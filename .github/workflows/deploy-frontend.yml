@@ -141,15 +141,47 @@ jobs:
           gzip -t osgard-release/html/skillcred/styles.css.gz osgard-release/html/skillcred/app.js.gz
           cp nginx.conf osgard-release/nginx.conf
           tar -czf osgard-world-release.tgz -C osgard-release .
+      - name: Validate deployment secrets
+        env:
+          DEPLOY_HOST: ${{ secrets.OSGARD_DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.OSGARD_DEPLOY_USER }}
+          DEPLOY_KEY: ${{ secrets.OSGARD_DEPLOY_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -z "$DEPLOY_HOST" ]; then
+            echo "::error::Missing GitHub Actions secret OSGARD_DEPLOY_HOST. Set it to the VPS hostname or IP."
+            exit 1
+          fi
+          if [ -z "$DEPLOY_USER" ]; then
+            echo "::error::Missing GitHub Actions secret OSGARD_DEPLOY_USER. Set it to the SSH deployment username."
+            exit 1
+          fi
+          if [ -z "$DEPLOY_KEY" ]; then
+            echo "::error::Missing GitHub Actions secret OSGARD_DEPLOY_KEY. Add the private SSH key authorized for the deployment user on the VPS."
+            exit 1
+          fi
+          if ! printf '%s' "$DEPLOY_KEY" | grep -q -- 'PRIVATE KEY'; then
+            echo "::error::OSGARD_DEPLOY_KEY does not look like a private SSH key. Store the full private key, including its BEGIN/END lines."
+            exit 1
+          fi
       - name: Configure SSH
         env:
           DEPLOY_KEY: ${{ secrets.OSGARD_DEPLOY_KEY }}
+          DEPLOY_HOST: ${{ secrets.OSGARD_DEPLOY_HOST }}
         run: |
-          test -n "$DEPLOY_KEY"
+          set -euo pipefail
           install -m 700 -d ~/.ssh
-          printf '%s\n' "$DEPLOY_KEY" > ~/.ssh/osgard_deploy
+          printf '%s\\n' "$DEPLOY_KEY" > ~/.ssh/osgard_deploy
           chmod 600 ~/.ssh/osgard_deploy
-          ssh-keyscan -H "${{ secrets.OSGARD_DEPLOY_HOST }}" >> ~/.ssh/known_hosts
+          if ! ssh-keyscan -T 10 -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts 2>/tmp/osgard-keyscan.err; then
+            echo "::error::Could not read the SSH host key from OSGARD_DEPLOY_HOST. Check the host/IP, network access, and SSH port on the VPS."
+            cat /tmp/osgard-keyscan.err >&2
+            exit 1
+          fi
+          if [ ! -s ~/.ssh/known_hosts ]; then
+            echo "::error::SSH host-key scan returned no host keys for OSGARD_DEPLOY_HOST."
+            exit 1
+          fi
       - name: Stage archive and verify checksum
         env:
           HOST: ${{ secrets.OSGARD_DEPLOY_HOST }}
