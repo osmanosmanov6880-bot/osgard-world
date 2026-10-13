@@ -20,7 +20,7 @@ const contentByLocale = {
     pathAction:'Открыть учебную историю', available:'УЖЕ ДОСТУПНО',
     courseTitle:'OSA Original: ИИ, власть знаний и будущее человека',
     courseBody:'Три акта интерактивного обучения — о возможностях моделей, доступе к знаниям и решениях человека. Выборы, пояснения и прогресс уже реализованы в существующем опыте.',
-    scenes:'учебных сцен', verification:'Проверка источников', continue:'Продолжить в OSA Original', progressEyebrow:'ВАШ МАРШРУТ', progressTitle:'Продолжите с того места, где остановились', progressIntro:'Прогресс хранится в этом браузере. Можно вернуться к сцене или продолжить практический проект.', progressCourse:'OSA Original', progressScene:'Текущая сцена', progressChoices:'Ваши решения', progressComplete:'Курс завершён', progressNotStarted:'Вы ещё не начали курс', progressResume:'Продолжить обучение', progressStudio:'Продолжить проект', progressDrafts:'Черновики проектов', progressSelfCheck:'Самопроверка', lessonAll:'Все темы', lessonAct1:'Акт I · Основы', lessonAct2:'Акт II · Знания', lessonAct3:'Акт III · Человек', lessonCount:'тем',
+    scenes:'учебных сцен', verification:'Проверка источников', continue:'Продолжить в OSA Original', lessonPractice:'Применить на практике', progressEyebrow:'ВАШ МАРШРУТ', progressTitle:'Продолжите с того места, где остановились', progressIntro:'Прогресс хранится в этом браузере. Можно вернуться к сцене или продолжить практический проект.', progressCourse:'OSA Original', progressScene:'Текущая сцена', progressChoices:'Ваши решения', progressComplete:'Курс завершён', progressNotStarted:'Вы ещё не начали курс', progressResume:'Продолжить обучение', progressStudio:'Продолжить проект', progressDrafts:'Черновики проектов', progressSelfCheck:'Самопроверка', lessonAll:'Все темы', lessonAct1:'Акт I · Основы', lessonAct2:'Акт II · Знания', lessonAct3:'Акт III · Человек', lessonCount:'тем',
     lessonsEyebrow:'СОДЕРЖАНИЕ КУРСА', lessonsTitle:'Темы внутри существующей программы',
     lessonsIntro:'Названия и описания берутся из реальных сцен OSA Original.', lessonAction:'Изучить в курсе',
     practicalEyebrow:'ПЕРЕЙДИТЕ К ПРАКТИКЕ',
@@ -51,7 +51,7 @@ const contentByLocale = {
     pathAction:'Explore the learning experience', available:'AVAILABLE NOW',
     courseTitle:'OSA Original: AI, knowledge, and human agency',
     courseBody:'Three acts of interactive learning about model capabilities, access to knowledge, and human decisions. Choices, explanations, and progress are already part of the existing experience.',
-    scenes:'learning scenes', verification:'Source verification', continue:'Continue in OSA Original', progressEyebrow:'YOUR LEARNING PATH', progressTitle:'Pick up where you left off', progressIntro:'Your progress stays in this browser. Return to a scene or continue a practical project.', progressCourse:'OSA Original', progressScene:'Current scene', progressChoices:'Your decisions', progressComplete:'Course completed', progressNotStarted:'You have not started the course yet', progressResume:'Resume learning', progressStudio:'Continue project', progressDrafts:'Project drafts', progressSelfCheck:'Self-check', lessonAll:'All topics', lessonAct1:'Act I · Foundations', lessonAct2:'Act II · Knowledge', lessonAct3:'Act III · Humanity', lessonCount:'topics',
+    scenes:'learning scenes', verification:'Source verification', continue:'Continue in OSA Original', lessonPractice:'Apply in a project', progressEyebrow:'YOUR LEARNING PATH', progressTitle:'Pick up where you left off', progressIntro:'Your progress stays in this browser. Return to a scene or continue a practical project.', progressCourse:'OSA Original', progressScene:'Current scene', progressChoices:'Your decisions', progressComplete:'Course completed', progressNotStarted:'You have not started the course yet', progressResume:'Resume learning', progressStudio:'Continue project', progressDrafts:'Project drafts', progressSelfCheck:'Self-check', lessonAll:'All topics', lessonAct1:'Act I · Foundations', lessonAct2:'Act II · Knowledge', lessonAct3:'Act III · Humanity', lessonCount:'topics',
     lessonsEyebrow:'COURSE CONTENT', lessonsTitle:'Inside the current curriculum',
     lessonsIntro:'Titles and summaries are sourced from the existing OSA Original scenes.', lessonAction:'Explore in the course',
     practicalEyebrow:'PUT LEARNING INTO PRACTICE',
@@ -172,9 +172,15 @@ export default function AcademyHome() {
         <span aria-live="polite">{visibleLessons.length} {t.lessonCount}</span>
       </div>
       <div className="academy-lesson-grid">
-        {visibleLessons.map(lesson => <a className="academy-lesson-card" href={`/osa-cinema?scene=${Number(lesson.id.split('-').pop())}`} key={lesson.id}>
-          <span>{lesson.tag}</span><h3>{lesson.title}</h3><p>{lesson.body}</p><strong>{t.lessonAction}<ArrowUpRight size={15} aria-hidden="true" /></strong>
-        </a>)}
+        {visibleLessons.map(lesson => {
+          const sceneIndex = Number(lesson.id.split('-').pop())
+          const project = sceneIndex === 5 ? 'privacy' : sceneIndex === 3 || sceneIndex === 4 ? 'evidence' : 'decision'
+          return <article className="academy-lesson-card" key={lesson.id}>
+            <span>{lesson.tag}</span><h3>{lesson.title}</h3><p>{lesson.body}</p>
+            <a className="academy-lesson-link" href={`/osa-cinema?scene=${sceneIndex}`}>{t.lessonAction}<ArrowUpRight size={15} aria-hidden="true" /></a>
+            <a className="academy-lesson-practice" href={`/?project=${project}#project-studio`}>{t.lessonPractice}<ArrowUpRight size={15} aria-hidden="true" /></a>
+          </article>
+        })}
       </div>
     </section>
 
