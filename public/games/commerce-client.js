@@ -28,8 +28,8 @@
   function readLeadAttribution() {
     const params = new URLSearchParams(location.search);
     const safeSlug = (value) => {
-      const cleaned = clean(value, 60).toLowerCase();
-      return LEAD_ATTRIBUTION_SLUG.test(cleaned) ? cleaned : '';
+      const cleaned = String(value ?? '').replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
+      return cleaned.length <= 60 && LEAD_ATTRIBUTION_SLUG.test(cleaned) ? cleaned : '';
     };
     const content = safeSlug(params.get('utm_content'));
     const pathMatch = location.pathname.match(/^\/games\/([a-z0-9_-]{1,48})\/?$/i);
