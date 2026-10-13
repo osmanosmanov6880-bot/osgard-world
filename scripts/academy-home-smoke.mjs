@@ -82,3 +82,7 @@ console.log('PASS Academy-first homepage: root routing, source-backed lesson con
 
 assert.ok(cinema.includes('cinema-practice-link') && cinema.includes('t.practice') && cinema.includes("index===5?'privacy':index===3||index===4?'evidence':'decision'"), 'Every course scene must link directly to its mapped practical project')
 assert.ok(cinemaStyles.includes('.cinema-practice-link') && cinemaStyles.includes('.cinema-practice-link:focus-visible'), 'In-course project link must be styled and keyboard accessible')
+
+assert.ok(studio.includes('deliverables:string[]') && studio.includes('academy-studio-checklist') && studio.includes('aria-valuenow={submission.deliverables.length}'), 'Project Studio must provide an accessible, persisted deliverable checklist')
+assert.ok(studio.includes('deliverables:Array.isArray(value.deliverables)'), 'Checklist progress must restore from existing local drafts safely')
+assert.ok(home.includes('projectChecks') && home.includes('projectsCompleted') && home.includes('checklist items completed'), 'Academy dashboard must summarize practical checklist progress')
