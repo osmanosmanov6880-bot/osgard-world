@@ -105,3 +105,8 @@ assert.ok(home.includes('skillComplete') && home.includes('skillInProgress') && 
 assert.ok(home.includes('aria-valuenow={Math.min(4,skill.count)}') && home.includes('skillSelfCheck'), 'Competency map must expose accessible checklist progress and course self-check totals')
 assert.ok(home.includes('SKILL MAP') && home.includes('КАРТА НАВЫКОВ'), 'Competency map must be bilingual')
 assert.ok(styles.includes('.academy-skills-grid') && styles.includes('@media(max-width:760px)'), 'Competency map must be responsive')
+
+assert.ok(studio.includes('ratedCriteria=submission.scores.filter(value=>value>0).length') && studio.includes('rubricComplete=ratedCriteria===weights.length'), 'Rubric must distinguish unrated criteria from a complete self-assessment')
+assert.ok(studio.includes("{rubricComplete?score:'—'}") && studio.includes('t.scorePending') && studio.includes('ratedCriteria/'), 'A final score must only appear after all criteria are rated, with visible completion progress')
+assert.ok(studio.includes('rubricComplete?`${score}/100`:t.scorePending'), 'Exported project must not present an incomplete rubric as a final score')
+assert.ok(studio.includes("scorePending:'Оцените все четыре критерия") && studio.includes("scorePending:'Rate all four criteria") && cc.includes('.academy-studio-rubric-progress'), 'Rubric completion guidance must be bilingual and styled')
