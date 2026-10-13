@@ -1,16 +1,24 @@
 # AFTERIMAGE//RUN — growth & monetization plan
 
 ## Product pitch
-A compact sci-fi precision runner in OSGARD PLAY: the same UTC daily seed for everyone, a personal best/ghost, a challenge URL carrying the seed and score, share-result image, and a cosmetic SIGNAL SHARD that can be earned once per UTC day by starting a share flow or copying a challenge link. The game explicitly tells the player that the actual public post is not verified.
+A compact sci-fi precision runner in OSGARD PLAY: the same UTC daily seed for everyone, a personal best/ghost, a canonical invite URL carrying the seed and target score, a result card, social share buttons, and a cosmetic SIGNAL SHARD that can be claimed once per UTC day only after the player explicitly confirms they published. Public posts are not independently verified.
 
 ## Viral loop to measure
 1. A player starts from the OSGARD games catalog or Entertainment.
 2. The daily seed and score make a compact challenge ("beat this route / beat this score").
 3. Native share or Telegram, VK, X, WhatsApp and copy-link buttons create a route-specific challenge URL.
 4. The recipient lands on the same date/seed, plays their run and can share their result.
-5. A non-transferable, cosmetic shard provides a small in-game acknowledgement. It does not alter speed, score, or paid rights.
+5. After opening the destination/system share flow, the player must explicitly confirm they published to claim a non-transferable cosmetic shard. Copying a link alone never grants the reward. The shard does not alter speed, score, or paid rights.
 
-The share incentive is intentionally a reward for starting the share flow, not a claim that a post was published. Client-only localStorage is easy to reset and is not anti-fraud. Before offering tradable/paid value or a referral payout, implement server-side invite attribution, idempotent referral records, account/abuse controls, and require a qualified referred player's first completed session. The local shard is cosmetic-only.
+The share incentive is a self-confirmed cosmetic acknowledgement, not proof that a public post exists. Client-only localStorage is easy to reset and is not anti-fraud. Before offering tradable/paid value or referral payout, use server-side invite attribution, idempotent referral records, account/abuse controls, and require a qualified referred player's first completed session.
+
+## Gameplay fairness and challenge handoff
+
+- Gameplay obstacle/collectible placement uses a dedicated daily-seeded RNG. Background stars, particles, hit sparks, collectible spin, and camera shake use a separate visual RNG. Visual effects therefore cannot consume the gameplay sequence and change the course a friend receives.
+- Restart resets both generators. Daily challenge URLs use the canonical `/games/invite/afterimage-run/` route with `og_challenge=afterimage-run`, `mode=daily`, the validated ISO date, and a bounded integer target score.
+- The invite page forwards only a validated date and score to the standalone game while preserving valid referral code and UTM attribution. Invalid dates, unsupported modes, and out-of-range scores fall back to the game catalogue.
+- A challenge is won only by a score **strictly greater** than the target. An equal score is a tie, not a win.
+- The exported PNG result card remains a share asset; it is not a server-verified score or public leaderboard entry.
 
 ## Owned-service intermission
 On closing an embedded game session, show one optional luxury cross-promotion panel containing the ten OSGARD-owned products. The player chooses a specific card then explicitly opens that destination, or dismisses the intermission. Each link carries:
