@@ -17,6 +17,11 @@ assert.ok(main.includes("if (path === '/osa-cinema') return <><Seo path={path} /
 assert.ok(home.includes('getOSACinemaLessons(locale)'), 'Featured lessons must use existing course data')
 assert.ok(home.includes('lessonFilters.map') && home.includes('aria-pressed={activeAct === filter.value}'), 'Curriculum filters must be keyboard-accessible and expose their selected state')
 assert.ok(home.includes('visibleLessons.map(lesson =>') && !home.includes('lessons.slice(0, 4)'), 'Academy must expose the full curriculum instead of silently truncating to four scenes')
+assert.ok(home.includes('academy-lab') && home.includes('const taskBrief = task.trim()'), 'Academy must provide a task-to-prompt practical lab')
+assert.ok(home.includes('qualityChecks') && home.includes('labEvidence') && home.includes('labPrivacy') && home.includes('labLimits'), 'Practical lab must let learners select concrete quality criteria')
+assert.ok(home.includes('navigator.clipboard.writeText(taskBrief)') && home.includes('aria-pressed={taskType===mode.value}'), 'Practical lab must support accessible task modes and copying the generated prompt')
+assert.ok(home.includes('maxLength={1000}') && home.includes('labCopyError'), 'Practical lab must constrain task input and explain clipboard failure')
+assert.ok(styles.includes('.academy-lab-panel') && styles.includes('@media(max-width:760px)'), 'Practical lab must have responsive layout styling')
 assert.ok(home.includes('/osa-cinema?scene=') && cinema.includes("new URLSearchParams(window.location.search).get('scene')"), 'Lesson cards must deep-link to their corresponding course scene')
 assert.ok(styles.includes('.academy-lesson-filters') && styles.includes('@media(prefers-reduced-motion:reduce)'), 'Curriculum filters must have responsive and reduced-motion styling')
 for (const href of ['href="/osa-cinema"', 'href="/catalog"', 'href="/games/"', 'href="/portal"']) {
