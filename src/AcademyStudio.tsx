@@ -52,6 +52,7 @@ export default function AcademyStudio({locale}:{locale:OSACinemaLocale}){
   const [submissions,setSubmissions]=useState<Record<string,Submission>>({})
   const [ready,setReady]=useState(false)
   const [saveFailed,setSaveFailed]=useState(false)
+  useEffect(()=>{try{if(new URLSearchParams(window.location.search).has('project'))document.getElementById('project-studio')?.scrollIntoView({behavior:'auto',block:'start'})}catch{}},[])
   const project=t.projectsData.find(item=>item.id===active) ?? t.projectsData[0]
   const submission=submissions[active] ?? {response:'',scores:[0,0,0,0],updatedAt:''}
   useEffect(()=>{try{const raw=localStorage.getItem(KEY);if(raw){const parsed=JSON.parse(raw);if(parsed&&typeof parsed==='object'){const restored:Record<string,Submission>={};for(const item of t.projectsData){const value=parsed[item.id];if(value&&typeof value.response==='string'&&Array.isArray(value.scores)){restored[item.id]={response:value.response.slice(0,12000),scores:weights.map((_,i)=>Number.isInteger(value.scores[i])&&value.scores[i]>=0&&value.scores[i]<=4?value.scores[i]:0),updatedAt:typeof value.updatedAt==='string'?value.updatedAt:''}}}setSubmissions(restored)}}}catch{}finally{setReady(true)}},[])
