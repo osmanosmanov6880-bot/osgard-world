@@ -1,0 +1,42 @@
+import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
+import vm from 'node:vm'
+
+const html=readFileSync(new URL('../public/games/vector-zero/index.html',import.meta.url),'utf8')
+const manifest=readFileSync(new URL('../src/core/manifest.ts',import.meta.url),'utf8')
+const ids=[...html.matchAll(/\bid="([^"]+)"/g)].map(m=>m[1])
+assert.equal(new Set(ids).size,ids.length,'DOM ids must be unique')
+const scripts=[...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)].map(m=>m[1]).filter(s=>s.trim())
+assert.equal(scripts.length,1,'game remains self-contained')
+new vm.Script(scripts[0],{filename:'vector-zero-inline.js'})
+const refs=[...scripts[0].matchAll(/\$\('([^']+)'\)/g)].map(m=>m[1])
+assert.deepEqual([...new Set(refs.filter(id=>!ids.includes(id)))],[],'every direct DOM lookup must have a matching element')
+assert.ok(html.includes('id="objective-status"'),'portal readiness probe must find objective-status')
+assert.ok(!html.includes('ctx.setTransform'),'resize must use the actual canvas context')
+assert.ok(scripts[0].includes('const challengeDate=')&&scripts[0].includes('function stableHash('),'daily challenge target must be deterministic')
+assert.ok(scripts[0].includes('const dailyTarget=Number((9+(challengeSeed%61)/10).toFixed(1))'),'daily target should remain in the testable 9–15 second range')
+assert.ok(scripts[0].includes("const dailyRules=[{name:'LOW FLUX',multiplier:.88},{name:'BALANCED FLUX',multiplier:1},{name:'HIGH FLUX',multiplier:1.12}]"),'daily challenge must select a deterministic magnetic law')
+assert.ok(scripts[0].includes('350*dailyRule.multiplier*(1-d/m.r)'), 'daily law must alter actual magnetic physics')
+assert.ok(html.includes('osgard.core.events.pending.v1'),'growth events must use the first-party local queue')
+assert.ok(scripts[0].includes("localStorage.getItem('osgard.games.analytics-consent.v1')==='yes'")&&scripts[0].includes("localStorage.getItem('osgard.auth.accessToken')||''"),'event queue writes must require explicit analytics consent and an authenticated player')
+for(const event of ['game_opened','game_session_started','game_session_completed','score_submitted','challenge_created','challenge_invite_accepted','share_created','share_link_copied','share_dialog_opened','partner_cta_clicked','result_card_exported'])assert.ok(manifest.includes("'"+event+"'"),'missing manifest event: '+event)
+assert.ok(html.includes('navigator.share')&&html.includes('id="share-result"')&&html.includes('id="save-card"'),'result sharing and PNG export must exist')
+assert.ok(html.includes('vector_zero_sponsor'),'sponsor CTA must be attributable')
+assert.ok(!/<script\b[^>]*\bsrc\s*=/i.test(html),'game must not add third-party scripts')
+
+const hashStart=scripts[0].indexOf('function stableHash(value){')
+const hashEnd=scripts[0].indexOf('const challengeDate=',hashStart)
+assert.ok(hashStart>=0&&hashEnd>hashStart,'stable hash function definition must be extractable for deterministic test')
+const hashDefinition=scripts[0].slice(hashStart,hashEnd)
+const stableHash=new Function(hashDefinition+'; return stableHash')()
+const seedA=stableHash('VECTOR-ZERO|2026-10-13')
+const seedB=stableHash('VECTOR-ZERO|2026-10-13')
+const seedNextDay=stableHash('VECTOR-ZERO|2026-10-14')
+assert.equal(seedA,seedB,'same UTC date must produce the same daily challenge seed')
+assert.notEqual(seedA,seedNextDay,'adjacent dates should produce different seeds for the selected fixture')
+const target=Number((9+(seedA%61)/10).toFixed(1))
+assert.ok(target>=9&&target<=15,'daily target must remain inside the designed 9–15 second range')
+const rules=[{name:'LOW FLUX',multiplier:.88},{name:'BALANCED FLUX',multiplier:1},{name:'HIGH FLUX',multiplier:1.12}]
+assert.equal(rules[seedA%rules.length].multiplier,[.88,1,1.12][seedA%3],'the daily rule must be selected deterministically from the same seed')
+
+console.log('PASS VECTOR//ZERO growth smoke: syntax, IDs, readiness, daily seed, events, share, result card, sponsor lead, no third-party scripts')
