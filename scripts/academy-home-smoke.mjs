@@ -21,6 +21,8 @@ assert.ok(studio.includes("KEY='osgard-academy-studio-v1'") && studio.includes('
 assert.ok(studio.includes("id:'evidence'") && studio.includes("id:'privacy'") && studio.includes("id:'decision'"), 'Project studio must include verification, privacy and human-decision assignments')
 assert.ok(studio.includes('weights=[40,30,20,10]') && studio.includes('submission.scores.reduce'), 'Project studio must calculate a weighted rubric score')
 assert.ok(studio.includes('URL.createObjectURL') && studio.includes('download='), 'Learners must be able to export their project as a text file')
+assert.ok(studio.includes('setSaveFailed(true)') && studio.includes('t.saveFailed') && studio.includes('role="status"'), 'Project studio must clearly report when local draft persistence fails')
+assert.ok(studio.includes('window.setTimeout(()=>URL.revokeObjectURL(url),1000)'), 'Project export must not revoke its object URL before the browser starts downloading')
 assert.ok(studio.includes('aria-pressed={active===item.id}') && studio.includes('aria-live="polite"'), 'Project selection and scoring must expose accessible state')
 assert.ok(studioStyles.includes('@media(max-width:700px)') && studioStyles.includes('focus-visible'), 'Project studio must be responsive and keyboard accessible')
 assert.ok(studioStyles.includes('var(--panel)') && studioStyles.includes('var(--bg)') && !studioStyles.includes('var(--surface)') && !studioStyles.includes('var(--background)'), 'Project studio must use defined Academy design tokens')
