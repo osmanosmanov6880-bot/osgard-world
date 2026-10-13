@@ -100,7 +100,7 @@ export default function AcademyHome() {
         const nextProject = projectState.find(item => item.deliverables.length < 4)?.id || 'evidence'
         const index = course && Number.isInteger(course.index) && course.index >= 0 && course.index < lessons.length ? course.index : 0
         const validAnswers = course?.answers && typeof course.answers === 'object' && !Array.isArray(course.answers)
-          ? Object.entries(course.answers).filter(([key,value]:[string,any]) => /^\\d+$/.test(key) && Number(key) >= 0 && Number(key) < lessons.length && Number.isInteger(value) && value >= 0).length
+          ? Object.entries(course.answers).filter(([key,value]:[string,any]) => /^\d+$/.test(key) && Number(key) >= 0 && Number(key) < lessons.length && Number.isInteger(value) && value >= 0).length
           : 0
         const validSelfChecks = course?.selfChecks && typeof course.selfChecks === 'object' && !Array.isArray(course.selfChecks)
           ? Object.entries(course.selfChecks).filter(([key,value]:[string,any]) => /^[0-2]$/.test(key) && value === true).length
