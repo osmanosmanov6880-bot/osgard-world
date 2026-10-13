@@ -90,6 +90,16 @@ assert.ok(html.includes("utm_source=osgard_games") && html.includes("utm_medium=
 assert.ok(sharedClient.includes("cross_promo_clicked") && sharedClient.includes("utm_content"), "Cross-promo clicks must be measured with consent and campaign context.");
 assert.ok(playerLifecycle.includes("sendCommerceEvent(name,payload)") && playerLifecycle.includes("game_session_completed"), "Consented game session metrics must reach commerce analytics.");
 assert.ok(privacy.includes("платёжного провайдера") && privacy.includes("Необязательная аналитика"), "Privacy page missing actual commerce data handling.");
+const commerceCore = readFileSync(resolve("services/osgard-commerce-api/src/core.mjs"), "utf8");
+const commerceServer = readFileSync(resolve("services/osgard-commerce-api/src/server.mjs"), "utf8");
+const commerceAdmin = readFileSync(resolve("public/games/commerce-admin/index.html"), "utf8");
+const commerceClient = readFileSync(resolve("public/games/commerce-client.js"), "utf8");
+assert.ok(commerceCore.includes("normalizeLeadAttribution(raw)") && commerceCore.includes("attribution: normalizeLeadAttribution(input.attribution)"), "Lead attribution must be normalized on the server.");
+assert.ok(commerceServer.includes("ALTER TABLE commerce_leads ADD COLUMN IF NOT EXISTS attribution_source") && commerceServer.includes("leadAttribution: leadAttribution.rows"), "Existing lead databases must migrate and expose a bounded attribution aggregate.");
+assert.ok(commerceServer.includes("attribution_medium,attribution_campaign,attribution_content,referral_code") && commerceServer.includes("attribution_game_id AS \\"gameId\\""), "Lead attribution fields must be stored and grouped separately.");
+assert.ok(commerceClient.includes("attribution: structuredAttribution") && commerceClient.includes("function readLeadAttribution()"), "Lead forms must send structured source metadata.");
+assert.ok(commerceAdmin.includes('id="lead-attribution-body"') && commerceAdmin.includes("renderLeadAttribution(overview.leadAttribution || [])"), "Protected operator dashboard must show the lead-source funnel.");
+assert.ok(privacy.includes("безопасные значения сохраняются со заявкой") && privacy.includes("Полный URL") === false, "Privacy page must explain source metadata without claiming that a full URL is retained.");
 assert.ok(terms.includes("Покупки и платёжный статус") && terms.includes("Подписка OSGARD PREMIUM выключена"), "Terms must document checkout and disabled recurring sales.");
 const successPage = readFileSync(resolve("public/games/premium/success/index.html"), "utf8");
 assert.ok(successPage.includes("/v1/checkout/status"), "Success page must ask the server for verified payment status.");
