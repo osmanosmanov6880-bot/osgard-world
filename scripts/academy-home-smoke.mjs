@@ -43,6 +43,9 @@ assert.ok(styles.includes('.academy-lesson-filters') && styles.includes('@media(
 for (const href of ['href="/osa-cinema"', 'href="/catalog"', 'href="/games/"', 'href="/portal"']) {
   assert.ok(home.includes(href), 'Academy homepage is missing expected navigation: ' + href)
 }
+assert.ok(home.includes("osgard-osa-cinema-progress-v1") && home.includes("osgard-academy-studio-v1"), 'Learning dashboard must read the course and project draft progress saved locally')
+assert.ok(home.includes('academy-progress-grid') && home.includes('progressResume') && home.includes('progressStudio'), 'Learning dashboard must offer course resume and project continuation actions')
+assert.ok(styles.includes('.academy-progress-card') && styles.includes('@media(max-width:760px)'), 'Learning dashboard must be responsive')
 for (const section of ['academy-hero', 'academy-path-grid', 'academy-lesson-grid', 'academy-practice-grid', 'academy-ecosystem-grid', 'academy-final-cta']) {
   assert.ok(home.includes(section), 'Academy homepage is missing section: ' + section)
 }
