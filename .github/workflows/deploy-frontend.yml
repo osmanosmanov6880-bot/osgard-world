@@ -27,6 +27,7 @@ on:
       - "scripts/frontend-archive-preflight.mjs"
       - "scripts/production-route-matrix.mjs"
       - "scripts/activate-frontend-remote.sh"
+      - "scripts/deploy-workflow-smoke.mjs"
       - "scripts/skillcred-page-smoke.mjs"
       - "scripts/time-prototype-smoke.mjs"
       - "scripts/null-shift-premium-smoke.mjs"
@@ -50,6 +51,8 @@ jobs:
         with:
           node-version: 20
       - run: npm ci
+      - name: Validate deployment workflow safety checks
+        run: npm run qa:deploy-workflow
       - run: npm run check
       - run: npm run qa:null-shift
       - name: Smoke-test the OSGARD Games hub
