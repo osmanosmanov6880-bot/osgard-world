@@ -21,7 +21,7 @@
 <section class="growth-panel" aria-label="Ежедневное испытание VECTOR ZERO">
   <div class="growth-copy">
     <div class="eye">DAILY FIELD CONTRACT <span id="challenge-code">VZ—DAILY</span></div>
-    <p id="challenge-description">Один ежедневный seed для всех. Доставь ядро, побей цель дня и пригласи соперника.</p>
+    <p id="challenge-description">Один ежедневный контракт для всех игроков. Доставь ядро, побей цель дня и пригласи соперника.</p>
     <div class="growth-metrics"><span id="daily-target">TARGET —</span><span id="daily-best">PERSONAL BEST —</span><span id="incoming-challenge" hidden></span></div>
   </div>
   <div class="growth-actions">
@@ -38,7 +38,7 @@ function validChallengeDate(value){if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(value||''))
 function stableHash(value){let hash=2166136261;for(let i=0;i<value.length;i++){hash^=value.charCodeAt(i);hash=Math.imul(hash,16777619)}return hash>>>0}
 const challengeDate=validChallengeDate(params.get('challenge'))?params.get('challenge'):new Date().toISOString().slice(0,10);
 const challengeSeed=stableHash('VECTOR-ZERO|'+challengeDate);
-const dailyTarget=Number((5.3+(challengeSeed%21)/10).toFixed(1));
+const dailyTarget=Number((9+(challengeSeed%61)/10).toFixed(1));
 const friendTimeRaw=Number(params.get('t'));
 const friendTarget=Number.isFinite(friendTimeRaw)&&friendTimeRaw>=1&&friendTimeRaw<=600?friendTimeRaw:null;
 const incomingInvite=params.get('ref')==='vector-zero'&&params.get('src')==='challenge';
@@ -50,7 +50,7 @@ function recordMetric(name,payload={}){const allowed=new Set(['game_opened','gam
 function formatRun(value){return Number(value).toFixed(2)+' s'}
 function activeTarget(){return friendTarget??dailyTarget}
 function challengeRank(value){const goal=activeTarget();if(value<=goal)return 'S';if(value<=goal*1.18)return 'A';if(value<=goal*1.4)return 'B';return 'C'}
-function refreshGrowthPanel(){const best=readBest();$('challenge-code').textContent=challengeCode;$('daily-target').textContent=(friendTarget?'BEAT FRIEND ':'DAILY TARGET ')+formatRun(activeTarget());$('daily-best').textContent='PERSONAL BEST '+(best===null?'—':formatRun(best));$('challenge-description').textContent=friendTarget?'Друг передал тебе результат '+formatRun(friendTarget)+'. Доставь ядро быстрее, чем он.':'Один ежедневный seed для всех. Доставь ядро быстрее цели дня и передай вызов другу.';$('incoming-challenge').hidden=!incomingInvite&&!friendTarget;$('incoming-challenge').textContent=incomingInvite?'INVITED RUN':('FRIEND TARGET '+formatRun(friendTarget||0))}
+function refreshGrowthPanel(){const best=readBest();$('challenge-code').textContent=challengeCode;$('daily-target').textContent=(friendTarget?'BEAT FRIEND ':'DAILY TARGET ')+formatRun(activeTarget());$('daily-best').textContent='PERSONAL BEST '+(best===null?'—':formatRun(best));$('challenge-description').textContent=friendTarget?'Друг передал тебе результат '+formatRun(friendTarget)+'. Доставь ядро быстрее, чем он.':'Один ежедневный контракт для всех игроков. Доставь ядро быстрее цели дня и передай вызов другу.';$('incoming-challenge').hidden=!incomingInvite&&!friendTarget;$('incoming-challenge').textContent=incomingInvite?'INVITED RUN':('FRIEND TARGET '+formatRun(friendTarget||0))}
 function makeChallengeUrl(withResult){const url=new URL(location.href);url.searchParams.set('challenge',challengeDate);url.searchParams.set('ref','vector-zero');url.searchParams.set('src','challenge');if(withResult&&mode==='won')url.searchParams.set('t',time.toFixed(2));else url.searchParams.delete('t');return url.href}
 async function copyText(value){if(navigator.clipboard?.writeText){await navigator.clipboard.writeText(value);return}const area=document.createElement('textarea');area.value=value;area.setAttribute('readonly','');area.style.position='fixed';area.style.opacity='0';document.body.append(area);area.select();const ok=document.execCommand('copy');area.remove();if(!ok)throw new Error('clipboard unavailable')}
 async function shareChallenge(withResult=false){const url=makeChallengeUrl(withResult),score=mode==='won'?time:null,target=activeTarget();const text=score===null?'Твой ход: VECTOR//ZERO · '+challengeCode+' · цель '+formatRun(target)+'. Сможешь доставить ядро быстрее?':('VECTOR//ZERO · '+challengeCode+' · '+formatRun(score)+' · '+(score<target?'цель побита':'цель не побита')+'. Побей мой результат:');recordMetric('challenge_created',{placement:withResult?'result':'daily-panel',scoreSeconds:score===null?null:Number(score.toFixed(2)),targetSeconds:target,challengeCode});try{if(navigator.share){recordMetric('share_dialog_opened',{placement:withResult?'result':'daily-panel'});await navigator.share({title:'VECTOR//ZERO — вызов',text,url});recordMetric('share_created',{method:'native',placement:withResult?'result':'daily-panel'});return}await copyText(text+' '+url);recordMetric('share_link_copied',{placement:withResult?'result':'daily-panel'});recordMetric('share_created',{method:'clipboard',placement:withResult?'result':'daily-panel'});say('ВЫЗОВ СКОПИРОВАН · ПЕРЕДАЙ ДРУГУ')}catch(error){if(error&&error.name==='AbortError')return;try{await copyText(text+' '+url);recordMetric('share_link_copied',{placement:withResult?'result':'daily-panel'});say('ССЫЛКА СКОПИРОВАНА')}catch{say('СКОПИРУЙ АДРЕС СТРАНИЦЫ ВРУЧНУЮ')}}}
