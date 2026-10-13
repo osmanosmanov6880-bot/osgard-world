@@ -180,6 +180,65 @@ assert.ok(afterimageGame.includes("shardCosmeticUnlocked=true")&&afterimageGame.
 const goldTrailStart=afterimageGame.indexOf('if(shardCosmeticUnlocked&&game.elapsed-(game.cosmeticTrailAt||0)>.06)')
 const goldTrailEnd=afterimageGame.indexOf('game.speed=',goldTrailStart)
 assert.ok(goldTrailStart>=0&&goldTrailEnd>goldTrailStart&&!afterimageGame.slice(goldTrailStart,goldTrailEnd).includes('random('),'Cosmetic trail must not consume gameplay randomness or alter obstacle generation')
+
+assert.ok(afterimageGame.includes('function makeRng(initialState,multiplier=1664525,increment=1013904223)')&&afterimageGame.includes('let gameplayRandom=makeRng(seed),visualRandom=makeRng(cosmeticSeed,22695477,1)'),'AFTERIMAGE must use separate deterministic gameplay and visual RNG streams')
+assert.ok(afterimageGame.includes('function reset(){gameplayRandom=makeRng(seed);visualRandom=makeRng(cosmeticSeed,22695477,1);'),'Restart must reset both RNG streams from the daily seed')
+const afterimageSpawnStart=afterimageGame.indexOf('function spawn(){')
+const afterimageSpawnEnd=afterimageGame.indexOf('\nfunction hit(',afterimageSpawnStart)
+const afterimageBurstStart=afterimageGame.indexOf('function burst(')
+const afterimageBurstEnd=afterimageGame.indexOf('\nfunction spawn(',afterimageBurstStart)
+assert.ok(afterimageSpawnStart>=0&&afterimageSpawnEnd>afterimageSpawnStart&&afterimageBurstStart>=0&&afterimageBurstEnd>afterimageBurstStart,'AFTERIMAGE RNG boundaries must remain independently testable')
+const afterimageSpawnSource=afterimageGame.slice(afterimageSpawnStart,afterimageSpawnEnd)
+const afterimageBurstSource=afterimageGame.slice(afterimageBurstStart,afterimageBurstEnd)
+assert.ok(afterimageSpawnSource.includes('gameplayRandom()')&&afterimageSpawnSource.includes('phase:visualRandom()')&&!/\brandom\(\)/.test(afterimageSpawnSource),'Obstacle layout must use gameplay RNG; only collectible animation phase may use visual RNG')
+assert.ok(afterimageBurstSource.includes('visualRandom()')&&!afterimageBurstSource.includes('gameplayRandom()')&&!/\brandom\(\)/.test(afterimageBurstSource),'Particles must never consume gameplay RNG')
+const afterimageRngFactoryStart=afterimageGame.indexOf('function makeRng(')
+const afterimageRngFactoryEnd=afterimageGame.indexOf('\nlet gameplayRandom=',afterimageRngFactoryStart)
+assert.ok(afterimageRngFactoryStart>=0&&afterimageRngFactoryEnd>afterimageRngFactoryStart,'Deterministic RNG factory must be extractable for behavior tests')
+const makeAfterimageRng=new Function(afterimageGame.slice(afterimageRngFactoryStart,afterimageRngFactoryEnd)+'\nreturn makeRng;')()
+function simulateAfterimageWorld(visualCallsPerStep){
+ const world={distance:0,obstacles:[],items:[],spawnAt:0}
+ const playRng=makeAfterimageRng(0x1234abcd)
+ const fxRng=makeAfterimageRng((0x1234abcd^0x9e3779b9)>>>0,22695477,1)
+ const spawn=new Function('game','gameplayRandom','visualRandom','W','FLOOR',afterimageSpawnSource+'\nreturn spawn;')(world,playRng,fxRng,1200,490)
+ for(let step=0;step<24;step++){
+  for(let j=0;j<visualCallsPerStep(step);j++)fxRng()
+  world.distance=step*75
+  spawn()
+ }
+ return {obstacles:world.obstacles,items:world.items.map(({phase,...item})=>item),spawnAt:world.spawnAt}
+}
+assert.deepEqual(simulateAfterimageWorld(step=>step%2===0?18:3),simulateAfterimageWorld(step=>step%5===0?1:7),'The daily obstacle/collectible layout must not change when the number of visual RNG calls changes')
+assert.ok(afterimageGame.includes("candidate.pathname==='/games/invite/afterimage-run/'")&&afterimageGame.includes("url.searchParams.set('og_challenge','afterimage-run')")&&afterimageGame.includes("url.searchParams.set('mode','daily')")&&afterimageGame.includes("url.searchParams.set('day',day)")&&afterimageGame.includes("url.searchParams.set('challenge',String(score))"),'AFTERIMAGE share URLs must use the canonical invite route with validated seed/score fields')
+assert.ok(afterimageGame.includes("flowType:'daily-challenge'")&&afterimageGame.includes('challengeScore:Math.max(0,Math.floor(game.score||daily.best||0))')&&afterimageGame.includes('referralCode:shareCode'),'Confirmed share analytics must carry the challenge flow and validated referral code')
+assert.ok(inviteLandingScript.includes("const afterimageChallenge = game === 'afterimage-run'")&&inviteLandingScript.includes("params.get('og_challenge') === 'afterimage-run'")&&inviteLandingScript.includes("Number.isSafeInteger(scoreValue) && scoreValue >= 0 && scoreValue <= 99999999"),'Invite landing must validate AFTERIMAGE challenge markers and bounded target score')
+{
+ const makeInviteTarget=query=>{
+  const playLink={href:''}
+  const fakeDocument={body:{dataset:{game:'afterimage-run'}},querySelector(selector){return selector==='#play-link'?playLink:null}}
+  const fakeLocation={origin:'https://osgard.world',search:query}
+  const fakeStorage={getItem(){return null}}
+  new Function('document','location','URL','URLSearchParams','localStorage',inviteLandingScript)(fakeDocument,fakeLocation,URL,URLSearchParams,fakeStorage)
+  return new URL(playLink.href)
+ }
+ const validInvite='?og_ref=og_1234abcd&og_game=afterimage-run&utm_source=osgard_play&utm_medium=referral&utm_campaign=play_with_friends&utm_content=afterimage-run&og_challenge=afterimage-run&challenge=2468&day=2026-10-13&mode=daily'
+ const validTarget=makeInviteTarget(validInvite)
+ assert.equal(validTarget.pathname,'/games/afterimage-run/','A valid invite challenge must launch AFTERIMAGE directly')
+ assert.equal(validTarget.searchParams.get('seed'),'2026-10-13','Invite handoff must preserve the same daily seed')
+ assert.equal(validTarget.searchParams.get('score'),'2468','Invite handoff must preserve the friend target score')
+ assert.equal(validTarget.searchParams.get('og_ref'),'og_1234abcd','Invite handoff must preserve the referral code')
+ assert.equal(validTarget.searchParams.get('utm_campaign'),'play_with_friends','Invite handoff must preserve campaign attribution')
+ for(const badQuery of [
+  '?og_ref=og_1234abcd&og_game=afterimage-run&utm_source=osgard_play&utm_medium=referral&utm_campaign=play_with_friends&utm_content=afterimage-run&og_challenge=afterimage-run&challenge=2468&day=2026-99-99&mode=daily',
+  '?og_ref=og_1234abcd&og_game=afterimage-run&utm_source=osgard_play&utm_medium=referral&utm_campaign=play_with_friends&utm_content=afterimage-run&og_challenge=afterimage-run&challenge=999999999999&day=2026-10-13&mode=daily',
+  '?og_ref=og_1234abcd&og_game=afterimage-run&utm_source=osgard_play&utm_medium=referral&utm_campaign=play_with_friends&utm_content=afterimage-run&og_challenge=afterimage-run&challenge=2468&day=2026-10-13&mode=wrong'
+ ]){
+  const invalidTarget=makeInviteTarget(badQuery)
+  assert.equal(invalidTarget.pathname,'/games/','Invalid AFTERIMAGE challenge data must fall back to the catalogue')
+  assert.equal(invalidTarget.searchParams.has('challenge'),false,'Invalid challenge fields must not be forwarded')
+ }
+}
+
 const afterimageInline=[...afterimageGame.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m=>m[1]).filter(s=>s.trim())
 assert.equal(afterimageInline.length,1,'AFTERIMAGE should have one inline game script')
 new Function(afterimageInline[0])
