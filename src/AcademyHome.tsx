@@ -34,7 +34,7 @@ const contentByLocale = {
     portalBody:'К прежнему порталу OSGARD сохранён отдельный маршрут.', portalAction:'Перейти в портал',
     finalEyebrow:'СДЕЛАЙТЕ СЛЕДУЮЩИЙ ШАГ', finalTitle:'Начните с вопроса. Завершите проверенным решением.',
     finalBody:'Пройдите интерактивную историю и выберите одну привычку, которую примените в своей следующей задаче с ИИ.',
-    footer:'Учитесь понимать. Проверяйте источники. Решайте осознанно.'
+    labEyebrow:'МИНИ-ПРАКТИКУМ', labTitle:'Превратите задачу в проверяемый запрос', labIntro:'Опишите реальную задачу, выберите тип работы и отметьте критерии качества. Академия соберёт основу задания, которую можно скопировать в ваш ИИ-инструмент.', labResearch:'Исследование', labWriting:'Текст или материал', labPlanning:'План действий', labTaskLabel:'Какую задачу нужно решить?', labTaskPlaceholder:'Например: сравнить три варианта выхода продукта на рынок…', labCriteria:'Критерии качества', labEvidence:'Ключевые факты должны опираться на проверяемые источники.', labPrivacy:'Не использовать секреты и лишние персональные данные.', labLimits:'Явно указать допущения, ограничения и что нужно проверить человеку.', labOutputTitle:'Черновик задания', labOutputEmpty:'Введите задачу выше — здесь появится структурированный запрос.', labCopy:'Скопировать запрос', labCopied:'Скопировано', labCopyError:'Не удалось скопировать — выделите текст вручную.', labNeedTask:'Сначала опишите задачу.', footer:'Учитесь понимать. Проверяйте источники. Решайте осознанно.'
   },
   en: {
     brand:'AI ACADEMY', paths:'Learning paths', products:'Products', games:'Games', portal:'OSGARD portal',
@@ -65,13 +65,17 @@ const contentByLocale = {
     portalBody:'The previous OSGARD portal remains available on its own route.', portalAction:'Open the portal',
     finalEyebrow:'TAKE THE NEXT STEP', finalTitle:'Start with a question. Finish with a verified decision.',
     finalBody:'Complete the interactive story and choose one habit to use in your next AI-assisted task.',
-    footer:'Understand the system. Verify the sources. Decide with care.'
+    labEyebrow:'PRACTICE LAB', labTitle:'Turn a task into a verifiable prompt', labIntro:'Describe a real task, choose a work mode, and select quality criteria. The Academy builds a task brief you can copy into your AI tool.', labResearch:'Research', labWriting:'Writing or content', labPlanning:'Action plan', labTaskLabel:'What task do you need to solve?', labTaskPlaceholder:'For example: compare three go-to-market options for a product…', labCriteria:'Quality criteria', labEvidence:'Key factual claims must rely on verifiable sources.', labPrivacy:'Do not include secrets or unnecessary personal data.', labLimits:'State assumptions, limitations, and what a human must verify.', labOutputTitle:'Task brief', labOutputEmpty:'Describe your task above to generate a structured prompt here.', labCopy:'Copy prompt', labCopied:'Copied', labCopyError:'Could not copy — select the text manually.', labNeedTask:'Describe the task first.', footer:'Understand the system. Verify the sources. Decide with care.'
   }
 } as const
 
 export default function AcademyHome() {
   const [locale, setLocale] = useState<OSACinemaLocale>('ru')
   const [activeAct, setActiveAct] = useState<number | null>(null)
+  const [taskType, setTaskType] = useState<'research'|'writing'|'planning'>('research')
+  const [task, setTask] = useState('')
+  const [qualityChecks, setQualityChecks] = useState([true, true, true])
+  const [copyStatus, setCopyStatus] = useState<'idle'|'copied'|'error'>('idle')
   const t = contentByLocale[locale]
   const lessons = getOSACinemaLessons(locale)
   const visibleLessons = activeAct === null ? lessons : lessons.filter(lesson => lesson.act === activeAct)
@@ -81,6 +85,9 @@ export default function AcademyHome() {
     { number:'02', title:t.path2, body:t.path2Body, Icon:Compass },
     { number:'03', title:t.path3, body:t.path3Body, Icon:ShieldCheck }
   ]
+  const taskModes = [{value:'research' as const,label:t.labResearch},{value:'writing' as const,label:t.labWriting},{value:'planning' as const,label:t.labPlanning}]
+  const qualityLabels = [t.labEvidence,t.labPrivacy,t.labLimits]
+  const taskBrief = task.trim() ? `${taskModes.find(mode=>mode.value===taskType)?.label}\n\nTask: ${task.trim()}\n\nPlease produce a useful first draft, not an unsupported final answer.\n${qualityChecks[0] ? `- Evidence: ${t.labEvidence}` : ''}\n${qualityChecks[1] ? `- Privacy: ${t.labPrivacy}` : ''}\n${qualityChecks[2] ? `- Review: ${t.labLimits}` : ''}\n\nSeparate facts from assumptions. Mark unknowns explicitly. End with a short checklist of what the human should verify before using the result.` : ''
   const habits = [
     { number:'01', title:t.practical1, body:t.practical1Body },
     { number:'02', title:t.practical2, body:t.practical2Body },
@@ -161,6 +168,20 @@ export default function AcademyHome() {
       <div className="academy-section-heading"><div><p className="academy-eyebrow">{t.practicalEyebrow}</p><h2>{t.practicalTitle}</h2></div><p>{t.practicalIntro}</p></div>
       <div className="academy-practice-grid">
         {habits.map(item => <article className="academy-practice-card" key={item.number}><span>{item.number}</span><h3>{item.title}</h3><p>{item.body}</p></article>)}
+      </div>
+    </section>
+
+    <section className="academy-section academy-lab" id="practice-lab">
+      <div className="academy-section-heading"><div><p className="academy-eyebrow">{t.labEyebrow}</p><h2>{t.labTitle}</h2></div><p>{t.labIntro}</p></div>
+      <div className="academy-lab-panel">
+        <div className="academy-lab-inputs">
+          <div className="academy-lab-modes" role="group" aria-label={t.labTitle}>{taskModes.map(mode=><button key={mode.value} type="button" className={taskType===mode.value?'active':''} aria-pressed={taskType===mode.value} onClick={()=>setTaskType(mode.value)}>{mode.label}</button>)}</div>
+          <label className="academy-lab-task-label" htmlFor="academy-task">{t.labTaskLabel}</label>
+          <textarea id="academy-task" value={task} onChange={event=>{setTask(event.target.value);setCopyStatus('idle')}} placeholder={t.labTaskPlaceholder} rows={4} maxLength={1000} />
+          <div className="academy-lab-counter">{task.length} / 1000</div>
+          <fieldset className="academy-lab-checks"><legend>{t.labCriteria}</legend>{qualityLabels.map((label,i)=><label key={label}><input type="checkbox" checked={qualityChecks[i]} onChange={event=>setQualityChecks(previous=>previous.map((checked,index)=>index===i?event.target.checked:checked))}/><span>{label}</span></label>)}</fieldset>
+        </div>
+        <div className="academy-lab-output"><p className="academy-eyebrow">{t.labOutputTitle}</p><textarea aria-label={t.labOutputTitle} value={taskBrief || t.labOutputEmpty} readOnly rows={10} onFocus={event=>event.currentTarget.select()} /><button type="button" className="academy-button academy-button-primary" disabled={!task.trim()} onClick={async()=>{try{await navigator.clipboard.writeText(taskBrief);setCopyStatus('copied')}catch{setCopyStatus('error')}}}>{copyStatus==='copied'?t.labCopied:t.labCopy}<ArrowUpRight size={15} aria-hidden="true"/></button>{copyStatus==='error'&&<p role="status" className="academy-lab-status">{t.labCopyError}</p>}</div>
       </div>
     </section>
 
