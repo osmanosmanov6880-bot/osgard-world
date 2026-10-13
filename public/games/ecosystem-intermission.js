@@ -63,7 +63,7 @@ function utm(s){const u=new URL(s.url);u.searchParams.set('utm_source','osgard_g
 cta.addEventListener('click',()=>{const s=services.find(x=>x.id===selected);if(!s)return;log('ecosystem_promo_clicked',{project:s.id,url:s.url});window.open(utm(s),'_blank','noopener,noreferrer');dialog.close('opened')});
 dialog.querySelector('[data-skip]').addEventListener('click',()=>{log('ecosystem_intermission_skipped',{source:'skip_button'});dialog.close('skip')});
 const player=document.getElementById('player-dialog');
-document.addEventListener('click',e=>{const a=e.target.closest('a[data-play]');if(a){activeSession=true;lastGame=a.dataset.play||a.textContent.trim().slice(0,80)}},true);
+document.addEventListener('click',e=>{const a=e.target.closest('a[data-play]');if(!a||e.metaKey||e.ctrlKey||e.shiftKey||e.button!==0)return;activeSession=true;lastGame=a.dataset.play||a.textContent.trim().slice(0,80)},true);
 function show(){if(dialog.open)return;selected='';grid.querySelectorAll('[data-service]').forEach(b=>b.setAttribute('aria-pressed','false'));cta.disabled=true;cta.textContent='Открыть выбранный проект ↗';try{dialog.showModal();log('ecosystem_intermission_shown',{projectCount:services.length});grid.querySelector('[data-service]')?.focus({preventScroll:true})}catch{}}
 if(player)player.addEventListener('close',()=>{if(!activeSession)return;activeSession=false;clearTimeout(showTimer);showTimer=setTimeout(show,320)});
 document.addEventListener('osgard:game-session-ended',()=>{activeSession=false;clearTimeout(showTimer);showTimer=setTimeout(show,320)});
