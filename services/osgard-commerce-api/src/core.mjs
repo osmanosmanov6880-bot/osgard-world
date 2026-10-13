@@ -101,6 +101,28 @@ export function validateCheckoutPayload(body) {
   return { ok: true, product, productKey, email, attribution: normalizeCheckoutAttribution(input.attribution) };
 }
 
+const LEAD_ATTRIBUTION_SLUG = /^[a-z0-9][a-z0-9_-]{0,59}$/;
+const LEAD_REFERRAL_CODE = /^(?:og_[a-f0-9]{8}|[a-f0-9]{12})$/;
+
+export function normalizeLeadAttribution(raw) {
+  const input = raw && typeof raw === "object" && !Array.isArray(raw) ? raw : {};
+  const slug = (key) => cleanText(input[key], 128).toLowerCase();
+  const gameCandidate = slug("gameId");
+  const sourceCandidate = slug("source");
+  const mediumCandidate = slug("medium");
+  const campaignCandidate = slug("campaign");
+  const contentCandidate = slug("content");
+  const referralCandidate = slug("referralCode").slice(0, 64);
+  return {
+    gameId: GAME_IDS.has(gameCandidate) ? gameCandidate : "unknown",
+    source: LEAD_ATTRIBUTION_SLUG.test(sourceCandidate) ? sourceCandidate : "direct",
+    medium: LEAD_ATTRIBUTION_SLUG.test(mediumCandidate) ? mediumCandidate : "",
+    campaign: LEAD_ATTRIBUTION_SLUG.test(campaignCandidate) ? campaignCandidate : "",
+    content: LEAD_ATTRIBUTION_SLUG.test(contentCandidate) ? contentCandidate : "",
+    referralCode: LEAD_REFERRAL_CODE.test(referralCandidate) ? referralCandidate : "",
+  };
+}
+
 export function validateLeadPayload(body) {
   const input = body && typeof body === "object" && !Array.isArray(body) ? body : {};
   if (cleanText(input.website, 200)) return { ok: true, bot: true };
@@ -112,7 +134,7 @@ export function validateLeadPayload(body) {
   if (projectType.length < 2) return { ok: false, status: 400, code: "PROJECT_TYPE_REQUIRED" };
   if (contact.length < 3) return { ok: false, status: 400, code: "CONTACT_REQUIRED" };
   if (description.length < 10) return { ok: false, status: 400, code: "DESCRIPTION_TOO_SHORT" };
-  return { ok: true, bot: false, projectType, budget, contact, description };
+  return { ok: true, bot: false, projectType, budget, contact, description, attribution: normalizeLeadAttribution(input.attribution) };
 }
 
 export function validateEventBatch(body) {
