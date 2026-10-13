@@ -23,6 +23,7 @@ assert.ok(studio.includes('weights=[40,30,20,10]') && studio.includes('submissio
 assert.ok(studio.includes('URL.createObjectURL') && studio.includes('download='), 'Learners must be able to export their project as a text file')
 assert.ok(studio.includes('aria-pressed={active===item.id}') && studio.includes('aria-live="polite"'), 'Project selection and scoring must expose accessible state')
 assert.ok(studioStyles.includes('@media(max-width:700px)') && studioStyles.includes('focus-visible'), 'Project studio must be responsive and keyboard accessible')
+assert.ok(studioStyles.includes('var(--panel)') && studioStyles.includes('var(--bg)') && !studioStyles.includes('var(--surface)') && !studioStyles.includes('var(--background)'), 'Project studio must use defined Academy design tokens')
 assert.ok(home.includes('getOSACinemaLessons(locale)'), 'Featured lessons must use existing course data')
 assert.ok(home.includes('lessonFilters.map') && home.includes('aria-pressed={activeAct === filter.value}'), 'Curriculum filters must be keyboard-accessible and expose their selected state')
 assert.ok(home.includes('visibleLessons.map(lesson =>') && !home.includes('lessons.slice(0, 4)'), 'Academy must expose the full curriculum instead of silently truncating to four scenes')
