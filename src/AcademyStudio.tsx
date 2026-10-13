@@ -57,7 +57,7 @@ export default function AcademyStudio({locale}:{locale:OSACinemaLocale}){
   const project=t.projectsData.find(item=>item.id===active) ?? t.projectsData[0]
   const submission=submissions[active] ?? {response:'',scores:[0,0,0,0],deliverables:[],updatedAt:''}
   useEffect(()=>{try{const raw=localStorage.getItem(KEY);if(raw){const parsed=JSON.parse(raw);if(parsed&&typeof parsed==='object'){const restored:Record<string,Submission>={};for(const item of t.projectsData){const value=parsed[item.id];if(value&&typeof value.response==='string'&&Array.isArray(value.scores)){restored[item.id]={response:value.response.slice(0,12000),scores:weights.map((_,i)=>Number.isInteger(value.scores[i])&&value.scores[i]>=0&&value.scores[i]<=4?value.scores[i]:0),deliverables:Array.isArray(value.deliverables)?value.deliverables.filter((id:any)=>typeof id==='string'&&item.deliverables.includes(id)):[],updatedAt:typeof value.updatedAt==='string'?value.updatedAt:''}}}setSubmissions(restored)}}}catch{}finally{setReady(true)}},[])
-  useEffect(()=>{if(!ready)return;try{localStorage.setItem(KEY,JSON.stringify(submissions));setSaveFailed(false)}catch{setSaveFailed(true)}},[submissions,ready])
+  useEffect(()=>{if(!ready)return;try{localStorage.setItem(KEY,JSON.stringify(submissions));setSaveFailed(false);window.dispatchEvent(new Event('osgard-academy-progress'))}catch{setSaveFailed(true)}},[submissions,ready])
   const wordCount=submission.response.trim()?submission.response.trim().split(/\s+/).length:0
   const ratedCriteria=submission.scores.filter(value=>value>0).length
   const rubricComplete=ratedCriteria===weights.length
