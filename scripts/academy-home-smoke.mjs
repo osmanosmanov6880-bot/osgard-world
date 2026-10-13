@@ -91,6 +91,9 @@ assert.ok(home.includes('const projectIds = [\'evidence\',\'privacy\',\'decision
 assert.ok(home.includes('Продолжить:') && home.includes('Continue:'), 'Next-project recommendation must be localised in Russian and English')
 
 assert.ok(home.includes('academy-skills-grid') && home.includes('academy-skill-card'), 'Academy dashboard must expose a practical competency map')
+assert.ok(home.includes('nextLearningAction') && home.includes('actionChecksTitle') && home.includes('learningProgress.selfChecks < 3'), 'Dashboard must prioritize unfinished course self-checks before recommending another project')
+assert.ok(home.includes('academy-next-action') && home.includes('actionStartTitle') && home.includes('actionProjectTitle'), 'Dashboard must show a contextual next learning action in both locales')
+assert.ok(styles.includes('.academy-next-action') && styles.includes('@media(max-width:640px)'), 'Next learning action must have responsive styling')
 assert.ok(home.includes('evidenceChecks') && home.includes('privacyChecks') && home.includes('decisionChecks'), 'Competency map must derive each skill state from its matching project checklist')
 assert.ok(home.includes('skillComplete') && home.includes('skillInProgress') && home.includes('skillNotStarted'), 'Competency map must distinguish not-started, in-progress and complete practice')
 assert.ok(home.includes('aria-valuenow={Math.min(4,skill.count)}') && home.includes('skillSelfCheck'), 'Competency map must expose accessible checklist progress and course self-check totals')
