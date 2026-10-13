@@ -78,6 +78,9 @@ assert.ok(html.includes('OSGARD AI Academy — интерактивное обу
 assert.ok(sitemap.includes('https://osgard.world/osa-cinema') && sitemap.includes('https://osgard.world/portal'), 'Sitemap must include the Academy experience and preserved portal')
 assert.ok(routeMatrix.includes("'/portal','/osa-cinema'"), 'Production route matrix must verify both preserved routes')
 
+assert.ok(studio.includes('next:') && studio.includes('item.next') && studio.includes("locale==='ru'?'Следующий шаг':'Next step'"), 'Low rubric ratings must reveal concrete, bilingual next-step advice for each quality criterion')
+assert.ok(studioStyles.includes('.academy-studio-next-step'), 'Actionable rubric guidance must have a distinct readable visual treatment')
+
 console.log('PASS Academy-first homepage: root routing, source-backed lesson content, ecosystem links, SEO, responsive and reduced-motion contracts')
 
 assert.ok(cinema.includes('cinema-practice-link') && cinema.includes('t.practice') && cinema.includes("index===5?'privacy':index===3||index===4?'evidence':'decision'"), 'Every course scene must link directly to its mapped practical project')
