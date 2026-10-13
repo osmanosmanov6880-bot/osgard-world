@@ -151,7 +151,7 @@ export default function AcademyHome() {
         <span aria-live="polite">{visibleLessons.length} {t.lessonCount}</span>
       </div>
       <div className="academy-lesson-grid">
-        {visibleLessons.map(lesson => <a className="academy-lesson-card" href={`/osa-cinema?scene=${Number(lesson.id.split('-').at(-1))}`} key={lesson.id}>
+        {visibleLessons.map(lesson => <a className="academy-lesson-card" href={`/osa-cinema?scene=${Number(lesson.id.split('-').pop())}`} key={lesson.id}>
           <span>{lesson.tag}</span><h3>{lesson.title}</h3><p>{lesson.body}</p><strong>{t.lessonAction}<ArrowUpRight size={15} aria-hidden="true" /></strong>
         </a>)}
       </div>
