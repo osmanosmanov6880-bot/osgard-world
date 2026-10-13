@@ -89,3 +89,10 @@ assert.ok(home.includes('projectChecks') && home.includes('projectsCompleted') &
 
 assert.ok(home.includes('const projectIds = [\'evidence\',\'privacy\',\'decision\']') && home.includes('learningProgress.nextProject'), 'Dashboard must recommend the next incomplete practical project')
 assert.ok(home.includes('Продолжить:') && home.includes('Continue:'), 'Next-project recommendation must be localised in Russian and English')
+
+assert.ok(home.includes('academy-skills-grid') && home.includes('academy-skill-card'), 'Academy dashboard must expose a practical competency map')
+assert.ok(home.includes('evidenceChecks') && home.includes('privacyChecks') && home.includes('decisionChecks'), 'Competency map must derive each skill state from its matching project checklist')
+assert.ok(home.includes('skillComplete') && home.includes('skillInProgress') && home.includes('skillNotStarted'), 'Competency map must distinguish not-started, in-progress and complete practice')
+assert.ok(home.includes('aria-valuenow={Math.min(4,skill.count)}') && home.includes('skillSelfCheck'), 'Competency map must expose accessible checklist progress and course self-check totals')
+assert.ok(home.includes('SKILL MAP') && home.includes('КАРТА НАВЫКОВ'), 'Competency map must be bilingual')
+assert.ok(styles.includes('.academy-skills-grid') && styles.includes('@media(max-width:760px)'), 'Competency map must be responsive')
