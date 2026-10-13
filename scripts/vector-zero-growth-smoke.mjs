@@ -24,7 +24,7 @@ assert.ok(html.includes('navigator.share')&&html.includes('id="share-result"')&&
 assert.ok(html.includes('vector_zero_sponsor'),'sponsor CTA must be attributable')
 assert.ok(!/<script\b[^>]*\bsrc\s*=/i.test(html),'game must not add third-party scripts')
 
-const hashDefinition=scripts[0].match(/function stableHash\(value\)\{[^}]*\}/)?.[0]
+const hashDefinition=scripts[0].match(/function stableHash\(value\)\{[\s\S]*?\}(?=\nconst challengeDate=)/)?.[0]
 assert.ok(hashDefinition,'stable hash function definition must be extractable for deterministic test')
 const stableHash=vm.runInNewContext('('+hashDefinition+')')
 const seedA=stableHash('VECTOR-ZERO|2026-10-13')
