@@ -171,7 +171,7 @@ jobs:
         run: |
           set -euo pipefail
           install -m 700 -d ~/.ssh
-          printf '%s\\n' "$DEPLOY_KEY" > ~/.ssh/osgard_deploy
+          printf '%s\n' "$DEPLOY_KEY" > ~/.ssh/osgard_deploy
           chmod 600 ~/.ssh/osgard_deploy
           if ! ssh-keyscan -T 10 -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts 2>/tmp/osgard-keyscan.err; then
             echo "::error::Could not read the SSH host key from OSGARD_DEPLOY_HOST. Check the host/IP, network access, and SSH port on the VPS."
