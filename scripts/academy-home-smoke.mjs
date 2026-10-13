@@ -85,6 +85,8 @@ assert.ok(cinemaStyles.includes('.cinema-practice-link') && cinemaStyles.include
 
 assert.ok(studio.includes('deliverables:string[]') && studio.includes('academy-studio-checklist') && studio.includes('aria-valuenow={submission.deliverables.length}'), 'Project Studio must provide an accessible, persisted deliverable checklist')
 assert.ok(studio.includes('deliverables:Array.isArray(value.deliverables)'), 'Checklist progress must restore from existing local drafts safely')
+assert.ok(studio.includes("wordCount:'слов'") && studio.includes("wordCount:'words'") && studio.includes('split(/\\s+/)'), 'Project editor must show a whitespace-aware word count in both locales')
+assert.ok(studio.includes('localOnly:') && studio.includes('academy-studio-local-note') && studioStyles.includes('.academy-studio-local-note'), 'Project editor must clearly explain browser-local storage and style the privacy notice')
 assert.ok(home.includes('projectChecks') && home.includes('projectsCompleted') && home.includes('checklist items completed'), 'Academy dashboard must summarize practical checklist progress')
 
 assert.ok(home.includes('const projectIds = [\'evidence\',\'privacy\',\'decision\']') && home.includes('learningProgress.nextProject'), 'Dashboard must recommend the next incomplete practical project')
