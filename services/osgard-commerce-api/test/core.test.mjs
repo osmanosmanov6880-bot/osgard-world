@@ -65,6 +65,44 @@ test("lead endpoint requires contact, brief and acknowledgement; honeypot is sil
   assert.equal(validateLeadPayload({ website: "spam", consent: true }).bot, true);
 });
 
+test("lead attribution stores only bounded slugs and validated game/referral identifiers", () => {
+  const base = { projectType: "Разработка игры", contact: "buyer@example.com", description: "Нужна коммерческая игровая витрина", consent: true };
+  const valid = validateLeadPayload({ ...base, attribution: {
+    gameId: "AFTERIMAGE-RUN",
+    source: "OSGARD_GAMES",
+    medium: "CROSS_PROMO",
+    campaign: "PLAY_WITH_FRIENDS",
+    content: "SUPERDAY",
+    referralCode: "OG_ABCDEF12",
+  } });
+  assert.equal(valid.ok, true);
+  assert.deepEqual(valid.attribution, {
+    gameId: "afterimage-run",
+    source: "osgard_games",
+    medium: "cross_promo",
+    campaign: "play_with_friends",
+    content: "superday",
+    referralCode: "og_abcdef12",
+  });
+
+  const legacy = validateLeadPayload(base);
+  assert.deepEqual(legacy.attribution, {
+    gameId: "unknown", source: "direct", medium: "", campaign: "", content: "", referralCode: "",
+  });
+
+  const hostile = validateLeadPayload({ ...base, attribution: {
+    gameId: "<script>",
+    source: "https://evil.example/click?email=test",
+    medium: "paid social",
+    campaign: "x".repeat(200),
+    content: "service@example.com",
+    referralCode: "customer@example.com",
+  } });
+  assert.deepEqual(hostile.attribution, {
+    gameId: "unknown", source: "direct", medium: "", campaign: "", content: "", referralCode: "",
+  });
+});
+
 test("analytics is disabled unless consent is explicit and event names are allow-listed", () => {
   const event = { name: "game_session_started", sessionId: "session_123456789", gameId: "signal-run", source: "catalog", path: "/games/", durationSeconds: 0 };
   assert.equal(validateEventBatch({ consent: false, events: [event] }).code, "ANALYTICS_CONSENT_REQUIRED");
