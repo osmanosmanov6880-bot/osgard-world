@@ -79,3 +79,6 @@ assert.ok(sitemap.includes('https://osgard.world/osa-cinema') && sitemap.include
 assert.ok(routeMatrix.includes("'/portal','/osa-cinema'"), 'Production route matrix must verify both preserved routes')
 
 console.log('PASS Academy-first homepage: root routing, source-backed lesson content, ecosystem links, SEO, responsive and reduced-motion contracts')
+
+assert.ok(cinema.includes('cinema-practice-link') && cinema.includes('t.practice') && cinema.includes("index===5?'privacy':index===3||index===4?'evidence':'decision'"), 'Every course scene must link directly to its mapped practical project')
+assert.ok(cinemaStyles.includes('.cinema-practice-link') && cinemaStyles.includes('.cinema-practice-link:focus-visible'), 'In-course project link must be styled and keyboard accessible')
