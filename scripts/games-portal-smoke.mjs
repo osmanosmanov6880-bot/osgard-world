@@ -75,7 +75,7 @@ const afterimageHtml=readFileSync(resolve(root,'afterimage-run/index.html'),'utf
 assert.ok(afterimageHtml.includes('<title>AFTERIMAGE//RUN — OSGARD PLAY</title>')&&afterimageHtml.includes('id="runnerCanvas"')&&afterimageHtml.includes('id="run-start"')&&afterimageHtml.includes('id="share-telegram"')&&afterimageHtml.includes('id="record-progress"'),'AFTERIMAGE//RUN playable/share contract missing')
 assert.ok(!/<script[^>]+src=/i.test(afterimageHtml),'AFTERIMAGE//RUN must remain self-contained')
 assert.ok(afterimageHtml.includes('SIGNAL SHARD')&&afterimageHtml.includes('targetScore')&&afterimageHtml.includes('osgard:game-lifecycle'),'AFTERIMAGE viral loop and host lifecycle hooks missing')
-const afterimageScripts=Array.from(afterimageHtml.matchAll(/<script>([\\s\\S]*?)<\\/script>/g)).map(m=>m[1]).filter(s=>s.trim())
+const afterimageScripts=Array.from(afterimageHtml.matchAll(/<script>([\s\S]*?)<\/script>/g)).map(m=>m[1]).filter(s=>s.trim())
 assert.equal(afterimageScripts.length,1,'AFTERIMAGE//RUN should be a single self-contained script')
 new Function(afterimageScripts[0])
 assert.ok(html.includes('src="./ecosystem-intermission.js"'),'Between-game owned-service intermission is not loaded')
