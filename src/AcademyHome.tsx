@@ -78,39 +78,54 @@ export default function AcademyHome() {
   const [task, setTask] = useState('')
   const [qualityChecks, setQualityChecks] = useState([true, true, true])
   const [copyStatus, setCopyStatus] = useState<'idle'|'copied'|'error'>('idle')
-  const [learningProgress, setLearningProgress] = useState({ index:0, completed:false, answers:0, selfChecks:0, drafts:0, projectChecks:0, projectsCompleted:0, evidenceChecks:0, privacyChecks:0, decisionChecks:0, nextProject:'evidence', started:false })
+  const [learningProgress, setLearningProgress] = useState({ index:0, completed:false, answers:0, selfChecks:0, drafts:0, projectChecks:0, projectsCompleted:0, evidenceChecks:0, privacyChecks:0, decisionChecks:0, criteriaRated:0, reviewedProjects:0, nextProject:'evidence', started:false })
   useEffect(() => {
-    try {
-      const course = JSON.parse(localStorage.getItem('osgard-osa-cinema-progress-v1') || 'null')
-      const studio = JSON.parse(localStorage.getItem('osgard-academy-studio-v1') || 'null')
-      const projectIds = ['evidence','privacy','decision'] as const
-      const validStudio = studio && typeof studio === 'object' && !Array.isArray(studio) ? studio : {}
-      const projectState = projectIds.map(id => {
-        const item = validStudio[id]
-        const entries = item && Array.isArray(item.deliverables) ? item.deliverables : []
-        const deliverables = [...new Set(entries.filter((entry:any) => typeof entry === 'string' && entry.trim().length > 0 && entry.length <= 300))]
-        return { id, deliverables:deliverables.slice(0,4), hasDraft:Boolean(item && typeof item.response === 'string' && item.response.trim()) }
-      })
-      const drafts = projectState.filter(item => item.hasDraft).length
-      const projectChecks = projectState.reduce((sum,item) => sum + item.deliverables.length, 0)
-      const projectsCompleted = projectState.filter(item => item.deliverables.length === 4).length
-      const nextProject = projectState.find(item => item.deliverables.length < 4)?.id || 'evidence'
-      const index = course && Number.isInteger(course.index) && course.index >= 0 && course.index < lessons.length ? course.index : 0
-      const validAnswers = course?.answers && typeof course.answers === 'object' && !Array.isArray(course.answers)
-        ? Object.entries(course.answers).filter(([key,value]:[string,any]) => /^\d+$/.test(key) && Number(key) >= 0 && Number(key) < lessons.length && Number.isInteger(value) && value >= 0).length
-        : 0
-      const validSelfChecks = course?.selfChecks && typeof course.selfChecks === 'object' && !Array.isArray(course.selfChecks)
-        ? Object.entries(course.selfChecks).filter(([key,value]:[string,any]) => /^[0-2]$/.test(key) && value === true).length
-        : 0
-      const completed = course?.completed === true
-      setLearningProgress({
-        index, completed, answers:validAnswers, selfChecks:Math.min(3,validSelfChecks), drafts, projectChecks, projectsCompleted,
-        evidenceChecks:projectState[0].deliverables.length, privacyChecks:projectState[1].deliverables.length,
-        decisionChecks:projectState[2].deliverables.length, nextProject,
-        started:Boolean(course && (index > 0 || validAnswers > 0 || validSelfChecks > 0 || completed))
-      })
-    } catch {
-      setLearningProgress({ index:0, completed:false, answers:0, selfChecks:0, drafts:0, projectChecks:0, projectsCompleted:0, evidenceChecks:0, privacyChecks:0, decisionChecks:0, nextProject:'evidence', started:false })
+    const refreshProgress = () => {
+      try {
+        const course = JSON.parse(localStorage.getItem('osgard-osa-cinema-progress-v1') || 'null')
+        const studio = JSON.parse(localStorage.getItem('osgard-academy-studio-v1') || 'null')
+        const projectIds = ['evidence','privacy','decision'] as const
+        const validStudio = studio && typeof studio === 'object' && !Array.isArray(studio) ? studio : {}
+        const projectState = projectIds.map(id => {
+          const item = validStudio[id]
+          const entries = item && Array.isArray(item.deliverables) ? item.deliverables : []
+          const deliverables = [...new Set(entries.filter((entry:any) => typeof entry === 'string' && entry.trim().length > 0 && entry.length <= 300))]
+          const scores = item && Array.isArray(item.scores) ? item.scores : []
+          const criteriaRated = scores.slice(0,4).filter((score:any) => Number.isInteger(score) && score >= 1 && score <= 4).length
+          return { id, deliverables:deliverables.slice(0,4), hasDraft:Boolean(item && typeof item.response === 'string' && item.response.trim()), criteriaRated, reviewed:criteriaRated===4 }
+        })
+        const drafts = projectState.filter(item => item.hasDraft).length
+        const projectChecks = projectState.reduce((sum,item) => sum + item.deliverables.length, 0)
+        const projectsCompleted = projectState.filter(item => item.deliverables.length === 4).length
+        const nextProject = projectState.find(item => item.deliverables.length < 4)?.id || 'evidence'
+        const index = course && Number.isInteger(course.index) && course.index >= 0 && course.index < lessons.length ? course.index : 0
+        const validAnswers = course?.answers && typeof course.answers === 'object' && !Array.isArray(course.answers)
+          ? Object.entries(course.answers).filter(([key,value]:[string,any]) => /^\\d+$/.test(key) && Number(key) >= 0 && Number(key) < lessons.length && Number.isInteger(value) && value >= 0).length
+          : 0
+        const validSelfChecks = course?.selfChecks && typeof course.selfChecks === 'object' && !Array.isArray(course.selfChecks)
+          ? Object.entries(course.selfChecks).filter(([key,value]:[string,any]) => /^[0-2]$/.test(key) && value === true).length
+          : 0
+        const completed = course?.completed === true
+        setLearningProgress({
+          index, completed, answers:validAnswers, selfChecks:Math.min(3,validSelfChecks), drafts, projectChecks, projectsCompleted,
+          evidenceChecks:projectState[0].deliverables.length, privacyChecks:projectState[1].deliverables.length,
+          decisionChecks:projectState[2].deliverables.length, nextProject,
+          criteriaRated:projectState.reduce((sum,item)=>sum+item.criteriaRated,0),
+          reviewedProjects:projectState.filter(item=>item.reviewed).length,
+          started:Boolean(course && (index > 0 || validAnswers > 0 || validSelfChecks > 0 || completed))
+        })
+      } catch {
+        setLearningProgress({ index:0, completed:false, answers:0, selfChecks:0, drafts:0, projectChecks:0, projectsCompleted:0, evidenceChecks:0, privacyChecks:0, decisionChecks:0, criteriaRated:0, reviewedProjects:0, nextProject:'evidence', started:false })
+      }
+    }
+    refreshProgress()
+    window.addEventListener('focus', refreshProgress)
+    window.addEventListener('storage', refreshProgress)
+    window.addEventListener('osgard-academy-progress', refreshProgress)
+    return () => {
+      window.removeEventListener('focus', refreshProgress)
+      window.removeEventListener('storage', refreshProgress)
+      window.removeEventListener('osgard-academy-progress', refreshProgress)
     }
   }, [])
   const t = contentByLocale[locale]
@@ -184,6 +199,18 @@ export default function AcademyHome() {
         <article className="academy-progress-card"><div className="academy-progress-card-top"><BookOpen size={18} aria-hidden="true" /><span>{t.progressCourse}</span></div><strong>{learningProgress.completed ? t.progressComplete : learningProgress.started ? `${learningProgress.index + 1} / ${lessons.length}` : t.progressNotStarted}</strong><div className="academy-progress-track" aria-label={`${Math.round((learningProgress.completed ? lessons.length : learningProgress.index) / Math.max(1, lessons.length) * 100)}%`}><span style={{width:`${learningProgress.completed ? 100 : Math.round(learningProgress.index / Math.max(1, lessons.length) * 100)}%`}} /></div><p>{learningProgress.answers} · {t.progressChoices} · {learningProgress.selfChecks}/3 {t.progressSelfCheck}</p></article>
         <article className="academy-progress-card"><div className="academy-progress-card-top"><Sparkles size={18} aria-hidden="true" /><span>{t.progressDrafts}</span></div><strong>{learningProgress.drafts} / 3</strong><p>{locale === 'ru' ? 'Проектов с черновиками на этом устройстве' : 'Projects with drafts on this device'}</p><p className="academy-progress-project-detail">{learningProgress.projectChecks} {locale === 'ru' ? 'пунктов чек-листа выполнено' : 'checklist items completed'} · {learningProgress.projectsCompleted}/3 {locale === 'ru' ? 'проектов с полным чек-листом' : 'projects with complete checklists'}</p><a href={`/?project=${learningProgress.nextProject}#project-studio`}>{locale === 'ru' ? `Продолжить: ${learningProgress.nextProject === 'evidence' ? 'проверка источников' : learningProgress.nextProject === 'privacy' ? 'защита данных' : 'решение с ИИ'}` : `Continue: ${learningProgress.nextProject === 'evidence' ? 'source verification' : learningProgress.nextProject === 'privacy' ? 'data privacy' : 'AI-assisted decision'}`}<ArrowRight size={14} aria-hidden="true" /></a></article>
       </div>
+    </section>
+
+    <section className="academy-section academy-journey" aria-labelledby="academy-journey-title">
+      <div className="academy-section-heading"><div><p className="academy-eyebrow">{locale==='ru'?'ОТ ТЕОРИИ К ПРИМЕНЕНИЮ':'FROM THEORY TO PRACTICE'}</p><h2 id="academy-journey-title">{locale==='ru'?'Ваш путь обучения':'Your learning pathway'}</h2></div><p>{locale==='ru'?'Четыре этапа объединяют курс, самопроверку и практические проекты. Отметки обновляются по мере работы.':'Four stages connect the course, self-check and practical projects. Progress updates as you work.'}</p></div>
+      <ol className="academy-journey-steps">
+        {([
+          {title:locale==='ru'?'Изучить основы':'Learn the foundations',body:locale==='ru'?'Пройдите интерактивный курс OSA Original.':'Complete the OSA Original interactive course.',done:learningProgress.completed,href:'/osa-cinema',status:learningProgress.completed?(locale==='ru'?'Курс завершён':'Course complete'):(learningProgress.started?(locale==='ru'?'В процессе':'In progress'):(locale==='ru'?'Не начато':'Not started'))},
+          {title:locale==='ru'?'Проверить понимание':'Check your understanding',body:locale==='ru'?'Отметьте три пункта самопроверки после курса.':'Complete the three post-course self-checks.',done:learningProgress.selfChecks===3,href:'/osa-cinema',status:`${learningProgress.selfChecks}/3 ${locale==='ru'?'отмечено':'completed'}`},
+          {title:locale==='ru'?'Создать практический результат':'Create a practical deliverable',body:locale==='ru'?'Заполните проект и отметьте необходимые результаты.':'Write a project draft and check off the required deliverables.',done:learningProgress.projectsCompleted>0,href:`/?project=${learningProgress.nextProject}#project-studio`,status:`${learningProgress.projectChecks}/12 ${locale==='ru'?'пунктов':'items'}`},
+          {title:locale==='ru'?'Оценить качество':'Assess the quality',body:locale==='ru'?'Оцените точность, пользу, ясность и риски по рубрике.':'Rate accuracy, usefulness, clarity and risks with the rubric.',done:learningProgress.reviewedProjects>0,href:`/?project=${learningProgress.nextProject}#project-studio`,status:`${learningProgress.criteriaRated}/12 ${locale==='ru'?'критериев':'criteria'}`}
+        ]).map((step,index)=><li className={step.done?'is-complete':''} key={step.title}><span className="academy-journey-number" aria-hidden="true">{step.done?'✓':String(index+1).padStart(2,'0')}</span><div className="academy-journey-copy"><h3>{step.title}</h3><p>{step.body}</p><span>{step.status}</span></div><a href={step.href} aria-label={`${locale==='ru'?'Перейти к этапу':'Go to step'}: ${step.title}`}>{step.done?(locale==='ru'?'Повторить':'Review'):(locale==='ru'?'Продолжить':'Continue')}<ArrowRight size={14} aria-hidden="true" /></a></li>)}
+      </ol>
     </section>
 
     <section className="academy-section academy-skills" aria-labelledby="academy-skills-title">
