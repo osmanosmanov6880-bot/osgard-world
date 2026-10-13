@@ -34,6 +34,7 @@ assert.ok(cinema.includes('version:2,index,answers,locale,completed'), 'Course p
 assert.ok(cinema.includes("finally{setHydrated(true)}"), 'Progress writes must wait until stored progress has been restored')
 assert.ok(cinema.includes('setCompleted(true)') && cinema.includes('t.completeTitle'), 'Completing the final scene must show a completion summary')
 assert.ok(cinema.includes('Number.isInteger(value)') && cinema.includes('scenes.ru[sceneIndex].choices?.length'), 'Stored answer indices must be validated before restoration')
+assert.ok(cinema.includes('data.findIndex(s=>s.act===act)') && cinema.includes('data.findIndex(s=>s.act===3)'), 'Act navigation must follow scene data when lessons are inserted')
 assert.ok(html.includes('<title>OSGARD AI Academy — понимать, проверять, применять ИИ</title>'), 'Static document title must describe the Academy homepage')
 assert.ok(html.includes('OSGARD AI Academy — интерактивное обучение ИИ'), 'Static description must describe the Academy homepage')
 assert.ok(sitemap.includes('https://osgard.world/osa-cinema') && sitemap.includes('https://osgard.world/portal'), 'Sitemap must include the Academy experience and preserved portal')
