@@ -48,7 +48,7 @@ const copy = {
 
 export default function AcademyStudio({locale}:{locale:OSACinemaLocale}){
   const t=copy[locale]
-  const [active,setActive]=useState('evidence')
+  const [active,setActive]=useState(()=>{try{const requested=new URLSearchParams(window.location.search).get('project');return requested&&['evidence','privacy','decision'].includes(requested)?requested:'evidence'}catch{return 'evidence'}})
   const [submissions,setSubmissions]=useState<Record<string,Submission>>({})
   const [ready,setReady]=useState(false)
   const [saveFailed,setSaveFailed]=useState(false)
