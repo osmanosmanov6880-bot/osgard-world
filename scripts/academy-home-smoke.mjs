@@ -14,6 +14,10 @@ assert.ok(main.includes("if (path === '/') return <><Seo path=\"/\" /><AcademyHo
 assert.ok(main.includes("if (path === '/portal') return <><Seo path=\"/portal\" /><App /></>"), 'Previous ecosystem homepage must remain available at /portal')
 assert.ok(main.includes("if (path === '/osa-cinema') return <><Seo path={path} /><OSACinema /></>"), 'Existing OSA Original course URL must remain registered')
 assert.ok(home.includes('getOSACinemaLessons(locale)'), 'Featured lessons must use existing course data')
+assert.ok(home.includes('lessonFilters.map') && home.includes('aria-pressed={activeAct === filter.value}'), 'Curriculum filters must be keyboard-accessible and expose their selected state')
+assert.ok(home.includes('visibleLessons.map(lesson =>') && !home.includes('lessons.slice(0, 4)'), 'Academy must expose the full curriculum instead of silently truncating to four scenes')
+assert.ok(home.includes('/osa-cinema?scene=') && cinema.includes("new URLSearchParams(window.location.search).get('scene')"), 'Lesson cards must deep-link to their corresponding course scene')
+assert.ok(styles.includes('.academy-lesson-filters') && styles.includes('@media(prefers-reduced-motion:reduce)'), 'Curriculum filters must have responsive and reduced-motion styling')
 for (const href of ['href="/osa-cinema"', 'href="/catalog"', 'href="/games/"', 'href="/portal"']) {
   assert.ok(home.includes(href), 'Academy homepage is missing expected navigation: ' + href)
 }
