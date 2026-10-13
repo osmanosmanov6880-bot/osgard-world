@@ -18,6 +18,7 @@ import './profile.css'
 import './community.css'
 import './stream.css'
 import App from './App'
+import AcademyHome from './AcademyHome'
 import OSACinema from './OSACinema'
 import MiniApp from './MiniApp'
 import { AurumPage, CatalogPage, ChroniclePage, ClubPage, DevelopmentPage, MastersPage, TimeCoinPage, WorldsPage } from './Sections'
@@ -53,7 +54,8 @@ const seo: Record<string, { title: string; description: string }> = {
 
 const cleanSeo: Record<string, { title: string; description: string }> = {
   '/osa-cinema': { title: 'OSA Original — интерактивный фильм об ИИ и власти знаний', description: 'Три акта об искусственном интеллекте, власти информации и будущем человека. Интерактивные решения, источники и прогресс на устройстве.' },
-  '/': { title: 'OSGARD WORLD — цифровая экосистема', description: 'OSGARD объединяет продукты для защиты, мобильности, бизнеса, времени и создания цифровых решений.' },
+  '/': { title: 'OSGARD AI Academy — понимать, проверять, применять ИИ', description: 'Интерактивное обучение искусственному интеллекту: как работают модели, почему нужно проверять источники и как принимать осознанные решения.' },
+  '/portal': { title: 'OSGARD World — портал экосистемы', description: 'Продукты, игры, проекты и направления цифровой экосистемы OSGARD.' },
   '/worlds': { title: 'Миры OSGARD — семь самостоятельных продуктов', description: 'Выберите мир OSGARD: защита, мобильность, бизнес, время и создание цифровых продуктов.' },
   '/catalog': { title: 'Каталог OSGARD — продукты и решения', description: 'Каталог самостоятельных продуктов OSGARD с понятными условиями и маршрутами.' },
   '/chronicle': { title: 'Хроника OSGARD — история экосистемы', description: 'События, продукты и ключевые этапы развития OSGARD.' },
@@ -95,6 +97,8 @@ function Seo({ path }: { path: string }) {
 const path = location.pathname.replace(/\/+$/, '') || '/'
 function RoutedRoot() {
   const [locale, setLocale] = React.useState<'ru' | 'en'>('ru')
+  if (path === '/') return <><Seo path="/" /><AcademyHome /></>
+  if (path === '/portal') return <><Seo path="/portal" /><App /></>
   if (path === '/osa-cinema') return <><Seo path={path} /><OSACinema /></>
   if (path === '/miniapp') return <MiniApp />
   if (path === '/games/time' || path === '/games/time-empire') return <><Seo path="/games/time" /><TimePrototype /></>
