@@ -2,6 +2,7 @@ import { ArrowRight, ArrowUpRight, BookOpen, BrainCircuit, Compass, ShieldCheck,
 import { useState } from 'react'
 import { getOSACinemaLessons, type OSACinemaLocale } from './OSACinema'
 import { OsgardLogo } from './OsgardLogo'
+import AcademyStudio from './AcademyStudio'
 import './academyHome.css'
 
 const contentByLocale = {
@@ -166,6 +167,8 @@ export default function AcademyHome() {
         </a>)}
       </div>
     </section>
+
+    <AcademyStudio locale={locale} />
 
     <section className="academy-section academy-practice">
       <div className="academy-section-heading"><div><p className="academy-eyebrow">{t.practicalEyebrow}</p><h2>{t.practicalTitle}</h2></div><p>{t.practicalIntro}</p></div>
