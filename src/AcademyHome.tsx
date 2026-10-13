@@ -1,5 +1,5 @@
 import { ArrowRight, ArrowUpRight, BookOpen, BrainCircuit, Compass, ShieldCheck, Sparkles } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { getOSACinemaLessons, type OSACinemaLocale } from './OSACinema'
 import { OsgardLogo } from './OsgardLogo'
 import AcademyStudio from './AcademyStudio'
@@ -20,7 +20,7 @@ const contentByLocale = {
     pathAction:'Открыть учебную историю', available:'УЖЕ ДОСТУПНО',
     courseTitle:'OSA Original: ИИ, власть знаний и будущее человека',
     courseBody:'Три акта интерактивного обучения — о возможностях моделей, доступе к знаниям и решениях человека. Выборы, пояснения и прогресс уже реализованы в существующем опыте.',
-    scenes:'учебных сцен', verification:'Проверка источников', continue:'Продолжить в OSA Original', lessonAll:'Все темы', lessonAct1:'Акт I · Основы', lessonAct2:'Акт II · Знания', lessonAct3:'Акт III · Человек', lessonCount:'тем',
+    scenes:'учебных сцен', verification:'Проверка источников', continue:'Продолжить в OSA Original', progressEyebrow:'ВАШ МАРШРУТ', progressTitle:'Продолжите с того места, где остановились', progressIntro:'Прогресс хранится в этом браузере. Можно вернуться к сцене или продолжить практический проект.', progressCourse:'OSA Original', progressScene:'Текущая сцена', progressChoices:'Ваши решения', progressComplete:'Курс завершён', progressNotStarted:'Вы ещё не начали курс', progressResume:'Продолжить обучение', progressStudio:'Продолжить проект', progressDrafts:'Черновики проектов', progressSelfCheck:'Самопроверка', lessonAll:'Все темы', lessonAct1:'Акт I · Основы', lessonAct2:'Акт II · Знания', lessonAct3:'Акт III · Человек', lessonCount:'тем',
     lessonsEyebrow:'СОДЕРЖАНИЕ КУРСА', lessonsTitle:'Темы внутри существующей программы',
     lessonsIntro:'Названия и описания берутся из реальных сцен OSA Original.', lessonAction:'Изучить в курсе',
     practicalEyebrow:'ПЕРЕЙДИТЕ К ПРАКТИКЕ',
@@ -51,7 +51,7 @@ const contentByLocale = {
     pathAction:'Explore the learning experience', available:'AVAILABLE NOW',
     courseTitle:'OSA Original: AI, knowledge, and human agency',
     courseBody:'Three acts of interactive learning about model capabilities, access to knowledge, and human decisions. Choices, explanations, and progress are already part of the existing experience.',
-    scenes:'learning scenes', verification:'Source verification', continue:'Continue in OSA Original', lessonAll:'All topics', lessonAct1:'Act I · Foundations', lessonAct2:'Act II · Knowledge', lessonAct3:'Act III · Humanity', lessonCount:'topics',
+    scenes:'learning scenes', verification:'Source verification', continue:'Continue in OSA Original', progressEyebrow:'YOUR LEARNING PATH', progressTitle:'Pick up where you left off', progressIntro:'Your progress stays in this browser. Return to a scene or continue a practical project.', progressCourse:'OSA Original', progressScene:'Current scene', progressChoices:'Your decisions', progressComplete:'Course completed', progressNotStarted:'You have not started the course yet', progressResume:'Resume learning', progressStudio:'Continue project', progressDrafts:'Project drafts', progressSelfCheck:'Self-check', lessonAll:'All topics', lessonAct1:'Act I · Foundations', lessonAct2:'Act II · Knowledge', lessonAct3:'Act III · Humanity', lessonCount:'topics',
     lessonsEyebrow:'COURSE CONTENT', lessonsTitle:'Inside the current curriculum',
     lessonsIntro:'Titles and summaries are sourced from the existing OSA Original scenes.', lessonAction:'Explore in the course',
     practicalEyebrow:'PUT LEARNING INTO PRACTICE',
@@ -78,6 +78,8 @@ export default function AcademyHome() {
   const [task, setTask] = useState('')
   const [qualityChecks, setQualityChecks] = useState([true, true, true])
   const [copyStatus, setCopyStatus] = useState<'idle'|'copied'|'error'>('idle')
+  const [learningProgress, setLearningProgress] = useState({ index:0, completed:false, answers:0, selfChecks:0, drafts:0, started:false })
+  useEffect(() => { try { const course = JSON.parse(localStorage.getItem('osgard-osa-cinema-progress-v1') || 'null'); const studio = JSON.parse(localStorage.getItem('osgard-academy-studio-v1') || 'null'); const drafts = studio && typeof studio === 'object' ? Object.values(studio).filter((item:any) => item && typeof item.response === 'string' && item.response.trim()).length : 0; const index = course && Number.isInteger(course.index) && course.index >= 0 && course.index < lessons.length ? course.index : 0; const answers = course?.answers && typeof course.answers === 'object' ? Object.keys(course.answers).length : 0; const selfChecks = course?.selfChecks && typeof course.selfChecks === 'object' ? Object.values(course.selfChecks).filter(Boolean).length : 0; setLearningProgress({ index, completed:course?.completed === true, answers, selfChecks, drafts, started:Boolean(course && (course.index > 0 || answers > 0 || course.completed)) }) } catch { setLearningProgress({ index:0, completed:false, answers:0, selfChecks:0, drafts:0, started:false }) } }, [lessons.length])
   const t = contentByLocale[locale]
   const lessons = getOSACinemaLessons(locale)
   const visibleLessons = activeAct === null ? lessons : lessons.filter(lesson => lesson.act === activeAct)
@@ -132,6 +134,14 @@ export default function AcademyHome() {
         <div className="academy-art-label academy-art-label-one">MODEL / 01</div>
         <div className="academy-art-label academy-art-label-two">EVIDENCE / 02</div>
         <div className="academy-art-label academy-art-label-three">HUMAN / 03</div>
+      </div>
+    </section>
+
+    <section className="academy-section academy-progress" aria-labelledby="academy-progress-title">
+      <div className="academy-progress-heading"><div><p className="academy-eyebrow">{t.progressEyebrow}</p><h2 id="academy-progress-title">{t.progressTitle}</h2><p>{t.progressIntro}</p></div><a className="academy-button academy-button-secondary" href={learningProgress.started ? `/osa-cinema?scene=${learningProgress.index}` : '/osa-cinema'}>{t.progressResume}<ArrowUpRight size={15} aria-hidden="true" /></a></div>
+      <div className="academy-progress-grid">
+        <article className="academy-progress-card"><div className="academy-progress-card-top"><BookOpen size={18} aria-hidden="true" /><span>{t.progressCourse}</span></div><strong>{learningProgress.completed ? t.progressComplete : learningProgress.started ? `${learningProgress.index + 1} / ${lessons.length}` : t.progressNotStarted}</strong><div className="academy-progress-track" aria-label={`${Math.round((learningProgress.completed ? lessons.length : learningProgress.index) / Math.max(1, lessons.length) * 100)}%`}><span style={{width:`${learningProgress.completed ? 100 : Math.round(learningProgress.index / Math.max(1, lessons.length) * 100)}%`}} /></div><p>{learningProgress.answers} · {t.progressChoices} · {learningProgress.selfChecks}/3 {t.progressSelfCheck}</p></article>
+        <article className="academy-progress-card"><div className="academy-progress-card-top"><Sparkles size={18} aria-hidden="true" /><span>{t.progressDrafts}</span></div><strong>{learningProgress.drafts} / 3</strong><p>{locale === 'ru' ? 'Практические проекты с черновиками на этом устройстве' : 'Practical projects with drafts on this device'}</p><a href="#project-studio">{t.progressStudio}<ArrowRight size={14} aria-hidden="true" /></a></article>
       </div>
     </section>
 
