@@ -76,8 +76,9 @@ function rewardShare(method){
  const rawMethod=String(method||'social-share');
  const shareMethod=rawMethod.includes('web-share')?'web-share':rawMethod.includes('telegram')?'telegram':rawMethod.includes('facebook')?'facebook':rawMethod.includes('whatsapp')?'whatsapp':rawMethod.includes('vk')?'vk':rawMethod.includes('share-intent-x')?'x':'social-share';
  const shareScore=Math.max(0,Math.min(99999999,Math.floor(Number(game.score||daily.best||0))));
- track('share_created',{method:shareMethod,reward:'signal-shard',rewardConfirmedByPlayer:true,challengeScore:shareScore,challengeSeed:day});
- life('share_created',{shareMethod:shareMethod,rewardConfirmedByPlayer:true,challengeScore:shareScore,challengeSeed:day});
+ let referralCode='';try{const candidate=localStorage.getItem('osgard.games.invite-code.v1')||'';if(/^og_[a-f0-9]{8}$/.test(candidate))referralCode=candidate}catch{}
+ track('share_created',{method:shareMethod,flowType:'friend-invite',referralCode:referralCode||undefined,reward:'signal-shard',rewardConfirmedByPlayer:true,challengeScore:shareScore,challengeSeed:day});
+ life('share_created',{shareMethod:shareMethod,flowType:'friend-invite',referralCode:referralCode||undefined,rewardConfirmedByPlayer:true,challengeScore:shareScore,challengeSeed:day});
  toast('SIGNAL SHARD получена — золотой след разблокирован.');
  return true;
 }
