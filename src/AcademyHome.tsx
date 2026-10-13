@@ -79,7 +79,40 @@ export default function AcademyHome() {
   const [qualityChecks, setQualityChecks] = useState([true, true, true])
   const [copyStatus, setCopyStatus] = useState<'idle'|'copied'|'error'>('idle')
   const [learningProgress, setLearningProgress] = useState({ index:0, completed:false, answers:0, selfChecks:0, drafts:0, projectChecks:0, projectsCompleted:0, evidenceChecks:0, privacyChecks:0, decisionChecks:0, nextProject:'evidence', started:false })
-  useEffect(() => { try { const course = JSON.parse(localStorage.getItem('osgard-osa-cinema-progress-v1') || 'null'); const studio = JSON.parse(localStorage.getItem('osgard-academy-studio-v1') || 'null'); const drafts = studio && typeof studio === 'object' ? Object.values(studio).filter((item:any) => item && typeof item.response === 'string' && item.response.trim()).length : 0; const projectItems = studio && typeof studio === 'object' ? Object.values(studio).filter((item:any) => item && Array.isArray(item.deliverables)) : []; const projectChecks:number = projectItems.reduce<number>((sum:number,item:any) => sum + item.deliverables.filter((entry:any) => typeof entry === 'string').length, 0); const projectIds = ['evidence','privacy','decision']; const evidenceChecks = projectIds.map((id:any) => Array.isArray(studio?.[id]?.deliverables) ? studio[id].deliverables.filter((entry:any) => typeof entry === 'string').length : 0); const projectsCompleted = projectIds.filter((id:any) => Array.isArray(studio?.[id]?.deliverables) && studio[id].deliverables.length >= 4).length; const nextProject = projectIds.find((id:any) => !Array.isArray(studio?.[id]?.deliverables) || studio[id].deliverables.length < 4) || 'evidence'; const index = course && Number.isInteger(course.index) && course.index >= 0 && course.index < lessons.length ? course.index : 0; const answers = course?.answers && typeof course.answers === 'object' ? Object.keys(course.answers).length : 0; const selfChecks = course?.selfChecks && typeof course.selfChecks === 'object' ? Object.values(course.selfChecks).filter(Boolean).length : 0; setLearningProgress({ index, completed:course?.completed === true, answers, selfChecks, drafts, projectChecks, projectsCompleted, evidenceChecks:evidenceChecks[0], privacyChecks:evidenceChecks[1], decisionChecks:evidenceChecks[2], nextProject, started:Boolean(course && (course.index > 0 || answers > 0 || course.completed)) }) } catch { setLearningProgress({ index:0, completed:false, answers:0, selfChecks:0, drafts:0, projectChecks:0, projectsCompleted:0, evidenceChecks:0, privacyChecks:0, decisionChecks:0, nextProject:'evidence', started:false }) } }, [])
+  useEffect(() => {
+    try {
+      const course = JSON.parse(localStorage.getItem('osgard-osa-cinema-progress-v1') || 'null')
+      const studio = JSON.parse(localStorage.getItem('osgard-academy-studio-v1') || 'null')
+      const projectIds = ['evidence','privacy','decision'] as const
+      const validStudio = studio && typeof studio === 'object' && !Array.isArray(studio) ? studio : {}
+      const projectState = projectIds.map(id => {
+        const item = validStudio[id]
+        const entries = item && Array.isArray(item.deliverables) ? item.deliverables : []
+        const deliverables = [...new Set(entries.filter((entry:any) => typeof entry === 'string' && entry.trim().length > 0 && entry.length <= 300))]
+        return { id, deliverables:deliverables.slice(0,4), hasDraft:Boolean(item && typeof item.response === 'string' && item.response.trim()) }
+      })
+      const drafts = projectState.filter(item => item.hasDraft).length
+      const projectChecks = projectState.reduce((sum,item) => sum + item.deliverables.length, 0)
+      const projectsCompleted = projectState.filter(item => item.deliverables.length === 4).length
+      const nextProject = projectState.find(item => item.deliverables.length < 4)?.id || 'evidence'
+      const index = course && Number.isInteger(course.index) && course.index >= 0 && course.index < lessons.length ? course.index : 0
+      const validAnswers = course?.answers && typeof course.answers === 'object' && !Array.isArray(course.answers)
+        ? Object.entries(course.answers).filter(([key,value]:[string,any]) => /^\\d+$/.test(key) && Number(key) >= 0 && Number(key) < lessons.length && Number.isInteger(value) && value >= 0).length
+        : 0
+      const validSelfChecks = course?.selfChecks && typeof course.selfChecks === 'object' && !Array.isArray(course.selfChecks)
+        ? Object.entries(course.selfChecks).filter(([key,value]:[string,any]) => /^[0-2]$/.test(key) && value === true).length
+        : 0
+      const completed = course?.completed === true
+      setLearningProgress({
+        index, completed, answers:validAnswers, selfChecks:Math.min(3,validSelfChecks), drafts, projectChecks, projectsCompleted,
+        evidenceChecks:projectState[0].deliverables.length, privacyChecks:projectState[1].deliverables.length,
+        decisionChecks:projectState[2].deliverables.length, nextProject,
+        started:Boolean(course && (index > 0 || validAnswers > 0 || validSelfChecks > 0 || completed))
+      })
+    } catch {
+      setLearningProgress({ index:0, completed:false, answers:0, selfChecks:0, drafts:0, projectChecks:0, projectsCompleted:0, evidenceChecks:0, privacyChecks:0, decisionChecks:0, nextProject:'evidence', started:false })
+    }
+  }, [])
   const t = contentByLocale[locale]
   const nextLearningAction = !learningProgress.started && !learningProgress.completed
     ? { title:t.actionStartTitle, body:t.actionStartBody, label:t.actionStartLabel, href:'/osa-cinema' }
