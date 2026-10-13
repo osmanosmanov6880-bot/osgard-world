@@ -122,3 +122,8 @@ assert.ok(studio.includes('reviewReady?t.reviewReady:t.reviewInProgress') && stu
 assert.ok(studio.includes('submission.response.trim().length<250') && studio.includes('reviewShort'), 'Review plan must flag overly short drafts for substantive evidence and next steps')
 assert.ok(studio.includes('reviewTitle:') && studio.includes('reviewReady:') && studio.includes('reviewMissing:') && studio.includes('reviewLow:'), 'Improvement plan status and guidance must be localised in both languages')
 assert.ok(studioStyles.includes('.academy-studio-review') && studioStyles.includes('.academy-studio-review.is-ready'), 'Improvement plan must have clear responsive-ready visual states')
+
+assert.ok(home.includes('academy-journey-steps') && home.includes('academy-journey-title'), 'Academy must show a unified course-to-practice learning pathway')
+assert.ok(home.includes('criteriaRated') && home.includes('reviewedProjects') && home.includes('selfChecks===3'), 'Learning pathway must reflect course mastery and project rubric progress')
+assert.ok(home.includes("addEventListener('osgard-academy-progress'") && studio.includes("dispatchEvent(new Event('osgard-academy-progress'))"), 'Dashboard progress must refresh immediately when project drafts or rubric scores change')
+assert.ok(css.includes('.academy-journey-steps') && css.includes('@media(max-width:760px)'), 'Learning pathway must be responsive')
