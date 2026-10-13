@@ -59,13 +59,14 @@ function prepareShareReward(method){
  return true;
 }
 function rewardShare(method){
+ const confirmedMethod=String(method||'social-confirmation').replace(/^player-confirmed:/,'').replace(/^share-intent-/,'').slice(0,40);
  const r=safeRead(REWARD,{});
  if(r[today]){
   $('claim-share-reward').hidden=true;
   $('reward-status').textContent='SIGNAL SHARD за сегодня уже получена. Следующая доступна после смены UTC-даты.';
   return false;
  }
- r[today]={kind:'cosmetic',method:String(method||'social-confirmation').slice(0,40),at:new Date().toISOString()};
+ r[today]={kind:'cosmetic',method:confirmedMethod,at:new Date().toISOString()};
  if(!safeWrite(REWARD,r)||!safeRead(REWARD,{})[today]){
   $('reward-status').textContent='Не удалось сохранить локальную награду в этом браузере. Освободи место в хранилище и попробуй позже.';
   return false;
@@ -73,8 +74,8 @@ function rewardShare(method){
  $('claim-share-reward').hidden=true;
  $('reward-title').textContent='✦ SIGNAL SHARD ПОЛУЧЕНА';
  shardCosmeticUnlocked=true;$('reward-status').textContent='Золотой голографический след разблокирован на этом устройстве. Он не меняет скорость или счёт. Публичная публикация поста не проверяется.';
- track('share_created',{method:method,reward:'signal-shard',rewardConfirmedByPlayer:true});
- life('share_created',{shareMethod:method==='web-share'?'web-share':'social-share',rewardConfirmedByPlayer:true});
+ track('share_created',{method:confirmedMethod,reward:'signal-shard',rewardConfirmedByPlayer:true});
+ life('share_created',{shareMethod:confirmedMethod,rewardConfirmedByPlayer:true,challengeScore:game.score||daily.best||0});
  toast('SIGNAL SHARD получена — золотой след разблокирован.');
  return true;
 }
