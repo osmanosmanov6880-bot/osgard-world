@@ -1,5 +1,5 @@
 import { ArrowRight, ArrowUpRight, BookOpen, BrainCircuit, Compass, ShieldCheck, Sparkles } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { getOSACinemaLessons, type OSACinemaLocale } from './OSACinema'
 import { OsgardLogo } from './OsgardLogo'
 import './academyHome.css'
@@ -74,7 +74,7 @@ export default function AcademyHome() {
   const [activeAct, setActiveAct] = useState<number | null>(null)
   const t = contentByLocale[locale]
   const lessons = getOSACinemaLessons(locale)
-  const visibleLessons = useMemo(() => activeAct === null ? lessons : lessons.filter(lesson => lesson.act === activeAct), [activeAct, lessons])
+  const visibleLessons = activeAct === null ? lessons : lessons.filter(lesson => lesson.act === activeAct)
   const lessonFilters = [{ value:null as number | null, label:t.lessonAll }, { value:1, label:t.lessonAct1 }, { value:2, label:t.lessonAct2 }, { value:3, label:t.lessonAct3 }]
   const pathways = [
     { number:'01', title:t.path1, body:t.path1Body, Icon:BrainCircuit },
@@ -151,7 +151,7 @@ export default function AcademyHome() {
         <span aria-live="polite">{visibleLessons.length} {t.lessonCount}</span>
       </div>
       <div className="academy-lesson-grid">
-        {visibleLessons.map((lesson, index) => <a className="academy-lesson-card" href={`/osa-cinema?scene=${Number(lesson.id.split('-').at(-1))}`} key={lesson.id}>
+        {visibleLessons.map(lesson => <a className="academy-lesson-card" href={`/osa-cinema?scene=${Number(lesson.id.split('-').at(-1))}`} key={lesson.id}>
           <span>{lesson.tag}</span><h3>{lesson.title}</h3><p>{lesson.body}</p><strong>{t.lessonAction}<ArrowUpRight size={15} aria-hidden="true" /></strong>
         </a>)}
       </div>
