@@ -18,6 +18,7 @@ on:
       - "public/games/null-shift-godot/**"
       - ".gitignore"
       - "index.html"
+      - "public/sitemap.xml"
       - "nginx.conf"
       - "package.json"
       - "package-lock.json"
@@ -30,6 +31,7 @@ on:
       - "scripts/time-prototype-smoke.mjs"
       - "scripts/null-shift-premium-smoke.mjs"
       - "scripts/games-portal-smoke.mjs"
+      - "scripts/academy-home-smoke.mjs"
       - "scripts/remix-growth-smoke.mjs"
       - "scripts/ecosystem-integrity-smoke.mjs"
       - "docs/09_OSGARD_GAMES_PLATFORM_AUDIT.md"
@@ -56,6 +58,8 @@ jobs:
         run: npm run qa:remix-growth
       - name: Verify ecosystem links, claims, contacts and privacy boundaries
         run: npm run qa:ecosystem
+      - name: Verify Academy-first homepage and preserved portal route
+        run: npm run qa:academy
 
       - name: Validate the Godot game project contract
         run: npm run qa:null-shift-godot
