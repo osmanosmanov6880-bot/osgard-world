@@ -8,6 +8,7 @@ on:
       - "scripts/skillcred-page-smoke.mjs"
       - "scripts/time-prototype-smoke.mjs"
       - "scripts/games-portal-smoke.mjs"
+      - "scripts/academy-home-smoke.mjs"
       - "scripts/games-lighthouse-report.mjs"
       - ".github/workflows/games-lighthouse.yml"
       - "public/games/**"
@@ -15,6 +16,8 @@ on:
       - "public/skillcred/**"
       - "package.json"
       - "package-lock.json"
+      - "index.html"
+      - "public/sitemap.xml"
       - "vite.config.ts"
       - ".github/workflows/frontend-check.yml"
   pull_request:
@@ -56,5 +59,7 @@ jobs:
         run: npm run qa:partners-page
       - name: Verify ecosystem links, claims, contacts and privacy boundaries
         run: npm run qa:ecosystem
+      - name: Verify Academy-first homepage and preserved portal route
+        run: npm run qa:academy
       - name: Validate static archive and HTML
         run: npm run preflight:frontend
