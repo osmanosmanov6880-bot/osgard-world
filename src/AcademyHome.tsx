@@ -1,5 +1,5 @@
 import { ArrowRight, ArrowUpRight, BookOpen, BrainCircuit, Compass, ShieldCheck, Sparkles } from 'lucide-react'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { getOSACinemaLessons, type OSACinemaLocale } from './OSACinema'
 import { OsgardLogo } from './OsgardLogo'
 import './academyHome.css'
@@ -71,8 +71,11 @@ const contentByLocale = {
 
 export default function AcademyHome() {
   const [locale, setLocale] = useState<OSACinemaLocale>('ru')
+  const [activeAct, setActiveAct] = useState<number | null>(null)
   const t = contentByLocale[locale]
   const lessons = getOSACinemaLessons(locale)
+  const visibleLessons = useMemo(() => activeAct === null ? lessons : lessons.filter(lesson => lesson.act === activeAct), [activeAct, lessons])
+  const lessonFilters = [{ value:null as number | null, label:t.lessonAll }, { value:1, label:t.lessonAct1 }, { value:2, label:t.lessonAct2 }, { value:3, label:t.lessonAct3 }]
   const pathways = [
     { number:'01', title:t.path1, body:t.path1Body, Icon:BrainCircuit },
     { number:'02', title:t.path2, body:t.path2Body, Icon:Compass },
@@ -143,8 +146,12 @@ export default function AcademyHome() {
       <div className="academy-section-heading academy-lessons-heading">
         <div><p className="academy-eyebrow">{t.lessonsEyebrow}</p><h2>{t.lessonsTitle}</h2></div><p>{t.lessonsIntro}</p>
       </div>
+      <div className="academy-lesson-filters" role="group" aria-label={locale === 'ru' ? 'Фильтр тем курса' : 'Filter course topics'}>
+        {lessonFilters.map(filter => <button key={filter.value ?? 'all'} type="button" aria-pressed={activeAct === filter.value} className={activeAct === filter.value ? 'active' : ''} onClick={() => setActiveAct(filter.value)}>{filter.label}</button>)}
+        <span aria-live="polite">{visibleLessons.length} {t.lessonCount}</span>
+      </div>
       <div className="academy-lesson-grid">
-        {lessons.slice(0, 4).map(lesson => <a className="academy-lesson-card" href="/osa-cinema" key={lesson.id}>
+        {visibleLessons.map((lesson, index) => <a className="academy-lesson-card" href={`/osa-cinema?scene=${Number(lesson.id.split('-').at(-1))}`} key={lesson.id}>
           <span>{lesson.tag}</span><h3>{lesson.title}</h3><p>{lesson.body}</p><strong>{t.lessonAction}<ArrowUpRight size={15} aria-hidden="true" /></strong>
         </a>)}
       </div>
