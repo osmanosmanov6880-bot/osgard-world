@@ -95,6 +95,10 @@ assert.ok(home.includes('nextLearningAction') && home.includes('actionChecksTitl
 assert.ok(home.includes('academy-next-action') && home.includes('actionStartTitle') && home.includes('actionProjectTitle'), 'Dashboard must show a contextual next learning action in both locales')
 assert.ok(styles.includes('.academy-next-action') && styles.includes('@media(max-width:640px)'), 'Next learning action must have responsive styling')
 assert.ok(home.includes('evidenceChecks') && home.includes('privacyChecks') && home.includes('decisionChecks'), 'Competency map must derive each skill state from its matching project checklist')
+assert.ok(home.includes("!Array.isArray(studio)") && home.includes("[...new Set(entries.filter") && home.includes("deliverables.length === 4"), 'Dashboard must sanitize corrupted project state, deduplicate checklist entries and require four unique outcomes for completion')
+assert.ok(home.includes("validAnswers") && home.includes("validSelfChecks") && home.includes("Math.min(3,validSelfChecks)"), 'Dashboard must validate stored course answers and cap self-check progress at three')
+assert.ok(home.includes("index < lessons.length") && home.includes("started:Boolean(course && (index > 0 || validAnswers > 0 || validSelfChecks > 0 || completed))"), 'Dashboard must safely restore course state and recognize valid activity at the first scene')
+
 assert.ok(home.includes('skillComplete') && home.includes('skillInProgress') && home.includes('skillNotStarted'), 'Competency map must distinguish not-started, in-progress and complete practice')
 assert.ok(home.includes('aria-valuenow={Math.min(4,skill.count)}') && home.includes('skillSelfCheck'), 'Competency map must expose accessible checklist progress and course self-check totals')
 assert.ok(home.includes('SKILL MAP') && home.includes('КАРТА НАВЫКОВ'), 'Competency map must be bilingual')
