@@ -1,0 +1,20 @@
+import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
+
+const workflow = readFileSync('.github/workflows/deploy-frontend.yml', 'utf8')
+const packageJson = JSON.parse(readFileSync('package.json', 'utf8'))
+
+for (const secret of ['OSGARD_DEPLOY_HOST', 'OSGARD_DEPLOY_USER', 'OSGARD_DEPLOY_KEY']) {
+  assert.ok(workflow.includes(`secrets.${secret}`), `Deployment workflow must use ${secret}`)
+  assert.ok(workflow.includes(`Missing GitHub Actions secret ${secret}`), `Missing-secret error must name ${secret}`)
+}
+
+assert.ok(workflow.includes("grep -q -- 'PRIVATE KEY'"), 'Workflow must reject a key value that does not look like a private SSH key')
+assert.ok(workflow.includes('ssh-keyscan -T 10 -H "$DEPLOY_HOST"'), 'SSH host-key scan must have a finite timeout')
+assert.ok(workflow.includes('Could not read the SSH host key'), 'SSH host-key failure must provide actionable diagnostics')
+assert.ok(workflow.includes("printf '%s\\n' \"$DEPLOY_KEY\" > ~/.ssh/osgard_deploy"), 'SSH key must be written with a trailing newline')
+assert.ok(workflow.includes('npm run qa:deploy-workflow'), 'Deploy workflow must run its own static contract test before deployment')
+assert.ok(packageJson.scripts?.['qa:deploy-workflow'] === 'node scripts/deploy-workflow-smoke.mjs', 'Package script must expose the deploy workflow contract test')
+assert.ok(!workflow.includes('echo "$DEPLOY_KEY"'), 'Workflow must not print the private key')
+
+console.log('PASS deployment workflow: required secrets, safe key handling, SSH timeout and actionable diagnostics')
