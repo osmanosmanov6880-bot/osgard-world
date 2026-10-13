@@ -54,6 +54,13 @@ assert.ok(inviteLandingScript.includes("const afterimageChallenge = game === 'af
   new Function('document','location','URL','URLSearchParams',inviteLandingScript)(fakeDocument,fakeLocation,URL,URLSearchParams)
   assert.equal(new URL(playLink.href).pathname,'/games/','Invalid-date AFTERIMAGE challenge must fall back to catalogue rather than trust unchecked params')
 }
+{
+  const playLink={href:''}
+  const fakeDocument={body:{dataset:{game:'afterimage-run'}},querySelector(selector){return selector==='#play-link'?playLink:null}}
+  const fakeLocation={origin:'https://osgard.world',search:'?og_challenge=afterimage-run&challenge=999999999999&day=2026-10-13&mode=daily'}
+  new Function('document','location','URL','URLSearchParams',inviteLandingScript)(fakeDocument,fakeLocation,URL,URLSearchParams)
+  assert.equal(new URL(playLink.href).pathname,'/games/','Oversized AFTERIMAGE challenge score must fall back to catalogue')
+}
 const productionMatrix = readFileSync(resolve('scripts/production-route-matrix.mjs'),'utf8')
 assert.ok(productionMatrix.includes("path === '/games/invite/invite-landing.js'") && productionMatrix.includes("target.searchParams.set('utm_campaign', campaign)"), 'Production route matrix must validate the invitation script with its own content contract, not unrelated SkillCred markers')
 for(const game of routeEntries){
