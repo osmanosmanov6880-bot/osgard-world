@@ -11,7 +11,7 @@ const copy = {
   ru:{
     eyebrow:'ПРОЕКТНАЯ МАСТЕРСКАЯ',title:'Покажите навык на реальной задаче',
     intro:'Выберите проект, подготовьте собственный результат и оцените его по единой рубрике. Черновик и оценки сохраняются в этом браузере.',
-    projects:'Практические проекты',workspace:'Рабочая область',brief:'Задание',deliverables:'Что должно быть в результате',hint:'Подсказка',response:'Ваш результат',responseHint:'Вставьте свой анализ, план или черновик. Не добавляйте пароли, секреты и персональные данные.',
+    projects:'Практические проекты',workspace:'Рабочая область',draftSaved:'Черновик сохранён',startProject:'Начать проект',brief:'Задание',deliverables:'Что должно быть в результате',hint:'Подсказка',response:'Ваш результат',responseHint:'Вставьте свой анализ, план или черновик. Не добавляйте пароли, секреты и персональные данные.',
     rubric:'Самооценка качества',accuracy:'Точность и проверяемость',usefulness:'Практическая применимость',clarity:'Ясность и структура',safety:'Ограничения и риски',
     scale:['Не оценено','1 · Слабо','2 · Частично','3 · Хорошо','4 · Отлично'],score:'Итог самооценки',outOf:'из 100',save:'Сохранено на устройстве',export:'Экспортировать проект',reset:'Очистить черновик',resetConfirm:'Удалить черновик и оценки этого проекта?',empty:'Начните с краткого черновика — его можно доработать позже.',
     projectsData:[
@@ -29,7 +29,7 @@ const copy = {
   en:{
     eyebrow:'PROJECT STUDIO',title:'Demonstrate the skill on a real task',
     intro:'Choose a project, create your own deliverable and assess it against a shared rubric. Your draft and scores stay in this browser.',
-    projects:'Practical projects',workspace:'Workspace',brief:'Assignment',deliverables:'Required deliverables',hint:'Field note',response:'Your work',responseHint:'Write your analysis, plan or draft. Do not include passwords, secrets or personal data.',
+    projects:'Practical projects',workspace:'Workspace',draftSaved:'Draft saved',startProject:'Start project',brief:'Assignment',deliverables:'Required deliverables',hint:'Field note',response:'Your work',responseHint:'Write your analysis, plan or draft. Do not include passwords, secrets or personal data.',
     rubric:'Quality self-assessment',accuracy:'Accuracy and verifiability',usefulness:'Practical usefulness',clarity:'Clarity and structure',safety:'Limits and risks',
     scale:['Not rated','1 · Weak','2 · Partial','3 · Good','4 · Excellent'],score:'Self-assessment score',outOf:'out of 100',save:'Saved on this device',export:'Export project',reset:'Clear draft',resetConfirm:'Delete this project draft and its scores?',empty:'Start with a rough draft — you can improve it later.',
     projectsData:[
@@ -62,7 +62,7 @@ export default function AcademyStudio({locale}:{locale:OSACinemaLocale}){
   return <section className="academy-section academy-studio" id="project-studio">
     <div className="academy-section-heading"><div><p className="academy-eyebrow">{t.eyebrow}</p><h2>{t.title}</h2></div><p>{t.intro}</p></div>
     <div className="academy-studio-layout">
-      <aside className="academy-studio-projects"><p className="academy-studio-label">{t.projects}</p>{t.projectsData.map(item=><button key={item.id} type="button" className={active===item.id?'active':''} aria-pressed={active===item.id} onClick={()=>setActive(item.id)}><span>{item.title}</span><small>{submissions[item.id]?.response?.trim()?'● Draft saved':'○ Start project'}</small></button>)}</aside>
+      <aside className="academy-studio-projects"><p className="academy-studio-label">{t.projects}</p>{t.projectsData.map(item=><button key={item.id} type="button" className={active===item.id?'active':''} aria-pressed={active===item.id} onClick={()=>setActive(item.id)}><span>{item.title}</span><small>{submissions[item.id]?.response?.trim()?t.draftSaved:'○ '+t.startProject}</small></button>)}</aside>
       <div className="academy-studio-workspace">
         <div className="academy-studio-brief"><p className="academy-studio-label">{t.brief}</p><h3>{project.title}</h3><p>{project.brief}</p><h4>{t.deliverables}</h4><ul>{project.deliverables.map(item=><li key={item}>{item}</li>)}</ul><div className="academy-studio-hint"><strong>{t.hint}</strong><p>{project.hint}</p></div></div>
         <div className="academy-studio-editor"><label htmlFor="academy-studio-response">{t.response}</label><textarea id="academy-studio-response" maxLength={12000} rows={8} value={submission.response} onChange={event=>update({response:event.target.value})} placeholder={t.responseHint}/><div className="academy-studio-editor-meta"><span>{submission.response.length} / 12000</span><span>{submission.updatedAt? t.save:''}</span></div>
