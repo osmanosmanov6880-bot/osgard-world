@@ -15,6 +15,8 @@ assert.ok(html.includes('id="objective-status"'),'portal readiness probe must fi
 assert.ok(!html.includes('ctx.setTransform'),'resize must use the actual canvas context')
 assert.ok(scripts[0].includes('const challengeDate=')&&scripts[0].includes('function stableHash('),'daily challenge target must be deterministic')
 assert.ok(scripts[0].includes('const dailyTarget=Number((9+(challengeSeed%61)/10).toFixed(1))'),'daily target should remain in the testable 9–15 second range')
+assert.ok(scripts[0].includes("const dailyRules=[{name:'LOW FLUX',multiplier:.88},{name:'BALANCED FLUX',multiplier:1},{name:'HIGH FLUX',multiplier:1.12}]"),'daily challenge must select a deterministic magnetic law')
+assert.ok(scripts[0].includes('350*dailyRule.multiplier*(1-d/m.r)'), 'daily law must alter actual magnetic physics')
 assert.ok(html.includes('osgard.core.events.pending.v1'),'growth events must use the first-party local queue')
 assert.ok(scripts[0].includes("localStorage.getItem('osgard.games.analytics-consent.v1')==='yes'")&&scripts[0].includes("localStorage.getItem('osgard.auth.accessToken')||''"),'event queue writes must require explicit analytics consent and an authenticated player')
 for(const event of ['game_opened','game_session_started','game_session_completed','score_submitted','challenge_created','challenge_invite_accepted','share_created','share_link_copied','share_dialog_opened','partner_cta_clicked','result_card_exported'])assert.ok(manifest.includes("'"+event+"'"),'missing manifest event: '+event)
