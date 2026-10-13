@@ -78,6 +78,9 @@ assert.ok(html.includes('OSGARD AI Academy — интерактивное обу
 assert.ok(sitemap.includes('https://osgard.world/osa-cinema') && sitemap.includes('https://osgard.world/portal'), 'Sitemap must include the Academy experience and preserved portal')
 assert.ok(routeMatrix.includes("'/portal','/osa-cinema'"), 'Production route matrix must verify both preserved routes')
 
+assert.ok(studio.includes('next:') && studio.includes('item.next') && studio.includes("locale==='ru'?'Следующий шаг':'Next step'"), 'Low rubric ratings must reveal concrete, bilingual next-step advice for each quality criterion')
+assert.ok(studioStyles.includes('.academy-studio-next-step'), 'Actionable rubric guidance must have a distinct readable visual treatment')
+
 console.log('PASS Academy-first homepage: root routing, source-backed lesson content, ecosystem links, SEO, responsive and reduced-motion contracts')
 
 assert.ok(cinema.includes('cinema-practice-link') && cinema.includes('t.practice') && cinema.includes("index===5?'privacy':index===3||index===4?'evidence':'decision'"), 'Every course scene must link directly to its mapped practical project')
@@ -85,6 +88,8 @@ assert.ok(cinemaStyles.includes('.cinema-practice-link') && cinemaStyles.include
 
 assert.ok(studio.includes('deliverables:string[]') && studio.includes('academy-studio-checklist') && studio.includes('aria-valuenow={submission.deliverables.length}'), 'Project Studio must provide an accessible, persisted deliverable checklist')
 assert.ok(studio.includes('deliverables:Array.isArray(value.deliverables)'), 'Checklist progress must restore from existing local drafts safely')
+assert.ok(studio.includes("wordCount:'слов'") && studio.includes("wordCount:'words'") && studio.includes('split(/\\s+/)'), 'Project editor must show a whitespace-aware word count in both locales')
+assert.ok(studio.includes('localOnly:') && studio.includes('academy-studio-local-note') && studioStyles.includes('.academy-studio-local-note'), 'Project editor must clearly explain browser-local storage and style the privacy notice')
 assert.ok(home.includes('projectChecks') && home.includes('projectsCompleted') && home.includes('checklist items completed'), 'Academy dashboard must summarize practical checklist progress')
 
 assert.ok(home.includes('const projectIds = [\'evidence\',\'privacy\',\'decision\']') && home.includes('learningProgress.nextProject'), 'Dashboard must recommend the next incomplete practical project')
@@ -103,3 +108,25 @@ assert.ok(home.includes('skillComplete') && home.includes('skillInProgress') && 
 assert.ok(home.includes('aria-valuenow={Math.min(4,skill.count)}') && home.includes('skillSelfCheck'), 'Competency map must expose accessible checklist progress and course self-check totals')
 assert.ok(home.includes('SKILL MAP') && home.includes('КАРТА НАВЫКОВ'), 'Competency map must be bilingual')
 assert.ok(styles.includes('.academy-skills-grid') && styles.includes('@media(max-width:760px)'), 'Competency map must be responsive')
+
+assert.ok(studio.includes('ratedCriteria=submission.scores.filter(value=>value>0).length') && studio.includes('rubricComplete=ratedCriteria===weights.length'), 'Rubric must distinguish unrated criteria from a complete self-assessment')
+assert.ok(studio.includes("{rubricComplete?score:'—'}") && studio.includes('t.scorePending') && studio.includes('ratedCriteria/'), 'A final score must only appear after all criteria are rated, with visible completion progress')
+assert.ok(studio.includes('rubricComplete?`${score}/100`:t.scorePending'), 'Exported project must not present an incomplete rubric as a final score')
+assert.ok(studio.includes("scorePending:'Оцените все четыре критерия") && studio.includes("scorePending:'Rate all four criteria") && studioStyles.includes('.academy-studio-rubric-progress'), 'Rubric completion guidance must be bilingual and styled')
+
+assert.ok(studio.includes("format:'osgard-academy-studio-backup',version:1") && studio.includes('osgard-academy-backup.json'), 'Learners must be able to export a versioned portable backup of all projects')
+assert.ok(studio.includes('const importBackup=async(file:File|null)') && studio.includes("parsed.format!=='osgard-academy-studio-backup'") && studio.includes('parsed.version!==1'), 'Backup import must validate the expected format and version before restoring')
+assert.ok(studio.includes('value.response.length>12000') && studio.includes('value.scores.length!==4') && studio.includes('item.deliverables.includes(id)'), 'Backup import must validate draft length, rubric scores and project checklist entries')
+assert.ok(studio.includes('backupExport:') && studio.includes('backupImport:') && studio.includes('backupInvalid:') && studio.includes('aria-live="polite">{backupStatus}'), 'Backup and restore must provide bilingual accessible status feedback')
+assert.ok(studio.includes('accept="application/json,.json"') && studioStyles.includes('.academy-studio-import-button') && studioStyles.includes('.academy-studio-backup-status'), 'Backup import must use an accessible JSON picker and responsive styled controls')
+
+assert.ok(studio.includes('missingDeliverables') && studio.includes('weakCriteria') && studio.includes('reviewSteps'), 'Project Studio must derive a concrete improvement plan from incomplete deliverables and rubric scores')
+assert.ok(studio.includes('reviewReady?t.reviewReady:t.reviewInProgress') && studio.includes('reviewAllDone') && studio.includes('aria-labelledby="academy-studio-review-title"'), 'Project Studio must distinguish actionable work remaining from readiness for human review')
+assert.ok(studio.includes('submission.response.trim().length<250') && studio.includes('reviewShort'), 'Review plan must flag overly short drafts for substantive evidence and next steps')
+assert.ok(studio.includes('reviewTitle:') && studio.includes('reviewReady:') && studio.includes('reviewMissing:') && studio.includes('reviewLow:'), 'Improvement plan status and guidance must be localised in both languages')
+assert.ok(studioStyles.includes('.academy-studio-review') && studioStyles.includes('.academy-studio-review.is-ready'), 'Improvement plan must have clear responsive-ready visual states')
+
+assert.ok(home.includes('academy-journey-steps') && home.includes('academy-journey-title'), 'Academy must show a unified course-to-practice learning pathway')
+assert.ok(home.includes('criteriaRated') && home.includes('reviewedProjects') && home.includes('selfChecks===3'), 'Learning pathway must reflect course mastery and project rubric progress')
+assert.ok(home.includes("addEventListener('osgard-academy-progress'") && studio.includes("dispatchEvent(new Event('osgard-academy-progress'))"), 'Dashboard progress must refresh immediately when project drafts or rubric scores change')
+assert.ok(styles.includes('.academy-journey-steps') && styles.includes('@media(max-width:760px)'), 'Learning pathway must be responsive')
