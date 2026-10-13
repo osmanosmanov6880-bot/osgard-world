@@ -19,6 +19,31 @@
       return /^[a-zA-Z0-9_-]{1,60}$/.test(value) ? [key + '=' + value] : [];
     });
   }
+  const LEAD_GAME_IDS = new Set([
+    'null-shift', 'time', 'swarm', 'inherit', 'remix', 'civic-cascade',
+    'patina', 'signal-run', 'cascade-lab', 'afterimage-run', 'unknown'
+  ]);
+  const LEAD_ATTRIBUTION_SLUG = /^[a-zA-Z0-9_-]{1,60}$/;
+  const LEAD_REFERRAL_CODE = /^(?:og_[a-f0-9]{8}|[a-f0-9]{12})$/;
+  function readLeadAttribution() {
+    const params = new URLSearchParams(location.search);
+    const safeSlug = (value) => {
+      const cleaned = clean(value, 60).toLowerCase();
+      return LEAD_ATTRIBUTION_SLUG.test(cleaned) ? cleaned : '';
+    };
+    const content = safeSlug(params.get('utm_content'));
+    const pathMatch = location.pathname.match(/^\/games\/([a-z0-9_-]{1,48})\/?$/i);
+    const gameCandidate = clean(params.get('og_game') || (LEAD_GAME_IDS.has(content) ? content : pathMatch?.[1] || ''), 48).toLowerCase();
+    const rawReferralCode = clean(params.get('og_ref') || params.get('ref'), 64).toLowerCase();
+    return {
+      gameId: LEAD_GAME_IDS.has(gameCandidate) ? gameCandidate : 'unknown',
+      source: safeSlug(params.get('utm_source')) || 'direct',
+      medium: safeSlug(params.get('utm_medium')),
+      campaign: safeSlug(params.get('utm_campaign')),
+      content,
+      referralCode: LEAD_REFERRAL_CODE.test(rawReferralCode) ? rawReferralCode : '',
+    };
+  }
   const apiBase = async () => {
     const config = await loadConfig();
     const raw = typeof config.apiBaseUrl === 'string' ? config.apiBaseUrl.trim() : '';
@@ -58,6 +83,7 @@
     const contact = clean(data.get('contact'), 180);
     const budget = clean(data.get('budget'), 80);
     const attribution = readCampaignAttribution();
+    const structuredAttribution = readLeadAttribution();
     const contextParts = [];
     const goal = clean(data.get('goal'), 120);
     const geo = clean(data.get('geo'), 80);
@@ -99,6 +125,7 @@
           description,
           consent: true,
           website: clean(data.get('website'), 200),
+          attribution: structuredAttribution,
         }),
       });
       const result = await response.json().catch(() => ({}));
