@@ -57,7 +57,14 @@ async function ensureSchema() {
     "CREATE INDEX IF NOT EXISTS commerce_orders_paid_attribution_idx ON commerce_orders(status, created_at DESC, attribution_game_id, attribution_source);\n" +
     "CREATE INDEX IF NOT EXISTS commerce_orders_email_idx ON commerce_orders(email);\n" +
     "CREATE TABLE IF NOT EXISTS commerce_stripe_events (event_id TEXT PRIMARY KEY, event_type TEXT NOT NULL, processed_at TIMESTAMPTZ NOT NULL DEFAULT NOW());\n" +
-    "CREATE TABLE IF NOT EXISTS commerce_leads (lead_id TEXT PRIMARY KEY, project_type TEXT NOT NULL, budget TEXT NOT NULL DEFAULT '', contact TEXT NOT NULL, description TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'new', consent_at TIMESTAMPTZ NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW());\n" +
+    "CREATE TABLE IF NOT EXISTS commerce_leads (lead_id TEXT PRIMARY KEY, project_type TEXT NOT NULL, budget TEXT NOT NULL DEFAULT '', contact TEXT NOT NULL, description TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'new', consent_at TIMESTAMPTZ NOT NULL, attribution_game_id TEXT NOT NULL DEFAULT 'unknown', attribution_source TEXT NOT NULL DEFAULT 'direct', attribution_medium TEXT NOT NULL DEFAULT '', attribution_campaign TEXT NOT NULL DEFAULT '', attribution_content TEXT NOT NULL DEFAULT '', referral_code TEXT NOT NULL DEFAULT '', created_at TIMESTAMPTZ NOT NULL DEFAULT NOW());\n" +
+    "ALTER TABLE commerce_leads ADD COLUMN IF NOT EXISTS attribution_game_id TEXT NOT NULL DEFAULT 'unknown';\n" +
+    "ALTER TABLE commerce_leads ADD COLUMN IF NOT EXISTS attribution_source TEXT NOT NULL DEFAULT 'direct';\n" +
+    "ALTER TABLE commerce_leads ADD COLUMN IF NOT EXISTS attribution_medium TEXT NOT NULL DEFAULT '';\n" +
+    "ALTER TABLE commerce_leads ADD COLUMN IF NOT EXISTS attribution_campaign TEXT NOT NULL DEFAULT '';\n" +
+    "ALTER TABLE commerce_leads ADD COLUMN IF NOT EXISTS attribution_content TEXT NOT NULL DEFAULT '';\n" +
+    "ALTER TABLE commerce_leads ADD COLUMN IF NOT EXISTS referral_code TEXT NOT NULL DEFAULT '';\n" +
+    "CREATE INDEX IF NOT EXISTS commerce_leads_attribution_idx ON commerce_leads(created_at DESC, attribution_source, attribution_game_id);\n" +
     "CREATE INDEX IF NOT EXISTS commerce_leads_created_idx ON commerce_leads(created_at DESC);\n" +
     "CREATE TABLE IF NOT EXISTS commerce_events (event_id TEXT PRIMARY KEY, event_name TEXT NOT NULL, session_id TEXT NOT NULL, game_id TEXT NOT NULL, source TEXT NOT NULL, path TEXT NOT NULL, duration_seconds INTEGER NOT NULL DEFAULT 0, received_at TIMESTAMPTZ NOT NULL DEFAULT NOW());\n" +
     "CREATE INDEX IF NOT EXISTS commerce_events_name_received_idx ON commerce_events(event_name, received_at DESC);\n" +
@@ -301,7 +308,7 @@ app.post("/v1/leads", async (req, res) => {
   if (!requireDatabase(res)) return;
   const leadId = crypto.randomUUID();
   try {
-    await pool.query("INSERT INTO commerce_leads(lead_id,project_type,budget,contact,description,consent_at) VALUES($1,$2,$3,$4,$5,NOW())", [leadId, lead.projectType, lead.budget, lead.contact, lead.description]);
+    await pool.query("INSERT INTO commerce_leads(lead_id,project_type,budget,contact,description,consent_at,attribution_game_id,attribution_source,attribution_medium,attribution_campaign,attribution_content,referral_code) VALUES($1,$2,$3,$4,$5,NOW(),$6,$7,$8,$9,$10,$11)", [leadId, lead.projectType, lead.budget, lead.contact, lead.description, lead.attribution.gameId, lead.attribution.source, lead.attribution.medium, lead.attribution.campaign, lead.attribution.content, lead.attribution.referralCode]);
     return res.status(201).json({ accepted: true, leadId, message: "Заявка сохранена." });
   } catch (error) {
     console.error("Lead insert failed:", error?.message || "unknown error");
@@ -342,7 +349,7 @@ app.post("/v1/events", async (req, res) => {
 app.get("/v1/admin/overview", requireAdmin, async (_req, res) => {
   if (!requireDatabase(res)) return;
   try {
-    const [orderStats, currencyStats, leadStats, eventStats, topEvents, analyticsByGame, ownedPromoByService, analyticsFunnel, socialShareByNetwork, paidRevenueByAttribution] = await Promise.all([
+    const [orderStats, currencyStats, leadStats, eventStats, topEvents, analyticsByGame, ownedPromoByService, analyticsFunnel, socialShareByNetwork, paidRevenueByAttribution, leadAttribution] = await Promise.all([
       pool.query("SELECT status, COUNT(*)::int AS count FROM commerce_orders GROUP BY status"),
       pool.query("SELECT currency, SUM(amount_total)::bigint AS total_minor, COUNT(*)::int AS count FROM commerce_orders WHERE status='paid' AND currency IS NOT NULL GROUP BY currency"),
       pool.query("SELECT attribution_game_id AS \"gameId\", attribution_source AS source, NULLIF(attribution_campaign, '') AS campaign, mode, currency, COUNT(*)::int AS orders, COALESCE(SUM(amount_total),0)::text AS \"totalMinor\" FROM commerce_orders WHERE status='paid' AND amount_total IS NOT NULL AND currency IS NOT NULL AND created_at >= NOW() - INTERVAL '30 days' GROUP BY attribution_game_id, attribution_source, attribution_campaign, mode, currency ORDER BY COUNT(*) DESC, attribution_game_id ASC LIMIT 50"),
@@ -437,6 +444,21 @@ app.get("/v1/admin/overview", requireAdmin, async (_req, res) => {
         GROUP BY network
         ORDER BY intents DESC, network ASC
       `),
+      pool.query(`
+        SELECT
+          attribution_game_id AS "gameId",
+          attribution_source AS source,
+          NULLIF(attribution_medium, '') AS medium,
+          NULLIF(attribution_campaign, '') AS campaign,
+          NULLIF(attribution_content, '') AS content,
+          COUNT(*)::int AS leads,
+          COUNT(*) FILTER (WHERE status = 'new')::int AS "newLeads"
+        FROM commerce_leads
+        WHERE created_at >= NOW() - INTERVAL '30 days'
+        GROUP BY attribution_game_id, attribution_source, attribution_medium, attribution_campaign, attribution_content
+        ORDER BY COUNT(*) DESC, attribution_game_id ASC, attribution_source ASC
+        LIMIT 50
+      `),
     ]);
     return res.json({
       ordersByStatus: orderStats.rows,
@@ -449,6 +471,7 @@ app.get("/v1/admin/overview", requireAdmin, async (_req, res) => {
       analyticsFunnel: analyticsFunnel.rows[0] || {},
       socialShareByNetwork: socialShareByNetwork.rows,
       paidRevenueByAttribution: paidRevenueByAttribution.rows,
+      leadAttribution: leadAttribution.rows,
       analyticsRetentionDays,
       note: "Аналитика включает только согласованные события. Это не все посещения сайта и не рекламные показы. Суммы сгруппированы по валютам и не являются бухгалтерским отчётом.",
     });
@@ -461,7 +484,7 @@ app.get("/v1/admin/leads", requireAdmin, async (req, res) => {
   if (!requireDatabase(res)) return;
   const limit = Math.max(1, Math.min(100, Number.parseInt(String(req.query.limit || "50"), 10) || 50));
   try {
-    const result = await pool.query("SELECT lead_id, project_type, budget, contact, description, status, created_at FROM commerce_leads ORDER BY created_at DESC LIMIT $1", [limit]);
+    const result = await pool.query("SELECT lead_id, project_type, budget, contact, description, status, attribution_game_id, attribution_source, attribution_medium, attribution_campaign, attribution_content, referral_code, created_at FROM commerce_leads ORDER BY created_at DESC LIMIT $1", [limit]);
     return res.json({ items: result.rows });
   } catch (error) {
     console.error("Admin leads failed:", error?.message || "unknown error");
