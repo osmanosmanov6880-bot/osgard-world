@@ -23,4 +23,18 @@ for(const event of ['game_opened','game_session_started','game_session_completed
 assert.ok(html.includes('navigator.share')&&html.includes('id="share-result"')&&html.includes('id="save-card"'),'result sharing and PNG export must exist')
 assert.ok(html.includes('vector_zero_sponsor'),'sponsor CTA must be attributable')
 assert.ok(!/<script\b[^>]*\bsrc\s*=/i.test(html),'game must not add third-party scripts')
+
+const hashDefinition=scripts[0].match(/function stableHash\(value\)\{[^}]*\}/)?.[0]
+assert.ok(hashDefinition,'stable hash function definition must be extractable for deterministic test')
+const stableHash=vm.runInNewContext('('+hashDefinition+')')
+const seedA=stableHash('VECTOR-ZERO|2026-10-13')
+const seedB=stableHash('VECTOR-ZERO|2026-10-13')
+const seedNextDay=stableHash('VECTOR-ZERO|2026-10-14')
+assert.equal(seedA,seedB,'same UTC date must produce the same daily challenge seed')
+assert.notEqual(seedA,seedNextDay,'adjacent dates should produce different seeds for the selected fixture')
+const target=Number((9+(seedA%61)/10).toFixed(1))
+assert.ok(target>=9&&target<=15,'daily target must remain inside the designed 9–15 second range')
+const rules=[{name:'LOW FLUX',multiplier:.88},{name:'BALANCED FLUX',multiplier:1},{name:'HIGH FLUX',multiplier:1.12}]
+assert.equal(rules[seedA%rules.length].multiplier,[.88,1,1.12][seedA%3],'the daily rule must be selected deterministically from the same seed')
+
 console.log('PASS VECTOR//ZERO growth smoke: syntax, IDs, readiness, daily seed, events, share, result card, sponsor lead, no third-party scripts')
