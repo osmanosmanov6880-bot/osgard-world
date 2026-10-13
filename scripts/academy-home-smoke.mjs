@@ -110,3 +110,9 @@ assert.ok(studio.includes('ratedCriteria=submission.scores.filter(value=>value>0
 assert.ok(studio.includes("{rubricComplete?score:'—'}") && studio.includes('t.scorePending') && studio.includes('ratedCriteria/'), 'A final score must only appear after all criteria are rated, with visible completion progress')
 assert.ok(studio.includes('rubricComplete?`${score}/100`:t.scorePending'), 'Exported project must not present an incomplete rubric as a final score')
 assert.ok(studio.includes("scorePending:'Оцените все четыре критерия") && studio.includes("scorePending:'Rate all four criteria") && studioStyles.includes('.academy-studio-rubric-progress'), 'Rubric completion guidance must be bilingual and styled')
+
+assert.ok(studio.includes("format:'osgard-academy-studio-backup',version:1") && studio.includes('osgard-academy-backup.json'), 'Learners must be able to export a versioned portable backup of all projects')
+assert.ok(studio.includes('const importBackup=async(file:File|null)') && studio.includes("parsed.format!=='osgard-academy-studio-backup'") && studio.includes('parsed.version!==1'), 'Backup import must validate the expected format and version before restoring')
+assert.ok(studio.includes('value.response.length>12000') && studio.includes('value.scores.length!==4') && studio.includes('item.deliverables.includes(id)'), 'Backup import must validate draft length, rubric scores and project checklist entries')
+assert.ok(studio.includes('backupExport:') && studio.includes('backupImport:') && studio.includes('backupInvalid:') && studio.includes('aria-live="polite">{backupStatus}'), 'Backup and restore must provide bilingual accessible status feedback')
+assert.ok(studio.includes('accept="application/json,.json"') && studioStyles.includes('.academy-studio-import-button') && studioStyles.includes('.academy-studio-backup-status'), 'Backup import must use an accessible JSON picker and responsive styled controls')
