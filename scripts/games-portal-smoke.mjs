@@ -80,7 +80,7 @@ assert.equal(afterimageScripts.length,1,'AFTERIMAGE//RUN should be a single self
 new Function(afterimageScripts[0])
 assert.ok(afterimageHtml.includes('incomingSeed=params.get(\'seed\')')&&afterimageHtml.includes('TARGET SCORE:'),'Shared challenge must retain the daily seed and show target score')
 assert.ok(afterimageHtml.includes('Публичная публикация поста не проверяется'),'Share reward must be transparent about unverified social posts')
-assert.ok(afterimageHtml.includes('Math.max(0,Number(params.get(\'score\')||0))'),'Challenge score must be read safely from URL')
+assert.ok(afterimageHtml.includes('Number.isFinite(rawTarget)')&&afterimageHtml.includes('Math.min(99999999,Math.floor(rawTarget))'),'Challenge score must be read safely from URL')
 assert.ok(html.includes('src="./ecosystem-intermission.js"'),'Between-game owned-service intermission is not loaded')
 const intermission=readFileSync(resolve(root,'ecosystem-intermission.js'),'utf8')
 for(const host of ['osgardbewworld.com','o2system.art','senjorio.com','superday.run','marcosa.club','myosa.world','gold-glamour.online','gardvpn.is','osgardos.com','osgardvanguard.studio']) assert.ok(intermission.includes(host),'Owned-project intermission link missing: '+host)
