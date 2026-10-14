@@ -17,3 +17,20 @@
 .tedes-featured-index{position:absolute;right:18px;top:18px;color:#7d94a8;font:9px ui-monospace,monospace;letter-spacing:.12em}
 @media(max-width:760px){.tedes-featured-case{grid-template-columns:1fr;gap:22px;padding:18px}.tedes-featured-art{min-height:215px}.tedes-art-door{height:170px}.tedes-featured-copy h3{font-size:32px}.tedes-featured-index{right:12px;top:12px}}
 @media(prefers-reduced-motion:reduce){.tedes-featured-case{transition:none}}
+
+/* LUXURY CARD — restrained metal accents, architectural editorial hierarchy */
+.tedes-featured-case{border-color:rgba(183,154,93,.28);background:radial-gradient(ellipse at 14% 15%,rgba(163,130,65,.15),transparent 40%),linear-gradient(120deg,#17150f 0%,#0b0b09 75%);box-shadow:0 20px 70px rgba(0,0,0,.14);gap:clamp(24px,4.5vw,62px);padding:clamp(24px,4vw,50px)}
+.tedes-featured-case:hover{border-color:rgba(206,178,120,.68);box-shadow:0 26px 82px rgba(0,0,0,.24);transform:translateY(-3px)}
+.tedes-featured-art{border-color:rgba(191,163,105,.3);background:radial-gradient(ellipse at 55% 35%,rgba(178,145,78,.15),transparent 55%),linear-gradient(145deg,#292419,#0e0d0a);min-height:270px}
+.tedes-featured-art:before{background:linear-gradient(rgba(207,180,122,.075) 1px,transparent 1px),linear-gradient(90deg,rgba(207,180,122,.075) 1px,transparent 1px);background-size:34px 34px}
+.tedes-art-door{width:38%;height:210px;border-color:#ad925c;background:linear-gradient(110deg,#403724,#282317 52%,#17140e);box-shadow:0 18px 46px #000b,inset 0 0 0 8px #100f0b,inset 0 0 0 9px #87704a}
+.tedes-art-door:before{inset:17px;border-color:rgba(221,194,139,.45)}
+.tedes-art-door:after{background:linear-gradient(90deg,#80683f,#e8d5a4 45%,#a1864d);box-shadow:0 0 18px rgba(210,183,119,.17)}
+.tedes-art-label{color:#d0bb8d;font-size:8px;letter-spacing:.2em}
+.tedes-featured-copy .eyebrow{color:#c9ad73;font-size:8px;letter-spacing:.27em}
+.tedes-featured-copy h3{font-family:"Cormorant Garamond",Georgia,serif;font-size:clamp(34px,4vw,52px);line-height:.97;letter-spacing:-.03em;font-weight:400;color:#f4eee1}
+.tedes-featured-copy>p:not(.eyebrow){color:#b8af9d;font-size:12px;line-height:1.95}
+.tedes-featured-tags span{border-color:rgba(190,163,105,.25);color:#d0c09a;background:rgba(171,139,75,.035);font-size:8px;letter-spacing:.07em;padding:8px 10px}
+.tedes-featured-link{color:#e2d0a4;font-size:9px;letter-spacing:.17em;text-transform:uppercase}
+.tedes-featured-index{color:#aa9568;font-size:8px;letter-spacing:.18em}
+@media(max-width:760px){.tedes-featured-case{padding:18px;gap:22px}.tedes-featured-art{min-height:230px}.tedes-art-door{height:178px}.tedes-featured-copy h3{font-size:39px}.tedes-featured-index{right:12px;top:12px}}
