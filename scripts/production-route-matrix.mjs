@@ -1,7 +1,7 @@
 import { isValidPartnerInventoryText } from './partner-inventory-contract.mjs'
 const base = process.env.OSGARD_BASE_URL || 'https://osgard.world'
 const expectCurrentDesign = process.env.SKILLCRED_EXPECT_CURRENT_DESIGN === '1'
-const routes = ['/','/portal','/osa-cinema','/academy','/skillcred/','/skillcred-api/health','/skillcred-api/ready','/skillcred-api/issuer','/entertainment','/games/','/games/index.html','/games/partners/','/games/admin/','/games/afterimage-run/','/games/vector-zero/','/games/favicon.svg','/privacy/','/terms/','/community','/stream','/archive','/profile','/api/v1/player/profile','/api/v1/analytics/summary?from=0&to=1','/r/1842','/games/time','/games/null-shift/','/games/null-shift/index.html','/games/null-shift-godot/','/games/null-shift-godot/index.html','/play/swarm','/play/null-shift','/play/inherit','/play/remix','/media','/business','/create','/mobility']
+const routes = ['/tedes/','/development/tedes/','/','/portal','/osa-cinema','/academy','/skillcred/','/skillcred-api/health','/skillcred-api/ready','/skillcred-api/issuer','/entertainment','/games/','/games/index.html','/games/partners/','/games/admin/','/games/afterimage-run/','/games/vector-zero/','/games/favicon.svg','/privacy/','/terms/','/community','/stream','/archive','/profile','/api/v1/player/profile','/api/v1/analytics/summary?from=0&to=1','/r/1842','/games/time','/games/null-shift/','/games/null-shift/index.html','/games/null-shift-godot/','/games/null-shift-godot/index.html','/play/swarm','/play/null-shift','/play/inherit','/play/remix','/media','/business','/create','/mobility']
 const agents = { desktop: 'OSGARD-Route-Matrix/1.1 Desktop', mobile: 'OSGARD-Route-Matrix/1.1 Mobile' }
 const results = []
 for (const [device, userAgent] of Object.entries(agents)) for (const route of routes) {
@@ -14,6 +14,10 @@ for (const [device, userAgent] of Object.entries(agents)) for (const route of ro
     const shellOk = route === '/'
       ? text.includes('<title>OSA Intelligence — понимать, проверять, решать</title>') &&
         /<script[^>]+src="\/assets\/[^"]+\.js"/i.test(text)
+      : route === '/tedes/'
+        ? text.includes('<title>TEDES Studio — архитектурная фурнитура как система</title>') && text.includes('id="addDoor"') && text.includes('id="exportJson"') && text.includes('id="exportCsv"') && text.includes('id="doorRows"')
+      : route === '/development/tedes/'
+        ? text.includes('<title>TEDES — кейс OSGARD Development</title>') && text.includes('href="/tedes/"') && text.includes('FLAGSHIP CASE')
       : route.startsWith('/api/v1/')
         ? [401, 403].includes(response.status) && (response.headers.get('content-type') || '').toLowerCase().includes('application/json') && (() => { try { JSON.parse(text); return true } catch { return false } })()
       : route === '/skillcred/'

@@ -1,0 +1,19 @@
+/* TEDES flagship case card — additive styling for OSGARD Development */
+.tedes-featured-case{position:relative;isolation:isolate;display:grid;grid-template-columns:minmax(220px,.75fr) minmax(0,1.25fr);align-items:stretch;gap:clamp(22px,4vw,54px);overflow:hidden;margin:0 0 26px;padding:clamp(22px,3.5vw,42px);border:1px solid rgba(144,174,204,.3);background:radial-gradient(ellipse at 10% 0%,rgba(90,123,157,.18),transparent 42%),linear-gradient(135deg,#101923,#090d12 76%);color:#f1f3f5;text-decoration:none;transition:border-color .2s,transform .2s}
+.tedes-featured-case:hover{border-color:rgba(174,204,232,.62);transform:translateY(-2px)}
+.tedes-featured-art{position:relative;display:grid;place-items:center;min-height:240px;overflow:hidden;border:1px solid rgba(149,180,209,.24);background:linear-gradient(150deg,#1a2836,#0b1016)}
+.tedes-featured-art:before{content:"";position:absolute;inset:0;background:linear-gradient(rgba(146,176,204,.08) 1px,transparent 1px),linear-gradient(90deg,rgba(146,176,204,.08) 1px,transparent 1px);background-size:28px 28px;mask-image:linear-gradient(135deg,#000,transparent 90%)}
+.tedes-art-door{position:relative;width:40%;height:190px;border:1px solid #9ab6d0;background:linear-gradient(110deg,#34485a,#1b2835 54%,#101820);box-shadow:0 13px 34px #0008,inset 0 0 0 7px #0c1219,inset 0 0 0 8px #5d7890}
+.tedes-art-door:before{content:"";position:absolute;inset:15px;border:1px solid rgba(162,192,217,.45)}
+.tedes-art-door:after{content:"";position:absolute;right:16%;top:50%;height:44px;width:3px;background:#c9d9e6;box-shadow:0 0 12px #c9d9e633}
+.tedes-art-label{position:absolute;z-index:1;left:14px;bottom:13px;color:#8eaac2;font:9px ui-monospace,monospace;letter-spacing:.14em}
+.tedes-featured-copy{align-self:center;min-width:0}
+.tedes-featured-copy .eyebrow{margin:0 0 13px;color:#9cb9d6;font-size:9px;letter-spacing:.2em}
+.tedes-featured-copy h3{max-width:750px;margin:0;color:#f3f5f7;font:400 clamp(27px,3.4vw,43px)/1.04 Georgia,serif;letter-spacing:-.025em}
+.tedes-featured-copy>p:not(.eyebrow){max-width:670px;color:#aab6c1;font-size:12px;line-height:1.85;margin:18px 0}
+.tedes-featured-tags{display:flex;flex-wrap:wrap;gap:7px;margin:0 0 20px}
+.tedes-featured-tags span{padding:7px 9px;border:1px solid rgba(145,178,207,.22);color:#aec4d7;font-size:9px;letter-spacing:.04em}
+.tedes-featured-link{display:inline-flex;align-items:center;gap:9px;color:#d0e1ef;font-size:11px;letter-spacing:.08em}
+.tedes-featured-index{position:absolute;right:18px;top:18px;color:#7d94a8;font:9px ui-monospace,monospace;letter-spacing:.12em}
+@media(max-width:760px){.tedes-featured-case{grid-template-columns:1fr;gap:22px;padding:18px}.tedes-featured-art{min-height:215px}.tedes-art-door{height:170px}.tedes-featured-copy h3{font-size:32px}.tedes-featured-index{right:12px;top:12px}}
+@media(prefers-reduced-motion:reduce){.tedes-featured-case{transition:none}}
