@@ -26,7 +26,7 @@ jobs:
           test -n "$DEPLOY_USER"
           test -n "$DEPLOY_KEY"
           install -m 700 -d ~/.ssh
-          printf '%s\\n' "$DEPLOY_KEY" > ~/.ssh/osgard_deploy
+          printf '%s\n' "$DEPLOY_KEY" > ~/.ssh/osgard_deploy
           chmod 600 ~/.ssh/osgard_deploy
           ssh-keyscan -T 10 -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts 2>/dev/null
 
