@@ -24,7 +24,7 @@
   const requestedMode = params.get('mode') || '';
   const afterimageScoreText = params.get('score') ?? params.get('challenge') ?? '';
   const afterimageScore = Number(afterimageScoreText);
-  const validAfterimageScore = /^(?:0|[1-9]\\d{0,7})$/.test(afterimageScoreText) && Number.isSafeInteger(afterimageScore) && afterimageScore >= 0 && afterimageScore <= 99999999;
+  const validAfterimageScore = /^(?:0|[1-9]\d{0,7})$/.test(afterimageScoreText) && Number.isSafeInteger(afterimageScore) && afterimageScore >= 0 && afterimageScore <= 99999999;
   const validDailyMode = requestedMode === 'daily' && validDay;
   const validOrdinaryMode = requestedMode === '' && requestedDay === '';
   const legacySignalRun = game === 'signal-run' &&
