@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#10110f">
+<meta name="robots" content="index,follow">
+<meta name="description" content="TEDES Studio — демонстрационная студия проектирования архитектурной фурнитуры и подготовки ведомости дверей. Концепт OSGARD Development.">
+<link rel="canonical" href="https://osgard.world/tedes/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="TEDES Studio — архитектурная фурнитура как система">
+<meta property="og:description" content="Настройте конфигурации дверей, соберите проект и экспортируйте спецификацию в JSON или CSV.">
+<meta property="og:url" content="https://osgard.world/tedes/">
+<title>TEDES Studio — архитектурная фурнитура как система</title>
+<style>
+:root{color-scheme:dark;--bg:#11120f;--panel:#191a16;--panel2:#20211c;--ink:#f3f1e9;--muted:#aaa99d;--dim:#74766b;--line:#393a31;--gold:#c9b98e;--gold2:#e8d7ad;--green:#b4c9a0;--danger:#e5a49a;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:radial-gradient(ellipse at 72% -12%,rgba(185,166,118,.13),transparent 34%),var(--bg);color:var(--ink);font-size:14px}a{color:inherit;text-decoration:none}button,input,select{font:inherit}button,a,select{touch-action:manipulation}button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--gold2);outline-offset:3px}.wrap{width:min(1440px,100% - 52px);margin:auto}.topbar{height:76px;border-bottom:1px solid rgba(220,210,180,.13);display:flex;align-items:center;justify-content:space-between;gap:20px}.brand{display:flex;align-items:center;gap:13px;letter-spacing:.16em;font-size:13px}.brand-mark{width:31px;height:31px;border:1px solid var(--gold);display:grid;place-items:center;color:var(--gold2);font-family:Georgia,serif;font-size:20px;transform:rotate(45deg)}.brand-mark span{transform:rotate(-45deg)}.brand small{display:block;margin-top:4px;color:var(--dim);font-size:9px;letter-spacing:.25em}.navlinks{display:flex;gap:24px;color:var(--muted);font-size:11px;letter-spacing:.08em}.navlinks a:hover{color:var(--gold2)}.top-note{color:var(--dim);font-size:10px;letter-spacing:.13em;text-align:right}.hero{padding:76px 0 58px;display:grid;grid-template-columns:1.2fr .8fr;gap:60px;align-items:center}.eyebrow{margin:0 0 17px;color:var(--gold);font-size:10px;letter-spacing:.24em;text-transform:uppercase}.hero h1{font:400 clamp(42px,6vw,76px)/.98 Georgia,"Times New Roman",serif;letter-spacing:-.035em;max-width:790px;margin:0}.hero h1 em{font-weight:400;color:var(--gold2)}.hero-copy{max-width:650px;color:#b6b6aa;font-size:14px;line-height:1.85;margin:24px 0 28px}.actions{display:flex;gap:10px;flex-wrap:wrap}.btn{min-height:46px;display:inline-flex;align-items:center;justify-content:center;gap:15px;padding:0 18px;border:1px solid var(--line);background:transparent;color:var(--ink);cursor:pointer;font-size:11px;letter-spacing:.08em;transition:background .2s,border-color .2s}.btn:hover{border-color:var(--gold);background:rgba(201,185,142,.08)}.btn.primary{background:var(--gold2);border-color:var(--gold2);color:#171711}.btn.primary:hover{background:#f1e4c0}.btn.small{min-height:34px;padding:0 11px;font-size:10px}.hero-stats{display:flex;gap:26px;margin-top:37px;padding-top:20px;border-top:1px solid var(--line);max-width:570px}.stat strong{display:block;font:30px/1 Georgia,serif;font-weight:400;color:var(--gold2)}.stat span{display:block;margin-top:9px;font-size:9px;letter-spacing:.1em;color:var(--dim);text-transform:uppercase}.hero-visual{position:relative;min-height:410px;border:1px solid #3b392f;background:linear-gradient(140deg,#27281f,#12130f 72%);overflow:hidden;display:grid;place-items:center}.hero-visual:before{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent 49.8%,rgba(201,185,142,.08) 50%,transparent 50.2%),linear-gradient(0deg,transparent 49.8%,rgba(201,185,142,.05) 50%,transparent 50.2%);background-size:48px 48px;mask-image:linear-gradient(to bottom,transparent,#000 30%,#000 80%,transparent)}.door-render{position:relative;width:53%;height:326px;border:1px solid #9c8d69;background:linear-gradient(115deg,#3b3d35,#252720 48%,#181a16);box-shadow:0 20px 60px #0009,inset 0 0 0 8px #11120f,inset 0 0 0 9px #71664d;z-index:1}.door-render:before{content:"";position:absolute;inset:20px;border:1px solid rgba(201,185,142,.4)}.door-render:after{content:"";position:absolute;left:21%;right:21%;top:22px;bottom:22px;border:1px solid rgba(201,185,142,.23)}.door-handle{position:absolute;right:14%;top:50%;height:82px;width:4px;border-radius:4px;background:linear-gradient(90deg,#685b40,#e0d0a4,#74684b);box-shadow:0 0 18px #d8c89a2e}.door-handle:after{content:"";position:absolute;left:-4px;top:0;width:12px;height:12px;border-radius:50%;background:#b8a77d}.visual-label{position:absolute;z-index:2;font-size:9px;letter-spacing:.16em;color:#dfd1ad}.visual-label.top{top:20px;left:20px}.visual-label.bottom{left:20px;right:20px;bottom:19px;display:flex;justify-content:space-between;color:#939383}.visual-badge{position:absolute;right:18px;top:18px;color:#b9c9a6;font:9px ui-monospace,monospace;letter-spacing:.12em}.section-head{display:flex;justify-content:space-between;align-items:end;gap:25px;margin-bottom:24px}.section-head h2{font:400 clamp(28px,3vw,41px)/1.05 Georgia,serif;margin:0;letter-spacing:-.02em}.section-head p{max-width:420px;color:var(--muted);font-size:12px;line-height:1.7;margin:0}.studio{padding:44px 0 76px;border-top:1px solid var(--line)}.demo-label{display:inline-flex;align-items:center;gap:9px;border:1px solid #43483c;color:#b8cba5;padding:8px 10px;font-size:9px;letter-spacing:.15em;text-transform:uppercase}.demo-label:before{content:"";width:6px;height:6px;border-radius:50%;background:#9bb487;box-shadow:0 0 10px #9bb4876b}.studio-grid{display:grid;grid-template-columns:minmax(320px,.84fr) minmax(0,1.16fr);gap:22px;align-items:start}.config-panel,.project-panel{border:1px solid var(--line);background:rgba(24,25,21,.86);min-width:0}.panel-header{display:flex;align-items:center;justify-content:space-between;gap:15px;padding:20px 22px;border-bottom:1px solid var(--line)}.panel-header h3{font:400 23px/1 Georgia,serif;margin:0}.panel-header small{color:var(--dim);font-size:9px;letter-spacing:.14em}.form-grid{padding:22px;display:grid;grid-template-columns:1fr 1fr;gap:16px}.field{display:flex;flex-direction:column;gap:8px;min-width:0}.field.full{grid-column:1/-1}.field label{font-size:10px;color:#b6b5a8;letter-spacing:.1em;text-transform:uppercase}.field input,.field select{min-width:0;width:100%;height:42px;border:1px solid #414238;background:#12130f;color:var(--ink);padding:0 11px;border-radius:0}.field input::placeholder{color:#62645a}.field select option{background:#171812}.field-note{font-size:10px;line-height:1.6;color:var(--dim)}.form-actions{padding:0 22px 22px;display:flex;gap:10px;flex-wrap:wrap}.form-message{min-height:18px;padding:0 22px 14px;color:var(--green);font-size:11px}.project-meta{display:flex;align-items:center;gap:8px;color:var(--dim);font-size:10px}.project-name{padding:18px 22px 10px}.project-name label{display:block;color:var(--dim);font-size:9px;letter-spacing:.15em;text-transform:uppercase;margin-bottom:8px}.project-name input{width:100%;background:transparent;border:0;border-bottom:1px solid #444538;padding:8px 0;color:var(--ink);font:22px Georgia,serif;outline-offset:1px}.project-preview{padding:12px 22px 20px;display:grid;grid-template-columns:150px 1fr;gap:20px;align-items:center}.mini-door-frame{height:150px;display:grid;place-items:center;background:linear-gradient(145deg,#292a22,#151610);border:1px solid #3c3d32}.mini-door{position:relative;width:65px;height:119px;background:linear-gradient(90deg,#414237,#26281e);border:1px solid #8d805f;box-shadow:inset 0 0 0 4px #151610}.mini-door:before{content:"";position:absolute;inset:10px;border:1px solid #8276558c}.mini-door:after{content:"";position:absolute;width:3px;height:31px;right:8px;top:45px;background:var(--gold2)}.preview-data p{color:var(--dim);font-size:9px;letter-spacing:.14em;text-transform:uppercase;margin:0 0 10px}.preview-data strong{display:block;font:25px Georgia,serif;font-weight:400;margin-bottom:9px}.preview-data span{display:block;color:var(--muted);font-size:11px;line-height:1.75}.table-wrap{overflow:auto;border-top:1px solid var(--line)}table{border-collapse:collapse;width:100%;min-width:570px}th,td{text-align:left;padding:13px 12px;border-bottom:1px solid #303128;font-size:10px;vertical-align:middle}th{color:var(--dim);font-weight:500;font-size:9px;letter-spacing:.1em;text-transform:uppercase}td:first-child,th:first-child{padding-left:22px}td:last-child,th:last-child{padding-right:22px}.zone-name{color:var(--ink);font-size:11px}.zone-code{display:block;color:var(--dim);font:9px ui-monospace,monospace;margin-top:5px}.finish-chip{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:middle}.remove-btn{background:transparent;border:0;color:#8c8c7d;cursor:pointer;padding:6px}.remove-btn:hover{color:var(--danger)}.empty-state{padding:32px 22px;color:var(--dim);line-height:1.7;font-size:12px}.project-footer{padding:18px 22px;display:flex;align-items:center;justify-content:space-between;gap:15px;flex-wrap:wrap}.project-footer p{margin:0;color:var(--dim);font-size:10px;line-height:1.6;max-width:260px}.export-actions{display:flex;gap:8px;flex-wrap:wrap}.disclaimer{border:1px solid #4a4131;background:rgba(120,93,47,.1);padding:16px 18px;display:grid;grid-template-columns:22px 1fr;gap:12px;margin-top:18px;color:#c7bd9f;font-size:11px;line-height:1.75}.disclaimer strong{display:block;color:#e3d5b4;font-weight:500;margin-bottom:3px}.capabilities{padding:68px 0;border-top:1px solid var(--line)}.cap-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.cap-card{padding:24px 22px;border:1px solid var(--line);background:linear-gradient(145deg,rgba(40,41,33,.55),rgba(20,21,17,.3));min-height:180px}.cap-card span{color:var(--gold);font:20px Georgia,serif}.cap-card h3{font-size:13px;letter-spacing:.04em;font-weight:500;margin:21px 0 10px}.cap-card p{color:var(--muted);font-size:11px;line-height:1.8;margin:0}.foot{padding:24px 0 34px;border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:20px;color:var(--dim);font-size:10px;letter-spacing:.06em}.foot a{color:var(--gold2)}.foot-links{display:flex;gap:18px;flex-wrap:wrap}
+@media(max-width:900px){.hero{grid-template-columns:1fr;gap:28px;padding-top:52px}.hero-visual{min-height:340px}.door-render{height:275px}.studio-grid{grid-template-columns:1fr}.project-preview{grid-template-columns:130px 1fr}.section-head{align-items:start;flex-direction:column}.cap-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:560px){.wrap{width:calc(100% - 32px)}.topbar{height:66px}.navlinks{gap:12px;font-size:10px}.navlinks a:nth-child(2){display:none}.top-note{font-size:8px;max-width:110px}.brand{font-size:11px;gap:10px}.brand-mark{width:27px;height:27px}.hero{padding:45px 0 35px}.hero h1{font-size:47px}.hero-copy{font-size:13px}.hero-visual{min-height:290px}.door-render{height:245px;width:58%}.hero-stats{gap:15px}.stat strong{font-size:25px}.stat span{font-size:8px}.studio{padding:32px 0 50px}.form-grid{padding:16px;gap:13px}.form-actions{padding:0 16px 18px}.form-message{padding:0 16px 12px}.panel-header{padding:17px 16px}.project-name{padding:16px}.project-preview{padding:12px 16px 16px;grid-template-columns:100px 1fr;gap:13px}.mini-door-frame{height:120px}.mini-door{height:95px}.mini-door:after{top:34px}.section-head h2{font-size:33px}.project-footer{padding:16px}.cap-grid{grid-template-columns:1fr}.cap-card{min-height:0}.foot{flex-direction:column}.foot-links{gap:12px}.btn{flex:1}.btn.small{flex:0 0 auto}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important}}
+</style>
+</head>
+<body>
+<header class="wrap topbar">
+<a class="brand" href="/tedes/" aria-label="TEDES Studio home"><span class="brand-mark"><span>T</span></span><span>TEDES<small>GLOBAL STUDIO / DEMO</small></span></a>
+<nav class="navlinks" aria-label="Основная навигация"><a href="#studio">СТУДИЯ</a><a href="#capabilities">ВОЗМОЖНОСТИ</a><a href="/development/tedes/">КЕЙС OSGARD ↗</a></nav>
+<div class="top-note">PRODUCT CONCEPT<br>OSGARD DEVELOPMENT</div>
+</header>
+<main>
+<section class="wrap hero">
+<div>
+<p class="eyebrow">ARCHITECTURAL HARDWARE / PROJECT STUDIO</p>
+<h1>Деталь, продуманная<br><em>как система.</em></h1>
+<p class="hero-copy">Демонстрационная студия TEDES показывает, как премиальный каталог фурнитуры может превратиться в рабочий инструмент: настроить дверные позиции, объединить их в проект и подготовить структурированную ведомость.</p>
+<div class="actions"><a class="btn primary" href="#studio">Открыть конфигуратор <span aria-hidden="true">↘</span></a><a class="btn" href="/development/tedes/">Как это создано <span aria-hidden="true">↗</span></a></div>
+<div class="hero-stats"><div class="stat"><strong>30</strong><span>позиций в проекте</span></div><div class="stat"><strong>CSV</strong><span>и JSON экспорт</span></div><div class="stat"><strong>01</strong><span>единая ведомость</span></div></div>
+</div>
+<div class="hero-visual" aria-label="Абстрактная визуализация архитектурной двери"><span class="visual-label top">TEDES / MATERIAL STUDY 01</span><span class="visual-badge">STUDIO LIVE · DEMO</span><div class="door-render"><span class="door-handle"></span></div><div class="visual-label bottom"><span>FORM / MATERIAL / DETAIL</span><span>FIG. 001</span></div></div>
+</section>
+<section class="wrap studio" id="studio">
+<div class="section-head"><div><p class="eyebrow">01 / CONFIGURATION WORKSPACE</p><h2>Один проект. Несколько зон.<br>Одна спецификация.</h2></div><div><span class="demo-label">Демо-режим · данные на устройстве</span><p style="max-width:450px;margin-top:13px">Каждая дверная позиция независима. Попробуйте разные серии, отделки, размеры и типы ручек — затем соберите ведомость проекта.</p></div></div>
+<div class="studio-grid">
+<section class="config-panel" aria-labelledby="config-title">
+<div class="panel-header"><h3 id="config-title">Новая позиция</h3><small>CONFIG / 01</small></div>
+<div class="form-grid">
+<div class="field full"><label for="projectName">Название проекта</label><input id="projectName" value="Residence / North Wing" maxlength="80"></div>
+<div class="field full"><label for="zone">Зона / помещение</label><input id="zone" value="Entrance / 01" maxlength="80" placeholder="Например, Lobby / 01"></div>
+<div class="field"><label for="collection">Серия</label><select id="collection"><option value="FORMA">FORMA — sculptural</option><option value="LINEA">LINEA — linear</option><option value="MATERIA">MATERIA — material</option></select></div>
+<div class="field"><label for="finish">Отделка</label><select id="finish"><option value="Antique brass">Античная латунь</option><option value="Matte black">Чёрный матовый</option><option value="Satin bronze">Бронза сатин</option><option value="Polished chrome">Полированный хром</option></select></div>
+<div class="field"><label for="handle">Тип ручки</label><select id="handle"><option value="ARC">ARC / curved</option><option value="EDGE">EDGE / slim</option><option value="LINE">LINE / straight</option></select></div>
+<div class="field"><label for="lock">Замок</label><select id="lock"><option value="Not specified">Не задан</option><option value="Privacy">Privacy / WC</option><option value="Passage">Passage</option><option value="Key">Key lock</option></select></div>
+<div class="field"><label for="width">Ширина, мм</label><input id="width" type="number" min="400" max="1800" step="1" value="900"></div>
+<div class="field"><label for="height">Высота, мм</label><input id="height" type="number" min="1500" max="3000" step="1" value="2100"></div>
+<div class="field full"><span class="field-note">Размеры заносятся как проектные значения для демонстрации. Они не подтверждают возможность установки или совместимость механизма.</span></div>
+</div>
+<div class="form-actions"><button class="btn primary" id="addDoor">Добавить в проект <span aria-hidden="true">＋</span></button><button class="btn" id="resetForm" type="button">Сбросить форму</button></div>
+<p class="form-message" id="formMessage" aria-live="polite"></p>
+</section>
+<section class="project-panel" aria-labelledby="project-title">
+<div class="panel-header"><h3 id="project-title">Ведомость проекта</h3><div class="project-meta"><span id="doorCount">0</span><span>/</span><span>30 позиции</span></div></div>
+<div class="project-name"><label for="projectNameMirror">PROJECT / NAME</label><input id="projectNameMirror" value="Residence / North Wing" readonly aria-label="Название проекта"></div>
+<div class="project-preview"><div class="mini-door-frame"><div class="mini-door" id="miniDoor" aria-hidden="true"></div></div><div class="preview-data"><p>LIVE CONFIGURATION PREVIEW</p><strong id="previewCollection">FORMA</strong><span id="previewDetails">Antique brass · ARC handle<br>900 × 2100 mm</span><span id="previewZone" style="color:var(--gold);margin-top:8px">Entrance / 01</span></div></div>
+<div class="table-wrap"><table><thead><tr><th>Зона / позиция</th><th>Серия</th><th>Отделка</th><th>Размер, мм</th><th aria-label="Действия"></th></tr></thead><tbody id="doorRows"></tbody></table><div class="empty-state" id="emptyState">Добавьте дверную позицию, чтобы сформировать ведомость. Можно собрать до 30 независимых конфигураций.</div></div>
+<div class="project-footer"><p>Экспорт содержит введённые значения и демонстрационные идентификаторы. Это не производственная спецификация.</p><div class="export-actions"><button class="btn small" id="exportCsv">Экспорт CSV ↓</button><button class="btn small" id="exportJson">Экспорт JSON ↓</button></div></div>
+</section>
+</div>
+<div class="disclaimer"><span aria-hidden="true">ⓘ</span><div><strong>Важное ограничение концепта</strong>Это демонстрационный продуктовый интерфейс. Реальные складские остатки, коммерческие цены, оформление заказа, платежи и проверка механической совместимости не подключены. Перед производством требуется подтверждение специалистом и поставщиком.</div></div>
+</section>
+<section class="wrap capabilities" id="capabilities">
+<div class="section-head"><div><p class="eyebrow">02 / PRODUCT THINKING</p><h2>Не только красивый каталог.</h2></div><p>Интерфейс строится вокруг следующего действия проектировщика: определить позицию, сравнить параметры и передать согласованную ведомость дальше.</p></div>
+<div class="cap-grid">
+<article class="cap-card"><span>01</span><h3>Зонная конфигурация</h3><p>Отдельные параметры для входной группы, кабинетов, санузлов и других зон в одном проекте.</p></article>
+<article class="cap-card"><span>02</span><h3>Структурированный экспорт</h3><p>JSON для дальнейшей цифровой обработки и CSV для быстрого просмотра в таблицах.</p></article>
+<article class="cap-card"><span>03</span><h3>Честная инженерная граница</h3><p>Проектные значения отделены от подтверждённых характеристик: интерфейс не подменяет техническую экспертизу.</p></article>
+</div>
+</section>
+</main>
+<footer class="wrap foot"><div>TEDES GLOBAL STUDIO · DEMONSTRATION CONCEPT</div><div class="foot-links"><a href="/development/tedes/">Кейс OSGARD Development ↗</a><a href="/development/">Заказать цифровой продукт ↗</a><a href="#studio">Вернуться к студии ↑</a></div></footer>
+<script>
+(function(){
+  const $ = (id) => document.getElementById(id);
+  let nextId = 4;
+  const doors = [
+    {id:"D-001",zone:"Entrance / 01",collection:"FORMA",finish:"Antique brass",handle:"ARC",lock:"Not specified",width:900,height:2100},
+    {id:"D-002",zone:"Private / 02",collection:"LINEA",finish:"Matte black",handle:"EDGE",lock:"Privacy",width:800,height:2100},
+    {id:"D-003",zone:"Suite / 03",collection:"MATERIA",finish:"Satin bronze",handle:"LINE",lock:"Passage",width:900,height:2200}
+  ];
+  const colorFor = (finish) => ({ "Antique brass":"#c5ac73","Matte black":"#30312b","Satin bronze":"#8e7860","Polished chrome":"#cbd0cb" }[finish] || "#c5ac73");
+  const escapeHtml = (value) => String(value).replace(/[&<>"']/g, (char) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[char]));
+  const safeNumber = (id,min,max) => { const val = Number($(id).value); return Number.isFinite(val) ? Math.min(max,Math.max(min,Math.round(val))) : min; };
+  function selectedConfig(){
+    return {id:"D-"+String(nextId).padStart(3,"0"),zone:$("zone").value.trim()||"Unassigned zone",collection:$("collection").value,finish:$("finish").value,handle:$("handle").value,lock:$("lock").value,width:safeNumber("width",400,1800),height:safeNumber("height",1500,3000)};
+  }
+  function updatePreview(){
+    const collection=$("collection").value,finish=$("finish").value,handle=$("handle").value,width=safeNumber("width",400,1800),height=safeNumber("height",1500,3000);
+    $("previewCollection").textContent=collection;
+    $("previewDetails").innerHTML=escapeHtml(finish)+" · "+escapeHtml(handle)+" handle<br>"+width+" × "+height+" mm";
+    $("previewZone").textContent=$("zone").value.trim()||"Unassigned zone";
+    $("projectNameMirror").value=$("projectName").value;
+    $("miniDoor").style.setProperty("--gold2",colorFor(finish));
+    $("miniDoor").style.borderColor=colorFor(finish);
+  }
+  function renderRows(){
+    $("doorCount").textContent=String(doors.length);
+    $("emptyState").hidden=doors.length>0;
+    $("doorRows").innerHTML=doors.map((door)=>"<tr><td><span class=\"zone-name\">"+escapeHtml(door.zone)+"</span><span class=\"zone-code\">"+door.id+" · "+escapeHtml(door.handle)+" / "+escapeHtml(door.lock)+"</span></td><td>"+escapeHtml(door.collection)+"</td><td><span class=\"finish-chip\" style=\"background:"+colorFor(door.finish)+"\"></span>"+escapeHtml(door.finish)+"</td><td>"+door.width+" × "+door.height+"</td><td><button class=\"remove-btn\" data-remove=\""+door.id+"\" aria-label=\"Удалить "+escapeHtml(door.zone)+"\">×</button></td></tr>").join("");
+  }
+  $("addDoor").addEventListener("click",()=>{
+    if(doors.length>=30){$("formMessage").textContent="Достигнут лимит демонстрационного проекта — 30 позиций.";return;}
+    const item=selectedConfig();
+    item.id="D-"+String(nextId++).padStart(3,"0");
+    doors.push(item);renderRows();$("formMessage").textContent="Позиция "+item.id+" добавлена в ведомость.";
+    $("zone").value="";$("zone").focus();updatePreview();
+  });
+  $("resetForm").addEventListener("click",()=>{$("zone").value="";$("collection").value="FORMA";$("finish").value="Antique brass";$("handle").value="ARC";$("lock").value="Not specified";$("width").value="900";$("height").value="2100";$("formMessage").textContent="Форма сброшена.";updatePreview();});
+  $("doorRows").addEventListener("click",(event)=>{const btn=event.target.closest("[data-remove]");if(!btn)return;const index=doors.findIndex((door)=>door.id===btn.dataset.remove);if(index>=0){doors.splice(index,1);renderRows();$("formMessage").textContent="Позиция удалена из демонстрационной ведомости."; }});
+  ["projectName","zone","collection","finish","handle","lock","width","height"].forEach((id)=>$(id).addEventListener("input",updatePreview));
+  ["collection","finish","handle","lock"].forEach((id)=>$(id).addEventListener("change",updatePreview));
+  $("exportJson").addEventListener("click",()=>{
+    const content={schema:"tedes-project-demo/v1",mode:"demonstration",project:{name:$("projectName").value.trim()||"Untitled project",positions:doors.length,exportedAt:new Date().toISOString()},notice:"Not a production specification. Availability, price and mechanical compatibility are not verified.",doors:doors};
+    download("tedes-project.json",JSON.stringify(content,null,2),"application/json;charset=utf-8");
+  });
+  $("exportCsv").addEventListener("click",()=>{
+    const columns=["id","zone","collection","finish","handle","lock","width_mm","height_mm"];
+    const rows=doors.map((door)=>[door.id,door.zone,door.collection,door.finish,door.handle,door.lock,door.width,door.height]);
+    const csv=[columns,...rows].map((row)=>row.map((value)=>'"'+String(value).replace(/"/g,'""')+'"').join(",")).join("\r\n");
+    download("tedes-project.csv","\ufeff"+csv,"text/csv;charset=utf-8");
+  });
+  function download(filename,content,type){const blob=new Blob([content],{type:type});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);}
+  $("projectName").addEventListener("input",updatePreview);
+  renderRows();updatePreview();
+})();
+</script>
+</body>
+</html>
