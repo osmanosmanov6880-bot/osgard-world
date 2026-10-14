@@ -32,8 +32,26 @@
     medium === 'share' &&
     campaign === 'challenge' &&
     (validDailyMode || validOrdinaryMode);
+  const afterimageChallenge = game === 'afterimage-run' &&
+    params.get('og_challenge') === 'afterimage-run' &&
+    Number.isSafeInteger(scoreValue) && scoreValue >= 0 && scoreValue <= 99999999 &&
+    validDailyMode;
   const play = document.querySelector('#play-link');
   if (play) {
+    if (afterimageChallenge) {
+      // Carry the exact seed and target through the social preview into the playable route.
+      // Keep referral attribution only when the complete OSGARD invite contract validated.
+      const target = new URL('/games/afterimage-run/', location.origin);
+      target.searchParams.set('seed', requestedDay);
+      target.searchParams.set('score', String(scoreValue));
+      if (valid) {
+        for (const key of ['og_ref', 'og_game', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_content']) {
+          const value = params.get(key);
+          if (value !== null) target.searchParams.set(key, value);
+        }
+      }
+      play.href = target.href;
+    } else {
     const target = new URL(game === 'aether-grid' ? '/games/aether-grid/' : '/games/', location.origin);
     const aetherDay = params.get('og_day') || '';
     const validAetherDay = /^\\d{4}-\\d{2}-\\d{2}$/.test(aetherDay) && (() => {
@@ -63,6 +81,7 @@
       }
     }
     play.href = target.href;
+    }
   }
   if (!valid) return;
   let consent = false;
