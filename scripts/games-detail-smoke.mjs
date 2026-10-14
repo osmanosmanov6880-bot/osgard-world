@@ -247,6 +247,70 @@ assert.ok(inviteRuntime.includes("new URL('/games/', location.origin)") &&
   'Canonical invitation landing must open the shared game player and preserve its referral code')
 assert.ok(inviteRuntime.includes('const validAetherDay = /^' + String.fromCharCode(92) + 'd{4}-' + String.fromCharCode(92) + 'd{2}-' + String.fromCharCode(92) + 'd{2}$/'),
   'AETHER GRID invite date must be validated as a calendar date before it is forwarded')
+
+// End-to-end regression: a shared AFTERIMAGE result must survive invite preview -> games hub -> iframe URL.
+assert.ok(afterimageGame.includes("u.searchParams.set('score',String(score))") &&
+  afterimageGame.includes("u.searchParams.set('seed',day)") &&
+  afterimageGame.includes("u.searchParams.set('og_day',day)"),
+  'AFTERIMAGE challenge links must encode the target score and daily seed explicitly')
+assert.ok(inviteRuntime.includes("requestedGame === 'afterimage-run'") &&
+  inviteRuntime.includes("params.get('og_challenge') === 'afterimage-run'") &&
+  inviteRuntime.includes('validAfterimageScore') &&
+  inviteRuntime.includes("target.searchParams.set('score', String(afterimageScore))") &&
+  inviteRuntime.includes("target.searchParams.set('seed', requestedDay)"),
+  'Canonical AFTERIMAGE invite landing must preserve only a validated score and UTC daily seed')
+assert.ok(hub.includes("const carryKeys=['challenge','score','ref','og_ref'") &&
+  hub.includes("gameId==='afterimage-run'&&(key==='score'||key==='challenge')") &&
+  hub.includes("gameId==='afterimage-run'&&(key==='seed'||key==='day'||key==='og_day')"),
+  'The Games deep-link bridge must validate and carry AFTERIMAGE challenge parameters into the game iframe')
+
+const sharedDay='2026-10-14', sharedScore='12345';
+const inviteUrl=new URL('https://osgard.world/games/invite/afterimage-run/');
+for(const [key,value] of Object.entries({
+  og_ref:'og_a1b2c3d4',og_game:'afterimage-run',utm_source:'osgard_play',utm_medium:'referral',
+  utm_campaign:'play_with_friends',utm_content:'afterimage-run',og_challenge:'afterimage-run',
+  challenge:sharedScore,score:sharedScore,day:sharedDay,seed:sharedDay,og_day:sharedDay,mode:'daily'
+})) inviteUrl.searchParams.set(key,value);
+const invitePlayLink={href:''};
+runInNewContext(inviteRuntime,{
+  URL,URLSearchParams,Date,location:inviteUrl,
+  document:{body:{dataset:{game:'afterimage-run'}},querySelector:selector=>selector==='#play-link'?invitePlayLink:null},
+  localStorage:{getItem:()=>null},sessionStorage:{getItem:()=>null,setItem:()=>{},removeItem:()=>{}}
+});
+const catalogChallenge=new URL(invitePlayLink.href);
+assert.equal(catalogChallenge.pathname,'/games/','AFTERIMAGE invite should use the existing unified Games player')
+assert.equal(catalogChallenge.searchParams.get('play'),'afterimage-run')
+assert.equal(catalogChallenge.searchParams.get('seed'),sharedDay,'Invite landing lost the daily seed')
+assert.equal(catalogChallenge.searchParams.get('score'),sharedScore,'Invite landing lost the target score')
+const bridgeMatch=hub.match(/<script id="games-deep-link-bridge">([\\s\\S]*?)<\\/script>/);
+assert.ok(bridgeMatch,'Games deep-link bridge script must exist for challenge propagation')
+const iframeLink={href:'https://osgard.world/games/afterimage-run/',clicked:false,click(){this.clicked=true}};
+runInNewContext(bridgeMatch[1],{
+  URL,URLSearchParams,Date,location:catalogChallenge,
+  document:{readyState:'complete',querySelector:()=>iframeLink},
+  window:{requestAnimationFrame:callback=>callback()},
+  localStorage:{getItem:()=>null}
+});
+const finalChallenge=new URL(iframeLink.href);
+assert.equal(finalChallenge.pathname,'/games/afterimage-run/')
+assert.equal(finalChallenge.searchParams.get('seed'),sharedDay,'Deep-link bridge lost the daily seed')
+assert.equal(finalChallenge.searchParams.get('score'),sharedScore,'Deep-link bridge lost the rival target score')
+assert.equal(finalChallenge.searchParams.get('og_ref'),'og_a1b2c3d4','Challenge handoff lost referral attribution')
+assert.ok(iframeLink.clicked,'Validated challenge should launch inside the existing game player')
+
+const invalidInviteUrl=new URL(inviteUrl.href);
+invalidInviteUrl.searchParams.set('score','100000000');
+invalidInviteUrl.searchParams.set('challenge','100000000');
+const invalidInviteLink={href:''};
+runInNewContext(inviteRuntime,{
+  URL,URLSearchParams,Date,location:invalidInviteUrl,
+  document:{body:{dataset:{game:'afterimage-run'}},querySelector:selector=>selector==='#play-link'?invalidInviteLink:null},
+  localStorage:{getItem:()=>null},sessionStorage:{getItem:()=>null,setItem:()=>{},removeItem:()=>{}}
+});
+const invalidTarget=new URL(invalidInviteLink.href);
+assert.equal(invalidTarget.searchParams.has('score'),false,'Out-of-range scores must not be forwarded to the challenge')
+assert.equal(invalidTarget.searchParams.has('seed'),false,'Invalid challenge must not preserve a ranked daily seed')
+
 assert.ok(entertainmentPage.includes('/entertainment/entertainment.js?v=20261014.4'),
   'Entertainment HTML must pin the changed launch runtime to a new cache version')
 execFileSync(process.execPath, ['--check', 'public/entertainment/entertainment.js'], { stdio: 'pipe' })
