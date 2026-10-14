@@ -1,0 +1,9 @@
+.osa5-game-mark{display:block;width:36px;height:36px;flex:0 0 auto;object-fit:contain}
+.osa5-legacy-brand{display:inline-flex;align-items:center;gap:10px}
+.osa5-legacy-brand img{display:block;width:29px;height:29px;flex:0 0 auto}
+.ecosystem-backlink{display:inline-flex;align-items:center;gap:7px;margin-right:auto;color:var(--muted);font:10px ui-monospace,SFMono-Regular,monospace;letter-spacing:.1em;text-decoration:none;white-space:nowrap}
+.ecosystem-backlink img{display:block;width:25px;height:25px;flex:0 0 auto}
+.ecosystem-backlink:hover{color:var(--acid)}
+.ecosystem-backlink:focus-visible{outline:2px solid var(--acid);outline-offset:4px}
+@media(max-width:1100px){.ecosystem-backlink span{display:none}.ecosystem-backlink{margin-right:0}}
+@media(max-width:820px){.ecosystem-backlink{width:31px;height:31px;justify-content:center}.ecosystem-backlink img{width:27px;height:27px}}
