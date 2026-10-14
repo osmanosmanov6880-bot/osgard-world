@@ -105,8 +105,10 @@ for (const [device, userAgent] of Object.entries(agents)) for (const route of ro
           ? text.includes('<title>AFTERIMAGE//RUN — OSGARD PLAY</title>') &&
             text.includes('id="runnerCanvas"') && text.includes('id="run-start"') &&
             text.includes('id="daily-seed"') && text.includes('id="share-telegram"') &&
-            text.includes('id="jumpButton"') && text.includes('id="focusMode"') &&
-            text.includes('id="claim-share-reward"') && text.includes('id="export-diagnostics"') &&
+            text.includes('id="jump-now"') && text.includes('id="focus-mode"') &&
+            text.includes('id="sound-toggle"') && text.includes('id="haptic-toggle"') &&
+            text.includes('id="contrast-toggle"') && text.includes('id="claim-share-reward"') &&
+            text.includes('id="run-report"') && text.includes('id="fullscreen-btn"') &&
             text.includes('function resizeCanvas()') && text.includes('AUTO-PAUSED / TAB HIDDEN') &&
             text.includes('osgard:game-lifecycle')
         : route === '/games/cascade-lab/'
