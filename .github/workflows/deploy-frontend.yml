@@ -185,7 +185,7 @@ jobs:
             echo "::error::SSH host-key scan returned no host keys for OSGARD_DEPLOY_HOST."
             exit 1
           fi
-      - name: Attach frontend to the game API Docker network
+      - name: Verify host-managed API from frontend container
         env:
           HOST: ${{ secrets.OSGARD_DEPLOY_HOST }}
           USER: ${{ secrets.OSGARD_DEPLOY_USER }}
@@ -193,23 +193,10 @@ jobs:
           set -euo pipefail
           ssh -i ~/.ssh/osgard_deploy "$USER@$HOST" 'bash -s' <<'REMOTE'
           set -euo pipefail
-          docker inspect osgard-world >/dev/null
-          docker inspect osgard-game-api >/dev/null
-          api_networks="$(docker inspect --format '{{range $name, $conf := .NetworkSettings.Networks}}{{println $name}}{{end}}' osgard-game-api)"
-          test -n "$api_networks" || { echo "OSGARD API container is not attached to a Docker network" >&2; exit 1; }
-          frontend_networks="$(docker inspect --format '{{json .NetworkSettings.Networks}}' osgard-world)"
-          while IFS= read -r network; do
-            [ -n "$network" ] || continue
-            if printf '%s' "$frontend_networks" | grep -Fq "\"$network\""; then
-              echo "Frontend already shares API network: $network"
-            else
-              docker network connect "$network" osgard-world
-              echo "Connected frontend to API network: $network"
-            fi
-          done <<NETWORKS
-          $api_networks
-          NETWORKS
-          docker exec osgard-world sh -lc 'wget -q -O - -T 3 http://osgard-game-api:4317/health'
+          host_gateway="$(docker inspect --format '{{range $name, $conf := .NetworkSettings.Networks}}{{println $conf.Gateway}}{{end}}' osgard-world | awk 'NF { print $1; exit }')"
+          test -n "$host_gateway" || { echo "Unable to determine the host gateway for osgard-world" >&2; exit 1; }
+          echo "Testing host API through frontend gateway $host_gateway"
+          docker exec osgard-world sh -lc "wget -q -O - -T 3 http://$host_gateway:4317/health"
           REMOTE
       - name: Stage archive and verify checksum
         env:

@@ -5,6 +5,12 @@ container_name="${OSGARD_CONTAINER:-osgard-world}"
 archive="${OSGARD_ARCHIVE:-/tmp/osgard-gh-release.tgz}"
 state_file="/tmp/osgard-frontend-activation.state"
 log_file="/tmp/osgard-frontend-activation.log"
+api_gateway="$(docker inspect --format '{{range $name, $conf := .NetworkSettings.Networks}}{{println $conf.Gateway}}{{end}}' "$container_name" | awk 'NF { print $1; exit }')"
+if [[ -z "$api_gateway" ]]; then
+  echo "Unable to determine the Docker gateway for $container_name" >&2
+  exit 1
+fi
+echo "Detected host API gateway: $api_gateway"
 rm -f "$state_file" "$log_file"
 
 rollback() {
@@ -39,6 +45,11 @@ rollback() {
     test -s /tmp/osgard-gh-next/html/skillcred/styles.css.gz
     test -s /tmp/osgard-gh-next/html/skillcred/app.js.gz
     test -f /tmp/osgard-gh-next/nginx.conf
+    sed -i 's/__OSGARD_HOST_GATEWAY__/'"$api_gateway"'/g' /tmp/osgard-gh-next/nginx.conf
+    if grep -q '__OSGARD_HOST_GATEWAY__' /tmp/osgard-gh-next/nginx.conf; then
+      echo 'Unresolved OSGARD host-gateway placeholder in Nginx configuration' >&2
+      exit 1
+    fi
     cp /etc/nginx/conf.d/default.conf /tmp/osgard-nginx-previous.conf
     mv /usr/share/nginx/html /tmp/osgard-gh-previous
     mv /tmp/osgard-gh-next/html /usr/share/nginx/html
