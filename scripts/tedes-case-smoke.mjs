@@ -30,6 +30,8 @@ assert.ok(devSource.includes("import './tedes-case.css'") && devSource.includes(
 assert.ok(cardCss.includes('.tedes-featured-case') && cardCss.includes('@media(max-width:760px)'), 'Responsive case-card styling is missing')
 assert.ok(demo.includes('LUXURY ART DIRECTION') && demo.includes('Cormorant+Garamond'), 'TEDES demo luxury art direction or display typography is missing')
 assert.ok(casePage.includes('LUXURY ART DIRECTION') && casePage.includes('Cormorant+Garamond'), 'TEDES case luxury art direction or display typography is missing')
+assert.ok(!demo.includes(String.fromCharCode(92) + 'n</style>') && !casePage.includes(String.fromCharCode(92) + 'n</style>'), 'Luxury CSS must not be preceded by a literal escaped newline')
+assert.ok(demo.includes('<meta charset="utf-8">' + String.fromCharCode(10) + '<link rel="preconnect"') && casePage.includes('<meta charset="utf-8">' + String.fromCharCode(10) + '<link rel="preconnect"'), 'Web-font preconnects must be valid head markup')
 assert.ok(cardCss.includes('LUXURY CARD') && cardCss.includes('Cormorant Garamond'), 'Development featured case luxury styling is missing')
 assert.ok(sitemap.includes('https://osgard.world/development/tedes/') && sitemap.includes('https://osgard.world/tedes/'), 'TEDES routes are missing from sitemap')
 assert.ok(routeMatrix.includes("'/tedes/'") && routeMatrix.includes("'/development/tedes/'"), 'Production route matrix does not include TEDES routes')
