@@ -21,6 +21,13 @@ On closing an embedded game session, show one optional luxury cross-promotion pa
 
 The panel is not a third-party advertising network, not a paid impression, and must be identified as owned-project cross-promotion. Events are sent only when the platform's existing consent flag is affirmative and a valid authenticated token is present. No personal data is added to UTM parameters.
 
+## Release v1.6.1 — challenge handoff integrity
+
+- A player only beats a friend by scoring **strictly more** than the target; a tie is not a win in the end screen, career achievement counter, or exported run report.
+- The generated invite preview validates the AFTERIMAGE challenge marker, bounded integer score, valid UTC date, and daily mode before changing the CTA to open the game directly.
+- The CTA forwards the exact `seed` and `score` values to the game. Referral code and UTM fields are forwarded only when the full OSGARD referral contract passes validation; invalid attribution does not prevent a valid daily challenge from opening.
+- QA asserts all three score comparisons and the invite handoff contract.
+
 ## Monetization ladder
 1. **Now — owned-service referrals and qualified development inquiries.** Track actual outbound clicks, brief form drafts and submitted/qualified leads separately. A click is not revenue; a mail draft is not a submitted lead. Follow attribution in a CRM and measure closed contracts/contribution margin.
 2. **After a user cohort is observed — clearly labeled partner placements.** Sell a defined campaign, date window, context, geography, frequency cap and report. Separate advertiser creatives from owned-project cards. Do not log fake impressions/clicks.
