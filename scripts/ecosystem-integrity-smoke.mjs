@@ -38,7 +38,10 @@ for (const host of projectHosts) {
 }
 assert.ok(development.includes('href="/development/merakki/"') && development.includes('MERAKKI GLOBAL'), 'Development portfolio must link to the MERAKKI GLOBAL case')
 assert.ok(merakkiPage.includes('<title>MERAKKI GLOBAL — кейс OSGARD Development</title>'), 'MERAKKI case needs its own metadata title')
-assert.ok(merakkiPage.includes('href="https://merakki-global-preview.vercel.app/"') && merakkiPage.includes('Live checkout and payments are disabled'), 'MERAKKI case must link to the public preview and state checkout boundaries')
+assert.ok(merakkiPage.includes('utm_campaign=merakki_global_case') && merakkiPage.includes('Live checkout and payments are disabled'), 'MERAKKI case must tag public-preview attribution and state checkout boundaries')
+assert.ok(merakkiPage.includes('id="contact-cta"') && merakkiPage.includes('https://wa.me/79640027222'), 'MERAKKI case must provide a direct WhatsApp project CTA')
+assert.ok(merakkiPage.includes('id="email-cta"') && merakkiPage.includes('mailto:osman.osmanov0099@gmail.com'), 'MERAKKI case must provide an email fallback')
+assert.ok(merakkiPage.includes('encodeURIComponent(v.contactMessage)') && merakkiPage.includes('translations.en') && merakkiPage.includes('translations.ru'), 'MERAKKI contact actions must follow the selected language')
 assert.ok(merakkiPage.includes('data-case-status="demo-only"'), 'MERAKKI case must declare demo-only status')
 assert.ok(sitemap.includes('https://osgard.world/development/merakki/'), 'Sitemap must include the MERAKKI case')
 
@@ -73,7 +76,7 @@ assert.ok(!apiProxy.includes('proxy_set_header Authorization "Bearer'), 'API cre
 
 console.log(JSON.stringify({
   status: 'PASS',
-  checks: 50,
+  checks: 53,
   projects: projectHosts.length,
   claimsGuarded: unsupportedClaims.length,
   contacts: 3,

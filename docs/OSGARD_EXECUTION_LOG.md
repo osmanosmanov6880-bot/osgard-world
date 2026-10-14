@@ -3449,3 +3449,19 @@ Continue non-financial brief implementation; billing can be handled only after a
 - The linked storefront is a demo: real order submission, checkout and payments remain disabled.
 - Dashboard and partial-refund logic are represented as source scope, not as an active public admin interface.
 - Remaining release gates are deployment workflow success and public route verification.
+
+
+## 2026-10-15 / Pass 181
+
+### Scope completed
+
+- Added a dedicated project-enquiry section to the MERAKKI case, separate from the demo action.
+- Added bilingual WhatsApp and email CTA links. Their prefilled message / subject / body adapt to the selected RU or EN locale.
+- Added campaign parameters to the header, hero and final demo links so visits from the OSGARD Development case can be attributed downstream.
+- Added responsive styling and updated repository integrity checks plus the public route matrix to require attribution markers and direct contact options.
+
+### Verification and delivery boundary
+
+- Modified `src/**` assets trigger the existing master-branch frontend validation and SSH publication workflow.
+- The case remains a showcase page and the linked restaurant storefront remains a demo. Live checkout/payment capability is not enabled by this change.
+- Release gate: check validation and deployment workflow conclusions and public desktop/mobile route responses.
