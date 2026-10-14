@@ -1,0 +1,62 @@
+name: Diagnose OSGARD VPS API routing
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - ".github/workflows/diagnose-osgard-vps.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Configure SSH
+        env:
+          DEPLOY_HOST: ${{ secrets.OSGARD_DEPLOY_HOST }}
+          DEPLOY_KEY: ${{ secrets.OSGARD_DEPLOY_KEY }}
+          DEPLOY_USER: ${{ secrets.OSGARD_DEPLOY_USER }}
+        run: |
+          set -euo pipefail
+          test -n "$DEPLOY_HOST"
+          test -n "$DEPLOY_USER"
+          test -n "$DEPLOY_KEY"
+          install -m 700 -d ~/.ssh
+          printf '%s\\n' "$DEPLOY_KEY" > ~/.ssh/osgard_deploy
+          chmod 600 ~/.ssh/osgard_deploy
+          ssh-keyscan -T 10 -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Inspect VPS listeners and Nginx routing without changing production
+        env:
+          HOST: ${{ secrets.OSGARD_DEPLOY_HOST }}
+          USER: ${{ secrets.OSGARD_DEPLOY_USER }}
+        run: |
+          set -euo pipefail
+          ssh -i ~/.ssh/osgard_deploy "$USER@$HOST" 'bash -s' <<'REMOTE'
+          set +e
+          echo '--- SSH identity ---'
+          id
+          echo '--- Relevant containers ---'
+          docker ps -a --format '{{.Names}} | {{.Status}} | {{.Ports}}' | grep -Ei 'osgard|api|nginx|remix|swarm' || true
+          echo '--- Frontend container network ---'
+          docker inspect osgard-world --format 'networks={{json .NetworkSettings.Networks}}' 2>&1
+          echo '--- Host TCP listener on 4317 ---'
+          if command -v ss >/dev/null 2>&1; then ss -ltnp '( sport = :4317 )' 2>&1; else netstat -ltnp 2>&1 | grep ':4317' || true; fi
+          echo '--- Host API health ---'
+          curl --max-time 5 -sS -i http://127.0.0.1:4317/health 2>&1 | head -20
+          echo '--- Container routes and special host alias ---'
+          docker exec osgard-world sh -lc 'ip route 2>&1; getent hosts host.docker.internal 2>&1; getent hosts osgard-game-api 2>&1' 2>&1
+          echo '--- Sudo capability ---'
+          if sudo -n true 2>/dev/null; then echo 'sudo_nopasswd=yes'; else echo 'sudo_nopasswd=no'; fi
+          echo '--- Host Nginx vhost source paths ---'
+          if sudo -n true 2>/dev/null; then
+            sudo -n nginx -T 2>&1 | awk '/^# configuration file / {file=$4; sub(/:$/, "", file)} /server_name .*osgard\\.world/ {print file ": " $0}'
+            sudo -n nginx -t 2>&1
+          else
+            echo 'Host Nginx config cannot be inspected without non-interactive sudo.'
+          fi
+          REMOTE
