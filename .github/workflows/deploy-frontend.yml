@@ -13,6 +13,8 @@ on:
       - "public/games/**"
       - "public/privacy/**"
       - "public/terms/**"
+      - "public/tedes/**"
+      - "public/development/tedes/**"
       - "godot/null-shift/**"
       - "scripts/null-shift-godot-smoke.mjs"
       - "public/games/null-shift-godot/**"
