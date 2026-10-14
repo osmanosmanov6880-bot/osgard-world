@@ -261,13 +261,17 @@ if(!validGameIds.has(gameId))return;
 const link=document.querySelector('a[data-play="'+gameId+'"]');
 if(!link)return;
 const target=new URL(link.href,location.origin);
-const carryKeys=['challenge','ref','og_ref','og_game','utm_source','utm_medium','utm_campaign','utm_content','mode','day','seed','og_day'];
+const carryKeys=['challenge','score','ref','og_ref','og_game','utm_source','utm_medium','utm_campaign','utm_content','mode','day','seed','og_day','og_challenge'];
 for(const key of carryKeys){
  const value=incoming.searchParams.get(key);
  if(value===null||value.length>128)continue;
  if(key==='ref'&&!/^[a-f0-9]{12}$/.test(value))continue;
  if(key==='og_ref'&&!/^og_[a-f0-9]{8}$/.test(value))continue;
  if(key==='og_game'&&value!==gameId)continue;
+ if(gameId==='afterimage-run'&&(key==='score'||key==='challenge')&&!/^(?:0|[1-9]\\d{0,7})$/.test(value))continue;
+ if(gameId==='afterimage-run'&&(key==='seed'||key==='day'||key==='og_day')){const date=new Date(value+'T00:00:00.000Z');if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(value)||!Number.isFinite(date.getTime())||date.toISOString().slice(0,10)!==value)continue;}
+ if(gameId==='afterimage-run'&&key==='mode'&&value!=='daily')continue;
+ if(gameId==='afterimage-run'&&key==='og_challenge'&&value!=='afterimage-run')continue;
  target.searchParams.set(key,value);
 }
 const code=incoming.searchParams.get('ref')||'';
