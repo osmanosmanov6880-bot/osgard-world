@@ -254,7 +254,10 @@ function challenge(){
  }
  u.searchParams.set('og_challenge','afterimage-run');
  u.searchParams.set('challenge',String(score));
+ u.searchParams.set('score',String(score));
  u.searchParams.set('day',day);
+ u.searchParams.set('seed',day);
+ u.searchParams.set('og_day',day);
  u.searchParams.set('mode','daily');
  track('challenge_created',{score:score,targetScore:targetScore,challengeSeed:day,sharePreview:'rich-invite'});
  return u.href;
