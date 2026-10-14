@@ -40,6 +40,15 @@ assert.ok(routeEntries.every(x=>x.url.startsWith('/games/')),'Every launch entry
 const inviteLandingScript=readFileSync(resolve(root,'invite/invite-landing.js'),'utf8')
 assert.ok(inviteLandingScript.includes("localStorage.getItem('osgard.games.analytics-consent.v1') === 'yes'") && inviteLandingScript.includes("name: 'referral_link_opened'") && inviteLandingScript.includes("source: 'referral-link:' + code"),'Invite preview must preserve consent-gated referral attribution')
 assert.ok(inviteLandingScript.includes("const afterimageChallenge = game === 'afterimage-run'") && inviteLandingScript.includes("target.searchParams.set('seed', requestedDay)") && inviteLandingScript.includes("target.searchParams.set('score', String(scoreValue))"),'AFTERIMAGE invite CTA must preserve the validated daily seed and target score')
+const challengeLink={href:''}
+const validChallengeUrl='https://osgard.world/games/invite/afterimage-run/?og_ref=og_a1b2c3d4&og_game=afterimage-run&utm_source=osgard_play&utm_medium=referral&utm_campaign=play_with_friends&utm_content=afterimage-run&og_challenge=afterimage-run&challenge=5000&day=2026-10-14&mode=daily'
+runInNewContext(inviteLandingScript,{document:{body:{dataset:{game:'afterimage-run'}},querySelector:()=>challengeLink},location:{origin:'https://osgard.world',search:new URL(validChallengeUrl).search,pathname:'/games/invite/afterimage-run/'},URL,URLSearchParams,Date,Number,Math,localStorage:{getItem:()=>null}})
+const forwardedChallenge=new URL(challengeLink.href)
+assert.equal(forwardedChallenge.pathname,'/games/afterimage-run/','Accepted AFTERIMAGE invite must open the game, not the generic catalogue')
+assert.equal(forwardedChallenge.searchParams.get('seed'),'2026-10-14','Accepted AFTERIMAGE invite must preserve the daily seed')
+assert.equal(forwardedChallenge.searchParams.get('score'),'5000','Accepted AFTERIMAGE invite must preserve the target score')
+assert.equal(forwardedChallenge.searchParams.get('og_ref'),'og_a1b2c3d4','Accepted AFTERIMAGE invite must preserve validated referral attribution')
+
 const productionMatrix = readFileSync(resolve('scripts/production-route-matrix.mjs'),'utf8')
 assert.ok(productionMatrix.includes("path === '/games/invite/invite-landing.js'") && productionMatrix.includes("target.searchParams.set('utm_campaign', campaign)"), 'Production route matrix must validate the invitation script with its own content contract, not unrelated SkillCred markers')
 for(const game of routeEntries){
@@ -171,7 +180,7 @@ assert.ok(afterimageGame.includes('jumpBuffer')&&afterimageGame.includes('device
 assert.ok(!/<script[^>]+src=/i.test(afterimageGame)&&!/<link[^>]+href=["']https?:/i.test(afterimageGame),'AFTERIMAGE//RUN must remain self-contained')
 assert.ok(afterimageGame.includes("extra||{}),location.origin)")&&!afterimageGame.includes("extra||{}),'*')"),'AFTERIMAGE lifecycle messages must stay same-origin')
 assert.ok(afterimageGame.includes('incomingSeed=params.get(\'seed\')')&&afterimageGame.includes('Number.isSafeInteger(rawTarget)')&&afterimageGame.includes('rawTarget<=99999999')&&afterimageGame.includes('if(r[today])'),'AFTERIMAGE challenge/reward safety checks missing')
-assert.equal((afterimageGame.match(/game\\.score>targetScore/g)||[]).length,3,'Challenge win must require a strictly higher score across UI, career stats and result report')
+assert.equal((afterimageGame.match(/game\.score>targetScore/g)||[]).length,3,'Challenge win must require a strictly higher score across UI, career stats and result report')
 assert.ok(!afterimageGame.includes('game.score>=targetScore'),'Equal scores must not count as a challenge win')
 assert.ok(afterimageGame.includes("opened.opener=null")&&afterimageGame.includes("prepareShareReward('share-intent-'+kind)"),'Social share must detach opener and require a separate reward confirmation')
 assert.ok(afterimageGame.includes('id="claim-share-reward"')&&afterimageGame.includes("rewardShare('player-confirmed:'+method)"),'AFTERIMAGE reward must require a separate player confirmation')
