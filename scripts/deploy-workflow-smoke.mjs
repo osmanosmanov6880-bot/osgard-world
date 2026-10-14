@@ -3,6 +3,8 @@ import { readFileSync } from 'node:fs'
 
 const workflow = readFileSync('.github/workflows/deploy-frontend.yml', 'utf8')
 const packageJson = JSON.parse(readFileSync('package.json', 'utf8'))
+const activation = readFileSync('scripts/activate-frontend-remote.sh', 'utf8')
+const nginx = readFileSync('nginx.conf', 'utf8')
 
 for (const secret of ['OSGARD_DEPLOY_HOST', 'OSGARD_DEPLOY_USER', 'OSGARD_DEPLOY_KEY']) {
   assert.ok(workflow.includes(`secrets.${secret}`), `Deployment workflow must use ${secret}`)
@@ -15,6 +17,9 @@ assert.ok(workflow.includes('Could not read the SSH host key'), 'SSH host-key fa
 assert.ok(workflow.includes("printf '%s\\n' \"$DEPLOY_KEY\" > ~/.ssh/osgard_deploy"), 'SSH key must be written with a trailing newline')
 assert.ok(workflow.includes('npm run qa:deploy-workflow'), 'Deploy workflow must run its own static contract test before deployment')
 assert.ok(packageJson.scripts?.['qa:deploy-workflow'] === 'node scripts/deploy-workflow-smoke.mjs', 'Package script must expose the deploy workflow contract test')
+assert.ok(workflow.includes('Attach frontend to the game API Docker network') && workflow.includes('docker network connect "$network" osgard-world') && workflow.includes('http://osgard-game-api:4317/health'), 'Deployment must ensure the frontend can resolve and reach the API container')
+assert.ok(activation.includes("<title>OSA Intelligence") && activation.includes('OSA INTELLIGENCE / BEYOND THE MODEL'), 'Activation must validate the actual OSA HTML and JavaScript bundle from the public domain')
+assert.ok(nginx.includes('location = /index.html') && nginx.includes('no-store, no-cache, must-revalidate, proxy-revalidate'), 'HTML shell must not be cached separately from versioned assets')
 assert.ok(!workflow.includes('echo "$DEPLOY_KEY"'), 'Workflow must not print the private key')
 
 console.log('PASS deployment workflow: required secrets, safe key handling, SSH timeout and actionable diagnostics')
