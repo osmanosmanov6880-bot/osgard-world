@@ -13,6 +13,8 @@ on:
       - "public/games/**"
       - "public/privacy/**"
       - "public/terms/**"
+      - "public/tedes/**"
+      - "public/development/tedes/**"
       - "godot/null-shift/**"
       - "scripts/null-shift-godot-smoke.mjs"
       - "public/games/null-shift-godot/**"
@@ -28,6 +30,7 @@ on:
       - "scripts/production-route-matrix.mjs"
       - "scripts/activate-frontend-remote.sh"
       - "scripts/deploy-workflow-smoke.mjs"
+      - "scripts/tedes-case-smoke.mjs"
       - "scripts/skillcred-page-smoke.mjs"
       - "scripts/time-prototype-smoke.mjs"
       - "scripts/null-shift-premium-smoke.mjs"
@@ -54,6 +57,8 @@ jobs:
       - name: Validate deployment workflow safety checks
         run: npm run qa:deploy-workflow
       - run: npm run check
+      - name: Validate TEDES demo and portfolio page
+        run: node scripts/tedes-case-smoke.mjs
       - run: npm run qa:null-shift
       - name: Smoke-test the OSGARD Games hub
         run: npm run qa:games-portal
