@@ -282,7 +282,7 @@ assert.equal(catalogChallenge.pathname,'/games/','AFTERIMAGE invite should use t
 assert.equal(catalogChallenge.searchParams.get('play'),'afterimage-run')
 assert.equal(catalogChallenge.searchParams.get('seed'),sharedDay,'Invite landing lost the daily seed')
 assert.equal(catalogChallenge.searchParams.get('score'),sharedScore,'Invite landing lost the target score')
-const bridgeMatch=hub.match(/<script id="games-deep-link-bridge">([\\s\\S]*?)<\\/script>/);
+const bridgeMatch=hub.match(/<script id="games-deep-link-bridge">([\s\S]*?)<\/script>/);
 assert.ok(bridgeMatch,'Games deep-link bridge script must exist for challenge propagation')
 const iframeLink={href:'https://osgard.world/games/afterimage-run/',clicked:false,click(){this.clicked=true}};
 runInNewContext(bridgeMatch[1],{
