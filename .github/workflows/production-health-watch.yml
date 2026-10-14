@@ -1,0 +1,37 @@
+name: OSGARD production health watch
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+  push:
+    branches: [master]
+    paths:
+      - '.github/workflows/production-health-watch.yml'
+      - 'scripts/production-health-watch.mjs'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: osgard-production-health-watch
+  cancel-in-progress: true
+
+jobs:
+  production-health:
+    name: Verify live production
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out health-check script
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Probe public site, live bundle, and API gateways
+        env:
+          OSGARD_BASE_URL: https://osgard.world
+        run: node scripts/production-health-watch.mjs
