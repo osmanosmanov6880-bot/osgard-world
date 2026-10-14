@@ -5,6 +5,7 @@ const read = path => readFileSync(path, 'utf8')
 const app = read('src/App.tsx')
 const sections = read('src/Sections.tsx')
 const development = read('src/Development.tsx')
+const merakkiPage = read('public/development/merakki/index.html')
 const manifest = read('src/core/manifest.ts')
 const games = read('public/games/index.html')
 const lifecycle = read('public/games/player-lifecycle.js')
@@ -12,7 +13,7 @@ const sitemap = read('public/sitemap.xml')
 const nginx = read('nginx.conf')
 const activation = read('scripts/activate-frontend-remote.sh')
 
-const promotionSources = { app, sections, development }
+const promotionSources = { app, sections, development, merakkiPage }
 const unsupportedClaims = [
   '99.9%', '7 min', '7 мин', '360°', '360пїЅ', '+2 h', '+2 часа в день',
   '40% less chaos', 'Меньше хаоса на 40%', '2 min', '2 мин', '0.0%',
@@ -35,6 +36,11 @@ for (const host of projectHosts) {
   assert.ok(games.includes('utm_source=osgard_games'), 'Games hub lacks campaign attribution')
   assert.ok(development.includes(host), 'Development portfolio is missing ' + host)
 }
+assert.ok(development.includes('href="/development/merakki/"') && development.includes('MERAKKI GLOBAL'), 'Development portfolio must link to the MERAKKI GLOBAL case')
+assert.ok(merakkiPage.includes('<title>MERAKKI GLOBAL — кейс OSGARD Development</title>'), 'MERAKKI case needs its own metadata title')
+assert.ok(merakkiPage.includes('href="https://merakki-global-preview.vercel.app/"') && merakkiPage.includes('Live checkout and payments are disabled'), 'MERAKKI case must link to the public preview and state checkout boundaries')
+assert.ok(merakkiPage.includes('data-case-status="demo-only"'), 'MERAKKI case must declare demo-only status')
+assert.ok(sitemap.includes('https://osgard.world/development/merakki/'), 'Sitemap must include the MERAKKI case')
 
 for (const [path, source] of [['src/App.tsx', app], ['src/Development.tsx', development], ['public/games/index.html', games]]) {
   assert.ok(source.includes('osman.osmanov0099@gmail.com'), path + ' is missing contact email')
@@ -67,7 +73,7 @@ assert.ok(!apiProxy.includes('proxy_set_header Authorization "Bearer'), 'API cre
 
 console.log(JSON.stringify({
   status: 'PASS',
-  checks: 45,
+  checks: 50,
   projects: projectHosts.length,
   claimsGuarded: unsupportedClaims.length,
   contacts: 3,
