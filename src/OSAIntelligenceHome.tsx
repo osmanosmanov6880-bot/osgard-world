@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ArrowRight, ArrowUpRight, BookOpen, Globe2, Layers3, ShieldCheck, Sparkles } from 'lucide-react'
+import { ArrowRight, ArrowUpRight, BookOpen, Globe2, Layers3, ShieldCheck } from 'lucide-react'
 import { OSAMark } from './OSAMark'
 import './osaIntelligenceHome.css'
 
