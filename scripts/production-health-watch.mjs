@@ -44,7 +44,7 @@ await check('OSA homepage HTML and cache policy', async () => {
   homeHtml = body
   expect(response.status === 200, `expected HTTP 200, got ${response.status}`)
   expect((response.headers.get('content-type') || '').includes('text/html'), 'response is not HTML')
-  expect(body.includes('<title>OSA Intelligence'), 'OSA Intelligence title is missing')
+  const title = body.match(/<title[^>]*>(.*?)<\\/title>/i)?.[1]?.trim() || 'no <title> tag'\n  expect(title.toLowerCase().includes('osa intelligence'), `expected OSA Intelligence title, got "${title}" from ${response.url}; prefix=${body.slice(0, 220).replace(/\\s+/g, ' ')}`)
   expect(/<script[^>]+src="\/assets\/index-[A-Za-z0-9_-]+\.js"/i.test(body), 'hashed application bundle is missing')
   const cache = (response.headers.get('cache-control') || '').toLowerCase()
   expect(cache.includes('no-store') && cache.includes('no-cache'), `homepage cache policy is unsafe: ${cache || 'missing'}`)
@@ -57,7 +57,7 @@ await check('Live OSA JavaScript bundle', async () => {
   expect(path && path.startsWith('/assets/'), 'could not resolve the same-origin homepage bundle')
   const { response, body } = await get(path)
   expect(response.status === 200, `bundle returned HTTP ${response.status}`)
-  expect(body.includes('OSA INTELLIGENCE / BEYOND THE MODEL'), 'expected OSA bundle marker is missing')
+  expect(body.includes('OSA INTELLIGENCE / BEYOND THE MODEL'), `expected OSA bundle marker is missing in ${path}; HTTP ${response.status}; bytes=${new TextEncoder().encode(body).byteLength}; prefix=${body.slice(0, 220).replace(/\\s+/g, ' ')}`)
   return { statusCode: response.status, bundle: path, bytes: new TextEncoder().encode(body).byteLength }
 })
 
