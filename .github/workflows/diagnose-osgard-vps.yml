@@ -26,7 +26,7 @@ jobs:
           test -n "$DEPLOY_USER"
           test -n "$DEPLOY_KEY"
           install -m 700 -d ~/.ssh
-          printf '%s\n' "$DEPLOY_KEY" > ~/.ssh/osgard_deploy
+          printf '%s\\n' "$DEPLOY_KEY" > ~/.ssh/osgard_deploy
           chmod 600 ~/.ssh/osgard_deploy
           ssh-keyscan -T 10 -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts 2>/dev/null
 
@@ -59,4 +59,12 @@ jobs:
           else
             echo 'Host Nginx config cannot be inspected without non-interactive sudo.'
           fi
+          echo '--- Existing TEDES route probe (read-only) ---'
+          for route in / /tedes/ /entertainment /games/; do
+            code="$(curl -sS -o /tmp/osgard-probe-body -w '%{http_code}' --max-time 5 "http://127.0.0.1:4189$route" 2>/dev/null)"
+            bytes="$(wc -c < /tmp/osgard-probe-body 2>/dev/null)"
+            printf 'route=%s status=%s bytes=%s\\n' "$route" "${code:-connection_failed}" "${bytes:-0}"
+          done
+          echo '--- Static root candidates (read-only) ---'
+          docker exec osgard-world sh -lc 'for root in /usr/share/nginx/html /var/www/html /app/dist /opt/osgard-world/dist; do if [ -d "$root" ]; then printf "directory=%s\\n" "$root"; [ -f "$root/index.html" ] && echo root_index=present; [ -f "$root/tedes/index.html" ] && echo tedes_index=present; fi; done' 2>&1
           REMOTE
