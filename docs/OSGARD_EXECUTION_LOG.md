@@ -3428,3 +3428,24 @@ Continue non-financial brief implementation; billing can be handled only after a
 ### Publication boundary
 
 - This changes verifier resilience only; it does not weaken catalog correctness or alter external production requirements.
+
+
+## 2026-10-15 / Pass 180
+
+### Scope completed
+
+- Added MERAKKI GLOBAL as a second featured case in OSGARD Development, preserving the existing TEDES card and its latest styling.
+- Added a bilingual page at `/development/merakki/` with a direct link to the public storefront demo and an explicit demo-only / checkout-disabled boundary.
+- Added the route to sitemap and production route matrix; expanded the ecosystem smoke test to validate the card, metadata, direct demo link and safety boundary.
+- Added responsive editorial styling specific to MERAKKI.
+
+### Verification and deployment
+
+- Changed `src/**` paths trigger the current master-branch frontend validation and SSH deployment workflow.
+- The Actions conclusions and live route response must be inspected after push. A source commit by itself does not prove publication.
+
+### Delivery boundary
+
+- The linked storefront is a demo: real order submission, checkout and payments remain disabled.
+- Dashboard and partial-refund logic are represented as source scope, not as an active public admin interface.
+- Remaining release gates are deployment workflow success and public route verification.
