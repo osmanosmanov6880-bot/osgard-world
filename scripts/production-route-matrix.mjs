@@ -98,7 +98,7 @@ for (const [device, userAgent] of Object.entries(agents)) for (const route of ro
             text.includes("notify('ready')") && text.includes("notify('completed'") &&
             text.includes("notify('share_created'")
         : route === '/games/civic-cascade/release.json'
-           ? (() => { try { const release = JSON.parse(text); const widths = release.cinematicExport?.profiles?.map(profile => profile.width) || []; return release.gameId === 'civic-cascade' && release.version === '2.0.0' && release.cinematicExport?.audio === true && release.cinematicExport?.audioMode === 'procedural-ambient-and-risk-cues' && release.cinematicExport?.microphoneUsed === false && release.entrypoint === '/games/civic-cascade/' && release.canonicalUrl === 'https://osgard.world/games/civic-cascade/' && release.buildContract?.readinessMarkers?.includes('cc-game-root') && [1920,3840,7680].every(width => widths.includes(width)) } catch { return false } })()
+           ? (() => { try { const release = JSON.parse(text); const widths = release.cinematicExport?.profiles?.map(profile => profile.width) || []; return release.gameId === 'civic-cascade' && release.version === '1.9.0' && release.entrypoint === '/games/civic-cascade/' && release.canonicalUrl === 'https://osgard.world/games/civic-cascade/' && release.buildContract?.readinessMarkers?.includes('cc-game-root') && [1920,3840,7680].every(width => widths.includes(width)) } catch { return false } })()
         : route === '/games/civic-cascade/'
           ? text.includes('<title>CIVIC CASCADE — кризисная стратегия | OSGARD PLAY</title>') && text.includes('id=\"cc-game-root\"') && text.includes('id=\"cc-status\"')
         : route === '/games/patina/'
@@ -106,7 +106,13 @@ for (const [device, userAgent] of Object.entries(agents)) for (const route of ro
         : route === '/games/signal-run/'
           ? text.includes('<title>SIGNAL RUN — OSGARD WORLD</title>') && text.includes('id="arena"') && text.includes('game.js')
                 : route === '/games/afterimage-run/'
-          ? text.includes('<title>AFTERIMAGE//RUN — OSGARD PLAY</title>') && text.includes('<meta name="osgard-game-version" content="1.6.0">') && text.includes('id="runnerCanvas"') && text.includes('id="run-start"') && text.includes('id="daily-seed"') && text.includes('id="share-telegram"') && text.includes('id="claim-share-reward"') && text.includes('id="focus-mode"') && text.includes('osgard:game-lifecycle')
+          ? text.includes('<title>AFTERIMAGE//RUN — OSGARD PLAY</title>') &&
+            text.includes('<meta name="osgard-game-version" content="1.7.0">') &&
+            text.includes('id="runnerCanvas"') && text.includes('id="run-start"') && text.includes('id="daily-seed"') &&
+            text.includes('id="share-telegram"') && text.includes('id="claim-share-reward"') && text.includes('id="focus-mode"') &&
+            text.includes('id="phase-splits"') && text.includes('id="split-delta"') && text.includes('id="split-history"') &&
+            text.includes("const RELEASE_VERSION='1.7.0'") && text.includes("schema:'osgard.afterimage.run-report.v3'") &&
+            text.includes('osgard:game-lifecycle')
         : route === '/games/cascade-lab/'
           ? text.includes('<title>CASCADE LAB — Premium Physics Lab 0.16.0</title>') &&
             text.includes('name="osgard-game-version" content="0.16.0-experiment-dossier"') &&
