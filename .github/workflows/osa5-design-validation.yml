@@ -45,6 +45,8 @@ jobs:
         run: npm run qa:ecosystem
       - name: Verify games hub and gameplay contracts
         run: npm run qa:games-portal
+      - name: Verify the existing TEDES flagship case
+        run: node scripts/tedes-case-smoke.mjs
       - name: Verify SkillCred static app and same-origin API contract
         run: npm run qa:skillcred
       - name: Verify deployment workflow safeguards
