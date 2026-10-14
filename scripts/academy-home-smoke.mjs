@@ -83,7 +83,7 @@ assert.ok(cinema.includes('data.findIndex(s=>s.act===act)') && cinema.includes('
 assert.ok(html.includes('<title>OSA Intelligence — понимать, проверять, решать</title>'), 'Static document title must describe OSA Intelligence')
 assert.ok(html.includes('OSA Intelligence — интерактивная среда для изучения ИИ'), 'Static description must describe OSA Intelligence')
 assert.ok(sitemap.includes('https://osgard.world/academy') && sitemap.includes('https://osgard.world/osa-cinema') && sitemap.includes('https://osgard.world/portal'), 'Sitemap must include OSA home, preserved Academy, course, and portal')
-assert.ok(routeMatrix.includes("'/portal','/osa-cinema'"), 'Production route matrix must verify both preserved routes')
+assert.ok(routeMatrix.includes("'/portal','/osa-cinema','/academy'"), 'Production route matrix must verify the Academy route and preserved portal/course routes')
 
 assert.ok(studio.includes('next:') && studio.includes('item.next') && studio.includes("locale==='ru'?'Следующий шаг':'Next step'"), 'Low rubric ratings must reveal concrete, bilingual next-step advice for each quality criterion')
 assert.ok(studioStyles.includes('.academy-studio-next-step'), 'Actionable rubric guidance must have a distinct readable visual treatment')
