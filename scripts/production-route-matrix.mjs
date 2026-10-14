@@ -103,6 +103,7 @@ for (const [device, userAgent] of Object.entries(agents)) for (const route of ro
           ? text.includes('<title>SIGNAL RUN — OSGARD WORLD</title>') && text.includes('id="arena"') && text.includes('game.js')
         : route === '/games/afterimage-run/'
           ? text.includes('<title>AFTERIMAGE//RUN — OSGARD PLAY</title>') &&
+            text.includes('name="osgard-game-version" content="1.5.0"') &&
             text.includes('id="runnerCanvas"') && text.includes('id="run-start"') &&
             text.includes('id="daily-seed"') && text.includes('id="share-telegram"') &&
             text.includes('id="jump-now"') && text.includes('id="focus-mode"') &&
