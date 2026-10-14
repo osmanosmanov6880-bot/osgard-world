@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ru">
 <head>
-<meta charset="utf-8">
+<meta charset="utf-8">\n<link rel="preconnect" href="https://fonts.googleapis.com">\n<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#10110f">
 <meta name="robots" content="index,follow">
@@ -18,7 +18,96 @@
 @media(max-width:900px){.hero{grid-template-columns:1fr;gap:28px;padding-top:52px}.hero-visual{min-height:340px}.door-render{height:275px}.studio-grid{grid-template-columns:1fr}.project-preview{grid-template-columns:130px 1fr}.section-head{align-items:start;flex-direction:column}.cap-grid{grid-template-columns:1fr 1fr}}
 @media(max-width:560px){.wrap{width:calc(100% - 32px)}.topbar{height:66px}.navlinks{gap:12px;font-size:10px}.navlinks a:nth-child(2){display:none}.top-note{font-size:8px;max-width:110px}.brand{font-size:11px;gap:10px}.brand-mark{width:27px;height:27px}.hero{padding:45px 0 35px}.hero h1{font-size:47px}.hero-copy{font-size:13px}.hero-visual{min-height:290px}.door-render{height:245px;width:58%}.hero-stats{gap:15px}.stat strong{font-size:25px}.stat span{font-size:8px}.studio{padding:32px 0 50px}.form-grid{padding:16px;gap:13px}.form-actions{padding:0 16px 18px}.form-message{padding:0 16px 12px}.panel-header{padding:17px 16px}.project-name{padding:16px}.project-preview{padding:12px 16px 16px;grid-template-columns:100px 1fr;gap:13px}.mini-door-frame{height:120px}.mini-door{height:95px}.mini-door:after{top:34px}.section-head h2{font-size:33px}.project-footer{padding:16px}.cap-grid{grid-template-columns:1fr}.cap-card{min-height:0}.foot{flex-direction:column}.foot-links{gap:12px}.btn{flex:1}.btn.small{flex:0 0 auto}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important}}
-</style>
+
+/* LUXURY ART DIRECTION — TEDES architectural editorial */
+:root{--bg:#0b0b09;--panel:#14130f;--panel2:#1c1a15;--ink:#f4efe5;--muted:#b8b0a1;--dim:#8c8373;--line:#383329;--gold:#bda46f;--gold2:#e4d2a8;--green:#b7c8a4;--danger:#e1a097;font-family:Inter,"Helvetica Neue",Arial,sans-serif}
+::selection{background:#bda46f;color:#100f0c}
+body{background:radial-gradient(ellipse at 74% -8%,rgba(180,150,91,.17),transparent 32%),radial-gradient(ellipse at 8% 46%,rgba(94,83,57,.09),transparent 38%),#0b0b09;letter-spacing:.005em}
+.wrap{width:min(1480px,100% - 64px)}
+.topbar{height:82px;border-bottom-color:rgba(210,191,148,.2)}
+.brand{font-size:12px;letter-spacing:.22em}
+.brand-mark{border-color:#bda46f;color:#ead6ab;box-shadow:inset 0 0 0 3px #0b0b09,0 0 0 1px rgba(189,164,111,.16);font-size:22px}
+.brand small{font-size:8px;letter-spacing:.28em;color:#a99a7e}
+.navlinks{font-size:10px;letter-spacing:.14em;color:#c0b8a8}
+.top-note{font-size:9px;line-height:1.85;letter-spacing:.2em;color:#948873}
+.hero{padding:clamp(58px,7vw,105px) 0 clamp(55px,6vw,82px);gap:clamp(34px,5vw,82px)}
+.eyebrow{color:#c9b17d;font-size:9px;letter-spacing:.29em;line-height:1.7}
+.hero h1{font-family:"Cormorant Garamond",Georgia,serif;font-size:clamp(54px,7vw,94px);line-height:.89;letter-spacing:-.035em;font-weight:400}
+.hero h1 em{color:#e4d2a8;text-shadow:0 5px 40px rgba(205,176,117,.08)}
+.hero-copy{max-width:600px;color:#c0b8a8;font-size:13px;line-height:2;margin:30px 0 32px}
+.btn{min-height:49px;padding:0 21px;border-color:#4a4335;color:#f1ebdf;font-size:9px;letter-spacing:.14em;text-transform:uppercase;transition:transform .25s ease,border-color .25s ease,background .25s ease,box-shadow .25s ease}
+.btn:hover{border-color:#c7ae79;background:rgba(190,165,110,.09);box-shadow:0 8px 24px #0002;transform:translateY(-2px)}
+.btn.primary{background:#e1d0aa;color:#191711;border-color:#e1d0aa;box-shadow:0 6px 24px rgba(199,174,119,.1)}
+.btn.primary:hover{background:#f0e2c2;border-color:#f0e2c2}
+.hero-stats{gap:clamp(18px,3vw,42px);margin-top:43px;padding-top:25px;border-top-color:#40392d}
+.stat strong{font-family:"Cormorant Garamond",Georgia,serif;font-size:38px;color:#e4d2a8}
+.stat span{font-size:8px;letter-spacing:.16em;color:#a49a87}
+.hero-visual{min-height:clamp(370px,42vw,520px);border:1px solid #524735;background:radial-gradient(ellipse at 50% 40%,rgba(167,139,79,.16),transparent 48%),linear-gradient(145deg,#242119,#0e0e0b 78%);box-shadow:0 30px 85px rgba(0,0,0,.28),inset 0 0 0 7px rgba(3,3,2,.32)}
+.hero-visual:before{background:linear-gradient(90deg,transparent 49.7%,rgba(201,177,125,.14) 50%,transparent 50.3%),linear-gradient(0deg,transparent 49.7%,rgba(201,177,125,.09) 50%,transparent 50.3%);background-size:56px 56px;opacity:.62}
+.hero-visual:after{content:"";position:absolute;inset:12px;border:1px solid rgba(201,177,125,.22);pointer-events:none}
+.door-render{width:51%;height:min(73%,390px);min-height:290px;border-color:#9b8150;background:linear-gradient(110deg,#3b3425,#29261d 42%,#181711 78%);box-shadow:0 24px 58px #000a,inset 0 0 0 8px #100f0b,inset 0 0 0 9px #786342,12px 0 0 -11px #c5ac75}
+.door-render:before{inset:21px;border-color:rgba(216,192,139,.42)}
+.door-render:after{border-color:rgba(216,192,139,.18)}
+.door-handle{right:13%;width:3px;height:94px;background:linear-gradient(90deg,#6f5a35,#efe0b7 45%,#a48a54);box-shadow:0 0 24px rgba(226,204,157,.14)}
+.door-handle:after{width:11px;height:11px;left:-4px;background:#d4bd87}
+.visual-label{color:#ddcda7;font-size:8px;letter-spacing:.2em}
+.visual-label.bottom{color:#b3a88f}
+.visual-badge{color:#c4cdaa;font-size:8px;letter-spacing:.18em}
+.section-head h2{font-family:"Cormorant Garamond",Georgia,serif;font-size:clamp(35px,4vw,54px);line-height:.98;font-weight:400}
+.section-head p{color:#b8b0a1;font-size:12px;line-height:1.9}
+.studio{padding:clamp(45px,6vw,82px) 0;border-top-color:#3c3529}
+.demo-label{background:rgba(157,172,132,.045);border-color:#51513d;color:#c8d0b4;padding:9px 12px;font-size:8px;letter-spacing:.18em}
+.demo-label:before{box-shadow:0 0 13px rgba(155,180,128,.38)}
+.studio-grid{gap:18px}
+.config-panel,.project-panel{border-color:#393329;background:linear-gradient(145deg,rgba(25,23,18,.97),rgba(15,14,11,.98));box-shadow:0 22px 65px rgba(0,0,0,.13)}
+.panel-header{padding:22px 24px;border-bottom-color:#393329}
+.panel-header h3{font-family:"Cormorant Garamond",Georgia,serif;font-size:29px}
+.panel-header small{color:#ac9b79;font-size:8px;letter-spacing:.2em}
+.form-grid{padding:24px}
+.field label{color:#c0b6a3;font-size:9px;letter-spacing:.15em}
+.field input,.field select{height:45px;border-color:#494031;background:#0e0e0b;color:#f2ecdf;transition:border-color .2s,background .2s}
+.field input:hover,.field select:hover{border-color:#87714b}
+.field input:focus,.field select:focus{border-color:#c4a86b;outline:1px solid rgba(196,168,107,.13)}
+.field-note{font-size:10px;line-height:1.8;color:#9e9585}
+.form-actions{padding:0 24px 22px}
+.form-message{color:#c6d0b5}
+.project-name{padding:20px 24px 10px}
+.project-name label{color:#a99a7e;font-size:8px;letter-spacing:.2em}
+.project-name input{font-family:"Cormorant Garamond",Georgia,serif;font-size:28px;border-bottom-color:#4a4030}
+.project-preview{padding:14px 24px 22px;grid-template-columns:clamp(110px,12vw,165px) 1fr}
+.mini-door-frame{border-color:#474032;background:radial-gradient(ellipse at center,rgba(165,133,75,.16),transparent 72%),linear-gradient(145deg,#29251b,#11100d)}
+.mini-door{border-color:#9f8755;background:linear-gradient(90deg,#413928,#252219);box-shadow:inset 0 0 0 4px #11100d,8px 8px 24px #0005}
+.mini-door:before{border-color:#8276558c}
+.preview-data p{font-size:8px;letter-spacing:.18em;color:#a99a7e}
+.preview-data strong{font-family:"Cormorant Garamond",Georgia,serif;font-size:32px}
+.preview-data span{color:#c2b9a9;font-size:10px}
+table{min-width:580px}
+th,td{padding-top:15px;padding-bottom:15px;border-bottom-color:#302c23;font-size:10px}
+th{color:#a89a80;font-size:8px;letter-spacing:.15em}
+.zone-name{font-size:11px}
+.zone-code{color:#938975}
+.remove-btn{font-size:17px;transition:color .2s}
+.remove-btn:hover{color:#e1b09e}
+.empty-state{color:#a59b8a}
+.project-footer{padding:20px 24px}
+.project-footer p{color:#a69c8a;font-size:10px;line-height:1.8}
+.btn.small{min-height:38px;padding:0 12px;font-size:8px;letter-spacing:.12em}
+.disclaimer{border-color:#5a4a30;background:linear-gradient(100deg,rgba(126,94,43,.12),rgba(126,94,43,.035));color:#c6b891;padding:18px 20px;font-size:10px;line-height:1.9}
+.disclaimer strong{color:#ead9b4;letter-spacing:.02em}
+.capabilities{padding:clamp(55px,7vw,92px) 0;border-top-color:#3c3529}
+.cap-grid{gap:14px}
+.cap-card{position:relative;overflow:hidden;border-color:#3c3529;background:linear-gradient(145deg,rgba(37,33,24,.62),rgba(15,14,11,.4));min-height:190px;padding:26px 24px}
+.cap-card:after{content:"";position:absolute;inset:auto 24px 0;height:1px;background:linear-gradient(90deg,#b89c62,transparent 75%);opacity:.5}
+.cap-card span{font-family:"Cormorant Garamond",Georgia,serif;color:#d2bb8b;font-size:26px}
+.cap-card h3{font-size:12px;letter-spacing:.08em;margin:23px 0 12px}
+.cap-card p{color:#b1a999;font-size:11px;line-height:1.9}
+.foot{border-top-color:#3c3529;color:#948a78;font-size:8px;letter-spacing:.14em}
+.foot a{color:#d2bc8f;transition:color .2s}
+.foot a:hover{color:#f2e2bc}
+@media(max-width:900px){.wrap{width:min(100% - 40px,720px)}.hero{padding-top:58px}.hero-visual{min-height:390px}.door-render{height:300px}.studio-grid{gap:16px}.cap-card{min-height:165px}}
+@media(max-width:560px){.wrap{width:calc(100% - 32px)}.topbar{height:66px}.brand{font-size:10px;letter-spacing:.16em}.brand small{font-size:7px;letter-spacing:.2em}.navlinks{font-size:8px;letter-spacing:.08em}.top-note{font-size:7px;letter-spacing:.12em}.hero{padding:43px 0 35px}.hero h1{font-size:clamp(47px,14vw,64px)}.hero-copy{line-height:1.85}.hero-visual{min-height:300px}.door-render{height:242px;min-height:0;width:59%}.hero-stats{gap:15px}.stat strong{font-size:30px}.stat span{font-size:7px;letter-spacing:.1em}.section-head h2{font-size:36px}.panel-header{padding:17px 16px}.panel-header h3{font-size:26px}.form-grid{padding:16px}.form-actions{padding:0 16px 17px}.project-name{padding:16px}.project-name input{font-size:24px}.project-preview{padding:12px 16px 18px;grid-template-columns:96px 1fr;gap:13px}.mini-door-frame{height:117px}.mini-door{height:93px}.mini-door:after{top:34px}.project-footer{padding:15px 16px}.disclaimer{padding:15px}.cap-card{padding:22px 19px}.foot{font-size:8px;line-height:1.8}}
+@media(prefers-reduced-motion:reduce){.btn,.foot a{transition:none}}
+\n</style>
 </head>
 <body>
 <header class="wrap topbar">
