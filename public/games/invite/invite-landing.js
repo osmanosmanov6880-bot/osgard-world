@@ -22,6 +22,9 @@
   const validDay = /^\d{4}-\d{2}-\d{2}$/.test(requestedDay) &&
     (() => { const date = new Date(requestedDay + 'T00:00:00.000Z'); return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === requestedDay; })();
   const requestedMode = params.get('mode') || '';
+  const afterimageScoreText = params.get('score') ?? params.get('challenge') ?? '';
+  const afterimageScore = Number(afterimageScoreText);
+  const validAfterimageScore = /^(?:0|[1-9]\\d{0,7})$/.test(afterimageScoreText) && Number.isSafeInteger(afterimageScore) && afterimageScore >= 0 && afterimageScore <= 99999999;
   const validDailyMode = requestedMode === 'daily' && validDay;
   const validOrdinaryMode = requestedMode === '' && requestedDay === '';
   const legacySignalRun = game === 'signal-run' &&
@@ -53,6 +56,17 @@
       target.searchParams.set('protocol', requestedAetherProtocol);
     }
     if (game === 'signal-run' && validAetherDay && params.get('og_daily_mode') === 'daily') target.searchParams.set('mode', 'daily');
+    // AFTERIMAGE challenge URLs use the same daily seed and target score in both the invite preview and the actual game iframe.
+    // Forward only a canonical invite and a strictly validated daily challenge; never carry arbitrary query values into the game.
+    if (requestedGame === 'afterimage-run' && valid && params.get('og_challenge') === 'afterimage-run' && validDailyMode && validAfterimageScore) {
+      target.searchParams.set('challenge', String(afterimageScore));
+      target.searchParams.set('score', String(afterimageScore));
+      target.searchParams.set('day', requestedDay);
+      target.searchParams.set('seed', requestedDay);
+      target.searchParams.set('og_day', requestedDay);
+      target.searchParams.set('mode', 'daily');
+      target.searchParams.set('og_challenge', 'afterimage-run');
+    }
     if (game === 'null-shift' && validAetherDay) {
       const month = Number(aetherDay.slice(5,7)), date = Number(aetherDay.slice(8,10));
       const expectedChallenge = 'NS-' + aetherDay.replace(/-/g,'') + '-C' + (((month + date) % 3) + 1);
