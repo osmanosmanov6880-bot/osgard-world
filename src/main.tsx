@@ -19,6 +19,7 @@ import './community.css'
 import './stream.css'
 import App from './App'
 import AcademyHome from './AcademyHome'
+import OSAIntelligenceHome from './OSAIntelligenceHome'
 import OSACinema from './OSACinema'
 import MiniApp from './MiniApp'
 import { AurumPage, CatalogPage, ChroniclePage, ClubPage, DevelopmentPage, MastersPage, TimeCoinPage, WorldsPage } from './Sections'
@@ -54,7 +55,8 @@ const seo: Record<string, { title: string; description: string }> = {
 
 const cleanSeo: Record<string, { title: string; description: string }> = {
   '/osa-cinema': { title: 'OSA Original — интерактивный фильм об ИИ и власти знаний', description: 'Три акта об искусственном интеллекте, власти информации и будущем человека. Интерактивные решения, источники и прогресс на устройстве.' },
-  '/': { title: 'OSGARD AI Academy — понимать, проверять, применять ИИ', description: 'Интерактивное обучение искусственному интеллекту: как работают модели, почему нужно проверять источники и как принимать осознанные решения.' },
+  '/': { title: 'OSA Intelligence — понимать, проверять, решать', description: 'Интерактивная среда OSA: изучайте возможности ИИ, проверяйте доказательства и принимайте ответственные решения.' },
+  '/academy': { title: 'OSGARD AI Academy — понимать, проверять, применять ИИ', description: 'Учебные маршруты, интерактивный курс и практическая студия по применению искусственного интеллекта.' },
   '/portal': { title: 'OSGARD World — портал экосистемы', description: 'Продукты, игры, проекты и направления цифровой экосистемы OSGARD.' },
   '/worlds': { title: 'Миры OSGARD — семь самостоятельных продуктов', description: 'Выберите мир OSGARD: защита, мобильность, бизнес, время и создание цифровых продуктов.' },
   '/catalog': { title: 'Каталог OSGARD — продукты и решения', description: 'Каталог самостоятельных продуктов OSGARD с понятными условиями и маршрутами.' },
@@ -97,7 +99,9 @@ function Seo({ path }: { path: string }) {
 const path = location.pathname.replace(/\/+$/, '') || '/'
 function RoutedRoot() {
   const [locale, setLocale] = React.useState<'ru' | 'en'>('ru')
-  if (path === '/') return <><Seo path="/" /><AcademyHome /></>
+  if (path === '/' && (new URLSearchParams(location.search).has('project') || location.hash === '#project-studio')) return <><Seo path="/academy" /><AcademyHome /></>
+  if (path === '/') return <><Seo path="/" /><OSAIntelligenceHome /></>
+  if (path === '/academy') return <><Seo path="/academy" /><AcademyHome /></>
   if (path === '/portal') return <><Seo path="/portal" /><App /></>
   if (path === '/osa-cinema') return <><Seo path={path} /><OSACinema /></>
   if (path === '/miniapp') return <MiniApp />
