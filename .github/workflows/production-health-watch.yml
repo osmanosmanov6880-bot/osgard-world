@@ -18,6 +18,7 @@ concurrency:
 
 jobs:
   production-health:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     name: Verify live production
     runs-on: ubuntu-latest
     timeout-minutes: 5
