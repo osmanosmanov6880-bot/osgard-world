@@ -1,6 +1,18 @@
 name: OSGARD Cloudflare Pages
 
 on:
+  pull_request:
+    branches: [master]
+    paths:
+      - "src/**"
+      - "public/**"
+      - "scripts/sync-swarm-assets.mjs"
+      - "scripts/cloudflare-pages-preflight.mjs"
+      - "package.json"
+      - "package-lock.json"
+      - "vite.config.ts"
+      - "wrangler.jsonc"
+      - ".github/workflows/cloudflare-pages.yml"
   push:
     branches: [master]
     paths:
