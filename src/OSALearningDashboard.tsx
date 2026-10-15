@@ -25,6 +25,7 @@ export default function OSALearningDashboard() {
       <progress value={count} max={8} style={{width:'100%',height:12}} />
       {next ? <p><a href={'/lectures/'+next} style={{color:'#a9c4e9'}}>{locale === 'ru' ? 'Продолжить обучение →' : 'Continue learning →'}</a></p> : <p>{locale === 'ru' ? 'Все лекции завершены!' : 'All lessons completed!'}</p>}
     </section>
+    <p><a href="/learning/pricing" style={{display:'inline-block',padding:'12px 20px',border:'1px solid #c8a96b',borderRadius:12,color:'#f0ddb6'}}>{locale === 'ru' ? 'Программы и форматы OSA →' : 'OSA programs and plans →'}</a></p>
     <p><a href="/learning/assessment" style={{display:'inline-block',padding:'12px 20px',border:'1px solid #a9c4e9',borderRadius:12,color:'#d6e5fb'}}>{locale === 'ru' ? 'Пройти итоговую самопроверку →' : 'Take the final knowledge check →'}</a></p>
     <section style={{padding:24,margin:'24px 0',border:'1px solid #39465b',borderRadius:20}} aria-label={locale==='ru'?'История тестов':'Assessment history'}>
       <h2>{locale==='ru'?'Результаты самопроверки':'Assessment results'}</h2>
