@@ -9,6 +9,14 @@
   <url><loc>https://osgard.world/academy</loc><lastmod>2026-10-15</lastmod><changefreq>weekly</changefreq><priority>0.9</priority></url>
   <url><loc>https://osgard.world/osa-cinema</loc><lastmod>2026-10-13</lastmod><changefreq>monthly</changefreq><priority>0.9</priority></url>
   <url><loc>https://osgard.world/lectures</loc><lastmod>2026-10-15</lastmod><changefreq>weekly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://osgard.world/lectures/intelligence-and-imitation</loc><lastmod>2026-10-15</lastmod><changefreq>monthly</changefreq><priority>0.75</priority></url>
+  <url><loc>https://osgard.world/lectures/how-language-models-work</loc><lastmod>2026-10-15</lastmod><changefreq>monthly</changefreq><priority>0.75</priority></url>
+  <url><loc>https://osgard.world/lectures/power-of-knowledge</loc><lastmod>2026-10-15</lastmod><changefreq>monthly</changefreq><priority>0.75</priority></url>
+  <url><loc>https://osgard.world/lectures/signal-and-noise</loc><lastmod>2026-10-15</lastmod><changefreq>monthly</changefreq><priority>0.75</priority></url>
+  <url><loc>https://osgard.world/lectures/verify-an-ai-answer</loc><lastmod>2026-10-15</lastmod><changefreq>monthly</changefreq><priority>0.75</priority></url>
+  <url><loc>https://osgard.world/lectures/privacy-before-prompting</loc><lastmod>2026-10-15</lastmod><changefreq>monthly</changefreq><priority>0.75</priority></url>
+  <url><loc>https://osgard.world/lectures/human-in-the-loop</loc><lastmod>2026-10-15</lastmod><changefreq>monthly</changefreq><priority>0.75</priority></url>
+  <url><loc>https://osgard.world/lectures/investigate-the-future</loc><lastmod>2026-10-15</lastmod><changefreq>monthly</changefreq><priority>0.75</priority></url>
   <url><loc>https://osgard.world/osa-library/</loc><lastmod>2026-10-15</lastmod><changefreq>weekly</changefreq><priority>0.9</priority></url>
   <url><loc>https://osgard.world/portal</loc><lastmod>2026-10-13</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>
   <url><loc>https://osgard.world/worlds</loc><lastmod>2026-09-23</lastmod><changefreq>weekly</changefreq><priority>0.9</priority></url>
