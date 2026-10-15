@@ -59,7 +59,7 @@ assert.ok(demo.includes('НЕ отправлены') || demo.includes('не от
 for (const [filename, page] of [['catalog', catalog], ['product', product]]) {
   for (const match of page.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)) new vm.Script(match[1], { filename: filename + '.html' })
 }
-for (const route of ['/tedes/catalog/','/tedes/collections/','/tedes/product/','/tedes/materials/']) assert.ok(routeMatrix.includes(route), \`Production route matrix missing \${route}\`)
+for (const route of ['/tedes/catalog/','/tedes/collections/','/tedes/product/','/tedes/materials/']) assert.ok(routeMatrix.includes(route), 'Production route matrix missing ' + route)
 
 let scriptCount = 0
 for (const match of demo.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)) {
