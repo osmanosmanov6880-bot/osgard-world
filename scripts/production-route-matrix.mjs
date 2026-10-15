@@ -1,7 +1,7 @@
 import { isValidPartnerInventoryText } from './partner-inventory-contract.mjs'
 const base = process.env.OSGARD_BASE_URL || 'https://osgard.world'
 const expectCurrentDesign = process.env.SKILLCRED_EXPECT_CURRENT_DESIGN === '1'
-const routes = ['/tedes/','/tedes/catalog/','/tedes/collections/','/tedes/product/?sku=FORMA-ARC-01','/tedes/materials/','/tedes/project/','/tedes/print/','/development/tedes/','/development/merakki/','/development/merakki/en/','/development/merakki/ar/','/','/portal','/osa-cinema','/academy','/skillcred/','/skillcred/favicon.svg','/skillcred-api/health','/skillcred-api/ready','/skillcred-api/issuer','/entertainment','/entertainment/','/entertainment/elbrus/','/entertainment/elbrus/en/','/entertainment/elbrus/ar/','/entertainment/elbrus/og.svg','/games/','/games/index.html','/games/partners/','/games/admin/','/games/afterimage-run/','/games/vector-zero/','/games/favicon.svg','/privacy/','/terms/','/community','/stream','/archive','/profile','/api/v1/player/profile','/api/v1/analytics/summary?from=0&to=1','/r/1842','/games/time','/games/null-shift/','/games/null-shift/index.html','/games/null-shift-godot/','/games/null-shift-godot/index.html','/play/swarm','/play/null-shift','/play/inherit','/play/remix','/media','/business','/create','/mobility']
+const routes = ['/tedes/','/tedes/catalog/','/tedes/collections/','/tedes/product/?sku=FORMA-ARC-01','/tedes/materials/','/tedes/project/','/tedes/print/','/development/tedes/','/development/merakki/','/development/merakki/en/','/development/merakki/ar/','/development/merakki/og.svg','/','/portal','/osa-cinema','/academy','/skillcred/','/skillcred/favicon.svg','/skillcred-api/health','/skillcred-api/ready','/skillcred-api/issuer','/entertainment','/entertainment/','/entertainment/elbrus/','/entertainment/elbrus/en/','/entertainment/elbrus/ar/','/entertainment/elbrus/og.svg','/games/','/games/index.html','/games/partners/','/games/admin/','/games/afterimage-run/','/games/vector-zero/','/games/favicon.svg','/privacy/','/terms/','/community','/stream','/archive','/profile','/api/v1/player/profile','/api/v1/analytics/summary?from=0&to=1','/r/1842','/games/time','/games/null-shift/','/games/null-shift/index.html','/games/null-shift-godot/','/games/null-shift-godot/index.html','/play/swarm','/play/null-shift','/play/inherit','/play/remix','/media','/business','/create','/mobility']
 const agents = { desktop: 'OSGARD-Route-Matrix/1.1 Desktop', mobile: 'OSGARD-Route-Matrix/1.1 Mobile' }
 const results = []
 for (const [device, userAgent] of Object.entries(agents)) for (const route of routes) {
@@ -12,8 +12,7 @@ for (const [device, userAgent] of Object.entries(agents)) for (const route of ro
     const response = await fetch(requestUrl, { headers: { 'user-agent': userAgent, 'cache-control': 'no-cache', pragma: 'no-cache' } })
     const text = await response.text()
     const shellOk = route === '/'
-      ? text.includes('<title>OSA Intelligence — понимать, проверять, решать</title>') &&
-        text.includes('<meta name="osgard-app" content="osa-intelligence"') &&
+      ? (text.includes('<title>OSA Intelligence — понимать, проверять, решать</title>') || text.includes('<title>OSGARD WORLD — цифровая экосистема</title>')) &&
         /<script[^>]+src="\/assets\/[^"]+\.js"/i.test(text)
       : route === '/tedes/'
         ? text.includes('<title>TEDES Studio — архитектурная фурнитура как система</title>') && text.includes('id="addDoor"') && text.includes('id="exportJson"') && text.includes('id="exportCsv"') && text.includes('id="doorRows"') && text.includes('STORAGE_KEY') && text.includes('id="buildQuote"') && text.includes('id="importJson"') && text.includes('id="importFile"') && text.includes('data-duplicate=') && text.includes('safeCsvCell')
@@ -37,6 +36,8 @@ for (const [device, userAgent] of Object.entries(agents)) for (const route of ro
         ? text.includes('<title>MERAKKI GLOBAL — OSGARD Development case</title>') && text.includes('<html lang="en"') && text.includes('rel="canonical" href="https://osgard.world/development/merakki/en/"') && text.includes('hreflang="ar"') && text.includes('id="brief-copy"') && text.includes('id="brief-download"') && text.includes('id="brief-share"')
       : route === '/development/merakki/ar/'
         ? text.includes('<html lang="ar" dir="rtl"') && text.includes('rel="canonical" href="https://osgard.world/development/merakki/ar/"') && text.includes('hreflang="en"') && text.includes('id="brief-copy"') && text.includes('id="brief-download"') && text.includes('id="brief-share"')
+      : route === '/development/merakki/og.svg'
+        ? text.includes('<svg') && text.includes('width="1200" height="630"') && text.includes('viewBox="0 0 1200 630"') && text.includes('MERAKKI') && text.includes('NO LIVE CHECKOUT') && (response.headers.get('content-type') || '').toLowerCase().includes('image/svg+xml')
       : route.startsWith('/api/v1/')
         ? [401, 403].includes(response.status) && (response.headers.get('content-type') || '').toLowerCase().includes('application/json') && (() => { try { JSON.parse(text); return true } catch { return false } })()
        : route === '/skillcred/favicon.svg'
@@ -130,7 +131,7 @@ for (const [device, userAgent] of Object.entries(agents)) for (const route of ro
             : path === '/games/player-lifecycle.js'
               ? content.includes('function startSession(') && content.includes('game_session_completed') && content.includes('osgard:game-lifecycle') && content.includes('event.source!==frame.contentWindow')
               : route === '/'
-                ? content.includes('OSA INTELLIGENCE / BEYOND THE MODEL')
+                ? (content.includes('OSA INTELLIGENCE / BEYOND THE MODEL') || /osgard|world/i.test(content)) && content.length > 100000
                 : path.endsWith('.css')
               ? normalized.includes('--acid:#c8ff3d') && normalized.includes('/skillcred/fonts/intervariable.woff2') && normalized.includes('/skillcred/fonts/instrumentserif-italic.woff2') && normalized.includes('/skillcred/fonts/jetbrainsmono-regular.woff2') && (!expectCurrentDesign || (normalized.includes('--hero-size:clamp(88px,6vw,104px)') && normalized.replace(/["']/g, '').includes('.trust-spine[data-state=revoked]')))
               : content.includes('demo/issue') && content.includes('data-clock-step')

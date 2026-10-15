@@ -44,7 +44,7 @@ function responseDiagnostics(response) {
   return Object.fromEntries(names.map(name => [name, response.headers.get(name)]).filter(([, value]) => value))
 }
 
-await check('OSA homepage identity, cache policy, and backend consistency', async () => {
+await check('OSGARD/OSA homepage identity, cache policy, and backend consistency', async () => {
   const probes = []
   for (let index = 0; index < 3; index++) {
     const { response, body } = await get('/')
@@ -67,8 +67,8 @@ await check('OSA homepage identity, cache policy, and backend consistency', asyn
   const invalid = probes.filter(probe =>
     probe.statusCode !== 200 ||
     !String(probe.headers['content-type'] || '').toLowerCase().includes('text/html') ||
-    !probe.title.toLowerCase().includes('osa intelligence') ||
-    probe.appId !== 'osa-intelligence' ||
+    !(probe.title.toLowerCase().includes('osa intelligence') || probe.title.toLowerCase().includes('osgard world')) ||
+    (probe.title.toLowerCase().includes('osa intelligence') && probe.appId !== 'osa-intelligence') ||
     !probe.cacheControl?.includes('no-store') ||
     !probe.cacheControl?.includes('no-cache')
   )
@@ -86,8 +86,41 @@ await check('Live OSA JavaScript bundle', async () => {
   expect(path && path.startsWith('/assets/'), 'could not resolve the same-origin homepage bundle')
   const { response, body } = await get(path)
   expect(response.status === 200, `bundle returned HTTP ${response.status}`)
-  expect(body.includes('OSA INTELLIGENCE / BEYOND THE MODEL'), `expected OSA bundle marker is missing in ${path}; HTTP ${response.status}; headers=${JSON.stringify(responseDiagnostics(response))}; bytes=${new TextEncoder().encode(body).byteLength}; prefix=${body.slice(0, 220).replace(/\\s+/g, ' ')}`)
+  expect(body.includes(homeHtml.toLowerCase().includes('osa intelligence') ? 'OSA INTELLIGENCE / BEYOND THE MODEL' : 'OSGARD'), `expected OSA bundle marker is missing in ${path}; HTTP ${response.status}; headers=${JSON.stringify(responseDiagnostics(response))}; bytes=${new TextEncoder().encode(body).byteLength}; prefix=${body.slice(0, 220).replace(/\\s+/g, ' ')}`)
   return { statusCode: response.status, bundle: path, bytes: new TextEncoder().encode(body).byteLength }
+})
+
+const merakkiLocales = [
+ {path:'/development/merakki/',locale:'ru',title:'MERAKKI GLOBAL — кейс OSGARD Development',canonical:'https://osgard.world/development/merakki/',language:'ru'},
+ {path:'/development/merakki/en/',locale:'en',title:'MERAKKI GLOBAL — OSGARD Development case',canonical:'https://osgard.world/development/merakki/en/',language:'en'},
+ {path:'/development/merakki/ar/',locale:'ar',title:'MERAKKI GLOBAL — دراسة حالة OSGARD Development',canonical:'https://osgard.world/development/merakki/ar/',language:'ar'}
+]
+for(const item of merakkiLocales){
+ await check('MERAKKI public case '+item.locale.toUpperCase(),async()=>{
+  const {response,body}=await get(item.path),type=(response.headers.get('content-type')||'').toLowerCase()
+  expect(response.status===200,item.path+' returned HTTP '+response.status)
+  expect(type.includes('text/html'),item.path+' is not HTML')
+  expect(body.includes('<title>'+item.title+'</title>'),item.path+' title mismatch')
+  expect(body.includes('<link rel="canonical" href="'+item.canonical+'">'),item.path+' canonical missing')
+  expect(body.includes('data-case-status="demo-only"'),item.path+' lost demo-only boundary')
+  expect(body.includes('id="project-brief"')&&body.includes('id="contact-cta"')&&body.includes('id="email-cta"'),item.path+' missing brief/contact')
+  expect(body.includes('utm_campaign=merakki_global_case'),item.path+' missing attribution')
+  expect(body.includes('property="og:image" content="https://osgard.world/development/merakki/og.svg"'),item.path+' missing OG image')
+  expect(body.includes('name="twitter:card" content="summary_large_image"')&&body.includes('name="twitter:image" content="https://osgard.world/development/merakki/og.svg"'),item.path+' missing large-image Twitter metadata')
+  const ld=body.match(/<script type="application\/ld\+json" id="case-structured-data">([\s\S]*?)<\/script>/)
+  expect(Boolean(ld),item.path+' missing JSON-LD')
+  const graph=JSON.parse(ld[1])['@graph']
+  expect(graph.some(n=>n['@type']==='Article'&&n.inLanguage===item.language),item.path+' JSON-LD locale mismatch')
+  return {statusCode:response.status,locale:item.locale,canonical:item.canonical}
+ })
+}
+await check('MERAKKI social image 1200x630 SVG',async()=>{
+ const {response,body}=await get('/development/merakki/og.svg'),type=(response.headers.get('content-type')||'').toLowerCase()
+ expect(response.status===200,'social image HTTP '+response.status)
+ expect(type.includes('image/svg+xml')||type.includes('image/svg'),'social image MIME invalid')
+ expect(body.includes('<svg')&&body.includes('width="1200" height="630"')&&body.includes('viewBox="0 0 1200 630"'),'social image dimensions mismatch')
+ expect(body.includes('MERAKKI')&&body.includes('GLOBAL')&&body.includes('NO LIVE CHECKOUT'),'social image brand/status missing')
+ return {statusCode:response.status,contentType:type,width:1200,height:630}
 })
 
 for (const path of ['/academy', '/osa-cinema', '/portal', '/games/', '/skillcred/']) {

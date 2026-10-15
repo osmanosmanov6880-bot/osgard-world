@@ -6,6 +6,7 @@ const html = readFileSync('public/development/merakki/index.html', 'utf8');
 const htmlEn = readFileSync('public/development/merakki/en/index.html', 'utf8');
 const htmlAr = readFileSync('public/development/merakki/ar/index.html', 'utf8');
 const css = readFileSync('src/merakki-case.css', 'utf8');
+const socialCard = readFileSync('public/development/merakki/og.svg', 'utf8');
 let checks = 0;
 async function check(name, fn) {
   await fn();
@@ -27,6 +28,16 @@ await check('canonical route and demo-only boundary', () => {
   assert.ok(html.includes('<link rel="canonical" href="https://osgard.world/development/merakki/">'));
   assert.ok(html.includes('data-case-status="demo-only"'));
   assert.ok(html.includes('Live checkout and payments are disabled') || html.includes('Реальные заказы и платежи отключены'));
+});
+await check('social card metadata is present for RU/EN/AR', () => {
+ assert.ok(socialCard.includes('<svg') && socialCard.includes('width="1200" height="630"') && socialCard.includes('viewBox="0 0 1200 630"'));
+ assert.ok(socialCard.includes('MERAKKI') && socialCard.includes('GLOBAL') && socialCard.includes('NO LIVE CHECKOUT'));
+ for(const page of [html,htmlEn,htmlAr]){
+  assert.ok(page.includes('property="og:image" content="https://osgard.world/development/merakki/og.svg'));
+  assert.ok(page.includes('property="og:image:type" content="image/svg+xml"'));
+  assert.ok(page.includes('name="twitter:card" content="summary_large_image"'));
+  assert.ok(page.includes('name="twitter:image" content="https://osgard.world/development/merakki/og.svg'));
+ }
 });
 await check('structured data includes Article and breadcrumbs', () => {
   assert.ok(structured['@graph'].some(item => item['@type'] === 'Article'));

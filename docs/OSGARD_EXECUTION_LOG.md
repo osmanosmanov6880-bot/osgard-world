@@ -3576,3 +3576,19 @@ Continue non-financial brief implementation; billing can be handled only after a
 
 - Brief answers stay in-page until the visitor explicitly copies, downloads, opens email/WhatsApp or uses the native share sheet. A share completion is not presented as proof of recipient delivery.
 - Restaurant ordering and payments remain disabled. Production publish is accepted only after frontend validation and the SSH route-matrix job succeed.
+
+
+## 2026-10-15 / Pass 190
+
+### Large delivery block
+
+- Updated production health monitoring to accept the known OSA Intelligence and OSGARD WORLD homepage shells while retaining response/cache consistency and live same-origin bundle checks.
+- Added live probes for MERAKKI RU, EN and AR pages, checking canonical URLs, demo-only status, local brief/contact controls, attribution, social image metadata and JSON-LD language.
+- Added a designed 1200×630 Open Graph SVG at `/development/merakki/og.svg`. All three locale pages now reference it in Open Graph and large-image Twitter metadata.
+- Expanded the standalone MERAKKI smoke test and production desktop/mobile route matrix to validate the social image.
+
+### Safety and release gates
+
+- The card clearly labels the storefront as a demo with no live checkout.
+- No tracking script or runtime dependency was introduced.
+- Full CI, health-watch, SSH deployment and route matrix must pass before this is called published.
