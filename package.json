@@ -44,7 +44,9 @@
     "qa:osa-progress": "node scripts/osa-progress-store-smoke.mjs",
     "qa:osa-media-release": "node scripts/osa-media-release-preflight.mjs --check-dist",
     "qa:osa-narration": "node scripts/osa-narration-readiness.mjs --check-manuscripts",
-    "qa:osa-media-files": "node scripts/osa-media-file-audit.mjs --self-test"
+    "qa:osa-media-files": "node scripts/osa-media-file-audit.mjs --self-test",
+    "postbuild": "node scripts/precompress-brand-transition.mjs",
+    "qa:brand-gzip": "node scripts/precompress-brand-transition.mjs --check-dist"
   },
   "dependencies": {
     "@types/three": "^0.186.0",

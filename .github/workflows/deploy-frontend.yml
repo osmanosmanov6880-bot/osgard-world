@@ -62,6 +62,7 @@ on:
       - "scripts/lecture-library-smoke.mjs"
       - "scripts/osa-media-release-preflight.mjs"
       - "scripts/osa-media-file-audit.mjs"
+      - "scripts/precompress-brand-transition.mjs"
       - "scripts/osa-narration-readiness.mjs"
       - "docs/OSA_TTS_PRODUCTION_PLAN.md"
       - "docs/osa-narration/**"
@@ -181,6 +182,8 @@ jobs:
           /tmp/osgard-godot/Godot_v4.7.2-stable_linux.x86_64 --headless --path godot/null-shift --export-release Web "$GITHUB_WORKSPACE/public/games/null-shift-godot/index.html"
           node scripts/null-shift-godot-smoke.mjs --export-check public/games/null-shift-godot
       - run: npm run build
+      - name: Verify precompressed shared-brand JavaScript
+        run: npm run qa:brand-gzip
       - name: Verify OSA media inventory and publication gate
         run: npm run qa:osa-media-release
       - name: Test local original-file verification gate
