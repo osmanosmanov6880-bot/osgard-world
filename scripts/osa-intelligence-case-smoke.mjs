@@ -42,7 +42,7 @@ for (const marker of [
 assert.ok(mediaLibrary.includes('<title>OSA Media Library — единая карта курса и медиа</title>'), 'OSA media library title is missing.')
 assert.ok(mediaLibrary.includes('data-media-count="31"') && mediaLibrary.includes('19') && mediaLibrary.includes('9') && mediaLibrary.includes('3'), 'OSA media library counts are missing.')
 assert.ok((mediaLibrary.match(/<tr data-kind=/g) || []).length === 31, 'OSA media library must list all 31 declared media assets.')
-assert.ok(mediaLibrary.includes('видео не подключено') && mediaLibrary.includes('permanentUrl: null'), 'OSA media library must state the missing-media boundary.')
+assert.ok(mediaLibrary.includes('Runway проверен, видео ещё не подключено') && mediaLibrary.includes('28 из 31 точных asset ID') && mediaLibrary.includes('все ссылки временные'), 'OSA media library must state the verified Runway inventory and durable-hosting boundary.')
 assert.ok(mediaLibrary.includes('https://github.com/osmanosmanov6880-bot/osa-global-intelligence') && mediaLibrary.includes('https://github.com/osmanosmanov6880-bot/osa-global-intelligence-2'), 'OSA media library must link both repositories.')
 assert.ok(canonicalDoc.includes('Единый источник правды') && canonicalDoc.includes('osa-global-intelligence-2') && canonicalDoc.includes('19 видео'), 'OSA source-of-truth document is incomplete.')
 assert.ok(page.includes('href="/osa-library/"'), 'OSA case must link the media library.')
