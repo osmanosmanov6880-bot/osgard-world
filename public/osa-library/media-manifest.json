@@ -1,0 +1,998 @@
+{
+  "schemaVersion": 1,
+  "title": "OSA Media Release Manifest",
+  "snapshotDate": "2026-10-15",
+  "sourceOfTruth": "public/osa-library/media-inventory.csv",
+  "policy": {
+    "temporaryRunwayUrlsAllowed": false,
+    "requiresPermanentUrl": true,
+    "requiresMeasuredDurationForAudioVideo": true,
+    "requiresVerifiedLanguageForAudioVideo": true,
+    "requiresRightsClearance": true,
+    "requiresQualityCheck": true,
+    "nonMusicAudioRequiresTranscriptOrSubtitles": true,
+    "publishOnlyWhenBlockersAreEmpty": true
+  },
+  "metrics": {
+    "total": 31,
+    "sourceFound": 28,
+    "sourceMissing": 3,
+    "permanentUrls": 0,
+    "readyForPublication": 0,
+    "providerKindMismatches": 7
+  },
+  "assets": [
+    {
+      "assetId": "15590a37-f024-477f-998d-5fde5da1b44f",
+      "kind": "video",
+      "slug": "city-aerial-opening",
+      "role": "part-1",
+      "sourceRepository": "osmanosmanov6880-bot/osa-global-intelligence",
+      "sourceSnapshot": {
+        "status": "FOUND_IN_RUNWAY_NOT_PERMANENTLY_HOSTED",
+        "providerReportedKind": "video",
+        "extension": "mp4",
+        "name": "Multi-Shot Video _ Premium science documentary opening_ 16_9_ Extreme wide aerial of a vast modern.mp4",
+        "createdAt": "2026-10-13T01:04:19.083Z"
+      },
+      "publication": {
+        "permanentUrl": null,
+        "durationSeconds": null,
+        "language": null,
+        "subtitleUrl": null,
+        "transcriptPath": null,
+        "rightsStatus": "unverified",
+        "qualityStatus": "pending",
+        "status": "blocked"
+      },
+      "blockers": [
+        "permanent_url_missing",
+        "duration_unmeasured",
+        "language_not_verified",
+        "rights_not_cleared",
+        "quality_check_pending"
+      ]
+    },
+    {
+      "assetId": "0e3d62ee-04fd-4f8a-979d-2f4898f35932",
+      "kind": "video",
+      "slug": "desk-ai-encounter",
+      "role": "part-1",
+      "sourceRepository": "osmanosmanov6880-bot/osa-global-intelligence",
+      "sourceSnapshot": {
+        "status": "FOUND_IN_RUNWAY_NOT_PERMANENTLY_HOSTED",
+        "providerReportedKind": "video",
+        "extension": "mp4",
+        "name": "Multi-Shot Video _ Premium science documentary_ close-up of a person at a desk at night facing a to.mp4",
+        "createdAt": "2026-10-13T00:52:09.696Z"
+      },
+      "publication": {
+        "permanentUrl": null,
+        "durationSeconds": null,
+        "language": null,
+        "subtitleUrl": null,
+        "transcriptPath": null,
+        "rightsStatus": "unverified",
+        "qualityStatus": "pending",
+        "status": "blocked"
+      },
+      "blockers": [
+        "permanent_url_missing",
+        "duration_unmeasured",
+        "language_not_verified",
+        "rights_not_cleared",
+        "quality_check_pending"
+      ]
+    },
+    {
+      "assetId": "54fade71-a159-4e09-81ba-30eb1a7791da",
+      "kind": "video",
+      "slug": "observatory-reflection",
+      "role": "transition",
+      "sourceRepository": "osmanosmanov6880-bot/osa-global-intelligence",
+      "sourceSnapshot": {
+        "status": "FOUND_IN_RUNWAY_NOT_PERMANENTLY_HOSTED",
+        "providerReportedKind": "video",
+        "extension": "mp4",
+        "name": "Multi-Shot Video _ Cinematic documentary wide shot of a person standing alone in a dark observatory.mp4",
+        "createdAt": "2026-10-13T00:51:46.366Z"
+      },
+      "publication": {
+        "permanentUrl": null,
+        "durationSeconds": null,
+        "language": null,
+        "subtitleUrl": null,
+        "transcriptPath": null,
+        "rightsStatus": "unverified",
+        "qualityStatus": "pending",
+        "status": "blocked"
+      },
+      "blockers": [
+        "permanent_url_missing",
+        "duration_unmeasured",
+        "language_not_verified",
+        "rights_not_cleared",
+        "quality_check_pending"
+      ]
+    },
+    {
+      "assetId": "ae6c3ed6-010a-487d-b52d-867793229af2",
+      "kind": "video",
+      "slug": "modern-city-wide",
+      "role": "part-1",
+      "sourceRepository": "osmanosmanov6880-bot/osa-global-intelligence",
+      "sourceSnapshot": {
+        "status": "FOUND_IN_RUNWAY_NOT_PERMANENTLY_HOSTED",
+        "providerReportedKind": "video",
+        "extension": "mp4",
+        "name": "Multi-Shot Video _ 16_9 cinematic premium science documentary_ Extreme wide aerial over a vast mode.mp4",
+        "createdAt": "2026-10-13T00:49:14.114Z"
+      },
+      "publication": {
+        "permanentUrl": null,
+        "durationSeconds": null,
+        "language": null,
+        "subtitleUrl": null,
+        "transcriptPath": null,
+        "rightsStatus": "unverified",
+        "qualityStatus": "pending",
+        "status": "blocked"
+      },
+      "blockers": [
+        "permanent_url_missing",
+        "duration_unmeasured",
+        "language_not_verified",
+        "rights_not_cleared",
+        "quality_check_pending"
+      ]
+    },
+    {
+      "assetId": "5902bfab-7c2f-4752-ae92-7fbb4e57c10f",
+      "kind": "video",
+      "slug": "desk-before-sunrise",
+      "role": "part-3",
+      "sourceRepository": "osmanosmanov6880-bot/osa-global-intelligence",
+      "sourceSnapshot": {
+        "status": "FOUND_IN_RUNWAY_NOT_PERMANENTLY_HOSTED",
+        "providerReportedKind": "video",
+        "extension": "mp4",
+        "name": "Multi-Shot Video _ Intimate cinematic documentary close-up of a person at a desk before sunrise_ wr.mp4",
+        "createdAt": "2026-10-13T00:46:25.018Z"
+      },
+      "publication": {
+        "permanentUrl": null,
+        "durationSeconds": null,
+        "language": null,
+        "subtitleUrl": null,
+        "transcriptPath": null,
+        "rightsStatus": "unverified",
+        "qualityStatus": "pending",
+        "status": "blocked"
+      },
+      "blockers": [
+        "permanent_url_missing",
+        "duration_unmeasured",
+        "language_not_verified",
+        "rights_not_cleared",
+        "quality_check_pending"
+      ]
+    },
+    {
+      "assetId": "dd30ba82-45ae-4bc9-b3d8-ee6c1f053f58",
+      "kind": "video",
+      "slug": "historical-library",
+      "role": "part-2",
+      "sourceRepository": "osmanosmanov6880-bot/osa-global-intelligence",
+      "sourceSnapshot": {
+        "status": "FOUND_IN_RUNWAY_NOT_PERMANENTLY_HOSTED",
+        "providerReportedKind": "video",
+        "extension": "mp4",
+        "name": "Multi-Shot Video _ Premium cinematic documentary_ a vast historical library at night with towering.mp4",
+        "createdAt": "2026-10-13T00:45:48.258Z"
+      },
+      "publication": {
+        "permanentUrl": null,
+        "durationSeconds": null,
+        "language": null,
+        "subtitleUrl": null,
+        "transcriptPath": null,
+        "rightsStatus": "unverified",
+        "qualityStatus": "pending",
+        "status": "blocked"
+      },
+      "blockers": [
+        "permanent_url_missing",
+        "duration_unmeasured",
+        "language_not_verified",
+        "rights_not_cleared",
+        "quality_check_pending"
+      ]
+    },
+    {
+      "assetId": "c6639cfd-51e4-4cea-963e-0ba9ace3b442",
+      "kind": "video",
+      "slug": "global-city-night",
+      "role": "part-2",
+      "sourceRepository": "osmanosmanov6880-bot/osa-global-intelligence",
+      "sourceSnapshot": {
+        "status": "FOUND_IN_RUNWAY_NOT_PERMANENTLY_HOSTED",
+        "providerReportedKind": "video",
+        "extension": "mp4",
+        "name": "Multi-Shot Video _ Cinematic premium science documentary opening_ 16_9 wide_ Nighttime global city.mp4",
+        "createdAt": "2026-10-13T00:41:33.625Z"
+      },
+      "publication": {
+        "permanentUrl": null,
+        "durationSeconds": null,
+        "language": null,
+        "subtitleUrl": null,
+        "transcriptPath": null,
+        "rightsStatus": "unverified",
+        "qualityStatus": "pending",
+        "status": "blocked"
+      },
+      "blockers": [
+        "permanent_url_missing",
+        "duration_unmeasured",
+        "language_not_verified",
+        "rights_not_cleared",
+        "quality_check_pending"
+      ]
+    },
+    {
+      "assetId": "67ee3e6f-8d56-4873-9bb6-96a0dbeb02c6",
+      "kind": "video",
+      "slug": "human-horizon",
+      "role": "finale",
+      "sourceRepository": "osmanosmanov6880-bot/osa-global-intelligence",
+      "sourceSnapshot": {
+        "status": "FOUND_IN_RUNWAY_NOT_PERMANENTLY_HOSTED",
+        "providerReportedKind": "video",
+        "extension": "mp4",
+        "name": "Multi-Shot Video _ Cinematic wide establishing shot_ a lone human silhouette standing at the edge o.mp4",
+        "createdAt": "2026-10-13T00:24:51.474Z"
+      },
+      "publication": {
+        "permanentUrl": null,
+        "durationSeconds": null,
+        "language": null,
+        "subtitleUrl": null,
+        "transcriptPath": null,
+        "rightsStatus": "unverified",
+        "qualityStatus": "pending",
+        "status": "blocked"
+      },
+      "blockers": [
+        "permanent_url_missing",
+        "duration_unmeasured",
+        "language_not_verified",
+        "rights_not_cleared",
+        "quality_check_pending"
+      ]
+    },
+    {
+      "assetId": "7ca621e7-9215-453d-afa2-b2afaf9e379b",
+      "kind": "video",
+      "slug": "cinematic-opening-24fps",
+      "role": "opening-alt",
+      "sourceRepository": "osmanosmanov6880-bot/osa-global-intelligence",
+      "sourceSnapshot": {
+        "status": "FOUND_IN_RUNWAY_NOT_PERMANENTLY_HOSTED",
+        "providerReportedKind": "video",
+        "extension": "mp4",
+        "name": "Multi-Shot Video _ Cinematic premium science documentary opening_ 16_9 widescreen_ 24fps_ Extreme w.mp4",
+        "createdAt": "2026-10-13T00:15:48.770Z"
+      },
+      "publication": {
+        "permanentUrl": null,
+        "durationSeconds": null,
+        "language": null,
+        "subtitleUrl": null,
+        "transcriptPath": null,
+        "rightsStatus": "unverified",
+        "qualityStatus": "pending",
+        "status": "blocked"
+      },
+      "blockers": [
+        "permanent_url_missing",
+        "duration_unmeasured",
+        "language_not_verified",
+        "rights_not_cleared",
+        "quality_check_pending"
+      ]
+    },
+    {
+      "assetId": "0857c276-202d-4414-a25b-b6cec24e5b0d",
+      "kind": "video",
+      "slug": "solitary-human-opening",
+      "role": "opening-alt",
+      "sourceRepository": "osmanosmanov6880-bot/osa-global-intelligence",
+      "sourceSnapshot": {
+        "status": "FOUND_IN_RUNWAY_NOT_PERMANENTLY_HOSTED",
+        "providerReportedKind": "video",
+        "extension": "mp4",
+        "name": "Multi-Shot Video _ Cinematic documentary opening_ extreme wide shot of a solitary human silhouette.mp4",
+        "createdAt": "2026-10-13T00:07:14.486Z"
+      },
+      "publication": {
+        "permanentUrl": null,
+        "durationSeconds": null,
+        "language": null,
+        "subtitleUrl": null,
+        "transcriptPath": null,
+        "rightsStatus": "unverified",
+        "qualityStatus": "pending",
+        "status": "blocked"
+      },
+      "blockers": [
+        "permanent_url_missing",
+        "duration_unmeasured",
+        "language_not_verified",
+        "rights_not_cleared",
+        "quality_check_pending"
+      ]
+    },
+    {
+      "assetId": "6104b990-ee3b-441b-ba33-cca71f2bb685",
+      "kind": "video",
+      "slug": "macro-eye-reflection",
+      "role": "hook",
+      "sourceRepository": "osmanosmanov6880-bot/osa-global-intelligence",
+      "sourceSnapshot": {
+        "status": "FOUND_IN_RUNWAY_NOT_PERMANENTLY_HOSTED",
+        "providerReportedKind": "video",
+        "extension": "mp4",
+        "name": "Multi-Shot Video _ 16_9 premium science documentary_ extreme macro of a human eye reflecting a vast.mp4",
+        "createdAt": "2026-10-12T20:52:08.727Z"
+      },
+      "publication": {
+        "permanentUrl": null,
+        "durationSeconds": null,
+        "language": null,
+        "subtitleUrl": null,
+        "transcriptPath": null,
+        "rightsStatus": "unverified",
+        "qualityStatus": "pending",
+        "status": "blocked"
+      },
+      "blockers": [
+        "permanent_url_missing",
+        "duration_unmeasured",
+        "language_not_verified",
+        "rights_not_cleared",
+        "quality_check_pending"
+      ]
+    },
+    {
+      "assetId": "56262182-2df6-4f78-82bf-7356cea837d0",
+      "kind": "video",
+      "slug": "human-monumental-space",
+      "role": "scale",
+      "sourceRepository": "osmanosmanov6880-bot/osa-global-intelligence",
+      "sourceSnapshot": {
+        "status": "FOUND_IN_RUNWAY_NOT_PERMANENTLY_HOSTED",
+        "providerReportedKind": "video",
+        "extension": "mp4",
+        "name": "Multi-Shot Video _ Cinematic documentary science visual_ 16_9_ A lone ordinary human silhouette in.mp4",
+        "createdAt": "2026-10-12T20:07:49.357Z"
+      },
+      "publication": {
+        "permanentUrl": null,
+        "durationSeconds": null,
+        "language": null,
+        "subtitleUrl": null,
+        "transcriptPath": null,
+        "rightsStatus": "unverified",
+        "qualityStatus": "pending",
+        "status": "blocked"
+      },
+      "blockers": [
+        "permanent_url_missing",
+        "duration_unmeasured",
+        "language_not_verified",
+        "rights_not_cleared",
+        "quality_check_pending"
+      ]
+    },
+    {
+      "assetId": "3af96f23-5eaf-4a99-87a1-981515a54b88",
+      "kind": "video",
+      "slug": "designer-engineer-work",
+      "role": "part-3",
+      "sourceRepository": "osmanosmanov6880-bot/osa-global-intelligence",
+      "sourceSnapshot": {
+        "status": "FOUND_IN_RUNWAY_NOT_PERMANENTLY_HOSTED",
+        "providerReportedKind": "video",
+        "extension": "mp4",
+        "name": "Multi-Shot Video _ Premium cinematic science documentary_ realistic close shot of a designer-engine.mp4",
+        "createdAt": "2026-10-12T19:43:50.556Z"
+      },
+      "publication": {
+        "permanentUrl": null,
+        "durationSeconds": null,
+        "language": null,
+        "subtitleUrl": null,
+        "transcriptPath": null,
+        "rightsStatus": "unverified",
+        "qualityStatus": "pending",
+        "status": "blocked"
+      },
+      "blockers": [
+        "permanent_url_missing",
+        "duration_unmeasured",
+        "language_not_verified",
+        "rights_not_cleared",
+        "quality_check_pending"
+      ]
+    },
+    {
+      "assetId": "fa0e7864-2a52-4a47-aab4-ec2314e9ba56",
+      "kind": "video",
+      "slug": "historical-reenactment",
+      "role": "part-2",
+      "sourceRepository": "osmanosmanov6880-bot/osa-global-intelligence",
+      "sourceSnapshot": {
+        "status": "FOUND_IN_RUNWAY_NOT_PERMANENTLY_HOSTED",
+        "providerReportedKind": "video",
+        "extension": "mp4",
+        "name": "Multi-Shot Video _ Premium historical science documentary visual_ photorealistic reenactment clearl.mp4",
+        "createdAt": "2026-10-12T19:43:38.153Z"
+      },
+      "publication": {
+        "permanentUrl": null,
+        "durationSeconds": null,
+        "language": null,
+        "subtitleUrl": null,
+        "transcriptPath": null,
+        "rightsStatus": "unverified",
+        "qualityStatus": "pending",
+        "status": "blocked"
+      },
+      "blockers": [
+        "permanent_url_missing",
+        "duration_unmeasured",
+        "language_not_verified",
+        "rights_not_cleared",
+        "quality_check_pending"
+      ]
+    },
+    {
+      "assetId": "c5434d77-09af-4294-9d3a-2221793d00a4",
+      "kind": "video",
+      "slug": "macro-eye-alt",
+      "role": "hook-alt",
+      "sourceRepository": "osmanosmanov6880-bot/osa-global-intelligence",
+      "sourceSnapshot": {
+        "status": "FOUND_IN_RUNWAY_NOT_PERMANENTLY_HOSTED",
+        "providerReportedKind": "video",
+        "extension": "mp4",
+        "name": "Multi-Shot Video _ Cinematic premium science documentary_ photorealistic_ Extreme macro of a human.mp4",
+        "createdAt": "2026-10-12T19:43:00.567Z"
+      },
+      "publication": {
+        "permanentUrl": null,
+        "durationSeconds": null,
+        "language": null,
+        "subtitleUrl": null,
+        "transcriptPath": null,
+        "rightsStatus": "unverified",
+        "qualityStatus": "pending",
+        "status": "blocked"
+      },
+      "blockers": [
+        "permanent_url_missing",
+        "duration_unmeasured",
+        "language_not_verified",
+        "rights_not_cleared",
+        "quality_check_pending"
+      ]
+    },
+    {
+      "assetId": "6cc2162c-c468-472c-b4a4-2f85779e2f51",
+      "kind": "video",
+      "slug": "research-table-overhead",
+      "role": "part-2",
+      "sourceRepository": "osmanosmanov6880-bot/osa-global-intelligence",
+      "sourceSnapshot": {
+        "status": "FOUND_IN_RUNWAY_NOT_PERMANENTLY_HOSTED",
+        "providerReportedKind": "video",
+        "extension": "mp4",
+        "name": "A single continuous cinematic top-down camera move over a hu.mp4",
+        "createdAt": "2026-10-12T19:34:04.608Z"
+      },
+      "publication": {
+        "permanentUrl": null,
+        "durationSeconds": null,
+        "language": null,
+        "subtitleUrl": null,
+        "transcriptPath": null,
+        "rightsStatus": "unverified",
+        "qualityStatus": "pending",
+        "status": "blocked"
+      },
+      "blockers": [
+        "permanent_url_missing",
+        "duration_unmeasured",
+        "language_not_verified",
+        "rights_not_cleared",
+        "quality_check_pending"
+      ]
+    },
+    {
+      "assetId": "94287192-1795-4f25-a5b8-4c0ef4dd0d4a",
+      "kind": "video",
+      "slug": "archival-reading-room",
+      "role": "part-2",
+      "sourceRepository": "osmanosmanov6880-bot/osa-global-intelligence",
+      "sourceSnapshot": {
+        "status": "FOUND_IN_RUNWAY_NOT_PERMANENTLY_HOSTED",
+        "providerReportedKind": "video",
+        "extension": "mp4",
+        "name": "Multi-Shot Video _ Macro cinematic practical-effects shot inside an immense dark archival reading r.mp4",
+        "createdAt": "2026-10-12T19:28:19.227Z"
+      },
+      "publication": {
+        "permanentUrl": null,
+        "durationSeconds": null,
+        "language": null,
+        "subtitleUrl": null,
+        "transcriptPath": null,
+        "rightsStatus": "unverified",
+        "qualityStatus": "pending",
+        "status": "blocked"
+      },
+      "blockers": [
+        "permanent_url_missing",
+        "duration_unmeasured",
+        "language_not_verified",
+        "rights_not_cleared",
+        "quality_check_pending"
+      ]
+    },
+    {
+      "assetId": "817bc2fc-23c7-41cd-b25b-6d8ed632fc4f",
+      "kind": "video",
+      "slug": "eye-city-reflection-alt",
+      "role": "opening-alt",
+      "sourceRepository": "osmanosmanov6880-bot/osa-global-intelligence",
+      "sourceSnapshot": {
+        "status": "FOUND_IN_RUNWAY_NOT_PERMANENTLY_HOSTED",
+        "providerReportedKind": "video",
+        "extension": "mp4",
+        "name": "Multi-Shot Video _ Cinematic documentary opening_ 16_9_ Extreme close-up of a human eye reflecting.mp4",
+        "createdAt": "2026-10-12T19:21:19.731Z"
+      },
+      "publication": {
+        "permanentUrl": null,
+        "durationSeconds": null,
+        "language": null,
+        "subtitleUrl": null,
+        "transcriptPath": null,
+        "rightsStatus": "unverified",
+        "qualityStatus": "pending",
+        "status": "blocked"
+      },
+      "blockers": [
+        "permanent_url_missing",
+        "duration_unmeasured",
+        "language_not_verified",
+        "rights_not_cleared",
+        "quality_check_pending"
+      ]
+    },
+    {
+      "assetId": "a0d3d701-8893-40a5-a064-71c934e73a8d",
+      "kind": "video",
+      "slug": "eye-city-reflection-take2",
+      "role": "opening-alt",
+      "sourceRepository": "osmanosmanov6880-bot/osa-global-intelligence",
+      "sourceSnapshot": {
+        "status": "NOT_FOUND_IN_RECENT_RUNWAY_LIST",
+        "providerReportedKind": null,
+        "extension": null,
+        "name": null,
+        "createdAt": null
+      },
+      "publication": {
+        "permanentUrl": null,
+        "durationSeconds": null,
+        "language": null,
+        "subtitleUrl": null,
+        "transcriptPath": null,
+        "rightsStatus": "unverified",
+        "qualityStatus": "pending",
+        "status": "blocked"
+      },
+      "blockers": [
+        "permanent_url_missing",
+        "duration_unmeasured",
+        "language_not_verified",
+        "rights_not_cleared",
+        "quality_check_pending",
+        "source_not_found_in_current_workspace_list"
+      ]
+    },
+    {
+      "assetId": "db58afba-0d6d-4ca4-946d-90eb1a7791da",
+      "kind": "audio",
+      "slug": "russian-trailer-voiceover",
+      "role": "trailer",
+      "sourceRepository": "osmanosmanov6880-bot/osa-global-intelligence",
+      "sourceSnapshot": {
+        "status": "NOT_FOUND_IN_RECENT_RUNWAY_LIST",
+        "providerReportedKind": null,
+        "extension": null,
+        "name": null,
+        "createdAt": null
+      },
+      "publication": {
+        "permanentUrl": null,
+        "durationSeconds": null,
+        "language": null,
+        "subtitleUrl": null,
+        "transcriptPath": null,
+        "rightsStatus": "unverified",
+        "qualityStatus": "pending",
+        "status": "blocked"
+      },
+      "blockers": [
+        "permanent_url_missing",
+        "duration_unmeasured",
+        "language_not_verified",
+        "transcript_or_subtitles_missing",
+        "rights_not_cleared",
+        "quality_check_pending",
+        "source_not_found_in_current_workspace_list"
+      ]
+    },
+    {
+      "assetId": "dab2973c-fd32-4e5e-b82c-c7d593b28b27",
+      "kind": "audio",
+      "slug": "russian-opening-narration",
+      "role": "opening",
+      "sourceRepository": "osmanosmanov6880-bot/osa-global-intelligence",
+      "sourceSnapshot": {
+        "status": "FOUND_IN_RUNWAY_NOT_PERMANENTLY_HOSTED",
+        "providerReportedKind": "image",
+        "extension": "mp3",
+        "name": "OSA Cinema — Russian opening narration",
+        "createdAt": "2026-10-13T00:06:04.978Z"
+      },
+      "publication": {
+        "permanentUrl": null,
+        "durationSeconds": null,
+        "language": null,
+        "subtitleUrl": null,
+        "transcriptPath": null,
+        "rightsStatus": "unverified",
+        "qualityStatus": "pending",
+        "status": "blocked"
+      },
+      "blockers": [
+        "permanent_url_missing",
+        "duration_unmeasured",
+        "language_not_verified",
+        "transcript_or_subtitles_missing",
+        "rights_not_cleared",
+        "quality_check_pending",
+        "provider_kind_mismatch"
+      ]
+    },
+    {
+      "assetId": "6be66c9c-16ac-4980-8cac-d1c6716d4d91",
+      "kind": "audio",
+      "slug": "russian-opening-teaser",
+      "role": "teaser",
+      "sourceRepository": "osmanosmanov6880-bot/osa-global-intelligence",
+      "sourceSnapshot": {
+        "status": "FOUND_IN_RUNWAY_NOT_PERMANENTLY_HOSTED",
+        "providerReportedKind": "image",
+        "extension": "mp3",
+        "name": "OSA Interactive Cinema — Russian Opening Teaser",
+        "createdAt": "2026-10-12T22:25:23.494Z"
+      },
+      "publication": {
+        "permanentUrl": null,
+        "durationSeconds": null,
+        "language": null,
+        "subtitleUrl": null,
+        "transcriptPath": null,
+        "rightsStatus": "unverified",
+        "qualityStatus": "pending",
+        "status": "blocked"
+      },
+      "blockers": [
+        "permanent_url_missing",
+        "duration_unmeasured",
+        "language_not_verified",
+        "transcript_or_subtitles_missing",
+        "rights_not_cleared",
+        "quality_check_pending",
+        "provider_kind_mismatch"
+      ]
+    },
+    {
+      "assetId": "4021f6f1-fb5a-455a-9da2-b44d3a699878",
+      "kind": "audio",
+      "slug": "knowledge-horizon-music",
+      "role": "score",
+      "sourceRepository": "osmanosmanov6880-bot/osa-global-intelligence",
+      "sourceSnapshot": {
+        "status": "FOUND_IN_RUNWAY_NOT_PERMANENTLY_HOSTED",
+        "providerReportedKind": "image",
+        "extension": "mp3",
+        "name": "OSA _ Knowledge Horizon _ Cinematic Bed.mp3",
+        "createdAt": "2026-10-12T20:51:42.146Z"
+      },
+      "publication": {
+        "permanentUrl": null,
+        "durationSeconds": null,
+        "language": null,
+        "subtitleUrl": null,
+        "transcriptPath": null,
+        "rightsStatus": "unverified",
+        "qualityStatus": "pending",
+        "status": "blocked"
+      },
+      "blockers": [
+        "permanent_url_missing",
+        "duration_unmeasured",
+        "language_not_verified",
+        "rights_not_cleared",
+        "quality_check_pending",
+        "provider_kind_mismatch"
+      ]
+    },
+    {
+      "assetId": "0d7362d2-20d1-4ef8-85f8-e8b854efc4e9",
+      "kind": "audio",
+      "slug": "beyond-the-model-underscore",
+      "role": "score",
+      "sourceRepository": "osmanosmanov6880-bot/osa-global-intelligence",
+      "sourceSnapshot": {
+        "status": "FOUND_IN_RUNWAY_NOT_PERMANENTLY_HOSTED",
+        "providerReportedKind": "image",
+        "extension": "mp3",
+        "name": "OSA _ Beyond the Model _ Cinematic Underscore.mp3",
+        "createdAt": "2026-10-12T19:20:21.364Z"
+      },
+      "publication": {
+        "permanentUrl": null,
+        "durationSeconds": null,
+        "language": null,
+        "subtitleUrl": null,
+        "transcriptPath": null,
+        "rightsStatus": "unverified",
+        "qualityStatus": "pending",
+        "status": "blocked"
+      },
+      "blockers": [
+        "permanent_url_missing",
+        "duration_unmeasured",
+        "language_not_verified",
+        "rights_not_cleared",
+        "quality_check_pending",
+        "provider_kind_mismatch"
+      ]
+    },
+    {
+      "assetId": "b85171e3-8d86-47de-b65a-7f955a25dd9a",
+      "kind": "audio",
+      "slug": "russian-trailer-voiceover-alt",
+      "role": "trailer-alt",
+      "sourceRepository": "osmanosmanov6880-bot/osa-global-intelligence",
+      "sourceSnapshot": {
+        "status": "NOT_FOUND_IN_RECENT_RUNWAY_LIST",
+        "providerReportedKind": null,
+        "extension": null,
+        "name": null,
+        "createdAt": null
+      },
+      "publication": {
+        "permanentUrl": null,
+        "durationSeconds": null,
+        "language": null,
+        "subtitleUrl": null,
+        "transcriptPath": null,
+        "rightsStatus": "unverified",
+        "qualityStatus": "pending",
+        "status": "blocked"
+      },
+      "blockers": [
+        "permanent_url_missing",
+        "duration_unmeasured",
+        "language_not_verified",
+        "transcript_or_subtitles_missing",
+        "rights_not_cleared",
+        "quality_check_pending",
+        "source_not_found_in_current_workspace_list"
+      ]
+    },
+    {
+      "assetId": "3ad80295-eec3-4f08-9f70-04cb7101dc15",
+      "kind": "audio",
+      "slug": "part-3-opening-narration",
+      "role": "part-3",
+      "sourceRepository": "osmanosmanov6880-bot/osa-global-intelligence",
+      "sourceSnapshot": {
+        "status": "FOUND_IN_RUNWAY_NOT_PERMANENTLY_HOSTED",
+        "providerReportedKind": "image",
+        "extension": "mp3",
+        "name": "OSA — Часть III — Вступление",
+        "createdAt": "2026-10-12T20:51:34.293Z"
+      },
+      "publication": {
+        "permanentUrl": null,
+        "durationSeconds": null,
+        "language": null,
+        "subtitleUrl": null,
+        "transcriptPath": null,
+        "rightsStatus": "unverified",
+        "qualityStatus": "pending",
+        "status": "blocked"
+      },
+      "blockers": [
+        "permanent_url_missing",
+        "duration_unmeasured",
+        "language_not_verified",
+        "transcript_or_subtitles_missing",
+        "rights_not_cleared",
+        "quality_check_pending",
+        "provider_kind_mismatch"
+      ]
+    },
+    {
+      "assetId": "c960375e-9fa8-419b-afab-fb18c5dee4a0",
+      "kind": "audio",
+      "slug": "part-2-opening-narration",
+      "role": "part-2",
+      "sourceRepository": "osmanosmanov6880-bot/osa-global-intelligence",
+      "sourceSnapshot": {
+        "status": "FOUND_IN_RUNWAY_NOT_PERMANENTLY_HOSTED",
+        "providerReportedKind": "image",
+        "extension": "mp3",
+        "name": "OSA — Часть II — Вступление",
+        "createdAt": "2026-10-12T20:51:31.617Z"
+      },
+      "publication": {
+        "permanentUrl": null,
+        "durationSeconds": null,
+        "language": null,
+        "subtitleUrl": null,
+        "transcriptPath": null,
+        "rightsStatus": "unverified",
+        "qualityStatus": "pending",
+        "status": "blocked"
+      },
+      "blockers": [
+        "permanent_url_missing",
+        "duration_unmeasured",
+        "language_not_verified",
+        "transcript_or_subtitles_missing",
+        "rights_not_cleared",
+        "quality_check_pending",
+        "provider_kind_mismatch"
+      ]
+    },
+    {
+      "assetId": "122f3399-d755-40ff-9a46-b2cc6768d9fe",
+      "kind": "audio",
+      "slug": "part-1-opening-narration",
+      "role": "part-1",
+      "sourceRepository": "osmanosmanov6880-bot/osa-global-intelligence",
+      "sourceSnapshot": {
+        "status": "FOUND_IN_RUNWAY_NOT_PERMANENTLY_HOSTED",
+        "providerReportedKind": "image",
+        "extension": "mp3",
+        "name": "OSA — Часть I — Вступление",
+        "createdAt": "2026-10-12T20:51:30.572Z"
+      },
+      "publication": {
+        "permanentUrl": null,
+        "durationSeconds": null,
+        "language": null,
+        "subtitleUrl": null,
+        "transcriptPath": null,
+        "rightsStatus": "unverified",
+        "qualityStatus": "pending",
+        "status": "blocked"
+      },
+      "blockers": [
+        "permanent_url_missing",
+        "duration_unmeasured",
+        "language_not_verified",
+        "transcript_or_subtitles_missing",
+        "rights_not_cleared",
+        "quality_check_pending",
+        "provider_kind_mismatch"
+      ]
+    },
+    {
+      "assetId": "7acbad60-27d5-4c9d-9d2f-75ebd6746e61",
+      "kind": "image",
+      "slug": "premium-key-visual-current",
+      "role": "cover",
+      "sourceRepository": "osmanosmanov6880-bot/osa-global-intelligence",
+      "sourceSnapshot": {
+        "status": "FOUND_IN_RUNWAY_NOT_PERMANENTLY_HOSTED",
+        "providerReportedKind": "image",
+        "extension": "jpg",
+        "name": "Create one premium cinematic key visual_ widescreen 16_9_ fo.jpg",
+        "createdAt": "2026-10-13T03:42:02.291Z"
+      },
+      "publication": {
+        "permanentUrl": null,
+        "durationSeconds": null,
+        "language": null,
+        "subtitleUrl": null,
+        "transcriptPath": null,
+        "rightsStatus": "unverified",
+        "qualityStatus": "pending",
+        "status": "blocked"
+      },
+      "blockers": [
+        "permanent_url_missing",
+        "rights_not_cleared",
+        "quality_check_pending"
+      ]
+    },
+    {
+      "assetId": "ae3a26f8-6d73-4c9c-bed9-43dfb41b52ec",
+      "kind": "image",
+      "slug": "documentary-key-art",
+      "role": "cover-alt",
+      "sourceRepository": "osmanosmanov6880-bot/osa-global-intelligence",
+      "sourceSnapshot": {
+        "status": "FOUND_IN_RUNWAY_NOT_PERMANENTLY_HOSTED",
+        "providerReportedKind": "image",
+        "extension": "png",
+        "name": "Single cinematic key art frame for a premium science documen.png",
+        "createdAt": "2026-10-13T03:16:09.460Z"
+      },
+      "publication": {
+        "permanentUrl": null,
+        "durationSeconds": null,
+        "language": null,
+        "subtitleUrl": null,
+        "transcriptPath": null,
+        "rightsStatus": "unverified",
+        "qualityStatus": "pending",
+        "status": "blocked"
+      },
+      "blockers": [
+        "permanent_url_missing",
+        "rights_not_cleared",
+        "quality_check_pending"
+      ]
+    },
+    {
+      "assetId": "c9fbea0c-e548-403c-aa06-a3ac4c523241",
+      "kind": "image",
+      "slug": "premium-key-art-alt",
+      "role": "cover-alt",
+      "sourceRepository": "osmanosmanov6880-bot/osa-global-intelligence",
+      "sourceSnapshot": {
+        "status": "FOUND_IN_RUNWAY_NOT_PERMANENTLY_HOSTED",
+        "providerReportedKind": "image",
+        "extension": "png",
+        "name": "Premium cinematic documentary key art, wide 16:9 composition.png",
+        "createdAt": "2026-10-12T21:05:04.797Z"
+      },
+      "publication": {
+        "permanentUrl": null,
+        "durationSeconds": null,
+        "language": null,
+        "subtitleUrl": null,
+        "transcriptPath": null,
+        "rightsStatus": "unverified",
+        "qualityStatus": "pending",
+        "status": "blocked"
+      },
+      "blockers": [
+        "permanent_url_missing",
+        "rights_not_cleared",
+        "quality_check_pending"
+      ]
+    }
+  ]
+}

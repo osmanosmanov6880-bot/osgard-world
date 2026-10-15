@@ -9,6 +9,8 @@ on:
       - "godot/null-shift/**"
       - "scripts/sync-swarm-assets.mjs"
       - "scripts/null-shift-godot-smoke.mjs"
+      - "scripts/osa-media-release-preflight.mjs"
+      - "docs/OSA_MEDIA_RELEASE_PIPELINE.md"
       - "scripts/cloudflare-pages-preflight.mjs"
       - "scripts/compress-pages-wasm.mjs"
       - "package.json"
@@ -92,6 +94,8 @@ jobs:
           node scripts/null-shift-godot-smoke.mjs --export-check public/games/null-shift-godot
       - name: Build the static frontend
         run: npm run build
+      - name: Verify OSA media inventory and publication gate
+        run: npm run qa:osa-media-release
       - name: Package Godot WASM under the Pages asset limit
         run: node scripts/compress-pages-wasm.mjs dist
       - name: Check Cloudflare Pages artifact and limits
