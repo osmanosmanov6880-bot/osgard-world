@@ -1,4 +1,5 @@
 import { OSA_LESSON_SLUGS } from './osaLessonGuides'
+import { isPermanentMediaUrl } from './osaMediaUrl'
 
 export type OSAMediaLocale = 'ru' | 'en'
 export type OSAMediaKind = 'audio' | 'video'
@@ -68,4 +69,29 @@ export function getOSACinemaMedia(
 ): OSAMediaResource | null {
   const slug = OSA_LESSON_SLUGS[sceneIndex]
   return slug ? getOSALessonMedia(slug, locale, kind) : null
+}
+
+/** A publication-safe status, independent of whether a player component is mounted. */
+export type OSAMediaAvailability = 'not_published' | 'invalid_source' | 'available'
+
+export function getOSAMediaAvailability(resource: OSAMediaResource | null | undefined): OSAMediaAvailability {
+  if (!resource?.src) return 'not_published'
+  return isPermanentMediaUrl(resource.src) ? 'available' : 'invalid_source'
+}
+
+/** Summary for editors: only valid durable sources count as published. */
+export function getOSALessonMediaSummary(locale: OSAMediaLocale) {
+  const lessons = OSA_LESSON_SLUGS.map(slug => {
+    const audio = getOSAMediaAvailability(getOSALessonMedia(slug, locale, 'audio'))
+    const video = getOSAMediaAvailability(getOSALessonMedia(slug, locale, 'video'))
+    return { slug, audio, video }
+  })
+  return {
+    locale,
+    totalLessons: lessons.length,
+    playableAudio: lessons.filter(item => item.audio === 'available').length,
+    playableVideo: lessons.filter(item => item.video === 'available').length,
+    invalidSources: lessons.reduce((sum, item) => sum + Number(item.audio === 'invalid_source') + Number(item.video === 'invalid_source'), 0),
+    lessons,
+  }
 }
