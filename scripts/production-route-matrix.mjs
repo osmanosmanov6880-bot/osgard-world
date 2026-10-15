@@ -128,7 +128,7 @@ for (const [device, userAgent] of Object.entries(agents)) for (const route of ro
           : route === '/entertainment/the-hummer-gym/'
         ? text.includes('<title>THE HUMMER GYM — цифровая концепция боксерского клуба | OSGARD WORLD</title>') && text.includes('Концепция · Не официальный сайт')
       : route === '/entertainment/the-hummer-gym/en/'
-        ? text.includes('<title>THE HUMMER GYM — Boxing Club Digital Concept | OSGARD WORLD</title>') && text.includes('not the official website')
+        ? text.includes('<title>THE HUMMER GYM — Boxing Club Digital Concept | OSGARD WORLD</title>') && text.includes('NOT THE OFFICIAL WEBSITE OF AN OPERATING CLUB')
       : route === '/entertainment/the-hummer-gym/ar/'
         ? text.includes('<title>THE HUMMER GYM — مفهوم رقمي لنادي الملاكمة | OSGARD WORLD</title>') && text.includes('<html lang="ar" dir="rtl">')
       : route === '/entertainment/elbrus/og.svg'
