@@ -138,6 +138,14 @@ try {
   try {
     const pageErrors = []
     lecturePage.on('pageerror', error => pageErrors.push(error.message))
+    await lecturePage.goto(base + '/lectures/intelligence-and-imitation', { waitUntil: 'domcontentloaded', timeout: 25000 })
+    await lecturePage.locator('.osa-lesson-page').waitFor({ state: 'visible', timeout: 8000 })
+    const readingBlocks = await lecturePage.locator('.osa-lesson-reading-section').count()
+    const takeawayRows = await lecturePage.locator('.osa-lesson-summary li').count()
+    const mediaStatusCards = await lecturePage.locator('.osa-lesson-media-status').count()
+    const mediaElements = await lecturePage.locator('audio, video').count()
+    if (readingBlocks !== 3 || takeawayRows !== 3) problems.push('lesson detail: expected three structured reading blocks and three takeaways')
+    if (mediaStatusCards !== 2 || mediaElements !== 0) problems.push('lesson detail: pending media must show two clear status cards without fake player controls')
     await lecturePage.goto(base + '/lectures', { waitUntil: 'domcontentloaded', timeout: 25000 })
     const rows = lecturePage.locator('.lecture-row')
     await rows.first().waitFor({ state: 'visible', timeout: 8000 })
