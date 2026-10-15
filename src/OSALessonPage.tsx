@@ -5,7 +5,7 @@ import { OSA_LESSON_SLUGS, osaLessonGuides } from './osaLessonGuides'
 import { osaLessonReadings } from './osaLessonReading'
 import { OsgardLogo } from './OsgardLogo'
 import OSAMediaPlayer from './OSAMediaPlayer'
-import { getOSALessonMedia } from './osaMediaCatalog'
+import { getOSALessonMedia, getOSAMediaAvailability } from './osaMediaCatalog'
 import { getOSALearningProgress, isOSALearningProgressPersistent, markOSALessonOpened, setOSALessonCompletion, subscribeOSALearningProgress } from './osaProgress'
 import './osaLessonPage.css'
 
@@ -211,7 +211,7 @@ export default function OSALessonPage({ slug }: { slug: string }) {
       </section>
 
       <section className="osa-lesson-media-note" aria-labelledby="osa-lesson-media-title">
-        <div><p className="osa-lesson-eyebrow">MEDIA / RELEASE STATUS</p><h2 id="osa-lesson-media-title">{t.mediaTitle}</h2><p>{t.mediaBody}</p><a href="/osa-library/">{t.mediaLink}<ArrowUpRight size={15} /></a></div>
+        <div><p className="osa-lesson-eyebrow">MEDIA / RELEASE STATUS</p><h2 id="osa-lesson-media-title">{t.mediaTitle}</h2><p>{getOSAMediaAvailability(getOSALessonMedia(slug, locale, 'audio')) === 'available' || getOSAMediaAvailability(getOSALessonMedia(slug, locale, 'video')) === 'available' ? (locale === 'ru' ? 'Доступные записи размещены ниже. Остальные версии появятся после проверки и публикации.' : 'Available recordings are shown below. Other versions will appear after review and publication.') : t.mediaBody}</p><a href="/osa-library/">{t.mediaLink}<ArrowUpRight size={15} /></a></div>
         <CircleHelp size={24} />
       </section>
 
