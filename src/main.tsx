@@ -23,6 +23,7 @@ import AcademyHome from './AcademyHome'
 import OSAIntelligenceHome from './OSAIntelligenceHome'
 import OSACinema from './OSACinema'
 import LectureLibrary from './LectureLibrary'
+import OSALessonPage from './OSALessonPage'
 import MiniApp from './MiniApp'
 import { AurumPage, CatalogPage, ChroniclePage, ClubPage, DevelopmentPage, MastersPage, TimeCoinPage, WorldsPage } from './Sections'
 import { EntertainmentCatalog } from './EntertainmentCatalog'
@@ -76,7 +77,7 @@ const cleanSeo: Record<string, { title: string; description: string }> = {
 
 function Seo({ path }: { path: string }) {
   React.useEffect(() => {
-    const data = cleanSeo[path] ?? cleanSeo['/']
+    const data = cleanSeo[path] ?? (path.startsWith('/lectures/') ? { title: 'OSA Original — подробная лекция | OSGARD', description: 'Учебные цели, материал, словарь, самопроверка, практика и проверяемые источники OSA Original.' } : cleanSeo['/'])
     const canonical = `https://osgard.world${path === '/' ? '/' : path}`
     document.title = data.title
     const setMeta = (selector: string, attribute: string, value: string) => {
@@ -106,6 +107,7 @@ function RoutedRoot() {
   if (path === '/') return <><Seo path="/" /><OSAIntelligenceHome /></>
   if (path === '/academy') return <><Seo path="/academy" /><AcademyHome /></>
   if (path === '/lectures') return <><Seo path="/lectures" /><LectureLibrary /></>
+  if (path.startsWith('/lectures/')) return <><Seo path={path} /><OSALessonPage slug={path.slice('/lectures/'.length)} /></>
   if (path === '/portal') return <><Seo path="/portal" /><App /></>
   if (path === '/osa-cinema') return <><Seo path={path} /><OSACinema /></>
   if (path === '/miniapp') return <MiniApp />
