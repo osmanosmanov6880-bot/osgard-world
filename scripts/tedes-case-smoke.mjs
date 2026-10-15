@@ -61,6 +61,7 @@ assert.ok(product.includes('id="addToProject"') && product.includes('localStorag
 assert.ok(product.includes('link.href="/tedes/project/"') && product.includes('sku==="LINEA-EDGE-02"?"Brushed steel"'), 'Product page must route to the project workspace and map the steel finish correctly')
 assert.ok(projectWorkspace.includes('<title>TEDES — проектная ведомость</title>') && projectWorkspace.includes('name="robots" content="noindex,nofollow"'), 'Project workspace metadata or private indexing policy is missing')
 assert.ok(projectWorkspace.includes('id="importJson"') && projectWorkspace.includes('id="importFile"') && projectWorkspace.includes('id="importDialog"') && projectWorkspace.includes('id="importReplace"') && projectWorkspace.includes('id="importMerge"'), 'Workspace needs import preview and explicit replace/merge choices')
+assert.ok(projectController.includes('pendingImport.doors') && projectController.includes('normalizeProjectDocument({') && projectController.includes('MAX_PROJECT_POSITIONS'), 'Replace import must normalize the complete document and enforce limits without duplicate IDs')
 assert.ok(projectWorkspace.includes('id="editDialog"') && projectWorkspace.includes('id="editForm"') && projectWorkspace.includes('id="editWidth"') && projectWorkspace.includes('id="editHeight"'), 'Workspace position editor is incomplete')
 assert.ok(projectWorkspace.includes('src="/tedes/project/project-workspace.js"') && projectController.includes('export function parseProjectDocument'), 'Workspace controller must be external and expose testable import logic')
 const fixture = { schema: 'tedes-studio-project/v1', projectName: 'Test Residence', doors: [
@@ -94,17 +95,17 @@ assert.throws(() => mergeProjectDocuments({ doors: Array.from({ length: 30 }, (_
 assert.equal(workspaceSafeCsvCell('=1+1'), '"\'=1+1"')
 assert.ok(workspaceSafeCsvCell('  @SUM(A1:A2)').startsWith('"\'  @SUM'), 'Workspace CSV must prevent formula injection')
 
-for (const marker of ['id="positionRows"','id="requestForm"','id="contactEmail"','id="exportJson"','id="exportCsv"','id="clearProject"','id="projectName"','tedes-studio-project-v1','data-duplicate=','data-remove=','LOCAL FILE ONLY','tedes-project-request.json','window.addEventListener("storage"']) {
+for (const marker of ['id="positionRows"','id="requestForm"','id="contactEmail"','id="exportJson"','id="exportCsv"','id="clearProject"','id="projectName"','tedes-studio-project-v1','noindex,nofollow']) {
   assert.ok(projectWorkspace.includes(marker), 'Project workspace contract marker missing: ' + marker)
 }
-assert.ok(projectWorkspace.includes('noindex,nofollow') && projectWorkspace.includes('не отправлено') && projectWorkspace.includes('не подтверждены'), 'Workspace privacy/commercial disclaimers are incomplete')
-const workspaceCsvCellMatch = projectWorkspace.match(/function csvCell\(value\)\s*\{[\s\S]*?\n\}/)
-assert.ok(workspaceCsvCellMatch, 'Project workspace CSV formula-injection guard is missing')
-const workspaceCsvCell = vm.runInNewContext('(' + workspaceCsvCellMatch[0] + ')')
-assert.equal(workspaceCsvCell('=1+1'), '"\'=1+1"')
-assert.ok(workspaceCsvCell('  @SUM(A1:A2)').startsWith('"\'  @SUM'), 'Project workspace CSV must neutralize formula prefixes')
+for (const marker of ['data-edit=','data-duplicate=','data-remove=','LOCAL FILE ONLY','tedes-project-request.json','window.addEventListener("storage"','MAX_IMPORT_BYTES','parseProjectDocument','mergeProjectDocuments','normalizeProjectDocument']) {
+  assert.ok(projectController.includes(marker), 'Project workspace controller marker missing: ' + marker)
+}
+assert.ok(projectWorkspace.includes('noindex,nofollow') && projectWorkspace.includes('не отправляется на сервер') && projectWorkspace.includes('не подтверждены') && projectController.includes('не отправлено'), 'Workspace privacy/commercial disclaimers are incomplete')
+assert.equal(workspaceSafeCsvCell('=1+1'), '"\\'=1+1"')
+assert.ok(workspaceSafeCsvCell('  @SUM(A1:A2)').startsWith('"\\'  @SUM'), 'Project workspace CSV must neutralize formula prefixes')
 assert.ok(demo.includes('doors:doors.map(d=>({...d}))') && demo.includes('schema:"tedes-studio-project/v1"'), 'Studio quote JSON must remain importable into the same project schema')
-assert.ok(demo.includes('window.addEventListener("storage"') && projectWorkspace.includes('window.addEventListener("storage"'), 'Studio and project workspace must synchronize project changes across tabs')
+assert.ok(demo.includes('window.addEventListener("storage"') && projectController.includes('window.addEventListener("storage"'), 'Studio and project workspace must synchronize project changes across tabs')
 assert.ok(demo.includes('function renderRows(save=true)') && demo.includes('renderRows(false);updatePreview();'), 'Studio storage events must render without re-writing shared storage and ping-ponging between tabs')
 assert.ok(demo.includes('const columns=["id","zone","sku","collection"') && demo.includes('door.sku?" · "+escapeHtml(door.sku)'), 'Model SKUs must remain visible and included in the exported CSV')
 assert.ok(materials.includes('Brushed Steel') && materials.includes('Matte Black') && materials.includes('Техническая граница'), 'Materials guide must show demo finishes and disclose limits')
