@@ -44,6 +44,8 @@ jobs:
         run: npm run qa:osa-media-availability
       - name: OSA 6 learning dashboard
         run: npm run qa:osa6-learning
+      - name: OSA monetization offer and checkout honesty
+        run: npm run qa:osa-monetization
       - name: Academy
         run: npm run qa:academy
       - name: Lectures
