@@ -44,7 +44,7 @@ check('three localized static entrypoints have correct metadata', () => {
     assert.ok(html.includes('<title>' + p.title + '</title>'), p.lang + ' title');
     assert.ok(html.includes('<link rel="canonical" href="' + p.url + '">'), p.lang + ' canonical');
     for (const other of pages) assert.ok(html.includes('hreflang="' + other.lang + '" href="' + other.url + '"'), p.lang + ' hreflang ' + other.lang);
-    assert.ok(html.includes('href="https://osgard.world/development/auto-style/og.svg"'), p.lang + ' OG image');
+    assert.ok(html.includes('property="og:image" content="https://osgard.world/development/auto-style/og.svg"'), p.lang + ' OG image');
     assert.ok(html.includes('name="twitter:card" content="summary_large_image"'), p.lang + ' social preview');
     assert.ok(html.includes('data-case-status="demo-only"'), p.lang + ' demo status');
     assert.ok(html.includes('id="main"') && html.includes('class="as-skip"'), p.lang + ' accessibility landmarks');
