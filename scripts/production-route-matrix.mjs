@@ -25,7 +25,7 @@ for (const [device, userAgent] of Object.entries(agents)) for (const route of ro
       : route === '/tedes/materials/'
         ? text.includes('<title>TEDES Materials — guide to finishes</title>') && text.includes('Antique Brass') && text.includes('Brushed Steel') && text.includes('Matte Black')
       : route === '/tedes/print/'
-        ? text.includes('<title>TEDES — печатная ведомость проекта</title>') && text.includes('id="positionRows"') && text.includes('id="printProject"') && text.includes('tedes-studio-project-v1') && text.includes('НЕ подтверждённая производственная спецификация')
+        ? text.includes('<title>TEDES — печатная ведомость проекта</title>') && text.includes('id="positionRows"') && text.includes('id="printProject"') && text.includes('tedes-studio-project-v1') && text.includes('не подтверждённая производственная спецификация')
       : route === '/development/tedes/'
         ? text.includes('<title>TEDES — кейс OSGARD Development</title>') && text.includes('href="/tedes/"') && text.includes('FLAGSHIP CASE')
       : route === '/development/merakki/'
