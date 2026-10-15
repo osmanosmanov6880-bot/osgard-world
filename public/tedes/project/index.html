@@ -124,19 +124,19 @@ render();
 $("projectName").addEventListener("input",()=>{project.projectName=clean($("projectName").value,80)||"Untitled project";save();$("projectSummary").textContent="Название проекта обновлено.";});
 $("positionRows").addEventListener("click",event=>{
  const remove=event.target.closest("[data-remove]"),duplicate=event.target.closest("[data-duplicate]");
- if(remove){project.doors=project.doors.filter(d=>d.id!==remove.dataset.remove);save();render();$("requestMessage").textContent="Позиция удалена из локальной ведомости.";return;}
+ if(remove){project.doors=project.doors.filter(d=>d.id!==remove.dataset.remove);const saved=save();render();$("requestMessage").textContent=saved?"Позиция удалена из локальной ведомости.":"Позиция удалена только в текущей сессии: экспортируйте резервную копию, так как сохранение браузером недоступно.";return;}
  if(duplicate){
   if(project.doors.length>=30){$("requestMessage").textContent="Достигнут лимит: 30 позиций.";return;}
   const src=project.doors.find(d=>d.id===duplicate.dataset.duplicate);if(!src)return;
   const next=Math.max(0,...project.doors.map(d=>Number(String(d.id).replace(/^D-/,""))||0))+1;
   project.doors.push({...src,id:"D-"+String(next).padStart(3,"0"),zone:clean(src.zone+" (копия)",80)});
-  save();render();$("requestMessage").textContent="Копия добавлена.";return;
+  const saved=save();render();$("requestMessage").textContent=saved?"Копия добавлена.":"Копия создана только в текущей сессии: сохранение браузером недоступно.";return;
  }
 });
 $("clearProject").addEventListener("click",()=>{
  if(!project.doors.length)return;
  if(!window.confirm("Удалить все позиции из локального проекта? Экспортируйте резервную копию перед очисткой."))return;
- project.doors=[];save();render();$("requestMessage").textContent="Проект очищен в этом браузере.";
+ project.doors=[];const saved=save();render();$("requestMessage").textContent=saved?"Проект очищен в этом браузере.":"Проект очищен только в текущей сессии; браузер не сохранил изменение.";
 });
 $("exportJson").addEventListener("click",()=>{
  if(!project.doors.length)return;
