@@ -1,0 +1,75 @@
+.osa-media-player {
+  display: grid;
+  gap: 14px;
+  width: 100%;
+  min-width: 0;
+  padding: clamp(16px, 2.5vw, 22px);
+  border: 1px solid rgba(130, 151, 180, .28);
+  border-radius: 16px;
+  background: rgba(10, 15, 24, .82);
+  color: #edf1f7;
+}
+.osa-media-player__header,
+.osa-media-player__settings,
+.osa-media-player__controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.osa-media-player__header { justify-content: space-between; }
+.osa-media-player__header h3 { margin: 3px 0 0; font-family: inherit; font-size: 1.05rem; line-height: 1.35; overflow-wrap: anywhere; }
+.osa-media-player__eyebrow { margin: 0; color: #a8bacf; font-family: inherit; font-size: .68rem; font-weight: 600; line-height: 1.4; letter-spacing: .13em; text-transform: uppercase; }
+.osa-media-player__language { flex: 0 0 auto; border: 1px solid rgba(168, 186, 207, .3); border-radius: 999px; padding: 4px 8px; color: #bccada; font-size: .72rem; }
+.osa-media-player audio { display: none; }
+.osa-media-player__video { display: block; width: 100%; max-height: 540px; aspect-ratio: 16 / 9; border-radius: 10px; background: #05070b; }
+.osa-media-player button,
+.osa-media-player select { font: inherit; }
+.osa-media-player button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 38px;
+  padding: 7px 10px;
+  border: 1px solid rgba(168, 186, 207, .25);
+  border-radius: 9px;
+  color: inherit;
+  background: rgba(255,255,255,.035);
+  cursor: pointer;
+}
+.osa-media-player button:hover { background: rgba(255,255,255,.09); }
+.osa-media-player button:focus-visible,
+.osa-media-player select:focus-visible,
+.osa-media-player input:focus-visible,
+.osa-media-player summary:focus-visible { outline: 2px solid #bbd5ff; outline-offset: 3px; }
+.osa-media-player__primary { background: #f0f4fa !important; color: #121a28 !important; border-color: #f0f4fa !important; }
+.osa-media-player__primary span { font-size: .85rem; font-weight: 600; }
+.osa-media-player__controls { align-items: center; flex-wrap: wrap; }
+.osa-media-player__controls button:not(.osa-media-player__primary) { position: relative; }
+.osa-media-player__controls button span { font-size: .7rem; margin-left: -5px; }
+.osa-media-player__timeline { flex: 1 1 180px; min-width: 130px; }
+.osa-media-player__timeline input,
+.osa-media-player__volume input { display: block; width: 100%; accent-color: #c8d9f3; cursor: pointer; }
+.osa-media-player__timeline > div { display: flex; justify-content: space-between; gap: 8px; color: #a8bacf; font: 500 .73rem/1.3 ui-monospace, SFMono-Regular, Menlo, monospace; }
+.osa-media-player__settings { justify-content: space-between; flex-wrap: wrap; padding-top: 2px; }
+.osa-media-player__settings label { display: inline-flex; align-items: center; gap: 9px; color: #bdc9d8; font-size: .8rem; }
+.osa-media-player__settings select { min-height: 34px; padding: 5px 9px; border: 1px solid rgba(168, 186, 207, .26); border-radius: 8px; color: #edf1f7; background: #121a27; }
+.osa-media-player__volume { width: min(160px, 100%); }
+.osa-media-player__volume svg { flex: 0 0 auto; }
+.osa-media-player__transcript { color: #d9e5f5; font-size: .8rem; }
+.osa-media-player__transcript summary { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+.osa-media-player__transcript div { margin-top: 10px; max-height: 280px; overflow: auto; line-height: 1.7; white-space: pre-wrap; color: #c6d1df; }
+.osa-media-player__transcript-status { color: #a8bacf; font-size: .76rem; }
+.osa-media-player__error { margin: 0; color: #ffb9b9; font-size: .83rem; }
+.osa-media-player--warning { border-color: rgba(234, 179, 8, .35); }
+.osa-media-player--warning p:last-child { margin: 0; color: #d0dae6; font-size: .85rem; line-height: 1.6; }
+@media (max-width: 560px) {
+  .osa-media-player { padding: 14px; border-radius: 12px; }
+  .osa-media-player__controls { gap: 7px; }
+  .osa-media-player__controls button { padding: 7px; }
+  .osa-media-player__settings { align-items: flex-start; flex-direction: column; }
+  .osa-media-player__volume { width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .osa-media-player * { scroll-behavior: auto !important; transition: none !important; animation: none !important; }
+}

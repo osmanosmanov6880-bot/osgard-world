@@ -4,6 +4,8 @@ import { getOSACinemaLessons, type OSACinemaLocale } from './OSACinema'
 import { OSA_LESSON_SLUGS, osaLessonGuides } from './osaLessonGuides'
 import { osaLessonReadings } from './osaLessonReading'
 import { OsgardLogo } from './OsgardLogo'
+import OSAMediaPlayer from './OSAMediaPlayer'
+import { getOSALessonMedia } from './osaMediaCatalog'
 import './osaLessonPage.css'
 
 const STORAGE_KEY = 'osgard-osa-lesson-completion-v1'
@@ -215,6 +217,9 @@ export default function OSALessonPage({ slug }: { slug: string }) {
         <div><p className="osa-lesson-eyebrow">MEDIA / RELEASE STATUS</p><h2 id="osa-lesson-media-title">{t.mediaTitle}</h2><p>{t.mediaBody}</p><a href="/osa-library/">{t.mediaLink}<ArrowUpRight size={15} /></a></div>
         <CircleHelp size={24} />
       </section>
+
+      <OSAMediaPlayer media={getOSALessonMedia(slug, locale, 'audio')} />
+      <OSAMediaPlayer media={getOSALessonMedia(slug, locale, 'video')} />
 
       <section className="osa-lesson-completion">
         <div><p className="osa-lesson-eyebrow">LEARNING RECORD / LOCAL</p><h2>{isComplete ? t.completed : (locale === 'ru' ? 'Зафиксируйте прохождение' : 'Record this lesson')}</h2><p>{t.completionNote}</p>{storageUnavailable && <p className="osa-lesson-storage-warning" role="status">{t.storageWarning}</p>}</div>
