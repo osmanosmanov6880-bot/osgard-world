@@ -83,7 +83,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: public/games/null-shift-godot
-          key: osgard-godot-web-export-${{ runner.os }}-${{ hashFiles('godot/null-shift/**', 'scripts/null-shift-godot-smoke.mjs') }}
+          key: osgard-godot-web-export-${{ runner.os }}-${{ hashFiles('godot/null-shift/**', 'public/games/null-shift-godot/**', 'scripts/null-shift-godot-smoke.mjs') }}
       - name: Cache Godot 4.7.2 and web export templates
         id: godot-cache
         if: ${{ steps.godot-export-cache.outputs.cache-hit != 'true' && !contains(github.event.head_commit.message, '[supersede]') }}
