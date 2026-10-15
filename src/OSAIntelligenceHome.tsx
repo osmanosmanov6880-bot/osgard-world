@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { ArrowRight, ArrowUpRight, BookOpen, Brain, Globe2, Layers3, ShieldCheck, Sparkles } from 'lucide-react'
+import { ArrowRight, ArrowUpRight, BookOpen, Globe2, Layers3, ShieldCheck } from 'lucide-react'
+import { OSAMark } from './OSAMark'
 import './osaIntelligenceHome.css'
 
 type Locale = 'ru' | 'en'
@@ -40,7 +41,7 @@ export default function OSAIntelligenceHome() {
   return <main className="osa-home" lang={locale}>
     <div className="osa-home-noise" aria-hidden="true" />
     <header className="osa-home-header">
-      <a className="osa-home-brand" href="/" aria-label={t.home}><span className="osa-home-brand-mark"><Brain size={20} strokeWidth={1.6} /></span><span><strong>OSA</strong><small>INTELLIGENCE</small></span></a>
+      <a className="osa-home-brand" href="/" aria-label={t.home}><span className="osa-home-brand-mark"><OSAMark variant="mark" /></span><span><strong>OSA</strong><small>INTELLIGENCE / 5.0</small></span></a>
       <div className="osa-home-header-actions"><span className="osa-home-status"><i />{locale === 'ru' ? 'ИНТЕЛЛЕКТ · ИССЛЕДОВАНИЕ · ДЕЙСТВИЕ' : 'INTELLIGENCE · RESEARCH · ACTION'}</span>
         <button className="osa-home-language" type="button" onClick={() => setLocale(locale === 'ru' ? 'en' : 'ru')} aria-label={t.language}><Globe2 size={15} />{locale.toUpperCase()}</button>
         <a className="osa-home-portal-link" href="/portal">OSGARD <ArrowUpRight size={14} /></a>
@@ -60,15 +61,10 @@ export default function OSAIntelligenceHome() {
           <span><BookOpen size={15} />{t.proofA}</span><span><Layers3 size={15} />{t.proofB}</span><span><ShieldCheck size={15} />{t.proofC}</span>
         </div>
       </div>
-      <div className="osa-home-art" role="img" aria-label={locale === 'ru' ? 'Схема модели, доказательств и решения' : 'Model, evidence, and decision diagram'}>
-        <div className="osa-home-art-grid" /><div className="osa-home-orbit osa-home-orbit-one" /><div className="osa-home-orbit osa-home-orbit-two" />
-        <div className="osa-home-art-caption">{t.artTop}</div>
-        <div className="osa-home-core"><Sparkles size={22} /><strong>OSA</strong><small>THINK / VERIFY / ACT</small></div>
-        <div className="osa-home-float osa-home-float-model"><i>01</i><span>{t.tagA}</span></div>
-        <div className="osa-home-float osa-home-float-evidence"><i>02</i><span>{t.tagB}</span></div>
-        <div className="osa-home-float osa-home-float-decision"><i>03</i><span>{t.tagC}</span></div>
-        <div className="osa-home-art-note"><strong>{t.artTitle}</strong><span>{t.artBody}</span></div>
-        <div className="osa-home-art-cross osa-home-cross-a" /><div className="osa-home-art-cross osa-home-cross-b" />
+      <div className="osa-home-art" role="img" aria-label={locale === 'ru' ? 'Знак OSA 5.0 и путь от модели к решению' : 'OSA 5.0 mark and the path from model to decision'}>
+        <div className="osa-home-art-grid" aria-hidden="true" /><div className="osa-home-art-caption">{t.artTop}</div>
+        <div className="osa-home-art-plate"><OSAMark variant="lockup" className="osa-home-art-mark" /><span className="osa-home-art-rule" /><div className="osa-home-art-note"><strong>{t.artTitle}</strong><span>{t.artBody}</span></div></div>
+        <div className="osa-home-art-sequence" aria-label={locale === 'ru' ? 'Этапы работы' : 'Working sequence'}><span><i>01</i>{t.tagA}</span><span><i>02</i>{t.tagB}</span><span><i>03</i>{t.tagC}</span></div>
       </div>
     </section>
 
