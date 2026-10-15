@@ -39,6 +39,7 @@ assert.ok(skill.includes('/brand/osa5-portals.css') && games.includes('/brand/os
 assert.ok(portalStyles.includes('.ecosystem-backlink:focus-visible') && portalStyles.includes('prefers-reduced-motion'), 'Static brand links need keyboard focus and reduced-motion support')
 assert.ok(cinema.includes("import { OSAMark } from './OSAMark'") && cinema.includes("className='cinema-osa-mark'"), 'OSA Original must use the common mark')
 assert.ok(main.includes("import './osa5-brand.css'"), 'Shared design system must load after existing styles')
+assert.ok(main.indexOf("import './osa5-brand.css'") > main.indexOf("import './legacy.css'"), 'OSA 5.0 overrides must load after product-specific CSS')
 assert.ok(main.includes("if (path === '/') return <><Seo path=\"/\" /><OSAIntelligenceHome /></>"), 'OSA Intelligence root route must remain unchanged')
 assert.ok(main.includes("if (path === '/portal') return <><Seo path=\"/portal\" /><App /></>"), 'OSGARD ecosystem must remain available on its current route')
 assert.ok(cinema.includes("className='cinema-brand' href='/portal'"), 'Course return route must remain intact')
