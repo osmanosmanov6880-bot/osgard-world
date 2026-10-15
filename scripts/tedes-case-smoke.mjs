@@ -95,10 +95,10 @@ assert.throws(() => mergeProjectDocuments({ doors: Array.from({ length: 30 }, (_
 assert.equal(workspaceSafeCsvCell('=1+1'), `"'=1+1"`)
 assert.ok(workspaceSafeCsvCell('  @SUM(A1:A2)').startsWith(`"'  @SUM`), 'Workspace CSV must prevent formula injection')
 
-for (const marker of ['id="positionRows"','id="requestForm"','id="contactEmail"','id="exportJson"','id="exportCsv"','id="clearProject"','id="projectName"','tedes-studio-project-v1','noindex,nofollow']) {
+for (const marker of ['id="positionRows"','id="requestForm"','id="contactEmail"','id="exportJson"','id="exportCsv"','id="clearProject"','id="projectName"','noindex,nofollow']) {
   assert.ok(projectWorkspace.includes(marker), 'Project workspace contract marker missing: ' + marker)
 }
-for (const marker of ['data-edit=','data-duplicate=','data-remove=','LOCAL FILE ONLY','tedes-project-request.json','window.addEventListener("storage"','MAX_IMPORT_BYTES','parseProjectDocument','mergeProjectDocuments','normalizeProjectDocument']) {
+for (const marker of ['data-edit=','data-duplicate=','data-remove=','LOCAL FILE ONLY','tedes-project-request.json','window.addEventListener("storage"','MAX_IMPORT_BYTES','parseProjectDocument','mergeProjectDocuments','normalizeProjectDocument','tedes-studio-project-v1']) {
   assert.ok(projectController.includes(marker), 'Project workspace controller marker missing: ' + marker)
 }
 assert.ok(projectWorkspace.includes('noindex,nofollow') && projectWorkspace.includes('не отправляется на сервер') && projectWorkspace.includes('не подтверждены') && projectController.includes('не отправлено'), 'Workspace privacy/commercial disclaimers are incomplete')
