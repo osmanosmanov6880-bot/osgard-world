@@ -1,5 +1,6 @@
 import React, { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+import './osa5-brand.css'
 import './styles.css'
 import './miniapp.css'
 import './founders.css'
