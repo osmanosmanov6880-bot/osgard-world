@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#11100d">
+<meta name="robots" content="noindex,nofollow">
+<meta name="description" content="Печатная демонстрационная ведомость TEDES, сформированная из локально сохранённого проекта.">
+<title>TEDES — печатная ведомость проекта</title>
+<style>
+:root{color-scheme:dark;--ink:#f0eadf;--muted:#aaa08e;--gold:#d6bf8b;--line:#453d2f;--paper:#f7f4ed;--paper-ink:#1d1c18;--paper-muted:#696558;--paper-line:#d9d3c5;font-family:Inter,"Helvetica Neue",Arial,sans-serif}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:#10100d;color:var(--ink);font-size:14px;line-height:1.5}
+a{color:inherit;text-decoration:none}
+button{font:inherit}
+button:focus-visible,a:focus-visible{outline:2px solid #e2c991;outline-offset:3px}
+.toolbar{min-height:76px;max-width:1120px;margin:auto;padding:18px 28px;display:flex;align-items:center;justify-content:space-between;gap:18px}
+.brand{font-size:11px;letter-spacing:.22em;color:#e4d2a8;text-transform:uppercase}
+.brand small{display:block;color:#938774;font-size:8px;letter-spacing:.18em;margin-top:4px}
+.toolbar-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+.button{display:inline-flex;align-items:center;justify-content:center;min-height:42px;padding:0 14px;border:1px solid #484132;background:transparent;color:#eee7d9;font-size:9px;letter-spacing:.1em;text-transform:uppercase;cursor:pointer}
+.button.primary{background:#e1d0aa;border-color:#e1d0aa;color:#17160f}
+.button:disabled{opacity:.45;cursor:not-allowed}
+.sheet{width:min(100% - 40px,960px);margin:8px auto 60px;padding:clamp(28px,5vw,58px);background:var(--paper);color:var(--paper-ink);box-shadow:0 26px 80px #0006}
+.folio-top{display:flex;justify-content:space-between;gap:18px;border-bottom:1px solid var(--paper-line);padding-bottom:14px;color:var(--paper-muted);font-size:9px;letter-spacing:.14em;text-transform:uppercase}
+.title-block{padding:42px 0 28px;border-bottom:1px solid var(--paper-line)}
+.eyebrow{margin:0 0 14px;color:#8b7043;font-size:9px;letter-spacing:.2em;text-transform:uppercase}
+h1{font-family:"Cormorant Garamond",Georgia,serif;font-size:clamp(38px,6vw,64px);font-weight:400;line-height:.98;letter-spacing:-.025em;margin:0;overflow-wrap:anywhere}
+.subtitle{max-width:630px;color:var(--paper-muted);font-size:13px;line-height:1.8;margin:18px 0 0}
+.notice{border-left:3px solid #b49a64;background:#eee8da;color:#524631;padding:13px 15px;margin:22px 0 0;font-size:10px;line-height:1.8}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:25px 0 34px}
+.stat{border:1px solid var(--paper-line);padding:15px 16px}
+.stat strong{display:block;font-family:"Cormorant Garamond",Georgia,serif;font-size:34px;font-weight:400;line-height:1.1;color:#695533}
+.stat span{display:block;margin-top:7px;color:var(--paper-muted);font-size:8px;letter-spacing:.13em;text-transform:uppercase}
+.section-head{display:flex;justify-content:space-between;align-items:end;gap:15px;margin-bottom:12px}
+.section-head h2{font:400 26px/1.1 "Cormorant Garamond",Georgia,serif;margin:0}
+.section-head p{margin:0;color:var(--paper-muted);font-size:9px}
+.table-wrap{width:100%;overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:620px}
+th{text-align:left;padding:11px 9px;background:#ebe5d8;border-top:1px solid var(--paper-line);border-bottom:1px solid var(--paper-line);color:#645b4a;font-size:8px;letter-spacing:.08em;text-transform:uppercase;font-weight:600}
+td{padding:13px 9px;border-bottom:1px solid var(--paper-line);font-size:10px;vertical-align:top}
+td:first-child,th:first-child{padding-left:12px}
+td strong{display:block;font-weight:600}
+.secondary{display:block;color:var(--paper-muted);font-size:8px;margin-top:4px;line-height:1.5;overflow-wrap:anywhere}
+.finish{display:inline-flex;align-items:center;gap:7px}
+.finish-dot{display:inline-block;width:8px;height:8px;border:1px solid #888;border-radius:50%;flex:0 0 auto}
+.empty-state{padding:28px 16px;border:1px dashed #c4bcae;color:var(--paper-muted);font-size:11px;line-height:1.8;margin-top:12px}
+.scope{margin-top:35px;padding-top:22px;border-top:1px solid var(--paper-line);display:grid;grid-template-columns:1fr 1fr;gap:22px}
+.scope h2{font:400 21px/1.15 "Cormorant Garamond",Georgia,serif;margin:0 0 8px}
+.scope p,.scope li{color:var(--paper-muted);font-size:9px;line-height:1.8}
+.scope ul{margin:8px 0 0;padding-left:17px}
+.document-footer{margin-top:30px;padding-top:14px;border-top:1px solid var(--paper-line);display:flex;justify-content:space-between;gap:16px;color:var(--paper-muted);font-size:8px;letter-spacing:.05em}
+@media(max-width:640px){.toolbar{padding:16px;align-items:flex-start;flex-direction:column}.toolbar-actions{justify-content:flex-start}.sheet{width:calc(100% - 20px);padding:22px;margin-top:0}.folio-top{font-size:7px}.title-block{padding:30px 0 22px}.stats{gap:6px}.stat{padding:10px 8px}.stat strong{font-size:28px}.stat span{font-size:7px}.scope{grid-template-columns:1fr}.document-footer{flex-direction:column}.table-wrap{margin-right:-2px}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+@page{size:A4 portrait;margin:12mm}
+@media print{
+  :root{color-scheme:light}
+  html,body{background:#fff!important;color:#1d1c18!important;margin:0!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .no-print{display:none!important}
+  .sheet{width:100%;max-width:none;margin:0;padding:0;background:#fff;box-shadow:none}
+  .title-block{padding-top:25px}
+  .stats{break-inside:avoid}
+  .table-wrap{overflow:visible}
+  table{min-width:0;table-layout:fixed}
+  th,td{padding:8px 5px;overflow-wrap:anywhere}
+  th{font-size:7px}
+  td{font-size:8px}
+  .scope{break-inside:avoid}
+  .document-footer{margin-top:24px}
+  a{color:inherit}
+}
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+<header class="toolbar no-print">
+  <a href="/tedes/" class="brand">TEDES <small>ARCHITECTURAL PROJECT STUDIO</small></a>
+  <div class="toolbar-actions">
+    <a class="button" href="/tedes/#studio">Вернуться в студию ↗</a>
+    <button class="button primary" type="button" id="printProject" disabled>Печать / сохранить PDF ↓</button>
+  </div>
+</header>
+<main class="sheet" id="printDocument">
+  <div class="folio-top"><span>TEDES · PROJECT STUDIO</span><span>PROJECT DOCUMENT / 01</span></div>
+  <header class="title-block">
+    <p class="eyebrow">ARCHITECTURAL HARDWARE / SCHEDULE</p>
+    <h1 id="projectTitle">Загрузка проекта…</h1>
+    <p class="subtitle">Сводная ведомость конфигураций, собранных в TEDES Studio. Документ предназначен для обсуждения проекта и дальнейшей проверки специалистом.</p>
+    <div class="notice" role="status" id="sourceNotice">Загружаются локальные данные проекта.</div>
+  </header>
+  <section class="stats" aria-label="Сводка проекта">
+    <div class="stat"><strong id="positionCount">—</strong><span>Позиций в ведомости</span></div>
+    <div class="stat"><strong id="collectionCount">—</strong><span>Коллекций</span></div>
+    <div class="stat"><strong id="finishCount">—</strong><span>Вариантов отделки</span></div>
+  </section>
+  <section aria-labelledby="scheduleTitle">
+    <div class="section-head"><h2 id="scheduleTitle">Ведомость позиций</h2><p id="updatedAt">Обновление проекта: —</p></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th style="width:7%">№</th><th style="width:24%">Зона / ID</th><th style="width:13%">Коллекция</th><th style="width:20%">Ручка / замок</th><th style="width:21%">Отделка</th><th style="width:15%">Размер, мм</th></tr></thead>
+        <tbody id="positionRows"></tbody>
+      </table>
+    </div>
+    <p class="empty-state" id="emptyState" hidden>На этом устройстве ещё нет сохранённых позиций. Вернитесь в TEDES Studio, соберите ведомость и откройте печатную версию снова. Данные не загружаются с сервера.</p>
+  </section>
+  <section class="scope" aria-label="Границы демонстрационного документа">
+    <div><h2>Область применения</h2><p>Этот документ визуализирует значения, которые были сохранены в локальном проекте браузера. Его можно распечатать или сохранить в PDF через системный диалог браузера.</p><p>Дата формирования: <strong id="generatedAt">—</strong></p></div>
+    <div><h2>Что необходимо подтвердить</h2><ul><li>Артикулы, складское наличие и коммерческие цены не подтверждены.</li><li>Размеры, комплектация, монтаж и механическая совместимость требуют проверки изготовителем или ответственным специалистом.</li><li>Этот файл не является заказом, офертой или отправленной заявкой.</li></ul></div>
+  </section>
+  <footer class="document-footer"><span>TEDES / DEMONSTRATION DOCUMENT</span><span>Сформировано локально · без отправки на сервер</span></footer>
+</main>
+<script>
+(function(){
+  const KEY="tedes-studio-project-v1";
+  const $=id=>document.getElementById(id);
+  const collections=new Set(["FORMA","LINEA","MATERIA"]);
+  const finishes=new Set(["Antique brass","Matte black","Satin bronze","Polished chrome","Brushed steel","Graphite"]);
+  const handles=new Set(["ARC","EDGE","LINE"]);
+  const locks=new Set(["Not specified","Privacy","Passage","Key"]);
+  const clean=(value,max)=>String(value==null?"":value).replace(/[<>]/g,"").trim().slice(0,max);
+  const escapeHtml=value=>String(value).replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
+  const clamp=(value,min,max,fallback)=>{const number=Number(value);return Number.isFinite(number)&&number!==0?Math.max(min,Math.min(max,Math.round(number))):fallback;};
+  function dateLabel(value){
+    const date=value?new Date(value):null;
+    if(!date||Number.isNaN(date.getTime()))return "—";
+    return new Intl.DateTimeFormat("ru-RU",{dateStyle:"medium",timeStyle:"short"}).format(date);
+  }
+  function readProject(){
+    try{
+      const raw=localStorage.getItem(KEY);
+      if(!raw)return {project:null,error:false};
+      const value=JSON.parse(raw);
+      if(!value||!Array.isArray(value.doors))return {project:null,error:true};
+      const doors=value.doors.slice(0,30).map((d,index)=>({
+        id:/^D-\d{3}$/.test(String(d.id||""))?String(d.id):"D-"+String(index+1).padStart(3,"0"),
+        zone:clean(d.zone||"Без названия",80)||"Без названия",
+        collection:collections.has(d.collection)?d.collection:"FORMA",
+        finish:finishes.has(d.finish)?d.finish:"Antique brass",
+        handle:handles.has(d.handle)?d.handle:"ARC",
+        lock:locks.has(d.lock)?d.lock:"Not specified",
+        width:clamp(d.width,400,1800,900),
+        height:clamp(d.height,1500,3000,2100)
+      }));
+      return {project:{name:clean(value.projectName||"Проект без названия",80)||"Проект без названия",doors:doors,updatedAt:typeof value.updatedAt==="string"?value.updatedAt:""},error:false};
+    }catch{return {project:null,error:true};}
+  }
+  function render(){
+    const result=readProject(),project=result.project;
+    const doors=project?project.doors:[];
+    $("projectTitle").textContent=project?project.name:"Проект не найден";
+    $("positionCount").textContent=String(doors.length).padStart(2,"0");
+    $("collectionCount").textContent=String(new Set(doors.map(d=>d.collection)).size).padStart(2,"0");
+    $("finishCount").textContent=String(new Set(doors.map(d=>d.finish)).size).padStart(2,"0");
+    $("updatedAt").textContent="Обновление проекта: "+(project?dateLabel(project.updatedAt):"нет данных");
+    $("generatedAt").textContent=dateLabel(new Date().toISOString());
+    $("positionRows").innerHTML=doors.map((d,index)=>'<tr><td>'+String(index+1).padStart(2,"0")+'</td><td><strong>'+escapeHtml(d.zone)+'</strong><span class="secondary">'+escapeHtml(d.id)+'</span></td><td>'+escapeHtml(d.collection)+'</td><td><strong>'+escapeHtml(d.handle)+'</strong><span class="secondary">'+escapeHtml(d.lock)+'</span></td><td>'+escapeHtml(d.finish)+'</td><td>'+d.width+' × '+d.height+'</td></tr>').join("");
+    $("emptyState").hidden=doors.length>0;
+    $("printProject").disabled=doors.length===0;
+    if(project){
+      $("sourceNotice").textContent="Локальная копия проекта из текущего браузера. "+doors.length+" поз. · данные не отправляются на сервер. ДЕМОНСТРАЦИЯ — не подтверждённая производственная спецификация.";
+    }else if(result.error){
+      $("sourceNotice").textContent="Сохранённые данные не удалось прочитать. Вернитесь в TEDES Studio и проверьте локальный проект. Этот экран ничего не отправлял и не изменял.";
+    }else{
+      $("sourceNotice").textContent="Локально сохранённый проект не найден на этом устройстве. Откройте TEDES Studio и сохраните позиции перед печатью.";
+    }
+  }
+  $("printProject").addEventListener("click",function(){if(!this.disabled)window.print();});
+  window.addEventListener("storage",function(event){if(!event.key||event.key===KEY)render();});
+  window.addEventListener("focus",render);
+  render();
+})();
+</script>
+</body>
+</html>
