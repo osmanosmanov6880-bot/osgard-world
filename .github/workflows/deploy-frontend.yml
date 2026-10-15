@@ -10,6 +10,7 @@ on:
     paths:
       - "src/**"
       - "public/skillcred/**"
+      - "public/entertainment/**"
       - "public/games/**"
       - "public/privacy/**"
       - "public/terms/**"
@@ -31,6 +32,7 @@ on:
       - "scripts/activate-frontend-remote.sh"
       - "scripts/deploy-workflow-smoke.mjs"
       - "scripts/tedes-case-smoke.mjs"
+      - "scripts/elbrus-case-smoke.mjs"
       - "scripts/skillcred-page-smoke.mjs"
       - "scripts/time-prototype-smoke.mjs"
       - "scripts/null-shift-premium-smoke.mjs"
@@ -59,6 +61,8 @@ jobs:
       - run: npm run check
       - name: Validate TEDES demo and portfolio page
         run: node scripts/tedes-case-smoke.mjs
+      - name: Smoke-test the ELBRUS Entertainment case
+        run: npm run qa:elbrus-case
       - run: npm run qa:null-shift
       - name: Smoke-test the OSGARD Games hub
         run: npm run qa:games-portal
