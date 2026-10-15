@@ -38,7 +38,7 @@ for (const marker of [
 ]) assert.ok(page.includes(marker), 'OSA case contract marker missing: ' + marker)
 
 assert.ok(og.startsWith('<svg') && og.includes('width="1200" height="630"') && og.includes('OSA Global') && og.includes('BEYOND THE MODEL'), 'OSA social card is incomplete.')
-assert.ok(landing.includes('SELECTED WORK / 01—05') && landing.includes('href="/development/osa-intelligence/"'), 'Development landing does not feature OSA case.')
+assert.ok(landing.includes('href="/development/osa-intelligence/"') && landing.includes('<h3>OSA Global Intelligence</h3>'), 'Development landing does not feature OSA case.')
 assert.ok(sitemap.includes('<loc>https://osgard.world/development/osa-intelligence/</loc>'), 'OSA case route is missing from sitemap.')
 assert.ok(routes.includes("'/development/osa-intelligence/'") && routes.includes("'/development/osa-intelligence/og.svg'"), 'Production route matrix must probe OSA case and social card.')
 assert.ok(routes.includes('<title>OSA Global Intelligence — кейс OSGARD Development</title>') && routes.includes('data-case-status="interactive-demo"'), 'Production matrix must validate OSA case content.')
