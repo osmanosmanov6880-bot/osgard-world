@@ -275,11 +275,11 @@ th{color:#a89a80;font-size:8px;letter-spacing:.15em}
     $("miniDoor").style.setProperty("--gold2",colorFor(finish));
     $("miniDoor").style.borderColor=colorFor(finish);
   }
-  function renderRows(){
+  function renderRows(save=true){
     $("doorCount").textContent=String(doors.length);
     $("emptyState").hidden=doors.length>0;
     $("doorRows").innerHTML=doors.map((door)=>"<tr><td><span class=\"zone-name\">"+escapeHtml(door.zone)+"</span><span class=\"zone-code\">"+escapeHtml(door.id)+" · "+escapeHtml(door.handle)+" / "+escapeHtml(door.lock)+(door.sku?" · "+escapeHtml(door.sku):"")+"</span></td><td>"+escapeHtml(door.collection)+"</td><td><span class=\"finish-chip\" style=\"background:"+colorFor(door.finish)+"\"></span>"+escapeHtml(door.finish)+"</td><td>"+door.width+" × "+door.height+"</td><td><div class=\"row-actions\"><button type=\"button\" class=\"copy-btn\" data-duplicate=\""+escapeHtml(door.id)+"\" aria-label=\"Дублировать "+escapeHtml(door.zone)+"\" title=\"Дублировать позицию\">⧉</button><button type=\"button\" class=\"remove-btn\" data-remove=\""+escapeHtml(door.id)+"\" aria-label=\"Удалить "+escapeHtml(door.zone)+"\">×</button></div></td></tr>").join("");
-    return persistProject();
+    return save ? persistProject() : true;
   }
   $("addDoor").addEventListener("click",()=>{
     if(doors.length>=30){$("formMessage").textContent="Достигнут лимит демонстрационного проекта — 30 позиций.";return;}
@@ -385,8 +385,8 @@ th{color:#a89a80;font-size:8px;letter-spacing:.15em}
     doors.splice(0,doors.length,...incoming.doors);
     $("projectName").value=incoming.projectName||"Residence / North Wing";
     nextId=Math.max(3,...doors.map(d=>Number(String(d.id).replace(/^D-/,""))||0))+1;
-    renderRows();updatePreview();
-    $("formMessage").textContent="Проект синхронизирован с другой вкладкой.";
+    renderRows(false);updatePreview();
+    $("formMessage").textContent="Проект синхронизирован с другой вкладкой — без повторной записи.";
   });
   renderRows();updatePreview();
 })();
