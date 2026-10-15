@@ -14,6 +14,10 @@ type Props = {
   captionsLabel: string
   transcriptLabel: string
   playbackErrorLabel: string
+  audioTypeLabel: string
+  videoTypeLabel: string
+  seekBackLabel: string
+  seekForwardLabel: string
 }
 
 export default function OSALessonMediaPlayer({
@@ -25,6 +29,10 @@ export default function OSALessonMediaPlayer({
   captionsLabel,
   transcriptLabel,
   playbackErrorLabel,
+  audioTypeLabel,
+  videoTypeLabel,
+  seekBackLabel,
+  seekForwardLabel,
 }: Props) {
   const mediaRef = useRef<HTMLMediaElement | null>(null)
   const lastSavedSecond = useRef(-1)
@@ -78,7 +86,7 @@ export default function OSALessonMediaPlayer({
   return <section className="osa-media-player" aria-label={title}>
     <div className="osa-media-player-heading">
       <div>
-        <p>{resource.kind === 'audio' ? 'AUDIO LESSON' : 'VIDEO LESSON'}</p>
+        <p>{resource.kind === 'audio' ? audioTypeLabel : videoTypeLabel}</p>
         <h3>{title}</h3>
       </div>
       <span>{resource.durationSeconds ? Math.round(resource.durationSeconds / 60) + ' min' : ''}</span>
@@ -110,8 +118,8 @@ export default function OSALessonMediaPlayer({
           {captionsAvailable && <track kind="captions" src={resource.captionsUrl!} srcLang={resource.language || 'en'} label={captionsLabel} />}
         </video>}
     <div className="osa-media-player-controls">
-      <button type="button" onClick={() => seekBy(-15)} aria-label="Seek back 15 seconds"><RotateCcw size={15} /><span>−15 s</span></button>
-      <button type="button" onClick={() => seekBy(15)} aria-label="Seek forward 15 seconds"><RotateCw size={15} /><span>+15 s</span></button>
+      <button type="button" onClick={() => seekBy(-15)} aria-label={seekBackLabel}><RotateCcw size={15} /><span>−15 s</span></button>
+      <button type="button" onClick={() => seekBy(15)} aria-label={seekForwardLabel}><RotateCw size={15} /><span>+15 s</span></button>
       <label><span>{speedLabel}</span><select value={playbackRate} onChange={event => changeRate(event.target.value)}>{PLAYBACK_RATES.map(rate => <option key={rate} value={rate}>{rate.toLocaleString('en-US')}×</option>)}</select></label>
       {captionsAvailable && <span className="osa-media-player-availability"><Captions size={14} />{captionsLabel}</span>}
       {transcriptAvailable && <a href={resource.transcriptUrl!} target="_blank" rel="noopener noreferrer"><ArrowDownToLine size={14} />{transcriptLabel}</a>}
