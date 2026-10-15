@@ -10,6 +10,9 @@ on:
     branches: [master]
     paths:
       - "src/**"
+      - "public/development/index.html"
+      - "public/development/og.svg"
+      - "scripts/development-index-smoke.mjs"
       - "public/development/merakki/**"
       - "scripts/merakki-case-smoke.mjs"
       - "public/skillcred/**"
@@ -71,6 +74,8 @@ jobs:
       - run: npm run check
       - name: Validate TEDES demo and portfolio page
         run: node scripts/tedes-case-smoke.mjs
+      - name: Validate Development landing and prevent directory 403
+        run: node scripts/development-index-smoke.mjs
       - name: Validate PHANTOM premium gaming case
         run: node scripts/phantom-case-smoke.mjs
       - name: Smoke-test the ELBRUS Entertainment case

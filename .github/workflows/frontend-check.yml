@@ -5,6 +5,9 @@ on:
     branches: [master]
     paths:
       - "src/**"
+      - "public/development/index.html"
+      - "public/development/og.svg"
+      - "scripts/development-index-smoke.mjs"
       - "public/development/merakki/**"
       - "scripts/merakki-case-smoke.mjs"
       - "scripts/skillcred-page-smoke.mjs"
@@ -49,6 +52,8 @@ jobs:
         run: npm ci
       - name: Type-check the frontend
         run: npm run check
+      - name: Validate Development landing and prevent directory 403
+        run: node scripts/development-index-smoke.mjs
       - name: Build the production site
         run: npm run build
       - name: Verify live SkillCred page wiring
