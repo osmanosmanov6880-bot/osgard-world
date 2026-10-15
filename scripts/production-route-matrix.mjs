@@ -69,21 +69,21 @@ for (const [device, userAgent] of Object.entries(agents)) for (const route of ro
     const isGamesHub = route === '/games/' || route === '/games/index.html'
     const isPartnerPage = route === '/games/partners/'
     const isGodot = route.startsWith('/games/null-shift-godot')
-    const assetPaths = route === '/games/favicon.svg' || route === '/privacy/' || route === '/terms/' ? [] : isPartnerPage ? ['/games/partners/partners.js', '/games/partners/inventory.json'] : isGamesHub ? ['/games/player-lifecycle.js'] : route === '/skillcred/' ? ['/skillcred/styles.css', '/skillcred/app.js', '/skillcred/fonts/InterVariable.woff2', '/skillcred/fonts/InstrumentSerif-Italic.woff2', '/skillcred/fonts/JetBrainsMono-Regular.woff2'] : isGodot ? ['/games/null-shift-godot/index.js', '/games/null-shift-godot/index.wasm', '/games/null-shift-godot/index.pck'] : route.startsWith('/games/null-shift') ? ['/games/null-shift/styles.css', '/games/null-shift/game.js', '/games/null-shift/engine-3d.js'] : []
+    const assetPaths = route === '/tedes/' ? ['/tedes/assets/hero-door.webp'] : route === '/development/tedes/' ? ['/tedes/assets/hero-door.webp', '/tedes/assets/architecture-scene.webp'] : route === '/games/favicon.svg' || route === '/privacy/' || route === '/terms/' ? [] : isPartnerPage ? ['/games/partners/partners.js', '/games/partners/inventory.json'] : isGamesHub ? ['/games/player-lifecycle.js'] : route === '/skillcred/' ? ['/skillcred/styles.css', '/skillcred/app.js', '/skillcred/fonts/InterVariable.woff2', '/skillcred/fonts/InstrumentSerif-Italic.woff2', '/skillcred/fonts/JetBrainsMono-Regular.woff2'] : isGodot ? ['/games/null-shift-godot/index.js', '/games/null-shift-godot/index.wasm', '/games/null-shift-godot/index.pck'] : route.startsWith('/games/null-shift') ? ['/games/null-shift/styles.css', '/games/null-shift/game.js', '/games/null-shift/engine-3d.js'] : []
     if (route === '/') {
       const rootBundle = text.match(/<script[^>]+src="([^"]+\.js)"[^>]*><\/script>/i)?.[1]
       if (rootBundle) assetPaths.push(rootBundle)
     }
     const assetChecks = await Promise.all(assetPaths.map(async path => {
-      const expectedType = path.endsWith('.css') ? 'text/css' : path.endsWith('.json') ? 'json' : path.endsWith('.js') ? 'javascript' : path.endsWith('.wasm') ? 'wasm' : path.endsWith('.pck') ? 'pack' : 'font'
+      const expectedType = path.endsWith('.webp') ? 'image' : path.endsWith('.css') ? 'text/css' : path.endsWith('.json') ? 'json' : path.endsWith('.js') ? 'javascript' : path.endsWith('.wasm') ? 'wasm' : path.endsWith('.pck') ? 'pack' : 'font'
       const asset = await fetch(new URL(path, base), { headers: { 'user-agent': userAgent, 'cache-control': 'no-cache', pragma: 'no-cache' } })
       const contentType = asset.headers.get('content-type') || ''
       const mime = contentType.toLowerCase()
-      const typeOk = expectedType === 'text/css' ? mime.includes('text/css') : expectedType === 'json' ? mime.includes('application/json') || mime.includes('text/json') || mime.includes('text/plain') : expectedType === 'javascript' ? mime.includes('javascript') || mime.includes('ecmascript') : expectedType === 'wasm' ? mime.includes('wasm') || mime.includes('octet-stream') : expectedType === 'pack' ? mime.length > 0 : mime.includes('font/woff2') || mime.includes('application/octet-stream')
+      const typeOk = expectedType === 'text/css' ? mime.includes('text/css') : expectedType === 'json' ? mime.includes('application/json') || mime.includes('text/json') || mime.includes('text/plain') : expectedType === 'javascript' ? mime.includes('javascript') || mime.includes('ecmascript') : expectedType === 'wasm' ? mime.includes('wasm') || mime.includes('octet-stream') : expectedType === 'pack' ? mime.length > 0 : expectedType === 'image' ? mime.includes('image/webp') : mime.includes('font/woff2') || mime.includes('application/octet-stream')
       let nonEmpty = false
-      if (expectedType === 'font' || expectedType === 'wasm' || expectedType === 'pack') {
+      if (expectedType === 'font' || expectedType === 'wasm' || expectedType === 'pack' || expectedType === 'image') {
         const size = (await asset.arrayBuffer()).byteLength
-        const minimum = expectedType === 'font' ? (path.endsWith('InterVariable.woff2') ? 100000 : 5000) : expectedType === 'wasm' ? 100000 : 10000
+        const minimum = expectedType === 'image' ? 1000 : expectedType === 'font' ? (path.endsWith('InterVariable.woff2') ? 100000 : 5000) : expectedType === 'wasm' ? 100000 : 10000
         nonEmpty = size > minimum
       } else {
         const content = await asset.text()

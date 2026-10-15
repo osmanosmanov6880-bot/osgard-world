@@ -110,6 +110,17 @@ th{color:#a89a80;font-size:8px;letter-spacing:.15em}
 @media(max-width:560px){.wrap{width:calc(100% - 32px)}.topbar{height:66px}.brand{font-size:10px;letter-spacing:.16em}.brand small{font-size:7px;letter-spacing:.2em}.navlinks{font-size:8px;letter-spacing:.08em}.top-note{font-size:7px;letter-spacing:.12em}.hero{padding:43px 0 35px}.hero h1{font-size:clamp(47px,14vw,64px)}.hero-copy{line-height:1.85}.hero-visual{min-height:300px}.door-render{height:242px;min-height:0;width:59%}.hero-stats{gap:15px}.stat strong{font-size:30px}.stat span{font-size:7px;letter-spacing:.1em}.section-head h2{font-size:36px}.panel-header{padding:17px 16px}.panel-header h3{font-size:26px}.form-grid{padding:16px}.form-actions{padding:0 16px 17px}.project-name{padding:16px}.project-name input{font-size:24px}.project-preview{padding:12px 16px 18px;grid-template-columns:96px 1fr;gap:13px}.mini-door-frame{height:117px}.mini-door{height:93px}.mini-door:after{top:34px}.project-footer{padding:15px 16px}.disclaimer{padding:15px}.cap-card{padding:22px 19px}.foot{font-size:8px;line-height:1.8}}
 @media(prefers-reduced-motion:reduce){.btn,.foot a{transition:none}}
 
+
+/* REAL PRODUCT PHOTOGRAPHY — luxury material treatment */
+.hero-visual{isolation:isolate;background:#100f0b}
+.hero-photography{position:absolute;inset:0;z-index:0;width:100%;height:100%;object-fit:cover;object-position:center 50%;opacity:.92;filter:contrast(1.04) saturate(.82);transform:scale(1.005)}
+.hero-visual:before{z-index:1;opacity:.52;background:linear-gradient(180deg,rgba(6,6,4,.18),transparent 34%,rgba(6,6,4,.34)),linear-gradient(90deg,transparent 49.7%,rgba(201,177,125,.10) 50%,transparent 50.3%)}
+.hero-visual:after{z-index:3}
+.hero-visual .door-render{display:none}
+.visual-label{z-index:2;text-shadow:0 2px 10px rgba(0,0,0,.65)}
+.visual-badge{z-index:2;text-shadow:0 2px 10px rgba(0,0,0,.65)}
+@media(max-width:560px){.hero-photography{object-position:52% center}}
+
 </style>
 </head>
 <body>
@@ -127,7 +138,7 @@ th{color:#a89a80;font-size:8px;letter-spacing:.15em}
 <div class="actions"><a class="btn primary" href="#studio">Открыть конфигуратор <span aria-hidden="true">↘</span></a><a class="btn" href="/development/tedes/">Как это создано <span aria-hidden="true">↗</span></a></div>
 <div class="hero-stats"><div class="stat"><strong>30</strong><span>позиций в проекте</span></div><div class="stat"><strong>CSV</strong><span>и JSON экспорт</span></div><div class="stat"><strong>01</strong><span>единая ведомость</span></div></div>
 </div>
-<div class="hero-visual" aria-label="Абстрактная визуализация архитектурной двери"><span class="visual-label top">TEDES / MATERIAL STUDY 01</span><span class="visual-badge">STUDIO LIVE · DEMO</span><div class="door-render"><span class="door-handle"></span></div><div class="visual-label bottom"><span>FORM / MATERIAL / DETAIL</span><span>FIG. 001</span></div></div>
+<div class="hero-visual" aria-label="Фотография премиальной латунной дверной ручки на тёмном деревянном полотне"><img class="hero-photography" src="/tedes/assets/hero-door.webp" alt="Дверная ручка в отделке тёплой латуни на тёмном деревянном полотне" width="600" height="500" fetchpriority="high"><span class="visual-label top">TEDES / MATERIAL STUDY 01</span><span class="visual-badge">STUDIO LIVE · DEMO</span><div class="door-render" aria-hidden="true"><span class="door-handle"></span></div><div class="visual-label bottom"><span>FORM / MATERIAL / DETAIL</span><span>FIG. 001</span></div></div>
 </section>
 <section class="wrap studio" id="studio">
 <div class="section-head"><div><p class="eyebrow">01 / CONFIGURATION WORKSPACE</p><h2>Один проект. Несколько зон.<br>Одна спецификация.</h2></div><div><span class="demo-label">Демо-режим · данные на устройстве</span><p style="max-width:450px;margin-top:13px">Каждая дверная позиция независима. Попробуйте разные серии, отделки, размеры и типы ручек — затем соберите ведомость проекта.</p></div></div>

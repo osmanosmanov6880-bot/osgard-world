@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync, readFileSync, statSync } from 'node:fs'
 import vm from 'node:vm'
 
 const read = (path) => {
@@ -28,6 +28,12 @@ assert.ok(casePage.includes('href="/tedes/"'), 'Case must link to the standalone
 assert.ok(casePage.includes('Не заявляется как готовое коммерческое подключение'), 'Case must explain commercial integration boundaries')
 assert.ok(devSource.includes("import './tedes-case.css'") && devSource.includes('tedes-featured-case') && devSource.includes('href="/development/tedes/"'), 'Development portfolio case card is missing')
 assert.ok(cardCss.includes('.tedes-featured-case') && cardCss.includes('@media(max-width:760px)'), 'Responsive case-card styling is missing')
+
+for (const imagePath of ['public/tedes/assets/hero-door.webp', 'public/tedes/assets/architecture-scene.webp']) {
+  assert.ok(existsSync(imagePath) && statSync(imagePath).size > 1000, `TEDES product image is missing or too small: ${imagePath}`)
+}
+assert.ok(demo.includes('src="/tedes/assets/hero-door.webp"'), 'TEDES demo must use the real product image')
+assert.ok(casePage.includes('id="materials"') && casePage.includes('src="/tedes/assets/architecture-scene.webp"') && casePage.includes('src="/tedes/assets/hero-door.webp"'), 'TEDES case material gallery must use real images')
 assert.ok(demo.includes('LUXURY ART DIRECTION') && demo.includes('Cormorant+Garamond'), 'TEDES demo luxury art direction or display typography is missing')
 assert.ok(casePage.includes('LUXURY ART DIRECTION') && casePage.includes('Cormorant+Garamond'), 'TEDES case luxury art direction or display typography is missing')
 assert.ok(!demo.includes(String.fromCharCode(92) + 'n</style>') && !casePage.includes(String.fromCharCode(92) + 'n</style>'), 'Luxury CSS must not be preceded by a literal escaped newline')
