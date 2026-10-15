@@ -378,6 +378,16 @@ th{color:#a89a80;font-size:8px;letter-spacing:.15em}
     $("quoteStatus").textContent="Файлы запроса и состава проекта подготовлены и скачиваются. Они НЕ отправлены автоматически.";
   });
   $("projectName").addEventListener("change",()=>{$("projectNameMirror").value=$("projectName").value;});
+  window.addEventListener("storage",(event)=>{
+    if(event.key!==STORAGE_KEY)return;
+    const incoming=readSavedProject();
+    if(!incoming){$("formMessage").textContent="Изменение из другой вкладки не удалось прочитать. Проверьте резервную копию JSON.";return;}
+    doors.splice(0,doors.length,...incoming.doors);
+    $("projectName").value=incoming.projectName||"Residence / North Wing";
+    nextId=Math.max(3,...doors.map(d=>Number(String(d.id).replace(/^D-/,""))||0))+1;
+    renderRows();updatePreview();
+    $("formMessage").textContent="Проект синхронизирован с другой вкладкой.";
+  });
   renderRows();updatePreview();
 })();
 </script>
