@@ -48,10 +48,14 @@ const headers = await readFile(join(root, '_headers'), 'utf8')
 assert.ok(headers.includes('X-Content-Type-Options: nosniff'), '_headers must include nosniff')
 assert.ok(headers.includes('Referrer-Policy: strict-origin-when-cross-origin'), '_headers must include a safe referrer policy')
 assert.ok(headers.includes('/index.html'), '_headers must prevent stale root HTML')
+assert.ok(headers.includes('/games/null-shift-godot/*.wasm') && headers.includes('Content-Encoding: gzip'), 'Packaged Godot WASM must be served with gzip encoding')
+assert.ok(headers.includes('Content-Type: application/wasm'), 'Packaged Godot WASM must retain the WebAssembly MIME type')
 const redirects = await readFile(join(root, '_redirects'), 'utf8')
 assert.ok(redirects.includes('/games/time-empire /games/time 301'), 'Legacy time-empire route redirect is missing')
 assert.ok(redirects.includes('/games/time-empire/ /games/time 301'), 'Legacy time-empire slash route redirect is missing')
 
+const wasm = await readFile(join(root, 'games/null-shift-godot/index.wasm'))
+assert.equal(wasm.subarray(0, 2).toString('hex'), '1f8b', 'Godot WASM must be gzip-packaged before Pages upload')
 const maxFiles = Number(process.env.CLOUDFLARE_PAGES_MAX_FILES || 20000)
 const maxAssetBytes = 25 * 1024 * 1024
 const files = []
