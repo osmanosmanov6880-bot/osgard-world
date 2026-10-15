@@ -19,7 +19,7 @@ assert.ok(workflow.includes('npm run qa:deploy-workflow'), 'Deploy workflow must
 assert.ok(workflow.includes("cancel-in-progress: ${{ contains(github.event.head_commit.message, '[supersede]') }}"), 'Recovery deploys must be able to cancel a stale recovery run')
 assert.ok(workflow.includes("group: osgard-frontend-deploy") && !workflow.includes("osgard-frontend-deploy-recovery"), "Supersede deployments must share the default concurrency group so they can cancel stale regular releases");
 assert.ok(workflow.includes("id: godot-export-cache") && workflow.includes("path: public/games/null-shift-godot"), 'Deployment must cache the actual generated Godot Web export')
-assert.ok(workflow.includes("hashFiles('godot/null-shift/**', 'scripts/null-shift-godot-smoke.mjs')"), 'Godot export cache must invalidate when game sources or export validation changes')
+assert.ok(workflow.includes("hashFiles('godot/null-shift/**', 'public/games/null-shift-godot/**', 'scripts/null-shift-godot-smoke.mjs')"), 'Godot export cache must invalidate when game sources, the custom public shell, or export validation changes')
 assert.ok(workflow.includes("if: ${{ steps.godot-export-cache.outputs.cache-hit != 'true' && !contains(github.event.head_commit.message, '[supersede]') }}"), 'Godot engine cache must only be needed when there is no reusable Web export')
 for (const step of ['Verify Godot installation','Import and parse the Godot project','Runtime-smoke gameplay state transitions in headless Godot','Export Godot Web game']) {
   const start = workflow.indexOf('- name: ' + step)
