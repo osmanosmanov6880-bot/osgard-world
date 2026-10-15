@@ -33,7 +33,7 @@ for (const [device, userAgent] of Object.entries(agents)) for (const route of ro
       : route === '/development/tedes/'
         ? text.includes('<title>TEDES — кейс OSGARD Development</title>') && text.includes('href="/tedes/"') && text.includes('FLAGSHIP CASE')
       : route === '/development/'
-        ? text.includes('<title>Разработка цифровых продуктов — OSGARD Development</title>') && text.includes('SELECTED WORK / 01—05') && text.includes('href="/development/phantom/"') && text.includes('href="/development/tedes/"') && text.includes('href="/development/merakki/"') && text.includes('href="/development/auto-style/"') && text.includes('href="/development/osa-intelligence/"')
+        ? text.includes('<title>Разработка цифровых продуктов — OSGARD Development</title>') && text.includes('SELECTED WORK / 01—06') && text.includes('href="/development/phantom/"') && text.includes('href="/development/tedes/"') && text.includes('href="/development/merakki/"') && text.includes('href="/development/auto-style/"') && text.includes('href="/development/osa-intelligence/"')
       : route === '/development/osa-intelligence/'
         ? text.includes('<title>OSA Global Intelligence — кейс OSGARD Development</title>') && text.includes('rel="canonical" href="https://osgard.world/development/osa-intelligence/"') && text.includes('data-case-status="interactive-demo"') && text.includes('href="/osa-cinema"') && text.includes('osa-global-intelligence-2')
       : route === '/development/osa-intelligence/og.svg'
