@@ -25,7 +25,7 @@ for (const [device, userAgent] of Object.entries(agents)) for (const route of ro
       : route === '/tedes/materials/'
         ? text.includes('<title>TEDES Materials — guide to finishes</title>') && text.includes('Antique Brass') && text.includes('Brushed Steel') && text.includes('Matte Black')
       : route === '/tedes/project/'
-        ? text.includes('<title>TEDES — проектная ведомость</title>') && text.includes('id="positionRows"') && text.includes('id="requestForm"') && text.includes('id="exportJson"') && text.includes('id="exportCsv"') && text.includes('tedes-studio-project-v1') && text.includes('noindex,nofollow') && text.includes('src="/tedes/project/project-workspace.js"')
+        ? text.includes('<title>TEDES — проектная ведомость</title>') && text.includes('id="positionRows"') && text.includes('id="requestForm"') && text.includes('id="exportJson"') && text.includes('id="exportCsv"') && text.includes('noindex,nofollow') && text.includes('src="/tedes/project/project-workspace.js"')
       : route === '/tedes/print/'
         ? text.includes('<title>TEDES — печатная ведомость проекта</title>') && text.includes('id="positionRows"') && text.includes('id="printProject"') && text.includes('tedes-studio-project-v1') && text.includes('не подтверждённая производственная спецификация')
       : route === '/development/tedes/'
