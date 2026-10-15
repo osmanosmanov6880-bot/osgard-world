@@ -57,6 +57,8 @@ assert.ok(product.includes('id="addToProject"') && product.includes('localStorag
 assert.ok(materials.includes('Brushed Steel') && materials.includes('Matte Black') && materials.includes('Техническая граница'), 'Materials guide must show demo finishes and disclose limits')
 assert.ok(demo.includes('tedes-studio-project-v1') && demo.includes('id="buildQuote"') && demo.includes('id="quoteEmail"'), 'Studio persistence and quote brief UI are missing')
 assert.ok(demo.includes('href="/tedes/print/"'), 'Studio must link to the print-ready project schedule')
+assert.ok(demo.includes('id="importJson"') && demo.includes('id="importFile"') && demo.includes('file.size>1024*1024'), 'Validated JSON project import is missing')
+assert.ok(demo.includes('tedes-project-demo/v1') && demo.includes('tedes-studio-project/v1') && demo.includes('Текущий проект не изменён'), 'JSON import must accept only TEDES backups and preserve state on failure')
 assert.ok(printView.includes('<title>TEDES — печатная ведомость проекта</title>') && printView.includes('name="robots" content="noindex,nofollow"'), 'Print view title or indexing safeguards are missing')
 for (const marker of ['id="printProject"', 'id="positionRows"', 'id="sourceNotice"', 'id="generatedAt"', 'window.print()', 'tedes-studio-project-v1', 'localStorage.getItem', 'не подтверждённая производственная спецификация', 'не отправляются на сервер']) {
   assert.ok(printView.toLowerCase().includes(marker.toLowerCase()), 'Print view contract marker missing: ' + marker)
