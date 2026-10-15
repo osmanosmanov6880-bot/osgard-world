@@ -33,7 +33,8 @@
     "qa:merakki-case": "node scripts/merakki-case-smoke.mjs",
     "qa:phantom-case": "node scripts/phantom-case-smoke.mjs",
     "qa:entertainment-locales": "node scripts/entertainment-locales-smoke.mjs",
-    "qa:auto-style-case": "node scripts/auto-style-case-smoke.mjs"
+    "qa:auto-style-case": "node scripts/auto-style-case-smoke.mjs",
+    "qa:osa-intelligence-case": "node scripts/osa-intelligence-case-smoke.mjs"
   },
   "dependencies": {
     "@types/three": "^0.186.0",
