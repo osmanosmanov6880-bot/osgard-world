@@ -51,7 +51,7 @@ await check('preview and copy controls are accessible and hidden until generated
   assert.ok(html.includes('id="brief-preview-text" tabindex="0"'));
   assert.ok(html.includes('id="brief-copy" type="button"'));
   assert.ok(html.includes('id="brief-download" type="button"'));
-  assert.ok(html.includes('id="brief-share" type="button"));
+  assert.ok(html.includes('id="brief-share" type="button"'));
   assert.ok(html.includes('id="brief-copy-status" role="status" aria-live="polite"'));
   assert.ok(css.includes('.brief-preview[hidden]{display:none!important}'));
   assert.ok(css.includes('white-space:pre-wrap'));
@@ -205,7 +205,7 @@ await check('RU/EN/AR pages have their own canonicals and reciprocal hreflang', 
     for (const locale of ['ru','en','ar']) assert.ok(item.html.includes('hreflang="'+locale+'"'), item.locale+' missing hreflang '+locale);
     assert.ok(item.html.includes('id="project-brief"') && item.html.includes('id="brief-copy"') && item.html.includes('id="brief-download"') && item.html.includes('id="brief-share"'), item.locale+' lost brief controls');
     const scriptStart=item.html.indexOf('<script>');const scriptEnd=item.html.indexOf('</script>',scriptStart);const localeScript=scriptStart>=0&&scriptEnd>=0?item.html.slice(scriptStart+8,scriptEnd):'';
-    assert.ok(localeScript && localeScript[1].includes('function downloadBriefMessage') && localeScript[1].includes('function shareBriefMessage'),item.locale+' is missing local export/share logic');
+    assert.ok(localeScript && localeScript.includes('function downloadBriefMessage') && localeScript.includes('function shareBriefMessage'),item.locale+' is missing local export/share logic');
     const ld=item.html.match(/<script type="application\/ld\+json" id="case-structured-data">([\s\S]*?)<\/script>/);
     assert.ok(ld,item.locale+' JSON-LD missing');
     const graph=JSON.parse(ld[1])['@graph'];
