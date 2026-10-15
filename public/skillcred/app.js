@@ -1,7 +1,7 @@
 (function () {
 "use strict";
 var API_BASE=(document.querySelector('meta[name="api-base"]')||{}).content||"/skillcred-api";
-var $=function(id){return document.getElementById(id);},credential=null,verified=false,revoked=false,busy=false,events=0,lastJson="",heroStarted=false,inspectorReady=false,eventLogVisible=false,eventScrollPending=false,eventScrollScheduled=false,pendingEvents=[],heroVerifiedAt=0,freshnessTimer=0;
+var $=function(id){return document.getElementById(id);},credential=null,verified=false,revoked=false,busy=false,events=0,lastJson="",heroStarted=false,heroStartScheduled=false,heroStartTimer=0,inspectorReady=false,eventLogVisible=false,eventScrollPending=false,eventScrollScheduled=false,pendingEvents=[],heroVerifiedAt=0,freshnessTimer=0;
 var reduced=window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 var samples={
 curl:{file:"terminal / issue.sh",text:"curl -sS -X POST \\\n  https://osgard.world/skillcred-api/demo/issue \\\n  -H 'Accept: application/json' \\\n  -H 'Content-Type: application/json' \\\n  -d '{}'"},
@@ -272,8 +272,8 @@ if($("downloadBtn"))$("downloadBtn").addEventListener("click",downloadCredential
 if($("restartBtn"))$("restartBtn").addEventListener("click",resetDemo);
 navSetup();faqSetup();codeSetup();jsonSetup();revealSetup();tiltSetup();inspectorActivationSetup();eventLogVisibilitySetup();sectionMotionSetup();trustScrollSetup();
 function afterFirstPaint(callback){if(typeof window.requestAnimationFrame==="function"){window.requestAnimationFrame(function(){window.requestAnimationFrame(callback);});}else window.setTimeout(callback,0);}
-function scheduleHeroArtifact(){if(window.matchMedia&&window.matchMedia("(max-width:600px)").matches){window.setTimeout(function(){if(document.visibilityState==="hidden")return;if(typeof window.requestIdleCallback==="function")window.requestIdleCallback(loadHeroArtifact,{timeout:700});else loadHeroArtifact();},1800);return;}loadHeroArtifact();}
+function scheduleHeroArtifact(){if(heroStarted||heroStartScheduled)return;heroStartScheduled=true;if(window.matchMedia&&window.matchMedia("(max-width:600px)").matches){heroStartTimer=window.setTimeout(function(){heroStartTimer=0;if(document.visibilityState==="hidden"){heroStartScheduled=false;return;}var begin=function(){heroStartScheduled=false;loadHeroArtifact();};if(typeof window.requestIdleCallback==="function")window.requestIdleCallback(begin,{timeout:700});else begin();},1800);return;}heroStartScheduled=false;loadHeroArtifact();}
 if("IntersectionObserver" in window){var observed=new IntersectionObserver(function(entries){if(entries.some(function(e){return e.isIntersecting;})){observed.disconnect();afterFirstPaint(scheduleHeroArtifact);}},{threshold:.08});var hero=document.querySelector(".hero-visual");if(hero)observed.observe(hero);}else afterFirstPaint(scheduleHeroArtifact);
-document.addEventListener("visibilitychange",function(){if(document.visibilityState==="visible"&&!heroStarted)loadHeroArtifact();else if(document.visibilityState==="visible"&&heroVerifiedAt&&!freshnessTimer)updateHeroFreshness();});
+document.addEventListener("visibilitychange",function(){if(document.visibilityState==="visible"&&!heroStarted&&!heroStartScheduled)scheduleHeroArtifact();else if(document.visibilityState==="visible"&&heroVerifiedAt&&!freshnessTimer)updateHeroFreshness();});
 window.SkillCredDemo={getState:function(){return{issued:!!credential,verified:verified,revoked:revoked,events:events};}};
 })();
