@@ -38,6 +38,10 @@ const filtered=products.filter(p=>(!q||(p.name+" "+p.sku+" "+p.form).toLowerCase
 $("count").textContent=String(filtered.length).padStart(2,"0");$("empty").hidden=filtered.length>0;
 $("products").innerHTML=filtered.map(p=>'<article class="product"><a href="/tedes/product/?sku='+encodeURIComponent(p.sku)+'" aria-label="Открыть '+escape(p.name)+'"><div class="product-art">'+(p.kind==="arc"?'<img src="/tedes/assets/hero-door.webp" alt="" loading="lazy">':'')+'<span class="product-object" aria-hidden="true"></span></div></a><div class="product-copy"><div class="meta"><span>'+escape(p.collection)+'</span><span>DEMO / '+escape(p.sku)+'</span></div><h3>'+escape(p.name)+'</h3><p>'+escape(p.desc)+'</p><div class="product-bottom"><span class="price">Цена не подтверждена</span><a class="text-link" href="/tedes/product/?sku='+encodeURIComponent(p.sku)+'">Смотреть объект ↗</a></div></div></article>').join("");
 }
+const query=new URLSearchParams(location.search);
+if(["FORMA","LINEA","MATERIA"].includes(query.get("collection"))) $("collection").value=query.get("collection");
+if(["Antique brass","Matte black","Satin bronze","Brushed steel","Graphite"].includes(query.get("finish"))) $("finish").value=query.get("finish");
+if(query.get("q")) $("search").value=query.get("q").slice(0,80);
 ["search","collection","finish"].forEach(id=>$(id).addEventListener(id==="search"?"input":"change",render));render();
 })();
 </script></body></html>
