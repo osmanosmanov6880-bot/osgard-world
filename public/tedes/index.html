@@ -178,7 +178,7 @@ th{color:#a89a80;font-size:8px;letter-spacing:.15em}
 <div class="project-name"><label for="projectNameMirror">PROJECT / NAME</label><input id="projectNameMirror" value="Residence / North Wing" readonly aria-label="Название проекта"></div>
 <div class="project-preview"><div class="mini-door-frame"><div class="mini-door" id="miniDoor" aria-hidden="true"></div></div><div class="preview-data"><p>LIVE CONFIGURATION PREVIEW</p><strong id="previewCollection">FORMA</strong><span id="previewDetails">Antique brass · ARC handle<br>900 × 2100 mm</span><span id="previewZone" style="color:var(--gold);margin-top:8px">Entrance / 01</span></div></div>
 <div class="table-wrap"><table><thead><tr><th>Зона / позиция</th><th>Серия</th><th>Отделка</th><th>Размер, мм</th><th aria-label="Действия"></th></tr></thead><tbody id="doorRows"></tbody></table><div class="empty-state" id="emptyState">Добавьте дверную позицию, чтобы сформировать ведомость. Можно собрать до 30 независимых конфигураций.</div></div>
-<div class="project-footer"><p>Экспорт содержит введённые значения и демонстрационные идентификаторы. Это не производственная спецификация.</p><div class="export-actions"><button class="btn small" id="exportCsv">Экспорт CSV ↓</button><button class="btn small" id="exportJson">Экспорт JSON ↓</button></div></div>
+<div class="project-footer"><p>Экспорт содержит введённые значения и демонстрационные идентификаторы. Это не производственная спецификация.</p><div class="export-actions"><button class="btn small" id="exportCsv">Экспорт CSV ↓</button><button class="btn small" id="exportJson">Экспорт JSON ↓</button><button class="btn small" id="importJson" type="button">Импорт JSON ↑</button><a class="btn small" href="/tedes/print/">Печать / PDF ↗</a><input id="importFile" type="file" accept=".json,application/json" hidden aria-label="Выберите JSON-файл проекта"></div></div>
 </section>
 </div>
 
@@ -199,7 +199,7 @@ th{color:#a89a80;font-size:8px;letter-spacing:.15em}
 <div class="section-head"><div><p class="eyebrow">02 / PRODUCT THINKING</p><h2>Не только красивый каталог.</h2></div><p>Интерфейс строится вокруг следующего действия проектировщика: определить позицию, сравнить параметры и передать согласованную ведомость дальше.</p></div>
 <div class="cap-grid">
 <article class="cap-card"><span>01</span><h3>Зонная конфигурация</h3><p>Отдельные параметры для входной группы, кабинетов, санузлов и других зон в одном проекте.</p></article>
-<article class="cap-card"><span>02</span><h3>Структурированный экспорт</h3><p>JSON для дальнейшей цифровой обработки и CSV для быстрого просмотра в таблицах.</p></article>
+<article class="cap-card"><span>02</span><h3>Проект можно перенести</h3><p>Экспортируйте JSON для резервной копии и импорта проекта, CSV для работы в таблицах или печатную ведомость для сохранения в PDF через браузер.</p></article>
 <article class="cap-card"><span>03</span><h3>Честная инженерная граница</h3><p>Проектные значения отделены от подтверждённых характеристик: интерфейс не подменяет техническую экспертизу.</p></article>
 </div>
 </section>
@@ -246,8 +246,12 @@ th{color:#a89a80;font-size:8px;letter-spacing:.15em}
       localStorage.setItem(STORAGE_KEY,JSON.stringify({schema:"tedes-studio-project/v1",projectName:cleanText($("projectName").value||"Untitled project",80),doors,updatedAt:new Date().toISOString()}));
       $("formMessage").classList.add("project-saved");
       $("formMessage").dataset.saved="true";
+      return true;
     }catch{
+      $("formMessage").classList.remove("project-saved");
+      delete $("formMessage").dataset.saved;
       $("formMessage").textContent="Не удалось сохранить проект в браузере. Экспорт JSON всё ещё доступен.";
+      return false;
     }
   }
   const colorFor = (finish) => ({ "Antique brass":"#c5ac73","Matte black":"#30312b","Satin bronze":"#8e7860","Polished chrome":"#cbd0cb","Brushed steel":"#a9aaa0","Graphite":"#55564f" }[finish] || "#c5ac73");
@@ -269,19 +273,55 @@ th{color:#a89a80;font-size:8px;letter-spacing:.15em}
     $("doorCount").textContent=String(doors.length);
     $("emptyState").hidden=doors.length>0;
     $("doorRows").innerHTML=doors.map((door)=>"<tr><td><span class=\"zone-name\">"+escapeHtml(door.zone)+"</span><span class=\"zone-code\">"+door.id+" · "+escapeHtml(door.handle)+" / "+escapeHtml(door.lock)+"</span></td><td>"+escapeHtml(door.collection)+"</td><td><span class=\"finish-chip\" style=\"background:"+colorFor(door.finish)+"\"></span>"+escapeHtml(door.finish)+"</td><td>"+door.width+" × "+door.height+"</td><td><button class=\"remove-btn\" data-remove=\""+door.id+"\" aria-label=\"Удалить "+escapeHtml(door.zone)+"\">×</button></td></tr>").join("");
-    persistProject();
+    return persistProject();
   }
   $("addDoor").addEventListener("click",()=>{
     if(doors.length>=30){$("formMessage").textContent="Достигнут лимит демонстрационного проекта — 30 позиций.";return;}
     const item=selectedConfig();
     item.id="D-"+String(nextId++).padStart(3,"0");
-    doors.push(item);renderRows();$("formMessage").textContent="Позиция "+item.id+" добавлена в ведомость.";
+    doors.push(item);const saved=renderRows();$("formMessage").textContent=saved?"Позиция "+item.id+" добавлена и сохранена в этом браузере.":"Позиция "+item.id+" добавлена в текущую сессию, но браузер не разрешил сохранить проект. Экспортируйте JSON.";
     $("zone").value="";$("zone").focus();updatePreview();
   });
   $("resetForm").addEventListener("click",()=>{$("zone").value="";$("collection").value="FORMA";$("finish").value="Antique brass";$("handle").value="ARC";$("lock").value="Not specified";$("width").value="900";$("height").value="2100";$("formMessage").textContent="Форма сброшена.";updatePreview();});
-  $("doorRows").addEventListener("click",(event)=>{const btn=event.target.closest("[data-remove]");if(!btn)return;const index=doors.findIndex((door)=>door.id===btn.dataset.remove);if(index>=0){doors.splice(index,1);renderRows();$("formMessage").textContent="Позиция удалена из демонстрационной ведомости."; }});
+  $("doorRows").addEventListener("click",(event)=>{const btn=event.target.closest("[data-remove]");if(!btn)return;const index=doors.findIndex((door)=>door.id===btn.dataset.remove);if(index>=0){doors.splice(index,1);const saved=renderRows();$("formMessage").textContent=saved?"Позиция удалена из локальной демонстрационной ведомости.":"Позиция удалена в текущей сессии, но изменение не удалось сохранить."; }});
   ["projectName","zone","collection","finish","handle","lock","width","height"].forEach((id)=>$(id).addEventListener("input",updatePreview));
   ["collection","finish","handle","lock"].forEach((id)=>$(id).addEventListener("change",updatePreview));
+  $("importJson").addEventListener("click",()=>$("importFile").click());
+  $("importFile").addEventListener("change",async()=>{
+    const file=$("importFile").files&&$("importFile").files[0];
+    if(!file)return;
+    try{
+      if(file.size>1024*1024)throw new Error("file-size");
+      const imported=JSON.parse(await file.text());
+      if(!imported||!["tedes-project-demo/v1","tedes-studio-project/v1"].includes(imported.schema))throw new Error("schema");
+      if(!Array.isArray(imported.doors)||imported.doors.length>30)throw new Error("positions");
+      const importedDoors=imported.doors.map((d,i)=>{
+        if(!d||typeof d!=="object"||Array.isArray(d))throw new Error("position");
+        const width=Number(d.width),height=Number(d.height);
+        const door={
+          id:"D-"+String(i+1).padStart(3,"0"),
+          zone:cleanText(d.zone||"Unassigned zone",80)||"Unassigned zone",
+          collection:allowedCollections.has(d.collection)?d.collection:"FORMA",
+          finish:allowedFinishes.has(d.finish)?d.finish:"Antique brass",
+          handle:["ARC","EDGE","LINE"].includes(d.handle)?d.handle:"ARC",
+          lock:["Not specified","Privacy","Passage","Key"].includes(d.lock)?d.lock:"Not specified",
+          width:Number.isFinite(width)&&width!==0?Math.max(400,Math.min(1800,Math.round(width))):900,
+          height:Number.isFinite(height)&&height!==0?Math.max(1500,Math.min(3000,Math.round(height))):2100
+        };
+        if(typeof d.sku==="string")door.sku=cleanText(d.sku,40);
+        return door;
+      });
+      const importedName=cleanText(imported.projectName||(imported.project&&imported.project.name)||"Imported project",80)||"Imported project";
+      doors.splice(0,doors.length,...importedDoors);
+      nextId=Math.max(0,...doors.map(d=>Number(String(d.id).replace(/^D-/,""))||0))+1;
+      $("projectName").value=importedName;
+      $("projectNameMirror").value=importedName;
+      const saved=renderRows();updatePreview();
+      $("formMessage").textContent=saved?"Импортировано позиций: "+doors.length+". Проект сохранён только в этом браузере.":"Импортировано позиций: "+doors.length+", но браузер не разрешил сохранить их. Скачайте JSON для резервной копии.";
+    }catch{
+      $("formMessage").textContent="Импорт не выполнен. Выберите JSON проекта TEDES до 1 МБ и максимум с 30 позициями. Текущий проект не изменён.";
+    }finally{$("importFile").value="";}
+  });
   $("exportJson").addEventListener("click",()=>{
     const content={schema:"tedes-project-demo/v1",mode:"demonstration",project:{name:$("projectName").value.trim()||"Untitled project",positions:doors.length,exportedAt:new Date().toISOString()},notice:"Not a production specification. Availability, price and mechanical compatibility are not verified.",doors:doors};
     download("tedes-project.json",JSON.stringify(content,null,2),"application/json;charset=utf-8");

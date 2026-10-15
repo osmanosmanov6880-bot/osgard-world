@@ -1,7 +1,7 @@
 import { isValidPartnerInventoryText } from './partner-inventory-contract.mjs'
 const base = process.env.OSGARD_BASE_URL || 'https://osgard.world'
 const expectCurrentDesign = process.env.SKILLCRED_EXPECT_CURRENT_DESIGN === '1'
-const routes = ['/tedes/','/tedes/catalog/','/tedes/collections/','/tedes/product/?sku=FORMA-ARC-01','/tedes/materials/','/development/tedes/','/development/merakki/','/','/portal','/osa-cinema','/academy','/skillcred/','/skillcred-api/health','/skillcred-api/ready','/skillcred-api/issuer','/entertainment','/entertainment/','/entertainment/elbrus/','/entertainment/elbrus/en/','/entertainment/elbrus/ar/','/entertainment/elbrus/og.svg','/games/','/games/index.html','/games/partners/','/games/admin/','/games/afterimage-run/','/games/vector-zero/','/games/favicon.svg','/privacy/','/terms/','/community','/stream','/archive','/profile','/api/v1/player/profile','/api/v1/analytics/summary?from=0&to=1','/r/1842','/games/time','/games/null-shift/','/games/null-shift/index.html','/games/null-shift-godot/','/games/null-shift-godot/index.html','/play/swarm','/play/null-shift','/play/inherit','/play/remix','/media','/business','/create','/mobility']
+const routes = ['/tedes/','/tedes/catalog/','/tedes/collections/','/tedes/product/?sku=FORMA-ARC-01','/tedes/materials/','/tedes/print/','/development/tedes/','/development/merakki/','/','/portal','/osa-cinema','/academy','/skillcred/','/skillcred-api/health','/skillcred-api/ready','/skillcred-api/issuer','/entertainment','/entertainment/','/entertainment/elbrus/','/entertainment/elbrus/en/','/entertainment/elbrus/ar/','/entertainment/elbrus/og.svg','/games/','/games/index.html','/games/partners/','/games/admin/','/games/afterimage-run/','/games/vector-zero/','/games/favicon.svg','/privacy/','/terms/','/community','/stream','/archive','/profile','/api/v1/player/profile','/api/v1/analytics/summary?from=0&to=1','/r/1842','/games/time','/games/null-shift/','/games/null-shift/index.html','/games/null-shift-godot/','/games/null-shift-godot/index.html','/play/swarm','/play/null-shift','/play/inherit','/play/remix','/media','/business','/create','/mobility']
 const agents = { desktop: 'OSGARD-Route-Matrix/1.1 Desktop', mobile: 'OSGARD-Route-Matrix/1.1 Mobile' }
 const results = []
 for (const [device, userAgent] of Object.entries(agents)) for (const route of routes) {
@@ -15,7 +15,7 @@ for (const [device, userAgent] of Object.entries(agents)) for (const route of ro
       ? text.includes('<title>OSA Intelligence — понимать, проверять, решать</title>') &&
         /<script[^>]+src="\/assets\/[^"]+\.js"/i.test(text)
       : route === '/tedes/'
-        ? text.includes('<title>TEDES Studio — архитектурная фурнитура как система</title>') && text.includes('id="addDoor"') && text.includes('id="exportJson"') && text.includes('id="exportCsv"') && text.includes('id="doorRows"') && text.includes('STORAGE_KEY') && text.includes('id="buildQuote"')
+        ? text.includes('<title>TEDES Studio — архитектурная фурнитура как система</title>') && text.includes('id="addDoor"') && text.includes('id="exportJson"') && text.includes('id="exportCsv"') && text.includes('id="doorRows"') && text.includes('STORAGE_KEY') && text.includes('id="buildQuote"') && text.includes('id="importJson"') && text.includes('id="importFile"')
       : route === '/tedes/catalog/'
         ? text.includes('<title>TEDES Catalog — коллекция архитектурной фурнитуры</title>') && text.includes('id="products"') && text.includes('id="search"') && text.includes('id="collection"') && text.includes('id="finish"')
       : route === '/tedes/collections/'
@@ -24,6 +24,8 @@ for (const [device, userAgent] of Object.entries(agents)) for (const route of ro
         ? text.includes('<title>TEDES Product Studio — configurable door hardware concept</title>') && text.includes('id="addToProject"') && text.includes('localStorage') && text.includes('id="swatches"')
       : route === '/tedes/materials/'
         ? text.includes('<title>TEDES Materials — guide to finishes</title>') && text.includes('Antique Brass') && text.includes('Brushed Steel') && text.includes('Matte Black')
+      : route === '/tedes/print/'
+        ? text.includes('<title>TEDES — печатная ведомость проекта</title>') && text.includes('id="positionRows"') && text.includes('id="printProject"') && text.includes('tedes-studio-project-v1') && text.includes('не подтверждённая производственная спецификация')
       : route === '/development/tedes/'
         ? text.includes('<title>TEDES — кейс OSGARD Development</title>') && text.includes('href="/tedes/"') && text.includes('FLAGSHIP CASE')
       : route === '/development/merakki/'
