@@ -53,6 +53,8 @@ jobs:
     timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
       - uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -76,9 +78,21 @@ jobs:
 
       - name: Validate the Godot game project contract
         run: npm run qa:null-shift-godot
+      - name: Detect whether the Godot web export needs rebuilding
+        id: godot-changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet HEAD^ HEAD -- godot/null-shift/ public/games/null-shift-godot/ scripts/null-shift-godot-smoke.mjs; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "No Godot sources or exported assets changed; keeping the checked-in Web export."
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "Godot sources or exported assets changed; rebuilding and validating the Web export."
+          fi
       - name: Cache Godot 4.7.2 and web export templates
         id: godot-cache
-        if: ${{ !contains(github.event.head_commit.message, '[supersede]') }}
+        if: ${{ steps.godot-changes.outputs.changed == 'true' && !contains(github.event.head_commit.message, '[supersede]') }}
         uses: actions/cache@v4
         with:
           path: |
@@ -86,7 +100,7 @@ jobs:
             /home/runner/.local/share/godot/export_templates/4.7.2.stable
           key: osgard-godot-4.7.2-web-templates-v1-${{ runner.os }}
       - name: Install official Godot 4.7.2 engine and web templates
-        if: steps.godot-cache.outputs.cache-hit != 'true'
+        if: ${{ steps.godot-changes.outputs.changed == 'true' && steps.godot-cache.outputs.cache-hit != 'true' }}
         run: |
           set -euo pipefail
           mkdir -p /tmp/osgard-godot "$HOME/.local/share/godot/export_templates/4.7.2.stable"
@@ -97,18 +111,22 @@ jobs:
           unzip -q /tmp/osgard-godot/templates.tpz -d /tmp/osgard-godot/unpacked-templates
           cp -a /tmp/osgard-godot/unpacked-templates/templates/. "$HOME/.local/share/godot/export_templates/4.7.2.stable/"
       - name: Verify Godot installation
+        if: ${{ steps.godot-changes.outputs.changed == 'true' }}
         run: |
           chmod +x /tmp/osgard-godot/Godot_v4.7.2-stable_linux.x86_64
           /tmp/osgard-godot/Godot_v4.7.2-stable_linux.x86_64 --version
           test -s "$HOME/.local/share/godot/export_templates/4.7.2.stable/web_nothreads_release.zip"
       - name: Import and parse the Godot project
+        if: ${{ steps.godot-changes.outputs.changed == 'true' }}
         run: /tmp/osgard-godot/Godot_v4.7.2-stable_linux.x86_64 --headless --editor --path godot/null-shift --quit
       - name: Runtime-smoke gameplay state transitions in headless Godot
+        if: ${{ steps.godot-changes.outputs.changed == 'true' }}
         run: |
           set -euo pipefail
           timeout 120s /tmp/osgard-godot/Godot_v4.7.2-stable_linux.x86_64 --headless --path godot/null-shift --script res://tests/runtime_smoke.gd 2>&1 | tee /tmp/null-shift-godot-runtime.log
           ! grep -E 'SCRIPT ERROR:|Parse Error:|RUNTIME_SMOKE_FAILURE:' /tmp/null-shift-godot-runtime.log
       - name: Export Godot Web game
+        if: ${{ steps.godot-changes.outputs.changed == 'true' }}
         run: |
           mkdir -p public/games/null-shift-godot
           /tmp/osgard-godot/Godot_v4.7.2-stable_linux.x86_64 --headless --path godot/null-shift --export-release Web "$GITHUB_WORKSPACE/public/games/null-shift-godot/index.html"
