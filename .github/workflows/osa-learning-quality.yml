@@ -1,0 +1,44 @@
+name: OSA Learning quality gates
+on:
+  pull_request:
+    paths:
+      - 'src/osa*'
+      - 'src/OSA*'
+      - 'src/LectureLibrary.tsx'
+      - 'scripts/osa-*'
+      - 'docs/OSA-*'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/osa-learning-quality.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: TypeScript validation
+        run: npm run check
+      - name: Bilingual media publication contract
+        run: npm run qa:osa-media-availability
+      - name: Academy
+        run: npm run qa:academy
+      - name: Lectures
+        run: npm run qa:lectures
+      - name: Media player
+        run: npm run qa:osa-media
+      - name: Learning progress
+        run: npm run qa:osa-progress
+      - name: Narration scripts
+        run: npm run qa:osa-narration
+      - name: Media file signature self-test
+        run: npm run qa:osa-media-files
+      - name: Production build
+        run: npm run build
