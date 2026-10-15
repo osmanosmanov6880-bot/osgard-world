@@ -10,6 +10,18 @@ const required = [
   'terms/index.html', 'entertainment/index.html', 'entertainment/noir-auto/index.html',
   'entertainment/noir-auto/en/index.html', 'entertainment/noir-auto/ar/index.html',
   'entertainment/noir-auto/og.svg', 'development/index.html',
+  'tedes/index.html',
+  'tedes/assets/hero-door.webp',
+  'tedes/assets/architecture-scene.webp',
+  'tedes/catalog/index.html',
+  'tedes/collections/index.html',
+  'tedes/product/index.html',
+  'tedes/materials/index.html',
+  'tedes/print/index.html',
+  'tedes/project/index.html',
+  'tedes/project/project-workspace.js',
+  'tedes/data/catalog.v1.json',
+  'development/tedes/index.html',
 ]
 
 for (const rel of required) {
@@ -18,19 +30,32 @@ for (const rel of required) {
     const info = await stat(full)
     assert.ok(info.isFile(), 'Required deployment path is not a file: ' + rel)
     assert.ok(info.size > 0, 'Required deployment file is empty: ' + rel)
+    if (rel.startsWith('tedes/assets/') && rel.endsWith('.webp')) {
+      assert.ok(info.size > 1000, 'TEDES WebP asset is unexpectedly small: ' + rel)
+    }
   } catch (error) {
     throw new Error('Cloudflare Pages artifact is missing ' + rel + ': ' + (error instanceof Error ? error.message : 'unknown error'))
   }
 }
 
+// The Pages config is source configuration, not a runtime secret.
+const wrangler = await readFile(resolve('wrangler.jsonc'), 'utf8')
+assert.match(wrangler, /"name"\s*:\s*"osgard-world"/, 'Wrangler Pages project name must match the configured Pages project')
+assert.match(wrangler, /"pages_build_output_dir"\s*:\s*"\.\/dist"/, 'Wrangler Pages output directory must be ./dist')
+assert.match(wrangler, /"compatibility_date"\s*:\s*"\d{4}-\d{2}-\d{2}"/, 'Wrangler compatibility date must be an explicit ISO date')
+
 const headers = await readFile(join(root, '_headers'), 'utf8')
 assert.ok(headers.includes('X-Content-Type-Options: nosniff'), '_headers must include nosniff')
 assert.ok(headers.includes('Referrer-Policy: strict-origin-when-cross-origin'), '_headers must include a safe referrer policy')
 assert.ok(headers.includes('/index.html'), '_headers must prevent stale root HTML')
+assert.ok(headers.includes('/games/null-shift-godot/*.wasm') && headers.includes('Content-Encoding: gzip'), 'Packaged Godot WASM must be served with gzip encoding')
+assert.ok(headers.includes('Content-Type: application/wasm'), 'Packaged Godot WASM must retain the WebAssembly MIME type')
 const redirects = await readFile(join(root, '_redirects'), 'utf8')
 assert.ok(redirects.includes('/games/time-empire /games/time 301'), 'Legacy time-empire route redirect is missing')
 assert.ok(redirects.includes('/games/time-empire/ /games/time 301'), 'Legacy time-empire slash route redirect is missing')
 
+const wasm = await readFile(join(root, 'games/null-shift-godot/index.wasm'))
+assert.equal(wasm.subarray(0, 2).toString('hex'), '1f8b', 'Godot WASM must be gzip-packaged before Pages upload')
 const maxFiles = Number(process.env.CLOUDFLARE_PAGES_MAX_FILES || 20000)
 const maxAssetBytes = 25 * 1024 * 1024
 const files = []
@@ -61,5 +86,6 @@ console.log(JSON.stringify({
   maxAssetBytes,
   largestAssets: largest.map(file => ({ path: relative(root, file.path).replaceAll('\\', '/'), bytes: file.size })),
   requiredStaticRoutes: required.length,
+  tedesRoutes: required.filter(path => path.startsWith('tedes/') || path.startsWith('development/tedes/')),
   note: 'Static files only: current container-backed API, WebSocket, SSE and game-session routes still need an origin/Worker proxy before production DNS is moved.',
 }, null, 2))
