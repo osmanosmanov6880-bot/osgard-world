@@ -7,6 +7,7 @@ const paths = [
   "public/entertainment/index.html",
   "public/entertainment/elbrus/index.html",
   "public/entertainment/elbrus/og.svg",
+  "scripts/production-route-matrix.mjs",
   "public/sitemap.xml",
   ".github/workflows/deploy-frontend.yml",
   "package.json"
@@ -18,6 +19,7 @@ const page = read("public/entertainment/elbrus/index.html");
 const sitemap = read("public/sitemap.xml");
 const workflow = read(".github/workflows/deploy-frontend.yml");
 const pkg = JSON.parse(read("package.json"));
+const routeMatrix = read("scripts/production-route-matrix.mjs");
 
 assert.ok(hub.includes('href="/entertainment/elbrus/"'), "Entertainment hub must link to the ELBRUS case");
 assert.ok(hub.includes("case-shelf") && hub.includes("SELECTED DIGITAL EXPERIENCE"), "Entertainment hub must expose the selected digital experiences shelf");
@@ -32,6 +34,8 @@ assert.ok(page.includes("does not place orders") && page.includes("не отпр
 assert.ok(!page.includes("/api/orders") && !page.includes("/api/reservations") && !page.includes("fetch("), "Public case preview must not claim or attempt live order integration");
 assert.ok(sitemap.includes("<loc>https://osgard.world/entertainment/elbrus/</loc>"), "ELBRUS case URL missing from sitemap");
 assert.ok(sitemap.includes("<loc>https://osgard.world/entertainment/</loc>"), "Entertainment hub missing from sitemap");
+assert.ok(routeMatrix.includes("'/entertainment/elbrus/'") && routeMatrix.includes("'/entertainment/elbrus/og.svg'"), "Production route matrix must test the ELBRUS case and its social preview");
+assert.ok(routeMatrix.includes("ELBRUS — Hospitality Experience | OSGARD WORLD") && routeMatrix.includes('text.match(/class="case-shelf"/g)'), "Production route matrix must validate case identity and exactly one hub card");
 assert.ok(workflow.includes('"public/entertainment/**"'), "SSH deployment workflow must trigger for Entertainment case changes");
 assert.ok(workflow.includes("npm run qa:elbrus-case"), "SSH workflow must run ELBRUS case smoke before build/deploy");
 assert.equal(pkg.scripts?.["qa:elbrus-case"], "node scripts/elbrus-case-smoke.mjs", "package.json must register the case smoke test");
