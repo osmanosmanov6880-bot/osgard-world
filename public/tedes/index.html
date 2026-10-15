@@ -3,7 +3,8 @@
 <head>
 <meta charset="utf-8">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#10110f">
 <meta name="robots" content="index,follow">
@@ -121,12 +122,24 @@ th{color:#a89a80;font-size:8px;letter-spacing:.15em}
 .visual-badge{z-index:2;text-shadow:0 2px 10px rgba(0,0,0,.65)}
 @media(max-width:560px){.hero-photography{object-position:52% center}}
 
+
+/* PRODUCT EXPERIENCE V3 — navigation, persistence feedback and quote handover */
+.product-links{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:0 0 44px}
+.product-links a{display:flex;flex-direction:column;gap:14px;min-width:0;padding:19px;border:1px solid #3e3527;background:linear-gradient(135deg,rgba(37,31,20,.72),rgba(13,12,9,.94));transition:border-color .2s,transform .2s}
+.product-links a:hover{border-color:#8b754a;transform:translateY(-2px)}
+.product-links span{font-size:8px;color:#a99365;letter-spacing:.18em}.product-links strong{font:400 25px/1.05 "Cormorant Garamond",Georgia,serif}.product-links em{font-style:normal;font-size:8px;letter-spacing:.12em;color:#d1bd91;margin-top:auto}
+.quote-builder{display:grid;grid-template-columns:.9fr 1.1fr;gap:clamp(24px,5vw,66px);padding:clamp(23px,4vw,42px);margin:26px 0;border:1px solid #54452f;background:radial-gradient(ellipse at 15% 0,rgba(183,148,79,.11),transparent 48%),linear-gradient(145deg,#19160f,#100f0b)}
+.quote-intro h3{margin:0;font:400 clamp(30px,3.5vw,43px)/.96 "Cormorant Garamond",Georgia,serif}.quote-intro p:not(.eyebrow){color:#b9ae98;font-size:11px;line-height:1.9;margin:18px 0 0}
+.quote-fields{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-content:start}.quote-fields .field label{font-size:8px;letter-spacing:.13em}.quote-fields input,.quote-fields textarea{width:100%;border:1px solid #4a3d2a;background:#0c0c09;color:#f1ebdf;padding:12px;font:11px Inter,Arial,sans-serif;border-radius:0;resize:vertical}.quote-fields input{height:42px}.quote-fields textarea{min-height:88px;line-height:1.75}.quote-fields .field:nth-child(3),.quote-fields .field:nth-child(4),.quote-fields #buildQuote,.quote-status{grid-column:1/-1}.quote-status{margin:0;color:#ada18a;font-size:10px;line-height:1.8}.project-saved{color:#c7d4b6!important}
+@media(max-width:780px){.product-links{grid-template-columns:1fr}.product-links a{gap:10px}.quote-builder{grid-template-columns:1fr}.quote-fields{grid-template-columns:1fr}}
+@media(max-width:560px){.product-links{padding-bottom:28px}.product-links a{padding:16px}.quote-builder{padding:18px}.quote-intro h3{font-size:34px}.quote-fields .btn{width:100%}}
+
 </style>
 </head>
 <body>
 <header class="wrap topbar">
 <a class="brand" href="/tedes/" aria-label="TEDES Studio home"><span class="brand-mark"><span>T</span></span><span>TEDES<small>GLOBAL STUDIO / DEMO</small></span></a>
-<nav class="navlinks" aria-label="Основная навигация"><a href="#studio">СТУДИЯ</a><a href="#capabilities">ВОЗМОЖНОСТИ</a><a href="/development/tedes/">КЕЙС OSGARD ↗</a></nav>
+<nav class="navlinks" aria-label="Основная навигация"><a href="/tedes/collections/">КОЛЛЕКЦИИ</a><a href="/tedes/catalog/">КАТАЛОГ</a><a href="/tedes/materials/">ОТДЕЛКИ</a><a href="#studio">СТУДИЯ</a><a href="/development/tedes/">КЕЙС ↗</a></nav>
 <div class="top-note">PRODUCT CONCEPT<br>OSGARD DEVELOPMENT</div>
 </header>
 <main>
@@ -139,7 +152,9 @@ th{color:#a89a80;font-size:8px;letter-spacing:.15em}
 <div class="hero-stats"><div class="stat"><strong>30</strong><span>позиций в проекте</span></div><div class="stat"><strong>CSV</strong><span>и JSON экспорт</span></div><div class="stat"><strong>01</strong><span>единая ведомость</span></div></div>
 </div>
 <div class="hero-visual" aria-label="Фотография премиальной латунной дверной ручки на тёмном деревянном полотне"><img class="hero-photography" src="/tedes/assets/hero-door.webp" alt="Дверная ручка в отделке тёплой латуни на тёмном деревянном полотне" width="600" height="500" fetchpriority="high"><span class="visual-label top">TEDES / MATERIAL STUDY 01</span><span class="visual-badge">STUDIO LIVE · DEMO</span><div class="door-render" aria-hidden="true"><span class="door-handle"></span></div><div class="visual-label bottom"><span>FORM / MATERIAL / DETAIL</span><span>FIG. 001</span></div></div>
+
 </section>
+<section class="wrap product-links" aria-label="Изучить TEDES"><a href="/tedes/collections/"><span>01 / COLLECTIONS</span><strong>Исследовать коллекции</strong><em>FORMA · LINEA · MATERIA ↗</em></a><a href="/tedes/catalog/"><span>02 / CATALOG</span><strong>Найти объект</strong><em>Поиск и фильтры ↗</em></a><a href="/tedes/materials/"><span>03 / MATERIAL LIBRARY</span><strong>Сравнить отделки</strong><em>Поверхности и оттенки ↗</em></a></section>
 <section class="wrap studio" id="studio">
 <div class="section-head"><div><p class="eyebrow">01 / CONFIGURATION WORKSPACE</p><h2>Один проект. Несколько зон.<br>Одна спецификация.</h2></div><div><span class="demo-label">Демо-режим · данные на устройстве</span><p style="max-width:450px;margin-top:13px">Каждая дверная позиция независима. Попробуйте разные серии, отделки, размеры и типы ручек — затем соберите ведомость проекта.</p></div></div>
 <div class="studio-grid">
@@ -167,6 +182,18 @@ th{color:#a89a80;font-size:8px;letter-spacing:.15em}
 <div class="project-footer"><p>Экспорт содержит введённые значения и демонстрационные идентификаторы. Это не производственная спецификация.</p><div class="export-actions"><button class="btn small" id="exportCsv">Экспорт CSV ↓</button><button class="btn small" id="exportJson">Экспорт JSON ↓</button></div></div>
 </section>
 </div>
+
+<div class="quote-builder">
+  <div class="quote-intro"><p class="eyebrow">PROJECT HANDOVER / LOCAL BRIEF</p><h3>Подготовить запрос<br>на коммерческое предложение.</h3><p>Соберите краткое резюме проекта вместе с текущей ведомостью. Это создаст файл на вашем устройстве — ничего не отправляется на сервер и не считается оформленным заказом.</p></div>
+  <div class="quote-fields">
+    <div class="field"><label for="quoteName">Контактное лицо</label><input id="quoteName" maxlength="100" autocomplete="name" placeholder="Имя"></div>
+    <div class="field"><label for="quoteCompany">Компания / проект</label><input id="quoteCompany" maxlength="120" autocomplete="organization" placeholder="Название компании"></div>
+    <div class="field"><label for="quoteEmail">Контактный email</label><input id="quoteEmail" type="email" maxlength="180" autocomplete="email" placeholder="name@company.com"></div>
+    <div class="field"><label for="quoteNotes">Комментарий к проекту</label><textarea id="quoteNotes" maxlength="1200" rows="3" placeholder="Сроки, объект, пожелания к комплектации…"></textarea></div>
+    <button class="btn primary" id="buildQuote" type="button">Сформировать файл запроса ↓</button>
+    <p class="quote-status" id="quoteStatus" role="status" aria-live="polite">Файл содержит контактные данные, введённые вами, и выбранные проектные позиции. Отправка не подключена.</p>
+  </div>
+</div>
 <div class="disclaimer"><span aria-hidden="true">ⓘ</span><div><strong>Важное ограничение концепта</strong>Это демонстрационный продуктовый интерфейс. Реальные складские остатки, коммерческие цены, оформление заказа, платежи и проверка механической совместимости не подключены. Перед производством требуется подтверждение специалистом и поставщиком.</div></div>
 </section>
 <section class="wrap capabilities" id="capabilities">
@@ -178,16 +205,52 @@ th{color:#a89a80;font-size:8px;letter-spacing:.15em}
 </div>
 </section>
 </main>
-<footer class="wrap foot"><div>TEDES GLOBAL STUDIO · DEMONSTRATION CONCEPT</div><div class="foot-links"><a href="/development/tedes/">Кейс OSGARD Development ↗</a><a href="/development/">Заказать цифровой продукт ↗</a><a href="#studio">Вернуться к студии ↑</a></div></footer>
+<footer class="wrap foot"><div>TEDES GLOBAL STUDIO · DEMONSTRATION CONCEPT</div><div class="foot-links"><a href="/tedes/collections/">Коллекции</a><a href="/tedes/catalog/">Каталог</a><a href="/tedes/materials/">Материалы</a><a href="/development/tedes/">Кейс OSGARD Development ↗</a><a href="#studio">К проекту ↑</a></div></footer>
 <script>
 (function(){
   const $ = (id) => document.getElementById(id);
-  let nextId = 4;
-  const doors = [
+  const STORAGE_KEY = "tedes-studio-project-v1";
+  const defaultDoors = [
     {id:"D-001",zone:"Entrance / 01",collection:"FORMA",finish:"Antique brass",handle:"ARC",lock:"Not specified",width:900,height:2100},
     {id:"D-002",zone:"Private / 02",collection:"LINEA",finish:"Matte black",handle:"EDGE",lock:"Privacy",width:800,height:2100},
     {id:"D-003",zone:"Suite / 03",collection:"MATERIA",finish:"Satin bronze",handle:"LINE",lock:"Passage",width:900,height:2200}
   ];
+  const allowedCollections = new Set(["FORMA","LINEA","MATERIA"]);
+  const allowedFinishes = new Set(["Antique brass","Matte black","Satin bronze","Polished chrome","Brushed steel","Graphite"]);
+  const cleanText = (value, max = 100) => String(value ?? "").replace(/[<>]/g,"").slice(0,max);
+  function readSavedProject(){
+    try{
+      const raw=localStorage.getItem(STORAGE_KEY);
+      if(!raw)return null;
+      const data=JSON.parse(raw);
+      if(!data||!Array.isArray(data.doors))return null;
+      const savedDoors=data.doors.slice(0,30).map((d,i)=>({
+        id:/^D-\d{3}$/.test(String(d.id||""))?String(d.id):"D-"+String(i+1).padStart(3,"0"),
+        zone:cleanText(d.zone||"Unassigned zone",80),
+        collection:allowedCollections.has(d.collection)?d.collection:"FORMA",
+        finish:allowedFinishes.has(d.finish)?d.finish:"Antique brass",
+        handle:["ARC","EDGE","LINE"].includes(d.handle)?d.handle:"ARC",
+        lock:["Not specified","Privacy","Passage","Key"].includes(d.lock)?d.lock:"Not specified",
+        width:Math.max(400,Math.min(1800,Math.round(Number(d.width)||900))),
+        height:Math.max(1500,Math.min(3000,Math.round(Number(d.height)||2100))),
+        ...(typeof d.sku==="string"?{sku:cleanText(d.sku,40)}:{})
+      }));
+      return {projectName:cleanText(data.projectName||"Residence / North Wing",80),doors:savedDoors};
+    }catch{return null;}
+  }
+  const savedProject=readSavedProject();
+  const doors = savedProject ? savedProject.doors : defaultDoors.map(d=>({...d}));
+  if(savedProject?.projectName) $("projectName").value=savedProject.projectName;
+  let nextId = Math.max(3,...doors.map(d=>Number(String(d.id).replace(/^D-/,""))||0))+1;
+  function persistProject(){
+    try{
+      localStorage.setItem(STORAGE_KEY,JSON.stringify({schema:"tedes-studio-project/v1",projectName:cleanText($("projectName").value||"Untitled project",80),doors,updatedAt:new Date().toISOString()}));
+      $("formMessage").classList.add("project-saved");
+      $("formMessage").dataset.saved="true";
+    }catch{
+      $("formMessage").textContent="Не удалось сохранить проект в браузере. Экспорт JSON всё ещё доступен.";
+    }
+  }
   const colorFor = (finish) => ({ "Antique brass":"#c5ac73","Matte black":"#30312b","Satin bronze":"#8e7860","Polished chrome":"#cbd0cb" }[finish] || "#c5ac73");
   const escapeHtml = (value) => String(value).replace(/[&<>"']/g, (char) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[char]));
   const safeNumber = (id,min,max) => { const val = Number($(id).value); return Number.isFinite(val) ? Math.min(max,Math.max(min,Math.round(val))) : min; };
@@ -207,6 +270,7 @@ th{color:#a89a80;font-size:8px;letter-spacing:.15em}
     $("doorCount").textContent=String(doors.length);
     $("emptyState").hidden=doors.length>0;
     $("doorRows").innerHTML=doors.map((door)=>"<tr><td><span class=\"zone-name\">"+escapeHtml(door.zone)+"</span><span class=\"zone-code\">"+door.id+" · "+escapeHtml(door.handle)+" / "+escapeHtml(door.lock)+"</span></td><td>"+escapeHtml(door.collection)+"</td><td><span class=\"finish-chip\" style=\"background:"+colorFor(door.finish)+"\"></span>"+escapeHtml(door.finish)+"</td><td>"+door.width+" × "+door.height+"</td><td><button class=\"remove-btn\" data-remove=\""+door.id+"\" aria-label=\"Удалить "+escapeHtml(door.zone)+"\">×</button></td></tr>").join("");
+    persistProject();
   }
   $("addDoor").addEventListener("click",()=>{
     if(doors.length>=30){$("formMessage").textContent="Достигнут лимит демонстрационного проекта — 30 позиций.";return;}
@@ -230,7 +294,28 @@ th{color:#a89a80;font-size:8px;letter-spacing:.15em}
     download("tedes-project.csv","\ufeff"+csv,"text/csv;charset=utf-8");
   });
   function download(filename,content,type){const blob=new Blob([content],{type:type});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);}
-  $("projectName").addEventListener("input",updatePreview);
+  $("projectName").addEventListener("input",()=>{updatePreview();persistProject();});
+  $("buildQuote").addEventListener("click",()=>{
+    const name=$("quoteName").value.trim(),email=$("quoteEmail").value.trim();
+    if(!name||!email||!$("quoteEmail").checkValidity()){
+      $("quoteStatus").textContent="Укажите контактное лицо и корректный email, чтобы включить их в файл запроса.";
+      $("quoteName").focus();return;
+    }
+    const brief={
+      document:"TEDES · DEMONSTRATION REQUEST BRIEF",
+      generatedAt:new Date().toISOString(),
+      delivery:"LOCAL FILE ONLY — this brief has not been sent to TEDES or any supplier.",
+      project:{name:$("projectName").value.trim()||"Untitled project",contactName:name,company:$("quoteCompany").value.trim(),email,notes:$("quoteNotes").value.trim()},
+      positionCount:doors.length,
+      positions:doors.map(d=>({...d})),
+      commercialStatus:"No verified prices, inventory, payment, order submission or manufacturer compatibility data are connected."
+    };
+    const text="TEDES — ЗАПРОС НА КОММЕРЧЕСКОЕ ПРЕДЛОЖЕНИЕ\nДЕМОНСТРАЦИОННЫЙ ФАЙЛ · НЕ ОТПРАВЛЕН\n\nПроект: "+brief.project.name+"\nКонтакт: "+name+"\nКомпания: "+brief.project.company+"\nEmail: "+email+"\nКомментарий: "+brief.project.notes+"\n\nПозиций: "+doors.length+"\n\n"+doors.map((d,i)=>(i+1)+". "+d.zone+" | "+d.collection+" | "+d.handle+" | "+d.finish+" | "+d.width+" × "+d.height+" мм | замок: "+d.lock+(d.sku?" | модель: "+d.sku:"")).join("\n")+"\n\nВажно: характеристики, наличие, цены и совместимость не подтверждены. Этот файл создан локально и не был отправлен.";
+    download("tedes-request-brief.txt",text,"text/plain;charset=utf-8");
+    download("tedes-project.json",JSON.stringify(brief,null,2),"application/json;charset=utf-8");
+    $("quoteStatus").textContent="Файлы запроса и состава проекта подготовлены и скачиваются. Они НЕ отправлены автоматически.";
+  });
+  $("projectName").addEventListener("change",()=>{$("projectNameMirror").value=$("projectName").value;});
   renderRows();updatePreview();
 })();
 </script>
