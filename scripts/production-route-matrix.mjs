@@ -171,6 +171,12 @@ for (const [device, userAgent] of Object.entries(agents)) for (const route of ro
                   content.includes('exportCsv') &&
                   content.includes('JSON.parse') &&
                   content.includes('localStorage')
+                : path.startsWith('/development/auto-style/')
+                  ? path.endsWith('.css')
+                    ? normalized.includes('--as-bg:#080a0c') && normalized.includes('.as-wrap') && normalized.includes('prefers-reduced-motion')
+                    : path.endsWith('.js')
+                      ? content.includes('data-copy-brief') && content.includes('navigator.clipboard') && content.includes('Project brief copied to clipboard.')
+                      : false
                 : path.endsWith('.css')
               ? normalized.includes('--acid:#c8ff3d') && normalized.includes('/skillcred/fonts/intervariable.woff2') && normalized.includes('/skillcred/fonts/instrumentserif-italic.woff2') && normalized.includes('/skillcred/fonts/jetbrainsmono-regular.woff2') && (!expectCurrentDesign || (normalized.includes('--hero-size:clamp(88px,6vw,104px)') && normalized.replace(/["']/g, '').includes('.trust-spine[data-state=revoked]')))
               : content.includes('demo/issue') && content.includes('data-clock-step')
