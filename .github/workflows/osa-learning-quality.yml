@@ -7,7 +7,9 @@ on:
       - 'src/osa*'
       - 'src/OSA*'
       - 'src/LectureLibrary.tsx'
+      - 'src/OSALearningDashboard.tsx'
       - 'scripts/osa-*'
+      - 'scripts/osa6-*'
       - 'docs/OSA-*'
       - 'package.json'
       - 'package-lock.json'
@@ -40,6 +42,8 @@ jobs:
         run: npm run check
       - name: Bilingual media publication contract
         run: npm run qa:osa-media-availability
+      - name: OSA 6 learning dashboard
+        run: npm run qa:osa6-learning
       - name: Academy
         run: npm run qa:academy
       - name: Lectures
