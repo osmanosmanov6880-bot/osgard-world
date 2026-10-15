@@ -246,8 +246,12 @@ th{color:#a89a80;font-size:8px;letter-spacing:.15em}
       localStorage.setItem(STORAGE_KEY,JSON.stringify({schema:"tedes-studio-project/v1",projectName:cleanText($("projectName").value||"Untitled project",80),doors,updatedAt:new Date().toISOString()}));
       $("formMessage").classList.add("project-saved");
       $("formMessage").dataset.saved="true";
+      return true;
     }catch{
+      $("formMessage").classList.remove("project-saved");
+      delete $("formMessage").dataset.saved;
       $("formMessage").textContent="Не удалось сохранить проект в браузере. Экспорт JSON всё ещё доступен.";
+      return false;
     }
   }
   const colorFor = (finish) => ({ "Antique brass":"#c5ac73","Matte black":"#30312b","Satin bronze":"#8e7860","Polished chrome":"#cbd0cb","Brushed steel":"#a9aaa0","Graphite":"#55564f" }[finish] || "#c5ac73");
@@ -269,17 +273,17 @@ th{color:#a89a80;font-size:8px;letter-spacing:.15em}
     $("doorCount").textContent=String(doors.length);
     $("emptyState").hidden=doors.length>0;
     $("doorRows").innerHTML=doors.map((door)=>"<tr><td><span class=\"zone-name\">"+escapeHtml(door.zone)+"</span><span class=\"zone-code\">"+door.id+" · "+escapeHtml(door.handle)+" / "+escapeHtml(door.lock)+"</span></td><td>"+escapeHtml(door.collection)+"</td><td><span class=\"finish-chip\" style=\"background:"+colorFor(door.finish)+"\"></span>"+escapeHtml(door.finish)+"</td><td>"+door.width+" × "+door.height+"</td><td><button class=\"remove-btn\" data-remove=\""+door.id+"\" aria-label=\"Удалить "+escapeHtml(door.zone)+"\">×</button></td></tr>").join("");
-    persistProject();
+    return persistProject();
   }
   $("addDoor").addEventListener("click",()=>{
     if(doors.length>=30){$("formMessage").textContent="Достигнут лимит демонстрационного проекта — 30 позиций.";return;}
     const item=selectedConfig();
     item.id="D-"+String(nextId++).padStart(3,"0");
-    doors.push(item);renderRows();$("formMessage").textContent="Позиция "+item.id+" добавлена в ведомость.";
+    doors.push(item);const saved=renderRows();$("formMessage").textContent=saved?"Позиция "+item.id+" добавлена и сохранена в этом браузере.":"Позиция "+item.id+" добавлена в текущую сессию, но браузер не разрешил сохранить проект. Экспортируйте JSON.";
     $("zone").value="";$("zone").focus();updatePreview();
   });
   $("resetForm").addEventListener("click",()=>{$("zone").value="";$("collection").value="FORMA";$("finish").value="Antique brass";$("handle").value="ARC";$("lock").value="Not specified";$("width").value="900";$("height").value="2100";$("formMessage").textContent="Форма сброшена.";updatePreview();});
-  $("doorRows").addEventListener("click",(event)=>{const btn=event.target.closest("[data-remove]");if(!btn)return;const index=doors.findIndex((door)=>door.id===btn.dataset.remove);if(index>=0){doors.splice(index,1);renderRows();$("formMessage").textContent="Позиция удалена из демонстрационной ведомости."; }});
+  $("doorRows").addEventListener("click",(event)=>{const btn=event.target.closest("[data-remove]");if(!btn)return;const index=doors.findIndex((door)=>door.id===btn.dataset.remove);if(index>=0){doors.splice(index,1);const saved=renderRows();$("formMessage").textContent=saved?"Позиция удалена из локальной демонстрационной ведомости.":"Позиция удалена в текущей сессии, но изменение не удалось сохранить."; }});
   ["projectName","zone","collection","finish","handle","lock","width","height"].forEach((id)=>$(id).addEventListener("input",updatePreview));
   ["collection","finish","handle","lock"].forEach((id)=>$(id).addEventListener("change",updatePreview));
   $("importJson").addEventListener("click",()=>$("importFile").click());
@@ -312,8 +316,8 @@ th{color:#a89a80;font-size:8px;letter-spacing:.15em}
       nextId=Math.max(0,...doors.map(d=>Number(String(d.id).replace(/^D-/,""))||0))+1;
       $("projectName").value=importedName;
       $("projectNameMirror").value=importedName;
-      renderRows();updatePreview();
-      $("formMessage").textContent="Импортировано позиций: "+doors.length+". Проект сохранён только в этом браузере.";
+      const saved=renderRows();updatePreview();
+      $("formMessage").textContent=saved?"Импортировано позиций: "+doors.length+". Проект сохранён только в этом браузере.":"Импортировано позиций: "+doors.length+", но браузер не разрешил сохранить их. Скачайте JSON для резервной копии.";
     }catch{
       $("formMessage").textContent="Импорт не выполнен. Выберите JSON проекта TEDES до 1 МБ и максимум с 30 позициями. Текущий проект не изменён.";
     }finally{$("importFile").value="";}
