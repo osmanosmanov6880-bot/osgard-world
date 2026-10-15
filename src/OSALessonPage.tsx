@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { ArrowLeft, ArrowRight, ArrowUpRight, BookOpen, CheckCircle2, CircleHelp, ClipboardCheck, ExternalLink, Languages, ListChecks } from 'lucide-react'
 import { getOSACinemaLessons, type OSACinemaLocale } from './OSACinema'
 import { OSA_LESSON_SLUGS, osaLessonGuides } from './osaLessonGuides'
+import { osaLessonReadings } from './osaLessonReading'
 import { OsgardLogo } from './OsgardLogo'
 import './osaLessonPage.css'
 
@@ -15,6 +16,9 @@ const copy = {
     act: 'АКТ',
     minutes: 'Оценка 15–20 минут · в своём темпе',
     objectives: 'После урока вы сможете',
+    material: 'Основной учебный материал',
+    materialIntro: 'Три последовательных блока связывают ключевую идею, её применение и ограничения.',
+    keyTakeaways: 'Ключевые выводы',
     example: 'Пример из практики',
     glossary: 'Словарь',
     check: 'Проверьте понимание',
@@ -47,6 +51,9 @@ const copy = {
     act: 'ACT',
     minutes: 'Estimated 15–20 minutes · self-paced',
     objectives: 'By the end of this lesson, you can',
+    material: 'Core lesson material',
+    materialIntro: 'Three connected sections move from the main idea to application and limitations.',
+    keyTakeaways: 'Key takeaways',
     example: 'Practical example',
     glossary: 'Glossary',
     check: 'Check your understanding',
@@ -84,6 +91,7 @@ export default function OSALessonPage({ slug }: { slug: string }) {
   const lessonIndex = (OSA_LESSON_SLUGS as readonly string[]).indexOf(slug)
   const lesson = lessonIndex >= 0 ? lessons[lessonIndex] : null
   const guide = lessonIndex >= 0 ? osaLessonGuides[locale][lessonIndex] : null
+  const reading = lessonIndex >= 0 ? osaLessonReadings[locale][OSA_LESSON_SLUGS[lessonIndex]] : null
   const totalLessons = OSA_LESSON_SLUGS.length
   const isComplete = completedSlugs.includes(slug)
 
@@ -113,7 +121,7 @@ export default function OSALessonPage({ slug }: { slug: string }) {
     }
   }
 
-  if (!lesson || !guide) {
+  if (!lesson || !guide || !reading) {
     return <main className="osa-lesson-page">
       <header className="osa-lesson-header"><a className="osa-lesson-brand" href="/academy"><OsgardLogo /><span>AI ACADEMY</span></a></header>
       <section className="osa-lesson-not-found"><p className="osa-lesson-eyebrow">OSA ORIGINAL</p><h1>{t.notFound}</h1><p>{t.notFoundBody}</p><a className="osa-lesson-button" href="/lectures"><ArrowLeft size={16} />{t.back}</a></section>
@@ -152,18 +160,29 @@ export default function OSALessonPage({ slug }: { slug: string }) {
         <ul className="osa-lesson-objectives">{guide.objectives.map((objective, index) => <li key={index}><CheckCircle2 size={17} /><span>{objective}</span></li>)}</ul>
       </section>
 
+      <section className="osa-lesson-block" aria-labelledby="osa-lesson-material">
+        <div className="osa-lesson-section-title"><span>02</span><div><p className="osa-lesson-eyebrow">READ / UNDERSTAND</p><h2 id="osa-lesson-material">{t.material}</h2><p>{t.materialIntro}</p></div></div>
+        <div className="osa-lesson-reading-sections">
+          {reading.sections.map((section, index) => <article className="osa-lesson-reading-section" key={section.heading}>
+            <div className="osa-lesson-reading-section-title"><span>0{index + 1}</span><h3>{section.heading}</h3></div>
+            <p>{section.body}</p>
+            <ul>{section.checkpoints.map((point, pointIndex) => <li key={pointIndex}>{point}</li>)}</ul>
+          </article>)}
+        </div>
+      </section>
+
       <section className="osa-lesson-block" aria-labelledby="osa-lesson-example">
-        <div className="osa-lesson-section-title"><span>02</span><div><p className="osa-lesson-eyebrow">CASE / FIELD NOTE</p><h2 id="osa-lesson-example">{t.example}</h2></div></div>
+        <div className="osa-lesson-section-title"><span>03</span><div><p className="osa-lesson-eyebrow">CASE / FIELD NOTE</p><h2 id="osa-lesson-example">{t.example}</h2></div></div>
         <div className="osa-lesson-reading"><p>{guide.example}</p></div>
       </section>
 
       <section className="osa-lesson-block" aria-labelledby="osa-lesson-glossary">
-        <div className="osa-lesson-section-title"><span>03</span><div><p className="osa-lesson-eyebrow">LANGUAGE / CONCEPTS</p><h2 id="osa-lesson-glossary">{t.glossary}</h2></div></div>
+        <div className="osa-lesson-section-title"><span>04</span><div><p className="osa-lesson-eyebrow">LANGUAGE / CONCEPTS</p><h2 id="osa-lesson-glossary">{t.glossary}</h2></div></div>
         <dl className="osa-lesson-glossary">{guide.glossary.map((item, index) => <div key={index}><dt>{item.term}</dt><dd>{item.definition}</dd></div>)}</dl>
       </section>
 
       <section className="osa-lesson-block" aria-labelledby="osa-lesson-check">
-        <div className="osa-lesson-section-title"><span>04</span><div><p className="osa-lesson-eyebrow">SELF-CHECK / 01</p><h2 id="osa-lesson-check">{t.check}</h2><p>{t.choose}</p></div></div>
+        <div className="osa-lesson-section-title"><span>05</span><div><p className="osa-lesson-eyebrow">SELF-CHECK / 01</p><h2 id="osa-lesson-check">{t.check}</h2><p>{t.choose}</p></div></div>
         <div className="osa-lesson-quiz">
           <h3>{guide.check.question}</h3>
           <fieldset>
@@ -178,12 +197,17 @@ export default function OSALessonPage({ slug }: { slug: string }) {
       </section>
 
       <section className="osa-lesson-block" aria-labelledby="osa-lesson-exercise">
-        <div className="osa-lesson-section-title"><span>05</span><div><p className="osa-lesson-eyebrow">APPLIED PRACTICE</p><h2 id="osa-lesson-exercise">{t.exercise}</h2></div></div>
+        <div className="osa-lesson-section-title"><span>06</span><div><p className="osa-lesson-eyebrow">APPLIED PRACTICE</p><h2 id="osa-lesson-exercise">{t.exercise}</h2></div></div>
         <article className="osa-lesson-exercise"><h3><ClipboardCheck size={19} />{guide.exercise.title}</h3><ol>{guide.exercise.steps.map((step, index) => <li key={index}>{step}</li>)}</ol><div className="osa-lesson-success"><ListChecks size={18} /><p><strong>{locale === 'ru' ? 'Критерий результата' : 'Success criterion'}</strong>{guide.exercise.successCriteria}</p></div></article>
       </section>
 
+      <section className="osa-lesson-block" aria-labelledby="osa-lesson-takeaways">
+        <div className="osa-lesson-section-title"><span>07</span><div><p className="osa-lesson-eyebrow">REVIEW / REMEMBER</p><h2 id="osa-lesson-takeaways">{t.keyTakeaways}</h2></div></div>
+        <ul className="osa-lesson-summary">{reading.keyTakeaways.map((item, index) => <li key={index}><span>0{index + 1}</span><p>{item}</p></li>)}</ul>
+      </section>
+
       <section className="osa-lesson-block" aria-labelledby="osa-lesson-sources">
-        <div className="osa-lesson-section-title"><span>06</span><div><p className="osa-lesson-eyebrow">READ / VERIFY</p><h2 id="osa-lesson-sources">{t.sources}</h2><p>{t.sourcesNote}</p></div></div>
+        <div className="osa-lesson-section-title"><span>08</span><div><p className="osa-lesson-eyebrow">READ / VERIFY</p><h2 id="osa-lesson-sources">{t.sources}</h2><p>{t.sourcesNote}</p></div></div>
         <div className="osa-lesson-sources">{guide.sources.map(source => <a href={source.url} target="_blank" rel="noopener noreferrer" key={source.url}><span>{source.title}<ExternalLink size={14} /></span><p>{source.context}</p></a>)}</div>
       </section>
 
