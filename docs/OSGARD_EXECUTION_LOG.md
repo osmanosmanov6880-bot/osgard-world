@@ -3507,3 +3507,19 @@ Continue non-financial brief implementation; billing can be handled only after a
 - Production route checks previously confirmed the MERAKKI page returns HTTP 200 in both desktop and mobile modes.
 - Two overlapping deployment runs were stopped at checksum verification before activation; the new path isolation directly addresses that race.
 - The newest recovery run must still pass static workflow smoke, production build, checksum, activation and route matrix.
+
+
+## 2026-10-15 / Pass 185
+
+### Scope completed
+
+- Added a bilingual guided brief builder to the MERAKKI Development case.
+- Captures product type, primary business goal, desired timeline and optional context capped at 320 characters.
+- Generates URL-encoded WhatsApp/email drafts locally after explicit submit; no form endpoint, persistence, or server-side submission is added.
+- Includes native required-field validation, accessible status, character count, a confidential-data warning and locale-aware message content.
+- Adds responsive form styling and strengthens repository integrity plus desktop/mobile production route checks.
+
+### Verification boundary
+
+- Input remains in the page and transfers only when the visitor clicks WhatsApp or email.
+- Production deployment and live desktop/mobile route checks are required before this behavior is considered public.

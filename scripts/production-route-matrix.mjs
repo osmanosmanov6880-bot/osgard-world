@@ -27,7 +27,7 @@ for (const [device, userAgent] of Object.entries(agents)) for (const route of ro
       : route === '/development/tedes/'
         ? text.includes('<title>TEDES — кейс OSGARD Development</title>') && text.includes('href="/tedes/"') && text.includes('FLAGSHIP CASE')
       : route === '/development/merakki/'
-        ? text.includes('<title>MERAKKI GLOBAL — кейс OSGARD Development</title>') && text.includes('utm_campaign=merakki_global_case') && text.includes('id="contact-cta"') && text.includes('id="email-cta"') && text.includes('data-case-status="demo-only"')
+        ? text.includes('<title>MERAKKI GLOBAL — кейс OSGARD Development</title>') && text.includes('utm_campaign=merakki_global_case') && text.includes('id="contact-cta"') && text.includes('id="email-cta"') && text.includes('id="project-brief"') && text.includes('id="brief-generate"') && text.includes('data-case-status="demo-only"')
       : route.startsWith('/api/v1/')
         ? [401, 403].includes(response.status) && (response.headers.get('content-type') || '').toLowerCase().includes('application/json') && (() => { try { JSON.parse(text); return true } catch { return false } })()
       : route === '/skillcred/'

@@ -42,6 +42,11 @@ assert.ok(merakkiPage.includes('utm_campaign=merakki_global_case') && merakkiPag
 assert.ok(merakkiPage.includes('id="contact-cta"') && merakkiPage.includes('https://wa.me/79640027222'), 'MERAKKI case must provide a direct WhatsApp project CTA')
 assert.ok(merakkiPage.includes('id="email-cta"') && merakkiPage.includes('mailto:osman.osmanov0099@gmail.com'), 'MERAKKI case must provide an email fallback')
 assert.ok(merakkiPage.includes('encodeURIComponent(v.contactMessage)') && merakkiPage.includes('"ru":{') && merakkiPage.includes('"en":{') && merakkiPage.includes('"contactMessage":"'), 'MERAKKI contact actions must follow the selected language')
+assert.ok(merakkiPage.includes('id="project-brief"') && merakkiPage.includes('id="brief-type"') && merakkiPage.includes('id="brief-goal"') && merakkiPage.includes('id="brief-timeline"'), 'MERAKKI case must include guided project brief fields')
+assert.ok(merakkiPage.includes('id="brief-context"') && merakkiPage.includes('maxlength="320"') && merakkiPage.includes('id="brief-count"') && merakkiPage.includes('id="brief-status"'), 'MERAKKI brief must bound free text and expose accessible status/count')
+assert.ok(merakkiPage.includes('function updateContactLinks()') && merakkiPage.includes('encodeURIComponent(message)'), 'MERAKKI brief must generate encoded WhatsApp/email drafts')
+assert.ok(merakkiPage.includes('data-i18n-placeholder="briefContextPlaceholder"') && merakkiPage.includes('briefReady') && merakkiPage.includes('passwords or confidential data'), 'MERAKKI brief must support RU/EN placeholder and confidential-data guidance')
+assert.ok(!merakkiPage.includes('localStorage') && !merakkiPage.includes('fetch('), 'MERAKKI brief must not persist or submit visitor input')
 assert.ok(merakkiPage.includes('data-case-status="demo-only"'), 'MERAKKI case must declare demo-only status')
 assert.ok(sitemap.includes('https://osgard.world/development/merakki/'), 'Sitemap must include the MERAKKI case')
 
