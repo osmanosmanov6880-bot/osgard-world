@@ -3,6 +3,8 @@ import { ArrowLeft, ArrowRight, ArrowUpRight, BookOpen, CheckCircle2, CircleHelp
 import { getOSACinemaLessons, type OSACinemaLocale } from './OSACinema'
 import { OSA_LESSON_SLUGS, osaLessonGuides } from './osaLessonGuides'
 import { osaLessonReadings } from './osaLessonReading'
+import OSALessonMediaPlayer from './OSALessonMediaPlayer'
+import { isPlayableLessonMedia, osaLessonMedia } from './osaLessonMedia'
 import { OsgardLogo } from './OsgardLogo'
 import './osaLessonPage.css'
 
@@ -14,7 +16,7 @@ const copy = {
     back: 'Все лекции',
     academy: 'AI Academy',
     act: 'АКТ',
-    minutes: 'Оценка 15–20 минут · в своём темпе',
+    minutes: 'Оценка длительности',
     objectives: 'После урока вы сможете',
     material: 'Основной учебный материал',
     materialIntro: 'Три последовательных блока связывают ключевую идею, её применение и ограничения.',
@@ -38,7 +40,22 @@ const copy = {
     finish: 'Вернуться к каталогу',
     mediaTitle: 'Аудио и видеоверсия',
     mediaBody: 'Исходные материалы частично найдены в Runway, но постоянные ссылки и воспроизводимый плеер на сайте пока не опубликованы. Здесь не показываем фиктивную кнопку воспроизведения.',
+    mediaBodyReady: 'Для этого урока подключён проверенный медиафайл. Если воспроизведение недоступно, используйте текстовую версию и интерактивную сцену.',
     mediaLink: 'Статус медиа и реестр',
+    audioTitle: 'Аудиоверсия лекции',
+    videoTitle: 'Видеоверсия лекции',
+    audioPending: 'Не опубликовано: к этой лекции пока не привязан проверенный постоянный аудиофайл.',
+    videoPending: 'Не опубликовано: к этой лекции пока не привязано проверенное постоянное видео.',
+    mediaPublished: 'Медиафайл опубликован и прошёл проверку источника.',
+    audioTypeLabel: 'АУДИОЛЕКЦИЯ',
+    videoTypeLabel: 'ВИДЕОЛЕКЦИЯ',
+    speedLabel: 'Скорость',
+    captionsLabel: 'Субтитры',
+    transcriptLabel: 'Текст лекции',
+    playbackErrorLabel: 'Не удалось воспроизвести файл. Проверьте соединение или вернитесь к текстовой версии.',
+    seekBackLabel: 'Назад на 15 секунд',
+    seekForwardLabel: 'Вперёд на 15 секунд',
+    languageLabel: 'Язык',
     notFound: 'Такой урок не найден',
     notFoundBody: 'Откройте каталог и выберите одну из доступных лекций.',
     progress: 'Уроков отмечено',
@@ -49,7 +66,7 @@ const copy = {
     back: 'All lectures',
     academy: 'AI Academy',
     act: 'ACT',
-    minutes: 'Estimated 15–20 minutes · self-paced',
+    minutes: 'Estimated study time',
     objectives: 'By the end of this lesson, you can',
     material: 'Core lesson material',
     materialIntro: 'Three connected sections move from the main idea to application and limitations.',
@@ -73,7 +90,22 @@ const copy = {
     finish: 'Return to catalogue',
     mediaTitle: 'Audio and video version',
     mediaBody: 'Some source assets were found in Runway, but permanent links and a playable site player have not been published yet. No fake play button is shown here.',
+    mediaBodyReady: 'A verified media file is available for this lesson. If playback fails, use the reading version and interactive scene.',
     mediaLink: 'Media status and inventory',
+    audioTitle: 'Audio lesson',
+    videoTitle: 'Video lesson',
+    audioPending: 'Not published: no verified permanent audio file is mapped to this lesson yet.',
+    videoPending: 'Not published: no verified permanent video file is mapped to this lesson yet.',
+    mediaPublished: 'The media file is published and its source has been verified.',
+    audioTypeLabel: 'AUDIO LESSON',
+    videoTypeLabel: 'VIDEO LESSON',
+    speedLabel: 'Speed',
+    captionsLabel: 'Captions',
+    transcriptLabel: 'Lesson transcript',
+    playbackErrorLabel: 'The media could not be played. Check your connection or return to the reading version.',
+    seekBackLabel: 'Seek back 15 seconds',
+    seekForwardLabel: 'Seek forward 15 seconds',
+    languageLabel: 'Language',
     notFound: 'Lesson not found',
     notFoundBody: 'Open the catalogue and choose one of the available lessons.',
     progress: 'Lessons completed',
@@ -92,6 +124,9 @@ export default function OSALessonPage({ slug }: { slug: string }) {
   const lesson = lessonIndex >= 0 ? lessons[lessonIndex] : null
   const guide = lessonIndex >= 0 ? osaLessonGuides[locale][lessonIndex] : null
   const reading = lessonIndex >= 0 ? osaLessonReadings[locale][OSA_LESSON_SLUGS[lessonIndex]] : null
+  const lessonSlug = lessonIndex >= 0 ? OSA_LESSON_SLUGS[lessonIndex] : null
+  const media = lessonSlug ? osaLessonMedia[lessonSlug] : null
+  const hasPlayableMedia = media ? isPlayableLessonMedia(media.audio) || isPlayableLessonMedia(media.video) : false
   const totalLessons = OSA_LESSON_SLUGS.length
   const isComplete = completedSlugs.includes(slug)
 
@@ -121,7 +156,7 @@ export default function OSALessonPage({ slug }: { slug: string }) {
     }
   }
 
-  if (!lesson || !guide || !reading) {
+  if (!lesson || !guide || !reading || !media) {
     return <main className="osa-lesson-page">
       <header className="osa-lesson-header"><a className="osa-lesson-brand" href="/academy"><OsgardLogo /><span>AI ACADEMY</span></a></header>
       <section className="osa-lesson-not-found"><p className="osa-lesson-eyebrow">OSA ORIGINAL</p><h1>{t.notFound}</h1><p>{t.notFoundBody}</p><a className="osa-lesson-button" href="/lectures"><ArrowLeft size={16} />{t.back}</a></section>
@@ -148,7 +183,7 @@ export default function OSALessonPage({ slug }: { slug: string }) {
         <p className="osa-lesson-number">{String(lessonIndex + 1).padStart(2, '0')} / 08 · {t.act} {lesson.act}</p>
         <h1>{lesson.title}</h1>
         <p className="osa-lesson-lead">{lesson.body}</p>
-        <div className="osa-lesson-meta"><span><BookOpen size={15} />{t.minutes}</span><span>{t.progress}: {completedSlugs.length} / {totalLessons}</span></div>
+        <div className="osa-lesson-meta"><span><BookOpen size={15} />{t.minutes}: {media.estimatedStudyMinutes.min}–{media.estimatedStudyMinutes.max} {locale === 'ru' ? 'мин' : 'min'}</span><span>{t.progress}: {completedSlugs.length} / {totalLessons}</span></div>
         <div className="osa-lesson-progress" role="progressbar" aria-label={t.progress} aria-valuemin={0} aria-valuemax={totalLessons} aria-valuenow={completedSlugs.length}><span style={{ width: (completedSlugs.length / totalLessons * 100) + '%' }} /></div>
       </div>
       <aside className="osa-lesson-key-insight"><span>KEY INSIGHT</span><p>{lesson.takeaway}</p><div><span>{t.act} {lesson.act}</span><span>{String(lessonIndex + 1).padStart(2, '0')} / 08</span></div></aside>
@@ -212,7 +247,50 @@ export default function OSALessonPage({ slug }: { slug: string }) {
       </section>
 
       <section className="osa-lesson-media-note" aria-labelledby="osa-lesson-media-title">
-        <div><p className="osa-lesson-eyebrow">MEDIA / RELEASE STATUS</p><h2 id="osa-lesson-media-title">{t.mediaTitle}</h2><p>{t.mediaBody}</p><a href="/osa-library/">{t.mediaLink}<ArrowUpRight size={15} /></a></div>
+        <div>
+          <p className="osa-lesson-eyebrow">MEDIA / RELEASE STATUS</p>
+          <h2 id="osa-lesson-media-title">{t.mediaTitle}</h2>
+          <p>{hasPlayableMedia ? t.mediaBodyReady : t.mediaBody}</p>
+          <div className="osa-lesson-media-status-grid">
+            <article className="osa-lesson-media-status">
+              <h3>{t.audioTitle}</h3>
+              <p>{isPlayableLessonMedia(media.audio) ? t.mediaPublished : t.audioPending}</p>
+              <OSALessonMediaPlayer
+                lessonSlug={lessonSlug!}
+                resource={media.audio}
+                title={lesson.title}
+                languageLabel={t.languageLabel}
+                speedLabel={t.speedLabel}
+                captionsLabel={t.captionsLabel}
+                transcriptLabel={t.transcriptLabel}
+                playbackErrorLabel={t.playbackErrorLabel}
+                audioTypeLabel={t.audioTypeLabel}
+                videoTypeLabel={t.videoTypeLabel}
+                seekBackLabel={t.seekBackLabel}
+                seekForwardLabel={t.seekForwardLabel}
+              />
+            </article>
+            <article className="osa-lesson-media-status">
+              <h3>{t.videoTitle}</h3>
+              <p>{isPlayableLessonMedia(media.video) ? t.mediaPublished : t.videoPending}</p>
+              <OSALessonMediaPlayer
+                lessonSlug={lessonSlug!}
+                resource={media.video}
+                title={lesson.title}
+                languageLabel={t.languageLabel}
+                speedLabel={t.speedLabel}
+                captionsLabel={t.captionsLabel}
+                transcriptLabel={t.transcriptLabel}
+                playbackErrorLabel={t.playbackErrorLabel}
+                audioTypeLabel={t.audioTypeLabel}
+                videoTypeLabel={t.videoTypeLabel}
+                seekBackLabel={t.seekBackLabel}
+                seekForwardLabel={t.seekForwardLabel}
+              />
+            </article>
+          </div>
+          <a href="/osa-library/">{t.mediaLink}<ArrowUpRight size={15} /></a>
+        </div>
         <CircleHelp size={24} />
       </section>
 

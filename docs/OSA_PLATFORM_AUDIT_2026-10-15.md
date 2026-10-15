@@ -115,6 +115,13 @@ This step expands the **reading/practice version** of the course; it does not cl
 
 The eight bilingual lesson detail pages now include three sequential teaching blocks per lesson, each with practical checkpoints, followed by three key takeaways. The source is `src/osaLessonReading.ts`; `src/OSALessonPage.tsx` renders it ahead of the existing practical example, glossary, self-check, exercise and sources. These are authored reading materials, not a claim that full recorded video or narrated audio is available.
 
+
+### Lesson media metadata and playback gate
+
+A typed contract in `src/osaLessonMedia.ts` now defines per-lesson audio/video status, source asset ID, permanent URL, MIME type, duration, language, chapters, captions, transcript and rights status. All current lesson-level media entries deliberately remain `not-ready` with blank URLs because source clips have not been editorially mapped to complete lessons or permanently hosted.
+
+`src/OSALessonMediaPlayer.tsx` implements the player for future verified media: native audio/video controls, playback-rate selection, 15-second seeking, browser-local resume position, optional captions/transcript and a visible error state. The component returns no player UI unless the resource is explicitly published, rights-approved, has a permanent HTTPS URL, declares language and duration, and uses a browser-playable MIME type. Current lesson pages show audio/video publication states instead of nonfunctional play buttons.
+
 ### Catalogue navigation update
 
 The OSA lecture catalogue now includes a bilingual search across scene title, tag, summary and key takeaway, plus accessible filters for Acts I–III and an explicit empty-results state. Filtering keeps each lesson's original scene index, so opening a filtered row still navigates to the correct detailed lesson and interactive scene. Responsive styles and a browser interaction contract cover keyword search, selected filter state, empty results and restoring the full catalogue.
