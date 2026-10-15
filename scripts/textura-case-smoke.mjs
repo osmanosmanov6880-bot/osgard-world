@@ -21,8 +21,7 @@ for (const [path, locale, headline, canonical] of routes) {
   assert.ok(html.includes('data-copy-brief'), `${locale}: missing brief-copy interaction`);
 }
 const css = read('public/development/textura/case.css');
-for (const token of ['@media(max-width:560px)', 'prefers-reduced-motion', ':focus', 'tx-hero', 'tx-status']) {
-  if (token === ':focus') continue; // Focus is inherited from native controls/links; keep this smoke test aligned with current styles.
+for (const token of ['@media(max-width:560px)', 'prefers-reduced-motion', ':focus-visible', 'tx-hero', 'tx-status']) {
   assert.ok(css.includes(token), `missing responsive/accessibility style: ${token}`);
 }
 const js = read('public/development/textura/case.js');
