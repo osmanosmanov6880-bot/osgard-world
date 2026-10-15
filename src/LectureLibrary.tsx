@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ArrowLeft, ArrowRight, ArrowUpRight, BookOpen, CheckCircle2, Clapperboard, CirclePlay, Languages } from 'lucide-react'
+import { ArrowLeft, ArrowRight, ArrowUpRight, BookOpen, CheckCircle2, Clapperboard, CirclePlay, Languages, Search, X } from 'lucide-react'
 import { getOSACinemaLessons, type OSACinemaLocale } from './OSACinema'
 import { OsgardLogo } from './OsgardLogo'
 import { OSA_LESSON_SLUGS } from './osaLessonGuides'
@@ -31,6 +31,15 @@ const copy = {
     acts: 'Три последовательных акта',
     lessons: 'Все лекции и сцены',
     lessonsIntro: 'Открывайте любую тему отдельно или проходите программу последовательно. Прогресс интерактивного курса сохраняется в браузере.',
+    searchLabel: 'Поиск по лекциям',
+    searchPlaceholder: 'Название, тема или ключевое слово…',
+    clearSearch: 'Очистить поиск',
+    filterLabel: 'Фильтр по акту',
+    allActs: 'Все акты',
+    actOne: 'Акт I',
+    actTwo: 'Акт II',
+    actThree: 'Акт III',
+    noResults: 'По этому запросу ничего не найдено. Измените слова или выберите другой акт.',
     available: 'Интерактивный урок доступен',
     completed: 'Урок изучен',
     completedCount: 'отмечено изученными',
@@ -56,6 +65,15 @@ const copy = {
     acts: 'Three ordered acts',
     lessons: 'All lectures and scenes',
     lessonsIntro: 'Open any topic individually or follow the sequence. Interactive course progress is saved in your browser.',
+    searchLabel: 'Search lessons',
+    searchPlaceholder: 'Title, topic or keyword…',
+    clearSearch: 'Clear search',
+    filterLabel: 'Filter by act',
+    allActs: 'All acts',
+    actOne: 'Act I',
+    actTwo: 'Act II',
+    actThree: 'Act III',
+    noResults: 'No lessons match this search. Change the keywords or choose another act.',
     available: 'Interactive lesson available',
     completed: 'Lesson completed',
     completedCount: 'marked complete',
@@ -76,10 +94,14 @@ const copy = {
 export default function LectureLibrary() {
   const [locale, setLocale] = useState<OSACinemaLocale>('ru')
   const [completedLessons, setCompletedLessons] = useState<string[]>([])
+  const [searchQuery, setSearchQuery] = useState('')
+  const [activeAct, setActiveAct] = useState<number | null>(null)
   const t = copy[locale]
   const lessons = useMemo(() => getOSACinemaLessons(locale), [locale])
   const acts = actCopy[locale]
   const actCounts = acts.map((act, index) => ({ ...act, count: lessons.filter(lesson => lesson.act === index + 1).length, firstScene: lessons.findIndex(lesson => lesson.act === index + 1) }))
+  const searchNeedle = searchQuery.trim().toLocaleLowerCase(locale === 'ru' ? 'ru-RU' : 'en-US')
+  const visibleLessons = lessons.map((lesson, index) => ({ lesson, index })).filter(({ lesson }) => (activeAct === null || lesson.act === activeAct) && (!searchNeedle || [lesson.title, lesson.tag, lesson.body, lesson.takeaway].some(value => value.toLocaleLowerCase(locale === 'ru' ? 'ru-RU' : 'en-US').includes(searchNeedle))))
   useEffect(() => {
     const refreshProgress = () => {
       try {
@@ -128,8 +150,22 @@ export default function LectureLibrary() {
 
     <section className="lecture-section lecture-all" aria-labelledby="lecture-list-title">
       <div className="lecture-section-heading"><div><p className="lecture-eyebrow">OSA ORIGINAL / 001</p><h2 id="lecture-list-title">{t.lessons}</h2></div><p>{t.lessonsIntro}</p></div>
-      <div className="lecture-list">
-        {lessons.map((lesson, index) => {
+      <div className="lecture-tools">
+        <label className="lecture-search">
+          <Search size={17} aria-hidden="true" />
+          <span className="lecture-sr-only">{t.searchLabel}</span>
+          <input type="search" value={searchQuery} onChange={event => setSearchQuery(event.target.value)} placeholder={t.searchPlaceholder} autoComplete="off" />
+          {searchQuery && <button type="button" onClick={() => setSearchQuery('')} aria-label={t.clearSearch}><X size={15} /></button>}
+        </label>
+        <div className="lecture-act-filters" role="group" aria-label={t.filterLabel}>
+          {[{ value: null as number | null, label: t.allActs }, { value: 1, label: t.actOne }, { value: 2, label: t.actTwo }, { value: 3, label: t.actThree }].map(filter => <button type="button" key={filter.label} className={activeAct === filter.value ? 'active' : ''} aria-pressed={activeAct === filter.value} onClick={() => setActiveAct(filter.value)}>{filter.label}</button>)}
+        </div>
+        <p className="lecture-results-count" role="status" aria-live="polite">{visibleLessons.length} / {lessons.length} {t.count}</p>
+      </div>
+      {visibleLessons.length === 0
+        ? <p className="lecture-empty-state" role="status">{t.noResults}</p>
+        : <div className="lecture-list">
+        {visibleLessons.map(({ lesson, index }) => {
           const isCompleted = completedLessons.includes(OSA_LESSON_SLUGS[index])
           return <article className={'lecture-row' + (isCompleted ? ' is-complete' : '')} key={lesson.id}>
             <span className="lecture-row-number">{String(index + 1).padStart(2, '0')}</span>
@@ -137,7 +173,7 @@ export default function LectureLibrary() {
             <div className="lecture-row-action"><span className="lecture-row-status">{isCompleted ? t.completed : t.available}</span><a href={`/lectures/${OSA_LESSON_SLUGS[index]}`}>{t.open}<ArrowUpRight size={15} /></a></div>
           </article>
         })}
-      </div>
+      </div>}
     </section>
 
     <section className="lecture-video-note" aria-labelledby="lecture-video-title">
