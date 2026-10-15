@@ -12,3 +12,9 @@
 
 /assets/*
   Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+# The CI packages this WASM payload as gzip to stay within the Pages 25 MiB asset limit.
+/games/null-shift-godot/*.wasm
+  Content-Type: application/wasm
+  Content-Encoding: gzip
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
