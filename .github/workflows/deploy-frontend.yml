@@ -45,6 +45,7 @@ on:
       - "scripts/phantom-case-smoke.mjs"
       - "scripts/auto-style-case-smoke.mjs"
       - "scripts/elbrus-case-smoke.mjs"
+      - "scripts/noir-auto-case-smoke.mjs"
       - "scripts/entertainment-locales-smoke.mjs"
       - "scripts/skillcred-page-smoke.mjs"
       - "scripts/time-prototype-smoke.mjs"
@@ -84,6 +85,8 @@ jobs:
         run: node scripts/phantom-case-smoke.mjs
       - name: Smoke-test the ELBRUS Entertainment case
         run: npm run qa:elbrus-case
+      - name: Smoke-test the NOIR AUTO automotive case
+        run: node scripts/noir-auto-case-smoke.mjs
       - name: Smoke-test global Entertainment hubs
         run: npm run qa:entertainment-locales
       - name: Verify MERAKKI brief generation and copy flow
