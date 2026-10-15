@@ -1,7 +1,7 @@
 import { isValidPartnerInventoryText } from './partner-inventory-contract.mjs'
 const base = process.env.OSGARD_BASE_URL || 'https://osgard.world'
 const expectCurrentDesign = process.env.SKILLCRED_EXPECT_CURRENT_DESIGN === '1'
-const routes = ['/tedes/','/tedes/catalog/','/tedes/collections/','/tedes/product/?sku=FORMA-ARC-01','/tedes/data/catalog.v1.json','/tedes/materials/','/tedes/project/','/tedes/print/','/development/tedes/','/development/phantom/','/development/phantom/og.svg','/development/merakki/','/development/merakki/en/','/development/merakki/ar/','/development/merakki/og.svg','/development/auto-style/','/development/auto-style/en/','/development/auto-style/ar/','/development/auto-style/og.svg','/','/portal','/osa-cinema','/academy','/skillcred/','/skillcred/favicon.svg','/skillcred-api/health','/skillcred-api/ready','/skillcred-api/issuer','/entertainment','/entertainment/','/entertainment/elbrus/','/entertainment/elbrus/en/','/entertainment/elbrus/ar/','/entertainment/elbrus/og.svg','/games/','/games/index.html','/games/partners/','/games/admin/','/games/afterimage-run/','/games/vector-zero/','/games/favicon.svg','/privacy/','/terms/','/community','/stream','/archive','/profile','/api/v1/player/profile','/api/v1/analytics/summary?from=0&to=1','/r/1842','/games/time','/games/null-shift/','/games/null-shift/index.html','/games/null-shift-godot/','/games/null-shift-godot/index.html','/play/swarm','/play/null-shift','/play/inherit','/play/remix','/media','/business','/create','/mobility']
+const routes = ['/tedes/','/tedes/catalog/','/tedes/collections/','/tedes/product/?sku=FORMA-ARC-01','/tedes/data/catalog.v1.json','/tedes/materials/','/tedes/project/','/tedes/print/','/development/tedes/','/development/phantom/','/development/phantom/og.svg','/development/merakki/','/development/merakki/en/','/development/merakki/ar/','/development/merakki/og.svg','/development/auto-style/','/development/auto-style/en/','/development/auto-style/ar/','/development/auto-style/og.svg','/','/portal','/osa-cinema','/academy','/skillcred/','/skillcred/favicon.svg','/skillcred-api/health','/skillcred-api/ready','/skillcred-api/issuer','/entertainment','/entertainment/','/entertainment/en/','/entertainment/ar/','/entertainment/og.svg','/entertainment/elbrus/','/entertainment/elbrus/en/','/entertainment/elbrus/ar/','/entertainment/elbrus/og.svg','/games/','/games/index.html','/games/partners/','/games/admin/','/games/afterimage-run/','/games/vector-zero/','/games/favicon.svg','/privacy/','/terms/','/community','/stream','/archive','/profile','/api/v1/player/profile','/api/v1/analytics/summary?from=0&to=1','/r/1842','/games/time','/games/null-shift/','/games/null-shift/index.html','/games/null-shift-godot/','/games/null-shift-godot/index.html','/play/swarm','/play/null-shift','/play/inherit','/play/remix','/media','/business','/create','/mobility']
 const agents = { desktop: 'OSGARD-Route-Matrix/1.1 Desktop', mobile: 'OSGARD-Route-Matrix/1.1 Mobile' }
 const results = []
 for (const [device, userAgent] of Object.entries(agents)) for (const route of routes) {
@@ -97,6 +97,12 @@ for (const [device, userAgent] of Object.entries(agents)) for (const route of ro
             text.includes('НАЧАТЬ ОПЕРАЦИЮ') && text.includes('osgard:game-lifecycle')
           : route.startsWith('/games/null-shift')
             ? text.includes('id="game"') && text.includes('id="mobile-ui"') && text.includes('id="diag-panel"') && text.includes('id="sound-toggle"') && text.includes('id="touch-sound"') && text.includes('./styles.css') && text.includes('./game.js') && text.includes('./engine-3d.js') && text.includes('id="engine-toggle"') && text.includes('id="touch-engine"') && text.includes('id="godot-preview"')
+          : route === '/entertainment/en/'
+            ? text.includes('<title>OSGARD Entertainment | Playable Worlds</title>') && text.includes('<html lang="en" dir="ltr">') && text.includes('rel="canonical" href="https://osgard.world/entertainment/en/"') && text.includes('hreflang="ar"') && text.includes('/entertainment/elbrus/')
+          : route === '/entertainment/ar/'
+            ? text.includes('<title>OSGARD Entertainment | عوالم قابلة للعب</title>') && text.includes('<html lang="ar" dir="rtl">') && text.includes('rel="canonical" href="https://osgard.world/entertainment/ar/"') && text.includes('hreflang="en"') && text.includes('/entertainment/elbrus/')
+          : route === '/entertainment/og.svg'
+            ? text.includes('<svg') && text.includes('OSGARD WORLD') && !text.includes('<script')
           : route === '/entertainment/elbrus/'
             ? text.includes('<title>ELBRUS — цифровой опыт гостеприимства | OSGARD WORLD</title>') && text.includes('<html lang="ru" dir="ltr">') && text.includes('id="interactive-preview"') && text.includes('не отправляет заказы')
           : route === '/entertainment/elbrus/en/'
@@ -107,6 +113,8 @@ for (const [device, userAgent] of Object.entries(agents)) for (const route of ro
             ? text.includes('<svg') && text.includes('ELBRUS')
           : (route === '/entertainment' || route === '/entertainment/')
             ? text.includes('<title>OSGARD Entertainment</title>') &&
+              text.includes('rel="canonical" href="https://osgard.world/entertainment/"') &&
+              text.includes('hreflang="en"') && text.includes('hreflang="ar"') &&
               text.includes('/entertainment/elbrus/') &&
               (text.match(/class="case-shelf"/g) || []).length === 1
           : text.includes('<div id="root">')
