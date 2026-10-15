@@ -92,8 +92,8 @@ assert.equal(merged.skippedDuplicates, 1)
 assert.equal(merged.project.doors.length, 3)
 assert.equal(new Set(merged.project.doors.map((door) => door.id)).size, 3)
 assert.throws(() => mergeProjectDocuments({ doors: Array.from({ length: 30 }, (_, i) => ({ id: 'D-' + String(i + 1).padStart(3, '0'), zone: 'Zone ' + i })) }, { doors: [{ zone: 'Extra' }] }), /лимит проекта/)
-assert.equal(workspaceSafeCsvCell('=1+1'), '"\'=1+1"')
-assert.ok(workspaceSafeCsvCell('  @SUM(A1:A2)').startsWith('"\'  @SUM'), 'Workspace CSV must prevent formula injection')
+assert.equal(workspaceSafeCsvCell('=1+1'), `"'=1+1"`)
+assert.ok(workspaceSafeCsvCell('  @SUM(A1:A2)').startsWith(`"'  @SUM`), 'Workspace CSV must prevent formula injection')
 
 for (const marker of ['id="positionRows"','id="requestForm"','id="contactEmail"','id="exportJson"','id="exportCsv"','id="clearProject"','id="projectName"','tedes-studio-project-v1','noindex,nofollow']) {
   assert.ok(projectWorkspace.includes(marker), 'Project workspace contract marker missing: ' + marker)
