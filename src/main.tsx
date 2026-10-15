@@ -4,6 +4,7 @@ import './styles.css'
 import './miniapp.css'
 import './founders.css'
 import './brand.css'
+import './osa5-brand.css'
 import './navigation.css'
 import './create.css'
 import './mobility.css'
@@ -21,6 +22,7 @@ import App from './App'
 import AcademyHome from './AcademyHome'
 import OSAIntelligenceHome from './OSAIntelligenceHome'
 import OSACinema from './OSACinema'
+import LectureLibrary from './LectureLibrary'
 import MiniApp from './MiniApp'
 import { AurumPage, CatalogPage, ChroniclePage, ClubPage, DevelopmentPage, MastersPage, TimeCoinPage, WorldsPage } from './Sections'
 import { EntertainmentCatalog } from './EntertainmentCatalog'
@@ -57,6 +59,7 @@ const cleanSeo: Record<string, { title: string; description: string }> = {
   '/osa-cinema': { title: 'OSA Original — интерактивный фильм об ИИ и власти знаний', description: 'Три акта об искусственном интеллекте, власти информации и будущем человека. Интерактивные решения, источники и прогресс на устройстве.' },
   '/': { title: 'OSA Intelligence — понимать, проверять, решать', description: 'Интерактивная среда OSA: изучайте возможности ИИ, проверяйте доказательства и принимайте ответственные решения.' },
   '/academy': { title: 'OSGARD AI Academy — понимать, проверять, применять ИИ', description: 'Учебные маршруты, интерактивный курс и практическая студия по применению искусственного интеллекта.' },
+  '/lectures': { title: 'OSA Original — курсы и интерактивные лекции | OSGARD', description: 'Упорядоченная программа OSA Original: три акта и восемь интерактивных лекций об ИИ, власти знаний и человеческом выборе. Видеозаписи отмечены отдельно от доступных интерактивных сцен.' },
   '/portal': { title: 'OSGARD World — портал экосистемы', description: 'Продукты, игры, проекты и направления цифровой экосистемы OSGARD.' },
   '/worlds': { title: 'Миры OSGARD — семь самостоятельных продуктов', description: 'Выберите мир OSGARD: защита, мобильность, бизнес, время и создание цифровых продуктов.' },
   '/catalog': { title: 'Каталог OSGARD — продукты и решения', description: 'Каталог самостоятельных продуктов OSGARD с понятными условиями и маршрутами.' },
@@ -102,6 +105,7 @@ function RoutedRoot() {
   if (path === '/' && (new URLSearchParams(location.search).has('project') || location.hash === '#project-studio')) return <><Seo path="/academy" /><AcademyHome /></>
   if (path === '/') return <><Seo path="/" /><OSAIntelligenceHome /></>
   if (path === '/academy') return <><Seo path="/academy" /><AcademyHome /></>
+  if (path === '/lectures') return <><Seo path="/lectures" /><LectureLibrary /></>
   if (path === '/portal') return <><Seo path="/portal" /><App /></>
   if (path === '/osa-cinema') return <><Seo path={path} /><OSACinema /></>
   if (path === '/miniapp') return <MiniApp />
