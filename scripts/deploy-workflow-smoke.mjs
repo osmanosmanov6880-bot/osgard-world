@@ -45,3 +45,7 @@ assert.ok(workflow.includes('node scripts/null-shift-godot-smoke.mjs --export-ch
 assert.ok(workflow.indexOf('Preserve Godot Web export for static-only releases') < workflow.indexOf('Stage archive and verify checksum'), 'Preserved export must be included before the release archive checksum is created')
 
 console.log('PASS deployment workflow: required secrets, safe key handling, SSH timeout and actionable diagnostics')
+
+assert.ok(workflow.includes('"public/development/phantom/**"'), 'Deploy workflow must include the PHANTOM public case path')
+assert.ok(workflow.includes('node scripts/phantom-case-smoke.mjs'), 'Deploy workflow must run the PHANTOM case contract before publishing')
+assert.ok(packageJson.scripts?.['qa:phantom-case'] === 'node scripts/phantom-case-smoke.mjs', 'Package must expose the PHANTOM case smoke test')
