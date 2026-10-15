@@ -25,7 +25,7 @@ for (const marker of [
   'href="/osa-cinema"',
   'osa-global-intelligence',
   'osa-global-intelligence-2',
-  'localStorage',
+  'хранится локально в браузере',
   'не заявляет о готовом полнометражном видео',
   'prefers-reduced-motion:reduce'
 ]) assert.ok(page.includes(marker), 'OSA case contract marker missing: ' + marker)
