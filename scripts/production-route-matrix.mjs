@@ -8,7 +8,7 @@ for (const [device, userAgent] of Object.entries(agents)) for (const route of ro
   const started = Date.now()
   try {
     const requestUrl = new URL(route, base)
-    if (route === '/') requestUrl.searchParams.set('osa_release_probe', `${device}-${Date.now()}`)
+    requestUrl.searchParams.set('osa_release_probe', `${device}-${encodeURIComponent(route)}-${Date.now()}`)
     const response = await fetch(requestUrl, { headers: { 'user-agent': userAgent, 'cache-control': 'no-cache', pragma: 'no-cache' } })
     const text = await response.text()
     const shellOk = route === '/'
