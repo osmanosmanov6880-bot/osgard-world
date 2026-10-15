@@ -24,36 +24,83 @@
 </main><footer class="wrap footer"><span>TEDES GLOBAL STUDIO · DEMONSTRATION CONCEPT</span><div class="footer-links"><a href="/tedes/">Студия</a><a href="/tedes/collections/">Коллекции</a><a href="/tedes/catalog/">Каталог</a><a href="/tedes/materials/">Материалы</a><a href="/tedes/project/">Проект</a><a href="/development/tedes/">Кейс OSGARD</a></div></footer>
 <script>
 (function(){
-const key="tedes-studio-project-v1";
-const data={
-"FORMA-ARC-01":{sku:"FORMA-ARC-01",name:"ARC / Sculptural Lever",collection:"FORMA",desc:"Пластичная дуга и скульптурная линия для интерьеров, в которых детали несут характер.",handle:"ARC",kind:"arc"},
-"FORMA-ARC-02":{sku:"FORMA-ARC-02",name:"ARC / Deep Black",collection:"FORMA",desc:"Графичный вариант скульптурного объекта в контрастном тёмном образе.",handle:"ARC",kind:"arc"},
-"LINEA-EDGE-01":{sku:"LINEA-EDGE-01",name:"EDGE / Linear Grip",collection:"LINEA",desc:"Чистый линейный силуэт для спокойной архитектуры и строгих плоскостей.",handle:"EDGE",kind:"line"},
-"LINEA-EDGE-02":{sku:"LINEA-EDGE-02",name:"EDGE / Satin Steel",collection:"LINEA",desc:"Нейтральная стальная эстетика с минимумом декоративного жеста.",handle:"EDGE",kind:"line"},
-"MATERIA-BAR-01":{sku:"MATERIA-BAR-01",name:"BAR / Warm Bronze",collection:"MATERIA",desc:"Тёплый материальный акцент со спокойным силуэтом.",handle:"LINE",kind:"bar"},
-"MATERIA-BAR-02":{sku:"MATERIA-BAR-02",name:"BAR / Dark Patina",collection:"MATERIA",desc:"Тональный контраст для композиции с камнем, штукатуркой и тёмным деревом.",handle:"LINE",kind:"bar"}
-};
-const finishes=[{name:"Antique brass",ru:"Античная латунь",color:"#b89550"},{name:"Matte black",ru:"Чёрный матовый",color:"#34352f"},{name:"Satin bronze",ru:"Бронза сатин",color:"#927654"},{name:"Brushed steel",ru:"Сталь сатин",color:"#999a90"},{name:"Graphite",ru:"Графит",color:"#4a4b44"}];
-const params=new URLSearchParams(location.search);const sku=params.get("sku")||"FORMA-ARC-01";const product=data[sku]||data["FORMA-ARC-01"];let finish=sku==="LINEA-EDGE-02"?"Brushed steel":sku.includes("02")?"Matte black":sku==="LINEA-EDGE-01"?"Graphite":sku.startsWith("MATERIA")?"Satin bronze":"Antique brass";
-const $=id=>document.getElementById(id);const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-$("productName").textContent=product.name;$("productSku").textContent="CONCEPT SKU / "+product.sku;$("productDesc").textContent=product.desc;$("productCollection").textContent=product.collection+" / "+({"FORMA":"SCULPTURAL","LINEA":"LINEAR","MATERIA":"MATERIAL"}[product.collection]);$("specType").textContent=product.handle+" / lever concept";
-document.title=product.name+" — TEDES Product Studio";
-const swatches=$("swatches");
-function renderSwatches(){swatches.innerHTML=finishes.map(f=>'<button type="button" class="swatch" data-finish="'+esc(f.name)+'" aria-pressed="'+String(finish===f.name)+'" style="--swatch:'+f.color+'">'+esc(f.ru)+'</button>').join("");}
-swatches.addEventListener("click",e=>{const button=e.target.closest("[data-finish]");if(!button)return;finish=button.dataset.finish;renderSwatches();$("imageCaption").textContent="TEDES / "+product.sku+" / "+finish.toUpperCase();});
-$("addToProject").addEventListener("click",()=>{
+"use strict";
+const DATA_URL="/tedes/data/catalog.v1.json";
+const KEY="tedes-studio-project-v1";
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const params=new URLSearchParams(location.search);
+const requestedSku=(params.get("sku")||"FORMA-ARC-01").slice(0,60);
+let catalogData=null,product=null,finish=null;
+function message(text){$("productMessage").textContent=text;}
+function validateData(value){
+ if(!value||value.schemaVersion!==1||value.catalogId!=="tedes-demo-catalog-v1"||value.status!=="demo-only"||!Array.isArray(value.products)||!Array.isArray(value.finishes))throw new Error("Каталог имеет неподдерживаемый формат.");
+ const seen=new Set();
+ for(const p of value.products){if(!p||typeof p.sku!=="string"||seen.has(p.sku)||p.recordStatus!=="concept"||p.price!==null||p.availability!==null||!Array.isArray(p.finishOptions))throw new Error("Некорректная запись каталога.");seen.add(p.sku);}
+ return value;
+}
+function renderSwatches(){
+ const available=catalogData.finishes.filter(f=>product.finishOptions.includes(f.name));
+ $("swatches").innerHTML=available.map(f=>'<button type="button" class="swatch" data-finish="'+esc(f.name)+'" aria-pressed="'+String(finish===f.name)+'" style="--swatch:'+f.color+'">'+esc(f.label)+'</button>').join("");
+}
+function showProduct(){
+ $("productName").textContent=product.name;
+ $("productSku").textContent="CONCEPT SKU / "+product.sku;
+ $("productDesc").textContent=product.description;
+ $("productCollection").textContent=product.collection+" / "+({"FORMA":"SCULPTURAL","LINEA":"LINEAR","MATERIA":"MATERIAL"}[product.collection]);
+ $("specType").textContent=product.handle+" / lever concept";
+ document.title=product.name+" — TEDES Product Studio";
+ $("productImage").src=product.image;
+ $("productImage").alt="Концептуальная визуализация архитектурной фурнитуры, не подтверждённая фотография серийной модели: "+product.name;
+ $("imageCaption").textContent="CONCEPT VISUALIZATION / "+product.sku;
+ renderSwatches();
+}
+function addToProject(){
  try{
-  let state=null;try{state=JSON.parse(localStorage.getItem(key)||"null")}catch{}
-  const seed=[{id:"D-001",zone:"Entrance / 01",collection:"FORMA",finish:"Antique brass",handle:"ARC",lock:"Not specified",width:900,height:2100},{id:"D-002",zone:"Private / 02",collection:"LINEA",finish:"Matte black",handle:"EDGE",lock:"Privacy",width:800,height:2100},{id:"D-003",zone:"Suite / 03",collection:"MATERIA",finish:"Satin bronze",handle:"LINE",lock:"Passage",width:900,height:2200}];
-  if(!state||!Array.isArray(state.doors))state={schema:"tedes-studio-project/v1",projectName:"Residence / North Wing",doors:seed};
-  if(state.doors.length>=30){$("productMessage").textContent="В проекте уже 30 позиций. Удалите позицию в студии и попробуйте снова.";return;}
-  const next=Math.max(0,...state.doors.map(d=>Number(String(d.id||"").replace(/^D-/,""))||0))+1;
-  state.doors.push({id:"D-"+String(next).padStart(3,"0"),zone:product.name+" / new",collection:product.collection,finish,handle:product.handle,lock:"Not specified",width:900,height:2100,sku:product.sku,concept:true});
-  state.schema="tedes-studio-project/v1";state.updatedAt=new Date().toISOString();localStorage.setItem(key,JSON.stringify(state));
-  $("productMessage").textContent="Добавлено в локальный проект ("+state.doors.length+" позиции). Продолжите в студии.";
-  const link=document.createElement("a");link.href="/tedes/project/";link.className="text-link";link.textContent="Открыть проектную ведомость ↗";$("productMessage").appendChild(document.createElement("br"));$("productMessage").appendChild(link);
- }catch(e){$("productMessage").textContent="Браузер не разрешил локальное сохранение. Откройте студию и попробуйте добавить позицию вручную.";}
+  const raw=localStorage.getItem(KEY);
+  let state;
+  if(raw){
+   state=JSON.parse(raw);
+   if(!state||!Array.isArray(state.doors)||state.doors.length>30||state.schema&&!["tedes-studio-project/v1","tedes-project-demo/v1"].includes(state.schema))throw new Error("Сохранённый проект имеет неподдерживаемый формат. Откройте рабочую область и восстановите его из JSON.");
+  }else state={schema:"tedes-studio-project/v1",projectName:"Residence / North Wing",doors:[]};
+  if(state.doors.length>=30){message("В проекте уже 30 позиций. Удалите одну позицию перед добавлением.");return;}
+  const used=new Set(state.doors.map(d=>d.id));
+  let next=1;while(used.has("D-"+String(next).padStart(3,"0")))next++;
+  state.doors.push({id:"D-"+String(next).padStart(3,"0"),zone:product.name,collection:product.collection,finish,handle:product.handle,lock:"Not specified",width:900,height:2100,sku:product.sku,concept:true});
+  state.schema="tedes-studio-project/v1";
+  state.projectName=typeof state.projectName==="string"&&state.projectName.trim()?state.projectName.slice(0,80):"Residence / North Wing";
+  state.updatedAt=new Date().toISOString();
+  localStorage.setItem(KEY,JSON.stringify(state));
+  message("Добавлено в локальный проект: "+product.sku+". Позиций: "+state.doors.length+".");
+  const link=document.createElement("a");link.href="/tedes/project/";link.className="text-link";link.textContent="Открыть проектную ведомость ↗";
+  $("productMessage").appendChild(document.createElement("br"));$("productMessage").appendChild(link);
+ }catch(error){message(error instanceof Error?error.message:"Браузер не разрешил сохранить проект. Экспортируйте данные, если они доступны.");}
+}
+$("swatches").addEventListener("click",event=>{
+ const button=event.target.closest("[data-finish]");if(!button)return;
+ finish=button.dataset.finish;renderSwatches();
+ $("imageCaption").textContent="CONCEPT VISUALIZATION / "+product.sku+" / "+finish.toUpperCase();
 });
-renderSwatches();
+$("addToProject").addEventListener("click",()=>{if(!product||!finish){message("Сначала дождитесь загрузки каталога.");return;}addToProject();});
+async function init(){
+ try{
+  const response=await fetch(DATA_URL,{headers:{accept:"application/json"},cache:"no-cache",signal:AbortSignal.timeout(7000)});
+  if(!response.ok)throw new Error("Не удалось загрузить каталог (HTTP "+response.status+").");
+  catalogData=validateData(await response.json());
+  product=catalogData.products.find(p=>p.sku===requestedSku);
+  if(!product){
+   $("productName").textContent="Модель не найдена";
+   $("productSku").textContent="UNKNOWN SKU / "+esc(requestedSku);
+   message("Этого кода нет в демонстрационном каталоге. Проверьте ссылку или откройте каталог.");
+   $("addToProject").disabled=true;return;
+  }
+  finish=product.defaultFinish;showProduct();message("Концептуальная позиция. Характеристики, цены и наличие не подтверждены.");
+ }catch(error){
+  $("productName").textContent="Каталог временно недоступен";
+  $("productSku").textContent="TEDES / DEMO DATA";
+  $("addToProject").disabled=true;message(error instanceof Error?error.message:"Не удалось загрузить каталог.");
+ }
+}
+init();
 })();
 </script></body></html>
