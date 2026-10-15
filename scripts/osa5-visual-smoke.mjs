@@ -17,6 +17,7 @@ const routes = [
   { name: 'portal', path: '/portal', selector: '.osgard-world-app' },
   { name: 'academy', path: '/academy', selector: 'body' },
   { name: 'lectures', path: '/lectures', selector: '.lecture-library' },
+  { name: 'lesson-detail', path: '/lectures/intelligence-and-imitation', selector: '.osa-lesson-page' },
   { name: 'media-library', path: '/osa-library/', selector: '.hero' },
   { name: 'cinema', path: '/osa-cinema', selector: '.osa-cinema' },
   { name: 'games', path: '/games/', selector: 'header' },
