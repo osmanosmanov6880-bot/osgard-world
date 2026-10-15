@@ -39,7 +39,7 @@ export default function OSALessonMediaPlayer({
   const [playbackRate, setPlaybackRate] = useState(1)
   const [playbackError, setPlaybackError] = useState(false)
   const canPlay = isPlayableLessonMedia(resource)
-  const captionsAvailable = Boolean(resource.captionsUrl && isPermanentHttpsUrl(resource.captionsUrl))
+  const captionsAvailable = Boolean(resource.language && resource.captionsUrl && isPermanentHttpsUrl(resource.captionsUrl))
   const transcriptAvailable = Boolean(resource.transcriptUrl && isPermanentHttpsUrl(resource.transcriptUrl))
   const storageKey = 'osgard-osa-media-position-v1:' + lessonSlug + ':' + resource.kind
 
