@@ -1,0 +1,3 @@
+# Preserve the retired Imperium of Time URL on Cloudflare Pages.
+/games/time-empire /games/time 301
+/games/time-empire/ /games/time 301
