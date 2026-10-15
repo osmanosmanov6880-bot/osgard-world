@@ -26,4 +26,8 @@
   <url><loc>https://osgard.world/development/merakki/</loc><lastmod>2026-10-15</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
   <url><loc>https://osgard.world/entertainment/</loc><lastmod>2026-10-15</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>
   <url><loc>https://osgard.world/entertainment/elbrus/</loc><lastmod>2026-10-15</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://osgard.world/tedes/catalog/</loc><lastmod>2026-10-15</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://osgard.world/tedes/collections/</loc><lastmod>2026-10-15</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://osgard.world/tedes/product/</loc><lastmod>2026-10-15</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://osgard.world/tedes/materials/</loc><lastmod>2026-10-15</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
 </urlset>
