@@ -1,0 +1,53 @@
+name: OSA 5.0 design validation
+
+on:
+  push:
+    branches: [feat/osa-5-brand-system]
+    paths:
+      - 'src/**'
+      - 'public/brand/**'
+      - 'public/games/index.html'
+      - 'public/games/favicon.svg'
+      - 'public/skillcred/index.html'
+      - 'public/entertainment/index.html'
+      - 'index.html'
+      - 'scripts/osa5-brand-smoke.mjs'
+      - '.github/workflows/osa5-design-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: osa5-design-validation
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Validate the OSA 5.0 identity and route contracts
+        run: node scripts/osa5-brand-smoke.mjs
+      - name: Check TypeScript
+        run: npm run check
+      - name: Build production bundle without deploying
+        run: npm run build
+      - name: Verify Academy, course routes and SEO
+        run: npm run qa:academy
+      - name: Verify existing product links, claims and privacy boundaries
+        run: npm run qa:ecosystem
+      - name: Verify games hub and gameplay contracts
+        run: npm run qa:games-portal
+      - name: Verify the existing TEDES flagship case
+        run: node scripts/tedes-case-smoke.mjs
+      - name: Verify SkillCred static app and same-origin API contract
+        run: npm run qa:skillcred
+      - name: Verify deployment workflow safeguards
+        run: npm run qa:deploy-workflow
