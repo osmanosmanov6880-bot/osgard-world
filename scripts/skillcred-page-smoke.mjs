@@ -143,7 +143,6 @@ for (const file of files) {
    }
   console.log('PASS ' + file + ': semantic page, local assets, same-origin API and JS syntax')
 }
-), 'Shared-brand JS must route through the gzip_static asset location')
 assert.ok(nginx.includes('alias /usr/share/nginx/html/skillcred/styles.css.gz;'), 'CSS must map to its precompressed asset')
 assert.ok(nginx.includes('alias /usr/share/nginx/html/skillcred/app.js.gz;'), 'JS must map to its precompressed asset')
 assert.ok(nginx.includes('add_header Content-Encoding gzip always;'), 'precompressed responses must set Content-Encoding')
