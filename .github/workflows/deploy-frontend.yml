@@ -163,6 +163,14 @@ jobs:
           /tmp/osgard-godot/Godot_v4.7.2-stable_linux.x86_64 --headless --path godot/null-shift --export-release Web "$GITHUB_WORKSPACE/public/games/null-shift-godot/index.html"
           node scripts/null-shift-godot-smoke.mjs --export-check public/games/null-shift-godot
       - run: npm run build
+      - name: Ensure public case and game assets are present in release tree
+        run: |
+          mkdir -p dist/games dist/entertainment
+          cp -a public/games/. dist/games/
+          cp -a public/entertainment/. dist/entertainment/
+          test -s dist/games/ecosystem-intermission.js
+          test -s dist/entertainment/og.svg
+          test -s dist/entertainment/noir-auto/og.svg
       - name: Subset self-hosted Inter and minify SkillCred assets
         run: |
           python -m pip install --quiet fonttools brotli
