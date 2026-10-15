@@ -10,6 +10,8 @@ on:
       - "scripts/sync-swarm-assets.mjs"
       - "scripts/null-shift-godot-smoke.mjs"
       - "scripts/osa-media-release-preflight.mjs"
+      - "scripts/osa-narration-readiness.mjs"
+      - "docs/OSA_TTS_PRODUCTION_PLAN.md"
       - "docs/OSA_MEDIA_RELEASE_PIPELINE.md"
       - "scripts/cloudflare-pages-preflight.mjs"
       - "scripts/compress-pages-wasm.mjs"
@@ -96,6 +98,8 @@ jobs:
         run: npm run build
       - name: Verify OSA media inventory and publication gate
         run: npm run qa:osa-media-release
+      - name: Verify bilingual OSA narration sources and estimate TTS cost
+        run: npm run qa:osa-narration
       - name: Package Godot WASM under the Pages asset limit
         run: node scripts/compress-pages-wasm.mjs dist
       - name: Check Cloudflare Pages artifact and limits
