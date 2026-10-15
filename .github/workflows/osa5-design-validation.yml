@@ -25,16 +25,6 @@ on:
       - 'index.html'
       - 'scripts/osa5-brand-smoke.mjs'
       - '.github/workflows/osa5-design-validation.yml'
-    paths:
-      - 'src/**'
-      - 'public/brand/**'
-      - 'public/games/index.html'
-      - 'public/games/favicon.svg'
-      - 'public/skillcred/index.html'
-      - 'public/entertainment/index.html'
-      - 'index.html'
-      - 'scripts/osa5-brand-smoke.mjs'
-      - '.github/workflows/osa5-design-validation.yml'
   workflow_dispatch:
 
 permissions:
