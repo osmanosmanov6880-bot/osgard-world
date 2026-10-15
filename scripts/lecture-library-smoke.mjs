@@ -1,0 +1,28 @@
+import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
+
+const read = path => readFileSync(path, 'utf8')
+const main = read('src/main.tsx')
+const home = read('src/AcademyHome.tsx')
+const osaHome = read('src/OSAIntelligenceHome.tsx')
+const library = read('src/LectureLibrary.tsx')
+const styles = read('src/lectureLibrary.css')
+const cinema = read('src/OSACinema.tsx')
+const sitemap = read('public/sitemap.xml')
+const routeMatrix = read('scripts/production-route-matrix.mjs')
+const packageJson = JSON.parse(read('package.json'))
+
+assert.ok(main.includes("import LectureLibrary from './LectureLibrary'"), 'Lecture library component must be imported')
+assert.ok(main.includes("if (path === '/lectures') return <><Seo path=\"/lectures\" /><LectureLibrary /></>"), 'Lecture library route and SEO wrapper must be registered')
+assert.ok(main.includes("'/lectures': { title:"), 'Lecture library must have route metadata')
+assert.ok(home.includes('href="/lectures"') && osaHome.includes('href="/lectures"'), 'Academy and OSA Intelligence must link directly to courses and lectures')
+assert.ok(library.includes('getOSACinemaLessons(locale)') && library.includes('lessons.map((lesson, index)'), 'Catalogue must use the real OSA Original scene data and show every scene')
+assert.ok(library.includes('/osa-cinema?scene=${index}'), 'Each lesson must deep-link to its matching interactive scene')
+assert.ok(library.includes('Видеозаписи пока не опубликованы') && library.includes('no MP4/WebM') && !library.includes('<video'), 'Missing recordings must be disclosed; do not show fake video players')
+assert.ok(library.includes('ИИ меняет правила') && library.includes('Власть знаний') && library.includes('Человек и будущее'), 'The three acts must appear in the correct learning order')
+assert.ok(styles.includes('@media(max-width:800px)') && styles.includes('@media(prefers-reduced-motion:reduce)') && styles.includes(':focus-visible'), 'Lecture catalogue must be responsive, keyboard accessible, and motion-aware')
+assert.ok(sitemap.includes('https://osgard.world/lectures'), 'Lecture catalogue must be discoverable in sitemap')
+assert.ok(routeMatrix.includes("'/lectures'"), 'Production route matrix must probe the lecture catalogue')
+assert.equal((cinema.match(/\{act:\d/g) || []).length, 16, 'OSA Original must retain eight scenes per locale')
+assert.ok(packageJson.scripts['qa:lectures'] === 'node scripts/lecture-library-smoke.mjs', 'Lecture contract must be runnable through npm')
+console.log('LECTURE_LIBRARY_PASS: ordered curriculum, real scene links, route/SEO, accessibility and video-media disclosure checked.')

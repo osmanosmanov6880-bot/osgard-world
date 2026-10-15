@@ -35,6 +35,7 @@ html[dir="rtl"] .lang{direction:ltr}html[dir="rtl"] .brand{direction:ltr;text-al
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"CreativeWork","name":"ELBRUS — цифровой опыт гостеприимства | OSGARD WORLD","url":"https://osgard.world/entertainment/elbrus/","inLanguage":"ru-RU","creator":{"@type":"Organization","name":"OSGARD WORLD","url":"https://osgard.world/"},"description":"ELBRUS — премиальная цифровая концепция гостеприимства для дагестанской кухни. Кейс OSGARD: бренд-система, меню UX, мобильный путь гостя и демонстрационный интерфейс.","isAccessibleForFree":true}</script>
   <link rel="stylesheet" href="/entertainment/elbrus/table-session.css">
   <script src="/entertainment/elbrus/table-session.js" defer></script>
+  <link rel="stylesheet" href="/brand/osa5-portals.css">
 </head>
 <body>
 <a class="skip-link" href="#main-content" data-i18n="skipLink">Перейти к содержимому</a>
@@ -122,4 +123,5 @@ document.querySelectorAll("[data-filter]").forEach(b=>b.addEventListener("click"
 document.querySelectorAll("[data-add]").forEach(b=>b.addEventListener("click",()=>{selected+=1;b.textContent=i18n[locale].added;b.setAttribute("aria-label",i18n[locale].added);renderCart()}));
 renderCart();
 </script>
+  <script defer src="/brand/osa-transition.js"></script>
 </body></html>
