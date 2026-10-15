@@ -36,6 +36,7 @@ rollback() {
     tar -xzf '$archive' -C /tmp/osgard-gh-next
     test -f /tmp/osgard-gh-next/html/index.html
     grep -q '<title>OSA Intelligence' /tmp/osgard-gh-next/html/index.html
+    grep -q '<meta name="osgard-app" content="osa-intelligence"' /tmp/osgard-gh-next/html/index.html
     grep -q 'OSA INTELLIGENCE / BEYOND THE MODEL' /tmp/osgard-gh-next/html/assets/*.js
     test -f /tmp/osgard-gh-next/html/skillcred/index.html
     test -f /tmp/osgard-gh-next/html/skillcred/styles.css
@@ -70,6 +71,7 @@ rollback() {
   set -x
   if curl --max-time 12 --compressed -fsS -H 'Cache-Control: no-cache' -H 'Pragma: no-cache' "https://osgard.world/?osa_deploy_verify=$(date +%s)" -o /tmp/osa-home-check.html \
     && grep -q '<title>OSA Intelligence' /tmp/osa-home-check.html \
+    && grep -q '<meta name="osgard-app" content="osa-intelligence"' /tmp/osa-home-check.html \
     && home_bundle_path="$(grep -oE 'src="[^"]+\.js"' /tmp/osa-home-check.html | head -n 1 | sed 's/^src="//;s/"$//')" \
     && test -n "$home_bundle_path" \
     && curl --max-time 12 --compressed -fsS -H 'Cache-Control: no-cache' "https://osgard.world$home_bundle_path" -o /tmp/osa-home-bundle-check.js \

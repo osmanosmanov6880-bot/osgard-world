@@ -13,6 +13,7 @@ for (const [device, userAgent] of Object.entries(agents)) for (const route of ro
     const text = await response.text()
     const shellOk = route === '/'
       ? text.includes('<title>OSA Intelligence — понимать, проверять, решать</title>') &&
+        text.includes('<meta name="osgard-app" content="osa-intelligence"') &&
         /<script[^>]+src="\/assets\/[^"]+\.js"/i.test(text)
       : route === '/tedes/'
         ? text.includes('<title>TEDES Studio — архитектурная фурнитура как система</title>') && text.includes('id="addDoor"') && text.includes('id="exportJson"') && text.includes('id="exportCsv"') && text.includes('id="doorRows"') && text.includes('STORAGE_KEY') && text.includes('id="buildQuote"') && text.includes('id="importJson"') && text.includes('id="importFile"') && text.includes('data-duplicate=') && text.includes('safeCsvCell')
