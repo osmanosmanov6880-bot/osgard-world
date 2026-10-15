@@ -189,7 +189,7 @@ export default function LectureLibrary() {
 
     <section className="lecture-video-note" aria-labelledby="lecture-video-title">
       <div className="lecture-video-icon"><Clapperboard size={22} /></div>
-      <div><p className="lecture-eyebrow">{t.videoLabel}</p><h2 id="lecture-video-title">{t.videoTitle}</h2><p>{t.videoBody}</p><small>{t.note}</small><a className="lecture-media-link" href="/osa-library/">{t.mediaLibrary}<ArrowUpRight size={15} /></a></div>
+      <div><p className="lecture-eyebrow">{t.videoLabel}</p><h2 id="lecture-video-title">{t.videoTitle}</h2><p>{mediaSummary.playableVideo > 0 ? (locale === 'ru' ? `Опубликовано видеозаписей: ${mediaSummary.playableVideo} из ${mediaSummary.totalLessons}. Для остальных уроков доступны текстовые материалы.` : `Published videos: ${mediaSummary.playableVideo} of ${mediaSummary.totalLessons}. Text lessons remain available for the others.`) : t.videoBody}</p><small>{t.note}</small><a className="lecture-media-link" href="/osa-library/">{t.mediaLibrary}<ArrowUpRight size={15} /></a></div>
     </section>
     <footer className="lecture-footer"><a href="/academy"><ArrowLeft size={15} />{t.back}</a><span>OSGARD WORLD × OSA ORIGINAL</span><a href="/osa-cinema?scene=0">{t.start}<ArrowRight size={15} /></a></footer>
   </main>
