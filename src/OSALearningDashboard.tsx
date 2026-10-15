@@ -22,6 +22,7 @@ export default function OSALearningDashboard() {
       <progress value={count} max={8} style={{width:'100%',height:12}} />
       {next ? <p><a href={'/lectures/'+next} style={{color:'#a9c4e9'}}>{locale === 'ru' ? 'Продолжить обучение →' : 'Continue learning →'}</a></p> : <p>{locale === 'ru' ? 'Все лекции завершены!' : 'All lessons completed!'}</p>}
     </section>
+    <p><a href="/learning/assessment" style={{display:'inline-block',padding:'12px 20px',border:'1px solid #a9c4e9',borderRadius:12,color:'#d6e5fb'}}>{locale === 'ru' ? 'Пройти итоговую самопроверку →' : 'Take the final knowledge check →'}</a></p>
     <section style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(240px,1fr))',gap:18}} aria-label={locale === 'ru' ? 'Учебные маршруты' : 'Learning tracks'}>
       {OSA_LEARNING_TRACKS.map(track => {
         const stats = getOSATrackProgress(track,progress.lessonCompletions)
