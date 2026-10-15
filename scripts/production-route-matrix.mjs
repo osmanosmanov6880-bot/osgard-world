@@ -15,7 +15,7 @@ for (const [device, userAgent] of Object.entries(agents)) for (const route of ro
       ? text.includes('<title>OSA Intelligence — понимать, проверять, решать</title>') &&
         /<script[^>]+src="\/assets\/[^"]+\.js"/i.test(text)
       : route === '/tedes/'
-        ? text.includes('<title>TEDES Studio — архитектурная фурнитура как система</title>') && text.includes('id="addDoor"') && text.includes('id="exportJson"') && text.includes('id="exportCsv"') && text.includes('id="doorRows"') && text.includes('STORAGE_KEY') && text.includes('id="buildQuote"')
+        ? text.includes('<title>TEDES Studio — архитектурная фурнитура как система</title>') && text.includes('id="addDoor"') && text.includes('id="exportJson"') && text.includes('id="exportCsv"') && text.includes('id="doorRows"') && text.includes('STORAGE_KEY') && text.includes('id="buildQuote"') && text.includes('id="importJson"') && text.includes('id="importFile"')
       : route === '/tedes/catalog/'
         ? text.includes('<title>TEDES Catalog — коллекция архитектурной фурнитуры</title>') && text.includes('id="products"') && text.includes('id="search"') && text.includes('id="collection"') && text.includes('id="finish"')
       : route === '/tedes/collections/'
