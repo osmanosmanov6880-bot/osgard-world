@@ -61,6 +61,8 @@ on:
       - "scripts/academy-home-smoke.mjs"
       - "scripts/lecture-library-smoke.mjs"
       - "scripts/osa-media-release-preflight.mjs"
+      - "scripts/osa-narration-readiness.mjs"
+      - "docs/OSA_TTS_PRODUCTION_PLAN.md"
       - "docs/OSA_MEDIA_RELEASE_PIPELINE.md"
       - "scripts/remix-growth-smoke.mjs"
       - "scripts/ecosystem-integrity-smoke.mjs"
@@ -179,6 +181,8 @@ jobs:
       - run: npm run build
       - name: Verify OSA media inventory and publication gate
         run: npm run qa:osa-media-release
+      - name: Verify bilingual OSA narration sources and estimate TTS cost
+        run: npm run qa:osa-narration
       - name: Ensure public case and game assets are present in release tree
         run: |
           mkdir -p dist/games dist/entertainment

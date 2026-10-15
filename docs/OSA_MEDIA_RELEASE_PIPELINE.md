@@ -5,7 +5,7 @@ Snapshot date: 2026-10-15
 ## Current inventory facts
 
 - 31 registered assets: 19 video, 9 audio and 3 image.
-- 28 asset IDs match the current Runway recent list; 3 do not currently match and require recovery from the source repository or workspace archive.
+- 28 asset IDs match the current Runway recent-assets listing. Three IDs are absent from that recent list but are still present in the canonical osa-global-intelligence media manifest. That manifest is an ID/metadata registry, not a binary archive; the original files must be recovered from the authenticated Runway workspace/archive and verified by bytes/MIME type. These three IDs are not treated as confirmed lost.
 - 7 audio assets are reported by Runway as kind "image" although their source path extension is ".mp3". The manifest records this discrepancy without saving temporary URLs; actual file bytes and MIME type must be confirmed after export.
 - 0 permanent URLs and 0 assets ready for publication.
 
@@ -18,7 +18,7 @@ Snapshot date: 2026-10-15
 
 ## Release sequence
 
-1. Recover the three not-found assets, preserving their exact IDs and verifying the actual downloaded bytes.
+1. Resolve the three legacy IDs against the canonical OSA manifest and retrieve the original binary from the authenticated Runway workspace/archive. Preserve the stable ID and verify the actual downloaded bytes; the text manifest alone does not contain the binary.
 2. Export chosen originals from Runway and move them to durable storage under a project-controlled HTTPS URL. Temporary CloudFront gallery URLs and _jwt links are forbidden in source control.
 3. Record measured duration and MIME type from the actual file; do not trust a provider's generic kind field where it conflicts with the file extension.
 4. Record language or an explicit non-linguistic value, and add subtitle/transcript paths where needed.
