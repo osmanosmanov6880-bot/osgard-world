@@ -134,6 +134,13 @@ for (const [device, userAgent] of Object.entries(agents)) for (const route of ro
                 ? content.includes('export function parseProjectDocument') && content.includes('export function mergeProjectDocuments') && content.includes('MAX_IMPORT_BYTES') && content.includes('localStorage') && content.length > 10000
                 : route === '/'
                   ? (content.includes('OSA INTELLIGENCE / BEYOND THE MODEL') || /osgard|world/i.test(content)) && content.length > 100000
+                : path === '/tedes/project/project-workspace.js'
+                ? content.includes('export const PROJECT_SCHEMA = "tedes-studio-project/v1";') &&
+                  content.includes('MAX_PROJECT_POSITIONS = 30') &&
+                  content.includes('MAX_IMPORT_BYTES = 1024 * 1024') &&
+                  content.includes('exportCsv') &&
+                  content.includes('JSON.parse') &&
+                  content.includes('localStorage')
                 : path.endsWith('.css')
               ? normalized.includes('--acid:#c8ff3d') && normalized.includes('/skillcred/fonts/intervariable.woff2') && normalized.includes('/skillcred/fonts/instrumentserif-italic.woff2') && normalized.includes('/skillcred/fonts/jetbrainsmono-regular.woff2') && (!expectCurrentDesign || (normalized.includes('--hero-size:clamp(88px,6vw,104px)') && normalized.replace(/["']/g, '').includes('.trust-spine[data-state=revoked]')))
               : content.includes('demo/issue') && content.includes('data-clock-step')

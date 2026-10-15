@@ -3592,3 +3592,17 @@ Continue non-financial brief implementation; billing can be handled only after a
 - The card clearly labels the storefront as a demo with no live checkout.
 - No tracking script or runtime dependency was introduced.
 - Full CI, health-watch, SSH deployment and route matrix must pass before this is called published.
+
+
+## 2026-10-15 / Pass 191
+
+### Release-gate repair
+
+- Fixed the production route matrix's TEDES workspace asset check. The route serves `project-workspace.js`, an ES module with its own project schema and import/export contract; the previous fallback incorrectly required unrelated generic-app markers.
+- Added an ecosystem regression assertion so the workspace receives a dedicated contract check and cannot silently fall back to the unrelated marker test.
+- Kept HTTP status, MIME, non-empty asset, and all other route assertions unchanged.
+
+### Release gate
+
+- Re-run ecosystem QA, frontend build and the full desktop/mobile production route matrix.
+- Publication is considered complete only after the new run passes. Restaurant checkout/payment remains disabled.

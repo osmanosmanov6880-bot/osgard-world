@@ -14,6 +14,7 @@ const lifecycle = read('public/games/player-lifecycle.js')
 const sitemap = read('public/sitemap.xml')
 const nginx = read('nginx.conf')
 const activation = read('scripts/activate-frontend-remote.sh')
+const productionRouteMatrix = read('scripts/production-route-matrix.mjs')
 
 const promotionSources = { app, sections, development, merakkiPage, merakkiPageEn, merakkiPageAr }
 for (const [locale, page] of Object.entries({ ru: merakkiPage, en: merakkiPageEn, ar: merakkiPageAr })) {
@@ -78,6 +79,7 @@ for (const [path, source] of [['src/App.tsx', app], ['src/Development.tsx', deve
   assert.ok(source.includes('https://wa.me/79640027222'), path + ' is missing the WhatsApp contact URL')
 }
 
+assert.ok(productionRouteMatrix.includes("path === '/tedes/project/project-workspace.js'") && productionRouteMatrix.includes('MAX_PROJECT_POSITIONS = 30'), 'Production route matrix must validate TEDES workspace with its own project contract')
 assert.ok(app.includes('href="/games/"'), 'Main navigation must expose the Games hub')
 assert.ok(app.includes("url: 'https://osgardbewworld.com/'"), 'Main ecosystem must use the supplied digital-development domain')
 assert.ok(sections.includes("href: '/games/time'"), 'Entertainment route must point to the current Time game URL')
