@@ -3621,3 +3621,12 @@ Continue non-financial brief implementation; billing can be handled only after a
 
 - Re-run frontend validation, production build, SSH activation, public desktop/mobile route matrix and the Games Lighthouse audit.
 - Do not claim mobile performance improved until fresh Lighthouse results confirm it. Consent/auth-gated analytics and demo/payment boundaries remain unchanged.
+
+
+## 2026-10-15 / Pass 193
+
+### Lazy-loader regression coverage
+
+- Updated the Games portal smoke test to distinguish the catalog's primary inline app from the new small lazy-loader script.
+- Syntax-checks all inline application scripts and asserts that favorites/history remain in the primary app while the lazy loader preserves deferred assets and first-click replay.
+- This closes a test-assumption gap exposed by CI; it does not relax runtime or production-route checks.
