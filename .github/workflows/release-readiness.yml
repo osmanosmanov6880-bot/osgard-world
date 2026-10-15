@@ -24,6 +24,8 @@ jobs:
       - run: npm ci
       - name: Typecheck
         run: npm run check
+      - name: Syntax-check production health monitor
+        run: node --check scripts/production-health-watch.mjs
       - name: Validate TEDES luxury pages and demo JavaScript
         run: node scripts/tedes-case-smoke.mjs
       - name: Validate NULL SHIFT standalone game
