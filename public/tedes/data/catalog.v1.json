@@ -1,0 +1,210 @@
+{
+  "schemaVersion": 1,
+  "catalogId": "tedes-demo-catalog-v1",
+  "status": "demo-only",
+  "title": "TEDES concept catalog",
+  "disclaimer": "Все позиции ниже — демонстрационные концепты. Это не подтверждённый ассортимент TEDES. Цены, наличие, размеры, совместимость, сертификаты и производственные спецификации не предоставлены.",
+  "collections": [
+    {
+      "id": "FORMA",
+      "name": "FORMA",
+      "direction": "SCULPTURAL",
+      "description": "Скульптурные формы и выразительная геометрия."
+    },
+    {
+      "id": "LINEA",
+      "name": "LINEA",
+      "direction": "LINEAR",
+      "description": "Чистые линии, минимализм и архитектурная строгость."
+    },
+    {
+      "id": "MATERIA",
+      "name": "MATERIA",
+      "direction": "TACTILE",
+      "description": "Материал, поверхность и тактильное восприятие."
+    }
+  ],
+  "finishes": [
+    {
+      "id": "antique-brass",
+      "name": "Antique brass",
+      "label": "Античная латунь",
+      "color": "#b89550",
+      "status": "illustrative"
+    },
+    {
+      "id": "matte-black",
+      "name": "Matte black",
+      "label": "Чёрный матовый",
+      "color": "#34352f",
+      "status": "illustrative"
+    },
+    {
+      "id": "satin-bronze",
+      "name": "Satin bronze",
+      "label": "Бронза сатин",
+      "color": "#927654",
+      "status": "illustrative"
+    },
+    {
+      "id": "brushed-steel",
+      "name": "Brushed steel",
+      "label": "Сталь сатин",
+      "color": "#999a90",
+      "status": "illustrative"
+    },
+    {
+      "id": "graphite",
+      "name": "Graphite",
+      "label": "Графит",
+      "color": "#4a4b44",
+      "status": "illustrative"
+    }
+  ],
+  "products": [
+    {
+      "sku": "FORMA-ARC-01",
+      "recordStatus": "concept",
+      "name": "ARC / Sculptural Lever",
+      "collection": "FORMA",
+      "form": "Скульптурная дуга",
+      "description": "Выразительная округлая линия для тактильного акцента.",
+      "handle": "ARC",
+      "visualKind": "arc",
+      "defaultFinish": "Antique brass",
+      "finishOptions": [
+        "Antique brass",
+        "Satin bronze",
+        "Matte black"
+      ],
+      "price": null,
+      "currency": null,
+      "availability": null,
+      "dimensionsMm": null,
+      "mechanism": null,
+      "certifications": [],
+      "image": "/tedes/assets/hero-door.webp",
+      "imageStatus": "concept-visualization"
+    },
+    {
+      "sku": "FORMA-ARC-02",
+      "recordStatus": "concept",
+      "name": "ARC / Deep Black",
+      "collection": "FORMA",
+      "form": "Скульптурная дуга",
+      "description": "Контрастный тёмный вариант визуальной концепции ARC.",
+      "handle": "ARC",
+      "visualKind": "arc",
+      "defaultFinish": "Matte black",
+      "finishOptions": [
+        "Matte black",
+        "Antique brass",
+        "Graphite"
+      ],
+      "price": null,
+      "currency": null,
+      "availability": null,
+      "dimensionsMm": null,
+      "mechanism": null,
+      "certifications": [],
+      "image": "/tedes/assets/hero-door.webp",
+      "imageStatus": "concept-visualization"
+    },
+    {
+      "sku": "LINEA-EDGE-01",
+      "recordStatus": "concept",
+      "name": "EDGE / Linear Grip",
+      "collection": "LINEA",
+      "form": "Чистая линия",
+      "description": "Строгая геометрия для сдержанной архитектуры.",
+      "handle": "EDGE",
+      "visualKind": "line",
+      "defaultFinish": "Graphite",
+      "finishOptions": [
+        "Graphite",
+        "Brushed steel",
+        "Matte black"
+      ],
+      "price": null,
+      "currency": null,
+      "availability": null,
+      "dimensionsMm": null,
+      "mechanism": null,
+      "certifications": [],
+      "image": "/tedes/assets/hero-door.webp",
+      "imageStatus": "concept-visualization"
+    },
+    {
+      "sku": "LINEA-EDGE-02",
+      "recordStatus": "concept",
+      "name": "EDGE / Satin Steel",
+      "collection": "LINEA",
+      "form": "Чистая линия",
+      "description": "Нейтральная металлическая фактура без декоративного шума.",
+      "handle": "EDGE",
+      "visualKind": "line",
+      "defaultFinish": "Brushed steel",
+      "finishOptions": [
+        "Brushed steel",
+        "Graphite",
+        "Matte black"
+      ],
+      "price": null,
+      "currency": null,
+      "availability": null,
+      "dimensionsMm": null,
+      "mechanism": null,
+      "certifications": [],
+      "image": "/tedes/assets/hero-door.webp",
+      "imageStatus": "concept-visualization"
+    },
+    {
+      "sku": "MATERIA-BAR-01",
+      "recordStatus": "concept",
+      "name": "BAR / Warm Bronze",
+      "collection": "MATERIA",
+      "form": "Материальный акцент",
+      "description": "Тёплая металлическая поверхность и спокойный силуэт.",
+      "handle": "LINE",
+      "visualKind": "bar",
+      "defaultFinish": "Satin bronze",
+      "finishOptions": [
+        "Satin bronze",
+        "Antique brass",
+        "Brushed steel"
+      ],
+      "price": null,
+      "currency": null,
+      "availability": null,
+      "dimensionsMm": null,
+      "mechanism": null,
+      "certifications": [],
+      "image": "/tedes/assets/hero-door.webp",
+      "imageStatus": "concept-visualization"
+    },
+    {
+      "sku": "MATERIA-BAR-02",
+      "recordStatus": "concept",
+      "name": "BAR / Dark Patina",
+      "collection": "MATERIA",
+      "form": "Материальный акцент",
+      "description": "Контрастная материальная концепция для минималистичного интерьера.",
+      "handle": "LINE",
+      "visualKind": "bar",
+      "defaultFinish": "Matte black",
+      "finishOptions": [
+        "Matte black",
+        "Graphite",
+        "Satin bronze"
+      ],
+      "price": null,
+      "currency": null,
+      "availability": null,
+      "dimensionsMm": null,
+      "mechanism": null,
+      "certifications": [],
+      "image": "/tedes/assets/hero-door.webp",
+      "imageStatus": "concept-visualization"
+    }
+  ]
+}
