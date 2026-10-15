@@ -3606,3 +3606,18 @@ Continue non-financial brief implementation; billing can be handled only after a
 
 - Re-run ecosystem QA, frontend build and the full desktop/mobile production route matrix.
 - Publication is considered complete only after the new run passes. Restaurant checkout/payment remains disabled.
+
+
+## 2026-10-15 / Pass 192
+
+### Mobile performance remediation — OSGARD PLAY
+
+- Lighthouse on the published Games hub measured mobile Performance 72/100 and Total Blocking Time 1,800 ms; desktop Performance was 100/100. Mobile accessibility, best practices and SEO were each 100/100.
+- Removed game-session lifecycle and owned-ecosystem intermission scripts from the initial execution path. They now load on game-link intent (pointer hover, keyboard focus, touch, or click).
+- Preserved first-click behavior: clicks during script loading are held and replayed after ordered script loading; if a script fails, the original inline catalog player remains the fallback.
+- Extended source smoke checks and the public desktop/mobile route matrix to require the lazy-loader contract and validate both deferred script assets.
+
+### Release gate
+
+- Re-run frontend validation, production build, SSH activation, public desktop/mobile route matrix and the Games Lighthouse audit.
+- Do not claim mobile performance improved until fresh Lighthouse results confirm it. Consent/auth-gated analytics and demo/payment boundaries remain unchanged.

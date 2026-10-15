@@ -88,6 +88,8 @@ assert.ok(manifest.includes("href: '/games/null-shift-godot/index.html'"), 'Mani
 assert.ok(games.includes('Рекламная сеть не подключена. Скрытых показов нет.'), 'Sponsor inventory must remain transparent while no ad provider is connected')
 assert.ok(games.includes('Без фиктивных рейтингов и онлайна') || games.includes('БЕЗ ФИКТИВНЫХ РЕЙТИНГОВ И ОНЛАЙНА'), 'Catalog should not imply fabricated players or ratings')
 assert.ok(games.includes('/privacy/') && games.includes('/terms/'), 'Privacy and terms links are required')
+assert.ok(games.includes('data-lazy-src="./player-lifecycle.js"') && games.includes('data-lazy-src="./ecosystem-intermission.js"'), 'Game lifecycle and intermission scripts must not execute on initial catalog load')
+assert.ok(games.includes("for(const type of ['pointerover','focusin','touchstart'])") && games.includes('event.stopImmediatePropagation()') && games.includes("new MouseEvent('click'"), 'Lazy game-script loader must preserve first-click launch after loading')
 assert.ok(sitemap.includes('https://osgard.world/games/'), 'Sitemap must include Games')
 assert.ok(lifecycle.includes('if(!consent||!token)return'), 'Session analytics must require user consent and authenticated account')
 assert.ok(lifecycle.includes('event.origin!==location.origin') && lifecycle.includes('event.source!==frame.contentWindow'), 'Cross-frame lifecycle messages must be same-origin and source-checked')

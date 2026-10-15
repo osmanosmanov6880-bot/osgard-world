@@ -73,5 +73,37 @@ $('#copy-email').addEventListener('click',async()=>{try{await navigator.clipboar
 $('#project-form').addEventListener('submit',e=>{e.preventDefault();const f=e.currentTarget;if(!(f instanceof HTMLFormElement)||!f.reportValidity())return;const d=new FormData(f),txt=['Здравствуйте! Хочу обсудить проект с OSGARD.','Направление: '+d.get('projectType'),'Бюджет: '+d.get('budget'),'Канал ответа: '+d.get('replyVia'),'Мой контакт: '+String(d.get('contact')).trim(),'Описание: '+String(d.get('brief')).trim()].join('\n');$('#form-status').textContent='Открываем WhatsApp. Проверьте текст и отправьте сообщение вручную.';window.open('https://wa.me/79640027222?text='+encodeURIComponent(txt),'_blank','noopener,noreferrer')});
 consentToggle.addEventListener('click',()=>{consent=!consent;try{localStorage.setItem(K.consent,consent?'yes':'no')}catch{}consentToggle.setAttribute('aria-pressed',consent);$('b',consentToggle).textContent=consent?'Разрешена':'Разрешить';consentState.textContent=consent?'Аналитика разрешена':'Аналитика выключена'});document.addEventListener('keydown',e=>{if(e.key==='/'&&!dialog.open&&!['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName)){e.preventDefault();search.focus()}});
 consentToggle.setAttribute('aria-pressed',consent);$('b',consentToggle).textContent=consent?'Разрешена':'Разрешить';consentState.textContent=consent?'Аналитика разрешена':'Аналитика выключена';renderFav();renderRecent()})();
-</script><script src="./player-lifecycle.js" defer></script>
-<script src="./ecosystem-intermission.js" defer></script></body></html>
+</script><script data-lazy-src="./player-lifecycle.js"></script>
+<script data-lazy-src="./ecosystem-intermission.js"></script>
+<script>
+(()=>{'use strict';
+const placeholders=Array.from(document.querySelectorAll('script[data-lazy-src]'));
+const sources=placeholders.map(node=>node.dataset.lazySrc).filter(Boolean);
+let loading=null,loaded=false,failed=false;
+function loadOptionalScripts(){
+ if(loaded)return Promise.resolve(true);
+ if(loading)return loading;
+ loading=(async()=>{
+  for(const src of sources){
+   await new Promise((resolve,reject)=>{
+    const script=document.createElement('script');
+    script.src=src;script.async=false;script.onload=resolve;
+    script.onerror=()=>reject(new Error('Could not load '+src));
+    document.head.append(script);
+   });
+  }
+  loaded=true;return true;
+ })().catch(()=>{failed=true;return false});
+ return loading;
+}
+function playLink(target){return target instanceof Element?target.closest('a[data-play]'):null}
+function warm(event){if(playLink(event.target))void loadOptionalScripts()}
+for(const type of ['pointerover','focusin','touchstart'])document.addEventListener(type,warm,{capture:true,passive:true});
+document.addEventListener('click',event=>{
+ const link=playLink(event.target);
+ if(!link||loaded||failed)return;
+ event.preventDefault();event.stopImmediatePropagation();
+ loadOptionalScripts().then(()=>link.dispatchEvent(new MouseEvent('click',{bubbles:true,cancelable:true,button:0,view:window})));
+},true);
+})();
+</script></body></html>
