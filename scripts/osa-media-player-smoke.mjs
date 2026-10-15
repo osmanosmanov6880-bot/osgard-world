@@ -19,6 +19,10 @@ assert.equal(isPermanentMediaUrl('https://cdn.example.org/lesson.mp3?_jwt=tempor
 assert.equal(isPermanentMediaUrl('https://cdn.example.org/lesson.mp3?token=temporary'), false, 'temporary token URLs must be rejected')
 assert.equal(isPermanentMediaUrl('/media/lesson.mp3?X-Amz-Signature=temporary'), false, 'signed object-storage URLs must be rejected')
 assert.equal(isPermanentMediaUrl(null), false, 'missing media is not playable')
+assert.equal(isPermanentMediaUrl('/osa-media/%2e%2e/secret.mp3'), false, 'encoded parent traversal must be rejected')
+assert.equal(isPermanentMediaUrl('/osa-media/%2Fsecret.mp3'), false, 'encoded path separators must be rejected')
+assert.equal(isPermanentMediaUrl('/osa-media/%5csecret.mp3'), false, 'encoded backslashes must be rejected')
+assert.equal(isPermanentMediaUrl('/osa-media/%ZZ.mp3'), false, 'malformed percent encoding must be rejected')
 
 for (const slug of [
   'intelligence-and-imitation',
