@@ -158,7 +158,9 @@ for (const [device, userAgent] of Object.entries(agents)) for (const route of ro
     }
     const assetChecks = await Promise.all(assetPaths.map(async path => {
       const expectedType = path.endsWith('.svg') ? 'image/svg+xml' : path.endsWith('.webp') ? 'image' : path.endsWith('.css') ? 'text/css' : path.endsWith('.json') ? 'json' : path.endsWith('.js') ? 'javascript' : path.endsWith('.wasm') ? 'wasm' : path.endsWith('.pck') ? 'pack' : 'font'
-      const asset = await fetch(new URL(path, base), { headers: { 'user-agent': userAgent, 'cache-control': 'no-cache', pragma: 'no-cache' } })
+      const assetUrl = new URL(path, base)
+      assetUrl.searchParams.set('osa_asset_probe', `${device}-${encodeURIComponent(route)}-${Date.now()}`)
+      const asset = await fetch(assetUrl, { headers: { 'user-agent': userAgent, 'cache-control': 'no-cache', pragma: 'no-cache' } })
       const contentType = asset.headers.get('content-type') || ''
       const mime = contentType.toLowerCase()
       const typeOk = expectedType === 'image/svg+xml' ? mime.includes('image/svg+xml') : expectedType === 'text/css' ? mime.includes('text/css') : expectedType === 'json' ? mime.includes('application/json') || mime.includes('text/json') || mime.includes('text/plain') : expectedType === 'javascript' ? mime.includes('javascript') || mime.includes('ecmascript') : expectedType === 'wasm' ? mime.includes('wasm') || mime.includes('octet-stream') : expectedType === 'pack' ? mime.length > 0 : expectedType === 'image' ? mime.includes('image/webp') : mime.includes('font/woff2') || mime.includes('application/octet-stream')
