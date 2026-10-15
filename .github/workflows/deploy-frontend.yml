@@ -21,6 +21,8 @@ on:
       - "public/entertainment/**"
       - "public/games/**"
       - "public/privacy/**"
+      - "public/osa-library/**"
+      - "docs/OSA_MEDIA_RECOVERY_RUNBOOK.md"
       - "public/terms/**"
       - "public/tedes/**"
       - "public/development/tedes/**"
