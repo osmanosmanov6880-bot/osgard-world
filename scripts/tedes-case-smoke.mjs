@@ -44,6 +44,11 @@ assert.ok(sitemap.includes('https://osgard.world/development/tedes/') && sitemap
 assert.ok(!sitemap.includes('https://osgard.world/tedes/project/'), 'Private local project workspace must not be included in sitemap')
 assert.ok(routeMatrix.includes("'/tedes/'") && routeMatrix.includes("'/development/tedes/'"), 'Production route matrix does not include TEDES routes')
 assert.ok(routeMatrix.includes("path === '/tedes/project/project-workspace.js'") && routeMatrix.includes('export function mergeProjectDocuments') && routeMatrix.includes('MAX_IMPORT_BYTES'), 'Production route matrix must validate the TEDES project controller by its real exports')
+const projectGateStart = routeMatrix.indexOf(": route === '/tedes/project/'")
+const projectGateEnd = routeMatrix.indexOf(": route === '/tedes/print/'", projectGateStart)
+assert.ok(projectGateStart >= 0 && projectGateEnd > projectGateStart, 'Production project route shell gate is missing')
+const projectRouteGate = routeMatrix.slice(projectGateStart, projectGateEnd)
+assert.ok(projectRouteGate.includes('src="/tedes/project/project-workspace.js"') && !projectRouteGate.includes("text.includes('tedes-studio-project-v1')"), 'Shell gate must check the external workspace controller, not its former inline schema marker')
 assert.ok(workflow.includes('"public/tedes/**"') && workflow.includes('"public/development/tedes/**"'), 'Deployment workflow does not watch TEDES pages')
 
 
