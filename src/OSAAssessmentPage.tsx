@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { OSA_LESSON_SLUGS, osaLessonGuides, type OSALessonLocale } from './osaLessonGuides'
 import { gradeOSAQuiz } from './osaAssessment'
+import { trackOSAEvent } from './osaAnalytics'
 
 export default function OSAAssessmentPage() {
   const [locale, setLocale] = useState<OSALessonLocale>('ru')
@@ -12,7 +13,7 @@ export default function OSAAssessmentPage() {
     <p style={{letterSpacing:3,color:'#a9c4e9',marginTop:50}}>OSA / KNOWLEDGE CHECK</p>
     <h1 style={{fontSize:'clamp(32px,5vw,58px)'}}>{locale==='ru'?'Проверка знаний':'Knowledge assessment'}</h1>
     <p>{locale==='ru'?'8 вопросов по материалам курса. Проходной результат — 6 правильных ответов.':'8 questions from the course. Passing score: 6 correct answers.'}</p>
-    <form onSubmit={event=>{event.preventDefault();setSubmitted(true)}}>
+    <form onSubmit={event=>{event.preventDefault();setSubmitted(true);trackOSAEvent('learning_assessment_submitted',{score:result.correct,passed:result.passed})}}>
       {OSA_LESSON_SLUGS.map((slug,index)=>{
         const check=osaLessonGuides[locale][index].check
         return <fieldset key={slug} style={{border:'1px solid #39465b',borderRadius:16,padding:20,margin:'18px 0'}}>
