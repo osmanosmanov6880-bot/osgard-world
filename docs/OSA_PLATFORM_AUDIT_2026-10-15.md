@@ -25,6 +25,7 @@
 - Responsive Academy CSS and reduced-motion styling exist.
 - OSGARD release workflow includes TypeScript checks, build, Academy/lecture smoke tests, an OSA portfolio-case check, and production route verification.
 - Current deployed frontend commit: `c10b9d0bc4cb05c0a63560fad3ccbf6dd0de8d2b`; deploy workflow: https://github.com/osmanosmanov6880-bot/osgard-world/actions/runs/38679658792.
+- A later production health-watch run (`38680735759`) failed independently of this documentation branch: the raw `/` HTML probe returned HTTP 200 but reported title `OSGARD WORLD — цифровая экосистема` and no `osgard-app` marker, unlike the current repository `index.html` which identifies OSA Intelligence. The same run also flagged three MERAKKI title mismatches and a MERAKKI social-image 404. Treat this as production/source drift to investigate; do not claim the live root matches the current repository solely from the successful deployment workflow.
 
 ## 3. What is not implemented or is not yet proven
 
