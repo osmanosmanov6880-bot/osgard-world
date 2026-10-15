@@ -3523,3 +3523,18 @@ Continue non-financial brief implementation; billing can be handled only after a
 
 - Input remains in the page and transfers only when the visitor clicks WhatsApp or email.
 - Production deployment and live desktop/mobile route checks are required before this behavior is considered public.
+
+
+## 2026-10-15 / Pass 186
+
+### Scope completed
+
+- Added JSON-LD `Article` and `BreadcrumbList` data for the MERAKKI case using the canonical public URL, real author/publisher names and the current publication date.
+- Added Open Graph site/locale metadata and Twitter Card title/description fields.
+- Made Open Graph and Twitter title/description/locale update with the RU/EN interface switch.
+- Extended the ecosystem smoke test to parse the embedded JSON-LD as JSON and assert article/breadcrumb types; the production desktop/mobile route matrix now requires the social metadata as well.
+
+### Verification boundary
+
+- Structured data describes this as a case/showcase, not a live restaurant checkout or a verified payment product.
+- No external tracking script, customer-data endpoint or third-party library was added.
