@@ -103,7 +103,6 @@ export default function LectureLibrary() {
       <div className="lecture-section-heading"><div><p className="lecture-eyebrow">OSA ORIGINAL / 001</p><h2 id="lecture-list-title">{t.lessons}</h2></div><p>{t.lessonsIntro}</p></div>
       <div className="lecture-list">
         {lessons.map((lesson, index) => {
-          const act = actCounts.find(item => item.n === String(lesson.act).padStart(2, '0'))!
           return <article className="lecture-row" key={lesson.id}>
             <span className="lecture-row-number">{String(index + 1).padStart(2, '0')}</span>
             <div className="lecture-row-copy"><span>{lesson.tag}</span><h3>{lesson.title}</h3><p>{lesson.body}</p><small>{lesson.takeaway}</small></div>
