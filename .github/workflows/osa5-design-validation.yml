@@ -2,7 +2,29 @@ name: OSA 5.0 design validation
 
 on:
   push:
-    branches: [feat/osa-5-brand-system]
+    branches: [feat/osa-5-brand-system, feat/osa-5-brand-system-sync]
+    paths:
+      - 'src/**'
+      - 'public/brand/**'
+      - 'public/games/index.html'
+      - 'public/games/favicon.svg'
+      - 'public/skillcred/index.html'
+      - 'public/entertainment/index.html'
+      - 'index.html'
+      - 'scripts/osa5-brand-smoke.mjs'
+      - '.github/workflows/osa5-design-validation.yml'
+  pull_request:
+    branches: [master]
+    paths:
+      - 'src/**'
+      - 'public/brand/**'
+      - 'public/games/index.html'
+      - 'public/games/favicon.svg'
+      - 'public/skillcred/index.html'
+      - 'public/entertainment/index.html'
+      - 'index.html'
+      - 'scripts/osa5-brand-smoke.mjs'
+      - '.github/workflows/osa5-design-validation.yml'
     paths:
       - 'src/**'
       - 'public/brand/**'
