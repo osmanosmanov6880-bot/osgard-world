@@ -3,6 +3,8 @@ import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 
 const html = readFileSync('public/development/merakki/index.html', 'utf8');
+const htmlEn = readFileSync('public/development/merakki/en/index.html', 'utf8');
+const htmlAr = readFileSync('public/development/merakki/ar/index.html', 'utf8');
 const css = readFileSync('src/merakki-case.css', 'utf8');
 let checks = 0;
 async function check(name, fn) {
@@ -141,5 +143,32 @@ await check('legacy clipboard fallback and honest failure reporting', async () =
   assert.ok(h.copyStatus.textContent.includes(translations.ru.briefCopySuccess));
   const bad=makeHarness({clipboard:false,legacyCopyWorks:false});runPage(bad);await submit(bad);await bad.copyButton.listeners.click[0]();
   assert.ok(bad.copyStatus.textContent.includes(translations.ru.briefCopyFallback));assert.ok(bad.previewText.focused);
+});
+
+await check('RU/EN/AR pages have their own canonicals and reciprocal hreflang', () => {
+  const cases = [
+    {locale:'ru', html, title:'MERAKKI GLOBAL — кейс OSGARD Development', url:'https://osgard.world/development/merakki/'},
+    {locale:'en', html:htmlEn, title:'MERAKKI GLOBAL — OSGARD Development case', url:'https://osgard.world/development/merakki/en/'},
+    {locale:'ar', html:htmlAr, title:'MERAKKI GLOBAL — دراسة حالة OSGARD Development', url:'https://osgard.world/development/merakki/ar/'}
+  ];
+  for (const item of cases) {
+    assert.ok(item.html.includes('<title>'+item.title+'</title>'), item.locale+' title mismatch');
+    assert.ok(item.html.includes('rel="canonical" href="'+item.url+'"'), item.locale+' canonical mismatch');
+    for (const locale of ['ru','en','ar']) assert.ok(item.html.includes('hreflang="'+locale+'"'), item.locale+' missing hreflang '+locale);
+    assert.ok(item.html.includes('id="project-brief"') && item.html.includes('id="brief-copy"'), item.locale+' lost brief controls');
+    const ld=item.html.match(/<script type="application\/ld\+json" id="case-structured-data">([\s\S]*?)<\/script>/);
+    assert.ok(ld,item.locale+' JSON-LD missing');
+    const graph=JSON.parse(ld[1])['@graph'];
+    assert.ok(graph.some(node=>node['@type']==='Article' && node.inLanguage===item.locale),item.locale+' structured-data language mismatch');
+  }
+});
+await check('Arabic case is RTL and localizes the brief before JavaScript', () => {
+  assert.ok(htmlAr.includes('<html lang="ar" dir="rtl" data-case-status="demo-only">'));
+  assert.ok(htmlAr.includes('واجهة متعددة اللغات'));
+  assert.ok(htmlAr.includes('.brief-preview-text{text-align:right;direction:rtl}'));
+});
+await check('English case renders useful text without requiring JavaScript', () => {
+  assert.ok(htmlEn.includes('A clear path from selection to an understandable order.'));
+  assert.ok(htmlEn.includes('Open public demo'));
 });
 console.log('MERAKKI case smoke passed: '+checks+' assertions.');

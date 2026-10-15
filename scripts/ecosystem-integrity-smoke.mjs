@@ -6,6 +6,8 @@ const app = read('src/App.tsx')
 const sections = read('src/Sections.tsx')
 const development = read('src/Development.tsx')
 const merakkiPage = read('public/development/merakki/index.html')
+const merakkiPageEn = read('public/development/merakki/en/index.html')
+const merakkiPageAr = read('public/development/merakki/ar/index.html')
 const manifest = read('src/core/manifest.ts')
 const games = read('public/games/index.html')
 const lifecycle = read('public/games/player-lifecycle.js')
@@ -13,7 +15,7 @@ const sitemap = read('public/sitemap.xml')
 const nginx = read('nginx.conf')
 const activation = read('scripts/activate-frontend-remote.sh')
 
-const promotionSources = { app, sections, development, merakkiPage }
+const promotionSources = { app, sections, development, merakkiPage, merakkiPageEn, merakkiPageAr }
 const unsupportedClaims = [
   '99.9%', '7 min', '7 мин', '360°', '360пїЅ', '+2 h', '+2 часа в день',
   '40% less chaos', 'Меньше хаоса на 40%', '2 min', '2 мин', '0.0%',
@@ -57,6 +59,12 @@ assert.ok(merakkiPage.includes('data-i18n-placeholder="briefContextPlaceholder"'
 assert.ok(!merakkiPage.includes('localStorage') && !merakkiPage.includes('fetch('), 'MERAKKI brief must not persist or submit visitor input')
 assert.ok(merakkiPage.includes('data-case-status="demo-only"'), 'MERAKKI case must declare demo-only status')
 assert.ok(sitemap.includes('https://osgard.world/development/merakki/'), 'Sitemap must include the MERAKKI case')
+
+assert.ok(merakkiPage.includes('hreflang="en"') && merakkiPage.includes('hreflang="ar"'), 'MERAKKI RU case must declare reciprocal EN and AR alternates')
+assert.ok(merakkiPageEn.includes('<html lang="en"') && merakkiPageEn.includes('rel="canonical" href="https://osgard.world/development/merakki/en/"'), 'MERAKKI English locale must have its own canonical')
+assert.ok(merakkiPageAr.includes('<html lang="ar" dir="rtl"') && merakkiPageAr.includes('rel="canonical" href="https://osgard.world/development/merakki/ar/"'), 'MERAKKI Arabic locale must have a distinct RTL canonical')
+assert.ok(merakkiPageEn.includes('id="brief-copy"') && merakkiPageAr.includes('id="brief-copy"'), 'MERAKKI locale variants must preserve the brief-copy flow')
+assert.ok(sitemap.includes('https://osgard.world/development/merakki/en/') && sitemap.includes('https://osgard.world/development/merakki/ar/'), 'Sitemap must include the MERAKKI EN and AR routes')
 
 for (const [path, source] of [['src/App.tsx', app], ['src/Development.tsx', development], ['public/games/index.html', games]]) {
   assert.ok(source.includes('osman.osmanov0099@gmail.com'), path + ' is missing contact email')

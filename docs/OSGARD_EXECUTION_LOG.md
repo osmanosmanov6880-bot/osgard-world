@@ -3549,3 +3549,15 @@ Continue non-financial brief implementation; billing can be handled only after a
 - Clipboard uses the secure Clipboard API where available, falls back to selection/copy and reports when manual copying is required.
 - No form submission endpoint was added: answers stay in the page until the visitor explicitly copies or opens WhatsApp/email.
 - Added qa:merakki-case, a smoke test that executes the actual inline page logic against a lightweight DOM harness and is wired into frontend validation and SSH deployment.
+
+
+## 2026-10-15 / Pass 188
+
+### MERAKKI international case routes — RU / EN / AR
+
+- Kept the Russian case at `/development/merakki/` and added static English and Arabic pages at `/development/merakki/en/` and `/development/merakki/ar/`.
+- Added reciprocal hreflang links, locale-specific canonicals, localized title/description/social metadata and locale-aware Article + BreadcrumbList JSON-LD.
+- Added a right-to-left Arabic page including RTL-aware header and brief-preview layout, plus crawlable language links.
+- Registered both routes in the sitemap and public desktop/mobile route matrix.
+- Expanded MERAKKI case QA and ecosystem integrity checks to protect localization, canonicals, structured data, brief controls and sitemap entries.
+- The case remains demo-only: answers stay client-side until explicit copy/email/WhatsApp use, and live restaurant checkout remains disabled.
