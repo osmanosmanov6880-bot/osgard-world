@@ -1,51 +1,43 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { OSAMark } from './OSAMark'
 
 type Props = { onComplete: () => void }
+const SEEN_KEY = 'osgard-preloader-seen-v3'
+function hasSeenIntro() {
+  try { return window.sessionStorage.getItem(SEEN_KEY) === '1' } catch { return false }
+}
 
 export function Preloader({ onComplete }: Props) {
+  const alreadySeen = useRef(hasSeenIntro()).current
   const [leaving, setLeaving] = useState(false)
-  const [muted, setMuted] = useState(true)
   const completed = useRef(false)
 
   const finish = useCallback(() => {
     if (completed.current) return
     completed.current = true
-    window.sessionStorage.setItem('osgard-preloader-seen-v2', '1')
+    try { window.sessionStorage.setItem(SEEN_KEY, '1') } catch { /* private browsing can disable storage */ }
     setLeaving(true)
-    window.setTimeout(onComplete, 520)
+    window.setTimeout(onComplete, 260)
   }, [onComplete])
 
   useEffect(() => {
-    if (window.location.pathname === '/miniapp') {
+    if (alreadySeen || window.location.pathname === '/miniapp') {
       onComplete()
       return
     }
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    const timer = window.setTimeout(finish, reduced ? 700 : 5000)
+    const timer = window.setTimeout(finish, reduced ? 80 : 910)
     return () => window.clearTimeout(timer)
-  }, [finish, onComplete])
+  }, [alreadySeen, finish, onComplete])
 
-  return (
-    <div className={`access-preloader${leaving ? ' is-leaving' : ''}`} role="dialog" aria-modal="true" aria-label="OSGARD access">
-      <div className="access-atmosphere" aria-hidden="true" />
-      <div className="access-seal" aria-hidden="true">
-        <span className="access-ring access-ring-outer" />
-        <span className="access-ring access-ring-inner" />
-        <span className="celestial-emblem"><i /><b /><em /></span>
-        <span className="celestial-wordmark">OSGARD</span>
-        <span className="celestial-submark"><i />WORLD<i /></span>
-      </div>
-      <div className="access-caption" aria-live="polite">
-        <span>ENTER THE CONSTELLATION</span>
-        <i />
-        <b>2026 / OSGARD WORLD</b>
-      </div>
-      <div className="access-controls">
-        <button type="button" onClick={finish}>Skip</button>
-        <button type="button" onClick={() => setMuted(value => !value)} aria-pressed={muted}>
-          {muted ? 'Sound off' : 'Sound on'}
-        </button>
-      </div>
+  if (alreadySeen) return null
+
+  return <div className={'access-preloader osa5-intro' + (leaving ? ' is-leaving' : '')} role="dialog" aria-modal="true" aria-label="OSGARD WORLD · OSA 5.0">
+    <div className="osa5-intro-light" aria-hidden="true" />
+    <div className="osa5-intro-lockup">
+      <OSAMark variant="lockup" className="osa5-intro-mark" />
+      <p>OSGARD WORLD <span>·</span> ONE CONNECTED ECOSYSTEM</p>
     </div>
-  )
+    <div className="osa5-intro-controls"><button type="button" onClick={finish}>Пропустить <span aria-hidden="true">↗</span></button></div>
+  </div>
 }
