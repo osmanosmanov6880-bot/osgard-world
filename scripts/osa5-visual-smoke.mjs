@@ -144,12 +144,13 @@ try {
     if (await rows.count() !== 8) problems.push('lectures search: expected eight lesson rows before filtering')
 
     const search = lecturePage.locator('.lecture-search input')
-    await search.fill('privacy')
-    const privacyRows = await rows.count()
-    const privacyTexts = await rows.locator('.lecture-row-copy').allTextContents()
-    if (privacyRows === 0 || privacyRows >= 8 || privacyTexts.some(text => !text.toLocaleLowerCase().includes('privacy'))) {
+    await search.fill('первоисточник')
+    const sourceRows = await rows.count()
+    const sourceTexts = await rows.locator('.lecture-row-copy').allTextContents()
+    if (sourceRows === 0 || sourceRows >= 8 || sourceTexts.some(text => !text.toLocaleLowerCase().includes('первоисточник'))) {
       problems.push('lectures search: keyword search did not restrict rows to matching lesson content')
     }
+    await lecturePage.getByRole('button', { name: 'Очистить поиск' }).click()
 
     await lecturePage.getByRole('button', { name: 'Все акты' }).click()
     if (await lecturePage.getByRole('button', { name: 'Все акты' }).getAttribute('aria-pressed') !== 'true') {
