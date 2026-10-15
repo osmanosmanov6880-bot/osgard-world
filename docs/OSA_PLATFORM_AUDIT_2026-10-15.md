@@ -110,6 +110,11 @@ Files in the lesson-page implementation slice:
 This step expands the **reading/practice version** of the course; it does not claim that full recorded video lectures or narrated versions are ready.
 
 
+
+### Lesson content expansion
+
+The eight bilingual lesson detail pages now include three sequential teaching blocks per lesson, each with practical checkpoints, followed by three key takeaways. The source is `src/osaLessonReading.ts`; `src/OSALessonPage.tsx` renders it ahead of the existing practical example, glossary, self-check, exercise and sources. These are authored reading materials, not a claim that full recorded video or narrated audio is available.
+
 ### Catalogue navigation update
 
 The OSA lecture catalogue now includes a bilingual search across scene title, tag, summary and key takeaway, plus accessible filters for Acts I–III and an explicit empty-results state. Filtering keeps each lesson's original scene index, so opening a filtered row still navigates to the correct detailed lesson and interactive scene. Responsive styles and a browser interaction contract cover keyword search, selected filter state, empty results and restoring the full catalogue.
