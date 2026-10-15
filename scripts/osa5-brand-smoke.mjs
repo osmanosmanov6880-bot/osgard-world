@@ -32,6 +32,8 @@ assert.ok(html.includes('/brand/osa-5-mark.svg') && html.includes('/brand/osa-tr
 assert.ok(skill.includes('class="ecosystem-backlink"') && skill.includes('/brand/osa-transition.js'), 'SkillCred must retain its identity and expose an ecosystem return')
 assert.ok(games.includes('/brand/osa-5-mark.svg') && games.includes('/brand/osa-transition.js'), 'Game hub must use the common mark and transition')
 assert.ok(entertainment.includes('osa5-legacy-brand') && entertainment.includes('/brand/osa-transition.js'), 'Legacy entertainment must remain linked without replacing the catalog')
+assert.ok(skill.includes('/brand/osa5-portals.css') && games.includes('/brand/osa5-portals.css') && entertainment.includes('/brand/osa5-portals.css'), 'Every standalone portal must load the shared static brand stylesheet')
+assert.ok(portalStyles.includes('.ecosystem-backlink:focus-visible') && portalStyles.includes('prefers-reduced-motion'), 'Static brand links need keyboard focus and reduced-motion support')
 assert.ok(cinema.includes("import { OSAMark } from './OSAMark'") && cinema.includes("className='cinema-osa-mark'"), 'OSA Original must use the common mark')
 assert.ok(main.includes("import './osa5-brand.css'"), 'Shared design system must load after existing styles')
 assert.ok(main.includes("if (path === '/') return <><Seo path=\"/\" /><OSAIntelligenceHome /></>"), 'OSA Intelligence root route must remain unchanged')
