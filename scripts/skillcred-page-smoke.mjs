@@ -137,7 +137,7 @@ for (const file of files) {
      assert.ok(js.indexOf('await wait(Math.max(0,(reduced?0:1850)-(performance.now()-started)))') < js.indexOf('await renderCredential(issued)'), file + ': update the credential only after the first-paint scene')
      assert.ok(js.includes('function sectionMotionSetup()') && js.includes('section.classList.toggle(pair[1],entry.isIntersecting)'), file + ': off-screen trace animations must remain idle')
      assert.ok(!js.includes('window.setTimeout(loadHeroArtifact,1800)'), file + ': automatic API startup must not use a fixed 1.8s delay')
-      assert.ok(js.includes('window.matchMedia&&window.matchMedia("(max-width:600px)").matches') && js.includes('window.requestIdleCallback(loadHeroArtifact,{timeout:700})'), file + ': mobile hero API startup must wait until after the first-screen render and then use an idle callback')
+      assert.ok(js.includes('window.matchMedia&&window.matchMedia("(max-width:600px)").matches') && js.includes('window.requestIdleCallback(begin,{timeout:700})') && js.includes('heroStartScheduled') && js.includes('!heroStartScheduled)scheduleHeroArtifact()'), file + ': mobile hero API startup must wait until after the first-screen render and then use an idle callback')
      assert.ok(js.includes('reduced?0:1850'), file + ': reduced-motion must skip the hero scene wait')
    }
   console.log('PASS ' + file + ': semantic page, local assets, same-origin API and JS syntax')
