@@ -2,7 +2,16 @@ name: OSA Learning quality gates
 on:
   push:
     branches:
-      - 'audit/osa-learning-2026-10-16'
+      - master
+    paths:
+      - 'src/osa*'
+      - 'src/OSA*'
+      - 'src/LectureLibrary.tsx'
+      - 'scripts/osa-*'
+      - 'docs/OSA-*'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/osa-learning-quality.yml'
   pull_request:
     paths:
       - 'src/osa*'
