@@ -33,8 +33,11 @@ export const OSA_LEARNING_TRACKS: OSALearningTrack[] = [
 ]
 
 export function getOSATrackProgress(track: OSALearningTrack, completed: readonly string[]) {
-  const done = track.lessonSlugs.filter(slug => completed.includes(slug)).length
-  return { completed: done, total: track.lessonSlugs.length, percent: track.lessonSlugs.length ? Math.round(done / track.lessonSlugs.length * 100) : 0 }
+  const valid = new Set<string>(OSA_LESSON_SLUGS)
+  const lessons = [...new Set(track.lessonSlugs.filter(slug => valid.has(slug)))]
+  const completedSet = new Set(completed)
+  const done = lessons.filter(slug => completedSet.has(slug)).length
+  return { completed: done, total: lessons.length, percent: lessons.length ? Math.round(done / lessons.length * 100) : 0 }
 }
 
 export function getOSANextLesson(completed: readonly string[]): string | null {
