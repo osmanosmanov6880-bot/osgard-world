@@ -61,6 +61,8 @@ jobs:
         run: npm ci
       - name: Validate the Godot Web export contract
         run: npm run qa:null-shift-godot
+      - name: Verify unified OSA learning progress persistence
+        run: npm run qa:osa-progress
       - name: Install official Godot 4.7.2 engine and web templates
         run: |
           set -euo pipefail

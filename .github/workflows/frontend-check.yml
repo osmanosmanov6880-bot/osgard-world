@@ -84,6 +84,8 @@ jobs:
         run: npm run qa:academy
       - name: Verify the OSA media-player contract
         run: npm run qa:osa-media
+      - name: Verify unified OSA learning progress persistence
+        run: npm run qa:osa-progress
       - name: Verify the searchable lesson catalogue
         run: npm run qa:lectures
       - name: Validate static archive and HTML

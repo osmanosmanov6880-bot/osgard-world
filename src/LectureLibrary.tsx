@@ -3,8 +3,7 @@ import { ArrowLeft, ArrowRight, ArrowUpRight, BookOpen, CheckCircle2, Clapperboa
 import { getOSACinemaLessons, type OSACinemaLocale } from './OSACinema'
 import { OsgardLogo } from './OsgardLogo'
 import { OSA_LESSON_SLUGS } from './osaLessonGuides'
-
-const LESSON_PROGRESS_KEY = 'osgard-osa-lesson-completion-v1'
+import { getOSALearningProgress, subscribeOSALearningProgress } from './osaProgress'
 import './lectureLibrary.css'
 
 const actCopy = {
@@ -53,6 +52,7 @@ const copy = {
     lessonLabel: 'ИНТЕРАКТИВНАЯ ЛЕКЦИЯ',
     videoLabel: 'ВИДЕО НЕ ОПУБЛИКОВАНО',
     source: 'Источник программы: репозиторий OSA Intelligence',
+    lastOpened: 'ПОСЛЕДНИЙ ОТКРЫТЫЙ УРОК', resumeLast: 'Продолжить урок',
     note: 'Интерактивная программа доступна сейчас. Это не утверждение, что видеоверсия уже создана.',
   },
   en: {
@@ -87,6 +87,7 @@ const copy = {
     lessonLabel: 'INTERACTIVE LECTURE',
     videoLabel: 'VIDEO NOT PUBLISHED',
     source: 'Curriculum source: OSA Intelligence repository',
+    lastOpened: 'LAST OPENED LESSON', resumeLast: 'Resume lesson',
     note: 'The interactive curriculum is available now. This does not claim that a video version already exists.',
   },
 } as const
@@ -94,6 +95,7 @@ const copy = {
 export default function LectureLibrary() {
   const [locale, setLocale] = useState<OSACinemaLocale>('ru')
   const [completedLessons, setCompletedLessons] = useState<string[]>([])
+  const [lastLessonSlug, setLastLessonSlug] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [activeAct, setActiveAct] = useState<number | null>(null)
   const t = copy[locale]
@@ -105,20 +107,22 @@ export default function LectureLibrary() {
   useEffect(() => {
     const refreshProgress = () => {
       try {
-        const stored: unknown = JSON.parse(localStorage.getItem(LESSON_PROGRESS_KEY) || '[]')
-        setCompletedLessons(Array.isArray(stored) ? [...new Set(stored.filter((item): item is string => typeof item === 'string' && (OSA_LESSON_SLUGS as readonly string[]).includes(item)))] : [])
+        const progress = getOSALearningProgress()
+        setCompletedLessons(progress.lessonCompletions)
+        setLastLessonSlug(progress.lastLessonSlug)
       } catch {
         setCompletedLessons([])
       }
     }
     refreshProgress()
-    window.addEventListener('focus', refreshProgress)
-    window.addEventListener('storage', refreshProgress)
+    const unsubscribeOSAProgress = subscribeOSALearningProgress(refreshProgress)
     return () => {
-      window.removeEventListener('focus', refreshProgress)
-      window.removeEventListener('storage', refreshProgress)
+      unsubscribeOSAProgress()
     }
   }, [])
+
+  const lastLessonIndex = lastLessonSlug ? (OSA_LESSON_SLUGS as readonly string[]).indexOf(lastLessonSlug) : -1
+  const lastOpenedLesson = lastLessonIndex >= 0 ? lessons[lastLessonIndex] : null
 
   return <main className="lecture-library">
     <header className="lecture-header">
@@ -136,6 +140,11 @@ export default function LectureLibrary() {
       <div className="lecture-hero-meta"><span><BookOpen size={16} /> {lessons.length} {t.count}</span><span><CheckCircle2 size={16} /> {completedLessons.length} {t.completedCount}</span><span><Clapperboard size={16} /> {t.videoStatus}</span></div>
       <a className="lecture-primary" href={`/lectures/${OSA_LESSON_SLUGS[0]}`}><CirclePlay size={17} />{t.start}<ArrowUpRight size={16} /></a>
     </section>
+
+    {lastOpenedLesson && lastLessonSlug && <section className="lecture-resume" aria-label={t.lastOpened}>
+      <div><p className="lecture-eyebrow">{t.lastOpened}</p><h2>{lastOpenedLesson.title}</h2><p>{lastOpenedLesson.takeaway}</p></div>
+      <a href={'/lectures/' + lastLessonSlug}>{t.resumeLast}<ArrowRight size={16} /></a>
+    </section>}
 
     <section className="lecture-section" aria-labelledby="lecture-acts-title">
       <div className="lecture-section-heading"><div><p className="lecture-eyebrow">{t.order}</p><h2 id="lecture-acts-title">{t.acts}</h2></div><p>{t.source}</p></div>
