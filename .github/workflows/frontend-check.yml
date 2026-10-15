@@ -12,6 +12,8 @@ on:
       - "scripts/osa-intelligence-case-smoke.mjs"
       - "public/development/merakki/**"
       - "public/development/essentia/**"
+      - "cloudflare/essentia/**"
+      - "scripts/essentia-cloudflare-smoke.mjs"
       - "scripts/essentia-case-smoke.mjs"
       - "scripts/merakki-case-smoke.mjs"
       - "scripts/skillcred-page-smoke.mjs"
@@ -60,6 +62,8 @@ jobs:
         run: node scripts/development-index-smoke.mjs
       - name: Validate ESSENTIA commerce showcase
         run: npm run qa:essentia
+      - name: Validate ESSENTIA Cloudflare Pages bundle
+        run: npm run qa:essentia-cloudflare
       - name: Validate OSA Global Intelligence case
         run: npm run qa:osa-intelligence-case
       - name: Build the production site

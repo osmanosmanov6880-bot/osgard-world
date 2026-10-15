@@ -37,7 +37,8 @@
     "qa:auto-style-case": "node scripts/auto-style-case-smoke.mjs",
     "qa:osa-intelligence-case": "node scripts/osa-intelligence-case-smoke.mjs",
     "qa:textura-case": "node scripts/textura-case-smoke.mjs",
-    "qa:essentia": "node scripts/essentia-case-smoke.mjs"
+    "qa:essentia": "node scripts/essentia-case-smoke.mjs",
+    "qa:essentia-cloudflare": "node scripts/essentia-cloudflare-smoke.mjs"
   },
   "dependencies": {
     "@types/three": "^0.186.0",
