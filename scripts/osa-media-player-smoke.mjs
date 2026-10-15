@@ -19,6 +19,7 @@ assert.equal(isPermanentMediaUrl('https://cdn.example.org/lesson.mp3?_jwt=tempor
 assert.equal(isPermanentMediaUrl('https://cdn.example.org/lesson.mp3?token=temporary'), false, 'temporary token URLs must be rejected')
 assert.equal(isPermanentMediaUrl('/media/lesson.mp3?X-Amz-Signature=temporary'), false, 'signed object-storage URLs must be rejected')
 assert.equal(isPermanentMediaUrl(null), false, 'missing media is not playable')
+assert.equal(isPermanentMediaUrl('https://cdn.example.org/lesson.mp3#token'), false, 'external URL fragments are rejected')
 assert.equal(isPermanentMediaUrl(' /osa-media/lesson.mp3'), false, 'leading whitespace must be rejected')
 assert.equal(isPermanentMediaUrl('/osa-media/lesson.mp3 '), false, 'trailing whitespace must be rejected')
 assert.equal(isPermanentMediaUrl('/osa-media/lesson.mp3' + String.fromCharCode(10)), false, 'newlines must be rejected')
