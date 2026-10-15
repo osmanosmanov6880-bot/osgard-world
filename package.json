@@ -40,6 +40,7 @@
     "qa:essentia": "node scripts/essentia-case-smoke.mjs",
     "qa:essentia-cloudflare": "node scripts/essentia-cloudflare-smoke.mjs",
     "qa:cloudflare-pages": "node scripts/cloudflare-pages-preflight.mjs dist",
+    "qa:osa6-learning": "node scripts/osa6-learning-smoke.mjs",
     "qa:osa-media": "node --experimental-strip-types scripts/osa-media-player-smoke.mjs",
     "qa:osa-media-availability": "node scripts/osa-media-availability-smoke.mjs",
     "qa:osa-progress": "node scripts/osa-progress-store-smoke.mjs",
