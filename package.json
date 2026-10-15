@@ -31,7 +31,8 @@
     "qa:deploy-workflow": "node scripts/deploy-workflow-smoke.mjs",
     "qa:elbrus-case": "node scripts/elbrus-case-smoke.mjs",
     "qa:merakki-case": "node scripts/merakki-case-smoke.mjs",
-    "qa:phantom-case": "node scripts/phantom-case-smoke.mjs"
+    "qa:phantom-case": "node scripts/phantom-case-smoke.mjs",
+    "qa:auto-style-case": "node scripts/auto-style-case-smoke.mjs"
   },
   "dependencies": {
     "@types/three": "^0.186.0",
