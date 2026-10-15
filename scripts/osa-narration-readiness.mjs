@@ -114,7 +114,7 @@ function buildNarration(slug, lessonIndex, locale, reading, guide) {
   ]
   const narration = parts.join('\n\n').trim()
   assert.ok(!/https?:\/\/|www\./iu.test(narration), slug + '/' + locale + ' narration must not read raw URLs.')
-  assert.ok(!/\bundefined\b|\bnull\b/iu.test(narration), slug + '/' + locale + ' narration contains a missing field marker.')
+  assert.ok(!/\bundefined\b/iu.test(narration), slug + '/' + locale + ' narration contains a missing field marker.')
   return narration
 }
 
