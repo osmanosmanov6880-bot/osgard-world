@@ -166,6 +166,7 @@ for (const locale of LOCALES) {
       title: reading.sections[0].heading,
       narrationCharacters: Array.from(narration).length,
       scriptSha256: sha256(narration),
+      narrationText: narration,
       segmentCount: segments.length,
       segmentCharacterCounts: segmentRecords.map(segment => segment.characters),
       segments: segmentRecords,
@@ -210,6 +211,32 @@ const serialized = JSON.stringify(manifest)
 assert.equal(records.length, 16, 'There must be one narration plan per lesson and language.')
 assert.ok(records.every(record => record.estimatedCredits > 0 && record.segments.length > 0), 'Every narration must have a positive, segmented plan.')
 assert.ok(!/cloudfront\.net|_jwt=|signed_url/i.test(serialized), 'Narration plan must not contain temporary media URLs.')
+if (process.argv.includes('--emit-manuscripts')) {
+  const output = {
+    schemaVersion: 1,
+    sourceOfTruth: manifest.sourceOfTruth,
+    totalScripts: manifest.totalScripts,
+    totals: manifest.totals,
+    byLocale,
+    scripts: records.map(record => ({
+      slug: record.slug,
+      locale: record.locale,
+      sequence: record.sequence,
+      title: record.title,
+      path: 'docs/osa-narration/' + record.locale + '/' + record.slug + '.txt',
+      characters: record.narrationCharacters,
+      sha256: record.scriptSha256,
+      segmentCount: record.segmentCount,
+      segmentCharacterCounts: record.segmentCharacterCounts,
+      estimatedCredits: record.estimatedCredits,
+      status: record.status,
+      text: record.narrationText,
+    })),
+  }
+  console.log('OSA_NARRATION_MANUSCRIPT_PAYLOAD_BEGIN')
+  console.log(JSON.stringify(output, null, 2))
+  console.log('OSA_NARRATION_MANUSCRIPT_PAYLOAD_END')
+} else {
 console.log(JSON.stringify({
   status: 'narration-plan-valid-audio-not-generated',
   lessonsPerLocale: manifest.lessonsPerLocale,
@@ -219,3 +246,5 @@ console.log(JSON.stringify({
   records: records.map(({slug,locale,title,narrationCharacters,segmentCount,estimatedCredits,status})=>({slug,locale,title,narrationCharacters,segmentCount,estimatedCredits,status})),
   blockers: manifest.releaseGate,
 }, null, 2))
+
+}
