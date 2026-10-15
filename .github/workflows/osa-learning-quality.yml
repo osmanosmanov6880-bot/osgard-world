@@ -1,5 +1,8 @@
 name: OSA Learning quality gates
 on:
+  push:
+    branches:
+      - 'audit/osa-learning-2026-10-16'
   pull_request:
     paths:
       - 'src/osa*'
