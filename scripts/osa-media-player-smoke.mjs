@@ -4,6 +4,7 @@ import { isPermanentMediaUrl } from '../src/osaMediaUrl.ts'
 
 const player = readFileSync('src/OSAMediaPlayer.tsx', 'utf8')
 const catalog = readFileSync('src/osaMediaCatalog.ts', 'utf8')
+const lessonGuides = readFileSync('src/osaLessonGuides.ts', 'utf8')
 const lessonPage = readFileSync('src/OSALessonPage.tsx', 'utf8')
 const cinema = readFileSync('src/OSACinema.tsx', 'utf8')
 const packageJson = JSON.parse(readFileSync('package.json', 'utf8'))
@@ -28,9 +29,10 @@ for (const slug of [
   'privacy-before-prompting',
   'human-in-the-loop',
   'investigate-the-future',
-]) assert.ok(catalog.includes(slug), 'media catalog should cover ' + slug)
+]) assert.ok(lessonGuides.includes(slug), 'canonical lesson source should include ' + slug)
 
 assert.ok(catalog.includes('src: null'), 'media must remain unpublished until a durable source is assigned')
+assert.ok(catalog.includes('OSA_LESSON_SLUGS.map(slug => [slug, createPendingLesson(slug)]'), 'media catalogue must derive from the canonical lesson registry')
 assert.ok(!/https:\/\/[^\s"'<>]+(?:_jwt=|token=|signature=)/i.test(catalog), 'temporary signed delivery URLs must never be committed')
 assert.ok(player.includes('playbackRate') && player.includes('[0.75, 1, 1.25, 1.5, 1.75, 2]'), 'player should apply the selected playback speeds')
 assert.ok(player.includes('localStorage') && player.includes('loadedmetadata'), 'player must restore the prior playback position when metadata loads')
