@@ -1,0 +1,107 @@
+name: OSA 5.0 design validation
+
+on:
+  push:
+    branches: [feat/osa-5-brand-system, feat/osa-5-brand-system-sync, feat/osa-5-brand-system-sync2]
+    paths:
+      - 'src/**'
+      - 'public/brand/**'
+      - 'public/tedes/**'
+      - 'public/development/**'
+      - 'public/games/index.html'
+      - 'public/games/favicon.svg'
+      - 'public/skillcred/index.html'
+      - 'public/entertainment/**'
+      - 'scripts/elbrus-case-smoke.mjs'
+      - 'scripts/tedes-case-smoke.mjs'
+      - 'scripts/merakki-case-smoke.mjs'
+      - 'index.html'
+      - 'scripts/osa5-brand-smoke.mjs'
+      - 'scripts/osa-transition-behavior-smoke.mjs'
+      - 'scripts/osa5-visual-smoke.mjs'
+      - '.github/workflows/osa5-design-validation.yml'
+  pull_request:
+    branches: [master]
+    paths:
+      - 'src/**'
+      - 'public/brand/**'
+      - 'public/tedes/**'
+      - 'public/development/**'
+      - 'public/games/index.html'
+      - 'public/games/favicon.svg'
+      - 'public/skillcred/index.html'
+      - 'public/entertainment/**'
+      - 'scripts/elbrus-case-smoke.mjs'
+      - 'scripts/tedes-case-smoke.mjs'
+      - 'scripts/merakki-case-smoke.mjs'
+      - 'index.html'
+      - 'scripts/osa5-brand-smoke.mjs'
+      - 'scripts/osa-transition-behavior-smoke.mjs'
+      - 'scripts/osa5-visual-smoke.mjs'
+      - '.github/workflows/osa5-design-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: osa5-design-validation-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Validate the OSA 5.0 identity and route contracts
+        run: node scripts/osa5-brand-smoke.mjs
+      - name: Exercise the actual navigation guard behavior
+        run: node scripts/osa-transition-behavior-smoke.mjs
+      - name: Check TypeScript
+        run: npm run check
+      - name: Build production bundle without deploying
+        run: npm run build
+      - name: Verify Academy, course routes and SEO
+        run: npm run qa:academy
+      - name: Verify existing product links, claims and privacy boundaries
+        run: npm run qa:ecosystem
+      - name: Verify MERAKKI brief preview, clipboard and privacy boundaries
+        run: npm run qa:merakki-case
+      - name: Verify games hub and gameplay contracts
+        run: npm run qa:games-portal
+      - name: Verify the existing TEDES flagship case
+        run: node scripts/tedes-case-smoke.mjs
+      - name: Verify the current Elbrus entertainment case
+        run: npm run qa:elbrus-case
+      - name: Verify SkillCred static app and same-origin API contract
+        run: npm run qa:skillcred
+      - name: Verify deployment workflow safeguards
+        run: npm run qa:deploy-workflow
+      - name: Install isolated Playwright Chromium for responsive QA
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Capture desktop, tablet and mobile preview screens
+        run: |
+          npm run preview -- --host 127.0.0.1 --port 4173 > /tmp/osa5-preview.log 2>&1 &
+          echo $! > /tmp/osa5-preview.pid
+          for attempt in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:4173/ >/dev/null; then break; fi
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:4173/ >/dev/null || { cat /tmp/osa5-preview.log; exit 1; }
+          node scripts/osa5-visual-smoke.mjs
+      - name: Upload responsive visual QA screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: osa5-responsive-visual-qa
+          path: artifacts/osa5-responsive/
+          if-no-files-found: warn
+          retention-days: 7

@@ -140,11 +140,21 @@ for (const [filename, page] of [['catalog', catalog], ['product', product], ['pr
 for (const route of ['/tedes/catalog/','/tedes/collections/','/tedes/product/','/tedes/materials/','/tedes/project/']) assert.ok(routeMatrix.includes(route), 'Production route matrix missing ' + route)
 
 let scriptCount = 0
-for (const match of demo.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)) {
+let reviewedBridgeCount = 0
+for (const match of demo.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)) {
+  const attrs = match[1]
+  const source = attrs.match(/\bsrc=["']([^"']+)["']/i)?.[1]
+  if (source) {
+    assert.equal(source, '/brand/osa-transition.js', 'TEDES may load only the reviewed same-origin OSA transition bridge')
+    assert.ok(read('public/brand/osa-transition.js').includes('osa5-transition-overlay'), 'Reviewed OSA transition bridge asset is missing')
+    reviewedBridgeCount++
+    continue
+  }
   scriptCount++
-  new vm.Script(match[1], { filename: demoPath })
+  new vm.Script(match[2], { filename: demoPath })
 }
-assert.equal(scriptCount, 1, 'Expected exactly one inline demo script and no unreviewed external scripts')
+assert.equal(scriptCount, 1, 'TEDES demo must keep exactly one syntax-checked inline script')
+assert.equal(reviewedBridgeCount, 1, 'TEDES may load exactly one reviewed external bridge script')
 for (const route of ['/tedes/', '/tedes/project/', '/tedes/print/', '/development/tedes/']) {
   assert.ok(routeMatrix.includes(route), `Production route matrix missing ${route}`)
 }
