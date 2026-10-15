@@ -21,6 +21,9 @@ const pkg = JSON.parse(read("package.json"));
 
 assert.ok(hub.includes('href="/entertainment/elbrus/"'), "Entertainment hub must link to the ELBRUS case");
 assert.ok(hub.includes("case-shelf") && hub.includes("SELECTED DIGITAL EXPERIENCE"), "Entertainment hub must expose the selected digital experiences shelf");
+assert.equal((hub.match(/class="case-shelf"/g) || []).length, 1, "Entertainment hub must contain exactly one ELBRUS case shelf");
+assert.equal((hub.match(/Selected digital experience — ELBRUS case/g) || []).length, 1, "ELBRUS shelf CSS must not be duplicated");
+assert.equal((hub.match(/href="\\/entertainment\\/elbrus\\/"/g) || []).length, 1, "ELBRUS case card must occur once");
 assert.ok(page.includes("<title>ELBRUS — Hospitality Experience | OSGARD WORLD</title>"), "ELBRUS case title missing");
 assert.ok(page.includes('rel="canonical" href="https://osgard.world/entertainment/elbrus/"'), "Canonical URL missing");
 assert.ok(page.includes('data-lang="en"') && page.includes('data-lang="ru"'), "RU/EN language control missing");
