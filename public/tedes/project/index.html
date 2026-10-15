@@ -13,6 +13,16 @@
 @media(max-width:800px){.hero{grid-template-columns:1fr;gap:20px}.quote{grid-template-columns:1fr}.section-head{align-items:start;flex-direction:column}}
 @media(max-width:560px){.wrap{width:calc(100% - 32px)}.top{height:66px}.nav{gap:11px;font-size:8px}.nav a:nth-child(3),.nav a:nth-child(5){display:none}.brand{font-size:9px;gap:8px}.mark{width:26px;height:26px}.brand small{font-size:7px}.hero{padding:36px 0 25px}.hero h1{font-size:53px}.status-card{padding:16px}.section{padding:27px 0 40px}.section-head h2{font-size:36px}.toolbar .btn{flex:1 1 calc(50% - 8px)}.quote{padding:17px}.fields{grid-template-columns:1fr}.full{grid-column:auto}.footer{flex-direction:column}.footer-links{gap:11px}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*:before,*:after{transition:none!important}}
+
+.workspace-dialog{width:min(680px,calc(100% - 28px));max-height:min(88vh,880px);overflow:auto;padding:clamp(18px,3.3vw,30px);border:1px solid #655239;background:#11100c;color:var(--ink);box-shadow:0 24px 90px #000c}
+.workspace-dialog::backdrop{background:rgba(5,5,4,.78);backdrop-filter:blur(3px)}
+.dialog-head{margin-bottom:22px}.dialog-head h2{font:400 clamp(30px,5vw,45px)/.95 "Cormorant Garamond",Georgia,serif;margin:0}.dialog-head>p:last-child{color:var(--muted);font-size:11px;line-height:1.8;margin:12px 0 0}
+.editor-fields{display:grid;grid-template-columns:1fr 1fr;gap:12px}.editor-fields .field{min-width:0}.editor-fields input,.editor-fields select{width:100%;height:42px;min-width:0;border:1px solid #4a3d2a;background:#0c0c09;color:var(--ink);padding:0 10px;font-size:11px}
+.dialog-warning{border:1px solid #594a32;background:rgba(157,120,58,.08);padding:12px;color:#c9b88f;font-size:10px;line-height:1.8;margin:18px 0}
+.dialog-actions,.import-options{display:flex;gap:8px;flex-wrap:wrap;margin-top:20px}.dialog-actions{justify-content:flex-end}.row-edit-fields{display:flex;gap:5px}.icon-btn.edit{width:auto;padding:0 9px;font-size:9px}
+@media(max-width:560px){.editor-fields{grid-template-columns:1fr}.dialog-actions,.import-options{flex-direction:column}.dialog-actions .btn,.import-options .btn{width:100%}}
+@media(prefers-reduced-motion:reduce){.workspace-dialog::backdrop{backdrop-filter:none}}
+
 @media print{body{background:#fff;color:#171610}.top,.hero,.toolbar,.section-head .screen-note,.quote,.footer,.notice,.empty .btn{display:none!important}.wrap{width:100%;margin:0}.section{border:0;padding:0}.section-head{display:block;margin:0 0 12px}.section-head h2{font-size:27px;color:#171610}table{min-width:0}th,td{color:#171610;border-color:#ddd;padding:7px 5px;font-size:9px}.table-wrap{border:0;background:#fff}.zone-meta{color:#555}.finish-chip{border:1px solid #777}.no-print{display:none!important}}
 </style></head><body>
 <header class="wrap top"><a class="brand" href="/tedes/" aria-label="TEDES Studio"><span class="mark">T</span><span>TEDES<small>PROJECT WORKSPACE / DEMO</small></span></a><nav class="nav" aria-label="Главная навигация"><a href="/tedes/collections/">КОЛЛЕКЦИИ</a><a href="/tedes/catalog/">КАТАЛОГ</a><a href="/tedes/materials/">МАТЕРИАЛЫ</a><a href="/tedes/">СТУДИЯ</a><a href="/development/tedes/">КЕЙС OSGARD ↗</a></nav></header>
@@ -21,7 +31,7 @@
 <div class="status-card"><span class="status-label">CURRENT WORKSPACE</span><div class="status-main" id="projectCount">0 позиций</div><div class="status-details" id="projectSummary">Проект загружается из локального хранилища.</div><div class="status-line" id="storageStatus" role="status" aria-live="polite">Локальное хранилище</div></div></section>
 <section class="wrap section"><div class="section-head"><div><p class="kicker">01 / PROJECT SCHEDULE</p><h2>Состав проекта</h2></div><p>Название и состав синхронизируются с TEDES Studio на этом устройстве. Для переноса проекта на другой компьютер используйте JSON-экспорт.</p></div>
 <label class="field" for="projectName"><span class="kicker">PROJECT NAME</span><input class="project-name" id="projectName" maxlength="80" value="Residence / North Wing" autocomplete="off"></label>
-<div class="toolbar no-print"><a class="btn primary" href="/tedes/catalog/">Добавить позицию из каталога ↗</a><a class="btn" href="/tedes/#studio">Открыть конфигуратор ↗</a><button class="btn" type="button" id="exportJson">Экспорт JSON ↓</button><button class="btn" type="button" id="exportCsv">Экспорт CSV ↓</button><a class="btn" href="/tedes/print/">Печать / PDF ↗</a><button class="btn danger" type="button" id="clearProject">Очистить проект</button></div>
+<div class="toolbar no-print"><a class="btn primary" href="/tedes/catalog/">Добавить позицию из каталога ↗</a><a class="btn" href="/tedes/#studio">Открыть конфигуратор ↗</a><button class="btn" type="button" id="importJson">Импорт JSON ↑</button><input id="importFile" type="file" accept=".json,application/json" hidden><button class="btn" type="button" id="exportJson">Экспорт JSON ↓</button><button class="btn" type="button" id="exportCsv">Экспорт CSV ↓</button><a class="btn" href="/tedes/print/">Печать / PDF ↗</a><button class="btn danger" type="button" id="clearProject">Очистить проект</button></div>
 <div class="table-wrap" id="tableWrap"><table><thead><tr><th>Позиция / артикул</th><th>Коллекция</th><th>Отделка</th><th>Ручка / замок</th><th>Размер, мм</th><th class="no-print">Управление</th></tr></thead><tbody id="positionRows"></tbody></table></div>
 <div class="empty" id="emptyState" hidden><h3>Пока нет позиций.</h3><p>Начните с демонстрационного каталога или откройте студию, чтобы собрать ведомость. Выбранные позиции появятся здесь автоматически.</p><a class="btn primary" href="/tedes/catalog/">Исследовать каталог ↗</a></div>
 <div class="notice"><strong>Демонстрационные данные.</strong> Коллекции, артикула и отделки на этой странице используются для демонстрации интерфейса. Размеры — введённые вами значения, а не проверенные габариты конкретного изделия. Цена, наличие и совместимость не подтверждены.</div>
@@ -35,142 +45,30 @@
 <div class="full"><button class="btn primary" type="submit">Скачать файл запроса + JSON ↓</button></div>
 <p class="message full" id="requestMessage" role="status" aria-live="polite">Запрос формируется только на вашем устройстве.</p>
 </form></div></section>
+<dialog id="editDialog" class="workspace-dialog" aria-labelledby="editTitle">
+  <form id="editForm" novalidate>
+    <div class="dialog-head"><p class="kicker">POSITION EDITOR / DEMO</p><h2 id="editTitle">Редактировать позицию</h2><p>Изменения сохраняются только в проекте этого браузера.</p></div>
+    <div class="editor-fields">
+      <div class="field"><label for="editZone">Зона / помещение</label><input id="editZone" maxlength="80" required></div>
+      <div class="field"><label for="editSku">Артикул / SKU (демо)</label><input id="editSku" maxlength="40" placeholder="Необязательно"></div>
+      <div class="field"><label for="editCollection">Коллекция</label><select id="editCollection"><option>FORMA</option><option>LINEA</option><option>MATERIA</option></select></div>
+      <div class="field"><label for="editFinish">Отделка</label><select id="editFinish"><option>Antique brass</option><option>Matte black</option><option>Satin bronze</option><option>Polished chrome</option><option>Brushed steel</option><option>Graphite</option></select></div>
+      <div class="field"><label for="editHandle">Форма ручки</label><select id="editHandle"><option>ARC</option><option>EDGE</option><option>LINE</option></select></div>
+      <div class="field"><label for="editLock">Тип замка</label><select id="editLock"><option>Not specified</option><option>Privacy</option><option>Passage</option><option>Key</option></select></div>
+      <div class="field"><label for="editWidth">Ширина, мм (вводимое значение)</label><input id="editWidth" type="number" min="400" max="1800" step="1" required></div>
+      <div class="field"><label for="editHeight">Высота, мм (вводимое значение)</label><input id="editHeight" type="number" min="1500" max="3000" step="1" required></div>
+    </div>
+    <p class="dialog-warning">Размеры здесь — ваши проектные значения, не подтверждённые габариты изделия. Перед производством проверьте их с поставщиком.</p>
+    <div class="dialog-actions"><button class="btn" type="button" id="cancelEdit">Отмена</button><button class="btn primary" type="button" id="saveEdit">Сохранить позицию</button></div>
+    <p class="message" id="editMessage" role="status" aria-live="polite"></p>
+  </form>
+</dialog>
+<dialog id="importDialog" class="workspace-dialog" aria-labelledby="importTitle">
+  <div class="dialog-head"><p class="kicker">PROJECT RESTORE / JSON</p><h2 id="importTitle">Импортировать проект?</h2><p id="importSummary">Файл проверен. Выберите способ применения.</p></div>
+  <div class="import-options"><button class="btn primary" type="button" id="importReplace">Заменить текущий проект</button><button class="btn" type="button" id="importMerge">Объединить позиции</button><button class="btn" type="button" id="cancelImport">Отмена</button></div>
+  <p class="dialog-warning">Импорт не выполняется до выбора действия. Максимум — 30 позиций, размер файла — 1 МБ. Нераспознанные поля отбрасываются; исходный файл не отправляется в сеть.</p>
+  <p class="message" id="importMessage" role="status" aria-live="polite"></p>
+</dialog>
 </main>
 <footer class="wrap footer"><span>TEDES GLOBAL STUDIO · DEMONSTRATION CONCEPT</span><div class="footer-links"><a href="/tedes/">Студия</a><a href="/tedes/collections/">Коллекции</a><a href="/tedes/catalog/">Каталог</a><a href="/tedes/materials/">Материалы</a><a href="/development/tedes/">Кейс OSGARD</a></div></footer>
-<script>
-(function(){
-const KEY="tedes-studio-project-v1";
-const allowedCollections=new Set(["FORMA","LINEA","MATERIA"]);
-const allowedFinishes=new Set(["Antique brass","Matte black","Satin bronze","Polished chrome","Brushed steel","Graphite"]);
-const allowedHandles=new Set(["ARC","EDGE","LINE"]);
-const allowedLocks=new Set(["Not specified","Privacy","Passage","Key"]);
-const $=id=>document.getElementById(id);
-const clean=(value,max=120)=>String(value??"").replace(/[<>]/g,"").slice(0,max);
-const esc=value=>String(value??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
-const color=finish=>({"Antique brass":"#b89550","Matte black":"#34352f","Satin bronze":"#927654","Polished chrome":"#cbd0cb","Brushed steel":"#999a90","Graphite":"#4a4b44"}[finish]||"#b89550");
-let project={schema:"tedes-studio-project/v1",projectName:"Residence / North Wing",doors:[],updatedAt:""};
-let storageWritable=true;
-function normalizeDoor(d,i){
- if(!d||typeof d!=="object"||Array.isArray(d))throw new Error("invalid-position");
- return {
-  id:/^D-\d{3}$/.test(String(d.id||""))?String(d.id):"D-"+String(i+1).padStart(3,"0"),
-  zone:clean(d.zone||"Unassigned zone",80)||"Unassigned zone",
-  collection:allowedCollections.has(d.collection)?d.collection:"FORMA",
-  finish:allowedFinishes.has(d.finish)?d.finish:"Antique brass",
-  handle:allowedHandles.has(d.handle)?d.handle:"ARC",
-  lock:allowedLocks.has(d.lock)?d.lock:"Not specified",
-  width:Math.max(400,Math.min(1800,Math.round(Number(d.width)||900))),
-  height:Math.max(1500,Math.min(3000,Math.round(Number(d.height)||2100))),
-  ...(typeof d.sku==="string"?{sku:clean(d.sku,40)}:{})
- };
-}
-function readProject(){
- try{
-  const raw=localStorage.getItem(KEY);
-  if(!raw)return {ok:true,exists:false,data:{...project,doors:[]}};
-  const saved=JSON.parse(raw);
-  if(!saved||!Array.isArray(saved.doors)||saved.doors.length>30)throw new Error("invalid-project");
-  if(saved.schema&&!["tedes-studio-project/v1","tedes-project-demo/v1"].includes(saved.schema))throw new Error("unknown-schema");
-  return {ok:true,exists:true,data:{schema:"tedes-studio-project/v1",projectName:clean(saved.projectName||(saved.project&&saved.project.name)||"Residence / North Wing",80)||"Residence / North Wing",doors:saved.doors.map(normalizeDoor),updatedAt:typeof saved.updatedAt==="string"?saved.updatedAt:""}};
- }catch{return {ok:false,exists:true,data:{...project,doors:[]}};}
-}
-function save(){
- try{
-  project.schema="tedes-studio-project/v1";
-  project.projectName=clean($("projectName").value||"Untitled project",80)||"Untitled project";
-  project.updatedAt=new Date().toISOString();
-  localStorage.setItem(KEY,JSON.stringify(project));
-  storageWritable=true;
-  $("storageStatus").textContent="Сохранено локально · "+new Date(project.updatedAt).toLocaleString();
-  return true;
- }catch{
-  storageWritable=false;
-  $("storageStatus").textContent="Сохранение недоступно: экспортируйте резервную копию.";
-  return false;
- }
-}
-function download(filename,content,type){
- const blob=new Blob([content],{type}),url=URL.createObjectURL(blob),a=document.createElement("a");
- a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();
- window.setTimeout(()=>URL.revokeObjectURL(url),1500);
-}
-function csvCell(value){
- const s=String(value??"");
- const protectedValue=/^[\s\x00-\x1f]*[=+\-@]/.test(s)?"'"+s:s;
- return '"'+protectedValue.replace(/"/g,'""')+'"';
-}
-function render(){
- $("projectName").value=project.projectName;
- $("projectCount").textContent=project.doors.length+" "+(project.doors.length===1?"позиция":project.doors.length>=2&&project.doors.length<=4?"позиции":"позиций");
- $("projectSummary").textContent=project.doors.length?"Последнее изменение: "+(project.updatedAt?new Date(project.updatedAt).toLocaleString():"в этой сессии")+". Ведомость хранится в браузере.":"В проекте пока нет сохранённых дверных позиций.";
- $("emptyState").hidden=project.doors.length!==0;
- $("tableWrap").hidden=project.doors.length===0;
- $("exportJson").disabled=project.doors.length===0;
- $("exportCsv").disabled=project.doors.length===0;
- $("clearProject").disabled=project.doors.length===0;
- $("positionRows").innerHTML=project.doors.map(d=>'<tr><td><span class="zone-name">'+esc(d.zone)+'</span><span class="zone-meta">'+esc(d.id)+(d.sku?' · '+esc(d.sku):'')+'</span></td><td>'+esc(d.collection)+'</td><td><span class="finish-chip" style="background:'+color(d.finish)+'"></span>'+esc(d.finish)+'</td><td>'+esc(d.handle)+' / '+esc(d.lock)+'</td><td>'+d.width+' × '+d.height+'</td><td class="no-print"><div class="row-buttons"><button class="icon-btn" type="button" data-duplicate="'+esc(d.id)+'" aria-label="Дублировать '+esc(d.zone)+'" title="Дублировать">⧉</button><button class="icon-btn" type="button" data-remove="'+esc(d.id)+'" aria-label="Удалить '+esc(d.zone)+'" title="Удалить">×</button></div></td></tr>').join("");
-}
-const loaded=readProject();
-project=loaded.data;
-if(!loaded.ok){
- $("storageStatus").textContent="Не удалось прочитать локальный проект. Текущее состояние показано пустым; исходные данные не перезаписаны.";
- $("requestMessage").textContent="Хранилище содержит некорректные данные. Сначала откройте студию и экспортируйте резервную копию, если она доступна.";
-}
-else if(!loaded.exists){
- $("storageStatus").textContent="Локальный проект ещё не найден. Откройте каталог или студию, чтобы начать.";
-}
-else $("storageStatus").textContent="Проект восстановлен из этого браузера.";
-render();
-$("projectName").addEventListener("input",()=>{project.projectName=clean($("projectName").value,80)||"Untitled project";save();$("projectSummary").textContent="Название проекта обновлено.";});
-$("positionRows").addEventListener("click",event=>{
- const remove=event.target.closest("[data-remove]"),duplicate=event.target.closest("[data-duplicate]");
- if(remove){project.doors=project.doors.filter(d=>d.id!==remove.dataset.remove);const saved=save();render();$("requestMessage").textContent=saved?"Позиция удалена из локальной ведомости.":"Позиция удалена только в текущей сессии: экспортируйте резервную копию, так как сохранение браузером недоступно.";return;}
- if(duplicate){
-  if(project.doors.length>=30){$("requestMessage").textContent="Достигнут лимит: 30 позиций.";return;}
-  const src=project.doors.find(d=>d.id===duplicate.dataset.duplicate);if(!src)return;
-  const next=Math.max(0,...project.doors.map(d=>Number(String(d.id).replace(/^D-/,""))||0))+1;
-  project.doors.push({...src,id:"D-"+String(next).padStart(3,"0"),zone:clean(src.zone+" (копия)",80)});
-  const saved=save();render();$("requestMessage").textContent=saved?"Копия добавлена.":"Копия создана только в текущей сессии: сохранение браузером недоступно.";return;
- }
-});
-$("clearProject").addEventListener("click",()=>{
- if(!project.doors.length)return;
- if(!window.confirm("Удалить все позиции из локального проекта? Экспортируйте резервную копию перед очисткой."))return;
- project.doors=[];const saved=save();render();$("requestMessage").textContent=saved?"Проект очищен в этом браузере.":"Проект очищен только в текущей сессии; браузер не сохранил изменение.";
-});
-$("exportJson").addEventListener("click",()=>{
- if(!project.doors.length)return;
- const file={schema:"tedes-studio-project/v1",mode:"demonstration",projectName:project.projectName,updatedAt:project.updatedAt,doors:project.doors,notice:"Демонстрационная ведомость. Цена, наличие и механическая совместимость не подтверждены."};
- download("tedes-project.json",JSON.stringify(file,null,2),"application/json;charset=utf-8");
- $("requestMessage").textContent="JSON-резервная копия подготовлена. Её можно импортировать обратно в TEDES Studio.";
-});
-$("exportCsv").addEventListener("click",()=>{
- if(!project.doors.length)return;
- const columns=["id","zone","sku","collection","finish","handle","lock","width_mm","height_mm"];
- const rows=project.doors.map(d=>[d.id,d.zone,d.sku||"",d.collection,d.finish,d.handle,d.lock,d.width,d.height]);
- const csv=[columns,...rows].map(row=>row.map(csvCell).join(",")).join("\r\n");
- download("tedes-project.csv","\ufeff"+csv,"text/csv;charset=utf-8");
- $("requestMessage").textContent="CSV-ведомость подготовлена. Перед использованием проверьте параметры с производителем.";
-});
-$("requestForm").addEventListener("submit",event=>{
- event.preventDefault();
- const name=clean($("contactName").value.trim(),100),email=$("contactEmail").value.trim().slice(0,180),company=clean($("company").value.trim(),120),notes=String($("notes").value||"").replace(/\r/g,"").slice(0,1200);
- if(!name||!email||!$("contactEmail").checkValidity()){
-  $("requestMessage").textContent="Укажите контактное лицо и корректный email.";(!name?$("contactName"):$("contactEmail")).focus();return;
- }
- if(!project.doors.length){$("requestMessage").textContent="Добавьте хотя бы одну позицию в проект перед формированием запроса.";return;}
- const request={contactName:name,email,company,notes,preparedAt:new Date().toISOString(),delivery:"LOCAL FILE ONLY — NOT SENT TO TEDES OR ANY SUPPLIER."};
- const snapshot={schema:"tedes-studio-project/v1",mode:"demonstration",projectName:project.projectName,updatedAt:project.updatedAt,doors:project.doors,request,notice:"Запрос создан локально и не отправлен. Цены, наличие и совместимость не подтверждены."};
- const lines=["TEDES — ЗАПРОС НА КОММЕРЧЕСКОЕ ПРЕДЛОЖЕНИЕ","ДЕМОНСТРАЦИОННЫЙ ФАЙЛ · НЕ ОТПРАВЛЕН","","Проект: "+project.projectName,"Контакт: "+name,"Email: "+email,"Компания: "+company,"Комментарий: "+notes,"","Позиций: "+project.doors.length,"",...project.doors.map((d,i)=>(i+1)+". "+d.zone+" | "+(d.sku||"DEMO / "+d.id)+" | "+d.collection+" | "+d.finish+" | "+d.handle+" / "+d.lock+" | "+d.width+" × "+d.height+" мм"),"","Этот файл сформирован локально. Он не отправлен поставщику. Цена, наличие, технические характеристики и совместимость не подтверждены."].join("\r\n");
- download("tedes-request-brief.txt",lines,"text/plain;charset=utf-8");
- download("tedes-project-request.json",JSON.stringify(snapshot,null,2),"application/json;charset=utf-8");
- $("requestMessage").textContent="Подготовлены текстовый запрос и JSON с полем doors, пригодный для обратного импорта в TEDES Studio. Ничего не отправлено.";
-});
-window.addEventListener("storage",event=>{
- if(event.key!==KEY)return;
- const result=readProject();
- if(!result.ok){$("storageStatus").textContent="Изменение в другой вкладке не удалось прочитать.";return;}
- project=result.data;render();$("requestMessage").textContent="Проект обновлён из другой вкладки.";
-});
-})();
-</script></body></html>
+<script type="module" src="/tedes/project/project-workspace.js"></script></body></html>
