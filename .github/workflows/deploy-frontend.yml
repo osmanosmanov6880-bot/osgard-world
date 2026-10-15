@@ -20,6 +20,7 @@ on:
       - "public/tedes/**"
       - "public/development/tedes/**"
       - "public/development/phantom/**"
+      - "public/development/auto-style/**"
       - "godot/null-shift/**"
       - "scripts/null-shift-godot-smoke.mjs"
       - "public/games/null-shift-godot/**"
@@ -37,6 +38,7 @@ on:
       - "scripts/deploy-workflow-smoke.mjs"
       - "scripts/tedes-case-smoke.mjs"
       - "scripts/phantom-case-smoke.mjs"
+      - "scripts/auto-style-case-smoke.mjs"
       - "scripts/elbrus-case-smoke.mjs"
       - "scripts/entertainment-locales-smoke.mjs"
       - "scripts/skillcred-page-smoke.mjs"
@@ -77,6 +79,8 @@ jobs:
         run: npm run qa:entertainment-locales
       - name: Verify MERAKKI brief generation and copy flow
         run: npm run qa:merakki-case
+      - name: Verify AUTO STYLE premium case, metadata and routes
+        run: npm run qa:auto-style-case
       - run: npm run qa:null-shift
       - name: Smoke-test the OSGARD Games hub
         run: npm run qa:games-portal

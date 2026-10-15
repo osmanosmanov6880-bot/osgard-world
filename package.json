@@ -32,7 +32,8 @@
     "qa:elbrus-case": "node scripts/elbrus-case-smoke.mjs",
     "qa:merakki-case": "node scripts/merakki-case-smoke.mjs",
     "qa:phantom-case": "node scripts/phantom-case-smoke.mjs",
-    "qa:entertainment-locales": "node scripts/entertainment-locales-smoke.mjs"
+    "qa:entertainment-locales": "node scripts/entertainment-locales-smoke.mjs",
+    "qa:auto-style-case": "node scripts/auto-style-case-smoke.mjs"
   },
   "dependencies": {
     "@types/three": "^0.186.0",
