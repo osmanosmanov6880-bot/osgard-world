@@ -58,12 +58,16 @@ assert.ok(materials.includes('Brushed Steel') && materials.includes('Matte Black
 assert.ok(demo.includes('tedes-studio-project-v1') && demo.includes('id="buildQuote"') && demo.includes('id="quoteEmail"'), 'Studio persistence and quote brief UI are missing')
 assert.ok(demo.includes('href="/tedes/print/"'), 'Studio must link to the print-ready project schedule')
 assert.ok(printView.includes('<title>TEDES — печатная ведомость проекта</title>') && printView.includes('name="robots" content="noindex,nofollow"'), 'Print view title or indexing safeguards are missing')
-for (const marker of ['id="printProject"', 'id="positionRows"', 'id="sourceNotice"', 'id="generatedAt"', 'window.print()', 'tedes-studio-project-v1', 'localStorage.getItem', 'не подтверждённая производственная спецификация', 'не отправляется на сервер']) {
+for (const marker of ['id="printProject"', 'id="positionRows"', 'id="sourceNotice"', 'id="generatedAt"', 'window.print()', 'tedes-studio-project-v1', 'localStorage.getItem', 'не подтверждённая производственная спецификация', 'не отправляются на сервер']) {
   assert.ok(printView.toLowerCase().includes(marker.toLowerCase()), 'Print view contract marker missing: ' + marker)
 }
 assert.ok(demo.includes('НЕ отправлены') || demo.includes('не отправляется'), 'Quote builder must clearly say it does not submit anything')
+let featureScriptCount = 0
 for (const [filename, page] of [['catalog', catalog], ['product', product], ['print-view', printView]]) {
-  for (const match of page.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)) new vm.Script(match[1], { filename: filename + '.html' })
+  for (const match of page.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)) {
+    new vm.Script(match[1], { filename: filename + '.html' })
+    featureScriptCount++
+  }
 }
 for (const route of ['/tedes/catalog/','/tedes/collections/','/tedes/product/','/tedes/materials/']) assert.ok(routeMatrix.includes(route), 'Production route matrix missing ' + route)
 
