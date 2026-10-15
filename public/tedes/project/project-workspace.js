@@ -312,12 +312,12 @@ function applyImport(mode) {
     let next;
     if (mode === "replace") {
       if (!window.confirm("Заменить текущий проект данными файла «" + pendingImport.filename + "»? Сначала скачайте резервную копию, если она нужна.")) return;
-      next = {
+      next = normalizeProjectDocument({
         schema: PROJECT_SCHEMA,
         projectName: pendingImport.projectName,
-        doors: pendingImport.doors.map((door, index, all) => normalizeProjectPosition(door, index, new Set(all.slice(0, index).map((item) => item.id)))),
+        doors: pendingImport.doors,
         updatedAt: new Date().toISOString(),
-      };
+      });
     } else {
       const merged = mergeProjectDocuments(project, pendingImport);
       next = merged.project;
