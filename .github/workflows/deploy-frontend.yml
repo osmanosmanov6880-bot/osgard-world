@@ -227,6 +227,41 @@ jobs:
           echo "Testing host API through frontend gateway $host_gateway"
           docker exec osgard-world sh -lc "wget -q -O - -T 3 http://$host_gateway:4317/health"
           REMOTE
+      - name: Preserve Godot Web export for static-only releases
+        if: ${{ steps.godot-changes.outputs.changed == 'false' }}
+        env:
+          HOST: ${{ secrets.OSGARD_DEPLOY_HOST }}
+          USER: ${{ secrets.OSGARD_DEPLOY_USER }}
+        run: |
+          set -euo pipefail
+          TEMP_DIR="/tmp/osgard-godot-preserve-${GITHUB_RUN_ID}"
+          rm -rf "$TEMP_DIR"
+          mkdir -p "$TEMP_DIR/unpacked/html/games/null-shift-godot"
+          tar -xzf osgard-world-release.tgz -C "$TEMP_DIR/unpacked"
+          ssh -i ~/.ssh/osgard_deploy "$USER@$HOST" "GITHUB_RUN_ID='${GITHUB_RUN_ID}' bash -s" > "$TEMP_DIR/godot-export.tgz" <<'REMOTE'
+          set -euo pipefail
+          container="osgard-world"
+          remote_dir="/tmp/osgard-godot-preserve-${GITHUB_RUN_ID}"
+          active="/usr/share/nginx/html/games/null-shift-godot"
+          previous="/tmp/osgard-gh-previous/games/null-shift-godot"
+          mkdir -p "$remote_dir"
+          trap 'rm -rf "$remote_dir"' EXIT
+          if docker exec "$container" sh -lc 'test -s /usr/share/nginx/html/games/null-shift-godot/index.js && test -s /usr/share/nginx/html/games/null-shift-godot/index.wasm && test -s /usr/share/nginx/html/games/null-shift-godot/index.pck'; then
+            source="$active"
+          elif docker exec "$container" sh -lc 'test -s /tmp/osgard-gh-previous/games/null-shift-godot/index.js && test -s /tmp/osgard-gh-previous/games/null-shift-godot/index.wasm && test -s /tmp/osgard-gh-previous/games/null-shift-godot/index.pck'; then
+            echo "Active export absent; restoring from last verified release backup." >&2
+            source="$previous"
+          else
+            echo "No complete Godot Web export is available in active or previous release." >&2
+            exit 1
+          fi
+          docker cp "$container:$source" "$remote_dir/export"
+          tar -czf - -C "$remote_dir/export" .
+          REMOTE
+          tar -xzf "$TEMP_DIR/godot-export.tgz" -C "$TEMP_DIR/unpacked/html/games/null-shift-godot"
+          node scripts/null-shift-godot-smoke.mjs --export-check "$TEMP_DIR/unpacked/html/games/null-shift-godot"
+          tar -czf osgard-world-release.tgz -C "$TEMP_DIR/unpacked" .
+          rm -rf "$TEMP_DIR"
       - name: Stage archive and verify checksum
         env:
           HOST: ${{ secrets.OSGARD_DEPLOY_HOST }}

@@ -34,4 +34,9 @@ assert.ok(activation.includes("<title>OSA Intelligence") && activation.includes(
 assert.ok(nginx.includes('location = /index.html') && nginx.includes('no-store, no-cache, must-revalidate, proxy-revalidate'), 'HTML shell must not be cached separately from versioned assets')
 assert.ok(!workflow.includes('echo "$DEPLOY_KEY"'), 'Workflow must not print the private key')
 
+assert.ok(workflow.includes('Preserve Godot Web export for static-only releases'), 'Static-only deploys must preserve generated Godot artifacts instead of deleting them')
+assert.ok(workflow.includes("steps.godot-changes.outputs.changed == 'false'") && workflow.includes('/tmp/osgard-gh-previous/games/null-shift-godot'), 'Static-only recovery must fall back to the prior verified Godot export when the active release is incomplete')
+assert.ok(workflow.includes('node scripts/null-shift-godot-smoke.mjs --export-check "$TEMP_DIR/unpacked/html/games/null-shift-godot"'), 'Preserved Godot export must be validated before archive re-creation')
+assert.ok(workflow.indexOf('Preserve Godot Web export for static-only releases') < workflow.indexOf('Stage archive and verify checksum'), 'Preserved export must be included before the release archive checksum is created')
+
 console.log('PASS deployment workflow: required secrets, safe key handling, SSH timeout and actionable diagnostics')
