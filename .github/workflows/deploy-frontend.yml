@@ -26,6 +26,7 @@ on:
       - "public/development/tedes/**"
       - "public/development/phantom/**"
       - "public/development/auto-style/**"
+      - "public/development/textura/**"
       - "godot/null-shift/**"
       - "scripts/null-shift-godot-smoke.mjs"
       - "public/games/null-shift-godot/**"
@@ -44,6 +45,7 @@ on:
       - "scripts/tedes-case-smoke.mjs"
       - "scripts/phantom-case-smoke.mjs"
       - "scripts/auto-style-case-smoke.mjs"
+      - "scripts/textura-case-smoke.mjs"
       - "scripts/elbrus-case-smoke.mjs"
       - "scripts/noir-auto-case-smoke.mjs"
       - "scripts/entertainment-locales-smoke.mjs"
@@ -93,6 +95,8 @@ jobs:
         run: npm run qa:merakki-case
       - name: Verify AUTO STYLE premium case, metadata and routes
         run: npm run qa:auto-style-case
+      - name: Verify TEXTURA luxury case and all locales
+        run: npm run qa:textura-case
       - run: npm run qa:null-shift
       - name: Smoke-test the OSGARD Games hub
         run: npm run qa:games-portal
