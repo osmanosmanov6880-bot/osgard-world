@@ -43,6 +43,23 @@ assert.ok(sitemap.includes('https://osgard.world/development/tedes/') && sitemap
 assert.ok(routeMatrix.includes("'/tedes/'") && routeMatrix.includes("'/development/tedes/'"), 'Production route matrix does not include TEDES routes')
 assert.ok(workflow.includes('"public/tedes/**"') && workflow.includes('"public/development/tedes/**"'), 'Deployment workflow does not watch TEDES pages')
 
+
+const catalog = read('public/tedes/catalog/index.html')
+const collections = read('public/tedes/collections/index.html')
+const product = read('public/tedes/product/index.html')
+const materials = read('public/tedes/materials/index.html')
+assert.ok(catalog.includes('id="search"') && catalog.includes('id="collection"') && catalog.includes('id="finish"') && catalog.includes('id="products"'), 'Catalog filter UI is incomplete')
+assert.ok(catalog.includes('price not confirmed') || catalog.includes('Цена не подтверждена'), 'Catalog must not invent prices')
+assert.ok(collections.includes('href="/tedes/catalog/?collection=FORMA"') && collections.includes('href="/tedes/catalog/?collection=LINEA"') && collections.includes('href="/tedes/catalog/?collection=MATERIA"'), 'Collection routes must filter the catalog')
+assert.ok(product.includes('id="addToProject"') && product.includes('localStorage') && product.includes('tedes-studio-project-v1'), 'Product page must add a concept item into the shared local project')
+assert.ok(materials.includes('Brushed Steel') && materials.includes('Matte Black') && materials.includes('Техническая граница'), 'Materials guide must show demo finishes and disclose limits')
+assert.ok(demo.includes('tedes-studio-project-v1') && demo.includes('id="buildQuote"') && demo.includes('id="quoteEmail"'), 'Studio persistence and quote brief UI are missing')
+assert.ok(demo.includes('Не отправлен') || demo.includes('НЕ отправлены') || demo.includes('не отправляется'), 'Quote builder must clearly say it does not submit anything')
+for (const [filename, page] of [['catalog', catalog], ['product', product]]) {
+  for (const match of page.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)) new vm.Script(match[1], { filename: filename + '.html' })
+}
+for (const route of ['/tedes/catalog/','/tedes/collections/','/tedes/product/','/tedes/materials/']) assert.ok(routeMatrix.includes(route), \`Production route matrix missing \${route}\`)
+
 let scriptCount = 0
 for (const match of demo.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)) {
   scriptCount++
