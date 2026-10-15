@@ -35,7 +35,7 @@ assert.ok(activation.includes('api_gateway=') && activation.includes('__OSGARD_H
 assert.ok(homepage.includes('<meta name="osgard-app" content="osa-intelligence"'), 'Homepage must expose the OSA app identity marker')
 assert.ok(healthWorkflow.includes('workflow_run:') && healthWorkflow.includes('workflows: ["OSGARD frontend deploy"]') && healthWorkflow.includes('types: [completed]') && !healthWorkflow.includes('\n  push:\n'), 'Production health checks must run after deploy, not race the push-triggered deploy')
 assert.ok(activation.includes("<title>OSA Intelligence") && activation.includes('OSA INTELLIGENCE / BEYOND THE MODEL'), 'Activation must validate the actual OSA HTML identity and JavaScript bundle from the public domain')
-assert.equal((activation.match(/grep -q 'osgard-app\\.\\*osa-intelligence'/g) || []).length, 2, 'Activation must check OSA identity both in the candidate archive and through the public domain using shell-safe patterns')
+assert.equal(activation.split("grep -q 'osgard-app.*osa-intelligence'").length - 1, 2, 'Activation must check OSA identity both in the candidate archive and through the public domain using shell-safe patterns')
 assert.ok(nginx.includes('location = /index.html') && nginx.includes('no-store, no-cache, must-revalidate, proxy-revalidate'), 'HTML shell must not be cached separately from versioned assets')
 assert.ok(!workflow.includes('echo "$DEPLOY_KEY"'), 'Workflow must not print the private key')
 
