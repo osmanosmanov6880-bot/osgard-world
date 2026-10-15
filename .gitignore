@@ -37,3 +37,7 @@ osgard_deploy_ci.pub
 
 /public/games/null-shift-godot/
 godot/null-shift/.godot/
+
+# Keep original media binaries out of Git history; stage them locally for the release audit.
+/osa-media-staging/
+osa-media-staging-report.json

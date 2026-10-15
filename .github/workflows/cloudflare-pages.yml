@@ -10,6 +10,7 @@ on:
       - "scripts/sync-swarm-assets.mjs"
       - "scripts/null-shift-godot-smoke.mjs"
       - "scripts/osa-media-release-preflight.mjs"
+      - "scripts/osa-media-file-audit.mjs"
       - "scripts/osa-narration-readiness.mjs"
       - "docs/OSA_TTS_PRODUCTION_PLAN.md"
       - "docs/osa-narration/**"
@@ -99,6 +100,8 @@ jobs:
         run: npm run build
       - name: Verify OSA media inventory and publication gate
         run: npm run qa:osa-media-release
+      - name: Test local original-file verification gate
+        run: npm run qa:osa-media-files
       - name: Verify bilingual OSA narration sources and estimate TTS cost
         run: npm run qa:osa-narration
       - name: Package Godot WASM under the Pages asset limit

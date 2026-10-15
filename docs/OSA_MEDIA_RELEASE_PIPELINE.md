@@ -31,3 +31,16 @@ The strict-ready option is intentionally not used in normal CI yet, because all 
 ## Scope boundary
 
 This registry covers cinematic source assets and publication readiness; it does not claim that the 31 assets are complete lecture recordings. Do not auto-wire B-roll, music beds or trailer voiceovers as complete lecture versions. The eight lesson entries in src/osaMediaCatalog.ts remain unpublished until each lesson has its own approved, durable, playable source.
+
+
+## Local original-file audit
+
+Do not commit large original MP4/MP3 binaries to Git. Create a local osa-media-staging directory (ignored by Git) and export originals as asset-ID.extension so each file remains traceable to its stable Runway asset ID.
+
+1. Run node scripts/osa-media-file-audit.mjs --root ./osa-media-staging --write-report ./osa-media-staging-report.json to inspect whatever has been recovered so far.
+2. The audit checks file-signature bytes against extension and inventory kind, calculates SHA-256 and file size, and uses ffprobe to verify a real audio/video stream and measured duration. The provider's generic kind field is not trusted in place of file bytes.
+3. Review warnings for source-extension discrepancies; correct the inventory only after confirming the actual file. Record measured duration/language and update rights/QC metadata through the release process.
+4. node scripts/osa-media-file-audit.mjs --root ./osa-media-staging --strict is the deliberate launch-preflight mode. It returns non-zero while any source file is missing, its bytes/type/duration are invalid, or publication metadata is not cleared.
+5. npm run qa:osa-media-files runs built-in signature tests in ordinary CI. It does not require source binaries and does not claim that production playback is active.
+
+The report is an audit aid; it does not upload binaries, assign rights, publish URLs or override the publication manifest's blockers.

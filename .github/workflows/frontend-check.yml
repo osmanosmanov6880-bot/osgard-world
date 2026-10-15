@@ -90,6 +90,8 @@ jobs:
         run: npm run qa:osa-media
       - name: Verify OSA media inventory and publication gate
         run: npm run qa:osa-media-release
+      - name: Test local original-file verification gate
+        run: npm run qa:osa-media-files
       - name: Verify bilingual OSA narration sources and estimate TTS cost
         run: npm run qa:osa-narration
       - name: Verify unified OSA learning progress persistence
