@@ -11,6 +11,7 @@ on:
       - "scripts/null-shift-godot-smoke.mjs"
       - "scripts/osa-media-release-preflight.mjs"
       - "scripts/osa-media-file-audit.mjs"
+      - "scripts/precompress-brand-transition.mjs"
       - "scripts/osa-narration-readiness.mjs"
       - "docs/OSA_TTS_PRODUCTION_PLAN.md"
       - "docs/osa-narration/**"
@@ -98,6 +99,8 @@ jobs:
           node scripts/null-shift-godot-smoke.mjs --export-check public/games/null-shift-godot
       - name: Build the static frontend
         run: npm run build
+      - name: Verify precompressed shared-brand JavaScript
+        run: npm run qa:brand-gzip
       - name: Verify OSA media inventory and publication gate
         run: npm run qa:osa-media-release
       - name: Test local original-file verification gate
