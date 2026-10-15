@@ -44,7 +44,8 @@ await check('OSA homepage HTML and cache policy', async () => {
   homeHtml = body
   expect(response.status === 200, `expected HTTP 200, got ${response.status}`)
   expect((response.headers.get('content-type') || '').includes('text/html'), 'response is not HTML')
-  const title = body.match(/<title[^>]*>(.*?)<\\/title>/i)?.[1]?.trim() || 'no <title> tag'\n  expect(title.toLowerCase().includes('osa intelligence'), `expected OSA Intelligence title, got "${title}" from ${response.url}; prefix=${body.slice(0, 220).replace(/\\s+/g, ' ')}`)
+  const title = body.match(/<title[^>]*>(.*?)<\/title>/i)?.[1]?.trim() || 'no <title> tag'
+  expect(title.toLowerCase().includes('osa intelligence'), `expected OSA Intelligence title, got "${title}"; prefix=${body.slice(0, 220).replace(/\s+/g, ' ')}`)
   expect(/<script[^>]+src="\/assets\/index-[A-Za-z0-9_-]+\.js"/i.test(body), 'hashed application bundle is missing')
   const cache = (response.headers.get('cache-control') || '').toLowerCase()
   expect(cache.includes('no-store') && cache.includes('no-cache'), `homepage cache policy is unsafe: ${cache || 'missing'}`)
