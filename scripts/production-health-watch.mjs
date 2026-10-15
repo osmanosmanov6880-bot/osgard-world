@@ -39,17 +39,45 @@ function expect(condition, message) {
   if (!condition) throw new Error(message)
 }
 
-await check('OSA homepage HTML and cache policy', async () => {
-  const { response, body } = await get('/')
-  homeHtml = body
-  expect(response.status === 200, `expected HTTP 200, got ${response.status}`)
-  expect((response.headers.get('content-type') || '').includes('text/html'), 'response is not HTML')
-  const title = body.match(/<title[^>]*>(.*?)<\/title>/i)?.[1]?.trim() || 'no <title> tag'
-  expect(title.toLowerCase().includes('osa intelligence'), `expected OSA Intelligence title, got "${title}"; prefix=${body.slice(0, 220).replace(/\s+/g, ' ')}`)
-  expect(/<script[^>]+src="\/assets\/index-[A-Za-z0-9_-]+\.js"/i.test(body), 'hashed application bundle is missing')
-  const cache = (response.headers.get('cache-control') || '').toLowerCase()
-  expect(cache.includes('no-store') && cache.includes('no-cache'), `homepage cache policy is unsafe: ${cache || 'missing'}`)
-  return { statusCode: response.status, cacheControl: cache }
+function responseDiagnostics(response) {
+  const names = ['content-type', 'cache-control', 'age', 'via', 'server', 'etag', 'last-modified', 'x-cache', 'cf-cache-status', 'x-served-by']
+  return Object.fromEntries(names.map(name => [name, response.headers.get(name)]).filter(([, value]) => value))
+}
+
+await check('OSA homepage identity, cache policy, and backend consistency', async () => {
+  const probes = []
+  for (let index = 0; index < 3; index++) {
+    const { response, body } = await get('/')
+    const title = body.match(/<title[^>]*>(.*?)<\/title>/i)?.[1]?.trim() || 'no <title> tag'
+    const appId = body.match(/<meta\s+name=["']osgard-app["']\s+content=["']([^"']+)["']/i)?.[1] || 'missing'
+    const headers = responseDiagnostics(response)
+    const cache = (headers['cache-control'] || '').toLowerCase()
+    probes.push({
+      attempt: index + 1,
+      statusCode: response.status,
+      url: response.url,
+      title,
+      appId,
+      cacheControl: cache || null,
+      headers,
+    })
+    if (index === 0) homeHtml = body
+  }
+
+  const invalid = probes.filter(probe =>
+    probe.statusCode !== 200 ||
+    !String(probe.headers['content-type'] || '').toLowerCase().includes('text/html') ||
+    !probe.title.toLowerCase().includes('osa intelligence') ||
+    probe.appId !== 'osa-intelligence' ||
+    !probe.cacheControl?.includes('no-store') ||
+    !probe.cacheControl?.includes('no-cache')
+  )
+  expect(invalid.length === 0, `expected 3 consistent OSA homepage responses; invalid=${JSON.stringify(invalid)}; all=${JSON.stringify(probes)}`)
+  return {
+    statusCode: probes[0].statusCode,
+    cacheControl: probes[0].cacheControl,
+    probes: probes.map(({ attempt, statusCode, title, appId, cacheControl, headers }) => ({ attempt, statusCode, title, appId, cacheControl, edge: { age: headers.age, via: headers.via, server: headers.server, xCache: headers['x-cache'], cfCacheStatus: headers['cf-cache-status'], xServedBy: headers['x-served-by'], etag: headers.etag } })),
+  }
 })
 
 await check('Live OSA JavaScript bundle', async () => {
@@ -58,7 +86,7 @@ await check('Live OSA JavaScript bundle', async () => {
   expect(path && path.startsWith('/assets/'), 'could not resolve the same-origin homepage bundle')
   const { response, body } = await get(path)
   expect(response.status === 200, `bundle returned HTTP ${response.status}`)
-  expect(body.includes('OSA INTELLIGENCE / BEYOND THE MODEL'), `expected OSA bundle marker is missing in ${path}; HTTP ${response.status}; bytes=${new TextEncoder().encode(body).byteLength}; prefix=${body.slice(0, 220).replace(/\\s+/g, ' ')}`)
+  expect(body.includes('OSA INTELLIGENCE / BEYOND THE MODEL'), `expected OSA bundle marker is missing in ${path}; HTTP ${response.status}; headers=${JSON.stringify(responseDiagnostics(response))}; bytes=${new TextEncoder().encode(body).byteLength}; prefix=${body.slice(0, 220).replace(/\\s+/g, ' ')}`)
   return { statusCode: response.status, bundle: path, bytes: new TextEncoder().encode(body).byteLength }
 })
 
