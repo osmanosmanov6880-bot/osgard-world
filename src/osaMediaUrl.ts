@@ -15,6 +15,7 @@ export function isPermanentMediaUrl(source: string | null | undefined): source i
 
   if (value.startsWith('/')) {
     if (value.startsWith('/../') || value.includes('/./')) return false
+    if (value.startsWith('/\\/')) return false
     const path = value.split(/[?#]/, 1)[0]
     if (path.split('/').some(segment => {
       try { const decoded = decodeURIComponent(segment); return decoded === '..' || decoded === '.' || decoded.includes('/') || decoded.includes(String.fromCharCode(92)) } catch { return true }
@@ -29,6 +30,7 @@ export function isPermanentMediaUrl(source: string | null | undefined): source i
 
   try {
     const url = new URL(value)
+    if (url.hash) return false
     if (url.protocol !== 'https:' || url.username || url.password) return false
     for (const key of url.searchParams.keys()) {
       if (TEMPORARY_QUERY_KEYS.has(key.toLowerCase())) return false
