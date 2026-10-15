@@ -4,11 +4,10 @@ on:
   schedule:
     - cron: '*/15 * * * *'
   workflow_dispatch:
-  push:
+  workflow_run:
+    workflows: ["OSGARD frontend deploy"]
+    types: [completed]
     branches: [master]
-    paths:
-      - '.github/workflows/production-health-watch.yml'
-      - 'scripts/production-health-watch.mjs'
 
 permissions:
   contents: read
