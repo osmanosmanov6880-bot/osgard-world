@@ -43,16 +43,7 @@ jobs:
         run: npm ci
       - name: Validate the Godot Web export contract
         run: npm run qa:null-shift-godot
-      - name: Cache Godot 4.7.2 and web export templates
-        id: godot-cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            /tmp/osgard-godot
-            /home/runner/.local/share/godot/export_templates/4.7.2.stable
-          key: osgard-godot-4.7.2-web-templates-v1-${{ runner.os }}
       - name: Install official Godot 4.7.2 engine and web templates
-        if: ${{ steps.godot-cache.outputs.cache-hit != 'true' }}
         run: |
           set -euo pipefail
           mkdir -p /tmp/osgard-godot "$HOME/.local/share/godot/export_templates/4.7.2.stable"
