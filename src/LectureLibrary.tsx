@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { ArrowLeft, ArrowRight, ArrowUpRight, BookOpen, Clapperboard, CirclePlay, Languages } from 'lucide-react'
 import { getOSACinemaLessons, type OSACinemaLocale } from './OSACinema'
 import { OsgardLogo } from './OsgardLogo'
+import { OSA_LESSON_SLUGS } from './osaLessonGuides'
 import './lectureLibrary.css'
 
 const actCopy = {
@@ -87,7 +88,7 @@ export default function LectureLibrary() {
       <h1>{t.title}</h1>
       <p className="lecture-lead">{t.intro}</p>
       <div className="lecture-hero-meta"><span><BookOpen size={16} /> {lessons.length} {t.count}</span><span><Clapperboard size={16} /> {t.videoStatus}</span></div>
-      <a className="lecture-primary" href="/osa-cinema?scene=0"><CirclePlay size={17} />{t.start}<ArrowUpRight size={16} /></a>
+      <a className="lecture-primary" href={`/lectures/${OSA_LESSON_SLUGS[0]}`}><CirclePlay size={17} />{t.start}<ArrowUpRight size={16} /></a>
     </section>
 
     <section className="lecture-section" aria-labelledby="lecture-acts-title">
@@ -96,7 +97,7 @@ export default function LectureLibrary() {
         {actCounts.map(act => <article className="lecture-act-card" key={act.n}>
           <span className="lecture-index">{act.n} / {t.actLabel}</span>
           <h3>{act.title}</h3><p className="lecture-act-subtitle">{act.subtitle}</p><p>{act.description}</p>
-          <div className="lecture-act-foot"><span>{act.count} {t.count}</span><a href={`/osa-cinema?scene=${Math.max(0, act.firstScene)}`} aria-label={`${t.open}: ${act.title}`}>{t.open}<ArrowRight size={15} /></a></div>
+          <div className="lecture-act-foot"><span>{act.count} {t.count}</span><a href={`/lectures/${OSA_LESSON_SLUGS[Math.max(0, act.firstScene)]}`} aria-label={`${t.open}: ${act.title}`}>{t.open}<ArrowRight size={15} /></a></div>
         </article>)}
       </div>
     </section>
@@ -108,7 +109,7 @@ export default function LectureLibrary() {
           return <article className="lecture-row" key={lesson.id}>
             <span className="lecture-row-number">{String(index + 1).padStart(2, '0')}</span>
             <div className="lecture-row-copy"><span>{lesson.tag}</span><h3>{lesson.title}</h3><p>{lesson.body}</p><small>{lesson.takeaway}</small></div>
-            <div className="lecture-row-action"><span>{t.available}</span><a href={`/osa-cinema?scene=${index}`}>{t.open}<ArrowUpRight size={15} /></a></div>
+            <div className="lecture-row-action"><span>{t.available}</span><a href={`/lectures/${OSA_LESSON_SLUGS[index]}`}>{t.open}<ArrowUpRight size={15} /></a></div>
           </article>
         })}
       </div>
