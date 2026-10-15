@@ -31,6 +31,9 @@ jobs:
         with:
           node-version: 20
 
+      - name: Syntax-check production health monitor
+        run: node --check scripts/production-health-watch.mjs
+
       - name: Probe public site, live bundle, and API gateways
         env:
           OSGARD_BASE_URL: https://osgard.world
