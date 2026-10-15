@@ -137,7 +137,7 @@ export default function OSAMediaPlayer({ media }: { media: OSAMediaResource | nu
   }
 
   const togglePlayback = async () => {
-    const node = audioRef.current
+    const node = getElement()
     if (!node) return
     setPlaybackError(false)
     if (node.paused) {
