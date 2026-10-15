@@ -41,6 +41,7 @@
     "qa:essentia-cloudflare": "node scripts/essentia-cloudflare-smoke.mjs",
     "qa:cloudflare-pages": "node scripts/cloudflare-pages-preflight.mjs dist",
     "qa:osa-media": "node --experimental-strip-types scripts/osa-media-player-smoke.mjs",
+    "qa:osa-media-availability": "node scripts/osa-media-availability-smoke.mjs",
     "qa:osa-progress": "node scripts/osa-progress-store-smoke.mjs",
     "qa:osa-media-release": "node scripts/osa-media-release-preflight.mjs --check-dist",
     "qa:osa-narration": "node scripts/osa-narration-readiness.mjs --check-manuscripts",

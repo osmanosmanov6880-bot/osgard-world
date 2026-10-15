@@ -44,7 +44,7 @@ export default function OSAMediaPlayer({ media }: { media: OSAMediaResource | nu
   }
 
   const savePosition = (node: HTMLMediaElement, force = false) => {
-    if (!storageKey || !Number.isFinite(node.currentTime)) return
+    if (!storageKey || !Number.isFinite(node.currentTime) || node.ended) return
     if (!force && node.currentTime - lastSavedPosition.current < 5) return
     try {
       localStorage.setItem(storageKey, String(Math.floor(node.currentTime)))
@@ -137,7 +137,7 @@ export default function OSAMediaPlayer({ media }: { media: OSAMediaResource | nu
   }
 
   const togglePlayback = async () => {
-    const node = audioRef.current
+    const node = getElement()
     if (!node) return
     setPlaybackError(false)
     if (node.paused) {
@@ -158,6 +158,7 @@ export default function OSAMediaPlayer({ media }: { media: OSAMediaResource | nu
 
   const handleEnded = (node: HTMLMediaElement) => {
     setPlaying(false)
+    lastSavedPosition.current = 0
     setCurrentTime(Number.isFinite(node.duration) ? node.duration : 0)
     if (storageKey) {
       try { localStorage.removeItem(storageKey) } catch { /* Storage is optional. */ }

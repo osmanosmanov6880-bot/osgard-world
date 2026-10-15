@@ -3,6 +3,7 @@ import { ArrowLeft, ArrowRight, ArrowUpRight, BookOpen, CheckCircle2, Clapperboa
 import { getOSACinemaLessons, type OSACinemaLocale } from './OSACinema'
 import { OsgardLogo } from './OsgardLogo'
 import { OSA_LESSON_SLUGS } from './osaLessonGuides'
+import { getOSALessonMediaSummary } from './osaMediaCatalog'
 import { getOSALearningProgress, subscribeOSALearningProgress } from './osaProgress'
 import './lectureLibrary.css'
 
@@ -100,6 +101,7 @@ export default function LectureLibrary() {
   const [activeAct, setActiveAct] = useState<number | null>(null)
   const t = copy[locale]
   const lessons = useMemo(() => getOSACinemaLessons(locale), [locale])
+  const mediaSummary = useMemo(() => getOSALessonMediaSummary(locale), [locale])
   const acts = actCopy[locale]
   const actCounts = acts.map((act, index) => ({ ...act, count: lessons.filter(lesson => lesson.act === index + 1).length, firstScene: lessons.findIndex(lesson => lesson.act === index + 1) }))
   const searchNeedle = searchQuery.trim().toLocaleLowerCase(locale === 'ru' ? 'ru-RU' : 'en-US')
@@ -137,7 +139,7 @@ export default function LectureLibrary() {
       <p className="lecture-eyebrow"><span />{t.kicker}</p>
       <h1>{t.title}</h1>
       <p className="lecture-lead">{t.intro}</p>
-      <div className="lecture-hero-meta"><span><BookOpen size={16} /> {lessons.length} {t.count}</span><span><CheckCircle2 size={16} /> {completedLessons.length} {t.completedCount}</span><span><Clapperboard size={16} /> {t.videoStatus}</span></div>
+      <div className="lecture-hero-meta"><span><BookOpen size={16} /> {lessons.length} {t.count}</span><span><CheckCircle2 size={16} /> {completedLessons.length} {t.completedCount}</span><span><Clapperboard size={16} /> {mediaSummary.playableVideo > 0 ? `${mediaSummary.playableVideo} / ${mediaSummary.totalLessons} ${locale === 'ru' ? 'видеозаписей' : 'videos'}` : t.videoStatus}</span></div>
       <a className="lecture-primary" href={`/lectures/${OSA_LESSON_SLUGS[0]}`}><CirclePlay size={17} />{t.start}<ArrowUpRight size={16} /></a>
     </section>
 
@@ -179,7 +181,7 @@ export default function LectureLibrary() {
           return <article className={'lecture-row' + (isCompleted ? ' is-complete' : '')} key={lesson.id}>
             <span className="lecture-row-number">{String(index + 1).padStart(2, '0')}</span>
             <div className="lecture-row-copy"><span>{lesson.tag}</span><h3>{lesson.title}</h3><p>{lesson.body}</p><small>{lesson.takeaway}</small></div>
-            <div className="lecture-row-action"><span className="lecture-row-status">{isCompleted ? t.completed : t.available}</span><a href={`/lectures/${OSA_LESSON_SLUGS[index]}`}>{t.open}<ArrowUpRight size={15} /></a></div>
+            <div className="lecture-row-action"><span className="lecture-row-status">{isCompleted ? t.completed : t.available}{mediaSummary.lessons[index]?.audio === 'available' ? (locale === 'ru' ? ' · Аудио' : ' · Audio') : ''}{mediaSummary.lessons[index]?.video === 'available' ? (locale === 'ru' ? ' · Видео' : ' · Video') : ''}</span><a href={`/lectures/${OSA_LESSON_SLUGS[index]}`}>{t.open}<ArrowUpRight size={15} /></a></div>
           </article>
         })}
       </div>}
@@ -187,7 +189,7 @@ export default function LectureLibrary() {
 
     <section className="lecture-video-note" aria-labelledby="lecture-video-title">
       <div className="lecture-video-icon"><Clapperboard size={22} /></div>
-      <div><p className="lecture-eyebrow">{t.videoLabel}</p><h2 id="lecture-video-title">{t.videoTitle}</h2><p>{t.videoBody}</p><small>{t.note}</small><a className="lecture-media-link" href="/osa-library/">{t.mediaLibrary}<ArrowUpRight size={15} /></a></div>
+      <div><p className="lecture-eyebrow">{t.videoLabel}</p><h2 id="lecture-video-title">{t.videoTitle}</h2><p>{mediaSummary.playableVideo > 0 ? (locale === 'ru' ? `Опубликовано видеозаписей: ${mediaSummary.playableVideo} из ${mediaSummary.totalLessons}. Для остальных уроков доступны текстовые материалы.` : `Published videos: ${mediaSummary.playableVideo} of ${mediaSummary.totalLessons}. Text lessons remain available for the others.`) : t.videoBody}</p><small>{t.note}</small><a className="lecture-media-link" href="/osa-library/">{t.mediaLibrary}<ArrowUpRight size={15} /></a></div>
     </section>
     <footer className="lecture-footer"><a href="/academy"><ArrowLeft size={15} />{t.back}</a><span>OSGARD WORLD × OSA ORIGINAL</span><a href="/osa-cinema?scene=0">{t.start}<ArrowRight size={15} /></a></footer>
   </main>
