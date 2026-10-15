@@ -40,6 +40,7 @@ const copy = {
     finish: 'Вернуться к каталогу',
     mediaTitle: 'Аудио и видеоверсия',
     mediaBody: 'Исходные материалы частично найдены в Runway, но постоянные ссылки и воспроизводимый плеер на сайте пока не опубликованы. Здесь не показываем фиктивную кнопку воспроизведения.',
+    mediaBodyReady: 'Для этого урока подключён проверенный медиафайл. Если воспроизведение недоступно, используйте текстовую версию и интерактивную сцену.',
     mediaLink: 'Статус медиа и реестр',
     audioTitle: 'Аудиоверсия лекции',
     videoTitle: 'Видеоверсия лекции',
@@ -89,6 +90,7 @@ const copy = {
     finish: 'Return to catalogue',
     mediaTitle: 'Audio and video version',
     mediaBody: 'Some source assets were found in Runway, but permanent links and a playable site player have not been published yet. No fake play button is shown here.',
+    mediaBodyReady: 'A verified media file is available for this lesson. If playback fails, use the reading version and interactive scene.',
     mediaLink: 'Media status and inventory',
     audioTitle: 'Audio lesson',
     videoTitle: 'Video lesson',
@@ -124,6 +126,7 @@ export default function OSALessonPage({ slug }: { slug: string }) {
   const reading = lessonIndex >= 0 ? osaLessonReadings[locale][OSA_LESSON_SLUGS[lessonIndex]] : null
   const lessonSlug = lessonIndex >= 0 ? OSA_LESSON_SLUGS[lessonIndex] : null
   const media = lessonSlug ? osaLessonMedia[lessonSlug] : null
+  const hasPlayableMedia = media ? isPlayableLessonMedia(media.audio) || isPlayableLessonMedia(media.video) : false
   const totalLessons = OSA_LESSON_SLUGS.length
   const isComplete = completedSlugs.includes(slug)
 
@@ -247,7 +250,7 @@ export default function OSALessonPage({ slug }: { slug: string }) {
         <div>
           <p className="osa-lesson-eyebrow">MEDIA / RELEASE STATUS</p>
           <h2 id="osa-lesson-media-title">{t.mediaTitle}</h2>
-          <p>{t.mediaBody}</p>
+          <p>{hasPlayableMedia ? t.mediaBodyReady : t.mediaBody}</p>
           <div className="osa-lesson-media-status-grid">
             <article className="osa-lesson-media-status">
               <h3>{t.audioTitle}</h3>
