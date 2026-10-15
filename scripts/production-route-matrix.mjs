@@ -1,7 +1,7 @@
 import { isValidPartnerInventoryText } from './partner-inventory-contract.mjs'
 const base = process.env.OSGARD_BASE_URL || 'https://osgard.world'
 const expectCurrentDesign = process.env.SKILLCRED_EXPECT_CURRENT_DESIGN === '1'
-const routes = ['/tedes/','/tedes/catalog/','/tedes/collections/','/tedes/product/?sku=FORMA-ARC-01','/tedes/materials/','/tedes/project/','/tedes/print/','/development/tedes/','/development/merakki/','/development/merakki/en/','/development/merakki/ar/','/','/portal','/osa-cinema','/academy','/skillcred/','/skillcred-api/health','/skillcred-api/ready','/skillcred-api/issuer','/entertainment','/entertainment/','/entertainment/elbrus/','/entertainment/elbrus/en/','/entertainment/elbrus/ar/','/entertainment/elbrus/og.svg','/games/','/games/index.html','/games/partners/','/games/admin/','/games/afterimage-run/','/games/vector-zero/','/games/favicon.svg','/privacy/','/terms/','/community','/stream','/archive','/profile','/api/v1/player/profile','/api/v1/analytics/summary?from=0&to=1','/r/1842','/games/time','/games/null-shift/','/games/null-shift/index.html','/games/null-shift-godot/','/games/null-shift-godot/index.html','/play/swarm','/play/null-shift','/play/inherit','/play/remix','/media','/business','/create','/mobility']
+const routes = ['/tedes/','/tedes/catalog/','/tedes/collections/','/tedes/product/?sku=FORMA-ARC-01','/tedes/materials/','/tedes/project/','/tedes/print/','/development/tedes/','/development/merakki/','/development/merakki/en/','/development/merakki/ar/','/','/portal','/osa-cinema','/academy','/skillcred/','/skillcred/favicon.svg','/skillcred-api/health','/skillcred-api/ready','/skillcred-api/issuer','/entertainment','/entertainment/','/entertainment/elbrus/','/entertainment/elbrus/en/','/entertainment/elbrus/ar/','/entertainment/elbrus/og.svg','/games/','/games/index.html','/games/partners/','/games/admin/','/games/afterimage-run/','/games/vector-zero/','/games/favicon.svg','/privacy/','/terms/','/community','/stream','/archive','/profile','/api/v1/player/profile','/api/v1/analytics/summary?from=0&to=1','/r/1842','/games/time','/games/null-shift/','/games/null-shift/index.html','/games/null-shift-godot/','/games/null-shift-godot/index.html','/play/swarm','/play/null-shift','/play/inherit','/play/remix','/media','/business','/create','/mobility']
 const agents = { desktop: 'OSGARD-Route-Matrix/1.1 Desktop', mobile: 'OSGARD-Route-Matrix/1.1 Mobile' }
 const results = []
 for (const [device, userAgent] of Object.entries(agents)) for (const route of routes) {
@@ -39,6 +39,8 @@ for (const [device, userAgent] of Object.entries(agents)) for (const route of ro
         ? text.includes('<html lang="ar" dir="rtl"') && text.includes('rel="canonical" href="https://osgard.world/development/merakki/ar/"') && text.includes('hreflang="en"') && text.includes('id="brief-copy"') && text.includes('id="brief-download"') && text.includes('id="brief-share"')
       : route.startsWith('/api/v1/')
         ? [401, 403].includes(response.status) && (response.headers.get('content-type') || '').toLowerCase().includes('application/json') && (() => { try { JSON.parse(text); return true } catch { return false } })()
+       : route === '/skillcred/favicon.svg'
+       ? text.includes('<svg') && text.includes('viewBox="0 0 64 64"') && text.includes('SKILLCRED')
       : route === '/skillcred/'
       ? text.includes('id="issueBtn"') &&
         text.includes('id="verifyBtn"') &&
@@ -96,17 +98,17 @@ for (const [device, userAgent] of Object.entries(agents)) for (const route of ro
     const isGamesHub = route === '/games/' || route === '/games/index.html'
     const isPartnerPage = route === '/games/partners/'
     const isGodot = route.startsWith('/games/null-shift-godot')
-    const assetPaths = route === '/tedes/' ? ['/tedes/assets/hero-door.webp'] : route === '/tedes/catalog/' ? ['/tedes/assets/architecture-scene.webp', '/tedes/assets/hero-door.webp'] : route === '/tedes/collections/' ? ['/tedes/assets/architecture-scene.webp', '/tedes/assets/hero-door.webp'] : route.startsWith('/tedes/product/') ? ['/tedes/assets/hero-door.webp'] : route === '/tedes/materials/' ? ['/tedes/assets/hero-door.webp'] : route === '/development/tedes/' ? ['/tedes/assets/hero-door.webp', '/tedes/assets/architecture-scene.webp'] : route === '/games/favicon.svg' || route === '/privacy/' || route === '/terms/' ? [] : isPartnerPage ? ['/games/partners/partners.js', '/games/partners/inventory.json'] : isGamesHub ? ['/games/player-lifecycle.js'] : route === '/skillcred/' ? ['/skillcred/styles.css', '/skillcred/app.js', '/skillcred/fonts/InterVariable.woff2', '/skillcred/fonts/InstrumentSerif-Italic.woff2', '/skillcred/fonts/JetBrainsMono-Regular.woff2'] : isGodot ? ['/games/null-shift-godot/index.js', '/games/null-shift-godot/index.wasm', '/games/null-shift-godot/index.pck'] : route.startsWith('/games/null-shift') ? ['/games/null-shift/styles.css', '/games/null-shift/game.js', '/games/null-shift/engine-3d.js'] : []
+    const assetPaths = route === '/skillcred/favicon.svg' ? ['/skillcred/favicon.svg'] : route === '/tedes/' ? ['/tedes/assets/hero-door.webp'] : route === '/tedes/catalog/' ? ['/tedes/assets/architecture-scene.webp', '/tedes/assets/hero-door.webp'] : route === '/tedes/collections/' ? ['/tedes/assets/architecture-scene.webp', '/tedes/assets/hero-door.webp'] : route.startsWith('/tedes/product/') ? ['/tedes/assets/hero-door.webp'] : route === '/tedes/materials/' ? ['/tedes/assets/hero-door.webp'] : route === '/development/tedes/' ? ['/tedes/assets/hero-door.webp', '/tedes/assets/architecture-scene.webp'] : route === '/games/favicon.svg' || route === '/privacy/' || route === '/terms/' ? [] : isPartnerPage ? ['/games/partners/partners.js', '/games/partners/inventory.json'] : isGamesHub ? ['/games/player-lifecycle.js'] : route === '/skillcred/' ? ['/skillcred/styles.css', '/skillcred/app.js', '/skillcred/fonts/InterVariable.woff2', '/skillcred/fonts/InstrumentSerif-Italic.woff2', '/skillcred/fonts/JetBrainsMono-Regular.woff2'] : isGodot ? ['/games/null-shift-godot/index.js', '/games/null-shift-godot/index.wasm', '/games/null-shift-godot/index.pck'] : route.startsWith('/games/null-shift') ? ['/games/null-shift/styles.css', '/games/null-shift/game.js', '/games/null-shift/engine-3d.js'] : []
     if (route === '/') {
       const rootBundle = text.match(/<script[^>]+src="([^"]+\.js)"[^>]*><\/script>/i)?.[1]
       if (rootBundle) assetPaths.push(rootBundle)
     }
     const assetChecks = await Promise.all(assetPaths.map(async path => {
-      const expectedType = path.endsWith('.webp') ? 'image' : path.endsWith('.css') ? 'text/css' : path.endsWith('.json') ? 'json' : path.endsWith('.js') ? 'javascript' : path.endsWith('.wasm') ? 'wasm' : path.endsWith('.pck') ? 'pack' : 'font'
+      const expectedType = path.endsWith('.svg') ? 'image/svg+xml' : path.endsWith('.webp') ? 'image' : path.endsWith('.css') ? 'text/css' : path.endsWith('.json') ? 'json' : path.endsWith('.js') ? 'javascript' : path.endsWith('.wasm') ? 'wasm' : path.endsWith('.pck') ? 'pack' : 'font'
       const asset = await fetch(new URL(path, base), { headers: { 'user-agent': userAgent, 'cache-control': 'no-cache', pragma: 'no-cache' } })
       const contentType = asset.headers.get('content-type') || ''
       const mime = contentType.toLowerCase()
-      const typeOk = expectedType === 'text/css' ? mime.includes('text/css') : expectedType === 'json' ? mime.includes('application/json') || mime.includes('text/json') || mime.includes('text/plain') : expectedType === 'javascript' ? mime.includes('javascript') || mime.includes('ecmascript') : expectedType === 'wasm' ? mime.includes('wasm') || mime.includes('octet-stream') : expectedType === 'pack' ? mime.length > 0 : expectedType === 'image' ? mime.includes('image/webp') : mime.includes('font/woff2') || mime.includes('application/octet-stream')
+      const typeOk = expectedType === 'image/svg+xml' ? mime.includes('image/svg+xml') : expectedType === 'text/css' ? mime.includes('text/css') : expectedType === 'json' ? mime.includes('application/json') || mime.includes('text/json') || mime.includes('text/plain') : expectedType === 'javascript' ? mime.includes('javascript') || mime.includes('ecmascript') : expectedType === 'wasm' ? mime.includes('wasm') || mime.includes('octet-stream') : expectedType === 'pack' ? mime.length > 0 : expectedType === 'image' ? mime.includes('image/webp') : mime.includes('font/woff2') || mime.includes('application/octet-stream')
       let nonEmpty = false
       if (expectedType === 'font' || expectedType === 'wasm' || expectedType === 'pack' || expectedType === 'image') {
         const size = (await asset.arrayBuffer()).byteLength
@@ -115,7 +117,7 @@ for (const [device, userAgent] of Object.entries(agents)) for (const route of ro
       } else {
         const content = await asset.text()
         const normalized = content.toLowerCase()
-        nonEmpty = isPartnerPage
+        nonEmpty = expectedType === 'image/svg+xml' ? content.includes('<svg') && content.includes('viewBox="0 0 64 64"') && content.includes('SKILLCRED') : isPartnerPage
           ? path.endsWith('.json') ? isValidPartnerInventoryText(content) : content.includes("fetch('./inventory.json'") && content.includes('item.active === false') && content.includes("sendLink.href = 'https://wa.me/79640027222?text='")
           : isGodot
           ? content.length > 100000
