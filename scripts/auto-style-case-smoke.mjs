@@ -87,7 +87,7 @@ check('responsive premium visual system and accessible motion preferences', () =
   assert.ok(featureCss.includes('.auto-style-featured-case') && featureCss.includes('prefers-reduced-motion:reduce'));
   assert.ok(card.includes("import './auto-style-case.css'"));
   assert.ok(card.includes('href="/development/auto-style/"'));
-  assert.ok(card.includes('FLAGSHIP CASE / 03') && card.includes('CASE 03 / 03'));
+  assert.ok(card.includes('FLAGSHIP CASE / 04') && card.includes('CASE 04 / 04'));
 });
 
 check('premium social-card SVG is valid and sized for sharing', () => {
