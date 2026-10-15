@@ -206,6 +206,12 @@ for (const [device, userAgent] of Object.entries(agents)) for (const route of ro
                   content.includes('exportCsv') &&
                   content.includes('JSON.parse') &&
                   content.includes('localStorage')
+                : path.startsWith('/development/essentia/')
+                  ? path.endsWith('.css')
+                    ? content.includes('.product-grid') && content.includes('.cart-drawer') && content.includes('@media(max-width:640px)')
+                    : path.endsWith('.js')
+                      ? content.includes('essentia-demo-cart-v1') && content.includes('ESSENTIA10') && content.includes('data-add')
+                      : false
                 : path.startsWith('/development/auto-style/')
                   ? path.endsWith('.css')
                     ? normalized.includes('--as-bg:#080a0c') && normalized.includes('.as-wrap') && normalized.includes('prefers-reduced-motion')
