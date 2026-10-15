@@ -52,7 +52,7 @@ assert.ok(merakkiStructuredDataMatch, 'MERAKKI case must contain JSON-LD structu
 const merakkiStructuredData = JSON.parse(merakkiStructuredDataMatch[1])
 assert.ok(merakkiStructuredData['@graph'].some(node => node['@type'] === 'Article'), 'MERAKKI JSON-LD must describe the case as an article')
 assert.ok(merakkiStructuredData['@graph'].some(node => node['@type'] === 'BreadcrumbList'), 'MERAKKI JSON-LD must include breadcrumb structured data')
-assert.ok(merakkiPage.includes('property="og:site_name" content="OSGARD WORLD"') && merakkiPage.includes('name="twitter:card" content="summary_large_image"'), 'MERAKKI case must include social sharing metadata')
+assert.ok(merakkiPage.includes('property="og:site_name" content="OSGARD WORLD"') && merakkiPage.includes('name="twitter:card" content="summary_large_image"') && merakkiPage.includes('property="og:image" content="https://osgard.world/development/merakki/og.svg"'), 'MERAKKI case must include large-image social sharing metadata')
 assert.ok(merakkiPage.includes('twitterDescription.content=v.description') && merakkiPage.includes('ogTitle.content=v.title'), 'MERAKKI social metadata must update when the locale changes')
 assert.ok(merakkiPage.includes('utm_campaign=merakki_global_case') && merakkiPage.includes('Live checkout and payments are disabled'), 'MERAKKI case must tag public-preview attribution and state checkout boundaries')
 assert.ok(merakkiPage.includes('id="contact-cta"') && merakkiPage.includes('https://wa.me/79640027222'), 'MERAKKI case must provide a direct WhatsApp project CTA')
