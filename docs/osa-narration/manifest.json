@@ -1,0 +1,485 @@
+{
+  "schemaVersion": 1,
+  "title": "OSA Bilingual Narration Manuscript Manifest",
+  "status": "draft_for_audio_production",
+  "audioGenerated": false,
+  "sourceOfTruth": [
+    "src/osaLessonReading.ts",
+    "src/osaLessonGuides.ts"
+  ],
+  "generationMethod": "Deterministic composition from canonical structured lesson readings and guides; no TTS generation call.",
+  "providerEstimate": {
+    "provider": "Runway TTS",
+    "model": "eleven_multilingual_v2",
+    "charactersPerCredit": 50,
+    "rounding": "ceil per segment",
+    "pricingReference": "Runway Dev API pricing page checked 2026-10-15: $0.01 per credit; verify current billing before purchase.",
+    "estimatedApiCreditsUsd": 7.88,
+    "note": "Planning estimate only. Runway web-workspace credits and API developer-project credits are separate contexts; this is not a quote or a purchase."
+  },
+  "lessonsPerLocale": 8,
+  "totalScripts": 16,
+  "totals": {
+    "characters": 38994,
+    "segments": 16,
+    "estimatedCredits": 788
+  },
+  "byLocale": {
+    "ru": {
+      "lessons": 8,
+      "characters": 20220,
+      "segments": 8,
+      "estimatedCredits": 409,
+      "perLesson": [
+        {
+          "slug": "intelligence-and-imitation",
+          "characters": 2463,
+          "segments": 1,
+          "estimatedCredits": 50
+        },
+        {
+          "slug": "how-language-models-work",
+          "characters": 2575,
+          "segments": 1,
+          "estimatedCredits": 52
+        },
+        {
+          "slug": "power-of-knowledge",
+          "characters": 2521,
+          "segments": 1,
+          "estimatedCredits": 51
+        },
+        {
+          "slug": "signal-and-noise",
+          "characters": 2562,
+          "segments": 1,
+          "estimatedCredits": 52
+        },
+        {
+          "slug": "verify-an-ai-answer",
+          "characters": 2524,
+          "segments": 1,
+          "estimatedCredits": 51
+        },
+        {
+          "slug": "privacy-before-prompting",
+          "characters": 2568,
+          "segments": 1,
+          "estimatedCredits": 52
+        },
+        {
+          "slug": "human-in-the-loop",
+          "characters": 2547,
+          "segments": 1,
+          "estimatedCredits": 51
+        },
+        {
+          "slug": "investigate-the-future",
+          "characters": 2460,
+          "segments": 1,
+          "estimatedCredits": 50
+        }
+      ]
+    },
+    "en": {
+      "lessons": 8,
+      "characters": 18774,
+      "segments": 8,
+      "estimatedCredits": 379,
+      "perLesson": [
+        {
+          "slug": "intelligence-and-imitation",
+          "characters": 2296,
+          "segments": 1,
+          "estimatedCredits": 46
+        },
+        {
+          "slug": "how-language-models-work",
+          "characters": 2450,
+          "segments": 1,
+          "estimatedCredits": 49
+        },
+        {
+          "slug": "power-of-knowledge",
+          "characters": 2329,
+          "segments": 1,
+          "estimatedCredits": 47
+        },
+        {
+          "slug": "signal-and-noise",
+          "characters": 2278,
+          "segments": 1,
+          "estimatedCredits": 46
+        },
+        {
+          "slug": "verify-an-ai-answer",
+          "characters": 2364,
+          "segments": 1,
+          "estimatedCredits": 48
+        },
+        {
+          "slug": "privacy-before-prompting",
+          "characters": 2370,
+          "segments": 1,
+          "estimatedCredits": 48
+        },
+        {
+          "slug": "human-in-the-loop",
+          "characters": 2367,
+          "segments": 1,
+          "estimatedCredits": 48
+        },
+        {
+          "slug": "investigate-the-future",
+          "characters": 2320,
+          "segments": 1,
+          "estimatedCredits": 47
+        }
+      ]
+    }
+  },
+  "scripts": [
+    {
+      "slug": "intelligence-and-imitation",
+      "locale": "ru",
+      "sequence": 1,
+      "title": "Полезный ответ — ещё не доказательство",
+      "path": "docs/osa-narration/ru/intelligence-and-imitation.txt",
+      "characters": 2463,
+      "sha256": "00a6f05d3acb089d89dc0d6d0b85b3ba324ff6f53b62589f7a3ab43c23f321f5",
+      "segmentCount": 1,
+      "segmentCharacterCounts": [
+        2463
+      ],
+      "estimatedCredits": 50,
+      "status": "draft_audio_not_generated",
+      "blockers": [
+        "voice_not_auditioned",
+        "audio_not_generated",
+        "permanent_hosting_not_configured",
+        "human_qc_not_passed"
+      ]
+    },
+    {
+      "slug": "how-language-models-work",
+      "locale": "ru",
+      "sequence": 2,
+      "title": "Как модель строит продолжение",
+      "path": "docs/osa-narration/ru/how-language-models-work.txt",
+      "characters": 2575,
+      "sha256": "e92ee07ecd65fb9b6cb33f5d1323fb98a3482d97d4381db6967c059b84044150",
+      "segmentCount": 1,
+      "segmentCharacterCounts": [
+        2575
+      ],
+      "estimatedCredits": 52,
+      "status": "draft_audio_not_generated",
+      "blockers": [
+        "voice_not_auditioned",
+        "audio_not_generated",
+        "permanent_hosting_not_configured",
+        "human_qc_not_passed"
+      ]
+    },
+    {
+      "slug": "power-of-knowledge",
+      "locale": "ru",
+      "sequence": 3,
+      "title": "Доступ к знаниям зависит от инфраструктуры",
+      "path": "docs/osa-narration/ru/power-of-knowledge.txt",
+      "characters": 2521,
+      "sha256": "888afb3e7fd23637a9ed4324772b29979d72fc181c6315d07153c5a67d1d4844",
+      "segmentCount": 1,
+      "segmentCharacterCounts": [
+        2521
+      ],
+      "estimatedCredits": 51,
+      "status": "draft_audio_not_generated",
+      "blockers": [
+        "voice_not_auditioned",
+        "audio_not_generated",
+        "permanent_hosting_not_configured",
+        "human_qc_not_passed"
+      ]
+    },
+    {
+      "slug": "signal-and-noise",
+      "locale": "ru",
+      "sequence": 4,
+      "title": "Количество публикаций не равно числу доказательств",
+      "path": "docs/osa-narration/ru/signal-and-noise.txt",
+      "characters": 2562,
+      "sha256": "372b3fd8e72d70e0e862518074ac74fc63a28a6d074c1ee7f200cac8ef2f7102",
+      "segmentCount": 1,
+      "segmentCharacterCounts": [
+        2562
+      ],
+      "estimatedCredits": 52,
+      "status": "draft_audio_not_generated",
+      "blockers": [
+        "voice_not_auditioned",
+        "audio_not_generated",
+        "permanent_hosting_not_configured",
+        "human_qc_not_passed"
+      ]
+    },
+    {
+      "slug": "verify-an-ai-answer",
+      "locale": "ru",
+      "sequence": 5,
+      "title": "Разбейте ответ на проверяемые тезисы",
+      "path": "docs/osa-narration/ru/verify-an-ai-answer.txt",
+      "characters": 2524,
+      "sha256": "ff55df20939f1a7fb423d2ca749098eb28da1215f31e5ff2f500d35ec08f4cd4",
+      "segmentCount": 1,
+      "segmentCharacterCounts": [
+        2524
+      ],
+      "estimatedCredits": 51,
+      "status": "draft_audio_not_generated",
+      "blockers": [
+        "voice_not_auditioned",
+        "audio_not_generated",
+        "permanent_hosting_not_configured",
+        "human_qc_not_passed"
+      ]
+    },
+    {
+      "slug": "privacy-before-prompting",
+      "locale": "ru",
+      "sequence": 6,
+      "title": "Сначала определите, что действительно необходимо",
+      "path": "docs/osa-narration/ru/privacy-before-prompting.txt",
+      "characters": 2568,
+      "sha256": "9a380a8e16130573514c366dbc946920fad85741b57292c639ca7c1b13440c28",
+      "segmentCount": 1,
+      "segmentCharacterCounts": [
+        2568
+      ],
+      "estimatedCredits": 52,
+      "status": "draft_audio_not_generated",
+      "blockers": [
+        "voice_not_auditioned",
+        "audio_not_generated",
+        "permanent_hosting_not_configured",
+        "human_qc_not_passed"
+      ]
+    },
+    {
+      "slug": "human-in-the-loop",
+      "locale": "ru",
+      "sequence": 7,
+      "title": "Контроль должен соответствовать риску",
+      "path": "docs/osa-narration/ru/human-in-the-loop.txt",
+      "characters": 2547,
+      "sha256": "922b7ddcb1652e6f19d67fc5bd191e369fac6cf75ccf1f15bbc6655992b2f695",
+      "segmentCount": 1,
+      "segmentCharacterCounts": [
+        2547
+      ],
+      "estimatedCredits": 51,
+      "status": "draft_audio_not_generated",
+      "blockers": [
+        "voice_not_auditioned",
+        "audio_not_generated",
+        "permanent_hosting_not_configured",
+        "human_qc_not_passed"
+      ]
+    },
+    {
+      "slug": "investigate-the-future",
+      "locale": "ru",
+      "sequence": 8,
+      "title": "Начните с конкретного вопроса",
+      "path": "docs/osa-narration/ru/investigate-the-future.txt",
+      "characters": 2460,
+      "sha256": "81854072e974cf0fe2b11ebc9a10bf9922f1109b024d7776ed405b850f29b2fd",
+      "segmentCount": 1,
+      "segmentCharacterCounts": [
+        2460
+      ],
+      "estimatedCredits": 50,
+      "status": "draft_audio_not_generated",
+      "blockers": [
+        "voice_not_auditioned",
+        "audio_not_generated",
+        "permanent_hosting_not_configured",
+        "human_qc_not_passed"
+      ]
+    },
+    {
+      "slug": "intelligence-and-imitation",
+      "locale": "en",
+      "sequence": 1,
+      "title": "A useful answer is not proof",
+      "path": "docs/osa-narration/en/intelligence-and-imitation.txt",
+      "characters": 2296,
+      "sha256": "3dd7f7d1754ae81fdecc8fee9675903e1016e1417db7173158c14ef5232e5b04",
+      "segmentCount": 1,
+      "segmentCharacterCounts": [
+        2296
+      ],
+      "estimatedCredits": 46,
+      "status": "draft_audio_not_generated",
+      "blockers": [
+        "voice_not_auditioned",
+        "audio_not_generated",
+        "permanent_hosting_not_configured",
+        "human_qc_not_passed"
+      ]
+    },
+    {
+      "slug": "how-language-models-work",
+      "locale": "en",
+      "sequence": 2,
+      "title": "How a model generates continuations",
+      "path": "docs/osa-narration/en/how-language-models-work.txt",
+      "characters": 2450,
+      "sha256": "e0dc826cb19b8384f80fb31e37ec140017609496158276ce99cec704b38d37c5",
+      "segmentCount": 1,
+      "segmentCharacterCounts": [
+        2450
+      ],
+      "estimatedCredits": 49,
+      "status": "draft_audio_not_generated",
+      "blockers": [
+        "voice_not_auditioned",
+        "audio_not_generated",
+        "permanent_hosting_not_configured",
+        "human_qc_not_passed"
+      ]
+    },
+    {
+      "slug": "power-of-knowledge",
+      "locale": "en",
+      "sequence": 3,
+      "title": "Access to knowledge depends on infrastructure",
+      "path": "docs/osa-narration/en/power-of-knowledge.txt",
+      "characters": 2329,
+      "sha256": "f1811afd67a4aff7a4854ec0b9f6f90dac466ea5087c2e3609beccf9c173c5cb",
+      "segmentCount": 1,
+      "segmentCharacterCounts": [
+        2329
+      ],
+      "estimatedCredits": 47,
+      "status": "draft_audio_not_generated",
+      "blockers": [
+        "voice_not_auditioned",
+        "audio_not_generated",
+        "permanent_hosting_not_configured",
+        "human_qc_not_passed"
+      ]
+    },
+    {
+      "slug": "signal-and-noise",
+      "locale": "en",
+      "sequence": 4,
+      "title": "More publications do not mean more evidence",
+      "path": "docs/osa-narration/en/signal-and-noise.txt",
+      "characters": 2278,
+      "sha256": "c813b8da9c79428fb1e9aa37356750e177fd8fb59514384e08f533b588a7247e",
+      "segmentCount": 1,
+      "segmentCharacterCounts": [
+        2278
+      ],
+      "estimatedCredits": 46,
+      "status": "draft_audio_not_generated",
+      "blockers": [
+        "voice_not_auditioned",
+        "audio_not_generated",
+        "permanent_hosting_not_configured",
+        "human_qc_not_passed"
+      ]
+    },
+    {
+      "slug": "verify-an-ai-answer",
+      "locale": "en",
+      "sequence": 5,
+      "title": "Break the answer into claims",
+      "path": "docs/osa-narration/en/verify-an-ai-answer.txt",
+      "characters": 2364,
+      "sha256": "820676e60eaf2c0b857a73dfa7f5d0684deac32d70d9cd00a9a5e82add76503c",
+      "segmentCount": 1,
+      "segmentCharacterCounts": [
+        2364
+      ],
+      "estimatedCredits": 48,
+      "status": "draft_audio_not_generated",
+      "blockers": [
+        "voice_not_auditioned",
+        "audio_not_generated",
+        "permanent_hosting_not_configured",
+        "human_qc_not_passed"
+      ]
+    },
+    {
+      "slug": "privacy-before-prompting",
+      "locale": "en",
+      "sequence": 6,
+      "title": "Decide what is actually needed",
+      "path": "docs/osa-narration/en/privacy-before-prompting.txt",
+      "characters": 2370,
+      "sha256": "45ae8e28b2183c7867f6889d54c4df89ec327c8f30e3a6e4520b871049529614",
+      "segmentCount": 1,
+      "segmentCharacterCounts": [
+        2370
+      ],
+      "estimatedCredits": 48,
+      "status": "draft_audio_not_generated",
+      "blockers": [
+        "voice_not_auditioned",
+        "audio_not_generated",
+        "permanent_hosting_not_configured",
+        "human_qc_not_passed"
+      ]
+    },
+    {
+      "slug": "human-in-the-loop",
+      "locale": "en",
+      "sequence": 7,
+      "title": "Match review to the risk",
+      "path": "docs/osa-narration/en/human-in-the-loop.txt",
+      "characters": 2367,
+      "sha256": "bb13237dd246365bf5aa730018d63345cbfd526eb910660f84807f6dda9533d7",
+      "segmentCount": 1,
+      "segmentCharacterCounts": [
+        2367
+      ],
+      "estimatedCredits": 48,
+      "status": "draft_audio_not_generated",
+      "blockers": [
+        "voice_not_auditioned",
+        "audio_not_generated",
+        "permanent_hosting_not_configured",
+        "human_qc_not_passed"
+      ]
+    },
+    {
+      "slug": "investigate-the-future",
+      "locale": "en",
+      "sequence": 8,
+      "title": "Start with a concrete question",
+      "path": "docs/osa-narration/en/investigate-the-future.txt",
+      "characters": 2320,
+      "sha256": "574868921e40085ffdad2d5d2cc957f51bcd371ab4633f5398080346785696fc",
+      "segmentCount": 1,
+      "segmentCharacterCounts": [
+        2320
+      ],
+      "estimatedCredits": 47,
+      "status": "draft_audio_not_generated",
+      "blockers": [
+        "voice_not_auditioned",
+        "audio_not_generated",
+        "permanent_hosting_not_configured",
+        "human_qc_not_passed"
+      ]
+    }
+  ],
+  "releaseGate": {
+    "permanentAudioUrls": 0,
+    "readyAudioTracks": 0,
+    "allowedToPublish": false,
+    "note": "These are text master files only. They do not imply voice approval, an audio file, rights clearance, measured audio duration, or playback verification."
+  }
+}

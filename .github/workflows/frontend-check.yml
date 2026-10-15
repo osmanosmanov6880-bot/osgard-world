@@ -10,6 +10,7 @@ on:
       - "public/osa-library/**"
       - "scripts/osa-narration-readiness.mjs"
       - "docs/OSA_TTS_PRODUCTION_PLAN.md"
+      - "docs/osa-narration/**"
       - "public/development/og.svg"
       - "scripts/development-index-smoke.mjs"
       - "scripts/osa-intelligence-case-smoke.mjs"
@@ -91,8 +92,6 @@ jobs:
         run: npm run qa:osa-media-release
       - name: Verify bilingual OSA narration sources and estimate TTS cost
         run: npm run qa:osa-narration
-      - name: Emit deterministic bilingual OSA narration payload for manuscript packaging
-        run: node scripts/osa-narration-readiness.mjs --emit-manuscripts
       - name: Verify unified OSA learning progress persistence
         run: npm run qa:osa-progress
       - name: Verify the searchable lesson catalogue

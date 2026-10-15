@@ -12,6 +12,7 @@ on:
       - "scripts/osa-media-release-preflight.mjs"
       - "scripts/osa-narration-readiness.mjs"
       - "docs/OSA_TTS_PRODUCTION_PLAN.md"
+      - "docs/osa-narration/**"
       - "docs/OSA_MEDIA_RELEASE_PIPELINE.md"
       - "scripts/cloudflare-pages-preflight.mjs"
       - "scripts/compress-pages-wasm.mjs"

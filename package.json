@@ -43,7 +43,7 @@
     "qa:osa-media": "node --experimental-strip-types scripts/osa-media-player-smoke.mjs",
     "qa:osa-progress": "node scripts/osa-progress-store-smoke.mjs",
     "qa:osa-media-release": "node scripts/osa-media-release-preflight.mjs --check-dist",
-    "qa:osa-narration": "node scripts/osa-narration-readiness.mjs"
+    "qa:osa-narration": "node scripts/osa-narration-readiness.mjs --check-manuscripts"
   },
   "dependencies": {
     "@types/three": "^0.186.0",

@@ -1,0 +1,19 @@
+Lesson 3 of 8.
+
+Learning objectives. Explain why access to information is shaped by infrastructure and platform rules. Distinguish openness, safety, privacy and accountability. Ask concrete questions to assess the consequences of deploying AI.
+
+Access to knowledge depends on infrastructure. An AI service is shaped by more than its model. Compute, data, interface, price, language, source access and usage rules matter. Access to knowledge and the ability to influence its distribution can therefore be uneven across people and organisations.
+
+Openness and safety are separate questions. Open access may expand participation and independent scrutiny, but it does not remove privacy, licensing or harm concerns. Restricted access may help control risk while creating opacity and barriers. Assess concrete governance mechanisms rather than relying on the labels “open” or “safe”.
+
+Accountability makes decisions reviewable. For important uses, people need to know who owns the outcome, how errors are detected and how a review can be requested. Documentation, independent evaluation, clear limitations and feedback channels turn an abstract promise of accountability into a practice that can be examined.
+
+Practical example. When choosing an AI service, it is not enough to ask whether it is powerful. Ask what data it receives, who can use its output, how errors are corrected and whether consequential decisions can be challenged.
+
+Key terms. Accountability. Clear responsibility for a system’s actions and consequences, including ways to review and correct them. AI governance. The rules, roles and processes used to oversee the development and use of AI systems.
+
+Practical exercise. Create a brief impact map. Name the task and the people affected by the output. Record who benefits, who could be harmed and what data is used. Identify who reviews the output and who fixes an error. Add a feedback or review mechanism. Success criteria. The map identifies accountable roles, plausible risks and testable correction paths rather than relying on slogans.
+
+Key takeaways. Real access is shaped by infrastructure, rules and cost. Openness does not remove privacy or risk assessment. Accountability needs a clear way to review and correct outcomes.
+
+Complete the knowledge check and open the additional sources on the lesson page.

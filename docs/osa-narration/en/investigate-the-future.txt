@@ -1,0 +1,19 @@
+Lesson 8 of 8.
+
+Learning objectives. Evaluate AI through a measurable task rather than broad promises. Compare quality and speed with the original workflow. State the limits of a personal experiment instead of generalising to all jobs.
+
+Start with a concrete question. Large questions about AI’s future are too broad to test directly. Choose a narrow, repeatable task, define the expected result and state the experiment’s limits. This creates a local observation without pretending to explain every industry or occupation.
+
+Compare the full workflow. Compare the usual approach and the AI-assisted approach under similar conditions. Count not only the first generation but review, editing, error correction and preparation of the final output. A system may speed up one step while adding work elsewhere.
+
+Keep conclusions narrow and testable. After several attempts, describe where the tool helped, where it failed and what remains unknown. Do not extend one experiment to other tasks without new data. A useful conclusion lets someone else repeat the test and see what may have influenced the result.
+
+Practical example. Choose one recurring task such as a first draft, plan or sorting materials. Compare multiple attempts with the usual process, including review time, edits and mistakes. Faster drafting does not always mean the whole task gets faster.
+
+Key terms. Baseline. The usual process or result used as a comparison point under the same criteria. Net benefit. The change in time and quality after accounting for review, corrections, errors and additional costs.
+
+Practical exercise. Run a small field experiment. Choose one low-risk task and describe the original workflow. Define metrics in advance: time, accuracy, completeness, edits and errors. Complete several attempts with and without AI under similar conditions. Compare outcomes and record where the method helps, fails or needs more evidence. Success criteria. You have a checkable comparison for one task and do not present a local experiment as a universal forecast.
+
+Key takeaways. Evaluate AI on a specific task with predefined criteria. Measure the work through a verified result, including corrections. Do not turn a local experiment into a universal forecast.
+
+Complete the knowledge check and open the additional sources on the lesson page.
