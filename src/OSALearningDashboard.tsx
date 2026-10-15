@@ -1,10 +1,11 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { OSA_LEARNING_TRACKS, getOSANextLesson, getOSATrackProgress } from './osaLearningTracks'
-import { getOSALearningProgressStore } from './osaProgress'
+import { getOSALearningProgress, subscribeOSALearningProgress } from './osaProgress'
 
 export default function OSALearningDashboard() {
   const [locale, setLocale] = useState<'ru' | 'en'>('ru')
-  const progress = useMemo(() => getOSALearningProgressStore().read(), [])
+  const [progress, setProgress] = useState(getOSALearningProgress)
+  useEffect(() => subscribeOSALearningProgress(() => setProgress(getOSALearningProgress())), [])
   const next = getOSANextLesson(progress.lessonCompletions)
   const count = progress.lessonCompletions.length
   return <main style={{maxWidth:1100,margin:'0 auto',padding:'clamp(24px,5vw,72px)',color:'#e8edf7',minHeight:'100vh'}}>
