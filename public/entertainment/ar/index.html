@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>OSGARD Entertainment | عوالم قابلة للعب</title>
+  <style>
+    :root{color-scheme:dark;--ink:#eaf2ff;--muted:#9eb2c8;--line:#28445a;--gold:#f3d795}
+    *{box-sizing:border-box}body{margin:0;background:#050914;color:var(--ink);font:14px Inter,Arial,sans-serif}
+    header{height:74px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 clamp(18px,6vw,88px);letter-spacing:.16em;color:#9eb2c8}
+    header a{color:var(--gold);text-decoration:none;font-weight:700}header span{font-size:10px}
+    .wrap{max-width:1320px;margin:auto;padding:clamp(64px,10vw,130px) clamp(18px,6vw,88px) 100px}
+    .hero{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:48px;align-items:end;padding-bottom:58px;border-bottom:1px solid var(--line)}
+    .eyebrow{color:var(--gold);font-size:10px;letter-spacing:.22em}.hero h1{font:300 clamp(46px,7vw,94px)/.94 Georgia,serif;margin:18px 0;color:#f4f0e7}.hero p{max-width:560px;color:var(--muted);line-height:1.8}
+    .count{border:1px solid #806d43;padding:22px 28px;text-align:center}.count b{display:block;font:300 74px/.85 Georgia,serif;color:#fff}.count span{font-size:9px;color:var(--gold);letter-spacing:.18em}
+    .grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:14px;padding-top:42px}.card{grid-column:span 4;min-height:430px;display:flex;flex-direction:column;border:1px solid var(--line);background:#091525;color:inherit;text-decoration:none;transition:.25s}.card:nth-child(1),.card:nth-child(4){grid-column:span 6}.card:hover,.card:focus-visible{transform:translateY(-7px);border-color:var(--accent);outline:none;box-shadow:0 24px 60px -32px #000,0 0 28px color-mix(in srgb,var(--accent) 22%,transparent)}
+    .art{height:220px;display:grid;place-items:center;position:relative;overflow:hidden;background:radial-gradient(circle,color-mix(in srgb,var(--accent) 35%,transparent),transparent 28%),linear-gradient(140deg,var(--dark),#050914 75%)}.art:before,.art:after{content:"";position:absolute;border:1px solid color-mix(in srgb,var(--accent) 55%,transparent);border-radius:50%;width:72%;aspect-ratio:1;transform:rotate(28deg)}.art:after{width:42%;border-style:dashed;transform:rotate(-42deg)}.art b{position:relative;z-index:1;font:300 clamp(58px,8vw,118px)/.8 Georgia,serif;color:#f7f9ff}.art small{position:absolute;z-index:2;top:18px;left:20px;color:var(--gold);font:10px monospace;letter-spacing:.2em}.copy{display:flex;flex-direction:column;flex:1;padding:24px}.copy h2{margin:0;color:#f4f0e7;font:300 clamp(28px,3vw,46px)/.95 Georgia,serif;letter-spacing:.04em}.copy p{margin:14px 0;color:var(--muted);line-height:1.65}.launch{margin-top:auto;padding-top:18px;color:var(--gold);font-size:10px;letter-spacing:.14em;text-transform:uppercase}.time{--accent:#e2b65d;--dark:#382412}.swarm{--accent:#62e4d2;--dark:#0d3030}.shift{--accent:#8eaefe;--dark:#172350}.inherit{--accent:#a7d581;--dark:#193421}.remix{--accent:#f27ba9;--dark:#35142b}.vector-zero{--accent:#5ce1e6;--dark:#0b1b2a}
+    @media(max-width:900px){.card,.card:nth-child(1),.card:nth-child(4){grid-column:span 6}}@media(max-width:620px){header{height:64px;padding:0 16px}.hero{grid-template-columns:1fr}.count{justify-self:start}.grid{grid-template-columns:1fr;padding-top:24px}.card,.card:nth-child(1),.card:nth-child(4){grid-column:1;min-height:0}.art{height:205px}}
+  
+    /* Selected digital experience — ELBRUS case */
+    .case-shelf{margin-top:78px;padding-top:38px;border-top:1px solid var(--line)}
+    .case-shelf__head{display:grid;grid-template-columns:minmax(0,1fr) minmax(240px,.72fr);gap:34px;align-items:end}
+    .case-shelf__head h2{font:300 clamp(34px,4.7vw,60px)/.98 Georgia,serif;letter-spacing:-.035em;margin:16px 0 0;color:#f4f0e7}
+    .case-shelf__head p{max-width:440px;color:var(--muted);line-height:1.8;margin:0}
+    .case-feature{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);margin-top:30px;min-height:330px;border:1px solid var(--line);background:#091525;color:inherit;text-decoration:none;transition:transform .25s,border-color .25s,box-shadow .25s}
+    .case-feature:hover,.case-feature:focus-visible{transform:translateY(-5px);border-color:#c5a46d;box-shadow:0 24px 60px -32px #000,0 0 28px #c5a46d22;outline:none}
+    .case-feature__visual{position:relative;min-height:330px;overflow:hidden;display:flex;align-items:flex-end;padding:26px;background:radial-gradient(ellipse at 50% 43%,#c5a46d36,transparent 34%),linear-gradient(135deg,#18293a 0%,#0b1420 55%,#060a14 100%)}
+    .case-feature__visual:before,.case-feature__visual:after{content:"";position:absolute;border:1px solid #c5a46d6b;inset:12% 17%;clip-path:polygon(0 73%,18% 40%,31% 57%,49% 15%,64% 44%,78% 31%,100% 72%,100% 100%,0 100%)}
+    .case-feature__visual:after{inset:23% 28% 12%;opacity:.48;transform:rotate(10deg);border-color:#e9d8b3}
+    .case-feature__wordmark{position:relative;z-index:1;font:300 clamp(56px,8vw,106px)/.8 Georgia,serif;letter-spacing:.13em;color:#f4f0e7}
+    .case-feature__stamp{position:absolute;top:20px;left:23px;color:var(--gold);font:10px monospace;letter-spacing:.2em}
+    .case-feature__copy{display:flex;flex-direction:column;justify-content:center;padding:clamp(26px,4vw,48px)}
+    .case-feature__eyebrow{font-size:9px;letter-spacing:.2em;color:var(--gold);text-transform:uppercase}
+    .case-feature__copy h3{font:300 clamp(34px,4vw,53px)/.98 Georgia,serif;letter-spacing:-.025em;margin:18px 0 14px;color:#f4f0e7}
+    .case-feature__copy p{margin:0;color:var(--muted);line-height:1.8;max-width:470px}
+    .case-feature__meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px}
+    .case-feature__meta span{border:1px solid #28445a;padding:7px 9px;font-size:8px;color:#c8d2df;letter-spacing:.08em}
+    .case-feature__launch{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:26px;padding-top:16px;border-top:1px solid var(--line);font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--gold)}
+    @media(max-width:760px){.case-shelf{margin-top:54px;padding-top:27px}.case-shelf__head{grid-template-columns:1fr;gap:14px}.case-feature{grid-template-columns:1fr}.case-feature__visual{min-height:230px}.case-feature__copy{padding:26px}.case-feature__copy h3{font-size:38px}}
+
+    .lang-switch{display:flex;align-items:center;gap:6px;letter-spacing:0;white-space:nowrap}
+    .lang-switch a{display:inline-flex;align-items:center;justify-content:center;min-width:34px;padding:7px 8px;border:1px solid #28445a;color:#9eb2c8;text-decoration:none;font-size:10px;letter-spacing:.04em}
+    .lang-switch a[aria-current="page"]{background:#18293a;border-color:#806d43;color:#f3d795}
+    .lang-switch a:focus-visible{outline:2px solid #f3d795;outline-offset:3px}
+    header{gap:16px}.site-home{white-space:nowrap}
+    html[dir="rtl"] body{font-family:"Noto Sans Arabic",Tahoma,Arial,sans-serif;text-align:right}
+    html[dir="rtl"] .art small{left:auto;right:20px}
+    html[dir="rtl"] .case-feature__visual{direction:ltr}
+    html[dir="rtl"] .case-feature__stamp{left:auto;right:23px}
+    html[dir="rtl"] .case-feature__launch{flex-direction:row-reverse}
+    @media(max-width:620px){header{gap:8px}.lang-switch{gap:3px}.lang-switch a{min-width:29px;padding:6px 5px}header span{font-size:8px}}
+    @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition-duration:.01ms!important;animation-duration:.01ms!important;animation-iteration-count:1!important}}
+
+  </style>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+<!-- GLOBAL HUB SEO -->
+<meta name="description" content="يجمع OSGARD Entertainment بين عوالم الألعاب والتجارب الرقمية. استكشف ألعاب OSGARD ودراسة حالة ELBRUS للضيافة.">
+<meta name="robots" content="index,follow,max-image-preview:large">
+<link rel="canonical" href="https://osgard.world/entertainment/ar/">
+<link rel="alternate" hreflang="ru" href="https://osgard.world/entertainment/">
+<link rel="alternate" hreflang="en" href="https://osgard.world/entertainment/en/">
+<link rel="alternate" hreflang="ar" href="https://osgard.world/entertainment/ar/">
+<link rel="alternate" hreflang="x-default" href="https://osgard.world/entertainment/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="OSGARD WORLD">
+<meta property="og:locale" content="ar_AR">
+<meta property="og:locale:alternate" content="ru_RU">
+<meta property="og:locale:alternate" content="en_US">
+<meta property="og:title" content="OSGARD Entertainment | عوالم قابلة للعب">
+<meta property="og:description" content="يجمع OSGARD Entertainment بين عوالم الألعاب والتجارب الرقمية. استكشف ألعاب OSGARD ودراسة حالة ELBRUS للضيافة.">
+<meta property="og:url" content="https://osgard.world/entertainment/ar/">
+<meta property="og:image" content="https://osgard.world/entertainment/og.svg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="OSGARD Entertainment | عوالم قابلة للعب">
+<meta name="twitter:description" content="يجمع OSGARD Entertainment بين عوالم الألعاب والتجارب الرقمية. استكشف ألعاب OSGARD ودراسة حالة ELBRUS للضيافة.">
+<meta name="twitter:image" content="https://osgard.world/entertainment/og.svg">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"CollectionPage","name":"OSGARD Entertainment | عوالم قابلة للعب","description":"يجمع OSGARD Entertainment بين عوالم الألعاب والتجارب الرقمية. استكشف ألعاب OSGARD ودراسة حالة ELBRUS للضيافة.","url":"https://osgard.world/entertainment/ar/","inLanguage":"ar","isPartOf":{"@type":"WebSite","name":"OSGARD WORLD","url":"https://osgard.world/"},"about":{"@type":"Thing","name":"Interactive entertainment and digital experiences"}}</script>
+</head>
+<body>
+  <header><a class="site-home" href="/">OSGARD WORLD</a><nav class="lang-switch" aria-label="اللغة"><a href="/entertainment/" hreflang="ru" lang="ru" >RU</a><a href="/entertainment/en/" hreflang="en" lang="en">EN</a><a href="/entertainment/ar/" hreflang="ar" lang="ar" aria-current="page">AR</a</nav><span>07 / ENTERTAINMENT</span></header>
+  <main class="wrap">
+    <section class="hero"><div><div class="eyebrow">OSGARD / عوالم قابلة للعب</div><h1>اختر عالماً.<br>ابدأ اللعب.</h1><p>سبع ألعاب مستقلة، لكل منها إيقاعها وقواعدها ولغتها البصرية. اختر بطاقة لدخول عالم.</p></div><div class="count"><b>07</b><span>عوالم قابلة للعب</span></div></section>
+    <section class="grid" aria-label="جميع ألعاب OSGARD">
+      <a class="card time" href="/games/time-empire/"><div class="art"><small>01 / عالم قابل للعب</small><b>ET</b></div><div class="copy"><h2>إمبراطورية الزمن</h2><p>مدينة تشكّلها الموارد والفصائل والقرارات.</p><span class="launch">ادخل اللعبة &#8599;</span></div></a>
+      <a class="card swarm" href="/games/swarm/index.html"><div class="art"><small>02 / عالم قابل للعب</small><b>SW</b></div><div class="copy"><h2>SWARM</h2><p>تعاونوا لاستخراج النواة والخروج قبل إطلاق الإنذار.</p><span class="launch">ادخل اللعبة &#8599;</span></div></a>
+      <a class="card shift" href="/games/null-shift-godot/index.html"><div class="art"><small>03 / عالم قابل للعب</small><b>NS</b></div><div class="copy"><h2>NULL//SHIFT</h2><p>اخترق العقدة، وبدّل الطبقة، واستخرج النواة.</p><span class="launch">ادخل اللعبة &#8599;</span></div></a>
+      <a class="card inherit" href="/games/inherit/index.html"><div class="art"><small>04 / عالم قابل للعب</small><b>IN</b></div><div class="copy"><h2>INHERIT</h2><p>الإرث والذاكرة وقرارات الأجيال.</p><span class="launch">ادخل اللعبة &#8599;</span></div></a>
+      <a class="card remix" href="/games/remix/index.html"><div class="art"><small>05 / عالم قابل للعب</small><b>RX</b></div><div class="copy"><h2>REMIX</h2><p>أنشئ التحديات وشارك إعادة اللعب الخاصة بك.</p><span class="launch">ادخل اللعبة &#8599;</span></div></a>
+      <a class="card vector-zero" href="/games/vector-zero/"><div class="art"><small>06 / تجربة ميدانية</small><b>VZ</b></div><div class="copy"><h2>VECTOR//ZERO</h2><p>تحكّم في قطبية نواة الطاقة ووجّهها عبر المجال المغناطيسي.</p><span class="launch">ادخل اللعبة &#8599;</span></div></a>
+    <a class="card afterimage" data-afterimage-card href="/games/afterimage-run/"><div class="art"><small>07 / تحدي اليوم</small><b>AF</b></div><div class="copy"><h2>AFTERIMAGE//RUN</h2><p>بذرة يومية واحدة، ونتيجة ظلّ لأفضل محاولة، وتحدٍ لصديق على المسار نفسه.</p><span class="launch">ادخل اللعبة &#8599;</span></div></a>
+    </section>
+
+    <section class="case-shelf" aria-labelledby="selected-case-title">
+      <div class="case-shelf__head">
+        <div><div class="eyebrow">OSGARD / تجربة رقمية مختارة</div><h2 id="selected-case-title">العوالم الرقمية أكثر من مجرد ألعاب.</h2></div>
+        <p>نصمم تجارب رقمية متكاملة، من الهوية البصرية إلى الواجهات التي تساعد الناس على اختيار خطوتهم التالية.</p>
+      </div>
+      <a class="case-feature" href="/entertainment/elbrus/" aria-label="افتح دراسة حالة ELBRUS لتجربة الضيافة الرقمية">
+        <div class="case-feature__visual" aria-hidden="true"><span class="case-feature__stamp">ضيافة / دراسة حالة 001</span><span class="case-feature__wordmark">ELBRUS</span></div>
+        <div class="case-feature__copy"><span class="case-feature__eyebrow">علامة رقمية · ضيافة</span><h3>ELBRUS</h3>
+          <p>مفهوم رقمي راقٍ للضيافة والمطبخ الداغستاني: سرد تحريري، وتجربة قائمة تفاعلية، واختيار واضح ومسار مدروس للضيف.</p>
+          <div class="case-feature__meta"><span>نظام العلامة</span><span>تجربة القائمة</span><span>أولوية الهاتف</span><span>RU · EN · AR</span></div>
+          <div class="case-feature__launch"><span>عرض دراسة الحالة</span><span aria-hidden="true">↗</span></div>
+        </div>
+      </a>
+    </section>
+
+
+  </main>
+</body>
+</html>
