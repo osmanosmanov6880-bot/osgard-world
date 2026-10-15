@@ -20,6 +20,7 @@ on:
       - "public/skillcred/**"
       - "public/entertainment/**"
       - "public/games/**"
+      - "public/brand/**"
       - "public/privacy/**"
       - "public/osa-library/**"
       - "docs/OSA_MEDIA_RECOVERY_RUNBOOK.md"
@@ -58,6 +59,7 @@ on:
       - "scripts/null-shift-premium-smoke.mjs"
       - "scripts/games-portal-smoke.mjs"
       - "scripts/academy-home-smoke.mjs"
+      - "scripts/lecture-library-smoke.mjs"
       - "scripts/remix-growth-smoke.mjs"
       - "scripts/ecosystem-integrity-smoke.mjs"
       - "docs/09_OSGARD_GAMES_PLATFORM_AUDIT.md"
@@ -112,6 +114,8 @@ jobs:
         run: npm run qa:ecosystem
       - name: Verify Academy-first homepage and preserved portal route
         run: npm run qa:academy
+      - name: Verify ordered OSA course and lecture library
+        run: npm run qa:lectures
 
       - name: Validate the Godot game project contract
         run: npm run qa:null-shift-godot

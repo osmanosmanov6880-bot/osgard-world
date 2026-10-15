@@ -161,7 +161,7 @@ export default function AcademyHome() {
         <OsgardLogo className="academy-logo" /><span>{t.brand}</span>
       </a>
       <nav className="academy-nav" aria-label={locale === 'ru' ? 'Основная навигация' : 'Main navigation'}>
-        <a href="#paths">{t.paths}</a><a href="/catalog">{t.products}</a><a href="/games/">{t.games}</a><a href="/portal">{t.portal}</a>
+        <a href="#paths">{t.paths}</a><a href="/lectures">{locale === 'ru' ? 'Лекции' : 'Lectures'}</a><a href="/catalog">{t.products}</a><a href="/games/">{t.games}</a><a href="/portal">{t.portal}</a>
       </nav>
       <div className="academy-header-actions">
         <button className="academy-language" type="button" onClick={() => setLocale(locale === 'ru' ? 'en' : 'ru')} aria-label={t.switchLanguage}>{locale.toUpperCase()}</button>
@@ -176,7 +176,7 @@ export default function AcademyHome() {
         <p className="academy-lead">{t.lead}</p>
         <div className="academy-hero-actions">
           <a className="academy-button academy-button-primary" href="/osa-cinema"><BookOpen size={17} aria-hidden="true" />{t.start}<ArrowUpRight size={16} aria-hidden="true" /></a>
-          <a className="academy-button academy-button-secondary" href="#paths">{t.explore}<ArrowRight size={16} aria-hidden="true" /></a>
+          <a className="academy-button academy-button-secondary" href="/lectures"><BookOpen size={16} aria-hidden="true" />{locale === 'ru' ? 'Курсы и лекции' : 'Courses & lectures'}<ArrowRight size={16} aria-hidden="true" /></a>
         </div>
         <div className="academy-proof-row" aria-label={locale === 'ru' ? 'Возможности обучения' : 'Learning details'}>
           {t.signals.map(signal => <span key={signal}><i aria-hidden="true" />{signal}</span>)}

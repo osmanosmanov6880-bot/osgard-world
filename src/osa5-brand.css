@@ -1,0 +1,118 @@
+/* OSA 5.0 — shared signature, motion and product-profile tokens. */
+:root{
+  --osa5-ink:#f5f2ea;--osa5-muted:#a4aab5;--osa5-night:#070a10;--osa5-panel:#111721;
+  --osa5-line:rgba(213,220,229,.17);--osa5-champagne:#d8bf8d;--osa5-focus:#eed7a4;
+  --osa5-radius-sm:3px;--osa5-radius-md:8px;--osa5-radius-lg:18px;
+  --osa5-ease:cubic-bezier(.2,.75,.25,1);--osa5-fast:160ms;--osa5-medium:360ms;--osa5-crossfade:440ms
+}
+:root[data-osa-profile="ecosystem"]{--osa5-profile-accent:#d8bf8d;--osa5-profile-bg:#090b11}
+:root[data-osa-profile="intelligence"]{--osa5-profile-accent:#b9d2ff;--osa5-profile-bg:#070b13}
+:root[data-osa-profile="academy"]{--osa5-profile-accent:#9be5c8;--osa5-profile-bg:#08110f}
+:root[data-osa-profile="cinema"]{--osa5-profile-accent:#9fb5ed;--osa5-profile-bg:#050813}
+:root[data-osa-profile="credentials"]{--osa5-profile-accent:#c8ff3d;--osa5-profile-bg:#08090a}
+:root[data-osa-profile="games"]{--osa5-profile-accent:#5ce1e6;--osa5-profile-bg:#080a0b}
+:root[data-osa-profile="development"]{--osa5-profile-accent:#d8bf8d;--osa5-profile-bg:#10110f}
+
+/* The same authored geometry is used in OSGARD, OSA, course navigation and favicons. */
+.osa5-mark-lockup{display:inline-flex;align-items:center;gap:9px;min-width:0;color:currentColor;line-height:1;text-decoration:none}
+.osa5-mark-symbol{display:block;width:44px;height:auto;flex:0 0 auto;overflow:visible;color:var(--osa5-champagne);stroke:currentColor;stroke-width:1.55;stroke-linecap:round;stroke-linejoin:round}
+.osa5-mark-symbol .osa5-mark-point{fill:currentColor;stroke:none}
+.osa5-mark-with-name .osa5-mark-word{display:inline-flex;align-items:baseline;gap:7px}
+.osa5-mark-word strong{color:currentColor;font:700 14px/1 Inter,ui-sans-serif,system-ui,sans-serif;letter-spacing:.18em}
+.osa5-mark-word small{color:var(--osa5-profile-accent,var(--osa5-champagne));font:600 10px/1 ui-monospace,SFMono-Regular,monospace;letter-spacing:.05em}
+.osa5-mark-only{display:inline-flex;align-items:center;justify-content:center}
+.osa5-mark-only .osa5-mark-symbol{width:100%;min-width:0}
+.osa5-mark-lockup:focus-visible{outline:2px solid var(--osa5-focus);outline-offset:4px}
+.osgard-logo{display:inline-flex;align-items:center;gap:10px;width:auto;max-width:100%;color:#f3eee4;text-decoration:none;filter:drop-shadow(0 4px 14px rgba(0,0,0,.25))}
+.osgard-logo-symbol{width:38px;height:38px;color:#d8bf8d}
+.osgard-logo-copy{display:grid;gap:4px;min-width:0}
+.osgard-logo-copy strong{font:650 14px/1 Inter,ui-sans-serif,system-ui,sans-serif;letter-spacing:.22em}
+.osgard-logo-copy small{display:flex;align-items:center;gap:5px;color:#b0a899;font:600 7px/1.2 Inter,ui-sans-serif,system-ui,sans-serif;letter-spacing:.13em;white-space:nowrap}
+.osgard-logo-copy small i{color:var(--osa5-champagne);font-style:normal}
+.osgard-logo-footer{transform:scale(1.04);transform-origin:left center}
+.osgard-logo-preloader{color:#f6efe2}
+.academy-logo{vertical-align:middle}
+
+/* OSA Intelligence remains editorial: mark plate replaces the generic orbital composition. */
+.osa-home-brand-mark{display:grid;place-items:center;flex:0 0 39px;width:39px;height:39px;border:1px solid rgba(189,213,248,.36);border-radius:12px;background:linear-gradient(145deg,rgba(133,171,230,.1),rgba(205,183,137,.04));color:var(--osa5-profile-accent,#b5d0ff)}
+.osa-home-brand-mark .osa5-mark-symbol{width:30px}
+.osa-home-brand small{letter-spacing:.16em}
+.osa-home-art{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:22px;min-height:460px;aspect-ratio:auto;max-width:570px;position:relative}
+.osa-home-art-grid{position:absolute;inset:9% 3%;background-image:linear-gradient(rgba(184,205,231,.04) 1px,transparent 1px);background-size:100% 38px;mask-image:linear-gradient(transparent,#000 20%,#000 80%,transparent);pointer-events:none}
+.osa-home-orbit,.osa-home-core,.osa-home-float,.osa-home-art-cross{display:none!important}
+.osa-home-art-plate{position:relative;display:grid;place-items:center;width:min(100%,470px);min-height:300px;padding:42px;border:1px solid rgba(187,204,230,.19);background:linear-gradient(135deg,rgba(22,30,44,.74),rgba(7,11,19,.48));clip-path:polygon(0 0,calc(100% - 26px) 0,100% 26px,100% 100%,26px 100%,0 calc(100% - 26px))}
+.osa-home-art-mark .osa5-mark-symbol{width:92px}
+.osa-home-art-mark .osa5-mark-word strong{font:500 clamp(26px,3.6vw,38px)/1 'Manrope',Inter,sans-serif;letter-spacing:.22em}
+.osa-home-art-mark .osa5-mark-word small{font-size:12px}
+.osa-home-art-rule{width:100%;height:1px;margin-top:26px;background:linear-gradient(90deg,transparent,rgba(216,191,141,.6),transparent)}
+.osa-home-art-note{position:static;display:flex;flex-direction:column;justify-self:center;align-items:center;gap:5px;padding:0;border:0;background:none;text-align:center}
+.osa-home-art-note strong{font-size:14px}
+.osa-home-art-sequence{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));width:100%;border-top:1px solid var(--osa5-line);border-bottom:1px solid var(--osa5-line)}
+.osa-home-art-sequence>span{display:grid;gap:8px;padding:14px 8px;color:#aeb9ca;text-align:center;font-size:9px;letter-spacing:.1em}
+.osa-home-art-sequence>span+span{border-left:1px solid var(--osa5-line)}
+.osa-home-art-sequence i{color:var(--osa5-champagne);font:10px ui-monospace,monospace;font-style:normal}
+
+/* Ecosystem: keep seven-world interaction and layouts; share signatures, not product templates. */
+.osgard-world-app .brand-logo{display:inline-flex;align-items:center;gap:10px}
+.osgard-world-app>header{background:rgba(7,10,16,.88);border-bottom-color:rgba(216,191,141,.16)}
+.osgard-world-app .hero{isolation:isolate}
+.osgard-world-app .hero-copy{max-width:650px}
+.osgard-world-app .hero-title{font-family:'Cormorant Garamond',Georgia,serif;font-weight:400;letter-spacing:-.04em}
+.osgard-world-app .hero-title .is-gold{color:var(--osa5-champagne)}
+.osgard-world-app .hero-art{filter:saturate(.78)}
+.osgard-world-app .osgard-ecosystem-eyebrow{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.osgard-world-app .osgard-ecosystem-eyebrow .osa5-mark-symbol{width:23px;color:var(--osa5-champagne)}
+.osgard-world-app .osgard-ecosystem-eyebrow .osa5-brand-version{color:#d8bf8d;font:600 9px ui-monospace,monospace;letter-spacing:.13em;padding-left:9px;border-left:1px solid rgba(216,191,141,.35)}
+.osgard-world-app .osa-learning{border-top-color:rgba(216,191,141,.17);border-bottom-color:rgba(216,191,141,.13)}
+.osgard-world-app .osa-learning-visual{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;min-height:450px;border-left:1px solid rgba(216,191,141,.15);background:radial-gradient(ellipse at 50% 42%,rgba(216,191,141,.055),transparent 49%)}
+.osgard-world-app .osa-learning-orbit{display:none!important}
+.osgard-world-app .osa-learning-core{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;width:auto;height:auto;border:0;border-radius:0;background:transparent;box-shadow:none;animation:none}
+.osgard-world-app .osa-learning-core .osa5-mark-symbol{width:clamp(90px,13vw,142px)}
+.osgard-world-app .osa-learning-core .osa5-mark-word strong{font-size:25px}
+.osgard-world-app .osa-learning-core .osa5-mark-word small{font-size:11px}
+.osgard-world-app .osa-learning-core>small{margin:7px 0 0;color:#9eaaBa;font-size:9px;letter-spacing:.18em;text-align:center;line-height:1.8}
+.osgard-world-app .osa-learning-signal{position:static;display:inline-flex;margin:0 7px;padding:7px 11px;border:1px solid rgba(216,191,141,.2);background:transparent;color:#aeb7c5;font-size:8px;letter-spacing:.12em}
+.osgard-world-app .osa-learning-visual .osa-learning-signal{display:inline-flex}
+.osgard-world-app .osa-learning-visual .osa-learning-signal:nth-last-child(3){margin-top:8px}
+.osgard-world-app .world-showcase{border-top-color:rgba(216,191,141,.26);border-bottom-color:rgba(216,191,141,.26)}
+.osgard-world-app .world-selector button{border-radius:0}
+.osgard-world-app .world-selector button.is-active{border-left-color:var(--osa5-champagne);color:#f5f2ea;background:linear-gradient(90deg,rgba(216,191,141,.08),transparent 78%)}
+.osgard-world-app .world-selector button.is-active small{color:var(--osa5-champagne)}
+.osgard-world-app .world-stage{background:linear-gradient(120deg,rgba(216,191,141,.035),transparent 50%)}
+.osgard-world-app .stage-mark{color:#d8bf8d}
+.osgard-world-app .world-card{border-radius:3px}
+.osgard-world-app :focus-visible{outline-color:var(--osa5-focus)}
+.osgard-world-app .hero-primary,.osgard-world-app .nav-cta{border-radius:2px}
+.osgard-world-app a,.osgard-world-app button{-webkit-tap-highlight-color:transparent}
+.osa-cinema .cinema-brand{gap:12px}
+.cinema-brand .cinema-osa-mark .osa5-mark-symbol{width:24px}
+.cinema-brand .cinema-osa-word{color:#aebce0;font-size:8px;letter-spacing:.13em}
+
+/* The transition is decorative, non-interactive and explicitly bounded. */
+.osa5-transition-overlay{position:fixed;inset:0;z-index:2147483000;display:grid;place-content:center;justify-items:center;gap:15px;pointer-events:none;background:rgba(6,9,15,.94);color:#f6f2e8;opacity:1;transition:opacity var(--osa5-crossfade) var(--osa5-ease),visibility var(--osa5-crossfade) var(--osa5-ease);visibility:visible}
+.osa5-transition-overlay.is-leaving{opacity:0;visibility:hidden}
+.osa5-transition-overlay img{width:58px;height:58px;object-fit:contain;animation:osa5-transition-mark 360ms var(--osa5-ease) both}
+.osa5-transition-word{display:flex;align-items:baseline;gap:7px;font:700 13px Inter,ui-sans-serif,system-ui,sans-serif;letter-spacing:.2em}
+.osa5-transition-word small{color:var(--osa5-champagne);font:600 9px ui-monospace,monospace;letter-spacing:.08em}
+@keyframes osa5-transition-mark{from{opacity:0;transform:translateY(5px) scale(.96)}to{opacity:1;transform:none}}
+@media(max-width:760px){
+ .osa-home-art{min-height:0;gap:14px}.osa-home-art-plate{min-height:260px;padding:26px 18px}.osa-home-art-mark{gap:12px;flex-direction:column}.osa-home-art-mark .osa5-mark-symbol{width:75px}
+ .osgard-world-app .hero{gap:12px}.osgard-world-app .osa-learning{grid-template-columns:1fr}.osgard-world-app .osa-learning-visual{min-height:300px;border-left:0;border-bottom:1px solid rgba(216,191,141,.15)}
+ .osgard-world-app .world-showcase{grid-template-columns:minmax(0,1fr);min-height:0}.osgard-world-app .world-selector{grid-template-columns:repeat(2,minmax(0,1fr));padding:12px 0;border:0;gap:0 18px}
+ .osgard-world-app .world-selector button{grid-template-columns:25px minmax(0,1fr) 14px;padding:13px 0}
+}
+@media(prefers-reduced-motion:reduce){
+ .osa5-mark-symbol,.osa5-transition-overlay *,.osa-home *,.osa-home *:before,.osa-home *:after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}
+ .osa5-transition-overlay{transition-duration:80ms}
+ .osa5-intro *,.osa5-intro *:before,.osa5-intro *:after{animation-duration:.01ms!important;animation-iteration-count:1!important}
+}
+.osa5-intro{display:grid;position:fixed;inset:0;z-index:99999;place-content:center;justify-items:center;gap:20px;overflow:hidden;background:#07080c;color:#f5f2ea;transition:opacity 260ms ease,visibility 260ms ease}
+.osa5-intro.is-leaving{opacity:0;visibility:hidden;pointer-events:none}
+.osa5-intro-light{position:absolute;width:min(60vw,460px);aspect-ratio:1;border-radius:50%;background:radial-gradient(circle,rgba(216,191,141,.09),transparent 66%);filter:blur(8px);animation:osa5-intro-light 760ms ease-out both}
+.osa5-intro-lockup{position:relative;display:grid;justify-items:center;gap:18px}
+.osa5-intro-mark{gap:12px}.osa5-intro-mark .osa5-mark-symbol{width:88px}
+.osa5-intro-mark .osa5-mark-word strong{font:500 26px/1 'Cormorant Garamond',Georgia,serif;letter-spacing:.23em}.osa5-intro-mark .osa5-mark-word small{font-size:11px}
+.osa5-intro-lockup p{margin:0;color:#97969a;font:9px/1.5 ui-monospace,monospace;letter-spacing:.18em;text-align:center}.osa5-intro-lockup p span{color:var(--osa5-champagne)}
+.osa5-intro-controls{position:absolute;right:26px;bottom:24px}.osa5-intro-controls button{border:0;border-bottom:1px solid rgba(216,191,141,.35);background:transparent;color:#d2c3a5;padding:8px 0;font:11px/1.4 Inter,ui-sans-serif,system-ui,sans-serif;cursor:pointer}
+.osa5-intro-controls button:focus-visible{outline:2px solid var(--osa5-focus);outline-offset:4px}
+@keyframes osa5-intro-light{from{opacity:0;transform:scale(.8)}to{opacity:1;transform:scale(1)}}

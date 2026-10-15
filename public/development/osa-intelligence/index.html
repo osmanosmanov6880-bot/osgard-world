@@ -41,11 +41,12 @@
 .media-status strong{color:var(--ink)}
 @media(max-width:800px){.learning-path{grid-template-columns:1fr}.learning-card{min-height:0}.learning-card h3{margin:16px 0 10px}.learning-tools{grid-template-columns:1fr}.media-status{grid-template-columns:1fr;gap:13px}}
 </style>
+  <link rel="stylesheet" href="/brand/osa5-portals.css">
 </head>
 <body data-case-status="interactive-demo">
 <header class="wrap top">
-<a class="brand" href="/development/" aria-label="OSGARD Development"><span class="brand-mark"><span>O</span></span><span>OSGARD / DEVELOPMENT</span></a>
-<nav class="nav" aria-label="Навигация кейса"><a href="#experience">Опыт</a><a href="#architecture">Архитектура</a><a class="back" href="/development/#work">Все кейсы ↗</a></nav>
+<a class="brand" href="/development/" aria-label="OSGARD Development"><img class="osa5-development-mark" src="/brand/osa-5-mark.svg" alt="" width="30" height="30"><span>OSGARD / DEVELOPMENT</span></a>
+<nav class="nav" aria-label="Навигация кейса"><a href="#experience">Опыт</a><a href="#architecture">Архитектура</a><a href="/osa-library/">Медиатека ↗</a><a class="back" href="/development/#work">Все кейсы ↗</a></nav>
 </header>
 <main>
 <section class="wrap hero" id="experience">
@@ -83,7 +84,6 @@
 <article class="learning-tool"><span class="step">7-DAY FIELD GUIDE</span><h3>Семидневный маршрут</h3><p>Закрепи обучение на собственной задаче: выбери цель, разбей её на ежедневные действия и проверь результат. AI Academy содержит учебный прогресс и практическую студию.</p><a href="/academy">Открыть AI Academy ↗</a></article>
 </div>
 <div class="media-status" id="video-status"><div class="status-mark" aria-hidden="true">MEDIA</div><div><h3>Видеолекции: файлы ещё не подключены</h3><p><strong>Проверено по исходному репозиторию:</strong> медиаманифест содержит 19 записей видео и 9 записей аудио, но у них нет постоянных URL; сами MP4/WebM и готовые аудиофайлы в дереве репозитория не найдены. Поэтому кнопки фиктивного воспроизведения не добавлены. Учебный маршрут уже доступен в интерактивном формате; для видеоверсии нужно загрузить исходные файлы в постоянное хранилище и прописать рабочие URL.</p></div></div>
-<p><a href="/osa-library/" style="display:inline-flex;margin-top:12px;padding:10px 14px;border:1px solid #6f829c;border-radius:4px;color:#d8e5fa;text-decoration:none;font-weight:700">Открыть единую карту курса и реестр 31 медиа-ресурса ↗</a></p>
 </section>
 <section class="wrap section" id="architecture">
 <div class="section-head"><div><p class="eyebrow">SOURCE / ARCHITECTURE</p><h2>Один продукт.<br>Разные слои.</h2></div><p>На публичном уровне OSGARD показывает единый путь к продукту. Репозитории ниже отражают две итерации разработки: более наполненную основу и отдельный снимок интерактивного cinematic-прототипа с дополнительными тестами и документацией.</p></div>
@@ -103,5 +103,6 @@
 </section>
 </main>
 <footer class="wrap foot"><span>© 2026 OSGARD DEVELOPMENT</span><span>OSA / BEYOND THE MODEL</span><a href="/development/#work">Ко всем проектам ↗</a></footer>
+  <script defer src="/brand/osa-transition.js"></script>
 </body>
 </html>

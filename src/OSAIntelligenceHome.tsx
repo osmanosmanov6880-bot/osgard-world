@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { ArrowRight, ArrowUpRight, BookOpen, Brain, Film, Globe2, Layers3, ShieldCheck, Sparkles } from 'lucide-react'
+import { OSAMark } from './OSAMark'
+import { ArrowRight, ArrowUpRight, BookOpen, Globe2, Layers3, ShieldCheck, Sparkles } from 'lucide-react'
 import './osaIntelligenceHome.css'
 
 type Locale = 'ru' | 'en'
@@ -7,7 +8,7 @@ const copy = {
   ru: {
     eyebrow: 'OSA INTELLIGENCE / BEYOND THE MODEL', titleA: 'Мышление', titleB: 'важнее модели.',
     lead: 'Изучайте искусственный интеллект, проверяйте доказательства и превращайте сложные вопросы в обоснованные решения — сохраняя человека в контуре.',
-    primary: 'Начать OSA Original', secondary: 'Открыть Академию', proofA: '15 интерактивных сцен', proofB: '3 смысловых акта', proofC: 'Практика на вашем устройстве',
+    primary: 'Начать OSA Original', secondary: 'Открыть Академию', proofA: '8 интерактивных сцен', proofB: '3 смысловых акта', proofC: 'Практика на вашем устройстве',
     artTop: 'INTELLIGENCE / 001', artTitle: 'Не верьте форме.', artBody: 'Проверьте содержание.', tagA: 'МОДЕЛЬ', tagB: 'ДОКАЗАТЕЛЬСТВА', tagC: 'РЕШЕНИЕ',
     sectionEyebrow: 'ЕДИНАЯ СРЕДА OSA', sectionTitle: 'От понимания — к действию.', sectionLead: 'Не просто читать об ИИ. Пробовать, задавать критерии, проверять источники и разбирать последствия.',
     cinemaTitle: 'OSA Original', cinemaBody: 'Интерактивное путешествие по возможностям ИИ, власти знаний и человеческой ответственности. Ваши выборы меняют ход обучения.', cinemaAction: 'Войти в опыт',
@@ -16,13 +17,12 @@ const copy = {
     principleTitle: 'Три принципа.', principleA: 'Понимайте систему', principleABody: 'Отделяйте возможности модели от обещаний и ограничений.', principleB: 'Проверяйте доказательства', principleBBody: 'Открывайте первоисточники и уточняйте, что именно подтверждено.',
     principleC: 'Сохраняйте ответственность', principleCBody: 'Учитывайте приватность, риск ошибки и последствия решения.',
     footer: 'OSA Intelligence · Интерактивное обучение, проверка и практика.', footerNote: 'Прогресс сохраняется в этом браузере. Не вводите секреты и лишние персональные данные.',
-    mediaTitle: 'Видеолекции и материалы', mediaBody: 'Единая карта курса и реестр всех найденных медиа-ID. Файлы пока не подключены к плееру — фиктивного воспроизведения нет.', mediaAction: 'Открыть карту материалов',
     language: 'Переключить язык', home: 'OSA INTELLIGENCE'
   },
   en: {
     eyebrow: 'OSA INTELLIGENCE / BEYOND THE MODEL', titleA: 'Better thinking', titleB: 'beats bigger models.',
     lead: 'Explore artificial intelligence, verify evidence, and turn difficult questions into grounded decisions — with people remaining in the loop.',
-    primary: 'Start OSA Original', secondary: 'Open the Academy', proofA: '15 interactive scenes', proofB: '3 connected acts', proofC: 'Practice on your device',
+    primary: 'Start OSA Original', secondary: 'Open the Academy', proofA: '8 interactive scenes', proofB: '3 connected acts', proofC: 'Practice on your device',
     artTop: 'INTELLIGENCE / 001', artTitle: 'Do not trust the form.', artBody: 'Examine the evidence.', tagA: 'MODEL', tagB: 'EVIDENCE', tagC: 'DECISION',
     sectionEyebrow: 'THE OSA ENVIRONMENT', sectionTitle: 'From understanding to action.', sectionLead: 'More than reading about AI. Try ideas, set criteria, verify sources, and examine consequences.',
     cinemaTitle: 'OSA Original', cinemaBody: 'An interactive journey through AI capabilities, the power of knowledge, and human responsibility. Your choices shape the learning experience.', cinemaAction: 'Enter the experience',
@@ -31,7 +31,6 @@ const copy = {
     principleTitle: 'Three principles.', principleA: 'Understand the system', principleABody: 'Separate model capabilities from promises and limitations.', principleB: 'Verify the evidence', principleBBody: 'Open original sources and establish what they actually support.',
     principleC: 'Keep responsibility', principleCBody: 'Consider privacy, error risk, and the consequences of a decision.',
     footer: 'OSA Intelligence · Interactive learning, verification, and practice.', footerNote: 'Learning progress stays in this browser. Do not enter secrets or unnecessary personal data.',
-    mediaTitle: 'Video lectures & media inventory', mediaBody: 'One course map and a register of discovered media IDs. Files are not connected to a player yet; no fake playback is shown.', mediaAction: 'Open media map',
     language: 'Switch language', home: 'OSA INTELLIGENCE'
   }
 }
@@ -42,10 +41,10 @@ export default function OSAIntelligenceHome() {
   return <main className="osa-home" lang={locale}>
     <div className="osa-home-noise" aria-hidden="true" />
     <header className="osa-home-header">
-      <a className="osa-home-brand" href="/" aria-label={t.home}><span className="osa-home-brand-mark"><Brain size={20} strokeWidth={1.6} /></span><span><strong>OSA</strong><small>INTELLIGENCE</small></span></a>
+      <a className="osa-home-brand" href="/" aria-label={t.home}><span className="osa-home-brand-mark"><OSAMark variant="mark" className="osa-home-symbol" /></span><span><strong>OSA</strong><small>INTELLIGENCE <i> / 5.0</i></small></span></a>
       <div className="osa-home-header-actions"><span className="osa-home-status"><i />{locale === 'ru' ? 'ИНТЕЛЛЕКТ · ИССЛЕДОВАНИЕ · ДЕЙСТВИЕ' : 'INTELLIGENCE · RESEARCH · ACTION'}</span>
         <button className="osa-home-language" type="button" onClick={() => setLocale(locale === 'ru' ? 'en' : 'ru')} aria-label={t.language}><Globe2 size={15} />{locale.toUpperCase()}</button>
-        <a className="osa-home-portal-link" href="/portal">OSGARD <ArrowUpRight size={14} /></a>
+        <a className="osa-home-portal-link osa-home-lectures-link" href="/lectures" aria-label={locale === 'ru' ? 'Курсы и лекции' : 'Courses and lectures'}>{locale === 'ru' ? 'КУРСЫ И ЛЕКЦИИ' : 'COURSES & LECTURES'} <BookOpen size={14} /></a><a className="osa-home-portal-link" href="/portal">OSGARD <ArrowUpRight size={14} /></a>
       </div>
     </header>
 
@@ -82,8 +81,6 @@ export default function OSAIntelligenceHome() {
         <a className="osa-home-card" href="/portal"><span className="osa-home-card-index">03 / ECOSYSTEM</span><span className="osa-home-card-icon"><Globe2 size={21} /></span><h3>{t.portalTitle}</h3><p>{t.portalBody}</p><span className="osa-home-card-action">{t.portalAction}<ArrowUpRight size={16} /></span></a>
       </div>
     </section>
-
-    <section className="osa-home-media-hub" aria-labelledby="osa-home-media-title"><div className="osa-home-media-icon"><Film size={22} /></div><div className="osa-home-media-copy"><p className="osa-home-eyebrow">{locale === 'ru' ? 'MEDIA / ПРОЗРАЧНЫЙ СТАТУС' : 'MEDIA / VERIFIED STATUS'}</p><h2 id="osa-home-media-title">{t.mediaTitle}</h2><p>{t.mediaBody}</p></div><a className="osa-home-button osa-home-button-secondary" href="/osa-library/">{t.mediaAction}<ArrowUpRight size={16} /></a></section>
 
     <section className="osa-home-principles" aria-labelledby="osa-home-principles-title">
       <div className="osa-home-principles-heading"><p className="osa-home-eyebrow">OSA / METHOD</p><h2 id="osa-home-principles-title">{t.principleTitle}</h2></div>
