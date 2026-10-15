@@ -33,6 +33,8 @@ html[dir="rtl"] .lang{direction:ltr}html[dir="rtl"] .brand{direction:ltr;text-al
 </style>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"CreativeWork","name":"ELBRUS — تجربة الضيافة | OSGARD WORLD","url":"https://osgard.world/entertainment/elbrus/ar/","inLanguage":"ar","creator":{"@type":"Organization","name":"OSGARD WORLD","url":"https://osgard.world/"},"description":"ELBRUS تجربة رقمية راقية للضيافة والمطبخ الداغستاني. اكتشف هوية العلامة وتجربة القائمة ومسار الضيف على الهاتف ومعاينة تفاعلية من OSGARD WORLD.","isAccessibleForFree":true}</script>
+  <link rel="stylesheet" href="/entertainment/elbrus/table-session.css">
+  <script src="/entertainment/elbrus/table-session.js" defer></script>
 </head>
 <body>
 <a class="skip-link" href="#main-content" data-i18n="skipLink">انتقل إلى المحتوى</a>
@@ -64,7 +66,41 @@ html[dir="rtl"] .lang{direction:ltr}html[dir="rtl"] .brand{direction:ltr;text-al
 <article class="dish" data-category="drinks"><div class="dish-art" aria-hidden="true">Ч</div><div class="dish-copy"><span class="dish-kind" data-i18n="sample">صنف تجريبي</span><h3 data-i18n="dish3">شاي الجبال</h3><p data-i18n="dish3Body">مشروب تجريبي؛ المكونات والحجم غير مؤكدين.</p><div class="dish-bottom"><span class="price" data-i18n="price3">160 RUB</span><button type="button" class="add" data-add="dish3" data-i18n="add">إضافة +</button></div></div></article>
 </div><div class="cart-demo"><p><strong data-i18n="demoCartTitle">سلة تجريبية</strong><span data-i18n="demoCartBody">تظل الأصناف المختارة في علامة التبويب هذه فقط.</span></p><span class="cart-status" id="cart-status" data-i18n="cartZero" aria-live="polite">المحدد: 0</span></div>
 </div></section>
-<div class="wrap"><section class="section architecture" aria-labelledby="engineering-title">
+<div class="wrap"><section class="section table-session" id="table-session-demo" aria-labelledby="table-session-title">
+ <div class="wrap">
+  <div class="section-heading"><div><div class="eyebrow">TABLE OS / معاينة الفكرة</div><h2 id="table-session-title">طاولة واحدة. أصوات متعددة.</h2></div><p>كوّن مجموعة تجريبية: اختر المناسبة وعدد الضيوف والميزانية. تتحدث التكلفة داخل المتصفح.</p></div>
+  <p class="table-session-note" id="table-session-notice" role="note">معاينة محلية على جهاز واحد فقط. لا تنشئ جلسة مشتركة، ولا ترسل دعوات، ولا تحفظ طلباً على الخادم، ولا تحجز طاولة.</p>
+  <div class="table-session-grid">
+   <div class="table-session-panel">
+    <div class="table-session-field">
+     <span class="table-session-label" id="table-guests-label">الضيوف على الطاولة</span>
+     <div class="table-session-stepper" role="group" aria-labelledby="table-guests-label">
+      <button type="button" data-guest-step="-1" aria-label="تقليل عدد الضيوف" disabled>−</button><output id="table-guest-count" aria-live="polite">4</output><button type="button" data-guest-step="1" aria-label="زيادة عدد الضيوف">+</button>
+     </div><button class="table-session-soft-button" type="button" data-guest-join>محاكاة انضمام ضيف +1</button>
+    </div>
+    <div class="table-session-field"><span class="table-session-label" id="table-budget-label">الميزانية التجريبية لكل ضيف</span>
+     <div class="table-session-options" role="group" aria-labelledby="table-budget-label">
+      <button type="button" data-table-budget="500" aria-pressed="false">500 RUB</button><button type="button" data-table-budget="800" aria-pressed="true">800 RUB</button><button type="button" data-table-budget="1200" aria-pressed="false">1200 RUB</button>
+     </div>
+    </div>
+    <div class="table-session-field"><span class="table-session-label" id="table-occasion-label">المناسبة</span>
+     <div class="table-session-options table-session-occasions" role="group" aria-labelledby="table-occasion-label">
+      <button type="button" data-table-occasion="family" aria-pressed="true">مائدة عائلية</button><button type="button" data-table-occasion="celebration" aria-pressed="false">احتفال</button><button type="button" data-table-occasion="explore" aria-pressed="false">اكتشاف المطبخ</button>
+     </div>
+    </div>
+    <button class="table-session-reset" type="button" data-table-reset>إعادة ضبط المعاينة</button>
+   </div>
+   <div class="table-session-panel table-session-result" aria-describedby="table-session-notice">
+    <div class="table-session-result-head"><div><span class="table-session-overline">المجموعة التجريبية المقترحة</span><h3 id="table-set-title">مائدة متوازنة</h3></div><span id="table-budget-status" class="table-session-status" aria-live="polite">ضمن الميزانية التجريبية</span></div>
+    <ul id="table-set-items" class="table-session-items" aria-live="polite"></ul>
+    <div class="table-session-metrics"><div><span>الإجمالي التقديري</span><strong id="table-total">—</strong></div><div><span>لكل ضيف</span><strong id="table-per-guest">—</strong></div><div><span>ميزانية المجموعة</span><strong id="table-budget-total">—</strong></div></div>
+    <button class="table-session-copy" type="button" data-table-copy>نسخ خطة الطاولة</button><p id="table-copy-status" class="table-session-copy-status" role="status" aria-live="polite"></p>
+    <textarea id="table-plan-fallback" class="table-session-fallback" rows="5" aria-label="نص خطة الطاولة التجريبية" hidden readonly></textarea>
+   </div>
+  </div>
+ </div>
+</section>
+<section class="section architecture" aria-labelledby="engineering-title">
 <div><div class="eyebrow" data-i18n="engineeringEyebrow">حدود التكاملات</div><h2 id="engineering-title" data-i18n="engineeringTitle">تقنية،<br>دون وعود زائفة.</h2><p data-i18n="engineeringIntro">تعرض هذه الحالة اتجاه المنتج ومعاينة تفاعلية. يتطلب التشغيل الحقيقي موافقة المالك على البيانات والتحقق من بيئة الإنتاج.</p></div>
 <div class="systems">
 <div class="system-row"><span>01</span><div><h3 data-i18n="sys1Title">القائمة والسعر من الخادم</h3><p data-i18n="sys1Body">يظل الخادم المصدر المعتمد لتكوين الطلب وإجمالي السعر في بنية المنتج المستهدفة.</p></div></div>

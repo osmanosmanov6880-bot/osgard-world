@@ -32,6 +32,8 @@ html[dir="rtl"] .lang{direction:ltr}html[dir="rtl"] .brand{direction:ltr;text-al
 @media(max-width:600px){.section,.preview,.architecture{contain-intrinsic-size:auto 720px}}
 </style>
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"CreativeWork","name":"ELBRUS — Hospitality Experience | OSGARD WORLD","url":"https://osgard.world/entertainment/elbrus/en/","inLanguage":"en","creator":{"@type":"Organization","name":"OSGARD WORLD","url":"https://osgard.world/"},"description":"ELBRUS is a premium digital hospitality concept for Dagestani cuisine. Explore the brand system, menu UX, mobile guest journey and interactive demo by OSGARD WORLD.","isAccessibleForFree":true}</script>
+  <link rel="stylesheet" href="/entertainment/elbrus/table-session.css">
+  <script src="/entertainment/elbrus/table-session.js" defer></script>
 </head>
 <body>
 <a class="skip-link" href="#main-content" data-i18n="skipLink">Skip to content</a>
@@ -63,7 +65,41 @@ html[dir="rtl"] .lang{direction:ltr}html[dir="rtl"] .brand{direction:ltr;text-al
 <article class="dish" data-category="drinks"><div class="dish-art" aria-hidden="true">Ч</div><div class="dish-copy"><span class="dish-kind" data-i18n="sample">SAMPLE ITEM</span><h3 data-i18n="dish3">Mountain tea</h3><p data-i18n="dish3Body">Sample drink; ingredients and volume are unconfirmed.</p><div class="dish-bottom"><span class="price" data-i18n="price3">160 RUB</span><button type="button" class="add" data-add="dish3" data-i18n="add">Add +</button></div></div></article>
 </div><div class="cart-demo"><p><strong data-i18n="demoCartTitle">Demo cart</strong><span data-i18n="demoCartBody">Selected items exist only in this browser tab.</span></p><span class="cart-status" id="cart-status" data-i18n="cartZero" aria-live="polite">Selected: 0</span></div>
 </div></section>
-<div class="wrap"><section class="section architecture" aria-labelledby="engineering-title">
+<div class="wrap"><section class="section table-session" id="table-session-demo" aria-labelledby="table-session-title">
+ <div class="wrap">
+  <div class="section-heading"><div><div class="eyebrow">TABLE OS / CONCEPT PREVIEW</div><h2 id="table-session-title">One table. Many voices.</h2></div><p>Compose a sample set for your group: choose the occasion, guest count and budget. The estimate updates in your browser.</p></div>
+  <p class="table-session-note" id="table-session-notice" role="note">Local, single-device concept demo. It does not create a shared session, send invitations, save orders to a server or reserve tables.</p>
+  <div class="table-session-grid">
+   <div class="table-session-panel">
+    <div class="table-session-field">
+     <span class="table-session-label" id="table-guests-label">Guests at the table</span>
+     <div class="table-session-stepper" role="group" aria-labelledby="table-guests-label">
+      <button type="button" data-guest-step="-1" aria-label="Decrease guest count" disabled>−</button><output id="table-guest-count" aria-live="polite">4</output><button type="button" data-guest-step="1" aria-label="Increase guest count">+</button>
+     </div><button class="table-session-soft-button" type="button" data-guest-join>Simulate guest joining +1</button>
+    </div>
+    <div class="table-session-field"><span class="table-session-label" id="table-budget-label">Demo budget per guest</span>
+     <div class="table-session-options" role="group" aria-labelledby="table-budget-label">
+      <button type="button" data-table-budget="500" aria-pressed="false">500 RUB</button><button type="button" data-table-budget="800" aria-pressed="true">800 RUB</button><button type="button" data-table-budget="1200" aria-pressed="false">1200 RUB</button>
+     </div>
+    </div>
+    <div class="table-session-field"><span class="table-session-label" id="table-occasion-label">Occasion</span>
+     <div class="table-session-options table-session-occasions" role="group" aria-labelledby="table-occasion-label">
+      <button type="button" data-table-occasion="family" aria-pressed="true">Family table</button><button type="button" data-table-occasion="celebration" aria-pressed="false">Celebration</button><button type="button" data-table-occasion="explore" aria-pressed="false">Explore the cuisine</button>
+     </div>
+    </div>
+    <button class="table-session-reset" type="button" data-table-reset>Reset preview</button>
+   </div>
+   <div class="table-session-panel table-session-result" aria-describedby="table-session-notice">
+    <div class="table-session-result-head"><div><span class="table-session-overline">Suggested demo set</span><h3 id="table-set-title">Balanced table</h3></div><span id="table-budget-status" class="table-session-status" aria-live="polite">Within the demo budget</span></div>
+    <ul id="table-set-items" class="table-session-items" aria-live="polite"></ul>
+    <div class="table-session-metrics"><div><span>Estimated total</span><strong id="table-total">—</strong></div><div><span>Per guest</span><strong id="table-per-guest">—</strong></div><div><span>Group budget</span><strong id="table-budget-total">—</strong></div></div>
+    <button class="table-session-copy" type="button" data-table-copy>Copy table plan</button><p id="table-copy-status" class="table-session-copy-status" role="status" aria-live="polite"></p>
+    <textarea id="table-plan-fallback" class="table-session-fallback" rows="5" aria-label="Demo table plan text" hidden readonly></textarea>
+   </div>
+  </div>
+ </div>
+</section>
+<section class="section architecture" aria-labelledby="engineering-title">
 <div><div class="eyebrow" data-i18n="engineeringEyebrow">ENGINEERING BOUNDARIES</div><h2 id="engineering-title" data-i18n="engineeringTitle">Technology with<br>no false promises.</h2><p data-i18n="engineeringIntro">This case shows product direction and a working interactive excerpt. A real restaurant launch requires owner-approved data and production verification.</p></div>
 <div class="systems">
 <div class="system-row"><span>01</span><div><h3 data-i18n="sys1Title">Catalogue and server pricing</h3><p data-i18n="sys1Body">In the target architecture, the server remains the source of truth for order composition and totals.</p></div></div>

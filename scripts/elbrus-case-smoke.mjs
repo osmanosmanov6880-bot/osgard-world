@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
-const root=process.cwd(),required=["public/entertainment/index.html","public/entertainment/elbrus/index.html","public/entertainment/elbrus/en/index.html","public/entertainment/elbrus/ar/index.html","public/entertainment/elbrus/og.svg","scripts/production-route-matrix.mjs","public/sitemap.xml",".github/workflows/deploy-frontend.yml","package.json"];
+const root=process.cwd(),required=["public/entertainment/index.html","public/entertainment/elbrus/index.html","public/entertainment/elbrus/en/index.html","public/entertainment/elbrus/ar/index.html","public/entertainment/elbrus/og.svg","public/entertainment/elbrus/table-session.css","public/entertainment/elbrus/table-session.js","scripts/production-route-matrix.mjs","public/sitemap.xml",".github/workflows/deploy-frontend.yml","package.json"];
 for(const file of required)assert.ok(existsSync(resolve(root,file)),"Missing ELBRUS publication file: "+file);
 const read=p=>readFileSync(resolve(root,p),"utf8"),hub=read("public/entertainment/index.html"),sitemap=read("public/sitemap.xml"),routes=read("scripts/production-route-matrix.mjs"),workflow=read(".github/workflows/deploy-frontend.yml"),pkg=JSON.parse(read("package.json"));
 assert.ok(hub.includes('href="/entertainment/elbrus/"'));assert.equal((hub.match(/class="case-shelf"/g)||[]).length,1);assert.equal((hub.match(/Selected digital experience — ELBRUS case/g)||[]).length,1);
@@ -19,4 +19,11 @@ assert.ok(p.includes('aria-current="page"')&&p.includes('aria-live="polite"'),l.
 for(const l of locales)assert.ok(sitemap.includes('<loc>'+l.url+'</loc>'),"sitemap "+l.code);
 for(const r of ["'/entertainment/elbrus/'","'/entertainment/elbrus/en/'","'/entertainment/elbrus/ar/'","'/entertainment/elbrus/og.svg'"])assert.ok(routes.includes(r),"route matrix "+r);
 assert.ok(workflow.includes('"public/entertainment/**"')&&workflow.includes("npm run qa:elbrus-case"));assert.equal(pkg.scripts?.["qa:elbrus-case"],"node scripts/elbrus-case-smoke.mjs");
+
+const tableCss=read("public/entertainment/elbrus/table-session.css"),tableJs=read("public/entertainment/elbrus/table-session.js");new Function(tableJs);
+assert.ok(tableCss.includes(".table-session-grid")&&tableCss.includes("@media(max-width:760px)")&&tableCss.includes("prefers-reduced-motion:reduce"),"TABLE OS responsive/reduced-motion CSS");
+assert.ok(!tableJs.includes("fetch(")&&!tableJs.includes("/api/orders")&&!tableJs.includes("/api/reservations")&&!tableJs.includes("localStorage")&&!tableJs.includes("sessionStorage"),"TABLE OS stays local-only/no persistence");
+assert.ok(tableJs.includes("Math.min(8")&&tableJs.includes("Math.max(1")&&tableJs.includes("navigator.clipboard"),"TABLE OS guest bounds/copy fallback");
+for(const l of locales){const p=read(l.file);assert.ok(p.includes('id="table-session-demo"'),l.code+" TABLE OS section");assert.ok(p.includes('/entertainment/elbrus/table-session.css')&&p.includes('/entertainment/elbrus/table-session.js'),l.code+" TABLE OS assets");assert.ok(p.includes('id="table-session-notice"')&&p.includes('data-guest-join')&&p.includes('data-table-copy'),l.code+" TABLE OS controls/disclosure");}
+
 console.log("ELBRUS_GLOBAL_CASE_PASS: RU/EN/AR, Arabic RTL, canonical/hreflang, metadata, no fake order API, responsive and SSH deployment gates.");
