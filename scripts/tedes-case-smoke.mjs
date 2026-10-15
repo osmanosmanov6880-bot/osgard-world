@@ -43,6 +43,7 @@ assert.ok(cardCss.includes('LUXURY CARD') && cardCss.includes('Cormorant Garamon
 assert.ok(sitemap.includes('https://osgard.world/development/tedes/') && sitemap.includes('https://osgard.world/tedes/'), 'TEDES public routes are missing from sitemap')
 assert.ok(!sitemap.includes('https://osgard.world/tedes/project/'), 'Private local project workspace must not be included in sitemap')
 assert.ok(routeMatrix.includes("'/tedes/'") && routeMatrix.includes("'/development/tedes/'"), 'Production route matrix does not include TEDES routes')
+assert.ok(routeMatrix.includes("path === '/tedes/project/project-workspace.js'") && routeMatrix.includes('export function mergeProjectDocuments') && routeMatrix.includes('MAX_IMPORT_BYTES'), 'Production route matrix must validate the TEDES project controller by its real exports')
 assert.ok(workflow.includes('"public/tedes/**"') && workflow.includes('"public/development/tedes/**"'), 'Deployment workflow does not watch TEDES pages')
 
 
