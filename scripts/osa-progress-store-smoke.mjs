@@ -1,5 +1,42 @@
 import assert from 'node:assert/strict'
-import { createOSALearningProgressStore, OSA_PROGRESS_STORAGE_KEY } from '../src/osaProgress.ts'
+import { readFileSync } from 'node:fs'
+import vm from 'node:vm'
+import ts from 'typescript'
+
+const source = readFileSync('src/osaProgress.ts', 'utf8')
+const compiled = ts.transpileModule(source, {
+  compilerOptions: {
+    target: ts.ScriptTarget.ES2022,
+    module: ts.ModuleKind.CommonJS,
+  },
+}).outputText
+
+const moduleRecord = { exports: {} }
+const sandbox = {
+  module: moduleRecord,
+  exports: moduleRecord.exports,
+  Date,
+  require(specifier) {
+    if (specifier === './osaLessonGuides') {
+      return {
+        OSA_LESSON_SLUGS: [
+          'intelligence-and-imitation',
+          'how-language-models-work',
+          'power-of-knowledge',
+          'signal-and-noise',
+          'verify-an-ai-answer',
+          'privacy-before-prompting',
+          'human-in-the-loop',
+          'investigate-the-future',
+        ],
+      }
+    }
+    throw new Error('Unexpected dependency in progress-store test: ' + specifier)
+  },
+}
+vm.runInNewContext(compiled, sandbox, { filename: 'osaProgress.transpiled.cjs' })
+const { createOSALearningProgressStore, OSA_PROGRESS_STORAGE_KEY } = moduleRecord.exports
+const plain = value => JSON.parse(JSON.stringify(value))
 
 class MemoryStorage {
   data = new Map()
@@ -26,7 +63,7 @@ storage.setItem('osgard-osa-cinema-progress-v1', JSON.stringify({
 let changeEvents = 0
 const store = createOSALearningProgressStore(storage, () => { changeEvents += 1 }, () => '2026-10-15T00:00:00.000Z')
 
-let progress = store.read()
+let progress = plain(store.read())
 assert.deepEqual(progress.lessonCompletions, ['intelligence-and-imitation', 'power-of-knowledge'], 'legacy completions should be deduplicated and invalid slugs removed')
 assert.equal(progress.cinema.index, 5, 'legacy cinema position should migrate')
 assert.equal(progress.cinema.locale, 'en', 'legacy locale should migrate')
@@ -37,20 +74,20 @@ assert.ok(storage.getItem(OSA_PROGRESS_STORAGE_KEY), 'a canonical snapshot shoul
 assert.equal(store.setLessonCompletion('human-in-the-loop', true), true, 'valid completion should persist')
 assert.equal(store.setLessonCompletion('not-a-real-lesson', true), false, 'unknown lesson slugs should be rejected')
 assert.equal(store.markLessonOpened('signal-and-noise'), true, 'last lesson should persist')
-progress = store.read()
+progress = plain(store.read())
 assert.equal(progress.lastLessonSlug, 'signal-and-noise', 'last opened lesson should be recorded')
 assert.ok(progress.lessonCompletions.includes('human-in-the-loop'), 'completion update should preserve existing lessons')
 assert.equal(progress.updatedAt, '2026-10-15T00:00:00.000Z', 'writes should carry a stable updatedAt timestamp')
 
 assert.equal(store.saveCinema({ index: 999, answers: { 0: 8 }, locale: 'fr', completed: true, selfChecks: { 0: true, 9: true } }), true)
-progress = store.read()
+progress = plain(store.read())
 assert.equal(progress.cinema.index, 0, 'out-of-range scene indexes should normalise to zero')
 assert.equal(progress.cinema.locale, 'ru', 'unsupported locale should normalise to Russian')
 assert.deepEqual(progress.cinema.answers, {}, 'invalid choice indexes should be discarded')
 assert.deepEqual(progress.cinema.selfChecks, { 0: true }, 'out-of-range self-check indexes should be discarded')
 
 assert.equal(store.resetCinema(), true, 'course restart should persist')
-progress = store.read()
+progress = plain(store.read())
 assert.equal(progress.cinema.index, 0, 'restart should reset the current scene')
 assert.equal(progress.lastLessonSlug, 'signal-and-noise', 'restart must preserve last opened lesson')
 assert.ok(progress.lessonCompletions.includes('power-of-knowledge'), 'restart must preserve lesson completion history')
@@ -61,6 +98,6 @@ const blocked = createOSALearningProgressStore({
   setItem() { throw new Error('storage blocked') },
 })
 assert.equal(blocked.setLessonCompletion('intelligence-and-imitation', true), false, 'blocked storage should be reported as non-persistent')
-assert.ok(blocked.read().lessonCompletions.includes('intelligence-and-imitation'), 'memory fallback should keep this tab functional')
+assert.ok(plain(blocked.read()).lessonCompletions.includes('intelligence-and-imitation'), 'memory fallback should keep this tab functional')
 
 console.log('OSA_PROGRESS_STORE_PASS: legacy migration, validation, persistence, eventing, and blocked-storage fallback verified.')
