@@ -89,6 +89,12 @@ const plans = [
 export default function OSAMonetizationPage() {
   const [locale, setLocale] = useState<Locale>('ru')
   const t = copy[locale]
+  const offerCopy = {
+    free: { label: t.freeLabel, title: t.freeTitle, price: t.freePrice, description: t.freeDescription, items: t.freeItems },
+    course: { label: t.courseLabel, title: t.courseTitle, price: t.coursePrice, cadence: t.courseCadence, description: t.courseDescription, items: t.courseItems },
+    cohort: { label: t.cohortLabel, title: t.cohortTitle, price: t.cohortPrice, cadence: t.cohortCadence, description: t.cohortDescription, items: t.cohortItems },
+    enterprise: { label: t.enterpriseLabel, title: t.enterpriseTitle, price: t.enterprisePrice, description: t.enterpriseDescription, items: t.enterpriseItems },
+  }
 
   return (
     <main style={{ minHeight: '100vh', color: '#edf3ff', background: 'radial-gradient(ellipse at 50% -12%, #20365b 0, #0b1220 48%, #080d16 100%)', padding: 'clamp(22px, 5vw, 72px)' }}>
@@ -106,7 +112,7 @@ export default function OSAMonetizationPage() {
 
         <section aria-label={locale === 'ru' ? 'Варианты обучения' : 'Learning plans'} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 245px), 1fr))', gap: 16, alignItems: 'stretch' }}>
           {plans.map(plan => {
-            const details = t[plan.key]
+            const details = offerCopy[plan.key]
             return (
               <article key={plan.key} style={{ position: 'relative', display: 'flex', flexDirection: 'column', padding: 24, borderRadius: 22, border: plan.featured ? '1px solid #c8a96b' : '1px solid #29394f', background: plan.featured ? 'linear-gradient(160deg, #1e2a3e, #101827 72%)' : 'linear-gradient(160deg, #141e2e, #0d1420 76%)', boxShadow: plan.featured ? '0 18px 55px #0006, inset 0 1px #ffffff12' : '0 18px 55px #0003' }}>
                 {plan.featured && <span style={{ position: 'absolute', top: -12, right: 18, padding: '6px 11px', borderRadius: 999, background: '#c8a96b', color: '#111722', fontSize: 11, fontWeight: 800 }}>{t.featured}</span>}
