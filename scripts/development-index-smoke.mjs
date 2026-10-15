@@ -20,7 +20,7 @@ for (const marker of [
 assert.ok(!/<form\b/i.test(page) && !/action=["']\/api/i.test(page), 'Portfolio landing must not submit live data.')
 assert.ok(og.startsWith('<svg') && og.includes('width="1200" height="630"') && og.includes('OSGARD / DEVELOPMENT') && og.includes('Build what'), 'Development social card is incomplete.')
 assert.ok(routes.includes("'/development/'") && routes.includes("'/development/og.svg'"), 'Production route matrix must include Development landing and social image.')
-assert.ok(routes.includes('Разработка цифровых продуктов — OSGARD Development') && routes.includes('SELECTED WORK / 01—06'), 'Production matrix must validate Development landing content.')
+assert.ok(routes.includes('Разработка цифровых продуктов — OSGARD Development') && routes.includes('SELECTED WORK / 01—07', 'href="/development/essentia/"'), 'Production matrix must validate Development landing content.')
 assert.ok(sitemap.includes('<loc>https://osgard.world/development/</loc>'), 'Development landing must be listed in sitemap.')
 for (const workflow of [deploy, frontend]) {
   assert.ok(workflow.includes('"public/development/index.html"'), 'Workflow must trigger for Development landing changes.')

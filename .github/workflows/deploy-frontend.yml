@@ -27,6 +27,8 @@ on:
       - "public/development/phantom/**"
       - "public/development/auto-style/**"
       - "public/development/textura/**"
+      - "public/development/essentia/**"
+      - "scripts/essentia-case-smoke.mjs"
       - "godot/null-shift/**"
       - "scripts/null-shift-godot-smoke.mjs"
       - "public/games/null-shift-godot/**"
@@ -97,6 +99,8 @@ jobs:
         run: npm run qa:auto-style-case
       - name: Verify TEXTURA luxury case and all locales
         run: npm run qa:textura-case
+      - name: Verify ESSENTIA commerce showcase
+        run: npm run qa:essentia
       - run: npm run qa:null-shift
       - name: Smoke-test the OSGARD Games hub
         run: npm run qa:games-portal
