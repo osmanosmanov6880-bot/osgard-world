@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react'
 import { OSA_LEARNING_TRACKS, getOSANextLesson, getOSATrackProgress } from './osaLearningTracks'
 import { getOSALearningProgress, subscribeOSALearningProgress } from './osaProgress'
+import { readOSAAttempts, clearOSAAttempts } from './osaAttempts'
 
 export default function OSALearningDashboard() {
   const [locale, setLocale] = useState<'ru' | 'en'>('ru')
   const [progress, setProgress] = useState(getOSALearningProgress)
   useEffect(() => subscribeOSALearningProgress(() => setProgress(getOSALearningProgress())), [])
+  const [attempts, setAttempts] = useState(readOSAAttempts)
+  useEffect(() => { const update = () => setAttempts(readOSAAttempts()); window.addEventListener('osa6:attempts-changed', update); window.addEventListener('storage', update); return () => { window.removeEventListener('osa6:attempts-changed', update); window.removeEventListener('storage', update) } }, [])
   const next = getOSANextLesson(progress.lessonCompletions)
   const count = progress.lessonCompletions.length
   return <main style={{maxWidth:1100,margin:'0 auto',padding:'clamp(24px,5vw,72px)',color:'#e8edf7',minHeight:'100vh'}}>
@@ -23,6 +26,10 @@ export default function OSALearningDashboard() {
       {next ? <p><a href={'/lectures/'+next} style={{color:'#a9c4e9'}}>{locale === 'ru' ? 'Продолжить обучение →' : 'Continue learning →'}</a></p> : <p>{locale === 'ru' ? 'Все лекции завершены!' : 'All lessons completed!'}</p>}
     </section>
     <p><a href="/learning/assessment" style={{display:'inline-block',padding:'12px 20px',border:'1px solid #a9c4e9',borderRadius:12,color:'#d6e5fb'}}>{locale === 'ru' ? 'Пройти итоговую самопроверку →' : 'Take the final knowledge check →'}</a></p>
+    <section style={{padding:24,margin:'24px 0',border:'1px solid #39465b',borderRadius:20}} aria-label={locale==='ru'?'История тестов':'Assessment history'}>
+      <h2>{locale==='ru'?'Результаты самопроверки':'Assessment results'}</h2>
+      {attempts.length ? <><p>{locale==='ru'?'Попыток':'Attempts'}: {attempts.length} · {locale==='ru'?'Лучший результат':'Best score'}: {Math.max(...attempts.map(item=>item.correct))} / 8</p><ol>{attempts.slice(0,5).map(item=><li key={item.at}>{new Date(item.at).toLocaleDateString(locale==='ru'?'ru-RU':'en-US')} — {item.correct} / 8</li>)}</ol><button type="button" onClick={()=>{if(window.confirm(locale==='ru'?'Удалить историю тестов?':'Delete assessment history?')) clearOSAAttempts()}}>{locale==='ru'?'Очистить историю':'Clear history'}</button></> : <p>{locale==='ru'?'Пока нет попыток.':'No attempts yet.'}</p>}
+    </section>
     <section style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(240px,1fr))',gap:18}} aria-label={locale === 'ru' ? 'Учебные маршруты' : 'Learning tracks'}>
       {OSA_LEARNING_TRACKS.map(track => {
         const stats = getOSATrackProgress(track,progress.lessonCompletions)
