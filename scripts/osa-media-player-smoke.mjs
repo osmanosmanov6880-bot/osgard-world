@@ -41,6 +41,8 @@ for (const slug of [
 assert.ok(catalog.includes('src: null'), 'media must remain unpublished until a durable source is assigned')
 assert.ok(catalog.includes('OSA_LESSON_SLUGS.map(slug => [slug, createPendingLesson(slug)]'), 'media catalogue must derive from the canonical lesson registry')
 assert.ok(!/https:\/\/[^\s"'<>]+(?:_jwt=|token=|signature=)/i.test(catalog), 'temporary signed delivery URLs must never be committed')
+assert.ok(player.includes('const node = getElement()'), 'playback must select the active audio or video element')
+assert.ok(player.includes('node.ended'), 'completed media must not persist a resume position')
 assert.ok(player.includes('playbackRate') && player.includes('[0.75, 1, 1.25, 1.5, 1.75, 2]'), 'player should apply the selected playback speeds')
 assert.ok(player.includes('localStorage') && player.includes('loadedmetadata'), 'player must restore the prior playback position when metadata loads')
 assert.ok(player.includes('kind="captions"') && player.includes('aria-label={copy.seek}'), 'caption tracks and an accessible seek control should be supported')
