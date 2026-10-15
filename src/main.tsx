@@ -25,6 +25,7 @@ import OSACinema from './OSACinema'
 import LectureLibrary from './LectureLibrary'
 import OSALearningDashboard from './OSALearningDashboard'
 import OSAAssessmentPage from './OSAAssessmentPage'
+import OSAMonetizationPage from './OSAMonetizationPage'
 import OSALessonPage from './OSALessonPage'
 import MiniApp from './MiniApp'
 import { AurumPage, CatalogPage, ChroniclePage, ClubPage, DevelopmentPage, MastersPage, TimeCoinPage, WorldsPage } from './Sections'
@@ -63,6 +64,7 @@ const cleanSeo: Record<string, { title: string; description: string }> = {
   '/': { title: 'OSA Intelligence — понимать, проверять, решать', description: 'Интерактивная среда OSA: изучайте возможности ИИ, проверяйте доказательства и принимайте ответственные решения.' },
   '/academy': { title: 'OSGARD AI Academy — понимать, проверять, применять ИИ', description: 'Учебные маршруты, интерактивный курс и практическая студия по применению искусственного интеллекта.' },
   '/learning/assessment': { title: 'OSA Learning — проверка знаний', description: 'Восемь проверочных вопросов по интерактивным урокам OSA.' },
+  '/learning/pricing': { title: 'OSA Learning — программы и доступ', description: 'Практические программы OSA по ИИ и технологиям: самостоятельное обучение, сопровождение и командные пилоты.' },
   '/learning': { title: 'OSA Learning — карта знаний | OSGARD', description: 'Учебные маршруты, результаты и следующий урок OSA Learning.' },
   '/lectures': { title: 'OSA Original — курсы и интерактивные лекции | OSGARD', description: 'Упорядоченная программа OSA Original: три акта и все существующие интерактивные лекции об ИИ, власти знаний и человеческом выборе. Видеозаписи отмечены отдельно от доступных интерактивных сцен.' },
   '/portal': { title: 'OSGARD World — портал экосистемы', description: 'Продукты, игры, проекты и направления цифровой экосистемы OSGARD.' },
@@ -111,6 +113,7 @@ function RoutedRoot() {
   if (path === '/') return <><Seo path="/" /><OSAIntelligenceHome /></>
   if (path === '/academy') return <><Seo path="/academy" /><AcademyHome /></>
   if (path === '/learning/assessment') return <><Seo path="/learning/assessment" /><OSAAssessmentPage /></>
+  if (path === '/learning/pricing') return <><Seo path="/learning/pricing" /><OSAMonetizationPage /></>
   if (path === '/learning') return <><Seo path="/learning" /><OSALearningDashboard /></>
   if (path === '/lectures') return <><Seo path="/lectures" /><LectureLibrary /></>
   if (path.startsWith('/lectures/')) return <><Seo path={path} /><OSALessonPage slug={path.slice('/lectures/'.length)} /></>
