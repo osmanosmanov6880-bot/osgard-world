@@ -8,6 +8,7 @@ on:
       - "public/**"
       - "scripts/sync-swarm-assets.mjs"
       - "scripts/cloudflare-pages-preflight.mjs"
+      - "scripts/compress-pages-wasm.mjs"
       - "package.json"
       - "package-lock.json"
       - "vite.config.ts"
@@ -20,6 +21,7 @@ on:
       - "public/**"
       - "scripts/sync-swarm-assets.mjs"
       - "scripts/cloudflare-pages-preflight.mjs"
+      - "scripts/compress-pages-wasm.mjs"
       - "package.json"
       - "package-lock.json"
       - "vite.config.ts"
@@ -55,6 +57,8 @@ jobs:
         run: npm ci
       - name: Build the static frontend
         run: npm run build
+      - name: Package Godot WASM under the Pages asset limit
+        run: node scripts/compress-pages-wasm.mjs dist
       - name: Check Cloudflare Pages artifact and limits
         run: npm run qa:cloudflare-pages
       - name: Ensure production deploy comes from master
