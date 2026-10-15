@@ -36,6 +36,7 @@ on:
       - "scripts/deploy-workflow-smoke.mjs"
       - "scripts/tedes-case-smoke.mjs"
       - "scripts/elbrus-case-smoke.mjs"
+      - "scripts/entertainment-locales-smoke.mjs"
       - "scripts/skillcred-page-smoke.mjs"
       - "scripts/time-prototype-smoke.mjs"
       - "scripts/null-shift-premium-smoke.mjs"
@@ -68,6 +69,8 @@ jobs:
         run: node scripts/tedes-case-smoke.mjs
       - name: Smoke-test the ELBRUS Entertainment case
         run: npm run qa:elbrus-case
+      - name: Smoke-test global Entertainment hubs
+        run: npm run qa:entertainment-locales
       - name: Verify MERAKKI brief generation and copy flow
         run: npm run qa:merakki-case
       - run: npm run qa:null-shift
