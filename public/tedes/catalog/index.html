@@ -17,31 +17,49 @@
 <section class="wrap hero"><div><p class="kicker">01 / SELECTED OBJECTS</p><h1>Меньше выбора.<br><em>Больше смысла.</em></h1><p class="lead">Каталог показывает, как выбор архитектурной фурнитуры может быть собран вокруг формы, материала и сценария пространства. Представленные модели — концептуальные демонстрационные позиции.</p><div class="actions"><a class="btn primary" href="/tedes/collections/">Исследовать коллекции ↗</a><a class="btn" href="/tedes/materials/">Сравнить отделки</a></div></div><div class="scene"><img src="/tedes/assets/architecture-scene.webp" alt="Архитектурная сцена с дверью и фактурной стеной" width="600" height="500" fetchpriority="high"><span class="scene-label">TEDES / ARCHITECTURAL OBJECTS</span></div></section>
 <section class="section"><div class="wrap"><div class="section-head"><div><p class="kicker">CATALOG / DEMO DATA</p><h2>Выберите направление.</h2></div><p>Используйте фильтры, чтобы сузить подборку. Артикулы и модели демонстрационные; цены, складские остатки и техническая совместимость не подтверждены.</p></div>
 <div class="tools"><label>Поиск по модели<input id="search" type="search" placeholder="Например, ARC"></label><label>Коллекция<select id="collection"><option value="">Все коллекции</option><option>FORMA</option><option>LINEA</option><option>MATERIA</option></select></label><label>Отделка<select id="finish"><option value="">Все отделки</option><option>Antique brass</option><option>Matte black</option><option>Satin bronze</option><option>Brushed steel</option><option>Graphite</option></select></label><div class="count" id="count" aria-live="polite">06</div></div>
-<div class="product-grid" id="products"></div><div id="empty" class="empty" hidden>По этим параметрам ничего не найдено. Измените фильтры.</div>
+<p id="catalogStatus" role="status" aria-live="polite" style="color:var(--muted);font-size:10px;line-height:1.8;margin:0 0 14px">Загрузка демонстрационного каталога…</p><div class="product-grid" id="products"></div><div id="empty" class="empty" hidden>По этим параметрам ничего не найдено. Измените фильтры.</div>
 <div class="notice" style="margin-top:20px"><strong>Концепт, не подтверждённый ассортимент.</strong> Все модели, коды и возможные варианты приведены только для демонстрации интерфейса. Не используйте их для заказа, монтажа или спецификации реального объекта.</div>
 </div></section></main><footer class="wrap footer"><span>TEDES GLOBAL STUDIO · DEMONSTRATION CONCEPT</span><div class="footer-links"><a href="/tedes/">Студия</a><a href="/tedes/collections/">Коллекции</a><a href="/tedes/catalog/">Каталог</a><a href="/tedes/materials/">Материалы</a><a href="/tedes/project/">Проект</a><a href="/development/tedes/">Кейс OSGARD</a></div></footer>
 <script>
 (function(){
-const products=[
-{sku:"FORMA-ARC-01",name:"ARC / Sculptural Lever",collection:"FORMA",finish:"Antique brass",form:"Скульптурная дуга",desc:"Выразительная округлая линия для тактильного акцента.",kind:"arc"},
-{sku:"FORMA-ARC-02",name:"ARC / Deep Black",collection:"FORMA",finish:"Matte black",form:"Скульптурная дуга",desc:"Та же концепция в контрастной тёмной отделке.",kind:"arc"},
-{sku:"LINEA-EDGE-01",name:"EDGE / Linear Grip",collection:"LINEA",finish:"Graphite",form:"Чистая линия",desc:"Строгая геометрия для сдержанной архитектуры.",kind:"linea"},
-{sku:"LINEA-EDGE-02",name:"EDGE / Satin Steel",collection:"LINEA",finish:"Brushed steel",form:"Чистая линия",desc:"Нейтральная металлическая фактура без декоративного шума.",kind:"linea"},
-{sku:"MATERIA-BAR-01",name:"BAR / Warm Bronze",collection:"MATERIA",finish:"Satin bronze",form:"Материальный акцент",desc:"Тёплая металлическая поверхность и спокойный силуэт.",kind:"materia"},
-{sku:"MATERIA-BAR-02",name:"BAR / Dark Patina",collection:"MATERIA",finish:"Matte black",form:"Материальный акцент",desc:"Контрастный объект в минималистичном интерьере.",kind:"materia"}
-];
+"use strict";
+const DATA_URL="/tedes/data/catalog.v1.json";
 const $=id=>document.getElementById(id);
 const escape=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+let products=[],catalogData=null,loading=true;
 function render(){
-const q=$("search").value.trim().toLowerCase(),col=$("collection").value,finish=$("finish").value;
-const filtered=products.filter(p=>(!q||(p.name+" "+p.sku+" "+p.form).toLowerCase().includes(q))&&(!col||p.collection===col)&&(!finish||p.finish===finish));
-$("count").textContent=String(filtered.length).padStart(2,"0");$("empty").hidden=filtered.length>0;
-$("products").innerHTML=filtered.map(p=>'<article class="product"><a href="/tedes/product/?sku='+encodeURIComponent(p.sku)+'" aria-label="Открыть '+escape(p.name)+'"><div class="product-art">'+(p.kind==="arc"?'<img src="/tedes/assets/hero-door.webp" alt="" loading="lazy">':'')+'<span class="product-object" aria-hidden="true"></span></div></a><div class="product-copy"><div class="meta"><span>'+escape(p.collection)+'</span><span>DEMO / '+escape(p.sku)+'</span></div><h3>'+escape(p.name)+'</h3><p>'+escape(p.desc)+'</p><div class="product-bottom"><span class="price">Цена не подтверждена</span><a class="text-link" href="/tedes/product/?sku='+encodeURIComponent(p.sku)+'">Смотреть объект ↗</a></div></div></article>').join("");
+ const q=$("search").value.trim().toLowerCase(),col=$("collection").value,finish=$("finish").value;
+ const filtered=products.filter(p=>(!q||(p.name+" "+p.sku+" "+p.form+" "+p.description).toLowerCase().includes(q))&&(!col||p.collection===col)&&(!finish||p.finishOptions.includes(finish)));
+ $("count").textContent=String(filtered.length).padStart(2,"0");
+ $("empty").hidden=loading||filtered.length>0;
+ $("products").innerHTML=filtered.map(p=>'<article class="product"><a href="/tedes/product/?sku='+encodeURIComponent(p.sku)+'" aria-label="Открыть '+escape(p.name)+'"><div class="product-art"><img src="'+escape(p.image)+'" alt="" loading="lazy"><span class="product-object '+escape(p.visualKind)+'" aria-hidden="true"></span></div></a><div class="product-copy"><div class="meta"><span>'+escape(p.collection)+'</span><span>CONCEPT / '+escape(p.sku)+'</span></div><h3>'+escape(p.name)+'</h3><p>'+escape(p.description)+'</p><p class="price" style="margin:0 0 13px">Демонстрационные отделки: '+escape(p.finishOptions.join(" · "))+'</p><div class="product-bottom"><span class="price">Цена не подтверждена</span><a class="text-link" href="/tedes/product/?sku='+encodeURIComponent(p.sku)+'">Смотреть объект ↗</a></div></div></article>').join("");
+ if(!loading&&catalogData) $("catalogStatus").textContent="Загружено "+products.length+" концептуальных позиций. Реальные цены, наличие и спецификации не предоставлены.";
+}
+function validateData(value){
+ if(!value||value.schemaVersion!==1||value.catalogId!=="tedes-demo-catalog-v1"||value.status!=="demo-only"||!Array.isArray(value.products)||!Array.isArray(value.finishes))throw new Error("Invalid TEDES catalog schema");
+ const seen=new Set();
+ for(const p of value.products){
+  if(!p||typeof p.sku!=="string"||seen.has(p.sku)||!p.name||!["FORMA","LINEA","MATERIA"].includes(p.collection)||!Array.isArray(p.finishOptions)||p.recordStatus!=="concept"||p.price!==null||p.availability!==null)throw new Error("Invalid or non-demo catalog record");
+  seen.add(p.sku);
+ }
+ return value;
+}
+async function loadCatalog(){
+ try{
+  const response=await fetch(DATA_URL,{headers:{accept:"application/json"},cache:"no-cache",signal:AbortSignal.timeout(7000)});
+  if(!response.ok)throw new Error("HTTP "+response.status);
+  catalogData=validateData(await response.json());products=catalogData.products;loading=false;render();
+ }catch(error){
+  loading=false;products=[];$("catalogStatus").textContent="Не удалось загрузить каталог. Обновите страницу или попробуйте позже.";
+  $("empty").hidden=false;$("empty").innerHTML='<p>Каталог временно недоступен. Демонстрационные данные не подменяются вымышленным ответом.</p>';
+  $("products").replaceChildren();$("count").textContent="00";
+ }
 }
 const query=new URLSearchParams(location.search);
 if(["FORMA","LINEA","MATERIA"].includes(query.get("collection"))) $("collection").value=query.get("collection");
 if(["Antique brass","Matte black","Satin bronze","Brushed steel","Graphite"].includes(query.get("finish"))) $("finish").value=query.get("finish");
 if(query.get("q")) $("search").value=query.get("q").slice(0,80);
-["search","collection","finish"].forEach(id=>$(id).addEventListener(id==="search"?"input":"change",render));render();
+["search","collection","finish"].forEach(id=>$(id).addEventListener(id==="search"?"input":"change",render));
+render();loadCatalog();
 })();
 </script></body></html>
