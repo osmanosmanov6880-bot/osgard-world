@@ -39,7 +39,8 @@ assert.ok(casePage.includes('LUXURY ART DIRECTION') && casePage.includes('Cormor
 assert.ok(!demo.includes(String.fromCharCode(92) + 'n</style>') && !casePage.includes(String.fromCharCode(92) + 'n</style>'), 'Luxury CSS must not be preceded by a literal escaped newline')
 assert.ok(demo.includes('<meta charset="utf-8">' + String.fromCharCode(10) + '<link rel="preconnect"') && casePage.includes('<meta charset="utf-8">' + String.fromCharCode(10) + '<link rel="preconnect"'), 'Web-font preconnects must be valid head markup')
 assert.ok(cardCss.includes('LUXURY CARD') && cardCss.includes('Cormorant Garamond'), 'Development featured case luxury styling is missing')
-assert.ok(sitemap.includes('https://osgard.world/development/tedes/') && sitemap.includes('https://osgard.world/tedes/'), 'TEDES routes are missing from sitemap')
+assert.ok(sitemap.includes('https://osgard.world/development/tedes/') && sitemap.includes('https://osgard.world/tedes/'), 'TEDES public routes are missing from sitemap')
+assert.ok(!sitemap.includes('https://osgard.world/tedes/project/'), 'Private local project workspace must not be included in sitemap')
 assert.ok(routeMatrix.includes("'/tedes/'") && routeMatrix.includes("'/development/tedes/'"), 'Production route matrix does not include TEDES routes')
 assert.ok(workflow.includes('"public/tedes/**"') && workflow.includes('"public/development/tedes/**"'), 'Deployment workflow does not watch TEDES pages')
 
@@ -49,11 +50,27 @@ const collections = read('public/tedes/collections/index.html')
 const product = read('public/tedes/product/index.html')
 const materials = read('public/tedes/materials/index.html')
 const printView = read('public/tedes/print/index.html')
+const projectWorkspace = read('public/tedes/project/index.html')
 assert.ok(catalog.includes('id="search"') && catalog.includes('id="collection"') && catalog.includes('id="finish"') && catalog.includes('id="products"'), 'Catalog filter UI is incomplete')
 assert.ok(catalog.includes('Цена не подтверждена'), 'Catalog must not invent prices')
 assert.ok(collections.includes('href="/tedes/catalog/?collection=FORMA"') && collections.includes('href="/tedes/catalog/?collection=LINEA"') && collections.includes('href="/tedes/catalog/?collection=MATERIA"'), 'Collection routes must filter the catalog')
 assert.ok(catalog.includes('new URLSearchParams(location.search)') && catalog.includes('query.get("collection")'), 'Catalog must initialize filters from collection links')
 assert.ok(product.includes('id="addToProject"') && product.includes('localStorage') && product.includes('tedes-studio-project-v1'), 'Product page must add a concept item into the shared local project')
+assert.ok(product.includes('link.href="/tedes/project/"') && product.includes('sku==="LINEA-EDGE-02"?"Brushed steel"'), 'Product page must route to the project workspace and map the steel finish correctly')
+assert.ok(projectWorkspace.includes('<title>TEDES — проектная ведомость</title>') && projectWorkspace.includes('name="robots" content="noindex,nofollow"'), 'Project workspace metadata or private indexing policy is missing')
+for (const marker of ['id="positionRows"','id="requestForm"','id="contactEmail"','id="exportJson"','id="exportCsv"','id="clearProject"','id="projectName"','tedes-studio-project-v1','data-duplicate=','data-remove=','LOCAL FILE ONLY','tedes-project-request.json','window.addEventListener("storage"']) {
+  assert.ok(projectWorkspace.includes(marker), 'Project workspace contract marker missing: ' + marker)
+}
+assert.ok(projectWorkspace.includes('noindex,nofollow') && projectWorkspace.includes('не отправлено') && projectWorkspace.includes('не подтверждены'), 'Workspace privacy/commercial disclaimers are incomplete')
+const workspaceCsvCellMatch = projectWorkspace.match(/function csvCell\(value\)\s*\{[\s\S]*?\n\}/)
+assert.ok(workspaceCsvCellMatch, 'Project workspace CSV formula-injection guard is missing')
+const workspaceCsvCell = vm.runInNewContext('(' + workspaceCsvCellMatch[0] + ')')
+assert.equal(workspaceCsvCell('=1+1'), '"\'=1+1"')
+assert.ok(workspaceCsvCell('  @SUM(A1:A2)').startsWith('"\'  @SUM'), 'Project workspace CSV must neutralize formula prefixes')
+assert.ok(demo.includes('doors:doors.map(d=>({...d}))') && demo.includes('schema:"tedes-studio-project/v1"'), 'Studio quote JSON must remain importable into the same project schema')
+assert.ok(demo.includes('window.addEventListener("storage"') && projectWorkspace.includes('window.addEventListener("storage"'), 'Studio and project workspace must synchronize project changes across tabs')
+assert.ok(demo.includes('function renderRows(save=true)') && demo.includes('renderRows(false);updatePreview();'), 'Studio storage events must render without re-writing shared storage and ping-ponging between tabs')
+assert.ok(demo.includes('const columns=["id","zone","sku","collection"') && demo.includes('door.sku?" · "+escapeHtml(door.sku)'), 'Model SKUs must remain visible and included in the exported CSV')
 assert.ok(materials.includes('Brushed Steel') && materials.includes('Matte Black') && materials.includes('Техническая граница'), 'Materials guide must show demo finishes and disclose limits')
 assert.ok(demo.includes('tedes-studio-project-v1') && demo.includes('id="buildQuote"') && demo.includes('id="quoteEmail"'), 'Studio persistence and quote brief UI are missing')
 assert.ok(demo.includes('href="/tedes/print/"'), 'Studio must link to the print-ready project schedule')
@@ -73,13 +90,13 @@ for (const marker of ['id="printProject"', 'id="positionRows"', 'id="sourceNotic
 }
 assert.ok(demo.includes('НЕ отправлены') || demo.includes('не отправляется'), 'Quote builder must clearly say it does not submit anything')
 let featureScriptCount = 0
-for (const [filename, page] of [['catalog', catalog], ['product', product], ['print-view', printView]]) {
+for (const [filename, page] of [['catalog', catalog], ['product', product], ['print-view', printView], ['project-workspace', projectWorkspace]]) {
   for (const match of page.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)) {
     new vm.Script(match[1], { filename: filename + '.html' })
     featureScriptCount++
   }
 }
-for (const route of ['/tedes/catalog/','/tedes/collections/','/tedes/product/','/tedes/materials/']) assert.ok(routeMatrix.includes(route), 'Production route matrix missing ' + route)
+for (const route of ['/tedes/catalog/','/tedes/collections/','/tedes/product/','/tedes/materials/','/tedes/project/']) assert.ok(routeMatrix.includes(route), 'Production route matrix missing ' + route)
 
 let scriptCount = 0
 for (const match of demo.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)) {
@@ -87,7 +104,7 @@ for (const match of demo.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)) {
   new vm.Script(match[1], { filename: demoPath })
 }
 assert.equal(scriptCount, 1, 'Expected exactly one inline demo script and no unreviewed external scripts')
-for (const route of ['/tedes/', '/tedes/print/', '/development/tedes/']) {
+for (const route of ['/tedes/', '/tedes/project/', '/tedes/print/', '/development/tedes/']) {
   assert.ok(routeMatrix.includes(route), `Production route matrix missing ${route}`)
 }
-console.log(JSON.stringify({ status: 'PASS', pages: [demoPath, casePath], inlineScriptsSyntaxChecked: scriptCount, routes: ['/tedes/', '/tedes/print/', '/development/tedes/'], productLimits: 'clearly disclosed' }, null, 2))
+console.log(JSON.stringify({ status: 'PASS', pages: [demoPath, 'public/tedes/project/index.html', casePath], inlineScriptsSyntaxChecked: scriptCount + featureScriptCount, routes: ['/tedes/', '/tedes/project/', '/tedes/print/', '/development/tedes/'], productLimits: 'clearly disclosed' }, null, 2))
