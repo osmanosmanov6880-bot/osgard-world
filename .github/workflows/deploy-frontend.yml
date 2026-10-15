@@ -60,6 +60,8 @@ on:
       - "scripts/games-portal-smoke.mjs"
       - "scripts/academy-home-smoke.mjs"
       - "scripts/lecture-library-smoke.mjs"
+      - "scripts/osa-media-release-preflight.mjs"
+      - "docs/OSA_MEDIA_RELEASE_PIPELINE.md"
       - "scripts/remix-growth-smoke.mjs"
       - "scripts/ecosystem-integrity-smoke.mjs"
       - "docs/09_OSGARD_GAMES_PLATFORM_AUDIT.md"
@@ -175,6 +177,8 @@ jobs:
           /tmp/osgard-godot/Godot_v4.7.2-stable_linux.x86_64 --headless --path godot/null-shift --export-release Web "$GITHUB_WORKSPACE/public/games/null-shift-godot/index.html"
           node scripts/null-shift-godot-smoke.mjs --export-check public/games/null-shift-godot
       - run: npm run build
+      - name: Verify OSA media inventory and publication gate
+        run: npm run qa:osa-media-release
       - name: Ensure public case and game assets are present in release tree
         run: |
           mkdir -p dist/games dist/entertainment

@@ -6,7 +6,7 @@ const root = resolve(process.argv[2] || 'dist')
 const required = [
   'index.html', '_headers', '_redirects', 'robots.txt', 'sitemap.xml',
   'brand/osa-transition.js', 'games/index.html', 'games/ecosystem-intermission.js',
-  'games/null-shift-godot/index.html', 'skillcred/index.html', 'privacy/index.html',
+  'games/null-shift-godot/index.html', 'osa-library/index.html', 'osa-library/media-inventory.csv', 'osa-library/media-manifest.json', 'skillcred/index.html', 'privacy/index.html',
   'terms/index.html', 'entertainment/index.html', 'entertainment/noir-auto/index.html',
   'entertainment/noir-auto/en/index.html', 'entertainment/noir-auto/ar/index.html',
   'entertainment/noir-auto/og.svg', 'development/index.html',
@@ -43,6 +43,10 @@ const wrangler = await readFile(resolve('wrangler.jsonc'), 'utf8')
 assert.match(wrangler, /"name"\s*:\s*"osgard-world"/, 'Wrangler Pages project name must match the configured Pages project')
 assert.match(wrangler, /"pages_build_output_dir"\s*:\s*"\.\/dist"/, 'Wrangler Pages output directory must be ./dist')
 assert.match(wrangler, /"compatibility_date"\s*:\s*"\d{4}-\d{2}-\d{2}"/, 'Wrangler compatibility date must be an explicit ISO date')
+
+const mediaManifest = JSON.parse(await readFile(join(root, 'osa-library/media-manifest.json'), 'utf8'))
+assert.equal(mediaManifest.schemaVersion, 1, 'OSA media manifest schema must be version 1')
+assert.equal(mediaManifest.assets.length, mediaManifest.metrics.total, 'OSA media manifest total does not match its records')
 
 const headers = await readFile(join(root, '_headers'), 'utf8')
 assert.ok(headers.includes('X-Content-Type-Options: nosniff'), '_headers must include nosniff')
