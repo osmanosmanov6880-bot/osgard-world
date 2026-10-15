@@ -94,6 +94,21 @@ Before integrating real payments, confirm seller jurisdiction and eligible provi
 - Add media playback, keyboard/screen-reader and narrow-mobile checks; document exact output and deployment SHA.
 - Keep production payments disabled until end-to-end test-mode flows pass.
 
+
+## Implementation update — individual lesson pages
+
+The next implementation slice adds eight individual lesson pages under `/lectures/{slug}`. Each page includes learning objectives, a practical example, glossary, interactive self-check with feedback, a step-by-step exercise with a success criterion, and links to relevant source organisations. Pages are bilingual, responsive, keyboard-oriented, and included in the sitemap and production route matrix.
+
+Lesson completion is stored locally in the browser under its own versioned key. This does not introduce user accounts or cross-device synchronisation. The lesson UI explicitly discloses that original Runway assets are not yet permanently hosted and does not present fake audio/video play controls.
+
+Files in the lesson-page implementation slice:
+- `src/osaLessonGuides.ts` — eight slugs and bilingual teaching guides.
+- `src/OSALessonPage.tsx`, `src/osaLessonPage.css` — detail view, quiz feedback, practice tasks and local completion.
+- `src/LectureLibrary.tsx`, `src/main.tsx` — catalogue links and route registration.
+- `public/sitemap.xml`, `scripts/production-route-matrix.mjs`, `scripts/lecture-library-smoke.mjs` — discoverability and validation.
+
+This step expands the **reading/practice version** of the course; it does not claim that full recorded video lectures or narrated versions are ready.
+
 ## 7. Small, safe changes in this branch
 
 - Updated the media CSV to distinguish exact IDs found in Runway from IDs not found in the recent-assets response; permanent URLs remain blank.
