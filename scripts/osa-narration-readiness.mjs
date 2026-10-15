@@ -166,6 +166,7 @@ for (const locale of LOCALES) {
       title: reading.sections[0].heading,
       narrationCharacters: Array.from(narration).length,
       scriptSha256: sha256(narration),
+      narrationText: narration,
       segmentCount: segments.length,
       segmentCharacterCounts: segmentRecords.map(segment => segment.characters),
       segments: segmentRecords,
@@ -207,9 +208,66 @@ const manifest = {
   },
 }
 const serialized = JSON.stringify(manifest)
+
+if (process.argv.includes('--check-manuscripts')) {
+  const committedManifest = JSON.parse(await readFile('docs/osa-narration/manifest.json', 'utf8'))
+  assert.equal(committedManifest.schemaVersion, 1, 'Narration manifest schema must be version 1.')
+  assert.equal(committedManifest.status, 'draft_for_audio_production', 'Narration manuscripts must remain drafts before audio QC.')
+  assert.equal(committedManifest.audioGenerated, false, 'Text manifests must not claim that audio exists.')
+  assert.equal(committedManifest.totalScripts, records.length, 'Committed narration script count is stale.')
+  assert.deepEqual(committedManifest.totals, manifest.totals, 'Committed narration totals differ from canonical source content.')
+  assert.deepEqual(committedManifest.sourceOfTruth, manifest.sourceOfTruth, 'Committed narration source paths differ from canonical content.')
+  assert.equal(committedManifest.scripts.length, records.length, 'Committed script metadata count is stale.')
+  for (const record of records) {
+    const path = 'docs/osa-narration/' + record.locale + '/' + record.slug + '.txt'
+    const committed = await readFile(path, 'utf8')
+    const narrationText = committed.endsWith('\n') ? committed.slice(0, -1) : committed
+    assert.equal(narrationText, record.narrationText, 'Narration manuscript is stale versus source: ' + path)
+    assert.equal(sha256(narrationText), record.scriptSha256, 'Narration SHA-256 mismatch: ' + path)
+    assert.equal(Array.from(narrationText).length, record.narrationCharacters, 'Narration character count mismatch: ' + path)
+    const metadata = committedManifest.scripts.find(item => item.slug === record.slug && item.locale === record.locale)
+    assert.ok(metadata, 'Narration manifest entry missing: ' + record.slug + '/' + record.locale)
+    assert.equal(metadata.path, path, 'Narration path mismatch: ' + path)
+    assert.equal(metadata.sha256, record.scriptSha256, 'Narration manifest hash mismatch: ' + path)
+    assert.equal(metadata.characters, record.narrationCharacters, 'Narration manifest character count mismatch: ' + path)
+    assert.equal(metadata.segmentCount, record.segmentCount, 'Narration manifest segment count mismatch: ' + path)
+    assert.equal(metadata.estimatedCredits, record.estimatedCredits, 'Narration manifest credit estimate mismatch: ' + path)
+    assert.equal(metadata.status, 'draft_audio_not_generated', 'Narration manifest must not mark a text script as generated audio.')
+  }
+  assert.equal(committedManifest.releaseGate.permanentAudioUrls, 0, 'Do not invent permanent audio URLs.')
+  assert.equal(committedManifest.releaseGate.readyAudioTracks, 0, 'No audio track should be marked ready before QC.')
+  assert.equal(committedManifest.releaseGate.allowedToPublish, false, 'Narration must remain unpublished until audio release gates pass.')
+  console.log('OSA_NARRATION_MANUSCRIPTS_PASS: 16 bilingual text masters, exact source parity, SHA-256, estimates and non-audio release state verified.')
+}
 assert.equal(records.length, 16, 'There must be one narration plan per lesson and language.')
 assert.ok(records.every(record => record.estimatedCredits > 0 && record.segments.length > 0), 'Every narration must have a positive, segmented plan.')
 assert.ok(!/cloudfront\.net|_jwt=|signed_url/i.test(serialized), 'Narration plan must not contain temporary media URLs.')
+if (process.argv.includes('--emit-manuscripts')) {
+  const output = {
+    schemaVersion: 1,
+    sourceOfTruth: manifest.sourceOfTruth,
+    totalScripts: manifest.totalScripts,
+    totals: manifest.totals,
+    byLocale,
+    scripts: records.map(record => ({
+      slug: record.slug,
+      locale: record.locale,
+      sequence: record.sequence,
+      title: record.title,
+      path: 'docs/osa-narration/' + record.locale + '/' + record.slug + '.txt',
+      characters: record.narrationCharacters,
+      sha256: record.scriptSha256,
+      segmentCount: record.segmentCount,
+      segmentCharacterCounts: record.segmentCharacterCounts,
+      estimatedCredits: record.estimatedCredits,
+      status: record.status,
+      text: record.narrationText,
+    })),
+  }
+  console.log('OSA_NARRATION_MANUSCRIPT_PAYLOAD_BEGIN')
+  console.log(JSON.stringify(output, null, 2))
+  console.log('OSA_NARRATION_MANUSCRIPT_PAYLOAD_END')
+} else {
 console.log(JSON.stringify({
   status: 'narration-plan-valid-audio-not-generated',
   lessonsPerLocale: manifest.lessonsPerLocale,
@@ -219,3 +277,5 @@ console.log(JSON.stringify({
   records: records.map(({slug,locale,title,narrationCharacters,segmentCount,estimatedCredits,status})=>({slug,locale,title,narrationCharacters,segmentCount,estimatedCredits,status})),
   blockers: manifest.releaseGate,
 }, null, 2))
+
+}

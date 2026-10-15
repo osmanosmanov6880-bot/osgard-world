@@ -1,0 +1,19 @@
+Lesson 1 of 8.
+
+Learning objectives. Distinguish a useful AI output from evidence that it is true. Choose a task with criteria that can be defined before using a model. Match human review to the risk of an error.
+
+A useful answer is not proof. An AI system can produce a quick draft, explain a term or suggest alternatives. Those can be useful actions, but they do not establish that every claim is true. Separate presentation quality from evidence quality: fluent, courteous prose may still contain errors.
+
+Define the task before choosing the tool. Start with the desired outcome and constraints. A small task with a clear criterion is usually a better first experiment than an open-ended request to “do everything”. Split larger work into parts and retain human review wherever an error could change the outcome.
+
+Measure results, not impressions. To learn whether a tool helps, compare its output with the usual workflow against the same criteria. Count review time, corrections, privacy concerns and the cost of mistakes. One successful example is a starting point for evaluation, not universal proof of effectiveness.
+
+Practical example. Ask a model to explain an unfamiliar topic. Use the explanation as a first-pass map, then pick one consequential claim and check it against a primary source. Do not judge the output only by its confident tone or polished writing.
+
+Key terms. Quality criterion. A condition defined in advance for evaluating a result, such as accuracy, completeness, clarity or suitability for the task. Verifiable claim. A statement that can be compared with data, a document, an observation or a reliable source.
+
+Practical exercise. Compare a workflow with and without AI. Choose a small, repeatable, low-risk task. Record the usual completion time and define what a good result means. Ask AI for a draft, then verify facts and correct errors. Compare time, quality, edits and new risks with the original workflow. Success criteria. Record a concrete comparison and its limitations. Do not generalise about AI from one example.
+
+Key takeaways. Fluent text does not guarantee correctness. Set quality criteria before generation. Base the final judgement on a result that can be checked.
+
+Complete the knowledge check and open the additional sources on the lesson page.

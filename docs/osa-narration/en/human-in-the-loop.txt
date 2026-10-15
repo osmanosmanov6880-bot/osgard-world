@@ -1,0 +1,19 @@
+Lesson 7 of 8.
+
+Learning objectives. Choose a level of verification that reflects the consequences of an error. Define quality criteria before asking AI to prepare a recommendation. Retain human review and responsibility where required.
+
+Match review to the risk. A draft text and a decision affecting rights, safety or money need different controls. The more likely and severe the consequences of error, the stronger the evidence and independent review should be. One checklist is not suitable for every case.
+
+Define human decision points. A person needs to understand what the system proposes, what data and limits underlie it, and when the process should stop. Useful control points include checking input data, approving recommendations, confirming actions and escalating uncertain cases.
+
+Accountability requires a reviewable process. The phrase “human in the loop” does not guarantee meaningful oversight. Review needs an owner, criteria, a recorded result and a way to correct mistakes. If the reviewer lacks time, competence or the authority to stop the process, the control may be merely formal.
+
+Practical example. A draft internal email may need a quick tone and fact check. A medical, legal, financial or hiring decision needs qualified expertise, primary information and an established review process; a chatbot response alone is not permission to act.
+
+Key terms. Human in the loop. A process in which a person reviews, approves or can stop a system’s output at defined points. Risk-proportionate review. The depth of oversight is selected in light of the likelihood and severity of possible harm.
+
+Practical exercise. Build a risk-aware review checklist. Describe the decision and the most serious plausible harm from an error. Split the task into claims, calculations and recommendations that can be checked. Specify what may be automated, what a person must verify and when an expert is needed. Define when to reject the output or escalate the case. Success criteria. The checklist names criteria, a responsible reviewer and a clear stop condition for unacceptable risk.
+
+Key takeaways. Review strength should reflect the potential harm. Human approval and stop points must be defined in advance. Oversight without authority or a checkable process may be only formal.
+
+Complete the knowledge check and open the additional sources on the lesson page.

@@ -1,0 +1,19 @@
+Lesson 5 of 8.
+
+Learning objectives. Verify the specific claim rather than only checking whether a nearby link exists. Check dates, units, sample, method and limits in the underlying material. Record verification outcomes and preserve uncertainty where answers are unavailable.
+
+Break the answer into claims. A broad answer may mix facts, assumptions, advice and conclusions. Split it into individual statements that can be checked separately. Highlight numbers, dates, names, quotations and causal claims: an error in one of these can change the meaning of the whole result.
+
+Check whether the source supports the claim. Open the original publication and find the evidence that supposedly supports the response. Confirm that period, units, region, group and metric definition match. A link can open and discuss a related topic without supporting the specific statement placed beside it.
+
+Record the verification result. Give every claim a transparent status: confirmed, partly confirmed, contradicted by the source or unknown so far. Keep the source link and a short explanation. Do not replace missing evidence with intuition or treat another model’s response as independent proof.
+
+Practical example. If a model gives a precise number, open the link and find that number in the primary material. Confirm the period, region, metric and dataset. A valid link may still fail to support the statement it accompanies.
+
+Key terms. Source-to-claim fit. How well a source actually supports a specific statement rather than merely discussing a related topic. Data limitation. A condition that narrows how a result can be used, such as date, sample, method or missing information.
+
+Practical exercise. Audit one AI answer. Select an answer containing three factual claims. Find a primary source for each claim or record that none was found. Check wording, dates, figures and limitations. Label each claim confirmed, partly confirmed, contradicted or unknown. Success criteria. Each claim has a reasoned status and a source where found; uncertainty is not replaced by a guess.
+
+Key takeaways. Verify individual statements instead of judging the whole answer by impression. A working link does not guarantee support for the stated claim. Verification status should be clear and reproducible.
+
+Complete the knowledge check and open the additional sources on the lesson page.

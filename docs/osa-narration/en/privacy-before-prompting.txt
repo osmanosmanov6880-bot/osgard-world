@@ -1,0 +1,19 @@
+Lesson 6 of 8.
+
+Learning objectives. Find unnecessary personal data, secrets and sensitive context before sharing a prompt. Apply data minimisation and de-identification where feasible. Check service and organisational rules before processing sensitive information.
+
+Decide what is actually needed. Text analysis rarely requires every identifier and detail in the original document. Before sharing data, define the purpose, approved service and minimum information required. Minimisation reduces potential exposure and makes later oversight easier.
+
+De-identification requires contextual review. Removing a name does not always anonymise a document: a combination of role, location, rare event or contract detail may identify someone again. Replace identifiers with neutral labels, generalise unnecessary specifics and review the full transformed excerpt.
+
+Use an approved data-handling process. Before uploading sensitive information, read the service terms and organisational rules. Some uses require a specifically approved tool, a lawful basis or a responsible specialist. If permission is unclear, pause and resolve the process before sharing the data.
+
+Practical example. A request analysis may not need a real name, phone number, address or contract identifier. Replace identifiers with neutral labels and check whether the remaining details could still reveal the person.
+
+Key terms. Data minimisation. Sharing and processing only the data needed for a specific, permitted purpose. De-identification. Removing or transforming identifiers; it does not always prevent re-identification from indirect clues.
+
+Practical exercise. Prepare a safer prompt. Use a fictional or authorised example document. Identify personal data, secrets, credentials and confidential information about others. Remove unnecessary fields and replace essential identifiers with neutral labels. Check whether remaining context could indirectly identify a person or organisation. Success criteria. The prompt contains only necessary data, does not reveal secrets and follows the chosen service’s handling rules.
+
+Key takeaways. Share only the minimum information required. Removing a name does not always eliminate identification risk. Check service and organisational rules before handling sensitive context.
+
+Complete the knowledge check and open the additional sources on the lesson page.

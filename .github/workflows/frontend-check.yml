@@ -10,6 +10,7 @@ on:
       - "public/osa-library/**"
       - "scripts/osa-narration-readiness.mjs"
       - "docs/OSA_TTS_PRODUCTION_PLAN.md"
+      - "docs/osa-narration/**"
       - "public/development/og.svg"
       - "scripts/development-index-smoke.mjs"
       - "scripts/osa-intelligence-case-smoke.mjs"

@@ -1,0 +1,19 @@
+Lesson 2 of 8.
+
+Learning objectives. Describe at a basic level how a language model generates text. Separate text generation from retrieval, calculation and fact verification. Choose checks that fit the task and the tool’s limitations.
+
+How a model generates continuations. A language model is trained on sequences of data and receives the context of the current request. At an introductory level, it estimates possible continuations and generates text from learned patterns. That is different from opening a verified reference book or independently checking a fact.
+
+Context, tools and limitations. Some applications add search, calculations, files or other tools. Then the result depends not only on the model, but also on source quality, permissions and correct tool use. A tool improves a workflow only when it is configured appropriately and its output is checked.
+
+Why convincing errors occur. A model may generalise from incomplete examples, extend a flawed chain of reasoning or generate a nonexistent citation. Wording confidence does not measure truth. Match the level of oversight to the task: brainstorming and a consequential decision require different verification procedures.
+
+Practical example. The same question may produce different wording. That is not necessarily an error by itself: generation depends on context, settings and the system. Separately verify facts, dates, calculations and links when they affect a decision.
+
+Key terms. Language model. A machine-learning model trained on sequences of text to generate likely continuations given a context. Context. Information and instructions available to the model during an interaction; context does not guarantee that the information is true.
+
+Practical exercise. Check an answer claim by claim. Ask a question whose answer contains several verifiable claims. Split the answer into claims and mark dates, numbers and links. Check claims against primary sources and independently verify calculations. Record which parts are correct, inaccurate, outdated or still unknown. Success criteria. Each consequential claim has a verification status. Unknown parts remain labelled as unknown rather than hidden behind confident prose.
+
+Key takeaways. Generating text is not the same as retrieving a verified fact. Context and extra tools change how a system works. Check errors against external evidence.
+
+Complete the knowledge check and open the additional sources on the lesson page.
