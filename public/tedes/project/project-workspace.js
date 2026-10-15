@@ -338,6 +338,7 @@ function applyImport(mode) {
   }
 }
 
+if (typeof document !== "undefined") {
 const loaded = readProject();
 project = loaded.data;
 if (!loaded.ok) {
@@ -509,3 +510,4 @@ window.addEventListener("storage", (event) => {
   render();
   $("requestMessage").textContent = "Проект обновлён из другой вкладки.";
 });
+}
