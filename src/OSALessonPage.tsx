@@ -6,9 +6,8 @@ import { osaLessonReadings } from './osaLessonReading'
 import { OsgardLogo } from './OsgardLogo'
 import OSAMediaPlayer from './OSAMediaPlayer'
 import { getOSALessonMedia } from './osaMediaCatalog'
+import { getOSALearningProgress, isOSALearningProgressPersistent, markOSALessonOpened, setOSALessonCompletion, subscribeOSALearningProgress } from './osaProgress'
 import './osaLessonPage.css'
-
-const STORAGE_KEY = 'osgard-osa-lesson-completion-v1'
 
 const copy = {
   ru: {
@@ -98,29 +97,27 @@ export default function OSALessonPage({ slug }: { slug: string }) {
   const isComplete = completedSlugs.includes(slug)
 
   useEffect(() => {
-    try {
-      const stored: unknown = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]')
-      if (Array.isArray(stored)) {
-        setCompletedSlugs(stored.filter((item): item is string => typeof item === 'string' && (OSA_LESSON_SLUGS as readonly string[]).includes(item)))
-      }
-    } catch {
-      setStorageUnavailable(true)
+    const refreshProgress = () => {
+      setCompletedSlugs(getOSALearningProgress().lessonCompletions)
+      setStorageUnavailable(!isOSALearningProgressPersistent())
     }
+    refreshProgress()
+    const unsubscribeOSAProgress = subscribeOSALearningProgress(refreshProgress)
+    return unsubscribeOSAProgress
   }, [])
+
+  useEffect(() => {
+    markOSALessonOpened(slug)
+  }, [slug])
 
   useEffect(() => {
     setSelectedOption(null)
   }, [slug, locale])
 
   const markComplete = () => {
-    const next = isComplete ? completedSlugs.filter(item => item !== slug) : [...new Set([...completedSlugs, slug])]
-    setCompletedSlugs(next)
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
-      setStorageUnavailable(false)
-    } catch {
-      setStorageUnavailable(true)
-    }
+    const persisted = setOSALessonCompletion(slug, !isComplete)
+    setCompletedSlugs(getOSALearningProgress().lessonCompletions)
+    setStorageUnavailable(!persisted)
   }
 
   if (!lesson || !guide || !reading) {

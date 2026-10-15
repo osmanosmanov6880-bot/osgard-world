@@ -2,6 +2,7 @@ import { ArrowRight, ArrowUpRight, BookOpen, BrainCircuit, Compass, ShieldCheck,
 import { useEffect, useState } from 'react'
 import { getOSACinemaLessons, type OSACinemaLocale } from './OSACinema'
 import { OSA_LESSON_SLUGS } from './osaLessonGuides'
+import { getOSALearningProgress, subscribeOSALearningProgress } from './osaProgress'
 import { OsgardLogo } from './OsgardLogo'
 import AcademyStudio from './AcademyStudio'
 import './academyHome.css'
@@ -83,10 +84,10 @@ export default function AcademyHome() {
   useEffect(() => {
     const refreshProgress = () => {
       try {
-        const course = JSON.parse(localStorage.getItem('osgard-osa-cinema-progress-v1') || 'null')
-        const studio = JSON.parse(localStorage.getItem('osgard-academy-studio-v1') || 'null')
-        const savedLessonProgress: unknown = JSON.parse(localStorage.getItem('osgard-osa-lesson-completion-v1') || '[]')
-        const lessonCompletions = Array.isArray(savedLessonProgress) ? new Set(savedLessonProgress.filter((slug:any) => typeof slug === 'string' && (OSA_LESSON_SLUGS as readonly string[]).includes(slug))).size : 0
+        const learning = getOSALearningProgress()
+        const course = learning.cinema
+        const studio = (() => { try { return JSON.parse(localStorage.getItem('osgard-academy-studio-v1') || 'null') } catch { return null } })()
+        const lessonCompletions = learning.lessonCompletions.length
         const projectIds = ['evidence','privacy','decision'] as const
         const validStudio = studio && typeof studio === 'object' && !Array.isArray(studio) ? studio : {}
         const projectState = projectIds.map(id => {
@@ -122,13 +123,11 @@ export default function AcademyHome() {
       }
     }
     refreshProgress()
-    window.addEventListener('focus', refreshProgress)
-    window.addEventListener('storage', refreshProgress)
+    const unsubscribeOSAProgress = subscribeOSALearningProgress(refreshProgress)
     window.addEventListener('osgard-academy-progress', refreshProgress)
     return () => {
-      window.removeEventListener('focus', refreshProgress)
-      window.removeEventListener('storage', refreshProgress)
       window.removeEventListener('osgard-academy-progress', refreshProgress)
+      unsubscribeOSAProgress()
     }
   }, [])
   const t = contentByLocale[locale]

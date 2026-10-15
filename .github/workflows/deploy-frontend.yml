@@ -116,6 +116,8 @@ jobs:
         run: npm run qa:academy
       - name: Verify ordered OSA course and lecture library
         run: npm run qa:lectures
+      - name: Verify unified OSA learning progress persistence
+        run: npm run qa:osa-progress
 
       - name: Validate the Godot game project contract
         run: npm run qa:null-shift-godot
