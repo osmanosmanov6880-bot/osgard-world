@@ -39,7 +39,8 @@ assert.ok(casePage.includes('LUXURY ART DIRECTION') && casePage.includes('Cormor
 assert.ok(!demo.includes(String.fromCharCode(92) + 'n</style>') && !casePage.includes(String.fromCharCode(92) + 'n</style>'), 'Luxury CSS must not be preceded by a literal escaped newline')
 assert.ok(demo.includes('<meta charset="utf-8">' + String.fromCharCode(10) + '<link rel="preconnect"') && casePage.includes('<meta charset="utf-8">' + String.fromCharCode(10) + '<link rel="preconnect"'), 'Web-font preconnects must be valid head markup')
 assert.ok(cardCss.includes('LUXURY CARD') && cardCss.includes('Cormorant Garamond'), 'Development featured case luxury styling is missing')
-assert.ok(sitemap.includes('https://osgard.world/development/tedes/') && sitemap.includes('https://osgard.world/tedes/'), 'TEDES routes are missing from sitemap')
+assert.ok(sitemap.includes('https://osgard.world/development/tedes/') && sitemap.includes('https://osgard.world/tedes/'), 'TEDES public routes are missing from sitemap')
+assert.ok(!sitemap.includes('https://osgard.world/tedes/project/'), 'Private local project workspace must not be included in sitemap')
 assert.ok(routeMatrix.includes("'/tedes/'") && routeMatrix.includes("'/development/tedes/'"), 'Production route matrix does not include TEDES routes')
 assert.ok(workflow.includes('"public/tedes/**"') && workflow.includes('"public/development/tedes/**"'), 'Deployment workflow does not watch TEDES pages')
 
@@ -62,6 +63,7 @@ for (const marker of ['id="positionRows"','id="requestForm"','id="contactEmail"'
 }
 assert.ok(projectWorkspace.includes('noindex,nofollow') && projectWorkspace.includes('не отправлено') && projectWorkspace.includes('не подтверждены'), 'Workspace privacy/commercial disclaimers are incomplete')
 assert.ok(demo.includes('doors:doors.map(d=>({...d}))') && demo.includes('schema:"tedes-studio-project/v1"'), 'Studio quote JSON must remain importable into the same project schema')
+assert.ok(demo.includes('window.addEventListener("storage"') && projectWorkspace.includes('window.addEventListener("storage"'), 'Studio and project workspace must synchronize project changes across tabs')
 assert.ok(demo.includes('const columns=["id","zone","sku","collection"') && demo.includes('door.sku?" · "+escapeHtml(door.sku)'), 'Model SKUs must remain visible and included in the exported CSV')
 assert.ok(materials.includes('Brushed Steel') && materials.includes('Matte Black') && materials.includes('Техническая граница'), 'Materials guide must show demo finishes and disclose limits')
 assert.ok(demo.includes('tedes-studio-project-v1') && demo.includes('id="buildQuote"') && demo.includes('id="quoteEmail"'), 'Studio persistence and quote brief UI are missing')
