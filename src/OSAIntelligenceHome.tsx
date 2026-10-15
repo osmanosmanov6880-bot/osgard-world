@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { ArrowRight, ArrowUpRight, BookOpen, Brain, Globe2, Layers3, ShieldCheck, Sparkles } from 'lucide-react'
+import { OSAMark } from './OSAMark'
+import { ArrowRight, ArrowUpRight, BookOpen, Globe2, Layers3, ShieldCheck, Sparkles } from 'lucide-react'
 import './osaIntelligenceHome.css'
 
 type Locale = 'ru' | 'en'
@@ -40,10 +41,10 @@ export default function OSAIntelligenceHome() {
   return <main className="osa-home" lang={locale}>
     <div className="osa-home-noise" aria-hidden="true" />
     <header className="osa-home-header">
-      <a className="osa-home-brand" href="/" aria-label={t.home}><span className="osa-home-brand-mark"><Brain size={20} strokeWidth={1.6} /></span><span><strong>OSA</strong><small>INTELLIGENCE</small></span></a>
+      <a className="osa-home-brand" href="/" aria-label={t.home}><span className="osa-home-brand-mark"><OSAMark variant="mark" className="osa-home-symbol" /></span><span><strong>OSA</strong><small>INTELLIGENCE <i> / 5.0</i></small></span></a>
       <div className="osa-home-header-actions"><span className="osa-home-status"><i />{locale === 'ru' ? 'ИНТЕЛЛЕКТ · ИССЛЕДОВАНИЕ · ДЕЙСТВИЕ' : 'INTELLIGENCE · RESEARCH · ACTION'}</span>
         <button className="osa-home-language" type="button" onClick={() => setLocale(locale === 'ru' ? 'en' : 'ru')} aria-label={t.language}><Globe2 size={15} />{locale.toUpperCase()}</button>
-        <a className="osa-home-portal-link" href="/portal">OSGARD <ArrowUpRight size={14} /></a>
+        <a className="osa-home-portal-link" href="/lectures">{locale === 'ru' ? 'КУРСЫ И ЛЕКЦИИ' : 'COURSES & LECTURES'} <ArrowUpRight size={14} /></a><a className="osa-home-portal-link" href="/portal">OSGARD <ArrowUpRight size={14} /></a>
       </div>
     </header>
 
