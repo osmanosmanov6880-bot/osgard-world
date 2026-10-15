@@ -1,47 +1,22 @@
 import assert from "node:assert/strict";
 import { readFileSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
-
-const root = process.cwd();
-const paths = [
-  "public/entertainment/index.html",
-  "public/entertainment/elbrus/index.html",
-  "public/entertainment/elbrus/og.svg",
-  "scripts/production-route-matrix.mjs",
-  "public/sitemap.xml",
-  ".github/workflows/deploy-frontend.yml",
-  "package.json"
-];
-for (const path of paths) assert.ok(existsSync(resolve(root, path)), "Missing ELBRUS publication file: " + path);
-const read = p => readFileSync(resolve(root, p), "utf8");
-const hub = read("public/entertainment/index.html");
-const page = read("public/entertainment/elbrus/index.html");
-const sitemap = read("public/sitemap.xml");
-const workflow = read(".github/workflows/deploy-frontend.yml");
-const pkg = JSON.parse(read("package.json"));
-const routeMatrix = read("scripts/production-route-matrix.mjs");
-
-assert.ok(hub.includes('href="/entertainment/elbrus/"'), "Entertainment hub must link to the ELBRUS case");
-assert.ok(hub.includes("case-shelf") && hub.includes("SELECTED DIGITAL EXPERIENCE"), "Entertainment hub must expose the selected digital experiences shelf");
-assert.equal((hub.match(/class="case-shelf"/g) || []).length, 1, "Entertainment hub must contain exactly one ELBRUS case shelf");
-assert.equal((hub.match(/Selected digital experience — ELBRUS case/g) || []).length, 1, "ELBRUS shelf CSS must not be duplicated");
-assert.equal(hub.split('href="/entertainment/elbrus/"').length - 1, 1, "ELBRUS case card must occur once");
-assert.ok(page.includes("<title>ELBRUS — Hospitality Experience | OSGARD WORLD</title>"), "ELBRUS case title missing");
-assert.ok(page.includes('rel="canonical" href="https://osgard.world/entertainment/elbrus/"'), "Canonical URL missing");
-assert.ok(page.includes('data-lang="en"') && page.includes('data-lang="ru"'), "RU/EN language control missing");
-assert.ok(page.includes('id="interactive-preview"') && page.includes('data-filter="khinkal"'), "Interactive menu preview missing");
-assert.ok(page.includes("does not place orders") && page.includes("не отправляет заказы"), "Demo-only boundaries must be explicit in both languages");
-assert.ok(!page.includes("/api/orders") && !page.includes("/api/reservations") && !page.includes("fetch("), "Public case preview must not claim or attempt live order integration");
-assert.ok(sitemap.includes("<loc>https://osgard.world/entertainment/elbrus/</loc>"), "ELBRUS case URL missing from sitemap");
-assert.ok(sitemap.includes("<loc>https://osgard.world/entertainment/</loc>"), "Entertainment hub missing from sitemap");
-assert.ok(routeMatrix.includes("'/entertainment/elbrus/'") && routeMatrix.includes("'/entertainment/elbrus/og.svg'"), "Production route matrix must test the ELBRUS case and its social preview");
-assert.ok(routeMatrix.includes("ELBRUS — Hospitality Experience | OSGARD WORLD") && routeMatrix.includes('text.match(/class="case-shelf"/g)'), "Production route matrix must validate case identity and exactly one hub card");
-assert.ok(workflow.includes('"public/entertainment/**"'), "SSH deployment workflow must trigger for Entertainment case changes");
-assert.ok(workflow.includes("npm run qa:elbrus-case"), "SSH workflow must run ELBRUS case smoke before build/deploy");
-assert.equal(pkg.scripts?.["qa:elbrus-case"], "node scripts/elbrus-case-smoke.mjs", "package.json must register the case smoke test");
-const scripts = [...page.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m => m[1]);
-assert.equal(scripts.length, 1, "Case preview should keep a single auditable script");
-new Function(scripts[0]);
-assert.ok(page.includes("@media(max-width:600px)") && page.includes("prefers-reduced-motion:reduce"), "Responsive and reduced-motion support missing");
-assert.ok(page.includes('aria-live="polite"') && page.includes('aria-pressed="true"'), "Accessible interactive states missing");
-console.log("ELBRUS_CASE_SMOKE_PASS: hub link, case SEO, RU/EN, local demo interactions, demo disclosure, sitemap and SSH workflow verified.");
+const root=process.cwd(),required=["public/entertainment/index.html","public/entertainment/elbrus/index.html","public/entertainment/elbrus/en/index.html","public/entertainment/elbrus/ar/index.html","public/entertainment/elbrus/og.svg","scripts/production-route-matrix.mjs","public/sitemap.xml",".github/workflows/deploy-frontend.yml","package.json"];
+for(const file of required)assert.ok(existsSync(resolve(root,file)),"Missing ELBRUS publication file: "+file);
+const read=p=>readFileSync(resolve(root,p),"utf8"),hub=read("public/entertainment/index.html"),sitemap=read("public/sitemap.xml"),routes=read("scripts/production-route-matrix.mjs"),workflow=read(".github/workflows/deploy-frontend.yml"),pkg=JSON.parse(read("package.json"));
+assert.ok(hub.includes('href="/entertainment/elbrus/"'));assert.equal((hub.match(/class="case-shelf"/g)||[]).length,1);assert.equal((hub.match(/Selected digital experience — ELBRUS case/g)||[]).length,1);
+const locales=[{code:"ru",file:"public/entertainment/elbrus/index.html",url:"https://osgard.world/entertainment/elbrus/",title:"ELBRUS — цифровой опыт гостеприимства | OSGARD WORLD",dir:"ltr",label:"Язык",disclosure:"не отправляет заказы"},{code:"en",file:"public/entertainment/elbrus/en/index.html",url:"https://osgard.world/entertainment/elbrus/en/",title:"ELBRUS — Hospitality Experience | OSGARD WORLD",dir:"ltr",label:"Language",disclosure:"does not place orders"},{code:"ar",file:"public/entertainment/elbrus/ar/index.html",url:"https://osgard.world/entertainment/elbrus/ar/",title:"ELBRUS — تجربة الضيافة | OSGARD WORLD",dir:"rtl",label:"اللغة",disclosure:"لا ترسل طلبات"}];let refKeys=null;
+for(const l of locales){const p=read(l.file),end=p.indexOf('<script>\nconst i18n='),visible=end>=0?p.slice(0,end):p;
+assert.ok(p.includes('<title>'+l.title+'</title>'),l.code+" title");assert.ok(p.includes('<html lang="'+l.code+'" dir="'+l.dir+'">'),l.code+" direction");assert.ok(p.includes('<link rel="canonical" href="'+l.url+'">'),l.code+" canonical");
+for(const o of locales)assert.ok(p.includes('hreflang="'+o.code+'" href="'+o.url+'"'),l.code+" hreflang "+o.code);
+assert.ok(p.includes('aria-label="'+l.label+'"'),l.code+" language selector");assert.ok(p.includes('id="main-content"')&&p.includes('id="interactive-preview"'),l.code+" landmarks");assert.ok(visible.includes(l.disclosure),l.code+" visible demo warning");
+assert.ok(p.includes('fetchpriority="high"')&&p.includes('content-visibility:auto'),l.code+" performance hints");assert.ok(!p.includes('/api/orders')&&!p.includes('/api/reservations')&&!p.includes('fetch('),l.code+" no fake live API");assert.equal(p.includes('Noto+Naskh+Arabic'),l.code==="ar",l.code+" Arabic font");
+assert.ok(p.includes('"@type":"CreativeWork"'),l.code+" JSON-LD");
+const scripts=[...p.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m=>m[1]);assert.equal(scripts.length,1,l.code+" script count");new Function(scripts[0]);const dictLines=scripts[0].split("\n").filter(x=>/^(ru|en|ar):\{/.test(x));assert.equal(dictLines.length,3,l.code+" locale dictionary count");
+const sig=dictLines.map(x=>[...x.matchAll(/([A-Za-z_$][\w$]*):"/g)].map(m=>m[1]).sort().join("|"));assert.equal(new Set(sig).size,1,l.code+" key parity");if(refKeys===null)refKeys=sig[0];else assert.equal(sig[0],refKeys,l.code+" common key set");
+assert.ok(p.includes('aria-current="page"')&&p.includes('aria-live="polite"'),l.code+" accessible state");assert.ok(p.includes('@media(max-width:600px)')&&p.includes('prefers-reduced-motion:reduce'),l.code+" responsive");
+}
+for(const l of locales)assert.ok(sitemap.includes('<loc>'+l.url+'</loc>'),"sitemap "+l.code);
+for(const r of ["'/entertainment/elbrus/'","'/entertainment/elbrus/en/'","'/entertainment/elbrus/ar/'","'/entertainment/elbrus/og.svg'"])assert.ok(routes.includes(r),"route matrix "+r);
+assert.ok(workflow.includes('"public/entertainment/**"')&&workflow.includes("npm run qa:elbrus-case"));assert.equal(pkg.scripts?.["qa:elbrus-case"],"node scripts/elbrus-case-smoke.mjs");
+console.log("ELBRUS_GLOBAL_CASE_PASS: RU/EN/AR, Arabic RTL, canonical/hreflang, metadata, no fake order API, responsive and SSH deployment gates.");
