@@ -1,8 +1,10 @@
-import { useMemo, useState } from 'react'
-import { ArrowLeft, ArrowRight, ArrowUpRight, BookOpen, Clapperboard, CirclePlay, Languages } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { ArrowLeft, ArrowRight, ArrowUpRight, BookOpen, CheckCircle2, Clapperboard, CirclePlay, Languages } from 'lucide-react'
 import { getOSACinemaLessons, type OSACinemaLocale } from './OSACinema'
 import { OsgardLogo } from './OsgardLogo'
 import { OSA_LESSON_SLUGS } from './osaLessonGuides'
+
+const LESSON_PROGRESS_KEY = 'osgard-osa-lesson-completion-v1'
 import './lectureLibrary.css'
 
 const actCopy = {
@@ -30,6 +32,8 @@ const copy = {
     lessons: 'Все лекции и сцены',
     lessonsIntro: 'Открывайте любую тему отдельно или проходите программу последовательно. Прогресс интерактивного курса сохраняется в браузере.',
     available: 'Интерактивный урок доступен',
+    completed: 'Урок изучен',
+    completedCount: 'отмечено изученными',
     open: 'Открыть урок',
     videoTitle: 'О видеоверсии',
     videoBody: 'В исходном репозитории OSA найден реестр видеоматериалов, но у видеозаписей нет постоянных URL, а файлов MP4/WebM в репозитории нет. Поэтому мы не показываем фиктивные видеоплееры: ниже доступны реальные интерактивные лекции; видеозаписи появятся после публикации самих файлов.',
@@ -53,6 +57,8 @@ const copy = {
     lessons: 'All lectures and scenes',
     lessonsIntro: 'Open any topic individually or follow the sequence. Interactive course progress is saved in your browser.',
     available: 'Interactive lesson available',
+    completed: 'Lesson completed',
+    completedCount: 'marked complete',
     open: 'Open lesson',
     videoTitle: 'About the video version',
     videoBody: 'The source OSA repository contains a video-asset manifest, but its video entries have no permanent URLs and no MP4/WebM files are stored in the repository. We therefore do not show fake video players. The existing interactive lectures are available below; recordings can appear after the actual files are published.',
@@ -69,10 +75,28 @@ const copy = {
 
 export default function LectureLibrary() {
   const [locale, setLocale] = useState<OSACinemaLocale>('ru')
+  const [completedLessons, setCompletedLessons] = useState<string[]>([])
   const t = copy[locale]
   const lessons = useMemo(() => getOSACinemaLessons(locale), [locale])
   const acts = actCopy[locale]
   const actCounts = acts.map((act, index) => ({ ...act, count: lessons.filter(lesson => lesson.act === index + 1).length, firstScene: lessons.findIndex(lesson => lesson.act === index + 1) }))
+  useEffect(() => {
+    const refreshProgress = () => {
+      try {
+        const stored: unknown = JSON.parse(localStorage.getItem(LESSON_PROGRESS_KEY) || '[]')
+        setCompletedLessons(Array.isArray(stored) ? [...new Set(stored.filter((item): item is string => typeof item === 'string' && (OSA_LESSON_SLUGS as readonly string[]).includes(item)))] : [])
+      } catch {
+        setCompletedLessons([])
+      }
+    }
+    refreshProgress()
+    window.addEventListener('focus', refreshProgress)
+    window.addEventListener('storage', refreshProgress)
+    return () => {
+      window.removeEventListener('focus', refreshProgress)
+      window.removeEventListener('storage', refreshProgress)
+    }
+  }, [])
 
   return <main className="lecture-library">
     <header className="lecture-header">
@@ -87,7 +111,7 @@ export default function LectureLibrary() {
       <p className="lecture-eyebrow"><span />{t.kicker}</p>
       <h1>{t.title}</h1>
       <p className="lecture-lead">{t.intro}</p>
-      <div className="lecture-hero-meta"><span><BookOpen size={16} /> {lessons.length} {t.count}</span><span><Clapperboard size={16} /> {t.videoStatus}</span></div>
+      <div className="lecture-hero-meta"><span><BookOpen size={16} /> {lessons.length} {t.count}</span><span><CheckCircle2 size={16} /> {completedLessons.length} {t.completedCount}</span><span><Clapperboard size={16} /> {t.videoStatus}</span></div>
       <a className="lecture-primary" href={`/lectures/${OSA_LESSON_SLUGS[0]}`}><CirclePlay size={17} />{t.start}<ArrowUpRight size={16} /></a>
     </section>
 
@@ -106,10 +130,11 @@ export default function LectureLibrary() {
       <div className="lecture-section-heading"><div><p className="lecture-eyebrow">OSA ORIGINAL / 001</p><h2 id="lecture-list-title">{t.lessons}</h2></div><p>{t.lessonsIntro}</p></div>
       <div className="lecture-list">
         {lessons.map((lesson, index) => {
-          return <article className="lecture-row" key={lesson.id}>
+          const isCompleted = completedLessons.includes(OSA_LESSON_SLUGS[index])
+          return <article className={'lecture-row' + (isCompleted ? ' is-complete' : '')} key={lesson.id}>
             <span className="lecture-row-number">{String(index + 1).padStart(2, '0')}</span>
             <div className="lecture-row-copy"><span>{lesson.tag}</span><h3>{lesson.title}</h3><p>{lesson.body}</p><small>{lesson.takeaway}</small></div>
-            <div className="lecture-row-action"><span>{t.available}</span><a href={`/lectures/${OSA_LESSON_SLUGS[index]}`}>{t.open}<ArrowUpRight size={15} /></a></div>
+            <div className="lecture-row-action"><span className="lecture-row-status">{isCompleted ? t.completed : t.available}</span><a href={`/lectures/${OSA_LESSON_SLUGS[index]}`}>{t.open}<ArrowUpRight size={15} /></a></div>
           </article>
         })}
       </div>
