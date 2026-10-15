@@ -18,6 +18,8 @@ assert.ok(workflow.includes("printf '%s\\n' \"$DEPLOY_KEY\" > ~/.ssh/osgard_depl
 assert.ok(workflow.includes('npm run qa:deploy-workflow'), 'Deploy workflow must run its own static contract test before deployment')
 assert.ok(workflow.includes("cancel-in-progress: ${{ contains(github.event.head_commit.message, '[supersede]') }}"), 'Recovery deploys must be able to cancel a stale recovery run')
 assert.ok(workflow.includes("if: ${{ !contains(github.event.head_commit.message, '[supersede]') }}"), 'Recovery deploys must bypass the cache step and use the official Godot download fallback')
+assert.ok(workflow.includes('REMOTE_RELEASE_DIR="/tmp/osgard-gh-release-${GITHUB_RUN_ID}"'), 'Each deploy must stage its archive in a unique run-scoped directory')
+assert.ok(workflow.includes('REMOTE_SCRIPT="/tmp/activate-frontend-remote-${GITHUB_RUN_ID}.sh"'), 'Each deploy must use its own activation script path')
 assert.ok(packageJson.scripts?.['qa:deploy-workflow'] === 'node scripts/deploy-workflow-smoke.mjs', 'Package script must expose the deploy workflow contract test')
 assert.ok(workflow.includes('Verify host-managed API from frontend container') && workflow.includes('http://$host_gateway:4317/health'), 'Deployment must verify the host-managed API through the active Docker gateway')
 assert.ok(activation.includes('api_gateway=') && activation.includes('__OSGARD_HOST_GATEWAY__') && activation.includes('Unresolved OSGARD host-gateway placeholder'), 'Activation must replace the API gateway placeholder using the current container network')

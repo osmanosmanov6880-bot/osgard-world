@@ -3492,3 +3492,18 @@ Continue non-financial brief implementation; billing can be handled only after a
 
 - The standard deployment and one recovery attempt remained on the Godot cache step without advancing, so the recovery workflow avoids that step instead of declaring a failed build successful.
 - The next superseding deployment must still pass the normal Godot import/runtime smoke, production build, checksum activation and live public route matrix.
+
+
+## 2026-10-15 / Pass 184
+
+### Scope completed
+
+- Made every frontend deployment use run-scoped remote staging, archive and activation-script paths based on `GITHUB_RUN_ID`.
+- Added deploy-workflow smoke assertions so concurrent release attempts cannot overwrite a shared checksum/archive directory.
+- Kept the dedicated supersede recovery behaviour: the incoming recovery run cancels an older recovery attempt and skips the cache before using the official Godot/Web-template download fallback.
+
+### Verification
+
+- Production route checks previously confirmed the MERAKKI page returns HTTP 200 in both desktop and mobile modes.
+- Two overlapping deployment runs were stopped at checksum verification before activation; the new path isolation directly addresses that race.
+- The newest recovery run must still pass static workflow smoke, production build, checksum, activation and route matrix.
