@@ -16,6 +16,8 @@ assert.ok(workflow.includes('ssh-keyscan -T 10 -H "$DEPLOY_HOST"'), 'SSH host-ke
 assert.ok(workflow.includes('Could not read the SSH host key'), 'SSH host-key failure must provide actionable diagnostics')
 assert.ok(workflow.includes("printf '%s\\n' \"$DEPLOY_KEY\" > ~/.ssh/osgard_deploy"), 'SSH key must be written with a trailing newline')
 assert.ok(workflow.includes('npm run qa:deploy-workflow'), 'Deploy workflow must run its own static contract test before deployment')
+assert.ok(workflow.includes("cancel-in-progress: ${{ contains(github.event.head_commit.message, '[supersede]') }}"), 'Recovery deploys must be able to cancel a stale recovery run')
+assert.ok(workflow.includes("if: ${{ !contains(github.event.head_commit.message, '[supersede]') }}"), 'Recovery deploys must bypass the cache step and use the official Godot download fallback')
 assert.ok(packageJson.scripts?.['qa:deploy-workflow'] === 'node scripts/deploy-workflow-smoke.mjs', 'Package script must expose the deploy workflow contract test')
 assert.ok(workflow.includes('Verify host-managed API from frontend container') && workflow.includes('http://$host_gateway:4317/health'), 'Deployment must verify the host-managed API through the active Docker gateway')
 assert.ok(activation.includes('api_gateway=') && activation.includes('__OSGARD_HOST_GATEWAY__') && activation.includes('Unresolved OSGARD host-gateway placeholder'), 'Activation must replace the API gateway placeholder using the current container network')

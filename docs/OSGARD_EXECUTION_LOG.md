@@ -3478,3 +3478,17 @@ Continue non-financial brief implementation; billing can be handled only after a
 
 - TypeScript and ecosystem integrity checks passed after the localized-contact assertion was aligned with the JSON-serialized RU/EN dictionaries.
 - Final release gate is the recovery run's production build, server activation, and desktop/mobile route matrix.
+
+
+## 2026-10-15 / Pass 183
+
+### Scope completed
+
+- Hardened the existing deploy recovery lane: a commit marked `[supersede]` now cancels a stale recovery run and bypasses the Godot cache step.
+- The official Godot 4.7.2/Web export-template download path remains active for recovery commits; standard deployments keep using the cache.
+- Extended `qa:deploy-workflow` to guard both recovery behaviours.
+
+### Reason and verification boundary
+
+- The standard deployment and one recovery attempt remained on the Godot cache step without advancing, so the recovery workflow avoids that step instead of declaring a failed build successful.
+- The next superseding deployment must still pass the normal Godot import/runtime smoke, production build, checksum activation and live public route matrix.

@@ -2,7 +2,7 @@ name: OSGARD frontend deploy
 
 concurrency:
   group: ${{ contains(github.event.head_commit.message, '[supersede]') && 'osgard-frontend-deploy-recovery' || 'osgard-frontend-deploy' }}
-  cancel-in-progress: false
+  cancel-in-progress: ${{ contains(github.event.head_commit.message, '[supersede]') }}
 
 on:
   push:
@@ -73,6 +73,7 @@ jobs:
         run: npm run qa:null-shift-godot
       - name: Cache Godot 4.7.2 and web export templates
         id: godot-cache
+        if: ${{ !contains(github.event.head_commit.message, '[supersede]') }}
         uses: actions/cache@v4
         with:
           path: |
