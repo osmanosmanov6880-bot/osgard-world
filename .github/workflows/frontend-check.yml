@@ -29,6 +29,7 @@ on:
       - "public/games/**"
       - "docs/02_IMPERIUM_OF_TIME_GAME_DESIGN.md"
       - "public/skillcred/**"
+      - "scripts/precompress-brand-transition.mjs"
       - "package.json"
       - "package-lock.json"
       - "index.html"

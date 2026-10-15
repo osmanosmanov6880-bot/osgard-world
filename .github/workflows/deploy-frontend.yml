@@ -224,9 +224,19 @@ jobs:
         run: bash -n scripts/activate-frontend-remote.sh
       - name: Package HTML assets and matching Nginx config
         run: |
+          set -euo pipefail
           mkdir -p osgard-release/html
           cp -a dist/. osgard-release/html/
           ASSET_VERSION="${GITHUB_SHA:0:12}"
+          # Bust immutable edge-cache URLs after changing the shared brand delivery.
+          find osgard-release/html -type f -name '*.html' -exec sed -i \
+            -e "s|/brand/osa-transition.js|/brand/osa-transition.js?v=$ASSET_VERSION|g" \
+            -e "s|/brand/osa5-portals.css|/brand/osa5-portals.css?v=$ASSET_VERSION|g" {} +
+          test -s osgard-release/html/brand/osa-transition.js.gz
+          test -s osgard-release/html/brand/osa5-portals.css.gz
+          gzip -t osgard-release/html/brand/osa-transition.js.gz osgard-release/html/brand/osa5-portals.css.gz
+          grep -R -F "/brand/osa-transition.js?v=$ASSET_VERSION" osgard-release/html --include='*.html' >/dev/null
+          grep -R -F "/brand/osa5-portals.css?v=$ASSET_VERSION" osgard-release/html --include='*.html' >/dev/null
           sed -i "s|/skillcred/styles.css|/skillcred/styles.css?v=$ASSET_VERSION|g" osgard-release/html/skillcred/index.html
           sed -i "s|/skillcred/app.js|/skillcred/app.js?v=$ASSET_VERSION|g" osgard-release/html/skillcred/index.html
           find osgard-release/html/skillcred -type f \( -name '*.html' -o -name '*.css' -o -name '*.js' \) -exec gzip -9 -k {} +
@@ -354,6 +364,26 @@ jobs:
           OSGARD_BASE_URL: https://osgard.world
           SKILLCRED_EXPECT_CURRENT_DESIGN: "1"
         run: npm run qa:production-routes
+      - name: Verify versioned shared-brand assets are delivered with gzip
+        env:
+          ASSET_VERSION: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          SHORT_SHA="${ASSET_VERSION:0:12}"
+          for asset in brand/osa-transition.js brand/osa5-portals.css; do
+            url="https://osgard.world/${asset}?v=${SHORT_SHA}"
+            echo "Checking gzip response for ${url}"
+            headers="$(curl --http1.1 -fsS -D - -o /dev/null -H 'Accept-Encoding: gzip' "${url}")"
+            printf '%s\\n' "${headers}"
+            printf '%s\\n' "${headers}" | grep -Eiq '^content-encoding:[[:space:]]*gzip[[:space:]]*        env:
+          OSGARD_BASE_URL: https://osgard.world
+        run: node scripts/skillcred-proxy-smoke.mjs
+ || {
+              echo "Expected Content-Encoding: gzip for ${url}" >&2
+              exit 1
+            }
+          done
+
       - name: Test real issue, verify and revoke through OSGARD proxy
         env:
           OSGARD_BASE_URL: https://osgard.world
