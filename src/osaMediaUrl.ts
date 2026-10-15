@@ -14,6 +14,10 @@ export function isPermanentMediaUrl(source: string | null | undefined): source i
 
   if (value.startsWith('/')) {
     if (value.startsWith('/../') || value.includes('/./')) return false
+    const path = value.split(/[?#]/, 1)[0]
+    if (path.split('/').some(segment => {
+      try { const decoded = decodeURIComponent(segment); return decoded === '..' || decoded === '.' || decoded.includes('/') || decoded.includes('\\\\') } catch { return true }
+    })) return false
     const query = value.includes('?') ? value.slice(value.indexOf('?') + 1) : ''
     const params = new URLSearchParams(query)
     for (const key of params.keys()) {
