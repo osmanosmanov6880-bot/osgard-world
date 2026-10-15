@@ -45,7 +45,7 @@ assert.ok((mediaLibrary.match(/<tr data-kind=/g) || []).length === 31, 'OSA medi
 assert.ok(mediaLibrary.includes('видео не подключено') && mediaLibrary.includes('permanentUrl: null'), 'OSA media library must state the missing-media boundary.')
 assert.ok(mediaLibrary.includes('https://github.com/osmanosmanov6880-bot/osa-global-intelligence') && mediaLibrary.includes('https://github.com/osmanosmanov6880-bot/osa-global-intelligence-2'), 'OSA media library must link both repositories.')
 assert.ok(canonicalDoc.includes('Единый источник правды') && canonicalDoc.includes('osa-global-intelligence-2') && canonicalDoc.includes('19 видео'), 'OSA source-of-truth document is incomplete.')
-assert.ok(landing.includes('href="/osa-library/"'), 'Development case must link the OSA media library.')
+assert.ok(page.includes('href="/osa-library/"'), 'OSA case must link the media library.')
 assert.ok(og.startsWith('<svg') && og.includes('width="1200" height="630"') && og.includes('OSA Global') && og.includes('BEYOND THE MODEL'), 'OSA social card is incomplete.')
 assert.ok(landing.includes('href="/development/osa-intelligence/"') && landing.includes('<h3>OSA Global Intelligence</h3>'), 'Development landing does not feature OSA case.')
 assert.ok(sitemap.includes('<loc>https://osgard.world/development/osa-intelligence/</loc>'), 'OSA case route is missing from sitemap.')
