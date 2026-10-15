@@ -1,7 +1,7 @@
 import { isValidPartnerInventoryText } from './partner-inventory-contract.mjs'
 const base = process.env.OSGARD_BASE_URL || 'https://osgard.world'
 const expectCurrentDesign = process.env.SKILLCRED_EXPECT_CURRENT_DESIGN === '1'
-const routes = ['/tedes/','/development/tedes/','/development/merakki/','/','/portal','/osa-cinema','/academy','/skillcred/','/skillcred-api/health','/skillcred-api/ready','/skillcred-api/issuer','/entertainment','/games/','/games/index.html','/games/partners/','/games/admin/','/games/afterimage-run/','/games/vector-zero/','/games/favicon.svg','/privacy/','/terms/','/community','/stream','/archive','/profile','/api/v1/player/profile','/api/v1/analytics/summary?from=0&to=1','/r/1842','/games/time','/games/null-shift/','/games/null-shift/index.html','/games/null-shift-godot/','/games/null-shift-godot/index.html','/play/swarm','/play/null-shift','/play/inherit','/play/remix','/media','/business','/create','/mobility']
+const routes = ['/tedes/','/tedes/catalog/','/tedes/collections/','/tedes/product/?sku=FORMA-ARC-01','/tedes/materials/','/development/tedes/','/development/merakki/','/','/portal','/osa-cinema','/academy','/skillcred/','/skillcred-api/health','/skillcred-api/ready','/skillcred-api/issuer','/entertainment','/games/','/games/index.html','/games/partners/','/games/admin/','/games/afterimage-run/','/games/vector-zero/','/games/favicon.svg','/privacy/','/terms/','/community','/stream','/archive','/profile','/api/v1/player/profile','/api/v1/analytics/summary?from=0&to=1','/r/1842','/games/time','/games/null-shift/','/games/null-shift/index.html','/games/null-shift-godot/','/games/null-shift-godot/index.html','/play/swarm','/play/null-shift','/play/inherit','/play/remix','/media','/business','/create','/mobility']
 const agents = { desktop: 'OSGARD-Route-Matrix/1.1 Desktop', mobile: 'OSGARD-Route-Matrix/1.1 Mobile' }
 const results = []
 for (const [device, userAgent] of Object.entries(agents)) for (const route of routes) {
@@ -15,7 +15,15 @@ for (const [device, userAgent] of Object.entries(agents)) for (const route of ro
       ? text.includes('<title>OSA Intelligence — понимать, проверять, решать</title>') &&
         /<script[^>]+src="\/assets\/[^"]+\.js"/i.test(text)
       : route === '/tedes/'
-        ? text.includes('<title>TEDES Studio — архитектурная фурнитура как система</title>') && text.includes('id="addDoor"') && text.includes('id="exportJson"') && text.includes('id="exportCsv"') && text.includes('id="doorRows"')
+        ? text.includes('<title>TEDES Studio — архитектурная фурнитура как система</title>') && text.includes('id="addDoor"') && text.includes('id="exportJson"') && text.includes('id="exportCsv"') && text.includes('id="doorRows"') && text.includes('STORAGE_KEY') && text.includes('id="buildQuote"')
+      : route === '/tedes/catalog/'
+        ? text.includes('<title>TEDES Catalog — коллекция архитектурной фурнитуры</title>') && text.includes('id="products"') && text.includes('id="search"') && text.includes('id="collection"') && text.includes('id="finish"')
+      : route === '/tedes/collections/'
+        ? text.includes('<title>TEDES Collections — форма, линия, материя</title>') && text.includes('FORMA') && text.includes('LINEA') && text.includes('MATERIA')
+      : route.startsWith('/tedes/product/')
+        ? text.includes('<title>TEDES Product Studio — configurable door hardware concept</title>') && text.includes('id="addToProject"') && text.includes('localStorage') && text.includes('id="swatches"')
+      : route === '/tedes/materials/'
+        ? text.includes('<title>TEDES Materials — guide to finishes</title>') && text.includes('Antique Brass') && text.includes('Brushed Steel') && text.includes('Matte Black')
       : route === '/development/tedes/'
         ? text.includes('<title>TEDES — кейс OSGARD Development</title>') && text.includes('href="/tedes/"') && text.includes('FLAGSHIP CASE')
       : route === '/development/merakki/'
@@ -69,7 +77,7 @@ for (const [device, userAgent] of Object.entries(agents)) for (const route of ro
     const isGamesHub = route === '/games/' || route === '/games/index.html'
     const isPartnerPage = route === '/games/partners/'
     const isGodot = route.startsWith('/games/null-shift-godot')
-    const assetPaths = route === '/tedes/' ? ['/tedes/assets/hero-door.webp'] : route === '/development/tedes/' ? ['/tedes/assets/hero-door.webp', '/tedes/assets/architecture-scene.webp'] : route === '/games/favicon.svg' || route === '/privacy/' || route === '/terms/' ? [] : isPartnerPage ? ['/games/partners/partners.js', '/games/partners/inventory.json'] : isGamesHub ? ['/games/player-lifecycle.js'] : route === '/skillcred/' ? ['/skillcred/styles.css', '/skillcred/app.js', '/skillcred/fonts/InterVariable.woff2', '/skillcred/fonts/InstrumentSerif-Italic.woff2', '/skillcred/fonts/JetBrainsMono-Regular.woff2'] : isGodot ? ['/games/null-shift-godot/index.js', '/games/null-shift-godot/index.wasm', '/games/null-shift-godot/index.pck'] : route.startsWith('/games/null-shift') ? ['/games/null-shift/styles.css', '/games/null-shift/game.js', '/games/null-shift/engine-3d.js'] : []
+    const assetPaths = route === '/tedes/' ? ['/tedes/assets/hero-door.webp'] : route === '/tedes/catalog/' ? ['/tedes/assets/architecture-scene.webp', '/tedes/assets/hero-door.webp'] : route === '/tedes/collections/' ? ['/tedes/assets/architecture-scene.webp', '/tedes/assets/hero-door.webp'] : route.startsWith('/tedes/product/') ? ['/tedes/assets/hero-door.webp'] : route === '/tedes/materials/' ? ['/tedes/assets/hero-door.webp'] : route === '/development/tedes/' ? ['/tedes/assets/hero-door.webp', '/tedes/assets/architecture-scene.webp'] : route === '/games/favicon.svg' || route === '/privacy/' || route === '/terms/' ? [] : isPartnerPage ? ['/games/partners/partners.js', '/games/partners/inventory.json'] : isGamesHub ? ['/games/player-lifecycle.js'] : route === '/skillcred/' ? ['/skillcred/styles.css', '/skillcred/app.js', '/skillcred/fonts/InterVariable.woff2', '/skillcred/fonts/InstrumentSerif-Italic.woff2', '/skillcred/fonts/JetBrainsMono-Regular.woff2'] : isGodot ? ['/games/null-shift-godot/index.js', '/games/null-shift-godot/index.wasm', '/games/null-shift-godot/index.pck'] : route.startsWith('/games/null-shift') ? ['/games/null-shift/styles.css', '/games/null-shift/game.js', '/games/null-shift/engine-3d.js'] : []
     if (route === '/') {
       const rootBundle = text.match(/<script[^>]+src="([^"]+\.js)"[^>]*><\/script>/i)?.[1]
       if (rootBundle) assetPaths.push(rootBundle)
