@@ -91,7 +91,7 @@ assert.equal(merged.added, 1)
 assert.equal(merged.skippedDuplicates, 1)
 assert.equal(merged.project.doors.length, 3)
 assert.equal(new Set(merged.project.doors.map((door) => door.id)).size, 3)
-assert.throws(() => mergeProjectDocuments({ doors: Array.from({ length: 30 }, (_, i) => ({ id: 'D-' + String(i + 1).padStart(3, '0'), zone: 'Zone ' + i })) }, { doors: [{ zone: 'Extra' }] }), /лимит проекта/)
+assert.throws(() => mergeProjectDocuments({ doors: Array.from({ length: 30 }, (_, i) => ({ id: 'D-' + String(i + 1).padStart(3, '0'), zone: 'Zone ' + i })) }, { doors: [{ zone: 'Extra' }] }), /Лимит проекта/)
 assert.equal(workspaceSafeCsvCell('=1+1'), `"'=1+1"`)
 assert.ok(workspaceSafeCsvCell('  @SUM(A1:A2)').startsWith(`"'  @SUM`), 'Workspace CSV must prevent formula injection')
 
