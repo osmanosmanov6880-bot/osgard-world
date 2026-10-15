@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ArrowRight, ArrowUpRight, BookOpen, Brain, Globe2, Layers3, ShieldCheck, Sparkles } from 'lucide-react'
+import { ArrowRight, ArrowUpRight, BookOpen, Brain, Film, Globe2, Layers3, ShieldCheck, Sparkles } from 'lucide-react'
 import './osaIntelligenceHome.css'
 
 type Locale = 'ru' | 'en'
@@ -16,6 +16,7 @@ const copy = {
     principleTitle: 'Три принципа.', principleA: 'Понимайте систему', principleABody: 'Отделяйте возможности модели от обещаний и ограничений.', principleB: 'Проверяйте доказательства', principleBBody: 'Открывайте первоисточники и уточняйте, что именно подтверждено.',
     principleC: 'Сохраняйте ответственность', principleCBody: 'Учитывайте приватность, риск ошибки и последствия решения.',
     footer: 'OSA Intelligence · Интерактивное обучение, проверка и практика.', footerNote: 'Прогресс сохраняется в этом браузере. Не вводите секреты и лишние персональные данные.',
+    mediaTitle: 'Видеолекции и материалы', mediaBody: 'Единая карта курса и реестр всех найденных медиа-ID. Файлы пока не подключены к плееру — фиктивного воспроизведения нет.', mediaAction: 'Открыть карту материалов',
     language: 'Переключить язык', home: 'OSA INTELLIGENCE'
   },
   en: {
@@ -30,6 +31,7 @@ const copy = {
     principleTitle: 'Three principles.', principleA: 'Understand the system', principleABody: 'Separate model capabilities from promises and limitations.', principleB: 'Verify the evidence', principleBBody: 'Open original sources and establish what they actually support.',
     principleC: 'Keep responsibility', principleCBody: 'Consider privacy, error risk, and the consequences of a decision.',
     footer: 'OSA Intelligence · Interactive learning, verification, and practice.', footerNote: 'Learning progress stays in this browser. Do not enter secrets or unnecessary personal data.',
+    mediaTitle: 'Video lectures & media inventory', mediaBody: 'One course map and a register of discovered media IDs. Files are not connected to a player yet; no fake playback is shown.', mediaAction: 'Open media map',
     language: 'Switch language', home: 'OSA INTELLIGENCE'
   }
 }
@@ -80,6 +82,8 @@ export default function OSAIntelligenceHome() {
         <a className="osa-home-card" href="/portal"><span className="osa-home-card-index">03 / ECOSYSTEM</span><span className="osa-home-card-icon"><Globe2 size={21} /></span><h3>{t.portalTitle}</h3><p>{t.portalBody}</p><span className="osa-home-card-action">{t.portalAction}<ArrowUpRight size={16} /></span></a>
       </div>
     </section>
+
+    <section className="osa-home-media-hub" aria-labelledby="osa-home-media-title"><div className="osa-home-media-icon"><Film size={22} /></div><div className="osa-home-media-copy"><p className="osa-home-eyebrow">{locale === 'ru' ? 'MEDIA / ПРОЗРАЧНЫЙ СТАТУС' : 'MEDIA / VERIFIED STATUS'}</p><h2 id="osa-home-media-title">{t.mediaTitle}</h2><p>{t.mediaBody}</p></div><a className="osa-home-button osa-home-button-secondary" href="/osa-library/">{t.mediaAction}<ArrowUpRight size={16} /></a></section>
 
     <section className="osa-home-principles" aria-labelledby="osa-home-principles-title">
       <div className="osa-home-principles-heading"><p className="osa-home-eyebrow">OSA / METHOD</p><h2 id="osa-home-principles-title">{t.principleTitle}</h2></div>
