@@ -257,6 +257,11 @@ th{color:#a89a80;font-size:8px;letter-spacing:.15em}
   const colorFor = (finish) => ({ "Antique brass":"#c5ac73","Matte black":"#30312b","Satin bronze":"#8e7860","Polished chrome":"#cbd0cb","Brushed steel":"#a9aaa0","Graphite":"#55564f" }[finish] || "#c5ac73");
   const escapeHtml = (value) => String(value).replace(/[&<>"']/g, (char) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[char]));
   const safeNumber = (id,min,max) => { const val = Number($(id).value); return Number.isFinite(val) ? Math.min(max,Math.max(min,Math.round(val))) : min; };
+  function safeCsvCell(value){
+    const text=String(value??"");
+    const safeText=/^[\s\x00-\x1f]*[=+\-@]/.test(text)?"'"+text:text;
+    return '"'+safeText.replace(/"/g,'""')+'"';
+  }
   function selectedConfig(){
     return {id:"D-"+String(nextId).padStart(3,"0"),zone:$("zone").value.trim()||"Unassigned zone",collection:$("collection").value,finish:$("finish").value,handle:$("handle").value,lock:$("lock").value,width:safeNumber("width",400,1800),height:safeNumber("height",1500,3000)};
   }
@@ -346,12 +351,7 @@ th{color:#a89a80;font-size:8px;letter-spacing:.15em}
   $("exportCsv").addEventListener("click",()=>{
     const columns=["id","zone","collection","finish","handle","lock","width_mm","height_mm"];
     const rows=doors.map((door)=>[door.id,door.zone,door.collection,door.finish,door.handle,door.lock,door.width,door.height]);
-    const csvCell=(value)=>{
-      const text=String(value??"");
-      const safeText=/^[\s\x00-\x1f]*[=+\-@]/.test(text)?"'"+text:text;
-      return '"'+safeText.replace(/"/g,'""')+'"';
-    };
-    const csv=[columns,...rows].map((row)=>row.map(csvCell).join(",")).join("\r\n");
+    const csv=[columns,...rows].map((row)=>row.map(safeCsvCell).join(",")).join("\r\n");
     download("tedes-project.csv","\ufeff"+csv,"text/csv;charset=utf-8");
   });
   function download(filename,content,type){const blob=new Blob([content],{type:type});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);}
