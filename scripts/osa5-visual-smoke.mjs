@@ -126,6 +126,60 @@ try {
     await context.close()
   }
 
+  // Real browser interaction: lecture search and act filters must compose, preserve lesson links, and expose empty results.
+  const lectureContext = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+    reducedMotion: 'reduce'
+  })
+  await lectureContext.addInitScript(() => {
+    try { sessionStorage.setItem('osgard-preloader-seen-v3', '1') } catch {}
+  })
+  const lecturePage = await lectureContext.newPage()
+  try {
+    const pageErrors = []
+    lecturePage.on('pageerror', error => pageErrors.push(error.message))
+    await lecturePage.goto(base + '/lectures', { waitUntil: 'domcontentloaded', timeout: 25000 })
+    const rows = lecturePage.locator('.lecture-row')
+    await rows.first().waitFor({ state: 'visible', timeout: 8000 })
+    if (await rows.count() !== 8) problems.push('lectures search: expected eight lesson rows before filtering')
+
+    const search = lecturePage.locator('.lecture-search input')
+    await search.fill('первоисточник')
+    const sourceRows = await rows.count()
+    const sourceTexts = await rows.locator('.lecture-row-copy').allTextContents()
+    if (sourceRows === 0 || sourceRows >= 8 || sourceTexts.some(text => !text.toLocaleLowerCase().includes('первоисточник'))) {
+      problems.push('lectures search: keyword search did not restrict rows to matching lesson content')
+    }
+    await lecturePage.getByRole('button', { name: 'Очистить поиск' }).click()
+
+    await lecturePage.getByRole('button', { name: 'Все акты' }).click()
+    if (await lecturePage.getByRole('button', { name: 'Все акты' }).getAttribute('aria-pressed') !== 'true') {
+      problems.push('lectures search: selecting all acts did not update aria-pressed')
+    }
+    await lecturePage.getByRole('button', { name: 'Акт III' }).click()
+    const actThreeCount = await rows.count()
+    if (await lecturePage.getByRole('button', { name: 'Акт III' }).getAttribute('aria-pressed') !== 'true' || actThreeCount === 0 || actThreeCount >= 8) {
+      problems.push('lectures search: act filter did not narrow results or expose its selected state')
+    }
+
+    await search.fill('no-result-token-qz')
+    await lecturePage.locator('.lecture-empty-state').waitFor({ state: 'visible', timeout: 3000 })
+    await lecturePage.getByRole('button', { name: 'Очистить поиск' }).click()
+    await lecturePage.getByRole('button', { name: 'Все акты' }).click()
+    if (await rows.count() !== 8) problems.push('lectures search: clearing search and act filter did not restore the full catalogue')
+    for (const message of pageErrors) problems.push('lectures search @ mobile: uncaught page error: ' + message)
+    await lecturePage.screenshot({ path: resolve(output, 'mobile-lectures-search-filtered.png'), animations: 'disabled' })
+    screenshots.push('mobile-lectures-search-filtered.png')
+  } catch (error) {
+    problems.push('lecture catalogue search/filter browser interaction: ' + String(error?.message || error))
+    try {
+      await lecturePage.screenshot({ path: resolve(output, 'mobile-lectures-search-failure.png'), animations: 'disabled' })
+      screenshots.push('mobile-lectures-search-failure.png')
+    } catch {}
+  } finally {
+    await lectureContext.close()
+  }
+
   // Real browser navigation: a cross-profile click shows the one-shot overlay, then consumes its intent.
   const transitionContext = await browser.newContext({
     viewport: { width: 1280, height: 800 },
