@@ -18,7 +18,13 @@ assert.ok(workflow.includes("printf '%s\\n' \"$DEPLOY_KEY\" > ~/.ssh/osgard_depl
 assert.ok(workflow.includes('npm run qa:deploy-workflow'), 'Deploy workflow must run its own static contract test before deployment')
 assert.ok(workflow.includes("cancel-in-progress: ${{ contains(github.event.head_commit.message, '[supersede]') }}"), 'Recovery deploys must be able to cancel a stale recovery run')
 assert.ok(workflow.includes("group: osgard-frontend-deploy") && !workflow.includes("osgard-frontend-deploy-recovery"), "Supersede deployments must share the default concurrency group so they can cancel stale regular releases");
-assert.ok(workflow.includes("if: ${{ !contains(github.event.head_commit.message, '[supersede]') }}"), 'Recovery deploys must bypass the cache step and use the official Godot download fallback')
+assert.ok(workflow.includes("id: godot-changes") && workflow.includes("git diff --quiet HEAD^ HEAD -- godot/null-shift/ public/games/null-shift-godot/ scripts/null-shift-godot-smoke.mjs"), 'Static-only releases must detect whether Godot sources actually changed')
+assert.ok(workflow.includes("fetch-depth: 2"), 'Deployment checkout must include the parent commit for path-aware Godot rebuild detection')
+assert.ok(workflow.includes("if: ${{ steps.godot-changes.outputs.changed == 'true' && !contains(github.event.head_commit.message, '[supersede]') }}"), 'Godot cache must only run for game changes and must retain the supersede fallback policy')
+for (const step of ['Verify Godot installation','Import and parse the Godot project','Runtime-smoke gameplay state transitions in headless Godot','Export Godot Web game']) {
+  const start = workflow.indexOf('- name: ' + step)
+  assert.ok(start >= 0 && workflow.slice(start, start + 220).includes("steps.godot-changes.outputs.changed == 'true'"), step + ' must be conditional on Godot source changes')
+}
 assert.ok(workflow.includes('REMOTE_RELEASE_DIR="/tmp/osgard-gh-release-${GITHUB_RUN_ID}"'), 'Each deploy must stage its archive in a unique run-scoped directory')
 assert.ok(workflow.includes('REMOTE_SCRIPT="/tmp/activate-frontend-remote-${GITHUB_RUN_ID}.sh"'), 'Each deploy must use its own activation script path')
 assert.ok(packageJson.scripts?.['qa:deploy-workflow'] === 'node scripts/deploy-workflow-smoke.mjs', 'Package script must expose the deploy workflow contract test')
