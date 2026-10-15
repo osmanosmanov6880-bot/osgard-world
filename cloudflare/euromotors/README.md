@@ -21,7 +21,7 @@ In Cloudflare Dashboard → Workers & Pages → Create → Pages → Connect to 
 - Build command: leave empty
 - Build output directory: `.`
 
-Cloudflare account permissions, project creation, and domain/DNS binding must be completed in the Cloudflare account.
+Create the Pages project once in the Cloudflare Dashboard with the exact name `euromotors-showcase` before using the workflow. Cloudflare account permissions, project creation, and domain/DNS binding must be completed in the Cloudflare account.
 
 ## Routes
 - `/` — Russian
@@ -34,3 +34,11 @@ Replace placeholder/current OSGARD references only if the business owner wants t
 
 ## Scope
 This is a static showcase. Live inventory, verified prices, CRM, financing, and working lead delivery are not connected. Do not advertise those as active features.
+
+## GitHub Actions deployment
+
+A manual workflow is included at `.github/workflows/deploy-euromotors-cloudflare.yml`. After the Pages project exists, add these repository Actions secrets (or secrets in the `cloudflare-production` environment):
+- `CLOUDFLARE_API_TOKEN` — token with Cloudflare Pages edit/deploy permissions for the target account
+- `CLOUDFLARE_ACCOUNT_ID` — the target Cloudflare account ID
+
+Then open GitHub → Actions → **Deploy EUROMOTORS to Cloudflare Pages** → **Run workflow** from `master`. The workflow runs bundle checks before deployment. Do not put the token or account ID in source files.
