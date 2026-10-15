@@ -3561,3 +3561,18 @@ Continue non-financial brief implementation; billing can be handled only after a
 - Registered both routes in the sitemap and public desktop/mobile route matrix.
 - Expanded MERAKKI case QA and ecosystem integrity checks to protect localization, canonicals, structured data, brief controls and sitemap entries.
 - The case remains demo-only: answers stay client-side until explicit copy/email/WhatsApp use, and live restaurant checkout remains disabled.
+
+
+## 2026-10-15 / Pass 189
+
+### MERAKKI brief export and system share
+
+- Added an explicit `.txt` download for the generated project brief. It uses a UTF-8 plain-text Blob, a fixed filename and a revoked object URL; nothing is sent to an API or stored by the page.
+- Added Web Share API handoff behind a direct user click, with localized success, cancellation, failure and unsupported-browser messages. Copy, download and share remain separate deliberate actions.
+- Added translated controls and responsive styling on Russian, English and Arabic (RTL) routes.
+- Extended the runtime DOM harness, source-level ecosystem checks and live desktop/mobile route matrix to require and test the new actions on all locales.
+
+### Delivery boundary
+
+- Brief answers stay in-page until the visitor explicitly copies, downloads, opens email/WhatsApp or uses the native share sheet. A share completion is not presented as proof of recipient delivery.
+- Restaurant ordering and payments remain disabled. Production publish is accepted only after frontend validation and the SSH route-matrix job succeed.

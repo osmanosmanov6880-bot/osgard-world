@@ -50,6 +50,8 @@ await check('preview and copy controls are accessible and hidden until generated
   assert.match(html, /id="brief-preview"[^>]*hidden/);
   assert.ok(html.includes('id="brief-preview-text" tabindex="0"'));
   assert.ok(html.includes('id="brief-copy" type="button"'));
+  assert.ok(html.includes('id="brief-download" type="button"'));
+  assert.ok(html.includes('id="brief-share" type="button"));
   assert.ok(html.includes('id="brief-copy-status" role="status" aria-live="polite"'));
   assert.ok(css.includes('.brief-preview[hidden]{display:none!important}'));
   assert.ok(css.includes('white-space:pre-wrap'));
@@ -59,6 +61,11 @@ await check('RU and EN include every preview/copy translation', () => {
 });
 await check('clipboard only runs on explicit click and has a fallback', () => {
   assert.ok(inlineScript.includes("briefCopyButton.addEventListener('click',copyBriefMessage)"));
+  assert.ok(inlineScript.includes("briefDownloadButton.addEventListener('click',downloadBriefMessage)"));
+  assert.ok(inlineScript.includes("briefShareButton.addEventListener('click',shareBriefMessage)"));
+  assert.ok(inlineScript.includes("URL.createObjectURL(file)"));
+  assert.ok(inlineScript.includes("new Blob([message]"));
+  assert.ok(inlineScript.includes("navigator.share({title:v.briefShareTitle,text:message})"));
   assert.ok(inlineScript.includes('navigator.clipboard.writeText(message)'));
   assert.ok(inlineScript.includes("document.execCommand('copy')"));
   assert.ok(inlineScript.includes('v.briefCopyFallback'));
@@ -68,14 +75,20 @@ await check('text stays bounded and is encoded before WhatsApp/email handoff', (
   assert.ok(inlineScript.includes("encodeURIComponent(message)"));
 });
 
-function makeHarness({ clipboard = true, valid = true, legacyCopyWorks = true } = {}) {
-  const copied = [], nodes = new Map();
+function makeHarness({ clipboard = true, valid = true, legacyCopyWorks = true, webShare = true, shareErrorName = null } = {}) {
+  const copied = [], nodes = new Map(), blobs = [], objectUrls = [], revokedUrls = [], shareCalls = [];
+  class BlobMock { constructor(parts, options = {}) { this.parts = parts; this.type = options.type || ''; blobs.push(this); } }
+  const URLMock = {
+    createObjectURL(blob) { const url = 'blob:merakki-brief-' + (objectUrls.length + 1); objectUrls.push({ url, blob }); return url; },
+    revokeObjectURL(url) { revokedUrls.push(url); }
+  };
+  const timeoutMock = callback => { callback(); return 1; };
   const makeNode = (id, extras = {}) => {
     const n = {id,value:'',href:'',textContent:'',hidden:true,style:{},dataset:{},attrs:{},listeners:{},selectedOptions:[],reportValidity:()=>valid,
       addEventListener(type,fn){(this.listeners[type] ||= []).push(fn);},
       setAttribute(name,value){this.attrs[name]=String(value);},
       getAttribute(name){return this.attrs[name] ?? null;},
-      focus(){this.focused=true;},select(){this.selected=true;},remove(){this.removed=true;},
+      focus(){this.focused=true;},select(){this.selected=true;},click(){this.clicked=true;},remove(){this.removed=true;},
       ...extras};
     nodes.set(id,n);return n;
   };
@@ -86,6 +99,7 @@ function makeHarness({ clipboard = true, valid = true, legacyCopyWorks = true } 
   const copyStatus=makeNode('brief-copy-status');
   const status=makeNode('brief-status');status.attrs['data-i18n']='briefPrivacy';
   const previewText=makeNode('brief-preview-text'),preview=makeNode('brief-preview'),copyButton=makeNode('brief-copy');
+  const downloadButton=makeNode('brief-download'),shareButton=makeNode('brief-share');
   const form=makeNode('project-brief',{reportValidity:()=>valid});
   for(const id of ['contact-cta','email-cta','brief-count','brief-generate','inquiry-note']) if(!nodes.has(id))makeNode(id);
   const ruButton=makeNode('lang-ru',{dataset:{lang:'ru'}}),enButton=makeNode('lang-en',{dataset:{lang:'en'}});
@@ -104,11 +118,13 @@ function makeHarness({ clipboard = true, valid = true, legacyCopyWorks = true } 
     createElement(tag){return makeNode('temporary-copy-'+tag);},
     execCommand(){return legacyCopyWorks;}
   };
-  const navigator=clipboard?{clipboard:{async writeText(text){copied.push(text);}}}:{};
-  return {document:doc,navigator,nodes,copied,buttons:{ruButton,enButton},form,context,preview,previewText,status,copyStatus,copyButton};
+  const navigator={};
+  if(clipboard)navigator.clipboard={async writeText(text){copied.push(text);}};
+  if(webShare)navigator.share=async payload=>{shareCalls.push(payload);if(shareErrorName){const error=new Error('Share action failed');error.name=shareErrorName;throw error;}};
+  return {document:doc,navigator,nodes,copied,blobs,objectUrls,revokedUrls,shareCalls,Blob:BlobMock,URL:URLMock,setTimeout:timeoutMock,buttons:{ruButton,enButton},form,context,preview,previewText,status,copyStatus,copyButton,downloadButton,shareButton};
 }
 function runPage(h) {
-  const context=vm.createContext({document:h.document,navigator:h.navigator,console});
+  const context=vm.createContext({document:h.document,navigator:h.navigator,Blob:h.Blob,URL:h.URL,setTimeout:h.setTimeout,console});
   new vm.Script(inlineScript).runInContext(context);
   return context;
 }
@@ -145,6 +161,38 @@ await check('legacy clipboard fallback and honest failure reporting', async () =
   assert.ok(bad.copyStatus.textContent.includes(translations.ru.briefCopyFallback));assert.ok(bad.previewText.focused);
 });
 
+
+await check('download exports the generated brief as a local UTF-8 text file', async () => {
+  const h=makeHarness();runPage(h);await submit(h);
+  await h.downloadButton.listeners.click[0]();
+  assert.equal(h.blobs.length,1);
+  assert.equal(h.blobs[0].type,'text/plain;charset=utf-8');
+  assert.ok(h.blobs[0].parts.join('').includes('Business website'));
+  assert.ok(h.blobs[0].parts.join('').includes('Build a multilingual storefront'));
+  const anchor=h.nodes.get('temporary-copy-a');
+  assert.equal(anchor.download,'merakki-project-brief.txt');
+  assert.equal(anchor.clicked,true);
+  assert.equal(anchor.removed,true);
+  assert.equal(h.objectUrls.length,1);
+  assert.deepEqual(h.revokedUrls,[h.objectUrls[0].url]);
+  assert.equal(h.copied.length,0,'download must not invoke clipboard without an explicit copy click');
+});
+await check('native share is explicit, localized and uses the generated brief', async () => {
+  const h=makeHarness({webShare:true});runPage(h);h.buttons.enButton.listeners.click[0]();await submit(h);
+  await h.shareButton.listeners.click[0]();
+  assert.equal(h.shareCalls.length,1);
+  assert.equal(h.shareCalls[0].title,translations.en.briefShareTitle);
+  assert.ok(h.shareCalls[0].text.includes('Business website'));
+  assert.ok(h.copyStatus.textContent.includes(translations.en.briefShareSuccess));
+});
+await check('cancelled or unavailable system share never reports an order sent', async () => {
+  const cancelled=makeHarness({webShare:true,shareErrorName:'AbortError'});runPage(cancelled);await submit(cancelled);await cancelled.shareButton.listeners.click[0]();
+  assert.ok(cancelled.copyStatus.textContent.includes(translations.ru.briefShareCancelled));
+  const unsupported=makeHarness({webShare:false});runPage(unsupported);await submit(unsupported);await unsupported.shareButton.listeners.click[0]();
+  assert.ok(unsupported.copyStatus.textContent.includes(translations.ru.briefShareUnsupported));
+  assert.equal(unsupported.shareCalls.length,0);
+});
+
 await check('RU/EN/AR pages have their own canonicals and reciprocal hreflang', () => {
   const cases = [
     {locale:'ru', html, title:'MERAKKI GLOBAL — кейс OSGARD Development', url:'https://osgard.world/development/merakki/'},
@@ -155,7 +203,9 @@ await check('RU/EN/AR pages have their own canonicals and reciprocal hreflang', 
     assert.ok(item.html.includes('<title>'+item.title+'</title>'), item.locale+' title mismatch');
     assert.ok(item.html.includes('rel="canonical" href="'+item.url+'"'), item.locale+' canonical mismatch');
     for (const locale of ['ru','en','ar']) assert.ok(item.html.includes('hreflang="'+locale+'"'), item.locale+' missing hreflang '+locale);
-    assert.ok(item.html.includes('id="project-brief"') && item.html.includes('id="brief-copy"'), item.locale+' lost brief controls');
+    assert.ok(item.html.includes('id="project-brief"') && item.html.includes('id="brief-copy"') && item.html.includes('id="brief-download"') && item.html.includes('id="brief-share"'), item.locale+' lost brief controls');
+    const scriptStart=item.html.indexOf('<script>');const scriptEnd=item.html.indexOf('</script>',scriptStart);const localeScript=scriptStart>=0&&scriptEnd>=0?item.html.slice(scriptStart+8,scriptEnd):'';
+    assert.ok(localeScript && localeScript[1].includes('function downloadBriefMessage') && localeScript[1].includes('function shareBriefMessage'),item.locale+' is missing local export/share logic');
     const ld=item.html.match(/<script type="application\/ld\+json" id="case-structured-data">([\s\S]*?)<\/script>/);
     assert.ok(ld,item.locale+' JSON-LD missing');
     const graph=JSON.parse(ld[1])['@graph'];

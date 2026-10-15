@@ -16,6 +16,13 @@ const nginx = read('nginx.conf')
 const activation = read('scripts/activate-frontend-remote.sh')
 
 const promotionSources = { app, sections, development, merakkiPage, merakkiPageEn, merakkiPageAr }
+for (const [locale, page] of Object.entries({ ru: merakkiPage, en: merakkiPageEn, ar: merakkiPageAr })) {
+  for (const id of ['brief-copy', 'brief-download', 'brief-share']) {
+    assert.ok(page.includes('id="' + id + '"'), 'MERAKKI ' + locale + ' page is missing ' + id)
+  }
+  assert.ok(page.includes('function downloadBriefMessage') && page.includes('function shareBriefMessage'), 'MERAKKI ' + locale + ' page is missing local export/share logic')
+  assert.ok(page.includes('data-case-status="demo-only"'), 'MERAKKI ' + locale + ' page must remain demo-only')
+}
 const unsupportedClaims = [
   '99.9%', '7 min', '7 мин', '360°', '360пїЅ', '+2 h', '+2 часа в день',
   '40% less chaos', 'Меньше хаоса на 40%', '2 min', '2 мин', '0.0%',
