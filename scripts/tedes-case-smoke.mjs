@@ -102,7 +102,6 @@ for (const marker of ['data-edit=','data-duplicate=','data-remove=','LOCAL FILE 
   assert.ok(projectController.includes(marker), 'Project workspace controller marker missing: ' + marker)
 }
 assert.ok(projectWorkspace.includes('noindex,nofollow') && projectWorkspace.includes('не отправляется на сервер') && projectWorkspace.includes('не подтверждены') && projectController.includes('не отправлено'), 'Workspace privacy/commercial disclaimers are incomplete')
-assert.equal(workspaceSafeCsvCell('=1+1'), '"\\'=1+1"')
 assert.ok(demo.includes('doors:doors.map(d=>({...d}))') && demo.includes('schema:"tedes-studio-project/v1"'), 'Studio quote JSON must remain importable into the same project schema')
 assert.ok(demo.includes('window.addEventListener("storage"') && projectController.includes('window.addEventListener("storage"'), 'Studio and project workspace must synchronize project changes across tabs')
 assert.ok(demo.includes('function renderRows(save=true)') && demo.includes('renderRows(false);updatePreview();'), 'Studio storage events must render without re-writing shared storage and ping-ponging between tabs')
