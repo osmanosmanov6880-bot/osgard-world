@@ -17,6 +17,7 @@ assert.ok(workflow.includes('Could not read the SSH host key'), 'SSH host-key fa
 assert.ok(workflow.includes("printf '%s\\n' \"$DEPLOY_KEY\" > ~/.ssh/osgard_deploy"), 'SSH key must be written with a trailing newline')
 assert.ok(workflow.includes('npm run qa:deploy-workflow'), 'Deploy workflow must run its own static contract test before deployment')
 assert.ok(workflow.includes("cancel-in-progress: ${{ contains(github.event.head_commit.message, '[supersede]') }}"), 'Recovery deploys must be able to cancel a stale recovery run')
+assert.ok(workflow.includes("group: osgard-frontend-deploy") && !workflow.includes("osgard-frontend-deploy-recovery"), "Supersede deployments must share the default concurrency group so they can cancel stale regular releases");
 assert.ok(workflow.includes("if: ${{ !contains(github.event.head_commit.message, '[supersede]') }}"), 'Recovery deploys must bypass the cache step and use the official Godot download fallback')
 assert.ok(workflow.includes('REMOTE_RELEASE_DIR="/tmp/osgard-gh-release-${GITHUB_RUN_ID}"'), 'Each deploy must stage its archive in a unique run-scoped directory')
 assert.ok(workflow.includes('REMOTE_SCRIPT="/tmp/activate-frontend-remote-${GITHUB_RUN_ID}.sh"'), 'Each deploy must use its own activation script path')

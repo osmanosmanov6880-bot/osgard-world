@@ -1,7 +1,8 @@
 name: OSGARD frontend deploy
 
 concurrency:
-  group: ${{ contains(github.event.head_commit.message, '[supersede]') && 'osgard-frontend-deploy-recovery' || 'osgard-frontend-deploy' }}
+  # A superseding release cancels stale normal runs and older recovery runs.
+  group: osgard-frontend-deploy
   cancel-in-progress: ${{ contains(github.event.head_commit.message, '[supersede]') }}
 
 on:
