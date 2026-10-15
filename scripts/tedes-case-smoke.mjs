@@ -48,6 +48,7 @@ const catalog = read('public/tedes/catalog/index.html')
 const collections = read('public/tedes/collections/index.html')
 const product = read('public/tedes/product/index.html')
 const materials = read('public/tedes/materials/index.html')
+const printView = read('public/tedes/print/index.html')
 assert.ok(catalog.includes('id="search"') && catalog.includes('id="collection"') && catalog.includes('id="finish"') && catalog.includes('id="products"'), 'Catalog filter UI is incomplete')
 assert.ok(catalog.includes('Цена не подтверждена'), 'Catalog must not invent prices')
 assert.ok(collections.includes('href="/tedes/catalog/?collection=FORMA"') && collections.includes('href="/tedes/catalog/?collection=LINEA"') && collections.includes('href="/tedes/catalog/?collection=MATERIA"'), 'Collection routes must filter the catalog')
@@ -55,8 +56,13 @@ assert.ok(catalog.includes('new URLSearchParams(location.search)') && catalog.in
 assert.ok(product.includes('id="addToProject"') && product.includes('localStorage') && product.includes('tedes-studio-project-v1'), 'Product page must add a concept item into the shared local project')
 assert.ok(materials.includes('Brushed Steel') && materials.includes('Matte Black') && materials.includes('Техническая граница'), 'Materials guide must show demo finishes and disclose limits')
 assert.ok(demo.includes('tedes-studio-project-v1') && demo.includes('id="buildQuote"') && demo.includes('id="quoteEmail"'), 'Studio persistence and quote brief UI are missing')
+assert.ok(demo.includes('href="/tedes/print/"'), 'Studio must link to the print-ready project schedule')
+assert.ok(printView.includes('<title>TEDES — печатная ведомость проекта</title>') && printView.includes('name="robots" content="noindex,nofollow"'), 'Print view title or indexing safeguards are missing')
+for (const marker of ['id="printProject"', 'id="positionRows"', 'id="sourceNotice"', 'id="generatedAt"', 'window.print()', 'tedes-studio-project-v1', 'localStorage.getItem', 'не подтверждённая производственная спецификация', 'не отправляется на сервер']) {
+  assert.ok(printView.toLowerCase().includes(marker.toLowerCase()), 'Print view contract marker missing: ' + marker)
+}
 assert.ok(demo.includes('НЕ отправлены') || demo.includes('не отправляется'), 'Quote builder must clearly say it does not submit anything')
-for (const [filename, page] of [['catalog', catalog], ['product', product]]) {
+for (const [filename, page] of [['catalog', catalog], ['product', product], ['print-view', printView]]) {
   for (const match of page.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)) new vm.Script(match[1], { filename: filename + '.html' })
 }
 for (const route of ['/tedes/catalog/','/tedes/collections/','/tedes/product/','/tedes/materials/']) assert.ok(routeMatrix.includes(route), 'Production route matrix missing ' + route)
@@ -67,7 +73,7 @@ for (const match of demo.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)) {
   new vm.Script(match[1], { filename: demoPath })
 }
 assert.equal(scriptCount, 1, 'Expected exactly one inline demo script and no unreviewed external scripts')
-for (const route of ['/tedes/', '/development/tedes/']) {
+for (const route of ['/tedes/', '/tedes/print/', '/development/tedes/']) {
   assert.ok(routeMatrix.includes(route), `Production route matrix missing ${route}`)
 }
-console.log(JSON.stringify({ status: 'PASS', pages: [demoPath, casePath], inlineScriptsSyntaxChecked: scriptCount, routes: ['/tedes/', '/development/tedes/'], productLimits: 'clearly disclosed' }, null, 2))
+console.log(JSON.stringify({ status: 'PASS', pages: [demoPath, casePath], inlineScriptsSyntaxChecked: scriptCount, routes: ['/tedes/', '/tedes/print/', '/development/tedes/'], productLimits: 'clearly disclosed' }, null, 2))
