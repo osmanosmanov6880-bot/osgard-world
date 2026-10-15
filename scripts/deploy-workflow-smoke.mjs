@@ -5,6 +5,7 @@ const workflow = readFileSync('.github/workflows/deploy-frontend.yml', 'utf8')
 const packageJson = JSON.parse(readFileSync('package.json', 'utf8'))
 const activation = readFileSync('scripts/activate-frontend-remote.sh', 'utf8')
 const homepage = readFileSync('index.html', 'utf8')
+const healthWorkflow = readFileSync('.github/workflows/production-health-watch.yml', 'utf8')
 const nginx = readFileSync('nginx.conf', 'utf8')
 
 for (const secret of ['OSGARD_DEPLOY_HOST', 'OSGARD_DEPLOY_USER', 'OSGARD_DEPLOY_KEY']) {
@@ -32,6 +33,7 @@ assert.ok(packageJson.scripts?.['qa:deploy-workflow'] === 'node scripts/deploy-w
 assert.ok(workflow.includes('Verify host-managed API from frontend container') && workflow.includes('http://$host_gateway:4317/health'), 'Deployment must verify the host-managed API through the active Docker gateway')
 assert.ok(activation.includes('api_gateway=') && activation.includes('__OSGARD_HOST_GATEWAY__') && activation.includes('Unresolved OSGARD host-gateway placeholder'), 'Activation must replace the API gateway placeholder using the current container network')
 assert.ok(homepage.includes('<meta name="osgard-app" content="osa-intelligence"'), 'Homepage must expose the OSA app identity marker')
+assert.ok(healthWorkflow.includes('workflow_run:') && healthWorkflow.includes('workflows: ["OSGARD frontend deploy"]') && healthWorkflow.includes('types: [completed]') && !healthWorkflow.includes('\n  push:\n'), 'Production health checks must run after deploy, not race the push-triggered deploy')
 assert.ok(activation.includes("<title>OSA Intelligence") && activation.includes('<meta name="osgard-app" content="osa-intelligence"') && activation.includes('OSA INTELLIGENCE / BEYOND THE MODEL'), 'Activation must validate the actual OSA HTML identity and JavaScript bundle from the public domain')
 assert.ok(nginx.includes('location = /index.html') && nginx.includes('no-store, no-cache, must-revalidate, proxy-revalidate'), 'HTML shell must not be cached separately from versioned assets')
 assert.ok(!workflow.includes('echo "$DEPLOY_KEY"'), 'Workflow must not print the private key')
