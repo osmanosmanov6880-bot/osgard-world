@@ -11,8 +11,10 @@ on:
     paths:
       - "src/**"
       - "public/development/index.html"
+      - "public/development/osa-intelligence/**"
       - "public/development/og.svg"
       - "scripts/development-index-smoke.mjs"
+      - "scripts/osa-intelligence-case-smoke.mjs"
       - "public/development/merakki/**"
       - "scripts/merakki-case-smoke.mjs"
       - "public/skillcred/**"
@@ -24,6 +26,7 @@ on:
       - "public/development/tedes/**"
       - "public/development/phantom/**"
       - "public/development/auto-style/**"
+      - "public/development/textura/**"
       - "godot/null-shift/**"
       - "scripts/null-shift-godot-smoke.mjs"
       - "public/games/null-shift-godot/**"
@@ -42,7 +45,9 @@ on:
       - "scripts/tedes-case-smoke.mjs"
       - "scripts/phantom-case-smoke.mjs"
       - "scripts/auto-style-case-smoke.mjs"
+      - "scripts/textura-case-smoke.mjs"
       - "scripts/elbrus-case-smoke.mjs"
+      - "scripts/noir-auto-case-smoke.mjs"
       - "scripts/entertainment-locales-smoke.mjs"
       - "scripts/skillcred-page-smoke.mjs"
       - "scripts/time-prototype-smoke.mjs"
@@ -76,16 +81,22 @@ jobs:
         run: node scripts/tedes-case-smoke.mjs
       - name: Validate Development landing and prevent directory 403
         run: node scripts/development-index-smoke.mjs
+      - name: Validate OSA Global Intelligence case
+        run: npm run qa:osa-intelligence-case
       - name: Validate PHANTOM premium gaming case
         run: node scripts/phantom-case-smoke.mjs
       - name: Smoke-test the ELBRUS Entertainment case
         run: npm run qa:elbrus-case
+      - name: Smoke-test the NOIR AUTO automotive case
+        run: node scripts/noir-auto-case-smoke.mjs
       - name: Smoke-test global Entertainment hubs
         run: npm run qa:entertainment-locales
       - name: Verify MERAKKI brief generation and copy flow
         run: npm run qa:merakki-case
       - name: Verify AUTO STYLE premium case, metadata and routes
         run: npm run qa:auto-style-case
+      - name: Verify TEXTURA luxury case and all locales
+        run: npm run qa:textura-case
       - run: npm run qa:null-shift
       - name: Smoke-test the OSGARD Games hub
         run: npm run qa:games-portal
