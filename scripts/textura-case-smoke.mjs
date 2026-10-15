@@ -28,6 +28,7 @@ const js = read('public/development/textura/case.js');
 assert.ok(js.includes('data-copy-brief') && js.includes('navigator.clipboard'), 'brief-copy behaviour missing');
 const og = read('public/development/textura/og.svg');
 assert.ok(og.includes('width="1200"') && og.includes('height="630"'), 'social image dimensions are incorrect');
+assert.ok(read('public/development/textura/index.html').includes('V8'), 'release version should match TEXTURA V8');
 const index = read('public/development/index.html');
 assert.ok(index.includes('href="/development/textura/"'), 'Development portfolio card missing TEXTURA');
 const sitemap = read('public/sitemap.xml');
