@@ -74,11 +74,16 @@ export function isPermanentHttpsUrl(value: string | null | undefined): value is 
 }
 
 export function isPlayableLessonMedia(resource: OSALessonMediaResource): boolean {
+  const supportedMimeTypes = resource.kind === 'audio'
+    ? ['audio/mpeg', 'audio/mp4', 'audio/ogg', 'audio/wav', 'audio/webm', 'audio/aac']
+    : ['video/mp4', 'video/webm']
   return resource.status === 'published'
     && resource.rightsStatus === 'approved'
     && isPermanentHttpsUrl(resource.permanentUrl)
     && typeof resource.durationSeconds === 'number'
     && Number.isFinite(resource.durationSeconds)
     && resource.durationSeconds > 0
-    && Boolean(resource.mimeType)
+    && resource.language !== null
+    && typeof resource.mimeType === 'string'
+    && supportedMimeTypes.includes(resource.mimeType)
 }
