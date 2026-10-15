@@ -16,10 +16,10 @@
 
 /* Direct project enquiry — intentionally separate from the demo CTA */
 .inquiry{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(240px,.75fr);gap:32px;align-items:center;margin:0 0 56px;padding:clamp(24px,4vw,44px);border:1px solid rgba(208,170,107,.32);background:radial-gradient(ellipse at 8% 0,rgba(208,170,107,.09),transparent 45%),linear-gradient(140deg,#171711,#0e0f0e)}
-.inquiry-copy h2{max-width:690px;margin:0;font:400 clamp(32px,4.2vw,49px)/1.04 Georgia,serif;letter-spacing:-.03em}
+.inquiry-copy{min-width:0}.inquiry-copy h2{max-width:690px;margin:0;font:400 clamp(32px,4.2vw,49px)/1.04 Georgia,serif;letter-spacing:-.03em}
 .inquiry-copy>p:not(.eyebrow){max-width:660px;margin:15px 0;color:var(--muted);font-size:12px;line-height:1.85}
 .inquiry-copy>small{display:block;color:var(--dim);font-size:10px;line-height:1.6}
 .inquiry-actions{display:grid;gap:10px;align-content:center}
-.inquiry-actions .btn{width:100%;min-height:48px;text-align:center}
+.inquiry-actions .btn{width:100%;min-width:0;min-height:48px;text-align:center;overflow-wrap:anywhere}
 @media(max-width:760px){.inquiry{grid-template-columns:1fr;gap:23px;margin-bottom:43px}.inquiry-actions{grid-template-columns:1fr}}
 @media(prefers-reduced-motion:reduce){.inquiry-actions .btn{transition:none}}

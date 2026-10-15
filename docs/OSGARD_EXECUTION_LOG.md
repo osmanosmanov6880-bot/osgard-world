@@ -3465,3 +3465,16 @@ Continue non-financial brief implementation; billing can be handled only after a
 - Modified `src/**` assets trigger the existing master-branch frontend validation and SSH publication workflow.
 - The case remains a showcase page and the linked restaurant storefront remains a demo. Live checkout/payment capability is not enabled by this change.
 - Release gate: check validation and deployment workflow conclusions and public desktop/mobile route responses.
+
+
+## 2026-10-15 / Pass 182
+
+### Scope completed
+
+- Hardened the MERAKKI enquiry section for narrow screens by allowing content/actions to shrink and wrapping long CTA labels safely.
+- Triggered the dedicated deployment-recovery concurrency lane because the standard deployment attempt remained stalled before the build stage. Existing concurrent OSGARD changes were preserved.
+
+### Verification
+
+- TypeScript and ecosystem integrity checks passed after the localized-contact assertion was aligned with the JSON-serialized RU/EN dictionaries.
+- Final release gate is the recovery run's production build, server activation, and desktop/mobile route matrix.
