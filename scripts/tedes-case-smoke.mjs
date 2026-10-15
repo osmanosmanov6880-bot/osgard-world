@@ -74,7 +74,10 @@ for (const item of catalogData.products) {
 }
 assert.ok(catalog.includes('/tedes/data/catalog.v1.json') && catalog.includes('async function loadCatalog()') && catalog.includes('finishOptions.includes(finish)'), 'Catalog must fetch and filter the shared registry')
 assert.ok(product.includes('/tedes/data/catalog.v1.json') && product.includes('product.finishOptions') && product.includes('p.price!==null'), 'Product page must use the shared registry and validate demo-only prices')
-assert.ok(product.includes('if(!raw)state={schema:"tedes-studio-project/v1",projectName:"Residence / North Wing",doors:[]}'), 'Adding the first model must not seed unrelated sample positions')
+assert.ok(product.includes('async function init()') && product.includes('if(!product){') && product.includes('Модель не найдена') && product.includes('addToProject').includes===undefined, 'Product page must handle unknown SKUs and load the registry asynchronously')
+assert.ok(catalog.includes('async function loadCatalog()') && catalog.includes('signal:AbortSignal.timeout(7000)'), 'Catalog loading must have a timeout and a visible failure state')
+assert.ok(catalog.includes('Демонстрационные отделки:') && catalog.includes('Цена не подтверждена'), 'Catalog must disclose demo finish options and unverified pricing')
+assert.ok(product.includes('}else state={schema:"tedes-studio-project/v1",projectName:"Residence / North Wing",doors:[]}'), 'Adding the first model must not seed unrelated sample positions')
 assert.ok(routeMatrix.includes("'/tedes/data/catalog.v1.json'") && routeMatrix.includes("path === '/tedes/data/catalog.v1.json'"), 'Catalog JSON must be covered as a direct production route and as a page dependency')
 
 assert.ok(catalog.includes('id="search"') && catalog.includes('id="collection"') && catalog.includes('id="finish"') && catalog.includes('id="products"'), 'Catalog filter UI is incomplete')
