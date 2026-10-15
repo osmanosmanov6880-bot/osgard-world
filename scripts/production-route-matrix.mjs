@@ -1,7 +1,7 @@
 import { isValidPartnerInventoryText } from './partner-inventory-contract.mjs'
 const base = process.env.OSGARD_BASE_URL || 'https://osgard.world'
 const expectCurrentDesign = process.env.SKILLCRED_EXPECT_CURRENT_DESIGN === '1'
-const routes = ['/tedes/','/tedes/catalog/','/tedes/collections/','/tedes/product/?sku=FORMA-ARC-01','/tedes/materials/','/development/tedes/','/development/merakki/','/','/portal','/osa-cinema','/academy','/skillcred/','/skillcred-api/health','/skillcred-api/ready','/skillcred-api/issuer','/entertainment','/entertainment/','/entertainment/elbrus/','/entertainment/elbrus/og.svg','/games/','/games/index.html','/games/partners/','/games/admin/','/games/afterimage-run/','/games/vector-zero/','/games/favicon.svg','/privacy/','/terms/','/community','/stream','/archive','/profile','/api/v1/player/profile','/api/v1/analytics/summary?from=0&to=1','/r/1842','/games/time','/games/null-shift/','/games/null-shift/index.html','/games/null-shift-godot/','/games/null-shift-godot/index.html','/play/swarm','/play/null-shift','/play/inherit','/play/remix','/media','/business','/create','/mobility']
+const routes = ['/tedes/','/tedes/catalog/','/tedes/collections/','/tedes/product/?sku=FORMA-ARC-01','/tedes/materials/','/development/tedes/','/development/merakki/','/','/portal','/osa-cinema','/academy','/skillcred/','/skillcred-api/health','/skillcred-api/ready','/skillcred-api/issuer','/entertainment','/entertainment/','/entertainment/elbrus/','/entertainment/elbrus/en/','/entertainment/elbrus/ar/','/entertainment/elbrus/og.svg','/games/','/games/index.html','/games/partners/','/games/admin/','/games/afterimage-run/','/games/vector-zero/','/games/favicon.svg','/privacy/','/terms/','/community','/stream','/archive','/profile','/api/v1/player/profile','/api/v1/analytics/summary?from=0&to=1','/r/1842','/games/time','/games/null-shift/','/games/null-shift/index.html','/games/null-shift-godot/','/games/null-shift-godot/index.html','/play/swarm','/play/null-shift','/play/inherit','/play/remix','/media','/business','/create','/mobility']
 const agents = { desktop: 'OSGARD-Route-Matrix/1.1 Desktop', mobile: 'OSGARD-Route-Matrix/1.1 Mobile' }
 const results = []
 for (const [device, userAgent] of Object.entries(agents)) for (const route of routes) {
@@ -72,10 +72,11 @@ for (const [device, userAgent] of Object.entries(agents)) for (const route of ro
           : route.startsWith('/games/null-shift')
             ? text.includes('id="game"') && text.includes('id="mobile-ui"') && text.includes('id="diag-panel"') && text.includes('id="sound-toggle"') && text.includes('id="touch-sound"') && text.includes('./styles.css') && text.includes('./game.js') && text.includes('./engine-3d.js') && text.includes('id="engine-toggle"') && text.includes('id="touch-engine"') && text.includes('id="godot-preview"')
           : route === '/entertainment/elbrus/'
-            ? text.includes('<title>ELBRUS — Hospitality Experience | OSGARD WORLD</title>') &&
-              text.includes('id="interactive-preview"') &&
-              text.includes('does not place orders') &&
-              text.includes('не отправляет заказы')
+            ? text.includes('<title>ELBRUS — цифровой опыт гостеприимства | OSGARD WORLD</title>') && text.includes('<html lang="ru" dir="ltr">') && text.includes('id="interactive-preview"') && text.includes('не отправляет заказы')
+          : route === '/entertainment/elbrus/en/'
+            ? text.includes('<title>ELBRUS — Hospitality Experience | OSGARD WORLD</title>') && text.includes('<html lang="en" dir="ltr">') && text.includes('does not place orders') && text.includes('id="interactive-preview"')
+          : route === '/entertainment/elbrus/ar/'
+            ? text.includes('<title>ELBRUS — تجربة الضيافة | OSGARD WORLD</title>') && text.includes('<html lang="ar" dir="rtl">') && text.includes('لا ترسل طلبات') && text.includes('id="interactive-preview"')
           : route === '/entertainment/elbrus/og.svg'
             ? text.includes('<svg') && text.includes('ELBRUS')
           : (route === '/entertainment' || route === '/entertainment/')
