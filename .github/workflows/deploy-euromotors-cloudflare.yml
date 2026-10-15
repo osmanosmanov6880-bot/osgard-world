@@ -1,0 +1,44 @@
+name: Deploy EUROMOTORS to Cloudflare Pages
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: euromotors-cloudflare-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy static showcase
+    runs-on: ubuntu-latest
+    environment: cloudflare-production
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Verify standalone bundle
+        shell: bash
+        run: |
+          test -s cloudflare/euromotors/index.html
+          test -s cloudflare/euromotors/en/index.html
+          test -s cloudflare/euromotors/ar/index.html
+          test -s cloudflare/euromotors/og.svg
+          ! grep -R -E '(/brand/osa5-portals\.css|/brand/osa-transition\.js|/entertainment/euromotors/)' cloudflare/euromotors --include='*.html'
+          echo "Standalone bundle checks passed."
+
+      - name: Deploy to Cloudflare Pages
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+          npx --yes wrangler@4 pages deploy cloudflare/euromotors --project-name euromotors-showcase --branch master
