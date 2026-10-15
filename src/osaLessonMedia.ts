@@ -81,5 +81,4 @@ export function isPlayableLessonMedia(resource: OSALessonMediaResource): boolean
     && Number.isFinite(resource.durationSeconds)
     && resource.durationSeconds > 0
     && Boolean(resource.mimeType)
-    && (resource.kind !== 'video' || Boolean(resource.captionsUrl && isPermanentHttpsUrl(resource.captionsUrl)))
 }
