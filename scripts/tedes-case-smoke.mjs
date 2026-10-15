@@ -60,7 +60,7 @@ assert.ok(demo.includes('href="/tedes/print/"'), 'Studio must link to the print-
 assert.ok(demo.includes('id="importJson"') && demo.includes('id="importFile"') && demo.includes('file.size>1024*1024'), 'Validated JSON project import is missing')
 assert.ok(demo.includes('data-duplicate=') && demo.includes('doors.splice(index+1,0,copy)'), 'Schedule position duplication is missing')
 assert.ok(demo.includes('doors.length>=30') && demo.includes('id="doorCount"'), 'Schedule duplication must respect the 30-position cap')
-const safeCsvCellMatch = demo.match(/function safeCsvCell\\(value\\)\\s*\\{[\\s\\S]*?\\n  \\}/)
+const safeCsvCellMatch = demo.match(/function safeCsvCell\(value\)\s*\{[\s\S]*?\n  \}/)
 assert.ok(safeCsvCellMatch, 'Reusable CSV formula-injection guard is missing')
 const safeCsvCell = vm.runInNewContext('(' + safeCsvCellMatch[0] + ')')
 assert.equal(safeCsvCell('=1+1'), '"\'=1+1"')
