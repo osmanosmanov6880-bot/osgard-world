@@ -5,6 +5,8 @@ on:
     branches: [master]
     paths:
       - "src/**"
+      - "public/development/merakki/**"
+      - "scripts/merakki-case-smoke.mjs"
       - "scripts/skillcred-page-smoke.mjs"
       - "scripts/time-prototype-smoke.mjs"
       - "scripts/games-portal-smoke.mjs"
@@ -59,6 +61,8 @@ jobs:
         run: npm run qa:partners-page
       - name: Verify ecosystem links, claims, contacts and privacy boundaries
         run: npm run qa:ecosystem
+      - name: Verify MERAKKI brief generation and copy flow
+        run: npm run qa:merakki-case
       - name: Verify Academy-first homepage and preserved portal route
         run: npm run qa:academy
       - name: Validate static archive and HTML

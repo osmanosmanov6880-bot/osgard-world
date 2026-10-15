@@ -10,6 +10,8 @@ on:
     branches: [master]
     paths:
       - "src/**"
+      - "public/development/merakki/**"
+      - "scripts/merakki-case-smoke.mjs"
       - "public/skillcred/**"
       - "public/entertainment/**"
       - "public/games/**"
@@ -66,6 +68,8 @@ jobs:
         run: node scripts/tedes-case-smoke.mjs
       - name: Smoke-test the ELBRUS Entertainment case
         run: npm run qa:elbrus-case
+      - name: Verify MERAKKI brief generation and copy flow
+        run: npm run qa:merakki-case
       - run: npm run qa:null-shift
       - name: Smoke-test the OSGARD Games hub
         run: npm run qa:games-portal

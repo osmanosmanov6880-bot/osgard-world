@@ -47,3 +47,15 @@
 @media(max-width:880px){.inquiry{grid-template-columns:1fr;align-items:stretch}.brief-form{padding:17px}.inquiry-actions{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:560px){.brief-fields{grid-template-columns:1fr}.brief-field-full{grid-column:auto}.brief-counter{align-items:flex-start}.inquiry-actions{grid-template-columns:1fr}.brief-submit-row .btn{min-height:46px}}
 @media(prefers-reduced-motion:reduce){.brief-submit-row .btn{transition:none}}
+
+/* Generated brief preview — local-first, explicit user action only */
+.brief-preview{display:grid;gap:16px;margin-top:18px;padding:clamp(17px,3vw,24px);border:1px solid rgba(208,170,107,.33);background:linear-gradient(145deg,rgba(208,170,107,.08),rgba(15,16,14,.86))}
+.brief-preview[hidden]{display:none!important}
+.brief-preview-heading h4{margin:0 0 7px;font:400 clamp(21px,2.5vw,28px)/1.1 Georgia,serif;color:var(--ink)}
+.brief-preview-heading p{margin:0;color:var(--muted);font-size:11px;line-height:1.8}
+#brief-preview-text{margin:0;max-height:340px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;padding:16px;border:1px solid var(--line);background:rgba(0,0,0,.22);color:#e4dccd;font:11px/1.8 ui-monospace,SFMono-Regular,Consolas,monospace;user-select:text}
+.brief-preview-actions{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.brief-preview-actions .btn{flex:0 0 auto;cursor:pointer}
+#brief-copy-status{margin:0;min-height:1.6em;color:var(--muted);font-size:10px;line-height:1.6}
+@media(max-width:560px){.brief-preview-actions{align-items:stretch;flex-direction:column}.brief-preview-actions .btn{width:100%}#brief-preview-text{font-size:10px;padding:12px}}
+@media(prefers-reduced-motion:reduce){.brief-preview-actions .btn{transition:none}}

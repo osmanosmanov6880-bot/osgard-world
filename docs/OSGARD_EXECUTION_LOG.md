@@ -3538,3 +3538,14 @@ Continue non-financial brief implementation; billing can be handled only after a
 
 - Structured data describes this as a case/showcase, not a live restaurant checkout or a verified payment product.
 - No external tracking script, customer-data endpoint or third-party library was added.
+
+
+## 2026-10-15 / Pass 187
+
+### MERAKKI conversion flow — local-first brief preview
+
+- The guided brief reveals a readable, accessible message preview after valid selection and provides an explicit Copy message action.
+- WhatsApp and email destinations are generated from one bounded message builder; changes in locale and form fields refresh the preview and links consistently.
+- Clipboard uses the secure Clipboard API where available, falls back to selection/copy and reports when manual copying is required.
+- No form submission endpoint was added: answers stay in the page until the visitor explicitly copies or opens WhatsApp/email.
+- Added qa:merakki-case, a smoke test that executes the actual inline page logic against a lightweight DOM harness and is wired into frontend validation and SSH deployment.
