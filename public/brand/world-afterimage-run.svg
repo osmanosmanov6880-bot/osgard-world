@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 760" role="img" aria-labelledby="afterimage-title afterimage-desc">
+  <title id="afterimage-title">AFTERIMAGE//RUN — иллюстрация мира</title>
+  <desc id="afterimage-desc">Бегун и два следа предыдущего движения над трассой с фазовыми воротами и осколками сигнала. Самостоятельная иллюстрация раннера OSGARD PLAY.</desc>
+  <defs>
+    <pattern id="afterimage-grid" width="80" height="80" patternUnits="userSpaceOnUse"><path d="M80 0H0V80" fill="none" stroke="#D8A8F8" stroke-opacity=".08"/></pattern>
+  </defs>
+  <rect width="1000" height="760" fill="#0B1420"/>
+  <rect width="1000" height="760" fill="url(#afterimage-grid)"/>
+  <g fill="none" stroke="#D8A8F8" stroke-width="1.5">
+    <path d="M60 575 280 542 488 566 745 468 940 493V537L749 512 491 610 283 586 60 619Z" fill="#D8A8F8" fill-opacity=".04" opacity=".65"/>
+    <path d="M60 597 282 564 490 588 747 490 940 515M280 542 283 586M488 566 491 610M745 468 749 512" opacity=".3"/>
+    <path d="M685 479V284H778V478M702 473V301H761V474" opacity=".7"/>
+    <path d="M704 304H759V472H704Z" fill="#D8A8F8" fill-opacity=".035" stroke-dasharray="3 9" opacity=".45"/>
+    <path d="M877 486V357H931V493M888 484V369H920V491" opacity=".3"/>
+    <path d="M76 460H181M112 431H240M175 397H270M229 366H308" opacity=".35"/>
+    <path d="M177 503Q334 305 466 439T672 390" stroke="#5CE1E6" stroke-dasharray="4 10" opacity=".6"/>
+  </g>
+  <g fill="#D8A8F8" stroke="#D8A8F8" stroke-width="1.2">
+    <path d="M3 70 0 48 6 31 17 16 28 28 35 51 30 70Z" transform="translate(223 395) scale(1.6)" fill-opacity=".04" opacity=".2"/>
+    <path d="M3 70 0 48 6 31 17 16 28 28 35 51 30 70Z" transform="translate(294 366) scale(1.6)" fill-opacity=".08" opacity=".45"/>
+    <path d="M3 70 0 48 6 31 17 16 28 28 35 51 30 70Z" transform="translate(375 343) scale(1.6)" fill-opacity=".8"/>
+  </g>
+  <path d="M387 399H416V416H387Z" fill="#171A35"/>
+  <path d="M395 405H411" fill="none" stroke="#F1F5FA" stroke-width="3"/>
+  <path d="M382 449H419" fill="none" stroke="#5CE1E6" stroke-width="4"/>
+  <g fill="#5CE1E6" stroke="#BDF4F4" stroke-width="1">
+    <path d="M501 348 510 361 501 374 492 361Z"/>
+    <path d="M563 326 572 339 563 352 554 339Z" opacity=".8"/>
+    <path d="M624 352 633 365 624 378 615 365Z" opacity=".65"/>
+  </g>
+  <text x="50" y="66" fill="#D8A8F8" font-size="14" font-family="monospace" letter-spacing="3">AFTERIMAGE / 07</text>
+  <text x="50" y="714" fill="#D8A8F8" opacity=".5" font-size="10" font-family="monospace" letter-spacing="2">OSGARD PLAY / WORLD ILLUSTRATION</text>
+</svg>

@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 760" role="img" aria-labelledby="orbit-title orbit-desc">
+  <title id="orbit-title">Империя времени: Орбита — иллюстрация мира</title>
+  <desc id="orbit-desc">Три мира на пересекающихся орбитах вокруг центрального циферблата. Самостоятельная иллюстрация орбитальной витрины OSGARD PLAY.</desc>
+  <defs>
+    <pattern id="orbit-grid" width="80" height="80" patternUnits="userSpaceOnUse"><path d="M80 0H0V80" fill="none" stroke="#DECBA3" stroke-opacity=".08"/></pattern>
+  </defs>
+  <rect width="1000" height="760" fill="#0B1420"/>
+  <rect width="1000" height="760" fill="url(#orbit-grid)"/>
+  <g fill="#DECBA3" opacity=".35"><circle cx="183" cy="194" r="2"/><circle cx="812" cy="225" r="2"/><circle cx="267" cy="623" r="2"/><circle cx="820" cy="593" r="2"/><circle cx="409" cy="146" r="2"/></g>
+  <g fill="none" stroke="#DECBA3" stroke-width="1.5">
+    <ellipse cx="500" cy="380" rx="370" ry="115" opacity=".8"/>
+    <ellipse cx="500" cy="380" rx="210" ry="240" transform="rotate(42 500 380)" opacity=".5"/>
+    <ellipse cx="500" cy="380" rx="292" ry="188" transform="rotate(-32 500 380)" opacity=".35"/>
+    <path d="M100 380H900M500 120V640" stroke-dasharray="3 11" opacity=".2"/>
+    <circle cx="500" cy="380" r="98" opacity=".25"/>
+    <circle cx="500" cy="380" r="76" fill="#101B28"/>
+    <circle cx="500" cy="380" r="59" opacity=".35"/>
+    <path d="M500 328V380L531 401" stroke-width="3"/>
+    <path d="M500 311V321M500 439V449M431 380H441M559 380H569" stroke-width="2"/>
+  </g>
+  <circle cx="500" cy="380" r="5" fill="#DECBA3"/>
+  <g stroke-width="1.5">
+    <circle cx="130" cy="380" r="37" fill="#0B1420" stroke="#DECBA3" stroke-opacity=".25"/>
+    <circle cx="130" cy="380" r="24" fill="#343124" stroke="#DECBA3"/>
+    <path d="M130 367V380L141 387" fill="none" stroke="#DECBA3"/>
+    <circle cx="661" cy="202" r="20" fill="#203644" stroke="#8DB5CE"/>
+    <path d="M644 211Q661 200 678 193" fill="none" stroke="#8DB5CE" opacity=".6"/>
+    <circle cx="556" cy="564" r="26" fill="#293630" stroke="#A2B8A2"/>
+    <ellipse cx="556" cy="564" rx="37" ry="9" transform="rotate(-24 556 564)" fill="none" stroke="#A2B8A2" opacity=".7"/>
+  </g>
+  <text x="50" y="66" fill="#DECBA3" font-size="14" font-family="monospace" letter-spacing="3">ORBIT / 03</text>
+  <text x="50" y="714" fill="#DECBA3" opacity=".5" font-size="10" font-family="monospace" letter-spacing="2">OSGARD PLAY / WORLD ILLUSTRATION</text>
+</svg>
