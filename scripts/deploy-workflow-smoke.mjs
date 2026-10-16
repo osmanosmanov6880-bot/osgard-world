@@ -45,7 +45,7 @@ assert.ok(workflow.includes('docker build --pull -f server/Dockerfile') && workf
 assert.ok(activation.includes("grep -q 'osgard-app.*osgard-ecosystem' /tmp/osgard-gh-next/html/index.html"), 'Candidate identity check must survive the nested remote-shell quoting')
 assert.equal((activation.match(/name="osgard-app" content="osgard-ecosystem"/g) ?? []).length, 1, 'Activation must check the exact OSGARD identity in live HTML')
 assert.ok(nginx.includes('location = /index.html') && nginx.includes('no-store, no-cache, must-revalidate, proxy-revalidate'), 'HTML shell must not be cached separately from versioned assets')
-assert.ok(nginx.includes('^/brand/(?:osa-transition\\.js|osa5-portals\\.css), 'Versioned shared-brand JavaScript and CSS must use their verified precompressed files')
+assert.ok(nginx.includes('^/brand/(?:osa-transition\\.js|osa5-portals\\.css)$') && nginx.includes('gzip_static on;') && nginx.includes('gzip_min_length 64;') && nginx.includes('gzip_types application/javascript text/css;'), 'Versioned shared-brand assets must be served with gzip')
 assert.ok(!workflow.includes('echo "$DEPLOY_KEY"'), 'Workflow must not print the private key')
 
 assert.ok(workflow.includes('Preserve Godot Web export for static-only releases'), 'Static-only deploys must preserve generated Godot artifacts instead of deleting them')
