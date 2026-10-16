@@ -1,0 +1,92 @@
+{
+  "scope": "Build dependency and token checks; not browser QA or field Core Web Vitals",
+  "routes": [
+    {
+      "route": "src/WorldHome.tsx",
+      "jsFiles": [
+        "assets/index-80esY97m.js",
+        "assets/react-SaLnwSRd.js",
+        "assets/WorldHome-BmnqtXg0.js",
+        "assets/redesignCatalog-Dn1dIFLL.js"
+      ],
+      "jsGzipBytes": 87799,
+      "cssFiles": [
+        "assets/index-DUd_jN3P.css"
+      ],
+      "cssGzipBytes": 6327
+    },
+    {
+      "route": "src/IntelligenceHome.tsx",
+      "jsFiles": [
+        "assets/index-80esY97m.js",
+        "assets/react-SaLnwSRd.js",
+        "assets/IntelligenceHome-CPAyw9vB.js",
+        "assets/osaProgress-D_5RQnBD.js",
+        "assets/osaLessonRegistry-z2xbN3zE.js",
+        "assets/osaLearningTracks-BmyVK_UO.js"
+      ],
+      "jsGzipBytes": 87205,
+      "cssFiles": [
+        "assets/index-DUd_jN3P.css"
+      ],
+      "cssGzipBytes": 6327
+    },
+    {
+      "route": "src/PlayHome.tsx",
+      "jsFiles": [
+        "assets/index-80esY97m.js",
+        "assets/react-SaLnwSRd.js",
+        "assets/PlayHome-DwYJgRfc.js",
+        "assets/redesignCatalog-Dn1dIFLL.js",
+        "assets/playCollection-C0lah9H7.js"
+      ],
+      "jsGzipBytes": 88379,
+      "cssFiles": [
+        "assets/index-DUd_jN3P.css"
+      ],
+      "cssGzipBytes": 6327
+    }
+  ],
+  "contrasts": [
+    {
+      "foreground": "#172027",
+      "background": "#F3F4F1",
+      "ratio": 14.95
+    },
+    {
+      "foreground": "#59656B",
+      "background": "#F3F4F1",
+      "ratio": 5.44
+    },
+    {
+      "foreground": "#315A62",
+      "background": "#FFFFFF",
+      "ratio": 7.58
+    },
+    {
+      "foreground": "#F3F0E8",
+      "background": "#101A27",
+      "ratio": 15.38
+    },
+    {
+      "foreground": "#AAB4BC",
+      "background": "#182330",
+      "ratio": 7.54
+    },
+    {
+      "foreground": "#83B9AE",
+      "background": "#101A27",
+      "ratio": 7.94
+    },
+    {
+      "foreground": "#5CE1E6",
+      "background": "#111926",
+      "ratio": 11.23
+    },
+    {
+      "foreground": "#AAB6C7",
+      "background": "#111926",
+      "ratio": 8.59
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "scope": "Real HTTP/SQLite pilot-report and assignment tests including all 28 Core/Learning regressions; not browser or real-student validation",
+  "status": "passed",
+  "testsRun": 38,
+  "failures": 0,
+  "errors": 0,
+  "generatedAt": "2026-10-16T04:16:39.184393+00:00",
+  "externalMessagesSent": false,
+  "paymentsTested": false
+}

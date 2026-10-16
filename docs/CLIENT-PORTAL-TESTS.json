@@ -1,0 +1,17 @@
+{
+  "scope": "Isolated recipient HTTP/SQLite tests plus 82 regressions; not browser QA, payments or external delivery",
+  "status": "passed",
+  "testsRun": 94,
+  "failures": 0,
+  "errors": 0,
+  "generatedAt": "2026-10-16T05:24:10.906785+00:00",
+  "externalMessagesSent": false,
+  "paymentsTested": false,
+  "localBaseline": {
+    "scope": "Loopback HTTP overview in temporary regression database, serial requests; not mobile, browser, production or user task speed",
+    "samples": 12,
+    "visibleProjects": 57,
+    "p50Milliseconds": 11.65,
+    "p95Milliseconds": 14.77
+  }
+}

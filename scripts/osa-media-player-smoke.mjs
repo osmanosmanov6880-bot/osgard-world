@@ -4,7 +4,7 @@ import { isPermanentMediaUrl } from '../src/osaMediaUrl.ts'
 
 const player = readFileSync('src/OSAMediaPlayer.tsx', 'utf8')
 const catalog = readFileSync('src/osaMediaCatalog.ts', 'utf8')
-const lessonGuides = readFileSync('src/osaLessonGuides.ts', 'utf8')
+const lessonGuides = readFileSync('src/osaLessonRegistry.ts', 'utf8')
 const lessonPage = readFileSync('src/OSALessonPage.tsx', 'utf8')
 const cinema = readFileSync('src/OSACinema.tsx', 'utf8')
 const packageJson = JSON.parse(readFileSync('package.json', 'utf8'))

@@ -1,7 +1,7 @@
 import { ArrowRight, ArrowUpRight, BookOpen, BrainCircuit, Compass, ShieldCheck, Sparkles } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { getOSACinemaLessons, type OSACinemaLocale } from './OSACinema'
-import { OSA_LESSON_SLUGS } from './osaLessonGuides'
+import { OSA_LESSON_SLUGS } from './osaLessonRegistry'
 import { getOSALearningProgress, subscribeOSALearningProgress } from './osaProgress'
 import { OsgardLogo } from './OsgardLogo'
 import AcademyStudio from './AcademyStudio'

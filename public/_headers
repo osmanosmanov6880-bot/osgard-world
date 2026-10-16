@@ -18,3 +18,7 @@
   Content-Type: application/wasm
   Content-Encoding: gzip
   Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+# Brand files have stable names; always revalidate after a redesign.
+/brand/*
+  Cache-Control: public, max-age=0, must-revalidate

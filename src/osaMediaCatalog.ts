@@ -1,4 +1,4 @@
-import { OSA_LESSON_SLUGS } from './osaLessonGuides'
+import { OSA_LESSON_SLUGS } from './osaLessonRegistry'
 import { isPermanentMediaUrl } from './osaMediaUrl'
 
 export type OSAMediaLocale = 'ru' | 'en'

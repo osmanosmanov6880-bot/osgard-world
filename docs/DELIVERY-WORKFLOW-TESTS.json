@@ -1,0 +1,10 @@
+{
+  "scope": "Real HTTP/SQLite delivery, support and process provenance tests plus 58 regressions; no browser QA, payments or external delivery",
+  "status": "passed",
+  "testsRun": 72,
+  "failures": 0,
+  "errors": 0,
+  "generatedAt": "2026-10-16T04:55:01.632475+00:00",
+  "externalMessagesSent": false,
+  "paymentsTested": false
+}

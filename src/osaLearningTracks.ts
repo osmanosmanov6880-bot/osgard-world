@@ -1,4 +1,4 @@
-import { OSA_LESSON_SLUGS } from './osaLessonGuides'
+import { OSA_LESSON_SLUGS } from './osaLessonRegistry'
 
 export type OSALearningTrack = {
   id: string

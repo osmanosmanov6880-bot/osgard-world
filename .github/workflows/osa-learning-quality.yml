@@ -46,6 +46,10 @@ jobs:
         run: npm run qa:osa6-learning
       - name: OSA monetization offer and checkout honesty
         run: npm run qa:osa-monetization
+      - name: Project import and validation
+        run: npm run qa:osa-project
+      - name: Project collections and experiments
+        run: npm run qa:osa-workspace && npm run qa:osa-experiments
       - name: Academy
         run: npm run qa:academy
       - name: Lectures
@@ -58,5 +62,11 @@ jobs:
         run: npm run qa:osa-narration
       - name: Media file signature self-test
         run: npm run qa:osa-media-files
+      - name: Navigation, forms and local data reliability
+        run: npm run qa:ux && npm run qa:backup
+      - name: Brand design and rendered route contracts
+        run: npm run qa:redesign
       - name: Production build
         run: npm run build
+      - name: Brand route asset and dependency audit
+        run: npm run qa:redesign-build

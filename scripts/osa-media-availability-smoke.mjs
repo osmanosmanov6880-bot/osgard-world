@@ -13,8 +13,8 @@ function load(path, dependencies = {}) {
   return module.exports
 }
 const url = load('src/osaMediaUrl.ts')
-const lessons = load('src/osaLessonGuides.ts')
-const catalog = load('src/osaMediaCatalog.ts', { './osaLessonGuides': lessons, './osaMediaUrl': url })
+const lessons = load('src/osaLessonRegistry.ts')
+const catalog = load('src/osaMediaCatalog.ts', { './osaLessonRegistry': lessons, './osaMediaUrl': url })
 assert.equal(lessons.OSA_LESSON_SLUGS.length, 8)
 for (const locale of ['ru', 'en']) {
   const summary = catalog.getOSALessonMediaSummary(locale)

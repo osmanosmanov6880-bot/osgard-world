@@ -1,0 +1,3 @@
+Inter Variable and JetBrains Mono are retained from the existing SkillCred font assets in this repository. See OFL.txt and the original public/skillcred/fonts/FONT-NOTICES.txt.
+Cormorant Garamond (Christian Thalmann) and Space Grotesk (Florian Karsten) were downloaded from the Google Fonts CSS service for local hosting. They use the SIL Open Font License 1.1. Their original licenses are included in this directory. No font is represented as an original OSGARD design.
+Space Grotesk does not contain Cyrillic glyphs; Cyrillic headings use the Inter/Arial fallback declared in the font stack.

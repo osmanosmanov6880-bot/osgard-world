@@ -1,0 +1,10 @@
+{
+  "scope": "Real temporary HTTP/SQLite integration coverage including the 16 existing Core regression tests; not browser QA or a real student pilot",
+  "status": "passed",
+  "testsRun": 28,
+  "failures": 0,
+  "errors": 0,
+  "generatedAt": "2026-10-16T04:06:18.379772+00:00",
+  "externalMessagesSent": false,
+  "paymentsTested": false
+}

@@ -11,8 +11,8 @@
 <meta property="og:url" content="https://osgard.world/development/essentia/"><meta property="og:image" content="https://osgard.world/development/essentia/og.svg">
 <meta name="twitter:card" content="summary_large_image"><link rel="stylesheet" href="/development/essentia/store.css">
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"ESSENTIA — OSGARD Development Case","description":"Demonstration storefront concept. Checkout is not connected to live payment processing."}</script>
-</head>
-<body>
+<link rel="stylesheet" href="/brand/ecosystem-chrome.css"><link rel="icon" href="/brand/favicon.svg" type="image/svg+xml"></head>
+<body><header class="osgard-static-header" aria-label="Экосистема OSGARD"><a href="/"><img src="/brand/portal-world.svg" alt="" width="30" height="30">OSGARD WORLD</a><nav aria-label="Продукты OSGARD"><a href="/">OSGARD</a><a href="/intelligence">Intelligence</a><a href="/play">Play</a><a href="/development">Development</a></nav></header><aside class="osgard-static-status">Демо. Корзина локальная; реальные заказы и платежи не подключены. <a href="/development#cases">Все кейсы →</a></aside>
 <header class="site-header">
 <a class="wordmark" href="/development/" aria-label="OSGARD Development"><span class="wordmark-symbol">O</span><span>OSGARD <i>/ DEVELOPMENT</i></span></a>
 <a class="brand" href="#top" aria-label="ESSENTIA home">ESSENTIA<span>®</span></a>
@@ -42,4 +42,4 @@
 <div class="modal-backdrop" id="checkoutBackdrop" hidden><section class="checkout-modal" role="dialog" aria-modal="true" aria-labelledby="checkoutTitle"><div class="drawer-head"><div><p class="eyebrow"><span class="eyebrow-line"></span> ALMOST YOURS</p><h2 id="checkoutTitle">Оформление заказа</h2></div><button class="close-button" id="checkoutClose" aria-label="Закрыть оформление">×</button></div><p class="checkout-warning">Только демонстрация: форма не отправляет данные и не принимает оплату.</p><form id="checkoutForm"><label>Имя<input name="name" autocomplete="name" required minlength="2" placeholder="Как к вам обращаться"></label><label>Электронная почта<input name="email" type="email" autocomplete="email" required placeholder="you@example.com"></label><label>Получение<select name="delivery" id="deliveryChoice"><option value="courier">Курьерская доставка · 590 ₽</option><option value="pickup">Самовывоз · бесплатно</option></select></label><label id="addressLabel">Адрес доставки<input name="address" autocomplete="street-address" placeholder="Улица, дом, квартира"></label><div class="checkout-summary"><span>Итого в демо</span><strong id="checkoutTotal">0 ₽</strong></div><button class="checkout-button" type="submit">Создать демо-заказ <span>↗</span></button><p class="form-error" id="checkoutError" aria-live="polite"></p></form><div id="orderSuccess" class="order-success" hidden><span>✓</span><h3>Сценарий пройден.</h3><p id="successText">Заказ не отправлен. Это локальное подтверждение интерфейса.</p><button class="outline-button" id="finishDemo">Вернуться в коллекцию</button></div></section></div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <script src="/development/essentia/store.js" defer></script>
-</body></html>
+<script defer src="/brand/osa-transition.js"></script></body></html>

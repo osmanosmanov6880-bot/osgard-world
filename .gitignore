@@ -41,3 +41,14 @@ godot/null-shift/.godot/
 # Keep original media binaries out of Git history; stage them locally for the release audit.
 /osa-media-staging/
 osa-media-staging-report.json
+
+# Authoritative local Core data and Python cache are never release assets.
+*.sqlite3
+*.sqlite3-wal
+*.sqlite3-shm
+__pycache__/
+/core-data/
+/backups/
+
+/delivery/
+*.tgz.sha256

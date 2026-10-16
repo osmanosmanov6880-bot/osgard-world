@@ -1,0 +1,10 @@
+{
+  "scope": "HTTP/SQLite account access tests plus all 38 Core/Learning/Pilot regressions; not a security audit or browser QA",
+  "status": "passed",
+  "testsRun": 48,
+  "failures": 0,
+  "errors": 0,
+  "generatedAt": "2026-10-16T04:33:38.287079+00:00",
+  "externalMessagesSent": false,
+  "paymentsTested": false
+}

@@ -1,59 +1,31 @@
 (() => {
-  'use strict';
-  const key = 'osgard.osa5.transition.v1';
-  const normalize = path => path.replace(/\/+$/, '') || '/';
-  const profile = pathname => {
-    const path = normalize(pathname);
-    if (path === '/') return 'intelligence';
-    if (path === '/portal' || path === '/development' || path.startsWith('/development/') || ['/worlds','/catalog','/chronicle','/masters','/club','/aurum','/timecoin','/mobility','/create','/business','/week','/next','/archive','/profile','/community','/stream'].includes(path)) return 'ecosystem';
-    if (path === '/tedes' || path.startsWith('/tedes/')) return 'development';
-    if (path === '/academy' || path === '/lectures' || path === '/osa-library') return 'academy';
-    if (path === '/osa-cinema') return 'cinema';
-    if (path === '/skillcred' || path.startsWith('/skillcred/')) return 'credentials';
-    if (path.startsWith('/play/') || path === '/games/time' || path === '/miniapp') return 'immersive';
-    if (path === '/games' || path.startsWith('/games/') || path === '/entertainment' || path.startsWith('/entertainment/')) return 'games';
-    return null;
-  };
-  const safeRead = () => { try { return sessionStorage.getItem(key); } catch { return null; } };
-  const safeWrite = value => { try { sessionStorage.setItem(key, value); } catch { /* optional */ } };
-  const currentProfile = profile(location.pathname);
-  if (currentProfile) document.documentElement.dataset.osaProfile = currentProfile;
-  document.addEventListener('click', event => {
-    if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-    const source = event.target instanceof Element ? event.target.closest('a[href]') : null;
-    if (!source || source.hasAttribute('download') || (source.target && source.target.toLowerCase() !== '_self') || source.relList.contains('external')) return;
-    let destination;
-    try { destination = new URL(source.href, location.href); } catch { return; }
-    if (destination.origin !== location.origin || !['https:', 'http:'].includes(destination.protocol)) return;
-    if (normalize(destination.pathname) === normalize(location.pathname)) return;
-    const from = profile(location.pathname), to = profile(destination.pathname);
-    if (!from || !to || from === to) return;
-    safeWrite(JSON.stringify({ to: normalize(destination.pathname), at: Date.now() }));
-  }, true);
-  let pending = null;
-  try { pending = JSON.parse(safeRead() || 'null'); } catch { pending = null; }
-  try { sessionStorage.removeItem(key); } catch { /* optional */ }
-  if (!pending || normalize(location.pathname) !== pending.to || Date.now() - pending.at > 5000) return;
-  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  let mounted = false;
-  let observer = null;
-  const mount = () => {
-    if (mounted || !document.body) return;
-    const appRoot = document.getElementById('root');
-    if (appRoot && !appRoot.childElementCount) return;
-    mounted = true;
-    const overlay = document.createElement('div');
-    overlay.className = 'osa5-transition-overlay';
-    overlay.setAttribute('aria-hidden', 'true');
-    overlay.innerHTML = '<img src="/brand/osa-5-mark.svg" alt=""><span class="osa5-transition-word">OSA <small>5.0</small></span>';
-    document.body.appendChild(overlay);
-    requestAnimationFrame(() => requestAnimationFrame(() => overlay.classList.add('is-leaving')));
-    window.setTimeout(() => overlay.remove(), reduced ? 100 : 460);
-    if (observer) observer.disconnect();
-  };
-  const root = document.getElementById('root');
-  if (root) { observer = new MutationObserver(mount); observer.observe(root, { childList: true, subtree: true }); }
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mount, { once: true });
-  else mount();
-  window.setTimeout(mount, 1400);
+ 'use strict';
+ const key='osgard:portal-navigation:v2';
+ const normalize=p=>p.replace(/\/+$/,'')||'/';
+ const profile=p=>{p=normalize(p);if(p==='/play/partners')return 'world';if(p==='/intelligence'||p==='/academy'||p==='/osa-cinema'||p.startsWith('/learning')||p.startsWith('/lectures')||p.startsWith('/osa-library'))return 'intelligence';if(p==='/play'||p.startsWith('/play/')||p==='/entertainment'||p.startsWith('/games'))return 'play';return 'world'};
+ const name={world:'OSGARD WORLD',intelligence:'OSA INTELLIGENCE',play:'OSGARD PLAY'};
+ const current=profile(location.pathname);document.documentElement.dataset.product=current;
+ const reduced=()=>matchMedia('(prefers-reduced-motion: reduce)').matches||document.documentElement.dataset.motion==='off';
+ try{document.documentElement.dataset.motion=localStorage.getItem('osgard:motion')==='off'?'off':'on'}catch{}
+ document.addEventListener('click',e=>{
+  if(e.defaultPrevented||e.button!==0||e.metaKey||e.ctrlKey||e.shiftKey||e.altKey)return;
+  const a=e.target instanceof Element?e.target.closest('a[href]'):null;
+  if(!a||a.hasAttribute('download')||(a.target&&a.target!=='_self')||a.relList.contains('external')||reduced())return;
+  let to;try{to=new URL(a.href,location.href)}catch{return}
+  if(to.origin!==location.origin||!['http:','https:'].includes(to.protocol)||normalize(to.pathname)===normalize(location.pathname))return;
+  const target=profile(to.pathname);if(current===target&&!a.hasAttribute('data-game-launch'))return;
+  try{sessionStorage.setItem(key,JSON.stringify({path:normalize(to.pathname),theme:target,game:a.hasAttribute('data-game-launch'),at:Date.now()}))}catch{}
+  // Navigation is never prevented or delayed for the effect.
+ },true);
+ let pending;try{pending=JSON.parse(sessionStorage.getItem(key)||'null');sessionStorage.removeItem(key)}catch{return}
+ if(!pending||pending.path!==normalize(location.pathname)||!Number.isFinite(pending.at)||Date.now()-pending.at>5000||!name[pending.theme]||reduced())return;
+ let mounted=false,observer;
+ const mount=()=>{if(mounted||!document.body||reduced())return;const root=document.getElementById('root');if(root&&!root.childElementCount)return;mounted=true;
+ const overlay=document.createElement('div');overlay.className='osgard-portal-transition portal-'+pending.theme+(pending.game?' portal-game':'');overlay.setAttribute('aria-hidden','true');
+ const image=document.createElement('img');image.src='/brand/portal-'+pending.theme+'.svg';image.alt='';
+ const label=document.createElement('span');label.textContent=name[pending.theme];overlay.append(image,label);document.body.append(overlay);
+ requestAnimationFrame(()=>requestAnimationFrame(()=>overlay.classList.add('portal-reveal')));setTimeout(()=>overlay.remove(),520);observer?.disconnect();
+ };
+ const root=document.getElementById('root');if(root){observer=new MutationObserver(mount);observer.observe(root,{childList:true,subtree:true})}
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',mount,{once:true});else mount();setTimeout(()=>{mount();observer?.disconnect()},2000);
 })();

@@ -45,7 +45,7 @@ export const OSGARD_WORLDS: ReadonlyArray<{ id: OsgardWorldId, label: string, pr
 export const OSGARD_GAMES: ReadonlyArray<{ id: OsgardGameId, title: string, reason: string, href: string }> = [
   { id: 'time', title: 'ИМПЕРИЯ ВРЕМЕНИ', reason: 'управлять', href: '/games/time' },
   { id: 'swarm', title: 'SWARM', reason: 'координироваться', href: '/games/swarm/index.html' },
-  { id: 'null-shift', title: 'NULL//SHIFT', reason: 'проникать', href: '/games/null-shift-godot/index.html' },
+  { id: 'null-shift', title: 'NULL//SHIFT', reason: 'проникать', href: '/play/world/null-shift' },
   { id: 'inherit', title: 'INHERIT', reason: 'наследовать', href: '/games/inherit/index.html' },
   { id: 'remix', title: 'REMIX', reason: 'создавать', href: '/games/remix/index.html' },
   { id: 'vector-zero', title: 'VECTOR//ZERO', reason: 'управлять магнитным полем', href: '/games/vector-zero/' },

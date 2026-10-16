@@ -1,4 +1,4 @@
-import { OSA_LESSON_SLUGS } from './osaLessonGuides'
+import { OSA_LESSON_SLUGS } from './osaLessonRegistry'
 
 export const OSA_PROGRESS_STORAGE_KEY = 'osgard-osa-learning-progress-v1'
 export const OSA_PROGRESS_EVENT = 'osgard-osa-progress'

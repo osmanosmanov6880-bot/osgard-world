@@ -1,0 +1,10 @@
+{
+  "scope": "Team ACL HTTP/SQLite tests plus 94 previous regressions; not SSO, billing or browser QA",
+  "status": "passed",
+  "testsRun": 106,
+  "failures": 0,
+  "errors": 0,
+  "generatedAt": "2026-10-16T06:10:13.455909+00:00",
+  "paymentsTested": false,
+  "externalMessagesSent": false
+}

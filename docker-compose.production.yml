@@ -20,6 +20,8 @@ services:
     container_name: osgard-world
     restart: unless-stopped
     depends_on:
+      core-api:
+        condition: service_healthy
       swarm-api:
         condition: service_healthy
       osgard-game-api:
@@ -32,6 +34,46 @@ services:
       timeout: 5s
       retries: 3
       start_period: 10s
+  core-api:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    container_name: osgard-core-api
+    restart: unless-stopped
+    init: true
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    pids_limit: 128
+    mem_limit: 768m
+    cpus: "1.0"
+    tmpfs:
+      - /tmp:size=16m,noexec,nosuid
+    expose:
+      - "4173"
+    command:
+      - python
+      - core_server.py
+      - --root
+      - /app/empty
+      - --database
+      - /var/lib/osgard-core/core.sqlite3
+      - --host
+      - 0.0.0.0
+      - --port
+      - "4173"
+      - --public-origin
+      - ${OSGARD_CORE_PUBLIC_ORIGIN:-https://osgard.world}
+    volumes:
+      - osgard-core-data:/var/lib/osgard-core
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:4173/api/core/health', timeout=3)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
   remix-api:
     build: ../remix/backend
     container_name: remix-api
@@ -57,4 +99,5 @@ services:
       start_period: 10s
 
 volumes:
+  osgard-core-data:
   osgard-game-data:

@@ -1,0 +1,30 @@
+{
+  "profile": "static-redesign-preview",
+  "status": "static-package-checks-passed",
+  "fullProductionApproval": false,
+  "fileCount": 348,
+  "maximumFileBytes": 6853428,
+  "sitemapRoutesChecked": 80,
+  "limitsChecked": {
+    "files": 20000,
+    "assetBytes": 26214400
+  },
+  "browserQA": "pending",
+  "fieldCoreWebVitals": "not-collected",
+  "cloudAccounts": false,
+  "optionalCoreServer": "included-in-full-source-archive-not-static-hosting",
+  "payments": false,
+  "formDelivery": "download-only",
+  "unavailableGames": [
+    "null-shift"
+  ],
+  "externalGameServices": "not-verified",
+  "notes": [
+    "This profile is for the static preview with unavailable functionality disclosed.",
+    "It does not satisfy the existing full-game release gate requiring a Godot WASM export."
+  ],
+  "references": [
+    "https://developers.cloudflare.com/pages/configuration/serving-pages/",
+    "https://developers.cloudflare.com/pages/platform/limits/"
+  ]
+}

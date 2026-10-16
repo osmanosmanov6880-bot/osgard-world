@@ -1,15 +1,6 @@
 export type OSALessonLocale = 'ru' | 'en'
 
-export const OSA_LESSON_SLUGS = [
-  'intelligence-and-imitation',
-  'how-language-models-work',
-  'power-of-knowledge',
-  'signal-and-noise',
-  'verify-an-ai-answer',
-  'privacy-before-prompting',
-  'human-in-the-loop',
-  'investigate-the-future',
-] as const
+export { OSA_LESSON_SLUGS } from './osaLessonRegistry'
 
 export type OSALessonGuide = {
   objectives: string[]
