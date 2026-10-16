@@ -55,6 +55,7 @@ test.describe('OSGARD slow mobile laboratory', () => {
         fieldMeasurement: false,
         p75: null,
         coreWebVitalsVerdict: 'not-assessed',
+        laboratoryBudgets: { initialLoadClsMax: 0.1 },
         limitations: [
           'One attempt on a CI Chromium mobile viewport; not a physical mobile device or field percentile.',
           'CPU slowdown is relative to the current CI machine; other workers may share its resources.',
@@ -89,6 +90,43 @@ test.describe('OSGARD slow mobile laboratory', () => {
           let lcp = null, cls = 0, clsWindow = 0, windowStart = null, previousShift = 0
           let eligibleShifts = 0, inputExcludedShifts = 0
           const shifts = []
+          const domMilestones = {
+            brandShellInsertedAtMs: null,
+            initialLoadingInsertedAtMs: null,
+            initialLoadingRemovedAtMs: null,
+            productHeroInsertedAtMs: null,
+            note: 'MutationObserver timestamps for DOM presence, not paint or layout completion; no geometry reads are used.',
+          }
+
+          // Distinguish the initial Suspense shell from the resolved product.
+          // These checks do not force layout, poll frames or extend observation.
+          function recordDomMilestones() {
+            const atMs = performance.now()
+            if (domMilestones.brandShellInsertedAtMs === null && document.querySelector('.brand-system')) domMilestones.brandShellInsertedAtMs = atMs
+            const initialLoading = document.querySelector('#product-main .route-loading[role="status"]')
+            if (initialLoading && domMilestones.initialLoadingInsertedAtMs === null) domMilestones.initialLoadingInsertedAtMs = atMs
+            if (!initialLoading && domMilestones.initialLoadingInsertedAtMs !== null && domMilestones.initialLoadingRemovedAtMs === null) domMilestones.initialLoadingRemovedAtMs = atMs
+            if (domMilestones.productHeroInsertedAtMs === null && document.querySelector('#product-main .world-hero, #product-main .intelligence-hero, #product-main .play-hero')) domMilestones.productHeroInsertedAtMs = atMs
+          }
+          const domObserver = new MutationObserver(() => {
+            recordDomMilestones()
+            if (domMilestones.productHeroInsertedAtMs !== null && document.querySelector('#product-main .route-loading[role="status"]') === null) domObserver.disconnect()
+          })
+          domObserver.observe(document, { childList: true, subtree: true })
+          recordDomMilestones()
+
+          function rectSnapshot(rect) {
+            return rect ? { x: rect.x, y: rect.y, width: rect.width, height: rect.height, top: rect.top, right: rect.right, bottom: rect.bottom, left: rect.left } : null
+          }
+
+          function shiftSourceSnapshot(source) {
+            const node = source.node
+            return {
+              node: node ? { tag: node.nodeName, id: node.id || null, classes: node instanceof Element ? [...node.classList] : [], connected: node.isConnected } : null,
+              previousRect: rectSnapshot(source.previousRect),
+              currentRect: rectSnapshot(source.currentRect),
+            }
+          }
 
           function observe(type, receive) {
             supported[type] = typeof PerformanceObserver !== 'undefined' && PerformanceObserver.supportedEntryTypes.includes(type)
@@ -122,12 +160,14 @@ test.describe('OSGARD slow mobile laboratory', () => {
               else { windowStart = entry.startTime; clsWindow = entry.value }
               previousShift = entry.startTime
               cls = Math.max(cls, clsWindow)
-              if (shifts.length < 100) shifts.push({ atMs: entry.startTime, value: entry.value })
+              if (shifts.length < 100) shifts.push({ atMs: entry.startTime, value: entry.value, sources: [...(entry.sources || [])].map(shiftSourceSnapshot) })
             }
           })
 
           window.__osgardMobileLab = {
             snapshot(stop = false) {
+              recordDomMilestones()
+              if (stop) domObserver.disconnect()
               for (const { observer, receive } of observers) {
                 receive(observer.takeRecords())
                 if (stop) observer.disconnect()
@@ -144,6 +184,7 @@ test.describe('OSGARD slow mobile laboratory', () => {
                 lcpMs: lcp?.startTimeMs ?? null, lcpCandidate: lcp,
                 cls: supported['layout-shift'] ? cls : null,
                 layoutShifts: { eligible: eligibleShifts, excludedAfterInput: inputExcludedShifts, first100: shifts },
+                domMilestones,
                 navigation: navigation?.toJSON() ?? null,
                 paint: performance.getEntriesByType('paint').map(entry => ({ name: entry.name, atMs: entry.startTime })),
                 resources: {
@@ -190,6 +231,7 @@ test.describe('OSGARD slow mobile laboratory', () => {
         evidence.observationBoundary = 'initial-load-readiness-before-first-input'
         expect(evidence.metrics.supported['largest-contentful-paint'], 'LCP observer must be available for valid evidence').toBe(true)
         expect(evidence.metrics.supported['layout-shift'], 'CLS observer must be available for valid evidence').toBe(true)
+        expect(evidence.metrics.cls, 'Lab layout-stability budget: initial-load CLS must be <= 0.1; this is not a field p75 verdict').toBeLessThanOrEqual(evidence.laboratoryBudgets.initialLoadClsMax)
         expect(evidence.metrics.lcpMs, 'A paint candidate must be observed; this is not an LCP speed threshold').not.toBeNull()
         expect(evidence.visualReadiness.fontsStatus).toBe('loaded')
         expect(evidence.visualReadiness.viewportImages.every(image => image.loaded), 'Visible images must load under the profile').toBe(true)
