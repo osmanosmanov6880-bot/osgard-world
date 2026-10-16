@@ -54,7 +54,7 @@ rollback() {
     tar -xzf '$archive' -C /tmp/osgard-gh-next
     test -f /tmp/osgard-gh-next/html/index.html
     grep -q '<title>OSGARD WORLD — цифровые продукты, построенные как системы</title>' /tmp/osgard-gh-next/html/index.html
-    grep -q 'name="osgard-app" content="osgard-ecosystem"' /tmp/osgard-gh-next/html/index.html
+    grep -q 'osgard-app.*osgard-ecosystem' /tmp/osgard-gh-next/html/index.html
     grep -q 'OSGARD WORLD' /tmp/osgard-gh-next/html/assets/*.js
     test -f /tmp/osgard-gh-next/html/skillcred/index.html
     test -f /tmp/osgard-gh-next/html/skillcred/styles.css

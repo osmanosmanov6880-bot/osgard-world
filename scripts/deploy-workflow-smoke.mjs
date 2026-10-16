@@ -40,7 +40,8 @@ assert.ok(activation.includes('core-api-image.tar.gz') && activation.includes('-
 assert.ok(activation.includes('osgard-core-internal') && activation.includes('docker network connect "$core_network" "$container_name"'), 'Activation must provide a user-defined DNS network when the existing site only uses Docker bridge')
 assert.ok(activation.includes('label=com.docker.compose.volume=osgard-core-data') && activation.includes('Multiple OSGARD Core data volumes exist'), 'Activation must preserve a single existing Core volume and refuse ambiguous data selection')
 assert.ok(workflow.includes('docker build --pull -f server/Dockerfile') && workflow.includes('docker save osgard-core-api:${GITHUB_SHA}'), 'Release archive must contain the versioned Core API image')
-assert.equal((activation.match(/name="osgard-app" content="osgard-ecosystem"/g) ?? []).length, 2, 'Activation must check the OSGARD identity in both candidate and live HTML')
+assert.ok(activation.includes("grep -q 'osgard-app.*osgard-ecosystem' /tmp/osgard-gh-next/html/index.html"), 'Candidate identity check must survive the nested remote-shell quoting')
+assert.equal((activation.match(/name="osgard-app" content="osgard-ecosystem"/g) ?? []).length, 1, 'Activation must check the exact OSGARD identity in live HTML')
 assert.ok(nginx.includes('location = /index.html') && nginx.includes('no-store, no-cache, must-revalidate, proxy-revalidate'), 'HTML shell must not be cached separately from versioned assets')
 assert.ok(!workflow.includes('echo "$DEPLOY_KEY"'), 'Workflow must not print the private key')
 
