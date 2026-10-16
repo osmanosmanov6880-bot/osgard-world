@@ -110,7 +110,11 @@ rollback() {
       exit 1
     fi
     docker stop osgard-core-api >/dev/null
-    docker rename osgard-core-api "$core_previous"
+    if ! docker rename osgard-core-api "$core_previous"; then
+      echo 'Unable to preserve the stopped Core container; restarting the existing API.' >&2
+      docker start osgard-core-api >/dev/null
+      exit 1
+    fi
     core_replaced=1
   fi
   if [[ "$core_replaced" != "1" ]]; then

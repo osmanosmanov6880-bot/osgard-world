@@ -9,7 +9,7 @@ on:
       - "scripts/core-*.py"
       - "scripts/redesign-*.mjs"
       - "scripts/zion-local-smoke.mjs"
-      - "scripts/ecosystem-browser.spec.mjs"
+      - "scripts/ecosystem-*.spec.mjs"
       - "playwright.ecosystem.config.mjs"
       - "public/brand/**"
       - "public/development/index.html"

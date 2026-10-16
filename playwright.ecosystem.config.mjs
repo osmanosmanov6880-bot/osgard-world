@@ -2,7 +2,7 @@ import { defineConfig } from '@playwright/test'
 
 export default defineConfig({
   testDir: './scripts',
-  testMatch: 'ecosystem-browser.spec.mjs',
+  testMatch: ['ecosystem-browser.spec.mjs', 'ecosystem-mobile-lab.spec.mjs'],
   fullyParallel: true,
   workers: 2,
   retries: 1,
@@ -12,7 +12,7 @@ export default defineConfig({
   use: {
     baseURL: 'http://127.0.0.1:4175',
     locale: 'ru-RU',
-    reducedMotion: 'reduce',
+    contextOptions: { reducedMotion: 'reduce' },
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
   },

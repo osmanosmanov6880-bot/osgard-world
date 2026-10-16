@@ -119,7 +119,7 @@ Event ID уникален. Точное повторение возвращае�
 
 `python3 scripts/core-stripe-sdk-smoke.py` — реальная поверхность SDK 15.6.0, 7 перехваченных transport requests без сети: import/конструктор, собственный аккаунт, Checkout, PaymentIntent, Charge, refunds, версия API и idempotency headers.
 
-Машиночитаемые результаты: `CORE-COMMERCE-TESTS.json` и отчёт SDK-проверки. Существующая Core-регрессия: `python3 scripts/core-teams-smoke.py` (включает предыдущие Core/Account/Learning/Acceptance/Delivery/Overview/ClientPortal/Teams проверки). TypeScript: `npm run check`.
+Машиночитаемый результат: `CORE-COMMERCE-TESTS.json`. SDK-проверка печатает итог PASS и число перехваченных запросов в журнал запуска. Существующая Core-регрессия: `python3 scripts/core-teams-smoke.py` (включает предыдущие Core/Account/Learning/Acceptance/Delivery/Overview/ClientPortal/Teams проверки). TypeScript: `npm run check`.
 
 Первичные источники, сверенные при подготовке:
 

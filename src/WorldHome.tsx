@@ -66,10 +66,10 @@ export default function WorldHome({ development = false }: { development?: boole
     <section id="cases" className="brand-section" aria-labelledby="world-cases-title">
       <div className="brand-section-heading"><p className="brand-eyebrow">02 / ИЗБРАННЫЕ ПРОЕКТЫ</p><h2 id="world-cases-title">У каждой задачи<br />свой характер.</h2><p>Откройте кейс: посмотрите интерфейс, доступные возможности и стадию проекта. Статус указан на каждой карточке.</p></div>
       <div className="world-case-grid">{cases.map((item, index) => <a href={item.href} className="world-case" key={item.id}>
-        <div className="world-case-art"><img src={item.art} alt={item.id === 'tedes' ? 'Архитектурная визуализация TEDES' : 'Визуальное превью ' + item.name} width="1200" height="630" loading="lazy" decoding="async" /><span className="brand-status">{item.type}</span></div>
+        <div className="world-case-art" style={item.visual === 'screenshot' ? { aspectRatio: '3 / 2' } : undefined}><img src={item.art} alt={(item.visual === 'screenshot' ? 'Снимок публичной страницы кейса ' : 'Визуальное превью ') + item.name} width="1200" height={item.visual === 'screenshot' ? 800 : 630} loading="lazy" decoding="async" /><span className="brand-status">{item.type}</span></div>
         <div className="world-case-title"><span>0{index + 1} / {item.category}</span><h3>{item.name} <span aria-hidden="true">↗</span></h3><p>{item.description}</p><span className="world-case-open">Открыть кейс <span aria-hidden="true">→</span></span></div>
       </a>)}</div>
-      <p className="world-case-legend"><strong>Как читать статусы.</strong> Концепт показывает направление. Демо позволяет попробовать сценарий. Прототип проверяет часть продукта. Коммерческий запуск требует отдельного подтверждения. Иллюстрации карточек — визуальные превью.</p>
+      <p className="world-case-legend"><strong>Как читать статусы.</strong> Концепт показывает направление. Демо позволяет попробовать сценарий. Прототип проверяет часть продукта. Коммерческий запуск требует отдельного подтверждения. PHANTOM, TEDES и MERAKKI показаны на реальных снимках публичных страниц кейсов. ESSENTIA — визуальное превью. Снимки не подтверждают работу сервера или коммерческий запуск.</p>
     </section>
 
     <section id="approach" className="brand-section" aria-labelledby="world-approach-title">

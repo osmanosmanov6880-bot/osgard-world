@@ -1,3 +1,18 @@
-Inter Variable and JetBrains Mono are retained from the existing SkillCred font assets in this repository. See OFL.txt and the original public/skillcred/fonts/FONT-NOTICES.txt.
+Inter Variable
+Copyright (c) 2016 The Inter Project Authors (https://github.com/rsms/inter)
+Licensed under the SIL Open Font License 1.1; the original LICENSE.txt is included unchanged as OFL.txt.
+Unmodified official Inter 4.1 web font, retrieved 2026-10-16:
+https://github.com/rsms/inter/releases/tag/v4.1
+Source commit: e3a3d4c57d5ecc01453a575621882a384c1995a3
+Source file: https://raw.githubusercontent.com/rsms/inter/e3a3d4c57d5ecc01453a575621882a384c1995a3/docs/font-files/InterVariable.woff2
+Git blob SHA-1: 5a8d3e72ad7ffb62af3b146e1b1f54ab5813a212
+SHA-256: 693b77d4f32ee9b8bfc995589b5fad5e99adf2832738661f5402f9978429a8e3
+File size: 352240 bytes. Variable axes: weight 100-900; optical size 14-32.
+This replaces an invalid legacy copy. The file has not been subsetted, renamed internally or otherwise modified.
+
+JetBrains Mono is retained from the existing SkillCred font assets in this repository.
+Copyright 2020 The JetBrains Mono Project Authors (https://github.com/JetBrains/JetBrainsMono)
+Licensed under the SIL Open Font License 1.1. See OFL.txt and the original public/skillcred/fonts/FONT-NOTICES.txt.
+
 Cormorant Garamond (Christian Thalmann) and Space Grotesk (Florian Karsten) were downloaded from the Google Fonts CSS service for local hosting. They use the SIL Open Font License 1.1. Their original licenses are included in this directory. No font is represented as an original OSGARD design.
 Space Grotesk does not contain Cyrillic glyphs; Cyrillic headings use the Inter/Arial fallback declared in the font stack.
