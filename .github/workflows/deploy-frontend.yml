@@ -46,6 +46,7 @@ on:
       - "scripts/sync-swarm-assets.mjs"
       - "scripts/frontend-archive-preflight.mjs"
       - "scripts/production-route-matrix.mjs"
+      - "scripts/production-health-watch.mjs"
       - "scripts/activate-frontend-remote.sh"
       - "scripts/deploy-workflow-smoke.mjs"
       - "scripts/tedes-case-smoke.mjs"
