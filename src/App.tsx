@@ -1,3 +1,6 @@
+Warning: truncated output (original token count: 11328)
+Total output lines: 133
+
 ﻿import { useEffect, useState, type CSSProperties } from 'react'
 import { ArrowDown, ArrowUpRight, Bot, ChevronRight, CircleHelp, Globe2, Menu, ShieldCheck, Sparkles, X } from 'lucide-react'
 import { LivingGlobe } from './LivingGlobe'
@@ -49,42 +52,7 @@ function Legal({ locale, back }: { locale: Locale, back: () => void }) { const i
 
 function PlayGateway({ locale, goto }: { locale: Locale, goto: (id: string) => void }) {
   const ru = locale === 'ru'
-  return <section className="play-gateway" id="play" aria-labelledby="play-title"><div className="play-gateway-head"><p className="eyebrow">02 / PLAY / OSGARD ENTERTAINMENT</p><h2 id="play-title">{ru ? 'Сначала игра. Затем следующий мир.' : 'Play first. Discover the next world.'}</h2><p>{ru ? 'Один живой вход в систему: короткая сессия, понятный результат и маршрут дальше.' : 'One living entry into the system: a short session, a clear result and a route forward.'}</p></div><div className="play-gateway-grid"><a className="play-feature" href="/play/world/null-shift"><span className="play-feature-art"><i/><b>NULL//SHIFT</b><small>THE BUILDING REMEMBERS.</small></span><span className="play-feature-copy"><em>BUILD PENDING / CO-OP CONCEPT</em><strong>{ru ? 'Измени реальность. Забери ядро.' : 'Change reality. Extract the core.'}</strong><span>{ru ? 'Сборка ожидается · запуск отключён' : 'Build pending · launch disabled'}</span></span><ArrowUpRight /></a><button className="play-challenge" onClick={() => goto('worlds')}><span><em>TODAY'S CHALLENGE</em><strong>{ru ? 'Открой один мир.' : 'Open one world.'}</strong><small>{ru ? 'Выбери задачу и получи следующий маршрут.' : 'Choose a task and receive the next route.'}</small></span><ChevronRight /></button><a className="play-catalog-link" href="/games/"><span><em>THE ARCHIVE</em><strong>{ru ? 'Все игры OSGARD' : 'All OSGARD games'}</strong></span><ArrowUpRight /></a></div></section>
-}
-
-function HeroTitle({ locale }: { locale: Locale }) {
-  const lines = locale === 'ru' ? ['Семь миров.', 'Одна система.'] : ['Seven worlds.', 'One system.']
-  let character = 0
-  return <h1 className="hero-title" aria-label={lines.join(' ')}>{lines.map((line, lineIndex) => <span className={lineIndex === 1 ? 'is-gold is-unbroken' : ''} key={line}>{[...line].map(letter => {
-    const delay = character++
-    return <i key={`${lineIndex}-${delay}`} style={{ '--delay': `${delay * 32}ms` } as CSSProperties}>{letter === ' ' ? '\u00a0' : letter}</i>
-  })}</span>)}</h1>
-}
-
-function PassportPanel({ locale, activeWorld, onOpenWorld }: { locale: Locale, activeWorld: number, onOpenWorld: (index: number) => void }) {
-  const ru = locale === 'ru'
-  const [opened, setOpened] = useState<number[]>(() => { try { return JSON.parse(localStorage.getItem('osgard-opened-worlds') || '[0]') } catch { return [0] } })
-  const open = (index: number) => { const next = Array.from(new Set([...opened, index])); setOpened(next); localStorage.setItem('osgard-opened-worlds', JSON.stringify(next)); onOpenWorld(index) }
-  return <section className="passport-panel" aria-labelledby="passport-title"><div className="passport-copy"><p className="eyebrow">OSGARD ID / PASSPORT</p><h2 id="passport-title">{ru ? 'Моя констелляция.' : 'My constellation.'}</h2><p>{ru ? 'Каждый открытый мир остаётся в вашей карте и ведёт к следующему.' : 'Every world you open stays on your map and points to the next.'}</p><div className="passport-stats"><strong>{opened.length}<small>{ru ? ' миров открыто' : ' worlds opened'}</small></strong><strong>1<small>{ru ? ' игра завершена' : ' game completed'}</small></strong><strong>{Math.max(0, 7 - opened.length)}<small>{ru ? ' сигналов осталось' : ' signals remain'}</small></strong></div></div><div className="passport-orbit">{worlds.map((world, index) => <button key={world.name} className={`${opened.includes(index) ? 'is-open' : ''}${activeWorld === index ? ' is-active' : ''}`} onClick={() => open(index)} aria-label={world.name}><span>{world.n}</span><b>{world.name}</b></button>)}</div></section>
-}
-
-export default function App() {
-  const [locale, setLocale] = useState<Locale>('ru'); const [menu, setMenu] = useState(false); const [legal, setLegal] = useState(location.hash === '#timecoin-rules'); const [hours, setHours] = useState(8); const [ready, setReady] = useState(false); const [activeWorld, setActiveWorld] = useState(0); const t = locale === 'ru' ? { ...copy.ru, nav: ['Миры', 'AURUM', 'TimeCoin', 'Правила'], enter: 'Войти в OSGARD', learn: 'Исследовать экосистему', aurum: 'AURUM — Архитектор экосистемы.', aurumText: 'Координационный интеллект помогает видеть связь между продуктами и выбирать следующий шаг.', coin: 'TimeCoin. Активность в одном мире открывает возможности в семи.', coinText: 'Внутренняя бонусная единица OSGARD для доступа, статуса и специальных условий.', club: 'Ранний доступ для тех, кто хочет создавать вместе.', honest: 'Прозрачные условия. Без громких обещаний.', legal: 'Правила TimeCoin' } : copy.en; const active = worlds[activeWorld]
-  useEffect(() => {
-    const handleTap = (event: MouseEvent | TouchEvent) => {
-      const point = 'touches' in event ? event.touches[0] : event
-      if (!point) return
-      const wave = document.createElement('span')
-      wave.className = 'tap-wave'
-      wave.style.left = `${point.clientX}px`
-      wave.style.top = `${point.clientY}px`
-      document.body.appendChild(wave)
-      window.setTimeout(() => wave.remove(), 700)
-    }
-    document.addEventListener('click', handleTap)
-    document.addEventListener('touchstart', handleTap, { passive: true })
-    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    const parallax = (event: PointerEvent) => { if (reduced) return; document.documentElement.style.setProperty('--pointer-x', `${(event.clientX / window.innerWidth - .5) * 2}`); document.documentElement.style.setProperty('--pointer-y', `${(event.clientY / window.innerHeight - .5) * 2}`) }
+  return <section className="play-gateway" id="play" aria-labelledby="play-title"><div className="play-gateway-head"><p className="eyebrow">02 / PLAY / OSGARD ENTERTAINMENT</p><h2 id="play-title">{ru ? 'Сначала игра. Затем следующий мир.' : 'Play first. Discover the next world.'}</h2><p>{ru ? 'Один живой вход в систему: короткая сессия, понятный результат и маршрут дальше.' : 'One living entry into the system: a short session, a clear result and a route forward.'}</p></div><div className="play-gateway-grid"><a className="play-feature" href="/games/null-shift-godot/"><span className="play-feature-art">…1328 tokens truncated…{(event.clientY / window.innerHeight - .5) * 2}`) }
     window.addEventListener('pointermove', parallax, { passive: true })
     return () => {
       document.removeEventListener('click', handleTap)

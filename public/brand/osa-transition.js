@@ -21,7 +21,7 @@
  if(!pending||pending.path!==normalize(location.pathname)||!Number.isFinite(pending.at)||Date.now()-pending.at>5000||!name[pending.theme]||reduced())return;
  let mounted=false,observer;
  const mount=()=>{if(mounted||!document.body||reduced())return;const root=document.getElementById('root');if(root&&!root.childElementCount)return;mounted=true;
- const overlay=document.createElement('div');overlay.className='osgard-portal-transition portal-'+pending.theme+(pending.game?' portal-game':'');overlay.setAttribute('aria-hidden','true');
+ const overlay=document.createElement('div');overlay.className='osa5-transition-overlay osgard-portal-transition portal-'+pending.theme+(pending.game?' portal-game':'');overlay.setAttribute('aria-hidden','true');
  const image=document.createElement('img');image.src='/brand/portal-'+pending.theme+'.svg';image.alt='';
  const label=document.createElement('span');label.textContent=name[pending.theme];overlay.append(image,label);document.body.append(overlay);
  requestAnimationFrame(()=>requestAnimationFrame(()=>overlay.classList.add('portal-reveal')));setTimeout(()=>overlay.remove(),520);observer?.disconnect();

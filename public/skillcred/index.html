@@ -1,3 +1,6 @@
+Warning: truncated output (original token count: 10984)
+Total output lines: 185
+
 <!doctype html>
 <html lang="ru" class="js-ready">
 <head>
@@ -19,7 +22,7 @@
   <a class="skip-link" href="#main">Перейти к содержимому</a>
   <header class="site-header">
     <div class="header-inner">
-      <a class="ecosystem-backlink" href="/portal" aria-label="OSGARD WORLD — ecosystem portal"><img src="/brand/osa-5-mark.svg" alt="" width="25" height="25"><span>OSGARD WORLD</span></a>
+      <a class="ecosystem-backlink" href="/portal" aria-label="OSGARD WORLD — ecosystem portal"><img src="/brand/portal-world.svg" alt="" width="25" height="25"><span>OSGARD WORLD</span></a>
       <a class="wordmark" href="/skillcred/" aria-label="SkillCred — на главную">
         <span class="brand-glyph" aria-hidden="true"><svg viewBox="0 0 28 28" fill="none"><path d="M14 2.5 25 8v12L14 25.5 3 20V8L14 2.5Z" stroke="currentColor"/><path d="m8 14 4 4 8-9" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
         <span>skillcred<span class="wordmark-period">.</span></span>
@@ -108,30 +111,7 @@
           <div class="action-stack">
             <button class="action-button" id="issueBtn" type="button"><span class="action-number">01</span><span class="action-copy"><strong>Выдать удостоверение</strong><small>POST /demo/issue</small></span><span class="action-stamp stamp-pending" id="issueStamp" aria-hidden="true">WAIT</span><span class="action-arrow" aria-hidden="true">↗</span></button>
             <button class="action-button" id="verifyBtn" type="button" disabled><span class="action-number">02</span><span class="action-copy"><strong>Проверить подпись</strong><small>POST /demo/verify</small></span><span class="action-stamp stamp-pending" id="verifyStamp" aria-hidden="true">WAIT</span><span class="action-arrow" aria-hidden="true">↗</span></button>
-            <button class="action-button" id="revokeBtn" type="button" disabled><span class="action-number">03</span><span class="action-copy"><strong>Отозвать документ</strong><small>POST /demo/revoke</small></span><span class="action-stamp stamp-pending" id="revokeStamp" aria-hidden="true">WAIT</span><span class="action-arrow" aria-hidden="true">↗</span></button>
-          </div>
-          <div class="demo-result" id="demoResult" role="status" aria-live="polite">Подключаемся к API и проверяем состояние демо-издателя.</div>
-          <div class="api-status"><span class="status-dot"></span><span id="apiStatus">API: соединение не подтверждено</span><span class="api-status-version">0.3.0</span></div>
-          <div class="demo-disclaimer">Только синтетический документ. Не отправляйте сюда реальные персональные данные.</div>
-          <div class="download-row"><button class="text-button" type="button" id="downloadBtn" disabled>Скачать JSON-LD ↓</button><button class="text-button" type="button" id="restartBtn">Сбросить шаги ↺</button></div>
-        </aside>
-        <div class="demo-result-column">
-          <div class="result-column-head"><div><span class="mono-label">LIVE CREDENTIAL</span><h3>Удостоверение</h3></div><span class="format-pill">JSON-LD</span></div>
-          <article class="demo-credential" id="demoCard" aria-busy="false">
-            <div class="demo-credential-top"><div class="mini-brand"><span class="mini-brand-mark">s.</span><span>SKILLCRED <small>OPEN BADGES 3.0</small></span></div><span class="badge-status status-pending" id="badgeStatus">ОЖИДАНИЕ</span></div>
-            <div class="demo-credential-main"><span class="mono-label">ACHIEVEMENT / 001</span><h3 id="badgeTitle">Практическая безопасность</h3><p id="badgeDescription">Переносимое цифровое подтверждение навыка.</p><div class="demo-credential-bottom"><div><span>ИЗДАТЕЛЬ</span><strong id="badgeIssuer">SkillCred Demo Issuer</strong></div><div><span>IDENTIFIER</span><code id="badgeId">ОЖИДАЕМ ВЫПУСКА</code></div></div></div>
-            <div class="demo-card-foot"><span class="seal-small" aria-hidden="true">S</span><span><strong id="demoProofLabel">Подпись ещё не проверена</strong><small id="demoProofSub">Результат появится после ответа API</small></span><span class="mini-corner">SC / 0.3</span></div>
-          </article>
-          <div class="transparency-panel"><div class="transparency-head"><div><span class="mono-label">DOCUMENT INSPECTOR</span><strong>Структура и доказательство</strong></div><span class="inspector-tip">Наводите на поля</span></div><pre class="json-inspector" id="credentialJson" tabindex="0" aria-label="Содержимое удостоверения в формате JSON-LD"><code>{
-  "@context": "https://www.w3.org/ns/credentials/v2",
-  "type": ["VerifiableCredential", "OpenBadgeCredential"],
-  "proof": "ожидаем ответ API"
-}</code></pre><p class="field-explainer" id="fieldExplainer" aria-live="polite">Выберите поле JSON, чтобы понять его роль.</p></div>
-        </div>
-      </div>
-
-      <div class="signature-clock" id="signatureClock" aria-labelledby="clockTitle">
-        <div class="clock-copy"><div class="act-label act-label-inline"><span>↳</span><span class="act-rule"></span><span>УНИКАЛЬНЫЙ ИНСТРУМЕНТ</span></div><h3 class="clock-title kinetic-heading" id="clockTitle">Живой след<br><span class="title-soft">проверки подписи.</span></h3><p>Нажмите «Проверить» и проследите за четырьмя этапами. Это визуализация серверного процесса, а не выдуманные миллисекунды для каждого этапа.</p><div class="clock-measure"><span>ОБЩЕЕ ВРЕМЯ ОТВЕТА API</span><strong id="timeElapsed">— <small>мс</small></strong></div><p class="clock-footnote">Измеряется полный запрос от браузера до получения ответа. Внутренние времена этапов API отдельно не публикует.</p></div>
+            <button class="action-button" id="revokeBtn" type="button" disabled><span class="action-number">03</span><span class="action-copy"><strong>Отозвать документ</strong><small>POST /…984 tokens truncated…sure"><span>ОБЩЕЕ ВРЕМЯ ОТВЕТА API</span><strong id="timeElapsed">— <small>мс</small></strong></div><p class="clock-footnote">Измеряется полный запрос от браузера до получения ответа. Внутренние времена этапов API отдельно не публикует.</p></div>
         <div class="clock-visual"><div class="clock-scale"><span>REQUEST</span><span>SERVER-SIDE VERIFICATION</span><span>RESPONSE</span></div><div class="clock-track" id="clockTrack" aria-label="Четыре этапа проверки"><svg class="clock-track-svg" viewBox="0 0 2 100" preserveAspectRatio="none" aria-hidden="true"><path class="clock-track-baseline" d="M1 0V100"/><path class="clock-track-progress" id="clockProgress" pathLength="100" d="M1 0V100"/></svg>
           <div class="clock-stage" data-clock-step="0"><span class="clock-point">01</span><div><strong>JCS</strong><small>Канонизация данных</small></div><code>RFC 8785</code></div>
           <div class="clock-stage" data-clock-step="1"><span class="clock-point">02</span><div><strong>Ed25519</strong><small>Проверка подписи</small></div><code>CRYPTO</code></div>
