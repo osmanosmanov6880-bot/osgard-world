@@ -104,14 +104,14 @@ jobs:
           for root in /usr/share/nginx/html /var/www/html /app/dist /opt/osgard-games/dist /srv/games; do
             if [ -d "$root" ]; then
               echo "ROOT $root"
-              find "$root" -maxdepth 10 -type f \\( -name index.html -o -iname "*.pck" -o -iname "*.wasm" -o -iname "*.zip" -o -path "*/games/*" -o -path "*/play/*" \\) -print | sort | sed -n "1,1200p"
+              find "$root" -maxdepth 10 -type f \( -name index.html -o -iname "*.pck" -o -iname "*.wasm" -o -iname "*.zip" -o -path "*/games/*" -o -path "*/play/*" \) -print | sort | sed -n "1,1200p"
             fi
           done
           ' 2>&1
           for route in / /games/ /play/; do
             code="$(curl -sS -o /tmp/osgard-game-probe -w '%{http_code}' --max-time 5 "http://127.0.0.1:4190$route" 2>/dev/null)"
             bytes="$(wc -c < /tmp/osgard-game-probe 2>/dev/null)"
-            printf 'game_container_route=%s status=%s bytes=%s\\n' "$route" "${code:-connection_failed}" "${bytes:-0}"
+            printf 'game_container_route=%s status=%s bytes=%s\n' "$route" "${code:-connection_failed}" "${bytes:-0}"
           done
           REMOTE
 
