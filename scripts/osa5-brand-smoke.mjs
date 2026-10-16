@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
+import { runTransitionBehaviorChecks } from './osa-transition-behavior-smoke.mjs'
 const read = path => readFileSync(path, 'utf8')
 const mark = read('src/BrandMark.tsx')
 const logo = read('src/OsgardLogo.tsx')
@@ -40,6 +41,13 @@ const deployWorkflow = read('.github/workflows/deploy-frontend.yml')
 const brandWorkflow = read('.github/workflows/osa5-design-validation.yml')
 const skillJs = read('public/skillcred/app.js')
 
+// Catch binary transport corruption before publishing; browser checks also
+// decode and load the actual font so a valid header alone is not sufficient.
+const interFont = readFileSync('public/brand/fonts/InterVariable.woff2')
+assert.ok(interFont.length >= 48, 'Inter must contain the complete WOFF2 header')
+assert.equal(interFont.subarray(0, 4).toString('ascii'), 'wOF2', 'Inter must be a WOFF2 font, not truncated tool output')
+assert.equal(interFont.readUInt32BE(8), interFont.length, 'Inter WOFF2 declared length must match its complete binary payload')
+
 assert.ok(mark.includes('viewBox="0 0 64 64"') && mark.includes('M49.7 14.3A25 25 0 1 0 57 32') && mark.includes("theme==='intelligence'&&<circle"), 'Shared portal geometry and the OSA lens variant must be present')
 assert.ok(logo.includes("import { BrandMark } from './BrandMark'") && logo.includes('<BrandMark className="osgard-logo-symbol" />') && logo.includes('OSGARD WORLD'), 'OSGARD logo must use the shared master mark and keep its product lockup')
 assert.ok(intro.includes('osgard-preloader-seen-v3') && intro.includes('if (shouldSkipIntro) return null') && intro.includes("prefers-reduced-motion: reduce"), 'Intro must be session-limited and skipped for reduced-motion users')
@@ -48,8 +56,10 @@ assert.ok(!intro.includes('Sound on') && !intro.includes('5000'), 'Intro cannot 
 assert.ok(app.includes('className="osgard-world-app"') && app.includes('<OSAMark variant="mark" className="osgard-ecosystem-mark" />'), 'OSGARD portal must carry the shared mark')
 assert.ok(home.includes("import { OSAMark } from './OSAMark'") && home.includes('href="/lectures"') && !home.includes('Brain size={20}'), 'OSA Intelligence must use the shared mark and expose the lecture library')
 assert.ok(tokens.includes('--osa5-champagne') && tokens.includes('prefers-reduced-motion') && tokens.includes('.osgard-world-app .world-selector button.is-active'), 'Design tokens must include palette profiles, focus and motion')
-assert.ok(transition.includes('sessionStorage') && transition.includes('prefers-reduced-motion') && transition.includes("a.relList.contains('external')"), 'Cross-portal transition must be one-shot and motion-aware')
-assert.ok(transition.includes('setTimeout(()=>overlay.remove(),520)'), 'Transition overlay must have a bounded lifetime')
+// Minification changes names and quoting. The actual runtime must still obey
+// guards, one-shot consumption, reduced motion and a short overlay lifetime.
+const transitionChecks = runTransitionBehaviorChecks()
+assert.ok(Buffer.byteLength(transition, 'utf8') <= 4096, 'Transition must fit the 4096-byte uncompressed delivery budget')
 assert.ok(portalStyles.includes('.osa5-transition-overlay{') && portalStyles.includes('prefers-reduced-motion'), 'Static portals must style the transition overlay and respect reduced motion')
 assert.ok(icon.includes('viewBox="0 0 64 64"') && icon.includes('M18 7.5h20.5L52 21'), 'Static icon must share the mark geometry')
 assert.ok(html.includes('/brand/favicon.svg') && html.includes('/brand/osa-transition.js'), 'React entry must load the common favicon and transition')
@@ -78,7 +88,6 @@ assert.ok(ecosystemSmoke.includes('MERAKKI case must provide a direct WhatsApp p
 assert.ok(deployWorkflow.includes('REMOTE_RELEASE_DIR="/tmp/osgard-gh-release-${GITHUB_RUN_ID}"') && deployWorkflow.includes('REMOTE_SCRIPT="/tmp/activate-frontend-remote-${GITHUB_RUN_ID}.sh"'), 'OSA branch must retain master deployment concurrency safeguards')
 assert.ok(legacyStyles.indexOf("import './osa5-brand.css'") > legacyStyles.indexOf("import './stream.css'"), 'OSA 5.0 overrides must load after product-specific styles')
 assert.ok((read('public/entertainment/index.html')).includes('ELBRUS') || (read('public/entertainment/index.html')).toLowerCase().includes('elbrus'), 'Latest entertainment catalogue must retain the Elbrus case')
-assert.ok(transition.includes('e.metaKey') && transition.includes('e.ctrlKey') && transition.includes("a.hasAttribute('download')") && transition.includes('to.origin!==location.origin'), 'Transitions must not hijack modified, download or external navigation')
 assert.ok(portalStyles.includes('pointer-events:none') && portalStyles.includes('.osa5-transition-overlay.is-leaving'), 'Transition overlays must remain non-interactive and self-dismiss visually')
 assert.ok(games.includes('id="menu-toggle"') && games.includes('id="mobile-nav"') && games.includes('./player-lifecycle.js'), 'Current games hub must retain keyboard-operable mobile navigation and player lifecycle')
 assert.ok(skillJs.includes('/skillcred-api') && skill.includes('/skillcred/app.js'), 'SkillCred branding must not replace the existing same-origin API client')
@@ -87,7 +96,6 @@ assert.ok(deployWorkflow.includes('group: osgard-frontend-deploy') && !deployWor
 assert.ok(brandWorkflow.includes('Build production bundle without deploying') && !brandWorkflow.includes('vercel deploy --prod'), 'Brand validation must build and test without deploying production')
 assert.ok(html.includes('name="theme-color" content="#F3F4F1"') && html.includes('rel="icon" href="/brand/favicon.svg"'), 'OSGARD WORLD entry metadata must use its palette and common icon')
 assert.ok(html.includes('name="osgard-app" content="osgard-ecosystem"'), 'OSGARD entry must retain the production deployment identity marker')
-assert.ok(transition.includes("p.startsWith('/learning')") && transition.includes("p.startsWith('/games')") && transition.includes("return 'world'"), 'Transition routing must classify OSA and Play paths and give development, TEDES and other studio cases the World identity')
 const standaloneCases = [['TEDES Studio', tedesStudio], ['TEDES catalog', tedesCatalog], ['TEDES collections', tedesCollections], ['TEDES product', tedesProduct], ['TEDES materials', tedesMaterials], ['TEDES project workspace', tedesProject], ['TEDES case', tedesCase], ['MERAKKI RU', merakkiCase], ['MERAKKI EN', merakkiEnglish], ['MERAKKI AR', merakkiArabic], ['ELBRUS RU', elbrusCase], ['ELBRUS EN', elbrusEnglish], ['ELBRUS AR', elbrusArabic]]
 for (const [name, page] of standaloneCases) assert.ok(page.includes('/brand/osa5-portals.css') && page.includes('/brand/osa-transition.js'), name + ' must use the shared non-invasive transition bridge')
 assert.ok(tedesCase.includes('crossorigin>\n<link') && !tedesCase.includes('crossorigin>\\n<link'), 'TEDES case head must not contain a literal escaped newline between metadata tags')
@@ -99,4 +107,4 @@ assert.ok(merakkiArabic.includes('<html lang="ar" dir="rtl"') && merakkiArabic.i
 assert.ok(elbrusEnglish.includes('lang="en"') && elbrusEnglish.includes('aria-current="page"') && elbrusEnglish.includes('href="/entertainment/elbrus/ar/"'), 'English ELBRUS case must keep language navigation and canonical locale')
 assert.ok(elbrusArabic.includes('lang="ar"') && elbrusArabic.includes('dir="rtl"') && elbrusArabic.includes('aria-current="page"'), 'Arabic ELBRUS case must keep RTL document direction and language state')
 assert.ok(brandWorkflow.includes("'public/tedes/**'") && brandWorkflow.includes("'public/development/**'"), 'Standalone case pages must trigger the OSA validation workflow')
-console.log('PASS OSA 5.0 design contract: shared SVG identity, preserved routes, short intro and bounded portal transitions')
+console.log('PASS OSA 5.0 design contract: shared SVG identity, preserved routes, short intro and ' + transitionChecks.checks + ' portal runtime checks')

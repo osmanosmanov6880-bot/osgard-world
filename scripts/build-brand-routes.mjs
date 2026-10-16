@@ -1,8 +1,12 @@
 import { readFile,writeFile,mkdir } from 'node:fs/promises'
+import { build } from 'esbuild'
+const catalogBundle=await build({entryPoints:['src/redesignCatalog.ts'],bundle:true,write:false,format:'esm',platform:'node'})
+const {playGames}=await import('data:text/javascript;base64,'+Buffer.from(catalogBundle.outputFiles[0].text).toString('base64'))
 const template=await readFile('dist/index.html','utf8')
 const routes=[
  ['teams','OSGARD Core — команды','Командные пространства, роли и подключение проектов.','world'],
  ['deliveries','OSGARD — полученные материалы','Изолированная передача выпуска и обсуждение без доступа к внутреннему проекту.','world'],
+ ['purchases','OSGARD — мои покупки','Состояние заказа, подтверждённая оплата и доступ к приобретённому результату.','world'],
  ['workspace/overview','OSGARD Core — рабочий центр','Состояние доступных проектов, очередь проверок, расходы и следующий шаг.','world'],
  ['account','OSGARD Core — аккаунт и доступ','Сессии, смена пароля и резервные коды восстановления.','world'],
  ['learning/organizer','OSA — организация пилота и очередь разборов','Назначения проверяющих, сроки и отчёты по сохранённым учебным данным.','intelligence'],
@@ -17,7 +21,7 @@ const routes=[
  ['brand','OSGARD — фирменная система','Мастер-знак, продуктовые версии, favicon и правила движения.','world'],
  ['data','OSGARD — ваши данные','Резервная копия и восстановление прогресса, проектов и коллекции PLAY.','world'],
  ['quality','OSGARD — состояние локальной сборки','Фактические возможности, ограничения и локальный журнал действий.','world'],
- ...['vector-zero','time','swarm','inherit','remix','null-shift'].map(id=>['play/world/'+id,'OSGARD PLAY — '+id.toUpperCase(),'Управление, платформа и состояние игрового клиента '+id+'.','play']),
+ ...playGames.map(game=>['play/world/'+game.id,game.title+' — OSGARD PLAY',game.description+' '+game.platform+'. Инструкция, сохранение и запуск.','play']),
  ['academy','OSA — Академия','Практика, учебные маршруты и проекты OSA.','intelligence'],
  ['osa-cinema','OSA Original — интерактивный курс','Восемь сцен, выборы и самопроверка. Прогресс сохраняется в браузере.','intelligence'],
  ['portal','OSGARD — портал экосистемы','Сохранённый портал направлений OSGARD.','world'],
@@ -31,8 +35,9 @@ for(const [path,label]of legacyRoutes)if(!routes.some(r=>r[0]===path))routes.pus
 const esc=v=>v.replaceAll('&','&amp;').replaceAll('"','&quot;').replaceAll('<','&lt;')
 for(const [path,title,description,theme] of routes){
  let html=template.replace(/<title>.*?<\/title>/,`<title>${esc(title)}</title>`)
- for(const [selector,value] of [['name="description"',description],['property="og:title"',title],['property="og:description"',description],['property="og:url"','https://osgard.world/'+path],['property="og:image"','https://osgard.world/brand/preview-'+theme+'.png'],['name="twitter:title"',title],['name="twitter:description"',description],['name="twitter:image"','https://osgard.world/brand/preview-'+theme+'.png']]){
-  const regex=new RegExp(`(<meta ${selector} content=")[^"]*("[^>]*>)`);html=html.replace(regex,(_,a,b)=>a+esc(value)+b)
+ const privateRoute=['account','workspace','workspace/overview','teams','deliveries','purchases','data','learning/campus','learning/organizer'].includes(path)
+ for(const [selector,value] of [['name="robots"',privateRoute?'noindex,follow':'index,follow'],['name="description"',description],['name="twitter:card"','summary_large_image'],['property="og:image:alt"',title],['property="og:title"',title],['property="og:description"',description],['property="og:url"','https://osgard.world/'+path],['property="og:image"','https://osgard.world/brand/preview-'+theme+'.png'],['name="twitter:title"',title],['name="twitter:description"',description],['name="twitter:image"','https://osgard.world/brand/preview-'+theme+'.png']]){
+  const regex=new RegExp(`(<meta ${selector} content=")[^"]*("[^>]*>)`);html=regex.test(html)?html.replace(regex,(_,a,b)=>a+esc(value)+b):html.replace('</head>',`<meta ${selector} content="${esc(value)}"/>\n</head>`)
  }
  html=html.replace(/(<link rel="canonical" href=")[^"]+/,`$1https://osgard.world/${path==='games'||path==='entertainment'?'play':path}`)
  html=html.replace('<html lang="ru">',`<html lang="ru" data-product="${theme}">`)

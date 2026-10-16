@@ -8,6 +8,10 @@ RUN groupadd --system --gid 10001 osgard \
     && install -d -o osgard -g osgard /app/server /app/empty /var/lib/osgard-core \
     && printf '%s\n' '<!doctype html><title>OSGARD Core API</title>' > /app/empty/index.html
 
+COPY server/requirements.txt /tmp/osgard-core-requirements.txt
+RUN pip install --no-cache-dir --disable-pip-version-check -r /tmp/osgard-core-requirements.txt \
+    && rm /tmp/osgard-core-requirements.txt
+
 COPY --chown=osgard:osgard server/ /app/server/
 
 WORKDIR /app/server

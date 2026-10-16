@@ -11,6 +11,15 @@ core_volume="osgard-core-data"
 core_network=""
 core_replaced=0
 core_started=0
+core_commerce_env="/etc/osgard/core-commerce.env"
+core_commerce_args=()
+if [[ -f "$core_commerce_env" ]]; then
+  if [[ "$(stat -c '%u:%a' "$core_commerce_env")" != "0:600" ]]; then
+    echo 'The optional Core commerce configuration must be owned by root with mode 600.' >&2
+    exit 1
+  fi
+  core_commerce_args=(--env-file "$core_commerce_env")
+fi
 api_gateway="$(docker inspect --format '{{range $name, $conf := .NetworkSettings.Networks}}{{println $conf.Gateway}}{{end}}' "$container_name" | awk 'NF { print $1; exit }')"
 if [[ -z "$api_gateway" ]]; then
   echo "Unable to determine the Docker gateway for $container_name" >&2
@@ -101,7 +110,11 @@ rollback() {
       exit 1
     fi
     docker stop osgard-core-api >/dev/null
-    docker rename osgard-core-api "$core_previous"
+    if ! docker rename osgard-core-api "$core_previous"; then
+      echo 'Unable to preserve the stopped Core container; restarting the existing API.' >&2
+      docker start osgard-core-api >/dev/null
+      exit 1
+    fi
     core_replaced=1
   fi
   if [[ "$core_replaced" != "1" ]]; then
@@ -123,6 +136,7 @@ rollback() {
     --restart unless-stopped --init --read-only --security-opt no-new-privileges --cap-drop ALL \
     --pids-limit 128 --memory 768m --cpus 1.0 --tmpfs /tmp:size=16m,noexec,nosuid \
     --mount "type=volume,src=$core_volume,dst=/var/lib/osgard-core" \
+    "${core_commerce_args[@]}" \
     -e OSGARD_CORE_PUBLIC_ORIGIN=https://osgard.world "$core_image"; then
     rollback
     exit 1

@@ -13,9 +13,10 @@ const viewports = [
   { name: 'mobile', width: 390, height: 844 }
 ]
 const routes = [
-  { name: 'world', path: '/', selector: '.world-home' },
-  { name: 'intelligence', path: '/intelligence', selector: '.intelligence-home' },
-  { name: 'portal', path: '/portal', selector: '.world-home' },
+  { name: 'world', path: '/', selector: '.world-home', heading: /Цифровые продукты/, product: 'OSGARD' },
+  { name: 'intelligence', path: '/intelligence', selector: '.intelligence-home', heading: /Понимать ИИ/, product: 'Intelligence' },
+  { name: 'play', path: '/play', selector: '.play-home', heading: /ДОБАВЬ ТЕНЬ/, product: 'Play' },
+  { name: 'portal', path: '/portal', selector: '.world-home', heading: /Цифровые продукты/, product: 'OSGARD' },
   { name: 'academy', path: '/academy', selector: 'body' },
   { name: 'lectures', path: '/lectures', selector: '.lecture-library' },
   { name: 'lesson-detail', path: '/lectures/intelligence-and-imitation', selector: '.osa-lesson-page' },
@@ -66,6 +67,16 @@ try {
 
         await page.locator(route.selector).first().waitFor({ state: 'attached', timeout: 12000 })
         await page.waitForTimeout(180)
+        if (route.heading) {
+          await page.getByRole('heading', { level: 1, name: route.heading }).waitFor({ state: 'visible', timeout: 5000 })
+          const products = page.getByRole('navigation', { name: 'Продукты OSGARD', exact: true })
+          for (const [name, href] of [['OSGARD', '/'], ['Intelligence', '/intelligence'], ['Play', '/play'], ['Development', '/development']]) {
+            const link = products.getByRole('link', { name, exact: true })
+            if (await link.getAttribute('href') !== href) problems.push(route.name + ': missing product route ' + name)
+          }
+          const current = await products.getByRole('link', { name: route.product, exact: true }).getAttribute('aria-current')
+          if (!['page', 'location'].includes(current)) problems.push(route.name + ': active product is not exposed in navigation')
+        }
         const title = await page.title()
         if (!title.trim()) problems.push(route.name + ' @ ' + viewport.name + ': empty document title')
 
@@ -105,7 +116,7 @@ try {
           if (english !== 'en') problems.push('MERAKKI English @ ' + viewport.name + ': expected lang=en')
         }
         if (viewport.name === 'mobile' && route.name === 'portal') {
-          const motion = page.locator('.brand-motion')
+          const motion = page.getByRole('button', { name: 'Меньше движения', exact: true })
           if (!(await motion.isDisabled()) || (await motion.getAttribute('aria-pressed')) !== 'true') {
             problems.push('portal @ mobile: system reduced-motion preference did not disable optional motion')
           }
@@ -201,7 +212,7 @@ try {
   const transitionPage = await transitionContext.newPage()
   try {
     await transitionPage.goto(base + '/play', { waitUntil: 'domcontentloaded', timeout: 25000 })
-    const brandLink = transitionPage.locator('.brand-global-nav a[href="/"]').first()
+    const brandLink = transitionPage.getByRole('navigation', { name: 'Продукты OSGARD', exact: true }).getByRole('link', { name: 'OSGARD', exact: true })
     await brandLink.waitFor({ state: 'visible', timeout: 5000 })
     await Promise.all([
       transitionPage.waitForURL(url => url.pathname === '/', { timeout: 12000 }),
@@ -310,6 +321,7 @@ try {
   const accessibilityPage = await accessibilityContext.newPage()
   try {
     await accessibilityPage.goto(base + '/', { waitUntil: 'domcontentloaded', timeout: 25000 })
+    await accessibilityPage.getByRole('heading', { level: 1, name: /Цифровые продукты/ }).waitFor({ state: 'visible', timeout: 8000 })
     await accessibilityPage.keyboard.press('Tab')
     const skipFocused = await accessibilityPage.evaluate(() => document.activeElement?.matches('.brand-skip') === true)
     if (!skipFocused) problems.push('keyboard: first Tab did not focus the skip link')
@@ -317,13 +329,20 @@ try {
     if (!skipVisible) problems.push('keyboard: focused skip link is not visible in the viewport')
     await accessibilityPage.keyboard.press('Enter')
     await accessibilityPage.waitForFunction(() => location.hash === '#product-main', null, { timeout: 5000 })
-    const motion = accessibilityPage.locator('.brand-motion')
+    const motion = accessibilityPage.getByRole('button', { name: 'Меньше движения', exact: true })
     await motion.click()
-    if ((await motion.getAttribute('aria-pressed')) !== 'true' || !(await motion.textContent())?.includes('выкл.')) {
+    await accessibilityPage.waitForFunction(() => document.documentElement.dataset.motion === 'off')
+    if ((await motion.getAttribute('aria-pressed')) !== 'true' ||
+        await accessibilityPage.evaluate(() => localStorage.getItem('osgard:motion')) !== 'off') {
       problems.push('motion: user control did not turn optional animation off')
     }
+    await accessibilityPage.reload({ waitUntil: 'domcontentloaded' })
+    await motion.waitFor({ state: 'visible', timeout: 8000 })
+    if ((await motion.getAttribute('aria-pressed')) !== 'true') problems.push('motion: preference did not survive reload')
     await motion.click()
-    if ((await motion.getAttribute('aria-pressed')) !== 'false' || !(await motion.textContent())?.includes('вкл.')) {
+    await accessibilityPage.waitForFunction(() => document.documentElement.dataset.motion === 'on')
+    if ((await motion.getAttribute('aria-pressed')) !== 'false' ||
+        await accessibilityPage.evaluate(() => localStorage.getItem('osgard:motion')) !== 'on') {
       problems.push('motion: user control did not restore optional animation')
     }
   } catch (error) {

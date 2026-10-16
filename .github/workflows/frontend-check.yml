@@ -5,6 +5,13 @@ on:
     branches: [master]
     paths:
       - "src/**"
+      - "server/**"
+      - "scripts/core-*.py"
+      - "scripts/redesign-*.mjs"
+      - "scripts/zion-local-smoke.mjs"
+      - "scripts/ecosystem-*.spec.mjs"
+      - "playwright.ecosystem.config.mjs"
+      - "public/brand/**"
       - "public/development/index.html"
       - "public/development/osa-intelligence/**"
       - "public/osa-library/**"
@@ -63,6 +70,17 @@ jobs:
         run: npm ci
       - name: Type-check the frontend
         run: npm run check
+      - name: Verify three product surfaces and all game entry points
+        run: npm run qa:redesign
+      - name: Verify locally published ZION gameplay
+        run: npm run qa:zion-local
+      - name: Install pinned Core dependencies
+        run: python3 -m pip install -r server/requirements.txt
+      - name: Verify release integrity and payment recovery boundaries
+        run: |
+          npm run qa:core-readiness
+          npm run qa:core-commerce
+          npm run qa:stripe-sdk
       - name: Validate Development landing and prevent directory 403
         run: node scripts/development-index-smoke.mjs
       - name: Validate ESSENTIA commerce showcase
@@ -73,6 +91,8 @@ jobs:
         run: npm run qa:osa-intelligence-case
       - name: Build the production site
         run: npm run build
+      - name: Verify landing page budgets and route metadata
+        run: npm run qa:redesign-build
       - name: Verify live SkillCred page wiring
         run: npm run qa:skillcred
       - name: Verify Imperium of Time game systems and visual diagnostics
@@ -103,3 +123,37 @@ jobs:
         run: npm run qa:lectures
       - name: Validate static archive and HTML
         run: npm run preflight:frontend
+
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install locked application dependencies
+        run: npm ci
+      - name: Build the production site
+        run: npm run build
+      - name: Include the published static game catalog
+        run: cp -a public/games/. dist/games/
+      - name: Install pinned browser test tooling
+        run: |
+          npm install --no-save --package-lock=false @playwright/test@1.58.2
+          npx playwright install --with-deps chromium
+      - name: Check desktop and mobile user journeys
+        run: npx playwright test --config playwright.ecosystem.config.mjs
+      - name: Keep screenshots and browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: osgard-ecosystem-browser
+          path: |
+            browser-report/
+            test-results/
+          if-no-files-found: warn
+          retention-days: 14

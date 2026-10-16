@@ -39,12 +39,14 @@ const CommunitySurface = React.lazy(() => import('./CommunitySurface').then(asyn
 const StreamSurface = React.lazy(() => import('./StreamSurface').then(async m => { await import('./legacyStyles'); return { default: m.StreamSurface } }))
 
 import { recordBrandEvent } from './brandTelemetry'
+import { getPlayGame } from './redesignCatalog'
 import { BrandShell } from './BrandShell'
 const WorldHome = React.lazy(() => import('./WorldHome'))
 const IntelligenceHome = React.lazy(() => import('./IntelligenceHome'))
 const PlayHome = React.lazy(() => import('./PlayHome'))
 const TeamsPage = React.lazy(() => import('./TeamsPage'))
 const ClientPortal = React.lazy(() => import('./ClientPortal'))
+const PurchasesPage = React.lazy(() => import('./PurchasesPage'))
 const OperationsPage = React.lazy(() => import('./OperationsPage'))
 const AccountPage = React.lazy(() => import('./AccountPage'))
 const PilotOrganizer = React.lazy(() => import('./PilotOrganizer'))
@@ -106,6 +108,7 @@ Object.assign(cleanSeo, {
  '/learning/campus':{title:'OSA Learning — практика, итоговый проект и расписание',description:'Серверные учебные записи, снимки итоговой работы, разбор по рубрике и расписание пилота.'},
  '/teams':{title:'OSGARD Core — команды',description:'Командные пространства, роли и явное подключение проектов.'},
  '/deliveries':{title:'OSGARD — полученные материалы',description:'Изолированная передача выпуска и обсуждение без доступа к внутреннему проекту.'},
+ '/purchases':{title:'OSGARD — мои покупки',description:'Состояние заказа, подтверждённая оплата и доступ к приобретённому результату.'},
  '/workspace/overview':{title:'OSGARD Core — рабочий центр',description:'Состояние доступных проектов, очередь проверок, расходы и следующий шаг.'},
  '/account':{title:'OSGARD Core — аккаунт и доступ',description:'Сессии, смена пароля и резервные коды для восстановления доступа к серверному аккаунту.'},
  '/workspace':{title:'OSGARD Core — от цели к результату',description:'Контракт, серверные проекты, Learning, Studio и Business. Версии, разрешения и контроль бюджета.'},
@@ -115,19 +118,29 @@ Object.assign(cleanSeo, {
 
 function Seo({ path }: { path: string }) {
   React.useEffect(() => {
-    const game = path.startsWith('/play/world/') ? path.slice('/play/world/'.length) : null
+    const gameId = path.startsWith('/play/world/') ? path.slice('/play/world/'.length) : null
+    const game = gameId ? getPlayGame(gameId) : undefined
     const lessonTitles: Record<string,string> = {'intelligence-and-imitation':'Интеллект и имитация','how-language-models-work':'Как работают языковые модели','power-of-knowledge':'Власть знаний','signal-and-noise':'Сигнал и шум','verify-an-ai-answer':'Проверьте ответ ИИ','privacy-before-prompting':'Приватность до запроса','human-in-the-loop':'Человек в контуре','investigate-the-future':'Исследуйте будущее'}
     const lessonTitle = path.startsWith('/lectures/') ? lessonTitles[path.slice('/lectures/'.length)] : null
-    const data = lessonTitle ? {title:'OSA — '+lessonTitle,description:'Урок OSA: '+lessonTitle+'. Цели, материал, практика, самопроверка и источники.'} : (game ? { title: 'OSGARD PLAY — '+game.toUpperCase(), description: 'Инструкция, платформа, управление и статусы игрового мира '+game+'.' } : cleanSeo[path]) ?? (path.startsWith('/lectures/') ? { title: 'OSA Original — подробная лекция | OSGARD', description: 'Учебные цели, материал, словарь, самопроверка, практика и проверяемые источники OSA Original.' } : cleanSeo['/'])
+    const data = lessonTitle ? {title:'OSA — '+lessonTitle,description:'Урок OSA: '+lessonTitle+'. Цели, материал, практика, самопроверка и источники.'} : (game ? { title: game.title+' — OSGARD PLAY', description: game.description+' '+game.platform+'. Инструкция, сохранение и запуск.' } : gameId ? { title: 'Мир не найден — OSGARD PLAY', description: 'Такого мира нет в каталоге. Откройте OSGARD PLAY и выберите доступный проект.' } : cleanSeo[path]) ?? (path.startsWith('/lectures/') ? { title: 'OSA Original — подробная лекция | OSGARD', description: 'Учебные цели, материал, словарь, самопроверка, практика и проверяемые источники OSA Original.' } : cleanSeo['/'])
     const canonicalPath = path==='/entertainment'||path==='/games'?'/play':path
     const canonical = `https://osgard.world${canonicalPath === '/' ? '/' : canonicalPath}`
     document.title = data.title
     const setMeta = (selector: string, attribute: string, value: string) => {
       let element = document.head.querySelector<HTMLMetaElement>(selector)
-      if (!element) { element = document.createElement('meta'); document.head.appendChild(element) }
+      if (!element) {
+        element = document.createElement('meta')
+        const identity = /^meta\[(name|property)="([^"]+)"\]$/.exec(selector)
+        if (!identity) return
+        element.setAttribute(identity[1], identity[2])
+        document.head.appendChild(element)
+      }
       element.setAttribute(attribute, value)
     }
     setMeta('meta[name="description"]', 'content', data.description)
+    const privateRoute = ['/account','/workspace','/workspace/overview','/teams','/deliveries','/purchases','/data','/learning/campus','/learning/organizer'].includes(path)
+    setMeta('meta[name="robots"]', 'content', privateRoute || gameId && !game ? 'noindex,follow' : 'index,follow')
+    setMeta('meta[name="twitter:card"]', 'content', 'summary_large_image')
     setMeta('meta[property="og:title"]', 'content', data.title)
     setMeta('meta[property="og:description"]', 'content', data.description)
     setMeta('meta[property="og:url"]', 'content', canonical)
@@ -158,6 +171,7 @@ function RoutedContent() {
   if (path === '/intelligence') return <><Seo path={path} /><IntelligenceHome /></>
   if (path === '/teams') return <><Seo path={path} /><TeamsPage /></>
   if (path === '/deliveries') return <><Seo path={path} /><ClientPortal /></>
+  if (path === '/purchases') return <><Seo path={path} /><PurchasesPage /></>
   if (path === '/workspace/overview') return <><Seo path={path} /><OperationsPage /></>
   if (path === '/account') return <><Seo path={path} /><AccountPage /></>
   if (path === '/workspace') return <><Seo path={path} /><CoreWorkspace /></>

@@ -46,6 +46,7 @@ on:
       - "scripts/sync-swarm-assets.mjs"
       - "scripts/frontend-archive-preflight.mjs"
       - "scripts/production-route-matrix.mjs"
+      - "scripts/ecosystem-production-smoke.mjs"
       - "scripts/production-health-watch.mjs"
       - "scripts/activate-frontend-remote.sh"
       - "scripts/deploy-workflow-smoke.mjs"
@@ -60,6 +61,9 @@ on:
       - "scripts/time-prototype-smoke.mjs"
       - "scripts/null-shift-premium-smoke.mjs"
       - "scripts/games-portal-smoke.mjs"
+      - "scripts/zion-local-smoke.mjs"
+      - "scripts/redesign-*.mjs"
+      - "scripts/core-*.py"
       - "scripts/academy-home-smoke.mjs"
       - "scripts/lecture-library-smoke.mjs"
       - "scripts/osa-media-release-preflight.mjs"
@@ -87,11 +91,17 @@ jobs:
           fetch-depth: 2
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
       - run: npm ci
       - name: Validate deployment workflow safety checks
         run: npm run qa:deploy-workflow
       - run: npm run check
+      - name: Verify three product surfaces and all game entry points
+        run: npm run qa:redesign
+      - name: Verify locally published ZION gameplay
+        run: npm run qa:zion-local
+      - name: Install pinned Core dependencies
+        run: python3 -m pip install -r server/requirements.txt
       - name: Validate TEDES demo and portfolio page
         run: node scripts/tedes-case-smoke.mjs
       - name: Validate Development landing and prevent directory 403
@@ -129,6 +139,11 @@ jobs:
         run: npm run qa:osa-progress
       - name: Validate OSGARD Core API and SQLite operations
         run: npm run qa:core-api
+      - name: Verify release integrity and payment recovery boundaries
+        run: |
+          npm run qa:core-readiness
+          npm run qa:core-commerce
+          npm run qa:stripe-sdk
 
       - name: Validate the Godot game project contract
         run: npm run qa:null-shift-godot
@@ -186,6 +201,8 @@ jobs:
           /tmp/osgard-godot/Godot_v4.7.2-stable_linux.x86_64 --headless --path godot/null-shift --export-release Web "$GITHUB_WORKSPACE/public/games/null-shift-godot/index.html"
           node scripts/null-shift-godot-smoke.mjs --export-check public/games/null-shift-godot
       - run: npm run build
+      - name: Verify landing page budgets and route metadata
+        run: npm run qa:redesign-build
       - name: Verify precompressed shared-brand JavaScript
         run: npm run qa:brand-gzip
       - name: Verify OSA media inventory and publication gate
@@ -371,6 +388,10 @@ jobs:
           OSGARD_BASE_URL: https://osgard.world
           SKILLCRED_EXPECT_CURRENT_DESIGN: "1"
         run: npm run qa:production-routes
+      - name: Verify all world routes and exact published ZION assets
+        env:
+          OSGARD_BASE_URL: https://osgard.world
+        run: npm run qa:ecosystem-production
       - name: Verify versioned shared-brand assets are delivered with gzip
         env:
           ASSET_VERSION: ${{ github.sha }}

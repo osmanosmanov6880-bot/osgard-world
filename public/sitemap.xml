@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://osgard.world/</loc>
-    <lastmod>2026-10-15</lastmod>
+    <loc>https://osgard.world/</loc><lastmod>2026-10-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
@@ -29,7 +28,7 @@
   <url><loc>https://osgard.world/development/</loc><lastmod>2026-10-15</lastmod><changefreq>weekly</changefreq><priority>0.95</priority></url>
   <url><loc>https://osgard.world/development/osa-intelligence/</loc><lastmod>2026-10-15</lastmod><changefreq>monthly</changefreq><priority>0.85</priority></url>
   <url><loc>https://osgard.world/development</loc><lastmod>2026-09-23</lastmod><changefreq>weekly</changefreq><priority>0.9</priority></url>
-  <url><loc>https://osgard.world/games/</loc><lastmod>2026-10-13</lastmod><changefreq>weekly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://osgard.world/games/</loc><lastmod>2026-10-16</lastmod><changefreq>weekly</changefreq><priority>0.9</priority></url>
   <url><loc>https://osgard.world/games/empire-orbit/</loc><lastmod>2026-10-16</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://osgard.world/skillcred/</loc><lastmod>2026-10-11</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
   <url><loc>https://osgard.world/games/vector-zero/</loc><lastmod>2026-10-13</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>
@@ -66,8 +65,8 @@
   <url><loc>https://osgard.world/development/textura/en/</loc><lastmod>2026-10-15</lastmod><changefreq>monthly</changefreq><priority>0.75</priority></url>
   <url><loc>https://osgard.world/development/textura/ar/</loc><lastmod>2026-10-15</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://osgard.world/development/essentia/</loc><lastmod>2026-10-15</lastmod><changefreq>monthly</changefreq><priority>0.85</priority></url>
-  <url><loc>https://osgard.world/intelligence</loc></url>
-  <url><loc>https://osgard.world/play</loc></url>
+  <url><loc>https://osgard.world/intelligence</loc><lastmod>2026-10-16</lastmod></url>
+  <url><loc>https://osgard.world/play</loc><lastmod>2026-10-16</lastmod></url>
   <url><loc>https://osgard.world/play/partners</loc></url>
   <url><loc>https://osgard.world/brand</loc></url>
   <url><loc>https://osgard.world/quality</loc></url>
@@ -86,4 +85,17 @@
   <url><loc>https://osgard.world/workspace</loc></url>
   <url><loc>https://osgard.world/learning/campus</loc></url>
   <url><loc>https://osgard.world/learning/organizer</loc></url>
+  <url><loc>https://osgard.world/play/world/empire-orbit</loc><lastmod>2026-10-16</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://osgard.world/play/world/afterimage-run</loc><lastmod>2026-10-16</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://osgard.world/play/world/zion-020</loc><lastmod>2026-10-16</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://osgard.world/play/world/zion-021</loc><lastmod>2026-10-16</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://osgard.world/play/world/zion-022</loc><lastmod>2026-10-16</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://osgard.world/play/world/zion-023</loc><lastmod>2026-10-16</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://osgard.world/play/world/zion-024</loc><lastmod>2026-10-16</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://osgard.world/play/world/zion-025</loc><lastmod>2026-10-16</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://osgard.world/play/world/zion-026</loc><lastmod>2026-10-16</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://osgard.world/play/world/zion-027</loc><lastmod>2026-10-16</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://osgard.world/play/world/zion-028</loc><lastmod>2026-10-16</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://osgard.world/play/world/zion-029</loc><lastmod>2026-10-16</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://osgard.world/play/world/zion-030</loc><lastmod>2026-10-16</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
 </urlset>

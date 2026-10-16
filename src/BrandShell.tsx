@@ -1,16 +1,105 @@
-import { useEffect,useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { BrandLockup } from './BrandMark'
-import { brandBreadcrumbs,globalNavigationState } from './brandNavigation'
+import { brandAreaForPath, brandBreadcrumbs, globalNavigationState } from './brandNavigation'
+import { getPlayGame } from './redesignCatalog'
 import type { ProductTheme } from './BrandMark'
 import './brandFonts.css'
 import './brandSystem.css'
-export function BrandShell({theme,children}:{theme:ProductTheme;children:ReactNode}){
- const [motion,setMotion]=useState(()=>{try{return localStorage.getItem('osgard:motion')!=='off'}catch{return true}})
- useEffect(()=>{document.documentElement.dataset.product=theme;document.documentElement.lang='ru';return()=>{delete document.documentElement.dataset.product}},[theme])
- const [reduced,setReduced]=useState(false)
- useEffect(()=>{const media=matchMedia('(prefers-reduced-motion: reduce)');const update=()=>setReduced(media.matches);update();media.addEventListener('change',update);return()=>media.removeEventListener('change',update)},[])
- const crumbs=brandBreadcrumbs(location.pathname,theme)
- const local=theme==='world'?[['Продукты','/#products'],['Кейсы','/#cases'],['Подход','/#approach'],['О компании','/#about'],['Контакт','/#contact']]:theme==='intelligence'?[['Метод','/intelligence#method'],['Демонстрация','/intelligence#demo'],['Программа','/learning/program'],['Лекции','/lectures'],['Мой прогресс','/learning'],['Практика','/learning/campus']]:[['Миры','/play#catalog'],['Избранное','/play?view=favorites#catalog'],['Недавние','/play?view=recent#catalog'],['Партнёрам','/play/partners']]
- return <div className={`brand-system theme-${theme}`}><a className="brand-skip" href="#product-main">Перейти к содержанию</a><header className="brand-header"><a href={theme==='world'?'/':theme==='intelligence'?'/intelligence':'/play'} aria-label={theme==='world'?'OSGARD WORLD':theme==='intelligence'?'OSA Intelligence':'OSGARD PLAY'}><BrandLockup theme={theme}/></a><nav aria-label="Продукты OSGARD" className="brand-global-nav">{[['OSGARD','/','world'],['Intelligence','/intelligence','intelligence'],['Play','/play','play'],['Development','/development','development']].map(([name,href,id])=><a key={id} href={href} aria-current={globalNavigationState(location.pathname,theme,href)}>{name}</a>)}</nav><button className="brand-motion" aria-label="Отключить необязательные анимации" aria-pressed={reduced||!motion} disabled={reduced} title={reduced?"Уменьшение движения включено в системных настройках":undefined} onClick={()=>{const enabled=!motion;setMotion(enabled);document.documentElement.dataset.motion=enabled?'on':'off';document.querySelector('.osgard-portal-transition')?.remove();try{localStorage.setItem('osgard:motion',enabled?'on':'off')}catch{}}}>{reduced?'Движение: системное ограничение':motion?'Движение: вкл.':'Движение: выкл.'}</button></header><div className="brand-local-bar"><span>{theme==='world'?'DIGITAL PRODUCT STUDIO':theme==='intelligence'?'OSA / THINK · VERIFY · DECIDE':'OSGARD PLAY / SELECT YOUR WORLD'}</span><nav aria-label="Навигация раздела">{local.map(([name,href])=><a key={name} href={href}>{name}</a>)}</nav></div><nav className="brand-breadcrumbs" aria-label="Путь к странице" hidden={!crumbs.length}><ol>{crumbs.map((item,index)=><li key={index}>{item.href?<a href={item.href}>{item.label}</a>:<span aria-current="page">{item.label}</span>}</li>)}</ol></nav><div id="product-main" tabIndex={-1}>{children}</div><footer className="brand-footer"><BrandLockup theme={theme}/><p>Одна экосистема. Разные способы двигаться вперёд.</p><nav aria-label="Дополнительные ссылки"><a href="/brand">Фирменная система</a><a href="/privacy/">Приватность</a><a href="/terms/">Условия</a><a href="/quality">Состояние сборки</a><a href="/workspace/overview">Рабочий центр</a><a href="/workspace">Рабочее пространство</a><a href="/teams">Команды</a><a href="/deliveries">Полученные материалы</a><a href="/account">Аккаунт</a><a href="/data">Мои данные</a></nav><small>Гостевые данные сохраняются в браузере. Данные Core — на подключённом сервере. <a href="/quality#measurements">Локальные события и их удаление</a></small></footer></div>
+
+const readMotion = () => { try { return localStorage.getItem('osgard:motion') !== 'off' } catch { return true } }
+const productHomes = { world: '/', intelligence: '/intelligence', play: '/play' }
+const productNames = { world: 'OSGARD WORLD', intelligence: 'OSA Intelligence', play: 'OSGARD PLAY' }
+const globalLinks = [['OSGARD', '/'], ['Intelligence', '/intelligence'], ['Play', '/play'], ['Development', '/development']] as const
+const footerGroups = [
+  { title: 'Продукты', links: [['OSGARD WORLD', '/'], ['OSA Intelligence', '/intelligence'], ['OSGARD PLAY', '/play'], ['Разработка', '/development']] },
+  { title: 'Моя работа', links: [['Рабочий центр', '/workspace/overview'], ['Проекты', '/workspace'], ['Команды', '/teams'], ['Полученные материалы', '/deliveries'], ['Покупки', '/purchases'], ['Аккаунт', '/account'], ['Мои данные', '/data']] },
+  { title: 'Информация', links: [['Фирменная система', '/brand'], ['Состояние сборки', '/quality'], ['Приватность', '/privacy/'], ['Условия', '/terms/'], ['Связаться', '/#contact']] },
+]
+
+export function BrandShell({ theme, children }: { theme: ProductTheme; children: ReactNode }) {
+  const [motion, setMotion] = useState(readMotion)
+  const [reduced, setReduced] = useState(false)
+  const [hash, setHash] = useState(() => location.hash || '')
+  const path = location.pathname.replace(/\/+$/, '') || '/'
+  const product = brandAreaForPath(path, theme)
+  const development = path === '/development' || path.startsWith('/development/')
+  const game = path.startsWith('/play/world/') ? getPlayGame(path.slice('/play/world/'.length)) : undefined
+  const crumbs = brandBreadcrumbs(path, product, game?.title)
+  const worldBase = development ? '/development' : '/'
+  const local = product === 'world'
+    ? [['Продукты', worldBase + '#products'], ['Кейсы', worldBase + '#cases'], ['Подход', worldBase + '#approach'], ['О компании', worldBase + '#about'], ['Контакт', worldBase + '#contact']]
+    : product === 'intelligence'
+      ? [['Метод', '/intelligence#method'], ['Демонстрация', '/intelligence#demo'], ['Программа', '/learning/program'], ['Лекции', '/lectures'], ['Мой прогресс', '/learning'], ['Практика', '/learning/campus']]
+      : [['Миры', '/play#catalog'], ['Избранное', '/play?view=favorites#catalog'], ['Недавние', '/play?view=recent#catalog'], ['Партнёрам', '/play/partners']]
+
+  useEffect(() => {
+    document.documentElement.dataset.product = theme
+    document.documentElement.lang = 'ru'
+    return () => { delete document.documentElement.dataset.product }
+  }, [theme])
+  useEffect(() => {
+    document.documentElement.dataset.motion = motion ? 'on' : 'off'
+    if (!motion) document.querySelector('.osgard-portal-transition')?.remove()
+  }, [motion])
+  useEffect(() => {
+    const media = window.matchMedia?.('(prefers-reduced-motion: reduce)')
+    const update = () => setReduced(Boolean(media?.matches))
+    update()
+    media?.addEventListener('change', update)
+    const syncStorage = (event: StorageEvent) => { if (event.key === 'osgard:motion' || event.key === null) setMotion(readMotion()) }
+    const syncHash = () => setHash(location.hash)
+    window.addEventListener('storage', syncStorage)
+    window.addEventListener('hashchange', syncHash)
+    return () => {
+      media?.removeEventListener('change', update)
+      window.removeEventListener('storage', syncStorage)
+      window.removeEventListener('hashchange', syncHash)
+    }
+  }, [])
+
+  const localState = (href: string): 'page' | 'location' | undefined => {
+    const target = new URL(href, 'https://osgard.world')
+    if ((target.pathname.replace(/\/+$/, '') || '/') !== path) return undefined
+    const view = new URLSearchParams(location.search || '').get('view') || 'all'
+    if (target.pathname === '/play' && (target.searchParams.get('view') || 'all') !== view) return undefined
+    if (target.hash) return hash === target.hash || target.hash === '#catalog' && path === '/play' ? 'location' : undefined
+    return 'page'
+  }
+  const toggleMotion = () => {
+    if (reduced) return
+    const enabled = !motion
+    setMotion(enabled)
+    try { localStorage.setItem('osgard:motion', enabled ? 'on' : 'off') } catch { /* The setting still applies to this open page. */ }
+  }
+
+  return <div className={`brand-system theme-${theme}`}>
+    <a className="brand-skip" href="#product-main">Перейти к содержанию</a>
+    <header className="brand-header">
+      <a href={productHomes[product]} aria-label={productNames[product]}><BrandLockup theme={product} /></a>
+      <nav aria-label="Продукты OSGARD" className="brand-global-nav">
+        {globalLinks.map(([name, href]) => <a key={href} href={href} aria-current={globalNavigationState(path, product, href)}>{name}</a>)}
+      </nav>
+      <button type="button" className="brand-motion" aria-pressed={reduced || !motion} disabled={reduced}
+        aria-label="Меньше движения" title={reduced ? 'Уменьшение движения включено в настройках устройства' : 'Отключить необязательную анимацию'} onClick={toggleMotion}>
+        <span className="brand-motion-state" aria-hidden="true">{reduced || !motion ? '◌' : '◉'}</span> Меньше движения
+        <span className="brand-motion-value">{reduced ? 'Система' : motion ? 'Выкл.' : 'Вкл.'}</span>
+      </button>
+    </header>
+    <div className="brand-local-bar">
+      <span>{product === 'world' ? development ? 'Development / Разработка продуктов' : 'OSGARD WORLD / Цифровая студия' : product === 'intelligence' ? 'OSA / Понять. Проверить. Решить.' : 'OSGARD PLAY / Игровые миры'}</span>
+      <nav aria-label="Навигация раздела">
+        {local.map(([name, href]) => <a key={name} href={href} aria-current={localState(href)}>{name}</a>)}
+      </nav>
+    </div>
+    <nav className="brand-breadcrumbs" aria-label="Путь к странице" hidden={!crumbs.length}>
+      <ol>{crumbs.map((item, index) => <li key={index}>{item.href ? <a href={item.href}>{item.label}</a> : <span aria-current="page">{item.label}</span>}</li>)}</ol>
+    </nav>
+    <div id="product-main" tabIndex={-1}>{children}</div>
+    <footer className="brand-footer">
+      <div className="brand-footer-intro"><BrandLockup theme={product} /><p>Одна экосистема.<br />Разные способы двигаться вперёд.</p></div>
+      {footerGroups.map(group => <nav key={group.title} aria-label={group.title} className="brand-footer-group"><h2>{group.title}</h2>{group.links.map(([label, href]) => <a key={href} href={href}>{label}</a>)}</nav>)}
+      <small className="brand-footer-note">Гостевой прогресс остаётся в этом браузере. Серверные проекты доступны через аккаунт. <a href="/quality#measurements">Посмотреть и удалить локальный журнал действий →</a></small>
+    </footer>
+  </div>
 }

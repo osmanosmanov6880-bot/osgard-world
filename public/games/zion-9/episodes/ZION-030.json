@@ -1,0 +1,346 @@
+{
+  "episode_id": "ZION-030",
+  "published_date": "2026-10-11",
+  "title": {
+    "en": "THE SHADE PROTOCOL",
+    "ru": "ТЕНЕВОЙ ПРОТОКОЛ"
+  },
+  "city": {
+    "name": "Athens",
+    "country": "Greece",
+    "latitude": 37.989284,
+    "longitude": 23.743921,
+    "location_name": "Argentinis Dimokratias Square — reference pin; not claimed to be the precise sensor point",
+    "map_url": "https://www.google.com/maps?q=37.989284,23.743921"
+  },
+  "pain": {
+    "category": [
+      "climate adaptation",
+      "public health",
+      "accessibility"
+    ],
+    "statement": "Extreme urban heat produces uneven surface thermal exposure and unequal access to cooler public places.",
+    "verified_observation": {
+      "value": "60°C exposed paving vs 30°C under tree shade",
+      "context": "Surface temperature measurements reported for Argentinis Dimokratias Square during summer 2025; not air temperature.",
+      "sources": [
+        "https://eu-mayors.ec.europa.eu/en/Athens-Hits-Refresh-Beating-the-Heat-with-Urban-Cooling-Solutions",
+        "https://netzerocities.eu/2025/09/03/cooling-athens-targeted-urban-interventions-for-a-resilient-city/"
+      ],
+      "cross_check": "https://www.cityofathens.gr/deltio-typoy/δήμος-αθηναίων-δημιουργούμε-μικρές/",
+      "cross_check_note": "Municipal field update separately reports shaded/natural-material spots around 30°C and conventional surfaces over 50°C at several locations; it corroborates the scale of surface differences, not the exact same paired reading."
+    },
+    "secondary_observation": {
+      "value": "4–6°C surface cooling",
+      "context": "Reported at Agia Irini Square after cool materials and targeted shading.",
+      "source": "https://eu-mayors.ec.europa.eu/en/Athens-Hits-Refresh-Beating-the-Heat-with-Urban-Cooling-Solutions"
+    },
+    "population_context": {
+      "value": 643452,
+      "unit": "residents",
+      "source": "https://www.statistics.gr/en/2021-census-res-pop-results",
+      "warning": "2021 census municipal population context only; not a count of people harmed by heat or an estimate of exposure.",
+      "cross_check": "https://www.cnigreece.gr/en/municipalities/athens/"
+    },
+    "programme_targets": {
+      "new_blue_green_infrastructure_m2": 8000,
+      "planned_sites": 6,
+      "target_local_cooling_c": 5,
+      "target_rainwater_retention_percent": 70,
+      "source": "https://www.cityofathens.gr/cooling-havens-3/",
+      "status": "programme targets, not verified completed outcomes"
+    },
+    "affected_people_estimate": null,
+    "affected_people_note": "No defensible count for people specifically affected at the reference square was found in reviewed sources. Population is not substituted for an affected-person count."
+  },
+  "technology": [
+    {
+      "name": "#CoolAthens",
+      "country": "Greece",
+      "status": "live public municipal information service",
+      "url": "https://coolathens.cityofathens.gr/en/",
+      "details": "Municipal heatwave information; cites an algorithm using two decades of historical weather and mortality data and updated temperature/thermal-discomfort maps."
+    },
+    {
+      "name": "Cooling Havens",
+      "country": "Greece",
+      "status": "municipal programme under implementation/planning as described on official site",
+      "url": "https://www.cityofathens.gr/cooling-havens-3/",
+      "details": "Water reuse, rain gardens, blue-green public spaces and IoT environmental monitoring; targets labelled as targets."
+    },
+    {
+      "name": "Athens urban cooling interventions",
+      "country": "Greece",
+      "status": "field results reported for 2025",
+      "url": "https://eu-mayors.ec.europa.eu/en/Athens-Hits-Refresh-Beating-the-Heat-with-Urban-Cooling-Solutions",
+      "details": "Thermal camera readings for shaded streets, cool surfaces, a microforest and a cooling garden."
+    }
+  ],
+  "photo": {
+    "file": "Orange tree in the street in Athens, Greece.jpg",
+    "author": "Philip Mallis",
+    "license": "CC BY-SA 2.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Orange_tree_in_the_street_in_Athens,_Greece.jpg",
+    "direct_image": "https://commons.wikimedia.org/wiki/Special:FilePath/Orange_tree_in_the_street_in_Athens,_Greece.jpg?width=1200",
+    "note": "Illustrative Athens street-tree image; it is not a photograph of the measured square."
+  },
+  "playable_world": {
+    "url": "https://osmanosmanov6880-bot.github.io/zion-9-worlds/queue/ZION-030/index.html",
+    "mechanics": "Place three interventions on empty tiles near three heat hotspots. Win by covering all hotspots; using all modules without coverage is a loss. Scores are illustrative, not scientific predictions.",
+    "sound_motif": "C4–G4–E4 through Web Audio API",
+    "ar": "WebXR immersive-ar attempted only if browser support is detected; availability varies by device/browser."
+  },
+  "video": {
+    "duration_seconds": 75,
+    "shot_count": 10,
+    "script": [
+      {
+        "time": "00–02",
+        "shot": "Thermal hook",
+        "action": "Macro sunlit pavement; overlay 60°C exposed vs 30°C in shade."
+      },
+      {
+        "time": "02–08",
+        "shot": "Athens arrival",
+        "action": "Wide street shot; ZION-9 enters the frame."
+      },
+      {
+        "time": "08–15",
+        "shot": "The point",
+        "action": "ZION points at the pavement; cyan grid traces a hot zone."
+      },
+      {
+        "time": "15–22",
+        "shot": "Show evidence",
+        "action": "Source card names the 2025 field report and distinguishes surface from air temperature."
+      },
+      {
+        "time": "22–30",
+        "shot": "Existing technology",
+        "action": "Show official heat-risk service and cool public-space examples."
+      },
+      {
+        "time": "30–39",
+        "shot": "World birth",
+        "action": "Procedural Three.js city emerges; heat spots glow."
+      },
+      {
+        "time": "39–49",
+        "shot": "Player solves",
+        "action": "Choose and place a tree, canopy and rain garden."
+      },
+      {
+        "time": "49–58",
+        "shot": "Win",
+        "action": "All hotspots turn green; show clear game victory."
+      },
+      {
+        "time": "58–68",
+        "shot": "Social value",
+        "action": "Show shade, accessible routes and public space without implying the prototype changes real infrastructure."
+      },
+      {
+        "time": "68–75",
+        "shot": "CTA",
+        "action": "Invite viewers to play and share with city planners."
+      }
+    ],
+    "production_budget_eur": {
+      "min": 0,
+      "max": 50,
+      "excludes": [
+        "operator labour",
+        "paid voice/video subscriptions"
+      ],
+      "note": "Target budget, not audited spend."
+    },
+    "platforms": [
+      "TikTok",
+      "Instagram Reels",
+      "YouTube Shorts",
+      "X",
+      "Telegram"
+    ]
+  },
+  "monetization": [
+    {
+      "stream": "B2C",
+      "offer": "World Pass",
+      "price_eur": 4.99,
+      "cadence": "monthly",
+      "platform_candidates": [
+        "Ko-fi",
+        "Lemon Squeezy"
+      ],
+      "status": "not connected",
+      "unit_example": "100 members = €499/month gross before fees/refunds/tax."
+    },
+    {
+      "stream": "B2B",
+      "offer": "City / NGO commissioned impact world",
+      "price_eur_min": 2000,
+      "price_eur_max": 10000,
+      "status": "offer model only",
+      "unit_example": "Illustrative €5,000 contract - €1,500 direct production budget = €3,500 contribution, 70%, before sales/overhead/tax."
+    },
+    {
+      "stream": "Licence",
+      "offer": "ZION-9 World Engine white-label licence",
+      "price_eur_min": 10000,
+      "cadence": "yearly",
+      "status": "requires hardened production engine and contract",
+      "unit_example": "Illustrative €10,000 licence - €2,000 annual support allowance = €8,000 contribution, 80%, before acquisition/tax."
+    }
+  ],
+  "metrics_targets": {
+    "views_24h": 1000,
+    "click_through_rate_percent": 5,
+    "game_completion_percent": 35,
+    "qualified_b2b_leads": 3,
+    "ugc_posts": 5,
+    "shares": 20,
+    "note": "Targets for manual tracking; not measured results. No analytics adapter is connected in this static release."
+  },
+  "evolution": {
+    "score_type": "editorial self-assessment, not analytics",
+    "baseline": "No validated historical 12-axis scorecard was stored for episode 029; previous values are estimates only.",
+    "axes": [
+      [
+        "Lore and mythology",
+        73,
+        80
+      ],
+      [
+        "City and location",
+        60,
+        88
+      ],
+      [
+        "Pain research",
+        58,
+        90
+      ],
+      [
+        "Technology and sources",
+        62,
+        91
+      ],
+      [
+        "Video scenario",
+        60,
+        86
+      ],
+      [
+        "3D world",
+        62,
+        89
+      ],
+      [
+        "Sound",
+        55,
+        85
+      ],
+      [
+        "Virality",
+        65,
+        81
+      ],
+      [
+        "ARG continuity",
+        68,
+        76
+      ],
+      [
+        "Monetization",
+        58,
+        78
+      ],
+      [
+        "Technical quality",
+        62,
+        84
+      ],
+      [
+        "Autonomy",
+        68,
+        70
+      ]
+    ],
+    "measured_outcomes": false
+  },
+  "arg": {
+    "next_episode": "ZION-031",
+    "clue": "THE PLACES THAT STAY COOL AFTER SUNSET.",
+    "next_seed": "BLUE-HOUR-ROUTE-31"
+  },
+  "self_critique": "AR support is browser-dependent and needs physical-device testing. Checkout, analytics, social publishing and cross-device browser test logs are not connected; do not claim production-scale autonomy or paid conversion.",
+  "evidence_register": [
+    {
+      "id": "S1",
+      "name": "Municipality of Athens — Cooling Havens",
+      "url": "https://www.cityofathens.gr/cooling-havens-3/",
+      "supports": "Six intervention sites, water reuse, rain gardens, IoT sensors and stated targets for more than 8,000 m² infrastructure, up to 5°C local cooling and over 70% rainwater retention."
+    },
+    {
+      "id": "S2",
+      "name": "EU Covenant of Mayors — Athens Hits Refresh",
+      "url": "https://eu-mayors.ec.europa.eu/en/Athens-Hits-Refresh-Beating-the-Heat-with-Urban-Cooling-Solutions",
+      "supports": "Summer 2025 field report: around 60°C exposed pavement vs 30°C tree shade at Argentinis Dimokratias Square; 4–6°C at Agia Irini."
+    },
+    {
+      "id": "S3",
+      "name": "NetZeroCities — Cooling Athens",
+      "url": "https://netzerocities.eu/2025/09/03/cooling-athens-targeted-urban-interventions-for-a-resilient-city/",
+      "supports": "Separate programme publication reporting comparable site-level thermal findings."
+    },
+    {
+      "id": "S4",
+      "name": "Municipality of Athens — Local cooling measures",
+      "url": "https://www.cityofathens.gr/deltio-typoy/δήμος-αθηναίων-δημιουργούμε-μικρές/",
+      "supports": "Separate municipal statement: around 30°C in shaded/natural-material areas vs above 50°C on conventional surfaces at several sites; corroborates magnitude, not exact same paired measurement."
+    },
+    {
+      "id": "S5",
+      "name": "NTUA UWMH — Cooling Havens",
+      "url": "https://uwmh.civil.ntua.gr/projects/140-cooling-havens.html",
+      "supports": "University research project timeline and the city’s impermeable surface challenge."
+    },
+    {
+      "id": "S6",
+      "name": "Municipality of Athens — #CoolAthens",
+      "url": "https://coolathens.cityofathens.gr/en/",
+      "supports": "Official heat-risk information service, described algorithm using two decades of weather/mortality data and maps updated every 15 minutes."
+    },
+    {
+      "id": "S7",
+      "name": "ELSTAT — 2021 Census",
+      "url": "https://www.statistics.gr/en/2021-census-res-pop-results",
+      "supports": "Official population census, Athens municipality permanent population."
+    },
+    {
+      "id": "S8",
+      "name": "CNI Greece — Athens municipality",
+      "url": "https://www.cnigreece.gr/en/municipalities/athens/",
+      "supports": "Secondary cross-check of the ELSTAT municipality population figure."
+    },
+    {
+      "id": "S9",
+      "name": "Argentinis Dimokratias Square — location verification",
+      "url": "https://militarytourism.warmuseum.gr/en/attractions/jose-de-san-martin",
+      "supports": "Square location and coordinates. Google Maps pin is a navigation reference, not a claimed sensor position."
+    }
+  ],
+  "social_pack": {
+    "short_video_caption_en": "60°C on exposed pavement. 30°C under tree shade. Could you redesign one city block? Play ZION-030: three hotspots, three interventions, one mission. Based on Athens’ reported 2025 surface measurements. Game score is illustrative — the field evidence is real.",
+    "x_en": "Athens reported a surface-temperature gap: ~60°C on exposed paving vs ~30°C under tree shade. We turned the evidence into a playable 3D mission. Place trees, canopies and rain gardens. Can you cover all three hotspots?",
+    "instagram_en": "The heat is measurable. Shade changes the surface. Cooling tools already exist. Now it’s your turn to redesign the block. ZION-030 is live as a browser game; evidence and limits are documented in the field dossier.",
+    "telegram_en": "NEW EPISODE — THE SHADE PROTOCOL. Athens’ 2025 thermal-camera reporting showed exposed pavement around 60°C and ground under tree shade around 30°C. The city already uses heat-risk information and cooling interventions. We built a 3D mission where you place three interventions beside heat hotspots. This is a simulation, not an official city planning tool. Primary sources, programme targets and business assumptions are linked in the dossier.",
+    "hook_tests": [
+      "A — Number: This pavement reached 60°C. Look what shade did.",
+      "B — Challenge: Three hotspots. Three interventions. Can you cool the block?",
+      "C — Mystery: ZION-9 points at empty pavement. A city appears — and you have 3 moves to fix it."
+    ],
+    "publishing_status": "drafts only; no social platforms have been auto-published"
+  }
+}
+
