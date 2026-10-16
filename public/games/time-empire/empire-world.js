@@ -52,29 +52,7 @@
   state.chapter = Math.max(1, Math.min(4, Number(state.chapter) || 1));
   state.factions = Object.assign({ council: 50, consortium: 50, dockers: 50, archivists: 50, citizens: 50 }, state.factions || {});
   state.version = 2;
-  function probeServerState() {
-    var headers = { Accept: 'application/json' };
-    try {
-      var keys = Object.keys(localStorage);
-      for (var i = 0; i < keys.length; i += 1) {
-        if (keys[i].indexOf('supabase.auth.token') >= 0 || keys[i].indexOf('-auth-token') >= 0) {
-          var session = JSON.parse(localStorage.getItem(keys[i]) || '{}');
-          var token = session.access_token || (session.currentSession && session.currentSession.access_token);
-          if (token) { headers.Authorization = 'Bearer ' + token; break; }
-        }
-      }
-    } catch (e) {}
-    return fetch('/api/game/empire/state', { credentials: 'include', headers: headers }).then(function (response) {
-      var type = response.headers.get('content-type') || '';
-      if (!response.ok || type.indexOf('application/json') === -1) return null;
-      return response.json();
-    }).catch(function () { return null; });
-  }
-  probeServerState().then(function (remote) {
-    if (!remote || !remote.state || remote.state.version !== 2) return;
-    try { Object.assign(state, remote.state); state.serverRevision = remote.revision; localStorage.setItem('osgard-empire-world-v1', JSON.stringify(state)); } catch (e) {}
-    window.dispatchEvent(new CustomEvent('osgard:server-state-ready', { detail: remote }));
-  });
+  // This release stores progress only in local browser storage; no backend sync is available.
   var elapsed = Math.min(3 * 60 * 60 * 1000, Math.max(0, Date.now() - Number(state.lastSeen || Date.now())));
   var offlineCycles = Math.floor(elapsed / (10 * 60 * 1000));
   if (offlineCycles > 0) { state.oil += offlineCycles * 2; state.treasury += offlineCycles * 4; }
