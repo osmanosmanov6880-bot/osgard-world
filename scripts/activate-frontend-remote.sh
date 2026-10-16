@@ -18,6 +18,7 @@ if [[ -z "$api_gateway" ]]; then
 fi
 echo "Detected host API gateway: $api_gateway"
 rm -f "$state_file" "$log_file"
+: > "$log_file"
 
 rollback() {
   if [[ "$core_started" == "1" ]]; then
@@ -44,6 +45,8 @@ rollback() {
 
 (
   set -euo pipefail
+  trap 'status=$?; printf "Activation worker failed at line %s (exit %s)\n" "$LINENO" "$status" >&2' ERR
+  echo 'Activation worker started.'
   docker exec "$container_name" sh -lc "
     set -eu
     rm -rf /tmp/osgard-gh-next /tmp/osgard-gh-previous
@@ -69,6 +72,7 @@ rollback() {
   "
 
   image_archive="/tmp/osgard-core-image-$$.tar.gz"
+  echo 'Loading the packaged OSGARD Core image.'
   docker cp "$container_name:/tmp/osgard-gh-next/core-api-image.tar.gz" "$image_archive"
   gzip -dc "$image_archive" | docker load
   rm -f "$image_archive"
