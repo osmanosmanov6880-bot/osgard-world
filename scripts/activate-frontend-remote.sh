@@ -48,7 +48,7 @@ rollback() {
   trap 'status=$?; printf "Activation worker failed at line %s (exit %s)\n" "$LINENO" "$status" >&2' ERR
   echo 'Activation worker started.'
   docker exec "$container_name" sh -lc "
-    set -eu
+    set -eux
     rm -rf /tmp/osgard-gh-next /tmp/osgard-gh-previous
     mkdir -p /tmp/osgard-gh-next
     tar -xzf '$archive' -C /tmp/osgard-gh-next
