@@ -81,8 +81,8 @@ jobs:
 
       - name: Capture public games and Godot export files
         env:
-          HOST: \${{ secrets.OSGARD_DEPLOY_HOST }}
-          USER: \${{ secrets.OSGARD_DEPLOY_USER }}
+          HOST: ${{ secrets.OSGARD_DEPLOY_HOST }}
+          USER: ${{ secrets.OSGARD_DEPLOY_USER }}
         run: |
           set -euo pipefail
           ssh -i ~/.ssh/osgard_deploy "$USER@$HOST" 'bash -s' <<'REMOTE' | tee production-game-inventory.txt
