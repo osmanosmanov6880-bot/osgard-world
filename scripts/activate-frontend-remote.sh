@@ -72,8 +72,22 @@ rollback() {
   docker cp "$container_name:/tmp/osgard-gh-next/core-api-image.tar.gz" "$image_archive"
   gzip -dc "$image_archive" | docker load
   rm -f "$image_archive"
-  core_network="$(docker inspect --format '{{range $name, $conf := .NetworkSettings.Networks}}{{println $name}}{{end}}' "$container_name" | awk 'NF { print $1; exit }')"
-  [[ -n "$core_network" ]] || { echo "Unable to determine Docker network for $container_name" >&2; exit 1; }
+  mapfile -t frontend_networks < <(docker inspect --format '{{range $name, $conf := .NetworkSettings.Networks}}{{println $name}}{{end}}' "$container_name")
+  for network in "${frontend_networks[@]}"; do
+    if [[ -n "$network" && "$network" != "bridge" ]]; then
+      core_network="$network"
+      break
+    fi
+  done
+  if [[ -z "$core_network" ]]; then
+    core_network="osgard-core-internal"
+    if ! docker network inspect "$core_network" >/dev/null 2>&1; then
+      docker network create "$core_network" >/dev/null
+    fi
+    if ! docker network inspect "$core_network" --format '{{range .Containers}}{{println .Name}}{{end}}' | grep -Fx "$container_name" >/dev/null; then
+      docker network connect "$core_network" "$container_name"
+    fi
+  fi
   if docker inspect osgard-core-api >/dev/null 2>&1; then
     old_volume="$(docker inspect --format '{{range .Mounts}}{{if eq .Destination "/var/lib/osgard-core"}}{{if eq .Type "volume"}}{{.Name}}{{end}}{{end}}{{end}}' osgard-core-api)"
     if [[ -n "$old_volume" ]]; then
