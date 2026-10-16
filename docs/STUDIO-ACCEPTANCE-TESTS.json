@@ -1,0 +1,10 @@
+{
+  "scope": "HTTP/SQLite release acceptance tests plus 48 Core/Learning/Pilot/Account regressions; not browser QA, certification or external URL verification",
+  "status": "passed",
+  "testsRun": 58,
+  "failures": 0,
+  "errors": 0,
+  "generatedAt": "2026-10-16T04:44:08.836320+00:00",
+  "paymentsTested": false,
+  "externalMessagesSent": false
+}

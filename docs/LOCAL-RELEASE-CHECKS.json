@@ -1,0 +1,239 @@
+{
+  "profile": "local-technical-pilot",
+  "status": "passed",
+  "startedAt": "2026-10-16T06:23:37.244017+00:00",
+  "checks": [
+    {
+      "name": "Build and TypeScript",
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/npm",
+        "run",
+        "build"
+      ],
+      "status": "passed",
+      "seconds": 20.82,
+      "exitCode": 0
+    },
+    {
+      "name": "Design models and server-rendered surfaces",
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/npm",
+        "run",
+        "qa:redesign"
+      ],
+      "status": "passed",
+      "seconds": 0.85,
+      "exitCode": 0
+    },
+    {
+      "name": "Landing dependency graphs and budgets",
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/npm",
+        "run",
+        "qa:redesign-build"
+      ],
+      "status": "passed",
+      "seconds": 0.37,
+      "exitCode": 0
+    },
+    {
+      "name": "Interface reliability contracts",
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/npm",
+        "run",
+        "qa:ux"
+      ],
+      "status": "passed",
+      "seconds": 0.38,
+      "exitCode": 0
+    },
+    {
+      "name": "Guest backup and rollback",
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/npm",
+        "run",
+        "qa:backup"
+      ],
+      "status": "passed",
+      "seconds": 0.42,
+      "exitCode": 0
+    },
+    {
+      "name": "Account client and safe return",
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+        "scripts/account-client-smoke.mjs"
+      ],
+      "status": "passed",
+      "seconds": 0.17,
+      "exitCode": 0
+    },
+    {
+      "name": "Learning client recovery and calendar",
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+        "scripts/core-learning-client-smoke.mjs"
+      ],
+      "status": "passed",
+      "seconds": 0.12,
+      "exitCode": 0
+    },
+    {
+      "name": "Pilot filters and report export",
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+        "scripts/pilot-report-client-smoke.mjs"
+      ],
+      "status": "passed",
+      "seconds": 0.18,
+      "exitCode": 0
+    },
+    {
+      "name": "Guest project collection",
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/npm",
+        "run",
+        "qa:osa-workspace"
+      ],
+      "status": "passed",
+      "seconds": 0.36,
+      "exitCode": 0
+    },
+    {
+      "name": "Experiment measurements",
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/npm",
+        "run",
+        "qa:osa-experiments"
+      ],
+      "status": "passed",
+      "seconds": 0.44,
+      "exitCode": 0
+    },
+    {
+      "name": "Media honesty and availability",
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/npm",
+        "run",
+        "qa:osa-media-availability"
+      ],
+      "status": "passed",
+      "seconds": 0.69,
+      "exitCode": 0
+    },
+    {
+      "name": "Learning progress",
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/npm",
+        "run",
+        "qa:osa-progress"
+      ],
+      "status": "passed",
+      "seconds": 0.74,
+      "exitCode": 0
+    },
+    {
+      "name": "Curriculum parity",
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+        "scripts/build-core-curriculum.mjs",
+        "--check"
+      ],
+      "status": "passed",
+      "seconds": 0.51,
+      "exitCode": 0
+    },
+    {
+      "name": "106 Core HTTP/SQLite regressions",
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python3",
+        "scripts/core-teams-smoke.py"
+      ],
+      "status": "passed",
+      "seconds": 25.87,
+      "exitCode": 0
+    },
+    {
+      "name": "Production Core gateway and backup contract",
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python3",
+        "scripts/core-production-smoke.py"
+      ],
+      "status": "passed",
+      "seconds": 0.74,
+      "exitCode": 0
+    },
+    {
+      "name": "Static release profile and hashes",
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/npm",
+        "run",
+        "qa:static-preview"
+      ],
+      "status": "passed",
+      "seconds": 0.52,
+      "exitCode": 0
+    },
+    {
+      "name": "Deep routes and real 404 responses",
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python3",
+        "scripts/redesign-http-smoke.py"
+      ],
+      "status": "passed",
+      "seconds": 0.9,
+      "exitCode": 0
+    },
+    {
+      "name": "Built file integrity",
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python3",
+        "delivery/VERIFY.py",
+        "dist"
+      ],
+      "status": "passed",
+      "seconds": 0.1,
+      "exitCode": 0
+    },
+    {
+      "name": "Create local delivery archives",
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python3",
+        "scripts/package-redesign.py"
+      ],
+      "status": "passed",
+      "seconds": 6.25,
+      "exitCode": 0
+    },
+    {
+      "name": "Packaged file integrity",
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python3",
+        "delivery/VERIFY.py"
+      ],
+      "status": "passed",
+      "seconds": 0.18,
+      "exitCode": 0
+    },
+    {
+      "name": "Packaged server and end-to-end workflow",
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python3",
+        "scripts/core-delivery-smoke.py"
+      ],
+      "status": "passed",
+      "seconds": 1.76,
+      "exitCode": 0
+    }
+  ],
+  "browserQA": "not-performed",
+  "realDeviceQA": "not-performed",
+  "fieldCoreWebVitals": "not-collected",
+  "realStudentPilot": "not-performed",
+  "payments": "deferred-by-user",
+  "github": "unchanged",
+  "published": false,
+  "fullStrategicPlanComplete": false,
+  "completedAt": "2026-10-16T06:24:39.629576+00:00",
+  "serverTestReport": "TEAM-TESTS.json"
+}

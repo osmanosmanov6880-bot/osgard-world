@@ -118,8 +118,9 @@ function buildNarration(slug, lessonIndex, locale, reading, guide) {
   return narration
 }
 
-const guideModule = await loadTypeScriptModule('src/osaLessonGuides.ts')
-const readingModule = await loadTypeScriptModule('src/osaLessonReading.ts', { './osaLessonGuides': guideModule })
+const registryModule = await loadTypeScriptModule('src/osaLessonRegistry.ts')
+const guideModule = await loadTypeScriptModule('src/osaLessonGuides.ts', { './osaLessonRegistry': registryModule })
+const readingModule = await loadTypeScriptModule('src/osaLessonReading.ts', { './osaLessonGuides': guideModule, './osaLessonRegistry': registryModule })
 const slugs = guideModule.OSA_LESSON_SLUGS
 const guides = guideModule.osaLessonGuides
 const readings = readingModule.osaLessonReadings

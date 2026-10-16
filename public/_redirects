@@ -1,3 +1,6 @@
 # Preserve the retired Imperium of Time URL on Cloudflare Pages.
 /games/time-empire /games/time 301
 /games/time-empire/ /games/time 301
+
+# Dynamic legacy result cards are the only client-side wildcard.
+/r/* /index.html 200

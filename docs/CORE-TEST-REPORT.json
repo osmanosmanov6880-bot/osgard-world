@@ -1,0 +1,30 @@
+{
+  "scope": "Real temporary HTTP/SQLite integration checks, not browser or production validation",
+  "status": "passed",
+  "testsRun": 16,
+  "failures": 0,
+  "errors": 0,
+  "generatedAt": "2026-10-16T03:50:13.759735+00:00",
+  "paymentsTested": false,
+  "externalServicesTested": false,
+  "checks": [
+    "session and origin",
+    "project isolation",
+    "optimistic version conflict",
+    "concurrent idempotent costs",
+    "budget limits",
+    "contract invalidation",
+    "release gates and expired sources",
+    "disabled payment and publication actions",
+    "restore preserving ledger",
+    "roles and revocation",
+    "export without credentials",
+    "restart persistence",
+    "input validation",
+    "immutable template release snapshot",
+    "durable queue recovery",
+    "consistent SQLite backup",
+    "artifact escaping and access",
+    "measurements including correction and human time"
+  ]
+}

@@ -5,6 +5,7 @@ import { OSA_LESSON_SLUGS, osaLessonGuides } from './osaLessonGuides'
 import { osaLessonReadings } from './osaLessonReading'
 import { OsgardLogo } from './OsgardLogo'
 import OSAMediaPlayer from './OSAMediaPlayer'
+import ServerLessonProgress from './ServerLessonProgress'
 import { getOSALessonMedia, getOSAMediaAvailability } from './osaMediaCatalog'
 import { getOSALearningProgress, isOSALearningProgressPersistent, markOSALessonOpened, setOSALessonCompletion, subscribeOSALearningProgress } from './osaProgress'
 import './osaLessonPage.css'
@@ -222,6 +223,8 @@ export default function OSALessonPage({ slug }: { slug: string }) {
         <div><p className="osa-lesson-eyebrow">LEARNING RECORD / LOCAL</p><h2>{isComplete ? t.completed : (locale === 'ru' ? 'Зафиксируйте прохождение' : 'Record this lesson')}</h2><p>{t.completionNote}</p>{storageUnavailable && <p className="osa-lesson-storage-warning" role="status">{t.storageWarning}</p>}</div>
         <button type="button" onClick={markComplete} className={isComplete ? 'is-complete' : ''}>{isComplete ? <CheckCircle2 size={17} /> : <ClipboardCheck size={17} />}{isComplete ? t.completed : t.complete}</button>
       </section>
+
+      <ServerLessonProgress slug={slug} answer={selectedOption} locale={locale} />
 
       <section className="osa-lesson-navigation" aria-label={locale === 'ru' ? 'Переход между уроками' : 'Lesson sequence'}>
         {previousSlug ? <a href={'/lectures/' + previousSlug}><ArrowLeft size={16} /><span><small>{t.previous}</small><strong>{lessons[lessonIndex - 1].title}</strong></span></a> : <a href="/lectures"><ArrowLeft size={16} /><span><small>{t.back}</small><strong>{t.finish}</strong></span></a>}

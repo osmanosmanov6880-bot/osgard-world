@@ -10,6 +10,7 @@ on:
     branches: [master]
     paths:
       - "src/**"
+      - "server/**"
       - "public/development/index.html"
       - "public/development/osa-intelligence/**"
       - "public/development/og.svg"
@@ -125,6 +126,8 @@ jobs:
         run: npm run qa:lectures
       - name: Verify unified OSA learning progress persistence
         run: npm run qa:osa-progress
+      - name: Validate OSGARD Core API and SQLite operations
+        run: npm run qa:core-api
 
       - name: Validate the Godot game project contract
         run: npm run qa:null-shift-godot
@@ -248,6 +251,9 @@ jobs:
           test -s osgard-release/html/skillcred/app.js.gz
           gzip -t osgard-release/html/skillcred/styles.css.gz osgard-release/html/skillcred/app.js.gz
           cp nginx.conf osgard-release/nginx.conf
+          docker build --pull -f server/Dockerfile -t osgard-core-api:${GITHUB_SHA} .
+          docker save osgard-core-api:${GITHUB_SHA} | gzip -1 > osgard-release/core-api-image.tar.gz
+          test -s osgard-release/core-api-image.tar.gz
           tar -czf osgard-world-release.tgz -C osgard-release .
       - name: Validate deployment secrets
         env:
@@ -358,7 +364,7 @@ jobs:
           REMOTE_ARCHIVE="/tmp/osgard-gh-release-${GITHUB_RUN_ID}.tgz"
           REMOTE_SCRIPT="/tmp/activate-frontend-remote-${GITHUB_RUN_ID}.sh"
           scp -i ~/.ssh/osgard_deploy scripts/activate-frontend-remote.sh "$USER@$HOST:$REMOTE_SCRIPT"
-          ssh -i ~/.ssh/osgard_deploy "$USER@$HOST" "docker cp '$REMOTE_RELEASE_DIR/osgard-world-release.tgz' osgard-world:'$REMOTE_ARCHIVE' && chmod 700 '$REMOTE_SCRIPT' && OSGARD_ARCHIVE='$REMOTE_ARCHIVE' OSGARD_CONTAINER=osgard-world '$REMOTE_SCRIPT'"
+          ssh -i ~/.ssh/osgard_deploy "$USER@$HOST" "docker cp '$REMOTE_RELEASE_DIR/osgard-world-release.tgz' osgard-world:'$REMOTE_ARCHIVE' && chmod 700 '$REMOTE_SCRIPT' && OSGARD_ARCHIVE='$REMOTE_ARCHIVE' OSGARD_CORE_IMAGE='osgard-core-api:${GITHUB_SHA}' OSGARD_CONTAINER=osgard-world '$REMOTE_SCRIPT'"
       - name: Verify published routes and same-origin API proxy
         env:
           OSGARD_BASE_URL: https://osgard.world

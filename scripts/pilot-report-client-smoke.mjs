@@ -1,0 +1,21 @@
+import {build} from 'esbuild'
+import {mkdir,writeFile,unlink} from 'node:fs/promises'
+import {createRequire} from 'node:module'
+import assert from 'node:assert/strict'
+const output='node_modules/.tmp/pilot-report-client.cjs'
+const source=`import React from 'react';import{renderToStaticMarkup}from'react-dom/server';import CampusFinal from'./src/CampusFinal';export{pilotReportCSV,campusProjectLink,filterPilotQueue}from'./src/pilotReportClient';
+export function reviewFixture(allowed,self=false){const sid='b'.repeat(32);globalThis.location={search:'?intent=review&submission='+sid};const core={user:{id:self?'author':'reviewer'},project:{id:'a'.repeat(32),role:'editor',version:7},data:{readiness:[],rubric:['definition','verification','repeatability','oversight','evaluation'].map(id=>({id,title:id})),submissions:[{id:sid,actorId:'author',actor:'author',sourceVersion:3,summary:'A submitted working guide',evidence:'Reproducible evidence',createdAt:'2026-01-01T00:00:00Z'}],reviews:[],assignments:[{submissionId:sid,reviewerId:allowed?'reviewer':'other',status:'open'}]},busy:false,pending:null};return renderToStaticMarkup(<CampusFinal core={core} onDirty={()=>{}}/>)};`
+const result=await build({stdin:{contents:source,resolveDir:process.cwd(),loader:'tsx'},bundle:true,format:'cjs',platform:'node',packages:'external',write:false,loader:{'.css':'empty'},jsx:'automatic'})
+await mkdir('node_modules/.tmp',{recursive:true});await writeFile(output,result.outputFiles[0].text)
+try{
+ const require=createRequire(import.meta.url),{pilotReportCSV,campusProjectLink,filterPilotQueue,reviewFixture}=require('../'+output)
+ const report={title:'=HYPERLINK("https://example.com")',projectId:'a'.repeat(32),version:4,generatedAt:'2026-01-01T00:00:00Z',pilot:{audience:'\t@external'},counts:{accountsWithAccess:2,accountsWithPractice:1,accountsWithEightCurrentPractices:1,submissions:2,latestSubmittedAuthors:1,pendingLatestReviews:1,latestNeedChanges:0,latestReviewedByParticipant:0,sessionCompletedMarks:0,attendanceSelfReports:0},measurements:{sampleSize:0,speedRatio:null,successRate:null},participants:[{username:'+cmd',role:'editor',currentPracticeCount:0}],warnings:['No verified outcome']}
+ const csv=pilotReportCSV(report);assert.ok(csv.startsWith('\uFEFF'));assert.ok(csv.includes('"\'=HYPERLINK(""https://example.com"")"'));assert.ok(csv.includes('"\'\t@external"'));assert.ok(csv.includes('"\'+cmd"'));assert.ok(csv.includes('"Нет данных"'));assert.ok(csv.includes('"Не сертификат"'));assert.ok(!csv.includes('undefined'))
+ const pid='a'.repeat(32),sid='b'.repeat(32);assert.equal(campusProjectLink(pid,'final',sid,true),'/learning/campus?project='+pid+'&panel=final&submission='+sid+'&intent=review');assert.throws(()=>campusProjectLink('javascript:alert(1)'));assert.throws(()=>campusProjectLink(pid,'external'));assert.throws(()=>campusProjectLink(pid,'final','../another'))
+ const base={projectTitle:'Проект Альфа',author:'learner',isLatest:true,assignment:null,latestVerdict:'pending'}
+ const items=[{...base,submissionId:'new'},{...base,submissionId:'old',isLatest:false,latestVerdict:'needs_changes'},{...base,submissionId:'assigned-old',isLatest:false,assignment:{status:'open',reviewerId:'me',reviewer:'reviewer'}},{...base,submissionId:'changes',latestVerdict:'needs_changes'}]
+ assert.deepEqual(filterPilotQueue(items,'pending','',undefined).map(v=>v.submissionId),['new','assigned-old']);assert.deepEqual(filterPilotQueue(items,'mine','', 'me').map(v=>v.submissionId),['assigned-old']);assert.deepEqual(filterPilotQueue(items,'mine','',undefined),[]);assert.deepEqual(filterPilotQueue(items,'changes','', 'me').map(v=>v.submissionId),['changes']);assert.equal(filterPilotQueue(items,'all',' АЛЬФА ', 'me').length,4);assert.equal(filterPilotQueue(items,'all','missing','me').length,0)
+ const allowed=reviewFixture(true);assert.ok(allowed.includes('Сохранить разбор'));assert.ok(allowed.includes('Прочитать снимок версии'));assert.ok(!allowed.includes('Сдать снимок версии'))
+ assert.ok(!reviewFixture(false).includes('Сохранить разбор'));assert.ok(!reviewFixture(true,true).includes('Сохранить разбор'))
+ console.log('PILOT CLIENT PASS: CSV formula escaping, missing values, safe scoped links, archived/latest queue filters and assigned review entry in server-rendered fixtures')
+}finally{await unlink(output)}

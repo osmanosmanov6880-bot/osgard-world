@@ -2,7 +2,17 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), {
+    name: 'brand-entry-routes',
+    configureServer(server) {
+      server.middlewares.use((req, _res, next) => {
+        const request = req as typeof req & { url?: string }
+        const path = request.url?.split('?')[0].replace(/\/+$/, '') || '/'
+        if (['/development','/games','/entertainment'].includes(path)) request.url='/index.html'
+        next()
+      })
+    },
+  }],
   server: {
     port: 4188,
     strictPort: false,
@@ -16,6 +26,7 @@ export default defineConfig({
     },
   },
   build: {
+    manifest: true,
     rollupOptions: {
       output: {
         manualChunks(id) {

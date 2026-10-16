@@ -1,0 +1,17 @@
+{
+  "scope": "Operational overview and runtime HTTP checks plus 72 regressions; no browser QA or real pilot",
+  "status": "passed",
+  "testsRun": 82,
+  "failures": 0,
+  "errors": 0,
+  "generatedAt": "2026-10-16T05:08:05.217817+00:00",
+  "localBaseline": {
+    "scope": "Loopback HTTP overview in temporary regression database, serial requests; not mobile, browser, production or user task speed",
+    "samples": 12,
+    "visibleProjects": 45,
+    "p50Milliseconds": 7.13,
+    "p95Milliseconds": 9.67
+  },
+  "externalMessagesSent": false,
+  "paymentsTested": false
+}

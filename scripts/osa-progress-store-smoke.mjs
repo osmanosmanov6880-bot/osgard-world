@@ -17,7 +17,7 @@ const sandbox = {
   exports: moduleRecord.exports,
   Date,
   require(specifier) {
-    if (specifier === './osaLessonGuides') {
+    if (specifier === './osaLessonRegistry') {
       return {
         OSA_LESSON_SLUGS: [
           'intelligence-and-imitation',

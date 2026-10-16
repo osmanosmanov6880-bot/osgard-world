@@ -69,10 +69,11 @@ await check('OSGARD/OSA homepage identity, cache policy, and backend consistency
     !String(probe.headers['content-type'] || '').toLowerCase().includes('text/html') ||
     !(probe.title.toLowerCase().includes('osa intelligence') || probe.title.toLowerCase().includes('osgard world')) ||
     (probe.title.toLowerCase().includes('osa intelligence') && probe.appId !== 'osa-intelligence') ||
+    (probe.title.toLowerCase().includes('osgard world') && probe.appId !== 'osgard-ecosystem') ||
     !probe.cacheControl?.includes('no-store') ||
     !probe.cacheControl?.includes('no-cache')
   )
-  expect(invalid.length === 0, `expected 3 consistent OSA homepage responses; invalid=${JSON.stringify(invalid)}; all=${JSON.stringify(probes)}`)
+  expect(invalid.length === 0, `expected 3 consistent OSGARD homepage responses; invalid=${JSON.stringify(invalid)}; all=${JSON.stringify(probes)}`)
   return {
     statusCode: probes[0].statusCode,
     cacheControl: probes[0].cacheControl,
@@ -139,6 +140,15 @@ await check('SkillCred API health', async () => {
   expect(value.service === 'skillcred', 'unexpected service identity')
   expect(value.version === '0.3.0', 'unexpected SkillCred API version')
   return { statusCode: response.status, service: value.service, version: value.version }
+})
+
+await check('OSGARD Core API health', async () => {
+  const { response, body } = await get('/api/core/health')
+  expect(response.status === 200, `expected HTTP 200, got ${response.status}`)
+  const value = JSON.parse(body)
+  expect(value.status === 'ok' && value.mode === 'self-hosted-pilot', 'unexpected Core API identity')
+  expect(value.payments === false && value.ai === false, 'Core must report unconnected payments and AI honestly')
+  return { statusCode: response.status, mode: value.mode, schemaVersion: value.schemaVersion, payments: value.payments, ai: value.ai }
 })
 
 await check('SkillCred API readiness', async () => {
