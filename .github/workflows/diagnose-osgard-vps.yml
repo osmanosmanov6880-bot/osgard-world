@@ -67,4 +67,13 @@ jobs:
           done
           echo '--- Static root candidates (read-only) ---'
           docker exec osgard-world sh -lc 'for root in /usr/share/nginx/html /var/www/html /app/dist /opt/osgard-world/dist; do if [ -d "$root" ]; then printf "directory=%s\n" "$root"; [ -f "$root/index.html" ] && echo root_index=present; [ -f "$root/tedes/index.html" ] && echo tedes_index=present; fi; done' 2>&1
+          echo '--- Public game HTML files in the active frontend container ---'
+          docker exec osgard-world sh -lc '
+          for root in /usr/share/nginx/html/games /usr/share/nginx/html/entertainment; do
+            if [ -d "$root" ]; then
+              echo "game_root=$root"
+              find "$root" -maxdepth 5 -type f \\( -name index.html -o -name "*.html" \\) -print | sort | sed -n "1,250p"
+            fi
+          done
+          ' 2>&1
           REMOTE
