@@ -22,7 +22,7 @@ assert.equal(assessReport(fixture({...healthyScores,performance:.84},501,4001),'
 assert.equal(assessReport(fixture({...healthyScores,performance:.89},100,1500),'desktop').pass,false,'Desktop performance below guardrail should fail')
 assert.ok(lighthouseScript.includes('maxTbtMs')&&lighthouseScript.includes('maxLcpMs'),'Lighthouse report must enforce Core Web Vitals guardrails')
 assert.ok(html.includes('type="application/ld+json"'),'SEO ItemList JSON-LD missing')
-assert.ok(html.includes('"numberOfItems":8')&&html.includes('/games/time-empire/'),'Empire Orbit must appear in the published ItemList')
+assert.ok(html.includes('"numberOfItems":8')&&html.includes('/games/empire-orbit/'),'Empire Orbit must appear in the published ItemList')
 assert.match(admin, /<meta name="robots" content="noindex,nofollow,noarchive">/, 'Operator analytics must not be indexed')
 for(const endpoint of ['/api/v1/analytics/summary','/api/v1/analytics/cohorts','/api/v1/analytics/snapshots','/api/v1/analytics/export']) assert.ok(admin.includes(endpoint),'LiveOps is missing protected API surface '+endpoint)
 assert.ok(admin.includes("'X-Moderation-Token':operatorToken"), 'Operator key must be sent only in the protected API request header')
