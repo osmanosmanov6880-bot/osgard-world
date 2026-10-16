@@ -74,7 +74,7 @@ assert.ok(js.includes("eventIfAllowed('share_created',id)"),'Share action event 
 assert.ok(js.includes('frame.requestFullscreen()'),'Fullscreen action missing')
 assert.ok(!/https?:\/\/(?:fonts\.googleapis\.com|fonts\.gstatic\.com|cdn\.jsdelivr\.net|unpkg\.com)/i.test(html),'External asset CDN found')
 for(const host of ['osgardbewworld.com','o2system.art','senjorio.com','superday.run','marcosa.club','myosa.world','gold-glamour.online','gardvpn.is','osgardos.com','osgardvanguard.studio']) assert.ok(html.includes('utm_source=osgard_games')&&html.includes(host),'Cross-promo UTM missing for '+host)
-assert.ok(html.includes('"numberOfItems":8'),'Game ItemList JSON-LD must contain nineteen catalog entries')
+assert.ok(html.includes('"numberOfItems":19'),'Game ItemList JSON-LD must contain nineteen catalog entries')
 assert.ok(lifecycle.includes("'vector-zero':{title:'VECTOR//ZERO',url:'/games/vector-zero/'}")&&lifecycle.includes("if(id==='vector-zero')"),'Vector Zero lifecycle registry/readiness missing')
 const vectorHtml=readFileSync(resolve(root,'vector-zero/index.html'),'utf8')
 assert.ok(vectorHtml.includes('<title>VECTOR//ZERO — Разрыв поля</title>')&&vectorHtml.includes('id="field"')&&vectorHtml.includes('id="start"')&&vectorHtml.includes('osgard:game-lifecycle'),'Vector Zero game contract missing')
