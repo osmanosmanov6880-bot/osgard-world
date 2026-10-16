@@ -13,7 +13,8 @@ const viewports = [
   { name: 'mobile', width: 390, height: 844 }
 ]
 const routes = [
-  { name: 'intelligence', path: '/', selector: '.osa-home' },
+  { name: 'world', path: '/', selector: '.world-home' },
+  { name: 'intelligence', path: '/intelligence', selector: '.intelligence-home' },
   { name: 'portal', path: '/portal', selector: '.osgard-world-app' },
   { name: 'academy', path: '/academy', selector: 'body' },
   { name: 'lectures', path: '/lectures', selector: '.lecture-library' },
@@ -183,12 +184,12 @@ try {
   // Real browser navigation: a cross-profile click shows the one-shot overlay, then consumes its intent.
   const transitionContext = await browser.newContext({
     viewport: { width: 1280, height: 800 },
-    reducedMotion: 'reduce'
+    reducedMotion: 'no-preference'
   })
   await transitionContext.addInitScript(() => {
     try { sessionStorage.setItem('osgard-preloader-seen-v3', '1') } catch {}
     const observer = new MutationObserver(() => {
-      if (document.querySelector('.osa5-transition-overlay')) {
+      if (document.querySelector('.osgard-portal-transition')) {
         window.__osa5TransitionSeen = true
         observer.disconnect()
       }
@@ -205,12 +206,12 @@ try {
       brandLink.click()
     ])
     await transitionPage.waitForFunction(() => window.__osa5TransitionSeen === true, null, { timeout: 5000 })
-    const intentConsumed = await transitionPage.evaluate(() => sessionStorage.getItem('osgard.osa5.transition.v1') === null)
+    const intentConsumed = await transitionPage.evaluate(() => sessionStorage.getItem('osgard:portal-navigation:v2') === null)
     if (!intentConsumed) problems.push('transition: one-shot navigation intent was not consumed on the destination')
-    await transitionPage.locator('.osa5-transition-overlay').waitFor({ state: 'detached', timeout: 3000 })
+    await transitionPage.locator('.osgard-portal-transition').waitFor({ state: 'detached', timeout: 3000 })
     await transitionPage.reload({ waitUntil: 'domcontentloaded' })
     await transitionPage.waitForTimeout(180)
-    const replayCount = await transitionPage.locator('.osa5-transition-overlay').count()
+    const replayCount = await transitionPage.locator('.osgard-portal-transition').count()
     if (replayCount !== 0) problems.push('transition: overlay replayed after its one-shot intent was consumed')
   } catch (error) {
     problems.push('cross-portal transition integration: ' + String(error?.message || error))

@@ -86,6 +86,17 @@ rollback() {
     docker rename osgard-core-api "$core_previous"
     core_replaced=1
   fi
+  if [[ "$core_replaced" != "1" ]]; then
+    mapfile -t existing_core_volumes < <(docker volume ls -q --filter label=com.docker.compose.volume=osgard-core-data)
+    if [[ "${#existing_core_volumes[@]}" -gt 1 ]]; then
+      echo 'Multiple OSGARD Core data volumes exist without an active Core container; refusing to choose one automatically.' >&2
+      exit 1
+    elif [[ "${#existing_core_volumes[@]}" == "1" ]]; then
+      core_volume="${existing_core_volumes[0]}"
+    elif docker volume inspect osgard-core-data >/dev/null 2>&1; then
+      core_volume="osgard-core-data"
+    fi
+  fi
   if ! docker volume create "$core_volume" >/dev/null; then
     rollback
     exit 1
