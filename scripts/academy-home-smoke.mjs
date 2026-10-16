@@ -22,7 +22,7 @@ assert.ok(main.includes("if (path === '/academy') return <><Seo path=\"/academy\
 assert.ok(osaHome.includes('OSA INTELLIGENCE') && osaHome.includes("'/osa-cinema'") && osaHome.includes("'/academy'") && osaHome.includes('href="/learning"'), 'OSA homepage must link to the existing course, preserved Academy, and ecosystem portal')
 assert.ok(osaHome.includes('Синхронизация аккаунта не подключена') && osaHome.includes('Статус аудио и видео'), 'OSA homepage must disclose storage and media limits')
 assert.ok(osaStyles.includes('@media(max-width:760px)') && osaStyles.includes('@media(prefers-reduced-motion:reduce)') && osaStyles.includes(':focus-visible'), 'OSA homepage must be responsive, keyboard-accessible, and respect reduced motion')
-assert.ok(main.includes("if (path === '/portal') return <><Seo path=\"/portal\" /><App /></>"), 'Previous ecosystem homepage must remain available at /portal')
+assert.ok(main.includes("if (path === '/portal') return <><Seo path=\"/\" /><WorldHome /></>"), 'Previous ecosystem homepage URL must resolve to the current OSGARD WORLD homepage at /portal')
 assert.ok(main.includes("if (path === '/osa-cinema') return <><Seo path={path} /><OSACinema /></>"), 'Existing OSA Original course URL must remain registered')
 assert.ok(home.includes("import AcademyStudio from './AcademyStudio'") && home.includes('<AcademyStudio locale={locale} />'), 'Academy must integrate the bilingual project studio into the learning journey')
 assert.ok(studio.includes("KEY='osgard-academy-studio-v1'") && studio.includes('localStorage.setItem(KEY'), 'Project drafts and self-assessments must persist locally')

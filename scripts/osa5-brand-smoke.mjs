@@ -65,7 +65,7 @@ assert.ok(cinema.includes("import { OSAMark } from './OSAMark'") && cinema.inclu
 assert.ok(legacyStyles.includes("import './osa5-brand.css'"), 'Shared design system must load after existing styles')
 assert.ok(legacyStyles.indexOf("import './osa5-brand.css'") > legacyStyles.indexOf("import './legacy.css'"), 'OSA 5.0 overrides must load after product-specific CSS')
 assert.ok(main.includes("if (path === '/') return <><Seo path=\"/\" /><WorldHome /></>") && main.includes("if (path === '/intelligence') return <><Seo path={path} /><IntelligenceHome /></>"), 'OSGARD WORLD and OSA Intelligence must each keep their own root route')
-assert.ok(main.includes("if (path === '/portal') return <><Seo path=\"/portal\" /><App /></>"), 'OSGARD ecosystem must remain available on its current route')
+assert.ok(main.includes("if (path === '/portal') return <><Seo path=\"/\" /><WorldHome /></>"), 'The legacy portal URL must resolve to the current OSGARD WORLD homepage')
 assert.ok(main.includes("if (path === '/lectures') return <><Seo path=\"/lectures\" /><LectureLibrary /></>"), 'Ordered OSA lecture library must have a dedicated route')
 assert.ok(lectures.includes('getOSACinemaLessons(locale)') && lectures.includes('visibleLessons.map(({ lesson, index })') && lectures.includes('OSA_LESSON_SLUGS[index]') && lessonPage.includes("'/osa-cinema?scene=' + lessonIndex"), 'Lecture library must search/filter without breaking lesson links or the interactive scene route')
 assert.ok(lectures.includes('Видеозаписи пока не опубликованы') && lectures.includes('no MP4/WebM') && !lectures.includes('<video'), 'Lecture library must not fake video players when permanent media is unavailable')
