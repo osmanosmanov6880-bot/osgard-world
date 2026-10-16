@@ -5,7 +5,7 @@
  const profile=p=>{p=normalize(p);if(p==='/play/partners')return 'world';if(p==='/intelligence'||p==='/academy'||p==='/osa-cinema'||p.startsWith('/learning')||p.startsWith('/lectures')||p.startsWith('/osa-library'))return 'intelligence';if(p==='/play'||p.startsWith('/play/')||p==='/entertainment'||p.startsWith('/games'))return 'play';return 'world'};
  const name={world:'OSGARD WORLD',intelligence:'OSA INTELLIGENCE',play:'OSGARD PLAY'};
  const current=profile(location.pathname);document.documentElement.dataset.product=current;
- const reduced=()=>matchMedia('(prefers-reduced-motion: reduce)').matches||document.documentElement.dataset.motion==='off';
+ const reduced=()=>globalThis.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches||document.documentElement.dataset.motion==='off';
  try{document.documentElement.dataset.motion=localStorage.getItem('osgard:motion')==='off'?'off':'on'}catch{}
  document.addEventListener('click',e=>{
   if(e.defaultPrevented||e.button!==0||e.metaKey||e.ctrlKey||e.shiftKey||e.altKey)return;
