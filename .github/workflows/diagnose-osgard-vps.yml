@@ -114,7 +114,7 @@ jobs:
           echo "title:"
           grep -Eo "<title[^>]*>[^<]*</title>" "$page" | head -5
           echo "local and external assets:"
-          grep -Eo "(href|src)=[\"'"][^\"'"]+[\"'"]" "$page" | sort -u | sed -n "1,200p"
+          grep -Eo "(href|src)=\"[^\"]+\"" "$page" | sort -u | sed -n "1,200p"
           echo "engine markers:"
           grep -Eio "Godot|Unity|WebGL|canvas|Phaser|three.js|iframe|game|игр[аы]" "$page" | sort | uniq -c | head -40
           ' 2>&1
