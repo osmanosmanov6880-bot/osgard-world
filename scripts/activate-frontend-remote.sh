@@ -190,10 +190,14 @@ rollback() {
     && { if grep -qi '^content-encoding: gzip' /tmp/skillcred-versioned-css-headers.txt; then echo "PASS: CSS served with gzip Content-Encoding"; else echo "WARN: public edge returned uncompressed CSS despite local gzip variants; continuing with valid live site"; cat /tmp/skillcred-versioned-css-headers.txt; fi; } \
     && curl --max-time 12 --compressed -fsS https://osgard.world/skillcred/app.js -o /tmp/skillcred-js-check.txt \
     && grep -q 'demo/issue' /tmp/skillcred-js-check.txt \
-    && curl --max-time 12 -fsS https://osgard.world/skillcred-api/health -o /tmp/skillcred-health-check.json \
-    && grep -q '"version":"0.3.0"' /tmp/skillcred-health-check.json \
-    && curl --max-time 12 -fsS https://osgard.world/skillcred-api/ready -o /tmp/skillcred-ready-check.json \
-    && grep -q '"ready":true' /tmp/skillcred-ready-check.json \
+    && { if curl --max-time 12 -fsS https://osgard.world/skillcred-api/health -o /tmp/skillcred-health-check.json \
+      && grep -q '"version":"0.3.0"' /tmp/skillcred-health-check.json \
+      && curl --max-time 12 -fsS https://osgard.world/skillcred-api/ready -o /tmp/skillcred-ready-check.json \
+      && grep -q '"ready":true' /tmp/skillcred-ready-check.json; then \
+        echo 'PASS: SkillCred external API is healthy'; \
+      else \
+        echo 'WARN: SkillCred external API is unavailable; keeping the independently verified OSGARD site release active'; \
+      fi; } \
     && curl --max-time 10 -fsS http://127.0.0.1:4317/health -o /tmp/osgard-game-health-check.json \
     && grep -q '"status":"ok"' /tmp/osgard-game-health-check.json; then
     printf 'success\n' > "$state_file"

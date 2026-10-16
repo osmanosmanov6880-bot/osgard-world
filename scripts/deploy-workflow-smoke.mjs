@@ -40,6 +40,10 @@ assert.ok(homepage.includes('<meta name="osgard-app" content="osgard-ecosystem"'
 assert.ok(healthWorkflow.includes('workflow_run:') && healthWorkflow.includes('workflows: ["OSGARD frontend deploy"]') && healthWorkflow.includes('types: [completed]') && !healthWorkflow.includes('\n  push:\n'), 'Production health checks must run after deploy, not race the push-triggered deploy')
 assert.ok(activation.includes('<title>OSGARD WORLD — цифровые продукты, построенные как системы</title>') && activation.includes("grep -q 'OSGARD WORLD'"), 'Activation must validate the OSGARD root identity and JavaScript bundle')
 assert.ok(activation.includes('core-api-image.tar.gz') && activation.includes('--network-alias core-api') && activation.includes('/api/core/health'), 'Activation must deploy, health-check and publish the Core API alongside the frontend')
+assert.ok(activation.includes("WARN: SkillCred external API is unavailable; keeping the independently verified OSGARD site release active"), 'A separate SkillCred provider outage must not roll back an otherwise healthy OSGARD static release')
+assert.ok(activation.includes("PASS: SkillCred external API is healthy"), 'Activation should still report a healthy SkillCred integration when available')
+assert.ok(activation.includes("curl --max-time 10 -fsS http://127.0.0.1:4317/health"), 'Game API health remains a required deployment gate')
+
 assert.ok(productionRoutes.includes('<title>OSGARD Development — цифровые продукты и кейсы</title>') && productionRoutes.includes('content.length > 10000'), 'Production route checks must match the current OSGARD homepage shells and bundle size')
 assert.ok(healthMonitor.includes("check('Live homepage JavaScript entry bundle'") && healthMonitor.includes("body.includes('__vite__mapDeps')"), 'Production health monitor must validate the Vite entry bundle without requiring lazy route content in it')
 assert.ok(activation.includes('osgard-core-internal') && activation.includes('docker network connect "$core_network" "$container_name"'), 'Activation must provide a user-defined DNS network when the existing site only uses Docker bridge')
