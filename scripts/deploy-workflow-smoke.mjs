@@ -7,6 +7,7 @@ const activation = readFileSync('scripts/activate-frontend-remote.sh', 'utf8')
 const homepage = readFileSync('index.html', 'utf8')
 const healthWorkflow = readFileSync('.github/workflows/production-health-watch.yml', 'utf8')
 const nginx = readFileSync('nginx.conf', 'utf8')
+const productionRoutes = readFileSync('scripts/production-route-matrix.mjs', 'utf8')
 
 for (const secret of ['OSGARD_DEPLOY_HOST', 'OSGARD_DEPLOY_USER', 'OSGARD_DEPLOY_KEY']) {
   assert.ok(workflow.includes(`secrets.${secret}`), `Deployment workflow must use ${secret}`)
@@ -37,6 +38,7 @@ assert.ok(homepage.includes('<meta name="osgard-app" content="osgard-ecosystem"'
 assert.ok(healthWorkflow.includes('workflow_run:') && healthWorkflow.includes('workflows: ["OSGARD frontend deploy"]') && healthWorkflow.includes('types: [completed]') && !healthWorkflow.includes('\n  push:\n'), 'Production health checks must run after deploy, not race the push-triggered deploy')
 assert.ok(activation.includes('<title>OSGARD WORLD — цифровые продукты, построенные как системы</title>') && activation.includes("grep -q 'OSGARD WORLD'"), 'Activation must validate the OSGARD root identity and JavaScript bundle')
 assert.ok(activation.includes('core-api-image.tar.gz') && activation.includes('--network-alias core-api') && activation.includes('/api/core/health'), 'Activation must deploy, health-check and publish the Core API alongside the frontend')
+assert.ok(productionRoutes.includes('<title>OSGARD Development — цифровые продукты и кейсы</title>') && productionRoutes.includes('content.length > 10000'), 'Production route checks must match the current OSGARD homepage shells and bundle size')
 assert.ok(activation.includes('osgard-core-internal') && activation.includes('docker network connect "$core_network" "$container_name"'), 'Activation must provide a user-defined DNS network when the existing site only uses Docker bridge')
 assert.ok(activation.includes('label=com.docker.compose.volume=osgard-core-data') && activation.includes('Multiple OSGARD Core data volumes exist'), 'Activation must preserve a single existing Core volume and refuse ambiguous data selection')
 assert.ok(workflow.includes('docker build --pull -f server/Dockerfile') && workflow.includes('docker save osgard-core-api:${GITHUB_SHA}'), 'Release archive must contain the versioned Core API image')

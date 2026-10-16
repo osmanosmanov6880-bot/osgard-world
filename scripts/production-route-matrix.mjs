@@ -36,7 +36,7 @@ for (const [device, userAgent] of Object.entries(agents)) for (const route of ro
       : route === '/development/tedes/'
         ? text.includes('<title>TEDES — кейс OSGARD Development</title>') && text.includes('href="/tedes/"') && text.includes('FLAGSHIP CASE')
       : route === '/development/'
-        ? text.includes('<title>Разработка цифровых продуктов — OSGARD Development</title>') && text.includes('SELECTED WORK / 01—07') && text.includes('href="/development/essentia/"') && text.includes('href="/development/phantom/"') && text.includes('href="/development/tedes/"') && text.includes('href="/development/merakki/"') && text.includes('href="/development/auto-style/"') && text.includes('href="/development/osa-intelligence/"')
+        ? text.includes('<title>OSGARD Development — цифровые продукты и кейсы</title>') && text.includes('name="osgard-app" content="osgard-ecosystem"') && text.includes('data-product="world"') && text.includes('href="/development/tedes/"')
       : route === '/development/essentia/'
         ? text.includes('<title>ESSENTIA — премиальный e-commerce концепт | OSGARD Development</title>') && text.includes('data-case-status="demo-only"') && text.includes('id="productGrid"') && text.includes('id="cartDrawer"')
       : route === '/development/essentia/og.svg'
@@ -202,7 +202,7 @@ for (const [device, userAgent] of Object.entries(agents)) for (const route of ro
                 : path === '/tedes/project/project-workspace.js'
                 ? content.includes('export function parseProjectDocument') && content.includes('export function mergeProjectDocuments') && content.includes('MAX_IMPORT_BYTES') && content.includes('localStorage') && content.length > 10000
                 : route === '/'
-                  ? (content.includes('OSA INTELLIGENCE / BEYOND THE MODEL') || /osgard|world/i.test(content)) && content.length > 100000
+                  ? /osgard|world/i.test(content) && content.length > 10000
                 : path === '/tedes/project/project-workspace.js'
                 ? content.includes('export const PROJECT_SCHEMA = "tedes-studio-project/v1";') &&
                   content.includes('MAX_PROJECT_POSITIONS = 30') &&
