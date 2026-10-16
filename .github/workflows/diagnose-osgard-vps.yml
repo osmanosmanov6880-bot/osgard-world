@@ -148,7 +148,7 @@ jobs:
       - name: Export the verified Empire game entry and its referenced assets
         run: |
           set -euo pipefail
-          ssh -i ~/.ssh/osgard_deploy "${{ secrets.OSGARD_DEPLOY_USER }}@${{ secrets.OSGARD_DEPLOY_HOST }}" 'docker exec osgard-games sh -lc "cd /usr/share/nginx/html && for file in index.html orbit-gallery.css orbit-ecosystem.js orbit-planetary.js orbit-wow.js; do test -f \"\$file\" || exit 1; done && tar -czf - -- index.html orbit-gallery.css orbit-ecosystem.js orbit-planetary.js orbit-wow.js"' > empire-time-public-assets.tar.gz
+          ssh -i ~/.ssh/osgard_deploy "${{ secrets.OSGARD_DEPLOY_USER }}@${{ secrets.OSGARD_DEPLOY_HOST }}" 'docker exec osgard-games sh -lc "cd /usr/share/nginx/html && for file in index.html orbit-gallery.css orbit-ecosystem.js orbit-planetary.js orbit-wow.js empire-world.js; do test -f \"\$file\" || exit 1; done && tar -czf - -- index.html orbit-gallery.css orbit-ecosystem.js orbit-planetary.js orbit-wow.js empire-world.js"' > empire-time-public-assets.tar.gz
           tar -tzf empire-time-public-assets.tar.gz
 
       - name: Upload only the verified Empire game files
