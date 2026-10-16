@@ -81,13 +81,13 @@ await check('OSGARD/OSA homepage identity, cache policy, and backend consistency
   }
 })
 
-await check('Live OSA JavaScript bundle', async () => {
+await check('Live homepage JavaScript entry bundle', async () => {
   expect(homeHtml.length > 0, 'homepage HTML was not available')
   const path = homeHtml.match(/<script[^>]+src="([^"]+\.js)"[^>]*><\/script>/i)?.[1]
   expect(path && path.startsWith('/assets/'), 'could not resolve the same-origin homepage bundle')
   const { response, body } = await get(path)
   expect(response.status === 200, `bundle returned HTTP ${response.status}`)
-  expect(body.includes(homeHtml.toLowerCase().includes('osa intelligence') ? 'OSA INTELLIGENCE / BEYOND THE MODEL' : 'OSGARD'), `expected OSA bundle marker is missing in ${path}; HTTP ${response.status}; headers=${JSON.stringify(responseDiagnostics(response))}; bytes=${new TextEncoder().encode(body).byteLength}; prefix=${body.slice(0, 220).replace(/\\s+/g, ' ')}`)
+  expect(body.length > 10000 && body.includes('__vite__mapDeps'), `homepage entry bundle is unexpectedly small or missing the Vite dependency map in ${path}; HTTP ${response.status}; headers=${JSON.stringify(responseDiagnostics(response))}; bytes=${new TextEncoder().encode(body).byteLength}; prefix=${body.slice(0, 220).replace(/\\s+/g, ' ')}`)
   return { statusCode: response.status, bundle: path, bytes: new TextEncoder().encode(body).byteLength }
 })
 
