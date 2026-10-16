@@ -144,3 +144,17 @@ jobs:
           path: production-game-inventory.txt
           if-no-files-found: error
           retention-days: 7
+
+      - name: Export the verified Empire game entry and its referenced assets
+        run: |
+          set -euo pipefail
+          ssh -i ~/.ssh/osgard_deploy "${{ secrets.OSGARD_DEPLOY_USER }}@${{ secrets.OSGARD_DEPLOY_HOST }}" 'docker exec osgard-games sh -lc "cd /usr/share/nginx/html && for file in index.html orbit-gallery.css orbit-ecosystem.js orbit-planetary.js orbit-wow.js; do test -f \"\$file\" || exit 1; done && tar -czf - -- index.html orbit-gallery.css orbit-ecosystem.js orbit-planetary.js orbit-wow.js"' > empire-time-public-assets.tar.gz
+          tar -tzf empire-time-public-assets.tar.gz
+
+      - name: Upload only the verified Empire game files
+        uses: actions/upload-artifact@v4
+        with:
+          name: empire-time-public-assets
+          path: empire-time-public-assets.tar.gz
+          if-no-files-found: error
+          retention-days: 7
