@@ -9,7 +9,6 @@ on:
 
 permissions:
   contents: read
-  issues: write
 
 jobs:
   diagnose:
@@ -79,7 +78,7 @@ jobs:
           ' 2>&1
           REMOTE
 
-      - name: Capture public games and Godot export files
+      - name: Capture public games and Godot export files from both production containers
         env:
           HOST: ${{ secrets.OSGARD_DEPLOY_HOST }}
           USER: ${{ secrets.OSGARD_DEPLOY_USER }}
@@ -99,30 +98,39 @@ jobs:
             fi
           done
           '
+          echo '--- Active game-serving container filesystem (read-only) ---'
+          docker inspect osgard-games --format 'container={{.Name}} image={{.Config.Image}} networks={{json .NetworkSettings.Networks}}' 2>&1
+          docker exec osgard-games sh -lc '
+          for root in /usr/share/nginx/html /var/www/html /app/dist /opt/osgard-games/dist /srv/games; do
+            if [ -d "$root" ]; then
+              echo "ROOT $root"
+              find "$root" -maxdepth 10 -type f \\( -name index.html -o -iname "*.pck" -o -iname "*.wasm" -o -iname "*.zip" -o -path "*/games/*" -o -path "*/play/*" \\) -print | sort | sed -n "1,1200p"
+            fi
+          done
+          ' 2>&1
+          for route in / /games/ /play/; do
+            code="$(curl -sS -o /tmp/osgard-game-probe -w '%{http_code}' --max-time 5 "http://127.0.0.1:4190$route" 2>/dev/null)"
+            bytes="$(wc -c < /tmp/osgard-game-probe 2>/dev/null)"
+            printf 'game_container_route=%s status=%s bytes=%s\\n' "$route" "${code:-connection_failed}" "${bytes:-0}"
+          done
           REMOTE
 
-      - name: Publish inventory to the diagnostic pull request
-        uses: actions/github-script@v7
-        env:
-          INVENTORY_FILE: production-game-inventory.txt
+      - name: Save production inventory to the workflow summary and artifact
+        run: |
+          {
+            echo '### Read-only production game inventory'
+            echo
+            echo 'Captured from both active production containers. This step only reads production files.'
+            echo
+            echo '~~~text'
+            sed -n '1,1600p' production-game-inventory.txt
+            echo '~~~'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload production game inventory
+        uses: actions/upload-artifact@v4
         with:
-          script: |
-            const fs = require('fs');
-            const report = fs.readFileSync(process.env.INVENTORY_FILE, 'utf8').trim();
-            const body = [
-              '### Read-only production game inventory',
-              '',
-              'Captured from the active frontend container over SSH. This lists public HTML pages, game directory files, and Godot export artifacts; no production files were changed.',
-              '',
-              '~~~text',
-              report.slice(0, 60000),
-              '~~~',
-              '',
-              'Workflow run: ' + context.serverUrl + '/' + context.repo.owner + '/' + context.repo.repo + '/actions/runs/' + context.runId,
-            ].join('\n');
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: 83,
-              body,
-            });
+          name: production-game-inventory
+          path: production-game-inventory.txt
+          if-no-files-found: error
+          retention-days: 7
