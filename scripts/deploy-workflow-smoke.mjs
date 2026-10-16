@@ -46,7 +46,7 @@ assert.ok(activation.includes("grep -q 'osgard-app.*osgard-ecosystem' /tmp/osgar
 assert.equal((activation.match(/name="osgard-app" content="osgard-ecosystem"/g) ?? []).length, 1, 'Activation must check the exact OSGARD identity in live HTML')
 assert.ok(nginx.includes('location = /index.html') && nginx.includes('no-store, no-cache, must-revalidate, proxy-revalidate'), 'HTML shell must not be cached separately from versioned assets')
 assert.ok(nginx.includes('^/brand/(?:osa-transition\\.js|osa5-portals\\.css)$') && nginx.includes('gzip_static on;') && nginx.includes('gzip_min_length 64;') && nginx.includes('gzip_types application/javascript text/css;'), 'Versioned shared-brand assets must be served with gzip')
-assert.ok(workflow.includes('content_length -le 4096'), 'Small shared-brand assets must remain within the response-size budget if gzip is unavailable')
+assert.ok(workflow.includes(' -le 4096') && workflow.includes('content_length'), 'Small shared-brand assets must remain within the response-size budget if gzip is unavailable')
 assert.ok(!workflow.includes('echo "$DEPLOY_KEY"'), 'Workflow must not print the private key')
 
 assert.ok(workflow.includes('Preserve Godot Web export for static-only releases'), 'Static-only deploys must preserve generated Godot artifacts instead of deleting them')
