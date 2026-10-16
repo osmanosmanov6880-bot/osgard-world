@@ -104,7 +104,9 @@ for (const [device, userAgent] of Object.entries(agents)) for (const route of ro
           ? text.includes('id="campaign-form"') && text.includes('id="inventory-grid"') && text.includes('id="principles"') && text.includes('partners.js') && text.includes('mailto:osman.osmanov0099@gmail.com')
         : (route === '/games/' || route === '/games/index.html')
           ? text.includes('id="games-grid"') && text.includes('data-game="null-shift"') && text.includes('data-game="time"') && text.includes('data-game="swarm"') && text.includes('data-game="inherit"') && text.includes('data-game="remix"') && text.includes('data-game="vector-zero"') && text.includes('data-game="afterimage-run"') && text.includes('data-game="empire-orbit"') && text.includes('"numberOfItems":8') && text.includes('id="player-dialog"') && text.includes('id="player-share"') && text.includes('data-lazy-src="./player-lifecycle.js"') && text.includes('data-lazy-src="./ecosystem-intermission.js"') && text.includes('id="project-form"') && text.includes('id="analytics-toggle"') && text.includes('osgardvanguard.studio')
-        : (route === '/games/time-empire/' || route === '/games/empire-orbit/')
+        : route === '/games/time-empire/'
+        ? text.includes('<title>Империя времени — OSGARD Games</title>') && text.includes('id="core"')
+      : route === '/games/empire-orbit/'
         ? text.includes('<title>OSGARD: EMPIRE — орбитальная версия | OSGARD PLAY</title>') && text.includes('WORLD 08') && text.includes('id="core"') && text.includes('empire-world.js') && text.includes('localStorage')
       : route.startsWith('/games/afterimage-run/')
           ? text.includes('<title>AFTERIMAGE//RUN — OSGARD PLAY</title>') && text.includes('id="runnerCanvas"') && text.includes('id="run-start"') && text.includes('id="share-telegram"') && text.includes('osgard:game-lifecycle')
