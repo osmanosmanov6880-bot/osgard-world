@@ -1,4 +1,4 @@
-const ALLOWED = new Set(['/teams','/deliveries','/workspace', '/workspace/overview', '/account', '/learning/campus', '/learning/organizer']);
+const ALLOWED = new Set(['/teams','/deliveries','/purchases','/workspace', '/workspace/overview', '/account', '/learning/campus', '/learning/organizer']);
 export function safeReturnTo(value: string | null | undefined) {
     if (!value || value.length > 1000 || /[\\\r\n]/.test(value) || !value.startsWith('/') || value.startsWith('//'))
         return '/workspace';
@@ -7,7 +7,7 @@ export function safeReturnTo(value: string | null | undefined) {
         if (u.origin !== 'https://osgard.invalid' || !ALLOWED.has(pathname) || u.hash)
             return '/workspace';
         const p = new URLSearchParams();
-        for (const key of ['project', 'submission','delivery','team']) {
+        for (const key of ['project', 'submission','delivery','team','order']) {
             const v = u.searchParams.get(key);
             if (v && /^[a-f0-9]{32}$/.test(v))
                 p.set(key, v);

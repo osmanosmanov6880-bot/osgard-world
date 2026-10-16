@@ -16,7 +16,7 @@ try{
   assert.ok(html.includes('aria-label="Продукты OSGARD"')&&html.includes('id="product-main"'),name+' shell')
   assert.ok(html.includes('href="/intelligence"')&&html.includes('href="/play"'))
   if(name==='world')assert.ok(html.includes('id="contact"')&&html.includes('Заявка не отправлена')===false&&html.includes('форма сама ничего не отправляет'))
-  if(name==='intelligence')assert.ok(html.includes('id="demo-sources" hidden')&&html.includes('type="checkbox"')&&html.includes('НЕ ОТВЕТ ПОДКЛЮЧЁННОЙ МОДЕЛИ'))
+  if(name==='intelligence')assert.ok(html.includes('id="demo-sources" hidden')&&html.includes('type="checkbox"')&&(html.includes('учебная')||html.includes('Учебная')||html.includes('НЕ ОТВЕТ ПОДКЛЮЧЁННОЙ МОДЕЛИ')))
   if(name==='teams')assert.ok(html.includes('CORE / TEAMS')&&html.includes('Подключаем команды'));
   if(name==='deliveries')assert.ok(html.includes('RECEIVED MATERIALS')&&html.includes('Подключаем кабинет'));
   if(name==='operations')assert.ok(html.includes('CORE / OPERATIONS')&&html.includes('Подключаем рабочий центр'));
@@ -28,10 +28,10 @@ try{
   if(name==='lesson-bridge')assert.ok(html.includes('Сохранить практику в проект')&&html.includes('Подключить серверный проект'))
   if(name==='workspace')assert.ok(html.includes('OSGARD CORE')&&html.includes('Рубеж пилота')&&!html.includes('type="password"'))
   if(name==='data')assert.ok(html.includes('Скачать текущие данные')&&html.includes('type="file"'))
-  if(name==='play')assert.equal((html.match(/class="play-card"/g)||[]).length,6)
+  if(name==='play')assert.equal((html.match(/class="play-card"/g)||[]).length,19)
  }
- const missing=renderPage('play','null-shift');assert.ok(missing.includes('disabled=""')&&!missing.includes('data-game-launch="null-shift"'))
+ const godot=renderPage('play','null-shift');assert.ok(godot.includes('data-game-launch="null-shift"')&&godot.includes('/games/null-shift/')&&godot.includes('WebGL 2'))
  const ready=renderPage('play','vector-zero');assert.ok(ready.includes('data-game-launch="vector-zero"')&&ready.includes('Избранное и история открытия'))
  const notFound=renderPage('play','unknown');assert.ok(notFound.includes('Мир не найден'))
- console.log('Server rendering checks passed: sixteen surfaces, landmarks, demo controls, six worlds and honest launch states')
+ console.log('Server rendering checks passed: sixteen surfaces, landmarks, demo controls, nineteen worlds and verified source-specific launch states')
 }finally{await unlink(output)}

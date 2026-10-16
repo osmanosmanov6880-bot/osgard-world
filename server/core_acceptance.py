@@ -1,6 +1,7 @@
 """Participant acceptance of an immutable Studio release. Never certifies or fetches URLs."""
 import hashlib
 import json
+import core_readiness
 from core_model import require, text, now, uid
 
 SCHEMA='''
@@ -26,7 +27,8 @@ def release_source(db,row,rid):
         a=db.execute('SELECT * FROM assets WHERE project_id=? AND id=?',(row['id'],artifact['assetId'])).fetchone()
         require(a is not None,'Файл выпуска недоступен.','release_asset',409)
         actual=hashlib.sha256(a['content'].encode()).hexdigest()
-        asset=dict(id=a['id'],html=a['content'],sha256=a['sha256'],sourceVersion=a['source_version'],integrityMatches=actual==a['sha256']==artifact['checksum'])
+        evidence,_=core_readiness.artifact_evidence(db,row['id'],snapshot)
+        asset=dict(id=a['id'],html=a['content'],sha256=a['sha256'],sourceVersion=a['source_version'],integrityMatches=actual==a['sha256']==artifact['checksum'],inputsMatchSnapshot=evidence['inputsMatch'],sourceSnapshotAvailable=evidence['sourceSnapshotAvailable'])
     return release,snapshot,created['actor_id'],asset
 
 def read(store,db,pid,actor,rid=None):
@@ -54,6 +56,7 @@ def mutate(store,db,row,actor,payload):
         validated.append(dict(id=item['id'],passed=item['passed'],evidence=text(item.get('evidence'),2000,20)))
     note=text(payload.get('note'),4000,20);verdict='accepted' if all(v['passed'] for v in validated) else 'needs_changes'
     require(verdict!='accepted' or asset is None or asset['integrityMatches'],'Содержимое файла не совпадает с SHA-256 выпуска. Приёмка заблокирована.','integrity_mismatch',409)
+    require(verdict!='accepted' or asset is None or asset['inputsMatchSnapshot'],'HTML собран из другой цели, аудитории, задач или критериев. Создайте новый прототип и выпуск.','artifact_stale',409)
     review_id=uid();db.execute('INSERT INTO release_reviews VALUES(?,?,?,?,?,?,?,?,?)',(review_id,row['id'],rid,release['sourceVersion'],actor,verdict,json.dumps(validated,ensure_ascii=False),note,now()))
     project=store.save(db,row,actor,data,'release_reviewed',dict(reviewId=review_id,releaseId=rid,sourceVersion=release['sourceVersion'],verdict=verdict))
     return dict(project=project,reviewId=review_id,verdict=verdict)

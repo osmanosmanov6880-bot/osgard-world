@@ -22,6 +22,9 @@ try{
  assert.equal(coreAuthReturn('/workspace','?project='+pid+'&tab=delivery'),'/workspace?project='+pid+'&tab=delivery');assert.equal(coreAuthReturn('/workspace','?returnTo='+encodeURIComponent('/workspace/overview')),'/workspace/overview');assert.equal(coreAuthReturn('/workspace','?returnTo=https://external.test'),'/workspace');
  assert.equal(coreAuthReturn('/workspace/','?returnTo='+encodeURIComponent('/deliveries?delivery='+sid)),'/deliveries?delivery='+sid);assert.equal(safeReturnTo('/deliveries/?delivery='+sid+'&token=discard'),'/deliveries?delivery='+sid);
  assert.equal(safeReturnTo('/teams/?team='+sid+'&secret=drop'),'/teams?team='+sid);
+ assert.equal(safeReturnTo('/purchases/?order='+sid+'&token=discard'),'/purchases?order='+sid);
+ assert.equal(safeReturnTo('/purchases?order=https://external.test'),'/purchases');
+ assert.equal(coreAuthReturn('/workspace','?returnTo='+encodeURIComponent('/purchases?order='+sid)),'/purchases?order='+sid);
  const txt=recoveryDocument('tester','batch',['one','two']);assert.ok(txt.includes('one\ntwo'));assert.ok(txt.includes('Активируйте этот набор'));assert.ok(txt.includes('аннулирует все старые коды и сессии'))
  await coreRequest('health');assert.equal(headers.Authorization,'Bearer first')
  stored='second';for(const fn of handlers)fn({persisted:true});await coreRequest('health');assert.equal(headers.Authorization,'Bearer second')

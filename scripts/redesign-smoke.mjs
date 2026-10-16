@@ -7,8 +7,15 @@ let p=toggleFavorite(emptyPlayCollection(),'time');assert.deepEqual(p.favorites,
 p=visitGame(visitGame(visitGame(p,'time'),'swarm'),'time');assert.deepEqual(p.recent,['time','swarm'])
 assert.deepEqual(parsePlayCollection('{"favorites":["time","time","unknown",12],"recent":["swarm"]}',ids),{favorites:['time'],recent:['swarm']})
 assert.throws(()=>parsePlayCollection('{',ids));assert.throws(()=>parsePlayCollection(' '.repeat(10001),ids));assert.throws(()=>parsePlayCollection('{"favorites":42}',ids))
-for(const game of playGames){assert.ok(existsSync('public'+game.asset));if(game.launchable&&game.id!=='time'){let path='public'+game.href; if(path.endsWith('/'))path+='index.html';assert.ok(existsSync(path),'Launch target missing: '+game.id)}assert.ok(game.warning&&game.save&&game.online&&game.controls)}
-assert.equal(playGames.find(g=>g.id==='null-shift').launchable,false)
+for(const game of playGames){assert.ok(existsSync('public'+game.asset));if(game.launchable&&!['time','null-shift'].includes(game.id)){let path='public'+game.href; if(path.endsWith('/'))path+='index.html';assert.ok(existsSync(path),'Launch target missing: '+game.id)}assert.ok(game.warning&&game.save&&game.online&&game.controls)}
+assert.equal(playGames.length,19)
+assert.equal(new Set(ids).size,19)
+const godot=playGames.find(g=>g.id==='null-shift')
+assert.equal(godot.launchable,true)
+assert.equal(godot.href,'/games/null-shift-godot/')
+assert.ok(existsSync('public'+godot.alternate.href+'index.html'))
+assert.ok(readFileSync('.github/workflows/deploy-frontend.yml','utf8').includes('Preserve Godot Web export'))
+for(const id of ['020','021','022','023','024','025','026','027','028','029','030'])assert.ok(playGames.some(g=>g.id==='zion-'+id&&g.href.startsWith('/games/zion-9/')))
 for(const item of cases){assert.ok(existsSync('public'+item.href+'index.html'));assert.ok(existsSync('public'+item.art))}
 const main=readFileSync('src/main.tsx','utf8'),css=readFileSync('src/brandSystem.css','utf8'),transition=readFileSync('public/brand/osa-transition.js','utf8')
 for(const route of ['/intelligence','/play','/play/partners','/learning/project','/learning/workspace','/learning/program','/learning/experiments','/learning/portfolio','/portal','/osa-cinema','/academy'])assert.ok(main.includes(route),route)

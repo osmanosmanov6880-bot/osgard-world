@@ -51,6 +51,7 @@ def create(store,db,project,actor,payload):
     rid=identifier(payload.get('releaseId'));release,snapshot,_,asset=core_acceptance.release_source(db,project,rid);reviews=core_acceptance.reviews(db,project['id'],rid)
     require(reviews and reviews[0]['verdict']=='accepted','Нужен последний положительный разбор выпуска.','review_required',409)
     require(asset is None or asset['integrityMatches'],'Сохранённый HTML повреждён.','integrity_mismatch',409)
+    require(asset is None or asset['inputsMatchSnapshot'],'HTML не соответствует исходным данным выпуска. Создайте и примите новый выпуск.','artifact_stale',409)
     username=text(payload.get('recipient'),64,3).lower();user=db.execute('SELECT id FROM users WHERE username=?',(username,)).fetchone();require(user is not None,'Аккаунт получателя не найден.','not_found',404);require(user['id']!=actor,'Выберите другой аккаунт.')
     require(db.execute('SELECT COUNT(*) FROM client_deliveries WHERE project_id=?',(project['id'],)).fetchone()[0]<100,'Лимит 100 изолированных передач.',status=409)
     require(db.execute("SELECT 1 FROM client_deliveries WHERE project_id=? AND release_id=? AND recipient_id=? AND status!='revoked'",(project['id'],rid,user['id'])).fetchone() is None,'Этот выпуск уже передан аккаунту.','delivery_exists',409)

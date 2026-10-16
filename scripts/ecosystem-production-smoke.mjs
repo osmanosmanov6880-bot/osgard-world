@@ -1,0 +1,54 @@
+import assert from 'node:assert/strict'
+import { createHash } from 'node:crypto'
+import { readFile, readdir } from 'node:fs/promises'
+import { build } from 'esbuild'
+
+const origin = new URL(process.env.OSGARD_BASE_URL || 'https://osgard.world')
+assert.ok(['https:', 'http:'].includes(origin.protocol))
+const bundle = await build({ entryPoints: ['src/redesignCatalog.ts'], bundle: true, write: false, format: 'esm', platform: 'node' })
+const { playGames } = await import('data:text/javascript;base64,' + Buffer.from(bundle.outputFiles[0].text).toString('base64'))
+const hash = bytes => createHash('sha256').update(bytes).digest('hex')
+const checked = []
+
+async function fetchPath(path) {
+  const url = new URL(path, origin)
+  url.searchParams.set('release_check', process.env.GITHUB_SHA?.slice(0, 12) || Date.now().toString())
+  const response = await fetch(url, { headers: { 'Cache-Control': 'no-cache' }, signal: AbortSignal.timeout(20000) })
+  assert.equal(response.status, 200, path + ': HTTP ' + response.status)
+  return Buffer.from(await response.arrayBuffer())
+}
+for (const [path, title] of [['/', 'OSGARD WORLD'], ['/intelligence', 'OSA Intelligence'], ['/play', 'OSGARD PLAY'], ['/purchases', 'OSGARD — мои покупки']]) {
+  const html = (await fetchPath(path)).toString('utf8')
+  assert.ok(html.includes('<title>' + title), path + ': title')
+  assert.ok(html.includes('name="description"') && html.includes('property="og:image"'), path + ': SEO')
+  assert.ok(html.includes('https://osgard.world' + path), path + ': canonical')
+  if (path === '/purchases') assert.ok(html.includes('noindex,follow'), path + ': personal page indexing')
+  checked.push(path)
+}
+for (const game of playGames) {
+  const path = '/play/world/' + game.id
+  const html = (await fetchPath(path)).toString('utf8')
+  assert.ok(html.includes('<title>' + game.title), path + ': actual world title')
+  assert.ok(html.includes('href="https://osgard.world' + path + '"'), path + ': canonical')
+  checked.push(path)
+}
+async function filesAt(directory, relative = '') {
+  const found = []
+  for (const item of await readdir(directory, { withFileTypes: true })) {
+    const path = relative + item.name
+    if (item.isDirectory()) found.push(...await filesAt(directory + '/' + item.name, path + '/'))
+    else found.push(path)
+  }
+  return found
+}
+for (const relative of await filesAt('public/games/zion-9')) {
+  const path = '/games/zion-9/' + relative
+  assert.equal(hash(await fetchPath(path)), hash(await readFile('public' + path)), path + ': published bytes differ from release')
+  checked.push(path)
+}
+const inherit = (await fetchPath('/games/inherit/')).toString('utf8')
+assert.ok(inherit.includes("'/api/world/quiet-reach'"), 'INHERIT same-origin world endpoint')
+assert.equal((inherit.match(/<\/html>/gi) || []).length, 1, 'INHERIT document integrity')
+const health = JSON.parse((await fetchPath('/api/core/health')).toString('utf8'))
+assert.equal(health.status, 'ok', 'Core health')
+console.log(JSON.stringify({ status: 'PASS', origin: origin.origin, checkedRoutesAndAssets: checked.length + 2, worlds: playGames.length, localZionWorlds: 11, verification: 'HTTP, metadata, exact local archive bytes and Core health; browser interaction is a separate CI check' }, null, 2))

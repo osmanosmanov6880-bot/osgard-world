@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#070a12">
+
+<title>THE SHADE PROTOCOL — ZION-030</title>
+<style>
+:root{color-scheme:dark;--bg:#070a12;--panel:#0d1320;--fg:#f3f6ff;--muted:#9eabc0;--line:rgba(255,255,255,.14);--cyan:#8de9f5;--hot:#ff805e;--green:#72e6b1}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:var(--bg);color:var(--fg);font:14px/1.5 Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}body{background:radial-gradient(ellipse at 70% 0%,rgba(255,115,78,.11),transparent 35%),radial-gradient(ellipse at 0% 80%,rgba(70,139,215,.10),transparent 35%),var(--bg)}
+main{width:min(1240px,100%);margin:auto;padding:22px clamp(14px,3vw,32px) 44px}header{display:flex;justify-content:space-between;align-items:center;gap:14px;border-bottom:1px solid var(--line);padding:4px 0 18px;flex-wrap:wrap}.brand{display:flex;align-items:center;gap:10px;letter-spacing:.16em;text-transform:uppercase;font-size:10px}.orb{width:8px;height:8px;border-radius:50%;background:var(--cyan);box-shadow:0 0 18px var(--cyan)}header a,.back{color:var(--cyan);text-decoration:none;font-size:11px;letter-spacing:.08em}.hero{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;padding:28px 0 20px}.eyebrow{color:var(--cyan);font-size:10px;letter-spacing:.2em;text-transform:uppercase}.hero h1{font-size:clamp(34px,5vw,62px);line-height:.92;letter-spacing:-.065em;margin:9px 0 12px;font-weight:650}.hero p{margin:0;max-width:680px;color:#b7c3d7;font-size:clamp(14px,1.7vw,17px)}.live-ref{border:1px solid var(--line);border-radius:15px;padding:13px 15px;min-width:160px;background:rgba(255,255,255,.025)}.live-ref small{display:block;color:var(--muted);font-size:9px;letter-spacing:.16em;text-transform:uppercase}.live-ref strong{display:block;font-size:24px;letter-spacing:-.04em;margin-top:4px}.live-ref span{font-size:10px;color:var(--muted)}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 285px;gap:14px;align-items:stretch}.stage{position:relative;min-width:0;border:1px solid var(--line);border-radius:22px;overflow:hidden;background:radial-gradient(ellipse at 50% 45%,#15202d,#080c14 72%);min-height:490px}.scene{display:block;width:100%;height:100%;min-height:490px;touch-action:pan-y;outline:none}.scene canvas{display:block;width:100%;height:100%}.stage-top{position:absolute;left:16px;top:14px;right:16px;display:flex;justify-content:space-between;gap:10px;align-items:center;pointer-events:none}.pill{background:rgba(4,8,15,.82);backdrop-filter:blur(8px);border:1px solid var(--line);border-radius:99px;padding:7px 10px;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#cbd5e6}.pill.hot{color:#ffae91;border-color:rgba(255,128,94,.4)}.stage-bottom{position:absolute;left:14px;right:14px;bottom:14px;display:flex;justify-content:space-between;align-items:flex-end;gap:10px;pointer-events:none}.stage-bottom .pill{max-width:80%;line-height:1.4}
+.panel{border:1px solid var(--line);border-radius:22px;padding:20px;background:linear-gradient(145deg,rgba(255,255,255,.05),rgba(255,255,255,.015)),var(--panel)}.panel h2{font-size:12px;letter-spacing:.15em;text-transform:uppercase;font-weight:550;margin:0 0 9px}.sub{color:var(--muted);font-size:12px;margin:0 0 16px}.modules{display:grid;grid-template-columns:1fr;gap:8px}.module{display:flex;align-items:center;gap:11px;text-align:left;width:100%;border:1px solid var(--line);border-radius:13px;padding:11px;background:rgba(255,255,255,.02);color:var(--fg);cursor:pointer;font:inherit}.module[aria-pressed=true]{border-color:var(--cyan);background:rgba(141,233,245,.08);box-shadow:inset 0 0 0 1px rgba(141,233,245,.08)}.module:focus-visible,.btn:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}.module-icon{display:grid;place-items:center;width:35px;height:35px;border-radius:10px;background:rgba(141,233,245,.08);font-size:17px;flex-shrink:0}.module strong{display:block;font-size:12px}.module small{display:block;font-size:10px;color:var(--muted);margin-top:2px}.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid var(--line);border-radius:99px;padding:10px 13px;background:transparent;color:var(--fg);font:600 10px/1.2 system-ui,sans-serif;letter-spacing:.08em;cursor:pointer}.btn.primary{border-color:rgba(141,233,245,.5);background:rgba(141,233,245,.10);color:#d8fbff}.btn:disabled{opacity:.45;cursor:not-allowed}.controls{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}.controls .btn{width:100%}.status{margin-top:15px;padding:12px;border:1px solid var(--line);border-radius:13px;background:rgba(255,255,255,.025);color:#b5c4d9;font-size:11px;min-height:65px}.status strong{display:block;color:var(--cyan);font-size:10px;text-transform:uppercase;letter-spacing:.12em;margin-bottom:4px}.meter{display:flex;gap:5px;margin-top:9px}.meter i{height:4px;flex:1;border-radius:9px;background:rgba(255,255,255,.1)}.meter i.on{background:var(--green)}.stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}.stat{border:1px solid var(--line);border-radius:12px;padding:11px}.stat small{display:block;color:var(--muted);font-size:9px;text-transform:uppercase;letter-spacing:.11em}.stat strong{display:block;font-size:19px;margin-top:4px}.footnote{font-size:10px;color:#8290a5;margin-top:12px}.below{margin-top:15px;display:grid;grid-template-columns:1fr 1fr;gap:14px}.info{border:1px solid var(--line);border-radius:17px;padding:17px;background:rgba(255,255,255,.02)}.info h2{font-size:11px;text-transform:uppercase;letter-spacing:.16em;margin:0 0 8px}.info p{color:var(--muted);font-size:12px;margin:0}.info a{color:var(--cyan)}footer{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;border-top:1px solid var(--line);margin-top:20px;padding-top:15px;color:#75839a;font-size:10px;letter-spacing:.08em;text-transform:uppercase}
+@media(max-width:850px){.layout{grid-template-columns:1fr}.panel{order:-1}.modules{grid-template-columns:repeat(3,minmax(0,1fr))}.module{align-items:flex-start;flex-direction:column}.scene,.stage{min-height:430px}.hero{align-items:flex-start;flex-direction:column}.live-ref{display:flex;align-items:center;gap:10px;width:100%;min-width:0}.live-ref strong{margin:0}.live-ref span{margin-left:auto}}
+@media(max-width:520px){main{padding:14px 10px 30px}.hero{padding:23px 0 15px}.stage,.scene{min-height:375px}.panel{padding:15px}.modules{gap:6px}.module{padding:8px;border-radius:11px}.module-icon{width:29px;height:29px;font-size:14px}.module strong{font-size:10px}.module small{font-size:9px}.below{grid-template-columns:1fr}.stage-bottom{left:8px;right:8px;bottom:8px}.stage-top{left:8px;right:8px;top:8px}.pill{font-size:8px;padding:6px 8px}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important}}
+</style><meta name="description" content="Теневой протокол. Выберите дерево, навес или дождевой сад и закройте три горячие точки. Бюджет — три размещения."><link rel="canonical" href="https://osgard.world/games/zion-9/queue/ZION-030/index.html"><meta property="og:title" content="Теневой протокол — OSGARD PLAY"><meta property="og:description" content="Выберите дерево, навес или дождевой сад и закройте три горячие точки. Бюджет — три размещения."><meta property="og:image" content="https://osgard.world/games/zion-9/covers/zion-030.svg"><link rel="icon" href="/games/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="../../entry.css"></head>
+<body><main><nav class="z9-osgard-nav" aria-label="OSGARD PLAY"><a href="/games/">← Все игры OSGARD</a><a href="/play/world/zion-030">О мире и управлении</a><span>ZION-030 / 3D-головоломка</span></nav>
+<aside class="z9-entry" aria-label="Перед началом"><p class="z9-entry-label">ПЕРЕД НАЧАЛОМ · 3D-ГОЛОВОЛОМКА</p><p>Выберите дерево, навес или дождевой сад и закройте три горячие точки. Бюджет — три размещения.</p><p class="z9-entry-controls">Мышь или касание — клетка. Стрелки — выбор клетки, Enter — размещение, 1–3 — модуль, R — заново.</p><div class="z9-entry-state"><span>Сохранение: только текущая сессия</span><span>Одиночный режим · онлайн отсутствует</span><span>Русский / English</span></div><p class="z9-entry-note">После обновления страницы прохождение начнётся заново. Избранное каталога сохраняет ссылку на мир, а не игровой прогресс.</p><a class="z9-entry-action" href="#world-play">Перейти к игре ↓</a></aside>
+<div id="world-play" tabindex="-1">
+<header><div class="brand"><span class="orb" aria-hidden="true"></span>ZION-9 / MONOLITH · ZION-030</div><a href="../../index.html">← ALL WORLDS</a></header>
+<section class="hero"><div><div class="eyebrow">Athens · Climate adaptation / interactive field lab</div><h1>THE SHADE PROTOCOL</h1><p>Three interventions. Three heat hotspots. Turn a sun-baked city block into a cooler public place — one deliberate placement at a time.</p></div><div class="live-ref"><small>Athens surface reference</small><strong>60°C → 30°C</strong><span>sun / tree shade · 2025</span></div></section>
+<section class="layout">
+<div class="stage"><div id="scene" class="scene" role="group" tabindex="0" aria-describedby="board-controls-help" aria-label="Procedurally generated 3D city block heat map. Select a cooling module and tap the ground to place it."></div><div class="stage-top"><span class="pill hot">● HEAT RISK MAP · SIMULATION</span><span class="pill" id="placedPill">NODES 0 / 3</span></div><div class="stage-bottom"><span class="pill" id="sceneHint">SELECT MODULE → TAP AN EMPTY TILE</span><span class="pill">3D / WEBXR</span></div></div>
+<aside class="panel"><h2>Deploy a cooling intervention</h2><p class="sub">Choose a module, then tap an empty tile in the city. Cover all three marked hotspots before your deployment budget runs out.</p>
+<div class="modules">
+<button class="module" type="button" data-type="tree" aria-pressed="true"><span class="module-icon">♧</span><span><strong>Urban tree</strong><small>Deep shade</small></span></button>
+<button class="module" type="button" data-type="shade" aria-pressed="false"><span class="module-icon">▤</span><span><strong>Cool canopy</strong><small>Reflective shade</small></span></button>
+<button class="module" type="button" data-type="water" aria-pressed="false"><span class="module-icon">≋</span><span><strong>Rain garden</strong><small>Water + planting</small></span></button>
+</div>
+<div class="stats"><div class="stat"><small>Cooling points</small><strong id="score">00 / 03</strong></div><div class="stat"><small>Modules left</small><strong id="left">03</strong></div></div><div class="meter" id="meter" aria-label="Hotspots covered"><i></i><i></i><i></i></div>
+<div class="status" role="status" aria-live="polite"><strong id="statusTitle">Mission brief</strong><span id="statusText">Place cooling infrastructure close to each glowing hotspot. This is an educational simulation, not a live city model.</span></div>
+<div class="controls"><button id="sound" class="btn" type="button">♫ PLAY C–G–E</button><button id="ar" class="btn" type="button" disabled>◈ CHECKING AR…</button><button id="reset" class="btn" type="button">↺ RESET</button><button id="report" class="btn primary" type="button">FIELD REPORT ↗</button></div>
+<p class="footnote">Browser audio starts only after a tap. AR requires a compatible phone/browser and HTTPS.</p>
+</aside></section>
+<section class="z9-keyboard-controls" aria-label="BOARD CONTROLS"><p id="board-controls-help">Arrow keys choose a tile. Enter places the module; 1–3 changes module; R resets. Hotspots: X −4 / Z −3, X 2 / Z 2, X 4 / Z −2.</p><button type="button" data-cursor="left" aria-label="Choose tile to the left">←</button><button type="button" data-cursor="up" aria-label="Choose tile above">↑</button><button type="button" data-cursor="down" aria-label="Choose tile below">↓</button><button type="button" data-cursor="right" aria-label="Choose tile to the right">→</button><output id="cursor-coordinate" aria-live="polite">Tile X 0 / Z 0 — empty</output><button type="button" id="place-keyboard">Place here</button></section>
+<section class="below"><article class="info"><h2>Field evidence · not game scoring</h2><p>A 2025 Athens field report described surface readings around 60°C on exposed paving and 30°C under tree shade at Argentinis Dimokratias Square. The 3D puzzle uses that finding as context; its points are illustrative, not scientific predictions.</p></article><article class="info"><h2>Technology already in use</h2><p>Athens combines shaded/green spaces with a Heat Risk Index and the <a href="https://coolathens.cityofathens.gr/en/" target="_blank" rel="noopener noreferrer">#CoolAthens</a> information service. Explore the <a href="../../episodes/ZION-030.html">full field episode, sources and business model ↗</a>.</p></article></section>
+<footer><span>Public interactive prototype · no account needed</span><a href="../../episodes/ZION-030.html">Episode dossier ↗</a><a href="../../operator_dashboard.html">Transmission index ↗</a></footer>
+</div></main>
+<script>
+(function(){
+  const sources=[
+    "../../libs/three.min.js"
+  ];
+  let index=0;
+  function loadNext(){
+    if(index>=sources.length){window.dispatchEvent(new Event("zion-three-failed"));return;}
+    const script=document.createElement("script");
+    script.async=true;
+    script.src=sources[index++];
+    let settled=false;
+    const timer=window.setTimeout(function(){
+      if(settled)return;
+      settled=true;
+      script.remove();
+      loadNext();
+    },6500);
+    script.onload=function(){
+      if(settled)return;
+      settled=true;
+      window.clearTimeout(timer);
+      if(window.THREE)window.dispatchEvent(new Event("zion-three-ready"));
+      else loadNext();
+    };
+    script.onerror=function(){
+      if(settled)return;
+      settled=true;
+      window.clearTimeout(timer);
+      script.remove();
+      loadNext();
+    };
+    document.head.appendChild(script);
+  }
+  loadNext();
+})();
+</script>
+<script>
+(function(){
+"use strict";
+const root=document.getElementById("scene"), statusTitle=document.getElementById("statusTitle"),statusText=document.getElementById("statusText");
+const placedPill=document.getElementById("placedPill"),scoreEl=document.getElementById("score"),leftEl=document.getElementById("left"),meter=[...document.querySelectorAll("#meter i")];
+const moduleButtons=[...document.querySelectorAll(".module")],arButton=document.getElementById("ar");
+const HOT=[{x:-4,z:-3},{x:2,z:2},{x:4,z:-2}];
+const GRID=7;let selected="tree",placed=[],won=false,lost=false,renderer,scene,camera,world,moduleGroup,hotGroup,floor,raycaster,pointer,resizeObserver,audioContext,normalBackground,frameCounter=0,perfSampleStart=0,perfSampleFrame=0,adaptiveQualitySteps=0;
+const occupied=new Set();let hotRings=[];
+let gameReady=false,renderingMode="pending",flatCanvas=null,flatContext=null,cursorMesh=null;
+const cursor={x:0,z:0},motionPreference=matchMedia("(prefers-reduced-motion: reduce)");
+const cursorOutput=document.getElementById("cursor-coordinate"),placeButton=document.getElementById("place-keyboard");
+const say=(title,text)=>{statusTitle.textContent=title;statusText.textContent=text;};
+function deterministic(x,z){let n=Math.sin(x*127.1+z*311.7+74.7)*43758.5453;return n-Math.floor(n);}
+function material(color,roughness=.78,metalness=.05,emissive=0x000000){return new THREE.MeshStandardMaterial({color,roughness,metalness,emissive});}
+function addBox(parent,x,y,z,w,h,d,mat){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);m.position.set(x,y+h/2,z);parent.add(m);return m;}
+function key(x,z){return Math.round(x)+","+Math.round(z);}
+function buildCity(){
+ scene=new THREE.Scene();scene.background=new THREE.Color(0x080d16);normalBackground=scene.background;scene.fog=new THREE.Fog(0x080d16,18,34);
+ camera=new THREE.PerspectiveCamera(42,1,.1,100);camera.position.set(11,14,17);camera.lookAt(0,0,0);
+ renderer=new THREE.WebGLRenderer({antialias:false,alpha:true,powerPreference:"high-performance"});
+ renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.0));renderer.setSize(root.clientWidth,root.clientHeight);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.NoToneMapping;renderer.toneMappingExposure=1;root.appendChild(renderer.domElement);
+ scene.add(new THREE.HemisphereLight(0xb6e7ff,0x171723,1.8));
+ const keyLight=new THREE.DirectionalLight(0xffd4a4,2.6);keyLight.position.set(-7,13,8);scene.add(keyLight);
+ const rim=new THREE.PointLight(0x2e9ed0,12,24);rim.position.set(8,6,-7);scene.add(rim);
+ world=new THREE.Group();scene.add(world);
+ const groundMat=new THREE.MeshBasicMaterial({color:0x101a26});floor=new THREE.Mesh(new THREE.PlaneGeometry(16,16),groundMat);floor.rotation.x=-Math.PI/2;floor.position.y=-.04;floor.userData.ground=true;world.add(floor);
+ const grid=new THREE.GridHelper(16,16,0x375066,0x263546);grid.position.y=.01;world.add(grid);
+ const plaza=new THREE.MeshBasicMaterial({color:0x1a2935});addBox(world,0,.01,0,5,.035,5,plaza);
+ // Reuse a handful of instanced draw calls instead of allocating hundreds of separate meshes.
+ const unitBox=new THREE.BoxGeometry(1,1,1);
+ const buildingMat=new THREE.MeshBasicMaterial({color:0xffffff});
+ const roofMat=new THREE.MeshBasicMaterial({color:0x202c38});
+ const windowsMat=new THREE.MeshBasicMaterial({color:0x174158});
+ const badgeMat=new THREE.MeshBasicMaterial({color:0xf07858});
+ const buildings=new THREE.InstancedMesh(unitBox,buildingMat,225);
+ const roofs=new THREE.InstancedMesh(unitBox,roofMat,225);
+ const windows=new THREE.InstancedMesh(unitBox,windowsMat,1800);
+ const badges=new THREE.InstancedMesh(unitBox,badgeMat,225);
+ const dummy=new THREE.Object3D(),tint=new THREE.Color();
+ let buildingCount=0,roofCount=0,windowCount=0,badgeCount=0;
+ occupied.clear();
+ for(let x=-7;x<=7;x++)for(let z=-7;z<=7;z++){
+  if(Math.abs(x)<=2&&Math.abs(z)<=2)continue;
+  const hval=deterministic(x,z);
+  if(hval<.49||Math.abs(x)>6||Math.abs(z)>6)continue;
+  if(HOT.some(p=>Math.hypot(p.x-x,p.z-z)<1.55))continue;
+  occupied.add(key(x,z));
+  const h=1.0+hval*3.2,w=.56+deterministic(z,x)*.25,d=.56+deterministic(x+5,z-4)*.25;
+  const hot=deterministic(x-11,z+6)>.4;
+  dummy.position.set(x,.015+h/2,z);dummy.scale.set(w,h,d);dummy.updateMatrix();
+  buildings.setMatrixAt(buildingCount,dummy.matrix);buildings.setColorAt(buildingCount,tint.setHex(hot?0x673c36:0x394550));buildingCount++;
+  if(h>.34){
+   dummy.position.set(x,h+.035,z);dummy.scale.set(w*.83,.04,d*.86);dummy.updateMatrix();roofs.setMatrixAt(roofCount++,dummy.matrix);
+  }
+  if(hot&&hval>.68){
+   dummy.position.set(x,h+.045,z);dummy.scale.set(w*.62,.025,d*.62);dummy.updateMatrix();badges.setMatrixAt(badgeCount++,dummy.matrix);
+  }
+  if(deterministic(x+z,z-x)>.7){
+   for(let y=.35;y<h-.2;y+=.45){
+    dummy.position.set(x,y+.045,z+d*.505);dummy.scale.set(.13,.09,.03);dummy.updateMatrix();windows.setMatrixAt(windowCount++,dummy.matrix);
+   }
+  }
+ }
+ buildings.count=buildingCount;roofs.count=roofCount;windows.count=windowCount;badges.count=badgeCount;
+ [buildings,roofs,windows,badges].forEach(mesh=>{
+  if(mesh.count>0){mesh.instanceMatrix.needsUpdate=true;if(mesh.instanceColor)mesh.instanceColor.needsUpdate=true;mesh.computeBoundingSphere();world.add(mesh);}
+ });
+ hotGroup=new THREE.Group();world.add(hotGroup);hotRings=[];
+ HOT.forEach((p)=>{
+  const ring=new THREE.Mesh(new THREE.TorusGeometry(.68,.045,6,24),new THREE.MeshBasicMaterial({color:0xff805e,transparent:true,opacity:.95}));
+  ring.rotation.x=-Math.PI/2;ring.position.set(p.x,.09,p.z);hotGroup.add(ring);
+  const dot=new THREE.Mesh(new THREE.SphereGeometry(.13,10,8),new THREE.MeshBasicMaterial({color:0xffc19f}));
+  dot.position.set(p.x,.18,p.z);hotGroup.add(dot);hotRings.push(ring);
+ });
+ moduleGroup=new THREE.Group();world.add(moduleGroup);raycaster=new THREE.Raycaster();pointer=new THREE.Vector2();
+ resizeObserver=new ResizeObserver(resize);resizeObserver.observe(root);resize();
+ renderer.setAnimationLoop(animate);
+}
+function createTree(x,z){
+ const g=new THREE.Group();g.position.set(x,0,z);
+ g.add(new THREE.Mesh(new THREE.CylinderGeometry(.09,.13,.72,7),material(0x98724d)));
+ for(const [dx,dy,dz,r] of [[0,.92,0,.47],[-.28,.75,.06,.32],[.28,.83,-.06,.34],[0,1.25,.12,.3]]){
+  const leaf=new THREE.Mesh(new THREE.IcosahedronGeometry(r,1),material(0x52c997,.92,.0,0x06371d));leaf.position.set(dx,dy,dz);g.add(leaf);
+ }
+ const base=new THREE.Mesh(new THREE.CylinderGeometry(.58,.58,.035,28),material(0x264d3b));base.position.y=.02;g.add(base);return g;
+}
+function createShade(x,z){
+ const g=new THREE.Group();g.position.set(x,0,z);const pole=material(0x8fa9b9,.4,.55),roof=material(0x66bfc4,.55,.25,0x0b2426);
+ for(const dx of [-.55,.55])for(const dz of [-.55,.55])addBox(g,dx,.01,dz,.065,1.45,.065,pole);
+ addBox(g,0,1.45,0,1.32,.09,1.32,roof);
+ for(let n=-2;n<=2;n++)addBox(g,n*.24,1.53,0,.035,.055,1.3,pole);
+ return g;
+}
+function createWater(x,z){
+ const g=new THREE.Group();g.position.set(x,0,z);
+ const rim=material(0x6c967d,.65),water=material(0x3aabc4,.25,.25,0x0b526b),plant=material(0x67cf8a,.8);
+ const bed=new THREE.Mesh(new THREE.CylinderGeometry(.66,.7,.14,7),rim);bed.position.y=.06;g.add(bed);
+ const pool=new THREE.Mesh(new THREE.CylinderGeometry(.48,.48,.035,24),water);pool.position.y=.15;g.add(pool);
+ for(let i=0;i<7;i++){const a=i*2.399,r=.26+(i%2)*.16;const stem=new THREE.Mesh(new THREE.CylinderGeometry(.018,.025,.32,5),plant);stem.position.set(Math.cos(a)*r,.28,Math.sin(a)*r);stem.rotation.z=(i%2?.25:-.25);g.add(stem);const leaf=new THREE.Mesh(new THREE.SphereGeometry(.1,7,5),plant);leaf.position.set(Math.cos(a)*r,.44,Math.sin(a)*r);g.add(leaf);}
+ return g;
+}
+function makeModule(type,x,z){return type==="tree"?createTree(x,z):type==="shade"?createShade(x,z):createWater(x,z);}
+function setModule(type){
+ if(won||lost||placed.length>=3)return;selected=type;
+ moduleButtons.forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.type===type)));
+ const text={tree:"Urban tree selected. Tap a tile beside a glowing hotspot.",shade:"Cool canopy selected. Tap a tile beside a glowing hotspot.",water:"Rain garden selected. Tap a tile beside a glowing hotspot."};
+ say("Module selected",text[type]);
+}
+moduleButtons.forEach(b=>b.addEventListener("click",()=>setModule(b.dataset.type)));
+function placeModuleAt(x,z,type){
+ if(!gameReady||won||lost||placed.length>=3)return false;
+ x=Math.max(-7,Math.min(7,Math.round(x)));z=Math.max(-7,Math.min(7,Math.round(z)));
+ const k=key(x,z);
+ if(occupied.has(k)||placed.some(p=>p.key===k)){say("Tile unavailable","Choose an empty tile. Buildings and existing interventions cannot be replaced.");return false;}
+ occupied.add(k);if(renderer&&moduleGroup)moduleGroup.add(makeModule(type||selected,x,z));placed.push({x,z,key:k,type:type||selected});
+ const covered=HOT.map(p=>placed.some(m=>Math.hypot(m.x-p.x,m.z-p.z)<=1.35));
+ const score=covered.filter(Boolean).length;updateUI(covered);
+ if(score===3){won=true;say("Mission complete","All three heat hotspots are covered. You built a cooler shared space. Play the C–G–E signature or open the source dossier.");playMotif();}
+ else if(placed.length===3){lost=true;say("Thermal pressure remains","Three modules used, but one or more hotspots remain exposed. Reset and try a tighter placement.");}
+ else say("Intervention placed",score+" of 3 hotspots covered. "+(3-placed.length)+" modules remain. Target glowing rings.");
+ updateCursor();
+ return true;
+}
+function onPlace(event){
+ if(!renderer||won||lost||placed.length>=3)return;
+ const rect=renderer.domElement.getBoundingClientRect();pointer.x=((event.clientX-rect.left)/rect.width)*2-1;pointer.y=-((event.clientY-rect.top)/rect.height)*2+1;
+ raycaster.setFromCamera(pointer,camera);const hits=raycaster.intersectObject(floor,false);if(!hits.length)return;
+ placeModuleAt(hits[0].point.x,hits[0].point.z,selected);
+}
+function updateUI(covered){
+ const score=covered.filter(Boolean).length;
+ placedPill.textContent="NODES "+placed.length+" / 3";scoreEl.textContent=String(score).padStart(2,"0")+" / 03";leftEl.textContent=String(Math.max(0,3-placed.length));
+ meter.forEach((e,i)=>e.classList.toggle("on",i<score));
+ hotRings.forEach((ring,i)=>{ring.material.color.set(covered[i]?0x72e6b1:0xff805e);ring.material.opacity=covered[i]?.75:.95;});
+}
+function reset(){
+ placed=[];won=false;lost=false;occupied.clear();
+ for(let x=-7;x<=7;x++)for(let z=-7;z<=7;z++){if(Math.abs(x)<=2&&Math.abs(z)<=2)continue;const h=deterministic(x,z);if(h>=.49&&Math.abs(x)<=6&&Math.abs(z)<=6&&!HOT.some(p=>Math.hypot(p.x-x,p.z-z)<1.55))occupied.add(key(x,z));}
+ while(moduleGroup&&moduleGroup.children.length){const o=moduleGroup.children.pop();o.traverse?.(n=>{n.geometry?.dispose();if(n.material){if(Array.isArray(n.material))n.material.forEach(m=>m.dispose());else n.material.dispose();}});}
+ hotRings.forEach(r=>{r.material.color.set(0xff805e);r.material.opacity=.95;});
+ updateUI([false,false,false]);updateCursor();say("Mission brief","Place cooling infrastructure close to each glowing hotspot. This is an educational simulation, not a live city model.");
+}
+function playMotif(){
+ try{
+  const AC=window.AudioContext||window.webkitAudioContext;if(!AC){say("Audio unavailable","This browser does not support Web Audio.");return;}
+  if(!audioContext)audioContext=new AC();if(audioContext.state==="suspended")audioContext.resume().catch(()=>{});
+  const now=audioContext.currentTime,[c,g,e]=[261.63,392.00,329.63];
+  [c,g,e].forEach((f,i)=>{const osc=audioContext.createOscillator(),gain=audioContext.createGain();osc.type="sine";osc.frequency.value=f;gain.gain.setValueAtTime(.0001,now+i*.22);gain.gain.exponentialRampToValueAtTime(.12,now+i*.22+.035);gain.gain.exponentialRampToValueAtTime(.0001,now+i*.22+.19);osc.connect(gain);gain.connect(audioContext.destination);osc.start(now+i*.22);osc.stop(now+i*.22+.2);});
+ }catch(err){say("Audio unavailable","Allow browser audio and try again.");}
+}
+function resize(){if(flatCanvas){drawFlatBoard();return;}if(!renderer||!camera)return;const w=Math.max(1,root.clientWidth),h=Math.max(1,root.clientHeight);renderer.setSize(w,h);camera.aspect=w/h;camera.updateProjectionMatrix();}
+function animate(time){
+ if(!renderer||document.hidden)return;
+ frameCounter++;
+ if(!perfSampleStart){perfSampleStart=time;perfSampleFrame=frameCounter;}
+ else if(time-perfSampleStart>=1000){
+  const measuredFps=(frameCounter-perfSampleFrame)*1000/(time-perfSampleStart);
+  // Adapt only when this device is slow: lower pixel fill cost, preserve CSS layout.
+  if(measuredFps<28&&renderer.getPixelRatio()>.58){
+   renderer.setPixelRatio(Math.max(.58,renderer.getPixelRatio()*.75));
+   resize();
+   adaptiveQualitySteps++;
+  }
+  perfSampleStart=time;perfSampleFrame=frameCounter;
+ }
+ const t=time*.001;
+ hotRings.forEach((r,i)=>{r.scale.setScalar(motionPreference.matches?1:1+Math.sin(t*2+i)*.055);});
+ if(!renderer.xr.isPresenting){camera.position.x=motionPreference.matches?11:11+Math.sin(t*.12)*.35;camera.lookAt(0,0,0);}
+ renderer.render(scene,camera);
+}
+async function setupAR(){
+ if(!navigator.xr||!renderer){arButton.textContent="AR NOT SUPPORTED";arButton.disabled=true;return;}
+ try{
+  const supported=await navigator.xr.isSessionSupported("immersive-ar");
+  arButton.disabled=!supported;arButton.textContent=supported?"◈ ENTER AR":"◈ AR NOT AVAILABLE";
+  if(!supported)return;
+  arButton.addEventListener("click",async()=>{
+   try{
+    const session=await navigator.xr.requestSession("immersive-ar",{optionalFeatures:["local-floor","dom-overlay"],domOverlay:{root:document.body}});
+    renderer.xr.enabled=true;renderer.xr.setReferenceSpaceType("local");scene.background=null;scene.fog=null;
+    world.position.set(0,-.35,-2.6);world.scale.setScalar(.32);camera.position.set(0,0,0);camera.lookAt(0,0,-1);
+    await renderer.xr.setSession(session);
+    session.addEventListener("end",()=>{scene.background=normalBackground;scene.fog=new THREE.Fog(0x080d16,18,34);world.position.set(0,0,0);world.scale.setScalar(1);camera.position.set(11,14,17);camera.lookAt(0,0,0);resize();});
+   }catch(err){say("AR could not start","Use the 3D simulation in a compatible browser over HTTPS, then try AR again.");}
+  });
+ }catch(err){arButton.textContent="◈ AR NOT AVAILABLE";arButton.disabled=true;}
+}
+document.getElementById("sound").addEventListener("click",playMotif);
+document.getElementById("reset").addEventListener("click",reset);
+document.getElementById("report").addEventListener("click",()=>location.href="../../episodes/ZION-030.html");
+function updateCursor(){
+ const state=occupied.has(key(cursor.x,cursor.z))?"occupied":HOT.some(p=>p.x===cursor.x&&p.z===cursor.z)?"hotspot":"empty";
+ cursorOutput.textContent="Tile X "+cursor.x+" / Z "+cursor.z+" — "+state;
+ placeButton.disabled=!gameReady||won||lost||state==="occupied";
+ if(cursorMesh)cursorMesh.position.set(cursor.x,.07,cursor.z);
+ if(flatCanvas)drawFlatBoard();
+}
+function moveCursor(dx,dz){cursor.x=Math.max(-GRID,Math.min(GRID,cursor.x+dx));cursor.z=Math.max(-GRID,Math.min(GRID,cursor.z+dz));updateCursor();}
+function flatGeometry(){const rect=root.getBoundingClientRect(),width=Math.max(1,rect.width),height=Math.max(375,rect.height),size=Math.min(width-16,height-72);return {width,height,size,left:(width-size)/2,top:(height-size)/2+12,cell:size/15};}
+function drawFlatBoard(){
+ if(!flatContext||!flatCanvas)return;
+ const g=flatGeometry(),ratio=Math.min(devicePixelRatio||1,2);flatCanvas.width=Math.round(g.width*ratio);flatCanvas.height=Math.round(g.height*ratio);flatContext.setTransform(ratio,0,0,ratio,0,0);
+ const ctx=flatContext;ctx.fillStyle="#080d16";ctx.fillRect(0,0,g.width,g.height);
+ for(let x=-GRID;x<=GRID;x++)for(let z=-GRID;z<=GRID;z++){
+  const px=g.left+(x+GRID)*g.cell,py=g.top+(z+GRID)*g.cell,unit=placed.find(m=>m.x===x&&m.z===z),hot=HOT.find(p=>p.x===x&&p.z===z),covered=hot&&placed.some(m=>Math.hypot(m.x-hot.x,m.z-hot.z)<=1.35);
+  ctx.fillStyle=unit?"#245c50":hot?(covered?"#386b48":"#a9533d"):occupied.has(key(x,z))?"#394550":"#152333";ctx.fillRect(px+1,py+1,g.cell-2,g.cell-2);
+  if(hot||unit){ctx.beginPath();ctx.arc(px+g.cell/2,py+g.cell/2,g.cell*.25,0,Math.PI*2);ctx.fillStyle=unit?"#8ceabf":covered?"#b7f15a":"#ffbd91";ctx.fill();}
+ }
+ const cx=g.left+(cursor.x+GRID)*g.cell,cz=g.top+(cursor.z+GRID)*g.cell;ctx.lineWidth=2;ctx.strokeStyle="#b1f7ff";ctx.strokeRect(cx+1,cz+1,g.cell-2,g.cell-2);
+}
+function installTestApi(){
+ if(!new URLSearchParams(location.search).has("test"))return;
+ window.__ZION9_TEST__={
+  placeAt:(x,z,type)=>{const ok=placeModuleAt(x,z,type);return {ok,placed:placed.length,score:HOT.filter(p=>placed.some(m=>Math.hypot(m.x-p.x,m.z-p.z)<=1.35)).length,won,lost};},
+  reset:()=>{reset();return {placed:placed.length,won,lost};},
+  state:()=>({placed:placed.length,won,lost,score:HOT.filter(p=>placed.some(m=>Math.hypot(m.x-p.x,m.z-p.z)<=1.35)).length,rendererCalls:renderer?.info.render.calls||0,frameCounter,webgl:!!renderer?.getContext(),renderingMode,pixelRatio:renderer?.getPixelRatio()||1,adaptiveQualitySteps,cursor:{...cursor}}),
+  hotSpots:()=>HOT.map(p=>({x:p.x,z:p.z}))
+ };
+}
+function showThreeFallback(){
+ if(gameReady)return;
+ root.replaceChildren();flatCanvas=document.createElement("canvas");flatCanvas.setAttribute("aria-hidden","true");root.appendChild(flatCanvas);flatContext=flatCanvas.getContext("2d");
+ if(!flatContext){say("3D engine unavailable","Choose a tile with arrow keys, then press Enter to place the selected module.");}
+ gameReady=true;renderingMode="canvas2d";root.dataset.renderer=renderingMode;arButton.disabled=true;arButton.textContent="AR needs the 3D view";
+ reset();say("Lightweight board","The same three-hotspot puzzle is ready in a lightweight view. Select a module, then choose a tile.");
+ flatCanvas.addEventListener("pointerdown",event=>{const g=flatGeometry(),rect=flatCanvas.getBoundingClientRect(),x=Math.floor((event.clientX-rect.left-g.left)/g.cell)-GRID,z=Math.floor((event.clientY-rect.top-g.top)/g.cell)-GRID;if(x< -GRID||x>GRID||z< -GRID||z>GRID)return;cursor.x=x;cursor.z=z;placeModuleAt(x,z,selected);updateCursor();});
+ if(!resizeObserver){resizeObserver=new ResizeObserver(resize);resizeObserver.observe(root);}installTestApi();
+}
+root.addEventListener("keydown",event=>{if(!gameReady)return;const keyName=event.key.toLowerCase();if(["arrowleft","arrowright","arrowup","arrowdown","enter"," ","1","2","3","r"].includes(keyName))event.preventDefault();if(keyName==="arrowleft")moveCursor(-1,0);if(keyName==="arrowright")moveCursor(1,0);if(keyName==="arrowup")moveCursor(0,-1);if(keyName==="arrowdown")moveCursor(0,1);if(keyName==="enter"||keyName===" ")placeModuleAt(cursor.x,cursor.z,selected);if(["1","2","3"].includes(keyName))setModule(["tree","shade","water"][Number(keyName)-1]);if(keyName==="r")reset();});
+document.querySelectorAll("[data-cursor]").forEach(button=>button.addEventListener("click",()=>{const d={left:[-1,0],right:[1,0],up:[0,-1],down:[0,1]}[button.dataset.cursor];moveCursor(d[0],d[1]);}));
+placeButton.addEventListener("click",()=>placeModuleAt(cursor.x,cursor.z,selected));
+function startThreeGame(){
+ if(!window.THREE){showThreeFallback();return;}
+ if(renderer)return;
+ try{
+  buildCity();gameReady=true;renderingMode="webgl";root.dataset.renderer=renderingMode;
+  cursorMesh=new THREE.Mesh(new THREE.RingGeometry(.43,.49,24),new THREE.MeshBasicMaterial({color:0xaef5ff,side:THREE.DoubleSide}));cursorMesh.rotation.x=-Math.PI/2;world.add(cursorMesh);updateCursor();
+  renderer.domElement.addEventListener("pointerdown",onPlace);
+  setupAR();
+ }catch(error){
+  // WebGL may be unavailable in constrained browsers. Keep the dossier and controls reachable.
+  try{renderer?.dispose();}catch(_){}
+  renderer=null;gameReady=false;
+  showThreeFallback();
+  return;
+ }
+ installTestApi();
+}
+window.addEventListener("zion-three-ready",startThreeGame,{once:true});
+window.addEventListener("zion-three-failed",showThreeFallback,{once:true});
+if(window.THREE)startThreeGame();
+updateCursor();
+})();
+</script><script src="../../language.js?v=osgard-20261017"></script>
+</body></html>

@@ -5,6 +5,7 @@ from core_model import now,simulation,economics,metrics
 import core_learning
 import core_acceptance
 import core_delivery
+import core_readiness
 
 
 def overview(store,db,actor):
@@ -12,6 +13,9 @@ def overview(store,db,actor):
     truncated=len(rows)>200;projects=[];currencies={}
     for row in rows[:200]:
         d=json.loads(row['data']);pid=row['id'];checks=simulation(d);money=economics(d);jobs={s:0 for s in ('queued','running','completed','failed')};learning=None;delivery=None;latest=None;client_counts=None
+        readiness=core_readiness.evaluate(db,pid,row['version'],d) if d['consents']['studio'] else None
+        if readiness:checks=readiness['checks']
+        artifact_problem=bool(readiness and any(item.startswith('asset_') for item in readiness['blockers']))
         if d['consents']['studio']:
             for j in db.execute('SELECT status,COUNT(*) AS n FROM jobs WHERE project_id=? GROUP BY status',(pid,)):jobs[j['status']]=j['n']
             if d['releases']:
@@ -36,6 +40,7 @@ def overview(store,db,actor):
         if expired:issues.append('expired_sources')
         if d['consents']['business'] and money['budgetRemainingMinor']<0:issues.append('over_budget')
         if jobs['failed']:issues.append('failed_checks')
+        if artifact_problem:issues.append('artifact_rebuild')
         if latest and not latest['matchesCurrentArtifactAndScope']:issues.append('unreleased_changes')
         if latest and latest['verdict']=='needs_changes':issues.append('release_changes')
         if delivery and delivery['pendingReceipts']:issues.append('receipt_waiting')
@@ -46,6 +51,7 @@ def overview(store,db,actor):
         elif not d['accepted']:stage,label='contract','Уточнить и принять контракт'
         elif expired:stage,label='memory','Проверить устаревшие источники'
         elif d['consents']['business'] and money['budgetRemainingMinor']<0:stage,label='business','Проверить бюджет и расходы'
+        elif artifact_problem:stage,label='studio','Пересобрать HTML по текущей цели'
         elif learning and learning['myCurrentPractices']<learning['curriculumSize']:stage,label='campus','Продолжить личную практику'
         elif d['consents']['studio'] and not (d['artifact']['url'] or d['artifact'].get('assetId')):stage,label='studio','Создать артефакт'
         elif d['consents']['studio'] and not latest:stage,label='studio','Проверить и зафиксировать выпуск'
@@ -58,6 +64,6 @@ def overview(store,db,actor):
         else:stage,label='history','Открыть историю и материалы'
         # A viewer's own receipt/support is actionable without permission to alter the project.
         if row['role']=='viewer' and delivery and (delivery['pendingReceipts'] or delivery['openTickets'] or delivery['resolvedTickets']):stage,label='delivery','Открыть получение и поддержку'
-        projects.append(dict(id=pid,title=d['title'],version=row['version'],role=row['role'],updatedAt=row['updated_at'],consents=d['consents'],checks=dict(passed=sum(c['passed'] for c in checks),total=len(checks),meaning='Structure and manually declared criteria only'),expiredSourceCount=expired,jobs=jobs,learning=learning,latestRelease=latest,delivery=delivery,clientDeliveryCounts=client_counts,economics=dict(currency=d['currency'],**money) if d['consents']['business'] else None,measurements=metrics(d),issues=issues,nextAction=dict(stage=stage,label=label)))
+        projects.append(dict(id=pid,title=d['title'],version=row['version'],role=row['role'],updatedAt=row['updated_at'],consents=d['consents'],checks=dict(passed=sum(c['passed'] for c in checks),total=len(checks),meaning='Saved contract conditions and local HTML integrity/input checks; criteria remain manually declared'),expiredSourceCount=expired,jobs=jobs,learning=learning,latestRelease=latest,delivery=delivery,clientDeliveryCounts=client_counts,economics=dict(currency=d['currency'],**money) if d['consents']['business'] else None,measurements=metrics(d),issues=issues,nextAction=dict(stage=stage,label=label)))
     aggregate={s:sum(p['jobs'][s] for p in projects) for s in ('queued','running','completed','failed')}
     return dict(format='osgard-core-overview-v1',generatedAt=now(),projects=projects,counts=dict(projects=len(projects),attentionProjects=sum(bool(p['issues']) for p in projects),ownPracticeRecordsCompleted=sum(p['learning']['myCurrentPractices'] for p in projects if p['learning']),measurementRecords=sum(p['measurements']['sampleSize'] for p in projects)),jobs=aggregate,currencies=currencies,truncated=truncated,scope='At most 200 currently accessible projects; module consent and support visibility applied',limits=dict(independentCertification=False,fieldCoreWebVitals=False,actualPilotConfirmed=False,externalURLsChecked=False,payments=False,measurementSource='user_reported_observations',currencyTotals='Only visible projects with Business consent; do not add different currencies'))

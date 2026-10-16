@@ -50,6 +50,7 @@ def mutate(store,db,row,actor,payload):
         rid=identifier(payload.get('releaseId'));release,_,_,asset=core_acceptance.release_source(db,row,rid)
         rs=core_acceptance.reviews(db,row['id'],rid);require(rs and rs[0]['verdict']=='accepted','Нужен последний положительный разбор этого выпуска другим участником.','review_required',409)
         require(asset is None or asset['integrityMatches'],'Файл выпуска повреждён.','integrity_mismatch',409)
+        require(asset is None or asset['inputsMatchSnapshot'],'HTML не соответствует исходным данным выпуска. Создайте и примите новый выпуск.','artifact_stale',409)
         username=text(payload.get('recipient'),64,3).lower();recipient=db.execute('SELECT id FROM users WHERE username=?',(username,)).fetchone();require(recipient is not None,'Участник не найден.','not_found',404)
         store.access(db,row['id'],recipient['id']);require(recipient['id']!=actor,'Выберите другого участника.')
         require(db.execute("SELECT 1 FROM handoffs WHERE project_id=? AND release_id=? AND recipient_id=? AND status!='withdrawn'",(row['id'],rid,recipient['id'])).fetchone() is None,'Этому участнику уже передан данный выпуск.','handoff_exists',409)

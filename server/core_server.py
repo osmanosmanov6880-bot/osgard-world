@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Self-contained OSGARD pilot server. SQLite is authoritative; no payment/AI integration."""
+"""OSGARD pilot server. SQLite is authoritative; Commerce is disabled by default."""
 from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -24,6 +24,8 @@ import core_delivery
 import core_overview
 import core_client_portal
 import core_teams
+import core_readiness
+import core_commerce
 from core_model import Fault, require, text, initial, patch, action, economics, simulation, metrics, now, uid
 
 SCHEMA='''
@@ -50,12 +52,13 @@ def digest(v): return hashlib.sha256(v.encode()).hexdigest()
 def password_hash(password,salt): return hashlib.pbkdf2_hmac('sha256',password.encode(),bytes.fromhex(salt),600000).hex()
 
 class Store:
-    def __init__(self,path):
+    def __init__(self,path,commerce_config=None,commerce_provider=None):
         self.path=str(path)
         Path(path).parent.mkdir(parents=True,exist_ok=True)
         with self.connect() as db:
             require(db.execute('PRAGMA user_version').fetchone()[0] in (0,1),'Версия базы новее этого сервера. Обновите Core.')
-            db.executescript(SCHEMA+core_learning.SCHEMA+core_pilot_reports.SCHEMA+core_account.SCHEMA+core_acceptance.SCHEMA+core_delivery.SCHEMA+core_client_portal.SCHEMA+core_teams.SCHEMA)
+            db.executescript(SCHEMA+core_learning.SCHEMA+core_pilot_reports.SCHEMA+core_account.SCHEMA+core_acceptance.SCHEMA+core_delivery.SCHEMA+core_client_portal.SCHEMA+core_teams.SCHEMA+core_commerce.SCHEMA)
+        self.commerce=core_commerce.Commerce(self,commerce_config,commerce_provider)
         try:os.chmod(path,0o600)
         except OSError:pass
     @contextmanager
@@ -119,6 +122,12 @@ class Store:
     def get(self,route,actor):
         with self.connect() as db:
             db.execute('BEGIN')
+            if route=='commerce/config':return self.commerce.config_view(actor)
+            if route=='commerce/purchases':return self.commerce.purchases(db,actor)
+            purchase_file=re.fullmatch(r'commerce/purchases/([a-f0-9]{32})/file',route)
+            if purchase_file:return self.commerce.download(db,purchase_file[1],actor)
+            commerce_project=re.fullmatch(r'projects/([a-f0-9]{32})/commerce',route)
+            if commerce_project:return self.commerce.project_orders(db,commerce_project[1],actor)
             if route=='teams':return core_teams.listing(self,db,actor)
             team_route=re.fullmatch(r'teams/([a-f0-9]{32})',route)
             if team_route:return core_teams.read(self,db,team_route[1],actor)
@@ -130,6 +139,8 @@ class Store:
             portal_project=re.fullmatch(r'projects/([a-f0-9]{32})/client-deliveries',route)
             if portal_project:return core_client_portal.project_list(self,db,portal_project[1],actor)
             if route=='overview':return core_overview.overview(self,db,actor)
+            readiness_route=re.fullmatch(r'projects/([a-f0-9]{32})/readiness',route)
+            if readiness_route:return core_readiness.read(self,db,readiness_route[1],actor)
             delivery_route=re.fullmatch(r'projects/([a-f0-9]{32})/delivery(?:/tickets/([a-f0-9]{32}))?',route)
             if delivery_route:return core_delivery.read(self,db,delivery_route[1],actor,delivery_route[2])
             release_route=re.fullmatch(r'projects/([a-f0-9]{32})/releases(?:/([a-f0-9]{32}))?',route)
@@ -178,6 +189,7 @@ class Store:
                 result['clientDeliveries']=core_client_portal.project_list(self,db,pid,actor,export=True)['deliveries'] if row['role'] in ('owner','editor') else []
                 result['delivery']=core_delivery.read(self,db,pid,actor,export=True)
                 result['releaseReviews']=core_acceptance.reviews(db,pid)
+                result['releaseReadiness']=core_readiness.evaluate(db,pid,row['version'],json.loads(row['data'])) if json.loads(row['data'])['consents']['studio'] else None
                 result['format']='osgard-core-project-v1'
             return result
     def mutate(self,route,actor,payload,key):
@@ -228,12 +240,13 @@ class Store:
                 db.execute('INSERT INTO revisions VALUES(?,?,?,?,?)',(pid,1,raw,actor,stamp));self.event(db,pid,actor,'project_created',{})
                 result={'project':self.project(self.access(db,pid,actor))}
             else:
-                m=re.fullmatch(r'projects/([a-f0-9]{32})(?:/(actions|restore|members|jobs|learning|release-review|delivery|client-deliveries|team))?',route)
+                m=re.fullmatch(r'projects/([a-f0-9]{32})(?:/(actions|restore|members|jobs|learning|release-review|delivery|client-deliveries|team|commerce))?',route)
                 require(m is not None,'Маршрут API не найден.','not_found',404)
-                pid,section=m.groups();row=self.access(db,pid,actor,write=section!='delivery',owner=section in ('members','team'))
+                pid,section=m.groups();row=self.access(db,pid,actor,write=section!='delivery',owner=section in ('members','team','commerce'))
                 require(type(payload.get('expectedVersion')) is int and payload['expectedVersion']==row['version'],'Проект изменён в другой вкладке или на другом устройстве. Загрузите актуальную версию.','version_conflict',409)
                 d=json.loads(row['data'])
-                if section=='team':result=core_teams.detach_owned(self,db,row,actor)
+                if section=='commerce':result=self.commerce.prepare(db,row,actor,payload)
+                elif section=='team':result=core_teams.detach_owned(self,db,row,actor)
                 elif section=='client-deliveries':result=core_client_portal.create(self,db,row,actor,payload)
                 elif section=='delivery':result=core_delivery.mutate(self,db,row,actor,payload)
                 elif section=='release-review':result=core_acceptance.mutate(self,db,row,actor,payload)
@@ -252,8 +265,16 @@ class Store:
                     d['artifact']={'assetId':aid,'url':'','checksum':checksum,'notes':'HTML-прототип, созданный из сохранённого контракта. Содержимое не является подключённым сервисом.'}
                     result={'project':self.save(db,row,actor,d,'preview_built',{'assetId':aid,'sha256':checksum}),'assetId':aid}
                 elif section=='actions':
+                    if payload.get('kind')=='cancel_order':self.commerce.guard_draft_cancellation(db,pid,payload.get('payload',{}).get('orderId'))
                     d,value=action(d,payload.get('kind'),payload.get('payload',{}))
-                    if payload.get('kind')=='release':value['sourceVersion']=row['version']
+                    if payload.get('kind') in ('simulate','release'):
+                        report=core_readiness.evaluate(db,pid,row['version'],json.loads(row['data']))
+                        if payload.get('kind')=='simulate':
+                            value=report;value['at']=report['generatedAt']
+                        else:
+                            core_readiness.require_current_artifact(report)
+                            value['sourceVersion']=row['version'];value['checks']=report['checks']
+                            value['evidence']=dict(format=report['format'],sourceVersion=report['sourceVersion'],snapshotSha256=report['snapshotSha256'],artifactSha256=report['artifact']['actualSha256'],externalVerification=False,checkedAt=report['generatedAt'])
                     result={'project':self.save(db,row,actor,d,payload.get('kind'),value),'result':value}
                 elif section=='restore':
                     require(type(payload.get('version')) is int,'Неверная версия.')
@@ -295,7 +316,10 @@ class QueueWorker(threading.Thread):
             db.execute("UPDATE jobs SET status='running',attempts=attempts+1,updated_at=? WHERE id=?",(now(),job['id']))
             snapshot=db.execute('SELECT data FROM revisions WHERE project_id=? AND version=?',(job['project_id'],job['source_version'])).fetchone()
         try:
-            result={'checks':simulation(json.loads(snapshot['data'])),'sourceVersion':job['source_version'],'externalVerification':False,'at':now()};status='completed'
+            with self.store.connect() as db:
+                db.execute('BEGIN')
+                result=core_readiness.evaluate(db,job['project_id'],job['source_version'],json.loads(snapshot['data']))
+            result['at']=result['generatedAt'];status='completed'
         except Exception:result={'error':'local_check_failed','message':'Не удалось проверить сохранённую версию.'};status='failed'
         with self.store.transaction() as db:
             db.execute('UPDATE jobs SET status=?,result=?,updated_at=? WHERE id=?',(status,encoded(result),now(),job['id']))
@@ -344,13 +368,21 @@ class Handler(SimpleHTTPRequestHandler):
         except (ValueError,UnicodeError):raise Fault('json','Неверный JSON.')
         require(isinstance(p,dict),'Нужен JSON-объект.')
         return p
+    def raw_json_body(self):
+        require(self.headers.get('Content-Type','').split(';')[0]=='application/json','Ожидается JSON.','content_type',415)
+        try:size=int(self.headers.get('Content-Length','0'))
+        except ValueError:raise Fault('body','Неверный размер запроса.')
+        require(0<size<=256*1024,'Размер запроса превышен.','body_size',413)
+        raw=self.rfile.read(size);require(len(raw)==size,'Неполное тело запроса.','body',400)
+        return raw
     def api(self,method):
         try:
             origin=self.headers.get('Origin');host=self.headers.get('Host','')
             require(host in self.server.allowed_hosts,'Недопустимый адрес сервера.','host',403)
             require(not origin or origin in self.server.allowed_origins,'Запрос с другого сайта запрещён.','origin',403)
             route=urlsplit(self.path).path.removeprefix('/api/core/').strip('/')
-            if method=='GET' and route=='health':return self.output({'status':'ok','mode':'self-hosted-pilot','schemaVersion':1,'payments':False,'ai':False})
+            if method=='GET' and route=='health':return self.output({'status':'ok','mode':'self-hosted-pilot','schemaVersion':1,'payments':self.server.store.commerce.config.enabled,'paymentMode':'live' if self.server.store.commerce.config.livemode else 'test','livePaymentTested':False,'ai':False})
+            if method=='POST' and route=='commerce/webhook':return self.output(self.server.store.commerce.webhook(self.raw_json_body(),self.headers.get('Stripe-Signature')))
             if method=='POST' and route in ('auth/register','auth/login','auth/recover','auth/password','auth/recovery/prepare'):
                 with self.server.rate_lock:
                     stamp=time.monotonic();buckets=self.server.rate_limits
@@ -362,6 +394,7 @@ class Handler(SimpleHTTPRequestHandler):
                 if route=='auth/recover':return self.output(core_account.recover(self.server.store,self.body()))
                 if route in ('auth/register','auth/login'):return self.output(self.server.store.auth(route.split('/')[1],self.body(),self.headers.get('User-Agent','')))
             auth=self.headers.get('Authorization','');actor=self.server.store.actor(auth[7:] if auth.startswith('Bearer ') else '')
+            if method=='POST' and re.fullmatch(r'commerce/orders/[a-f0-9]{32}/(checkout|refund)',route):return self.output(self.server.store.commerce.execute(route,actor['id'],self.body(),self.headers.get('Idempotency-Key')))
             if method=='GET' and route=='overview':
                 report=self.server.store.get(route,actor['id']);worker=getattr(self.server,'worker',None)
                 report['runtime']=dict(uptimeSeconds=round(time.monotonic()-self.server.started_monotonic),workerRegistered=worker is not None,workerAlive=worker.is_alive() if worker else None,lastCycleAt=worker.last_cycle_at if worker else None,secondsSinceCycle=round(time.monotonic()-worker.last_cycle_monotonic,2) if worker and worker.last_cycle_monotonic else None,storageHealthy=worker.storage_healthy if worker else None,storageErrorsSinceStart=worker.storage_errors if worker else None,lastStorageErrorAt=worker.last_storage_error_at if worker else None,scope='This HTTP server process only; no infrastructure uptime or backup guarantee')
@@ -390,10 +423,10 @@ class Handler(SimpleHTTPRequestHandler):
         return super().do_HEAD()
     def do_POST(self):return self.api('POST') if self.path.startswith('/api/') else self.send_error(405)
 
-def create_server(root,database,host='127.0.0.1',port=4173,public_origin=None):
+def create_server(root,database,host='127.0.0.1',port=4173,public_origin=None,commerce_config=None,commerce_provider=None):
     require(not Path(database).resolve().is_relative_to(Path(root).resolve()),'База данных должна быть вне публичной папки сайта.')
     server=ThreadingHTTPServer((host,port),functools.partial(Handler,directory=str(Path(root).resolve())))
-    server.started_monotonic=time.monotonic();server.worker=None;server.store=Store(database);server.rate_limits={};server.rate_lock=threading.Lock()
+    server.started_monotonic=time.monotonic();server.worker=None;server.store=Store(database,commerce_config or core_commerce.Config.from_env(),commerce_provider);server.rate_limits={};server.rate_lock=threading.Lock()
     actual=server.server_address[1]
     server.allowed_origins={f'http://127.0.0.1:{actual}',f'http://localhost:{actual}'}
     server.allowed_hosts={f'127.0.0.1:{actual}',f'localhost:{actual}'}
