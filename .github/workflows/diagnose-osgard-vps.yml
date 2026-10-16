@@ -108,6 +108,16 @@ jobs:
             fi
           done
           ' 2>&1
+          echo '--- Game container landing page title, links, and engines (read-only) ---'
+          docker exec osgard-games sh -lc '
+          page=/usr/share/nginx/html/index.html
+          echo "title:"
+          grep -Eo "<title[^>]*>[^<]*</title>" "$page" | head -5
+          echo "local and external assets:"
+          grep -Eo "(href|src)=\"[^\"]+\"" "$page" | sort -u | sed -n "1,200p"
+          echo "engine markers:"
+          grep -Eio "Godot|Unity|WebGL|canvas|Phaser|three.js|iframe|game|игр[аы]" "$page" | sort | uniq -c | head -40
+          ' 2>&1
           for route in / /games/ /play/; do
             code="$(curl -sS -o /tmp/osgard-game-probe -w '%{http_code}' --max-time 5 "http://127.0.0.1:4190$route" 2>/dev/null)"
             bytes="$(wc -c < /tmp/osgard-game-probe 2>/dev/null)"
