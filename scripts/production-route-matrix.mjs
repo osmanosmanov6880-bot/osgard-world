@@ -188,8 +188,20 @@ for (const [device, userAgent] of Object.entries(agents)) for (const route of ro
         const normalized = content.toLowerCase()
         nonEmpty = expectedType === 'image/svg+xml' ? (path.endsWith('/development/essentia/og.svg') ? content.includes('<svg') && content.includes('width="1200" height="630"') && content.includes('ESSENTIA') : path.endsWith('/development/auto-style/og.svg') ? content.includes('<svg') && content.includes('width="1200" height="630"') && content.includes('AUTO STYLE') : content.includes('<svg') && content.includes('viewBox="0 0 64 64"') && content.includes('SKILLCRED')) : isPartnerPage
           ? path.endsWith('.json') ? isValidPartnerInventoryText(content) : content.includes("fetch('./inventory.json'") && content.includes('item.active === false') && content.includes("sendLink.href = 'https://wa.me/79640027222?text='")
-          : isGodot
-          ? content.length > 100000
+          : isEmpireOrbit
+            ? path.endsWith('orbit-gallery.css')
+              ? normalized.includes('.orrery-gate') && normalized.includes('prefers-reduced-motion')
+              : path.endsWith('orbit-ecosystem.js')
+                ? content.includes('.orrery-stage') && content.includes('.orrery-node__frame')
+                : path.endsWith('orbit-planetary.js')
+                  ? content.includes('.orrery-node__frame') && content.includes('archetype')
+                  : path.endsWith('orbit-wow.js')
+                    ? content.includes('orrery-arrival') && content.includes('prefers-reduced-motion')
+                    : path.endsWith('empire-world.js')
+                      ? content.includes('.empire-map') && content.includes('localStorage')
+                      : false
+            : isGodot
+            ? content.length > 100000
           : path.startsWith('/games/null-shift/')
             ? path.endsWith('engine-3d.js')
               ? content.includes("getContext('webgl'") && content.includes('NULL_SHIFT_GET_SCENE_STATE') && content.includes('function cube(){') && content.includes('NULL_SHIFT_SCREEN_TO_WORLD') && content.includes('drawParticles') && content.includes('ANGLE_instanced_arrays') && content.includes('renderInstanced') && content.includes('gpuFrameStats.triangles') && content.includes('function updateAdaptiveResolution(') && content.includes('adaptiveScale') && content.includes('renderCost.toFixed(1)') && content.includes('lastStats=0') && content.includes('renderCost=0') && content.includes('function softShadow(') && content.includes('aVertexAlpha') && content.includes('G.shadow')
