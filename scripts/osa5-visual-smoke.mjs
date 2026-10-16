@@ -15,13 +15,13 @@ const viewports = [
 const routes = [
   { name: 'world', path: '/', selector: '.world-home' },
   { name: 'intelligence', path: '/intelligence', selector: '.intelligence-home' },
-  { name: 'portal', path: '/portal', selector: '.osgard-world-app' },
+  { name: 'portal', path: '/portal', selector: '.world-home' },
   { name: 'academy', path: '/academy', selector: 'body' },
   { name: 'lectures', path: '/lectures', selector: '.lecture-library' },
   { name: 'lesson-detail', path: '/lectures/intelligence-and-imitation', selector: '.osa-lesson-page' },
   { name: 'media-library', path: '/osa-library/', selector: '.hero' },
   { name: 'cinema', path: '/osa-cinema', selector: '.osa-cinema' },
-  { name: 'games', path: '/games/', selector: 'header' },
+  { name: 'games', path: '/games/', selector: '#catalog' },
   { name: 'skillcred', path: '/skillcred/', selector: '.site-header' },
   { name: 'entertainment', path: '/entertainment/', selector: 'header' },
   { name: 'elbrus', path: '/entertainment/elbrus/', selector: 'main' },
@@ -105,8 +105,10 @@ try {
           if (english !== 'en') problems.push('MERAKKI English @ ' + viewport.name + ': expected lang=en')
         }
         if (viewport.name === 'mobile' && route.name === 'portal') {
-          const introCount = await page.locator('.osa5-intro').count()
-          if (introCount !== 0) problems.push('portal @ mobile: reduced-motion preference did not skip intro')
+          const motion = page.locator('.brand-motion')
+          if (!(await motion.isDisabled()) || (await motion.getAttribute('aria-pressed')) !== 'true') {
+            problems.push('portal @ mobile: system reduced-motion preference did not disable optional motion')
+          }
         }
 
         const screenshot = resolve(output, viewport.name + '-' + route.name + '.png')
@@ -198,8 +200,8 @@ try {
   })
   const transitionPage = await transitionContext.newPage()
   try {
-    await transitionPage.goto(base + '/games/', { waitUntil: 'domcontentloaded', timeout: 25000 })
-    const brandLink = transitionPage.locator('header a.brand[href="/"]').first()
+    await transitionPage.goto(base + '/play', { waitUntil: 'domcontentloaded', timeout: 25000 })
+    const brandLink = transitionPage.locator('.brand-global-nav a[href="/"]').first()
     await brandLink.waitFor({ state: 'visible', timeout: 5000 })
     await Promise.all([
       transitionPage.waitForURL(url => url.pathname === '/', { timeout: 12000 }),
@@ -300,27 +302,34 @@ try {
     await tableContext.close()
   }
 
-  // Keyboard contract for the normal-motion intro: focus starts on Skip, Tab stays within the modal, Escape dismisses it.
-  const modalContext = await browser.newContext({
+  // Keyboard and motion controls for the current shared product shell.
+  const accessibilityContext = await browser.newContext({
     viewport: { width: 1280, height: 800 },
     reducedMotion: 'no-preference'
   })
-  const modalPage = await modalContext.newPage()
+  const accessibilityPage = await accessibilityContext.newPage()
   try {
-    await modalPage.goto(base + '/portal', { waitUntil: 'domcontentloaded', timeout: 25000 })
-    const dialog = modalPage.locator('.osa5-intro')
-    await dialog.waitFor({ state: 'visible', timeout: 5000 })
-    const initiallyFocused = await modalPage.evaluate(() => Boolean(document.activeElement?.matches('.osa5-intro-controls button')))
-    if (!initiallyFocused) problems.push('intro: initial keyboard focus is not on Skip')
-    await modalPage.keyboard.press('Tab')
-    const focusContained = await modalPage.evaluate(() => Boolean(document.activeElement?.closest('.osa5-intro')))
-    if (!focusContained) problems.push('intro: Tab escaped the modal')
-    await modalPage.keyboard.press('Escape')
-    await dialog.waitFor({ state: 'hidden', timeout: 5000 })
+    await accessibilityPage.goto(base + '/', { waitUntil: 'domcontentloaded', timeout: 25000 })
+    await accessibilityPage.keyboard.press('Tab')
+    const skipFocused = await accessibilityPage.evaluate(() => document.activeElement?.matches('.brand-skip') === true)
+    if (!skipFocused) problems.push('keyboard: first Tab did not focus the skip link')
+    const skipVisible = await accessibilityPage.locator('.brand-skip').evaluate(element => element.getBoundingClientRect().top >= 0)
+    if (!skipVisible) problems.push('keyboard: focused skip link is not visible in the viewport')
+    await accessibilityPage.keyboard.press('Enter')
+    await accessibilityPage.waitForFunction(() => location.hash === '#product-main', null, { timeout: 5000 })
+    const motion = accessibilityPage.locator('.brand-motion')
+    await motion.click()
+    if ((await motion.getAttribute('aria-pressed')) !== 'true' || !(await motion.textContent())?.includes('выкл.')) {
+      problems.push('motion: user control did not turn optional animation off')
+    }
+    await motion.click()
+    if ((await motion.getAttribute('aria-pressed')) !== 'false' || !(await motion.textContent())?.includes('вкл.')) {
+      problems.push('motion: user control did not restore optional animation')
+    }
   } catch (error) {
-    problems.push('intro keyboard contract: ' + String(error?.message || error))
+    problems.push('product shell keyboard and motion controls: ' + String(error?.message || error))
   } finally {
-    await modalContext.close()
+    await accessibilityContext.close()
   }
 } finally {
   await browser.close()
