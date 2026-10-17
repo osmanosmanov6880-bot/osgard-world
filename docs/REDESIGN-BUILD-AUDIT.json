@@ -4,11 +4,11 @@
     {
       "route": "src/WorldHome.tsx",
       "jsFiles": [
-        "assets/index-CKh8tE57.js",
+        "assets/index-CXsRxs2n.js",
         "assets/react-SaLnwSRd.js",
-        "assets/WorldHome-DaZBqqV2.js"
+        "assets/WorldHome-Bm285HoC.js"
       ],
-      "jsGzipBytes": 92818,
+      "jsGzipBytes": 93053,
       "cssFiles": [
         "assets/index-CENhuM_1.css"
       ],
@@ -17,14 +17,14 @@
     {
       "route": "src/IntelligenceHome.tsx",
       "jsFiles": [
-        "assets/index-CKh8tE57.js",
+        "assets/index-CXsRxs2n.js",
         "assets/react-SaLnwSRd.js",
-        "assets/IntelligenceHome-vIc6liFj.js",
-        "assets/osaProgress-D_5RQnBD.js",
+        "assets/IntelligenceHome-DoIXaaA2.js",
+        "assets/osaProgress-Dp4MgOzp.js",
         "assets/osaLessonRegistry-z2xbN3zE.js",
         "assets/osaLearningTracks-BmyVK_UO.js"
       ],
-      "jsGzipBytes": 94603,
+      "jsGzipBytes": 94891,
       "cssFiles": [
         "assets/index-CENhuM_1.css"
       ],
@@ -33,12 +33,12 @@
     {
       "route": "src/PlayHome.tsx",
       "jsFiles": [
-        "assets/index-CKh8tE57.js",
+        "assets/index-CXsRxs2n.js",
         "assets/react-SaLnwSRd.js",
-        "assets/PlayHome-DYcb3sJy.js",
+        "assets/PlayHome-_yOKhcwK.js",
         "assets/playCollection-C0lah9H7.js"
       ],
-      "jsGzipBytes": 92865,
+      "jsGzipBytes": 93186,
       "cssFiles": [
         "assets/index-CENhuM_1.css"
       ],

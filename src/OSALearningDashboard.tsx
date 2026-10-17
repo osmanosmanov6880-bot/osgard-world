@@ -11,7 +11,7 @@ export default function OSALearningDashboard() {
   useEffect(() => { const update = () => setAttempts(readOSAAttempts()); window.addEventListener('osa6:attempts-changed', update); window.addEventListener('storage', update); return () => { window.removeEventListener('osa6:attempts-changed', update); window.removeEventListener('storage', update) } }, [])
   const next = getOSANextLesson(progress.lessonCompletions)
   const count = progress.lessonCompletions.length
-  return <main style={{maxWidth:1100,margin:'0 auto',padding:'clamp(24px,5vw,72px)',color:'#e8edf7',minHeight:'100vh'}}>
+  return <main lang={locale} style={{maxWidth:1100,margin:'0 auto',padding:'clamp(24px,5vw,72px)',color:'#e8edf7',minHeight:'100vh'}}>
     <header style={{display:'flex',justifyContent:'space-between',gap:20,alignItems:'center'}}>
       <a href="/academy" style={{color:'#a9c4e9'}}>← OSA Academy</a>
       <button type="button" onClick={() => setLocale(locale === 'ru' ? 'en' : 'ru')} aria-label="Switch language">{locale.toUpperCase()} / {locale === 'ru' ? 'EN' : 'RU'}</button>

@@ -74,6 +74,15 @@ jobs:
         run: npm run qa:redesign
       - name: Verify locally published ZION gameplay
         run: npm run qa:zion-local
+      - name: Verify navigation, guest progress and resilient game interfaces
+        run: |
+          npm run qa:ux
+          npm run qa:osa-progress
+          npm run qa:game-interface
+      - name: Verify measured pilot outcomes and offline recovery
+        run: |
+          npm run qa:pilot-scorecard
+          npm run qa:core-recovery
       - name: Install pinned Core dependencies
         run: python3 -m pip install -r server/requirements.txt
       - name: Verify release integrity and payment recovery boundaries
@@ -92,6 +101,8 @@ jobs:
         run: npm run qa:osa-intelligence-case
       - name: Build the production site
         run: npm run build
+      - name: Verify Unity runtime delivery through candidate Nginx
+        run: npm run qa:nginx-game-delivery
       - name: Verify landing page budgets and route metadata
         run: npm run qa:redesign-build
       - name: Verify live SkillCred page wiring
