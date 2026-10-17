@@ -1,0 +1,21 @@
+# OSGARD staging operations — четыре новых независимых модуля
+
+Новая ветка добавляет автономные инструменты для ручного и CI-аудита процесса выпуска.
+
+1. `scripts/staging-http-acceptance.py`: ограниченные GET проверки шести HTML-маршрутов на заранее выбранном HTTPS staging origin, запрет перехода на чужой origin. Не подключать к реальному сайту без согласованного staging URL.
+2. `scripts/rollback-readiness.py`: проверка доказательств доступности предыдущего релиза, контрольной суммы резервной копии, факта испытания восстановления, назначенного оператора и окна обслуживания. Никогда не производит rollback самостоятельно.
+3. `scripts/release-config-audit.py`: минимальные обязательные файлы, security headers и подозрительные ключи по названиям в собранном артефакте. Это не полноценное сканирование секретов или аудит CSP.
+4. `scripts/release-matrix.py`: семь обязательных оценок готовности и сохранение состояния только `ready_for_review` при отсутствии ручного разрешения.
+
+## Примеры
+```sh
+python3 scripts/staging-http-acceptance.py --origin https://staging.example.com
+python3 scripts/rollback-readiness.py /private/rollback-evidence.json
+python3 scripts/release-config-audit.py dist
+python3 scripts/release-matrix.py /private/release-matrix.json
+python3 -m unittest discover -s tests -p test_staging_operations.py -v
+```
+
+Эти утилиты не выполняют публикацию, оплату, импорт или изменение базы данных. Единая матрица принимает статусы как **непроверенные утверждения**, поэтому её нельзя использовать вместо независимых доказательств GitHub API и проверки артефакта. HTTP checker делает лишь простую проверку маршрутов; не проверяет логин, выполнение JS, безопасность и доступность игр.
+
+Открытые зависимости: настоящий staging URL, production-like Core service без реальных клиентских данных, испытание восстановления и проверка отката с авторизованным оператором. До этого `ready_for_review` не означает `released`.
