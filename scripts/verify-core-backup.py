@@ -123,9 +123,10 @@ def check_sqlite(path, sqlite_only=False):
     # SQLite only ever opens the private copied file, never the supplied source.
     uri = path.as_uri() + "?mode=ro&immutable=1"
     with closing(sqlite3.connect(uri, uri=True, timeout=3)) as db:
+        db.row_factory = sqlite3.Row
         db.execute("PRAGMA trusted_schema=OFF")
         db.execute("PRAGMA query_only=ON")
-        if db.execute("PRAGMA integrity_check").fetchone() != ("ok",):
+        if db.execute("PRAGMA integrity_check").fetchone()[0] != "ok":
             # Do not leak table names, row identifiers or database values into shared logs.
             raise ValueError("SQLite integrity_check failed")
         if db.execute("PRAGMA foreign_key_check").fetchone() is not None:
@@ -148,12 +149,36 @@ def check_sqlite(path, sqlite_only=False):
                 if not required.issubset(columns):
                     raise ValueError("Core backup is missing expected columns")
             if tables & INHERIT_COLUMNS.keys():
-                if db.execute('SELECT version FROM inherit_meta').fetchall() != [(1,)]:
+                if [row[0] for row in db.execute('SELECT version FROM inherit_meta')] != [1]:
                     raise ValueError("unsupported INHERIT schema version")
                 triggers = {row[0] for row in db.execute("SELECT name FROM sqlite_schema WHERE type='trigger'")}
                 if not {"inherit_generation_no_update", "inherit_generation_no_delete"} <= triggers:
                     raise ValueError("Core backup is missing INHERIT history guards")
-        return {"table_count": len(tables), "user_version": version}
+        # Validate application invariants on the private, immutable backup copy.
+        # PRAGMA integrity_check verifies SQLite pages, not the semantic lineage
+        # encoded in otherwise syntactically valid rows.
+        lineage_checked = not sqlite_only and bool(tables & INHERIT_COLUMNS.keys())
+        worlds_verified = 0
+        generations_verified = 0
+        if lineage_checked:
+            server_dir = str(Path(__file__).resolve().parents[1] / "server")
+            if server_dir not in sys.path:
+                sys.path.insert(0, server_dir)
+            import core_inherit
+            try:
+                # Stream bounded histories one world at a time. All names,
+                # coordinates and owner identifiers remain on the private copy.
+                for world in db.execute("SELECT * FROM inherit_worlds ORDER BY id"):
+                    core_inherit.verify_lineage(db, world)
+                    worlds_verified += 1
+                    generations_verified += world["generation"] - 1
+            except Exception:
+                # Fail closed without leaking content or world IDs to CI logs.
+                raise ValueError("INHERIT application lineage integrity check failed") from None
+        return {"table_count": len(tables), "user_version": version,
+                "inherit_lineage_checked": lineage_checked,
+                "inherit_worlds_verified": worlds_verified,
+                "inherit_generations_verified": generations_verified}
 
 
 def drill(source, expected_sha256=None, sqlite_only=False):
@@ -179,6 +204,9 @@ def drill(source, expected_sha256=None, sqlite_only=False):
             "schema_version": schema["user_version"],
             "core_schema_checked": not sqlite_only,
             "foreign_keys_checked": True,
+            "inherit_lineage_checked": schema["inherit_lineage_checked"],
+            "inherit_worlds_verified": schema["inherit_worlds_verified"],
+            "inherit_generations_verified": schema["inherit_generations_verified"],
             "restored_to": "ephemeral_private_directory",
             "production_modified": False,
             "verification_seconds": round(time.perf_counter() - started, 6),
