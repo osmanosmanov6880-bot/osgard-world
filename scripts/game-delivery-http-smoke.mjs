@@ -32,7 +32,7 @@ for (const [, kind, suffix] of entries) {
   if (kind === 'codeUrl') assert.deepEqual([...actual.subarray(0, 4)], [0, 97, 115, 109], 'Valid WebAssembly signature')
   checks.push({ path, status: response.status, decodedBytes: actual.length })
 }
-for (const path of ['/api/osgard-missing-delivery-probe', '/osgard-missing-delivery-probe.wasm']) {
+for (const path of ['/api/osgard-missing-delivery-probe', '/api/osgard-missing-delivery-probe.json', '/osgard-missing-delivery-probe.wasm']) {
   const response = await fetch(new URL(path, origin), { signal: AbortSignal.timeout(15000) })
   assert.equal(response.status, 404, path + ': missing resources must not return the React shell')
   if (path.startsWith('/api/')) {
