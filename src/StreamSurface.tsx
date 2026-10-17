@@ -3,10 +3,33 @@ import { useState } from 'react'
 import { recordOsgardEvent } from './core/eventQueue'
 
 type Mode = 'LIVE' | 'SPECTATOR' | 'REPLAY' | 'CHALLENGE'
-const modes: Array<{ id: Mode; label: string; icon: typeof Radio }> = [{ id: 'LIVE', label: 'LIVE', icon: Radio }, { id: 'SPECTATOR', label: 'SPECTATOR', icon: Eye }, { id: 'REPLAY', label: 'REPLAY', icon: Film }, { id: 'CHALLENGE', label: 'CHALLENGE', icon: Users }]
+const modes: Array<{ id: Mode; label: string; icon: typeof Radio }> = [
+  { id: 'LIVE', label: 'Эфир', icon: Radio },
+  { id: 'SPECTATOR', label: 'Наблюдение', icon: Eye },
+  { id: 'REPLAY', label: 'Повтор', icon: Film },
+  { id: 'CHALLENGE', label: 'Испытание', icon: Users },
+]
 
 export function StreamSurface() {
   const [mode, setMode] = useState<Mode>('LIVE')
-  const choose = (next: Mode) => { setMode(next); recordOsgardEvent('portal_opened', { surface: 'stream', mode: next }) }
-  return <main className="stream-page"><p className="eyebrow">OSGARD LIVE / STREAM MODE</p><h1>Смотри, как<br />меняется мир.</h1><p className="stream-lead">События, матчи и испытания в минимальном HUD — только действие и его последствия.</p><nav className="stream-modes" aria-label="Stream modes">{modes.map(item => { const Icon = item.icon; return <button className={mode === item.id ? 'is-active' : ''} onClick={() => choose(item.id)} key={item.id}><Icon />{item.label}</button> })}</nav><section className="stream-stage"><div className="stream-signal"><span className="stream-dot" />{mode === 'LIVE' ? 'LIVE SIGNAL' : mode}</div><div className="stream-grid"><div><span>WORLD</span><strong>{mode === 'CHALLENGE' ? 'REMIX / ARENA 04' : mode === 'REPLAY' ? 'TIME / YEAR 50' : 'SWARM / FACILITY 04'}</strong></div><div><span>VIEWERS</span><strong>{mode === 'SPECTATOR' ? '2 184' : '846'}</strong></div><div><span>STATE</span><strong>{mode === 'REPLAY' ? 'ARCHIVED' : 'IN MOTION'}</strong></div></div><button className="stream-primary" onClick={() => recordOsgardEvent('share_created', { surface: 'stream', mode })}>Открыть событие <Radio /></button></section></main>
+  const choose = (next: Mode) => { setMode(next); recordOsgardEvent('portal_opened', { surface: 'stream', mode: next, demo: true }) }
+  const selected = modes.find(item => item.id === mode)!
+  return <main className="stream-page">
+    <p className="eyebrow">OSGARD PLAY / ПРОТОТИП ТРАНСЛЯЦИИ</p>
+    <h1>Режимы<br />наблюдения.</h1>
+    <p className="stream-lead">Демонстрация интерфейса эфира, наблюдения, повтора и испытания. Видеопоток, зрители и архив повторов пока не подключены.</p>
+    <nav className="stream-modes" aria-label="Режимы демонстрации">{modes.map(item => {
+      const Icon = item.icon
+      return <button className={mode === item.id ? 'is-active' : ''} aria-pressed={mode === item.id} onClick={() => choose(item.id)} key={item.id}><Icon />{item.label}</button>
+    })}</nav>
+    <section className="stream-stage">
+      <div className="stream-signal">ДЕМО / {selected.label}</div>
+      <div className="stream-grid">
+        <div><span>МИР / ПРИМЕР</span><strong>{mode === 'CHALLENGE' ? 'REMIX' : mode === 'REPLAY' ? 'Империя времени' : 'SWARM'}</strong></div>
+        <div><span>ЗРИТЕЛИ</span><strong aria-label="Зрители не подключены">—</strong></div>
+        <div><span>СТАТУС</span><strong>ДЕМО</strong></div>
+      </div>
+      <a className="stream-primary" href={mode === 'CHALLENGE' ? '/games/remix/' : '/play'}>{mode === 'CHALLENGE' ? 'Открыть консоль REMIX' : 'Выбрать игровой мир'} <Radio /></a>
+    </section>
+  </main>
 }

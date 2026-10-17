@@ -4,6 +4,7 @@ set -euo pipefail
 container_name="${OSGARD_CONTAINER:-osgard-world}"
 archive="${OSGARD_ARCHIVE:-/tmp/osgard-gh-release.tgz}"
 core_image="${OSGARD_CORE_IMAGE:-osgard-core-api:release}"
+remix_guard_image="${OSGARD_REMIX_GUARD_IMAGE:-osgard-remix-guard:release}"
 state_file="/tmp/osgard-frontend-activation.state"
 log_file="/tmp/osgard-frontend-activation.log"
 core_previous="osgard-core-api-previous-$$"
@@ -11,8 +12,43 @@ core_volume="osgard-core-data"
 core_network=""
 core_replaced=0
 core_started=0
+remix_guard_previous="osgard-remix-guard-previous-$$"
+remix_guard_volume="osgard-remix-guard-data"
+remix_guard_replaced=0
+remix_guard_started=0
+remix_network=""
+frontend_replaced=0
+rollback_done=0
+activation_committed=0
+activation_worker_started=0
+pid=""
 core_commerce_env="/etc/osgard/core-commerce.env"
 core_commerce_args=()
+
+acquire_activation_lock() {
+  local lock_path="${OSGARD_ACTIVATION_LOCK:-/run/lock/osgard-frontend-activation.lock}"
+  if ! command -v flock >/dev/null 2>&1; then
+    echo 'Host flock is required before changing the active release.' >&2
+    return 1
+  fi
+  if [[ -L "$lock_path" ]]; then
+    echo 'The activation lock cannot be a symlink.' >&2
+    return 1
+  fi
+  if ! { exec 9>>"$lock_path"; }; then
+    echo 'Unable to open the host activation lock; no release changes were made.' >&2
+    return 1
+  fi
+  if ! flock -n 9; then
+    echo 'Another activation or rollback still owns the host lock; no release changes were made.' >&2
+    exec 9>&-
+    return 1
+  fi
+  # FD 9 is inherited by the exact activation worker. A lost SSH caller cannot
+  # release this lock while that worker is still changing or restoring services.
+}
+
+acquire_activation_lock
 if [[ -f "$core_commerce_env" ]]; then
   if [[ "$(stat -c '%u:%a' "$core_commerce_env")" != "0:600" ]]; then
     echo 'The optional Core commerce configuration must be owned by root with mode 600.' >&2
@@ -30,16 +66,42 @@ rm -f "$state_file" "$log_file"
 : > "$log_file"
 
 rollback() {
+  [[ "$rollback_done" == "1" ]] && return 0
+  if [[ "$activation_committed" == "1" ]]; then
+    echo 'The public release has been verified and committed; retaining its running services.' >&2
+    return 0
+  fi
+  local restore_failed=0
+  if [[ "$remix_guard_started" == "1" ]]; then
+    if ! docker rm -f osgard-remix-guard >/dev/null 2>&1; then
+      echo 'Unable to remove the candidate REMIX guard during rollback.' >&2
+      restore_failed=1
+    fi
+  fi
+  if [[ "$remix_guard_replaced" == "1" ]]; then
+    if docker inspect "$remix_guard_previous" >/dev/null 2>&1; then
+      if ! { docker rename "$remix_guard_previous" osgard-remix-guard && docker start osgard-remix-guard >/dev/null; }; then
+        echo 'Unable to restore the previous REMIX guard; continuing the other rollback steps.' >&2
+        restore_failed=1
+      fi
+    fi
+  fi
   if [[ "$core_started" == "1" ]]; then
-    docker rm -f osgard-core-api >/dev/null 2>&1 || true
+    if ! docker rm -f osgard-core-api >/dev/null 2>&1; then
+      echo 'Unable to remove the candidate Core API during rollback.' >&2
+      restore_failed=1
+    fi
   fi
   if [[ "$core_replaced" == "1" ]]; then
     if docker inspect "$core_previous" >/dev/null 2>&1; then
-      docker rename "$core_previous" osgard-core-api
-      docker start osgard-core-api >/dev/null
+      if ! { docker rename "$core_previous" osgard-core-api && docker start osgard-core-api >/dev/null; }; then
+        echo 'Unable to restore the previous Core API; continuing the frontend rollback.' >&2
+        restore_failed=1
+      fi
     fi
   fi
-  docker exec "$container_name" sh -lc '
+  if [[ "$frontend_replaced" == "1" ]]; then
+    if ! docker exec "$container_name" sh -lc '
     set -eu
     if [ -f /tmp/osgard-nginx-previous.conf ]; then
       cp /tmp/osgard-nginx-previous.conf /etc/nginx/conf.d/default.conf
@@ -49,16 +111,91 @@ rollback() {
       mv /tmp/osgard-gh-previous /usr/share/nginx/html
     fi
     nginx -t && nginx -s reload
-  '
+    '; then
+      echo 'Unable to restore the prior frontend configuration.' >&2
+      restore_failed=1
+    fi
+  fi
+  rollback_done=1
+  return "$restore_failed"
 }
+
+stop_activation_worker() {
+  local status="$1"
+  local worker_status=0
+  # Repeated session/caller signals must not interrupt the worker's rollback
+  # or the parent's wait. SIGKILL cannot be handled by a shell trap.
+  trap '' TERM INT HUP
+  if [[ "$activation_worker_started" == "0" ]]; then
+    # A signal can arrive after '&' but before the following pid assignment.
+    pid="${!:-}"
+  fi
+  if [[ -n "$pid" ]]; then
+    if kill -0 "$pid" 2>/dev/null; then
+      kill -TERM "$pid" 2>/dev/null || true
+    fi
+    wait "$pid" || worker_status="$?"
+    pid=""
+  fi
+  cat "$log_file" || true
+  if [[ "$worker_status" == "0" && -f "$state_file" ]] && grep -q '^success$' "$state_file"; then
+    exit 0
+  fi
+  exit "$status"
+}
+
+monitor_activation_worker() {
+  local attempts="${1:-600}"
+  local attempt
+  local worker_status=0
+  for ((attempt=0; attempt<attempts; attempt++)); do
+    [[ -f "$state_file" ]] && break
+    kill -0 "$pid" 2>/dev/null || break
+    sleep 1
+  done
+  if [[ ! -f "$state_file" ]] && kill -0 "$pid" 2>/dev/null; then
+    stop_activation_worker 124
+  fi
+  # The state file is written immediately before worker exit. Reap that exact
+  # child even on ordinary completion before another release can begin.
+  wait "$pid" || worker_status="$?"
+  pid=""
+  cat "$log_file" || true
+  if [[ "$worker_status" != "0" ]]; then
+    return "$worker_status"
+  fi
+  [[ -f "$state_file" ]] && grep -q '^success$' "$state_file"
+}
+
+trap 'stop_activation_worker 143' TERM
+trap 'stop_activation_worker 130' INT
+trap 'stop_activation_worker 129' HUP
 
 (
   set -euo pipefail
-  trap 'status=$?; printf "Activation worker failed at line %s (exit %s)\n" "$LINENO" "$status" >&2' ERR
+  activation_failure() {
+    local status="$1"
+    local failed_line="$2"
+    trap - ERR
+    trap '' TERM INT HUP
+    printf 'Activation worker interrupted at line %s (exit %s)\n' "$failed_line" "$status" >&2
+    if [[ "$activation_committed" == "1" ]]; then
+      echo 'The verified release remains active; optional previous-container cleanup was interrupted.' >&2
+      printf 'success\n' > "$state_file"
+      exit 0
+    fi
+    rollback || true
+    printf 'failed\n' > "$state_file"
+    exit "$status"
+  }
+  trap 'activation_failure "$?" "$LINENO"' ERR
+  trap 'activation_failure 143 "$LINENO"' TERM INT
+  trap 'activation_failure 129 "$LINENO"' HUP
   echo 'Activation worker started.'
   docker exec "$container_name" sh -lc "
     set -eux
     rm -rf /tmp/osgard-gh-next /tmp/osgard-gh-previous
+    rm -f /tmp/osgard-nginx-previous.conf
     mkdir -p /tmp/osgard-gh-next
     tar -xzf '$archive' -C /tmp/osgard-gh-next
     test -f /tmp/osgard-gh-next/html/index.html
@@ -85,6 +222,12 @@ rollback() {
   docker cp "$container_name:/tmp/osgard-gh-next/core-api-image.tar.gz" "$image_archive"
   gzip -dc "$image_archive" | docker load
   rm -f "$image_archive"
+  guard_image_archive="/tmp/osgard-remix-guard-image-$$.tar.gz"
+  echo 'Loading the packaged REMIX phase guard; the existing game service stays running.'
+  docker cp "$container_name:/tmp/osgard-gh-next/remix-guard-image.tar.gz" "$guard_image_archive"
+  gzip -dc "$guard_image_archive" | docker load
+  rm -f "$guard_image_archive"
+  docker image inspect "$remix_guard_image" >/dev/null
   mapfile -t frontend_networks < <(docker inspect --format '{{range $name, $conf := .NetworkSettings.Networks}}{{println $name}}{{end}}' "$container_name")
   for network in "${frontend_networks[@]}"; do
     if [[ -n "$network" && "$network" != "bridge" ]]; then
@@ -99,6 +242,43 @@ rollback() {
     fi
     if ! docker network inspect "$core_network" --format '{{range .Containers}}{{println .Name}}{{end}}' | grep -Fx "$container_name" >/dev/null; then
       docker network connect "$core_network" "$container_name"
+    fi
+  fi
+  # The guard joins both sides if the existing frontend and REMIX API use
+  # different user-defined networks. The legacy container is never restarted.
+  mapfile -t remix_networks < <(docker inspect --format '{{range $name, $conf := .NetworkSettings.Networks}}{{println $name}}{{end}}' remix-api)
+  for network in "${remix_networks[@]}"; do
+    if [[ "$network" == "$core_network" ]]; then
+      remix_network="$network"
+      break
+    elif [[ -n "$network" && "$network" != "bridge" && -z "$remix_network" ]]; then
+      remix_network="$network"
+    fi
+  done
+  if [[ -z "$remix_network" ]]; then
+    echo 'The existing REMIX API has no user-defined DNS network; refusing to change its running container.' >&2
+    exit 1
+  fi
+  if docker inspect osgard-remix-guard >/dev/null 2>&1; then
+    guard_owner="$(docker inspect --format '{{index .Config.Labels "org.osgard.service"}}' osgard-remix-guard)"
+    guard_compose_service="$(docker inspect --format '{{index .Config.Labels "com.docker.compose.service"}}' osgard-remix-guard)"
+    if [[ "$guard_owner" != "remix-guard" && "$guard_compose_service" != "remix-guard" ]]; then
+      echo 'The REMIX guard container name is occupied by an unrecognized service; leaving it untouched.' >&2
+      exit 1
+    fi
+    old_guard_volume="$(docker inspect --format '{{range .Mounts}}{{if eq .Destination "/var/lib/remix-guard"}}{{if eq .Type "volume"}}{{.Name}}{{end}}{{end}}{{end}}' osgard-remix-guard)"
+    if [[ -z "$old_guard_volume" ]]; then
+      echo 'Existing REMIX guard has no named result volume; refusing an unsafe data migration.' >&2
+      exit 1
+    fi
+    remix_guard_volume="$old_guard_volume"
+  else
+    mapfile -t existing_guard_volumes < <(docker volume ls -q --filter label=com.docker.compose.volume=osgard-remix-guard-data)
+    if [[ "${#existing_guard_volumes[@]}" -gt 1 ]]; then
+      echo 'Multiple REMIX result volumes exist without an active guard; refusing to choose one automatically.' >&2
+      exit 1
+    elif [[ "${#existing_guard_volumes[@]}" == "1" ]]; then
+      remix_guard_volume="${existing_guard_volumes[0]}"
     fi
   fi
   if docker inspect osgard-core-api >/dev/null 2>&1; then
@@ -132,6 +312,7 @@ rollback() {
     rollback
     exit 1
   fi
+  core_started=1
   if ! docker run -d --name osgard-core-api --network "$core_network" --network-alias core-api \
     --restart unless-stopped --init --read-only --security-opt no-new-privileges --cap-drop ALL \
     --pids-limit 128 --memory 768m --cpus 1.0 --tmpfs /tmp:size=16m,noexec,nosuid \
@@ -141,7 +322,6 @@ rollback() {
     rollback
     exit 1
   fi
-  core_started=1
   core_ready=0
   for _ in $(seq 1 30); do
     if docker exec osgard-core-api python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:4173/api/core/health', timeout=3)"; then
@@ -157,6 +337,47 @@ rollback() {
     exit 1
   fi
 
+  docker volume create "$remix_guard_volume" >/dev/null
+  if docker inspect osgard-remix-guard >/dev/null 2>&1; then
+    docker stop osgard-remix-guard >/dev/null
+    if ! docker rename osgard-remix-guard "$remix_guard_previous"; then
+      echo 'Unable to preserve the stopped REMIX guard; restarting the existing guard.' >&2
+      docker start osgard-remix-guard >/dev/null
+      rollback
+      exit 1
+    fi
+    remix_guard_replaced=1
+  fi
+  remix_guard_started=1
+  if ! docker run -d --name osgard-remix-guard --network "$core_network" --network-alias remix-guard \
+    --label org.osgard.service=remix-guard \
+    --restart unless-stopped --init --read-only --security-opt no-new-privileges --cap-drop ALL \
+    --pids-limit 96 --memory 128m --cpus 0.5 --tmpfs /tmp:size=4m,noexec,nosuid \
+    --mount "type=volume,src=$remix_guard_volume,dst=/var/lib/remix-guard" \
+    "$remix_guard_image"; then
+    rollback
+    exit 1
+  fi
+  if [[ "$remix_network" != "$core_network" ]]; then
+    docker network connect "$remix_network" osgard-remix-guard
+  fi
+  remix_guard_ready=0
+  for _ in $(seq 1 15); do
+    if docker exec osgard-remix-guard python -c "import json, urllib.request; h=json.load(urllib.request.urlopen('http://127.0.0.1:8081/health', timeout=6)); assert h.get('service') == 'osgard-remix-guard' and h.get('frozenResults') is True and h.get('status') == 'ok'" \
+      && docker exec "$container_name" wget -q -T 8 -O - http://remix-guard:8081/health | grep -q 'osgard-remix-guard'; then
+      remix_guard_ready=1
+      break
+    fi
+    sleep 2
+  done
+  if [[ "$remix_guard_ready" != "1" ]]; then
+    echo 'REMIX result guard did not become healthy through the frontend network; rolling back.' >&2
+    docker logs --tail 100 osgard-remix-guard >&2 || true
+    rollback
+    exit 1
+  fi
+
+  frontend_replaced=1
   if ! docker exec "$container_name" sh -lc "
     set -eu
     cp /etc/nginx/conf.d/default.conf /tmp/osgard-nginx-previous.conf
@@ -189,6 +410,8 @@ rollback() {
     && grep -q 'OSGARD WORLD' /tmp/osa-home-bundle-check.js \
     && curl --max-time 12 -fsS https://osgard.world/api/core/health -o /tmp/osgard-core-health-check.json \
     && grep -q '"status":"ok"' /tmp/osgard-core-health-check.json \
+    && curl --max-time 12 -fsS https://osgard.world/api/remix/health -o /tmp/osgard-remix-guard-health-check.json \
+    && python3 -c 'import json; h=json.load(open("/tmp/osgard-remix-guard-health-check.json")); assert h.get("status") == "ok" and h.get("service") == "osgard-remix-guard" and h.get("frozenResults") is True' \
     && curl --max-time 12 -fsS https://osgard.world/ >/dev/null \
     && curl --max-time 12 -fsS https://osgard.world/skillcred/ -o /tmp/skillcred-page-check.html \
     && grep -q 'id="issueBtn"' /tmp/skillcred-page-check.html \
@@ -214,27 +437,31 @@ rollback() {
       fi; } \
     && curl --max-time 10 -fsS http://127.0.0.1:4317/health -o /tmp/osgard-game-health-check.json \
     && grep -q '"status":"ok"' /tmp/osgard-game-health-check.json; then
-    printf 'success\n' > "$state_file"
+    echo 'Public release checks passed.'
   else
     rollback
     printf 'failed\n' > "$state_file"
     exit 1
   fi
+  # After this commit point the public routes have all passed. A cancellation
+  # during optional backup cleanup must retain the verified running release.
+  activation_committed=1
   if [[ -n "$core_previous" ]] && docker inspect "$core_previous" >/dev/null 2>&1; then
-    docker rm "$core_previous" >/dev/null
-    core_replaced=0
+    if docker rm "$core_previous" >/dev/null; then
+      core_replaced=0
+    else
+      echo 'WARN: the stopped previous Core container remains available for manual cleanup.' >&2
+    fi
   fi
+  if docker inspect "$remix_guard_previous" >/dev/null 2>&1; then
+    if docker rm "$remix_guard_previous" >/dev/null; then
+      remix_guard_replaced=0
+    else
+      echo 'WARN: the stopped previous REMIX guard remains available for manual cleanup.' >&2
+    fi
+  fi
+  printf 'success\n' > "$state_file"
 ) >"$log_file" 2>&1 &
 pid=$!
-for _ in $(seq 1 300); do
-  [[ -f "$state_file" ]] && break
-  kill -0 "$pid" 2>/dev/null || break
-  sleep 1
-done
-if [[ ! -f "$state_file" ]]; then
-  kill "$pid" 2>/dev/null || true
-  cat "$log_file" || true
-  exit 1
-fi
-cat "$log_file" || true
-grep -q '^success$' "$state_file"
+activation_worker_started=1
+monitor_activation_worker
