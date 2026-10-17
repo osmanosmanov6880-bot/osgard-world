@@ -8,6 +8,10 @@ class BuildTriggerTests(unittest.TestCase):
   section=text.split("  pull_request:",1)[1].split("  workflow_dispatch:",1)[0]
   self.assertNotIn("paths:",section)
   self.assertNotIn("paths-ignore:",section)
+ def test_integrated_suite_requires_live_chain_audit(self):
+  workflow=(ROOT/".github/workflows/integrated-quality-suite.yml").read_text()
+  self.assertIn("python scripts/live-release-pr-audit.py",workflow)
+  self.assertIn("github.event_name == 'pull_request'",workflow)
  def test_full_source_acceptance_still_builds_and_validates_all_games(self):
   text=(ROOT/".github/workflows/full-source-release-acceptance.yml").read_text()
   for cmd in ("npm ci","npm run build","npm run qa:zion-local","scripts/staging-release-acceptance.py"):
