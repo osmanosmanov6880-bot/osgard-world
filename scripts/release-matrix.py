@@ -1,14 +1,45 @@
 #!/usr/bin/env python3
-"""Independent release gate policy over machine-readable status observations."""
-import argparse,json,sys
+"""Release-readiness policy; fail closed on forged, partial or mismatched evidence."""
+import argparse
+import hashlib
+import json
+import re
+import sys
+from pathlib import Path
 GATES=("source_build","zip_integrity","game_routes","staging_http","rollback_readiness","backup_recovery","security_config")
-def assess(d):
-    fail=[k for k in GATES if not isinstance(d.get(k),dict) or d[k].get("status") not in ("passed","ready_for_human_review","verified","verified_for_staging")]
-    if d.get("human_approval") is not False:fail.append("human_approval must be pending")
-    return {"status":"ready_for_review" if not fail else "blocked","blocked_gates":fail,"deployed":False}
+SHA=re.compile(r"^[a-f0-9]{64}$")
+COMMIT=re.compile(r"^(?:[a-f0-9]{40}|[a-f0-9]{64})$")
+def assess(data):
+    errors=[]
+    if not isinstance(data,dict):raise ValueError("evidence must be an object")
+    if set(data.get("checks",{})) - set(GATES) if isinstance(data.get("checks",{}),dict) else False:
+        errors.append("unexpected evidence gates")
+    if data.get("schema_version")!=2:errors.append("schema_version")
+    commit=data.get("commit_sha")
+    artifact=data.get("artifact_sha256")
+    if not isinstance(commit,str) or not COMMIT.fullmatch(commit):errors.append("commit_sha")
+    if not isinstance(artifact,str) or not SHA.fullmatch(artifact):errors.append("artifact_sha256")
+    checks=data.get("checks")
+    if not isinstance(checks,dict):checks={}
+    for gate in GATES:
+        item=checks.get(gate)
+        if not isinstance(item,dict) or item.get("status")!="passed":
+            errors.append(gate+": missing verified PASS")
+            continue
+        if item.get("commit_sha")!=commit or item.get("artifact_sha256")!=artifact:
+            errors.append(gate+": evidence does not match candidate")
+        evidence=item.get("evidence_url")
+        if not isinstance(evidence,str) or not re.fullmatch(r"https://github\.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+/actions/runs/[1-9][0-9]*",evidence):
+            errors.append(gate+": missing auditable CI URL")
+    if data.get("human_approval") is not False:errors.append("human approval must remain pending")
+    if data.get("payments_enabled") is not False:errors.append("payments must remain disabled")
+    return {"status":"ready_for_human_review" if not errors else "blocked",
+            "problems":errors,"publication_performed":False}
 def main():
-    p=argparse.ArgumentParser();p.add_argument("evidence");a=p.parse_args()
-    try:r=assess(json.load(open(a.evidence,encoding="utf-8")))
-    except (ValueError,OSError) as e:print(e,file=sys.stderr);return 2
-    print(json.dumps(r,indent=2));return 0 if r["status"]=="ready_for_review" else 2
+    p=argparse.ArgumentParser();p.add_argument("evidence",type=Path);a=p.parse_args()
+    try:
+        result=assess(json.loads(a.evidence.read_text(encoding="utf-8")))
+    except (ValueError,OSError,TypeError) as e:
+        print("BLOCK:",e,file=sys.stderr);return 2
+    print(json.dumps(result,indent=2));return 0 if result["status"]=="ready_for_human_review" else 2
 if __name__=="__main__":raise SystemExit(main())

@@ -1,22 +1,45 @@
 #!/usr/bin/env python3
-"""Conservative static release configuration linter."""
-import argparse,json,re,sys
+"""Conservative static output configuration auditor; read-only and fail-closed."""
+import argparse
+import json
+import sys
 from pathlib import Path
+
+FORBIDDEN={".env","id_ed25519","id_rsa","credentials.json","secrets.json",".ssh",".git"}
 def audit(root):
     root=Path(root)
     failures=[]
+    if root.is_symlink() or not root.is_dir():
+        return {"status":"blocked","failures":["release root is absent or symlinked"],"read_only":True}
     for filename in ("_headers","_redirects","robots.txt"):
-        if not (root/filename).is_file():failures.append("missing "+filename)
-    headers=(root/"_headers").read_text(encoding="utf-8") if (root/"_headers").is_file() else ""
+        path=root/filename
+        if path.is_symlink() or not path.is_file():
+            failures.append("missing or unsafe "+filename)
+    path=root/"_headers"
+    try:
+        headers=path.read_text(encoding="utf-8") if path.is_file() and not path.is_symlink() else ""
+    except (UnicodeError,OSError):
+        headers=""
+        failures.append("unreadable headers")
     for setting in ("X-Content-Type-Options: nosniff","Referrer-Policy:"):
-        if setting.lower() not in headers.lower():failures.append("missing security header "+setting)
+        if setting.lower() not in headers.lower():
+            failures.append("missing security header "+setting)
     for path in root.rglob("*"):
-        if path.is_symlink():failures.append("symlink "+str(path.relative_to(root)))
-        elif path.is_file():
-            name=path.name.lower()
-            if name in (".env","id_ed25519","id_rsa","credentials.json") or name.startswith(".env."):
-                failures.append("secret-like filename "+str(path.relative_to(root)))
+        relative=path.relative_to(root)
+        if path.is_symlink():
+            failures.append("symlink "+relative.as_posix())
+            continue
+        if not path.is_file() and not path.is_dir():
+            failures.append("non-regular entry "+relative.as_posix())
+        if any(part.lower() in FORBIDDEN or part.lower().startswith(".env.") for part in relative.parts):
+            failures.append("secret-like filename "+relative.as_posix())
     return {"status":"passed" if not failures else "blocked","failures":failures,"read_only":True}
 def main():
-    p=argparse.ArgumentParser();p.add_argument("root");a=p.parse_args();r=audit(a.root);print(json.dumps(r,indent=2));return 0 if r["status"]=="passed" else 2
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument("root");a=p.parse_args()
+    try:
+        result=audit(a.root)
+    except (OSError,UnicodeError) as exc:
+        print("BLOCK:",exc,file=sys.stderr);return 2
+    print(json.dumps(result,indent=2))
+    return 0 if result["status"]=="passed" else 2
 if __name__=="__main__":raise SystemExit(main())

@@ -40,10 +40,16 @@ class OperationsTest(unittest.TestCase):
  def test_rollback_fails_closed(self):
   self.assertEqual(rollback.verify({})["status"],"blocked")
  def test_rollback_ready_only_for_review(self):
-  data={"schema_version":1,"previous_commit":"a"*40,"previous_zip_sha256":"b"*64,"backup_sha256":"c"*64,"payments_enabled":False}
+  data={"schema_version":2,"current_commit":"d"*40,"previous_commit":"a"*40,"previous_zip_sha256":"b"*64,"backup_sha256":"c"*64,"payments_enabled":False,"rollback_executed":False}
   for key in ("backup_restore_tested","previous_release_available","rollback_runbook_reviewed","operator_assigned","maintenance_window_approved"):data[key]=True
   self.assertEqual(rollback.verify(data)["status"],"ready_for_human_review")
   data["payments_enabled"]=True
+  self.assertEqual(rollback.verify(data)["status"],"blocked")
+  data["payments_enabled"]=False
+  data["previous_commit"]=data["current_commit"]
+  self.assertEqual(rollback.verify(data)["status"],"blocked")
+  data["previous_commit"]="a"*40
+  data["rollback_executed"]=True
   self.assertEqual(rollback.verify(data)["status"],"blocked")
  def test_config_fail_closed(self):
   with tempfile.TemporaryDirectory() as d:
@@ -57,10 +63,36 @@ class OperationsTest(unittest.TestCase):
    self.assertEqual(config.audit(root)["status"],"passed")
    (root/".env.production").write_text("secret")
    self.assertEqual(config.audit(root)["status"],"blocked")
+ def test_nested_secret_directory_rejected(self):
+  with tempfile.TemporaryDirectory() as d:
+   root=Path(d)
+   (root/"_headers").write_text("X-Content-Type-Options: nosniff\\nReferrer-Policy: strict-origin")
+   (root/"_redirects").write_text("ok")
+   (root/"robots.txt").write_text("ok")
+   (root/".ssh").mkdir()
+   (root/".ssh"/"config").write_text("sensitive")
+   self.assertEqual(config.audit(root)["status"],"blocked")
+ def test_config_symlink_root_rejected(self):
+  with tempfile.TemporaryDirectory() as d:
+   root=Path(d);actual=root/"actual";actual.mkdir()
+   link=root/"alias";link.symlink_to(actual,target_is_directory=True)
+   self.assertEqual(config.audit(link)["status"],"blocked")
  def test_matrix_missing_and_partial(self):
   self.assertEqual(matrix.assess({})["status"],"blocked")
-  d={key:{"status":"passed"} for key in matrix.GATES};d["human_approval"]=False
-  self.assertEqual(matrix.assess(d)["status"],"ready_for_review")
-  d["backup_recovery"]["status"]="unknown"
+  sha="a"*40; digest="b"*64
+  d={"schema_version":2,"commit_sha":sha,"artifact_sha256":digest,
+     "human_approval":False,"payments_enabled":False,
+     "checks":{key:{"status":"passed","commit_sha":sha,"artifact_sha256":digest,
+                    "evidence_url":"https://github.com/example/repo/actions/runs/1"}
+               for key in matrix.GATES}}
+  self.assertEqual(matrix.assess(d)["status"],"ready_for_human_review")
+  d["checks"]["backup_recovery"]["status"]="unknown"
+  self.assertEqual(matrix.assess(d)["status"],"blocked")
+  d["checks"]["backup_recovery"]["status"]="passed"
+  d["checks"]["archive_extra"]={"status":"passed"}
+  d["checks"]["source_build"]["commit_sha"]="c"*40
+  self.assertEqual(matrix.assess(d)["status"],"blocked")
+  d["checks"]["source_build"]["commit_sha"]=sha
+  d["payments_enabled"]=True
   self.assertEqual(matrix.assess(d)["status"],"blocked")
 if __name__=="__main__":unittest.main()
