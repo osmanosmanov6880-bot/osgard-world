@@ -73,7 +73,7 @@ class InheritCoreTests(unittest.TestCase):
         self.assertEqual(first['worldId'],replay['worldId'])
         self.fault(409,lambda:self.write('inherit/worlds',payload={'title':'Other World'},key=key))
         wid=first['worldId']
-        self.fault(403,lambda:self.offer(wid,'bravo','charlie',1))
+        self.fault(404,lambda:self.offer(wid,'bravo','charlie',1))
         self.fault(409,lambda:self.offer(wid,version=2))
         offer_key=uuid.uuid4().hex
         self.offer(wid,key=offer_key)
