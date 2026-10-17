@@ -30,11 +30,10 @@ class GameArchiveTests(unittest.TestCase):
         self.assertEqual((d["zion_worlds"],d["legacy_entrypoints"]),(11,8))
         self.assertEqual(d["local_dependencies_checked"],11)
     def test_manifest_array_rejected(self):
-        self.pack()
-        with zipfile.ZipFile(self.file,"a") as z:
-            z.writestr("games/zion-9/worlds.json",json.dumps([1,2,3]))
-        # Duplicate archive entries are independently rejected.
-        with self.assertRaisesRegex(ValueError,"duplicate ZIP"):
+        self.files["games/zion-9/worlds.json"]=json.dumps([1,2,3]).encode()
+        with zipfile.ZipFile(self.file,"w") as z:
+            for name,payload in self.files.items(): z.writestr(name,payload)
+        with self.assertRaisesRegex(ValueError,"manifest must be an object"):
             m.verify(self.file)
     def test_manifest_non_object_game_rejected(self):
         self.worlds[0]=None
