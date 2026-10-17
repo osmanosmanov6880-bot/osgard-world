@@ -122,7 +122,7 @@ export default function OSALessonPage({ slug }: { slug: string }) {
   }
 
   if (!lesson || !guide || !reading) {
-    return <main className="osa-lesson-page">
+    return <main lang={locale} className="osa-lesson-page">
       <header className="osa-lesson-header"><a className="osa-lesson-brand" href="/academy"><OsgardLogo /><span>AI ACADEMY</span></a></header>
       <section className="osa-lesson-not-found"><p className="osa-lesson-eyebrow">OSA ORIGINAL</p><h1>{t.notFound}</h1><p>{t.notFoundBody}</p><a className="osa-lesson-button" href="/lectures"><ArrowLeft size={16} />{t.back}</a></section>
     </main>
@@ -132,7 +132,7 @@ export default function OSALessonPage({ slug }: { slug: string }) {
   const nextSlug = lessonIndex < totalLessons - 1 ? OSA_LESSON_SLUGS[lessonIndex + 1] : null
   const passed = selectedOption === guide.check.correctIndex
 
-  return <main className="osa-lesson-page">
+  return <main lang={locale} className="osa-lesson-page">
     <header className="osa-lesson-header">
       <a className="osa-lesson-brand" href="/academy" aria-label="OSGARD AI Academy"><OsgardLogo /><span>AI ACADEMY</span></a>
       <nav aria-label={locale === 'ru' ? 'Навигация урока' : 'Lesson navigation'}>

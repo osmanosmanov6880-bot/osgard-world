@@ -41,6 +41,7 @@ const StreamSurface = React.lazy(() => import('./StreamSurface').then(async m =>
 import { recordBrandEvent } from './brandTelemetry'
 import { getPlayGame } from './redesignCatalog'
 import { BrandShell } from './BrandShell'
+import { restorePageFragment } from './browserNavigation'
 const WorldHome = React.lazy(() => import('./WorldHome'))
 const IntelligenceHome = React.lazy(() => import('./IntelligenceHome'))
 const PlayHome = React.lazy(() => import('./PlayHome'))
@@ -223,6 +224,7 @@ class RouteBoundary extends React.Component<{children:React.ReactNode},{failed:b
 }
 function MeasuredRoute(){
   React.useEffect(()=>{
+    restorePageFragment()
     if(path.startsWith('/lectures/'))recordBrandEvent('lecture_opened',path.slice('/lectures/'.length))
     if(path==='/osa-cinema'||path==='/learning/program')recordBrandEvent('course_started',path)
   },[])

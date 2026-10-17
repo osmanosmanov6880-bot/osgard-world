@@ -3,6 +3,23 @@ import { readPlayFilters,playCatalogHref,playWorldHref,playReturnHref } from '..
 import { brandBreadcrumbs,globalNavigationState } from '../src/brandNavigation.ts'
 import { formatEnquiry,validateEnquiry } from '../src/projectEnquiry.ts'
 import { BRAND_EVENT_KEY,recordBrandEvent,readBrandEventState,readBrandEvents,clearBrandEvents } from '../src/brandTelemetry.ts'
+import { BROWSER_LOCATION_EVENT,browserLocationKey,replaceBrowserUrl,restorePageFragment } from '../src/browserNavigation.ts'
+globalThis.location={pathname:'/play',search:'',hash:''}
+globalThis.window=Object.assign(new EventTarget(),{scrollY:0})
+let locationEvents=0,replacements=0,fragmentScrolls=0
+window.addEventListener(BROWSER_LOCATION_EVENT,()=>locationEvents++)
+const retainedState={previous:'preserved'}
+globalThis.history={state:retainedState,replaceState(state,title,href){assert.equal(state,retainedState);replacements++;const url=new URL(href,'https://osgard.world');Object.assign(location,{pathname:url.pathname,search:url.search,hash:url.hash})}}
+replaceBrowserUrl('/play?view=favorites')
+assert.equal(browserLocationKey(),'/play?view=favorites')
+assert.equal(locationEvents,1,'Changing a filter notifies product navigation')
+replaceBrowserUrl('/play?view=favorites')
+assert.equal(replacements,1,'Unchanged URLs do not rewrite history or trigger loops')
+globalThis.document={getElementById:id=>id==='catalog'?{scrollIntoView(options){assert.equal(options.behavior,'instant');fragmentScrolls++}}:null}
+location.hash='#catalog';restorePageFragment();assert.equal(fragmentScrolls,1)
+window.scrollY=120;restorePageFragment();assert.equal(fragmentScrolls,1,'Late chunk must not override user scrolling')
+window.scrollY=0;location.hash='#%E0%A4';assert.doesNotThrow(restorePageFragment)
+location.hash='#missing';restorePageFragment();assert.equal(fragmentScrolls,1)
 const genres=['Стратегия','Арена']
 const filters=readPlayFilters('?q=TIME&genre=Стратегия&mode=solo&view=favorites',genres)
 assert.equal(filters.query,'TIME');assert.equal(filters.genre,'Стратегия')

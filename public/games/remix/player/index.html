@@ -3,19 +3,21 @@
   <head>
     <meta charset="utf-8">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>REMIX — игра в браузере</title>
     <link rel="shortcut icon" href="/brand/favicon.svg">
     <link rel="stylesheet" href="TemplateData/style.css">
   <link rel="stylesheet" href="/brand/ecosystem-chrome.css"><link rel="icon" href="/brand/favicon.svg" type="image/svg+xml"></head>
   <body>
+    <header class="remix-player-header"><a href="/play/world/remix">← О мире и управлении</a><a href="/play#catalog">Каталог миров</a><a href="/games/remix/">Консоль испытаний</a></header>
+    <main><section class="remix-player-guide"><h1>REMIX</h1><p id="player-controls">Выберите игровое поле, чтобы передать ему управление. Подсказки сборки появятся внутри игры. Кнопки возврата расположены над полем.</p><p>Нужен WebGL 2. Сетевые матчи и сохранённые результаты требуют подтверждения сервиса REMIX; загрузка сборки сама по себе их не подтверждает.</p><p id="player-load-status" role="status">Подготавливаем игровую сборку…</p><a href="" id="player-retry" hidden>Повторить загрузку</a></section>
     <div id="unity-container" class="unity-desktop">
       <div id="unity-fullscreen-container">
-        <canvas id="unity-canvas" width="960" height="600" tabindex="-1"></canvas>
+        <canvas id="unity-canvas" width="960" height="600" tabindex="0" aria-label="Игровое поле REMIX" aria-describedby="player-controls"></canvas>
         <div id="unity-loading-container">
           <div id="unity-loading-bar">
             <div id="unity-logo"></div>
-            <div id="unity-progress-bar-empty">
+            <div id="unity-progress-bar-empty" role="progressbar" aria-label="Загрузка игры" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
               <div id="unity-progress-bar-full"></div>
             </div>
           </div>
@@ -24,8 +26,8 @@
       <div id="unity-warning" aria-live="polite"> </div>
       <div id="unity-footer">
         <div id="unity-logo-title-footer"></div>
-        <div id="unity-fullscreen-button"></div>
-        <div id="unity-build-title">remix-game-check</div>
+        <button id="unity-fullscreen-button" type="button" aria-label="Развернуть игру на весь экран">На весь экран</button>
+        <div id="unity-build-title">REMIX</div>
       </div>
     </div>
     <script>
@@ -44,8 +46,9 @@
           warningBanner.style.display = warningBanner.children.length ? 'block' : 'none';
         }
         var div = document.createElement('div');
-        div.innerHTML = msg;
+        div.textContent = String(msg);
         warningBanner.appendChild(div);
+        if (type == 'error') { document.querySelector('#player-load-status').textContent='Не удалось запустить игру. Проверьте поддержку WebGL и повторите загрузку.'; document.querySelector('#player-retry').hidden=false; document.querySelector('#unity-loading-container').style.display='none'; }
         if (type == 'error') div.style = 'background: #b42318; color: white; padding: 12px 16px; border-radius: 6px; font-family: Arial, sans-serif;';
         else {
           if (type == 'warning') div.style = 'background: yellow; padding: 10px;';
@@ -105,7 +108,7 @@
 
         var meta = document.createElement('meta');
         meta.name = 'viewport';
-        meta.content = 'width=device-width, height=device-height, initial-scale=1.0, viewport-fit=cover, user-scalable=no, shrink-to-fit=yes';
+        meta.content = 'width=device-width, height=device-height, initial-scale=1.0, viewport-fit=cover';
         document.getElementsByTagName('head')[0].appendChild(meta);
         document.querySelector("#unity-container").className = "unity-mobile";
         canvas.className = "unity-mobile";
@@ -123,12 +126,16 @@
 
 
       var script = document.createElement("script");
+      script.onerror = () => unityShowBanner("Не удалось загрузить файлы игры. Повторите попытку или вернитесь в каталог.", "error");
       script.src = loaderUrl;
       script.onload = () => {
         const loadingContainer = document.querySelector("#unity-loading-container");
         const progressBarFull = document.querySelector("#unity-progress-bar-full");
 
         createUnityInstance(canvas, config, (progress) => {
+          const percent=Math.max(0,Math.min(100,Math.round(progress*100)));
+          document.querySelector('#unity-progress-bar-empty').setAttribute('aria-valuenow',String(percent));
+          document.querySelector('#player-load-status').textContent='Загрузка игры: '+percent+'%';
           if (progress < 1) {
             loadingContainer.style.display = "block";
             progressBarFull.style.width = 100 * progress + "%";
@@ -136,6 +143,8 @@
             loadingContainer.style.display = "none";
           }
         }).then((unityInstance) => {
+                document.querySelector('#player-load-status').textContent='Сборка загружена. Выберите игровое поле и следуйте подсказкам.';
+                document.querySelector('#unity-canvas').setAttribute('data-state','ready');
                 document.querySelector("#unity-fullscreen-button").onclick = () => {
                   unityInstance.SetFullscreen(1);
                 };
@@ -149,5 +158,5 @@
       document.body.appendChild(script);
 
     </script>
-  <script defer src="/brand/osa-transition.js"></script></body>
+  </main><script defer src="/brand/osa-transition.js"></script></body>
 </html>

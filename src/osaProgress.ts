@@ -156,22 +156,30 @@ export function createOSALearningProgressStore(
 ) {
   let memorySnapshot = defaultProgress()
   let memoryDirty = false
+  // Distinguish the unchanged snapshot left behind by a failed write from a
+  // genuinely newer persisted value received through another tab.
+  let lastStoredRaw: string | null | undefined
 
   const read = (): OSALearningProgress => {
     if (!storage) return cloneProgress(memorySnapshot)
     try {
       const raw = storage.getItem(OSA_PROGRESS_STORAGE_KEY)
+      if (memoryDirty && (lastStoredRaw === undefined || raw === lastStoredRaw)) {
+        return cloneProgress(memorySnapshot)
+      }
       if (raw) {
         const canonical = normalizeProgress(JSON.parse(raw) as unknown)
         if (canonical) {
           memorySnapshot = canonical
           memoryDirty = false
+          lastStoredRaw = raw
           return cloneProgress(canonical)
         }
         if (memoryDirty) return cloneProgress(memorySnapshot)
       } else if (memoryDirty) {
         return cloneProgress(memorySnapshot)
       }
+      lastStoredRaw = raw
     } catch {
       return cloneProgress(memorySnapshot)
     }
@@ -180,15 +188,19 @@ export function createOSALearningProgressStore(
     memorySnapshot = migrated
     if (migrated.updatedAt) {
       try {
-        memoryDirty = storage.getItem(OSA_PROGRESS_STORAGE_KEY) === null
+        lastStoredRaw = storage.getItem(OSA_PROGRESS_STORAGE_KEY)
+        memoryDirty = lastStoredRaw !== JSON.stringify(migrated)
       } catch {
         memoryDirty = true
       }
     } else {
       // Repair a malformed canonical value with a safe, validated default snapshot.
       try {
-        if (storage.getItem(OSA_PROGRESS_STORAGE_KEY) !== null) {
-          storage.setItem(OSA_PROGRESS_STORAGE_KEY, JSON.stringify(migrated))
+        lastStoredRaw = storage.getItem(OSA_PROGRESS_STORAGE_KEY)
+        if (lastStoredRaw !== null) {
+          const serialized = JSON.stringify(migrated)
+          storage.setItem(OSA_PROGRESS_STORAGE_KEY, serialized)
+          lastStoredRaw = serialized
         }
         memoryDirty = false
       } catch {
@@ -205,7 +217,9 @@ export function createOSALearningProgressStore(
     let persisted = false
     if (storage) {
       try {
-        storage.setItem(OSA_PROGRESS_STORAGE_KEY, JSON.stringify(normalized))
+        const serialized = JSON.stringify(normalized)
+        storage.setItem(OSA_PROGRESS_STORAGE_KEY, serialized)
+        lastStoredRaw = serialized
         persisted = true
         memoryDirty = false
       } catch {
@@ -237,7 +251,7 @@ export function createOSALearningProgressStore(
     markLessonOpened(slug: string): boolean {
       if (!validSlugs.includes(slug)) return false
       const current = read()
-      if (current.lastLessonSlug === slug) return this.isPersistent()
+      if (current.lastLessonSlug === slug && this.isPersistent()) return true
       return write({ ...current, lastLessonSlug: slug })
     },
     isPersistent(): boolean {

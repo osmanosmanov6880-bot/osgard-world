@@ -126,7 +126,7 @@ export default function LectureLibrary() {
   const lastLessonIndex = lastLessonSlug ? (OSA_LESSON_SLUGS as readonly string[]).indexOf(lastLessonSlug) : -1
   const lastOpenedLesson = lastLessonIndex >= 0 ? lessons[lastLessonIndex] : null
 
-  return <main className="lecture-library">
+  return <main lang={locale} className="lecture-library">
     <header className="lecture-header">
       <a href="/academy" className="lecture-brand" aria-label="OSGARD AI Academy"><OsgardLogo /><span>AI ACADEMY</span></a>
       <nav aria-label={locale === 'ru' ? 'Навигация по курсам' : 'Course navigation'}>
