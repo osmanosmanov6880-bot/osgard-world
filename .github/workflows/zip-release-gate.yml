@@ -1,0 +1,21 @@
+name: OSGARD ZIP release safety gate
+on:
+  pull_request:
+    paths:
+      - 'scripts/verify-release-zip.py'
+      - 'tests/test_release_zip_gate.py'
+      - 'docs/ZIP-RELEASE-GATE.md'
+      - '.github/workflows/zip-release-gate.yml'
+permissions:
+  contents: read
+jobs:
+  archive-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m py_compile scripts/verify-release-zip.py tests/test_release_zip_gate.py
+      - run: python -m unittest discover -s tests -p test_release_zip_gate.py -v
