@@ -346,6 +346,61 @@ async function suite(){
   assert.ok(data.has(oldDraft.key),'foreign mutable slot remains intact');
   assert.equal(b.ui().drafts.length,0,'fresh immutable history proves these exact old contents were committed');
  });
+ await check('world selection during a held POST ignores success and 401, preserves its journal and unlocks navigation',async()=>{
+  for(const outcome of ['committed','unauthorized']){
+   const h=harness(),first=await create(h);h.place('tree');
+   await h.controller.createWorld('template','Second world');const second=h.ui().world.id;await h.controller.loadWorld(first);
+   const held=deferred();h.handler=async call=>call.method==='POST'?held.promise:undefined;
+   const saving=h.controller.saveGeneration('Held selection');await h.flush();const call=h.posts().at(-1),saved=h.operations()[0];
+   await h.controller.loadWorld(second);const before=h.current();
+   held.resolve(response(outcome==='committed'?h.service.handle(call):error('authentication_required',401)));
+   assert.equal(await saving,'ignored');assert.equal(h.ui().world.id,second);assert.deepEqual(h.current(),before);
+   assert.equal(h.ui().account.id,ids.alice);assert.equal(h.ui().busy,false);assert.equal(h.data.get(saved.key),JSON.stringify(saved.value));
+   assert.equal(h.ui().pending.length,1);h.handler=null;
+   if(outcome==='committed'){
+    const posts=h.posts().length;assert.equal(await h.controller.recover(saved.value.key),'committed');
+    assert.equal(h.ui().world.id,first);assert.equal(h.current().pending.length,0);assert.equal(h.posts().length,posts);
+   }
+  }
+ });
+ await check('held GET-only recovery cannot replace a newly selected world or expire its session',async()=>{
+  for(const outcome of ['committed','unauthorized']){
+   const h=harness(),first=await create(h);await h.controller.createWorld('template','Second');const second=h.ui().world.id;
+   await h.controller.loadWorld(first);h.place();
+   h.handler=async call=>{if(call.method==='POST'){h.service.handle(call);throw Error('lost')}};
+   await h.controller.saveGeneration('Recover after navigation');const saved=h.operations()[0],held=deferred();
+   h.handler=async call=>call.path===API+'operations/'+saved.value.key?held.promise:undefined;
+   const recovering=h.controller.recover(saved.value.key);await h.flush();const call=h.calls.at(-1);
+   await h.controller.loadWorld(second);const before=h.current(),posts=h.posts().length;
+   held.resolve(response(outcome==='committed'?h.service.handle(call):error('authentication_required',401)));
+   assert.equal(await recovering,'ignored');assert.equal(h.ui().world.id,second);assert.deepEqual(h.current(),before);
+   assert.equal(h.ui().account.id,ids.alice);assert.equal(h.ui().busy,false);assert.equal(h.data.get(saved.key),JSON.stringify(saved.value));
+   h.handler=null;assert.equal(await h.controller.recover(saved.value.key),'committed');assert.equal(h.posts().length,posts);
+  }
+ });
+ await check('a held invitation refresh after an operation’s own world GET stays bound to that selection',async()=>{
+  for(const outcome of ['committed','unauthorized']){
+   const h=harness(),first=await create(h);await generationOne(h);
+   await h.controller.createWorld('template','Second');const second=h.ui().world.id;await h.controller.loadWorld(first);
+   const held=deferred();h.handler=async call=>call.method==='GET'&&call.path.startsWith(API+'handoffs/')?held.promise:undefined;
+   const offering=h.controller.offer(ids.bob,true);await h.flush();const call=h.calls.at(-1),saved=h.operations()[0];
+   assert.ok(call.path.startsWith(API+'handoffs/'));await h.controller.loadWorld(second);
+   held.resolve(response(outcome==='committed'?h.service.handle(call):error('authentication_required',401)));
+   assert.equal(await offering,'ignored');assert.equal(h.ui().world.id,second);assert.equal(h.ui().invite,null);
+   assert.equal(h.ui().account.id,ids.alice);assert.equal(h.ui().busy,false);assert.equal(h.data.get(saved.key),JSON.stringify(saved.value));
+   const posts=h.posts().length;h.handler=null;assert.equal(await h.controller.recover(saved.value.key),'committed');
+   assert.equal(h.ui().world.id,first);assert.equal(h.ui().invite.to.id,ids.bob);assert.equal(h.posts().length,posts);
+  }
+ });
+ await check('notification navigation superseded by another world never opens its generation or marks it read',async()=>{
+  const h=harness(),first=await create(h);await generationOne(h);await h.controller.createWorld('template','Second');const second=h.ui().world.id;
+  const note={userId:ids.alice,id:800,kind:'generation_created',worldId:first,invitationId:null,generation:1,actor:{id:ids.bob,username:'bob'},createdAt:stamp,readAt:null};
+  h.service.notifications.push(note);await h.controller.refresh();const held=deferred();
+  h.handler=async call=>call.method==='GET'&&call.path===API+'worlds/'+first?held.promise:undefined;
+  const opening=h.controller.openNotification(note.id);await h.flush();const call=h.calls.at(-1),posts=h.posts().length;
+  await h.controller.loadWorld(second);held.resolve(response(h.service.handle(call)));assert.equal(await opening,false);
+  assert.equal(h.ui().world.id,second);assert.equal(h.snapshot,undefined);assert.equal(note.readAt,null);assert.equal(h.posts().length,posts);
+ });
  console.log('SUMMARY '+passed+' PASS / 0 FAIL. Shipped account controller and placement handler; in-memory transport only. No browser or live persistence asserted.');
 }
 if(process.argv[1]&&pathToFileURL(process.argv[1]).href===import.meta.url)await suite();

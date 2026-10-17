@@ -1,0 +1,154 @@
+{
+  "schemaVersion": 1,
+  "origin": "https://osgard.world",
+  "status": "FAIL",
+  "mode": "guest-two-player-engine-compatibility",
+  "startedAt": "2026-10-17T18:44:59.816867+00:00",
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 200,
+      "outcome": "received",
+      "status": 200,
+      "bytes": 3760
+    },
+    {
+      "method": "GET",
+      "path": "/api/remix/health",
+      "expectedStatus": 200,
+      "outcome": "received",
+      "status": 200,
+      "bytes": 391
+    },
+    {
+      "method": "POST",
+      "path": "/api/remix/v1/challenges",
+      "expectedStatus": 201,
+      "outcome": "received",
+      "status": 201,
+      "bytes": 271
+    },
+    {
+      "method": "POST",
+      "path": "/api/remix/v1/matches",
+      "expectedStatus": 201,
+      "outcome": "received",
+      "status": 201,
+      "bytes": 140
+    },
+    {
+      "method": "GET",
+      "path": "/api/remix/v1/matches/match_20261017184504.950665511_10/state",
+      "expectedStatus": 200,
+      "outcome": "received",
+      "status": 200,
+      "bytes": 123
+    },
+    {
+      "method": "GET",
+      "path": "/api/remix/v1/matches/match_20261017184504.950665511_10/state",
+      "expectedStatus": 200,
+      "outcome": "received",
+      "status": 200,
+      "bytes": 122
+    },
+    {
+      "method": "POST",
+      "path": "/api/remix/v1/matches/match_20261017184504.950665511_10/input",
+      "expectedStatus": 200,
+      "outcome": "received",
+      "input": {
+        "playerId": "qa_two_1aef205c7c94d53f5fd03567",
+        "sequence": 1
+      },
+      "status": 200,
+      "bytes": 160
+    },
+    {
+      "method": "POST",
+      "path": "/api/remix/v1/matches/match_20261017184504.950665511_10/input",
+      "expectedStatus": 200,
+      "outcome": "received",
+      "input": {
+        "playerId": "qa_two_67150d80d021f508c0669c46",
+        "sequence": 1
+      },
+      "status": 200,
+      "bytes": 161
+    },
+    {
+      "method": "POST",
+      "path": "/api/remix/v1/matches/match_20261017184504.950665511_10/input",
+      "expectedStatus": 409,
+      "outcome": "uncertain",
+      "input": {
+        "playerId": "qa_two_1aef205c7c94d53f5fd03567",
+        "sequence": 1
+      },
+      "status": 409,
+      "bytes": 21,
+      "errorType": "ProbeFailure"
+    }
+  ],
+  "checks": [
+    "Initial public release marker is recorded",
+    "Public REMIX guard and legacy health are ready",
+    "One fresh private QA challenge and empty guest match",
+    "Both distinct guest players accepted their own sequence 1"
+  ],
+  "limits": [
+    "Guest v1 engine compatibility only; no v2 membership or ACL proof",
+    "No Core accounts, credentials or sessions",
+    "No Unity or verified replay",
+    "No active-engine recovery, restart test or atomic legacy expiry claim",
+    "No automatic POST retry, match enumeration or existing-user-data modification",
+    "One private QA challenge and one guest match remain if created"
+  ],
+  "release": "75a3251ae5cc",
+  "challengeId": "ch_20261017184502_11",
+  "match": {
+    "id": "match_20261017184504.950665511_10",
+    "challengeId": "ch_20261017184502_11",
+    "playerIds": [
+      "qa_two_1aef205c7c94d53f5fd03567",
+      "qa_two_67150d80d021f508c0669c46"
+    ],
+    "accessMode": "legacy-guest"
+  },
+  "stateObservations": [
+    {
+      "phase": "COUNTDOWN",
+      "remainingMs": 2017,
+      "players": 0,
+      "replayFrames": 0
+    },
+    {
+      "phase": "PLAYING",
+      "remainingMs": 30000,
+      "players": 0,
+      "replayFrames": 0
+    }
+  ],
+  "acceptedInputs": [
+    {
+      "playerId": "qa_two_1aef205c7c94d53f5fd03567",
+      "lastSequence": 1,
+      "score": 0.016666666666666666
+    },
+    {
+      "playerId": "qa_two_67150d80d021f508c0669c46",
+      "lastSequence": 1,
+      "score": 0.016666666666666666
+    }
+  ],
+  "failureType": "ProbeFailure",
+  "failure": "The bounded two-player check did not complete all required assertions. No automatic POST retry was performed.",
+  "finishedAt": "2026-10-17T18:45:12.494185+00:00",
+  "durationSeconds": 12.677,
+  "postAttempts": {
+    "challenge": 1,
+    "match": 1,
+    "input": 3
+  }
+}

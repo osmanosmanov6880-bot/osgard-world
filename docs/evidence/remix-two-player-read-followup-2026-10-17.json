@@ -1,0 +1,94 @@
+{
+  "schemaVersion": 1,
+  "origin": "https://osgard.world",
+  "status": "PASS",
+  "mode": "read-only-followup-of-own-new-QA-match",
+  "startedAt": "2026-10-17T18:46:28.065723+00:00",
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 200,
+      "outcome": "received",
+      "status": 200,
+      "bytes": 3760
+    },
+    {
+      "method": "GET",
+      "path": "/api/remix/v1/matches/match_20261017184504.950665511_10/state",
+      "expectedStatus": 200,
+      "outcome": "received",
+      "status": 200,
+      "bytes": 268
+    },
+    {
+      "method": "GET",
+      "path": "/api/remix/v1/matches/match_20261017184504.950665511_10/result",
+      "expectedStatus": 200,
+      "outcome": "received",
+      "status": 200,
+      "bytes": 245
+    },
+    {
+      "method": "GET",
+      "path": "/api/remix/v1/matches/match_20261017184504.950665511_10/result",
+      "expectedStatus": 200,
+      "outcome": "received",
+      "status": 200,
+      "bytes": 245
+    },
+    {
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 200,
+      "outcome": "received",
+      "status": 200,
+      "bytes": 3760
+    }
+  ],
+  "checks": [
+    "Two newly assigned guest IDs remain in the terminal two-frame result",
+    "Repeated GET returns the same terminal snapshot"
+  ],
+  "limits": [
+    "Original strict guest probe remains FAIL after a received HTTP409 failed its response-format contract",
+    "No repeated POST or new challenge/match; only the exact QA match created by the source report is read",
+    "This follow-up does not prove the unexecuted second duplicate or either late-input assertion",
+    "Terminal snapshot hash is not replay verification"
+  ],
+  "sourceReportSha256": "b48e79ca8f112b376a2001c2b49cf44499c8b6784f95cd0968493123a84b1f6b",
+  "stateObservations": [
+    {
+      "phase": "RESULTS",
+      "remainingMs": 0,
+      "players": 2,
+      "replayFrames": 2
+    }
+  ],
+  "match": {
+    "id": "match_20261017184504.950665511_10",
+    "challengeId": "ch_20261017184502_11",
+    "playerIds": [
+      "qa_two_1aef205c7c94d53f5fd03567",
+      "qa_two_67150d80d021f508c0669c46"
+    ],
+    "accessMode": "legacy-guest"
+  },
+  "result": {
+    "matchId": "match_20261017184504.950665511_10",
+    "phase": "RESULTS",
+    "replayFrames": 2,
+    "scores": [
+      {
+        "playerId": "qa_two_1aef205c7c94d53f5fd03567",
+        "score": 0.016666666666666666
+      },
+      {
+        "playerId": "qa_two_67150d80d021f508c0669c46",
+        "score": 0.016666666666666666
+      }
+    ]
+  },
+  "resultSha256": "f038b938e3a38052b38859b7858dba7548167baa90edcf0c11a7e8a3ac280841",
+  "finishedAt": "2026-10-17T18:46:32.132981+00:00"
+}

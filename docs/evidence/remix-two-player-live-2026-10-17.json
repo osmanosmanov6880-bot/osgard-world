@@ -1,0 +1,486 @@
+{
+  "schemaVersion": 1,
+  "origin": "https://osgard.world",
+  "status": "PASS",
+  "mode": "guest-two-player-engine-compatibility",
+  "startedAt": "2026-10-17T18:54:56.917940+00:00",
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 200,
+      "outcome": "received",
+      "status": 200,
+      "contentType": "text/html",
+      "noStore": true,
+      "bytes": 3760
+    },
+    {
+      "method": "GET",
+      "path": "/api/remix/health",
+      "expectedStatus": 200,
+      "outcome": "received",
+      "status": 200,
+      "contentType": "application/json",
+      "noStore": true,
+      "bytes": 391
+    },
+    {
+      "method": "POST",
+      "path": "/api/remix/v1/challenges",
+      "expectedStatus": 201,
+      "outcome": "received",
+      "status": 201,
+      "contentType": "application/json",
+      "noStore": true,
+      "bytes": 271
+    },
+    {
+      "method": "POST",
+      "path": "/api/remix/v1/matches",
+      "expectedStatus": 201,
+      "outcome": "received",
+      "status": 201,
+      "contentType": "application/json",
+      "noStore": true,
+      "bytes": 139
+    },
+    {
+      "method": "GET",
+      "path": "/api/remix/v1/matches/match_20261017185459.852229433_11/state",
+      "expectedStatus": 200,
+      "outcome": "received",
+      "status": 200,
+      "contentType": "application/json",
+      "noStore": true,
+      "bytes": 122
+    },
+    {
+      "method": "GET",
+      "path": "/api/remix/v1/matches/match_20261017185459.852229433_11/state",
+      "expectedStatus": 200,
+      "outcome": "received",
+      "status": 200,
+      "contentType": "application/json",
+      "noStore": true,
+      "bytes": 122
+    },
+    {
+      "method": "POST",
+      "path": "/api/remix/v1/matches/match_20261017185459.852229433_11/input",
+      "expectedStatus": 200,
+      "outcome": "received",
+      "input": {
+        "playerId": "qa_two_0f4b1ea305a30392e4c7dea8",
+        "sequence": 1
+      },
+      "status": 200,
+      "contentType": "application/json",
+      "noStore": true,
+      "bytes": 160
+    },
+    {
+      "method": "POST",
+      "path": "/api/remix/v1/matches/match_20261017185459.852229433_11/input",
+      "expectedStatus": 200,
+      "outcome": "received",
+      "input": {
+        "playerId": "qa_two_cceb8ff05be21a1b77c1ceab",
+        "sequence": 1
+      },
+      "status": 200,
+      "contentType": "application/json",
+      "noStore": true,
+      "bytes": 161
+    },
+    {
+      "method": "POST",
+      "path": "/api/remix/v1/matches/match_20261017185459.852229433_11/input",
+      "expectedStatus": 409,
+      "outcome": "received",
+      "input": {
+        "playerId": "qa_two_0f4b1ea305a30392e4c7dea8",
+        "sequence": 1
+      },
+      "status": 409,
+      "contentType": "text/plain",
+      "noStore": true,
+      "bytes": 21
+    },
+    {
+      "method": "POST",
+      "path": "/api/remix/v1/matches/match_20261017185459.852229433_11/input",
+      "expectedStatus": 409,
+      "outcome": "received",
+      "input": {
+        "playerId": "qa_two_cceb8ff05be21a1b77c1ceab",
+        "sequence": 1
+      },
+      "status": 409,
+      "contentType": "text/plain",
+      "noStore": true,
+      "bytes": 21
+    },
+    {
+      "method": "GET",
+      "path": "/api/remix/v1/matches/match_20261017185459.852229433_11/state",
+      "expectedStatus": 200,
+      "outcome": "received",
+      "status": 200,
+      "contentType": "application/json",
+      "noStore": true,
+      "bytes": 273
+    },
+    {
+      "method": "GET",
+      "path": "/api/remix/v1/matches/match_20261017185459.852229433_11/state",
+      "expectedStatus": 200,
+      "outcome": "received",
+      "status": 200,
+      "contentType": "application/json",
+      "noStore": true,
+      "bytes": 273
+    },
+    {
+      "method": "GET",
+      "path": "/api/remix/v1/matches/match_20261017185459.852229433_11/state",
+      "expectedStatus": 200,
+      "outcome": "received",
+      "status": 200,
+      "contentType": "application/json",
+      "noStore": true,
+      "bytes": 273
+    },
+    {
+      "method": "GET",
+      "path": "/api/remix/v1/matches/match_20261017185459.852229433_11/state",
+      "expectedStatus": 200,
+      "outcome": "received",
+      "status": 200,
+      "contentType": "application/json",
+      "noStore": true,
+      "bytes": 273
+    },
+    {
+      "method": "GET",
+      "path": "/api/remix/v1/matches/match_20261017185459.852229433_11/state",
+      "expectedStatus": 200,
+      "outcome": "received",
+      "status": 200,
+      "contentType": "application/json",
+      "noStore": true,
+      "bytes": 273
+    },
+    {
+      "method": "GET",
+      "path": "/api/remix/v1/matches/match_20261017185459.852229433_11/state",
+      "expectedStatus": 200,
+      "outcome": "received",
+      "status": 200,
+      "contentType": "application/json",
+      "noStore": true,
+      "bytes": 273
+    },
+    {
+      "method": "GET",
+      "path": "/api/remix/v1/matches/match_20261017185459.852229433_11/state",
+      "expectedStatus": 200,
+      "outcome": "received",
+      "status": 200,
+      "contentType": "application/json",
+      "noStore": true,
+      "bytes": 273
+    },
+    {
+      "method": "GET",
+      "path": "/api/remix/v1/matches/match_20261017185459.852229433_11/state",
+      "expectedStatus": 200,
+      "outcome": "received",
+      "status": 200,
+      "contentType": "application/json",
+      "noStore": true,
+      "bytes": 273
+    },
+    {
+      "method": "GET",
+      "path": "/api/remix/v1/matches/match_20261017185459.852229433_11/state",
+      "expectedStatus": 200,
+      "outcome": "received",
+      "status": 200,
+      "contentType": "application/json",
+      "noStore": true,
+      "bytes": 272
+    },
+    {
+      "method": "GET",
+      "path": "/api/remix/v1/matches/match_20261017185459.852229433_11/state",
+      "expectedStatus": 200,
+      "outcome": "received",
+      "status": 200,
+      "contentType": "application/json",
+      "noStore": true,
+      "bytes": 272
+    },
+    {
+      "method": "GET",
+      "path": "/api/remix/v1/matches/match_20261017185459.852229433_11/state",
+      "expectedStatus": 200,
+      "outcome": "received",
+      "status": 200,
+      "contentType": "application/json",
+      "noStore": true,
+      "bytes": 272
+    },
+    {
+      "method": "GET",
+      "path": "/api/remix/v1/matches/match_20261017185459.852229433_11/state",
+      "expectedStatus": 200,
+      "outcome": "received",
+      "status": 200,
+      "contentType": "application/json",
+      "noStore": true,
+      "bytes": 272
+    },
+    {
+      "method": "GET",
+      "path": "/api/remix/v1/matches/match_20261017185459.852229433_11/state",
+      "expectedStatus": 200,
+      "outcome": "received",
+      "status": 200,
+      "contentType": "application/json",
+      "noStore": true,
+      "bytes": 272
+    },
+    {
+      "method": "GET",
+      "path": "/api/remix/v1/matches/match_20261017185459.852229433_11/state",
+      "expectedStatus": 200,
+      "outcome": "received",
+      "status": 200,
+      "contentType": "application/json",
+      "noStore": true,
+      "bytes": 268
+    },
+    {
+      "method": "GET",
+      "path": "/api/remix/v1/matches/match_20261017185459.852229433_11/result",
+      "expectedStatus": 200,
+      "outcome": "received",
+      "status": 200,
+      "contentType": "application/json",
+      "noStore": true,
+      "bytes": 245
+    },
+    {
+      "method": "POST",
+      "path": "/api/remix/v1/matches/match_20261017185459.852229433_11/input",
+      "expectedStatus": 409,
+      "outcome": "received",
+      "input": {
+        "playerId": "qa_two_0f4b1ea305a30392e4c7dea8",
+        "sequence": 2
+      },
+      "status": 409,
+      "contentType": "application/json",
+      "noStore": true,
+      "bytes": 91
+    },
+    {
+      "method": "POST",
+      "path": "/api/remix/v1/matches/match_20261017185459.852229433_11/input",
+      "expectedStatus": 409,
+      "outcome": "received",
+      "input": {
+        "playerId": "qa_two_cceb8ff05be21a1b77c1ceab",
+        "sequence": 2
+      },
+      "status": 409,
+      "contentType": "application/json",
+      "noStore": true,
+      "bytes": 91
+    },
+    {
+      "method": "GET",
+      "path": "/api/remix/v1/matches/match_20261017185459.852229433_11/result",
+      "expectedStatus": 200,
+      "outcome": "received",
+      "status": 200,
+      "contentType": "application/json",
+      "noStore": true,
+      "bytes": 245
+    },
+    {
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 200,
+      "outcome": "received",
+      "status": 200,
+      "contentType": "text/html",
+      "noStore": true,
+      "bytes": 3760
+    }
+  ],
+  "checks": [
+    "Initial public release marker is recorded",
+    "Public REMIX guard and legacy health are ready",
+    "One fresh private QA challenge and empty guest match",
+    "Both distinct guest players accepted their own sequence 1",
+    "Duplicate sequence 1 is rejected independently for both players",
+    "Terminal result includes exactly the two players and two accepted frames",
+    "Late sequence 2 from both players is rejected and the terminal result is unchanged",
+    "Public release marker remained unchanged"
+  ],
+  "limits": [
+    "Guest v1 engine compatibility only; no v2 membership or ACL proof",
+    "No Core accounts, credentials or sessions",
+    "No Unity or verified replay",
+    "No active-engine recovery, restart test or atomic legacy expiry claim",
+    "No automatic POST retry, match enumeration or existing-user-data modification",
+    "One private QA challenge and one guest match remain if created"
+  ],
+  "release": "75a3251ae5cc",
+  "challengeId": "ch_20261017185459_12",
+  "match": {
+    "id": "match_20261017185459.852229433_11",
+    "challengeId": "ch_20261017185459_12",
+    "playerIds": [
+      "qa_two_0f4b1ea305a30392e4c7dea8",
+      "qa_two_cceb8ff05be21a1b77c1ceab"
+    ],
+    "accessMode": "legacy-guest"
+  },
+  "stateObservations": [
+    {
+      "phase": "COUNTDOWN",
+      "remainingMs": 949,
+      "players": 0,
+      "replayFrames": 0
+    },
+    {
+      "phase": "PLAYING",
+      "remainingMs": 30000,
+      "players": 0,
+      "replayFrames": 0
+    },
+    {
+      "phase": "PLAYING",
+      "remainingMs": 25643,
+      "players": 2,
+      "replayFrames": 2
+    },
+    {
+      "phase": "PLAYING",
+      "remainingMs": 23635,
+      "players": 2,
+      "replayFrames": 2
+    },
+    {
+      "phase": "PLAYING",
+      "remainingMs": 21715,
+      "players": 2,
+      "replayFrames": 2
+    },
+    {
+      "phase": "PLAYING",
+      "remainingMs": 19628,
+      "players": 2,
+      "replayFrames": 2
+    },
+    {
+      "phase": "PLAYING",
+      "remainingMs": 17572,
+      "players": 2,
+      "replayFrames": 2
+    },
+    {
+      "phase": "PLAYING",
+      "remainingMs": 15566,
+      "players": 2,
+      "replayFrames": 2
+    },
+    {
+      "phase": "PLAYING",
+      "remainingMs": 13365,
+      "players": 2,
+      "replayFrames": 2
+    },
+    {
+      "phase": "PLAYING",
+      "remainingMs": 11281,
+      "players": 2,
+      "replayFrames": 2
+    },
+    {
+      "phase": "PLAYING",
+      "remainingMs": 9273,
+      "players": 2,
+      "replayFrames": 2
+    },
+    {
+      "phase": "PLAYING",
+      "remainingMs": 7275,
+      "players": 2,
+      "replayFrames": 2
+    },
+    {
+      "phase": "PLAYING",
+      "remainingMs": 5256,
+      "players": 2,
+      "replayFrames": 2
+    },
+    {
+      "phase": "PLAYING",
+      "remainingMs": 3166,
+      "players": 2,
+      "replayFrames": 2
+    },
+    {
+      "phase": "PLAYING",
+      "remainingMs": 1110,
+      "players": 2,
+      "replayFrames": 2
+    },
+    {
+      "phase": "RESULTS",
+      "remainingMs": 0,
+      "players": 2,
+      "replayFrames": 2
+    }
+  ],
+  "acceptedInputs": [
+    {
+      "playerId": "qa_two_0f4b1ea305a30392e4c7dea8",
+      "lastSequence": 1,
+      "score": 0.016666666666666666
+    },
+    {
+      "playerId": "qa_two_cceb8ff05be21a1b77c1ceab",
+      "lastSequence": 1,
+      "score": 0.016666666666666666
+    }
+  ],
+  "result": {
+    "matchId": "match_20261017185459.852229433_11",
+    "phase": "RESULTS",
+    "replayFrames": 2,
+    "scores": [
+      {
+        "playerId": "qa_two_0f4b1ea305a30392e4c7dea8",
+        "score": 0.016666666666666666
+      },
+      {
+        "playerId": "qa_two_cceb8ff05be21a1b77c1ceab",
+        "score": 0.016666666666666666
+      }
+    ]
+  },
+  "resultSha256": "42883f3dd4dcf69ea67b4d71d5b6db73fc1b83ee76f8e5f04c5e93c1ff55ff63",
+  "digestMeaning": "Canonical terminal snapshot only; not verified replay",
+  "finishedAt": "2026-10-17T18:55:40.279297+00:00",
+  "durationSeconds": 43.361,
+  "postAttempts": {
+    "challenge": 1,
+    "match": 1,
+    "input": 6
+  }
+}

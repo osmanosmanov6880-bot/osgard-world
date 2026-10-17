@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "origin": "https://osgard.world",
+  "status": "FAIL",
+  "mode": "guest-two-player-engine-compatibility",
+  "startedAt": "2026-10-17T18:44:35.212485+00:00",
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 200,
+      "outcome": "failed",
+      "errorType": "PermissionError"
+    }
+  ],
+  "checks": [],
+  "limits": [
+    "Guest v1 engine compatibility only; no v2 membership or ACL proof",
+    "No Core accounts, credentials or sessions",
+    "No Unity or verified replay",
+    "No active-engine recovery, restart test or atomic legacy expiry claim",
+    "No automatic POST retry, match enumeration or existing-user-data modification",
+    "One private QA challenge and one guest match remain if created"
+  ],
+  "failureType": "PermissionError",
+  "failure": "The bounded two-player check did not complete all required assertions. No automatic POST retry was performed.",
+  "finishedAt": "2026-10-17T18:44:35.216222+00:00",
+  "durationSeconds": 0.004,
+  "postAttempts": {
+    "challenge": 0,
+    "match": 0,
+    "input": 0
+  }
+}

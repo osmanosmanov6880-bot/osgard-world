@@ -71,7 +71,8 @@ function createController(options){
   try{if(readToken()===credential)return true}catch{}
   pause('session_changed');return false;
  }
- function ticket(){return {epoch,accountId:account?.id,credential}}
+ function ticket(){return {epoch,accountId:account?.id,credential,selection}}
+ function currentSelection(context){return current(context)&&context.selection===selection}
  function clearRequests(){for(const controller of requests)controller.abort();requests.clear()}
  function pause(reason){
   epoch++;selection++;clearRequests();credential='';account=null;worldVerified=false;loading=false;busy=null;
@@ -328,7 +329,7 @@ function createController(options){
   if(saved.kind==='notification_read')need(notification(result.notification)&&result.notification.id===saved.notificationId&&result.notification.readAt!==null);
  }
  async function complete(saved,result,context){
-  operationProof(saved,result);if(!current(context))return false;
+  if(!currentSelection(context))return false;operationProof(saved,result);
   if(saved.kind==='create'&&saved.carry.length){
    const value={version:1,api,accountId:saved.accountId,worldId:result.world.id,id:saved.key,documentId:'operation-'+saved.key,
     baseRevision:1,baseGeneration:1,baseHash:result.world.snapshotHash,baseObjects:clone(saved.body.objects),pending:clone(saved.carry),updatedAt:saved.createdAt};
@@ -341,15 +342,18 @@ function createController(options){
    if(draft&&draftKey(draft)===key){draft=null;ownDraftId=null;currentDraftRaw=null}
   }
   // The stored response proves the operation, not current custody. Always read the live world.
-  if(result.world){const opened=await loadWorld(result.world.id,{keepStatus:true});if(!opened||!current(context))return false}
+  if(result.world){
+   const opening=loadWorld(result.world.id,{keepStatus:true});context.selection=selection;
+   if(!await opening||!currentSelection(context))return false;
+  }
   if(result.invitation){
-   const fresh=await json(PREFIX+'handoffs/'+result.invitation.id);if(!current(context))return false;
+   const fresh=await json(PREFIX+'handoffs/'+result.invitation.id);if(!currentSelection(context))return false;
    need(invitation(fresh.invitation)&&fresh.invitation.id===result.invitation.id);invite=clone(fresh.invitation);
   }
+  await refreshLists();if(!currentSelection(context))return false;
   const raw=get(opKey(saved));
   need(raw!==null&&equal(JSON.parse(raw),saved),'storage');removeExact(opKey(saved),raw);
-  refreshJournals();status='operation_confirmed';
-  await refreshLists();return true;
+  refreshJournals();status='operation_confirmed';render();return true;
  }
  async function mutate(kind,body,metadata={}){
   if(!mutationAllowed())return 'blocked';
@@ -363,7 +367,7 @@ function createController(options){
    let result;
    try{result=await json(PREFIX+saved.path,{method:'POST',body:saved.body,key:saved.key})}
    catch(error){
-    if(!current(context))return 'ignored';
+    if(!currentSelection(context))return 'ignored';
     // Only a parsed, definitive client error closes this exact attempt. Lost/5xx replies remain journaled.
     if([400,401,403,404,409,422].includes(error.status)){
      const raw=get(opKey(saved));if(raw&&equal(JSON.parse(raw),saved))removeExact(opKey(saved),raw);
@@ -373,9 +377,14 @@ function createController(options){
     }
     status='operation_unknown';render();return 'uncertain';
    }
-   if(!current(context))return 'ignored';
+   if(!currentSelection(context))return 'ignored';
    try{return await complete(saved,result,context)?'committed':'ignored'}
-   catch(error){if(current(context)){status=error.code==='storage'?'storage':'operation_unknown';storageFailed=error.code==='storage';render()}return 'uncertain'}
+   catch(error){
+    if(!currentSelection(context))return 'ignored';
+    if(error.status===401)pause('session_expired');
+    else{status=error.code==='storage'?'storage':'operation_unknown';storageFailed=error.code==='storage';render()}
+    return 'uncertain';
+   }
   }finally{if(current(context)&&busy===saved.key){busy=null;game.busy(false);render()}}
  }
  async function recover(key){
@@ -384,10 +393,11 @@ function createController(options){
   const context=ticket();busy=key;status='checking_operation';game.busy(true);render();
   try{
    let result;
-   try{result=await json(PREFIX+'operations/'+key)}catch(error){if(current(context)){if(error.status===401)pause('session_expired');else status=error.status===404?'operation_unknown':'unavailable'}return 'uncertain'}
-   if(!current(context))return 'ignored';
+   try{result=await json(PREFIX+'operations/'+key)}catch(error){if(!currentSelection(context))return 'ignored';if(error.status===401)pause('session_expired');else status=error.status===404?'operation_unknown':'unavailable';return 'uncertain'}
+   if(!currentSelection(context))return 'ignored';
    need(result.status==='committed'&&record(result.operation)&&equal(result.operation,result.result?.operation));
    return await complete(row.value,result.result,context)?'committed':'ignored';
+  }catch(error){if(!currentSelection(context))return 'ignored';return fail(error)
   }finally{if(current(context)&&busy===key){busy=null;game.busy(false);render()}}
  }
  async function createWorld(source,title){
@@ -431,10 +441,14 @@ function createController(options){
  }
  async function openNotification(id){
   const item=notifications.find(value=>value.id===id);need(item&&authenticated(),'invalid_notification');const context=ticket();
-  if(item.kind==='handoff_offered')await openInvitation(item.invitationId);
-  else if(worlds.some(value=>value.id===item.worldId)){await loadWorld(item.worldId);if(item.generation&&current(context))await viewGeneration(item.generation)}
-  else if(item.invitationId)await openInvitation(item.invitationId);
-  if(!current(context))return false;
+  let opening,showGeneration=false;
+  if(item.kind==='handoff_offered')opening=openInvitation(item.invitationId);
+  else if(worlds.some(value=>value.id===item.worldId)){opening=loadWorld(item.worldId);showGeneration=!!item.generation}
+  else if(item.invitationId)opening=openInvitation(item.invitationId);
+  else return false;
+  context.selection=selection;
+  if(!await opening||!currentSelection(context))return false;
+  if(showGeneration&&(!await viewGeneration(item.generation)||!currentSelection(context)))return false;
   if(item.readAt===null&&!busy&&!loading&&!readOperations().length)await mutate('notification_read',{}, {notificationId:item.id});
   return true;
  }
