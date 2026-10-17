@@ -97,6 +97,55 @@ function harness() {
   vm.createContext(context)
   return { context, get, pips, timers, modules, arrows, emit(name) { for (const fn of events.get(name) || []) fn() }, flush() { const pending = [...timers.values()]; timers.clear(); for (const fn of pending) fn() } }
 }
+// INHERIT's history Done action must leave both existing past modes, without
+// advancing the generation or changing the saved world. Run the real handlers.
+{
+  const history = harness(), document = history.context.document
+  document.querySelector = selector => history.get(selector.replace(/^#/, ''))
+  document.head = { insertAdjacentHTML() {} }
+  document.body = new Element()
+  const world = { generation: 173, budget: 99, changes: [], objects: [{ tool: 'tree', x: 60, y: 40 }], history: [], snapshots: [{ generation: 172, objects: [{ tool: 'stone', x: 20, y: 35 }] }] }
+  const savedWorld = JSON.stringify(world), storage = new Map([['inherit-world-v1', savedWorld]])
+  let writes = 0
+  history.context.localStorage = { getItem: key => storage.get(key) ?? null, setItem(key, value) { writes++; storage.set(key, value) } }
+  const modal = history.get('modal')
+  modal.showModal = () => { modal.open = true }
+  modal.close = () => { modal.open = false }
+  for (const id of ['showHistory', 'past', 'done']) {
+    const button = history.get(id)
+    button.click = () => { button.onclick?.(); button.dispatch('click') }
+  }
+  const scripts = inlineScripts(inherit)
+  for (const script of [scripts[0], scripts.find(s => s.includes('let pastMode=')), scripts.find(s => s.includes('function returnToToday()'))]) {
+    assert.ok(script, 'INHERIT history and replay handlers must exist')
+    vm.runInContext(script, history.context, { filename: 'inherit-history.js' })
+  }
+  history.get('showHistory').click()
+  assert.equal(modal.open, true)
+  history.get('past').click()
+  assert.equal(document.body.classList.contains('past'), true)
+  history.get('done').click()
+  assert.equal(document.body.classList.contains('past'), false, 'INHERIT Return to today must exit past traces')
+  assert.equal(history.get('past').textContent, 'Show past traces')
+  assert.equal(modal.open, false)
+  history.get('showHistory').click()
+  history.get('done').click()
+  assert.equal(document.body.classList.contains('past'), false, 'Returning while already present must not toggle into the past')
+  vm.runInContext('drawReplay(snapshotFor(172))', history.context)
+  assert.equal(document.body.classList.contains('replay-mode'), true)
+  assert.equal(history.get('objects').children[0].className, 'placed stone')
+  history.get('showHistory').click()
+  history.get('past').click()
+  history.get('done').click()
+  assert.equal(document.body.classList.contains('past'), false)
+  assert.equal(document.body.classList.contains('replay-mode'), false, 'Return to today must leave preserved-generation replay')
+  assert.equal(vm.runInContext('replayGeneration', history.context), null)
+  assert.equal(history.get('objects').children[0].className, 'placed tree', 'Return must redraw the current generation')
+  assert.equal(modal.open, false)
+  assert.equal(vm.runInContext('JSON.stringify(S)', history.context), savedWorld)
+  assert.equal(storage.get('inherit-world-v1'), savedWorld)
+  assert.equal(writes, 0, 'Returning from history must not mutate persistent world data')
+}
 for (const id of ['020', '021']) {
   const h = harness()
   vm.runInContext(inlineScripts(text(resolve(root, `queue/ZION-${id}/index.html`)))[0], h.context)
@@ -150,4 +199,4 @@ if (process.env.ZION_BASE_URL) {
     assert.ok(body.includes('z9-entry') && body.includes('world-play'), item.route + ': served the imported world, not SPA fallback')
   }
 }
-console.log('PASS local ZION release: 19 unique catalog entries; 11 complete local worlds; RU default/EN choice; dependency closure; exact format and persistence disclosures; reset-race fixes; actual keyboard, win/loss/reset behavior in the lightweight renderer. GPU rendering and visual layout require browser QA.')
+console.log('PASS local ZION release: 19 unique catalog entries; 11 complete local worlds; RU default/EN choice; dependency closure; exact format and persistence disclosures; reset-race fixes; INHERIT history returns to the present without changing saved world data; actual keyboard, win/loss/reset behavior in the lightweight renderer. GPU rendering and visual layout require browser QA.')

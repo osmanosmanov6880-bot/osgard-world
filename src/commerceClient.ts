@@ -10,6 +10,11 @@ export type CommerceOrder = {
   paidMinor: number; refundedMinor: number; checkoutConfirmed: boolean; accessGranted: boolean;
   checkoutState: string | null; refundState: string | null; refundTargetMinor: number | null;
   buyer?: string; sourceOrderId?: string; releaseId?: string; createdAt: string; updatedAt: string;
+  kind?: 'html_release' | 'learning_program'; program?: ProgramHeader; enrollmentActivated?: boolean;
+};
+export type ProgramHeader = {
+  programId: string; version: string; policyVersion: string; title: string; scope: string;
+  mentorIncluded: boolean; lessonCount: number; freeModule: string;
 };
 export const commerceStatus: Record<string, string> = {
   prepared: 'Готов к оплате', checkout_pending: 'Запрос оплаты отправлен', checkout_open: 'Ожидает оплаты',

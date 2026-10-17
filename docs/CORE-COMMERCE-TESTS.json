@@ -3,7 +3,7 @@
   "testsRun": 25,
   "failures": 0,
   "errors": 0,
-  "generatedAt": "2026-10-16T23:08:28.708551+00:00",
+  "generatedAt": "2026-10-16T23:51:38.473650+00:00",
   "scope": "Local HTTP/SQLite with injected FakeProvider; signature, isolation, idempotency, failed/partial/full refunds, immutable access and recovery",
   "stripeNetworkCalled": false,
   "realPaymentsTested": false,

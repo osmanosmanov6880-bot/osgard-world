@@ -61,21 +61,21 @@ export default function PurchasesPage() {
     </section>
     <p ref={alert} tabIndex={-1} role={error ? 'alert' : undefined} hidden={!error} className="core-alert">{error}</p>
     <p role="status" className="core-status">{busy || phase === 'loading' ? 'Проверяем заказы…' : message}</p>
-    {returned === 'returned' && <p className="core-alert">Вы вернулись со страницы оплаты. Возврат на сайт не подтверждает платёж. Файл откроется только после подтверждения Stripe; при необходимости обновите покупки.</p>}
+    {returned === 'returned' && <p className="core-alert">Вы вернулись со страницы оплаты. Возврат на сайт не подтверждает платёж. Доступ откроется только после подтверждения Stripe; при необходимости обновите покупки.</p>}
     {returned === 'cancelled' && <p className="core-alert">Оплата была закрыта в браузере. Это не отменяет заказ и не подтверждает списание. Актуальный статус указан ниже.</p>}
     {phase === 'login' ? <section className="core-panel"><h2>Войдите в аккаунт покупателя</h2><p>Заказ и файл доступны только тому аккаунту, для которого оператор подготовил предложение.</p><a className="brand-button primary" href={coreLoginLink('/purchases')}>Войти и открыть покупки</a></section> : <button className="brand-button" disabled={busy || phase === 'loading'} onClick={() => void run(load)}>Обновить покупки</button>}
     {user && config && <>
       <p><strong>{user.username}</strong> · {config.mode === 'test' ? 'Тестовый режим — реальные платежи здесь не подтверждаются.' : 'Режим реальных платежей.'}</p>
-      {!config.enabled && <p className="core-alert">Приём новых платежей выключен. Ранее выданный доступ к файлам сохраняется, если платёж не возвращён полностью.</p>}
+      {!config.enabled && <p className="core-alert">Приём новых платежей выключен. Ранее выданный доступ сохраняется, если платёж не возвращён полностью.</p>}
       {phase === 'ready' && !orders.length && <section className="core-panel"><h2>Покупок пока нет</h2><p>Когда оператор подготовит заказ на ваш логин, он появится здесь. Список обновляется кнопкой выше.</p></section>}
       {orders.map(order => <article key={order.id} className="core-panel">
         <p className="brand-eyebrow">ЗАКАЗ {order.id.slice(0, 8)} · {commerceStatus[order.status] || order.status}</p>
-        <h2>{order.title}</h2><p>{order.scope}</p><p><strong>{formatMoney(order.amountMinor, order.currency)}</strong> · Разовая покупка сохранённого HTML</p>
+        <h2>{order.title}</h2><p>{order.scope}</p><p><strong>{formatMoney(order.amountMinor, order.currency)}</strong> · {order.kind === 'learning_program' ? 'Разовая версия программы и личная практика' : 'Разовая покупка сохранённого HTML'}</p>
         <p>Подтверждено оплатой: {formatMoney(order.paidMinor, order.currency)}. Возвращено: {formatMoney(order.refundedMinor, order.currency)}.</p>
         {['prepared', 'checkout_pending', 'checkout_open'].includes(order.status) && <><button className="brand-button primary" disabled={busy || !config.enabled} onClick={() => void run(() => checkout(order))}>{order.checkoutState === 'unknown' ? 'Продолжить тот же запрос оплаты' : 'Оплатить ' + formatMoney(order.amountMinor, order.currency) + ' через Stripe'}</button><p>Данные карты вводятся на странице Stripe. После оплаты доступ появится здесь, когда сервер получит подтверждение.</p></>}
         {order.status === 'payment_processing' && <p>Ожидаем подтверждения платёжной системы. Повторно платить не нужно. Обновите покупки через некоторое время.</p>}
-        {order.accessGranted && <><button className="brand-button primary" disabled={busy} onClick={() => void run(() => download(order))}>Скачать оплаченный HTML</button><p>Это сохранённая версия на момент заказа. Обновления проекта не подменяют купленный файл.</p></>}
-        {order.status === 'refunded' && <p>Полный возврат подтверждён. Доступ к новому скачиванию отозван.</p>}
+        {order.kind === 'learning_program' ? <><a className="brand-button primary" href={'/learning/enrollment?order=' + order.id}>{order.status === 'refunded' ? 'Открыть статус и экспорт своих работ' : order.accessGranted ? 'Открыть личную программу' : 'Проверить доступ к программе'}</a><p>Версия {order.program?.version.slice(0, 12)}. Практика становится доступна после оплаты и вашего согласия. Наставник не включён; бесплатные лекции открыты.</p></> : order.accessGranted && <><button className="brand-button primary" disabled={busy} onClick={() => void run(() => download(order))}>Скачать оплаченный HTML</button><p>Это сохранённая версия на момент заказа. Обновления проекта не подменяют купленный файл.</p></>}
+        {order.status === 'refunded' && <p>{order.kind === 'learning_program' ? 'Полный возврат подтверждён. Платная практика закрыта; собственные работы сохранены для экспорта.' : 'Полный возврат подтверждён. Доступ к новому скачиванию отозван.'}</p>}
         {['expired', 'failed', 'cancelled'].includes(order.status) && <p>Этот заказ закрыт для новой оплаты. Для продолжения обратитесь к оператору, который подготовил предложение.</p>}
         <p><small>Обновлено {new Date(order.updatedAt).toLocaleString('ru-RU')}</small></p>
       </article>)}

@@ -26,6 +26,7 @@ import core_client_portal
 import core_teams
 import core_readiness
 import core_commerce
+import core_programs
 from core_model import Fault, require, text, initial, patch, action, economics, simulation, metrics, now, uid
 
 SCHEMA='''
@@ -57,7 +58,7 @@ class Store:
         Path(path).parent.mkdir(parents=True,exist_ok=True)
         with self.connect() as db:
             require(db.execute('PRAGMA user_version').fetchone()[0] in (0,1),'Версия базы новее этого сервера. Обновите Core.')
-            db.executescript(SCHEMA+core_learning.SCHEMA+core_pilot_reports.SCHEMA+core_account.SCHEMA+core_acceptance.SCHEMA+core_delivery.SCHEMA+core_client_portal.SCHEMA+core_teams.SCHEMA+core_commerce.SCHEMA)
+            db.executescript(SCHEMA+core_learning.SCHEMA+core_pilot_reports.SCHEMA+core_account.SCHEMA+core_acceptance.SCHEMA+core_delivery.SCHEMA+core_client_portal.SCHEMA+core_teams.SCHEMA+core_commerce.SCHEMA+core_programs.SCHEMA)
         self.commerce=core_commerce.Commerce(self,commerce_config,commerce_provider)
         try:os.chmod(path,0o600)
         except OSError:pass
@@ -124,6 +125,10 @@ class Store:
             db.execute('BEGIN')
             if route=='commerce/config':return self.commerce.config_view(actor)
             if route=='commerce/purchases':return self.commerce.purchases(db,actor)
+            if route=='learning/programs':return core_programs.catalog(self,actor)
+            program_route=re.fullmatch(r'learning/enrollments/([a-f0-9]{32})(/export)?',route)
+            if program_route:
+                return core_programs.own_work(self,db,program_route[1],actor) if program_route[2] else core_programs.read(self,db,program_route[1],actor)
             purchase_file=re.fullmatch(r'commerce/purchases/([a-f0-9]{32})/file',route)
             if purchase_file:return self.commerce.download(db,purchase_file[1],actor)
             commerce_project=re.fullmatch(r'projects/([a-f0-9]{32})/commerce',route)
@@ -190,6 +195,8 @@ class Store:
                 result['delivery']=core_delivery.read(self,db,pid,actor,export=True)
                 result['releaseReviews']=core_acceptance.reviews(db,pid)
                 result['releaseReadiness']=core_readiness.evaluate(db,pid,row['version'],json.loads(row['data'])) if json.loads(row['data'])['consents']['studio'] else None
+                program_enrollment=db.execute('SELECT order_id FROM program_enrollments WHERE project_id=? AND buyer_id=?',(pid,actor)).fetchone()
+                if program_enrollment:result['programWork']=core_programs.own_work(self,db,program_enrollment['order_id'],actor)
                 result['format']='osgard-core-project-v1'
             return result
     def mutate(self,route,actor,payload,key):
@@ -205,6 +212,8 @@ class Store:
                 if team_retry:core_teams.access(db,team_retry[1],actor)
                 portal_retry=re.fullmatch(r'deliveries/([a-f0-9]{32})',route)
                 if portal_retry:core_client_portal.access(self,db,portal_retry[1],actor)
+                program_retry=re.fullmatch(r'learning/enrollments/([a-f0-9]{32})',route)
+                if program_retry:core_programs.retry_guard(self,db,program_retry[1],actor,payload)
                 # Re-check access on retries after a membership revocation.
                 if 'project' in old:self.access(db,old['project']['id'],actor,write=not route.endswith('/delivery'))
                 old['replayed']=True
@@ -212,7 +221,9 @@ class Store:
             require(db.execute('SELECT COUNT(*) FROM operations WHERE user_id=?',(actor,)).fetchone()[0]<10000,'Достигнут лимит операций пилота.',status=409)
             portal_mutation=re.fullmatch(r'deliveries/([a-f0-9]{32})',route)
             team_mutation=re.fullmatch(r'teams/([a-f0-9]{32})',route)
-            if route=='teams':result=core_teams.create(db,actor,payload)
+            program_mutation=re.fullmatch(r'learning/enrollments/([a-f0-9]{32})',route)
+            if program_mutation:result=core_programs.mutate(self,db,program_mutation[1],actor,payload)
+            elif route=='teams':result=core_teams.create(db,actor,payload)
             elif team_mutation:result=core_teams.mutate(self,db,team_mutation[1],actor,payload)
             elif portal_mutation:result=core_client_portal.mutate(self,db,portal_mutation[1],actor,payload)
             elif route=='templates':

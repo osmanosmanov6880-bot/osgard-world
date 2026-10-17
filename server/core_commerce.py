@@ -17,6 +17,7 @@ import time
 
 from core_model import Fault, require, text, uid, now
 import core_acceptance
+import core_programs
 
 API_VERSION = '2026-08-26.dahlia'
 RETRY_WINDOW = 20 * 3600  # Stop before Stripe's minimum 24-hour key retention.
@@ -197,7 +198,8 @@ class Commerce:
     def config_view(self, actor):
         return dict(enabled=self.config.enabled, canManage=actor == self.config.merchant_id,
                     mode='live' if self.config.livemode else 'test', currencies=['USD', 'EUR'], oneTimeOnly=True,
-                    scope='One configured merchant; paid access to one immutable HTML file', livePaymentTested=False)
+                    scope='One configured merchant; immutable HTML or versioned OSA private practice',
+                    purchaseKinds=['html_release', 'learning_program'], livePaymentTested=False)
 
     def access(self, db, order_id, actor, merchant=False):
         identifier(order_id)
@@ -222,6 +224,11 @@ class Commerce:
                       checkoutState=checkout['state'] if checkout else None, mode='live' if order['livemode'] else 'test',
                       refundState=refund['state'] if refund else None, refundTargetMinor=refund['target_minor'] if refund else None,
                       createdAt=order['created_at'], updatedAt=order['updated_at'])
+        envelope = json.loads(order['envelope'])
+        result['kind'] = envelope.get('kind', 'html_release')
+        if result['kind'] == 'learning_program':
+            result['program'] = core_programs.program_header(core_programs.program_snapshot(order))
+            result['enrollmentActivated'] = db.execute('SELECT 1 FROM program_enrollments WHERE order_id=?', (order['id'],)).fetchone() is not None
         if merchant:
             buyer = db.execute('SELECT username FROM users WHERE id=?', (order['buyer_id'],)).fetchone()
             result.update(buyer=buyer['username'], sourceOrderId=order['source_order_id'], releaseId=order['release_id'])
@@ -243,26 +250,35 @@ class Commerce:
         self.enabled()
         require(actor == self.config.merchant_id and actor == row['owner_id'], 'Заказ создаёт настроенный оператор — владелец проекта.', 'forbidden', 403)
         data = json.loads(row['data'])
-        require(data['accepted'] and data['consents']['business'] and data['consents']['studio'], 'Примите контракт и разрешите Studio и Business.')
+        require(data['accepted'] and data['consents']['business'], 'Примите контракт и разрешите Business.')
         require(payload.get('sharingAcknowledged') is True, 'Подтвердите состав передаваемого файла и выбранного покупателя.')
         draft = next((item for item in data['orders'] if item['id'] == payload.get('draftOrderId') and item['status'] == 'draft'), None)
         require(draft is not None, 'Нужен существующий неотменённый черновик заказа.')
         require(draft['currency'] in ('USD', 'EUR'), 'Commerce поддерживает USD и EUR. RUB в этом модуле не подключён.', 'unsupported_currency')
         require(type(payload.get('confirmedAmountMinor')) is int and payload['confirmedAmountMinor'] == draft['amountMinor'] and payload.get('confirmedCurrency') == draft['currency'], 'Подтвердите точную сумму и валюту черновика.', 'amount_confirmation')
         require(0 < draft['amountMinor'] <= 99999999, 'Сумма заказа выходит за пределы модуля.')
-        release_id = identifier(payload.get('releaseId'))
-        release, snapshot, _, asset = core_acceptance.release_source(db, row, release_id)
-        reviews = core_acceptance.reviews(db, row['id'], release_id)
-        require(reviews and reviews[0]['verdict'] == 'accepted', 'Нужен положительный разбор этого выпуска другим участником.', 'review_required', 409)
-        require(asset and asset['integrityMatches'] and asset['inputsMatchSnapshot'], 'Для продажи нужен проверенный сохранённый HTML этого выпуска.', 'artifact_required', 409)
+        kind = payload.get('kind', 'html_release')
+        require(kind in ('html_release', 'learning_program'), 'Неизвестный вид предложения.', 'wrong_order_kind')
+        if kind == 'learning_program':
+            envelope = core_programs.offer(payload)
+            release_id = envelope['program']['version']
+            title, scope = envelope['title'], envelope['description']
+        else:
+            require(data['consents']['studio'], 'Разрешите Studio для передачи HTML.')
+            release_id = identifier(payload.get('releaseId'))
+            release, snapshot, _, asset = core_acceptance.release_source(db, row, release_id)
+            reviews = core_acceptance.reviews(db, row['id'], release_id)
+            require(reviews and reviews[0]['verdict'] == 'accepted', 'Нужен положительный разбор этого выпуска другим участником.', 'review_required', 409)
+            require(asset and asset['integrityMatches'] and asset['inputsMatchSnapshot'], 'Для продажи нужен проверенный сохранённый HTML этого выпуска.', 'artifact_required', 409)
+            envelope = dict(title=draft['title'], description=draft['scope'], html=asset['html'], sha256=asset['sha256'], sourceVersion=release['sourceVersion'])
+            title, scope = draft['title'], draft['scope']
         buyer = db.execute('SELECT id FROM users WHERE username=?', (text(payload.get('buyerUsername'), 64, 3).lower(),)).fetchone()
         require(buyer is not None and buyer['id'] != actor, 'Выберите другой существующий аккаунт покупателя.')
         require(db.execute('SELECT COUNT(*) FROM commerce_orders WHERE merchant_id=?', (actor,)).fetchone()[0] < 1000, 'Лимит коммерческого пилота.', status=409)
-        envelope = dict(title=draft['title'], description=draft['scope'], html=asset['html'], sha256=asset['sha256'], sourceVersion=release['sourceVersion'])
         raw = encoded(envelope); order_id = uid(); stamp = now()
         try:
             db.execute('INSERT INTO commerce_orders(id,project_id,source_order_id,release_id,merchant_id,buyer_id,account_id,livemode,title,scope,envelope,envelope_sha256,amount_minor,currency,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
-                       (order_id,row['id'],draft['id'],release_id,actor,buyer['id'],self.config.account_id,int(self.config.livemode),draft['title'],draft['scope'],raw,sha(raw),draft['amountMinor'],draft['currency'],stamp,stamp))
+                       (order_id,row['id'],draft['id'],release_id,actor,buyer['id'],self.config.account_id,int(self.config.livemode),title,scope,raw,sha(raw),draft['amountMinor'],draft['currency'],stamp,stamp))
         except sqlite3.IntegrityError:
             raise Fault('commerce_order_exists', 'Этот черновик уже связан с коммерческим заказом.', 409)
         self.store.event(db,row['id'],actor,'commerce_order_prepared',dict(orderId=order_id,releaseId=release_id))
@@ -503,6 +519,8 @@ class Commerce:
 
     def download(self, db, order_id, actor):
         order=self.access(db,order_id,actor)
+        require(json.loads(order['envelope']).get('kind', 'html_release') == 'html_release',
+                'Учебная программа открывается в личной практике, а не через скачивание HTML.', 'wrong_order_kind', 409)
         entitlement=db.execute('SELECT active FROM commerce_entitlements WHERE order_id=? AND buyer_id=?',(order_id,actor)).fetchone()
         require(entitlement and entitlement['active'] and order['refunded_minor']<order['amount_minor'],'Доступ к файлу не выдан или отозван после полного возврата.','payment_required',403)
         envelope=json.loads(order['envelope'])

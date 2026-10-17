@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { coreRequest, formatMoney, minorUnits } from './coreClient';
 import type { CoreProject } from './coreClient';
 import { commerceMutation, commerceStatus } from './commerceClient';
-import type { CommerceConfiguration, CommerceOrder } from './commerceClient';
+import type { CommerceConfiguration, CommerceOrder, ProgramHeader } from './commerceClient';
 
 type Release = { id: string; sourceVersion: number | null; latestReview: { verdict: string } | null };
 type Props = {
@@ -12,6 +12,7 @@ type Props = {
 
 export default function CommercePanel({ project, disabled, onDirty, onPrepare }: Props) {
   const [config, setConfig] = useState<CommerceConfiguration | null>(null);
+  const [kind, setKind] = useState<'html_release' | 'learning_program'>('html_release'), [program, setProgram] = useState<ProgramHeader | null>(null);
   const [orders, setOrders] = useState<CommerceOrder[]>([]), [releases, setReleases] = useState<Release[]>([]);
   const [loading, setLoading] = useState(true), [busy, setBusy] = useState(false);
   const [error, setError] = useState(''), [message, setMessage] = useState('');
@@ -27,12 +28,13 @@ export default function CommercePanel({ project, disabled, onDirty, onPrepare }:
     if (stamp !== sequence.current) return;
     setConfig(configuration);
     if (configuration.canManage && project.role === 'owner') {
-      const [commerce, material] = await Promise.all([
+      const [commerce, material, programs] = await Promise.all([
         coreRequest<{ orders: CommerceOrder[] }>('projects/' + project.id + '/commerce'),
         coreRequest<{ releases: Release[] }>('projects/' + project.id + '/releases'),
+        coreRequest<{ program: ProgramHeader }>('learning/programs'),
       ]);
       if (stamp !== sequence.current) return;
-      setOrders(commerce.orders); setReleases(material.releases);
+      setOrders(commerce.orders); setReleases(material.releases); setProgram(programs.program);
     } else { setOrders([]); setReleases([]); }
   }
   useEffect(() => {
@@ -52,8 +54,8 @@ export default function CommercePanel({ project, disabled, onDirty, onPrepare }:
   const accepted = releases.filter(r => r.sourceVersion && r.latestReview?.verdict === 'accepted');
   const blocked = disabled || busy || loading || !config?.enabled;
   return <section className="core-panel" aria-label="Коммерческие заказы">
-    <p className="brand-eyebrow">BUSINESS / ОПЛАТА И ДОСТУП</p><h2>Проверенный файл — конкретному покупателю</h2>
-    <p>Разовая покупка сохранённого HTML через Stripe. Покупатель получает именно выбранный выпуск после подтверждения оплаты. Учебные подписки и размещение сайта в это предложение не входят.</p>
+    <p className="brand-eyebrow">BUSINESS / ОПЛАТА И ДОСТУП</p><h2>Конкретное предложение — своему покупателю</h2>
+    <p>Разовая покупка принятого HTML или версии практической программы OSA. Доступ выдаёт сервер после подтверждения оплаты. Подписки, наставник и размещение сайта не включены.</p>
     <p><a href="/purchases">Открыть мои покупки →</a></p>
     <p ref={alert} tabIndex={-1} role={error ? 'alert' : undefined} hidden={!error} className="core-alert">{error}</p>
     <p role="status">{loading ? 'Загружаем настройки и заказы…' : busy ? 'Сохраняем запрос…' : message}</p>
@@ -66,24 +68,26 @@ export default function CommercePanel({ project, disabled, onDirty, onPrepare }:
     {config?.canManage && project.role === 'owner' && <>
       <form onSubmit={e => { e.preventDefault(); void run(async () => {
         if (!chosen || !confirmed) throw new Error('Выберите черновик и подтвердите условия.');
-        await onPrepare({ expectedVersion: project.version, draftOrderId: chosen.id, releaseId,
+        await onPrepare({ expectedVersion: project.version, draftOrderId: chosen.id, kind, releaseId,
+          ...(kind === 'learning_program' && program ? { programId: program.programId, programVersion: program.version, policyVersion: program.policyVersion } : {}),
           buyerUsername: buyer, confirmedAmountMinor: chosen.amountMinor, confirmedCurrency: chosen.currency, sharingAcknowledged: true });
         setDraftId(''); setReleaseId(''); setBuyer(''); setConfirmed(false); onDirty(false);
       }); }}>
         <fieldset disabled={blocked} className="core-editor"><legend>Подготовить заказ покупателю</legend>
+          <label className="core-field"><span>Что получает покупатель</span><select value={kind} onChange={e => { setKind(e.target.value as typeof kind); setConfirmed(false); }}><option value="html_release">Принятый HTML-файл</option><option value="learning_program">Версия программы OSA и личная практика</option></select></label>
           <label className="core-field"><span>Сохранённое предложение</span><select required value={draftId} onChange={e => { setDraftId(e.target.value); setConfirmed(false); }}>
             <option value="">Выберите черновик</option>{usable.map(o => <option key={o.id} value={o.id}>{o.title} · {formatMoney(o.amountMinor, o.currency)}</option>)}
           </select></label>
           {!usable.length && <p>Сначала сохраните предложение и создайте черновик заказа выше.</p>}
-          <label className="core-field"><span>Выпуск, принятый другим участником</span><select required value={releaseId} onChange={e => { setReleaseId(e.target.value); setConfirmed(false); }}>
+          {kind === 'html_release' ? <><label className="core-field"><span>Выпуск, принятый другим участником</span><select required value={releaseId} onChange={e => { setReleaseId(e.target.value); setConfirmed(false); }}>
             <option value="">Выберите выпуск</option>{accepted.map(r => <option key={r.id} value={r.id}>{r.id.slice(0, 8)} · исходная версия {r.sourceVersion}</option>)}
           </select></label>
-          {!accepted.length && <p>Нужен сохранённый HTML и положительный разбор выпуска на вкладке «Приёмка».</p>}
+          {!accepted.length && <p>Нужен сохранённый HTML и положительный разбор выпуска на вкладке «Приёмка».</p>}</> : program && <div className="core-source"><strong>{program.title}</strong><p>{program.scope}</p><p>Версия {program.version.slice(0, 12)} · условия {program.policyVersion}. Состав фиксируется сервером; цена берётся из выбранного черновика и отдельно подтверждается вами.</p></div>}
           <label className="core-field"><span>Логин существующего аккаунта покупателя</span><input required autoComplete="off" minLength={3} maxLength={64} value={buyer} onChange={e => { setBuyer(e.target.value); setConfirmed(false); }} /></label>
           {chosen && <div className="core-source"><strong>{chosen.title} · {formatMoney(chosen.amountMinor, chosen.currency)}</strong><p>{chosen.scope}</p>
             {!['USD', 'EUR'].includes(chosen.currency) && <p className="core-alert">Приём RUB в этом модуле не подключён. Поддерживаются USD и EUR.</p>}</div>}
-          <label className="core-check"><input required type="checkbox" checked={confirmed} onChange={e => setConfirmed(e.target.checked)} />Подтверждаю сумму, валюту и получателя; разрешаю передать HTML выбранного выпуска. Я проверил содержимое файла.</label>
-          <button className="brand-button primary" disabled={!chosen || !releaseId || !confirmed || !['USD', 'EUR'].includes(chosen.currency)}>Подготовить заказ на указанную сумму</button>
+          <label className="core-check"><input required type="checkbox" checked={confirmed} onChange={e => setConfirmed(e.target.checked)} />{kind === 'html_release' ? 'Подтверждаю сумму, валюту и получателя; разрешаю передать HTML выбранного выпуска. Я проверил содержимое файла.' : 'Подтверждаю сумму, валюту, получателя и указанную версию программы. Наставник и сертификат не входят; бесплатные лекции остаются открытыми.'}</label>
+          <button className="brand-button primary" disabled={!chosen || (kind === 'html_release' ? !releaseId : !program) || !confirmed || !['USD', 'EUR'].includes(chosen.currency)}>Подготовить заказ на указанную сумму</button>
           <p>Создание заказа не списывает деньги. Покупатель запускает оплату сам на странице «Мои покупки».</p>
         </fieldset>
       </form>
@@ -109,7 +113,7 @@ export default function CommercePanel({ project, disabled, onDirty, onPrepare }:
             setMessage(result.failed ? 'Возврат не выполнен. Нужна сверка со Stripe.' : result.confirmed ? 'Возврат подтверждён.' : 'Запрос возврата сохранён. Сумма и доступ изменятся после подтверждения Stripe.');
           }); }}><label className="core-field"><span>Общая сумма возврата с учётом предыдущих, {order.currency}</span><input required inputMode="decimal" disabled={blocked || unresolved} value={targetText} onChange={e => setRefunds(v => ({ ...v, [order.id]: e.target.value }))} /></label>
             <button className="brand-button" disabled={blocked || (unresolved && !['unknown', 'calling'].includes(order.refundState || ''))}>{unresolved ? 'Повторить тот же запрос возврата' : 'Проверить и запросить возврат'}</button>
-            <p>Полный подтверждённый возврат отзывает доступ к скачиванию. Уже скачанную копию удалить у покупателя невозможно.</p>
+            <p>{order.kind === 'learning_program' ? 'Полный подтверждённый возврат закрывает платную практику; личный проект и экспорт собственных работ сохраняются.' : 'Полный подтверждённый возврат отзывает доступ к скачиванию. Уже скачанную копию удалить у покупателя невозможно.'}</p>
           </form>}
         </article>;
       })}

@@ -11,6 +11,7 @@ const routes=[
  ['account','OSGARD Core — аккаунт и доступ','Сессии, смена пароля и резервные коды восстановления.','world'],
  ['learning/organizer','OSA — организация пилота и очередь разборов','Назначения проверяющих, сроки и отчёты по сохранённым учебным данным.','intelligence'],
  ['learning/campus','OSA Learning — практика, итоговый проект и расписание','Серверная практика, версионная сдача работы, разбор и расписание пилота.','intelligence'],
+ ['learning/enrollment','OSA — приобретённая практическая программа','Состояние зачисления, версия программы, личная практика и экспорт собственных работ.','intelligence'],
  ['workspace','OSGARD Core — от цели к результату','Контракт, Learning, Studio, Business и серверные версии проекта.','world'],
  ['intelligence','OSA Intelligence — понимать ИИ, проверять, решать','Метод проверки, учебная демонстрация, восемь уроков и практические проекты.','intelligence'],
  ['play','OSGARD PLAY — каталог игровых миров','Игры, фильтры и честные статусы сохранения, платформ и онлайн-сервисов.','play'],
@@ -35,7 +36,7 @@ for(const [path,label]of legacyRoutes)if(!routes.some(r=>r[0]===path))routes.pus
 const esc=v=>v.replaceAll('&','&amp;').replaceAll('"','&quot;').replaceAll('<','&lt;')
 for(const [path,title,description,theme] of routes){
  let html=template.replace(/<title>.*?<\/title>/,`<title>${esc(title)}</title>`)
- const privateRoute=['account','workspace','workspace/overview','teams','deliveries','purchases','data','learning/campus','learning/organizer'].includes(path)
+ const privateRoute=['account','workspace','workspace/overview','teams','deliveries','purchases','data','learning/campus','learning/organizer','learning/enrollment'].includes(path)
  for(const [selector,value] of [['name="robots"',privateRoute?'noindex,follow':'index,follow'],['name="description"',description],['name="twitter:card"','summary_large_image'],['property="og:image:alt"',title],['property="og:title"',title],['property="og:description"',description],['property="og:url"','https://osgard.world/'+path],['property="og:image"','https://osgard.world/brand/preview-'+theme+'.png'],['name="twitter:title"',title],['name="twitter:description"',description],['name="twitter:image"','https://osgard.world/brand/preview-'+theme+'.png']]){
   const regex=new RegExp(`(<meta ${selector} content=")[^"]*("[^>]*>)`);html=regex.test(html)?html.replace(regex,(_,a,b)=>a+esc(value)+b):html.replace('</head>',`<meta ${selector} content="${esc(value)}"/>\n</head>`)
  }
