@@ -1,0 +1,434 @@
+{
+  "schemaVersion": 1,
+  "origin": "https://osgard.world",
+  "status": "PASS",
+  "mode": "two-qa-accounts-one-owned-match",
+  "startedAt": "2026-10-17T12:39:02.828509+00:00",
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/",
+      "outcome": "received",
+      "status": 200,
+      "bytes": 3760
+    },
+    {
+      "method": "GET",
+      "path": "/api/remix/v2/capabilities",
+      "outcome": "received",
+      "status": 200,
+      "bytes": 193
+    },
+    {
+      "method": "POST",
+      "path": "/api/core/auth/register",
+      "outcome": "received",
+      "status": 200,
+      "bytes": 174
+    },
+    {
+      "method": "POST",
+      "path": "/api/core/auth/logout",
+      "outcome": "received",
+      "status": 200,
+      "bytes": 18
+    },
+    {
+      "method": "POST",
+      "path": "/api/core/auth/login",
+      "outcome": "received",
+      "status": 200,
+      "bytes": 174
+    },
+    {
+      "method": "GET",
+      "path": "/api/core/auth/me",
+      "outcome": "received",
+      "status": 200,
+      "bytes": 95
+    },
+    {
+      "method": "POST",
+      "path": "/api/core/auth/register",
+      "outcome": "received",
+      "status": 200,
+      "bytes": 174
+    },
+    {
+      "method": "POST",
+      "path": "/api/core/auth/logout",
+      "outcome": "received",
+      "status": 200,
+      "bytes": 18
+    },
+    {
+      "method": "POST",
+      "path": "/api/core/auth/login",
+      "outcome": "received",
+      "status": 200,
+      "bytes": 174
+    },
+    {
+      "method": "GET",
+      "path": "/api/core/auth/me",
+      "outcome": "received",
+      "status": 200,
+      "bytes": 95
+    },
+    {
+      "method": "POST",
+      "path": "/api/remix/v1/challenges",
+      "outcome": "received",
+      "status": 201,
+      "bytes": 254
+    },
+    {
+      "method": "POST",
+      "path": "/api/remix/v2/matches",
+      "outcome": "received",
+      "status": 201,
+      "bytes": 245
+    },
+    {
+      "method": "GET",
+      "path": "/api/remix/v2/creation-attempts/561d4cfb3e92366d097cb762f86b6bec",
+      "outcome": "received",
+      "status": 200,
+      "bytes": 272
+    },
+    {
+      "method": "GET",
+      "path": "/api/remix/v2/matches",
+      "outcome": "received",
+      "status": 200,
+      "bytes": 277
+    },
+    {
+      "method": "GET",
+      "path": "/api/remix/v2/matches",
+      "outcome": "received",
+      "status": 200,
+      "bytes": 32
+    },
+    {
+      "method": "GET",
+      "path": "/api/remix/v2/matches/match_20261017123910.583263791_9/state",
+      "outcome": "received",
+      "status": 401,
+      "bytes": 92
+    },
+    {
+      "method": "GET",
+      "path": "/api/remix/v2/matches/match_20261017123910.583263791_9/state",
+      "outcome": "received",
+      "status": 403,
+      "bytes": 78
+    },
+    {
+      "method": "GET",
+      "path": "/api/remix/v1/matches/match_20261017123910.583263791_9/state",
+      "outcome": "received",
+      "status": 401,
+      "bytes": 92
+    },
+    {
+      "method": "GET",
+      "path": "/api/remix/v1/matches/match_20261017123910.583263791_9/state",
+      "outcome": "received",
+      "status": 403,
+      "bytes": 78
+    },
+    {
+      "method": "GET",
+      "path": "/api/remix/v2/matches/match_20261017123910.583263791_9/state",
+      "outcome": "received",
+      "status": 200,
+      "bytes": 121
+    },
+    {
+      "method": "POST",
+      "path": "/api/remix/v1/matches/match_20261017123910.583263791_9/input",
+      "outcome": "received",
+      "status": 401,
+      "bytes": 92
+    },
+    {
+      "method": "POST",
+      "path": "/api/remix/v1/matches/match_20261017123910.583263791_9/input",
+      "outcome": "received",
+      "status": 403,
+      "bytes": 78
+    },
+    {
+      "method": "POST",
+      "path": "/api/remix/v2/matches/match_20261017123910.583263791_9/input",
+      "outcome": "received",
+      "status": 200,
+      "bytes": 167
+    },
+    {
+      "method": "POST",
+      "path": "/api/remix/v2/matches/match_20261017123910.583263791_9/input",
+      "outcome": "received",
+      "status": 409,
+      "bytes": 97
+    },
+    {
+      "method": "GET",
+      "path": "/api/remix/v2/matches/match_20261017123910.583263791_9",
+      "outcome": "received",
+      "status": 200,
+      "bytes": 245
+    },
+    {
+      "method": "GET",
+      "path": "/api/remix/v2/matches/match_20261017123910.583263791_9/state",
+      "outcome": "received",
+      "status": 200,
+      "bytes": 203
+    },
+    {
+      "method": "GET",
+      "path": "/api/remix/v2/matches/match_20261017123910.583263791_9/state",
+      "outcome": "received",
+      "status": 200,
+      "bytes": 203
+    },
+    {
+      "method": "GET",
+      "path": "/api/remix/v2/matches/match_20261017123910.583263791_9/state",
+      "outcome": "received",
+      "status": 200,
+      "bytes": 203
+    },
+    {
+      "method": "GET",
+      "path": "/api/remix/v2/matches/match_20261017123910.583263791_9/state",
+      "outcome": "received",
+      "status": 200,
+      "bytes": 203
+    },
+    {
+      "method": "GET",
+      "path": "/api/remix/v2/matches/match_20261017123910.583263791_9/state",
+      "outcome": "received",
+      "status": 200,
+      "bytes": 203
+    },
+    {
+      "method": "GET",
+      "path": "/api/remix/v2/matches/match_20261017123910.583263791_9/state",
+      "outcome": "received",
+      "status": 200,
+      "bytes": 203
+    },
+    {
+      "method": "GET",
+      "path": "/api/remix/v2/matches/match_20261017123910.583263791_9/state",
+      "outcome": "received",
+      "status": 200,
+      "bytes": 203
+    },
+    {
+      "method": "GET",
+      "path": "/api/remix/v2/matches/match_20261017123910.583263791_9/state",
+      "outcome": "received",
+      "status": 200,
+      "bytes": 203
+    },
+    {
+      "method": "GET",
+      "path": "/api/remix/v2/matches/match_20261017123910.583263791_9/state",
+      "outcome": "received",
+      "status": 200,
+      "bytes": 203
+    },
+    {
+      "method": "GET",
+      "path": "/api/remix/v2/matches/match_20261017123910.583263791_9/state",
+      "outcome": "received",
+      "status": 200,
+      "bytes": 202
+    },
+    {
+      "method": "GET",
+      "path": "/api/remix/v2/matches/match_20261017123910.583263791_9/state",
+      "outcome": "received",
+      "status": 200,
+      "bytes": 202
+    },
+    {
+      "method": "GET",
+      "path": "/api/remix/v2/matches/match_20261017123910.583263791_9/state",
+      "outcome": "received",
+      "status": 200,
+      "bytes": 202
+    },
+    {
+      "method": "GET",
+      "path": "/api/remix/v2/matches/match_20261017123910.583263791_9/state",
+      "outcome": "received",
+      "status": 200,
+      "bytes": 202
+    },
+    {
+      "method": "GET",
+      "path": "/api/remix/v2/matches/match_20261017123910.583263791_9/state",
+      "outcome": "received",
+      "status": 200,
+      "bytes": 202
+    },
+    {
+      "method": "GET",
+      "path": "/api/remix/v2/matches/match_20261017123910.583263791_9/state",
+      "outcome": "received",
+      "status": 200,
+      "bytes": 198
+    },
+    {
+      "method": "GET",
+      "path": "/api/remix/v2/matches/match_20261017123910.583263791_9/result",
+      "outcome": "received",
+      "status": 200,
+      "bytes": 175
+    },
+    {
+      "method": "GET",
+      "path": "/api/remix/v2/matches/match_20261017123910.583263791_9/result",
+      "outcome": "received",
+      "status": 401,
+      "bytes": 92
+    },
+    {
+      "method": "GET",
+      "path": "/api/remix/v2/matches/match_20261017123910.583263791_9/result",
+      "outcome": "received",
+      "status": 403,
+      "bytes": 78
+    },
+    {
+      "method": "GET",
+      "path": "/api/remix/v2/matches/match_20261017123910.583263791_9/result",
+      "outcome": "received",
+      "status": 200,
+      "bytes": 175
+    },
+    {
+      "method": "GET",
+      "path": "/api/remix/v1/matches/match_20261017123910.583263791_9/result",
+      "outcome": "received",
+      "status": 401,
+      "bytes": 92
+    },
+    {
+      "method": "GET",
+      "path": "/api/remix/v1/matches/match_20261017123910.583263791_9/result",
+      "outcome": "received",
+      "status": 403,
+      "bytes": 78
+    },
+    {
+      "method": "GET",
+      "path": "/api/remix/v1/matches/match_20261017123910.583263791_9/result",
+      "outcome": "received",
+      "status": 200,
+      "bytes": 175
+    },
+    {
+      "method": "POST",
+      "path": "/api/remix/v1/matches/match_20261017123910.583263791_9/input",
+      "outcome": "received",
+      "status": 409,
+      "bytes": 91
+    },
+    {
+      "method": "GET",
+      "path": "/api/remix/v2/matches/match_20261017123910.583263791_9/result",
+      "outcome": "received",
+      "status": 200,
+      "bytes": 175
+    },
+    {
+      "method": "POST",
+      "path": "/api/core/auth/logout",
+      "outcome": "received",
+      "status": 200,
+      "bytes": 18
+    },
+    {
+      "method": "GET",
+      "path": "/api/remix/v2/matches/match_20261017123910.583263791_9/result",
+      "outcome": "received",
+      "status": 401,
+      "bytes": 104
+    },
+    {
+      "method": "GET",
+      "path": "/",
+      "outcome": "received",
+      "status": 200,
+      "bytes": 3760
+    },
+    {
+      "method": "POST",
+      "path": "/api/core/auth/logout",
+      "outcome": "received",
+      "status": 200,
+      "bytes": 18
+    }
+  ],
+  "checks": [
+    "Published ownership policy is Core confirmed-durable-binding",
+    "Two independently registered and logged-in QA accounts",
+    "One durably bound Core-owned match with a server-assigned player",
+    "Creation attempt resolves by GET without repeating POST",
+    "Owner history includes QA match",
+    "Other account history excludes QA match",
+    "Missing sessions and another account cannot read either match alias",
+    "Only owner input is accepted for the server-assigned player",
+    "Consumed input sequence is durable and duplicate input is rejected",
+    "Completed results remain protected through both aliases",
+    "A late owner input cannot change the completed result",
+    "Logout revokes access to the frozen result immediately",
+    "The public release remained unchanged during verification"
+  ],
+  "authOutcomeUncertain": false,
+  "limits": [
+    "No Unity gameplay or replay validation",
+    "No restart or active-engine recovery check",
+    "No POST retry or access to existing users' data",
+    "A lost authentication response may leave an unknown session that cannot be logged out",
+    "Two QA accounts and their one match remain; no credentials are retained in evidence"
+  ],
+  "release": "75a3251ae5cc",
+  "capabilities": {
+    "authPolicyVersion": 1,
+    "provider": "core",
+    "ownershipPolicy": "confirmed-durable-binding",
+    "creationEnabled": true,
+    "legacyMatches": "anonymous",
+    "activeMatchRecovery": false,
+    "replayVerification": false
+  },
+  "match": {
+    "id": "match_20261017123910.583263791_9",
+    "challengeId": "ch_20261017123910_10",
+    "playerId": "corep_851ae0de21a2474a7952dde9e0aa4d3a",
+    "accessMode": "core-owned"
+  },
+  "result": {
+    "matchId": "match_20261017123910.583263791_9",
+    "phase": "RESULTS",
+    "replayFrames": 1,
+    "scores": [
+      {
+        "playerId": "corep_851ae0de21a2474a7952dde9e0aa4d3a",
+        "score": 0.016666666666666666
+      }
+    ]
+  },
+  "resultSha256": "9f9a4d211ed9cfd7eca894589e40da34485594f08c3c2705c350ed67d681a99d",
+  "allQaSessionsLoggedOut": true,
+  "finishedAt": "2026-10-17T12:39:51.887529+00:00",
+  "durationSeconds": 49.059
+}

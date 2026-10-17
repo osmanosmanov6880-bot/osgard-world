@@ -1,0 +1,1948 @@
+{
+  "purpose": "Read-only comparison of retained full acceptance captures; the unchanged 100 Performance requirement remains unmet. No causal source diagnosis is established.",
+  "currentRun": "39032711133",
+  "baselineRun": "39031159490",
+  "currentReleasePrefix": "75a3251ae5cc",
+  "currentArtifact": {
+    "id": "12100653855",
+    "zipBytes": 6627865,
+    "zipSha256": "47a75f4796825258c321805e8da43b4d67ebb6b57f297877b0dc0dd646e91d0b",
+    "archiveVerification": "Parent verified downloaded ZIP; constituent JSON hashes independently recomputed here."
+  },
+  "units": {
+    "wallMs": "Raw trace dur / 1000, elapsed milliseconds",
+    "threadCpuMs": "Raw trace tdur / 1000, recorded thread CPU milliseconds",
+    "modeled": "Exact audit numericValue, Lighthouse simulated clock",
+    "observed": "Timestamp minus observedTimeOriginTs, divided by 1000"
+  },
+  "limits": [
+    "Navigation windows differ in length; event counts and totals are not equal-duration workload comparisons.",
+    "Named inclusive event totals can include nested work and must not be added as a CPU partition.",
+    "URL association is not proof that an entire task executed code from that URL.",
+    "No usable V8 sample profile was captured; wall/CPU gaps are not attributed to a specific app function or infrastructure cause.",
+    "No workflow rerun, browser, server, production request or tracked edit was performed for this comparison."
+  ],
+  "runs": {
+    "39031159490": {
+      "mobile": {
+        "sources": {
+          "report": {
+            "path": "/tmp/osgard-skillcred-audit-39031159490/skillcred-lighthouse-mobile.json",
+            "bytes": 788379,
+            "sha256": "690f8ceeab272f2e5c8b44f76512527d6e1ae5bfd1d1afeb4907f6172a04aa0c"
+          },
+          "trace": {
+            "path": "/tmp/osgard-skillcred-audit-39031159490/skillcred-lighthouse-mobile-0.trace.json",
+            "bytes": 6943399,
+            "sha256": "62dc11cc02277693c8fa1e5afbda9564d60090ec4ce245c34679288f44dc2912"
+          },
+          "devtoolsLog": {
+            "path": "/tmp/osgard-skillcred-audit-39031159490/skillcred-lighthouse-mobile-0.devtoolslog.json",
+            "bytes": 74804,
+            "sha256": "61ad22cbe4cad18b496a50e43c8ece99565cbf1df7058053620ba1d797937400"
+          }
+        },
+        "capture": {
+          "lighthouseVersion": "12.8.2",
+          "fetchTime": "2026-10-17T12:05:55.330Z",
+          "requestedUrl": "https://osgard.world/skillcred/",
+          "mainDocumentUrl": "https://osgard.world/skillcred/",
+          "hostUserAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36",
+          "emulatedNetworkUserAgent": "Mozilla/5.0 (Linux; Android 11; moto g power (2022)) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Mobile Safari/537.36",
+          "benchmarkIndex": 2072.5,
+          "formFactor": "mobile",
+          "throttlingMethod": "simulate",
+          "throttling": {
+            "rttMs": 150,
+            "throughputKbps": 1638.4,
+            "requestLatencyMs": 562.5,
+            "downloadThroughputKbps": 1474.5600000000002,
+            "uploadThroughputKbps": 675,
+            "cpuSlowdownMultiplier": 4
+          },
+          "screenEmulation": {
+            "mobile": true,
+            "width": 412,
+            "height": 823,
+            "deviceScaleFactor": 1.75,
+            "disabled": false
+          },
+          "additionalTraceCategories": null,
+          "traceEventCount": 12891,
+          "mainThreadEventCount": 1180,
+          "frameId": "371A8B8F7C195FCA34DE288F1FAF7806",
+          "pid": 2458,
+          "tid": 2458,
+          "threadName": "CrRendererMain",
+          "navigationStartTimestampUs": 197097600,
+          "observedOriginTimestampUs": 197097600,
+          "observedEndTimestampUs": 200606600,
+          "identityEvidence": "Exact report navigation timestamp, trace main-frame identity and URL, and matching CrRendererMain metadata.",
+          "runWarnings": []
+        },
+        "categories": {
+          "performance": 94,
+          "accessibility": 100,
+          "best-practices": 100,
+          "seo": 100
+        },
+        "modeled": {
+          "first-contentful-paint": 1180.386,
+          "largest-contentful-paint": 2250.772,
+          "speed-index": 1903.9698399999993,
+          "total-blocking-time": 240,
+          "interactive": 2250.772,
+          "cumulative-layout-shift": 0.0009511047978906637
+        },
+        "observedMs": {
+          "observedFirstContentfulPaint": 949.083,
+          "observedLargestContentfulPaint": 949.083,
+          "observedLoad": 1026.218,
+          "observedDomContentLoaded": 950.734,
+          "observedTraceEnd": 3509.0,
+          "observedSpeedIndex": 978.44
+        },
+        "errors": {
+          "runtimeError": null,
+          "runWarnings": [],
+          "auditErrors": []
+        },
+        "rawMainThread": {
+          "taskCount": 458,
+          "tasksAtLeast50WallMs": 1,
+          "tasksAtLeast50CpuMs": 0,
+          "totalTaskWallMs": 297.408,
+          "totalTaskThreadCpuMs": 62.77,
+          "tasksMissingThreadDuration": 0,
+          "topTasks": [
+            {
+              "event": "RunTask",
+              "startMs": 788.181,
+              "wallMs": 135.321,
+              "threadCpuMs": 21.225
+            },
+            {
+              "event": "RunTask",
+              "startMs": 961.334,
+              "wallMs": 43.693,
+              "threadCpuMs": 4.221
+            },
+            {
+              "event": "RunTask",
+              "startMs": 444.839,
+              "wallMs": 38.793,
+              "threadCpuMs": 7.339
+            },
+            {
+              "event": "RunTask",
+              "startMs": 1082.566,
+              "wallMs": 14.128,
+              "threadCpuMs": 0.332
+            },
+            {
+              "event": "RunTask",
+              "startMs": 930.362,
+              "wallMs": 13.26,
+              "threadCpuMs": 3.85
+            },
+            {
+              "event": "RunTask",
+              "startMs": 943.652,
+              "wallMs": 11.513,
+              "threadCpuMs": 1.525
+            },
+            {
+              "event": "RunTask",
+              "startMs": 923.521,
+              "wallMs": 5.804,
+              "threadCpuMs": 1.747
+            },
+            {
+              "event": "RunTask",
+              "startMs": 2205.644,
+              "wallMs": 5.631,
+              "threadCpuMs": 0.476
+            }
+          ],
+          "eventInclusiveTotals": [
+            {
+              "event": "Layout",
+              "count": 10,
+              "inclusiveWallMs": 54.039,
+              "inclusiveThreadCpuMs": 12.914,
+              "missingThreadDuration": 0
+            },
+            {
+              "event": "UpdateLayoutTree",
+              "count": 11,
+              "inclusiveWallMs": 39.958,
+              "inclusiveThreadCpuMs": 6.244,
+              "missingThreadDuration": 0
+            },
+            {
+              "event": "PrePaint",
+              "count": 11,
+              "inclusiveWallMs": 15.788,
+              "inclusiveThreadCpuMs": 1.349,
+              "missingThreadDuration": 0
+            },
+            {
+              "event": "Paint",
+              "count": 11,
+              "inclusiveWallMs": 23.105,
+              "inclusiveThreadCpuMs": 3.52,
+              "missingThreadDuration": 0
+            },
+            {
+              "event": "ParseHTML",
+              "count": 5,
+              "inclusiveWallMs": 2.38,
+              "inclusiveThreadCpuMs": 2.375,
+              "missingThreadDuration": 0
+            },
+            {
+              "event": "EvaluateScript",
+              "count": 6,
+              "inclusiveWallMs": 27.365,
+              "inclusiveThreadCpuMs": 6.624,
+              "missingThreadDuration": 0
+            },
+            {
+              "event": "FunctionCall",
+              "count": 11,
+              "inclusiveWallMs": 0.668,
+              "inclusiveThreadCpuMs": 0.663,
+              "missingThreadDuration": 0
+            },
+            {
+              "event": "RunMicrotasks",
+              "count": 6,
+              "inclusiveWallMs": 5.472,
+              "inclusiveThreadCpuMs": 0.472,
+              "missingThreadDuration": 0
+            },
+            {
+              "event": "IntersectionObserverController::computeIntersections",
+              "count": 14,
+              "inclusiveWallMs": 0.269,
+              "inclusiveThreadCpuMs": 0.262,
+              "missingThreadDuration": 0
+            }
+          ],
+          "scriptEvaluateEvents": [
+            {
+              "event": "EvaluateScript",
+              "startMs": 930.398,
+              "wallMs": 13.157,
+              "threadCpuMs": 3.748,
+              "path": "/skillcred/app.js"
+            },
+            {
+              "event": "EvaluateScript",
+              "startMs": 943.66,
+              "wallMs": 6.945,
+              "threadCpuMs": 1.02,
+              "path": "/brand/osa-transition.js"
+            },
+            {
+              "event": "EvaluateScript",
+              "startMs": 2203.817,
+              "wallMs": 0.995,
+              "threadCpuMs": 0.754,
+              "path": null
+            },
+            {
+              "event": "EvaluateScript",
+              "startMs": 2203.864,
+              "wallMs": 0.152,
+              "threadCpuMs": 0.144,
+              "path": null
+            },
+            {
+              "event": "EvaluateScript",
+              "startMs": 2205.67,
+              "wallMs": 5.579,
+              "threadCpuMs": 0.426,
+              "path": null
+            },
+            {
+              "event": "EvaluateScript",
+              "startMs": 3356.245,
+              "wallMs": 0.537,
+              "threadCpuMs": 0.532,
+              "path": null
+            }
+          ]
+        },
+        "animation": {
+          "compositeFailedEventCount": 0,
+          "unsupportedPropertyCounts": {},
+          "starts": [
+            {
+              "startMs": 870.809,
+              "displayName": "pulse-dot",
+              "nodeId": 5,
+              "nodeName": "::after",
+              "state": "running"
+            },
+            {
+              "startMs": 870.845,
+              "displayName": "trust-orbit-rotation",
+              "nodeId": 6,
+              "nodeName": "::before",
+              "state": "running"
+            }
+          ]
+        },
+        "v8": {
+          "status": "no-usable-samples",
+          "profileCount": 0,
+          "profiles": [],
+          "otherThreadProfileEventCount": 0,
+          "totalMainThreadProfileSamples": 0,
+          "sampleCount": 0,
+          "resolvedLeafSampleCount": 0,
+          "completeStackSampleCount": 0,
+          "functionCount": 0,
+          "functions": [],
+          "sourcePositions": "V8 call-frame line/column numbers are zero based; timeline event positions are retained as emitted."
+        },
+        "network": {
+          "requestCount": 9,
+          "methodCounts": {
+            "GET": 9
+          },
+          "loadingFailedCount": 0,
+          "requests": [
+            {
+              "method": "GET",
+              "path": "/skillcred/",
+              "startMs": 0.732,
+              "resourceSize": 44129,
+              "transferSize": 15291,
+              "status": 200,
+              "endMs": 438.192
+            },
+            {
+              "method": "GET",
+              "path": "/skillcred/fonts/InterVariable.woff2",
+              "startMs": 478.077,
+              "resourceSize": 115288,
+              "transferSize": 116004,
+              "status": 200,
+              "endMs": 783.513
+            },
+            {
+              "method": "GET",
+              "path": "/skillcred/styles.css",
+              "startMs": 482.741,
+              "resourceSize": 70005,
+              "transferSize": 15144,
+              "status": 200,
+              "endMs": 707.051
+            },
+            {
+              "method": "GET",
+              "path": "/skillcred/app.js",
+              "startMs": 482.878,
+              "resourceSize": 46959,
+              "transferSize": 11394,
+              "status": 200,
+              "endMs": 804.341
+            },
+            {
+              "method": "GET",
+              "path": "/brand/portal-world.svg",
+              "startMs": 482.96,
+              "resourceSize": 285,
+              "transferSize": 657,
+              "status": 200,
+              "endMs": 805.77
+            },
+            {
+              "method": "GET",
+              "path": "/brand/osa-transition.js",
+              "startMs": 483.099,
+              "resourceSize": 3339,
+              "transferSize": 3864,
+              "status": 200,
+              "endMs": 804.019
+            },
+            {
+              "method": "GET",
+              "path": "/skillcred/fonts/JetBrainsMono-Regular.woff2",
+              "startMs": 817.618,
+              "resourceSize": 18652,
+              "transferSize": 19366,
+              "status": 200,
+              "endMs": 1024.984
+            },
+            {
+              "method": "GET",
+              "path": "/skillcred/fonts/InstrumentSerif-Italic.woff2",
+              "startMs": 817.759,
+              "resourceSize": 14108,
+              "transferSize": 14822,
+              "status": 200,
+              "endMs": 1022.067
+            },
+            {
+              "method": "GET",
+              "path": "/skillcred/favicon.svg",
+              "startMs": 1096.837,
+              "resourceSize": 442,
+              "transferSize": 814,
+              "status": 200,
+              "endMs": 1190.952
+            }
+          ]
+        }
+      },
+      "desktop": {
+        "sources": {
+          "report": {
+            "path": "/tmp/osgard-skillcred-audit-39031159490/skillcred-lighthouse-desktop.json",
+            "bytes": 670374,
+            "sha256": "a254524fbb98f8e45124f6c01d28057a2b15e2e8795403b4abab96de74677b98"
+          },
+          "trace": {
+            "path": "/tmp/osgard-skillcred-audit-39031159490/skillcred-lighthouse-desktop-0.trace.json",
+            "bytes": 9428443,
+            "sha256": "c68e3d419620ac4ee049814db78aa6103ffa0c786c12485736fa65d810973e67"
+          },
+          "devtoolsLog": {
+            "path": "/tmp/osgard-skillcred-audit-39031159490/skillcred-lighthouse-desktop-0.devtoolslog.json",
+            "bytes": 94191,
+            "sha256": "96f7565047c389dd5fb2c45f88c4d5319af5ef089b32ae55b61dc85624e25f49"
+          }
+        },
+        "capture": {
+          "lighthouseVersion": "12.8.2",
+          "fetchTime": "2026-10-17T12:06:09.685Z",
+          "requestedUrl": "https://osgard.world/skillcred/",
+          "mainDocumentUrl": "https://osgard.world/skillcred/",
+          "hostUserAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36",
+          "emulatedNetworkUserAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36",
+          "benchmarkIndex": 2290.5,
+          "formFactor": "desktop",
+          "throttlingMethod": "simulate",
+          "throttling": {
+            "rttMs": 40,
+            "throughputKbps": 10240,
+            "requestLatencyMs": 0,
+            "downloadThroughputKbps": 0,
+            "uploadThroughputKbps": 0,
+            "cpuSlowdownMultiplier": 1
+          },
+          "screenEmulation": {
+            "mobile": false,
+            "width": 1350,
+            "height": 940,
+            "deviceScaleFactor": 1,
+            "disabled": false
+          },
+          "additionalTraceCategories": null,
+          "traceEventCount": 23750,
+          "mainThreadEventCount": 6999,
+          "frameId": "55E632A27F9C204EA3DED49A4F3BC933",
+          "pid": 2653,
+          "tid": 2653,
+          "threadName": "CrRendererMain",
+          "navigationStartTimestampUs": 211312869,
+          "observedOriginTimestampUs": 211312869,
+          "observedEndTimestampUs": 214614185,
+          "identityEvidence": "Exact report navigation timestamp, trace main-frame identity and URL, and matching CrRendererMain metadata.",
+          "runWarnings": []
+        },
+        "categories": {
+          "performance": 100,
+          "accessibility": 100,
+          "best-practices": 100,
+          "seo": 100
+        },
+        "modeled": {
+          "first-contentful-paint": 306.47,
+          "largest-contentful-paint": 546.47,
+          "speed-index": 670.5299806954465,
+          "total-blocking-time": 29,
+          "interactive": 546.47,
+          "cumulative-layout-shift": 0.00041843244145869533
+        },
+        "observedMs": {
+          "observedFirstContentfulPaint": 754.515,
+          "observedLargestContentfulPaint": 754.515,
+          "observedLoad": 775.742,
+          "observedDomContentLoaded": 682.36,
+          "observedTraceEnd": 3301.316,
+          "observedSpeedIndex": 846.829
+        },
+        "errors": {
+          "runtimeError": null,
+          "runWarnings": [],
+          "auditErrors": []
+        },
+        "rawMainThread": {
+          "taskCount": 1014,
+          "tasksAtLeast50WallMs": 1,
+          "tasksAtLeast50CpuMs": 0,
+          "totalTaskWallMs": 673.118,
+          "totalTaskThreadCpuMs": 217.187,
+          "tasksMissingThreadDuration": 0,
+          "topTasks": [
+            {
+              "event": "RunTask",
+              "startMs": 983.935,
+              "wallMs": 78.879,
+              "threadCpuMs": 5.325
+            },
+            {
+              "event": "RunTask",
+              "startMs": 690.433,
+              "wallMs": 45.931,
+              "threadCpuMs": 0.518
+            },
+            {
+              "event": "RunTask",
+              "startMs": 643.98,
+              "wallMs": 29.629,
+              "threadCpuMs": 22.971
+            },
+            {
+              "event": "RunTask",
+              "startMs": 818.506,
+              "wallMs": 21.224,
+              "threadCpuMs": 1.378
+            },
+            {
+              "event": "RunTask",
+              "startMs": 913.166,
+              "wallMs": 21.223,
+              "threadCpuMs": 1.254
+            },
+            {
+              "event": "RunTask",
+              "startMs": 889.372,
+              "wallMs": 19.703,
+              "threadCpuMs": 1.469
+            },
+            {
+              "event": "RunTask",
+              "startMs": 1212.265,
+              "wallMs": 18.17,
+              "threadCpuMs": 0.911
+            },
+            {
+              "event": "RunTask",
+              "startMs": 1278.92,
+              "wallMs": 16.895,
+              "threadCpuMs": 0.86
+            }
+          ],
+          "eventInclusiveTotals": [
+            {
+              "event": "Layout",
+              "count": 11,
+              "inclusiveWallMs": 31.919,
+              "inclusiveThreadCpuMs": 21.882,
+              "missingThreadDuration": 0
+            },
+            {
+              "event": "UpdateLayoutTree",
+              "count": 153,
+              "inclusiveWallMs": 42.875,
+              "inclusiveThreadCpuMs": 39.0,
+              "missingThreadDuration": 0
+            },
+            {
+              "event": "PrePaint",
+              "count": 152,
+              "inclusiveWallMs": 13.328,
+              "inclusiveThreadCpuMs": 13.005,
+              "missingThreadDuration": 0
+            },
+            {
+              "event": "Paint",
+              "count": 398,
+              "inclusiveWallMs": 45.844,
+              "inclusiveThreadCpuMs": 33.144,
+              "missingThreadDuration": 0
+            },
+            {
+              "event": "ParseHTML",
+              "count": 5,
+              "inclusiveWallMs": 3.04,
+              "inclusiveThreadCpuMs": 2.924,
+              "missingThreadDuration": 0
+            },
+            {
+              "event": "EvaluateScript",
+              "count": 6,
+              "inclusiveWallMs": 8.875,
+              "inclusiveThreadCpuMs": 6.97,
+              "missingThreadDuration": 0
+            },
+            {
+              "event": "FunctionCall",
+              "count": 13,
+              "inclusiveWallMs": 2.424,
+              "inclusiveThreadCpuMs": 2.405,
+              "missingThreadDuration": 0
+            },
+            {
+              "event": "RunMicrotasks",
+              "count": 18,
+              "inclusiveWallMs": 92.783,
+              "inclusiveThreadCpuMs": 9.77,
+              "missingThreadDuration": 0
+            },
+            {
+              "event": "IntersectionObserverController::computeIntersections",
+              "count": 295,
+              "inclusiveWallMs": 9.874,
+              "inclusiveThreadCpuMs": 9.784,
+              "missingThreadDuration": 0
+            }
+          ],
+          "scriptEvaluateEvents": [
+            {
+              "event": "EvaluateScript",
+              "startMs": 675.911,
+              "wallMs": 3.542,
+              "threadCpuMs": 3.508,
+              "path": "/skillcred/app.js"
+            },
+            {
+              "event": "EvaluateScript",
+              "startMs": 679.908,
+              "wallMs": 2.341,
+              "threadCpuMs": 0.878,
+              "path": "/brand/osa-transition.js"
+            },
+            {
+              "event": "EvaluateScript",
+              "startMs": 1993.055,
+              "wallMs": 1.207,
+              "threadCpuMs": 1.023,
+              "path": null
+            },
+            {
+              "event": "EvaluateScript",
+              "startMs": 1993.124,
+              "wallMs": 0.212,
+              "threadCpuMs": 0.205,
+              "path": null
+            },
+            {
+              "event": "EvaluateScript",
+              "startMs": 1996.972,
+              "wallMs": 0.866,
+              "threadCpuMs": 0.653,
+              "path": null
+            },
+            {
+              "event": "EvaluateScript",
+              "startMs": 3146.597,
+              "wallMs": 0.707,
+              "threadCpuMs": 0.703,
+              "path": null
+            }
+          ]
+        },
+        "animation": {
+          "compositeFailedEventCount": 18,
+          "unsupportedPropertyCounts": {
+            "background-position-x": 1,
+            "border-bottom-color": 3,
+            "border-left-color": 3,
+            "border-right-color": 3,
+            "border-top-color": 3,
+            "stroke": 2,
+            "stroke-dashoffset": 3
+          },
+          "starts": [
+            {
+              "startMs": 665.135,
+              "displayName": "pulse-dot",
+              "nodeId": 5,
+              "nodeName": "::after",
+              "state": "running"
+            },
+            {
+              "startMs": 665.198,
+              "displayName": "trust-orbit-rotation",
+              "nodeId": 6,
+              "nodeName": "::before",
+              "state": "running"
+            },
+            {
+              "startMs": 741.624,
+              "displayName": "border-top-color",
+              "nodeId": 16,
+              "nodeName": "ARTICLE id='heroCredential' class='artifact-card tilt-card'",
+              "state": "running"
+            },
+            {
+              "startMs": 741.649,
+              "displayName": "border-bottom-color",
+              "nodeId": 16,
+              "nodeName": "ARTICLE id='heroCredential' class='artifact-card tilt-card'",
+              "state": "running"
+            },
+            {
+              "startMs": 741.658,
+              "displayName": "border-left-color",
+              "nodeId": 16,
+              "nodeName": "ARTICLE id='heroCredential' class='artifact-card tilt-card'",
+              "state": "running"
+            },
+            {
+              "startMs": 741.663,
+              "displayName": "border-right-color",
+              "nodeId": 16,
+              "nodeName": "ARTICLE id='heroCredential' class='artifact-card tilt-card'",
+              "state": "running"
+            },
+            {
+              "startMs": 741.673,
+              "displayName": "credential-light-sweep",
+              "nodeId": 17,
+              "nodeName": "::before",
+              "state": "running"
+            },
+            {
+              "startMs": 741.681,
+              "displayName": "flow-signature",
+              "nodeId": 72,
+              "nodeName": "path class='signature-flow-pulse'",
+              "state": "running"
+            },
+            {
+              "startMs": 2605.254,
+              "displayName": "artifact-arrive",
+              "nodeId": 16,
+              "nodeName": "ARTICLE id='heroCredential' class='artifact-card tilt-card'",
+              "state": "running"
+            },
+            {
+              "startMs": 2605.289,
+              "displayName": "border-top-color",
+              "nodeId": 16,
+              "nodeName": "ARTICLE id='heroCredential' class='artifact-card tilt-card'",
+              "state": "running"
+            },
+            {
+              "startMs": 2605.299,
+              "displayName": "border-bottom-color",
+              "nodeId": 16,
+              "nodeName": "ARTICLE id='heroCredential' class='artifact-card tilt-card'",
+              "state": "running"
+            },
+            {
+              "startMs": 2605.32,
+              "displayName": "border-left-color",
+              "nodeId": 16,
+              "nodeName": "ARTICLE id='heroCredential' class='artifact-card tilt-card'",
+              "state": "running"
+            },
+            {
+              "startMs": 2605.329,
+              "displayName": "border-right-color",
+              "nodeId": 16,
+              "nodeName": "ARTICLE id='heroCredential' class='artifact-card tilt-card'",
+              "state": "running"
+            },
+            {
+              "startMs": 2605.345,
+              "displayName": "transform",
+              "nodeId": 81,
+              "nodeName": "DIV id='validStamp' class='valid-stamp'",
+              "state": "running"
+            },
+            {
+              "startMs": 2605.362,
+              "displayName": "opacity",
+              "nodeId": 81,
+              "nodeName": "DIV id='validStamp' class='valid-stamp'",
+              "state": "running"
+            },
+            {
+              "startMs": 2605.384,
+              "displayName": "opacity",
+              "nodeId": 82,
+              "nodeName": "path id='trustSpineProgress' class='trust-spine-progress'",
+              "state": "running"
+            },
+            {
+              "startMs": 2605.394,
+              "displayName": "stroke",
+              "nodeId": 82,
+              "nodeName": "path id='trustSpineProgress' class='trust-spine-progress'",
+              "state": "running"
+            },
+            {
+              "startMs": 2605.41,
+              "displayName": "stroke-dashoffset",
+              "nodeId": 83,
+              "nodeName": "path id='heroThread' class='thread-flow'",
+              "state": "running"
+            },
+            {
+              "startMs": 2605.418,
+              "displayName": "opacity",
+              "nodeId": 83,
+              "nodeName": "path id='heroThread' class='thread-flow'",
+              "state": "running"
+            },
+            {
+              "startMs": 3097.47,
+              "displayName": "opacity",
+              "nodeId": 82,
+              "nodeName": "path id='trustSpineProgress' class='trust-spine-progress'",
+              "state": "running"
+            },
+            {
+              "startMs": 3097.504,
+              "displayName": "stroke",
+              "nodeId": 82,
+              "nodeName": "path id='trustSpineProgress' class='trust-spine-progress'",
+              "state": "running"
+            },
+            {
+              "startMs": 3097.523,
+              "displayName": "border-top-color",
+              "nodeId": 16,
+              "nodeName": "ARTICLE id='heroCredential' class='artifact-card tilt-card'",
+              "state": "running"
+            },
+            {
+              "startMs": 3097.531,
+              "displayName": "border-bottom-color",
+              "nodeId": 16,
+              "nodeName": "ARTICLE id='heroCredential' class='artifact-card tilt-card'",
+              "state": "running"
+            },
+            {
+              "startMs": 3097.541,
+              "displayName": "border-left-color",
+              "nodeId": 16,
+              "nodeName": "ARTICLE id='heroCredential' class='artifact-card tilt-card'",
+              "state": "running"
+            },
+            {
+              "startMs": 3097.547,
+              "displayName": "border-right-color",
+              "nodeId": 16,
+              "nodeName": "ARTICLE id='heroCredential' class='artifact-card tilt-card'",
+              "state": "running"
+            },
+            {
+              "startMs": 3097.569,
+              "displayName": "stroke-dashoffset",
+              "nodeId": 83,
+              "nodeName": "path id='heroThread' class='thread-flow'",
+              "state": "running"
+            },
+            {
+              "startMs": 3097.577,
+              "displayName": "opacity",
+              "nodeId": 83,
+              "nodeName": "path id='heroThread' class='thread-flow'",
+              "state": "running"
+            }
+          ]
+        },
+        "v8": {
+          "status": "no-usable-samples",
+          "profileCount": 0,
+          "profiles": [],
+          "otherThreadProfileEventCount": 0,
+          "totalMainThreadProfileSamples": 0,
+          "sampleCount": 0,
+          "resolvedLeafSampleCount": 0,
+          "completeStackSampleCount": 0,
+          "functionCount": 0,
+          "functions": [],
+          "sourcePositions": "V8 call-frame line/column numbers are zero based; timeline event positions are retained as emitted."
+        },
+        "network": {
+          "requestCount": 11,
+          "methodCounts": {
+            "GET": 9,
+            "POST": 2
+          },
+          "loadingFailedCount": 0,
+          "requests": [
+            {
+              "method": "GET",
+              "path": "/skillcred/",
+              "startMs": 0.699,
+              "resourceSize": 44129,
+              "transferSize": 15291,
+              "status": 200,
+              "endMs": 360.198
+            },
+            {
+              "method": "GET",
+              "path": "/skillcred/fonts/InterVariable.woff2",
+              "startMs": 365.374,
+              "resourceSize": 115288,
+              "transferSize": 116004,
+              "status": 200,
+              "endMs": 639.393
+            },
+            {
+              "method": "GET",
+              "path": "/skillcred/styles.css",
+              "startMs": 365.641,
+              "resourceSize": 70005,
+              "transferSize": 15144,
+              "status": 200,
+              "endMs": 559.105
+            },
+            {
+              "method": "GET",
+              "path": "/skillcred/app.js",
+              "startMs": 365.768,
+              "resourceSize": 46959,
+              "transferSize": 11394,
+              "status": 200,
+              "endMs": 657.065
+            },
+            {
+              "method": "GET",
+              "path": "/brand/portal-world.svg",
+              "startMs": 365.866,
+              "resourceSize": 285,
+              "transferSize": 657,
+              "status": 200,
+              "endMs": 656.723
+            },
+            {
+              "method": "GET",
+              "path": "/brand/osa-transition.js",
+              "startMs": 366.132,
+              "resourceSize": 3339,
+              "transferSize": 3864,
+              "status": 200,
+              "endMs": 659.115
+            },
+            {
+              "method": "GET",
+              "path": "/skillcred/fonts/JetBrainsMono-Regular.woff2",
+              "startMs": 647.929,
+              "resourceSize": 18652,
+              "transferSize": 19366,
+              "status": 200,
+              "endMs": 770.548
+            },
+            {
+              "method": "GET",
+              "path": "/skillcred/fonts/InstrumentSerif-Italic.woff2",
+              "startMs": 648.018,
+              "resourceSize": 14108,
+              "transferSize": 14822,
+              "status": 200,
+              "endMs": 770.059
+            },
+            {
+              "method": "POST",
+              "path": "/skillcred-api/demo/issue",
+              "startMs": 739.695,
+              "resourceSize": 1486,
+              "transferSize": 2153,
+              "status": 200,
+              "endMs": 959.777
+            },
+            {
+              "method": "GET",
+              "path": "/skillcred/favicon.svg",
+              "startMs": 788.076,
+              "resourceSize": 442,
+              "transferSize": 814,
+              "status": 200,
+              "endMs": 882.52
+            },
+            {
+              "method": "POST",
+              "path": "/skillcred-api/demo/verify",
+              "startMs": 2600.834,
+              "resourceSize": 199,
+              "transferSize": 866,
+              "status": 200,
+              "endMs": 3087.897
+            }
+          ]
+        }
+      }
+    },
+    "39032711133": {
+      "mobile": {
+        "sources": {
+          "report": {
+            "path": "/tmp/osgard-skillcred-audit-39032711133/skillcred-lighthouse-mobile.json",
+            "bytes": 775297,
+            "sha256": "a9d593825144aea6bfa1311862059b6cb8aeb508dd5c5e2a71cffc48c0b30f2c"
+          },
+          "trace": {
+            "path": "/tmp/osgard-skillcred-audit-39032711133/skillcred-lighthouse-mobile-0.trace.json",
+            "bytes": 7818509,
+            "sha256": "fcb10fa559283723b6809b83fee489da2a72e89be197fcdeca3f5b06c7e8a66b"
+          },
+          "devtoolsLog": {
+            "path": "/tmp/osgard-skillcred-audit-39032711133/skillcred-lighthouse-mobile-0.devtoolslog.json",
+            "bytes": 74333,
+            "sha256": "3ed5f012f2c06ef85f44b5f66640f0e84ce9ab331ec071e6c51a3459b4afddf0"
+          }
+        },
+        "capture": {
+          "lighthouseVersion": "12.8.2",
+          "fetchTime": "2026-10-17T12:29:59.093Z",
+          "requestedUrl": "https://osgard.world/skillcred/",
+          "mainDocumentUrl": "https://osgard.world/skillcred/",
+          "hostUserAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36",
+          "emulatedNetworkUserAgent": "Mozilla/5.0 (Linux; Android 11; moto g power (2022)) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Mobile Safari/537.36",
+          "benchmarkIndex": 1227,
+          "formFactor": "mobile",
+          "throttlingMethod": "simulate",
+          "throttling": {
+            "rttMs": 150,
+            "throughputKbps": 1638.4,
+            "requestLatencyMs": 562.5,
+            "downloadThroughputKbps": 1474.5600000000002,
+            "uploadThroughputKbps": 675,
+            "cpuSlowdownMultiplier": 4
+          },
+          "screenEmulation": {
+            "mobile": true,
+            "width": 412,
+            "height": 823,
+            "deviceScaleFactor": 1.75,
+            "disabled": false
+          },
+          "additionalTraceCategories": null,
+          "traceEventCount": 14873,
+          "mainThreadEventCount": 1317,
+          "frameId": "380BB1DB9414CB861EF7578D835FE191",
+          "pid": 2453,
+          "tid": 2453,
+          "threadName": "CrRendererMain",
+          "navigationStartTimestampUs": 69585606,
+          "observedOriginTimestampUs": 69585606,
+          "observedEndTimestampUs": 74224042,
+          "identityEvidence": "Exact report navigation timestamp, trace main-frame identity and URL, and matching CrRendererMain metadata.",
+          "runWarnings": []
+        },
+        "categories": {
+          "performance": 70,
+          "accessibility": 100,
+          "best-practices": 100,
+          "seo": 100
+        },
+        "modeled": {
+          "first-contentful-paint": 1725.527,
+          "largest-contentful-paint": 2500.527,
+          "speed-index": 2743.6695999999915,
+          "total-blocking-time": 1640,
+          "interactive": 3668.927,
+          "cumulative-layout-shift": 0.0009511047978906637
+        },
+        "observedMs": {
+          "observedFirstContentfulPaint": 1309.286,
+          "observedLargestContentfulPaint": 1309.286,
+          "observedLoad": 1541.844,
+          "observedDomContentLoaded": 1360.809,
+          "observedTraceEnd": 4638.436,
+          "observedSpeedIndex": 1343.042
+        },
+        "errors": {
+          "runtimeError": null,
+          "runWarnings": [],
+          "auditErrors": []
+        },
+        "rawMainThread": {
+          "taskCount": 558,
+          "tasksAtLeast50WallMs": 5,
+          "tasksAtLeast50CpuMs": 0,
+          "totalTaskWallMs": 904.076,
+          "totalTaskThreadCpuMs": 75.221,
+          "tasksMissingThreadDuration": 0,
+          "topTasks": [
+            {
+              "event": "RunTask",
+              "startMs": 960.745,
+              "wallMs": 321.076,
+              "threadCpuMs": 21.928
+            },
+            {
+              "event": "RunTask",
+              "startMs": 1406.245,
+              "wallMs": 134.685,
+              "threadCpuMs": 6.056
+            },
+            {
+              "event": "RunTask",
+              "startMs": 1976.496,
+              "wallMs": 113.573,
+              "threadCpuMs": 0.635
+            },
+            {
+              "event": "RunTask",
+              "startMs": 528.559,
+              "wallMs": 108.22,
+              "threadCpuMs": 8.032
+            },
+            {
+              "event": "RunTask",
+              "startMs": 1302.898,
+              "wallMs": 85.488,
+              "threadCpuMs": 1.994
+            },
+            {
+              "event": "RunTask",
+              "startMs": 637.159,
+              "wallMs": 38.091,
+              "threadCpuMs": 2.602
+            },
+            {
+              "event": "RunTask",
+              "startMs": 3249.427,
+              "wallMs": 34.509,
+              "threadCpuMs": 0.739
+            },
+            {
+              "event": "RunTask",
+              "startMs": 2090.491,
+              "wallMs": 17.119,
+              "threadCpuMs": 0.194
+            }
+          ],
+          "eventInclusiveTotals": [
+            {
+              "event": "Layout",
+              "count": 10,
+              "inclusiveWallMs": 90.768,
+              "inclusiveThreadCpuMs": 13.793,
+              "missingThreadDuration": 0
+            },
+            {
+              "event": "UpdateLayoutTree",
+              "count": 11,
+              "inclusiveWallMs": 105.72,
+              "inclusiveThreadCpuMs": 8.085,
+              "missingThreadDuration": 0
+            },
+            {
+              "event": "PrePaint",
+              "count": 12,
+              "inclusiveWallMs": 34.925,
+              "inclusiveThreadCpuMs": 2.167,
+              "missingThreadDuration": 0
+            },
+            {
+              "event": "Paint",
+              "count": 9,
+              "inclusiveWallMs": 121.026,
+              "inclusiveThreadCpuMs": 3.797,
+              "missingThreadDuration": 0
+            },
+            {
+              "event": "ParseHTML",
+              "count": 5,
+              "inclusiveWallMs": 38.168,
+              "inclusiveThreadCpuMs": 2.675,
+              "missingThreadDuration": 0
+            },
+            {
+              "event": "EvaluateScript",
+              "count": 6,
+              "inclusiveWallMs": 104.002,
+              "inclusiveThreadCpuMs": 6.685,
+              "missingThreadDuration": 0
+            },
+            {
+              "event": "FunctionCall",
+              "count": 12,
+              "inclusiveWallMs": 1.395,
+              "inclusiveThreadCpuMs": 1.387,
+              "missingThreadDuration": 0
+            },
+            {
+              "event": "RunMicrotasks",
+              "count": 6,
+              "inclusiveWallMs": 34.154,
+              "inclusiveThreadCpuMs": 0.607,
+              "missingThreadDuration": 0
+            },
+            {
+              "event": "IntersectionObserverController::computeIntersections",
+              "count": 14,
+              "inclusiveWallMs": 0.332,
+              "inclusiveThreadCpuMs": 0.338,
+              "missingThreadDuration": 0
+            }
+          ],
+          "scriptEvaluateEvents": [
+            {
+              "event": "EvaluateScript",
+              "startMs": 1293.098,
+              "wallMs": 9.342,
+              "threadCpuMs": 3.145,
+              "path": "/skillcred/app.js"
+            },
+            {
+              "event": "EvaluateScript",
+              "startMs": 1302.913,
+              "wallMs": 57.72,
+              "threadCpuMs": 1.037,
+              "path": "/brand/osa-transition.js"
+            },
+            {
+              "event": "EvaluateScript",
+              "startMs": 3246.029,
+              "wallMs": 1.718,
+              "threadCpuMs": 1.061,
+              "path": null
+            },
+            {
+              "event": "EvaluateScript",
+              "startMs": 3246.098,
+              "wallMs": 0.194,
+              "threadCpuMs": 0.186,
+              "path": null
+            },
+            {
+              "event": "EvaluateScript",
+              "startMs": 3249.463,
+              "wallMs": 34.416,
+              "threadCpuMs": 0.648,
+              "path": null
+            },
+            {
+              "event": "EvaluateScript",
+              "startMs": 4399.46,
+              "wallMs": 0.612,
+              "threadCpuMs": 0.608,
+              "path": null
+            }
+          ]
+        },
+        "animation": {
+          "compositeFailedEventCount": 0,
+          "unsupportedPropertyCounts": {},
+          "starts": [
+            {
+              "startMs": 1116.819,
+              "displayName": "pulse-dot-halo",
+              "nodeId": 5,
+              "nodeName": "::after",
+              "state": "running"
+            },
+            {
+              "startMs": 1116.859,
+              "displayName": "trust-orbit-rotation",
+              "nodeId": 6,
+              "nodeName": "::before",
+              "state": "running"
+            }
+          ]
+        },
+        "v8": {
+          "status": "no-usable-samples",
+          "profileCount": 0,
+          "profiles": [],
+          "otherThreadProfileEventCount": 0,
+          "totalMainThreadProfileSamples": 0,
+          "sampleCount": 0,
+          "resolvedLeafSampleCount": 0,
+          "completeStackSampleCount": 0,
+          "functionCount": 0,
+          "functions": [],
+          "sourcePositions": "V8 call-frame line/column numbers are zero based; timeline event positions are retained as emitted."
+        },
+        "network": {
+          "requestCount": 9,
+          "methodCounts": {
+            "GET": 9
+          },
+          "loadingFailedCount": 0,
+          "requests": [
+            {
+              "method": "GET",
+              "path": "/skillcred/",
+              "startMs": 0.816,
+              "resourceSize": 44129,
+              "transferSize": 15290,
+              "status": 200,
+              "endMs": 508.008
+            },
+            {
+              "method": "GET",
+              "path": "/skillcred/fonts/InterVariable.woff2",
+              "startMs": 630.276,
+              "resourceSize": 115288,
+              "transferSize": 116004,
+              "status": 200,
+              "endMs": 967.381
+            },
+            {
+              "method": "GET",
+              "path": "/skillcred/styles.css",
+              "startMs": 636.081,
+              "resourceSize": 70133,
+              "transferSize": 15174,
+              "status": 200,
+              "endMs": 858.576
+            },
+            {
+              "method": "GET",
+              "path": "/skillcred/app.js",
+              "startMs": 636.18,
+              "resourceSize": 46959,
+              "transferSize": 11394,
+              "status": 200,
+              "endMs": 974.878
+            },
+            {
+              "method": "GET",
+              "path": "/brand/portal-world.svg",
+              "startMs": 636.26,
+              "resourceSize": 285,
+              "transferSize": 657,
+              "status": 200,
+              "endMs": 1016.442
+            },
+            {
+              "method": "GET",
+              "path": "/brand/osa-transition.js",
+              "startMs": 636.341,
+              "resourceSize": 3339,
+              "transferSize": 3864,
+              "status": 200,
+              "endMs": 1017.135
+            },
+            {
+              "method": "GET",
+              "path": "/skillcred/fonts/JetBrainsMono-Regular.woff2",
+              "startMs": 1031.487,
+              "resourceSize": 18652,
+              "transferSize": 19366,
+              "status": 200,
+              "endMs": 1509.737
+            },
+            {
+              "method": "GET",
+              "path": "/skillcred/fonts/InstrumentSerif-Italic.woff2",
+              "startMs": 1031.632,
+              "resourceSize": 14108,
+              "transferSize": 14822,
+              "status": 200,
+              "endMs": 1508.557
+            },
+            {
+              "method": "GET",
+              "path": "/skillcred/favicon.svg",
+              "startMs": 2090.284,
+              "resourceSize": 442,
+              "transferSize": 814,
+              "status": 200,
+              "endMs": 2231.072
+            }
+          ]
+        }
+      },
+      "desktop": {
+        "sources": {
+          "report": {
+            "path": "/tmp/osgard-skillcred-audit-39032711133/skillcred-lighthouse-desktop.json",
+            "bytes": 665418,
+            "sha256": "7b8f458d8109e80690ec63a4569b0c141c148a3bea6d50d71e406686ded50640"
+          },
+          "trace": {
+            "path": "/tmp/osgard-skillcred-audit-39032711133/skillcred-lighthouse-desktop-0.trace.json",
+            "bytes": 11334367,
+            "sha256": "fc94ca57b363563eece1695d8dd7b0a8471d66cdc1f2b39f7319036b90c18402"
+          },
+          "devtoolsLog": {
+            "path": "/tmp/osgard-skillcred-audit-39032711133/skillcred-lighthouse-desktop-0.devtoolslog.json",
+            "bytes": 94411,
+            "sha256": "69ee36b3ca2680327eb65438b7cb38c971a7167ef8c46348bf4d86c08f6b61ee"
+          }
+        },
+        "capture": {
+          "lighthouseVersion": "12.8.2",
+          "fetchTime": "2026-10-17T12:30:14.773Z",
+          "requestedUrl": "https://osgard.world/skillcred/",
+          "mainDocumentUrl": "https://osgard.world/skillcred/",
+          "hostUserAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36",
+          "emulatedNetworkUserAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36",
+          "benchmarkIndex": 2774,
+          "formFactor": "desktop",
+          "throttlingMethod": "simulate",
+          "throttling": {
+            "rttMs": 40,
+            "throughputKbps": 10240,
+            "requestLatencyMs": 0,
+            "downloadThroughputKbps": 0,
+            "uploadThroughputKbps": 0,
+            "cpuSlowdownMultiplier": 1
+          },
+          "screenEmulation": {
+            "mobile": false,
+            "width": 1350,
+            "height": 940,
+            "deviceScaleFactor": 1,
+            "disabled": false
+          },
+          "additionalTraceCategories": null,
+          "traceEventCount": 28342,
+          "mainThreadEventCount": 8227,
+          "frameId": "3E55DF631644485C7621494DF0A5EF50",
+          "pid": 2652,
+          "tid": 2652,
+          "threadName": "CrRendererMain",
+          "navigationStartTimestampUs": 84782230,
+          "observedOriginTimestampUs": 84782230,
+          "observedEndTimestampUs": 88951385,
+          "identityEvidence": "Exact report navigation timestamp, trace main-frame identity and URL, and matching CrRendererMain metadata.",
+          "runWarnings": []
+        },
+        "categories": {
+          "performance": 92,
+          "accessibility": 100,
+          "best-practices": 100,
+          "seo": 100
+        },
+        "modeled": {
+          "first-contentful-paint": 314.442,
+          "largest-contentful-paint": 554.442,
+          "speed-index": 793.4379009033916,
+          "total-blocking-time": 235.5,
+          "interactive": 826.421,
+          "cumulative-layout-shift": 0.00041843244145869533
+        },
+        "observedMs": {
+          "observedFirstContentfulPaint": 941.683,
+          "observedLargestContentfulPaint": 941.683,
+          "observedLoad": 1093.332,
+          "observedDomContentLoaded": 874.288,
+          "observedTraceEnd": 4169.155,
+          "observedSpeedIndex": 1038.256
+        },
+        "errors": {
+          "runtimeError": null,
+          "runWarnings": [],
+          "auditErrors": []
+        },
+        "rawMainThread": {
+          "taskCount": 1228,
+          "tasksAtLeast50WallMs": 4,
+          "tasksAtLeast50CpuMs": 0,
+          "totalTaskWallMs": 996.108,
+          "totalTaskThreadCpuMs": 252.069,
+          "tasksMissingThreadDuration": 0,
+          "topTasks": [
+            {
+              "event": "RunTask",
+              "startMs": 1153.05,
+              "wallMs": 264.24,
+              "threadCpuMs": 6.41
+            },
+            {
+              "event": "RunTask",
+              "startMs": 3395.763,
+              "wallMs": 76.557,
+              "threadCpuMs": 3.696
+            },
+            {
+              "event": "RunTask",
+              "startMs": 2798.735,
+              "wallMs": 65.709,
+              "threadCpuMs": 3.425
+            },
+            {
+              "event": "RunTask",
+              "startMs": 801.415,
+              "wallMs": 56.767,
+              "threadCpuMs": 24.09
+            },
+            {
+              "event": "RunTask",
+              "startMs": 3478.973,
+              "wallMs": 41.779,
+              "threadCpuMs": 0.391
+            },
+            {
+              "event": "RunTask",
+              "startMs": 889.923,
+              "wallMs": 25.903,
+              "threadCpuMs": 0.248
+            },
+            {
+              "event": "RunTask",
+              "startMs": 1059.588,
+              "wallMs": 24.463,
+              "threadCpuMs": 1.401
+            },
+            {
+              "event": "RunTask",
+              "startMs": 1038.148,
+              "wallMs": 20.513,
+              "threadCpuMs": 1.182
+            }
+          ],
+          "eventInclusiveTotals": [
+            {
+              "event": "Layout",
+              "count": 14,
+              "inclusiveWallMs": 72.86,
+              "inclusiveThreadCpuMs": 28.53,
+              "missingThreadDuration": 0
+            },
+            {
+              "event": "UpdateLayoutTree",
+              "count": 177,
+              "inclusiveWallMs": 43.937,
+              "inclusiveThreadCpuMs": 41.261,
+              "missingThreadDuration": 0
+            },
+            {
+              "event": "PrePaint",
+              "count": 178,
+              "inclusiveWallMs": 17.245,
+              "inclusiveThreadCpuMs": 17.206,
+              "missingThreadDuration": 0
+            },
+            {
+              "event": "Paint",
+              "count": 444,
+              "inclusiveWallMs": 44.497,
+              "inclusiveThreadCpuMs": 32.863,
+              "missingThreadDuration": 0
+            },
+            {
+              "event": "ParseHTML",
+              "count": 5,
+              "inclusiveWallMs": 3.155,
+              "inclusiveThreadCpuMs": 2.988,
+              "missingThreadDuration": 0
+            },
+            {
+              "event": "EvaluateScript",
+              "count": 7,
+              "inclusiveWallMs": 15.271,
+              "inclusiveThreadCpuMs": 7.941,
+              "missingThreadDuration": 0
+            },
+            {
+              "event": "FunctionCall",
+              "count": 15,
+              "inclusiveWallMs": 3.784,
+              "inclusiveThreadCpuMs": 2.976,
+              "missingThreadDuration": 0
+            },
+            {
+              "event": "RunMicrotasks",
+              "count": 23,
+              "inclusiveWallMs": 331.738,
+              "inclusiveThreadCpuMs": 11.552,
+              "missingThreadDuration": 0
+            },
+            {
+              "event": "IntersectionObserverController::computeIntersections",
+              "count": 347,
+              "inclusiveWallMs": 10.863,
+              "inclusiveThreadCpuMs": 10.697,
+              "missingThreadDuration": 0
+            }
+          ],
+          "scriptEvaluateEvents": [
+            {
+              "event": "EvaluateScript",
+              "startMs": 861.813,
+              "wallMs": 3.311,
+              "threadCpuMs": 3.233,
+              "path": "/skillcred/app.js"
+            },
+            {
+              "event": "EvaluateScript",
+              "startMs": 865.847,
+              "wallMs": 8.301,
+              "threadCpuMs": 1.113,
+              "path": "/brand/osa-transition.js"
+            },
+            {
+              "event": "EvaluateScript",
+              "startMs": 2430.595,
+              "wallMs": 1.057,
+              "threadCpuMs": 1.019,
+              "path": null
+            },
+            {
+              "event": "EvaluateScript",
+              "startMs": 2430.667,
+              "wallMs": 0.212,
+              "threadCpuMs": 0.206,
+              "path": null
+            },
+            {
+              "event": "EvaluateScript",
+              "startMs": 2432.683,
+              "wallMs": 0.646,
+              "threadCpuMs": 0.641,
+              "path": null
+            },
+            {
+              "event": "EvaluateScript",
+              "startMs": 3587.857,
+              "wallMs": 0.854,
+              "threadCpuMs": 0.85,
+              "path": null
+            },
+            {
+              "event": "EvaluateScript",
+              "startMs": 4016.044,
+              "wallMs": 0.89,
+              "threadCpuMs": 0.879,
+              "path": null
+            }
+          ]
+        },
+        "animation": {
+          "compositeFailedEventCount": 18,
+          "unsupportedPropertyCounts": {
+            "background-position-x": 1,
+            "border-bottom-color": 3,
+            "border-left-color": 3,
+            "border-right-color": 3,
+            "border-top-color": 3,
+            "stroke": 2,
+            "stroke-dashoffset": 3
+          },
+          "starts": [
+            {
+              "startMs": 848.634,
+              "displayName": "pulse-dot-halo",
+              "nodeId": 5,
+              "nodeName": "::after",
+              "state": "running"
+            },
+            {
+              "startMs": 848.666,
+              "displayName": "trust-orbit-rotation",
+              "nodeId": 6,
+              "nodeName": "::before",
+              "state": "running"
+            },
+            {
+              "startMs": 952.396,
+              "displayName": "border-top-color",
+              "nodeId": 16,
+              "nodeName": "ARTICLE id='heroCredential' class='artifact-card tilt-card'",
+              "state": "running"
+            },
+            {
+              "startMs": 952.424,
+              "displayName": "border-bottom-color",
+              "nodeId": 16,
+              "nodeName": "ARTICLE id='heroCredential' class='artifact-card tilt-card'",
+              "state": "running"
+            },
+            {
+              "startMs": 952.437,
+              "displayName": "border-left-color",
+              "nodeId": 16,
+              "nodeName": "ARTICLE id='heroCredential' class='artifact-card tilt-card'",
+              "state": "running"
+            },
+            {
+              "startMs": 952.449,
+              "displayName": "border-right-color",
+              "nodeId": 16,
+              "nodeName": "ARTICLE id='heroCredential' class='artifact-card tilt-card'",
+              "state": "running"
+            },
+            {
+              "startMs": 952.463,
+              "displayName": "credential-light-sweep",
+              "nodeId": 17,
+              "nodeName": "::before",
+              "state": "running"
+            },
+            {
+              "startMs": 952.474,
+              "displayName": "flow-signature",
+              "nodeId": 72,
+              "nodeName": "path class='signature-flow-pulse'",
+              "state": "running"
+            },
+            {
+              "startMs": 2869.573,
+              "displayName": "artifact-arrive",
+              "nodeId": 16,
+              "nodeName": "ARTICLE id='heroCredential' class='artifact-card tilt-card'",
+              "state": "running"
+            },
+            {
+              "startMs": 2869.615,
+              "displayName": "border-top-color",
+              "nodeId": 16,
+              "nodeName": "ARTICLE id='heroCredential' class='artifact-card tilt-card'",
+              "state": "running"
+            },
+            {
+              "startMs": 2869.623,
+              "displayName": "border-bottom-color",
+              "nodeId": 16,
+              "nodeName": "ARTICLE id='heroCredential' class='artifact-card tilt-card'",
+              "state": "running"
+            },
+            {
+              "startMs": 2869.638,
+              "displayName": "border-left-color",
+              "nodeId": 16,
+              "nodeName": "ARTICLE id='heroCredential' class='artifact-card tilt-card'",
+              "state": "running"
+            },
+            {
+              "startMs": 2869.644,
+              "displayName": "border-right-color",
+              "nodeId": 16,
+              "nodeName": "ARTICLE id='heroCredential' class='artifact-card tilt-card'",
+              "state": "running"
+            },
+            {
+              "startMs": 2869.659,
+              "displayName": "transform",
+              "nodeId": 81,
+              "nodeName": "DIV id='validStamp' class='valid-stamp'",
+              "state": "running"
+            },
+            {
+              "startMs": 2869.674,
+              "displayName": "opacity",
+              "nodeId": 81,
+              "nodeName": "DIV id='validStamp' class='valid-stamp'",
+              "state": "running"
+            },
+            {
+              "startMs": 2869.697,
+              "displayName": "opacity",
+              "nodeId": 82,
+              "nodeName": "path id='trustSpineProgress' class='trust-spine-progress'",
+              "state": "running"
+            },
+            {
+              "startMs": 2869.706,
+              "displayName": "stroke",
+              "nodeId": 82,
+              "nodeName": "path id='trustSpineProgress' class='trust-spine-progress'",
+              "state": "running"
+            },
+            {
+              "startMs": 2869.717,
+              "displayName": "stroke-dashoffset",
+              "nodeId": 83,
+              "nodeName": "path id='heroThread' class='thread-flow'",
+              "state": "running"
+            },
+            {
+              "startMs": 2869.723,
+              "displayName": "opacity",
+              "nodeId": 83,
+              "nodeName": "path id='heroThread' class='thread-flow'",
+              "state": "running"
+            },
+            {
+              "startMs": 3476.62,
+              "displayName": "opacity",
+              "nodeId": 82,
+              "nodeName": "path id='trustSpineProgress' class='trust-spine-progress'",
+              "state": "running"
+            },
+            {
+              "startMs": 3476.643,
+              "displayName": "stroke",
+              "nodeId": 82,
+              "nodeName": "path id='trustSpineProgress' class='trust-spine-progress'",
+              "state": "running"
+            },
+            {
+              "startMs": 3476.66,
+              "displayName": "border-top-color",
+              "nodeId": 16,
+              "nodeName": "ARTICLE id='heroCredential' class='artifact-card tilt-card'",
+              "state": "running"
+            },
+            {
+              "startMs": 3476.685,
+              "displayName": "border-bottom-color",
+              "nodeId": 16,
+              "nodeName": "ARTICLE id='heroCredential' class='artifact-card tilt-card'",
+              "state": "running"
+            },
+            {
+              "startMs": 3476.701,
+              "displayName": "border-left-color",
+              "nodeId": 16,
+              "nodeName": "ARTICLE id='heroCredential' class='artifact-card tilt-card'",
+              "state": "running"
+            },
+            {
+              "startMs": 3476.709,
+              "displayName": "border-right-color",
+              "nodeId": 16,
+              "nodeName": "ARTICLE id='heroCredential' class='artifact-card tilt-card'",
+              "state": "running"
+            },
+            {
+              "startMs": 3476.726,
+              "displayName": "stroke-dashoffset",
+              "nodeId": 83,
+              "nodeName": "path id='heroThread' class='thread-flow'",
+              "state": "running"
+            },
+            {
+              "startMs": 3476.754,
+              "displayName": "opacity",
+              "nodeId": 83,
+              "nodeName": "path id='heroThread' class='thread-flow'",
+              "state": "running"
+            }
+          ]
+        },
+        "v8": {
+          "status": "no-usable-samples",
+          "profileCount": 0,
+          "profiles": [],
+          "otherThreadProfileEventCount": 0,
+          "totalMainThreadProfileSamples": 0,
+          "sampleCount": 0,
+          "resolvedLeafSampleCount": 0,
+          "completeStackSampleCount": 0,
+          "functionCount": 0,
+          "functions": [],
+          "sourcePositions": "V8 call-frame line/column numbers are zero based; timeline event positions are retained as emitted."
+        },
+        "network": {
+          "requestCount": 11,
+          "methodCounts": {
+            "GET": 9,
+            "POST": 2
+          },
+          "loadingFailedCount": 0,
+          "requests": [
+            {
+              "method": "GET",
+              "path": "/skillcred/",
+              "startMs": 0.824,
+              "resourceSize": 44129,
+              "transferSize": 15290,
+              "status": 200,
+              "endMs": 470.384
+            },
+            {
+              "method": "GET",
+              "path": "/skillcred/fonts/InterVariable.woff2",
+              "startMs": 475.527,
+              "resourceSize": 115288,
+              "transferSize": 116004,
+              "status": 200,
+              "endMs": 806.696
+            },
+            {
+              "method": "GET",
+              "path": "/skillcred/styles.css",
+              "startMs": 475.831,
+              "resourceSize": 70133,
+              "transferSize": 15174,
+              "status": 200,
+              "endMs": 699.828
+            },
+            {
+              "method": "GET",
+              "path": "/skillcred/app.js",
+              "startMs": 475.954,
+              "resourceSize": 46959,
+              "transferSize": 11394,
+              "status": 200,
+              "endMs": 814.661
+            },
+            {
+              "method": "GET",
+              "path": "/brand/portal-world.svg",
+              "startMs": 476.102,
+              "resourceSize": 285,
+              "transferSize": 657,
+              "status": 200,
+              "endMs": 823.761
+            },
+            {
+              "method": "GET",
+              "path": "/brand/osa-transition.js",
+              "startMs": 476.169,
+              "resourceSize": 3339,
+              "transferSize": 3864,
+              "status": 200,
+              "endMs": 830.216
+            },
+            {
+              "method": "GET",
+              "path": "/skillcred/fonts/JetBrainsMono-Regular.woff2",
+              "startMs": 804.832,
+              "resourceSize": 18652,
+              "transferSize": 19366,
+              "status": 200,
+              "endMs": 1090.493
+            },
+            {
+              "method": "GET",
+              "path": "/skillcred/fonts/InstrumentSerif-Italic.woff2",
+              "startMs": 804.976,
+              "resourceSize": 14108,
+              "transferSize": 14822,
+              "status": 200,
+              "endMs": 979.768
+            },
+            {
+              "method": "POST",
+              "path": "/skillcred-api/demo/issue",
+              "startMs": 949.471,
+              "resourceSize": 1486,
+              "transferSize": 2153,
+              "status": 200,
+              "endMs": 1143.657
+            },
+            {
+              "method": "GET",
+              "path": "/skillcred/favicon.svg",
+              "startMs": 1103.815,
+              "resourceSize": 442,
+              "transferSize": 814,
+              "status": 200,
+              "endMs": 1220.647
+            },
+            {
+              "method": "POST",
+              "path": "/skillcred-api/demo/verify",
+              "startMs": 2863.813,
+              "resourceSize": 199,
+              "transferSize": 866,
+              "status": 200,
+              "endMs": 3393.809
+            }
+          ]
+        }
+      }
+    }
+  },
+  "sameReportConfig": {
+    "mobile": true,
+    "desktop": true
+  },
+  "conclusion": {
+    "requirement": "Performance 100 remains open for both current viewports. Other three categories are 100 in both.",
+    "mobile": "Five raw wall-long tasks versus one; all tasks have recorded CPU below 50 ms. Initial layout and paint dominate the longest task, with similar recorded CPU and layout object counts. app.js evaluation CPU did not increase. No compositeFailed or clock pulse animation was captured.",
+    "desktop": "Four raw wall-long tasks versus one. Largest task is a two-microtask event without direct stack evidence; recorded thread CPU is 6.410 ms despite 264.240 ms wall. Existing noncomposited animation event/property counts are unchanged; no clock pulse animation or halo failure was captured.",
+    "nextAction": "Retain unchanged acceptance gate and namespace correction, document valid failed measurements and attribution limits. These captures do not justify another speculative app/CSS modification or a rerun solely to seek a score."
+  }
+}
