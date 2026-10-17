@@ -80,10 +80,10 @@ class OperationsTest(unittest.TestCase):
  def test_matrix_missing_and_partial(self):
   self.assertEqual(matrix.assess({})["status"],"blocked")
   sha="a"*40; digest="b"*64
-  d={"schema_version":2,"commit_sha":sha,"artifact_sha256":digest,
+  d={"schema_version":2,"repository":"osmanosmanov6880-bot/osgard-world","commit_sha":sha,"artifact_sha256":digest,
      "human_approval":False,"payments_enabled":False,
      "checks":{key:{"status":"passed","commit_sha":sha,"artifact_sha256":digest,
-                    "evidence_url":"https://github.com/example/repo/actions/runs/1"}
+                    "evidence_url":"https://github.com/osmanosmanov6880-bot/osgard-world/actions/runs/1"}
                for key in matrix.GATES}}
   self.assertEqual(matrix.assess(d)["status"],"ready_for_human_review")
   d["checks"]["backup_recovery"]["status"]="unknown"
@@ -93,6 +93,12 @@ class OperationsTest(unittest.TestCase):
   d["checks"]["source_build"]["commit_sha"]="c"*40
   self.assertEqual(matrix.assess(d)["status"],"blocked")
   d["checks"]["source_build"]["commit_sha"]=sha
+  d["checks"]["source_build"]["evidence_url"]="https://github.com/attacker/other/actions/runs/123"
+  self.assertEqual(matrix.assess(d)["status"],"blocked")
+  d["checks"]["source_build"]["evidence_url"]="https://github.com/osmanosmanov6880-bot/osgard-world/actions/runs/1"
+  d["repository"]="attacker/other"
+  self.assertEqual(matrix.assess(d)["status"],"blocked")
+  d["repository"]="osmanosmanov6880-bot/osgard-world"
   d["payments_enabled"]=True
   self.assertEqual(matrix.assess(d)["status"],"blocked")
 if __name__=="__main__":unittest.main()

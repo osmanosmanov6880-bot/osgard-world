@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Release-readiness policy; fail closed on forged, partial or mismatched evidence."""
 import argparse
-import hashlib
 import json
 import re
 import sys
@@ -12,9 +11,12 @@ COMMIT=re.compile(r"^(?:[a-f0-9]{40}|[a-f0-9]{64})$")
 def assess(data):
     errors=[]
     if not isinstance(data,dict):raise ValueError("evidence must be an object")
-    if set(data.get("checks",{})) - set(GATES) if isinstance(data.get("checks",{}),dict) else False:
+    if isinstance(data.get("checks"),dict) and set(data["checks"]) - set(GATES):
         errors.append("unexpected evidence gates")
     if data.get("schema_version")!=2:errors.append("schema_version")
+    repository=data.get("repository")
+    if repository!="osmanosmanov6880-bot/osgard-world":
+        errors.append("repository must identify canonical OSGARD source")
     commit=data.get("commit_sha")
     artifact=data.get("artifact_sha256")
     if not isinstance(commit,str) or not COMMIT.fullmatch(commit):errors.append("commit_sha")
@@ -29,7 +31,9 @@ def assess(data):
         if item.get("commit_sha")!=commit or item.get("artifact_sha256")!=artifact:
             errors.append(gate+": evidence does not match candidate")
         evidence=item.get("evidence_url")
-        if not isinstance(evidence,str) or not re.fullmatch(r"https://github\.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+/actions/runs/[1-9][0-9]*",evidence):
+        if not isinstance(evidence,str) or not re.fullmatch(
+            r"https://github\.com/osmanosmanov6880-bot/osgard-world/actions/runs/[1-9][0-9]*", evidence
+        ):
             errors.append(gate+": missing auditable CI URL")
     if data.get("human_approval") is not False:errors.append("human approval must remain pending")
     if data.get("payments_enabled") is not False:errors.append("payments must remain disabled")
