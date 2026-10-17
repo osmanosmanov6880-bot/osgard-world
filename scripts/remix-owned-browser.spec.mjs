@@ -8,7 +8,9 @@ const fixtureTokens = { alice: 'fixture-only-core-session-alice', bob: 'fixture-
 
 async function ownedFixture(page, info, { creationEnabled = true, signedIn = true, shared = null } = {}) {
   info.annotations.push({ type: 'evidence-scope', description: 'Real browser; explicit Core and REMIX HTTP fixtures; separate from live server and Unity verification.' })
-  if (signedIn) await page.addInitScript(({ key, token }) => sessionStorage.setItem(key, token), { key: sessionKey, token: fixtureTokens.alice })
+  if (signedIn) await page.addInitScript(({ key, token, origin }) => {
+    if (location.origin === origin) sessionStorage.setItem(key, token)
+  }, { key: sessionKey, token: fixtureTokens.alice, origin: new URL(info.project.use.baseURL).origin })
   const calls = shared?.calls || [], errors = shared?.errors || [], matches = shared?.matches || new Map(), attempts = shared?.attempts || new Map()
   let releaseMetadata
   const service = shared || {
