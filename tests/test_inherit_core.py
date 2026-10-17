@@ -8,6 +8,7 @@ from pathlib import Path
 
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'server'))
 from core_model import Fault,now
+import core_server
 from core_server import Store
 
 
@@ -114,6 +115,51 @@ class InheritCoreTests(unittest.TestCase):
     def _offer_outcome(self,wid,who):
         try:self.offer(wid,to_user=who);return 200
         except Fault as error:return error.status
+
+
+    def test_real_http_auth_and_private_routing(self):
+        import json
+        import time
+        from urllib.request import Request, urlopen
+        from urllib.error import HTTPError
+        root=Path(self.tmp.name)/'public'
+        root.mkdir(exist_ok=True)
+        server=core_server.create_server(root,Path(self.tmp.name)/'core.sqlite',port=0)
+        service=threading.Thread(target=server.serve_forever,daemon=True)
+        service.start()
+        self.addCleanup(server.server_close)
+        self.addCleanup(lambda:service.join(timeout=5))
+        self.addCleanup(server.shutdown)
+        tokens={'alpha':'A'*50,'bravo':'B'*50}
+        with server.store.transaction() as db:
+            for who,token in tokens.items():
+                db.execute('INSERT INTO sessions VALUES(?,?,?)',(
+                    core_server.digest(token),self.ids[who],time.time()+3600))
+        url=f"http://127.0.0.1:{server.server_address[1]}/api/core/"
+        def http(method,route,who=None,payload=None):
+            headers={'Accept':'application/json'}
+            if who:headers['Authorization']='Bearer '+tokens[who]
+            data=None
+            if method=='POST':
+                data=json.dumps(payload).encode()
+                headers['Content-Type']='application/json'
+                headers['Idempotency-Key']=uuid.uuid4().hex
+            request=Request(url+route,data=data,headers=headers,method=method)
+            try:
+                with urlopen(request,timeout=5) as response:
+                    return response.status,json.load(response)
+            except HTTPError as error:
+                with error:return error.code,json.load(error)
+        self.assertEqual(http('GET','inherit/worlds')[0],401)
+        status,created=http('POST','inherit/worlds','alpha',{'title':'HTTP island'})
+        self.assertEqual(status,200,created)
+        wid=created['worldId']
+        self.assertEqual(http('GET','inherit/worlds/'+wid,'bravo')[0],404)
+        self.assertEqual(http('GET','inherit/worlds/'+wid,'alpha')[0],200)
+        self.assertEqual(http('POST','inherit/worlds','alpha',{'title':'bad'},
+                              )[0],200)
+        self.assertEqual(http('POST','auth/logout','alpha',{})[0],200)
+        self.assertEqual(http('GET','inherit/worlds/'+wid,'alpha')[0],401)
 
 
 if __name__=='__main__':unittest.main()
