@@ -1,0 +1,39 @@
+name: Core backup semantic integrity
+
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - "scripts/verify-core-backup.py"
+      - "server/core_inherit.py"
+      - "tests/test_core_inherit_backup_semantics.py"
+      - "tests/test_core_backup_recovery.py"
+      - ".github/workflows/core-backup-semantic.yml"
+  push:
+    branches: [master]
+    paths:
+      - "scripts/verify-core-backup.py"
+      - "server/core_inherit.py"
+      - "tests/test_core_inherit_backup_semantics.py"
+      - "tests/test_core_backup_recovery.py"
+      - ".github/workflows/core-backup-semantic.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backup-integrity:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Compile verifier and immutable lineage model
+        run: python -m py_compile scripts/verify-core-backup.py server/core_inherit.py
+      - name: Validate generic and Core backup safety
+        run: python -m unittest discover -s tests -p 'test_core_backup_recovery.py' -v
+      - name: Validate real INHERIT SQLite copies and rejection of corrupt snapshots
+        run: python -m unittest discover -s tests -p 'test_core_inherit_backup_semantics.py' -v
