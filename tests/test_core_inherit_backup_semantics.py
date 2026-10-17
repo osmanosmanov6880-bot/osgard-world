@@ -114,6 +114,21 @@ class InheritBackupSemanticTests(InheritFixture, unittest.TestCase):
             self.assertEqual(db.execute('PRAGMA foreign_key_check').fetchall(), [])
         self.assert_rejected(copy)
 
+    def test_core_backup_predating_inherit_remains_supported(self):
+        # A schema with none of the additive INHERIT tables is allowed, even
+        # though a partially missing INHERIT schema is always rejected.
+        copy = self.snapshot()
+        with sqlite3.connect(copy) as db:
+            for table in ('inherit_operations', 'inherit_notifications',
+                          'inherit_handoffs', 'inherit_generations',
+                          'inherit_members', 'inherit_worlds', 'inherit_meta'):
+                db.execute('DROP TABLE ' + table)
+        report = verifier.drill(copy)
+        self.assertTrue(report['core_schema_checked'])
+        self.assertFalse(report['inherit_lineage_checked'])
+        self.assertEqual(report['inherit_worlds_checked'], 0)
+        self.assertEqual(report['inherit_generations_checked'], 0)
+
     def test_sqlite_only_explicitly_skips_application_semantics(self):
         world = self.append(self.create())['world']
         copy = self.snapshot()
