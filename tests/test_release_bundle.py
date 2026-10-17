@@ -44,6 +44,16 @@ class BundleTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,"already exist"):
             self.make()
         self.assertEqual(self.zip.read_bytes(),b"do not touch")
+    def test_existing_manifest_not_deleted_after_failure(self):
+        self.manifest.write_bytes(b"existing-approved-manifest")
+        with self.assertRaisesRegex(ValueError,"already exist"):
+            self.make()
+        self.assertEqual(self.manifest.read_bytes(),b"existing-approved-manifest")
+    def test_existing_archive_survives_failed_validation(self):
+        self.zip.write_bytes(b"approved-existing-archive")
+        with self.assertRaisesRegex(ValueError,"already exist"):
+            self.make()
+        self.assertEqual(self.zip.read_bytes(),b"approved-existing-archive")
     def test_manifest_outside_build_root(self):
         with self.assertRaisesRegex(ValueError,"outside"):
             bundle.build(self.dist,"a"*40,self.zip,self.dist/"manifest.json")
