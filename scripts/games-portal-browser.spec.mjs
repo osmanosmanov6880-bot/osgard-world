@@ -172,3 +172,90 @@ test('two catalog tabs exchange favorites without echoing storage writes', async
     await peer.close()
   }
 })
+
+test('record catalog browser startup and filter costs without a synthetic Lighthouse pass', async ({ page }, testInfo) => {
+  await page.addInitScript(() => {
+    const evidence = { longTasks: [], layoutShifts: [], observerSupport: {} }
+    for (const kind of ['longtask', 'layout-shift']) {
+      const supported = PerformanceObserver.supportedEntryTypes?.includes(kind) === true
+      evidence.observerSupport[kind] = supported
+      if (!supported) continue
+      const observer = new PerformanceObserver(list => {
+        for (const entry of list.getEntries()) {
+          if (kind === 'longtask') evidence.longTasks.push({
+            startMs: Math.round(entry.startTime * 100) / 100,
+            durationMs: Math.round(entry.duration * 100) / 100,
+          })
+          else if (!entry.hadRecentInput) evidence.layoutShifts.push({
+            startMs: Math.round(entry.startTime * 100) / 100,
+            value: entry.value,
+          })
+        }
+      })
+      observer.observe({ type: kind, buffered: true })
+    }
+    window.__osgardCatalogPerf = evidence
+  })
+  const errors = []
+  page.on('pageerror', error => errors.push(error.message))
+  await openCatalog(page)
+  await page.waitForTimeout(250)
+  const snapshot = await page.evaluate(() => {
+    const durations = []
+    const search = document.getElementById('game-search')
+    // Measure actual synchronous input handlers on the same renderer clock,
+    // not Playwright roundtrip/network latency.
+    for (const value of ['swarm', 'север сна', 'remix', '', 'ZION-030', '']) {
+      search.value = value
+      const start = performance.now()
+      search.dispatchEvent(new Event('input', { bubbles: true }))
+      durations.push(Math.round((performance.now() - start) * 1000) / 1000)
+    }
+    const perf = window.__osgardCatalogPerf
+    const nav = performance.getEntriesByType('navigation')[0]
+    const paint = performance.getEntriesByType('paint')
+    return {
+      source: 'local static catalogue fixture on Vite preview, not public Lighthouse',
+      urlPath: location.pathname,
+      viewport: { width: innerWidth, height: innerHeight },
+      navigation: nav ? {
+        domInteractiveMs: Math.round(nav.domInteractive),
+        domContentLoadedMs: Math.round(nav.domContentLoadedEventEnd),
+        loadMs: Math.round(nav.loadEventEnd),
+      } : null,
+      firstContentfulPaintMs: paint.find(x => x.name === 'first-contentful-paint')?.startTime ?? null,
+      resources: performance.getEntriesByType('resource').length,
+      inputHandlerDurationsMs: durations,
+      observerSupport: perf.observerSupport,
+      longTasks: perf.longTasks,
+      layoutShifts: perf.layoutShifts,
+    }
+  })
+  await page.waitForTimeout(100)
+  const result = await page.evaluate(original => {
+    const p = window.__osgardCatalogPerf
+    const tasks = p.longTasks
+    return {
+      ...original,
+      longTasks: tasks,
+      sumLongTaskExcessMs: Math.round(tasks.reduce((sum, task) => sum + Math.max(0, task.durationMs - 50), 0) * 100) / 100,
+      observedCls: Math.round(p.layoutShifts.reduce((sum, entry) => sum + entry.value, 0) * 1000000) / 1000000,
+      caveat: 'Long-task excess is descriptive only; it is NOT Lighthouse simulated TBT or a performance budget pass.',
+    }
+  }, snapshot)
+  await expect(page.locator('#games-grid .card:not([hidden])')).toHaveCount(19)
+  expect(errors).toEqual([])
+  expect(result.inputHandlerDurationsMs).toHaveLength(6)
+  expect(result.inputHandlerDurationsMs.every(x => Number.isFinite(x) && x >= 0)).toBe(true)
+  const serialized = JSON.stringify(result, null, 2)
+  await testInfo.attach('games-catalog-local-observation.json', { body: serialized, contentType: 'application/json' })
+  console.log('GAMES_LOCAL_OBSERVATION ' + JSON.stringify({
+    profile: testInfo.project.name,
+    fcpMs: result.firstContentfulPaintMs,
+    inputHandlerDurationsMs: result.inputHandlerDurationsMs,
+    longTasks: result.longTasks.length,
+    longTaskExcessMs: result.sumLongTaskExcessMs,
+    observedCls: result.observedCls,
+    longTaskSupported: result.observerSupport.longtask,
+  }))
+})
