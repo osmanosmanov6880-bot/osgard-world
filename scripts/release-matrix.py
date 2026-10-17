@@ -6,13 +6,14 @@ import json
 import re
 import sys
 from pathlib import Path
+from urllib.parse import urlsplit
 GATES=("source_build","zip_integrity","game_routes","staging_http","rollback_readiness","backup_recovery","security_config")
 SHA=re.compile(r"^[a-f0-9]{64}$")
 COMMIT=re.compile(r"^(?:[a-f0-9]{40}|[a-f0-9]{64})$")
 def assess(data):
     errors=[]
     if not isinstance(data,dict):raise ValueError("evidence must be an object")
-    if set(data.get("checks",{})) - set(GATES) if isinstance(data.get("checks",{}),dict) else False:
+    if isinstance(data.get("checks"),dict) and set(data["checks"]) - set(GATES):
         errors.append("unexpected evidence gates")
     if data.get("schema_version")!=2:errors.append("schema_version")
     commit=data.get("commit_sha")
