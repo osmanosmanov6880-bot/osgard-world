@@ -114,3 +114,61 @@ test('Time route loads its real game with external font services unavailable', a
   }
   expect(fontRequests).toEqual([])
 })
+
+test('catalog search retains Russian and ZION-9 matches without repeated hidden-attribute writes', async ({ page }) => {
+  await openCatalog(page)
+  await page.locator('#game-search').fill('теневой протокол')
+  await expect(page.locator('#games-grid .card:not([hidden])')).toHaveCount(1)
+  await expect(page.locator('#games-grid [data-game="zion-030"]')).toBeVisible()
+  await expect(page.locator('#result-count')).toContainText('1 игровой проект')
+  const redundantWrites = await page.evaluate(async () => {
+    const grid = document.getElementById('games-grid')
+    let writes = 0
+    const observer = new MutationObserver(records => { writes += records.filter(record => record.attributeName === 'hidden').length })
+    observer.observe(grid, { subtree: true, attributes: true, attributeFilter: ['hidden'] })
+    document.getElementById('game-search').dispatchEvent(new Event('input', { bubbles: true }))
+    await Promise.resolve()
+    observer.disconnect()
+    return writes
+  })
+  expect(redundantWrites).toBe(0)
+})
+
+test('two catalog tabs exchange favorites without echoing storage writes', async ({ page }) => {
+  await openCatalog(page)
+  const peer = await page.context().newPage()
+  try {
+    await openCatalog(peer)
+    const spy = () => {
+      const oldSet = Storage.prototype.setItem
+      const writes = []
+      Storage.prototype.setItem = function (key, value) {
+        if (this === localStorage && key.startsWith('osgard')) writes.push(key)
+        return oldSet.call(this, key, value)
+      }
+      window.__osgardCatalogWrites = writes
+    }
+    await page.evaluate(spy)
+    await peer.evaluate(spy)
+    const a = page.locator('#games-grid [data-favorite="remix"]').first()
+    const b = peer.locator('#games-grid [data-favorite="remix"]').first()
+    await a.click()
+    await expect(b).toHaveAttribute('aria-pressed', 'true')
+    await expect(peer.locator('#favorite-count')).toHaveText('1')
+    expect(await peer.evaluate(() => window.__osgardCatalogWrites)).toEqual([])
+    expect(await page.evaluate(() => window.__osgardCatalogWrites)).toEqual([
+      'osgard.games.favorites.v1', 'osgard:play-collection:v1',
+    ])
+    await b.click()
+    await expect(a).toHaveAttribute('aria-pressed', 'false')
+    await expect(page.locator('#favorite-count')).toHaveText('0')
+    expect(await page.evaluate(() => window.__osgardCatalogWrites)).toEqual([
+      'osgard.games.favorites.v1', 'osgard:play-collection:v1',
+    ])
+    expect(await peer.evaluate(() => window.__osgardCatalogWrites)).toEqual([
+      'osgard.games.favorites.v1', 'osgard:play-collection:v1',
+    ])
+  } finally {
+    await peer.close()
+  }
+})
