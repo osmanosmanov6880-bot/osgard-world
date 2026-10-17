@@ -63,6 +63,20 @@ class OperationsTest(unittest.TestCase):
    self.assertEqual(config.audit(root)["status"],"passed")
    (root/".env.production").write_text("secret")
    self.assertEqual(config.audit(root)["status"],"blocked")
+ def test_nested_secret_directory_rejected(self):
+  with tempfile.TemporaryDirectory() as d:
+   root=Path(d)
+   (root/"_headers").write_text("X-Content-Type-Options: nosniff\\nReferrer-Policy: strict-origin")
+   (root/"_redirects").write_text("ok")
+   (root/"robots.txt").write_text("ok")
+   (root/".ssh").mkdir()
+   (root/".ssh"/"config").write_text("sensitive")
+   self.assertEqual(config.audit(root)["status"],"blocked")
+ def test_config_symlink_root_rejected(self):
+  with tempfile.TemporaryDirectory() as d:
+   root=Path(d);actual=root/"actual";actual.mkdir()
+   link=root/"alias";link.symlink_to(actual,target_is_directory=True)
+   self.assertEqual(config.audit(link)["status"],"blocked")
  def test_matrix_missing_and_partial(self):
   self.assertEqual(matrix.assess({})["status"],"blocked")
   sha="a"*40; digest="b"*64
