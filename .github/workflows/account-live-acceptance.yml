@@ -1,0 +1,54 @@
+name: OSGARD bounded account acceptance
+
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - ".github/workflows/account-live-acceptance.yml"
+      - ".github/qa/**"
+      - "ops/account-live-acceptance.json"
+  push:
+    branches: [master]
+    paths:
+      - "ops/account-live-acceptance.json"
+
+permissions:
+  contents: read
+
+jobs:
+  offline-safety:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Test fixed origin, first attempt, pacing, report and no-retry boundaries
+        run: python3 -m unittest discover -s .github/qa -p 'test_account_acceptance.py' -v
+
+  published-acceptance:
+    needs: offline-safety
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master' && github.run_attempt == 1 && github.repository == 'osmanosmanov6880-bot/osgard-world'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    concurrency:
+      group: osgard-frontend-deploy
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Verify frozen probes and execute the exact reviewed acceptance intent once
+        run: python3 .github/qa/account_acceptance.py
+      - name: Preserve credential-checked acceptance evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: account-live-acceptance-${{ github.run_id }}
+          path: account-live-evidence/*.json
+          if-no-files-found: warn
+          retention-days: 14
