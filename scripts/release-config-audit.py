@@ -22,16 +22,22 @@ def audit(root):
         headers=""
         failures.append("unreadable headers")
     declarations={}
+    active_scope=None
     for line in headers.splitlines():
         stripped=line.strip()
-        if not stripped or stripped.startswith("#") or ":" not in stripped:
+        if not stripped or stripped.startswith("#"):
+            continue
+        if line[0] not in " \\t":
+            active_scope=stripped
+            continue
+        if active_scope!="/*" or ":" not in stripped:
             continue
         name,value=stripped.split(":",1)
         declarations.setdefault(name.strip().lower(),[]).append(value.strip().lower())
     if "nosniff" not in declarations.get("x-content-type-options",[]):
-        failures.append("missing security header X-Content-Type-Options: nosniff")
+        failures.append("missing global security header X-Content-Type-Options: nosniff")
     if not any(value for value in declarations.get("referrer-policy",[])):
-        failures.append("missing security header Referrer-Policy:")
+        failures.append("missing global security header Referrer-Policy:")
     for path in root.rglob("*"):
         relative=path.relative_to(root)
         if path.is_symlink():
