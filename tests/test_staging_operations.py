@@ -23,6 +23,13 @@ class OperationsTest(unittest.TestCase):
  def test_http_origin(self):
   for url in ["http://staging.example.com","https://localhost","https://staging.example.com/path","https://user@staging.example.com"]:
    with self.subTest(url=url),self.assertRaises(ValueError):http.origin(url)
+ def test_private_ip_origins_rejected(self):
+  for url in ["https://10.0.0.1","https://192.168.1.5","https://127.0.0.1","https://[::1]","https://169.254.1.1"]:
+   with self.subTest(url=url),self.assertRaises(ValueError):http.origin(url)
+ def test_redirect_handler_fails_closed(self):
+  handler=http.BlockRedirects()
+  with self.assertRaisesRegex(ValueError,"redirect refused"):
+   handler.redirect_request(None,None,302,"redirect",{},"https://evil.example.org")
  def test_http_acceptance(self):
   result=http.probe("https://staging.example.com",opener=lambda req,timeout:HTTPResponse(req.full_url))
   self.assertEqual(result["status"],"passed")

@@ -10,13 +10,20 @@ import zipfile
 from pathlib import Path, PurePosixPath
 
 SHA=re.compile(r"^[a-f0-9]{64}$")
+MAX_FILES=20000
+MAX_ASSET_BYTES=25*1024*1024
+MAX_TOTAL_BYTES=1024*1024*1024
 def verify(archive, manifest):
     if not isinstance(manifest,dict) or manifest.get("schema_version")!=1:
         raise ValueError("invalid manifest schema")
     expected=manifest.get("files")
     if not isinstance(expected,list) or not expected:
         raise ValueError("manifest has no files")
+    if len(expected)>MAX_FILES:
+        raise ValueError("manifest exceeds file limit")
     index={}
+    folded=set()
+    total=0
     for row in expected:
         if not isinstance(row,dict) or set(row)!={"path","size","sha256"}:
             raise ValueError("invalid manifest entry")
@@ -26,6 +33,14 @@ def verify(archive, manifest):
         p=PurePosixPath(name)
         if p.is_absolute() or ".." in p.parts or str(p)!=name or "\\" in name or not name:
             raise ValueError("unsafe manifest path")
+        if name.casefold() in folded:
+            raise ValueError("case-colliding manifest path")
+        folded.add(name.casefold())
+        if row["size"]>MAX_ASSET_BYTES:
+            raise ValueError("manifest asset exceeds size limit")
+        total+=row["size"]
+        if total>MAX_TOTAL_BYTES:
+            raise ValueError("manifest exceeds total uncompressed limit")
         index[name]=row
     if manifest.get("file_count")!=len(index) or "index.html" not in index:
         raise ValueError("manifest file count/entrypoint mismatch")
@@ -33,7 +48,10 @@ def verify(archive, manifest):
     if archive.is_symlink() or not archive.is_file():
         raise ValueError("ZIP must be a regular file")
     seen=set()
+    folded_zip=set()
     with zipfile.ZipFile(archive) as z:
+        if len(z.infolist())>MAX_FILES+1000:
+            raise ValueError("ZIP exceeds entry count limit")
         for info in z.infolist():
             name=info.filename
             if not name or "\\" in name or name.startswith("/") or ".." in PurePosixPath(name).parts:
@@ -42,6 +60,9 @@ def verify(archive, manifest):
                 continue
             if name in seen:
                 raise ValueError("duplicate ZIP member")
+            if name.casefold() in folded_zip:
+                raise ValueError("case-colliding ZIP member")
+            folded_zip.add(name.casefold())
             seen.add(name)
             mode=(info.external_attr>>16)&0xF000
             if mode not in (0,stat.S_IFREG):

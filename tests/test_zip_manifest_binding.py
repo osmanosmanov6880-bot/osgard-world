@@ -64,6 +64,23 @@ class ZipManifestBindingTest(unittest.TestCase):
         self.pack();self.record["files"][0]["size"]=999
         with self.assertRaisesRegex(ValueError,"size differs"):
             gate.verify(self.zip,self.record)
+    def test_manifest_asset_size_bound(self):
+        self.pack()
+        self.record["files"][0]["size"]=gate.MAX_ASSET_BYTES+1
+        with self.assertRaisesRegex(ValueError,"size limit"):
+            gate.verify(self.zip,self.record)
+    def test_case_collision_in_manifest(self):
+        self.pack()
+        duplicate=dict(self.record["files"][0])
+        duplicate["path"]=duplicate["path"].upper()
+        self.record["files"].append(duplicate)
+        self.record["file_count"]=len(self.record["files"])
+        with self.assertRaisesRegex(ValueError,"case-colliding"):
+            gate.verify(self.zip,self.record)
+    def test_case_collision_in_zip(self):
+        self.pack(extra=("INDEX.HTML",b"surprise"))
+        with self.assertRaisesRegex(ValueError,"case-colliding"):
+            gate.verify(self.zip,self.record)
     def test_no_manifest_entrypoint(self):
         self.pack();self.record["files"]=[r for r in self.record["files"] if r["path"]!="index.html"]
         self.record["file_count"]=len(self.record["files"])

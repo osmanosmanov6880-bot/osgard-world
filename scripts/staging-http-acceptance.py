@@ -1,19 +1,31 @@
 #!/usr/bin/env python3
 """Read-only staging HTTP acceptance; allowlisted origin, bounded responses, no credentials."""
-import argparse,json,sys
+import argparse,json,sys,ipaddress
 from urllib.parse import urlsplit
-from urllib.request import Request,urlopen
+from urllib.request import Request, build_opener, HTTPRedirectHandler
 from urllib.error import HTTPError,URLError
 
 ROUTES=("/", "/play", "/games", "/intelligence", "/privacy", "/learning/program")
+class BlockRedirects(HTTPRedirectHandler):
+    def redirect_request(self,req,fp,code,msg,headers,newurl):
+        raise ValueError("HTTP redirect refused; inspect staging routing explicitly")
+def safe_opener(request,timeout=8):
+    return build_opener(BlockRedirects()).open(request,timeout=timeout)
 def origin(url):
     p=urlsplit(url)
     if p.scheme!="https" or not p.hostname or p.username or p.password or p.query or p.fragment or p.path not in ("","/"):
         raise ValueError("staging origin must be an HTTPS scheme+host, with no path, credentials or query")
-    if p.hostname in ("localhost","127.0.0.1","0.0.0.0") or p.hostname.endswith(".local"):
+    try:
+        address=ipaddress.ip_address(p.hostname)
+        if not address.is_global:
+            raise ValueError("private or reserved address refused")
+    except ValueError as err:
+        if str(err)=="private or reserved address refused":
+            raise
+    if p.hostname in ("localhost","0.0.0.0") or p.hostname.endswith((".local",".internal",".localhost")):
         raise ValueError("local/non-public staging host refused")
     return url.rstrip("/")
-def probe(base,routes=ROUTES,opener=urlopen):
+def probe(base,routes=ROUTES,opener=safe_opener):
     base=origin(base)
     results=[]
     for route in routes:

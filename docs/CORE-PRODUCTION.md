@@ -39,3 +39,9 @@ Before a schema or image upgrade, create and verify a backup. Keep `osgard-core-
 ## Limits before public launch
 
 This wiring makes the code reachable through the production stack; it does not complete production acceptance. Before relying on real users, configure and verify the host TLS/reverse-proxy trust chain and client-IP rate limits, test a full backup/restore on the target host, add external uptime and disk/volume alerts, review data retention and privacy requirements, and complete real browser/mobile and accessibility checks. No SSO, email recovery, AI provider, marketplace, payment integration, or payment processing is included.
+
+## Безопасность резервирования — усиленный сценарий
+
+`backup-core-production.sh` теперь использует уникальное имя снимка по UTC и PID, уникальный временный путь внутри Core-контейнера, приватный временный файл на хосте и trap для очистки после ошибок. Путь резервного каталога не должен быть симлинком. Не переиспользуйте старое имя архива; при ошибке копирования задача должна завершиться с ненулевым кодом без завершённого снимка.
+
+Перед включением расписания резервирования отдельно выполните практический тест на целевом Docker-хосте и проверьте журнал: CI выполняет только синтаксическую проверку и сценарии отказа через фальшивый docker, а не настоящую остановку/восстановление сервиса. Для восстановимости используйте `scripts/verify-core-backup.py` на полученном копировании и затем испытание бизнес-функций на изолированном сервере.

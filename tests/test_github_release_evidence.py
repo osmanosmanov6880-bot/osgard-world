@@ -29,6 +29,10 @@ def opener(replace=None):
 class EvidenceTests(unittest.TestCase):
     def test_all_five_valid(self):
         self.assertEqual(att.verify(evidence(),REPO,NAMES,opener())["status"],"verified")
+    def test_api_redirect_is_rejected_before_following(self):
+        handler=att.RejectAPIRedirects()
+        with self.assertRaisesRegex(ValueError,"redirect refused"):
+            handler.redirect_request(None,None,302,"redirect",{},"https://attacker.invalid")
     def test_other_commit_blocked(self):
         self.assertEqual(att.verify(evidence(),REPO,NAMES,opener({"head_sha":"b"*40}))["status"],"blocked")
     def test_failure_blocked(self):
