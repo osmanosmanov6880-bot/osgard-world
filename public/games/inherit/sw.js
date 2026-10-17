@@ -1,5 +1,5 @@
-const CACHE = 'inherit-shell-v6';
-const SHELL = ['/games/inherit/index.html', '/games/inherit/manifest.webmanifest', '/games/inherit/interface.js', '/games/inherit/interface.css'];
+const CACHE = 'inherit-shell-v7';
+const SHELL = ['/games/inherit/index.html', '/games/inherit/manifest.webmanifest', '/games/inherit/interface.js', '/games/inherit/interface.css', '/games/inherit/account.js', '/games/inherit/account.css'];
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(SHELL)).then(() => self.skipWaiting()));
 });

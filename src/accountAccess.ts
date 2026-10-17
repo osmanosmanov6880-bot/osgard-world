@@ -1,4 +1,4 @@
-const ALLOWED = new Set(['/teams','/deliveries','/purchases','/workspace', '/workspace/overview', '/account', '/learning/campus', '/learning/organizer', '/learning/enrollment', '/games/remix']);
+const ALLOWED = new Set(['/teams','/deliveries','/purchases','/workspace', '/workspace/overview', '/account', '/learning/campus', '/learning/organizer', '/learning/enrollment', '/games/remix', '/games/inherit', '/games/inherit/index.html']);
 export function safeReturnTo(value: string | null | undefined) {
     if (!value || value.length > 1000 || /[\\\r\n]/.test(value) || !value.startsWith('/') || value.startsWith('//'))
         return '/workspace';
@@ -8,11 +8,22 @@ export function safeReturnTo(value: string | null | undefined) {
             return '/workspace';
         const p = new URLSearchParams();
         if (pathname === '/games/remix') {
-            const challenge = u.searchParams.get('challenge'), lang = u.searchParams.get('lang');
-            if (challenge && /^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$/.test(challenge)) p.set('challenge', challenge);
+            const challenge = u.searchParams.get('challenge'), invitation = u.searchParams.get('invitation'), lang = u.searchParams.get('lang');
+            if (invitation && /^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$/.test(invitation)) p.set('invitation', invitation);
+            else if (challenge && /^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$/.test(challenge)) p.set('challenge', challenge);
             if (lang === 'ru' || lang === 'en') p.set('lang', lang);
             if (u.searchParams.get('mode') === 'account') p.set('mode', 'account');
             return '/games/remix/' + (p.size ? '?' + p : '');
+        }
+        if (pathname === '/games/inherit' || pathname === '/games/inherit/index.html') {
+            for (const key of ['world', 'invitation']) {
+                const value = u.searchParams.get(key);
+                if (value && /^[a-f0-9]{32}$/.test(value)) p.set(key, value);
+            }
+            const lang = u.searchParams.get('lang');
+            if (lang === 'ru' || lang === 'en') p.set('lang', lang);
+            if (u.searchParams.get('mode') === 'account') p.set('mode', 'account');
+            return '/games/inherit/' + (p.size ? '?' + p : '');
         }
         for (const key of ['project', 'submission','delivery','team','order']) {
             const v = u.searchParams.get(key);

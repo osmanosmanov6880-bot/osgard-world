@@ -245,7 +245,7 @@ function setLanguage(value){
  locale=value==='en'?'en':'ru';persistence?.setItem('osgard:game-language',locale);
  document.documentElement.lang=locale;
  try{const url=new URL(location.href);url.searchParams.set('lang',locale);history.replaceState(null,'',url.href)}catch{}
- if(ready){apply();updateStorage();document.querySelectorAll('[data-game-language]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.gameLanguage===locale)))}
+ if(ready){apply();updateStorage();document.querySelectorAll('[data-game-language]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.gameLanguage===locale)));window.InheritAccount?.render()}
 }
 function languageTools(){
  const bar=document.createElement('div');bar.className='game-language';bar.dataset.localeTools='';bar.setAttribute('role','group');bar.setAttribute('aria-label','Язык / Language');
@@ -281,6 +281,7 @@ dynamic.push(
 );
 function ephemeralText(key){if(!persistence?.ephemeral)return key;return ({'Interest saved on this device':'Saved for this open page only','Founder interest saved locally':'Saved for this open page only','Server unavailable — saved as a local generation':'Server unavailable — this generation remains in the open page. Export before leaving.','Your offline lineage is safe on this device.':'The local world remains in this open page. Export before leaving.','Saved locally. The server has not confirmed this generation.':'This generation stays in the open page only. Server confirmation is unknown; export before leaving.'})[key]||key}
 function updateStorage(){
+ if(window.InheritAccount?.isAccountMode()){window.InheritAccount.renderStorage();return}
  const save=document.querySelector('#inherit-save-state'),online=document.querySelector('#inherit-online-state'),recovery=document.querySelector('#inherit-recovery');
  if(save)save.textContent=t(persistence?.ephemeral?'Save unavailable: the world stays in this open page only. Export it before leaving.':'Save: this browser only. Use Export lineage to keep a separate copy.');
  if(online)online.textContent=t(persistence?.online===true?'Online: the world service responded. Each generation still needs server confirmation.':persistence?.online===false?'Online: unavailable. This is a local world.':'Online: checking the world service; local play is available.');
@@ -312,6 +313,7 @@ function init(){
  apply();updateStorage();watch();
 }
 window.InheritUI={t,setLanguage,getLanguage:()=>locale,updateStorage};
+window.InheritUI.addTranslations=values=>{Object.assign(dictionary,values);if(ready)apply()};
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 
 })();

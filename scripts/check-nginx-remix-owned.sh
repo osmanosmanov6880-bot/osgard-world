@@ -42,6 +42,7 @@ docker run --detach --name "$fixture_name" --network "$upstream_network" --netwo
 start_guard() {
   local creation_args=()
   if [[ "$1" == "enabled" ]]; then creation_args=(--enable-owned-creation); fi
+  if [[ "$1" == "participants" ]]; then creation_args=(--enable-owned-creation --enable-participant-admission); fi
   docker run --detach --name "$guard_name" --network "$frontend_network" --network-alias remix-guard \
     --read-only --init --cap-drop ALL --security-opt no-new-privileges \
     --pids-limit 96 --memory 128m --cpus 0.5 --tmpfs /tmp:size=4m,noexec,nosuid \
@@ -72,6 +73,7 @@ wait_ready() {
 }
 wait_ready
 docker exec "$nginx_name" nginx -t
+python3 scripts/core-inherit-gateway-smoke.py "$candidate_base"
 python3 scripts/remix-owned-gateway-smoke.py "$candidate_base" active "$candidate_dir/private-fixture.json"
 docker exec "$fixture_name" python -c \
   "import urllib.request; urllib.request.urlopen(urllib.request.Request('http://127.0.0.1:8080/__fixture/owned-terminal',data=b'{}',headers={'Content-Type':'application/json'}),timeout=4).read()"
@@ -89,3 +91,39 @@ wait_ready
 docker stop "$core_name" >/dev/null
 python3 scripts/remix-owned-gateway-smoke.py "$candidate_base" core-offline "$candidate_dir/private-fixture.json"
 echo 'PASS actual Core sessions, protected aliases, one creation, sequence reservation, durable protected cache, disabled-creation rollback and separate service outages.'
+
+# The original one-player fixture above deliberately models a legacy bug. Use a
+# fresh, isolated two-player fixture and empty disposable guard volume for the
+# participant contract; neither data reset touches production or Core accounts.
+docker start "$core_name" >/dev/null
+docker rm -f "$guard_name" "$fixture_name" >/dev/null
+docker volume rm "$result_volume" >/dev/null
+docker volume create "$result_volume" >/dev/null
+docker run --detach --name "$fixture_name" --network "$upstream_network" --network-alias remix-api \
+  --read-only --cap-drop ALL --security-opt no-new-privileges \
+  --mount "type=bind,src=$checkout_dir,dst=/source,readonly" \
+  "$guard_image" python /source/scripts/remix-guard-fixture.py --host 0.0.0.0 --port 8080 --two-player >/dev/null
+start_guard participants
+wait_ready
+python3 scripts/remix-participants-gateway-smoke.py "$candidate_base" active "$candidate_dir/participants-private.json"
+docker exec "$fixture_name" python -c \
+  "import urllib.request; urllib.request.urlopen(urllib.request.Request('http://127.0.0.1:8080/__fixture/owned-terminal',data=b'{}',headers={'Content-Type':'application/json'}),timeout=4).read()"
+python3 scripts/remix-participants-gateway-smoke.py "$candidate_base" finalized "$candidate_dir/participants-private.json"
+# The replacement guard must use its durable terminal snapshot even if the
+# upstream again reports PLAYING; re-fetching and re-freezing cannot pass.
+docker exec "$fixture_name" python -c \
+  "import urllib.request; urllib.request.urlopen(urllib.request.Request('http://127.0.0.1:8080/__fixture/playing',data=b'{}',headers={'Content-Type':'application/json'}),timeout=4).read()"
+docker rm -f "$guard_name" >/dev/null
+start_guard disabled
+wait_ready
+python3 scripts/remix-participants-gateway-smoke.py "$candidate_base" restored "$candidate_dir/participants-private.json"
+docker stop "$fixture_name" >/dev/null
+python3 scripts/remix-participants-gateway-smoke.py "$candidate_base" legacy-offline "$candidate_dir/participants-private.json"
+docker start "$fixture_name" >/dev/null
+wait_ready
+docker stop "$core_name" >/dev/null
+python3 scripts/remix-participants-gateway-smoke.py "$candidate_base" core-offline "$candidate_dir/participants-private.json"
+docker start "$core_name" >/dev/null
+wait_ready
+python3 scripts/remix-participants-gateway-smoke.py "$candidate_base" logout "$candidate_dir/participants-private.json"
+echo 'PASS two Core participants, independent sequences, immutable two-player result, flags-off schema-3 restart, service outages and logout.'

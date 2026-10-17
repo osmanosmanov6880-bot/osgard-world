@@ -8,6 +8,9 @@ remix_guard_image="${OSGARD_REMIX_GUARD_IMAGE:-osgard-remix-guard:release}"
 # Foundation release: a later reviewed release may enable creation only after
 # this ACL-aware build is the verified rollback target.
 remix_owned_creation="${OSGARD_REMIX_OWNED_CREATION:-1}"
+# Keep admission disabled until this participant-aware foundation is the exact
+# verified rollback container. Existing participant ACLs are never flag-gated.
+remix_participant_admission="${OSGARD_REMIX_PARTICIPANT_ADMISSION:-0}"
 state_file="/tmp/osgard-frontend-activation.state"
 log_file="/tmp/osgard-frontend-activation.log"
 core_previous="osgard-core-api-previous-$$"
@@ -27,6 +30,22 @@ activation_worker_started=0
 pid=""
 core_commerce_env="/etc/osgard/core-commerce.env"
 core_commerce_args=()
+
+verify_remix_participant_rollout() {
+  if [[ "$remix_participant_admission" != "0" && "$remix_participant_admission" != "1" ]]; then
+    echo 'OSGARD_REMIX_PARTICIPANT_ADMISSION must be 0 or 1.' >&2
+    return 1
+  fi
+  [[ "$remix_participant_admission" == "0" ]] && return 0
+  if [[ "$remix_owned_creation" != "1" ]]; then
+    echo 'Participant admission requires the protected owned-match mode.' >&2
+    return 1
+  fi
+  if ! docker exec osgard-remix-guard python -c "import json,urllib.request; h=json.load(urllib.request.urlopen('http://127.0.0.1:8081/v2/capabilities',timeout=6)); assert h.get('authPolicyVersion') == 1 and h.get('participantPolicyVersion') == 1 and h.get('ownershipPolicy') == 'confirmed-durable-binding'"; then
+    echo 'Participant admission requires a verified participant-aware rollback build. Deploy the disabled participant foundation first.' >&2
+    return 1
+  fi
+}
 
 verify_remix_owned_rollout() {
   if [[ "$remix_owned_creation" != "0" && "$remix_owned_creation" != "1" ]]; then
@@ -381,6 +400,7 @@ trap 'stop_activation_worker 129' HUP
     fi
   fi
   verify_remix_owned_rollout
+  verify_remix_participant_rollout
   if docker inspect osgard-core-api >/dev/null 2>&1; then
     old_volume="$(docker inspect --format '{{range .Mounts}}{{if eq .Destination "/var/lib/osgard-core"}}{{if eq .Type "volume"}}{{.Name}}{{end}}{{end}}{{end}}' osgard-core-api)"
     if [[ -n "$old_volume" ]]; then
@@ -453,6 +473,7 @@ trap 'stop_activation_worker 129' HUP
     --upstream http://remix-api:8080 --database /var/lib/remix-guard/terminal.sqlite3 \
     --core-upstream http://core-api:4173 --core-host osgard.world)
   if [[ "$remix_owned_creation" == "1" ]]; then remix_guard_command+=(--enable-owned-creation); fi
+  if [[ "$remix_participant_admission" == "1" ]]; then remix_guard_command+=(--enable-participant-admission); fi
   if ! docker run -d --name osgard-remix-guard --network "$core_network" --network-alias remix-guard \
     --label org.osgard.service=remix-guard \
     --restart unless-stopped --init --read-only --security-opt no-new-privileges --cap-drop ALL \
@@ -467,7 +488,7 @@ trap 'stop_activation_worker 129' HUP
   fi
   remix_guard_ready=0
   for _ in $(seq 1 15); do
-    if docker exec osgard-remix-guard python -c "import json, urllib.request; h=json.load(urllib.request.urlopen('http://127.0.0.1:8081/health', timeout=6)); assert h.get('service') == 'osgard-remix-guard' and h.get('frozenResults') is True and h.get('status') == 'ok' and h.get('authPolicyVersion') == 1 and h.get('creationEnabled') is bool(int('$remix_owned_creation'))" \
+    if docker exec osgard-remix-guard python -c "import json, urllib.request; h=json.load(urllib.request.urlopen('http://127.0.0.1:8081/health', timeout=6)); assert h.get('service') == 'osgard-remix-guard' and h.get('frozenResults') is True and h.get('status') == 'ok' and h.get('authPolicyVersion') == 1 and h.get('creationEnabled') is bool(int('$remix_owned_creation')) and h.get('participantPolicyVersion') == 1 and h.get('participantAdmissionEnabled') is bool(int('$remix_participant_admission'))" \
       && docker exec osgard-remix-guard python -c "import http.client; c=http.client.HTTPConnection('core-api',4173,timeout=3); c.request('GET','/api/core/auth/me',headers={'Host':'osgard.world','Accept':'application/json'}); r=c.getresponse(); assert r.status == 401; r.read(); c.close()" \
       && docker exec "$container_name" wget -q -T 8 -O - http://remix-guard:8081/health | grep -q 'osgard-remix-guard'; then
       remix_guard_ready=1

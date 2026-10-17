@@ -35,6 +35,19 @@ CORE_COLUMNS = {
     "commerce_requests": {"user_id", "key", "request_hash", "response"},
 }
 
+# Additive game tables are optional in pre-INHERIT backups. Once any is present,
+# all ACL, lineage and recovery tables plus immutable-history guards are required.
+INHERIT_COLUMNS = {
+    "inherit_meta": {"version"},
+    "inherit_worlds": {"id", "creator_id", "custodian_id", "revision", "generation", "custody_start",
+                       "baseline", "objects", "baseline_hash", "snapshot_hash", "pending_handoff"},
+    "inherit_members": {"world_id", "user_id", "joined_at"},
+    "inherit_generations": {"world_id", "number", "author_id", "delta", "objects", "parent_hash", "snapshot_hash"},
+    "inherit_handoffs": {"id", "world_id", "from_id", "to_id", "status", "expected_revision", "expires_at"},
+    "inherit_notifications": {"id", "user_id", "world_id", "invitation_id", "generation", "actor_id", "kind", "read_at"},
+    "inherit_operations": {"user_id", "key", "world_id", "invitation_id", "response", "created_at"},
+}
+
 
 def digest(path):
     hasher = hashlib.sha256()
@@ -125,12 +138,21 @@ def check_sqlite(path, sqlite_only=False):
         if not sqlite_only:
             if version != 1:
                 raise ValueError("unsupported Core schema version")
-            for table, required in CORE_COLUMNS.items():
+            expected_columns = dict(CORE_COLUMNS)
+            if tables & INHERIT_COLUMNS.keys():
+                expected_columns.update(INHERIT_COLUMNS)
+            for table, required in expected_columns.items():
                 if table not in tables:
                     raise ValueError("Core backup is missing an expected table")
                 columns = {column[1] for column in db.execute(f'PRAGMA table_info("{table}")')}
                 if not required.issubset(columns):
                     raise ValueError("Core backup is missing expected columns")
+            if tables & INHERIT_COLUMNS.keys():
+                if db.execute('SELECT version FROM inherit_meta').fetchall() != [(1,)]:
+                    raise ValueError("unsupported INHERIT schema version")
+                triggers = {row[0] for row in db.execute("SELECT name FROM sqlite_schema WHERE type='trigger'")}
+                if not {"inherit_generation_no_update", "inherit_generation_no_delete"} <= triggers:
+                    raise ValueError("Core backup is missing INHERIT history guards")
         return {"table_count": len(tables), "user_version": version}
 
 
