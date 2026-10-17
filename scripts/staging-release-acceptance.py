@@ -24,7 +24,7 @@ def evaluate(dist,archive,manifest):
     legacy=games.get("legacy_entrypoints")
     if type(zion) is not int or zion!=11 or type(legacy) is not int or legacy!=8:
         failed.append("game_entrypoint_count")
-    if not isinstance(bundle.get("zip_sha256"),str) or len(bundle["zip_sha256"])!=64:
+    if not isinstance(bundle.get("zip_sha256"),str) or not re.fullmatch(r"[a-f0-9]{64}",bundle["zip_sha256"]):
         failed.append("zip_sha256")
     return {"status":"ready_for_staging_review" if not failed else "blocked",
             "failed":failed,"checks":checks,"zip_sha256":bundle["zip_sha256"],
