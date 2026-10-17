@@ -79,7 +79,7 @@ const anonymousPlayerId=playerId;
 let selectedAccess='guest',ownedIdentity=null,ownedAccountId='',ownedCapabilities=null;
 let ownedBusy=false,ownedMetadataRequired=false,ownedOperationKey='',ownedAttemptStatus='',ownedNextCursor=null;
 let ownedRole='',ownedParticipantCount=0,ownedInvitationId='';
-let activeInvitation=null,admissionIntent=null,admissionBusy=false,invitationReading=false,admissionEpoch=0,invitationTimer=null;
+let activeInvitation=null,admissionIntent=null,admissionBusy=false,invitationReading=false,admissionEpoch=0,invitationTimer=null,admissionStorageCode='';
 const ownedJournalLimit=32;
 function coreCredential(){try{const value=sessionStorage.getItem(coreSessionKey)||'';return value.length<=4096&&!/\s/.test(value)?value:''}catch{return ''}}
 function isOwnedMatch(){return match?.accessMode==='core-owned'}
@@ -211,7 +211,7 @@ function persistAdmission(value){
  try{
   const key=admissionKey(value);if(localStorage.getItem(key)!==null)throw ownedRecoveryError('admission_pending');
   localStorage.setItem(key,JSON.stringify(value));
- }catch(error){if(error.code)throw error;remixStore.ephemeral=true;window.RemixUI?.updateStorage();throw ownedRecoveryError()}
+ }catch(error){if(error?.code==='admission_pending')throw error;remixStore.ephemeral=true;window.RemixUI?.updateStorage();throw ownedRecoveryError()}
 }
 function settleAdmission(value){
  if(!ownedAuthCurrent()||value.accountId!==ownedAccountId)return false;
@@ -226,7 +226,7 @@ function stopAdmissionWork(clear=false){
  admissionEpoch++;admissionBusy=false;invitationReading=false;
  if(invitationTimer){clearTimeout(invitationTimer);invitationTimer=null}
  if(activeInvitation)activeInvitation={...activeInvitation,admissionAllowed:false};
- if(clear){activeInvitation=null;admissionIntent=null;ownedInvitationId='';ownedRole='';ownedParticipantCount=0}
+ if(clear){activeInvitation=null;admissionIntent=null;ownedInvitationId='';ownedRole='';ownedParticipantCount=0;admissionStorageCode=''}
 }
 function admissionCurrent(epoch,token,accountId){return epoch===admissionEpoch&&token===operation&&accountId===ownedAccountId&&ownedAuthCurrent()}
 function validInvitation(value){
@@ -249,7 +249,8 @@ function accountMatchURL(invitationId=''){
  url.searchParams.set('lang',window.RemixUI?.getLanguage?.()||(['ru','en'].includes(routeParams.get('lang'))?routeParams.get('lang'):'ru'));
  url.searchParams.set('mode','account');return url;
 }
-function admissionMessage(text){panel.querySelector('#owned-admission-status').textContent=text}
+// A successful invitation GET does not prove this browser can save a new operation.
+function admissionMessage(text){panel.querySelector('#owned-admission-status').textContent=admissionStorageCode?ownedErrorMessage({code:admissionStorageCode}):text}
 function admissionErrorMessage(error){
  if(error.code==='admission_pending')return 'An invitation action is still unconfirmed. Check its saved operation before another action.';
  if(error.code==='owned_recovery_full'||error.code==='owned_recovery_unavailable')return ownedErrorMessage(error);
@@ -355,7 +356,10 @@ async function mutateAdmission(kind){
  if(!validId(recipient)||kind==='invite'&&recipient===ownedAccountId){admissionMessage('Enter the other account’s verified Core ID. This form does not search for accounts.');return}
  const key=window.crypto?.randomUUID?.();if(typeof key!=='string'||!/^[A-Za-z0-9_-]{16,100}$/.test(key)){admissionMessage('A secure invitation operation key is unavailable.');return}
  const intent={version:1,apiBase:ownedBase,accountId:ownedAccountId,operation:kind,operationKey:key,matchId:kind==='invite'?match.id:activeInvitation.matchId,invitationId:kind==='invite'?null:activeInvitation.id,recipientAccountId:recipient,savedAt:Date.now()};
- try{persistAdmission(intent)}catch(error){admissionMessage(admissionErrorMessage(error));syncControls();return}
+ try{persistAdmission(intent);admissionStorageCode=''}catch(error){
+  if(['owned_recovery_unavailable','owned_recovery_full'].includes(error.code))admissionStorageCode=error.code;
+  admissionMessage(admissionErrorMessage(error));syncControls();return;
+ }
  const epoch=admissionEpoch,token=operation,accountId=ownedAccountId;admissionIntent=intent;admissionBusy=true;
  if(invitationTimer){clearTimeout(invitationTimer);invitationTimer=null}syncControls();
  const path=kind==='invite'?'/v2/matches/'+encodeURIComponent(intent.matchId)+'/invitations':'/v2/invitations/'+encodeURIComponent(intent.invitationId)+'/'+kind;

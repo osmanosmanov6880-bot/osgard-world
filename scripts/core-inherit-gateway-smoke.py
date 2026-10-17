@@ -8,7 +8,38 @@ import http.client
 import importlib.util
 from pathlib import Path
 import sys
+import time
 from urllib.parse import urlsplit
+
+
+def connection_factory(port, *, clock=time.monotonic, sleep=time.sleep,
+                       connection_type=http.client.HTTPConnection):
+    # Core's production Nginx policy is 5 requests/second with a burst of 20.
+    # Pace this sequential CI probe below that rate, including its logout calls.
+    # Probe.request already encloses request() in its per-request/overall budget.
+    next_start = None
+
+    class Connection(connection_type):
+        def request(self, method, path, body=None, headers=None, **kwargs):
+            nonlocal next_start
+            started = clock()
+            deadline = started + self.timeout
+            if next_start is not None and started < next_start:
+                if next_start >= deadline:
+                    raise TimeoutError('Gateway pacing exceeds the remaining request budget')
+                sleep(next_start - started)
+            stamp = clock()
+            if stamp >= deadline or (next_start is not None and stamp < next_start):
+                raise TimeoutError('Gateway pacing did not complete within the request budget')
+            next_start = stamp + 0.25
+            return super().request(method, path, body, {**(headers or {}), 'Host': 'osgard.world'}, **kwargs)
+
+    def connect(host, *, timeout):
+        if host != 'osgard.world':
+            raise ValueError('Only the fixed Core host is permitted')
+        return Connection('127.0.0.1', port, timeout=timeout)
+
+    return connect
 
 
 def main():
@@ -22,15 +53,7 @@ def main():
     contract = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(contract)
 
-    class Connection(http.client.HTTPConnection):
-        def request(self, method, path, body=None, headers=None, **kwargs):
-            return super().request(method, path, body, {**(headers or {}), 'Host': 'osgard.world'}, **kwargs)
-
-    def connect(host, *, timeout):
-        assert host == 'osgard.world'
-        return Connection('127.0.0.1', parsed.port, timeout=timeout)
-
-    probe = contract.Probe(connect)
+    probe = contract.Probe(connection_factory(parsed.port))
     try:
         contract.exercise(probe)
         probe.report['status'] = 'PASS'

@@ -158,18 +158,29 @@ test('REMIX invitation fixtures: ambiguous accept survives actual old-tab pagehi
 test('REMIX invitation fixtures: denied journal storage prevents acceptance before any POST', async ({ page }, info) => {
   const p = await pair(page, info)
   try {
-    await p.recipient.evaluate(() => {
+    const quotaCode = await p.recipient.evaluate(() => {
       const original = Storage.prototype.setItem
+      const quota = new DOMException('Fixture quota', 'QuotaExceededError')
       Storage.prototype.setItem = function (key, value) {
-        if (this === localStorage && key.startsWith('osgard:remix-admission:v1:')) throw new DOMException('Fixture quota', 'QuotaExceededError')
+        if (this === localStorage && key.startsWith('osgard:remix-admission:v1:')) throw quota
         return original.call(this, key, value)
       }
+      return quota.code
     })
+    expect(quotaCode).toBe(22)
     await p.recipient.locator('#owned-accept-invitation').click()
+    await expect(p.recipient.locator('#owned-admission-status')).toContainText('recovery storage is unavailable')
+    const reads = () => p.service.calls.filter(call => call.method === 'GET' && call.path.endsWith('/v2/invitations/' + p.invitation.id) && call.headers.authorization === 'Bearer ' + accounts.bob.token).length
+    const before = reads()
+    await expect.poll(reads).toBeGreaterThan(before + 1)
+    await expect(p.recipient.locator('#owned-admission-status')).toContainText('recovery storage is unavailable')
+    await p.recipient.locator('#owned-refresh-invitation').click()
+    await expect.poll(reads).toBeGreaterThan(before + 2)
     await expect(p.recipient.locator('#owned-admission-status')).toContainText('recovery storage is unavailable')
     expect(posts(p.service, 'accept')).toHaveLength(0)
     expect(p.match.participants.size).toBe(1)
     expect(await journal(p.recipient)).toEqual([])
+    await screenshot(p.recipient, info, 'remix-invitation-storage-unavailable')
   } finally { await p.recipient.close() }
 })
 

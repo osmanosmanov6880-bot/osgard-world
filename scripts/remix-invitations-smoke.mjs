@@ -318,6 +318,37 @@ async function runChecks() {
     await owner.run("mutateAdmission('revoke')"); assert.equal(owner.posts('revoke').length, 0);
     assert.equal(recipient.journals().length, 0); assert.equal(owner.journals().length, 0);
   });
+  await check('browser QuotaExceededError remains actionable through timed invitation reads until explicit durable retry', async () => {
+    const { recipient, match } = await readyPair(), original = recipient.context.localStorage.setItem;
+    const quota = new DOMException('Fixture quota', 'QuotaExceededError'); assert.equal(quota.code, 22);
+    recipient.context.localStorage.setItem = (key, value) => {
+      if (key.startsWith('osgard:remix-admission:v1:')) throw quota;
+      original(key, value);
+    };
+    const reads = () => recipient.calls.filter(call => call.method === 'GET' && call.path.includes('/v2/invitations/')).length;
+    await recipient.accept();
+    assert.match(recipient.node('#owned-admission-status').textContent, /recovery storage is unavailable/);
+    const before = reads(); await recipient.advance(4100); assert.ok(reads() >= before + 2);
+    await recipient.run('readInvitation()');
+    assert.match(recipient.node('#owned-admission-status').textContent, /recovery storage is unavailable/);
+    assert.equal(recipient.posts('accept').length, 0); assert.equal(recipient.journals().length, 0); assert.equal(match.participants.size, 1);
+    recipient.context.localStorage.setItem = original;
+    await recipient.accept(); assert.equal(recipient.posts('accept').length, 1); assert.equal(match.participants.size, 2);
+    assert.equal(recipient.journals().length, 0);
+    assert.doesNotMatch(recipient.node('#owned-admission-status').textContent, /recovery storage is unavailable/);
+  });
+  await check('an invitation storage warning does not follow a different verified account', async () => {
+    const { recipient } = await readyPair(), original = recipient.context.localStorage.setItem;
+    recipient.context.localStorage.setItem = (key, value) => {
+      if (key.startsWith('osgard:remix-admission:v1:')) throw new DOMException('Fixture quota', 'QuotaExceededError');
+      original(key, value);
+    };
+    await recipient.accept(); assert.match(recipient.node('#owned-admission-status').textContent, /recovery storage is unavailable/);
+    recipient.tab.set(coreKey, accounts.carol.token); recipient.emit('focus'); await recipient.run('verifyOwnedAccount()');
+    assert.equal(recipient.run('ownedAccountId'), accounts.carol.id);
+    assert.doesNotMatch(recipient.node('#owned-admission-status').textContent, /recovery storage is unavailable/);
+    assert.equal(recipient.posts('accept').length, 0); assert.equal(recipient.journals().length, 0);
+  });
   await check('ready acceptance survives an active-pointer-only quota failure and later recovers without POST', async () => {
     const { recipient, service, match } = await readyPair(), old = recipient.context.localStorage.setItem;
     recipient.context.localStorage.setItem = (key, value) => { if (key.startsWith('osgard:remix-session:v2:')) throw Error('pointer quota'); old(key, value); };
