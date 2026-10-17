@@ -40,6 +40,12 @@ def assess(data):
             errors.append(gate+": reused CI run across independent gates")
         else:
             seen_runs.add(evidence)
+    if data.get("staging_deployed") is not False:
+        errors.append("staging_deployed must not be claimed by offline evidence")
+    if data.get("production_deployed") is not False:
+        errors.append("production_deployed must be false")
+    if data.get("rollback_executed") is not False:
+        errors.append("rollback_executed must be false")
     if data.get("human_approval") is not False:errors.append("human approval must remain pending")
     if data.get("payments_enabled") is not False:errors.append("payments must remain disabled")
     return {"status":"ready_for_human_review" if not errors else "blocked",

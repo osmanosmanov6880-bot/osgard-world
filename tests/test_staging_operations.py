@@ -81,7 +81,7 @@ class OperationsTest(unittest.TestCase):
   self.assertEqual(matrix.assess({})["status"],"blocked")
   sha="a"*40; digest="b"*64
   d={"schema_version":2,"repository":"osmanosmanov6880-bot/osgard-world","commit_sha":sha,"artifact_sha256":digest,
-     "human_approval":False,"payments_enabled":False,
+     "human_approval":False,"payments_enabled":False,"staging_deployed":False,"production_deployed":False,"rollback_executed":False,
      "checks":{key:{"status":"passed","commit_sha":sha,"artifact_sha256":digest,
                     "evidence_url":f"https://github.com/osmanosmanov6880-bot/osgard-world/actions/runs/{i+1}"}
                for i,key in enumerate(matrix.GATES)}}
@@ -102,6 +102,10 @@ class OperationsTest(unittest.TestCase):
   d["repository"]="attacker/other"
   self.assertEqual(matrix.assess(d)["status"],"blocked")
   d["repository"]="osmanosmanov6880-bot/osgard-world"
+  for flag in ("staging_deployed","production_deployed","rollback_executed"):
+   d[flag]=True
+   self.assertEqual(matrix.assess(d)["status"],"blocked")
+   d[flag]=False
   d["payments_enabled"]=True
   self.assertEqual(matrix.assess(d)["status"],"blocked")
 if __name__=="__main__":unittest.main()
