@@ -1,0 +1,28 @@
+name: OSGARD staging operations safety suite
+on:
+  pull_request:
+    paths:
+      - 'scripts/staging-http-acceptance.py'
+      - 'scripts/rollback-readiness.py'
+      - 'scripts/release-config-audit.py'
+      - 'scripts/release-matrix.py'
+      - 'tests/test_staging_operations.py'
+      - '.github/workflows/staging-operations-qa.yml'
+permissions:
+  contents: read
+jobs:
+  offline-safety:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m py_compile scripts/staging-http-acceptance.py scripts/rollback-readiness.py scripts/release-config-audit.py scripts/release-matrix.py
+      - run: python -m unittest discover -s tests -p test_staging_operations.py -v
+      - name: Verify previous quality regression families
+        run: |
+          python -m unittest discover -s tests -p test_release_bundle.py -v
+          python -m unittest discover -s tests -p test_game_archive.py -v
+          python -m unittest discover -s tests -p test_zip_manifest_binding.py -v
