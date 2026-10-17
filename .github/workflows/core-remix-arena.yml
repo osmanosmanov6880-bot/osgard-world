@@ -42,6 +42,11 @@ jobs:
         run: |
           python -m unittest discover -s tests -p 'test_remix_service_contract.py' -v
           python -m unittest discover -s tests -p 'test_remix_participants*.py' -v
+      - name: Reject corrupt combined INHERIT and REMIX backup copies
+        run: |
+          python -m unittest discover -s tests -p 'test_core_backup_recovery.py' -v
+          python -m unittest discover -s tests -p 'test_core_inherit_backup_semantics.py' -v
+          python -m unittest discover -s tests -p 'test_core_remix_backup_semantics.py' -v
       - name: Install immutable frontend dependencies and build actual assets
         run: |
           npm ci

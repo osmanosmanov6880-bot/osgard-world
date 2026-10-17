@@ -43,3 +43,24 @@ is claimed.
 There is no Unity gameplay implementation, paid monetization,
 public Lighthouse performance proof, production/staging deployment,
 or master merge in this integration branch.
+
+
+## Combined offline SQLite backup semantic check
+
+The current-master Core backup verifier remains the authoritative code; no
+legacy backup module was replaced. It now treats REMIX journal tables as an
+optional additive schema. When any is present, all four tables/required
+columns must be present. On the **already copied immutable local backup**
+it replays every Core arena match using the same bounded verification as live
+Core, and verifies challenge arena geometry and author proof. The existing
+INHERIT generation/lineage check remains unchanged and is run separately on
+the same copied snapshot. Neither verifier mutates the supplied snapshot.
+The added tests create real WAL-mode Core+INHERIT+REMIX databases, generate
+online SQLite snapshots, corrupt only copies, and require fail-closed
+verification for invalid game states, checkpoints, acknowledgements, incomplete
+schemas and INHERIT lineages. Generic `--sqlite-only` remains distinct and
+does not claim game-semantic verification.
+
+**Important:** this is semantic **backup inspection**, not a process-kill
+restoration, a production restore, failover RTO/RPO measurement, or a
+replacement for deployment rehearsal.
