@@ -102,7 +102,8 @@ test('Time route loads its real game with external font services unavailable', a
       return route.abort('failed')
     })
   }
-  const timeRouteErrors = [], timeRouteRequests = []
+  const timeRouteErrors = [], timeRouteRequests = [], timeRouteConsole = []
+  page.on('console', message => { if (message.type() === 'error') timeRouteConsole.push(message.text().slice(0, 800)) })
   page.on('pageerror', error => timeRouteErrors.push(error.message.slice(0, 500)))
   page.on('requestfailed', request => {
     if (!/^https:\/\/fonts\.(googleapis|gstatic)\.com\//.test(request.url()))
@@ -120,7 +121,7 @@ test('Time route loads its real game with external font services unavailable', a
   }))
   console.log('GAMES_TIME_ROUTE_DIAGNOSTIC ' + JSON.stringify({ profile: test.info().project.name,
     status: routeResponse?.status() || null, ...timeRouteState,
-    exceptions: timeRouteErrors, failedOwnRequests: timeRouteRequests }))
+    exceptions: timeRouteErrors, consoleErrors: timeRouteConsole, failedOwnRequests: timeRouteRequests }))
   await expect(page.locator('.tg-map-viewport')).toBeVisible()
   await expect(page.getByText('Страница не загрузилась.', { exact: true })).toHaveCount(0)
   const faces = await page.evaluate(async () => Promise.all(
