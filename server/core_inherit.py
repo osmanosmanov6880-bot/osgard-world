@@ -179,6 +179,9 @@ def _check_history(db, row):
         previous = actual
     require(len(records) + 1 == row["generation"],
             "История мира неполная.", "lineage_integrity", 503)
+    expected_snapshot = json.loads(records[-1]["snapshot_json"]) if records else []
+    require(json.loads(row["objects_json"]) == expected_snapshot,
+            "Состояние не соответствует истории мира.", "lineage_integrity", 503)
     return records, previous
 
 
@@ -251,6 +254,7 @@ def pass_world(db, wid, actor, payload):
     require(row["keeper_id"] == actor, "Только текущий хранитель меняет мир.",
             "forbidden", 403)
     _check_version(row, payload)
+    _check_history(db, row)
     require(row["pending_to"] is None, "Сначала завершите текущую передачу.",
             "handoff_pending", 409)
     require(row["generation"] <= MAX_GENERATIONS, "Лимит поколений достигнут.",
