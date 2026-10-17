@@ -5,12 +5,15 @@ on:
     branches: [master]
 permissions:
   contents: read
+  pull-requests: read
 jobs:
   complete-safety-suite:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -42,9 +45,18 @@ jobs:
           python -m unittest discover -s tests -p test_remix_service_contract.py -v
           python -m unittest discover -s tests -p test_remix_guard.py -v
           python -m unittest discover -s tests -p test_frontend_activation.py -v
-      - name: Live PR chain metadata verification (read-only)
+      - name: Live PR dependency or consolidated candidate verification (read-only)
         if: ${{ github.event_name == 'pull_request' }}
-        run: python scripts/live-release-pr-audit.py
+        env:
+          OSGARD_AUDIT_PR: ${{ github.event.pull_request.number }}
+          OSGARD_AUDIT_HEAD: ${{ github.event.pull_request.head.sha }}
+          OSGARD_PR_AUDIT_TOKEN: ${{ github.token }}
+        run: |
+          if [ "$OSGARD_AUDIT_PR" = "128" ]; then
+            python scripts/live-release-pr-audit.py --consolidated-pr 128 --expected-head "$OSGARD_AUDIT_HEAD" --repository .
+          else
+            python scripts/live-release-pr-audit.py
+          fi
       - name: Guard against accidental activation
         run: |
           python - <<'PY'

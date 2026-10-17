@@ -59,7 +59,7 @@
     "qa:osa-media-release": "node scripts/osa-media-release-preflight.mjs --check-dist",
     "qa:osa-narration": "node scripts/osa-narration-readiness.mjs --check-manuscripts",
     "qa:osa-media-files": "node scripts/osa-media-file-audit.mjs --self-test",
-    "postbuild": "node scripts/precompress-brand-transition.mjs && node scripts/build-brand-routes.mjs && node scripts/build-core-curriculum.mjs",
+    "postbuild": "node scripts/precompress-brand-transition.mjs && node scripts/build-brand-routes.mjs && node scripts/build-core-curriculum.mjs && node scripts/bundle-skillcred-styles.mjs",
     "qa:brand-gzip": "node scripts/precompress-brand-transition.mjs --check-dist",
     "qa:osa-project": "node --experimental-strip-types scripts/osa-project-smoke.mjs",
     "qa:osa-workspace": "node --experimental-strip-types scripts/osa-workspace-smoke.mjs",

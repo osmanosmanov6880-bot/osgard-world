@@ -8,8 +8,8 @@ GitHub compare `master...integration/consolidated-release-candidate-2026-10-17`:
 
 - Integrated safety CI on consolidated head: required, green
 - Full real-site build, ZIP archive and 19 game route contract: required, green
-- Read-only live GitHub PR dependency audit: required, green at time of review
-- Every prior stacked PR: draft, open and based on immediate prior branch before consolidation
+- Read-only live GitHub audit of PR #128: required, with exact event head, actual master ref and inclusion of all current dependency heads #107–127; see [the consolidated audit mode](LIVE-RELEASE-PR-AUDIT.md)
+- Every prior stacked PR: draft, open, based on its expected parent, and its current head included in the consolidated candidate. Independent chain-merge readiness remains a separate default audit and can stay blocked after master advances
 - Production deploy workflows on `master`: inspect and evaluate before merging; at least `deploy-frontend.yml` has filtered push-to-master triggers
 - External staging HTTP and browser game UI: not demonstrated by offline build; separately required for launch
 - Core restoration with real isolated backup: not demonstrated by mocked Docker tests; separately required for launch
@@ -32,7 +32,7 @@ Review in GitHub PR checks for complete release-bundle acceptance and SHA bindin
 ## Stop conditions
 
 - Any check fails or is missing
-- Live PR dependency check returns null/unmergeable or changed base
+- The consolidated candidate's live state is null/unmergeable, its head/base changes during audit, a dependency is retargeted or absent from candidate history, or the latest master is not included
 - Release zip checksums or manifest mismatch
 - Stage origin is unverified or staging HTTP missing
 - No operator rollback/recovery signoff

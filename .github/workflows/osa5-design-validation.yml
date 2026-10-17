@@ -19,6 +19,8 @@ on:
       - 'scripts/osa5-brand-smoke.mjs'
       - 'scripts/osa-transition-behavior-smoke.mjs'
       - 'scripts/osa5-visual-smoke.mjs'
+      - 'scripts/bundle-skillcred-styles.mjs'
+      - 'package.json'
       - 'scripts/lecture-library-smoke.mjs'
       - 'docs/OSA_LECTURE_LIBRARY.md'
       - 'public/sitemap.xml'
@@ -41,6 +43,8 @@ on:
       - 'scripts/osa5-brand-smoke.mjs'
       - 'scripts/osa-transition-behavior-smoke.mjs'
       - 'scripts/osa5-visual-smoke.mjs'
+      - 'scripts/bundle-skillcred-styles.mjs'
+      - 'package.json'
       - '.github/workflows/osa5-design-validation.yml'
   workflow_dispatch:
 

@@ -36,11 +36,25 @@ Frontend/deploy validation сохраняют оба набора проверо
 
 Первый общий Python discovery обнаружил два сбоя SIGHUP в тестовой фикстуре активации. Среда передавала Python и Bash игнорирование HUP; Bash, запущенный с таким disposition, не устанавливал ожидаемый trap. Явный ignored-HUP родитель воспроизвёл те же два сбоя. Исправлен только тестовый launcher: свежий Python child восстанавливает HUP/INT/TERM перед `exec` Bash, сохраняя session/PID и реальные production traps. Таймауты и assertions сохранены; disposition основного runner не меняется, `preexec_fn` не используется. Добавлен отдельный сценарий запуска из ignored-HUP родителя. Production activation script сохранён из PR #130.
 
+### Проверка единого PR после продвижения master
+
+Первый свежий CI объединённого коммита `c726de890fd0060a6cd38b15651d9aa574f7ad71` прошёл все 376 Python-тестов, но Integrated Quality Suite остановился на старом live-аудите: PR #107 теперь конфликтует при самостоятельном объединении с master. Повторный GitHub API подтвердил `mergeable: false`; это не временный `null`. При этом реальные текущие head SHA всех 21 PR #107–127 уже входят в проверенный кандидат, что отдельно подтверждено по полной Git-истории.
+
+Добавлен явный режим `--consolidated-pr 128` для единого draft review. Он проверяет канонические repo/refs, open/draft/mergeable кандидата, точный head из PR event, актуальный master ref и включение всех живых dependency heads. Проверки Git отвергают shallow/подменённую историю, отсутствующие commit и несовпадение дерева checkout. Повторно читаются все dependency PR, кандидат и master; наблюдаемое движение блокирует аудит. Две совпавшие выборки не являются атомарным snapshot всех GitHub refs. Default-политика самостоятельной цепочки сохранена и по-прежнему блокирует конфликтующий PR #107; результат нового режима называется отдельно `ready_for_consolidated_review`. Ни один режим не разрешает merge или deploy. Подробности и команды — в [контракте live-аудита](LIVE-RELEASE-PR-AUDIT.md).
+
+Исправление аудита меняет только read-only audit, его тесты, Integrated workflow и документацию. Старый policy-файл сохранён побайтово; отдельные 38 live-audit tests, включая 7 исходных, и 9 legacy-policy tests прошли. Общий discovery после изменения содержит 407 успешных тестов. Свежий итоговый CI и artifact provenance фиксируются в PR #128; успешные проверки промежуточного `c726de89` не подменяют их.
+
+### Сохранение последующего PR #132
+
+Перед записью финального коммита master продвинулся до `5ee54cd9533db62c67c7b64cd1086cadf0a1e19b` ([PR #132](https://github.com/osmanosmanov6880-bot/osgard-world/pull/132)). Шесть incoming-файлов автоматически объединились без конфликтов. Новый последний `postbuild`-шаг объединяет полные стили SkillCred и порталов в прежнем каскадном порядке и убирает один отдельный CSS-запрос только на странице SkillCred. Сохранены новые OSA5 browser assertions и честное незакрытое требование Lighthouse Performance 100.
+
+Повторный `npm run build` и свежая Pages-копия прошли binding/preflight. Полный SHA-256 inventory до/после подтвердил ровно два изменённых output-файла: `skillcred/index.html` и `skillcred/styles.css`; добавленных/удалённых файлов нет. Все остальные 427 файлов, включая игры, их движки, общие assets и REMIX, побайтово сохранены в raw и Pages вариантах. Поэтому предыдущие локальные игровые проверки сохраняют свой предмет проверки; точные итоговые полные матрицы и новые артефакты проверяются свежим CI финального SHA.
+
 ## Проверки объединённого кандидата
 
 | Проверка | Результат |
 | --- | --- |
-| Общий Python discovery | **376 passed**, все 23 test families, **48,878 с** |
+| Общий Python discovery | **407 passed**, все 23 test families, **42,330 с**; отдельный финальный live-audit subset **38/38** |
 | Core regression subset | 82 случая из предыдущего набора; входят в общий discovery |
 | Core arena HTTP/simulation | **25/25 passed**, включая отрицательный namespace case |
 | Legacy guard HTTP/SQLite | **24/24 passed** на loopback mutable fixture |
@@ -50,15 +64,16 @@ Frontend/deploy validation сохраняют оба набора проверо
 | Legacy redirects/catalog integrity | **7/7 passed** |
 | TypeScript + Vite + Godot binding + frontend/Pages preflight + build budgets | Passed |
 | Общие redesign/navigation/OSA/deploy/ecosystem QA | **5/5 passed** |
+| SkillCred после PR #132 | **3 targeted QA passed**; весь OSA5 browser suite: **26 маршрутов × 3 viewport**, **81 PNG**, `problems=[]`; один CSS-запрос/применённый stylesheet и mobile menu закрыто→открыто→закрыто |
 | Arena auth/response-loss/restore/polling UI | **10/10 passed** на новых UI/API-путях, с настоящими HTTP faults и SQLite assertions |
-| Raw full game matrix | **40 passed, 0 failed, 0 blocked; totalAccepted=true**, 84 PNG |
-| Exact Pages full game matrix | **40 passed, 0 failed, 0 blocked; totalAccepted=true**, 84 PNG |
+| Локальная raw full game matrix | **40 passed, 0 failed, 0 blocked; totalAccepted=true**, 84 PNG; игровые байты сохранены после PR #132 |
+| Локальная Pages full game matrix | **40 passed, 0 failed, 0 blocked; totalAccepted=true**, 84 PNG; игровые байты сохранены после PR #132 |
 | Ecosystem browser journeys | **70 passed / 6 предусмотренных project skips**, 76 всего, **1,3 мин**, retries=0; включены incoming legacy-console scenarios |
 | Core HTTP → WAL backup → restored HTTP process | **11/11 групп passed**, полный цикл **1 147,3 мс** |
 
 Полные игровые матрицы используют настоящий временный Core/SQLite service, два аккаунта и реальные keyboard/touch inputs. Успешные игровые ответы не подменяются. Legacy browser scenarios отдельно используют контролируемые ответы для проверки своей клиентской state machine; HTTP/SQLite guard проверяется отдельными loopback tests. Эти виды доказательств не смешиваются.
 
-Сборка содержит **429 файлов / 67 356 500 байт**. Точная Pages-копия после gzip упаковки содержит **429 файлов / 37 995 825 байт**. Все статические REMIX-файлы dist побайтово совпадают с замороженными исходниками. Godot source fingerprint остаётся `3c8e511873600c48963752ac6bfb2e807ca0a486a93d83f5271a6122c861509f`; новый перенос REMIX не меняет его исходники. Связь PCK/WASM с `build-info.json` проверена в обоих вариантах доставки.
+Итоговая сборка после PR #132 содержит **429 файлов / 67 358 864 байт**. Точная Pages-копия после gzip упаковки содержит **429 файлов / 37 998 189 байт**. Все статические REMIX-файлы dist побайтово совпадают с замороженными исходниками. Godot source fingerprint остаётся `3c8e511873600c48963752ac6bfb2e807ca0a486a93d83f5271a6122c861509f`; новый перенос REMIX и bundling SkillCred не меняют его исходники. Связь PCK/WASM с `build-info.json` проверена в обоих вариантах доставки.
 
 Повторный Core drill восстановил 503 808 байт и 44 таблицы. Подтверждены три аккаунта, один проект и участник, шесть ревизий, ассет, завершённое задание и запись затрат. Ревизия 6 включена в snapshot, последующая ревизия 7 исключена. Password/session auth, ACL, idempotent retry, новая HTTP-запись и окончательные SQLite integrity/FK прошли. Для публикации подходит только JSON-отчёт, без приватного work-dir.
 
