@@ -64,8 +64,8 @@ const failureBriefs = {
 };
 function updateMissionBrief(modifier='standard', mission='lab_escape') {
   const [name,effect]=modifierBriefs[modifier] || modifierBriefs.standard;
-  const [missionName,missionEffect]=missionBriefs[mission] || missionBriefs.lab_escape;
-  missionTitle.textContent=`${missionName} // MISSION PATH`; missionModifier.textContent=name; missionEffect.textContent=`${missionEffect} ${effect}`;
+  const [missionName,missionDescription]=missionBriefs[mission] || missionBriefs.lab_escape;
+  missionTitle.textContent=`${missionName} // MISSION PATH`; missionModifier.textContent=name; missionEffect.textContent=`${missionDescription} ${effect}`;
 }
 function labelRole(role) { return String(role || '').replaceAll('_',' ').toUpperCase(); }
 function updateRoleCue() {
@@ -509,5 +509,11 @@ addEventListener('keydown',event=>{
 });
 addEventListener('keyup',event=>keys[event.code]=false);
 document.querySelectorAll('[data-key]').forEach(button=>{const key=button.dataset.key;const up=()=>keys[key]=false;button.addEventListener('pointerdown',e=>{e.preventDefault();keys[key]=true;});button.addEventListener('pointerup',up);button.addEventListener('pointercancel',up);button.addEventListener('pointerleave',up);});
+// Read-only opt-in diagnostics let browser acceptance observe the real simulation.
+// Gameplay is always driven by its normal keyboard/pointer handlers.
+if(new URLSearchParams(location.search).has('test')) window.__SWARM_TEST__=Object.freeze({
+  state:()=>({active:game?.active,finished:game?.finished,online:Boolean(game?.online),role:activeRole,overdrive:game?.overdrive,
+    elapsed:game?.elapsed,player:game?{x:game.player.x,y:game.player.y}:null})
+});
 game=newGame();updateMissionBrief();renderRoles();draw();
 restoreRoomSession();

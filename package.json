@@ -25,6 +25,8 @@
     "qa:null-shift": "node scripts/null-shift-premium-smoke.mjs",
     "qa:games-portal": "node scripts/games-portal-smoke.mjs",
     "qa:zion-local": "node scripts/zion-local-smoke.mjs",
+    "qa:games-browser": "node scripts/games-browser-acceptance.mjs --root dist",
+    "qa:browser": "playwright test --config playwright.ecosystem.config.mjs",
     "qa:null-shift-godot": "node scripts/null-shift-godot-smoke.mjs",
     "qa:partners-page": "node scripts/partners-page-smoke.mjs",
     "qa:ecosystem": "node scripts/ecosystem-integrity-smoke.mjs",
@@ -87,6 +89,7 @@
     "three": "^0.186.0"
   },
   "devDependencies": {
+    "@playwright/test": "1.58.2",
     "@types/react": "^19.0.3",
     "@types/react-dom": "^19.0.3",
     "@vitejs/plugin-react": "^4.3.4",

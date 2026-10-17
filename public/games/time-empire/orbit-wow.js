@@ -43,8 +43,11 @@
 })();
 
 (function () {
+  if (Array.prototype.some.call(document.scripts, function (item) {
+    return item.src && new URL(item.src, location.href).pathname.endsWith('/empire-world.js');
+  })) return;
   var script = document.createElement('script');
-  script.src = 'empire-world.js?v=20261002a';
+  script.src = '/games/time-empire/empire-world.js?v=20261002a';
   script.defer = true;
   document.head.appendChild(script);
 })();

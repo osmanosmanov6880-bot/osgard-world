@@ -12,14 +12,28 @@ def module(name,path):
     spec=importlib.util.spec_from_file_location(name,ROOT/path)
     m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m);return m
 
+def verify_dist_manifest(dist,manifest):
+    """Bind the audited directory's exact files to the archived manifest."""
+    path=Path(manifest)
+    if path.is_symlink() or not path.is_file():
+        raise ValueError("manifest must be a regular file")
+    record=json.loads(path.read_text(encoding="utf-8"))
+    return module("artifact_manifest","release-artifact-manifest.py").verify(dist,record)
+
 def evaluate(dist,archive,manifest):
     dist=Path(dist)
     config=module("config","release-config-audit.py").audit(dist)
     bundle=module("bundle","release-bundle.py").verify(archive,manifest)
+    provenance=verify_dist_manifest(dist,manifest)
     games=module("games","verify-game-archive.py").verify(archive)
-    checks={"security_config":config["status"],"bundle":bundle["status"],"game_routes":games["status"]}
-    expected={"security_config":"passed","bundle":"verified_for_staging","game_routes":"verified"}
+    checks={"security_config":config["status"],"bundle":bundle["status"],
+            "dist_manifest":provenance["status"],"game_routes":games["status"]}
+    expected={"security_config":"passed","bundle":"verified_for_staging",
+              "dist_manifest":"verified","game_routes":"verified"}
     failed=[key for key in expected if checks[key]!=expected[key]]
+    manifest_digest=provenance.get("manifest_sha256")
+    if not isinstance(manifest_digest,str) or not re.fullmatch(r"[a-f0-9]{64}",manifest_digest) or manifest_digest!=bundle.get("manifest_sha256"):
+        failed.append("manifest_binding")
     zion=games.get("zion_worlds")
     legacy=games.get("legacy_entrypoints")
     if type(zion) is not int or zion!=11 or type(legacy) is not int or legacy!=8:
@@ -28,6 +42,7 @@ def evaluate(dist,archive,manifest):
         failed.append("zip_sha256")
     return {"status":"ready_for_staging_review" if not failed else "blocked",
             "failed":failed,"checks":checks,"zip_sha256":bundle["zip_sha256"],
+            "commit_sha":provenance.get("commit_sha"),
             "game_entrypoints_checked":zion+legacy if type(zion) is int and type(legacy) is int else 0,
             "staging_deployed":False,"production_modified":False}
 

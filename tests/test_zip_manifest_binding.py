@@ -29,6 +29,29 @@ class ZipManifestBindingTest(unittest.TestCase):
     def test_exact_copy(self):
         self.pack()
         self.assertEqual(gate.verify(self.zip,self.record)["status"],"verified")
+    def test_missing_or_malformed_commit_metadata_is_rejected(self):
+        self.pack()
+        for value in (None, True, 123, [], {}, "", "not-a-commit", "a"*39, "a"*41, "g"*40, "a"*40+"\n"):
+            with self.subTest(commit_sha=value):
+                record=dict(self.record,commit_sha=value)
+                with self.assertRaisesRegex(ValueError,"commit"):
+                    gate.verify(self.zip,record)
+        record=dict(self.record)
+        record.pop("commit_sha")
+        with self.assertRaisesRegex(ValueError,"commit"):
+            gate.verify(self.zip,record)
+    def test_git_sha256_commit_metadata_is_accepted(self):
+        self.pack()
+        record=dict(self.record,commit_sha="b"*64)
+        self.assertEqual(gate.verify(self.zip,record)["status"],"verified")
+    def test_boolean_schema_version_is_rejected(self):
+        self.pack()
+        with self.assertRaisesRegex(ValueError,"schema"):
+            gate.verify(self.zip,dict(self.record,schema_version=True))
+    def test_noninteger_file_count_is_rejected(self):
+        self.pack()
+        with self.assertRaisesRegex(ValueError,"file count"):
+            gate.verify(self.zip,dict(self.record,file_count=float(self.record["file_count"])))
     def test_repack_compression_independent(self):
         self.pack()
         first=gate.verify(self.zip,self.record)

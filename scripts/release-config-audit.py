@@ -27,7 +27,7 @@ def audit(root):
         stripped=line.strip()
         if not stripped or stripped.startswith("#"):
             continue
-        if line[0] not in " \\t":
+        if line[0] not in " \t":
             active_scope=stripped
             continue
         if active_scope!="/*" or ":" not in stripped:

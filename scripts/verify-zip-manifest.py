@@ -10,12 +10,16 @@ import zipfile
 from pathlib import Path, PurePosixPath
 
 SHA=re.compile(r"^[a-f0-9]{64}$")
+COMMIT_SHA=re.compile(r"(?:[a-f0-9]{40}|[a-f0-9]{64})")
 MAX_FILES=20000
 MAX_ASSET_BYTES=25*1024*1024
 MAX_TOTAL_BYTES=1024*1024*1024
 def verify(archive, manifest):
-    if not isinstance(manifest,dict) or manifest.get("schema_version")!=1:
+    if not isinstance(manifest,dict) or type(manifest.get("schema_version")) is not int or manifest.get("schema_version")!=1:
         raise ValueError("invalid manifest schema")
+    commit=manifest.get("commit_sha")
+    if not isinstance(commit,str) or not COMMIT_SHA.fullmatch(commit.lower()):
+        raise ValueError("invalid manifest commit_sha: expected a Git SHA with 40 or 64 hex characters")
     expected=manifest.get("files")
     if not isinstance(expected,list) or not expected:
         raise ValueError("manifest has no files")
@@ -42,7 +46,7 @@ def verify(archive, manifest):
         if total>MAX_TOTAL_BYTES:
             raise ValueError("manifest exceeds total uncompressed limit")
         index[name]=row
-    if manifest.get("file_count")!=len(index) or "index.html" not in index:
+    if type(manifest.get("file_count")) is not int or manifest.get("file_count")!=len(index) or "index.html" not in index:
         raise ValueError("manifest file count/entrypoint mismatch")
     archive=Path(archive)
     if archive.is_symlink() or not archive.is_file():
@@ -87,6 +91,7 @@ def verify(archive, manifest):
     if seen!=set(index):
         raise ValueError("ZIP missing manifest files: "+", ".join(sorted(set(index)-seen)[:5]))
     return {"status":"verified","files":len(seen),"zip_sha256":file_sha(archive),
+            "commit_sha":commit.lower(),
             "manifest_sha256":hashlib.sha256((json.dumps(manifest,ensure_ascii=False,sort_keys=True,separators=(",",":"))+"\n").encode()).hexdigest(),
             "publication_performed":False}
 

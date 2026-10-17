@@ -52,3 +52,7 @@ __pycache__/
 
 /delivery/
 *.tgz.sha256
+
+# Browser evidence is uploaded by CI and must not enter the source tree.
+/browser-report/
+/test-results/

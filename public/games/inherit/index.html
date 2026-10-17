@@ -111,7 +111,7 @@ const traceHotkeys=['tree','stone','light','path','flower','arch','chime','moss'
 document.addEventListener('keydown',function(event){
   if(event.target.matches('input,textarea,[contenteditable="true"]'))return;
   const index=event.key==='0'?9:Number(event.key)-1;
-  if(index<0||index>9)return;
+  if(!Number.isInteger(index)||index<0||index>9)return;
   const type=traceHotkeys[index];
   tool=type;
   qa('.tool').forEach(function(item){item.classList.toggle('active',item.dataset.tool===type)});
@@ -434,5 +434,47 @@ document.head.insertAdjacentHTML('beforeend','<style>.generation-card-heir{margi
     track('return_continue_clicked',{generation:Number(S.generation)||0});
   });
   document.head.insertAdjacentHTML('beforeend','<style>.return-card .continue-lineage{margin-left:8px;background:#18382e;color:#e5dfbf;border-color:#18382e}.return-card .continue-lineage:hover{background:#0e251d}@media(max-width:520px){.return-card .continue-lineage{margin:8px 0 0}}</style>');
+})();
+</script>
+<style id="inherit-accessible-controls">
+#world:focus-visible{outline:2px solid #e7c778;outline-offset:-3px}
+.return-card:not(.show),.replay-banner:not(.show),.catalog:not(.open),.chronicle:not(.open),#panel:not(.show){visibility:hidden;pointer-events:none}
+.placement-cursor{position:absolute;width:26px;height:26px;border:2px solid #e7c778;border-radius:50%;transform:translate(-50%,-50%);pointer-events:none;z-index:12;box-shadow:0 0 0 4px #07151488}
+.placement-cursor[hidden]{display:none}
+.placement-help{margin:0;padding:10px 4vw;background:#071514;color:#dce8d8;font:11px/1.6 Manrope,sans-serif}
+@media(max-width:740px){
+  .dock{height:auto;min-height:108px;flex-wrap:wrap;align-items:stretch;padding:12px 4vw;gap:8px}
+  .dock .turn{display:flex;align-items:center;gap:10px;flex:1 0 100%}
+  .dock .turn strong{font-size:24px}
+  .dock .tools{flex:1 0 100%;min-width:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));padding:0;border:0;overflow:visible;gap:6px}
+  .dock .tools button{min-width:0;min-height:44px}
+  .dock>.history{display:block}
+  .dock>button{flex:1 1 calc(50% - 8px);min-width:0;min-height:44px;width:auto;margin:0}
+}
+</style>
+<script>
+// The same placement handler serves pointer and keyboard input. No world state
+// or save format is duplicated by the accessibility controls.
+(function(){
+  const world=q('#world'),island=q('#island');
+  world.tabIndex=0;world.setAttribute('role','group');world.setAttribute('aria-label','Остров: размещение следов');
+  const help=document.createElement('p');help.id='placement-help';help.className='placement-help';
+  help.textContent='Выберите след, затем нажмите на остров. С клавиатуры: Tab — остров, стрелки — место, Enter — разместить.';
+  world.insertAdjacentElement('afterend',help);world.setAttribute('aria-describedby',help.id);
+  const cursor=document.createElement('span');cursor.className='placement-cursor';cursor.hidden=true;cursor.setAttribute('aria-hidden','true');island.appendChild(cursor);
+  let x=60,y=45;
+  function paint(){cursor.style.left=x+'%';cursor.style.top=y+'%'}paint();
+  world.addEventListener('focus',()=>{cursor.hidden=false});world.addEventListener('blur',()=>{cursor.hidden=true});
+  world.addEventListener('keydown',function(event){
+    if(event.target!==world||!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Enter',' '].includes(event.key))return;
+    event.preventDefault();event.stopPropagation();
+    if(typeof replayGeneration!=='undefined'&&replayGeneration!==null){notice('Вернитесь к сегодняшнему миру, чтобы оставить след');return}
+    if(event.key==='ArrowLeft')x=Math.max(8,x-3);if(event.key==='ArrowRight')x=Math.min(91,x+3);
+    if(event.key==='ArrowUp')y=Math.max(12,y-3);if(event.key==='ArrowDown')y=Math.min(77,y+3);
+    paint();
+    if(event.key==='Enter'||event.key===' '){const rect=island.getBoundingClientRect();world.dispatchEvent(new MouseEvent('click',{bubbles:true,clientX:rect.left+rect.width*x/100,clientY:rect.top+rect.height*y/100}));}
+  });
+  document.querySelectorAll('[data-memory]').forEach(element=>element.setAttribute('aria-label',({tree:'История дерева',ruin:'История каменной арки',beacon:'История маяка'})[element.dataset.memory]||'История объекта'));
+  q('#close').setAttribute('aria-label','Закрыть историю объекта');q('#closeModal').setAttribute('aria-label','Закрыть историю мира');
 })();
 </script><script defer src="/brand/osa-transition.js"></script></body></html>

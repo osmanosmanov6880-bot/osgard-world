@@ -9,6 +9,8 @@ on:
       - "scripts/core-*.py"
       - "scripts/redesign-*.mjs"
       - "scripts/zion-local-smoke.mjs"
+      - "scripts/games-browser-acceptance.mjs"
+      - "scripts/games-portal-browser.spec.mjs"
       - "scripts/ecosystem-*.spec.mjs"
       - "playwright.ecosystem.config.mjs"
       - "public/brand/**"
@@ -140,13 +142,12 @@ jobs:
         run: npm ci
       - name: Build the production site
         run: npm run build
-      - name: Include the published static game catalog
-        run: cp -a public/games/. dist/games/
-      - name: Install pinned browser test tooling
-        run: |
-          npm install --no-save --package-lock=false @playwright/test@1.58.2
-          npx playwright install --with-deps chromium
+      - name: Install Chromium for locked Playwright tooling
+        run: npx playwright install --with-deps chromium
+      - name: Check all game clients with explicit external-service blockers
+        run: npm run qa:games-browser -- --expected-blocked null-shift,remix
       - name: Check desktop and mobile user journeys
+        if: ${{ !cancelled() }}
         run: npx playwright test --config playwright.ecosystem.config.mjs
       - name: Keep screenshots and browser evidence
         if: always()

@@ -16,3 +16,30 @@ Licensed under the SIL Open Font License 1.1. See OFL.txt and the original publi
 
 Cormorant Garamond (Christian Thalmann) and Space Grotesk (Florian Karsten) were downloaded from the Google Fonts CSS service for local hosting. They use the SIL Open Font License 1.1. Their original licenses are included in this directory. No font is represented as an original OSGARD design.
 Space Grotesk does not contain Cyrillic glyphs; Cyrillic headings use the Inter/Arial fallback declared in the font stack.
+
+Playfair Display Variable
+Unmodified TrueType font from the official Google Fonts repository, retrieved 2026-10-17:
+https://github.com/google/fonts/tree/main/ofl/playfairdisplay
+Source file: https://raw.githubusercontent.com/google/fonts/main/ofl/playfairdisplay/PlayfairDisplay%5Bwght%5D.ttf
+SHA-256: c40f2293766a503bc70cce9e512ef844a4ccb7cbcde792fe2ea31d191917d8d6
+File size: 300724 bytes. Variable weight axis: 400-900.
+Licensed under the SIL Open Font License 1.1; the original license is included unchanged as PlayfairDisplay-OFL.txt.
+The font was not subsetted, renamed internally or modified. It replaces the same font's remote CSS dependency in legacy routes.
+
+Fraunces Variable
+Unmodified TrueType font from the official Google Fonts repository, retrieved 2026-10-17:
+https://github.com/google/fonts/tree/main/ofl/fraunces
+Source file: https://raw.githubusercontent.com/google/fonts/main/ofl/fraunces/Fraunces%5BSOFT%2CWONK%2Copsz%2Cwght%5D.ttf
+SHA-256: 177ff6c0f14e5550a3c624247cd1189611d4eb65d000b14944c63d967958abbb
+File size: 360440 bytes. Variable axes: opsz 9-144, wght 100-900, SOFT 0-100, WONK 0-1.
+Licensed under the SIL Open Font License 1.1; the original license is included unchanged as Fraunces-OFL.txt.
+The font was not subsetted, renamed internally or modified. It replaces the same font's remote CSS dependency in miniapp.css, which shares the legacy route stylesheet.
+
+InterTight Variable
+Unmodified TrueType font from the official Google Fonts repository, retrieved 2026-10-17:
+https://github.com/google/fonts/tree/main/ofl/intertight
+Source file: https://raw.githubusercontent.com/google/fonts/main/ofl/intertight/InterTight%5Bwght%5D.ttf
+SHA-256: b81b73dcb64df3c230cabade7df6c5773bf863233f24c9ee51087519f1f88b6f
+File size: 581588 bytes. Variable axes: wght 100-900.
+Licensed under the SIL Open Font License 1.1; the original license is included unchanged as InterTight-OFL.txt.
+The font was not subsetted, renamed internally or modified. It replaces the same font's remote CSS dependency in miniapp.css, which shares the legacy route stylesheet.

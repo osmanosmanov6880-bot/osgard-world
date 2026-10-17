@@ -2,7 +2,8 @@ import { defineConfig } from '@playwright/test'
 
 export default defineConfig({
   testDir: './scripts',
-  testMatch: ['ecosystem-browser.spec.mjs', 'ecosystem-mobile-lab.spec.mjs', 'program-enrollment-browser.spec.mjs'],
+  testMatch: ['ecosystem-browser.spec.mjs', 'ecosystem-mobile-lab.spec.mjs', 'program-enrollment-browser.spec.mjs', 'games-portal-browser.spec.mjs'],
+  outputDir: 'test-results/ecosystem',
   fullyParallel: true,
   workers: 2,
   retries: 1,
