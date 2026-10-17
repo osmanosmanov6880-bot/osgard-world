@@ -122,7 +122,8 @@ npm run qa:core-api
 npm run qa:core-readiness
 npm run qa:core-program-commerce
 npm run qa:pilot-scorecard
-npm run qa:core-recovery
+npm run qa:core-recovery-tests
+npm run qa:core-recovery -- --work-dir /tmp/osgard-core-brief-review --report /tmp/osgard-core-brief-review.json
 npm run qa:deploy-workflow
 npm run qa:nginx-game-delivery
 OSGARD_BASE_URL=https://osgard.world npm run qa:game-delivery

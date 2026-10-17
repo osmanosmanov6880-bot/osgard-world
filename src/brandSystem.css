@@ -161,3 +161,11 @@ html[data-motion=off] :is(.world-case:hover img,.world-case:focus-visible img,.p
 .brand-logo-downloads a{color:var(--accent);font-size:12px;line-height:1.65;text-underline-offset:3px}
 .brand-system .brand-logo-grid .brand-variant-label{font-size:13px;line-height:1.65;margin:0}
 @media(max-width:760px){.brand-system .brand-table-caption{padding-left:12px}.brand-swatch{font-size:14px}.brand-swatch code{font-size:12px}}
+/* Keep the mobile navigation in one row during font swap. Native scrolling
+   remains available; hide its track so it cannot change the row height. */
+@media(max-width:760px){
+  .brand-local-bar nav,.brand-global-nav{flex-wrap:nowrap;min-width:0;overflow-x:auto;scrollbar-width:none}
+  .brand-local-bar nav::-webkit-scrollbar,.brand-global-nav::-webkit-scrollbar{display:none}
+  .brand-local-bar a,.brand-global-nav a{flex:0 0 auto;white-space:nowrap}
+  .brand-system .brand-local-bar a:focus-visible,.brand-system .brand-global-nav a:focus-visible{outline-offset:-3px}
+}

@@ -3,6 +3,7 @@
 "use strict";
 const persistence=window.RemixPersistence;
 const dictionary={
+ "Open game arena ↗":"Открыть игровую арену ↗",
  "Failed to fetch":"Нет связи с игровым сервисом. Проверьте подключение.",
  "OSGARD ENTERTAINMENT / 03": "OSGARD PLAY / 03",
  "One daily seed. One challenge link. Create a match, send inputs and compare the results returned by the match service.": "Ежедневное испытание и ссылка для друга. Создайте матч, отправляйте команды и сравнивайте результаты, полученные от сервиса.",

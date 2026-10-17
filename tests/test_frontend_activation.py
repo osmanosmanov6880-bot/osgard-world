@@ -13,6 +13,7 @@ import re
 import shlex
 import signal
 import subprocess
+import sys
 import tempfile
 import time
 import unittest
@@ -46,6 +47,17 @@ PARENT_TRAPS = "\n".join(line.strip() for line in ACTIVATION.splitlines()
                          if re.fullmatch(r"trap 'stop_activation_worker [0-9]+' (?:TERM|INT|HUP)", line))
 if len(PARENT_TRAPS.splitlines()) != 3:
     raise AssertionError("Expected the actual parent signal forwarding traps")
+
+# Detached test runners may inherit ignored HUP/INT. Bash cannot install a trap
+# for a signal ignored when it starts, and start_new_session does not reset that
+# disposition. Reset only this fixture's signals in a fresh interpreter before
+# exec; changing the test runner itself or using preexec_fn would be unsafe when
+# other tests have threads. The exec preserves the new session and exact PID.
+ACTIVATION_SHELL = """import os, signal
+for signum in (signal.SIGHUP, signal.SIGINT, signal.SIGTERM):
+    signal.signal(signum, signal.SIG_DFL)
+os.execv('/bin/bash', ['/bin/bash', '--noprofile', '--norc'])
+"""
 
 
 def recovery_fixture(body, **overrides):
@@ -130,7 +142,7 @@ docker() {
                   '\n) >"$log_file" 2>&1 &\npid=$!\nactivation_worker_started=1\n' +
                   f"monitor_activation_worker {attempts}\n")
         process = subprocess.Popen(
-            ["/bin/bash", "--noprofile", "--norc"], stdin=subprocess.PIPE,
+            [sys.executable, "-I", "-c", ACTIVATION_SHELL], stdin=subprocess.PIPE,
             stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
             cwd=directory, env={"PATH": "/usr/bin:/bin"}, start_new_session=True,
         )
@@ -235,6 +247,24 @@ class ActivationRecoveryTests(unittest.TestCase):
             self.assertEqual(files["rollback"].read_text(), "started\n")
             with self.assertRaises(ProcessLookupError):
                 os.kill(worker_pid, 0)
+
+    def test_fixture_resets_ignored_caller_hup_before_starting_bash(self):
+        # Run the real session-HUP/repeated-signal assertions below a caller that
+        # ignores HUP, as detached CI runners can. Never change this runner's own
+        # disposition, and do not replace the activation traps with fixture code.
+        program = (
+            "import signal, sys, unittest\n"
+            "signal.signal(signal.SIGHUP, signal.SIG_IGN)\n"
+            f"sys.path.insert(0, {str(ROOT / 'tests')!r})\n"
+            "from test_frontend_activation import ActivationRecoveryTests\n"
+            "suite = unittest.TestSuite([ActivationRecoveryTests("
+            "'test_session_hup_reaches_both_shells_and_cannot_interrupt_rollback_twice')])\n"
+            "result = unittest.TextTestRunner(verbosity=2).run(suite)\n"
+            "raise SystemExit(0 if result.wasSuccessful() else 1)\n"
+        )
+        completed = subprocess.run([sys.executable, "-I", "-c", program], text=True,
+                                   capture_output=True, timeout=15, check=False)
+        self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
 
     def test_parent_timeout_waits_for_rollback_and_returns_timeout_status(self):
         with parent_fixture(attempts=1) as (process, files, worker_pid):

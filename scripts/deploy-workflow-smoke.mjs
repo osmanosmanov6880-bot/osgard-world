@@ -25,10 +25,11 @@ assert.ok(workflow.includes('npm run qa:core-api'), 'Deploy workflow must run Co
 assert.ok(workflow.includes('"scripts/production-health-watch.mjs"'), 'Health monitor changes must trigger a production deploy and post-deploy health check')
 assert.ok(workflow.includes("cancel-in-progress: ${{ contains(github.event.head_commit.message, '[supersede]') }}"), 'Recovery deploys must be able to cancel a stale recovery run')
 assert.ok(workflow.includes("group: osgard-frontend-deploy") && !workflow.includes("osgard-frontend-deploy-recovery"), "Supersede deployments must share the default concurrency group so they can cancel stale regular releases");
-assert.ok(workflow.includes("id: godot-changes") && workflow.includes("git diff --quiet HEAD^ HEAD -- godot/null-shift/ public/games/null-shift-godot/ scripts/null-shift-godot-smoke.mjs"), 'Static-only releases must detect whether Godot sources actually changed')
+assert.ok(workflow.includes("id: godot-changes") && workflow.includes("git diff --quiet HEAD^ HEAD -- godot/null-shift/ godot/toolchain-lock.json public/games/null-shift-godot/ scripts/null-shift-godot-smoke.mjs scripts/build-null-shift-godot.py .github/actions/setup-godot/"), 'Static-only releases must detect Godot source, toolchain and build changes')
 assert.ok(workflow.includes("fetch-depth: 2"), 'Deployment checkout must include the parent commit for path-aware Godot rebuild detection')
-assert.ok(workflow.includes("if: ${{ steps.godot-changes.outputs.changed == 'true' && !contains(github.event.head_commit.message, '[supersede]') }}"), 'Godot cache must only run for game changes and must retain the supersede fallback policy')
-for (const step of ['Verify Godot installation','Import and parse the Godot project','Runtime-smoke gameplay state transitions in headless Godot','Export Godot Web game']) {
+assert.ok(workflow.includes("use-cache: ${{ !contains(github.event.head_commit.message, '[supersede]') }}"), 'Godot cache must retain the supersede fallback policy')
+assert.ok(workflow.includes('uses: ./.github/actions/setup-godot') && workflow.includes('run: npm run build:godot'), 'Production must use the same checksum-pinned toolchain and validated exporter as browser/release CI')
+for (const step of ['Install and verify the pinned Godot toolchain','Import, runtime-test and export the pinned Godot Web game']) {
   const start = workflow.indexOf('- name: ' + step)
   assert.ok(start >= 0 && workflow.slice(start, start + 220).includes("steps.godot-changes.outputs.changed == 'true'"), step + ' must be conditional on Godot source changes')
 }

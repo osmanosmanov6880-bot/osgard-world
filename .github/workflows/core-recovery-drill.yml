@@ -1,0 +1,54 @@
+name: OSGARD Core backup recovery verification
+on:
+  pull_request:
+    paths:
+      - 'server/**'
+      - 'scripts/backup-core-production.sh'
+      - 'scripts/restore-core-backup.py'
+      - 'scripts/core-recovery-drill.py'
+      - 'scripts/verify-core-backup.py'
+      - 'tests/test_core_backup_recovery.py'
+      - 'tests/test_core_recovery_http.py'
+      - 'tests/test_core_restored_operations.py'
+      - 'tests/test_backup_shell_contract.py'
+      - 'docs/CORE-RECOVERY-DRILL.md'
+      - '.github/workflows/core-recovery-drill.yml'
+  push:
+    branches: [master]
+    paths:
+      - 'server/**'
+      - 'scripts/backup-core-production.sh'
+      - 'scripts/restore-core-backup.py'
+      - 'scripts/core-recovery-drill.py'
+      - 'scripts/verify-core-backup.py'
+      - 'tests/test_core_backup_recovery.py'
+      - 'tests/test_core_recovery_http.py'
+      - 'tests/test_core_restored_operations.py'
+      - 'tests/test_backup_shell_contract.py'
+      - 'docs/CORE-RECOVERY-DRILL.md'
+      - '.github/workflows/core-recovery-drill.yml'
+permissions:
+  contents: read
+jobs:
+  temporary-sqlite-recovery:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m py_compile scripts/verify-core-backup.py tests/test_core_backup_recovery.py
+      - run: python -m unittest discover -s tests -p test_core_backup_recovery.py -v
+      - run: python -m unittest discover -s tests -p test_backup_shell_contract.py -v
+      - run: python -m unittest discover -s tests -p test_core_restored_operations.py -v
+      - name: Back up and restore a real isolated Core HTTP service
+        run: python scripts/core-recovery-drill.py --work-dir "$RUNNER_TEMP/osgard-core-recovery" --report "$RUNNER_TEMP/core-recovery-report.json"
+      - name: Keep the recovery evidence without database or session material
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: osgard-core-recovery-report
+          path: ${{ runner.temp }}/core-recovery-report.json
+          if-no-files-found: warn
+          retention-days: 14
