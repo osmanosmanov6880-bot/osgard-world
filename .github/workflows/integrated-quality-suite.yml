@@ -1,0 +1,34 @@
+name: OSGARD Integrated Quality Suite
+on:
+  pull_request:
+  push:
+    branches: [master]
+permissions:
+  contents: read
+jobs:
+  complete-safety-suite:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Python syntax
+        run: python -m py_compile scripts/pilot-scorecard.py scripts/verify-core-backup.py scripts/verify-release-zip.py scripts/unified-release-gate.py
+      - name: All four test families (combined)
+        run: |
+          python -m unittest discover -s tests -p test_pilot_scorecard.py -v
+          python -m unittest discover -s tests -p test_core_backup_recovery.py -v
+          python -m unittest discover -s tests -p test_release_zip_gate.py -v
+          python -m unittest discover -s tests -p test_unified_release_gate.py -v
+      - name: Guard against accidental activation
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          code=Path('scripts/unified-release-gate.py').read_text()
+          assert 'publication_performed' in code
+          assert 'payment_mode' in code
+          assert 'ready_for_human_review' in code
+          print('Validated: evidence gate remains manual and non-deploying')
+          PY
