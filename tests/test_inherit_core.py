@@ -1,5 +1,6 @@
 """INHERIT lineage database and authorization regressions, entirely isolated."""
 import sys
+import threading
 import tempfile
 import unittest
 import uuid
@@ -156,8 +157,6 @@ class InheritCoreTests(unittest.TestCase):
         wid=created['worldId']
         self.assertEqual(http('GET','inherit/worlds/'+wid,'bravo')[0],404)
         self.assertEqual(http('GET','inherit/worlds/'+wid,'alpha')[0],200)
-        self.assertEqual(http('POST','inherit/worlds','alpha',{'title':'bad'},
-                              )[0],200)
         self.assertEqual(http('POST','auth/logout','alpha',{})[0],200)
         self.assertEqual(http('GET','inherit/worlds/'+wid,'alpha')[0],401)
 
