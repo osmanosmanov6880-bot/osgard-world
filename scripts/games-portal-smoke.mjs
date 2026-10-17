@@ -1,4 +1,5 @@
 import { assessReport } from './games-lighthouse-report.mjs'
+import { lighthouseFixture } from '../tests/fixtures/lighthouse-reports.mjs'
 import assert from 'node:assert/strict'
 import { readFileSync, existsSync } from 'node:fs'
 import { resolve } from 'node:path'
@@ -24,10 +25,10 @@ const lighthouseWorkflow=readFileSync(resolve('.github/workflows/games-lighthous
 assert.ok(lighthouseWorkflow.includes('https://osgard.world/games/')&&lighthouseWorkflow.includes('--preset=desktop')&&lighthouseWorkflow.includes('actions/upload-artifact@v4'),'Games Lighthouse workflow must audit mobile/desktop and preserve reports')
 assert.ok(lighthouseWorkflow.includes('workflow_run')&&lighthouseWorkflow.includes('OSGARD frontend deploy'),'Games Lighthouse audit should run after successful publication')
 const healthyScores={performance:.95,accessibility:1,'best-practices':1,seo:1}
-const fixture=(scores,tbt,lcp)=>({finalDisplayedUrl:'https://osgard.world/games/',categories:Object.fromEntries(Object.entries(scores).map(([key,score])=>[key,{score}])),audits:{'total-blocking-time':{numericValue:tbt},'largest-contentful-paint':{numericValue:lcp}}})
+const fixture=(scores,tbt,lcp,mode='mobile')=>{const report=lighthouseFixture('games',mode);for(const [key,score] of Object.entries(scores))report.categories[key].score=score;report.audits['total-blocking-time'].numericValue=tbt;report.audits['largest-contentful-paint'].numericValue=lcp;return report}
 assert.equal(assessReport(fixture(healthyScores,250,2500),'mobile').pass,true,'Healthy mobile Lighthouse report should pass guardrails')
 assert.equal(assessReport(fixture({...healthyScores,performance:.84},501,4001),'mobile').pass,false,'Poor mobile scores/TBT/LCP should fail guardrails')
-assert.equal(assessReport(fixture({...healthyScores,performance:.89},100,1500),'desktop').pass,false,'Desktop performance below guardrail should fail')
+assert.equal(assessReport(fixture({...healthyScores,performance:.89},100,1500,'desktop'),'desktop').pass,false,'Desktop performance below guardrail should fail')
 assert.ok(lighthouseScript.includes('maxTbtMs')&&lighthouseScript.includes('maxLcpMs'),'Lighthouse report must enforce Core Web Vitals guardrails')
 assert.ok(html.includes('type="application/ld+json"'),'SEO ItemList JSON-LD missing')
 assert.ok(html.includes('"numberOfItems":19')&&html.includes('/games/empire-orbit/'),'Empire Orbit must appear in the published ItemList')

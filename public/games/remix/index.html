@@ -20,6 +20,10 @@
 </main>
 <script>
 const panel=document.createElement('section');panel.id='live-growth-console';panel.className='panel';panel.style='background:#102825f5;border:1px solid #e7c77855';panel.innerHTML="<span class=\"eyebrow\">LIVE MATCH CONSOLE</span>\n<strong id=\"match-title\">Ready to enter</strong>\n<p id=\"match-status\">The daily challenge uses a shared UTC seed. Create a run, then send the invite link to a friend.</p>\n<input id=\"api-url\" aria-label=\"API URL\" placeholder=\"/api/remix\" style=\"width:100%;margin:10px 0;padding:10px;background:#07110f;border:1px solid #ffffff2b;color:#e8eee3\">\n<button id=\"start-match\" class=\"cta\" style=\"border:0;cursor:pointer;margin-top:4px\">Create daily challenge</button>\n<a id=\"new-daily-challenge\" class=\"cta remix-secondary\" href=\"/games/remix/\" hidden>Open a new daily challenge</a>\n<canvas id=\"arena\" width=\"340\" height=\"150\" style=\"display:block;width:100%;height:150px;margin-top:16px;background:#07110f;border:1px solid #ffffff1c\" aria-label=\"Server input preview, separate from the Unity game\"></canvas>\n<p id=\"server-position\">Position appears after the service accepts an input.</p>\n<div id=\"match-meter\" class=\"match-phase\"><strong id=\"phase-state\">Waiting for the service</strong><span id=\"phase-time\"></span><span id=\"match-counts\"></span></div>\n<button id=\"retry-match\" class=\"cta remix-secondary\" type=\"button\" hidden>Reconnect to this match</button>\n<div id=\"growth-panel\" hidden>\n  <span class=\"eyebrow\" id=\"growth-badge\">CHALLENGE PASSPORT</span>\n  <strong id=\"challenge-code\" style=\"display:block;margin-top:7px;font:21px Georgia,serif\">Awaiting server ID</strong>\n  <p id=\"challenge-copy\">Use this link to challenge a friend to the same ruleset. Only the server result is presented as a result.</p>\n  <input id=\"challenge-link\" aria-label=\"Shareable challenge URL\" readonly>\n  <div id=\"growth-actions\">\n    <button id=\"share-challenge\" class=\"cta\" type=\"button\">Share challenge ↗</button>\n    <button id=\"copy-challenge\" class=\"cta\" type=\"button\" style=\"background:transparent;color:#e7c778;border:1px solid #e7c77855\">Copy invite link</button>\n    <button id=\"rematch-challenge\" class=\"cta\" type=\"button\" style=\"grid-column:1/-1;background:transparent;color:#e8eee3;border:1px solid #ffffff2b\">Run this challenge again ↻</button>\n  </div>\n  <p id=\"result-summary\" role=\"status\" aria-live=\"polite\" hidden></p>\n  <div id=\"result-card-actions\" hidden style=\"margin-top:8px\"><p id=\"result-proof-note\">This is the match service response. An immutable replay archive has not been verified.</p><button id=\"share-result-card\" class=\"cta\" type=\"button\" style=\"width:100%;justify-content:center\">Share result card ↗</button><button id=\"download-result-card\" class=\"cta\" type=\"button\" style=\"width:100%;justify-content:center;background:transparent;color:#e8eee3;border:1px solid #ffffff2b\">Download result card PNG ↓</button></div>\n  <div id=\"sponsor-slot\" hidden>\n    <span class=\"eyebrow\">PARTNER SLOT / INQUIRY ONLY</span>\n    <strong>A brand can sponsor the next challenge.</strong>\n    <p>This is a commercial inquiry link, not a live ad. It appears after the result, never over active controls. No sponsor campaign is currently represented as active.</p>\n    <a id=\"sponsor-cta\" class=\"cta\" href=\"/games/partners/?utm_source=remix&utm_medium=post_session&utm_campaign=challenge_series&utm_content=result_card\">Discuss a sponsored challenge ↗</a>\n  </div>\n</div>";document.querySelector('main').insertBefore(panel,document.querySelector('#build'));
+const accessPanel=document.createElement('div');
+accessPanel.style='margin:18px 0;border-block:1px solid #e7c77844;padding:14px 0;max-width:680px';
+accessPanel.innerHTML='<span class="eyebrow">SESSION ACCESS</span><div role="group" aria-label="Session access" style="display:flex;flex-wrap:wrap;gap:10px"><button id="access-guest" type="button" class="cta remix-secondary" aria-pressed="true">Guest / invite mode</button><button id="access-account" type="button" class="cta remix-secondary" aria-pressed="false">Account-owned matches</button></div><section id="owned-panel" hidden aria-label="Account-owned matches"><p id="owned-status" role="status" aria-live="polite">Choose account mode to verify your Core session.</p><div style="display:flex;flex-wrap:wrap;gap:10px"><a id="owned-signin" class="cta remix-secondary" href="/account">Sign in and return to REMIX</a><a class="cta remix-secondary" href="/account">Manage account access</a><button id="owned-verify" type="button" class="cta remix-secondary">Verify account again</button><button id="owned-history-refresh" type="button" class="cta remix-secondary">Refresh account matches</button></div><p class="note">One account controls its assigned player. Other accounts cannot join this owned match. Guest matches remain anonymous. Active simulation recovery and replay verification are not available.</p><div id="owned-history"></div><button id="owned-history-next" type="button" class="cta remix-secondary" hidden>Next page of account matches</button><button id="owned-recover-attempt" type="button" class="cta remix-secondary" hidden>Check pending creation</button><button id="owned-new-challenge" type="button" class="cta remix-secondary" hidden>Create a new public challenge</button></section>';
+panel.insertBefore(accessPanel,panel.querySelector('#api-url'));
 const remixStore=(()=>{
  const memory=new Map(),store={ephemeral:false};
  store.getItem=key=>{if(memory.has(key))return memory.get(key);try{return localStorage.getItem(key)}catch{store.ephemeral=true;return null}};
@@ -61,6 +65,320 @@ const requests=new Set();
 const validId=value=>typeof value==='string'&&/^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$/.test(value);
 const sessionAgeLimit=7*24*60*60*1000;
 const routeScope=incomingChallengeId?'challenge:'+incomingChallengeId:'daily:'+dailyDate;
+// Account access is a separate, explicitly selected protocol. Core credentials
+// never enter the configurable guest transport or persistent match records.
+const ownedBase=location.origin+'/api/remix';
+const coreSessionKey='osgard:core-session:v1';
+const anonymousPlayerId=playerId;
+let selectedAccess='guest',ownedIdentity=null,ownedAccountId='',ownedCapabilities=null;
+let ownedBusy=false,ownedMetadataRequired=false,ownedOperationKey='',ownedAttemptStatus='',ownedNextCursor=null;
+const ownedJournalLimit=32;
+function coreCredential(){try{const value=sessionStorage.getItem(coreSessionKey)||'';return value.length<=4096&&!/\s/.test(value)?value:''}catch{return ''}}
+function isOwnedMatch(){return match?.accessMode==='core-owned'}
+function ownedAuthCurrent(){return Boolean(ownedIdentity&&ownedIdentity.id===ownedAccountId&&coreCredential()===ownedIdentity.credential)}
+function ownedStorageKey(accountId){return 'osgard:remix-session:v2:'+encodeURIComponent(ownedBase)+':'+encodeURIComponent(accountId)+':'+encodeURIComponent(routeScope)}
+function readOwnedSession(raw,accountId,scope=routeScope){
+ if(typeof raw!=='string'||raw.length>4096)return null;
+ try{
+  const value=JSON.parse(raw),now=Date.now();
+  if(!value||value.version!==2||value.accessMode!=='core-owned'||value.apiBase!==ownedBase||value.accountId!==accountId||value.scope!==scope)return null;
+  if(!['opening-challenge','prepared','creating','uncertain','rejected','active'].includes(value.stage))return null;
+  if(value.matchId!==null&&!validId(value.matchId)||value.challengeId!==''&&!validId(value.challengeId))return null;
+  if(value.matchId&&!value.challengeId||value.playerId!==null&&!validId(value.playerId))return null;
+  if(value.operationKey!==''&&!/^[A-Za-z0-9_-]{16,100}$/.test(value.operationKey))return null;
+  if(['creating','uncertain','rejected'].includes(value.stage)&&(!value.operationKey||!value.challengeId))return null;
+  if(!Number.isSafeInteger(value.sequence)||value.sequence<0||value.sequence>=Number.MAX_SAFE_INTEGER||!Number.isSafeInteger(value.seed)||value.seed<1)return null;
+  const unresolved=!value.matchId&&value.operationKey&&['creating','uncertain'].includes(value.stage);
+  if(!Number.isSafeInteger(value.savedAt)||value.savedAt<0||value.savedAt>now+60000||!unresolved&&value.savedAt<now-sessionAgeLimit||!Number.isSafeInteger(value.startedAt)||value.startedAt<0||value.startedAt>now+60000||typeof value.completionReported!=='boolean')return null;
+  return value;
+ }catch{return null}
+}
+function ownedSessionValue(stage){return {version:2,accessMode:'core-owned',apiBase:ownedBase,accountId:ownedAccountId,scope:routeScope,stage,matchId:isOwnedMatch()?match.id:null,challengeId:activeChallengeId,seed:activeChallengeSeed,playerId:isOwnedMatch()?playerId:null,sequence:seq,operationKey:ownedOperationKey,startedAt:matchStartedAt,savedAt:Date.now(),completionReported}}
+function rememberOwnedSession(stage=match?'active':ownedAttemptStatus||'prepared',replace=false){
+ if(!validId(ownedAccountId))return false;
+ // A selected history row is only a protected placeholder until metadata arrives.
+ // Leaving the page or changing modes must not replace a valid recovery record.
+ if(isOwnedMatch()&&(!validId(playerId)||match.accountId!==ownedAccountId))return false;
+ sessionKey=ownedStorageKey(ownedAccountId);
+ try{
+  const latest=currentOwnedSession(ownedAccountId);
+  if(latest&&!latest.matchId&&['creating','uncertain'].includes(latest.stage)&&latest.operationKey!==ownedOperationKey)return false;
+  if(!replace&&isOwnedMatch()&&latest?.matchId&&latest.matchId!==match.id)return false;
+  if(isOwnedMatch())seq=ownedReservedSequence(ownedAccountId,match.id,Math.max(seq,latest?.matchId===match.id?latest.sequence:0));
+  return remixStore.setItem(sessionKey,JSON.stringify(ownedSessionValue(stage)));
+ }catch{remixStore.ephemeral=true;window.RemixUI?.updateStorage();return false}
+}
+function currentOwnedSession(accountId){
+ const key=ownedStorageKey(accountId),cached=readOwnedSession(remixStore.getItem(key),accountId);
+ let durable;try{durable=readOwnedSession(localStorage.getItem(key),accountId)}catch{throw ownedRecoveryError()}
+ if(!durable)return cached?.matchId?{...cached,sequence:ownedReservedSequence(accountId,cached.matchId,cached.sequence)}:cached;
+ // Another tab may reserve input after this page populated its memory cache.
+ if(durable.matchId)return {...durable,sequence:ownedReservedSequence(accountId,durable.matchId,Math.max(durable.sequence,cached?.matchId===durable.matchId?cached.sequence:0))};
+ return durable;
+}
+function ownedJournalPrefix(kind,accountId){return 'osgard:remix-'+kind+':v2:'+encodeURIComponent(ownedBase)+':'+encodeURIComponent(accountId)+':'}
+function ownedCreationKey(value){return ownedJournalPrefix('creation',value.accountId)+encodeURIComponent(value.scope)+':'+value.operationKey}
+function ownedReservationKey(value){return ownedJournalPrefix('input',value.accountId)+encodeURIComponent(value.matchId)+':'+value.sequence}
+function ownedRecoveryError(code='owned_recovery_unavailable'){const error=Error('Account recovery storage is unavailable.');error.code=code;return error}
+function ownedJournalEntries(kind,accountId){
+ const prefix=ownedJournalPrefix(kind,accountId),entries=[];
+ try{
+  for(let i=0,n=localStorage.length;i<n;i++){
+   const key=localStorage.key(i);if(!key?.startsWith(prefix))continue;
+   const raw=localStorage.getItem(key);if(typeof raw!=='string'||raw.length>4096)throw ownedRecoveryError();
+   const value=JSON.parse(raw);let valid=false;
+   if(kind==='creation')valid=value&&typeof value.scope==='string'&&/^(?:daily:\d{4}-\d{2}-\d{2}|challenge:[A-Za-z0-9][A-Za-z0-9_.-]{0,127})$/.test(value.scope)&&readOwnedSession(raw,accountId,value.scope)&&!value.matchId&&['creating','uncertain'].includes(value.stage)&&key===ownedCreationKey(value);
+   else valid=value&&value.version===2&&value.apiBase===ownedBase&&value.accountId===accountId&&validId(value.matchId)&&Number.isSafeInteger(value.sequence)&&value.sequence>0&&value.sequence<Number.MAX_SAFE_INTEGER&&key===ownedReservationKey(value);
+   if(!valid)throw ownedRecoveryError();entries.push({key,value});
+  }
+  return entries;
+ }catch{throw ownedRecoveryError()}
+}
+function pendingOwnedCreation(accountId,preferred=''){
+ const values=ownedJournalEntries('creation',accountId).map(entry=>entry.value),saved=currentOwnedSession(accountId);
+ if(saved&&!saved.matchId&&['creating','uncertain'].includes(saved.stage)&&!values.some(value=>value.operationKey===saved.operationKey))values.push(saved);
+ values.sort((a,b)=>a.savedAt-b.savedAt||a.operationKey.localeCompare(b.operationKey));
+ return values.find(value=>value.operationKey===(preferred||saved?.operationKey))||values[0]||null;
+}
+function hasOwnedPendingCreation(){try{return Boolean(validId(ownedAccountId)&&pendingOwnedCreation(ownedAccountId,ownedOperationKey))}catch{return true}}
+function persistOwnedCreation(){
+ const entries=ownedJournalEntries('creation',ownedAccountId);
+ if(entries.length>=ownedJournalLimit||ownedJournalEntries('input',ownedAccountId).length>=ownedJournalLimit)throw ownedRecoveryError('owned_recovery_full');
+ if(pendingOwnedCreation(ownedAccountId))throw ownedRecoveryError('owned_creation_pending');
+ const value=ownedSessionValue('creating'),key=ownedCreationKey(value);
+ try{if(localStorage.getItem(key)!==null)throw ownedRecoveryError('owned_creation_pending');localStorage.setItem(key,JSON.stringify(value))}
+ catch(error){if(error.code)throw error;remixStore.ephemeral=true;window.RemixUI?.updateStorage();throw ownedRecoveryError()}
+}
+function settleOwnedCreation(key){
+ if(!key||!ownedAuthCurrent())return;
+ try{for(const entry of ownedJournalEntries('creation',ownedAccountId))if(entry.value.operationKey===key)localStorage.removeItem(entry.key)}catch{remixStore.ephemeral=true;window.RemixUI?.updateStorage()}
+}
+function ownedReservedSequence(accountId,id,minimum=0){return ownedJournalEntries('input',accountId).reduce((highest,entry)=>entry.value.matchId===id?Math.max(highest,entry.value.sequence):highest,minimum)}
+function reserveOwnedInput(id,sequence){
+ const entries=ownedJournalEntries('input',ownedAccountId),value={version:2,apiBase:ownedBase,accountId:ownedAccountId,matchId:id,sequence},key=ownedReservationKey(value);
+ if(entries.length>=ownedJournalLimit)throw ownedRecoveryError('owned_recovery_full');
+ try{if(localStorage.getItem(key)===null)localStorage.setItem(key,JSON.stringify(value))}
+ catch{remixStore.ephemeral=true;window.RemixUI?.updateStorage();throw ownedRecoveryError()}
+}
+function acknowledgeOwnedInputs(id,highwater){
+ if(!ownedAuthCurrent())return;
+ try{for(const entry of ownedJournalEntries('input',ownedAccountId))if(entry.value.matchId===id&&entry.value.sequence<=highwater)localStorage.removeItem(entry.key)}catch{remixStore.ephemeral=true;window.RemixUI?.updateStorage()}
+}
+function pauseOwnedInputRecovery(error){
+ if(timer){clearTimeout(timer);timer=null}ownedMetadataRequired=true;sessionMode='reconnecting';pendingInput=null;status.textContent=ownedErrorMessage(error);syncControls();
+}
+function validOwnedMetadata(value){return value&&typeof value==='object'&&!Array.isArray(value)&&value.accessMode==='core-owned'&&validId(value.id)&&validId(value.challengeId)&&value.maxPlayers===2&&typeof value.createdAt==='string'&&value.createdAt.length>0&&value.createdAt.length<=100&&validId(value.playerId)&&Number.isSafeInteger(value.highestSubmittedSequence)&&value.highestSubmittedSequence>=0&&value.highestSubmittedSequence<Number.MAX_SAFE_INTEGER}
+function ownedSignInURL(){
+ const query=new URLSearchParams();
+ if(validId(incomingChallengeId))query.set('challenge',incomingChallengeId);
+ query.set('lang',window.RemixUI?.getLanguage?.()||(['ru','en'].includes(routeParams.get('lang'))?routeParams.get('lang'):'ru'));
+ query.set('mode','account');
+ return '/workspace?returnTo='+encodeURIComponent('/games/remix/?'+query);
+}
+function ownedModeLocked(){return opening||ownedBusy||Boolean(match&&!['completed','missing','unavailable','auth-required','auth-unavailable','access-denied'].includes(sessionMode))}
+function ownedCreationPending(){return Boolean(ownedOperationKey&&!match&&['creating','uncertain'].includes(ownedAttemptStatus))}
+function canCreateOwned(){
+ if(selectedAccess!=='core-owned'||!ownedAuthCurrent()||ownedCapabilities?.creationEnabled!==true||ownedBusy||ownedOperationKey&&!match&&ownedAttemptStatus!=='rejected')return false;
+ try{return ownedJournalEntries('input',ownedAccountId).length<ownedJournalLimit&&!pendingOwnedCreation(ownedAccountId)}catch{return false}
+}
+function canStartNewOwnedChallenge(){return !match&&!opening&&!polling&&sessionMode==='creation-rejected'&&ownedAttemptStatus==='rejected'&&canCreateOwned()}
+async function startNewOwnedChallenge(){
+ if(!canStartNewOwnedChallenge())return;
+ activeChallengeId='';activeChallengeSeed=dailySeed;challengeSeedVerified=false;ownedOperationKey='';ownedAttemptStatus='';growthPanel.hidden=true;
+ await startOwned();
+}
+function syncOwnedControls(){
+ const account=selectedAccess==='core-owned';
+ panel.querySelector('#access-guest').setAttribute('aria-pressed',String(!account));panel.querySelector('#access-account').setAttribute('aria-pressed',String(account));
+ panel.querySelector('#access-guest').disabled=ownedModeLocked();panel.querySelector('#access-account').disabled=ownedModeLocked();
+ panel.querySelector('#owned-panel').hidden=!account;
+ panel.querySelector('#owned-signin').href=ownedSignInURL();panel.querySelector('#owned-signin').hidden=ownedAuthCurrent();
+ panel.querySelector('#owned-verify').disabled=ownedBusy||opening;
+ panel.querySelector('#owned-history-refresh').disabled=!ownedAuthCurrent()||ownedBusy||opening;
+ panel.querySelector('#owned-history-next').hidden=!ownedNextCursor;panel.querySelector('#owned-history-next').disabled=!ownedAuthCurrent()||ownedBusy||opening;
+ panel.querySelector('#owned-recover-attempt').hidden=!ownedCreationPending()&&!hasOwnedPendingCreation();panel.querySelector('#owned-recover-attempt').disabled=!ownedAuthCurrent()||ownedBusy||opening;
+ panel.querySelector('#owned-new-challenge').hidden=sessionMode!=='creation-rejected'||ownedAttemptStatus!=='rejected';panel.querySelector('#owned-new-challenge').disabled=!canStartNewOwnedChallenge();
+ panel.querySelectorAll('[data-owned-match]').forEach(button=>{button.disabled=ownedModeLocked()||ownedCreationPending()||hasOwnedPendingCreation()});
+ panel.setAttribute('data-access-mode',selectedAccess);
+}
+function ownedMessage(text){panel.querySelector('#owned-status').textContent=text}
+function stopOwnedWork(message,mode='auth-required'){
+ operation++;ownedBusy=false;opening=false;polling=false;verifiedState=false;ownedMetadataRequired=true;ownedIdentity=null;
+ stopInputs();if(timer){clearTimeout(timer);timer=null}for(const request of requests)request.controller.abort();
+ clearResult();panel.querySelector('#owned-history').innerHTML='';ownedNextCursor=null;
+ sessionMode=mode;ownedMessage(message);status.textContent=message;syncControls();
+}
+function ownedErrorMessage(error){
+ if(error.code==='owned_recovery_full')return 'Saved account recovery is full. Check pending creations or restore existing matches before submitting more.';
+ if(error.code==='owned_creation_pending')return 'Another creation is pending for this account. Check its recovery before starting another run.';
+ if(error.code==='owned_recovery_unavailable')return 'Account recovery storage is unavailable. Existing recovery records are retained; new commands and creations are paused.';
+ if(error.status===401)return 'Sign in to your Core account, then verify it here. Protected matches remain account-owned.';
+ if(error.code==='authentication_unavailable')return 'Account verification is unavailable. Protected input is paused; your match remains account-owned.';
+ if(error.status===403)return 'This account cannot access that protected match. Choose a match from its own history.';
+ return 'The account match service did not confirm this request. Your saved recovery record is retained.';
+}
+async function ownedJSON(url,options={},credential=''){
+ const target=new URL(url,location.origin);
+ if(credential&&(target.origin!==location.origin||target.username||target.password||target.hash||!(target.pathname==='/api/core/auth/me'&&!target.search&&(options.method||'GET')==='GET'||target.pathname.startsWith('/api/remix/v2/')&&validOwnedPath(target.pathname.slice('/api/remix'.length)+target.search))))throw Error('Core credentials are restricted to the fixed account service.');
+ const controller=new AbortController(),request={controller,path:url};requests.add(request);
+ let timer;const expiresAt=Date.now()+12000;
+ try{
+  const result=await Promise.race([(async()=>{
+   const headers={Accept:'application/json',...(options.body?{'Content-Type':'application/json'}:{}),...(credential?{Authorization:'Bearer '+credential}:{}),...(options.idempotencyKey?{'Idempotency-Key':options.idempotencyKey}:{})};
+   const response=await fetch(url,{method:options.method||'GET',headers,body:options.body,signal:controller.signal,credentials:'omit',cache:'no-store',redirect:'error'});
+   let value;try{value=await response.json()}catch{const error=Error('The match service returned an invalid response.');error.status=response.status;throw error}
+   if(!response.ok){const error=Error('The account match service rejected this request.');error.status=response.status;error.code=typeof value?.error==='string'?value.error:'';throw error}
+   return value;
+  })(),new Promise((resolve,reject)=>{timer=setTimeout(()=>{reject(Error('The match service took too long to respond.'));controller.abort()},12000)})]);
+  if(Date.now()>=expiresAt)throw Error('The match service took too long to respond.');
+  return result;
+ }finally{clearTimeout(timer);requests.delete(request)}
+}
+function validOwnedPath(path){return /^\/v2\/(?:matches(?:\?after=[A-Za-z0-9_.-]+|\/[A-Za-z0-9][A-Za-z0-9_.-]{0,127}(?:\/(?:state|result|input))?)?|creation-attempts\/[A-Za-z0-9_-]{16,100})$/.test(path)}
+async function ownedApi(path,options={}){
+ if(selectedAccess!=='core-owned'||connectionBase!==ownedBase||!validOwnedPath(path))throw Error('Protected matches require the fixed account service.');
+ if(!ownedAuthCurrent()){stopOwnedWork('Your account session changed. Verify the account again before using this protected match.');throw Error('Account verification required.')}
+ const identity=ownedIdentity,token=operation;
+ try{
+  const value=await ownedJSON(ownedBase+path,options,identity.credential);
+  if(token!==operation||ownedIdentity!==identity||!ownedAuthCurrent()){
+   if(token===operation)stopOwnedWork('Your account session changed. Verify the account again before using this protected match.');
+   throw Error('Account verification changed.');
+  }
+  return value;
+ }catch(error){
+  if(token===operation&&(error.status===401||error.code==='authentication_unavailable'))stopOwnedWork(ownedErrorMessage(error),error.status===401?'auth-required':'auth-unavailable');
+  throw error;
+ }
+}
+function matchApi(suffix,options){return isOwnedMatch()?ownedApi('/v2/matches/'+encodeURIComponent(match.id)+suffix,options):api('/v1/matches/'+encodeURIComponent(match.id)+suffix,options)}
+function applyOwnedMetadata(value,reserved=0){
+ if(!validOwnedMetadata(value))throw Error('The match service returned an invalid response.');
+ match={id:value.id,accessMode:'core-owned',accountId:ownedAccountId};playerId=value.playerId;
+ seq=ownedReservedSequence(ownedAccountId,value.id,Math.max(value.highestSubmittedSequence,Number.isSafeInteger(reserved)&&reserved>=0&&reserved<Number.MAX_SAFE_INTEGER?reserved:0));
+ acknowledgeOwnedInputs(value.id,value.highestSubmittedSequence);
+ activeChallengeId=value.challengeId;challengeSeedVerified=false;ownedMetadataRequired=false;ownedAttemptStatus='';
+ if(!matchStartedAt)matchStartedAt=Date.now();
+ connectionBase=ownedBase;sessionMode='restoring';verifiedState=false;title.textContent='Match '+match.id;
+ updateChallengePassport();if(rememberOwnedSession('active',true))settleOwnedCreation(ownedOperationKey);
+}
+async function loadOwnedHistory(next=false){
+ if(ownedBusy||opening||!ownedAuthCurrent())return;
+ const token=operation;ownedBusy=true;syncControls();
+ try{
+  const page=await ownedApi('/v2/matches'+(next&&ownedNextCursor?'?after='+encodeURIComponent(ownedNextCursor):''));
+  if(!current(token))return;
+  if(!page||!Array.isArray(page.matches)||page.matches.length>50||!page.matches.every(validOwnedMetadata)||new Set(page.matches.map(item=>item.id)).size!==page.matches.length||page.nextCursor!==null&&!validId(page.nextCursor))throw Error('The match service returned an invalid response.');
+  ownedNextCursor=page.nextCursor;const list=panel.querySelector('#owned-history');list.innerHTML='';
+  if(!page.matches.length){const empty=document.createElement('p');empty.textContent='No account-owned matches were returned.';list.appendChild(empty)}
+  for(const item of page.matches){const row=document.createElement('p'),button=document.createElement('button');button.type='button';button.className='cta remix-secondary';button.dataset.ownedMatch=item.id;button.textContent='Recover match '+item.id;button.style='max-width:100%;overflow-wrap:anywhere';button.onclick=()=>recoverOwnedMatch(item.id);row.appendChild(button);list.appendChild(row)}
+ }catch(error){if(current(token))ownedMessage(ownedErrorMessage(error))}
+ finally{if(current(token)){ownedBusy=false;syncControls()}}
+}
+async function recoverOwnedMatch(id,saved=null){
+ if(!validId(id)||ownedBusy||opening||ownedCreationPending()||hasOwnedPendingCreation()||!ownedAuthCurrent())return;
+ const token=++operation;ownedBusy=true;polling=false;verifiedState=false;stopInputs();if(timer){clearTimeout(timer);timer=null}for(const request of requests)request.controller.abort();clearResult();
+ match={id,accessMode:'core-owned',accountId:ownedAccountId};playerId='';seq=0;ownedMetadataRequired=true;syncControls();
+ try{
+  const metadata=await ownedApi('/v2/matches/'+encodeURIComponent(id));if(!current(token))return;
+  if(!validOwnedMetadata(metadata)||metadata.id!==id)throw Error('The match service returned an invalid response.');
+  let local=saved;
+  if(!local)local=currentOwnedSession(ownedAccountId);
+  const latest=currentOwnedSession(ownedAccountId);if(latest?.matchId===id&&(!local||latest.sequence>local.sequence))local=latest;
+  const reserved=local?.matchId===id?local.sequence:0;
+  ownedOperationKey=local?.matchId===id?local.operationKey:'';matchStartedAt=local?.matchId===id?local.startedAt:0;completionReported=local?.matchId===id?local.completionReported:false;
+  applyOwnedMetadata(metadata,reserved);status.textContent='Restoring the account-owned match. Its player and submitted sequence come from the service.';
+ }catch(error){if(current(token)){sessionMode=error.status===403?'access-denied':'unavailable';status.textContent=ownedErrorMessage(error);ownedMessage(status.textContent)}}
+ finally{if(current(token)){ownedBusy=false;syncControls();if(isOwnedMatch()&&sessionMode==='restoring')await refresh()}}
+}
+async function recoverOwnedCreation(){
+ if(!ownedCreationPending()||ownedBusy||opening||!ownedAuthCurrent())return;
+ const key=ownedOperationKey,token=operation;ownedBusy=true;syncControls();
+ try{
+  const attempt=await ownedApi('/v2/creation-attempts/'+encodeURIComponent(key));if(!current(token)||key!==ownedOperationKey)return;
+  if(attempt?.status==='ready'){
+   if(!validOwnedMetadata(attempt.match)||attempt.match.challengeId!==activeChallengeId)throw Error('The match service returned an invalid response.');
+   applyOwnedMetadata(attempt.match);status.textContent='The service recovered this account-owned creation. No create request was repeated.';
+  }else if(['uncertain','rejected'].includes(attempt?.status)&&attempt.operationKey===key){
+   ownedAttemptStatus=attempt.status;sessionMode=attempt.status==='rejected'?'creation-rejected':'creation-uncertain';rememberOwnedSession(attempt.status);
+   if(attempt.status==='rejected')settleOwnedCreation(key);
+   status.textContent=attempt.status==='rejected'?'The service rejected this creation. A new attempt requires a separate action.':'Creation remains unconfirmed. Check this same attempt again; no POST will be repeated.';
+  }else throw Error('The match service returned an invalid response.');
+ }catch(error){if(current(token)){ownedAttemptStatus='uncertain';sessionMode='creation-uncertain';rememberOwnedSession('uncertain');status.textContent=error.status===404?'No account-owned creation is confirmed for this attempt. Its request will not be repeated.':ownedErrorMessage(error)}}
+ finally{if(current(token)){ownedBusy=false;syncControls();if(isOwnedMatch())await refresh()}}
+}
+async function verifyOwnedAccount(){
+ if(selectedAccess!=='core-owned'||ownedBusy||opening)return;
+ const token=++operation;ownedBusy=true;polling=false;verifiedState=false;ownedIdentity=null;
+ stopInputs();if(timer){clearTimeout(timer);timer=null}for(const request of requests)request.controller.abort();clearResult();panel.querySelector('#owned-history').innerHTML='';ownedNextCursor=null;
+ ownedMessage('Checking account access and service capabilities…');syncControls();let saved=null;
+ try{
+  const capabilities=await ownedJSON(ownedBase+'/v2/capabilities');if(!current(token))return;
+  if(!capabilities||capabilities.authPolicyVersion!==1||capabilities.provider!=='core'||capabilities.ownershipPolicy!=='confirmed-durable-binding'||typeof capabilities.creationEnabled!=='boolean')throw Error('Account match capabilities are unavailable.');
+  ownedCapabilities=capabilities;const credential=coreCredential();if(!credential){const error=Error('Sign in required');error.status=401;throw error}
+  const account=await ownedJSON('/api/core/auth/me',{},credential);if(!current(token))return;
+  if(coreCredential()!==credential)throw Error('Account verification changed.');
+  if(!account?.user||!validId(account.user.id)||typeof account.user.username!=='string'||!account.user.username||account.user.username.length>128)throw Error('Account verification returned an invalid response.');
+  const changed=ownedAccountId&&ownedAccountId!==account.user.id;
+  ownedAccountId=account.user.id;ownedIdentity={id:ownedAccountId,username:account.user.username,credential};
+  match=null;playerId='';seq=0;ownedOperationKey='';ownedAttemptStatus='';matchStartedAt=0;completionReported=false;sessionMode='idle';connectionBase=ownedBase;sessionKey=ownedStorageKey(ownedAccountId);
+  saved=currentOwnedSession(ownedAccountId);saved=pendingOwnedCreation(ownedAccountId,saved?.operationKey)||saved;
+  if(saved){activeChallengeId=saved.challengeId;activeChallengeSeed=saved.seed;ownedOperationKey=saved.operationKey;ownedAttemptStatus=['creating','uncertain','rejected'].includes(saved.stage)?saved.stage:'';if(!saved.matchId&&ownedOperationKey){sessionMode=saved.stage==='rejected'?'creation-rejected':'creation-uncertain';seq=saved.sequence}}
+  else{activeChallengeId=incomingChallengeId;activeChallengeSeed=Number.isSafeInteger(incomingSeed)&&incomingSeed>0?incomingSeed:dailySeed}
+  ownedMessage('Verified account: '+account.user.username);
+  status.textContent=changed?'A different account is verified. Previous protected matches remain with their original account.':capabilities.creationEnabled?'Choose an account-owned match or create a separate run.':'Account match creation is disabled. You can view and recover existing account-owned matches.';
+ }catch(error){if(current(token)){ownedIdentity=null;sessionMode=error.status===401?'auth-required':'auth-unavailable';ownedMessage(ownedErrorMessage(error));status.textContent=ownedErrorMessage(error)}}
+ finally{if(current(token)){ownedBusy=false;syncControls()}}
+ if(!current(token)||!ownedAuthCurrent())return;
+ if(saved?.matchId)await recoverOwnedMatch(saved.matchId,saved);else if(ownedCreationPending())await recoverOwnedCreation();
+ if(ownedAuthCurrent())await loadOwnedHistory();
+}
+async function selectAccess(mode){
+ if(!['guest','core-owned'].includes(mode)||ownedModeLocked())return;
+ if(mode===selectedAccess){if(mode==='core-owned')await verifyOwnedAccount();return}
+ if(match)rememberSession();operation++;stopInputs();if(timer){clearTimeout(timer);timer=null}for(const request of requests)request.controller.abort();
+ selectedAccess=mode;match=null;seq=0;playerId=anonymousPlayerId;serverPhase='';verifiedState=false;completionReported=false;opening=false;polling=false;ownedIdentity=null;ownedOperationKey='';ownedAttemptStatus='';clearResult();growthPanel.hidden=true;
+ const url=new URL(location.href);if(mode==='core-owned')url.searchParams.set('mode','account');else url.searchParams.delete('mode');try{history.replaceState(null,'',url.pathname+url.search+url.hash)}catch{}
+ sessionMode='idle';activeChallengeId=incomingChallengeId;activeChallengeSeed=Number.isSafeInteger(incomingSeed)&&incomingSeed>0?incomingSeed:dailySeed;challengeSeedVerified=false;
+ if(mode==='core-owned'){connectionBase=ownedBase;apiInput.value='/api/remix';syncControls();await verifyOwnedAccount()}
+ else{ownedAccountId='';connectionBase='';sessionKey='';apiInput.value=remixStore.getItem('remix-api-url')||'/api/remix';status.textContent='Guest mode is separate from account-owned matches.';syncControls();await restoreSession()}
+}
+async function startOwned(){
+ if(opening||polling||ownedBusy||!canCreateOwned()||match&&!['completed','missing','unavailable','access-denied'].includes(sessionMode))return;
+ const token=++operation;opening=true;stopInputs();if(timer){clearTimeout(timer);timer=null}for(const request of requests)request.controller.abort();
+ match=null;seq=0;playerId='';matchStartedAt=0;completionReported=false;verifiedState=false;serverPhase='';failures=0;ownedOperationKey='';ownedAttemptStatus='';connectionBase=ownedBase;clearResult();
+ sessionMode='opening';status.textContent='Opening an account-owned run. Its single participant is assigned by the service.';syncControls();let stage='prepared',recover=false;
+ try{
+  if(!activeChallengeId){
+   stage='opening-challenge';if(!rememberOwnedSession(stage))throw Object.assign(Error('Recovery storage unavailable'),{code:'recovery_storage_unavailable'});
+   const challenge=await api('/v1/challenges',{method:'POST',body:JSON.stringify({creatorId:anonymousPlayerId,title:'OSGARD DAILY '+dailyDate,mode:'speed',seed:dailySeed,visibility:'public'})});
+   if(!current(token))return;if(!challenge||!validId(challenge.id))throw Error('The challenge service returned no challenge ID.');
+   activeChallengeId=challenge.id;activeChallengeSeed=Number.isSafeInteger(challenge.seed)&&challenge.seed>0?challenge.seed:dailySeed;challengeSeedVerified=Number.isSafeInteger(challenge.seed)&&challenge.seed>0;
+  }
+  if(!validId(activeChallengeId))throw Error('The challenge service returned no challenge ID.');
+  const key=window.crypto?.randomUUID?.();if(typeof key!=='string'||!/^[A-Za-z0-9_-]{16,100}$/.test(key))throw Error('A secure operation key is unavailable.');
+  ownedOperationKey=key;ownedAttemptStatus='creating';stage='creating';
+  // An immutable per-operation journal is required before POST. The active
+  // session pointer is only a convenience and may be stale in another tab.
+  try{persistOwnedCreation()}catch(error){ownedOperationKey='';ownedAttemptStatus='';throw error}
+  rememberOwnedSession(stage);
+  const created=await ownedApi('/v2/matches',{method:'POST',body:JSON.stringify({challengeId:activeChallengeId,maxPlayers:2}),idempotencyKey:key});
+  if(!current(token))return;if(!validOwnedMetadata(created)||created.challengeId!==activeChallengeId)throw Error('The match service returned an invalid response.');
+  applyOwnedMetadata(created);status.textContent='Account-owned match created. Checking its server state…';arena.focus({preventScroll:true});
+ }catch(error){
+  if(!current(token))return;
+  if(error.code==='recovery_storage_unavailable'||['owned_recovery_unavailable','owned_recovery_full','owned_creation_pending'].includes(error.code)){
+   sessionMode='creation-rejected';status.textContent=error.code==='recovery_storage_unavailable'?'Account match creation needs saved recovery metadata. Enable browser storage before trying again.':ownedErrorMessage(error);
+  }
+  else if(stage==='creating'){
+   const rejected=error.code==='creation_rejected'||error.code==='owned_creation_disabled';ownedAttemptStatus=rejected?'rejected':'uncertain';sessionMode=rejected?'creation-rejected':'creation-uncertain';rememberOwnedSession(ownedAttemptStatus);
+   if(rejected)settleOwnedCreation(ownedOperationKey);
+   if(error.code==='owned_creation_disabled')ownedCapabilities.creationEnabled=false;
+   status.textContent=rejected?'The service rejected this creation. A new attempt requires a separate action.':'Creation remains unconfirmed. Check this same attempt again; no POST will be repeated.';recover=!rejected;
+  }else{sessionMode='idle';status.textContent='The public challenge was not confirmed. No account-owned match request was submitted.'}
+ }finally{if(current(token)){opening=false;syncControls();if(match)await refresh();else if(recover)await recoverOwnedCreation()}}
+}
+
 function normalizeApi(value){
  const raw=String(value||'').trim();if(!raw)throw Error('Enter the REMIX API URL first');
  const url=new URL(raw,location.origin);
@@ -72,7 +390,7 @@ function readSession(raw,base){
  if(typeof raw!=='string'||raw.length>4096)return null;
  try{
   const value=JSON.parse(raw),now=Date.now();
-  if(!value||typeof value!=='object'||Array.isArray(value)||value.version!==1||value.apiBase!==base||value.scope!==routeScope)return null;
+  if(!value||typeof value!=='object'||Array.isArray(value)||value.version!==1||value.apiBase!==base||value.scope!==routeScope||value.accessMode&&value.accessMode!=='guest')return null;
   if(!validId(value.playerId)||!['opening-challenge','opening-match','prepared','active'].includes(value.stage))return null;
   if(value.matchId!==null&&!validId(value.matchId))return null;
   if(value.challengeId!==''&&!validId(value.challengeId))return null;
@@ -85,6 +403,7 @@ function readSession(raw,base){
  }catch{return null}
 }
 function rememberSession(stage=match?'active':'prepared'){
+ if(selectedAccess==='core-owned'||isOwnedMatch())return rememberOwnedSession(stage);
  if(!connectionBase||!sessionKey)return;
  remixStore.setItem(sessionKey,JSON.stringify({version:1,apiBase:connectionBase,scope:routeScope,stage,matchId:match?.id||null,challengeId:activeChallengeId,seed:activeChallengeSeed,playerId,sequence:seq,startedAt:matchStartedAt,savedAt:Date.now(),completionReported}));
 }
@@ -98,18 +417,26 @@ function clearResult(){
  for(const selector of ['#result-summary','#result-card-actions','#sponsor-slot'])panel.querySelector(selector).hidden=true;
  panel.querySelector('#result-summary').textContent='';panel.querySelector('#server-position').textContent='Position appears after the service accepts an input.';
 }
-function canSubmitInput(){return Boolean(match&&verifiedState&&sessionMode==='active'&&['PLAYING','RUNNING'].includes(serverPhase)&&navigator.onLine!==false)}
+function canSubmitInput(){return Boolean(match&&verifiedState&&sessionMode==='active'&&['PLAYING','RUNNING'].includes(serverPhase)&&navigator.onLine!==false&&(!isOwnedMatch()||ownedAuthCurrent()&&match.accountId===ownedAccountId))}
 function syncControls(){
- const locked=opening||Boolean(match&&!['completed','missing'].includes(sessionMode));
+ const locked=opening||Boolean(match&&!['completed','missing','unavailable','access-denied'].includes(sessionMode));
  const button=panel.querySelector('#start-match');
  button.disabled=locked||sessionMode==='completed';apiInput.disabled=locked;
  button.textContent=opening?'Opening challenge…':sessionMode==='completed'?'Result received':locked?'Match active':sessionMode==='uncertain'?'Start a new match':sessionMode==='missing'?'Create another match':sessionMode==='invalid-invite'?'Retry shared challenge':activeChallengeId?'Start this challenge':'Create daily challenge';
  panel.querySelector('#new-daily-challenge').hidden=sessionMode!=='invalid-invite';
  panel.querySelector('#rematch-challenge').disabled=sessionMode!=='completed';
- const retry=panel.querySelector('#retry-match');retry.hidden=!match||!['reconnecting','restoring','result-pending','missing'].includes(sessionMode);retry.disabled=polling;
+ const retry=panel.querySelector('#retry-match');retry.hidden=!match||!['reconnecting','restoring','result-pending','missing','unavailable','auth-required','auth-unavailable','access-denied'].includes(sessionMode);retry.disabled=polling||ownedBusy;
  arena.setAttribute('aria-disabled',String(!canSubmitInput()));
  panel.querySelectorAll('[data-console-action]').forEach(button=>{button.disabled=!canSubmitInput()});
- panel.setAttribute('data-session-state',sessionMode);
+ if(selectedAccess==='core-owned'){
+  apiInput.disabled=true;button.disabled=locked||!canCreateOwned();
+  if(!ownedCapabilities?.creationEnabled)button.textContent='Account creation unavailable';
+  else if(!ownedAuthCurrent())button.textContent='Verify account to continue';
+  else if(ownedOperationKey&&!match&&ownedAttemptStatus!=='rejected')button.textContent='Recover pending creation';
+  else if(!locked)button.textContent=sessionMode==='completed'?'Create another account run':'Create account-owned run';
+  panel.querySelector('#rematch-challenge').disabled=sessionMode!=='completed'||!canCreateOwned();
+ }
+ panel.setAttribute('data-session-state',sessionMode);syncOwnedControls();
 }
 function paintState(state){
  serverPhase=state.phase;
@@ -132,6 +459,7 @@ async function api(path, options){
  finally{clearTimeout(timeout);requests.delete(request)}
 }
 async function start(reuseCurrent=false){
+ if(selectedAccess==='core-owned')return startOwned();
  if(opening||polling||match&&!['completed','missing'].includes(sessionMode))return;
  let nextBase;
  try{nextBase=normalizeApi(apiInput.value)}catch(error){status.textContent='Connection error: '+error.message;syncControls();return}
@@ -186,7 +514,7 @@ async function start(reuseCurrent=false){
 }
 function scheduleRefresh(delay){
  if(timer){clearTimeout(timer);timer=null}
- if(!match||['completed','missing'].includes(sessionMode)||navigator.onLine===false)return;
+ if(!match||['completed','missing','unavailable','auth-required','auth-unavailable','access-denied'].includes(sessionMode)||navigator.onLine===false)return;
  timer=setTimeout(()=>{timer=null;refresh()},delay);
 }
 async function refresh(){
@@ -195,14 +523,20 @@ async function refresh(){
  if(navigator.onLine===false){sessionMode='reconnecting';status.textContent='You are offline. The saved match will reconnect when the connection returns.';stopInputs();syncControls();return}
  const token=operation,id=match.id;polling=true;syncControls();
  try{
-  const state=await api('/v1/matches/'+encodeURIComponent(id)+'/state');
+  if(isOwnedMatch()&&ownedMetadataRequired){
+   const metadata=await ownedApi('/v2/matches/'+encodeURIComponent(id));
+   if(!current(token,id))return;
+   if(!validOwnedMetadata(metadata)||metadata.id!==id)throw Error('The match service returned an invalid response.');
+   playerId=metadata.playerId;seq=ownedReservedSequence(ownedAccountId,id,Math.max(seq,metadata.highestSubmittedSequence));acknowledgeOwnedInputs(id,metadata.highestSubmittedSequence);ownedMetadataRequired=false;rememberOwnedSession('active');
+  }
+  const state=await matchApi('/state');
   if(!current(token,id))return;
   if(!validState(state,id))throw Error('The match service returned an invalid response.');
   verifiedState=true;paintState(state);
   if(state.phase==='RESULTS'){
    sessionMode='result-pending';stopInputs();syncControls();
    status.textContent='The run ended. Fetching its server result…';
-   const result=await api('/v1/matches/'+encodeURIComponent(id)+'/result');
+   const result=await matchApi('/result');
    if(!current(token,id))return;
    if(!validResult(result,id))throw Error('The match service returned an invalid response.');
    lastResultSummary=summarizeResult(result);
@@ -223,13 +557,18 @@ async function refresh(){
  }catch(error){
   if(!current(token,id))return;
   stopInputs();failures++;
-  if(error.status===404){sessionMode='missing';verifiedState=false;clearResult();status.textContent='The service cannot find this saved match. Retry its lookup or create another match.'}
+  if(isOwnedMatch()&&(error.status===403||error.status===404)){
+   sessionMode=error.status===403?'access-denied':'unavailable';verifiedState=false;clearResult();
+   status.textContent=error.status===403?ownedErrorMessage(error):'The owned record remains saved, but its active simulation is unavailable. This release cannot recover a lost simulation.';
+  }
+  else if(error.status===404){sessionMode='missing';verifiedState=false;clearResult();status.textContent='The service cannot find this saved match. Retry its lookup or create another match.'}
   else{sessionMode=serverPhase==='RESULTS'?'result-pending':'reconnecting';status.textContent=serverPhase==='RESULTS'?'The result has not loaded yet. Your match is retained; reconnecting…':'Connection lost. Your match is retained; reconnecting…'}
  }finally{
   if(current(token,id)){polling=false;syncControls();scheduleRefresh(failures?Math.min(10000,1000*2**Math.min(failures,4)):1000)}
  }
 }
 function send(moveX,moveY,jump){
+ if(isOwnedMatch()&&!ownedAuthCurrent()){stopOwnedWork('Your account session changed. Verify the account again before using this protected match.');return}
  if(!canSubmitInput()||![-1,0,1].includes(moveX)||![-1,0,1].includes(moveY)||typeof jump!=='boolean')return;
  // At most one request and one coalesced intent. Keyboard repeat cannot flood the service.
  pendingInput={moveX,moveY,jump:jump||Boolean(pendingInput?.jump)};dispatchInput();
@@ -238,23 +577,30 @@ async function dispatchInput(){
  if(inputBusy||inputTimer||!pendingInput||!canSubmitInput())return;
  if(Date.now()<nextInputAt){inputTimer=setTimeout(()=>{inputTimer=null;dispatchInput()},nextInputAt-Date.now());return}
  const token=operation,inputToken=inputOperation,id=match.id,intent=pendingInput;pendingInput=null;
- try{const saved=readSession(localStorage.getItem(sessionKey),connectionBase);if(saved?.matchId===id&&saved.playerId===playerId)seq=Math.max(seq,saved.sequence)}catch{}
- if(seq>=Number.MAX_SAFE_INTEGER-1){sessionMode='reconnecting';status.textContent='This session cannot accept more inputs. Reconnect to view its result.';syncControls();return}
- const sequence=++seq;rememberSession();inputBusy=true;nextInputAt=Date.now()+100;
+ try{const saved=isOwnedMatch()?readOwnedSession(localStorage.getItem(sessionKey),ownedAccountId):readSession(localStorage.getItem(sessionKey),connectionBase);if(saved?.matchId===id&&(isOwnedMatch()||saved.playerId===playerId))seq=Math.max(seq,saved.sequence)}catch{if(isOwnedMatch()){pauseOwnedInputRecovery(ownedRecoveryError());return}}
+ let sequence;
  try{
-  const value=await api('/v1/matches/'+encodeURIComponent(id)+'/input',{method:'POST',body:JSON.stringify({playerId,sequence,...intent})});
+  if(isOwnedMatch())seq=ownedReservedSequence(ownedAccountId,id,seq);
+  if(seq>=Number.MAX_SAFE_INTEGER-1){sessionMode='reconnecting';status.textContent='This session cannot accept more inputs. Reconnect to view its result.';syncControls();return}
+  sequence=++seq;if(isOwnedMatch())reserveOwnedInput(id,sequence);
+ }catch(error){pauseOwnedInputRecovery(error);return}
+ rememberSession();inputBusy=true;nextInputAt=Date.now()+100;
+ try{
+  const value=await matchApi('/input',{method:'POST',body:JSON.stringify(isOwnedMatch()?{sequence,...intent}:{playerId,sequence,...intent})});
   if(!current(token,id)||inputToken!==inputOperation||!canSubmitInput())return;
   if(!value||value.playerId!==playerId||value.lastSequence!==sequence||!Array.isArray(value.position)||value.position.length<2||!value.position.every(number=>typeof number==='number'&&Number.isFinite(number)))throw Error('The match service returned an invalid response.');
+  if(isOwnedMatch())acknowledgeOwnedInputs(id,sequence);
   serverPosition=value.position.slice(0,3);draw();
   panel.querySelector('#server-position').textContent='Server position · X '+serverPosition[0].toFixed(2)+' · Y '+serverPosition[1].toFixed(2);
  }catch(error){
   if(!current(token,id)||inputToken!==inputOperation||sessionMode==='completed'||serverPhase==='RESULTS')return;
-  pendingInput=null;sessionMode='reconnecting';status.textContent='This input was not confirmed. It will not be sent again. Reconnecting to the match…';syncControls();scheduleRefresh(250);
+  pendingInput=null;if(isOwnedMatch())ownedMetadataRequired=true;sessionMode='reconnecting';status.textContent='This input was not confirmed. It will not be sent again. Reconnecting to the match…';syncControls();scheduleRefresh(250);
  }finally{
   if(current(token,id)&&inputToken===inputOperation){inputBusy=false;if(pendingInput&&canSubmitInput())dispatchInput()}
  }
 }
 async function restoreSession(){
+ if(selectedAccess==='core-owned')return verifyOwnedAccount();
  try{connectionBase=normalizeApi(apiInput.value);sessionKey=storageKey(connectionBase)}catch(error){connectionBase='';sessionKey='';status.textContent='Connection error: '+error.message;syncControls();return}
  const raw=remixStore.getItem(sessionKey),saved=readSession(raw,connectionBase);
  if(!saved){if(raw!==null){remixStore.removeItem(sessionKey);status.textContent='The local session record is invalid or expired. You can start a new challenge.'}syncControls();return}
@@ -267,6 +613,7 @@ async function restoreSession(){
 window.RemixSession={syncControls};
 function buildChallengeURL(){
   const link=new URL(location.href);
+  link.searchParams.delete('mode');
   link.searchParams.set('challenge',activeChallengeId);
   link.searchParams.set('seed',String(activeChallengeSeed));
   link.searchParams.set('ref',playerId.slice(4));
@@ -408,7 +755,14 @@ if(incomingChallengeId){
   startButton.textContent='Accept shared challenge';
 }
 startButton.onclick=()=>start(false);
-panel.querySelector('#retry-match').addEventListener('click',()=>refresh());
+panel.querySelector('#retry-match').addEventListener('click',()=>isOwnedMatch()&&!ownedAuthCurrent()?verifyOwnedAccount():refresh());
+panel.querySelector('#access-guest').onclick=()=>selectAccess('guest');
+panel.querySelector('#access-account').onclick=()=>selectAccess('core-owned');
+panel.querySelector('#owned-verify').onclick=()=>verifyOwnedAccount();
+panel.querySelector('#owned-history-refresh').onclick=()=>loadOwnedHistory();
+panel.querySelector('#owned-history-next').onclick=()=>loadOwnedHistory(true);
+panel.querySelector('#owned-recover-attempt').onclick=()=>ownedCreationPending()?recoverOwnedCreation():verifyOwnedAccount();
+panel.querySelector('#owned-new-challenge').onclick=()=>startNewOwnedChallenge();
 panel.querySelector('#share-challenge').addEventListener('click',shareChallenge);
 panel.querySelector('#copy-challenge').addEventListener('click',copyChallengeLink);
 panel.querySelector('#rematch-challenge').addEventListener('click',resetForRematch);
@@ -426,6 +780,7 @@ sponsorCta.addEventListener('click',()=>reportEvent('partner_cta_clicked',{chall
 arena.addEventListener('keydown',e=>{if(!canSubmitInput()||e.ctrlKey||e.metaKey||e.altKey)return;const k=e.key.toLowerCase();if(['arrowleft','a','arrowright','d','arrowup','w',' '].includes(k))e.preventDefault();if(['arrowleft','a'].includes(k))send(-1,0,false);else if(['arrowright','d'].includes(k))send(1,0,false);else if(['arrowup','w',' '].includes(k))send(0,1,true)});
 
 apiInput.addEventListener('change',()=>{
+ if(selectedAccess==='core-owned'){apiInput.value='/api/remix';return}
  if(opening||match&&!['completed','missing'].includes(sessionMode))return;
  try{normalizeApi(apiInput.value)}catch(error){status.textContent='Connection error: '+error.message;return}
  operation++;if(timer){clearTimeout(timer);timer=null}stopInputs();
@@ -435,8 +790,13 @@ apiInput.addEventListener('change',()=>{
  title.textContent='Ready to enter';status.textContent='The daily challenge uses a shared UTC seed. Create a run, then send the invite link to a friend.';
  remixStore.setItem('remix-api-url',apiInput.value.trim());restoreSession();
 });
-window.addEventListener('online',()=>{if(match&&sessionMode!=='completed')refresh()});
+window.addEventListener('online',()=>{if(selectedAccess==='core-owned'&&(!ownedAuthCurrent()||!match))verifyOwnedAccount();else if(match&&sessionMode!=='completed'){if(isOwnedMatch())ownedMetadataRequired=true;refresh()}});
 window.addEventListener('offline',()=>{
+ if(selectedAccess==='core-owned'){
+  operation++;ownedBusy=false;opening=false;polling=false;verifiedState=false;ownedMetadataRequired=true;stopInputs();if(timer){clearTimeout(timer);timer=null}for(const request of requests)request.controller.abort();
+  if(ownedOperationKey&&!match&&ownedAttemptStatus==='creating'){ownedAttemptStatus='uncertain';rememberOwnedSession('uncertain')}
+  sessionMode=match?'reconnecting':ownedOperationKey?ownedAttemptStatus==='rejected'?'creation-rejected':'creation-uncertain':'idle';status.textContent='You are offline. Account-owned records remain saved; no create or input request will be repeated.';syncControls();return;
+ }
  if(!match||sessionMode==='completed')return;
  // A reply already in transit belongs to the connection that just ended.
  // Preserve the match and consumed input sequence, but verify it again online.
@@ -445,15 +805,17 @@ window.addEventListener('offline',()=>{
  status.textContent='You are offline. The saved match will reconnect when the connection returns.';syncControls();
 });
 window.addEventListener('storage',event=>{
+ if(selectedAccess==='core-owned'&&(event.key===coreSessionKey||event.key===null)&&!ownedAuthCurrent()){stopOwnedWork('Your account session changed. Verify the account again before using this protected match.');return}
  if(!match||event.key!==sessionKey)return;
- const saved=readSession(event.newValue,connectionBase);
- if(saved?.matchId===match.id&&saved.playerId===playerId)seq=Math.max(seq,saved.sequence);
+ const saved=isOwnedMatch()?readOwnedSession(event.newValue,ownedAccountId):readSession(event.newValue,connectionBase);
+ if(saved?.matchId===match.id&&(isOwnedMatch()||saved.playerId===playerId))seq=Math.max(seq,saved.sequence);
 });
 window.addEventListener('pagehide',()=>{
  if(match)rememberSession();operation++;stopInputs();
  if(timer){clearTimeout(timer);timer=null}for(const request of requests)request.controller.abort();
- polling=false;inputBusy=false;opening=false;
+ polling=false;inputBusy=false;opening=false;ownedBusy=false;if(selectedAccess==='core-owned')ownedIdentity=null;
 });
 window.addEventListener('pageshow',event=>{if(event.persisted){verifiedState=false;clearResult();restoreSession()}});
-restoreSession();
+window.addEventListener('focus',()=>{if(selectedAccess==='core-owned'&&ownedIdentity&&!ownedAuthCurrent())stopOwnedWork('Your account session changed. Verify the account again before using this protected match.')});
+if(routeParams.get('mode')==='account')selectAccess('core-owned');else restoreSession();
 </script><script defer src="/brand/osa-transition.js"></script></body></html>

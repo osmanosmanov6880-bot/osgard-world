@@ -58,7 +58,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--dist', type=Path, default=ROOT / 'dist')
     parser.add_argument('--out', type=Path, default=ROOT / 'test-results/remix-ui')
-    parser.add_argument('--only', choices=['poll'], help='Run only the two delayed-read/touch regressions')
+    parser.add_argument('--only', choices=['poll', 'history'], help='Run only the selected browser regression family')
     args = parser.parse_args()
     args.out.mkdir(parents=True, exist_ok=True)
     if not (args.dist / 'games/remix/arena/remix-client.js').is_file():
@@ -122,7 +122,7 @@ def main():
                     raise AssertionError('A transient state read created or substituted a run.')
                 report['readRecoveryProof'].append(dict(recovery=name, matchRows=1, sameConfirmedRun=True))
             report['pollProof'] = []
-            for name, expected_runs in (('poll-touch', 1), ('poll-rematch', 2)):
+            for name, expected_runs in (() if args.only == 'history' else (('poll-touch', 1), ('poll-rematch', 2))):
                 server = next(server for candidate, server, _ in servers if candidate == name)
                 with server.store.connect() as db:
                     runs = db.execute('SELECT id,state_json FROM remix_matches').fetchall()

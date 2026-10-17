@@ -1,0 +1,85 @@
+{
+  "backup": {
+    "bytes": 593920,
+    "manifest_sha256": "54d2b0804e1e15afaefab658e62a269623a3f6cf67a8b75f2fac2ee74bd68df7",
+    "sha256": "1a07e091fbe68f94fca1f4ee5b76695bb9699bdc30c00b818231da39b9afa10a",
+    "snapshot_method": "sqlite-online-backup"
+  },
+  "checks": [
+    "real_http_creator_proof_publication_and_active_challenger",
+    "active_wal_main_file_is_stale_and_offline_copy_is_rejected",
+    "online_backup_preserves_active_prefix_before_later_input_and_sigkill",
+    "new_source_process_recovers_acknowledged_input_and_idempotent_retry",
+    "restored_password_and_all_session_relations_authenticate",
+    "restored_owner_creator_outsider_and_anonymous_access_controls",
+    "snapshot_prefix_excludes_later_source_input_and_preserves_published_proof",
+    "restored_operation_and_sequence_idempotence_without_duplicate_input",
+    "every_restored_step_matches_source_and_full_replay_resimulates",
+    "restored_result_replay_leaderboard_and_terminal_input_boundaries",
+    "corrupt_active_copy_rejects_reads_fresh_input_and_cached_retry_without_writes",
+    "final_sqlite_fk_checks_and_source_snapshot_immutability"
+  ],
+  "completed_at": "2026-10-17T18:28:27.652620+00:00",
+  "continuation": {
+    "final_sequence": 13,
+    "replay_sha256": "7157e711151eab15fce77a40f0d2b82c7d5e354f882640feba57e6fa9eb5641b",
+    "result_sha256": "5738bfcef2cf90a2628bba7ffa561ee4f440e25803afebc0abd5d4c18a000295",
+    "resumed_inputs": 9,
+    "same_replay_as_source": true,
+    "same_result_as_source": true
+  },
+  "external_requests_performed": false,
+  "http": {
+    "loopback_only": true,
+    "requests": 81,
+    "verified_responses": 81
+  },
+  "legacy_active_match_recovery_tested": false,
+  "observed_records_at_snapshot": {
+    "remix_challenges": 1,
+    "remix_inputs": 17,
+    "remix_matches": 2,
+    "users": 3
+  },
+  "payments_enabled": false,
+  "post_http_sqlite": {
+    "foreign_key_check": "passed",
+    "integrity_check": "passed",
+    "schema_sha256": "48bde2150e29d739a442811787dd82f230fe623fc4d1521099044312d7f070a2",
+    "table_count": 48,
+    "user_version": 1
+  },
+  "processes": {
+    "forced_terminations": 1,
+    "started": 4
+  },
+  "production_backup_used": false,
+  "production_modified": false,
+  "production_restore_tested": false,
+  "production_rto_rpo_measured": false,
+  "recovery_point": {
+    "later_input_excluded": true,
+    "later_source_sequence": 5,
+    "prefix_sha256": "31bffd1b0e6ad71b2b16871fa7fafe2163d61676f039c509c935fd7f5b580299",
+    "snapshot_sequence": 4
+  },
+  "remix_enabled": true,
+  "restored_sqlite": {
+    "foreign_key_check": "passed",
+    "integrity_check": "passed",
+    "schema_sha256": "48bde2150e29d739a442811787dd82f230fe623fc4d1521099044312d7f070a2",
+    "table_count": 48,
+    "user_version": 1
+  },
+  "ruleset": "remix-arena-v1",
+  "schema_version": 1,
+  "scope": "Isolated active Core REMIX arena recovery with real HTTP, process death and private synthetic data",
+  "started_at": "2026-10-17T18:28:26.136980+00:00",
+  "status": "passed",
+  "timings_ms": {
+    "offline_restore": 9.39,
+    "online_backup": 23.12,
+    "source_restart_and_continuation": 207.01,
+    "total": 1515.66
+  }
+}

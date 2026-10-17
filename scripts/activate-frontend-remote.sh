@@ -5,6 +5,9 @@ container_name="${OSGARD_CONTAINER:-osgard-world}"
 archive="${OSGARD_ARCHIVE:-/tmp/osgard-gh-release.tgz}"
 core_image="${OSGARD_CORE_IMAGE:-osgard-core-api:release}"
 remix_guard_image="${OSGARD_REMIX_GUARD_IMAGE:-osgard-remix-guard:release}"
+# Foundation release: a later reviewed release may enable creation only after
+# this ACL-aware build is the verified rollback target.
+remix_owned_creation="${OSGARD_REMIX_OWNED_CREATION:-1}"
 state_file="/tmp/osgard-frontend-activation.state"
 log_file="/tmp/osgard-frontend-activation.log"
 core_previous="osgard-core-api-previous-$$"
@@ -24,6 +27,102 @@ activation_worker_started=0
 pid=""
 core_commerce_env="/etc/osgard/core-commerce.env"
 core_commerce_args=()
+
+verify_remix_owned_rollout() {
+  if [[ "$remix_owned_creation" != "0" && "$remix_owned_creation" != "1" ]]; then
+    echo 'OSGARD_REMIX_OWNED_CREATION must be 0 or 1.' >&2
+    return 1
+  fi
+  [[ "$remix_owned_creation" == "0" ]] && return 0
+  # The running build will be the exact stopped container restored on failure.
+  # It must understand schema-2 ACLs before any new protected match can exist.
+  if ! docker exec osgard-remix-guard python -c "import json,urllib.request; h=json.load(urllib.request.urlopen('http://127.0.0.1:8081/v2/capabilities',timeout=6)); assert h.get('authPolicyVersion') == 1 and h.get('ownershipPolicy') == 'confirmed-durable-binding'"; then
+    echo 'Owned REMIX creation requires a running, verified ACL-aware rollback build. Deploy the disabled foundation first.' >&2
+    return 1
+  fi
+  # Only networking/version metadata is read. Neither environment nor private
+  # source/configuration is exported. Loopback publication alone is insufficient
+  # with direct routing: require the legacy API to have no published ports.
+  local legacy_metadata network_ids network_id network_metadata docker_version
+  if ! legacy_metadata="$(docker inspect --format '{"network":{{json .HostConfig.NetworkMode}},"ports":{{json .NetworkSettings.Ports}},"configuredPorts":{{json .HostConfig.PortBindings}},"publishAllPorts":{{json .HostConfig.PublishAllPorts}},"running":{{json .State.Running}},"networks":{{json .NetworkSettings.Networks}}}' remix-api)"; then
+    echo 'Unable to inspect legacy REMIX networking; owned creation remains disabled.' >&2
+    return 1
+  fi
+  if ! network_ids="$(python3 -c '
+import json,re,sys
+def require(value,message):
+    if not value: raise SystemExit(message)
+v=json.load(sys.stdin)
+require(isinstance(v,dict) and v.get("running") is True, "Legacy API must be running with verifiable networking")
+require(v.get("publishAllPorts") is False, "Legacy API must not publish ports automatically")
+for field in ("ports","configuredPorts"):
+    ports=v[field]
+    require(ports is None or isinstance(ports,dict), "Invalid legacy port metadata")
+    for bindings in (ports or {}).values():
+        require(bindings is None or bindings == [], "All legacy API ports must be unpublished, including loopback bindings")
+attached=v["networks"]
+require(isinstance(attached,dict) and 1 <= len(attached) <= 16, "Legacy API needs verifiable attached user-defined networks")
+ids=[]
+for name,endpoint in attached.items():
+    require(isinstance(name,str) and name not in ("bridge","host","none") and 1 <= len(name) <= 255,
+            "Default or shared legacy network is not supported")
+    require(isinstance(endpoint,dict), "Invalid attached network metadata")
+    identifier=endpoint.get("NetworkID")
+    require(isinstance(identifier,str) and re.fullmatch(r"[a-f0-9]{64}",identifier) and identifier not in ids,
+            "Attached network must have one unambiguous Docker network ID")
+    ids.append(identifier)
+mode=v["network"]
+require(isinstance(mode,str) and (mode in attached or mode in ids), "Legacy network mode must match an attached user-defined network")
+print("\n".join(ids))
+' <<< "$legacy_metadata")"; then
+    echo 'Legacy REMIX ports and network attachments do not satisfy the ownership boundary.' >&2
+    return 1
+  fi
+  # Docker 28 introduced default filtering of directly routed unpublished
+  # ports. This gate relies on supported Docker firewall behavior, not on a
+  # claim that metadata proves arbitrary host firewall/daemon modifications.
+  # https://docs.docker.com/engine/release-notes/28/
+  if ! docker_version="$(docker version --format '{{.Server.Version}}')" || ! python3 -c '
+import re,sys
+match=re.fullmatch(r"([0-9]+)\.([0-9]+)\.([0-9]+)(?:\+[A-Za-z0-9.-]+)?",sys.stdin.read().strip())
+if match is None or tuple(map(int,match.group(1,2,3))) < (28,0,0):
+    raise SystemExit("Owned creation requires a recognized stable Docker Engine version 28 or newer")
+' <<< "$docker_version"; then
+    echo 'Docker networking support could not be verified; owned creation remains disabled.' >&2
+    return 1
+  fi
+  while IFS= read -r network_id; do
+    if ! network_metadata="$(docker network inspect --format '{"id":{{json .Id}},"name":{{json .Name}},"driver":{{json .Driver}},"scope":{{json .Scope}},"internal":{{json .Internal}},"ingress":{{json .Ingress}},"configOnly":{{json .ConfigOnly}},"options":{{json .Options}}}' "$network_id")"; then
+      echo 'An attached legacy REMIX network could not be inspected; owned creation remains disabled.' >&2
+      return 1
+    fi
+    if ! python3 -c '
+import json,sys
+def require(value,message):
+    if not value: raise SystemExit(message)
+container=json.loads(sys.argv[1]);identifier=sys.argv[2];v=json.load(sys.stdin)
+require(isinstance(v,dict) and v.get("id") == identifier, "Network inspection returned a different network")
+names=[name for name,endpoint in container["networks"].items() if endpoint["NetworkID"] == identifier]
+require(names == [v.get("name")], "Network name and attached ID disagree")
+require(v.get("driver") == "bridge" and v.get("scope") == "local", "Only local user-defined bridge networks are supported")
+require(type(v.get("internal")) is bool and v.get("ingress") is False and v.get("configOnly") is False,
+        "Ingress, configuration-only or unknown network state is not supported")
+options=v["options"]
+require(options is None or isinstance(options,dict), "Invalid network driver options")
+options=options or {}
+require(all(isinstance(key,str) and isinstance(value,str) for key,value in options.items()), "Unknown network option format")
+for family in ("ipv4","ipv6"):
+    require(options.get("com.docker.network.bridge.gateway_mode_"+family,"nat") == "nat",
+            "Routed, unprotected, isolated or unknown gateway modes cannot enable ownership")
+require("com.docker.network.bridge.trusted_host_interfaces" not in options, "Trusted host interfaces allow unverified direct routing")
+require(options.get("com.docker.network.bridge.default_bridge","false") == "false", "The default bridge is not supported")
+require(options.get("com.docker.network.bridge.enable_ip_masquerade","true") == "true", "Nonstandard bridge masquerading is not supported")
+' "$legacy_metadata" "$network_id" <<< "$network_metadata"; then
+      echo 'An attached legacy REMIX network permits unsupported routing around the ownership guard.' >&2
+      return 1
+    fi
+  done <<< "$network_ids"
+}
 
 acquire_activation_lock() {
   local lock_path="${OSGARD_ACTIVATION_LOCK:-/run/lock/osgard-frontend-activation.lock}"
@@ -281,6 +380,7 @@ trap 'stop_activation_worker 129' HUP
       remix_guard_volume="${existing_guard_volumes[0]}"
     fi
   fi
+  verify_remix_owned_rollout
   if docker inspect osgard-core-api >/dev/null 2>&1; then
     old_volume="$(docker inspect --format '{{range .Mounts}}{{if eq .Destination "/var/lib/osgard-core"}}{{if eq .Type "volume"}}{{.Name}}{{end}}{{end}}{{end}}' osgard-core-api)"
     if [[ -n "$old_volume" ]]; then
@@ -349,12 +449,16 @@ trap 'stop_activation_worker 129' HUP
     remix_guard_replaced=1
   fi
   remix_guard_started=1
+  remix_guard_command=(python remix_guard.py --host 0.0.0.0 --port 8081 \
+    --upstream http://remix-api:8080 --database /var/lib/remix-guard/terminal.sqlite3 \
+    --core-upstream http://core-api:4173 --core-host osgard.world)
+  if [[ "$remix_owned_creation" == "1" ]]; then remix_guard_command+=(--enable-owned-creation); fi
   if ! docker run -d --name osgard-remix-guard --network "$core_network" --network-alias remix-guard \
     --label org.osgard.service=remix-guard \
     --restart unless-stopped --init --read-only --security-opt no-new-privileges --cap-drop ALL \
     --pids-limit 96 --memory 128m --cpus 0.5 --tmpfs /tmp:size=4m,noexec,nosuid \
     --mount "type=volume,src=$remix_guard_volume,dst=/var/lib/remix-guard" \
-    "$remix_guard_image"; then
+    "$remix_guard_image" "${remix_guard_command[@]}"; then
     rollback
     exit 1
   fi
@@ -363,7 +467,8 @@ trap 'stop_activation_worker 129' HUP
   fi
   remix_guard_ready=0
   for _ in $(seq 1 15); do
-    if docker exec osgard-remix-guard python -c "import json, urllib.request; h=json.load(urllib.request.urlopen('http://127.0.0.1:8081/health', timeout=6)); assert h.get('service') == 'osgard-remix-guard' and h.get('frozenResults') is True and h.get('status') == 'ok'" \
+    if docker exec osgard-remix-guard python -c "import json, urllib.request; h=json.load(urllib.request.urlopen('http://127.0.0.1:8081/health', timeout=6)); assert h.get('service') == 'osgard-remix-guard' and h.get('frozenResults') is True and h.get('status') == 'ok' and h.get('authPolicyVersion') == 1 and h.get('creationEnabled') is bool(int('$remix_owned_creation'))" \
+      && docker exec osgard-remix-guard python -c "import http.client; c=http.client.HTTPConnection('core-api',4173,timeout=3); c.request('GET','/api/core/auth/me',headers={'Host':'osgard.world','Accept':'application/json'}); r=c.getresponse(); assert r.status == 401; r.read(); c.close()" \
       && docker exec "$container_name" wget -q -T 8 -O - http://remix-guard:8081/health | grep -q 'osgard-remix-guard'; then
       remix_guard_ready=1
       break

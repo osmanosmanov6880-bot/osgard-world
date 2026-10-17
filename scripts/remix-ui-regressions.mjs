@@ -12,9 +12,9 @@ const out = process.argv[process.argv.indexOf('--out') + 1];
 assert.ok(out && out !== process.argv[0]); await mkdir(out, { recursive: true });
 const browser = await chromium.launch({ headless: true });
 const checks = [];
-const pollOnly = process.argv.includes('--only') && process.argv[process.argv.indexOf('--only') + 1] === 'poll';
+const only = process.argv.includes('--only') ? process.argv[process.argv.indexOf('--only') + 1] : null;
 async function check(name, action) {
-  if (pollOnly && !name.startsWith('poll-')) return;
+  if (only && !name.startsWith(only + '-')) return;
   const context = await browser.newContext({ ...devices['iPhone 13'] });
   const page = await context.newPage(); page.setDefaultTimeout(15000);
   const errors = []; page.on('pageerror', error => errors.push(error.message));
@@ -22,10 +22,10 @@ async function check(name, action) {
   catch (error) { checks.push({ name, passed: false, error: String(error.message) }); await page.screenshot({ path: out + '/' + name + '-failed.png', fullPage: true }).catch(() => {}); console.error('FAIL', name, error.message); }
   finally { await context.close(); }
 }
-async function createRun(page, base) {
+async function createRun(page, base, credentials = { username: 'remix-poll-' + randomBytes(5).toString('hex'), password: randomBytes(24).toString('base64url') }) {
   await page.goto(base + '/games/remix/arena/'); await page.locator('#auth-panel').waitFor({ state: 'visible' });
-  await page.locator('#remix-username').fill('remix-poll-' + randomBytes(5).toString('hex'));
-  await page.locator('#remix-password').fill(randomBytes(24).toString('base64url')); await page.locator('#register-player').tap();
+  await page.locator('#remix-username').fill(credentials.username);
+  await page.locator('#remix-password').fill(credentials.password); await page.locator('#register-player').tap();
   await page.waitForFunction(() => !document.querySelector('#start-match').disabled); await page.locator('#start-match').tap();
   await page.waitForFunction(() => Boolean(document.querySelector('#arena').dataset.state));
   return page.locator('#arena').evaluate(canvas => JSON.parse(canvas.dataset.state));
@@ -44,6 +44,153 @@ function pathToGoal(level, start) {
   throw Error('The actual server arena has no safe walking route.');
 }
 try {
+  await check('history-restores-after-browser-storage-loss-and-keeps-accounts-separate', async page => {
+    const credentials = { username: 'remix-history-' + randomBytes(5).toString('hex'), password: randomBytes(24).toString('base64url') };
+    const creations = [];
+    page.on('request', request => { if (request.method() === 'POST' && new URL(request.url()).pathname === '/api/core/remix/v1/matches') creations.push(request.url()); });
+    const original = await createRun(page, bases.normal, credentials);
+    await page.waitForFunction(() => !document.querySelector('[data-remix-move="right"]').disabled);
+    await page.locator('[data-remix-move="right"]').tap();
+    await page.waitForFunction(() => JSON.parse(document.querySelector('#arena').dataset.state).sequence === 1);
+    const saved = await page.locator('#arena').evaluate(canvas => JSON.parse(canvas.dataset.state));
+    await page.evaluate(() => sessionStorage.clear()); await page.reload();
+    await page.locator('#auth-panel').waitFor({ state: 'visible' });
+    await page.locator('#remix-username').fill(credentials.username); await page.locator('#remix-password').fill(credentials.password);
+    await page.locator('#auth-form button[type="submit"]').tap();
+    const resume = page.locator('[data-history-match="' + original.id + '"]'); await resume.waitFor({ state: 'visible' });
+    assert.equal(await page.locator('#arena').getAttribute('data-state'), null, 'History metadata cannot become an authoritative playing state');
+    await resume.tap();
+    await page.waitForFunction(id => JSON.parse(document.querySelector('#arena').dataset.state || 'null')?.id === id, original.id);
+    assert.deepEqual(await page.locator('#arena').evaluate(canvas => JSON.parse(canvas.dataset.state)), saved);
+    await page.waitForFunction(() => !document.querySelector('[data-remix-move="right"]').disabled);
+    await page.locator('[data-remix-move="right"]').tap();
+    await page.waitForFunction(() => JSON.parse(document.querySelector('#arena').dataset.state).sequence === 2);
+    assert.equal(creations.length, 1, 'Opening history must not create a replacement run');
+    const reference = await page.evaluate(() => JSON.parse(sessionStorage.getItem('osgard:remix-client:v1')));
+    assert.equal(reference.matchId, original.id);
+    await page.screenshot({ path: out + '/history-mobile-resumed.png', fullPage: true });
+    await page.evaluate(() => sessionStorage.clear()); await page.reload();
+    await page.locator('#auth-panel').waitFor({ state: 'visible' });
+    await page.locator('#remix-username').fill('remix-other-' + randomBytes(5).toString('hex')); await page.locator('#remix-password').fill(randomBytes(24).toString('base64url'));
+    await page.locator('#register-player').tap();
+    await page.waitForFunction(() => document.querySelector('#history-status').textContent === 'Незавершённых заездов пока нет.');
+    assert.equal(await page.locator('[data-history-match]').count(), 0);
+    const denied = await page.evaluate(async matchId => {
+      const response = await fetch('/api/core/remix/v1/matches/' + matchId + '/state', { headers: { Authorization: 'Bearer ' + sessionStorage.getItem('osgard:core-session:v1') } });
+      return response.status;
+    }, original.id);
+    assert.equal(denied, 404);
+    return { restoredSequence: saved.sequence, continuedSequence: 2, matchCreations: creations.length, otherAccountDenied: true };
+  });
+  await check('history-keyset-pagination-keeps-distinct-runs', async page => {
+    const original = await createRun(page, bases.normal);
+    const extra = await page.evaluate(async () => {
+      const title = '🧭'.repeat(100);
+      const headers = { Authorization: 'Bearer ' + sessionStorage.getItem('osgard:core-session:v1'), 'Content-Type': 'application/json' };
+      const challengeResponse = await fetch('/api/core/remix/v1/challenges', { method: 'POST', headers: { ...headers, 'Idempotency-Key': crypto.randomUUID() }, body: JSON.stringify({ title, seed: 41723, mode: 'speed', visibility: 'public' }) });
+      if (!challengeResponse.ok) throw Error('The maximum Unicode title must be accepted by the actual server');
+      const challengeId = (await challengeResponse.json()).id;
+      const ids = [];
+      for (let i = 0; i < 20; i++) {
+        const response = await fetch('/api/core/remix/v1/matches', { method: 'POST', headers: { Authorization: 'Bearer ' + sessionStorage.getItem('osgard:core-session:v1'), 'Content-Type': 'application/json', 'Idempotency-Key': crypto.randomUUID() }, body: JSON.stringify({ challengeId, maxPlayers: 1 }) });
+        if (!response.ok) throw Error('Real fixture run was rejected'); ids.push((await response.json()).id);
+      }
+      return { ids, title };
+    });
+    await page.evaluate(() => sessionStorage.removeItem('osgard:remix-client:v1')); await page.reload();
+    await page.locator('#history-next').waitFor({ state: 'visible' });
+    assert.equal(await page.locator('[data-history-match]').count(), 20);
+    await page.waitForFunction(() => !document.querySelector('#history-next').disabled); await page.locator('#history-next').tap();
+    await page.waitForFunction(() => document.querySelectorAll('[data-history-match]').length === 21);
+    const ids = await page.locator('[data-history-match]').evaluateAll(buttons => buttons.map(button => button.dataset.historyMatch));
+    assert.deepEqual(ids.toSorted(), [original.id, ...extra.ids].toSorted());
+    assert.equal(await page.locator('#history-list strong').evaluateAll((titles, expected) => titles.filter(node => node.textContent === expected).length, extra.title), 20, 'History accepts the same 100 Unicode code points as the server');
+    assert.ok(await page.locator('#history-next').isHidden());
+    const bounds = await page.locator('#history-list').evaluate(list => ({ height: list.getBoundingClientRect().height, scroll: list.scrollHeight }));
+    assert.ok(bounds.height <= 361 && bounds.scroll > bounds.height, 'Long histories stay inside a scrollable panel');
+    assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
+    return { distinctRuns: ids.length, pageSize: 20, accountPaginationVerified: true, maximumUnicodeTitleVerified: true };
+  });
+  await check('history-completed-result-and-replay-open-without-new-run', async page => {
+    const creations = [];
+    page.on('request', request => { if (request.method() === 'POST' && new URL(request.url()).pathname === '/api/core/remix/v1/matches') creations.push(request.url()); });
+    const original = await createRun(page, bases.normal);
+    for (const direction of pathToGoal(original.arena, original.position)) {
+      const sequence = await page.locator('#arena').evaluate(canvas => JSON.parse(canvas.dataset.state).sequence);
+      await page.waitForFunction(() => !document.querySelector('[data-remix-move="right"]').disabled);
+      await page.locator('[data-remix-move="' + direction + '"]').tap();
+      await page.waitForFunction(previous => JSON.parse(document.querySelector('#arena').dataset.state).sequence === previous + 1, sequence);
+    }
+    await page.locator('#result-panel').waitFor({ state: 'visible' });
+    const result = await page.locator('#result-panel').evaluate(panel => JSON.parse(panel.dataset.result));
+    await page.evaluate(() => sessionStorage.removeItem('osgard:remix-client:v1')); await page.reload();
+    await page.locator('#run-history').waitFor({ state: 'visible' });
+    await page.waitForFunction(() => !document.querySelector('[data-history-status="complete"]').disabled);
+    await page.locator('[data-history-status="complete"]').tap();
+    await page.locator('[data-history-match="' + original.id + '"]').waitFor({ state: 'visible' });
+    await page.locator('[data-history-match="' + original.id + '"]').tap();
+    await page.locator('#result-panel').waitFor({ state: 'visible' });
+    assert.deepEqual(await page.locator('#result-panel').evaluate(panel => JSON.parse(panel.dataset.result)), result);
+    await page.waitForFunction(() => !document.querySelector('#show-replay').disabled); await page.locator('#show-replay').tap();
+    await page.locator('#replay-panel').waitFor({ state: 'visible' });
+    assert.equal(await page.locator('#replay-step').getAttribute('max'), String(result.steps));
+    assert.equal(creations.length, 1);
+    return { sameCompletedResult: true, replaySteps: result.steps, matchCreations: creations.length };
+  });
+  await check('history-expiry-waits-for-real-committed-input-acknowledgement', async page => {
+    const credentials = { username: 'remix-history-race-' + randomBytes(5).toString('hex'), password: randomBytes(24).toString('base64url') };
+    const mutations = [];
+    page.on('request', request => { if (request.method() === 'POST' && new URL(request.url()).pathname.startsWith('/api/core/remix/v1/')) mutations.push(new URL(request.url()).pathname); });
+    const original = await createRun(page, bases.normal, credentials);
+    await page.locator('[data-history-match="' + original.id + '"]').waitFor({ state: 'visible' });
+    await page.waitForFunction(() => !document.querySelector('#history-refresh').disabled);
+    const historyGate = Promise.withResolvers(), inputGate = Promise.withResolvers(), committed = Promise.withResolvers();
+    let deadline;
+    const historyRoute = '**/api/core/remix/v1/matches?*', inputRoute = '**/api/core/remix/v1/matches/*/input';
+    await page.route(historyRoute, async route => {
+      await historyGate.promise;
+      // Explicit negative fixture: the only fabricated response is a 401.
+      await route.fulfill({ status: 401, contentType: 'application/json', body: JSON.stringify({ error: { code: 'session', message: 'Проверочная ошибка сессии истории.' } }) });
+    });
+    await page.route(inputRoute, async route => {
+      try {
+        const response = await route.fetch();
+        committed.resolve({ status: response.status(), body: await response.json() });
+        await inputGate.promise;
+        // Deliver the real, already committed server response unchanged.
+        await route.fulfill({ response });
+      } catch (error) { committed.reject(error); await route.abort().catch(() => {}); }
+    });
+    try {
+      const historyRequest = page.waitForRequest(request => request.method() === 'GET' && new URL(request.url()).pathname === '/api/core/remix/v1/matches');
+      await page.locator('#history-refresh').tap(); await historyRequest;
+      await page.waitForFunction(() => !document.querySelector('[data-remix-move="right"]').disabled);
+      await page.locator('[data-remix-move="right"]').tap();
+      const accepted = await Promise.race([committed.promise, new Promise((_, reject) => { deadline = setTimeout(() => reject(Error('Real input did not commit in time')), 15000); })]);
+      clearTimeout(deadline); assert.equal(accepted.status, 200); assert.equal(accepted.body.state.sequence, 1);
+      historyGate.resolve();
+      await page.waitForFunction(() => document.querySelector('#history-status').textContent === 'Проверочная ошибка сессии истории.');
+      assert.ok(await page.locator('#auth-panel').isHidden(), 'A background rejection waits for the foreground acknowledgement');
+      assert.equal(await page.locator('#arena').evaluate(canvas => JSON.parse(canvas.dataset.state).sequence), 0);
+      const pending = await page.evaluate(() => JSON.parse(sessionStorage.getItem('osgard:remix-pending:v1')));
+      assert.equal(pending.kind, 'input'); assert.equal(pending.body.sequence, 1);
+      inputGate.resolve();
+      await page.waitForFunction(() => JSON.parse(document.querySelector('#arena').dataset.state).sequence === 1);
+      await page.locator('#auth-panel').waitFor({ state: 'visible' });
+      assert.deepEqual(await page.locator('#arena').evaluate(canvas => JSON.parse(canvas.dataset.state)), accepted.body.state);
+      assert.equal(await page.evaluate(() => sessionStorage.getItem('osgard:remix-pending:v1')), null);
+      assert.equal(await page.evaluate(() => JSON.parse(sessionStorage.getItem('osgard:remix-client:v1')).matchId), original.id);
+      assert.equal(await page.evaluate(() => sessionStorage.getItem('osgard:core-session:v1')), null);
+      await page.unroute(historyRoute); await page.unroute(inputRoute);
+      await page.locator('#remix-username').fill(credentials.username); await page.locator('#remix-password').fill(credentials.password);
+      await page.locator('#auth-form button[type="submit"]').tap();
+      await page.waitForFunction(() => document.querySelector('#auth-panel').hidden && !document.querySelector('[data-remix-move="right"]').disabled);
+      assert.deepEqual(await page.locator('#arena').evaluate(canvas => JSON.parse(canvas.dataset.state)), accepted.body.state);
+      assert.equal(mutations.filter(path => path.endsWith('/matches')).length, 1);
+      assert.equal(mutations.filter(path => path.endsWith('/input')).length, 1);
+      return { historyRejection: 401, realCommittedSequence: 1, acknowledgementPreserved: true, matchCreations: 1, inputRequests: 1 };
+    } finally { clearTimeout(deadline); historyGate.resolve(); inputGate.resolve(); }
+  });
   await check('real-signup-login-session-expiry', async page => {
     const authStatuses = [];
     page.on('response', response => { if (new URL(response.url()).pathname.startsWith('/api/core/auth/')) authStatuses.push(response.status()); });

@@ -8,6 +8,7 @@ to verify actual signals, reaping and lock ownership across a lost caller.
 
 from contextlib import contextmanager
 from pathlib import Path
+import json
 import os
 import re
 import shlex
@@ -330,6 +331,177 @@ class ActivationRecoveryTests(unittest.TestCase):
                                        text=True, capture_output=True, env={"PATH": "/nonexistent"}, timeout=2)
             self.assertEqual(completed.returncode, 1)
             self.assertFalse(lock.exists())
+
+
+class OwnedRolloutTests(unittest.TestCase):
+    NETWORK_ID = "a" * 64
+    SECOND_NETWORK_ID = "b" * 64
+
+    def container_metadata(self, **changes):
+        return {"network": "fixture-network", "ports": {"8080/tcp": None}, "configuredPorts": {},
+                "publishAllPorts": False, "running": True,
+                "networks": {"fixture-network": {"NetworkID": self.NETWORK_ID}}, **changes}
+
+    def network_metadata(self, **changes):
+        return {"id": self.NETWORK_ID, "name": "fixture-network", "driver": "bridge", "scope": "local",
+                "internal": False, "ingress": False, "configOnly": False, "options": {}, **changes}
+
+    def run_gate(self, flag="1", probe_status=0, metadata=None, inspect_status=0,
+                 networks=None, network_status=0, version="28.5.1", version_status=0):
+        if metadata is None:
+            metadata = self.container_metadata()
+        if networks is None:
+            networks = {self.NETWORK_ID: self.network_metadata()}
+        with tempfile.TemporaryDirectory(prefix="osgard-owned-rollout-") as directory:
+            calls = Path(directory) / "calls"
+            calls.write_text("")
+            values = {"remix_owned_creation": flag, "fixture_probe_status": str(probe_status),
+                      "fixture_inspect_status": str(inspect_status), "fixture_metadata": json.dumps(metadata),
+                      "fixture_networks": json.dumps(networks), "fixture_network_status": str(network_status),
+                      "fixture_version": version, "fixture_version_status": str(version_status),
+                      "fixture_calls": str(calls)}
+            assignments = "\n".join(f"{key}={shlex.quote(value)}" for key, value in values.items())
+            script = "set -euo pipefail\n" + assignments + r'''
+docker() {
+  printf '%s\n' "$1" >> "$fixture_calls"
+  case "$1" in
+    exec) return "$fixture_probe_status" ;;
+    inspect) printf '%s\n' "$fixture_metadata"; return "$fixture_inspect_status" ;;
+    version) printf '%s\n' "$fixture_version"; return "$fixture_version_status" ;;
+    network)
+      [[ "${2:-}" == "inspect" ]] || return 99
+      [[ "$fixture_network_status" == "0" ]] || return "$fixture_network_status"
+      python3 -c 'import json,sys; print(json.dumps(json.loads(sys.argv[1]).get(sys.argv[2])))' "$fixture_networks" "${@: -1}"
+      ;;
+    *) return 99 ;;
+  esac
+}
+''' + shell_function("verify_remix_owned_rollout") + "\nverify_remix_owned_rollout\n"
+            result = subprocess.run(["/bin/bash", "--noprofile", "--norc"], input=script,
+                                    text=True, capture_output=True, timeout=4,
+                                    env={"PATH": os.environ.get("PATH", "/usr/bin:/bin")})
+            return result, calls.read_text().splitlines()
+
+    def test_disabled_foundation_needs_no_prior_auth_build(self):
+        result, calls = self.run_gate(flag="0", probe_status=1, metadata={"unrecognized": True},
+                                      version="unrecognized", network_status=1)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(calls, [])
+
+    def test_invalid_creation_setting_fails_before_docker(self):
+        for flag in ("", "true", "2", "1; echo invalid"):
+            with self.subTest(flag=flag):
+                result, calls = self.run_gate(flag=flag)
+                self.assertEqual(result.returncode, 1)
+                self.assertEqual(calls, [])
+
+    def test_unverified_old_guard_cannot_be_the_enabled_release_rollback(self):
+        result, calls = self.run_gate(probe_status=1)
+        self.assertEqual(result.returncode, 1)
+        self.assertEqual(calls, ["exec"])
+        self.assertIn("Deploy the disabled foundation first", result.stderr)
+
+    def test_all_published_legacy_ports_including_loopback_are_rejected(self):
+        for address in ("0.0.0.0", "::", "198.51.100.12", "", "127.0.0.1", "::1"):
+            with self.subTest(address=address):
+                result, calls = self.run_gate(metadata=self.container_metadata(ports={
+                    "8080/tcp": [{"HostIp": address, "HostPort": "8080"}]}))
+                self.assertEqual(result.returncode, 1)
+                self.assertEqual(calls, ["exec", "inspect"])
+
+    def test_unpublished_legacy_ports_on_verified_nat_bridge_are_accepted(self):
+        for ports in ({"8080/tcp": None}, {}, None):
+            with self.subTest(ports=ports):
+                result, calls = self.run_gate(metadata=self.container_metadata(ports=ports, configuredPorts=ports))
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(calls, ["exec", "inspect", "version", "network"])
+
+    def test_configured_or_automatic_port_publication_cannot_hide_behind_runtime_ports(self):
+        for changes in ({"publishAllPorts": True}, {"configuredPorts": {"8080/tcp": [
+                {"HostIp": "127.0.0.1", "HostPort": "8080"}]}}, {"ports": "unrecognized"}, {"running": False}):
+            with self.subTest(changes=changes):
+                result, calls = self.run_gate(metadata=self.container_metadata(**changes))
+                self.assertEqual(result.returncode, 1)
+                self.assertEqual(calls, ["exec", "inspect"])
+
+    def test_actual_attached_driver_and_scope_are_checked_instead_of_network_name(self):
+        for changes in ({"driver": "macvlan"}, {"driver": "ipvlan"}, {"driver": "overlay"},
+                        {"driver": "unknown"}, {"scope": "swarm"}, {"scope": ""},
+                        {"ingress": True}, {"configOnly": True}, {"internal": "unknown"}):
+            with self.subTest(changes=changes):
+                result, calls = self.run_gate(networks={self.NETWORK_ID: self.network_metadata(**changes)})
+                self.assertEqual(result.returncode, 1)
+                self.assertEqual(calls, ["exec", "inspect", "version", "network"])
+
+    def test_each_attached_network_is_inspected_and_a_second_unsafe_driver_blocks_enable(self):
+        attached = {"fixture-network": {"NetworkID": self.NETWORK_ID},
+                    "second-network": {"NetworkID": self.SECOND_NETWORK_ID}}
+        for driver, expected in (("bridge", 0), ("macvlan", 1)):
+            with self.subTest(second_driver=driver):
+                networks = {self.NETWORK_ID: self.network_metadata(), self.SECOND_NETWORK_ID: self.network_metadata(
+                    id=self.SECOND_NETWORK_ID, name="second-network", driver=driver)}
+                result, calls = self.run_gate(metadata=self.container_metadata(networks=attached), networks=networks)
+                self.assertEqual(result.returncode, expected, result.stderr)
+                self.assertEqual(calls, ["exec", "inspect", "version", "network", "network"])
+
+    def test_routed_unprotected_and_unknown_gateway_modes_are_rejected_for_both_families(self):
+        for family in ("ipv4", "ipv6"):
+            for mode in ("routed", "nat-unprotected", "isolated", "unknown", ""):
+                with self.subTest(family=family, mode=mode):
+                    options = {"com.docker.network.bridge.gateway_mode_" + family: mode}
+                    result, _ = self.run_gate(networks={self.NETWORK_ID: self.network_metadata(options=options)})
+                    self.assertEqual(result.returncode, 1)
+        options = {"com.docker.network.bridge.gateway_mode_ipv4": "nat",
+                   "com.docker.network.bridge.gateway_mode_ipv6": "nat"}
+        result, _ = self.run_gate(networks={self.NETWORK_ID: self.network_metadata(options=options)})
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_trusted_interfaces_and_nonstandard_bridge_options_are_rejected(self):
+        invalid = [{"com.docker.network.bridge.trusted_host_interfaces": value} for value in ("", "eth0", "vxlan.1:eth3")]
+        invalid += [{"com.docker.network.bridge.default_bridge": "true"},
+                    {"com.docker.network.bridge.enable_ip_masquerade": "false"},
+                    {"com.docker.network.bridge.gateway_mode_ipv4": None}]
+        for options in invalid:
+            with self.subTest(options=options):
+                result, _ = self.run_gate(networks={self.NETWORK_ID: self.network_metadata(options=options)})
+                self.assertEqual(result.returncode, 1)
+
+    def test_network_identity_missing_or_mismatched_metadata_fails_closed(self):
+        for changes in ({"id": self.SECOND_NETWORK_ID}, {"name": "wrong-network"}):
+            result, _ = self.run_gate(networks={self.NETWORK_ID: self.network_metadata(**changes)})
+            self.assertEqual(result.returncode, 1)
+        for attached in ({}, {"bridge": {"NetworkID": self.NETWORK_ID}},
+                         {"fixture-network": {"NetworkID": "malformed"}},
+                         {"fixture-network": {"NetworkID": self.NETWORK_ID}, "duplicate": {"NetworkID": self.NETWORK_ID}}):
+            result, _ = self.run_gate(metadata=self.container_metadata(networks=attached))
+            self.assertEqual(result.returncode, 1)
+        result, _ = self.run_gate(networks={})
+        self.assertEqual(result.returncode, 1)
+        result, _ = self.run_gate(network_status=1)
+        self.assertEqual(result.returncode, 1)
+
+    def test_unsupported_or_unavailable_engine_version_cannot_claim_unpublished_port_protection(self):
+        for version in ("27.5.1", "20.10.27", "28.0.0-rc.1", "unrecognized", ""):
+            with self.subTest(version=version):
+                result, calls = self.run_gate(version=version)
+                self.assertEqual(result.returncode, 1)
+                self.assertEqual(calls, ["exec", "inspect", "version"])
+        result, _ = self.run_gate(version_status=1)
+        self.assertEqual(result.returncode, 1)
+
+    def test_shared_host_network_or_unavailable_metadata_fails_closed(self):
+        for network in ("host", "container:other-fixture", "bridge", "default", "not-actually-attached"):
+            result, _ = self.run_gate(metadata=self.container_metadata(network=network))
+            self.assertEqual(result.returncode, 1)
+        result, _ = self.run_gate(metadata={"unrecognized": True})
+        self.assertEqual(result.returncode, 1)
+        result, _ = self.run_gate(inspect_status=1)
+        self.assertEqual(result.returncode, 1)
+
+    def test_rollout_gate_precedes_any_service_replacement(self):
+        call = ACTIVATION.index("\n  verify_remix_owned_rollout\n")
+        self.assertLess(call, ACTIVATION.index("docker stop osgard-core-api"))
+        self.assertLess(call, ACTIVATION.index("docker stop osgard-remix-guard"))
 
 
 if __name__ == "__main__":

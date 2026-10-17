@@ -38,8 +38,9 @@ def check(condition, label):
 
 class LocalCore:
     """A fresh application process whose only listener is an ephemeral loopback port."""
-    def __init__(self, web_root, database):
+    def __init__(self, web_root, database, enable_remix=False):
         self.root, self.database = web_root, database
+        self.enable_remix = enable_remix
         self.process = None
         self.port = None
 
@@ -49,7 +50,8 @@ class LocalCore:
         env.update(OSGARD_COMMERCE_ENABLED="0", PYTHONDONTWRITEBYTECODE="1", PYTHONUNBUFFERED="1", PYTHONNOUSERSITE="1")
         self.process = subprocess.Popen(
             [sys.executable, str(ROOT / "server/core_server.py"), "--root", str(self.root),
-             "--database", str(self.database), "--host", "127.0.0.1", "--port", "0"],
+             "--database", str(self.database), "--host", "127.0.0.1", "--port", "0"] +
+            (["--remix"] if self.enable_remix else []),
             stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
             text=True, env=env, cwd=self.database.parent)
         deadline = time.monotonic() + 20

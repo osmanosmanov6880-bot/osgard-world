@@ -13,6 +13,8 @@ const incoming = new URL(location.href).searchParams.get('challenge');
 let token = '', actor = null, service = null, challenge = null, state = null, result = null, replay = null;
 let pending = null, busy = 0, loadingResult = false, lastDirection = 'right', incomingConsumed = false;
 let restoring = false, restoreNeeded = false, polling = false;
+let historyKind = 'active', historyCursor = null, historyEntries = [], historyLoading = false, historyEpoch = 0;
+let historyAuthRejected = null;
 
 function readStorage(key) { try { return sessionStorage.getItem(key) || ''; } catch { return ''; } }
 function writeStorage(key, value) { try { if (value === null) sessionStorage.removeItem(key); else sessionStorage.setItem(key, value); } catch {} }
@@ -24,6 +26,8 @@ function remember() {
 }
 function setStatus(message) { $('#match-status').textContent = message; }
 function id(value) { return typeof value === 'string' && /^[a-f0-9]{32}$/.test(value); }
+// Python's stored-title limit counts Unicode code points, not UTF-16 units.
+function validHistoryTitle(value) { return typeof value === 'string' && value.length <= 200 && [...value].length <= 100; }
 
 class RequestError extends Error {
   constructor(message, status = 0, code = 'network') { super(message); this.status = status; this.code = code; }
@@ -52,6 +56,13 @@ async function request(path, { body, key, anonymous = false, core = false } = {}
 }
 
 function syncControls() {
+  // A background 401 must not erase the account while a committed mutation
+  // still awaits its acknowledgement. Finish saving that response (or retain
+  // its pending key) before asking the same account to sign in again.
+  if (!busy && !restoring && historyAuthRejected) {
+    const rejected = historyAuthRejected; historyAuthRejected = null;
+    if (actor?.id === rejected.actorId && token === rejected.sessionToken) expireSession();
+  }
   const restoringRun = restoring || restoreNeeded;
   const playing = Boolean(service && actor && state?.phase === 'PLAYING' && !busy && !pending && !replay && !restoringRun);
   document.querySelectorAll('[data-remix-move],[data-remix-jump]').forEach(button => { button.disabled = !playing; });
@@ -66,6 +77,83 @@ function syncControls() {
   $('#retry-restore').hidden = !restoreNeeded;
   $('#retry-restore').disabled = Boolean(busy || restoring || !actor || !service);
   $('#auth-form').querySelectorAll('button').forEach(button => { button.disabled = Boolean(busy || !service); });
+  $('#run-history').hidden = !actor;
+  for (const button of document.querySelectorAll('[data-history-status],#history-refresh,#history-next')) button.disabled = Boolean(!actor || !service || historyLoading);
+  for (const button of document.querySelectorAll('[data-history-match]')) button.disabled = Boolean(!actor || !service || busy || pending || restoring);
+}
+
+function resetHistory() {
+  historyAuthRejected = null;
+  historyEpoch++; historyLoading = false; historyCursor = null; historyEntries = []; historyKind = 'active';
+  renderHistory(); $('#run-history').hidden = !actor;
+}
+
+function renderHistory() {
+  document.querySelectorAll('[data-history-status]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.historyStatus === historyKind)));
+  $('#history-next').hidden = !historyCursor;
+  $('#history-list').replaceChildren(...historyEntries.map(item => {
+    const row = document.createElement('li'), title = document.createElement('strong'), detail = document.createElement('span'), action = document.createElement('button');
+    title.textContent = item.title; title.dataset.noTranslate = '';
+    detail.textContent = uiText(item.purpose === 'creator-proof' ? 'Проверочный заезд' : 'Заезд испытания') + ' · ' + item.id.slice(0, 8);
+    action.type = 'button'; action.className = 'cta secondary'; action.dataset.historyMatch = item.id;
+    action.textContent = uiText(item.phase === 'PLAYING' ? 'Продолжить заезд' : 'Открыть результат');
+    row.append(title, detail, action); return row;
+  }));
+}
+
+async function loadHistory(append = false) {
+  if (!actor || !service || historyLoading || append && !historyCursor) return;
+  const actorId = actor.id, sessionToken = token, kind = historyKind, cursor = append ? historyCursor : null, epoch = ++historyEpoch;
+  const current = () => epoch === historyEpoch && actor?.id === actorId && token === sessionToken && historyKind === kind;
+  historyLoading = true; $('#history-status').textContent = 'Загружаем заезды аккаунта…'; syncControls();
+  try {
+    const value = await request('matches?status=' + kind + '&limit=20' + (cursor ? '&cursor=' + encodeURIComponent(cursor) : ''));
+    if (!current()) return;
+    const phase = kind === 'active' ? 'PLAYING' : 'RESULTS';
+    if (value?.schemaVersion !== 1 || !Array.isArray(value.matches) || value.matches.length > 20 || value.nextCursor !== null && !id(value.nextCursor) || !value.matches.every(item => id(item.id) && id(item.challengeId) && validHistoryTitle(item.title) && item.phase === phase && ['creator-proof', 'challenge'].includes(item.purpose) && item.stateVerified === false) || new Set(value.matches.map(item => item.id)).size !== value.matches.length || value.nextCursor && (value.nextCursor !== value.matches.at(-1)?.id || value.nextCursor === cursor)) throw Error('Сервис вернул неподдерживаемую историю заездов.');
+    const existing = append ? historyEntries : [], known = new Set(existing.map(item => item.id));
+    const next = [...existing, ...value.matches.filter(item => !known.has(item.id))];
+    if (next.length > 500) throw Error('Сервис вернул неподдерживаемую историю заездов.');
+    historyEntries = next; historyCursor = value.nextCursor; renderHistory();
+    $('#history-status').textContent = next.length ? 'Выберите заезд. Его состояние проверится перед открытием.' : kind === 'active' ? 'Незавершённых заездов пока нет.' : 'Завершённых заездов пока нет.';
+  } catch (error) {
+    if (!current()) return;
+    $('#history-status').textContent = error.message || 'Не удалось загрузить заезды. Обновите историю.';
+    if (error.status === 401) historyAuthRejected = { actorId, sessionToken };
+  } finally {
+    if (current()) { historyLoading = false; syncControls(); }
+  }
+}
+
+async function openHistoryRun(item) {
+  if (!actor || pending || restoring || !id(item?.id) || !id(item.challengeId)) return;
+  const actorId = actor.id, sessionToken = token, previousRecovery = restoreNeeded;
+  const current = () => actor?.id === actorId && token === sessionToken;
+  let opened = false;
+  restoring = true; restoreNeeded = true; syncControls(); setStatus('Проверяем сохранённый заезд…');
+  try {
+    const savedChallenge = await request('challenges/' + item.challengeId);
+    if (!current()) return;
+    validateChallenge(savedChallenge);
+    const savedState = await request('matches/' + item.id + '/state');
+    if (!current()) return;
+    validateState(savedState, savedChallenge, actorId);
+    if (savedChallenge.id !== item.challengeId || savedState.id !== item.id) throw Error('Сервис вернул другой заезд.');
+    // Commit the browser reference only after both authoritative reads succeed.
+    // A failed read must not replace an earlier recoverable run or pending input.
+    state = null; resetResult(); setChallenge(savedChallenge); opened = true; restoreNeeded = false;
+    await applyState(savedState);
+  } catch (error) {
+    if (current()) {
+      restoreNeeded = previousRecovery || item.id === state?.id && error.status === 503;
+      throw error;
+    }
+  } finally {
+    restoring = false;
+    if (opened && current()) remember();
+    else if (current() && !state) restoreNeeded = previousRecovery;
+    syncControls();
+  }
 }
 
 function draw(level = state?.arena, position = state?.position) {
@@ -92,8 +180,12 @@ function validArena(level) {
   return level?.ruleset === RULESET && level.width === 12 && level.height === 7 && Array.isArray(level.objects) && level.objects.length <= 40 && level.objects.every(object => ['platform', 'hazard', 'goal'].includes(object.kind) && Number.isInteger(object.x) && object.x >= 0 && object.x < 12 && Number.isInteger(object.y) && object.y >= 0 && object.y < 7);
 }
 
-function setChallenge(value) {
+function validateChallenge(value) {
   if (value?.schemaVersion !== 1 || value.ruleset !== RULESET || !id(value.id) || !id(value.creatorId) || !['DRAFT', 'VALIDATED', 'PUBLISHED'].includes(value.status) || !validArena(value.arena) || !Number.isSafeInteger(value.seed) || typeof value.title !== 'string') throw Error('Сервис вернул неподдерживаемое испытание.');
+}
+
+function setChallenge(value) {
+  validateChallenge(value);
   challenge = value;
   $('#challenge-name').value = value.title;
   $('#challenge-seed').value = String(value.seed);
@@ -109,8 +201,12 @@ function resetResult() {
   delete $('#result-panel').dataset.result;
 }
 
+function validateState(value, targetChallenge = challenge, actorId = actor?.id) {
+  if (value?.schemaVersion !== 1 || value.ruleset !== RULESET || !id(value.id) || value.playerId !== actorId || value.challengeId !== targetChallenge?.id || !validArena(value.arena) || !['PLAYING', 'RESULTS'].includes(value.phase) || !Number.isInteger(value.sequence) || value.sequence < 0 || value.sequence > 256 || !Array.isArray(value.position) || value.position.length !== 2 || !value.position.every(Number.isInteger) || value.position[0] < 0 || value.position[0] >= 12 || value.position[1] < 0 || value.position[1] >= 7) throw Error('Сервис вернул неподдерживаемое состояние заезда.');
+}
+
 async function applyState(value) {
-  if (value?.schemaVersion !== 1 || value.ruleset !== RULESET || !id(value.id) || value.playerId !== actor?.id || value.challengeId !== challenge?.id || !validArena(value.arena) || !['PLAYING', 'RESULTS'].includes(value.phase) || !Number.isInteger(value.sequence) || value.sequence < 0 || value.sequence > 256 || !Array.isArray(value.position) || value.position.length !== 2 || !value.position.every(Number.isInteger)) throw Error('Сервис вернул неподдерживаемое состояние заезда.');
+  validateState(value);
   if (state?.id === value.id && state.sequence > value.sequence) return;
   const changedMatch = state?.id !== value.id;
   if (changedMatch) { resetResult(); lastDirection = 'right'; }
@@ -205,6 +301,7 @@ async function operation(kind, path, body, reuse = null) {
   } else if (kind === 'publish') {
     setChallenge(value); await loadLeaderboard(); setStatus('Испытание опубликовано. Отправь ссылку другому игроку или пройди заезд для таблицы результатов.');
   }
+  if (kind === 'match' || kind === 'input' && state?.phase === 'RESULTS') { historyEpoch++; historyLoading = false; void loadHistory(); }
   syncControls(); return value;
 }
 
@@ -299,6 +396,7 @@ async function restoreSession() {
 
 function expireSession() {
   token = ''; actor = null; writeStorage(CORE_TOKEN, null); $('#auth-panel').hidden = false;
+  resetHistory();
   $('#session-state').textContent = pending ? 'Сессия истекла. Для сохранённого действия войдите тем же аккаунтом.' : 'Сессия истекла. Войдите снова.';
 }
 
@@ -312,9 +410,10 @@ async function authenticate(mode) {
   $('#remix-password').value = '';
   if (typeof value.token !== 'string' || !id(value.user?.id)) throw Error('Сервис входа вернул неподдерживаемую сессию.');
   token = value.token; actor = value.user; writeStorage(CORE_TOKEN, token);
+  resetHistory();
   $('#auth-status').textContent = ''; $('#auth-panel').hidden = true;
   $('#session-state').textContent = 'Игрок: ' + actor.username;
-  await restoreSession();
+  try { await restoreSession(); } finally { void loadHistory(); }
 }
 
 function canonical(value) {
@@ -412,6 +511,17 @@ $('#publish-challenge').addEventListener('click', () => act(() => operation('val
 $('#remix-challenge').addEventListener('click', () => act(() => operation('remix', 'challenges/' + challenge.id + '/remix', { title: ('Мой ремикс / ' + challenge.title).slice(0, 100) })));
 $('#retry-operation').addEventListener('click', () => { if (pending) act(() => operation(pending.kind, pending.path, pending.body, pending)); });
 $('#retry-restore').addEventListener('click', () => act(restoreSession));
+$('#history-refresh').addEventListener('click', () => loadHistory());
+$('#history-next').addEventListener('click', () => loadHistory(true));
+for (const button of document.querySelectorAll('[data-history-status]')) button.addEventListener('click', () => {
+  if (historyLoading || button.dataset.historyStatus === historyKind) return;
+  historyKind = button.dataset.historyStatus; historyCursor = null; historyEntries = []; renderHistory(); void loadHistory();
+});
+$('#history-list').addEventListener('click', event => {
+  const button = event.target.closest('[data-history-match]');
+  const item = historyEntries.find(value => value.id === button?.dataset.historyMatch);
+  if (item) act(() => openHistoryRun(item));
+});
 $('#show-replay').addEventListener('click', () => act(openReplay));
 $('#replay-step').addEventListener('input', showReplayFrame);
 $('#close-replay').addEventListener('click', () => { replay = null; $('#replay-panel').hidden = true; draw(); syncControls(); });
@@ -431,7 +541,7 @@ arena.addEventListener('keydown', event => {
   const direction = keyDirections[event.key];
   if (direction || event.code === 'Space') { event.preventDefault(); if (!event.repeat) move(direction || lastDirection, event.code === 'Space'); }
 });
-window.addEventListener('remix:languagechange', () => { if (replay) showReplayFrame(); else draw(); });
+window.addEventListener('remix:languagechange', () => { if (replay) showReplayFrame(); else draw(); renderHistory(); syncControls(); });
 $('#auth-form').addEventListener('submit', event => { event.preventDefault(); act(() => authenticate('login')); });
 $('#register-player').addEventListener('click', () => act(() => authenticate('register')));
 $('#copy-challenge').addEventListener('click', copyChallengeLink);
@@ -451,7 +561,7 @@ async function boot() {
       try { const current = await request('auth/me', { core: true }); actor = current.user; if (!id(actor?.id)) throw Error('Неверный формат сессии.'); }
       catch (error) { if (error.status !== 401) throw error; token = ''; writeStorage(CORE_TOKEN, null); }
     }
-    if (actor) { $('#session-state').textContent = 'Игрок: ' + actor.username; await restoreSession(); }
+    if (actor) { $('#session-state').textContent = 'Игрок: ' + actor.username; try { await restoreSession(); } finally { void loadHistory(); } }
     else { $('#session-state').textContent = 'Для сохранения заезда нужен вход'; $('#auth-panel').hidden = false; setStatus('Войдите в OSGARD Core или создайте аккаунт, чтобы начать заезд.'); }
   } catch (error) {
     if (!service) { $('#service-state').textContent = 'Серверная арена недоступна'; $('#service-state').dataset.status = 'unavailable'; setStatus(error.status === 404 ? 'На этом сайте сервис REMIX arena не включён. Создание заездов недоступно.' : error.message); }

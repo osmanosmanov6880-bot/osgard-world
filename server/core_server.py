@@ -2,7 +2,7 @@
 """OSGARD pilot server. SQLite is authoritative; Commerce is disabled by default."""
 from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 from pathlib import Path
-from urllib.parse import urlsplit
+from urllib.parse import urlsplit, parse_qs
 from contextlib import contextmanager
 import html
 import argparse
@@ -402,6 +402,14 @@ class Handler(SimpleHTTPRequestHandler):
                 remix_auth=self.headers.get('Authorization','')
                 remix_actor=self.server.store.actor(remix_auth[7:] if remix_auth.startswith('Bearer ') else '')
                 remix_route=request_path.removeprefix('/api/core/remix/v1/')
+                if method=='GET' and remix_route=='matches':
+                    query=urlsplit(self.path).query
+                    require(len(query)<=256,'Слишком длинный запрос истории.','history_query',400)
+                    fields=parse_qs(query,keep_blank_values=True,strict_parsing=True,max_num_fields=3)
+                    require(set(fields)<=set(('status','limit','cursor')) and all(len(values)==1 for values in fields.values()),'Неверные параметры истории.','history_query',400)
+                    limit=fields.get('limit',['20'])[0]
+                    require(re.fullmatch(r'[1-9][0-9]?',limit) is not None,'Неверный размер страницы.','history_query',400)
+                    return self.output(self.server.store.remix.list_matches(remix_actor['id'],status=fields.get('status',['active'])[0],limit=int(limit),cursor=fields.get('cursor',[None])[0]))
                 if method=='GET':return self.output(self.server.store.remix.get(remix_route,remix_actor['id']))
                 if method=='POST':return self.output(self.server.store.remix.mutate(remix_route,remix_actor['id'],self.body(),self.headers.get('Idempotency-Key')))
                 raise Fault('method','Метод не поддерживается.',405)

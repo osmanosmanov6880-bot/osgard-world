@@ -13,6 +13,7 @@ from core_model import Fault, now, require, text, uid
 
 RULESET = 'remix-arena-v1'
 WIDTH, HEIGHT, STEP_MS, MAX_INPUTS = 12, 7, 100, 256
+MAX_STORED_JSON = 16 * 1024
 START = [0, 3]
 SCHEMA = '''
 CREATE TABLE IF NOT EXISTS remix_challenges(
@@ -45,6 +46,24 @@ def canonical(value):
 
 def checksum(value):
     return hashlib.sha256(canonical(value).encode()).hexdigest()
+
+
+def stored_json(raw):
+    """Read bounded server records without ambiguous keys or non-JSON numbers."""
+    def unique(pairs):
+        result = {}
+        for key, value in pairs:
+            if key in result:
+                raise ValueError('Duplicate stored key')
+            result[key] = value
+        return result
+
+    def invalid_number(value):
+        raise ValueError('Non-finite stored number')
+
+    require(isinstance(raw, str) and len(raw.encode('utf-8')) <= MAX_STORED_JSON,
+            'Сохранённая запись заезда повреждена.', 'replay_integrity', 503)
+    return json.loads(raw, object_pairs_hook=unique, parse_constant=invalid_number)
 
 
 def fields(payload, allowed):
@@ -214,20 +233,93 @@ class RemixService:
     def challenge_view(self, row):
         return dict(schemaVersion=1, id=row['id'], creatorId=row['creator_id'], title=row['title'], seed=row['seed'], mode='speed', visibility=row['visibility'], status=row['status'], arena=json.loads(row['arena_json']), ruleset=RULESET, parentId=row['parent_id'], createdAt=row['created_at'])
 
+    @staticmethod
+    def _state_value(row, challenge, level, state):
+        # Existing records and responses use canonical JSON for persisted state.
+        # Keep the same field order as the previous state_view on valid runs.
+        state = json.loads(canonical(state))
+        return dict(schemaVersion=1, id=row['id'], challengeId=row['challenge_id'], playerId=row['player_id'], phase='RESULTS' if state['finished'] else 'PLAYING', players=1, maxPlayers=1, purpose=row['purpose'], ruleset=RULESET, seed=challenge['seed'], arena=level, replayFrames=state['sequence'], **state)
+
+    def _input_response(self, row, challenge, level, state):
+        return dict(schemaVersion=1, accepted=True, replayed=False, sequence=state['sequence'], position=state['position'], state=self._state_value(row, challenge, level, state))
+
+    def verified_prefix(self, db, row):
+        """Verify 0..256 committed inputs in the caller's single DB snapshot.
+
+        The 257th row is only an overflow sentinel. No prefix/checkpoint from a
+        previous connection is cached, and a write holds BEGIN IMMEDIATE while
+        verifying and extending this prefix. This also validates saved replies:
+        an idempotency lookup must not bypass a damaged active run.
+        """
+        try:
+            challenge = db.execute('SELECT * FROM remix_challenges WHERE id=?', (row['challenge_id'],)).fetchone()
+            require(challenge is not None and row['purpose'] in ('creator-proof', 'challenge'), 'Повреждены данные заезда.')
+            require(row['purpose'] != 'creator-proof' or row['player_id'] == challenge['creator_id'], 'Изменён автор проверочного заезда.')
+            saved_level = stored_json(challenge['arena_json'])
+            level = arena(integer(challenge['seed'], 1, 2147483647), saved_level['objects'])
+            require(canonical(level) == canonical(saved_level), 'Изменена арена заезда.')
+            # Preserve the existing canonical arena field order in responses.
+            level = saved_level
+            entries = db.execute('SELECT * FROM remix_inputs WHERE match_id=? ORDER BY sequence LIMIT ?', (row['id'], MAX_INPUTS + 1)).fetchall()
+            require(len(entries) <= MAX_INPUTS, 'Превышен предел журнала заезда.')
+            state, inputs, checkpoints, responses = initial_state(), [], [], []
+            for sequence, entry in enumerate(entries, 1):
+                require(type(entry['sequence']) is int and entry['sequence'] == sequence, 'Журнал ходов неполон или нарушен.')
+                raw = stored_json(entry['input_json'])
+                intent = input_intent(raw, row['player_id'])
+                require(canonical(raw) == canonical(intent), 'Изменён формат сохранённого хода.')
+                state = advance(level, state, intent)
+                checkpoint = dict(sequence=sequence, state=state, hash=checksum(state))
+                saved_checkpoint = stored_json(entry['checkpoint_json'])
+                require(canonical(saved_checkpoint) == canonical(checkpoint), 'Контрольная точка не воспроизводится.')
+                response = stored_json(entry['response_json'])
+                require(canonical(response) == canonical(self._input_response(row, challenge, level, state)), 'Подтверждение хода не соответствует журналу.')
+                inputs.append(raw)
+                checkpoints.append(saved_checkpoint)
+                responses.append(response)
+            require(canonical(stored_json(row['state_json'])) == canonical(state), 'Состояние заезда не соответствует журналу.')
+            require(row['phase'] == ('RESULTS' if state['finished'] else 'PLAYING'), 'Фаза заезда не соответствует журналу.')
+            envelope = None
+            if state['finished']:
+                require(canonical(stored_json(row['result_json'])) == canonical(result_record(row, state)), 'Результат заезда не соответствует журналу.')
+                envelope = dict(schemaVersion=1, game='remix', gameVersion=RULESET, seed=challenge['seed'], challengeId=challenge['id'], matchId=row['id'], playerId=row['player_id'], purpose=row['purpose'], arena=level, initialState=initial_state(), inputs=inputs, checkpoints=checkpoints, result=result_values(state))
+                require(row['replay_hash'] == checksum(envelope), 'Хеш повтора не совпадает.')
+                envelope['hash'] = row['replay_hash']
+            else:
+                require(row['result_json'] is None and row['replay_hash'] is None, 'У активного заезда появился неподтверждённый результат.')
+            return dict(challenge=challenge, level=level, state=state, inputs=inputs, responses=responses, replay=envelope)
+        except (Fault, ValueError, TypeError, KeyError, IndexError, OverflowError, RecursionError) as error:
+            raise Fault('replay_integrity', 'Сохранённый заезд не соответствует целостному журналу. Продолжение недоступно.', 503) from error
+
     def state_view(self, db, row):
-        challenge = db.execute('SELECT * FROM remix_challenges WHERE id=?', (row['challenge_id'],)).fetchone()
-        return dict(schemaVersion=1, id=row['id'], challengeId=row['challenge_id'], playerId=row['player_id'], phase=row['phase'], players=1, maxPlayers=1, purpose=row['purpose'], ruleset=RULESET, seed=challenge['seed'], arena=json.loads(challenge['arena_json']), replayFrames=json.loads(row['state_json'])['sequence'], **json.loads(row['state_json']))
+        prefix = self.verified_prefix(db, row)
+        return self._state_value(row, prefix['challenge'], prefix['level'], prefix['state'])
 
     def replay(self, db, row):
         require(row['phase'] == 'RESULTS', 'Заезд ещё не завершён.', 'result_not_ready', 409)
-        challenge = db.execute('SELECT * FROM remix_challenges WHERE id=?', (row['challenge_id'],)).fetchone()
-        entries = db.execute('SELECT * FROM remix_inputs WHERE match_id=? ORDER BY sequence', (row['id'],)).fetchall()
-        result = json.loads(row['result_json'])
-        envelope = dict(schemaVersion=1, game='remix', gameVersion=RULESET, seed=challenge['seed'], challengeId=challenge['id'], matchId=row['id'], playerId=row['player_id'], purpose=row['purpose'], arena=json.loads(challenge['arena_json']), initialState=initial_state(), inputs=[json.loads(entry['input_json']) for entry in entries], checkpoints=[json.loads(entry['checkpoint_json']) for entry in entries], result={key: result[key] for key in result_values(json.loads(row['state_json']))}, hash=row['replay_hash'])
-        verify_replay(envelope)
-        final_state = envelope['checkpoints'][-1]['state']
-        require(json.loads(row['state_json']) == final_state and result == result_record(row, final_state), 'Сохранённый результат не соответствует повтору.', 'replay_integrity', 503)
-        return envelope
+        return self.verified_prefix(db, row)['replay']
+
+    def list_matches(self, actor, *, status='active', limit=20, cursor=None):
+        """Own-run metadata only; resuming always requires verified GET state."""
+        require(status in ('active', 'complete'), 'Выберите активные или завершённые заезды.')
+        limit = integer(limit, 1, 50)
+        require(cursor is None or isinstance(cursor, str) and re.fullmatch(r'[a-f0-9]{32}', cursor), 'Неверный курсор истории.', 'invalid_cursor', 400)
+        with self.store.connect() as db:
+            db.execute('BEGIN')
+            parameters = [actor, 'PLAYING' if status == 'active' else 'RESULTS']
+            after = ''
+            if cursor is not None:
+                # Ownership, not current phase, determines cursor validity. A
+                # run may finish between two independently observed pages.
+                previous = db.execute('SELECT created_at,id FROM remix_matches WHERE id=? AND player_id=?', (cursor, actor)).fetchone()
+                require(previous is not None, 'Курсор отсутствует в вашей истории.', 'invalid_cursor', 400)
+                after = ' AND (m.created_at,m.id)<(?,?)'
+                parameters.extend((previous['created_at'], previous['id']))
+            rows = db.execute('''SELECT m.id,m.challenge_id,m.phase,m.purpose,m.created_at,c.title
+                FROM remix_matches m JOIN remix_challenges c ON c.id=m.challenge_id
+                WHERE m.player_id=? AND m.phase=?''' + after + ' ORDER BY m.created_at DESC,m.id DESC LIMIT ?', (*parameters, limit + 1)).fetchall()
+            matches = [dict(id=row['id'], challengeId=row['challenge_id'], title=row['title'], phase=row['phase'], purpose=row['purpose'], createdAt=row['created_at'], stateVerified=False) for row in rows[:limit]]
+            return dict(schemaVersion=1, matches=matches, nextCursor=matches[-1]['id'] if len(rows) > limit else None)
 
     def get(self, route, actor):
         with self.store.connect() as db:
@@ -272,6 +364,19 @@ class RemixService:
             previous = db.execute('SELECT * FROM remix_operations WHERE actor_id=? AND operation_key=?', (actor, key)).fetchone()
             if previous:
                 require(previous['request_hash'] == fingerprint, 'Ключ уже использован для другого запроса.', 'idempotency_conflict', 409)
+                match_input = re.fullmatch(r'matches/([a-f0-9]{32})/input', route)
+                if match_input:
+                    row = self.match_row(db, match_input[1], actor)
+                    prefix = self.verified_prefix(db, row)
+                    intent = input_intent(payload, actor)
+                    try:
+                        saved = stored_json(previous['response_json'])
+                        require(type(saved.get('replayed')) is bool and intent['sequence'] <= len(prefix['responses']), 'Не найден подтверждённый ход.')
+                        require(canonical(intent) == canonical(prefix['inputs'][intent['sequence'] - 1]) and
+                                canonical(dict(saved, replayed=False)) == canonical(prefix['responses'][intent['sequence'] - 1]), 'Сохранённый ответ операции изменён.')
+                    except (Fault, ValueError, TypeError, AttributeError, IndexError, RecursionError) as error:
+                        raise Fault('replay_integrity', 'Сохранённое подтверждение хода не соответствует журналу.', 503) from error
+                    return dict(saved, replayed=True)
                 return dict(json.loads(previous['response_json']), replayed=True)
             require(db.execute('SELECT COUNT(*) FROM remix_operations WHERE actor_id=?', (actor,)).fetchone()[0] < 40000, 'Достигнут лимит операций REMIX.', 'quota', 409)
             result = self._mutate(db, route, actor, payload)
@@ -330,12 +435,12 @@ class RemixService:
         if match_input:
             row = self.match_row(db, match_input[1], actor)
             intent = input_intent(payload, actor)
-            old = db.execute('SELECT * FROM remix_inputs WHERE match_id=? AND sequence=?', (row['id'], intent['sequence'])).fetchone()
-            if old:
-                require(old['input_json'] == canonical(intent), 'Этот номер уже занят другим ходом.', 'sequence_conflict', 409)
-                return dict(json.loads(old['response_json']), replayed=True)
-            challenge = db.execute('SELECT * FROM remix_challenges WHERE id=?', (row['challenge_id'],)).fetchone()
-            state = advance(json.loads(challenge['arena_json']), json.loads(row['state_json']), intent)
+            prefix = self.verified_prefix(db, row)
+            if intent['sequence'] <= len(prefix['inputs']):
+                require(canonical(prefix['inputs'][intent['sequence'] - 1]) == canonical(intent), 'Этот номер уже занят другим ходом.', 'sequence_conflict', 409)
+                return dict(prefix['responses'][intent['sequence'] - 1], replayed=True)
+            challenge, level = prefix['challenge'], prefix['level']
+            state = advance(level, prefix['state'], intent)
             db.execute('UPDATE remix_matches SET state_json=?,phase=? WHERE id=?', (canonical(state), 'RESULTS' if state['finished'] else 'PLAYING', row['id']))
             checkpoint = dict(sequence=state['sequence'], state=state, hash=checksum(state))
             db.execute('INSERT INTO remix_inputs VALUES(?,?,?,?,?)', (row['id'], intent['sequence'], canonical(intent), canonical(checkpoint), '{}'))
@@ -346,7 +451,10 @@ class RemixService:
                 replay_hash = checksum(envelope)
                 verify_replay(dict(envelope, hash=replay_hash))
                 db.execute('UPDATE remix_matches SET result_json=?,replay_hash=? WHERE id=?', (canonical(result), replay_hash, row['id']))
-            response = dict(schemaVersion=1, accepted=True, replayed=False, sequence=intent['sequence'], position=state['position'], state=self.state_view(db, self.match_row(db, row['id'], actor)))
+            # The prefix was checked under this write transaction. Construct the
+            # new acknowledgement from the just-derived state, before its saved
+            # response is present; later reads verify that acknowledgement too.
+            response = self._input_response(row, challenge, level, state)
             db.execute('UPDATE remix_inputs SET response_json=? WHERE match_id=? AND sequence=?', (canonical(response), row['id'], intent['sequence']))
             return response
         raise Fault('not_found', 'Маршрут REMIX не найден.', 404)

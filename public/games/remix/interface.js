@@ -4,6 +4,49 @@
 const persistence=window.RemixPersistence;
 const dictionary={
  "Open game arena ↗":"Открыть игровую арену ↗",
+ "SESSION ACCESS": "ДОСТУП К СЕССИИ",
+ "Session access": "Доступ к сессии",
+ "Guest / invite mode": "Гость / приглашение",
+ "Account-owned matches": "Матчи аккаунта",
+ "Choose account mode to verify your Core session.": "Выберите режим аккаунта, чтобы проверить сессию Core.",
+ "Sign in and return to REMIX": "Войти и вернуться в REMIX",
+ "Manage account access": "Управление аккаунтом",
+ "Verify account again": "Проверить аккаунт снова",
+ "Refresh account matches": "Обновить матчи аккаунта",
+ "One account controls its assigned player. Other accounts cannot join this owned match. Guest matches remain anonymous. Active simulation recovery and replay verification are not available.": "Один аккаунт управляет назначенным ему игроком. Другие аккаунты не могут присоединиться к этому матчу. Гостевые матчи остаются анонимными. Восстановление потерянной симуляции и проверка повторов недоступны.",
+ "Next page of account matches": "Следующая страница матчей",
+ "Check pending creation": "Проверить создание матча",
+ "Create a new public challenge": "Создать новое публичное испытание",
+ "Saved account recovery is full. Check pending creations or restore existing matches before submitting more.": "Достигнут предел записей восстановления аккаунта. Проверьте незавершённое создание или восстановите существующие матчи перед новыми командами.",
+ "Another creation is pending for this account. Check its recovery before starting another run.": "Для этого аккаунта уже ожидается создание матча. Проверьте его восстановление перед новым запуском.",
+ "Account recovery storage is unavailable. Existing recovery records are retained; new commands and creations are paused.": "Хранилище восстановления аккаунта недоступно. Существующие записи сохранены; новые команды и создание матчей приостановлены.",
+ "Account creation unavailable": "Создание матчей аккаунта недоступно",
+ "Verify account to continue": "Сначала проверьте аккаунт",
+ "Recover pending creation": "Восстановите создание матча",
+ "Create another account run": "Создать следующий матч аккаунта",
+ "Create account-owned run": "Создать матч аккаунта",
+ "Sign in to your Core account, then verify it here. Protected matches remain account-owned.": "Войдите в Core и проверьте аккаунт здесь. Защищённые матчи остаются привязаны к аккаунту.",
+ "Account verification is unavailable. Protected input is paused; your match remains account-owned.": "Проверка аккаунта недоступна. Управление приостановлено; матч остаётся привязан к аккаунту.",
+ "This account cannot access that protected match. Choose a match from its own history.": "Этот аккаунт не имеет доступа к выбранному матчу. Выберите матч из его собственной истории.",
+ "The account match service did not confirm this request. Your saved recovery record is retained.": "Сервис матчей аккаунта не подтвердил запрос. Запись для восстановления сохранена.",
+ "Your account session changed. Verify the account again before using this protected match.": "Сессия аккаунта изменилась. Проверьте аккаунт снова перед продолжением защищённого матча.",
+ "No account-owned matches were returned.": "Сервис не вернул матчей этого аккаунта.",
+ "Restoring the account-owned match. Its player and submitted sequence come from the service.": "Восстанавливаем матч аккаунта. Игрок и номера отправленных команд проверяются по данным сервиса.",
+ "The service recovered this account-owned creation. No create request was repeated.": "Сервис восстановил созданный матч аккаунта. Запрос создания не повторялся.",
+ "The service rejected this creation. A new attempt requires a separate action.": "Сервис отклонил создание. Новая попытка требует отдельного действия.",
+ "Creation remains unconfirmed. Check this same attempt again; no POST will be repeated.": "Создание пока не подтверждено. Проверьте эту же попытку ещё раз; запрос создания не повторится.",
+ "No account-owned creation is confirmed for this attempt. Its request will not be repeated.": "Создание матча аккаунта для этой попытки не подтверждено. Запрос не будет повторён.",
+ "Checking account access and service capabilities…": "Проверяем аккаунт и возможности сервиса…",
+ "A different account is verified. Previous protected matches remain with their original account.": "Проверен другой аккаунт. Прежние защищённые матчи остаются у исходного владельца.",
+ "Choose an account-owned match or create a separate run.": "Выберите матч аккаунта или создайте отдельный матч.",
+ "Account match creation is disabled. You can view and recover existing account-owned matches.": "Создание матчей аккаунта отключено. Можно просматривать и восстанавливать уже существующие матчи.",
+ "Guest mode is separate from account-owned matches.": "Гостевой режим работает отдельно от матчей аккаунта.",
+ "Opening an account-owned run. Its single participant is assigned by the service.": "Создаём матч аккаунта. Его единственного участника назначает сервис.",
+ "Account-owned match created. Checking its server state…": "Матч аккаунта создан. Проверяем его состояние на сервере…",
+ "Account match creation needs saved recovery metadata. Enable browser storage before trying again.": "Для создания матча аккаунта нужно сохранить данные восстановления. Разрешите хранилище браузера перед новой попыткой.",
+ "The public challenge was not confirmed. No account-owned match request was submitted.": "Публичное испытание не подтверждено. Запрос создания матча аккаунта не отправлялся.",
+ "The owned record remains saved, but its active simulation is unavailable. This release cannot recover a lost simulation.": "Запись матча аккаунта сохранена, но активная симуляция недоступна. Этот выпуск не восстанавливает потерянную симуляцию.",
+ "You are offline. Account-owned records remain saved; no create or input request will be repeated.": "Нет подключения к сети. Записи матчей аккаунта сохранены; запросы создания и команд не будут повторяться.",
  "Failed to fetch":"Нет связи с игровым сервисом. Проверьте подключение.",
  "OSGARD ENTERTAINMENT / 03": "OSGARD PLAY / 03",
  "One daily seed. One challenge link. Create a match, send inputs and compare the results returned by the match service.": "Ежедневное испытание и ссылка для друга. Создайте матч, отправляйте команды и сравнивайте результаты, полученные от сервиса.",
@@ -161,7 +204,7 @@ function setLanguage(value){
  locale=value==='en'?'en':'ru';persistence?.setItem('osgard:game-language',locale);
  document.documentElement.lang=locale;
  try{const url=new URL(location.href);url.searchParams.set('lang',locale);history.replaceState(null,'',url.href)}catch{}
- if(ready){apply();updateStorage();document.querySelectorAll('[data-game-language]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.gameLanguage===locale)))}
+ if(ready){window.RemixSession?.syncControls();apply();updateStorage();document.querySelectorAll('[data-game-language]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.gameLanguage===locale)))}
 }
 function languageTools(){
  const bar=document.createElement('div');bar.className='game-language';bar.dataset.localeTools='';bar.setAttribute('role','group');bar.setAttribute('aria-label','Язык / Language');
@@ -173,6 +216,7 @@ function watch(){
 }
 
 dynamic.push(
+ [/^Verified account: (.+)$/,name=>'Проверенный аккаунт: '+name],[/^Recover match (.+)$/,id=>'Восстановить матч '+id],
  [/^(Connection error|State error|Input error|Card export unavailable|Result-card sharing unavailable): (.+)$/,(kind,value)=>({'Connection error':'Ошибка подключения','State error':'Ошибка состояния','Input error':'Команда не отправлена','Card export unavailable':'Не удалось скачать карточку','Result-card sharing unavailable':'Не удалось отправить карточку'})[kind]+': '+t(value)],
  [/^Match (.+)$/,id=>'Матч '+id],[/^Friend challenge (.+)$/,id=>'Испытание друга '+id],
  [/^CHALLENGE \/ (.+)$/,id=>'ИСПЫТАНИЕ / '+id],[/^DAILY CHALLENGE \/ (.+)$/,date=>'ИСПЫТАНИЕ ДНЯ / '+date],

@@ -30,6 +30,13 @@ try{
  assert.equal(coreAuthReturn('/workspace','?returnTo='+encodeURIComponent(enrollment)),enrollment);
  assert.equal(safeReturnTo('/learning/enrollment/?order='+sid+'&token=discard'),enrollment);
  assert.equal(safeReturnTo('/learning/enrollment?order=https://external.test'),'/learning/enrollment');
+ const remixReturn='/games/remix/?challenge=ch_return.1&lang=en&mode=account';
+ assert.equal(safeReturnTo('/games/remix'),'/games/remix/');assert.equal(safeReturnTo(remixReturn),remixReturn);
+ assert.equal(new URLSearchParams(coreLoginLink(remixReturn).split('?')[1]).get('returnTo'),remixReturn);
+ assert.equal(coreAuthReturn('/workspace','?returnTo='+encodeURIComponent(remixReturn)),remixReturn);
+ assert.equal(safeReturnTo(remixReturn+'&api=https://external.test&token=secret&redirect=//external.test&seed=42&project='+pid),remixReturn);
+ assert.equal(safeReturnTo('/games/remix/?challenge=../other&lang=external&mode=guest'),'/games/remix/');
+ for(const value of ['/games/remix/player/','/games/remix/other','/games/remix/#secret','/games/remix/?challenge='+ 'x'.repeat(1001)])assert.equal(safeReturnTo(value),'/workspace');
  const txt=recoveryDocument('tester','batch',['one','two']);assert.ok(txt.includes('one\ntwo'));assert.ok(txt.includes('Активируйте этот набор'));assert.ok(txt.includes('аннулирует все старые коды и сессии'))
  await coreRequest('health');assert.equal(headers.Authorization,'Bearer first')
  stored='second';for(const fn of handlers)fn({persisted:true});await coreRequest('health');assert.equal(headers.Authorization,'Bearer second')

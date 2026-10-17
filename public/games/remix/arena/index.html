@@ -62,6 +62,17 @@
             <div class="button-row"><button class="cta" type="submit">Войти</button><button class="cta secondary" id="register-player" type="button">Создать аккаунт</button></div>
           </form><p id="auth-status" role="status"></p>
         </div>
+        <section class="run-history" id="run-history" hidden aria-labelledby="run-history-title">
+          <h3 id="run-history-title">Мои заезды</h3>
+          <p class="fine">Заезды хранятся в аккаунте. Выберите сохранённый маршрут, даже если данные браузера потеряны.</p>
+          <div class="button-row history-filters" aria-label="Состояние заездов">
+            <button class="cta secondary" type="button" data-history-status="active" aria-pressed="true">В процессе</button>
+            <button class="cta secondary" type="button" data-history-status="complete" aria-pressed="false">Завершённые</button>
+          </div>
+          <p id="history-status" class="fine" role="status" aria-live="polite">Загружаем заезды аккаунта…</p>
+          <ul id="history-list" aria-label="Заезды аккаунта"></ul>
+          <div class="button-row"><button id="history-refresh" class="cta secondary" type="button">Обновить заезды</button><button id="history-next" class="cta secondary" type="button" hidden>Ещё заезды</button></div>
+        </section>
         <span class="eyebrow" id="challenge-mode">Испытание дня</span><h2>Твой маршрут</h2>
         <label for="challenge-name">Название испытания</label><input data-no-translate id="challenge-name" type="text" minlength="2" maxlength="100" value="Испытание дня">
         <label for="challenge-seed">Seed — код поля</label><input id="challenge-seed" type="number" min="1" max="2147483647" step="1">

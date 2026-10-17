@@ -138,12 +138,12 @@ await check('REMIX Core arena dynamic state and restore errors translate without
   assert.equal(r.ui.t('Не удалось восстановить заезд: Сервис вернул страницу вместо ответа API.'), 'Could not restore the run: The service returned a page instead of an API response.');
   assert.equal(r.ui.t('player-owned custom title'), 'player-owned custom title');
 });
-await check('REMIX legacy console and Core arena keep separate runtimes and visible entry points', () => {
+await check('REMIX service console and Core arena keep separate runtimes and visible entry points', () => {
   assert.match(remix, /href="\/games\/remix\/arena\/">Open game arena/);
   assert.match(remixArena, /href="\/games\/remix\/">Открыть сервисную консоль/);
   for (const html of [remix, remixArena]) assert.equal([...html.matchAll(/href="\/games\/remix\/player\/index\.html"/g)].length, 1, 'Each interface has one explicit Unity status entry');
   assert.match(remix, /async function api\(path, options\)/);
-  assert.ok(!remix.includes('remix-client.js') && !remix.includes('osgard:core-session:v1'), 'The legacy console must not load the Core arena client or credential');
+  assert.ok(!remix.includes('remix-client.js'), 'The service console must not load the separate Core arena client');
   assert.match(remixArena, /<script type="module" src="remix-client\.js"><\/script>/);
   assert.ok(!remixArena.includes('async function api('));
   for (const direction of ['up', 'down', 'left', 'right']) assert.ok(remixArena.includes(`data-remix-move="${direction}"`));
@@ -153,6 +153,30 @@ await check('REMIX legacy console and Core arena keep separate runtimes and visi
   arena.ui.setLanguage('en');
   assert.equal(arena.ui.t('Открыть сервисную консоль ↗'), 'Open the legacy service console ↗');
   assert.equal(arena.ui.t('Статус Unity-сборки ↗'), 'Unity build status ↗');
+});
+await check('REMIX guest transport stays anonymous while owned credentials are limited to fixed auth and guard v2 routes', async () => {
+  const guest = remix.slice(remix.indexOf('async function api(path, options){'), remix.indexOf('\nasync function start('));
+  const begin = remix.indexOf('async function ownedJSON('), end = remix.indexOf('\nasync function ownedApi(', begin);
+  assert.ok(begin >= 0 && end > begin, 'Execute the actual owned request implementation and path validator');
+  const calls = [], credential = 'fixture-core-session-only';
+  const context = { URL, AbortController, Error, connectionBase: '/api/remix', requests: new Set(), location: { origin: 'https://osgard.world' }, apiInput: { value: '/api/remix' }, ownedIdentity: { credential }, coreCredential: () => credential, sessionStorage: { getItem: () => credential }, setTimeout: () => 1, clearTimeout() {}, fetch: async (url, options) => { calls.push({ url, options }); return { ok: true, status: 200, json: async () => ({ ok: true }) }; } };
+  vm.createContext(context); vm.runInContext(guest + '\n' + remix.slice(begin, end), context);
+  await vm.runInContext("api('/v1/matches', {method:'POST'})", context);
+  assert.equal(calls[0].url, '/api/remix/v1/matches');
+  assert.ok(!Object.keys(calls[0].options.headers).some(key => key.toLowerCase() === 'authorization'));
+  assert.ok(!JSON.stringify(calls[0]).includes(credential), 'An available Core credential must never enter the guest request');
+  for (const url of ['/api/core/auth/me', '/api/remix/v2/matches']) {
+    await vm.runInContext('ownedJSON(' + JSON.stringify(url) + ',{},coreCredential())', context);
+    const request = calls.at(-1);
+    assert.equal(request.url, url); assert.equal(request.options.headers.Authorization, 'Bearer ' + credential);
+    assert.equal(request.options.credentials, 'omit'); assert.equal(request.options.redirect, 'error');
+  }
+  const before = calls.length;
+  for (const url of ['https://other.example/api/remix/v2/matches', '//other.example/api/remix/v2/matches', 'https://user:pass@osgard.world/api/remix/v2/matches', '/api/remix/v1/matches', '/api/core/remix/v1/matches', '/api/v1/player/events', '/api/core/auth/me?token=bad']) {
+    await assert.rejects(vm.runInContext('ownedJSON(' + JSON.stringify(url) + ',{},coreCredential())', context), /credentials are restricted/);
+  }
+  await assert.rejects(vm.runInContext("ownedJSON('/api/core/auth/me',{method:'POST'},coreCredential())", context), /credentials are restricted/);
+  assert.equal(calls.length, before, 'Forbidden credential destinations must be rejected before fetch');
 });
 await check('REMIX Core arena actual API binds the origin, preserves routes, and rejects HTML or timed-out responses', async () => {
   const begin = remixClient.indexOf('class RequestError extends Error {');

@@ -8,6 +8,7 @@ on:
       - "server/**"
       - "scripts/remix-*"
       - "scripts/check-nginx-remix-guard.sh"
+      - "scripts/check-nginx-remix-owned.sh"
       - "tests/test_remix_*.py"
       - "tests/test_frontend_activation.py"
       - "docker-compose.production.yml"
@@ -51,7 +52,12 @@ on:
       - "scripts/games-portal-smoke.mjs"
       - "scripts/academy-home-smoke.mjs"
       - "scripts/games-lighthouse-report.mjs"
+      - "scripts/lighthouse-report.mjs"
+      - "scripts/lighthouse-report-validation.mjs"
+      - "tests/lighthouse_reports.test.mjs"
+      - "tests/fixtures/lighthouse-reports.mjs"
       - ".github/workflows/games-lighthouse.yml"
+      - ".github/workflows/skillcred-lighthouse.yml"
       - "public/games/**"
       - "godot/**"
       - "scripts/build-null-shift-godot.py"
@@ -101,10 +107,14 @@ jobs:
           npm run qa:ux
           npm run qa:osa-progress
           npm run qa:game-interface
+          npm run qa:inherit-handoff
           npm run qa:remix-session
+          npm run qa:remix-owned-session
+          npm run qa:remix-owned-probe
           npm run qa:remix-legacy
           npm run qa:remix-contract
           npm run qa:remix-guard
+          npm run qa:remix-owned
           npm run qa:activation
       - name: Install pinned Core dependencies
         run: python3 -m pip install -r server/requirements.txt
@@ -133,6 +143,8 @@ jobs:
         run: npm run qa:nginx-game-delivery
       - name: Verify REMIX result durability through candidate Nginx
         run: npm run qa:nginx-remix-guard
+      - name: Verify Core ownership and protected rollback through candidate Nginx
+        run: npm run qa:nginx-remix-owned
       - name: Verify unavailable Unity build is pinned to reviewed evidence
         run: |
           node scripts/remix-unity-status-check.mjs dist
@@ -144,7 +156,9 @@ jobs:
       - name: Verify Imperium of Time game systems and visual diagnostics
         run: npm run qa:time-ui
       - name: Verify OSGARD Games portal and Lighthouse guardrails
-        run: npm run qa:games-portal
+        run: |
+          npm run qa:games-portal
+          npm run qa:lighthouse-reports
       - name: Verify partner inventory and enquiry form
         run: npm run qa:partners-page
       - name: Verify ecosystem links, claims, contacts and privacy boundaries
@@ -197,7 +211,7 @@ jobs:
         run: npm run qa:games-local
       - name: Verify authoritative REMIX results, replay and server ownership
         run: npm run qa:remix-server
-      - name: Verify REMIX login, unavailable service and lost-response recovery
+      - name: Verify REMIX login, account history and lost-response recovery
         run: npm run qa:remix-ui
       - name: Check desktop and mobile user journeys
         if: ${{ !cancelled() }}
