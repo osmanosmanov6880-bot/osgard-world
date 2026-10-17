@@ -134,6 +134,61 @@ def objects(value, maximum, minimum=0):
     return result
 
 
+def _integrity_failure():
+    raise Fault('inherit_integrity', 'История мира не совпадает с сохранённым снимком. Восстановите проверенную резервную копию.', 503)
+
+
+def _verified_objects(raw, maximum, minimum=0):
+    # Persistent JSON is not user input at read time. Invalid data is a storage
+    # integrity fault, never a reason to serve an unchecked world or mutate it.
+    try:
+        if type(raw) is not str or len(raw.encode('utf-8')) > 256 * 1024:
+            _integrity_failure()
+        return objects(json.loads(raw), maximum, minimum)
+    except (ValueError, TypeError, OverflowError, Fault):
+        _integrity_failure()
+
+
+def verify_lineage(db, row):
+    """Replay the bounded immutable generation chain against the mutable world tip.
+
+    The hash is an integrity checksum, not a signature against a DB administrator
+    who can consistently rewrite every row.
+    """
+    if row['template'] != TEMPLATE or row['source'] not in ('template', 'local-copy'):
+        _integrity_failure()
+    baseline = _verified_objects(row['baseline'], LIMITS['objects'])
+    previous = checksum(dict(template=TEMPLATE, source=row['source'], objects=baseline))
+    if row['baseline_hash'] != previous:
+        _integrity_failure()
+    prior_objects = baseline
+    generations = db.execute(
+        'SELECT * FROM inherit_generations WHERE world_id=? ORDER BY number '
+        'LIMIT ?', (row['id'], LIMITS['generations'] + 1)).fetchall()
+    if len(generations) > LIMITS['generations']:
+        _integrity_failure()
+    for ordinal, generation in enumerate(generations, 1):
+        if generation['number'] != ordinal or generation['parent_hash'] != previous:
+            _integrity_failure()
+        delta = _verified_objects(generation['delta'], LIMITS['delta'], 1)
+        snapshot = _verified_objects(generation['objects'], LIMITS['objects'])
+        if snapshot != prior_objects + delta:
+            _integrity_failure()
+        actual = checksum(dict(worldId=row['id'], number=ordinal,
+                               authorId=generation['author_id'],
+                               message=generation['message'], delta=delta,
+                               objects=snapshot, parentHash=previous,
+                               createdAt=generation['created_at']))
+        if generation['snapshot_hash'] != actual:
+            _integrity_failure()
+        prior_objects, previous = snapshot, actual
+    current = _verified_objects(row['objects'], LIMITS['objects'])
+    if (type(row['generation']) is not int or row['generation'] != len(generations) + 1
+            or row['snapshot_hash'] != previous or current != prior_objects):
+        _integrity_failure()
+    return previous
+
+
 def access(db, world_id, actor, write=False):
     row = db.execute('SELECT w.* FROM inherit_worlds w JOIN inherit_members m ON m.world_id=w.id '
                      'WHERE w.id=? AND m.user_id=?', (world_id, actor)).fetchone()
@@ -221,7 +276,7 @@ def recovery_access(db, saved, actor):
     if saved['invitation_id']:
         handoff_access(db, saved['invitation_id'], actor)
     if saved['world_id']:
-        access(db, saved['world_id'], actor)
+        verify_lineage(db, access(db, saved['world_id'], actor))
 
 
 def retry_guard(db, actor, key):
@@ -248,6 +303,7 @@ def get(db, route, actor):
     match = re.fullmatch('worlds/(' + ID + ')(?:/generations/([1-9][0-9]{0,2}))?', route)
     if match:
         row = access(db, match[1], actor)
+        verify_lineage(db, row)
         if match[2]:
             generation = db.execute('SELECT * FROM inherit_generations WHERE world_id=? AND number=?',
                                     (row['id'], int(match[2]))).fetchone()
@@ -302,6 +358,7 @@ def create(db, actor, payload):
 def append(db, world_id, actor, payload):
     fields(payload, ('expectedRevision', 'expectedGeneration', 'message', 'delta'))
     row = access(db, world_id, actor, write=True)
+    verify_lineage(db, row)
     expected(row, payload)
     require(type(payload.get('expectedGeneration')) is int and payload['expectedGeneration'] == row['generation'],
             'У мира уже другое поколение.', 'generation_conflict', 409)
@@ -330,6 +387,7 @@ def append(db, world_id, actor, payload):
 def offer(db, world_id, actor, payload):
     fields(payload, ('expectedRevision', 'targetUserId', 'sharingAcknowledged'))
     row = access(db, world_id, actor, write=True)
+    verify_lineage(db, row)
     expected(row, payload)
     require(payload.get('sharingAcknowledged') is True, 'Подтвердите передачу и доступ хранителей к истории.')
     target_id = payload.get('targetUserId')
@@ -360,6 +418,7 @@ def transition(db, invitation_id, action, actor, payload):
     allowed_actor = invitation['from_id'] if action == 'cancel' else invitation['to_id']
     require(actor == allowed_actor, 'Действие недоступно этому аккаунту.', 'forbidden', 403)
     row = db.execute('SELECT * FROM inherit_worlds WHERE id=?', (invitation['world_id'],)).fetchone()
+    verify_lineage(db, row)
     expected(row, payload)
     require(row['pending_handoff'] == invitation_id and row['custodian_id'] == invitation['from_id'] and
             row['revision'] == invitation['expected_revision'], 'Передача уже изменилась.', 'handoff_conflict', 409)
