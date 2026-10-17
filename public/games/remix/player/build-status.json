@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "game": "remix",
+  "availability": "unavailable",
+  "reason": "inactive-main-scene",
+  "reviewedAt": "2026-10-17",
+  "engineInitializationVerified": true,
+  "playableSceneVerified": false,
+  "defaultEngineDownload": false,
+  "diagnosticQuery": "diagnostic=1",
+  "runtimeSha256": {
+    "REMIX-webgl3.data.gz": "38922e28d30ddfee2c2a32fd2e9e0d19dd455af8448ee6472179a7aa33d321b5",
+    "REMIX-webgl3.framework.js.gz": "3ec44e558cf3c7b1c1c36b3bfd0e57c9cb9615b5b5c4ef1f19a178b8605c1df7",
+    "REMIX-webgl3.wasm.gz": "aced15274a80a3c94e27283f1e3aaa9dd898e03eb945ccbd42a40251bdfdde7f",
+    "REMIX-webgl3.loader.js": "cb05b4c8fdb28f19b9f15614fea17a342728d0d586981e7201eb539fce16b551"
+  },
+  "evidence": {
+    "originalRun": "https://github.com/osmanosmanov6880-bot/osgard-world/actions/runs/39022901898",
+    "originalCommit": "b9879e853c38217db69e4ed904f62fbddeec127c",
+    "originalArtifactId": 12097427909,
+    "originalArtifactSha256": "4aa0475d7f3950c8cfb0a60fdcee046caadaf93a58d34cfbf73581eec9282516",
+    "experimentalRun": "https://github.com/osmanosmanov6880-bot/osgard-world/actions/runs/39023160181",
+    "experimentalArtifactId": 12097940708,
+    "experimentalArtifactSha256": "7c81523d000264db96fd4cd52717a6336126f9ced65687fdd211449e3b781432",
+    "experimentalOutcome": "rejected-browser-target-crashed"
+  }
+}

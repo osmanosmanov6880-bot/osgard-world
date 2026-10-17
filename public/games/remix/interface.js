@@ -1,169 +1,143 @@
-/* RU/EN presentation only. Match/auth state belongs to remix-client.js. */
+/* RU/EN interface layer. Keeps original game state and mechanics independent of presentation. */
 (()=>{
 "use strict";
-const persistence=window.RemixPersistence||(()=>{
- const memory=new Map(),store={ephemeral:false};
- store.getItem=key=>{if(memory.has(key))return memory.get(key);try{return localStorage.getItem(key)}catch{store.ephemeral=true;return null}};
- store.setItem=(key,value)=>{memory.set(key,String(value));try{localStorage.setItem(key,String(value))}catch{store.ephemeral=true}};
- return store;
-})();
-window.RemixPersistence=persistence;
-const english={
- "REMIX — создай и пройди испытание":"REMIX — create and complete a challenge",
- "Экосистема OSGARD":"OSGARD ecosystem",
- "Продукты OSGARD":"OSGARD products",
- "← Каталог игровых миров":"← Game worlds catalog",
- "Создай · Пройди · Передай":"Create · Complete · Share",
- "Найди путь через барьеры и опасные клетки. Пройди своё испытание, опубликуй его и предложи другому игроку найти более короткий маршрут.":"Find a path through barriers and hazards. Complete your challenge, publish it and invite another player to find a shorter route.",
- "Режимы REMIX":"REMIX modes",
- "Открыть серверную арену ↓":"Open the server arena ↓",
- "Открыть Unity-версию ↗":"Open the Unity version ↗",
- "Одинаковый seed — одинаковое поле":"Same seed, same arena",
- "Результат рассчитывает сервер":"The server calculates results",
- "Клавиатура и touch":"Keyboard and touch",
- "Перед запуском":"Before you start",
- "Серверная арена.":"Server arena.",
- "Войдите в OSGARD Core, создайте поле и достигните цели. После публикации другой игрок сможет пройти то же испытание в своём заезде.":"Sign in to OSGARD Core, create an arena and reach the goal. Once published, another player can attempt the same challenge in their own run.",
- "Управление.":"Controls.",
- "Выберите поле: стрелки или WASD — ход, Space — прыжок в последнем направлении. На телефоне используйте кнопки под полем. Tab перемещает фокус по странице.":"Focus the arena: arrows or WASD move; Space jumps in the last direction. On a phone, use the buttons below the arena. Tab moves focus around the page.",
- "Сохранение и онлайн.":"Saving and online play.",
- "Арене нужен совместимый сервис REMIX на этом сайте. Подтверждённые ходы и результаты сохраняет сервер; при потере ответа повторите неподтверждённое действие.":"The arena requires a compatible REMIX service on this site. The server saves confirmed moves and results; if a response is lost, retry the unconfirmed action.",
- "Отдельная игровая сборка требует WebGL 2. Её управление показано внутри игры; сетевой сервис и результаты не объединены с этой ареной.":"The separate game build requires WebGL 2. Its controls are shown in the game; its online service and results are separate from this arena.",
- "Подключение серверной арены":"Arena connection",
- "Используется сервис этого сайта. Совместимость проверяется перед входом; адрес Unity-сервиса здесь не меняется.":"This arena uses the service on this site. Compatibility is checked before sign-in; this setting does not change the Unity service.",
- "Адрес API арены":"Arena API address",
- "Серверное испытание REMIX":"REMIX server challenge",
- "Проверяем сервер матчей…":"Checking the match service…",
- "Сессия ещё не проверена":"Session not checked yet",
- "Поле испытания":"Challenge arena",
- "Подключаемся к сервису испытаний…":"Connecting to the challenge service…",
- "Поле испытания. Управление стрелками или WASD.":"Challenge arena. Use the arrow keys or WASD.",
- "Ожидаем подтверждённое сервером поле":"Waiting for the server-confirmed arena",
- "Игрок":"Player",
- "Барьер":"Barrier",
- "Опасность":"Hazard",
- "Цель":"Goal",
- "Направление хода":"Move direction",
- "Ход вверх":"Move up",
- "Ход влево":"Move left",
- "Ход вниз":"Move down",
- "Ход вправо":"Move right",
- "Прыжок":"Jump",
- "Стрелки или WASD":"Arrow keys or WASD",
- "— ход на одну клетку.":"move one cell.",
- "— прыжок на две клетки в последнем направлении; барьер перепрыгнуть нельзя. Опасная клетка возвращает на старт. Ход стоит 100 мс игрового времени, прыжок — 200 мс, падение добавляет 1500 мс. Это пошаговая арена: задержка сети не влияет на счёт.":"jumps two cells in the last direction; barriers cannot be jumped. A hazard returns you to the start. A move costs 100 ms of game time, a jump costs 200 ms and a fall adds 1500 ms. This is a turn-based arena: network latency does not affect your score.",
- "Повторить неподтверждённое действие":"Retry the unconfirmed action",
- "Восстановить сохранённый заезд":"Restore the saved run",
- "Вход в OSGARD Core":"Sign in to OSGARD Core",
- "Один аккаунт хранит ваши испытания, заезды и повторы.":"One account stores your challenges, runs and replays.",
- "Имя пользователя":"Username",
- "Пароль — от 12 символов":"Password — at least 12 characters",
- "Войти":"Sign in",
- "Создать аккаунт":"Create account",
- "Испытание дня":"Daily challenge",
- "Твой маршрут":"Your route",
- "Название испытания":"Challenge title",
- "Seed — код поля":"Seed — arena code",
- "Создать испытание":"Create challenge",
- "Сначала автор достигает цели в проверочном заезде. После публикации каждый игрок проходит то же поле отдельно; в таблицу попадает его лучший заезд.":"The creator must first reach the goal in a proof run. Once published, each player attempts the same arena separately; their best run appears on the leaderboard.",
- "Пройти ещё раз":"Run again",
- "Новое поле":"New arena",
- "Черновики доступны только автору.":"Drafts are only visible to their creator.",
- "Заезд завершён":"Run complete",
- "Твой результат":"Your result",
- "Подтвердить и опубликовать":"Validate and publish",
- "Посмотреть повтор":"View replay",
- "Сделать свой ремикс":"Create your remix",
- "Серверный повтор":"Server replay",
- "Ход повтора":"Replay step",
- "Закрыть повтор":"Close replay",
- "Лучшие заезды испытания":"Best challenge runs",
- "Опубликованное испытание":"Published challenge",
- "Ссылка для другого игрока":"Link for another player",
- "Поделиться испытанием ↗":"Share challenge ↗",
- "Скопировать ссылку":"Copy invite link",
- "Поделиться карточкой ↗":"Share result card ↗",
- "Скачать карточку PNG ↓":"Download result card PNG ↓",
- "ПАРТНЁРАМ / ОБСУЖДЕНИЕ":"PARTNER SLOT / INQUIRY ONLY",
- "Испытание для вашего проекта":"A challenge for your project",
- "Это заявка на сотрудничество после заезда. Активная рекламная кампания здесь не представлена.":"This is a partnership inquiry after the run. No active advertising campaign is represented here.",
- "Обсудить партнёрское испытание ↗":"Discuss a sponsored challenge ↗",
- "Здесь работает отдельная серверная арена REMIX. Существующая Unity-версия открывается отдельно; её сетевой сервис и результаты не объединены с этой ареной.":"This page runs a separate REMIX server arena. The existing Unity version opens separately; its online service and results are not shared with this arena.",
- "Сервис вернул страницу вместо ответа API.":"The service returned a page instead of an API response.",
- "Запрос отклонён сервером.":"The server rejected this request.",
- "Нет подтверждения от сервера. Проверьте соединение и повторите действие.":"No confirmation from the server. Check your connection and retry the action.",
- "Заезд идёт":"Run in progress",
- "Начать заезд":"Start run",
- "Поле появится после запуска заезда":"The arena appears when a run starts",
- "Сервис вернул неподдерживаемое испытание.":"The service returned an unsupported challenge.",
- "Ремикс опубликованного поля":"Remix of a published arena",
- "Твоё испытание":"Your challenge",
- "Испытание другого игрока":"Another player's challenge",
- "Опубликовано. Каждый игрок получает тот же набор объектов и собственный заезд.":"Published. Each player receives the same objects and their own run.",
- "Черновик. Достигни цели в проверочном заезде, затем подтверди публикацию.":"Draft. Reach the goal in a proof run, then validate publication.",
- "Сервис вернул неподдерживаемое состояние заезда.":"The service returned an unsupported run state.",
- "Заезд активен. Выбирай направление; клетка меняется после ответа сервера.":"Run active. Choose a direction; your position changes after the server responds.",
- "Результат не относится к этому заезду.":"The result does not belong to this run.",
- "Неподдерживаемая таблица результатов.":"Unsupported leaderboard response.",
- "Сначала войдите в доступный сервис.":"Sign in to the available service first.",
- "Сначала восстановите сохранённый заезд.":"Restore your saved run first.",
- "Сначала повторите неподтверждённое действие.":"Retry the unconfirmed action first.",
- "Сервер не подтвердил этот ход.":"The server did not confirm this move.",
- "Испытание опубликовано. Отправь ссылку другому игроку или пройди заезд для таблицы результатов.":"Challenge published. Send the link to another player or complete a leaderboard run.",
- "Действие не подтверждено.":"Action not confirmed.",
- "Введите название от 2 до 100 символов и целый seed от 1 до 2147483647.":"Enter a title of 2–100 characters and a whole-number seed from 1 to 2147483647.",
- "Не удалось обновить состояние.":"Could not refresh the run state.",
- "Восстанавливаем сохранённый заезд…":"Restoring your saved run…",
- "Есть неподтверждённое действие. Повтор сохранит его номер и ключ, поэтому второй ход не будет создан.":"An action is unconfirmed. Retrying preserves its sequence and key, so it cannot create a second move.",
- "Испытание загружено с сервера. Начни свой заезд.":"Challenge loaded from the server. Start your run.",
- "Сервис готов. Создай испытание и пройди маршрут.":"Service ready. Create a challenge and complete the route.",
- "Сессия истекла. Для сохранённого действия войдите тем же аккаунтом.":"Session expired. Sign in to the same account to recover the saved action.",
- "Сессия истекла. Войдите снова.":"Session expired. Sign in again.",
- "Создаём аккаунт…":"Creating your account…",
- "Проверяем вход…":"Signing in…",
- "Сервис входа вернул неподдерживаемую сессию.":"The sign-in service returned an unsupported session.",
- "Повтор не соответствует этому результату.":"The replay does not match this result.",
- "Контрольный хеш повтора не совпадает.":"The replay checksum does not match.",
- "Ссылка скопирована. Другой игрок сможет открыть это же испытание.":"Link copied. Another player can open this same challenge.",
- "Ссылка выделена. Скопируйте её из поля.":"Link selected. Copy it from the field.",
- "Не удалось создать PNG результата.":"Could not create the result PNG.",
- "Браузер не передал файл напрямую. Карточка PNG скачана.":"The browser could not share the file directly. The PNG card was downloaded.",
- "Карточка с серверным результатом скачана.":"The server result card was downloaded.",
- "Новое испытание":"New challenge",
- "Выбери название и seed следующего поля.":"Choose a title and seed for the next arena.",
- "Подключённый backend не объявляет совместимую арену remix-arena-v1. Этот режим здесь недоступен.":"The connected backend does not announce a compatible remix-arena-v1 arena. This mode is unavailable here.",
- "Серверная арена доступна":"Server arena available",
- "Неверный формат сессии.":"Invalid session format.",
- "Для сохранения заезда нужен вход":"Sign in to save your run",
- "Войдите в OSGARD Core или создайте аккаунт, чтобы начать заезд.":"Sign in to OSGARD Core or create an account to start a run.",
- "Серверная арена недоступна":"Server arena unavailable",
- "На этом сайте сервис REMIX arena не включён. Создание заездов недоступно.":"The REMIX arena service is not enabled on this site. Runs cannot be created.",
- "Сервис вернул неподдерживаемый результат.":"The service returned an unsupported result.",
- "ИСПЫТАНИЕ ПРОЙДЕНО":"CHALLENGE COMPLETE",
- "ЛИМИТ ХОДОВ":"MOVE LIMIT",
- "Повтори маршрут. Найди более короткий путь.":"Try the route. Find a shorter path.",
- "Браузер не сохраняет настройки языка. Выбор действует на открытой странице; сохранение заездов подтверждает сервер.":"Language preferences cannot be saved in this browser. Your choice lasts while this page is open; the server confirms saved runs."
+const persistence=window.RemixPersistence;
+const dictionary={
+ "Open game arena ↗":"Открыть игровую арену ↗",
+ "Failed to fetch":"Нет связи с игровым сервисом. Проверьте подключение.",
+ "OSGARD ENTERTAINMENT / 03": "OSGARD PLAY / 03",
+ "One daily seed. One challenge link. Create a match, send inputs and compare the results returned by the match service.": "Ежедневное испытание и ссылка для друга. Создайте матч, отправляйте команды и сравнивайте результаты, полученные от сервиса.",
+ "DAILY CHALLENGE / SERVER-RECORDED RESULTS": "ИСПЫТАНИЕ ДНЯ / ПОДТВЕРЖДЕНИЕ СЕРВЕРОМ",
+ "Open challenge console ↗": "Открыть консоль испытаний ↗",
+ "Unity build status ↗": "Статус Unity-сборки ↗",
+ "The loop": "Как устроено испытание",
+ "01 / CREATE": "01 / СОЗДАЙТЕ",
+ "Shape a challenge": "Создайте испытание",
+ "Create a daily challenge and open its match in the console.": "Создайте испытание дня и откройте его матч в консоли.",
+ "02 / PLAY": "02 / ПРОЙДИТЕ",
+ "Enter the match": "Начните матч",
+ "The service reports the countdown, match state and position after accepted inputs.": "Сервис сообщает обратный отсчёт, состояние матча и позицию после принятых команд.",
+ "03 / REMIX": "03 / ПОДЕЛИТЕСЬ",
+ "Save the result": "Сохраните результат",
+ "Request a result recorded by the match service, then share the challenge link with a friend.": "Получите результат от игрового сервиса и отправьте другу ссылку на испытание.",
+ "The console shows position and results from the match service. The separate Unity build is currently unavailable.": "Консоль показывает позицию и результаты из ответов сервиса матчей. Отдельная Unity-сборка сейчас недоступна.",
+ "04 / GROWTH + REVENUE": "04 / ПАРТНЁРАМ",
+ "Invite a rival.": "Пригласите соперника.",
+ "Open a sponsor slot.": "Создайте совместное испытание.",
+ "The daily seed gives players a reason to return; the challenge link gives them a concrete reason to invite someone; a result screen can introduce a clearly labelled sponsor only after the run ends. Sponsorship is by inquiry until a real campaign is contracted.": "Испытание дня даёт новый повод зайти, а ссылка — пригласить друга. Партнёрское размещение обсуждается отдельно и может появиться только после прохождения. Действующая рекламная кампания не заявляется.",
+ "Sponsor a challenge series ↗": "Обсудить серию испытаний ↗",
+ "LIVE MATCH CONSOLE": "КОНСОЛЬ ИСПЫТАНИЙ",
+ "Ready to enter": "Готовы начать?",
+ "The daily challenge uses a shared UTC seed. Create a run, then send the invite link to a friend.": "Условия испытания одинаковы в течение дня по UTC. Создайте матч, затем отправьте другу ссылку.",
+ "API URL": "Адрес игрового сервиса",
+ "Create daily challenge": "Создать испытание дня",
+ "Local input preview": "Поле управления консоли, не изображение Unity",
+ "Server input preview, separate from the Unity game": "Позиция из ответа игрового сервиса, отдельно от игры Unity",
+ "Position appears after the service accepts an input.": "Позиция появится, когда сервис подтвердит команду.",
+ "Waiting for the service": "Ожидаем игровой сервис",
+ "Opening challenge…": "Открываем испытание…",
+ "Result received": "Результат получен",
+ "Start a new match": "Начать новый матч",
+ "Start this challenge": "Начать это испытание",
+ "Reconnect to this match": "Восстановить связь с матчем",
+ "Waiting for players": "Ожидаем игроков",
+ "Countdown": "Обратный отсчёт",
+ "Match running": "Матч идёт",
+ "Run finished": "Прохождение завершено",
+ "DAILY CHALLENGE": "ИСПЫТАНИЕ ДНЯ",
+ "SERVER RESULT": "РЕЗУЛЬТАТ СЕРВЕРА",
+ "SEED": "КОД УСЛОВИЙ",
+ "CHALLENGE": "ИСПЫТАНИЕ",
+ "MATCH": "МАТЧ",
+ "CAN YOU BEAT THIS?": "СМОЖЕТЕ ПРОЙТИ ЛУЧШЕ?",
+ "Server result · no input frames were recorded.": "Результат сервера · ни одна команда не была принята.",
+ "Open a new daily challenge": "Открыть новое испытание дня",
+ "This shared challenge is no longer available. Open a new daily challenge to continue.": "Испытание по приглашению больше недоступно. Чтобы продолжить, откройте новое испытание дня.",
+ "This invitation does not contain a valid challenge ID. Open a new daily challenge to continue.": "В приглашении указан неверный номер испытания. Чтобы продолжить, откройте новое испытание дня.",
+ "The old challenge is no longer available. Create a new daily challenge.": "Прошлое испытание больше недоступно. Создайте новое испытание дня.",
+ "This is the match service response. An immutable replay archive has not been verified.": "Это ответ сервиса матчей. Неизменяемый архив повторов пока не проверен.",
+ "Use a secure, compatible match-service address without a query or password.": "Укажите HTTPS-адрес совместимого игрового сервиса без пароля и параметров запроса.",
+ "Match created. Checking the server state…": "Матч создан. Проверяем его состояние…",
+ "The creation response was lost. A match may exist on the service. Starting a new match is a separate action.": "Ответ на создание не получен. Матч мог появиться на сервере. Кнопка ниже создаст новый матч; автоматического повтора не будет.",
+ "You are offline. The saved match will reconnect when the connection returns.": "Нет подключения к сети. Связь с сохранённым матчем восстановится, когда сеть появится.",
+ "The run ended. Fetching its server result…": "Матч завершён. Получаем результат от сервера…",
+ "The match is running. Focus the field or use the buttons to submit input.": "Матч идёт. Выберите поле или используйте кнопки, чтобы отправлять команды.",
+ "The service is preparing the match. Controls unlock when play begins.": "Сервис готовит матч. Управление станет доступно после начала игры.",
+ "The service cannot find this saved match. Retry its lookup or create another match.": "Сервис не нашёл сохранённый матч. Проверьте его ещё раз или создайте другой.",
+ "The result has not loaded yet. Your match is retained; reconnecting…": "Результат пока не загрузился. Данные матча сохранены; восстанавливаем связь…",
+ "Connection lost. Your match is retained; reconnecting…": "Связь потеряна. Данные матча сохранены; подключаемся снова…",
+ "This session cannot accept more inputs. Reconnect to view its result.": "Команды для этой сессии больше недоступны. Восстановите связь, чтобы увидеть результат.",
+ "This input was not confirmed. It will not be sent again. Reconnecting to the match…": "Команда не подтверждена и не будет отправлена повторно. Восстанавливаем связь с матчем…",
+ "The local session record is invalid or expired. You can start a new challenge.": "Запись сессии на устройстве повреждена или устарела. Можно начать новое испытание.",
+ "A challenge is saved. Start its match when you are ready.": "Испытание сохранено. Начните матч, когда будете готовы.",
+ "Restoring the saved match. The service will verify its current state and result.": "Восстанавливаем сохранённый матч. Сервис проверит его состояние и результат.",
+ "CHALLENGE PASSPORT": "КАРТОЧКА ИСПЫТАНИЯ",
+ "Awaiting server ID": "Ожидаем номер от сервера",
+ "Use this link to challenge a friend to the same ruleset. Only the server result is presented as a result.": "Ссылка приглашает друга пройти те же правила. Результат считается подтверждённым после ответа сервера.",
+ "Shareable challenge URL": "Ссылка для приглашения друга",
+ "Share challenge ↗": "Поделиться испытанием ↗",
+ "Copy invite link": "Скопировать ссылку",
+ "Run this challenge again ↻": "Пройти ещё раз ↻",
+ "Share result card ↗": "Поделиться карточкой ↗",
+ "Download result card PNG ↓": "Скачать карточку PNG ↓",
+ "PARTNER SLOT / INQUIRY ONLY": "ПАРТНЁРАМ / ОБСУЖДЕНИЕ",
+ "A brand can sponsor the next challenge.": "Следующее испытание можно создать с партнёром.",
+ "This is a commercial inquiry link, not a live ad. It appears after the result, never over active controls. No sponsor campaign is currently represented as active.": "Ссылка ведёт к обсуждению партнёрства и появляется после результата. Действующая рекламная кампания не подключена.",
+ "Discuss a sponsored challenge ↗": "Обсудить партнёрское испытание ↗",
+ "Opening a server-owned daily challenge...": "Запрашиваем испытание у игрового сервиса…",
+ "The challenge service returned no challenge ID.": "Сервис не вернул номер испытания.",
+ "The match service returned no match ID.": "Сервис не вернул номер матча.",
+ "Shared challenge accepted by the match service. Use arrow keys or WASD.": "Сервис принял приглашение. На поле: A/D или ←/→; W, ↑ или пробел — прыжок.",
+ "Match created. Use arrow keys or WASD to submit input.": "Матч создан. На поле: A/D или ←/→; W, ↑ или пробел — прыжок.",
+ "Match active": "Матч идёт",
+ "Retry shared challenge": "Повторить подключение",
+ "Retry daily challenge": "Попробовать снова",
+ "Unknown error": "Неизвестная ошибка",
+ "FRIEND CHALLENGE / SERVER CHECK": "ИСПЫТАНИЕ ДРУГА / ПРОВЕРКА СЕРВЕРОМ",
+ "FRIEND CHALLENGE / PENDING SERVER VALIDATION": "ИСПЫТАНИЕ ДРУГА / ОЖИДАЕТ ПРОВЕРКИ",
+ "Finish a server-recorded run first.": "Сначала завершите матч и получите подтверждённый результат.",
+ "Result card downloaded. Share the challenge link so a friend can run the same seed.": "Карточка скачана. Отправьте другу ссылку, чтобы он прошёл те же условия.",
+ "Result card downloaded. It identifies the server match. Send the challenge invitation separately.": "Карточка скачана. В ней указан номер матча на сервере. Ссылку-приглашение отправьте отдельно.",
+ "The share sheet opened. Share delivery depends on the target app.": "Окно отправки открыто. Дальнейшая отправка зависит от выбранного приложения.",
+ "This browser cannot share files directly. The PNG card was downloaded instead.": "Браузер не поддерживает прямую отправку файлов. Карточка PNG скачана.",
+ "Create or accept a challenge first.": "Сначала создайте испытание или примите приглашение.",
+ "Invite link copied. Send it to a friend who can open the same challenge.": "Ссылка скопирована. Отправьте её другу.",
+ "Share sheet opened. The recipient still needs to open the link and start the challenge.": "Окно отправки открыто. Получателю нужно открыть ссылку и начать испытание.",
+ "Create another match": "Создать следующий матч",
+ "Ready to run this same challenge again.": "Готово к повторному прохождению.",
+ "A friend shared a challenge. Accept it to ask the match service to validate and start it.": "Вас пригласили в испытание. Примите приглашение, чтобы сервис проверил его и создал матч.",
+ "Accept shared challenge": "Принять приглашение",
+ "Server returned the result. Challenge a friend to compare this same ruleset.": "Сервер вернул результат. Предложите другу пройти те же условия.",
+ "The match service is unavailable. Try again later.": "Игровой сервис недоступен. Попробуйте позже.",
+ "The match service rejected this request.": "Игровой сервис отклонил запрос.",
+ "The match service returned an invalid response.": "Сервис вернул ответ в неверном формате.",
+ "The match service took too long to respond.": "Сервис не ответил вовремя. Повторите попытку.",
+ "Enter the REMIX API URL first": "Укажите адрес сервиса в дополнительных настройках.",
+ "Copy the challenge invite link": "Скопируйте ссылку-приглашение",
+ "Before you start": "Перед запуском",
+ "The Unity build is currently unavailable. The console below connects to the match service and displays its responses.": "Unity-сборка сейчас недоступна. Консоль ниже подключается к сервису матчей и показывает его ответы.",
+ "Save and online: match results require the REMIX service. Page loading does not confirm an online match or a saved result.": "Сохранение и онлайн: результат матча подтверждает сервис REMIX. Открытая страница ещё не означает работающий онлайн или сохранённый результат.",
+ "Console controls: focus its field and use A/D or left/right; W, up or Space jumps. Touch buttons are also available.": "Управление консолью: выберите поле, A/D или ←/→ — движение; W, ↑ или пробел — прыжок. Можно использовать экранные кнопки.",
+ "Advanced connection settings": "Дополнительные настройки подключения",
+ "Keep the default address unless you run your own compatible match service.": "Оставьте адрес по умолчанию, если вы не используете собственный совместимый игровой сервис.",
+ "Console controls: focus the field or use the buttons below. A/D or arrows moves; W, up or Space jumps.": "Управление консолью: выберите поле или используйте кнопки ниже. A/D или ←/→ — движение; W, ↑ или пробел — прыжок.",
+ "← Left": "← Влево",
+ "Jump ↑": "Прыжок ↑",
+ "Right →": "Вправо →",
+ "Preferences cannot be saved in this browser. You can still play while this page is open.": "Браузер не сохраняет настройки. На открытой странице можно продолжить игру.",
+ "This browser cannot save session recovery. Keep this page open; reloading may lose access to this match.": "Браузер не сохраняет данные для восстановления сессии. Оставьте страницу открытой: после перезагрузки доступ к этому матчу может потеряться."
 };
-const russian=Object.fromEntries(Object.entries(english).map(([ru,en])=>[en,ru]));
+
 const originals=new WeakMap(),attributes=new WeakMap();
 let ready=false,locale='ru';
-try{const requested=new URLSearchParams(location.search).get('lang');locale=requested==='en'?'en':requested==='ru'?'ru':persistence.getItem('osgard:game-language')==='en'?'en':'ru'}catch{}
-const dynamicEnglish=[
- [/^Игрок: (.+)$/,name=>'Player: '+name],
- [/^(Проверочный заезд|Заезд испытания) · (.+)$/,(kind,id)=>(kind==='Проверочный заезд'?'Proof run':'Challenge run')+' · '+id],
- [/^Клетка (\d+), (\d+) · ход (\d+)\/256 · падений (\d+) · (\d+) мс$/,(x,y,step,falls,time)=>`Cell ${x}, ${y} · move ${step}/256 · falls ${falls} · ${time} ms`],
- [/^Опубликованное испытание · seed (\d+)$/,seed=>'Published challenge · seed '+seed],
- [/^(Цель достигнута|Лимит ходов) · (\d+) ходов · (\d+) очков$/,(kind,steps,score)=>(kind==='Цель достигнута'?'Goal reached':'Move limit')+` · ${steps} moves · ${score} points`],
- [/^(\d+) мс игрового времени · падений (\d+) · прыжков (\d+) · повтор (.+)$/,(time,falls,jumps,hash)=>`${time} ms game time · falls ${falls} · jumps ${jumps} · replay ${hash}`],
- [/^(Ты|Игрок .+) · (\d+) очков · (\d+) мс$/,(player,score,time)=>(player==='Ты'?'You':player.replace(/^Игрок /,'Player '))+` · ${score} points · ${time} ms`],
- [/^Не удалось восстановить заезд: (.+)$/,message=>'Could not restore the run: '+t(message)],
- [/^Серверный повтор · ход (\d+)\/(\d+) · клетка (\d+), (\d+) · (\d+) мс$/,(step,total,x,y,time)=>`Server replay · move ${step}/${total} · cell ${x}, ${y} · ${time} ms`]
-];
+try{const requested=new URLSearchParams(location.search).get('lang');locale=requested==='en'?'en':requested==='ru'?'ru':persistence?.getItem('osgard:game-language')==='en'?'en':'ru'}catch{}
+const dynamic=[];
 function t(value){
  const raw=String(value??''),key=raw.replace(/\s+/g,' ').trim();
- let translated=(locale==='en'?english:russian)[key];
- if(translated===undefined&&locale==='en')for(const [pattern,render] of dynamicEnglish){const match=key.match(pattern);if(match){translated=render(...match.slice(1));break}}
- if(translated===undefined&&key.startsWith('RESULTS · '))translated='RESULTS · '+t(key.slice(10));
+ const source=ephemeralText(key);
+ if(locale==='en')return source===key?raw:source;
+ let translated=dictionary[source];
+ if(translated===undefined){for(const [pattern,render] of dynamic){const match=source.match(pattern);if(match){translated=render(...match.slice(1));break}}}
  return translated===undefined?raw:(raw.match(/^\s*/)?.[0]||'')+translated+(raw.match(/\s*$/)?.[0]||'');
 }
 function textNode(node){
@@ -174,8 +148,8 @@ function textNode(node){
 }
 function element(node){
  if(!node.getAttribute||node.closest?.('script,style,[data-locale-tools],[data-no-translate]'))return;
- const saved=attributes.get(node)||{};
- for(const name of ['aria-label','title','placeholder']){if(!node.hasAttribute(name))continue;const current=node.getAttribute(name),before=saved[name],source=before&&current===before.rendered?before.source:current,rendered=t(source);if(current!==rendered)node.setAttribute(name,rendered);saved[name]={source,rendered}}
+ let saved=attributes.get(node)||{};
+ for(const name of ['aria-label','title','placeholder']){if(!node.hasAttribute(name))continue;const current=node.getAttribute(name);const before=saved[name];const source=before&&current===before.rendered?before.source:current;const rendered=t(source);if(current!==rendered)node.setAttribute(name,rendered);saved[name]={source,rendered}}
  attributes.set(node,saved);
 }
 function apply(root=document.body){
@@ -184,23 +158,46 @@ function apply(root=document.body){
  root.querySelectorAll?.('[aria-label],[title],[placeholder]').forEach(element);
 }
 function setLanguage(value){
- locale=value==='en'?'en':'ru';persistence.setItem('osgard:game-language',locale);
+ locale=value==='en'?'en':'ru';persistence?.setItem('osgard:game-language',locale);
  document.documentElement.lang=locale;
  try{const url=new URL(location.href);url.searchParams.set('lang',locale);history.replaceState(null,'',url.href)}catch{}
- if(ready){apply();document.title=t('REMIX — создай и пройди испытание');updateStorage();document.querySelectorAll('[data-game-language]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.gameLanguage===locale)));window.dispatchEvent(new Event('remix:languagechange'))}
+ if(ready){apply();updateStorage();document.querySelectorAll('[data-game-language]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.gameLanguage===locale)))}
 }
 function languageTools(){
  const bar=document.createElement('div');bar.className='game-language';bar.dataset.localeTools='';bar.setAttribute('role','group');bar.setAttribute('aria-label','Язык / Language');
  for(const [code,label] of [['ru','Русский'],['en','English']]){const button=document.createElement('button');button.type='button';button.textContent=label;button.dataset.gameLanguage=code;button.setAttribute('aria-pressed',String(locale===code));button.addEventListener('click',()=>setLanguage(code));bar.appendChild(button)}return bar;
 }
-function updateStorage(){const node=document.querySelector('#remix-storage-state');if(node){node.hidden=!persistence.ephemeral;node.textContent=t('Браузер не сохраняет настройки языка. Выбор действует на открытой странице; сохранение заездов подтверждает сервер.')}}
-function init(){
- ready=true;document.documentElement.lang=locale;document.title=t('REMIX — создай и пройди испытание');
- document.querySelector('.hero').insertAdjacentElement('beforebegin',languageTools());
- apply();updateStorage();
+function watch(){
  const observer=new MutationObserver(records=>{for(const record of records){if(record.type==='characterData')textNode(record.target);else if(record.type==='attributes')element(record.target);else record.addedNodes.forEach(node=>apply(node))}});
  observer.observe(document.body,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:['aria-label','title','placeholder']});
 }
+
+dynamic.push(
+ [/^(Connection error|State error|Input error|Card export unavailable|Result-card sharing unavailable): (.+)$/,(kind,value)=>({'Connection error':'Ошибка подключения','State error':'Ошибка состояния','Input error':'Команда не отправлена','Card export unavailable':'Не удалось скачать карточку','Result-card sharing unavailable':'Не удалось отправить карточку'})[kind]+': '+t(value)],
+ [/^Match (.+)$/,id=>'Матч '+id],[/^Friend challenge (.+)$/,id=>'Испытание друга '+id],
+ [/^CHALLENGE \/ (.+)$/,id=>'ИСПЫТАНИЕ / '+id],[/^DAILY CHALLENGE \/ (.+)$/,date=>'ИСПЫТАНИЕ ДНЯ / '+date],
+ [/^Seed (\d+) · Share this link to let a friend enter the same challenge\. The match API must accept the shared challenge before it starts\.$/,seed=>'Код условий: '+seed+'. Отправьте ссылку другу. Для запуска сервис должен подтвердить приглашение.'],
+ [/^Invitation seed (\d+) · This number comes from the link or browser record\. The service must accept the challenge ID before play\.$/,seed=>'Код из приглашения: '+seed+'. Число взято из ссылки или записи браузера. Перед игрой сервис должен принять номер испытания.'],
+ [/^Server result · score (.+)$/,score=>'Подтверждённый результат · очки: '+score],
+ [/^Server result · (.+)$/,score=>'Подтверждённый результат · '+score.replace(/\bYou\b/g,'Вы').replace(/\bPlayer (\d+)/g,'Игрок $1')],[/^RESULTS · (.+)$/,score=>'РЕЗУЛЬТАТ · '+t(score)],
+ [/^(\d+) player\(s\) · (\d+) accepted input frames$/,(players,frames)=>'Игроков: '+players+' · принятых команд: '+frames],
+ [/^(\d+) s left in this phase$/,seconds=>'Осталось в этой фазе: '+seconds+' с'],
+ [/^Server position · X ([-\d.]+) · Y ([-\d.]+)$/,(x,y)=>'Позиция на сервере · X '+x+' · Y '+y],
+ [/^(.+) · (\d+) player\(s\) · (\d+) replay frames$/,(phase,players,frames)=>(({'WAITING':'Ожидание','COUNTDOWN':'Обратный отсчёт','PLAYING':'Матч идёт','RUNNING':'Матч идёт','RESULTS':'Результаты'})[phase]||phase)+' · игроков: '+players+' · кадров повтора: '+frames]
+);
+function ephemeralText(key){return key}
+function updateStorage(){const node=document.querySelector('#remix-storage-state');if(node){node.hidden=!persistence?.ephemeral;node.textContent=t('This browser cannot save session recovery. Keep this page open; reloading may lose access to this match.')}}
+function init(){
+ ready=true;document.documentElement.lang=locale;
+ const hero=document.querySelector('.hero'),tools=languageTools();hero.insertAdjacentElement('beforebegin',tools);
+ const guide=document.createElement('aside');guide.className='remix-guide';guide.innerHTML='<strong>Before you start</strong><p>The Unity build is currently unavailable. The console below connects to the match service and displays its responses.</p><p>Console controls: focus its field and use A/D or left/right; W, up or Space jumps. Touch buttons are also available.</p><p>Save and online: match results require the REMIX service. Page loading does not confirm an online match or a saved result.</p>';hero.appendChild(guide);
+ const api=document.querySelector('#api-url'),settings=document.createElement('details');settings.className='remix-settings';settings.innerHTML='<summary>Advanced connection settings</summary><p>Keep the default address unless you run your own compatible match service.</p><label>API URL</label>';api.insertAdjacentElement('beforebegin',settings);settings.querySelector('label').appendChild(api);
+ const arena=document.querySelector('#arena');arena.tabIndex=0;arena.setAttribute('aria-describedby','remix-console-controls');const controls=document.createElement('div');controls.className='remix-console-controls';controls.innerHTML='<p id="remix-console-controls">Console controls: focus the field or use the buttons below. A/D or arrows moves; W, up or Space jumps.</p><div><button type="button" data-console-action="left">← Left</button><button type="button" data-console-action="jump">Jump ↑</button><button type="button" data-console-action="right">Right →</button></div><p id="remix-storage-state" role="status" hidden></p>';arena.insertAdjacentElement('afterend',controls);
+ controls.querySelectorAll('[data-console-action]').forEach(button=>button.addEventListener('click',()=>{const action=button.dataset.consoleAction;if(action==='left')send(-1,0,false);if(action==='right')send(1,0,false);if(action==='jump')send(0,1,true)}));
+ const status=document.querySelector('#match-status');status.setAttribute('role','status');status.setAttribute('aria-live','polite');
+ window.RemixSession?.syncControls();apply();updateStorage();watch();
+}
 window.RemixUI={t,setLanguage,getLanguage:()=>locale,updateStorage};
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
+
 })();

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
-import { compatibleService } from '../public/games/remix/remix-contract.mjs';
+import { compatibleService } from '../public/games/remix/arena/remix-contract.mjs';
 
 const RULESET = 'remix-arena-v1';
 const canonical = value => Array.isArray(value) ? '[' + value.map(canonical).join(',') + ']' : value && typeof value === 'object' ? '{' + Object.keys(value).sort().map(key => JSON.stringify(key) + ':' + canonical(value[key])).join(',') + '}' : JSON.stringify(value);
@@ -66,7 +66,7 @@ export async function acceptRemix(page, result, { timeout = 15000, screenshot, B
   const mobile = result.device === 'mobile';
   const observedResponses = [];
   const observer = async response => {
-    if (!new URL(response.url()).pathname.startsWith('/api/remix/v1/') || !response.ok()) return;
+    if (!new URL(response.url()).pathname.startsWith('/api/core/remix/v1/') || !response.ok()) return;
     try { observedResponses.push({ path: new URL(response.url()).pathname, value: await response.json() }); } catch {}
   };
   page.on('response', observer);
@@ -113,7 +113,7 @@ export async function acceptRemix(page, result, { timeout = 15000, screenshot, B
       // read it again, so a client exception cannot masquerade as a dependency.
       const capability = await page.evaluate(async () => {
         try {
-          const response = await fetch('/api/remix/v1/capabilities', { credentials: 'omit' });
+          const response = await fetch('/api/core/remix/v1/capabilities', { credentials: 'omit' });
           let value = null;
           try { value = await response.json(); } catch {}
           return { status: response.status, value };

@@ -5,7 +5,8 @@ import vm from 'node:vm';
 const read = path => readFileSync(path, 'utf8');
 const inherit = read('public/games/inherit/index.html');
 const remix = read('public/games/remix/index.html');
-const remixClient = read('public/games/remix/remix-client.js');
+const remixArena = read('public/games/remix/arena/index.html');
+const remixClient = read('public/games/remix/arena/remix-client.js');
 const unity = read('public/games/remix/player/index.html');
 const scripts = html => [...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/g)].map(m => m[1]).filter(s => s.trim());
 let passed = 0;
@@ -31,8 +32,8 @@ function inheritHarness({ raw, denied = false, quota = false } = {}) {
 }
 
 await check('every game and launcher script parses', () => {
-  for (const html of [inherit, remix, unity]) for (const source of scripts(html)) new vm.Script(source);
-  for (const game of ['inherit', 'remix']) new vm.Script(read(`public/games/${game}/interface.js`));
+  for (const html of [inherit, remix, remixArena, unity]) for (const source of scripts(html)) new vm.Script(source);
+  for (const game of ['inherit', 'remix', 'remix/arena']) new vm.Script(read(`public/games/${game}/interface.js`));
 });
 await check('INHERIT restores a valid world without changing it', () => {
   const raw = JSON.stringify(initial()), h = inheritHarness({ raw });
@@ -82,13 +83,13 @@ function languageHarness(game, search = '', stored) {
   vm.runInContext(source, context); return { ui: context[game === 'inherit' ? 'InheritUI' : 'RemixUI'], context, data };
 }
 await check('RU is the default; explicit and saved EN remain selectable without a reload', () => {
-  for (const game of ['inherit', 'remix']) {
+  for (const game of ['inherit', 'remix', 'remix/arena']) {
     assert.equal(languageHarness(game).ui.getLanguage(), 'ru'); assert.equal(languageHarness(game, '?lang=en').ui.getLanguage(), 'en');
     assert.equal(languageHarness(game, '', 'en').ui.getLanguage(), 'en'); assert.equal(languageHarness(game, '?lang=ru', 'en').ui.getLanguage(), 'ru');
-    const h = languageHarness(game), source = game === 'inherit' ? 'Pass this world on →' : 'Create challenge';
+    const h = languageHarness(game), source = game === 'inherit' ? 'Pass this world on →' : game === 'remix' ? 'Create daily challenge' : 'Create challenge';
     const node = { nodeValue: source, parentElement: { closest: () => null } }; h.ui.testTextNode(node); assert.notEqual(node.nodeValue, source);
     h.ui.setLanguage('en'); h.ui.testTextNode(node); assert.equal(node.nodeValue, source); assert.equal(h.data.get('osgard:game-language'), 'en');
-    node.nodeValue = game === 'inherit' ? 'World passed on — a new generation begins' : 'Run in progress'; h.ui.testTextNode(node);
+    node.nodeValue = game === 'inherit' ? 'World passed on — a new generation begins' : game === 'remix' ? 'Match active' : 'Run in progress'; h.ui.testTextNode(node);
     h.ui.setLanguage('ru'); h.ui.testTextNode(node); assert.match(node.nodeValue, /[А-Яа-я]/);
   }
 });
@@ -97,6 +98,39 @@ await check('dynamic milestones, errors, and temporary-storage disclosures trans
   assert.equal(i.ui.t('Generation 173 carries 4 recorded traces.'), 'Поколение 173 · записей в истории: 4');
   assert.equal(i.ui.t('Leave 2 more kinds of trace'), 'Добавьте ещё видов следов: 2');
   i.context.InheritPersistence.ephemeral = true; assert.match(i.ui.t('Your offline lineage is safe on this device.'), /открытой странице/);
+  assert.match(r.ui.t('Connection error: The match service is unavailable. Try again later.'), /Игровой сервис недоступен/);
+  assert.equal(r.ui.t('RUNNING · 2 player(s) · 12 replay frames'), 'Матч идёт · игроков: 2 · кадров повтора: 12');
+  assert.ok(!r.ui.t('UNRECOGNIZED · 2 player(s) · 12 replay frames').includes('undefined'));
+  assert.equal(r.ui.t('2 player(s) · 12 accepted input frames'), 'Игроков: 2 · принятых команд: 12');
+  assert.equal(r.ui.t('28 s left in this phase'), 'Осталось в этой фазе: 28 с');
+  assert.equal(r.ui.t('Server position · X -0.25 · Y 1.50'), 'Позиция на сервере · X -0.25 · Y 1.50');
+  assert.match(r.ui.t('The result has not loaded yet. Your match is retained; reconnecting…'), /Результат пока не загрузился/);
+  assert.match(r.ui.t('This browser cannot save session recovery. Keep this page open; reloading may lose access to this match.'), /восстановления сессии/);
+});
+await check('REMIX legacy API preserves routes and rejects HTML errors with readable messages', async () => {
+  const source = remix.slice(remix.indexOf('async function api(path, options){'), remix.indexOf('\nasync function start('));
+  const calls = [], timers = [];
+  const context = { AbortController, Error, connectionBase: '/api/remix', requests: new Set(), apiInput: { value: '/api/remix' }, setTimeout(fn) { timers.push(fn); return timers.length; }, clearTimeout() {}, fetch: async (url, options) => { calls.push([url, options]); return { ok: true, json: async () => ({ id: 'sample' }) }; } };
+  vm.createContext(context); vm.runInContext(source, context);
+  assert.equal((await vm.runInContext("api('/v1/matches', {method:'POST'})", context)).id, 'sample'); assert.equal(calls[0][0], '/api/remix/v1/matches'); assert.equal(calls[0][1].method, 'POST');
+  context.fetch = async () => ({ ok: false, status: 503, text() { throw Error('raw body must not be rendered'); } });
+  await assert.rejects(vm.runInContext("api('/v1/matches')", context), /match service is unavailable/);
+  context.fetch = async () => ({ ok: true, json: async () => { throw Error('HTML received'); } });
+  await assert.rejects(vm.runInContext("api('/v1/matches')", context), /invalid response/);
+  context.fetch = (_url, { signal }) => new Promise((_resolve, reject) => signal.addEventListener('abort', () => { const e = Error('aborted'); e.name = 'AbortError'; reject(e); }));
+  const pending = vm.runInContext("api('/v1/matches')", context); timers.at(-1)(); await assert.rejects(pending, /too long/);
+});
+await check('REMIX legacy input listens on its field and respects modifier shortcuts', () => {
+  const source = scripts(remix).find(s => s.includes("arena.addEventListener('keydown'")); const line = source.split('\n').find(s => s.startsWith("arena.addEventListener('keydown'"));
+  const arena = new Element(), sent = []; const context = { arena, match: null, canSubmitInput: () => Boolean(context.match), send: (...args) => sent.push(args) }; vm.createContext(context); vm.runInContext(line, context);
+  const keydown = arena.handlers.get('keydown'); let prevented = 0;
+  keydown({ key: 'ArrowLeft', preventDefault() { prevented++; } }); assert.equal(sent.length, 0);
+  context.match = {}; keydown({ key: 'ArrowRight', preventDefault() { prevented++; } }); assert.deepEqual(sent[0], [1, 0, false]); assert.equal(prevented, 1);
+  keydown({ key: 'a', ctrlKey: true, preventDefault() { throw Error('must not swallow select-all'); } }); assert.equal(sent.length, 1);
+  assert.ok(!remix.includes("window.addEventListener('keydown'"));
+});
+await check('REMIX Core arena dynamic state and restore errors translate without changing player titles', () => {
+  const r = languageHarness('remix/arena');
   assert.equal(r.ui.t('Server arena unavailable'), 'Серверная арена недоступна');
   r.ui.setLanguage('en');
   assert.equal(r.ui.t('Клетка 2, 4 · ход 1/256 · падений 0 · 100 мс'), 'Cell 2, 4 · move 1/256 · falls 0 · 100 ms');
@@ -104,7 +138,23 @@ await check('dynamic milestones, errors, and temporary-storage disclosures trans
   assert.equal(r.ui.t('Не удалось восстановить заезд: Сервис вернул страницу вместо ответа API.'), 'Could not restore the run: The service returned a page instead of an API response.');
   assert.equal(r.ui.t('player-owned custom title'), 'player-owned custom title');
 });
-await check('REMIX actual API binds the origin, preserves routes, and rejects HTML or timed-out responses', async () => {
+await check('REMIX legacy console and Core arena keep separate runtimes and visible entry points', () => {
+  assert.match(remix, /href="\/games\/remix\/arena\/">Open game arena/);
+  assert.match(remixArena, /href="\/games\/remix\/">Открыть сервисную консоль/);
+  for (const html of [remix, remixArena]) assert.equal([...html.matchAll(/href="\/games\/remix\/player\/index\.html"/g)].length, 1, 'Each interface has one explicit Unity status entry');
+  assert.match(remix, /async function api\(path, options\)/);
+  assert.ok(!remix.includes('remix-client.js') && !remix.includes('osgard:core-session:v1'), 'The legacy console must not load the Core arena client or credential');
+  assert.match(remixArena, /<script type="module" src="remix-client\.js"><\/script>/);
+  assert.ok(!remixArena.includes('async function api('));
+  for (const direction of ['up', 'down', 'left', 'right']) assert.ok(remixArena.includes(`data-remix-move="${direction}"`));
+  assert.ok(remixArena.includes('data-remix-jump'));
+  const legacy = languageHarness('remix'), arena = languageHarness('remix/arena');
+  assert.equal(legacy.ui.t('Open game arena ↗'), 'Открыть игровую арену ↗');
+  arena.ui.setLanguage('en');
+  assert.equal(arena.ui.t('Открыть сервисную консоль ↗'), 'Open the legacy service console ↗');
+  assert.equal(arena.ui.t('Статус Unity-сборки ↗'), 'Unity build status ↗');
+});
+await check('REMIX Core arena actual API binds the origin, preserves routes, and rejects HTML or timed-out responses', async () => {
   const begin = remixClient.indexOf('class RequestError extends Error {');
   const end = remixClient.indexOf('\nfunction syncControls()', begin);
   assert.ok(begin >= 0 && end > begin, 'Execute the real module request implementation');
@@ -113,7 +163,7 @@ await check('REMIX actual API binds the origin, preserves routes, and rejects HT
   const context = { AbortController, Error, token: 'vm-only-session', setTimeout(fn) { timers.push(fn); return timers.length; }, clearTimeout() {}, fetch: async (url, options) => { calls.push([url, options]); return json({ id: 'sample' }); } };
   vm.createContext(context); vm.runInContext(source, context);
   assert.equal((await vm.runInContext("request('matches', {body:{challengeId:'sample'},key:'same-operation-key'})", context)).id, 'sample');
-  assert.equal(calls[0][0], '/api/remix/v1/matches'); assert.equal(calls[0][1].method, 'POST'); assert.equal(calls[0][1].credentials, 'omit');
+  assert.equal(calls[0][0], '/api/core/remix/v1/matches'); assert.equal(calls[0][1].method, 'POST'); assert.equal(calls[0][1].credentials, 'omit');
   assert.equal(calls[0][1].headers.Authorization, 'Bearer vm-only-session'); assert.equal(calls[0][1].headers['Idempotency-Key'], 'same-operation-key');
   assert.deepEqual(JSON.parse(calls[0][1].body), { challengeId: 'sample' });
   await vm.runInContext("request('auth/me', {core:true,anonymous:true})", context);
@@ -128,7 +178,7 @@ await check('REMIX actual API binds the origin, preserves routes, and rejects HT
   const pending = vm.runInContext("request('matches')", context); timers.at(-1)();
   await assert.rejects(pending, error => error.status === 0 && error.code === 'network' && /повторите действие/.test(error.message));
 });
-await check('REMIX actual input handler is field-scoped and respects shortcuts, repeat and inactive runs', () => {
+await check('REMIX Core arena actual input handler is field-scoped and respects shortcuts, repeat and inactive runs', () => {
   const marker = "arena.addEventListener('keydown', event => {", begin = remixClient.indexOf(marker), end = remixClient.indexOf('\n});', begin);
   assert.ok(begin >= 0 && end > begin, 'Execute the field handler from the real client');
   const source = remixClient.slice(begin, end + 4), directionMap = remixClient.split('\n').find(line => line.startsWith('const keyDirections ='));
@@ -144,11 +194,11 @@ await check('REMIX actual input handler is field-scoped and respects shortcuts, 
   context.replay = {}; keydown(event('ArrowRight')); assert.equal(sent.length, 2);
   context.replay = null; context.state.phase = 'RESULTS'; keydown(event('ArrowRight')); assert.equal(sent.length, 2);
   assert.ok(!/(?:window|document)\.addEventListener\(['"]keydown/.test(remixClient));
-  assert.ok(!remix.includes('async function api('), 'Do not retain a second, obsolete match client');
+  assert.ok(!remixArena.includes('async function api('), 'The Core arena must not load the separate legacy match client');
 });
-await check('REMIX language preferences survive denied storage without touching match or auth keys', () => {
-  const keys = [], context = { URLSearchParams, URL, console, location: { search: '', href: 'https://example.test/games/remix/?challenge=existing' }, history: { replaceState(_state, _title, href) { assert.match(href, /challenge=existing/); } }, localStorage: { getItem(key) { keys.push(key); throw Error('denied'); }, setItem(key) { keys.push(key); throw Error('denied'); } }, document: { readyState: 'loading', addEventListener() {}, documentElement: {} } };
-  context.window = context; vm.createContext(context); vm.runInContext(read('public/games/remix/interface.js'), context);
+await check('REMIX Core arena language preferences survive denied storage without touching match or auth keys', () => {
+  const keys = [], context = { URLSearchParams, URL, console, location: { search: '', href: 'https://example.test/games/remix/arena/?challenge=existing' }, history: { replaceState(_state, _title, href) { assert.match(href, /challenge=existing/); } }, localStorage: { getItem(key) { keys.push(key); throw Error('denied'); }, setItem(key) { keys.push(key); throw Error('denied'); } }, document: { readyState: 'loading', addEventListener() {}, documentElement: {} } };
+  context.window = context; vm.createContext(context); vm.runInContext(read('public/games/remix/arena/interface.js'), context);
   context.RemixUI.setLanguage('en'); assert.equal(context.RemixUI.getLanguage(), 'en'); assert.equal(context.RemixPersistence.ephemeral, true);
   assert.equal(context.RemixPersistence.getItem('osgard:game-language'), 'en');
   assert.ok(keys.length > 0 && keys.every(key => key === 'osgard:game-language'));

@@ -23,7 +23,7 @@ async function check(name, action) {
   finally { await context.close(); }
 }
 async function createRun(page, base) {
-  await page.goto(base + '/games/remix/'); await page.locator('#auth-panel').waitFor({ state: 'visible' });
+  await page.goto(base + '/games/remix/arena/'); await page.locator('#auth-panel').waitFor({ state: 'visible' });
   await page.locator('#remix-username').fill('remix-poll-' + randomBytes(5).toString('hex'));
   await page.locator('#remix-password').fill(randomBytes(24).toString('base64url')); await page.locator('#register-player').tap();
   await page.waitForFunction(() => !document.querySelector('#start-match').disabled); await page.locator('#start-match').tap();
@@ -47,7 +47,7 @@ try {
   await check('real-signup-login-session-expiry', async page => {
     const authStatuses = [];
     page.on('response', response => { if (new URL(response.url()).pathname.startsWith('/api/core/auth/')) authStatuses.push(response.status()); });
-    await page.goto(bases.normal + '/games/remix/');
+    await page.goto(bases.normal + '/games/remix/arena/');
     await page.locator('#auth-panel').waitFor({ state: 'visible' }); assert.ok(await page.locator('#start-match').isDisabled());
     const username = 'remix-ui-' + randomBytes(6).toString('hex'), password = randomBytes(24).toString('base64url');
     await page.locator('#remix-username').fill(username); await page.locator('#remix-password').fill(password);
@@ -82,8 +82,8 @@ try {
   for (const name of ['disabled', 'incompatible']) await check(name + '-service-fails-closed', async page => {
     const mutations = [], capabilities = [];
     page.on('request', request => { if (request.method() === 'POST') mutations.push(new URL(request.url()).pathname); });
-    page.on('response', response => { if (new URL(response.url()).pathname === '/api/remix/v1/capabilities') capabilities.push(response.status()); });
-    await page.goto(bases[name] + '/games/remix/');
+    page.on('response', response => { if (new URL(response.url()).pathname === '/api/core/remix/v1/capabilities') capabilities.push(response.status()); });
+    await page.goto(bases[name] + '/games/remix/arena/');
     await page.waitForFunction(() => document.querySelector('#service-state').dataset.status === 'unavailable');
     assert.ok(await page.locator('#start-match').isDisabled()); assert.ok(await page.locator('#growth-panel').isHidden()); assert.ok(await page.locator('#result-panel').isHidden());
     assert.equal(await page.locator('#arena').getAttribute('data-state'), null); assert.deepEqual(mutations, []);
@@ -92,7 +92,7 @@ try {
   });
   await check('lost-committed-response-retries-once', async (page, context) => {
     await context.addInitScript(({ origin, token }) => { if (location.origin === origin) sessionStorage.setItem('osgard:core-session:v1', token); }, { origin: bases['lost-response'], token: process.env.OSGARD_REMIX_UI_RETRY_TOKEN });
-    await page.goto(bases['lost-response'] + '/games/remix/');
+    await page.goto(bases['lost-response'] + '/games/remix/arena/');
     await page.waitForFunction(() => !document.querySelector('#start-match').disabled); await page.locator('#start-match').tap();
     await page.waitForFunction(() => !document.querySelector('[data-remix-move="right"]').disabled); await page.locator('[data-remix-move="right"]').tap();
     await page.locator('#retry-operation').waitFor({ state: 'visible' });
@@ -102,7 +102,7 @@ try {
     const original = await page.locator('#arena').evaluate(canvas => JSON.parse(canvas.dataset.state));
     assert.equal(original.sequence, 0, 'A missing response must not cause optimistic movement');
     const stored = await page.evaluate(async match => {
-      const response = await fetch('/api/remix/v1/matches/' + match + '/state', { headers: { Authorization: 'Bearer ' + sessionStorage.getItem('osgard:core-session:v1') }, credentials: 'omit' });
+      const response = await fetch('/api/core/remix/v1/matches/' + match + '/state', { headers: { Authorization: 'Bearer ' + sessionStorage.getItem('osgard:core-session:v1') }, credentials: 'omit' });
       return response.json();
     }, original.id);
     assert.equal(stored.sequence, 1, 'The fault occurred after the real server committed the input');
@@ -121,7 +121,7 @@ try {
     await page.screenshot({ path: out + '/committed-input-recovered.png', fullPage: true });
   });
   for (const name of ['lost-create', 'lost-match']) await check(name + '-reauth-preserves-operation', async page => {
-    await page.goto(bases[name] + '/games/remix/');
+    await page.goto(bases[name] + '/games/remix/arena/');
     await page.locator('#auth-panel').waitFor({ state: 'visible' });
     const username = 'remix-reauth-' + randomBytes(5).toString('hex'), password = randomBytes(24).toString('base64url');
     await page.locator('#remix-username').fill(username); await page.locator('#remix-password').fill(password);
@@ -139,7 +139,7 @@ try {
       return { status: response.status, value: await response.json() };
     });
     assert.equal(revoked.status, 200); assert.equal(revoked.value.revoked, true); assert.equal(revoked.value.current, true);
-    const rejectedRetry = page.waitForResponse(response => new URL(response.url()).pathname === '/api/remix/v1/' + pending.path && response.request().method() === 'POST');
+    const rejectedRetry = page.waitForResponse(response => new URL(response.url()).pathname === '/api/core/remix/v1/' + pending.path && response.request().method() === 'POST');
     await page.locator('#retry-operation').tap();
     assert.equal((await rejectedRetry).status(), 401);
     await page.locator('#auth-panel').waitFor({ state: 'visible' });
@@ -150,7 +150,7 @@ try {
     await page.waitForFunction(() => document.querySelector('#auth-panel').hidden && !document.querySelector('#retry-operation').disabled);
     assert.ok(await page.locator('#start-match').isDisabled(), 'A new create must wait for the saved operation to be acknowledged');
     assert.deepEqual(await page.evaluate(() => JSON.parse(sessionStorage.getItem('osgard:remix-pending:v1'))), pending);
-    const replayedResponse = page.waitForResponse(response => new URL(response.url()).pathname === '/api/remix/v1/' + pending.path && response.request().method() === 'POST');
+    const replayedResponse = page.waitForResponse(response => new URL(response.url()).pathname === '/api/core/remix/v1/' + pending.path && response.request().method() === 'POST');
     await page.locator('#retry-operation').tap();
     const response = await replayedResponse, recovered = await response.json();
     assert.equal(response.status(), 200); assert.equal(recovered.replayed, true);
@@ -162,7 +162,7 @@ try {
     return { recoveredEntityId: recovered.id, rejectedRetryStatus: 401, replayed: true };
   });
   for (const name of ['state-retry', 'state-reload']) await check(name + '-keeps-confirmed-run', async page => {
-    await page.goto(bases[name] + '/games/remix/'); await page.locator('#auth-panel').waitFor({ state: 'visible' });
+    await page.goto(bases[name] + '/games/remix/arena/'); await page.locator('#auth-panel').waitFor({ state: 'visible' });
     await page.locator('#remix-username').fill('remix-restore-' + randomBytes(5).toString('hex'));
     await page.locator('#remix-password').fill(randomBytes(24).toString('base64url')); await page.locator('#register-player').tap();
     await page.waitForFunction(() => !document.querySelector('#start-match').disabled); await page.locator('#start-match').tap();

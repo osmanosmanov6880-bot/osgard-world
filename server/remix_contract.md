@@ -5,13 +5,19 @@ This repository now contains an **opt-in arena slice**, identified by
 OSGARD Core accounts and SQLite database. The implementation is in
 `server/remix_service.py`, with the opt-in HTTP dispatch in `core_server.py`.
 
-This is a new compatible local service, not a reconstruction of an unavailable
-external backend. The existing deployment files refer to a separate
-`../remix/backend` project (`docker-compose.production.yml`) and an independent
-`remix-api:8080` upstream (`nginx.conf`). That source is not present in this
-checkout or the inspected workspace. Those production routes are unchanged.
-The Unity player at `/games/remix/player/index.html` remains separate; this arena
-does not claim to supply its protocol, physics or multiplayer implementation.
+The arena has its own UI at `/games/remix/arena/` and Core-owned API namespace
+`/api/core/remix/v1/`. The established match console remains at `/games/remix/`,
+with `/api/remix/` routed through `remix-guard:8081` to the independent legacy
+`remix-api:8080` service. The two services have different session, state and
+result contracts. Core rejects the reserved legacy API paths instead of
+interpreting their requests as arena operations. The existing Core reverse
+proxy already forwards the arena namespace; its opt-in flag remains disabled
+in production Compose.
+
+The Unity route `/games/remix/player/index.html` retains PR130's unavailable
+status. Its normal page does not load the engine; an explicit diagnostic route
+remains available for inspection. The Core arena supplies its own game rules,
+without making claims about Unity physics or multiplayer compatibility.
 
 ## Enable it locally
 
@@ -20,14 +26,14 @@ npm run build
 python3 server/core_server.py --root dist --database /tmp/osgard-remix.sqlite3 --port 4173 --remix
 ```
 
-Open `http://127.0.0.1:4173/games/remix/`. Without `--remix`, Core behaves as
+Open `http://127.0.0.1:4173/games/remix/arena/`. Without `--remix`, Core behaves as
 before: it creates no REMIX tables and returns `404 remix_disabled` for REMIX API
 requests. `create_server(..., enable_remix=False)` and the Store constructor keep
 the flag optional and last in their signatures. The SQLite file must remain
 outside the static document root. This is a local launch example, not a change
 to production compose/nginx or an instruction to publish the service.
 
-The browser first reads `/api/remix/v1/capabilities`. It requires the exact
+The browser first reads `/api/core/remix/v1/capabilities`. It requires the exact
 schema/service/ruleset/auth/result-authority contract and `playersPerMatch: 1`.
 A missing or incompatible service leaves gameplay disabled with a concrete
 message. A legacy service without this capability is not silently treated as
@@ -39,8 +45,9 @@ The UI uses the existing Core session format: the raw bearer token stored in
 `sessionStorage['osgard:core-session:v1']`. It verifies the session through
 `GET /api/core/auth/me`. Registration and login use the existing Core endpoints
 and password rules. Tokens are never shown in game labels, links, result cards
-or QA reports. The browser sends Core credentials only to same-origin Core and
-REMIX API paths; there is no arbitrary API URL field.
+or QA reports. The browser sends Core credentials only to same-origin Core auth
+and `/api/core/remix/v1/` paths. The read-only diagnostic field cannot change
+request routing, and the legacy match API does not receive the Core bearer.
 
 Only the capability request is anonymous. Every challenge/run operation resolves
 its actor from the Core bearer session. Optional `creatorId` or `playerId` fields
@@ -77,7 +84,7 @@ general platformer engine.
 
 ## HTTP routes
 
-All routes below are relative to `/api/remix/v1/`. JSON success responses include
+All routes below are relative to `/api/core/remix/v1/`. JSON success responses include
 `schemaVersion: 1`; challenge/state/result responses identify the ruleset.
 
 | Method and route | Input | Result / boundary |
@@ -195,8 +202,10 @@ programmatically, as the browser acceptance test does through normal UI inputs.
 - The implementation retains immutable challenge arenas. The browser can choose
   a seed/title and fork an existing field; it is not a complete visual level
   editor. The existing `src/core/remixState` prototype is separate and unchanged.
-- Core's existing deployment/security/backup constraints still apply. No
-  production service was configured, redirected, published or written by QA.
+- Core's existing deployment/security/backup constraints still apply. Arena QA
+  writes only to disposable loopback servers. Enabling the arena for production
+  remains a separate action. The Core recovery drill does not cover the legacy
+  guard's independent `osgard-remix-guard-data` volume.
 
 ## Reproducible acceptance
 

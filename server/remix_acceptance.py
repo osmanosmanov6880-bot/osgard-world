@@ -17,7 +17,7 @@ class Actor:
         self.base, self.token, self.user, self.requests = base, token, user, 0
 
     def request(self, route, body=None, key=None, expected=200, headers=None):
-        path = route if route.startswith('/api/') else '/api/remix/v1/' + route
+        path = route if route.startswith('/api/') else '/api/core/remix/v1/' + route
         request_headers = {'Accept': 'application/json'}
         if self.token:
             request_headers['Authorization'] = 'Bearer ' + self.token

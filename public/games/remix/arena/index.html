@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#07110f">
+  <title>REMIX — создай и пройди испытание</title>
+  <link rel="stylesheet" href="/brand/ecosystem-chrome.css">
+  <link rel="stylesheet" href="remix.css">
+  <link rel="stylesheet" href="interface.css">
+  <script defer src="interface.js"></script>
+  <link rel="icon" href="/brand/favicon.svg" type="image/svg+xml">
+</head>
+<body>
+<header class="osgard-static-header" aria-label="Экосистема OSGARD"><a href="/"><img src="/brand/portal-world.svg" alt="" width="30" height="30">OSGARD WORLD</a><nav aria-label="Продукты OSGARD"><a href="/">OSGARD</a><a href="/intelligence">Intelligence</a><a href="/play">Play</a><a href="/development">Development</a></nav></header>
+<main>
+  <a class="back" href="/play#catalog">← Каталог игровых миров</a>
+  <section class="hero">
+    <span class="eyebrow">Создай · Пройди · Передай</span><h1>REMIX</h1>
+    <p>Найди путь через барьеры и опасные клетки. Пройди своё испытание, опубликуй его и предложи другому игроку найти более короткий маршрут.</p>
+    <nav class="remix-modes" aria-label="Режимы REMIX"><a class="cta" href="#live-growth-console">Открыть серверную арену ↓</a><a class="cta secondary" href="/games/remix/">Открыть сервисную консоль ↗</a><a class="cta secondary" href="/games/remix/player/index.html">Статус Unity-сборки ↗</a></nav>
+    <div class="badges"><span class="badge">Одинаковый seed — одинаковое поле</span><span class="badge">Результат рассчитывает сервер</span><span class="badge">Клавиатура и touch</span></div>
+  </section>
+  <aside class="remix-guide" aria-labelledby="remix-guide-title">
+    <h2 id="remix-guide-title">Перед запуском</h2>
+    <p><strong>Серверная арена.</strong> Войдите в OSGARD Core, создайте поле и достигните цели. После публикации другой игрок сможет пройти то же испытание в своём заезде.</p>
+    <p><strong>Управление.</strong> Выберите поле: стрелки или WASD — ход, Space — прыжок в последнем направлении. На телефоне используйте кнопки под полем. Tab перемещает фокус по странице.</p>
+    <p><strong>Сохранение и онлайн.</strong> Арене нужен совместимый сервис REMIX на этом сайте. Подтверждённые ходы и результаты сохраняет сервер; при потере ответа повторите неподтверждённое действие.</p>
+    <p><strong>Unity WebGL.</strong> Unity-сборка сейчас недоступна. На странице статуса описаны ограничения и отдельная диагностика; её сетевой сервис и результаты не объединены с Core-ареной.</p>
+    <details class="remix-settings"><summary>Подключение серверной арены</summary><p>Используется сервис этого сайта. Совместимость проверяется перед входом; адрес Unity-сервиса здесь не меняется.</p><label for="api-url">Адрес API арены</label><input id="api-url" type="text" value="/api/core/remix/v1/" readonly aria-describedby="remix-service-contract"><p id="remix-service-contract" data-no-translate>osgard-remix-arena · remix-arena-v1 · osgard-core-bearer-v1</p></details>
+    <p id="remix-storage-state" role="status" hidden></p>
+  </aside>
+  <section class="game-shell" id="live-growth-console" aria-label="Серверное испытание REMIX">
+    <div class="session-bar"><strong id="service-state">Проверяем сервер матчей…</strong><span id="session-state">Сессия ещё не проверена</span></div>
+    <div class="play-grid">
+      <div class="field">
+        <strong id="match-title">Поле испытания</strong>
+        <p id="match-status" role="status" aria-live="polite">Подключаемся к сервису испытаний…</p>
+        <canvas id="arena" width="600" height="350" tabindex="0" aria-label="Поле испытания. Управление стрелками или WASD." aria-describedby="controls-help position-label"></canvas>
+        <div id="match-meter" aria-hidden="true"><i></i></div>
+        <p id="position-label" aria-live="polite">Ожидаем подтверждённое сервером поле</p>
+        <div class="legend"><span>Игрок</span><span class="wall">Барьер</span><span class="hazard">Опасность</span><span class="goal">Цель</span></div>
+        <div class="controls" id="movement-controls">
+          <div class="dpad" aria-label="Направление хода">
+            <button class="control" data-remix-move="up" aria-label="Ход вверх" disabled>↑</button>
+            <button class="control" data-remix-move="left" aria-label="Ход влево" disabled>←</button>
+            <button class="control" data-remix-move="down" aria-label="Ход вниз" disabled>↓</button>
+            <button class="control" data-remix-move="right" aria-label="Ход вправо" disabled>→</button>
+          </div>
+          <button class="control jump" data-remix-jump disabled>Прыжок<br><small>Space</small></button>
+        </div>
+        <p class="instructions" id="controls-help"><strong>Стрелки или WASD</strong> — ход на одну клетку. <strong>Space</strong> — прыжок на две клетки в последнем направлении; барьер перепрыгнуть нельзя. Опасная клетка возвращает на старт. Ход стоит 100 мс игрового времени, прыжок — 200 мс, падение добавляет 1500 мс. Это пошаговая арена: задержка сети не влияет на счёт.</p>
+        <button id="retry-operation" class="cta secondary retry" hidden>Повторить неподтверждённое действие</button>
+        <button id="retry-restore" class="cta secondary retry" hidden>Восстановить сохранённый заезд</button>
+      </div>
+      <aside class="setup">
+        <div class="auth-panel" id="auth-panel" hidden>
+          <h3>Вход в OSGARD Core</h3><p>Один аккаунт хранит ваши испытания, заезды и повторы.</p>
+          <form id="auth-form">
+            <label for="remix-username">Имя пользователя</label><input id="remix-username" name="username" type="text" autocomplete="username" minlength="3" maxlength="64" pattern="[A-Za-z0-9_.-]+" required>
+            <label for="remix-password">Пароль — от 12 символов</label><input id="remix-password" name="password" type="password" autocomplete="current-password" minlength="12" maxlength="256" required>
+            <div class="button-row"><button class="cta" type="submit">Войти</button><button class="cta secondary" id="register-player" type="button">Создать аккаунт</button></div>
+          </form><p id="auth-status" role="status"></p>
+        </div>
+        <span class="eyebrow" id="challenge-mode">Испытание дня</span><h2>Твой маршрут</h2>
+        <label for="challenge-name">Название испытания</label><input data-no-translate id="challenge-name" type="text" minlength="2" maxlength="100" value="Испытание дня">
+        <label for="challenge-seed">Seed — код поля</label><input id="challenge-seed" type="number" min="1" max="2147483647" step="1">
+        <button id="start-match" class="cta" disabled>Создать испытание</button>
+        <p class="fine">Сначала автор достигает цели в проверочном заезде. После публикации каждый игрок проходит то же поле отдельно; в таблицу попадает его лучший заезд.</p>
+        <div class="button-row"><button id="rematch-challenge" class="cta secondary" hidden>Пройти ещё раз</button><button id="new-challenge" class="cta secondary">Новое поле</button></div>
+        <p id="challenge-copy" class="notice">Черновики доступны только автору.</p>
+      </aside>
+    </div>
+    <section class="result-panel" id="result-panel" hidden>
+      <span class="eyebrow">Заезд завершён</span><h2>Твой результат</h2>
+      <p id="result-summary" role="status" aria-live="polite"></p><p id="result-detail"></p>
+      <div class="button-row"><button id="publish-challenge" class="cta" hidden>Подтвердить и опубликовать</button><button id="show-replay" class="cta secondary">Посмотреть повтор</button><button id="remix-challenge" class="cta secondary" hidden>Сделать свой ремикс</button></div>
+      <section id="replay-panel" hidden aria-label="Серверный повтор"><p id="replay-status"></p><label for="replay-step">Ход повтора</label><input id="replay-step" type="range" min="0" max="1" value="0"><button id="close-replay" class="cta secondary">Закрыть повтор</button></section>
+      <ol id="leaderboard" aria-label="Лучшие заезды испытания"></ol>
+      <div id="growth-panel" hidden><span id="growth-badge" class="eyebrow">Опубликованное испытание</span><p><strong id="challenge-code"></strong></p><label for="challenge-link">Ссылка для другого игрока</label><input id="challenge-link" readonly><div id="growth-actions"><button id="share-challenge" class="cta">Поделиться испытанием ↗</button><button id="copy-challenge" class="cta secondary">Скопировать ссылку</button></div></div>
+      <div id="result-card-actions" class="button-row" hidden><button id="share-result-card" class="cta secondary">Поделиться карточкой ↗</button><button id="download-result-card" class="cta secondary">Скачать карточку PNG ↓</button></div>
+      <div id="sponsor-slot" hidden><span class="eyebrow">PARTNER SLOT / INQUIRY ONLY</span><p><strong>Испытание для вашего проекта</strong></p><p>Это заявка на сотрудничество после заезда. Активная рекламная кампания здесь не представлена.</p><a id="sponsor-cta" class="cta secondary" href="/games/partners/?utm_source=remix&amp;utm_medium=post_session&amp;utm_campaign=challenge_series&amp;utm_content=result_card&amp;format=Спонсорское%20событие%20или%20уровень">Обсудить партнёрское испытание ↗</a></div>
+    </section>
+  </section>
+</main>
+<script type="module" src="remix-client.js"></script>
+<script defer src="/brand/osa-transition.js"></script>
+</body>
+</html>

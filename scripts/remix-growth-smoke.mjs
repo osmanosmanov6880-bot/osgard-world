@@ -2,11 +2,11 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import vm from 'node:vm';
-import { CORE_TOKEN, RULESET, challengeURL, compatibleService, dailyChallenge, resultCardLines, summarizeResult } from '../public/games/remix/remix-contract.mjs';
+import { CORE_TOKEN, RULESET, challengeURL, compatibleService, dailyChallenge, resultCardLines, summarizeResult } from '../public/games/remix/arena/remix-contract.mjs';
 
 const read = path => readFileSync(path, 'utf8');
-const html = read('public/games/remix/index.html');
-const client = read('public/games/remix/remix-client.js');
+const html = read('public/games/remix/arena/index.html');
+const client = read('public/games/remix/arena/remix-client.js');
 const partners = read('public/games/partners/partners.js');
 const manifest = read('src/core/manifest.ts');
 const checks = [];
@@ -17,7 +17,7 @@ async function check(name, action) {
 const result = { schemaVersion: 1, ruleset: RULESET, won: true, score: 98100, steps: 19, timeMs: 1900, replayHash: 'a'.repeat(64) };
 
 await check('browser module parses and is loaded as a module', () => {
-  const parsed = spawnSync(process.execPath, ['--check', 'public/games/remix/remix-client.js'], { encoding: 'utf8' });
+  const parsed = spawnSync(process.execPath, ['--check', 'public/games/remix/arena/remix-client.js'], { encoding: 'utf8' });
   assert.equal(parsed.status, 0, parsed.stderr); assert.match(html, /<script type="module" src="remix-client\.js"><\/script>/);
 });
 await check('daily seed uses the UTC calendar across time zones and midnight', () => {
@@ -26,14 +26,14 @@ await check('daily seed uses the UTC calendar across time zones and midnight', (
   assert.equal(dailyChallenge(new Date('2026-10-18T00:00:00Z')).seed, 20261018);
 });
 await check('shared challenge URL preserves server identity and discards unrelated query state', () => {
-  const url = new URL(challengeURL('https://example.test/games/remix/?temporary=secret#old', 'abc123', 42, 'ref-7'));
-  assert.equal(url.origin, 'https://example.test'); assert.equal(url.pathname, '/games/remix/');
+  const url = new URL(challengeURL('https://example.test/games/remix/arena/?temporary=secret#old', 'abc123', 42, 'ref-7'));
+  assert.equal(url.origin, 'https://example.test'); assert.equal(url.pathname, '/games/remix/arena/');
   assert.equal(url.searchParams.get('challenge'), 'abc123'); assert.equal(url.searchParams.get('seed'), '42');
   assert.equal(url.searchParams.get('ref'), 'ref-7'); assert.equal(url.searchParams.has('temporary'), false); assert.equal(url.hash, '');
   assert.throws(() => challengeURL(url, '', 42)); assert.throws(() => challengeURL(url, 'id', 1.5));
 });
 await check('share links contain the existing campaign attribution', () => {
-  const params = new URL(challengeURL('https://example.test/games/remix/', 'id', 1)).searchParams;
+  const params = new URL(challengeURL('https://example.test/games/remix/arena/', 'id', 1)).searchParams;
   assert.equal(params.get('utm_source'), 'osgard_remix'); assert.equal(params.get('utm_medium'), 'friend_challenge');
   assert.equal(params.get('utm_campaign'), 'daily_challenge'); assert.equal(params.get('utm_content'), 'id');
 });
@@ -75,7 +75,7 @@ await check('Core credentials stay on the same origin and are separate from opti
   const diagnostic = html.match(/<input\b[^>]*\bid="api-url"[^>]*>/g);
   assert.equal(diagnostic?.length, 1, 'There is one diagnostic endpoint field');
   assert.match(diagnostic[0], /\breadonly(?:\s|=|>)/, 'The endpoint is not user-editable');
-  assert.match(diagnostic[0], /\bvalue="\/api\/remix\/v1\/"/);
+  assert.match(diagnostic[0], /\bvalue="\/api\/core\/remix\/v1\/"/);
   assert.ok(!client.includes('remix-api-url')); assert.ok(!client.includes('api-url'), 'The client must not obtain a request base from the diagnostic DOM');
   const requestBegin = client.indexOf('class RequestError extends Error {');
   const requestEnd = client.indexOf('\nfunction syncControls()', requestBegin);
@@ -101,7 +101,7 @@ await check('Core credentials stay on the same origin and are separate from opti
     diagnosticValue = value;
     await vm.runInContext("request('matches', {body:{challengeId:'vm-challenge'},key:'vm-idempotency-key'})", context);
     const call = calls.at(-1);
-    assert.equal(call.url.origin, origin); assert.equal(call.url.pathname, '/api/remix/v1/matches');
+    assert.equal(call.url.origin, origin); assert.equal(call.url.pathname, '/api/core/remix/v1/matches');
     assert.equal(call.options.method, 'POST'); assert.equal(call.options.credentials, 'omit');
     assert.equal(call.options.headers.Authorization, 'Bearer ' + coreToken);
     assert.equal(call.options.headers['Idempotency-Key'], 'vm-idempotency-key');
@@ -112,7 +112,7 @@ await check('Core credentials stay on the same origin and are separate from opti
   assert.equal(calls.at(-1).url.origin, origin); assert.equal(calls.at(-1).url.pathname, '/api/core/auth/me');
   assert.equal(calls.at(-1).options.headers.Authorization, 'Bearer ' + coreToken);
   await vm.runInContext("request('capabilities', {anonymous:true})", context);
-  assert.equal(calls.at(-1).url.pathname, '/api/remix/v1/capabilities'); assert.equal(calls.at(-1).options.credentials, 'omit');
+  assert.equal(calls.at(-1).url.pathname, '/api/core/remix/v1/capabilities'); assert.equal(calls.at(-1).options.credentials, 'omit');
   assert.equal(calls.at(-1).options.headers.Authorization, undefined, 'Anonymous capability checks must not carry a Core token');
   const beforeAnalytics = calls.length;
   vm.runInContext("reportEvent('challenge_created', {challengeId:'vm-challenge'})", context);

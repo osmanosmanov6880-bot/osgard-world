@@ -22,7 +22,7 @@ class LostResponseHandler(Handler):
     """Drop one response after the real operation transaction has already committed."""
     def output(self, value, status=200):
         target = self.server.drop_target
-        matches_target = self.path.endswith('/input') if target == 'input' else self.path == '/api/remix/v1/' + target
+        matches_target = self.path.endswith('/input') if target == 'input' else self.path == '/api/core/remix/v1/' + target
         if self.command == 'POST' and matches_target and status == 200 and self.server.drop_response:
             self.server.drop_response = False
             self.server.dropped_entity_id = value.get('id') or value.get('state', {}).get('id')
@@ -36,7 +36,7 @@ class LostResponseHandler(Handler):
 class TransientStateHandler(Handler):
     """A real local HTTP 503 on the first restore read; subsequent reads use SQLite."""
     def api(self, method):
-        if method == 'GET' and self.path.startswith('/api/remix/v1/matches/') and self.path.endswith('/state') and self.server.fail_state_read:
+        if method == 'GET' and self.path.startswith('/api/core/remix/v1/matches/') and self.path.endswith('/state') and self.server.fail_state_read:
             self.server.fail_state_read = False
             # Keep the read in flight briefly so the browser also checks that
             # startup cannot enable a new match between challenge and state.
@@ -61,7 +61,7 @@ def main():
     parser.add_argument('--only', choices=['poll'], help='Run only the two delayed-read/touch regressions')
     args = parser.parse_args()
     args.out.mkdir(parents=True, exist_ok=True)
-    if not (args.dist / 'games/remix/remix-client.js').is_file():
+    if not (args.dist / 'games/remix/arena/remix-client.js').is_file():
         raise SystemExit('Build the REMIX UI before this browser acceptance.')
     servers, report, code = [], dict(schemaVersion=1, status='failed', passed=0, failed=1), 1
     try:

@@ -7,7 +7,7 @@ const games={
  time:{title:'Империя времени',url:'/games/time'},
  swarm:{title:'SWARM',url:'/games/swarm/'},
  inherit:{title:'INHERIT',url:'/games/inherit/'},
- remix:{title:'REMIX',url:'/games/remix/'},
+ remix:{title:'REMIX',url:'/games/remix/arena/'},
  'vector-zero':{title:'VECTOR//ZERO',url:'/games/vector-zero/'},
  'afterimage-run':{title:'AFTERIMAGE//RUN',url:'/games/afterimage-run/'}
 };

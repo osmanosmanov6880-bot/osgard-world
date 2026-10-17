@@ -105,6 +105,17 @@ class HttpTests(unittest.TestCase):
                 thread.join(5)
                 server.server_close()
 
+    def test_arena_namespace_never_claims_legacy_match_routes(self):
+        self.assertEqual(Actor(self.base).request('/api/core/remix/v1/capabilities')['ruleset'], remix.RULESET)
+        with self.server.store.connect() as db:
+            before = db.execute('SELECT COUNT(*) FROM remix_challenges').fetchone()[0]
+        for actor in (Actor(self.base), self.alice):
+            with self.subTest(authenticated=bool(actor.token)):
+                self.assertEqual(actor.request('/api/remix/v1/capabilities', expected=404)['error'], 'not_found')
+                self.assertEqual(actor.request('/api/remix/v1/challenges', dict(title='Reserved legacy route', seed=42), expected=404)['error'], 'not_found')
+        with self.server.store.connect() as db:
+            self.assertEqual(db.execute('SELECT COUNT(*) FROM remix_challenges').fetchone()[0], before)
+
     def test_failed_mutations_leave_no_sqlite_rows(self):
         with self.server.store.connect() as db:
             before = db.execute('SELECT COUNT(*) FROM remix_challenges').fetchone()[0]

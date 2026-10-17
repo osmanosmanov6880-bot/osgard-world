@@ -96,7 +96,8 @@ await mkdir(out, { recursive: true })
 
 function integrationFor(url) {
   const path = new URL(url, base).pathname
-  if (path.startsWith('/api/remix/')) return 'remix-match-service'
+  if (path.startsWith('/api/core/remix/')) return 'remix-match-service'
+  if (path.startsWith('/api/remix/')) return 'remix-legacy-match-service'
   if (path.startsWith('/api/world/')) return 'inherit-shared-world'
   if (/^\/(rooms|players)\//.test(path)) return 'swarm-room-service'
   if (path.startsWith('/api/') || /\/api\//.test(path)) return 'optional-platform-api'

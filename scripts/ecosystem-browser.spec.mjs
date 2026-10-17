@@ -242,16 +242,16 @@ for (const [game, action, ru, en] of [
       page.on('request', request => { if (new URL(request.url()).pathname.startsWith('/api/') && request.method() !== 'GET') remixWrites.push(request.url()) })
       // This is the unavailable-service UI case; real authenticated flows run
       // against Core + SQLite in qa:games:local and qa:remix-ui.
-      await page.route('**/api/remix/v1/capabilities', route => route.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({ error: { code: 'service_unavailable', message: 'Серверная арена недоступна' } }) }))
+      await page.route('**/api/core/remix/v1/capabilities', route => route.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({ error: { code: 'service_unavailable', message: 'Серверная арена недоступна' } }) }))
     }
-    await page.goto('/games/' + game + '/', { waitUntil: 'domcontentloaded' })
+    await page.goto(game === 'remix' ? '/games/remix/arena/' : '/games/inherit/', { waitUntil: 'domcontentloaded' })
     await expect(page.locator('html')).toHaveAttribute('lang', 'ru')
     await expect(page.locator(action)).toContainText(ru)
     await expect(page.locator('[data-game-language="ru"]')).toHaveAttribute('aria-pressed', 'true')
     if (game === 'remix') {
       await expect(page.locator('#api-url')).toBeHidden()
       await expect(page.locator('#api-url')).toHaveJSProperty('readOnly', true)
-      await expect(page.locator('#api-url')).toHaveValue('/api/remix/v1/')
+      await expect(page.locator('#api-url')).toHaveValue('/api/core/remix/v1/')
       await expect(page.locator('.remix-guide')).toContainText('Сохранение и онлайн')
       expect(await page.locator('#live-growth-console').evaluate(node => getComputedStyle(node).position)).toBe('relative')
       await expect(page.locator('#service-state')).toHaveAttribute('data-status', 'unavailable')
@@ -260,6 +260,7 @@ for (const [game, action, ru, en] of [
       await expect(page.locator('[data-remix-move]')).toHaveCount(4)
       await expect(page.locator('[data-remix-jump]')).toHaveCount(1)
       await expect(page.locator('.remix-modes a[href="/games/remix/player/index.html"]')).toBeVisible()
+      await expect(page.locator('.remix-modes a[href="/games/remix/"]')).toBeVisible()
     } else {
       await expectInheritPanelsClosed(page)
       await expect(page.locator('#inherit-enter')).toBeInViewport()
@@ -295,7 +296,7 @@ for (const [game, action, ru, en] of [
     if (game === 'remix') {
       await page.locator('.remix-settings summary').click()
       await expect(page.locator('#api-url')).toBeVisible()
-      await expect(page.locator('#api-url')).toHaveValue('/api/remix/v1/')
+      await expect(page.locator('#api-url')).toHaveValue('/api/core/remix/v1/')
       await page.locator('.remix-settings summary').click()
       await expect(page.locator('#api-url')).toBeHidden()
       expect(remixWrites).toEqual([])

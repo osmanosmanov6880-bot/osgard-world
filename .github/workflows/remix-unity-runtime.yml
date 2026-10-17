@@ -1,0 +1,64 @@
+name: REMIX launcher safety and recovery
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - "public/games/remix/player/**"
+      - "public/brand/osa-transition.js"
+      - "public/brand/ecosystem-chrome.css"
+      - "nginx.conf"
+      - "scripts/game-delivery-http-smoke.mjs"
+      - "scripts/check-nginx-unity-browser.sh"
+      - "scripts/remix-unity-browser.spec.mjs"
+      - "scripts/remix-unity-status-check.mjs"
+      - "playwright.remix-unity.config.mjs"
+      - ".github/workflows/remix-unity-runtime.yml"
+  pull_request:
+    branches: [master]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: remix-launcher-safety-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  launcher-safety:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install locked application dependencies
+        run: npm ci
+      - name: Verify reviewed quarantine and reject unknown builds
+        run: |
+          node scripts/remix-unity-status-check.mjs
+          node scripts/remix-unity-status-check.mjs --self-test
+      - name: Build the production site
+        run: npm run build
+      - name: Verify the built quarantine metadata
+        run: node scripts/remix-unity-status-check.mjs dist
+      - name: Install pinned browser test tooling
+        run: |
+          npm install --no-save --package-lock=false @playwright/test@1.58.2 pngjs@7.0.0
+          npx playwright install --with-deps chromium
+      - name: Verify unavailable route and diagnostic launcher recovery
+        run: bash scripts/check-nginx-unity-browser.sh --grep-invert 'actual gzip build'
+      - name: Keep runtime screenshots, traces and network evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: remix-launcher-safety
+          path: |
+            unity-browser-report/
+            unity-test-results/
+          if-no-files-found: warn
+          retention-days: 14

@@ -37,7 +37,7 @@ async function request(path, { body, key, anonymous = false, core = false } = {}
     if (!anonymous && token) headers.Authorization = 'Bearer ' + token;
     if (body !== undefined) headers['Content-Type'] = 'application/json';
     if (key) headers['Idempotency-Key'] = key;
-    const response = await fetch((core ? '/api/core/' : '/api/remix/v1/') + path, { method: body === undefined ? 'GET' : 'POST', credentials: 'omit', headers, body: body === undefined ? undefined : JSON.stringify(body), signal: controller.signal });
+    const response = await fetch((core ? '/api/core/' : '/api/core/remix/v1/') + path, { method: body === undefined ? 'GET' : 'POST', credentials: 'omit', headers, body: body === undefined ? undefined : JSON.stringify(body), signal: controller.signal });
     if (!response.headers.get('content-type')?.includes('application/json')) throw new RequestError('Сервис вернул страницу вместо ответа API.', response.status, 'unsupported_response');
     const data = await response.json();
     if (!response.ok) {

@@ -3,87 +3,457 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="theme-color" content="#07110f">
-  <title>REMIX — создай и пройди испытание</title>
-  <link rel="stylesheet" href="/brand/ecosystem-chrome.css">
-  <link rel="stylesheet" href="remix.css">
-  <link rel="stylesheet" href="interface.css">
-  <script defer src="interface.js"></script>
-  <link rel="icon" href="/brand/favicon.svg" type="image/svg+xml">
-</head>
-<body>
-<header class="osgard-static-header" aria-label="Экосистема OSGARD"><a href="/"><img src="/brand/portal-world.svg" alt="" width="30" height="30">OSGARD WORLD</a><nav aria-label="Продукты OSGARD"><a href="/">OSGARD</a><a href="/intelligence">Intelligence</a><a href="/play">Play</a><a href="/development">Development</a></nav></header>
-<main>
+  <title>REMIX — испытания OSGARD PLAY</title>
+  <style>
+    :root{color-scheme:dark;--ink:#07110f;--panel:#102825;--line:#e7c77855;--gold:#e7c778;--muted:#a9b8aa}
+    *{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(circle at 70% 15%,#1b4038 0,#07110f 48%,#030807 100%);color:#e8eee3;font:15px/1.6 system-ui,sans-serif}
+    main{width:min(1080px,calc(100% - 40px));margin:auto;padding:34px 0 70px}a{color:inherit;text-decoration:none}.back{color:var(--gold);font:11px ui-monospace,monospace;letter-spacing:.12em;text-transform:uppercase}.eyebrow{color:var(--gold);font:11px ui-monospace,monospace;letter-spacing:.15em;text-transform:uppercase}h1{font:clamp(58px,12vw,150px)/.85 Georgia,serif;letter-spacing:.02em;margin:28px 0 20px}h2{font:32px Georgia,serif;margin:0 0 10px}p{color:var(--muted);max-width:650px}.hero{min-height:60vh;display:grid;align-content:center;position:relative}.hero:after{content:'RX';position:absolute;right:5vw;top:18%;font:220px Georgia,serif;color:#e7c77812;pointer-events:none}.tag{display:inline-block;border:1px solid var(--line);padding:8px 11px;color:var(--gold);font:10px ui-monospace,monospace;letter-spacing:.1em}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:30px}.panel{border:1px solid #ffffff1c;background:#ffffff08;padding:22px;min-height:150px}.panel strong{display:block;color:#f2f4e9;font:24px Georgia,serif;margin-top:12px}.cta{display:inline-flex;align-items:center;gap:12px;margin-top:24px;padding:13px 17px;background:var(--gold);color:#0a1512;font:11px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase}.note{border-left:2px solid var(--gold);padding-left:16px;margin-top:34px}@media(max-width:700px){main{width:min(100% - 28px,1080px)}.grid{grid-template-columns:1fr}.hero{min-height:70vh}.hero:after{font-size:130px;top:12%}}
+
+    .growth-loop{margin-top:30px;padding:24px;border:1px solid #e7c77855;background:linear-gradient(120deg,#e7c77810,transparent 70%)}.growth-loop h2{font-size:clamp(28px,5vw,42px);margin:8px 0}.growth-loop p{font-size:13px;line-height:1.8}.growth-loop .cta{margin-top:12px}
+    #live-growth-console{max-height:calc(100dvh - 36px);overflow:auto;overscroll-behavior:contain}#growth-panel{margin-top:14px;padding:14px;border:1px solid #e7c77855;background:#07110ff5}#challenge-link{width:100%;margin:10px 0;padding:10px;background:#030807;border:1px solid #ffffff2b;color:#e8eee3;font-size:11px}#growth-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px}#growth-actions button{margin:0;min-width:0;padding:10px 8px;font-size:9px}#challenge-copy,#result-summary{font-size:11px;line-height:1.65;margin:9px 0;color:#d4ddcf}#sponsor-slot{margin-top:14px;padding:14px;border:1px solid #e7c77866;background:#e7c7780b}#sponsor-slot strong{font:21px Georgia,serif}#sponsor-slot p{font-size:11px;line-height:1.7}#sponsor-slot .cta{margin-top:8px}@media(max-width:520px){#live-growth-console{right:10px!important;bottom:10px!important;width:calc(100vw - 20px)!important;max-height:calc(100dvh - 20px)!important}.growth-loop{padding:18px}}
+  </style>
+<link rel="stylesheet" href="/brand/ecosystem-chrome.css"><link rel="icon" href="/brand/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="./interface.css"><script defer src="./interface.js"></script></head>
+<body><header class="osgard-static-header" aria-label="Экосистема OSGARD"><a href="/"><img src="/brand/portal-world.svg" alt="" width="30" height="30">OSGARD WORLD</a><nav aria-label="Продукты OSGARD"><a href="/">OSGARD</a><a href="/intelligence">Intelligence</a><a href="/play">Play</a><a href="/development">Development</a></nav></header><main>
   <a class="back" href="/play#catalog">← Каталог игровых миров</a>
-  <section class="hero">
-    <span class="eyebrow">Создай · Пройди · Передай</span><h1>REMIX</h1>
-    <p>Найди путь через барьеры и опасные клетки. Пройди своё испытание, опубликуй его и предложи другому игроку найти более короткий маршрут.</p>
-    <nav class="remix-modes" aria-label="Режимы REMIX"><a class="cta" href="#live-growth-console">Открыть серверную арену ↓</a><a class="cta secondary" href="/games/remix/player/index.html">Открыть Unity-версию ↗</a></nav>
-    <div class="badges"><span class="badge">Одинаковый seed — одинаковое поле</span><span class="badge">Результат рассчитывает сервер</span><span class="badge">Клавиатура и touch</span></div>
-  </section>
-  <aside class="remix-guide" aria-labelledby="remix-guide-title">
-    <h2 id="remix-guide-title">Перед запуском</h2>
-    <p><strong>Серверная арена.</strong> Войдите в OSGARD Core, создайте поле и достигните цели. После публикации другой игрок сможет пройти то же испытание в своём заезде.</p>
-    <p><strong>Управление.</strong> Выберите поле: стрелки или WASD — ход, Space — прыжок в последнем направлении. На телефоне используйте кнопки под полем. Tab перемещает фокус по странице.</p>
-    <p><strong>Сохранение и онлайн.</strong> Арене нужен совместимый сервис REMIX на этом сайте. Подтверждённые ходы и результаты сохраняет сервер; при потере ответа повторите неподтверждённое действие.</p>
-    <p><strong>Unity WebGL.</strong> Отдельная игровая сборка требует WebGL 2. Её управление показано внутри игры; сетевой сервис и результаты не объединены с этой ареной.</p>
-    <details class="remix-settings"><summary>Подключение серверной арены</summary><p>Используется сервис этого сайта. Совместимость проверяется перед входом; адрес Unity-сервиса здесь не меняется.</p><label for="api-url">Адрес API арены</label><input id="api-url" type="text" value="/api/remix/v1/" readonly aria-describedby="remix-service-contract"><p id="remix-service-contract" data-no-translate>osgard-remix-arena · remix-arena-v1 · osgard-core-bearer-v1</p></details>
-    <p id="remix-storage-state" role="status" hidden></p>
-  </aside>
-  <section class="game-shell" id="live-growth-console" aria-label="Серверное испытание REMIX">
-    <div class="session-bar"><strong id="service-state">Проверяем сервер матчей…</strong><span id="session-state">Сессия ещё не проверена</span></div>
-    <div class="play-grid">
-      <div class="field">
-        <strong id="match-title">Поле испытания</strong>
-        <p id="match-status" role="status" aria-live="polite">Подключаемся к сервису испытаний…</p>
-        <canvas id="arena" width="600" height="350" tabindex="0" aria-label="Поле испытания. Управление стрелками или WASD." aria-describedby="controls-help position-label"></canvas>
-        <div id="match-meter" aria-hidden="true"><i></i></div>
-        <p id="position-label" aria-live="polite">Ожидаем подтверждённое сервером поле</p>
-        <div class="legend"><span>Игрок</span><span class="wall">Барьер</span><span class="hazard">Опасность</span><span class="goal">Цель</span></div>
-        <div class="controls" id="movement-controls">
-          <div class="dpad" aria-label="Направление хода">
-            <button class="control" data-remix-move="up" aria-label="Ход вверх" disabled>↑</button>
-            <button class="control" data-remix-move="left" aria-label="Ход влево" disabled>←</button>
-            <button class="control" data-remix-move="down" aria-label="Ход вниз" disabled>↓</button>
-            <button class="control" data-remix-move="right" aria-label="Ход вправо" disabled>→</button>
-          </div>
-          <button class="control jump" data-remix-jump disabled>Прыжок<br><small>Space</small></button>
-        </div>
-        <p class="instructions" id="controls-help"><strong>Стрелки или WASD</strong> — ход на одну клетку. <strong>Space</strong> — прыжок на две клетки в последнем направлении; барьер перепрыгнуть нельзя. Опасная клетка возвращает на старт. Ход стоит 100 мс игрового времени, прыжок — 200 мс, падение добавляет 1500 мс. Это пошаговая арена: задержка сети не влияет на счёт.</p>
-        <button id="retry-operation" class="cta secondary retry" hidden>Повторить неподтверждённое действие</button>
-        <button id="retry-restore" class="cta secondary retry" hidden>Восстановить сохранённый заезд</button>
-      </div>
-      <aside class="setup">
-        <div class="auth-panel" id="auth-panel" hidden>
-          <h3>Вход в OSGARD Core</h3><p>Один аккаунт хранит ваши испытания, заезды и повторы.</p>
-          <form id="auth-form">
-            <label for="remix-username">Имя пользователя</label><input id="remix-username" name="username" type="text" autocomplete="username" minlength="3" maxlength="64" pattern="[A-Za-z0-9_.-]+" required>
-            <label for="remix-password">Пароль — от 12 символов</label><input id="remix-password" name="password" type="password" autocomplete="current-password" minlength="12" maxlength="256" required>
-            <div class="button-row"><button class="cta" type="submit">Войти</button><button class="cta secondary" id="register-player" type="button">Создать аккаунт</button></div>
-          </form><p id="auth-status" role="status"></p>
-        </div>
-        <span class="eyebrow" id="challenge-mode">Испытание дня</span><h2>Твой маршрут</h2>
-        <label for="challenge-name">Название испытания</label><input data-no-translate id="challenge-name" type="text" minlength="2" maxlength="100" value="Испытание дня">
-        <label for="challenge-seed">Seed — код поля</label><input id="challenge-seed" type="number" min="1" max="2147483647" step="1">
-        <button id="start-match" class="cta" disabled>Создать испытание</button>
-        <p class="fine">Сначала автор достигает цели в проверочном заезде. После публикации каждый игрок проходит то же поле отдельно; в таблицу попадает его лучший заезд.</p>
-        <div class="button-row"><button id="rematch-challenge" class="cta secondary" hidden>Пройти ещё раз</button><button id="new-challenge" class="cta secondary">Новое поле</button></div>
-        <p id="challenge-copy" class="notice">Черновики доступны только автору.</p>
-      </aside>
-    </div>
-    <section class="result-panel" id="result-panel" hidden>
-      <span class="eyebrow">Заезд завершён</span><h2>Твой результат</h2>
-      <p id="result-summary" role="status" aria-live="polite"></p><p id="result-detail"></p>
-      <div class="button-row"><button id="publish-challenge" class="cta" hidden>Подтвердить и опубликовать</button><button id="show-replay" class="cta secondary">Посмотреть повтор</button><button id="remix-challenge" class="cta secondary" hidden>Сделать свой ремикс</button></div>
-      <section id="replay-panel" hidden aria-label="Серверный повтор"><p id="replay-status"></p><label for="replay-step">Ход повтора</label><input id="replay-step" type="range" min="0" max="1" value="0"><button id="close-replay" class="cta secondary">Закрыть повтор</button></section>
-      <ol id="leaderboard" aria-label="Лучшие заезды испытания"></ol>
-      <div id="growth-panel" hidden><span id="growth-badge" class="eyebrow">Опубликованное испытание</span><p><strong id="challenge-code"></strong></p><label for="challenge-link">Ссылка для другого игрока</label><input id="challenge-link" readonly><div id="growth-actions"><button id="share-challenge" class="cta">Поделиться испытанием ↗</button><button id="copy-challenge" class="cta secondary">Скопировать ссылку</button></div></div>
-      <div id="result-card-actions" class="button-row" hidden><button id="share-result-card" class="cta secondary">Поделиться карточкой ↗</button><button id="download-result-card" class="cta secondary">Скачать карточку PNG ↓</button></div>
-      <div id="sponsor-slot" hidden><span class="eyebrow">PARTNER SLOT / INQUIRY ONLY</span><p><strong>Испытание для вашего проекта</strong></p><p>Это заявка на сотрудничество после заезда. Активная рекламная кампания здесь не представлена.</p><a id="sponsor-cta" class="cta secondary" href="/games/partners/?utm_source=remix&amp;utm_medium=post_session&amp;utm_campaign=challenge_series&amp;utm_content=result_card&amp;format=Спонсорское%20событие%20или%20уровень">Обсудить партнёрское испытание ↗</a></div>
-    </section>
-  </section>
+  <section class="hero"><span class="eyebrow">OSGARD ENTERTAINMENT / 03</span><h1>REMIX</h1><p>One daily seed. One challenge link. Create a match, send inputs and compare the results returned by the match service.</p><span class="tag">DAILY CHALLENGE / SERVER-RECORDED RESULTS</span><div class="remix-entry-actions"><a class="cta" href="#live-growth-console">Open challenge console ↗</a><a class="cta remix-secondary" href="/games/remix/arena/">Open game arena ↗</a><a class="cta remix-secondary" href="/games/remix/player/index.html">Unity build status ↗</a></div></section>
+  <section id="build"><span class="eyebrow">The loop</span><div class="grid"><article class="panel"><span class="eyebrow">01 / CREATE</span><strong>Shape a challenge</strong><p>Create a daily challenge and open its match in the console.</p></article><article class="panel"><span class="eyebrow">02 / PLAY</span><strong>Enter the match</strong><p>The service reports the countdown, match state and position after accepted inputs.</p></article><article class="panel"><span class="eyebrow">03 / REMIX</span><strong>Save the result</strong><p>Request a result recorded by the match service, then share the challenge link with a friend.</p></article></div><p class="note">The console shows position and results from the match service. The separate Unity build is currently unavailable.</p></section><section class="growth-loop"><span class="eyebrow">04 / GROWTH + REVENUE</span><h2>Invite a rival.<br>Open a sponsor slot.</h2><p>The daily seed gives players a reason to return; the challenge link gives them a concrete reason to invite someone; a result screen can introduce a clearly labelled sponsor only after the run ends. Sponsorship is by inquiry until a real campaign is contracted.</p><a class="cta" href="/games/partners/?utm_source=remix&utm_medium=landing_cta&utm_campaign=daily_challenge&format=Sponsored%20event%20or%20level">Sponsor a challenge series ↗</a></section>
 </main>
-<script type="module" src="remix-client.js"></script>
-<script defer src="/brand/osa-transition.js"></script>
-</body>
-</html>
+<script>
+const panel=document.createElement('section');panel.id='live-growth-console';panel.className='panel';panel.style='background:#102825f5;border:1px solid #e7c77855';panel.innerHTML="<span class=\"eyebrow\">LIVE MATCH CONSOLE</span>\n<strong id=\"match-title\">Ready to enter</strong>\n<p id=\"match-status\">The daily challenge uses a shared UTC seed. Create a run, then send the invite link to a friend.</p>\n<input id=\"api-url\" aria-label=\"API URL\" placeholder=\"/api/remix\" style=\"width:100%;margin:10px 0;padding:10px;background:#07110f;border:1px solid #ffffff2b;color:#e8eee3\">\n<button id=\"start-match\" class=\"cta\" style=\"border:0;cursor:pointer;margin-top:4px\">Create daily challenge</button>\n<a id=\"new-daily-challenge\" class=\"cta remix-secondary\" href=\"/games/remix/\" hidden>Open a new daily challenge</a>\n<canvas id=\"arena\" width=\"340\" height=\"150\" style=\"display:block;width:100%;height:150px;margin-top:16px;background:#07110f;border:1px solid #ffffff1c\" aria-label=\"Server input preview, separate from the Unity game\"></canvas>\n<p id=\"server-position\">Position appears after the service accepts an input.</p>\n<div id=\"match-meter\" class=\"match-phase\"><strong id=\"phase-state\">Waiting for the service</strong><span id=\"phase-time\"></span><span id=\"match-counts\"></span></div>\n<button id=\"retry-match\" class=\"cta remix-secondary\" type=\"button\" hidden>Reconnect to this match</button>\n<div id=\"growth-panel\" hidden>\n  <span class=\"eyebrow\" id=\"growth-badge\">CHALLENGE PASSPORT</span>\n  <strong id=\"challenge-code\" style=\"display:block;margin-top:7px;font:21px Georgia,serif\">Awaiting server ID</strong>\n  <p id=\"challenge-copy\">Use this link to challenge a friend to the same ruleset. Only the server result is presented as a result.</p>\n  <input id=\"challenge-link\" aria-label=\"Shareable challenge URL\" readonly>\n  <div id=\"growth-actions\">\n    <button id=\"share-challenge\" class=\"cta\" type=\"button\">Share challenge ↗</button>\n    <button id=\"copy-challenge\" class=\"cta\" type=\"button\" style=\"background:transparent;color:#e7c778;border:1px solid #e7c77855\">Copy invite link</button>\n    <button id=\"rematch-challenge\" class=\"cta\" type=\"button\" style=\"grid-column:1/-1;background:transparent;color:#e8eee3;border:1px solid #ffffff2b\">Run this challenge again ↻</button>\n  </div>\n  <p id=\"result-summary\" role=\"status\" aria-live=\"polite\" hidden></p>\n  <div id=\"result-card-actions\" hidden style=\"margin-top:8px\"><p id=\"result-proof-note\">This is the match service response. An immutable replay archive has not been verified.</p><button id=\"share-result-card\" class=\"cta\" type=\"button\" style=\"width:100%;justify-content:center\">Share result card ↗</button><button id=\"download-result-card\" class=\"cta\" type=\"button\" style=\"width:100%;justify-content:center;background:transparent;color:#e8eee3;border:1px solid #ffffff2b\">Download result card PNG ↓</button></div>\n  <div id=\"sponsor-slot\" hidden>\n    <span class=\"eyebrow\">PARTNER SLOT / INQUIRY ONLY</span>\n    <strong>A brand can sponsor the next challenge.</strong>\n    <p>This is a commercial inquiry link, not a live ad. It appears after the result, never over active controls. No sponsor campaign is currently represented as active.</p>\n    <a id=\"sponsor-cta\" class=\"cta\" href=\"/games/partners/?utm_source=remix&utm_medium=post_session&utm_campaign=challenge_series&utm_content=result_card\">Discuss a sponsored challenge ↗</a>\n  </div>\n</div>";document.querySelector('main').insertBefore(panel,document.querySelector('#build'));
+const remixStore=(()=>{
+ const memory=new Map(),store={ephemeral:false};
+ store.getItem=key=>{if(memory.has(key))return memory.get(key);try{return localStorage.getItem(key)}catch{store.ephemeral=true;return null}};
+ store.setItem=(key,value)=>{memory.set(key,String(value));try{localStorage.setItem(key,String(value));return true}catch{store.ephemeral=true;return false}finally{window.RemixUI?.updateStorage()}};
+ store.removeItem=key=>{memory.set(key,null);try{localStorage.removeItem(key)}catch{store.ephemeral=true}finally{window.RemixUI?.updateStorage()}};
+ window.RemixPersistence=store;return store;
+})();
+const apiInput=panel.querySelector('#api-url'),status=panel.querySelector('#match-status'),title=panel.querySelector('#match-title'),arena=panel.querySelector('#arena'),ctx=arena.getContext('2d');
+let serverPosition=null;
+function draw(){
+ if(!ctx)return;
+ ctx.clearRect(0,0,arena.width,arena.height);ctx.strokeStyle='#e7c77833';
+ for(let x=0;x<arena.width;x+=34){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,arena.height);ctx.stroke()}
+ for(let y=0;y<arena.height;y+=30){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(arena.width,y);ctx.stroke()}
+ if(!serverPosition)return;
+ // A fixed, bounded projection of server world units. It is not the Unity scene.
+ const x=Math.max(10,Math.min(arena.width-10,arena.width/2+serverPosition[0]*34));
+ const y=Math.max(10,Math.min(arena.height-10,arena.height-24-serverPosition[1]*30));
+ ctx.fillStyle='#e7c778';ctx.beginPath();ctx.arc(x,y,8,0,Math.PI*2);ctx.fill();
+}
+draw();apiInput.value=remixStore.getItem('remix-api-url')||'/api/remix';
+let match=null,playerId='web-'+(window.crypto?.randomUUID?.()||Math.random().toString(36).slice(2,12)),seq=0,timer=null;
+const routeParams=new URLSearchParams(location.search);
+const incomingChallengeId=(routeParams.get('challenge')||'').trim().slice(0,128);
+const incomingSeed=Number(routeParams.get('seed'));
+const incomingReferralCode=(routeParams.get('ref')||'').trim().slice(0,80);
+const dailyDate=new Date().toISOString().slice(0,10);
+const dailySeed=Number(dailyDate.replace(/-/g,''));
+let activeChallengeId=incomingChallengeId;
+let activeChallengeSeed=Number.isSafeInteger(incomingSeed)&&incomingSeed>0?incomingSeed:dailySeed;
+let challengeSeedVerified=false;
+let matchStartedAt=0;
+let lastResultSummary='';
+const growthPanel=panel.querySelector('#growth-panel');
+let sessionMode='idle',serverPhase='',connectionBase='',sessionKey='',operation=0;
+let opening=false,polling=false,verifiedState=false,completionReported=false,failures=0;
+let inputBusy=false,pendingInput=null,inputTimer=null,nextInputAt=0,inputOperation=0;
+const requests=new Set();
+const validId=value=>typeof value==='string'&&/^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$/.test(value);
+const sessionAgeLimit=7*24*60*60*1000;
+const routeScope=incomingChallengeId?'challenge:'+incomingChallengeId:'daily:'+dailyDate;
+function normalizeApi(value){
+ const raw=String(value||'').trim();if(!raw)throw Error('Enter the REMIX API URL first');
+ const url=new URL(raw,location.origin);
+ if(!['http:','https:'].includes(url.protocol)||url.username||url.password||url.search||url.hash||(location.protocol==='https:'&&url.protocol!=='https:'))throw Error('Use a secure, compatible match-service address without a query or password.');
+ return url.origin+url.pathname.replace(/\/+$/,'');
+}
+function storageKey(base){return 'osgard:remix-session:v1:'+encodeURIComponent(base)+':'+encodeURIComponent(routeScope)}
+function readSession(raw,base){
+ if(typeof raw!=='string'||raw.length>4096)return null;
+ try{
+  const value=JSON.parse(raw),now=Date.now();
+  if(!value||typeof value!=='object'||Array.isArray(value)||value.version!==1||value.apiBase!==base||value.scope!==routeScope)return null;
+  if(!validId(value.playerId)||!['opening-challenge','opening-match','prepared','active'].includes(value.stage))return null;
+  if(value.matchId!==null&&!validId(value.matchId))return null;
+  if(value.challengeId!==''&&!validId(value.challengeId))return null;
+  if(value.matchId&&!value.challengeId)return null;
+  if(incomingChallengeId&&value.challengeId!==incomingChallengeId)return null;
+  if(!Number.isSafeInteger(value.seed)||value.seed<1||!Number.isSafeInteger(value.sequence)||value.sequence<0||value.sequence>=Number.MAX_SAFE_INTEGER)return null;
+  if(!Number.isSafeInteger(value.savedAt)||value.savedAt>now+60000||value.savedAt<now-sessionAgeLimit)return null;
+  if(!Number.isSafeInteger(value.startedAt)||value.startedAt<0||value.startedAt>now+60000||typeof value.completionReported!=='boolean')return null;
+  return value;
+ }catch{return null}
+}
+function rememberSession(stage=match?'active':'prepared'){
+ if(!connectionBase||!sessionKey)return;
+ remixStore.setItem(sessionKey,JSON.stringify({version:1,apiBase:connectionBase,scope:routeScope,stage,matchId:match?.id||null,challengeId:activeChallengeId,seed:activeChallengeSeed,playerId,sequence:seq,startedAt:matchStartedAt,savedAt:Date.now(),completionReported}));
+}
+function current(token,id){return token===operation&&(!id||match?.id===id)}
+function stopInputs(){
+ inputOperation++;inputBusy=false;pendingInput=null;if(inputTimer){clearTimeout(inputTimer);inputTimer=null}
+ for(const request of requests)if(request.path.endsWith('/input'))request.controller.abort();
+}
+function clearResult(){
+ lastResultSummary='';serverPosition=null;draw();
+ for(const selector of ['#result-summary','#result-card-actions','#sponsor-slot'])panel.querySelector(selector).hidden=true;
+ panel.querySelector('#result-summary').textContent='';panel.querySelector('#server-position').textContent='Position appears after the service accepts an input.';
+}
+function canSubmitInput(){return Boolean(match&&verifiedState&&sessionMode==='active'&&['PLAYING','RUNNING'].includes(serverPhase)&&navigator.onLine!==false)}
+function syncControls(){
+ const locked=opening||Boolean(match&&!['completed','missing'].includes(sessionMode));
+ const button=panel.querySelector('#start-match');
+ button.disabled=locked||sessionMode==='completed';apiInput.disabled=locked;
+ button.textContent=opening?'Opening challenge…':sessionMode==='completed'?'Result received':locked?'Match active':sessionMode==='uncertain'?'Start a new match':sessionMode==='missing'?'Create another match':sessionMode==='invalid-invite'?'Retry shared challenge':activeChallengeId?'Start this challenge':'Create daily challenge';
+ panel.querySelector('#new-daily-challenge').hidden=sessionMode!=='invalid-invite';
+ panel.querySelector('#rematch-challenge').disabled=sessionMode!=='completed';
+ const retry=panel.querySelector('#retry-match');retry.hidden=!match||!['reconnecting','restoring','result-pending','missing'].includes(sessionMode);retry.disabled=polling;
+ arena.setAttribute('aria-disabled',String(!canSubmitInput()));
+ panel.querySelectorAll('[data-console-action]').forEach(button=>{button.disabled=!canSubmitInput()});
+ panel.setAttribute('data-session-state',sessionMode);
+}
+function paintState(state){
+ serverPhase=state.phase;
+ panel.querySelector('#phase-state').textContent=({WAITING:'Waiting for players',COUNTDOWN:'Countdown',PLAYING:'Match running',RUNNING:'Match running',RESULTS:'Run finished'})[state.phase];
+ panel.querySelector('#match-counts').textContent=state.players+' player(s) · '+state.replayFrames+' accepted input frames';
+ panel.querySelector('#phase-time').textContent=state.phase==='RESULTS'?'':Math.ceil(state.remainingMs/1000)+' s left in this phase';
+ panel.querySelector('#match-meter').dataset.phase=state.phase;
+}
+function validState(value,id){return value&&typeof value==='object'&&value.id===id&&['WAITING','COUNTDOWN','PLAYING','RUNNING','RESULTS'].includes(value.phase)&&Number.isSafeInteger(value.players)&&value.players>=0&&Number.isSafeInteger(value.replayFrames)&&value.replayFrames>=0&&Number.isFinite(value.remainingMs)&&value.remainingMs>=0}
+function validResult(value,id){return value&&value.matchId===id&&value.phase==='RESULTS'&&Number.isSafeInteger(value.replayFrames)&&value.replayFrames>=0&&Array.isArray(value.scores)&&value.scores.length<=100&&value.scores.every(item=>item&&validId(item.playerId)&&typeof item.score==='number'&&Number.isFinite(item.score))&&new Set(value.scores.map(item=>item.playerId)).size===value.scores.length}
+async function api(path, options){
+ const base=connectionBase||normalizeApi(apiInput.value);
+ const controller=new AbortController(),request={controller,path};requests.add(request);
+ const timeout=setTimeout(()=>controller.abort(),12000);
+ try{
+  const response=await fetch(base+path,Object.assign({headers:{'content-type':'application/json'}},options||{},{signal:controller.signal}));
+  if(!response.ok){const error=Error(response.status===404||response.status>=500?'The match service is unavailable. Try again later.':'The match service rejected this request.');error.status=response.status;throw error}
+  try{return await response.json()}catch{throw Error('The match service returned an invalid response.')}
+ }catch(error){if(error?.name==='AbortError')throw Error('The match service took too long to respond.');throw error}
+ finally{clearTimeout(timeout);requests.delete(request)}
+}
+async function start(reuseCurrent=false){
+ if(opening||polling||match&&!['completed','missing'].includes(sessionMode))return;
+ let nextBase;
+ try{nextBase=normalizeApi(apiInput.value)}catch(error){status.textContent='Connection error: '+error.message;syncControls();return}
+ const token=++operation;opening=true;
+ if(timer){clearTimeout(timer);timer=null}stopInputs();
+ for(const request of requests)request.controller.abort();
+ match=null;seq=0;serverPhase='';verifiedState=false;completionReported=false;failures=0;matchStartedAt=0;inputBusy=false;nextInputAt=0;clearResult();
+ panel.querySelector('#phase-state').textContent='Waiting for the service';panel.querySelector('#match-counts').textContent='';panel.querySelector('#phase-time').textContent='';
+ let stage='prepared',createdNew=false;
+ try{
+  connectionBase=nextBase;sessionKey=storageKey(connectionBase);
+  remixStore.setItem('remix-api-url',apiInput.value.trim());
+  sessionMode='opening';status.textContent='Opening a server-owned daily challenge...';syncControls();
+  let challenge;
+  if(activeChallengeId){challenge={id:activeChallengeId,seed:activeChallengeSeed}}
+  else{
+   stage='opening-challenge';rememberSession(stage);
+   challenge=await api('/v1/challenges',{method:'POST',body:JSON.stringify({creatorId:playerId,title:'OSGARD DAILY '+dailyDate,mode:'speed',seed:dailySeed,visibility:'public'})});
+   if(!current(token))return;createdNew=true;challengeSeedVerified=Number.isSafeInteger(challenge?.seed)&&challenge.seed>0;
+  }
+  if(!challenge||!validId(challenge.id))throw Error('The challenge service returned no challenge ID.');
+  activeChallengeId=challenge.id;
+  activeChallengeSeed=Number.isSafeInteger(challenge.seed)&&challenge.seed>0?challenge.seed:activeChallengeSeed;
+  updateChallengePassport();rememberSession('prepared');
+  if(createdNew)reportEvent('challenge_created',{challengeId:activeChallengeId,seed:activeChallengeSeed,campaign:'daily_challenge'});
+  stage='opening-match';rememberSession(stage);
+  const created=await api('/v1/matches',{method:'POST',body:JSON.stringify({challengeId:activeChallengeId,maxPlayers:2})});
+  if(!current(token))return;
+  if(!created||!validId(created.id)||(created.challengeId&&created.challengeId!==activeChallengeId))throw Error('The match service returned no match ID.');
+  match={id:created.id};matchStartedAt=Date.now();sessionMode='restoring';rememberSession();
+  const joinedInvite=Boolean(incomingChallengeId)&&!reuseCurrent;
+  title.textContent='Match '+match.id;
+  if(joinedInvite)reportEvent('challenge_invite_accepted',{challengeId:activeChallengeId,referralCode:incomingReferralCode||'direct',campaign:'daily_challenge'});
+  reportEvent('game_session_started',{challengeId:activeChallengeId,seed:activeChallengeSeed,shared:joinedInvite,campaign:'daily_challenge'});
+  try{if(window.parent!==window)window.parent.postMessage({type:'osgard:game-lifecycle',game:'remix',state:'started',challengeId:activeChallengeId,at:Date.now()},window.location.origin)}catch{}
+  status.textContent='Match created. Checking the server state…';arena.focus({preventScroll:true});
+ }catch(error){
+  if(!current(token))return;
+  // Never retry a create POST automatically: its response may have been lost.
+  const uncertain=['opening-challenge','opening-match'].includes(stage)&&!(error.status>=400&&error.status<500);
+  sessionMode=uncertain?'uncertain':'idle';
+  if(stage==='opening-match'&&error.status===404){
+   if(incomingChallengeId){sessionMode='invalid-invite';status.textContent='This shared challenge is no longer available. Open a new daily challenge to continue.'}
+   else{activeChallengeId='';challengeSeedVerified=false;growthPanel.hidden=true;title.textContent='Ready to enter';status.textContent='The old challenge is no longer available. Create a new daily challenge.'}
+  }else if(incomingChallengeId&&!validId(incomingChallengeId)){
+   sessionMode='invalid-invite';status.textContent='This invitation does not contain a valid challenge ID. Open a new daily challenge to continue.';
+  }else status.textContent=uncertain?'The creation response was lost. A match may exist on the service. Starting a new match is a separate action.':'Connection error: '+(error?.message||'Unknown error');
+  if(!uncertain)rememberSession('prepared');
+ }finally{
+  if(current(token)){opening=false;syncControls();if(match)await refresh()}
+ }
+}
+function scheduleRefresh(delay){
+ if(timer){clearTimeout(timer);timer=null}
+ if(!match||['completed','missing'].includes(sessionMode)||navigator.onLine===false)return;
+ timer=setTimeout(()=>{timer=null;refresh()},delay);
+}
+async function refresh(){
+ if(!match||polling||opening||sessionMode==='completed')return;
+ if(timer){clearTimeout(timer);timer=null}
+ if(navigator.onLine===false){sessionMode='reconnecting';status.textContent='You are offline. The saved match will reconnect when the connection returns.';stopInputs();syncControls();return}
+ const token=operation,id=match.id;polling=true;syncControls();
+ try{
+  const state=await api('/v1/matches/'+encodeURIComponent(id)+'/state');
+  if(!current(token,id))return;
+  if(!validState(state,id))throw Error('The match service returned an invalid response.');
+  verifiedState=true;paintState(state);
+  if(state.phase==='RESULTS'){
+   sessionMode='result-pending';stopInputs();syncControls();
+   status.textContent='The run ended. Fetching its server result…';
+   const result=await api('/v1/matches/'+encodeURIComponent(id)+'/result');
+   if(!current(token,id))return;
+   if(!validResult(result,id))throw Error('The match service returned an invalid response.');
+   lastResultSummary=summarizeResult(result);
+   const resultSummary=panel.querySelector('#result-summary');resultSummary.textContent=lastResultSummary;resultSummary.hidden=false;
+   panel.querySelector('#result-card-actions').hidden=false;
+   const sponsor=panel.querySelector('#sponsor-slot');sponsor.hidden=false;
+   growthPanel.hidden=false;sessionMode='completed';status.textContent='RESULTS · '+lastResultSummary;
+   if(!completionReported){
+    completionReported=true;rememberSession();
+    reportEvent('game_session_completed',{challengeId:activeChallengeId,seed:activeChallengeSeed,durationMs:matchStartedAt?Math.max(0,Date.now()-matchStartedAt):null,scoreShape:'array',campaign:'daily_challenge'});
+    try{if(window.parent!==window)window.parent.postMessage({type:'osgard:game-lifecycle',game:'remix',state:'completed',challengeId:activeChallengeId,at:Date.now()},window.location.origin)}catch{}
+   }
+  }else{
+   sessionMode='active';
+   status.textContent=['PLAYING','RUNNING'].includes(state.phase)?'The match is running. Focus the field or use the buttons to submit input.':'The service is preparing the match. Controls unlock when play begins.';
+  }
+  failures=0;rememberSession();
+ }catch(error){
+  if(!current(token,id))return;
+  stopInputs();failures++;
+  if(error.status===404){sessionMode='missing';verifiedState=false;clearResult();status.textContent='The service cannot find this saved match. Retry its lookup or create another match.'}
+  else{sessionMode=serverPhase==='RESULTS'?'result-pending':'reconnecting';status.textContent=serverPhase==='RESULTS'?'The result has not loaded yet. Your match is retained; reconnecting…':'Connection lost. Your match is retained; reconnecting…'}
+ }finally{
+  if(current(token,id)){polling=false;syncControls();scheduleRefresh(failures?Math.min(10000,1000*2**Math.min(failures,4)):1000)}
+ }
+}
+function send(moveX,moveY,jump){
+ if(!canSubmitInput()||![-1,0,1].includes(moveX)||![-1,0,1].includes(moveY)||typeof jump!=='boolean')return;
+ // At most one request and one coalesced intent. Keyboard repeat cannot flood the service.
+ pendingInput={moveX,moveY,jump:jump||Boolean(pendingInput?.jump)};dispatchInput();
+}
+async function dispatchInput(){
+ if(inputBusy||inputTimer||!pendingInput||!canSubmitInput())return;
+ if(Date.now()<nextInputAt){inputTimer=setTimeout(()=>{inputTimer=null;dispatchInput()},nextInputAt-Date.now());return}
+ const token=operation,inputToken=inputOperation,id=match.id,intent=pendingInput;pendingInput=null;
+ try{const saved=readSession(localStorage.getItem(sessionKey),connectionBase);if(saved?.matchId===id&&saved.playerId===playerId)seq=Math.max(seq,saved.sequence)}catch{}
+ if(seq>=Number.MAX_SAFE_INTEGER-1){sessionMode='reconnecting';status.textContent='This session cannot accept more inputs. Reconnect to view its result.';syncControls();return}
+ const sequence=++seq;rememberSession();inputBusy=true;nextInputAt=Date.now()+100;
+ try{
+  const value=await api('/v1/matches/'+encodeURIComponent(id)+'/input',{method:'POST',body:JSON.stringify({playerId,sequence,...intent})});
+  if(!current(token,id)||inputToken!==inputOperation||!canSubmitInput())return;
+  if(!value||value.playerId!==playerId||value.lastSequence!==sequence||!Array.isArray(value.position)||value.position.length<2||!value.position.every(number=>typeof number==='number'&&Number.isFinite(number)))throw Error('The match service returned an invalid response.');
+  serverPosition=value.position.slice(0,3);draw();
+  panel.querySelector('#server-position').textContent='Server position · X '+serverPosition[0].toFixed(2)+' · Y '+serverPosition[1].toFixed(2);
+ }catch(error){
+  if(!current(token,id)||inputToken!==inputOperation||sessionMode==='completed'||serverPhase==='RESULTS')return;
+  pendingInput=null;sessionMode='reconnecting';status.textContent='This input was not confirmed. It will not be sent again. Reconnecting to the match…';syncControls();scheduleRefresh(250);
+ }finally{
+  if(current(token,id)&&inputToken===inputOperation){inputBusy=false;if(pendingInput&&canSubmitInput())dispatchInput()}
+ }
+}
+async function restoreSession(){
+ try{connectionBase=normalizeApi(apiInput.value);sessionKey=storageKey(connectionBase)}catch(error){connectionBase='';sessionKey='';status.textContent='Connection error: '+error.message;syncControls();return}
+ const raw=remixStore.getItem(sessionKey),saved=readSession(raw,connectionBase);
+ if(!saved){if(raw!==null){remixStore.removeItem(sessionKey);status.textContent='The local session record is invalid or expired. You can start a new challenge.'}syncControls();return}
+ playerId=saved.playerId;activeChallengeId=saved.challengeId;activeChallengeSeed=saved.seed;challengeSeedVerified=false;seq=saved.sequence;matchStartedAt=saved.startedAt;completionReported=saved.completionReported;
+ if(activeChallengeId)updateChallengePassport();
+ if(!saved.matchId){sessionMode=saved.stage.startsWith('opening-')?'uncertain':'idle';status.textContent=sessionMode==='uncertain'?'The creation response was lost. A match may exist on the service. Starting a new match is a separate action.':'A challenge is saved. Start its match when you are ready.';syncControls();return}
+ match={id:saved.matchId};sessionMode='restoring';verifiedState=false;title.textContent='Match '+match.id;
+ status.textContent='Restoring the saved match. The service will verify its current state and result.';clearResult();syncControls();await refresh();
+}
+window.RemixSession={syncControls};
+function buildChallengeURL(){
+  const link=new URL(location.href);
+  link.searchParams.set('challenge',activeChallengeId);
+  link.searchParams.set('seed',String(activeChallengeSeed));
+  link.searchParams.set('ref',playerId.slice(4));
+  link.searchParams.set('utm_source','osgard_remix');
+  link.searchParams.set('utm_medium','friend_challenge');
+  link.searchParams.set('utm_campaign','daily_challenge');
+  link.searchParams.set('utm_content',activeChallengeId);
+  link.hash='';
+  return link.href;
+}
+function updateChallengePassport(){
+  const code=panel.querySelector('#challenge-code');
+  const input=panel.querySelector('#challenge-link');
+  const copy=panel.querySelector('#challenge-copy');
+  growthPanel.hidden=false;
+  code.textContent='CHALLENGE / '+activeChallengeId.slice(0,24);
+  input.value=buildChallengeURL();
+  copy.textContent=challengeSeedVerified?'Seed '+activeChallengeSeed+' · Share this link to let a friend enter the same challenge. The match API must accept the shared challenge before it starts.':'Invitation seed '+activeChallengeSeed+' · This number comes from the link or browser record. The service must accept the challenge ID before play.';
+  panel.querySelector('#growth-badge').textContent=incomingChallengeId?'FRIEND CHALLENGE / SERVER CHECK':'DAILY CHALLENGE / '+dailyDate;
+}
+function summarizeResult(result){
+  if(result && typeof result.score==='number' && Number.isFinite(result.score))return 'Server result · score '+String(result.score);
+  const scores=result && result.scores;
+  if(Array.isArray(scores)){
+    const labels=scores.slice(0,4).map((item,index)=>{
+      if(item && typeof item==='object')return (item.playerId===playerId?'You':'Player '+(index+1))+': '+String(typeof item.score==='number'?Number(item.score.toFixed(4)):item.timeMs??'');
+      return 'Player '+(index+1)+' '+String(item);
+    });
+    if(labels.length)return 'Server result · '+labels.join(' / ');
+    return 'Server result · no input frames were recorded.';
+  }
+  if(scores && typeof scores==='object'){
+    const labels=Object.entries(scores).slice(0,4).map(([key,value])=>key+' '+(value && typeof value==='object'?String(value.score??value.timeMs??''):String(value)));
+    if(labels.length)return 'Server result · '+labels.join(' / ');
+  }
+  return 'Server returned the result. Challenge a friend to compare this same ruleset.';
+}
+function createResultCardBlob(card){
+  const translate=window.RemixUI?.t||String;
+  return new Promise((resolve,reject)=>{
+    const canvas=document.createElement('canvas');canvas.width=1200;canvas.height=630;
+    const ctx=canvas.getContext('2d');if(!ctx){reject(Error('Canvas export is unavailable.'));return}
+    const bg=ctx.createLinearGradient(0,0,1200,630);bg.addColorStop(0,'#07110f');bg.addColorStop(.58,'#102825');bg.addColorStop(1,'#030807');
+    ctx.fillStyle=bg;ctx.fillRect(0,0,1200,630);
+    ctx.strokeStyle='rgba(231,199,120,.12)';ctx.lineWidth=1;
+    for(let x=0;x<1200;x+=48){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,630);ctx.stroke()}
+    for(let y=0;y<630;y+=48){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(1200,y);ctx.stroke()}
+    ctx.strokeStyle='rgba(231,199,120,.55)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(1010,145,116,0,Math.PI*2);ctx.stroke();ctx.beginPath();ctx.arc(1010,145,82,0,Math.PI*2);ctx.stroke();
+    ctx.fillStyle='#e7c778';ctx.font='700 22px ui-monospace,monospace';ctx.fillText('OSGARD WORLD  /  REMIX',72,74);
+    ctx.fillStyle='#eff1e7';ctx.font='600 64px Georgia,serif';ctx.fillText(translate('DAILY CHALLENGE'),72,165,1048);
+    ctx.fillStyle='#a9b8aa';ctx.font='20px ui-monospace,monospace';ctx.fillText(translate('SERVER RESULT'),76,216);
+    ctx.fillStyle='#e7c778';ctx.font='700 20px ui-monospace,monospace';ctx.fillText(translate('MATCH')+' '+String(card.matchId),76,282,1048);
+    ctx.fillStyle='#eef2e8';ctx.font='27px system-ui,sans-serif';
+    const words=translate(card.summary).slice(0,180).split(/\s+/);let line='',y=352;
+    for(const word of words){const next=line?line+' '+word:word;if(ctx.measureText(next).width>1000){ctx.fillText(line,76,y);line=word;y+=42;}else line=next;}
+    if(line)ctx.fillText(line,76,y);
+    ctx.strokeStyle='rgba(231,199,120,.55)';ctx.beginPath();ctx.moveTo(76,510);ctx.lineTo(1124,510);ctx.stroke();
+    ctx.fillStyle='#e7c778';ctx.font='700 25px ui-monospace,monospace';ctx.fillText(translate('CAN YOU BEAT THIS?'),76,557);
+    ctx.fillStyle='#becbbd';ctx.font='17px ui-monospace,monospace';ctx.fillText('osgard.world/games/remix/',76,592,1048);
+    canvas.toBlob(blob=>blob?resolve(blob):reject(Error('Could not encode the result card.')),'image/png');
+  });
+}
+function downloadBlob(blob,filename){
+  const url=URL.createObjectURL(blob);const link=document.createElement('a');link.href=url;link.download=filename;document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+async function downloadResultCard(){
+  if(sessionMode!=='completed'||!lastResultSummary||!activeChallengeId){status.textContent='Finish a server-recorded run first.';return}
+  const card={token:operation,matchId:match.id,challengeId:activeChallengeId,seed:activeChallengeSeed,summary:lastResultSummary};
+  try{
+    const blob=await createResultCardBlob(card);
+    if(!current(card.token,card.matchId)||sessionMode!=='completed')return;
+    downloadBlob(blob,'osgard-remix-challenge-'+String(card.matchId)+'.png');
+    reportEvent('result_card_exported',{challengeId:card.challengeId,seed:card.seed,format:'png'});
+    status.textContent='Result card downloaded. It identifies the server match. Send the challenge invitation separately.';
+  }catch(e){status.textContent='Card export unavailable: '+(e && e.message ? e.message : 'Unknown error')}
+}
+async function shareResultCard(){
+  if(sessionMode!=='completed'||!lastResultSummary||!activeChallengeId){status.textContent='Finish a server-recorded run first.';return}
+  const card={token:operation,matchId:match.id,challengeId:activeChallengeId,seed:activeChallengeSeed,summary:lastResultSummary,url:buildChallengeURL()};
+  try{
+    const blob=await createResultCardBlob(card);
+    if(!current(card.token,card.matchId)||sessionMode!=='completed')return;
+    const file=new File([blob],'osgard-remix-challenge-'+String(card.matchId)+'.png',{type:'image/png'});
+    if(navigator.share && navigator.canShare && navigator.canShare({files:[file]})){
+      await navigator.share({title:'REMIX — Daily Challenge',text:'REMIX match '+card.matchId+'. Challenge invitation: '+card.url,files:[file]});
+      reportEvent('result_card_shared',{challengeId:card.challengeId,seed:card.seed,channel:'native_file_share'});
+      if(!current(card.token,card.matchId))return;
+      status.textContent='The share sheet opened. Share delivery depends on the target app.';
+    }else{
+      downloadBlob(blob,'osgard-remix-challenge-'+String(card.matchId)+'.png');
+      status.textContent='This browser cannot share files directly. The PNG card was downloaded instead.';
+    }
+  }catch(e){if(e && e.name==='AbortError')return;status.textContent='Result-card sharing unavailable: '+(e && e.message ? e.message : 'Unknown error')}
+}
+function reportEvent(name,payload){
+  let token='';
+  try{token=localStorage.getItem('osgard.auth.accessToken')||''}catch{return}
+  if(!token)return;
+  const eventId=window.crypto && typeof crypto.randomUUID==='function'?crypto.randomUUID():'remix-'+Date.now()+'-'+Math.random().toString(36).slice(2,9);
+  const event={id:eventId,name,game:'remix',payload,occurredAt:new Date().toISOString(),schemaVersion:1};
+  fetch('/api/v1/player/events',{method:'POST',credentials:'same-origin',headers:{authorization:'Bearer '+token,'content-type':'application/json'},body:JSON.stringify({event})}).catch(()=>{});
+}
+async function copyChallengeLink(){
+  if(!activeChallengeId){status.textContent='Create or accept a challenge first.';return}
+  const link=buildChallengeURL();
+  try{
+    await navigator.clipboard.writeText(link);
+    status.textContent='Invite link copied. Send it to a friend who can open the same challenge.';
+    reportEvent('share_link_copied',{challengeId:activeChallengeId,medium:'friend_challenge',campaign:'daily_challenge'});
+  }catch(e){
+    window.prompt('Copy the challenge invite link',link);
+  }
+}
+async function shareChallenge(){
+  if(!activeChallengeId){status.textContent='Create or accept a challenge first.';return}
+  const url=buildChallengeURL();
+  const text='Can you beat my REMIX challenge? Open the invitation; the match service must accept its challenge ID.';
+  if(navigator.share){
+    try{
+      await navigator.share({title:'REMIX — Challenge a friend',text,url});
+      reportEvent('share_dialog_opened',{challengeId:activeChallengeId,medium:'native_share',campaign:'daily_challenge'});
+      status.textContent='Share sheet opened. The recipient still needs to open the link and start the challenge.';
+      return;
+    }catch(e){if(e && e.name==='AbortError')return}
+  }
+  await copyChallengeLink();
+}
+function resetForRematch(){
+  if(sessionMode!=='completed'||opening||polling)return;
+  start(true);
+}
+const startButton=panel.querySelector('#start-match');
+if(incomingChallengeId){
+  activeChallengeId=incomingChallengeId;
+  updateChallengePassport();
+  panel.querySelector('#growth-badge').textContent='FRIEND CHALLENGE / PENDING SERVER VALIDATION';
+  title.textContent='Friend challenge '+incomingChallengeId.slice(0,8);
+  status.textContent='A friend shared a challenge. Accept it to ask the match service to validate and start it.';
+  startButton.textContent='Accept shared challenge';
+}
+startButton.onclick=()=>start(false);
+panel.querySelector('#retry-match').addEventListener('click',()=>refresh());
+panel.querySelector('#share-challenge').addEventListener('click',shareChallenge);
+panel.querySelector('#copy-challenge').addEventListener('click',copyChallengeLink);
+panel.querySelector('#rematch-challenge').addEventListener('click',resetForRematch);
+panel.querySelector('#share-result-card').addEventListener('click',shareResultCard);
+panel.querySelector('#download-result-card').addEventListener('click',downloadResultCard);
+const sponsorCta=panel.querySelector('#sponsor-cta');
+const partnerUrl=new URL('/games/partners/',location.origin);
+partnerUrl.searchParams.set('utm_source','osgard_remix');
+partnerUrl.searchParams.set('utm_medium','post_session');
+partnerUrl.searchParams.set('utm_campaign','challenge_series');
+partnerUrl.searchParams.set('utm_content','challenge_result');
+partnerUrl.searchParams.set('format','Спонсорское событие или уровень');
+sponsorCta.href=partnerUrl.href;
+sponsorCta.addEventListener('click',()=>reportEvent('partner_cta_clicked',{challengeId:activeChallengeId,placement:'post_session',campaign:'challenge_series',sponsorActive:false}));
+arena.addEventListener('keydown',e=>{if(!canSubmitInput()||e.ctrlKey||e.metaKey||e.altKey)return;const k=e.key.toLowerCase();if(['arrowleft','a','arrowright','d','arrowup','w',' '].includes(k))e.preventDefault();if(['arrowleft','a'].includes(k))send(-1,0,false);else if(['arrowright','d'].includes(k))send(1,0,false);else if(['arrowup','w',' '].includes(k))send(0,1,true)});
+
+apiInput.addEventListener('change',()=>{
+ if(opening||match&&!['completed','missing'].includes(sessionMode))return;
+ try{normalizeApi(apiInput.value)}catch(error){status.textContent='Connection error: '+error.message;return}
+ operation++;if(timer){clearTimeout(timer);timer=null}stopInputs();
+ for(const request of requests)request.controller.abort();
+ match=null;seq=0;serverPhase='';verifiedState=false;sessionMode='idle';completionReported=false;inputBusy=false;
+ activeChallengeId=incomingChallengeId;activeChallengeSeed=Number.isSafeInteger(incomingSeed)&&incomingSeed>0?incomingSeed:dailySeed;challengeSeedVerified=false;clearResult();growthPanel.hidden=true;
+ title.textContent='Ready to enter';status.textContent='The daily challenge uses a shared UTC seed. Create a run, then send the invite link to a friend.';
+ remixStore.setItem('remix-api-url',apiInput.value.trim());restoreSession();
+});
+window.addEventListener('online',()=>{if(match&&sessionMode!=='completed')refresh()});
+window.addEventListener('offline',()=>{
+ if(!match||sessionMode==='completed')return;
+ // A reply already in transit belongs to the connection that just ended.
+ // Preserve the match and consumed input sequence, but verify it again online.
+ operation++;polling=false;verifiedState=false;sessionMode='reconnecting';stopInputs();if(timer){clearTimeout(timer);timer=null}
+ for(const request of requests)request.controller.abort();
+ status.textContent='You are offline. The saved match will reconnect when the connection returns.';syncControls();
+});
+window.addEventListener('storage',event=>{
+ if(!match||event.key!==sessionKey)return;
+ const saved=readSession(event.newValue,connectionBase);
+ if(saved?.matchId===match.id&&saved.playerId===playerId)seq=Math.max(seq,saved.sequence);
+});
+window.addEventListener('pagehide',()=>{
+ if(match)rememberSession();operation++;stopInputs();
+ if(timer){clearTimeout(timer);timer=null}for(const request of requests)request.controller.abort();
+ polling=false;inputBusy=false;opening=false;
+});
+window.addEventListener('pageshow',event=>{if(event.persisted){verifiedState=false;clearResult();restoreSession()}});
+restoreSession();
+</script><script defer src="/brand/osa-transition.js"></script></body></html>

@@ -39,6 +39,9 @@ jobs:
           python -m unittest discover -s tests -p test_godot_export_binding.py -v
           python -m unittest discover -s tests -p test_remix_service.py -v
           python -m unittest discover -s tests -p test_remix_acceptance_wrapper.py -v
+          python -m unittest discover -s tests -p test_remix_service_contract.py -v
+          python -m unittest discover -s tests -p test_remix_guard.py -v
+          python -m unittest discover -s tests -p test_frontend_activation.py -v
       - name: Live PR chain metadata verification (read-only)
         if: ${{ github.event_name == 'pull_request' }}
         run: python scripts/live-release-pr-audit.py

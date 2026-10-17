@@ -50,7 +50,17 @@ assert.ok(css.includes('@media(max-width:760px)'),'Responsive/mobile layout miss
 assert.ok(css.includes('.player-view')&&css.includes('dialog::backdrop'),'Game dialog style missing')
 assert.ok(html.includes('src="./player-lifecycle.js"'),'Self-hosted lifecycle module must be included')
 assert.ok(html.includes('aria-label="OSGARD WORLD PLAY"'),'Brand accessible name must include visible PLAY label')
-for(const label of ['NULL//SHIFT — играть на Godot','TIME / EMPIRE — играть в Империю времени','SWARM — играть','INHERIT — играть','REMIX / ARENA — открыть REMIX']) assert.ok(html.includes('aria-label="'+label+'"'),'Game art accessible name must include the visible label: '+label)
+for(const label of ['NULL//SHIFT — играть на Godot','TIME / EMPIRE — играть в Империю времени','SWARM — играть','INHERIT — играть','REMIX / ARENA — открыть серверную арену']) assert.ok(html.includes('aria-label="'+label+'"'),'Game art accessible name must include the visible label: '+label)
+const remixCard=html.match(/<article\b[^>]*data-game="remix"[\s\S]*?<\/article>/)?.[0]
+assert.ok(remixCard,'REMIX card must exist')
+const remixLaunches=[...remixCard.matchAll(/<a\b[^>]*\bdata-play="remix"[^>]*>/g)]
+assert.equal(remixLaunches.length,2,'REMIX artwork and primary action must both launch the arena')
+for(const [link] of remixLaunches) assert.match(link,/href="\/games\/remix\/arena\/"/,'REMIX primary launch must use the Core arena route')
+assert.ok(remixCard.includes('Unity-сборка сейчас недоступна')&&remixCard.includes('href="/games/remix/player/">Статус Unity-сборки'),'Keep the distinct unavailable Unity build status accessible')
+assert.ok(html.includes("remix:{title:'REMIX',url:'/games/remix/arena/'}"),'REMIX player/history/share registry must use the primary arena')
+assert.ok(lifecycle.includes("remix:{title:'REMIX',url:'/games/remix/arena/'}"),'REMIX lifecycle and share fallback must use the primary arena')
+const catalogItems=JSON.parse(html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)[1]).itemListElement
+assert.equal(catalogItems.find(item=>item.name==='REMIX')?.url,'https://osgard.world/games/remix/arena/','REMIX structured data must use the primary arena route')
 for(const lowContrast of ['#656c61','#6f796b','#6d756a','#71796c','#737a70','#737b70','#697168']) assert.ok(!html.toLowerCase().includes(lowContrast),'Low-contrast secondary color remains: '+lowContrast)
 assert.ok(html.includes('.consent-row p{max-width:710px;color:#7f877c;font-size:12px;line-height:1.7}'),'Analytics consent copy must reach a legible 12px size')
 assert.ok(html.includes('.note{margin:16px 0 0;color:#8b9387;font-size:12px;line-height:1.7}')&&html.includes('.privacy-note{color:#8b9387;font-size:12px;line-height:1.65}'),'Notes must remain readable on mobile')
@@ -99,4 +109,4 @@ const intermission=readFileSync(resolve(root,'ecosystem-intermission.js'),'utf8'
 for(const host of ['osgardbewworld.com','o2system.art','senjorio.com','superday.run','marcosa.club','myosa.world','gold-glamour.online','gardvpn.is','osgardos.com','osgardvanguard.studio']) assert.ok(intermission.includes(host),'Owned-project intermission link missing: '+host)
 assert.ok(intermission.includes("player.addEventListener('close'")&&intermission.includes('dialog.showModal()'),'Intermission is not triggered between game sessions')
 new Function(intermission)
-console.log('PASS OSGARD GAMES HUB: nineteen playable projects including eleven Russian ZION worlds, search/filters, local favorites/history, embedded player/fullscreen/share, consent-gated authenticated analytics, cross-promotion, contact form, SEO, mobile/reduced-motion styling and legal documents.')
+console.log('PASS OSGARD GAMES HUB: nineteen catalog entries including eleven Russian ZION worlds, REMIX Core arena as the primary route and distinct unavailable Unity status, search/filters, local favorites/history, embedded player/fullscreen/share, consent-gated authenticated analytics, cross-promotion, contact form, SEO, mobile/reduced-motion styling and legal documents.')

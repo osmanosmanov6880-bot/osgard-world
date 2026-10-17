@@ -395,16 +395,17 @@ class Handler(SimpleHTTPRequestHandler):
             require(host in self.server.allowed_hosts,'Недопустимый адрес сервера.','host',403)
             require(not origin or origin in self.server.allowed_origins,'Запрос с другого сайта запрещён.','origin',403)
             request_path=urlsplit(self.path).path
-            if request_path.startswith('/api/remix/'):
+            if request_path.startswith('/api/core/remix/'):
                 require(self.server.store.remix is not None,'Сервер REMIX не включён для этого запуска.','remix_disabled',404)
-                if method=='GET' and request_path=='/api/remix/v1/capabilities':return self.output(self.server.store.remix.capabilities())
-                require(request_path.startswith('/api/remix/v1/'),'Маршрут REMIX не найден.','not_found',404)
+                if method=='GET' and request_path=='/api/core/remix/v1/capabilities':return self.output(self.server.store.remix.capabilities())
+                require(request_path.startswith('/api/core/remix/v1/'),'Маршрут REMIX не найден.','not_found',404)
                 remix_auth=self.headers.get('Authorization','')
                 remix_actor=self.server.store.actor(remix_auth[7:] if remix_auth.startswith('Bearer ') else '')
-                remix_route=request_path.removeprefix('/api/remix/v1/')
+                remix_route=request_path.removeprefix('/api/core/remix/v1/')
                 if method=='GET':return self.output(self.server.store.remix.get(remix_route,remix_actor['id']))
                 if method=='POST':return self.output(self.server.store.remix.mutate(remix_route,remix_actor['id'],self.body(),self.headers.get('Idempotency-Key')))
                 raise Fault('method','Метод не поддерживается.',405)
+            require(request_path.startswith('/api/core/'),'Маршрут Core API не найден.','not_found',404)
             route=urlsplit(self.path).path.removeprefix('/api/core/').strip('/')
             if method=='GET' and route=='health':return self.output({'status':'ok','mode':'self-hosted-pilot','schemaVersion':1,'payments':self.server.store.commerce.config.enabled,'paymentMode':'live' if self.server.store.commerce.config.livemode else 'test','livePaymentTested':False,'ai':False})
             if method=='POST' and route=='commerce/webhook':return self.output(self.server.store.commerce.webhook(self.raw_json_body(),self.headers.get('Stripe-Signature')))

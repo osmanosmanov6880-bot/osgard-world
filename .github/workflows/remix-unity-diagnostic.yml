@@ -1,0 +1,105 @@
+name: REMIX Unity playability diagnostic (manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      include_reactivation:
+        description: Also reproduce the rejected three-byte scene reactivation experiment
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: remix-unity-diagnostic-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  original-scene:
+    # The preserved export currently fails this playability test. A green
+    # launcher-safety workflow is not a passing result for this diagnostic.
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out the preserved export
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install locked application dependencies
+        run: npm ci
+      - name: Verify original build identity
+        run: node scripts/remix-unity-status-check.mjs
+      - name: Build the original production site
+        run: npm run build
+      - name: Install pinned browser test tooling
+        run: |
+          npm install --no-save --package-lock=false @playwright/test@1.58.2 pngjs@7.0.0
+          npx playwright install --with-deps chromium
+      - name: Require a real nonblank scene and capture focused input evidence
+        run: bash scripts/check-nginx-unity-browser.sh --grep 'actual gzip build'
+      - name: Keep the actual playability result and evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: remix-unity-playability-diagnostic
+          path: |
+            unity-browser-report/
+            unity-test-results/
+          if-no-files-found: warn
+          retention-days: 14
+
+  experimental-reactivation:
+    if: ${{ inputs.include_reactivation }}
+    # Diagnostic only. The candidate is generated into a disposable dist copy.
+    # No release artifact, repository file, deployment, or live service changes.
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out original source and export
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Set up the pinned audit runtime
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install locked application dependencies
+        run: npm ci
+      - name: Verify original build identity
+        run: node scripts/remix-unity-status-check.mjs
+      - name: Build the original production site
+        run: npm run build
+      - name: Generate a separate three-byte scene reactivation experiment
+        run: |
+          python3 -m pip install UnityPy==1.25.4
+          mkdir -p unity-candidate-analysis
+          python3 scripts/remix-unity-reactivation-candidate.py \
+            public/games/remix/player/Build/REMIX-webgl3.data.gz \
+            "$RUNNER_TEMP/REMIX-reactivation.data.gz" \
+            unity-candidate-analysis/manifest.json
+          cp "$RUNNER_TEMP/REMIX-reactivation.data.gz" dist/games/remix/player/Build/REMIX-webgl3.data.gz
+      - name: Install pinned browser test tooling
+        run: |
+          npm install --no-save --package-lock=false @playwright/test@1.58.2 pngjs@7.0.0
+          npx playwright install --with-deps chromium
+      - name: Inspect the experimental engine scene without publishing it
+        run: bash scripts/check-nginx-unity-browser.sh --grep 'actual gzip build'
+      - name: Keep separate experiment evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: remix-unity-reactivation-experiment
+          path: |
+            unity-candidate-analysis/
+            unity-browser-report/
+            unity-test-results/
+          if-no-files-found: warn
+          retention-days: 14

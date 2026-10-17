@@ -26,6 +26,8 @@ services:
         condition: service_healthy
       osgard-game-api:
         condition: service_healthy
+      remix-guard:
+        condition: service_healthy
     ports:
       - "127.0.0.1:4189:80"
     healthcheck:
@@ -80,6 +82,38 @@ services:
     restart: unless-stopped
     expose:
       - "8080"
+  remix-guard:
+    build:
+      context: .
+      dockerfile: server/RemixGuard.Dockerfile
+    container_name: osgard-remix-guard
+    labels:
+      org.osgard.service: remix-guard
+    restart: unless-stopped
+    init: true
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    pids_limit: 96
+    mem_limit: 128m
+    cpus: "0.5"
+    tmpfs:
+      - /tmp:size=4m,noexec,nosuid
+    depends_on:
+      remix-api:
+        condition: service_started
+    expose:
+      - "8081"
+    volumes:
+      - osgard-remix-guard-data:/var/lib/remix-guard
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8081/health', timeout=6)"]
+      interval: 30s
+      timeout: 8s
+      retries: 3
+      start_period: 15s
   swarm-api:
     build: ../swarm-mvp
     container_name: swarm-api
@@ -101,3 +135,4 @@ services:
 volumes:
   osgard-core-data:
   osgard-game-data:
+  osgard-remix-guard-data:
