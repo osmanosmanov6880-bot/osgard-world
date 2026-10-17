@@ -254,6 +254,50 @@ await check('offline suspends input and polling; coming online resumes the same 
   assert.ok(h.calls.slice(count).every(call => call.method === 'GET'));
 });
 
+await check('a state body received after disconnect cannot overwrite offline status or restart polling', async () => {
+  const h = harness(); await h.start(); await h.play(); h.run('send(1,0,false)'); await h.flush();
+  const id = h.run('match.id'), player = h.run('playerId'), waiting = deferred();
+  // The response headers have arrived; its body deliberately ignores abort so
+  // this exercises the operation guard as well as transport cancellation.
+  h.handler = call => call.path.endsWith('/state') ? { ...response(null), json: () => waiting.promise } : undefined;
+  const pending = h.run('refresh()'); await h.flush();
+  const oldRead = h.calls.at(-1);
+  h.context.navigator.onLine = false; h.emit('offline');
+  waiting.resolve({ id, ...h.state }); await pending;
+  assert.equal(h.run('sessionMode'), 'reconnecting'); assert.equal(h.run('verifiedState'), false);
+  assert.match(h.node('#match-status').textContent, /You are offline/);
+  assert.equal(h.run('polling'), false); assert.equal(h.pending(1000), 0); assert.equal(oldRead.signal.aborted, true);
+  assert.equal(h.run('seq'), 1); assert.equal(h.run('playerId'), player); assert.equal(h.run('match.id'), id);
+  h.run('send(1,0,false)'); await h.flush(); assert.equal(h.calls.filter(call => call.path.endsWith('/input')).length, 1);
+  h.handler = undefined; h.context.navigator.onLine = true; h.emit('online'); await h.flush();
+  assert.equal(h.run('canSubmitInput()'), true); assert.equal(h.run('match.id'), id);
+  await h.advance(100); h.run('send(1,0,false)'); await h.flush();
+  assert.equal(h.calls.filter(call => call.path.endsWith('/input')).at(-1).body.sequence, 2);
+  assert.equal(h.calls.filter(call => call.path.endsWith('/v1/matches')).length, 1);
+});
+
+await check('a pre-disconnect result cannot unlock export or finish a fresh reconnect read', async () => {
+  const h = harness(); await h.start();
+  h.state = { phase: 'RESULTS', players: 1, remainingMs: 0, replayFrames: 1 };
+  const id = h.run('match.id'), oldResult = deferred(), newState = deferred();
+  h.handler = call => call.path.endsWith('/result') ? { ...response(null), json: () => oldResult.promise } : undefined;
+  const pending = h.run('refresh()'); await h.flush(); assert.equal(h.run('sessionMode'), 'result-pending');
+  const oldRead = h.calls.at(-1);
+  h.context.navigator.onLine = false; h.emit('offline');
+  h.handler = call => call.path.endsWith('/state') ? { ...response(null), json: () => newState.promise } : undefined;
+  h.context.navigator.onLine = true; h.emit('online'); await h.flush();
+  assert.equal(h.run('polling'), true);
+  oldResult.resolve({ matchId: id, phase: 'RESULTS', replayFrames: 1, scores: [{ playerId: 'web-test-player', score: 0.05 }] });
+  await pending;
+  assert.equal(h.run('sessionMode'), 'reconnecting'); assert.equal(h.run('polling'), true);
+  assert.equal(h.run('lastResultSummary'), ''); assert.equal(h.node('#result-card-actions').hidden, true);
+  assert.equal(oldRead.signal.aborted, true);
+  newState.resolve({ id, ...h.state }); await h.flush();
+  assert.equal(h.run('sessionMode'), 'completed'); assert.equal(h.run('match.id'), id);
+  assert.equal(h.node('#result-card-actions').hidden, false);
+  assert.equal(h.calls.filter(call => call.path.endsWith('/v1/matches')).length, 1);
+});
+
 await check('an API text edit cannot redirect an active match request', async () => {
   const h = harness(); await h.start(); h.node('#api-url').value = 'https://other.example/match'; await h.play();
   assert.ok(h.calls.every(call => call.url.startsWith('https://osgard.world/api/remix/'))); assert.equal(h.node('#api-url').disabled, true);

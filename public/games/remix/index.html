@@ -438,7 +438,10 @@ apiInput.addEventListener('change',()=>{
 window.addEventListener('online',()=>{if(match&&sessionMode!=='completed')refresh()});
 window.addEventListener('offline',()=>{
  if(!match||sessionMode==='completed')return;
- sessionMode='reconnecting';stopInputs();if(timer){clearTimeout(timer);timer=null}
+ // A reply already in transit belongs to the connection that just ended.
+ // Preserve the match and consumed input sequence, but verify it again online.
+ operation++;polling=false;verifiedState=false;sessionMode='reconnecting';stopInputs();if(timer){clearTimeout(timer);timer=null}
+ for(const request of requests)request.controller.abort();
  status.textContent='You are offline. The saved match will reconnect when the connection returns.';syncControls();
 });
 window.addEventListener('storage',event=>{

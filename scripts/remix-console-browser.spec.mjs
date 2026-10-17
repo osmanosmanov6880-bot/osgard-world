@@ -9,7 +9,7 @@ async function fixtureService(page, info) {
   const failures = [], calls = [], matches = new Map()
   let counter = 0, releaseStateGate
   const service = {
-    phase: 'COUNTDOWN', calls, matches, failures, resultFailures: 0,
+    phase: 'COUNTDOWN', calls, matches, failures, resultFailures: 0, stateReplies: 0,
     position: [1, 2, 0], stateGate: null,
     holdStates() { this.stateGate = new Promise(resolve => { releaseStateGate = resolve }) },
     releaseStates() { this.stateGate = null; releaseStateGate?.() },
@@ -44,6 +44,7 @@ async function fixtureService(page, info) {
     if (path.endsWith('/state') && method === 'GET') {
       if (service.stateGate) await service.stateGate
       await json({ id, phase: service.phase, players: match.players.size, remainingMs: service.phase === 'COUNTDOWN' ? 3000 : service.phase === 'RESULTS' ? 0 : 30000, replayFrames: match.inputs, scores: scores() })
+      service.stateReplies++
       return
     }
     if (path.endsWith('/input') && method === 'POST') {
@@ -234,16 +235,29 @@ test('REMIX HTTP fixtures: offline disables input and reconnects to the existing
   const service = await fixtureService(page, info)
   await enterPlaying(page, service)
   await submitRight(page, info, service)
-  await context.setOffline(true)
-  await expect(page.locator('#match-status')).toContainText('Нет подключения к сети')
-  await expect(page.locator('[data-console-action="right"]')).toBeDisabled()
-  await page.locator('#arena').press('ArrowRight')
-  expect(service.inputs()).toHaveLength(1)
-  await context.setOffline(false)
-  await expect(page.locator('[data-console-action="right"]')).toBeEnabled()
-  await submitRight(page, info, service)
-  expect(service.inputs().at(-1).body.sequence).toBe(2)
-  expect(service.inputs().at(-1).path).toContain('/match_browser_fixture.1/input')
-  expect(service.posts('/v1/matches')).toHaveLength(1)
-  expect(service.failures).toEqual([])
+  service.holdStates()
+  try {
+    const readsBefore = service.calls.filter(call => call.path.endsWith('/state')).length
+    await expect.poll(() => service.calls.filter(call => call.path.endsWith('/state')).length).toBeGreaterThan(readsBefore)
+    const repliesBefore = service.stateReplies
+    await context.setOffline(true)
+    await expect(page.locator('#match-status')).toContainText('Нет подключения к сети')
+    // Resolve a pre-disconnect GET after the offline handler. It must not turn
+    // the retained match back into an active session or overwrite its status.
+    service.releaseStates()
+    await expect.poll(() => service.stateReplies).toBeGreaterThan(repliesBefore)
+    await expect(page.locator('#live-growth-console')).toHaveAttribute('data-session-state', 'reconnecting')
+    await expect(page.locator('#match-status')).toContainText('Нет подключения к сети')
+    await expect(page.locator('[data-console-action="right"]')).toBeDisabled()
+    await page.locator('#arena').press('ArrowRight')
+    expect(service.inputs()).toHaveLength(1)
+    await page.locator('#live-growth-console').screenshot({ path: info.outputPath('fixture-remix-offline-ru.png') })
+    await context.setOffline(false)
+    await expect(page.locator('[data-console-action="right"]')).toBeEnabled()
+    await submitRight(page, info, service)
+    expect(service.inputs().at(-1).body.sequence).toBe(2)
+    expect(service.inputs().at(-1).path).toContain('/match_browser_fixture.1/input')
+    expect(service.posts('/v1/matches')).toHaveLength(1)
+    expect(service.failures).toEqual([])
+  } finally { service.releaseStates() }
 })
