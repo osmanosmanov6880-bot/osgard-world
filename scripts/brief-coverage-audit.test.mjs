@@ -26,7 +26,7 @@ try {
   })
   check('optional #0 preamble and dated #242 are accepted',()=>{
     const lines=content.split('\n')
-    lines[241]='[2026-10-17 21:00] # 242. Dated section'
+    lines[241]='[2026-10-17 21:00] Message: # 242. Dated section'
     const d='# 0. Preamble\n'+lines.join('\n')
     const x=run(d)
     assert.equal(x.code,0)
