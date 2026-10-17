@@ -125,7 +125,7 @@ function warm(event){if(playLink(event.target))void loadOptionalScripts()}
 for(const type of ['pointerover','focusin','touchstart'])document.addEventListener(type,warm,{capture:true,passive:true});
 document.addEventListener('click',event=>{
  const link=playLink(event.target);
- if(!link||loaded||failed)return;
+ if(!link||loaded||failed||event.defaultPrevented||event.button!==0||event.metaKey||event.ctrlKey||event.shiftKey||event.altKey)return;
  event.preventDefault();event.stopImmediatePropagation();
  loadOptionalScripts().then(()=>link.dispatchEvent(new MouseEvent('click',{bubbles:true,cancelable:true,button:0,view:window})));
 },true);
