@@ -25,7 +25,13 @@ def bounded_read(z, name, limit):
 
 def verify(archive):
     with zipfile.ZipFile(archive) as z:
-        names={x.filename for x in z.infolist() if not x.is_dir()}
+        entries=[x.filename for x in z.infolist() if not x.is_dir()]
+        if len(entries)!=len(set(entries)):
+            raise ValueError("duplicate ZIP game archive member")
+        folded=[name.casefold() for name in entries]
+        if len(folded)!=len(set(folded)):
+            raise ValueError("case-colliding ZIP game archive member")
+        names=set(entries)
         required={"index.html","games/index.html","play/index.html",
                   "games/zion-9/worlds.json"}
         required.update(f"{ZION_PREFIX}{id}/index.html" for id in ZION_IDS)

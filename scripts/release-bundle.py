@@ -57,8 +57,14 @@ def build(root,commit,output,manifest_output,required_routes=REQUIRED_ROUTES):
     if missing:
         raise ValueError("required routes missing: "+", ".join(missing))
     # Verify files unchanged while they are streamed into archive. Writing to new output.
+    output_created=False
+    manifest_created=False
     try:
-        with zipfile.ZipFile(output,"x",compression=zipfile.ZIP_DEFLATED,compresslevel=9,allowZip64=True) as z:
+        # Reserve the archive path exclusively. Never unlink someone else's release.
+        with output.open("xb"):
+            pass
+        output_created=True
+        with zipfile.ZipFile(output,"w",compression=zipfile.ZIP_DEFLATED,compresslevel=9,allowZip64=True) as z:
             for row in rows:
                 path=root/row["path"]
                 info=zipfile.ZipInfo(row["path"],date_time=FIXED_DATE)
@@ -79,14 +85,17 @@ def build(root,commit,output,manifest_output,required_routes=REQUIRED_ROUTES):
             raise ValueError("ZIP verification not successful")
         serialized=(json.dumps(data,ensure_ascii=False,sort_keys=True,separators=(",",":"))+"\n").encode("utf-8")
         with manifest_output.open("xb") as f:
+            manifest_created=True
             f.write(serialized)
         return {"status":"built_and_verified","files":len(rows),
                 "zip_sha256":result["zip_sha256"],
                 "manifest_sha256":result["manifest_sha256"],
                 "commit_sha":commit,"publication_performed":False}
     except BaseException:
-        output.unlink(missing_ok=True)
-        manifest_output.unlink(missing_ok=True)
+        if output_created:
+            output.unlink(missing_ok=True)
+        if manifest_created:
+            manifest_output.unlink(missing_ok=True)
         raise
 
 def verify(archive,manifest_path,required_routes=REQUIRED_ROUTES):
