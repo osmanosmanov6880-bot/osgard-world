@@ -2,9 +2,9 @@
 """Auditable dry-run plan for stacking OSGARD pull requests. Never merges or deploys."""
 import argparse,json,sys
 from pathlib import Path
-CHAIN=tuple(range(107,123))
+CHAIN=tuple(range(107,125))
 CANONICAL="osmanosmanov6880-bot/osgard-world"
-BASE_BRANCHES={107:"master",108:"integration/osgard-quality-suite-2026-10-17",109:"security/attested-release-evidence-2026-10-17",110:"release/artifact-provenance-manifest-2026-10-17",111:"release/zip-manifest-binding-2026-10-17",112:"release/end-to-end-bundle-verification-2026-10-17",113:"qa/staged-game-route-contract-2026-10-17",114:"ci/full-source-release-acceptance-2026-10-17",115:"qa/staging-operations-suite-2026-10-17",116:"hardening/release-quality-fixes-2026-10-17",117:"hardening/release-safety-batch-2026-10-17",118:"hardening/integrated-release-2026-10-17",119:"integration/three-step-acceptance-2026-10-17",120:"engineering/three-block-fifteen-tasks-2026-10-17",121:"hardening/release-evidence-integrity-2026-10-17",122:"hardening/release-proof-validation-2026-10-17"}
+BASE_BRANCHES={107:"master",108:"integration/osgard-quality-suite-2026-10-17",109:"security/attested-release-evidence-2026-10-17",110:"release/artifact-provenance-manifest-2026-10-17",111:"release/zip-manifest-binding-2026-10-17",112:"release/end-to-end-bundle-verification-2026-10-17",113:"qa/staged-game-route-contract-2026-10-17",114:"ci/full-source-release-acceptance-2026-10-17",115:"qa/staging-operations-suite-2026-10-17",116:"hardening/release-quality-fixes-2026-10-17",117:"hardening/release-safety-batch-2026-10-17",118:"hardening/integrated-release-2026-10-17",119:"integration/three-step-acceptance-2026-10-17",120:"engineering/three-block-fifteen-tasks-2026-10-17",121:"hardening/release-evidence-integrity-2026-10-17",122:"hardening/release-proof-validation-2026-10-17",123:"hardening/release-proof-boundaries-2026-10-17",124:"integration/release-readiness-2026-10-17"}
 def inspect(rows):
     errors=[]
     byid={}
