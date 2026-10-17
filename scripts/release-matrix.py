@@ -23,6 +23,7 @@ def assess(data):
     if not isinstance(artifact,str) or not SHA.fullmatch(artifact):errors.append("artifact_sha256")
     checks=data.get("checks")
     if not isinstance(checks,dict):checks={}
+    seen_runs=set()
     for gate in GATES:
         item=checks.get(gate)
         if not isinstance(item,dict) or item.get("status")!="passed":
@@ -35,6 +36,10 @@ def assess(data):
             r"https://github\.com/osmanosmanov6880-bot/osgard-world/actions/runs/[1-9][0-9]*", evidence
         ):
             errors.append(gate+": missing auditable CI URL")
+        elif evidence in seen_runs:
+            errors.append(gate+": reused CI run across independent gates")
+        else:
+            seen_runs.add(evidence)
     if data.get("human_approval") is not False:errors.append("human approval must remain pending")
     if data.get("payments_enabled") is not False:errors.append("payments must remain disabled")
     return {"status":"ready_for_human_review" if not errors else "blocked",
