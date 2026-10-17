@@ -32,7 +32,7 @@ def assess(data):
             errors.append(gate+": evidence does not match candidate")
         evidence=item.get("evidence_url")
         if not isinstance(evidence,str) or not re.fullmatch(
-            r"https://github\\.com/osmanosmanov6880-bot/osgard-world/actions/runs/[1-9][0-9]*", evidence
+            r"https://github\.com/osmanosmanov6880-bot/osgard-world/actions/runs/[1-9][0-9]*", evidence
         ):
             errors.append(gate+": missing auditable CI URL")
     if data.get("human_approval") is not False:errors.append("human approval must remain pending")
