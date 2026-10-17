@@ -1,0 +1,49 @@
+name: OSGARD Full Source Release Acceptance
+on:
+  pull_request:
+    paths:
+      - 'scripts/release-bundle.py'
+      - 'scripts/verify-game-archive.py'
+      - 'scripts/release-artifact-manifest.py'
+      - 'scripts/verify-zip-manifest.py'
+      - 'scripts/verify-release-zip.py'
+      - '.github/workflows/full-source-release-acceptance.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build-and-inspect-real-site:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Reproducible dependency install
+        run: npm ci
+      - name: Build real site
+        run: npm run build
+      - name: Existing browser-world source checks
+        run: npm run qa:zion-local
+      - name: Build deterministic ZIP and per-file manifest
+        run: |
+          mkdir -p "$RUNNER_TEMP/osgard-release"
+          python scripts/release-bundle.py build dist --commit "$GITHUB_SHA" --zip "$RUNNER_TEMP/osgard-release/osgard-world.zip" --manifest "$RUNNER_TEMP/osgard-release/manifest.json"
+      - name: Independently verify ZIP and manifest
+        run: python scripts/release-bundle.py verify "$RUNNER_TEMP/osgard-release/osgard-world.zip" --manifest "$RUNNER_TEMP/osgard-release/manifest.json"
+      - name: Verify the playable world entrypoints and dependencies
+        run: python scripts/verify-game-archive.py "$RUNNER_TEMP/osgard-release/osgard-world.zip"
+      - name: Write a checksum summary without exposing archived files
+        run: |
+          python - <<'PY'
+          import hashlib,os,pathlib
+          file=pathlib.Path(os.environ['RUNNER_TEMP'])/'osgard-release/osgard-world.zip'
+          print('Actual CI candidate SHA-256:',hashlib.sha256(file.read_bytes()).hexdigest())
+          print('Actual CI candidate bytes:',file.stat().st_size)
+          print('No production publication or payment activation performed')
+          PY
