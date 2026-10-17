@@ -59,8 +59,20 @@ class OperationsTest(unittest.TestCase):
    self.assertEqual(config.audit(root)["status"],"blocked")
  def test_matrix_missing_and_partial(self):
   self.assertEqual(matrix.assess({})["status"],"blocked")
-  d={key:{"status":"passed"} for key in matrix.GATES};d["human_approval"]=False
-  self.assertEqual(matrix.assess(d)["status"],"ready_for_review")
-  d["backup_recovery"]["status"]="unknown"
+  sha="a"*40; digest="b"*64
+  d={"schema_version":2,"commit_sha":sha,"artifact_sha256":digest,
+     "human_approval":False,"payments_enabled":False,
+     "checks":{key:{"status":"passed","commit_sha":sha,"artifact_sha256":digest,
+                    "evidence_url":"https://github.com/example/repo/actions/runs/1"}
+               for key in matrix.GATES}}
+  self.assertEqual(matrix.assess(d)["status"],"ready_for_human_review")
+  d["checks"]["backup_recovery"]["status"]="unknown"
+  self.assertEqual(matrix.assess(d)["status"],"blocked")
+  d["checks"]["backup_recovery"]["status"]="passed"
+  d["checks"]["archive_extra"]={"status":"passed"}
+  d["checks"]["source_build"]["commit_sha"]="c"*40
+  self.assertEqual(matrix.assess(d)["status"],"blocked")
+  d["checks"]["source_build"]["commit_sha"]=sha
+  d["payments_enabled"]=True
   self.assertEqual(matrix.assess(d)["status"],"blocked")
 if __name__=="__main__":unittest.main()
