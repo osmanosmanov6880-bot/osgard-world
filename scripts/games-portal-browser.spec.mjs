@@ -102,7 +102,25 @@ test('Time route loads its real game with external font services unavailable', a
       return route.abort('failed')
     })
   }
-  await page.goto('/games/time')
+  const timeRouteErrors = [], timeRouteRequests = []
+  page.on('pageerror', error => timeRouteErrors.push(error.message.slice(0, 500)))
+  page.on('requestfailed', request => {
+    if (!/^https:\/\/fonts\.(googleapis|gstatic)\.com\//.test(request.url()))
+      timeRouteRequests.push({ url: request.url().slice(0, 180), reason: request.failure()?.errorText || 'unknown' })
+  })
+  const routeResponse = await page.goto('/games/time')
+  await page.waitForTimeout(1600)
+  const timeRouteState = await page.evaluate(() => ({
+    pathname: location.pathname,
+    title: document.title,
+    rootPresent: !!document.getElementById('root'),
+    rootText: document.getElementById('root')?.textContent?.trim().slice(0, 350) || '',
+    mapCount: document.querySelectorAll('.tg-map-viewport').length,
+    alertText: document.querySelector('[role=alert]')?.textContent?.trim().slice(0, 350) || '',
+  }))
+  console.log('GAMES_TIME_ROUTE_DIAGNOSTIC ' + JSON.stringify({ profile: test.info().project.name,
+    status: routeResponse?.status() || null, ...timeRouteState,
+    exceptions: timeRouteErrors, failedOwnRequests: timeRouteRequests }))
   await expect(page.locator('.tg-map-viewport')).toBeVisible()
   await expect(page.getByText('Страница не загрузилась.', { exact: true })).toHaveCount(0)
   const faces = await page.evaluate(async () => Promise.all(
