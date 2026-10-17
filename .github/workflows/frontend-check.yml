@@ -8,6 +8,7 @@ on:
       - "server/**"
       - "scripts/remix-*"
       - "scripts/check-nginx-remix-guard.sh"
+      - "scripts/check-nginx-remix-owned.sh"
       - "tests/test_remix_*.py"
       - "tests/test_frontend_activation.py"
       - "docker-compose.production.yml"
@@ -84,10 +85,12 @@ jobs:
           npm run qa:ux
           npm run qa:osa-progress
           npm run qa:game-interface
+          npm run qa:inherit-handoff
           npm run qa:remix-session
           npm run qa:remix-legacy
           npm run qa:remix-contract
           npm run qa:remix-guard
+          npm run qa:remix-owned
           npm run qa:activation
       - name: Verify measured pilot outcomes and offline recovery
         run: |
@@ -115,6 +118,8 @@ jobs:
         run: npm run qa:nginx-game-delivery
       - name: Verify REMIX result durability through candidate Nginx
         run: npm run qa:nginx-remix-guard
+      - name: Verify Core ownership and protected rollback through candidate Nginx
+        run: npm run qa:nginx-remix-owned
       - name: Verify unavailable Unity build is pinned to reviewed evidence
         run: |
           node scripts/remix-unity-status-check.mjs dist
