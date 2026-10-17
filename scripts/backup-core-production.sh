@@ -40,12 +40,13 @@ docker compose -f "$compose_file" exec -T core-api python -c \
 
 docker compose -f "$compose_file" cp "core-api:$remote_tmp" "$pending"
 chmod 600 -- "$pending"
-mv -n -- "$pending" "$final"
-if [[ -e "$pending" || ! -f "$final" ]]; then
+ln -- "$pending" "$final"
+moved=1
+rm -f -- "$pending"
+if [[ ! -f "$final" ]]; then
   echo "Core backup was not moved into final location" >&2
   exit 1
 fi
-moved=1
 sha256sum "$final" > "$final.sha256"
 chmod 600 -- "$final.sha256"
 sha256sum -c "$final.sha256"
