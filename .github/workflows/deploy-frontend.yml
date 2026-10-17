@@ -113,6 +113,8 @@ jobs:
           npm run qa:game-interface
           npm run qa:inherit-handoff
           npm run qa:remix-session
+          npm run qa:remix-owned-session
+          npm run qa:remix-owned-probe
           npm run qa:remix-legacy
           npm run qa:remix-contract
           npm run qa:remix-guard
@@ -240,8 +242,8 @@ jobs:
           npx playwright install --with-deps chromium
       - name: Verify unavailable Unity route and diagnostic recovery before publication
         run: bash scripts/check-nginx-unity-browser.sh --grep-invert 'actual gzip build'
-      - name: Verify REMIX console recovery on desktop and mobile before publication
-        run: npx playwright test --config playwright.ecosystem.config.mjs scripts/remix-console-browser.spec.mjs
+      - name: Verify REMIX guest and account recovery on desktop and mobile before publication
+        run: npx playwright test --config playwright.ecosystem.config.mjs scripts/remix-console-browser.spec.mjs scripts/remix-owned-browser.spec.mjs
       - name: Verify landing page budgets and route metadata
         run: npm run qa:redesign-build
       - name: Verify precompressed shared-brand JavaScript
