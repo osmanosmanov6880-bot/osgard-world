@@ -25,6 +25,16 @@ def bounded_read(z, name, limit):
 
 def verify(archive):
     with zipfile.ZipFile(archive) as z:
+        for member in z.infolist():
+            path=member.filename
+            if (not path or path.startswith("/") or "\\\\" in path or
+                any(part in ("", ".", "..") for part in path.rstrip("/").split("/"))):
+                raise ValueError("unsafe ZIP game archive path: "+path)
+            if member.flag_bits & 1:
+                raise ValueError("encrypted ZIP game archive entry: "+path)
+            mode=(member.external_attr >> 16) & 0o170000
+            if mode==0o120000:
+                raise ValueError("ZIP game archive symlink: "+path)
         entries=[x.filename for x in z.infolist() if not x.is_dir()]
         if len(entries)!=len(set(entries)):
             raise ValueError("duplicate ZIP game archive member")
