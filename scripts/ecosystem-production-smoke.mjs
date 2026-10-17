@@ -17,12 +17,12 @@ async function fetchPath(path) {
   assert.equal(response.status, 200, path + ': HTTP ' + response.status)
   return Buffer.from(await response.arrayBuffer())
 }
-for (const [path, title] of [['/', 'OSGARD WORLD'], ['/intelligence', 'OSA Intelligence'], ['/play', 'OSGARD PLAY'], ['/purchases', 'OSGARD — мои покупки']]) {
+for (const [path, title] of [['/', 'OSGARD WORLD'], ['/intelligence', 'OSA Intelligence'], ['/play', 'OSGARD PLAY'], ['/purchases', 'OSGARD — мои покупки'], ['/learning/enrollment', 'OSA — приобретённая практическая программа']]) {
   const html = (await fetchPath(path)).toString('utf8')
   assert.ok(html.includes('<title>' + title), path + ': title')
   assert.ok(html.includes('name="description"') && html.includes('property="og:image"'), path + ': SEO')
   assert.ok(html.includes('https://osgard.world' + path), path + ': canonical')
-  if (path === '/purchases') assert.ok(html.includes('noindex,follow'), path + ': personal page indexing')
+  if (path === '/purchases' || path === '/learning/enrollment') assert.ok(html.includes('noindex,follow'), path + ': personal page indexing')
   checked.push(path)
 }
 for (const game of playGames) {
@@ -30,6 +30,12 @@ for (const game of playGames) {
   const html = (await fetchPath(path)).toString('utf8')
   assert.ok(html.includes('<title>' + game.title), path + ': actual world title')
   assert.ok(html.includes('href="https://osgard.world' + path + '"'), path + ': canonical')
+  checked.push(path)
+}
+const covers = playGames.map(game => game.asset)
+assert.equal(new Set(covers).size, playGames.length, 'Every game has a distinct illustration')
+for (const path of covers.filter(path => path.startsWith('/brand/'))) {
+  assert.equal(hash(await fetchPath(path)), hash(await readFile('public' + path)), path + ': published game cover differs from release')
   checked.push(path)
 }
 async function filesAt(directory, relative = '') {
@@ -51,4 +57,8 @@ assert.ok(inherit.includes("'/api/world/quiet-reach'"), 'INHERIT same-origin wor
 assert.equal((inherit.match(/<\/html>/gi) || []).length, 1, 'INHERIT document integrity')
 const health = JSON.parse((await fetchPath('/api/core/health')).toString('utf8'))
 assert.equal(health.status, 'ok', 'Core health')
-console.log(JSON.stringify({ status: 'PASS', origin: origin.origin, checkedRoutesAndAssets: checked.length + 2, worlds: playGames.length, localZionWorlds: 11, verification: 'HTTP, metadata, exact local archive bytes and Core health; browser interaction is a separate CI check' }, null, 2))
+const privateProgram = new URL('/api/core/learning/programs', origin)
+privateProgram.searchParams.set('release_check', process.env.GITHUB_SHA?.slice(0, 12) || Date.now().toString())
+const privateResponse = await fetch(privateProgram, { headers: { 'Cache-Control': 'no-cache' }, signal: AbortSignal.timeout(20000) })
+assert.equal(privateResponse.status, 401, 'Program API requires authentication')
+console.log(JSON.stringify({ status: 'PASS', origin: origin.origin, checkedRoutesAndAssets: checked.length + 3, worlds: playGames.length, localZionWorlds: 11, verification: 'HTTP, metadata, exact local archive and cover bytes, Core health and program authentication; browser interaction is a separate CI check' }, null, 2))

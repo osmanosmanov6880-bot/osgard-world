@@ -38,6 +38,7 @@ const routeLabels: Record<string, string> = {
   '/teams': 'Команды', '/deliveries': 'Полученные материалы', '/purchases': 'Мои покупки', '/workspace/overview': 'Рабочий центр',
   '/account': 'Аккаунт и доступ', '/workspace': 'Рабочее пространство', '/data': 'Мои данные',
   '/learning/organizer': 'Организация пилота', '/learning/campus': 'Учебное пространство',
+  '/learning/enrollment': 'Приобретённая программа',
   '/learning': 'Мой прогресс', '/learning/program': 'Практическая программа',
   '/learning/project': 'Редактор проекта', '/learning/workspace': 'Мастерская',
   '/learning/portfolio': 'Локальное портфолио', '/learning/experiments': 'Журнал экспериментов',

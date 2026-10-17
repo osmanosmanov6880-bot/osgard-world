@@ -47,6 +47,7 @@ const PlayHome = React.lazy(() => import('./PlayHome'))
 const TeamsPage = React.lazy(() => import('./TeamsPage'))
 const ClientPortal = React.lazy(() => import('./ClientPortal'))
 const PurchasesPage = React.lazy(() => import('./PurchasesPage'))
+const ProgramEnrollmentPage = React.lazy(() => import('./ProgramEnrollmentPage'))
 const OperationsPage = React.lazy(() => import('./OperationsPage'))
 const AccountPage = React.lazy(() => import('./AccountPage'))
 const PilotOrganizer = React.lazy(() => import('./PilotOrganizer'))
@@ -106,6 +107,7 @@ Object.assign(cleanSeo, {
  '/brand':{title:'OSGARD — фирменная система открытого портала',description:'Мастер-знак, версии для OSA и PLAY, монохромные варианты, favicon и правила движения.'},
  '/learning/organizer':{title:'OSA — организация пилота и очередь разборов',description:'Доступные учебные проекты, назначения проверяющих, сроки и отчёты по сохранённым данным.'},
  '/learning/campus':{title:'OSA Learning — практика, итоговый проект и расписание',description:'Серверные учебные записи, снимки итоговой работы, разбор по рубрике и расписание пилота.'},
+ '/learning/enrollment':{title:'OSA — приобретённая практическая программа',description:'Состояние зачисления, версия программы, личная практика и экспорт собственных работ.'},
  '/teams':{title:'OSGARD Core — команды',description:'Командные пространства, роли и явное подключение проектов.'},
  '/deliveries':{title:'OSGARD — полученные материалы',description:'Изолированная передача выпуска и обсуждение без доступа к внутреннему проекту.'},
  '/purchases':{title:'OSGARD — мои покупки',description:'Состояние заказа, подтверждённая оплата и доступ к приобретённому результату.'},
@@ -138,7 +140,7 @@ function Seo({ path }: { path: string }) {
       element.setAttribute(attribute, value)
     }
     setMeta('meta[name="description"]', 'content', data.description)
-    const privateRoute = ['/account','/workspace','/workspace/overview','/teams','/deliveries','/purchases','/data','/learning/campus','/learning/organizer'].includes(path)
+    const privateRoute = ['/account','/workspace','/workspace/overview','/teams','/deliveries','/purchases','/data','/learning/campus','/learning/organizer','/learning/enrollment'].includes(path)
     setMeta('meta[name="robots"]', 'content', privateRoute || gameId && !game ? 'noindex,follow' : 'index,follow')
     setMeta('meta[name="twitter:card"]', 'content', 'summary_large_image')
     setMeta('meta[property="og:title"]', 'content', data.title)
@@ -172,6 +174,7 @@ function RoutedContent() {
   if (path === '/teams') return <><Seo path={path} /><TeamsPage /></>
   if (path === '/deliveries') return <><Seo path={path} /><ClientPortal /></>
   if (path === '/purchases') return <><Seo path={path} /><PurchasesPage /></>
+  if (path === '/learning/enrollment') return <><Seo path={path} /><ProgramEnrollmentPage /></>
   if (path === '/workspace/overview') return <><Seo path={path} /><OperationsPage /></>
   if (path === '/account') return <><Seo path={path} /><AccountPage /></>
   if (path === '/workspace') return <><Seo path={path} /><CoreWorkspace /></>

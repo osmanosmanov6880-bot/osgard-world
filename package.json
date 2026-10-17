@@ -63,6 +63,7 @@
     "qa:core-api": "python3 scripts/core-api-smoke.py",
     "qa:core-readiness": "python3 scripts/core-readiness-smoke.py",
     "qa:core-commerce": "python3 scripts/core-commerce-smoke.py",
+    "qa:core-program-commerce": "node scripts/build-core-curriculum.mjs --check && python3 scripts/core-program-commerce-smoke.py && python3 scripts/core-program-access-smoke.py",
     "qa:stripe-sdk": "python3 scripts/core-stripe-sdk-smoke.py",
     "core:serve": "python3 server/core_server.py",
     "core:curriculum": "node scripts/build-core-curriculum.mjs",

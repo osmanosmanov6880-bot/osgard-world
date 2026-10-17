@@ -25,6 +25,11 @@ try{
  assert.equal(safeReturnTo('/purchases/?order='+sid+'&token=discard'),'/purchases?order='+sid);
  assert.equal(safeReturnTo('/purchases?order=https://external.test'),'/purchases');
  assert.equal(coreAuthReturn('/workspace','?returnTo='+encodeURIComponent('/purchases?order='+sid)),'/purchases?order='+sid);
+ const enrollment='/learning/enrollment?order='+sid;
+ assert.equal(new URLSearchParams(coreLoginLink(enrollment).split('?')[1]).get('returnTo'),enrollment);
+ assert.equal(coreAuthReturn('/workspace','?returnTo='+encodeURIComponent(enrollment)),enrollment);
+ assert.equal(safeReturnTo('/learning/enrollment/?order='+sid+'&token=discard'),enrollment);
+ assert.equal(safeReturnTo('/learning/enrollment?order=https://external.test'),'/learning/enrollment');
  const txt=recoveryDocument('tester','batch',['one','two']);assert.ok(txt.includes('one\ntwo'));assert.ok(txt.includes('Активируйте этот набор'));assert.ok(txt.includes('аннулирует все старые коды и сессии'))
  await coreRequest('health');assert.equal(headers.Authorization,'Bearer first')
  stored='second';for(const fn of handlers)fn({persisted:true});await coreRequest('health');assert.equal(headers.Authorization,'Bearer second')

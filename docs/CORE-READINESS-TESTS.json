@@ -3,7 +3,7 @@
   "testsRun": 17,
   "failures": 0,
   "errors": 0,
-  "generatedAt": "2026-10-16T23:10:05.995430+00:00",
+  "generatedAt": "2026-10-16T23:54:49.814591+00:00",
   "scope": "Real local HTTP/SQLite release evidence, stale builds, file integrity, exact versions, retry and immutable historical releases",
   "externalPublicationTested": false,
   "paymentsTested": false,

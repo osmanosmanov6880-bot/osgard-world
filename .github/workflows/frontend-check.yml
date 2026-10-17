@@ -80,6 +80,7 @@ jobs:
         run: |
           npm run qa:core-readiness
           npm run qa:core-commerce
+          npm run qa:core-program-commerce
           npm run qa:stripe-sdk
       - name: Validate Development landing and prevent directory 403
         run: node scripts/development-index-smoke.mjs

@@ -1,4 +1,4 @@
-const ALLOWED = new Set(['/teams','/deliveries','/purchases','/workspace', '/workspace/overview', '/account', '/learning/campus', '/learning/organizer']);
+const ALLOWED = new Set(['/teams','/deliveries','/purchases','/workspace', '/workspace/overview', '/account', '/learning/campus', '/learning/organizer', '/learning/enrollment']);
 export function safeReturnTo(value: string | null | undefined) {
     if (!value || value.length > 1000 || /[\\\r\n]/.test(value) || !value.startsWith('/') || value.startsWith('//'))
         return '/workspace';
