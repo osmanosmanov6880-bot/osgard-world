@@ -77,6 +77,8 @@ def verify(archive):
                 if not raw or raw.startswith(("http:","https:","data:","mailto:","//","#")):
                     continue
                 if raw.startswith("/"):
+                    if any(part in (".", "..") for part in raw.split("/")):
+                        raise ValueError("unsafe absolute game dependency path")
                     target=raw.lstrip("/")
                 else:
                     p=PurePosixPath(rel).parent/raw
