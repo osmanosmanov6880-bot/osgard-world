@@ -153,7 +153,38 @@ def check_sqlite(path, sqlite_only=False):
                 triggers = {row[0] for row in db.execute("SELECT name FROM sqlite_schema WHERE type='trigger'")}
                 if not {"inherit_generation_no_update", "inherit_generation_no_delete"} <= triggers:
                     raise ValueError("Core backup is missing INHERIT history guards")
-        return {"table_count": len(tables), "user_version": version}
+        return {"table_count": len(tables), "user_version": version,
+                "inherit_present": bool(tables & INHERIT_COLUMNS.keys())}
+
+
+def check_inherit_lineages(path):
+    """Validate application snapshots in the read-only copied backup.
+
+    SQLite integrity_check only verifies storage structure. A valid SQLite file
+    can still contain a mismatched generation delta, hash or current world tip.
+    Reuse the same bounded, fail-closed verifier that Core uses for its live
+    authenticated read path. This never changes the source or copied snapshot.
+    """
+    # Entrypoint is under scripts/, module is under its sibling server/.
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "server"))
+    from core_inherit import verify_lineage
+    from core_model import Fault
+
+    uri = path.as_uri() + "?mode=ro&immutable=1"
+    with closing(sqlite3.connect(uri, uri=True, timeout=3)) as db:
+        db.row_factory = sqlite3.Row
+        db.execute("PRAGMA trusted_schema=OFF")
+        db.execute("PRAGMA query_only=ON")
+        worlds, generations = 0, 0
+        for world in db.execute("SELECT * FROM inherit_worlds ORDER BY id"):
+            try:
+                verify_lineage(db, world)
+            except (Fault, ValueError, TypeError, OverflowError, UnicodeError):
+                # Keep private world titles, IDs and data out of CI logs.
+                raise ValueError("INHERIT world lineage or snapshot failed semantic verification") from None
+            worlds += 1
+            generations += world["generation"] - 1
+        return {"worlds": worlds, "generations": generations}
 
 
 def drill(source, expected_sha256=None, sqlite_only=False):
@@ -170,8 +201,13 @@ def drill(source, expected_sha256=None, sqlite_only=False):
         if expected_sha256 is not None and source_digest != expected_sha256:
             raise ValueError("checksum does not match expected SHA-256")
         schema = check_sqlite(target, sqlite_only)
+        lineage = (check_inherit_lineages(target)
+                   if not sqlite_only and schema["inherit_present"] else None)
         return {
             "status": "passed",
+            "inherit_lineage_checked": lineage is not None,
+            "inherit_worlds_checked": lineage["worlds"] if lineage is not None else 0,
+            "inherit_generations_checked": lineage["generations"] if lineage is not None else 0,
             "sha256": source_digest,
             "expected_sha256_verified": expected_sha256 is not None,
             "bytes": size,
@@ -206,6 +242,8 @@ def main(argv=None):
     else:
         print("RECOVERY DRILL PASSED: SQLite integrity and foreign keys OK;",
               "Core schema checked:", report["core_schema_checked"],
+              "INHERIT lineage checked:", report["inherit_lineage_checked"],
+              "worlds:", report["inherit_worlds_checked"],
               "sha256:", report["sha256"], "; private ephemeral restore only")
     return 0
 
