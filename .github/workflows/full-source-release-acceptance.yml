@@ -38,7 +38,7 @@ jobs:
           python scripts/release-bundle.py build dist --commit "$GITHUB_SHA" --zip "$RUNNER_TEMP/osgard-release/osgard-world.zip" --manifest "$RUNNER_TEMP/osgard-release/manifest.json"
       - name: Independently verify ZIP and manifest
         run: python scripts/release-bundle.py verify "$RUNNER_TEMP/osgard-release/osgard-world.zip" --manifest "$RUNNER_TEMP/osgard-release/manifest.json"
-      - name: Unified static staging acceptance: ZIP, 19 game entrypoints and configuration
+      - name: "Unified static staging acceptance: ZIP, 19 game entrypoints and configuration"
         run: python scripts/staging-release-acceptance.py --dist dist --zip "$RUNNER_TEMP/osgard-release/osgard-world.zip" --manifest "$RUNNER_TEMP/osgard-release/manifest.json"
       - name: Write a checksum summary without exposing archived files
         run: |
