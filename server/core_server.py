@@ -27,6 +27,7 @@ import core_teams
 import core_readiness
 import core_commerce
 import core_programs
+import core_inherit
 from core_model import Fault, require, text, initial, patch, action, economics, simulation, metrics, now, uid
 
 SCHEMA='''
@@ -58,7 +59,7 @@ class Store:
         Path(path).parent.mkdir(parents=True,exist_ok=True)
         with self.connect() as db:
             require(db.execute('PRAGMA user_version').fetchone()[0] in (0,1),'Версия базы новее этого сервера. Обновите Core.')
-            db.executescript(SCHEMA+core_learning.SCHEMA+core_pilot_reports.SCHEMA+core_account.SCHEMA+core_acceptance.SCHEMA+core_delivery.SCHEMA+core_client_portal.SCHEMA+core_teams.SCHEMA+core_commerce.SCHEMA+core_programs.SCHEMA)
+            db.executescript(SCHEMA+core_learning.SCHEMA+core_pilot_reports.SCHEMA+core_account.SCHEMA+core_acceptance.SCHEMA+core_delivery.SCHEMA+core_client_portal.SCHEMA+core_teams.SCHEMA+core_commerce.SCHEMA+core_programs.SCHEMA+core_inherit.SCHEMA)
         self.commerce=core_commerce.Commerce(self,commerce_config,commerce_provider)
         try:os.chmod(path,0o600)
         except OSError:pass
@@ -123,6 +124,7 @@ class Store:
     def get(self,route,actor):
         with self.connect() as db:
             db.execute('BEGIN')
+            if route.startswith('inherit/'):return core_inherit.get(db,route,actor)
             if route=='commerce/config':return self.commerce.config_view(actor)
             if route=='commerce/purchases':return self.commerce.purchases(db,actor)
             if route=='learning/programs':return core_programs.catalog(self,actor)
@@ -208,6 +210,7 @@ class Store:
                 require(previous['request_hash']==fingerprint,'Ключ уже использован для другого запроса.','idempotency_conflict',409)
                 old=json.loads(previous['response'])
                 if route=='teams':core_teams.access(db,old['teamId'],actor)
+                if route.startswith('inherit/'):core_inherit.retry_guard(db,route,actor,old)
                 team_retry=re.fullmatch(r'teams/([a-f0-9]{32})',route)
                 if team_retry:core_teams.access(db,team_retry[1],actor)
                 portal_retry=re.fullmatch(r'deliveries/([a-f0-9]{32})',route)
@@ -222,7 +225,8 @@ class Store:
             portal_mutation=re.fullmatch(r'deliveries/([a-f0-9]{32})',route)
             team_mutation=re.fullmatch(r'teams/([a-f0-9]{32})',route)
             program_mutation=re.fullmatch(r'learning/enrollments/([a-f0-9]{32})',route)
-            if program_mutation:result=core_programs.mutate(self,db,program_mutation[1],actor,payload)
+            if route.startswith('inherit/'):result=core_inherit.mutate(db,route,actor,payload)
+            elif program_mutation:result=core_programs.mutate(self,db,program_mutation[1],actor,payload)
             elif route=='teams':result=core_teams.create(db,actor,payload)
             elif team_mutation:result=core_teams.mutate(self,db,team_mutation[1],actor,payload)
             elif portal_mutation:result=core_client_portal.mutate(self,db,portal_mutation[1],actor,payload)
