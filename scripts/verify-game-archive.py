@@ -39,17 +39,23 @@ def verify(archive):
         missing=sorted(required-names)
         if missing: raise ValueError("missing game routes: "+", ".join(missing[:15]))
         manifest=json.loads(bounded_read(z,"games/zion-9/worlds.json",MAX_WORLD_MANIFEST_BYTES))
+        if not isinstance(manifest,dict):
+            raise ValueError("ZION manifest must be an object")
         games=manifest.get("games")
         if not isinstance(games,list) or len(games)!=11:
             raise ValueError("ZION manifest must have 11 worlds")
         ids=set()
         checked_dependencies=0
         for game in games:
+            if not isinstance(game,dict):
+                raise ValueError("ZION manifest game must be object")
             gid=game.get("id")
+            if not isinstance(gid,str) or gid not in {f"zion-{i:03d}" for i in range(20,31)}:
+                raise ValueError("invalid ZION game ID")
             if gid in ids: raise ValueError("duplicate ZION game ID")
             ids.add(gid)
             route=game.get("route")
-            expected=f"/{ZION_PREFIX}{gid.upper()}/index.html" if isinstance(gid,str) else None
+            expected=f"/{ZION_PREFIX}{gid.upper()}/index.html"
             if route!=expected:
                 raise ValueError("ZION route/id mismatch")
             rel=route.lstrip("/")
