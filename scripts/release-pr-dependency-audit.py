@@ -19,6 +19,7 @@ def inspect(rows):
         if not p:errors.append(f"missing PR {n}");continue
         if p.get("state")!="open":errors.append(f"PR {n} not open")
         if p.get("base")!=BASE_BRANCHES[n]:errors.append(f"PR {n} changed base")
+        if n!=CHAIN[-1] and p.get("head_ref")!=BASE_BRANCHES[n+1]:errors.append(f"PR {n} head is not parent of next PR")
         if p.get("draft") is not True:errors.append(f"PR {n} unexpectedly not draft")
         if p.get("mergeable") is not True:errors.append(f"PR {n} not confirmed mergeable")
         if not isinstance(p.get("head_sha"),str) or len(p["head_sha"])!=40 or any(c not in "0123456789abcdef" for c in p["head_sha"]):errors.append(f"PR {n} invalid head sha")
