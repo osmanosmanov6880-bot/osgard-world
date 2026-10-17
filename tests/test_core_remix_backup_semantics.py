@@ -110,7 +110,7 @@ class CoreRemixBackupSemanticsTests(unittest.TestCase):
     def test_inherit_semantic_integrity_still_rejects_corrupt_tips(self):
         path = self.snapshot()
         with closing(sqlite3.connect(path)) as db:
-            db.execute("UPDATE inherit_worlds SET baseline='[]' WHERE id=?",
+            db.execute("UPDATE inherit_worlds SET baseline='invalid JSON fixture' WHERE id=?",
                        (self.world["id"],))
             db.commit()
         before = hashlib.sha256(path.read_bytes()).hexdigest()
