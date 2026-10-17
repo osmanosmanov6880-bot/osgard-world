@@ -58,6 +58,12 @@ try {
       const page = await context.newPage()
       const pageErrors = []
       page.on('pageerror', error => pageErrors.push(error.message))
+      const stylesheetRequests = []
+      if (route.name === 'skillcred') {
+        page.on('request', request => {
+          if (request.resourceType() === 'stylesheet') stylesheetRequests.push(new URL(request.url()).pathname)
+        })
+      }
       let response = null
       try {
         response = await page.goto(base + route.path, { waitUntil: 'domcontentloaded', timeout: 25000 })
@@ -79,6 +85,29 @@ try {
         }
         const title = await page.title()
         if (!title.trim()) problems.push(route.name + ' @ ' + viewport.name + ': empty document title')
+
+        if (route.name === 'skillcred') {
+          const stylesheets = await page.evaluate(() => Array.from(document.styleSheets)
+            .filter(sheet => sheet.href)
+            .map(sheet => ({ path: new URL(sheet.href).pathname, rules: sheet.cssRules.length })))
+          assert.deepEqual(stylesheetRequests, ['/skillcred/styles.css'], 'SkillCred must request one bundled stylesheet without a separate portal stylesheet')
+          assert.deepEqual(stylesheets.map(sheet => sheet.path), ['/skillcred/styles.css'], 'SkillCred must apply only the main stylesheet bundle')
+          assert.ok(stylesheets[0].rules > 0, 'SkillCred stylesheet bundle must load and expose parsed CSS rules')
+
+          if (viewport.name === 'mobile') {
+            const menu = page.locator('#menuToggle')
+            const navigation = page.locator('#primaryNav')
+            await navigation.waitFor({ state: 'hidden', timeout: 3000 })
+            assert.equal(await menu.getAttribute('aria-expanded'), 'false', 'SkillCred mobile menu must start collapsed')
+            await menu.click()
+            await navigation.waitFor({ state: 'visible', timeout: 3000 })
+            assert.equal(await menu.getAttribute('aria-expanded'), 'true', 'SkillCred mobile menu must expose its open state')
+            await menu.click()
+            await navigation.waitFor({ state: 'hidden', timeout: 3000 })
+            assert.equal(await menu.getAttribute('aria-expanded'), 'false', 'SkillCred mobile menu must collapse again')
+            await menu.evaluate(element => element.blur())
+          }
+        }
 
         const dimensions = await page.evaluate(() => ({
           viewport: window.innerWidth,
