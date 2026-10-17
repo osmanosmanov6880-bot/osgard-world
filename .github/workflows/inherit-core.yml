@@ -7,7 +7,7 @@ on:
       - tests/test_inherit_core.py
       - .github/workflows/inherit-core.yml
   push:
-    branches: [master]
+    branches: [master, feat/inherit-core-lineage-20261017]
     paths:
       - server/core_server.py
       - server/core_inherit.py
