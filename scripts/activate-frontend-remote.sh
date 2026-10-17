@@ -20,8 +20,35 @@ remix_network=""
 frontend_replaced=0
 rollback_done=0
 activation_committed=0
+activation_worker_started=0
+pid=""
 core_commerce_env="/etc/osgard/core-commerce.env"
 core_commerce_args=()
+
+acquire_activation_lock() {
+  local lock_path="${OSGARD_ACTIVATION_LOCK:-/run/lock/osgard-frontend-activation.lock}"
+  if ! command -v flock >/dev/null 2>&1; then
+    echo 'Host flock is required before changing the active release.' >&2
+    return 1
+  fi
+  if [[ -L "$lock_path" ]]; then
+    echo 'The activation lock cannot be a symlink.' >&2
+    return 1
+  fi
+  if ! { exec 9>>"$lock_path"; }; then
+    echo 'Unable to open the host activation lock; no release changes were made.' >&2
+    return 1
+  fi
+  if ! flock -n 9; then
+    echo 'Another activation or rollback still owns the host lock; no release changes were made.' >&2
+    exec 9>&-
+    return 1
+  fi
+  # FD 9 is inherited by the exact activation worker. A lost SSH caller cannot
+  # release this lock while that worker is still changing or restoring services.
+}
+
+acquire_activation_lock
 if [[ -f "$core_commerce_env" ]]; then
   if [[ "$(stat -c '%u:%a' "$core_commerce_env")" != "0:600" ]]; then
     echo 'The optional Core commerce configuration must be owned by root with mode 600.' >&2
@@ -93,12 +120,64 @@ rollback() {
   return "$restore_failed"
 }
 
+stop_activation_worker() {
+  local status="$1"
+  local worker_status=0
+  # Repeated session/caller signals must not interrupt the worker's rollback
+  # or the parent's wait. SIGKILL cannot be handled by a shell trap.
+  trap '' TERM INT HUP
+  if [[ "$activation_worker_started" == "0" ]]; then
+    # A signal can arrive after '&' but before the following pid assignment.
+    pid="${!:-}"
+  fi
+  if [[ -n "$pid" ]]; then
+    if kill -0 "$pid" 2>/dev/null; then
+      kill -TERM "$pid" 2>/dev/null || true
+    fi
+    wait "$pid" || worker_status="$?"
+    pid=""
+  fi
+  cat "$log_file" || true
+  if [[ "$worker_status" == "0" && -f "$state_file" ]] && grep -q '^success$' "$state_file"; then
+    exit 0
+  fi
+  exit "$status"
+}
+
+monitor_activation_worker() {
+  local attempts="${1:-600}"
+  local attempt
+  local worker_status=0
+  for ((attempt=0; attempt<attempts; attempt++)); do
+    [[ -f "$state_file" ]] && break
+    kill -0 "$pid" 2>/dev/null || break
+    sleep 1
+  done
+  if [[ ! -f "$state_file" ]] && kill -0 "$pid" 2>/dev/null; then
+    stop_activation_worker 124
+  fi
+  # The state file is written immediately before worker exit. Reap that exact
+  # child even on ordinary completion before another release can begin.
+  wait "$pid" || worker_status="$?"
+  pid=""
+  cat "$log_file" || true
+  if [[ "$worker_status" != "0" ]]; then
+    return "$worker_status"
+  fi
+  [[ -f "$state_file" ]] && grep -q '^success$' "$state_file"
+}
+
+trap 'stop_activation_worker 143' TERM
+trap 'stop_activation_worker 130' INT
+trap 'stop_activation_worker 129' HUP
+
 (
   set -euo pipefail
   activation_failure() {
     local status="$1"
     local failed_line="$2"
-    trap - ERR TERM INT
+    trap - ERR
+    trap '' TERM INT HUP
     printf 'Activation worker interrupted at line %s (exit %s)\n' "$failed_line" "$status" >&2
     if [[ "$activation_committed" == "1" ]]; then
       echo 'The verified release remains active; optional previous-container cleanup was interrupted.' >&2
@@ -111,6 +190,7 @@ rollback() {
   }
   trap 'activation_failure "$?" "$LINENO"' ERR
   trap 'activation_failure 143 "$LINENO"' TERM INT
+  trap 'activation_failure 129 "$LINENO"' HUP
   echo 'Activation worker started.'
   docker exec "$container_name" sh -lc "
     set -eux
@@ -383,15 +463,5 @@ rollback() {
   printf 'success\n' > "$state_file"
 ) >"$log_file" 2>&1 &
 pid=$!
-for _ in $(seq 1 600); do
-  [[ -f "$state_file" ]] && break
-  kill -0 "$pid" 2>/dev/null || break
-  sleep 1
-done
-if [[ ! -f "$state_file" ]]; then
-  kill "$pid" 2>/dev/null || true
-  cat "$log_file" || true
-  exit 1
-fi
-cat "$log_file" || true
-grep -q '^success$' "$state_file"
+activation_worker_started=1
+monitor_activation_worker
