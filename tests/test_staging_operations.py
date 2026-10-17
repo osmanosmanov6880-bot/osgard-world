@@ -57,12 +57,26 @@ class OperationsTest(unittest.TestCase):
  def test_config_valid_and_secret_detected(self):
   with tempfile.TemporaryDirectory() as d:
    root=Path(d)
-   (root/"_headers").write_text("X-Content-Type-Options: nosniff\nReferrer-Policy: strict-origin-when-cross-origin")
+   (root/"_headers").write_text("/*\n  X-Content-Type-Options: nosniff\n  Referrer-Policy: strict-origin-when-cross-origin")
    (root/"_redirects").write_text("/old /new 301")
    (root/"robots.txt").write_text("User-agent: *")
    self.assertEqual(config.audit(root)["status"],"passed")
    (root/".env.production").write_text("secret")
    self.assertEqual(config.audit(root)["status"],"blocked")
+ def test_security_headers_only_for_subpath_are_rejected(self):
+  with tempfile.TemporaryDirectory() as d:
+   root=Path(d)
+   (root/"_headers").write_text("/assets/*\\n  X-Content-Type-Options: nosniff\\n  Referrer-Policy: strict-origin\\n")
+   (root/"_redirects").write_text("/old /new 301")
+   (root/"robots.txt").write_text("User-agent: *")
+   self.assertEqual(config.audit(root)["status"],"blocked")
+ def test_global_header_ruleset_valid(self):
+  with tempfile.TemporaryDirectory() as d:
+   root=Path(d)
+   (root/"_headers").write_text("/*\\n  X-Content-Type-Options: nosniff\\n  Referrer-Policy: strict-origin-when-cross-origin\\n")
+   (root/"_redirects").write_text("/old /new 301")
+   (root/"robots.txt").write_text("User-agent: *")
+   self.assertEqual(config.audit(root)["status"],"passed")
  def test_security_headers_not_satisfied_by_comments(self):
   with tempfile.TemporaryDirectory() as d:
    root=Path(d)
