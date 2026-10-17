@@ -34,6 +34,14 @@ CORE_COLUMNS = {
     "templates": {"id", "owner_id", "title", "source_project", "source_version", "data", "created_at"},
     "jobs": {"id", "project_id", "actor_id", "source_version", "status", "attempts", "result", "created_at", "updated_at"},
     "assets": {"id", "project_id", "source_version", "content", "sha256", "created_at"},
+    "commerce_orders": {"id", "project_id", "buyer_id", "state", "paid_minor", "refunded_minor"},
+    "commerce_checkout_ops": {"id", "order_id", "provider_key", "params", "state", "started_at",
+                              "lease_until", "session_id", "checkout_url", "last_error"},
+    "commerce_refund_ops": {"id", "order_id", "provider_key", "params", "state", "target_minor",
+                            "started_at", "lease_until", "refund_id", "last_error"},
+    "commerce_webhook_events": {"id", "body_sha256", "event_type", "order_id", "processed_at"},
+    "commerce_entitlements": {"order_id", "buyer_id", "active"},
+    "commerce_requests": {"user_id", "key", "request_hash", "response"},
 }
 CORE_FOREIGN_KEYS = {
     "sessions": {("user_id", "users", "id")}, "projects": {("owner_id", "users", "id")},
@@ -41,6 +49,12 @@ CORE_FOREIGN_KEYS = {
     "revisions": {("project_id", "projects", "id")}, "events": {("project_id", "projects", "id")},
     "operations": {("user_id", "users", "id")}, "templates": {("owner_id", "users", "id")},
     "jobs": {("project_id", "projects", "id")}, "assets": {("project_id", "projects", "id")},
+    "commerce_orders": {("project_id", "projects", "id"), ("buyer_id", "users", "id")},
+    "commerce_checkout_ops": {("order_id", "commerce_orders", "id")},
+    "commerce_refund_ops": {("order_id", "commerce_orders", "id")},
+    "commerce_webhook_events": {("order_id", "commerce_orders", "id")},
+    "commerce_entitlements": {("order_id", "commerce_orders", "id"), ("buyer_id", "users", "id")},
+    "commerce_requests": {("user_id", "users", "id")},
 }
 
 
@@ -113,20 +127,48 @@ def unlink_owned(path, owner):
 
 
 @contextmanager
-def regular_reader(value, *, max_bytes=MAX_BYTES, stable=True):
+def directory_reader(path):
+    """Pin each existing parent without following a concurrently replaced symlink."""
+    if not hasattr(os, "O_NOFOLLOW") or not hasattr(os, "O_DIRECTORY"):
+        raise ValueError("Safe snapshot verification requires a POSIX filesystem.")
+    flags = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW
+    directory_fd = os.open(path.anchor, flags)
+    try:
+        for part in path.parts[1:]:
+            try:
+                child_fd = os.open(part, flags, dir_fd=directory_fd)
+            except OSError as error:
+                raise ValueError("Backup path must use real directories, not symlinks.") from error
+            os.close(directory_fd)
+            directory_fd = child_fd
+        yield directory_fd
+    finally:
+        os.close(directory_fd)
+
+
+@contextmanager
+def regular_reader(value, *, max_bytes=MAX_BYTES, stable=True, standalone=False):
     path = checked_path(value)
-    fd = os.open(path, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_NONBLOCK", 0))
-    with os.fdopen(fd, "rb") as stream:
-        before = os.fstat(stream.fileno())
-        if not stat.S_ISREG(before.st_mode):
-            raise ValueError("Backup must be a regular file, not a symlink or device.")
-        if not 0 < before.st_size <= max_bytes:
-            raise ValueError("empty backup file or configured file size limit exceeded.")
-        yield path, stream, before
-        after = os.fstat(stream.fileno())
-        current = path.stat()
-        if (before.st_dev, before.st_ino) != (current.st_dev, current.st_ino) or (stable and (identity(before) != identity(after) or identity(after) != identity(current))):
-            raise ValueError("Backup changed while testing or copying.")
+    with directory_reader(path.parent) as directory_fd:
+        if standalone:
+            reject_sidecars(path, directory_fd=directory_fd)
+        fd = os.open(path.name, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK, dir_fd=directory_fd)
+        with os.fdopen(fd, "rb") as stream:
+            before = os.fstat(stream.fileno())
+            if not stat.S_ISREG(before.st_mode):
+                raise ValueError("Backup must be a regular file, not a symlink or device.")
+            if not 0 < before.st_size <= max_bytes:
+                raise ValueError("empty backup file or configured file size limit exceeded.")
+            yield path, stream, before
+            after = os.fstat(stream.fileno())
+            current = os.stat(path.name, dir_fd=directory_fd, follow_symlinks=False)
+            visible = checked_path(path).stat()
+            if ((before.st_dev, before.st_ino) != (current.st_dev, current.st_ino)
+                    or (before.st_dev, before.st_ino) != (visible.st_dev, visible.st_ino)
+                    or (stable and (identity(before) != identity(after) or identity(after) != identity(current)))):
+                raise ValueError("Backup changed while testing or copying.")
+            if standalone:
+                reject_sidecars(path, directory_fd=directory_fd)
 
 
 def digest(path):
@@ -143,10 +185,14 @@ def checked_sha(value):
     return value.lower()
 
 
-def reject_sidecars(path):
+def reject_sidecars(path, *, directory_fd=None):
     for suffix in ("-wal", "-shm", "-journal"):
-        if os.path.lexists(str(path) + suffix):
-            raise ValueError("Offline backup has a WAL/SHM/journal sidecar; create an online SQLite backup first.")
+        try:
+            os.stat(str(path) + suffix if directory_fd is None else path.name + suffix,
+                    dir_fd=directory_fd, follow_symlinks=False)
+        except FileNotFoundError:
+            continue
+        raise ValueError("Offline backup has a WAL/SHM/journal sidecar; create an online SQLite backup first.")
 
 
 def check_sqlite(path, *, require_core=False, timeout=SQLITE_TIMEOUT):
@@ -156,6 +202,7 @@ def check_sqlite(path, *, require_core=False, timeout=SQLITE_TIMEOUT):
     with closing(sqlite3.connect(path.as_uri() + "?mode=ro&immutable=1", uri=True, timeout=3)) as db:
         db.set_progress_handler(lambda: int(time.monotonic() > deadline), 1000)
         db.execute("PRAGMA trusted_schema=OFF")
+        db.execute("PRAGMA query_only=ON")
         try:
             if db.execute("PRAGMA integrity_check").fetchall() != [("ok",)]:
                 raise ValueError("SQLite integrity_check failed.")
@@ -168,8 +215,10 @@ def check_sqlite(path, *, require_core=False, timeout=SQLITE_TIMEOUT):
                 raise ValueError("SQLite schema table budget exceeded.")
             version = db.execute("PRAGMA user_version").fetchone()[0]
             if require_core:
-                if version != 1 or not CORE_COLUMNS.keys() <= set(tables):
-                    raise ValueError("Unsupported or unrelated Core schema.")
+                if version != 1:
+                    raise ValueError("Unsupported Core schema version.")
+                if not CORE_COLUMNS.keys() <= set(tables):
+                    raise ValueError("Core schema is missing an expected table.")
                 for table, required in CORE_COLUMNS.items():
                     columns = {row[1] for row in db.execute(f'PRAGMA table_info("{table}")')}
                     if not required <= columns:
@@ -198,7 +247,7 @@ def copy_snapshot(source, destination, expected_sha256=None):
     reject_sidecars(destination)
     owner = None
     try:
-        with regular_reader(source) as (_, original, before):
+        with regular_reader(source, standalone=True) as (_, original, before):
             fd = private_fd(destination)
             info = os.fstat(fd)
             owner = (info.st_dev, info.st_ino)

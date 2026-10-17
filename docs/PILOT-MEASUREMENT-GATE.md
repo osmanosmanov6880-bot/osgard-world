@@ -1,37 +1,64 @@
-# OSGARD — Pilot Measurement Gate v1
-**Status:** preparation for a real pilot, NOT observed market results.
+# OSGARD — протокол измерения пилота, schema v2
 
-This isolated standard-library utility measures the commercial and educational claims from the October 17 master plan without touching production, personal account information, Stripe, or Core databases.
+**Статус:** инструмент подготовки и анализа наблюдений. Реальные результаты пилота в репозитории отсутствуют. Числа из автоматических тестов — синтетические фикстуры.
 
-## Input
-Provide UTF-8 CSV with exactly one `baseline` and one `pilot` record for each task identifier. Required columns:
+Улучшенная версия предложения [PR #103](https://github.com/osmanosmanov6880-bot/osgard-world/pull/103), адаптированная к текущему master. Скрипт работает офлайн на стандартной библиотеке Python; он не обращается к Core, аккаунтам или платёжному провайдеру.
+
+## Цели брифа и вычисления
+
+| Цель | Как проверяется | Что ещё должен подтвердить исследователь |
+| --- | --- | --- |
+| Повторяемый процесс быстрее минимум в 3 раза | Медиана **индивидуальных парных отношений** полного времени baseline/pilot ≥ 3 | Один процесс, сопоставимые задания, одинаковые критерии завершения и условия помощи |
+| Завершены ≥ 85% задач | Число успешных pilot-наблюдений / **все** pilot-наблюдения, включая непарные неудачи | Заранее зафиксированный набор задач; неудачи не удалены |
+| Улучшение навыка на новых заданиях | Полные pre/post outcomes; число false→true больше true→false | Разные ранее не виденные равносложные задания A/B, независимая оценка, контроль тренировочного эффекта |
+| Положительный вклад платного формата | Выручка − возвраты − вычисления − комиссии − наставники − переменная поддержка > 0 | Реальные оплаченные заказы, один интервал учёта, подтверждённые затраты |
+
+Скрипт предлагает **20 полных пар** и минимум 20 пар с успешным завершением обоих вариантов для сравнения времени. Это предлагаемый минимум протокола, а не требование пользователя и не гарантия статистической значимости. Параметр `--minimum-pairs` задаётся **до** эксперимента и явно сохраняется в отчёте. Повторные задачи одного участника не превращаются в независимых участников исследования.
+
+## CSV v2
+
+Точный набор колонок (порядок может отличаться):
 
 ```csv
-task_id,variant,elapsed_minutes,completed,human_minutes,corrections,revenue,refunds,compute_cost,payment_fees,mentor_cost,support_cost,novel_skill_pass
-task-01,baseline,30,true,5,1,0,0,0,0,0,0,
-task-01,pilot,10,true,1,0,5,0,1,0,1,1,true
+task_id,variant,difficulty,currency,elapsed_minutes,correction_minutes,completed,human_minutes,corrections,revenue,refunds,compute_cost,payment_fees,mentor_cost,support_cost,novel_skill_pass
+task-01,baseline,medium,USD,30,0,true,0,0,0,0,0,0,0,0,false
+task-01,pilot,medium,USD,8,1,true,1,1,5,0,1,0,1,1,true
 ```
 
-All amounts must use the **same currency**, documented outside the CSV. Time and monetary values are nonnegative; corrections are whole numbers. A missing variable cost is **an error, not zero**. An explicit zero means a real verified zero, not an unknown estimate. `novel_skill_pass` may be empty (unknown), but incomplete skill evidence blocks a scale decision. Use pseudonymous task IDs, never names or email addresses. Do not place real commercial/customer records in GitHub.
+Эта одна пара показана **только как пример формата**; она не проходит предлагаемый минимум выборки.
 
-## Execute
+- `task_id` — псевдоним пары, без ФИО/email: латинские буквы, цифры, `_`, `-`, `.`; по одной записи `baseline` и `pilot` на пару.
+- `difficulty` — `simple`, `medium` или `complex`; в паре значения совпадают. Метка не доказывает реальную равносложность: задания и рубрика хранятся отдельно.
+- `currency` — один и тот же трёхбуквенный код во всём файле. Конвертации и смешения валют нет.
+- Полное время = `elapsed_minutes + correction_minutes + human_minutes`. Категории **не пересекаются**: обычное выполнение; отдельные исправления; отдельная ручная помощь. Не добавляйте одну минуту дважды. Если учитываете параллельный труд разных людей, заранее определите метрику человеко-минут и не называйте её длительностью ожидания клиента.
+- `completed=false` сохраняется вместе с фактическим временем и затратами неудачи. Время > 0; все числа конечные и неотрицательные, десятичный разделитель — точка, до 6 знаков после неё. `corrections` — целое число.
+- Все денежные поля обязательны. Пустая стоимость — ошибка; явный ноль допустим только как измеренный ноль. Выручка черновика, обещание оплаты или тестовый платёж не являются реальной выручкой.
+- `novel_skill_pass` в baseline — результат предварительного нового задания A; в pilot — итогового **другого** нового задания B. `true`/`false`; пустое значение означает отсутствие измерения и блокирует образовательный критерий.
+
+CSV v2 несовместим с ранней схемой чернового PR: добавлены `difficulty`, `currency`, `correction_minutes`, а pretest теперь необходим для оценки наблюдаемого изменения. Не подставляйте нули вместо отсутствующих исторических измерений.
+
+## Запуск
+
 ```sh
-python3 scripts/pilot-scorecard.py /secure/path/pilot.csv --output /secure/path/scorecard.json
+python3 scripts/pilot-scorecard.py /private/pilot.csv --process landing-page-01 --output /private/scorecard.json
+python3 scripts/pilot-scorecard.py /private/pilot.csv --process landing-page-01 --minimum-pairs 20 --strict
 python3 -m unittest discover -s tests -p test_pilot_scorecard.py -v
 ```
 
-The tool uses paired tasks and rejects duplicate observations and malformed numeric data. Scale readiness requires at least **20 fully paired tasks**, no unpaired records, pilot completion >=85%, >=3x median time reduction measured on at least 20 mutually completed task pairs, positive pilot variable contribution, and recorded novel-task outcomes. This gate is intentionally strict: a smaller sample or any missing measurement is **not evidence of success**.
+Код выхода: `0` — отчёт рассчитан; с `--strict` код `1` означает, что численные критерии или полнота данных не выполнены; `2` — ошибка входа/записи. В отчёте сохраняются SHA-256 **ровно прочитанных байтов CSV**, время расчёта, выбранный процесс, валюта и минимум выборки. JSON записывается атомарно через случайный временный файл с приватными правами; входной CSV не перезаписывается.
 
-## Measurement protocol
-1. Define one representative audience and a fixed task set before testing. Document task difficulty, eligibility, time limit, assistance rules, and how participants are assigned to baseline/pilot. Randomization or a credible matched design is required for causal claims.
-2. Begin timing at the same trigger for both variants; stop only at the same acceptance criterion. Record failures as `completed=false`, not omitted data.
-3. Capture human assistance, corrections, compute use, payment fees, mentor time, refunds and variable support with receipts or exportable system evidence. Blind-review task acceptance when possible.
-4. Use a previously unseen skill exercise for `novel_skill_pass`; retain a separate pre-test/control for genuine improvement claims. Simply recording post-test pass rates does not demonstrate learning gain.
-5. Preserve source evidence, pilot design, timestamp, currency, version and a SHA-256 digest of the input **in a private controlled workspace**. Review failed tasks and missing data before scaling.
-6. Do not enable production payments or claim a successful commercial pilot solely because this scorecard has passing synthetic tests.
+`numeric_targets_met` сообщает только результат вычисляемых проверок. `ready_for_review=true` означает, что записи можно передать на независимую проверку. `ready_for_scale_decision` всегда `false`: сам отчёт не подтверждает источники, причинное обучение, законность платежей или готовность запуска.
 
-## Risks and decisions
-- **Secret rotation:** the SSH private key previously pasted in chat must be treated as compromised. Remove its public key from the server and CI authorized access after confirming a replacement deploy identity; rotate related credentials as appropriate. This change does NOT perform rotation.
-- **Payment gate:** real merchant selection, signed webhook verification against that merchant's test environment, explicit refund acceptance and legal/commercial review are independent required approvals.
-- **Low sample / selection bias:** successful-pair speedup can overstate benefits; completion rate and unresolved failures are shown separately.
-- **Ownership:** OSGARD Supreme Director approves the experiment and access to real data; Learning owns educational rubric; Commerce owns unit costs; Core owns access and audit boundaries.
+## Обязательный протокол реального пилота
+
+1. Выбрать одну аудиторию, один повторяемый процесс и один продаваемый формат. Зафиксировать цель, критерии приёмки, лимит времени, сложность, состав всех заданий, способ назначения вариантов и порог выборки до сбора данных.
+2. Использовать рандомизированный или обоснованный сопоставимый дизайн. Отдельно учитывать повторные наблюдения одних людей, эффект порядка и уже знакомые задания.
+3. Засекать одинаковые этапы процесса; записывать исправления, помощь и провалы. Сохранять исходные журналы времени и независимые результаты приёмки.
+4. Для обучения подготовить новые равносложные задания A/B и одну рубрику. Не давать обучение на итоговом задании. Хранить проверенные pre/post-оценки, контрольную группу или другой обоснованный контрфактический дизайн для причинных выводов.
+5. Сверить выручку, возвраты, вычисления, комиссии и часы людей с первичными данными за один интервал. Полученный вклад не равен чистой прибыли: постоянные расходы и налоги требуют отдельного расчёта.
+6. Хранить CSV, идентификатор версии протокола, источник каждого наблюдения, рубрику и хеши в закрытой рабочей среде. В GitHub оставлять только код и синтетические тесты.
+7. После расчёта разобрать провалы и недостающие данные. Решение о продолжении пилота принимает владелец на основе проверенных свидетельств, а не зелёного статуса тестов.
+
+## Проверенные регрессии
+
+Проверки покрывают медиану пар вместо отношения медиан; скрытые исправления и помощь; непарные провалы и затраты; точный порог 85%; сравнение порога до округления; отсутствие pre/post; 0% успешных новых заданий; отсутствие улучшения при уже успешном pretest; валюты/сложности; возвраты; точную денежную арифметику; дубли/некорректный CSV; приватную атомарную запись и происхождение данных.

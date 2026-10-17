@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import { BrandLockup } from './BrandMark'
 import { brandAreaForPath, brandBreadcrumbs, globalNavigationState } from './brandNavigation'
 import { getPlayGame } from './redesignCatalog'
+import { BROWSER_LOCATION_EVENT, browserLocationKey } from './browserNavigation'
 import type { ProductTheme } from './BrandMark'
 import './brandFonts.css'
 import './brandSystem.css'
@@ -20,7 +21,9 @@ const footerGroups = [
 export function BrandShell({ theme, children }: { theme: ProductTheme; children: ReactNode }) {
   const [motion, setMotion] = useState(readMotion)
   const [reduced, setReduced] = useState(false)
-  const [hash, setHash] = useState(() => location.hash || '')
+  const [currentLocation, setCurrentLocation] = useState(browserLocationKey)
+  const currentUrl = new URL(currentLocation, 'https://osgard.world')
+  const hash = currentUrl.hash
   const path = location.pathname.replace(/\/+$/, '') || '/'
   const product = brandAreaForPath(path, theme)
   const development = path === '/development' || path.startsWith('/development/')
@@ -48,20 +51,27 @@ export function BrandShell({ theme, children }: { theme: ProductTheme; children:
     update()
     media?.addEventListener('change', update)
     const syncStorage = (event: StorageEvent) => { if (event.key === 'osgard:motion' || event.key === null) setMotion(readMotion()) }
-    const syncHash = () => setHash(location.hash)
+    const syncLocation = () => setCurrentLocation(browserLocationKey())
     window.addEventListener('storage', syncStorage)
-    window.addEventListener('hashchange', syncHash)
+    window.addEventListener('hashchange', syncLocation)
+    window.addEventListener('popstate', syncLocation)
+    window.addEventListener('pageshow', syncLocation)
+    window.addEventListener(BROWSER_LOCATION_EVENT, syncLocation)
+    syncLocation()
     return () => {
       media?.removeEventListener('change', update)
       window.removeEventListener('storage', syncStorage)
-      window.removeEventListener('hashchange', syncHash)
+      window.removeEventListener('hashchange', syncLocation)
+      window.removeEventListener('popstate', syncLocation)
+      window.removeEventListener('pageshow', syncLocation)
+      window.removeEventListener(BROWSER_LOCATION_EVENT, syncLocation)
     }
   }, [])
 
   const localState = (href: string): 'page' | 'location' | undefined => {
     const target = new URL(href, 'https://osgard.world')
     if ((target.pathname.replace(/\/+$/, '') || '/') !== path) return undefined
-    const view = new URLSearchParams(location.search || '').get('view') || 'all'
+    const view = currentUrl.searchParams.get('view') || 'all'
     if (target.pathname === '/play' && (target.searchParams.get('view') || 'all') !== view) return undefined
     if (target.hash) return hash === target.hash || target.hash === '#catalog' && path === '/play' ? 'location' : undefined
     return 'page'

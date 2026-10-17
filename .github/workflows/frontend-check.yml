@@ -7,6 +7,14 @@ on:
       - "src/**"
       - "server/**"
       - "scripts/core-*.py"
+      - "scripts/verify-core-backup.py"
+      - "scripts/pilot-scorecard.py"
+      - "tests/test_core_*.py"
+      - "tests/test_pilot_scorecard.py"
+      - "scripts/game-interface-smoke.mjs"
+      - "scripts/game-delivery-http-smoke.mjs"
+      - "scripts/check-nginx-game-delivery.sh"
+      - "nginx.conf"
       - "scripts/redesign-*.mjs"
       - "scripts/zion-local-smoke.mjs"
       - "scripts/games-browser-acceptance.mjs"
@@ -83,8 +91,18 @@ jobs:
         run: npm run qa:redesign
       - name: Verify locally published ZION gameplay
         run: npm run qa:zion-local
+      - name: Verify navigation, guest progress and resilient game interfaces
+        run: |
+          npm run qa:ux
+          npm run qa:osa-progress
+          npm run qa:game-interface
       - name: Install pinned Core dependencies
         run: python3 -m pip install -r server/requirements.txt
+      - name: Verify measured pilot outcomes and offline recovery
+        run: |
+          npm run qa:pilot-scorecard
+          npm run qa:core-recovery-tests
+          npm run qa:core-recovery -- --work-dir "$RUNNER_TEMP/osgard-core-recovery" --report "$RUNNER_TEMP/core-recovery-report.json"
       - name: Verify release integrity and payment recovery boundaries
         run: |
           npm run qa:core-readiness
@@ -101,6 +119,8 @@ jobs:
         run: npm run qa:osa-intelligence-case
       - name: Build the production site
         run: npm run build
+      - name: Verify Unity runtime delivery through candidate Nginx
+        run: npm run qa:nginx-game-delivery
       - name: Verify landing page budgets and route metadata
         run: npm run qa:redesign-build
       - name: Verify live SkillCred page wiring

@@ -1,6 +1,7 @@
 import { CORE_TOKEN, RULESET, challengeURL, compatibleService, dailyChallenge, resultCardLines, summarizeResult } from './remix-contract.mjs';
 
 const $ = selector => document.querySelector(selector);
+const uiText = message => window.RemixUI?.t(message) || message;
 const arena = $('#arena');
 const ctx = arena.getContext('2d');
 const SESSION = 'osgard:remix-client:v1';
@@ -75,7 +76,7 @@ function draw(level = state?.arena, position = state?.position) {
   for (let x = 0; x <= width; x++) { ctx.beginPath(); ctx.moveTo(x * cellX, 0); ctx.lineTo(x * cellX, arena.height); ctx.stroke(); }
   for (let y = 0; y <= height; y++) { ctx.beginPath(); ctx.moveTo(0, y * cellY); ctx.lineTo(arena.width, y * cellY); ctx.stroke(); }
   if (!level) {
-    ctx.fillStyle = '#b2c3b5'; ctx.font = '18px system-ui'; ctx.textAlign = 'center'; ctx.fillText('Поле появится после запуска заезда', arena.width / 2, arena.height / 2); return;
+    ctx.fillStyle = '#b2c3b5'; ctx.font = '18px system-ui'; ctx.textAlign = 'center'; ctx.fillText(uiText('Поле появится после запуска заезда'), arena.width / 2, arena.height / 2, arena.width - 32); return;
   }
   for (const object of level.objects) {
     const x = object.x * cellX, y = object.y * cellY;
@@ -378,7 +379,7 @@ async function shareChallenge() {
 
 async function createResultCardBlob() {
   const summary = summarizeResult(result);
-  const lines = resultCardLines(summary, challenge.id, challenge.seed, result.won);
+  const lines = resultCardLines(summary, challenge.id, challenge.seed, result.won).map(uiText);
   const canvas = document.createElement('canvas'); canvas.width = 1200; canvas.height = 630;
   const context = canvas.getContext('2d');
   const background = context.createLinearGradient(0, 0, 1200, 630); background.addColorStop(0, '#173d30'); background.addColorStop(1, '#07110f');
@@ -425,11 +426,12 @@ $('#new-challenge').addEventListener('click', () => {
 });
 for (const [name] of Object.entries(directions)) $('[data-remix-move="' + name + '"]').addEventListener('click', () => move(name));
 $('[data-remix-jump]').addEventListener('click', () => move(lastDirection, true));
-document.addEventListener('keydown', event => {
+arena.addEventListener('keydown', event => {
   if (event.ctrlKey || event.altKey || event.metaKey || event.target.closest('input,textarea,select,[contenteditable=true]') || state?.phase !== 'PLAYING' || replay) return;
   const direction = keyDirections[event.key];
   if (direction || event.code === 'Space') { event.preventDefault(); if (!event.repeat) move(direction || lastDirection, event.code === 'Space'); }
 });
+window.addEventListener('remix:languagechange', () => { if (replay) showReplayFrame(); else draw(); });
 $('#auth-form').addEventListener('submit', event => { event.preventDefault(); act(() => authenticate('login')); });
 $('#register-player').addEventListener('click', () => act(() => authenticate('register')));
 $('#copy-challenge').addEventListener('click', copyChallengeLink);

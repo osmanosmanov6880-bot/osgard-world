@@ -9,6 +9,7 @@ on:
       - 'scripts/verify-core-backup.py'
       - 'tests/test_core_backup_recovery.py'
       - 'tests/test_core_recovery_http.py'
+      - 'tests/test_core_restored_operations.py'
       - 'tests/test_backup_shell_contract.py'
       - 'docs/CORE-RECOVERY-DRILL.md'
       - '.github/workflows/core-recovery-drill.yml'
@@ -22,6 +23,7 @@ on:
       - 'scripts/verify-core-backup.py'
       - 'tests/test_core_backup_recovery.py'
       - 'tests/test_core_recovery_http.py'
+      - 'tests/test_core_restored_operations.py'
       - 'tests/test_backup_shell_contract.py'
       - 'docs/CORE-RECOVERY-DRILL.md'
       - '.github/workflows/core-recovery-drill.yml'
@@ -39,6 +41,7 @@ jobs:
       - run: python -m py_compile scripts/verify-core-backup.py tests/test_core_backup_recovery.py
       - run: python -m unittest discover -s tests -p test_core_backup_recovery.py -v
       - run: python -m unittest discover -s tests -p test_backup_shell_contract.py -v
+      - run: python -m unittest discover -s tests -p test_core_restored_operations.py -v
       - name: Back up and restore a real isolated Core HTTP service
         run: python scripts/core-recovery-drill.py --work-dir "$RUNNER_TEMP/osgard-core-recovery" --report "$RUNNER_TEMP/core-recovery-report.json"
       - name: Keep the recovery evidence without database or session material

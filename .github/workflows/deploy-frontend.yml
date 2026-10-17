@@ -67,6 +67,13 @@ on:
       - "scripts/zion-local-smoke.mjs"
       - "scripts/redesign-*.mjs"
       - "scripts/core-*.py"
+      - "scripts/verify-core-backup.py"
+      - "scripts/pilot-scorecard.py"
+      - "tests/test_core_*.py"
+      - "tests/test_pilot_scorecard.py"
+      - "scripts/game-interface-smoke.mjs"
+      - "scripts/game-delivery-http-smoke.mjs"
+      - "scripts/check-nginx-game-delivery.sh"
       - "scripts/academy-home-smoke.mjs"
       - "scripts/lecture-library-smoke.mjs"
       - "scripts/osa-media-release-preflight.mjs"
@@ -103,8 +110,18 @@ jobs:
         run: npm run qa:redesign
       - name: Verify locally published ZION gameplay
         run: npm run qa:zion-local
+      - name: Verify navigation, guest progress and resilient game interfaces
+        run: |
+          npm run qa:ux
+          npm run qa:osa-progress
+          npm run qa:game-interface
       - name: Install pinned Core dependencies
         run: python3 -m pip install -r server/requirements.txt
+      - name: Verify measured pilot outcomes and offline recovery
+        run: |
+          npm run qa:pilot-scorecard
+          npm run qa:core-recovery-tests
+          npm run qa:core-recovery -- --work-dir "$RUNNER_TEMP/osgard-core-recovery" --report "$RUNNER_TEMP/core-recovery-report.json"
       - name: Validate TEDES demo and portfolio page
         run: node scripts/tedes-case-smoke.mjs
       - name: Validate Development landing and prevent directory 403
@@ -172,6 +189,8 @@ jobs:
         if: ${{ steps.godot-changes.outputs.changed == 'true' }}
         run: npm run build:godot
       - run: npm run build
+      - name: Verify Unity runtime delivery through candidate Nginx
+        run: npm run qa:nginx-game-delivery
       - name: Verify landing page budgets and route metadata
         run: npm run qa:redesign-build
       - name: Verify precompressed shared-brand JavaScript
@@ -359,6 +378,10 @@ jobs:
           OSGARD_BASE_URL: https://osgard.world
           SKILLCRED_EXPECT_CURRENT_DESIGN: "1"
         run: npm run qa:production-routes
+      - name: Verify published Unity runtime and real missing-resource responses
+        env:
+          OSGARD_BASE_URL: https://osgard.world
+        run: npm run qa:game-delivery
       - name: Verify all world routes and exact published ZION assets
         env:
           OSGARD_BASE_URL: https://osgard.world

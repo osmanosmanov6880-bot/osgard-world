@@ -7,18 +7,30 @@
   <title>REMIX — создай и пройди испытание</title>
   <link rel="stylesheet" href="/brand/ecosystem-chrome.css">
   <link rel="stylesheet" href="remix.css">
+  <link rel="stylesheet" href="interface.css">
+  <script defer src="interface.js"></script>
   <link rel="icon" href="/brand/favicon.svg" type="image/svg+xml">
 </head>
 <body>
 <header class="osgard-static-header" aria-label="Экосистема OSGARD"><a href="/"><img src="/brand/portal-world.svg" alt="" width="30" height="30">OSGARD WORLD</a><nav aria-label="Продукты OSGARD"><a href="/">OSGARD</a><a href="/intelligence">Intelligence</a><a href="/play">Play</a><a href="/development">Development</a></nav></header>
 <main>
-  <a class="back" href="/entertainment">← Entertainment / Каталог игр</a>
+  <a class="back" href="/play#catalog">← Каталог игровых миров</a>
   <section class="hero">
     <span class="eyebrow">Создай · Пройди · Передай</span><h1>REMIX</h1>
     <p>Найди путь через барьеры и опасные клетки. Пройди своё испытание, опубликуй его и предложи другому игроку найти более короткий маршрут.</p>
+    <nav class="remix-modes" aria-label="Режимы REMIX"><a class="cta" href="#live-growth-console">Открыть серверную арену ↓</a><a class="cta secondary" href="/games/remix/player/index.html">Открыть Unity-версию ↗</a></nav>
     <div class="badges"><span class="badge">Одинаковый seed — одинаковое поле</span><span class="badge">Результат рассчитывает сервер</span><span class="badge">Клавиатура и touch</span></div>
   </section>
-  <section class="game-shell" aria-label="Серверное испытание REMIX">
+  <aside class="remix-guide" aria-labelledby="remix-guide-title">
+    <h2 id="remix-guide-title">Перед запуском</h2>
+    <p><strong>Серверная арена.</strong> Войдите в OSGARD Core, создайте поле и достигните цели. После публикации другой игрок сможет пройти то же испытание в своём заезде.</p>
+    <p><strong>Управление.</strong> Выберите поле: стрелки или WASD — ход, Space — прыжок в последнем направлении. На телефоне используйте кнопки под полем. Tab перемещает фокус по странице.</p>
+    <p><strong>Сохранение и онлайн.</strong> Арене нужен совместимый сервис REMIX на этом сайте. Подтверждённые ходы и результаты сохраняет сервер; при потере ответа повторите неподтверждённое действие.</p>
+    <p><strong>Unity WebGL.</strong> Отдельная игровая сборка требует WebGL 2. Её управление показано внутри игры; сетевой сервис и результаты не объединены с этой ареной.</p>
+    <details class="remix-settings"><summary>Подключение серверной арены</summary><p>Используется сервис этого сайта. Совместимость проверяется перед входом; адрес Unity-сервиса здесь не меняется.</p><label for="api-url">Адрес API арены</label><input id="api-url" type="text" value="/api/remix/v1/" readonly aria-describedby="remix-service-contract"><p id="remix-service-contract" data-no-translate>osgard-remix-arena · remix-arena-v1 · osgard-core-bearer-v1</p></details>
+    <p id="remix-storage-state" role="status" hidden></p>
+  </aside>
+  <section class="game-shell" id="live-growth-console" aria-label="Серверное испытание REMIX">
     <div class="session-bar"><strong id="service-state">Проверяем сервер матчей…</strong><span id="session-state">Сессия ещё не проверена</span></div>
     <div class="play-grid">
       <div class="field">
@@ -51,7 +63,7 @@
           </form><p id="auth-status" role="status"></p>
         </div>
         <span class="eyebrow" id="challenge-mode">Испытание дня</span><h2>Твой маршрут</h2>
-        <label for="challenge-name">Название испытания</label><input id="challenge-name" type="text" minlength="2" maxlength="100" value="Испытание дня">
+        <label for="challenge-name">Название испытания</label><input data-no-translate id="challenge-name" type="text" minlength="2" maxlength="100" value="Испытание дня">
         <label for="challenge-seed">Seed — код поля</label><input id="challenge-seed" type="number" min="1" max="2147483647" step="1">
         <button id="start-match" class="cta" disabled>Создать испытание</button>
         <p class="fine">Сначала автор достигает цели в проверочном заезде. После публикации каждый игрок проходит то же поле отдельно; в таблицу попадает его лучший заезд.</p>
@@ -70,7 +82,6 @@
       <div id="sponsor-slot" hidden><span class="eyebrow">PARTNER SLOT / INQUIRY ONLY</span><p><strong>Испытание для вашего проекта</strong></p><p>Это заявка на сотрудничество после заезда. Активная рекламная кампания здесь не представлена.</p><a id="sponsor-cta" class="cta secondary" href="/games/partners/?utm_source=remix&amp;utm_medium=post_session&amp;utm_campaign=challenge_series&amp;utm_content=result_card&amp;format=Спонсорское%20событие%20или%20уровень">Обсудить партнёрское испытание ↗</a></div>
     </section>
   </section>
-  <section class="legacy-note"><p>Здесь работает отдельная серверная арена REMIX. Существующая Unity-версия открывается отдельно; её сетевой сервис и результаты не объединены с этой ареной.</p><a class="cta secondary" href="/games/remix/player/index.html">Открыть Unity-версию ↗</a></section>
 </main>
 <script type="module" src="remix-client.js"></script>
 <script defer src="/brand/osa-transition.js"></script>

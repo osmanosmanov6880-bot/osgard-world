@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Regression tests for production-independent Core SQLite recovery validation."""
 import importlib.util
-from contextlib import closing
+from contextlib import closing, redirect_stderr, redirect_stdout
 import hashlib
+import io
 import json
 import os
 import sqlite3
@@ -29,62 +30,65 @@ class RecoveryDrillTest(unittest.TestCase):
             db.execute("CREATE TABLE records (id INTEGER PRIMARY KEY, label TEXT)")
             db.execute("INSERT INTO records (label) VALUES ('private test fixture')")
 
+    def generic(self, path, checksum=None):
+        return module.drill(path, checksum, sqlite_only=True)
+
     def test_valid_private_restore(self):
         content = self.backup.read_bytes()
-        result = module.drill(self.backup)
+        result = self.generic(self.backup)
         self.assertEqual(result["status"], "passed")
         self.assertEqual(result["table_count"], 1)
         self.assertFalse(result["production_modified"])
         self.assertEqual(self.backup.read_bytes(), content)
 
     def test_expected_sha(self):
-        result = module.drill(self.backup, module.digest(self.backup))
+        result = self.generic(self.backup, module.digest(self.backup))
         self.assertEqual(result["sha256"], module.digest(self.backup))
 
     def test_wrong_sha_rejected(self):
         with self.assertRaisesRegex(ValueError, "checksum"):
-            module.drill(self.backup, "0" * 64)
+            self.generic(self.backup, "0" * 64)
 
     def test_invalid_sha_rejected(self):
         with self.assertRaisesRegex(ValueError, "64 hex"):
-            module.drill(self.backup, "not-a-sha")
+            self.generic(self.backup, "not-a-sha")
 
     def test_corrupt_file_rejected(self):
         self.backup.write_bytes(b"SQLite format 3" + b"\0" * 300)
         with self.assertRaises((ValueError, sqlite3.DatabaseError)):
-            module.drill(self.backup)
+            self.generic(self.backup)
 
     def test_empty_file_rejected(self):
         self.backup.write_bytes(b"")
         with self.assertRaisesRegex(ValueError, "empty"):
-            module.drill(self.backup)
+            self.generic(self.backup)
 
     def test_symlink_rejected(self):
         link = self.base / "link.sqlite3"
         link.symlink_to(self.backup)
         with self.assertRaisesRegex(ValueError, "symlink"):
-            module.drill(link)
+            self.generic(link)
 
     def test_non_database_file_rejected(self):
         self.backup.write_bytes(b"secret-not-a-database")
         with self.assertRaises(sqlite3.DatabaseError):
-            module.drill(self.backup)
+            self.generic(self.backup)
 
     def test_database_without_tables_rejected(self):
         self.backup.unlink()
         with sqlite3.connect(self.backup) as db:
             db.execute("PRAGMA user_version = 1")
         with self.assertRaisesRegex(ValueError, "no SQLite tables"):
-            module.drill(self.backup)
+            self.generic(self.backup)
 
     def test_orphan_foreign_key_is_rejected(self):
         with closing(sqlite3.connect(self.backup)) as db:
             db.executescript("CREATE TABLE parents(id PRIMARY KEY); CREATE TABLE children(parent_id REFERENCES parents(id)); INSERT INTO children VALUES(99);")
         with self.assertRaisesRegex(ValueError, "foreign_key_check"):
-            module.drill(self.backup)
+            self.generic(self.backup)
 
     def test_legacy_generic_inspection_does_not_claim_core_restore(self):
-        result = module.drill(self.backup)
+        result = module.drill(self.backup, require_core=False)
         self.assertEqual(result['validation_scope'], 'sqlite_only')
         self.assertFalse(result['metadata_bound'])
         self.assertFalse(result['application_restore_tested'])
@@ -184,6 +188,14 @@ class CoreSnapshotRestoreTest(unittest.TestCase):
         self.sql('ALTER TABLE projects RENAME COLUMN owner_id TO renamed_owner;')
         with self.assertRaisesRegex(ValueError, 'required columns'):
             core_backup.backup(self.source, self.snapshot)
+
+    def test_bundle_rejects_missing_commerce_runtime_column(self):
+        self.sql('ALTER TABLE commerce_refund_ops DROP COLUMN started_at;')
+        with self.assertRaisesRegex(ValueError, 'required columns'):
+            self.bundle()
+        self.assertFalse(self.snapshot.exists())
+        self.assertFalse(self.manifest.exists())
+        self.assertFalse(Path(str(self.snapshot) + '.sha256').exists())
 
     def test_missing_core_foreign_key_is_rejected(self):
         self.sql('DROP TABLE sessions; CREATE TABLE sessions(token_hash TEXT PRIMARY KEY,user_id TEXT NOT NULL,expires_at REAL NOT NULL);')
@@ -396,6 +408,212 @@ class CoreSnapshotRestoreTest(unittest.TestCase):
         self.assertEqual(self.manifest.read_bytes(), b'COMPETING WRITER')
         self.assertFalse(self.snapshot.exists())
         self.assertFalse(Path(str(self.snapshot) + '.sha256').exists())
+
+class SnapshotCompatibilityTest(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.base = Path(self.temp.name)
+        self.backup = self.base / "backup.sqlite3"
+        with closing(sqlite3.connect(self.backup)) as db:
+            db.execute("CREATE TABLE records (id INTEGER PRIMARY KEY, label TEXT)")
+            db.execute("INSERT INTO records (label) VALUES ('private synthetic value')")
+            db.commit()
+
+    def generic(self, path=None, checksum=None):
+        return module.drill(path or self.backup, checksum, sqlite_only=True)
+
+    def test_cli_default_core_and_explicit_generic_profile(self):
+        before = self.backup.read_bytes()
+        for flags in ([], ['--require-core']):
+            with self.subTest(flags=flags), redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()) as error:
+                self.assertEqual(module.main([str(self.backup), '--json', *flags]), 2)
+                self.assertIn('Core schema', error.getvalue())
+        with redirect_stdout(io.StringIO()) as output:
+            self.assertEqual(module.main([str(self.backup), '--sqlite-only', '--json']), 0)
+        result = json.loads(output.getvalue())
+        self.assertFalse(result['core_schema_checked'])
+        self.assertEqual(result['validation_scope'], 'sqlite_only')
+        self.assertFalse(result['application_restore_validated'])
+        self.assertFalse(result['application_restore_tested'])
+        self.assertEqual(self.backup.read_bytes(), before)
+
+    def test_contradictory_profiles_are_rejected(self):
+        with redirect_stderr(io.StringIO()), self.assertRaises(SystemExit) as error:
+            module.main([str(self.backup), '--sqlite-only', '--require-core'])
+        self.assertEqual(error.exception.code, 2)
+        with self.assertRaisesRegex(ValueError, 'cannot be combined'):
+            module.drill(self.backup, sqlite_only=True, require_core=True)
+        with redirect_stderr(io.StringIO()) as output:
+            self.assertEqual(module.main([str(self.backup), '--sqlite-only', '--manifest', str(self.base / 'absent.json')]), 2)
+        self.assertIn('cannot be combined', output.getvalue())
+
+    def test_parent_replaced_after_validation_is_not_followed(self):
+        parent = self.base / 'original-parent'
+        parent.mkdir()
+        source = parent / 'source.sqlite3'
+        source.write_bytes(self.backup.read_bytes())
+        unrelated = self.base / 'unrelated-directory'
+        unrelated.mkdir()
+        (unrelated / source.name).write_bytes(b'DO NOT READ THIS FILE')
+        original_check = core_backup.checked_path
+        replaced = False
+        received = []
+
+        def replace_parent(value, **kwargs):
+            nonlocal replaced
+            result = original_check(value, **kwargs)
+            if result == source and not replaced:
+                replaced = True
+                parent.rename(self.base / 'moved-parent')
+                parent.symlink_to(unrelated, target_is_directory=True)
+            return result
+
+        with patch.object(core_backup, 'checked_path', side_effect=replace_parent):
+            with self.assertRaisesRegex(ValueError, 'symlink'):
+                with core_backup.regular_reader(source) as (_, stream, _):
+                    received.append(stream.read())
+        self.assertTrue(replaced)
+        self.assertEqual(received, [])
+        self.assertEqual((unrelated / source.name).read_bytes(), b'DO NOT READ THIS FILE')
+
+    def test_private_restore_is_read_only_and_reports_its_limits(self):
+        before = self.backup.read_bytes()
+        result = self.generic()
+        self.assertEqual(result["status"], "passed")
+        self.assertEqual(result["table_count"], 1)
+        self.assertFalse(result["production_modified"])
+        self.assertFalse(result["core_schema_checked"])
+        self.assertFalse(result["application_restore_validated"])
+        self.assertIsNone(result["rto_seconds"])
+        self.assertIsNone(result["rpo_seconds"])
+        self.assertNotIn("private synthetic value", json.dumps(result))
+        self.assertEqual(self.backup.read_bytes(), before)
+
+    def test_expected_hash_is_verified_and_wrong_hash_is_rejected(self):
+        checksum = module.digest(self.backup)
+        result = self.generic(checksum=checksum)
+        self.assertEqual(result["sha256"], checksum)
+        self.assertTrue(result["expected_sha256_verified"])
+        with self.assertRaisesRegex(ValueError, "checksum"):
+            self.generic(checksum="0" * 64)
+        with self.assertRaisesRegex(ValueError, "64 hex"):
+            self.generic(checksum="not-a-sha")
+
+    def test_corrupt_empty_and_non_database_files_are_rejected(self):
+        for value in (b"SQLite format 3" + b"\0" * 300, b"", b"not a database"):
+            with self.subTest(value=len(value)):
+                self.backup.write_bytes(value)
+                with self.assertRaises((ValueError, sqlite3.DatabaseError)):
+                    self.generic()
+
+    def test_empty_schema_is_rejected(self):
+        self.backup.unlink()
+        with closing(sqlite3.connect(self.backup)) as db:
+            db.execute("PRAGMA user_version = 1")
+        with self.assertRaisesRegex(ValueError, "no SQLite tables"):
+            self.generic()
+
+    def test_file_and_parent_symlinks_are_rejected(self):
+        link = self.base / "link.sqlite3"
+        link.symlink_to(self.backup)
+        with self.assertRaisesRegex(ValueError, "symlink"):
+            self.generic(link)
+        parent = self.base / "linked-directory"
+        parent.symlink_to(self.base, target_is_directory=True)
+        with self.assertRaisesRegex(ValueError, "symlink"):
+            self.generic(parent / self.backup.name)
+
+    @unittest.skipUnless(hasattr(os, "mkfifo"), "POSIX named pipe regression")
+    def test_named_pipe_is_rejected_without_blocking(self):
+        pipe = self.base / "pipe.sqlite3"
+        os.mkfifo(pipe)
+        with self.assertRaisesRegex(ValueError, "regular file"):
+            self.generic(pipe)
+
+    def test_even_empty_sidecars_are_not_treated_as_a_standalone_snapshot(self):
+        for suffix in ("-wal", "-shm", "-journal"):
+            sidecar = self.backup.with_name(self.backup.name + suffix)
+            with self.subTest(suffix=suffix):
+                sidecar.touch()
+                try:
+                    with self.assertRaisesRegex(ValueError, "sidecar"):
+                        self.generic()
+                finally:
+                    sidecar.unlink()
+
+    def test_integrity_check_alone_cannot_hide_broken_foreign_keys(self):
+        with closing(sqlite3.connect(self.backup)) as db:
+            db.execute("CREATE TABLE children (record_id INTEGER REFERENCES records(id))")
+            db.execute("INSERT INTO children VALUES (999)")
+            db.commit()
+            self.assertEqual(db.execute("PRAGMA integrity_check").fetchone(), ("ok",))
+        with self.assertRaisesRegex(ValueError, "foreign_key_check"):
+            self.generic()
+
+    def test_core_profile_rejects_generic_wrong_version_and_missing_columns(self):
+        with self.assertRaisesRegex(ValueError, "Core schema version"):
+            module.drill(self.backup)
+        with closing(sqlite3.connect(self.backup)) as db:
+            db.execute("PRAGMA user_version=1")
+        with self.assertRaisesRegex(ValueError, "expected table"):
+            module.drill(self.backup)
+        with closing(sqlite3.connect(self.backup)) as db:
+            for name in module.CORE_COLUMNS:
+                db.execute(f'CREATE TABLE "{name}" (placeholder TEXT)')
+        with self.assertRaisesRegex(ValueError, "required columns"):
+            module.drill(self.backup)
+
+    def test_current_core_snapshot_is_accepted_without_environment_credentials(self):
+        import sys
+        sys.path.insert(0, str(ROOT / "server"))
+        from core_server import Store
+        from core_commerce import Config
+        from core_backup import backup
+        source = self.base / "synthetic-core.sqlite3"
+        target = self.base / "consistent-core.sqlite3"
+        store = Store(source, commerce_config=Config())
+        with store.transaction() as db:
+            db.execute("INSERT INTO users VALUES (?,?,?,?,?)",
+                       ("synthetic-user", "synthetic-fixture", "00", "not-a-password-hash", "2026-01-01T00:00:00Z"))
+        checksum = backup(source, target)
+        before = target.read_bytes()
+        result = module.drill(target, checksum)
+        self.assertTrue(result["core_schema_checked"])
+        self.assertTrue(result["foreign_keys_checked"])
+        self.assertEqual(result["schema_version"], 1)
+        self.assertGreaterEqual(result["table_count"], len(module.CORE_COLUMNS))
+        self.assertEqual(target.read_bytes(), before)
+
+    def test_core_profile_rejects_missing_runtime_refund_timestamp(self):
+        import sys
+        sys.path.insert(0, str(ROOT / "server"))
+        from core_server import Store
+        from core_commerce import Config
+        source = self.base / "core-missing-refund-timestamp.sqlite3"
+        store = Store(source, commerce_config=Config())
+        with store.transaction() as db:
+            db.execute("ALTER TABLE commerce_refund_ops DROP COLUMN started_at")
+            self.assertEqual(db.execute("PRAGMA integrity_check").fetchone()[0], "ok")
+            with self.assertRaisesRegex(sqlite3.OperationalError, "no such column: started_at"):
+                db.execute("SELECT state,target_minor FROM commerce_refund_ops ORDER BY started_at DESC LIMIT 1")
+        with self.assertRaisesRegex(ValueError, "required columns"):
+            module.drill(source)
+
+    def test_active_wal_requires_backup_api_snapshot(self):
+        with closing(sqlite3.connect(self.backup)) as source:
+            source.execute("PRAGMA journal_mode=WAL")
+            source.execute("INSERT INTO records(label) VALUES ('uncheckpointed synthetic row')")
+            source.commit()
+            with self.assertRaisesRegex(ValueError, "sidecar"):
+                self.generic()
+            snapshot = self.base / "consistent.sqlite3"
+            with closing(sqlite3.connect(snapshot)) as destination:
+                source.backup(destination)
+            result = self.generic(snapshot)
+            self.assertEqual(result["status"], "passed")
+
+
 
 if __name__ == "__main__":
     unittest.main()

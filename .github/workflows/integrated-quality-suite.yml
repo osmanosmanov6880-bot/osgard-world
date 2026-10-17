@@ -22,6 +22,7 @@ jobs:
           python -m unittest discover -s tests -p test_pilot_scorecard.py -v
           python -m unittest discover -s tests -p test_core_backup_recovery.py -v
           python -m unittest discover -s tests -p test_core_recovery_http.py -v
+          python -m unittest discover -s tests -p test_core_restored_operations.py -v
           python -m unittest discover -s tests -p test_release_zip_gate.py -v
           python -m unittest discover -s tests -p test_unified_release_gate.py -v
           python -m unittest discover -s tests -p test_github_release_evidence.py -v
