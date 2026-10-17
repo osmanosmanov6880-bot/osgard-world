@@ -4,7 +4,7 @@ Authoritative source snapshot (2026-10-06): `A:\HADJAL\Рабочий стол\�
 
 This is a living audit of the 255-point `игры ОСГАРД.txt` brief. It distinguishes implemented runtime evidence from documented contracts and remaining production work. The validator accepts the documented dated-line format used for section 242 and does not silently invent headings.
 
-The numbered-source check is reproducible with `npm run qa:brief`; it validates the authoritative file's line count, byte count, SHA-256, and reports missing or out-of-range section numbers before a pass is recorded.
+When the original file is available, `node scripts/brief-coverage-audit.mjs <brief-file>` reports its line count, byte count, SHA-256 and missing/out-of-range section numbers. The current implementation validates numbered-section coverage; its printed size/hash must be compared with the authoritative snapshot above separately. The package shortcut `npm run qa:brief` points to the original Windows path. That path is absent in the current Linux workspace, so its 17 October rerun returned `ENOENT`; no new source-verification pass is recorded from that attempt.
 
 ## Current status — 17 October 2026
 
