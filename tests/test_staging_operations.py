@@ -83,17 +83,20 @@ class OperationsTest(unittest.TestCase):
   d={"schema_version":2,"repository":"osmanosmanov6880-bot/osgard-world","commit_sha":sha,"artifact_sha256":digest,
      "human_approval":False,"payments_enabled":False,
      "checks":{key:{"status":"passed","commit_sha":sha,"artifact_sha256":digest,
-                    "evidence_url":"https://github.com/osmanosmanov6880-bot/osgard-world/actions/runs/1"}
-               for key in matrix.GATES}}
+                    "evidence_url":f"https://github.com/osmanosmanov6880-bot/osgard-world/actions/runs/{i+1}"}
+               for i,key in enumerate(matrix.GATES)}}
   self.assertEqual(matrix.assess(d)["status"],"ready_for_human_review")
   d["checks"]["backup_recovery"]["status"]="unknown"
   self.assertEqual(matrix.assess(d)["status"],"blocked")
   d["checks"]["backup_recovery"]["status"]="passed"
   d["checks"]["archive_extra"]={"status":"passed"}
+  d["checks"].pop("archive_extra")
   d["checks"]["source_build"]["commit_sha"]="c"*40
   self.assertEqual(matrix.assess(d)["status"],"blocked")
   d["checks"]["source_build"]["commit_sha"]=sha
   d["checks"]["source_build"]["evidence_url"]="https://github.com/attacker/other/actions/runs/123"
+  self.assertEqual(matrix.assess(d)["status"],"blocked")
+  d["checks"]["source_build"]["evidence_url"]=d["checks"]["backup_recovery"]["evidence_url"]
   self.assertEqual(matrix.assess(d)["status"],"blocked")
   d["checks"]["source_build"]["evidence_url"]="https://github.com/osmanosmanov6880-bot/osgard-world/actions/runs/1"
   d["repository"]="attacker/other"
