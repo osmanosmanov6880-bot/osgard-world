@@ -1,15 +1,6 @@
 name: OSGARD Full Source Release Acceptance
 on:
   pull_request:
-    paths:
-      - 'scripts/release-bundle.py'
-      - 'scripts/verify-game-archive.py'
-      - 'scripts/release-artifact-manifest.py'
-      - 'scripts/verify-zip-manifest.py'
-      - 'scripts/verify-release-zip.py'
-      - 'scripts/release-config-audit.py'
-      - 'scripts/staging-release-acceptance.py'
-      - '.github/workflows/full-source-release-acceptance.yml'
   workflow_dispatch:
 permissions:
   contents: read
