@@ -27,7 +27,7 @@ def verify(archive):
     with zipfile.ZipFile(archive) as z:
         for member in z.infolist():
             path=member.filename
-            if (not path or path.startswith("/") or "\\\\" in path or
+            if (not path or path.startswith("/") or "\\" in path or
                 any(part in ("", ".", "..") for part in path.rstrip("/").split("/"))):
                 raise ValueError("unsafe ZIP game archive path: "+path)
             if member.flag_bits & 1:
