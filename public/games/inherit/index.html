@@ -23,7 +23,30 @@ const gameStorage=(()=>{
  return store;
 })();
 const initialWorld={generation:173,budget:100,changes:[],objects:[],history:[{generation:170,by:'@Naru',action:'Placed the first lantern at the western shore.',when:'3 days ago'},{generation:171,by:'@Ria',action:'Restored the stone arch after the winter tide.',when:'2 days ago'},{generation:172,by:'@Sava',action:'Marked a safe path through the river meadow.',when:'Yesterday'},{generation:173,by:'@Luna',action:'Left the island quiet, except for one signal.',when:'Now'}]};
-const S=gameStorage.readWorld(initialWorld);let tool='tree';const q=s=>document.querySelector(s),qa=s=>Array.from(document.querySelectorAll(s));const names={tree:'planted a young tree',stone:'placed a shoreline stone',light:'left a lantern for the next person',path:'marked a new path'};function persist(){gameStorage.setItem('inherit-world-v1',JSON.stringify(S))}function render(){q('#gen').textContent='GEN '+S.generation;q('#budget').textContent=S.budget;let box=q('#objects');box.innerHTML='';S.objects.forEach(o=>{let e=document.createElement('button');e.className='placed '+o.tool;e.style.left=o.x+'%';e.style.top=o.y+'%';e.setAttribute('aria-label','A trace you left');e.onclick=x=>{x.stopPropagation();memory('A trace you left','Generation '+S.generation+' '+names[o.tool]+'. Someone will find it after you pass this world on.','Created by <b>you</b>')};box.appendChild(e)})}function notice(t){let e=q('#toast');e.textContent=t;e.classList.add('show');setTimeout(()=>e.classList.remove('show'),2600)}function memory(t,x,b){q('#memoryTitle').textContent=t;q('#memoryText').textContent=x;q('#memoryByline').innerHTML=b;q('#panel').classList.add('show')}qa('.tool').forEach(e=>e.onclick=()=>{qa('.tool').forEach(x=>x.classList.remove('active'));e.classList.add('active');tool=e.dataset.tool;notice('Selected: '+e.textContent.trim())});q('#world').onclick=e=>{if(e.target.closest('button,.panel,.dock,[data-memory]'))return;let r=q('#island').getBoundingClientRect(),x=(e.clientX-r.left)/r.width*100,y=(e.clientY-r.top)/r.height*100;if(x<8||x>91||y<12||y>77)return;if(!S.budget){notice('Your change budget is complete');return}S.objects.push({tool:tool,x:x,y:y});S.changes.push(names[tool]);S.budget--;persist();render();notice('You '+names[tool])};const M={tree:['The old tree','It has watched 143 generations arrive at this shore. Its roots hold the first promise this island received.','First planted by <b>@Luna</b>'],ruin:['The stone arch','It survived a storm that erased every marker from the eastern coast. Someone rebuilt it before they left.','Restored by <b>@Ria</b>'],beacon:['The last signal','It blinks slowly over the water. A small invitation made for whoever came next.','Left by <b>@Sava</b>']};qa('[data-memory]').forEach(e=>e.onclick=()=>memory(...M[e.dataset.memory]));q('#close').onclick=()=>q('#panel').classList.remove('show');q('#showHistory').onclick=()=>{q('#timeline').innerHTML=S.history.slice().reverse().map(h=>'<div class="entry"><time>GEN '+h.generation+'</time><p><b>'+h.by+'</b> '+h.action+'<br><small>'+h.when+'</small></p></div>').join('');q('#modal').showModal()};q('#closeModal').onclick=()=>q('#modal').close();q('#done').onclick=()=>{if(pastMode)q('#past').click();returnToToday();q('#modal').close()};q('#past').onclick=()=>notice('Earlier traces are glowing over the island');q('#pass').onclick=()=>{if(!S.changes.length){notice('Leave one trace before passing the world on');return}S.history.push({generation:S.generation,by:'@You',action:S.changes.length+' changes: '+S.changes.join(', ')+'.',when:'Just now'});S.generation++;S.budget=100;S.changes=[];persist();render();q('#caption').textContent='Your trace is waiting for the next person.';notice('World passed on — a new generation begins')};q('#reset').onclick=()=>{if(confirm(window.InheritUI?window.InheritUI.t('Start a new local lineage?'):'Start a new local lineage?')){gameStorage.removeItem('inherit-world-v1');location.reload()}};render();
+// A pending handoff owns one immutable generation until its response or deadline settles.
+let worldRevision=0;
+let handoffPending=false;
+let handoffControls=[];
+function blockWhileHandoff(){
+ if(!handoffPending)return false;
+ notice('Generation handoff is in progress. Please wait.');
+ return true;
+}
+function setHandoffBusy(busy){
+ handoffPending=busy;
+ if(busy){
+  handoffControls=['#pass','#reset','#inherit-import','#inherit-import-file'].map(selector=>q(selector)).filter(Boolean).map(control=>[control,control.disabled]);
+  handoffControls.forEach(([control])=>{control.disabled=true});
+ }else{
+  handoffControls.forEach(([control,disabled])=>{control.disabled=disabled});
+  handoffControls=[];
+ }
+ q('#pass').textContent=busy?'Passing generation…':'Pass this world on →';
+ q('#pass').setAttribute('aria-busy',String(busy));
+ q('#world').setAttribute('aria-busy',String(busy));
+ q('#caption').setAttribute('role','status');
+}
+const S=gameStorage.readWorld(initialWorld);let tool='tree';const q=s=>document.querySelector(s),qa=s=>Array.from(document.querySelectorAll(s));const names={tree:'planted a young tree',stone:'placed a shoreline stone',light:'left a lantern for the next person',path:'marked a new path'};function persist(){worldRevision++;gameStorage.setItem('inherit-world-v1',JSON.stringify(S))}function render(){q('#gen').textContent='GEN '+S.generation;q('#budget').textContent=S.budget;let box=q('#objects');box.innerHTML='';S.objects.forEach(o=>{let e=document.createElement('button');e.className='placed '+o.tool;e.style.left=o.x+'%';e.style.top=o.y+'%';e.setAttribute('aria-label','A trace you left');e.onclick=x=>{x.stopPropagation();memory('A trace you left','Generation '+S.generation+' '+names[o.tool]+'. Someone will find it after you pass this world on.','Created by <b>you</b>')};box.appendChild(e)})}function notice(t){let e=q('#toast');e.textContent=t;e.classList.add('show');setTimeout(()=>e.classList.remove('show'),2600)}function memory(t,x,b){q('#memoryTitle').textContent=t;q('#memoryText').textContent=x;q('#memoryByline').innerHTML=b;q('#panel').classList.add('show')}qa('.tool').forEach(e=>e.onclick=()=>{qa('.tool').forEach(x=>x.classList.remove('active'));e.classList.add('active');tool=e.dataset.tool;notice('Selected: '+e.textContent.trim())});q('#world').onclick=e=>{if(e.target.closest('button,.panel,.dock,[data-memory]'))return;let r=q('#island').getBoundingClientRect(),x=(e.clientX-r.left)/r.width*100,y=(e.clientY-r.top)/r.height*100;if(x<8||x>91||y<12||y>77)return;if(!S.budget){notice('Your change budget is complete');return}S.objects.push({tool:tool,x:x,y:y});S.changes.push(names[tool]);S.budget--;persist();render();notice('You '+names[tool])};const M={tree:['The old tree','It has watched 143 generations arrive at this shore. Its roots hold the first promise this island received.','First planted by <b>@Luna</b>'],ruin:['The stone arch','It survived a storm that erased every marker from the eastern coast. Someone rebuilt it before they left.','Restored by <b>@Ria</b>'],beacon:['The last signal','It blinks slowly over the water. A small invitation made for whoever came next.','Left by <b>@Sava</b>']};qa('[data-memory]').forEach(e=>e.onclick=()=>memory(...M[e.dataset.memory]));q('#close').onclick=()=>q('#panel').classList.remove('show');q('#showHistory').onclick=()=>{q('#timeline').innerHTML=S.history.slice().reverse().map(h=>'<div class="entry"><time>GEN '+h.generation+'</time><p><b>'+h.by+'</b> '+h.action+'<br><small>'+h.when+'</small></p></div>').join('');q('#modal').showModal()};q('#closeModal').onclick=()=>q('#modal').close();q('#done').onclick=()=>{if(pastMode)q('#past').click();returnToToday();q('#modal').close()};q('#past').onclick=()=>notice('Earlier traces are glowing over the island');q('#pass').onclick=()=>{if(!S.changes.length){notice('Leave one trace before passing the world on');return}S.history.push({generation:S.generation,by:'@You',action:S.changes.length+' changes: '+S.changes.join(', ')+'.',when:'Just now'});S.generation++;S.budget=100;S.changes=[];persist();render();q('#caption').textContent='Your trace is waiting for the next person.';notice('World passed on — a new generation begins')};q('#reset').onclick=()=>{if(blockWhileHandoff())return;if(confirm(window.InheritUI?window.InheritUI.t('Start a new local lineage?'):'Start a new local lineage?')){worldRevision++;gameStorage.removeItem('inherit-world-v1');location.reload()}};render();
 </script><script>
 // Founder Preview validates demand before any payment provider is connected.
 document.addEventListener('DOMContentLoaded',function(){
@@ -61,8 +84,26 @@ q('#pass').onclick=function(){if(!S.changes.length){notice('Leave one trace befo
 </script><script>
 const apiWorld='/api/world/quiet-reach';
 S.pending=S.pending||[];
-async function loadSharedWorld(){try{const response=await fetch(apiWorld);if(!response.ok)throw new Error('offline');const world=await response.json();if(!world||!Number.isSafeInteger(world.currentGeneration)||!Array.isArray(world.objects)||!Array.isArray(world.generations))throw Error('invalid world');gameStorage.online=true;window.InheritUI?.updateStorage?.();if(S.pending.length)return;S.generation=world.currentGeneration;S.objects=world.objects.map(item=>({tool:item.type,x:item.x,y:item.y}));S.history=world.generations.map(item=>({generation:item.number,by:item.author,action:item.message,when:new Date(item.createdAt).toLocaleDateString()}));S.pending=[];persist();render()}catch(error){gameStorage.online=false;window.InheritUI?.updateStorage?.()}}
-q('#world').onclick=function(event){if(event.target.closest('button,.panel,.dock,[data-memory]'))return;const rect=q('#island').getBoundingClientRect(),x=(event.clientX-rect.left)/rect.width*100,y=(event.clientY-rect.top)/rect.height*100;if(x<8||x>91||y<12||y>77)return;if(!S.budget){notice('Your change budget is complete');return}S.objects.push({tool:tool,x:x,y:y});S.pending.push({type:tool,x:x,y:y});S.changes.push(names[tool]);S.budget--;persist();render();notice('You '+names[tool])};
+async function loadSharedWorld(){
+ const revision=worldRevision;
+ try{
+  const response=await fetch(apiWorld);
+  if(!response.ok)throw new Error('offline');
+  const world=await response.json();
+  // A late initial read must never replace placement, import, reset, or handoff work.
+  if(revision!==worldRevision||handoffPending)return;
+  if(!world||!Number.isSafeInteger(world.currentGeneration)||!Array.isArray(world.objects)||!Array.isArray(world.generations))throw Error('invalid world');
+  gameStorage.online=true;window.InheritUI?.updateStorage?.();
+  if(S.pending.length)return;
+  const loaded={...S,generation:world.currentGeneration,objects:world.objects.map(item=>({tool:item.type,x:item.x,y:item.y})),history:world.generations.map(item=>({generation:item.number,by:item.author,action:item.message,when:new Date(item.createdAt).toLocaleDateString()})),pending:[]};
+  if(!gameStorage.validWorld(loaded))throw Error('invalid world');
+  Object.assign(S,loaded);persist();render();
+ }catch(error){
+  if(revision!==worldRevision||handoffPending)return;
+  gameStorage.online=false;window.InheritUI?.updateStorage?.();
+ }
+}
+q('#world').onclick=function(event){if(event.target.closest('button,.panel,.dock,[data-memory]'))return;if(blockWhileHandoff())return;const rect=q('#island').getBoundingClientRect(),x=(event.clientX-rect.left)/rect.width*100,y=(event.clientY-rect.top)/rect.height*100;if(x<8||x>91||y<12||y>77)return;if(!S.budget){notice('Your change budget is complete');return}S.objects.push({tool:tool,x:x,y:y});S.pending.push({type:tool,x:x,y:y});S.changes.push(names[tool]);S.budget--;persist();render();notice('You '+names[tool])};
 q('#pass').onclick=async function(){if(!S.pending.length){notice('Leave one trace before passing the world on');return}try{const response=await fetch(apiWorld+'/generations',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({expectedGeneration:S.generation,author:'@You',message:S.pending.length+' new traces for the next person.',delta:S.pending})});if(response.status===409){notice('Someone changed this world — loading their generation');return loadSharedWorld()}if(!response.ok)throw new Error('save failed');const result=await response.json();S.history.push({generation:result.generation.number,by:result.generation.author,action:result.generation.message,when:'Just now'});S.generation=result.currentGeneration;S.snapshots.push({generation:S.generation,objects:S.objects.slice()});S.pending=[];S.changes=[];S.budget=100;persist();render();q('#caption').textContent='Your trace is now part of a shared history.';notice('Generation '+result.generation.number+' is safely passed on')}catch(error){notice('Server unavailable — your local lineage is preserved')}};
 loadSharedWorld();
 </script><script>
@@ -84,7 +125,7 @@ const journey=document.createElement('aside');journey.className='journey';journe
 const journeyState=gameStorage.readObject('inherit-journey');
 function journeyStep(stage){journeyState[stage]=true;gameStorage.setItem('inherit-journey',JSON.stringify(journeyState));document.querySelectorAll('.journey-step').forEach(item=>item.classList.toggle('done',Boolean(journeyState[item.dataset.stage])))}
 document.querySelectorAll('[data-memory]').forEach(item=>item.addEventListener('click',()=>journeyStep('explorer')));
-q('#world').addEventListener('click',event=>{if(!event.target.closest('button,.panel,.dock,[data-memory]'))journeyStep('creator')});
+q('#world').addEventListener('click',event=>{if(!handoffPending&&!event.target.closest('button,.panel,.dock,[data-memory]'))journeyStep('creator')});
 q('#showHistory').addEventListener('click',()=>journeyStep('historian'));
 document.querySelectorAll('.journey-step').forEach(item=>item.classList.toggle('done',Boolean(journeyState[item.dataset.stage])));
 </script><script>
@@ -108,7 +149,72 @@ q('#return-now').onclick=returnToToday;
 window.addEventListener('click',function(event){if(replayGeneration!==null&&event.target.closest('#world')){event.stopImmediatePropagation();event.preventDefault()}},true);
 function addReplayChoices(){const rows=Array.from(document.querySelectorAll('#timeline .entry'));const entries=(S.history||[]).slice().reverse();rows.forEach(function(row,index){const entry=entries[index];if(!entry||row.querySelector('.replay-choice'))return;const frame=snapshotFor(entry.generation);if(!frame)return;const choice=document.createElement('button');choice.className='replay-choice';choice.textContent='View traces';choice.onclick=function(){q('#modal').close();drawReplay(frame)};row.appendChild(choice)})}
 q('#showHistory').addEventListener('click',function(){setTimeout(addReplayChoices,0)});
-q('#pass').onclick=async function(){if(!S.pending.length){notice('Leave one trace before passing the world on');return}const author=gameStorage.getItem('inherit-author')||'@You';const passedGeneration=S.generation;const frame={generation:passedGeneration,objects:copyObjects(S.objects)};try{const response=await fetch(apiWorld+'/generations',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({expectedGeneration:S.generation,author:author,message:S.pending.length+' new traces for the next person.',delta:S.pending})});if(response.status===409){notice('Someone changed this world — loading their generation');return loadSharedWorld()}if(!response.ok)throw new Error('save failed');const result=await response.json();S.snapshots=S.snapshots||[];S.snapshots.push(frame);S.history.push({generation:result.generation.number,by:result.generation.author,action:result.generation.message,when:'Just now'});S.generation=result.currentGeneration;S.pending=[];S.changes=[];S.budget=100;gameStorage.setItem('inherit-last-passed',String(result.currentGeneration));persist();render();q('#caption').textContent='Your trace is now part of a shared history.';notice('Generation '+result.generation.number+' is safely passed on')}catch(error){S.snapshots=S.snapshots||[];S.snapshots.push(frame);S.history.push({generation:passedGeneration,by:author,action:S.pending.length+' local traces preserved for the next person.',when:'Just now'});S.generation=passedGeneration+1;S.pending=[];S.changes=[];S.budget=100;persist();render();q('#caption').textContent='Your offline lineage is safe on this device.';notice('Server unavailable — saved as a local generation')}};
+async function requestGenerationHandoff(body){
+ const controller=typeof AbortController==='function'?new AbortController():null;
+ const expiresAt=Date.now()+12000;
+ let timer;
+ const deadline=new Promise((resolve,reject)=>{
+  timer=setTimeout(()=>{reject(new Error('handoff timeout'));controller?.abort()},12000);
+ });
+ try{
+  // No state changes inside this promise: even an unabortable late response is harmless.
+  const reply=await Promise.race([(async()=>{
+   const response=await fetch(apiWorld+'/generations',{method:'POST',headers:{'content-type':'application/json'},body:body,...(controller?{signal:controller.signal}:{})});
+   if(response.status===409)return {conflict:true};
+   if(!response.ok)throw new Error('save failed');
+   return {result:await response.json()};
+  })(),deadline]);
+  if(Date.now()>=expiresAt)throw new Error('handoff timeout');
+  return reply;
+ }finally{clearTimeout(timer)}
+}
+function validHandoffResult(result,generation){
+ return result&&typeof result==='object'&&!Array.isArray(result)
+  &&result.generation&&typeof result.generation==='object'&&!Array.isArray(result.generation)
+  &&result.generation.number===generation&&result.currentGeneration===generation+1
+  &&Number.isSafeInteger(result.currentGeneration)
+  &&typeof result.generation.author==='string'&&typeof result.generation.message==='string';
+}
+q('#pass').onclick=async function(){
+ if(blockWhileHandoff())return 'busy';
+ if(!S.pending.length){notice('Leave one trace before passing the world on');return 'empty'}
+ if(!Number.isSafeInteger(S.generation+1)){notice('This lineage cannot advance further. Export it before starting a new lineage.');return 'limit'}
+ const author=gameStorage.getItem('inherit-author')||'@You';
+ const passedGeneration=S.generation;
+ const delta=S.pending.map(item=>({type:item.type||item.tool,x:item.x,y:item.y}));
+ const frame={generation:passedGeneration,objects:copyObjects(S.objects)};
+ const body=JSON.stringify({expectedGeneration:passedGeneration,author:author,message:delta.length+' new traces for the next person.',delta:delta});
+ setHandoffBusy(true);worldRevision++;
+ q('#caption').textContent='Passing this generation. Traces are paused until the request finishes.';
+ notice('Generation handoff is in progress. Please wait.');
+ try{
+  let confirmed=false,entry,nextGeneration=passedGeneration+1;
+  try{
+   const reply=await requestGenerationHandoff(body);
+   if(reply.conflict){
+    gameStorage.online=true;window.InheritUI?.updateStorage?.();
+    q('#caption').textContent='The shared world changed. Your pending traces are unchanged; export before reloading.';
+    notice('The shared world changed. Your pending traces are unchanged; export before reloading.');
+    return 'conflict';
+   }
+   if(!validHandoffResult(reply.result,passedGeneration))throw new Error('invalid generation response');
+   const result=reply.result;
+   entry={generation:result.generation.number,by:result.generation.author,action:result.generation.message,when:'Just now'};
+   nextGeneration=result.currentGeneration;confirmed=true;
+  }catch(error){
+   // A failed or incomplete response cannot tell us whether the POST committed remotely.
+   entry={generation:passedGeneration,by:author,action:delta.length+' local traces preserved; server confirmation is unknown.',when:'Just now'};
+  }
+  // One commit path; presentation/storage errors must not append a second fallback frame.
+  S.snapshots=S.snapshots||[];S.snapshots.push(frame);S.history.push(entry);
+  S.generation=nextGeneration;S.pending=[];S.changes=[];S.budget=100;
+  if(confirmed)gameStorage.setItem('inherit-last-passed',String(nextGeneration));
+  persist();render();gameStorage.online=confirmed;window.InheritUI?.updateStorage?.();
+  q('#caption').textContent=confirmed?'Your trace is now part of a shared history.':'Saved locally. The server has not confirmed this generation.';
+  notice(confirmed?'Generation '+passedGeneration+' is safely passed on':'Saved locally. The server has not confirmed this generation.');
+  return confirmed?'confirmed':'local';
+ }finally{setHandoffBusy(false)}
+};
 </script><script>
 document.querySelectorAll('[data-memory]').forEach(function (item) {
   item.addEventListener('keydown', function (event) {
@@ -164,26 +270,32 @@ exportButton.onclick=function(){
 document.head.insertAdjacentHTML('beforeend','<style>.chronicle-export{margin-top:18px;border:1px solid #e7c77866;background:#e7c77812;color:#e7c778;padding:9px 11px;font:10px DM Mono,monospace;letter-spacing:.05em;text-transform:uppercase;cursor:pointer}.chronicle-export:hover{background:#e7c77825}</style>');
 </script><script>
 const importButton=document.createElement('button');
+importButton.id='inherit-import';
 importButton.className='chronicle-export';
 importButton.textContent='Import lineage';
 importButton.setAttribute('aria-label','Import a Quiet Reach lineage archive');
 importButton.title='Restore a previously exported lineage';
 const importInput=document.createElement('input');
+importInput.id='inherit-import-file';
 importInput.type='file'; importInput.accept='application/json'; importInput.hidden=true;
 chronicle.appendChild(importButton); chronicle.appendChild(importInput);
-importButton.onclick=function(){importInput.click()};
+importButton.onclick=function(){if(!blockWhileHandoff())importInput.click()};
 importInput.onchange=function(){
+  if(blockWhileHandoff()){importInput.value='';return}
+  const revision=worldRevision;
   const file=importInput.files&&importInput.files[0]; if(!file)return;
   const reader=new FileReader();
   reader.onload=function(){
     try{
+      if(blockWhileHandoff())return;
+      if(revision!==worldRevision){notice('The world changed while the archive was loading. Choose the file again.');return}
       const data=JSON.parse(reader.result);
       const allowed=['tree','stone','light','path','flower','arch','chime','moss','cairn','marker'];
       if(data.world!=='The Quiet Reach'||!Number.isInteger(data.generation)||data.generation<0||!Array.isArray(data.history)||!Array.isArray(data.objects)||data.objects.length>10000||!data.objects.every(function(item){return item&&allowed.includes(item.tool||item.type)&&Number.isFinite(Number(item.x))&&Number.isFinite(Number(item.y))&&Number(item.x)>=0&&Number(item.x)<=100&&Number(item.y)>=0&&Number(item.y)<=100}))throw new Error('invalid');
       const imported={generation:data.generation,history:data.history,objects:data.objects.map(function(item){return {tool:item.tool||item.type,x:Number(item.x),y:Number(item.y)}}),snapshots:Array.isArray(data.snapshots)?data.snapshots:[],budget:100,changes:[],pending:[]}; if(!gameStorage.validWorld(imported))throw new Error('invalid'); Object.assign(S,imported);
       persist(); render(); openChronicle(); notice('Lineage archive restored');
     }catch(error){notice('Archive rejected — invalid lineage file')}
-    importInput.value='';
+    finally{importInput.value=''}
   };
   reader.readAsText(file);
 };
@@ -222,6 +334,7 @@ document.addEventListener('keydown',function(event){
   if(!(event.ctrlKey||event.metaKey)||event.key.toLowerCase()!=='z')return;
   if(event.target.matches('input,textarea,[contenteditable="true"]'))return;
   event.preventDefault();
+  if(blockWhileHandoff())return;
   if(!S.pending||!S.pending.length){notice('Nothing to undo in this generation');return}
   const removed=S.pending.pop();
   S.objects.pop();
@@ -247,13 +360,13 @@ const referralGeneration=new URLSearchParams(location.search).get('inherit_gener
 if(referralGeneration&&/^\d{1,9}$/.test(referralGeneration)){const referred=Number(referralGeneration);track('heir_link_opened',{referralGeneration:referred});document.title='INHERIT — Generation '+referred;const ogDescription=document.querySelector('meta[property="og:description"]');if(ogDescription)ogDescription.setAttribute('content','Continue INHERIT from generation '+referred+'. Leave one trace and pass it on.');}
 let analyticsTraceCount=readAnalytics().filter(function(item){return item.event==='first_trace_placed'||item.event==='trace_placed'}).length;
 document.addEventListener('click',function(event){
-  if(event.target.closest('#world')&&!event.target.closest('button,.panel,.dock,[data-memory]')){
+  if(!handoffPending&&event.target.closest('#world')&&!event.target.closest('button,.panel,.dock,[data-memory]')){
     analyticsTraceCount+=1;
     track(analyticsTraceCount===1?'first_trace_placed':'trace_placed',{count:analyticsTraceCount});
     if(analyticsTraceCount===3)track('third_trace_placed',{count:analyticsTraceCount});
   }
 },true);
-q('#pass').addEventListener('click',function(){if(S.pending&&S.pending.length)track('generation_transfer_started',{pending:S.pending.length});},true);
+q('#pass').addEventListener('click',function(){if(!handoffPending&&S.pending&&S.pending.length)track('generation_transfer_started',{pending:S.pending.length});},true);
 const shareButton=document.createElement('button');
 shareButton.type='button';shareButton.className='share-generation';shareButton.textContent='Share this generation';shareButton.setAttribute('aria-label','Share this generation');
 q('#pass').insertAdjacentElement('afterend',shareButton);
@@ -309,10 +422,11 @@ q('#pass').onclick=async function(event){
   const generationBefore=Number(S.generation)||0;
   const pendingBefore=Array.isArray(S.pending)?S.pending.length:0;
   const previouslyPassed=gameStorage.getItem('inherit-last-passed')||'';
-  await passForAnalytics.call(this,event);
+  const outcome=await passForAnalytics.call(this,event);
   const generationAfter=Number(S.generation)||0;
   const recordedPass=gameStorage.getItem('inherit-last-passed')||'';
-  if(pendingBefore>0&&generationAfter>generationBefore&&recordedPass===String(generationAfter)&&recordedPass!==previouslyPassed)track('generation_transferred');
+  if(outcome==='confirmed'&&pendingBefore>0&&generationAfter>generationBefore&&recordedPass===String(generationAfter)&&recordedPass!==previouslyPassed)track('generation_transferred');
+  return outcome;
 };
 const returnedEventKey='inherit-lineage-returned-generation';
 setTimeout(function(){

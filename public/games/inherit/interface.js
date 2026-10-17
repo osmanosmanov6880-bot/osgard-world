@@ -21,6 +21,14 @@ const dictionary={
  "Mark a path": "Проложить тропу",
  "See history ↗": "История мира ↗",
  "Pass this world on →": "Завершить поколение →",
+ "Passing generation…": "Сохраняем поколение…",
+ "Generation handoff is in progress. Please wait.": "Поколение сохраняется. Дождитесь завершения.",
+ "Passing this generation. Traces are paused until the request finishes.": "Сохраняем поколение. Новые следы можно оставить после завершения запроса.",
+ "Saved locally. The server has not confirmed this generation.": "Поколение сохранено локально. Подтверждения сервера нет.",
+ "This generation stays in the open page only. Server confirmation is unknown; export before leaving.": "Поколение осталось только на открытой странице. Подтверждения сервера нет; экспортируйте мир перед уходом.",
+ "The shared world changed. Your pending traces are unchanged; export before reloading.": "Сетевой мир изменился. Ваши незавершённые следы сохранены без изменений; экспортируйте мир перед перезагрузкой.",
+ "The world changed while the archive was loading. Choose the file again.": "Мир изменился во время чтения архива. Выберите файл ещё раз.",
+ "This lineage cannot advance further. Export it before starting a new lineage.": "Это поколение больше нельзя продолжить. Экспортируйте мир перед началом новой истории.",
  "OBJECT MEMORY": "ПАМЯТЬ ОБЪЕКТА",
  "WORLD HISTORY": "ИСТОРИЯ МИРА",
  "Every change becomes a trace.": "Каждое действие оставляет след.",
@@ -262,6 +270,7 @@ dynamic.push(
  [/^Generation (\d+) holds (\d+) traces? across (\d+) kinds?\.$/,(n,c,k)=>'Поколение '+n+' · следов: '+c+' · видов: '+k+'.'],
  [/^Generation (\d+) is safely passed on$/,n=>'Сервис подтвердил поколение '+n+'.'],
  [/^(\d+) local traces preserved for the next person\.$/,n=>'Сохранено локальных следов: '+n+'.'],
+ [/^(\d+) local traces preserved; server confirmation is unknown\.$/,n=>'Сохранено локальных следов: '+n+'. Подтверждения сервера нет.'],
  [/^(\d+) new traces for the next person\.$/,n=>'Новых следов для следующего поколения: '+n+'.'],
  [/^(.+) continued your world in generation (\d+)\.$/,(a,n)=>a+' продолжил мир: поколение '+n+'.'],
  [/^Generation (\d+) (.+)\. Someone will find it after you pass this world on\.$/,(n,v)=>'Поколение '+n+': '+t(v)+'. След остаётся в истории мира.'],
@@ -270,7 +279,7 @@ dynamic.push(
  [/^I chose you as the next keeper of INHERIT, generation (\d+)\. Continue the island: (.+)$/,(n,url)=>'Приглашаю тебя стать хранителем INHERIT, поколение '+n+'. Открыть остров: '+url],
  [/^I am passing on INHERIT, generation (\d+) — (\d+) traces?, (\d+) kinds?\. Leave one trace and continue the island: (.+)$/,(n,c,k,url)=>'INHERIT, поколение '+n+' · следов: '+c+' · видов: '+k+'. Продолжить историю: '+url]
 );
-function ephemeralText(key){if(!persistence?.ephemeral)return key;return ({'Interest saved on this device':'Saved for this open page only','Founder interest saved locally':'Saved for this open page only','Server unavailable — saved as a local generation':'Server unavailable — this generation remains in the open page. Export before leaving.','Your offline lineage is safe on this device.':'The local world remains in this open page. Export before leaving.'})[key]||key}
+function ephemeralText(key){if(!persistence?.ephemeral)return key;return ({'Interest saved on this device':'Saved for this open page only','Founder interest saved locally':'Saved for this open page only','Server unavailable — saved as a local generation':'Server unavailable — this generation remains in the open page. Export before leaving.','Your offline lineage is safe on this device.':'The local world remains in this open page. Export before leaving.','Saved locally. The server has not confirmed this generation.':'This generation stays in the open page only. Server confirmation is unknown; export before leaving.'})[key]||key}
 function updateStorage(){
  const save=document.querySelector('#inherit-save-state'),online=document.querySelector('#inherit-online-state'),recovery=document.querySelector('#inherit-recovery');
  if(save)save.textContent=t(persistence?.ephemeral?'Save unavailable: the world stays in this open page only. Export it before leaving.':'Save: this browser only. Use Export lineage to keep a separate copy.');
