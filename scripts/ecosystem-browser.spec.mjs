@@ -179,6 +179,19 @@ async function prepareStandaloneGame(page) {
   return errors
 }
 
+async function expectInheritPanelsClosed(page) {
+  for (const selector of ['#panel', '.catalog', '.chronicle', '.return-card', '.replay-banner', '#toast']) {
+    const panel = page.locator(selector)
+    await expect(panel).toHaveCount(1)
+    await expect(panel).toBeHidden()
+    await expect(panel).toHaveJSProperty('hidden', true)
+    await expect(panel).toHaveAttribute('aria-hidden', 'true')
+    // Moving a fixed panel beyond the viewport still paints it in full-page screenshots.
+    expect(await panel.evaluate(node => getComputedStyle(node).display)).toBe('none')
+  }
+  await expect(page.locator('dialog[open]')).toHaveCount(0)
+}
+
 for (const [game, action, ru, en] of [
   ['inherit', '#pass', 'Завершить поколение', 'Pass this world on'],
   ['remix', '#start-match', 'Создать испытание дня', 'Create daily challenge'],
@@ -193,6 +206,10 @@ for (const [game, action, ru, en] of [
       await expect(page.locator('#api-url')).toBeHidden()
       await expect(page.locator('.remix-guide')).toContainText('Сохранение и онлайн')
       expect(await page.locator('#live-growth-console').evaluate(node => getComputedStyle(node).position)).toBe('relative')
+    } else {
+      await expectInheritPanelsClosed(page)
+      await expect(page.locator('#inherit-enter')).toBeInViewport()
+      expect(await page.locator('.journey').evaluate(node => node.parentElement.classList.contains('inherit-guide') && getComputedStyle(node).position === 'static')).toBe(true)
     }
     for (const [language, label] of [['en', en], ['ru', ru]]) {
       await page.locator('[data-game-language="' + language + '"]').click()
@@ -200,12 +217,51 @@ for (const [game, action, ru, en] of [
       await expect(page.locator(action)).toContainText(label)
       await expect(page.locator('[data-game-language="' + language + '"]')).toHaveAttribute('aria-pressed', 'true')
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true)
+      if (game === 'inherit') {
+        await expectInheritPanelsClosed(page)
+        if (info.project.name === 'mobile') {
+          expect(await page.evaluate(() => {
+            const bounds = selector => document.querySelector(selector).getBoundingClientRect()
+            return bounds('.objective').bottom <= bounds('.community-signal').top && bounds('.community-signal').bottom <= bounds('.hero').top
+          })).toBe(true)
+        }
+      }
     }
     expect(await page.evaluate(() => localStorage.getItem('osgard:game-language'))).toBe('ru')
     await page.screenshot({ path: info.outputPath(game + '-interface.png'), fullPage: true })
+    if (game === 'inherit') {
+      await expectInheritPanelsClosed(page)
+      await page.screenshot({ path: info.outputPath('inherit-entry-viewport.png') })
+    }
     expect(errors).toEqual([])
   })
 }
+
+test('INHERIT catalog and chronicle open on request and close without ghost panels', async ({ page }, info) => {
+  const errors = await prepareStandaloneGame(page)
+  await page.goto('/games/inherit/', { waitUntil: 'domcontentloaded' })
+  await expect(page.locator('#pass')).toContainText('Завершить поколение')
+  await expectInheritPanelsClosed(page)
+  await page.locator('.catalog-button').click()
+  await expect(page.locator('.catalog')).toBeVisible()
+  await expect(page.locator('.catalog')).toHaveJSProperty('inert', false)
+  await expect(page.locator('.catalog [data-extra]')).toHaveCount(6)
+  await expect(page.locator('.catalog-button')).toHaveAttribute('aria-expanded', 'true')
+  await page.keyboard.press('Escape')
+  await expect(page.locator('.catalog-button')).toHaveAttribute('aria-expanded', 'false')
+  await expectInheritPanelsClosed(page)
+  await page.locator('.chronicle-button').click()
+  await expect(page.locator('.chronicle')).toBeVisible()
+  await expect(page.locator('.chronicle')).toHaveJSProperty('inert', false)
+  await expect(page.locator('.chronicle-button')).toHaveAttribute('aria-expanded', 'true')
+  await expect(page.locator('#chronicle-list li')).toHaveCount(4)
+  await page.locator('.chronicle .close').click()
+  await expect(page.locator('.chronicle-button')).toHaveAttribute('aria-expanded', 'false')
+  await expectInheritPanelsClosed(page)
+  await page.evaluate(() => scrollTo(0, 0))
+  await page.screenshot({ path: info.outputPath('inherit-panels-closed.png'), fullPage: true })
+  expect(errors).toEqual([])
+})
 
 test('INHERIT keyboard placement keeps the selected trace through ordinary keys and language changes', async ({ page }) => {
   const errors = await prepareStandaloneGame(page)

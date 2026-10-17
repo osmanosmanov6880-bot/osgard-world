@@ -281,6 +281,8 @@ function init(){
  ready=true;document.documentElement.lang=locale;
  const intro=document.createElement('section');intro.className='inherit-guide';intro.innerHTML='<div class="inherit-guide-heading"><div><span class="eyebrow">How to play</span><h2>Choose a trace. Leave it on the island.</h2></div></div><p>Start with three different trace types. Finish the generation when you are ready to begin the next chapter.</p><p id="inherit-controls">Controls: click or tap the island; 1–0 chooses a trace. Focus the island, use arrows and Enter to place. Ctrl/Cmd+Z undoes the last trace; H opens the chronicle.</p><div class="inherit-storage" role="status"><p id="inherit-save-state"></p><p id="inherit-online-state"></p></div><p class="inherit-truth">The first four entries are a fictional introduction. Names in local history do not mean other people are online. An invitation shares the route, not your local save.</p><div class="inherit-guide-actions"><button type="button" class="save" id="inherit-enter">Enter the island</button><a href="/play#catalog">← Каталог / Catalog</a></div><div id="inherit-recovery" hidden><p>An unreadable save was preserved separately. A fresh local world is open; you can download the original.</p><button type="button" id="inherit-recovery-download">Download recovered save</button></div>';
  document.querySelector('.app > header').insertAdjacentElement('afterend',intro);intro.querySelector('.inherit-guide-heading').appendChild(languageTools());
+ intro.querySelector('.inherit-guide-heading').insertAdjacentElement('afterend',intro.querySelector('.inherit-guide-actions'));
+ const journey=document.querySelector('.journey');if(journey)intro.appendChild(journey);
  const world=document.querySelector('#world');world.tabIndex=0;world.setAttribute('aria-label','Island: choose a location with arrows and place with Enter');world.setAttribute('aria-describedby','inherit-controls');
  document.querySelector('#inherit-enter').addEventListener('click',()=>{world.focus();world.scrollIntoView({block:'center',behavior:'auto'})});
  const cursor=document.createElement('span');cursor.className='inherit-cursor';cursor.setAttribute('aria-hidden','true');document.querySelector('#island').appendChild(cursor);let point={x:50,y:35};
@@ -291,7 +293,13 @@ function init(){
  document.querySelectorAll('[data-memory]').forEach(node=>node.setAttribute('aria-label',({tree:'Old tree: read its memory',ruin:'Stone arch: read its memory',beacon:'Beacon: read its memory'})[node.dataset.memory]));
  document.querySelectorAll('.close').forEach(button=>{if(!button.hasAttribute('aria-label'))button.setAttribute('aria-label','Close memory')});
  document.querySelector('#inherit-recovery-download').addEventListener('click',()=>{const raw=persistence?.getItem(persistence.recoveryKey);if(!raw)return;const url=URL.createObjectURL(new Blob([raw],{type:'application/json'}));const link=document.createElement('a');link.href=url;link.download='inherit-original-save.json';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000)});
- for(const [selector,openClass] of [['#panel','show'],['.catalog','open'],['.chronicle','open']]){const item=document.querySelector(selector);if(!item)continue;const sync=()=>{const open=item.classList.contains(openClass);item.inert=!open;item.setAttribute('aria-hidden',String(!open))};sync();new MutationObserver(sync).observe(item,{attributes:true,attributeFilter:['class']})}
+ for(const [selector,openClass,triggerSelector] of [['#panel','show'],['.catalog','open','.catalog-button'],['.chronicle','open','.chronicle-button'],['.return-card','show'],['.replay-banner','show'],['#toast','show']]){
+  const item=document.querySelector(selector);if(!item)continue;
+  const trigger=triggerSelector?document.querySelector(triggerSelector):null;
+  if(trigger){if(!item.id)item.id='inherit-'+selector.slice(1);trigger.setAttribute('aria-controls',item.id)}
+  const sync=()=>{const open=item.classList.contains(openClass);item.hidden=!open;item.inert=!open;item.setAttribute('aria-hidden',String(!open));if(trigger)trigger.setAttribute('aria-expanded',String(open))};
+  sync();new MutationObserver(sync).observe(item,{attributes:true,attributeFilter:['class']});
+ }
  apply();updateStorage();watch();
 }
 window.InheritUI={t,setLanguage,getLanguage:()=>locale,updateStorage};
