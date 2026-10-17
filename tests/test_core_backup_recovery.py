@@ -64,8 +64,8 @@ class RecoveryDrillTest(unittest.TestCase):
 
     def test_database_without_tables_rejected(self):
         self.backup.unlink()
-        with sqlite3.connect(self.backup):
-            pass
+        with sqlite3.connect(self.backup) as db:
+            db.execute("PRAGMA user_version = 1")
         with self.assertRaisesRegex(ValueError, "no SQLite tables"):
             module.drill(self.backup)
 
