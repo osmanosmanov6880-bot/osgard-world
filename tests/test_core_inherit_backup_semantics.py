@@ -17,6 +17,13 @@ class InheritBackupSemanticTests(InheritFixture, unittest.TestCase):
         dest = self.base / (uuid.uuid4().hex + '.sqlite3')
         checksum = backup(self.store.path, dest)
         self.assertEqual(hashlib.sha256(dest.read_bytes()).hexdigest(), checksum)
+        # These tests deliberately mutate the *copied* SQLite file. A Core
+        # backup may itself use WAL mode; changing its journal mode to DELETE
+        # on this disposable copy avoids creating active -wal/-shm sidecars
+        # when injecting corruption. The verifier's sidecar ban is unchanged.
+        with sqlite3.connect(dest) as db:
+            self.assertEqual(db.execute('PRAGMA journal_mode=DELETE').fetchone()[0].lower(),
+                             'delete')
         return dest
 
     def mutate_copy(self, path, sql, args=()):
