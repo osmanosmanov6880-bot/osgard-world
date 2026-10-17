@@ -5,7 +5,7 @@ p=Path(__file__).resolve().parents[1]/"scripts/release-pr-dependency-audit.py"
 s=importlib.util.spec_from_file_location("pr_audit",p);m=importlib.util.module_from_spec(s);s.loader.exec_module(m)
 class PRAuditTest(unittest.TestCase):
  def fixture(self):
-  return [{"number":n,"state":"open","base":m.BASE_BRANCHES[n],"draft":True,"mergeable":True,"head_sha":"a"*40} for n in m.CHAIN]
+  return [{"number":n,"state":"open","base":m.BASE_BRANCHES[n],"draft":True,"mergeable":True,"head_sha":"a"*40,"head_ref":m.BASE_BRANCHES[n+1] if n!=m.CHAIN[-1] else "integration/live-pr-chain-audit-2026-10-17"} for n in m.CHAIN]
  def test_complete_review_only(self):
   r=m.inspect(self.fixture())
   self.assertEqual(r["status"],"ready_for_independent_review")

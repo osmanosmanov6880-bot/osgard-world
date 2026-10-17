@@ -16,12 +16,12 @@ class TestLivePRAudit(unittest.TestCase):
  def record(self,n):
   return {"number":n,"state":"open","draft":True,"mergeable":True,
           "base":{"ref":m.POLICY.BASE_BRANCHES[n],"repo":{"full_name":m.POLICY.CANONICAL}},
-          "head":{"sha":"a"*40}}
+          "head":{"sha":"a"*40,"ref":m.POLICY.BASE_BRANCHES[n+1] if n!=m.POLICY.CHAIN[-1] else "integration/live-pr-chain-audit-2026-10-17","repo":{"full_name":m.POLICY.CANONICAL}}}
  def test_live_success(self):
   def fake(n):
    x=self.record(n)
    return {"number":n,"state":x["state"],"draft":x["draft"],"mergeable":x["mergeable"],
-           "base":x["base"]["ref"],"head_sha":x["head"]["sha"]}
+           "base":x["base"]["ref"],"head_sha":x["head"]["sha"],"head_ref":x["head"]["ref"]}
   self.assertEqual(m.audit_live(fake)["status"],"ready_for_independent_review")
  def test_wrong_repo_refused(self):
   n=107;data=self.record(n);data["base"]["repo"]["full_name"]="evil/other"
@@ -43,6 +43,6 @@ class TestLivePRAudit(unittest.TestCase):
   with self.assertRaisesRegex(ValueError,"unexpected PR number"):m.fetch_pr(999)
  def test_incomplete_chain_blocked(self):
   def fake(n):
-   return {"number":n,"state":"open","draft":True,"mergeable":None,"base":m.POLICY.BASE_BRANCHES[n],"head_sha":"a"*40}
+   return {"number":n,"state":"open","draft":True,"mergeable":None,"base":m.POLICY.BASE_BRANCHES[n],"head_sha":"a"*40,"head_ref":m.POLICY.BASE_BRANCHES[n+1] if n!=m.POLICY.CHAIN[-1] else "integration/live-pr-chain-audit-2026-10-17"}
   self.assertEqual(m.audit_live(fake)["status"],"blocked")
 if __name__=="__main__":unittest.main()

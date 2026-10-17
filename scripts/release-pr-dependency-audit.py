@@ -2,9 +2,9 @@
 """Auditable dry-run plan for stacking OSGARD pull requests. Never merges or deploys."""
 import argparse,json,sys
 from pathlib import Path
-CHAIN=tuple(range(107,123))
+CHAIN=tuple(range(107,125))
 CANONICAL="osmanosmanov6880-bot/osgard-world"
-BASE_BRANCHES={107:"master",108:"integration/osgard-quality-suite-2026-10-17",109:"security/attested-release-evidence-2026-10-17",110:"release/artifact-provenance-manifest-2026-10-17",111:"release/zip-manifest-binding-2026-10-17",112:"release/end-to-end-bundle-verification-2026-10-17",113:"qa/staged-game-route-contract-2026-10-17",114:"ci/full-source-release-acceptance-2026-10-17",115:"qa/staging-operations-suite-2026-10-17",116:"hardening/release-quality-fixes-2026-10-17",117:"hardening/release-safety-batch-2026-10-17",118:"hardening/integrated-release-2026-10-17",119:"integration/three-step-acceptance-2026-10-17",120:"engineering/three-block-fifteen-tasks-2026-10-17",121:"hardening/release-evidence-integrity-2026-10-17",122:"hardening/release-proof-validation-2026-10-17"}
+BASE_BRANCHES={107:"master",108:"integration/osgard-quality-suite-2026-10-17",109:"security/attested-release-evidence-2026-10-17",110:"release/artifact-provenance-manifest-2026-10-17",111:"release/zip-manifest-binding-2026-10-17",112:"release/end-to-end-bundle-verification-2026-10-17",113:"qa/staged-game-route-contract-2026-10-17",114:"ci/full-source-release-acceptance-2026-10-17",115:"qa/staging-operations-suite-2026-10-17",116:"hardening/release-quality-fixes-2026-10-17",117:"hardening/release-safety-batch-2026-10-17",118:"hardening/integrated-release-2026-10-17",119:"integration/three-step-acceptance-2026-10-17",120:"engineering/three-block-fifteen-tasks-2026-10-17",121:"hardening/release-evidence-integrity-2026-10-17",122:"hardening/release-proof-validation-2026-10-17",123:"hardening/release-proof-boundaries-2026-10-17",124:"integration/release-readiness-2026-10-17"}
 def inspect(rows):
     errors=[]
     byid={}
@@ -19,6 +19,7 @@ def inspect(rows):
         if not p:errors.append(f"missing PR {n}");continue
         if p.get("state")!="open":errors.append(f"PR {n} not open")
         if p.get("base")!=BASE_BRANCHES[n]:errors.append(f"PR {n} changed base")
+        if n!=CHAIN[-1] and p.get("head_ref")!=BASE_BRANCHES[n+1]:errors.append(f"PR {n} head is not parent of next PR")
         if p.get("draft") is not True:errors.append(f"PR {n} unexpectedly not draft")
         if p.get("mergeable") is not True:errors.append(f"PR {n} not confirmed mergeable")
         if not isinstance(p.get("head_sha"),str) or len(p["head_sha"])!=40 or any(c not in "0123456789abcdef" for c in p["head_sha"]):errors.append(f"PR {n} invalid head sha")
