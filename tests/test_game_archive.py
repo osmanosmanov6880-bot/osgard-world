@@ -105,6 +105,27 @@ class GameArchiveTests(unittest.TestCase):
             z.writestr("GAMES/index.html",b"<html></html>")
         with self.assertRaisesRegex(ValueError,"case-colliding"):
             m.verify(self.file)
+    def test_zip_parent_traversal_rejected(self):
+        self.pack()
+        with zipfile.ZipFile(self.file,"a") as z:
+            z.writestr("../outside.txt",b"bad")
+        with self.assertRaisesRegex(ValueError,"unsafe ZIP"):
+            m.verify(self.file)
+    def test_zip_backslash_path_rejected(self):
+        self.pack()
+        with zipfile.ZipFile(self.file,"a") as z:
+            z.writestr("games\\\\escape.txt",b"bad")
+        with self.assertRaisesRegex(ValueError,"unsafe ZIP"):
+            m.verify(self.file)
+    def test_zip_symlink_rejected(self):
+        self.pack()
+        info=zipfile.ZipInfo("games/unsafe-link")
+        info.create_system=3
+        info.external_attr=(0o120777<<16)
+        with zipfile.ZipFile(self.file,"a") as z:
+            z.writestr(info,b"../../unsafe")
+        with self.assertRaisesRegex(ValueError,"symlink"):
+            m.verify(self.file)
     def test_no_remote_forced(self):
         self.files["games/zion-9/queue/ZION-020/index.html"]=b'<html><script src="https://example.com"></script></html>'
         self.assertEqual(m.verify(self.pack())["status"],"verified")
