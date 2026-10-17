@@ -14,6 +14,9 @@ def inspect(rows):
         n=row["number"]
         if n in byid:errors.append(f"duplicate PR {n}")
         byid[n]=row
+    if set(byid)!=set(CHAIN):
+        errors.append("PR snapshot contains unexpected or missing PR numbers")
+    seen_heads=set()
     for n in CHAIN:
         p=byid.get(n)
         if not p:errors.append(f"missing PR {n}");continue
@@ -22,7 +25,13 @@ def inspect(rows):
         if n!=CHAIN[-1] and p.get("head_ref")!=BASE_BRANCHES[n+1]:errors.append(f"PR {n} head is not parent of next PR")
         if p.get("draft") is not True:errors.append(f"PR {n} unexpectedly not draft")
         if p.get("mergeable") is not True:errors.append(f"PR {n} not confirmed mergeable")
-        if not isinstance(p.get("head_sha"),str) or len(p["head_sha"])!=40 or any(c not in "0123456789abcdef" for c in p["head_sha"]):errors.append(f"PR {n} invalid head sha")
+        sha=p.get("head_sha")
+        if not isinstance(sha,str) or len(sha)!=40 or any(c not in "0123456789abcdef" for c in sha):
+            errors.append(f"PR {n} invalid head sha")
+        elif sha in seen_heads:
+            errors.append(f"PR {n} reuses another PR head commit")
+        else:
+            seen_heads.add(sha)
     return {"status":"ready_for_independent_review" if not errors else "blocked","problems":errors,
             "suggested_order":list(CHAIN),"merge_performed":False,"deploy_performed":False,
             "notice":"PR 103-106 overlap with integrated PR 107; do not merge both sets blindly. Review push-to-master workflow triggers."}
