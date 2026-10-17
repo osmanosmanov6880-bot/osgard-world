@@ -1,0 +1,80 @@
+name: SkillCred startup diagnostic
+
+on:
+  # A diagnostic records the public release once when its PR is opened.
+  # Later product commits do not repeatedly profile the unchanged live page.
+  pull_request:
+    branches: [master]
+    types: [opened, reopened]
+    paths:
+      - ".github/workflows/skillcred-startup-diagnostic.yml"
+      - "scripts/analyze-skillcred-trace.mjs"
+      - "scripts/skillcred-diagnostic-provenance.mjs"
+  workflow_dispatch:
+    inputs:
+      expected_release:
+        description: Optional published release SHA or its 12-character marker
+        required: false
+        default: ""
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: skillcred-startup-diagnostic-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Validate the raw-trace analyzer and provenance checks
+        run: |
+          node scripts/analyze-skillcred-trace.mjs --self-test
+          node scripts/skillcred-diagnostic-provenance.mjs --self-test
+      - name: Capture normal and instrumented mobile startup on one Chrome binary
+        env:
+          SKILLCRED_EXPECTED_RELEASE: ${{ inputs.expected_release }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/skillcred-startup
+          export CHROME_PATH="$(command -v google-chrome)"
+          test -x "$CHROME_PATH"
+          node scripts/skillcred-diagnostic-provenance.mjs capture /tmp/skillcred-startup/before.json
+          npx --yes lighthouse@12.8.2 https://osgard.world/skillcred/ \
+            --chrome-flags="--headless --no-sandbox --disable-dev-shm-usage" \
+            --only-categories=performance --output=json \
+            --output-path=/tmp/skillcred-startup/normal.json --save-assets --quiet
+          npx --yes lighthouse@12.8.2 https://osgard.world/skillcred/ \
+            --chrome-flags="--headless --no-sandbox --disable-dev-shm-usage" \
+            --additional-trace-categories=disabled-by-default-v8.cpu_profiler \
+            --only-categories=performance --output=json \
+            --output-path=/tmp/skillcred-startup/sampled.json --save-assets --quiet
+          node scripts/skillcred-diagnostic-provenance.mjs capture /tmp/skillcred-startup/after.json
+          node scripts/skillcred-diagnostic-provenance.mjs verify /tmp/skillcred-startup
+      - name: Attribute actual main-thread tasks and CPU samples
+        run: |
+          set -euo pipefail
+          node scripts/analyze-skillcred-trace.mjs \
+            /tmp/skillcred-startup/normal.json /tmp/skillcred-startup/normal-0.trace.json \
+            /tmp/skillcred-startup/normal-analysis.json
+          node scripts/analyze-skillcred-trace.mjs \
+            /tmp/skillcred-startup/sampled.json /tmp/skillcred-startup/sampled-0.trace.json \
+            /tmp/skillcred-startup/sampled-analysis.json
+      - name: Retain the diagnostic capture independently of the 100-point audit
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: skillcred-startup-diagnostic
+          path: /tmp/skillcred-startup/*.json
+          if-no-files-found: error
+          retention-days: 14
+
+# Success means a consistent diagnostic was captured, not Lighthouse acceptance.
+# The normal post-deployment workflow retains its unchanged four-category 100 gate.
