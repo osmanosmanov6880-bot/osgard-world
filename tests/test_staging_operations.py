@@ -66,14 +66,14 @@ class OperationsTest(unittest.TestCase):
  def test_security_headers_only_for_subpath_are_rejected(self):
   with tempfile.TemporaryDirectory() as d:
    root=Path(d)
-   (root/"_headers").write_text("/assets/*\\n  X-Content-Type-Options: nosniff\\n  Referrer-Policy: strict-origin\\n")
+   (root/"_headers").write_text("/assets/*\n  X-Content-Type-Options: nosniff\n  Referrer-Policy: strict-origin\n")
    (root/"_redirects").write_text("/old /new 301")
    (root/"robots.txt").write_text("User-agent: *")
    self.assertEqual(config.audit(root)["status"],"blocked")
  def test_global_header_ruleset_valid(self):
   with tempfile.TemporaryDirectory() as d:
    root=Path(d)
-   (root/"_headers").write_text("/*\\n  X-Content-Type-Options: nosniff\\n  Referrer-Policy: strict-origin-when-cross-origin\\n")
+   (root/"_headers").write_text("/*\n  X-Content-Type-Options: nosniff\n  Referrer-Policy: strict-origin-when-cross-origin\n")
    (root/"_redirects").write_text("/old /new 301")
    (root/"robots.txt").write_text("User-agent: *")
    self.assertEqual(config.audit(root)["status"],"passed")
