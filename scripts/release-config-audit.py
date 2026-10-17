@@ -21,9 +21,17 @@ def audit(root):
     except (UnicodeError,OSError):
         headers=""
         failures.append("unreadable headers")
-    for setting in ("X-Content-Type-Options: nosniff","Referrer-Policy:"):
-        if setting.lower() not in headers.lower():
-            failures.append("missing security header "+setting)
+    declarations={}
+    for line in headers.splitlines():
+        stripped=line.strip()
+        if not stripped or stripped.startswith("#") or ":" not in stripped:
+            continue
+        name,value=stripped.split(":",1)
+        declarations.setdefault(name.strip().lower(),[]).append(value.strip().lower())
+    if "nosniff" not in declarations.get("x-content-type-options",[]):
+        failures.append("missing security header X-Content-Type-Options: nosniff")
+    if not any(value for value in declarations.get("referrer-policy",[])):
+        failures.append("missing security header Referrer-Policy:")
     for path in root.rglob("*"):
         relative=path.relative_to(root)
         if path.is_symlink():
