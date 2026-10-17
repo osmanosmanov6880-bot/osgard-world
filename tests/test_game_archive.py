@@ -50,6 +50,16 @@ class GameArchiveTests(unittest.TestCase):
     def test_unexpected_worlds(self):
         self.worlds=self.worlds[:-1]
         with self.assertRaisesRegex(ValueError,"11 worlds"):m.verify(self.pack())
+    def test_oversized_world_manifest(self):
+        self.pack()
+        with zipfile.ZipFile(self.file,"a") as z:
+            z.writestr("games/zion-9/worlds.json",b" "* (m.MAX_WORLD_MANIFEST_BYTES+1))
+        with self.assertRaisesRegex(ValueError,"oversized"):
+            m.verify(self.file)
+    def test_oversized_game_html(self):
+        self.files["games/zion-9/queue/ZION-020/index.html"]=b"<html>"+b"x"*(m.MAX_GAME_HTML_BYTES+1)+b"</html>"
+        with self.assertRaisesRegex(ValueError,"oversized"):
+            m.verify(self.pack())
     def test_no_remote_forced(self):
         self.files["games/zion-9/queue/ZION-020/index.html"]=b'<html><script src="https://example.com"></script></html>'
         self.assertEqual(m.verify(self.pack())["status"],"verified")
