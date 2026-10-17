@@ -218,6 +218,26 @@ def validate_result(value, match_id, state):
 class SnapshotStore:
     """Snapshots, ownership, submission counters and creation intents; no sessions."""
 
+    @staticmethod
+    def validate_protected_schema(db):
+        # A schema-2 database has already crossed the protection boundary.
+        # Recreating a lost ownership table as empty could classify protected
+        # frozen results as anonymous. Refuse incomplete/restored fragments;
+        # recovery requires the consistent database, not an empty ACL catalog.
+        required = {
+            "terminal_matches": [("match_id", 1), ("state_json", 0), ("result_json", 0), ("observed_at", 0), ("finalized_at", 0)],
+            "guard_health": [("id", 1), ("sequence", 0)],
+            "owned_matches": [("match_id", 1), ("owner_id", 0), ("player_id", 0), ("match_json", 0), ("highest_submitted_sequence", 0)],
+            "owned_creation_attempts": [("owner_id", 1), ("operation_key", 2), ("request_hash", 0), ("status", 0),
+                                        ("match_id", 0), ("upstream_status", 0), ("created_at", 0)],
+            "anonymous_matches": [("match_id", 1)],
+        }
+        for name, columns in required.items():
+            table = db.execute("SELECT type FROM sqlite_master WHERE name=?", (name,)).fetchone()
+            actual = [(row["name"], row["pk"]) for row in db.execute(f'PRAGMA table_info("{name}")')]
+            if table is None or table["type"] != "table" or actual != columns:
+                raise ValueError("Protected REMIX storage schema is incomplete. Restore a consistent database before starting.")
+
     def __init__(self, path):
         self.request_context = threading.local()
         self.path = Path(path).absolute()
@@ -232,6 +252,8 @@ class SnapshotStore:
                 raise ValueError("REMIX guard database integrity check failed.")
             db.execute("PRAGMA journal_mode=WAL")
             db.execute("BEGIN IMMEDIATE")
+            if db.execute("PRAGMA user_version").fetchone()[0] == OWNED_SCHEMA_VERSION:
+                self.validate_protected_schema(db)
             db.execute("""CREATE TABLE IF NOT EXISTS terminal_matches(
                 match_id TEXT PRIMARY KEY,
                 state_json TEXT,
@@ -257,6 +279,10 @@ class SnapshotStore:
             # subsequent ACL-aware start or disabled-creation rollback never lowers it.
             if db.execute("PRAGMA user_version").fetchone()[0] == 0:
                 db.execute(f"PRAGMA user_version={VERSION}")
+            if (db.execute("PRAGMA user_version").fetchone()[0] == VERSION and
+                    (db.execute("SELECT 1 FROM owned_matches LIMIT 1").fetchone() is not None or
+                     db.execute("SELECT 1 FROM owned_creation_attempts LIMIT 1").fetchone() is not None)):
+                raise ValueError("Protected ownership data require REMIX storage schema 2.")
             db.commit()
         os.chmod(self.path, 0o600)
 

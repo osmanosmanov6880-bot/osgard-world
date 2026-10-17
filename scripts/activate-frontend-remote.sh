@@ -40,18 +40,88 @@ verify_remix_owned_rollout() {
     echo 'Owned REMIX creation requires a running, verified ACL-aware rollback build. Deploy the disabled foundation first.' >&2
     return 1
   fi
-  # Inspect only networking metadata. No environment, credentials or source is read.
-  if ! docker inspect --format '{"network":{{json .HostConfig.NetworkMode}},"ports":{{json .NetworkSettings.Ports}}}' remix-api | python3 -c '
-import ipaddress,json,sys
-v=json.load(sys.stdin)
-assert v["network"] != "host" and not v["network"].startswith("container:"), "Legacy API shares an unverified host/container network"
-for bindings in (v["ports"] or {}).values():
-    for binding in bindings or []:
-        assert ipaddress.ip_address(binding["HostIp"]).is_loopback, "Legacy API has a public host-port bypass"
-'; then
-    echo 'The legacy REMIX API networking must exclude public access around the ownership guard before creation is enabled.' >&2
+  # Only networking/version metadata is read. Neither environment nor private
+  # source/configuration is exported. Loopback publication alone is insufficient
+  # with direct routing: require the legacy API to have no published ports.
+  local legacy_metadata network_ids network_id network_metadata docker_version
+  if ! legacy_metadata="$(docker inspect --format '{"network":{{json .HostConfig.NetworkMode}},"ports":{{json .NetworkSettings.Ports}},"configuredPorts":{{json .HostConfig.PortBindings}},"publishAllPorts":{{json .HostConfig.PublishAllPorts}},"running":{{json .State.Running}},"networks":{{json .NetworkSettings.Networks}}}' remix-api)"; then
+    echo 'Unable to inspect legacy REMIX networking; owned creation remains disabled.' >&2
     return 1
   fi
+  if ! network_ids="$(python3 -c '
+import json,re,sys
+def require(value,message):
+    if not value: raise SystemExit(message)
+v=json.load(sys.stdin)
+require(isinstance(v,dict) and v.get("running") is True, "Legacy API must be running with verifiable networking")
+require(v.get("publishAllPorts") is False, "Legacy API must not publish ports automatically")
+for field in ("ports","configuredPorts"):
+    ports=v[field]
+    require(ports is None or isinstance(ports,dict), "Invalid legacy port metadata")
+    for bindings in (ports or {}).values():
+        require(bindings is None or bindings == [], "All legacy API ports must be unpublished, including loopback bindings")
+attached=v["networks"]
+require(isinstance(attached,dict) and 1 <= len(attached) <= 16, "Legacy API needs verifiable attached user-defined networks")
+ids=[]
+for name,endpoint in attached.items():
+    require(isinstance(name,str) and name not in ("bridge","host","none") and 1 <= len(name) <= 255,
+            "Default or shared legacy network is not supported")
+    require(isinstance(endpoint,dict), "Invalid attached network metadata")
+    identifier=endpoint.get("NetworkID")
+    require(isinstance(identifier,str) and re.fullmatch(r"[a-f0-9]{64}",identifier) and identifier not in ids,
+            "Attached network must have one unambiguous Docker network ID")
+    ids.append(identifier)
+mode=v["network"]
+require(isinstance(mode,str) and (mode in attached or mode in ids), "Legacy network mode must match an attached user-defined network")
+print("\n".join(ids))
+' <<< "$legacy_metadata")"; then
+    echo 'Legacy REMIX ports and network attachments do not satisfy the ownership boundary.' >&2
+    return 1
+  fi
+  # Docker 28 introduced default filtering of directly routed unpublished
+  # ports. This gate relies on supported Docker firewall behavior, not on a
+  # claim that metadata proves arbitrary host firewall/daemon modifications.
+  # https://docs.docker.com/engine/release-notes/28/
+  if ! docker_version="$(docker version --format '{{.Server.Version}}')" || ! python3 -c '
+import re,sys
+match=re.fullmatch(r"([0-9]+)\.([0-9]+)\.([0-9]+)(?:\+[A-Za-z0-9.-]+)?",sys.stdin.read().strip())
+if match is None or tuple(map(int,match.group(1,2,3))) < (28,0,0):
+    raise SystemExit("Owned creation requires a recognized stable Docker Engine version 28 or newer")
+' <<< "$docker_version"; then
+    echo 'Docker networking support could not be verified; owned creation remains disabled.' >&2
+    return 1
+  fi
+  while IFS= read -r network_id; do
+    if ! network_metadata="$(docker network inspect --format '{"id":{{json .Id}},"name":{{json .Name}},"driver":{{json .Driver}},"scope":{{json .Scope}},"internal":{{json .Internal}},"ingress":{{json .Ingress}},"configOnly":{{json .ConfigOnly}},"options":{{json .Options}}}' "$network_id")"; then
+      echo 'An attached legacy REMIX network could not be inspected; owned creation remains disabled.' >&2
+      return 1
+    fi
+    if ! python3 -c '
+import json,sys
+def require(value,message):
+    if not value: raise SystemExit(message)
+container=json.loads(sys.argv[1]);identifier=sys.argv[2];v=json.load(sys.stdin)
+require(isinstance(v,dict) and v.get("id") == identifier, "Network inspection returned a different network")
+names=[name for name,endpoint in container["networks"].items() if endpoint["NetworkID"] == identifier]
+require(names == [v.get("name")], "Network name and attached ID disagree")
+require(v.get("driver") == "bridge" and v.get("scope") == "local", "Only local user-defined bridge networks are supported")
+require(type(v.get("internal")) is bool and v.get("ingress") is False and v.get("configOnly") is False,
+        "Ingress, configuration-only or unknown network state is not supported")
+options=v["options"]
+require(options is None or isinstance(options,dict), "Invalid network driver options")
+options=options or {}
+require(all(isinstance(key,str) and isinstance(value,str) for key,value in options.items()), "Unknown network option format")
+for family in ("ipv4","ipv6"):
+    require(options.get("com.docker.network.bridge.gateway_mode_"+family,"nat") == "nat",
+            "Routed, unprotected, isolated or unknown gateway modes cannot enable ownership")
+require("com.docker.network.bridge.trusted_host_interfaces" not in options, "Trusted host interfaces allow unverified direct routing")
+require(options.get("com.docker.network.bridge.default_bridge","false") == "false", "The default bridge is not supported")
+require(options.get("com.docker.network.bridge.enable_ip_masquerade","true") == "true", "Nonstandard bridge masquerading is not supported")
+' "$legacy_metadata" "$network_id" <<< "$network_metadata"; then
+      echo 'An attached legacy REMIX network permits unsupported routing around the ownership guard.' >&2
+      return 1
+    fi
+  done <<< "$network_ids"
 }
 
 acquire_activation_lock() {

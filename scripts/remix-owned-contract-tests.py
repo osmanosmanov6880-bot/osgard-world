@@ -674,6 +674,29 @@ class OwnedContractTests(unittest.TestCase):
         self.assertEqual(self.create()[0], 503)
         self.assertEqual(self.legacy.posts("/v1/matches"), [])
 
+    def test_restart_refuses_missing_protected_schema_instead_of_recreating_anonymous_catalog(self):
+        match = self.create_ok()
+        self.legacy.terminal(match["id"], match["playerId"])
+        self.assertEqual(self.get(match, "result")[0], 200)
+        route = f"/v1/matches/{match['id']}/result"
+        self.assertEqual(self.request(route)[0], 401)
+        for name in ("owned_matches", "owned_creation_attempts", "anonymous_matches", "terminal_matches", "guard_health"):
+            with self.subTest(missing=name):
+                broken = Path(self.temporary.name) / (name + "-missing.sqlite3")
+                with sqlite3.connect(self.database) as source, sqlite3.connect(broken) as destination:
+                    source.backup(destination)
+                    destination.execute(f'DROP TABLE "{name}"')
+                with self.assertRaisesRegex(ValueError, "schema is incomplete"):
+                    guard.Guard(broken, self.backend_base, core_upstream=self.core_base)
+                with sqlite3.connect(broken) as db:
+                    self.assertIsNone(db.execute("SELECT 1 FROM sqlite_master WHERE name=?", (name,)).fetchone())
+                    self.assertEqual(db.execute("PRAGMA user_version").fetchone()[0], 2)
+        with sqlite3.connect(self.database) as db:
+            db.execute("DROP TABLE owned_matches")
+        self.assertEqual(self.request(route)[0], 503)
+        with self.assertRaisesRegex(ValueError, "schema is incomplete"):
+            guard.Guard(self.database, self.backend_base, core_upstream=self.core_base)
+
     def test_shared_lock_and_database_contention_respect_request_deadline(self):
         self.restart(enabled=True, budget=0.1)
         with self.server.guard.files.admission(True, time.monotonic() + 1):
