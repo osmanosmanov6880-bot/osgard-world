@@ -63,6 +63,38 @@ else:
             self.assertEqual(files[0].stat().st_mode & 0o777,0o600)
             check=subprocess.run(["sha256sum","-c",str(files[0])+".sha256"],capture_output=True,text=True)
             self.assertEqual(check.returncode,0,check.stderr)
+    def test_atomic_finalization_rejects_collision(self):
+        with tempfile.TemporaryDirectory() as d:
+            base=Path(d);binary=base/"bin";binary.mkdir()
+            docker=binary/"docker"
+            docker.write_text("""#!/usr/bin/env python3
+import pathlib,sqlite3,shutil,sys
+args=sys.argv[1:]
+if "exec" in args:
+    i=args.index("core-api")
+    if args[i+1]=="python":
+        with sqlite3.connect(args[-1]) as db:
+            db.execute("CREATE TABLE fixture (id INTEGER PRIMARY KEY)")
+    elif args[i+1]=="rm":
+        pathlib.Path(args[-1]).unlink(missing_ok=True)
+elif "cp" in args:
+    source=pathlib.Path(args[-2].removeprefix("core-api:"))
+    pending=pathlib.Path(args[-1])
+    shutil.copyfile(source,pending)
+    # Simulate a competing writer occupying the final name immediately before commit.
+    target=pending.parent/source.name.replace("osgard-core-backup-","osgard-core-")
+    target.write_bytes(b"DO NOT OVERWRITE")
+""")
+            docker.chmod(0o700)
+            dest=base/"backups"
+            env=dict(os.environ,PATH=str(binary)+os.pathsep+os.environ.get("PATH",""),
+                     OSGARD_CORE_BACKUP_DIR=str(dest))
+            r=subprocess.run(["bash",str(SCRIPT)],cwd=ROOT,env=env,
+                             capture_output=True,text=True,timeout=20)
+            self.assertNotEqual(r.returncode,0)
+            self.assertEqual([p.read_bytes() for p in dest.glob("*.sqlite3")],[b"DO NOT OVERWRITE"])
+            self.assertEqual(list(dest.glob(".osgard-core-pending-*")),[])
+            self.assertEqual(list(dest.glob("*.sha256")),[])
     def test_symlink_backup_directory_refused(self):
         with tempfile.TemporaryDirectory() as d:
             base=Path(d)
