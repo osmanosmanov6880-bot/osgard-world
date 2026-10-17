@@ -87,6 +87,8 @@ jobs:
           npm run qa:game-interface
           npm run qa:inherit-handoff
           npm run qa:remix-session
+          npm run qa:remix-owned-session
+          npm run qa:remix-owned-probe
           npm run qa:remix-legacy
           npm run qa:remix-contract
           npm run qa:remix-guard

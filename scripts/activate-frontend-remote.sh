@@ -7,7 +7,7 @@ core_image="${OSGARD_CORE_IMAGE:-osgard-core-api:release}"
 remix_guard_image="${OSGARD_REMIX_GUARD_IMAGE:-osgard-remix-guard:release}"
 # Foundation release: a later reviewed release may enable creation only after
 # this ACL-aware build is the verified rollback target.
-remix_owned_creation="${OSGARD_REMIX_OWNED_CREATION:-0}"
+remix_owned_creation="${OSGARD_REMIX_OWNED_CREATION:-1}"
 state_file="/tmp/osgard-frontend-activation.state"
 log_file="/tmp/osgard-frontend-activation.log"
 core_previous="osgard-core-api-previous-$$"
