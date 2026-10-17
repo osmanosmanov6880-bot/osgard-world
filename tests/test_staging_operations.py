@@ -40,10 +40,16 @@ class OperationsTest(unittest.TestCase):
  def test_rollback_fails_closed(self):
   self.assertEqual(rollback.verify({})["status"],"blocked")
  def test_rollback_ready_only_for_review(self):
-  data={"schema_version":1,"previous_commit":"a"*40,"previous_zip_sha256":"b"*64,"backup_sha256":"c"*64,"payments_enabled":False}
+  data={"schema_version":2,"current_commit":"d"*40,"previous_commit":"a"*40,"previous_zip_sha256":"b"*64,"backup_sha256":"c"*64,"payments_enabled":False,"rollback_executed":False}
   for key in ("backup_restore_tested","previous_release_available","rollback_runbook_reviewed","operator_assigned","maintenance_window_approved"):data[key]=True
   self.assertEqual(rollback.verify(data)["status"],"ready_for_human_review")
   data["payments_enabled"]=True
+  self.assertEqual(rollback.verify(data)["status"],"blocked")
+  data["payments_enabled"]=False
+  data["previous_commit"]=data["current_commit"]
+  self.assertEqual(rollback.verify(data)["status"],"blocked")
+  data["previous_commit"]="a"*40
+  data["rollback_executed"]=True
   self.assertEqual(rollback.verify(data)["status"],"blocked")
  def test_config_fail_closed(self):
   with tempfile.TemporaryDirectory() as d:
