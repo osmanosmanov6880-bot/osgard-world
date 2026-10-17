@@ -7,10 +7,22 @@ import sys
 import zipfile
 from pathlib import PurePosixPath
 
+MAX_GAME_HTML_BYTES=8*1024*1024
+MAX_WORLD_MANIFEST_BYTES=256*1024
 ZION_PREFIX="games/zion-9/queue/"
 ZION_IDS=tuple(f"ZION-{i:03d}" for i in range(20,31))
 LEGACY=("afterimage-run","empire-orbit","inherit","null-shift","remix","swarm","time-empire","vector-zero")
 LOCAL_TAG=re.compile(r'<(?:script|link)\b[^>]*?(?:src|href)\s*=\s*["\']([^"\']+)["\']',re.I)
+def bounded_read(z, name, limit):
+    info=z.getinfo(name)
+    if info.file_size>limit:
+        raise ValueError("oversized game archive entry: "+name)
+    with z.open(info) as stream:
+        data=stream.read(limit+1)
+    if len(data)>limit:
+        raise ValueError("oversized game archive entry: "+name)
+    return data
+
 def verify(archive):
     with zipfile.ZipFile(archive) as z:
         names={x.filename for x in z.infolist() if not x.is_dir()}
@@ -20,7 +32,7 @@ def verify(archive):
         required.update(f"games/{name}/index.html" for name in LEGACY)
         missing=sorted(required-names)
         if missing: raise ValueError("missing game routes: "+", ".join(missing[:15]))
-        manifest=json.loads(z.read("games/zion-9/worlds.json"))
+        manifest=json.loads(bounded_read(z,"games/zion-9/worlds.json",MAX_WORLD_MANIFEST_BYTES))
         games=manifest.get("games")
         if not isinstance(games,list) or len(games)!=11:
             raise ValueError("ZION manifest must have 11 worlds")
@@ -35,7 +47,7 @@ def verify(archive):
             if route!=expected:
                 raise ValueError("ZION route/id mismatch")
             rel=route.lstrip("/")
-            html=z.read(rel).decode("utf-8")
+            html=bounded_read(z,rel,MAX_GAME_HTML_BYTES).decode("utf-8")
             if "<html" not in html.lower() or "</html>" not in html.lower():
                 raise ValueError("invalid HTML shell: "+gid)
             for raw in LOCAL_TAG.findall(html):
