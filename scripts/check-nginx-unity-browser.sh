@@ -28,4 +28,4 @@ for attempt in $(seq 1 15); do
 done
 docker exec "$candidate_name" nginx -t
 OSGARD_BASE_URL="http://127.0.0.1:$candidate_port" node scripts/game-delivery-http-smoke.mjs dist
-OSGARD_UNITY_BASE_URL="http://127.0.0.1:$candidate_port" npx playwright test --config playwright.remix-unity.config.mjs
+OSGARD_UNITY_BASE_URL="http://127.0.0.1:$candidate_port" npx playwright test --config playwright.remix-unity.config.mjs "$@"
