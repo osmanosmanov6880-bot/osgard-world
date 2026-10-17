@@ -12,6 +12,8 @@ COMMIT=re.compile(r"^(?:[a-f0-9]{40}|[a-f0-9]{64})$")
 def assess(data):
     errors=[]
     if not isinstance(data,dict):raise ValueError("evidence must be an object")
+    if set(data.get("checks",{})) - set(GATES) if isinstance(data.get("checks",{}),dict) else False:
+        errors.append("unexpected evidence gates")
     if data.get("schema_version")!=2:errors.append("schema_version")
     commit=data.get("commit_sha")
     artifact=data.get("artifact_sha256")
@@ -27,7 +29,7 @@ def assess(data):
         if item.get("commit_sha")!=commit or item.get("artifact_sha256")!=artifact:
             errors.append(gate+": evidence does not match candidate")
         evidence=item.get("evidence_url")
-        if not isinstance(evidence,str) or not evidence.startswith("https://github.com/"):
+        if not isinstance(evidence,str) or not re.fullmatch(r"https://github\.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+/actions/runs/[1-9][0-9]*",evidence):
             errors.append(gate+": missing auditable CI URL")
     if data.get("human_approval") is not False:errors.append("human approval must remain pending")
     if data.get("payments_enabled") is not False:errors.append("payments must remain disabled")
