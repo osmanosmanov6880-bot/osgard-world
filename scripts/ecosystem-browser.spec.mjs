@@ -192,20 +192,75 @@ async function expectInheritPanelsClosed(page) {
   await expect(page.locator('dialog[open]')).toHaveCount(0)
 }
 
+async function expectInheritDockGeometry(page) {
+  await expect(page.locator('.dock .tool')).toHaveCount(4)
+  for (const control of await page.locator('.dock .tool').all()) await expect(control).toBeVisible()
+  for (const selector of ['.catalog-button', '#showHistory', '#pass']) await expect(page.locator(selector)).toBeVisible()
+  const geometry = await page.locator('.dock').evaluate(dock => {
+    const bounds = node => {
+      const { left, top, right, bottom, width, height } = node.getBoundingClientRect()
+      return { left, top, right, bottom, width, height }
+    }
+    return {
+      dock: bounds(dock),
+      tools: bounds(dock.querySelector('.tools')),
+      controls: [...dock.querySelectorAll('button')].map(button => ({
+        name: button.id || button.dataset.tool || button.textContent.trim(),
+        inTools: Boolean(button.closest('.tools')),
+        visible: button.getClientRects().length > 0 && getComputedStyle(button).visibility === 'visible',
+        ...bounds(button),
+      })),
+    }
+  })
+  const intersections = []
+  for (const [index, control] of geometry.controls.entries()) {
+    expect(control.visible, control.name + ' remains visible').toBe(true)
+    expect(control.width, control.name + ' has a 44px target width').toBeGreaterThanOrEqual(44)
+    expect(control.height, control.name + ' has a 44px target height').toBeGreaterThanOrEqual(44)
+    const container = control.inTools ? geometry.tools : geometry.dock
+    expect(control.left, control.name + ' starts inside its group').toBeGreaterThanOrEqual(container.left - 1)
+    expect(control.right, control.name + ' ends inside its group').toBeLessThanOrEqual(container.right + 1)
+    expect(control.top, control.name + ' starts inside its group vertically').toBeGreaterThanOrEqual(container.top - 1)
+    expect(control.bottom, control.name + ' ends inside its group vertically').toBeLessThanOrEqual(container.bottom + 1)
+    for (const other of geometry.controls.slice(index + 1)) {
+      const overlapX = Math.min(control.right, other.right) - Math.max(control.left, other.left)
+      const overlapY = Math.min(control.bottom, other.bottom) - Math.max(control.top, other.top)
+      if (overlapX > 0.5 && overlapY > 0.5) intersections.push({ first: control.name, second: other.name, overlapX, overlapY })
+    }
+  }
+  expect(intersections, 'INHERIT tool, history and action buttons do not overlap').toEqual([])
+}
+
 for (const [game, action, ru, en] of [
   ['inherit', '#pass', 'Завершить поколение', 'Pass this world on'],
-  ['remix', '#start-match', 'Создать испытание дня', 'Create daily challenge'],
+  ['remix', '#start-match', 'Создать испытание', 'Create challenge'],
 ]) {
   test(game + ': RU/EN interface and responsive page without a live match', async ({ page }, info) => {
     const errors = await prepareStandaloneGame(page)
-    await page.goto('/games/' + game + '/', { waitUntil: 'domcontentloaded' })
+    const remixWrites = []
+    if (game === 'remix') {
+      page.on('request', request => { if (new URL(request.url()).pathname.startsWith('/api/') && request.method() !== 'GET') remixWrites.push(request.url()) })
+      // This is the unavailable-service UI case; real authenticated flows run
+      // against Core + SQLite in qa:games:local and qa:remix-ui.
+      await page.route('**/api/core/remix/v1/capabilities', route => route.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({ error: { code: 'service_unavailable', message: 'Серверная арена недоступна' } }) }))
+    }
+    await page.goto(game === 'remix' ? '/games/remix/arena/' : '/games/inherit/', { waitUntil: 'domcontentloaded' })
     await expect(page.locator('html')).toHaveAttribute('lang', 'ru')
     await expect(page.locator(action)).toContainText(ru)
     await expect(page.locator('[data-game-language="ru"]')).toHaveAttribute('aria-pressed', 'true')
     if (game === 'remix') {
       await expect(page.locator('#api-url')).toBeHidden()
+      await expect(page.locator('#api-url')).toHaveJSProperty('readOnly', true)
+      await expect(page.locator('#api-url')).toHaveValue('/api/core/remix/v1/')
       await expect(page.locator('.remix-guide')).toContainText('Сохранение и онлайн')
       expect(await page.locator('#live-growth-console').evaluate(node => getComputedStyle(node).position)).toBe('relative')
+      await expect(page.locator('#service-state')).toHaveAttribute('data-status', 'unavailable')
+      await expect(page.locator('#start-match')).toBeDisabled()
+      await expect(page.locator('#arena')).toHaveAttribute('tabindex', '0')
+      await expect(page.locator('[data-remix-move]')).toHaveCount(4)
+      await expect(page.locator('[data-remix-jump]')).toHaveCount(1)
+      await expect(page.locator('.remix-modes a[href="/games/remix/player/index.html"]')).toBeVisible()
+      await expect(page.locator('.remix-modes a[href="/games/remix/"]')).toBeVisible()
     } else {
       await expectInheritPanelsClosed(page)
       await expect(page.locator('#inherit-enter')).toBeInViewport()
@@ -217,8 +272,18 @@ for (const [game, action, ru, en] of [
       await expect(page.locator(action)).toContainText(label)
       await expect(page.locator('[data-game-language="' + language + '"]')).toHaveAttribute('aria-pressed', 'true')
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true)
+      if (game === 'remix') {
+        await expect(page.locator('#service-state')).toHaveText(language === 'en' ? 'Server arena unavailable' : 'Серверная арена недоступна')
+        await expect(page.locator('#start-match')).toBeDisabled()
+        await page.locator('#arena').focus()
+        await page.locator('#arena').press('ArrowRight')
+        await page.locator('#arena').press('Space')
+        expect(await page.locator('#arena').getAttribute('data-state')).toBeNull()
+        expect(remixWrites).toEqual([])
+      }
       if (game === 'inherit') {
         await expectInheritPanelsClosed(page)
+        await expectInheritDockGeometry(page)
         if (info.project.name === 'mobile') {
           expect(await page.evaluate(() => {
             const bounds = selector => document.querySelector(selector).getBoundingClientRect()
@@ -228,6 +293,14 @@ for (const [game, action, ru, en] of [
       }
     }
     expect(await page.evaluate(() => localStorage.getItem('osgard:game-language'))).toBe('ru')
+    if (game === 'remix') {
+      await page.locator('.remix-settings summary').click()
+      await expect(page.locator('#api-url')).toBeVisible()
+      await expect(page.locator('#api-url')).toHaveValue('/api/core/remix/v1/')
+      await page.locator('.remix-settings summary').click()
+      await expect(page.locator('#api-url')).toBeHidden()
+      expect(remixWrites).toEqual([])
+    }
     await page.screenshot({ path: info.outputPath(game + '-interface.png'), fullPage: true })
     if (game === 'inherit') {
       await expectInheritPanelsClosed(page)

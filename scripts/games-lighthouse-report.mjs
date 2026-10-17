@@ -1,13 +1,6 @@
-import fs from 'node:fs'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
-
-const categoryNames = {
-  performance: 'Performance',
-  accessibility: 'Accessibility',
-  'best-practices': 'Best Practices',
-  seo: 'SEO',
-}
+import { categoryNames, readReportPair, validateReport } from './lighthouse-report-validation.mjs'
 
 const guardrails = {
   mobile: {
@@ -28,37 +21,27 @@ const guardrails = {
   },
 }
 
-export function assessReport(json, label) {
-  const mode = label.toLowerCase().includes('mobile') ? 'mobile' : 'desktop'
+export function assessReport(json, mode) {
   const limits = guardrails[mode]
-  const issues = []
-  const scores = {}
+  const validation = validateReport(json, 'games', mode)
+  const issues = [...validation.issues]
+  const scores = validation.scores
 
   for (const [key, name] of Object.entries(categoryNames)) {
-    const raw = json.categories?.[key]?.score
-    if (typeof raw !== 'number') {
-      issues.push(name + ': missing score in report')
-      continue
-    }
-    const score = Math.round(raw * 100)
-    scores[key] = score
-    if (score < limits[key]) issues.push(name + ' below guardrail: ' + score + '/100 (minimum ' + limits[key] + ')')
+    const score = scores[key]
+    if (limits && score !== undefined && score < limits[key]) issues.push(name + ' below guardrail: ' + score + '/100 (minimum ' + limits[key] + ')')
   }
 
-  const tbt = json.audits?.['total-blocking-time']?.numericValue
-  const lcp = json.audits?.['largest-contentful-paint']?.numericValue
-  const tbtMs = typeof tbt === 'number' ? tbt : null
-  const lcpMs = typeof lcp === 'number' ? lcp : null
+  const tbtMs = validation.metrics['total-blocking-time'] ?? null
+  const lcpMs = validation.metrics['largest-contentful-paint'] ?? null
 
-  if (tbtMs === null) issues.push('Total Blocking Time metric is missing')
-  else if (tbtMs > limits.maxTbtMs) issues.push('Total Blocking Time above guardrail: ' + Math.round(tbtMs) + ' ms (maximum ' + limits.maxTbtMs + ' ms)')
+  if (limits && tbtMs !== null && tbtMs > limits.maxTbtMs) issues.push('Total Blocking Time above guardrail: ' + Math.round(tbtMs) + ' ms (maximum ' + limits.maxTbtMs + ' ms)')
 
-  if (lcpMs === null) issues.push('Largest Contentful Paint metric is missing')
-  else if (lcpMs > limits.maxLcpMs) issues.push('Largest Contentful Paint above guardrail: ' + (lcpMs / 1000).toFixed(2) + ' s (maximum ' + (limits.maxLcpMs / 1000).toFixed(1) + ' s)')
+  if (limits && lcpMs !== null && lcpMs > limits.maxLcpMs) issues.push('Largest Contentful Paint above guardrail: ' + (lcpMs / 1000).toFixed(2) + ' s (maximum ' + (limits.maxLcpMs / 1000).toFixed(1) + ' s)')
 
   return {
-    label: mode.toUpperCase(),
-    url: json.finalDisplayedUrl ?? '(URL missing from report)',
+    label: typeof mode === 'string' ? mode.toUpperCase() : 'UNKNOWN',
+    url: 'https://osgard.world/games/',
     scores,
     tbtMs,
     lcpMs,
@@ -68,17 +51,16 @@ export function assessReport(json, label) {
 }
 
 function main(paths) {
-  if (paths.length !== 2) {
-    console.error('Usage: node scripts/games-lighthouse-report.mjs <mobile-report.json> <desktop-report.json>')
+  let pair
+  try {
+    pair = readReportPair(paths)
+  } catch (error) {
+    console.error('Lighthouse report input: ' + error.message)
     process.exitCode = 2
     return
   }
 
-  const results = paths.map(file => {
-    const json = JSON.parse(fs.readFileSync(file, 'utf8'))
-    const label = path.basename(file)
-    return assessReport(json, label)
-  })
+  const results = pair.map(({ report, mode }) => assessReport(report, mode))
 
   for (const result of results) {
     console.log('\nOSGARD GAMES Lighthouse ' + result.label + ' — ' + result.url)

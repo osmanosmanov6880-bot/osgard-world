@@ -3,6 +3,7 @@
 "use strict";
 const persistence=window.RemixPersistence;
 const dictionary={
+ "Open game arena ↗":"Открыть игровую арену ↗",
  "SESSION ACCESS": "ДОСТУП К СЕССИИ",
  "Session access": "Доступ к сессии",
  "Guest / invite mode": "Гость / приглашение",

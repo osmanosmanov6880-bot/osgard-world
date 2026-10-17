@@ -2,7 +2,7 @@
 """OSGARD pilot server. SQLite is authoritative; Commerce is disabled by default."""
 from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 from pathlib import Path
-from urllib.parse import urlsplit
+from urllib.parse import urlsplit, parse_qs
 from contextlib import contextmanager
 import html
 import argparse
@@ -27,6 +27,7 @@ import core_teams
 import core_readiness
 import core_commerce
 import core_programs
+import remix_service
 from core_model import Fault, require, text, initial, patch, action, economics, simulation, metrics, now, uid
 
 SCHEMA='''
@@ -53,13 +54,15 @@ def digest(v): return hashlib.sha256(v.encode()).hexdigest()
 def password_hash(password,salt): return hashlib.pbkdf2_hmac('sha256',password.encode(),bytes.fromhex(salt),600000).hex()
 
 class Store:
-    def __init__(self,path,commerce_config=None,commerce_provider=None):
+    def __init__(self,path,commerce_config=None,commerce_provider=None,enable_remix=False):
         self.path=str(path)
         Path(path).parent.mkdir(parents=True,exist_ok=True)
         with self.connect() as db:
             require(db.execute('PRAGMA user_version').fetchone()[0] in (0,1),'Версия базы новее этого сервера. Обновите Core.')
             db.executescript(SCHEMA+core_learning.SCHEMA+core_pilot_reports.SCHEMA+core_account.SCHEMA+core_acceptance.SCHEMA+core_delivery.SCHEMA+core_client_portal.SCHEMA+core_teams.SCHEMA+core_commerce.SCHEMA+core_programs.SCHEMA)
+            if enable_remix:db.executescript(remix_service.SCHEMA)
         self.commerce=core_commerce.Commerce(self,commerce_config,commerce_provider)
+        self.remix=remix_service.RemixService(self) if enable_remix else None
         try:os.chmod(path,0o600)
         except OSError:pass
     @contextmanager
@@ -391,6 +394,26 @@ class Handler(SimpleHTTPRequestHandler):
             origin=self.headers.get('Origin');host=self.headers.get('Host','')
             require(host in self.server.allowed_hosts,'Недопустимый адрес сервера.','host',403)
             require(not origin or origin in self.server.allowed_origins,'Запрос с другого сайта запрещён.','origin',403)
+            request_path=urlsplit(self.path).path
+            if request_path.startswith('/api/core/remix/'):
+                require(self.server.store.remix is not None,'Сервер REMIX не включён для этого запуска.','remix_disabled',404)
+                if method=='GET' and request_path=='/api/core/remix/v1/capabilities':return self.output(self.server.store.remix.capabilities())
+                require(request_path.startswith('/api/core/remix/v1/'),'Маршрут REMIX не найден.','not_found',404)
+                remix_auth=self.headers.get('Authorization','')
+                remix_actor=self.server.store.actor(remix_auth[7:] if remix_auth.startswith('Bearer ') else '')
+                remix_route=request_path.removeprefix('/api/core/remix/v1/')
+                if method=='GET' and remix_route=='matches':
+                    query=urlsplit(self.path).query
+                    require(len(query)<=256,'Слишком длинный запрос истории.','history_query',400)
+                    fields=parse_qs(query,keep_blank_values=True,strict_parsing=True,max_num_fields=3)
+                    require(set(fields)<=set(('status','limit','cursor')) and all(len(values)==1 for values in fields.values()),'Неверные параметры истории.','history_query',400)
+                    limit=fields.get('limit',['20'])[0]
+                    require(re.fullmatch(r'[1-9][0-9]?',limit) is not None,'Неверный размер страницы.','history_query',400)
+                    return self.output(self.server.store.remix.list_matches(remix_actor['id'],status=fields.get('status',['active'])[0],limit=int(limit),cursor=fields.get('cursor',[None])[0]))
+                if method=='GET':return self.output(self.server.store.remix.get(remix_route,remix_actor['id']))
+                if method=='POST':return self.output(self.server.store.remix.mutate(remix_route,remix_actor['id'],self.body(),self.headers.get('Idempotency-Key')))
+                raise Fault('method','Метод не поддерживается.',405)
+            require(request_path.startswith('/api/core/'),'Маршрут Core API не найден.','not_found',404)
             route=urlsplit(self.path).path.removeprefix('/api/core/').strip('/')
             if method=='GET' and route=='health':return self.output({'status':'ok','mode':'self-hosted-pilot','schemaVersion':1,'payments':self.server.store.commerce.config.enabled,'paymentMode':'live' if self.server.store.commerce.config.livemode else 'test','livePaymentTested':False,'ai':False})
             if method=='POST' and route=='commerce/webhook':return self.output(self.server.store.commerce.webhook(self.raw_json_body(),self.headers.get('Stripe-Signature')))
@@ -434,10 +457,10 @@ class Handler(SimpleHTTPRequestHandler):
         return super().do_HEAD()
     def do_POST(self):return self.api('POST') if self.path.startswith('/api/') else self.send_error(405)
 
-def create_server(root,database,host='127.0.0.1',port=4173,public_origin=None,commerce_config=None,commerce_provider=None):
+def create_server(root,database,host='127.0.0.1',port=4173,public_origin=None,commerce_config=None,commerce_provider=None,enable_remix=False):
     require(not Path(database).resolve().is_relative_to(Path(root).resolve()),'База данных должна быть вне публичной папки сайта.')
     server=ThreadingHTTPServer((host,port),functools.partial(Handler,directory=str(Path(root).resolve())))
-    server.started_monotonic=time.monotonic();server.worker=None;server.store=Store(database,commerce_config or core_commerce.Config.from_env(),commerce_provider);server.rate_limits={};server.rate_lock=threading.Lock()
+    server.started_monotonic=time.monotonic();server.worker=None;server.store=Store(database,commerce_config or core_commerce.Config.from_env(),commerce_provider,enable_remix);server.rate_limits={};server.rate_lock=threading.Lock()
     actual=server.server_address[1]
     server.allowed_origins={f'http://127.0.0.1:{actual}',f'http://localhost:{actual}'}
     server.allowed_hosts={f'127.0.0.1:{actual}',f'localhost:{actual}'}
@@ -448,10 +471,10 @@ def create_server(root,database,host='127.0.0.1',port=4173,public_origin=None,co
     return server
 
 def main():
-    parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--root',type=Path,default=Path(__file__).resolve().parents[1]/'dist');parser.add_argument('--database',type=Path,default=Path.home()/'.osgard-core'/'core.sqlite3');parser.add_argument('--port',type=int,default=4173);parser.add_argument('--host',default='127.0.0.1');parser.add_argument('--public-origin')
+    parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--root',type=Path,default=Path(__file__).resolve().parents[1]/'dist');parser.add_argument('--database',type=Path,default=Path.home()/'.osgard-core'/'core.sqlite3');parser.add_argument('--port',type=int,default=4173);parser.add_argument('--host',default='127.0.0.1');parser.add_argument('--public-origin');parser.add_argument('--remix',action='store_true',help='Enable the local authoritative REMIX arena service')
     args=parser.parse_args();require((args.root/'index.html').is_file(),'Сначала соберите сайт: npm run build.')
     require(args.host in ('127.0.0.1','localhost') or args.public_origin,'Для внешнего интерфейса нужен HTTPS reverse proxy и --public-origin.')
-    server=create_server(args.root,args.database,args.host,args.port,args.public_origin)
+    server=create_server(args.root,args.database,args.host,args.port,args.public_origin,enable_remix=args.remix)
     worker=QueueWorker(server.store);server.worker=worker;worker.start()
     print(f'OSGARD Core: http://127.0.0.1:{server.server_address[1]}/workspace — data: {args.database}',flush=True)
     try:server.serve_forever()

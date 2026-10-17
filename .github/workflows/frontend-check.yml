@@ -13,8 +13,22 @@ on:
       - "tests/test_frontend_activation.py"
       - "docker-compose.production.yml"
       - "scripts/core-*.py"
+      - "scripts/verify-core-backup.py"
+      - "scripts/pilot-scorecard.py"
+      - "tests/test_core_*.py"
+      - "tests/test_pilot_scorecard.py"
+      - "scripts/game-interface-smoke.mjs"
+      - "scripts/game-delivery-http-smoke.mjs"
+      - "scripts/check-nginx-game-delivery.sh"
+      - "nginx.conf"
       - "scripts/redesign-*.mjs"
       - "scripts/zion-local-smoke.mjs"
+      - "scripts/games-browser-acceptance.mjs"
+      - "scripts/games-local-acceptance.py"
+      - "scripts/remix-*.py"
+      - "scripts/remix-*.mjs"
+      - "scripts/null-shift-godot-browser.mjs"
+      - "scripts/games-portal-browser.spec.mjs"
       - "scripts/ecosystem-*.spec.mjs"
       - "playwright.ecosystem.config.mjs"
       - "public/brand/**"
@@ -38,8 +52,16 @@ on:
       - "scripts/games-portal-smoke.mjs"
       - "scripts/academy-home-smoke.mjs"
       - "scripts/games-lighthouse-report.mjs"
+      - "scripts/lighthouse-report.mjs"
+      - "scripts/lighthouse-report-validation.mjs"
+      - "tests/lighthouse_reports.test.mjs"
+      - "tests/fixtures/lighthouse-reports.mjs"
       - ".github/workflows/games-lighthouse.yml"
+      - ".github/workflows/skillcred-lighthouse.yml"
       - "public/games/**"
+      - "godot/**"
+      - "scripts/build-null-shift-godot.py"
+      - ".github/actions/setup-godot/**"
       - "docs/02_IMPERIUM_OF_TIME_GAME_DESIGN.md"
       - "public/skillcred/**"
       - "scripts/precompress-brand-transition.mjs"
@@ -94,12 +116,13 @@ jobs:
           npm run qa:remix-guard
           npm run qa:remix-owned
           npm run qa:activation
+      - name: Install pinned Core dependencies
+        run: python3 -m pip install -r server/requirements.txt
       - name: Verify measured pilot outcomes and offline recovery
         run: |
           npm run qa:pilot-scorecard
-          npm run qa:core-recovery
-      - name: Install pinned Core dependencies
-        run: python3 -m pip install -r server/requirements.txt
+          npm run qa:core-recovery-tests
+          npm run qa:core-recovery -- --work-dir "$RUNNER_TEMP/osgard-core-recovery" --report "$RUNNER_TEMP/core-recovery-report.json"
       - name: Verify release integrity and payment recovery boundaries
         run: |
           npm run qa:core-readiness
@@ -133,7 +156,9 @@ jobs:
       - name: Verify Imperium of Time game systems and visual diagnostics
         run: npm run qa:time-ui
       - name: Verify OSGARD Games portal and Lighthouse guardrails
-        run: npm run qa:games-portal
+        run: |
+          npm run qa:games-portal
+          npm run qa:lighthouse-reports
       - name: Verify partner inventory and enquiry form
         run: npm run qa:partners-page
       - name: Verify ecosystem links, claims, contacts and privacy boundaries
@@ -161,7 +186,7 @@ jobs:
 
   browser:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     steps:
       - name: Check out source
         uses: actions/checkout@v4
@@ -172,15 +197,24 @@ jobs:
           cache: npm
       - name: Install locked application dependencies
         run: npm ci
+      - name: Install the checksum-pinned Godot engine and Web template
+        uses: ./.github/actions/setup-godot
+      - name: Build the actual primary NULL SHIFT runtime
+        run: npm run build:godot
       - name: Build the production site
         run: npm run build
-      - name: Include the published static game catalog
-        run: cp -a public/games/. dist/games/
-      - name: Install pinned browser test tooling
-        run: |
-          npm install --no-save --package-lock=false @playwright/test@1.58.2
-          npx playwright install --with-deps chromium
+      - name: Verify the exact exported Godot artifact
+        run: npm run qa:godot-export
+      - name: Install Chromium for locked Playwright tooling
+        run: npx playwright install --with-deps chromium
+      - name: Check all game clients against the real isolated local service
+        run: npm run qa:games-local
+      - name: Verify authoritative REMIX results, replay and server ownership
+        run: npm run qa:remix-server
+      - name: Verify REMIX login, account history and lost-response recovery
+        run: npm run qa:remix-ui
       - name: Check desktop and mobile user journeys
+        if: ${{ !cancelled() }}
         run: npx playwright test --config playwright.ecosystem.config.mjs
       - name: Keep screenshots and browser evidence
         if: always()

@@ -1,0 +1,32 @@
+name: OSGARD End-to-End Release Bundle
+on:
+  pull_request:
+    paths:
+      - 'scripts/release-bundle.py'
+      - 'tests/test_release_bundle.py'
+      - 'docs/RELEASE-BUNDLE-RUNBOOK.md'
+      - '.github/workflows/release-bundle-qa.yml'
+permissions:
+  contents: read
+jobs:
+  release-fixtures:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify source syntax
+        run: python -m py_compile scripts/release-bundle.py tests/test_release_bundle.py
+      - name: Run integration tests against real ZIP archives
+        run: python -m unittest discover -s tests -p test_release_bundle.py -v
+      - name: Re-run all quality families together
+        run: |
+          python -m unittest discover -s tests -p test_pilot_scorecard.py -v
+          python -m unittest discover -s tests -p test_core_backup_recovery.py -v
+          python -m unittest discover -s tests -p test_release_zip_gate.py -v
+          python -m unittest discover -s tests -p test_unified_release_gate.py -v
+          python -m unittest discover -s tests -p test_github_release_evidence.py -v
+          python -m unittest discover -s tests -p test_release_artifact_manifest.py -v
+          python -m unittest discover -s tests -p test_zip_manifest_binding.py -v

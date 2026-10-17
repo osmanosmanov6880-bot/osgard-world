@@ -1,0 +1,30 @@
+name: OSGARD pilot measurement quality
+on:
+  pull_request:
+    paths:
+      - 'scripts/pilot-scorecard.py'
+      - 'tests/test_pilot_scorecard.py'
+      - 'docs/PILOT-MEASUREMENT-GATE.md'
+      - '.github/workflows/pilot-measurement.yml'
+  push:
+    branches: [master]
+    paths:
+      - 'scripts/pilot-scorecard.py'
+      - 'tests/test_pilot_scorecard.py'
+      - 'docs/PILOT-MEASUREMENT-GATE.md'
+      - '.github/workflows/pilot-measurement.yml'
+permissions:
+  contents: read
+jobs:
+  scorecard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify syntax
+        run: python -m py_compile scripts/pilot-scorecard.py tests/test_pilot_scorecard.py
+      - name: Run measurement regressions
+        run: python -m unittest discover -s tests -p test_pilot_scorecard.py -v

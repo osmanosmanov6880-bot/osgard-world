@@ -192,12 +192,14 @@ const dictionary={
  "How to play": "Как играть",
  "Choose a trace. Leave it on the island.": "Выберите след и оставьте его на острове.",
  "Start with three different trace types. Finish the generation when you are ready to begin the next chapter.": "Начните с трёх разных видов следов. Завершите поколение, когда будете готовы перейти к следующей главе.",
- "Controls: click or tap the island; 1–0 chooses a trace. Focus the island, use arrows and Enter to place. Ctrl/Cmd+Z undoes the last trace; H opens the chronicle.": "Управление: нажатие на остров; 1–0 — вид следа. На поле: стрелки — место, Enter — разместить. Ctrl/Cmd+Z — отменить след; H — летопись.",
+ "Controls: click or tap the island; 1–0 chooses a trace. Focus the island, use arrows and Enter or Space to place. Ctrl/Cmd+Z undoes the last trace; H opens the chronicle.": "Управление: нажатие на остров; 1–0 — вид следа. На поле: стрелки — место, Enter или пробел — разместить. Ctrl/Cmd+Z — отменить след; H — летопись.",
  "The first four entries are a fictional introduction. Names in local history do not mean other people are online. An invitation shares the route, not your local save.": "Первые четыре записи — вымышленное вступление. Имена в локальной летописи не означают, что другие люди сейчас онлайн. Приглашение передаёт ссылку, а не ваше локальное сохранение.",
  "Enter the island": "Перейти на остров",
  "Download recovered save": "Скачать исходное сохранение",
  "Close memory": "Закрыть память объекта",
- "Island: choose a location with arrows and place with Enter": "Остров: выберите место стрелками и разместите след клавишей Enter",
+ "Close world history": "Закрыть историю мира",
+ "Return to today to leave a trace": "Вернитесь к сегодняшнему миру, чтобы оставить след",
+ "Island: choose a location with arrows and place with Enter or Space": "Остров: выберите место стрелками и разместите след клавишей Enter или пробелом",
  "Old tree: read its memory": "Старое дерево: прочитать историю",
  "Stone arch: read its memory": "Каменная арка: прочитать историю",
  "Beacon: read its memory": "Маяк: прочитать историю",
@@ -288,18 +290,30 @@ function updateStorage(){
 }
 function init(){
  ready=true;document.documentElement.lang=locale;
- const intro=document.createElement('section');intro.className='inherit-guide';intro.innerHTML='<div class="inherit-guide-heading"><div><span class="eyebrow">How to play</span><h2>Choose a trace. Leave it on the island.</h2></div></div><p>Start with three different trace types. Finish the generation when you are ready to begin the next chapter.</p><p id="inherit-controls">Controls: click or tap the island; 1–0 chooses a trace. Focus the island, use arrows and Enter to place. Ctrl/Cmd+Z undoes the last trace; H opens the chronicle.</p><div class="inherit-storage" role="status"><p id="inherit-save-state"></p><p id="inherit-online-state"></p></div><p class="inherit-truth">The first four entries are a fictional introduction. Names in local history do not mean other people are online. An invitation shares the route, not your local save.</p><div class="inherit-guide-actions"><button type="button" class="save" id="inherit-enter">Enter the island</button><a href="/play#catalog">← Каталог / Catalog</a></div><div id="inherit-recovery" hidden><p>An unreadable save was preserved separately. A fresh local world is open; you can download the original.</p><button type="button" id="inherit-recovery-download">Download recovered save</button></div>';
+ const intro=document.createElement('section');intro.className='inherit-guide';intro.innerHTML='<div class="inherit-guide-heading"><div><span class="eyebrow">How to play</span><h2>Choose a trace. Leave it on the island.</h2></div></div><p>Start with three different trace types. Finish the generation when you are ready to begin the next chapter.</p><p id="inherit-controls">Controls: click or tap the island; 1–0 chooses a trace. Focus the island, use arrows and Enter or Space to place. Ctrl/Cmd+Z undoes the last trace; H opens the chronicle.</p><div class="inherit-storage" role="status"><p id="inherit-save-state"></p><p id="inherit-online-state"></p></div><p class="inherit-truth">The first four entries are a fictional introduction. Names in local history do not mean other people are online. An invitation shares the route, not your local save.</p><div class="inherit-guide-actions"><button type="button" class="save" id="inherit-enter">Enter the island</button><a href="/play#catalog">← Каталог / Catalog</a></div><div id="inherit-recovery" hidden><p>An unreadable save was preserved separately. A fresh local world is open; you can download the original.</p><button type="button" id="inherit-recovery-download">Download recovered save</button></div>';
  document.querySelector('.app > header').insertAdjacentElement('afterend',intro);intro.querySelector('.inherit-guide-heading').appendChild(languageTools());
  intro.querySelector('.inherit-guide-heading').insertAdjacentElement('afterend',intro.querySelector('.inherit-guide-actions'));
  const journey=document.querySelector('.journey');if(journey)intro.appendChild(journey);
- const world=document.querySelector('#world');world.tabIndex=0;world.setAttribute('aria-label','Island: choose a location with arrows and place with Enter');world.setAttribute('aria-describedby','inherit-controls');
+ const world=document.querySelector('#world');world.tabIndex=0;world.setAttribute('role','group');world.setAttribute('aria-label','Island: choose a location with arrows and place with Enter or Space');world.setAttribute('aria-describedby','inherit-controls');
  document.querySelector('#inherit-enter').addEventListener('click',()=>{world.focus();world.scrollIntoView({block:'center',behavior:'auto'})});
  const cursor=document.createElement('span');cursor.className='inherit-cursor';cursor.setAttribute('aria-hidden','true');document.querySelector('#island').appendChild(cursor);let point={x:50,y:35};
  const coordinate=document.createElement('span');coordinate.className='inherit-coordinate';coordinate.setAttribute('role','status');world.appendChild(coordinate);
  const drawCursor=()=>{cursor.style.left=point.x+'%';cursor.style.top=point.y+'%';coordinate.textContent=(locale==='ru'?'Место: ':'Position: ')+point.x+', '+point.y;};drawCursor();
  world.addEventListener('focus',()=>world.classList.add('inherit-keyboard'));world.addEventListener('blur',()=>world.classList.remove('inherit-keyboard'));
- world.addEventListener('keydown',event=>{if(event.target!==world||event.ctrlKey||event.metaKey||event.altKey)return;const key=event.key;if(!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Enter'].includes(key))return;event.preventDefault();if(key==='ArrowLeft')point.x=Math.max(8,point.x-3);if(key==='ArrowRight')point.x=Math.min(91,point.x+3);if(key==='ArrowUp')point.y=Math.max(12,point.y-3);if(key==='ArrowDown')point.y=Math.min(77,point.y+3);drawCursor();if(key==='Enter'){const r=document.querySelector('#island').getBoundingClientRect();world.dispatchEvent(new MouseEvent('click',{bubbles:true,clientX:r.left+r.width*point.x/100,clientY:r.top+r.height*point.y/100}))}});
+ // One placement handler serves the RU/EN interface and the original controls.
+ world.addEventListener('keydown',event=>{
+  if(event.target!==world||event.defaultPrevented||event.ctrlKey||event.metaKey||event.altKey)return;
+  const key=event.key;
+  if(!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Enter',' '].includes(key))return;
+  event.preventDefault();event.stopPropagation();
+  if(typeof replayGeneration!=='undefined'&&replayGeneration!==null){notice('Return to today to leave a trace');return}
+  if(key==='ArrowLeft')point.x=Math.max(8,point.x-3);if(key==='ArrowRight')point.x=Math.min(91,point.x+3);
+  if(key==='ArrowUp')point.y=Math.max(12,point.y-3);if(key==='ArrowDown')point.y=Math.min(77,point.y+3);
+  drawCursor();
+  if(key==='Enter'||key===' '){const r=document.querySelector('#island').getBoundingClientRect();world.dispatchEvent(new MouseEvent('click',{bubbles:true,clientX:r.left+r.width*point.x/100,clientY:r.top+r.height*point.y/100}))}
+ });
  document.querySelectorAll('[data-memory]').forEach(node=>node.setAttribute('aria-label',({tree:'Old tree: read its memory',ruin:'Stone arch: read its memory',beacon:'Beacon: read its memory'})[node.dataset.memory]));
+ document.querySelector('#closeModal').setAttribute('aria-label','Close world history');
  document.querySelectorAll('.close').forEach(button=>{if(!button.hasAttribute('aria-label'))button.setAttribute('aria-label','Close memory')});
  document.querySelector('#inherit-recovery-download').addEventListener('click',()=>{const raw=persistence?.getItem(persistence.recoveryKey);if(!raw)return;const url=URL.createObjectURL(new Blob([raw],{type:'application/json'}));const link=document.createElement('a');link.href=url;link.download='inherit-original-save.json';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000)});
  for(const [selector,openClass,triggerSelector] of [['#panel','show'],['.catalog','open','.catalog-button'],['.chronicle','open','.chronicle-button'],['.return-card','show'],['.replay-banner','show'],['#toast','show']]){

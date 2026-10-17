@@ -1,0 +1,72 @@
+name: OSGARD Full Source Release Acceptance
+on:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build-and-inspect-real-site:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Reproducible dependency install
+        run: npm ci
+      - name: Install the checksum-pinned Godot engine and Web template
+        uses: ./.github/actions/setup-godot
+      - name: Build the primary Godot runtime included in this candidate
+        run: npm run build:godot
+      - name: Build real site
+        run: npm run build
+      - name: Verify Godot runtime source and artifact binding
+        run: npm run qa:godot-export
+      - name: Existing browser-world source checks
+        run: npm run qa:zion-local
+      - name: Package Godot for the existing 25 MiB release asset limit
+        run: |
+          node scripts/compress-pages-wasm.mjs dist
+          npm run qa:godot-export
+          npm run qa:cloudflare-pages
+      - name: Install Chromium for the exact packaged candidate
+        run: npx playwright install --with-deps chromium
+      - name: Exercise all 19 games from the packaged candidate with real local APIs
+        run: npm run qa:games-local -- --cloudflare-headers --out test-results/packaged-games
+      - name: Build deterministic ZIP and per-file manifest
+        run: |
+          mkdir -p "$RUNNER_TEMP/osgard-release"
+          python scripts/release-bundle.py build dist --commit "$GITHUB_SHA" --zip "$RUNNER_TEMP/osgard-release/osgard-world.zip" --manifest "$RUNNER_TEMP/osgard-release/manifest.json"
+      - name: Independently verify ZIP and manifest
+        run: python scripts/release-bundle.py verify "$RUNNER_TEMP/osgard-release/osgard-world.zip" --manifest "$RUNNER_TEMP/osgard-release/manifest.json"
+      - name: "Unified static staging acceptance: ZIP, 19 game entrypoints and configuration"
+        run: python scripts/staging-release-acceptance.py --dist dist --zip "$RUNNER_TEMP/osgard-release/osgard-world.zip" --manifest "$RUNNER_TEMP/osgard-release/manifest.json"
+      - name: Write a checksum summary without exposing archived files
+        run: |
+          python - <<'PY'
+          import hashlib,os,pathlib
+          file=pathlib.Path(os.environ['RUNNER_TEMP'])/'osgard-release/osgard-world.zip'
+          print('Actual CI candidate SHA-256:',hashlib.sha256(file.read_bytes()).hexdigest())
+          print('Actual CI candidate bytes:',file.stat().st_size)
+          print('No production publication or payment activation performed')
+          PY
+      - name: Keep the exact accepted ZIP and manifest
+        uses: actions/upload-artifact@v4
+        with:
+          name: osgard-full-source-candidate
+          path: ${{ runner.temp }}/osgard-release/
+          if-no-files-found: error
+          retention-days: 14
+      - name: Keep the packaged candidate browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: osgard-packaged-game-browser
+          path: test-results/packaged-games/
+          if-no-files-found: warn
+          retention-days: 14

@@ -76,19 +76,23 @@ check('the public legacy route selects the redirect component, never the retired
   assert.ok(!legacy.includes('184200')); assert.ok(!legacy.includes("startPlayerSession('remix'")); assert.ok(!legacy.includes('submitRun('))
 })
 
-check('active catalogs launch the real console and identify the unavailable Unity build without promising replay', () => {
+check('active catalogs launch the Core arena with its actual controls and keep the unavailable Unity build distinct', () => {
   const games = componentFixture('src/redesignCatalog.ts').exports.playGames
   const remix = games.find(game => game.id === 'remix')
-  assert.equal(remix.launchable, true); assert.equal(remix.href, '/games/remix/')
+  assert.equal(remix.launchable, true); assert.equal(remix.href, '/games/remix/arena/')
   assert.equal(remix.alternate.href, '/games/remix/player/')
   assert.ok(remix.alternate.label.includes('Статус')); assert.ok(remix.warning.includes('Unity-сборка сейчас недоступна'))
-  assert.ok(remix.description.includes('позицию')); assert.ok(remix.controls.includes('экранные кнопки'))
+  for (const control of ['WASD', 'стрелки', 'четыре направления', 'пробел', 'экранные кнопки']) assert.ok(remix.controls.includes(control), control)
+  for (const capability of ['проверочный заезд', 'опубликуйте', 'результат', 'повтор']) assert.ok(remix.description.includes(capability), capability)
+  assert.ok(remix.online.includes('аккаунт') && remix.online.includes('сервис'))
   const catalog = readFileSync('public/games/index.html', 'utf8')
   const card = catalog.match(/<article\b[^>]*data-game="remix"[\s\S]*?<\/article>/)?.[0]
   assert.ok(card); assert.ok(card.includes('Unity-сборка сейчас недоступна'))
-  assert.match(card, /class="play-link" href="\/games\/remix\/"/)
+  assert.match(card, /class="play-link" href="\/games\/remix\/arena\/"/)
   assert.match(card, /href="\/games\/remix\/player\/">Статус Unity-сборки/)
-  assert.ok(!card.includes('LEAVE A REPLAY')); assert.ok(!card.includes('<span>Повторы</span>'))
+  assert.ok(card.includes('<span>Повторы</span>')); assert.ok(card.includes('проверочный заезд'))
+  const arena = readFileSync('public/games/remix/arena/index.html', 'utf8')
+  assert.match(arena, /href="\/games\/remix\/"/)
   const landing = readFileSync('public/games/remix/index.html', 'utf8')
   assert.match(landing, /href="#live-growth-console">Open challenge console/)
   assert.match(landing, /href="\/games\/remix\/player\/index.html">Unity build status/)

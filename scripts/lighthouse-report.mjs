@@ -1,37 +1,41 @@
-import assert from 'node:assert/strict'
-import fs from 'node:fs'
+import path from 'node:path'
+import { pathToFileURL } from 'node:url'
+import { categoryNames, readReportPair, validateReport } from './lighthouse-report-validation.mjs'
 
-const paths = process.argv.slice(2)
-assert.ok(paths.length > 0, 'Pass at least one Lighthouse JSON report')
-const names = {
-  performance: 'Performance',
-  accessibility: 'Accessibility',
-  'best-practices': 'Best Practices',
-  seo: 'SEO',
+export function assessReport(json, mode) {
+  const validation = validateReport(json, 'skillcred', mode)
+  const issues = [...validation.issues]
+  for (const [key, score] of Object.entries(validation.scores)) {
+    if (score < 100) issues.push(`${categoryNames[key]} below requirement: ${score}/100 (required 100)`)
+  }
+  return { ...validation, issues, pass: issues.length === 0 }
 }
-let lowest = 100
-for (const path of paths) {
-  const json = JSON.parse(fs.readFileSync(path, 'utf8'))
-  const label = path.includes('mobile') ? 'MOBILE' : path.includes('desktop') ? 'DESKTOP' : path
-  console.log('\nLighthouse ' + label + ' — ' + json.finalDisplayedUrl)
-  for (const [key, title] of Object.entries(names)) {
-    const category = json.categories && json.categories[key]
-    const score = category && typeof category.score === 'number' ? Math.round(category.score * 100) : null
-    if (score === null) {
-      console.log('  ' + title + ': not reported')
-      continue
+
+function main(paths) {
+  let pair
+  try {
+    pair = readReportPair(paths)
+  } catch (error) {
+    console.error('Lighthouse report input: ' + error.message)
+    process.exitCode = 2
+    return
+  }
+  let failed = false
+  for (const { report, mode } of pair) {
+    const result = assessReport(report, mode)
+    console.log(`\nLighthouse ${mode.toUpperCase()} — https://osgard.world/skillcred/`)
+    for (const [key, title] of Object.entries(categoryNames)) {
+      console.log('  ' + title + ': ' + (result.scores[key] === undefined ? 'not valid' : result.scores[key] + '/100'))
     }
-    lowest = Math.min(lowest, score)
-    console.log('  ' + title + ': ' + score + '/100')
+    console.log('Core Web Vitals diagnostics:')
+    for (const [id, value] of Object.entries(result.metrics)) console.log(`  ${id}: ${value}`)
+    for (const issue of result.issues) console.error('  REQUIREMENT: ' + issue)
+    if (!result.pass) failed = true
   }
-  const audits = json.audits || {}
-  console.log('Core Web Vitals diagnostics:')
-  for (const id of ['first-contentful-paint', 'largest-contentful-paint', 'speed-index', 'total-blocking-time', 'cumulative-layout-shift', 'interactive', 'uses-text-compression']) {
-    const audit = audits[id]
-    if (audit) console.log('  ' + id + ': score=' + audit.score + (audit.displayValue ? ', value=' + audit.displayValue : ''))
-  }
-  const issues = Object.values(audits).filter(a => a && a.score !== null && a.score < 1 && ['contrast','font-display','uses-text-compression','render-blocking-resources','uses-responsive-images','meta-description','document-title','html-has-lang'].some(key => (a.id || '').includes(key)))
-  if (issues.length) console.log('  High-priority findings: ' + issues.map(a => a.id + ' (' + Math.round((a.score || 0) * 100) + ')').join(', '))
+  console.log('\nLighthouse four-category mobile/desktop gate: ' + (failed ? 'FAIL' : 'PASS'))
+  if (failed) process.exitCode = 1
 }
-console.log('\nLowest measured category score: ' + lowest + '/100')
-assert.equal(lowest, 100, 'Brief requires Lighthouse 100/100 in every reported category on mobile and desktop')
+
+if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
+  main(process.argv.slice(2))
+}

@@ -6,7 +6,15 @@ This is a living audit of the 255-point `игры ОСГАРД.txt` brief. It di
 
 When the original file is available, `node scripts/brief-coverage-audit.mjs <brief-file>` reports its line count, byte count, SHA-256 and missing/out-of-range section numbers. The current implementation validates numbered-section coverage; its printed size/hash must be compared with the authoritative snapshot above separately. The package shortcut `npm run qa:brief` points to the original Windows path. That path is absent in the current Linux workspace, so its 17 October rerun returned `ENOENT`; no new source-verification pass is recorded from that attempt.
 
-## Current status — 17 October 2026
+## Current review candidate — Core arena recovery and history
+
+Draft PR #128 now integrates master `c472c47904a2b9cd47d04d689eeba947e6b6864f` (PRs #134–136) and extends the separate opt-in Core arena. Active state reads and new/repeated inputs verify the complete bounded input prefix, acknowledgements and checkpoints inside the same database transaction. The reproduced corruption path now returns `503 / replay_integrity` without mutation. Actor-owned keyset history returns unverified metadata only; opening an entry verifies its challenge and state. Lost browser storage can be recovered through account history, including completed results/replays. Background history authentication failure waits for a foreground acknowledgement or retained pending operation.
+
+Local acceptance passed 442 Python tests across 25 CI families, all 14 REMIX UI cases, 86 desktop/mobile ecosystem cases with six profile-specific skips and no retries, 20 Lighthouse report regressions and the production build. The real active-run drill passed 12 checks across 81 HTTP responses, four processes and one SIGKILL; restart and snapshot restoration preserved their distinct commit boundaries, and deterministic continuation matched the original result and full replay. See [the contract, evidence and limits](REMIX-ACTIVE-RECOVERY-2026-10-17.md). Exact-head CI and review-branch identity are recorded in PR #128; no deployment is implied.
+
+Strict report validation preserves all existing Lighthouse budgets. The four retained real reports remain structurally valid and their original performance failures remain failures. This improves evidence acceptance, not the measured page performance. The published legacy `/api/remix/v2` console remains a separate implementation; its missing active simulation recovery and verified replay are not closed by the Core arena proof. Source-file/numbered-brief verification and the outstanding production requirements below remain open.
+
+## Current published status — 17 October 2026
 
 [PR #135](https://github.com/osmanosmanov6880-bot/osgard-world/pull/135) is published as [`75a3251ae5cc5b6d781f537648623dafedc67b88`](https://github.com/osmanosmanov6880-bot/osgard-world/commit/75a3251ae5cc5b6d781f537648623dafedc67b88); [SSH 39032208241](https://github.com/osmanosmanov6880-bot/osgard-world/actions/runs/39032208241) succeeded. The separately deployed disabled foundation passed its public checks before this enabled release. Its actual host preflight verified the ACL-aware rollback target and supported unpublished-port/NAT bridge conditions before replacement.
 

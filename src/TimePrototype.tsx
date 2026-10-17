@@ -645,10 +645,10 @@ export function TimePrototype() {
                 <g className="tg-city-lights" aria-hidden="true">{Array.from({ length: 64 }, (_, i) => { const angle = ((i * 137.508) % 360) * Math.PI / 180; const radius = 112 + (i % 9) * 19; const x = 420 + Math.cos(angle) * radius * 1.45; const y = 260 + Math.sin(angle) * radius * .77; if (x < 12 || x > 828 || y < 14 || y > 506) return null; const bright = i % 9 === 0; return <g key={i} className={'tg-city-light ' + (bright ? 'is-bright' : '')}><circle cx={x} cy={y} r={bright ? 1.65 : .8} fill={i % 4 === 0 ? '#e5d19b' : '#8fc7ad'} opacity={bright ? '.86' : '.44'} />{bright && <circle className="tg-city-light-halo" cx={x} cy={y} r="4.5" fill="#d9c28b" />}</g> })}</g>
                 <g className="tg-canal-bridges" aria-hidden="true"><path d="M174 358Q195 347 216 365" fill="none" stroke="#071116" strokeWidth="17" strokeLinecap="round" /><path d="M174 358Q195 347 216 365" fill="none" stroke="#b5a879" strokeWidth="7" strokeLinecap="round" strokeOpacity=".55" /><path d="M379 315Q396 299 414 298" fill="none" stroke="#071116" strokeWidth="15" strokeLinecap="round" /><path d="M379 315Q396 299 414 298" fill="none" stroke="#b5a879" strokeWidth="6" strokeLinecap="round" strokeOpacity=".5" /></g>
                 <g fill="url(#tgLand)" stroke="#8fa098" strokeOpacity=".30" strokeWidth="1.4">
-                  <path d={districts[0].points} />
-                  <path d={districts[1].points} />
-                  <path d={districts[2].points} />
-                  <path d={districts[3].points} />
+                  <polygon points={districts[0].points} />
+                  <polygon points={districts[1].points} />
+                  <polygon points={districts[2].points} />
+                  <polygon points={districts[3].points} />
                 </g>
                 {districts.map((shape) => {
                   const item = state.districts.find((d) => d.id === shape.id)!
