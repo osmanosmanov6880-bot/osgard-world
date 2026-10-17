@@ -63,6 +63,22 @@ class OperationsTest(unittest.TestCase):
    self.assertEqual(config.audit(root)["status"],"passed")
    (root/".env.production").write_text("secret")
    self.assertEqual(config.audit(root)["status"],"blocked")
+ def test_security_headers_not_satisfied_by_comments(self):
+  with tempfile.TemporaryDirectory() as d:
+   root=Path(d)
+   (root/"_headers").write_text("# X-Content-Type-Options: nosniff\\n# Referrer-Policy: strict-origin\\n")
+   (root/"_redirects").write_text("/old /new 301")
+   (root/"robots.txt").write_text("User-agent: *")
+   result=config.audit(root)
+   self.assertEqual(result["status"],"blocked")
+   self.assertTrue(any("X-Content-Type-Options" in item for item in result["failures"]))
+ def test_security_headers_must_have_correct_value(self):
+  with tempfile.TemporaryDirectory() as d:
+   root=Path(d)
+   (root/"_headers").write_text("X-Content-Type-Options: invalid\\nReferrer-Policy:\\n")
+   (root/"_redirects").write_text("/old /new 301")
+   (root/"robots.txt").write_text("User-agent: *")
+   self.assertEqual(config.audit(root)["status"],"blocked")
  def test_nested_secret_directory_rejected(self):
   with tempfile.TemporaryDirectory() as d:
    root=Path(d)
