@@ -1,4 +1,4 @@
-const CACHE = 'inherit-shell-v3';
+const CACHE = 'inherit-shell-v4';
 const SHELL = ['/games/inherit/index.html', '/games/inherit/manifest.webmanifest'];
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(SHELL)).then(() => self.skipWaiting()));
