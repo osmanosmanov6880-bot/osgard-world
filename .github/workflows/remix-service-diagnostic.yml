@@ -1,0 +1,51 @@
+name: REMIX read-only source inventory
+
+on:
+  push:
+    branches: [feat/remix-reliability-2026-10-17]
+    paths:
+      - .github/workflows/remix-service-diagnostic.yml
+      - scripts/remix-vps-inventory.py
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  inventory:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure existing VPS SSH identity
+        env:
+          DEPLOY_HOST: ${{ secrets.OSGARD_DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.OSGARD_DEPLOY_USER }}
+          DEPLOY_KEY: ${{ secrets.OSGARD_DEPLOY_KEY }}
+        run: |
+          set -euo pipefail
+          test -n "$DEPLOY_HOST"
+          test -n "$DEPLOY_USER"
+          test -n "$DEPLOY_KEY"
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$DEPLOY_KEY" > ~/.ssh/osgard_deploy
+          chmod 600 ~/.ssh/osgard_deploy
+          ssh-keyscan -T 10 -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+      - name: Inspect only source paths, checksums and scene structure
+        env:
+          DEPLOY_HOST: ${{ secrets.OSGARD_DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.OSGARD_DEPLOY_USER }}
+        run: |
+          set -euo pipefail
+          ssh -o BatchMode=yes -o ConnectTimeout=15 -i ~/.ssh/osgard_deploy "$DEPLOY_USER@$DEPLOY_HOST" 'python3 -' < scripts/remix-vps-inventory.py > remix-source-inventory.json
+          python3 -m json.tool remix-source-inventory.json
+      - name: Retain the metadata inventory
+        uses: actions/upload-artifact@v4
+        with:
+          name: remix-source-inventory
+          path: remix-source-inventory.json
+          if-no-files-found: error
+          retention-days: 7
+      - name: Remove the temporary SSH key
+        if: always()
+        run: rm -f ~/.ssh/osgard_deploy
