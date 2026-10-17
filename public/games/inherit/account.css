@@ -1,0 +1,18 @@
+.inherit-account{margin-top:20px;border-top:1px solid #acc0af44;padding-top:18px;max-width:1000px}
+.inherit-account-modes,.inherit-account-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.inherit-account button,.inherit-account a{font:13px/1.5 Manrope,system-ui,sans-serif;min-height:44px;padding:10px 14px;border:1px solid #e7c77888;background:#e7c77810;color:#edf3e7;cursor:pointer;box-sizing:border-box}
+.inherit-account a{display:inline-flex;align-items:center;text-decoration:none}.inherit-account button[aria-pressed=true]{background:#e7c778;color:#14201b}
+.inherit-account button:disabled{opacity:.55;cursor:not-allowed}
+.inherit-account [hidden]{display:none!important}
+.inherit-account details,.inherit-account section{border-top:1px solid #acc0af33;padding:14px 0;margin-top:12px}
+.inherit-account summary{cursor:pointer;min-height:44px;display:list-item;align-content:center;color:#e7c778;font:14px/1.5 Manrope,system-ui,sans-serif}
+.inherit-account label{display:block;margin:12px 0 5px;font:13px/1.5 Manrope,system-ui,sans-serif}
+.inherit-account input:not([type=checkbox]),.inherit-account textarea{width:100%;max-width:650px;box-sizing:border-box;padding:11px;border:1px solid #acc0af77;background:#071514;color:#edf3e7;font:14px/1.5 Manrope,system-ui,sans-serif;border-radius:0}
+.inherit-account .inherit-sharing{display:flex;align-items:start;gap:10px;max-width:750px;margin:14px 0}
+.inherit-sharing input{flex:none;width:20px;height:20px;margin:2px 0}
+.inherit-account ul{padding:0;list-style:none}.inherit-account li{display:flex;gap:12px;align-items:center;justify-content:space-between;border-bottom:1px solid #acc0af22;padding:10px 0;font:13px/1.5 Manrope,system-ui,sans-serif;overflow-wrap:anywhere}
+.inherit-account h3{font:600 24px/1.25 'Playfair Display',Georgia,serif;margin:16px 0 8px}
+#inherit-account-identity{overflow-wrap:anywhere;font-size:12px}
+#inherit-account-status{border-left:3px solid #e7c778;padding-left:12px}
+#inherit-account-drafts>div{margin:10px 0}
+@media(max-width:740px){.inherit-account-modes button{flex:1 1 150px}.inherit-account-actions button,.inherit-account-actions a{flex:1 1 180px}.inherit-account li{align-items:flex-start}.inherit-account li button{flex:none}.inherit-account input,.inherit-account textarea{font-size:16px}}

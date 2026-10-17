@@ -86,13 +86,17 @@ jobs:
           npm run qa:osa-progress
           npm run qa:game-interface
           npm run qa:inherit-handoff
+          npm run qa:inherit-account
           npm run qa:remix-session
           npm run qa:remix-owned-session
+          npm run qa:remix-invitations
           npm run qa:remix-owned-probe
           npm run qa:remix-legacy
           npm run qa:remix-contract
           npm run qa:remix-guard
           npm run qa:remix-owned
+          npm run qa:remix-participants
+          npm run qa:remix-two-player-probe
           npm run qa:activation
       - name: Verify measured pilot outcomes and offline recovery
         run: |

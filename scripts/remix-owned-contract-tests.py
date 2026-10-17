@@ -327,7 +327,9 @@ class OwnedContractTests(unittest.TestCase):
         capability = self.request("/v2/capabilities")[1]
         self.assertEqual(capability, {"authPolicyVersion": 1, "creationEnabled": False, "provider": "core",
                                       "ownershipPolicy": "confirmed-durable-binding", "legacyMatches": "anonymous",
-                                      "activeMatchRecovery": False, "replayVerification": False})
+                                      "activeMatchRecovery": False, "replayVerification": False,
+                                      "participantPolicyVersion": 1, "participantAdmissionEnabled": False,
+                                      "maxParticipants": 2})
         self.assertEqual(self.create()[0:2], (403, {"error": "owned_creation_disabled",
                                                   "message": "Account-owned creation is not enabled in this release."}))
         self.assertEqual(self.server.guard.store.schema_version(), 1)
@@ -337,7 +339,8 @@ class OwnedContractTests(unittest.TestCase):
 
     def test_real_core_identity_and_trusted_host_bind_server_player(self):
         match = self.create_ok()
-        self.assertEqual(set(match), {"id", "challengeId", "maxPlayers", "createdAt", "playerId", "highestSubmittedSequence", "accessMode"})
+        self.assertEqual(set(match), {"id", "challengeId", "maxPlayers", "createdAt", "playerId", "highestSubmittedSequence", "accessMode",
+                                     "role", "participantCount", "maxParticipants"})
         self.assertEqual((match["accessMode"], match["highestSubmittedSequence"]), ("core-owned", 0))
         self.assertNotEqual(match["playerId"], self.alpha["user"]["id"])
         row = self.server.guard.store.owner(match["id"])

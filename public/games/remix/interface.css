@@ -10,3 +10,9 @@ body #growth-panel{max-width:680px;padding:20px}body #growth-actions button{font
 @media(max-width:520px){body main{width:calc(100% - 32px);padding-top:22px}.game-language button{flex:1}.hero:after{font-size:130px;right:0;top:32px}.hero h1{font-size:clamp(62px,18vw,95px)}.hero>p{font-size:16px}.remix-guide{padding:14px 16px}.remix-console-controls>div{gap:6px}.remix-console-controls button{padding:10px 6px;font-size:13px}#growth-actions{grid-template-columns:1fr}#growth-actions button{grid-column:auto!important}.remix-settings input{font-size:16px}.growth-loop h2{font-size:32px;line-height:1.15}}
 @media(max-width:520px){.match-phase{grid-template-columns:1fr}.match-phase #match-counts{grid-column:1}#live-growth-console #match-title{font-size:18px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+#owned-admission-panel{margin-top:18px;padding-top:16px;border-top:1px solid #e7c77844}
+#owned-admission-panel label{display:block;margin-top:12px;color:#d4ddcf;font-size:13px}
+#owned-admission-panel input{display:block;width:100%;min-width:0;margin:7px 0;padding:11px;background:#07110f;color:#e8eee3;border:1px solid #ffffff40;font:12px ui-monospace,monospace}
+#owned-admission-panel .cta{margin-top:10px}
+.remix-admission-actions{display:flex;flex-wrap:wrap;gap:8px}
+#owned-invitation-description,#owned-invitation-target,#owned-participants{overflow-wrap:anywhere}

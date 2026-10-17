@@ -9,6 +9,7 @@ Control routes must only be called on the isolated fixture, never production.
 """
 
 import argparse
+import json
 from http.server import ThreadingHTTPServer
 from pathlib import Path
 import sys
@@ -41,6 +42,20 @@ class FixtureHandler(LegacyHandler):
     def do_POST(self):
         legacy = self.server.legacy
         path = urlsplit(self.path).path
+        if path.endswith('/input') and getattr(legacy, 'two_player', False):
+            value = json.loads(self.rfile.read(int(self.headers.get('Content-Length', '0'))))
+            with legacy.lock:
+                legacy.calls.append(('POST', self.path, value, dict(self.headers)))
+                player = value['playerId']
+                if value['sequence'] <= legacy.player_sequences.get(player, 0):
+                    return self.answer(409, {'error': 'sequence_already_used'})
+                legacy.player_sequences[player] = value['sequence']
+                legacy.player_scores[player] = legacy.player_scores.get(player, 0) + .1
+                legacy.input_count += 1
+                legacy.state.update(players=len(legacy.player_scores), replayFrames=legacy.input_count,
+                                    scores=[dict(playerId=identifier, score=score) for identifier, score in sorted(legacy.player_scores.items())])
+                return self.answer(200, dict(playerId=player, position=[legacy.input_count / 12, 0, 0],
+                                            velocityY=0, onGround=True, score=legacy.player_scores[player], lastSequence=value['sequence']))
         if path.startswith("/__fixture/"):
             if self.headers.get("Transfer-Encoding"):
                 return self.answer(400, {"error": "unsupported fixture body"})
@@ -68,10 +83,14 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8080)
+    parser.add_argument("--two-player", action="store_true", help="Use distinct per-player sequences and score rows in this isolated fixture")
     args = parser.parse_args()
     server = ThreadingHTTPServer((args.host, args.port), FixtureHandler)
     server.daemon_threads = True
     server.legacy = Legacy()
+    server.legacy.two_player = args.two_player
+    server.legacy.player_sequences = {}
+    server.legacy.player_scores = {}
     print(f"CI fixture ready: match={MATCH} player={PLAYER} port={server.server_address[1]}", flush=True)
     try:
         server.serve_forever()

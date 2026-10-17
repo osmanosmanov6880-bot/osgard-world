@@ -37,6 +37,17 @@ try{
  assert.equal(safeReturnTo(remixReturn+'&api=https://external.test&token=secret&redirect=//external.test&seed=42&project='+pid),remixReturn);
  assert.equal(safeReturnTo('/games/remix/?challenge=../other&lang=external&mode=guest'),'/games/remix/');
  for(const value of ['/games/remix/player/','/games/remix/other','/games/remix/#secret','/games/remix/?challenge='+ 'x'.repeat(1001)])assert.equal(safeReturnTo(value),'/workspace');
+ const invitedRemix='/games/remix/?invitation=invite_same.1&lang=en&mode=account';
+ assert.equal(safeReturnTo(invitedRemix+'&challenge=other&api=https://external.test&token=discard&recipientAccountId=private'),invitedRemix);
+ assert.equal(coreAuthReturn('/workspace','?returnTo='+encodeURIComponent(invitedRemix)),invitedRemix);
+ assert.equal(safeReturnTo('/games/remix/?invitation=../other&lang=ru&mode=account'),'/games/remix/?lang=ru&mode=account');
+ const inheritReturn='/games/inherit/?world='+pid+'&invitation='+sid+'&lang=en&mode=account';
+ assert.equal(safeReturnTo(inheritReturn),inheritReturn);
+ assert.equal(safeReturnTo('/games/inherit/index.html?world='+pid+'&invitation='+sid+'&lang=en&mode=account&api=https://external.test&token=discard'),inheritReturn);
+ assert.equal(new URLSearchParams(coreLoginLink(inheritReturn).split('?')[1]).get('returnTo'),inheritReturn);
+ assert.equal(coreAuthReturn('/workspace','?returnTo='+encodeURIComponent(inheritReturn)),inheritReturn);
+ assert.equal(safeReturnTo('/games/inherit/?world=../other&invitation=ABCDEF1234567890ABCDEF1234567890&lang=other&mode=guest'),'/games/inherit/');
+ for(const value of ['/games/inherit/#secret','/games/inherit/player/','//external.test/games/inherit/'])assert.equal(safeReturnTo(value),'/workspace');
  const txt=recoveryDocument('tester','batch',['one','two']);assert.ok(txt.includes('one\ntwo'));assert.ok(txt.includes('Активируйте этот набор'));assert.ok(txt.includes('аннулирует все старые коды и сессии'))
  await coreRequest('health');assert.equal(headers.Authorization,'Bearer first')
  stored='second';for(const fn of handlers)fn({persisted:true});await coreRequest('health');assert.equal(headers.Authorization,'Bearer second')

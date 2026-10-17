@@ -24,6 +24,11 @@ const accessPanel=document.createElement('div');
 accessPanel.style='margin:18px 0;border-block:1px solid #e7c77844;padding:14px 0;max-width:680px';
 accessPanel.innerHTML='<span class="eyebrow">SESSION ACCESS</span><div role="group" aria-label="Session access" style="display:flex;flex-wrap:wrap;gap:10px"><button id="access-guest" type="button" class="cta remix-secondary" aria-pressed="true">Guest / invite mode</button><button id="access-account" type="button" class="cta remix-secondary" aria-pressed="false">Account-owned matches</button></div><section id="owned-panel" hidden aria-label="Account-owned matches"><p id="owned-status" role="status" aria-live="polite">Choose account mode to verify your Core session.</p><div style="display:flex;flex-wrap:wrap;gap:10px"><a id="owned-signin" class="cta remix-secondary" href="/account">Sign in and return to REMIX</a><a class="cta remix-secondary" href="/account">Manage account access</a><button id="owned-verify" type="button" class="cta remix-secondary">Verify account again</button><button id="owned-history-refresh" type="button" class="cta remix-secondary">Refresh account matches</button></div><p class="note">One account controls its assigned player. Other accounts cannot join this owned match. Guest matches remain anonymous. Active simulation recovery and replay verification are not available.</p><div id="owned-history"></div><button id="owned-history-next" type="button" class="cta remix-secondary" hidden>Next page of account matches</button><button id="owned-recover-attempt" type="button" class="cta remix-secondary" hidden>Check pending creation</button><button id="owned-new-challenge" type="button" class="cta remix-secondary" hidden>Create a new public challenge</button></section>';
 panel.insertBefore(accessPanel,panel.querySelector('#api-url'));
+const admissionPanel=document.createElement('section');admissionPanel.id='owned-admission-panel';
+admissionPanel.innerHTML='<p id="owned-participants"></p><label for="owned-core-id">Your verified Core account ID</label><input id="owned-core-id" readonly><button id="owned-copy-id" type="button" class="cta remix-secondary">Copy my Core ID</button><p class="note">Invite one specific Core account to this match. Joining does not extend its running timer. Each account controls its own assigned player; this console is separate from Unity.</p><p id="owned-admission-status" role="status" aria-live="polite">Participant invitations require a compatible account service.</p><div id="owned-invite-form"><label for="owned-invite-recipient">Recipient Core account ID</label><input id="owned-invite-recipient" maxlength="128" autocomplete="off" spellcheck="false"><button id="owned-create-invite" type="button" class="cta remix-secondary">Invite this account</button></div><div id="owned-invitation-detail" hidden><p id="owned-invitation-description"></p><input id="owned-invitation-link" aria-label="Account invitation link" readonly><div class="remix-admission-actions"><button id="owned-copy-invitation" type="button" class="cta remix-secondary">Copy account invitation</button><button id="owned-refresh-invitation" type="button" class="cta remix-secondary">Check invitation</button><button id="owned-accept-invitation" type="button" class="cta">Join this match</button><button id="owned-revoke-invitation" type="button" class="cta remix-secondary">Revoke pending invitation</button></div></div><button id="owned-admission-recover" type="button" class="cta remix-secondary" hidden>Check saved invitation action</button><a id="owned-account-matches" class="cta remix-secondary" href="/games/remix/?mode=account">Open account matches</a>';
+panel.querySelector('#owned-panel').appendChild(admissionPanel);
+const admissionCapability=document.createElement('p');admissionCapability.id='owned-admission-capability';admissionPanel.insertBefore(admissionCapability,admissionPanel.querySelector('#owned-admission-status'));
+const invitationTarget=document.createElement('p');invitationTarget.id='owned-invitation-target';panel.querySelector('#owned-invitation-detail').insertBefore(invitationTarget,panel.querySelector('#owned-invitation-link'));
 const remixStore=(()=>{
  const memory=new Map(),store={ephemeral:false};
  store.getItem=key=>{if(memory.has(key))return memory.get(key);try{return localStorage.getItem(key)}catch{store.ephemeral=true;return null}};
@@ -48,6 +53,7 @@ draw();apiInput.value=remixStore.getItem('remix-api-url')||'/api/remix';
 let match=null,playerId='web-'+(window.crypto?.randomUUID?.()||Math.random().toString(36).slice(2,12)),seq=0,timer=null;
 const routeParams=new URLSearchParams(location.search);
 const incomingChallengeId=(routeParams.get('challenge')||'').trim().slice(0,128);
+const incomingInvitationId=routeParams.get('invitation')||'';
 const incomingSeed=Number(routeParams.get('seed'));
 const incomingReferralCode=(routeParams.get('ref')||'').trim().slice(0,80);
 const dailyDate=new Date().toISOString().slice(0,10);
@@ -58,7 +64,7 @@ let challengeSeedVerified=false;
 let matchStartedAt=0;
 let lastResultSummary='';
 const growthPanel=panel.querySelector('#growth-panel');
-let sessionMode='idle',serverPhase='',connectionBase='',sessionKey='',operation=0;
+let sessionMode='idle',serverPhase='',serverRemainingMs=0,connectionBase='',sessionKey='',operation=0;
 let opening=false,polling=false,verifiedState=false,completionReported=false,failures=0;
 let inputBusy=false,pendingInput=null,inputTimer=null,nextInputAt=0,inputOperation=0;
 const requests=new Set();
@@ -72,6 +78,8 @@ const coreSessionKey='osgard:core-session:v1';
 const anonymousPlayerId=playerId;
 let selectedAccess='guest',ownedIdentity=null,ownedAccountId='',ownedCapabilities=null;
 let ownedBusy=false,ownedMetadataRequired=false,ownedOperationKey='',ownedAttemptStatus='',ownedNextCursor=null;
+let ownedRole='',ownedParticipantCount=0,ownedInvitationId='';
+let activeInvitation=null,admissionIntent=null,admissionBusy=false,invitationReading=false,admissionEpoch=0,invitationTimer=null;
 const ownedJournalLimit=32;
 function coreCredential(){try{const value=sessionStorage.getItem(coreSessionKey)||'';return value.length<=4096&&!/\s/.test(value)?value:''}catch{return ''}}
 function isOwnedMatch(){return match?.accessMode==='core-owned'}
@@ -86,6 +94,7 @@ function readOwnedSession(raw,accountId,scope=routeScope){
   if(value.matchId!==null&&!validId(value.matchId)||value.challengeId!==''&&!validId(value.challengeId))return null;
   if(value.matchId&&!value.challengeId||value.playerId!==null&&!validId(value.playerId))return null;
   if(value.operationKey!==''&&!/^[A-Za-z0-9_-]{16,100}$/.test(value.operationKey))return null;
+  if(value.invitationId!==undefined&&value.invitationId!==''&&!validId(value.invitationId))return null;
   if(['creating','uncertain','rejected'].includes(value.stage)&&(!value.operationKey||!value.challengeId))return null;
   if(!Number.isSafeInteger(value.sequence)||value.sequence<0||value.sequence>=Number.MAX_SAFE_INTEGER||!Number.isSafeInteger(value.seed)||value.seed<1)return null;
   const unresolved=!value.matchId&&value.operationKey&&['creating','uncertain'].includes(value.stage);
@@ -93,7 +102,7 @@ function readOwnedSession(raw,accountId,scope=routeScope){
   return value;
  }catch{return null}
 }
-function ownedSessionValue(stage){return {version:2,accessMode:'core-owned',apiBase:ownedBase,accountId:ownedAccountId,scope:routeScope,stage,matchId:isOwnedMatch()?match.id:null,challengeId:activeChallengeId,seed:activeChallengeSeed,playerId:isOwnedMatch()?playerId:null,sequence:seq,operationKey:ownedOperationKey,startedAt:matchStartedAt,savedAt:Date.now(),completionReported}}
+function ownedSessionValue(stage){return {version:2,accessMode:'core-owned',apiBase:ownedBase,accountId:ownedAccountId,scope:routeScope,stage,matchId:isOwnedMatch()?match.id:null,challengeId:activeChallengeId,seed:activeChallengeSeed,playerId:isOwnedMatch()?playerId:null,sequence:seq,operationKey:ownedOperationKey,invitationId:ownedInvitationId,startedAt:matchStartedAt,savedAt:Date.now(),completionReported}}
 function rememberOwnedSession(stage=match?'active':ownedAttemptStatus||'prepared',replace=false){
  if(!validId(ownedAccountId))return false;
  // A selected history row is only a protected placeholder until metadata arrives.
@@ -167,18 +176,216 @@ function acknowledgeOwnedInputs(id,highwater){
 function pauseOwnedInputRecovery(error){
  if(timer){clearTimeout(timer);timer=null}ownedMetadataRequired=true;sessionMode='reconnecting';pendingInput=null;status.textContent=ownedErrorMessage(error);syncControls();
 }
-function validOwnedMetadata(value){return value&&typeof value==='object'&&!Array.isArray(value)&&value.accessMode==='core-owned'&&validId(value.id)&&validId(value.challengeId)&&value.maxPlayers===2&&typeof value.createdAt==='string'&&value.createdAt.length>0&&value.createdAt.length<=100&&validId(value.playerId)&&Number.isSafeInteger(value.highestSubmittedSequence)&&value.highestSubmittedSequence>=0&&value.highestSubmittedSequence<Number.MAX_SAFE_INTEGER}
+function validOwnedMetadata(value){return value&&typeof value==='object'&&!Array.isArray(value)&&value.accessMode==='core-owned'&&validId(value.id)&&validId(value.challengeId)&&value.maxPlayers===2&&typeof value.createdAt==='string'&&value.createdAt.length>0&&value.createdAt.length<=100&&validId(value.playerId)&&Number.isSafeInteger(value.highestSubmittedSequence)&&value.highestSubmittedSequence>=0&&value.highestSubmittedSequence<Number.MAX_SAFE_INTEGER&&(!admissionSupported()&&value.role===undefined&&value.participantCount===undefined&&value.maxParticipants===undefined||['owner','participant'].includes(value.role)&&[1,2].includes(value.participantCount)&&value.maxParticipants===2)}
 function ownedSignInURL(){
  const query=new URLSearchParams();
- if(validId(incomingChallengeId))query.set('challenge',incomingChallengeId);
+ if(validId(incomingInvitationId))query.set('invitation',incomingInvitationId);
+ else if(validId(incomingChallengeId))query.set('challenge',incomingChallengeId);
  query.set('lang',window.RemixUI?.getLanguage?.()||(['ru','en'].includes(routeParams.get('lang'))?routeParams.get('lang'):'ru'));
  query.set('mode','account');
  return '/workspace?returnTo='+encodeURIComponent('/games/remix/?'+query);
 }
-function ownedModeLocked(){return opening||ownedBusy||Boolean(match&&!['completed','missing','unavailable','auth-required','auth-unavailable','access-denied'].includes(sessionMode))}
+function admissionSupported(){return ownedCapabilities?.participantPolicyVersion===1&&ownedCapabilities.maxParticipants===2}
+function admissionEnabled(){return admissionSupported()&&ownedCapabilities.participantAdmissionEnabled===true}
+function admissionPrefix(accountId){return 'osgard:remix-admission:v1:'+encodeURIComponent(ownedBase)+':'+encodeURIComponent(accountId)+':'}
+function admissionKey(value){return admissionPrefix(value.accountId)+value.operationKey}
+function admissionEntries(accountId=ownedAccountId){
+ if(!validId(accountId))return [];
+ const prefix=admissionPrefix(accountId),entries=[];
+ try{
+  for(let i=0,n=localStorage.length;i<n;i++){
+   const key=localStorage.key(i);if(!key?.startsWith(prefix))continue;
+   const raw=localStorage.getItem(key);if(typeof raw!=='string'||raw.length>2048)throw ownedRecoveryError();
+   const value=JSON.parse(raw);
+   if(!value||value.version!==1||value.apiBase!==ownedBase||value.accountId!==accountId||!['invite','accept','revoke'].includes(value.operation)||!validId(value.matchId)||!validId(value.recipientAccountId)||!/^[A-Za-z0-9_-]{16,100}$/.test(value.operationKey)||!Number.isSafeInteger(value.savedAt)||value.savedAt<0||value.savedAt>Date.now()+60000||key!==admissionKey(value)||!(value.operation==='invite'?value.invitationId===null:validId(value.invitationId)))throw ownedRecoveryError();
+   entries.push({key,value});
+  }
+  return entries.sort((a,b)=>a.value.savedAt-b.value.savedAt||a.value.operationKey.localeCompare(b.value.operationKey));
+ }catch{throw ownedRecoveryError()}
+}
+function hasPendingAdmission(){try{return admissionEntries().length>0}catch{return true}}
+function persistAdmission(value){
+ const entries=admissionEntries();
+ if(entries.length>=ownedJournalLimit)throw ownedRecoveryError('owned_recovery_full');
+ if(entries.length||hasOwnedPendingCreation())throw ownedRecoveryError('admission_pending');
+ try{
+  const key=admissionKey(value);if(localStorage.getItem(key)!==null)throw ownedRecoveryError('admission_pending');
+  localStorage.setItem(key,JSON.stringify(value));
+ }catch(error){if(error.code)throw error;remixStore.ephemeral=true;window.RemixUI?.updateStorage();throw ownedRecoveryError()}
+}
+function settleAdmission(value){
+ if(!ownedAuthCurrent()||value.accountId!==ownedAccountId)return false;
+ try{
+  const entry=admissionEntries().find(entry=>entry.value.operationKey===value.operationKey);
+  if(!entry)return true;
+  if(JSON.stringify(entry.value)!==JSON.stringify(value))return false;
+  localStorage.removeItem(entry.key);return localStorage.getItem(entry.key)===null;
+ }catch{remixStore.ephemeral=true;window.RemixUI?.updateStorage();return false}
+}
+function stopAdmissionWork(clear=false){
+ admissionEpoch++;admissionBusy=false;invitationReading=false;
+ if(invitationTimer){clearTimeout(invitationTimer);invitationTimer=null}
+ if(activeInvitation)activeInvitation={...activeInvitation,admissionAllowed:false};
+ if(clear){activeInvitation=null;admissionIntent=null;ownedInvitationId='';ownedRole='';ownedParticipantCount=0}
+}
+function admissionCurrent(epoch,token,accountId){return epoch===admissionEpoch&&token===operation&&accountId===ownedAccountId&&ownedAuthCurrent()}
+function validInvitation(value){
+ return value&&typeof value==='object'&&!Array.isArray(value)&&validId(value.id)&&validId(value.matchId)&&validId(value.challengeId)&&validId(value.recipientAccountId)&&['pending','accepted','revoked','expired','match_closed'].includes(value.status)&&['owner','recipient'].includes(value.role)&&typeof value.createdAt==='string'&&value.createdAt.length<=100&&Number.isFinite(Date.parse(value.createdAt))&&typeof value.expiresAt==='string'&&value.expiresAt.length<=100&&Number.isFinite(Date.parse(value.expiresAt))&&Date.parse(value.expiresAt)>=Date.parse(value.createdAt)&&(value.role==='recipient'?value.recipientAccountId===ownedAccountId:value.recipientAccountId!==ownedAccountId);
+}
+function validInvitationRead(value,id){
+ return validInvitation(value)&&value.id===id&&typeof value.admissionAllowed==='boolean'&&value.engine&&['WAITING','COUNTDOWN','PLAYING','RUNNING','RESULTS'].includes(value.engine.phase)&&Number.isFinite(value.engine.remainingMs)&&value.engine.remainingMs>=0;
+}
+function validAdmissionReply(value,intent){
+ if(!value||value.operation!==intent.operation||value.operationKey!==intent.operationKey||!['ready','rejected'].includes(value.status))return false;
+ if(value.status==='rejected')return typeof value.error==='string'&&/^[a-z][a-z0-9_]{0,79}$/.test(value.error)&&(value.invitationId===undefined||(intent.operation==='invite'?validId(value.invitationId):value.invitationId===intent.invitationId));
+ const invite=value.invitation;
+ if(!validInvitation(invite)||invite.matchId!==intent.matchId||invite.recipientAccountId!==intent.recipientAccountId||intent.invitationId&&invite.id!==intent.invitationId)return false;
+ if(intent.operation==='accept')return invite.role==='recipient'&&invite.status==='accepted'&&validOwnedMetadata(value.match)&&value.match.id===intent.matchId&&value.match.challengeId===invite.challengeId&&value.match.role==='participant'&&value.match.participantCount===2;
+ return invite.role==='owner'&&(intent.operation!=='revoke'||invite.status==='revoked');
+}
+function accountMatchURL(invitationId=''){
+ const url=new URL('/games/remix/',location.origin);
+ if(invitationId)url.searchParams.set('invitation',invitationId);
+ url.searchParams.set('lang',window.RemixUI?.getLanguage?.()||(['ru','en'].includes(routeParams.get('lang'))?routeParams.get('lang'):'ru'));
+ url.searchParams.set('mode','account');return url;
+}
+function admissionMessage(text){panel.querySelector('#owned-admission-status').textContent=text}
+function admissionErrorMessage(error){
+ if(error.code==='admission_pending')return 'An invitation action is still unconfirmed. Check its saved operation before another action.';
+ if(error.code==='owned_recovery_full'||error.code==='owned_recovery_unavailable')return ownedErrorMessage(error);
+ if(error.status===403)return 'This account cannot use that invitation. Only its addressed recipient can join.';
+ if(error.status===404)return 'The invitation or saved action is not confirmed. No request will be repeated.';
+ return 'The invitation action is not confirmed. Its saved operation is retained; check it again without repeating the request.';
+}
+function admissionRejectionMessage(code){
+ if(code==='invitation_revoked')return 'This invitation was revoked. No participant was added.';
+ if(code==='invitation_expired'||code==='match_closed')return 'This invitation is closed. A new match requires a separate action.';
+ if(code==='match_full')return 'The second account slot is already occupied. This invitation did not add a participant.';
+ return 'The service rejected this invitation action. A new action is never automatic.';
+}
+function canCreateInvitation(){
+ return ownedAuthCurrent()&&admissionEnabled()&&isOwnedMatch()&&ownedRole==='owner'&&ownedParticipantCount===1&&verifiedState&&['COUNTDOWN','PLAYING','RUNNING'].includes(serverPhase)&&serverRemainingMs>0&&navigator.onLine!==false&&!opening&&!ownedBusy&&!admissionBusy&&!invitationReading&&!hasPendingAdmission()&&!hasOwnedPendingCreation()&&!(activeInvitation?.matchId===match.id&&activeInvitation.status==='pending');
+}
+function canAcceptInvitation(){
+ return ownedAuthCurrent()&&admissionEnabled()&&activeInvitation?.role==='recipient'&&activeInvitation.status==='pending'&&activeInvitation.admissionAllowed===true&&['COUNTDOWN','PLAYING','RUNNING'].includes(activeInvitation.engine?.phase)&&activeInvitation.engine.remainingMs>0&&navigator.onLine!==false&&!opening&&!ownedBusy&&!admissionBusy&&!invitationReading&&!hasPendingAdmission()&&!hasOwnedPendingCreation()&&!match;
+}
+function canRevokeInvitation(){
+ return ownedAuthCurrent()&&admissionEnabled()&&activeInvitation?.role==='owner'&&activeInvitation.status==='pending'&&navigator.onLine!==false&&!opening&&!ownedBusy&&!admissionBusy&&!invitationReading&&!hasPendingAdmission()&&!hasOwnedPendingCreation();
+}
+function syncAdmissionControls(){
+ const verified=ownedAuthCurrent(),pending=hasPendingAdmission(),busy=admissionBusy||invitationReading||ownedBusy||opening;
+ panel.querySelector('#owned-core-id').value=verified?ownedAccountId:'';
+ panel.querySelector('#owned-copy-id').disabled=!verified;
+ panel.querySelector('#owned-admission-capability').hidden=admissionEnabled();
+ panel.querySelector('#owned-admission-capability').textContent=admissionSupported()?'Participant invitations are disabled by this service. Existing account matches remain available.':'Participant invitations require a compatible account service.';
+ panel.querySelector('#owned-participants').textContent=isOwnedMatch()&&ownedParticipantCount?'Assigned accounts · '+ownedParticipantCount+' / 2':'';
+ panel.querySelector('#owned-invite-form').hidden=!admissionEnabled()||!isOwnedMatch()||ownedRole!=='owner';
+ panel.querySelector('#owned-create-invite').disabled=!canCreateInvitation();
+ panel.querySelector('#owned-invite-recipient').disabled=busy;
+ panel.querySelector('#owned-invitation-detail').hidden=!activeInvitation&&!incomingInvitationId;
+ panel.querySelector('#owned-invitation-description').textContent=activeInvitation?'Invitation '+activeInvitation.id+' · '+activeInvitation.status+' · Match '+activeInvitation.matchId:'';
+ panel.querySelector('#owned-invitation-target').textContent=activeInvitation?'Addressed Core ID · '+activeInvitation.recipientAccountId:'';
+ panel.querySelector('#owned-invitation-link').value=activeInvitation?accountMatchURL(activeInvitation.id).href:'';
+ panel.querySelector('#owned-copy-invitation').disabled=!verified||!activeInvitation;
+ panel.querySelector('#owned-refresh-invitation').disabled=!verified||busy||!validId(activeInvitation?.id||incomingInvitationId||ownedInvitationId);
+ const already=activeInvitation?.status==='accepted'&&activeInvitation.role==='recipient';
+ panel.querySelector('#owned-accept-invitation').textContent=already?'Open joined match':'Join this match';
+ panel.querySelector('#owned-accept-invitation').hidden=!already&&!admissionEnabled()||Boolean(activeInvitation&&activeInvitation.role!=='recipient');
+ panel.querySelector('#owned-accept-invitation').disabled=already?busy||pending||!verified||match?.id===activeInvitation.matchId:!canAcceptInvitation();
+ panel.querySelector('#owned-revoke-invitation').hidden=!admissionEnabled()||activeInvitation?.role!=='owner';
+ panel.querySelector('#owned-revoke-invitation').disabled=!canRevokeInvitation();
+ panel.querySelector('#owned-admission-recover').hidden=!pending;panel.querySelector('#owned-admission-recover').disabled=!verified||busy;
+ panel.querySelector('#owned-account-matches').href=accountMatchURL().href;
+ panel.querySelector('#owned-panel .note').textContent=admissionEnabled()?'Each account controls its assigned player. A second account needs an addressed invitation. Guest matches remain anonymous. Active simulation recovery and replay verification are not available.':'One account controls its assigned player. Other accounts cannot join this owned match. Guest matches remain anonymous. Active simulation recovery and replay verification are not available.';
+}
+function scheduleInvitationRead(){
+ if(invitationTimer){clearTimeout(invitationTimer);invitationTimer=null}
+ if(!ownedAuthCurrent()||navigator.onLine===false||admissionBusy||activeInvitation?.status!=='pending')return;
+ const id=activeInvitation.id;invitationTimer=setTimeout(()=>{invitationTimer=null;readInvitation(id)},2000);
+}
+async function readInvitation(id=activeInvitation?.id||incomingInvitationId||ownedInvitationId,expectedMatchId=''){
+ if(!validId(id)||!ownedAuthCurrent()||admissionBusy||invitationReading||navigator.onLine===false)return;
+ if(invitationTimer){clearTimeout(invitationTimer);invitationTimer=null}
+ const epoch=admissionEpoch,token=operation,accountId=ownedAccountId;invitationReading=true;syncAdmissionControls();
+ try{
+  const value=await ownedApi('/v2/invitations/'+encodeURIComponent(id));if(!admissionCurrent(epoch,token,accountId))return;
+  if(!validInvitationRead(value,id)||expectedMatchId&&value.matchId!==expectedMatchId)throw Error('Invalid invitation response');
+  activeInvitation=value;
+  if(isOwnedMatch()&&match.id===value.matchId){ownedInvitationId=id;rememberOwnedSession();if(value.status==='accepted')ownedMetadataRequired=true}
+  admissionMessage(value.status==='pending'?(value.role==='owner'?'The invitation is pending for its addressed recipient. Joining does not extend the match timer.':value.admissionAllowed?'The invitation is open at the last server check. Joining does not extend the match timer.':'This invitation cannot admit a participant now. Check the current match state.') :value.status==='accepted'?'The service confirmed this invitation was accepted.':value.status==='revoked'?'This invitation was revoked. No participant was added.':'This invitation is closed. A new match requires a separate action.');
+ }catch(error){
+  if(admissionCurrent(epoch,token,accountId)){if(activeInvitation?.id===id)activeInvitation={...activeInvitation,admissionAllowed:false};admissionMessage(admissionErrorMessage(error))}
+ }finally{if(admissionCurrent(epoch,token,accountId)){invitationReading=false;syncControls();scheduleInvitationRead()}}
+}
+async function acceptAdmissionReply(reply,intent){
+ if(!validAdmissionReply(reply,intent))throw Error('Invalid invitation operation response');
+ if(reply.status==='rejected'){
+  const closed=settleAdmission(intent);if(closed)admissionIntent=null;
+  if(intent.operation==='invite'&&validId(reply.invitationId)){ownedInvitationId=reply.invitationId;if(activeInvitation?.id!==reply.invitationId)activeInvitation=null}
+  if(activeInvitation)activeInvitation={...activeInvitation,admissionAllowed:false};
+  admissionMessage(admissionRejectionMessage(reply.error));return closed;
+ }
+ activeInvitation=reply.invitation;ownedInvitationId=reply.invitation.id;
+ let metadata=reply.match;
+ if(intent.operation!=='accept'){
+  metadata=await ownedApi('/v2/matches/'+encodeURIComponent(intent.matchId));
+  if(!validOwnedMetadata(metadata)||metadata.id!==intent.matchId||metadata.role!=='owner')throw Error('Invalid owner metadata');
+ }
+ const latest=currentOwnedSession(ownedAccountId),local=latest?.matchId===intent.matchId?latest:null;
+ ownedOperationKey=local?.operationKey||'';matchStartedAt=local?.startedAt||0;completionReported=local?.completionReported||false;
+ if(!isOwnedMatch()||match.id!==intent.matchId){stopInputs();clearResult();verifiedState=false;serverPhase=''}
+ const saved=applyOwnedMetadata(metadata,local?.sequence||0);
+ if(saved&&settleAdmission(intent)){admissionIntent=null;admissionMessage(intent.operation==='accept'?'The service assigned your account to this match. Checking its current state…':intent.operation==='revoke'?'The invitation was revoked.':'The addressed invitation is saved. Copy its link for the intended account.');return true}
+ admissionMessage('The service confirmed the action. Its recovery journal remains saved until this browser can store the active match.');return false;
+}
+async function recoverAdmission(){
+ if(!ownedAuthCurrent()||ownedBusy||opening||admissionBusy||invitationReading)return;
+ let entries;try{entries=admissionEntries()}catch(error){admissionMessage(admissionErrorMessage(error));syncControls();return}
+ const entry=entries.find(entry=>entry.value.operationKey===admissionIntent?.operationKey)||entries[0];if(!entry)return;
+ const intent=entry.value,epoch=admissionEpoch,token=operation,accountId=ownedAccountId;admissionIntent=intent;admissionBusy=true;syncControls();
+ try{
+  const value=await ownedApi('/v2/admission-attempts/'+encodeURIComponent(intent.operationKey));if(!admissionCurrent(epoch,token,accountId))return;
+  await acceptAdmissionReply(value,intent);
+ }catch(error){if(admissionCurrent(epoch,token,accountId))admissionMessage(admissionErrorMessage(error))}
+ finally{if(admissionCurrent(epoch,token,accountId)){admissionBusy=false;syncControls();if(isOwnedMatch())await refresh();if(admissionCurrent(epoch,token,accountId)&&(activeInvitation||ownedInvitationId))await readInvitation(activeInvitation?.id||ownedInvitationId,intent.matchId)}}
+}
+async function mutateAdmission(kind){
+ if(kind==='invite'&&!canCreateInvitation()||kind==='accept'&&!canAcceptInvitation()||kind==='revoke'&&!canRevokeInvitation())return;
+ const recipient=kind==='invite'?panel.querySelector('#owned-invite-recipient').value.trim():activeInvitation.recipientAccountId;
+ if(!validId(recipient)||kind==='invite'&&recipient===ownedAccountId){admissionMessage('Enter the other account’s verified Core ID. This form does not search for accounts.');return}
+ const key=window.crypto?.randomUUID?.();if(typeof key!=='string'||!/^[A-Za-z0-9_-]{16,100}$/.test(key)){admissionMessage('A secure invitation operation key is unavailable.');return}
+ const intent={version:1,apiBase:ownedBase,accountId:ownedAccountId,operation:kind,operationKey:key,matchId:kind==='invite'?match.id:activeInvitation.matchId,invitationId:kind==='invite'?null:activeInvitation.id,recipientAccountId:recipient,savedAt:Date.now()};
+ try{persistAdmission(intent)}catch(error){admissionMessage(admissionErrorMessage(error));syncControls();return}
+ const epoch=admissionEpoch,token=operation,accountId=ownedAccountId;admissionIntent=intent;admissionBusy=true;
+ if(invitationTimer){clearTimeout(invitationTimer);invitationTimer=null}syncControls();
+ const path=kind==='invite'?'/v2/matches/'+encodeURIComponent(intent.matchId)+'/invitations':'/v2/invitations/'+encodeURIComponent(intent.invitationId)+'/'+kind;
+ let check=false;
+ try{
+  const value=await ownedApi(path,{method:'POST',body:JSON.stringify(kind==='invite'?{recipientAccountId:recipient}:{}),idempotencyKey:key});
+  if(!admissionCurrent(epoch,token,accountId))return;await acceptAdmissionReply(value,intent);
+ }catch(error){
+  if(!admissionCurrent(epoch,token,accountId))return;
+  if(error.value?.status==='rejected'&&validAdmissionReply(error.value,intent))await acceptAdmissionReply(error.value,intent);
+  else{check=true;admissionMessage(admissionErrorMessage(error))}
+ }finally{
+  if(admissionCurrent(epoch,token,accountId)){admissionBusy=false;syncControls();if(check)await recoverAdmission();else{if(isOwnedMatch())await refresh();if(admissionCurrent(epoch,token,accountId)&&(activeInvitation||ownedInvitationId))await readInvitation(activeInvitation?.id||ownedInvitationId,intent.matchId)}}
+ }
+}
+async function openOrAcceptInvitation(){
+ if(activeInvitation?.status==='accepted'&&activeInvitation.role==='recipient'&&!admissionBusy&&!hasPendingAdmission())return recoverOwnedMatch(activeInvitation.matchId);
+ return mutateAdmission('accept');
+}
+async function copyAdmissionValue(kind){
+ if(!ownedAuthCurrent())return;
+ const value=kind==='account'?ownedAccountId:activeInvitation?accountMatchURL(activeInvitation.id).href:'';
+ if(!value)return;
+ try{await navigator.clipboard.writeText(value);admissionMessage(kind==='account'?'Your verified Core ID was copied.':'The addressed invitation link was copied. Only its recipient can join.')}
+ catch{window.prompt(kind==='account'?'Copy your Core account ID':'Copy the addressed invitation link',value)}
+}
+function ownedModeLocked(){return opening||ownedBusy||admissionBusy||Boolean(match&&!['completed','missing','unavailable','auth-required','auth-unavailable','access-denied'].includes(sessionMode))}
 function ownedCreationPending(){return Boolean(ownedOperationKey&&!match&&['creating','uncertain'].includes(ownedAttemptStatus))}
 function canCreateOwned(){
- if(selectedAccess!=='core-owned'||!ownedAuthCurrent()||ownedCapabilities?.creationEnabled!==true||ownedBusy||ownedOperationKey&&!match&&ownedAttemptStatus!=='rejected')return false;
+ if(selectedAccess!=='core-owned'||!ownedAuthCurrent()||ownedCapabilities?.creationEnabled!==true||ownedBusy||admissionBusy||incomingInvitationId||hasPendingAdmission()||ownedOperationKey&&!match&&ownedAttemptStatus!=='rejected')return false;
  try{return ownedJournalEntries('input',ownedAccountId).length<ownedJournalLimit&&!pendingOwnedCreation(ownedAccountId)}catch{return false}
 }
 function canStartNewOwnedChallenge(){return !match&&!opening&&!polling&&sessionMode==='creation-rejected'&&ownedAttemptStatus==='rejected'&&canCreateOwned()}
@@ -198,11 +405,13 @@ function syncOwnedControls(){
  panel.querySelector('#owned-history-next').hidden=!ownedNextCursor;panel.querySelector('#owned-history-next').disabled=!ownedAuthCurrent()||ownedBusy||opening;
  panel.querySelector('#owned-recover-attempt').hidden=!ownedCreationPending()&&!hasOwnedPendingCreation();panel.querySelector('#owned-recover-attempt').disabled=!ownedAuthCurrent()||ownedBusy||opening;
  panel.querySelector('#owned-new-challenge').hidden=sessionMode!=='creation-rejected'||ownedAttemptStatus!=='rejected';panel.querySelector('#owned-new-challenge').disabled=!canStartNewOwnedChallenge();
- panel.querySelectorAll('[data-owned-match]').forEach(button=>{button.disabled=ownedModeLocked()||ownedCreationPending()||hasOwnedPendingCreation()});
+ panel.querySelectorAll('[data-owned-match]').forEach(button=>{button.disabled=ownedModeLocked()||ownedCreationPending()||hasOwnedPendingCreation()||hasPendingAdmission()});
  panel.setAttribute('data-access-mode',selectedAccess);
+ syncAdmissionControls();
 }
 function ownedMessage(text){panel.querySelector('#owned-status').textContent=text}
 function stopOwnedWork(message,mode='auth-required'){
+ stopAdmissionWork(true);
  operation++;ownedBusy=false;opening=false;polling=false;verifiedState=false;ownedMetadataRequired=true;ownedIdentity=null;
  stopInputs();if(timer){clearTimeout(timer);timer=null}for(const request of requests)request.controller.abort();
  clearResult();panel.querySelector('#owned-history').innerHTML='';ownedNextCursor=null;
@@ -227,14 +436,14 @@ async function ownedJSON(url,options={},credential=''){
    const headers={Accept:'application/json',...(options.body?{'Content-Type':'application/json'}:{}),...(credential?{Authorization:'Bearer '+credential}:{}),...(options.idempotencyKey?{'Idempotency-Key':options.idempotencyKey}:{})};
    const response=await fetch(url,{method:options.method||'GET',headers,body:options.body,signal:controller.signal,credentials:'omit',cache:'no-store',redirect:'error'});
    let value;try{value=await response.json()}catch{const error=Error('The match service returned an invalid response.');error.status=response.status;throw error}
-   if(!response.ok){const error=Error('The account match service rejected this request.');error.status=response.status;error.code=typeof value?.error==='string'?value.error:'';throw error}
+   if(!response.ok){const error=Error('The account match service rejected this request.');error.status=response.status;error.code=typeof value?.error==='string'?value.error:'';error.value=value;throw error}
    return value;
   })(),new Promise((resolve,reject)=>{timer=setTimeout(()=>{reject(Error('The match service took too long to respond.'));controller.abort()},12000)})]);
   if(Date.now()>=expiresAt)throw Error('The match service took too long to respond.');
   return result;
  }finally{clearTimeout(timer);requests.delete(request)}
 }
-function validOwnedPath(path){return /^\/v2\/(?:matches(?:\?after=[A-Za-z0-9_.-]+|\/[A-Za-z0-9][A-Za-z0-9_.-]{0,127}(?:\/(?:state|result|input))?)?|creation-attempts\/[A-Za-z0-9_-]{16,100})$/.test(path)}
+function validOwnedPath(path){return /^\/v2\/(?:matches(?:\?after=[A-Za-z0-9_.-]+|\/[A-Za-z0-9][A-Za-z0-9_.-]{0,127}(?:\/(?:state|result|input|invitations))?)?|invitations\/[A-Za-z0-9][A-Za-z0-9_.-]{0,127}(?:\/(?:accept|revoke))?|(?:creation|admission)-attempts\/[A-Za-z0-9_-]{16,100})$/.test(path)}
 async function ownedApi(path,options={}){
  if(selectedAccess!=='core-owned'||connectionBase!==ownedBase||!validOwnedPath(path))throw Error('Protected matches require the fixed account service.');
  if(!ownedAuthCurrent()){stopOwnedWork('Your account session changed. Verify the account again before using this protected match.');throw Error('Account verification required.')}
@@ -255,12 +464,13 @@ function matchApi(suffix,options){return isOwnedMatch()?ownedApi('/v2/matches/'+
 function applyOwnedMetadata(value,reserved=0){
  if(!validOwnedMetadata(value))throw Error('The match service returned an invalid response.');
  match={id:value.id,accessMode:'core-owned',accountId:ownedAccountId};playerId=value.playerId;
+ ownedRole=value.role||'owner';ownedParticipantCount=value.participantCount||1;
  seq=ownedReservedSequence(ownedAccountId,value.id,Math.max(value.highestSubmittedSequence,Number.isSafeInteger(reserved)&&reserved>=0&&reserved<Number.MAX_SAFE_INTEGER?reserved:0));
  acknowledgeOwnedInputs(value.id,value.highestSubmittedSequence);
  activeChallengeId=value.challengeId;challengeSeedVerified=false;ownedMetadataRequired=false;ownedAttemptStatus='';
  if(!matchStartedAt)matchStartedAt=Date.now();
  connectionBase=ownedBase;sessionMode='restoring';verifiedState=false;title.textContent='Match '+match.id;
- updateChallengePassport();if(rememberOwnedSession('active',true))settleOwnedCreation(ownedOperationKey);
+ updateChallengePassport();const saved=rememberOwnedSession('active',true);if(saved)settleOwnedCreation(ownedOperationKey);return saved;
 }
 async function loadOwnedHistory(next=false){
  if(ownedBusy||opening||!ownedAuthCurrent())return;
@@ -276,7 +486,8 @@ async function loadOwnedHistory(next=false){
  finally{if(current(token)){ownedBusy=false;syncControls()}}
 }
 async function recoverOwnedMatch(id,saved=null){
- if(!validId(id)||ownedBusy||opening||ownedCreationPending()||hasOwnedPendingCreation()||!ownedAuthCurrent())return;
+ if(!validId(id)||ownedBusy||opening||admissionBusy||ownedCreationPending()||hasOwnedPendingCreation()||hasPendingAdmission()||!ownedAuthCurrent())return;
+ stopAdmissionWork();
  const token=++operation;ownedBusy=true;polling=false;verifiedState=false;stopInputs();if(timer){clearTimeout(timer);timer=null}for(const request of requests)request.controller.abort();clearResult();
  match={id,accessMode:'core-owned',accountId:ownedAccountId};playerId='';seq=0;ownedMetadataRequired=true;syncControls();
  try{
@@ -286,10 +497,10 @@ async function recoverOwnedMatch(id,saved=null){
   if(!local)local=currentOwnedSession(ownedAccountId);
   const latest=currentOwnedSession(ownedAccountId);if(latest?.matchId===id&&(!local||latest.sequence>local.sequence))local=latest;
   const reserved=local?.matchId===id?local.sequence:0;
-  ownedOperationKey=local?.matchId===id?local.operationKey:'';matchStartedAt=local?.matchId===id?local.startedAt:0;completionReported=local?.matchId===id?local.completionReported:false;
+  ownedOperationKey=local?.matchId===id?local.operationKey:'';ownedInvitationId=local?.matchId===id?local.invitationId||'':'';matchStartedAt=local?.matchId===id?local.startedAt:0;completionReported=local?.matchId===id?local.completionReported:false;
   applyOwnedMetadata(metadata,reserved);status.textContent='Restoring the account-owned match. Its player and submitted sequence come from the service.';
  }catch(error){if(current(token)){sessionMode=error.status===403?'access-denied':'unavailable';status.textContent=ownedErrorMessage(error);ownedMessage(status.textContent)}}
- finally{if(current(token)){ownedBusy=false;syncControls();if(isOwnedMatch()&&sessionMode==='restoring')await refresh()}}
+ finally{if(current(token)){ownedBusy=false;syncControls();if(isOwnedMatch()&&sessionMode==='restoring')await refresh();if(current(token))scheduleInvitationRead()}}
 }
 async function recoverOwnedCreation(){
  if(!ownedCreationPending()||ownedBusy||opening||!ownedAuthCurrent())return;
@@ -309,9 +520,10 @@ async function recoverOwnedCreation(){
 }
 async function verifyOwnedAccount(){
  if(selectedAccess!=='core-owned'||ownedBusy||opening)return;
+ stopAdmissionWork(true);
  const token=++operation;ownedBusy=true;polling=false;verifiedState=false;ownedIdentity=null;
  stopInputs();if(timer){clearTimeout(timer);timer=null}for(const request of requests)request.controller.abort();clearResult();panel.querySelector('#owned-history').innerHTML='';ownedNextCursor=null;
- ownedMessage('Checking account access and service capabilities…');syncControls();let saved=null;
+ ownedMessage('Checking account access and service capabilities…');syncControls();let saved=null,pendingAdmission=null;
  try{
   const capabilities=await ownedJSON(ownedBase+'/v2/capabilities');if(!current(token))return;
   if(!capabilities||capabilities.authPolicyVersion!==1||capabilities.provider!=='core'||capabilities.ownershipPolicy!=='confirmed-durable-binding'||typeof capabilities.creationEnabled!=='boolean')throw Error('Account match capabilities are unavailable.');
@@ -323,20 +535,32 @@ async function verifyOwnedAccount(){
   ownedAccountId=account.user.id;ownedIdentity={id:ownedAccountId,username:account.user.username,credential};
   match=null;playerId='';seq=0;ownedOperationKey='';ownedAttemptStatus='';matchStartedAt=0;completionReported=false;sessionMode='idle';connectionBase=ownedBase;sessionKey=ownedStorageKey(ownedAccountId);
   saved=currentOwnedSession(ownedAccountId);saved=pendingOwnedCreation(ownedAccountId,saved?.operationKey)||saved;
+  pendingAdmission=admissionEntries()[0]?.value||null;admissionIntent=pendingAdmission;
   if(saved){activeChallengeId=saved.challengeId;activeChallengeSeed=saved.seed;ownedOperationKey=saved.operationKey;ownedAttemptStatus=['creating','uncertain','rejected'].includes(saved.stage)?saved.stage:'';if(!saved.matchId&&ownedOperationKey){sessionMode=saved.stage==='rejected'?'creation-rejected':'creation-uncertain';seq=saved.sequence}}
   else{activeChallengeId=incomingChallengeId;activeChallengeSeed=Number.isSafeInteger(incomingSeed)&&incomingSeed>0?incomingSeed:dailySeed}
   ownedMessage('Verified account: '+account.user.username);
+  admissionMessage(admissionEnabled()?'Invitations are addressed to a verified Core account ID. Opening a link never submits a join request.':'Participant invitations are disabled by this service. Existing account matches remain available.');
   status.textContent=changed?'A different account is verified. Previous protected matches remain with their original account.':capabilities.creationEnabled?'Choose an account-owned match or create a separate run.':'Account match creation is disabled. You can view and recover existing account-owned matches.';
  }catch(error){if(current(token)){ownedIdentity=null;sessionMode=error.status===401?'auth-required':'auth-unavailable';ownedMessage(ownedErrorMessage(error));status.textContent=ownedErrorMessage(error)}}
  finally{if(current(token)){ownedBusy=false;syncControls()}}
  if(!current(token)||!ownedAuthCurrent())return;
- if(saved?.matchId)await recoverOwnedMatch(saved.matchId,saved);else if(ownedCreationPending())await recoverOwnedCreation();
+ if(ownedCreationPending())await recoverOwnedCreation();
+ else if(pendingAdmission)await recoverAdmission();
+ else if(incomingInvitationId){
+  if(validId(incomingInvitationId)){
+   await readInvitation(incomingInvitationId);
+   if(activeInvitation&&(activeInvitation.role==='owner'||activeInvitation.status==='accepted'))await recoverOwnedMatch(activeInvitation.matchId,saved?.matchId===activeInvitation.matchId?saved:null);
+  }else admissionMessage('This link does not contain a valid account invitation ID.');
+ }else if(saved?.matchId){
+  await recoverOwnedMatch(saved.matchId,saved);
+  if(validId(ownedInvitationId)&&admissionSupported())await readInvitation(ownedInvitationId);
+ }
  if(ownedAuthCurrent())await loadOwnedHistory();
 }
 async function selectAccess(mode){
  if(!['guest','core-owned'].includes(mode)||ownedModeLocked())return;
  if(mode===selectedAccess){if(mode==='core-owned')await verifyOwnedAccount();return}
- if(match)rememberSession();operation++;stopInputs();if(timer){clearTimeout(timer);timer=null}for(const request of requests)request.controller.abort();
+ if(match)rememberSession();stopAdmissionWork(true);operation++;stopInputs();if(timer){clearTimeout(timer);timer=null}for(const request of requests)request.controller.abort();
  selectedAccess=mode;match=null;seq=0;playerId=anonymousPlayerId;serverPhase='';verifiedState=false;completionReported=false;opening=false;polling=false;ownedIdentity=null;ownedOperationKey='';ownedAttemptStatus='';clearResult();growthPanel.hidden=true;
  const url=new URL(location.href);if(mode==='core-owned')url.searchParams.set('mode','account');else url.searchParams.delete('mode');try{history.replaceState(null,'',url.pathname+url.search+url.hash)}catch{}
  sessionMode='idle';activeChallengeId=incomingChallengeId;activeChallengeSeed=Number.isSafeInteger(incomingSeed)&&incomingSeed>0?incomingSeed:dailySeed;challengeSeedVerified=false;
@@ -345,9 +569,9 @@ async function selectAccess(mode){
 }
 async function startOwned(){
  if(opening||polling||ownedBusy||!canCreateOwned()||match&&!['completed','missing','unavailable','access-denied'].includes(sessionMode))return;
- const token=++operation;opening=true;stopInputs();if(timer){clearTimeout(timer);timer=null}for(const request of requests)request.controller.abort();
+ stopAdmissionWork(true);const token=++operation;opening=true;stopInputs();if(timer){clearTimeout(timer);timer=null}for(const request of requests)request.controller.abort();
  match=null;seq=0;playerId='';matchStartedAt=0;completionReported=false;verifiedState=false;serverPhase='';failures=0;ownedOperationKey='';ownedAttemptStatus='';connectionBase=ownedBase;clearResult();
- sessionMode='opening';status.textContent='Opening an account-owned run. Its single participant is assigned by the service.';syncControls();let stage='prepared',recover=false;
+ sessionMode='opening';status.textContent='Opening an account-owned run. Its owner player is assigned by the service.';syncControls();let stage='prepared',recover=false;
  try{
   if(!activeChallengeId){
    stage='opening-challenge';if(!rememberOwnedSession(stage))throw Object.assign(Error('Recovery storage unavailable'),{code:'recovery_storage_unavailable'});
@@ -439,7 +663,7 @@ function syncControls(){
  panel.setAttribute('data-session-state',sessionMode);syncOwnedControls();
 }
 function paintState(state){
- serverPhase=state.phase;
+ serverPhase=state.phase;serverRemainingMs=state.remainingMs;
  panel.querySelector('#phase-state').textContent=({WAITING:'Waiting for players',COUNTDOWN:'Countdown',PLAYING:'Match running',RUNNING:'Match running',RESULTS:'Run finished'})[state.phase];
  panel.querySelector('#match-counts').textContent=state.players+' player(s) · '+state.replayFrames+' accepted input frames';
  panel.querySelector('#phase-time').textContent=state.phase==='RESULTS'?'':Math.ceil(state.remainingMs/1000)+' s left in this phase';
@@ -527,7 +751,7 @@ async function refresh(){
    const metadata=await ownedApi('/v2/matches/'+encodeURIComponent(id));
    if(!current(token,id))return;
    if(!validOwnedMetadata(metadata)||metadata.id!==id)throw Error('The match service returned an invalid response.');
-   playerId=metadata.playerId;seq=ownedReservedSequence(ownedAccountId,id,Math.max(seq,metadata.highestSubmittedSequence));acknowledgeOwnedInputs(id,metadata.highestSubmittedSequence);ownedMetadataRequired=false;rememberOwnedSession('active');
+   playerId=metadata.playerId;ownedRole=metadata.role||'owner';ownedParticipantCount=metadata.participantCount||1;seq=ownedReservedSequence(ownedAccountId,id,Math.max(seq,metadata.highestSubmittedSequence));acknowledgeOwnedInputs(id,metadata.highestSubmittedSequence);ownedMetadataRequired=false;rememberOwnedSession('active');
   }
   const state=await matchApi('/state');
   if(!current(token,id))return;
@@ -612,11 +836,11 @@ async function restoreSession(){
 }
 window.RemixSession={syncControls};
 function buildChallengeURL(){
-  const link=new URL(location.href);
-  link.searchParams.delete('mode');
+  const link=new URL('/games/remix/',location.origin);
+  link.searchParams.set('lang',window.RemixUI?.getLanguage?.()||(['ru','en'].includes(routeParams.get('lang'))?routeParams.get('lang'):'ru'));
   link.searchParams.set('challenge',activeChallengeId);
   link.searchParams.set('seed',String(activeChallengeSeed));
-  link.searchParams.set('ref',playerId.slice(4));
+  if(!isOwnedMatch())link.searchParams.set('ref',playerId.slice(4));
   link.searchParams.set('utm_source','osgard_remix');
   link.searchParams.set('utm_medium','friend_challenge');
   link.searchParams.set('utm_campaign','daily_challenge');
@@ -763,6 +987,13 @@ panel.querySelector('#owned-history-refresh').onclick=()=>loadOwnedHistory();
 panel.querySelector('#owned-history-next').onclick=()=>loadOwnedHistory(true);
 panel.querySelector('#owned-recover-attempt').onclick=()=>ownedCreationPending()?recoverOwnedCreation():verifyOwnedAccount();
 panel.querySelector('#owned-new-challenge').onclick=()=>startNewOwnedChallenge();
+panel.querySelector('#owned-copy-id').onclick=()=>copyAdmissionValue('account');
+panel.querySelector('#owned-create-invite').onclick=()=>mutateAdmission('invite');
+panel.querySelector('#owned-copy-invitation').onclick=()=>copyAdmissionValue('invitation');
+panel.querySelector('#owned-refresh-invitation').onclick=()=>readInvitation();
+panel.querySelector('#owned-accept-invitation').onclick=()=>openOrAcceptInvitation();
+panel.querySelector('#owned-revoke-invitation').onclick=()=>mutateAdmission('revoke');
+panel.querySelector('#owned-admission-recover').onclick=()=>recoverAdmission();
 panel.querySelector('#share-challenge').addEventListener('click',shareChallenge);
 panel.querySelector('#copy-challenge').addEventListener('click',copyChallengeLink);
 panel.querySelector('#rematch-challenge').addEventListener('click',resetForRematch);
@@ -790,9 +1021,10 @@ apiInput.addEventListener('change',()=>{
  title.textContent='Ready to enter';status.textContent='The daily challenge uses a shared UTC seed. Create a run, then send the invite link to a friend.';
  remixStore.setItem('remix-api-url',apiInput.value.trim());restoreSession();
 });
-window.addEventListener('online',()=>{if(selectedAccess==='core-owned'&&(!ownedAuthCurrent()||!match))verifyOwnedAccount();else if(match&&sessionMode!=='completed'){if(isOwnedMatch())ownedMetadataRequired=true;refresh()}});
+window.addEventListener('online',()=>{if(selectedAccess==='core-owned'&&(!ownedAuthCurrent()||!match||hasPendingAdmission()))verifyOwnedAccount();else if(match&&sessionMode!=='completed'){if(isOwnedMatch())ownedMetadataRequired=true;refresh();scheduleInvitationRead()}});
 window.addEventListener('offline',()=>{
  if(selectedAccess==='core-owned'){
+  stopAdmissionWork();
   operation++;ownedBusy=false;opening=false;polling=false;verifiedState=false;ownedMetadataRequired=true;stopInputs();if(timer){clearTimeout(timer);timer=null}for(const request of requests)request.controller.abort();
   if(ownedOperationKey&&!match&&ownedAttemptStatus==='creating'){ownedAttemptStatus='uncertain';rememberOwnedSession('uncertain')}
   sessionMode=match?'reconnecting':ownedOperationKey?ownedAttemptStatus==='rejected'?'creation-rejected':'creation-uncertain':'idle';status.textContent='You are offline. Account-owned records remain saved; no create or input request will be repeated.';syncControls();return;
@@ -811,13 +1043,13 @@ window.addEventListener('storage',event=>{
  if(saved?.matchId===match.id&&(isOwnedMatch()||saved.playerId===playerId))seq=Math.max(seq,saved.sequence);
 });
 window.addEventListener('pagehide',()=>{
- if(match)rememberSession();operation++;stopInputs();
+ if(match)rememberSession();stopAdmissionWork(true);operation++;stopInputs();
  if(timer){clearTimeout(timer);timer=null}for(const request of requests)request.controller.abort();
  polling=false;inputBusy=false;opening=false;ownedBusy=false;if(selectedAccess==='core-owned')ownedIdentity=null;
 });
 window.addEventListener('pageshow',event=>{if(event.persisted){verifiedState=false;clearResult();restoreSession()}});
 window.addEventListener('focus',()=>{if(selectedAccess==='core-owned'&&ownedIdentity&&!ownedAuthCurrent())stopOwnedWork('Your account session changed. Verify the account again before using this protected match.')});
-if(routeParams.get('mode')==='account')selectAccess('core-owned');else restoreSession();
+if(routeParams.get('mode')==='account'||incomingInvitationId)selectAccess('core-owned');else restoreSession();
 </script><script defer src="/brand/osa-transition.js"></script></body></html>
 
 

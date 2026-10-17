@@ -23,6 +23,7 @@ function harness({ data = new Map(), denied = false, quota = false, href = 'http
     setAttribute(name, value) { this[name] = String(value); }
     addEventListener(name, callback) { this.handlers.set(name, callback); }
     insertBefore() {}
+    appendChild(child) { return child; }
     getContext() { return ctx; }
     focus() { this.focused = true; }
   }
