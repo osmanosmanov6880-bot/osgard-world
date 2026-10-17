@@ -28,6 +28,23 @@ class AcceptanceTests(unittest.TestCase):
         with self.fixture(bundle="blocked"): result=m.evaluate("dist","a","m")
         self.assertEqual(result["status"],"blocked")
         self.assertIn("bundle",result["failed"])
+    def test_incomplete_world_count_blocks(self):
+        with patch.object(m,"module",side_effect=[
+            Fake({"status":"passed"}),
+            Fake({"status":"verified_for_staging","zip_sha256":"a"*64}),
+            Fake({"status":"verified","zion_worlds":10,"legacy_entrypoints":8})
+        ]):
+            result=m.evaluate("dist","a","m")
+        self.assertEqual(result["status"],"blocked")
+        self.assertIn("game_entrypoint_count",result["failed"])
+    def test_malformed_zip_digest_blocks(self):
+        with patch.object(m,"module",side_effect=[
+            Fake({"status":"passed"}),
+            Fake({"status":"verified_for_staging","zip_sha256":"invalid"}),
+            Fake({"status":"verified","zion_worlds":11,"legacy_entrypoints":8})
+        ]):
+            result=m.evaluate("dist","a","m")
+        self.assertIn("zip_sha256",result["failed"])
     def test_games_failure_blocks(self):
         with self.fixture(games="blocked"): result=m.evaluate("dist","a","m")
         self.assertEqual(result["status"],"blocked")
