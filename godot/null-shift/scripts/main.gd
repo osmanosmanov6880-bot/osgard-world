@@ -9,6 +9,7 @@ const MAX_RING_POOL := 10
 const DASH_DURATION := 0.24
 const DASH_COOLDOWN := 1.65
 const DASH_SPEED_MULTIPLIER := 3.05
+const WEAPON_MUZZLE_HEIGHT := 0.16
 
 var player: CharacterBody3D
 var camera: Camera3D
@@ -39,6 +40,7 @@ var keypad_panel: PanelContainer
 var keypad_progress_label: Label
 var loadout_panel: PanelContainer
 var pause_panel: PanelContainer
+var pause_resume_button: Button
 var result_panel: PanelContainer
 var mobile_move_panel: PanelContainer
 var mobile_action_panel: PanelContainer
@@ -111,7 +113,7 @@ var sound_enabled := true
 var player_aim := Vector3.FORWARD
 var career_names := ["STANDARD RAID", "BLACKOUT RUN", "IRON VEIL"]
 var contract_bonus := [0, 350, 550]
-var objective_text := "ВЗЛОМАТЬ ТЕРМИНАЛ → ЗАБРАТЬ ЯДРО → ЭВАКУИРОВАТЬСЯ"
+var objective_text := "ВЗЛОМАТЬ ТЕРМИНАЛ / ЗАБРАТЬ ЯДРО / ЭВАКУИРОВАТЬСЯ"
 var eliminations := 0
 var scene_clock := 0.0
 var operator_rig: Node3D
@@ -179,6 +181,10 @@ var briefing_scroll: ScrollContainer
 
 func _ready() -> void:
 	_reset_runtime_collections()
+	_sync_web_viewport()
+	if OS.has_feature("web"):
+		get_window().size_changed.connect(_sync_web_viewport)
+	get_window().focus_exited.connect(_on_window_focus_exited)
 	_load_career()
 	_create_materials()
 	_create_lighting()
@@ -193,7 +199,33 @@ func _ready() -> void:
 	if not bool(career.get_value("settings", "briefing_seen", false)):
 		_show_briefing()
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	if OS.has_feature("web") and bool(JavaScriptBridge.eval("new URLSearchParams(location.search).get('test') === '1'")):
+		var browser_probe = preload("res://scripts/browser_probe.gd").new()
+		browser_probe.configure(self)
+		add_child(browser_probe)
 	print("NULL//SHIFT Godot prototype ready")
+
+func _sync_web_viewport() -> void:
+	if not OS.has_feature("web"):
+		return
+	# CSS pixels are the layout unit. The Web template keeps the backing canvas
+	# at device-pixel resolution; a fixed 1600x900 base made phone controls tiny.
+	var width := int(JavaScriptBridge.eval("document.getElementById('canvas').clientWidth"))
+	var height := int(JavaScriptBridge.eval("document.getElementById('canvas').clientHeight"))
+	var logical_size := Vector2i(width, height)
+	if width > 0 and height > 0 and get_window().content_scale_size != logical_size:
+		get_window().content_scale_size = logical_size
+
+func _release_gameplay_input() -> void:
+	mouse_firing = false
+	touch_firing = false
+	for action in mobile_actions:
+		mobile_actions[action] = false
+
+func _on_window_focus_exited() -> void:
+	_release_gameplay_input()
+	if is_instance_valid(pause_panel):
+		_set_pause(true)
 
 func _reset_runtime_collections() -> void:
 	# Array/Dictionary values declared with literals can be shared as script defaults.
@@ -244,9 +276,9 @@ func _reset_runtime_collections() -> void:
 func _process(delta: float) -> void:
 	var dt := minf(delta, 0.06)
 	current_frame_ms = maxf(0.0, delta * 1000.0)
-	elapsed += dt
 	scene_clock += dt
 	if not paused_game and not mission_finished:
+		elapsed += dt
 		_update_phase_lanes(dt)
 	damage_flash_timer = maxf(0.0, damage_flash_timer - dt)
 	camera_shake_timer = maxf(0.0, camera_shake_timer - dt)
@@ -895,13 +927,13 @@ func _create_player() -> void:
 	muzzle_flash.name = "MuzzleFlash"
 	muzzle_flash.mesh = flash_mesh
 	muzzle_flash.material_override = materials["white"]
-	muzzle_flash.position = Vector3(0.0, 0.16, -1.31)
+	muzzle_flash.position = Vector3(0.0, WEAPON_MUZZLE_HEIGHT, -1.31)
 	muzzle_flash.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	muzzle_flash.visible = false
 	operator_rig.add_child(muzzle_flash)
 	muzzle_light = OmniLight3D.new()
 	muzzle_light.name = "MuzzleFlashLight"
-	muzzle_light.position = Vector3(0.0, 0.16, -1.31)
+	muzzle_light.position = Vector3(0.0, WEAPON_MUZZLE_HEIGHT, -1.31)
 	muzzle_light.light_color = Color(0.22, 1.0, 0.84)
 	muzzle_light.light_energy = 3.2
 	muzzle_light.omni_range = 3.2
@@ -1328,7 +1360,9 @@ func _fire_weapon() -> void:
 		return
 	fire_cooldown = maxf(0.09, 0.17 - float(weapon_level) * 0.022)
 	_trigger_muzzle_flash()
-	var from := player.global_position + Vector3.UP * 0.82 + player_aim * 0.8
+	# Match the visible weapon. The old 0.82 offset fired above ordinary guard
+	# capsules, so even correctly aimed mouse/touch shots passed over their heads.
+	var from := player.global_position + Vector3.UP * WEAPON_MUZZLE_HEIGHT + player_aim * 0.8
 	var to := from + player_aim * 37.0
 	var query := PhysicsRayQueryParameters3D.create(from, to)
 	query.exclude = [player.get_rid()]
@@ -1480,7 +1514,7 @@ func _interact() -> void:
 	elif not terminal_unlocked and _near(player, terminal, 3.3):
 		terminal_active = not terminal_active
 		keypad_panel.visible = terminal_active
-		objective_text = "ВВЕДИТЕ ШИФР: ↑  ←  ↓  →" if terminal_active else "ТЕРМИНАЛ ОЖИДАЕТ ПОДКЛЮЧЕНИЯ"
+		objective_text = "ШИФР: ВВЕРХ, ВЛЕВО, ВНИЗ, ВПРАВО" if terminal_active else "ТЕРМИНАЛ ОЖИДАЕТ ПОДКЛЮЧЕНИЯ"
 		_play_sfx(390.0, 0.12, 0.08)
 	elif terminal_unlocked and not core_secured and _near(player, quantum_core, 3.0):
 		core_secured = true
@@ -1790,6 +1824,7 @@ func _show_briefing() -> void:
 		return
 	briefing_visible = true
 	paused_game = true
+	_release_gameplay_input()
 	pause_panel.visible = false
 	loadout_panel.visible = false
 	keypad_panel.visible = false
@@ -1802,11 +1837,12 @@ func _dismiss_briefing() -> void:
 		return
 	briefing_visible = false
 	paused_game = false
+	get_viewport().gui_release_focus()
 	if is_instance_valid(briefing_panel):
 		briefing_panel.visible = false
 	career.set_value("settings", "briefing_seen", true)
 	_save_career()
-	objective_text = "ОПЕРАЦИЯ НАЧАЛАСЬ · ВЗЛОМ → ЯДРО → ЭВАКУАЦИЯ"
+	objective_text = "ОПЕРАЦИЯ НАЧАЛАСЬ · ВЗЛОМ / ЯДРО / ЭВАКУАЦИЯ"
 	_update_hud()
 	_update_crosshair()
 
@@ -1815,6 +1851,11 @@ func _set_pause(state: bool) -> void:
 		return
 	paused_game = state
 	pause_panel.visible = state
+	if state:
+		_release_gameplay_input()
+		pause_resume_button.grab_focus()
+	else:
+		get_viewport().gui_release_focus()
 
 func _load_career() -> void:
 	career.load(SAVE_PATH)
@@ -1930,7 +1971,7 @@ func _create_ui() -> void:
 	objective_compass_arrow.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	objective_compass_text = _label(compass_row, "ЦЕЛЬ / ТЕРМИНАЛ · -- М", 10, Color(0.34, 0.86, 0.8))
 	objective_compass_text.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	var subtitle := _label(mid_stack, "ТЕРМИНАЛ → КВАНТОВОЕ ЯДРО → ЭВАКУАЦИЯ", 11, Color(0.91, 0.98, 0.96))
+	var subtitle := _label(mid_stack, "ТЕРМИНАЛ / КВАНТОВОЕ ЯДРО / ЭВАКУАЦИЯ", 11, Color(0.91, 0.98, 0.96))
 	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 
 	diagnostics_label = _label(hud_root, "", 11, Color(0.7, 1.0, 0.92))
@@ -1954,16 +1995,16 @@ func _create_ui() -> void:
 	keypad_panel.visible = false
 	var keypad_stack := _panel_stack(keypad_panel)
 	_label(keypad_stack, "SECURITY CIPHER / LEVEL 03", 17, Color(0.4, 1.0, 0.85))
-	_label(keypad_stack, "Введите последовательность ↑  ←  ↓  →", 12, Color(0.82, 0.92, 0.9))
+	_label(keypad_stack, "Шифр: вверх, влево, вниз, вправо", 12, Color(0.82, 0.92, 0.9))
 	keypad_progress_label = _label(keypad_stack, "КОД 0 / 4", 11, Color(1.0, 0.77, 0.39))
 	var code_row := HBoxContainer.new()
 	code_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	code_row.add_theme_constant_override("separation", 10)
 	keypad_stack.add_child(code_row)
-	_add_button(code_row, "↑", _submit_cipher_key.bind(KEY_UP), Vector2(70.0, 48.0))
-	_add_button(code_row, "←", _submit_cipher_key.bind(KEY_LEFT), Vector2(70.0, 48.0))
-	_add_button(code_row, "↓", _submit_cipher_key.bind(KEY_DOWN), Vector2(70.0, 48.0))
-	_add_button(code_row, "→", _submit_cipher_key.bind(KEY_RIGHT), Vector2(70.0, 48.0))
+	_add_button(code_row, "↑", _submit_cipher_key.bind(KEY_UP), Vector2(52.0, 48.0))
+	_add_button(code_row, "←", _submit_cipher_key.bind(KEY_LEFT), Vector2(52.0, 48.0))
+	_add_button(code_row, "↓", _submit_cipher_key.bind(KEY_DOWN), Vector2(52.0, 48.0))
+	_add_button(code_row, "→", _submit_cipher_key.bind(KEY_RIGHT), Vector2(52.0, 48.0))
 	_add_button(keypad_stack, "ОТКЛЮЧИТЬСЯ", _close_keypad, Vector2(168.0, 38.0))
 
 	loadout_panel = _make_panel(hud_root, Control.PRESET_CENTER, Rect2(-256.0, -186.0, 512.0, 372.0))
@@ -1982,8 +2023,10 @@ func _create_ui() -> void:
 	var pause_stack := _panel_stack(pause_panel)
 	_label(pause_stack, "RAID SUSPENDED", 22, Color(0.4, 1.0, 0.85))
 	_label(pause_stack, "СИГНАЛ ОПЕРАТОРА СОХРАНЁН", 11, Color(0.62, 0.78, 0.76))
-	_add_button(pause_stack, "ПРОДОЛЖИТЬ", _resume_game, Vector2(210.0, 44.0))
-	_add_button(pause_stack, "ПЕРЕЗАПУСТИТЬ РЕЙД", _restart_game, Vector2(210.0, 44.0))
+	pause_resume_button = _add_button(pause_stack, "ПРОДОЛЖИТЬ", _resume_game, Vector2(210.0, 44.0))
+	pause_resume_button.set_meta("browser_action", "resume")
+	var restart_button := _add_button(pause_stack, "ПЕРЕЗАПУСТИТЬ РЕЙД", _restart_game, Vector2(210.0, 44.0))
+	restart_button.set_meta("browser_action", "restart")
 	_add_button(pause_stack, "ЗАКРЫТЬ МОДУЛИ", _close_loadout, Vector2(210.0, 36.0))
 
 	result_panel = _make_panel(hud_root, Control.PRESET_CENTER, Rect2(-272.0, -172.0, 544.0, 344.0))
@@ -2044,7 +2087,7 @@ func _create_briefing_panel() -> void:
 	subhead.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	var intro := _label(stack, "Ты в закрытом комплексе. Охрана реагирует на взлом — сначала изучи путь, затем действуй.", 11, Color(0.76, 0.88, 0.87))
 	intro.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_add_briefing_step(stack, "01", "ВЗЛОМАТЬ ТЕРМИНАЛ", "Подойди к панели и нажми E. Введи шифр: ↑ ← ↓ →.", Color(0.36, 1.0, 0.83))
+	_add_briefing_step(stack, "01", "ВЗЛОМАТЬ ТЕРМИНАЛ", "Подойди к панели и нажми E. Шифр: вверх, влево, вниз, вправо.", Color(0.36, 1.0, 0.83))
 	_add_briefing_step(stack, "02", "ЗАБРАТЬ ЯДРО", "Используй укрытия и стреляй по угрозам. Янтарная полоса заряжается перед красной опасной фазой: уходи с линии или активируй NULL Shift. Затем забери золотое ядро.", Color(1.0, 0.74, 0.36))
 	_add_briefing_step(stack, "03", "ЭВАКУИРОВАТЬСЯ", "Доберись до бирюзовой площадки и нажми E, чтобы завершить рейд.", Color(0.56, 0.57, 1.0))
 	var controls := _label(stack, "КОМПЬЮТЕР   WASD / стрелки · мышь + ЛКМ · Q импульс · SHIFT сдвиг", 10, Color(0.48, 0.74, 0.73))
@@ -2053,6 +2096,7 @@ func _create_briefing_panel() -> void:
 	mobile_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	var start_width: float = maxf(220.0, minf(360.0, panel_width - 32.0))
 	var start_button := _add_button(stack, "НАЧАТЬ РЕЙД  /  ENTER", _dismiss_briefing, Vector2(start_width, 46.0))
+	start_button.set_meta("browser_action", "briefing-start")
 	start_button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 
 func _add_briefing_step(parent: VBoxContainer, number: String, title_text: String, detail_text: String, accent: Color) -> void:
@@ -2405,8 +2449,21 @@ func _label(parent: Node, value: String, size: int, color: Color) -> Label:
 func _add_button(parent: Node, value: String, callback: Callable, minimum_size: Vector2) -> Button:
 	var button := Button.new()
 	button.text = value
+	# The export's default font does not contain arrow glyphs. Local vector
+	# icons keep movement and cipher directions readable on every platform.
+	var direction_icons := {
+		"↑": [preload("res://assets/arrow-up.svg"), "Вверх"],
+		"↓": [preload("res://assets/arrow-down.svg"), "Вниз"],
+		"←": [preload("res://assets/arrow-left.svg"), "Влево"],
+		"→": [preload("res://assets/arrow-right.svg"), "Вправо"]
+	}
+	if direction_icons.has(value):
+		button.text = ""
+		button.icon = direction_icons[value][0]
+		button.tooltip_text = direction_icons[value][1]
 	button.custom_minimum_size = minimum_size
-	button.focus_mode = Control.FOCUS_NONE
+	button.set_meta("preferred_minimum_width", minimum_size.x)
+	button.focus_mode = Control.FOCUS_ALL
 	button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	button.add_theme_font_size_override("font_size", 11)
 	button.add_theme_color_override("font_color", Color(0.86, 0.98, 0.95))
@@ -2446,6 +2503,7 @@ func _create_mobile_controls(parent: Control) -> void:
 		else:
 			var arrow := "↑" if action == "up" else ("↓" if action == "down" else ("←" if action == "left" else "→"))
 			var button := _add_button(grid, arrow, func(): pass, Vector2(52.0, 38.0))
+			button.set_meta("browser_action", "move-" + action)
 			button.button_down.connect(_set_mobile_action.bind(action, true))
 			button.button_up.connect(_set_mobile_action.bind(action, false))
 			mobile_move_buttons.append(button)
@@ -2462,10 +2520,12 @@ func _create_mobile_controls(parent: Control) -> void:
 		{"key": "use", "label": "ДЕЙСТВИЕ"},
 		{"key": "pulse", "label": "ИМПУЛЬС"},
 		{"key": "shift", "label": "СДВИГ"},
-		{"key": "dash", "label": "РЫВОК"}
+		{"key": "dash", "label": "РЫВОК"},
+		{"key": "pause", "label": "ПАУЗА"}
 	]
 	for item in combat_actions:
 		var action_button := _add_button(action_grid, item["label"], func(): pass, Vector2(84.0, 38.0))
+		action_button.set_meta("browser_action", item["key"])
 		action_button.button_down.connect(_set_mobile_action.bind(item["key"], true))
 		action_button.button_up.connect(_set_mobile_action.bind(item["key"], false))
 		mobile_action_buttons.append(action_button)
@@ -2480,6 +2540,7 @@ func _create_mobile_controls(parent: Control) -> void:
 	mobile_diagnostics_button = _add_button(utility_row, "FPS", _toggle_diagnostics, Vector2(86.0, 27.0))
 	mobile_diagnostics_button.add_theme_font_size_override("font_size", 8)
 	mobile_modules_button = _add_button(action_stack, "МОДУЛИ", _toggle_loadout, Vector2(176.0, 28.0))
+	mobile_modules_button.set_meta("browser_action", "modules")
 	sound_button = _add_button(action_stack, "ЗВУК / ВКЛ" if sound_enabled else "ЗВУК / ВЫКЛ", _toggle_sound, Vector2(176.0, 27.0))
 
 func _set_mobile_action(action: String, pressed: bool) -> void:
@@ -2500,6 +2561,10 @@ func _set_mobile_action(action: String, pressed: bool) -> void:
 					_shift_layer()
 				"dash":
 					_try_dash()
+				"pause":
+					# Touch and its emulated mouse press can both reach this signal.
+					# Only the dedicated resume control should leave a touch pause.
+					_set_pause(true)
 
 func _update_mobile_layout() -> void:
 	# Godot may dispatch a first layout frame before the platform reports a valid viewport.
@@ -2527,27 +2592,43 @@ func _update_mobile_layout() -> void:
 		briefing_panel.offset_right = panel_width * 0.5
 		briefing_panel.offset_top = -panel_height * 0.5
 		briefing_panel.offset_bottom = panel_height * 0.5
+	for entry in [{"panel": pause_panel, "width": 440.0}, {"panel": keypad_panel, "width": 444.0},
+			{"panel": loadout_panel, "width": 512.0}, {"panel": result_panel, "width": 544.0}]:
+		var panel: PanelContainer = entry["panel"]
+		if not is_instance_valid(panel):
+			continue
+		var modal_width := minf(float(entry["width"]), viewport_size.x - 24.0)
+		panel.offset_left = -modal_width * 0.5
+		panel.offset_right = modal_width * 0.5
+		for label in panel.find_children("*", "Label", true, false):
+			(label as Label).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		for node in panel.find_children("*", "Button", true, false):
+			var button := node as Button
+			button.custom_minimum_size.x = minf(float(button.get_meta("preferred_minimum_width")), modal_width - 24.0)
+			button.custom_minimum_size.y = maxf(44.0, button.custom_minimum_size.y)
 	if is_instance_valid(phase_lane_status_row):
 		phase_lane_status_row.visible = not compact
 	if compact:
 		status_panel.offset_left = 10.0
 		status_panel.offset_top = 10.0
 		status_panel.offset_right = width - 10.0
-		status_panel.offset_bottom = 140.0
 		status_title.add_theme_font_size_override("font_size", 18)
 		status_subtitle.visible = false
 		status_shortcuts.visible = false
 		health_label.add_theme_font_size_override("font_size", 11)
 		credits_label.add_theme_font_size_override("font_size", 10)
 		threat_label.add_theme_font_size_override("font_size", 10)
+		# Container text can require more than the preferred 130px height.
+		# Place the next panel below the full HUD, including the dash readout.
+		status_panel.offset_bottom = status_panel.offset_top + maxf(130.0, status_panel.get_combined_minimum_size().y)
 		objective_panel.anchor_left = 0.0
 		objective_panel.anchor_right = 1.0
 		objective_panel.anchor_top = 0.0
 		objective_panel.anchor_bottom = 0.0
 		objective_panel.offset_left = 10.0
 		objective_panel.offset_right = -10.0
-		objective_panel.offset_top = 148.0
-		objective_panel.offset_bottom = 218.0
+		objective_panel.offset_top = status_panel.offset_bottom + 8.0
+		objective_panel.offset_bottom = objective_panel.offset_top + 70.0
 		objective_title.visible = false
 		telemetry_label.visible = false
 		objective_actions.visible = false
@@ -2605,26 +2686,26 @@ func _layout_compact_controls(viewport_size: Vector2) -> void:
 	var action_width: float = floor(clampf(width * 0.47, 150.0, 206.0))
 	mobile_move_panel.offset_left = 8.0
 	mobile_move_panel.offset_right = 8.0 + move_width
-	mobile_move_panel.offset_top = -178.0
+	mobile_move_panel.offset_top = -194.0
 	mobile_move_panel.offset_bottom = -8.0
 	mobile_action_panel.offset_left = -8.0 - action_width
 	mobile_action_panel.offset_right = -8.0
-	mobile_action_panel.offset_top = -286.0
+	mobile_action_panel.offset_top = -344.0
 	mobile_action_panel.offset_bottom = -8.0
-	var move_size: float = 36.0 if width < 400.0 else (44.0 if width < 520.0 else 52.0)
-	var move_button_height: float = 32.0 if width < 400.0 else 36.0
+	var move_size: float = 36.0 if width < 360.0 else (44.0 if width < 520.0 else 52.0)
+	var move_button_height: float = 44.0
 	for button in mobile_move_buttons:
 		button.custom_minimum_size = Vector2(move_size, move_button_height)
 	for spacer in mobile_move_spacers:
 		spacer.custom_minimum_size = Vector2(move_size, move_button_height)
 	var action_button_width: float = floor((action_width - 32.0) * 0.5)
 	for button in mobile_action_buttons:
-		button.custom_minimum_size = Vector2(action_button_width, 34.0)
+		button.custom_minimum_size = Vector2(action_button_width, 44.0)
 	var utility_button_width: float = floor((action_width - 28.0) * 0.5)
-	mobile_quality_button.custom_minimum_size = Vector2(utility_button_width, 27.0)
-	mobile_diagnostics_button.custom_minimum_size = Vector2(utility_button_width, 27.0)
-	mobile_modules_button.custom_minimum_size = Vector2(action_width - 24.0, 28.0)
-	sound_button.custom_minimum_size = Vector2(action_width - 24.0, 27.0)
+	mobile_quality_button.custom_minimum_size = Vector2(utility_button_width, 44.0)
+	mobile_diagnostics_button.custom_minimum_size = Vector2(utility_button_width, 44.0)
+	mobile_modules_button.custom_minimum_size = Vector2(action_width - 24.0, 44.0)
+	sound_button.custom_minimum_size = Vector2(action_width - 24.0, 44.0)
 
 func _refresh_loadout() -> void:
 	if not is_instance_valid(loadout_panel):

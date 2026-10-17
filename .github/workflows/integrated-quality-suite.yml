@@ -21,6 +21,7 @@ jobs:
         run: |
           python -m unittest discover -s tests -p test_pilot_scorecard.py -v
           python -m unittest discover -s tests -p test_core_backup_recovery.py -v
+          python -m unittest discover -s tests -p test_core_recovery_http.py -v
           python -m unittest discover -s tests -p test_release_zip_gate.py -v
           python -m unittest discover -s tests -p test_unified_release_gate.py -v
           python -m unittest discover -s tests -p test_github_release_evidence.py -v
@@ -34,6 +35,9 @@ jobs:
           python -m unittest discover -s tests -p test_release_pr_dependency_audit.py -v
           python -m unittest discover -s tests -p test_live_release_pr_audit.py -v
           python -m unittest discover -s tests -p test_full_source_ci_contract.py -v
+          python -m unittest discover -s tests -p test_godot_export_binding.py -v
+          python -m unittest discover -s tests -p test_remix_service.py -v
+          python -m unittest discover -s tests -p test_remix_acceptance_wrapper.py -v
       - name: Live PR chain metadata verification (read-only)
         if: ${{ github.event_name == 'pull_request' }}
         run: python scripts/live-release-pr-audit.py

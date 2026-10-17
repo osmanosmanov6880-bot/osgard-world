@@ -7,8 +7,8 @@
  *
  * --only zion-030,swarm  --devices desktop,mobile  --out test-results/games-browser
  * --base-url http://127.0.0.1:4173 (uses an existing server)
- * --allow-api-mutations explicitly permits non-read-only requests outside the
- * runner's own static server. Without it, those requests are aborted and recorded.
+ * --allow-api-mutations explicitly permits non-read-only requests to the selected
+ * base origin. Other origins always remain blocked and recorded.
  * --expected-blocked null-shift,remix permits only named external dependencies;
  * blocked integrations stay blocked
  * in JSON and totalAccepted remains false. No responses or game state are mocked.
@@ -20,6 +20,8 @@ import { existsSync } from 'node:fs'
 import { dirname, extname, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { chromium } from 'playwright'
+import { acceptGodotNullShift } from './null-shift-godot-browser.mjs'
+import { acceptRemix } from './remix-browser-acceptance.mjs'
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const args = process.argv.slice(2)
@@ -207,6 +209,14 @@ async function zionBoard(page, result) {
 }
 
 async function nullShift(page, result) {
+  if (result.variant === 'catalog' && result.route.includes('godot')) {
+    await acceptGodotNullShift(page, result, { timeout, screenshot: async label => {
+      const file = `${result.id}-${result.device}-${label}.png`
+      await page.screenshot({ path: resolve(out, file), animations: 'disabled', timeout })
+      result.screenshots.push(file)
+    } })
+    return
+  }
   assert.ok(await page.locator('#game-frame').count(), result.variant === 'lightweight'
     ? 'The lightweight game document is missing its required game frame'
     : 'The game document loaded but exposes no supported gameplay state contract; a rendered Godot export requires its own interaction adapter')
@@ -334,34 +344,13 @@ async function inherit(page, result) {
 }
 
 async function remix(page, result) {
-  await page.locator('#start-match').waitFor()
-  assert.ok(await page.locator('a[href*="/games/remix/player/"]').isVisible(), 'Player link is not visible')
-  if (!safeApiActions) throw new Blocked('Remote match creation was not requested; use --allow-api-mutations only for an authorized integration environment.')
-  const before = await page.locator('#match-status').innerText()
-  const previousIntegrations = result.integrations.length
-  await activate(page.locator('#start-match'), result.device === 'mobile')
-  await page.waitForFunction(previous => {
-    const status = document.querySelector('#match-status')?.textContent || ''
-    return status !== previous && !status.includes('Opening a server-owned')
-  }, before)
-  const status = await page.locator('#match-status').innerText()
-  if (/Connection error:|Ошибка соединения/.test(status)) {
-    assert.ok(await page.locator('#start-match').isEnabled(), 'Failed connection must permit retry')
-    assert.ok(await page.locator('#growth-panel').isHidden(), 'A failed API call must not manufacture a challenge')
-    result.observed = { connectionStatus: status }
-    assert.ok(result.integrations.slice(previousIntegrations).some(item => item.name === 'remix-match-service' && item.status === 'unavailable'),
-      'REMIX displayed a connection error without a failed service request; this may be a client/runtime defect')
-    result.checks.push('Real service failure is visible, retry remains enabled, no match/result is invented')
-    throw new Blocked('REMIX requires the match service. The real request failed; no playable server match was verified.')
-  }
-  const beforeInput = await page.locator('#arena').evaluate(canvas => canvas.toDataURL())
-  if (result.device === 'mobile') {
-    if (!await page.locator('[data-remix-move]').count()) throw new Error('REMIX active match has no touch movement controls')
-    await activate(page.locator('[data-remix-move="right"]'), true)
-  } else await page.keyboard.press('ArrowRight')
-  await page.waitForFunction(previous => document.querySelector('#arena').toDataURL() !== previous, beforeInput)
-  result.checks.push('The real service accepted a match and a user input changed the input preview')
-  result.scope = 'Server match creation and one input; result/replay validation requires a completed match'
+  await acceptRemix(page, result, { timeout, Blocked, safeApiActions, screenshot: async label => {
+    const path = `${result.id}-${result.device}-${label}.png`
+    await page.screenshot({ path: resolve(out, path), fullPage: true, animations: 'disabled', timeout })
+    result.screenshots.push(path)
+  } })
+  result.integrations.push({ name: 'remix-match-service', status: 'verified', ruleset: result.remix.ruleset,
+    scope: 'Authenticated input, result, creator proof/publication and independently reproduced replay for this server only' })
 }
 
 async function vectorZero(page, result) {
@@ -409,10 +398,17 @@ const results = []
 async function runCase(game, device, route = game.href, variant = 'catalog') {
   const profile = device === 'mobile' ? { width: 390, height: 844 } : { width: 1440, height: 1000 }
   const result = { id: game.id, title: game.name || game.title, device, variant, catalogRoute: game.href, route,
-    status: 'pending', checks: [], pageErrors: [], failedResources: [], integrations: [], blockedRequests: [], consoleErrors: [], screenshots: [] }
+    status: 'pending', checks: [], pageErrors: [], failedResources: [], integrations: [], blockedRequests: [], consoleErrors: [], consoleWarnings: [], engineMessages: [], screenshots: [] }
   const context = await browser.newContext({ viewport: profile,
     deviceScaleFactor: device === 'mobile' ? 2 : 1, isMobile: device === 'mobile', hasTouch: device === 'mobile',
     locale: 'ru-RU', reducedMotion: 'reduce', serviceWorkers: 'block' })
+  // The local Core wrapper creates this real, disposable session over HTTP.
+  // Keep the raw token out of URLs, reports and traces, and bind it to this origin.
+  if (game.id === 'remix' && process.env.OSGARD_REMIX_ACCEPTANCE_TOKEN) {
+    await context.addInitScript(({ origin, token }) => {
+      if (location.origin === origin) sessionStorage.setItem('osgard:core-session:v1', token)
+    }, { origin: base.origin, token: process.env.OSGARD_REMIX_ACCEPTANCE_TOKEN })
+  }
   const page = await context.newPage()
   page.setDefaultTimeout(timeout)
   const blockedRequestUrls = new Set()
@@ -423,9 +419,10 @@ async function runCase(game, device, route = game.href, variant = 'catalog') {
     const request = route.request()
     const readOnly = ['GET', 'HEAD', 'OPTIONS'].includes(request.method())
     const ownStaticServer = Boolean(local) && new URL(request.url()).origin === base.origin
-    if (readOnly || allowApiMutations || ownStaticServer) return route.continue()
+    const approvedBaseOrigin = allowApiMutations && new URL(request.url()).origin === base.origin
+    if (readOnly || approvedBaseOrigin || ownStaticServer) return route.continue()
     blockedRequestUrls.add(request.url())
-    result.blockedRequests.push({ url: request.url(), method: request.method(), reason: 'External API mutation is not authorized; use --allow-api-mutations for an approved integration environment' })
+    result.blockedRequests.push({ url: request.url(), method: request.method(), reason: 'API mutation is not authorized for this origin; --allow-api-mutations permits only the selected base origin' })
     result.integrations.push({ name: integrationFor(request.url()) || 'external-mutation', status: 'not-tested', url: request.url(), reason: 'Request blocked before transmission by acceptance policy' })
     await route.abort('blockedbyclient')
   })
@@ -433,7 +430,17 @@ async function runCase(game, device, route = game.href, variant = 'catalog') {
   url.searchParams.set('test', '1')
   result.url = url.href
   page.on('pageerror', error => result.pageErrors.push(errorMessage(error)))
-  page.on('console', message => { if (message.type() === 'error') result.consoleErrors.push(message.text().slice(0, 600)) })
+  page.on('console', message => {
+    const value = message.text().slice(0, 1000)
+    if (game.id === 'null-shift' && route.includes('godot') && message.type() === 'log' && result.engineMessages.length < 100) result.engineMessages.push(value)
+    if (message.type() === 'error') result.consoleErrors.push(value)
+    else if (message.type() === 'warning') {
+      result.consoleWarnings.push(value)
+      // The Godot export shell forwards native stderr through console.warn.
+      // A GDScript failure must still fail the browser gate.
+      if (value.includes('[NULL SHIFT]') && /(?:SCRIPT ERROR:|ERROR:|Parse Error:)/.test(value)) result.consoleErrors.push(value)
+    }
+  })
   function failedResource(resource) {
     if (blockedRequestUrls.has(resource.url)) return
     const integration = integrationFor(resource.url)
@@ -518,7 +525,7 @@ const report = { schemaVersion: 1, startedAt, completedAt: new Date().toISOStrin
   engine: 'Playwright', localStaticServer: Boolean(local), sourceRoot: externalBase ? null : root, baseUrl: base.href,
   viewportProfiles: { desktop: '1440×1000, keyboard', mobile: '390×844, Chromium touch emulation' },
   methodology: 'Real document/resource loading and actual user inputs. Read-only state probes only; no API response mocks or state injection.',
-  apiMutationPolicy: allowApiMutations ? 'Explicit --allow-api-mutations opt-in' : 'Only the runner-owned static server may receive non-read-only requests; all other origins are blocked and recorded',
+  apiMutationPolicy: allowApiMutations ? 'Explicit --allow-api-mutations permits only the selected base origin; all other origins are blocked and recorded' : 'Only the runner-owned static server may receive non-read-only requests; all other origins are blocked and recorded',
   limitations: ['Mobile emulation is not a physical-device Safari/Android test.', 'Smoke acceptance is not a whole-game completion or performance audit.',
     'External APIs, accounts, live rooms, payments, AR and production publication are not certified by this runner.'],
   launchError, expectedCatalogEntries: selected.size || 19, primaryCases: primary.length,

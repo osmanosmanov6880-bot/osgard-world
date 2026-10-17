@@ -43,8 +43,11 @@ core_proxy = block(nginx, '  location ^~ /api/core/ {', '\n  location / {')
 for token in ('proxy_pass http://$osgard_core_api_host:4173;', 'proxy_set_header Host $host;', 'proxy_set_header X-Real-IP $remote_addr;', 'client_max_body_size 256k;', 'Cache-Control "no-store"'):
     assert token in core_proxy, f'Core proxy missing {token}'
 assert 'osgard_core_api' in nginx and 'limit_req_status 429;' in core_proxy
-assert 'src.backup(dst)' in backup and 'PRAGMA integrity_check' in backup
-assert 'sqlite3' in backup and 'sha256sum -c' in backup and 'chmod 600' in backup
+backup_module = (ROOT / 'server/core_backup.py').read_text()
+assert 'from core_backup import backup' in backup and 'server/core_backup.py publish' in backup
+assert 'src.backup(dst,' in backup_module and 'PRAGMA integrity_check' in backup_module
+assert 'PRAGMA foreign_key_check' in backup_module and '?mode=ro' in backup_module
+assert '--sha256 "$remote_sha"' in backup and 'sha256sum -c' in backup and 'chmod 600' in backup
 assert 'named Docker volume is persistence, not a backup' in docs
 
 with TemporaryDirectory() as directory:

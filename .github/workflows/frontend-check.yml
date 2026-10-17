@@ -10,6 +10,10 @@ on:
       - "scripts/redesign-*.mjs"
       - "scripts/zion-local-smoke.mjs"
       - "scripts/games-browser-acceptance.mjs"
+      - "scripts/games-local-acceptance.py"
+      - "scripts/remix-*.py"
+      - "scripts/remix-*.mjs"
+      - "scripts/null-shift-godot-browser.mjs"
       - "scripts/games-portal-browser.spec.mjs"
       - "scripts/ecosystem-*.spec.mjs"
       - "playwright.ecosystem.config.mjs"
@@ -36,6 +40,9 @@ on:
       - "scripts/games-lighthouse-report.mjs"
       - ".github/workflows/games-lighthouse.yml"
       - "public/games/**"
+      - "godot/**"
+      - "scripts/build-null-shift-godot.py"
+      - ".github/actions/setup-godot/**"
       - "docs/02_IMPERIUM_OF_TIME_GAME_DESIGN.md"
       - "public/skillcred/**"
       - "scripts/precompress-brand-transition.mjs"
@@ -129,7 +136,7 @@ jobs:
 
   browser:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     steps:
       - name: Check out source
         uses: actions/checkout@v4
@@ -140,12 +147,22 @@ jobs:
           cache: npm
       - name: Install locked application dependencies
         run: npm ci
+      - name: Install the checksum-pinned Godot engine and Web template
+        uses: ./.github/actions/setup-godot
+      - name: Build the actual primary NULL SHIFT runtime
+        run: npm run build:godot
       - name: Build the production site
         run: npm run build
+      - name: Verify the exact exported Godot artifact
+        run: npm run qa:godot-export
       - name: Install Chromium for locked Playwright tooling
         run: npx playwright install --with-deps chromium
-      - name: Check all game clients with explicit external-service blockers
-        run: npm run qa:games-browser -- --expected-blocked null-shift,remix
+      - name: Check all game clients against the real isolated local service
+        run: npm run qa:games-local
+      - name: Verify authoritative REMIX results, replay and server ownership
+        run: npm run qa:remix-server
+      - name: Verify REMIX login, unavailable service and lost-response recovery
+        run: npm run qa:remix-ui
       - name: Check desktop and mobile user journeys
         if: ${{ !cancelled() }}
         run: npx playwright test --config playwright.ecosystem.config.mjs

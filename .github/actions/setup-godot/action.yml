@@ -1,0 +1,24 @@
+name: Set up pinned OSGARD Godot
+description: Verify the official Linux engine and single-thread Web release template
+inputs:
+  use-cache:
+    description: Restore and save the verified toolchain cache
+    default: 'true'
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+    - uses: actions/cache@v4
+      if: ${{ inputs.use-cache == 'true' }}
+      with:
+        path: |
+          ${{ runner.temp }}/osgard-godot-4.7.2/engine
+          ${{ runner.temp }}/osgard-godot-4.7.2/data/godot/export_templates
+        key: osgard-godot-web-${{ runner.os }}-${{ hashFiles('godot/toolchain-lock.json') }}
+    - name: Verify every cached engine and template byte
+      shell: bash
+      run: |
+        python3 scripts/build-null-shift-godot.py --install-only --cache-dir "$RUNNER_TEMP/osgard-godot-4.7.2"
+        echo "OSGARD_GODOT_CACHE=$RUNNER_TEMP/osgard-godot-4.7.2" >> "$GITHUB_ENV"

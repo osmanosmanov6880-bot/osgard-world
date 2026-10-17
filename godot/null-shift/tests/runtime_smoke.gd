@@ -33,6 +33,22 @@ func _run_smoke() -> void:
 		return
 	game.sound_enabled = false
 
+	print("RUNTIME_STAGE: idempotent touch pause and frozen raid time")
+	game._set_mobile_action("pause", true)
+	game._set_mobile_action("pause", true)
+	if not _expect(game.paused_game and game.pause_panel.visible, "repeated touch pause activation must remain paused until explicit resume"):
+		return
+	var paused_elapsed: float = game.elapsed
+	var paused_phase: float = game.phase_clock
+	await process_frame
+	await process_frame
+	if not _expect(is_equal_approx(game.elapsed, paused_elapsed) and is_equal_approx(game.phase_clock, paused_phase), "pause must freeze both raid time and phase hazards"):
+		return
+	game._set_mobile_action("pause", false)
+	game._resume_game()
+	if not _expect(not game.paused_game and not game.pause_panel.visible, "explicit resume must restore the raid"):
+		return
+
 	print("RUNTIME_STAGE: live objective compass and mission progression")
 	if not _expect(is_instance_valid(game.objective_compass_arrow) and is_instance_valid(game.objective_compass_text), "objective compass arrow and label must instantiate"):
 		return
@@ -306,7 +322,7 @@ func _run_smoke() -> void:
 	game.player_aim = Vector3.FORWARD
 
 	print("RUNTIME_STAGE: tactical operator dash, visual response and timed evade")
-	if not _expect(is_instance_valid(game.mobile_dash_button) and game.mobile_action_buttons.size() == 5, "mobile HUD must expose a dedicated fifth dash action"):
+	if not _expect(is_instance_valid(game.mobile_dash_button) and game.mobile_action_buttons.size() == 6, "mobile HUD must expose dash and pause alongside combat actions"):
 		return
 	var dash_saved_position: Vector3 = game.player.global_position
 	var dash_saved_velocity: Vector3 = game.player.velocity
@@ -476,6 +492,28 @@ func _run_smoke() -> void:
 		return
 	if not _expect(game.mobile_modules_button.custom_minimum_size.x <= 126.0 and game.sound_button.custom_minimum_size.x <= 126.0, "320px utility buttons must not overflow the action panel"):
 		return
+	game._layout_compact_controls(Vector2(390.0, 776.0))
+	for button in game.mobile_move_buttons + game.mobile_action_buttons:
+		if not _expect(button.custom_minimum_size.x >= 44.0 and button.custom_minimum_size.y >= 44.0, "390px primary controls must provide at least 44px touch targets"):
+			return
+	var layout_saved_size: Vector2i = root.size
+	var layout_saved_content_scale_size: Vector2i = root.content_scale_size
+	root.content_scale_size = Vector2i(390, 776)
+	root.size = Vector2i(390, 776)
+	await process_frame
+	await process_frame
+	var compact_hud_bounds: Rect2 = game.status_panel.get_global_rect()
+	var compact_status_bounds: Rect2 = game.objective_panel.get_global_rect()
+	var compact_dash_bounds: Rect2 = game.dash_status_label.get_global_rect()
+	print("RUNTIME_STAGE: compact HUD %s, status %s" % [compact_hud_bounds, compact_status_bounds])
+	if not _expect(game.mobile_controls_visible and compact_hud_bounds.encloses(compact_dash_bounds), "390px compact HUD must fully contain the visible dash readout"):
+		return
+	if not _expect(compact_status_bounds.position.y >= compact_hud_bounds.end.y + 8.0 and not compact_status_bounds.intersects(compact_dash_bounds), "390px status panel must leave an 8px gap below the full HUD without covering dash text"):
+		return
+	root.content_scale_size = layout_saved_content_scale_size
+	root.size = layout_saved_size
+	await process_frame
+	await process_frame
 	var saved_position: Vector3 = game.player.global_position
 	game.player.global_position = Vector3(0.0, 0.82, 0.0)
 	var clear_lane: Array = [{"from": Vector3(0.0, 1.0, -10.0), "to": Vector3(0.0, 1.0, 0.0)}]
