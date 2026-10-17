@@ -4,7 +4,7 @@ import argparse
 import json
 import re
 import sys
-from urllib.request import Request, urlopen
+from urllib.request import Request, build_opener, HTTPRedirectHandler
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlparse
 
@@ -12,6 +12,11 @@ RUN_PATTERN = re.compile(r"^/([A-Za-z0-9_.-]+)/([A-Za-z0-9_.-]+)/actions/runs/([
 REQUIRED = ("code_ci", "frontend_ci", "archive", "backup_restore", "smoke")
 GITHUB_HOST = "github.com"
 API_HOST = "api.github.com"
+class RejectAPIRedirects(HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        raise ValueError("GitHub API redirect refused")
+def safe_api_opener(request, timeout=10):
+    return build_opener(RejectAPIRedirects()).open(request, timeout=timeout)
 
 def parse_run_url(value, expected_repo):
     if not isinstance(value, str):
@@ -27,7 +32,7 @@ def parse_run_url(value, expected_repo):
         raise ValueError("run URL references a different repository")
     return int(run_id)
 
-def fetch_run(repository, run_id, opener=urlopen):
+def fetch_run(repository, run_id, opener=safe_api_opener):
     request = Request(f"https://api.github.com/repos/{repository}/actions/runs/{run_id}",
         headers={"Accept":"application/vnd.github+json", "User-Agent":"osgard-release-verifier"})
     # Explicitly request a GitHub API URL; no arbitrary user-supplied hosts.
@@ -40,7 +45,7 @@ def fetch_run(repository, run_id, opener=urlopen):
         raise ValueError("invalid GitHub API result")
     return obj
 
-def verify(evidence, repository, workflow_names, opener=urlopen):
+def verify(evidence, repository, workflow_names, opener=safe_api_opener):
     errors = []
     if not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", repository or ""):
         raise ValueError("invalid repository")
