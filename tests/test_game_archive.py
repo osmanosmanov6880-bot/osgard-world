@@ -60,6 +60,18 @@ class GameArchiveTests(unittest.TestCase):
         self.files["games/zion-9/queue/ZION-020/index.html"]=b"<html>"+b"x"*(m.MAX_GAME_HTML_BYTES+1)+b"</html>"
         with self.assertRaisesRegex(ValueError,"oversized"):
             m.verify(self.pack())
+    def test_duplicate_zip_member_rejected(self):
+        self.pack()
+        with zipfile.ZipFile(self.file,"a") as z:
+            z.writestr("games/index.html",b"<html></html>")
+        with self.assertRaisesRegex(ValueError,"duplicate ZIP"):
+            m.verify(self.file)
+    def test_case_colliding_zip_member_rejected(self):
+        self.pack()
+        with zipfile.ZipFile(self.file,"a") as z:
+            z.writestr("GAMES/index.html",b"<html></html>")
+        with self.assertRaisesRegex(ValueError,"case-colliding"):
+            m.verify(self.file)
     def test_no_remote_forced(self):
         self.files["games/zion-9/queue/ZION-020/index.html"]=b'<html><script src="https://example.com"></script></html>'
         self.assertEqual(m.verify(self.pack())["status"],"verified")
