@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#071c1c">
+<meta name="description" content="INHERIT: сохранение поколений мира, передача следующему хранителю и личная летопись в аккаунте OSGARD Core.">
+<meta name="robots" content="noindex">
+<title>INHERIT — Миры аккаунта | OSGARD PLAY</title>
+<link rel="icon" href="/brand/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="./worlds.css">
+<script type="module" src="./worlds.mjs"></script>
+</head>
+<body>
+<a class="skip" href="#main">Перейти к содержимому</a>
+<header class="topbar">
+  <a class="mark" href="/play"><span aria-hidden="true">◈</span> OSGARD <strong>PLAY</strong></a>
+  <nav aria-label="Навигация"><a href="/games/inherit/">Локальный INHERIT</a><a href="/games/">Каталог игр</a><a href="/account">Аккаунт</a></nav>
+</header>
+<main id="main">
+ <section class="intro">
+  <p class="eyebrow">THE QUIET REACH / CONNECTED LINEAGE</p>
+  <div class="intro-layout"><div><h1>Мир, который <em>продолжат.</em></h1><p class="lead">Оставьте след. Передайте остров другому хранителю. Вернитесь позже и увидьте, что изменилось. Каждая передача сохраняется в истории аккаунта.</p></div><div class="illustration" aria-hidden="true"><div class="moon"></div><div class="rings"></div><span>INHERIT / 01</span></div></div>
+  <p class="disclosure"><strong>Режим аккаунта:</strong> реальные серверные записи и адресные приглашения. Это отдельные миры — локальное сохранение обычного INHERIT не изменяется. Совместного редактирования в реальном времени пока нет.</p>
+ </section>
+ <section class="status-panel" aria-live="polite" aria-atomic="true"><span class="status-dot" aria-hidden="true"></span><p id="status">Проверяем сессию Core…</p><button type="button" id="reload">Обновить</button></section>
+ <section id="login" class="panel" hidden><h2>Войдите в OSGARD Core</h2><p>Для мира с несколькими хранителями нужен действующий аккаунт. Гостевой мир можно продолжить в локальной игре.</p><a class="primary-link" href="/workspace?returnTo=%2Fgames%2Finherit%2Fworlds%2F">Войти и вернуться</a></section>
+ <div id="dashboard" hidden>
+  <section class="dashboard-top">
+   <div><p class="eyebrow">ПОДТВЕРЖДЁННЫЙ АККАУНТ</p><p class="username" id="username"></p></div>
+   <button type="button" id="refresh">Обновить мои миры</button>
+  </section>
+  <section class="layout">
+   <div class="left-col">
+    <section class="panel">
+     <div class="section-heading"><p class="eyebrow">01 / ВАШИ МИРЫ</p><h2>Выбрать историю</h2></div>
+     <div id="world-list" class="world-list" aria-live="polite"></div>
+     <form id="create-form" class="mini-form">
+      <label for="world-title">Название нового мира</label>
+      <div class="form-row"><input id="world-title" maxlength="100" minlength="3" placeholder="Тихая гавань" required><button class="action" type="submit">Создать</button></div>
+      <small>До 20 собственных миров. Создание не переносит локальные следы.</small>
+     </form>
+    </section>
+    <section class="panel">
+     <p class="eyebrow">02 / ПРИГЛАШЕНИЯ</p><h2>Мир ждёт вас</h2>
+     <div id="invitations" class="invitations" aria-live="polite"></div>
+     <h3>Сигналы прежних миров</h3><div id="notifications" class="notifications"></div>
+    </section>
+   </div>
+   <section class="panel workbench" id="workbench" hidden>
+    <div class="section-heading"><p class="eyebrow">03 / КАРТА МИРА</p><h2 id="selected-name">Мир</h2><p id="selected-meta"></p></div>
+    <p id="keeper-state" class="keeper-state"></p>
+    <div class="tools" id="tools" role="group" aria-label="Выберите след">
+      <button type="button" class="selected" data-tool="tree" aria-pressed="true">✦ Дерево</button>
+      <button type="button" data-tool="stone" aria-pressed="false">◇ Камень</button>
+      <button type="button" data-tool="light" aria-pressed="false">☼ Огонь</button>
+      <button type="button" data-tool="path" aria-pressed="false">⌁ Тропа</button>
+    </div>
+    <div id="map" class="world-map" tabindex="0" role="button" aria-label="Карта острова: нажмите, чтобы поставить выбранный след. Стрелки — переместить курсор; Enter — оставить след.">
+      <div class="sun" aria-hidden="true"></div><div class="land" aria-hidden="true"></div><div id="placed" class="placed" aria-hidden="true"></div>
+      <span class="map-hint">Кликните по карте — оставьте след</span><span id="cursor" class="cursor" aria-hidden="true"></span>
+    </div>
+    <div class="draft-bar"><p id="draft-counter">Черновик: 0 из 30 следов</p><button type="button" id="undo">Отменить последний</button><button type="button" id="export">Скачать черновик</button></div>
+    <form id="pass-form" class="pass-form">
+      <div class="field"><label for="to-username">Логин следующего хранителя</label><input id="to-username" required maxlength="64" minlength="3" pattern="[a-zA-Z0-9_.-]{3,64}" placeholder="имя_аккаунта" autocomplete="off"></div>
+      <div class="field"><label for="pass-message">Послание следующему хранителю</label><textarea id="pass-message" required minlength="5" maxlength="240" rows="3" placeholder="Я оставил свет возле старого дерева…"></textarea></div>
+      <button class="primary-link" type="submit" id="pass-button">Предложить передачу мира</button>
+      <p class="small">Новый хранитель сначала подтверждает приглашение. Пока он не принял его, владелец мира не меняется.</p>
+    </form>
+    <div id="cancel-zone" hidden><p>Предложение передачи ожидает согласия.</p><button type="button" id="cancel">Отменить приглашение</button></div>
+    <section class="chronicle"><div class="section-heading"><p class="eyebrow">ЛЕТОПИСЬ / СЕРВЕРНЫЕ ЗАПИСИ</p><h3>То, что осталось</h3></div><div id="chronicle" class="chronicle-items"></div></section>
+   </section>
+  </section>
+  <section class="panel recovery" id="recovery" hidden>
+   <p class="eyebrow">ВОССТАНОВЛЕНИЕ ЗАПРОСА</p><h2>Ответ мог потеряться</h2>
+   <p id="recovery-info">Сервер мог сохранить операцию. Повторяем только исходный запрос с прежним ключом; другой запрос не отправляем.</p>
+   <button id="recover-button" class="action" type="button">Проверить с прежним ключом</button>
+  </section>
+ </div>
+</main>
+<footer>OSGARD WORLD / OSGARD PLAY · Миры аккаунта и локальная игра хранятся отдельно. <a href="/games/inherit/">Вернуться в локальный INHERIT</a></footer>
+</body>
+</html>
