@@ -1,0 +1,160 @@
+{
+  "status": "PASS",
+  "commit": "75a3251ae5cc5b6d781f537648623dafedc67b88",
+  "checks": [
+    {
+      "path": "/",
+      "status": 200,
+      "html_bytes": 3760
+    },
+    {
+      "path": "/intelligence",
+      "status": 200,
+      "html_bytes": 3817
+    },
+    {
+      "path": "/play",
+      "status": 200,
+      "html_bytes": 3670
+    },
+    {
+      "path": "/games/",
+      "status": 200,
+      "html_bytes": 104855
+    },
+    {
+      "path": "/brand",
+      "status": 200,
+      "html_bytes": 3546
+    },
+    {
+      "path": "/learning/program",
+      "status": 200,
+      "html_bytes": 3722
+    },
+    {
+      "path": "/workspace",
+      "status": 200,
+      "html_bytes": 3568
+    },
+    {
+      "path": "/games/inherit/",
+      "status": 200,
+      "html_bytes": 74450
+    },
+    {
+      "path": "/games/remix/",
+      "status": 200,
+      "html_bytes": 80718
+    },
+    {
+      "path": "/games/remix/player/",
+      "status": 200,
+      "html_bytes": 17856
+    },
+    {
+      "path": "/skillcred/",
+      "status": 200,
+      "html_bytes": 44129
+    },
+    {
+      "path": "/games/inherit/interface.css",
+      "status": 200,
+      "matches_source": true
+    },
+    {
+      "path": "/games/inherit/interface.js",
+      "status": 200,
+      "matches_source": true
+    },
+    {
+      "path": "/games/inherit/sw.js",
+      "status": 200,
+      "matches_source": true
+    },
+    {
+      "path": "/games/remix/interface.js",
+      "status": 200,
+      "matches_source": true
+    },
+    {
+      "path": "/games/remix/player/build-status.json",
+      "status": 200,
+      "matches_source": true
+    },
+    {
+      "path": "/skillcred/styles.css",
+      "status": 200,
+      "matches_minified_bundle": true,
+      "decoded_bytes": 70133,
+      "sha256": "3d38fe8f5216cf22caa9ae2dccf98aa7236d829eda13d0aa4476561c6a98eb51"
+    },
+    {
+      "path": "/api/core/health",
+      "status": 200,
+      "mode": "self-hosted-pilot",
+      "payments": false,
+      "ai": false,
+      "livePaymentTested": false
+    },
+    {
+      "path": "/api/remix/health",
+      "status": 200,
+      "capabilities": {
+        "activeMatchRecovery": false,
+        "authPolicyVersion": 1,
+        "creationEnabled": true,
+        "frozenResults": true,
+        "legacyMatches": "anonymous",
+        "ownershipPolicy": "confirmed-durable-binding",
+        "playerAuthentication": false,
+        "provider": "core",
+        "replayVerification": false,
+        "resultPolicy": "freeze-on-first-terminal-observation",
+        "schemaVersion": 1,
+        "service": "osgard-remix-guard",
+        "status": "ok",
+        "storage": "ok",
+        "upstream": "ok"
+      }
+    },
+    {
+      "path": "/api/remix/v2/capabilities",
+      "status": 200,
+      "capabilities": {
+        "activeMatchRecovery": false,
+        "authPolicyVersion": 1,
+        "creationEnabled": true,
+        "legacyMatches": "anonymous",
+        "ownershipPolicy": "confirmed-durable-binding",
+        "provider": "core",
+        "replayVerification": false
+      }
+    },
+    {
+      "path": "/api/remix/v2/matches",
+      "status": 401
+    },
+    {
+      "path": "/api/world/quiet-reach",
+      "status": 404,
+      "boundary": "INHERIT remains local; no world API was published"
+    },
+    {
+      "path": "/api/remix/v1/matches/match_20261017104120.194819975_5/result",
+      "status": 200,
+      "same_frozen_result": true,
+      "baseline_run": 39025550637
+    },
+    {
+      "path": "/api/core/learning/programs",
+      "status": 401,
+      "json": true
+    },
+    {
+      "path": "/api/osgard-missing-delivery-probe.json",
+      "status": 404,
+      "json": true
+    }
+  ]
+}

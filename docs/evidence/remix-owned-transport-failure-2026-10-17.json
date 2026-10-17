@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "origin": "https://osgard.world",
+  "status": "FAIL",
+  "mode": "two-qa-accounts-one-owned-match",
+  "startedAt": "2026-10-17T12:30:42.827164+00:00",
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/",
+      "outcome": "failed",
+      "errorType": "gaierror"
+    }
+  ],
+  "checks": [],
+  "authOutcomeUncertain": false,
+  "limits": [
+    "No Unity gameplay or replay validation",
+    "No restart or active-engine recovery check",
+    "No POST retry or access to existing users' data",
+    "A lost authentication response may leave an unknown session that cannot be logged out",
+    "Two QA accounts and their one match remain; no credentials are retained in evidence"
+  ],
+  "failure": "Transport or parsing failure: gaierror",
+  "allQaSessionsLoggedOut": true,
+  "finishedAt": "2026-10-17T12:30:42.834665+00:00",
+  "durationSeconds": 0.008
+}

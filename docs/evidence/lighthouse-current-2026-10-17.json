@@ -1,0 +1,215 @@
+{
+  "schemaVersion": 1,
+  "releaseCommit": "75a3251ae5cc5b6d781f537648623dafedc67b88",
+  "evidenceDate": "2026-10-17",
+  "description": "Exact selected values from first automatic post-deploy Lighthouse audits; modeled and observed times are kept separate. This summary is not a causal estimate or field CWV evidence.",
+  "audits": [
+    {
+      "component": "skillcred",
+      "runId": 39032711133,
+      "runAttempt": 1,
+      "conclusion": "failure",
+      "workflowUrl": "https://github.com/osmanosmanov6880-bot/osgard-world/actions/runs/39032711133",
+      "artifact": {
+        "id": 12100653855,
+        "zipSha256": "47a75f4796825258c321805e8da43b4d67ebb6b57f297877b0dc0dd646e91d0b",
+        "url": "https://github.com/osmanosmanov6880-bot/osgard-world/actions/runs/39032711133/artifacts/12100653855",
+        "expires": "2026-10-31"
+      },
+      "gate": {
+        "requirement": "100 in all four categories on mobile and desktop",
+        "met": false
+      },
+      "audits": [
+        {
+          "viewport": "mobile",
+          "fetchTime": "2026-10-17T12:29:59.093Z",
+          "lighthouseVersion": "12.8.2",
+          "url": "https://osgard.world/skillcred/",
+          "scores": {
+            "performance": 70,
+            "accessibility": 100,
+            "best-practices": 100,
+            "seo": 100
+          },
+          "modeledMetrics": {
+            "firstContentfulPaintMs": 1725.527,
+            "largestContentfulPaintMs": 2500.527,
+            "totalBlockingTimeMs": 1640,
+            "speedIndexMs": 2743.6695999999915
+          },
+          "observedMetrics": {
+            "firstContentfulPaintMs": 1309.286,
+            "largestContentfulPaintMs": 1309.286,
+            "cumulativeLayoutShift": 0.0009511047978906637
+          },
+          "benchmarkIndex": 1227,
+          "runtimeError": null,
+          "runWarnings": [],
+          "report": {
+            "filename": "skillcred-lighthouse-mobile.json",
+            "sha256": "a9d593825144aea6bfa1311862059b6cb8aeb508dd5c5e2a71cffc48c0b30f2c",
+            "bytes": 775297
+          }
+        },
+        {
+          "viewport": "desktop",
+          "fetchTime": "2026-10-17T12:30:14.773Z",
+          "lighthouseVersion": "12.8.2",
+          "url": "https://osgard.world/skillcred/",
+          "scores": {
+            "performance": 92,
+            "accessibility": 100,
+            "best-practices": 100,
+            "seo": 100
+          },
+          "modeledMetrics": {
+            "firstContentfulPaintMs": 314.442,
+            "largestContentfulPaintMs": 554.442,
+            "totalBlockingTimeMs": 235.5,
+            "speedIndexMs": 793.4379009033916
+          },
+          "observedMetrics": {
+            "firstContentfulPaintMs": 941.683,
+            "largestContentfulPaintMs": 941.683,
+            "cumulativeLayoutShift": 0.00041843244145869533
+          },
+          "benchmarkIndex": 2774,
+          "runtimeError": null,
+          "runWarnings": [],
+          "report": {
+            "filename": "skillcred-lighthouse-desktop.json",
+            "sha256": "7b8f458d8109e80690ec63a4569b0c141c148a3bea6d50d71e406686ded50640",
+            "bytes": 665418
+          }
+        }
+      ],
+      "artifactFiles": [
+        {
+          "filename": "skillcred-lighthouse-desktop-0.devtoolslog.json",
+          "bytes": 94411,
+          "sha256": "69ee36b3ca2680327eb65438b7cb38c971a7167ef8c46348bf4d86c08f6b61ee"
+        },
+        {
+          "filename": "skillcred-lighthouse-desktop-0.trace.json",
+          "bytes": 11334367,
+          "sha256": "fc94ca57b363563eece1695d8dd7b0a8471d66cdc1f2b39f7319036b90c18402"
+        },
+        {
+          "filename": "skillcred-lighthouse-desktop.json",
+          "bytes": 665418,
+          "sha256": "7b8f458d8109e80690ec63a4569b0c141c148a3bea6d50d71e406686ded50640"
+        },
+        {
+          "filename": "skillcred-lighthouse-mobile-0.devtoolslog.json",
+          "bytes": 74333,
+          "sha256": "3ed5f012f2c06ef85f44b5f66640f0e84ce9ab331ec071e6c51a3459b4afddf0"
+        },
+        {
+          "filename": "skillcred-lighthouse-mobile-0.trace.json",
+          "bytes": 7818509,
+          "sha256": "fcb10fa559283723b6809b83fee489da2a72e89be197fcdeca3f5b06c7e8a66b"
+        },
+        {
+          "filename": "skillcred-lighthouse-mobile.json",
+          "bytes": 775297,
+          "sha256": "a9d593825144aea6bfa1311862059b6cb8aeb508dd5c5e2a71cffc48c0b30f2c"
+        }
+      ]
+    },
+    {
+      "component": "games",
+      "runId": 39032711146,
+      "runAttempt": 1,
+      "conclusion": "failure",
+      "workflowUrl": "https://github.com/osmanosmanov6880-bot/osgard-world/actions/runs/39032711146",
+      "artifact": {
+        "id": 12101365460,
+        "zipSha256": "548513a1deaba7209831142ce0f0dafcd69ee8d4ebb0078a91802162aa7d92cd",
+        "url": "https://github.com/osmanosmanov6880-bot/osgard-world/actions/runs/39032711146/artifacts/12101365460",
+        "expires": "2026-10-31"
+      },
+      "gate": {
+        "failedRequirement": "mobile total blocking time <= 500 ms",
+        "actualMs": 553.5,
+        "met": false
+      },
+      "audits": [
+        {
+          "viewport": "mobile",
+          "fetchTime": "2026-10-17T12:29:47.965Z",
+          "lighthouseVersion": "12.8.2",
+          "url": "https://osgard.world/games/",
+          "scores": {
+            "performance": 85,
+            "accessibility": 100,
+            "best-practices": 100,
+            "seo": 100
+          },
+          "modeledMetrics": {
+            "firstContentfulPaintMs": 1454.149,
+            "largestContentfulPaintMs": 1454.149,
+            "totalBlockingTimeMs": 553.5,
+            "speedIndexMs": 2365.329006468807
+          },
+          "observedMetrics": {
+            "firstContentfulPaintMs": 1024.521,
+            "largestContentfulPaintMs": 1024.521,
+            "cumulativeLayoutShift": 0.0003107708126152344
+          },
+          "benchmarkIndex": 1958.5,
+          "runtimeError": null,
+          "runWarnings": [],
+          "report": {
+            "filename": "osgard-games-lighthouse-mobile.json",
+            "sha256": "8210684efa9926e0f8fcb225fb58b3ea475eac6f98087fcc84136fb108ab7089",
+            "bytes": 929815
+          }
+        },
+        {
+          "viewport": "desktop",
+          "fetchTime": "2026-10-17T12:30:04.143Z",
+          "lighthouseVersion": "12.8.2",
+          "url": "https://osgard.world/games/",
+          "scores": {
+            "performance": 100,
+            "accessibility": 100,
+            "best-practices": 100,
+            "seo": 100
+          },
+          "modeledMetrics": {
+            "firstContentfulPaintMs": 420,
+            "largestContentfulPaintMs": 420,
+            "totalBlockingTimeMs": 0,
+            "speedIndexMs": 925.6145672499966
+          },
+          "observedMetrics": {
+            "firstContentfulPaintMs": 1141.184,
+            "largestContentfulPaintMs": 1141.184,
+            "cumulativeLayoutShift": 0.0004082556677449865
+          },
+          "benchmarkIndex": 2458,
+          "runtimeError": null,
+          "runWarnings": [],
+          "report": {
+            "filename": "osgard-games-lighthouse-desktop.json",
+            "sha256": "2d8b0dbee2b58b71568719ed5761cf0fe69bbb9315f1888da65239979211aecc",
+            "bytes": 1055576
+          }
+        }
+      ],
+      "artifactFiles": [
+        {
+          "filename": "osgard-games-lighthouse-desktop.json",
+          "bytes": 1055576,
+          "sha256": "2d8b0dbee2b58b71568719ed5761cf0fe69bbb9315f1888da65239979211aecc"
+        },
+        {
+          "filename": "osgard-games-lighthouse-mobile.json",
+          "bytes": 929815,
+          "sha256": "8210684efa9926e0f8fcb225fb58b3ea475eac6f98087fcc84136fb108ab7089"
+        }
+      ]
+    }
+  ]
+}
