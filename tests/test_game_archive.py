@@ -62,6 +62,14 @@ class GameArchiveTests(unittest.TestCase):
     def test_missing_legacy(self):
         self.files.pop("games/swarm/index.html")
         with self.assertRaisesRegex(ValueError,"missing game routes"):m.verify(self.pack())
+    def test_zion_absolute_dependency_traversal_rejected(self):
+        self.files["games/zion-9/queue/ZION-020/index.html"]=b'<html><script src="/../local.js"></script></html>'
+        with self.assertRaisesRegex(ValueError,"unsafe absolute game dependency"):
+            m.verify(self.pack())
+    def test_legacy_absolute_dependency_traversal_rejected(self):
+        self.files["games/swarm/index.html"]=b'<html><script src="/games/../local.js"></script></html>'
+        with self.assertRaisesRegex(ValueError,"unsafe absolute game dependency"):
+            m.verify(self.pack())
     def test_legacy_invalid_html(self):
         self.files["games/swarm/index.html"]=b"this is not a real HTML shell"
         with self.assertRaisesRegex(ValueError,"invalid legacy HTML"):
