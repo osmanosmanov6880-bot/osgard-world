@@ -24,10 +24,11 @@ if [[ -e "$final" || -L "$final" ]]; then
 fi
 pending="$(mktemp "$backup_dir/.osgard-core-pending-XXXXXXXX")"
 completed=0
+moved=0
 cleanup() {
   docker compose -f "$compose_file" exec -T core-api rm -f -- "$remote_tmp" >/dev/null 2>&1 || true
   rm -f -- "$pending"
-  if [[ "$completed" != 1 ]]; then
+  if [[ "$completed" != 1 && "$moved" == 1 ]]; then
     rm -f -- "$final" "$final.sha256"
   fi
 }
@@ -40,10 +41,11 @@ docker compose -f "$compose_file" exec -T core-api python -c \
 docker compose -f "$compose_file" cp "core-api:$remote_tmp" "$pending"
 chmod 600 -- "$pending"
 mv -n -- "$pending" "$final"
-if [[ ! -f "$final" ]]; then
+if [[ -e "$pending" || ! -f "$final" ]]; then
   echo "Core backup was not moved into final location" >&2
   exit 1
 fi
+moved=1
 sha256sum "$final" > "$final.sha256"
 chmod 600 -- "$final.sha256"
 sha256sum -c "$final.sha256"
