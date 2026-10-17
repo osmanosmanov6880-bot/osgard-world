@@ -1,0 +1,21 @@
+name: OSGARD game archive contract
+on:
+  pull_request:
+    paths:
+      - 'scripts/verify-game-archive.py'
+      - 'tests/test_game_archive.py'
+      - 'docs/GAME-ARCHIVE-ACCEPTANCE.md'
+      - '.github/workflows/game-archive-contract.yml'
+permissions:
+  contents: read
+jobs:
+  game-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m py_compile scripts/verify-game-archive.py tests/test_game_archive.py
+      - run: python -m unittest discover -s tests -p test_game_archive.py -v
