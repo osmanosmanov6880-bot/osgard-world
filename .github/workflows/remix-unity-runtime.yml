@@ -1,0 +1,58 @@
+name: REMIX Unity runtime validation
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - "public/games/remix/player/**"
+      - "public/brand/osa-transition.js"
+      - "public/brand/ecosystem-chrome.css"
+      - "nginx.conf"
+      - "scripts/game-delivery-http-smoke.mjs"
+      - "scripts/check-nginx-unity-browser.sh"
+      - "scripts/remix-unity-browser.spec.mjs"
+      - "playwright.remix-unity.config.mjs"
+      - ".github/workflows/remix-unity-runtime.yml"
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: remix-unity-runtime-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  unity-runtime:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install locked application dependencies
+        run: npm ci
+      - name: Build the production site
+        run: npm run build
+      - name: Install pinned browser test tooling
+        run: |
+          npm install --no-save --package-lock=false @playwright/test@1.58.2 pngjs@7.0.0
+          npx playwright install --with-deps chromium
+      - name: Exercise real Unity startup and recovery behind Nginx
+        run: bash scripts/check-nginx-unity-browser.sh
+      - name: Keep runtime screenshots, traces and network evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: remix-unity-runtime
+          path: |
+            unity-browser-report/
+            unity-test-results/
+          if-no-files-found: warn
+          retention-days: 14

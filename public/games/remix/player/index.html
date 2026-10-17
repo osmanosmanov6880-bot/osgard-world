@@ -10,10 +10,10 @@
   <link rel="stylesheet" href="/brand/ecosystem-chrome.css"><link rel="icon" href="/brand/favicon.svg" type="image/svg+xml"></head>
   <body>
     <header class="remix-player-header"><a href="/play/world/remix">← О мире и управлении</a><a href="/play#catalog">Каталог миров</a><a href="/games/remix/">Консоль испытаний</a></header>
-    <main><section class="remix-player-guide"><h1>REMIX</h1><p id="player-controls">Выберите игровое поле, чтобы передать ему управление. Подсказки сборки появятся внутри игры. Кнопки возврата расположены над полем.</p><p>Нужен WebGL 2. Сетевые матчи и сохранённые результаты требуют подтверждения сервиса REMIX; загрузка сборки сама по себе их не подтверждает.</p><p id="player-load-status" role="status">Подготавливаем игровую сборку…</p><a href="" id="player-retry" hidden>Повторить загрузку</a></section>
+    <main><section class="remix-player-guide"><h1>REMIX</h1><p id="player-controls">Выберите игровое поле, чтобы передать ему управление. Подсказки сборки появятся внутри игры. Кнопки возврата расположены над полем.</p><p>Нужен WebGL 2. Сетевые матчи и сохранённые результаты требуют подтверждения сервиса REMIX; загрузка сборки сама по себе их не подтверждает.</p><p id="player-load-status" role="status" aria-live="polite" aria-atomic="true">Подготавливаем игровую сборку…</p><a href="" id="player-retry" hidden>Повторить загрузку</a></section>
     <div id="unity-container" class="unity-desktop">
       <div id="unity-fullscreen-container">
-        <canvas id="unity-canvas" width="960" height="600" tabindex="0" aria-label="Игровое поле REMIX" aria-describedby="player-controls"></canvas>
+        <canvas id="unity-canvas" width="960" height="600" tabindex="0" aria-label="Игровое поле REMIX" aria-describedby="player-controls player-load-status" aria-busy="true" aria-disabled="true" data-state="loading"></canvas>
         <div id="unity-loading-container">
           <div id="unity-loading-bar">
             <div id="unity-logo"></div>
@@ -26,38 +26,71 @@
       <div id="unity-warning" aria-live="polite"> </div>
       <div id="unity-footer">
         <div id="unity-logo-title-footer"></div>
-        <button id="unity-fullscreen-button" type="button" aria-label="Развернуть игру на весь экран">На весь экран</button>
+        <button id="unity-fullscreen-button" type="button" aria-label="Развернуть игру на весь экран" disabled>На весь экран</button>
         <div id="unity-build-title">REMIX</div>
       </div>
     </div>
     <script>
-      let canvas = document.querySelector("#unity-canvas");
-      let fullscreenContainer = document.querySelector("#unity-fullscreen-container");
+      const canvas = document.querySelector("#unity-canvas");
+      const fullscreenContainer = document.querySelector("#unity-fullscreen-container");
+      const loadStatus = document.querySelector("#player-load-status");
+      const retry = document.querySelector("#player-retry");
+      const loadingContainer = document.querySelector("#unity-loading-container");
+      const progressBar = document.querySelector("#unity-progress-bar-empty");
+      const progressBarFull = document.querySelector("#unity-progress-bar-full");
+      const fullscreenButton = document.querySelector("#unity-fullscreen-button");
+      const warningBanner = document.querySelector("#unity-warning");
+      let unityInstance = null;
+      let disposed = false;
+      let failed = false;
+      let lastProgress = 0;
+      let lastProgressAt = performance.now();
+      let watchdog = null;
 
-      // Shows a temporary message banner/ribbon for a few seconds, or
-      // a permanent error message on top of the canvas if type=='error'.
-      // If type=='warning', a yellow highlight color is used.
-      // Modify or remove this function to customize the visually presented
-      // way that non-critical warnings and error messages are presented to the
-      // user.
+      // A slow connection may still finish. Offer recovery after 90 seconds
+      // without progress, but never cancel a legitimate download or compile.
+      function watchProgress() {
+        clearInterval(watchdog);
+        watchdog = setInterval(() => {
+          if (disposed || failed || unityInstance || document.hidden) return;
+          if (performance.now() - lastProgressAt >= 90000 && canvas.dataset.state !== 'stalled') {
+            canvas.dataset.state = 'stalled';
+            loadStatus.textContent = 'Давно нет обновления загрузки. Соединение или подготовка игры могут быть медленными. Можно подождать или повторить загрузку.';
+            retry.hidden = false;
+          }
+        }, 1000);
+      }
+
+      function failLoad(message) {
+        if (disposed || failed) return;
+        failed = true;
+        clearInterval(watchdog);
+        canvas.dataset.state = 'error';
+        canvas.setAttribute('aria-busy', 'false');
+        canvas.setAttribute('aria-disabled', 'true');
+        fullscreenButton.disabled = true;
+        loadingContainer.style.display = 'none';
+        loadStatus.textContent = message;
+        retry.hidden = false;
+      }
+
+      // Keep diagnostic text inert. An engine error must not be mistaken for
+      // a successful launch even if its initialization promise resolves later.
       function unityShowBanner(msg, type) {
-        var warningBanner = document.querySelector("#unity-warning");
-        function updateBannerVisibility() {
-          warningBanner.style.display = warningBanner.children.length ? 'block' : 'none';
-        }
-        var div = document.createElement('div');
+        if (disposed) return;
+        const div = document.createElement('div');
         div.textContent = String(msg);
+        div.className = type === 'error' ? 'unity-message-error' : 'unity-message-warning';
         warningBanner.appendChild(div);
-        if (type == 'error') { document.querySelector('#player-load-status').textContent='Не удалось запустить игру. Проверьте поддержку WebGL и повторите загрузку.'; document.querySelector('#player-retry').hidden=false; document.querySelector('#unity-loading-container').style.display='none'; }
-        if (type == 'error') div.style = 'background: #b42318; color: white; padding: 12px 16px; border-radius: 6px; font-family: Arial, sans-serif;';
-        else {
-          if (type == 'warning') div.style = 'background: yellow; padding: 10px;';
-          setTimeout(function() {
-            warningBanner.removeChild(div);
-            updateBannerVisibility();
+        warningBanner.style.display = 'block';
+        if (type === 'error') {
+          failLoad('Не удалось запустить игру. Проверьте соединение и поддержку WebGL 2, затем повторите загрузку.');
+        } else {
+          setTimeout(() => {
+            div.remove();
+            warningBanner.style.display = warningBanner.children.length ? 'block' : 'none';
           }, 5000);
         }
-        updateBannerVisibility();
       }
 
       var buildUrl = "Build";
@@ -78,12 +111,6 @@
         productName: "REMIX",
         productVersion: "1.0",
         showBanner: unityShowBanner,
-        // errorHandler: function(err, url, line) {
-        //    alert("error " + err + " occurred at line " + line);
-        //    // Return 'true' if you handled this error and don't want Unity
-        //    // to process it further, 'false' otherwise.
-        //    return true;
-        // },
       };
 
       // By default, Unity keeps WebGL canvas render target size matched with
@@ -106,10 +133,6 @@
       if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
         // Mobile device style: fill the whole browser client area with the game canvas:
 
-        var meta = document.createElement('meta');
-        meta.name = 'viewport';
-        meta.content = 'width=device-width, height=device-height, initial-scale=1.0, viewport-fit=cover';
-        document.getElementsByTagName('head')[0].appendChild(meta);
         document.querySelector("#unity-container").className = "unity-mobile";
         canvas.className = "unity-mobile";
 
@@ -125,36 +148,79 @@
       }
 
 
-      var script = document.createElement("script");
-      script.onerror = () => unityShowBanner("Не удалось загрузить файлы игры. Повторите попытку или вернитесь в каталог.", "error");
+      function releaseInstance(instance) {
+        if (!instance || typeof instance.Quit !== 'function') return;
+        // pagehide cannot wait for the promise; late completion is also freed.
+        try { Promise.resolve(instance.Quit()).catch(error => console.warn('REMIX cleanup:', error)); }
+        catch (error) { console.warn('REMIX cleanup:', error); }
+      }
+
+      canvas.addEventListener('webglcontextlost', () => {
+        failLoad('Браузер потерял графический контекст. Повторите загрузку игры. Прогресс внутри этой сборки может быть потерян.');
+      });
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) lastProgressAt = performance.now();
+      });
+      addEventListener('pagehide', event => {
+        clearInterval(watchdog);
+        if (event.persisted) return;
+        disposed = true;
+        releaseInstance(unityInstance);
+        unityInstance = null;
+      });
+      addEventListener('pageshow', event => {
+        if (event.persisted && !disposed && !failed && !unityInstance) {
+          lastProgressAt = performance.now();
+          watchProgress();
+        }
+      });
+      fullscreenButton.addEventListener('click', () => {
+        if (failed || !unityInstance) return;
+        try { unityInstance.SetFullscreen(1); }
+        catch (error) { loadStatus.textContent = 'Полноэкранный режим недоступен. Игра остаётся в этом окне.'; console.warn(error); }
+      });
+
+      const script = document.createElement("script");
+      script.onerror = () => failLoad('Не удалось загрузить файлы игры. Проверьте соединение и повторите попытку.');
       script.src = loaderUrl;
-      script.onload = () => {
-        const loadingContainer = document.querySelector("#unity-loading-container");
-        const progressBarFull = document.querySelector("#unity-progress-bar-full");
+      script.onload = async () => {
+        if (disposed || failed) return;
+        try {
+          const instance = await createUnityInstance(canvas, config, progress => {
+            if (disposed || failed || !Number.isFinite(progress)) return;
+            const value = Math.max(0, Math.min(1, progress));
+            if (value > lastProgress) {
+              lastProgress = value;
+              lastProgressAt = performance.now();
+              canvas.dataset.state = 'loading';
+              retry.hidden = true;
+            }
+            const percent = Math.round(lastProgress * 100);
+            progressBar.setAttribute('aria-valuenow', String(percent));
+            progressBarFull.style.width = percent + '%';
+            if (canvas.dataset.state !== 'stalled') {
+              loadStatus.textContent = percent < 100 ? 'Загрузка игры: ' + percent + '%' : 'Файлы загружены. Запускаем игровую сборку…';
+            }
+          });
+          if (disposed || failed) { releaseInstance(instance); return; }
+          unityInstance = instance;
+          clearInterval(watchdog);
+          loadingContainer.style.display = 'none';
+          progressBar.setAttribute('aria-valuenow', '100');
+          canvas.dataset.state = 'ready';
+          canvas.setAttribute('aria-busy', 'false');
+          canvas.setAttribute('aria-disabled', 'false');
+          retry.hidden = true;
+          fullscreenButton.disabled = false;
+          loadStatus.textContent = 'Сборка загружена. Выберите игровое поле и следуйте подсказкам.';
+        } catch (error) {
+          failLoad('Не удалось запустить игру. Проверьте соединение и поддержку WebGL 2, затем повторите загрузку.');
+          console.error('REMIX initialization:', error);
+        }
+      };
 
-        createUnityInstance(canvas, config, (progress) => {
-          const percent=Math.max(0,Math.min(100,Math.round(progress*100)));
-          document.querySelector('#unity-progress-bar-empty').setAttribute('aria-valuenow',String(percent));
-          document.querySelector('#player-load-status').textContent='Загрузка игры: '+percent+'%';
-          if (progress < 1) {
-            loadingContainer.style.display = "block";
-            progressBarFull.style.width = 100 * progress + "%";
-          } else {
-            loadingContainer.style.display = "none";
-          }
-        }).then((unityInstance) => {
-                document.querySelector('#player-load-status').textContent='Сборка загружена. Выберите игровое поле и следуйте подсказкам.';
-                document.querySelector('#unity-canvas').setAttribute('data-state','ready');
-                document.querySelector("#unity-fullscreen-button").onclick = () => {
-                  unityInstance.SetFullscreen(1);
-                };
-
-              }).catch((message) => {
-        unityShowBanner("Не удалось загрузить игру. Обновите страницу или проверьте соединение.", "error");
-        console.error(message);
-              });
-            };
-
+      loadingContainer.style.display = 'block';
+      watchProgress();
       document.body.appendChild(script);
 
     </script>
