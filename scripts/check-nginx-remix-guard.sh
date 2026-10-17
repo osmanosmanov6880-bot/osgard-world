@@ -69,6 +69,9 @@ python3 scripts/remix-guard-gateway-smoke.py "$candidate_base" playing "$candida
 fixture_phase terminal
 python3 scripts/remix-guard-gateway-smoke.py "$candidate_base" finalized "$candidate_dir/snapshot.json"
 
+# Regress the mutable fixture before replacement. A missing result volume must
+# fail this gate rather than silently refreeze an identical upstream response.
+fixture_phase playing
 # Recreate the service process/container, retaining only the named result volume.
 docker rm -f "$guard_name" >/dev/null
 start_guard
