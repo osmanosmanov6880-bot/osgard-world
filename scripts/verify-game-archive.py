@@ -74,6 +74,30 @@ def verify(archive):
                 if target not in names:
                     raise ValueError(f"{gid}: missing dependency {target}")
                 checked_dependencies+=1
+        # Legacy entries need executable shells too; their mere presence is insufficient.
+        for name in LEGACY:
+            rel=f"games/{name}/index.html"
+            html=bounded_read(z,rel,MAX_GAME_HTML_BYTES).decode("utf-8")
+            if "<html" not in html.lower() or "</html>" not in html.lower():
+                raise ValueError("invalid legacy HTML shell: "+name)
+            for raw in LOCAL_TAG.findall(html):
+                raw=raw.split("?",1)[0].split("#",1)[0]
+                if not raw or raw.startswith(("http:","https:","data:","mailto:","//","#")):
+                    continue
+                if raw.startswith("/"):
+                    target=raw.lstrip("/")
+                else:
+                    p=PurePosixPath(rel).parent/raw
+                    chunks=[]
+                    for part in p.parts:
+                        if part=="..":
+                            if not chunks: raise ValueError("dependency escapes root")
+                            chunks.pop()
+                        elif part!=".":chunks.append(part)
+                    target="/".join(chunks)
+                if target not in names:
+                    raise ValueError(f"legacy {name}: missing dependency {target}")
+                checked_dependencies+=1
         if ids!={f"zion-{i:03d}" for i in range(20,31)}:
             raise ValueError("unexpected ZION IDs")
         return {"status":"verified","zion_worlds":11,"legacy_entrypoints":len(LEGACY),
