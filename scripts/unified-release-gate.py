@@ -8,8 +8,8 @@ from pathlib import Path
 
 REQUIRED = ("code_ci", "frontend_ci", "archive", "backup_restore", "smoke")
 HASH_KEYS = ("artifact_sha256", "commit_sha")
-def sha(value):
-    return isinstance(value, str) and len(value) == 64 and all(c in "0123456789abcdef" for c in value.lower())
+def sha(value, lengths=(64,)):
+    return isinstance(value, str) and len(value) in lengths and all(c in "0123456789abcdef" for c in value.lower())
 
 def check(record, artifact=None):
     problems = []
@@ -18,8 +18,8 @@ def check(record, artifact=None):
     if not isinstance(record.get("release_id"), str) or not record["release_id"].strip():
         problems.append("release_id missing")
     for key in HASH_KEYS:
-        if not sha(record.get(key)):
-            problems.append(f"{key} is not a SHA-256/commit-style hex string")
+        if not sha(record.get(key), (40, 64) if key == "commit_sha" else (64,)):
+            problems.append(f"{key} is not a valid hex digest (Git commit 40/64, artifact 64)")
     for key in REQUIRED:
         entry = record.get("checks", {}).get(key) if isinstance(record.get("checks"), dict) else None
         if not isinstance(entry, dict) or entry.get("status") != "passed" or not isinstance(entry.get("evidence_url"), str) or not entry["evidence_url"].startswith("https://"):
