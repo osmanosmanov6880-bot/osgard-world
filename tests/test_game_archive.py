@@ -29,6 +29,25 @@ class GameArchiveTests(unittest.TestCase):
         d=m.verify(self.pack())
         self.assertEqual((d["zion_worlds"],d["legacy_entrypoints"]),(11,8))
         self.assertEqual(d["local_dependencies_checked"],11)
+    def test_manifest_array_rejected(self):
+        self.pack()
+        with zipfile.ZipFile(self.file,"a") as z:
+            z.writestr("games/zion-9/worlds.json",json.dumps([1,2,3]))
+        # Duplicate archive entries are independently rejected.
+        with self.assertRaisesRegex(ValueError,"duplicate ZIP"):
+            m.verify(self.file)
+    def test_manifest_non_object_game_rejected(self):
+        self.worlds[0]=None
+        with self.assertRaisesRegex(ValueError,"must be object"):
+            m.verify(self.pack())
+    def test_manifest_non_string_id_rejected(self):
+        self.worlds[0]["id"]=123
+        with self.assertRaisesRegex(ValueError,"invalid ZION game ID"):
+            m.verify(self.pack())
+    def test_manifest_unknown_id_rejected(self):
+        self.worlds[0]["id"]="zion-999"
+        with self.assertRaisesRegex(ValueError,"invalid ZION game ID"):
+            m.verify(self.pack())
     def test_missing_game(self):
         self.files.pop("games/zion-9/queue/ZION-030/index.html")
         with self.assertRaisesRegex(ValueError,"missing game routes"):m.verify(self.pack())
