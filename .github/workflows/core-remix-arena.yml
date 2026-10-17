@@ -1,0 +1,56 @@
+name: Core REMIX arena opt-in integration
+
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - "server/core_server.py"
+      - "server/remix_service.py"
+      - "server/remix_acceptance.py"
+      - "public/games/remix/arena/**"
+      - "scripts/remix-server-acceptance.py"
+      - "scripts/remix-ui-acceptance.py"
+      - "scripts/remix-ui-regressions.mjs"
+      - "tests/test_remix_service.py"
+      - ".github/workflows/core-remix-arena.yml"
+      - "package.json"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  isolated-core-arena:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install pinned Core dependencies
+        run: python -m pip install -r server/requirements.txt
+      - name: Compile unchanged INHERIT and new REMIX modules
+        run: python -m py_compile server/core_server.py server/core_inherit.py server/remix_service.py server/remix_acceptance.py
+      - name: Exercise actual actor ownership, active history, replay and idempotency
+        run: python -m unittest discover -s tests -p 'test_remix_service.py' -v
+      - name: Verify legacy account-owned REMIX remains isolated
+        run: |
+          python -m unittest discover -s tests -p 'test_remix_service_contract.py' -v
+          python -m unittest discover -s tests -p 'test_remix_participants*.py' -v
+      - name: Install immutable frontend dependencies and build actual assets
+        run: |
+          npm ci
+          npm run build
+      - name: Verify the live Core arena through the real loopback HTTP server
+        run: npm run qa:remix-arena-server
+      - name: Install isolated Chromium acceptance tooling
+        run: |
+          npm install --no-save --package-lock=false playwright@1.58.2
+          npx playwright install chromium
+      - name: Verify actual account login, match history and lost response recovery in browser
+        run: npm run qa:remix-arena-ui

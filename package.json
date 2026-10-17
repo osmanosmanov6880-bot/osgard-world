@@ -28,6 +28,8 @@
     "qa:null-shift-godot": "node scripts/null-shift-godot-smoke.mjs",
     "qa:partners-page": "node scripts/partners-page-smoke.mjs",
     "qa:ecosystem": "node scripts/ecosystem-integrity-smoke.mjs",
+    "qa:remix-arena-server": "python3 scripts/remix-server-acceptance.py --dist dist --out test-results/remix-arena-server.json",
+    "qa:remix-arena-ui": "python3 scripts/remix-ui-acceptance.py --dist dist --out test-results/remix-arena-ui",
     "qa:remix-growth": "node scripts/remix-growth-smoke.mjs",
     "qa:academy": "node scripts/academy-home-smoke.mjs",
     "qa:lectures": "node scripts/lecture-library-smoke.mjs",
