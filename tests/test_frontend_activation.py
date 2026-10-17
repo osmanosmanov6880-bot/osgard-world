@@ -8,6 +8,7 @@ to verify actual signals, reaping and lock ownership across a lost caller.
 
 from contextlib import contextmanager
 from pathlib import Path
+import json
 import os
 import re
 import shlex
@@ -300,6 +301,81 @@ class ActivationRecoveryTests(unittest.TestCase):
                                        text=True, capture_output=True, env={"PATH": "/nonexistent"}, timeout=2)
             self.assertEqual(completed.returncode, 1)
             self.assertFalse(lock.exists())
+
+
+class OwnedRolloutTests(unittest.TestCase):
+    def run_gate(self, flag="1", probe_status=0, metadata=None, inspect_status=0):
+        if metadata is None:
+            metadata = {"network": "fixture-network", "ports": {"8080/tcp": None}}
+        with tempfile.TemporaryDirectory(prefix="osgard-owned-rollout-") as directory:
+            calls = Path(directory) / "calls"
+            calls.write_text("")
+            values = {"remix_owned_creation": flag, "fixture_probe_status": str(probe_status),
+                      "fixture_inspect_status": str(inspect_status), "fixture_metadata": json.dumps(metadata),
+                      "fixture_calls": str(calls)}
+            assignments = "\n".join(f"{key}={shlex.quote(value)}" for key, value in values.items())
+            script = "set -euo pipefail\n" + assignments + r'''
+docker() {
+  printf '%s\n' "$1" >> "$fixture_calls"
+  case "$1" in
+    exec) return "$fixture_probe_status" ;;
+    inspect) printf '%s\n' "$fixture_metadata"; return "$fixture_inspect_status" ;;
+    *) return 99 ;;
+  esac
+}
+''' + shell_function("verify_remix_owned_rollout") + "\nverify_remix_owned_rollout\n"
+            result = subprocess.run(["/bin/bash", "--noprofile", "--norc"], input=script,
+                                    text=True, capture_output=True, timeout=4,
+                                    env={"PATH": os.environ.get("PATH", "/usr/bin:/bin")})
+            return result, calls.read_text().splitlines()
+
+    def test_disabled_foundation_needs_no_prior_auth_build(self):
+        result, calls = self.run_gate(flag="0", probe_status=1)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(calls, [])
+
+    def test_invalid_creation_setting_fails_before_docker(self):
+        for flag in ("", "true", "2", "1; echo invalid"):
+            with self.subTest(flag=flag):
+                result, calls = self.run_gate(flag=flag)
+                self.assertEqual(result.returncode, 1)
+                self.assertEqual(calls, [])
+
+    def test_unverified_old_guard_cannot_be_the_enabled_release_rollback(self):
+        result, calls = self.run_gate(probe_status=1)
+        self.assertEqual(result.returncode, 1)
+        self.assertEqual(calls, ["exec"])
+        self.assertIn("Deploy the disabled foundation first", result.stderr)
+
+    def test_public_legacy_ports_are_rejected(self):
+        for address in ("0.0.0.0", "::", "198.51.100.12", ""):
+            with self.subTest(address=address):
+                result, calls = self.run_gate(metadata={"network": "fixture-network", "ports": {
+                    "8080/tcp": [{"HostIp": address, "HostPort": "8080"}]}})
+                self.assertEqual(result.returncode, 1)
+                self.assertEqual(calls, ["exec", "inspect"])
+
+    def test_unpublished_and_loopback_only_legacy_ports_are_accepted(self):
+        for ports in ({"8080/tcp": None}, {}, {"8080/tcp": [
+                {"HostIp": "127.0.0.1", "HostPort": "8080"}, {"HostIp": "::1", "HostPort": "8080"}]}):
+            with self.subTest(ports=ports):
+                result, calls = self.run_gate(metadata={"network": "fixture-network", "ports": ports})
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(calls, ["exec", "inspect"])
+
+    def test_shared_host_network_or_unavailable_metadata_fails_closed(self):
+        for network in ("host", "container:other-fixture"):
+            result, _ = self.run_gate(metadata={"network": network, "ports": {}})
+            self.assertEqual(result.returncode, 1)
+        result, _ = self.run_gate(metadata={"unrecognized": True})
+        self.assertEqual(result.returncode, 1)
+        result, _ = self.run_gate(inspect_status=1)
+        self.assertEqual(result.returncode, 1)
+
+    def test_rollout_gate_precedes_any_service_replacement(self):
+        call = ACTIVATION.index("\n  verify_remix_owned_rollout\n")
+        self.assertLess(call, ACTIVATION.index("docker stop osgard-core-api"))
+        self.assertLess(call, ACTIVATION.index("docker stop osgard-remix-guard"))
 
 
 if __name__ == "__main__":

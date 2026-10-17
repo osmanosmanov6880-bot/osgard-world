@@ -88,8 +88,10 @@
     "qa:remix-contract": "python3 -m unittest discover -s tests -p test_remix_service_contract.py -v",
     "qa:remix-health": "python3 scripts/remix-service-contract-smoke.py",
     "qa:remix-guard": "python3 -m unittest discover -s tests -p test_remix_guard.py -v",
+    "qa:remix-owned": "python3 scripts/remix-owned-contract-tests.py",
     "qa:remix-legacy": "node scripts/remix-legacy-integrity-smoke.mjs",
     "qa:nginx-remix-guard": "bash scripts/check-nginx-remix-guard.sh",
+    "qa:nginx-remix-owned": "bash scripts/check-nginx-remix-owned.sh",
     "qa:remix-unity-status": "node scripts/remix-unity-status-check.mjs",
     "qa:activation": "python3 -m unittest discover -s tests -p test_frontend_activation.py -v"
   },

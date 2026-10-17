@@ -19,9 +19,23 @@ from test_remix_guard import Legacy, LegacyHandler, MATCH, PLAYER
 
 
 class FixtureHandler(LegacyHandler):
+    def answer(self, status, value, content_type="application/json"):
+        # Match the observed create DTO in the isolated gateway fixture.
+        if self.path == "/v1/matches" and status == 201 and isinstance(value, dict):
+            value = dict(value, createdAt="2026-10-17T00:00:00Z")
+        return super().answer(status, value, content_type)
+
     def do_GET(self):
         if urlsplit(self.path).path == "/__fixture/echo":
             return self.answer(200, {"path": self.path})
+        if urlsplit(self.path).path == "/__fixture/ownership-evidence":
+            with self.server.legacy.lock:
+                calls = self.server.legacy.calls
+                return self.answer(200, {
+                    "creates": sum(method == "POST" and path == "/v1/matches" for method, path, _, _ in calls),
+                    "inputs": sum(method == "POST" and path.endswith("/input") for method, path, _, _ in calls),
+                    "credentialHeaders": sum(any(key.lower() in ("authorization", "cookie") for key in headers) for _, _, _, headers in calls),
+                })
         return super().do_GET()
 
     def do_POST(self):
@@ -41,6 +55,9 @@ class FixtureHandler(LegacyHandler):
                     legacy.state.update(phase="PLAYING", remainingMs=30000)
                 elif path == "/__fixture/terminal":
                     legacy.terminal()
+                elif path == "/__fixture/owned-terminal":
+                    # Preserve the random authenticated player's existing score.
+                    legacy.state.update(phase="RESULTS", remainingMs=0)
                 else:
                     return self.answer(404, {"error": "unknown fixture control"})
                 return self.answer(200, legacy.state)

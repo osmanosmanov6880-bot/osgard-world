@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 """REMIX phase guard and durable terminal snapshots for the existing HTTP API.
 
-This is original proxy code, not the legacy game implementation. One process
-must own a database. It serializes requests for the same match, blocks input
-outside a verified playing phase, and never changes a persisted terminal result.
-Active matches, player identity, simulation, and complete replays remain upstream.
+This is original proxy code, not the legacy game implementation. Cooperating
+ACL-aware processes share one local SQLite volume and its admission locks. The
+guard serializes match requests, blocks input outside a verified playing phase,
+and never changes a persisted terminal result. Optional v2 ownership verifies a
+live Core session on every protected request; anonymous legacy matches remain
+anonymous. Protected creation is disabled unless explicitly enabled. Simulation,
+active-match recovery, and complete replay verification remain unavailable here.
 The read-before-write gate cannot make the legacy simulator's phase expiry
 atomic. The durable guarantee starts at the first observed terminal phase.
 """
@@ -15,6 +18,8 @@ import argparse
 from contextlib import closing, contextmanager
 from dataclasses import dataclass
 from datetime import datetime, timezone
+import errno
+import fcntl
 import hashlib
 import http.client
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -23,23 +28,93 @@ import math
 import os
 from pathlib import Path
 import re
+import secrets
 import socket
 import sqlite3
+import stat
 import threading
 import time
-from urllib.parse import urlsplit
+from urllib.parse import parse_qs, urlsplit
 
 
 VERSION = 1
+AUTH_POLICY_VERSION = 1
+OWNED_SCHEMA_VERSION = 2
 MAX_WORKERS = 32
 MAX_BODY = 256 * 1024
 MAX_RESPONSE = 1024 * 1024
 MAX_SAFE_INTEGER = 2 ** 53 - 1
 ID = r"[A-Za-z0-9][A-Za-z0-9_.-]{0,127}"
 MATCH_ROUTE = re.compile(r"^/v1/matches/(?P<id>" + ID + r")/(?P<action>state|result|input)$")
+OWNED_MATCH_ROUTE = re.compile(r"^/v2/matches/(?P<id>" + ID + r")(?:/(?P<action>state|result|input))?$")
+ATTEMPT_ROUTE = re.compile(r"^/v2/creation-attempts/(?P<key>[A-Za-z0-9_-]{16,100})$")
 PHASES = {"WAITING", "COUNTDOWN", "PLAYING", "RUNNING", "RESULTS"}
 HOP_HEADERS = {"connection", "keep-alive", "proxy-authenticate", "proxy-authorization",
                "te", "trailer", "transfer-encoding", "upgrade", "host", "content-length"}
+
+
+def field_header(headers, name):
+    values = [value for key, value in headers.items() if key.lower() == name.lower()]
+    if len(values) > 1:
+        raise GuardError("request_headers", "Duplicate authorization or operation header.", 400)
+    return values[0] if values else ""
+
+
+def request_object(body):
+    try:
+        value = decode_json(body)
+    except GuardError as error:
+        raise GuardError("invalid_request", "Send one valid JSON object.", 400) from error
+    if not isinstance(value, dict):
+        raise GuardError("invalid_request", "Send one valid JSON object.", 400)
+    return value
+
+
+class VolumeLocks:
+    """Separate open-file descriptions: flock coordinates threads and processes.
+
+    Lock order is admission SH/EX -> local match stripe -> file match stripe ->
+    SQLite. No client value is used as a filename. A dead process releases its
+    lease. An unknown orphan is never adopted or presented as protected.
+    """
+    def __init__(self, directory):
+        self.directory = Path(directory)
+
+    @contextmanager
+    def lease(self, name, exclusive, deadline):
+        expiry = min(deadline, time.monotonic() + 2)
+        directory = os.open(self.directory, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_CLOEXEC)
+        fd = None
+        try:
+            fd = os.open(name, os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW | os.O_CLOEXEC, 0o600, dir_fd=directory)
+            info = os.fstat(fd)
+            current = os.stat(name, dir_fd=directory, follow_symlinks=False)
+            if (not stat.S_ISREG(info.st_mode) or info.st_nlink != 1 or info.st_uid != os.geteuid()
+                    or info.st_mode & 0o077 or (info.st_dev, info.st_ino) != (current.st_dev, current.st_ino)):
+                raise OSError("Unsafe REMIX lock file")
+            mode = fcntl.LOCK_EX if exclusive else fcntl.LOCK_SH
+            while True:
+                if time.monotonic() >= expiry:
+                    raise GuardError("match_busy", "Match admission is busy. Retry this read later.")
+                try:
+                    fcntl.flock(fd, mode | fcntl.LOCK_NB)
+                    break
+                except OSError as error:
+                    if error.errno not in (errno.EAGAIN, errno.EACCES):
+                        raise
+                    time.sleep(min(0.01, max(0, expiry - time.monotonic())))
+            yield
+        finally:
+            if fd is not None:
+                os.close(fd)
+            os.close(directory)
+
+    def admission(self, exclusive, deadline):
+        return self.lease("remix-admission.lock", exclusive, deadline)
+
+    def match(self, match_id, deadline):
+        stripe = hashlib.sha256(match_id.encode()).digest()[0]
+        return self.lease(f"remix-match-{stripe:02x}.lock", True, deadline)
 
 
 class GuardError(Exception):
@@ -141,16 +216,17 @@ def validate_result(value, match_id, state):
 
 
 class SnapshotStore:
-    """Only server state/result DTOs and operational timestamps are persisted."""
+    """Snapshots, ownership, submission counters and creation intents; no sessions."""
 
     def __init__(self, path):
+        self.request_context = threading.local()
         self.path = Path(path).absolute()
         if self.path.is_symlink():
             raise ValueError("The guard database cannot be a symlink.")
         self.path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
         with self.connect() as db:
             version = db.execute("PRAGMA user_version").fetchone()[0]
-            if version not in (0, VERSION):
+            if version not in (0, VERSION, OWNED_SCHEMA_VERSION):
                 raise ValueError("Unsupported REMIX guard database version.")
             if db.execute("PRAGMA quick_check").fetchone()[0] != "ok":
                 raise ValueError("REMIX guard database integrity check failed.")
@@ -165,17 +241,35 @@ class SnapshotStore:
                 CHECK(result_json IS NULL OR (state_json IS NOT NULL AND finalized_at IS NOT NULL)))""")
             db.execute("CREATE TABLE IF NOT EXISTS guard_health(id INTEGER PRIMARY KEY CHECK(id=1), sequence INTEGER NOT NULL)")
             db.execute("INSERT OR IGNORE INTO guard_health VALUES(1,0)")
-            db.execute(f"PRAGMA user_version={VERSION}")
+            db.execute("""CREATE TABLE IF NOT EXISTS owned_matches(
+                match_id TEXT PRIMARY KEY, owner_id TEXT NOT NULL, player_id TEXT NOT NULL,
+                match_json TEXT NOT NULL, highest_submitted_sequence INTEGER NOT NULL DEFAULT 0
+                CHECK(highest_submitted_sequence>=0))""")
+            db.execute("CREATE INDEX IF NOT EXISTS owned_matches_owner ON owned_matches(owner_id,match_id)")
+            db.execute("""CREATE TABLE IF NOT EXISTS owned_creation_attempts(
+                owner_id TEXT NOT NULL, operation_key TEXT NOT NULL, request_hash TEXT NOT NULL,
+                status TEXT NOT NULL CHECK(status IN ('dispatching','ready','rejected','uncertain')),
+                match_id TEXT, upstream_status INTEGER, created_at TEXT NOT NULL,
+                PRIMARY KEY(owner_id,operation_key))""")
+            db.execute("CREATE TABLE IF NOT EXISTS anonymous_matches(match_id TEXT PRIMARY KEY)")
+            # Empty ACL tables remain rollback-compatible with the old guard.
+            # The first protected reservation raises this to 2 atomically; a
+            # subsequent ACL-aware start or disabled-creation rollback never lowers it.
+            if db.execute("PRAGMA user_version").fetchone()[0] == 0:
+                db.execute(f"PRAGMA user_version={VERSION}")
             db.commit()
         os.chmod(self.path, 0o600)
 
     @contextmanager
     def connect(self):
         # Existing requests use this same fixed path; no client value becomes a filename.
-        with closing(sqlite3.connect(self.path, timeout=2, isolation_level=None)) as db:
+        remaining = min(2, getattr(self.request_context, "deadline", time.monotonic() + 2) - time.monotonic())
+        if remaining <= 0:
+            raise GuardError("storage_timeout", "The storage deadline expired. No further request was forwarded.")
+        with closing(sqlite3.connect(self.path, timeout=remaining, isolation_level=None)) as db:
             db.row_factory = sqlite3.Row
             db.execute("PRAGMA synchronous=FULL")
-            db.execute("PRAGMA busy_timeout=2000")
+            db.execute(f"PRAGMA busy_timeout={max(1, int(remaining * 1000))}")
             try:
                 yield db
             finally:
@@ -189,6 +283,85 @@ class SnapshotStore:
             db.execute("BEGIN IMMEDIATE")
             db.execute("UPDATE guard_health SET sequence=(sequence+1)%1000000 WHERE id=1")
             require(db.execute("SELECT changes()").fetchone()[0] == 1, "Guard metadata is missing.")
+            db.commit()
+
+    def schema_version(self):
+        with self.connect() as db:
+            return db.execute("PRAGMA user_version").fetchone()[0]
+
+    def owner(self, match_id):
+        with self.connect() as db:
+            row = db.execute("SELECT * FROM owned_matches WHERE match_id=?", (match_id,)).fetchone()
+            if row is None:
+                return None
+            value = dict(row)
+            require(isinstance(value["owner_id"], str) and re.fullmatch(ID, value["owner_id"])
+                    and isinstance(value["player_id"], str) and re.fullmatch(ID, value["player_id"])
+                    and natural(value["highest_submitted_sequence"]), "Invalid stored ownership record.")
+            return value
+
+    def register_anonymous(self, match_id):
+        with self.connect() as db:
+            db.execute("BEGIN IMMEDIATE")
+            require(db.execute("SELECT 1 FROM owned_matches WHERE match_id=?", (match_id,)).fetchone() is None,
+                    "An owned match cannot become anonymous.")
+            db.execute("INSERT OR IGNORE INTO anonymous_matches VALUES(?)", (match_id,))
+            db.commit()
+
+    def metadata(self, owned):
+        value = decode_json(owned["match_json"])
+        require(isinstance(value, dict) and value.get("id") == owned["match_id"], "Invalid stored match metadata.")
+        return dict(value, playerId=owned["player_id"], highestSubmittedSequence=owned["highest_submitted_sequence"],
+                    accessMode="core-owned")
+
+    def list_owned(self, owner_id, after=""):
+        with self.connect() as db:
+            ids = [row[0] for row in db.execute("SELECT match_id FROM owned_matches WHERE owner_id=? AND match_id>? ORDER BY match_id LIMIT 51", (owner_id, after))]
+        return {"matches": [self.metadata(self.owner(identifier)) for identifier in ids[:50]],
+                "nextCursor": ids[49] if len(ids) > 50 else None}
+
+    def attempt(self, owner_id, key):
+        with self.connect() as db:
+            row = db.execute("SELECT * FROM owned_creation_attempts WHERE owner_id=? AND operation_key=?", (owner_id, key)).fetchone()
+            return dict(row) if row is not None else None
+
+    def reserve_creation(self, owner_id, key, request_hash):
+        with self.connect() as db:
+            db.execute("BEGIN IMMEDIATE")
+            require(db.execute("SELECT COUNT(*) FROM owned_creation_attempts WHERE owner_id=?", (owner_id,)).fetchone()[0] < 1000,
+                    "The account creation-history limit has been reached.")
+            db.execute(f"PRAGMA user_version={OWNED_SCHEMA_VERSION}")
+            db.execute("INSERT INTO owned_creation_attempts VALUES(?,?,?,'dispatching',NULL,NULL,?)",
+                       (owner_id, key, request_hash, datetime.now(timezone.utc).isoformat()))
+            db.commit()
+
+    def finish_creation(self, owner_id, key, status, upstream_status=None):
+        with self.connect() as db:
+            db.execute("BEGIN IMMEDIATE")
+            db.execute("UPDATE owned_creation_attempts SET status=?,upstream_status=? WHERE owner_id=? AND operation_key=? AND status='dispatching'",
+                       (status, upstream_status, owner_id, key))
+            db.commit()
+
+    def bind_creation(self, owner_id, key, match, player_id):
+        with self.connect() as db:
+            db.execute("BEGIN IMMEDIATE")
+            require(db.execute("SELECT 1 FROM owned_creation_attempts WHERE owner_id=? AND operation_key=? AND status='dispatching'", (owner_id, key)).fetchone() is not None,
+                    "The protected creation reservation is missing.")
+            identifier = match["id"]
+            require(db.execute("SELECT 1 FROM anonymous_matches WHERE match_id=? UNION ALL SELECT 1 FROM terminal_matches WHERE match_id=? LIMIT 1", (identifier, identifier)).fetchone() is None,
+                    "An existing anonymous match cannot be claimed.")
+            db.execute("INSERT INTO owned_matches VALUES(?,?,?,?,0)", (identifier, owner_id, player_id, canonical(match)))
+            db.execute("UPDATE owned_creation_attempts SET status='ready',match_id=?,upstream_status=201 WHERE owner_id=? AND operation_key=?", (identifier, owner_id, key))
+            db.commit()
+
+    def submit_sequence(self, match_id, owner_id, sequence):
+        with self.connect() as db:
+            db.execute("BEGIN IMMEDIATE")
+            row = db.execute("SELECT owner_id,highest_submitted_sequence FROM owned_matches WHERE match_id=?", (match_id,)).fetchone()
+            require(row is not None and row["owner_id"] == owner_id, "The protected ownership record changed.")
+            if sequence <= row["highest_submitted_sequence"]:
+                raise GuardError("stale_input_sequence", "Use a sequence above the highest submitted sequence.", 409)
+            db.execute("UPDATE owned_matches SET highest_submitted_sequence=? WHERE match_id=?", (sequence, match_id))
             db.commit()
 
     def _decode(self, row):
@@ -258,13 +431,16 @@ class Reply:
 
 
 class Upstream:
-    def __init__(self, base, timeout=3):
+    def __init__(self, base, timeout=3, trusted_host=None):
         parsed = urlsplit(base)
         if (parsed.scheme not in ("http", "https") or not parsed.hostname or parsed.username is not None
                 or parsed.password is not None or parsed.path not in ("", "/") or parsed.query or parsed.fragment):
             raise ValueError("The upstream must be one fixed HTTP(S) origin without credentials or a path.")
         self.host, self.port, self.scheme = parsed.hostname, parsed.port, parsed.scheme
         self.timeout = timeout
+        if trusted_host is not None and not re.fullmatch(r"[A-Za-z0-9.-]+(?::[0-9]{1,5})?", trusted_host):
+            raise ValueError("The trusted Core Host must be a fixed hostname with an optional port.")
+        self.trusted_host = trusted_host
 
     def request(self, method, target, body, headers, deadline):
         now = time.monotonic()
@@ -277,6 +453,8 @@ class Upstream:
         forwarded = {name: value for name, value in headers.items() if name.lower() not in HOP_HEADERS | {"accept-encoding"}}
         forwarded["Accept-Encoding"] = "identity"
         forwarded["Connection"] = "close"
+        if self.trusted_host is not None:
+            forwarded["Host"] = self.trusted_host
         # A fresh direct connection does not consult HTTP_PROXY, follow redirects,
         # or retry a POST. Its host can never be selected through a request target.
         response = None
@@ -348,10 +526,42 @@ class Upstream:
             connection.close()
 
 
+class CoreVerifier:
+    def __init__(self, base="http://core-api:4173", trusted_host="osgard.world", timeout=3):
+        self.upstream = Upstream(base, timeout, trusted_host)
+
+    def actor(self, headers, deadline):
+        authorization = field_header(headers, "Authorization")
+        if not isinstance(authorization, str) or not re.fullmatch(r"Bearer [A-Za-z0-9_-]{40,100}", authorization):
+            raise GuardError("authentication_required", "Sign in to your Core account for this match.", 401)
+        try:
+            reply = self.upstream.request("GET", "/api/core/auth/me", None,
+                                          {"Authorization": authorization, "Accept": "application/json"}, deadline)
+            if reply.status == 401:
+                raise GuardError("authentication_required", "Your Core session expired or was revoked. Sign in again.", 401)
+            require(reply.status == 200, "Core authentication is unavailable.")
+            value = reply.object()
+            require(isinstance(value, dict) and set(value) == {"user"} and isinstance(value["user"], dict),
+                    "Invalid Core identity response.")
+            user = value["user"]
+            require(set(user) == {"id", "username"} and isinstance(user["id"], str)
+                    and re.fullmatch(ID, user["id"]) and isinstance(user["username"], str)
+                    and re.fullmatch(r"[a-z0-9_.-]{3,64}", user["username"]), "Invalid Core identity response.")
+            return user["id"]
+        except GuardError as error:
+            if error.status == 401:
+                raise
+            raise GuardError("authentication_unavailable", "Core could not verify this session. No protected input was forwarded.") from error
+
+
 class Guard:
-    def __init__(self, database, upstream="http://remix-api:8080", timeout=3, budget=10):
+    def __init__(self, database, upstream="http://remix-api:8080", timeout=3, budget=10,
+                 core_upstream="http://core-api:4173", core_host="osgard.world", enable_owned_creation=False):
         self.store = SnapshotStore(database)
         self.upstream = Upstream(upstream, timeout)
+        self.core = CoreVerifier(core_upstream, core_host, timeout)
+        self.enable_owned_creation = bool(enable_owned_creation)
+        self.files = VolumeLocks(self.store.path.parent)
         self.budget = budget
         self.locks = [threading.Lock() for _ in range(256)]
 
@@ -359,7 +569,10 @@ class Guard:
         return self.locks[hashlib.sha256(match_id.encode()).digest()[0]]
 
     def _request(self, method, target, body, headers, deadline):
-        return self.upstream.request(method, target, body, headers, deadline)
+        # Legacy never receives a Core bearer, browser cookie or claimed identity header.
+        safe = {name: value for name, value in headers.items()
+                if name.lower() not in {"authorization", "cookie", "proxy-authorization", "x-user", "x-user-id"}}
+        return self.upstream.request(method, target, body, safe, deadline)
 
     def _state(self, match_id, headers, deadline):
         reply = self._request("GET", f"/v1/matches/{match_id}/state", None, headers, deadline)
@@ -389,15 +602,104 @@ class Guard:
         result = validate_result(reply.object(), match_id, state)
         return self.store.finalize(match_id, state, result)
 
+    def capabilities(self):
+        return {"authPolicyVersion": AUTH_POLICY_VERSION, "creationEnabled": self.enable_owned_creation,
+                "provider": "core", "ownershipPolicy": "confirmed-durable-binding",
+                "legacyMatches": "anonymous", "activeMatchRecovery": False, "replayVerification": False}
+
+    def _attempt_reply(self, owner_id, key, attempt, creation=False):
+        if attempt["status"] == "ready":
+            owned = self.store.owner(attempt["match_id"])
+            require(owned is not None and owned["owner_id"] == owner_id, "Stored creation ownership is invalid.")
+            value = self.store.metadata(owned)
+            return Reply.json(201, value) if creation else Reply.json(200, {"status": "ready", "match": value})
+        if attempt["status"] == "dispatching":
+            # Every caller holds admission SH/EX, so a live creator cannot still
+            # be dispatching under its exclusive lease. Commit crash recovery as
+            # uncertain; no missing upstream ID can be adopted from this intent.
+            self.store.finish_creation(owner_id, key, "uncertain")
+        status = "uncertain" if attempt["status"] in ("dispatching", "uncertain") else "rejected"
+        value = {"status": status, "operationKey": key}
+        if creation:
+            value.update(error="creation_" + status,
+                         message="This creation was not retried. Check the existing attempt before starting another match.")
+        return Reply.json(409 if creation else 200, value)
+
+    def _owned_create(self, body, headers, deadline):
+        if not self.enable_owned_creation:
+            raise GuardError("owned_creation_disabled", "Account-owned creation is not enabled in this release.", 403)
+        actor = self.core.actor(headers, deadline)
+        value = request_object(body)
+        if (set(value) != {"challengeId", "maxPlayers"} or not isinstance(value["challengeId"], str)
+                or not re.fullmatch(ID, value["challengeId"]) or type(value["maxPlayers"]) is not int or value["maxPlayers"] != 2):
+            raise GuardError("invalid_request", "Owned creation requires challengeId and maxPlayers: 2 only.", 400)
+        key = field_header(headers, "Idempotency-Key")
+        if not re.fullmatch(r"[A-Za-z0-9_-]{16,100}", key):
+            raise GuardError("operation_key", "Provide an Idempotency-Key with 16 to 100 letters, digits, underscores or hyphens.", 400)
+        encoded = canonical(value).encode()
+        request_hash = hashlib.sha256(encoded).hexdigest()
+        with self.files.admission(True, deadline):
+            previous = self.store.attempt(actor, key)
+            if previous is not None:
+                if previous["request_hash"] != request_hash:
+                    raise GuardError("operation_conflict", "This operation key belongs to a different creation request.", 409)
+                return self._attempt_reply(actor, key, previous, True)
+            self.store.reserve_creation(actor, key, request_hash)
+            try:
+                # Nothing linking this request to an account or player is sent
+                # upstream before the confirmed binding. A crash may leave an
+                # empty, unlinked orphan; it is never adopted or retried.
+                reply = self._request("POST", "/v1/matches", encoded, {"Content-Type": "application/json"}, deadline)
+                if reply.status != 201:
+                    rejected = 400 <= reply.status < 500
+                    self.store.finish_creation(actor, key, "rejected" if rejected else "uncertain", reply.status)
+                    return self._attempt_reply(actor, key, self.store.attempt(actor, key), True)
+                match = reply.object()
+                require(isinstance(match, dict) and set(match) == {"id", "challengeId", "maxPlayers", "createdAt"}
+                        and isinstance(match["id"], str) and re.fullmatch(ID, match["id"])
+                        and match["challengeId"] == value["challengeId"]
+                        and type(match["maxPlayers"]) is int and match["maxPlayers"] == 2
+                        and isinstance(match["createdAt"], str) and 1 <= len(match["createdAt"]) <= 100,
+                        "The service did not confirm the requested new match.")
+                state_reply = self._request("GET", f"/v1/matches/{match['id']}/state", None, {}, deadline)
+                require(state_reply.status == 200, "The new match state is unavailable.")
+                state = validate_state(state_reply.object(), match["id"])
+                require(state["players"] == 0 and state["replayFrames"] == 0 and state["scores"] == [],
+                        "A nonempty or existing match cannot be registered as newly owned.")
+                self.store.bind_creation(actor, key, match, "corep_" + secrets.token_hex(16))
+                return Reply.json(201, self.store.metadata(self.store.owner(match["id"])))
+            except (GuardError, sqlite3.Error, OSError) as error:
+                try:
+                    self.store.finish_creation(actor, key, "uncertain")
+                except (GuardError, sqlite3.Error, OSError):
+                    pass  # The durable dispatching intent also means uncertain after restart.
+                raise GuardError("creation_uncertain", "The service did not confirm a durable owned match. This creation was not retried.") from error
+
+    def _owned_input(self, body, owned):
+        value = request_object(body)
+        required = {"sequence", "moveX", "moveY", "jump"}
+        if (not required <= set(value) or set(value) - required - {"playerId"}
+                or not natural(value["sequence"]) or value["sequence"] == 0
+                or not all(finite_number(value[key]) and abs(value[key]) <= 1 for key in ("moveX", "moveY"))
+                or type(value["jump"]) is not bool):
+            raise GuardError("invalid_input", "Provide a positive integer sequence, movement from -1 to 1 and a boolean jump.", 400)
+        if "playerId" in value and value["playerId"] != owned["player_id"]:
+            raise GuardError("player_forbidden", "This player does not belong to the authenticated match.", 403)
+        value["playerId"] = owned["player_id"]
+        return value
+
     def handle(self, method, target, body=b"", headers=None):
         headers = headers or {}
         deadline = time.monotonic() + self.budget
+        self.store.request_context.deadline = deadline
         try:
             return self._handle(method, target, body, headers, deadline)
         except (sqlite3.Error, OSError) as error:
             return Reply.json(503, {"error": "storage_unavailable", "message": "Match result storage is unavailable. No input was forwarded without its storage check."})
         except GuardError as error:
             return Reply.json(error.status, {"error": error.code, "message": error.message})
+        finally:
+            del self.store.request_context.deadline
 
     def _handle(self, method, target, body, headers, deadline):
         parsed = urlsplit(target)
@@ -415,60 +717,165 @@ class Guard:
             self.store.probe()
             legacy = self._request("GET", "/health", None, headers, deadline)
             require(legacy.status == 200 and legacy.object().get("status") == "ok", "Legacy service health is not ready.")
-            return Reply.json(200, {"status": "ok", "service": "osgard-remix-guard", "schemaVersion": VERSION,
+            return Reply.json(200, {"status": "ok", "service": "osgard-remix-guard", "schemaVersion": self.store.schema_version(),
                                     "frozenResults": True, "storage": "ok", "upstream": "ok",
                                     "resultPolicy": "freeze-on-first-terminal-observation",
-                                    "activeMatchRecovery": False, "replayVerification": False, "playerAuthentication": False})
-        route = MATCH_ROUTE.fullmatch(path)
+                                    "playerAuthentication": False, **self.capabilities()})
+        if path == "/v2/capabilities" and method in ("GET", "HEAD"):
+            return Reply.json(200, self.capabilities())
+        if path == "/v2/matches":
+            if method == "POST" and not parsed.query:
+                return self._owned_create(body, headers, deadline)
+            if method not in ("GET", "HEAD"):
+                raise GuardError("method_not_allowed", "Use GET to list owned matches or POST to create one.", 405)
+            try:
+                query = parse_qs(parsed.query, keep_blank_values=True, strict_parsing=True, max_num_fields=2)
+            except ValueError as error:
+                raise GuardError("invalid_query", "Use only one optional after match identifier.", 400) from error
+            if (set(query) - {"after"} or "after" in query and
+                    (len(query["after"]) != 1 or not re.fullmatch(ID, query["after"][0]))):
+                raise GuardError("invalid_query", "Use only one optional after match identifier.", 400)
+            with self.files.admission(False, deadline):
+                actor = self.core.actor(headers, deadline)
+                return Reply.json(200, self.store.list_owned(actor, query.get("after", [""])[0]))
+        attempt = ATTEMPT_ROUTE.fullmatch(path)
+        if attempt is not None:
+            if method not in ("GET", "HEAD"):
+                raise GuardError("method_not_allowed", "Use GET to read an existing creation attempt.", 405)
+            with self.files.admission(False, deadline):
+                actor = self.core.actor(headers, deadline)
+                saved = self.store.attempt(actor, attempt["key"])
+                if saved is None:
+                    raise GuardError("attempt_not_found", "This account has no such creation attempt.", 404)
+                return self._attempt_reply(actor, attempt["key"], saved)
+        owned_route = OWNED_MATCH_ROUTE.fullmatch(path)
+        route = owned_route or MATCH_ROUTE.fullmatch(path)
         if route is None:
-            if path.lower().startswith("/v1/matches/"):
+            if path.lower().startswith("/v2/") or path.lower().startswith("/v1/matches/"):
                 raise GuardError("unknown_match_route", "This match route is not supported.", 404)
+            if path.lower() == "/v1/matches":
+                if path != "/v1/matches" or method != "POST":
+                    raise GuardError("method_not_allowed", "Use POST to create a legacy match.", 405)
+                with self.files.admission(False, deadline):
+                    # Do not allow an unclassified client-supplied identity to
+                    # reset a protected legacy object through the create route.
+                    value = request_object(body)
+                    if (set(value) != {"challengeId", "maxPlayers"}
+                            or not isinstance(value["challengeId"], str) or not re.fullmatch(ID, value["challengeId"])
+                            or not natural(value["maxPlayers"]) or value["maxPlayers"] == 0):
+                        raise GuardError("invalid_request", "Legacy creation requires challengeId and maxPlayers only.", 400)
+                    self.store.probe()
+                    reply = self._request(method, target, body, headers, deadline)
+                    if reply.status == 201:
+                        match = reply.object()
+                        require(isinstance(match, dict) and isinstance(match.get("id"), str) and re.fullmatch(ID, match["id"]),
+                                "The service did not confirm a match identifier.")
+                        self.store.register_anonymous(match["id"])
+                    return reply
             return self._request(method, target, body, headers, deadline)
-        if not ((method in ("GET", "HEAD") and route["action"] in ("state", "result")) or
+        if not ((method in ("GET", "HEAD") and route["action"] in (None, "state", "result")) or
                 (method == "POST" and route["action"] == "input")):
             raise GuardError("method_not_allowed", "Use POST for input and GET or HEAD for state and result.", 405)
         match_id, action = route["id"], route["action"]
-        lock = self.lock(match_id)
-        if not lock.acquire(timeout=min(2, max(0, deadline - time.monotonic()))):
-            raise GuardError("match_busy", "This match has a request in progress. Retry the read later.")
-        try:
-            saved = self.store.load(match_id)
-            if action == "input" and saved is not None:
+        # Classification must stay valid until forwarding/frozen reads finish.
+        # The exclusive creation lease cannot release an ID before its owner
+        # binding is durable, even when another guard process handles the alias.
+        with self.files.admission(False, deadline):
+            lock = self.lock(match_id)
+            if not lock.acquire(timeout=min(2, max(0, deadline - time.monotonic()))):
+                raise GuardError("match_busy", "This match has a request in progress. Retry the read later.")
+            try:
+                with self.files.match(match_id, deadline):
+                    owned = self.store.owner(match_id)
+                    if owned is not None or owned_route is not None:
+                        actor = self.core.actor(headers, deadline)
+                        if owned is None:
+                            raise GuardError("owned_match_not_found", "This match is not registered as account-owned.", 404)
+                        if actor != owned["owner_id"]:
+                            raise GuardError("match_forbidden", "This match belongs to another account.", 403)
+                    if action is None:
+                        return Reply.json(200, self.store.metadata(owned))
+                    if owned is not None:
+                        # Account credentials, cookies, referrers and operation
+                        # keys are never part of a legacy match request.
+                        headers = {"Content-Type": "application/json", "Accept": "application/json"}
+                        if action == "input":
+                            body = canonical(self._owned_input(body, owned)).encode()
+                    legacy_target = f"/v1/matches/{match_id}/{action}"
+                    if owned is None and parsed.query:
+                        legacy_target += "?" + parsed.query
+                    return self._match_action(match_id, action, legacy_target, body, headers, deadline, owned)
+            finally:
+                lock.release()
+
+    def _match_action(self, match_id, action, target, body, headers, deadline, owned):
+        saved = self.store.load(match_id)
+        if action == "input" and saved is not None:
+            raise GuardError("match_finished", "This match has finished and cannot accept new input.", 409)
+        if saved is not None:
+            frozen = self._frozen(match_id, saved, headers, deadline)
+            return Reply.json(200, frozen[action])
+        if action == "input":
+            self.store.probe()
+        state_reply, state = self._state(match_id, headers, deadline)
+        if state is None:
+            return self._owned_error(state_reply, "state") if owned else state_reply
+        if owned is None:
+            self.store.register_anonymous(match_id)
+        if state["phase"] == "RESULTS":
+            if action == "input":
                 raise GuardError("match_finished", "This match has finished and cannot accept new input.", 409)
-            if saved is not None:
-                frozen = self._frozen(match_id, saved, headers, deadline)
-                return Reply.json(200, frozen[action])
-            if action == "input":
-                self.store.probe()
-            state_reply, state = self._state(match_id, headers, deadline)
-            if state is None:
-                return state_reply
-            if state["phase"] == "RESULTS":
-                if action == "input":
-                    raise GuardError("match_finished", "This match has finished and cannot accept new input.", 409)
-                frozen = self._frozen(match_id, self.store.load(match_id), headers, deadline)
-                return Reply.json(200, frozen[action])
-            if action == "state":
-                return state_reply
-            if action == "input":
-                if state["phase"] not in ("PLAYING", "RUNNING") or state["remainingMs"] <= 0:
-                    raise GuardError("match_not_playing", "The service has not confirmed an active playing phase.", 409)
-                return self._request("POST", target, body, headers, deadline)
-            result_reply = self._request("GET", target, None, headers, deadline)
-            if result_reply.status != 200:
-                return result_reply
-            # The phase may have changed during the two reads. Establish and
-            # persist a matching terminal state before exposing the result.
-            if terminal_identity(result_reply.body, "matchId", match_id):
-                self.store.mark_terminal(match_id)
-            result = result_reply.object()
-            _, terminal = self._state(match_id, headers, deadline)
-            require(terminal is not None and terminal["phase"] == "RESULTS", "A result arrived before a matching terminal state.")
-            validate_result(result, match_id, terminal)
-            frozen = self.store.finalize(match_id, terminal, result)
-            return Reply.json(200, frozen["result"])
-        finally:
-            lock.release()
+            frozen = self._frozen(match_id, self.store.load(match_id), headers, deadline)
+            return Reply.json(200, frozen[action])
+        if action == "state":
+            return state_reply
+        if action == "input":
+            if state["phase"] not in ("PLAYING", "RUNNING") or state["remainingMs"] <= 0:
+                raise GuardError("match_not_playing", "The service has not confirmed an active playing phase.", 409)
+            if owned:
+                value = request_object(body)
+                # This is a submitted high-water mark, never an acceptance or
+                # replay claim. An uncertain POST may have changed the engine.
+                self.store.submit_sequence(match_id, owned["owner_id"], value["sequence"])
+            reply = self._request("POST", target, body, headers, deadline)
+            if owned:
+                if reply.status != 200:
+                    return self._owned_error(reply, action)
+                ack = reply.object()
+                require(isinstance(ack, dict) and set(ack) == {"playerId", "position", "velocityY", "onGround", "score", "lastSequence"}
+                        and ack["playerId"] == owned["player_id"] and natural(ack["lastSequence"])
+                        and ack["lastSequence"] == value["sequence"] and type(ack["onGround"]) is bool
+                        and isinstance(ack["position"], list) and len(ack["position"]) == 3
+                        and all(finite_number(number) for number in ack["position"])
+                        and finite_number(ack["velocityY"]) and finite_number(ack["score"]),
+                        "The input acknowledgement did not match the submitted player and sequence; it was not retried.")
+            return reply
+        result_reply = self._request("GET", target, None, headers, deadline)
+        if result_reply.status != 200:
+            return self._owned_error(result_reply, action) if owned else result_reply
+        # The phase may have changed during the two reads. Establish and
+        # persist a matching terminal state before exposing the result.
+        if terminal_identity(result_reply.body, "matchId", match_id):
+            self.store.mark_terminal(match_id)
+        result = result_reply.object()
+        _, terminal = self._state(match_id, headers, deadline)
+        require(terminal is not None and terminal["phase"] == "RESULTS", "A result arrived before a matching terminal state.")
+        validate_result(result, match_id, terminal)
+        frozen = self.store.finalize(match_id, terminal, result)
+        return Reply.json(200, frozen["result"])
+
+    @staticmethod
+    def _owned_error(reply, action):
+        # Legacy errors can be arbitrary plain text. Protected endpoints return
+        # bounded, non-sensitive errors without reflecting that upstream body.
+        if reply.status == 404:
+            return Reply.json(404, {"error": "match_unavailable", "message": "The legacy engine cannot find this match. Its active simulation cannot be recovered here."})
+        if action == "result" and reply.status == 409:
+            return Reply.json(409, {"error": "match_not_finished", "message": "The service has not confirmed a terminal result."})
+        if action == "input":
+            return Reply.json(503 if reply.status >= 500 else 409,
+                              {"error": "input_unconfirmed", "message": "The engine did not accept a confirmed input. Its submitted sequence is retained and the write was not retried."})
+        return Reply.json(503, {"error": "upstream_unavailable", "message": "The match service could not return this match. Retry this read later."})
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -489,7 +896,8 @@ class Handler(BaseHTTPRequestHandler):
             if self.headers.get("Transfer-Encoding"):
                 raise GuardError("body_encoding", "Chunked request bodies are not supported by this API guard.", 400)
             lengths = self.headers.get_all("Content-Length", [])
-            if len(lengths) > 1 or sum(len(name) + len(value) for name, value in self.headers.items()) > 16384:
+            if (len(lengths) > 1 or any(len(self.headers.get_all(name, [])) > 1 for name in ("Authorization", "Idempotency-Key"))
+                    or sum(len(name) + len(value) for name, value in self.headers.items()) > 16384):
                 raise GuardError("request_headers", "Request headers are invalid or too large.", 400)
             try:
                 size = int(lengths[0]) if lengths else 0
@@ -563,20 +971,27 @@ class Server(ThreadingHTTPServer):
         pass
 
 
-def create_server(database, upstream="http://remix-api:8080", host="127.0.0.1", port=8081, timeout=3, budget=10):
-    return Server((host, port), Guard(database, upstream, timeout, budget))
+def create_server(database, upstream="http://remix-api:8080", host="127.0.0.1", port=8081, timeout=3, budget=10,
+                  core_upstream="http://core-api:4173", core_host="osgard.world", enable_owned_creation=False):
+    return Server((host, port), Guard(database, upstream, timeout, budget, core_upstream, core_host, enable_owned_creation))
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--database", type=Path, default=Path("/var/lib/remix-guard/terminal.sqlite3"))
     parser.add_argument("--upstream", default="http://remix-api:8080")
+    parser.add_argument("--core-upstream", default="http://core-api:4173")
+    parser.add_argument("--core-host", default="osgard.world")
+    parser.add_argument("--enable-owned-creation", action="store_true",
+                        help="Enable protected v2 creation only after an ACL-aware rollback release is verified.")
     parser.add_argument("--host", default="0.0.0.0")
     parser.add_argument("--port", type=int, default=8081)
     args = parser.parse_args()
     os.umask(0o077)
-    server = create_server(args.database, args.upstream, args.host, args.port)
-    print(f"OSGARD REMIX guard ready on port {server.server_address[1]}; snapshot schema {VERSION}.", flush=True)
+    server = create_server(args.database, args.upstream, args.host, args.port,
+                           core_upstream=args.core_upstream, core_host=args.core_host,
+                           enable_owned_creation=args.enable_owned_creation)
+    print(f"OSGARD REMIX guard ready on port {server.server_address[1]}; auth policy {AUTH_POLICY_VERSION}; owned creation {args.enable_owned_creation}.", flush=True)
     try:
         server.serve_forever()
     except KeyboardInterrupt:
