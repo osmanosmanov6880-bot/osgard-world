@@ -31,6 +31,7 @@ jobs:
           python -m unittest discover -s tests -p test_staging_operations.py -v
           python -m unittest discover -s tests -p test_backup_shell_contract.py -v
           python -m unittest discover -s tests -p test_staging_release_acceptance.py -v
+          python -m unittest discover -s tests -p test_release_pr_dependency_audit.py -v
       - name: Guard against accidental activation
         run: |
           python - <<'PY'
