@@ -8,6 +8,7 @@ on:
       - 'scripts/verify-zip-manifest.py'
       - 'scripts/verify-release-zip.py'
       - 'scripts/release-config-audit.py'
+      - 'scripts/staging-release-acceptance.py'
       - '.github/workflows/full-source-release-acceptance.yml'
   workflow_dispatch:
 permissions:
@@ -37,10 +38,8 @@ jobs:
           python scripts/release-bundle.py build dist --commit "$GITHUB_SHA" --zip "$RUNNER_TEMP/osgard-release/osgard-world.zip" --manifest "$RUNNER_TEMP/osgard-release/manifest.json"
       - name: Independently verify ZIP and manifest
         run: python scripts/release-bundle.py verify "$RUNNER_TEMP/osgard-release/osgard-world.zip" --manifest "$RUNNER_TEMP/osgard-release/manifest.json"
-      - name: Audit real dist deployment headers and accidental secret filenames
-        run: python scripts/release-config-audit.py dist
-      - name: Verify the playable world entrypoints and dependencies
-        run: python scripts/verify-game-archive.py "$RUNNER_TEMP/osgard-release/osgard-world.zip"
+      - name: "Unified static staging acceptance: ZIP, 19 game entrypoints and configuration"
+        run: python scripts/staging-release-acceptance.py --dist dist --zip "$RUNNER_TEMP/osgard-release/osgard-world.zip" --manifest "$RUNNER_TEMP/osgard-release/manifest.json"
       - name: Write a checksum summary without exposing archived files
         run: |
           python - <<'PY'
