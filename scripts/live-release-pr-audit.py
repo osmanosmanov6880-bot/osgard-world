@@ -28,7 +28,9 @@ def fetch_pr(n,opener=None):
     if not isinstance(data,dict) or data.get("number")!=n:raise ValueError("unexpected PR API response")
     if data.get("base",{}).get("repo",{}).get("full_name")!=POLICY.CANONICAL:
         raise ValueError("PR repository mismatch")
-    return {"number":n,"state":data.get("state"),"base":data.get("base",{}).get("ref"),
+    if data.get("head",{}).get("repo",{}).get("full_name")!=POLICY.CANONICAL:
+        raise ValueError("PR head repository mismatch")
+    return {"number":n,"head_ref":data.get("head",{}).get("ref"),"state":data.get("state"),"base":data.get("base",{}).get("ref"),
             "draft":data.get("draft"),"mergeable":data.get("mergeable"),
             "head_sha":data.get("head",{}).get("sha")}
 def audit_live(fetcher=fetch_pr):
