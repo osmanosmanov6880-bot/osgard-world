@@ -31,7 +31,7 @@ const Recommendations = React.lazy(() => import('./Recommendations').then(async 
 const ArchiveSurface = React.lazy(() => import('./ArchiveSurface').then(async m => { await import('./legacyStyles'); return { default: m.ArchiveSurface } }))
 const ProfileSurface = React.lazy(() => import('./ProfileSurface').then(async m => { await import('./legacyStyles'); return { default: m.ProfileSurface } }))
 const InheritPrototype = React.lazy(() => import('./LegacyCreatorPrototypes').then(async m => { await import('./legacyStyles'); return { default: m.InheritPrototype } }))
-const RemixPrototype = React.lazy(() => import('./LegacyCreatorPrototypes').then(async m => { await import('./legacyStyles'); return { default: m.RemixPrototype } }))
+const RemixLegacyRedirect = React.lazy(() => import('./LegacyCreatorPrototypes').then(async m => { await import('./legacyStyles'); return { default: m.RemixLegacyRedirect } }))
 const OnlineGamePrototype = React.lazy(() => import('./OnlineGamePrototype').then(async m => { await import('./legacyStyles'); return { default: m.OnlineGamePrototype } }))
 const CoreEvents = React.lazy(() => import('./CoreEvents').then(async m => { await import('./legacyStyles'); return { default: m.CoreEvents } }))
 const EcosystemSurface = React.lazy(() => import('./EcosystemSurfaces').then(async m => { await import('./legacyStyles'); return { default: m.EcosystemSurface } }))
@@ -205,7 +205,7 @@ function RoutedContent() {
   if (path === '/play/swarm') return <OnlineGamePrototype game="swarm" />
   if (path === '/play/null-shift') return <OnlineGamePrototype game="null" />
   if (path === '/play/inherit') return <InheritPrototype />
-  if (path === '/play/remix') return <RemixPrototype />
+  if (path === '/play/remix') return <RemixLegacyRedirect />
   if (path === '/week') return <WeekSurface />
   if (path === '/next') return <Recommendations />
   if (path === '/archive') return <ArchiveSurface />

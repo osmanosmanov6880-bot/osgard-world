@@ -2,17 +2,22 @@ import { test, expect } from '@playwright/test'
 import { PNG } from 'pngjs'
 import { createHash } from 'node:crypto'
 
-const playerPath = '/games/remix/player/'
+const ordinaryPlayerPath = '/games/remix/player/'
+const playerPath = ordinaryPlayerPath + '?diagnostic=1'
 const loaderPattern = '**/games/remix/player/Build/REMIX-webgl3.loader.js'
 const evidence = new WeakMap()
 
 test.beforeEach(async ({ page }) => {
-  const observed = { console: [], pageErrors: [], responses: [], failedRequests: [] }
+  const observed = { console: [], pageErrors: [], responses: [], failedRequests: [], buildRequests: [], crashed: false }
   evidence.set(page, observed)
   page.on('console', message => {
     if (observed.console.length < 300) observed.console.push({ type: message.type(), text: message.text().slice(0, 3000) })
   })
   page.on('pageerror', error => observed.pageErrors.push(error.message))
+  page.on('crash', () => { observed.crashed = true })
+  page.on('request', request => {
+    if (request.url().includes('/games/remix/player/Build/')) observed.buildRequests.push(new URL(request.url()).pathname)
+  })
   page.on('response', response => {
     if (response.url().includes('/games/remix/player/Build/')) {
       const headers = response.headers()
@@ -27,7 +32,12 @@ test.beforeEach(async ({ page }) => {
 test.afterEach(async ({ page }, info) => {
   await info.attach('runtime-network-console.json', { body: JSON.stringify(evidence.get(page), null, 2), contentType: 'application/json' })
   if (!page.isClosed()) {
-    const state = await page.evaluate(() => ({ state: document.querySelector('#unity-canvas')?.dataset.state, message: document.querySelector('#player-load-status')?.textContent })).catch(() => null)
+    let deadline
+    const state = await Promise.race([
+      page.evaluate(() => ({ state: document.querySelector('#unity-canvas')?.dataset.state, message: document.querySelector('#player-load-status')?.textContent })).catch(() => ({ unavailable: 'Page closed or crashed' })),
+      new Promise(resolve => { deadline = setTimeout(() => resolve({ unavailable: 'Page did not answer within 5 seconds' }), 5000) }),
+    ])
+    clearTimeout(deadline)
     await info.attach('launcher-state.json', { body: JSON.stringify(state, null, 2), contentType: 'application/json' })
   }
 })
@@ -71,6 +81,34 @@ function frameStats(buffer) {
     channelRange: max - min,
   }
 }
+
+for (const language of ['ru', 'en']) {
+  test(`ordinary unavailable route (${language}) downloads no engine and preserves only a valid invitation`, async ({ page }, info) => {
+    if (language === 'ru') await page.setViewportSize({ width: 390, height: 844 })
+    await page.goto(ordinaryPlayerPath + '?challenge=community_1&seed=20261017&ref=friend-1&lang=' + language + '&diagnostic=0&api=https%3A%2F%2Fexample.invalid&token=fixture-not-a-real-token')
+    await expect(page.locator('main')).toHaveAttribute('data-unity-availability', 'unavailable')
+    await expect(page.locator('#unity-canvas')).toHaveAttribute('data-state', 'unavailable')
+    await expect(page.locator('#unity-canvas')).toHaveAttribute('aria-busy', 'false')
+    await expect(page.locator('#unity-container')).toBeHidden()
+    await expect(page.locator('#player-retry')).toBeHidden()
+    await expect(page.locator('#player-diagnostic-note')).toBeHidden()
+    await expect(page.locator('#player-load-status')).toContainText(language === 'en' ? 'currently unavailable' : 'временно недоступна')
+    await expect(page.locator('#player-remix-link')).toHaveAttribute('href', '/games/remix/?challenge=community_1&seed=20261017&ref=friend-1&lang=' + language)
+    await expect(page.locator('#player-remix-nav')).toHaveAttribute('href', '/games/remix/?challenge=community_1&seed=20261017&ref=friend-1&lang=' + language)
+    expect(await page.evaluate(() => typeof window.createUnityInstance)).toBe('undefined')
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true)
+    expect(evidence.get(page).buildRequests).toEqual([])
+    expect(evidence.get(page).pageErrors).toEqual([])
+    await page.screenshot({ path: info.outputPath('unity-unavailable-' + language + '.png'), fullPage: true })
+  })
+}
+
+test('invalid invitation fields and nonexact diagnostic values cannot start the engine', async ({ page }) => {
+  await page.goto(ordinaryPlayerPath + '?challenge=bad%2Fpath&seed=10&ref=sample&lang=unknown&diagnostic=true')
+  await expect(page.locator('#unity-canvas')).toHaveAttribute('data-state', 'unavailable')
+  await expect(page.locator('#player-remix-link')).toHaveAttribute('href', '/games/remix/')
+  expect(evidence.get(page).buildRequests).toEqual([])
+})
 
 test('actual gzip build initializes, renders its scene, receives focused input and recovers from context loss', async ({ page }, info) => {
   // Observe calls on the real engine; no loader, runtime, network, render

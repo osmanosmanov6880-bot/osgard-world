@@ -11,6 +11,11 @@ on:
     paths:
       - "src/**"
       - "server/**"
+      - "scripts/remix-*"
+      - "scripts/check-nginx-remix-guard.sh"
+      - "tests/test_remix_*.py"
+      - "tests/test_frontend_activation.py"
+      - "docker-compose.production.yml"
       - "public/development/index.html"
       - "public/development/osa-intelligence/**"
       - "public/development/og.svg"
@@ -105,6 +110,11 @@ jobs:
           npm run qa:ux
           npm run qa:osa-progress
           npm run qa:game-interface
+          npm run qa:remix-session
+          npm run qa:remix-legacy
+          npm run qa:remix-contract
+          npm run qa:remix-guard
+          npm run qa:activation
       - name: Verify measured pilot outcomes and offline recovery
         run: |
           npm run qa:pilot-scorecard
@@ -213,6 +223,20 @@ jobs:
       - run: npm run build
       - name: Verify Unity runtime delivery through candidate Nginx
         run: npm run qa:nginx-game-delivery
+      - name: Verify REMIX result durability through candidate Nginx
+        run: npm run qa:nginx-remix-guard
+      - name: Verify unavailable Unity build is pinned to reviewed evidence
+        run: |
+          node scripts/remix-unity-status-check.mjs dist
+          node scripts/remix-unity-status-check.mjs --self-test
+      - name: Install pinned launcher safety browser
+        run: |
+          npm install --no-save --package-lock=false @playwright/test@1.58.2 pngjs@7.0.0
+          npx playwright install --with-deps chromium
+      - name: Verify unavailable Unity route and diagnostic recovery before publication
+        run: bash scripts/check-nginx-unity-browser.sh --grep-invert 'actual gzip build'
+      - name: Verify REMIX console recovery on desktop and mobile before publication
+        run: npx playwright test --config playwright.ecosystem.config.mjs scripts/remix-console-browser.spec.mjs
       - name: Verify landing page budgets and route metadata
         run: npm run qa:redesign-build
       - name: Verify precompressed shared-brand JavaScript
@@ -284,6 +308,9 @@ jobs:
           docker build --pull -f server/Dockerfile -t osgard-core-api:${GITHUB_SHA} .
           docker save osgard-core-api:${GITHUB_SHA} | gzip -1 > osgard-release/core-api-image.tar.gz
           test -s osgard-release/core-api-image.tar.gz
+          docker build --pull -f server/RemixGuard.Dockerfile -t osgard-remix-guard:${GITHUB_SHA} .
+          docker save osgard-remix-guard:${GITHUB_SHA} | gzip -1 > osgard-release/remix-guard-image.tar.gz
+          test -s osgard-release/remix-guard-image.tar.gz
           tar -czf osgard-world-release.tgz -C osgard-release .
       - name: Validate deployment secrets
         env:
@@ -394,7 +421,20 @@ jobs:
           REMOTE_ARCHIVE="/tmp/osgard-gh-release-${GITHUB_RUN_ID}.tgz"
           REMOTE_SCRIPT="/tmp/activate-frontend-remote-${GITHUB_RUN_ID}.sh"
           scp -i ~/.ssh/osgard_deploy scripts/activate-frontend-remote.sh "$USER@$HOST:$REMOTE_SCRIPT"
-          ssh -i ~/.ssh/osgard_deploy "$USER@$HOST" "docker cp '$REMOTE_RELEASE_DIR/osgard-world-release.tgz' osgard-world:'$REMOTE_ARCHIVE' && chmod 700 '$REMOTE_SCRIPT' && OSGARD_ARCHIVE='$REMOTE_ARCHIVE' OSGARD_CORE_IMAGE='osgard-core-api:${GITHUB_SHA}' OSGARD_CONTAINER=osgard-world '$REMOTE_SCRIPT'"
+          ssh -i ~/.ssh/osgard_deploy "$USER@$HOST" "docker cp '$REMOTE_RELEASE_DIR/osgard-world-release.tgz' osgard-world:'$REMOTE_ARCHIVE' && chmod 700 '$REMOTE_SCRIPT' && OSGARD_ARCHIVE='$REMOTE_ARCHIVE' OSGARD_CORE_IMAGE='osgard-core-api:${GITHUB_SHA}' OSGARD_REMIX_GUARD_IMAGE='osgard-remix-guard:${GITHUB_SHA}' OSGARD_CONTAINER=osgard-world '$REMOTE_SCRIPT'"
+      - name: Verify published REMIX guard readiness
+        run: npm run qa:remix-health
+      - name: Verify one private QA match through the published REMIX API
+        id: remix-live-contract
+        run: python3 scripts/remix-service-contract-smoke.py --exercise --output remix-live-contract.json
+      - name: Retain the exact private QA match contract evidence
+        if: ${{ always() && steps.remix-live-contract.outcome != 'skipped' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: remix-live-contract
+          path: remix-live-contract.json
+          if-no-files-found: warn
+          retention-days: 14
       - name: Verify published routes and same-origin API proxy
         env:
           OSGARD_BASE_URL: https://osgard.world

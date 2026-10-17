@@ -1,11 +1,6 @@
 name: REMIX read-only source inventory
 
 on:
-  push:
-    branches: [feat/remix-reliability-2026-10-17]
-    paths:
-      - .github/workflows/remix-service-diagnostic.yml
-      - scripts/remix-vps-inventory.py
   workflow_dispatch:
 
 permissions:

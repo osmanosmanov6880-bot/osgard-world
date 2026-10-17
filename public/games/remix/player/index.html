@@ -4,16 +4,16 @@
     <meta charset="utf-8">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <title>REMIX — игра в браузере</title>
+    <title>REMIX — Unity-версия временно недоступна</title>
     <link rel="shortcut icon" href="/brand/favicon.svg">
     <link rel="stylesheet" href="TemplateData/style.css">
   <link rel="stylesheet" href="/brand/ecosystem-chrome.css"><link rel="icon" href="/brand/favicon.svg" type="image/svg+xml"></head>
   <body>
-    <header class="remix-player-header"><a href="/play/world/remix">← О мире и управлении</a><a href="/play#catalog">Каталог миров</a><a href="/games/remix/">Консоль испытаний</a></header>
-    <main><section class="remix-player-guide"><h1>REMIX</h1><p id="player-controls">Выберите игровое поле, чтобы передать ему управление. Подсказки сборки появятся внутри игры. Кнопки возврата расположены над полем.</p><p>Нужен WebGL 2. Сетевые матчи и сохранённые результаты требуют подтверждения сервиса REMIX; загрузка сборки сама по себе их не подтверждает.</p><p id="player-load-status" role="status" aria-live="polite" aria-atomic="true">Подготавливаем игровую сборку…</p><a href="" id="player-retry" hidden>Повторить загрузку</a></section>
-    <div id="unity-container" class="unity-desktop">
+    <header class="remix-player-header"><a href="/play/world/remix" data-player-copy="world">← О мире и управлении</a><a href="/play#catalog" data-player-copy="catalog">Каталог миров</a><a href="/games/remix/" id="player-remix-nav" data-player-copy="console">Консоль испытаний</a></header>
+    <main data-unity-availability="unavailable"><section class="remix-player-guide"><p class="remix-player-eyebrow" data-player-copy="eyebrow">UNITY · ВРЕМЕННО НЕДОСТУПНО</p><h1>REMIX</h1><p id="player-controls" data-player-copy="intro">Эта версия пока не открывает рабочую игровую сцену. Можно перейти к испытаниям REMIX или выбрать другой мир.</p><p id="player-diagnostic-note" hidden data-player-copy="diagnostic">Режим диагностики: запускается сохранённая экспериментальная сборка. Она требует WebGL 2 и не подтверждает доступность игрового процесса, сетевых матчей или сохранений.</p><p id="player-load-status" role="status" aria-live="polite" aria-atomic="true" data-player-copy="unavailable">Unity-версия временно недоступна.</p><a href="/games/remix/" id="player-remix-link" class="remix-player-primary" data-player-copy="openRemix">Открыть REMIX →</a><a href="" id="player-retry" hidden data-player-copy="retry">Повторить загрузку</a></section>
+    <div id="unity-container" class="unity-desktop" hidden>
       <div id="unity-fullscreen-container">
-        <canvas id="unity-canvas" width="960" height="600" tabindex="0" aria-label="Игровое поле REMIX" aria-describedby="player-controls player-load-status" aria-busy="true" aria-disabled="true" data-state="loading"></canvas>
+        <canvas id="unity-canvas" width="960" height="600" tabindex="0" aria-label="Диагностика Unity REMIX" aria-describedby="player-controls player-load-status" aria-busy="false" aria-disabled="true" data-state="unavailable" data-gameplay-state="unavailable"></canvas>
         <div id="unity-loading-container">
           <div id="unity-loading-bar">
             <div id="unity-logo"></div>
@@ -31,6 +31,51 @@
       </div>
     </div>
     <script>
+      (() => {
+      const params = new URLSearchParams(location.search);
+      const language = params.get('lang') === 'en' ? 'en' : 'ru';
+      const copy = {
+        world: ['← О мире и управлении', '← About this world and controls'],
+        catalog: ['Каталог миров', 'World catalog'],
+        console: ['Консоль испытаний', 'Challenge console'],
+        eyebrow: ['UNITY · ВРЕМЕННО НЕДОСТУПНО', 'UNITY · CURRENTLY UNAVAILABLE'],
+        intro: ['Эта версия пока не открывает рабочую игровую сцену. Можно перейти к испытаниям REMIX или выбрать другой мир.', 'This version does not currently open a working game scene. You can open REMIX challenges or choose another world.'],
+        diagnostic: ['Режим диагностики: запускается сохранённая экспериментальная сборка. Она требует WebGL 2 и не подтверждает доступность игрового процесса, сетевых матчей или сохранений.', 'Diagnostic mode: the preserved experimental build is running. It requires WebGL 2 and does not establish working gameplay, network matches, or saved progress.'],
+        unavailable: ['Unity-версия временно недоступна.', 'The Unity version is currently unavailable.'],
+        openRemix: ['Открыть REMIX →', 'Open REMIX →'],
+        retry: ['Повторить загрузку', 'Retry loading'],
+        prepare: ['Подготавливаем диагностическую сборку…', 'Preparing the diagnostic build…'],
+        slow: ['Давно нет обновления загрузки. Соединение или подготовка игры могут быть медленными. Можно подождать или повторить загрузку.', 'Loading has not advanced recently. The connection or initialization may be slow. You can wait or retry.'],
+        failed: ['Не удалось запустить игру. Проверьте соединение и поддержку WebGL 2, затем повторите загрузку.', 'The build could not start. Check your connection and WebGL 2 support, then retry.'],
+        filesFailed: ['Не удалось загрузить файлы игры. Проверьте соединение и повторите попытку.', 'The build files could not be loaded. Check your connection and retry.'],
+        lostContext: ['Браузер потерял графический контекст. Повторите загрузку игры. Прогресс внутри этой сборки может быть потерян.', 'The browser lost its graphics context. Reload the build. Progress within this build may be lost.'],
+        fullscreenUnavailable: ['Полноэкранный режим недоступен. Сборка остаётся в этом окне.', 'Fullscreen is unavailable. The build remains in this window.'],
+        loading: ['Загрузка сборки: ', 'Loading build: '],
+        starting: ['Файлы загружены. Запускаем диагностическую сборку…', 'Files loaded. Starting the diagnostic build…'],
+        engineReady: ['Движок Unity запущен. Рабочая игровая сцена этой версии недоступна.', 'The Unity engine has started. This version does not have a working game scene.'],
+      };
+      const message = key => copy[key][language === 'en' ? 1 : 0];
+      document.documentElement.lang = language;
+      if (language === 'en') document.title = 'REMIX — Unity version currently unavailable';
+      document.querySelectorAll('[data-player-copy]').forEach(node => { node.textContent = message(node.dataset.playerCopy); });
+      // Keep the invitation on its same-origin route. Diagnostic/API/token
+      // overrides never travel into the match console or a shared challenge.
+      const remixLink = new URL('/games/remix/', location.origin);
+      const challenge = params.get('challenge') || '';
+      if (/^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$/.test(challenge)) {
+        remixLink.searchParams.set('challenge', challenge);
+        const seed = Number(params.get('seed'));
+        if (Number.isSafeInteger(seed) && seed > 0) remixLink.searchParams.set('seed', String(seed));
+        const referral = params.get('ref') || '';
+        if (/^[A-Za-z0-9][A-Za-z0-9_.-]{0,79}$/.test(referral)) remixLink.searchParams.set('ref', referral);
+      }
+      if (['ru', 'en'].includes(params.get('lang'))) remixLink.searchParams.set('lang', params.get('lang'));
+      for (const id of ['player-remix-link', 'player-remix-nav']) document.getElementById(id).href = remixLink.pathname + remixLink.search;
+
+      // This reviewed export has no working scene. A normal visit is complete
+      // here: no loader, data, framework, WASM, WebGL context, or timer starts.
+      if (params.get('diagnostic') !== '1') return;
+
       const canvas = document.querySelector("#unity-canvas");
       const fullscreenContainer = document.querySelector("#unity-fullscreen-container");
       const loadStatus = document.querySelector("#player-load-status");
@@ -40,6 +85,17 @@
       const progressBarFull = document.querySelector("#unity-progress-bar-full");
       const fullscreenButton = document.querySelector("#unity-fullscreen-button");
       const warningBanner = document.querySelector("#unity-warning");
+      document.querySelector('#unity-container').hidden = false;
+      document.querySelector('#player-diagnostic-note').hidden = false;
+      loadStatus.textContent = message('prepare');
+      canvas.dataset.state = 'loading';
+      canvas.setAttribute('aria-busy', 'true');
+      if (language === 'en') {
+        canvas.setAttribute('aria-label', 'REMIX Unity diagnostics');
+        progressBar.setAttribute('aria-label', 'Loading build');
+        fullscreenButton.textContent = 'Fullscreen';
+        fullscreenButton.setAttribute('aria-label', 'Open the diagnostic build fullscreen');
+      }
       let unityInstance = null;
       let disposed = false;
       let failed = false;
@@ -55,7 +111,7 @@
           if (disposed || failed || unityInstance || document.hidden) return;
           if (performance.now() - lastProgressAt >= 90000 && canvas.dataset.state !== 'stalled') {
             canvas.dataset.state = 'stalled';
-            loadStatus.textContent = 'Давно нет обновления загрузки. Соединение или подготовка игры могут быть медленными. Можно подождать или повторить загрузку.';
+            loadStatus.textContent = message('slow');
             retry.hidden = false;
           }
         }, 1000);
@@ -84,7 +140,7 @@
         warningBanner.appendChild(div);
         warningBanner.style.display = 'block';
         if (type === 'error') {
-          failLoad('Не удалось запустить игру. Проверьте соединение и поддержку WebGL 2, затем повторите загрузку.');
+          failLoad(message('failed'));
         } else {
           setTimeout(() => {
             div.remove();
@@ -156,7 +212,7 @@
       }
 
       canvas.addEventListener('webglcontextlost', () => {
-        failLoad('Браузер потерял графический контекст. Повторите загрузку игры. Прогресс внутри этой сборки может быть потерян.');
+        failLoad(message('lostContext'));
       });
       document.addEventListener('visibilitychange', () => {
         if (!document.hidden) lastProgressAt = performance.now();
@@ -177,11 +233,11 @@
       fullscreenButton.addEventListener('click', () => {
         if (failed || !unityInstance) return;
         try { unityInstance.SetFullscreen(1); }
-        catch (error) { loadStatus.textContent = 'Полноэкранный режим недоступен. Игра остаётся в этом окне.'; console.warn(error); }
+        catch (error) { loadStatus.textContent = message('fullscreenUnavailable'); console.warn(error); }
       });
 
       const script = document.createElement("script");
-      script.onerror = () => failLoad('Не удалось загрузить файлы игры. Проверьте соединение и повторите попытку.');
+      script.onerror = () => failLoad(message('filesFailed'));
       script.src = loaderUrl;
       script.onload = async () => {
         if (disposed || failed) return;
@@ -199,9 +255,10 @@
             progressBar.setAttribute('aria-valuenow', String(percent));
             progressBarFull.style.width = percent + '%';
             if (canvas.dataset.state !== 'stalled') {
-              loadStatus.textContent = percent < 100 ? 'Загрузка игры: ' + percent + '%' : 'Файлы загружены. Запускаем игровую сборку…';
+              loadStatus.textContent = percent < 100 ? message('loading') + percent + '%' : message('starting');
             }
           });
+          if (!instance || typeof instance.SetFullscreen !== 'function' || typeof instance.Quit !== 'function') throw new Error('Invalid Unity instance');
           if (disposed || failed) { releaseInstance(instance); return; }
           unityInstance = instance;
           clearInterval(watchdog);
@@ -212,9 +269,9 @@
           canvas.setAttribute('aria-disabled', 'false');
           retry.hidden = true;
           fullscreenButton.disabled = false;
-          loadStatus.textContent = 'Сборка загружена. Выберите игровое поле и следуйте подсказкам.';
+          loadStatus.textContent = message('engineReady');
         } catch (error) {
-          failLoad('Не удалось запустить игру. Проверьте соединение и поддержку WebGL 2, затем повторите загрузку.');
+          failLoad(message('failed'));
           console.error('REMIX initialization:', error);
         }
       };
@@ -222,7 +279,7 @@
       loadingContainer.style.display = 'block';
       watchProgress();
       document.body.appendChild(script);
-
+      })();
     </script>
   </main><script defer src="/brand/osa-transition.js"></script></body>
 </html>

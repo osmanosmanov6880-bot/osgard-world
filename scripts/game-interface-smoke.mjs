@@ -99,11 +99,16 @@ await check('dynamic milestones, errors, and temporary-storage disclosures trans
   assert.match(r.ui.t('Connection error: The match service is unavailable. Try again later.'), /Игровой сервис недоступен/);
   assert.equal(r.ui.t('RUNNING · 2 player(s) · 12 replay frames'), 'Матч идёт · игроков: 2 · кадров повтора: 12');
   assert.ok(!r.ui.t('UNRECOGNIZED · 2 player(s) · 12 replay frames').includes('undefined'));
+  assert.equal(r.ui.t('2 player(s) · 12 accepted input frames'), 'Игроков: 2 · принятых команд: 12');
+  assert.equal(r.ui.t('28 s left in this phase'), 'Осталось в этой фазе: 28 с');
+  assert.equal(r.ui.t('Server position · X -0.25 · Y 1.50'), 'Позиция на сервере · X -0.25 · Y 1.50');
+  assert.match(r.ui.t('The result has not loaded yet. Your match is retained; reconnecting…'), /Результат пока не загрузился/);
+  assert.match(r.ui.t('This browser cannot save session recovery. Keep this page open; reloading may lose access to this match.'), /восстановления сессии/);
 });
 await check('REMIX API preserves routes and rejects HTML errors with readable messages', async () => {
   const source = remix.slice(remix.indexOf('async function api(path, options){'), remix.indexOf('\nasync function start('));
   const calls = [], timers = [];
-  const context = { AbortController, Error, apiInput: { value: '/api/remix' }, remixStore: { setItem() {} }, setTimeout(fn) { timers.push(fn); return timers.length; }, clearTimeout() {}, fetch: async (url, options) => { calls.push([url, options]); return { ok: true, json: async () => ({ id: 'sample' }) }; } };
+  const context = { AbortController, Error, connectionBase: '/api/remix', requests: new Set(), apiInput: { value: '/api/remix' }, setTimeout(fn) { timers.push(fn); return timers.length; }, clearTimeout() {}, fetch: async (url, options) => { calls.push([url, options]); return { ok: true, json: async () => ({ id: 'sample' }) }; } };
   vm.createContext(context); vm.runInContext(source, context);
   assert.equal((await vm.runInContext("api('/v1/matches', {method:'POST'})", context)).id, 'sample'); assert.equal(calls[0][0], '/api/remix/v1/matches'); assert.equal(calls[0][1].method, 'POST');
   context.fetch = async () => ({ ok: false, status: 503, text() { throw Error('raw body must not be rendered'); } });
@@ -115,7 +120,7 @@ await check('REMIX API preserves routes and rejects HTML errors with readable me
 });
 await check('REMIX input listens on its field and respects modifier shortcuts', () => {
   const source = scripts(remix).find(s => s.includes("arena.addEventListener('keydown'")); const line = source.split('\n').find(s => s.startsWith("arena.addEventListener('keydown'"));
-  const arena = new Element(), sent = []; const context = { arena, match: null, send: (...args) => sent.push(args) }; vm.createContext(context); vm.runInContext(line, context);
+  const arena = new Element(), sent = []; const context = { arena, match: null, canSubmitInput: () => Boolean(context.match), send: (...args) => sent.push(args) }; vm.createContext(context); vm.runInContext(line, context);
   const keydown = arena.handlers.get('keydown'); let prevented = 0;
   keydown({ key: 'ArrowLeft', preventDefault() { prevented++; } }); assert.equal(sent.length, 0);
   context.match = {}; keydown({ key: 'ArrowRight', preventDefault() { prevented++; } }); assert.deepEqual(sent[0], [1, 0, false]); assert.equal(prevented, 1);

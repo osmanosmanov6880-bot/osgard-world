@@ -1,4 +1,4 @@
-name: REMIX Unity runtime validation
+name: REMIX launcher safety and recovery
 
 on:
   push:
@@ -11,22 +11,21 @@ on:
       - "scripts/game-delivery-http-smoke.mjs"
       - "scripts/check-nginx-unity-browser.sh"
       - "scripts/remix-unity-browser.spec.mjs"
-      - "scripts/remix-unity-reactivation-candidate.py"
+      - "scripts/remix-unity-status-check.mjs"
       - "playwright.remix-unity.config.mjs"
       - ".github/workflows/remix-unity-runtime.yml"
   pull_request:
     branches: [master]
-  workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: remix-unity-runtime-${{ github.ref }}
+  group: remix-launcher-safety-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  unity-runtime:
+  launcher-safety:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -39,68 +38,26 @@ jobs:
           cache: npm
       - name: Install locked application dependencies
         run: npm ci
+      - name: Verify reviewed quarantine and reject unknown builds
+        run: |
+          node scripts/remix-unity-status-check.mjs
+          node scripts/remix-unity-status-check.mjs --self-test
       - name: Build the production site
         run: npm run build
+      - name: Verify the built quarantine metadata
+        run: node scripts/remix-unity-status-check.mjs dist
       - name: Install pinned browser test tooling
         run: |
           npm install --no-save --package-lock=false @playwright/test@1.58.2 pngjs@7.0.0
           npx playwright install --with-deps chromium
-      - name: Exercise real Unity startup and recovery behind Nginx
-        run: bash scripts/check-nginx-unity-browser.sh
+      - name: Verify unavailable route and diagnostic launcher recovery
+        run: bash scripts/check-nginx-unity-browser.sh --grep-invert 'actual gzip build'
       - name: Keep runtime screenshots, traces and network evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: remix-unity-runtime
+          name: remix-launcher-safety
           path: |
-            unity-browser-report/
-            unity-test-results/
-          if-no-files-found: warn
-          retention-days: 14
-
-  experimental-reactivation:
-    # Diagnostic only. This generated artifact is never uploaded as a release
-    # or consumed by deploy-frontend. The original tracked export is untouched.
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - name: Check out original source and export
-        uses: actions/checkout@v4
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-          cache: npm
-      - name: Set up the pinned audit runtime
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-      - name: Install locked application dependencies
-        run: npm ci
-      - name: Build the original production site
-        run: npm run build
-      - name: Generate a separate three-byte scene reactivation experiment
-        run: |
-          python3 -m pip install UnityPy==1.25.4
-          mkdir -p unity-candidate-analysis
-          python3 scripts/remix-unity-reactivation-candidate.py \
-            public/games/remix/player/Build/REMIX-webgl3.data.gz \
-            "$RUNNER_TEMP/REMIX-reactivation.data.gz" \
-            unity-candidate-analysis/manifest.json
-          cp "$RUNNER_TEMP/REMIX-reactivation.data.gz" dist/games/remix/player/Build/REMIX-webgl3.data.gz
-      - name: Install pinned browser test tooling
-        run: |
-          npm install --no-save --package-lock=false @playwright/test@1.58.2 pngjs@7.0.0
-          npx playwright install --with-deps chromium
-      - name: Inspect the experimental engine scene without publishing it
-        run: bash scripts/check-nginx-unity-browser.sh --grep 'actual gzip build'
-      - name: Keep separate experiment evidence
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: remix-unity-reactivation-experiment
-          path: |
-            unity-candidate-analysis/
             unity-browser-report/
             unity-test-results/
           if-no-files-found: warn

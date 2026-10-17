@@ -12,6 +12,7 @@ export default defineConfig({
   workers: 1,
   retries: 0,
   timeout: 180000,
+  globalTimeout: 600000,
   expect: { timeout: 15000 },
   reporter: [['list'], ['html', { outputFolder: 'unity-browser-report', open: 'never' }]],
   use: {
@@ -20,6 +21,8 @@ export default defineConfig({
     viewport: { width: 1280, height: 1000 },
     locale: 'ru-RU',
     reducedMotion: 'reduce',
+    actionTimeout: 15000,
+    navigationTimeout: 30000,
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
     launchOptions: {
