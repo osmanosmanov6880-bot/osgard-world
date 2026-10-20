@@ -19,7 +19,7 @@ function harness(search='',saved){
   state.InheritPersistence={ephemeral:false,getItem:key=>store.get(key)||null,setItem:(key,value)=>store.set(key,value)};
   vm.createContext(state);
   vm.runInContext(zhSource,state,{filename:'zh.js'});
-  vm.runInContext(interfaceSource.replace('getLanguage:()=>locale,updateStorage}', 'getLanguage:()=>locale,updateStorage,testTextNode:textNode'),state,{filename:'interface.js'});
+  vm.runInContext(interfaceSource.replace('getLanguage:()=>locale,updateStorage}', 'getLanguage:()=>locale,updateStorage,testTextNode:textNode}'),state,{filename:'interface.js'});
   return {ui:state.InheritUI,zh:state.InheritChinese,state,store};
 }
 check('Source locale files parse and are cached in the offline shell',()=>{
