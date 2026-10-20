@@ -86,6 +86,25 @@ test('OSGARD globe fails gracefully without WebGL2 and keeps the experience swit
   await expect(page.getByRole('link', { name: /Исследовать экосистему/ })).toBeVisible()
 })
 
+test('OSGARD Earth GPU quality changes real texture detail with safe remount', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'no-preference' })
+  await page.goto('/')
+  const picker = page.getByRole('combobox', { name: 'Качество 3D-глобуса' })
+  const stage = page.locator('.omega-webgl-stage')
+  await expect(picker).toHaveValue('auto')
+  await expect(stage).toHaveAttribute('data-earth-texture', 'adaptive')
+  await picker.selectOption('ultra')
+  await expect(stage).toHaveAttribute('data-globe-quality', 'ultra')
+  await expect(stage).toHaveAttribute('data-earth-texture', '4096')
+  await expect(stage).toHaveAttribute('data-globe-status', /^(webgl|fallback)$/, { timeout: 20000 })
+  await picker.selectOption('eco')
+  await expect(stage).toHaveAttribute('data-earth-texture', '512')
+  await expect(page.locator('.omega-globe')).toHaveCount(1)
+  await picker.selectOption('auto')
+  await expect(stage).toHaveAttribute('data-globe-quality', 'auto')
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true)
+})
+
 test('OSGARD Earth uses real bundled coastlines and WebGL or safe fallback', async ({ page, request }) => {
   const earth = await request.get('/brand/omega-earth-land.json')
   expect(earth.status()).toBe(200)
