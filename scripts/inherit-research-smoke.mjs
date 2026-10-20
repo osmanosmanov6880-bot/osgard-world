@@ -79,10 +79,12 @@ check('operator tool deduplicates repeated exports, counts real opt-in cohorts a
 });
 check('bounded participant journal preserves early cohort anchor',()=>{
  let s=start(idA,'2026-10-01T01:00:00.000Z');
+ s=add(s,'first_trace_placed','2026-10-01T01:00:03.000Z');
  for(let i=0;i<575;i++)s=add(s,'journal_opened','2026-10-02T01:00:00.000Z');
  assert.equal(s.events.length,512);
  assert.equal(s.events[0].type,'session_opened');
- assert.equal(s.lastSeq,576);
+ assert.equal(s.events[1].type,'first_trace_placed');
+ assert.equal(s.lastSeq,577);
  assert.ok(core.normalize(s));
 });
 check('UI cannot write to game saves, servers or identity sources',()=>{
