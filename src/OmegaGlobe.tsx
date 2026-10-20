@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import * as THREE from 'three'
+import { createCityLightsTexture, createCloudLayers } from './OmegaGlobeEffects'
 
 /**
  * OSGARD WORLD decorative 3D Earth.
@@ -11,6 +12,15 @@ type Ring = number[][]
 type LandPolygons = {
   type: 'land-polygons'
   polygons: Ring[][]
+}
+export type GlobeMode = 'cinema' | 'world' | 'hybrid'
+export type GlobeChapter = 0 | 1 | 2
+export type GlobeView = { yaw: number; pitch: number; distance: number }
+type OmegaGlobeProps = {
+  mode: GlobeMode
+  chapter: GlobeChapter
+  view: GlobeView
+  onViewChange: (view: GlobeView) => void
 }
 type GlobeStatus = 'loading' | 'webgl' | 'fallback'
 
@@ -179,6 +189,8 @@ function disposeScene(scene: THREE.Scene) {
         materials.add(material)
         const mapped = material as THREE.Material & { map?: THREE.Texture }
         if (mapped.map) textures.add(mapped.map)
+        const emissive = material as THREE.Material & { emissiveMap?: THREE.Texture }
+        if (emissive.emissiveMap) textures.add(emissive.emissiveMap)
       }
     }
   })
@@ -187,10 +199,19 @@ function disposeScene(scene: THREE.Scene) {
   textures.forEach(texture => texture.dispose())
 }
 
-export default function OmegaGlobe() {
+export default function OmegaGlobe({ mode, chapter, view, onViewChange }: OmegaGlobeProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const stageRef = useRef<HTMLDivElement>(null)
+  const modeRef = useRef(mode)
+  const chapterRef = useRef(chapter)
+  const viewRef = useRef(view)
+  const onViewChangeRef = useRef(onViewChange)
   const [status, setStatus] = useState<GlobeStatus>('loading')
+
+  useEffect(() => { modeRef.current = mode }, [mode])
+  useEffect(() => { chapterRef.current = chapter }, [chapter])
+  useEffect(() => { viewRef.current = view }, [view])
+  useEffect(() => { onViewChangeRef.current = onViewChange }, [onViewChange])
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -207,6 +228,15 @@ export default function OmegaGlobe() {
     let resizeObserver: ResizeObserver | null = null
     let targetX = 0, targetY = 0, x = 0, y = 0
     let turn = 0
+    let chapterFocus = 0
+    let renderYaw = viewRef.current.yaw
+    let renderPitch = viewRef.current.pitch
+    let renderDistance = viewRef.current.distance
+    let drag: { id: number; x: number; y: number; start: GlobeView } | null = null
+    let cloudInner: THREE.Mesh | null = null
+    let cloudOuter: THREE.Mesh | null = null
+    let keyLight: THREE.DirectionalLight | null = null
+    let fillLight: THREE.DirectionalLight | null = null
     const media = window.matchMedia('(prefers-reduced-motion: reduce)')
     const controller = new AbortController()
     const mobile = window.matchMedia('(max-width: 760px)').matches
@@ -366,7 +396,7 @@ export default function OmegaGlobe() {
     }
   }, [])
 
-  return <div className="omega-webgl-stage" data-globe-status={status} ref={stageRef}>
+  return <div className="omega-webgl-stage" data-globe-status={status} data-globe-mode={mode} ref={stageRef}>
     <canvas ref={canvasRef} className="omega-webgl-canvas" aria-hidden="true" />
   </div>
 }
