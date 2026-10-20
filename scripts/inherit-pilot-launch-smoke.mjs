@@ -22,7 +22,7 @@ test('pilot landing, local console and research engine ship as static files',()=
  for(const file of ['pilot/index.html','pilot/report.html','pilot/landing.js','pilot/report.js','pilot/pilot.css','pilot-metrics.js'])
    assert.ok(sw.includes("'/games/inherit/"+file+"'"),file);
  for(const name of ['pilot/landing.js','pilot/report.js','pilot/pilot.css'])assert.ok(html.includes('./'+name.split('/').pop())||report.includes('./'+name.split('/').pop()),name);
- assert.match(sw,/inherit-shell-v16/);
+ assert.match(sw,/inherit-shell-v17/);
  assert.match(sw,/mjs\|js\|css/);
  assert.ok(sw.includes("path.endsWith('/report.html')"));
  assert.ok(sw.includes("'/games/inherit/pilot/report.html'"));
@@ -59,8 +59,11 @@ test('historical reports strictly censor future session activity and survey answ
  s=event(s,'session_opened','2026-10-08');
  s=event(s,'survey_submitted','2026-10-09',{clarity:5,returnIntent:5,meaning:5,reason:'creation',priceCents:799});
  const old=aggregate([exportOf(s)],'2026-10-03');
- assert.deepEqual(old.retention.d1,{eligible:1,returned:0,ratePercent:0});
- assert.deepEqual(old.retention.d7,{eligible:0,returned:0,ratePercent:null});
+ assert.equal(old.retention.d1.eligible,1);assert.equal(old.retention.d1.returned,0);
+ assert.equal(old.retention.d1.verifiedNo,1);assert.equal(old.retention.d1.unknown,0);
+ assert.equal(old.retention.d1.ratePercent,0);
+ assert.equal(old.retention.d7.eligible,0);assert.equal(old.retention.d7.returned,0);
+ assert.equal(old.retention.d7.unknown,0);assert.equal(old.retention.d7.ratePercent,null);
  assert.equal(old.funnel.any_trace.participants,1);
  assert.equal(old.survey.count,0);
  const later=aggregate([exportOf(s)],'2026-10-09');

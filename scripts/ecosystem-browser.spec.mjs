@@ -29,6 +29,9 @@ for (const [path, product, heading] of surfaces) {
 }
 
 test('OSGARD cinema, 3D world and hybrid controls are functional and keyboard-accessible', async ({ page }) => {
+  // Multiple WebGL scene transitions and a full reload cost >30 seconds on
+  // saturated mobile CI runners. Keep every real pointer and keyboard assertion.
+  test.slow()
   const errors = []
   page.on('pageerror', error => errors.push(error.message))
   await page.emulateMedia({ reducedMotion: 'no-preference' })
@@ -974,5 +977,42 @@ test('INHERIT pilot console analyzes voluntary files locally, censors future eve
  await expect(page.locator('#files')).toHaveJSProperty('value','');
  await expect(page.locator('#status')).toContainText('убраны из этой вкладки');
  expect(posted).toEqual([]);
+ expect(errors).toEqual([]);
+});
+
+
+test('INHERIT pilot console distinguishes stale D1 D7 D30 evidence from confirmed nonreturns',async({page})=>{
+ const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ const posts=[];page.on('request',req=>{if(req.method()!=='GET')posts.push(req.url())});
+ await page.goto('/games/inherit/pilot/report.html',{waitUntil:'domcontentloaded'});
+ await page.waitForFunction(()=>Boolean(window.InheritResearchCore));
+ const file=await page.evaluate(()=>{
+  const c=window.InheritResearchCore,at=d=>d+'T12:00:00.000Z';
+  let s=c.create('r5-test-participant-00000000000000',at('2026-09-01'));
+  s=c.record(s,'session_opened',at('2026-09-01'));
+  return c.exportConsent(s,at('2026-09-01'));
+ });
+ await page.locator('#files').setInputFiles({name:'stale-voluntary-export.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(file))});
+ await page.locator('#as-of').fill('2026-10-20');
+ await page.locator('#calculate').click();
+ await expect(page.locator('#results')).toBeVisible();
+ await expect(page.locator('#evidence-status')).toContainText('без полного наблюдения');
+ await expect(page.locator('#retention-body tr')).toHaveCount(3);
+ for(const row of await page.locator('#retention-body tr').all()){
+  await expect(row.locator('td').nth(4)).toHaveText('1'); // unknown
+  await expect(row.locator('td').nth(6)).toHaveText('н/д'); // no defensible rate
+ }
+ await expect(page.locator('#retention-body')).toContainText('D30');
+ expect(await page.locator('#results').textContent()).not.toContain('r5-test-participant-00000000000000');
+ const revised={...file,generatedAt:'2026-10-20T12:00:00.000Z'};
+ await page.locator('#files').setInputFiles({name:'full-voluntary-export.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(revised))});
+ await page.locator('#calculate').click();
+ await expect(page.locator('#evidence-status')).toContainText('невелико');
+ for(const row of await page.locator('#retention-body tr').all()){
+  await expect(row.locator('td').nth(3)).toHaveText('1'); // documented no-session
+  await expect(row.locator('td').nth(4)).toHaveText('0'); // no unresolved
+  await expect(row.locator('td').nth(6)).toHaveText('0%');
+ }
+ expect(posts).toEqual([]);
  expect(errors).toEqual([]);
 });

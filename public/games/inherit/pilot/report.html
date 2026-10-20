@@ -40,10 +40,12 @@
 <h2 id="results-title">02 · Итоги добровольного пилота</h2>
 <p class="console-caveat" id="basis"></p>
 <div class="metrics" id="summary-metrics"></div>
-<h3>Возвраты на конкретный календарный день</h3>
+<div class="evidence-banner" role="status" id="evidence-status"></div>
+<h3>Возвраты на конкретный календарный день — только по имеющимся экспортам</h3>
+<p class="console-caveat">Если отчёт скачан до окончания дня D1/D7/D30, отсутствие записи не является доказанным невозвратом. Такие случаи учитываются в колонке «Неизвестно». Доля считается лишь среди записей с достаточным наблюдением и не распространяется на всех игроков.</p>
 <div class="console-scroll">
-<table class="metric-table" aria-label="Удержание по добровольным отчётам">
-<thead><tr><th>Метрика</th><th>Достигли срока</th><th>Вернулись</th><th>Доля</th></tr></thead>
+<table class="metric-table retention-table" aria-label="Наблюдаемые возвраты и неполнота данных добровольного пилота">
+<thead><tr><th>Метрика</th><th>Срок наступил</th><th>Есть возврат</th><th>Нет сессии за полный день</th><th>Неизвестно</th><th>Покрытие</th><th>Доля при покрытии</th></tr></thead>
 <tbody id="retention-body"></tbody></table>
 </div>
 <h3>Игровая воронка после согласия</h3>

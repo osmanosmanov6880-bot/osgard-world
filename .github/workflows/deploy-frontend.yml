@@ -119,6 +119,7 @@ jobs:
           npm run qa:inherit-world-cycle
           npm run qa:inherit-research
           npm run qa:inherit-pilot-launch
+          npm run qa:inherit-followup
           npm run qa:remix-session
           npm run qa:remix-owned-session
           npm run qa:remix-invitations

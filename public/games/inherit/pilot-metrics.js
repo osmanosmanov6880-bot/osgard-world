@@ -11,22 +11,56 @@ export function aggregate(exports,asOf){
  let rejected=0,duplicates=0;
  for(const raw of exports){
   const payload=raw&&raw.kind==='voluntary-pilot-export'&&raw.product==='INHERIT'?raw:null;
-  const value=core.normalize(payload);
-  if(!value){rejected++;continue}
+  const value=core.normalize(payload),capturedAt=core.iso(payload?.generatedAt);
+  // Export timestamps are part of the capture window. Unknown or contradictory
+  // capture dates cannot be used to prove a non-return.
+  if(!value||!capturedAt||capturedAt<value.consentedAt||
+     value.events.some(event=>event.at>capturedAt)){rejected++;continue}
   if(value.consentedAt.slice(0,10)>date){rejected++;continue}
   const existing=chosen.get(value.participantId);
-  if(existing&&existing.consentedAt!==value.consentedAt){rejected++;continue}
+  if(existing&&existing.state.consentedAt!==value.consentedAt){rejected++;continue}
   if(existing){
    duplicates++;
-   if(value.lastSeq>existing.lastSeq)chosen.set(value.participantId,value);
-  }else chosen.set(value.participantId,value);
+   // Prefer the fullest journal. With equally many events prefer the later
+   // export: only that one can extend negative follow-up coverage.
+   if(value.lastSeq>existing.state.lastSeq||
+      (value.lastSeq===existing.state.lastSeq&&capturedAt>existing.capturedAt))
+     chosen.set(value.participantId,{state:value,capturedAt});
+  }else chosen.set(value.participantId,{state:value,capturedAt});
  }
- // Historical scorecards must not count visits, actions or survey answers after
- // the requested as-of date. The input may have been exported much later.
- const summaries=[...chosen.values()].map(x=>core.summarize({
-   ...x,events:x.events.filter(event=>event.at.slice(0,10)<=date)
- },date)).filter(Boolean);
- const count=summaries.length,eligD1=summaries.filter(s=>s.d1.eligible),eligD7=summaries.filter(s=>s.d7.eligible);
+ // Future events must never affect a historical report; the export itself may
+ // have been captured later, proving coverage of earlier complete UTC days.
+ const participants=[...chosen.values()].map(item=>{
+  const state=item.state,asOfState={...state,events:state.events.filter(event=>event.at.slice(0,10)<=date)};
+  const summary=core.summarize(asOfState,date);
+  // A trimmed journal may have silently lost the very session we are seeking.
+  const fullHistory=state.lastSeq===state.events.length&&
+    state.events.every((event,index)=>event.seq===index+1);
+  return summary?{state,summary,capturedAt:item.capturedAt,fullHistory}:null;
+ }).filter(Boolean);
+ const summaries=participants.map(item=>item.summary);
+ const count=summaries.length;
+ function retention(days){
+   const eligible=participants.filter(item=>date>=core.dayShift(item.summary.firstDay,days));
+   // Exact UTC calendar-day sessions only. This works for D1, D7 and D30
+   // without pretending to know whether a participant visited another device.
+   const observed=item=>{
+     const target=core.dayShift(item.summary.firstDay,days);
+     return item.state.events.some(event=>event.type==='session_opened'&&event.at.slice(0,10)===target);
+   };
+   const positive=eligible.filter(observed).length;
+   const negative=eligible.filter(item=>{
+     if(observed(item))return false;
+     const target=core.dayShift(item.summary.firstDay,days);
+     return item.fullHistory&&item.capturedAt.slice(0,10)>target;
+   }).length;
+   const covered=positive+negative,unknown=eligible.length-covered;
+   return {eligible:eligible.length,returned:positive,verifiedNo:negative,unknown,
+     covered,coveragePercent:clampRate(covered,eligible.length),
+     ratePercent:clampRate(positive,covered),
+     observedSharePercent:clampRate(positive,eligible.length)};
+ }
+ const d1=retention(1),d7=retention(7),d30=retention(30);
  const funnel={
   first_trace:summaries.filter(s=>s.firstTrace).length,
   any_trace:summaries.filter(s=>s.everPlaced).length,
@@ -44,19 +78,22 @@ export function aggregate(exports,asOf){
   priceIntentionCounts:priceChoices,
   reasons:Object.fromEntries(core.REASONS.map(x=>[x,surveys.filter(s=>s.reason===x).length]))
  };
- const d1Returned=eligD1.filter(s=>s.d1.returned).length,d7Returned=eligD7.filter(s=>s.d7.returned).length;
  return {
   product:'INHERIT',reportKind:'voluntary-export-pilot',asOf:date,
   sample:{participants:count,rejectedExports:rejected,duplicateExports:duplicates,scope:'Self-selected voluntary exports only; not MAU or population retention'},
-  retention:{
-   d1:{eligible:eligD1.length,returned:d1Returned,ratePercent:clampRate(d1Returned,eligD1.length)},
-   d7:{eligible:eligD7.length,returned:d7Returned,ratePercent:clampRate(d7Returned,eligD7.length)}
+  retention:{d1,d7,d30},
+  evidence:{
+   status:count===0?'NO_EXPORTS':d7.eligible===0?'AWAIT_D7':d7.unknown>0?'MISSING_FOLLOWUP':d7.covered<30?'SMALL_VOLUNTARY_SAMPLE':'DESCRIPTIVE_ONLY',
+   minDescriptiveSample:30,readyForPayments:false,
+   note:'Voluntary local exports alone cannot establish population retention, CAC, revenue or purchase demand.'
   },
   funnel:Object.fromEntries(Object.entries(funnel).map(([k,v])=>[k,{participants:v,ratePercent:clampRate(v,count)}])),
   survey:answers,
   limitations:[
-   'Exporters are self-selected; missing exports and incomplete event journals bias every rate.',
-   'D1 and D7 use exact UTC calendar day relative to research consent, not first install or first gameplay. Later events are censored at the report as-of day.',
+   'Self-selected voluntary exports cannot estimate the retention of all game users. Missing uploads and device resets create strong selection bias.',
+   'An exported journal captured before a target day ends cannot prove non-return; incomplete follow-up is shown as unknown.',
+   'A full journal observed through the entire target UTC day can document the absence of a recorded session on that device, not that the person never returned elsewhere.',
+   'D1, D7 and D30 use exact UTC calendar day relative to research consent, not first install or first gameplay. Later events are censored at the report as-of day.',
    'This file includes no purchases, real payments, CAC, LTV or verified server history.',
    'A stated price preference is not evidence of a completed purchase.',
    'World-generation advancement is observed client-side and is not a server-authoritative transfer.'
@@ -73,11 +110,15 @@ export function formatMarkdown(report){
   '**Сфера:** только вручную переданные экспорты участников, не вся аудитория.',
   '**Участников:** '+sample.participants+'; повторных экспортов: '+sample.duplicateExports+'; отклонено: '+sample.rejectedExports,
   '',
-  '## Удержание (после согласия)',
-  '| Метрика | Достигли срока | Вернулись | Доля |',
-  '|---|---:|---:|---:|',
-  '| D1 | '+retention.d1.eligible+' | '+retention.d1.returned+' | '+rate(retention.d1)+' |',
-  '| D7 | '+retention.d7.eligible+' | '+retention.d7.returned+' | '+rate(retention.d7)+' |',
+  '## Возвраты по добровольным экспортам (не D1/D7 всей аудитории)',
+  '| Период | Достигли срока | Зафиксирован возврат | Сессия не обнаружена при полном охвате | Нет достаточных данных | Охват | Доля среди охваченных |',
+  '|---|---:|---:|---:|---:|---:|---:|',
+  '| D1 | '+retention.d1.eligible+' | '+retention.d1.returned+' | '+retention.d1.verifiedNo+' | '+retention.d1.unknown+' | '+(retention.d1.coveragePercent===null?'н/д':retention.d1.coveragePercent+'%')+' | '+rate(retention.d1)+' |',
+  '| D7 | '+retention.d7.eligible+' | '+retention.d7.returned+' | '+retention.d7.verifiedNo+' | '+retention.d7.unknown+' | '+(retention.d7.coveragePercent===null?'н/д':retention.d7.coveragePercent+'%')+' | '+rate(retention.d7)+' |',
+  '| D30 | '+retention.d30.eligible+' | '+retention.d30.returned+' | '+retention.d30.verifiedNo+' | '+retention.d30.unknown+' | '+(retention.d30.coveragePercent===null?'н/д':retention.d30.coveragePercent+'%')+' | '+rate(retention.d30)+' |',
+  '',
+  '**Метод:** «Неизвестно» означает, что экспорт сделан до окончания нужного дня или локальный журнал неполный. Процент считается лишь среди данных с достаточным временным охватом; это не показатель удержания всех пользователей.',
+  '**Готовность к монетизации:** '+report.evidence.status+'; автоматическое разрешение принимать платежи отсутствует.',
   '',
   '## Игровая воронка',
   '| Действие | Участники | Доля |',

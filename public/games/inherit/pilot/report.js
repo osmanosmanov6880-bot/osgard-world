@@ -6,7 +6,7 @@ const d=document,form=d.querySelector('#pilot-form'),files=d.querySelector('#fil
 const metrics=d.querySelector('#summary-metrics'),retention=d.querySelector('#retention-body'),
  funnel=d.querySelector('#funnel-body'),prices=d.querySelector('#price-body');
 const outBasis=d.querySelector('#basis'),survey=d.querySelector('#survey-summary'),
- limitations=d.querySelector('#limitations');
+ limitations=d.querySelector('#limitations'),evidence=d.querySelector('#evidence-status');
 let current=null;
 date.value=new Date().toISOString().slice(0,10);
 const labels={
@@ -43,10 +43,20 @@ function render(report){
  stat(report.survey.count,'Добровольных ответов на опрос');
  stat(report.retention.d1.eligible,'Достигли срока D1');
  stat(report.retention.d7.eligible,'Достигли срока D7');
+ stat(report.retention.d7.unknown,'D7: недостаточно наблюдений');
+ stat(report.retention.d30.eligible,'Достигли срока D30');
+ stat(report.retention.d30.unknown,'D30: недостаточно наблюдений');
+ evidence.textContent={
+   NO_EXPORTS:'Данных для оценки нет. Подключать оплату или заявлять об удержании нельзя.',
+   AWAIT_D7:'Седьмой день ещё не наступил для полученной выборки. D7 пока не определён.',
+   MISSING_FOLLOWUP:'Есть участники без полного наблюдения до D7. Они не считаются невозвратами.',
+   SMALL_VOLUNTARY_SAMPLE:'Число проверяемых D7-наблюдений невелико. Результат остаётся описательным.',
+   DESCRIPTIVE_ONLY:'Данные можно описывать, но нельзя считать доказанным спросом, MAU или удержанием всей аудитории.'
+ }[report.evidence.status]||'Требуется дополнительная проверка данных.';
  retention.replaceChildren();funnel.replaceChildren();prices.replaceChildren();
- for(const [key,label] of [['d1','D1 · следующий день'],['d7','D7 · седьмой день']]){
+ for(const [key,label] of [['d1','D1 · следующий день'],['d7','D7 · седьмой день'],['d30','D30 · тридцатый день']]){
   const r=report.retention[key];
-  dataRow(retention,[label,r.eligible,r.returned,percent(r.ratePercent)]);
+  dataRow(retention,[label,r.eligible,r.returned,r.verifiedNo,r.unknown,percent(r.coveragePercent),percent(r.ratePercent)]);
  }
  for(const [key,data] of Object.entries(report.funnel))
   dataRow(funnel,[labels[key]||key,data.participants,percent(data.ratePercent)]);
@@ -97,7 +107,7 @@ d.querySelector('#clear-data').addEventListener('click',()=>{
  current=null;files.value='';results.hidden=true;
  outBasis.textContent='';metrics.replaceChildren();retention.replaceChildren();
  funnel.replaceChildren();prices.replaceChildren();survey.textContent='';
- limitations.textContent='';
+ limitations.textContent='';evidence.textContent='';
  status.textContent='Выбранные файлы и результаты убраны из этой вкладки. Ничего не отправлялось.';
 });
 d.querySelector('#save-json').addEventListener('click',()=>{

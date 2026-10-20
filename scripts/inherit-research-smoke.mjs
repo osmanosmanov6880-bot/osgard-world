@@ -17,7 +17,7 @@ check('all research and tutorial assets are loaded and versioned in offline shel
  for(const name of ['research-core.js','research-i18n.js','research-ui.js','research.css','first-steps.js','first-steps.css']){
   assert.ok(html.includes('./'+name),'HTML '+name);assert.ok(sw.includes('/games/inherit/'+name),'SW '+name);
  }
- assert.match(sw,/inherit-shell-v16/);
+ assert.match(sw,/inherit-shell-v17/);
  for(const name of ['research-core.js','research-ui.js','first-steps.js','research-i18n.js'])new vm.Script(read(name));
 });
 check('consent is required before a research participant can exist',()=>{
@@ -68,8 +68,10 @@ check('operator tool deduplicates repeated exports, counts real opt-in cohorts a
  c=add(c,'survey_submitted','2026-10-20T08:00:00.000Z',{clarity:4,returnIntent:5,meaning:4,reason:'visual',priceCents:199});
  const report=aggregate([exportOf(a),exportOf(b),exportOf(c),exportOf(a),{},null], '2026-10-20');
  assert.equal(report.sample.participants,3);assert.equal(report.sample.duplicateExports,1);assert.equal(report.sample.rejectedExports,2);
- assert.deepEqual(report.retention.d1,{eligible:2,returned:1,ratePercent:50});
- assert.deepEqual(report.retention.d7,{eligible:2,returned:1,ratePercent:50});
+ assert.equal(report.retention.d1.eligible,2);assert.equal(report.retention.d1.returned,1);
+ assert.equal(report.retention.d1.verifiedNo,1);assert.equal(report.retention.d1.unknown,0);assert.equal(report.retention.d1.ratePercent,50);
+ assert.equal(report.retention.d7.eligible,2);assert.equal(report.retention.d7.returned,1);
+ assert.equal(report.retention.d7.verifiedNo,1);assert.equal(report.retention.d7.unknown,0);assert.equal(report.retention.d7.ratePercent,50);
  assert.equal(report.funnel.first_trace.participants,1);assert.equal(report.funnel.generation_advanced_observed.participants,1);
  assert.equal(report.survey.count,3);assert.equal(report.survey.priceIntentionCounts['499'],1);
  assert.equal(report.survey.priceIntentionCounts['0'],1);
