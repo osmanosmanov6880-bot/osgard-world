@@ -235,3 +235,37 @@ html[data-motion="off"] .omega-mode-tabs button{transition:none!important}
 @media(prefers-reduced-motion:reduce){
   .omega-quality-options button{transition:none!important}
 }
+
+/* NASA orthographic fallback, shown when WebGL is unavailable or motion is disabled. */
+.omega-globe {
+  border-color:#86dffa;
+  background-image:
+    url('/brand/omega-nasa-poster-1k.webp'),
+    radial-gradient(circle at 38% 25%,#064d74 2%,#001425 78%);
+  background-size:cover;
+  background-position:center;
+  box-shadow:
+    inset -26px -18px 48px #020915aa,
+    inset 16px 12px 48px #6cefff24,
+    0 0 54px #46ddff75,
+    0 0 130px #176fb855;
+  animation:omega-photoreal-idle 16s ease-in-out infinite;
+}
+.omega-globe .omega-continent {display:none}
+.omega-globe::before {
+  background:
+    radial-gradient(circle at 31% 26%,#95ebff26,transparent 42%),
+    radial-gradient(circle at 55% 50%,transparent 56%,#020b1a9b 91%);
+}
+.omega-globe::after {opacity:.20}
+@keyframes omega-photoreal-idle {
+  0%,100%{transform:translate(-50%,-50%) scale(1)}
+  50%{transform:translate(-50%,-50%) scale(1.025)}
+}
+@media(prefers-reduced-motion:reduce) {
+  .omega-globe {animation:none!important;transform:translate(-50%,-50%)!important}
+}
+html[data-motion="off"] .omega-globe {
+  animation:none!important;
+  transform:translate(-50%,-50%)!important;
+}
