@@ -173,3 +173,8 @@ body .dock.cine-account-dock{display:flex;flex-wrap:wrap;align-items:center;gap:
   .cine-account-dock .tools{flex-basis:100%;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
   .cine-account-dock .tool,.cine-account-dock .catalog-button{white-space:normal;font-size:12px;text-align:left}
 }
+
+/* Click response has no hitbox: it never steals clicks from gameplay. */
+.cine-click-ripple{position:absolute;z-index:8;display:block;width:12px;height:12px;border:2px solid rgba(246,215,154,.9);border-radius:50%;box-shadow:0 0 12px rgba(240,210,144,.45);background:rgba(245,216,158,.08);transform:translate(-50%,-50%);pointer-events:none;animation:cine-touch .76s cubic-bezier(.13,.59,.42,1) forwards}
+@keyframes cine-touch{0%{opacity:1;transform:translate(-50%,-50%) scale(.7)}80%{opacity:.58}100%{opacity:0;transform:translate(-50%,-50%) scale(6)}}
+@media(prefers-reduced-motion:reduce){.cine-click-ripple{display:none!important;animation:none!important}}
