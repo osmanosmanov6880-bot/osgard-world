@@ -90,6 +90,7 @@ jobs:
           npm run qa:inherit-story
           npm run qa:inherit-world-cycle
           npm run qa:inherit-research
+          npm run qa:inherit-pilot-launch
           npm run qa:inherit-handoff
           npm run qa:inherit-account
           npm run qa:remix-session
