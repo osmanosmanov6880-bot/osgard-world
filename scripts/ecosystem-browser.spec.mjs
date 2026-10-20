@@ -86,6 +86,51 @@ test('OSGARD globe fails gracefully without WebGL2 and keeps the experience swit
   await expect(page.getByRole('link', { name: /Исследовать экосистему/ })).toBeVisible()
 })
 
+test('OSGARD satellite Earth loads genuine NASA albedo, cloud and night maps with provenance', async ({ page, request }) => {
+  for (const name of ['earth-day-4096.jpg', 'earth-day-2048.jpg', 'earth-night-2048.jpg', 'earth-clouds-2048.jpg']) {
+    const response = await request.get('/brand/nasa/' + name)
+    expect(response.status(), 'NASA image ' + name).toBe(200)
+    expect(response.headers()['content-type']).toContain('image/jpeg')
+  }
+
+  const errors = []
+  page.on('pageerror', error => errors.push(error.message))
+  page.on('console', message => {
+    if (message.type() === 'error' && /THREE.WebGLProgram|Shader Error|VALIDATE_STATUS false/.test(message.text()))
+      errors.push(message.text())
+  })
+  await page.emulateMedia({ reducedMotion: 'no-preference' })
+  await page.goto('/')
+  const stage = page.locator('.omega-webgl-stage')
+  await expect(stage).toHaveAttribute('data-globe-status', /^(webgl|fallback)$/, { timeout: 20000 })
+  if (await stage.getAttribute('data-globe-status') === 'webgl') {
+    await expect(stage).toHaveAttribute('data-earth-source', 'nasa')
+    await expect(stage).toHaveAttribute('data-earth-image-width', '2048')
+    await expect(stage).toHaveAttribute('data-cloud-model', 'raymarch')
+    await expect(stage).toHaveAttribute('data-cloud-layers', '2')
+  }
+  await page.getByText('Откуда изображение Земли?').click()
+  await expect(page.getByText('Поверхность: NASA Blue Marble')).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Посмотреть источник NASA' })).toHaveAttribute('href', /science\.nasa\.gov/)
+  expect(errors).toEqual([])
+})
+
+test('OSGARD satellite image errors degrade safely to the procedural sphere', async ({ page }) => {
+  await page.route('**/brand/nasa/**', route => route.abort('failed'))
+  await page.emulateMedia({ reducedMotion: 'no-preference' })
+  await page.goto('/')
+  const stage = page.locator('.omega-webgl-stage')
+  await expect(stage).toHaveAttribute('data-globe-status', /^(webgl|fallback)$/, { timeout: 20000 })
+  if (await stage.getAttribute('data-globe-status') === 'webgl') {
+    await expect(stage).toHaveAttribute('data-earth-source', 'vector')
+    await expect(stage).toHaveAttribute('data-cloud-model', 'procedural')
+  }
+  await expect(page.getByRole('group', { name: 'Выберите режим 3D-сцены' })).toBeVisible()
+  await page.getByRole('button', { name: 'Кино' }).click()
+  await expect(page.locator('.omega-hero')).toHaveAttribute('data-omega-mode', 'cinema')
+  await expect(page.locator('.omega-globe')).toHaveCount(1)
+})
+
 test('OSGARD Earth GPU quality changes real texture detail with safe remount', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'no-preference' })
   await page.goto('/')
