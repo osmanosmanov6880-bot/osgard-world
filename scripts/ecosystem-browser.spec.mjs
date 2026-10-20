@@ -731,7 +731,7 @@ test('INHERIT world growth: 12 discoveries and ancient island are derived from v
      {tool:'tree',x:30,y:30},{tool:'moss',x:31,y:31},
      {tool:'light',x:43,y:43},{tool:'path',x:45,y:44},
      {tool:'arch',x:60,y:60},{tool:'stone',x:61,y:61},
-     {tool:'flower',x:72,y:72},{tool:'chime',x:73,y:73}
+     {tool:'flower',x:72,y:72},{tool:'chime',x:73,y:73},{tool:'cairn',x:82,y:62}
     ];
     window.InheritGame.apply({...base,generation:177,objects:placed,snapshots:[{generation:167,objects:placed}],pending:[],changes:[],budget:100});
     return JSON.stringify(window.InheritGame.snapshot());
@@ -743,8 +743,16 @@ test('INHERIT world growth: 12 discoveries and ancient island are derived from v
   await expect(page.locator('.inherit-cycle-milestone')).toHaveCount(12);
   await expect(page.locator('.inherit-cycle-milestone.is-unlocked').first()).toBeVisible();
   await expect(page.locator('.inherit-cycle-fact')).toHaveCount(4);
+  await expect(page.locator('.inherit-cosmetic-tile')).toHaveCount(4);
+  for(const name of ['fern','aurora','copper'])await expect(page.locator('.inherit-cosmetic-tile--'+name)).toBeEnabled();
+  await page.locator('.inherit-cosmetic-tile--copper').click();
+  await expect(page.locator('body')).toHaveAttribute('data-inherit-skin','copper');
+  await expect(page.locator('.inherit-cosmetic-tile--copper')).toHaveAttribute('aria-pressed','true');
   await page.screenshot({path:info.outputPath('inherit-world-ancient.png')});
   expect(await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()))).toBe(before);
+  await page.evaluate(()=>window.InheritPersistence.setItem('inherit-world-v1',JSON.stringify(window.InheritGame.snapshot())));
+  await page.reload({waitUntil:'domcontentloaded'});
+  await expect(page.locator('body')).toHaveAttribute('data-inherit-skin','copper');
   expect(errors).toEqual([]);
 });
 
