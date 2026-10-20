@@ -158,3 +158,18 @@ body.cine-eco .beacon:after,body.cine-eco .ring{animation:none}
 }
 @media(max-width:460px){body .world{min-height:680px;height:760px}body .world>.island{width:800px;height:440px;bottom:14%}body .world>.hero{top:17%}body .world>.hero h1{font-size:clamp(37px,10vw,52px)}body .world>.hero p{max-width:200px}.cine-utility{grid-template-columns:1fr 1fr;padding:11px}.cine-utility button{font-size:11px}}
 @media(prefers-reduced-motion:reduce){body .world>.stars,body .world>.island{animation:none!important;transition:none!important}body .island .beacon:after,body .island .ring{animation:none!important}}
+
+/* Account mode: no hidden critical actions or reparenting of interactive controls. */
+body .dock.cine-account-dock{display:flex;flex-wrap:wrap;align-items:center;gap:9px 13px;height:auto;min-height:112px;padding:15px clamp(22px,5vw,84px);background:#05121dee;border-top:1px solid var(--cine-edge)}
+.cine-account-dock .tools{flex:1 1 340px;display:flex;flex-wrap:wrap;gap:6px;border:0;padding:0;min-width:0}
+.cine-account-dock .tool{min-height:44px;border-radius:5px;border:1px solid #b9c7c433;background:#ffffff07}
+.cine-account-dock .tool.active{border-color:var(--cine-gold);color:#fff0cc}
+.cine-account-dock #pass{order:0;border-radius:5px;font-size:12px;min-height:48px;letter-spacing:0}
+@media(max-width:740px){
+  body .world>.objective{position:absolute;inset:auto;left:5vw;top:72px;right:auto;bottom:auto;max-width:min(76vw,310px);margin:0;padding:9px 11px;z-index:7}
+  body .world>.community-signal{position:absolute;inset:auto;left:5vw;top:147px;right:auto;bottom:auto;max-width:min(69vw,280px);margin:0;padding:9px 11px;z-index:7}
+  body .world>.hero{position:absolute;top:260px;bottom:auto;left:7vw;right:7vw;max-width:86vw;z-index:7}
+  .world>.hero:before{background:radial-gradient(ellipse at 34% 35%,rgba(2,11,20,.89),transparent 80%)}
+  .cine-account-dock .tools{flex-basis:100%;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+  .cine-account-dock .tool,.cine-account-dock .catalog-button{white-space:normal;font-size:12px;text-align:left}
+}
