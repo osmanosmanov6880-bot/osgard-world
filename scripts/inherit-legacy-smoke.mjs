@@ -16,8 +16,16 @@ check('deterministic grove with proven age in two generations',()=>{
  const before=JSON.stringify(root);const a=engine.derive(root),b=engine.derive(root);
  assert.equal(JSON.stringify(a),JSON.stringify(b));assert.equal(JSON.stringify(root),before);
  assert.equal(a.total,1);assert.equal(a.totals.grove,1);assert.equal(a.effects[0].since,10);assert.equal(a.effects[0].age,3);
- assert.equal(a.effects[0].stage,'growing');assert.equal(a.memory.length,2);
+ assert.equal(a.effects[0].stage,'growing');assert.equal(a.memory.length,2);assert.equal(a.memoryCount,2);
  const later=engine.derive({...root,generation:16});assert.equal(later.effects[0].stage,'heritage');assert.equal(later.effects[0].age,6);
+});
+check('same-type memories are grouped without undercounting preserved objects',()=>{
+ const objects=[...root.objects,{tool:'tree',x:61,y:61}];
+ const frame={generation:10,objects};
+ const result=engine.derive({...root,objects,snapshots:[frame]});
+ assert.equal(result.memoryCount,3);
+ assert.equal(result.memory.find(x=>x.type==='tree').count,2);
+ assert.equal(result.memory.length,2);
 });
 check('reversing an unsubmitted trace removes its synergy with no budget impact',()=>{
  const a=engine.derive(root);
