@@ -55,6 +55,22 @@ for (const relative of await filesAt('public/games/zion-9')) {
 const inherit = (await fetchPath('/games/inherit/')).toString('utf8')
 assert.ok(inherit.includes("'/api/world/quiet-reach'"), 'INHERIT same-origin world endpoint')
 assert.equal((inherit.match(/<\/html>/gi) || []).length, 1, 'INHERIT document integrity')
+const pilotReleaseAssets = [
+ '/games/inherit/pilot/index.html',
+ '/games/inherit/pilot/landing.js',
+ '/games/inherit/pilot/pilot.css',
+ '/games/inherit/pilot/report.html',
+ '/games/inherit/pilot/report.js',
+ '/games/inherit/pilot-metrics.js',
+ '/games/inherit/research-ui.js',
+ '/games/inherit/sw.js'
+];
+for (const path of pilotReleaseAssets) {
+  assert.equal(hash(await fetchPath(path)), hash(await readFile('public' + path)),
+    path + ': published INHERIT pilot bytes differ from this release');
+  checked.push(path);
+}
+
 const health = JSON.parse((await fetchPath('/api/core/health')).toString('utf8'))
 assert.equal(health.status, 'ok', 'Core health')
 const privateProgram = new URL('/api/core/learning/programs', origin)
