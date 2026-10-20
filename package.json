@@ -88,6 +88,7 @@
     "qa:inherit-story": "node scripts/inherit-story-smoke.mjs",
     "qa:inherit-world-cycle": "node scripts/inherit-world-cycle-smoke.mjs",
     "qa:inherit-research": "node scripts/inherit-research-smoke.mjs",
+    "qa:inherit-pilot-launch": "node scripts/inherit-pilot-launch-smoke.mjs",
     "qa:inherit-handoff": "node scripts/inherit-handoff-smoke.mjs",
     "qa:inherit-account": "node scripts/inherit-account-smoke.mjs",
     "qa:remix-session": "node scripts/remix-session-smoke.mjs",
