@@ -47,6 +47,9 @@ jobs:
           echo '== Host identity and inspection privileges =='
           id -u
           if sudo -n true 2>/dev/null; then echo 'sudo: available without interactive input'; else echo 'sudo: not available'; fi
+          echo '== Current frontend container IPv4 =='
+          docker inspect --format '{{range $name, $conf := .NetworkSettings.Networks}}{{println $name $conf.IPAddress $conf.Gateway}}{{end}}' osgard-world || true
+          docker exec osgard-world sh -lc 'hostname -i || true' || true
           echo '== Docker bridge metadata =='
           net="$(docker inspect --format '{{range $name, $conf := .NetworkSettings.Networks}}{{println $name}}{{end}}' osgard-world | awk 'NF {print $1; exit}')"
           if [ -n "$net" ]; then
