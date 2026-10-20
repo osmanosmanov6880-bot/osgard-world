@@ -1,0 +1,55 @@
+name: OSGARD Omega live acceptance
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - ".github/workflows/omega-production-acceptance.yml"
+      - "playwright.omega-production.config.mjs"
+      - "scripts/omega-production.spec.mjs"
+  workflow_run:
+    workflows: ["OSGARD frontend deploy"]
+    types: [completed]
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: omega-live-acceptance
+  cancel-in-progress: true
+
+jobs:
+  verify-production:
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Checkout production acceptance scripts
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install locked app dependencies
+        run: npm ci
+      - name: Install pinned Playwright
+        run: |
+          npm install --no-save --package-lock=false @playwright/test@1.58.2
+          npx playwright install --with-deps chromium
+      - name: Validate the live public website in desktop and mobile browsers
+        env:
+          OSGARD_PROD_BASE_URL: https://osgard.world
+        run: npx playwright test --config playwright.omega-production.config.mjs
+      - name: Upload screenshots, HTML results and failed traces
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: omega-production-acceptance
+          path: |
+            omega-acceptance-results/
+            omega-acceptance-report/
+          if-no-files-found: warn
+          retention-days: 14
