@@ -1016,3 +1016,62 @@ test('INHERIT pilot console distinguishes stale D1 D7 D30 evidence from confirme
  expect(posts).toEqual([]);
  expect(errors).toEqual([]);
 });
+
+
+test('INHERIT generation atlas compares two real local generations without editing the world',async({page})=>{
+ const errors=await prepareStandaloneGame(page);
+ await page.goto('/games/inherit/?lang=ru',{waitUntil:'domcontentloaded'});
+ await expect(page.locator('.inherit-atlas-trigger')).toBeVisible();
+ const before=await page.evaluate(()=>window.InheritGame.snapshot());
+ await page.locator('.inherit-atlas-trigger').click();
+ const dialog=page.locator('.inherit-atlas-dialog');
+ await expect(dialog).toBeVisible();
+ await expect(dialog.locator('.inherit-atlas-title')).toHaveText('Атлас поколений');
+ await expect(dialog.locator('.inherit-atlas-disclosure')).toContainText('Нет записи в историю');
+ await dialog.locator('.inherit-atlas-close').click();
+ // A placement is a real game action. The atlas does not simulate it.
+ await page.locator('#world').focus();
+ await page.locator('#world').press('Enter');
+ await expect(page.locator('#budget')).toHaveText('99');
+ await page.locator('#pass').click();
+ await expect.poll(()=>page.evaluate(()=>window.InheritGame.snapshot().generation)).toBe(before.generation+1);
+ const committed=await page.evaluate(()=>window.InheritGame.snapshot());
+ await page.locator('.inherit-atlas-trigger').click();
+ await expect(dialog).toBeVisible();
+ await expect(dialog.locator('.inherit-atlas-main')).toBeVisible();
+ await expect(dialog.locator('.inherit-atlas-field select').first()).not.toBeDisabled();
+ const model=await page.evaluate(()=>window.InheritAtlasUI.getModel());
+ expect(model.status).toBe('ok');
+ expect(model.totals.added).toBeGreaterThanOrEqual(1);
+ expect(model.source).toBe('saved-frames-only');
+ await expect(dialog.locator('.inherit-atlas-stat').first()).toContainText('+');
+ expect(await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()))).toBe(JSON.stringify(committed));
+ await dialog.locator('.inherit-atlas-close').click();
+ await page.locator('[data-game-language="zh"]').click();
+ await page.locator('.inherit-atlas-trigger').click();
+ await expect(dialog.locator('.inherit-atlas-title')).toHaveText('世代图鉴');
+ await expect(dialog.locator('.inherit-atlas-disclosure')).toContainText('不会连接服务器');
+ expect(errors).toEqual([]);
+});
+
+test('INHERIT generation atlas exposes insufficient evidence rather than fabricated earlier history',async({page})=>{
+ const errors=await prepareStandaloneGame(page);
+ await page.goto('/games/inherit/?lang=en',{waitUntil:'domcontentloaded'});
+ await page.evaluate(()=>{
+   const game=window.InheritGame,s=game.snapshot();
+   s.snapshots=[];s.objects=[];s.pending=[];s.changes=[];
+   game.apply(s);
+ });
+ const start=await page.evaluate(()=>window.InheritGame.snapshot());
+ await page.locator('.inherit-atlas-trigger').click();
+ const dialog=page.locator('.inherit-atlas-dialog');
+ await expect(dialog).toBeVisible();
+ await expect(dialog.locator('.inherit-atlas-main')).toBeHidden();
+ await expect(dialog.locator('.inherit-atlas-status')).toContainText('You need two different saved states');
+ await expect(dialog.locator('.inherit-atlas-field select').first()).toBeDisabled();
+ await expect.poll(()=>page.evaluate(()=>window.InheritGame.snapshot().generation)).toBe(start.generation);
+ expect(await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()))).toBe(JSON.stringify(start));
+ await page.keyboard.press('Escape');
+ await expect(dialog).toBeHidden();
+ expect(errors).toEqual([]);
+});

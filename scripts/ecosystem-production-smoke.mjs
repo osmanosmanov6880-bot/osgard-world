@@ -63,7 +63,10 @@ const pilotReleaseAssets = [
  '/games/inherit/pilot/report.js',
  '/games/inherit/pilot-metrics.js',
  '/games/inherit/research-ui.js',
- '/games/inherit/sw.js'
+ '/games/inherit/sw.js',
+ '/games/inherit/generation-atlas-core.js',
+ '/games/inherit/generation-atlas.js',
+ '/games/inherit/generation-atlas.css'
 ];
 for (const path of pilotReleaseAssets) {
   assert.equal(hash(await fetchPath(path)), hash(await readFile('public' + path)),

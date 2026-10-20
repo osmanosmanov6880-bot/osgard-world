@@ -92,6 +92,7 @@ jobs:
           npm run qa:inherit-research
           npm run qa:inherit-pilot-launch
           npm run qa:inherit-followup
+          npm run qa:inherit-atlas
           npm run qa:inherit-handoff
           npm run qa:inherit-account
           npm run qa:remix-session

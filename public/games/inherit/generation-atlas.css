@@ -1,0 +1,75 @@
+/* Read-only generation atlas. Isolated from the island's placement coordinates. */
+.inherit-atlas-trigger{display:inline-flex;align-items:center;justify-content:center;min-height:38px;
+ padding:8px 12px;border:1px solid rgba(232,203,145,.48);border-radius:4px;
+ background:linear-gradient(145deg,rgba(233,211,165,.13),rgba(12,43,43,.32));color:#f1e3c5;
+ font:700 11px/1.3 Manrope,system-ui,sans-serif;letter-spacing:.02em;cursor:pointer;white-space:nowrap}
+.inherit-atlas-trigger:hover{border-color:#f0d59d;background:rgba(224,199,143,.23)}
+.inherit-atlas-trigger:focus-visible,.inherit-atlas-dialog button:focus-visible,
+.inherit-atlas-dialog select:focus-visible{outline:3px solid #ffe6ae;outline-offset:3px}
+.inherit-atlas-dialog{width:min(1040px,calc(100vw - 26px));max-width:1040px;
+ max-height:min(90dvh,920px);height:auto;margin:auto;padding:clamp(16px,3vw,32px);
+ border:1px solid #bda6728a;border-radius:13px;color:#edf2e8;
+ background:radial-gradient(ellipse at 84% 10%,rgba(85,134,126,.29),transparent 53%),
+ linear-gradient(145deg,#10343b,#071c26 67%,#071720);box-shadow:0 35px 130px #000c;
+ overflow:auto;overscroll-behavior:contain}
+.inherit-atlas-dialog::backdrop{background:rgba(1,10,15,.82);backdrop-filter:blur(6px)}
+.inherit-atlas-dialog:not([open]){display:none!important}
+.inherit-atlas-heading{display:flex;align-items:start;justify-content:space-between;gap:20px}
+.inherit-atlas-titles{min-width:0}.inherit-atlas-eyebrow{margin:0 0 6px;
+ font:700 10px/1.6 Manrope,system-ui,sans-serif;letter-spacing:.17em;color:#e0c187}
+.inherit-atlas-title{margin:0;color:#f4e7d2;font:500 clamp(29px,4vw,43px)/1.15 Georgia,serif}
+.inherit-atlas-close{width:44px;height:44px;min-width:44px;
+ display:grid;place-items:center;border:1px solid #ded2b56e;border-radius:6px;
+ background:rgba(234,216,179,.06);font:26px/1 Georgia,serif;color:#f2e5cd;cursor:pointer}
+.inherit-atlas-close:hover{background:rgba(231,201,153,.19)}
+.inherit-atlas-intro{max-width:850px;margin:13px 0 21px;color:#b9ccc8;font:13px/1.7 Manrope,system-ui,sans-serif}
+.inherit-atlas-controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px;margin:0 0 20px}
+.inherit-atlas-field{display:grid;gap:7px;color:#e8d3aa;font:700 12px/1.45 Manrope,system-ui,sans-serif}
+.inherit-atlas-field select{min-height:46px;min-width:0;width:100%;padding:10px 12px;
+ border:1px solid #ddc29088;border-radius:5px;background:#0f2c36;color:#f4e7d4;
+ font:500 13px/1.4 Manrope,system-ui,sans-serif;cursor:pointer}
+.inherit-atlas-field select:disabled{opacity:.55;cursor:default}
+.inherit-atlas-status{min-height:0;margin:7px 0 13px;color:#eed59f;font:600 13px/1.7 Manrope,system-ui,sans-serif}
+.inherit-atlas-status:empty{display:none}
+.inherit-atlas-main{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,.8fr);gap:22px}
+.inherit-atlas-main[hidden]{display:none!important}
+.inherit-atlas-view,.inherit-atlas-details{min-width:0}
+.inherit-atlas-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:0 0 15px}
+.inherit-atlas-stat{display:grid;gap:5px;align-content:start;padding:13px 10px;border:1px solid #d6b9803e;
+ background:#f7e9cb0a;border-radius:7px}
+.inherit-atlas-stat span{font:600 10px/1.5 Manrope,system-ui,sans-serif;color:#c4d3c8}
+.inherit-atlas-stat strong{font:500 clamp(20px,2.6vw,29px)/1.2 Georgia,serif;color:#eace95;font-variant-numeric:tabular-nums}
+.inherit-atlas-legend{display:flex;flex-wrap:wrap;gap:14px;margin:15px 0 13px}
+.inherit-atlas-legend-item{display:inline-flex;align-items:center;gap:6px;color:#d7e4d5;font:600 11px/1.4 Manrope,system-ui,sans-serif}
+.inherit-atlas-dot{display:inline-block;width:10px;height:10px;border-radius:50%}
+.inherit-atlas-dot--added{background:#ebcd86}.inherit-atlas-dot--removed{background:#d18c80}
+.inherit-atlas-dot--same{background:#91b8a9}
+.inherit-atlas-map{position:relative;aspect-ratio:1.6;overflow:hidden;min-height:220px;
+ border:1px solid #a9bd9f45;border-radius:50% 50% 48% 48%/43% 40% 57% 54%;
+ background:radial-gradient(ellipse at 45% 43%,#8ba783 0,#608a72 43%,#2c6a65 68%,#113b42 86%,#0c303b 96%);
+ box-shadow:inset 0 0 55px #07242b8a,0 14px 45px #0005}
+.inherit-atlas-map::before{content:"";position:absolute;inset:6% 8%;border:1px solid #d6dfb02b;
+ border-radius:50%;box-shadow:0 0 33px #d6c79426;pointer-events:none}
+.inherit-atlas-map::after{content:"";position:absolute;inset:0;
+ background:repeating-linear-gradient(90deg,transparent 0,transparent calc(25% - 1px),rgba(237,224,181,.075) 25%);
+ pointer-events:none}
+.inherit-atlas-pin{position:absolute;display:block;width:11px;height:11px;transform:translate(-50%,-50%);
+ border:2px solid rgba(2,26,29,.8);border-radius:50%;box-shadow:0 2px 7px #00191cb0;z-index:2}
+.inherit-atlas-pin--added{background:#fae19c;box-shadow:0 0 14px rgba(255,216,123,.85);z-index:3}
+.inherit-atlas-pin--removed{background:#e28d82;box-shadow:0 0 11px rgba(239,132,110,.65);z-index:3}
+.inherit-atlas-pin--same{background:#a8d2bf;width:7px;height:7px;opacity:.72;z-index:1}
+.inherit-atlas-map-note{margin:8px 0;color:#c1d3c6;font:11px/1.6 Manrope,system-ui,sans-serif;min-height:12px}
+.inherit-atlas-subtitle{margin:0 0 11px;color:#e7d5b4;font:500 23px/1.3 Georgia,serif}
+.inherit-atlas-table{width:100%;border-collapse:collapse;font:12px/1.5 Manrope,system-ui,sans-serif}
+.inherit-atlas-table th{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:#f1d8a2;font-weight:700;text-align:left;
+ padding:11px 6px;border-bottom:1px solid #d9c08b77}
+.inherit-atlas-table td{padding:11px 6px;border-bottom:1px solid #b9c7b03a;color:#d9e5dc}
+.inherit-atlas-table :is(th,td):not(:first-child){text-align:right;font-variant-numeric:tabular-nums}
+.inherit-atlas-limit,.inherit-atlas-disclosure{font:11px/1.75 Manrope,system-ui,sans-serif;color:#adc4c0}
+.inherit-atlas-disclosure{margin:23px 0 0;padding:13px 16px;border-top:1px solid #d3ba8147}
+.inherit-atlas-limit{margin:12px 0 0;color:#efcd9f}
+@media(max-width:800px){.inherit-atlas-main{grid-template-columns:1fr}.inherit-atlas-map{max-height:335px}}
+@media(max-width:600px){.inherit-atlas-dialog{padding:17px 13px;max-height:94dvh}.inherit-atlas-controls{grid-template-columns:1fr;gap:10px}
+ .inherit-atlas-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.inherit-atlas-map{min-height:205px}
+ .inherit-atlas-intro{font-size:12px}.inherit-atlas-table th{font-size:9px}.inherit-atlas-trigger{min-height:36px;padding:6px 8px;font-size:10px}}
+@media(prefers-reduced-motion:reduce){.inherit-atlas-dialog *, .inherit-atlas-trigger{animation:none!important;transition:none!important}}
