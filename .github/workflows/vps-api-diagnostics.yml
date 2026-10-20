@@ -1,0 +1,50 @@
+name: OSGARD VPS host API diagnostic
+on:
+  push:
+    branches: [master]
+    paths:
+      - ".github/workflows/vps-api-diagnostics.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Read-only SSH checks for Docker API connectivity
+        env:
+          DEPLOY_HOST: ${{ secrets.OSGARD_DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.OSGARD_DEPLOY_USER }}
+          DEPLOY_KEY: ${{ secrets.OSGARD_DEPLOY_KEY }}
+        run: |
+          set -euo pipefail
+          test -n "$DEPLOY_HOST" && test -n "$DEPLOY_USER" && test -n "$DEPLOY_KEY"
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$DEPLOY_KEY" > ~/.ssh/osgard_diagnostic
+          chmod 600 ~/.ssh/osgard_diagnostic
+          ssh-keyscan -T 10 -H "$DEPLOY_HOST" > ~/.ssh/known_hosts 2>/dev/null
+          test -s ~/.ssh/known_hosts
+          ssh -i ~/.ssh/osgard_diagnostic -o BatchMode=yes "$DEPLOY_USER@$DEPLOY_HOST" 'bash -s' <<'REMOTE'
+          set -uo pipefail
+          echo '== API and frontend container state =='
+          docker ps -a --format '{{.Names}} | {{.Status}}' | grep -E '^osgard-(world|game-api|core-api|remix-guard)' || true
+          echo '== Listening health ports =='
+          (ss -lnt 2>/dev/null || true) | grep -E '(:4317|:4189|:4173)' || true
+          echo '== Internal host gateway =='
+          gateway="$(docker inspect --format '{{range $name, $conf := .NetworkSettings.Networks}}{{println $conf.Gateway}}{{end}}' osgard-world | awk 'NF {print $1; exit}')"
+          echo "Gateway: ${gateway:-NOT_FOUND}"
+          echo '== Check local API host health (HTTP only, no payload) =='
+          for target in 127.0.0.1 "${gateway:-127.0.0.1}"; do
+            if command -v curl >/dev/null 2>&1; then curl -sS -o /dev/null -w "host $target:4317 HTTP %{http_code}; connect=%{time_connect}s; total=%{time_total}s\n" --connect-timeout 3 --max-time 8 "http://$target:4317/health" || echo "host $target:4317 unreachable"; else echo "curl unavailable"; fi
+          done
+          echo '== Verify API internally, using bundled Python =='
+          docker exec osgard-game-api python -c "import urllib.request; print('game-api self:',urllib.request.urlopen('http://127.0.0.1:4317/health',timeout=5).status)" 2>&1 || true
+          echo '== Check container to host gateway =='
+          if [ -n "$gateway" ]; then docker exec osgard-world sh -lc "wget -q -O /dev/null -T 7 http://$gateway:4317/health && echo gateway-ok || echo gateway-unreachable" 2>&1 || true; fi
+          echo '== Check container via Docker service DNS =='
+          docker exec osgard-world sh -lc 'wget -q -O /dev/null -T 7 http://osgard-game-api:4317/health && echo docker-dns-ok || echo docker-dns-unreachable' 2>&1 || true
+          echo '== Network names =='
+          docker inspect --format '{{range $name, $net := .NetworkSettings.Networks}}{{println $name}}{{end}}' osgard-world 2>&1 || true
+          docker inspect --format '{{range $name, $net := .NetworkSettings.Networks}}{{println $name}}{{end}}' osgard-game-api 2>&1 || true
+          REMOTE
