@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
 import '../public/games/inherit/research-core.js';
-import {aggregate,formatMarkdown} from './inherit-pilot-metrics.js';
+import {aggregate,formatMarkdown} from './inherit-pilot-metrics.mjs';
 import {aggregate as browserAggregate} from '../public/games/inherit/pilot-metrics.js';
 const core=globalThis.InheritResearchCore;
 const read=name=>readFileSync('public/games/inherit/'+name,'utf8');
