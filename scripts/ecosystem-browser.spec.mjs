@@ -86,6 +86,50 @@ test('OSGARD globe fails gracefully without WebGL2 and keeps the experience swit
   await expect(page.getByRole('link', { name: /Исследовать экосистему/ })).toBeVisible()
 })
 
+test('OSGARD NASA 4K textures are local and quality selector stays accessible', async ({ page, request }, testInfo) => {
+  const manifestRes = await request.get('/brand/omega-nasa-manifest.json')
+  expect(manifestRes.status()).toBe(200)
+  const manifest = await manifestRes.json()
+  expect(manifest.projection).toBe('equirectangular')
+  expect(Object.keys(manifest.assets)).toHaveLength(6)
+  for (const name of ['day_4k', 'night_4k', 'day_2k', 'night_2k', 'day_1k', 'night_1k']) {
+    const file = manifest.assets[name]
+    expect(file.bytes).toBeLessThan(5_000_000)
+    const res = await request.get(file.path)
+    expect(res.status()).toBe(200)
+    expect(res.headers()['content-type']).toContain('image/webp')
+    expect((await res.body()).length).toBe(file.bytes)
+  }
+  const errors = []
+  page.on('pageerror', error => errors.push(error.message))
+  const shaderErrors = []
+  page.on('console', message => {
+    if (message.type() === 'error' && /webglprogram|shader error|error 0:|gl_invalid_operation/i.test(message.text())) shaderErrors.push(message.text())
+  })
+  await page.emulateMedia({ reducedMotion: 'no-preference' })
+  await page.goto('/')
+  const hero = page.locator('.omega-hero')
+  const quality = page.getByRole('group', { name: 'Качество графики Земли' })
+  await expect(quality).toBeVisible()
+  await expect(quality.getByRole('button')).toHaveCount(3)
+  await quality.getByRole('button', { name: '4K / Макс.' }).click()
+  await expect(hero).toHaveAttribute('data-omega-quality', 'ultra')
+  const stage = page.locator('.omega-webgl-stage')
+  await expect(stage).toHaveAttribute('data-globe-status', /^(webgl|fallback)$/, { timeout: 25000 })
+  if (await stage.getAttribute('data-globe-status') === 'webgl') {
+    const mobile = testInfo.project.name === 'mobile'
+    await expect(stage).toHaveAttribute('data-earth-source', 'nasa')
+    await expect(stage).toHaveAttribute('data-earth-detail', mobile ? '2k' : '4k')
+  }
+  await page.reload()
+  await expect(hero).toHaveAttribute('data-omega-quality', 'ultra')
+  await quality.getByRole('button', { name: 'Эконом' }).click()
+  await expect(hero).toHaveAttribute('data-omega-quality', 'eco')
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true)
+  expect(shaderErrors).toEqual([])
+  expect(errors).toEqual([])
+})
+
 test('OSGARD Earth uses real bundled coastlines and WebGL or safe fallback', async ({ page, request }) => {
   const earth = await request.get('/brand/omega-earth-land.json')
   expect(earth.status()).toBe(200)
