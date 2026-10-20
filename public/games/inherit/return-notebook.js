@@ -5,7 +5,9 @@ const KEY='inherit:return-notebook:v2:local';
 const MAX_DAYS=30;
 function day(value){
  const v=String(value||'');
- return /^\d{4}-\d{2}-\d{2}$/.test(v)&&!Number.isNaN(Date.parse(v+'T00:00:00Z'))?v:null;
+ if(!/^\d{4}-\d{2}-\d{2}$/.test(v))return null;
+ const parsed=new Date(v+'T00:00:00Z');
+ return !Number.isNaN(parsed.getTime())&&parsed.toISOString().slice(0,10)===v?v:null;
 }
 function clamp(v,max=1000000){return Number.isSafeInteger(v)&&v>=0?Math.min(v,max):0}
 function summary(world){
