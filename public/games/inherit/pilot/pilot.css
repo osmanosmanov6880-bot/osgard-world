@@ -87,3 +87,5 @@ h1{font-size:clamp(42px,6.5vw,83px);line-height:1.04;margin:.4em 0}h2{font-size:
  .metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.console-controls label{width:100%}.console-controls button{width:100%}
  .console-hero{padding:50px 18px 22px}.console-card{margin:12px 12px 45px;padding:17px 13px}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*:before,*:after{animation:none!important;transition:none!important}}
+
+.console-controls .secondary-control{background:rgba(216,195,147,.08);color:#f3e2bf;border-color:rgba(224,201,157,.5)}.console-controls .secondary-control:hover{background:rgba(224,201,157,.2)}
