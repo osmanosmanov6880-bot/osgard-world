@@ -50,6 +50,20 @@ check('invalid, malformed and off-map coordinates cannot create decorations',()=
  const m=engine.derive({generation:-20,objects:[null,{tool:'tree',x:NaN,y:40},{type:'tree',x:-1,y:20},{tool:'stone',x:22,y:101},{tool:'__proto__',x:35,y:35},{tool:'tree',x:50,y:50}]});
  assert.equal(m.objects,1);assert.equal(m.total,0);assert.equal(m.generation,0);
 });
+check('out-of-order snapshots use earliest documented appearance, not array order',()=>{
+ const objects=[{tool:'tree',x:40,y:40},{tool:'moss',x:45,y:41}];
+ const frames=[{generation:12,objects},{generation:5,objects},{generation:11,objects}];
+ const result=engine.derive({generation:13,objects,snapshots:frames});
+ assert.equal(result.effects[0].since,5);
+ assert.equal(result.effects[0].age,8);
+ assert.equal(result.effects[0].stage,'heritage');
+});
+check('crowded neighborhoods disclose capped matching rather than claiming full coverage',()=>{
+ const objects=[{tool:'tree',x:20,y:20},...Array.from({length:70},(_,i)=>({tool:'moss',x:21+i*.02,y:20}))];
+ const result=engine.derive({generation:12,objects,snapshots:[]});
+ assert.equal(result.total,1);
+ assert.equal(result.limited,true);
+});
 check('many traces stay bounded; pending and account journals are not used as truth',()=>{
  const huge={generation:10,pending:[{type:'moss',x:3,y:3}],history:[{action:'moss appeared'}],objects:Array.from({length:10200},(_,i)=>({tool:'tree',x:i%100,y:Math.floor(i/100)%100}))};
  const m=engine.derive(huge);assert.equal(m.objects,10000);assert.equal(m.limited,true);assert.equal(m.total,0);
