@@ -223,11 +223,11 @@ function read(){
  }catch{storageUnavailable=true;return null}
 }
 function save(record){
- try{stored?.setItem?.(notebook.KEY,JSON.stringify(record));return true}
+ try{const saved=stored?.setItem?.(notebook.KEY,JSON.stringify(record));if(saved===false||!stored){storageUnavailable=true;return false}return true}
  catch{storageUnavailable=true;return false}
 }
 function clear(){
- try{stored?.removeItem?.(notebook.KEY);return true}
+ try{const cleared=stored?.removeItem?.(notebook.KEY);if(cleared===false||!stored){storageUnavailable=true;return false}return true}
  catch{storageUnavailable=true;return false}
 }
 function noticeIfReturned(){
@@ -266,11 +266,11 @@ open.addEventListener('click',show);
 consent.addEventListener('click',()=>{
  if(!local()||storageUnavailable)return;
  const record=notebook.enable(notebook.todayLocal(),engine.evaluate(game.snapshot()));
- if(record&&save(record)){book=record;lastDelta=null;render()}
+ if(record&&save(record)){book=record;lastDelta=null}render()
 });
 erase.addEventListener('click',()=>{
  if(!local())return;
- if(clear()){book=null;lastDelta=null;render()}
+ if(clear()){book=null;lastDelta=null}render()
 });
 function fact(number,title){const x=create('div','inherit-cycle-fact');x.append(create('strong','',String(number)),create('small','',title));facts.append(x)}
 function interpolate(value,variables){return String(value).replace(/\{([a-z]+)\}/g,(_,key)=>String(variables[key]??''))}
