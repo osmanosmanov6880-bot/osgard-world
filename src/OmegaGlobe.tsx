@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import * as THREE from 'three'
 import { createCityLightsTexture, createCloudLayers } from './OmegaGlobeEffects'
 import { chooseEarthDetail, loadNasaTextures, makeNasaEarthMaterial, makeScatteringAtmosphere } from './OmegaEarthMaterials'
+import { createCloudVolume } from './OmegaCloudVolume'
 import type { EarthQuality } from './OmegaEarthMaterials'
 
 /**
@@ -245,6 +246,7 @@ export default function OmegaGlobe({ mode, chapter, view, onViewChange, quality 
     let drag: { id: number; x: number; y: number; start: GlobeView } | null = null
     let cloudInner: THREE.Mesh | null = null
     let cloudOuter: THREE.Mesh | null = null
+    let volumeCloud: THREE.Mesh | null = null
     let keyLight: THREE.DirectionalLight | null = null
     let fillLight: THREE.DirectionalLight | null = null
     const media = window.matchMedia('(prefers-reduced-motion: reduce)')
@@ -368,6 +370,9 @@ export default function OmegaGlobe({ mode, chapter, view, onViewChange, quality 
         if (cloudInner && cloudOuter) {
           cloudInner.rotation.y += delta * (currentMode === 'cinema' ? 0.000029 : 0.000015)
           cloudOuter.rotation.y -= delta * 0.000018
+          if (volumeCloud && volumeCloud.material instanceof THREE.ShaderMaterial) {
+            volumeCloud.material.uniforms.uTime.value += delta / 1000
+          }
         }
         if (keyLight && fillLight) {
           keyLight.position.x = -2.5 + Math.sin(time * 0.00017) * 0.75
@@ -441,11 +446,18 @@ export default function OmegaGlobe({ mode, chapter, view, onViewChange, quality 
         cloudInner = clouds.inner
         cloudOuter = clouds.outer
         geography.add(clouds.group)
+        if (detail === '4k') {
+          const cloudMap = (clouds.inner.material as THREE.MeshStandardMaterial).map
+          if (cloudMap) {
+            volumeCloud = createCloudVolume(cloudMap, sunDirection)
+            geography.add(volumeCloud)
+          }
+        }
         const atmosphere = makeScatteringAtmosphere(sunDirection, detail)
         globe.add(atmosphere)
         stage.dataset.earthSource = nasa ? 'nasa' : 'geospatial-fallback'
         stage.dataset.earthDetail = nasa ? detail : 'fallback'
-        stage.dataset.cloudLayers = '2'
+        stage.dataset.cloudLayers = detail === '4k' ? '4' : '2'
         scene.add(globe)
         scene.add(orbit(2.05, 1.03, 0x77efff, 0.34, 0.35))
         scene.add(orbit(2.13, 1.12, 0xbb8dff, 0.27, -0.85))
