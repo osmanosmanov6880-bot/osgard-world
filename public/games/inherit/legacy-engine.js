@@ -70,9 +70,17 @@ function derive(world){
    }
  }
  const available=RULES.filter(rule=>counts[rule.first]>0&&counts[rule.second]===0).map(rule=>({id:rule.id,near:rule.first,place:rule.second}));
- const memory=enriched.filter(o=>o.age!==null&&o.age>=3).sort((a,b)=>b.age-a.age||a.index-b.index).slice(0,6).map(o=>({type:o.type,age:o.age,since:o.since,x:o.x,y:o.y}));
+ const mature=enriched.filter(o=>o.age!==null&&o.age>=3).sort((a,b)=>b.age-a.age||a.index-b.index);
+ const groups=new Map();
+ for(const o of mature){
+   const groupKey=o.type+'|'+o.since;
+   if(!groups.has(groupKey))groups.set(groupKey,{type:o.type,age:o.age,since:o.since,count:0});
+   groups.get(groupKey).count++;
+ }
+ const memory=[...groups.values()].slice(0,6);
+ const memoryCount=mature.length;
  const total=Object.values(totals).reduce((sum,n)=>sum+n,0);
- return {generation,objects:objects.length,counts:Object.fromEntries(Object.entries(counts)),total,totals:Object.fromEntries(Object.entries(totals)),effects,memory,available,hasSnapshots:historyFrames.length>0,
+ return {generation,objects:objects.length,counts:Object.fromEntries(Object.entries(counts)),total,totals:Object.fromEntries(Object.entries(totals)),effects,memory,memoryCount,available,hasSnapshots:historyFrames.length>0,
    limited:world?.objects?.length>10000||world?.snapshots?.length>512};
 }
 root.InheritLegacyEngine=Object.freeze({derive, rules:RULES,types:[...VALID]});
