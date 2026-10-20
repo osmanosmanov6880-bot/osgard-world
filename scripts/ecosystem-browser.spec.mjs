@@ -690,12 +690,16 @@ test('INHERIT sixteen-episode cycle: genuine placement resolves incident, persis
   await page.locator('.inherit-cycle-entry-open').click();
   await expect(page.locator('.inherit-legacy-dialog')).toBeVisible();
   await expect(page.locator('.inherit-cycle-choice')).toHaveCount(2);
+  await expect(page.locator('.inherit-cycle-nav-button')).toHaveCount(5);
+  await page.locator('.inherit-cycle-nav-button').filter({hasText:'Событие'}).click();
+  await expect(page.locator('.inherit-cycle-journal')).toBeFocused();
   await page.locator('.inherit-cycle-choice').first().click();
   await expect(page.locator('.inherit-legacy-dialog')).toBeHidden();
   await page.locator('#world').press('Enter');
   await expect(page.locator('#budget')).toHaveText('99');
   await expect.poll(()=>page.evaluate(()=>window.InheritWorldUI.getState().event.resolved)).toBe(true);
   await expect(page.locator('body')).toHaveAttribute('data-inherit-incident','glow');
+  await expect(page.locator('.inherit-cycle-imprint--glow')).toHaveCount(1);
   await page.locator('.inherit-cycle-entry-open').click();
   await expect(page.locator('.inherit-cycle-consequence')).toContainText('тёплый свет');
   const snapshot=await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()));
@@ -713,6 +717,7 @@ test('INHERIT sixteen-episode cycle: genuine placement resolves incident, persis
   await expect.poll(()=>page.evaluate(()=>window.InheritGame.snapshot().generation)).toBe(174);
   await expect.poll(()=>page.evaluate(()=>window.InheritWorldUI.getState().event.resolved)).toBe(false);
   await expect(page.locator('body')).toHaveAttribute('data-inherit-season','wind');
+  await expect(page.locator('.inherit-cycle-imprint')).toHaveCount(0);
   await expect(page.locator('#objects > .placed')).toHaveCount(1);
   expect(errors).toEqual([]);
 });
