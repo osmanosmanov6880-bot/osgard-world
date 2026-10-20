@@ -48,6 +48,19 @@ INHERIT_COLUMNS = {
     "inherit_operations": {"user_id", "key", "world_id", "invitation_id", "response", "created_at"},
 }
 
+# Optional single-actor Core REMIX arena. A pre-REMIX Core backup need not have
+# any of these tables. Once one exists, all journal and replay tables must be
+# present, alongside the existing Core and INHERIT schema.
+REMIX_COLUMNS = {
+    "remix_challenges": {"id", "creator_id", "title", "seed", "visibility",
+                         "status", "arena_json", "proof_match_id", "parent_id", "created_at"},
+    "remix_matches": {"id", "challenge_id", "player_id", "purpose", "phase",
+                      "state_json", "result_json", "replay_hash", "created_at"},
+    "remix_inputs": {"match_id", "sequence", "input_json", "checkpoint_json",
+                     "response_json"},
+    "remix_operations": {"actor_id", "operation_key", "request_hash", "response_json"},
+}
+
 
 def digest(path):
     hasher = hashlib.sha256()
@@ -141,6 +154,8 @@ def check_sqlite(path, sqlite_only=False):
             expected_columns = dict(CORE_COLUMNS)
             if tables & INHERIT_COLUMNS.keys():
                 expected_columns.update(INHERIT_COLUMNS)
+            if tables & REMIX_COLUMNS.keys():
+                expected_columns.update(REMIX_COLUMNS)
             for table, required in expected_columns.items():
                 if table not in tables:
                     raise ValueError("Core backup is missing an expected table")
@@ -154,7 +169,8 @@ def check_sqlite(path, sqlite_only=False):
                 if not {"inherit_generation_no_update", "inherit_generation_no_delete"} <= triggers:
                     raise ValueError("Core backup is missing INHERIT history guards")
         return {"table_count": len(tables), "user_version": version,
-                "inherit_present": bool(tables & INHERIT_COLUMNS.keys())}
+                "inherit_present": bool(tables & INHERIT_COLUMNS.keys()),
+                "remix_present": bool(tables & REMIX_COLUMNS.keys())}
 
 
 def check_inherit_lineages(path):
@@ -187,6 +203,66 @@ def check_inherit_lineages(path):
         return {"worlds": worlds, "generations": generations}
 
 
+
+def check_remix_journals(path):
+    """Re-simulate every Core arena match in the immutable private DB copy.
+
+    This is deliberately not the unrelated Unity/guest/invitation match service.
+    Reuse the same bounded journal verifier used by authenticated live reads:
+    a matching hash alone cannot conceal a mutated position, input or response.
+    """
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "server"))
+    from remix_service import RemixService, arena, canonical, integer, stored_json
+    from core_model import Fault
+
+    uri = path.as_uri() + "?mode=ro&immutable=1"
+    with closing(sqlite3.connect(uri, uri=True, timeout=3)) as db:
+        db.row_factory = sqlite3.Row
+        db.execute("PRAGMA trusted_schema=OFF")
+        db.execute("PRAGMA query_only=ON")
+        validator = RemixService(None)
+        checked = 0
+        challenges = 0
+        for row in db.execute("SELECT * FROM remix_challenges ORDER BY id"):
+            try:
+                level = stored_json(row["arena_json"])
+                expected = arena(integer(row["seed"], 1, 2147483647),
+                                 level.get("objects"))
+                if canonical(level) != canonical(expected):
+                    raise ValueError("Arena geometry changed")
+                if row["status"] not in ("DRAFT", "VALIDATED", "PUBLISHED"):
+                    raise ValueError("Invalid challenge state")
+                if row["visibility"] not in ("public", "private"):
+                    raise ValueError("Invalid challenge visibility")
+                if row["status"] != "DRAFT":
+                    proof = db.execute(
+                        "SELECT * FROM remix_matches WHERE id=?",
+                        (row["proof_match_id"],)).fetchone()
+                    if (proof is None or proof["challenge_id"] != row["id"]
+                            or proof["player_id"] != row["creator_id"]
+                            or proof["purpose"] != "creator-proof"
+                            or proof["phase"] != "RESULTS"):
+                        raise ValueError("Missing challenge proof")
+                    checked_proof = validator.verified_prefix(db, proof)
+                    if checked_proof["state"]["won"] is not True:
+                        raise ValueError("Unproven challenge")
+                elif row["proof_match_id"] is not None:
+                    raise ValueError("Unexpected draft proof")
+            except (Fault, ValueError, TypeError, KeyError, AttributeError,
+                    IndexError, OverflowError, RecursionError, UnicodeError):
+                raise ValueError("REMIX challenge or replay failed semantic verification") from None
+            challenges += 1
+        for row in db.execute("SELECT * FROM remix_matches ORDER BY id"):
+            try:
+                validator.verified_prefix(db, row)
+            except (Fault, ValueError, TypeError, KeyError, AttributeError,
+                    IndexError, OverflowError, RecursionError, UnicodeError):
+                # Never place usernames, account identifiers or replay data
+                # from a private backup into a public CI log.
+                raise ValueError("REMIX match journal failed semantic verification") from None
+            checked += 1
+        return {"matches": checked, "challenges": challenges}
+
 def drill(source, expected_sha256=None, sqlite_only=False):
     if expected_sha256 is not None:
         expected_sha256 = expected_sha256.lower().strip()
@@ -203,11 +279,16 @@ def drill(source, expected_sha256=None, sqlite_only=False):
         schema = check_sqlite(target, sqlite_only)
         lineage = (check_inherit_lineages(target)
                    if not sqlite_only and schema["inherit_present"] else None)
+        remix = (check_remix_journals(target)
+                 if not sqlite_only and schema["remix_present"] else None)
         return {
             "status": "passed",
             "inherit_lineage_checked": lineage is not None,
             "inherit_worlds_checked": lineage["worlds"] if lineage is not None else 0,
             "inherit_generations_checked": lineage["generations"] if lineage is not None else 0,
+            "remix_journal_checked": remix is not None,
+            "remix_matches_checked": remix["matches"] if remix is not None else 0,
+            "remix_challenges_checked": remix["challenges"] if remix is not None else 0,
             "sha256": source_digest,
             "expected_sha256_verified": expected_sha256 is not None,
             "bytes": size,
