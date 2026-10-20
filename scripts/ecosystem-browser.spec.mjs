@@ -883,3 +883,73 @@ test('INHERIT account read-only keeps voluntary study disabled and gameplay righ
  await expect(page.locator('.inherit-first-steps')).toBeHidden();
  expect(errors).toEqual([]);
 });
+
+
+test('INHERIT pilot invitation: RU EN ZH, direct opt-in panel, zero research events before consent',async({page})=>{
+ const errors=await prepareStandaloneGame(page);
+ await page.goto('/games/inherit/pilot/index.html?lang=ru',{waitUntil:'domcontentloaded'});
+ await expect(page.locator('html')).toHaveAttribute('lang','ru');
+ await expect(page.locator('#join')).toHaveAttribute('href','/games/inherit/?lang=ru&pilot=1');
+ await page.locator('[data-lang="en"]').click();
+ await expect(page.locator('html')).toHaveAttribute('lang','en');
+ await expect(page.locator('#heading')).toContainText('Leave a trace');
+ await expect(page.locator('#join')).toHaveAttribute('href','/games/inherit/?lang=en&pilot=1');
+ await page.locator('[data-lang="zh"]').click();
+ await expect(page.locator('html')).toHaveAttribute('lang','zh');
+ await expect(page.locator('#heading')).toContainText('留下痕迹');
+ await page.locator('[data-lang="ru"]').click();
+ await page.locator('#join').click();
+ await expect(page).toHaveURL(/\/games\/inherit\/\?lang=ru&pilot=1/);
+ await expect(page.locator('.inherit-legacy-dialog')).toBeVisible();
+ await expect(page.locator('#inherit-research-section')).toBeVisible();
+ await expect(page.locator('.inherit-research-consent input')).not.toBeChecked();
+ await expect(page.locator('.inherit-research-consent button')).toBeDisabled();
+ expect(await page.evaluate(()=>localStorage.getItem('inherit:pilot-research:v1'))).toBeNull();
+ await expect(page.locator('.inherit-research-about')).toHaveAttribute('href','/games/inherit/pilot/index.html?lang=ru');
+ expect(errors).toEqual([]);
+});
+
+test('INHERIT pilot console analyzes voluntary files locally, censors future events and exports only aggregates',async({page})=>{
+ const errors=[];
+ page.on('pageerror',e=>errors.push(e.message));
+ const posted=[];page.on('request',req=>{if(req.method()!=='GET')posted.push(req.url())});
+ await page.goto('/games/inherit/pilot/report.html',{waitUntil:'domcontentloaded'});
+ await expect(page.locator('#results')).toBeHidden();
+ await expect(page.locator('#as-of')).not.toHaveValue('');
+ await page.waitForFunction(()=>Boolean(window.InheritResearchCore));
+ const id='volunteer-aaaaaaaaaaaaaaaaaaaa';
+ const voluntary=await page.evaluate(code=>{
+  const c=window.InheritResearchCore,iso=d=>d+'T12:00:00.000Z';
+  let s=c.create(code,iso('2026-10-01'));
+  s=c.record(s,'session_opened',iso('2026-10-01'));
+  s=c.record(s,'session_opened',iso('2026-10-02'));
+  s=c.record(s,'session_opened',iso('2026-10-08'));
+  s=c.record(s,'trace_placed',iso('2026-10-08'),{pendingCount:1});
+  s=c.record(s,'survey_submitted',iso('2026-10-09'),{clarity:5,returnIntent:4,meaning:5,reason:'creation',priceCents:499});
+  return c.exportConsent(s,iso('2026-10-20'));
+ },id);
+ await page.locator('#files').setInputFiles([
+  {name:'participant-one.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(voluntary))},
+  {name:'participant-duplicate.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(voluntary))}
+ ]);
+ await page.locator('#as-of').fill('2026-10-03');
+ await page.locator('#calculate').click();
+ await expect(page.locator('#results')).toBeVisible();
+ await expect(page.locator('#basis')).toContainText('Учтено 1 добровольных участников');
+ await expect(page.locator('#basis')).toContainText('Повторных экспортов: 1');
+ await expect(page.locator('#survey-summary')).toContainText('Ответов: 0');
+ await expect(page.locator('#retention-body')).toContainText('100%');
+ await expect(page.locator('#retention-body')).toContainText('н/д');
+ expect(await page.locator('#results').textContent()).not.toContain(id);
+ await page.locator('#as-of').fill('2026-10-10');
+ await page.locator('#calculate').click();
+ await expect(page.locator('#survey-summary')).toContainText('Ответов: 1');
+ const download=page.waitForEvent('download');
+ await page.locator('#save-json').click();
+ expect((await download).suggestedFilename()).toBe('inherit-pilot-summary-2026-10-10.json');
+ const secondDownload=page.waitForEvent('download');
+ await page.locator('#save-md').click();
+ expect((await secondDownload).suggestedFilename()).toBe('inherit-pilot-summary-2026-10-10.md');
+ expect(posted).toEqual([]);
+ expect(errors).toEqual([]);
+});
