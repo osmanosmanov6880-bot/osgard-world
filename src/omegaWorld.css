@@ -186,3 +186,17 @@ html[data-motion="off"] .omega-mode-tabs button{transition:none!important}
 .omega-earth-provenance a{display:inline-block;color:#8aebed;text-decoration:underline;text-underline-offset:3px;padding:3px 0}
 .omega-earth-provenance summary:focus-visible,.omega-earth-provenance a:focus-visible{outline:2px solid #7af6f8;outline-offset:4px}
 @media(max-width:760px){.omega-earth-provenance summary{min-height:40px}.omega-earth-provenance summary span{font-size:9px}}
+
+/* Desktop IA: keep the 3D quality deck separate from the three product links. */
+@media (min-width:1180px) {
+  .omega-hero { min-height:950px; }
+  .omega-hero .omega-gate {
+    transform:translateY(195px);
+    padding:20px 24px;
+  }
+  .omega-hero .omega-gate a { padding:11px 0; }
+  .omega-hero:has(.omega-earth-provenance[open]) .omega-gate {
+    transform:translateY(300px);
+  }
+  .omega-hero:has(.omega-earth-provenance[open]) { min-height:1040px; }
+}
