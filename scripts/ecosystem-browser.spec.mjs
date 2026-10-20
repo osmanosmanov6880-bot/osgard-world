@@ -91,8 +91,8 @@ test('OSGARD NASA 4K textures are local and quality selector stays accessible', 
   expect(manifestRes.status()).toBe(200)
   const manifest = await manifestRes.json()
   expect(manifest.projection).toBe('equirectangular')
-  expect(Object.keys(manifest.assets)).toHaveLength(6)
-  for (const name of ['day_4k', 'night_4k', 'day_2k', 'night_2k', 'day_1k', 'night_1k']) {
+  expect(Object.keys(manifest.assets)).toHaveLength(7)
+  for (const name of ['day_4k', 'night_4k', 'day_2k', 'night_2k', 'day_1k', 'night_1k', 'poster_1k']) {
     const file = manifest.assets[name]
     expect(file.bytes).toBeLessThan(5_000_000)
     const res = await request.get(file.path)
