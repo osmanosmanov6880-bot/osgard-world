@@ -269,3 +269,30 @@ html[data-motion="off"] .omega-globe {
   animation:none!important;
   transform:translate(-50%,-50%)!important;
 }
+
+/* OMEGA UX QA: the premium-mode console must never overlap product navigation. */
+@media(min-width:1180px) {
+  .omega-experience-panel {
+    top:-108px;
+    padding:12px 16px 11px;
+  }
+  .omega-experience-title {margin-bottom:7px}
+  .omega-mode-tabs>button {padding:8px 7px;min-height:36px}
+  .omega-mode-description {
+    font-size:11px;
+    line-height:1.4;
+    min-height:0;
+    margin:7px 0 4px;
+  }
+  .omega-quality-wrap {margin-top:8px;padding-top:8px}
+  .omega-quality-label {font-size:9px;margin-bottom:5px}
+  .omega-quality-options button {min-height:31px;padding:6px 5px;font-size:10px}
+  .omega-quality-description {font-size:9.5px;margin-top:5px;line-height:1.4}
+  .omega-nasa-credit {font-size:8px;margin-top:4px;line-height:1.35}
+  .omega-world-navigation {margin-top:7px}
+  .omega-world-navigation button {min-height:32px}
+  .omega-cinema-chapters {margin-top:7px}
+  .omega-cinema-chapters button {padding:5px 8px}
+  .omega-gate {transform:translateY(125px);padding:18px 26px}
+  .omega-gate a {padding:13px 0}
+}
