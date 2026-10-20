@@ -88,6 +88,8 @@
     chapter.textContent = label('chapter');
   }
 
+  window.InheritCinematic = { updateLabels, getQuality: () => quality };
+
   function guideControls() {
     if (!guide) return;
     guideButton = doc.createElement('button');
@@ -138,7 +140,7 @@
     panel.appendChild(heading);
     // Moving the already-bound elements preserves their handlers, IDs, and live game state.
     for (const child of [...dock.children]) {
-      if (child.matches('.turn,.tools,#pass,.cine-utility,.cine-menu-toggle')) continue;
+      if (child.matches('.turn,.tools,#pass,#showHistory,.cine-utility,.cine-menu-toggle')) continue;
       panel.appendChild(child);
     }
     const button = doc.createElement('button');
