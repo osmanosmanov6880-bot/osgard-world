@@ -85,6 +85,7 @@ jobs:
           npm run qa:ux
           npm run qa:osa-progress
           npm run qa:game-interface
+          npm run qa:inherit-i18n
           npm run qa:inherit-handoff
           npm run qa:inherit-account
           npm run qa:remix-session
