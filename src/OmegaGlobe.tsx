@@ -1,6 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import * as THREE from 'three'
 import { createCityLightsTexture, createCloudLayers } from './OmegaGlobeEffects'
+import { atmosphereMaterial, loadSatelliteTextures, satelliteSurfaceMaterial } from './OmegaSatelliteMaterials'
+import type { SatelliteTextures } from './OmegaSatelliteMaterials'
+import { makeSatelliteCloudSystem } from './OmegaCloudVolume'
+import type { CloudSystem } from './OmegaCloudVolume'
 
 /**
  * OSGARD WORLD decorative 3D Earth.
@@ -194,6 +198,13 @@ function disposeScene(scene: THREE.Scene) {
         if (mapped.map) textures.add(mapped.map)
         const emissive = material as THREE.Material & { emissiveMap?: THREE.Texture }
         if (emissive.emissiveMap) textures.add(emissive.emissiveMap)
+        const alpha = material as THREE.Material & { alphaMap?: THREE.Texture }
+        if (alpha.alphaMap) textures.add(alpha.alphaMap)
+        if (material instanceof THREE.ShaderMaterial) {
+          for (const uniform of Object.values(material.uniforms)) {
+            if (uniform.value instanceof THREE.Texture) textures.add(uniform.value)
+          }
+        }
       }
     }
   })
@@ -239,6 +250,8 @@ export default function OmegaGlobe({ quality, mode, chapter, view, onViewChange 
     let drag: { id: number; x: number; y: number; start: GlobeView } | null = null
     let cloudInner: THREE.Mesh | null = null
     let cloudOuter: THREE.Mesh | null = null
+    let satelliteCloud: CloudSystem | null = null
+    const sunlight = new THREE.Vector3(-2.5, 3.0, 5.0).normalize()
     let keyLight: THREE.DirectionalLight | null = null
     let fillLight: THREE.DirectionalLight | null = null
     const media = window.matchMedia('(prefers-reduced-motion: reduce)')
@@ -352,10 +365,12 @@ export default function OmegaGlobe({ quality, mode, chapter, view, onViewChange 
           cloudInner.rotation.y += delta * (currentMode === 'cinema' ? 0.000029 : 0.000015)
           cloudOuter.rotation.y -= delta * 0.000018
         }
+        if (satelliteCloud && camera) satelliteCloud.update(time * 0.001, camera)
         if (keyLight && fillLight) {
           keyLight.position.x = -2.5 + Math.sin(time * 0.00017) * 0.75
           keyLight.position.y = 3 + Math.cos(time * 0.00013) * 0.35
           fillLight.intensity = currentMode === 'cinema' ? 1.15 : 1.45
+          sunlight.copy(keyLight.position).normalize()
         }
         renderer.render(scene, camera)
       }
@@ -392,53 +407,71 @@ export default function OmegaGlobe({ quality, mode, chapter, view, onViewChange 
         keyLight = lighting.key
         fillLight = lighting.fill
 
+        let imagery: SatelliteTextures | null = null
+        try {
+          imagery = await loadSatelliteTextures(quality, controller.signal)
+        } catch {
+          // Offline, missing imagery, denied requests: render the preexisting vector Earth.
+        }
+        if (!alive) {
+          imagery?.day.dispose()
+          imagery?.night.dispose()
+          imagery?.clouds?.dispose()
+          return
+        }
+
         globe = new THREE.Group()
         const geography = new THREE.Group()
         geography.rotation.y = -Math.PI / 2
         globe.add(geography)
-        const landTexture = createLandTexture(data, textureWidth)
-        const cityLights = createCityLightsTexture(data, mobile)
-        const sphere = new THREE.Mesh(
-          new THREE.SphereGeometry(1.55, sphereSegments, sphereRings),
-          new THREE.MeshStandardMaterial({
-            map: landTexture, metalness: 0.12, roughness: 0.84,
-            emissiveMap: cityLights, emissive: 0x72e5ff, emissiveIntensity: 0.93,
-          }),
-        )
-        geography.add(sphere)
-        geography.add(earthGrid())
-        const clouds = createCloudLayers(quality === 'eco' || (quality === 'auto' && mobile))
-        cloudInner = clouds.inner
-        cloudOuter = clouds.outer
-        geography.add(clouds.group)
+
+        if (imagery) {
+          const sphere = new THREE.Mesh(
+            new THREE.SphereGeometry(1.55, sphereSegments, sphereRings),
+            satelliteSurfaceMaterial(imagery, sunlight),
+          )
+          geography.add(sphere)
+          // One real NOAA/MODIS-derived cloud density map, multi-sampled at depth.
+          if (imagery.clouds) {
+            satelliteCloud = makeSatelliteCloudSystem(imagery.clouds, quality, sunlight)
+            cloudInner = satelliteCloud.inner
+            cloudOuter = satelliteCloud.outer
+            geography.add(satelliteCloud.group)
+          } else {
+            const clouds = createCloudLayers(quality === 'eco' || (quality === 'auto' && mobile))
+            cloudInner = clouds.inner
+            cloudOuter = clouds.outer
+            geography.add(clouds.group)
+          }
+          stage.dataset.earthSource = 'nasa'
+          stage.dataset.cloudModel = imagery.clouds ? 'raymarch' : 'procedural'
+          stage.dataset.earthImageWidth = quality === 'ultra' ? '4096' : '2048'
+        } else {
+          // Fully local, geographically aligned procedural safety net.
+          const landTexture = createLandTexture(data, textureWidth)
+          const cityLights = createCityLightsTexture(data, mobile)
+          geography.add(new THREE.Mesh(
+            new THREE.SphereGeometry(1.55, sphereSegments, sphereRings),
+            new THREE.MeshStandardMaterial({
+              map: landTexture, metalness: 0.12, roughness: 0.84,
+              emissiveMap: cityLights, emissive: 0x72e5ff, emissiveIntensity: 0.93,
+            }),
+          ))
+          geography.add(earthGrid())
+          const clouds = createCloudLayers(quality === 'eco' || (quality === 'auto' && mobile))
+          cloudInner = clouds.inner
+          cloudOuter = clouds.outer
+          geography.add(clouds.group)
+          stage.dataset.earthSource = 'vector'
+          stage.dataset.cloudModel = 'procedural'
+          stage.dataset.earthImageWidth = textureWidth.toString()
+        }
 
         const atmosphere = new THREE.Mesh(
-          new THREE.SphereGeometry(1.64, mobile ? 40 : 64, mobile ? 24 : 40),
-          new THREE.ShaderMaterial({
-            transparent: true,
-            depthWrite: false,
-            blending: THREE.AdditiveBlending,
-            vertexShader: [
-              'varying vec3 vNormal;',
-              'varying vec3 vWorldPos;',
-              'void main() {',
-              '  vec4 world = modelMatrix * vec4(position, 1.0);',
-              '  vWorldPos = world.xyz;',
-              '  vNormal = normalize(mat3(modelMatrix) * normal);',
-              '  gl_Position = projectionMatrix * viewMatrix * world;',
-              '}',
-            ].join('\n'),
-            fragmentShader: [
-              'varying vec3 vNormal;',
-              'varying vec3 vWorldPos;',
-              'void main() {',
-              '  vec3 eye = normalize(cameraPosition - vWorldPos);',
-              '  float rim = pow(1.0 - max(0.0, dot(normalize(vNormal), eye)), 3.0);',
-              '  gl_FragColor = vec4(0.18, 0.79, 1.0, rim * 0.48);',
-              '}',
-            ].join('\n'),
-          }),
+          new THREE.SphereGeometry(1.69, mobile ? 40 : 72, mobile ? 24 : 48),
+          atmosphereMaterial(sunlight),
         )
+        atmosphere.renderOrder = 4
         globe.add(atmosphere)
         scene.add(globe)
         scene.add(orbit(2.05, 1.03, 0x77efff, 0.34, 0.35))
@@ -455,6 +488,9 @@ export default function OmegaGlobe({ quality, mode, chapter, view, onViewChange 
         syncRendering()
       } catch {
         if (scene) { disposeScene(scene); scene = null }
+        delete stage.dataset.earthSource
+        delete stage.dataset.cloudModel
+        delete stage.dataset.earthImageWidth
         renderer?.dispose()
         renderer = null
         camera = null
@@ -508,6 +544,9 @@ export default function OmegaGlobe({ quality, mode, chapter, view, onViewChange 
       canvas.removeEventListener('webglcontextlost', contextLost)
       sky.classList.remove('omega-webgl-ready')
       delete stage.dataset.cloudLayers
+      delete stage.dataset.earthSource
+      delete stage.dataset.cloudModel
+      delete stage.dataset.earthImageWidth
       if (scene) disposeScene(scene)
       renderer?.dispose()
     }
