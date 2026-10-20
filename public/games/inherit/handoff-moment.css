@@ -9,6 +9,11 @@
  linear-gradient(140deg,#173d3a,#09222d 55%,#091b24);
  isolation:isolate;animation:inherit-handoff-arrive .42s cubic-bezier(.2,.9,.2,1) both
 }
+/* Decorative content does not steal taps from legacy, research or account controls.
+   Only explicit receipt actions are interactive. */
+.inherit-handoff-moment{pointer-events:none}
+.inherit-handoff-moment :is(button,summary),
+.inherit-handoff-moment .inherit-handoff-details[open]{pointer-events:auto}
 .inherit-handoff-moment[hidden]{display:none!important}
 .inherit-handoff-moment::before{
  content:"";position:absolute;pointer-events:none;inset:0;
