@@ -44,6 +44,24 @@ jobs:
           if [ -n "$gateway" ]; then docker exec osgard-world sh -lc "wget -q -O /dev/null -T 7 http://$gateway:4317/health && echo gateway-ok || echo gateway-unreachable" 2>&1 || true; fi
           echo '== Check container via Docker service DNS =='
           docker exec osgard-world sh -lc 'wget -q -O /dev/null -T 7 http://osgard-game-api:4317/health && echo docker-dns-ok || echo docker-dns-unreachable' 2>&1 || true
+          echo '== Host identity and inspection privileges =='
+          id -u
+          if sudo -n true 2>/dev/null; then echo 'sudo: available without interactive input'; else echo 'sudo: not available'; fi
+          echo '== Docker bridge metadata =='
+          net="$(docker inspect --format '{{range $name, $conf := .NetworkSettings.Networks}}{{println $name}}{{end}}' osgard-world | awk 'NF {print $1; exit}')"
+          if [ -n "$net" ]; then
+            docker network inspect --format '{{.Name}} | ID={{.Id}} | subnet={{range .IPAM.Config}}{{.Subnet}}{{end}} | gateway={{range .IPAM.Config}}{{.Gateway}}{{end}}' "$net"
+          fi
+          echo '== Host firewall tools / policy summary =='
+          if command -v ufw >/dev/null 2>&1; then sudo -n ufw status 2>&1 | head -n 24 || true; fi
+          if command -v iptables >/dev/null 2>&1; then
+            echo 'INPUT policy and first filter rules (read only)'
+            (sudo -n iptables -S INPUT 2>/dev/null || iptables -S INPUT 2>/dev/null || true) | head -n 20
+          fi
+          if command -v nft >/dev/null 2>&1; then
+            echo 'nft input chains with port 4317 references'
+            (sudo -n nft list ruleset 2>/dev/null || nft list ruleset 2>/dev/null || true) | grep -E 'hook input|4317|policy drop|policy accept' | head -n 25 || true
+          fi
           echo '== Network names =='
           docker inspect --format '{{range $name, $net := .NetworkSettings.Networks}}{{println $name}}{{end}}' osgard-world 2>&1 || true
           docker inspect --format '{{range $name, $net := .NetworkSettings.Networks}}{{println $name}}{{end}}' osgard-game-api 2>&1 || true
