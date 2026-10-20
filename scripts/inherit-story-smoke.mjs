@@ -36,7 +36,7 @@ check('real current-generation light and path create completed signal chapter',(
  assert.equal(JSON.stringify(original),before);
  assert.equal(a.chapter,'signal');assert.equal(a.done,3);
  assert.equal(a.complete,true);assert.equal(a.mood,'routes');
- assert.deepEqual(a.objectives.map(o=>o.done),[true,true,true]);
+ assert.deepEqual(Array.from(a.objectives,o=>o.done),[true,true,true]);
  assert.equal(a.pendingCount,2);
 });
 check('handoff clears quests but preserves inherited island consequences',()=>{
@@ -51,7 +51,7 @@ check('handoff clears quests but preserves inherited island consequences',()=>{
 check('new connection can form with an old retained trace',()=>{
  const old=l('light',30,30),latest=l('path',39,39);
  const answer=story.evaluate(world(173,[old,latest],[latest]));
- assert.deepEqual(answer.objectives.map(o=>o.done),[false,true,true]);
+ assert.deepEqual(Array.from(answer.objectives,o=>o.done),[false,true,true]);
  assert.equal(answer.done,2);
 });
 check('an existing old connection is never awarded as a new chapter quest',()=>{
