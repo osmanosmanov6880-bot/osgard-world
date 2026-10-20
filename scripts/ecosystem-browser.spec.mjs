@@ -113,7 +113,7 @@ test('OSGARD cinema overlay never obscures OSA, PLAY or Development entry points
   await expect(gateway.getByRole('link')).toHaveCount(3)
 })
 
-test('OSGARD satellite Earth loads genuine NASA albedo, cloud and night maps with provenance', async ({ page, request }) => {
+test('OSGARD satellite Earth loads genuine NASA albedo, cloud and night maps with provenance', async ({ page, request }, testInfo) => {
   for (const name of ['earth-day-4096.jpg', 'earth-day-2048.jpg', 'earth-night-2048.jpg', 'earth-clouds-2048.jpg']) {
     const response = await request.get('/brand/nasa/' + name)
     expect(response.status(), 'NASA image ' + name).toBe(200)
@@ -136,6 +136,8 @@ test('OSGARD satellite Earth loads genuine NASA albedo, cloud and night maps wit
     await expect(stage).toHaveAttribute('data-cloud-model', 'raymarch')
     await expect(stage).toHaveAttribute('data-cloud-layers', '2')
   }
+  await page.waitForTimeout(250)
+  await page.screenshot({ path: testInfo.outputPath('nasa-earth-render.png') })
   await page.getByText('Откуда изображение Земли?').click()
   await expect(page.getByText('Поверхность: NASA Blue Marble')).toBeVisible()
   await expect(page.getByRole('link', { name: 'Посмотреть источник NASA' })).toHaveAttribute('href', /science\.nasa\.gov/)
