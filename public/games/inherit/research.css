@@ -1,0 +1,43 @@
+/* Opt-in research belongs to the journal; never obscures game controls. */
+.inherit-research-panel{margin:26px 0 0;padding:19px clamp(12px,2vw,22px);
+ border:1px solid rgba(206,185,140,.36);border-radius:11px;
+ background:linear-gradient(135deg,rgba(26,58,63,.62),rgba(7,27,39,.85));scroll-margin-top:68px}
+.inherit-research-title{font:600 clamp(22px,3vw,29px)/1.2 'Playfair Display',Georgia,serif;color:#f4ebd7;margin:6px 0 12px}
+.inherit-research-intro{font:13px/1.7 Manrope,system-ui,sans-serif;color:#c7d6d0;margin:12px 0}
+.inherit-research-note{font:11px/1.65 Manrope,system-ui,sans-serif;color:#afc3c3;margin:10px 0}
+.inherit-research-status{font:600 12px/1.6 Manrope,system-ui,sans-serif;color:#e0ca9d;min-height:18px}
+.inherit-research-consent{display:grid;gap:14px;margin-top:19px}
+.inherit-research-consent[hidden],.inherit-research-active[hidden]{display:none!important}
+.inherit-research-consent label{display:flex;align-items:flex-start;gap:12px;padding:12px;border:1px solid rgba(211,191,149,.29);
+ border-radius:7px;background:rgba(255,255,255,.025);cursor:pointer;color:#e7e4d7;font:12px/1.6 Manrope,system-ui,sans-serif}
+.inherit-research-consent input{margin:4px 0 0;flex-shrink:0;width:19px;height:19px;accent-color:#b6d39d}
+.inherit-research-primary,.inherit-research-export,.inherit-research-erase{
+ display:inline-flex;justify-content:center;align-items:center;min-height:44px;border-radius:6px;
+ padding:10px 15px;border:1px solid rgba(228,198,143,.55);
+ font:700 12px/1.35 Manrope,system-ui,sans-serif;cursor:pointer}
+.inherit-research-primary{background:#e4ca91;color:#17352f;justify-self:start}
+.inherit-research-export{background:rgba(215,194,143,.14);color:#f2ddbb}
+.inherit-research-erase{background:rgba(187,148,140,.06);color:#dec4b5;border-color:rgba(196,150,139,.45)}
+.inherit-research-primary:hover:not(:disabled){background:#f2dfb6}
+.inherit-research-export:hover,.inherit-research-erase:hover{background:rgba(231,196,142,.24)}
+.inherit-research-primary:disabled{opacity:.44;cursor:not-allowed}
+.inherit-research-primary:focus-visible,.inherit-research-export:focus-visible,.inherit-research-erase:focus-visible,
+.inherit-research-field select:focus-visible{outline:3px solid #ffe2a4;outline-offset:3px}
+.inherit-research-active{margin-top:14px}
+.inherit-research-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:17px}
+.inherit-research-stat{display:grid;gap:6px;min-width:0;padding:13px 10px;
+ border:1px solid rgba(201,221,201,.19);border-radius:7px;background:rgba(255,255,255,.03)}
+.inherit-research-stat strong{color:#f2d29c;font:600 27px/1.1 'Playfair Display',Georgia,serif}
+.inherit-research-stat small{font:600 11px/1.4 Manrope,system-ui,sans-serif;color:#b4ccc8}
+.inherit-research-retention{grid-column:span 2;padding:12px;margin:0;border:1px solid rgba(207,198,158,.19);
+ border-radius:7px;background:rgba(255,255,255,.02);font:12px/1.5 Manrope,system-ui,sans-serif;color:#dae5d7}
+.inherit-research-subtitle{font:600 21px/1.3 'Playfair Display',Georgia,serif;color:#f6e9ce;margin:20px 0 8px}
+.inherit-research-survey{display:grid;gap:14px;margin-top:17px}
+.inherit-research-field{display:grid;gap:6px;font:700 12px/1.5 Manrope,system-ui,sans-serif;color:#f0e6d3}
+.inherit-research-field select{width:100%;max-width:100%;min-height:44px;padding:9px 12px;
+ border-radius:6px;border:1px solid rgba(222,195,147,.4);background:#142b34;color:#f3ead6;font:13px Manrope,system-ui,sans-serif}
+.inherit-research-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:17px}
+@media(max-width:740px){.inherit-research-panel{padding:15px 12px}.inherit-research-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .inherit-research-retention{grid-column:1/-1}.inherit-research-actions>*{flex:1 1 180px}
+ .inherit-research-field select{font-size:16px}}
+@media(prefers-reduced-motion:reduce){.inherit-research-panel *{transition:none!important}}
