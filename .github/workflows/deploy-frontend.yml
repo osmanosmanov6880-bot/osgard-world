@@ -117,6 +117,7 @@ jobs:
           npm run qa:inherit-legacy
           npm run qa:inherit-story
           npm run qa:inherit-world-cycle
+          npm run qa:inherit-research
           npm run qa:remix-session
           npm run qa:remix-owned-session
           npm run qa:remix-invitations
