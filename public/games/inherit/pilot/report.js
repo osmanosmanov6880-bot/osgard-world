@@ -1,6 +1,6 @@
 /* INHERIT pilot console: parses manually selected exports entirely in the browser.
    No fetch, XMLHttpRequest, storage, sendBeacon or remote analytics. */
-import {aggregate,formatMarkdown} from '../pilot-metrics.mjs';
+import {aggregate,formatMarkdown} from '../pilot-metrics.js';
 const d=document,form=d.querySelector('#pilot-form'),files=d.querySelector('#files'),
  date=d.querySelector('#as-of'),status=d.querySelector('#status'),results=d.querySelector('#results');
 const metrics=d.querySelector('#summary-metrics'),retention=d.querySelector('#retention-body'),
