@@ -45,6 +45,32 @@ export default function WorldHome({ development = false }: { development?: boole
   }
 
   return <main className="world-home brand-container">
+    {development ? <>
+      <section className="omega-dev-hero" aria-labelledby="world-title">
+        <div className="omega-dev-hero-art" aria-hidden="true"><img src="/brand/omega-development.svg" width="1600" height="1000" alt="" decoding="async" /><span className="omega-dev-orbit omega-dev-orbit-a"/><span className="omega-dev-orbit omega-dev-orbit-b"/></div>
+        <div className="omega-dev-intro">
+          <p className="brand-eyebrow">OSGARD / DEVELOPMENT / DIGITAL ENGINEERING</p>
+          <h1 id="world-title">СОЗДАЁМ<br/><span>ЦИФРОВЫЕ</span><br/>РЕШЕНИЯ.</h1>
+          <p className="brand-lead">Проектируем интерфейсы и цифровые продукты — от первых сценариев до проверяемых демонстраций. Смотрите реальные кейсы, возможности и текущую стадию каждого проекта.</p>
+          <div className="brand-actions"><a className="brand-button primary" href="#cases">Смотреть проекты <span aria-hidden="true">↗</span></a><a className="brand-button" href="#contact">Обсудить разработку <span aria-hidden="true">→</span></a></div>
+          <p className="brand-meta">СТРАТЕГИЯ / ПРОТОТИП / ИНТЕРФЕЙС / ЗАПУСК</p>
+        </div>
+        <div className="omega-dev-console" aria-label="Принцип работы студии">
+          <span>OSGARD ENGINEERING / 001</span>
+          <strong>От идеи — к работающему сценарию.</strong>
+          <p>Технология ценна, когда результат можно открыть, попробовать и проверить.</p>
+          <a href="#approach">Как мы работаем <span aria-hidden="true">↘</span></a>
+        </div>
+      </section>
+      <section id="products" className="brand-section omega-dev-capabilities" aria-labelledby="dev-capabilities-title">
+        <div className="brand-section-heading"><p className="brand-eyebrow">01 / ЧТО МЫ ДЕЛАЕМ</p><h2 id="dev-capabilities-title">АРХИТЕКТУРА. <span>ДИЗАЙН. КОД.</span></h2><p>Начинаем с задачи, показываем логику продукта и доступную реализацию. Без выдуманных результатов и обещаний несуществующих функций.</p></div>
+        <div className="omega-dev-capability-grid">
+          <a href="#cases"><span>01 / UX & PRODUCT</span><strong>Интерфейсы и сценарии</strong><p>Понятная структура, удобная навигация, адаптация и доступность.</p><em>Смотреть кейсы ↗</em></a>
+          <a href="/development/tedes/"><span>02 / PROTOTYPES</span><strong>Конфигураторы и инструменты</strong><p>Изучите демонстрацию TEDES с локальной проектной спецификацией.</p><em>Открыть TEDES ↗</em></a>
+          <a href="#contact"><span>03 / ENGINEERING</span><strong>Разработка и проверка</strong><p>Обсуждаем требования, реализуем необходимые функции и проверяем результат.</p><em>Обсудить задачу ↗</em></a>
+        </div>
+      </section>
+    </> : <>
     <section className="omega-hero" aria-labelledby="world-title">
       <div className="omega-sky" aria-hidden="true"><div className="omega-stars"/><div className="omega-orbit omega-orbit-one"/><div className="omega-orbit omega-orbit-two"/><div className="omega-globe"><div className="omega-continent omega-c-one"/><div className="omega-continent omega-c-two"/><div className="omega-continent omega-c-three"/></div><div className="omega-platform"/></div>
       <div className="omega-copy">
@@ -70,6 +96,7 @@ export default function WorldHome({ development = false }: { development?: boole
       </div>
       <div className="world-workspace-link"><p>Работаешь над своей идеей? Собери план и материалы в одном месте.</p><a className="brand-text-link" href="/workspace">Открыть рабочее пространство ↗</a></div>
     </section>
+    </>}
     <section id="cases" className="brand-section" aria-labelledby="world-cases-title">
       <div className="brand-section-heading"><p className="brand-eyebrow">02 / ИЗБРАННЫЕ ПРОЕКТЫ</p><h2 id="world-cases-title">У каждой задачи<br />свой характер.</h2><p>Откройте кейс: посмотрите интерфейс, доступные возможности и стадию проекта. Статус указан на каждой карточке.</p></div>
       <div className="world-case-grid">{cases.map((item, index) => <a href={item.href} className="world-case" key={item.id}>

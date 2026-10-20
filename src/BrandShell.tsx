@@ -7,6 +7,7 @@ import { BROWSER_LOCATION_EVENT, browserLocationKey } from './browserNavigation'
 import type { ProductTheme } from './BrandMark'
 import './brandFonts.css'
 import './brandSystem.css'
+import './omegaSystems.css'
 
 const readMotion = () => { try { return localStorage.getItem('osgard:motion') !== 'off' } catch { return true } }
 const productHomes = { world: '/', intelligence: '/intelligence', play: '/play' }

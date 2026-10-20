@@ -28,6 +28,38 @@ for (const [path, product, heading] of surfaces) {
   })
 }
 
+test('OSGARD Omega cinematic scenes preserve working routes and images', async ({ page }) => {
+  const pageErrors = []
+  page.on('pageerror', error => pageErrors.push(error.message))
+  await page.goto('/')
+  await expect(page.locator('.omega-hero .omega-globe')).toHaveCount(1)
+  await expect(page.locator('.omega-cards .omega-card')).toHaveCount(3)
+  for (const path of ['/intelligence', '/play', '/development']) {
+    await expect(page.locator('.omega-gate a[href="' + path + '"]')).toHaveCount(1)
+  }
+
+  await page.goto('/intelligence')
+  await expect(page.locator('.omega-intelligence-scene img[src="/brand/omega-osa.svg"]')).toBeVisible()
+  await expect(page.locator('.omega-osa-trails a')).toHaveCount(3)
+  expect(await page.locator('.omega-intelligence-scene img').evaluate(img => img.complete && img.naturalWidth > 0)).toBe(true)
+
+  await page.goto('/play')
+  await expect(page.locator('.omega-play-city img[src="/brand/omega-play.svg"]')).toBeVisible()
+  await expect(page.locator('.omega-play-shortcuts a')).toHaveCount(3)
+  await expect(page.locator('.omega-play-actions a[href^="/play/world/zion-030"]')).toHaveCount(1)
+  expect(await page.locator('.omega-play-city img').evaluate(img => img.complete && img.naturalWidth > 0)).toBe(true)
+
+  await page.goto('/development')
+  await expect(page.locator('.omega-dev-hero h1')).toContainText('ЦИФРОВЫЕ')
+  await expect(page.locator('.omega-dev-capability-grid a')).toHaveCount(3)
+  await expect(page.locator('.omega-dev-hero-art img[src="/brand/omega-development.svg"]')).toBeVisible()
+  expect(await page.locator('.omega-dev-hero-art img').evaluate(img => img.complete && img.naturalWidth > 0)).toBe(true)
+  await expect(page.locator('#cases')).toHaveCount(1)
+  await expect(page.locator('#contact')).toHaveCount(1)
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true)
+  expect(pageErrors).toEqual([])
+})
+
 for (const slug of ['phantom', 'tedes', 'merakki']) {
   test('capture actual case interface: ' + slug, async ({ page }, info) => {
     test.skip(info.project.name !== 'desktop', 'The published case evidence uses a fixed desktop viewport')

@@ -24,3 +24,34 @@ html[data-product=play] .osgard-static-header a:focus-visible{outline-color:#5ce
 .osgard-portal-transition.portal-world::after{animation-duration:300ms}
 @media(max-width:600px){.osgard-static-header nav{font-size:13px;gap:8px 16px;justify-content:flex-start}.osgard-static-header a{min-height:44px}.osgard-static-status{font-size:12px;line-height:1.8}}
 @media(prefers-reduced-motion:reduce){.osgard-portal-transition{display:none!important}}
+
+/* OSGARD Omega: short luminous portal transition, on the destination page only. */
+.osgard-portal-transition{
+ isolation:isolate;overflow:hidden;
+ background:radial-gradient(ellipse at 50% 46%,#104a66 0%,#071b32 32%,#020a18 78%);
+ color:#86f9ff;
+ transition:opacity 460ms cubic-bezier(.16,.73,.25,1),visibility 460ms;
+}
+.osgard-portal-transition.portal-intelligence{
+ background:radial-gradient(ellipse at 50% 46%,#164758 0%,#091c2c 35%,#04101e 80%);
+ color:#a1f4eb;
+}
+.osgard-portal-transition.portal-play{
+ background:radial-gradient(ellipse at 50% 46%,#162d67 0%,#08192f 35%,#040a18 80%);
+ color:#81e7ff;
+}
+.osgard-portal-transition::before{
+ content:'';position:absolute;z-index:-1;left:50%;top:50%;
+ width:min(78vmin,620px);aspect-ratio:1;border:2px solid currentColor;border-radius:50%;
+ transform:translate(-50%,-50%) scale(.7);
+ box-shadow:0 0 25px currentColor,0 0 95px #4688ff80,inset 0 0 90px #68daff33;
+ opacity:.75;animation:omega-portal-bloom 460ms cubic-bezier(.17,.72,.26,1) both;
+}
+.osgard-portal-transition.portal-reveal::before{opacity:0;transform:translate(-50%,-50%) scale(2)}
+.osgard-portal-transition>img:not(.portal-world-preview){filter:drop-shadow(0 0 17px currentColor);position:relative;z-index:2}
+.osgard-portal-transition>span{position:relative;z-index:2;color:#e6fcff;font-size:clamp(12px,1.3vw,16px);letter-spacing:.18em;text-shadow:0 0 18px currentColor}
+.osgard-portal-transition.portal-reveal>img:not(.portal-world-preview){transform:scale(3);opacity:0}
+.osgard-portal-transition.portal-game>img.portal-world-preview{position:relative;z-index:2;box-shadow:0 0 45px #28d4ff8a}
+@keyframes omega-portal-bloom{from{opacity:0;transform:translate(-50%,-50%) scale(.35)}to{opacity:.75;transform:translate(-50%,-50%) scale(1)}}
+@media(prefers-reduced-motion:reduce){.osgard-portal-transition{display:none!important}.osgard-portal-transition::before{animation:none!important}}
+html[data-motion=off] .osgard-portal-transition{display:none!important}
