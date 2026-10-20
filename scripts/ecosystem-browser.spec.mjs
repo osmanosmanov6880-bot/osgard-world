@@ -424,3 +424,25 @@ test('INHERIT RU/EN/ZH switches in place without losing placed traces or breakin
   expect(await page.evaluate(()=>localStorage.getItem('osgard:game-language'))).toBe('zh');
   expect(errors).toEqual([]);
 });
+
+test('INHERIT touch undo reuses guarded pending-trace logic and keeps committed history',async({page})=>{
+  const errors=await prepareStandaloneGame(page);
+  await page.goto('/games/inherit/?lang=ru',{waitUntil:'domcontentloaded'});
+  const world=page.locator('#world');
+  await world.focus();
+  await world.press('Enter');
+  await expect(page.locator('#budget')).toHaveText('99');
+  await expect(page.locator('#objects > .placed')).toHaveCount(1);
+  await expect(page.locator('.cine-undo')).toBeVisible();
+  await page.locator('.cine-undo').click();
+  await expect(page.locator('#budget')).toHaveText('100');
+  await expect(page.locator('#objects > .placed')).toHaveCount(0);
+  const state=await page.evaluate(()=>window.InheritGame.snapshot());
+  expect(state.pending).toEqual([]);
+  expect(state.changes).toEqual([]);
+  await page.locator('[data-game-language="zh"]').click();
+  await expect(page.locator('.cine-undo')).toContainText('撤销痕迹');
+  await page.locator('.cine-undo').click();
+  expect((await page.evaluate(()=>window.InheritGame.snapshot())).budget).toBe(100);
+  expect(errors).toEqual([]);
+});
