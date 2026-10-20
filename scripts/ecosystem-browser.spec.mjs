@@ -860,7 +860,9 @@ test('INHERIT voluntary research requires consent and supports real offline surv
  const download=page.waitForEvent('download');
  await panel.locator('.inherit-research-export').click();
  expect((await download).suggestedFilename()).toMatch(/inherit-pilot-.*\.json/);
+ await page.locator('.inherit-legacy-close').click();
  await page.locator('[data-game-language="zh"]').click();
+ await page.locator('.inherit-legacy-trigger').click();
  await expect(panel.locator('.inherit-research-title')).toContainText('帮助改进');
  await panel.locator('.inherit-research-erase').click();
  expect(await page.evaluate(k=>localStorage.getItem(k),key)).toBeNull();
