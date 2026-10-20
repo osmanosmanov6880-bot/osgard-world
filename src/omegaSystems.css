@@ -1,0 +1,144 @@
+/* OSGARD OMEGA: cohesive cinematic identity. Existing lessons, games and case functionality stay intact. */
+html[data-product=intelligence]{background:#061321;color-scheme:dark}
+html[data-product=play]{background:#030c1b;color-scheme:dark}
+.brand-system.theme-intelligence{--bg:#061321;--surface:#0b2236;--ink:#f4faff;--muted:#b3cbd7;--accent:#76deda;--line:#29495e;background:radial-gradient(ellipse at 80% 4%,#0d3850 0%,transparent 43%),#061321}
+.brand-system.theme-play{--bg:#030c1b;--surface:#0a1c31;--ink:#f2f9ff;--muted:#b1cadb;--accent:#58e9f2;--line:#28506a;background:radial-gradient(ellipse at 50% 0%,#092644 0%,#030c1b 50%)}
+.theme-intelligence .brand-header,.theme-intelligence .brand-local-bar,.theme-intelligence .brand-footer,.theme-play .brand-header,.theme-play .brand-local-bar,.theme-play .brand-footer{background:#061527;border-color:#27516b}
+.theme-intelligence .brand-header,.theme-play .brand-header{min-height:82px}
+.theme-intelligence .brand-footer,.theme-play .brand-footer{background:#061729}
+.theme-intelligence .brand-lockup>svg,.theme-play .brand-lockup>svg{filter:drop-shadow(0 0 9px #39eaff99)}
+.theme-intelligence .brand-global-nav a[aria-current=page],.theme-play .brand-global-nav a[aria-current=page]{border-color:#68e8ee;color:#80f2f5}
+.theme-intelligence .brand-button.primary{background:#79e4df;border-color:#79e4df;color:#041a25;box-shadow:0 0 26px #51e1ed33}
+.theme-play .brand-button.primary{background:#59e8f1;border-color:#59e8f1;color:#031321;box-shadow:0 0 26px #51e1ed33}
+.theme-intelligence :is(.brand-button,.brand-text-link):hover,.theme-play :is(.brand-button,.brand-text-link):hover{border-color:#9af9fc}
+.theme-intelligence .brand-section,.theme-play .brand-section{border-color:#294a63}
+.theme-intelligence .brand-eyebrow,.theme-play .brand-eyebrow{color:#72e7ec}
+/* OSA: contextual hologram and immediately legible learning routes. */
+.theme-intelligence .intelligence-hero{position:relative;isolation:isolate;grid-template-columns:minmax(0,1.05fr) minmax(340px,1fr);gap:clamp(20px,4vw,68px);align-items:center;min-height:740px;padding:70px 0 85px}
+.theme-intelligence .intelligence-hero::before{content:'';position:absolute;z-index:-1;inset:0 -4vw;pointer-events:none;background:radial-gradient(ellipse at 74% 48%,#0d5e7b52 0%,transparent 50%)}
+.theme-intelligence .intelligence-hero h1{font-size:clamp(45px,5.2vw,84px);line-height:1.12;letter-spacing:-.045em;text-shadow:0 3px 28px #0008}
+.theme-intelligence .intelligence-hero h1 em{color:#84e2dd;text-shadow:0 0 27px #52c7ce47}
+.theme-intelligence .intelligence-hero .brand-lead{color:#d0e3ef;max-width:555px}
+.theme-intelligence .intelligence-lens.omega-intelligence-lens{padding:0;min-height:530px;display:flex;align-items:center;justify-content:center;gap:8px;position:relative}
+.omega-intelligence-lens>.brand-eyebrow{position:relative;z-index:2;margin:0;align-self:flex-start;color:#95eefa}
+.omega-intelligence-scene{width:100%;max-width:610px;aspect-ratio:1.22;position:relative;isolation:isolate;overflow:hidden;border:1px solid #3d839477;background:radial-gradient(circle at center,#12537566,#06182d);box-shadow:0 25px 85px #020914a8,inset 0 0 42px #2addf41e}
+.omega-intelligence-scene::before{content:'';position:absolute;inset:-1px;z-index:3;border:1px solid #81f6f433;pointer-events:none;box-shadow:inset 0 0 45px #49d7fa22}
+.omega-intelligence-scene img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;filter:saturate(1.17);animation:omega-scene-breathe 12s ease-in-out infinite}
+.omega-intelligence-scene .lens-ring{position:absolute;inset:auto;top:50%;left:50%;z-index:2;transform:translate(-50%,-50%);width:29%;height:auto;aspect-ratio:1;background:#08213588;border:1px solid #8cf3fa55;box-shadow:0 0 45px #21dcf855;backdrop-filter:blur(5px)}
+.omega-intelligence-scene .lens-ring svg{color:#aafcff;width:55%;height:55%}
+.omega-intelligence-pulse{position:absolute;left:50%;top:50%;z-index:2;border:1px solid #74e8ff99;width:52%;aspect-ratio:1;border-radius:50%;transform:translate(-50%,-50%);pointer-events:none;animation:omega-orbit-spark 10s linear infinite}
+.omega-intelligence-pulse-b{width:68%;border-color:#c28aff77;animation-duration:17s;animation-direction:reverse}
+.omega-intelligence-hud{position:absolute;z-index:4;font:10px/1.4 'JetBrains Mono',monospace;letter-spacing:.06em;color:#b8faff;border:1px solid #5bd5f266;background:#06182ce6;padding:6px 8px}
+.hud-one{left:4%;top:19%}.hud-two{right:3%;top:54%}.hud-three{left:8%;bottom:10%}
+.omega-intelligence-lens>p{position:relative;z-index:2;font-size:25px!important;color:#f3ffff!important;margin:13px 0 0!important;text-shadow:0 2px 18px #000}
+.omega-intelligence-lens>small{position:relative;z-index:2;letter-spacing:.13em!important}
+.omega-osa-trails{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:30px 0 0;max-width:650px}
+.omega-osa-trails a{display:flex;flex-direction:column;min-height:106px;padding:13px 15px;background:#0c283aaf;border:1px solid #356278;transition:transform .25s,border-color .25s,background .25s}
+.omega-osa-trails a:hover{transform:translateY(-4px);background:#12384d;border-color:#84f8ff}
+.omega-osa-trails a span{font:9px/1.6 'JetBrains Mono',monospace;color:#85e7eb;letter-spacing:.07em}
+.omega-osa-trails a strong{font:650 15px/1.5 Inter,sans-serif;color:#f0ffff;margin:6px 0 2px}
+.omega-osa-trails a small{font:12px/1.5 Inter,sans-serif;color:#adcbd8}
+.theme-intelligence .intelligence-method>div{background:linear-gradient(155deg,#10314a,#0b1b2b);border:1px solid #31566a;padding:25px;transition:transform .3s,border-color .3s}
+.theme-intelligence .intelligence-method>div:hover{border-color:#79eaf0;transform:translateY(-6px)}
+.theme-intelligence .intelligence-method h3{font-size:clamp(28px,3vw,41px);color:#f6fcff}
+.theme-intelligence .intelligence-answer{background:linear-gradient(145deg,#0c293e,#081929);box-shadow:0 12px 70px #0005;border-color:#3b6b7d}
+.theme-intelligence .intelligence-path>a{background:linear-gradient(160deg,#12304a,#091a2b);border:1px solid #365b6b;padding:26px;transition:transform .3s,border-color .3s}
+.theme-intelligence .intelligence-path>a:hover{transform:translateY(-6px);border-color:#79e9ec}
+.theme-intelligence .intelligence-path h3{font-size:clamp(27px,2.8vw,40px)}
+.theme-intelligence .intelligence-answer .brand-status{background:#14374c}
+.theme-intelligence .intelligence-continue{max-width:100%}
+/* PLAY: world environment provides the atmosphere; the featured real game is identifiable. */
+.theme-play .play-hero.omega-play-hero{min-height:730px;isolation:isolate;border:1px solid #387797;margin:35px 0 65px;background:#041328;box-shadow:0 24px 85px #0007}
+.theme-play .omega-play-hero>.omega-play-city{position:absolute;z-index:-1;inset:0;max-width:none;padding:0;pointer-events:none;overflow:hidden}
+.omega-play-city img{display:block;width:100%;height:100%;object-fit:cover;object-position:55% 52%;filter:saturate(1.2) brightness(.88);animation:omega-scene-breathe 17s ease-in-out infinite}
+.omega-play-city::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,#031021 3%,#031020df 32%,#03102088 62%,#04101a43),linear-gradient(0deg,#041425dd,transparent 38%)}
+.omega-play-light{position:absolute;top:17%;left:62%;width:200px;aspect-ratio:1;border:1px solid #3ad5fc6f;box-shadow:0 0 45px #49eeff4c;border-radius:50%;animation:omega-orbit-spark 14s linear infinite}
+.omega-play-light-two{left:74%;top:30%;width:155px;border-color:#a58afd6b;animation-duration:24s;animation-direction:reverse}
+.theme-play .omega-play-hero::after{background:linear-gradient(90deg,#04101fdd 0%,#03102177 45%,#03102113 100%);z-index:0}
+.theme-play .omega-play-hero>div:not(.omega-play-city){max-width:660px;width:65%;position:relative;z-index:2;padding:clamp(25px,4vw,60px);text-shadow:0 2px 14px #030815}
+.theme-play .omega-play-hero h1{font-size:clamp(42px,5.8vw,82px);text-shadow:0 4px 35px #030911}
+.theme-play .omega-play-hero h1 span{color:#70eff8}
+.theme-play .omega-play-hero>img.omega-play-feature-art{position:absolute;z-index:2;right:4%;top:46%;width:31%;height:35%;object-fit:cover;object-position:center;opacity:.91;border:2px solid #81eeff8c;border-radius:8px;box-shadow:0 0 0 9px #05192cc0,0 20px 75px #0008;transform:perspective(850px) rotateY(-8deg)}
+.theme-play .omega-play-hero .play-launch-warning{max-width:450px;border-left:2px solid #5eeef2;padding-left:16px}
+.theme-play .omega-play-hero .play-hero-coordinate{position:absolute;z-index:3;color:#80fbff}
+.omega-play-actions{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin:24px 0}
+.theme-play .omega-play-actions .brand-button{min-height:51px}
+.omega-play-discovery{padding:24px 0 65px;margin:0 0 30px;border-bottom:1px solid #2b506b}
+.omega-play-discovery-heading span{font:10px/1.8 'JetBrains Mono',monospace;color:#8dfaff;letter-spacing:.15em}
+.omega-play-discovery-heading h2{font-size:clamp(27px,3vw,44px);font-weight:650;margin:12px 0 8px}
+.omega-play-discovery-heading p{color:#b1cadb;font-size:15px;line-height:1.7;max-width:720px}
+.omega-play-shortcuts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:26px}
+.omega-play-shortcuts>a{position:relative;display:flex;flex-direction:column;min-height:154px;padding:22px 25px;background:linear-gradient(135deg,#102940,#081525 70%);border:1px solid #2e6180;overflow:hidden;transition:transform .25s,border-color .25s}
+.omega-play-shortcuts>a::before{content:'';position:absolute;right:-30px;bottom:-70px;width:190px;height:190px;border-radius:50%;border:1px solid #46e8fa30;box-shadow:0 0 50px #29f4fc1d}
+.omega-play-shortcuts>a:hover{border-color:#8ceeff;transform:translateY(-5px)}
+.omega-play-shortcuts span{font:10px/1.6 'JetBrains Mono',monospace;color:#77dced;letter-spacing:.06em}
+.omega-play-shortcuts strong{margin:22px 0 8px;color:#f4f9ff;font-size:20px;font-weight:700}
+.omega-play-shortcuts small{color:#b3cad8;font-size:13px}
+.omega-play-shortcuts em{position:absolute;right:24px;top:20px;color:#5fe7f1;font-style:normal}
+.theme-play .play-card{background:linear-gradient(160deg,#0c253d,#071523);border-color:#345d78;box-shadow:0 14px 35px #0003;transition:transform .25s,border-color .25s}
+.theme-play .play-card:hover{border-color:#7ceef0;transform:translateY(-4px)}
+.theme-play .play-card-art img{transition:transform .4s;filter:saturate(1.18)}
+.theme-play .play-card:hover .play-card-art img{transform:scale(1.04)}
+/* Development: an honest engineering studio with cinematic presentation. */
+.omega-dev-hero{position:relative;isolation:isolate;min-height:730px;display:grid;grid-template-columns:minmax(0,1.1fr) minmax(270px,.72fr);align-items:end;gap:clamp(16px,3vw,52px);padding:90px 0 80px;overflow:hidden}
+.omega-dev-hero-art{position:absolute;z-index:-1;inset:0 -5vw;pointer-events:none;background:radial-gradient(ellipse at 74% 50%,#0a4a67 0%,#041121 56%,#020914 90%);overflow:hidden}
+.omega-dev-hero-art img{position:absolute;left:33%;top:4%;width:90%;height:95%;object-fit:cover;opacity:.75;filter:saturate(1.15);animation:omega-scene-breathe 15s ease-in-out infinite}
+.omega-dev-hero-art::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,#030d1e 0%,#03101fd1 27%,transparent 72%),linear-gradient(0deg,#041321dd,transparent 48%)}
+.omega-dev-orbit{position:absolute;left:67%;top:41%;width:42%;height:15%;border:2px solid #68f9ff88;border-radius:50%;transform:rotate(-20deg);box-shadow:0 0 25px #42e6ff33;animation:omega-dev-orbit 8s ease-in-out infinite}
+.omega-dev-orbit-b{border-color:#ad77f870;transform:rotate(24deg);animation-delay:-4s}
+.omega-dev-intro{position:relative;z-index:1;max-width:730px;text-shadow:0 3px 27px #010817}
+.omega-dev-hero h1{font-size:clamp(46px,6vw,92px);line-height:1.03;font-weight:800;letter-spacing:-.06em}
+.omega-dev-hero h1 span{color:#67eaf6}
+.omega-dev-intro .brand-lead{color:#d7e7f2;max-width:580px}
+.omega-dev-console{align-self:end;position:relative;z-index:1;background:#071c30ee;border:1px solid #54d5ef7d;padding:28px 26px;box-shadow:0 20px 65px #0006,inset 0 0 35px #14436266;backdrop-filter:blur(12px)}
+.omega-dev-console>span,.omega-dev-capability-grid>a>span{font:10px 'JetBrains Mono',monospace;letter-spacing:.12em;color:#90eaf6}
+.omega-dev-console strong{display:block;margin:20px 0 12px;font-size:24px;line-height:1.3;color:#f2fbff}
+.omega-dev-console p{font-size:14px;line-height:1.7;color:#bfd4e0}
+.omega-dev-console a{display:flex;justify-content:space-between;gap:15px;margin-top:24px;padding-top:17px;border-top:1px solid #39728b;color:#7ff4f7;font-size:14px}
+.omega-dev-capabilities h2{font-size:clamp(33px,4vw,61px)}
+.omega-dev-capabilities h2 span{color:#73eef1}
+.omega-dev-capability-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.omega-dev-capability-grid>a{display:flex;flex-direction:column;background:linear-gradient(152deg,#0e2940,#091727);border:1px solid #33637b;min-height:250px;padding:26px;transition:transform .25s,border-color .25s}
+.omega-dev-capability-grid>a:hover{transform:translateY(-5px);border-color:#7defff}
+.omega-dev-capability-grid strong{display:block;font-size:23px;line-height:1.3;margin:23px 0 10px}
+.omega-dev-capability-grid p{font-size:14px;line-height:1.7;color:#bbcfdb}
+.omega-dev-capability-grid em{margin-top:auto;padding-top:20px;color:#77f4f3;font-size:13px;font-style:normal}
+@keyframes omega-scene-breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.045)}}
+@keyframes omega-orbit-spark{0%{filter:drop-shadow(0 0 8px #27eafb);opacity:.54}50%{filter:drop-shadow(0 0 18px #7bfdff);opacity:1}100%{filter:drop-shadow(0 0 8px #27eafb);opacity:.54}}
+@keyframes omega-dev-orbit{0%,100%{opacity:.43}50%{opacity:1}}
+@media(max-width:1100px){
+ .theme-intelligence .intelligence-hero{grid-template-columns:minmax(0,1fr) minmax(320px,1fr)}
+ .theme-play .omega-play-hero>img.omega-play-feature-art{width:28%;height:25%;top:60%}
+ .omega-dev-hero{grid-template-columns:1fr minmax(225px,.55fr)}
+}
+@media(max-width:760px){
+ .theme-intelligence .intelligence-hero{grid-template-columns:1fr;min-height:0;padding:54px 0 60px;gap:35px}
+ .theme-intelligence .intelligence-hero h1{font-size:clamp(42px,8.5vw,67px)}
+ .theme-intelligence .intelligence-lens.omega-intelligence-lens{min-height:0;gap:10px}
+ .omega-intelligence-scene{max-width:550px}
+ .omega-osa-trails{grid-template-columns:1fr;gap:8px;margin-top:20px}
+ .omega-osa-trails a{min-height:76px}
+ .theme-play .play-hero.omega-play-hero{min-height:640px;margin:18px 0 35px}
+ .theme-play .omega-play-hero>div:not(.omega-play-city){width:100%;max-width:100%;padding:28px;align-self:flex-start}
+ .theme-play .omega-play-hero h1{font-size:clamp(40px,8vw,65px)}
+ .theme-play .omega-play-hero>img.omega-play-feature-art{width:41%;height:22%;top:auto;bottom:55px;right:6%;opacity:.6}
+ .omega-play-shortcuts{grid-template-columns:1fr}
+ .omega-play-shortcuts>a{min-height:140px}
+ .omega-dev-hero{grid-template-columns:1fr;gap:45px;min-height:0;padding:78px 0 65px}
+ .omega-dev-intro h1{font-size:clamp(39px,8.3vw,66px)}
+ .omega-dev-hero-art img{left:10%;width:160%;opacity:.43}
+ .omega-dev-console{max-width:560px}
+ .omega-dev-capability-grid{grid-template-columns:1fr}
+ .omega-dev-capability-grid>a{min-height:190px}
+}
+@media(max-width:440px){
+ .omega-intelligence-hud{font-size:8px}
+ .theme-play .omega-play-hero>img.omega-play-feature-art{display:none}
+ .omega-play-actions{gap:8px}
+ .omega-play-actions .brand-button{width:100%}
+}
+@media(prefers-reduced-motion:reduce){
+ .omega-intelligence-scene img,.omega-intelligence-pulse,.omega-play-city img,.omega-play-light,.omega-dev-hero-art img,.omega-dev-orbit{animation:none!important}
+ .omega-osa-trails a,.omega-play-shortcuts>a,.omega-dev-capability-grid>a{transition:none!important}
+}
+html[data-motion=off] .omega-intelligence-scene img,html[data-motion=off] .omega-intelligence-pulse,html[data-motion=off] .omega-play-city img,html[data-motion=off] .omega-play-light,html[data-motion=off] .omega-dev-hero-art img,html[data-motion=off] .omega-dev-orbit{animation:none!important}
