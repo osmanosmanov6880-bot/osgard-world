@@ -48,3 +48,18 @@ body.cine-eco .inherit-legacy-aura{animation:none;filter:blur(2px)}
  .inherit-legacy-story{padding:11px}
 }
 @media(prefers-reduced-motion:reduce){.inherit-legacy-aura{animation:none!important;transition:none!important}}
+
+/* Always-visible entry into heritage gameplay, clear of primary mobile generation CTA. */
+body .world>.inherit-legacy-trigger{
+ position:absolute;top:76px;right:clamp(20px,4vw,80px);z-index:10;
+ min-height:43px;max-width:170px;min-width:0;
+ padding:9px 12px;background:rgba(6,24,34,.87);
+ border-color:rgba(226,194,139,.62);backdrop-filter:blur(12px);
+ box-shadow:0 8px 25px #0005;white-space:normal;text-align:center;
+}
+@media(max-width:740px){
+ body .world>.inherit-legacy-trigger{top:75px;right:5vw;min-height:40px;max-width:130px;padding:7px 9px;font-size:11px}
+}
+@media(max-width:360px){
+ body .world>.inherit-legacy-trigger{top:177px;right:5vw;max-width:120px;font-size:10px}
+}
