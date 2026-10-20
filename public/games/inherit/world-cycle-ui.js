@@ -186,6 +186,7 @@ for(let i=0;i<12;i++){
  mote.style.left=(8+i*7.3)+'%';mote.style.top=(14+(i*17)%68)+'%';ambience.appendChild(mote);
 }
 world.appendChild(ambience);
+const imprints=create('div','inherit-cycle-imprint-layer');imprints.setAttribute('aria-hidden','true');island.appendChild(imprints);
 const chapter=create('section','inherit-cycle-journal');chapter.dataset.noTranslate='';
 chapter.setAttribute('aria-labelledby','inherit-cycle-title');
 const brow=create('span','inherit-cycle-eyebrow');
@@ -301,6 +302,12 @@ function render(){
  d.body.dataset.inheritSeason=current.season;
  d.body.dataset.inheritStage=current.stage;
  d.body.dataset.inheritIncident=incident.resolved?incident.impact:'none';
+ imprints.replaceChildren();
+ if(incident.resolved&&incident.position){
+  const glyph=create('span','inherit-cycle-imprint inherit-cycle-imprint--'+incident.impact);
+  glyph.style.left=incident.position.x+'%';glyph.style.top=incident.position.y+'%';
+  imprints.appendChild(glyph);
+ }
  label.textContent=strings.pretitle+' · '+current.generation;
  name.textContent=episode[0];
  status.textContent=incident.resolved?strings.resolved:strings.unresolved;
