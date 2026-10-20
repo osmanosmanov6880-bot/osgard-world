@@ -14,9 +14,11 @@ type LandPolygons = {
   polygons: Ring[][]
 }
 export type GlobeMode = 'cinema' | 'world' | 'hybrid'
+export type GlobeQuality = 'auto' | 'eco' | 'ultra'
 export type GlobeChapter = 0 | 1 | 2
 export type GlobeView = { yaw: number; pitch: number; distance: number }
 type OmegaGlobeProps = {
+  quality: GlobeQuality
   mode: GlobeMode
   chapter: GlobeChapter
   view: GlobeView
@@ -200,7 +202,7 @@ function disposeScene(scene: THREE.Scene) {
   textures.forEach(texture => texture.dispose())
 }
 
-export default function OmegaGlobe({ mode, chapter, view, onViewChange }: OmegaGlobeProps) {
+export default function OmegaGlobe({ quality, mode, chapter, view, onViewChange }: OmegaGlobeProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const stageRef = useRef<HTMLDivElement>(null)
   const modeRef = useRef(mode)
@@ -242,6 +244,11 @@ export default function OmegaGlobe({ mode, chapter, view, onViewChange }: OmegaG
     const media = window.matchMedia('(prefers-reduced-motion: reduce)')
     const controller = new AbortController()
     const mobile = window.matchMedia('(max-width: 760px)').matches
+    const textureWidth = quality === 'ultra' ? 4096 : quality === 'eco' ? 512 : mobile ? 1024 : 2048
+    const sphereSegments = quality === 'ultra' ? 112 : quality === 'eco' ? 32 : mobile ? 48 : 80
+    const sphereRings = quality === 'ultra' ? 72 : quality === 'eco' ? 20 : mobile ? 32 : 56
+    const frameInterval = quality === 'eco' || (quality === 'auto' && mobile) ? 33.4 : 16.7
+    const pixelRatioLimit = quality === 'ultra' ? 2 : quality === 'eco' ? 1 : mobile ? 1.25 : 1.6
     const allowed = () => !media.matches && document.documentElement.dataset.motion !== 'off'
     const onMove = (event: PointerEvent) => {
       if (modeRef.current === 'world' && drag?.id === event.pointerId) {
@@ -287,7 +294,7 @@ export default function OmegaGlobe({ mode, chapter, view, onViewChange }: OmegaG
       const bounds = sky.getBoundingClientRect()
       const width = Math.max(1, Math.round(bounds.width))
       const height = Math.max(1, Math.round(bounds.height))
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, mobile ? 1.25 : 1.6))
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, pixelRatioLimit))
       renderer.setSize(width, height, false)
       camera.aspect = width / height
       camera.updateProjectionMatrix()
@@ -296,7 +303,7 @@ export default function OmegaGlobe({ mode, chapter, view, onViewChange }: OmegaG
     const animate = (time: number) => {
       frameId = 0
       if (!alive || !renderer || !scene || !camera || !globe || !visible || document.hidden || !allowed()) return
-      const interval = mobile ? 33.4 : 16.7
+      const interval = frameInterval
       const delta = Math.min(50, Math.max(0, time - (lastFrame || time)))
       if (time - lastFrame >= interval) {
         lastFrame = time
@@ -389,10 +396,10 @@ export default function OmegaGlobe({ mode, chapter, view, onViewChange }: OmegaG
         const geography = new THREE.Group()
         geography.rotation.y = -Math.PI / 2
         globe.add(geography)
-        const landTexture = createLandTexture(data, mobile ? 1024 : 2048)
+        const landTexture = createLandTexture(data, textureWidth)
         const cityLights = createCityLightsTexture(data, mobile)
         const sphere = new THREE.Mesh(
-          new THREE.SphereGeometry(1.55, mobile ? 48 : 80, mobile ? 32 : 56),
+          new THREE.SphereGeometry(1.55, sphereSegments, sphereRings),
           new THREE.MeshStandardMaterial({
             map: landTexture, metalness: 0.12, roughness: 0.84,
             emissiveMap: cityLights, emissive: 0x72e5ff, emissiveIntensity: 0.93,
@@ -400,7 +407,7 @@ export default function OmegaGlobe({ mode, chapter, view, onViewChange }: OmegaG
         )
         geography.add(sphere)
         geography.add(earthGrid())
-        const clouds = createCloudLayers(mobile)
+        const clouds = createCloudLayers(quality === 'eco' || (quality === 'auto' && mobile))
         cloudInner = clouds.inner
         cloudOuter = clouds.outer
         geography.add(clouds.group)
@@ -506,7 +513,7 @@ export default function OmegaGlobe({ mode, chapter, view, onViewChange }: OmegaG
     }
   }, [])
 
-  return <div className="omega-webgl-stage" data-globe-status={status} data-globe-mode={mode} ref={stageRef}>
+  return <div className="omega-webgl-stage" data-globe-status={status} data-globe-mode={mode} data-globe-quality={quality} data-earth-texture={quality === 'ultra' ? '4096' : quality === 'eco' ? '512' : 'adaptive'} ref={stageRef}>
     <canvas ref={canvasRef} className="omega-webgl-canvas" aria-hidden="true" />
   </div>
 }

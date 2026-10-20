@@ -5,7 +5,7 @@ import { cases } from './redesignCatalog'
 import { BrandMark } from './BrandMark'
 import { formatEnquiry, validateEnquiry } from './projectEnquiry'
 import { recordBrandEvent } from './brandTelemetry'
-import type { GlobeChapter, GlobeMode, GlobeView } from './OmegaGlobe'
+import type { GlobeChapter, GlobeMode, GlobeView, GlobeQuality } from './OmegaGlobe'
 
 const OmegaGlobe = lazy(() => import('./OmegaGlobe'))
 
@@ -39,6 +39,7 @@ const process = [
 export default function WorldHome({ development = false }: { development?: boolean }) {
   const [omegaMode, setOmegaMode] = useState<GlobeMode>(readOmegaMode)
   const [omegaChapter, setOmegaChapter] = useState<GlobeChapter>(0)
+  const [omegaQuality, setOmegaQuality] = useState<GlobeQuality>('auto')
   const [omegaView, setOmegaView] = useState<GlobeView>({ yaw: 0, pitch: -0.14, distance: 5.7 })
   useEffect(() => {
     try { localStorage.setItem('osgard:omega-world-mode', omegaMode) } catch { /* The mode still works for this visit. */ }
@@ -113,7 +114,7 @@ export default function WorldHome({ development = false }: { development?: boole
     </> : <>
     <section className={`omega-hero omega-experience-${omegaMode}`} data-omega-mode={omegaMode} data-omega-yaw={omegaView.yaw.toFixed(2)} data-omega-distance={omegaView.distance.toFixed(2)} aria-labelledby="world-title"
       tabIndex={omegaMode === 'world' ? 0 : undefined} onKeyDown={onWorldKeyDown}>
-      <div className="omega-sky" aria-hidden="true"><div className="omega-stars"/><Suspense fallback={null}><OmegaGlobe mode={omegaMode} chapter={omegaChapter} view={omegaView} onViewChange={setOmegaView} /></Suspense><div className="omega-orbit omega-orbit-one"/><div className="omega-orbit omega-orbit-two"/><div className="omega-globe"><div className="omega-continent omega-c-one"/><div className="omega-continent omega-c-two"/><div className="omega-continent omega-c-three"/></div><div className="omega-platform"/></div>
+      <div className="omega-sky" aria-hidden="true"><div className="omega-stars"/><Suspense fallback={null}><OmegaGlobe key={omegaQuality} quality={omegaQuality} mode={omegaMode} chapter={omegaChapter} view={omegaView} onViewChange={setOmegaView} /></Suspense><div className="omega-orbit omega-orbit-one"/><div className="omega-orbit omega-orbit-two"/><div className="omega-globe"><div className="omega-continent omega-c-one"/><div className="omega-continent omega-c-two"/><div className="omega-continent omega-c-three"/></div><div className="omega-platform"/></div>
       <div className="omega-copy">
         <p className="brand-eyebrow">OSGARD DIGITAL UNIVERSE / НОВАЯ ТОЧКА ВХОДА</p>
         <h1 id="world-title">ТЕХНОЛОГИИ,<br/><span>КОТОРЫЕ</span><br/>СОЕДИНЯЮТ<br/>МИРЫ<span className="omega-period">.</span></h1>
@@ -127,6 +128,15 @@ export default function WorldHome({ development = false }: { development?: boole
             <button type="button" aria-pressed={omegaMode === 'hybrid'} onClick={() => setOmegaMode('hybrid')}>Гибрид</button>
           </div>
           <p className="omega-mode-description" aria-live="polite">{omegaHelp[omegaMode]}</p>
+          <div className="omega-quality-switch">
+            <label htmlFor="omega-quality">Детализация 3D</label>
+            <select id="omega-quality" value={omegaQuality} onChange={e => setOmegaQuality(e.target.value as GlobeQuality)}
+              aria-label="Качество 3D-глобуса">
+              <option value="auto">Авто · оптимально</option>
+              <option value="eco">Экономно · быстрый режим</option>
+              <option value="ultra">Ультра · до 4K текстур</option>
+            </select>
+          </div>
           {omegaMode === 'cinema' && <div className="omega-cinema-chapters" role="group" aria-label="Кинематографические главы">
             {omegaChapters.map((name, index) => <button type="button" key={name} aria-pressed={omegaChapter === index}
               onClick={() => setOmegaChapter(index as GlobeChapter)}>{String(index + 1).padStart(2, '0')} / {name}</button>)}
