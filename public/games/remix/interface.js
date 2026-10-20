@@ -211,14 +211,71 @@ const dictionary={
  "This browser cannot save session recovery. Keep this page open; reloading may lose access to this match.": "Браузер не сохраняет данные для восстановления сессии. Оставьте страницу открытой: после перезагрузки доступ к этому матчу может потеряться."
 };
 
+const chinese={
+ "OSGARD ENTERTAINMENT / 03": "OSGARD 娱乐 / 03",
+ "One daily seed. One challenge link. Create a match, send inputs and compare the results returned by the match service.": "每天一条赛道，一条挑战链接。创建比赛、提交操作，并比较比赛服务确认的结果。",
+ "DAILY CHALLENGE / SERVER-RECORDED RESULTS": "每日挑战 / 服务器记录的成绩",
+ "Open challenge console ↗": "打开比赛控制台 ↗",
+ "Unity build status ↗": "Unity 构建状态 ↗",
+ "The loop": "玩法",
+ "01 / CREATE": "01 / 创建",
+ "Shape a challenge": "创建挑战",
+ "Create a daily challenge and open its match in the console.": "创建每日挑战并在控制台中打开比赛。",
+ "02 / PLAY": "02 / 游玩",
+ "Enter the match": "进入比赛",
+ "The service reports the countdown, match state and position after accepted inputs.": "服务器返回倒计时、比赛状态和位置。",
+ "03 / REMIX": "03 / 再次挑战",
+ "Save the result": "记录成绩",
+ "Request a result recorded by the match service, then share the challenge link with a friend.": "获取服务器记录的结果，然后分享挑战链接。",
+ "The console shows position and results from the match service. The separate Unity build is currently unavailable.": "控制台显示服务器位置及结果。独立 Unity 构建目前不可用。",
+ "Before you start": "开始之前",
+ "The Unity build is currently unavailable. The console below connects to the match service and displays its responses.": "Unity 构建目前不可用。下方控制台连接比赛服务并显示响应。",
+ "LIVE MATCH CONSOLE": "在线比赛控制台",
+ "Ready to enter": "准备开始",
+ "Create daily challenge": "创建每日挑战",
+ "Create or accept a challenge first.": "请先创建或接受挑战。",
+ "Guest / invite mode": "访客 / 邀请模式",
+ "Account-owned matches": "账号专属比赛",
+ "Session access": "比赛权限",
+ "SESSION ACCESS": "比赛权限",
+ "Match running": "比赛进行中",
+ "Waiting for the service": "正在等待服务器",
+ "Start a new match": "开始新比赛",
+ "Start this challenge": "开始挑战",
+ "Result received": "已收到结果",
+ "Download result card PNG ↓": "下载成绩卡 PNG ↓",
+ "Share challenge ↗": "分享挑战 ↗",
+ "Copy invite link": "复制邀请链接",
+ "Run this challenge again ↻": "重新挑战 ↻",
+ "← Left": "← 向左",
+ "Right →": "向右 →",
+ "Jump ↑": "跳跃 ↑",
+ "The match service is unavailable. Try again later.": "比赛服务不可用，请稍后重试。",
+ "The match service rejected this request.": "服务器拒绝了此次请求。",
+ "The match service returned an invalid response.": "服务器返回的数据格式不正确。",
+ "The match service took too long to respond.": "服务器响应超时。",
+ "Advanced connection settings": "高级连接设置",
+ "Keep the default address unless you run your own compatible match service.": "除非使用自己的兼容服务，否则请保留默认地址。",
+ "Open a new daily challenge": "打开新每日挑战",
+ "A brand can sponsor the next challenge.": "品牌可以赞助下一场挑战。",
+ "04 / GROWTH + REVENUE": "04 / 增长与收益",
+ "Invite a rival.": "邀请对手。",
+ "Open a sponsor slot.": "开启赞助合作。",
+ "Sponsor a challenge series ↗": "赞助系列挑战 ↗",
+ "The daily challenge uses a shared UTC seed. Create a run, then send the invite link to a friend.": "每日挑战使用统一 UTC 编号。创建比赛后，可向好友发送邀请链接。",
+ "The service is preparing the match. Controls unlock when play begins.": "服务器正在准备比赛，开始后将解锁操作。",
+ "Console controls: focus its field or use the buttons below. A/D or arrows moves; W, up or Space jumps.": "控制台操作：点击场地，A/D 或方向键移动；W、上方向键或空格跳跃。",
+ "Preferences cannot be saved in this browser. You can still play while this page is open.": "此浏览器无法保存设置。当前页面仍可继续使用。"
+};
 const originals=new WeakMap(),attributes=new WeakMap();
 let ready=false,locale='ru';
-try{const requested=new URLSearchParams(location.search).get('lang');locale=requested==='en'?'en':requested==='ru'?'ru':persistence?.getItem('osgard:game-language')==='en'?'en':'ru'}catch{}
+try{const requested=new URLSearchParams(location.search).get('lang');locale=['ru','en','zh'].includes(requested)?requested:['ru','en','zh'].includes(persistence?.getItem('osgard:game-language'))?persistence.getItem('osgard:game-language'):'ru'}catch{}
 const dynamic=[];
 function t(value){
  const raw=String(value??''),key=raw.replace(/\s+/g,' ').trim();
  const source=ephemeralText(key);
  if(locale==='en')return source===key?raw:source;
+ if(locale==='zh'){const translated=chinese[source];if(translated!==undefined)return translated; /* use existing Russian dictionary as fallback for unlocalized dynamic text */}
  let translated=dictionary[source];
  if(translated===undefined){for(const [pattern,render] of dynamic){const match=source.match(pattern);if(match){translated=render(...match.slice(1));break}}}
  return translated===undefined?raw:(raw.match(/^\s*/)?.[0]||'')+translated+(raw.match(/\s*$/)?.[0]||'');
@@ -241,14 +298,14 @@ function apply(root=document.body){
  root.querySelectorAll?.('[aria-label],[title],[placeholder]').forEach(element);
 }
 function setLanguage(value){
- locale=value==='en'?'en':'ru';persistence?.setItem('osgard:game-language',locale);
+ locale=['ru','en','zh'].includes(value)?value:'ru';persistence?.setItem('osgard:game-language',locale);
  document.documentElement.lang=locale;
  try{const url=new URL(location.href);url.searchParams.set('lang',locale);history.replaceState(null,'',url.href)}catch{}
- if(ready){window.RemixSession?.syncControls();apply();updateStorage();document.querySelectorAll('[data-game-language]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.gameLanguage===locale)))}
+ if(ready){window.RemixSession?.syncControls();apply();updateStorage();window.dispatchEvent(new Event('remix:language'));document.querySelectorAll('[data-game-language]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.gameLanguage===locale)))}
 }
 function languageTools(){
  const bar=document.createElement('div');bar.className='game-language';bar.dataset.localeTools='';bar.setAttribute('role','group');bar.setAttribute('aria-label','Язык / Language');
- for(const [code,label] of [['ru','Русский'],['en','English']]){const button=document.createElement('button');button.type='button';button.textContent=label;button.dataset.gameLanguage=code;button.setAttribute('aria-pressed',String(locale===code));button.addEventListener('click',()=>setLanguage(code));bar.appendChild(button)}return bar;
+ for(const [code,label] of [['ru','Русский'],['en','English'],['zh','中文']]){const button=document.createElement('button');button.type='button';button.textContent=label;button.dataset.gameLanguage=code;button.setAttribute('aria-pressed',String(locale===code));button.addEventListener('click',()=>setLanguage(code));bar.appendChild(button)}return bar;
 }
 function watch(){
  const observer=new MutationObserver(records=>{for(const record of records){if(record.type==='characterData')textNode(record.target);else if(record.type==='attributes')element(record.target);else record.addedNodes.forEach(node=>apply(node))}});
