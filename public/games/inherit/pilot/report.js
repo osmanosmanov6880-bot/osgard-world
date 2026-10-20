@@ -1,5 +1,5 @@
-/* INHERIT pilot console: parses manually selected exports entirely in the browser.
-   No fetch, XMLHttpRequest, storage, sendBeacon or remote analytics. */
+/* INHERIT pilot console: manually selected voluntary exports are processed
+   in tab memory only; this module performs no external submission. */
 import {aggregate,formatMarkdown} from '../pilot-metrics.js';
 const d=document,form=d.querySelector('#pilot-form'),files=d.querySelector('#files'),
  date=d.querySelector('#as-of'),status=d.querySelector('#status'),results=d.querySelector('#results');
