@@ -4,6 +4,7 @@ on:
     branches: ["feature/omega-ultra-nasa-earth-20261020"]
     paths:
       - ".github/workflows/omega-nasa-assets.yml"
+      - "scripts/omega-nasa-assets.py"
   workflow_dispatch:
 permissions:
   contents: write
@@ -21,7 +22,7 @@ jobs:
         with:
           python-version: "3.11"
       - name: Install Pillow image processing
-        run: python -m pip install --disable-pip-version-check Pillow==11.3.0
+        run: python -m pip install --disable-pip-version-check Pillow==11.3.0 numpy==2.2.6
       - name: Download NASA source and generate local responsive textures
         run: python scripts/omega-nasa-assets.py
       - name: Verify dimensions and outputs
@@ -31,7 +32,7 @@ jobs:
           from pathlib import Path
           from PIL import Image
           manifest = json.loads(Path('public/brand/omega-nasa-manifest.json').read_text())
-          assert len(manifest['assets']) == 6
+          assert len(manifest['assets']) == 7
           for asset in manifest['assets'].values():
               p = Path('public') / asset['path'].lstrip('/')
               assert p.exists(), p
