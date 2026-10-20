@@ -47,7 +47,7 @@ check('many traces stay bounded; pending and account journals are not used as tr
  const m=engine.derive(huge);assert.equal(m.objects,10000);assert.equal(m.limited,true);assert.equal(m.total,0);
 });
 check('UI only reads account snapshot and observes the existing renderer',()=>{
- for(const word of ['InheritGame','snapshot','MutationObserver','getLanguage','showModal','data-no-translate','aria-hidden'])assert.ok(ui.includes(word),word);
+ for(const word of ['InheritGame','snapshot','MutationObserver','getLanguage','showModal','dataset.noTranslate','aria-hidden'])assert.ok(ui.includes(word),word);
  for(const banned of ['fetch(', 'localStorage.setItem', 'sessionStorage.setItem','window.InheritGame.apply('])assert.ok(!ui.includes(banned),banned);
 });
 console.log('INHERIT LEGACY:',passed,'passed');
