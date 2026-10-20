@@ -229,6 +229,7 @@ export default function OmegaGlobe({ mode, chapter, view, onViewChange }: OmegaG
     let resizeObserver: ResizeObserver | null = null
     let targetX = 0, targetY = 0, x = 0, y = 0
     let turn = 0
+    let previousMode: GlobeMode = modeRef.current
     let chapterFocus = 0
     let renderYaw = viewRef.current.yaw
     let renderPitch = viewRef.current.pitch
@@ -301,6 +302,18 @@ export default function OmegaGlobe({ mode, chapter, view, onViewChange }: OmegaG
         lastFrame = time
         const currentMode = modeRef.current
         const currentChapter = chapterRef.current
+        if (previousMode !== currentMode) {
+          // Keep the current Earth orientation while switching from autoplay to manual orbit.
+          if (currentMode === 'world') {
+            viewRef.current = { ...viewRef.current, yaw: globe.rotation.y, pitch: globe.rotation.x }
+            renderYaw = globe.rotation.y
+            renderPitch = globe.rotation.x
+            onViewChangeRef.current({ ...viewRef.current })
+          } else if (previousMode === 'world') {
+            turn = globe.rotation.y - chapterFocus
+          }
+          previousMode = currentMode
+        }
         const chapterTarget = currentMode === 'cinema' ? currentChapter * 0.85 : 0
         chapterFocus += (chapterTarget - chapterFocus) * 0.026
         if (currentMode !== 'world') turn += delta * (currentMode === 'cinema' ? 0.00013 : 0.000055)
@@ -434,6 +447,11 @@ export default function OmegaGlobe({ mode, chapter, view, onViewChange }: OmegaG
         setStatus('webgl')
         syncRendering()
       } catch {
+        if (scene) { disposeScene(scene); scene = null }
+        renderer?.dispose()
+        renderer = null
+        camera = null
+        globe = null
         if (alive) {
           sky.classList.remove('omega-webgl-ready')
           setStatus('fallback')
@@ -482,6 +500,7 @@ export default function OmegaGlobe({ mode, chapter, view, onViewChange }: OmegaG
       hero.removeEventListener('pointerleave', onLeave)
       canvas.removeEventListener('webglcontextlost', contextLost)
       sky.classList.remove('omega-webgl-ready')
+      delete stage.dataset.cloudLayers
       if (scene) disposeScene(scene)
       renderer?.dispose()
     }
