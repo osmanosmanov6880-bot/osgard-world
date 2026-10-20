@@ -6,6 +6,36 @@ const getResponse = async (page, path = '/') => {
   expect(response?.status(), path + ' status').toBe(200)
 }
 
+test('NASA 4K Earth assets and quality preset work on the deployed website', async ({ page, request }, testInfo) => {
+  const url = await request.get(URL + '/brand/omega-nasa-manifest.json')
+  expect(url.status()).toBe(200)
+  const manifest = await url.json()
+  expect(Object.keys(manifest.assets).length).toBe(6)
+  for (const key of ['day_4k', 'night_4k']) {
+    const item = manifest.assets[key]
+    expect(item.size).toEqual([4096, 2048])
+    const response = await request.get(URL + item.path)
+    expect(response.status()).toBe(200)
+    expect((await response.body()).length).toBe(item.bytes)
+  }
+  await page.emulateMedia({ reducedMotion: 'no-preference' })
+  await getResponse(page)
+  const picker = page.getByRole('group', { name: 'Качество графики Земли' })
+  await expect(picker).toBeVisible()
+  await picker.getByRole('button', { name: '4K / Макс.' }).click()
+  await expect(page.locator('.omega-hero')).toHaveAttribute('data-omega-quality', 'ultra')
+  const stage = page.locator('.omega-webgl-stage')
+  await expect(stage).toHaveAttribute('data-globe-status', /^(webgl|fallback)$/, { timeout: 25000 })
+  if (await stage.getAttribute('data-globe-status') === 'webgl') {
+    await expect(stage).toHaveAttribute('data-earth-source', 'nasa')
+    await expect(stage).toHaveAttribute('data-earth-detail', testInfo.project.name === 'mobile' ? '2k' : '4k')
+  }
+  await page.screenshot({ path: testInfo.outputPath('omega-nasa-4k-production.png') })
+  await page.reload()
+  await expect(page.locator('.omega-hero')).toHaveAttribute('data-omega-quality', 'ultra')
+  await picker.getByRole('button', { name: 'Авто' }).click()
+})
+
 test('public OSGARD Earth and three-mode controller are deployed', async ({ page, request }, testInfo) => {
   const resp = await request.get(URL + '/brand/omega-earth-land.json', { timeout: 30000 })
   expect(resp.status()).toBe(200)
