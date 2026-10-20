@@ -164,3 +164,74 @@ html[data-motion="off"] .omega-mode-tabs button{transition:none!important}
     z-index:5;
   }
 }
+
+/* OSGARD Ω ULTRA: professional Earth texture fidelity control. */
+.omega-quality-wrap{
+  margin-top:13px;
+  padding-top:12px;
+  border-top:1px solid #31708b92;
+}
+.omega-quality-label{
+  display:block;
+  margin:0 0 9px;
+  font:600 9px/1.5 "JetBrains Mono",monospace;
+  letter-spacing:.11em;
+  color:#8fe9f6;
+}
+.omega-quality-options{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:6px;
+}
+.omega-quality-options button{
+  appearance:none;
+  background:linear-gradient(180deg,#112b40,#081b2d);
+  border:1px solid #3c7286;
+  color:#c1dce7;
+  font:650 11px/1.3 Inter,Arial,sans-serif;
+  padding:8px 7px;
+  min-height:36px;
+  cursor:pointer;
+  border-radius:2px;
+  transition:border-color .2s,background .2s,box-shadow .2s;
+}
+.omega-quality-options button:hover{
+  border-color:#8beff6;
+  background:#183d56;
+}
+.omega-quality-options button[aria-pressed="true"]{
+  border-color:#86f6f2;
+  color:#031824;
+  background:#78eaf0;
+  box-shadow:0 0 12px #35d6e536;
+}
+.omega-quality-options button:focus-visible{
+  outline:2px solid #e4ffff;
+  outline-offset:2px;
+}
+.omega-quality-description{
+  color:#a9cfde;
+  margin:7px 0 0;
+  font-size:10.5px;
+  line-height:1.55;
+}
+.omega-nasa-credit{
+  font-size:9px;
+  line-height:1.65;
+  margin:9px 0 0;
+  color:#91b1c0;
+}
+.omega-nasa-credit a{
+  color:#9eebf2;
+  text-decoration:underline;
+  text-underline-offset:2px;
+}
+.omega-nasa-credit a:hover{color:#f0ffff}
+.omega-webgl-stage[data-earth-source="nasa"] canvas{filter:saturate(1.08) contrast(1.05)}
+@media(max-width:760px){
+  .omega-quality-options button{min-height:44px;font-size:12px}
+  .omega-quality-description{font-size:11px}
+}
+@media(prefers-reduced-motion:reduce){
+  .omega-quality-options button{transition:none!important}
+}
