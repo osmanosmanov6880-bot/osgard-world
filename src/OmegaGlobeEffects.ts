@@ -1,4 +1,5 @@
 import * as THREE from 'three'
+import type { EarthDetail } from './OmegaEarthMaterials'
 
 /**
  * GPU-conscious procedural materials for the OSGARD Earth.
@@ -33,8 +34,8 @@ function periodicNoise(u: number, v: number, cellsX: number, cellsY: number): nu
     (c * (1 - dx) + d * dx) * dy
 }
 
-export function createCloudTexture(mobile: boolean): THREE.CanvasTexture {
-  const width = mobile ? 384 : 768
+export function createCloudTexture(mobile: boolean, detail: EarthDetail = '2k'): THREE.CanvasTexture {
+  const width = detail === '4k' && !mobile ? 1152 : mobile || detail === '1k' ? 384 : 768
   const height = width / 2
   const canvas = document.createElement('canvas')
   canvas.width = width
@@ -71,12 +72,12 @@ export function createCloudTexture(mobile: boolean): THREE.CanvasTexture {
   return texture
 }
 
-export function createCloudLayers(mobile: boolean): {
+export function createCloudLayers(mobile: boolean, detail: EarthDetail = '2k'): {
   group: THREE.Group
   inner: THREE.Mesh
   outer: THREE.Mesh
 } {
-  const texture = createCloudTexture(mobile)
+  const texture = createCloudTexture(mobile, detail)
   const group = new THREE.Group()
   const inner = new THREE.Mesh(
     new THREE.SphereGeometry(1.602, mobile ? 40 : 72, mobile ? 28 : 48),
@@ -108,6 +109,23 @@ export function createCloudLayers(mobile: boolean): {
   outer.rotation.y = -0.31
   outer.rotation.z = 0.07
   group.add(inner, outer)
+  if (detail === '4k' && !mobile) {
+    // A third independently rotated veil adds cloud-depth parallax.
+    // It is an artistic multi-shell approximation, not real volumetric weather data.
+    const veil = new THREE.Mesh(
+      new THREE.SphereGeometry(1.632, 56, 38),
+      new THREE.MeshBasicMaterial({
+        map: texture,
+        color: 0x7be7fa,
+        transparent: true,
+        opacity: 0.11,
+        depthWrite: false,
+      }),
+    )
+    veil.rotation.y = 0.63
+    veil.rotation.z = -0.10
+    group.add(veil)
+  }
   return { group, inner, outer }
 }
 

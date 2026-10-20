@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import * as THREE from 'three'
 import { createCityLightsTexture, createCloudLayers } from './OmegaGlobeEffects'
+import { chooseEarthDetail, loadNasaTextures, makeNasaEarthMaterial, makeScatteringAtmosphere } from './OmegaEarthMaterials'
+import { createCloudVolume } from './OmegaCloudVolume'
+import type { EarthQuality } from './OmegaEarthMaterials'
 
 /**
  * OSGARD WORLD decorative 3D Earth.
@@ -21,6 +24,7 @@ type OmegaGlobeProps = {
   chapter: GlobeChapter
   view: GlobeView
   onViewChange: (view: GlobeView) => void
+  quality: EarthQuality
 }
 type GlobeStatus = 'loading' | 'webgl' | 'fallback'
 
@@ -192,6 +196,11 @@ function disposeScene(scene: THREE.Scene) {
         if (mapped.map) textures.add(mapped.map)
         const emissive = material as THREE.Material & { emissiveMap?: THREE.Texture }
         if (emissive.emissiveMap) textures.add(emissive.emissiveMap)
+        if (material instanceof THREE.ShaderMaterial) {
+          for (const uniform of Object.values(material.uniforms)) {
+            if (uniform.value instanceof THREE.Texture) textures.add(uniform.value)
+          }
+        }
       }
     }
   })
@@ -200,7 +209,7 @@ function disposeScene(scene: THREE.Scene) {
   textures.forEach(texture => texture.dispose())
 }
 
-export default function OmegaGlobe({ mode, chapter, view, onViewChange }: OmegaGlobeProps) {
+export default function OmegaGlobe({ mode, chapter, view, onViewChange, quality }: OmegaGlobeProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const stageRef = useRef<HTMLDivElement>(null)
   const modeRef = useRef(mode)
@@ -237,11 +246,17 @@ export default function OmegaGlobe({ mode, chapter, view, onViewChange }: OmegaG
     let drag: { id: number; x: number; y: number; start: GlobeView } | null = null
     let cloudInner: THREE.Mesh | null = null
     let cloudOuter: THREE.Mesh | null = null
+    let volumeCloud: THREE.Mesh | null = null
     let keyLight: THREE.DirectionalLight | null = null
     let fillLight: THREE.DirectionalLight | null = null
     const media = window.matchMedia('(prefers-reduced-motion: reduce)')
     const controller = new AbortController()
     const mobile = window.matchMedia('(max-width: 760px)').matches
+    const detail = chooseEarthDetail(quality, mobile)
+    const sunDirection = new THREE.Vector3(-2.5, 3, 5).normalize()
+    let lowerResolution = false
+    let fpsSamples = 0
+    let sluggishSamples = 0
     const allowed = () => !media.matches && document.documentElement.dataset.motion !== 'off'
     const onMove = (event: PointerEvent) => {
       if (modeRef.current === 'world' && drag?.id === event.pointerId) {
@@ -287,7 +302,8 @@ export default function OmegaGlobe({ mode, chapter, view, onViewChange }: OmegaG
       const bounds = sky.getBoundingClientRect()
       const width = Math.max(1, Math.round(bounds.width))
       const height = Math.max(1, Math.round(bounds.height))
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, mobile ? 1.25 : 1.6))
+      const qualityDpr = quality === 'eco' ? 1.0 : quality === 'ultra' ? (mobile ? 1.3 : 2.0) : (mobile ? 1.2 : 1.5)
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, lowerResolution ? 1 : qualityDpr))
       renderer.setSize(width, height, false)
       camera.aspect = width / height
       camera.updateProjectionMatrix()
@@ -299,6 +315,16 @@ export default function OmegaGlobe({ mode, chapter, view, onViewChange }: OmegaG
       const interval = mobile ? 33.4 : 16.7
       const delta = Math.min(50, Math.max(0, time - (lastFrame || time)))
       if (time - lastFrame >= interval) {
+        if (lastFrame && quality === 'auto') {
+          fpsSamples++
+          if (delta > (mobile ? 58 : 42)) sluggishSamples++
+          if (!lowerResolution && fpsSamples >= 140 && sluggishSamples > 55) {
+            lowerResolution = true
+            stage.dataset.performance = 'adaptive'
+            resize()
+          }
+          if (fpsSamples >= 140) { fpsSamples = 0; sluggishSamples = 0 }
+        }
         lastFrame = time
         const currentMode = modeRef.current
         const currentChapter = chapterRef.current
@@ -344,11 +370,15 @@ export default function OmegaGlobe({ mode, chapter, view, onViewChange }: OmegaG
         if (cloudInner && cloudOuter) {
           cloudInner.rotation.y += delta * (currentMode === 'cinema' ? 0.000029 : 0.000015)
           cloudOuter.rotation.y -= delta * 0.000018
+          if (volumeCloud && volumeCloud.material instanceof THREE.ShaderMaterial) {
+            volumeCloud.material.uniforms.uTime.value += delta / 1000
+          }
         }
         if (keyLight && fillLight) {
           keyLight.position.x = -2.5 + Math.sin(time * 0.00017) * 0.75
           keyLight.position.y = 3 + Math.cos(time * 0.00013) * 0.35
           fillLight.intensity = currentMode === 'cinema' ? 1.15 : 1.45
+          sunDirection.copy(keyLight.position).normalize()
         }
         renderer.render(scene, camera)
       }
@@ -373,7 +403,7 @@ export default function OmegaGlobe({ mode, chapter, view, onViewChange }: OmegaG
         if (!alive) return
         const gl = canvas.getContext('webgl2', { alpha: true, antialias: true, powerPreference: 'low-power' })
         if (!gl) throw new Error('WebGL2 not supported')
-        renderer = new THREE.WebGLRenderer({ canvas, context: gl, antialias: true, alpha: true, powerPreference: 'low-power' })
+        renderer = new THREE.WebGLRenderer({ canvas, context: gl, antialias: true, alpha: true, powerPreference: quality === 'ultra' ? 'high-performance' : 'low-power' })
         renderer.outputColorSpace = THREE.SRGBColorSpace
         renderer.toneMapping = THREE.ACESFilmicToneMapping
         renderer.toneMappingExposure = 1.32
@@ -389,50 +419,45 @@ export default function OmegaGlobe({ mode, chapter, view, onViewChange }: OmegaG
         const geography = new THREE.Group()
         geography.rotation.y = -Math.PI / 2
         globe.add(geography)
-        const landTexture = createLandTexture(data, mobile ? 1024 : 2048)
-        const cityLights = createCityLightsTexture(data, mobile)
+        let nasa: Awaited<ReturnType<typeof loadNasaTextures>> | null = null
+        try { nasa = await loadNasaTextures(detail, controller.signal) } catch { /* Public domain geography fallback below. */ }
+        if (!alive) {
+          nasa?.day.dispose()
+          nasa?.night.dispose()
+          return
+        }
+        const surface = nasa
+          ? makeNasaEarthMaterial(nasa.day, nasa.night, sunDirection)
+          : new THREE.MeshStandardMaterial({
+              map: createLandTexture(data, quality === 'eco' ? 1024 : mobile ? 1024 : 2048),
+              metalness: 0.12,
+              roughness: 0.84,
+              emissiveMap: createCityLightsTexture(data, mobile),
+              emissive: 0x72e5ff,
+              emissiveIntensity: 0.93,
+            })
         const sphere = new THREE.Mesh(
-          new THREE.SphereGeometry(1.55, mobile ? 48 : 80, mobile ? 32 : 56),
-          new THREE.MeshStandardMaterial({
-            map: landTexture, metalness: 0.12, roughness: 0.84,
-            emissiveMap: cityLights, emissive: 0x72e5ff, emissiveIntensity: 0.93,
-          }),
+          new THREE.SphereGeometry(1.55, detail === '4k' ? 128 : mobile ? 48 : 80, detail === '4k' ? 80 : mobile ? 32 : 56),
+          surface,
         )
         geography.add(sphere)
-        geography.add(earthGrid())
-        const clouds = createCloudLayers(mobile)
+        if (quality !== 'eco') geography.add(earthGrid())
+        const clouds = createCloudLayers(mobile, detail)
         cloudInner = clouds.inner
         cloudOuter = clouds.outer
         geography.add(clouds.group)
-
-        const atmosphere = new THREE.Mesh(
-          new THREE.SphereGeometry(1.64, mobile ? 40 : 64, mobile ? 24 : 40),
-          new THREE.ShaderMaterial({
-            transparent: true,
-            depthWrite: false,
-            blending: THREE.AdditiveBlending,
-            vertexShader: [
-              'varying vec3 vNormal;',
-              'varying vec3 vWorldPos;',
-              'void main() {',
-              '  vec4 world = modelMatrix * vec4(position, 1.0);',
-              '  vWorldPos = world.xyz;',
-              '  vNormal = normalize(mat3(modelMatrix) * normal);',
-              '  gl_Position = projectionMatrix * viewMatrix * world;',
-              '}',
-            ].join('\n'),
-            fragmentShader: [
-              'varying vec3 vNormal;',
-              'varying vec3 vWorldPos;',
-              'void main() {',
-              '  vec3 eye = normalize(cameraPosition - vWorldPos);',
-              '  float rim = pow(1.0 - max(0.0, dot(normalize(vNormal), eye)), 3.0);',
-              '  gl_FragColor = vec4(0.18, 0.79, 1.0, rim * 0.48);',
-              '}',
-            ].join('\n'),
-          }),
-        )
+        if (detail === '4k') {
+          const cloudMap = (clouds.inner.material as THREE.MeshStandardMaterial).map
+          if (cloudMap) {
+            volumeCloud = createCloudVolume(cloudMap, sunDirection)
+            geography.add(volumeCloud)
+          }
+        }
+        const atmosphere = makeScatteringAtmosphere(sunDirection, detail)
         globe.add(atmosphere)
+        stage.dataset.earthSource = nasa ? 'nasa' : 'geospatial-fallback'
+        stage.dataset.earthDetail = nasa ? detail : 'fallback'
+        stage.dataset.cloudLayers = detail === '4k' ? '4' : '2'
         scene.add(globe)
         scene.add(orbit(2.05, 1.03, 0x77efff, 0.34, 0.35))
         scene.add(orbit(2.13, 1.12, 0xbb8dff, 0.27, -0.85))
@@ -500,13 +525,15 @@ export default function OmegaGlobe({ mode, chapter, view, onViewChange }: OmegaG
       hero.removeEventListener('pointerleave', onLeave)
       canvas.removeEventListener('webglcontextlost', contextLost)
       sky.classList.remove('omega-webgl-ready')
+      delete stage.dataset.earthSource
+      delete stage.dataset.earthDetail
       delete stage.dataset.cloudLayers
       if (scene) disposeScene(scene)
       renderer?.dispose()
     }
   }, [])
 
-  return <div className="omega-webgl-stage" data-globe-status={status} data-globe-mode={mode} ref={stageRef}>
+  return <div className="omega-webgl-stage" data-globe-status={status} data-globe-mode={mode} data-globe-quality={quality} ref={stageRef}>
     <canvas ref={canvasRef} className="omega-webgl-canvas" aria-hidden="true" />
   </div>
 }

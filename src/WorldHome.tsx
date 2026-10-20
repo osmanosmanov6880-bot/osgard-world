@@ -6,6 +6,7 @@ import { BrandMark } from './BrandMark'
 import { formatEnquiry, validateEnquiry } from './projectEnquiry'
 import { recordBrandEvent } from './brandTelemetry'
 import type { GlobeChapter, GlobeMode, GlobeView } from './OmegaGlobe'
+import type { EarthQuality } from './OmegaEarthMaterials'
 
 const OmegaGlobe = lazy(() => import('./OmegaGlobe'))
 
@@ -14,6 +15,17 @@ const readOmegaMode = (): GlobeMode => {
     const value = localStorage.getItem('osgard:omega-world-mode')
     return value === 'cinema' || value === 'world' || value === 'hybrid' ? value : 'hybrid'
   } catch { return 'hybrid' }
+}
+const readOmegaQuality = (): EarthQuality => {
+  try {
+    const stored = localStorage.getItem('osgard:omega-earth-quality')
+    return stored === 'eco' || stored === 'ultra' || stored === 'auto' ? stored : 'auto'
+  } catch { return 'auto' }
+}
+const omegaQualityDescriptions: Record<EarthQuality, string> = {
+  auto: 'Оптимальное качество для вашего устройства: 2K на компьютере, 1K на телефоне.',
+  eco: 'Экономный режим: карта 1K, меньше нагрузка на видеокарту.',
+  ultra: 'Максимальная детализация: 4K на компьютере, 2K на телефоне.',
 }
 const omegaChapters = ['Планета', 'Связи', 'Миры'] as const
 const omegaHelp: Record<GlobeMode, string> = {
@@ -38,11 +50,15 @@ const process = [
 
 export default function WorldHome({ development = false }: { development?: boolean }) {
   const [omegaMode, setOmegaMode] = useState<GlobeMode>(readOmegaMode)
+  const [omegaQuality, setOmegaQuality] = useState<EarthQuality>(readOmegaQuality)
   const [omegaChapter, setOmegaChapter] = useState<GlobeChapter>(0)
   const [omegaView, setOmegaView] = useState<GlobeView>({ yaw: 0, pitch: -0.14, distance: 5.7 })
   useEffect(() => {
     try { localStorage.setItem('osgard:omega-world-mode', omegaMode) } catch { /* The mode still works for this visit. */ }
   }, [omegaMode])
+  useEffect(() => {
+    try { localStorage.setItem('osgard:omega-earth-quality', omegaQuality) } catch { /* Session-level choice is enough. */ }
+  }, [omegaQuality])
   const moveWorld = (action: 'left' | 'right' | 'closer' | 'farther' | 'reset') => {
     setOmegaView(view => action === 'reset'
       ? { yaw: 0, pitch: -0.14, distance: 5.7 }
@@ -111,9 +127,9 @@ export default function WorldHome({ development = false }: { development?: boole
         </div>
       </section>
     </> : <>
-    <section className={`omega-hero omega-experience-${omegaMode}`} data-omega-mode={omegaMode} data-omega-yaw={omegaView.yaw.toFixed(2)} data-omega-distance={omegaView.distance.toFixed(2)} aria-labelledby="world-title"
+    <section className={`omega-hero omega-experience-${omegaMode}`} data-omega-mode={omegaMode} data-omega-quality={omegaQuality} data-omega-yaw={omegaView.yaw.toFixed(2)} data-omega-distance={omegaView.distance.toFixed(2)} aria-labelledby="world-title"
       tabIndex={omegaMode === 'world' ? 0 : undefined} onKeyDown={onWorldKeyDown}>
-      <div className="omega-sky" aria-hidden="true"><div className="omega-stars"/><Suspense fallback={null}><OmegaGlobe mode={omegaMode} chapter={omegaChapter} view={omegaView} onViewChange={setOmegaView} /></Suspense><div className="omega-orbit omega-orbit-one"/><div className="omega-orbit omega-orbit-two"/><div className="omega-globe"><div className="omega-continent omega-c-one"/><div className="omega-continent omega-c-two"/><div className="omega-continent omega-c-three"/></div><div className="omega-platform"/></div>
+      <div className="omega-sky" aria-hidden="true"><div className="omega-stars"/><Suspense fallback={null}><OmegaGlobe key={omegaQuality} quality={omegaQuality} mode={omegaMode} chapter={omegaChapter} view={omegaView} onViewChange={setOmegaView} /></Suspense><div className="omega-orbit omega-orbit-one"/><div className="omega-orbit omega-orbit-two"/><div className="omega-globe"><div className="omega-continent omega-c-one"/><div className="omega-continent omega-c-two"/><div className="omega-continent omega-c-three"/></div><div className="omega-platform"/></div>
       <div className="omega-copy">
         <p className="brand-eyebrow">OSGARD DIGITAL UNIVERSE / НОВАЯ ТОЧКА ВХОДА</p>
         <h1 id="world-title">ТЕХНОЛОГИИ,<br/><span>КОТОРЫЕ</span><br/>СОЕДИНЯЮТ<br/>МИРЫ<span className="omega-period">.</span></h1>
@@ -127,6 +143,16 @@ export default function WorldHome({ development = false }: { development?: boole
             <button type="button" aria-pressed={omegaMode === 'hybrid'} onClick={() => setOmegaMode('hybrid')}>Гибрид</button>
           </div>
           <p className="omega-mode-description" aria-live="polite">{omegaHelp[omegaMode]}</p>
+          <div className="omega-quality-wrap">
+            <span className="omega-quality-label">ДЕТАЛИЗАЦИЯ ЗЕМЛИ</span>
+            <div className="omega-quality-options" role="group" aria-label="Качество графики Земли">
+              <button type="button" onClick={() => setOmegaQuality('auto')} aria-pressed={omegaQuality === 'auto'}>Авто</button>
+              <button type="button" onClick={() => setOmegaQuality('eco')} aria-pressed={omegaQuality === 'eco'}>Эконом</button>
+              <button type="button" onClick={() => setOmegaQuality('ultra')} aria-pressed={omegaQuality === 'ultra'}>4K / Макс.</button>
+            </div>
+            <p className="omega-quality-description" aria-live="polite">{omegaQualityDescriptions[omegaQuality]}</p>
+            <p className="omega-nasa-credit">Карта Земли и ночные огни: <a href="https://svs.gsfc.nasa.gov/2915" target="_blank" rel="noopener noreferrer">NASA/GSFC</a> · Облака — визуализация.</p>
+          </div>
           {omegaMode === 'cinema' && <div className="omega-cinema-chapters" role="group" aria-label="Кинематографические главы">
             {omegaChapters.map((name, index) => <button type="button" key={name} aria-pressed={omegaChapter === index}
               onClick={() => setOmegaChapter(index as GlobeChapter)}>{String(index + 1).padStart(2, '0')} / {name}</button>)}
