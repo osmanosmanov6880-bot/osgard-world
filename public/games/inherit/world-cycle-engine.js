@@ -93,7 +93,7 @@ function evaluate(world){
  const incident={
    id:event.id,zone:event.zone,types:[...event.types],
    resolved:!!chosen,choice:chosen?.type||null,
-   impact:chosen?event.impact[chosen.type]:null,
+   impact:chosen?event.impact[chosen.type]:null,position:chosen?{x:chosen.x,y:chosen.y}:null,
    // This visual outcome is an interpretation, not a server-authored event.
    evidence:chosen?'current-generation-trace':'not-yet-placed'
  };
