@@ -2,8 +2,8 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
 import '../public/games/inherit/research-core.js';
-import {aggregate,formatMarkdown} from './inherit-pilot-metrics.mjs';
-import {aggregate as browserAggregate} from '../public/games/inherit/pilot-metrics.mjs';
+import {aggregate,formatMarkdown} from './inherit-pilot-metrics.js';
+import {aggregate as browserAggregate} from '../public/games/inherit/pilot-metrics.js';
 const core=globalThis.InheritResearchCore;
 const read=name=>readFileSync('public/games/inherit/'+name,'utf8');
 const at=(day,clock='12:00:00')=>day+'T'+clock+'.000Z';
@@ -19,7 +19,7 @@ const event=(r,type,day,data={})=>core.record(r,type,at(day),data);
 const exportOf=(r)=>core.exportConsent(r,at('2026-10-31'));
 test('pilot landing, local console and research engine ship as static files',()=>{
  const html=read('pilot/index.html'),report=read('pilot/report.html'),sw=read('sw.js');
- for(const file of ['pilot/index.html','pilot/report.html','pilot/landing.js','pilot/report.js','pilot/pilot.css','pilot-metrics.mjs'])
+ for(const file of ['pilot/index.html','pilot/report.html','pilot/landing.js','pilot/report.js','pilot/pilot.css','pilot-metrics.js'])
    assert.ok(sw.includes("'/games/inherit/"+file+"'"),file);
  for(const name of ['pilot/landing.js','pilot/report.js','pilot/pilot.css'])assert.ok(html.includes('./'+name.split('/').pop())||report.includes('./'+name.split('/').pop()),name);
  assert.match(sw,/inherit-shell-v16/);
