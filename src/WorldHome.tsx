@@ -1,11 +1,27 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react'
+import type { KeyboardEvent as ReactKeyboardEvent } from 'react'
 import './omegaWorld.css'
 import { cases } from './redesignCatalog'
 import { BrandMark } from './BrandMark'
 import { formatEnquiry, validateEnquiry } from './projectEnquiry'
 import { recordBrandEvent } from './brandTelemetry'
+import type { GlobeChapter, GlobeMode, GlobeView } from './OmegaGlobe'
 
 const OmegaGlobe = lazy(() => import('./OmegaGlobe'))
+
+const readOmegaMode = (): GlobeMode => {
+  try {
+    const value = localStorage.getItem('osgard:omega-world-mode')
+    return value === 'cinema' || value === 'world' || value === 'hybrid' ? value : 'hybrid'
+  } catch { return 'hybrid' }
+}
+const omegaChapters = ['Планета', 'Связи', 'Миры'] as const
+const omegaHelp: Record<GlobeMode, string> = {
+  cinema: 'Камера сама показывает Землю с разных ракурсов. Выберите главу или перейдите к продуктам.',
+  world: 'Вращайте планету мышью, приближайте колёсиком или используйте кнопки. Остальные разделы доступны сразу.',
+  hybrid: 'Живой 3D-глобус работает на фоне, а все разделы и кнопки остаются на переднем плане.',
+}
+
 
 const directions = [
   ['01', 'OSA Intelligence', 'Для тех, кто хочет понимать ИИ, проверять ответы и принимать обоснованные решения.', '/intelligence', 'Обучение и мышление'],
@@ -21,6 +37,28 @@ const process = [
 ]
 
 export default function WorldHome({ development = false }: { development?: boolean }) {
+  const [omegaMode, setOmegaMode] = useState<GlobeMode>(readOmegaMode)
+  const [omegaChapter, setOmegaChapter] = useState<GlobeChapter>(0)
+  const [omegaView, setOmegaView] = useState<GlobeView>({ yaw: 0, pitch: -0.14, distance: 5.7 })
+  useEffect(() => {
+    try { localStorage.setItem('osgard:omega-world-mode', omegaMode) } catch { /* The mode still works for this visit. */ }
+  }, [omegaMode])
+  const moveWorld = (action: 'left' | 'right' | 'closer' | 'farther' | 'reset') => {
+    setOmegaView(view => action === 'reset'
+      ? { yaw: 0, pitch: -0.14, distance: 5.7 }
+      : action === 'left' ? { ...view, yaw: view.yaw - 0.38 }
+      : action === 'right' ? { ...view, yaw: view.yaw + 0.38 }
+      : action === 'closer' ? { ...view, distance: Math.max(3.1, view.distance - 0.42) }
+      : { ...view, distance: Math.min(8, view.distance + 0.42) })
+  }
+  const onWorldKeyDown = (event: ReactKeyboardEvent<HTMLElement>) => {
+    if (omegaMode !== 'world' || event.target !== event.currentTarget) return
+    const action = event.key === 'ArrowLeft' ? 'left'
+      : event.key === 'ArrowRight' ? 'right'
+      : event.key === '+' || event.key === '=' ? 'closer'
+      : event.key === '-' ? 'farther' : event.key === 'Home' ? 'reset' : null
+    if (action) { event.preventDefault(); moveWorld(action) }
+  }
   const [brief, setBrief] = useState('')
   const [contact, setContact] = useState('')
   const [saved, setSaved] = useState(false)
@@ -73,13 +111,34 @@ export default function WorldHome({ development = false }: { development?: boole
         </div>
       </section>
     </> : <>
-    <section className="omega-hero" aria-labelledby="world-title">
-      <div className="omega-sky" aria-hidden="true"><div className="omega-stars"/><Suspense fallback={null}><OmegaGlobe /></Suspense><div className="omega-orbit omega-orbit-one"/><div className="omega-orbit omega-orbit-two"/><div className="omega-globe"><div className="omega-continent omega-c-one"/><div className="omega-continent omega-c-two"/><div className="omega-continent omega-c-three"/></div><div className="omega-platform"/></div>
+    <section className={`omega-hero omega-experience-${omegaMode}`} data-omega-mode={omegaMode} aria-labelledby="world-title"
+      tabIndex={omegaMode === 'world' ? 0 : undefined} onKeyDown={onWorldKeyDown}>
+      <div className="omega-sky" aria-hidden="true"><div className="omega-stars"/><Suspense fallback={null}><OmegaGlobe mode={omegaMode} chapter={omegaChapter} view={omegaView} onViewChange={setOmegaView} /></Suspense><div className="omega-orbit omega-orbit-one"/><div className="omega-orbit omega-orbit-two"/><div className="omega-globe"><div className="omega-continent omega-c-one"/><div className="omega-continent omega-c-two"/><div className="omega-continent omega-c-three"/></div><div className="omega-platform"/></div>
       <div className="omega-copy">
         <p className="brand-eyebrow">OSGARD DIGITAL UNIVERSE / НОВАЯ ТОЧКА ВХОДА</p>
         <h1 id="world-title">ТЕХНОЛОГИИ,<br/><span>КОТОРЫЕ</span><br/>СОЕДИНЯЮТ<br/>МИРЫ<span className="omega-period">.</span></h1>
         <p className="brand-lead">Искусственный интеллект, интерактивные миры и разработка цифровых продуктов. Три направления — одна понятная экосистема OSGARD.</p>
         <div className="brand-actions"><a className="brand-button primary" href="#products">Исследовать экосистему <span aria-hidden="true">↗</span></a><a className="brand-button" href="#approach">Как это работает <span aria-hidden="true">↓</span></a></div>
+        <div className="omega-experience-panel" aria-label="Управление 3D-пространством">
+          <div className="omega-experience-title"><span>OSGARD CORE / РЕЖИМ ПРОСМОТРА</span><span className="omega-experience-live"><span aria-hidden="true" /> ONLINE</span></div>
+          <div className="omega-mode-tabs" role="group" aria-label="Выберите режим 3D-сцены">
+            <button type="button" aria-pressed={omegaMode === 'cinema'} onClick={() => setOmegaMode('cinema')}>Кино</button>
+            <button type="button" aria-pressed={omegaMode === 'world'} onClick={() => setOmegaMode('world')}>3D-мир</button>
+            <button type="button" aria-pressed={omegaMode === 'hybrid'} onClick={() => setOmegaMode('hybrid')}>Гибрид</button>
+          </div>
+          <p className="omega-mode-description" aria-live="polite">{omegaHelp[omegaMode]}</p>
+          {omegaMode === 'cinema' && <div className="omega-cinema-chapters" role="group" aria-label="Кинематографические главы">
+            {omegaChapters.map((name, index) => <button type="button" key={name} aria-pressed={omegaChapter === index}
+              onClick={() => setOmegaChapter(index as GlobeChapter)}>{String(index + 1).padStart(2, '0')} / {name}</button>)}
+          </div>}
+          {omegaMode === 'world' && <div className="omega-world-navigation" role="group" aria-label="Управление вращением и масштабом глобуса">
+            <button type="button" onClick={() => moveWorld('left')} aria-label="Повернуть Землю влево">←</button>
+            <button type="button" onClick={() => moveWorld('right')} aria-label="Повернуть Землю вправо">→</button>
+            <button type="button" onClick={() => moveWorld('closer')} aria-label="Приблизить глобус">+</button>
+            <button type="button" onClick={() => moveWorld('farther')} aria-label="Отдалить глобус">−</button>
+            <button type="button" onClick={() => moveWorld('reset')} className="omega-reset-view">Сбросить</button>
+          </div>}
+        </div>
         <p className="brand-meta">ЗНАНИЯ / МИРЫ / СОЗДАНИЕ</p>
       </div>
       <nav className="omega-gate" aria-label="Три направления экосистемы"><p className="brand-eyebrow">ВХОД В ЭКОСИСТЕМУ <span>01 / 03</span></p>
