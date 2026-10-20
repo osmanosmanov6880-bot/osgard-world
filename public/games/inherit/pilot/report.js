@@ -44,6 +44,8 @@ function render(report){
  stat(report.retention.d1.eligible,'Достигли срока D1');
  stat(report.retention.d7.eligible,'Достигли срока D7');
  stat(report.retention.d7.unknown,'D7: недостаточно наблюдений');
+ stat(report.retention.d30.eligible,'Достигли срока D30');
+ stat(report.retention.d30.unknown,'D30: недостаточно наблюдений');
  evidence.textContent={
    NO_EXPORTS:'Данных для оценки нет. Подключать оплату или заявлять об удержании нельзя.',
    AWAIT_D7:'Седьмой день ещё не наступил для полученной выборки. D7 пока не определён.',
@@ -52,7 +54,7 @@ function render(report){
    DESCRIPTIVE_ONLY:'Данные можно описывать, но нельзя считать доказанным спросом, MAU или удержанием всей аудитории.'
  }[report.evidence.status]||'Требуется дополнительная проверка данных.';
  retention.replaceChildren();funnel.replaceChildren();prices.replaceChildren();
- for(const [key,label] of [['d1','D1 · следующий день'],['d7','D7 · седьмой день']]){
+ for(const [key,label] of [['d1','D1 · следующий день'],['d7','D7 · седьмой день'],['d30','D30 · тридцатый день']]){
   const r=report.retention[key];
   dataRow(retention,[label,r.eligible,r.returned,r.verifiedNo,r.unknown,percent(r.coveragePercent),percent(r.ratePercent)]);
  }
