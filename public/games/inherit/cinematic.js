@@ -71,7 +71,7 @@
     if (guideButton) {
       const compact = guide?.classList.contains('cine-compact');
       guideButton.textContent = compact ? label('rules') : label('hideRules');
-      guideButton.setAttribute('aria-label', label('guideOpen'));
+      guideButton.setAttribute('aria-label', compact ? label('guideOpen') : label('hideRules'));
       guideButton.setAttribute('aria-expanded', String(!compact));
     }
     if (menuButton) {
