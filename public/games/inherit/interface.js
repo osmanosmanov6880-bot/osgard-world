@@ -212,18 +212,20 @@ const dictionary={
  "The local world remains in this open page. Export before leaving.": "Локальный мир доступен на открытой странице. Экспортируйте его перед уходом."
 };
 
+const chinese=window.InheritChinese;
 const originals=new WeakMap(),attributes=new WeakMap();
 let ready=false,locale='ru';
-try{const requested=new URLSearchParams(location.search).get('lang');locale=requested==='en'?'en':requested==='ru'?'ru':persistence?.getItem('osgard:game-language')==='en'?'en':'ru'}catch{}
+try{const requested=new URLSearchParams(location.search).get('lang'),saved=persistence?.getItem('osgard:game-language');locale=['ru','en','zh'].includes(requested)?requested:['ru','en','zh'].includes(saved)?saved:'ru'}catch{}
 const dynamic=[];
 function t(value){
  const raw=String(value??''),key=raw.replace(/\s+/g,' ').trim();
  const source=ephemeralText(key);
  if(locale==='en')return source===key?raw:source;
- let translated=dictionary[source];
- if(translated===undefined){for(const [pattern,render] of dynamic){const match=source.match(pattern);if(match){translated=render(...match.slice(1));break}}}
+ let translated=locale==='zh'?chinese?.translate(source):dictionary[source];
+ if(translated===undefined&&locale==='ru'){for(const [pattern,render] of dynamic){const match=source.match(pattern);if(match){translated=render(...match.slice(1));break}}}
  return translated===undefined?raw:(raw.match(/^\s*/)?.[0]||'')+translated+(raw.match(/\s*$/)?.[0]||'');
 }
+chinese?.setTranslator?.(t);
 function textNode(node){
  const parent=node.parentElement;if(!parent||parent.closest('script,style,noscript,[data-locale-tools],[data-no-translate]'))return;
  let state=originals.get(node);if(!state||node.nodeValue!==state.rendered)state={source:node.nodeValue,rendered:node.nodeValue};
@@ -242,14 +244,14 @@ function apply(root=document.body){
  root.querySelectorAll?.('[aria-label],[title],[placeholder]').forEach(element);
 }
 function setLanguage(value){
- locale=value==='en'?'en':'ru';persistence?.setItem('osgard:game-language',locale);
- document.documentElement.lang=locale;
+ locale=['ru','en','zh'].includes(value)?value:'ru';persistence?.setItem('osgard:game-language',locale);
+ document.documentElement.lang=locale==='zh'?'zh-CN':locale;
  try{const url=new URL(location.href);url.searchParams.set('lang',locale);history.replaceState(null,'',url.href)}catch{}
- if(ready){apply();updateStorage();document.querySelectorAll('[data-game-language]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.gameLanguage===locale)));window.InheritAccount?.render()}
+ if(ready){apply();updateStorage();document.querySelectorAll('[data-game-language]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.gameLanguage===locale)));window.InheritAccount?.render();window.InheritCinematic?.updateLabels?.()}
 }
 function languageTools(){
  const bar=document.createElement('div');bar.className='game-language';bar.dataset.localeTools='';bar.setAttribute('role','group');bar.setAttribute('aria-label','Язык / Language');
- for(const [code,label] of [['ru','Русский'],['en','English']]){const button=document.createElement('button');button.type='button';button.textContent=label;button.dataset.gameLanguage=code;button.setAttribute('aria-pressed',String(locale===code));button.addEventListener('click',()=>setLanguage(code));bar.appendChild(button)}return bar;
+ for(const [code,label] of [['ru','Русский'],['en','English'],['zh','简体中文']]){const button=document.createElement('button');button.type='button';button.textContent=label;button.dataset.gameLanguage=code;button.setAttribute('aria-pressed',String(locale===code));button.addEventListener('click',()=>setLanguage(code));bar.appendChild(button)}return bar;
 }
 function watch(){
  const observer=new MutationObserver(records=>{for(const record of records){if(record.type==='characterData')textNode(record.target);else if(record.type==='attributes')element(record.target);else record.addedNodes.forEach(node=>apply(node))}});
@@ -288,7 +290,7 @@ function updateStorage(){
  if(recovery)recovery.hidden=!persistence?.recovered;
 }
 function init(){
- ready=true;document.documentElement.lang=locale;
+ ready=true;document.documentElement.lang=locale==='zh'?'zh-CN':locale;
  const intro=document.createElement('section');intro.className='inherit-guide';intro.innerHTML='<div class="inherit-guide-heading"><div><span class="eyebrow">How to play</span><h2>Choose a trace. Leave it on the island.</h2></div></div><p>Start with three different trace types. Finish the generation when you are ready to begin the next chapter.</p><p id="inherit-controls">Controls: click or tap the island; 1–0 chooses a trace. Focus the island, use arrows and Enter to place. Ctrl/Cmd+Z undoes the last trace; H opens the chronicle.</p><div class="inherit-storage" role="status"><p id="inherit-save-state"></p><p id="inherit-online-state"></p></div><p class="inherit-truth">The first four entries are a fictional introduction. Names in local history do not mean other people are online. An invitation shares the route, not your local save.</p><div class="inherit-guide-actions"><button type="button" class="save" id="inherit-enter">Enter the island</button><a href="/play#catalog">← Каталог / Catalog</a></div><div id="inherit-recovery" hidden><p>An unreadable save was preserved separately. A fresh local world is open; you can download the original.</p><button type="button" id="inherit-recovery-download">Download recovered save</button></div>';
  document.querySelector('.app > header').insertAdjacentElement('afterend',intro);intro.querySelector('.inherit-guide-heading').appendChild(languageTools());
  intro.querySelector('.inherit-guide-heading').insertAdjacentElement('afterend',intro.querySelector('.inherit-guide-actions'));
