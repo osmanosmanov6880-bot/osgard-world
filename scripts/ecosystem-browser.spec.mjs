@@ -452,6 +452,12 @@ test('INHERIT living legacy: six-rule engine animates inherited places, survives
   const errors=await prepareStandaloneGame(page);
   await page.goto('/games/inherit/?lang=ru',{waitUntil:'domcontentloaded'});
   await expect(page.locator('.inherit-legacy-trigger')).toBeVisible();
+  await expect(page.locator('.inherit-legacy-trigger')).toBeInViewport();
+  expect(await page.evaluate(()=>{
+    const a=document.querySelector('.inherit-legacy-trigger').getBoundingClientRect();
+    const b=document.querySelector('.cine-scene-mode').getBoundingClientRect();
+    return a.top>=b.bottom && a.right<=innerWidth+1 && a.left>=0;
+  })).toBe(true);
   const original=await page.evaluate(()=>{
     const state=window.InheritGame.snapshot();
     const additions=[
