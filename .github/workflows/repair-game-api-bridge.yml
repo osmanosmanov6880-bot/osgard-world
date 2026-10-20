@@ -1,0 +1,87 @@
+name: OSGARD internal API bridge repair
+on:
+  push:
+    branches: [master]
+    paths:
+      - ".github/workflows/repair-game-api-bridge.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  bridge:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Reconcile a single Docker-container-to-host API firewall permission over SSH
+        env:
+          HOST: ${{ secrets.OSGARD_DEPLOY_HOST }}
+          USER: ${{ secrets.OSGARD_DEPLOY_USER }}
+          KEY: ${{ secrets.OSGARD_DEPLOY_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$HOST" && test -n "$USER" && test -n "$KEY"
+          install -m 700 -d "$HOME/.ssh"
+          printf '%s\n' "$KEY" > "$HOME/.ssh/osgard_repair"
+          chmod 600 "$HOME/.ssh/osgard_repair"
+          ssh-keyscan -T 10 -H "$HOST" > "$HOME/.ssh/known_hosts" 2>/dev/null
+          test -s "$HOME/.ssh/known_hosts"
+          ssh -o BatchMode=yes -i "$HOME/.ssh/osgard_repair" "$USER@$HOST" 'bash -s' <<'REMOTE'
+          set -euo pipefail
+          test "$(id -u)" -eq 0 || { echo 'Root is required for a single UFW firewall rule' >&2; exit 1; }
+          container=osgard-world
+          port=4317
+          network="$(docker inspect --format '{{range $name, $conf := .NetworkSettings.Networks}}{{println $name}}{{end}}' "$container" | awk 'NF {print $1; exit}')"
+          test -n "$network" || { echo 'Frontend container has no network' >&2; exit 1; }
+          test "$(docker network inspect --format '{{.Driver}}' "$network")" = bridge || { echo 'Expected a Docker bridge network' >&2; exit 1; }
+          network_id="$(docker network inspect --format '{{.Id}}' "$network")"
+          iface="br-$(printf %s "$network_id" | cut -c1-12)"
+          test -d "/sys/class/net/$iface" || { echo "Expected bridge interface $iface not found" >&2; exit 1; }
+          ip="$(docker inspect --format '{{range $name, $conf := .NetworkSettings.Networks}}{{println $conf.IPAddress}}{{end}}' "$container" | awk 'NF {print $1; exit}')"
+          gateway="$(docker inspect --format '{{range $name, $conf := .NetworkSettings.Networks}}{{println $conf.Gateway}}{{end}}' "$container" | awk 'NF {print $1; exit}')"
+          python3 - "$ip" "$gateway" "$network" <<'PY'
+          import ipaddress, sys
+          ip, gateway, name = sys.argv[1:]
+          src, dst = ipaddress.ip_address(ip), ipaddress.ip_address(gateway)
+          assert src.version == dst.version == 4
+          assert src in ipaddress.ip_network('172.16.0.0/12')
+          assert dst in ipaddress.ip_network('172.16.0.0/12')
+          assert src != dst
+          assert name == 'osgard-worldnext_default', f'unexpected Docker network: {name}'
+          PY
+          if ! ufw status | grep -Fq 'Status: active'; then
+            echo 'Refusing change: UFW is not active' >&2; exit 1
+          fi
+          echo "Repair scope: Docker bridge $iface, source $ip, destination $gateway, TCP port $port"
+          probe() {
+            docker exec "$container" sh -lc "wget -q -O /dev/null -T 5 http://$gateway:$port/health"
+          }
+          if probe; then
+            echo 'Already healthy: no firewall change was necessary'
+            exit 0
+          fi
+          inserted=0
+          rollback() {
+            if [ "$inserted" -eq 1 ]; then
+              echo 'Probe failed. Rolling back the new single-host UFW rule.'
+              ufw --force delete allow in on "$iface" from "$ip" to "$gateway" port "$port" proto tcp || true
+            fi
+          }
+          trap rollback EXIT
+          if ufw status | grep -F "$ip" | grep -F "4317" | grep -F "$iface" | grep -F "$gateway" > /dev/null; then
+            echo 'Exact scoped rule already exists; connectivity issue requires more investigation' >&2
+            exit 1
+          fi
+          ufw allow in on "$iface" from "$ip" to "$gateway" port "$port" proto tcp
+          inserted=1
+          success=0
+          for n in 1 2 3; do
+            if probe; then success=1; break; fi
+            sleep 1
+          done
+          test "$success" -eq 1 || { echo 'Gateway still unreachable after scoped UFW rule' >&2; exit 1; }
+          echo 'PASS: Frontend Docker container reached host-managed /health through bridge.'
+          echo 'Rule is source-IP and bridge restricted; API remains closed to the public internet by UFW.'
+          inserted=0
+          trap - EXIT
+          REMOTE
