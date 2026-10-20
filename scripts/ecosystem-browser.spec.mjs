@@ -86,6 +86,24 @@ test('OSGARD globe fails gracefully without WebGL2 and keeps the experience swit
   await expect(page.getByRole('link', { name: /Исследовать экосистему/ })).toBeVisible()
 })
 
+test('OSGARD desktop 3D quality controls never overlap product navigation', async ({ page }, testInfo) => {
+  if (testInfo.project.name !== 'desktop') return
+  await page.goto('/')
+  const nav = page.locator('.omega-gate')
+  const panel = page.locator('.omega-experience-panel')
+  const tabs = page.getByRole('group', { name: 'Выберите режим 3D-сцены' })
+  for (const mode of ['Гибрид', 'Кино', '3D-мир']) {
+    await tabs.getByRole('button', { name: mode }).click()
+    const a = await panel.boundingBox()
+    const b = await nav.boundingBox()
+    expect(a && b).toBeTruthy()
+    if (!a || !b) continue
+    expect(a.y + a.height + 6, mode + ' control panel must be above ecosystem navigator').toBeLessThan(b.y)
+    expect(a.x + a.width).toBeLessThanOrEqual(1441)
+    await expect(tabs.getByRole('button', { name: mode })).toHaveAttribute('aria-pressed', 'true')
+  }
+})
+
 test('OSGARD NASA 4K textures are local and quality selector stays accessible', async ({ page, request }, testInfo) => {
   const manifestRes = await request.get('/brand/omega-nasa-manifest.json')
   expect(manifestRes.status()).toBe(200)
