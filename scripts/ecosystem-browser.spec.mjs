@@ -446,3 +446,60 @@ test('INHERIT touch undo reuses guarded pending-trace logic and keeps committed 
   expect((await page.evaluate(()=>window.InheritGame.snapshot())).budget).toBe(100);
   expect(errors).toEqual([]);
 });
+
+
+test('INHERIT living legacy: six-rule engine animates inherited places, survives translation and never mutates the save',async({page},info)=>{
+  const errors=await prepareStandaloneGame(page);
+  await page.goto('/games/inherit/?lang=ru',{waitUntil:'domcontentloaded'});
+  await expect(page.locator('.inherit-legacy-trigger')).toBeVisible();
+  const original=await page.evaluate(()=>{
+    const state=window.InheritGame.snapshot();
+    const additions=[
+      {tool:'tree',x:35,y:44},{tool:'moss',x:41,y:47},
+      {tool:'path',x:66,y:41},{tool:'light',x:67,y:43}
+    ];
+    window.InheritGame.apply({...state,generation:176,objects:additions,snapshots:[{generation:171,objects:additions}],pending:[],changes:[],budget:100});
+    return JSON.stringify(window.InheritGame.snapshot());
+  });
+  await expect(page.locator('.inherit-legacy-aura--grove')).toHaveCount(1);
+  await expect(page.locator('.inherit-legacy-aura--waylight')).toHaveCount(1);
+  await expect(page.locator('.inherit-legacy-aura--heritage')).toHaveCount(2);
+  await page.locator('.inherit-legacy-trigger').click();
+  await expect(page.locator('.inherit-legacy-dialog')).toBeVisible();
+  await expect(page.locator('.inherit-legacy-dialog')).toContainText('Тихая роща');
+  await expect(page.locator('.inherit-legacy-dialog')).toContainText('Освещённая тропа');
+  await expect(page.locator('.inherit-legacy-dialog')).toContainText('Память поколений');
+  await page.screenshot({path:info.outputPath('inherit-legacy-journal.png')});
+  await page.locator('.inherit-legacy-close').click();
+  await page.locator('[data-game-language="zh"]').click();
+  await expect(page.locator('.inherit-legacy-trigger')).toContainText('传承');
+  await page.locator('.inherit-legacy-trigger').click();
+  await expect(page.locator('.inherit-legacy-dialog')).toContainText('宁静树林');
+  await page.locator('.inherit-legacy-close').click();
+  expect(await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()))).toBe(original);
+  expect(errors).toEqual([]);
+});
+
+test('INHERIT mobile primary action stays clickable while passing a generation with the compact tool dock',async({page},info)=>{
+  const errors=await prepareStandaloneGame(page);
+  await page.goto('/games/inherit/?lang=ru',{waitUntil:'domcontentloaded'});
+  const pass=page.locator('#pass');
+  if(info.project.name==='mobile'){
+    await expect(pass).toBeInViewport();
+    const bounds=await pass.boundingBox();
+    expect(bounds).not.toBeNull();
+    expect(bounds.y).toBeGreaterThanOrEqual(0);
+    expect(bounds.y+bounds.height).toBeLessThanOrEqual(info.project.use.viewport.height+1);
+  }
+  await page.locator('#world').focus();
+  await page.locator('#world').press('Enter');
+  await expect(page.locator('#budget')).toHaveText('99');
+  await pass.click();
+  await expect(page.locator('#budget')).toHaveText('100');
+  const state=await page.evaluate(()=>window.InheritGame.snapshot());
+  expect(state.generation).toBe(174);
+  expect(state.pending).toEqual([]);
+  expect(state.objects).toHaveLength(1);
+  if(info.project.name==='mobile')await expect(pass).toBeInViewport();
+  expect(errors).toEqual([]);
+});
