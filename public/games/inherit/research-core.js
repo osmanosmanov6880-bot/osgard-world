@@ -75,9 +75,13 @@ function record(state,type,at,data){
  const next=[...old.events,event];
  if(next.length>MAX_EVENTS){
    // Keep the earliest consented session, recent actions, and monotone sequence.
-   const first=next.find(e=>e.type==='session_opened')||next[0];
-   const tail=next.slice(-(MAX_EVENTS-1)).filter(e=>e.seq!==first.seq);
-   next.splice(0,next.length,first,...tail.slice(-(MAX_EVENTS-1)));
+   const anchors=[];
+   for(const type of ['session_opened','first_trace_placed']){
+     const found=next.find(e=>e.type===type);
+     if(found&&!anchors.some(item=>item.seq===found.seq))anchors.push(found);
+   }
+   const remaining=next.filter(e=>!anchors.some(item=>item.seq===e.seq)).slice(-(MAX_EVENTS-anchors.length));
+   next.splice(0,next.length,...[...anchors,...remaining].sort((a,b)=>a.seq-b.seq));
  }
  return {...old,lastSeq:event.seq,events:next};
 }
