@@ -1075,3 +1075,73 @@ test('INHERIT generation atlas exposes insufficient evidence rather than fabrica
  await expect(dialog).toBeHidden();
  expect(errors).toEqual([]);
 });
+
+
+test('INHERIT R7: only a real server-confirmed generation opens the star-lit handoff receipt',async({page})=>{
+ const errors=await prepareStandaloneGame(page);
+ const requests=[];
+ await page.route('**/api/world/quiet-reach/generations',route=>{
+  const body=route.request().postDataJSON();requests.push(body);
+  return route.fulfill({status:201,contentType:'application/json',
+   body:JSON.stringify({currentGeneration:body.expectedGeneration+1,
+    generation:{number:body.expectedGeneration,author:body.author,message:body.message}})});
+ });
+ await page.goto('/games/inherit/?lang=ru',{waitUntil:'domcontentloaded'});
+ const moment=page.locator('.inherit-handoff-moment');
+ await expect(moment).toBeHidden();
+ await page.locator('#pass').click(); // no placed trace, so no completion
+ await expect(moment).toBeHidden();
+ await expect.poll(()=>requests.length).toBe(0);
+ await page.locator('#world').press('Enter');
+ await expect(page.locator('#budget')).toHaveText('99');
+ await page.locator('#pass').click();
+ await expect(moment).toBeVisible();
+ await expect(moment).toHaveAttribute('data-verification','shared-server-confirmed');
+ await expect(moment.locator('.inherit-handoff-route')).toContainText('173 → 174');
+ await expect(moment.locator('.inherit-handoff-source')).toContainText('Сервер подтвердил');
+ await expect(moment.locator('.inherit-handoff-stat').first()).toContainText('1');
+ await expect.poll(()=>requests.length).toBe(1);
+ const committed=await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()));
+ const model=await page.evaluate(()=>window.InheritHandoffMomentUI.peek());
+ expect(model.source).toBe('explicit-commit-only');
+ expect(model.verification).toBe('shared-server-confirmed');
+ await moment.locator('.inherit-handoff-details-trigger').click();
+ await expect(moment.locator('.inherit-handoff-count')).toHaveCount(1);
+ await expect(moment.locator('.inherit-handoff-pin')).toHaveCount(1);
+ expect(await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()))).toBe(committed);
+ await page.locator('[data-game-language="zh"]').click();
+ await expect(moment.locator('.inherit-handoff-title')).toContainText('痕迹已留下');
+ await expect(moment.locator('.inherit-handoff-source')).toContainText('服务器');
+ await moment.locator('.inherit-handoff-next').click();
+ await expect(moment).toBeHidden();
+ await expect(page.locator('.inherit-atlas-dialog')).toBeVisible();
+ await page.keyboard.press('Escape');
+ expect(await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()))).toBe(committed);
+ expect(errors).toEqual([]);
+});
+
+test('INHERIT R7: offline preservation is clearly unverified, and conflict never grants a receipt',async({page})=>{
+ const errors=await prepareStandaloneGame(page);
+ await page.goto('/games/inherit/?lang=en',{waitUntil:'domcontentloaded'});
+ const moment=page.locator('.inherit-handoff-moment');
+ await page.locator('#world').press('Enter');
+ await page.locator('#pass').click(); // offline fixture returns 503
+ await expect(moment).toBeVisible();
+ await expect(moment).toHaveAttribute('data-verification','local-saved-server-unverified');
+ await expect(moment.locator('.inherit-handoff-source')).toContainText('Server confirmation is unknown');
+ const first=await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()));
+ await moment.locator('.inherit-handoff-continue').click();
+ await expect(moment).toBeHidden();
+ expect(await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()))).toBe(first);
+ // A 409 from the shared server must leave pending work intact with NO new receipt.
+ await page.route('**/api/world/quiet-reach/generations',route=>route.fulfill({
+  status:409,contentType:'application/json',body:'{"error":"generation conflict fixture"}'
+ }));
+ await page.locator('#world').press('Enter');
+ const before=await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()));
+ await page.locator('#pass').click();
+ await expect(page.locator('#caption')).toContainText('Your pending traces');
+ await expect(moment).toBeHidden();
+ expect(await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()))).toBe(before);
+ expect(errors).toEqual([]);
+});
