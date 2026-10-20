@@ -49,5 +49,7 @@ jobs:
             echo "Assets unchanged"
           else
             git commit -m "assets(omega): store NASA 4K satellite day/night textures with provenance"
+            git fetch origin feature/omega-ultra-nasa-earth-20261020
+            git rebase origin/feature/omega-ultra-nasa-earth-20261020
             git push origin HEAD:feature/omega-ultra-nasa-earth-20261020
           fi
