@@ -15,7 +15,8 @@ test('assets are parseable, loaded and available in offline cache v13',()=>{
   assert.ok(index.includes('./'+name),'HTML missing '+name);
   assert.ok(sw.includes('/games/inherit/'+name),'offline cache missing '+name);
  }
- new vm.Script(ui);assert.match(css,/prefers-reduced-motion:reduce/);assert.match(sw,/inherit-shell-v13/);
+ new vm.Script(ui);new vm.Script(read('cosmetic-rewards.js'));assert.match(css,/prefers-reduced-motion:reduce/);
+ for(const name of ['cosmetic-rewards.js','cosmetic-rewards.css']){assert.ok(index.includes('./'+name));assert.ok(sw.includes('/games/inherit/'+name));}assert.match(sw,/inherit-shell-v14/);
 });
 test('16 generation incidents, all with 2 real object choices and stable deterministic order',()=>{
  assert.equal(engine.events.length,16);assert.equal(new Set(engine.events.map(e=>e.id)).size,16);
@@ -117,5 +118,10 @@ test('UI respects account rights, consent, accessibility and safe text-only rend
  for(const required of ['window.InheritAccount?.state','window.InheritUI?.getLanguage','addEventListener','MutationObserver','aria-label','dataset.inheritSeason','b.disabled=!allowed()','consent.addEventListener','erase.addEventListener','notebook.KEY'])
    assert.ok(ui.includes(required),required);
  for(const banned of ['fetch(', 'innerHTML=', 'InheritGame.apply(', 'navigator.sendBeacon','localStorage.setItem('])assert.ok(!ui.includes(banned),banned);
+});
+test('earned cosmetics require real milestones and never alter gameplay budgets',()=>{
+ const s=read('cosmetic-rewards.js');
+ for(const need of ['gardener','connected','architect','window.InheritWorldUI','aria-pressed','disabled=!available'])assert.ok(s.includes(need),need);
+ for(const forbidden of ['InheritGame.apply(', 'fetch(', 'purchase', 'checkout'])assert.ok(!s.includes(forbidden),forbidden);
 });
 console.log('INHERIT WORLD CYCLE:',passed,'passed');
