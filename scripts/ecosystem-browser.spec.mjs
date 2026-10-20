@@ -28,6 +28,34 @@ for (const [path, product, heading] of surfaces) {
   })
 }
 
+test('OSGARD Earth uses real bundled coastlines and WebGL or safe fallback', async ({ page, request }) => {
+  const earth = await request.get('/brand/omega-earth-land.json')
+  expect(earth.status()).toBe(200)
+  const data = await earth.json()
+  expect(data.type).toBe('land-polygons')
+  expect(data.polygons.length).toBeGreaterThan(100)
+
+  const errors = []
+  page.on('pageerror', error => errors.push(error.message))
+  await page.emulateMedia({ reducedMotion: 'no-preference' })
+  await page.goto('/')
+  const stage = page.locator('.omega-webgl-stage')
+  await expect(stage).toHaveCount(1)
+  await expect(stage).toHaveAttribute('data-globe-status', /^(webgl|fallback)$/, { timeout: 20000 })
+  await expect(page.locator('.omega-globe')).toHaveCount(1)
+  await expect(page.locator('.omega-hero h1')).toContainText('ТЕХНОЛОГИИ')
+  if (await stage.getAttribute('data-globe-status') === 'webgl') {
+    await expect(page.locator('.omega-sky')).toHaveClass(/omega-webgl-ready/)
+    await expect(stage.locator('canvas')).toHaveCount(1)
+  }
+
+  await page.getByRole('button', { name: 'Меньше движения', exact: true }).click()
+  await expect(page.locator('html')).toHaveAttribute('data-motion', 'off')
+  await expect(page.locator('.omega-gate a')).toHaveCount(3)
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true)
+  expect(errors).toEqual([])
+})
+
 test('OSGARD Omega cinematic scenes preserve working routes and images', async ({ page }) => {
   const pageErrors = []
   page.on('pageerror', error => pageErrors.push(error.message))
