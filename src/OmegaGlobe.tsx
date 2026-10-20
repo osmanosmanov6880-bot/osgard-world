@@ -196,7 +196,7 @@ export default function OmegaGlobe() {
     const canvas = canvasRef.current
     const stage = stageRef.current
     const sky = stage?.closest('.omega-sky')
-    const hero = stage?.closest('.omega-hero')
+    const hero = stage?.closest<HTMLElement>('.omega-hero')
     if (!canvas || !stage || !sky || !hero) return
 
     let alive = true, started = false, visible = true, lastFrame = 0, frameId = 0
