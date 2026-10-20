@@ -107,3 +107,26 @@ body.cine-eco .inherit-cycle-mote{animation:none;opacity:.17}
  .inherit-cycle-mote{animation:none!important}
  body .world>.mountain,body .world>.island{transition:none!important}
 }
+
+/* Every new episode imprints its consequence at the player's actual placed coordinate.
+   This element is presentation-only and never changes any game object or hitbox. */
+.inherit-cycle-imprint-layer{position:absolute;inset:0;z-index:9;overflow:hidden;pointer-events:none;border-radius:45%}
+.inherit-cycle-imprint{position:absolute;display:block;width:100px;height:100px;transform:translate(-50%,-50%);border-radius:50%;pointer-events:none;
+ background:radial-gradient(circle,rgba(230,211,159,.42) 1%,rgba(210,196,156,.16) 26%,transparent 70%);
+ mix-blend-mode:screen;filter:blur(3px);animation:inherit-imprint 4.5s ease-in-out infinite}
+.inherit-cycle-imprint:before{content:"";position:absolute;inset:17%;border:1px solid rgba(235,222,175,.55);border-radius:50%;box-shadow:0 0 20px rgba(237,220,170,.21)}
+.inherit-cycle-imprint:after{content:"";position:absolute;inset:41%;border-radius:50%;background:rgba(237,219,178,.85);box-shadow:0 0 14px 5px rgba(227,205,153,.34)}
+.inherit-cycle-imprint--sprout,.inherit-cycle-imprint--birds,.inherit-cycle-imprint--pollinators,.inherit-cycle-imprint--reeds,.inherit-cycle-imprint--shelter{
+ background:radial-gradient(circle,rgba(176,234,139,.51),rgba(111,195,137,.16) 32%,transparent 73%);}
+.inherit-cycle-imprint--sprout:after,.inherit-cycle-imprint--birds:after,.inherit-cycle-imprint--pollinators:after,.inherit-cycle-imprint--reeds:after,.inherit-cycle-imprint--shelter:after{
+ background:#dcf1b4;box-shadow:0 0 14px 5px rgba(136,210,120,.42);}
+.inherit-cycle-imprint--glow,.inherit-cycle-imprint--route,.inherit-cycle-imprint--crossing{
+ background:radial-gradient(circle,rgba(255,234,166,.61),rgba(248,182,102,.22) 33%,transparent 78%);}
+.inherit-cycle-imprint--glow:after,.inherit-cycle-imprint--route:after,.inherit-cycle-imprint--crossing:after{
+ background:#fff2ca;box-shadow:0 0 17px 7px rgba(255,206,110,.5);}
+.inherit-cycle-imprint--echo,.inherit-cycle-imprint--memorial{
+ background:radial-gradient(circle,rgba(209,233,227,.49),rgba(129,174,192,.14) 38%,transparent 75%);}
+.inherit-cycle-imprint--breeze{background:radial-gradient(circle,rgba(180,212,239,.54),rgba(158,202,220,.14) 41%,transparent 76%)}
+@keyframes inherit-imprint{0%,100%{opacity:.52;transform:translate(-50%,-50%) scale(.85)}50%{opacity:1;transform:translate(-50%,-50%) scale(1.12)}}
+body.cine-eco .inherit-cycle-imprint{animation:none;filter:blur(1px)}
+@media(prefers-reduced-motion:reduce){.inherit-cycle-imprint{animation:none!important;transform:translate(-50%,-50%)!important}}
