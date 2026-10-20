@@ -3,7 +3,7 @@
   'use strict';
   const doc = document;
   const storage = window.InheritPersistence;
-  const ui = window.InheritUI;
+  const ui = () => window.InheritUI;
   const qualityKey = 'inherit:visual-quality:v1';
   const copy = {
     ru: {
@@ -34,10 +34,9 @@
       performance: '切换画质',
     },
   };
-  const lang = () => copy[ui?.getLanguage?.()] ? ui.getLanguage() : 'ru';
+  const lang = () => copy[ui()?.getLanguage?.()] ? ui().getLanguage() : 'ru';
   const label = name => copy[lang()][name];
   const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)');
-  const game = window.InheritGame;
   const world = doc.querySelector('#world');
   if (!world) return;
 
