@@ -13,6 +13,7 @@ from pathlib import Path
 from urllib.request import Request, urlopen
 
 from PIL import Image, ImageEnhance, ImageOps
+import numpy as np
 
 ROOT = Path(__file__).resolve().parent.parent
 DEST = ROOT / "public" / "brand"
@@ -85,6 +86,42 @@ def write_image(image: Image.Image, filename: str, width: int, quality: int) -> 
     return {"path": "/" + str(target.relative_to(ROOT / "public")), "size": new_size, "bytes": len(blob), "sha256": digest(blob)}
 
 
+
+def build_poster(day: Image.Image) -> dict:
+    """An orthographic Earth preview from the actual NASA equirectangular map."""
+    size = 1024
+    middle = (size - 1) / 2
+    x = (np.arange(size, dtype=np.float32) - middle) / (size * 0.475)
+    y = (middle - np.arange(size, dtype=np.float32)) / (size * 0.475)
+    xx, yy = np.meshgrid(x, y)
+    rr = xx * xx + yy * yy
+    visible = rr <= 1.0
+    zz = np.sqrt(np.maximum(0.0, 1.0 - rr))
+    longitude = np.arctan2(xx, zz) + np.deg2rad(18.0)
+    latitude = np.arcsin(np.clip(yy, -1, 1))
+    u = (longitude / (2 * np.pi) + 0.5) % 1.0
+    v = np.clip(0.5 - latitude / np.pi, 0.0, 1.0)
+    src = np.asarray(day, dtype=np.uint8)
+    ix = np.minimum((u * (src.shape[1] - 1)).astype(np.int32), src.shape[1] - 1)
+    iy = np.minimum((v * (src.shape[0] - 1)).astype(np.int32), src.shape[0] - 1)
+    rgb = src[iy, ix].astype(np.float32)
+    solar = np.maximum(0.0, xx * 0.53 + yy * 0.37 + zz * 0.77)
+    brightness = 0.10 + 1.16 * solar
+    halo = np.power(1.0 - zz, 4) * 46.0
+    rgb = np.clip(rgb * brightness[..., None] +
+                  halo[..., None] * np.asarray([0.25, 0.78, 1.0]), 0, 255)
+    alpha = np.where(visible, 255, 0).astype(np.uint8)
+    rgba = np.dstack((rgb.astype(np.uint8), alpha))
+    target = DEST / "omega-nasa-poster-1k.webp"
+    Image.fromarray(rgba, mode="RGBA").save(target, "WEBP", quality=86, method=6)
+    with Image.open(target) as proof:
+        assert proof.size == (size, size)
+        proof.verify()
+    blob = target.read_bytes()
+    return {"path": "/brand/omega-nasa-poster-1k.webp",
+            "size": [size, size], "bytes": len(blob), "sha256": digest(blob)}
+
+
 def main() -> None:
     images = {}
     proofs = {}
@@ -99,6 +136,7 @@ def main() -> None:
         "night_4k": write_image(night, "omega-nasa-night-4k.webp", 4096, 83),
         "night_2k": write_image(night, "omega-nasa-night-2k.webp", 2048, 80),
         "night_1k": write_image(night, "omega-nasa-night-1k.webp", 1024, 78),
+        "poster_1k": build_poster(daytime),
     }
     meta = {
         "edition": "nasa-blue-marble-svs-2004-derived",
