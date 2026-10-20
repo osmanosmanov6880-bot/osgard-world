@@ -151,3 +151,16 @@ html[data-motion="off"] .omega-sky.omega-webgl-ready .omega-globe {
 }
 html[data-motion="off"] .omega-sky::after{animation:none!important;display:none!important}
 html[data-motion="off"] .omega-mode-tabs button{transition:none!important}
+
+/* Keep the three cinematic modes visible in the first desktop viewport. */
+@media(min-width:1180px){
+  .omega-experience-panel{
+    position:absolute;
+    left:calc(100% + 28px);
+    top:-112px;
+    width:min(445px, calc(100vw - 830px));
+    max-width:none;
+    margin:0;
+    z-index:5;
+  }
+}
