@@ -177,3 +177,26 @@ html[data-motion="off"] .omega-mode-tabs button{transition:none!important}
    Hero copy is a single stacking context; raising only the nested panel is insufficient. */
 .omega-hero .omega-copy{z-index:6}
 .omega-hero .omega-gate{z-index:2}
+
+/* NASA satellite-map transparency; disclosure does not obscure existing navigation. */
+.omega-earth-provenance{margin:11px 0 2px;padding-top:9px;border-top:1px solid #34637d;color:#a9cfe3;font:11px/1.55 Inter,Arial,sans-serif}
+.omega-earth-provenance summary{display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer;color:#d2ebf5;font-weight:650;list-style-position:inside;min-height:26px}
+.omega-earth-provenance summary span{color:#83d6d8;font-size:10px;white-space:nowrap}
+.omega-earth-provenance p{margin:9px 0 5px;max-width:430px;color:#a9cce3}
+.omega-earth-provenance a{display:inline-block;color:#8aebed;text-decoration:underline;text-underline-offset:3px;padding:3px 0}
+.omega-earth-provenance summary:focus-visible,.omega-earth-provenance a:focus-visible{outline:2px solid #7af6f8;outline-offset:4px}
+@media(max-width:760px){.omega-earth-provenance summary{min-height:40px}.omega-earth-provenance summary span{font-size:9px}}
+
+/* Desktop IA: keep the 3D quality deck separate from the three product links. */
+@media (min-width:1180px) {
+  .omega-hero { min-height:950px; }
+  .omega-hero .omega-gate {
+    transform:translateY(195px);
+    padding:20px 24px;
+  }
+  .omega-hero .omega-gate a { padding:11px 0; }
+  .omega-hero:has(.omega-earth-provenance[open]) .omega-gate {
+    transform:translateY(300px);
+  }
+  .omega-hero:has(.omega-earth-provenance[open]) { min-height:1040px; }
+}

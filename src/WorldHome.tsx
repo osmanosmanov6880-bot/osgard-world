@@ -137,6 +137,12 @@ export default function WorldHome({ development = false }: { development?: boole
               <option value="ultra">Ультра · до 4K текстур</option>
             </select>
           </div>
+          <details className="omega-earth-provenance">
+            <summary>Откуда изображение Земли? <span>Спутниковые данные</span></summary>
+            <p>Поверхность: NASA Blue Marble (2004). Огни городов: Black Marble (2016). Облака: архивный снимок, не текущая погода. Освещение и объём — художественная WebGL-симуляция.</p>
+            <a href="https://science.nasa.gov/earth/earth-observatory/blue-marble-next-generation/base-map/"
+              target="_blank" rel="noreferrer noopener">Посмотреть источник NASA ↗</a>
+          </details>
           {omegaMode === 'cinema' && <div className="omega-cinema-chapters" role="group" aria-label="Кинематографические главы">
             {omegaChapters.map((name, index) => <button type="button" key={name} aria-pressed={omegaChapter === index}
               onClick={() => setOmegaChapter(index as GlobeChapter)}>{String(index + 1).padStart(2, '0')} / {name}</button>)}

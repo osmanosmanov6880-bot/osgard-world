@@ -50,7 +50,7 @@
     "qa:osa-media-release": "node scripts/osa-media-release-preflight.mjs --check-dist",
     "qa:osa-narration": "node scripts/osa-narration-readiness.mjs --check-manuscripts",
     "qa:osa-media-files": "node scripts/osa-media-file-audit.mjs --self-test",
-    "postbuild": "node scripts/precompress-brand-transition.mjs && node scripts/build-brand-routes.mjs && node scripts/build-core-curriculum.mjs && node scripts/bundle-skillcred-styles.mjs",
+    "postbuild": "node scripts/precompress-brand-transition.mjs && node scripts/build-brand-routes.mjs && node scripts/build-core-curriculum.mjs && node scripts/bundle-skillcred-styles.mjs && node scripts/omega-earth-assets-audit.mjs dist",
     "qa:brand-gzip": "node scripts/precompress-brand-transition.mjs --check-dist",
     "qa:osa-project": "node --experimental-strip-types scripts/osa-project-smoke.mjs",
     "qa:osa-workspace": "node --experimental-strip-types scripts/osa-workspace-smoke.mjs",
@@ -105,7 +105,9 @@
     "qa:nginx-remix-guard": "bash scripts/check-nginx-remix-guard.sh",
     "qa:nginx-remix-owned": "bash scripts/check-nginx-remix-owned.sh",
     "qa:remix-unity-status": "node scripts/remix-unity-status-check.mjs",
-    "qa:activation": "python3 -m unittest discover -s tests -p test_frontend_activation.py -v"
+    "qa:activation": "python3 -m unittest discover -s tests -p test_frontend_activation.py -v",
+    "prebuild": "node scripts/omega-earth-assets-audit.mjs",
+    "qa:omega-earth": "node scripts/omega-earth-assets-audit.mjs"
   },
   "dependencies": {
     "@types/three": "^0.186.0",
