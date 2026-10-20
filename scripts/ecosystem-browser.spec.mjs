@@ -469,6 +469,8 @@ test('INHERIT living legacy: six-rule engine animates inherited places, survives
   await expect(page.locator('.inherit-legacy-dialog')).toContainText('Тихая роща');
   await expect(page.locator('.inherit-legacy-dialog')).toContainText('Освещённая тропа');
   await expect(page.locator('.inherit-legacy-dialog')).toContainText('Память поколений');
+  await expect(page.locator('.inherit-legacy-memories')).toContainText('Дерево');
+  await expect(page.locator('.inherit-legacy-memories')).toContainText('Тропа');
   await page.screenshot({path:info.outputPath('inherit-legacy-journal.png')});
   await page.locator('.inherit-legacy-close').click();
   await page.locator('[data-game-language="zh"]').click();
