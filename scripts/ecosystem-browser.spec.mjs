@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test'
 
 const surfaces = [
-  ['/', 'world', 'Цифровые продукты,'],
+  ['/', 'world', 'ТЕХНОЛОГИИ,'],
   ['/intelligence', 'intelligence', 'Понимать ИИ.'],
   ['/play', 'play', 'ДОБАВЬ ТЕНЬ.'],
 ]
