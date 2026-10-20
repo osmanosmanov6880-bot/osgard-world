@@ -28,6 +28,63 @@ for (const [path, product, heading] of surfaces) {
   })
 }
 
+test('OSGARD cinema, 3D world and hybrid controls are functional and keyboard-accessible', async ({ page }) => {
+  const errors = []
+  page.on('pageerror', error => errors.push(error.message))
+  await page.emulateMedia({ reducedMotion: 'no-preference' })
+  await page.goto('/')
+  const hero = page.locator('.omega-hero')
+  const mode = page.getByRole('group', { name: 'Выберите режим 3D-сцены' })
+
+  await expect(hero).toHaveAttribute('data-omega-mode', 'hybrid')
+  await expect(mode.getByRole('button', { name: 'Гибрид' })).toHaveAttribute('aria-pressed', 'true')
+  await mode.getByRole('button', { name: 'Кино' }).click()
+  await expect(hero).toHaveAttribute('data-omega-mode', 'cinema')
+  await expect(page.getByRole('group', { name: 'Кинематографические главы' }).getByRole('button')).toHaveCount(3)
+  await page.getByRole('button', { name: '03 / Миры' }).click()
+  await expect(page.getByRole('button', { name: '03 / Миры' })).toHaveAttribute('aria-pressed', 'true')
+
+  await mode.getByRole('button', { name: '3D-мир' }).click()
+  await expect(hero).toHaveAttribute('data-omega-mode', 'world')
+  await expect(hero).toHaveAttribute('data-omega-distance', '5.70')
+  await page.getByRole('button', { name: 'Приблизить глобус' }).click()
+  await expect(hero).toHaveAttribute('data-omega-distance', '5.28')
+  await page.getByRole('button', { name: 'Повернуть Землю вправо' }).click()
+  await expect(hero).toHaveAttribute('data-omega-yaw', '0.38')
+  await hero.focus()
+  await page.keyboard.press('ArrowLeft')
+  await expect(hero).toHaveAttribute('data-omega-yaw', '0.00')
+  await page.getByRole('button', { name: 'Сбросить' }).click()
+  await expect(hero).toHaveAttribute('data-omega-distance', '5.70')
+
+  await page.reload()
+  await expect(hero).toHaveAttribute('data-omega-mode', 'world')
+  await mode.getByRole('button', { name: 'Гибрид' }).click()
+  await expect(hero).toHaveAttribute('data-omega-mode', 'hybrid')
+  await expect(page.getByRole('navigation', { name: 'Три направления экосистемы' }).getByRole('link')).toHaveCount(3)
+  await page.getByRole('button', { name: 'Меньше движения', exact: true }).click()
+  await expect(page.locator('html')).toHaveAttribute('data-motion', 'off')
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true)
+  expect(errors).toEqual([])
+})
+
+test('OSGARD globe fails gracefully without WebGL2 and keeps the experience switcher', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'no-preference' })
+  await page.addInitScript(() => {
+    const base = HTMLCanvasElement.prototype.getContext
+    HTMLCanvasElement.prototype.getContext = function(type, ...args) {
+      if (type === 'webgl2') return null
+      return base.call(this, type, ...args)
+    }
+  })
+  await page.goto('/')
+  await expect(page.locator('.omega-webgl-stage')).toHaveAttribute('data-globe-status', 'fallback', { timeout: 20000 })
+  await expect(page.locator('.omega-globe')).toHaveCount(1)
+  await page.getByRole('button', { name: 'Кино' }).click()
+  await expect(page.locator('.omega-hero')).toHaveAttribute('data-omega-mode', 'cinema')
+  await expect(page.getByRole('link', { name: /Исследовать экосистему/ })).toBeVisible()
+})
+
 test('OSGARD Earth uses real bundled coastlines and WebGL or safe fallback', async ({ page, request }) => {
   const earth = await request.get('/brand/omega-earth-land.json')
   expect(earth.status()).toBe(200)
