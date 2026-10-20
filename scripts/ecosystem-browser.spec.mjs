@@ -690,7 +690,7 @@ test('INHERIT sixteen-episode cycle: genuine placement resolves incident, persis
   await page.locator('.inherit-cycle-entry-open').click();
   await expect(page.locator('.inherit-legacy-dialog')).toBeVisible();
   await expect(page.locator('.inherit-cycle-choice')).toHaveCount(2);
-  await expect(page.locator('.inherit-cycle-nav-button')).toHaveCount(5);
+  await expect(page.locator('.inherit-cycle-nav-button')).toHaveCount(6);
   await page.locator('.inherit-cycle-nav-button').filter({hasText:'Событие'}).click();
   await expect(page.locator('.inherit-cycle-journal')).toBeFocused();
   await page.locator('.inherit-cycle-choice').first().click();
@@ -799,4 +799,87 @@ test('INHERIT account read-only cannot use episode choices or private return not
   await expect(page.locator('.inherit-return-status')).toContainText('仅用于本地世界');
   expect(await page.evaluate(()=>window.InheritGame.snapshot().pending||[])).toEqual([]);
   expect(errors).toEqual([]);
+});
+
+
+test('INHERIT first-time guide teaches actual placing and passing without fake world writes',async({page},info)=>{
+ const errors=await prepareStandaloneGame(page);
+ await page.goto('/games/inherit/?lang=ru',{waitUntil:'domcontentloaded'});
+ const guide=page.locator('.inherit-first-steps');
+ await expect(guide).toBeVisible();
+ await expect(guide).toHaveAttribute('data-step','1');
+ await guide.locator('.inherit-first-steps-primary').click();
+ await expect(guide).toHaveAttribute('data-step','2');
+ await guide.locator('.inherit-first-steps-primary').click();
+ await expect(page.locator('#world')).toBeFocused();
+ await page.locator('#world').press('Enter');
+ await expect(page.locator('#budget')).toHaveText('99');
+ await expect(guide).toHaveAttribute('data-step','3');
+ await guide.locator('.inherit-first-steps-primary').click();
+ await expect(page.locator('#pass')).toBeFocused();
+ await page.locator('#pass').click();
+ await expect.poll(()=>page.evaluate(()=>window.InheritGame.snapshot().generation)).toBe(174);
+ await expect(guide).toBeHidden();
+ expect(await page.evaluate(()=>localStorage.getItem('inherit:welcome-completed:v2'))).toBe('yes');
+ await page.reload({waitUntil:'domcontentloaded'});
+ await expect(guide).toBeHidden();
+ expect(errors).toEqual([]);
+});
+
+test('INHERIT voluntary research requires consent and supports real offline survey, export and deletion',async({page})=>{
+ const errors=await prepareStandaloneGame(page);
+ await page.goto('/games/inherit/?lang=ru',{waitUntil:'domcontentloaded'});
+ const key='inherit:pilot-research:v1';
+ expect(await page.evaluate(k=>localStorage.getItem(k),key)).toBeNull();
+ await page.locator('#world').focus();
+ await page.locator('#world').press('Enter');
+ expect(await page.evaluate(k=>localStorage.getItem(k),key)).toBeNull();
+ await page.locator('.inherit-legacy-trigger').click();
+ const panel=page.locator('.inherit-research-panel');
+ await expect(panel).toBeVisible();
+ await expect(panel.locator('.inherit-research-primary').first()).toBeDisabled();
+ await panel.locator('.inherit-research-consent input').check();
+ await panel.locator('.inherit-research-consent button').click();
+ await expect(panel.locator('.inherit-research-active')).toBeVisible();
+ expect(await page.evaluate(k=>JSON.parse(localStorage.getItem(k)).events.length,key)).toBe(1);
+ await page.locator('.inherit-legacy-close').click();
+ await page.locator('#world').focus();
+ await page.locator('#world').press('Enter');
+ await expect.poll(()=>page.evaluate(()=>window.InheritResearchUI.getSummary().counts.trace_placed)).toBe(1);
+ await page.locator('#pass').click();
+ await expect.poll(()=>page.evaluate(()=>window.InheritResearchUI.getSummary().counts.generation_advanced_observed)).toBe(1);
+ await page.locator('.inherit-legacy-trigger').click();
+ const answers={clarity:'5',returnIntent:'4',meaning:'5',reason:'story',priceCents:'499'};
+ for(const [name,value] of Object.entries(answers))await panel.locator('select[name="'+name+'"]').selectOption(value);
+ await panel.locator('.inherit-research-survey button[type="submit"]').click();
+ await expect(panel.locator('.inherit-research-survey .inherit-research-status')).toContainText('сохранены');
+ const exported=await page.evaluate(()=>window.InheritResearchUI.getExport());
+ expect(exported.kind).toBe('voluntary-pilot-export');
+ expect(exported.events.some(e=>e.type==='survey_submitted'&&e.data.priceCents===499)).toBe(true);
+ expect(JSON.stringify(exported)).not.toContain('username');
+ const download=page.waitForEvent('download');
+ await panel.locator('.inherit-research-export').click();
+ expect((await download).suggestedFilename()).toMatch(/inherit-pilot-.*\.json/);
+ await page.locator('.inherit-legacy-close').click();
+ await page.locator('[data-game-language="zh"]').click();
+ await page.locator('.inherit-legacy-trigger').click();
+ await expect(panel.locator('.inherit-research-title')).toContainText('帮助改进');
+ await panel.locator('.inherit-research-erase').click();
+ expect(await page.evaluate(k=>localStorage.getItem(k),key)).toBeNull();
+ await page.reload({waitUntil:'domcontentloaded'});
+ expect(await page.evaluate(()=>window.InheritResearchUI.enabled())).toBe(false);
+ expect(errors).toEqual([]);
+});
+
+test('INHERIT account read-only keeps voluntary study disabled and gameplay rights unchanged',async({page})=>{
+ const errors=await prepareStandaloneGame(page);
+ await page.goto('/games/inherit/?mode=account&lang=en',{waitUntil:'domcontentloaded'});
+ await page.locator('.inherit-legacy-trigger').click();
+ const research=page.locator('.inherit-research-panel');
+ await expect(research).toContainText('Research is limited to local worlds');
+ await expect(research.locator('.inherit-research-consent')).toBeHidden();
+ expect(await page.evaluate(()=>window.InheritGame.snapshot().pending||[])).toEqual([]);
+ expect(await page.evaluate(()=>localStorage.getItem('inherit:pilot-research:v1'))).toBeNull();
+ await expect(page.locator('.inherit-first-steps')).toBeHidden();
+ expect(errors).toEqual([]);
 });

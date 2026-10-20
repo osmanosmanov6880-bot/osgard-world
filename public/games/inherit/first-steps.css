@@ -1,0 +1,21 @@
+/* INHERIT first-use coach: small, skippable, and keyboard accessible. */
+.inherit-first-steps{position:absolute;z-index:12;left:clamp(18px,6vw,98px);top:clamp(205px,24vh,290px);
+ width:min(310px,38vw);padding:16px 17px;border:1px solid rgba(238,208,153,.62);
+ border-radius:9px;background:linear-gradient(140deg,rgba(5,24,31,.94),rgba(12,48,46,.88));
+ box-shadow:0 15px 50px rgba(0,12,19,.38);backdrop-filter:blur(12px)}
+.inherit-first-steps[hidden]{display:none!important}
+.inherit-first-steps-title{font:600 23px/1.15 'Playfair Display',Georgia,serif;color:#f6ead2;margin:0 0 9px}
+.inherit-first-steps-progress{font:700 12px/1.5 Manrope,system-ui,sans-serif;color:#eacb90}
+.inherit-first-steps-description{font:11px/1.65 Manrope,system-ui,sans-serif;color:#c4d6cb;margin:8px 0}
+.inherit-first-steps-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:13px}
+.inherit-first-steps-primary,.inherit-first-steps-skip{min-height:40px;padding:9px 12px;border-radius:5px;
+ font:700 11px/1.4 Manrope,system-ui,sans-serif;cursor:pointer}
+.inherit-first-steps-primary{background:#e9cd95;color:#143429;border:1px solid #f5ddb2}
+.inherit-first-steps-skip{background:transparent;color:#e2dbc9;border:1px solid rgba(225,218,194,.37)}
+.inherit-first-steps-primary:hover{background:#f6e5b8}
+.inherit-first-steps-skip:hover{background:rgba(255,255,255,.1)}
+.inherit-first-steps button:focus-visible{outline:3px solid #fff0bf;outline-offset:3px}
+@media(max-width:740px){.inherit-first-steps{top:clamp(136px,19vh,205px);left:13px;right:13px;width:min(320px,calc(100vw - 26px));padding:12px 13px}
+ .inherit-first-steps-title{font-size:21px}.inherit-first-steps-actions button{min-height:42px}}
+@media(max-width:360px){.inherit-first-steps{top:125px;width:calc(100vw - 24px)}}
+@media(prefers-reduced-motion:reduce){.inherit-first-steps *{transition:none!important}}
