@@ -9,8 +9,9 @@ function day(value){
 }
 function clamp(v,max=1000000){return Number.isSafeInteger(v)&&v>=0?Math.min(v,max):0}
 function summary(world){
- return {generation:clamp(world?.generation),objects:clamp(world?.metrics?.objects,10000),
-  links:clamp(world?.metrics?.connections,10000),discoveries:clamp(world?.unlocked,12)};
+ const metrics=world?.metrics||world||{};
+ return {generation:clamp(world?.generation),objects:clamp(metrics.objects,10000),
+  links:clamp(metrics.connections??metrics.links,10000),discoveries:clamp(world?.unlocked??metrics.discoveries,12)};
 }
 function normalize(raw){
  if(!raw||raw.v!==2||raw.enabled!==true||!day(raw.last?.day))return null;
