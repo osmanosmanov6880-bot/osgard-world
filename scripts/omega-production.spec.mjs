@@ -64,6 +64,25 @@ test('public cinema, 3D-world and hybrid modes work and persist', async ({ page 
   await page.screenshot({ path: testInfo.outputPath('omega-production-interactive.png') })
 })
 
+test('public GPU detail selector controls real render settings without breaking pages', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'no-preference' })
+  await getResponse(page)
+  const picker = page.getByRole('combobox', { name: 'Качество 3D-глобуса' })
+  const stage = page.locator('.omega-webgl-stage')
+  await expect(picker).toHaveValue('auto')
+  await picker.selectOption('ultra')
+  await expect(stage).toHaveAttribute('data-earth-texture', '4096')
+  await expect(stage).toHaveAttribute('data-globe-status', /^(webgl|fallback)$/, { timeout: 20000 })
+  await picker.selectOption('eco')
+  await expect(stage).toHaveAttribute('data-earth-texture', '512')
+  await picker.selectOption('auto')
+  await expect(stage).toHaveAttribute('data-globe-quality', 'auto')
+  await page.getByRole('button', { name: 'Кино' }).click()
+  await page.getByRole('button', { name: '03 / Миры' }).click()
+  await expect(page.getByRole('button', { name: '03 / Миры' })).toHaveAttribute('aria-pressed', 'true')
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true)
+})
+
 test('public website provides non-WebGL low-motion fallback and product routes', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await getResponse(page)
