@@ -79,7 +79,7 @@ check('a bounded 512-event local journal does not prove missing past sessions',(
  assert.equal(r.retention.d1.verifiedNo,0);
  assert.equal(r.retention.d1.unknown,1);
 });
-check('but a positively observed return can count even in a bounded journal',()=>{
+check('a capped journal with a missing D1 session is unresolved, not a negative or positive',()=>{
  let s=visit(create(8),'2026-10-02');
  for(let i=0;i<545;i++)s=core.record(s,'journal_opened',day('2026-10-03'));
  const r=aggregate([exported(s,'2026-10-20')],base);
