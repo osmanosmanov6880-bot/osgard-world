@@ -29,6 +29,9 @@ for (const [path, product, heading] of surfaces) {
 }
 
 test('OSGARD cinema, 3D world and hybrid controls are functional and keyboard-accessible', async ({ page }) => {
+  // Multiple WebGL scene transitions and a full reload cost >30 seconds on
+  // saturated mobile CI runners. Keep every real pointer and keyboard assertion.
+  test.slow()
   const errors = []
   page.on('pageerror', error => errors.push(error.message))
   await page.emulateMedia({ reducedMotion: 'no-preference' })
