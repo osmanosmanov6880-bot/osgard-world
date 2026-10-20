@@ -150,7 +150,7 @@ function orbit(radiusX: number, radiusY: number, color: number, opacity: number,
   return line
 }
 
-function decorateScene(scene: THREE.Scene, detail: number) {
+function decorateScene(scene: THREE.Scene, detail: number): { key: THREE.DirectionalLight; fill: THREE.DirectionalLight } {
   let seed = 184731
   const next = () => {
     seed = (1664525 * seed + 1013904223) >>> 0
@@ -175,6 +175,7 @@ function decorateScene(scene: THREE.Scene, detail: number) {
   const fill = new THREE.DirectionalLight(0x526dff, 1.45)
   fill.position.set(3, -1.8, -2)
   scene.add(fill)
+  return { key, fill }
 }
 
 function disposeScene(scene: THREE.Scene) {
@@ -361,26 +362,35 @@ export default function OmegaGlobe({ mode, chapter, view, onViewChange }: OmegaG
         if (!gl) throw new Error('WebGL2 not supported')
         renderer = new THREE.WebGLRenderer({ canvas, context: gl, antialias: true, alpha: true, powerPreference: 'low-power' })
         renderer.outputColorSpace = THREE.SRGBColorSpace
+        renderer.toneMapping = THREE.ACESFilmicToneMapping
+        renderer.toneMappingExposure = 1.32
         renderer.setClearColor(0x000000, 0)
         scene = new THREE.Scene()
         camera = new THREE.PerspectiveCamera(45, 1, 0.1, 80)
         camera.position.set(0, 0, 5.7)
-        decorateScene(scene, mobile ? 90 : 230)
+        const lighting = decorateScene(scene, mobile ? 90 : 230)
+        keyLight = lighting.key
+        fillLight = lighting.fill
 
         globe = new THREE.Group()
         const geography = new THREE.Group()
         geography.rotation.y = -Math.PI / 2
         globe.add(geography)
         const landTexture = createLandTexture(data, mobile ? 1024 : 2048)
+        const cityLights = createCityLightsTexture(data, mobile)
         const sphere = new THREE.Mesh(
           new THREE.SphereGeometry(1.55, mobile ? 48 : 80, mobile ? 32 : 56),
           new THREE.MeshStandardMaterial({
-            map: landTexture, metalness: 0.18, roughness: 0.78,
-            emissive: 0x07506a, emissiveIntensity: 0.38,
+            map: landTexture, metalness: 0.12, roughness: 0.84,
+            emissiveMap: cityLights, emissive: 0x72e5ff, emissiveIntensity: 0.93,
           }),
         )
         geography.add(sphere)
         geography.add(earthGrid())
+        const clouds = createCloudLayers(mobile)
+        cloudInner = clouds.inner
+        cloudOuter = clouds.outer
+        geography.add(clouds.group)
 
         const atmosphere = new THREE.Mesh(
           new THREE.SphereGeometry(1.64, mobile ? 40 : 64, mobile ? 24 : 40),
@@ -421,7 +431,7 @@ export default function OmegaGlobe({ mode, chapter, view, onViewChange }: OmegaG
         resize()
         sky.classList.add('omega-webgl-ready')
         setStatus('webgl')
-        frameId = requestAnimationFrame(animate)
+        syncRendering()
       } catch {
         if (alive) {
           sky.classList.remove('omega-webgl-ready')
@@ -432,13 +442,20 @@ export default function OmegaGlobe({ mode, chapter, view, onViewChange }: OmegaG
     const observer = new IntersectionObserver(entries => {
       visible = Boolean(entries[0]?.isIntersecting)
       if (visible) void init()
+      syncRendering()
     }, { rootMargin: '180px' })
     observer.observe(hero)
-    const mutation = new MutationObserver(() => { if (allowed()) void init() })
+    const mutation = new MutationObserver(() => { if (allowed()) void init(); syncRendering() })
     mutation.observe(document.documentElement, { attributes: true, attributeFilter: ['data-motion'] })
-    const onMotion = () => { if (allowed()) void init() }
+    const onMotion = () => { if (allowed()) void init(); syncRendering() }
+    const onVisibility = () => syncRendering()
     media.addEventListener('change', onMotion)
+    document.addEventListener('visibilitychange', onVisibility)
+    hero.addEventListener('pointerdown', onDown)
+    hero.addEventListener('pointerup', onUp)
+    hero.addEventListener('pointercancel', onUp)
     hero.addEventListener('pointermove', onMove, { passive: true })
+    hero.addEventListener('wheel', onWheel, { passive: false })
     hero.addEventListener('pointerleave', onLeave)
     const contextLost = (event: Event) => {
       event.preventDefault()
@@ -455,7 +472,12 @@ export default function OmegaGlobe({ mode, chapter, view, onViewChange }: OmegaG
       mutation.disconnect()
       resizeObserver?.disconnect()
       media.removeEventListener('change', onMotion)
+      document.removeEventListener('visibilitychange', onVisibility)
+      hero.removeEventListener('pointerdown', onDown)
+      hero.removeEventListener('pointerup', onUp)
+      hero.removeEventListener('pointercancel', onUp)
       hero.removeEventListener('pointermove', onMove)
+      hero.removeEventListener('wheel', onWheel)
       hero.removeEventListener('pointerleave', onLeave)
       canvas.removeEventListener('webglcontextlost', contextLost)
       sky.classList.remove('omega-webgl-ready')
