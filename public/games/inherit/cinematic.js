@@ -14,6 +14,7 @@
       guideOpen: 'Развернуть правила и сведения о сохранении',
       menuOpen: 'Открыть дополнительные действия',
       performance: 'Переключить качество графики',
+      undo: '↶  Отменить след', undoHint: 'Отменить последнюю незавершённую отметку',
     },
     en: {
       rules: 'How to play', hideRules: 'Hide guide', menu: 'All options',
@@ -23,6 +24,7 @@
       guideOpen: 'Expand guide and save information',
       menuOpen: 'Open additional actions',
       performance: 'Switch graphics quality',
+      undo: '↶  Undo trace', undoHint: 'Undo the last unsubmitted trace',
     },
     zh: {
       rules: '游戏指南', hideRules: '收起指南', menu: '更多功能',
@@ -32,6 +34,7 @@
       guideOpen: '展开游戏指南与存档说明',
       menuOpen: '打开其他操作',
       performance: '切换画质',
+      undo: '↶  撤销痕迹', undoHint: '撤销最后一条未提交的痕迹',
     },
   };
   const lang = () => copy[ui()?.getLanguage?.()] ? ui().getLanguage() : 'ru';
@@ -63,7 +66,7 @@
   chapter.textContent = label('chapter');
   world.appendChild(chapter);
   const guide = doc.querySelector('.inherit-guide');
-  let guideButton = null, menuButton = null, menuPanel = null, menuOpen = false;
+  let guideButton = null, menuButton = null, menuPanel = null, menuOpen = false, undoButton = null;
   const accountMode = new URLSearchParams(location.search).get('mode') === 'account';
   const compactAllowed = !accountMode && !storage?.recovered && !storage?.ephemeral;
 
@@ -81,6 +84,10 @@
     if (menuPanel) {
       const heading = menuPanel.querySelector('.cine-utility-heading');
       if (heading) heading.textContent = label('menuTitle');
+    }
+    if (undoButton) {
+      undoButton.textContent=label('undo');
+      undoButton.setAttribute('aria-label',label('undoHint'));
     }
     qualityButton.textContent = quality === 'eco' ? '◉  ' + label('quality') : '✧  ' + label('cinema');
     qualityButton.setAttribute('aria-label', label('performance'));
@@ -122,6 +129,18 @@
   function dockControls() {
     const dock = doc.querySelector('.dock');
     if (!dock) return;
+    // Touch-accessible undo reuses the already-verified keyboard mutation path.
+    const tools = dock.querySelector('.tools');
+    if (tools && !tools.querySelector('.cine-undo')) {
+      const undo = doc.createElement('button');
+      undo.type='button'; undo.className='cine-undo';
+      tools.appendChild(undo); undoButton=undo;
+      undo.addEventListener('click', () => {
+        const snapshot=window.InheritGame?.snapshot?.();
+        if (!snapshot?.pending?.length) { window.InheritGame?.notify?.(lang()==='zh'?'没有可撤销的痕迹':lang()==='en'?'No unsubmitted trace to undo':'Нет незавершённых следов для отмены');return; }
+        world.dispatchEvent(new KeyboardEvent('keydown',{key:'z',ctrlKey:true,bubbles:true,cancelable:true}));
+      });
+    }
     // The shared-account browser journey uses directly visible history, export and refresh actions.
     // Keep those controls discoverable instead of trapping them in a collapsed utility menu.
     if (accountMode) {
