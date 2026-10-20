@@ -950,6 +950,10 @@ test('INHERIT pilot console analyzes voluntary files locally, censors future eve
  const secondDownload=page.waitForEvent('download');
  await page.locator('#save-md').click();
  expect((await secondDownload).suggestedFilename()).toBe('inherit-pilot-summary-2026-10-10.md');
+ await page.locator('#clear-data').click();
+ await expect(page.locator('#results')).toBeHidden();
+ await expect(page.locator('#files')).toHaveJSProperty('value','');
+ await expect(page.locator('#status')).toContainText('убраны из этой вкладки');
  expect(posted).toEqual([]);
  expect(errors).toEqual([]);
 });
