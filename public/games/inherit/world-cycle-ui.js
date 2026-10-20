@@ -212,6 +212,32 @@ const erase=create('button','inherit-return-erase');erase.type='button';
 returnActions.append(consent,erase);returnSection.append(returnHead,returnInfo,returnStatus,returnActions);
 chapter.append(brow,heading,summary,choiceLabel,options,consequence,phaseHead,phaseDesc,facts,badgeHead,unlockCount,milestoneList,truth,returnSection);
 insertAfter.after(chapter);
+// Navigable, keyboard-accessible journal sections prevent long mobile scrolling.
+const navigation=create('nav','inherit-cycle-nav');navigation.setAttribute('aria-label','Journal navigation');
+const navLabels={
+ ru:{chapter:'Задания',incident:'Событие',legacy:'Наследие',milestones:'Открытия',notebook:'Дневник'},
+ en:{chapter:'Missions',incident:'Episode',legacy:'Legacy',milestones:'Discoveries',notebook:'Notebook'},
+ zh:{chapter:'任务',incident:'事件',legacy:'传承',milestones:'发现',notebook:'日志'}
+};
+const navButtons=[];
+for(const [id,target] of [
+ ['chapter',d.querySelector('.inherit-chapter-panel')],
+ ['incident',chapter],
+ ['legacy',d.querySelector('.inherit-legacy-section-title')],
+ ['milestones',badgeHead],
+ ['notebook',returnSection]
+]){
+ if(!target)continue;
+ const button=create('button','inherit-cycle-nav-button');button.type='button';
+ button.addEventListener('click',()=>{
+   target.setAttribute('tabindex','-1');
+   target.scrollIntoView?.({block:'start',behavior:'instant'});
+   target.focus?.({preventScroll:true});
+ });
+ navigation.appendChild(button);navButtons.push({id,button});
+}
+const subtitle=d.querySelector('.inherit-legacy-subtitle');
+if(subtitle)subtitle.after(navigation);
 let initialized=false,book=null,lastDelta=null,storageUnavailable=false,lastEvent=null,scheduled=false;
 let stored=null;try{stored=window.InheritPersistence||window.localStorage}catch{storageUnavailable=true}
 function local(){return !game.accountMode?.()}
@@ -298,6 +324,7 @@ function renderReturn(state,strings){
 function render(){
  noticeIfReturned();
  const current=engine.evaluate(game.snapshot()),strings=t(),incident=current.event;
+ for(const item of navButtons)item.button.textContent=navLabels[locale()][item.id];
  const episode=strings.events[incident.id]||[incident.id,''];
  d.body.dataset.inheritSeason=current.season;
  d.body.dataset.inheritStage=current.stage;
