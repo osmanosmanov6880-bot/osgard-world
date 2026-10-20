@@ -22,19 +22,21 @@ function derive(world){
  const generation=validGeneration(world?.generation)?world.generation:0;
  const objects=(Array.isArray(world?.objects)?world.objects:[]).slice(0,10000).map(normalized).filter(Boolean);
  const counts=Object.create(null);for(const t of VALID)counts[t]=0;
- const historyFrames=Array.isArray(world?.snapshots)?world.snapshots.filter(f=>validGeneration(f?.generation)&&f.generation<=generation&&Array.isArray(f.objects)).slice(0,512).sort((a,b)=>a.generation-b.generation):[];
- const knownSince=new Map();
+ const historyFrames=Array.isArray(world?.snapshots)?world.snapshots.filter(f=>validGeneration(f?.generation)&&f.generation<=generation&&Array.isArray(f.objects)).sort((a,b)=>a.generation-b.generation).slice(0,512):[];
+ const knownSince=new Map();let inspected=0,truncatedSnapshots=false;
  for(const frame of historyFrames){
    for(const raw of frame.objects.slice(0,10000)){
+     if(++inspected>250000){truncatedSnapshots=true;break}
      const o=normalized(raw);if(o&&!knownSince.has(key(o)))knownSince.set(key(o),frame.generation);
    }
+   if(truncatedSnapshots)break;
  }
  const enriched=objects.map((o,i)=>{
    counts[o.type]++;
    const since=knownSince.get(key(o));
    return {...o,index:i,since:since===undefined?null:since,age:since===undefined?null:Math.max(0,generation-since)};
  });
- const effects=[],totals=Object.create(null);
+ const effects=[],totals=Object.create(null);let truncatedCells=false;
  for(const rule of RULES){
    const primary=enriched.filter(o=>o.type===rule.first);
    const nearby=enriched.filter(o=>o.type===rule.second);
@@ -46,7 +48,7 @@ function derive(world){
      const bucket=Math.floor(o.x/cell)+':'+Math.floor(o.y/cell);
      if(!index.has(bucket))index.set(bucket,[]);
      const values=index.get(bucket);
-     if(values.length<64)values.push(o);
+     if(values.length<64)values.push(o);else truncatedCells=true;
    }
    for(const a of primary){
      let best=null,bestDistance=rule.radius*rule.radius;
@@ -81,7 +83,7 @@ function derive(world){
  const memoryCount=mature.length;
  const total=Object.values(totals).reduce((sum,n)=>sum+n,0);
  return {generation,objects:objects.length,counts:Object.fromEntries(Object.entries(counts)),total,totals:Object.fromEntries(Object.entries(totals)),effects,memory,memoryCount,available,hasSnapshots:historyFrames.length>0,
-   limited:world?.objects?.length>10000||world?.snapshots?.length>512};
+   limited:Boolean(world?.objects?.length>10000||world?.snapshots?.length>512||truncatedCells||truncatedSnapshots)};
 }
 root.InheritLegacyEngine=Object.freeze({derive, rules:RULES,types:[...VALID]});
 if(typeof module!=='undefined'&&module.exports)module.exports=root.InheritLegacyEngine;
