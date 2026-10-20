@@ -13,10 +13,10 @@ const viewports = [
   { name: 'mobile', width: 390, height: 844 }
 ]
 const routes = [
-  { name: 'world', path: '/', selector: '.world-home', heading: /Цифровые продукты/, product: 'OSGARD' },
+  { name: 'world', path: '/', selector: '.world-home', heading: /ТЕХНОЛОГИИ|Цифровые продукты/i, product: 'OSGARD' },
   { name: 'intelligence', path: '/intelligence', selector: '.intelligence-home', heading: /Понимать ИИ/, product: 'Intelligence' },
   { name: 'play', path: '/play', selector: '.play-home', heading: /ДОБАВЬ ТЕНЬ/, product: 'Play' },
-  { name: 'portal', path: '/portal', selector: '.world-home', heading: /Цифровые продукты/, product: 'OSGARD' },
+  { name: 'portal', path: '/portal', selector: '.world-home', heading: /ТЕХНОЛОГИИ|Цифровые продукты/i, product: 'OSGARD' },
   { name: 'academy', path: '/academy', selector: 'body' },
   { name: 'lectures', path: '/lectures', selector: '.lecture-library' },
   { name: 'lesson-detail', path: '/lectures/intelligence-and-imitation', selector: '.osa-lesson-page' },
@@ -350,7 +350,7 @@ try {
   const accessibilityPage = await accessibilityContext.newPage()
   try {
     await accessibilityPage.goto(base + '/', { waitUntil: 'domcontentloaded', timeout: 25000 })
-    await accessibilityPage.getByRole('heading', { level: 1, name: /Цифровые продукты/ }).waitFor({ state: 'visible', timeout: 8000 })
+    await accessibilityPage.getByRole('heading', { level: 1, name: /ТЕХНОЛОГИИ|Цифровые продукты/i }).waitFor({ state: 'visible', timeout: 8000 })
     await accessibilityPage.keyboard.press('Tab')
     const skipFocused = await accessibilityPage.evaluate(() => document.activeElement?.matches('.brand-skip') === true)
     if (!skipFocused) problems.push('keyboard: first Tab did not focus the skip link')
