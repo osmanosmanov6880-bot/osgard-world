@@ -396,3 +396,31 @@ test('INHERIT conflict leaves the exact pending generation available for export 
   await expect(page.locator('#budget')).toHaveText('98')
   expect(errors).toEqual([])
 })
+
+test('INHERIT RU/EN/ZH switches in place without losing placed traces or breaking mobile layout',async({page})=>{
+  const errors=await prepareStandaloneGame(page);
+  await page.goto('/games/inherit/?lang=zh',{waitUntil:'domcontentloaded'});
+  await expect(page.locator('html')).toHaveAttribute('lang','zh-CN');
+  await expect(page.locator('[data-game-language="zh"]')).toHaveAttribute('aria-pressed','true');
+  await expect(page.locator('#pass')).toContainText('传承这个世界');
+  await expect(page.locator('.hero h1')).toContainText('有人修了一条路');
+  const world=page.locator('#world');
+  await world.focus();
+  await world.press('Enter');
+  await expect(page.locator('#budget')).toHaveText('99');
+  await expect(page.locator('#objects > .placed')).toHaveCount(1);
+  const original=await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()));
+  await page.locator('[data-game-language="en"]').click();
+  await expect(page.locator('html')).toHaveAttribute('lang','en');
+  await expect(page.locator('#pass')).toContainText('Pass this world on');
+  await page.locator('[data-game-language="ru"]').click();
+  await expect(page.locator('html')).toHaveAttribute('lang','ru');
+  await expect(page.locator('#pass')).toContainText('Завершить поколение');
+  await page.locator('[data-game-language="zh"]').click();
+  await expect(page.locator('html')).toHaveAttribute('lang','zh-CN');
+  await expect(page.locator('#pass')).toContainText('传承这个世界');
+  expect(await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()))).toBe(original);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);
+  expect(await page.evaluate(()=>localStorage.getItem('osgard:game-language'))).toBe('zh');
+  expect(errors).toEqual([]);
+});
