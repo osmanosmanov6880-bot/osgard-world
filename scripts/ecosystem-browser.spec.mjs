@@ -1097,6 +1097,11 @@ test('INHERIT R7: only a real server-confirmed generation opens the star-lit han
  await page.locator('#pass').click();
  await expect(moment).toBeVisible();
  await expect(moment).toHaveAttribute('data-verification','shared-server-confirmed');
+ // A post-generation receipt must not intercept the existing legacy entry
+ // on a touch viewport; this was discovered by the full mobile CI suite.
+ await page.locator('.inherit-legacy-trigger').click();
+ await expect(page.locator('.inherit-legacy-dialog')).toBeVisible();
+ await page.locator('.inherit-legacy-close').click();
  await expect(moment.locator('.inherit-handoff-route')).toContainText('173 → 174');
  await expect(moment.locator('.inherit-handoff-source')).toContainText('Сервер подтвердил');
  await expect(moment.locator('.inherit-handoff-stat').first()).toContainText('1');
