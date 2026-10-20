@@ -23,9 +23,11 @@ export function makeSatelliteCloudSystem(
   const steps = tier === 'ultra' ? 10 : tier === 'eco' ? 3 : 6
   const group = new THREE.Group()
   const cameraLocal = new THREE.Vector3(0, 0, 5.7)
+  const localSun = new THREE.Vector3()
+  const worldQuaternion = new THREE.Quaternion()
   const uniforms = {
     uCloud: { value: image },
-    uSun: { value: sun },
+    uSunLocal: { value: localSun },
     uCameraLocal: { value: cameraLocal },
     uWind: { value: 0 },
     uOpacity: { value: tier === 'ultra' ? 0.83 : 0.7 },
@@ -50,7 +52,7 @@ export function makeSatelliteCloudSystem(
     `,
     fragmentShader: `
       uniform sampler2D uCloud;
-      uniform vec3 uSun;
+      uniform vec3 uSunLocal;
       uniform vec3 uCameraLocal;
       uniform float uWind;
       uniform float uOpacity;
@@ -86,7 +88,7 @@ export function makeSatelliteCloudSystem(
         // Spherical cloud shell, 1.573 to 1.665 above 1.55-radius land sphere.
         float pathLength = min(0.34, 0.092 / incidence);
         float stepSize = pathLength / float(CLOUD_STEPS);
-        vec3 light = normalize(uSun);
+        vec3 light = normalize(uSunLocal);
         float through = 1.0;
         vec3 scattering = vec3(0.0);
         float forward = pow(max(dot(-ray, light), 0.0), 8.0);
@@ -106,8 +108,7 @@ export function makeSatelliteCloudSystem(
             + smoothNoise(point * 28.0 - vec3(0.0, uWind * 0.018, 0.)) * 0.28;
           float density = coverage * profile * mix(0.35, 1.4, detail);
           float sampleAlpha = 1.0 - exp(-density * 10.8 * stepSize);
-          float dayLight = smoothstep(-0.30, 0.50,
-            dot(normalize(mat3(modelMatrix) * point), light));
+          float dayLight = smoothstep(-0.30, 0.50, dot(normalize(point), light));
           float scatteringLight = 0.16 + dayLight * 0.79 + forward * dayLight * 0.25;
           vec3 shaded = mix(vec3(0.12, 0.23, 0.42), vec3(0.87, 0.96, 1.0),
             clamp(scatteringLight, 0.0, 1.0));
@@ -148,6 +149,8 @@ export function makeSatelliteCloudSystem(
       group.updateWorldMatrix(true, true)
       cameraLocal.copy(camera.position)
       outer.worldToLocal(cameraLocal)
+      outer.getWorldQuaternion(worldQuaternion)
+      localSun.copy(sun).applyQuaternion(worldQuaternion.invert()).normalize()
       uniforms.uWind.value = elapsedSeconds
     },
   }
