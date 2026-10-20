@@ -242,12 +242,44 @@ export default function OmegaGlobe({ mode, chapter, view, onViewChange }: OmegaG
     const mobile = window.matchMedia('(max-width: 760px)').matches
     const allowed = () => !media.matches && document.documentElement.dataset.motion !== 'off'
     const onMove = (event: PointerEvent) => {
-      if (event.pointerType === 'touch') return
+      if (modeRef.current === 'world' && drag?.id === event.pointerId) {
+        viewRef.current = {
+          yaw: drag.start.yaw + (event.clientX - drag.x) * 0.008,
+          pitch: THREE.MathUtils.clamp(drag.start.pitch + (event.clientY - drag.y) * 0.004, -0.95, 0.95),
+          distance: drag.start.distance,
+        }
+        return
+      }
+      if (event.pointerType === 'touch' || modeRef.current === 'world') return
       const bounds = hero.getBoundingClientRect()
       targetX = THREE.MathUtils.clamp((event.clientX - bounds.left) / bounds.width * 2 - 1, -1, 1)
       targetY = THREE.MathUtils.clamp((event.clientY - bounds.top) / bounds.height * 2 - 1, -1, 1)
     }
+    const onDown = (event: PointerEvent) => {
+      if (modeRef.current !== 'world' || event.pointerType === 'touch' || event.button !== 0) return
+      const target = event.target
+      if (target instanceof Element && target.closest('a, button, input, textarea, .omega-copy, .omega-gate, .omega-experience-panel')) return
+      drag = { id: event.pointerId, x: event.clientX, y: event.clientY, start: { ...viewRef.current } }
+      hero.setPointerCapture(event.pointerId)
+    }
+    const onUp = (event: PointerEvent) => {
+      if (drag?.id !== event.pointerId) return
+      drag = null
+      onViewChangeRef.current({ ...viewRef.current })
+      if (hero.hasPointerCapture(event.pointerId)) hero.releasePointerCapture(event.pointerId)
+    }
     const onLeave = () => { targetX = 0; targetY = 0 }
+    const onWheel = (event: WheelEvent) => {
+      if (modeRef.current !== 'world' || event.ctrlKey) return
+      const target = event.target
+      if (target instanceof Element && target.closest('.omega-copy, .omega-gate, .omega-experience-panel')) return
+      event.preventDefault()
+      viewRef.current = {
+        ...viewRef.current,
+        distance: THREE.MathUtils.clamp(viewRef.current.distance + Math.sign(event.deltaY) * 0.26, 3.1, 8),
+      }
+      onViewChangeRef.current({ ...viewRef.current })
+    }
     const resize = () => {
       if (!renderer || !camera) return
       const bounds = sky.getBoundingClientRect()
@@ -260,22 +292,58 @@ export default function OmegaGlobe({ mode, chapter, view, onViewChange }: OmegaG
       renderer.render(scene!, camera)
     }
     const animate = (time: number) => {
-      if (!alive || !renderer || !scene || !camera || !globe) return
-      frameId = requestAnimationFrame(animate)
-      if (!visible || document.hidden || !allowed()) return
+      frameId = 0
+      if (!alive || !renderer || !scene || !camera || !globe || !visible || document.hidden || !allowed()) return
       const interval = mobile ? 33.4 : 16.7
-      if (time - lastFrame < interval) return
       const delta = Math.min(50, Math.max(0, time - (lastFrame || time)))
-      lastFrame = time
-      turn += delta * 0.000055
-      x += (targetX - x) * 0.025
-      y += (targetY - y) * 0.025
-      globe.rotation.y = turn
-      globe.rotation.x = -0.14 + y * 0.075
-      camera.position.x = x * 0.17
-      camera.position.y = -y * 0.13
-      camera.lookAt(0, 0, 0)
-      renderer.render(scene, camera)
+      if (time - lastFrame >= interval) {
+        lastFrame = time
+        const currentMode = modeRef.current
+        const currentChapter = chapterRef.current
+        const chapterTarget = currentMode === 'cinema' ? currentChapter * 0.85 : 0
+        chapterFocus += (chapterTarget - chapterFocus) * 0.026
+        if (currentMode !== 'world') turn += delta * (currentMode === 'cinema' ? 0.00013 : 0.000055)
+        const currentView = viewRef.current
+        renderYaw += (currentView.yaw - renderYaw) * 0.055
+        renderPitch += (currentView.pitch - renderPitch) * 0.055
+        renderDistance += (currentView.distance - renderDistance) * 0.055
+        x += (targetX - x) * 0.025
+        y += (targetY - y) * 0.025
+        if (currentMode === 'world') {
+          globe.rotation.y = renderYaw
+          globe.rotation.x = renderPitch
+        } else {
+          globe.rotation.y = turn + chapterFocus
+          globe.rotation.x = -0.14 + y * 0.075 + (currentMode === 'cinema' ? Math.sin(time * 0.00024) * 0.05 : 0)
+        }
+        const destination = currentMode === 'world'
+          ? new THREE.Vector3(0, 0, renderDistance)
+          : currentMode === 'cinema'
+            ? new THREE.Vector3(
+              Math.sin(time * 0.00019 + currentChapter * 0.72) * 0.55,
+              0.18 + Math.sin(time * 0.00013 + currentChapter) * 0.3,
+              [5.0, 4.3, 5.6][currentChapter],
+            )
+            : new THREE.Vector3(x * 0.17, -y * 0.13, 5.7)
+        camera.position.lerp(destination, 0.045)
+        camera.lookAt(0, 0, 0)
+        if (cloudInner && cloudOuter) {
+          cloudInner.rotation.y += delta * (currentMode === 'cinema' ? 0.000029 : 0.000015)
+          cloudOuter.rotation.y -= delta * 0.000018
+        }
+        if (keyLight && fillLight) {
+          keyLight.position.x = -2.5 + Math.sin(time * 0.00017) * 0.75
+          keyLight.position.y = 3 + Math.cos(time * 0.00013) * 0.35
+          fillLight.intensity = currentMode === 'cinema' ? 1.15 : 1.45
+        }
+        renderer.render(scene, camera)
+      }
+      frameId = requestAnimationFrame(animate)
+    }
+    const syncRendering = () => {
+      const shouldRun = alive && visible && !document.hidden && allowed() && !!renderer && !!scene && !!camera && !!globe
+      if (shouldRun && !frameId) frameId = requestAnimationFrame(animate)
+      if (!shouldRun && frameId) { cancelAnimationFrame(frameId); frameId = 0 }
     }
     const init = async () => {
       if (started || !visible || !allowed() || !alive) return
