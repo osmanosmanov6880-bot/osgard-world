@@ -120,6 +120,12 @@
   function dockControls() {
     const dock = doc.querySelector('.dock');
     if (!dock) return;
+    // The shared-account browser journey uses directly visible history, export and refresh actions.
+    // Keep those controls discoverable instead of trapping them in a collapsed utility menu.
+    if (accountMode) {
+      dock.classList.add('cine-account-dock');
+      return;
+    }
     dock.classList.add('cine-dock');
     const panel = doc.createElement('section');
     panel.className = 'cine-utility';
