@@ -33,6 +33,29 @@ test('public OSGARD Earth and three-mode controller are deployed', async ({ page
   await page.screenshot({ path: testInfo.outputPath('omega-production-first-screen.png') })
 })
 
+test('public Earth uses self-hosted NASA satellite imagery and honest provenance', async ({ page, request }) => {
+  const day = await request.get(URL + '/brand/nasa/earth-day-4096.jpg')
+  const night = await request.get(URL + '/brand/nasa/earth-night-2048.jpg')
+  const cloud = await request.get(URL + '/brand/nasa/earth-clouds-2048.jpg')
+  for (const response of [day, night, cloud]) {
+    expect(response.status()).toBe(200)
+    expect(response.headers()['content-type']).toContain('image/jpeg')
+  }
+  await page.emulateMedia({ reducedMotion: 'no-preference' })
+  await getResponse(page)
+  const globe = page.locator('.omega-webgl-stage')
+  await expect(globe).toHaveAttribute('data-globe-status', /^(webgl|fallback)$/, { timeout: 30000 })
+  if (await globe.getAttribute('data-globe-status') === 'webgl') {
+    await expect(globe).toHaveAttribute('data-earth-source', 'nasa')
+    await expect(globe).toHaveAttribute('data-cloud-model', 'raymarch')
+    await expect(globe).toHaveAttribute('data-earth-image-width', '2048')
+    await page.getByRole('combobox', { name: 'Качество 3D-глобуса' }).selectOption('ultra')
+    await expect(globe).toHaveAttribute('data-earth-image-width', '4096', { timeout: 30000 })
+  }
+  await page.getByText('Откуда изображение Земли?').click()
+  await expect(page.getByText('Поверхность: NASA Blue Marble')).toBeVisible()
+})
+
 test('public cinema, 3D-world and hybrid modes work and persist', async ({ page }, testInfo) => {
   await page.emulateMedia({ reducedMotion: 'no-preference' })
   await getResponse(page)
