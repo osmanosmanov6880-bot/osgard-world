@@ -12,7 +12,7 @@
     .growth-loop{margin-top:30px;padding:24px;border:1px solid #e7c77855;background:linear-gradient(120deg,#e7c77810,transparent 70%)}.growth-loop h2{font-size:clamp(28px,5vw,42px);margin:8px 0}.growth-loop p{font-size:13px;line-height:1.8}.growth-loop .cta{margin-top:12px}
     #live-growth-console{max-height:calc(100dvh - 36px);overflow:auto;overscroll-behavior:contain}#growth-panel{margin-top:14px;padding:14px;border:1px solid #e7c77855;background:#07110ff5}#challenge-link{width:100%;margin:10px 0;padding:10px;background:#030807;border:1px solid #ffffff2b;color:#e8eee3;font-size:11px}#growth-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px}#growth-actions button{margin:0;min-width:0;padding:10px 8px;font-size:9px}#challenge-copy,#result-summary{font-size:11px;line-height:1.65;margin:9px 0;color:#d4ddcf}#sponsor-slot{margin-top:14px;padding:14px;border:1px solid #e7c77866;background:#e7c7780b}#sponsor-slot strong{font:21px Georgia,serif}#sponsor-slot p{font-size:11px;line-height:1.7}#sponsor-slot .cta{margin-top:8px}@media(max-width:520px){#live-growth-console{right:10px!important;bottom:10px!important;width:calc(100vw - 20px)!important;max-height:calc(100dvh - 20px)!important}.growth-loop{padding:18px}}
   </style>
-<link rel="stylesheet" href="/brand/ecosystem-chrome.css"><link rel="icon" href="/brand/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="./interface.css"><script defer src="./interface.js"></script></head>
+<link rel="stylesheet" href="/brand/ecosystem-chrome.css"><link rel="stylesheet" href="./premium.css"><link rel="icon" href="/brand/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="./interface.css"><script defer src="./interface.js"></script></head>
 <body><header class="osgard-static-header" aria-label="Экосистема OSGARD"><a href="/"><img src="/brand/portal-world.svg" alt="" width="30" height="30">OSGARD WORLD</a><nav aria-label="Продукты OSGARD"><a href="/">OSGARD</a><a href="/intelligence">Intelligence</a><a href="/play">Play</a><a href="/development">Development</a></nav></header><main>
   <a class="back" href="/play#catalog">← Каталог игровых миров</a>
   <section class="hero"><span class="eyebrow">OSGARD ENTERTAINMENT / 03</span><h1>REMIX</h1><p>One daily seed. One challenge link. Create a match, send inputs and compare the results returned by the match service.</p><span class="tag">DAILY CHALLENGE / SERVER-RECORDED RESULTS</span><div class="remix-entry-actions"><a class="cta" href="#live-growth-console">Open challenge console ↗</a><a class="cta remix-secondary" href="/games/remix/player/index.html">Unity build status ↗</a></div></section>
@@ -1054,7 +1054,7 @@ window.addEventListener('pagehide',()=>{
 window.addEventListener('pageshow',event=>{if(event.persisted){verifiedState=false;clearResult();restoreSession()}});
 window.addEventListener('focus',()=>{if(selectedAccess==='core-owned'&&ownedIdentity&&!ownedAuthCurrent())stopOwnedWork('Your account session changed. Verify the account again before using this protected match.')});
 if(routeParams.get('mode')==='account'||incomingInvitationId)selectAccess('core-owned');else restoreSession();
-</script><script defer src="/brand/osa-transition.js"></script></body></html>
+</script><script defer src="./premium-init.js"></script><script defer src="./practice.js"></script><script defer src="/brand/osa-transition.js"></script></body></html>
 
 
 
