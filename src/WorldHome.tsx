@@ -111,7 +111,7 @@ export default function WorldHome({ development = false }: { development?: boole
         </div>
       </section>
     </> : <>
-    <section className={`omega-hero omega-experience-${omegaMode}`} data-omega-mode={omegaMode} aria-labelledby="world-title"
+    <section className={`omega-hero omega-experience-${omegaMode}`} data-omega-mode={omegaMode} data-omega-yaw={omegaView.yaw.toFixed(2)} data-omega-distance={omegaView.distance.toFixed(2)} aria-labelledby="world-title"
       tabIndex={omegaMode === 'world' ? 0 : undefined} onKeyDown={onWorldKeyDown}>
       <div className="omega-sky" aria-hidden="true"><div className="omega-stars"/><Suspense fallback={null}><OmegaGlobe mode={omegaMode} chapter={omegaChapter} view={omegaView} onViewChange={setOmegaView} /></Suspense><div className="omega-orbit omega-orbit-one"/><div className="omega-orbit omega-orbit-two"/><div className="omega-globe"><div className="omega-continent omega-c-one"/><div className="omega-continent omega-c-two"/><div className="omega-continent omega-c-three"/></div><div className="omega-platform"/></div>
       <div className="omega-copy">
