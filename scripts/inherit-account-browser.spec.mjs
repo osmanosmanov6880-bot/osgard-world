@@ -56,6 +56,9 @@ function assertTokenIsolation(service){
 }
 
 test('INHERIT account: two custodians save, pass, return through a persisted notification and view an immutable generation',async({page,browser},info)=>{
+ // Two isolated browser contexts, multiple server-proven operations, and
+ // a full generation replay require a realistic CI budget on mobile runners.
+ test.slow();
  const service=serviceFixture();await install(page.context(),info,service);const errors=errorsFor(page);
  await page.goto('/games/inherit/?mode=account&lang=en',{waitUntil:'domcontentloaded'});
  await createWorld(page);
