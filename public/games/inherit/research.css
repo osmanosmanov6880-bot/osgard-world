@@ -41,3 +41,6 @@
  .inherit-research-retention{grid-column:1/-1}.inherit-research-actions>*{flex:1 1 180px}
  .inherit-research-field select{font-size:16px}}
 @media(prefers-reduced-motion:reduce){.inherit-research-panel *{transition:none!important}}
+
+.inherit-research-about{display:inline-block;margin:3px 0 12px;color:#edd09e;font:700 12px/1.5 Manrope,system-ui,sans-serif;text-decoration:underline;text-underline-offset:4px}
+.inherit-research-about:focus-visible{outline:3px solid #f5dca4;outline-offset:3px}

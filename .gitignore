@@ -52,3 +52,9 @@ __pycache__/
 
 /delivery/
 *.tgz.sha256
+
+# INHERIT voluntary research: never commit participant exports or operator scratch data.
+/pilot-exports/
+/pilot-report/
+/private-pilot-data/
+/inherit-pilot-*.json

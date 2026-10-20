@@ -7,6 +7,7 @@ if(!core||!copy||!game||!journal)return;
 const lang=()=>{const v=window.InheritUI?.getLanguage?.();return copy[v]?v:'ru'};
 const t=()=>copy[lang()];
 const el=(tag,cls,value)=>{const n=d.createElement(tag);if(cls)n.className=cls;if(value!==undefined)n.textContent=value;return n};
+const about=el('a','inherit-research-about');about.href='/games/inherit/pilot/index.html?lang=ru';
 const panel=el('section','inherit-research-panel');panel.id='inherit-research-section';panel.dataset.noTranslate='';
 panel.setAttribute('aria-labelledby','inherit-research-title');
 const title=el('h3','inherit-research-title');title.id='inherit-research-title';
@@ -37,7 +38,7 @@ const exportBtn=el('button','inherit-research-export');exportBtn.type='button';
 const erase=el('button','inherit-research-erase');erase.type='button';
 actions.append(exportBtn,erase);
 active.append(stats,scope,surveyHeading,scale,survey,actions);
-panel.append(title,intro,legacy,status,consent,active);journal.appendChild(panel);
+panel.append(title,intro,legacy,about,status,consent,active);journal.appendChild(panel);
 const nav=journal.querySelector('.inherit-cycle-nav');
 const tab=el('button','inherit-cycle-nav-button');tab.type='button';
 tab.addEventListener('click',()=>{panel.setAttribute('tabindex','-1');panel.scrollIntoView?.({block:'start',behavior:'instant'});panel.focus?.({preventScroll:true})});
@@ -150,6 +151,7 @@ function counter(value,label){const row=el('div','inherit-research-stat');row.ap
 function render(){
  const c=t(),account=!local(),s=record?core.summarize(record,today()):null;
  tab.textContent=c.tab;title.textContent=c.title;intro.textContent=c.intro;legacy.textContent=c.legacy;
+ about.textContent=c.about;about.href='/games/inherit/pilot/index.html?lang='+lang();
  consentCaption.textContent=c.consent;enable.textContent=c.enable;
  status.textContent=account?c.account:denied?c.unavailable:record?c.on:c.off;
  consent.hidden=account||denied||!!record;
@@ -170,4 +172,12 @@ window.InheritResearchUI=Object.freeze({refresh:render,enabled:()=>!!record,
  getSummary:()=>record?core.summarize(record,today()):null,
  getExport:()=>record?core.exportConsent(record,now()):null});
 render();
+// The public invitation opens the journal at the consent section, but never opts in.
+try{
+ if(new URLSearchParams(location.search).get('pilot')==='1'&&local()){
+  const openJournal=d.querySelector('.inherit-legacy-trigger');
+  if(openJournal&&!journal.open)openJournal.click();
+  if(journal.open){panel.setAttribute('tabindex','-1');panel.scrollIntoView?.({block:'nearest',behavior:'instant'});panel.focus?.({preventScroll:true})}
+ }
+}catch{}
 })();

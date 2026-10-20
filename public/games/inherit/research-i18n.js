@@ -1,7 +1,7 @@
 /* Voluntary INHERIT playtest: complete RU, EN and ZH copy. */
 window.InheritResearchCopy=Object.freeze({
 ru:{
-tab:'Исследование',title:'Помочь развитию INHERIT',
+tab:'Исследование',about:'О правилах добровольного пилота ↗',title:'Помочь развитию INHERIT',
 intro:'Участие добровольное. После согласия на этом устройстве сохраняются только даты сессий, названия нескольких игровых действий, оценки и случайный код участника. Имена, координаты, история сообщений и IP-адреса не собираются. Данные никуда не отправляются автоматически.',
 legacy:'В игре отдельно существует локальная история действий. Этот опрос её не отправляет и не включает серверную аналитику.',
 consent:'Согласен на локальную запись перечисленных событий для исследования.',
@@ -22,7 +22,7 @@ choose:'Выберите вариант',submit:'Сохранить ответы
 identity:'Случайный код появится только в файле, который вы сами экспортируете. Он нужен для исключения повторов; отправки по умолчанию нет.'
 },
 en:{
-tab:'Research',title:'Help improve INHERIT',
+tab:'Research',about:'About the voluntary pilot ↗',title:'Help improve INHERIT',
 intro:'Participation is optional. After consent, only session dates, a few action types, survey ratings and a random participant code are kept on this device. No names, coordinates, messages or IP addresses are collected. Nothing is uploaded automatically.',
 legacy:'The game separately keeps a local event history. This survey does not transmit it or enable server analytics.',
 consent:'I agree to locally record the listed events for voluntary research.',
@@ -43,7 +43,7 @@ choose:'Choose an option',submit:'Save answers locally',saved:'Answers saved on 
 identity:'The random participant code appears only in your manually exported file, for deduplication. There is no automatic transmission.'
 },
 zh:{
-tab:'研究',title:'帮助改进 INHERIT',
+tab:'研究',about:'了解自愿体验规则 ↗',title:'帮助改进 INHERIT',
 intro:'参与完全自愿。同意后只在本设备保存会话日期、少量操作类型、问卷分数和随机参与者代码。不会收集姓名、坐标、消息或 IP 地址，也不会自动上传。',
 legacy:'游戏本身另有本地事件记录。本研究不会发送这些记录，也不会启动服务器分析。',
 consent:'我同意为自愿研究在本地记录上述事件。',
