@@ -1,0 +1,79 @@
+/* INHERIT R7: post-commit presentation; never overlays the whole island. */
+.inherit-handoff-moment{
+ position:fixed;right:clamp(10px,4vw,75px);bottom:clamp(114px,12vh,145px);
+ z-index:65;width:min(445px,calc(100vw - 24px));max-height:min(75dvh,700px);
+ padding:clamp(17px,2.3vw,26px);overflow:auto;overscroll-behavior:contain;
+ border:1px solid rgba(238,207,143,.65);border-radius:11px;
+ color:#f4e8cf;box-shadow:0 25px 90px #021012c7,inset 0 1px 0 #efcf9977;
+ background:radial-gradient(ellipse at 85% 5%,rgba(222,196,124,.19),transparent 50%),
+ linear-gradient(140deg,#173d3a,#09222d 55%,#091b24);
+ isolation:isolate;animation:inherit-handoff-arrive .42s cubic-bezier(.2,.9,.2,1) both
+}
+.inherit-handoff-moment[hidden]{display:none!important}
+.inherit-handoff-moment::before{
+ content:"";position:absolute;pointer-events:none;inset:0;
+ background-image:radial-gradient(rgba(239,217,174,.5) .7px,transparent 1px);background-size:37px 35px;
+ opacity:.2;z-index:-1
+}
+.inherit-handoff-glint{pointer-events:none;position:absolute;right:-28px;top:-44px;
+ width:165px;height:165px;border-radius:50%;border:1px solid #efdaae35;
+ box-shadow:0 0 0 25px #e9d9ae0c,0 0 0 55px #e9d9ae07,inset 0 0 28px #d7c58f24;
+ animation:inherit-handoff-glow 5s ease-in-out infinite;z-index:-1}
+.inherit-handoff-top{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:5px}
+.inherit-handoff-eyebrow{margin:0;color:#ebd09b;font:700 10px/1.5 Manrope,system-ui,sans-serif;letter-spacing:.18em}
+.inherit-handoff-close{width:36px;height:36px;min-width:36px;display:grid;place-items:center;
+ border:1px solid #eddaaf66;border-radius:5px;background:#fff1cf0b;color:#f6ebd0;
+ font:25px/1 Georgia,serif;cursor:pointer}
+.inherit-handoff-close:hover{background:#eddaaf24}
+.inherit-handoff-moment button:focus-visible,.inherit-handoff-moment summary:focus-visible{
+ outline:3px solid #ffe8b2;outline-offset:3px}
+.inherit-handoff-title{font:500 clamp(23px,3vw,31px)/1.13 Georgia,serif;
+ letter-spacing:-.025em;margin:6px 0 13px;color:#f6edd7}
+.inherit-handoff-route{display:inline-flex;padding:6px 10px;margin-bottom:12px;
+ border:1px solid #d4c18a66;color:#ebd098;border-radius:3px;
+ background:#e7d49a0c;font:800 11px/1.4 Manrope,system-ui,sans-serif;letter-spacing:.04em}
+.inherit-handoff-source{margin:0 0 13px;color:#cbddd1;font:12px/1.75 Manrope,system-ui,sans-serif}
+.inherit-handoff-moment[data-verification="local-saved-server-unverified"] .inherit-handoff-route{
+ border-color:#d5a38588;color:#f0c3a4;background:#d4a88a12}
+.inherit-handoff-summary{display:flex;gap:9px;flex-wrap:wrap;margin-bottom:15px}
+.inherit-handoff-stat{min-width:125px;flex:1;display:grid;gap:4px;padding:13px;
+ border:1px solid #d5c19144;background:#e5d4ad0a;border-radius:5px}
+.inherit-handoff-stat strong{font:500 26px/1.1 Georgia,serif;color:#f0d49b;font-variant-numeric:tabular-nums}
+.inherit-handoff-stat span{color:#c8d8ce;font:11px/1.45 Manrope,system-ui,sans-serif}
+.inherit-handoff-controls{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.inherit-handoff-controls button{flex:1;min-height:43px;padding:10px 12px;
+ font:750 12px/1.3 Manrope,system-ui,sans-serif;border-radius:5px;cursor:pointer}
+.inherit-handoff-continue{background:#e6c88e;border:1px solid #ffe1a2;color:#09242c}
+.inherit-handoff-continue:hover{background:#f5dda7}
+.inherit-handoff-next{background:#e6c88e0c;border:1px solid #d9c39270;color:#f5e5c4}
+.inherit-handoff-next:hover{background:#e6c88e20}
+.inherit-handoff-details{border-top:1px solid #d8c7933c;border-bottom:1px solid #d8c7933c;padding:11px 0;margin:5px 0}
+.inherit-handoff-details-trigger{font:700 12px/1.5 Manrope,system-ui,sans-serif;cursor:pointer;color:#edddb6}
+.inherit-handoff-details-trigger:hover{color:#fff0cb}
+.inherit-handoff-detail-body{padding-top:12px}
+.inherit-handoff-counts{display:flex;flex-wrap:wrap;gap:6px}
+.inherit-handoff-count{display:inline-flex;align-items:center;gap:7px;
+ border:1px solid #c5c29b55;border-radius:4px;padding:7px 10px;
+ color:#dce7d5;background:#a4bb9f0b;font:12px/1.2 Manrope,system-ui,sans-serif}
+.inherit-handoff-count i{font-style:normal;color:#ffe0a0;font-weight:800}
+.inherit-handoff-map-title{margin:13px 0 6px;color:#b6d2c5;font:11px Manrope,system-ui,sans-serif}
+.inherit-handoff-map{position:relative;aspect-ratio:2.1;min-height:115px;
+ border:1px solid #d9cb9a5f;border-radius:48% 52% 49% 51%/43% 44% 56% 57%;
+ overflow:hidden;background:radial-gradient(ellipse at 42% 42%,#90ab80,#4d806c 57%,#266461 77%,#0e3c43);
+ box-shadow:inset 0 0 24px #072d2b9c}
+.inherit-handoff-pin{position:absolute;width:9px;height:9px;border:1px solid #103839;
+ border-radius:50%;background:#ffe2a0;box-shadow:0 0 13px #f8d393d9;
+ transform:translate(-50%,-50%)}
+.inherit-handoff-map-note{margin:7px 0 0;font:10px/1.5 Manrope,system-ui,sans-serif;color:#d3d9c2}
+.inherit-handoff-disclaimer{margin:13px 0 0;color:#a8c0bd;font:10px/1.65 Manrope,system-ui,sans-serif}
+@keyframes inherit-handoff-arrive{from{opacity:0;transform:translateY(30px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes inherit-handoff-glow{50%{opacity:.4;transform:scale(1.07)}}
+@media(max-width:740px){
+ .inherit-handoff-moment{right:12px;bottom:116px;width:min(385px,calc(100vw - 24px));
+ max-height:min(67dvh,590px);padding:16px}
+ .inherit-handoff-title{font-size:25px}
+ .inherit-handoff-controls button{font-size:11px;padding:10px 8px}
+}
+@media(prefers-reduced-motion:reduce){
+ .inherit-handoff-moment,.inherit-handoff-glint{animation:none!important;transition:none!important}
+}
