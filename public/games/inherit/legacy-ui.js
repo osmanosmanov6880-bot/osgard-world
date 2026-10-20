@@ -33,6 +33,18 @@ const memoryTitle=create('h3','inherit-legacy-section-title');panel.appendChild(
 const memories=create('ul','inherit-legacy-memories');panel.appendChild(memories);
 const note=create('p','inherit-legacy-disclosure');panel.appendChild(note);
 doc.body.appendChild(panel);
+const memoryNames={
+ ru:{tree:'Дерево',stone:'Камень',light:'Фонарь',path:'Тропа',flower:'Цветы',arch:'Арка',chime:'Колокольчик',moss:'Мох',cairn:'Каменная насыпь',marker:'Указатель'},
+ en:{tree:'Tree',stone:'Stone',light:'Lantern',path:'Path',flower:'Flowers',arch:'Arch',chime:'Wind chime',moss:'Moss',cairn:'Cairn',marker:'Marker'},
+ zh:{tree:'树木',stone:'石头',light:'灯笼',path:'道路',flower:'花朵',arch:'拱门',chime:'风铃',moss:'苔藓',cairn:'石堆',marker:'路标'}
+};
+function duration(n){
+ const c=tr();
+ if(locale()!=='ru')return format(c.age,{n});
+ const tens=n%100,ones=n%10;
+ const suffix=tens>=11&&tens<=14?'поколений':ones===1?'поколение':ones>=2&&ones<=4?'поколения':'поколений';
+ return 'Сохраняется уже '+n+' '+suffix;
+}
 const current=()=>window.InheritGame?.snapshot?.();
 let model=engine.derive(current()),queued=false;
 function addStat(value,title){const box=create('div','inherit-legacy-stat');box.appendChild(create('strong','',String(value)));box.appendChild(create('small','',title));stats.appendChild(box)}
@@ -42,14 +54,14 @@ function update(){
  trigger.setAttribute('aria-label',c.button+' · '+model.total);
  pulse.textContent=replay?c.past:(model.total?c.subtitle+' · '+model.total+' '+c.links:c.first);
  title.textContent=c.title;subtitle.textContent=c.subtitle;
- stats.replaceChildren();addStat(model.objects,c.traces);addStat(model.total,c.links);addStat(model.generation,c.generation);addStat(model.memory.length,c.verified);
+ stats.replaceChildren();addStat(model.objects,c.traces);addStat(model.total,c.links);addStat(model.generation,c.generation);addStat(model.memoryCount,c.verified);
  intro.textContent=c.intro;sectionTitle.textContent=c.effects;list.replaceChildren();
  for(const rule of engine.rules){
    const count=model.totals[rule.id];if(!count)continue;
    const item=create('li','inherit-legacy-story');const heading=create('strong','',c.ruleNames[rule.id]+' · '+count);
    const body=create('p','',c.ruleBody[rule.id]);item.append(heading,body);
    const ages=model.effects.filter(effect=>effect.id===rule.id&&effect.age!==null).map(effect=>effect.age);
-   if(ages.length){const oldest=Math.max(...ages);const stage=oldest>=4?c.heritage:oldest>=1?c.growing:c.new;item.appendChild(create('small','',stage+' · '+format(c.age,{n:oldest})));}
+   if(ages.length){const oldest=Math.max(...ages);const stage=oldest>=4?c.heritage:oldest>=1?c.growing:c.new;item.appendChild(create('small','',stage+' · '+duration(oldest)));}
    list.appendChild(item);
  }
  if(!list.children.length)list.appendChild(create('li','inherit-legacy-empty',c.none));
@@ -58,7 +70,7 @@ function update(){
  else if(!model.objects)suggestion.textContent=c.first;
  else suggestion.textContent=c.close;
  memoryTitle.textContent=c.memory;memories.replaceChildren();
- if(model.memory.length){for(const mark of model.memory){memories.appendChild(create('li','',format(c.since,{n:mark.since})+' · '+format(c.age,{n:mark.age})));}}
+ if(model.memory.length){for(const mark of model.memory){const label=memoryNames[locale()][mark.type]||mark.type;memories.appendChild(create('li','',label+(mark.count>1?' ×'+mark.count:'')+' · '+format(c.since,{n:mark.since})+' · '+duration(mark.age)));}}
  else memories.appendChild(create('li','',c.noAge));
  note.textContent=c.source+(replay?' '+c.past:'')+(model.limited?' '+c.limit:'');
  close.setAttribute('aria-label',c.closeLabel);
