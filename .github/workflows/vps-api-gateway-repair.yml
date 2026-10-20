@@ -1,0 +1,68 @@
+name: OSGARD VPS scoped API gateway repair
+on:
+  push:
+    branches: [master]
+    paths:
+      - ".github/workflows/vps-api-gateway-repair.yml"
+permissions:
+  contents: read
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Reconcile one container IP to host API port over its Docker bridge
+        env:
+          DEPLOY_HOST: ${{ secrets.OSGARD_DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.OSGARD_DEPLOY_USER }}
+          DEPLOY_KEY: ${{ secrets.OSGARD_DEPLOY_KEY }}
+        run: |
+          set -euo pipefail
+          test -n "$DEPLOY_HOST" && test -n "$DEPLOY_USER" && test -n "$DEPLOY_KEY"
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$DEPLOY_KEY" > ~/.ssh/osgard_repair
+          chmod 600 ~/.ssh/osgard_repair
+          ssh-keyscan -T 10 -H "$DEPLOY_HOST" > ~/.ssh/known_hosts 2>/dev/null
+          test -s ~/.ssh/known_hosts
+          ssh -i ~/.ssh/osgard_repair -o BatchMode=yes "$DEPLOY_USER@$DEPLOY_HOST" 'bash -s' <<'REMOTE'
+          set -euo pipefail
+          if [ "$(id -u)" -ne 0 ]; then echo 'Requires the authorized root deployment account' >&2; exit 1; fi
+          name="$(docker inspect --format '{{range $key, $conf := .NetworkSettings.Networks}}{{println $key}}{{end}}' osgard-world | awk 'NF {print $1; exit}')"
+          if [[ "$name" != osgard-* ]]; then echo 'Unexpected Docker network, refusing ACL change' >&2; exit 1; fi
+          ip="$(docker inspect --format '{{range $key, $conf := .NetworkSettings.Networks}}{{println $conf.IPAddress}}{{end}}' osgard-world | awk 'NF {print $1; exit}')"
+          gateway="$(docker network inspect --format '{{range .IPAM.Config}}{{println .Gateway}}{{end}}' "$name" | awk 'NF {print $1; exit}')"
+          subnet="$(docker network inspect --format '{{range .IPAM.Config}}{{println .Subnet}}{{end}}' "$name" | awk 'NF {print $1; exit}')"
+          netid="$(docker network inspect --format '{{.Id}}' "$name")"
+          interface="br-${netid:0:12}"
+          python3 - "$ip" "$gateway" "$subnet" <<'PY'
+          import ipaddress, sys
+          ip, gateway, subnet = sys.argv[1:]
+          net = ipaddress.IPv4Network(subnet, strict=False)
+          assert net.is_private and net.prefixlen >= 16, 'Docker bridge is not a private scoped network'
+          assert ipaddress.IPv4Address(ip) in net and ipaddress.IPv4Address(gateway) in net and ip != gateway, 'IP outside scoped bridge'
+          PY
+          ip link show "$interface" >/dev/null
+          test "$(ufw status | head -n 1)" = "Status: active"
+          echo "Candidate one-host ACL: source=$ip target=$gateway:4317 interface=$interface"
+          if docker exec osgard-world sh -lc "wget -q -O /dev/null -T 6 http://$gateway:4317/health"; then
+            echo 'Already reachable, no firewall mutation'
+            exit 0
+          fi
+          if ufw status | grep -F "$ip" | grep -F "$gateway" | grep -F "4317/tcp" >/dev/null; then
+            echo 'An existing specific ACL did not work; refuse a duplicate rule' >&2
+            exit 1
+          fi
+          ufw allow in on "$interface" from "$ip" to "$gateway" port 4317 proto tcp comment 'OSGARD frontend API internal'
+          ok=0
+          for attempt in 1 2 3; do
+            if docker exec osgard-world sh -lc "wget -q -O /dev/null -T 7 http://$gateway:4317/health"; then ok=1; break; fi
+            sleep 1
+          done
+          if [ "$ok" != 1 ]; then
+            echo 'Scoped firewall change did not restore connectivity; rolling it back' >&2
+            ufw --force delete allow in on "$interface" from "$ip" to "$gateway" port 4317 proto tcp
+            exit 1
+          fi
+          echo 'Verified: existing frontend container can access host-managed game API'
+          ufw status | grep -F "$ip" || true
+          REMOTE
