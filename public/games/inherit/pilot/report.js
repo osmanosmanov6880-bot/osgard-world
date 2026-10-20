@@ -93,6 +93,13 @@ function saveText(contents,mime,filename){
  anchor.hidden=true;d.body.appendChild(anchor);anchor.click();anchor.remove();
  setTimeout(()=>URL.revokeObjectURL(url),1500);
 }
+d.querySelector('#clear-data').addEventListener('click',()=>{
+ current=null;files.value='';results.hidden=true;
+ outBasis.textContent='';metrics.replaceChildren();retention.replaceChildren();
+ funnel.replaceChildren();prices.replaceChildren();survey.textContent='';
+ limitations.textContent='';
+ status.textContent='Выбранные файлы и результаты убраны из этой вкладки. Ничего не отправлялось.';
+});
 d.querySelector('#save-json').addEventListener('click',()=>{
  if(current)saveText(JSON.stringify(current,null,2)+'\n','application/json','inherit-pilot-summary-'+current.asOf+'.json')
 });
