@@ -80,6 +80,8 @@ check('UI is nonmodal, localized, accessible and leaves the real game controls a
  for(const bad of ['fetch(', 'sendBeacon(', 'localStorage.setItem(', 'sessionStorage.setItem(', 'InheritGame.apply(', 'innerHTML='])
   assert.ok(!js.includes(bad),'side effect '+bad);
  assert.match(css,/prefers-reduced-motion:reduce/);
+ assert.match(css,/\.inherit-handoff-moment\{pointer-events:none\}/);
+ assert.ok(read('index.html').includes('InheritHandoffMomentUI?.dismiss?.()'));
  assert.match(css,/focus-visible/);
  assert.match(sw,/inherit-shell-v19/);
  assert.ok(lang.includes('InheritHandoffMomentUI?.refresh?.()'));
