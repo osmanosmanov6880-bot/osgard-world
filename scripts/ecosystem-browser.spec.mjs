@@ -86,6 +86,33 @@ test('OSGARD globe fails gracefully without WebGL2 and keeps the experience swit
   await expect(page.getByRole('link', { name: /Исследовать экосистему/ })).toBeVisible()
 })
 
+test('OSGARD cinema overlay never obscures OSA, PLAY or Development entry points', async ({ page }) => {
+  await page.goto('/')
+  const tabs = page.getByRole('group', { name: 'Выберите режим 3D-сцены' })
+  const panel = page.locator('.omega-experience-panel')
+  const gateway = page.getByRole('navigation', { name: 'Три направления экосистемы' })
+  for (const mode of ['Кино', '3D-мир', 'Гибрид']) {
+    await tabs.getByRole('button', { name: mode, exact: true }).click()
+    const a = await panel.boundingBox()
+    const b = await gateway.boundingBox()
+    expect(a && b).toBeTruthy()
+    if (a && b) {
+      const overlapX = Math.min(a.x + a.width, b.x + b.width) - Math.max(a.x, b.x)
+      const overlapY = Math.min(a.y + a.height, b.y + b.height) - Math.max(a.y, b.y)
+      expect(overlapX <= 0 || overlapY <= 0, mode + ' obstructs the navigation').toBe(true)
+    }
+  }
+  await page.getByText('Откуда изображение Земли?').click()
+  const a = await panel.boundingBox()
+  const b = await gateway.boundingBox()
+  if (a && b) {
+    const overlapX = Math.min(a.x + a.width, b.x + b.width) - Math.max(a.x, b.x)
+    const overlapY = Math.min(a.y + a.height, b.y + b.height) - Math.max(a.y, b.y)
+    expect(overlapX <= 0 || overlapY <= 0).toBe(true)
+  }
+  await expect(gateway.getByRole('link')).toHaveCount(3)
+})
+
 test('OSGARD satellite Earth loads genuine NASA albedo, cloud and night maps with provenance', async ({ page, request }) => {
   for (const name of ['earth-day-4096.jpg', 'earth-day-2048.jpg', 'earth-night-2048.jpg', 'earth-clouds-2048.jpg']) {
     const response = await request.get('/brand/nasa/' + name)
