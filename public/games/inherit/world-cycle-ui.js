@@ -20,7 +20,7 @@ const copy={
   unknown:'Не удалось проверить соответствие текущих объектов и черновика. Событие не засчитывается.',
   noRight:'Мир сейчас доступен только для чтения. Событие не создаёт права изменять чужие объекты.',
   more:'Читать и продолжить',legacy:'Сохранённые следы',age:'Снимки поколений',ageUnknown:'Возраст отдельных объектов неизвестен без старых снимков.',
-  counts:{nature:'Живая природа',routes:'Дороги и свет',memory:'Постройки'},
+  counts:{nature:'Живая природа',routes:'Дороги и свет',memory:'Постройки',connections:'Связи'},
   stagesDesc:{
    untouched:'Пока на острове мало отметок. Следующий путь ещё предстоит придумать.',
    growing:'Следы становятся заметны. Теперь у следующего хранителя есть с чего начать.',
@@ -84,7 +84,7 @@ const copy={
   unknown:'The current draft does not match the world objects. The episode cannot be awarded.',
   noRight:'This world is read only at present. An episode cannot grant permission to change other people’s traces.',
   more:'Read and continue',legacy:'Saved traces',age:'Generation snapshots',ageUnknown:'Ages are unknown without archived generation snapshots.',
-  counts:{nature:'Living nature',routes:'Roads and lights',memory:'Structures'},
+  counts:{nature:'Living nature',routes:'Roads and lights',memory:'Structures',connections:'Connections'},
   stagesDesc:{
    untouched:'Few marks remain on the island. Its next path has yet to be chosen.',
    growing:'Traces are taking shape, giving the next keeper something to build on.',
@@ -134,7 +134,7 @@ const copy={
   unknown:'目前的草稿与世界物件不符，不能授予事件进度。',
   noRight:'当前世界只能查看。事件不会授予修改其他玩家痕迹的权限。',
   more:'阅读并继续',legacy:'已保存痕迹',age:'世代快照',ageUnknown:'如果没有过去世代的快照，就无法确认物件年代。',
-  counts:{nature:'自然',routes:'道路与灯光',memory:'建筑'},
+  counts:{nature:'自然',routes:'道路与灯光',memory:'建筑',connections:'连接'},
   stagesDesc:{untouched:'岛上还没有太多痕迹，下一段旅程仍在等待。',growing:'痕迹逐渐成形，下一位守护者有了新的起点。',settlement:'相连的地点成为了岛上熟悉的风景。',ancient:'古老的连接跨越世代，快照可以证实其年代。'},
   milestone:{
    first:['第一道痕迹','放置至少一个物件'],diversity:['三种材料','使用三种痕迹'],connected:['第一次连接','创造一个物件组合'],
@@ -212,7 +212,7 @@ returnActions.append(consent,erase);returnSection.append(returnHead,returnInfo,r
 chapter.append(brow,heading,summary,choiceLabel,options,consequence,phaseHead,phaseDesc,facts,badgeHead,unlockCount,milestoneList,truth,returnSection);
 insertAfter.after(chapter);
 let initialized=false,book=null,lastDelta=null,storageUnavailable=false,lastEvent=null,scheduled=false;
-const stored=window.InheritPersistence||window.localStorage;
+let stored=null;try{stored=window.InheritPersistence||window.localStorage}catch{storageUnavailable=true}
 function local(){return !game.accountMode?.()}
 function read(){
  try{
@@ -322,7 +322,7 @@ function render(){
  phaseDesc.textContent=strings.stages[current.stage]+' — '+strings.stagesDesc[current.stage];
  facts.replaceChildren();
  fact(current.metrics.objects,strings.legacy);
- fact(current.metrics.connections,strings.counts.routes+' +');
+ fact(current.metrics.connections,strings.counts.connections);
  fact(current.metrics.living,strings.counts.nature);
  fact(current.metrics.built,strings.counts.memory);
  badgeHead.textContent=strings.milestones;
