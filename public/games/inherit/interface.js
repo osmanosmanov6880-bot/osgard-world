@@ -247,7 +247,7 @@ function setLanguage(value){
  locale=['ru','en','zh'].includes(value)?value:'ru';persistence?.setItem('osgard:game-language',locale);
  document.documentElement.lang=locale==='zh'?'zh-CN':locale;
  try{const url=new URL(location.href);url.searchParams.set('lang',locale);history.replaceState(null,'',url.href)}catch{}
- if(ready){apply();updateStorage();document.querySelectorAll('[data-game-language]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.gameLanguage===locale)));window.InheritAccount?.render();window.InheritCinematic?.updateLabels?.();window.InheritLegacyUI?.refresh?.();window.InheritStoryUI?.refresh?.();window.InheritWorldUI?.refresh?.();window.InheritCosmeticUI?.refresh?.();window.InheritResearchUI?.refresh?.();window.InheritOnboarding?.refresh?.()}
+ if(ready){apply();updateStorage();document.querySelectorAll('[data-game-language]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.gameLanguage===locale)));window.InheritAccount?.render();window.InheritCinematic?.updateLabels?.();window.InheritLegacyUI?.refresh?.();window.InheritStoryUI?.refresh?.();window.InheritWorldUI?.refresh?.();window.InheritCosmeticUI?.refresh?.();window.InheritResearchUI?.refresh?.();window.InheritOnboarding?.refresh?.();window.InheritAtlasUI?.refresh?.()}
 }
 function languageTools(){
  const bar=document.createElement('div');bar.className='game-language';bar.dataset.localeTools='';bar.setAttribute('role','group');bar.setAttribute('aria-label','Язык / Language');
