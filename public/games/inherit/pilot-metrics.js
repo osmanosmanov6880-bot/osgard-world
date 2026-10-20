@@ -42,11 +42,15 @@ export function aggregate(exports,asOf){
  const count=summaries.length;
  function retention(days){
    const eligible=participants.filter(item=>date>=core.dayShift(item.summary.firstDay,days));
-   // Core's existing summary exposes d1/d7 outcomes, not individual visit days
-   // after normalization. Use the exact marked target-day result for each.
-   const positive=eligible.filter(item=>item.summary['d'+days].returned).length;
+   // Exact UTC calendar-day sessions only. This works for D1, D7 and D30
+   // without pretending to know whether a participant visited another device.
+   const observed=item=>{
+     const target=core.dayShift(item.summary.firstDay,days);
+     return item.state.events.some(event=>event.type==='session_opened'&&event.at.slice(0,10)===target);
+   };
+   const positive=eligible.filter(observed).length;
    const negative=eligible.filter(item=>{
-     if(item.summary['d'+days].returned)return false;
+     if(observed(item))return false;
      const target=core.dayShift(item.summary.firstDay,days);
      return item.fullHistory&&item.capturedAt.slice(0,10)>target;
    }).length;
@@ -56,7 +60,7 @@ export function aggregate(exports,asOf){
      ratePercent:clampRate(positive,covered),
      observedSharePercent:clampRate(positive,eligible.length)};
  }
- const d1=retention(1),d7=retention(7);
+ const d1=retention(1),d7=retention(7),d30=retention(30);
  const funnel={
   first_trace:summaries.filter(s=>s.firstTrace).length,
   any_trace:summaries.filter(s=>s.everPlaced).length,
@@ -77,7 +81,7 @@ export function aggregate(exports,asOf){
  return {
   product:'INHERIT',reportKind:'voluntary-export-pilot',asOf:date,
   sample:{participants:count,rejectedExports:rejected,duplicateExports:duplicates,scope:'Self-selected voluntary exports only; not MAU or population retention'},
-  retention:{d1,d7},
+  retention:{d1,d7,d30},
   evidence:{
    status:count===0?'NO_EXPORTS':d7.eligible===0?'AWAIT_D7':d7.unknown>0?'MISSING_FOLLOWUP':d7.covered<30?'SMALL_VOLUNTARY_SAMPLE':'DESCRIPTIVE_ONLY',
    minDescriptiveSample:30,readyForPayments:false,
@@ -89,7 +93,7 @@ export function aggregate(exports,asOf){
    'Self-selected voluntary exports cannot estimate the retention of all game users. Missing uploads and device resets create strong selection bias.',
    'An exported journal captured before a target day ends cannot prove non-return; incomplete follow-up is shown as unknown.',
    'A full journal observed through the entire target UTC day can document the absence of a recorded session on that device, not that the person never returned elsewhere.',
-   'D1 and D7 use exact UTC calendar day relative to research consent, not first install or first gameplay. Later events are censored at the report as-of day.',
+   'D1, D7 and D30 use exact UTC calendar day relative to research consent, not first install or first gameplay. Later events are censored at the report as-of day.',
    'This file includes no purchases, real payments, CAC, LTV or verified server history.',
    'A stated price preference is not evidence of a completed purchase.',
    'World-generation advancement is observed client-side and is not a server-authoritative transfer.'
@@ -111,6 +115,7 @@ export function formatMarkdown(report){
   '|---|---:|---:|---:|---:|---:|---:|',
   '| D1 | '+retention.d1.eligible+' | '+retention.d1.returned+' | '+retention.d1.verifiedNo+' | '+retention.d1.unknown+' | '+(retention.d1.coveragePercent===null?'н/д':retention.d1.coveragePercent+'%')+' | '+rate(retention.d1)+' |',
   '| D7 | '+retention.d7.eligible+' | '+retention.d7.returned+' | '+retention.d7.verifiedNo+' | '+retention.d7.unknown+' | '+(retention.d7.coveragePercent===null?'н/д':retention.d7.coveragePercent+'%')+' | '+rate(retention.d7)+' |',
+  '| D30 | '+retention.d30.eligible+' | '+retention.d30.returned+' | '+retention.d30.verifiedNo+' | '+retention.d30.unknown+' | '+(retention.d30.coveragePercent===null?'н/д':retention.d30.coveragePercent+'%')+' | '+rate(retention.d30)+' |',
   '',
   '**Метод:** «Неизвестно» означает, что экспорт сделан до окончания нужного дня или локальный журнал неполный. Процент считается лишь среди данных с достаточным временным охватом; это не показатель удержания всех пользователей.',
   '**Готовность к монетизации:** '+report.evidence.status+'; автоматическое разрешение принимать платежи отсутствует.',
