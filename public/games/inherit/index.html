@@ -588,12 +588,14 @@ window.InheritGame={
  snapshot:()=>JSON.parse(JSON.stringify(S)),
  localSnapshot:()=>JSON.parse(JSON.stringify(inheritLocalSnapshot||S)),
  setMode(account){
+  window.InheritHandoffMomentUI?.dismiss?.();
   if(account&&!inheritAccountMode)inheritLocalSnapshot=JSON.parse(JSON.stringify(S));
   if(account&&inheritLocalSnapshot===null)inheritLocalSnapshot=JSON.parse(JSON.stringify(S));
   inheritAccountMode=account;worldRevision++;
   if(!account&&inheritLocalSnapshot){this.apply(inheritLocalSnapshot);inheritLocalSnapshot=null}
  },
  apply(value){
+  window.InheritHandoffMomentUI?.dismiss?.();
   returnToToday();if(pastMode){pastMode=false;document.body.classList.remove('past')}
   for(const key of Object.keys(S))delete S[key];Object.assign(S,JSON.parse(JSON.stringify(value)));
   worldRevision++;render();
