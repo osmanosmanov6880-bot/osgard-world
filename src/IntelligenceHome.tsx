@@ -35,10 +35,23 @@ export default function IntelligenceHome() {
           <a className="brand-button" href="#demo">Посмотреть, как это работает <span aria-hidden="true">↓</span></a>
         </div>
         <p className="brand-meta">{total} УРОКОВ / ПРАКТИКА / ПРОВЕРКА ИСТОЧНИКОВ</p>
+        <nav className="omega-osa-trails" aria-label="Быстрый старт обучения">
+          <a href="/learning/program"><span>01 / ЗНАНИЯ</span><strong>Программа</strong><small>Уроки и маршрут</small></a>
+          <a href="#demo"><span>02 / ПРОВЕРКА</span><strong>Практика</strong><small>Проверка утверждений</small></a>
+          <a href="/learning"><span>03 / РЕЗУЛЬТАТ</span><strong>Мой прогресс</strong><small>Сохранённые уроки</small></a>
+        </nav>
       </div>
-      <div className="intelligence-lens" aria-hidden="true">
-        <span className="brand-eyebrow">ОКНО ВНИМАНИЯ / 01</span>
-        <div className="lens-ring"><BrandMark theme="intelligence" /></div>
+      <div className="intelligence-lens omega-intelligence-lens" aria-hidden="true">
+        <span className="brand-eyebrow">OSA LAB / KNOWLEDGE ENGINE</span>
+        <div className="omega-intelligence-scene">
+          <img src="/brand/omega-osa.svg" alt="" width="1600" height="1000" decoding="async" fetchPriority="high" />
+          <span className="omega-intelligence-pulse omega-intelligence-pulse-a"/>
+          <span className="omega-intelligence-pulse omega-intelligence-pulse-b"/>
+          <span className="omega-intelligence-hud hud-one">01 / ПОНИМАНИЕ</span>
+          <span className="omega-intelligence-hud hud-two">02 / ДОКАЗАТЕЛЬСТВА</span>
+          <span className="omega-intelligence-hud hud-three">03 / ПРАКТИКА</span>
+          <div className="lens-ring"><BrandMark theme="intelligence" /></div>
+        </div>
         <p>Ответ — начало.<br /><i>Доказательство — опора.</i></p>
         <small>МОДЕЛЬ → ИСТОЧНИК → РЕШЕНИЕ</small>
       </div>
