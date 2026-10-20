@@ -83,6 +83,7 @@
     "qa:pilot-scorecard": "python3 -m unittest discover -s tests -p test_pilot_scorecard.py -v",
     "qa:core-recovery": "python3 -m unittest discover -s tests -p 'test_core_*' -v",
     "qa:game-interface": "node scripts/game-interface-smoke.mjs",
+    "qa:inherit-i18n": "node scripts/inherit-i18n-smoke.mjs && node scripts/inherit-cinematic-smoke.mjs",
     "qa:inherit-handoff": "node scripts/inherit-handoff-smoke.mjs",
     "qa:inherit-account": "node scripts/inherit-account-smoke.mjs",
     "qa:remix-session": "node scripts/remix-session-smoke.mjs",
