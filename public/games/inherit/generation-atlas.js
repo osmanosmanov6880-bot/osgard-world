@@ -1,5 +1,5 @@
 /* A real, read-only journey through stored generations.
-   Uses the exact current world snapshot; no IO, localStorage or world mutation. */
+   Uses the exact current world snapshot; no IO or game-world mutation. */
 (()=>{
 'use strict';
 const d=document,core=window.InheritGenerationAtlas,game=window.InheritGame;
