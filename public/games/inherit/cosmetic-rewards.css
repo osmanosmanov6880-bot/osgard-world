@@ -1,0 +1,28 @@
+/* Free cosmetic achievement rewards: local visual themes only, no game-stat overrides. */
+.inherit-cosmetic-panel{border-top:1px solid rgba(220,200,162,.22);padding-top:4px;margin-top:24px}
+.inherit-cosmetic-intro{font:12px/1.65 Manrope,system-ui,sans-serif;color:#bed0ca}
+.inherit-cosmetic-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin-top:13px}
+.inherit-cosmetic-tile{display:grid;gap:7px;align-content:start;min-width:0;min-height:130px;padding:11px;
+ border:1px solid rgba(223,199,151,.3);border-radius:8px;background:rgba(255,255,255,.036);text-align:left;color:#f1ead9;cursor:pointer}
+.inherit-cosmetic-tile:disabled{opacity:.45;cursor:not-allowed;filter:grayscale(.75)}
+.inherit-cosmetic-tile[aria-pressed=true]{border-color:#f6d398;box-shadow:inset 0 0 0 1px rgba(235,211,164,.35),0 0 18px rgba(227,205,150,.08)}
+.inherit-cosmetic-tile:hover:not(:disabled){background:rgba(215,196,145,.12);border-color:#e9d4a5}
+.inherit-cosmetic-tile:focus-visible{outline:3px solid #ffe1a2;outline-offset:3px}
+.inherit-cosmetic-tile strong{font:700 12px/1.3 Manrope,system-ui,sans-serif}
+.inherit-cosmetic-tile small{color:#b6c8c9;font:11px/1.35 Manrope,system-ui,sans-serif}
+.inherit-cosmetic-swatch{display:block;width:100%;height:42px;border-radius:5px;border:1px solid rgba(249,237,197,.17);background:linear-gradient(155deg,#091827,#173747)}
+.inherit-cosmetic-tile--fern .inherit-cosmetic-swatch{background:linear-gradient(130deg,#09241d,#4d8467,#adcba0)}
+.inherit-cosmetic-tile--aurora .inherit-cosmetic-swatch{background:linear-gradient(135deg,#171e4d,#247f86,#86d5be)}
+.inherit-cosmetic-tile--copper .inherit-cosmetic-swatch{background:linear-gradient(140deg,#2c1d22,#97663b,#f1cb7d)}
+.inherit-cosmetic-hint{font:11px/1.65 Manrope,system-ui,sans-serif;color:#e6c5a0}
+body[data-inherit-skin=fern] .world>.island .land{background:radial-gradient(ellipse at 32% 26%,rgba(186,219,133,.66),transparent 37%),radial-gradient(ellipse at 64% 49%,#6ca575,#345c54 64%,#133c3f)}
+body[data-inherit-skin=fern] .world>.island .shore{background:radial-gradient(ellipse at 45% 25%,#adcca3,#4c8b79 63%,#17434c 95%)}
+body[data-inherit-skin=fern] .world{background:linear-gradient(180deg,#091d22,#153e39 67%,#14373c)}
+body[data-inherit-skin=aurora] .world>.island .land{background:radial-gradient(ellipse at 26% 32%,rgba(152,221,183,.62),transparent 41%),radial-gradient(ellipse at 63% 46%,#538d92,#234568 67%,#132c4f)}
+body[data-inherit-skin=aurora] .world>.island .shore{background:radial-gradient(ellipse at 46% 35%,#91c9c0,#476e99 66%,#17315a 95%)}
+body[data-inherit-skin=aurora] .world{background:linear-gradient(180deg,#090c29,#163656 66%,#0c244d)}
+body[data-inherit-skin=copper] .world>.island .land{background:radial-gradient(ellipse at 29% 30%,rgba(232,191,114,.61),transparent 40%),radial-gradient(ellipse at 61% 47%,#a27956,#695546 59%,#453f44)}
+body[data-inherit-skin=copper] .world>.island .shore{background:radial-gradient(ellipse at 50% 34%,#d3b689,#927057 68%,#42323a 96%)}
+body[data-inherit-skin=copper] .world{background:linear-gradient(180deg,#16121f,#4a3036 70%,#322934)}
+@media(max-width:740px){.inherit-cosmetic-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.inherit-cosmetic-tile{min-height:109px;padding:10px}.inherit-cosmetic-swatch{height:35px}}
+@media(prefers-reduced-motion:reduce){.inherit-cosmetic-tile{transition:none!important}}

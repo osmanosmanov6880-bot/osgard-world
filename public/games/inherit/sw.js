@@ -1,5 +1,5 @@
-const CACHE = 'inherit-shell-v12';
-const SHELL = ['/games/inherit/index.html', '/games/inherit/manifest.webmanifest', '/games/inherit/interface.js', '/games/inherit/interface.css', '/games/inherit/account.js', '/games/inherit/account.css', '/games/inherit/cinematic.js', '/games/inherit/cinematic.css', '/games/inherit/zh.js', '/games/inherit/legacy.css', '/games/inherit/legacy-engine.js', '/games/inherit/legacy-ui.js', '/games/inherit/story.css', '/games/inherit/story-engine.js', '/games/inherit/story-ui.js'];
+const CACHE = 'inherit-shell-v14';
+const SHELL = ['/games/inherit/index.html', '/games/inherit/manifest.webmanifest', '/games/inherit/interface.js', '/games/inherit/interface.css', '/games/inherit/account.js', '/games/inherit/account.css', '/games/inherit/cinematic.js', '/games/inherit/cinematic.css', '/games/inherit/zh.js', '/games/inherit/legacy.css', '/games/inherit/legacy-engine.js', '/games/inherit/legacy-ui.js', '/games/inherit/story.css', '/games/inherit/story-engine.js', '/games/inherit/story-ui.js', '/games/inherit/world-cycle.css', '/games/inherit/world-cycle-engine.js', '/games/inherit/return-notebook.js', '/games/inherit/world-cycle-ui.js', '/games/inherit/cosmetic-rewards.css', '/games/inherit/cosmetic-rewards.js'];
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(SHELL)).then(() => self.skipWaiting()));
 });

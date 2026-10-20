@@ -679,3 +679,124 @@ test('INHERIT chapter suggestions do not mutate protected account mode without c
   expect(await page.evaluate(()=>window.InheritGame.snapshot().pending?.length||0)).toBe(0);
   expect(errors).toEqual([]);
 });
+
+
+test('INHERIT sixteen-episode cycle: genuine placement resolves incident, persists on reload, rotates on handoff',async({page},info)=>{
+  const errors=await prepareStandaloneGame(page);
+  await page.goto('/games/inherit/?lang=ru',{waitUntil:'domcontentloaded'});
+  await expect(page.locator('.inherit-cycle-entry')).toBeVisible();
+  await expect(page.locator('.inherit-cycle-entry-name')).toContainText('Сигнал в тумане');
+  await expect(page.locator('body')).toHaveAttribute('data-inherit-season','sun');
+  await page.locator('.inherit-cycle-entry-open').click();
+  await expect(page.locator('.inherit-legacy-dialog')).toBeVisible();
+  await expect(page.locator('.inherit-cycle-choice')).toHaveCount(2);
+  await expect(page.locator('.inherit-cycle-nav-button')).toHaveCount(5);
+  await page.locator('.inherit-cycle-nav-button').filter({hasText:'Событие'}).click();
+  await expect(page.locator('.inherit-cycle-journal')).toBeFocused();
+  await page.locator('.inherit-cycle-choice').first().click();
+  await expect(page.locator('.inherit-legacy-dialog')).toBeHidden();
+  await page.locator('#world').press('Enter');
+  await expect(page.locator('#budget')).toHaveText('99');
+  await expect.poll(()=>page.evaluate(()=>window.InheritWorldUI.getState().event.resolved)).toBe(true);
+  await expect(page.locator('body')).toHaveAttribute('data-inherit-incident','glow');
+  await expect(page.locator('.inherit-cycle-imprint--glow')).toHaveCount(1);
+  await page.locator('.inherit-cycle-entry-open').click();
+  await expect(page.locator('.inherit-cycle-consequence')).toContainText('тёплый свет');
+  const snapshot=await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()));
+  await page.screenshot({path:info.outputPath('inherit-world-episode-ru.png')});
+  await page.locator('.inherit-legacy-close').click();
+  await page.reload({waitUntil:'domcontentloaded'});
+  await expect.poll(()=>page.evaluate(()=>window.InheritWorldUI.getState().event.resolved)).toBe(true);
+  expect(await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()))).toBe(snapshot);
+  await page.locator('[data-game-language="zh"]').click();
+  await expect(page.locator('.inherit-cycle-entry-name')).toContainText('雾中信号');
+  await page.locator('.inherit-cycle-entry-open').click();
+  await expect(page.locator('.inherit-cycle-consequence')).toContainText('迷雾中出现了温暖的光');
+  await page.locator('.inherit-legacy-close').click();
+  await page.locator('#pass').click();
+  await expect.poll(()=>page.evaluate(()=>window.InheritGame.snapshot().generation)).toBe(174);
+  await expect.poll(()=>page.evaluate(()=>window.InheritWorldUI.getState().event.resolved)).toBe(false);
+  await expect(page.locator('body')).toHaveAttribute('data-inherit-season','wind');
+  await expect(page.locator('.inherit-cycle-imprint')).toHaveCount(0);
+  await expect(page.locator('#objects > .placed')).toHaveCount(1);
+  expect(errors).toEqual([]);
+});
+
+test('INHERIT world growth: 12 discoveries and ancient island are derived from verified snapshots without save changes',async({page},info)=>{
+  const errors=await prepareStandaloneGame(page);
+  await page.goto('/games/inherit/?lang=ru',{waitUntil:'domcontentloaded'});
+  const before=await page.evaluate(()=>{
+    const base=window.InheritGame.snapshot();
+    const placed=[
+     {tool:'tree',x:30,y:30},{tool:'moss',x:31,y:31},
+     {tool:'light',x:43,y:43},{tool:'path',x:45,y:44},
+     {tool:'arch',x:60,y:60},{tool:'stone',x:61,y:61},
+     {tool:'flower',x:72,y:72},{tool:'chime',x:73,y:73},{tool:'cairn',x:82,y:62}
+    ];
+    window.InheritGame.apply({...base,generation:177,objects:placed,snapshots:[{generation:167,objects:placed}],pending:[],changes:[],budget:100});
+    return JSON.stringify(window.InheritGame.snapshot());
+  });
+  await expect(page.locator('body')).toHaveAttribute('data-inherit-stage','ancient');
+  await expect(page.locator('.inherit-cycle-entry')).toBeVisible();
+  await page.locator('.inherit-cycle-entry-open').click();
+  await expect(page.locator('.inherit-cycle-phase-description')).toContainText('Старое наследие');
+  await expect(page.locator('.inherit-cycle-milestone')).toHaveCount(12);
+  await expect(page.locator('.inherit-cycle-milestone.is-unlocked').first()).toBeVisible();
+  await expect(page.locator('.inherit-cycle-fact')).toHaveCount(4);
+  await expect(page.locator('.inherit-cosmetic-tile')).toHaveCount(4);
+  for(const name of ['fern','aurora','copper'])await expect(page.locator('.inherit-cosmetic-tile--'+name)).toBeEnabled();
+  await page.locator('.inherit-cosmetic-tile--copper').click();
+  await expect(page.locator('body')).toHaveAttribute('data-inherit-skin','copper');
+  await expect(page.locator('.inherit-cosmetic-tile--copper')).toHaveAttribute('aria-pressed','true');
+  await page.screenshot({path:info.outputPath('inherit-world-ancient.png')});
+  expect(await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()))).toBe(before);
+  await page.evaluate(()=>window.InheritPersistence.setItem('inherit-world-v1',JSON.stringify(window.InheritGame.snapshot())));
+  await page.reload({waitUntil:'domcontentloaded'});
+  await expect(page.locator('body')).toHaveAttribute('data-inherit-skin','copper');
+  expect(errors).toEqual([]);
+});
+
+test('INHERIT private return notebook: explicit opt-in, truthful delta, no streaks and reversible deletion',async({page})=>{
+  const errors=await prepareStandaloneGame(page);
+  await page.goto('/games/inherit/?lang=en',{waitUntil:'domcontentloaded'});
+  const key='inherit:return-notebook:v2:local';
+  expect(await page.evaluate(k=>localStorage.getItem(k),key)).toBeNull();
+  await page.locator('.inherit-cycle-entry-open').click();
+  await expect(page.locator('.inherit-return-enable')).toBeVisible();
+  await page.locator('.inherit-return-enable').click();
+  await expect(page.locator('.inherit-return-stats')).toContainText('Days visited: 1');
+  const local=await page.evaluate(k=>JSON.parse(localStorage.getItem(k)),key);
+  expect(local.enabled).toBe(true);
+  expect(Object.keys(local.last).sort()).toEqual(['day','discoveries','generation','links','objects']);
+  await page.locator('.inherit-legacy-close').click();
+  await page.locator('#world').focus();
+  await page.locator('#world').press('Enter');
+  await expect(page.locator('#budget')).toHaveText('99');
+  await page.evaluate(k=>{
+    const x=JSON.parse(localStorage.getItem(k));
+    x.last.day='2020-01-01';x.days=['2020-01-01'];
+    localStorage.setItem(k,JSON.stringify(x));
+  },key);
+  await page.reload({waitUntil:'domcontentloaded'});
+  await page.locator('.inherit-cycle-entry-open').click();
+  await expect(page.locator('.inherit-return-stats')).toContainText('Days visited: 2');
+  await expect(page.locator('.inherit-return-changes')).toContainText('traces 1');
+  await page.locator('.inherit-return-erase').click();
+  await expect(page.locator('.inherit-return-enable')).toBeVisible();
+  expect(await page.evaluate(k=>localStorage.getItem(k),key)).toBeNull();
+  await page.reload({waitUntil:'domcontentloaded'});
+  expect(await page.evaluate(k=>localStorage.getItem(k),key)).toBeNull();
+  expect(errors).toEqual([]);
+});
+
+test('INHERIT account read-only cannot use episode choices or private return notebook',async({page})=>{
+  const errors=await prepareStandaloneGame(page);
+  await page.goto('/games/inherit/?mode=account&lang=zh',{waitUntil:'domcontentloaded'});
+  await page.locator('.inherit-cycle-entry-open').click();
+  await expect(page.locator('.inherit-cycle-title')).not.toBeEmpty();
+  await expect(page.locator('.inherit-cycle-choice').first()).toBeDisabled();
+  await expect(page.locator('.inherit-return-actions')).toBeHidden();
+  await expect(page.locator('.inherit-return-status')).toContainText('仅用于本地世界');
+  expect(await page.evaluate(()=>window.InheritGame.snapshot().pending||[])).toEqual([]);
+  expect(errors).toEqual([]);
+});
