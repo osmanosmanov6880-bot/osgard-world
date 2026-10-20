@@ -10,7 +10,7 @@ test('NASA 4K Earth assets and quality preset work on the deployed website', asy
   const url = await request.get(URL + '/brand/omega-nasa-manifest.json')
   expect(url.status()).toBe(200)
   const manifest = await url.json()
-  expect(Object.keys(manifest.assets).length).toBe(6)
+  expect(Object.keys(manifest.assets).length).toBe(7)
   for (const key of ['day_4k', 'night_4k']) {
     const item = manifest.assets[key]
     expect(item.size).toEqual([4096, 2048])
