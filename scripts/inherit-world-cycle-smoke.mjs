@@ -114,7 +114,7 @@ test('return log rejects future or malformed record and never grants game budget
  assert.ok(!/budget|score|purchase|checkout|payment/i.test(read('return-notebook.js')));
 });
 test('UI respects account rights, consent, accessibility and safe text-only rendering',()=>{
- for(const required of ['window.InheritAccount?.state','window.InheritUI?.getLanguage','addEventListener','MutationObserver','aria-label','data-inherit-season','b.disabled=!allowed()','consent.addEventListener','erase.addEventListener','notebook.KEY'])
+ for(const required of ['window.InheritAccount?.state','window.InheritUI?.getLanguage','addEventListener','MutationObserver','aria-label','dataset.inheritSeason','b.disabled=!allowed()','consent.addEventListener','erase.addEventListener','notebook.KEY'])
    assert.ok(ui.includes(required),required);
  for(const banned of ['fetch(', 'innerHTML=', 'InheritGame.apply(', 'navigator.sendBeacon','localStorage.setItem('])assert.ok(!ui.includes(banned),banned);
 });
