@@ -178,3 +178,76 @@ body .dock.cine-account-dock{display:flex;flex-wrap:wrap;align-items:center;gap:
 .cine-click-ripple{position:absolute;z-index:8;display:block;width:12px;height:12px;border:2px solid rgba(246,215,154,.9);border-radius:50%;box-shadow:0 0 12px rgba(240,210,144,.45);background:rgba(245,216,158,.08);transform:translate(-50%,-50%);pointer-events:none;animation:cine-touch .76s cubic-bezier(.13,.59,.42,1) forwards}
 @keyframes cine-touch{0%{opacity:1;transform:translate(-50%,-50%) scale(.7)}80%{opacity:.58}100%{opacity:0;transform:translate(-50%,-50%) scale(6)}}
 @media(prefers-reduced-motion:reduce){.cine-click-ripple{display:none!important;animation:none!important}}
+
+/* Above-the-fold pass: browser QA showed a 399px local guide on 390px mobile.
+   Keep the game itself, not the instructional chrome, in the initial viewport. */
+@media (min-width:1100px) {
+  body .inherit-guide.cine-compact{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 18px;align-items:center;padding:12px clamp(22px,5vw,84px)}
+  body .inherit-guide.cine-compact>.inherit-guide-heading{grid-column:1;grid-row:1;min-width:0;align-items:center;gap:8px}
+  body .inherit-guide.cine-compact>.inherit-guide-heading>div{flex:1;min-width:0}
+  body .inherit-guide.cine-compact>.inherit-guide-heading h2{font-size:clamp(22px,2.2vw,28px);line-height:1.18}
+  body .inherit-guide.cine-compact>.inherit-guide-actions{grid-column:2;grid-row:1;display:flex;align-items:center;margin:0;gap:9px}
+  .inherit-guide.cine-compact>.inherit-guide-actions .save{padding:10px 12px;font-size:11px;min-height:43px}
+  .inherit-guide.cine-compact>.inherit-guide-actions a{font-size:12px;min-height:43px;white-space:nowrap}
+  body .inherit-guide.cine-compact>.inherit-account{grid-column:1/-1;grid-row:2;display:flex;align-items:center;gap:18px;max-width:none;margin:2px 0 0;padding:0;border:0}
+  body .inherit-guide.cine-compact .inherit-account-modes{display:flex;gap:7px;flex-shrink:0}
+  body .inherit-guide.cine-compact .inherit-account-modes button{min-height:39px;padding:8px 11px;font-size:12px}
+  body .inherit-guide.cine-compact #inherit-account-status{margin:0;padding:0;border:0;font-size:12px;line-height:1.4;max-width:none}
+  body .inherit-guide.cine-compact .inherit-account:has(#inherit-account-body[hidden]) #inherit-account-status{display:block}
+  body .world{height:clamp(490px,calc(100svh - 400px),690px);min-height:490px}
+  body .world>.hero{top:23%;max-width:min(440px,37vw)}
+  body .world>.hero h1{font-size:clamp(46px,4.5vw,66px);line-height:1.015;margin:13px 0}
+  body .world>.island{left:62%;bottom:-34px;width:min(760px,62vw);height:410px;min-height:0}
+  body .dock.cine-dock{grid-template-columns:100px minmax(0,1fr) auto auto auto;gap:9px;padding-block:12px;min-height:100px}
+  .cine-dock .tools{gap:6px}
+  .cine-dock .tool,.cine-dock .catalog-button{font-size:11px!important;padding:9px 10px!important;min-height:42px}
+  .cine-dock #pass,.cine-dock .cine-menu-toggle{min-height:46px}
+}
+@media (max-width:740px) {
+  body .app>header{display:flex;flex-wrap:nowrap;align-items:center;min-height:61px;gap:6px;padding:8px 5vw}
+  body .app>header .logo{flex:1 1 auto;letter-spacing:.21em;font-size:14px;white-space:nowrap;min-width:0}
+  body .app>header #reset{flex:none;width:39px;min-width:39px;min-height:39px;max-width:39px;padding:3px!important;overflow:hidden;white-space:nowrap;font-size:0!important}
+  body .app>header #reset:before{content:"↻";display:block;font:600 24px/1.1 Manrope,system-ui,sans-serif;color:#e8d29b}
+  body .app>header .chronicle-button{flex:none;white-space:nowrap;font:600 10px/1.4 Manrope,sans-serif;letter-spacing:0;padding:9px 6px}
+  body .inherit-guide.cine-compact{display:grid;gap:7px;padding:11px 5vw 13px}
+  body .inherit-guide.cine-compact>.inherit-guide-heading{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;gap:7px 12px;min-width:0}
+  body .inherit-guide.cine-compact>.inherit-guide-heading>div{grid-column:1;grid-row:1;min-width:0}
+  body .inherit-guide.cine-compact>.inherit-guide-heading .eyebrow{font-size:9px}
+  body .inherit-guide.cine-compact>.inherit-guide-heading h2{font-size:clamp(18px,5vw,22px);line-height:1.15;margin:3px 0}
+  body .inherit-guide.cine-compact>.inherit-guide-heading .cine-guide-toggle{grid-column:2;grid-row:1;align-self:center;font-size:10px;padding:6px 9px;min-height:36px;max-width:110px}
+  body .inherit-guide.cine-compact>.inherit-guide-heading .game-language{grid-column:1/-1;grid-row:2;width:100%;display:flex;gap:6px}
+  body .inherit-guide.cine-compact .game-language button{min-height:37px;padding:6px 9px;font-size:11px;flex:1 1 0}
+  body .inherit-guide.cine-compact>.inherit-guide-actions{display:flex;gap:7px;margin:0;align-items:center}
+  .inherit-guide.cine-compact>.inherit-guide-actions .save{font-size:11px!important;min-height:38px;padding:9px 11px}
+  .inherit-guide.cine-compact>.inherit-guide-actions a{font-size:11px;min-height:38px}
+  body .inherit-guide.cine-compact>.inherit-account{border:0;margin:0;padding:0;max-width:none}
+  body .inherit-guide.cine-compact .inherit-account-modes{display:flex;flex-wrap:nowrap;gap:6px}
+  .inherit-guide.cine-compact .inherit-account-modes button{flex:1 1 0;padding:7px 6px;min-height:36px;font-size:11px;line-height:1.22}
+  body .inherit-guide.cine-compact .inherit-account:has(#inherit-account-body[hidden]) #inherit-account-status{display:none}
+  body .world{height:540px;min-height:540px}
+  body .world>.objective{top:14px;left:5vw;max-width:74vw}
+  body .world>.community-signal{top:89px;left:5vw;max-width:67vw}
+  body .world>.hero{top:197px;left:7vw;right:7vw;max-width:86vw}
+  body .world>.hero h1{font-size:clamp(36px,8.9vw,47px);line-height:1.02;margin:12px 0}
+  body .world>.hero p{font-size:13px}
+  body .world>.island{left:61%;bottom:-25px;width:630px;height:332px;min-height:0}
+  body .world>.hint{bottom:14px;font-size:10px}
+  body .world>.cine-chapter{bottom:12px}
+  body .dock.cine-dock{position:fixed;left:0;right:0;bottom:0;width:100%;z-index:50;display:grid;grid-template-columns:1fr 1fr;gap:6px 8px;align-items:center;min-height:0;max-height:160px;padding:7px 12px max(8px,env(safe-area-inset-bottom));background:rgba(3,12,20,.98);box-shadow:0 -9px 36px #0009}
+  .cine-dock .turn{display:none}
+  .cine-dock .tools{grid-column:1/-1;grid-row:1;display:flex;flex-wrap:nowrap;gap:6px;min-width:0;width:100%;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:thin;padding:0 0 2px}
+  .cine-dock .tool,.cine-dock .catalog-button{flex:none;min-width:128px;min-height:41px;font-size:11px!important;white-space:nowrap;text-align:center;padding:9px 10px!important}
+  .cine-dock .key-hint{display:none}
+  .cine-dock #pass{grid-column:1;grid-row:2;min-height:43px;padding:10px 12px;font-size:11px}
+  .cine-dock .cine-menu-toggle{grid-column:2;grid-row:2;min-height:43px;padding:9px 12px}
+  body .app{padding-bottom:118px}
+  body .toast{z-index:61;bottom:135px}
+  .cine-utility{bottom:calc(100% + 7px);max-height:56svh}
+}
+@media (max-width:360px){
+  body .app>header .logo{font-size:12px;letter-spacing:.16em}
+  body .app>header .chronicle-button{font-size:9px}
+  .inherit-guide.cine-compact>.inherit-guide-actions .save{font-size:10px!important}
+  body .world>.community-signal{top:95px}
+  body .world>.hero{top:216px}
+}
