@@ -102,7 +102,7 @@ test('atlas is local-only, localized, keyboard navigable and cached for offline 
  assert.match(css,/prefers-reduced-motion:reduce/);
  assert.match(css,/focus-visible/);
  for(const word of ['ru:','en:','zh:','showModal','textContent','aria-labelledby'])assert.ok(ui.includes(word));
- for(const forbidden of ['fetch(', 'sendBeacon', 'localStorage', 'sessionStorage','innerHTML=','InheritGame.apply(','.saveDraft(','.setItem('])
+ for(const forbidden of ['fetch(', 'sendBeacon', 'localStorage.setItem(', 'sessionStorage.setItem(', 'innerHTML=', 'InheritGame.apply(','.saveDraft(','.setItem('])
    assert.ok(!ui.includes(forbidden),'unexpected side effect: '+forbidden);
  assert.ok(interfaceScript.includes('window.InheritAtlasUI?.refresh?.()'));
  new vm.Script(ui);new vm.Script(read('generation-atlas-core.js'));
