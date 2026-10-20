@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import './omegaWorld.css'
 import { cases } from './redesignCatalog'
 import { BrandMark } from './BrandMark'
 import { formatEnquiry, validateEnquiry } from './projectEnquiry'
@@ -44,25 +45,31 @@ export default function WorldHome({ development = false }: { development?: boole
   }
 
   return <main className="world-home brand-container">
-    <section className="world-hero" aria-labelledby="world-title">
-      <div><p className="brand-eyebrow">OSGARD {development ? 'DEVELOPMENT / РАЗРАБОТКА' : 'WORLD / ЦИФРОВАЯ СТУДИЯ'}</p>
-        <h1 id="world-title">Цифровые продукты,<br /><span>построенные<br />как системы.</span></h1>
-        <p className="brand-lead">Соединяем продуктовую задачу, структуру, дизайн и разработку. От первого сценария — до работающего цифрового опыта.</p>
-        <div className="brand-actions"><a className="brand-button primary" href="#cases">Смотреть проекты <span aria-hidden="true">↗</span></a><a className="brand-button" href="#contact">Обсудить проект <span aria-hidden="true">→</span></a></div>
-        <p className="brand-meta">СТРАТЕГИЯ / ИНТЕРФЕЙС / РАЗРАБОТКА</p>
+    <section className="omega-hero" aria-labelledby="world-title">
+      <div className="omega-sky" aria-hidden="true"><div className="omega-stars"/><div className="omega-orbit omega-orbit-one"/><div className="omega-orbit omega-orbit-two"/><div className="omega-globe"><div className="omega-continent omega-c-one"/><div className="omega-continent omega-c-two"/><div className="omega-continent omega-c-three"/></div><div className="omega-platform"/></div>
+      <div className="omega-copy">
+        <p className="brand-eyebrow">OSGARD DIGITAL UNIVERSE / НОВАЯ ТОЧКА ВХОДА</p>
+        <h1 id="world-title">ТЕХНОЛОГИИ,<br/><span>КОТОРЫЕ</span><br/>СОЕДИНЯЮТ<br/>МИРЫ<span className="omega-period">.</span></h1>
+        <p className="brand-lead">Искусственный интеллект, интерактивные миры и разработка цифровых продуктов. Три направления — одна понятная экосистема OSGARD.</p>
+        <div className="brand-actions"><a className="brand-button primary" href="#products">Исследовать экосистему <span aria-hidden="true">↗</span></a><a className="brand-button" href="#approach">Как это работает <span aria-hidden="true">↓</span></a></div>
+        <p className="brand-meta">ЗНАНИЯ / МИРЫ / СОЗДАНИЕ</p>
       </div>
-      <div className="world-system-art" role="img" aria-label="Открытый портал объединяет стратегию, интерфейс и систему">
-        <div className="world-art-caption">СИСТЕМА / 001<span>ОТКРЫТА К НОВОМУ</span></div><BrandMark /><div className="world-art-axis" />
-        <span className="world-art-label label-a">01 / СТРАТЕГИЯ</span><span className="world-art-label label-b">02 / ИНТЕРФЕЙС</span><span className="world-art-label label-c">03 / СИСТЕМА</span><p>Каждый элемент<br />работает на цель.</p>
+      <nav className="omega-gate" aria-label="Три направления экосистемы"><p className="brand-eyebrow">ВХОД В ЭКОСИСТЕМУ <span>01 / 03</span></p>
+        <a href="/intelligence"><span className="omega-glyph">◇</span><span><small>01 / ИНТЕЛЛЕКТ</small><strong>OSA INTELLIGENCE</strong><em>Понимай ИИ. Проверяй ответы. Учись и принимай решения.</em></span><b aria-hidden="true">↗</b></a>
+        <a href="/play"><span className="omega-glyph">✧</span><span><small>02 / МИРЫ</small><strong>OSGARD PLAY</strong><em>Игры и интерактивные миры. Исследуй, играй, создавай.</em></span><b aria-hidden="true">↗</b></a>
+        <a href="/development"><span className="omega-glyph">⌘</span><span><small>03 / СОЗДАНИЕ</small><strong>DEVELOPMENT</strong><em>Реальные кейсы и цифровые продукты от идеи до запуска.</em></span><b aria-hidden="true">↗</b></a>
+      </nav>
+    </section>
+    <div className="omega-benefits" aria-label="Возможности OSGARD"><span>◇ <b>ОБУЧАЙСЯ</b> <small>Понимай и проверяй</small></span><span>✧ <b>ИССЛЕДУЙ</b> <small>Открывай игровые миры</small></span><span>⌘ <b>СОЗДАВАЙ</b> <small>Развивай свои проекты</small></span></div>
+    <section id="products" className="brand-section omega-products" aria-labelledby="world-products-title">
+      <div className="brand-section-heading"><p className="brand-eyebrow">01 / НАПРАВЛЕНИЯ OSGARD</p><h2 id="world-products-title">ТРИ МИРА. <span>ОДНА ВСЕЛЕННАЯ.</span></h2><p>Выбери свой путь. Каждое направление показывает конкретные возможности, доступные действия и ограничения.</p></div>
+      <div className="omega-cards">
+        <a href="/intelligence" className="omega-card"><div className="omega-card-art"><img src="/brand/omega-osa.svg" alt="Голографическое интеллектуальное ядро с нейронными связями" loading="lazy"/><small>01 / ИНТЕЛЛЕКТ</small></div><div className="omega-card-content"><h3>OSA <span>Intelligence</span></h3><p>Разберись в возможностях ИИ, научись проверять ответы и применять знания на практике.</p><strong>Начать обучение <span aria-hidden="true">↗</span></strong></div></a>
+        <a href="/play" className="omega-card"><div className="omega-card-art"><img src="/brand/omega-play.svg" alt="Футуристический цифровой город и игровой портал" loading="lazy"/><small>02 / ИГРОВЫЕ МИРЫ</small></div><div className="omega-card-content"><h3>OSGARD <span>Play</span></h3><p>Исследуй интерактивные миры, открывай доступные игры и игровые эксперименты.</p><strong>Исследовать игры <span aria-hidden="true">↗</span></strong></div></a>
+        <a href="/development" className="omega-card"><div className="omega-card-art"><img src="/brand/omega-development.svg" alt="Голографические 3D-кубы и архитектура программных продуктов" loading="lazy"/><small>03 / РАЗРАБОТКА</small></div><div className="omega-card-content"><h3>OSGARD <span>Development</span></h3><p>Изучи настоящие демонстрации интерфейсов, кейсы и подход к созданию продуктов.</p><strong>Смотреть проекты <span aria-hidden="true">↗</span></strong></div></a>
       </div>
+      <div className="world-workspace-link"><p>Работаешь над своей идеей? Собери план и материалы в одном месте.</p><a className="brand-text-link" href="/workspace">Открыть рабочее пространство ↗</a></div>
     </section>
-
-    <section id="products" className="brand-section" aria-labelledby="world-products-title">
-      <div className="brand-section-heading"><p className="brand-eyebrow">01 / ЭКОСИСТЕМА</p><h2 id="world-products-title">Разные задачи.<br />Одна логика качества.</h2></div>
-      <div className="world-directions">{directions.map(([index, title, description, href, label]) => <a key={index} href={href}><span className="brand-eyebrow">{index} / {label}</span><h3>{title} <span aria-hidden="true">↗</span></h3><p>{description}</p></a>)}</div>
-      <div className="world-workspace-link"><p>Есть цель, над которой хотите работать сами? Соберите план, материалы и критерии результата в одном проекте.</p><a className="brand-text-link" href="/workspace">Открыть рабочее пространство <span aria-hidden="true">↗</span></a></div>
-    </section>
-
     <section id="cases" className="brand-section" aria-labelledby="world-cases-title">
       <div className="brand-section-heading"><p className="brand-eyebrow">02 / ИЗБРАННЫЕ ПРОЕКТЫ</p><h2 id="world-cases-title">У каждой задачи<br />свой характер.</h2><p>Откройте кейс: посмотрите интерфейс, доступные возможности и стадию проекта. Статус указан на каждой карточке.</p></div>
       <div className="world-case-grid">{cases.map((item, index) => <a href={item.href} className="world-case" key={item.id}>
