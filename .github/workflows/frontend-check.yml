@@ -88,6 +88,7 @@ jobs:
           npm run qa:inherit-i18n
           npm run qa:inherit-legacy
           npm run qa:inherit-story
+          npm run qa:inherit-world-cycle
           npm run qa:inherit-handoff
           npm run qa:inherit-account
           npm run qa:remix-session
