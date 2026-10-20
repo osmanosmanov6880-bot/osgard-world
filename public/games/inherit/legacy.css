@@ -1,0 +1,65 @@
+/* Living heritage: decorative consequences are derived, never written into game saves. */
+.inherit-legacy-aura-layer{position:absolute;inset:0;z-index:7;pointer-events:none;overflow:hidden;border-radius:44%;transform:translateZ(0)}
+.inherit-legacy-aura-layer[hidden]{display:none!important}
+.inherit-legacy-aura{position:absolute;display:block;transform:translate(-50%,-50%);width:95px;height:95px;border-radius:50%;opacity:.82;pointer-events:none;filter:blur(5px);mix-blend-mode:screen;animation:legacy-breathe 6s ease-in-out infinite}
+.inherit-legacy-aura--grove{background:radial-gradient(circle,rgba(156,235,119,.37),rgba(85,180,95,.21) 31%,transparent 71%);box-shadow:0 0 23px rgba(134,220,110,.21)}
+.inherit-legacy-aura--waylight{background:radial-gradient(circle,rgba(255,226,136,.55),rgba(247,166,73,.24) 38%,transparent 72%);box-shadow:0 0 22px rgba(250,208,120,.2)}
+.inherit-legacy-aura--garden{background:radial-gradient(circle,rgba(253,151,198,.5),rgba(199,136,229,.19) 42%,transparent 76%)}
+.inherit-legacy-aura--monument{background:radial-gradient(circle,rgba(200,219,221,.45),rgba(113,168,190,.18) 43%,transparent 78%)}
+.inherit-legacy-aura--waymark{background:radial-gradient(circle,rgba(252,207,117,.45),rgba(232,175,88,.12) 42%,transparent 77%)}
+.inherit-legacy-aura--landmark{background:radial-gradient(circle,rgba(247,212,123,.4),rgba(122,196,191,.2) 45%,transparent 79%)}
+.inherit-legacy-aura--new{opacity:.54;width:75px;height:75px}
+.inherit-legacy-aura--growing{opacity:.72;width:96px;height:96px}
+.inherit-legacy-aura--heritage{opacity:1;width:120px;height:120px;box-shadow:0 0 32px rgba(229,213,144,.21)}
+.inherit-legacy-trigger{flex:none;min-height:44px;padding:10px 13px;border:1px solid rgba(222,193,140,.6);border-radius:6px;background:linear-gradient(135deg,rgba(222,193,140,.22),rgba(22,51,52,.6));color:#f3dfb4;cursor:pointer;font:700 12px/1.4 Manrope,system-ui,sans-serif;white-space:nowrap}
+.inherit-legacy-trigger:hover{background:rgba(222,193,140,.28);border-color:#ffe0a2}
+.inherit-legacy-trigger:focus-visible,.inherit-legacy-close:focus-visible{outline:3px solid #ffe1a2;outline-offset:4px}
+.inherit-legacy-pulse{position:absolute;z-index:8;left:clamp(24px,6vw,104px);bottom:12%;max-width:280px;padding:9px 13px;border-left:2px solid rgba(226,200,151,.7);border-radius:2px;background:rgba(4,17,27,.64);color:#e2d9c2;pointer-events:none;text-shadow:0 2px 10px #000;font:600 11px/1.5 Manrope,system-ui,sans-serif}
+.inherit-legacy-dialog{position:fixed;inset:0;margin:auto;width:min(760px,calc(100vw - 32px));max-height:calc(100dvh - 35px);overflow-y:auto;overscroll-behavior:contain;padding:clamp(20px,3vw,38px);border:1px solid rgba(227,194,142,.67);border-radius:14px;background:linear-gradient(150deg,#0e2431,#061421 74%);color:#f1ead8;box-shadow:0 32px 130px #000c;z-index:90}
+.inherit-legacy-dialog::backdrop{background:rgba(0,6,12,.85);backdrop-filter:blur(12px)}
+.inherit-legacy-dialog[open]{display:block}
+.inherit-legacy-close{position:absolute;right:16px;top:11px;width:44px;height:44px;border:1px solid #e7c77877;border-radius:50%;background:rgba(255,255,255,.04);color:#f4ead4;cursor:pointer;font-size:24px}
+.inherit-legacy-eyebrow{font:700 10px/1.5 'DM Mono',monospace;letter-spacing:.17em;color:#e7c778}
+.inherit-legacy-title{font:600 clamp(28px,4vw,47px)/1.1 'Playfair Display',Georgia,serif;margin:13px 35px 10px 0;color:#f1eee5}
+.inherit-legacy-subtitle{font:500 15px/1.6 Manrope,sans-serif;color:#c8d7cf}
+.inherit-legacy-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:19px 0}
+.inherit-legacy-stat{display:grid;gap:4px;padding:14px 10px;border-radius:7px;border:1px solid #e7c77833;background:rgba(220,198,156,.05);min-width:0}
+.inherit-legacy-stat strong{font:600 clamp(22px,3vw,32px)/1.1 'Playfair Display',Georgia,serif;color:#e7c778}
+.inherit-legacy-stat small{font:600 11px/1.4 Manrope,sans-serif;color:#b7c9c6}
+.inherit-legacy-intro{font:14px/1.7 Manrope,sans-serif;color:#c0d0ca;margin:18px 0}
+.inherit-legacy-section-title{font:600 clamp(20px,2vw,26px)/1.2 'Playfair Display',Georgia,serif;margin:24px 0 12px;color:#f1eee5}
+.inherit-legacy-list{list-style:none;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:0;margin:0}
+.inherit-legacy-story{padding:14px;border:1px solid rgba(200,215,203,.24);border-radius:8px;background:rgba(255,255,255,.035);min-width:0}
+.inherit-legacy-story strong{font:700 14px/1.35 Manrope,sans-serif;color:#eddaac}
+.inherit-legacy-story p{font:13px/1.6 Manrope,sans-serif;color:#c7d7d4;margin:8px 0}
+.inherit-legacy-story small{font:600 11px/1.5 Manrope,sans-serif;color:#9acdb7}
+.inherit-legacy-empty{grid-column:1/-1;color:#b9c9ca;border:1px dashed #d3bd874d;padding:14px;font:13px/1.6 Manrope,sans-serif}
+.inherit-legacy-suggestion{padding:15px;border-left:3px solid #e7c778;background:#dcbf7e16;font:600 14px/1.6 Manrope,sans-serif;color:#f3e7cd}
+.inherit-legacy-memories{padding-left:21px;color:#c5d7d1;font:13px/1.7 Manrope,sans-serif}
+.inherit-legacy-disclosure{font:11px/1.7 Manrope,sans-serif;color:#a9bbc4;border-top:1px solid rgba(222,193,140,.26);padding-top:14px;margin-top:21px}
+@keyframes legacy-breathe{50%{opacity:.56;transform:translate(-50%,-50%) scale(1.15)}}
+body.cine-eco .inherit-legacy-aura{animation:none;filter:blur(2px)}
+@media(max-width:740px){
+ .inherit-legacy-trigger{min-width:143px;min-height:42px;max-width:none;white-space:nowrap;font-size:11px}
+ .inherit-legacy-pulse{display:none}
+ .inherit-legacy-dialog{width:calc(100vw - 20px);max-height:calc(100dvh - 20px);padding:21px 17px;border-radius:10px}
+ .inherit-legacy-stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+ .inherit-legacy-list{grid-template-columns:1fr}
+ .inherit-legacy-story{padding:11px}
+}
+@media(prefers-reduced-motion:reduce){.inherit-legacy-aura{animation:none!important;transition:none!important}}
+
+/* Always-visible entry into heritage gameplay, clear of primary mobile generation CTA. */
+body .world>.inherit-legacy-trigger{
+ position:absolute;top:76px;right:clamp(20px,4vw,80px);z-index:10;
+ min-height:43px;max-width:170px;min-width:0;
+ padding:9px 12px;background:rgba(6,24,34,.87);
+ border-color:rgba(226,194,139,.62);backdrop-filter:blur(12px);
+ box-shadow:0 8px 25px #0005;white-space:normal;text-align:center;
+}
+@media(max-width:740px){
+ body .world>.inherit-legacy-trigger{top:75px;right:5vw;min-height:40px;max-width:130px;padding:7px 9px;font-size:11px}
+}
+@media(max-width:360px){
+ body .world>.inherit-legacy-trigger{top:177px;right:5vw;max-width:120px;font-size:10px}
+}

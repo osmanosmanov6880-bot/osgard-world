@@ -456,3 +456,168 @@ test('INHERIT conflict leaves the exact pending generation available for export 
   await expect(page.locator('#budget')).toHaveText('98')
   expect(errors).toEqual([])
 })
+
+test('INHERIT RU/EN/ZH switches in place without losing placed traces or breaking mobile layout',async({page})=>{
+  const errors=await prepareStandaloneGame(page);
+  await page.goto('/games/inherit/?lang=zh',{waitUntil:'domcontentloaded'});
+  await expect(page.locator('html')).toHaveAttribute('lang','zh-CN');
+  await expect(page.locator('[data-game-language="zh"]')).toHaveAttribute('aria-pressed','true');
+  await expect(page.locator('#pass')).toContainText('传承这个世界');
+  await expect(page.locator('.hero h1')).toContainText('有人修了一条路');
+  const world=page.locator('#world');
+  await world.focus();
+  await world.press('Enter');
+  await expect(page.locator('#budget')).toHaveText('99');
+  await expect(page.locator('#objects > .placed')).toHaveCount(1);
+  const original=await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()));
+  await page.locator('[data-game-language="en"]').click();
+  await expect(page.locator('html')).toHaveAttribute('lang','en');
+  await expect(page.locator('#pass')).toContainText('Pass this world on');
+  await page.locator('[data-game-language="ru"]').click();
+  await expect(page.locator('html')).toHaveAttribute('lang','ru');
+  await expect(page.locator('#pass')).toContainText('Завершить поколение');
+  await page.locator('[data-game-language="zh"]').click();
+  await expect(page.locator('html')).toHaveAttribute('lang','zh-CN');
+  await expect(page.locator('#pass')).toContainText('传承这个世界');
+  expect(await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()))).toBe(original);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);
+  expect(await page.evaluate(()=>localStorage.getItem('osgard:game-language'))).toBe('zh');
+  expect(errors).toEqual([]);
+});
+
+test('INHERIT touch undo reuses guarded pending-trace logic and keeps committed history',async({page})=>{
+  const errors=await prepareStandaloneGame(page);
+  await page.goto('/games/inherit/?lang=ru',{waitUntil:'domcontentloaded'});
+  const world=page.locator('#world');
+  await world.focus();
+  await world.press('Enter');
+  await expect(page.locator('#budget')).toHaveText('99');
+  await expect(page.locator('#objects > .placed')).toHaveCount(1);
+  await expect(page.locator('.cine-undo')).toBeVisible();
+  await page.locator('.cine-undo').click();
+  await expect(page.locator('#budget')).toHaveText('100');
+  await expect(page.locator('#objects > .placed')).toHaveCount(0);
+  const state=await page.evaluate(()=>window.InheritGame.snapshot());
+  expect(state.pending).toEqual([]);
+  expect(state.changes).toEqual([]);
+  await page.locator('[data-game-language="zh"]').click();
+  await expect(page.locator('.cine-undo')).toContainText('撤销痕迹');
+  await page.locator('.cine-undo').click();
+  expect((await page.evaluate(()=>window.InheritGame.snapshot())).budget).toBe(100);
+  expect(errors).toEqual([]);
+});
+
+
+test('INHERIT living legacy: six-rule engine animates inherited places, survives translation and never mutates the save',async({page},info)=>{
+  const errors=await prepareStandaloneGame(page);
+  await page.goto('/games/inherit/?lang=ru',{waitUntil:'domcontentloaded'});
+  await expect(page.locator('.inherit-legacy-trigger')).toBeVisible();
+  await expect(page.locator('.inherit-legacy-trigger')).toBeInViewport();
+  expect(await page.evaluate(()=>{
+    const a=document.querySelector('.inherit-legacy-trigger').getBoundingClientRect();
+    const b=document.querySelector('.cine-scene-mode').getBoundingClientRect();
+    return a.top>=b.bottom && a.right<=innerWidth+1 && a.left>=0;
+  })).toBe(true);
+  const original=await page.evaluate(()=>{
+    const state=window.InheritGame.snapshot();
+    const additions=[
+      {tool:'tree',x:35,y:44},{tool:'moss',x:41,y:47},
+      {tool:'path',x:66,y:41},{tool:'light',x:67,y:43}
+    ];
+    window.InheritGame.apply({...state,generation:176,objects:additions,snapshots:[{generation:171,objects:additions}],pending:[],changes:[],budget:100});
+    return JSON.stringify(window.InheritGame.snapshot());
+  });
+  await expect(page.locator('.inherit-legacy-aura--grove')).toHaveCount(1);
+  await expect(page.locator('.inherit-legacy-aura--waylight')).toHaveCount(1);
+  await expect(page.locator('.inherit-legacy-aura--heritage')).toHaveCount(2);
+  await page.locator('.inherit-legacy-trigger').click();
+  await expect(page.locator('.inherit-legacy-dialog')).toBeVisible();
+  await expect(page.locator('.inherit-legacy-dialog')).toContainText('Тихая роща');
+  await expect(page.locator('.inherit-legacy-dialog')).toContainText('Освещённая тропа');
+  await expect(page.locator('.inherit-legacy-dialog')).toContainText('Память поколений');
+  await expect(page.locator('.inherit-legacy-memories')).toContainText('Дерево');
+  await expect(page.locator('.inherit-legacy-memories')).toContainText('Тропа');
+  await page.screenshot({path:info.outputPath('inherit-legacy-journal.png')});
+  await page.locator('.inherit-legacy-close').click();
+  await page.locator('[data-game-language="zh"]').click();
+  await expect(page.locator('.inherit-legacy-trigger')).toContainText('传承');
+  await page.locator('.inherit-legacy-trigger').click();
+  await expect(page.locator('.inherit-legacy-dialog')).toContainText('宁静树林');
+  await page.locator('.inherit-legacy-close').click();
+  expect(await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()))).toBe(original);
+  expect(errors).toEqual([]);
+});
+
+test('INHERIT mobile primary action stays clickable while passing a generation with the compact tool dock',async({page},info)=>{
+  const errors=await prepareStandaloneGame(page);
+  await page.goto('/games/inherit/?lang=ru',{waitUntil:'domcontentloaded'});
+  const pass=page.locator('#pass');
+  if(info.project.name==='mobile'){
+    await expect(pass).toBeInViewport();
+    const bounds=await pass.boundingBox();
+    expect(bounds).not.toBeNull();
+    expect(bounds.y).toBeGreaterThanOrEqual(0);
+    expect(bounds.y+bounds.height).toBeLessThanOrEqual(info.project.use.viewport.height+1);
+  }
+  await page.locator('#world').focus();
+  await page.locator('#world').press('Enter');
+  await expect(page.locator('#budget')).toHaveText('99');
+  await pass.click();
+  await expect(page.locator('#budget')).toHaveText('100');
+  const state=await page.evaluate(()=>window.InheritGame.snapshot());
+  expect(state.generation).toBe(174);
+  expect(state.pending).toEqual([]);
+  expect(state.objects).toHaveLength(1);
+  if(info.project.name==='mobile')await expect(pass).toBeInViewport();
+  expect(errors).toEqual([]);
+});
+
+test('INHERIT generation chapters: select real traces, complete three quests, pass and preserve world',async({page},info)=>{
+  const errors=await prepareStandaloneGame(page);
+  await page.goto('/games/inherit/?lang=ru',{waitUntil:'domcontentloaded'});
+  await expect(page.locator('.inherit-legacy-trigger')).toBeVisible();
+  await page.locator('.inherit-legacy-trigger').click();
+  await expect(page.locator('.inherit-chapter-title')).toContainText('Огонь на берегу');
+  await expect(page.locator('.inherit-chapter-progress')).toHaveJSProperty('value',0);
+  await page.locator('.inherit-chapter-goal').nth(0).locator('.inherit-chapter-tool').click();
+  await expect(page.locator('.inherit-legacy-dialog')).toBeHidden();
+  await page.locator('#world').press('Enter');
+  await expect(page.locator('#budget')).toHaveText('99');
+  await expect.poll(()=>page.evaluate(()=>window.InheritStoryUI.getState().done)).toBe(1);
+  await page.locator('.inherit-legacy-trigger').click();
+  await page.locator('.inherit-chapter-goal').nth(1).locator('.inherit-chapter-tool').click();
+  await page.locator('#world').press('Enter');
+  await expect(page.locator('#budget')).toHaveText('98');
+  await expect.poll(()=>page.evaluate(()=>window.InheritStoryUI.getState().done)).toBe(3);
+  await page.locator('.inherit-legacy-trigger').click();
+  await expect(page.locator('.inherit-chapter-panel')).toHaveAttribute('data-complete','true');
+  await expect(page.locator('.inherit-chapter-goal--done')).toHaveCount(3);
+  await expect(page.locator('.inherit-chapter-outcome')).toContainText('Мир дорог');
+  await page.screenshot({path:info.outputPath('inherit-chapters-ru.png')});
+  await page.locator('.inherit-legacy-close').click();
+  await page.locator('[data-game-language="zh"]').click();
+  await page.locator('.inherit-legacy-trigger').click();
+  await expect(page.locator('.inherit-chapter-title')).toContainText('海岸之火');
+  await expect(page.locator('.inherit-chapter-panel')).toHaveAttribute('data-complete','true');
+  await page.locator('.inherit-legacy-close').click();
+  const before=await page.evaluate(()=>window.InheritGame.snapshot().objects.length);
+  expect(before).toBe(2);
+  await page.locator('#pass').click();
+  await expect.poll(()=>page.evaluate(()=>window.InheritGame.snapshot().generation)).toBe(174);
+  await expect.poll(()=>page.evaluate(()=>window.InheritStoryUI.getState().done)).toBe(0);
+  await expect(page.locator('#objects > .placed')).toHaveCount(2);
+  await expect(page.locator('body')).toHaveAttribute('data-inherit-mood','routes');
+  expect(errors).toEqual([]);
+});
+
+test('INHERIT chapter suggestions do not mutate protected account mode without custody',async({page})=>{
+  const errors=await prepareStandaloneGame(page);
+  await page.goto('/games/inherit/?mode=account&lang=en',{waitUntil:'domcontentloaded'});
+  await expect(page.locator('.inherit-legacy-trigger')).toBeVisible();
+  await page.locator('.inherit-legacy-trigger').click();
+  await expect(page.locator('.inherit-chapter-title')).not.toBeEmpty();
+  await expect(page.locator('.inherit-chapter-tool').first()).toBeDisabled();
+  await expect(page.locator('.inherit-chapter-caution')).toContainText('World editing is unavailable');
+  expect(await page.evaluate(()=>window.InheritGame.snapshot().pending?.length||0)).toBe(0);
+  expect(errors).toEqual([]);
+});
