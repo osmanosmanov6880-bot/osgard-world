@@ -1,12 +1,6 @@
 name: OSGARD Omega live acceptance
 
 on:
-  push:
-    branches: [master]
-    paths:
-      - ".github/workflows/omega-production-acceptance.yml"
-      - "playwright.omega-production.config.mjs"
-      - "scripts/omega-production.spec.mjs"
   workflow_run:
     workflows: ["OSGARD frontend deploy"]
     types: [completed]
