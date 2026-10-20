@@ -94,3 +94,11 @@ function setLanguage(l,save){
 for(const b of buttons)b.addEventListener('click',()=>setLanguage(b.dataset.lang,true));
 setLanguage(pick(),false);
 })();
+
+
+// Scope the optional offline worker to INHERIT only; research files are not cached.
+if('serviceWorker' in navigator){
+ window.addEventListener('load',()=>{
+   navigator.serviceWorker.register('/games/inherit/sw.js',{scope:'/games/inherit/'}).catch(()=>{});
+ },{once:true});
+}
