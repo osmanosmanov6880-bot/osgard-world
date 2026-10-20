@@ -13,10 +13,10 @@ const locale=()=>{const id=window.InheritUI?.getLanguage?.();return i18n[id]?id:
 const tr=()=>i18n[locale()];
 const format=(string,params={})=>String(string).replace(/\{(\w+)\}/g,(_m,key)=>String(params[key]??''));
 const create=(tag,cls,text)=>{const el=doc.createElement(tag);if(cls)el.className=cls;if(text!==undefined)el.textContent=text;return el};
-const island=doc.querySelector('#island'),tools=doc.querySelector('.dock .tools');
-if(!island||!tools)return;
+const island=doc.querySelector('#island'),stage=doc.querySelector('#world');
+if(!island||!stage)return;
 const layer=create('div','inherit-legacy-aura-layer');layer.setAttribute('aria-hidden','true');layer.dataset.noTranslate='';island.appendChild(layer);
-const trigger=create('button','inherit-legacy-trigger');trigger.type='button';trigger.dataset.noTranslate='';tools.appendChild(trigger);
+const trigger=create('button','inherit-legacy-trigger');trigger.type='button';trigger.dataset.noTranslate='';stage.appendChild(trigger);
 const pulse=create('span','inherit-legacy-pulse');pulse.dataset.noTranslate='';pulse.setAttribute('aria-hidden','true');doc.querySelector('#world').appendChild(pulse);
 const panel=create('dialog','inherit-legacy-dialog');panel.dataset.noTranslate='';panel.setAttribute('aria-labelledby','inherit-legacy-title');
 const close=create('button','inherit-legacy-close','×');close.type='button';panel.appendChild(close);
