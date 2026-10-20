@@ -251,3 +251,9 @@ body .dock.cine-account-dock{display:flex;flex-wrap:wrap;align-items:center;gap:
   body .world>.community-signal{top:95px}
   body .world>.hero{top:216px}
 }
+
+/* Touch undo invokes the original generation-safe keyboard undo handler. */
+.cine-undo{min-height:46px;padding:10px 13px;border:1px solid rgba(222,193,140,.44);border-radius:6px;background:rgba(222,193,140,.06);color:#f2deb7;font:700 12px/1.3 Manrope,sans-serif;cursor:pointer;white-space:nowrap}
+.cine-undo:hover{background:rgba(222,193,140,.18);border-color:#eed6a2}
+.cine-undo:focus-visible{outline:3px solid #ffe1a2;outline-offset:3px}
+@media(max-width:740px){.cine-dock .cine-undo,.cine-account-dock .cine-undo{grid-column:1/-1;text-align:center;min-height:44px}}
