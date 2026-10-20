@@ -430,6 +430,7 @@ export default function OmegaGlobe({ mode, chapter, view, onViewChange }: OmegaG
         resizeObserver.observe(sky)
         resize()
         sky.classList.add('omega-webgl-ready')
+        stage.dataset.cloudLayers = '2'
         setStatus('webgl')
         syncRendering()
       } catch {
