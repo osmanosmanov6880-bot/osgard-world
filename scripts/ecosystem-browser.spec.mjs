@@ -36,6 +36,7 @@ test('OSGARD cinema, 3D world and hybrid controls are functional and keyboard-ac
   page.on('pageerror', error => errors.push(error.message))
   await page.emulateMedia({ reducedMotion: 'no-preference' })
   await page.goto('/')
+  await page.locator('.omega-experience-panel summary').click()
   const hero = page.locator('.omega-hero')
   const mode = page.getByRole('group', { name: 'Выберите режим 3D-сцены' })
 
@@ -62,6 +63,7 @@ test('OSGARD cinema, 3D world and hybrid controls are functional and keyboard-ac
   await expect(hero).toHaveAttribute('data-omega-distance', '5.70')
 
   await page.reload()
+  await page.locator('.omega-experience-panel summary').click()
   await expect(hero).toHaveAttribute('data-omega-mode', 'world')
   await mode.getByRole('button', { name: 'Гибрид' }).click()
   await expect(hero).toHaveAttribute('data-omega-mode', 'hybrid')
@@ -82,6 +84,7 @@ test('OSGARD globe fails gracefully without WebGL2 and keeps the experience swit
     }
   })
   await page.goto('/')
+  await page.locator('.omega-experience-panel summary').click()
   await expect(page.locator('.omega-webgl-stage')).toHaveAttribute('data-globe-status', 'fallback', { timeout: 20000 })
   await expect(page.locator('.omega-globe')).toHaveCount(1)
   await page.getByRole('button', { name: 'Кино' }).click()
@@ -90,8 +93,12 @@ test('OSGARD globe fails gracefully without WebGL2 and keeps the experience swit
 })
 
 test('OSGARD Earth GPU quality changes real texture detail with safe remount', async ({ page }) => {
+  // 4K GPU textures and three WebGL remounts can exceed the standard 30-second
+  // wall clock on shared CI runners. Keep every quality, source and fallback assertion.
+  test.setTimeout(90_000)
   await page.emulateMedia({ reducedMotion: 'no-preference' })
   await page.goto('/')
+  await page.locator('.omega-experience-panel summary').click()
   const picker = page.getByRole('combobox', { name: 'Качество 3D-глобуса' })
   const stage = page.locator('.omega-webgl-stage')
   await expect(picker).toHaveValue('auto')
@@ -123,6 +130,7 @@ test('OSGARD raymarched cloud scene retains navigation, motion fallback and on-s
   page.on('pageerror', error => errors.push(error.message))
   await page.emulateMedia({ reducedMotion: 'no-preference' })
   await page.goto('/')
+  await page.locator('.omega-experience-panel summary').click()
   const stage = page.locator('.omega-webgl-stage')
   await expect(stage).toHaveAttribute('data-globe-status', /^(webgl|fallback)$/, { timeout: 25000 })
   const hasWebGL2 = await page.evaluate(() => {
@@ -143,6 +151,31 @@ test('OSGARD raymarched cloud scene retains navigation, motion fallback and on-s
   await expect(page.locator('.omega-globe')).toHaveCount(1)
   await expect(page.locator('.omega-gate a')).toHaveCount(3)
   expect(errors).toEqual([])
+})
+
+test('World Cosmic Portal makes real product routes obvious and keeps Earth settings accessible', async ({ page }) => {
+  await page.goto('/')
+  const hero = page.locator('.omega-command')
+  await expect(hero).toBeVisible()
+  await expect(hero.getByRole('heading', { level: 1, name: /ТЕХНОЛОГИИ,/ })).toBeVisible()
+  const gateways = page.getByRole('navigation', { name: 'Три направления экосистемы' }).getByRole('link')
+  await expect(gateways).toHaveCount(3)
+  for (const [index, href] of ['/intelligence', '/play', '/development'].entries()) {
+    await expect(gateways.nth(index)).toHaveAttribute('href', href)
+  }
+  const settings = page.locator('.omega-experience-panel')
+  await expect(settings).not.toHaveAttribute('open', '')
+  await settings.locator('summary').focus()
+  await page.keyboard.press('Enter')
+  await expect(settings).toHaveAttribute('open', '')
+  await expect(page.getByRole('combobox', { name: 'Качество 3D-глобуса' })).toBeVisible()
+  await settings.locator('summary').click()
+  await expect(settings).not.toHaveAttribute('open', '')
+  const fallback = page.locator('.omega-globe')
+  await expect(fallback).toHaveCount(1)
+  const photographicBackground = await fallback.evaluate(element => getComputedStyle(element).backgroundImage)
+  expect(photographicBackground).toContain('blue-marble-2048.webp')
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true)
 })
 
 test('NASA globe assets are self-hosted, historically credited and hash-verified', async ({ request }) => {
@@ -176,6 +209,10 @@ test('OSGARD Earth uses bundled NASA satellite data with fallback if blocked', a
     await expect(stage).toHaveAttribute('data-cloud-layers', '2')
     await expect(stage).toHaveAttribute('data-earth-resolution', /^(512|1024|2048|4096)$/)
   }
+  // NASA attribution lives inside the compact, keyboard-accessible settings
+  // disclosure. Reveal it before asserting visibility instead of forcing it
+  // to obstruct the main cinematic artwork.
+  await page.locator('.omega-experience-panel summary').click()
   await expect(page.getByText(/ночные огни 2016/)).toBeVisible()
   await expect(page.getByRole('link', { name: 'NASA Blue Marble ↗' })).toHaveAttribute('href', /science\.nasa\.gov/)
 })
