@@ -84,7 +84,10 @@ const pilotReleaseAssets = [
  '/games/inherit/legacy-network.css',
  '/games/inherit/memory-expeditions-core.js',
  '/games/inherit/memory-expeditions.js',
- '/games/inherit/memory-expeditions.css'
+ '/games/inherit/memory-expeditions.css',
+ '/games/inherit/guided-journey-core.js',
+ '/games/inherit/guided-journey.js',
+ '/games/inherit/guided-journey.css'
 ];
 for (const path of pilotReleaseAssets) {
   assert.equal(hash(await fetchPath(path)), hash(await readFile('public' + path)),
