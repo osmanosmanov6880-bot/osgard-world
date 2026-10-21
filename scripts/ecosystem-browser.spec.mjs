@@ -232,10 +232,15 @@ for (const [locale, path] of [['ru','/entertainment/'], ['en','/entertainment/en
     await expect(page.locator('.hero-spotlight')).toHaveAttribute('href', '/play')
     await expect(page.locator('.grid .card')).toHaveCount(7)
     await expect(page.locator('.grid .art img')).toHaveCount(7)
-    const imageStatus = await page.locator('.grid .art img').evaluateAll(images => images.map(img => ({
-      src: new URL(img.src).pathname,
-      loaded: img.complete && img.naturalWidth > 0
-    })))
+    const imageStatus = await page.locator('.grid .art img').evaluateAll(async images => {
+      // Archive artwork is lazy in production. Explicitly decode each cover
+      // before checking the asset, independent of which card is in the viewport.
+      await Promise.all(images.map(async img => { img.loading = 'eager'; await img.decode().catch(() => {}) }))
+      return images.map(img => ({
+        src: new URL(img.src).pathname,
+        loaded: img.complete && img.naturalWidth > 0
+      }))
+    })
     expect(imageStatus.every(image => image.loaded)).toBe(true)
     expect(new Set(imageStatus.map(image => image.src)).size).toBe(7)
     await expect(page.locator('.grid .card[href="/games/time-empire/"]')).toHaveCount(1)
