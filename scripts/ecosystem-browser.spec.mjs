@@ -1247,6 +1247,10 @@ test('INHERIT R9 inspects an actual placed trace without spending a second move'
  const launch=async()=>info.project.name==='mobile'?
   page.locator('.inherit-trace-launcher').click():trace.click();
  await expect(page.locator('.inherit-trace-launcher')).toBeEnabled();
+ if(info.project.name==='mobile'){
+  await expect(page.locator('.inherit-guide-actions .inherit-trace-launcher')).toHaveCount(1);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);
+ }
  await launch();
  const dialog=page.locator('.inherit-trace-inspector');
  await expect(dialog).toBeVisible();
