@@ -1160,7 +1160,7 @@ test('INHERIT R8 real time-lapse plays only saved island frames without changing
  const dialog=page.locator('.inherit-atlas-dialog'),timeline=dialog.locator('.inherit-timelapse');
  await expect(dialog).toBeVisible();
  await expect(timeline.locator('.inherit-timelapse-title')).toContainText('Остров сквозь поколения');
- await expect(timeline.locator('.inherit-timelapse-intro')).toContainText('не выдуманных');
+ await expect(timeline.locator('.inherit-timelapse-intro')).toContainText('нет выдуманных');
  await expect(timeline.locator('.inherit-timelapse-frame')).toContainText('Поколение');
  await dialog.locator('.inherit-atlas-close').click();
  await page.locator('#world').press('Enter');
@@ -1217,7 +1217,8 @@ test('INHERIT R8 honors reduced-motion and discloses missing generations, withou
  await expect(tl).toBeVisible();
  await expect(tl.locator('.inherit-timelapse-play')).toBeDisabled();
  await expect(tl.locator('.inherit-timelapse-warning')).toContainText('Autoplay is disabled');
- await tl.locator('.inherit-timelapse-scrubber input').fill('1');
+ await tl.locator('.inherit-timelapse-scrubber input').focus();
+ await tl.locator('.inherit-timelapse-scrubber input').press('End');
  await expect(tl.locator('.inherit-timelapse-warning')).toContainText('Saved frames are missing');
  await expect(tl.locator('.inherit-timelapse-warning')).toContainText('Intermediate history is unknown');
  await expect(tl.locator('.inherit-timelapse-frame')).toContainText(String(generation));
