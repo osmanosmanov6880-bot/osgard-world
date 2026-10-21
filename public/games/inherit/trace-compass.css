@@ -75,3 +75,10 @@
    selected Compass hint, temporarily give the island its click surface back.
    Its stored onboarding progress is untouched; a real placement restores it. */
 .inherit-compass-armed .inherit-first-steps{display:none!important}
+
+/* R9 inspector opens the optional R10 planner explicitly. */
+.inherit-trace-actions{flex-wrap:wrap}
+.inherit-trace-compass-plan{min-height:44px;padding:9px 14px;background:#e9cf9430;color:#f4d99f;border:1px solid #edd28e8c;border-radius:5px;cursor:pointer}
+.inherit-trace-compass-plan:hover:not(:disabled){background:#e9cf9450}
+.inherit-trace-compass-plan:disabled{opacity:.5;cursor:not-allowed}
+.inherit-trace-compass-plan:focus-visible{outline:3px solid #ffe6b8;outline-offset:3px}
