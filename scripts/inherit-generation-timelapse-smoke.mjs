@@ -126,8 +126,8 @@ check('all frame metadata and pins come only from validated saved objects',()=>{
 });
 check('UI has pause-on-hide, manual controls and no synthetic network/storage writes',()=>{
  const ui=read('generation-timelapse.js'),css=read('generation-timelapse.css');
- for(const text of ['window.InheritTimeLapseUI','visibilitychange','pagehide','dialog.addEventListener(\\'close\\'','matchMedia','aria-label','input','setTimeout','clearTimeout']){
-  assert.ok(ui.includes(text.replaceAll("\\'","'")),text);
+ for(const text of ['window.InheritTimeLapseUI','visibilitychange','pagehide',"dialog.addEventListener('close'",'matchMedia','aria-label','input','setTimeout','clearTimeout']){
+  assert.ok(ui.includes(text),text);
  }
  for(const banned of ['fetch(', 'sendBeacon(', 'localStorage.setItem(', 'sessionStorage.setItem(', 'InheritGame.apply(', 'innerHTML=']){
   assert.ok(!ui.includes(banned),'Unexpected side effect '+banned);
