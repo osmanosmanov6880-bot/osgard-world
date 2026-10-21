@@ -1234,7 +1234,7 @@ test('INHERIT R8 honors reduced-motion and discloses missing generations, withou
 });
 
 
-test('INHERIT R9 inspects an actual placed trace without spending a second move',async({page})=>{
+test('INHERIT R9 inspects an actual placed trace without spending a second move',async({page},info)=>{
  const errors=await prepareStandaloneGame(page);
  await page.goto('/games/inherit/?lang=ru',{waitUntil:'domcontentloaded'});
  await page.locator('#world').focus();
@@ -1244,12 +1244,18 @@ test('INHERIT R9 inspects an actual placed trace without spending a second move'
  expect(before.budget).toBe(99);
  const trace=page.locator('#objects button.placed').first();
  await expect(trace).toHaveAttribute('aria-label',/Исследовать след: Дерево/);
- await trace.click();
+ const launch=async()=>info.project.name==='mobile'?
+  page.locator('.inherit-trace-launcher').click():trace.click();
+ await expect(page.locator('.inherit-trace-launcher')).toBeEnabled();
+ await launch();
  const dialog=page.locator('.inherit-trace-inspector');
  await expect(dialog).toBeVisible();
  await expect(dialog.locator('.inherit-trace-title')).toContainText('Дерево');
  await expect(dialog.locator('.inherit-trace-status')).toContainText('ожидает завершения');
  await expect(dialog.locator('.inherit-trace-pin--selected')).toHaveCount(1);
+ await expect(dialog.locator('.inherit-trace-counter')).toContainText('1 из 1');
+ await expect(dialog.locator('.inherit-trace-prev')).toBeDisabled();
+ await expect(dialog.locator('.inherit-trace-next')).toBeDisabled();
  await expect(page.locator('#panel')).not.toHaveClass(/show/);
  const model=await page.evaluate(()=>window.InheritTraceInspectorUI.getModel());
  expect(model.status).toBe('ok');
@@ -1260,7 +1266,7 @@ test('INHERIT R9 inspects an actual placed trace without spending a second move'
  await expect(dialog).toBeHidden();
  await expect(trace).toBeFocused();
  await page.locator('[data-game-language="en"]').click();
- await trace.click();
+ await launch();
  await expect(dialog.locator('.inherit-trace-title')).toContainText('Tree');
  await expect(dialog.locator('.inherit-trace-disclosure')).toContainText('does not prove');
  await dialog.locator('.inherit-trace-atlas').click();
@@ -1268,7 +1274,7 @@ test('INHERIT R9 inspects an actual placed trace without spending a second move'
  await expect(page.locator('.inherit-atlas-dialog')).toBeVisible();
  await page.locator('.inherit-atlas-close').click();
  await page.locator('[data-game-language="zh"]').click();
- await trace.click();
+ await launch();
  await expect(dialog.locator('.inherit-trace-title')).toContainText('树木');
  await expect(dialog.locator('.inherit-trace-disclosure')).toContainText('不会修改世界');
  await dialog.locator('.inherit-trace-close').click();
@@ -1293,8 +1299,12 @@ test('INHERIT R9 shows real archived matching generations and existing legacy gr
  });
  await expect(page.locator('#objects button.placed')).toHaveCount(3);
  const before=await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()));
- await page.locator('#objects button.placed').first().click();
+ await page.locator('.inherit-trace-launcher').click();
  const dialog=page.locator('.inherit-trace-inspector');
+ await expect(dialog.locator('.inherit-trace-counter')).toContainText('3 из 3');
+ await dialog.locator('.inherit-trace-prev').click();
+ await dialog.locator('.inherit-trace-prev').click();
+ await expect(dialog.locator('.inherit-trace-counter')).toContainText('1 из 3');
  await expect(dialog).toBeVisible();
  await expect(dialog.locator('.inherit-trace-connection')).toContainText('Роща');
  await expect(dialog.locator('.inherit-trace-connection')).toContainText('Мох');
