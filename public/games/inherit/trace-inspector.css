@@ -95,6 +95,9 @@
  border-radius:5px;cursor:pointer}
 .inherit-trace-atlas{background:#edce95;color:#12343a}
 .inherit-trace-back{background:#ffffff09;color:#ebdfc8}
+.inherit-trace-network-link{background:#19434c;color:#e8dfc7;border-color:#d2bf916e}
+.inherit-trace-network-link:hover:not(:disabled){background:#285763}
+.inherit-trace-network-link:disabled{opacity:.45;cursor:default}
 .inherit-trace-atlas:hover:not(:disabled){background:#f6ddaa}
 .inherit-trace-back:hover{background:#ffffff18}
 .inherit-trace-atlas:disabled{opacity:.45;cursor:default}
