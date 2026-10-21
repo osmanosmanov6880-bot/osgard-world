@@ -1,0 +1,84 @@
+/* INHERIT R10 — placement guidance, never an actual game object. */
+.inherit-compass-trigger{min-height:44px;padding:8px 11px;margin-left:5px;border:1px solid #d9c28d91;
+ border-radius:5px;background:linear-gradient(140deg,#e2c58d22,#12362e4d);color:#f5ddab;
+ font:700 11px/1.3 Manrope,system-ui,sans-serif;white-space:nowrap;cursor:pointer}
+.inherit-compass-trigger:hover{background:#d6b97d38;border-color:#f1d89e}
+.inherit-compass-dialog{width:min(730px,calc(100vw - 24px));max-height:min(90dvh,830px);
+ margin:auto;padding:clamp(15px,2.8vw,30px);overflow:auto;overscroll-behavior:contain;
+ border:1px solid #c5ac759c;border-radius:13px;color:#edf1e2;
+ background:radial-gradient(ellipse at 90% 0,#38635755,transparent 60%),
+ linear-gradient(145deg,#123d3b,#0c2527 65%,#071719);
+ box-shadow:0 24px 110px #000b}
+.inherit-compass-dialog:not([open]){display:none!important}
+.inherit-compass-dialog::backdrop{background:#01100de0;backdrop-filter:blur(7px)}
+.inherit-compass-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:14px}
+.inherit-compass-eyebrow{margin:0;color:#e5c98d;font:700 10px/1.5 Manrope,system-ui,sans-serif;letter-spacing:.16em}
+.inherit-compass-title{margin:6px 0;color:#f3e8d2;font:600 clamp(30px,4vw,45px)/1.12 Georgia,serif}
+.inherit-compass-close{min-width:44px;min-height:44px;border-radius:6px;border:1px solid #dac49566;
+ background:#efdfbe0b;color:#f2e7d1;font:29px Georgia,serif;cursor:pointer}
+.inherit-compass-close:hover{background:#ead5ad24}
+.inherit-compass-intro{max-width:630px;color:#c5d8cb;font:13px/1.7 Manrope,system-ui,sans-serif;margin:13px 0 21px}
+.inherit-compass-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:16px 0}
+.inherit-compass-stat{display:grid;gap:7px;align-content:start;padding:12px 14px;
+ border:1px solid #d4c3923d;border-radius:7px;background:#eddfba0a}
+.inherit-compass-stat strong{color:#f2d89b;font:500 clamp(22px,3vw,31px)/1.1 Georgia,serif}
+.inherit-compass-stat small{color:#c5d6cd;font:600 10px/1.5 Manrope,system-ui,sans-serif}
+.inherit-compass-status{color:#f3d7a5;font:600 12px/1.6 Manrope,system-ui,sans-serif}
+.inherit-compass-status:empty{display:none}
+.inherit-compass-candidates{display:grid;gap:9px;margin:17px 0}
+.inherit-compass-option{display:grid;position:relative;grid-template-columns:1fr auto;align-items:center;
+ column-gap:14px;row-gap:3px;width:100%;min-height:78px;padding:14px 17px;
+ border:1px solid #d4c7963e;border-radius:8px;text-align:left;background:#e9d6b50b;color:#e5eddc;
+ font:12px/1.5 Manrope,system-ui,sans-serif;cursor:pointer}
+.inherit-compass-option:hover{border-color:#dbc792aa;background:#e9d6b518}
+.inherit-compass-option[aria-pressed=true]{border-color:#f4db9a;background:#ddc08824;
+ box-shadow:inset 3px 0 #ead28f}
+.inherit-compass-option strong{font:600 17px/1.25 Georgia,serif;color:#f7e8c9;grid-column:1}
+.inherit-compass-option small{grid-column:1;color:#c3d4cb;font-size:11px}
+.inherit-compass-option-score{grid-column:2;grid-row:1/4;color:#f4d799;font:600 26px Georgia,serif}
+.inherit-compass-option .inherit-compass-coordinates{opacity:.75;font-variant-numeric:tabular-nums}
+.inherit-compass-use{min-height:46px;border:1px solid #f5d89b;border-radius:6px;
+ background:#e9cb8a;color:#122d2a;padding:12px 17px;font:800 12px/1.45 Manrope,system-ui,sans-serif;
+ cursor:pointer}
+.inherit-compass-use:disabled{opacity:.43;cursor:not-allowed}
+.inherit-compass-use:hover:not(:disabled){background:#ffe2a4}
+.inherit-compass-note{color:#b7ccc5;font:11px/1.7 Manrope,system-ui,sans-serif;
+ padding-top:13px;margin:17px 0 0;border-top:1px solid #d8c49544}
+.inherit-compass-trigger:focus-visible,.inherit-compass-dialog button:focus-visible{outline:3px solid #ffdf9c;outline-offset:3px}
+/* The phantom pin is not a game object and MUST NOT capture clicks. */
+.inherit-compass-ghost{position:absolute;z-index:12;width:29px;height:29px;
+ transform:translate(-50%,-50%);border:2px solid #fff0bb;border-radius:50%;
+ background:#fbe7a05c;box-shadow:0 0 0 7px #fae7aa25,0 0 27px 12px #f8d88d55;
+ pointer-events:none;animation:inherit-compass-pulse 2.4s ease-in-out infinite}
+.inherit-compass-ghost::before,.inherit-compass-ghost::after{content:"";position:absolute;
+ top:50%;left:50%;background:#fff3ce;transform:translate(-50%,-50%)}
+.inherit-compass-ghost::before{width:2px;height:42px}
+.inherit-compass-ghost::after{height:2px;width:42px}
+.inherit-compass-ghost[hidden]{display:none!important}
+@keyframes inherit-compass-pulse{0%,100%{box-shadow:0 0 0 7px #fae7aa24,0 0 24px 7px #f8d88d55}
+ 50%{box-shadow:0 0 0 12px #fae7aa10,0 0 32px 17px #f8d88d74}}
+/* A 900px-wide island normally sinks below the small mobile viewport.
+   Raise it temporarily on a real player-armed placement so the golden marker
+   stays ABOVE the tool dock and can be tapped on the island itself. */
+@media(max-width:740px){
+ .inherit-compass-armed #island{bottom:-35px}
+}
+@media(max-width:740px){.inherit-compass-trigger{margin:0;white-space:normal;text-align:center;font-size:11px}
+ .inherit-compass-dialog{max-height:92dvh;padding:17px 13px}
+ .inherit-compass-stats{grid-template-columns:repeat(3,minmax(0,1fr))}
+ .inherit-compass-stat{padding:10px}.inherit-compass-stat small{font-size:9px}
+ .inherit-compass-option{padding:12px 11px}.inherit-compass-use{width:100%}}
+@media(prefers-reduced-motion:reduce){.inherit-compass-ghost{animation:none!important}
+ .inherit-compass-dialog *,.inherit-compass-trigger{transition:none!important}}
+
+/* On mobile the first-use coach covers much of the island. During an explicitly
+   selected Compass hint, temporarily give the island its click surface back.
+   Its stored onboarding progress is untouched; a real placement restores it. */
+.inherit-compass-armed .inherit-first-steps{display:none!important}
+
+/* R9 inspector opens the optional R10 planner explicitly. */
+.inherit-trace-actions{flex-wrap:wrap}
+.inherit-trace-compass-plan{min-height:44px;padding:9px 14px;background:#e9cf9430;color:#f4d99f;border:1px solid #edd28e8c;border-radius:5px;cursor:pointer}
+.inherit-trace-compass-plan:hover:not(:disabled){background:#e9cf9450}
+.inherit-trace-compass-plan:disabled{opacity:.5;cursor:not-allowed}
+.inherit-trace-compass-plan:focus-visible{outline:3px solid #ffe6b8;outline-offset:3px}

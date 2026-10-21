@@ -124,6 +124,7 @@ jobs:
           npm run qa:inherit-handoff-moment
           npm run qa:inherit-timelapse
           npm run qa:inherit-traces
+          npm run qa:inherit-compass
           npm run qa:remix-session
           npm run qa:remix-owned-session
           npm run qa:remix-invitations
