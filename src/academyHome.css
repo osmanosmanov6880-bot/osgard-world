@@ -90,7 +90,7 @@
   width:min(1280px,calc(100% - 48px));min-height:615px;
   grid-template-columns:minmax(0,1.08fr) minmax(380px,.92fr);
   gap:clamp(26px,3.5vw,58px);padding:clamp(58px,5.8vw,93px) 0 65px;
-  align-items:center;
+  align-items:center;position:relative;isolation:isolate;
 }
 .academy-hero:before{content:'';position:absolute;pointer-events:none;right:0;top:140px;width:min(65vw,820px);height:460px;border-radius:50%;background:radial-gradient(ellipse,#39639b30,transparent 70%);filter:blur(35px)}
 .academy-hero-copy{max-width:670px}
