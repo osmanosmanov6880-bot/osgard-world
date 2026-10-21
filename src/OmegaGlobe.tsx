@@ -472,7 +472,7 @@ export default function OmegaGlobe({ quality, mode, chapter, view, onViewChange 
         // Premium desktop rendering ray-marches cloud density through a thin
         // spherical shell. Eco/phone renderers keep the inexpensive 2D layers.
         if (quality === 'ultra' || (quality === 'auto' && !mobile)) {
-          const maxSamples: CloudSampleCount = quality === 'ultra' ? 12 : 7
+          const maxSamples: CloudSampleCount = quality === 'ultra' && !mobile ? 12 : 7
           volumetricClouds = createVolumetricClouds(cloudTexture, maxSamples)
           const previousMaterial = clouds.outer.material
           if (Array.isArray(previousMaterial)) previousMaterial.forEach(material => material.dispose())
@@ -513,6 +513,10 @@ export default function OmegaGlobe({ quality, mode, chapter, view, onViewChange 
         scene.add(orbit(2.28, 0.49, 0x3bb3f3, 0.24, 0.97))
 
         if (!alive) return
+        if (volumetricClouds && cloudOuter) {
+          cloudOuter.updateWorldMatrix(true, false)
+          volumetricClouds.update(camera, cloudOuter, sunDirection)
+        }
         resizeObserver = new ResizeObserver(resize)
         resizeObserver.observe(sky)
         resize()
