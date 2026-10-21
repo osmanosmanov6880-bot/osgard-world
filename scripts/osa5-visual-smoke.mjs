@@ -15,9 +15,10 @@ const viewports = [
 const routes = [
   { name: 'world', path: '/', selector: '.world-home', heading: /ТЕХНОЛОГИИ|Цифровые продукты/i, product: 'OSGARD' },
   { name: 'intelligence', path: '/intelligence', selector: '.intelligence-home', heading: /Понимать ИИ/, product: 'Intelligence' },
+  { name: 'development', path: '/development', selector: '.signature-showcase', heading: /СОЗДАЁМ/, product: 'Development' },
   { name: 'play', path: '/play', selector: '.play-universe', heading: /^OSGARD\s*Play$/, product: 'Play' },
   { name: 'portal', path: '/portal', selector: '.world-home', heading: /ТЕХНОЛОГИИ|Цифровые продукты/i, product: 'OSGARD' },
-  { name: 'academy', path: '/academy', selector: 'body' },
+  { name: 'academy', path: '/academy', selector: '.academy-learning-console', heading: /Понимайте ИИ/, product: 'Intelligence' },
   { name: 'lectures', path: '/lectures', selector: '.lecture-library' },
   { name: 'lesson-detail', path: '/lectures/intelligence-and-imitation', selector: '.osa-lesson-page' },
   { name: 'media-library', path: '/osa-library/', selector: '.hero' },
