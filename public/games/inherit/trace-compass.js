@@ -10,7 +10,7 @@ const copy={
  ru:{
  trigger:'✧ Компас следов',title:'Компас следов',eyebrow:'СПЛАНИРУЙ СЛЕДУЮЩИЙ ХОД',
  intro:'Найди место, где новый предмет может дополнить уже существующие. Прогноз вычислен по реальным следам острова и тем же правилам, что в «Наследии».',
- existing:'Связей сейчас',traces:'Следов на острове',prediction:'Возможных новых связей',
+ existing:'Связей сейчас',traces:'Следов на острове',prediction:'Предложений для хода',
  starter:'Начни с дерева. Затем поставь мох рядом — так появится первая роща.',
  none:'Подходящих новых сочетаний в проверенных местах нет. Можно свободно размещать предметы в другом месте.',
  limited:'В этом сохранении слишком много или недостаточно корректных объектов для быстрого прогноза. Игра продолжает работать.',
@@ -27,7 +27,7 @@ const copy={
  en:{
  trigger:'✧ Trace compass',title:'Trace compass',eyebrow:'PLAN YOUR NEXT TRACE',
  intro:'Discover positions where a new object might complement what is already on the island. Predictions use real saved traces and the same rules as the Legacy journal.',
- existing:'Connections now',traces:'Recorded traces',prediction:'Potential new connections',
+ existing:'Connections now',traces:'Recorded traces',prediction:'Suggested placements',
  starter:'Start with a tree. Then place moss nearby to make your first grove.',
  none:'No new link was found in the inspected positions. You may still place traces freely elsewhere.',
  limited:'Too many or invalid saved objects for a quick preview. The game itself is unaffected.',
@@ -44,7 +44,7 @@ const copy={
  zh:{
  trigger:'✧ 痕迹罗盘',title:'痕迹罗盘',eyebrow:'规划下一道痕迹',
  intro:'探索放置新物件的可能位置，让它与已有物件形成联系。预测来自真实存档和「传承」中的相同规则。',
- existing:'当前联系',traces:'岛上痕迹',prediction:'可能新增的联系',
+ existing:'当前联系',traces:'岛上痕迹',prediction:'建议放置方案',
  starter:'可以先种一棵树，再在旁边放苔藓，形成第一片树林。',
  none:'在已检查的位置没有发现新的组合。仍可自由放置其他物件。',
  limited:'存档物件过多或不符合校验，无法快速预测。游戏不受影响。',
