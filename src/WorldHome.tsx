@@ -137,7 +137,7 @@ export default function WorldHome({ development = false }: { development?: boole
               <option value="ultra">Ультра · до 4K текстур</option>
             </select>
           </div>
-          <p className="omega-imagery-credit">Земля: <a href="https://science.nasa.gov/earth/earth-observatory/blue-marble-next-generation/base-map/" target="_blank" rel="noreferrer">NASA Blue Marble ↗</a> · ночные огни 2016 · не прямой эфир.</p>
+          <p className="omega-imagery-credit">Земля: <a href="https://science.nasa.gov/earth/earth-observatory/blue-marble-next-generation/base-map/" target="_blank" rel="noreferrer">NASA Blue Marble ↗</a> · огни 2016 · облака смоделированы, не прогноз погоды.</p>
           {omegaMode === 'cinema' && <div className="omega-cinema-chapters" role="group" aria-label="Кинематографические главы">
             {omegaChapters.map((name, index) => <button type="button" key={name} aria-pressed={omegaChapter === index}
               onClick={() => setOmegaChapter(index as GlobeChapter)}>{String(index + 1).padStart(2, '0')} / {name}</button>)}
