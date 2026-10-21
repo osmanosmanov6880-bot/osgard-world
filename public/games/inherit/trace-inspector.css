@@ -1,3 +1,27 @@
+/* Reachable even if a saved trace is physically behind the mobile dock. */
+.inherit-trace-launcher{display:inline-flex;align-items:center;justify-content:center;min-height:38px;
+ padding:8px 12px;border:1px solid rgba(233,207,153,.52);border-radius:4px;
+ background:linear-gradient(140deg,rgba(233,211,166,.16),rgba(9,43,49,.22));
+ color:#f5e6c4;font:700 11px/1.35 Manrope,system-ui,sans-serif;cursor:pointer;white-space:nowrap}
+.inherit-trace-launcher:hover:not(:disabled){border-color:#f1d29b;background:#edd4a02a}
+.inherit-trace-launcher:disabled{opacity:.55;cursor:default}
+.inherit-trace-launcher:focus-visible{outline:3px solid #ffe4aa;outline-offset:4px}
+.inherit-trace-navigation{display:flex;align-items:center;justify-content:flex-start;gap:10px;flex-wrap:wrap;
+ margin:0 0 16px}
+.inherit-trace-navigation button{min-height:42px;padding:9px 15px;border:1px solid #d8c2946f;
+ background:rgba(224,200,149,.11);border-radius:5px;color:#eddfc5;
+ font:700 12px/1.35 Manrope,system-ui,sans-serif;cursor:pointer}
+.inherit-trace-navigation button:hover:not(:disabled){background:#efdbaf25}
+.inherit-trace-navigation button:disabled{opacity:.38;cursor:default}
+.inherit-trace-counter{color:#e8d19c;font:700 12px/1.5 Manrope,system-ui,sans-serif;
+ font-variant-numeric:tabular-nums}
+@media(max-width:600px){
+ .inherit-trace-launcher{font-size:10px;padding:7px 9px;min-height:36px}
+ .inherit-trace-navigation{gap:7px}
+ .inherit-trace-navigation button{flex:1 1 115px}
+ .inherit-trace-counter{flex:0 0 100%;order:-1}
+}
+
 /* INHERIT R9 — accessible object-by-object exploration, no gameplay layers changed. */
 .inherit-trace-inspector{width:min(990px,calc(100vw - 28px));max-width:990px;max-height:min(91dvh,940px);
  height:auto;overflow:auto;overscroll-behavior:contain;margin:auto;
