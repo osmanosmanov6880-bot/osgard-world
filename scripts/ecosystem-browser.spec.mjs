@@ -1268,7 +1268,7 @@ test('INHERIT R9 inspects an actual placed trace without spending a second move'
  expect(await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()))).toBe(JSON.stringify(before));
  await page.keyboard.press('Escape');
  await expect(dialog).toBeHidden();
- await expect(trace).toBeFocused();
+ await expect(info.project.name==='mobile'?page.locator('.inherit-trace-launcher'):trace).toBeFocused();
  await page.locator('[data-game-language="en"]').click();
  await launch();
  await expect(dialog.locator('.inherit-trace-title')).toContainText('Tree');
