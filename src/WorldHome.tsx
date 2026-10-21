@@ -85,7 +85,7 @@ export default function WorldHome({ development = false }: { development?: boole
     } catch { setError('Не удалось создать файл. Скопируйте описание задачи и отправьте его на указанный адрес.') }
   }
 
-  return <main className="world-home brand-container">
+  return <main className={development ? 'world-home brand-container' : 'world-home brand-container world-command'}>
     {development ? <>
       <section className="omega-dev-hero" aria-labelledby="world-title">
         <div className="omega-dev-hero-art" aria-hidden="true"><img src="/brand/omega-development.svg" width="1600" height="1000" alt="" decoding="async" /><span className="omega-dev-orbit omega-dev-orbit-a"/><span className="omega-dev-orbit omega-dev-orbit-b"/></div>
