@@ -1327,3 +1327,109 @@ test('INHERIT R9 shows real archived matching generations and existing legacy gr
  expect(await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()))).toBe(before);
  expect(errors).toEqual([]);
 });
+
+
+test('INHERIT trace compass: starter guidance and an actual two-tool Legacy connection without invented moves',async({page})=>{
+ const errors=await prepareStandaloneGame(page);
+ await page.goto('/games/inherit/?lang=ru',{waitUntil:'domcontentloaded'});
+ const before=await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()));
+ const trigger=page.locator('.inherit-compass-trigger'),dialog=page.locator('.inherit-compass-dialog');
+ await expect(trigger).toBeVisible();
+ await trigger.click();
+ await expect(dialog).toBeVisible();
+ await expect(dialog.locator('.inherit-compass-title')).toHaveText('Компас следов');
+ await expect(dialog.locator('.inherit-compass-status')).toContainText('Начни с дерева');
+ const starter=await page.evaluate(()=>window.InheritTraceCompassUI.getPlan());
+ expect(starter.status).toBe('first-trace');
+ expect(starter.choices[0].newLinks).toBe(0);
+ expect(await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()))).toBe(before);
+ await dialog.locator('.inherit-compass-use').click();
+ await expect(dialog).toBeHidden();
+ await expect(page.locator('.inherit-compass-ghost')).toBeVisible();
+ await expect(page.locator('.inherit-first-steps')).toBeHidden();
+ expect(await page.evaluate(()=>document.body.classList.contains('inherit-compass-armed'))).toBe(true);
+ // On a 390px-wide screen the old island placement put the hint BELOW the
+ // visible stage, inside the tool dock. A visible CSS node is not enough:
+ // the physical point must hit the island, not a button/overlay.
+ const hit=await page.evaluate(()=>{
+  const dot=document.querySelector('.inherit-compass-ghost').getBoundingClientRect();
+  const x=dot.left+dot.width/2,y=dot.top+dot.height/2;
+  const target=document.elementFromPoint(x,y);
+  return {insideViewport:x>=0&&x<innerWidth&&y>=0&&y<innerHeight,
+   hitWorld:!!target?.closest('#world'),
+   blockedByButton:!!target?.closest('button,.dock,[data-memory]')};
+ });
+ expect(hit.insideViewport).toBe(true);
+ expect(hit.hitWorld).toBe(true);
+ expect(hit.blockedByButton).toBe(false);
+ expect(await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()))).toBe(before);
+ const place=async choice=>{
+  const p=await page.locator('#island').boundingBox();
+  await page.mouse.click(p.x+p.width*choice.x/100,p.y+p.height*choice.y/100);
+ };
+ await place(starter.choices[0]);
+ await expect.poll(()=>page.evaluate(()=>window.InheritGame.snapshot().objects.length)).toBe(1);
+ await expect(page.locator('.inherit-compass-ghost')).toBeHidden();
+ await expect(page.locator('.inherit-first-steps')).toBeVisible();
+ expect(await page.evaluate(()=>document.body.classList.contains('inherit-compass-armed'))).toBe(false);
+ await trigger.click();
+ const option=await page.evaluate(()=>window.InheritTraceCompassUI.getPlan());
+ expect(option.status).toBe('opportunities');
+ const moss=option.choices.find(x=>x.tool==='moss'&&x.rules.some(r=>r.id==='grove'));
+ expect(moss).toBeTruthy();
+ expect(moss.newLinks).toBe(1);
+ const buttons=dialog.locator('.inherit-compass-option');
+ await buttons.nth(option.choices.findIndex(x=>x.tool==='moss')).click();
+ const unchanged=await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()));
+ await dialog.locator('.inherit-compass-use').click();
+ expect(await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()))).toBe(unchanged);
+ await place(moss);
+ await expect.poll(()=>page.evaluate(()=>window.InheritGame.snapshot().objects.length)).toBe(2);
+ await expect.poll(()=>page.evaluate(()=>window.InheritLegacyUI.getState().totals.grove)).toBe(1);
+ const after=await page.evaluate(()=>window.InheritGame.snapshot());
+ expect(after.budget).toBe(98);
+ expect(after.generation).toBe(173);
+ await expect(page.locator('.inherit-compass-ghost')).toBeHidden();
+ expect(errors).toEqual([]);
+});
+
+test('INHERIT trace compass: multilingual, keyboard-dismissable and read-only on account worlds',async({page})=>{
+ const errors=await prepareStandaloneGame(page);
+ await page.goto('/games/inherit/?mode=account&lang=en',{waitUntil:'domcontentloaded'});
+ const before=await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()));
+ const dialog=page.locator('.inherit-compass-dialog'),trigger=page.locator('.inherit-compass-trigger');
+ await trigger.click();
+ await expect(dialog).toBeVisible();
+ await expect(dialog.locator('.inherit-compass-title')).toHaveText('Trace compass');
+ await expect(dialog.locator('.inherit-compass-note')).toContainText('server permissions');
+ await expect(dialog.locator('.inherit-compass-status')).toContainText('Start with a tree');
+ await page.keyboard.press('Escape');
+ await expect(dialog).toBeHidden();
+ await expect(page.locator('.inherit-compass-ghost')).toBeHidden();
+ await page.locator('[data-game-language="zh"]').click();
+ await trigger.click();
+ await expect(dialog.locator('.inherit-compass-title')).toHaveText('痕迹罗盘');
+ await expect(dialog.locator('.inherit-compass-intro')).toContainText('真实存档');
+ await dialog.locator('.inherit-compass-close').click();
+ await expect(dialog).toBeHidden();
+ expect(await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()))).toBe(before);
+ expect(errors).toEqual([]);
+});
+
+test('INHERIT trace compass: exhausted turn blocks misleading placements and does not modify budget',async({page})=>{
+ const errors=await prepareStandaloneGame(page);
+ await page.goto('/games/inherit/?lang=ru',{waitUntil:'domcontentloaded'});
+ await page.evaluate(()=>{
+  const s=window.InheritGame.snapshot();
+  window.InheritGame.apply({...s,budget:0,objects:[{tool:'tree',x:45,y:45}],pending:[],changes:[]});
+ });
+ const before=await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()));
+ await page.locator('.inherit-compass-trigger').click();
+ const panel=page.locator('.inherit-compass-dialog');
+ await expect(panel.locator('.inherit-compass-status')).toContainText('исчерпан');
+ await expect(panel.locator('.inherit-compass-use')).toBeDisabled();
+ await expect(panel.locator('.inherit-compass-candidates button')).toHaveCount(0);
+ expect(await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()))).toBe(before);
+ await page.keyboard.press('Escape');
+ expect(errors).toEqual([]);
+});
