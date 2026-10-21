@@ -42,8 +42,44 @@ function plan(raw,compass=root.InheritTraceCompassCore,legacy=root.InheritLegacy
  const permit=(x,y)=>safe(x,y)&&(typeof reachable!=='function'||reachable(x,y)!==false);
  let sim={generation:base.generation,budget:base.budget,objects:base.objects.slice(),pending:base.pending.slice()};
  const steps=[];
- const starterFallback=[[49,44],[41,57],[61,57],[29,55],[70,42]];
- for(let index=0;index<Math.min(MAX_STEPS,base.budget);index++){
+ const starterFallback=[[49,44],[41,57],[56,60],[36,60],[60,55],[51,60],[58,50],[48,65],[29,55]];
+ // On a blank island, a single safe tree position may lead to a second
+ // suggestion behind a real interactive landmark. Check *both* coordinates
+ // before offering an honest two-move grove route. The exact shipped Legacy
+ // rule must confirm the hypothetical combination; no object is placed here.
+ if(!sim.objects.length&&sim.budget>=2){
+  const firstPredicted=compass.predict(asWorld(sim),legacy);
+  const seeds=[
+   ...(firstPredicted.status==='first-trace'&&Array.isArray(firstPredicted.choices)?
+      firstPredicted.choices.filter(choice=>choice.tool==='tree'):[]),
+   ...starterFallback.map(([x,y])=>({tool:'tree',x,y,starter:true}))
+  ];
+  const offsets=[[5,0],[-5,0],[0,5],[0,-5],[7,0],[-7,0],[0,7]];
+  let found=false;
+  for(const seed of seeds){
+   if(!permit(seed.x,seed.y))continue;
+   const before=legacy.derive({generation:base.generation,objects:[{tool:'tree',x:seed.x,y:seed.y}]});
+   if(before?.limited||!Number.isSafeInteger(before?.total))continue;
+   for(const [dx,dy] of offsets){
+    const x=seed.x+dx,y=seed.y+dy;
+    if(!permit(x,y))continue;
+    const after=legacy.derive({generation:base.generation,
+     objects:[{tool:'tree',x:seed.x,y:seed.y},{tool:'moss',x,y}]});
+    if(after?.limited||!Number.isSafeInteger(after?.total)||after.total<=before.total)continue;
+    steps.push({tool:'tree',x:seed.x,y:seed.y,expectedNewLinks:0,
+       starter:true,source:'hypothetical-only'});
+    steps.push({tool:'moss',x,y,expectedNewLinks:after.total-before.total,
+       starter:false,source:'hypothetical-only'});
+    found=true;break;
+   }
+   if(found)break;
+  }
+  if(found)sim={...sim,budget:sim.budget-2,
+    objects:[...steps.map(step=>({tool:step.tool,x:step.x,y:step.y}))],
+    pending:[...steps.map(step=>({tool:step.tool,x:step.x,y:step.y}))]};
+ }
+
+ for(let index=steps.length;index<Math.min(MAX_STEPS,base.budget);index++){
   const predicted=compass.predict(asWorld(sim),legacy),choices=Array.isArray(predicted?.choices)?predicted.choices:[];
   if(!['first-trace','opportunities'].includes(predicted?.status))break;
   let allowed=choices.filter(choice=>ALLOWED.has(choice.tool)&&Number.isFinite(choice.x)&&Number.isFinite(choice.y)&&
