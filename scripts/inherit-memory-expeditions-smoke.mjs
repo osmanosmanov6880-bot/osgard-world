@@ -44,8 +44,8 @@ check('a surviving archived tree creates a real compatible companion mission',()
 });
 check('UI geometry can reject a blocked target and choose a truthful second position',()=>{
  const v=world([t('tree',56,46)],[ [t('tree',56,46)] ]);
- const blocked=(x,y)=>x>59;
- const p=expedition.derive(v,atlas,legacy,blocked);
+ const allowed=(x,y)=>x<=59;
+ const p=expedition.derive(v,atlas,legacy,allowed);
  assert.equal(p.status,'opportunities');
  const goal=p.goals.find(g=>g.kind==='honor'&&g.tool==='moss');
  assert.ok(goal);assert.ok(goal.x<=59);
