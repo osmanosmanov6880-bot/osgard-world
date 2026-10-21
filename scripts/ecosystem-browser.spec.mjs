@@ -1743,6 +1743,12 @@ test('INHERIT R13 guided route requires two actual island clicks and a genuine l
   await hud.locator('.inherit-journey-hud-action').click();
   await expect(page.locator('.inherit-journey-ghost')).toBeVisible();
   expect((await page.evaluate(()=>window.InheritGame.snapshot())).objects).toHaveLength(i);
+  await expect.poll(()=>page.evaluate(()=>{
+   const r=document.querySelector('.inherit-journey-ghost').getBoundingClientRect();
+   const x=r.left+r.width/2,y=r.top+r.height/2,node=document.elementFromPoint(x,y);
+   return x>=0&&x<innerWidth&&y>=0&&y<innerHeight&&Boolean(node?.closest('#world'))&&
+    !node?.closest('button,.dock,[data-memory],.inherit-journey-hud');
+  }),{timeout:9000}).toBe(true);
   const rect=await page.locator('#island').boundingBox();
   const marker=planned.steps[i];
   await page.mouse.click(rect.x+rect.width*marker.x/100,rect.y+rect.height*marker.y/100);
