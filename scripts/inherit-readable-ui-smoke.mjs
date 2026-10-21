@@ -58,7 +58,7 @@ check('game instructions remain linked to real pending/changes/generation state'
  for(const fragment of [
   "window.InheritGame?.snapshot?.()","s.pending>0||s.changes>0?3:selected?2:1",
   "s.generation!==lastGeneration","query of ['#objects','#budget','#gen']",
-  "aria-current","data-current"
+  "aria-current","dataset.current"
  ])assert.ok(js.includes(fragment),'missing real UI state: '+fragment);
  assert.ok(!js.includes("setInterval"));
 });
