@@ -1,0 +1,48 @@
+name: OSGARD build NASA Earth texture assets
+on:
+  push:
+    branches:
+      - feature/omega-nasa-cinematic-earth-20261021
+    paths:
+      - ".github/workflows/build-nasa-earth-assets.yml"
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build-earth-assets:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Checkout candidate branch
+        uses: actions/checkout@v4
+        with:
+          ref: feature/omega-nasa-cinematic-earth-20261021
+          fetch-depth: 1
+      - name: Install Pillow
+        run: python3 -m pip install --disable-pip-version-check Pillow==11.3.0
+      - name: Build credited NASA textures at 512, 1024, 2048 and 4096 pixels
+        run: python3 scripts/prepare_nasa_earth.py
+      - name: Validate generated assets and publish them to this feature branch only
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+          from PIL import Image
+          base=Path('public/brand/earth')
+          m=json.loads((base/'manifest.json').read_text())
+          assert m['not_live_data'] is True
+          assert len(m['generated']) == 6
+          for file in m['generated']:
+            p=base/file['file']
+            assert p.is_file() and 0 < p.stat().st_size <= 3 * 1024 * 1024
+            with Image.open(p) as im: assert im.size == (file['width'], file['height'])
+          print('Earth assets verified:', m['bundle_bytes'], 'bytes')
+          PY
+          git config user.name "osgard-asset-builder[bot]"
+          git config user.email "osgard-asset-builder[bot]@users.noreply.github.com"
+          git add public/brand/earth/
+          if ! git diff --staged --quiet; then
+            git commit -m "assets(earth): add verified NASA satellite surface and nighttime textures"
+            git push origin "HEAD:feature/omega-nasa-cinematic-earth-20261021"
+          fi
