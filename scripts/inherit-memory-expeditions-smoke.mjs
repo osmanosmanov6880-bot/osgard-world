@@ -42,6 +42,19 @@ check('a surviving archived tree creates a real compatible companion mission',()
  const next=legacy.derive({...v,objects:[...v.objects,t(goal.tool,goal.x,goal.y)]});
  assert.ok(next.totals.grove>baseline.totals.grove);
 });
+check('UI geometry can reject a blocked target and choose a truthful second position',()=>{
+ const v=world([t('tree',56,46)],[ [t('tree',56,46)] ]);
+ const blocked=(x,y)=>x>59;
+ const p=expedition.derive(v,atlas,legacy,blocked);
+ assert.equal(p.status,'opportunities');
+ const goal=p.goals.find(g=>g.kind==='honor'&&g.tool==='moss');
+ assert.ok(goal);assert.ok(goal.x<=59);
+ const next=legacy.derive({...v,objects:[...v.objects,t(goal.tool,goal.x,goal.y)]});
+ assert.ok(next.totals.grove>0);
+ const restored=expedition.derive(world([],[ [t('stone',66,53)] ]),atlas,legacy,
+  (x,y)=>x<60);
+ assert.equal(restored.status,'no-opportunities');
+});
 check('do not invent a disappearance for a historical site still in current world',()=>{
  const v=world([t('tree',34,42)],[ [t('tree',34,42)] ]);
  const p=expedition.derive(v,atlas,legacy);
