@@ -190,6 +190,10 @@
   .theme-intelligence .intelligence-command .intelligence-command-actions .brand-button{font-size:13px}
 }
 @media(max-width:880px){
+  /* Decorative desktop orbital rings extend 460px beyond the mobile card.
+     Removing only these pseudo-elements prevents actual document overflow
+     without clipping focus rings or working evidence controls. */
+  .intelligence-command-lens::before,.intelligence-command-lens::after{display:none}
   .theme-intelligence .intelligence-command .intelligence-command-hero{
     grid-template-columns:1fr;gap:25px;min-height:0;padding:54px 0 60px}
   .theme-intelligence .intelligence-command .intelligence-command-hero h1{
