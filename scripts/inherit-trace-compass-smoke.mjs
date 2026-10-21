@@ -142,6 +142,10 @@ test('all required assets, offline shell and localization hooks are shipped',()=
  assert.ok(ui.includes("d.body.classList.add('inherit-compass-armed')"));
  assert.ok(ui.includes("d.body.classList.remove('inherit-compass-armed')"));
  assert.match(css,/prefers-reduced-motion:reduce/);
+ const inspector=read('trace-inspector.js');
+ assert.ok(inspector.includes('inherit-trace-compass-plan'));
+ assert.ok(inspector.includes('window.InheritTraceCompassUI?.open?.()'));
+
  assert.match(css,/inherit-compass-armed #island\{bottom:-35px\}/);
  assert.match(css,/focus-visible/);
  new vm.Script(ui);new vm.Script(read('trace-compass-core.js'));
