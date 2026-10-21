@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "product": "OSGARD EMPIRE Ω — Империя времени",
+  "release": "v0.21-browser-companion",
+  "route": "/games/time-omega-preview/",
+  "source_path": "public/games/time-omega-preview/index.html",
+  "source_blob_sha": "4cd777fa1d8bfbf9530b788ce01b10e0333db32c",
+  "artifact_type": "standalone HTML browser strategy",
+  "godot_3d_exported": false,
+  "integrity_check": "scripts/time-prototype-smoke.mjs"
+}
