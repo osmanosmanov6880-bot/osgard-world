@@ -353,7 +353,15 @@ function createController(options){
   await refreshLists();if(!currentSelection(context))return false;
   const raw=get(opKey(saved));
   need(raw!==null&&equal(JSON.parse(raw),saved),'storage');removeExact(opKey(saved),raw);
-  refreshJournals();status='operation_confirmed';render();return true;
+  refreshJournals();status='operation_confirmed';render();
+  // Only a verified committed generation, never an uncertain POST or draft,
+  // can display the account server-confirmed receipt.
+  if(saved.kind==='generation')try{
+   game.handoffComplete?.({mode:'account',outcome:'confirmed',
+    fromGeneration:saved.body.expectedGeneration,toGeneration:saved.body.expectedGeneration+1,
+    delta:saved.body.delta});
+  }catch{}
+  return true;
  }
  async function mutate(kind,body,metadata={}){
   if(!mutationAllowed())return 'blocked';

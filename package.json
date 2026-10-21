@@ -91,6 +91,7 @@
     "qa:inherit-pilot-launch": "node scripts/inherit-pilot-launch-smoke.mjs",
     "qa:inherit-followup": "node scripts/inherit-followup-evidence-smoke.mjs",
     "qa:inherit-atlas": "node scripts/inherit-generation-atlas-smoke.mjs",
+    "qa:inherit-handoff-moment": "node scripts/inherit-handoff-moment-smoke.mjs",
     "qa:inherit-handoff": "node scripts/inherit-handoff-smoke.mjs",
     "qa:inherit-account": "node scripts/inherit-account-smoke.mjs",
     "qa:remix-session": "node scripts/remix-session-smoke.mjs",
