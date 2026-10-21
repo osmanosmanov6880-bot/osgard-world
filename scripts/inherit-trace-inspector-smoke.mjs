@@ -59,7 +59,8 @@ test('the same trace can match archival type and location, without proving autho
  assert.deepEqual({first:r.evidence.firstMatch,latest:r.evidence.latestMatch,matched:r.evidence.matchedFrames},
   {first:171,latest:172,matched:2});
  assert.equal(r.evidence.identity,'type-position-and-occurrence-only');
- assert.ok(!JSON.stringify(r).includes('author'));
+ assert.equal(Object.hasOwn(r,'author'),false);
+ assert.equal(Object.hasOwn(r,'createdAt'),false);
  assert.equal(r.caveat,'not-author-not-creation-not-server-confirmation');
 });
 test('duplicate objects use occurrence ordinal instead of inventing two oldest copies',()=>{
