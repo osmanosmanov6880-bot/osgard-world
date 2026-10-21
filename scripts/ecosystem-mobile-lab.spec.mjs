@@ -16,7 +16,7 @@ const profile = {
 }
 const surfaces = [
   { path: '/', product: 'world', heading: 'ТЕХНОЛОГИИ,', primary: '.omega-hero .brand-button.primary', href: /^#products$/ },
-  { path: '/intelligence', product: 'intelligence', heading: 'Понимать ИИ.', primary: '.intelligence-hero .brand-button.primary', href: /^\/learning\/program$/ },
+  { path: '/intelligence', product: 'intelligence', heading: 'Понимать ИИ.', primary: '.intelligence-hero .brand-button.primary', href: /^#proof-card$/ },
   { path: '/play', product: 'play', heading: /OSGARD\s*Play/i, primary: '.cp-hero-actions .cp-button-primary', href: /^#featured$/ },
 ]
 
