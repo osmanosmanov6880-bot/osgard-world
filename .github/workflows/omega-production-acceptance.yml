@@ -1,12 +1,6 @@
 name: OSGARD Omega live acceptance
 
 on:
-  push:
-    branches: [master]
-    paths:
-      - ".github/workflows/omega-production-acceptance.yml"
-      - "playwright.omega-production.config.mjs"
-      - "scripts/omega-production.spec.mjs"
   workflow_run:
     workflows: ["OSGARD frontend deploy"]
     types: [completed]
@@ -39,6 +33,25 @@ jobs:
         run: |
           npm install --no-save --package-lock=false @playwright/test@1.58.2
           npx playwright install --with-deps chromium
+      - name: Wait for deployed NASA imagery and CDN propagation
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import time, urllib.request
+          url = "https://osgard.world/brand/earth/manifest.json"
+          for attempt in range(12):
+              try:
+                  with urllib.request.urlopen(url, timeout=15) as res:
+                      body = res.read()
+                  if b'"not_live_data": true' in body and b'blue-marble-4096.webp' in body:
+                      print("NASA texture manifest deployed")
+                      break
+              except Exception as error:
+                  print(f"Waiting for deployment: {error}")
+              time.sleep(5)
+          else:
+              raise SystemExit("Deployed Earth texture manifest not found")
+          PY
       - name: Validate the live public website in desktop and mobile browsers
         env:
           OSGARD_PROD_BASE_URL: https://osgard.world
