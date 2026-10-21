@@ -32,23 +32,7 @@
 @media(max-width:1000px){.play-universe .cp-explore-placeholder {min-height:6200px}}
 @media(max-width:600px){.play-universe .cp-explore-placeholder {min-height:10500px}}
 
-/* The existing global navigation is kept; only the catalogue places it over its artwork. */
-.theme-play:has(.play-universe) {background:#020814;--ink:#f7fbff;--muted:#a7b9cc;--accent:#56f4f5;--line:#214456}
-.theme-play:has(.play-universe)>.brand-header {position:absolute;left:0;right:0;top:0;min-height:82px;padding:17px clamp(18px,4.3vw,82px);background:linear-gradient(180deg,#020814de,#02081470,transparent);border:0;z-index:5}
-.theme-play:has(.play-universe) .brand-global-nav {gap:34px}
-.theme-play:has(.play-universe) .brand-global-nav a {color:#e6f3ff;font-size:12px}
-.theme-play:has(.play-universe) .brand-global-nav a[aria-current=page] {color:#56f4f5}
-.theme-play:has(.play-universe) .brand-lockup b {font-size:21px;letter-spacing:.14em}
-.theme-play:has(.play-universe) .brand-lockup small {color:#c2dfef;font-size:8px}
-.theme-play:has(.play-universe) .brand-lockup>svg {width:45px;height:45px}
-.theme-play:has(.play-universe) .brand-motion {color:#b0f8ff;border-color:#6599b180;background:#06152773;backdrop-filter:blur(10px);padding:9px 13px;font-size:9px}
-.theme-play:has(.play-universe)>.brand-local-bar {position:absolute;top:88px;right:clamp(18px,4.3vw,82px);z-index:4;min-height:32px;padding:0;border:0;background:transparent}
-.theme-play:has(.play-universe)>.brand-local-bar>span {display:none}
-.theme-play:has(.play-universe)>.brand-local-bar nav {gap:22px}
-.theme-play:has(.play-universe)>.brand-local-bar a {font-size:10px;color:#ceecf6;min-height:32px;border-bottom:1px solid transparent}
-.theme-play:has(.play-universe)>.brand-local-bar a:hover {border-color:#56f4f5}
-.theme-play:has(.play-universe)>.brand-breadcrumbs {display:none}
-.theme-play:has(.play-universe)>.brand-footer {background:#020814;border-color:#13374a}
+/* Global navigation for Play catalog is in eagerly loaded brandSystem.css. */
 
 /* One panoramic scene, actual HTML, and an independently composed mobile picture. */
 .play-universe .cp-hero {position:relative;isolation:isolate;height:clamp(660px,48.4vw,930px);min-height:660px;background:#020814}
@@ -232,8 +216,6 @@
   .play-universe .cp-card-top>span {font-size:11px}
 }
 @media(max-width:1150px){
-  .theme-play:has(.play-universe) .brand-global-nav {gap:23px}
-  .theme-play:has(.play-universe) .brand-motion-value {display:none}
   .play-universe .cp-hero-copy {width:51%}
   .play-universe .cp-hero-actions {gap:9px}
   .play-universe .cp-hero-actions .cp-button {font-size:11px;padding:13px 17px;gap:12px}
@@ -258,14 +240,6 @@
   .play-universe .cp-guest>.cp-button {margin-left:62px}
 }
 @media(max-width:900px){
-  .theme-play:has(.play-universe)>.brand-header {gap:20px}
-  .theme-play:has(.play-universe) .brand-global-nav {gap:16px}
-  .theme-play:has(.play-universe) .brand-lockup b {font-size:17px}
-  .theme-play:has(.play-universe) .brand-lockup small {font-size:7px}
-  .theme-play:has(.play-universe) .brand-lockup>svg {width:37px;height:37px}
-  .theme-play:has(.play-universe) .brand-motion {font-size:0;min-width:36px;padding:8px}
-  .theme-play:has(.play-universe) .brand-motion-state {font-size:14px}
-  .theme-play:has(.play-universe)>.brand-local-bar {top:86px}
   .play-universe .cp-hero {height:auto;min-height:810px}
   .play-universe .cp-hero-layout {padding-top:150px;padding-bottom:85px;align-items:flex-start;min-height:810px}
   .play-universe .cp-hero-copy {width:64%}
@@ -299,13 +273,6 @@
 }
 @media(max-width:600px){
   .play-universe {--cp-gutter:19px}
-  .theme-play:has(.play-universe)>.brand-header {display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:15px 19px 0;min-height:90px}
-  .theme-play:has(.play-universe) .brand-lockup b {font-size:17px}
-  .theme-play:has(.play-universe) .brand-lockup small {font-size:7px}
-  .theme-play:has(.play-universe) .brand-global-nav {order:3;width:100%;justify-content:space-between;gap:8px}
-  .theme-play:has(.play-universe) .brand-global-nav a {font-size:10px;min-height:34px}
-  .theme-play:has(.play-universe) .brand-motion {min-width:35px;min-height:35px;margin-left:auto}
-  .theme-play:has(.play-universe)>.brand-local-bar {position:relative;top:auto;right:auto;padding:13px 19px;background:#03101b;border-bottom:1px solid #17394c;min-height:53px;order:0;transform:none;display:none}
   .play-universe .cp-hero {min-height:960px;height:auto;padding-bottom:28px}
   .play-universe .cp-hero-art {inset:0}
   .play-universe .cp-hero-art img {object-position:center top}
