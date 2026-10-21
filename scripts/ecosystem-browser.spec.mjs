@@ -1717,3 +1717,102 @@ test('INHERIT R12 has honest no-archive and zero-budget states in account mode a
  expect(JSON.parse(before).objects).toHaveLength(0);
  expect(errors).toEqual([]);
 });
+
+
+test('INHERIT R13 guided route requires two actual island clicks and a genuine local handoff',async({page})=>{
+ const errors=await prepareStandaloneGame(page);
+ await page.goto('/games/inherit/?lang=ru',{waitUntil:'domcontentloaded'});
+ await page.evaluate(()=>{
+  const s=window.InheritGame.snapshot();
+  window.InheritGame.apply({...s,generation:173,budget:100,objects:[],pending:[],changes:[],snapshots:[]});
+ });
+ const initial=await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()));
+ const trigger=page.locator('.inherit-journey-trigger'),dialog=page.locator('.inherit-journey-dialog'),
+   hud=page.locator('.inherit-journey-hud');
+ await expect(trigger).toBeVisible();
+ await trigger.click();await expect(dialog).toBeVisible();
+ await expect(dialog.locator('.inherit-journey-title')).toHaveText('Маршрут поколений');
+ const planned=await page.evaluate(()=>window.InheritJourneyUI.getPlan());
+ expect(planned.status).toBe('ready');expect(planned.steps).toHaveLength(2);
+ expect(planned.steps.map(s=>s.tool)).toEqual(['tree','moss']);
+ expect(await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()))).toBe(initial);
+ await dialog.locator('.inherit-journey-start').click();
+ await expect(dialog).toBeHidden();await expect(hud).toBeVisible();
+ expect(await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()))).toBe(initial);
+ for(let i=0;i<2;i++){
+  await hud.locator('.inherit-journey-hud-action').click();
+  await expect(page.locator('.inherit-journey-ghost')).toBeVisible();
+  expect((await page.evaluate(()=>window.InheritGame.snapshot())).objects).toHaveLength(i);
+  const rect=await page.locator('#island').boundingBox();
+  const marker=planned.steps[i];
+  await page.mouse.click(rect.x+rect.width*marker.x/100,rect.y+rect.height*marker.y/100);
+  await expect.poll(()=>page.evaluate(()=>window.InheritGame.snapshot().objects.length)).toBe(i+1);
+  await expect.poll(()=>page.evaluate(()=>window.InheritJourneyUI.getProgress()?.completed)).toBe(i+1);
+ }
+ await expect(page.locator('.inherit-journey-ghost')).toBeHidden();
+ await expect(hud.locator('.inherit-journey-hud-text')).toContainText('Заверши поколение');
+ expect((await page.evaluate(()=>window.InheritGame.snapshot())).budget).toBe(98);
+ expect((await page.evaluate(()=>window.InheritLegacyUI.getState().totals.grove))).toBeGreaterThanOrEqual(1);
+ await hud.locator('.inherit-journey-hud-action').click();
+ await expect(page.locator('#pass')).toBeFocused();
+ expect((await page.evaluate(()=>window.InheritGame.snapshot())).generation).toBe(173);
+ await page.locator('#pass').click();
+ await expect.poll(()=>page.evaluate(()=>window.InheritGame.snapshot().generation)).toBe(174);
+ await expect.poll(()=>page.evaluate(()=>window.InheritJourneyUI.getProgress()?.status)).toBe('local-server-unverified');
+ await expect(hud.locator('.inherit-journey-hud-text')).toContainText('Подтверждение сервера неизвестно');
+ expect((await page.evaluate(()=>window.InheritGame.snapshot())).pending).toHaveLength(0);
+ await hud.locator('.inherit-journey-stop').click();
+ await expect(hud).toBeHidden();expect(errors).toEqual([]);
+});
+
+test('INHERIT R13 plan remains preview-only with account rights, history replay and localization',async({page})=>{
+ const errors=await prepareStandaloneGame(page);
+ await page.goto('/games/inherit/?mode=account&lang=en',{waitUntil:'domcontentloaded'});
+ await page.evaluate(()=>{
+  const s=window.InheritGame.snapshot();
+  window.InheritGame.apply({...s,generation:173,budget:100,objects:[],pending:[],changes:[],snapshots:[]});
+ });
+ const before=await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()));
+ const trigger=page.locator('.inherit-journey-trigger'),dialog=page.locator('.inherit-journey-dialog');
+ await trigger.click();
+ await expect(dialog).toContainText('Account world: this route is a read-only preview');
+ await expect(dialog.locator('.inherit-journey-start')).toBeDisabled();
+ expect(await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()))).toBe(before);
+ await page.keyboard.press('Escape');await expect(dialog).toBeHidden();
+ await page.locator('[data-game-language="zh"]').click();
+ await trigger.click();
+ await expect(dialog.locator('.inherit-journey-title')).toHaveText('世代路线');
+ await expect(dialog.locator('.inherit-journey-status')).toContainText('服务器权限');
+ await page.keyboard.press('Escape');
+ expect(await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()))).toBe(before);
+ await page.goto('/games/inherit/?lang=en',{waitUntil:'domcontentloaded'});
+ await page.evaluate(()=>document.body.classList.add('replay-mode'));
+ await page.locator('.inherit-journey-trigger').click();
+ await expect(page.locator('.inherit-journey-start')).toBeDisabled();
+ await expect(page.locator('.inherit-journey-status')).toContainText('Return to the present');
+ await page.keyboard.press('Escape');
+ expect(errors).toEqual([]);
+});
+
+test('INHERIT R13 abandons guided route after a different real world change and never credits it',async({page})=>{
+ const errors=await prepareStandaloneGame(page);
+ await page.goto('/games/inherit/?lang=en',{waitUntil:'domcontentloaded'});
+ await page.evaluate(()=>{
+  const s=window.InheritGame.snapshot();
+  window.InheritGame.apply({...s,generation:173,budget:100,objects:[],pending:[],changes:[],snapshots:[]});
+ });
+ await page.locator('.inherit-journey-trigger').click();
+ await page.locator('.inherit-journey-start').click();
+ await expect(page.locator('.inherit-journey-hud')).toBeVisible();
+ await page.evaluate(()=>{
+  const s=window.InheritGame.snapshot();
+  window.InheritGame.apply({...s,objects:[{tool:'stone',x:25,y:30}],pending:[{type:'stone',x:25,y:30}],budget:99,changes:['stone']});
+ });
+ await expect.poll(()=>page.evaluate(()=>window.InheritJourneyUI.getProgress()?.status)).toBe('invalidated');
+ await expect(page.locator('.inherit-journey-hud-text')).toContainText('world changed outside the planned route');
+ await expect(page.locator('.inherit-journey-ghost')).toBeHidden();
+ const observed=await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()));
+ await page.locator('.inherit-journey-stop').click();
+ expect(await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()))).toBe(observed);
+ expect(errors).toEqual([]);
+});
