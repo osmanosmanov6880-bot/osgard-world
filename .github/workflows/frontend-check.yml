@@ -99,6 +99,7 @@ jobs:
           npm run qa:inherit-compass
           npm run qa:inherit-network
           npm run qa:inherit-expeditions
+          npm run qa:inherit-readability
           npm run qa:inherit-handoff
           npm run qa:inherit-account
           npm run qa:remix-session
