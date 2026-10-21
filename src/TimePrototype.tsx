@@ -519,6 +519,10 @@ export function TimePrototype() {
           <div className="tg-overline"><span>{state.year} / MANDATE I</span><span>·</span><span>ЦИКЛ {String(state.tick).padStart(2, '0')}</span></div>
           <h1>Империя <em>времени.</em></h1>
           <p>Город запоминает каждое решение. Казна, энергия и три силы определят, переживёт ли империя следующий такт.</p>
+          <a className="tg-omega-preview-link" href="/games/time-omega-preview/" aria-label="Открыть браузерную демоверсию Империя времени Омега версии 0.21">
+            <span>ИГРАТЬ В OMEGA v0.21 <small>БРАУЗЕРНАЯ ДЕМОВЕРСИЯ</small></span>
+            <ArrowUpRight size={17} />
+          </a>
         </div>
         <div className="tg-mission-card">
           <div className="tg-mission-head"><span>ОСНОВНАЯ ЦЕЛЬ</span><span>МАНДАТ 01</span></div>
