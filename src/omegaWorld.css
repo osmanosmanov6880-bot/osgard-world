@@ -210,7 +210,7 @@ html[data-motion="off"] .omega-mode-tabs button{transition:none!important}
 .world-command .omega-command-secondary{background:#081b30bd;border-color:#6d96a878;color:#ecf9ff;backdrop-filter:blur(9px)}
 .world-command .omega-command-promise{font:600 11px/1.6 'JetBrains Mono',monospace;letter-spacing:.14em;color:#96b9ce;margin:22px 0 0}
 .world-command .omega-command-promise span{color:#5fe9f5;padding:0 9px}
-.world-command .omega-command-planet-caption{position:absolute;right:10px;bottom:206px;z-index:3;margin:0;text-align:right;color:#b0d7e9;font:600 9px/1.6 'JetBrains Mono',monospace;letter-spacing:.17em}
+.world-command .omega-command-planet-caption{display:none}
 .world-command .omega-command-planet-caption span{display:block;font-size:8px;color:#83acbe;letter-spacing:.08em}
 /* Three clear, keyboard-accessible product portals replace the right-hand settings dashboard. */
 .world-command .omega-command .omega-gate{position:absolute;inset:auto 0 24px;width:100%;max-width:none;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding:0;border:0;box-shadow:none;background:transparent;backdrop-filter:none;z-index:7}
@@ -252,7 +252,7 @@ html[data-motion="off"] .omega-mode-tabs button{transition:none!important}
 .world-command .omega-command .omega-copy{max-width:67%}
 .world-command .omega-command .omega-globe{left:80%;width:clamp(430px,62vw,710px);opacity:.8}
 .world-command .omega-command .omega-webgl-stage{width:72%}
-.world-command .omega-command .omega-gate a{padding:17px 14px;min-height:158px;gap:9px}
+.world-command .omega-command .omega-gate a{grid-template-columns:24px minmax(0,1fr) 12px;padding:17px 11px;min-height:158px;gap:8px}
 .world-command .omega-command .omega-gate strong{font-size:17px}
 }
 @media(max-width:760px){
@@ -276,7 +276,7 @@ html[data-motion="off"] .omega-mode-tabs button{transition:none!important}
 .world-command .omega-command .omega-gate a strong{font-size:18px}
 .world-command .omega-command .omega-gate a em{font-size:12px}
 .world-command .omega-command-planet-caption{display:none}
-.world-command .omega-command .omega-experience-panel{top:11px;right:0;width:205px}
+.world-command .omega-command .omega-experience-panel{top:11px;right:0;width:245px}
 .world-command .omega-command .omega-experience-panel[open]{width:min(400px,100%)}
 .world-command .omega-products{padding-top:50px}
 }
