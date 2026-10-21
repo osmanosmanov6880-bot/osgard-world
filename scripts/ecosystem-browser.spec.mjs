@@ -1232,3 +1232,98 @@ test('INHERIT R8 honors reduced-motion and discloses missing generations, withou
  await page.keyboard.press('Escape');
  expect(errors).toEqual([]);
 });
+
+
+test('INHERIT R9 inspects an actual placed trace without spending a second move',async({page},info)=>{
+ const errors=await prepareStandaloneGame(page);
+ await page.goto('/games/inherit/?lang=ru',{waitUntil:'domcontentloaded'});
+ await page.locator('#world').focus();
+ await page.locator('#world').press('Enter');
+ await expect(page.locator('#objects button.placed')).toHaveCount(1);
+ const before=await page.evaluate(()=>window.InheritGame.snapshot());
+ expect(before.budget).toBe(99);
+ const trace=page.locator('#objects button.placed').first();
+ await expect(trace).toHaveAttribute('aria-label',/Исследовать след: Дерево/);
+ const launch=async()=>info.project.name==='mobile'?
+  page.locator('.inherit-trace-launcher').click():trace.click();
+ await expect(page.locator('.inherit-trace-launcher')).toBeEnabled();
+ if(info.project.name==='mobile'){
+  await expect(page.locator('.inherit-guide-actions .inherit-trace-launcher')).toHaveCount(1);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);
+ }
+ await launch();
+ const dialog=page.locator('.inherit-trace-inspector');
+ await expect(dialog).toBeVisible();
+ await expect(dialog.locator('.inherit-trace-title')).toContainText('Дерево');
+ await expect(dialog.locator('.inherit-trace-status')).toContainText('ожидает завершения');
+ await expect(dialog.locator('.inherit-trace-pin--selected')).toHaveCount(1);
+ await expect(dialog.locator('.inherit-trace-counter')).toContainText('1 из 1');
+ await expect(dialog.locator('.inherit-trace-prev')).toBeDisabled();
+ await expect(dialog.locator('.inherit-trace-next')).toBeDisabled();
+ await expect(page.locator('#panel')).not.toHaveClass(/show/);
+ const model=await page.evaluate(()=>window.InheritTraceInspectorUI.getModel());
+ expect(model.status).toBe('ok');
+ expect(model.draft).toBe(true);
+ expect(model.selected.type).toBe('tree');
+ expect(await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()))).toBe(JSON.stringify(before));
+ await page.keyboard.press('Escape');
+ await expect(dialog).toBeHidden();
+ await expect(info.project.name==='mobile'?page.locator('.inherit-trace-launcher'):trace).toBeFocused();
+ await page.locator('[data-game-language="en"]').click();
+ await launch();
+ await expect(dialog.locator('.inherit-trace-title')).toContainText('Tree');
+ await expect(dialog.locator('.inherit-trace-disclosure')).toContainText('does not prove');
+ await dialog.locator('.inherit-trace-atlas').click();
+ await expect(dialog).toBeHidden();
+ await expect(page.locator('.inherit-atlas-dialog')).toBeVisible();
+ await page.locator('.inherit-atlas-close').click();
+ await page.locator('[data-game-language="zh"]').click();
+ await launch();
+ await expect(dialog.locator('.inherit-trace-title')).toContainText('树木');
+ await expect(dialog.locator('.inherit-trace-disclosure')).toContainText('不会修改世界');
+ await dialog.locator('.inherit-trace-close').click();
+ await expect(dialog).toBeHidden();
+ expect(await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()))).toBe(JSON.stringify(before));
+ expect(errors).toEqual([]);
+});
+
+test('INHERIT R9 shows real archived matching generations and existing legacy grove pairing',async({page})=>{
+ const errors=await prepareStandaloneGame(page);
+ await page.goto('/games/inherit/?lang=ru',{waitUntil:'domcontentloaded'});
+ await page.evaluate(()=>{
+  const game=window.InheritGame,s=game.snapshot();
+  s.generation=174;s.budget=100;s.pending=[];s.changes=[];
+  s.objects=[{tool:'tree',x:34,y:42},{tool:'moss',x:37,y:43},{tool:'stone',x:85,y:77}];
+  s.snapshots=[
+   {generation:170,objects:[{tool:'tree',x:34,y:42}]},
+   {generation:172,objects:[{tool:'tree',x:34,y:42},{tool:'stone',x:85,y:77}]},
+   {generation:173,objects:[{tool:'tree',x:60,y:63}]}
+  ];
+  game.apply(s);
+ });
+ await expect(page.locator('#objects button.placed')).toHaveCount(3);
+ const before=await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()));
+ await page.locator('.inherit-trace-launcher').click();
+ const dialog=page.locator('.inherit-trace-inspector');
+ await expect(dialog.locator('.inherit-trace-counter')).toContainText('3 из 3');
+ await dialog.locator('.inherit-trace-prev').click();
+ await dialog.locator('.inherit-trace-prev').click();
+ await expect(dialog.locator('.inherit-trace-counter')).toContainText('1 из 3');
+ await expect(dialog).toBeVisible();
+ await expect(dialog.locator('.inherit-trace-connection')).toContainText('Роща');
+ await expect(dialog.locator('.inherit-trace-connection')).toContainText('Мох');
+ const details=await page.evaluate(()=>window.InheritTraceInspectorUI.getModel());
+ expect(details.evidence.firstMatch).toBe(170);
+ expect(details.evidence.latestMatch).toBe(172);
+ expect(details.evidence.matchedFrames).toBe(2);
+ expect(details.connectionTotal).toBe(1);
+ expect(details.connections[0].id).toBe('grove');
+ expect(details.draft).toBe(false);
+ await expect(dialog.locator('.inherit-trace-history')).toContainText('170');
+ await expect(dialog.locator('.inherit-trace-map .inherit-trace-pin--compatible')).toHaveCount(1);
+ await expect(page.locator('#budget')).toHaveText('100');
+ await dialog.locator('.inherit-trace-back').click();
+ await expect(dialog).toBeHidden();
+ expect(await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()))).toBe(before);
+ expect(errors).toEqual([]);
+});
