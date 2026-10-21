@@ -108,6 +108,54 @@ test('OSGARD Earth GPU quality changes real texture detail with safe remount', a
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true)
 })
 
+test('NASA globe assets are self-hosted, historically credited and hash-verified', async ({ request }) => {
+  const { createHash } = await import('node:crypto')
+  const response = await request.get('/brand/earth/manifest.json')
+  expect(response.status()).toBe(200)
+  const manifest = await response.json()
+  expect(manifest.mode).toBe('self-hosted')
+  expect(manifest.not_live_data).toBe(true)
+  expect(manifest.generated).toHaveLength(6)
+  expect(manifest.bundle_bytes).toBeLessThan(7 * 1024 * 1024)
+  for (const resource of manifest.generated) {
+    const img = await request.get('/brand/earth/' + resource.file)
+    expect(img.status(), resource.file).toBe(200)
+    const bytes = await img.body()
+    expect(bytes.length, resource.file).toBe(resource.bytes)
+    expect(bytes.subarray(0, 4).toString('ascii'), resource.file).toBe('RIFF')
+    expect(bytes.subarray(8, 12).toString('ascii'), resource.file).toBe('WEBP')
+    expect(createHash('sha256').update(bytes).digest('hex'), resource.file).toBe(resource.sha256)
+  }
+})
+
+test('OSGARD Earth uses bundled NASA satellite data with fallback if blocked', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'no-preference' })
+  await page.goto('/')
+  const stage = page.locator('.omega-webgl-stage')
+  await expect(stage).toHaveAttribute('data-globe-status', /^(webgl|fallback)$/, { timeout: 25000 })
+  const state = await stage.getAttribute('data-globe-status')
+  if (state === 'webgl') {
+    await expect(stage).toHaveAttribute('data-earth-source', 'nasa')
+    await expect(stage).toHaveAttribute('data-cloud-layers', '2')
+    await expect(stage).toHaveAttribute('data-earth-resolution', /^(512|1024|2048|4096)$/)
+  }
+  await expect(page.getByText(/ночные огни 2016/)).toBeVisible()
+  await expect(page.getByRole('link', { name: 'NASA Blue Marble ↗' })).toHaveAttribute('href', /science\.nasa\.gov/)
+})
+
+test('OSGARD Earth falls back to coastlines if NASA texture assets cannot load', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'no-preference' })
+  await page.route('**/brand/earth/*.webp', route => route.abort())
+  await page.goto('/')
+  const stage = page.locator('.omega-webgl-stage')
+  await expect(stage).toHaveAttribute('data-globe-status', /^(webgl|fallback)$/, { timeout: 25000 })
+  if (await stage.getAttribute('data-globe-status') === 'webgl') {
+    await expect(stage).toHaveAttribute('data-earth-source', 'procedural')
+  }
+  await expect(page.locator('.omega-globe')).toHaveCount(1)
+  await expect(page.locator('.omega-mode-tabs button')).toHaveCount(3)
+})
+
 test('OSGARD Earth uses real bundled coastlines and WebGL or safe fallback', async ({ page, request }) => {
   const earth = await request.get('/brand/omega-earth-land.json')
   expect(earth.status()).toBe(200)
