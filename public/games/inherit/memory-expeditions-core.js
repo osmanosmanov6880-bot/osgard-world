@@ -27,7 +27,11 @@ function lastMatching(objects,anchor,radius=.35){
 function identifier(kind,anchor,generation,tool,rule){
  return kind+':'+generation+':'+anchor.tool+':'+anchor.x.toFixed(4)+':'+anchor.y.toFixed(4)+':'+tool+':'+(rule||'');
 }
-function derive(world,atlas=root.InheritGenerationAtlas,legacy=root.InheritLegacyEngine){
+function derive(world,atlas=root.InheritGenerationAtlas,legacy=root.InheritLegacyEngine,allowPoint){
+ // The optional caller-supplied hit-test is read-only and lets the UI reject
+ // coordinates hidden behind decorative, clickable landmarks and game buttons.
+ const reachable=(x,y)=>inside(x,y)&&
+  (typeof allowPoint!=='function'||allowPoint(x,y)!==false);
  if(!world||!validGen(world.generation)||!validBudget(world.budget)||
   !Array.isArray(world.objects)||typeof atlas?.getFrames!=='function'||
   !Array.isArray(legacy?.rules)||typeof legacy?.derive!=='function')
@@ -60,7 +64,7 @@ function derive(world,atlas=root.InheritGenerationAtlas,legacy=root.InheritLegac
    if(!present&&missing.length<MAX_GOALS){
     // Never propose a site where the existing game's island cannot receive
     // a pointer placement. We cannot force a trace outside playable bounds.
-    if(inside(anchor.x,anchor.y)){
+    if(reachable(anchor.x,anchor.y)){
      missing.push({id:identifier('restore',anchor,frame.generation,anchor.tool),
       kind:'restore',tool:anchor.tool,x:round(anchor.x),y:round(anchor.y),
       anchor:{tool:anchor.tool,x:anchor.x,y:anchor.y},
@@ -77,7 +81,7 @@ function derive(world,atlas=root.InheritGenerationAtlas,legacy=root.InheritLegac
      for(const [dx,dy] of OFFSETS){
       if(metadata.analyzed>=MAX_PREDICTIONS){capReached=true;break}
       const x=round(anchor.x+dx),y=round(anchor.y+dy);
-      if(!inside(x,y)||current.some(o=>distance(o,{x,y})<2))continue;
+      if(!reachable(x,y)||current.some(o=>distance(o,{x,y})<2))continue;
       metadata.analyzed++;
       const after=legacy.derive({generation:world.generation,objects:[...current,{tool:companion,x,y}]});
       if(after.limited||(after.totals[rule.id]||0)<=(baseline.totals[rule.id]||0))continue;
