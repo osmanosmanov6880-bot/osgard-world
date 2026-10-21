@@ -93,6 +93,9 @@ test('OSGARD globe fails gracefully without WebGL2 and keeps the experience swit
 })
 
 test('OSGARD Earth GPU quality changes real texture detail with safe remount', async ({ page }) => {
+  // 4K GPU textures and three WebGL remounts can exceed the standard 30-second
+  // wall clock on shared CI runners. Keep every quality, source and fallback assertion.
+  test.setTimeout(90_000)
   await page.emulateMedia({ reducedMotion: 'no-preference' })
   await page.goto('/')
   await page.locator('.omega-experience-panel summary').click()
