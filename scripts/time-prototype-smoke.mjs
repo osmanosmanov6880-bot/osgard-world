@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs'
 import assert from 'node:assert/strict'
+import { createHash } from 'node:crypto'
 
 const component = readFileSync('src/TimePrototype.tsx', 'utf8')
 const styles = readFileSync('src/time.css', 'utf8')
@@ -61,4 +62,17 @@ assert.ok(styles.includes('.tg-map-controls button{min-width:38px;min-height:38p
 assert.ok(styles.includes('.tg-icon-button{width:40px;height:40px;min-width:40px;min-height:40px}'), 'header controls must have phone-friendly hit targets')
 assert.ok(bible.includes('95-й процентиль интервала кадра'), 'design bible must describe actual runtime metrics')
 assert.ok(bible.includes('Указы Совета') && bible.includes('Стабилизировать энергосеть'), 'design bible must document the tactical council action system')
-console.log('PASS TIME vertical slice: state-driven city art, responsive input, runtime diagnostics and accessibility')
+const omegaPreview = readFileSync('public/games/time-omega-preview/index.html', 'utf8')
+const gamesHub = readFileSync('public/games/index.html', 'utf8')
+assert.ok(omegaPreview.includes('osgard-omega-preview') && omegaPreview.includes('v0.21-browser-companion'), 'Time Omega v0.21 must be present as a real standalone browser game')
+assert.ok(component.includes('href="/games/time-omega-preview/"') && styles.includes('.tg-omega-preview-link'), 'Imperium of Time must visibly link to the new standalone Omega demo')
+assert.ok(gamesHub.includes('href="/games/time-omega-preview/"'), 'OSGARD PLAY hub must link to the published Time Omega preview')
+const omegaReleaseManifest = JSON.parse(readFileSync('public/games/time-omega-preview/release.json', 'utf8'))
+const omegaSourceBytes = readFileSync('public/games/time-omega-preview/index.html')
+const omegaSourceBlobSha = createHash('sha1').update(`blob ${omegaSourceBytes.length}\0`).update(omegaSourceBytes).digest('hex')
+assert.equal(omegaReleaseManifest.schema_version, 1, 'Omega release manifest must use supported schema')
+assert.equal(omegaReleaseManifest.release, 'v0.21-browser-companion', 'Omega release must match the reviewed browser version')
+assert.equal(omegaReleaseManifest.route, '/games/time-omega-preview/', 'Omega release route must stay separate from the main game')
+assert.equal(omegaReleaseManifest.source_blob_sha, omegaSourceBlobSha, 'Omega release manifest must pin exact HTML content')
+assert.equal(omegaReleaseManifest.godot_3d_exported, false, 'Browser preview must not be represented as a Godot 3D export')
+console.log('PASS TIME vertical slice: state-driven city art, responsive input, runtime diagnostics, Omega preview and accessibility')
