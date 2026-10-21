@@ -2068,12 +2068,13 @@ test('INHERIT R12 has honest no-archive and zero-budget states in account mode a
  expect(errors).toEqual([]);
 });
 
-for (const [locale, path] of [['ru','/entertainment/index.html'], ['en','/entertainment/en/'], ['ar','/entertainment/ar/']]) {
+for (const [locale, path] of [['ru','/entertainment/archive/'], ['en','/entertainment/en/'], ['ar','/entertainment/ar/']]) {
   test('Entertainment World Select shows seven real illustrated archived worlds in ' + locale, async ({ page }) => {
     const errors = []
     page.on('pageerror', error => errors.push(error.message))
     await page.goto(path)
     await expect(page.locator('body.entertainment-premium')).toBeVisible()
+    if (locale !== 'ru') await expect(page.locator('.lang-switch a[lang="ru"]')).toHaveAttribute('href', '/entertainment/archive/')
     await expect(page.locator('link[href="/entertainment/premium.css"]')).toHaveCount(1)
     await expect(page.locator('.hero-cta')).toHaveAttribute('href', '/play')
     await expect(page.locator('.hero-spotlight')).toHaveAttribute('href', '/play')
