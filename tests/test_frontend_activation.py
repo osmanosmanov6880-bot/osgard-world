@@ -493,8 +493,23 @@ docker() {
                                     text=True, capture_output=True, timeout=3, env={'PATH': '/nonexistent'})
             return result, calls.read_text().splitlines()
 
+    def test_published_admission_default_preserves_explicit_disable_override(self):
+        assignments = re.findall(r'^remix_participant_admission=.*$', ACTIVATION, re.M)
+        self.assertEqual(len(assignments), 1)
+        for value, expected in ((None, '1'), ('0', '0'), ('1', '1'), ('', '1')):
+            with self.subTest(environment=value):
+                env = {'PATH': '/nonexistent'}
+                if value is not None:
+                    env['OSGARD_REMIX_PARTICIPANT_ADMISSION'] = value
+                result = subprocess.run(
+                    ['/bin/bash', '--noprofile', '--norc'],
+                    input='set -euo pipefail\n' + assignments[0] + '\nprintf "%s" "$remix_participant_admission"\n',
+                    text=True, capture_output=True, timeout=3, env=env)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(result.stdout, expected)
+
     def test_disabled_participant_foundation_allows_current_owner_only_rollback(self):
-        result, calls = self.run_gate(probe_status=1)
+        result, calls = self.run_gate(admission='0', probe_status=1)
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(calls, [])
 

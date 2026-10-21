@@ -8,9 +8,9 @@ remix_guard_image="${OSGARD_REMIX_GUARD_IMAGE:-osgard-remix-guard:release}"
 # Foundation release: a later reviewed release may enable creation only after
 # this ACL-aware build is the verified rollback target.
 remix_owned_creation="${OSGARD_REMIX_OWNED_CREATION:-1}"
-# Keep admission disabled until this participant-aware foundation is the exact
-# verified rollback container. Existing participant ACLs are never flag-gated.
-remix_participant_admission="${OSGARD_REMIX_PARTICIPANT_ADMISSION:-0}"
+# Enabled after verifying participant-aware foundation 48879eb3c94e.
+# Explicit 0 blocks new admissions; existing participant ACLs stay enforced.
+remix_participant_admission="${OSGARD_REMIX_PARTICIPANT_ADMISSION:-1}"
 state_file="/tmp/osgard-frontend-activation.state"
 log_file="/tmp/osgard-frontend-activation.log"
 core_previous="osgard-core-api-previous-$$"
