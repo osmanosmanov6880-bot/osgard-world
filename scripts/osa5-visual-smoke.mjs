@@ -25,6 +25,7 @@ const routes = [
   { name: 'games', path: '/games/', selector: '#catalog' },
   { name: 'skillcred', path: '/skillcred/', selector: '.site-header' },
   { name: 'entertainment', path: '/entertainment/', selector: 'header' },
+  { name: 'entertainment-archive', path: '/entertainment/archive/', selector: '.entertainment-premium .hero-spotlight' },
   { name: 'elbrus', path: '/entertainment/elbrus/', selector: 'main' },
   { name: 'elbrus-en', path: '/entertainment/elbrus/en/', selector: 'main' },
   { name: 'elbrus-ar', path: '/entertainment/elbrus/ar/', selector: 'main' },
