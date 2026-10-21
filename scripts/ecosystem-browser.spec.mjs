@@ -1570,3 +1570,34 @@ test('INHERIT R11 respects account read-only, language changes and exhausted bud
  expect(await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()))).toBe(original);
  expect(errors).toEqual([]);
 });
+
+
+test('INHERIT R9 inspector opens R11 network anchored to the selected real trace',async({page})=>{
+ const errors=await prepareStandaloneGame(page);
+ await page.goto('/games/inherit/?lang=ru',{waitUntil:'domcontentloaded'});
+ await page.evaluate(()=>{
+  const s=window.InheritGame.snapshot();
+  window.InheritGame.apply({...s,objects:[
+   {tool:'path',x:30,y:40},{tool:'light',x:40,y:40},{tool:'cairn',x:51,y:40}
+  ],generation:173,budget:97,pending:[],changes:[]});
+ });
+ const original=await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()));
+ await page.locator('.inherit-trace-launcher').click();
+ const inspector=page.locator('.inherit-trace-inspector');
+ await expect(inspector).toBeVisible();
+ await expect(inspector.locator('.inherit-trace-counter')).toContainText('3 из 3');
+ const forward=inspector.locator('.inherit-trace-network-link');
+ await expect(forward).toHaveText('Просмотреть сеть связей');
+ await expect(forward).toBeEnabled();
+ await forward.click();
+ await expect(inspector).toBeHidden();
+ const network=page.locator('.inherit-network-dialog');
+ await expect(network).toBeVisible();
+ await expect(network.locator('select[name="inherit-network-start"]')).toHaveValue('2');
+ await network.locator('select[name="inherit-network-end"]').selectOption('0');
+ await expect(network.locator('.inherit-network-status')).toContainText('цепочкой из 2');
+ expect(await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()))).toBe(original);
+ await page.keyboard.press('Escape');
+ await expect(network).toBeHidden();
+ expect(errors).toEqual([]);
+});
