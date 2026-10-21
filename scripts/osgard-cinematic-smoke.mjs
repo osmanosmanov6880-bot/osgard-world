@@ -505,6 +505,9 @@ await check('replay cancelled by reduced motion restores main focus when its pre
     // focused Skip button leaves the document, before the provider's focus task.
     skip.remove()
     assert.equal(host.document.activeElement, host.document.body)
+    // Some browsers retain a button as activeElement after disabling it.
+    // In that case merely comparing activeElement with the old target is unsafe.
+    if (unavailable === 'disabled') host.document.activeElement = trigger
     await host.advance(0)
     assert.equal(host.document.activeElement.id, 'product-main', unavailable + ' replay trigger must fall back to main content')
     assert.equal(host.focus.at(-1).options.preventScroll, true)
