@@ -1351,14 +1351,21 @@ test('INHERIT trace compass: starter guidance and an actual two-tool Legacy conn
  // On a 390px-wide screen the old island placement put the hint BELOW the
  // visible stage, inside the tool dock. A visible CSS node is not enough:
  // the physical point must hit the island, not a button/overlay.
- const hit=await page.evaluate(()=>{
+ const locateHit=()=>page.evaluate(()=>{
   const dot=document.querySelector('.inherit-compass-ghost').getBoundingClientRect();
   const x=dot.left+dot.width/2,y=dot.top+dot.height/2;
   const target=document.elementFromPoint(x,y);
   return {insideViewport:x>=0&&x<innerWidth&&y>=0&&y<innerHeight,
    hitWorld:!!target?.closest('#world'),
-   blockedByButton:!!target?.closest('button,.dock,[data-memory]')};
+   blockedByButton:!!target?.closest('button,.dock,[data-memory]'),
+   target:target?.className||target?.tagName};
  });
+ // Allow the browser one paint after the dialog's focus restoration and
+ // require an actual hit on the island, not merely a visible CSS dot.
+ await expect.poll(async()=>{const hit=await locateHit();
+  return hit.insideViewport&&hit.hitWorld&&!hit.blockedByButton;
+ },{timeout:6000}).toBe(true);
+ const hit=await locateHit();
  expect(hit.insideViewport).toBe(true);
  expect(hit.hitWorld).toBe(true);
  expect(hit.blockedByButton).toBe(false);
@@ -1383,6 +1390,9 @@ test('INHERIT trace compass: starter guidance and an actual two-tool Legacy conn
  const unchanged=await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()));
  await dialog.locator('.inherit-compass-use').click();
  expect(await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()))).toBe(unchanged);
+ await expect.poll(async()=>{const hit=await locateHit();
+  return hit.insideViewport&&hit.hitWorld&&!hit.blockedByButton;
+ },{timeout:6000}).toBe(true);
  await place(moss);
  await expect.poll(()=>page.evaluate(()=>window.InheritGame.snapshot().objects.length)).toBe(2);
  await expect.poll(()=>page.evaluate(()=>window.InheritLegacyUI.getState().totals.grove)).toBe(1);
