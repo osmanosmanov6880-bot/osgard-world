@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import * as THREE from 'three'
 import { createCityLightsTexture, createCloudLayers } from './OmegaGlobeEffects'
+import { createVolumetricClouds } from './OmegaVolumetricClouds'
+import type { CloudSampleCount, VolumetricClouds } from './OmegaVolumetricClouds'
 import { createSunlitAtmosphere, disposeSatelliteTextures, enhanceEarthSurface, loadSatelliteTextures } from './OmegaEarthMaterials'
 import type { EarthSurfaceUniforms, SatelliteEarthTextures, EarthTextureTier } from './OmegaEarthMaterials'
 
@@ -243,6 +245,8 @@ export default function OmegaGlobe({ quality, mode, chapter, view, onViewChange 
     let drag: { id: number; x: number; y: number; start: GlobeView } | null = null
     let cloudInner: THREE.Mesh | null = null
     let cloudOuter: THREE.Mesh | null = null
+    let volumetricClouds: VolumetricClouds | null = null
+    let activeCloudSamples: CloudSampleCount | null = null
     let keyLight: THREE.DirectionalLight | null = null
     let fillLight: THREE.DirectionalLight | null = null
     let satelliteTextures: SatelliteEarthTextures | null = null
@@ -367,7 +371,11 @@ export default function OmegaGlobe({ quality, mode, chapter, view, onViewChange 
           keyLight.position.y = 3 + Math.cos(time * 0.00013) * 0.35
           fillLight.intensity = currentMode === 'cinema' ? 0.23 : 0.18
           sunDirection.copy(keyLight.position).normalize()
-          if (surfaceUniforms && cloudInner) surfaceUniforms.cloudOffset.value = -cloudInner.rotation.y / (Math.PI * 2)
+          if (surfaceUniforms && cloudOuter) surfaceUniforms.cloudOffset.value = -cloudOuter.rotation.y / (Math.PI * 2)
+        }
+        if (volumetricClouds && cloudOuter) {
+          cloudOuter.updateWorldMatrix(true, false)
+          volumetricClouds.update(camera, cloudOuter, sunDirection)
         }
         renderer.render(scene, camera)
         // Auto mode adjusts pixel density rather than reducing asset quality.
@@ -384,6 +392,14 @@ export default function OmegaGlobe({ quality, mode, chapter, view, onViewChange 
             if (fps < target * 0.72) adaptiveDpr = Math.max(minimum, adaptiveDpr - 0.17)
             else if (fps > target * 0.95) adaptiveDpr = Math.min(pixelRatioLimit, adaptiveDpr + 0.08)
             if (Math.abs(previous - adaptiveDpr) > 0.01) resize()
+            if (volumetricClouds) {
+              const updatedSamples: CloudSampleCount = fps < target * 0.72 ? 4 : 7
+              if (activeCloudSamples !== updatedSamples) {
+                volumetricClouds.setSamples(updatedSamples)
+                activeCloudSamples = updatedSamples
+                stage.dataset.earthCloudSamples = String(updatedSamples)
+              }
+            }
           }
           stage.dataset.earthDpr = String(Math.min(window.devicePixelRatio || 1, adaptiveDpr).toFixed(2))
           renderedFrames = 0
@@ -453,6 +469,18 @@ export default function OmegaGlobe({ quality, mode, chapter, view, onViewChange 
         cloudOuter = clouds.outer
         const cloudTexture = (cloudInner.material as THREE.MeshStandardMaterial).map
         if (!cloudTexture) throw new Error('Cloud alpha texture unavailable')
+        // Premium desktop rendering ray-marches cloud density through a thin
+        // spherical shell. Eco/phone renderers keep the inexpensive 2D layers.
+        if (quality === 'ultra' || (quality === 'auto' && !mobile)) {
+          const maxSamples: CloudSampleCount = quality === 'ultra' ? 12 : 7
+          volumetricClouds = createVolumetricClouds(cloudTexture, maxSamples)
+          const previousMaterial = clouds.outer.material
+          if (Array.isArray(previousMaterial)) previousMaterial.forEach(material => material.dispose())
+          else previousMaterial.dispose()
+          clouds.outer.material = volumetricClouds.material
+          clouds.inner.visible = false
+          activeCloudSamples = maxSamples
+        }
         const earthMaterial = new THREE.MeshStandardMaterial({
           map: landTexture,
           emissiveMap: cityLights,
@@ -490,6 +518,8 @@ export default function OmegaGlobe({ quality, mode, chapter, view, onViewChange 
         resize()
         sky.classList.add('omega-webgl-ready')
         stage.dataset.cloudLayers = '2'
+        stage.dataset.earthCloudMode = volumetricClouds ? 'raymarched' : 'layered'
+        stage.dataset.earthCloudSamples = String(activeCloudSamples ?? 0)
         stage.dataset.earthSource = earthSource
         stage.dataset.earthResolution = String(effectiveTextureWidth)
         stage.dataset.earthTextureLimited = String(effectiveTextureWidth < textureWidth)
@@ -552,6 +582,8 @@ export default function OmegaGlobe({ quality, mode, chapter, view, onViewChange 
       canvas.removeEventListener('webglcontextlost', contextLost)
       sky.classList.remove('omega-webgl-ready')
       delete stage.dataset.cloudLayers
+      delete stage.dataset.earthCloudMode
+      delete stage.dataset.earthCloudSamples
       delete stage.dataset.earthSource
       delete stage.dataset.earthResolution
       delete stage.dataset.earthTextureLimited
