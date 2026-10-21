@@ -146,7 +146,7 @@ test('RU EN ZH, PWA, keyboard and click capture are part of the actual game rele
   assert.ok(worker.includes('/games/inherit/'+name),name);
  }
  assert.match(worker,/inherit-shell-v21/);
- for(const item of ['ru:','en:','zh:','showModal','aria-labelledby','event.stopPropagation()','event.preventDefault()','data-game-language']){
+ for(const item of ['ru:','en:','zh:','showModal','aria-labelledby','event.stopPropagation()','event.preventDefault()','inherit-trace-launcher','inherit-trace-prev','inherit-trace-next','data-game-language']){
   if(item==='data-game-language'){assert.ok(locale.includes(item));continue}
   assert.ok(script.includes(item),'missing '+item);
  }
