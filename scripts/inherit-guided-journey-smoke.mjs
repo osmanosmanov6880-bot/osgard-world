@@ -98,6 +98,20 @@ check('a real pending generation with zero budget is handoff-only, not a paid or
  const none=plan(world(objects,[],0));
  assert.equal(none.status,'budget-exhausted');assert.equal(none.steps.length,0);
 });
+check('a blocked Compass neighbour moves the whole grove plan to two actually reachable positions',()=>{
+ const w=world(),allow=(x,y)=>x>=40&&x<=65&&y>=55&&y<=65;
+ const p=plan(w,allow);
+ assert.equal(p.status,'ready');assert.equal(p.steps.length,2);
+ assert.ok(p.steps.every(step=>allow(step.x,step.y)));
+ assert.equal(p.steps[0].tool,'tree');assert.equal(p.steps[1].tool,'moss');
+ assert.equal(JSON.stringify(w),JSON.stringify(world()));
+});
+check('when a second click is physically blocked the planner offers one honest move, not fake synergy',()=>{
+ const w=world(),p=plan(w,(x,y)=>x===49&&y===44);
+ assert.equal(p.steps.length,1);
+ assert.equal(p.steps[0].tool,'tree');
+ assert.equal(p.steps[0].expectedNewLinks,0);
+});
 check('history is not an entitlement: invalid objects and records disable route without repairs',()=>{
  const broken=[
   world([tool('stone',NaN,12)]),world([tool('admin',23,44)]),
