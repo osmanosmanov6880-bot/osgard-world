@@ -112,7 +112,7 @@ html[data-motion="off"] .omega-sky.omega-webgl-ready .omega-globe {
 .omega-world-navigation{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
 .omega-world-navigation button{min-height:38px;min-width:40px;background:#0d2c42;border:1px solid #43859a;color:#91f3fa;padding:6px 10px;font-size:16px}
 .omega-world-navigation button.omega-reset-view{font-size:12px;padding:7px 14px;color:#e2f8ff}
-.omega-experience-world{cursor:grab}
+.omega-experience-world{cursor:grab;touch-action:pan-y}
 .omega-experience-world:active{cursor:grabbing}
 .omega-experience-world .omega-copy,.omega-experience-world .omega-gate{cursor:auto}
 .omega-experience-world .omega-mode-tabs button,.omega-experience-world .omega-world-navigation button{cursor:pointer}
