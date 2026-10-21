@@ -36,7 +36,7 @@
  border-radius:6px;background:#e9cc94;color:#102833;font:800 13px/1.4 Manrope,system-ui,sans-serif;cursor:pointer}
 .inherit-journey-start:disabled{opacity:.45;cursor:not-allowed}
 .inherit-journey-start:hover:not(:disabled){background:#f6e2ba}
-.inherit-journey-hud{position:fixed;z-index:33;right:clamp(12px,3vw,42px);bottom:clamp(125px,12vh,180px);
+.inherit-journey-hud{position:fixed;z-index:33;right:clamp(12px,3vw,42px);top:clamp(138px,17vh,175px);bottom:auto;
  width:min(340px,calc(100vw - 24px));padding:14px 16px 16px;
  background:linear-gradient(140deg,rgba(9,31,42,.97),rgba(14,49,49,.95));
  color:#f0e8d5;border:1px solid #e8c78f9e;border-left:3px solid #a65558;
@@ -59,7 +59,7 @@
 .inherit-journey-hud button:focus-visible{outline:3px solid #ffe8af;outline-offset:3px}
 @media(max-width:740px){
  .inherit-journey-dialog{padding:18px 14px;max-height:93dvh}
- .inherit-journey-hud{bottom:calc(108px + env(safe-area-inset-bottom,0px) + 10px);
+ .inherit-journey-hud{top:clamp(125px,15vh,145px);bottom:auto;
  right:10px;width:min(335px,calc(100vw - 20px));padding:11px 12px}
  .inherit-journey-hud-text{font-size:11px;margin:6px 0 9px}
  .inherit-journey-task{padding:12px}
