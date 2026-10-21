@@ -82,7 +82,17 @@ const el=(tag,klass,value)=>{
  return node;
 };
 const launcher=el('button','inherit-trace-launcher');launcher.type='button';
-const header=d.querySelector('.app > header');if(header)header.appendChild(launcher);
+const header=d.querySelector('.app > header');
+const compact=typeof matchMedia==='function'?matchMedia('(max-width:740px)'):null;
+function mountLauncher(){
+ // The guide is created by interface.js at DOMContentLoaded. On narrow
+ // screens use its visible actions row rather than crowding a no-wrap header.
+ const dest=compact?.matches?(d.querySelector('.inherit-guide-actions')||header):header;
+ if(dest&&launcher.parentElement!==dest)dest.appendChild(launcher);
+}
+mountLauncher();
+d.addEventListener('DOMContentLoaded',mountLauncher,{once:true});
+compact?.addEventListener?.('change',mountLauncher);
 const dialog=el('dialog','inherit-trace-inspector');
 dialog.dataset.noTranslate='';
 dialog.setAttribute('aria-labelledby','inherit-trace-title');
