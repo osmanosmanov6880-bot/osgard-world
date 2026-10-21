@@ -41,11 +41,7 @@ export default function IntelligenceHome() {
           </div>
           <p>{persistent ? 'Отметки сохраняются в этом браузере.' : 'Сейчас постоянное сохранение недоступно.'}</p>
         </div>
-        <nav className="omega-osa-trails intelligence-command-trails" aria-label="Быстрый старт обучения">
-          <a href="/learning/program"><span>01 / ЗНАНИЯ</span><strong>8 уроков</strong><small>Начать программу</small></a>
-          <a href="#demo"><span>02 / ПРОВЕРКА</span><strong>Разбор</strong><small>Источники и границы</small></a>
-          <a href="/learning"><span>03 / РЕЗУЛЬТАТ</span><strong>Прогресс</strong><small>Мой учебный маршрут</small></a>
-        </nav>
+
       </div>
       <div className="intelligence-lens omega-intelligence-lens intelligence-command-lens">
         <div className="omega-intelligence-scene intelligence-command-art" aria-hidden="true">
@@ -77,6 +73,11 @@ export default function IntelligenceHome() {
           <p className="intelligence-proof-note">Это подготовленный учебный пример, а не ответ подключённой нейросети. Источники и ограничения указаны в разборе.</p>
         </section>
       </div>
+      <nav className="omega-osa-trails intelligence-command-trails" aria-label="Быстрый старт обучения">
+        <a href="/learning/program"><span>01 / ЗНАНИЯ</span><strong>8 уроков</strong><small>Начать программу</small></a>
+        <a href="#demo"><span>02 / ПРОВЕРКА</span><strong>Разбор</strong><small>Источники и границы</small></a>
+        <a href="/learning"><span>03 / РЕЗУЛЬТАТ</span><strong>Прогресс</strong><small>Мой учебный маршрут</small></a>
+      </nav>
     </section>
 
     <section id="method" className="brand-section" aria-labelledby="intelligence-method-title">
