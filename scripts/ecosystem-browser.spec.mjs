@@ -125,9 +125,15 @@ test('OSGARD raymarched cloud scene retains navigation, motion fallback and on-s
   await page.goto('/')
   const stage = page.locator('.omega-webgl-stage')
   await expect(stage).toHaveAttribute('data-globe-status', /^(webgl|fallback)$/, { timeout: 25000 })
-  if (await stage.getAttribute('data-globe-status') === 'webgl') {
+  const hasWebGL2 = await page.evaluate(() => {
+    const probe = document.createElement('canvas')
+    return Boolean(probe.getContext('webgl2'))
+  })
+  if (hasWebGL2) {
+    await expect(stage).toHaveAttribute('data-globe-status', 'webgl')
     const mobile = await page.evaluate(() => window.matchMedia('(max-width: 760px)').matches)
     await expect(stage).toHaveAttribute('data-earth-cloud-mode', mobile ? 'layered' : 'raymarched')
+    if (!mobile) await expect(stage).toHaveAttribute('data-earth-cloud-samples', /^(4|7)$/)
   }
   await page.getByRole('button', { name: 'Кино', exact: true }).click()
   await page.getByRole('button', { name: '03 / Миры' }).click()
