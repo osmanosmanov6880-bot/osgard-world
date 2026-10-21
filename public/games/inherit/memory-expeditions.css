@@ -1,0 +1,98 @@
+/* INHERIT Memory Expeditions: premium, keyboard-accessible, mobile-first.
+   Ghosts are pointer-transparent and never place gameplay objects. */
+.inherit-expedition-trigger{min-height:40px;padding:8px 12px;white-space:nowrap;
+ border:1px solid rgba(228,201,147,.55);border-radius:5px;
+ background:linear-gradient(135deg,rgba(228,194,135,.19),rgba(24,64,60,.24));
+ color:#f4e4be;font:700 11px/1.45 Manrope,system-ui,sans-serif;
+ cursor:pointer}
+.inherit-expedition-trigger:hover{background:rgba(226,195,136,.26);border-color:#ecd6a5}
+.inherit-expedition-dialog{width:min(950px,calc(100vw - 28px));max-width:950px;
+ max-height:min(91dvh,920px);height:auto;margin:auto;padding:clamp(17px,3vw,32px);
+ border:1px solid rgba(234,200,151,.55);border-radius:12px;
+ background:radial-gradient(ellipse at 90% 8%,rgba(69,120,102,.22),transparent 56%),linear-gradient(145deg,#123339,#071e27 71%,#07191f);
+ color:#eff0e4;box-shadow:0 30px 120px #000c;overflow:auto;overscroll-behavior:contain}
+.inherit-expedition-dialog::backdrop{background:#031218d9;backdrop-filter:blur(5px)}
+.inherit-expedition-dialog:not([open]){display:none!important}
+.inherit-expedition-dialog *{box-sizing:border-box}
+.inherit-expedition-top{display:flex;align-items:start;justify-content:space-between;gap:18px}
+.inherit-expedition-eyebrow{font:700 10px/1.6 Manrope,system-ui,sans-serif;letter-spacing:.15em;
+ text-transform:uppercase;color:#dfc28b;margin:0 0 7px}
+.inherit-expedition-title{font:600 clamp(27px,4vw,43px)/1.12 Georgia,serif;
+ letter-spacing:-.02em;margin:0;color:#f2e7ce}
+.inherit-expedition-close{width:44px;height:44px;flex-shrink:0;
+ border:1px solid rgba(230,205,162,.42);border-radius:6px;
+ background:rgba(234,218,184,.04);color:#e3d7bc;font:26px/1 Georgia,serif;
+ cursor:pointer}
+.inherit-expedition-close:hover{background:rgba(235,205,152,.19)}
+.inherit-expedition-intro{font:13px/1.7 Manrope,system-ui,sans-serif;
+ color:#bed0c9;max-width:760px;margin:13px 0 18px}
+.inherit-expedition-status{font:600 12px/1.65 Manrope,system-ui,sans-serif;color:#efd69f;
+ margin:4px 0 16px;min-height:0}
+.inherit-expedition-status:empty{display:none}
+.inherit-expedition-layout{display:grid;grid-template-columns:minmax(0,.95fr) minmax(0,1.05fr);gap:17px}
+.inherit-expedition-layout[hidden],.inherit-expedition-preview[hidden]{display:none!important}
+.inherit-expedition-choices{display:grid;gap:8px;align-content:start;max-height:380px;overflow:auto;padding:2px}
+.inherit-expedition-option{width:100%;display:grid;gap:4px;text-align:left;padding:14px;
+ border-radius:7px;border:1px solid rgba(217,196,153,.26);
+ background:rgba(219,205,154,.055);color:#e5e9df;cursor:pointer}
+.inherit-expedition-option:hover{border-color:rgba(235,207,154,.72)}
+.inherit-expedition-option[aria-pressed="true"]{border-color:#ebce93;background:rgba(226,201,144,.16)}
+.inherit-expedition-option strong{font:700 13px/1.4 Manrope,system-ui,sans-serif;color:#f1d6a2}
+.inherit-expedition-option span{font:600 13px/1.5 Manrope,system-ui,sans-serif}
+.inherit-expedition-option small{font:11px/1.5 Manrope,system-ui,sans-serif;color:#b8cbbf}
+.inherit-expedition-preview{padding:17px;border:1px solid rgba(226,202,151,.33);
+ border-radius:10px;background:rgba(2,21,28,.3);min-width:0}
+.inherit-expedition-goal-title{font:600 24px/1.16 Georgia,serif;color:#edd7ac;margin:0 0 15px}
+.inherit-expedition-site{position:relative;width:100%;aspect-ratio:1.75;min-height:195px;overflow:hidden;
+ border-radius:50% 50% 48% 52%/43% 45% 54% 57%;border:2px solid rgba(223,205,158,.54);
+ background:radial-gradient(ellipse at 44% 42%,#94b28b,#729879 42%,#386d6a 76%,#18444a);
+ box-shadow:inset 0 0 42px #10343192,0 13px 29px #00151b5c}
+.inherit-expedition-site::before{content:"";position:absolute;inset:6%;
+ border:1px solid rgba(238,226,177,.26);border-radius:50%}
+.inherit-expedition-site-anchor,.inherit-expedition-site-target{position:absolute;
+ width:14px;height:14px;border-radius:50%;transform:translate(-50%,-50%);
+ pointer-events:none;z-index:2}
+.inherit-expedition-site-anchor{background:#aecbb4;border:2px solid #123a39;box-shadow:0 0 10px #b9dcb18a}
+.inherit-expedition-site-target{background:#fbe1a4;border:2px solid #3c402f;
+ box-shadow:0 0 0 9px #f3d09026,0 0 26px #f6d18f}
+.inherit-expedition-goal-text{font:12px/1.7 Manrope,system-ui,sans-serif;
+ color:#d0dfd2;margin:16px 0 14px}
+.inherit-expedition-use{min-height:46px;width:100%;padding:11px 16px;
+ border:1px solid #f2dfa9;border-radius:5px;background:#e7c98c;color:#18342c;
+ font:800 12px/1.4 Manrope,system-ui,sans-serif;cursor:pointer}
+.inherit-expedition-use:hover:not(:disabled){background:#f4dfb4}
+.inherit-expedition-use:disabled{opacity:.45;cursor:default}
+.inherit-expedition-subnote,.inherit-expedition-provenance{font:11px/1.75 Manrope,system-ui,sans-serif;
+ color:#b3c6be;margin:12px 0 0}
+.inherit-expedition-provenance{padding:13px 0 0;margin:20px 0 0;border-top:1px solid rgba(229,195,143,.3)}
+.inherit-expedition-trigger:focus-visible,.inherit-expedition-dialog button:focus-visible,
+.inherit-expedition-confirm button:focus-visible{outline:3px solid #ffe5a5;outline-offset:3px}
+.inherit-expedition-ghost{position:absolute;width:22px;height:22px;transform:translate(-50%,-50%);
+ pointer-events:none;z-index:8;border-radius:50%;border:3px solid #fbe2a6;
+ background:#f4cb6d56;box-shadow:0 0 0 11px #fbe2a51e,0 0 30px #f3cd72bb}
+.inherit-expedition-ghost::before{content:"";position:absolute;inset:-21px;
+ border:1px dashed #f3d79bc5;border-radius:50%}
+.inherit-expedition-ghost[hidden]{display:none!important}
+.inherit-expedition-confirm{position:fixed;z-index:49;left:50%;bottom:max(122px,env(safe-area-inset-bottom));
+ transform:translateX(-50%);width:min(520px,calc(100vw - 26px));padding:16px 17px;
+ border:1px solid #e7cf9f;border-radius:9px;
+ background:linear-gradient(135deg,#ebdfbd,#e4e2c8);color:#14332d;
+ box-shadow:0 12px 55px #0009}
+.inherit-expedition-confirm[hidden]{display:none!important}
+.inherit-expedition-confirm p{margin:0 0 10px;color:#23443b;
+ font:600 13px/1.55 Manrope,system-ui,sans-serif}
+.inherit-expedition-confirm-actions{display:flex;gap:10px;flex-wrap:wrap}
+.inherit-expedition-confirm button{min-height:40px;padding:9px 13px;border:1px solid #385f53;
+ border-radius:5px;background:#183b34;color:#f3e8d4;font:700 11px/1.4 Manrope,system-ui,sans-serif;cursor:pointer}
+.inherit-expedition-confirm button+button{background:transparent;color:#193c32}
+@media(max-width:760px){.inherit-expedition-layout{grid-template-columns:1fr}
+ .inherit-expedition-choices{grid-template-columns:repeat(2,minmax(0,1fr));max-height:215px}
+ .inherit-expedition-option{padding:10px}
+ .inherit-expedition-site{max-height:230px;min-height:175px}
+ .inherit-expedition-dialog{max-height:93dvh;padding:16px}
+ .inherit-expedition-confirm{bottom:118px}}
+@media(max-width:460px){.inherit-expedition-choices{grid-template-columns:1fr;max-height:175px}
+ .inherit-expedition-dialog{padding:14px 12px}
+ .inherit-expedition-site{min-height:180px}}
+@media(prefers-reduced-motion:reduce){.inherit-expedition-dialog *, .inherit-expedition-ghost,
+ .inherit-expedition-confirm, .inherit-expedition-trigger{animation:none!important;transition:none!important}}
