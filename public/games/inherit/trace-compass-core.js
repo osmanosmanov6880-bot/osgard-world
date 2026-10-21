@@ -34,35 +34,43 @@ function predict(world,legacy){
   return {status:'first-trace',choices:[{tool:'tree',x:49,y:44,newLinks:0,rules:[],starter:true}],
    baseline:0,objects:0,evaluated:0,source:'hypothetical-only'};
  }
- const seen=new Set(),possibilities=[];
- let evaluated=0,cutShort=false;
- outer: for(const rule of legacy.rules){
-  if(!TYPES.has(rule.first)||!TYPES.has(rule.second)||!Number.isFinite(rule.radius))continue;
-  for(const [tool,anchorType] of [[rule.first,rule.second],[rule.second,rule.first]]){
-   const anchors=normalized.filter(o=>o.tool===anchorType).slice(0,MAX_ANCHORS);
-   for(const anchor of anchors){
-    for(const [dx,dy] of OFFSETS){
-     const x=round(anchor.x+dx),y=round(anchor.y+dy);
-     if(!inside(x,y))continue;
-     const key=tool+'|'+x.toFixed(3)+'|'+y.toFixed(3);
-     if(seen.has(key))continue;
-     seen.add(key);
-     if(evaluated>=MAX_EVALUATIONS){cutShort=true;break outer}
-     evaluated++;
-     // The same engine and rules used by the island's existing Legacy view.
-     // A small, snapshot-free copy is sufficient: ages never affect link counts.
-     const after=legacy.derive({generation:state.generation,
-      objects:[...normalized,{tool,x,y}]});
-     if(after.limited)continue;
-     const newLinks=after.total-existing.total;
-     if(newLinks<=0)continue;
-     const links=legacy.rules.map(r=>({id:r.id,
-      delta:(after.totals[r.id]||0)-(existing.totals[r.id]||0)}))
-      .filter(item=>item.delta>0);
-     possibilities.push({tool,x,y,newLinks,rules:links,starter:false});
-    }
+ // Visit each known recipe in turn before checking second and third anchors:
+ // crowded islands must not starve the later recipes of their preview budget.
+ const anchorsByType=Object.fromEntries(TOOLS.map(type=>[
+  type,normalized.filter(item=>item.tool===type).slice(0,MAX_ANCHORS)]));
+ const attempts=[];
+ const inspectedRules=new Set();
+ for(let anchorIndex=0;anchorIndex<MAX_ANCHORS;anchorIndex++){
+  for(const rule of legacy.rules){
+   if(!TYPES.has(rule.first)||!TYPES.has(rule.second)||!Number.isFinite(rule.radius))continue;
+   for(const [tool,anchorType] of [[rule.first,rule.second],[rule.second,rule.first]]){
+    const anchor=anchorsByType[anchorType][anchorIndex];
+    if(!anchor)continue;
+    for(const [dx,dy] of OFFSETS)
+     attempts.push({tool,x:round(anchor.x+dx),y:round(anchor.y+dy),ruleId:rule.id});
    }
   }
+ }
+ const seen=new Set(),possibilities=[];
+ let evaluated=0,cutShort=false;
+ for(const attempt of attempts){
+  const {tool,x,y,ruleId}=attempt;
+  if(!inside(x,y))continue;
+  const key=tool+'|'+x.toFixed(3)+'|'+y.toFixed(3);
+  if(seen.has(key))continue;
+  seen.add(key);
+  if(evaluated>=MAX_EVALUATIONS){cutShort=true;break}
+  evaluated++;inspectedRules.add(ruleId);
+  // Predictions use precisely the same rule engine as the Legacy journal.
+  const after=legacy.derive({generation:state.generation,
+   objects:[...normalized,{tool,x,y}]});
+  if(after.limited)continue;
+  const newLinks=after.total-existing.total;
+  if(newLinks<=0)continue;
+  const links=legacy.rules.map(r=>({id:r.id,
+   delta:(after.totals[r.id]||0)-(existing.totals[r.id]||0)}))
+   .filter(item=>item.delta>0);
+  possibilities.push({tool,x,y,newLinks,rules:links,starter:false});
  }
  possibilities.sort((a,b)=>b.newLinks-a.newLinks||
   TOOLS.indexOf(a.tool)-TOOLS.indexOf(b.tool)||a.x-b.x||a.y-b.y);
@@ -75,7 +83,7 @@ function predict(world,legacy){
   if(choices.length>=MAX_CHOICES)break;
  }
  return {status:choices.length?'opportunities':'no-synergy',choices,
-  baseline:existing.total,objects:normalized.length,evaluated,cutShort,
+  baseline:existing.total,objects:normalized.length,evaluated,cutShort,inspectedRules:[...inspectedRules],
   source:'hypothetical-only'};
 }
 const api=Object.freeze({predict,valid,types:TOOLS,maxObjects:MAX_OBJECTS,
