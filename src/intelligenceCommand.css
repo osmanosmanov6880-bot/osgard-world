@@ -1,0 +1,248 @@
+/* OSA Intelligence / Evidence Command
+   First-screen proof workspace, not a simulated connection to an AI model.
+   Only applies to /intelligence, with working sources and progress preserved. */
+.theme-intelligence .intelligence-command{
+  --accent:#84f0ee;
+  --surface:#0a2030;
+  --line:#335e7199;
+  background:radial-gradient(ellipse at 77% 9%,#16507441,transparent 49%),
+             radial-gradient(ellipse at 0 20%,#30347331,transparent 44%);
+}
+.theme-intelligence .intelligence-command .intelligence-command-hero{
+  display:grid;
+  grid-template-columns:minmax(0,.98fr) minmax(440px,1.02fr);
+  column-gap:clamp(32px,4vw,76px);
+  row-gap:28px;
+  min-height:0;
+  padding:clamp(55px,5.4vw,86px) 0 58px;
+  align-items:center;
+  isolation:isolate;
+}
+.theme-intelligence .intelligence-command .intelligence-command-hero::before{
+  z-index:-1;inset:0 -4vw;pointer-events:none;
+  background:radial-gradient(ellipse at 69% 36%,#1b83a92d,transparent 56%),
+             radial-gradient(ellipse at 92% 14%,#906ad51a,transparent 51%);
+}
+.intelligence-command-copy{position:relative;z-index:2;min-width:0}
+.theme-intelligence .intelligence-command .intelligence-command-eyebrow{
+  margin:0 0 31px;color:#85ecf0;letter-spacing:.17em;font-size:12px;
+}
+.intelligence-command-eyebrow span{color:#aec3d5}
+.theme-intelligence .intelligence-command .intelligence-command-hero h1{
+  font:780 clamp(43px,4.55vw,76px)/1.055 Inter,Arial,sans-serif;
+  letter-spacing:-.062em;text-wrap:balance;color:#f7fdff;
+  text-shadow:0 4px 36px #00101ca8;
+}
+.theme-intelligence .intelligence-command .intelligence-command-hero h1 em{
+  font-style:normal;color:#85eff4;font-weight:780;
+  text-shadow:0 0 38px #4befff33;
+}
+.theme-intelligence .intelligence-command .intelligence-command-hero .brand-lead{
+  font-size:clamp(16px,1.4vw,19px);line-height:1.7;color:#cfdfed;
+  max-width:585px;margin:27px 0 27px;
+}
+.theme-intelligence .intelligence-command .intelligence-command-actions{gap:12px;margin:0;flex-wrap:wrap}
+.theme-intelligence .intelligence-command .intelligence-command-actions .brand-button{
+  display:inline-flex;align-items:center;justify-content:space-between;
+  min-height:55px;gap:15px;padding:14px 19px;border-radius:5px;
+  font-size:14px;font-weight:690;line-height:1.3;text-align:left;
+  border:1px solid #6689a47d;background:#0b273c94;
+  color:#f3fbff;transition:background .2s,border-color .2s,transform .2s;
+}
+.theme-intelligence .intelligence-command .intelligence-command-actions .brand-button.primary{
+  border-color:#8ff7f0;background:#7af1ed;color:#032133;
+  box-shadow:0 12px 37px #35e7f720;
+}
+.theme-intelligence .intelligence-command .intelligence-command-actions .brand-button:hover{
+  border-color:#b4ffff;transform:translateY(-2px);
+}
+.theme-intelligence .intelligence-command .intelligence-command-actions .brand-button.primary:hover{background:#a9fffa}
+.intelligence-command-progress{
+  margin-top:37px;max-width:530px;
+  padding:17px 20px 16px;
+  border:1px solid #4a80906b;
+  border-radius:8px;
+  background:linear-gradient(110deg,#1233479a,#08192a54);
+}
+.intelligence-progress-heading{display:flex;justify-content:space-between;align-items:center;gap:14px;
+  font:650 10px/1.4 'JetBrains Mono',monospace;letter-spacing:.09em;color:#add0dc}
+.intelligence-progress-heading strong{font-size:11px;color:#94f5f3;white-space:nowrap}
+.intelligence-progress-rail{height:5px;margin-top:12px;border-radius:5px;background:#39566c;overflow:hidden}
+.intelligence-progress-rail span{display:block;height:100%;background:linear-gradient(90deg,#62e2e9,#c7a0ff);
+  transition:width .32s ease;border-radius:5px}
+.intelligence-command-progress p{color:#a9bdca;font-size:11px;margin:10px 0 0}
+.theme-intelligence .intelligence-command .intelligence-command-lens{
+  position:relative;z-index:1;display:flex;flex-direction:column;
+  padding:22px;min-width:0;min-height:570px;align-items:stretch;justify-content:center;
+  gap:0;border:1px solid #386d8a2b;border-radius:24px;
+  background:radial-gradient(ellipse at 58% 26%,#16618f33,transparent 60%);
+}
+.intelligence-command-lens::before,.intelligence-command-lens::after{content:'';position:absolute;pointer-events:none;
+  border:1px solid #9ee4ff2d;border-radius:50%;
+  width:360px;height:360px;left:50%;top:45%;
+  transform:translate(-50%,-50%) rotateX(70deg) rotateZ(-20deg)}
+.intelligence-command-lens::after{height:460px;width:460px;opacity:.28;border-color:#be9dff6c}
+.theme-intelligence .intelligence-command .intelligence-command-lens .intelligence-command-art{
+  position:absolute;inset:0;z-index:0;display:block;
+  width:100%;max-width:none;height:100%;aspect-ratio:auto;
+  min-height:0;border:0;background:transparent;
+  box-shadow:none;overflow:hidden;border-radius:24px;pointer-events:none;
+  opacity:.53;
+}
+.intelligence-command .intelligence-command-art img{
+  width:100%;height:100%;opacity:.38;object-fit:cover;filter:blur(2px) saturate(.9);
+}
+.intelligence-command .intelligence-command-art .omega-intelligence-pulse{opacity:.25}
+.intelligence-proof-console{
+  position:relative;z-index:5;max-width:585px;margin:auto;width:100%;
+  background:linear-gradient(145deg,#12354df2 0%,#092036f6 41%,#061522fb 100%);
+  border:1px solid #75b5c59d;border-radius:15px;
+  box-shadow:0 35px 95px #000a,inset 0 1px 0 #a5eeff28,0 0 50px #43aeea0d;
+  padding:clamp(18px,2.1vw,30px);
+  backdrop-filter:blur(16px);
+  text-align:left;
+}
+.intelligence-proof-console::before{content:'';position:absolute;inset:0 0 auto;height:170px;z-index:-1;
+  background:radial-gradient(ellipse at 4% 0%,#61d6ef27,transparent 62%);pointer-events:none}
+.intelligence-proof-topbar{display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding-bottom:17px;border-bottom:1px solid #54788a82;
+  font:720 10px/1.5 'JetBrains Mono',monospace;letter-spacing:.09em;color:#92ebf2}
+.intelligence-proof-topbar span:last-child{display:inline-flex;align-items:center;gap:7px;
+  font:600 10px/1.6 Inter,Arial,sans-serif;letter-spacing:0;color:#c0dae8;text-align:right}
+.intelligence-proof-topbar i{display:block;flex:none;width:6px;height:6px;border-radius:50%;
+  background:#87f3d3;box-shadow:0 0 10px #73ffee8a}
+.intelligence-proof-console .intelligence-proof-eyebrow{margin:22px 0 9px;
+  color:#84e6e9;font:720 10px/1.5 'JetBrains Mono',monospace;letter-spacing:.17em}
+.theme-intelligence .intelligence-command .intelligence-proof-console h2{
+  color:#f3fbff;margin:0;max-width:465px;
+  font:760 clamp(26px,2.5vw,36px)/1.14 Inter,Arial,sans-serif;letter-spacing:-.044em;
+}
+.intelligence-proof-console .intelligence-proof-lead{color:#bed2df;line-height:1.65;
+  font-size:13px;margin:14px 0 18px;max-width:480px}
+.intelligence-proof-claims{display:grid;gap:8px}
+.theme-intelligence .intelligence-command .intelligence-proof-claim{
+  display:grid;grid-template-columns:27px minmax(0,1fr) 21px;gap:12px;align-items:center;
+  min-width:0;width:100%;text-align:left;
+  color:#e8f5ff;padding:14px 12px;min-height:72px;
+  background:#071c2cbd;border:1px solid #52778e82;border-radius:8px;
+  font:500 13px/1.5 Inter,Arial,sans-serif;
+  transition:border-color .18s,background .18s,transform .18s;
+}
+.theme-intelligence .intelligence-command .intelligence-proof-claim:hover{
+  border-color:#94edf5;background:#123348e8;transform:translateX(2px)}
+.theme-intelligence .intelligence-command .intelligence-proof-claim.is-selected{
+  border-color:#81e8f1;background:#123e51ec;box-shadow:inset 3px 0 0 #77f1ec}
+.intelligence-proof-index{font:750 12px/1.4 'JetBrains Mono',monospace;color:#80dfe9}
+.intelligence-proof-statement{min-width:0;font-size:13px;line-height:1.48}
+.intelligence-proof-marker{display:grid;place-items:center;font-size:17px;font-weight:650;
+  border:1px solid #6b9aaf;border-radius:6px;color:#7be8ed;width:24px;height:24px}
+.intelligence-proof-claim.is-selected .intelligence-proof-marker{background:#72eff0;color:#062132;border-color:#72eff0}
+.intelligence-proof-summary{display:flex;align-items:center;gap:12px;justify-content:space-between;margin-top:18px}
+.intelligence-proof-summary>span{font:600 10px/1.6 'JetBrains Mono',monospace;letter-spacing:.08em;color:#aec7d3}
+.intelligence-proof-summary strong{display:block;color:#e8fbff;font-size:17px}
+.intelligence-proof-summary>a{display:flex;align-items:center;justify-content:space-between;gap:15px;
+  font:720 13px/1.4 Inter,Arial,sans-serif;background:#84f0ed;color:#072031;
+  border:1px solid #a6ffff;border-radius:6px;padding:13px 14px;min-height:45px;max-width:65%}
+.intelligence-proof-summary>a:hover{background:#bdfffa;color:#061a23}
+.intelligence-proof-console .intelligence-proof-note{font:400 11px/1.7 Inter,Arial,sans-serif;
+  color:#93afc0;margin:14px 0 0}
+.theme-intelligence .intelligence-command .intelligence-command-trails{
+  grid-column:1/-1;display:grid;max-width:none;
+  grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;
+  margin:6px 0 0;
+}
+.theme-intelligence .intelligence-command .intelligence-command-trails a{
+  border:1px solid #436e818f;border-radius:8px;padding:17px 20px;
+  min-height:104px;
+  background:linear-gradient(125deg,#102c3ef0,#0a192bea);
+}
+.theme-intelligence .intelligence-command .intelligence-command-trails a:nth-child(2){
+  background:linear-gradient(125deg,#143a4cf0,#0c2033ea);border-color:#508b9f}
+.theme-intelligence .intelligence-command .intelligence-command-trails a:nth-child(3){
+  background:linear-gradient(125deg,#1b2945ef,#101827e8);border-color:#595d8e}
+.theme-intelligence .intelligence-command .intelligence-command-trails a>span{font-size:10px;color:#97ebf0}
+.theme-intelligence .intelligence-command .intelligence-command-trails a>strong{
+  font-size:18px;font-weight:720;line-height:1.3;letter-spacing:-.01em}
+.theme-intelligence .intelligence-command .intelligence-command-trails a>small{
+  font-size:13px;line-height:1.6;color:#bfd4e1}
+.theme-intelligence .intelligence-command .brand-section{border-top-color:#48657e6e;scroll-margin-top:35px}
+.theme-intelligence .intelligence-command .intelligence-method>div{background:#09203560;
+  border:1px solid #3b657d70;padding:25px;border-radius:10px}
+.theme-intelligence .intelligence-command .intelligence-method h3{font:750 30px/1.15 Inter,Arial,sans-serif;margin:15px 0 12px}
+.theme-intelligence .intelligence-command .intelligence-method p{font-size:15px;color:#c0d5e2}
+.theme-intelligence .intelligence-command .intelligence-demo{align-items:start;gap:clamp(24px,5vw,66px)}
+.theme-intelligence .intelligence-command .intelligence-answer{
+  background:linear-gradient(150deg,#10283a,#091a2b);border:1px solid #3f758dbb;border-radius:12px;
+  box-shadow:0 15px 60px #0005}
+.theme-intelligence .intelligence-command .answer-claim.selected{background:#22556845}
+.theme-intelligence .intelligence-command .answer-heading{font-size:12px;color:#b6d8e8}
+.theme-intelligence .intelligence-command .demo-sources{
+  animation:none;border-top:1px solid #4b758f83;margin-top:20px}
+.theme-intelligence .intelligence-command .intelligence-source-note{color:#acc3d2}
+.theme-intelligence .intelligence-command .intelligence-path>a{
+  background:linear-gradient(155deg,#112b3d,#0a192a);border:1px solid #3d677d;border-radius:10px}
+@media(max-width:1140px){
+  .theme-intelligence .intelligence-command .intelligence-command-hero{
+    grid-template-columns:minmax(0,.94fr) minmax(375px,1.06fr);gap:22px}
+  .theme-intelligence .intelligence-command .intelligence-command-hero h1{font-size:clamp(42px,4.7vw,63px)}
+  .theme-intelligence .intelligence-command .intelligence-command-lens{padding:12px}
+  .intelligence-proof-console{padding:21px}
+  .theme-intelligence .intelligence-command .intelligence-command-actions .brand-button{font-size:13px}
+}
+@media(max-width:880px){
+  /* Decorative desktop orbital rings extend 460px beyond the mobile card.
+     Removing only these pseudo-elements prevents actual document overflow
+     without clipping focus rings or working evidence controls. */
+  .intelligence-command-lens::before,.intelligence-command-lens::after{display:none}
+  .theme-intelligence .intelligence-command .intelligence-command-hero{
+    grid-template-columns:1fr;gap:25px;min-height:0;padding:54px 0 60px}
+  .theme-intelligence .intelligence-command .intelligence-command-hero h1{
+    font-size:clamp(43px,6.6vw,66px)}
+  .theme-intelligence .intelligence-command .intelligence-command-lens{
+    min-height:0;padding:15px;max-width:650px;width:100%;margin:0 auto}
+  .intelligence-proof-console{max-width:100%}
+  .theme-intelligence .intelligence-command .intelligence-command-trails{grid-template-columns:1fr 1fr 1fr}
+}
+@media(max-width:600px){
+  .theme-intelligence .intelligence-command .intelligence-command-hero{padding:30px 0 48px;gap:24px}
+  .theme-intelligence .intelligence-command .intelligence-command-eyebrow{font-size:10px;margin-bottom:18px;letter-spacing:.09em}
+  .theme-intelligence .intelligence-command .intelligence-command-eyebrow span{display:inline}
+  .theme-intelligence .intelligence-command .intelligence-command-hero h1{
+    font-size:clamp(36px,9.3vw,49px);line-height:1.07;letter-spacing:-.06em}
+  .theme-intelligence .intelligence-command .intelligence-command-hero .brand-lead{
+    font-size:15px;line-height:1.6;margin:18px 0 22px}
+  .theme-intelligence .intelligence-command .intelligence-command-actions{display:grid;grid-template-columns:1fr;gap:9px}
+  .theme-intelligence .intelligence-command .intelligence-command-actions .brand-button{
+    width:100%;font-size:15px;min-height:50px}
+  .intelligence-command-progress{padding:13px 14px;margin-top:23px}
+  .intelligence-command-progress p{font-size:11px}
+  .theme-intelligence .intelligence-command .intelligence-command-lens{
+    padding:0;border:0;border-radius:14px;background:none}
+  .theme-intelligence .intelligence-command .intelligence-command-lens .intelligence-command-art{
+    border-radius:14px}
+  .intelligence-proof-console{padding:18px;border-radius:12px}
+  .intelligence-proof-topbar{font-size:9px}
+  .intelligence-proof-topbar span:last-child{font-size:9px}
+  .theme-intelligence .intelligence-command .intelligence-proof-console h2{font-size:clamp(25px,6.3vw,31px)}
+  .intelligence-proof-console .intelligence-proof-lead{font-size:13px}
+  .theme-intelligence .intelligence-command .intelligence-proof-claim{min-height:0;padding:12px 9px;gap:9px}
+  .intelligence-proof-statement{font-size:13px}
+  .intelligence-proof-summary>a{font-size:12px;max-width:68%;padding:10px}
+  .theme-intelligence .intelligence-command .intelligence-command-trails{
+    grid-template-columns:1fr;gap:8px;margin:0}
+  .theme-intelligence .intelligence-command .intelligence-command-trails a{min-height:73px;padding:11px 15px}
+  .theme-intelligence .intelligence-command .intelligence-command-trails a>strong{font-size:16px;margin:3px 0}
+  .theme-intelligence .intelligence-command .intelligence-command-trails a>small{font-size:12px}
+  .theme-intelligence .intelligence-command .intelligence-answer{padding:22px 16px}
+}
+@media(prefers-reduced-motion:reduce){
+  .intelligence-command .intelligence-command-art img,
+  .intelligence-command .intelligence-command-art .omega-intelligence-pulse{animation:none!important}
+  .intelligence-command .intelligence-proof-claim,
+  .intelligence-command .intelligence-command-actions .brand-button{transition:none!important;transform:none!important}
+  .intelligence-command-progress .intelligence-progress-rail span{transition:none!important}
+}
+html[data-motion=off] .intelligence-command .intelligence-command-art img,
+html[data-motion=off] .intelligence-command .intelligence-command-art .omega-intelligence-pulse{animation:none!important}
+html[data-motion=off] .intelligence-command .intelligence-proof-claim,
+html[data-motion=off] .intelligence-command .intelligence-command-actions .brand-button{transition:none!important;transform:none!important}
