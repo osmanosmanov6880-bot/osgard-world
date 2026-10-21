@@ -46,23 +46,32 @@ export default function OsgardTransitionProvider({ children }: { children: React
     setSession(null)
     if (skipped || !introEligible()) clearReveal()
     clearTimeout(focusTimer.current)
-    focusTimer.current = setTimeout(() => {
+    const restoreFocus = (remaining: number) => {
       if (active.current) return
+      // A deferred React commit can leave the background inert for one more
+      // task even after the finite overlay's session has ended.
+      if (document.querySelector<HTMLElement>('[data-osgard-content]')?.inert) {
+        if (remaining > 0) focusTimer.current = setTimeout(() => restoreFocus(remaining - 1), 32)
+        return
+      }
       const replayTarget = previousFocus.current
-      // Reduced motion can disable a still-focused replay button. Chromium may
-      // retain it as activeElement even though focus() can no longer move to it.
+      // Chromium may retain a disabled replay button as activeElement.
       const canRestoreReplay = running.replay && replayTarget?.isConnected &&
         !replayTarget.hidden && !(replayTarget as HTMLButtonElement).disabled &&
         !replayTarget.hasAttribute('hidden') && !replayTarget.hasAttribute('disabled') &&
         !replayTarget.matches?.('[inert], :disabled, [aria-hidden="true"]') &&
         (!replayTarget.getClientRects || replayTarget.getClientRects().length > 0)
-      const target = canRestoreReplay ? replayTarget : document.getElementById('product-main')
+      const main = document.getElementById('product-main')
+      const target = canRestoreReplay ? replayTarget : main
       target?.focus({ preventScroll: true })
-      // Always leave keyboard users at a usable target, not a disabled control.
       if (document.activeElement !== target || target?.matches?.(':disabled, [inert]')) {
-        document.getElementById('product-main')?.focus({ preventScroll: true })
+        main?.focus({ preventScroll: true })
       }
-    }, 0)
+      if (document.activeElement !== target && document.activeElement !== main && remaining > 0) {
+        focusTimer.current = setTimeout(() => restoreFocus(remaining - 1), 32)
+      }
+    }
+    focusTimer.current = setTimeout(() => restoreFocus(12), 0)
   }, [clearReveal])
   const begin = useCallback((kind: Session['kind'], replay = false) => {
     clearReveal()
