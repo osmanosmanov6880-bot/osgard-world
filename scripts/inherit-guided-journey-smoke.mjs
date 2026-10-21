@@ -70,7 +70,7 @@ check('a non-committed or mismatching server result cannot claim completion',()=
 check('a different tool, unrelated placement, wrong budget or pending suffix cancels guidance',()=>{
  const w=world(),s=begin(w),a=next(w,s);
  assert.equal(core.progress(s,{...a,objects:[tool('stone',a.objects[0].x,a.objects[0].y)]},legacy).status,'invalidated');
- assert.equal(core.progress(s,{...a,objects:[tool('tree',15,15)]},legacy).reason,'different-placement');
+ assert.equal(core.progress(s,{...a,objects:[tool('tree',15,15)],pending:[{type:'tree',x:15,y:15}]},legacy).reason,'different-placement');
  assert.equal(core.progress(s,{...a,budget:100},legacy).reason,'unplanned-move');
  assert.equal(core.progress(s,{...a,pending:[]},legacy).reason,'unplanned-move');
  assert.equal(core.progress(s,{...a,generation:174},legacy).reason,'generation-changed');
