@@ -100,6 +100,14 @@ test('unsupported positions do not generate fictitious synergies',()=>{
  assert.equal(r.status,'no-synergy');
  assert.deepEqual(r.choices,[]);
 });
+test('dense islands inspect all six genuine recipes before spending the preview budget',()=>{
+ const all=compass.types.flatMap((type,i)=>Array.from({length:3},(_,n)=>
+  t(type,22+i*5+n*0.2,30+n*7)));
+ const plan=compass.predict(world(all),legacy);
+ assert.equal(plan.inspectedRules.length,legacy.rules.length);
+ assert.deepEqual(new Set(plan.inspectedRules),new Set(legacy.rules.map(rule=>rule.id)));
+ assert.ok(plan.evaluated<=compass.maxEvaluations);
+});
 test('bounded prediction work and finite suggestions on a busy 600-trace island',()=>{
  const objects=Array.from({length:compass.maxObjects},(_,i)=>t('tree',30+(i%8),42+Math.floor(i/8)/8));
  const r=compass.predict(world(objects),legacy);
