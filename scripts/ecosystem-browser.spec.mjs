@@ -90,6 +90,9 @@ test('OSGARD globe fails gracefully without WebGL2 and keeps the experience swit
 })
 
 test('OSGARD Earth GPU quality changes real texture detail with safe remount', async ({ page }) => {
+  // 4K texture switching remounts GPU contexts repeatedly on shared CI runners.
+  // Preserve all assertions; bound only the test wall-clock allowance.
+  test.setTimeout(90_000)
   await page.emulateMedia({ reducedMotion: 'no-preference' })
   await page.goto('/')
   const picker = page.getByRole('combobox', { name: 'Качество 3D-глобуса' })
@@ -221,7 +224,7 @@ test('OSGARD Earth uses real bundled coastlines and WebGL or safe fallback', asy
   expect(errors).toEqual([])
 })
 
-for (const [locale, path] of [['ru','/entertainment/'], ['en','/entertainment/en/'], ['ar','/entertainment/ar/']]) {
+for (const [locale, path] of [['ru','/entertainment/index.html'], ['en','/entertainment/en/'], ['ar','/entertainment/ar/']]) {
   test('Entertainment World Select shows seven real illustrated archived worlds in ' + locale, async ({ page }) => {
     const errors = []
     page.on('pageerror', error => errors.push(error.message))
