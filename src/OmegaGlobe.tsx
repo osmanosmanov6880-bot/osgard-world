@@ -404,10 +404,13 @@ export default function OmegaGlobe({ quality, mode, chapter, view, onViewChange 
         // Check GPU support before fetching any imagery. Never load satellite assets from a CDN.
         const gl = canvas.getContext('webgl2', { alpha: true, antialias: true, powerPreference: quality === 'ultra' ? 'high-performance' : 'low-power' })
         if (!gl) throw new Error('WebGL2 not supported')
+        const maxTextureSize = Number(gl.getParameter(gl.MAX_TEXTURE_SIZE)) || 2048
+        const effectiveTextureWidth = ([4096, 2048, 1024, 512] as const)
+          .find(width => width <= textureWidth && width <= maxTextureSize) ?? 512
         let data: LandPolygons | null = null
         let earthSource: 'nasa' | 'procedural' = 'nasa'
         try {
-          satelliteTextures = await loadSatelliteTextures(textureWidth as EarthTextureTier)
+          satelliteTextures = await loadSatelliteTextures(effectiveTextureWidth as EarthTextureTier)
         } catch {
           earthSource = 'procedural'
           const response = await fetch('/brand/omega-earth-land.json', { signal: controller.signal })
@@ -441,7 +444,7 @@ export default function OmegaGlobe({ quality, mode, chapter, view, onViewChange 
         const geography = new THREE.Group()
         geography.rotation.y = -Math.PI / 2
         globe.add(geography)
-        const landTexture = satelliteTextures?.surface ?? createLandTexture(data!, textureWidth)
+        const landTexture = satelliteTextures?.surface ?? createLandTexture(data!, effectiveTextureWidth)
         const cityLights = satelliteTextures?.night ?? createCityLightsTexture(data!, mobile)
         const roughnessMap = satelliteTextures?.roughness
         const clouds = createCloudLayers(quality === 'eco' || (quality === 'auto' && mobile))
@@ -487,7 +490,8 @@ export default function OmegaGlobe({ quality, mode, chapter, view, onViewChange 
         sky.classList.add('omega-webgl-ready')
         stage.dataset.cloudLayers = '2'
         stage.dataset.earthSource = earthSource
-        stage.dataset.earthResolution = String(textureWidth)
+        stage.dataset.earthResolution = String(effectiveTextureWidth)
+        stage.dataset.earthTextureLimited = String(effectiveTextureWidth < textureWidth)
         setStatus('webgl')
         syncRendering()
       } catch {
@@ -549,6 +553,7 @@ export default function OmegaGlobe({ quality, mode, chapter, view, onViewChange 
       delete stage.dataset.cloudLayers
       delete stage.dataset.earthSource
       delete stage.dataset.earthResolution
+      delete stage.dataset.earthTextureLimited
       delete stage.dataset.earthFps
       delete stage.dataset.earthDpr
       if (scene) disposeScene(scene)
