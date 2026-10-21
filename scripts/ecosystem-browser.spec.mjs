@@ -1150,3 +1150,85 @@ test('INHERIT R7: offline preservation is clearly unverified, and conflict never
  expect(await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()))).toBe(before);
  expect(errors).toEqual([]);
 });
+
+
+test('INHERIT R8 real time-lapse plays only saved island frames without changing world state',async({page})=>{
+ const errors=await prepareStandaloneGame(page);
+ // CI normally emulates reduced motion; explicit opt-in playback must be
+ // tested with ordinary motion, while the separate accessibility case
+ // preserves and asserts reduced-motion behavior.
+ await page.emulateMedia({reducedMotion:'no-preference'});
+ await page.goto('/games/inherit/?lang=ru',{waitUntil:'domcontentloaded'});
+ const original=await page.evaluate(()=>window.InheritGame.snapshot());
+ await page.locator('.inherit-atlas-trigger').click();
+ const dialog=page.locator('.inherit-atlas-dialog'),timeline=dialog.locator('.inherit-timelapse');
+ await expect(dialog).toBeVisible();
+ await expect(timeline.locator('.inherit-timelapse-title')).toContainText('Остров сквозь поколения');
+ await expect(timeline.locator('.inherit-timelapse-intro')).toContainText('нет выдуманных');
+ await expect(timeline.locator('.inherit-timelapse-frame')).toContainText('Поколение');
+ await dialog.locator('.inherit-atlas-close').click();
+ await page.locator('#world').press('Enter');
+ await expect(page.locator('#budget')).toHaveText('99');
+ await page.locator('#pass').click();
+ await expect.poll(()=>page.evaluate(()=>window.InheritGame.snapshot().generation)).toBe(original.generation+1);
+ await page.locator('.inherit-handoff-continue').click();
+ const committed=await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()));
+ await page.locator('.inherit-atlas-trigger').click();
+ await expect(dialog).toBeVisible();
+ await expect(timeline.locator('.inherit-timelapse-play')).toBeEnabled();
+ const initial=await page.evaluate(()=>window.InheritTimeLapseUI.getModel());
+ expect(initial.status).toBe('ok');
+ expect(initial.frameCount).toBeGreaterThanOrEqual(2);
+ expect(initial.source).toBe('local-or-account-saved-frame');
+ expect(initial.transition).toBe('first-available');
+ await timeline.locator('.inherit-timelapse-next').click();
+ const later=await page.evaluate(()=>window.InheritTimeLapseUI.getModel());
+ expect(later.index).toBe(1);
+ expect(later.transition).toBe('adjacent-saved-frames');
+ expect(later.changes.added).toBeGreaterThanOrEqual(1);
+ await expect(timeline.locator('.inherit-timelapse-pin--added')).not.toHaveCount(0);
+ await timeline.locator('.inherit-timelapse-prev').click();
+ await timeline.locator('.inherit-timelapse-play').click();
+ await expect.poll(()=>page.evaluate(()=>window.InheritTimeLapseUI.getState().playing),{timeout:5000}).toBe(false);
+ await expect.poll(()=>page.evaluate(()=>window.InheritTimeLapseUI.getState().index)).toBe(1);
+ expect(await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()))).toBe(committed);
+ await dialog.locator('.inherit-atlas-close').click();
+ await page.locator('[data-game-language="zh"]').click();
+ await page.locator('.inherit-atlas-trigger').click();
+ await expect(timeline.locator('.inherit-timelapse-title')).toHaveText('世代中的岛屿');
+ await expect(timeline.locator('.inherit-timelapse-disclosure')).toContainText('不是他人操作的录像');
+ await page.keyboard.press('Escape');
+ expect(await page.evaluate(()=>window.InheritTimeLapseUI.getState().playing)).toBe(false);
+ expect(await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()))).toBe(committed);
+ expect(errors).toEqual([]);
+});
+
+test('INHERIT R8 honors reduced-motion and discloses missing generations, without replay mutation',async({page})=>{
+ const errors=await prepareStandaloneGame(page);
+ await page.emulateMedia({reducedMotion:'reduce'});
+ await page.goto('/games/inherit/?lang=en',{waitUntil:'domcontentloaded'});
+ const generation=await page.evaluate(()=>{
+  const game=window.InheritGame,state=game.snapshot(),oldGen=state.generation;
+  state.generation+=5;
+  state.snapshots=[{generation:oldGen,objects:[]}];
+  state.objects=[{tool:'tree',x:32,y:43}];state.pending=[];state.changes=[];state.budget=100;
+  game.apply(state);
+  return state.generation;
+ });
+ const before=await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()));
+ await page.locator('.inherit-atlas-trigger').click();
+ const tl=page.locator('.inherit-timelapse');
+ await expect(tl).toBeVisible();
+ await expect(tl.locator('.inherit-timelapse-play')).toBeDisabled();
+ await expect(tl.locator('.inherit-timelapse-warning')).toContainText('Autoplay is disabled');
+ await tl.locator('.inherit-timelapse-scrubber input').focus();
+ await tl.locator('.inherit-timelapse-scrubber input').press('End');
+ await expect(tl.locator('.inherit-timelapse-warning')).toContainText('Saved frames are missing');
+ await expect(tl.locator('.inherit-timelapse-warning')).toContainText('Intermediate history is unknown');
+ await expect(tl.locator('.inherit-timelapse-frame')).toContainText(String(generation));
+ await expect(tl.locator('.inherit-timelapse-pin--added')).toHaveCount(1);
+ expect(await page.evaluate(()=>window.InheritTimeLapseUI.getState().playing)).toBe(false);
+ expect(await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()))).toBe(before);
+ await page.keyboard.press('Escape');
+ expect(errors).toEqual([]);
+});

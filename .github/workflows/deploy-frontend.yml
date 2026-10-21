@@ -122,6 +122,7 @@ jobs:
           npm run qa:inherit-followup
           npm run qa:inherit-atlas
           npm run qa:inherit-handoff-moment
+          npm run qa:inherit-timelapse
           npm run qa:remix-session
           npm run qa:remix-owned-session
           npm run qa:remix-invitations

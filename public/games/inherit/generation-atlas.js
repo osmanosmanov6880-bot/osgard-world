@@ -144,7 +144,7 @@ function update(){
 }
 function open(){
  previousFrom=null;previousTo=null;
- render();if(!dialog.open)dialog.showModal();
+ render();if(!dialog.open)dialog.showModal();window.InheritTimeLapseUI?.refresh?.();
 }
 trigger.addEventListener('click',open);
 close.addEventListener('click',()=>dialog.close());
