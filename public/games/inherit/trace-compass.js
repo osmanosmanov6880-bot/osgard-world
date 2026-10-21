@@ -86,6 +86,20 @@ const source=()=>game.snapshot();
 const fingerprint=world=>JSON.stringify({g:world.generation,b:world.budget,objects:world.objects});
 function dismiss(){dialog.close()}
 function resetGhost(){ghost.hidden=true;armed=false;d.body.classList.remove('inherit-compass-armed')}
+// On phones the action dock is fixed above the island. Native <dialog> returns
+// focus to its dock trigger on close and can leave the chosen position beneath
+// the dock. Only after the player arms a real choice do we reveal the island.
+// This never clicks it, spends budget, or alters saved coordinates.
+function revealArmedWorld(){
+ if(!armed||ghost.hidden||!window.matchMedia?.('(max-width:740px)').matches)return;
+ const stage=d.querySelector('#world');
+ if(!stage)return;
+ const marker=ghost.getBoundingClientRect(),x=marker.left+marker.width/2,y=marker.top+marker.height/2;
+ const top=x>=0&&x<innerWidth&&y>=0&&y<innerHeight?d.elementFromPoint(x,y):null;
+ if(!top?.closest('#world')||top.closest('button,.dock,[data-memory]')){
+  stage.scrollIntoView({block:'start',inline:'nearest',behavior:'auto'});
+ }
+}
 function labelFor(rule,c){return c.rules[rule.id]||rule.id}
 function addStat(value,label){const item=el('div','inherit-compass-stat');item.append(el('strong','',value),el('small','',label));stats.append(item)}
 function render(){
@@ -147,6 +161,8 @@ use.addEventListener('click',()=>{
  if(!button){status.textContent=copy[lang()].unavailable;return}
  button.click();armed=true;d.body.classList.add('inherit-compass-armed');dismiss();
  d.querySelector('#world')?.focus?.({preventScroll:true});
+ // Run after dialog focus restoration and the fixed mobile dock have settled.
+ requestAnimationFrame(revealArmedWorld);
  game.notify?.(copy[lang()].selected);
 });
 const objects=d.querySelector('#objects'),gen=d.querySelector('#gen');
