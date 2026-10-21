@@ -139,6 +139,8 @@ export default function AcademyHome() {
         ? { title:t.actionChecksTitle, body:t.actionChecksBody, label:t.actionChecksLabel, href:'/osa-cinema' }
         : { title:t.actionProjectTitle, body:t.actionProjectBody, label:t.actionProjectLabel, href:`/?project=${learningProgress.nextProject}#project-studio` }
   const lessons = getOSACinemaLessons(locale)
+  const completedScenes = learningProgress.completed ? lessons.length : Math.min(lessons.length, Math.max(learningProgress.index, learningProgress.answers))
+  const coursePercentage = Math.round(completedScenes / Math.max(1, lessons.length) * 100)
   const visibleLessons = activeAct === null ? lessons : lessons.filter(lesson => lesson.act === activeAct)
   const lessonFilters = [{ value:null as number | null, label:t.lessonAll }, { value:1, label:t.lessonAct1 }, { value:2, label:t.lessonAct2 }, { value:3, label:t.lessonAct3 }]
   const pathways = [
@@ -158,12 +160,16 @@ export default function AcademyHome() {
   ]
 
   return <main className="academy-home">
-    <header className="academy-header">
-      <a className="academy-brand" href="/" aria-label="OSGARD AI Academy home">
-        <OsgardLogo className="academy-logo" /><span>{t.brand}</span>
-      </a>
-      <nav className="academy-nav" aria-label={locale === 'ru' ? 'Основная навигация' : 'Main navigation'}>
-        <a href="#paths">{t.paths}</a><a href="/lectures">{locale === 'ru' ? 'Лекции' : 'Lectures'}</a><a href="/catalog">{t.products}</a><a href="/games/">{t.games}</a><a href="/portal">{t.portal}</a>
+    <header className="academy-header academy-compact-header">
+      <div className="academy-context">
+        <span className="academy-context-glyph" aria-hidden="true">◇</span>
+        <a href="/intelligence">OSA Intelligence</a><span aria-hidden="true">/</span>
+        <strong>{locale === 'ru' ? 'Академия' : 'Academy'}</strong>
+      </div>
+      <nav className="academy-nav" aria-label={locale === 'ru' ? 'Разделы академии' : 'Academy sections'}>
+        <a href="#paths">{t.paths}</a>
+        <a href="/lectures">{locale === 'ru' ? 'Все уроки' : 'All lessons'}</a>
+        <a href="#academy-progress-title">{locale === 'ru' ? 'Мой прогресс' : 'My progress'}</a>
       </nav>
       <div className="academy-header-actions">
         <button className="academy-language" type="button" onClick={() => setLocale(locale === 'ru' ? 'en' : 'ru')} aria-label={t.switchLanguage}>{locale.toUpperCase()}</button>
@@ -184,14 +190,32 @@ export default function AcademyHome() {
           {t.signals.map(signal => <span key={signal}><i aria-hidden="true" />{signal}</span>)}
         </div>
       </div>
-      <div className="academy-hero-art" aria-hidden="true">
-        <div className="academy-art-grid" /><div className="academy-art-orbit academy-art-orbit-one" />
-        <div className="academy-art-orbit academy-art-orbit-two" />
-        <div className="academy-art-core"><Sparkles size={32} /><strong>AI</strong><small>LEARN / VERIFY / APPLY</small></div>
-        <div className="academy-art-label academy-art-label-one">MODEL / 01</div>
-        <div className="academy-art-label academy-art-label-two">EVIDENCE / 02</div>
-        <div className="academy-art-label academy-art-label-three">HUMAN / 03</div>
-      </div>
+      <aside className="academy-learning-console" aria-label={locale === 'ru' ? 'Обзор моего обучения' : 'My learning overview'}>
+        <div className="academy-console-topline"><span>OSA / LEARNING COCKPIT</span><span className="academy-console-live"><i aria-hidden="true" /> {locale === 'ru' ? 'На этом устройстве' : 'On this device'}</span></div>
+        <div className="academy-console-identity">
+          <div className="academy-console-dial" role="progressbar" aria-label={t.progressCourse} aria-valuemin={0} aria-valuemax={lessons.length} aria-valuenow={completedScenes}
+            style={{background: `conic-gradient(#79f3ff ${coursePercentage}%, #224259 ${coursePercentage}% 100%)`}}>
+            <div><strong>{coursePercentage}%</strong><span>{locale === 'ru' ? 'ПРОГРЕСС КУРСА' : 'COURSE PROGRESS'}</span></div>
+          </div>
+          <div className="academy-console-summary">
+            <span>{t.progressCourse} / {lessons.length} {t.scenes}</span>
+            <h2>{learningProgress.completed ? t.progressComplete : learningProgress.started ? (locale === 'ru' ? 'Продолжайте обучение' : 'Keep learning') : (locale === 'ru' ? 'Ваш путь начинается здесь' : 'Your journey starts here')}</h2>
+            <p>{learningProgress.completed
+              ? (locale === 'ru' ? 'Вернитесь к любому уроку и продолжите практику.' : 'Revisit lessons and keep practising.')
+              : (locale === 'ru' ? 'Изучайте, проверяйте источники и применяйте знания.' : 'Learn, verify sources and apply what you discover.')}</p>
+          </div>
+        </div>
+        <div className="academy-console-metrics">
+          <div><strong>{learningProgress.lessonCompletions}<span>/{OSA_LESSON_SLUGS.length}</span></strong><small>{locale === 'ru' ? 'Изучено уроков' : 'Lessons completed'}</small></div>
+          <div><strong>{learningProgress.selfChecks}<span>/3</span></strong><small>{locale === 'ru' ? 'Самопроверка' : 'Self-checks'}</small></div>
+          <div><strong>{learningProgress.projectChecks}<span>/12</span></strong><small>{locale === 'ru' ? 'Шагов практики' : 'Practice steps'}</small></div>
+        </div>
+        <a href={nextLearningAction.href} className="academy-console-continue">{nextLearningAction.label}<ArrowUpRight size={19} aria-hidden="true" /></a>
+        <nav className="academy-console-quicklinks" aria-label={locale === 'ru' ? 'Быстрый доступ к обучению' : 'Quick learning links'}>
+          <a href="/lectures"><BookOpen size={17} aria-hidden="true" />{locale === 'ru' ? 'Каталог 8 уроков' : 'Eight-lesson catalogue'}<ArrowRight size={16} aria-hidden="true" /></a>
+          <a href="/osa-cinema"><Sparkles size={17} aria-hidden="true" />OSA Original<ArrowRight size={16} aria-hidden="true" /></a>
+        </nav>
+      </aside>
     </section>
 
     <section className="academy-section academy-progress" aria-labelledby="academy-progress-title">
