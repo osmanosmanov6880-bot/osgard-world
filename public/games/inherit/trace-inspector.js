@@ -11,6 +11,7 @@ const content={
   intro:'Нажми на след, чтобы увидеть то, что действительно известно о нём из текущего сохранения.',
   types:{tree:'Дерево',stone:'Камень',light:'Фонарь',path:'Тропа',flower:'Цветы',arch:'Арка',chime:'Колокольчик',moss:'Мох',cairn:'Каменная насыпь',marker:'Указатель'},
   rules:{grove:'Роща',waylight:'Освещённая тропа',garden:'Сад',monument:'Монумент',waymark:'Путевой знак',landmark:'Маяк'},
+  launch:'Исследовать следы',prev:'Предыдущий',next:'Следующий',of:'из',
   index:'След №',generation:'Поколение',position:'Положение на острове',status:'Состояние',
   pending:'Это новое размещение ещё ожидает завершения поколения.',
   current:'Этот след присутствует в текущем сохранении. Дистанционное подтверждение здесь не проверяется.',
@@ -32,6 +33,7 @@ const content={
   intro:'Select a trace to see what the currently saved world can actually establish.',
   types:{tree:'Tree',stone:'Stone',light:'Lantern',path:'Path',flower:'Flowers',arch:'Arch',chime:'Wind chime',moss:'Moss',cairn:'Stone cairn',marker:'Waymarker'},
   rules:{grove:'Grove',waylight:'Lit pathway',garden:'Garden',monument:'Monument',waymark:'Waymark',landmark:'Beacon'},
+  launch:'Inspect traces',prev:'Previous',next:'Next',of:'of',
   index:'Trace #',generation:'Generation',position:'Island position',status:'State',
   pending:'This new placement is still awaiting a completed generation.',
   current:'This trace is in the current saved world. Remote confirmation is not established here.',
@@ -53,6 +55,7 @@ const content={
   intro:'选择岛上的痕迹，查看当前保存记录真正能够证明的信息。',
   types:{tree:'树木',stone:'石头',light:'灯笼',path:'小路',flower:'花朵',arch:'拱门',chime:'风铃',moss:'苔藓',cairn:'石堆',marker:'路标'},
   rules:{grove:'树林',waylight:'照亮的小路',garden:'花园',monument:'纪念碑',waymark:'路标',landmark:'灯塔'},
+  launch:'查看岛屿痕迹',prev:'上一个',next:'下一个',of:'共',
   index:'痕迹编号',generation:'世代',position:'岛屿位置',status:'状态',
   pending:'这个新物件尚未完成世代传承。',
   current:'这个物件存在于当前保存的世界中，此处不能证明服务器已经确认。',
@@ -78,6 +81,8 @@ const el=(tag,klass,value)=>{
  if(value!==undefined)node.textContent=String(value);
  return node;
 };
+const launcher=el('button','inherit-trace-launcher');launcher.type='button';
+const header=d.querySelector('.app > header');if(header)header.appendChild(launcher);
 const dialog=el('dialog','inherit-trace-inspector');
 dialog.dataset.noTranslate='';
 dialog.setAttribute('aria-labelledby','inherit-trace-title');
@@ -87,6 +92,9 @@ const top=el('div','inherit-trace-top'),titles=el('div','inherit-trace-titles'),
 title.id='inherit-trace-title';close.type='button';
 titles.append(eyebrow,title);top.append(titles,close);
 const intro=el('p','inherit-trace-intro');intro.id='inherit-trace-intro';
+const navigation=el('div','inherit-trace-navigation');
+const prev=el('button','inherit-trace-prev'),next=el('button','inherit-trace-next'),counter=el('span','inherit-trace-counter');
+prev.type='button';next.type='button';navigation.append(prev,counter,next);
 const summary=el('div','inherit-trace-summary'),status=el('p','inherit-trace-status');
 status.setAttribute('role','status');
 const layout=el('div','inherit-trace-layout'),mapPanel=el('section','inherit-trace-map-panel'),
@@ -102,13 +110,16 @@ atlas.type='button';back.type='button';actions.append(atlas,back);
 mapPanel.append(map,legend,historyTitle,history);
 dataPanel.append(connectionTitle,connections,possibilityTitle,possibilities);
 layout.append(mapPanel,dataPanel);
-dialog.append(top,intro,summary,status,layout,sourceNote,actions);
+dialog.append(top,intro,navigation,summary,status,layout,sourceNote,actions);
 d.body.appendChild(dialog);
 let selectedIndex=null,selectedIdentity=null,selectedButton=null,last=null;
 const label=(key,value)=>{const card=el('div','inherit-trace-fact');card.append(el('span','',key),el('strong','',value));return card};
 const fmt=n=>Number(n).toFixed(1).replace(/\.0$/,'');
 function paint(model){
  const c=tr(),item=model.selected;
+ prev.textContent=c.prev;next.textContent=c.next;
+ counter.textContent=(item.index+1)+' '+c.of+' '+model.currentTotal;
+ prev.disabled=item.index===0;next.disabled=item.index>=model.currentTotal-1;
  eyebrow.textContent=c.eyebrow;
  title.textContent=c.types[item.type]+' · '+c.index+(item.index+1);
  close.setAttribute('aria-label',c.close);
@@ -165,7 +176,8 @@ function inspectIndex(index,button){
  if(typeof dialog.showModal!=='function')return false;
  const result=modelFor(index);
  if(result.status!=='ok'){game.notify?.(tr().unavailable);return false}
- selectedIndex=index;selectedIdentity=identity(result.selected);selectedButton=button||null;last=result;
+ if(!dialog.open)selectedButton=button||d.activeElement;
+ selectedIndex=index;selectedIdentity=identity(result.selected);last=result;
  paint(result);
  if(!dialog.open)dialog.showModal();
  return true;
@@ -181,6 +193,14 @@ objects.addEventListener('click',event=>{
  event.stopPropagation();event.preventDefault();
  inspectIndex(index,button);
 },true);
+launcher.addEventListener('click',()=>{
+ const count=game.snapshot().objects?.length||0;if(count)inspectIndex(count-1,launcher);
+});
+prev.addEventListener('click',()=>{if(selectedIndex!==null&&selectedIndex>0)inspectIndex(selectedIndex-1,null)});
+next.addEventListener('click',()=>{
+ const size=game.snapshot().objects?.length||0;
+ if(selectedIndex!==null&&selectedIndex<size-1)inspectIndex(selectedIndex+1,null);
+});
 function decorate(){
  const snapshot=game.snapshot(),buttons=objects.querySelectorAll('button.placed');
  const c=tr();
@@ -192,6 +212,8 @@ function decorate(){
  }
 }
 function refresh(){
+ const snapshot=game.snapshot();launcher.textContent=tr().launch;
+ launcher.disabled=!Array.isArray(snapshot.objects)||snapshot.objects.length===0;
  decorate();
  if(dialog.open&&selectedIndex!==null){
   const next=modelFor(selectedIndex);
