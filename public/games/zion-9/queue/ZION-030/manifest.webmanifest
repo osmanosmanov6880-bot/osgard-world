@@ -1,0 +1,19 @@
+{
+  "name": "Теневой протокол / Shadow Protocol v21.0",
+  "short_name": "SHADOW 21",
+  "description": "Образовательная игра о городском охлаждении и пешеходных маршрутах",
+  "id": "./index.html",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#07121f",
+  "theme_color": "#0b2031",
+  "icons": [
+    {
+      "src": "./assets/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

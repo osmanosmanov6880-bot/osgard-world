@@ -1,0 +1,9 @@
+{
+  "game": "SHADOW PROTOCOL",
+  "version": "21.0.0",
+  "source_sha256": "e7c30de241c14b55b420a6066764fd81f25b18f2956bb1ee4175a83fb5865375",
+  "source_file": "SHADOW_PROTOCOL_v21_0_PLAY_OFFLINE.html",
+  "release": "static offline-game only",
+  "classroom_server": "not deployed",
+  "ssh_delivery": "GitHub Actions frontend deploy"
+}
