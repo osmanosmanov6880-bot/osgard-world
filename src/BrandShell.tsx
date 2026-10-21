@@ -34,7 +34,9 @@ export function BrandShell({ theme, children }: { theme: ProductTheme; children:
   const local = product === 'world'
     ? [['Продукты', worldBase + '#products'], ['Кейсы', worldBase + '#cases'], ['Подход', worldBase + '#approach'], ['О компании', worldBase + '#about'], ['Контакт', worldBase + '#contact']]
     : product === 'intelligence'
-      ? [['Метод', '/intelligence#method'], ['Демонстрация', '/intelligence#demo'], ['Программа', '/learning/program'], ['Лекции', '/lectures'], ['Мой прогресс', '/learning'], ['Практика', '/learning/campus']]
+      ? path === '/intelligence'
+        ? [['Проверка', '/intelligence#demo'], ['Уроки', '/lectures'], ['Мой прогресс', '/learning']]
+        : [['Метод', '/intelligence#method'], ['Демонстрация', '/intelligence#demo'], ['Программа', '/learning/program'], ['Лекции', '/lectures'], ['Мой прогресс', '/learning'], ['Практика', '/learning/campus']]
       : [['Миры', '/play#catalog'], ['Избранное', '/play?view=favorites#catalog'], ['Недавние', '/play?view=recent#catalog'], ['Партнёрам', '/play/partners']]
 
   useEffect(() => {
