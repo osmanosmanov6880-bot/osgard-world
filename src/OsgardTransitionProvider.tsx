@@ -50,6 +50,8 @@ export default function OsgardTransitionProvider({ children }: { children: React
       if (active.current) return
       const target = running.replay && previousFocus.current?.isConnected ? previousFocus.current : document.getElementById('product-main')
       target?.focus({ preventScroll: true })
+      // A connected replay trigger can become disabled or hidden during playback.
+      if (document.activeElement !== target) document.getElementById('product-main')?.focus({ preventScroll: true })
     }, 0)
   }, [clearReveal])
   const begin = useCallback((kind: Session['kind'], replay = false) => {

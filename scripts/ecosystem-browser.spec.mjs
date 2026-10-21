@@ -1,13 +1,56 @@
 import { test, expect } from '@playwright/test'
 
+const cinematicOverlay = '.osgard-cinematic, [data-osgard-pending]'
+
+async function expectOsgardContentReady(page) {
+  await expect(page.locator('[data-osgard-content]')).toHaveCount(1)
+  await expect(page.locator(cinematicOverlay)).toHaveCount(0)
+  await expect(page.locator('[data-osgard-content]')).not.toHaveAttribute('inert', '')
+  await expect(page.locator('[data-osgard-content]')).not.toHaveAttribute('aria-hidden', 'true')
+  await expect(page.locator('html')).not.toHaveAttribute('data-osgard-cinematic', /.+/)
+}
+
+async function openPlayCatalog(page) {
+  // Use the actual catalogue destination; the primary hero action goes to featured worlds.
+  await page.locator('.cp-glass-panel a[href="#catalog"]').click()
+  await expect(page.locator('.cp-explore')).toHaveAttribute('data-explore-state', 'ready')
+  await expect(page.locator('#catalog .play-card')).toHaveCount(19)
+}
+
+async function recordOsgardTransitions(page, returning = false) {
+  await page.addInitScript(({ returning }) => {
+    if (returning) localStorage.setItem('osgard:intro:v1', 'seen')
+    const trace = { documentId: Math.random().toString(36), started: [], visuals: [] }
+    window.__osgardBrowserTrace = trace
+    let previous = null
+    const observedVisuals = new WeakSet()
+    // Observe real DOM lifecycle; do not replace the visual, its timers or route modules.
+    new MutationObserver(records => {
+      const kind = document.documentElement?.getAttribute('data-osgard-cinematic') || null
+      if (kind && kind !== previous) trace.started.push(kind)
+      previous = kind
+      for (const record of records) for (const node of record.addedNodes) {
+        if (!(node instanceof Element)) continue
+        const visuals = [...node.querySelectorAll('.osgard-cinematic')]
+        if (node.matches('.osgard-cinematic')) visuals.push(node)
+        for (const visual of visuals) if (!observedVisuals.has(visual)) {
+          observedVisuals.add(visual)
+          trace.visuals.push(visual.getAttribute('data-kind'))
+        }
+      }
+    }).observe(document, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-osgard-cinematic'] })
+  }, { returning })
+}
+
 const surfaces = [
   ['/', 'world', 'ТЕХНОЛОГИИ,'],
   ['/intelligence', 'intelligence', 'Понимать ИИ.'],
-  ['/play', 'play', 'ДОБАВЬ ТЕНЬ.'],
+  ['/play', 'play', /OSGARD\s*Play/],
 ]
 
 for (const [path, product, heading] of surfaces) {
   test(product + ': real layout, navigation and reduced motion', async ({ page }, info) => {
+    if (product === 'play') test.slow() // Visit the real artwork before the full-page capture on mobile CI.
     const failures = []
     page.on('pageerror', error => failures.push(error.message))
     await page.goto(path)
@@ -17,11 +60,23 @@ for (const [path, product, heading] of surfaces) {
     await expect(page.getByRole('navigation', { name: 'Продукты OSGARD' }).getByRole('link')).toHaveCount(4)
     expect(await page.evaluate(() => matchMedia('(prefers-reduced-motion: reduce)').matches)).toBe(true)
     await expect(page.getByRole('button', { name: 'Меньше движения', exact: true })).toBeDisabled()
+    await expectOsgardContentReady(page)
     await expect(page.locator('#product-main')).toBeVisible()
     await page.evaluate(() => document.fonts.ready)
     const interFonts = await page.evaluate(async () => (await document.fonts.load('400 16px Inter', 'OSGARD Интерфейс')).map(font => font.status))
     expect(interFonts.length).toBeGreaterThan(0)
     expect(interFonts.every(status => status === 'loaded')).toBe(true)
+    if (product === 'play') {
+      await openPlayCatalog(page)
+      // A full-page capture must contain the real sections and loaded artwork,
+      // rather than the intentionally deferred below-fold placeholder.
+      for (const img of await page.locator('.play-universe img').all()) {
+        if (!await img.isVisible()) continue
+        await img.scrollIntoViewIfNeeded()
+        await expect.poll(() => img.evaluate(image => image.complete && image.naturalWidth > 0)).toBe(true)
+      }
+      await page.evaluate(() => scrollTo(0, 0))
+    }
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true)
     await page.screenshot({ path: info.outputPath(product + '.png'), fullPage: true })
     expect(failures).toEqual([])
@@ -36,6 +91,7 @@ test('OSGARD cinema, 3D world and hybrid controls are functional and keyboard-ac
   page.on('pageerror', error => errors.push(error.message))
   await page.emulateMedia({ reducedMotion: 'no-preference' })
   await page.goto('/')
+  await expectOsgardContentReady(page)
   const hero = page.locator('.omega-hero')
   const mode = page.getByRole('group', { name: 'Выберите режим 3D-сцены' })
 
@@ -82,6 +138,7 @@ test('OSGARD globe fails gracefully without WebGL2 and keeps the experience swit
     }
   })
   await page.goto('/')
+  await expectOsgardContentReady(page)
   await expect(page.locator('.omega-webgl-stage')).toHaveAttribute('data-globe-status', 'fallback', { timeout: 20000 })
   await expect(page.locator('.omega-globe')).toHaveCount(1)
   await page.getByRole('button', { name: 'Кино' }).click()
@@ -92,6 +149,7 @@ test('OSGARD globe fails gracefully without WebGL2 and keeps the experience swit
 test('OSGARD Earth GPU quality changes real texture detail with safe remount', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'no-preference' })
   await page.goto('/')
+  await expectOsgardContentReady(page)
   const picker = page.getByRole('combobox', { name: 'Качество 3D-глобуса' })
   const stage = page.locator('.omega-webgl-stage')
   await expect(picker).toHaveValue('auto')
@@ -123,6 +181,7 @@ test('OSGARD raymarched cloud scene retains navigation, motion fallback and on-s
   page.on('pageerror', error => errors.push(error.message))
   await page.emulateMedia({ reducedMotion: 'no-preference' })
   await page.goto('/')
+  await expectOsgardContentReady(page)
   const stage = page.locator('.omega-webgl-stage')
   await expect(stage).toHaveAttribute('data-globe-status', /^(webgl|fallback)$/, { timeout: 25000 })
   const hasWebGL2 = await page.evaluate(() => {
@@ -168,6 +227,7 @@ test('NASA globe assets are self-hosted, historically credited and hash-verified
 test('OSGARD Earth uses bundled NASA satellite data with fallback if blocked', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'no-preference' })
   await page.goto('/')
+  await expectOsgardContentReady(page)
   const stage = page.locator('.omega-webgl-stage')
   await expect(stage).toHaveAttribute('data-globe-status', /^(webgl|fallback)$/, { timeout: 25000 })
   const state = await stage.getAttribute('data-globe-status')
@@ -184,6 +244,7 @@ test('OSGARD Earth falls back to coastlines if NASA texture assets cannot load',
   await page.emulateMedia({ reducedMotion: 'no-preference' })
   await page.route('**/brand/earth/*.webp', route => route.abort())
   await page.goto('/')
+  await expectOsgardContentReady(page)
   const stage = page.locator('.omega-webgl-stage')
   await expect(stage).toHaveAttribute('data-globe-status', /^(webgl|fallback)$/, { timeout: 25000 })
   if (await stage.getAttribute('data-globe-status') === 'webgl') {
@@ -204,6 +265,7 @@ test('OSGARD Earth uses real bundled coastlines and WebGL or safe fallback', asy
   page.on('pageerror', error => errors.push(error.message))
   await page.emulateMedia({ reducedMotion: 'no-preference' })
   await page.goto('/')
+  await expectOsgardContentReady(page)
   const stage = page.locator('.omega-webgl-stage')
   await expect(stage).toHaveCount(1)
   await expect(stage).toHaveAttribute('data-globe-status', /^(webgl|fallback)$/, { timeout: 20000 })
@@ -221,10 +283,11 @@ test('OSGARD Earth uses real bundled coastlines and WebGL or safe fallback', asy
   expect(errors).toEqual([])
 })
 
-test('OSGARD Omega cinematic scenes preserve working routes and images', async ({ page }) => {
+test('OSGARD cinematic scenes preserve working routes and real responsive artwork', async ({ page }) => {
   const pageErrors = []
   page.on('pageerror', error => pageErrors.push(error.message))
   await page.goto('/')
+  await expectOsgardContentReady(page)
   await expect(page.locator('.omega-hero .omega-globe')).toHaveCount(1)
   await expect(page.locator('.omega-cards .omega-card')).toHaveCount(3)
   for (const path of ['/intelligence', '/play', '/development']) {
@@ -237,10 +300,27 @@ test('OSGARD Omega cinematic scenes preserve working routes and images', async (
   expect(await page.locator('.omega-intelligence-scene img').evaluate(img => img.complete && img.naturalWidth > 0)).toBe(true)
 
   await page.goto('/play')
-  await expect(page.locator('.omega-play-city img[src="/brand/omega-play.svg"]')).toBeVisible()
-  await expect(page.locator('.omega-play-shortcuts a')).toHaveCount(3)
-  await expect(page.locator('.omega-play-actions a[href^="/play/world/zion-030"]')).toHaveCount(1)
-  expect(await page.locator('.omega-play-city img').evaluate(img => img.complete && img.naturalWidth > 0)).toBe(true)
+  await expect(page.locator('.play-universe')).toHaveAttribute('data-art-state', 'loaded')
+  const playArt = page.locator('.cp-hero-art img')
+  await expect(playArt).toBeVisible()
+  expect(await playArt.evaluate(img => img.complete && img.naturalWidth > 0)).toBe(true)
+  const artPath = await playArt.evaluate(img => new URL(img.currentSrc).pathname)
+  expect(artPath).toMatch(await page.evaluate(() => innerWidth <= 600)
+    ? /^\/brand\/play\/hero-mobile(?:-780)?\.webp$/
+    : /^\/brand\/play\/hero-megacity(?:-(?:1280|1920))?\.webp$/)
+  await expect(page.locator('.cp-glass-panel a')).toHaveCount(3)
+  await expect(page.getByRole('link', { name: 'Исследовать миры', exact: true })).toHaveAttribute('href', '#featured')
+  await expect(page.getByRole('button', { name: 'Смотреть трейлер', exact: true })).toBeDisabled()
+  await expect(page.locator('#trailer-status')).toContainText('Трейлер пока не опубликован')
+  await expect(page.locator('#featured .cp-world')).toHaveCount(3)
+  await page.getByRole('button', { name: 'Следующие избранные миры', exact: true }).click()
+  await page.getByRole('button', { name: 'Следующие избранные миры', exact: true }).click()
+  const shadow = page.locator('#featured [data-world-id="zion-030"]')
+  await expect(shadow).toBeVisible()
+  await expect(shadow.getByRole('heading', { level: 3 })).toHaveText('Теневой протокол')
+  await expect(shadow.locator('h3 a')).toHaveAttribute('href', /^\/play\/world\/zion-030\?back=/)
+  await shadow.locator('img').scrollIntoViewIfNeeded()
+  await expect.poll(() => shadow.locator('img').evaluate(img => img.complete && img.naturalWidth > 0)).toBe(true)
 
   await page.goto('/development')
   await expect(page.locator('.omega-dev-hero h1')).toContainText('ЦИФРОВЫЕ')
@@ -269,6 +349,7 @@ for (const slug of ['phantom', 'tedes', 'merakki']) {
 
 test('keyboard can skip the shared navigation', async ({ page }) => {
   await page.goto('/')
+  await expectOsgardContentReady(page)
   await page.keyboard.press('Tab')
   await expect(page.getByRole('link', { name: 'Перейти к содержанию' })).toBeFocused()
   await page.keyboard.press('Enter')
@@ -291,6 +372,7 @@ test('OSA sources, marked claims and reset are functional', async ({ page }) => 
 
 test('contact form reports errors and exports a brief without submitting', async ({ page }) => {
   await page.goto('/')
+  await expectOsgardContentReady(page)
   const field = page.getByLabel('Что хотите создать?', { exact: true })
   await page.getByRole('button', { name: 'Скачать бриф' }).click()
   await expect(page.locator('#brief-feedback')).toHaveAttribute('role', 'alert')
@@ -303,30 +385,73 @@ test('contact form reports errors and exports a brief without submitting', async
 })
 
 test('catalog filters, return path and favorites survive reload', async ({ page }) => {
+  test.slow() // Includes a real iframe runtime, stop/focus recovery and a full persistence reload.
   await page.goto('/play')
-  await expect(page.locator('.play-card')).toHaveCount(19)
-  await page.getByRole('searchbox', { name: 'Поиск', exact: true }).fill('does-not-exist')
-  await expect(page.locator('.play-card')).toHaveCount(0)
-  await page.getByRole('button', { name: 'Показать все миры' }).click()
-  await expect(page.getByRole('searchbox', { name: 'Поиск', exact: true })).toBeFocused()
-  await expect(page.locator('.play-card')).toHaveCount(19)
-  await page.getByRole('searchbox', { name: 'Поиск', exact: true }).fill('ZION-030')
-  await expect(page.locator('.play-card')).toHaveCount(1)
-  await page.locator('.play-card h3 a').click()
-  await expect(page.locator('[data-game-launch="zion-030"]')).toHaveAttribute('href', '/games/zion-9/queue/ZION-030/index.html')
-  await page.getByRole('button', { name: 'Добавить в избранное' }).click()
-  await expect(page.getByRole('button', { name: 'Убрать из избранного' })).toHaveAttribute('aria-pressed', 'true')
+  await openPlayCatalog(page)
+  const catalog = page.locator('#catalog')
+  const cards = catalog.locator('.play-card')
+  const search = catalog.getByRole('searchbox', { name: 'Найти свой мир', exact: true })
+  expect(new Set(await cards.evaluateAll(items => items.map(item => item.dataset.worldId))).size).toBe(19)
+  await catalog.getByRole('combobox', { name: 'Жанр', exact: true }).selectOption('Стратегия')
+  await expect(cards).toHaveCount(2)
+  expect(await cards.evaluateAll(items => items.map(item => item.dataset.worldId).sort())).toEqual(['empire-orbit', 'time'])
+  await catalog.getByRole('button', { name: 'Сбросить фильтры', exact: true }).click()
+  await catalog.getByRole('combobox', { name: 'Доступность', exact: true }).selectOption('service')
+  await expect(cards).toHaveCount(1)
+  await expect(cards).toHaveAttribute('data-world-id', 'remix')
+  await expect(page).toHaveURL(/mode=service/)
+  await catalog.getByRole('button', { name: 'Сбросить фильтры', exact: true }).click()
+  await search.fill('does-not-exist')
+  await expect(cards).toHaveCount(0)
+  await catalog.getByRole('button', { name: 'Показать все миры', exact: true }).click()
+  await expect(search).toBeFocused()
+  await expect(cards).toHaveCount(19)
+  await search.fill('Добавь тень')
+  await expect(cards).toHaveCount(1)
+  await expect(cards).toHaveAttribute('data-world-id', 'zion-030')
+  await search.fill('ZION-030')
+  await expect(page).toHaveURL(/q=ZION-030/)
+  await cards.locator('h3 a').click()
+  await expect(page.locator('#play-game-title')).toHaveText('Теневой протокол')
+  expect(new URL(page.url()).searchParams.get('back')).toBe('/play?q=ZION-030#catalog')
+  const launch = page.locator('.play-game-hero button[data-game-launch="zion-030"]')
+  const separate = page.locator('.play-game-hero a[data-game-launch="zion-030"]')
+  await expect(launch).toBeEnabled()
+  await expect(launch).toHaveAttribute('aria-controls', 'play-session')
+  await expect(separate).toHaveAttribute('href', '/games/zion-9/queue/ZION-030/index.html')
+  await expect(separate).toHaveAttribute('target', '_blank')
+  await expect(separate).toHaveAttribute('rel', /noopener/)
+  await expect(page.locator('#play-session iframe')).toHaveCount(0)
+  await launch.click()
+  const frame = page.locator('#play-session iframe')
+  await expect(frame).toHaveAttribute('src', /\/games\/zion-9\/queue\/ZION-030\/index\.html$/)
+  await expect(frame).toHaveAttribute('title', 'Теневой протокол — игровое окно')
+  const scene = page.frameLocator('#play-session iframe').locator('#scene')
+  await expect(scene).toBeVisible()
+  await expect(scene).toHaveAttribute('data-renderer', /.+/)
+  await expect(page.locator('#play-session')).toHaveAttribute('data-session-phase', /^(loaded|ready|playing|completed)$/)
+  await page.getByRole('button', { name: 'Остановить', exact: true }).click()
+  await expect(frame).toHaveCount(0)
+  await expect(page.locator('#play-session')).toHaveAttribute('data-session-phase', 'idle')
+  await expect(launch).toBeFocused()
+  await page.getByRole('button', { name: 'Добавить в избранное: Теневой протокол', exact: true }).click()
+  await expect(page.getByRole('button', { name: 'Убрать из избранного: Теневой протокол', exact: true })).toHaveAttribute('aria-pressed', 'true')
   await page.reload()
-  await expect(page.getByRole('button', { name: 'Убрать из избранного' })).toHaveAttribute('aria-pressed', 'true')
-  await page.getByRole('link', { name: 'Каталог миров', exact: false }).click()
-  await expect(page.getByRole('searchbox', { name: 'Поиск', exact: true })).toHaveValue('ZION-030')
-  await expect(page.locator('.play-card')).toHaveCount(1)
-  await page.getByLabel('Коллекция', { exact: false }).selectOption('favorites')
-  await expect(page.locator('.play-card')).toHaveCount(1)
-  await expect(page.getByRole('navigation', { name: 'Навигация раздела' }).getByRole('link', { name: 'Избранное', exact: true })).toHaveAttribute('aria-current', 'location')
-  await page.locator('.play-card-actions button').click()
-  await expect(page.locator('.play-card')).toHaveCount(0)
-  await expect(page.getByRole('searchbox', { name: 'Поиск', exact: true })).toBeFocused()
+  await expect(page.getByRole('button', { name: 'Убрать из избранного: Теневой протокол', exact: true })).toHaveAttribute('aria-pressed', 'true')
+  await expect(page.locator('#play-session iframe')).toHaveCount(0)
+  await page.getByRole('link', { name: 'Каталог миров', exact: true }).click()
+  await expect(page.locator('.cp-explore')).toHaveAttribute('data-explore-state', 'ready')
+  await expect(search).toHaveValue('ZION-030')
+  await expect(cards).toHaveCount(1)
+  const favorites = catalog.getByRole('group', { name: 'Моя коллекция', exact: true }).getByRole('button', { name: /^Избранное/ })
+  await favorites.click()
+  await expect(favorites).toHaveAttribute('aria-pressed', 'true')
+  await expect(page).toHaveURL(/view=favorites/)
+  await expect(cards).toHaveCount(1)
+  await expect(page.locator('.brand-local-bar nav[aria-label="Навигация раздела"] a[href="/play?view=favorites#catalog"]')).toHaveAttribute('aria-current', 'location')
+  await cards.getByRole('button', { name: 'Убрать из избранного: Теневой протокол', exact: true }).click()
+  await expect(cards).toHaveCount(0)
+  await expect(search).toBeFocused()
 })
 
 test('a cold contact fragment waits for the actual lazy page', async ({ page }) => {
@@ -339,11 +464,18 @@ test('a cold contact fragment waits for the actual lazy page', async ({ page }) 
   expect(new URL(page.url()).hash).toBe('#contact')
 })
 
-test('ordinary Play entry keeps the featured world at the top', async ({ page }) => {
+test('ordinary Play entry stays at the hero and loads the real catalog only on approach', async ({ page }) => {
   await page.goto('/play')
-  await expect(page.locator('.play-card')).toHaveCount(19)
+  await expect(page.locator('#play-title')).toBeInViewport()
+  await expect(page.locator('#featured .cp-world')).toHaveCount(3)
+  await expect(page.locator('.cp-explore')).toHaveAttribute('data-explore-state', 'deferred')
+  await expect(page.locator('#catalog')).toHaveCount(0)
   expect(new URL(page.url()).hash).toBe('')
   expect(await page.evaluate(() => scrollY)).toBe(0)
+  await page.locator('.cp-explore').scrollIntoViewIfNeeded()
+  await expect(page.locator('.cp-explore')).toHaveAttribute('data-explore-state', 'ready')
+  await expect(page.locator('#catalog .play-card')).toHaveCount(19)
+  expect(new URL(page.url()).hash).toBe('')
 })
 
 test('blocked optional storage keeps the game catalog usable', async ({ page }) => {
@@ -351,20 +483,120 @@ test('blocked optional storage keeps the game catalog usable', async ({ page }) 
     Object.defineProperty(Storage.prototype, 'setItem', { value: () => { throw new DOMException('Storage blocked', 'SecurityError') } })
   })
   await page.goto('/play')
-  await expect(page.locator('.play-card')).toHaveCount(19)
-  await page.locator('.play-card-actions button').first().click()
-  await expect(page.locator('#catalog [role="status"]')).toContainText('Не удалось сохранить коллекцию')
-  await expect(page.locator('.play-card h3 a').first()).toBeEnabled()
+  await openPlayCatalog(page)
+  const first = page.locator('#catalog .play-card').first()
+  const favorite = first.getByRole('button', { name: /^В избранное:/ })
+  await favorite.click()
+  await expect(page.locator('#catalog .cp-collection-feedback')).toContainText('Не удалось сохранить коллекцию')
+  await expect(favorite).toHaveAttribute('aria-pressed', 'false')
+  await expect(first.locator('h3 a')).toBeEnabled()
+  await first.locator('h3 a').click()
+  await expect(page.locator('.play-game-hero button[data-game-launch]')).toBeEnabled()
 })
 
 test('motion choice persists independently from the system setting', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'no-preference' })
   await page.goto('/')
+  await expectOsgardContentReady(page)
   await page.getByRole('button', { name: 'Меньше движения', exact: true }).click()
   await expect(page.locator('html')).toHaveAttribute('data-motion', 'off')
   await page.reload()
   await expect(page.locator('html')).toHaveAttribute('data-motion', 'off')
   await expect(page.getByRole('button', { name: 'Меньше движения', exact: true })).toHaveAttribute('aria-pressed', 'true')
+})
+
+test('first OSGARD intro retains a real deep link, supports replay and Escape, and stays dismissed on reload', async ({ page }) => {
+  const errors = []
+  page.on('pageerror', error => errors.push(error.message))
+  await page.emulateMedia({ reducedMotion: 'no-preference' })
+  await recordOsgardTransitions(page)
+  const destination = '/play?q=ZION-030#catalog'
+  const [, visualResponse] = await Promise.all([
+    page.goto(destination, { waitUntil: 'domcontentloaded' }),
+    page.waitForResponse(response => /\/assets\/OsgardCinematic-[^/]+\.js$/.test(new URL(response.url()).pathname)),
+  ])
+  expect(visualResponse.status()).toBe(200)
+  await visualResponse.finished()
+  // A cold chunk may legitimately hit the 800 ms watchdog. Either path must
+  // release input; the downloaded visual is then exercised by an explicit replay.
+  await expectOsgardContentReady(page)
+  expect(await page.evaluate(() => window.__osgardBrowserTrace.started)).toEqual(['intro'])
+  expect(await page.evaluate(() => localStorage.getItem('osgard:intro:v1'))).toBe('seen')
+  expect(new URL(page.url()).pathname + new URL(page.url()).search + new URL(page.url()).hash).toBe(destination)
+  await expect(page.locator('.cp-explore')).toHaveAttribute('data-explore-state', 'ready')
+  await expect(page.locator('#catalog .play-card')).toHaveCount(1)
+  const replay = page.getByRole('button', { name: 'Повторить заставку', exact: true })
+  await replay.click()
+  await expect(page.locator('.osgard-cinematic[data-kind="intro"]')).toBeVisible()
+  await expect(page.locator('[data-osgard-content]')).toHaveAttribute('inert', '')
+  await expect(page.getByRole('button', { name: 'Пропустить', exact: true })).toBeFocused()
+  await page.keyboard.press('Escape')
+  await expectOsgardContentReady(page)
+  await expect(replay).toBeFocused()
+  expect(await page.evaluate(() => window.__osgardBrowserTrace.visuals)).toContain('intro')
+  expect(new URL(page.url()).pathname + new URL(page.url()).search + new URL(page.url()).hash).toBe(destination)
+  await page.reload()
+  await expect(page.locator('#catalog .play-card')).toHaveCount(1)
+  await expectOsgardContentReady(page)
+  expect(await page.evaluate(() => window.__osgardBrowserTrace.started)).toEqual([])
+  expect(errors).toEqual([])
+})
+
+test('major-section transitions keep one SPA document across Play and account, with no animation for account pages or filters', async ({ page }) => {
+  const errors = []
+  page.on('pageerror', error => errors.push(error.message))
+  await page.emulateMedia({ reducedMotion: 'no-preference' })
+  await recordOsgardTransitions(page, true)
+  await page.goto('/account')
+  await expect(page.locator('h1')).toContainText('Доступ под')
+  await expectOsgardContentReady(page)
+  const documentId = await page.evaluate(() => window.__osgardBrowserTrace.documentId)
+  const playLink = page.getByRole('navigation', { name: 'Продукты OSGARD', exact: true }).getByRole('link', { name: 'Play', exact: true })
+  const [, visualResponse] = await Promise.all([
+    playLink.click(),
+    page.waitForResponse(response => /\/assets\/OsgardCinematic-[^/]+\.js$/.test(new URL(response.url()).pathname)),
+  ])
+  expect(visualResponse.status()).toBe(200)
+  await visualResponse.finished()
+  await expect(page.locator('#play-title')).toContainText(/OSGARD\s*Play/)
+  await expectOsgardContentReady(page)
+  expect(await page.evaluate(() => window.__osgardBrowserTrace.documentId)).toBe(documentId)
+  expect(await page.evaluate(() => window.__osgardBrowserTrace.started)).toEqual(['play'])
+
+  await page.goBack()
+  await expect(page).toHaveURL(/\/account$/)
+  await expect(page.locator('h1')).toContainText('Доступ под')
+  await expectOsgardContentReady(page)
+  expect(await page.evaluate(() => window.__osgardBrowserTrace.started)).toEqual(['play', 'transition'])
+  expect(await page.evaluate(() => window.__osgardBrowserTrace.visuals)).toContain('transition')
+  await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', 'https://osgard.world/account')
+
+  await page.getByRole('link', { name: 'Рабочее пространство', exact: true }).click()
+  await expect(page).toHaveURL(/\/workspace$/)
+  await expect(page.locator('h1')).toContainText('к проверенному результату')
+  await expectOsgardContentReady(page)
+  await page.goBack()
+  await expect(page).toHaveURL(/\/account$/)
+  await expect(page.locator('h1')).toContainText('Доступ под')
+  await page.goForward()
+  await expect(page).toHaveURL(/\/workspace$/)
+  await expect(page.locator('h1')).toContainText('к проверенному результату')
+  await expectOsgardContentReady(page)
+  expect(await page.evaluate(() => window.__osgardBrowserTrace.started)).toEqual(['play', 'transition'])
+  expect(await page.evaluate(() => window.__osgardBrowserTrace.documentId)).toBe(documentId)
+
+  await playLink.click()
+  await expect(page.locator('#play-title')).toContainText(/OSGARD\s*Play/)
+  await expectOsgardContentReady(page)
+  expect(await page.evaluate(() => window.__osgardBrowserTrace.started)).toEqual(['play', 'transition', 'play'])
+  await openPlayCatalog(page)
+  await page.getByRole('searchbox', { name: 'Найти свой мир', exact: true }).fill('ZION-030')
+  await expect(page.locator('#catalog .play-card')).toHaveCount(1)
+  await expect(page).toHaveURL(/q=ZION-030.*#catalog$/)
+  await expectOsgardContentReady(page)
+  expect(await page.evaluate(() => window.__osgardBrowserTrace.started)).toEqual(['play', 'transition', 'play'])
+  expect(await page.evaluate(() => window.__osgardBrowserTrace.documentId)).toBe(documentId)
+  expect(errors).toEqual([])
 })
 
 test('ZION-030 remains playable without WebGL using accessible controls', async ({ page }, info) => {

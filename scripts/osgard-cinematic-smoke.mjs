@@ -61,7 +61,11 @@ function environment(initial = '/', options = {}) {
     hasAttribute(name) { return this.attributes.has(name) }
     closest(selector) { if (selector === 'a[href]') return this.tagName === 'A' && this.hasAttribute('href') ? this : this.parentElement?.closest(selector) || null; return null }
     contains(target) { return target === this || this.children.some(child => child.contains?.(target)) }
-    focus(options) { document.activeElement = this; focus.push({ id: this.id, node: this, options }) }
+    focus(options) {
+      // Native focus() does not move focus to disabled, hidden or detached nodes.
+      if (!this.isConnected || this.disabled || this.hidden || this.hasAttribute('disabled') || this.hasAttribute('hidden')) return
+      document.activeElement = this; focus.push({ id: this.id, node: this, options })
+    }
     scrollIntoView(options) { scroll.push({ id: this.id, options }) }
     querySelector(selector) {
       const attribute = /^(meta|link)\[(name|property|rel)="([^"]+)"\]$/.exec(selector)
@@ -72,7 +76,7 @@ function environment(initial = '/', options = {}) {
     querySelectorAll() { return [] }
     append(...children) { children.forEach(child => { child.parentElement = this }); this.children.push(...children) }
     appendChild(child) { this.append(child); return child }
-    remove() { this.isConnected = false }
+    remove() { if (this.contains(document.activeElement)) document.activeElement = document.body; this.isConnected = false }
   }
   function addNode(id, tag = 'DIV') { const element = new Element(tag); element.id = id; nodes.set(id, element); return element }
   const root = addNode('root'), main = addNode('product-main', 'MAIN'), html = new Element('HTML'), body = new Element('BODY'), head = new Element('HEAD')
@@ -482,6 +486,34 @@ await check('manual replay restores its trigger and stale session callbacks cann
   oldComplete(); await host.settle(); assert.equal(controller.overlay?.kind, 'play')
   await host.advance(900); assert.equal(controller.overlay, null)
   stop()
+})
+
+await check('replay cancelled by reduced motion restores main focus when its previous trigger is disabled, hidden or detached', async () => {
+  for (const unavailable of ['disabled', 'hidden', 'detached']) {
+    const host = environment('/', { local: repeat() }), controller = host.mountProvider(); await host.settle()
+    const trigger = host.addNode('replay-intro', 'BUTTON'); trigger.focus()
+    host.emit('osgard:replay-intro'); await host.settle()
+    assert.equal(controller.overlay?.kind, 'intro')
+    const skip = host.addNode('intro-skip', 'BUTTON'); skip.focus()
+    if (unavailable === 'detached') trigger.remove()
+    else trigger[unavailable] = true
+    host.media.matches = true
+    host.media.dispatchEvent(new HostEvent('change'))
+    await host.settle()
+    assert.equal(controller.overlay, null)
+    // The actual visual is unmounted; native focus falls back to body when its
+    // focused Skip button leaves the document, before the provider's focus task.
+    skip.remove()
+    assert.equal(host.document.activeElement, host.document.body)
+    await host.advance(0)
+    assert.equal(host.document.activeElement.id, 'product-main', unavailable + ' replay trigger must fall back to main content')
+    assert.equal(host.focus.at(-1).options.preventScroll, true)
+    assert.equal(contentNode(controller.tree).props.inert, undefined)
+    assert.equal(host.document.documentElement.dataset.osgardCinematic, undefined)
+    assert.equal(host.key('Escape').defaultPrevented, false)
+    await host.advance(5000); assert.equal(host.timers.size, 0)
+    host.assertAuthUntouched(); host.assertNoReload(); controller.unmount()
+  }
 })
 
 await check('storage denial and React Strict Mode effect replay still leave a bounded usable page', async () => {
