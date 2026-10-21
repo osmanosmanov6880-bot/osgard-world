@@ -1656,7 +1656,7 @@ test('INHERIT R12 restores only a real past location and never invents an owner 
  await page.evaluate(()=>{
   const s=window.InheritGame.snapshot();
   window.InheritGame.apply({...s,generation:175,budget:100,objects:[],pending:[],changes:[],
-   snapshots:[{generation:173,objects:[{tool:'stone',x:66,y:53}]}]});
+   snapshots:[{generation:173,objects:[{tool:'stone',x:55,y:58}]}]});
  });
  const original=await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()));
  await page.locator('.inherit-expedition-trigger').click();
