@@ -25,7 +25,7 @@ const content={
   comboNote:'Пары рассчитаны по фактической близости и правилам игры. Это не награда и не доказательство чьего-либо авторства.',
   radius:'Расстояние',limit:'Показана часть соседних следов. Подсчёт сделан по всему доступному состоянию.',
   disclosure:'Совпадение типа и координат в архиве не доказывает, что это один и тот же предмет, кто его оставил или когда он появился. Имена и даты не выдумываются. Просмотр ничего не меняет в мире.',
-  atlas:'Открыть атлас',plan:'Спланировать следующий след',back:'Вернуться на остров',close:'Закрыть описание',
+  atlas:'Открыть атлас',plan:'Спланировать следующий след',network:'Просмотреть сеть связей',back:'Вернуться на остров',close:'Закрыть описание',
   unavailable:'Данные этого следа недоступны для проверки.',inspect:'Исследовать след: '
  },
  en:{
@@ -47,7 +47,7 @@ const content={
   comboNote:'Pairs are based on actual saved proximity and existing game rules. They are not rewards or proof of authorship.',
   radius:'Distance',limit:'Only a selection of nearby traces is mapped. Counts use the available state.',
   disclosure:'Matching a type and location in two archives does not prove it is the same individual object, who left it or when it was created. No names or dates are invented. Inspection never edits the world.',
-  atlas:'Open generation atlas',plan:'Plan your next trace',back:'Return to island',close:'Close trace inspector',
+  atlas:'Open generation atlas',plan:'Plan your next trace',network:'Explore compatible network',back:'Return to island',close:'Close trace inspector',
   unavailable:'This trace cannot be verified.',inspect:'Inspect trace: '
  },
  zh:{
@@ -69,7 +69,7 @@ const content={
   comboNote:'搭配基于已保存的真实位置和游戏既有规则，不代表奖励或作者身份。',
   radius:'距离',limit:'地图仅显示部分相邻物件，统计包含所有可用记录。',
   disclosure:'两个快照中同类型、同坐标的匹配，无法证明它们是同一个物件，也无法证明是谁或何时创建的。不会虚构姓名和日期，查看不会修改世界。',
-  atlas:'打开世代图鉴',plan:'规划下一道痕迹',back:'返回小岛',close:'关闭痕迹详情',
+  atlas:'打开世代图鉴',plan:'规划下一道痕迹',network:'查看痕迹连接网络',back:'返回小岛',close:'关闭痕迹详情',
   unavailable:'无法验证该痕迹的信息。',inspect:'查看痕迹：'
  }
 };
@@ -115,8 +115,8 @@ const historyTitle=el('h3','inherit-trace-subtitle'),history=el('div','inherit-t
 const connectionTitle=el('h3','inherit-trace-subtitle'),connections=el('div','inherit-trace-connections');
 const possibilityTitle=el('h3','inherit-trace-subtitle'),possibilities=el('div','inherit-trace-possibilities');
 const sourceNote=el('p','inherit-trace-disclosure');
-const actions=el('div','inherit-trace-actions'),atlas=el('button','inherit-trace-atlas'),plan=el('button','inherit-trace-compass-plan'),back=el('button','inherit-trace-back');
-atlas.type='button';plan.type='button';back.type='button';actions.append(atlas,plan,back);
+const actions=el('div','inherit-trace-actions'),atlas=el('button','inherit-trace-atlas'),plan=el('button','inherit-trace-compass-plan'),network=el('button','inherit-trace-network-link'),back=el('button','inherit-trace-back');
+atlas.type='button';plan.type='button';network.type='button';back.type='button';actions.append(atlas,plan,network,back);
 mapPanel.append(map,legend,historyTitle,history);
 dataPanel.append(connectionTitle,connections,possibilityTitle,possibilities);
 layout.append(mapPanel,dataPanel);
@@ -178,6 +178,7 @@ function paint(model){
  sourceNote.textContent=c.disclosure;
  atlas.textContent=c.atlas;atlas.disabled=!window.InheritAtlasUI?.open;
  plan.textContent=c.plan;plan.disabled=!window.InheritTraceCompassUI?.open;
+ network.textContent=c.network;network.disabled=!window.InheritLegacyNetworkUI?.openFrom;
  back.textContent=c.back;
 }
 function identity(item){return item.type+'|'+item.x+'|'+item.y+'|'+item.ordinal}
@@ -239,6 +240,11 @@ atlas.addEventListener('click',()=>{
 });
 plan.addEventListener('click',()=>{
  dismiss();window.InheritTraceCompassUI?.open?.();
+});
+network.addEventListener('click',()=>{
+ const index=selectedIndex;
+ dismiss();
+ if(index!==null)window.InheritLegacyNetworkUI?.openFrom?.(index);
 });
 dialog.addEventListener('click',event=>{if(event.target===dialog)dismiss()});
 dialog.addEventListener('close',()=>{
