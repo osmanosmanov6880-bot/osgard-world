@@ -1253,6 +1253,20 @@ test('INHERIT trace compass: starter guidance and an actual two-tool Legacy conn
  await expect(page.locator('.inherit-compass-ghost')).toBeVisible();
  await expect(page.locator('.inherit-first-steps')).toBeHidden();
  expect(await page.evaluate(()=>document.body.classList.contains('inherit-compass-armed'))).toBe(true);
+ // On a 390px-wide screen the old island placement put the hint BELOW the
+ // visible stage, inside the tool dock. A visible CSS node is not enough:
+ // the physical point must hit the island, not a button/overlay.
+ const hit=await page.evaluate(()=>{
+  const dot=document.querySelector('.inherit-compass-ghost').getBoundingClientRect();
+  const x=dot.left+dot.width/2,y=dot.top+dot.height/2;
+  const target=document.elementFromPoint(x,y);
+  return {insideViewport:x>=0&&x<innerWidth&&y>=0&&y<innerHeight,
+   hitWorld:!!target?.closest('#world'),
+   blockedByButton:!!target?.closest('button,.dock,[data-memory]')};
+ });
+ expect(hit.insideViewport).toBe(true);
+ expect(hit.hitWorld).toBe(true);
+ expect(hit.blockedByButton).toBe(false);
  expect(await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()))).toBe(before);
  const place=async choice=>{
   const p=await page.locator('#island').boundingBox();
