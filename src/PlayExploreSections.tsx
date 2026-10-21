@@ -121,8 +121,8 @@ export default function PlayExploreSections({ filters, onFiltersChange, collecti
           <span><Search size={18} aria-hidden="true" /><input ref={catalogSearch} id="play-search" type="search" value={query} maxLength={80}
             placeholder="Название, механика или настроение" onChange={event => setQuery(event.target.value)} /></span>
         </label>
-        <label htmlFor="play-genre">Жанр<select id="play-genre" value={genre} onChange={event => setGenre(event.target.value)}><option value="all">Все жанры</option>{genres.map(item => <option key={item}>{item}</option>)}</select></label>
-        <label htmlFor="play-mode">Доступность<select id="play-mode" value={mode} onChange={event => setMode(event.target.value as typeof mode)}>
+        <label htmlFor="play-genre">Жанр<select id="play-genre" aria-label="Жанр" value={genre} onChange={event => setGenre(event.target.value)}><option value="all">Все жанры</option>{genres.map(item => <option key={item}>{item}</option>)}</select></label>
+        <label htmlFor="play-mode">Доступность<select id="play-mode" aria-label="Доступность" value={mode} onChange={event => setMode(event.target.value as typeof mode)}>
           <option value="all">Все форматы</option><option value="solo">Одиночный доступ</option><option value="service">Нужен игровой сервис</option>
         </select></label>
       </div>
