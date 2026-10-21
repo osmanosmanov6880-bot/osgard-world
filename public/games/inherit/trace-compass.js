@@ -85,7 +85,7 @@ let plan=null,selected=0,signature='',armed=false;
 const source=()=>game.snapshot();
 const fingerprint=world=>JSON.stringify({g:world.generation,b:world.budget,objects:world.objects});
 function dismiss(){dialog.close()}
-function resetGhost(){ghost.hidden=true;armed=false}
+function resetGhost(){ghost.hidden=true;armed=false;d.body.classList.remove('inherit-compass-armed')}
 function labelFor(rule,c){return c.rules[rule.id]||rule.id}
 function addStat(value,label){const item=el('div','inherit-compass-stat');item.append(el('strong','',value),el('small','',label));stats.append(item)}
 function render(){
@@ -145,7 +145,7 @@ use.addEventListener('click',()=>{
  const button=d.querySelector('.tools [data-tool="'+choice.tool+'"]')||
   d.querySelector('.catalog [data-extra="'+choice.tool+'"]');
  if(!button){status.textContent=copy[lang()].unavailable;return}
- button.click();armed=true;dismiss();
+ button.click();armed=true;d.body.classList.add('inherit-compass-armed');dismiss();
  d.querySelector('#world')?.focus?.({preventScroll:true});
  game.notify?.(copy[lang()].selected);
 });
