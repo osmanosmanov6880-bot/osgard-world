@@ -113,7 +113,7 @@ export function createVolumetricClouds(
 ): VolumetricClouds {
   const localCamera = new THREE.Vector3(0, 0, 6)
   const localSun = new THREE.Vector3(0, 1, 0)
-  const sampleUniform = { value: maxSamples }
+  const sampleUniform: { value: number } = { value: maxSamples }
   const inverseMatrix = new THREE.Matrix4()
   const material = new THREE.ShaderMaterial({
     uniforms: {
