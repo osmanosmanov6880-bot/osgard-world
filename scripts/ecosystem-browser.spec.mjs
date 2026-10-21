@@ -301,7 +301,7 @@ test('OSA Evidence Command previews real claim checks and synchronises the full 
   await expect(claims.nth(0)).toHaveAttribute('aria-pressed', 'true')
   await console.getByRole('link', { name: 'Посмотреть доказательства' }).click()
   await expect(page.locator('#demo-sources')).toBeVisible()
-  await expect(page.locator('#demo-sources').getByRole('link', { name: /NIST AI 600-1/ })).toHaveAttribute('href', /nistpubs\.nist\.gov/)
+  await expect(page.locator('#demo-sources').getByRole('link', { name: /NIST AI 600-1/ })).toHaveAttribute('href', /nvlpubs\.nist\.gov\/nistpubs\/ai\/NIST\.AI\.600-1\.pdf/)
   await page.getByRole('button', { name: 'Начать заново', exact: true }).click()
   await expect(claims.nth(0)).toHaveAttribute('aria-pressed', 'false')
   await expect(page.locator('#demo-sources')).toBeHidden()
