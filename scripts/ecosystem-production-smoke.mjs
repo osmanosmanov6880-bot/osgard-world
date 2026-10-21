@@ -72,7 +72,10 @@ const pilotReleaseAssets = [
  '/games/inherit/handoff-moment.css',
  '/games/inherit/generation-timelapse-core.js',
  '/games/inherit/generation-timelapse.js',
- '/games/inherit/generation-timelapse.css'
+ '/games/inherit/generation-timelapse.css',
+ '/games/inherit/trace-compass-core.js',
+ '/games/inherit/trace-compass.js',
+ '/games/inherit/trace-compass.css'
 ];
 for (const path of pilotReleaseAssets) {
   assert.equal(hash(await fetchPath(path)), hash(await readFile('public' + path)),
