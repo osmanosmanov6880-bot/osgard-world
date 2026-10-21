@@ -98,9 +98,17 @@ test('public GPU detail selector controls real render settings without breaking 
   await expect(picker).toHaveValue('auto')
   await picker.selectOption('ultra')
   await expect(stage).toHaveAttribute('data-earth-texture', '4096')
-  await expect(stage).toHaveAttribute('data-globe-status', /^(webgl|fallback)$/, { timeout: 20000 })
+  await expect(stage).toHaveAttribute('data-globe-status', /^(webgl|fallback)$/, { timeout: 25000 })
+  if (await stage.getAttribute('data-globe-status') === 'webgl') {
+    await expect(stage).toHaveAttribute('data-earth-cloud-mode', 'raymarched')
+    await expect(stage).toHaveAttribute('data-earth-cloud-samples', /^(7|12)$/)
+  }
   await picker.selectOption('eco')
   await expect(stage).toHaveAttribute('data-earth-texture', '512')
+  await expect(stage).toHaveAttribute('data-globe-status', /^(webgl|fallback)$/, { timeout: 25000 })
+  if (await stage.getAttribute('data-globe-status') === 'webgl') {
+    await expect(stage).toHaveAttribute('data-earth-cloud-mode', 'layered')
+  }
   await picker.selectOption('auto')
   await expect(stage).toHaveAttribute('data-globe-quality', 'auto')
   await page.getByRole('button', { name: 'Кино' }).click()

@@ -99,13 +99,50 @@ test('OSGARD Earth GPU quality changes real texture detail with safe remount', a
   await picker.selectOption('ultra')
   await expect(stage).toHaveAttribute('data-globe-quality', 'ultra')
   await expect(stage).toHaveAttribute('data-earth-texture', '4096')
-  await expect(stage).toHaveAttribute('data-globe-status', /^(webgl|fallback)$/, { timeout: 20000 })
+  await expect(stage).toHaveAttribute('data-globe-status', /^(webgl|fallback)$/, { timeout: 25000 })
+  if (await stage.getAttribute('data-globe-status') === 'webgl') {
+    await expect(stage).toHaveAttribute('data-earth-cloud-mode', 'raymarched')
+    await expect(stage).toHaveAttribute('data-earth-cloud-samples', /^(7|12)$/)
+    await expect(stage).toHaveAttribute('data-earth-source', 'nasa')
+  }
   await picker.selectOption('eco')
   await expect(stage).toHaveAttribute('data-earth-texture', '512')
+  await expect(stage).toHaveAttribute('data-globe-status', /^(webgl|fallback)$/, { timeout: 25000 })
+  if (await stage.getAttribute('data-globe-status') === 'webgl') {
+    await expect(stage).toHaveAttribute('data-earth-cloud-mode', 'layered')
+    await expect(stage).toHaveAttribute('data-earth-cloud-samples', '0')
+  }
   await expect(page.locator('.omega-globe')).toHaveCount(1)
   await picker.selectOption('auto')
   await expect(stage).toHaveAttribute('data-globe-quality', 'auto')
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true)
+})
+
+test('OSGARD raymarched cloud scene retains navigation, motion fallback and on-screen actions', async ({ page }) => {
+  const errors = []
+  page.on('pageerror', error => errors.push(error.message))
+  await page.emulateMedia({ reducedMotion: 'no-preference' })
+  await page.goto('/')
+  const stage = page.locator('.omega-webgl-stage')
+  await expect(stage).toHaveAttribute('data-globe-status', /^(webgl|fallback)$/, { timeout: 25000 })
+  const hasWebGL2 = await page.evaluate(() => {
+    const probe = document.createElement('canvas')
+    return Boolean(probe.getContext('webgl2'))
+  })
+  if (hasWebGL2) {
+    await expect(stage).toHaveAttribute('data-globe-status', 'webgl')
+    const mobile = await page.evaluate(() => window.matchMedia('(max-width: 760px)').matches)
+    await expect(stage).toHaveAttribute('data-earth-cloud-mode', mobile ? 'layered' : 'raymarched')
+    if (!mobile) await expect(stage).toHaveAttribute('data-earth-cloud-samples', /^(4|7)$/)
+  }
+  await page.getByRole('button', { name: 'Кино', exact: true }).click()
+  await page.getByRole('button', { name: '03 / Миры' }).click()
+  await expect(page.getByRole('button', { name: '03 / Миры' })).toHaveAttribute('aria-pressed', 'true')
+  await page.getByRole('button', { name: 'Меньше движения', exact: true }).click()
+  await expect(page.locator('html')).toHaveAttribute('data-motion', 'off')
+  await expect(page.locator('.omega-globe')).toHaveCount(1)
+  await expect(page.locator('.omega-gate a')).toHaveCount(3)
+  expect(errors).toEqual([])
 })
 
 test('NASA globe assets are self-hosted, historically credited and hash-verified', async ({ request }) => {
