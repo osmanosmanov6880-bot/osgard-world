@@ -90,6 +90,9 @@ test('OSGARD globe fails gracefully without WebGL2 and keeps the experience swit
 })
 
 test('OSGARD Earth GPU quality changes real texture detail with safe remount', async ({ page }) => {
+  // 4K texture switching remounts GPU contexts repeatedly on shared CI runners.
+  // Preserve all assertions; bound only the test wall-clock allowance.
+  test.setTimeout(90_000)
   await page.emulateMedia({ reducedMotion: 'no-preference' })
   await page.goto('/')
   const picker = page.getByRole('combobox', { name: 'Качество 3D-глобуса' })
@@ -220,6 +223,39 @@ test('OSGARD Earth uses real bundled coastlines and WebGL or safe fallback', asy
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true)
   expect(errors).toEqual([])
 })
+
+for (const [locale, path] of [['ru','/entertainment/archive/'], ['en','/entertainment/en/'], ['ar','/entertainment/ar/']]) {
+  test('Entertainment World Select shows seven real illustrated archived worlds in ' + locale, async ({ page }) => {
+    const errors = []
+    page.on('pageerror', error => errors.push(error.message))
+    await page.goto(path)
+    await expect(page.locator('body.entertainment-premium')).toBeVisible()
+    if (locale !== 'ru') await expect(page.locator('.lang-switch a[lang="ru"]')).toHaveAttribute('href', '/entertainment/archive/')
+    await expect(page.locator('link[href="/entertainment/premium.css"]')).toHaveCount(1)
+    await expect(page.locator('.hero-cta')).toHaveAttribute('href', '/play')
+    await expect(page.locator('.hero-spotlight')).toHaveAttribute('href', '/play')
+    const heroImage = page.locator('.hero-spotlight img')
+    await expect(heroImage).toHaveAttribute('src', '/brand/omega-play.svg')
+    expect(await heroImage.evaluate(img => img.complete && img.naturalWidth > 0)).toBe(true)
+    await expect(page.locator('.grid .card')).toHaveCount(7)
+    await expect(page.locator('.grid .art img')).toHaveCount(7)
+    const imageStatus = await page.locator('.grid .art img').evaluateAll(async images => {
+      // Archive artwork is lazy in production. Explicitly decode each cover
+      // before checking the asset, independent of which card is in the viewport.
+      await Promise.all(images.map(async img => { img.loading = 'eager'; await img.decode().catch(() => {}) }))
+      return images.map(img => ({
+        src: new URL(img.src).pathname,
+        loaded: img.complete && img.naturalWidth > 0
+      }))
+    })
+    expect(imageStatus.every(image => image.loaded)).toBe(true)
+    expect(new Set(imageStatus.map(image => image.src)).size).toBe(7)
+    await expect(page.locator('.grid .card[href="/games/time-empire/"]')).toHaveCount(1)
+    await expect(page.locator('.case-shelf .case-feature')).toHaveCount(4)
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true)
+    expect(errors).toEqual([])
+  })
+}
 
 test('OSGARD Omega cinematic scenes preserve working routes and images', async ({ page }) => {
   const pageErrors = []
