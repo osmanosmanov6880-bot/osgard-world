@@ -48,10 +48,20 @@ export default function OsgardTransitionProvider({ children }: { children: React
     clearTimeout(focusTimer.current)
     focusTimer.current = setTimeout(() => {
       if (active.current) return
-      const target = running.replay && previousFocus.current?.isConnected ? previousFocus.current : document.getElementById('product-main')
+      const replayTarget = previousFocus.current
+      // Reduced motion can disable a still-focused replay button. Chromium may
+      // retain it as activeElement even though focus() can no longer move to it.
+      const canRestoreReplay = running.replay && replayTarget?.isConnected &&
+        !replayTarget.hidden && !(replayTarget as HTMLButtonElement).disabled &&
+        !replayTarget.hasAttribute('hidden') && !replayTarget.hasAttribute('disabled') &&
+        !replayTarget.matches?.('[inert], :disabled, [aria-hidden="true"]') &&
+        (!replayTarget.getClientRects || replayTarget.getClientRects().length > 0)
+      const target = canRestoreReplay ? replayTarget : document.getElementById('product-main')
       target?.focus({ preventScroll: true })
-      // A connected replay trigger can become disabled or hidden during playback.
-      if (document.activeElement !== target) document.getElementById('product-main')?.focus({ preventScroll: true })
+      // Always leave keyboard users at a usable target, not a disabled control.
+      if (document.activeElement !== target || target?.matches?.(':disabled, [inert]')) {
+        document.getElementById('product-main')?.focus({ preventScroll: true })
+      }
     }, 0)
   }, [clearReveal])
   const begin = useCallback((kind: Session['kind'], replay = false) => {
