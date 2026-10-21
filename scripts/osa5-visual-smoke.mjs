@@ -75,14 +75,36 @@ function observeCinematics() {
 }
 
 async function waitForCinematicRelease(page, replay = false) {
-  await page.waitForFunction(isReplay => {
-    const content = document.querySelector('[data-osgard-content]')
-    const focus = document.activeElement
-    return !document.querySelector('.osgard-cinematic, [data-osgard-pending]') &&
-      !document.documentElement.hasAttribute('data-osgard-cinematic') &&
-      content?.inert === false && content.getAttribute('aria-hidden') !== 'true' &&
-      (isReplay ? focus?.textContent?.trim() === 'Повторить заставку' : focus?.id === 'product-main')
-  }, replay, { timeout: 1500 })
+  try {
+    await page.waitForFunction(isReplay => {
+      const content = document.querySelector('[data-osgard-content]')
+      const focus = document.activeElement
+      return !document.querySelector('.osgard-cinematic, [data-osgard-pending]') &&
+        !document.documentElement.hasAttribute('data-osgard-cinematic') &&
+        content?.inert === false && content.getAttribute('aria-hidden') !== 'true' &&
+        (isReplay ? focus?.textContent?.trim() === 'Повторить заставку' : focus?.id === 'product-main')
+    }, replay, { timeout: 2500 })
+  } catch (error) {
+    // Preserve meaningful evidence when the overlay is gone but keyboard focus
+    // did not recover; an anonymous timeout hides genuine accessibility bugs.
+    const state = await page.evaluate(() => {
+      const active = document.activeElement
+      const content = document.querySelector('[data-osgard-content]')
+      const trigger = Array.from(document.querySelectorAll('button')).find(button => button.textContent?.trim() === 'Повторить заставку')
+      return {
+        path: location.pathname,
+        focus: { tag: active?.tagName, id: active?.id, text: active?.textContent?.trim().slice(0, 80),
+          disabled: active instanceof HTMLButtonElement && active.disabled },
+        mainConnected: document.getElementById('product-main')?.isConnected,
+        contentInert: content?.inert, contentHidden: content?.getAttribute('aria-hidden'),
+        overlayCount: document.querySelectorAll('.osgard-cinematic, [data-osgard-pending]').length,
+        htmlCinematic: document.documentElement.dataset.osgardCinematic ?? null,
+        replayDisabled: trigger?.disabled, replayIsFocused: trigger === active,
+        latestSession: window.__osa5CinematicTrace?.at(-1) ?? null,
+      }
+    }).catch(cause => ({ evaluateError: String(cause) }))
+    throw new Error('Cinematic release/focus mismatch: ' + JSON.stringify({ replay, state, reason: String(error) }))
+  }
 }
 
 async function assertNaturalCinematic(page, index, kind, path) {
