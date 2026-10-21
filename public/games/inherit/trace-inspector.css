@@ -1,4 +1,9 @@
 /* Reachable even if a saved trace is physically behind the mobile dock. */
+.inherit-guide-actions .inherit-trace-launcher{flex:1 1 100%;width:100%;white-space:normal;letter-spacing:.02em}
+@media(max-width:740px){
+ .inherit-guide-actions{flex-wrap:wrap}
+ .inherit-guide-actions .inherit-trace-launcher{min-height:42px}
+}
 .inherit-trace-launcher{display:inline-flex;align-items:center;justify-content:center;min-height:38px;
  padding:8px 12px;border:1px solid rgba(233,207,153,.52);border-radius:4px;
  background:linear-gradient(140deg,rgba(233,211,166,.16),rgba(9,43,49,.22));
