@@ -1,0 +1,38 @@
+import { test, expect } from '@playwright/test'
+
+test('Academy learning cockpit displays real beginner progress with meaningful routes', async ({ page }) => {
+  const errors = []
+  page.on('pageerror', error => errors.push(error.message))
+  await page.goto('/academy')
+  await expect(page.locator('h1')).toHaveCount(1)
+  const cockpit = page.locator('.academy-learning-console')
+  await expect(cockpit).toBeVisible()
+  await expect(page.getByRole('navigation', { name: 'Продукты OSGARD' })).toBeVisible()
+  await expect(page.getByRole('navigation', { name: 'Разделы академии' })).toBeVisible()
+  await expect(page.getByRole('navigation', { name: 'Разделы академии' }).getByRole('link')).toHaveCount(3)
+  const dial = cockpit.getByRole('progressbar', { name: 'OSA Original' })
+  await expect(dial).toHaveAttribute('aria-valuemin', '0')
+  await expect(dial).toHaveAttribute('aria-valuenow', '0')
+  expect(Number(await dial.getAttribute('aria-valuemax'))).toBeGreaterThan(0)
+  await expect(cockpit.getByRole('link', { name: /Начать курс/ })).toHaveAttribute('href', '/osa-cinema')
+  await expect(cockpit.getByRole('link', { name: /Каталог 8 уроков/ })).toHaveAttribute('href', '/lectures')
+  await expect(cockpit.getByRole('link', { name: /OSA Original/ })).toHaveAttribute('href', '/osa-cinema')
+  await expect(cockpit.locator('.academy-console-metrics > div')).toHaveCount(3)
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true)
+  expect(errors).toEqual([])
+})
+
+test('Academy cockpit language switch preserves destinations, keyboard focus and responsive layout', async ({ page }) => {
+  await page.goto('/academy')
+  const cockpit = page.locator('.academy-learning-console')
+  await expect(cockpit).toBeVisible()
+  await page.getByRole('button', { name: 'Switch to English' }).click()
+  await expect(page.getByRole('navigation', { name: 'Academy sections' })).toBeVisible()
+  await expect(cockpit.getByRole('link', { name: /Eight-lesson catalogue/ })).toHaveAttribute('href', '/lectures')
+  await expect(cockpit.getByRole('link', { name: /Start course/ })).toHaveAttribute('href', '/osa-cinema')
+  const action = cockpit.locator('.academy-console-continue')
+  await action.focus()
+  await expect(action).toBeFocused()
+  await expect(page.getByRole('button', { name: 'Переключить на русский' })).toBeVisible()
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true)
+})
