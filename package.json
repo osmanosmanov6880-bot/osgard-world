@@ -93,6 +93,7 @@
     "qa:inherit-atlas": "node scripts/inherit-generation-atlas-smoke.mjs",
     "qa:inherit-handoff-moment": "node scripts/inherit-handoff-moment-smoke.mjs",
     "qa:inherit-timelapse": "node scripts/inherit-generation-timelapse-smoke.mjs",
+    "qa:inherit-traces": "node scripts/inherit-trace-inspector-smoke.mjs",
     "qa:inherit-handoff": "node scripts/inherit-handoff-smoke.mjs",
     "qa:inherit-account": "node scripts/inherit-account-smoke.mjs",
     "qa:remix-session": "node scripts/remix-session-smoke.mjs",
