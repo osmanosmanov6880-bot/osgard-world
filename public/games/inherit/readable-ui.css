@@ -1,0 +1,307 @@
+/*
+ * INHERIT — QUIET REACH / READABLE EDITION
+ * Design direction: cinematic landscape, warm editorial hierarchy, obvious
+ * three-step interaction and generous 48-58px tap targets.
+ * Default text is already large. Optional A+ increases it further.
+ * This file loads AFTER all optional feature styles.
+ * No game, account or research state is modified by CSS.
+ */
+:root{--inherit-readable-scale:1;--inherit-readable-ink:#f3f4eb;
+ --inherit-readable-secondary:#d1e1dc;--inherit-readable-muted:#b8cfc8;
+ --inherit-readable-gold:#f5d99f;--inherit-readable-focus:#ffedae}
+body[data-inherit-text-size="extra"]{--inherit-readable-scale:1.18}
+html{scroll-padding-top:24px}
+body{font-size:calc(16px * var(--inherit-readable-scale));line-height:1.6;
+ -webkit-text-size-adjust:100%;text-size-adjust:100%;overflow-wrap:break-word}
+body .app{color:var(--inherit-readable-ink)}
+body .app :is(button,a,input,select){font-family:Manrope,system-ui,sans-serif}
+body button:focus-visible,body a:focus-visible,body select:focus-visible,
+body input:focus-visible,body [tabindex]:focus-visible{
+ outline:3px solid var(--inherit-readable-focus);outline-offset:3px}
+
+/* Navigation is no longer microtypography. */
+body .app>header{gap:12px 16px}
+body .app>header .logo{font-size:calc(23px * var(--inherit-readable-scale));letter-spacing:.19em}
+body .app>header .logo sup{font-size:12px}
+body .app>header .meta{font-size:calc(14px * var(--inherit-readable-scale));line-height:1.6;color:#dfebe5}
+body .app>header :is(button,.link,.chronicle-button,.inherit-atlas-trigger,
+ .inherit-timelapse-trigger,.inherit-network-trigger,.inherit-expedition-trigger,
+ .inherit-compass-trigger,.inherit-inspector-trigger){
+ min-height:48px;padding:10px 15px;
+ font-size:calc(15px * var(--inherit-readable-scale))!important;
+ line-height:1.45!important;font-weight:700!important;
+ border-radius:7px;white-space:normal;text-wrap:pretty}
+body .app>header .inherit-text-toggle{
+ background:#e7c98a;color:#122a31;border:1px solid #ffedbe;
+ box-shadow:0 6px 20px #eac47e20;white-space:nowrap!important;
+ padding:9px 16px;font-size:calc(16px * var(--inherit-readable-scale))!important}
+body .app>header .inherit-text-toggle:hover{background:#fae6b4}
+body .app>header .inherit-text-toggle[aria-pressed=true]{
+ background:#e5eee1;border-color:#e5eee1;color:#0b2630}
+body .app>header #reset{color:#eff2e9}
+
+/* Instructional entry: generous visual hierarchy and stronger text contrast. */
+body .inherit-guide{padding:22px clamp(18px,4vw,66px)}
+body .inherit-guide h2,
+body .inherit-guide.cine-compact>.inherit-guide-heading h2{
+ font-size:clamp(calc(28px * var(--inherit-readable-scale)),3vw,42px)!important;
+ line-height:1.19!important;letter-spacing:-.025em}
+body .inherit-guide p,body .inherit-guide .inherit-truth,
+body .inherit-guide #inherit-controls,body .inherit-guide .inherit-storage p{
+ font-size:calc(16px * var(--inherit-readable-scale))!important;
+ line-height:1.75!important;color:#e0ece5!important}
+body .inherit-guide :is(.eyebrow,.inherit-guide-heading .eyebrow){
+ font-size:calc(14px * var(--inherit-readable-scale))!important;
+ line-height:1.45!important;color:var(--inherit-readable-gold)}
+body .inherit-guide .game-language button,
+body .inherit-guide .cine-guide-toggle,
+body .inherit-guide .inherit-guide-actions :is(button,a){
+ font-size:calc(16px * var(--inherit-readable-scale))!important;
+ line-height:1.4!important;min-height:50px;padding:11px 16px}
+body .inherit-guide.cine-compact{padding-block:18px}
+body .inherit-guide.cine-compact>.inherit-guide-heading h2{margin:4px 0}
+body .inherit-guide .inherit-guide-actions .save{
+ background:#efd6a0;color:#10272c;border-radius:7px}
+body .inherit-guide .inherit-storage{gap:12px;padding-block:10px}
+
+/* Scene labels are readable despite the scenic background. */
+body .world>.hero{max-width:min(560px,44vw)}
+body .world>.hero h1{
+ font-size:clamp(calc(49px * var(--inherit-readable-scale)),5.1vw,90px)!important;
+ line-height:1.05!important;letter-spacing:-.045em}
+body .world>.hero .eyebrow{
+ font-size:calc(15px * var(--inherit-readable-scale))!important;
+ line-height:1.55!important;letter-spacing:.09em}
+body .world>.hero p{
+ font-size:calc(19px * var(--inherit-readable-scale))!important;
+ line-height:1.6!important;color:#e1eae2}
+body .world>.hint{font-size:calc(16px * var(--inherit-readable-scale))!important;
+ line-height:1.55!important;max-width:260px;color:#fff2d1!important;
+ background:rgba(2,18,25,.80);border:1px solid #e2c68b78;
+ border-radius:8px;padding:10px 14px;text-align:left}
+body .world>.objective{padding:14px 18px;max-width:min(350px,37vw);
+ border-radius:9px;background:rgba(2,20,28,.86);box-shadow:0 12px 40px #010d17a0}
+body .world>.objective strong,
+body .world>.community-signal strong{
+ font-size:calc(17px * var(--inherit-readable-scale))!important;line-height:1.48!important}
+body .world>.community-signal{max-width:295px;padding:14px;border-radius:9px;
+ background:rgba(2,20,28,.88)}
+body .world>.community-signal p{
+ font-size:calc(15px * var(--inherit-readable-scale))!important;
+ line-height:1.55!important;color:#d8e7dd}
+body .inherit-cycle-entry{width:min(290px,30vw);padding:16px 18px;border-radius:10px}
+body .inherit-cycle-entry-name{
+ font-size:clamp(calc(22px * var(--inherit-readable-scale)),2vw,29px)!important}
+body .inherit-cycle-entry-label,
+body .inherit-cycle-eyebrow{font-size:calc(14px * var(--inherit-readable-scale))!important}
+body .inherit-cycle-entry-status{font-size:calc(15px * var(--inherit-readable-scale))!important}
+body .inherit-cycle-entry-open{font-size:calc(15px * var(--inherit-readable-scale))!important;
+ min-height:48px;padding:10px 16px}
+
+/* 3 steps remain visible beside the actual placement and handoff controls. */
+body .inherit-readable-steps{
+ display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;
+ padding:14px clamp(18px,5vw,84px);border-top:1px solid #d5bf9348;
+ border-bottom:1px solid #d5bf9348;
+ background:linear-gradient(105deg,#0b2830,#102f32 53%,#0a222c)}
+body .inherit-readable-step{
+ min-width:0;display:flex;align-items:center;gap:14px;
+ padding:14px 16px;border:1px solid #b6c9bf4d;border-radius:10px;
+ background:#d9e8d00b;color:#d5e7df}
+body .inherit-readable-step[data-current=true]{
+ border-color:#f1d093;background:#eac98a1d;box-shadow:inset 0 0 0 1px #f1d0933a}
+body .inherit-readable-step-number{
+ flex:0 0 42px;width:42px;height:42px;display:grid;place-items:center;
+ border:1px solid #d9caaf75;border-radius:50%;font:700 21px/1 Georgia,serif;color:#f5d99e}
+body .inherit-readable-step[data-current=true] .inherit-readable-step-number{
+ background:#efd198;color:#143139;border-color:#efd198}
+body .inherit-readable-step-copy{display:grid;gap:3px;min-width:0}
+body .inherit-readable-step-copy strong{
+ font:700 calc(17px * var(--inherit-readable-scale))/1.35 Manrope,system-ui,sans-serif;
+ color:#f7eee0}
+body .inherit-readable-step-copy small{
+ font:500 calc(14px * var(--inherit-readable-scale))/1.4 Manrope,system-ui,sans-serif;color:#c4d8d1}
+body .inherit-readable-status{
+ grid-column:1/-1;color:#f2ddae;
+ font:600 calc(16px * var(--inherit-readable-scale))/1.6 Manrope,system-ui,sans-serif;
+ padding:1px 4px 0}
+body .inherit-readable-steps[hidden]{display:none!important}
+
+/* Primary activity always beats secondary navigation visually and typographically. */
+body .dock,body .dock.cine-dock,body .dock.cine-account-dock{
+ padding-block:20px;gap:13px 18px}
+body .dock .turn{min-width:0}
+body .dock .turn strong{font-size:calc(37px * var(--inherit-readable-scale))!important}
+body .dock .turn :is(.eyebrow,small){
+ font-size:calc(14px * var(--inherit-readable-scale))!important;line-height:1.6;color:#e2c68d}
+body .dock .tools{gap:10px}
+body .dock.cine-dock .tool,body .dock.cine-account-dock .tool,body .dock .tool{
+ font-size:calc(16px * var(--inherit-readable-scale))!important;
+ line-height:1.45!important;font-weight:700!important;
+ padding:13px 17px!important;min-height:56px;
+ border-radius:9px;white-space:normal;text-align:center;color:#edf3e9;
+ border-color:#96b4b17a;background:#ffffff0a}
+body .dock .tool.active{
+ background:#e9c98825!important;color:#fff3d6!important;
+ border-color:#f8db9c!important;box-shadow:0 0 0 2px #f9d79618}
+body .dock .tool b{font-size:calc(20px * var(--inherit-readable-scale))!important}
+body .dock.cine-dock #pass,body .dock #pass{
+ font-size:calc(18px * var(--inherit-readable-scale))!important;
+ line-height:1.35!important;font-weight:800!important;
+ white-space:normal;min-height:60px;border-radius:9px;
+ padding:15px 23px;box-shadow:0 10px 28px #d3a85a38}
+body .dock .cine-menu-toggle,body .dock :is(.catalog-button,.cine-undo),
+body .dock .history,body .dock .link,body .dock .save:not(#pass){
+ font-size:calc(16px * var(--inherit-readable-scale))!important;
+ line-height:1.4!important;min-height:52px;border-radius:8px;padding:11px 15px}
+body .dock .key-hint{font-size:calc(14px * var(--inherit-readable-scale))!important;color:#c6d9d3}
+body .cine-utility-heading{font-size:calc(15px * var(--inherit-readable-scale))!important}
+body .cine-utility :is(button,a,.link){
+ font-size:calc(16px * var(--inherit-readable-scale))!important;
+ line-height:1.5!important;min-height:51px;padding:12px 14px;
+ color:#f2f2e6;border-color:#abc3bc75}
+body .cine-utility{width:min(560px,calc(100vw - 28px));gap:11px;
+ background:#0a2430;border-color:#efd29c99}
+body .dock.cine-account-dock :is(button,a,small){
+ font-size:calc(16px * var(--inherit-readable-scale))!important}
+
+/* First-use coach is no longer set in tiny text. */
+body .inherit-first-steps{
+ left:auto;right:clamp(22px,5vw,78px);top:clamp(100px,12vh,165px);
+ width:min(390px,calc(100vw - 38px));padding:21px 22px;
+ border-radius:12px;background:linear-gradient(140deg,#0b2531f5,#0e3939ef);
+ border-color:#f2d79eaa}
+body .inherit-first-steps-title{font-size:calc(29px * var(--inherit-readable-scale))!important}
+body .inherit-first-steps-progress{font-size:calc(17px * var(--inherit-readable-scale))!important}
+body .inherit-first-steps-description{font-size:calc(16px * var(--inherit-readable-scale))!important;
+ line-height:1.65!important}
+body .inherit-first-steps-actions button{
+ font-size:calc(16px * var(--inherit-readable-scale))!important;min-height:48px;
+ padding:11px 16px}
+body .inherit-first-steps[hidden]{display:none!important}
+
+/* Dialogs, overlays, side cards, history and journal: no 10px critical copy. */
+body dialog,body .panel,body .chronicle,body .catalog,
+body .inherit-cycle-journal,body .inherit-guide{color:#f1f4eb}
+body dialog :is(p,li,small,label,select,input,textarea),
+body :is(.panel,.chronicle,.catalog) :is(p,li,small,label,select,input){
+ font-size:calc(16px * var(--inherit-readable-scale))!important;
+ line-height:1.7!important;color:#deece5}
+body dialog :is(button,a):not([class*="close"]):not(.close),
+body :is(.panel,.chronicle,.catalog) :is(button,a):not(.close){
+ font-size:calc(16px * var(--inherit-readable-scale))!important;
+ line-height:1.4!important;min-height:49px}
+body dialog :is(h2,.inherit-legacy-title,.inherit-story-title){
+ font-size:clamp(calc(29px * var(--inherit-readable-scale)),3.2vw,46px)!important;
+ line-height:1.18!important}
+body dialog h3{font-size:calc(23px * var(--inherit-readable-scale))!important;line-height:1.25!important}
+body dialog :is(.eyebrow,[class$="-eyebrow"],[class$="-label"],[class$="-subtitle"]){
+ font-size:calc(15px * var(--inherit-readable-scale))!important;line-height:1.5!important}
+body dialog :is(.inherit-legacy-stat,.inherit-cycle-fact) small{font-size:calc(14px * var(--inherit-readable-scale))!important}
+body dialog .inherit-research-retention{font-size:calc(16px * var(--inherit-readable-scale))!important}
+body dialog :is(.inherit-research-field select,.inherit-network-controls select,
+ .inherit-atlas-field select){font-size:calc(16px * var(--inherit-readable-scale))!important;min-height:49px}
+body dialog :is(.inherit-network-stat,.inherit-atlas-stat) small{font-size:calc(14px * var(--inherit-readable-scale))!important}
+body .panel p,body .chronicle p,body .modal p{font-size:calc(16px * var(--inherit-readable-scale))!important}
+body .panel .byline,body .modal .entry,body .modal .entry time,
+body .chronicle :is(small,span,time){font-size:calc(15px * var(--inherit-readable-scale))!important}
+body #toast,body .return-card,body .replay-banner{
+ font-size:calc(16px * var(--inherit-readable-scale))!important;line-height:1.55!important}
+body .inherit-cycle-journal :is(p,small,li,label){
+ font-size:calc(16px * var(--inherit-readable-scale))!important;line-height:1.7!important}
+body .inherit-cycle-journal :is(button,a,select){
+ font-size:calc(16px * var(--inherit-readable-scale))!important;min-height:49px}
+body .inherit-cycle-journal h2{font-size:clamp(calc(28px * var(--inherit-readable-scale)),3.1vw,42px)!important}
+body :is(.inherit-expedition-confirm,.inherit-handoff-panel,.inherit-return-card,
+ .inherit-trace-confirm,.inherit-compass-confirm) :is(p,span,button){
+ font-size:calc(16px * var(--inherit-readable-scale))!important;line-height:1.6!important}
+
+/* Explicitly preserve true hidden and offscreen states in both font modes. */
+body :is(dialog,.inherit-first-steps,.inherit-readable-steps)[hidden]{display:none!important}
+body dialog:not([open]){display:none!important}
+body .inherit-readable-step:focus-within{outline:2px solid #ffe6ab;outline-offset:2px}
+
+@media(max-width:1240px){
+ body .dock.cine-dock{grid-template-columns:90px minmax(0,1fr) minmax(145px,auto);
+  gap:13px;align-items:center}
+ body .dock.cine-dock .tools{grid-column:2/-1}
+ body .dock.cine-dock #pass{grid-column:2}
+ body .dock.cine-dock .cine-menu-toggle{grid-column:3}
+}
+@media(max-width:850px){
+ body .world>.hero{left:6vw;right:6vw;top:23%;max-width:87vw}
+ body .world>.hero h1{font-size:clamp(calc(42px * var(--inherit-readable-scale)),7vw,70px)!important}
+ body .world>.objective{max-width:51vw}
+ body .world>.community-signal{max-width:225px}
+ body .inherit-cycle-entry{max-width:230px;width:32vw}
+ body .inherit-readable-steps{gap:8px}
+ body .inherit-readable-step{padding:12px;gap:10px}
+ body .inherit-readable-step-number{width:37px;height:37px;flex-basis:37px;font-size:18px}
+}
+@media(max-width:740px){
+ body .app>header{padding:14px 5vw;gap:9px}
+ body .app>header .logo{font-size:calc(20px * var(--inherit-readable-scale))}
+ body .app>header :is(button,.link,.chronicle-button,.inherit-text-toggle){
+  font-size:calc(15px * var(--inherit-readable-scale))!important;min-height:48px;padding:9px 12px}
+ body .inherit-guide h2,body .inherit-guide.cine-compact>.inherit-guide-heading h2{
+  font-size:calc(29px * var(--inherit-readable-scale))!important}
+ body .inherit-guide .game-language button{font-size:calc(16px * var(--inherit-readable-scale))!important}
+ body .world{min-height:690px}
+ body .world>.hero{top:24%;left:6vw;right:6vw;max-width:88vw}
+ body .world>.hero h1{font-size:clamp(calc(39px * var(--inherit-readable-scale)),9vw,60px)!important}
+ body .world>.hero p{font-size:calc(18px * var(--inherit-readable-scale))!important;
+  max-width:320px}
+ body .world>.hero .eyebrow{font-size:calc(14px * var(--inherit-readable-scale))!important}
+ body .world>.objective{top:12px;left:5vw;max-width:55vw;padding:11px 13px}
+ body .world>.objective strong{font-size:calc(15px * var(--inherit-readable-scale))!important}
+ body .world>.community-signal{max-width:44vw;padding:12px;bottom:10%}
+ body .world>.community-signal p{font-size:calc(14px * var(--inherit-readable-scale))!important}
+ body .world>.hint{right:5vw;bottom:2%;max-width:52vw;
+  font-size:calc(14px * var(--inherit-readable-scale))!important}
+ body .inherit-first-steps{top:clamp(160px,19vh,240px);left:4vw;right:4vw;
+  width:calc(100% - 8vw);padding:16px 17px}
+ body .inherit-first-steps-title{font-size:calc(26px * var(--inherit-readable-scale))!important}
+ body .inherit-readable-steps{grid-template-columns:1fr;gap:7px;padding:12px 5vw}
+ body .inherit-readable-step{min-height:58px;padding:10px 13px}
+ body .inherit-readable-step-copy strong{font-size:calc(16px * var(--inherit-readable-scale))}
+ body .inherit-readable-step-copy small{font-size:calc(14px * var(--inherit-readable-scale))}
+ body .inherit-readable-step:not([data-current=true]){display:none}
+ body .inherit-readable-status{grid-column:1/-1;font-size:calc(15px * var(--inherit-readable-scale))}
+ body .dock.cine-dock{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+  padding:14px 5vw 18px;gap:10px}
+ body .dock.cine-dock .turn{grid-column:1/-1}
+ body .dock.cine-dock .tools{grid-column:1/-1;grid-row:auto;display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr))}
+ body .dock.cine-dock .tool{min-height:57px;padding:12px!important;
+  font-size:calc(16px * var(--inherit-readable-scale))!important}
+ body .dock.cine-dock #pass{grid-column:1;min-height:64px;
+  font-size:calc(17px * var(--inherit-readable-scale))!important}
+ body .dock .cine-menu-toggle{grid-column:2;min-height:64px}
+ body .cine-utility{grid-template-columns:1fr 1fr;max-height:72dvh;padding:13px}
+ body .cine-utility button{font-size:calc(15px * var(--inherit-readable-scale))!important}
+ body .dock.cine-account-dock .tools{flex-basis:100%}
+ body .dock.cine-account-dock .tool{flex:1 1 145px}
+ body .inherit-cycle-entry{width:min(260px,63vw);bottom:23%;right:4vw;padding:12px}
+ body .inherit-cycle-entry-name{font-size:calc(19px * var(--inherit-readable-scale))!important}
+ body .inherit-cycle-entry-open{font-size:calc(14px * var(--inherit-readable-scale))!important}
+}
+@media(max-width:460px){
+ body .world>.hero{top:26%}
+ body .world>.hero h1{font-size:calc(40px * var(--inherit-readable-scale))!important}
+ body .world>.hero p{max-width:250px}
+ body .inherit-first-steps{top:160px}
+ body .inherit-first-steps-actions{align-items:stretch}
+ body .inherit-first-steps-actions button{flex:1 1 120px}
+ body .cine-utility{grid-template-columns:1fr;max-height:74dvh}
+ body .cine-utility :is(button,a){min-height:53px}
+}
+@media(max-width:360px){
+ body .app>header .logo{font-size:18px}
+ body .world>.hero h1{font-size:37px!important}
+ body .dock.cine-dock{grid-template-columns:1fr 1fr}
+ body .dock.cine-dock .tool{padding:10px!important}
+ body .inherit-first-steps{top:150px}
+}
+@media(prefers-reduced-motion:reduce){
+ body .inherit-readable-step,body .inherit-text-toggle{animation:none!important;transition:none!important}
+}

@@ -1717,3 +1717,80 @@ test('INHERIT R12 has honest no-archive and zero-budget states in account mode a
  expect(JSON.parse(before).objects).toHaveLength(0);
  expect(errors).toEqual([]);
 });
+
+
+test('INHERIT readable edition: default interface is genuinely large and stays within mobile width',async({page},info)=>{
+ const errors=await prepareStandaloneGame(page);
+ await page.goto('/games/inherit/?lang=ru',{waitUntil:'domcontentloaded'});
+ const aPlus=page.locator('.inherit-text-toggle');
+ await expect(aPlus).toBeVisible();
+ await expect(aPlus).toContainText('Ещё крупнее');
+ await expect(aPlus).toHaveAttribute('aria-pressed','false');
+ await expect(page.locator('.inherit-readable-steps')).toBeVisible();
+ await expect(page.locator('.inherit-readable-step')).toHaveCount(3);
+ await expect(page.locator('.inherit-readable-status')).toContainText('выбора предмета');
+ const sizes=await page.evaluate(()=>{
+  const size=selector=>parseFloat(getComputedStyle(document.querySelector(selector)).fontSize);
+  const height=selector=>document.querySelector(selector).getBoundingClientRect().height;
+  return {tool:size('.dock .tool'),pass:size('#pass'),
+   hero:size('.world>.hero p'),help:size('.inherit-first-steps-description'),
+   firstStep:size('.inherit-readable-step-copy strong'),
+   guide:size('.inherit-guide p'),passHeight:height('#pass'),
+   width:document.documentElement.scrollWidth,viewport:window.innerWidth};
+ });
+ expect(sizes.tool).toBeGreaterThanOrEqual(16);
+ expect(sizes.pass).toBeGreaterThanOrEqual(18);
+ expect(sizes.hero).toBeGreaterThanOrEqual(18);
+ expect(sizes.help).toBeGreaterThanOrEqual(16);
+ expect(sizes.firstStep).toBeGreaterThanOrEqual(16);
+ expect(sizes.guide).toBeGreaterThanOrEqual(16);
+ expect(sizes.passHeight).toBeGreaterThanOrEqual(55);
+ expect(sizes.width).toBeLessThanOrEqual(sizes.viewport+2);
+ await page.screenshot({path:info.outputPath('inherit-readable-default.png'),fullPage:true});
+ expect(errors).toEqual([]);
+});
+
+test('INHERIT readable edition: A+ is optional, persistent, localized and does not change the save',async({page})=>{
+ const errors=await prepareStandaloneGame(page);
+ await page.goto('/games/inherit/?lang=ru',{waitUntil:'domcontentloaded'});
+ const button=page.locator('.inherit-text-toggle');
+ const saved=await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()));
+ const normal=await page.locator('#pass').evaluate(node=>parseFloat(getComputedStyle(node).fontSize));
+ await button.click();
+ await expect(button).toHaveAttribute('aria-pressed','true');
+ await expect(page.locator('body')).toHaveAttribute('data-inherit-text-size','extra');
+ const large=await page.locator('#pass').evaluate(node=>parseFloat(getComputedStyle(node).fontSize));
+ expect(large).toBeGreaterThan(normal*1.15);
+ expect(await page.evaluate(()=>localStorage.getItem('inherit:text-preference:v1'))).toBe('extra');
+ expect(await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()))).toBe(saved);
+ await page.reload({waitUntil:'domcontentloaded'});
+ await expect(button).toHaveAttribute('aria-pressed','true');
+ await page.locator('[data-game-language="en"]').click();
+ await expect(button).toContainText('Standard text');
+ await page.locator('[data-game-language="zh"]').click();
+ await expect(button).toContainText('标准字号');
+ await button.click();
+ await expect(button).toHaveAttribute('aria-pressed','false');
+ expect(await page.evaluate(()=>localStorage.getItem('inherit:text-preference:v1'))).toBeNull();
+ expect(errors).toEqual([]);
+});
+
+test('INHERIT readable edition: three steps follow genuine placement/handoff, account mode stays read-only',async({page})=>{
+ const errors=await prepareStandaloneGame(page);
+ await page.goto('/games/inherit/?lang=ru',{waitUntil:'domcontentloaded'});
+ await expect(page.locator('.inherit-readable-step[data-current="true"]')).toHaveCount(1);
+ await expect(page.locator('.inherit-readable-step[data-current="true"]')).toContainText('Выбери предмет');
+ await page.locator('.dock [data-tool="stone"]').click();
+ await expect(page.locator('.inherit-readable-step[data-current="true"]')).toContainText('Поставь на остров');
+ await page.locator('#world').focus();
+ await page.locator('#world').press('Enter');
+ await expect(page.locator('#budget')).toHaveText('99');
+ await expect(page.locator('.inherit-readable-step[data-current="true"]')).toContainText('Передай поколение');
+ await page.locator('#pass').click();
+ await expect.poll(()=>page.evaluate(()=>window.InheritGame.snapshot().generation)).toBe(174);
+ await expect(page.locator('.inherit-readable-step[data-current="true"]')).toContainText('Выбери предмет');
+ await page.goto('/games/inherit/?mode=account&lang=ru',{waitUntil:'domcontentloaded'});
+ await expect(page.locator('.inherit-text-toggle')).toBeVisible();
+ await expect(page.locator('.inherit-readable-steps')).toBeHidden();
+ expect(errors).toEqual([]);
+});
