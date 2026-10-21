@@ -77,7 +77,7 @@ export function BrandShell({ theme, children }: { theme: ProductTheme; children:
     window.dispatchEvent(new Event(MOTION_CHANGE_EVENT))
   }
 
-  return <div className={`brand-system theme-${theme}`}>
+  return <div className={`brand-system theme-${theme}${theme === 'play' && (path === '/play' || path === '/games' || path === '/entertainment') ? ' play-catalog-shell' : ''}`}>
     <a className="brand-skip" href="#product-main">Перейти к содержанию</a>
     <header className="brand-header">
       <a href={productHomes[product]} aria-label={productNames[product]}><BrandLockup theme={product} /></a>
