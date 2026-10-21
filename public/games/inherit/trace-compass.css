@@ -57,6 +57,12 @@
 .inherit-compass-ghost[hidden]{display:none!important}
 @keyframes inherit-compass-pulse{0%,100%{box-shadow:0 0 0 7px #fae7aa24,0 0 24px 7px #f8d88d55}
  50%{box-shadow:0 0 0 12px #fae7aa10,0 0 32px 17px #f8d88d74}}
+/* A 900px-wide island normally sinks below the small mobile viewport.
+   Raise it temporarily on a real player-armed placement so the golden marker
+   stays ABOVE the tool dock and can be tapped on the island itself. */
+@media(max-width:740px){
+ .inherit-compass-armed #island{bottom:-35px}
+}
 @media(max-width:740px){.inherit-compass-trigger{margin:0;white-space:normal;text-align:center;font-size:11px}
  .inherit-compass-dialog{max-height:92dvh;padding:17px 13px}
  .inherit-compass-stats{grid-template-columns:repeat(3,minmax(0,1fr))}
