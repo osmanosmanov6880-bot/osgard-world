@@ -24,7 +24,7 @@ export default function IntelligenceHome() {
   const completed = progress.lessonCompletions.length
   const total = OSA_LESSON_SLUGS.length
 
-  return <main className="intelligence-home brand-container">
+  return <main className="intelligence-home brand-container intelligence-command">
     <section className="intelligence-hero intelligence-command-hero" aria-labelledby="intelligence-title">
       <div className="intelligence-command-copy">
         <p className="brand-eyebrow intelligence-command-eyebrow">OSA INTELLIGENCE <span>/ KNOWLEDGE ENGINE</span></p>
