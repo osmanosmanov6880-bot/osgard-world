@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import * as THREE from 'three'
 import { createCityLightsTexture, createCloudLayers } from './OmegaGlobeEffects'
+import { createSunlitAtmosphere, disposeSatelliteTextures, enhanceEarthSurface, loadSatelliteTextures } from './OmegaEarthMaterials'
+import type { EarthSurfaceUniforms, SatelliteEarthTextures, EarthTextureTier } from './OmegaEarthMaterials'
 
 /**
  * OSGARD WORLD decorative 3D Earth.
@@ -194,6 +196,8 @@ function disposeScene(scene: THREE.Scene) {
         if (mapped.map) textures.add(mapped.map)
         const emissive = material as THREE.Material & { emissiveMap?: THREE.Texture }
         if (emissive.emissiveMap) textures.add(emissive.emissiveMap)
+        const rough = material as THREE.Material & { roughnessMap?: THREE.Texture }
+        if (rough.roughnessMap) textures.add(rough.roughnessMap)
       }
     }
   })
@@ -241,6 +245,9 @@ export default function OmegaGlobe({ quality, mode, chapter, view, onViewChange 
     let cloudOuter: THREE.Mesh | null = null
     let keyLight: THREE.DirectionalLight | null = null
     let fillLight: THREE.DirectionalLight | null = null
+    let satelliteTextures: SatelliteEarthTextures | null = null
+    let surfaceUniforms: EarthSurfaceUniforms | null = null
+    const sunDirection = new THREE.Vector3(-2.5, 3, 5).normalize()
     const media = window.matchMedia('(prefers-reduced-motion: reduce)')
     const controller = new AbortController()
     const mobile = window.matchMedia('(max-width: 760px)').matches
@@ -355,7 +362,9 @@ export default function OmegaGlobe({ quality, mode, chapter, view, onViewChange 
         if (keyLight && fillLight) {
           keyLight.position.x = -2.5 + Math.sin(time * 0.00017) * 0.75
           keyLight.position.y = 3 + Math.cos(time * 0.00013) * 0.35
-          fillLight.intensity = currentMode === 'cinema' ? 1.15 : 1.45
+          fillLight.intensity = currentMode === 'cinema' ? 0.23 : 0.18
+          sunDirection.copy(keyLight.position).normalize()
+          if (surfaceUniforms && cloudInner) surfaceUniforms.cloudOffset.value = -cloudInner.rotation.y / (Math.PI * 2)
         }
         renderer.render(scene, camera)
       }
@@ -370,20 +379,30 @@ export default function OmegaGlobe({ quality, mode, chapter, view, onViewChange 
       if (started || !visible || !allowed() || !alive) return
       started = true
       try {
-        // Fetch stays on the same origin; any failure leaves the existing CSS globe intact.
-        const response = await fetch('/brand/omega-earth-land.json', { signal: controller.signal })
-        if (!response.ok) throw new Error('Earth coastline asset unavailable')
-        const data = await response.json() as LandPolygons
-        if (data.type !== 'land-polygons' || !Array.isArray(data.polygons) || data.polygons.length < 50) {
-          throw new Error('Invalid Earth coastline asset')
-        }
-        if (!alive) return
-        const gl = canvas.getContext('webgl2', { alpha: true, antialias: true, powerPreference: 'low-power' })
+        // Check GPU support before fetching any imagery. Never load satellite assets from a CDN.
+        const gl = canvas.getContext('webgl2', { alpha: true, antialias: true, powerPreference: quality === 'ultra' ? 'high-performance' : 'low-power' })
         if (!gl) throw new Error('WebGL2 not supported')
-        renderer = new THREE.WebGLRenderer({ canvas, context: gl, antialias: true, alpha: true, powerPreference: 'low-power' })
+        let data: LandPolygons | null = null
+        let earthSource: 'nasa' | 'procedural' = 'nasa'
+        try {
+          satelliteTextures = await loadSatelliteTextures(textureWidth as EarthTextureTier)
+        } catch {
+          earthSource = 'procedural'
+          const response = await fetch('/brand/omega-earth-land.json', { signal: controller.signal })
+          if (!response.ok) throw new Error('Earth coastline fallback unavailable')
+          data = await response.json() as LandPolygons
+          if (data.type !== 'land-polygons' || !Array.isArray(data.polygons) || data.polygons.length < 50) {
+            throw new Error('Invalid fallback coastline data')
+          }
+        }
+        if (!alive) {
+          if (satelliteTextures) disposeSatelliteTextures(satelliteTextures)
+          return
+        }
+        renderer = new THREE.WebGLRenderer({ canvas, context: gl, antialias: true, alpha: true, powerPreference: quality === 'ultra' ? 'high-performance' : 'low-power' })
         renderer.outputColorSpace = THREE.SRGBColorSpace
         renderer.toneMapping = THREE.ACESFilmicToneMapping
-        renderer.toneMappingExposure = 1.32
+        renderer.toneMappingExposure = 1.18
         renderer.setClearColor(0x000000, 0)
         scene = new THREE.Scene()
         camera = new THREE.PerspectiveCamera(45, 1, 0.1, 80)
@@ -391,54 +410,48 @@ export default function OmegaGlobe({ quality, mode, chapter, view, onViewChange 
         const lighting = decorateScene(scene, mobile ? 90 : 230)
         keyLight = lighting.key
         fillLight = lighting.fill
+        const hemisphere = scene.children.find(child => child instanceof THREE.HemisphereLight) as THREE.HemisphereLight | undefined
+        if (hemisphere) hemisphere.intensity = 0.26
+        keyLight.intensity = 2.7
+        fillLight.intensity = 0.2
 
         globe = new THREE.Group()
         const geography = new THREE.Group()
         geography.rotation.y = -Math.PI / 2
         globe.add(geography)
-        const landTexture = createLandTexture(data, textureWidth)
-        const cityLights = createCityLightsTexture(data, mobile)
-        const sphere = new THREE.Mesh(
-          new THREE.SphereGeometry(1.55, sphereSegments, sphereRings),
-          new THREE.MeshStandardMaterial({
-            map: landTexture, metalness: 0.12, roughness: 0.84,
-            emissiveMap: cityLights, emissive: 0x72e5ff, emissiveIntensity: 0.93,
-          }),
-        )
-        geography.add(sphere)
-        geography.add(earthGrid())
+        const landTexture = satelliteTextures?.surface ?? createLandTexture(data!, textureWidth)
+        const cityLights = satelliteTextures?.night ?? createCityLightsTexture(data!, mobile)
+        const roughnessMap = satelliteTextures?.roughness
         const clouds = createCloudLayers(quality === 'eco' || (quality === 'auto' && mobile))
         cloudInner = clouds.inner
         cloudOuter = clouds.outer
-        geography.add(clouds.group)
-
-        const atmosphere = new THREE.Mesh(
-          new THREE.SphereGeometry(1.64, mobile ? 40 : 64, mobile ? 24 : 40),
-          new THREE.ShaderMaterial({
-            transparent: true,
-            depthWrite: false,
-            blending: THREE.AdditiveBlending,
-            vertexShader: [
-              'varying vec3 vNormal;',
-              'varying vec3 vWorldPos;',
-              'void main() {',
-              '  vec4 world = modelMatrix * vec4(position, 1.0);',
-              '  vWorldPos = world.xyz;',
-              '  vNormal = normalize(mat3(modelMatrix) * normal);',
-              '  gl_Position = projectionMatrix * viewMatrix * world;',
-              '}',
-            ].join('\n'),
-            fragmentShader: [
-              'varying vec3 vNormal;',
-              'varying vec3 vWorldPos;',
-              'void main() {',
-              '  vec3 eye = normalize(cameraPosition - vWorldPos);',
-              '  float rim = pow(1.0 - max(0.0, dot(normalize(vNormal), eye)), 3.0);',
-              '  gl_FragColor = vec4(0.18, 0.79, 1.0, rim * 0.48);',
-              '}',
-            ].join('\n'),
-          }),
+        const cloudTexture = (cloudInner.material as THREE.MeshStandardMaterial).map
+        if (!cloudTexture) throw new Error('Cloud alpha texture unavailable')
+        const earthMaterial = new THREE.MeshStandardMaterial({
+          map: landTexture,
+          emissiveMap: cityLights,
+          emissive: 0xffe8c5,
+          emissiveIntensity: satelliteTextures ? 1.22 : 0.84,
+          roughnessMap,
+          metalness: 0,
+          roughness: roughnessMap ? 1 : 0.76,
+        })
+        surfaceUniforms = enhanceEarthSurface(earthMaterial, sunDirection, cloudTexture)
+        const sphere = new THREE.Mesh(
+          new THREE.SphereGeometry(1.55, sphereSegments, sphereRings),
+          earthMaterial,
         )
+        geography.add(sphere)
+        // Keep OSGARD's orbital styling, but let genuine NASA photography dominate.
+        const grid = earthGrid()
+        if (earthSource === 'nasa') grid.traverse(child => {
+          if (child instanceof THREE.Line && child.material instanceof THREE.LineBasicMaterial) {
+            child.material.opacity = 0.035
+          }
+        })
+        geography.add(grid)
+        geography.add(clouds.group)
+        const atmosphere = createSunlitAtmosphere(sunDirection, quality === 'eco')
         globe.add(atmosphere)
         scene.add(globe)
         scene.add(orbit(2.05, 1.03, 0x77efff, 0.34, 0.35))
@@ -451,10 +464,13 @@ export default function OmegaGlobe({ quality, mode, chapter, view, onViewChange 
         resize()
         sky.classList.add('omega-webgl-ready')
         stage.dataset.cloudLayers = '2'
+        stage.dataset.earthSource = earthSource
+        stage.dataset.earthResolution = String(textureWidth)
         setStatus('webgl')
         syncRendering()
       } catch {
         if (scene) { disposeScene(scene); scene = null }
+        if (satelliteTextures) { disposeSatelliteTextures(satelliteTextures); satelliteTextures = null }
         renderer?.dispose()
         renderer = null
         camera = null
@@ -508,7 +524,10 @@ export default function OmegaGlobe({ quality, mode, chapter, view, onViewChange 
       canvas.removeEventListener('webglcontextlost', contextLost)
       sky.classList.remove('omega-webgl-ready')
       delete stage.dataset.cloudLayers
+      delete stage.dataset.earthSource
+      delete stage.dataset.earthResolution
       if (scene) disposeScene(scene)
+      if (satelliteTextures) disposeSatelliteTextures(satelliteTextures)
       renderer?.dispose()
     }
   }, [])
