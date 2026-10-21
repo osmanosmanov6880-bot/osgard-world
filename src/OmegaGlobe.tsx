@@ -425,6 +425,7 @@ export default function OmegaGlobe({ quality, mode, chapter, view, onViewChange 
           return
         }
         renderer = new THREE.WebGLRenderer({ canvas, context: gl, antialias: true, alpha: true, powerPreference: quality === 'ultra' ? 'high-performance' : 'low-power' })
+        renderer.debug.onShaderError = () => { throw new Error('Satellite Earth shader failed to compile') }
         renderer.outputColorSpace = THREE.SRGBColorSpace
         renderer.toneMapping = THREE.ACESFilmicToneMapping
         renderer.toneMappingExposure = 1.18
