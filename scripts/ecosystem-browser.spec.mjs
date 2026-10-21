@@ -1433,3 +1433,27 @@ test('INHERIT trace compass: exhausted turn blocks misleading placements and doe
  await page.keyboard.press('Escape');
  expect(errors).toEqual([]);
 });
+
+
+
+test('INHERIT R9 saved-trace inspector opens R10 compass without spending a move',async({page})=>{
+ const errors=await prepareStandaloneGame(page);
+ await page.goto('/games/inherit/?lang=ru',{waitUntil:'domcontentloaded'});
+ await page.locator('#world').focus();
+ await page.locator('#world').press('Enter');
+ await expect.poll(()=>page.evaluate(()=>window.InheritGame.snapshot().objects.length)).toBe(1);
+ const before=await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()));
+ await page.locator('.inherit-trace-launcher').click();
+ const inspector=page.locator('.inherit-trace-inspector'),compass=page.locator('.inherit-compass-dialog');
+ await expect(inspector).toBeVisible();
+ const plan=inspector.locator('.inherit-trace-compass-plan');
+ await expect(plan).toHaveText('Спланировать следующий след');
+ await expect(plan).toBeEnabled();
+ await plan.click();
+ await expect(inspector).toBeHidden();
+ await expect(compass).toBeVisible();
+ expect(await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()))).toBe(before);
+ await compass.locator('.inherit-compass-close').click();
+ await expect(compass).toBeHidden();
+ expect(errors).toEqual([]);
+});
