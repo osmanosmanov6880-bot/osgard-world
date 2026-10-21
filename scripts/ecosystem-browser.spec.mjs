@@ -1467,3 +1467,106 @@ test('INHERIT R9 saved-trace inspector opens R10 compass without spending a move
  await expect(compass).toBeHidden();
  expect(errors).toEqual([]);
 });
+
+
+test('INHERIT R11 network shows a real two-link saved chain and preserves the world',async({page})=>{
+ const errors=await prepareStandaloneGame(page);
+ await page.goto('/games/inherit/?lang=ru',{waitUntil:'domcontentloaded'});
+ await page.evaluate(()=>{
+  const s=window.InheritGame.snapshot();
+  window.InheritGame.apply({...s,generation:173,budget:97,
+    objects:[{tool:'path',x:30,y:40},{tool:'light',x:40,y:40},{tool:'cairn',x:51,y:40}],
+    pending:[],changes:[],snapshots:[]});
+ });
+ const original=await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()));
+ const trigger=page.locator('.inherit-network-trigger'),dialog=page.locator('.inherit-network-dialog');
+ await expect(trigger).toBeVisible();await trigger.click();
+ await expect(dialog).toBeVisible();
+ await expect(dialog.locator('.inherit-network-title')).toHaveText('Сеть наследия');
+ const graph=await page.evaluate(()=>window.InheritLegacyNetworkUI.getGraph());
+ expect(graph.status).toBe('ok');expect(graph.links).toBe(2);expect(graph.components).toHaveLength(1);
+ await dialog.locator('select[name="inherit-network-end"]').selectOption('2');
+ await expect(dialog.locator('.inherit-network-status')).toContainText('цепочкой из 2');
+ const route=await page.evaluate(()=>window.InheritLegacyNetworkUI.getRoute());
+ expect(route.status).toBe('connected');expect(route.path).toEqual([0,1,2]);
+ await expect(dialog.locator('.inherit-network-svg .inherit-network-edge--route')).toHaveCount(2);
+ await expect(dialog.locator('.inherit-network-chain li')).toHaveCount(3);
+ await expect(dialog.locator('.inherit-network-bridge')).toBeHidden();
+ expect(await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()))).toBe(original);
+ await page.keyboard.press('Escape');
+ await expect(dialog).toBeHidden();
+ expect(errors).toEqual([]);
+});
+
+test('INHERIT R11 optional bridge requires a genuine second island click and creates real legacy rules',async({page})=>{
+ const errors=await prepareStandaloneGame(page);
+ await page.goto('/games/inherit/?lang=ru',{waitUntil:'domcontentloaded'});
+ await page.evaluate(()=>{
+  const s=window.InheritGame.snapshot();
+  window.InheritGame.apply({...s,generation:173,budget:98,
+    objects:[{tool:'path',x:30,y:40},{tool:'cairn',x:49,y:40}],
+    pending:[],changes:[],snapshots:[]});
+ });
+ const before=await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()));
+ const trigger=page.locator('.inherit-network-trigger'),dialog=page.locator('.inherit-network-dialog');
+ await trigger.click();
+ await expect(dialog.locator('.inherit-network-status')).toContainText('нет цепочки');
+ const hint=await page.evaluate(()=>window.InheritLegacyNetworkUI.getSuggestion());
+ expect(hint.status).toBe('suggested');expect(hint.tool).toBe('light');
+ await expect(dialog.locator('.inherit-network-choose')).toBeEnabled();
+ expect(await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()))).toBe(before);
+ await dialog.locator('.inherit-network-choose').click();
+ await expect(dialog).toBeHidden();
+ await expect(page.locator('.inherit-network-ghost')).toBeVisible();
+ expect(await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()))).toBe(before);
+ const markerHit=()=>page.evaluate(()=>{
+  const dot=document.querySelector('.inherit-network-ghost').getBoundingClientRect();
+  const x=dot.left+dot.width/2,y=dot.top+dot.height/2;
+  const target=document.elementFromPoint(x,y);
+  return {inside:x>=0&&x<innerWidth&&y>=0&&y<innerHeight,
+    hit:!!target?.closest('#world'),blocked:!!target?.closest('button,.dock,[data-memory]')};
+ });
+ await expect.poll(async()=>{
+  const hit=await markerHit();return hit.inside&&hit.hit&&!hit.blocked;
+ },{timeout:6000}).toBe(true);
+ const bounds=await page.locator('#island').boundingBox();
+ await page.mouse.click(bounds.x+bounds.width*hint.x/100,bounds.y+bounds.height*hint.y/100);
+ await expect.poll(()=>page.evaluate(()=>window.InheritGame.snapshot().objects.length)).toBe(3);
+ await expect.poll(()=>page.evaluate(()=>window.InheritLegacyUI.getState().total)).toBe(2);
+ await expect(page.locator('.inherit-network-ghost')).toBeHidden();
+ const next=await page.evaluate(()=>window.InheritGame.snapshot());
+ expect(next.generation).toBe(173);expect(next.budget).toBe(97);
+ expect(next.pending).toHaveLength(1);
+ await trigger.click();
+ await expect(dialog.locator('.inherit-network-status')).toContainText('цепочкой из 2');
+ expect((await page.evaluate(()=>window.InheritLegacyNetworkUI.getGraph())).components).toHaveLength(1);
+ await dialog.locator('.inherit-network-close').click();
+ expect(errors).toEqual([]);
+});
+
+test('INHERIT R11 respects account read-only, language changes and exhausted budgets',async({page})=>{
+ const errors=await prepareStandaloneGame(page);
+ await page.goto('/games/inherit/?mode=account&lang=en',{waitUntil:'domcontentloaded'});
+ await page.evaluate(()=>{
+  const s=window.InheritGame.snapshot();
+  window.InheritGame.apply({...s,objects:[{tool:'path',x:31,y:40},{tool:'cairn',x:50,y:40}],
+    generation:173,budget:0,pending:[],changes:[]});
+ });
+ const original=await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()));
+ const trigger=page.locator('.inherit-network-trigger'),dialog=page.locator('.inherit-network-dialog');
+ await trigger.click();
+ await expect(dialog.locator('.inherit-network-title')).toHaveText('Legacy network');
+ await expect(dialog.locator('.inherit-network-source')).toContainText('nearest neighbours');
+ await expect(dialog.locator('.inherit-network-bridge')).toContainText('budget exhausted');
+ await expect(dialog.locator('.inherit-network-choose')).toBeDisabled();
+ await page.keyboard.press('Escape');
+ await expect(dialog).toBeHidden();
+ await expect(page.locator('.inherit-network-ghost')).toBeHidden();
+ await page.locator('[data-game-language="zh"]').click();
+ await trigger.click();
+ await expect(dialog.locator('.inherit-network-title')).toHaveText('传承网络');
+ await expect(dialog.locator('.inherit-network-intro')).toContainText('真实保存');
+ await dialog.locator('.inherit-network-close').click();
+ expect(await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()))).toBe(original);
+ expect(errors).toEqual([]);
+});
