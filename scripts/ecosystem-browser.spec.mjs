@@ -1154,6 +1154,10 @@ test('INHERIT R7: offline preservation is clearly unverified, and conflict never
 
 test('INHERIT R8 real time-lapse plays only saved island frames without changing world state',async({page})=>{
  const errors=await prepareStandaloneGame(page);
+ // CI normally emulates reduced motion; explicit opt-in playback must be
+ // tested with ordinary motion, while the separate accessibility case
+ // preserves and asserts reduced-motion behavior.
+ await page.emulateMedia({reducedMotion:'no-preference'});
  await page.goto('/games/inherit/?lang=ru',{waitUntil:'domcontentloaded'});
  const original=await page.evaluate(()=>window.InheritGame.snapshot());
  await page.locator('.inherit-atlas-trigger').click();
