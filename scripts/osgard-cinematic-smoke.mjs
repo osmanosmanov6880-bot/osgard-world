@@ -519,6 +519,30 @@ await check('replay cancelled by reduced motion restores main focus when its pre
   }
 })
 
+await check('focus restoration waits for a briefly unfocusable main after cinematic exit', async () => {
+  const host = environment('/', { local: repeat() }), controller = host.mountProvider()
+  await host.settle()
+  const replay = host.addNode('replay-intro', 'BUTTON'); replay.focus()
+  host.emit('osgard:replay-intro'); await host.settle()
+  const skip = host.addNode('intro-skip', 'BUTTON'); skip.focus()
+  const main = host.document.getElementById('product-main')
+  const originalFocus = main.focus.bind(main)
+  let canFocus = false
+  main.focus = options => { if (canFocus) originalFocus(options) }
+  replay.disabled = true
+  controller.overlay.onSkip(); await host.settle()
+  skip.remove()
+  assert.equal(host.document.activeElement, host.document.body)
+  await host.advance(0)
+  assert.equal(host.document.activeElement, host.document.body, 'Focus cannot enter an inert/uncommitted main')
+  canFocus = true
+  await host.advance(32)
+  assert.equal(host.document.activeElement, main, 'Bounded retry must restore keyboard focus after commit')
+  await host.advance(500)
+  assert.equal(host.timers.size, 0)
+  host.assertAuthUntouched(); host.assertNoReload(); controller.unmount()
+})
+
 await check('storage denial and React Strict Mode effect replay still leave a bounded usable page', async () => {
   const host = environment('/play', { storageDenied: true }), controller = host.mountProvider(); await host.settle()
   controller.strictEffects(); await host.settle()
