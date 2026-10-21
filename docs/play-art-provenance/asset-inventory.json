@@ -1,0 +1,742 @@
+{
+  "verified_date": "2026-10-21",
+  "source": "Built-in Imagegen",
+  "classification": "Original cinematic promotional illustrations; not screenshots of actual gameplay",
+  "source_path_base": "osgard-art/",
+  "repository_path_base": ".",
+  "original_count": 22,
+  "world_count": 19,
+  "composition_count": 3,
+  "webp_count": 46,
+  "webp_total_bytes": 10529928,
+  "checks": {
+    "image_decode": true,
+    "source_and_repository_sha256_match": true,
+    "all_expected_files_present": true,
+    "unique_original_sha256_count": 22
+  },
+  "assets": [
+    {
+      "id": "hero-megacity",
+      "title": "hero-megacity",
+      "category": "composition",
+      "original": {
+        "path": "hero/hero-megacity.png",
+        "width": 1983,
+        "height": 793,
+        "size_bytes": 2987662,
+        "sha256": "9a4875fb4b1e34edbf4baa0846875f7cd4aedea966b867f846b2111077f73d51"
+      },
+      "variants": [
+        {
+          "art_path": "hero/hero-megacity-1280.webp",
+          "repository_path": "public/brand/play/hero-megacity-1280.webp",
+          "public_path": "/brand/play/hero-megacity-1280.webp",
+          "width": 1280,
+          "height": 512,
+          "size_bytes": 196476,
+          "sha256": "9b97dcc7c512b479e59a52ea31154cfe8844f64ec5bb9849c2becfdf134a5dcd"
+        },
+        {
+          "art_path": "hero/hero-megacity-1920.webp",
+          "repository_path": "public/brand/play/hero-megacity-1920.webp",
+          "public_path": "/brand/play/hero-megacity-1920.webp",
+          "width": 1920,
+          "height": 768,
+          "size_bytes": 353924,
+          "sha256": "483a6395cda734250f0e76958addbd046dbc904fef38b8ec5ea01d1d4b8d3bc0"
+        },
+        {
+          "art_path": "hero/hero-megacity.webp",
+          "repository_path": "public/brand/play/hero-megacity.webp",
+          "public_path": "/brand/play/hero-megacity.webp",
+          "width": 1983,
+          "height": 793,
+          "size_bytes": 421844,
+          "sha256": "d30d1f8844203385934e8f2877d1832985d6830f5554a8bc5962af4a5eb9fe40"
+        }
+      ]
+    },
+    {
+      "id": "hero-mobile",
+      "title": "hero-mobile",
+      "category": "composition",
+      "original": {
+        "path": "hero/hero-mobile.png",
+        "width": 1024,
+        "height": 1536,
+        "size_bytes": 2890033,
+        "sha256": "f068eacabbf87a9ded593a76959367f77d220dad7338a6884d6af8cd68c3a925"
+      },
+      "variants": [
+        {
+          "art_path": "hero/hero-mobile-780.webp",
+          "repository_path": "public/brand/play/hero-mobile-780.webp",
+          "public_path": "/brand/play/hero-mobile-780.webp",
+          "width": 780,
+          "height": 1170,
+          "size_bytes": 223086,
+          "sha256": "8754fa00f10eff3db2b7ef72f23963f066e5176b4fb2b7c7985aea5f26886854"
+        },
+        {
+          "art_path": "hero/hero-mobile.webp",
+          "repository_path": "public/brand/play/hero-mobile.webp",
+          "public_path": "/brand/play/hero-mobile.webp",
+          "width": 1024,
+          "height": 1536,
+          "size_bytes": 388548,
+          "sha256": "b02356ee93d102cf169730b5e54fdfa400b52ef7fbb1a73129bcf4c79cc1880a"
+        }
+      ]
+    },
+    {
+      "id": "panorama-discover",
+      "title": "panorama-discover",
+      "category": "composition",
+      "original": {
+        "path": "hero/panorama-discover.png",
+        "width": 1983,
+        "height": 793,
+        "size_bytes": 2850995,
+        "sha256": "50a6491d73dbc574a8f2ebfe34010063af07848e49718e358c3a47c2c334de78"
+      },
+      "variants": [
+        {
+          "art_path": "hero/panorama-discover-1280.webp",
+          "repository_path": "public/brand/play/panorama-discover-1280.webp",
+          "public_path": "/brand/play/panorama-discover-1280.webp",
+          "width": 1280,
+          "height": 512,
+          "size_bytes": 174238,
+          "sha256": "7b5f923bf077dfc6841209028c73e3d87badb76d986a17a720edee21f29d6132"
+        },
+        {
+          "art_path": "hero/panorama-discover-1920.webp",
+          "repository_path": "public/brand/play/panorama-discover-1920.webp",
+          "public_path": "/brand/play/panorama-discover-1920.webp",
+          "width": 1920,
+          "height": 768,
+          "size_bytes": 309696,
+          "sha256": "ee8549d309140f095e6587ba61773b98cd9aa532a7641409389c103b521facd6"
+        },
+        {
+          "art_path": "hero/panorama-discover.webp",
+          "repository_path": "public/brand/play/panorama-discover.webp",
+          "public_path": "/brand/play/panorama-discover.webp",
+          "width": 1983,
+          "height": 793,
+          "size_bytes": 383222,
+          "sha256": "b695a7c775c061eef52454d35478fcb8fcbb652124927553349bf0c6bb02a6a1"
+        }
+      ]
+    },
+    {
+      "id": "vector-zero",
+      "title": "VECTOR//ZERO",
+      "category": "world",
+      "original": {
+        "path": "covers/vector-zero.png",
+        "width": 1536,
+        "height": 1024,
+        "size_bytes": 2927903,
+        "sha256": "3c0e4f4ced70ab9db68f01412c3facca504245851c8fb3aa15807cb2fcea6a56"
+      },
+      "variants": [
+        {
+          "art_path": "covers/vector-zero-640.webp",
+          "repository_path": "public/brand/play/vector-zero-640.webp",
+          "public_path": "/brand/play/vector-zero-640.webp",
+          "width": 640,
+          "height": 427,
+          "size_bytes": 83290,
+          "sha256": "d366eba735e1aa9c0770669c0c2ff88f3dd14af29b0e149439805c17545d071d"
+        },
+        {
+          "art_path": "covers/vector-zero.webp",
+          "repository_path": "public/brand/play/vector-zero.webp",
+          "public_path": "/brand/play/vector-zero.webp",
+          "width": 1536,
+          "height": 1024,
+          "size_bytes": 412776,
+          "sha256": "74e05997f1440126de75ec6495b623bb537d9f110d46cc7dbc265b136c5d42f6"
+        }
+      ]
+    },
+    {
+      "id": "time",
+      "title": "Империя времени",
+      "category": "world",
+      "original": {
+        "path": "covers/time.png",
+        "width": 1536,
+        "height": 1024,
+        "size_bytes": 2940481,
+        "sha256": "668b44f021272fb183ab6227e0811a12b929c7e7bec4957a8e0384051cbdbba7"
+      },
+      "variants": [
+        {
+          "art_path": "covers/time-640.webp",
+          "repository_path": "public/brand/play/time-640.webp",
+          "public_path": "/brand/play/time-640.webp",
+          "width": 640,
+          "height": 427,
+          "size_bytes": 77940,
+          "sha256": "9e4978510c42b895cdc0ad73ae7e08103409dc08cefd7fdc6494bd7775d9cbee"
+        },
+        {
+          "art_path": "covers/time.webp",
+          "repository_path": "public/brand/play/time.webp",
+          "public_path": "/brand/play/time.webp",
+          "width": 1536,
+          "height": 1024,
+          "size_bytes": 405222,
+          "sha256": "86ca5bfe9438d9edcf346dd491443d8ae513cad736142a3fd8f810ff9cd0346d"
+        }
+      ]
+    },
+    {
+      "id": "null-shift",
+      "title": "NULL//SHIFT",
+      "category": "world",
+      "original": {
+        "path": "covers/null-shift.png",
+        "width": 1536,
+        "height": 1024,
+        "size_bytes": 2862347,
+        "sha256": "dcca1a21c59e0b6961a258bf5572bd90ff64909a3cc7b64517f7908f74e41c50"
+      },
+      "variants": [
+        {
+          "art_path": "covers/null-shift-640.webp",
+          "repository_path": "public/brand/play/null-shift-640.webp",
+          "public_path": "/brand/play/null-shift-640.webp",
+          "width": 640,
+          "height": 427,
+          "size_bytes": 77168,
+          "sha256": "7cb92aa53dcf300b05d91b6ebb991eea8e359d4c410858effb453103867c29fa"
+        },
+        {
+          "art_path": "covers/null-shift.webp",
+          "repository_path": "public/brand/play/null-shift.webp",
+          "public_path": "/brand/play/null-shift.webp",
+          "width": 1536,
+          "height": 1024,
+          "size_bytes": 360154,
+          "sha256": "6331af4e4b67739aac446cab1a8b5787a81bf7cbdda622d6a8bfa74c8109cdfd"
+        }
+      ]
+    },
+    {
+      "id": "zion-030",
+      "title": "Теневой протокол",
+      "category": "world",
+      "original": {
+        "path": "covers/zion-030.png",
+        "width": 1536,
+        "height": 1024,
+        "size_bytes": 2604478,
+        "sha256": "61904c2c383626586d1189bc501c3e2a02234361b02935b0ec12410d32ca847a"
+      },
+      "variants": [
+        {
+          "art_path": "covers/zion-030-640.webp",
+          "repository_path": "public/brand/play/zion-030-640.webp",
+          "public_path": "/brand/play/zion-030-640.webp",
+          "width": 640,
+          "height": 427,
+          "size_bytes": 44686,
+          "sha256": "12a07c7a8724e2771e18ded82c2dcb5acfc48fa73d6e85cec507789d5ee8e7d0"
+        },
+        {
+          "art_path": "covers/zion-030.webp",
+          "repository_path": "public/brand/play/zion-030.webp",
+          "public_path": "/brand/play/zion-030.webp",
+          "width": 1536,
+          "height": 1024,
+          "size_bytes": 260188,
+          "sha256": "c4e4ebc8f38158402f0e445415c8fef09d968fc52ee179cbe9505f444f811022"
+        }
+      ]
+    },
+    {
+      "id": "empire-orbit",
+      "title": "Империя времени: Орбита",
+      "category": "world",
+      "original": {
+        "path": "covers/empire-orbit.png",
+        "width": 1536,
+        "height": 1024,
+        "size_bytes": 2901999,
+        "sha256": "4d85a2dabfefe2d274f14f079e2c6abb2b3ef77a7ddcb0255f676e4a75226a63"
+      },
+      "variants": [
+        {
+          "art_path": "covers/empire-orbit-640.webp",
+          "repository_path": "public/brand/play/empire-orbit-640.webp",
+          "public_path": "/brand/play/empire-orbit-640.webp",
+          "width": 640,
+          "height": 427,
+          "size_bytes": 72528,
+          "sha256": "30ae15a73f308a9eb021bc385d97d7a76a76336b2e5e96c362a1ed5889b22cca"
+        },
+        {
+          "art_path": "covers/empire-orbit.webp",
+          "repository_path": "public/brand/play/empire-orbit.webp",
+          "public_path": "/brand/play/empire-orbit.webp",
+          "width": 1536,
+          "height": 1024,
+          "size_bytes": 380504,
+          "sha256": "8e2e5fcb37c1ccba667adcccc07361f44679347a3b85ae9b4bff6e0695d31704"
+        }
+      ]
+    },
+    {
+      "id": "swarm",
+      "title": "SWARM",
+      "category": "world",
+      "original": {
+        "path": "covers/swarm.png",
+        "width": 1536,
+        "height": 1024,
+        "size_bytes": 2754803,
+        "sha256": "53aa27ddd0f6f3a9bdabd44125bd1e337c0c9f7cf62b53f014c8d0291806a31d"
+      },
+      "variants": [
+        {
+          "art_path": "covers/swarm-640.webp",
+          "repository_path": "public/brand/play/swarm-640.webp",
+          "public_path": "/brand/play/swarm-640.webp",
+          "width": 640,
+          "height": 427,
+          "size_bytes": 69212,
+          "sha256": "e052bc4a14e2b30650cba4951d23018dd5c65f93aad271b88ee4e5e8e9abd28b"
+        },
+        {
+          "art_path": "covers/swarm.webp",
+          "repository_path": "public/brand/play/swarm.webp",
+          "public_path": "/brand/play/swarm.webp",
+          "width": 1536,
+          "height": 1024,
+          "size_bytes": 336278,
+          "sha256": "bf31ad482f939a451ba557d84ec3e21bb23eb29e4e99a85e62572e2bb2ecbc67"
+        }
+      ]
+    },
+    {
+      "id": "inherit",
+      "title": "INHERIT",
+      "category": "world",
+      "original": {
+        "path": "covers/inherit.png",
+        "width": 1536,
+        "height": 1024,
+        "size_bytes": 3020896,
+        "sha256": "2b8c5ece8d6615fa2ba7bc00acb0d4755028e3393371bdc4d9f7999a4af94268"
+      },
+      "variants": [
+        {
+          "art_path": "covers/inherit-640.webp",
+          "repository_path": "public/brand/play/inherit-640.webp",
+          "public_path": "/brand/play/inherit-640.webp",
+          "width": 640,
+          "height": 427,
+          "size_bytes": 85698,
+          "sha256": "f945fca7087ed739ba4349f7bbce3d00c4d2e9f20a15f38df0a53caa489c4496"
+        },
+        {
+          "art_path": "covers/inherit.webp",
+          "repository_path": "public/brand/play/inherit.webp",
+          "public_path": "/brand/play/inherit.webp",
+          "width": 1536,
+          "height": 1024,
+          "size_bytes": 429546,
+          "sha256": "ff19c17b962db12a334a605668f1f5062c0996b1b3560db9195c1b711188dacd"
+        }
+      ]
+    },
+    {
+      "id": "remix",
+      "title": "REMIX",
+      "category": "world",
+      "original": {
+        "path": "covers/remix.png",
+        "width": 1536,
+        "height": 1024,
+        "size_bytes": 2821927,
+        "sha256": "fbb21feac3ad46f995fa13dce83c9db9a1b2a0175a3de126a25111c361a96db8"
+      },
+      "variants": [
+        {
+          "art_path": "covers/remix-640.webp",
+          "repository_path": "public/brand/play/remix-640.webp",
+          "public_path": "/brand/play/remix-640.webp",
+          "width": 640,
+          "height": 427,
+          "size_bytes": 66826,
+          "sha256": "c45b657d7bca90d1b0e3672a8b01c639d36e52c54ded6bf07b6bfc0e599fc948"
+        },
+        {
+          "art_path": "covers/remix.webp",
+          "repository_path": "public/brand/play/remix.webp",
+          "public_path": "/brand/play/remix.webp",
+          "width": 1536,
+          "height": 1024,
+          "size_bytes": 348292,
+          "sha256": "3fde88d213b3093f1927fe4abfd4c44c1557896c6b551757c961827bd7a6e79f"
+        }
+      ]
+    },
+    {
+      "id": "afterimage-run",
+      "title": "AFTERIMAGE//RUN",
+      "category": "world",
+      "original": {
+        "path": "covers/afterimage-run.png",
+        "width": 1536,
+        "height": 1024,
+        "size_bytes": 2760060,
+        "sha256": "de89b39ab8ffc221e4e830e4127f40e1d83e5c0b727a481ce0b60cb06af483d9"
+      },
+      "variants": [
+        {
+          "art_path": "covers/afterimage-run-640.webp",
+          "repository_path": "public/brand/play/afterimage-run-640.webp",
+          "public_path": "/brand/play/afterimage-run-640.webp",
+          "width": 640,
+          "height": 427,
+          "size_bytes": 73814,
+          "sha256": "fe172000c18e921360ba7cb7e664f583bb729da68cb43a876a6761d053c239cc"
+        },
+        {
+          "art_path": "covers/afterimage-run.webp",
+          "repository_path": "public/brand/play/afterimage-run.webp",
+          "public_path": "/brand/play/afterimage-run.webp",
+          "width": 1536,
+          "height": 1024,
+          "size_bytes": 362608,
+          "sha256": "ff7576ddd768ce4daaf745ac5e7e8905bf57416992ec2a952b104501e4db9bd9"
+        }
+      ]
+    },
+    {
+      "id": "zion-020",
+      "title": "Базальтовая колыбель",
+      "category": "world",
+      "original": {
+        "path": "zion/zion-020.png",
+        "width": 1536,
+        "height": 1024,
+        "size_bytes": 2762271,
+        "sha256": "6b8f05bc91e257541090c944de1117fcfa992a3b1799ac11cb756f9b84b4dc67"
+      },
+      "variants": [
+        {
+          "art_path": "zion/zion-020-640.webp",
+          "repository_path": "public/brand/play/zion-020-640.webp",
+          "public_path": "/brand/play/zion-020-640.webp",
+          "width": 640,
+          "height": 427,
+          "size_bytes": 63846,
+          "sha256": "888165326f1cef94cbf06696777063ef666ca5eb89b897433301385aea94efd6"
+        },
+        {
+          "art_path": "zion/zion-020.webp",
+          "repository_path": "public/brand/play/zion-020.webp",
+          "public_path": "/brand/play/zion-020.webp",
+          "width": 1536,
+          "height": 1024,
+          "size_bytes": 283948,
+          "sha256": "463db1e45bebea78eadab251c34b838ce2a5d7a84280c1cc5dd33396e5ad8ce2"
+        }
+      ]
+    },
+    {
+      "id": "zion-021",
+      "title": "Тихий архив",
+      "category": "world",
+      "original": {
+        "path": "zion/zion-021.png",
+        "width": 1536,
+        "height": 1024,
+        "size_bytes": 2986447,
+        "sha256": "dba7b93271c4fa91d78b70a1a22e13d3fec88a35739aee01c2e90fc8b5ed5913"
+      },
+      "variants": [
+        {
+          "art_path": "zion/zion-021-640.webp",
+          "repository_path": "public/brand/play/zion-021-640.webp",
+          "public_path": "/brand/play/zion-021-640.webp",
+          "width": 640,
+          "height": 427,
+          "size_bytes": 75932,
+          "sha256": "8f4ef1768b5cfc6942b922b22b51ac2d9553b4c448f459be29a6cbb59bc6c231"
+        },
+        {
+          "art_path": "zion/zion-021.webp",
+          "repository_path": "public/brand/play/zion-021.webp",
+          "public_path": "/brand/play/zion-021.webp",
+          "width": 1536,
+          "height": 1024,
+          "size_bytes": 355766,
+          "sha256": "d9cb4a5f1bd1cb569c10633efdbaf2cd94ca235c374b1599c4962b93214635e0"
+        }
+      ]
+    },
+    {
+      "id": "zion-022",
+      "title": "Стеклянный сад",
+      "category": "world",
+      "original": {
+        "path": "zion/zion-022.png",
+        "width": 1536,
+        "height": 1024,
+        "size_bytes": 3630137,
+        "sha256": "75d35c7ccc9e056a42b85beb87b819a6342a33e22921ce14adc75dee7cffe6d8"
+      },
+      "variants": [
+        {
+          "art_path": "zion/zion-022-640.webp",
+          "repository_path": "public/brand/play/zion-022-640.webp",
+          "public_path": "/brand/play/zion-022-640.webp",
+          "width": 640,
+          "height": 427,
+          "size_bytes": 107196,
+          "sha256": "882685b69f2127bdffa74aadc89c61061fbb417b331bd76dbaa99868933b9bc8"
+        },
+        {
+          "art_path": "zion/zion-022.webp",
+          "repository_path": "public/brand/play/zion-022.webp",
+          "public_path": "/brand/play/zion-022.webp",
+          "width": 1536,
+          "height": 1024,
+          "size_bytes": 493748,
+          "sha256": "6045a5e98bf8acb34f463cb1c5cea82b256cd5add1b82c873000e1f4c9e816d5"
+        }
+      ]
+    },
+    {
+      "id": "zion-023",
+      "title": "Последний приливный механизм",
+      "category": "world",
+      "original": {
+        "path": "zion/zion-023.png",
+        "width": 1536,
+        "height": 1024,
+        "size_bytes": 3125654,
+        "sha256": "bc0658b6e6bd4a37a74c1ac2ec65d8d420d26ea536456e37f4eef265ae2bee61"
+      },
+      "variants": [
+        {
+          "art_path": "zion/zion-023-640.webp",
+          "repository_path": "public/brand/play/zion-023-640.webp",
+          "public_path": "/brand/play/zion-023-640.webp",
+          "width": 640,
+          "height": 427,
+          "size_bytes": 75182,
+          "sha256": "64cf0194544bf87abc708871209195833d22b78875fbf1db946b9337050782ed"
+        },
+        {
+          "art_path": "zion/zion-023.webp",
+          "repository_path": "public/brand/play/zion-023.webp",
+          "public_path": "/brand/play/zion-023.webp",
+          "width": 1536,
+          "height": 1024,
+          "size_bytes": 358126,
+          "sha256": "4247d63894a020a640382315de785a8b82703eea6658ab64bd4ddf02d1a29d6a"
+        }
+      ]
+    },
+    {
+      "id": "zion-024",
+      "title": "Бархатная частота",
+      "category": "world",
+      "original": {
+        "path": "zion/zion-024.png",
+        "width": 1536,
+        "height": 1024,
+        "size_bytes": 3021010,
+        "sha256": "81491c7b86df228211ab63fbc943de3e7ed336189e2ac33f7d08bc39fea2f351"
+      },
+      "variants": [
+        {
+          "art_path": "zion/zion-024-640.webp",
+          "repository_path": "public/brand/play/zion-024-640.webp",
+          "public_path": "/brand/play/zion-024-640.webp",
+          "width": 640,
+          "height": 427,
+          "size_bytes": 64836,
+          "sha256": "fe82a757e3b7df3cbb29e2d83978d56b20cca566ebbe93c60bf153e02a814752"
+        },
+        {
+          "art_path": "zion/zion-024.webp",
+          "repository_path": "public/brand/play/zion-024.webp",
+          "public_path": "/brand/play/zion-024.webp",
+          "width": 1536,
+          "height": 1024,
+          "size_bytes": 323702,
+          "sha256": "d432dd9720323753c12944d8992b4cd889f1248791ea7c557ec1165b1122aacd"
+        }
+      ]
+    },
+    {
+      "id": "zion-025",
+      "title": "Бледное уравнение",
+      "category": "world",
+      "original": {
+        "path": "zion/zion-025.png",
+        "width": 1536,
+        "height": 1024,
+        "size_bytes": 2640916,
+        "sha256": "847d9117bd706b6d9de2ff67e89089a7a31167ad7c537065ccf56553c5860a3c"
+      },
+      "variants": [
+        {
+          "art_path": "zion/zion-025-640.webp",
+          "repository_path": "public/brand/play/zion-025-640.webp",
+          "public_path": "/brand/play/zion-025-640.webp",
+          "width": 640,
+          "height": 427,
+          "size_bytes": 56998,
+          "sha256": "5413e10b159d58d8e444d45a96c37bb4f62e866d06db56b2ca72281051606394"
+        },
+        {
+          "art_path": "zion/zion-025.webp",
+          "repository_path": "public/brand/play/zion-025.webp",
+          "public_path": "/brand/play/zion-025.webp",
+          "width": 1536,
+          "height": 1024,
+          "size_bytes": 256032,
+          "sha256": "2d154ad3870b2537a512d56b8ffbbfac1e571b2ffd2b510f47dd1271e79f1592"
+        }
+      ]
+    },
+    {
+      "id": "zion-026",
+      "title": "Север сна",
+      "category": "world",
+      "original": {
+        "path": "zion/zion-026.png",
+        "width": 1536,
+        "height": 1024,
+        "size_bytes": 3108487,
+        "sha256": "67f2c324896562225a198f839d910a5df9e0a51bed3198f63bffc663c8e88475"
+      },
+      "variants": [
+        {
+          "art_path": "zion/zion-026-640.webp",
+          "repository_path": "public/brand/play/zion-026-640.webp",
+          "public_path": "/brand/play/zion-026-640.webp",
+          "width": 640,
+          "height": 427,
+          "size_bytes": 65390,
+          "sha256": "e5722256eb72b7840268c489412b44482285f47eddc86d72a90b03245ca1526a"
+        },
+        {
+          "art_path": "zion/zion-026.webp",
+          "repository_path": "public/brand/play/zion-026.webp",
+          "public_path": "/brand/play/zion-026.webp",
+          "width": 1536,
+          "height": 1024,
+          "size_bytes": 335764,
+          "sha256": "a941a760155bc89711efc143ddd5997610b05e516a4bde3420513b1b8f954635"
+        }
+      ]
+    },
+    {
+      "id": "zion-027",
+      "title": "Бронзовый час",
+      "category": "world",
+      "original": {
+        "path": "zion/zion-027.png",
+        "width": 1536,
+        "height": 1024,
+        "size_bytes": 2836705,
+        "sha256": "a79fd4c60a57df5165fdef530829e30dfd70d28e195ca69b47f3bb204b4cfb07"
+      },
+      "variants": [
+        {
+          "art_path": "zion/zion-027-640.webp",
+          "repository_path": "public/brand/play/zion-027-640.webp",
+          "public_path": "/brand/play/zion-027-640.webp",
+          "width": 640,
+          "height": 427,
+          "size_bytes": 70368,
+          "sha256": "5250842a0f3de1ce27785c7390877e965733ed5f6be15f63aae76d36e56cef9d"
+        },
+        {
+          "art_path": "zion/zion-027.webp",
+          "repository_path": "public/brand/play/zion-027.webp",
+          "public_path": "/brand/play/zion-027.webp",
+          "width": 1536,
+          "height": 1024,
+          "size_bytes": 328168,
+          "sha256": "281bd3b836586c4b9f23bc97c068ef8b1871337b42eb1cfdcb902ce25b3b4732"
+        }
+      ]
+    },
+    {
+      "id": "zion-028",
+      "title": "Зеркальная погода",
+      "category": "world",
+      "original": {
+        "path": "zion/zion-028.png",
+        "width": 1536,
+        "height": 1024,
+        "size_bytes": 3190774,
+        "sha256": "29434938db978d6a7857cd5eff6e2529246dbb4a819eaf3e95ca9cb2c8e9cf36"
+      },
+      "variants": [
+        {
+          "art_path": "zion/zion-028-640.webp",
+          "repository_path": "public/brand/play/zion-028-640.webp",
+          "public_path": "/brand/play/zion-028-640.webp",
+          "width": 640,
+          "height": 427,
+          "size_bytes": 83120,
+          "sha256": "dcd8e82ee2475358b7d1c80036448ca29e017803e0b46a113667923aafe79fa6"
+        },
+        {
+          "art_path": "zion/zion-028.webp",
+          "repository_path": "public/brand/play/zion-028.webp",
+          "public_path": "/brand/play/zion-028.webp",
+          "width": 1536,
+          "height": 1024,
+          "size_bytes": 387866,
+          "sha256": "c641314318a55bd515e47336d9aee1004ebeb8dc7644b6e708ab6029c53c6bab"
+        }
+      ]
+    },
+    {
+      "id": "zion-029",
+      "title": "Синий интервал",
+      "category": "world",
+      "original": {
+        "path": "zion/zion-029.png",
+        "width": 1536,
+        "height": 1024,
+        "size_bytes": 2748104,
+        "sha256": "1d0ba04cde73069a17ad13e53dcc44145eb3631a5694dfc6a1f20920822f4b6e"
+      },
+      "variants": [
+        {
+          "art_path": "zion/zion-029-640.webp",
+          "repository_path": "public/brand/play/zion-029-640.webp",
+          "public_path": "/brand/play/zion-029-640.webp",
+          "width": 640,
+          "height": 427,
+          "size_bytes": 62290,
+          "sha256": "dd700c7a385936708d07923f6a044b72abc52bef2af4a39e745891ce772155a8"
+        },
+        {
+          "art_path": "zion/zion-029.webp",
+          "repository_path": "public/brand/play/zion-029.webp",
+          "public_path": "/brand/play/zion-029.webp",
+          "width": 1536,
+          "height": 1024,
+          "size_bytes": 283886,
+          "sha256": "8f902fe9a14fd0c0c0a03d70cee90ca333ff989780f7398fdc65ac7941677184"
+        }
+      ]
+    }
+  ]
+}

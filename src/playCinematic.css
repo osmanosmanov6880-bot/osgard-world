@@ -1,0 +1,405 @@
+/* OSGARD PLAY — cinematic presentation. Every rule stays inside the Play surface. */
+.play-universe {
+  --cp-bg:#020814;--cp-surface:#061527;--cp-cyan:#56f4f5;--cp-blue:#168dff;--cp-violet:#b65aff;
+  --cp-white:#f7fbff;--cp-muted:#a7b9cc;--cp-line:#56f4f54d;--cp-gutter:clamp(18px,4.3vw,82px);
+  --scene-x:0px;--scene-y:0px;
+  background:var(--cp-bg);color:var(--cp-white);isolation:isolate;overflow:clip;
+}
+.brand-system .play-universe {font-family:Inter,Arial,sans-serif;line-height:1.6}
+.play-universe .cp-container {width:calc(100% - var(--cp-gutter)*2);max-width:1760px;margin-inline:auto}
+.brand-system .play-universe :is(h1,h2,h3) {font-family:Inter,Arial,sans-serif;font-weight:800;letter-spacing:-.04em;color:var(--cp-white)}
+.brand-system .play-universe h2 {font-size:clamp(24px,2.5vw,39px);line-height:1.15}
+.brand-system .play-universe h2>span {color:var(--cp-cyan)}
+.play-universe a {text-decoration:none}
+.play-universe :is(button,a,input,select):focus-visible {outline:2px solid var(--cp-cyan);outline-offset:5px}
+.brand-system .play-universe .cp-eyebrow {display:flex;align-items:center;gap:13px;font:500 10px/1.9 'JetBrains Mono',monospace;letter-spacing:.28em;color:var(--cp-cyan);margin:0 0 12px}
+.play-universe .cp-eyebrow::before {content:'';display:block;flex:none;width:34px;height:2px;background:var(--cp-cyan);box-shadow:0 0 12px #56f4f54d}
+.play-universe .cp-section {padding-top:40px;padding-bottom:22px;scroll-margin-top:30px}
+.play-universe .cp-section-top {display:flex;align-items:flex-end;justify-content:space-between;gap:28px;margin-bottom:24px}
+.play-universe .cp-section-top>div:first-child {min-width:0}
+.play-universe .cp-button {position:relative;display:inline-flex;align-items:center;justify-content:center;gap:24px;min-height:52px;padding:13px 24px;border:1px solid #75e7f5a3;border-radius:3px;background:#061527ba;color:var(--cp-cyan);font:650 13px/1.4 Inter,Arial,sans-serif;backdrop-filter:blur(12px);text-decoration:none;transform:translate(var(--magnet-x,0px),var(--magnet-y,0px));transition:border-color .2s,box-shadow .2s,background .2s,transform .2s}
+.play-universe .cp-button:hover {background:#123449c9;border-color:#c0ffff;box-shadow:0 0 24px #56f4f525;color:var(--cp-white)}
+.play-universe .cp-button-primary {background:var(--cp-cyan);color:#02151c;border-color:#8dfdff;box-shadow:0 0 32px #56f4f538}
+.play-universe .cp-button-primary:hover {color:#02151c;background:#95ffff;box-shadow:0 0 40px #56f4f568}
+.play-universe .cp-button svg {flex:none}
+
+/* Reserve the approximate catalogue height until its near-viewport import
+   resolves, keeping the footer and restored scroll position in the document. */
+.play-universe .cp-explore-placeholder {min-height:clamp(4650px,310vw,5850px);padding:40px var(--cp-gutter);box-sizing:border-box}
+.play-universe .cp-explore-loading {display:flex;align-items:center;justify-content:center;gap:14px;color:var(--cp-cyan);font-size:13px;min-height:100px;margin:0}
+.play-universe .cp-explore-loading svg {width:24px;height:24px;flex:none}
+.play-universe .cp-explore-entry {margin-top:24px}
+@media(max-width:1000px){.play-universe .cp-explore-placeholder {min-height:6200px}}
+@media(max-width:600px){.play-universe .cp-explore-placeholder {min-height:10500px}}
+
+/* The existing global navigation is kept; only the catalogue places it over its artwork. */
+.theme-play:has(.play-universe) {background:#020814;--ink:#f7fbff;--muted:#a7b9cc;--accent:#56f4f5;--line:#214456}
+.theme-play:has(.play-universe)>.brand-header {position:absolute;left:0;right:0;top:0;min-height:82px;padding:17px clamp(18px,4.3vw,82px);background:linear-gradient(180deg,#020814de,#02081470,transparent);border:0;z-index:5}
+.theme-play:has(.play-universe) .brand-global-nav {gap:34px}
+.theme-play:has(.play-universe) .brand-global-nav a {color:#e6f3ff;font-size:12px}
+.theme-play:has(.play-universe) .brand-global-nav a[aria-current=page] {color:#56f4f5}
+.theme-play:has(.play-universe) .brand-lockup b {font-size:21px;letter-spacing:.14em}
+.theme-play:has(.play-universe) .brand-lockup small {color:#c2dfef;font-size:8px}
+.theme-play:has(.play-universe) .brand-lockup>svg {width:45px;height:45px}
+.theme-play:has(.play-universe) .brand-motion {color:#b0f8ff;border-color:#6599b180;background:#06152773;backdrop-filter:blur(10px);padding:9px 13px;font-size:9px}
+.theme-play:has(.play-universe)>.brand-local-bar {position:absolute;top:88px;right:clamp(18px,4.3vw,82px);z-index:4;min-height:32px;padding:0;border:0;background:transparent}
+.theme-play:has(.play-universe)>.brand-local-bar>span {display:none}
+.theme-play:has(.play-universe)>.brand-local-bar nav {gap:22px}
+.theme-play:has(.play-universe)>.brand-local-bar a {font-size:10px;color:#ceecf6;min-height:32px;border-bottom:1px solid transparent}
+.theme-play:has(.play-universe)>.brand-local-bar a:hover {border-color:#56f4f5}
+.theme-play:has(.play-universe)>.brand-breadcrumbs {display:none}
+.theme-play:has(.play-universe)>.brand-footer {background:#020814;border-color:#13374a}
+
+/* One panoramic scene, actual HTML, and an independently composed mobile picture. */
+.play-universe .cp-hero {position:relative;isolation:isolate;height:clamp(660px,48.4vw,930px);min-height:660px;background:#020814}
+.play-universe .cp-hero-art {position:absolute;inset:-7px;z-index:-3;display:block;transform:translate(var(--scene-x),var(--scene-y));transition:transform .9s cubic-bezier(.16,1,.3,1);pointer-events:none}
+.play-universe .cp-hero-art img {width:100%;height:100%;object-fit:cover;object-position:54% 51%;display:block}
+.play-universe .cp-hero-shade {position:absolute;z-index:-2;inset:0;background:linear-gradient(90deg,#020814b8 0%,#02081466 23%,#02081406 48%,transparent 70%),linear-gradient(0deg,#02081436,transparent 20%,transparent 84%,#02081450);pointer-events:none}
+.play-universe .cp-hero-layout {height:100%;display:flex;align-items:center;justify-content:space-between;gap:28px;padding-top:116px;padding-bottom:54px}
+.play-universe .cp-hero-copy {width:min(46%,620px);padding-top:8px;z-index:1;text-shadow:0 2px 14px #020814b3}
+.brand-system .play-universe .cp-hero-eyebrow {margin-bottom:24px;line-height:1.8;font-size:10px;letter-spacing:.34em}
+.brand-system .play-universe .cp-hero h1 {font-size:clamp(68px,6.65vw,120px);font-weight:900;line-height:.9;letter-spacing:-.065em;margin:0 0 20px}
+.play-universe .cp-hero h1>span {display:block;color:var(--cp-cyan);font-size:1.06em;letter-spacing:-.055em}
+.brand-system .play-universe .cp-hero-slogan {font-size:clamp(13px,1.45vw,23px);font-weight:800;letter-spacing:.17em;line-height:1.5;margin:0 0 18px;color:var(--cp-cyan);white-space:nowrap}
+.play-universe .cp-hero-slogan>span {color:#d296ff}
+.brand-system .play-universe .cp-hero-description {font-size:clamp(14px,1.1vw,18px);line-height:1.6;color:#d2dfeb;max-width:490px;margin:0 0 24px}
+.play-universe .cp-hero-actions {display:flex;gap:12px;align-items:stretch}
+.play-universe .cp-hero-actions .cp-button {min-height:56px;gap:20px;white-space:nowrap;padding:14px 21px}
+.play-universe .cp-hero-actions .cp-trailer {color:#dbe8f5;opacity:.68;gap:10px;border-color:#82a9bf}
+.play-universe .cp-trailer-note {display:block;margin-top:9px;font-size:10px;line-height:1.6;color:#afc4d5;text-shadow:0 1px 5px #020814}
+.play-universe .cp-glass-panel {width:clamp(242px,21vw,310px);flex:none;margin-top:44px;padding:23px 23px 8px;background:linear-gradient(140deg,#072137db,#030c18e0);border:1px solid #58d9f99c;border-radius:2px;backdrop-filter:blur(17px);box-shadow:0 12px 60px #0006,inset 0 0 24px #36d7fa05;position:relative}
+.play-universe .cp-glass-panel::before,.play-universe .cp-glass-panel::after {content:'';position:absolute;width:26px;height:10px;border-top:2px solid #a9fcff;top:-1px;left:-1px;border-left:2px solid #a9fcff;box-shadow:-2px -2px 12px #56f4f544}
+.play-universe .cp-glass-panel::after {top:auto;left:auto;right:-1px;bottom:-1px;transform:rotate(180deg)}
+.brand-system .play-universe .cp-glass-panel>p {font:500 9px/1.95 'JetBrains Mono',monospace;letter-spacing:.24em;margin:0 0 15px;color:#c6d9e8}
+.play-universe .cp-glass-panel>a {display:flex;align-items:center;gap:14px;border-top:1px solid #39708d80;min-height:94px}
+.play-universe .cp-glass-panel>a>svg:first-child {width:32px;height:32px;color:var(--cp-cyan);flex:none;stroke-width:1.7;filter:drop-shadow(0 0 5px #56f4f536)}
+.play-universe .cp-glass-panel a>span {flex:1;min-width:0}
+.play-universe .cp-glass-panel strong {font-size:16px;line-height:1.3;display:block;font-weight:750;letter-spacing:-.02em}
+.play-universe .cp-glass-panel small {display:block;color:#b6cde0;font:9px/1.7 Inter,sans-serif;letter-spacing:.08em;margin-top:5px}
+.play-universe .cp-panel-arrow {width:28px;height:28px;border:1px solid #56f4f575;border-radius:50%;padding:6px;color:var(--cp-cyan);flex:none;transition:transform .25s}
+.play-universe .cp-glass-panel a:hover .cp-panel-arrow {transform:translateX(3px)}
+.play-universe .cp-hero-foot {position:absolute;bottom:20px;left:0;right:0;display:flex;align-items:center;justify-content:space-between;font:8px/1.6 'JetBrains Mono',monospace;letter-spacing:.17em;color:#c0dae9;text-shadow:0 1px 8px #020814}
+.play-universe .cp-hero-foot>a {display:flex;gap:10px;align-items:center;color:#a2fcff}
+.play-universe .cp-art-loading {position:absolute;bottom:18px;left:50%;display:flex;align-items:center;gap:10px;font:9px 'JetBrains Mono',monospace;color:#83fbff;pointer-events:none}
+.play-universe .cp-art-loading svg {width:18px;height:18px}
+.play-universe .cp-image-error {position:absolute;bottom:30px;right:var(--cp-gutter);font-size:12px;color:#a7b9cc}
+.play-universe .cp-atmosphere {position:absolute;z-index:-1;inset:0;overflow:hidden;pointer-events:none}
+.play-universe .cp-atmosphere>i {position:absolute;width:2px;height:2px;border-radius:50%;background:#b0ffff;box-shadow:0 0 8px 2px #56f4f533;opacity:.4}
+.play-universe .cp-vessel {position:absolute;left:35%;top:24%;width:49px;height:8px;opacity:0;background:linear-gradient(90deg,transparent,#5780fe55 40%,#e0faff);clip-path:polygon(0 47%,60% 30%,72% 0,90% 32%,100% 50%,82% 68%,68% 100%,58% 62%);filter:drop-shadow(-10px 0 3px #7d66ff)}
+.play-universe .cp-vessel-two {top:17%;width:32px;left:20%}
+.play-universe[data-animated=true] .cp-atmosphere>i {animation:cp-particle calc(12s + var(--i)*2s) ease-in-out infinite;animation-delay:calc(var(--i)*-1.2s)}
+.play-universe[data-animated=true] .cp-vessel-one {animation:cp-vessel 31s linear infinite 7s}
+.play-universe[data-animated=true] .cp-vessel-two {animation:cp-vessel 39s linear infinite 19s}
+.play-universe[data-hero-visible=false] .cp-atmosphere>* {animation-play-state:paused}
+/* The section enters once. Global page reveals animate its children separately;
+   removing the global reveal must never restart their original CSS animation. */
+.play-universe[data-animated=true] .cp-hero-copy {animation:cp-enter .9s both}
+.play-universe[data-animated=true] [data-reveal]:not(.is-visible) {opacity:0;transform:translateY(16px)}
+.play-universe [data-reveal] {transition:opacity .65s ease,transform .65s cubic-bezier(.2,.7,.2,1)}
+@keyframes cp-enter {from{opacity:0;transform:translateY(14px);filter:blur(3px)}to{opacity:1;transform:translateY(0);filter:blur(0)}}
+@keyframes cp-particle {0%,100%{transform:translate(0,0);opacity:.12}50%{transform:translate(5px,-18px);opacity:.6}}
+@keyframes cp-vessel {0%,5%{opacity:0;transform:translate(0,0)}8%{opacity:.6}34%{opacity:.6}38%,100%{opacity:0;transform:translate(420px,65px)}}
+
+/* A shallow glass rail connects the scene to the first three worlds. */
+.play-universe .cp-signal-strip {position:relative;background:linear-gradient(180deg,#051827d9,#020b14e8);border-top:1px solid #36d0f467;border-bottom:1px solid #36d0f44d;box-shadow:0 -9px 35px #28daee09}
+.play-universe .cp-signal-strip>.cp-container {display:grid;grid-template-columns:repeat(5,minmax(0,1fr));min-height:76px;align-items:center}
+.play-universe .cp-signal-strip a {display:flex;align-items:center;justify-content:center;gap:19px;border-left:1px solid #577d985e;min-height:34px}
+.play-universe .cp-signal-strip a:last-child {border-right:1px solid #577d985e}
+.play-universe .cp-signal-strip svg {width:30px;height:30px;stroke-width:1.6;color:var(--cp-cyan);flex:none}
+.play-universe .cp-signal-strip span {font:8px/1.85 'JetBrains Mono',monospace;letter-spacing:.16em;color:#b9d1e4}
+.play-universe .cp-signal-strip b {font-weight:400;color:#e6f4ff}
+.play-universe .cp-featured-navigation {display:flex;align-items:center;gap:9px;flex:none}
+.brand-system .play-universe .cp-featured-navigation p {font-size:10px;line-height:1.8;margin:0 15px 0 0;color:#acbfce}
+.play-universe .cp-featured-navigation button {display:grid;place-items:center;width:36px;height:36px;border:1px solid #73cbdfaa;background:#03111c;border-radius:50%;color:#92edf6}
+.play-universe .cp-featured-navigation button:first-of-type {border-color:#365161}
+.play-universe .cp-featured-navigation button:hover {background:#104052}
+.play-universe .cp-featured-navigation svg {width:18px;height:18px}
+.play-universe .cp-feature-grid,.play-universe .play-grid {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}
+.play-universe .play-grid {margin-top:22px}
+.play-universe :is(.cp-world,.play-card) {position:relative;display:block;width:100%;min-width:0;min-height:408px;aspect-ratio:1.03;border:1px solid #56f4f589;border-radius:3px;background:#041322;overflow:hidden;box-shadow:0 0 19px #21b0d108;transition:transform .35s,border-color .35s,box-shadow .35s;isolation:isolate}
+.play-universe :is(.cp-world,.play-card):hover {transform:translateY(-4px);border-color:#acffff;box-shadow:0 0 26px #38dfe42a}
+.play-universe :is(.cp-world,.play-card):focus-within {border-color:#bfffff}
+.play-universe .play-card-art {position:absolute;inset:0;display:block;aspect-ratio:auto;width:100%;height:100%;overflow:hidden;z-index:-2;background:#061527}
+.play-universe .play-card-art::after {content:'';position:absolute;inset:0;background:linear-gradient(180deg,#03101c66 0%,transparent 26%,#020b1633 43%,#020b16ed 72%,#020b16 100%);pointer-events:none}
+.play-universe .play-card-art img {width:100%;height:100%;object-fit:cover;object-position:center 28%;display:block;filter:none;transition:transform .85s cubic-bezier(.2,.7,.2,1)}
+.play-universe :is(.cp-world,.play-card):hover .play-card-art img {transform:scale(1.055)}
+.play-universe .cp-card-top {display:flex;align-items:center;justify-content:space-between;position:absolute;top:12px;left:18px;right:13px;gap:12px;pointer-events:none}
+.play-universe .cp-card-top>span {font:500 9px/1.6 'JetBrains Mono',monospace;color:#b4ffff;letter-spacing:.16em;text-transform:uppercase;text-shadow:0 1px 6px #000}
+.play-universe .cp-card-top i {font-style:normal;margin-inline:7px;color:#d6e9f6}
+.play-universe .cp-favorite {display:grid;place-items:center;width:34px;height:34px;min-width:34px;border:1px solid #72d5e55c;border-radius:3px;background:#031426af;backdrop-filter:blur(7px);color:#a2f9ff;pointer-events:auto;transition:background .2s}
+.play-universe .cp-favorite[aria-pressed=true] {background:#123c49;color:#7fffff;border-color:#56f4f5}
+.play-universe .cp-favorite:hover {background:#184559;border-color:#98ffff}
+.play-universe .play-card-body {position:absolute;left:0;right:0;bottom:0;padding:22px 20px 16px;display:flex;flex-direction:column;pointer-events:none}
+.play-universe .play-card-body a {pointer-events:auto}
+.play-universe .cp-card-format {font:8px/1.5 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#a9d1e3;margin-bottom:6px}
+.brand-system .play-universe :is(.cp-world,.play-card) h3 {font-size:clamp(22px,1.9vw,31px);line-height:1.12;font-weight:800;letter-spacing:-.045em;margin:0 0 10px;overflow-wrap:normal}
+.brand-system .play-universe .play-card-body>p {font-size:13px;line-height:1.55;min-height:0;margin:0 0 18px;color:#b9cbd9}
+.play-universe .play-card-actions {display:flex;align-items:center;justify-content:space-between;gap:9px;margin:0;padding-top:11px;border-top:1px solid #304d5e66}
+.play-universe .cp-status {font:8px/1.6 'JetBrains Mono',monospace;letter-spacing:.06em;text-transform:uppercase;color:#a2ecbf;max-width:50%;display:flex;align-items:center;gap:7px}
+.play-universe .cp-status>i {width:6px;height:6px;border-radius:50%;background:#6dff9b;box-shadow:0 0 8px #6dff9b44;flex:none}
+.play-universe .cp-status-service {color:#d9b2f2}
+.play-universe .cp-status-service>i {background:#c777ff;box-shadow:0 0 8px #c777ff33}
+.play-universe .cp-card-link {display:inline-flex;align-items:center;justify-content:space-between;gap:13px;min-height:38px;flex:none;border:1px solid #62ddeb9c;padding:8px 12px;border-radius:2px;font-size:11px;font-weight:650;color:#7df9fb;background:#05203050;transition:background .2s}
+.play-universe .cp-card-link:hover {background:#56f4f522;color:#caffff}
+.play-universe .cp-card-corner {position:absolute;width:14px;height:14px;pointer-events:none;border:solid #a8ffff;filter:drop-shadow(0 0 4px #56f4f56b)}
+.play-universe .cp-card-corner-a {inset:0 auto auto 0;border-width:2px 0 0 2px}
+.play-universe .cp-card-corner-b {inset:auto 0 0 auto;border-width:0 2px 2px 0}
+.brand-system .play-universe .cp-art-disclosure {font-size:10px;color:#9aafc0;margin:13px 0 0;line-height:1.7}
+.play-universe .cp-experience {padding-top:24px;padding-bottom:35px}
+.brand-system .play-universe .cp-experience h2 {font-size:clamp(22px,2.05vw,34px)}
+.play-universe .cp-experience-grid {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin-top:20px}
+.play-universe .cp-experience-grid>a {display:flex;align-items:center;gap:19px;min-width:0;min-height:106px;padding:19px 17px;border:1px solid #286a875e;border-radius:4px;background:linear-gradient(125deg,#0c2b3d77,#041320a6);position:relative;transition:border-color .25s,background .25s}
+.play-universe .cp-experience-grid>a:hover {border-color:#56f4f5;background:#0c2b3d}
+.play-universe .cp-experience-grid>a>svg:first-child {width:35px;height:35px;flex:none;color:#56f4f5;stroke-width:1.6}
+.play-universe .cp-experience-grid>a>svg:last-child {position:absolute;right:9px;top:9px;width:11px;height:11px;color:#6cadc5}
+.play-universe .cp-experience-grid strong {display:block;font-size:13px;font-weight:650;color:#e8f5ff;margin-bottom:6px}
+.play-universe .cp-experience-grid small {display:block;font-size:11px;line-height:1.65;color:#b0c4d6}
+
+/* Editorial alternation: a large artwork next to a playable world's story. */
+.play-universe .cp-discover {display:grid;grid-template-columns:1.12fr 1fr;min-height:465px;border:1px solid #22556d5c;background:#071724;margin-top:26px;margin-bottom:36px;scroll-margin-top:30px}
+.play-universe .cp-discover-art {position:relative;min-height:440px;overflow:hidden}
+.play-universe .cp-discover-art::after {content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent 60%,#07172499),linear-gradient(0deg,#07172499,transparent 40%);pointer-events:none}
+.play-universe .cp-discover-art img {position:absolute;width:100%;height:100%;object-fit:cover;object-position:center;animation:cp-enter .6s both}
+.play-universe .cp-discover-art>span {position:absolute;left:20px;bottom:15px;z-index:1;font:8px 'JetBrains Mono',monospace;letter-spacing:.1em;color:#c0d5e2}
+.play-universe .cp-discover-copy {padding:38px clamp(24px,4vw,60px);min-width:0}
+.play-universe .cp-story-selector {display:flex;gap:8px;margin:18px 0 25px}
+.play-universe .cp-story-selector button {border:1px solid #295268;background:transparent;color:#9cbaca;min-width:39px;min-height:35px;font:10px 'JetBrains Mono',monospace;border-radius:2px}
+.play-universe .cp-story-selector button[aria-pressed=true] {color:#061527;background:#56f4f5;border-color:#56f4f5}
+.play-universe .cp-story-kicker {font:8px/1.7 'JetBrains Mono',monospace;letter-spacing:.14em;color:#81ccdf;display:block;margin-bottom:12px}
+.brand-system .play-universe .cp-discover h2 {font-size:clamp(29px,3.1vw,46px);line-height:1.12;max-width:530px}
+.brand-system .play-universe .cp-discover-copy>p:not(.cp-eyebrow) {font-size:14px;line-height:1.8;color:#b9ccd9;margin:20px 0 16px}
+.play-universe .cp-mechanic {display:block;font-size:10px;color:#91dded;margin:0 0 23px}
+.play-universe .cp-discover .cp-button {justify-content:space-between;text-align:left}
+.play-universe .cp-story-state {display:block;font-size:10px;color:#adc2d2;margin-top:15px}
+
+/* Full catalogue keeps its existing URL filters and device-local collection. */
+.play-universe .cp-catalog {padding-top:42px;padding-bottom:50px}
+.play-universe .cp-back-top {display:flex;align-items:center;gap:11px;min-height:38px;font-size:11px;color:#a8cbd8;flex:none}
+.play-universe .cp-catalog-toolbar {display:flex;align-items:center;justify-content:space-between;gap:20px;border-bottom:1px solid #215067;margin-top:30px}
+.play-universe .cp-collection-tabs {display:flex;align-items:stretch;gap:22px}
+.play-universe .cp-collection-tabs>button {display:flex;align-items:center;gap:8px;border:0;border-bottom:2px solid transparent;background:transparent;border-radius:0;min-height:49px;padding:9px 0;color:#a6becd;font-size:12px;white-space:nowrap}
+.play-universe .cp-collection-tabs>button[aria-pressed=true] {border-bottom-color:#56f4f5;color:#9affff}
+.play-universe .cp-collection-tabs>button>span {font:9px 'JetBrains Mono',monospace;padding:3px 6px;background:#112b3c;border-radius:3px;color:#c4e6ed}
+.brand-system .play-universe .cp-catalog-toolbar>p {font-size:10px;line-height:1.6;color:#9aafc0;margin:0}
+.play-universe .cp-filters {display:grid;grid-template-columns:1.75fr 1fr 1fr;align-items:start;gap:17px;margin-top:24px}
+.brand-system .play-universe .cp-filters label {font-size:10px;color:#a4c6d8;font-weight:500}
+.brand-system .play-universe .cp-filters :is(input,select) {background:#071727;border:1px solid #295069;color:#d6eaf7;font-size:12px;min-height:45px;padding:12px 14px;border-radius:3px;margin:8px 0 0;resize:none}
+.play-universe .cp-search-label>span {position:relative;display:block}
+.play-universe .cp-search-label svg {position:absolute;top:13px;left:13px;color:#739cac}
+.brand-system .play-universe .cp-filters input {padding-left:40px}
+.play-universe .cp-filters input::placeholder {color:#7995a7;opacity:1}
+.play-universe .cp-results {display:flex;align-items:center;justify-content:space-between;gap:20px;min-height:49px;margin-top:5px}
+.play-universe .cp-results>span {font:10px 'JetBrains Mono',monospace;color:#9bb5c7}
+.play-universe .cp-results>button {display:flex;align-items:center;gap:7px;font-size:11px;min-height:36px;border:0;background:transparent;color:#8febf3}
+.play-universe .cp-empty {padding:55px 20px;border:1px solid #245269;text-align:center;background:#061523}
+.play-universe .cp-empty>svg {color:#56f4f5;margin-bottom:17px}
+.brand-system .play-universe .cp-empty h3 {font-size:25px;margin-bottom:12px}
+.brand-system .play-universe .cp-empty p {font-size:14px;color:#a7b9cc;margin-bottom:23px}
+.brand-system .play-universe .cp-collection-feedback {font-size:12px;color:#9bced9;min-height:20px;margin:19px 0 0}
+
+/* Only supported guest and partner features are offered. */
+.play-universe .cp-guest {display:flex;align-items:center;gap:25px;padding:28px 32px;margin-top:8px;margin-bottom:54px;border:1px solid #225168;background:linear-gradient(120deg,#082332,#04101b);scroll-margin-top:24px}
+.play-universe .cp-guest>svg {color:#56f4f5;flex:none}
+.play-universe .cp-guest>div {flex:1;min-width:0}
+.brand-system .play-universe .cp-guest .cp-eyebrow {font-size:8px;margin-bottom:8px}
+.brand-system .play-universe .cp-guest h2 {font-size:27px}
+.brand-system .play-universe .cp-guest p:not(.cp-eyebrow) {font-size:12px;line-height:1.8;color:#adc5d5;max-width:840px;margin:10px 0 0}
+.play-universe .cp-guest>.cp-button {flex:none;font-size:11px;gap:14px}
+.play-universe .cp-final {position:relative;isolation:isolate;min-height:clamp(310px,27vw,475px);display:grid;place-items:center;overflow:hidden;border-top:1px solid #23577f66}
+.play-universe .cp-final>picture {position:absolute;inset:0;z-index:-2}
+.play-universe .cp-final img {display:block;width:100%;height:100%;object-fit:cover;object-position:center 54%}
+.play-universe .cp-final::after {content:'';position:absolute;inset:0;z-index:-1;background:linear-gradient(0deg,#02081420,#02081415 60%,#02081488),linear-gradient(90deg,transparent 25%,#02081478 48%,#02081455 64%,transparent);pointer-events:none}
+.play-universe .cp-final-copy {padding:55px 20px;text-align:center;text-shadow:0 2px 22px #020814;margin-left:6vw}
+.brand-system .play-universe .cp-final .cp-eyebrow {justify-content:center;font-size:10px;letter-spacing:.5em;margin-bottom:16px}
+.play-universe .cp-final .cp-eyebrow::before {display:none}
+.brand-system .play-universe .cp-final h2 {font-size:clamp(31px,3.1vw,51px);font-weight:850;letter-spacing:-.035em}
+.play-universe .cp-final h2>span {color:#da9aff}
+.brand-system .play-universe .cp-final-copy>p:not(.cp-eyebrow) {font:9px/1.7 'JetBrains Mono',monospace;letter-spacing:.28em;color:#8cfaff;margin:14px 0 28px}
+.play-universe .cp-final .cp-button {text-shadow:none;min-height:56px}
+
+@media(min-width:1700px){
+  .play-universe .cp-hero-description {max-width:540px}
+  .play-universe .cp-hero-actions .cp-button {font-size:15px;padding:17px 28px;min-height:61px}
+  .play-universe .cp-glass-panel {width:330px;padding:30px 27px 12px}
+  .play-universe .cp-glass-panel>a {min-height:112px}
+  .play-universe .cp-glass-panel strong {font-size:20px}
+  .play-universe .cp-glass-panel small {font-size:11px}
+  .play-universe .cp-card-format {font-size:10px}
+  .brand-system .play-universe .play-card-body>p {font-size:15px;max-width:440px}
+  .play-universe .play-card-body {padding:30px}
+  .play-universe .cp-status {font-size:10px}
+  .play-universe .cp-card-link {font-size:13px;min-height:45px}
+  .play-universe .cp-card-top>span {font-size:11px}
+}
+@media(max-width:1150px){
+  .theme-play:has(.play-universe) .brand-global-nav {gap:23px}
+  .theme-play:has(.play-universe) .brand-motion-value {display:none}
+  .play-universe .cp-hero-copy {width:51%}
+  .play-universe .cp-hero-actions {gap:9px}
+  .play-universe .cp-hero-actions .cp-button {font-size:11px;padding:13px 17px;gap:12px}
+  .play-universe .cp-glass-panel {padding:19px 17px 6px;width:238px}
+  .play-universe .cp-glass-panel>a {gap:10px}
+  .play-universe .cp-glass-panel strong {font-size:15px}
+  .play-universe .cp-featured-navigation p {display:none}
+  .play-universe .cp-signal-strip a {gap:12px}
+  .play-universe .cp-signal-strip svg {width:25px;height:25px}
+  .play-universe .cp-signal-strip span {font-size:7px;letter-spacing:.1em}
+  .play-universe :is(.cp-world,.play-card) {min-height:405px}
+  .play-universe .play-card-body {padding:19px 15px 15px}
+  .brand-system .play-universe .play-card-body>p {font-size:12px}
+  .play-universe .cp-card-link {font-size:10px;gap:6px;padding:8px}
+  .play-universe .cp-status {font-size:7px}
+  .play-universe .cp-experience-grid {grid-template-columns:repeat(2,minmax(0,1fr))}
+  .play-universe .cp-experience-grid>a {min-height:100px}
+  .play-universe .cp-experience-grid strong {font-size:14px}
+  .play-universe .cp-experience-grid small {font-size:12px}
+  .play-universe .cp-discover-copy {padding:32px 28px}
+  .play-universe .cp-guest {flex-wrap:wrap}
+  .play-universe .cp-guest>.cp-button {margin-left:62px}
+}
+@media(max-width:900px){
+  .theme-play:has(.play-universe)>.brand-header {gap:20px}
+  .theme-play:has(.play-universe) .brand-global-nav {gap:16px}
+  .theme-play:has(.play-universe) .brand-lockup b {font-size:17px}
+  .theme-play:has(.play-universe) .brand-lockup small {font-size:7px}
+  .theme-play:has(.play-universe) .brand-lockup>svg {width:37px;height:37px}
+  .theme-play:has(.play-universe) .brand-motion {font-size:0;min-width:36px;padding:8px}
+  .theme-play:has(.play-universe) .brand-motion-state {font-size:14px}
+  .theme-play:has(.play-universe)>.brand-local-bar {top:86px}
+  .play-universe .cp-hero {height:auto;min-height:810px}
+  .play-universe .cp-hero-layout {padding-top:150px;padding-bottom:85px;align-items:flex-start;min-height:810px}
+  .play-universe .cp-hero-copy {width:64%}
+  .brand-system .play-universe .cp-hero h1 {font-size:76px}
+  .brand-system .play-universe .cp-hero-slogan {font-size:14px}
+  .play-universe .cp-glass-panel {position:absolute;right:var(--cp-gutter);bottom:68px;width:222px;padding:16px 16px 4px;margin-top:0}
+  .play-universe .cp-glass-panel>a {min-height:67px}
+  .play-universe .cp-glass-panel>a>svg:first-child {width:23px;height:23px}
+  .play-universe .cp-glass-panel strong {font-size:13px}
+  .play-universe .cp-glass-panel small {font-size:8px}
+  .brand-system .play-universe .cp-glass-panel>p {font-size:7px;margin-bottom:10px}
+  .play-universe .cp-panel-arrow {width:23px;height:23px}
+  .play-universe .cp-hero-art img {object-position:56% center}
+  .play-universe .cp-feature-grid {grid-template-columns:repeat(2,minmax(0,1fr))}
+  .play-universe .cp-feature-grid>.cp-world:last-child {display:none}
+  .play-universe .play-grid {grid-template-columns:repeat(2,minmax(0,1fr))}
+  .play-universe .cp-signal-strip>.cp-container {grid-template-columns:repeat(4,minmax(0,1fr))}
+  .play-universe .cp-signal-strip a:last-child {display:none}
+  .play-universe .cp-signal-strip a:nth-child(4) {border-right:1px solid #577d985e}
+  .play-universe .cp-signal-strip {min-height:75px}
+  .play-universe .cp-section-top {gap:15px}
+  .play-universe .cp-discover {grid-template-columns:1fr}
+  .play-universe .cp-discover-art {min-height:320px}
+  .play-universe .cp-discover-art::after {background:linear-gradient(0deg,#071724,transparent 50%)}
+  .play-universe .cp-discover-copy {padding:22px 30px 32px}
+  .brand-system .play-universe .cp-discover h2 {max-width:590px}
+  .play-universe .cp-discover .cp-story-selector {margin:14px 0 18px}
+  .play-universe .cp-catalog-toolbar {align-items:flex-start;flex-direction:column;gap:8px;padding-bottom:12px}
+  .play-universe .cp-filters {grid-template-columns:1fr 1fr}
+  .play-universe .cp-search-label {grid-column:1/-1}
+}
+@media(max-width:600px){
+  .play-universe {--cp-gutter:19px}
+  .theme-play:has(.play-universe)>.brand-header {display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:15px 19px 0;min-height:90px}
+  .theme-play:has(.play-universe) .brand-lockup b {font-size:17px}
+  .theme-play:has(.play-universe) .brand-lockup small {font-size:7px}
+  .theme-play:has(.play-universe) .brand-global-nav {order:3;width:100%;justify-content:space-between;gap:8px}
+  .theme-play:has(.play-universe) .brand-global-nav a {font-size:10px;min-height:34px}
+  .theme-play:has(.play-universe) .brand-motion {min-width:35px;min-height:35px;margin-left:auto}
+  .theme-play:has(.play-universe)>.brand-local-bar {position:relative;top:auto;right:auto;padding:13px 19px;background:#03101b;border-bottom:1px solid #17394c;min-height:53px;order:0;transform:none;display:none}
+  .play-universe .cp-hero {min-height:960px;height:auto;padding-bottom:28px}
+  .play-universe .cp-hero-art {inset:0}
+  .play-universe .cp-hero-art img {object-position:center top}
+  .play-universe .cp-hero-shade {background:linear-gradient(180deg,#02081471 0%,#0208142b 13%,#0208143b 48%,#02081420 63%,#020814b3 83%,#020814 100%),linear-gradient(90deg,#02081494,transparent 85%)}
+  .play-universe .cp-hero-layout {min-height:0;height:auto;display:block;padding-top:155px;padding-bottom:0}
+  .play-universe .cp-hero-copy {width:100%;max-width:none;padding-top:0}
+  .brand-system .play-universe .cp-hero-eyebrow {font-size:8px;line-height:1.85;letter-spacing:.24em;margin-bottom:25px}
+  .play-universe .cp-hero-eyebrow::before {width:27px}
+  .brand-system .play-universe .cp-hero h1 {font-size:clamp(61px,17vw,89px);line-height:.87;margin-bottom:24px}
+  .brand-system .play-universe .cp-hero-slogan {font-size:12px;letter-spacing:.16em;margin-bottom:17px;white-space:normal}
+  .brand-system .play-universe .cp-hero-description {font-size:13px;line-height:1.65;max-width:330px;color:#d0e0ed;margin-bottom:22px}
+  .play-universe .cp-hero-actions {flex-direction:column;align-items:flex-start;gap:9px}
+  .play-universe .cp-hero-actions .cp-button {width:100%;max-width:340px;justify-content:space-between;font-size:12px;min-height:50px;padding:13px 20px}
+  .play-universe .cp-trailer-note {font-size:9px;max-width:290px;line-height:1.7;margin-top:8px}
+  .play-universe .cp-glass-panel {position:relative;inset:auto;width:100%;max-width:none;padding:17px 18px 6px;margin-top:118px}
+  .brand-system .play-universe .cp-glass-panel>p {font-size:7px;letter-spacing:.2em}
+  .play-universe .cp-glass-panel>a {min-height:58px;gap:15px}
+  .play-universe .cp-glass-panel>a>svg:first-child {width:25px;height:25px}
+  .play-universe .cp-glass-panel strong {font-size:13px}
+  .play-universe .cp-glass-panel small {font-size:8px;letter-spacing:.05em}
+  .play-universe .cp-panel-arrow {width:25px;height:25px}
+  .play-universe .cp-hero-foot {display:none}
+  .play-universe .cp-vessel {display:none}
+  .play-universe .cp-art-loading {bottom:14px;font-size:7px}
+  .play-universe .cp-signal-strip>.cp-container {grid-template-columns:1fr 1fr;gap:19px 0;padding-block:19px;min-height:120px}
+  .play-universe .cp-signal-strip a {justify-content:flex-start;padding-left:16px;gap:15px;min-height:30px}
+  .play-universe .cp-signal-strip a:nth-child(2) {border-right:1px solid #577d985e}
+  .play-universe .cp-signal-strip span {font-size:7px;letter-spacing:.09em}
+  .play-universe .cp-signal-strip svg {width:25px;height:25px}
+  .play-universe .cp-section {padding-top:31px;padding-bottom:13px}
+  .brand-system .play-universe .cp-eyebrow {font-size:8px;letter-spacing:.2em;margin-bottom:11px;gap:10px}
+  .play-universe .cp-eyebrow::before {width:25px}
+  .brand-system .play-universe h2 {font-size:25px;line-height:1.18}
+  .play-universe .cp-section-top {align-items:flex-start;margin-bottom:18px}
+  .play-universe .cp-featured-navigation {gap:5px;flex-direction:column;align-self:flex-end}
+  .play-universe .cp-featured-navigation button {width:30px;height:30px}
+  .play-universe .cp-feature-grid {grid-template-columns:1fr;gap:17px}
+  .play-universe .cp-feature-grid>.cp-world:last-child {display:block}
+  .play-universe :is(.cp-world,.play-card) {min-height:409px;aspect-ratio:.88}
+  .play-universe .play-card-body {padding:21px 18px 17px}
+  .brand-system .play-universe :is(.cp-world,.play-card) h3 {font-size:27px;line-height:1.13}
+  .brand-system .play-universe .play-card-body>p {font-size:13px;line-height:1.65;margin-bottom:16px}
+  .play-universe .cp-card-format {font-size:8px;margin-bottom:8px}
+  .play-universe .cp-card-top {top:11px;left:16px}
+  .play-universe .cp-card-top>span {font-size:8px}
+  .play-universe .cp-favorite {width:39px;height:39px}
+  .play-universe .cp-card-link {font-size:11px;padding:9px 11px;gap:8px;min-height:40px}
+  .play-universe .cp-status {font-size:8px}
+  .brand-system .play-universe .cp-art-disclosure {font-size:9px;line-height:1.8}
+  .play-universe .cp-experience-grid {grid-template-columns:1fr;gap:10px;margin-top:18px}
+  .play-universe .cp-experience-grid>a {min-height:95px;padding:18px 21px;gap:21px}
+  .play-universe .cp-experience-grid strong {font-size:13px}
+  .play-universe .cp-experience-grid small {font-size:12px;max-width:260px}
+  .brand-system .play-universe .cp-experience h2 {font-size:24px}
+  .play-universe .cp-discover {margin-top:30px;margin-bottom:14px}
+  .play-universe .cp-discover-art {min-height:265px}
+  .play-universe .cp-discover-copy {padding:19px 20px 26px}
+  .brand-system .play-universe .cp-discover h2 {font-size:30px}
+  .brand-system .play-universe .cp-discover-copy>p:not(.cp-eyebrow) {font-size:13px;line-height:1.8}
+  .play-universe .cp-discover .cp-button {font-size:12px;width:100%;gap:10px;padding:13px 15px}
+  .play-universe .cp-story-state {font-size:9px;line-height:1.7}
+  .play-universe .cp-back-top {display:none}
+  .play-universe .cp-catalog-toolbar {margin-top:21px;gap:6px}
+  .play-universe .cp-collection-tabs {gap:17px;width:100%;justify-content:space-between}
+  .play-universe .cp-collection-tabs>button {font-size:10px;gap:5px}
+  .play-universe .cp-collection-tabs>button>svg {display:none}
+  .play-universe .cp-collection-tabs>button>span {font-size:8px;padding:3px 4px}
+  .brand-system .play-universe .cp-catalog-toolbar>p {font-size:9px}
+  .play-universe .cp-filters {gap:15px 10px;margin-top:20px}
+  .brand-system .play-universe .cp-filters :is(input,select) {font-size:11px;padding-right:8px}
+  .play-universe .cp-results {gap:10px;min-height:40px;margin-top:9px}
+  .play-universe .cp-results>span {font-size:9px}
+  .play-universe .cp-results>button {font-size:10px}
+  .play-universe .play-grid {grid-template-columns:1fr;gap:18px;margin-top:12px}
+  .play-universe .cp-guest {padding:22px;gap:15px;margin-top:30px;margin-bottom:37px;display:block}
+  .play-universe .cp-guest>svg {margin-bottom:17px;width:32px;height:32px}
+  .brand-system .play-universe .cp-guest .cp-eyebrow {font-size:7px}
+  .brand-system .play-universe .cp-guest h2 {font-size:27px;line-height:1.2}
+  .brand-system .play-universe .cp-guest p:not(.cp-eyebrow) {font-size:12px}
+  .play-universe .cp-guest>.cp-button {margin:21px 0 0;width:100%;padding:12px}
+  .play-universe .cp-final {min-height:460px}
+  .play-universe .cp-final img {object-position:center 45%}
+  .play-universe .cp-final::after {background:linear-gradient(0deg,#02081466,#02081465 50%,#02081499)}
+  .play-universe .cp-final-copy {margin:0;padding:65px 21px}
+  .brand-system .play-universe .cp-final .cp-eyebrow {font-size:9px}
+  .brand-system .play-universe .cp-final h2 {font-size:36px;max-width:345px}
+  .brand-system .play-universe .cp-final-copy>p:not(.cp-eyebrow) {font-size:8px;letter-spacing:.19em;line-height:1.9;margin:17px 0 28px}
+  .play-universe .cp-final .cp-button {font-size:12px;gap:17px;padding-inline:18px;min-height:53px}
+}
+@media(prefers-reduced-motion:reduce){
+  .play-universe,.play-universe *,.play-universe *::before,.play-universe *::after {animation:none!important;transition:none!important;scroll-behavior:auto!important}
+  .play-universe [data-reveal] {opacity:1!important;transform:none!important}
+  .play-universe .cp-hero-art,.play-universe .cp-button {transform:none!important}
+}
+html[data-motion=off] .play-universe *,html[data-motion=off] .play-universe *::before,html[data-motion=off] .play-universe *::after {animation:none!important;transition:none!important}
+html[data-motion=off] .play-universe [data-reveal] {opacity:1!important;transform:none!important}
+html[data-motion=off] .play-universe .cp-hero-art,html[data-motion=off] .play-universe .cp-button {transform:none!important}
