@@ -279,7 +279,7 @@ export default function OmegaGlobe({ quality, mode, chapter, view, onViewChange 
       targetY = THREE.MathUtils.clamp((event.clientY - bounds.top) / bounds.height * 2 - 1, -1, 1)
     }
     const onDown = (event: PointerEvent) => {
-      if (modeRef.current !== 'world' || event.pointerType === 'touch' || event.button !== 0) return
+      if (modeRef.current !== 'world' || (event.pointerType !== 'touch' && event.button !== 0)) return
       const target = event.target
       if (target instanceof Element && target.closest('a, button, input, textarea, .omega-copy, .omega-gate, .omega-experience-panel')) return
       drag = { id: event.pointerId, x: event.clientX, y: event.clientY, start: { ...viewRef.current } }
