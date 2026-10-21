@@ -16,7 +16,7 @@ test('assets are parseable, loaded and available in offline cache v13',()=>{
   assert.ok(sw.includes('/games/inherit/'+name),'offline cache missing '+name);
  }
  new vm.Script(ui);new vm.Script(read('cosmetic-rewards.js'));assert.match(css,/prefers-reduced-motion:reduce/);
- for(const name of ['cosmetic-rewards.js','cosmetic-rewards.css']){assert.ok(index.includes('./'+name));assert.ok(sw.includes('/games/inherit/'+name));}assert.match(sw,/inherit-shell-v22/);
+ for(const name of ['cosmetic-rewards.js','cosmetic-rewards.css']){assert.ok(index.includes('./'+name));assert.ok(sw.includes('/games/inherit/'+name));}assert.match(sw,/inherit-shell-v23/);
 });
 test('16 generation incidents, all with 2 real object choices and stable deterministic order',()=>{
  assert.equal(engine.events.length,16);assert.equal(new Set(engine.events.map(e=>e.id)).size,16);
