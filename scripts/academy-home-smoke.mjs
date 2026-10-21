@@ -140,6 +140,11 @@ assert.ok(home.includes('criteriaRated') && home.includes('reviewedProjects') &&
 assert.ok(home.includes("addEventListener('osgard-academy-progress'") && studio.includes("dispatchEvent(new Event('osgard-academy-progress'))"), 'Dashboard progress must refresh immediately when project drafts or rubric scores change')
 assert.ok(styles.includes('.academy-journey-steps') && styles.includes('@media(max-width:760px)'), 'Learning pathway must be responsive')
 
+assert.ok(studioStyles.includes('#academy-studio-backup-input{') &&
+  studioStyles.includes('inline-size:1px!important') &&
+  studioStyles.includes('.academy-studio-import-button{position:relative}'),
+  'Backup import must remain keyboard accessible without creating page-wide horizontal overflow')
+
 // Premium Academy cockpit shows only canonical, browser-local progress rather than invented certificates.
 assert.ok(home.includes('academy-learning-console') && home.includes('academy-console-dial') &&
   home.includes('academy-console-continue') && home.includes('academy-console-quicklinks'),
