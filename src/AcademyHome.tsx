@@ -160,28 +160,16 @@ export default function AcademyHome() {
   ]
 
   return <main className="academy-home">
-    <header className="academy-header academy-compact-header">
-      <div className="academy-context">
-        <span className="academy-context-glyph" aria-hidden="true">◇</span>
-        <a href="/intelligence">OSA Intelligence</a><span aria-hidden="true">/</span>
-        <strong>{locale === 'ru' ? 'Академия' : 'Academy'}</strong>
-      </div>
-      <nav className="academy-nav" aria-label={locale === 'ru' ? 'Разделы академии' : 'Academy sections'}>
-        <a href="#paths">{t.paths}</a>
-        <a href="/lectures">{locale === 'ru' ? 'Все уроки' : 'All lessons'}</a>
-        <a href="#academy-progress-title">{locale === 'ru' ? 'Мой прогресс' : 'My progress'}</a>
-      </nav>
-      <div className="academy-header-actions">
-        <button className="academy-language" type="button" onClick={() => setLocale(locale === 'ru' ? 'en' : 'ru')} aria-label={t.switchLanguage}>{locale.toUpperCase()}</button>
-        <a className="academy-header-cta" href="/osa-cinema">{t.start}<ArrowUpRight size={15} aria-hidden="true" /></a>
-      </div>
-    </header>
+
 
     <section className="academy-hero">
       <div className="academy-hero-copy">
-        <p className="academy-eyebrow"><span className="academy-eyebrow-dot" />{t.kicker}</p>
+        <div className="academy-hero-topline">
+          <p className="academy-eyebrow"><span className="academy-eyebrow-dot" />{t.kicker}</p>
+          <button className="academy-language" type="button" onClick={() => setLocale(locale === 'ru' ? 'en' : 'ru')} aria-label={t.switchLanguage}>{locale.toUpperCase()}</button>
+        </div>
         <h1>{t.hero1}<br /><span>{t.hero2}</span><br />{t.hero3}</h1>
-        <p className="academy-lead">{t.lead}</p>
+        <p className="academy-lead"><span className="academy-lead-full">{t.lead}</span><span className="academy-lead-compact">{locale === 'ru' ? 'Практические уроки: поймите ИИ, проверяйте ответы и безопасно применяйте знания.' : 'Practical lessons: understand AI, verify answers and apply knowledge responsibly.'}</span></p>
         <div className="academy-hero-actions">
           <a className="academy-button academy-button-primary" href="/osa-cinema"><BookOpen size={17} aria-hidden="true" />{t.start}<ArrowUpRight size={16} aria-hidden="true" /></a>
           <a className="academy-button academy-button-secondary" href="/lectures"><BookOpen size={16} aria-hidden="true" />{locale === 'ru' ? 'Курсы и лекции' : 'Courses & lectures'}<ArrowRight size={16} aria-hidden="true" /></a>
