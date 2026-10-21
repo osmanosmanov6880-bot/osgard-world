@@ -256,6 +256,9 @@ export default function OmegaGlobe({ quality, mode, chapter, view, onViewChange 
     const sphereRings = quality === 'ultra' ? 72 : quality === 'eco' ? 20 : mobile ? 32 : 56
     const frameInterval = quality === 'eco' || (quality === 'auto' && mobile) ? 33.4 : 16.7
     const pixelRatioLimit = quality === 'ultra' ? 2 : quality === 'eco' ? 1 : mobile ? 1.25 : 1.6
+    let adaptiveDpr = pixelRatioLimit
+    let performanceWindow = 0
+    let renderedFrames = 0
     const allowed = () => !media.matches && document.documentElement.dataset.motion !== 'off'
     const onMove = (event: PointerEvent) => {
       if (modeRef.current === 'world' && drag?.id === event.pointerId) {
@@ -301,7 +304,7 @@ export default function OmegaGlobe({ quality, mode, chapter, view, onViewChange 
       const bounds = sky.getBoundingClientRect()
       const width = Math.max(1, Math.round(bounds.width))
       const height = Math.max(1, Math.round(bounds.height))
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, pixelRatioLimit))
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, adaptiveDpr))
       renderer.setSize(width, height, false)
       camera.aspect = width / height
       camera.updateProjectionMatrix()
@@ -367,6 +370,25 @@ export default function OmegaGlobe({ quality, mode, chapter, view, onViewChange 
           if (surfaceUniforms && cloudInner) surfaceUniforms.cloudOffset.value = -cloudInner.rotation.y / (Math.PI * 2)
         }
         renderer.render(scene, camera)
+        // Auto mode adjusts pixel density rather than reducing asset quality.
+        // Budget: ~30 FPS on phones, ~60 FPS on desktop; hard lower bounds remain.
+        if (!performanceWindow) performanceWindow = time
+        renderedFrames++
+        if (time - performanceWindow >= 3000) {
+          const fps = renderedFrames * 1000 / Math.max(1, time - performanceWindow)
+          stage.dataset.earthFps = String(Math.round(fps))
+          if (quality === 'auto') {
+            const target = mobile ? 30 : 60
+            const minimum = mobile ? 0.8 : 1
+            const previous = adaptiveDpr
+            if (fps < target * 0.72) adaptiveDpr = Math.max(minimum, adaptiveDpr - 0.17)
+            else if (fps > target * 0.95) adaptiveDpr = Math.min(pixelRatioLimit, adaptiveDpr + 0.08)
+            if (Math.abs(previous - adaptiveDpr) > 0.01) resize()
+          }
+          stage.dataset.earthDpr = String(Math.min(window.devicePixelRatio || 1, adaptiveDpr).toFixed(2))
+          renderedFrames = 0
+          performanceWindow = time
+        }
       }
       frameId = requestAnimationFrame(animate)
     }
@@ -483,6 +505,7 @@ export default function OmegaGlobe({ quality, mode, chapter, view, onViewChange 
     }
     const observer = new IntersectionObserver(entries => {
       visible = Boolean(entries[0]?.isIntersecting)
+      if (!visible) { performanceWindow = 0; renderedFrames = 0 }
       if (visible) void init()
       syncRendering()
     }, { rootMargin: '180px' })
@@ -526,6 +549,8 @@ export default function OmegaGlobe({ quality, mode, chapter, view, onViewChange 
       delete stage.dataset.cloudLayers
       delete stage.dataset.earthSource
       delete stage.dataset.earthResolution
+      delete stage.dataset.earthFps
+      delete stage.dataset.earthDpr
       if (scene) disposeScene(scene)
       if (satelliteTextures) disposeSatelliteTextures(satelliteTextures)
       renderer?.dispose()
