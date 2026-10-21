@@ -181,3 +181,119 @@ html[data-motion="off"] .omega-mode-tabs button{transition:none!important}
    Hero copy is a single stacking context; raising only the nested panel is insufficient. */
 .omega-hero .omega-copy{z-index:6}
 .omega-hero .omega-gate{z-index:2}
+
+/* OSGARD WORLD — Cosmic Portal. Scoped strictly to the World homepage. */
+.world-command .omega-command{display:block;position:relative;min-height:810px;padding:clamp(62px,6vw,98px) 0 210px;overflow:clip;isolation:isolate}
+.world-command .omega-command .omega-sky{inset:0;background:radial-gradient(ellipse at 77% 42%,#196c9955 0%,#082a4b59 32%,transparent 66%),radial-gradient(ellipse at 15% 95%,#184c7759,transparent 58%),linear-gradient(120deg,#020814 12%,#041528 62%,#01060f)}
+.world-command .omega-command .omega-stars{opacity:.47;background-size:291px 257px,389px 353px,277px 297px,481px 381px}
+.world-command .omega-command-nebula{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 76% 42%,#5bcbed1c,transparent 52%),radial-gradient(ellipse at 86% 55%,#937bda17,transparent 44%)}
+/* NASA Blue Marble is already self-hosted; photographic fallback for reduced motion and no WebGL2. */
+.world-command .omega-command .omega-globe{z-index:0;top:44%;left:75%;width:clamp(430px,54vw,770px);aspect-ratio:1;opacity:.94;border:1px solid #a3d0ec72;border-radius:50%;transform:translate(-50%,-50%);overflow:hidden;background-image:linear-gradient(90deg,#071b3000 23%,#01081736 65%,#01050ee5 99%),url('/brand/earth/blue-marble-2048.webp');background-size:100% 100%,auto 100%;background-position:center,34% center;box-shadow:inset -72px -32px 92px #000c,inset 29px 13px 46px #c0f4ff21,0 0 0 10px #63bbeb08,0 0 45px #5ed3ff46,0 0 150px #1980dc40;filter:saturate(1.11) contrast(1.06);animation:omega-photo-orbit 84s ease-in-out infinite alternate}
+.world-command .omega-command .omega-globe::before{content:'';position:absolute;inset:0;border-radius:50%;background:radial-gradient(ellipse at 23% 19%,#d9f8ff38 0%,transparent 30%),radial-gradient(circle at 27% 28%,transparent 25%,#02071120 58%,#000b 100%);pointer-events:none}
+.world-command .omega-command .omega-globe::after{content:'';position:absolute;inset:0;border-radius:50%;border:1px solid #d3f7ff3d;box-shadow:inset 5px 1px 24px #a2eaff38;pointer-events:none;animation:none}
+@keyframes omega-photo-orbit{from{background-position:center,23% center}to{background-position:center,74% center}}
+.world-command .omega-command .omega-orbit{left:75%;top:45%;height:clamp(95px,10vw,155px);width:clamp(550px,69vw,990px);z-index:1;border-width:1px;border-color:#74d8f54d;box-shadow:0 0 18px #49c5ee16;opacity:.56;pointer-events:none;animation:none}
+.world-command .omega-command .omega-orbit-two{border-color:#c0a3ff44;opacity:.5}
+.world-command .omega-command-terminator{position:absolute;inset:0;z-index:2;pointer-events:none;background:linear-gradient(90deg,#020814ed 0%,#020814c0 27%,#02081422 59%,transparent 81%),linear-gradient(0deg,#020916d1 0%,transparent 26%,transparent 75%,#02091570 100%)}
+.world-command .omega-command .omega-webgl-stage{inset:0 0 165px auto;width:72%;height:auto;z-index:0;contain:layout paint}
+.world-command .omega-command .omega-sky.omega-webgl-ready .omega-webgl-stage{opacity:1}
+.world-command .omega-command .omega-copy{position:relative;z-index:6;max-width:min(620px,60%);padding:0;margin:0;text-shadow:0 3px 30px #010717}
+.world-command .omega-command .omega-command-eyebrow{color:#80f4ff;font-size:12px;letter-spacing:.2em;margin-bottom:30px}
+.world-command .omega-command .omega-command-eyebrow span{color:#accad8}
+.world-command .omega-command h1{font:850 clamp(47px,5.15vw,82px)/.98 Inter,Arial,sans-serif;letter-spacing:-.066em;text-wrap:balance;color:#f6fbff;text-shadow:0 4px 37px #000a}
+.world-command .omega-command h1 span{color:#60e9f4}
+.world-command .omega-command h1 .omega-period{color:#c79aff}
+.world-command .omega-command .brand-lead{max-width:545px;font:400 clamp(15px,1.35vw,19px)/1.7 Inter,Arial,sans-serif;color:#d5e5f3;margin:28px 0 26px}
+.world-command .omega-command-actions{margin:0;gap:12px;flex-wrap:wrap}
+.world-command .omega-command-actions .brand-button{min-height:56px;font-size:15px;padding:15px 21px;gap:24px;border-radius:4px;box-shadow:0 10px 36px #001a2780}
+.world-command .omega-command-actions .brand-button.primary{color:#021623}
+.world-command .omega-command-secondary{background:#081b30bd;border-color:#6d96a878;color:#ecf9ff;backdrop-filter:blur(9px)}
+.world-command .omega-command-promise{font:600 11px/1.6 'JetBrains Mono',monospace;letter-spacing:.14em;color:#96b9ce;margin:22px 0 0}
+.world-command .omega-command-promise span{color:#5fe9f5;padding:0 9px}
+.world-command .omega-command-planet-caption{position:absolute;right:10px;bottom:206px;z-index:3;margin:0;text-align:right;color:#b0d7e9;font:600 9px/1.6 'JetBrains Mono',monospace;letter-spacing:.17em}
+.world-command .omega-command-planet-caption span{display:block;font-size:8px;color:#83acbe;letter-spacing:.08em}
+/* Three clear, keyboard-accessible product portals replace the right-hand settings dashboard. */
+.world-command .omega-command .omega-gate{position:absolute;inset:auto 0 24px;width:100%;max-width:none;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding:0;border:0;box-shadow:none;background:transparent;backdrop-filter:none;z-index:7}
+.world-command .omega-command .omega-gate>.brand-eyebrow{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center;margin:0 0 4px;color:#82f2fc;font:600 10px/1.55 'JetBrains Mono',monospace;letter-spacing:.16em}
+.world-command .omega-command .omega-gate>.brand-eyebrow span{color:#81a6b9}
+.world-command .omega-command .omega-gate a{display:grid;grid-template-columns:34px minmax(0,1fr) 14px;align-items:start;gap:13px;min-height:147px;border:1px solid #579ab066;background:linear-gradient(133deg,#102c40e9,#061625f2 70%);border-radius:6px;padding:22px 18px;margin:0;box-shadow:0 8px 42px #0004,inset 0 1px #baf4ff12;backdrop-filter:blur(16px);transition:border-color .22s,background .22s,transform .22s,box-shadow .22s}
+.world-command .omega-command .omega-gate a:nth-of-type(2){border-color:#69cce083;background:linear-gradient(130deg,#123d56e9,#071a2af2 75%)}
+.world-command .omega-command .omega-gate a:nth-of-type(3){border-color:#8d83c65e;background:linear-gradient(130deg,#25213be8,#081624f2 75%)}
+.world-command .omega-command .omega-gate a:hover{transform:translateY(-5px);border-color:#b5f6ff;box-shadow:0 16px 40px #001525b8,0 0 27px #63ddec19}
+.world-command .omega-command .omega-gate a:focus-visible{outline:3px solid #78f3fa;outline-offset:3px}
+.world-command .omega-command .omega-gate a>span:nth-child(2){min-width:0}
+.world-command .omega-command .omega-gate .omega-glyph{font-size:29px;color:#82f6ff;line-height:1.1}
+.world-command .omega-command .omega-gate a:nth-of-type(3) .omega-glyph{color:#c69aff}
+.world-command .omega-command .omega-gate small{display:block;margin:0 0 9px;font:600 10px/1.4 'JetBrains Mono',monospace;color:#7addec;letter-spacing:.1em}
+.world-command .omega-command .omega-gate strong{display:block;color:#f4fbff;font-size:clamp(16px,1.45vw,21px);font-weight:750;line-height:1.25;letter-spacing:-.02em}
+.world-command .omega-command .omega-gate em{display:block;font-size:13px;line-height:1.5;color:#bdd0df;margin-top:7px;font-style:normal}
+.world-command .omega-command .omega-gate b{font-size:19px;line-height:1;color:#85f5ff}
+/* The native disclosure keeps the complete real 3D controls available on demand. */
+.world-command .omega-command .omega-experience-panel{position:absolute;inset:19px 0 auto auto;z-index:20;left:auto;display:block;width:225px;max-width:100%;margin:0;padding:0;border:1px solid #76b9d66f;background:#051526e5;border-radius:5px;box-shadow:0 12px 40px #0008;backdrop-filter:blur(20px)}
+.world-command .omega-command .omega-experience-panel[open]{width:min(420px,100%);border-color:#75e8f4ab;box-shadow:0 18px 60px #000d}
+.world-command .omega-command .omega-experience-panel summary{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:45px;padding:10px 14px;color:#dffbff;font:650 13px/1.4 Inter,Arial,sans-serif;list-style:none;cursor:pointer;user-select:none}
+.world-command .omega-command .omega-experience-panel summary::-webkit-details-marker{display:none}
+.world-command .omega-command .omega-experience-panel summary::marker{content:''}
+.world-command .omega-command .omega-experience-panel summary:focus-visible{outline:3px solid #90f3ff;outline-offset:3px}
+.world-command .omega-settings-mark{color:#80ebf7;font-size:21px;line-height:1}
+.world-command .omega-settings-chevron{margin-left:auto;font-size:19px;color:#82bed5}
+.world-command .omega-experience-panel[open] .omega-settings-chevron{transform:rotate(180deg)}
+.world-command .omega-command .omega-experience-content{padding:16px 17px 18px;border-top:1px solid #3c758a6e;max-height:min(66vh,545px);overflow:auto}
+.world-command .omega-experience-title{font-size:9px}
+.world-command .omega-mode-description{font-size:12px;min-height:0}
+.world-command .omega-quality-switch{gap:10px}
+.world-command .omega-quality-switch select{max-width:100%;font-size:12px}
+.world-command .omega-imagery-credit{font-size:10px}
+.world-command .omega-products{padding-top:70px}
+.world-command .omega-products .brand-section-heading{max-width:1050px}
+.world-command .omega-products h2{letter-spacing:-.06em}
+@media(max-width:1100px){
+.world-command .omega-command{min-height:790px;padding-top:80px;padding-bottom:225px}
+.world-command .omega-command .omega-copy{max-width:67%}
+.world-command .omega-command .omega-globe{left:80%;width:clamp(430px,62vw,710px);opacity:.8}
+.world-command .omega-command .omega-webgl-stage{width:72%}
+.world-command .omega-command .omega-gate a{padding:17px 14px;min-height:158px;gap:9px}
+.world-command .omega-command .omega-gate strong{font-size:17px}
+}
+@media(max-width:760px){
+.world-command .omega-command{min-height:0;padding:55px 0 25px;overflow:clip}
+.world-command .omega-command .omega-sky{inset:0}
+.world-command .omega-command .omega-globe{left:83%;top:236px;width:clamp(310px,103vw,460px);opacity:.57}
+.world-command .omega-command .omega-webgl-stage{inset:0 -22% auto auto;width:105%;height:485px}
+.world-command .omega-command .omega-sky.omega-webgl-ready .omega-webgl-stage{opacity:.68}
+.world-command .omega-command .omega-orbit{display:none}
+.world-command .omega-command-terminator{background:linear-gradient(90deg,#020814dd 0%,#0208147c 56%,#02081430 100%),linear-gradient(0deg,#020814ef 0%,transparent 50%,#02081499 100%)}
+.world-command .omega-command .omega-copy{max-width:none;margin-top:42px}
+.world-command .omega-command .omega-command-eyebrow{font-size:10px;letter-spacing:.12em;margin-bottom:22px}
+.world-command .omega-command h1{font-size:clamp(39px,9.2vw,62px);max-width:650px}
+.world-command .omega-command .brand-lead{font-size:15px;line-height:1.65;max-width:460px;margin:24px 0}
+.world-command .omega-command-actions .brand-button{font-size:14px;min-height:51px}
+.world-command .omega-command-promise{font-size:9px;letter-spacing:.08em;margin:21px 0 0}
+.world-command .omega-command-promise span{padding:0 4px}
+.world-command .omega-command .omega-gate{position:relative;inset:auto;margin-top:65px;grid-template-columns:1fr;gap:10px}
+.world-command .omega-command .omega-gate>.brand-eyebrow{margin:0 0 3px}
+.world-command .omega-command .omega-gate a{min-height:104px;grid-template-columns:34px minmax(0,1fr) 14px;padding:16px 18px;align-items:center}
+.world-command .omega-command .omega-gate a strong{font-size:18px}
+.world-command .omega-command .omega-gate a em{font-size:12px}
+.world-command .omega-command-planet-caption{display:none}
+.world-command .omega-command .omega-experience-panel{top:11px;right:0;width:205px}
+.world-command .omega-command .omega-experience-panel[open]{width:min(400px,100%)}
+.world-command .omega-products{padding-top:50px}
+}
+@media(max-width:420px){
+.world-command .omega-command{padding-top:53px}
+.world-command .omega-command .omega-copy{margin-top:54px}
+.world-command .omega-command h1{font-size:clamp(34px,9.3vw,43px);line-height:1.03}
+.world-command .omega-command .brand-lead{font-size:14px}
+.world-command .omega-command-actions{display:grid;grid-template-columns:1fr;gap:9px}
+.world-command .omega-command-actions .brand-button{width:100%;justify-content:space-between}
+.world-command .omega-command .omega-gate{margin-top:48px}
+}
+@media(prefers-reduced-motion:reduce){
+.world-command .omega-command .omega-globe{animation:none!important;opacity:.9!important}
+.world-command .omega-command .omega-webgl-stage{display:none!important}
+.world-command .omega-command .omega-gate a{transition:none!important}
+}
+html[data-motion="off"] .world-command .omega-command .omega-globe{animation:none!important;opacity:.9!important}
+html[data-motion="off"] .world-command .omega-command .omega-webgl-stage{display:none!important}
+html[data-motion="off"] .world-command .omega-command .omega-gate a{transition:none!important}
