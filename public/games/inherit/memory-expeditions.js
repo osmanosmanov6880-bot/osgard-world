@@ -118,6 +118,25 @@ const focusPass=el('button'),dismiss=el('button');
 focusPass.type='button';dismiss.type='button';actions.append(focusPass,dismiss);
 confirm.append(confirmText,actions);d.body.appendChild(confirm);
 const snapshot=()=>game.snapshot();
+// The native island handler ignores game buttons and memory landmarks. Read
+// their *actual rendered bounds* (including responsive layout) so a prediction
+// is never hidden beneath an element that consumes the player's click.
+function reachable(x,y){
+ const box=island.getBoundingClientRect();
+ if(!box.width||!box.height)return false;
+ const pointX=box.left+box.width*x/100,pointY=box.top+box.height*y/100;
+ const stage=d.querySelector('#world');
+ for(const node of stage?.querySelectorAll('button,[data-memory]')||[]){
+  if(node.hidden||node.closest('.inherit-expedition-dialog'))continue;
+  const style=getComputedStyle(node);
+  if(style.display==='none'||style.visibility==='hidden'||style.pointerEvents==='none')continue;
+  const rect=node.getBoundingClientRect();
+  if(rect.width&&rect.height&&pointX>=rect.left-6&&pointX<=rect.right+6&&
+   pointY>=rect.top-6&&pointY<=rect.bottom+6)return false;
+ }
+ return true;
+}
+const planFor=world=>core.derive(world,atlas,legacy,reachable);
 const signature=world=>JSON.stringify({
  generation:world.generation,budget:world.budget,objects:world.objects,pending:world.pending
 });
@@ -160,7 +179,7 @@ function render(){
  const c=tr();trigger.textContent=c.trigger;
  title.textContent=c.title;eyebrow.textContent=c.eyebrow;intro.textContent=c.intro;
  provenance.textContent=c.provenance;close.setAttribute('aria-label',c.close);
- const world=snapshot();plannedSignature=signature(world);plan=core.derive(world,atlas,legacy);
+ const world=snapshot();plannedSignature=signature(world);plan=planFor(world);
  list.replaceChildren();preview.hidden=true;
  const msgs={'no-archive':c.empty,'no-opportunities':c.none,limited:c.limited,unavailable:c.unavailable};
  status.textContent=msgs[plan.status]||'';
@@ -212,6 +231,9 @@ use.addEventListener('click',arm);
 focusPass.addEventListener('click',()=>d.querySelector('#pass')?.focus?.({preventScroll:true}));
 dismiss.addEventListener('click',()=>{confirm.hidden=true});
 function check(){
+ if(lastResult&&snapshot().generation!==lastResult.generation){
+  lastResult=null;confirm.hidden=true;
+ }
  if(armed){
   const current=snapshot();
   if(signature(current)!==armed.signature){
@@ -239,7 +261,7 @@ if(objects)observer.observe(objects,{childList:true});
 if(gen)observer.observe(gen,{childList:true,characterData:true,subtree:true});
 window.InheritMemoryExpeditionsUI=Object.freeze({
  open:()=>trigger.click(),refresh:()=>{if(dialog.open)render();else{trigger.textContent=tr().trigger;if(!confirm.hidden){confirmText.textContent=tr().success;focusPass.textContent=tr().focusPass;dismiss.textContent=tr().dismiss}}},
- getPlan:()=>core.derive(snapshot(),atlas,legacy),getResult:()=>lastResult,isArmed:()=>!!armed
+ getPlan:()=>planFor(snapshot()),getResult:()=>lastResult,isArmed:()=>!!armed
 });
 trigger.textContent=tr().trigger;
 })();
