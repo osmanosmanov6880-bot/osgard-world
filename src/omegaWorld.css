@@ -165,6 +165,10 @@ html[data-motion="off"] .omega-mode-tabs button{transition:none!important}
   }
 }
 
+.omega-imagery-credit { margin: 9px 0 0; font: 500 10px/1.55 Inter, Arial, sans-serif; color: #93b9c8; letter-spacing: .02em; }
+.omega-imagery-credit a { color: #8be5ee; text-decoration: underline; text-underline-offset: 3px; }
+.omega-imagery-credit a:hover { color: #e1fcff; }
+.omega-imagery-credit a:focus-visible { outline: 2px solid #86eefe; outline-offset: 3px; }
 /* GPU detail control; placed with cinematic modes, fully keyboard accessible. */
 .omega-quality-switch{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:9px;margin-top:12px;padding-top:10px;border-top:1px solid #2b627c}
 .omega-quality-switch label{font:600 11px/1.5 Inter,Arial,sans-serif;color:#b6ddec}

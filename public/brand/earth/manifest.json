@@ -1,0 +1,62 @@
+{
+  "version": 1,
+  "mode": "self-hosted",
+  "timeframe": "July 2004 surface / 2016 night lights",
+  "not_live_data": true,
+  "credit": "NASA Earth Observatory; Reto Stoeckli, Robert Simmon and NASA MODIS / VIIRS teams",
+  "source": {
+    "surface": {
+      "url": "https://assets.science.nasa.gov/content/dam/science/esd/eo/images/bmng/bmng-base/july/world.200407.3x5400x2700.jpg",
+      "sha256": "f55226d46d27e05511f2118dc6aa24f5dbf9b6b2cddc87cc6e0e7dd067c00b11"
+    },
+    "night": {
+      "url": "https://assets.science.nasa.gov/content/dam/science/esd/eo/images/imagerecords/144000/144898/BlackMarble_2016_01deg.jpg",
+      "sha256": "d87de751a264e4f8ff69c68de5dab9606daee87a6f15ae743c93200743bd7ec1"
+    }
+  },
+  "generated": [
+    {
+      "file": "blue-marble-512.webp",
+      "width": 512,
+      "height": 256,
+      "bytes": 11488,
+      "sha256": "fd2591f037541c381ee24ac5d48e81d4ef55f54a850ade97e5beac328fd6053d"
+    },
+    {
+      "file": "blue-marble-1024.webp",
+      "width": 1024,
+      "height": 512,
+      "bytes": 37482,
+      "sha256": "f3536c4fec0f70bc64fe3b0527a92bbf6ea217a07c3d0efe9031736f2deff36f"
+    },
+    {
+      "file": "blue-marble-2048.webp",
+      "width": 2048,
+      "height": 1024,
+      "bytes": 143018,
+      "sha256": "5b535f1b69426c506c3ed5e26be1fc71a5e768ceecca056275c0c6fb4586ad6a"
+    },
+    {
+      "file": "blue-marble-4096.webp",
+      "width": 4096,
+      "height": 2048,
+      "bytes": 566958,
+      "sha256": "0d543059f30485c1cf20fa62a506987e7eb5a5e7a43cf929f911cd4fb2eaf9dc"
+    },
+    {
+      "file": "black-marble-lights-2048.webp",
+      "width": 2048,
+      "height": 1024,
+      "bytes": 28508,
+      "sha256": "c275b3907573b0c23d581d29424243f753d141368f9a21187715f37a831eef5f"
+    },
+    {
+      "file": "earth-roughness-2048.webp",
+      "width": 2048,
+      "height": 1024,
+      "bytes": 41836,
+      "sha256": "81bcde5f78c811e302c515cfba605d096af8f8226ab061069d3c40b310efda6d"
+    }
+  ],
+  "bundle_bytes": 829290
+}

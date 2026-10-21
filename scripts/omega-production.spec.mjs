@@ -6,6 +6,32 @@ const getResponse = async (page, path = '/') => {
   expect(response?.status(), path + ' status').toBe(200)
 }
 
+test('public historical NASA Earth imagery and credits are served by OSGARD', async ({ request, page }) => {
+  const manifestResponse = await request.get(URL + '/brand/earth/manifest.json')
+  expect(manifestResponse.status()).toBe(200)
+  const manifest = await manifestResponse.json()
+  expect(manifest.not_live_data).toBe(true)
+  expect(manifest.mode).toBe('self-hosted')
+  expect(manifest.generated.length).toBe(6)
+  expect(manifest.bundle_bytes).toBeLessThan(7 * 1024 * 1024)
+
+  const highResolution = await request.get(URL + '/brand/earth/blue-marble-4096.webp')
+  expect(highResolution.status()).toBe(200)
+  const bytes = await highResolution.body()
+  expect(bytes.subarray(0, 4).toString('ascii')).toBe('RIFF')
+  expect(bytes.subarray(8, 12).toString('ascii')).toBe('WEBP')
+  expect(bytes.length).toBeGreaterThan(100000)
+  await page.emulateMedia({ reducedMotion: 'no-preference' })
+  await getResponse(page)
+  await expect(page.getByRole('link', { name: 'NASA Blue Marble ↗' })).toBeVisible()
+  await expect(page.locator('.omega-imagery-credit')).toContainText('не прямой эфир')
+  const stage = page.locator('.omega-webgl-stage')
+  await expect(stage).toHaveAttribute('data-globe-status', /^(webgl|fallback)$/, { timeout: 25000 })
+  if (await stage.getAttribute('data-globe-status') === 'webgl') {
+    await expect(stage).toHaveAttribute('data-earth-source', 'nasa')
+  }
+})
+
 test('public OSGARD Earth and three-mode controller are deployed', async ({ page, request }, testInfo) => {
   const resp = await request.get(URL + '/brand/omega-earth-land.json', { timeout: 30000 })
   expect(resp.status()).toBe(200)
