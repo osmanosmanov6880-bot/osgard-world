@@ -138,6 +138,9 @@ test('all required assets, offline shell and localization hooks are shipped',()=
   assert.ok(!ui.includes(banned),'unexpected side effect: '+banned);
  }
  assert.match(css,/pointer-events:none/);
+ assert.match(css,/inherit-compass-armed .inherit-first-steps/);
+ assert.ok(ui.includes("d.body.classList.add('inherit-compass-armed')"));
+ assert.ok(ui.includes("d.body.classList.remove('inherit-compass-armed')"));
  assert.match(css,/prefers-reduced-motion:reduce/);
  assert.match(css,/focus-visible/);
  new vm.Script(ui);new vm.Script(read('trace-compass-core.js'));
