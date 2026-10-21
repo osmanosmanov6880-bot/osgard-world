@@ -230,6 +230,9 @@ for (const [locale, path] of [['ru','/entertainment/'], ['en','/entertainment/en
     await expect(page.locator('link[href="/entertainment/premium.css"]')).toHaveCount(1)
     await expect(page.locator('.hero-cta')).toHaveAttribute('href', '/play')
     await expect(page.locator('.hero-spotlight')).toHaveAttribute('href', '/play')
+    const heroImage = page.locator('.hero-spotlight img')
+    await expect(heroImage).toHaveAttribute('src', '/brand/omega-play.svg')
+    expect(await heroImage.evaluate(img => img.complete && img.naturalWidth > 0)).toBe(true)
     await expect(page.locator('.grid .card')).toHaveCount(7)
     await expect(page.locator('.grid .art img')).toHaveCount(7)
     const imageStatus = await page.locator('.grid .art img').evaluateAll(async images => {
