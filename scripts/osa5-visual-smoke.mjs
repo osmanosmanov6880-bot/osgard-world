@@ -15,6 +15,7 @@ const viewports = [
 const routes = [
   { name: 'world', path: '/', selector: '.world-home', heading: /ТЕХНОЛОГИИ|Цифровые продукты/i, product: 'OSGARD' },
   { name: 'intelligence', path: '/intelligence', selector: '.intelligence-home', heading: /Понимать ИИ/, product: 'Intelligence' },
+  { name: 'development', path: '/development', selector: '.signature-showcase', heading: /СОЗДАЁМ/, product: 'Development' },
   { name: 'play', path: '/play', selector: '.play-home', heading: /ДОБАВЬ ТЕНЬ/, product: 'Play' },
   { name: 'portal', path: '/portal', selector: '.world-home', heading: /ТЕХНОЛОГИИ|Цифровые продукты/i, product: 'OSGARD' },
   { name: 'academy', path: '/academy', selector: 'body' },

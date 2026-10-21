@@ -253,6 +253,32 @@ test('OSGARD Omega cinematic scenes preserve working routes and images', async (
   expect(pageErrors).toEqual([])
 })
 
+test('Development Signature opens real case screens, preserves status disclosure and is responsive', async ({ page }) => {
+  const errors = []
+  page.on('pageerror', error => errors.push(error.message))
+  await page.goto('/development')
+  const surface = page.locator('.development-signature')
+  const showcase = surface.locator('.signature-showcase')
+  await expect(showcase).toBeVisible()
+  await expect(surface.locator('h1')).toContainText('ЦИФРОВЫЕ')
+  await expect(showcase.locator('a.signature-featured-case')).toHaveAttribute('href', '/development/tedes/')
+  await expect(showcase.locator('.signature-featured-image>span')).toContainText('Демо')
+  const featureImg = showcase.locator('.signature-featured-image img')
+  await expect(featureImg).toBeVisible()
+  expect(await featureImg.evaluate(img => img.complete && img.naturalWidth > 0)).toBe(true)
+  await expect(showcase.locator('.signature-case-pair>a')).toHaveCount(2)
+  await expect(showcase.locator('.signature-case-pair>a').nth(0)).toHaveAttribute('href', '/development/phantom/')
+  await expect(showcase.locator('.signature-case-pair>a').nth(1)).toHaveAttribute('href', '/development/merakki/')
+  await expect(surface.locator('#cases .world-case')).toHaveCount(4)
+  await expect(surface.locator('#cases .world-case .brand-status')).toHaveText(['Прототип','Демо','Концепт','Демо'])
+  await expect(surface.locator('#contact form')).toBeVisible()
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true)
+  await page.goto('/')
+  await expect(page.locator('.development-signature')).toHaveCount(0)
+  await expect(page.locator('.omega-hero')).toHaveCount(1)
+  expect(errors).toEqual([])
+})
+
 for (const slug of ['phantom', 'tedes', 'merakki']) {
   test('capture actual case interface: ' + slug, async ({ page }, info) => {
     test.skip(info.project.name !== 'desktop', 'The published case evidence uses a fixed desktop viewport')
