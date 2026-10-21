@@ -127,6 +127,7 @@ jobs:
           npm run qa:inherit-compass
           npm run qa:inherit-network
           npm run qa:inherit-expeditions
+          npm run qa:inherit-journey
           npm run qa:remix-session
           npm run qa:remix-owned-session
           npm run qa:remix-invitations
