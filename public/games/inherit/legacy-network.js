@@ -207,9 +207,13 @@ function update(){
  clearGhost();showRoute();
 }
 from.addEventListener('change',update);to.addEventListener('change',update);
-trigger.addEventListener('click',()=>{
- selectedA=0;selectedB=1;clearGhost();render();dialog.showModal();
-});
+function openFrom(index=0){
+ const current=core.analyze(snapshot(),legacy);
+ selectedA=Number.isSafeInteger(index)&&index>=0&&index<(current.nodes?.length||0)?index:0;
+ selectedB=current.nodes?.length>1?(selectedA===0?1:0):0;
+ clearGhost();render();if(!dialog.open)dialog.showModal();
+}
+trigger.addEventListener('click',()=>openFrom());
 close.addEventListener('click',()=>dialog.close());
 dialog.addEventListener('click',event=>{if(event.target===dialog)dialog.close()});
 dialog.addEventListener('close',()=>{if(!armed)clearGhost()});
@@ -245,7 +249,7 @@ const observer=new MutationObserver(schedule);
 if(objects)observer.observe(objects,{childList:true});
 if(gen)observer.observe(gen,{childList:true,subtree:true,characterData:true});
 window.InheritLegacyNetworkUI=Object.freeze({
- open:()=>trigger.click(),refresh:()=>{if(dialog.open)render();else trigger.textContent=tr().trigger},
+ open:()=>openFrom(),openFrom,refresh:()=>{if(dialog.open)render();else trigger.textContent=tr().trigger},
  getGraph:()=>core.analyze(snapshot(),legacy),getRoute:()=>core.route(core.analyze(snapshot(),legacy),selectedA,selectedB),
  getSuggestion:()=>suggestion,isArmed:()=>armed
 });
