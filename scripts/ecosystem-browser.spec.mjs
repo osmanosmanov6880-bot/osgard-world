@@ -1251,6 +1251,8 @@ test('INHERIT trace compass: starter guidance and an actual two-tool Legacy conn
  await dialog.locator('.inherit-compass-use').click();
  await expect(dialog).toBeHidden();
  await expect(page.locator('.inherit-compass-ghost')).toBeVisible();
+ await expect(page.locator('.inherit-first-steps')).toBeHidden();
+ expect(await page.evaluate(()=>document.body.classList.contains('inherit-compass-armed'))).toBe(true);
  expect(await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()))).toBe(before);
  const place=async choice=>{
   const p=await page.locator('#island').boundingBox();
@@ -1259,6 +1261,8 @@ test('INHERIT trace compass: starter guidance and an actual two-tool Legacy conn
  await place(starter.choices[0]);
  await expect.poll(()=>page.evaluate(()=>window.InheritGame.snapshot().objects.length)).toBe(1);
  await expect(page.locator('.inherit-compass-ghost')).toBeHidden();
+ await expect(page.locator('.inherit-first-steps')).toBeVisible();
+ expect(await page.evaluate(()=>document.body.classList.contains('inherit-compass-armed'))).toBe(false);
  await trigger.click();
  const option=await page.evaluate(()=>window.InheritTraceCompassUI.getPlan());
  expect(option.status).toBe('opportunities');
