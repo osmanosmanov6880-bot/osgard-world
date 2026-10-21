@@ -98,7 +98,7 @@ test('atlas is local-only, localized, keyboard navigable and cached for offline 
   assert.ok(html.includes('./'+file),'HTML '+file);
   assert.ok(sw.includes('/games/inherit/'+file),'offline '+file);
  }
- assert.match(sw,/inherit-shell-v23/);
+ assert.match(sw,/inherit-shell-v24/);
  assert.match(css,/prefers-reduced-motion:reduce/);
  assert.match(css,/focus-visible/);
  for(const word of ['ru:','en:','zh:','showModal','textContent','aria-labelledby'])assert.ok(ui.includes(word));

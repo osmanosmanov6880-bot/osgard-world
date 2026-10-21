@@ -1601,3 +1601,119 @@ test('INHERIT R9 inspector opens R11 network anchored to the selected real trace
  await expect(network).toBeHidden();
  expect(errors).toEqual([]);
 });
+
+
+test('INHERIT R12 memory expedition requires an actual island click to honor archived legacy',async({page})=>{
+ const errors=await prepareStandaloneGame(page);
+ await page.goto('/games/inherit/?lang=ru',{waitUntil:'domcontentloaded'});
+ await page.evaluate(()=>{
+  const s=window.InheritGame.snapshot(),tree={tool:'tree',x:56,y:46};
+  window.InheritGame.apply({...s,generation:173,budget:99,objects:[tree],
+   pending:[],changes:[],snapshots:[{generation:171,objects:[tree]}]});
+ });
+ const original=await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()));
+ const trigger=page.locator('.inherit-expedition-trigger'),dialog=page.locator('.inherit-expedition-dialog');
+ await expect(trigger).toBeVisible();await trigger.click();
+ await expect(dialog).toBeVisible();
+ await expect(dialog.locator('.inherit-expedition-title')).toHaveText('Экспедиции памяти');
+ const goal=await page.evaluate(()=>window.InheritMemoryExpeditionsUI.getPlan().goals[0]);
+ expect(goal.kind).toBe('honor');expect(goal.tool).toBe('moss');
+ await expect(dialog.locator('.inherit-expedition-goal-text')).toContainText('Тихая роща');
+ expect(await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()))).toBe(original);
+ await dialog.locator('.inherit-expedition-use').click();
+ await expect(dialog).toBeHidden();
+ await expect(page.locator('.inherit-expedition-ghost')).toBeVisible();
+ expect(await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()))).toBe(original);
+ const island=page.locator('#island');
+ await expect.poll(()=>page.evaluate(()=>{
+  const dot=document.querySelector('.inherit-expedition-ghost').getBoundingClientRect();
+  const x=dot.left+dot.width/2,y=dot.top+dot.height/2,node=document.elementFromPoint(x,y);
+  return x>=0&&x<innerWidth&&y>=0&&y<innerHeight &&
+    Boolean(node?.closest('#world'))&&!node?.closest('button,.dock,[data-memory]');
+ }),{timeout:9000}).toBe(true);
+ const rect=await island.boundingBox();
+ await page.mouse.click(rect.x+rect.width*goal.x/100,rect.y+rect.height*goal.y/100);
+ await expect.poll(()=>page.evaluate(()=>window.InheritGame.snapshot().objects.length)).toBe(2);
+ await expect.poll(()=>page.evaluate(()=>window.InheritLegacyUI.getState().totals.grove)).toBe(1);
+ await expect(page.locator('.inherit-expedition-ghost')).toBeHidden();
+ await expect(page.locator('.inherit-expedition-confirm')).toBeVisible();
+ const recorded=await page.evaluate(()=>window.InheritMemoryExpeditionsUI.getResult());
+ expect(recorded.status).toBe('observed-placement');
+ const after=await page.evaluate(()=>window.InheritGame.snapshot());
+ expect(after.generation).toBe(173);
+ expect(after.budget).toBe(98);
+ expect(after.pending).toHaveLength(1);
+ await page.locator('.inherit-expedition-confirm-actions button').first().click();
+ await expect(page.locator('#pass')).toBeFocused();
+ await page.locator('.inherit-expedition-confirm-actions button').last().click();
+ await expect(page.locator('.inherit-expedition-confirm')).toBeHidden();
+ expect(errors).toEqual([]);
+});
+
+test('INHERIT R12 restores only a real past location and never invents an owner or completion',async({page})=>{
+ const errors=await prepareStandaloneGame(page);
+ await page.goto('/games/inherit/?lang=en',{waitUntil:'domcontentloaded'});
+ await page.evaluate(()=>{
+  const s=window.InheritGame.snapshot();
+  window.InheritGame.apply({...s,generation:175,budget:100,objects:[],pending:[],changes:[],
+   snapshots:[{generation:173,objects:[{tool:'stone',x:55,y:58}]}]});
+ });
+ const original=await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()));
+ await page.locator('.inherit-expedition-trigger').click();
+ const dialog=page.locator('.inherit-expedition-dialog');
+ await expect(dialog).toContainText('RECOVER THE PAST');
+ const goal=await page.evaluate(()=>window.InheritMemoryExpeditionsUI.getPlan().goals[0]);
+ expect(goal.kind).toBe('restore');expect(goal.tool).toBe('stone');
+ await expect(dialog.locator('.inherit-expedition-goal-text')).toContainText('A Stone was recorded');
+ await dialog.locator('.inherit-expedition-use').click();
+ await expect(page.locator('.inherit-expedition-ghost')).toBeVisible();
+ expect(await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()))).toBe(original);
+ await expect.poll(()=>page.evaluate(()=>{
+  const dot=document.querySelector('.inherit-expedition-ghost').getBoundingClientRect();
+  const x=dot.left+dot.width/2,y=dot.top+dot.height/2,node=document.elementFromPoint(x,y);
+  return x>=0&&x<innerWidth&&y>=0&&y<innerHeight&&
+    Boolean(node?.closest('#world'))&&!node?.closest('button,.dock,[data-memory]');
+ }),{timeout:9000}).toBe(true);
+ const rect=await page.locator('#island').boundingBox();
+ await page.mouse.click(rect.x+rect.width*goal.x/100,rect.y+rect.height*goal.y/100);
+ await expect.poll(()=>page.evaluate(()=>window.InheritGame.snapshot().objects.length)).toBe(1);
+ const verified=await page.evaluate(()=>window.InheritMemoryExpeditionsUI.getResult());
+ expect(verified.status).toBe('observed-placement');expect(verified.kind).toBe('restore');
+ await expect(page.locator('.inherit-expedition-confirm')).toContainText('not a confirmed generation handoff');
+ expect((await page.evaluate(()=>window.InheritGame.snapshot())).generation).toBe(175);
+ expect(errors).toEqual([]);
+});
+
+test('INHERIT R12 has honest no-archive and zero-budget states in account mode across languages',async({page})=>{
+ const errors=await prepareStandaloneGame(page);
+ await page.goto('/games/inherit/?mode=account&lang=en',{waitUntil:'domcontentloaded'});
+ await page.evaluate(()=>{
+  const s=window.InheritGame.snapshot();
+  window.InheritGame.apply({...s,generation:175,budget:100,objects:[],pending:[],changes:[],snapshots:[]});
+ });
+ const before=await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()));
+ const trigger=page.locator('.inherit-expedition-trigger'),dialog=page.locator('.inherit-expedition-dialog');
+ await trigger.click();
+ await expect(dialog.locator('.inherit-expedition-status')).toContainText('No genuine snapshot');
+ await expect(dialog.locator('.inherit-expedition-layout')).toBeHidden();
+ await page.keyboard.press('Escape');await expect(dialog).toBeHidden();
+ await page.evaluate(()=>{
+  const s=window.InheritGame.snapshot(),tree={tool:'tree',x:56,y:46};
+  window.InheritGame.apply({...s,generation:175,budget:0,objects:[tree],pending:[],changes:[],
+   snapshots:[{generation:172,objects:[tree]}]});
+ });
+ const readonly=await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()));
+ await trigger.click();
+ await expect(dialog.locator('.inherit-expedition-status')).toContainText('no budget left');
+ await expect(dialog.locator('.inherit-expedition-use')).toBeDisabled();
+ await page.keyboard.press('Escape');await expect(dialog).toBeHidden();
+ await expect(page.locator('.inherit-expedition-ghost')).toBeHidden();
+ await page.locator('[data-game-language="zh"]').click();
+ await trigger.click();
+ await expect(dialog.locator('.inherit-expedition-title')).toHaveText('记忆远征');
+ await expect(dialog.locator('.inherit-expedition-provenance')).toContainText('账号世界');
+ await expect(dialog.locator('.inherit-expedition-use')).toBeDisabled();
+ expect(await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()))).toBe(readonly);
+ expect(JSON.parse(before).objects).toHaveLength(0);
+ expect(errors).toEqual([]);
+});
