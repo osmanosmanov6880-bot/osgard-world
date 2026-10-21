@@ -206,6 +206,10 @@ test('OSGARD Earth uses bundled NASA satellite data with fallback if blocked', a
     await expect(stage).toHaveAttribute('data-cloud-layers', '2')
     await expect(stage).toHaveAttribute('data-earth-resolution', /^(512|1024|2048|4096)$/)
   }
+  // NASA attribution lives inside the compact, keyboard-accessible settings
+  // disclosure. Reveal it before asserting visibility instead of forcing it
+  // to obstruct the main cinematic artwork.
+  await page.locator('.omega-experience-panel summary').click()
   await expect(page.getByText(/ночные огни 2016/)).toBeVisible()
   await expect(page.getByRole('link', { name: 'NASA Blue Marble ↗' })).toHaveAttribute('href', /science\.nasa\.gov/)
 })
