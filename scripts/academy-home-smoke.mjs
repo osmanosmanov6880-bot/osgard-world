@@ -147,6 +147,6 @@ assert.ok(home.includes('academy-learning-console') && home.includes('academy-co
 assert.ok(home.includes('aria-valuenow={completedScenes}') && home.includes('const coursePercentage =') &&
   home.includes('learningProgress.lessonCompletions') && home.includes('learningProgress.projectChecks'),
   'Cockpit progress indicators must be calculated from the existing canonical learning store')
-assert.ok(home.includes('academy-compact-header') && home.includes("href=\"#academy-progress-title\"") &&
-  styles.includes('.academy-learning-console') && styles.includes('@media(max-width:420px)'),
-  'Academy must replace duplicate global navigation with readable, responsive product controls')
+assert.ok(home.includes('academy-hero-topline') && !home.includes('academy-compact-header') &&
+  home.includes('academy-language') && styles.includes('.academy-learning-console') && styles.includes('@media(max-width:420px)'),
+  'Academy must avoid a fourth navigation header while preserving bilingual, responsive controls')
