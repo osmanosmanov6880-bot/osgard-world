@@ -17,7 +17,7 @@ check('all research and tutorial assets are loaded and versioned in offline shel
  for(const name of ['research-core.js','research-i18n.js','research-ui.js','research.css','first-steps.js','first-steps.css']){
   assert.ok(html.includes('./'+name),'HTML '+name);assert.ok(sw.includes('/games/inherit/'+name),'SW '+name);
  }
- assert.match(sw,/inherit-shell-v24/);
+ assert.match(sw,/inherit-shell-v25/);
  for(const name of ['research-core.js','research-ui.js','first-steps.js','research-i18n.js'])new vm.Script(read(name));
 });
 check('consent is required before a research participant can exist',()=>{
