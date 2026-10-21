@@ -64,3 +64,8 @@
  .inherit-compass-option{padding:12px 11px}.inherit-compass-use{width:100%}}
 @media(prefers-reduced-motion:reduce){.inherit-compass-ghost{animation:none!important}
  .inherit-compass-dialog *,.inherit-compass-trigger{transition:none!important}}
+
+/* On mobile the first-use coach covers much of the island. During an explicitly
+   selected Compass hint, temporarily give the island its click surface back.
+   Its stored onboarding progress is untouched; a real placement restores it. */
+.inherit-compass-armed .inherit-first-steps{display:none!important}
