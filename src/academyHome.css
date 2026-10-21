@@ -67,25 +67,17 @@
     radial-gradient(ellipse at 19% 29%,#101a4657,transparent 41%),#061322;
 }
 .theme-intelligence .academy-home :is(h1,h2){font-family:Inter,Arial,sans-serif;font-weight:760}
-.academy-compact-header{
-  width:min(1280px,calc(100% - 48px));min-height:67px;display:grid;
-  grid-template-columns:minmax(0,1fr) auto auto;gap:clamp(14px,2.3vw,35px);
-  align-items:center;background:#08192bc7;border-bottom:1px solid #32566b8a;
-  padding:6px 20px;margin:0 auto;position:relative;z-index:2;
-}
-.academy-context{display:flex;align-items:center;gap:12px;min-width:0;white-space:nowrap;font:650 13px/1.5 Inter,Arial,sans-serif}
-.academy-context-glyph{color:#7af5f1;font-size:23px}
-.academy-context>a{color:#bcd0df;text-decoration:none}
-.academy-context strong{font-weight:750;color:#f5fdff}
-.academy-context>span:nth-of-type(2){color:#668397}
-.academy-compact-header .academy-nav{gap:clamp(10px,1.6vw,25px);min-width:0}
-.academy-compact-header .academy-nav a{font-size:14px;font-weight:550;color:#c5d7e6;white-space:nowrap}
-.academy-compact-header .academy-nav a:hover{color:#98ffff}
-.academy-compact-header .academy-language{min-height:44px;min-width:48px;font-size:13px;border-radius:6px;border-color:#56849670;color:#edfaff}
-.academy-compact-header .academy-header-cta{min-height:44px;font-size:14px;padding:10px 17px;border-radius:6px;background:#80f5ef;color:#061826!important}
-.academy-compact-header :is(a,button):focus-visible,.academy-learning-console a:focus-visible{
+/* The global OSGARD and Intelligence menus remain the sole navigation.
+   Academy language selection sits inside the hero, not in a fourth header. */
+.academy-hero-topline{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:27px}
+.academy-hero-topline .academy-eyebrow{margin:0}
+.academy-hero-topline .academy-language{flex:none;display:inline-grid;place-items:center;min-height:44px;min-width:51px;
+  font-size:13px;font-weight:720;letter-spacing:.04em;border-radius:7px;color:#dffaff;
+  border:1px solid #5383998f;background:#0c2942b3}
+.academy-hero-topline .academy-language:focus-visible,.academy-learning-console a:focus-visible{
   outline:3px solid #94f8ff;outline-offset:3px;
 }
+.academy-hero .academy-lead-compact{display:none}
 .academy-hero{
   width:min(1280px,calc(100% - 48px));min-height:615px;
   grid-template-columns:minmax(0,1.08fr) minmax(380px,.92fr);
@@ -152,9 +144,6 @@
 .academy-path-card p,.academy-lesson-card p,.academy-practice-card p,.academy-ecosystem-card p{font-size:14px;line-height:1.7}
 .academy-path-card a,.academy-lesson-card strong,.academy-ecosystem-card strong{font-size:13px}
 @media(max-width:1120px){
-  .academy-compact-header{grid-template-columns:minmax(0,1fr) auto;gap:10px 22px}
-  .academy-compact-header .academy-nav{grid-column:1/-1;grid-row:2;justify-content:flex-start;border-top:1px solid #3d617158;padding-top:9px;padding-bottom:7px}
-  .academy-header-actions{grid-column:2;grid-row:1}
   .academy-hero{grid-template-columns:minmax(0,1fr) minmax(340px,.95fr);gap:24px}
   .academy-console-identity{grid-template-columns:112px minmax(0,1fr);gap:14px}
   .academy-console-dial{height:112px;width:112px}.academy-console-dial>div{height:92px;width:92px}
@@ -167,15 +156,12 @@
   .academy-console-dial{height:143px;width:143px}.academy-console-dial>div{height:119px;width:119px}
 }
 @media(max-width:760px){
-  .academy-compact-header,.academy-hero,.academy-section{width:min(calc(100% - 32px),600px)}
-  .academy-compact-header{min-height:0;padding:12px 0;background:transparent;grid-template-columns:minmax(0,1fr) auto}
-  .academy-context{font-size:12px;gap:7px}.academy-context-glyph{font-size:18px}
-  .academy-compact-header .academy-nav{gap:10px 19px;overflow:auto;scrollbar-width:none}
-  .academy-compact-header .academy-nav a{font-size:13px}
-  .academy-header-actions{gap:0}.academy-header-actions .academy-header-cta{display:none}
-  .academy-hero{padding:45px 0 40px;gap:30px}
+  .academy-hero,.academy-section{width:min(calc(100% - 32px),600px)}
+  .academy-hero{padding:30px 0 40px;gap:30px}
   .academy-hero h1{font-size:clamp(38px,8.8vw,59px)}
-  .academy-hero .academy-lead{font-size:16px}
+  .academy-hero .academy-lead{font-size:16px;line-height:1.65}
+  .academy-hero .academy-lead-full{display:none}
+  .academy-hero .academy-lead-compact{display:inline}
   .academy-hero .academy-hero-actions{display:grid;grid-template-columns:1fr;gap:10px}
   .academy-hero .academy-hero-actions .academy-button{justify-content:space-between}
   .academy-hero .academy-proof-row{margin-top:21px;gap:9px 13px}
@@ -187,8 +173,8 @@
   .academy-console-quicklinks a{font-size:13px}
 }
 @media(max-width:420px){
-  .academy-compact-header .academy-nav{gap:15px}
-  .academy-hero h1{font-size:clamp(35px,9vw,41px)}
+  .academy-hero h1{font-size:clamp(34px,8.8vw,40px)}
+  .academy-hero-topline{margin-bottom:20px}
   .academy-console-identity{grid-template-columns:90px minmax(0,1fr);gap:12px;margin:22px 0}
   .academy-console-dial{width:90px;height:90px}.academy-console-dial>div{width:74px;height:74px}
   .academy-console-dial strong{font-size:22px}.academy-console-dial span{font-size:6px}
