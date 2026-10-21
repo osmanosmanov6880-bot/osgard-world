@@ -221,6 +221,30 @@ test('OSGARD Earth uses real bundled coastlines and WebGL or safe fallback', asy
   expect(errors).toEqual([])
 })
 
+for (const [locale, path] of [['ru','/entertainment/'], ['en','/entertainment/en/'], ['ar','/entertainment/ar/']]) {
+  test('Entertainment World Select shows seven real illustrated archived worlds in ' + locale, async ({ page }) => {
+    const errors = []
+    page.on('pageerror', error => errors.push(error.message))
+    await page.goto(path)
+    await expect(page.locator('body.entertainment-premium')).toBeVisible()
+    await expect(page.locator('link[href="/entertainment/premium.css"]')).toHaveCount(1)
+    await expect(page.locator('.hero-cta')).toHaveAttribute('href', '/play')
+    await expect(page.locator('.hero-spotlight')).toHaveAttribute('href', '/play')
+    await expect(page.locator('.grid .card')).toHaveCount(7)
+    await expect(page.locator('.grid .art img')).toHaveCount(7)
+    const imageStatus = await page.locator('.grid .art img').evaluateAll(images => images.map(img => ({
+      src: new URL(img.src).pathname,
+      loaded: img.complete && img.naturalWidth > 0
+    })))
+    expect(imageStatus.every(image => image.loaded)).toBe(true)
+    expect(new Set(imageStatus.map(image => image.src)).size).toBe(7)
+    await expect(page.locator('.grid .card[href="/games/time-empire/"]')).toHaveCount(1)
+    await expect(page.locator('.case-shelf .case-feature')).toHaveCount(4)
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true)
+    expect(errors).toEqual([])
+  })
+}
+
 test('OSGARD Omega cinematic scenes preserve working routes and images', async ({ page }) => {
   const pageErrors = []
   page.on('pageerror', error => pageErrors.push(error.message))
