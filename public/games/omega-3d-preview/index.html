@@ -1,56 +1,218 @@
-<!doctype html>
-<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#060c16"><title>OSGARD EMPIRE Ω — 3D DRIVE LAB</title>
-<style>
-:root{font:16px system-ui,Arial;color:#f0f5ff;background:#060c16}*{box-sizing:border-box}body{margin:0;overflow:hidden}canvas{width:100vw;height:100vh;display:block;touch-action:none}#hud{position:fixed;inset:0;pointer-events:none}#top{position:absolute;top:18px;left:18px;right:18px;display:flex;gap:12px;justify-content:space-between;align-items:flex-start}.panel{background:rgba(6,15,29,.85);border:1px solid #344b5f;border-radius:15px;box-shadow:0 18px 65px #0009;padding:16px 19px;backdrop-filter:blur(12px)}.brand{font:700 20px system-ui;letter-spacing:.12em}.eyebrow{font-size:11px;color:#86decc;letter-spacing:.13em;font-weight:700}h1{font-size:20px;margin:7px 0 8px}p{margin:4px 0;color:#b0c5d5;font-size:14px}#bottom{position:absolute;bottom:18px;left:18px;right:18px;display:flex;justify-content:space-between;align-items:flex-end;gap:12px}#speed{font-size:50px;font-weight:800;line-height:1}#gear{color:#88ecd7}#instructions{max-width:510px}#progress{color:#fae3a9;font-size:14px}#notice{position:absolute;top:112px;left:50%;transform:translateX(-50%);font-weight:700;background:#102536ed;border:1px solid #4daaa2;border-radius:12px;padding:12px 22px;max-width:90vw;text-align:center}#map{width:172px;height:172px;border-radius:12px;border:1px solid #516775;background:#10232c}button{pointer-events:auto;background:#183043;border:1px solid #63808f;color:white;border-radius:10px;padding:11px 15px;cursor:pointer;font-weight:700;font-size:14px}button:hover{background:#2b5860}#actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}#gate{color:#93eacf}#warning{position:fixed;inset:0;background:#07111d;color:white;display:none;align-items:center;justify-content:center;padding:32px;text-align:center}#mobile{display:none;position:absolute;bottom:230px;left:14px;right:14px;justify-content:space-between}.ctrl{font-size:25px;width:67px;height:64px;opacity:.8}@media(max-width:800px){#top{top:8px;left:8px;right:8px}#bottom{bottom:8px;left:8px;right:8px}#instructions{max-width:240px}#instructions p{font-size:11px}#mobile{display:flex}#map{width:110px;height:110px}#speed{font-size:32px}h1{font-size:15px}.panel{padding:10px}.brand{font-size:14px}}
-</style></head><body><canvas id="view"></canvas><div id="hud">
-<div id="top"><div class="panel"><div class="eyebrow">REAL-TIME PROCEDURAL 3D · EXPERIMENTAL WEB PROTOTYPE</div><div class="brand">OSGARD EMPIRE Ω</div><h1>Живой город — свободное вождение</h1><p id="mission">Следуйте к бирюзовым воротам маршрута.</p><div id="actions"><button id="mode">E · Выйти из машины</button><button id="route">T · Новый маршрут</button><button id="reset">Начать заново</button></div></div><div class="panel"><div class="eyebrow">WORLD STATUS</div><p>Город: <strong>4 района</strong></p><p>Памятники: <strong id="found">0 / 12</strong></p><p>Баланс: <strong id="wallet">600 ₽</strong></p><p id="progress">Контрольные точки 0 / 5</p></div></div>
-<div id="notice" hidden>Маршрут начат</div>
-<div id="mobile"><div><button class="ctrl" data-k="a">◀</button><button class="ctrl" data-k="d">▶</button></div><div><button class="ctrl" data-k="s">▾</button><button class="ctrl" data-k="w">▴</button></div></div>
-<div id="bottom"><div class="panel"><div class="eyebrow">DRIVING TELEMETRY</div><div><span id="speed">0</span> <small>км/ч</small> <strong id="gear">N</strong></div><p id="gate">Состояние 100% · Топливо 100%</p></div><div class="panel" id="instructions"><div class="eyebrow">КАК ИГРАТЬ</div><p>W / S — газ, тормоз, задний ход. A / D — поворот. Пробел — ручник. E — пешком / в машину. F — исследовать место. T — маршрут.</p><p>Исследуйте 12 светящихся городских маяков. Ворота можно проходить только на автомобиле.</p></div><canvas id="map" width="180" height="180"></canvas></div></div>
-<div id="warning">Нужен браузер с WebGL. Аппаратное ускорение можно включить в настройках браузера.</div>
-<script>
-(()=>{'use strict';
-const canvas=document.getElementById('view'),gl=canvas.getContext('webgl',{alpha:false,antialias:true});if(!gl){document.getElementById('warning').style.display='flex';return}
-const vs='attribute vec3 a;uniform mat4 vp;uniform mat4 world;varying float depth;void main(){vec4 p=vp*world*vec4(a,1.0);gl_Position=p;depth=p.z/p.w;}';
-const fs='precision mediump float;uniform vec3 tint;varying float depth;void main(){float fog=clamp((depth-.89)*4.5,0.,.65);gl_FragColor=vec4(mix(tint,vec3(.06,.11,.18),fog),1.);}';
-const compile=(kind,code)=>{let s=gl.createShader(kind);gl.shaderSource(s,code);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw Error(gl.getShaderInfoLog(s));return s};
-let shader=gl.createProgram();gl.attachShader(shader,compile(gl.VERTEX_SHADER,vs));gl.attachShader(shader,compile(gl.FRAGMENT_SHADER,fs));gl.linkProgram(shader);if(!gl.getProgramParameter(shader,gl.LINK_STATUS))throw Error(gl.getProgramInfoLog(shader));gl.useProgram(shader);
-const loc={a:gl.getAttribLocation(shader,'a'),vp:gl.getUniformLocation(shader,'vp'),world:gl.getUniformLocation(shader,'world'),tint:gl.getUniformLocation(shader,'tint')};
-const verts=[-1,-1,-1,-1,-1,1,-1,1,1,-1,-1,-1,-1,1,1,-1,1,-1,1,-1,-1,1,1,-1,1,1,1,1,-1,-1,1,1,1,1,-1,1,-1,-1,-1,1,-1,-1,1,1,-1,-1,-1,-1,1,1,-1,1,1,1,1,1,1,-1,1,1,-1,1,1,1,-1,-1,1,1,-1,-1,1,1,-1,1,-1,-1,-1,-1,-1,-1,1,1,-1,-1,1,1,-1,-1,1,-1,1,-1,1,1,1,-1,1,1,1,1,-1,1,1,-1,1,-1,1,-1];
-const buffer=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buffer);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(verts),gl.STATIC_DRAW);gl.vertexAttribPointer(loc.a,3,gl.FLOAT,false,0,0);gl.enableVertexAttribArray(loc.a);gl.enable(gl.DEPTH_TEST);gl.enable(gl.CULL_FACE);
-const matMul=(a,b)=>{const c=new Float32Array(16);for(let col=0;col<4;col++)for(let row=0;row<4;row++)for(let k=0;k<4;k++)c[col*4+row]+=a[k*4+row]*b[col*4+k];return c};
-const ident=()=>new Float32Array([1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1]);
-function transform(x,y,z,sx,sy,sz,angle=0){let c=Math.cos(angle),s=Math.sin(angle);return new Float32Array([c*sx,0,-s*sx,0,0,sy,0,0,s*sz,0,c*sz,0,x,y,z,1])}
-function cameraMatrix(eye,at){let f=[at[0]-eye[0],at[1]-eye[1],at[2]-eye[2]];let l=Math.hypot(...f);f=f.map(v=>v/l);let r=[f[2],0,-f[0]];l=Math.hypot(...r);r=r.map(v=>v/l);let u=[-r[2]*f[1],r[2]*f[0]-r[0]*f[2],r[0]*f[1]];return new Float32Array([r[0],u[0],-f[0],0,r[1],u[1],-f[1],0,r[2],u[2],-f[2],0,-r[0]*eye[0]-r[1]*eye[1]-r[2]*eye[2],-u[0]*eye[0]-u[1]*eye[1]-u[2]*eye[2],f[0]*eye[0]+f[1]*eye[1]+f[2]*eye[2],1])}
-function perspective(fov,aspect,near,far){let f=1/Math.tan(fov/2);let m=ident();m[0]=f/aspect;m[5]=f;m[10]=(far+near)/(near-far);m[11]=-1;m[14]=2*far*near/(near-far);m[15]=0;return m}
-let blocks=[],sites=[],roadW=17,cell=52;let seed=217;function rand(){seed=(seed*1664525+1013904223)>>>0;return seed/4294967296}
-function add(x,y,z,sx,sy,sz,color,ang=0){blocks.push({x,y,z,sx,sy,sz,color,ang})}
-add(0,-.55,0,480,.5,480,[.055,.095,.12]);for(let i=-4;i<=4;i++){let p=i*cell;add(p,-.08,0,roadW,.07,480,[.14,.19,.235]);add(0,-.07,p,480,.07,roadW,[.14,.19,.235]);for(let t=-4;t<=4;t++){let q=t*cell;add(p,.013,q,1.1,.012,1.1,[.6,.64,.54]);}}
-for(let i=-4;i<4;i++)for(let j=-4;j<4;j++){let x=(i+.5)*cell,z=(j+.5)*cell;for(let a=0;a<3;a++){let dx=(rand()-.5)*23,dz=(rand()-.5)*23,w=5+rand()*7,h=8+rand()*33;let hue=rand();add(x+dx,h/2,z+dz,w,h,5+rand()*8,hue>.8?[.26,.34,.43]:hue>.45?[.22,.28,.38]:[.19,.24,.3]);add(x+dx,h+.25,z+dz,w+.4,.32,6,[.36,.49,.52]);}}
-for(let i=-4;i<=4;i++)for(let j=-4;j<=4;j++){let x=i*cell,z=j*cell;if((Math.abs(i)+Math.abs(j))%3===0){sites.push({x,z,done:false});add(x,1.2,z,1.2,2.5,1.2,[.17,.85,.72]);}if(sites.length>=12)break;if(sites.length>=12)break;}
-let car={x:-130,z:-104,heading:0,speed:0,fuel:100,health:100},walk=false,player={x:car.x,z:car.z},route=[{x:-104,z:-104},{x:-52,z:-104},{x:0,z:-104},{x:52,z:-104},{x:104,z:-104}],step=0,wallet=600,found=0,keys={};
-let saved=null;try{saved=JSON.parse(localStorage.getItem('osgard:omega3d:v1')||'null')}catch{}if(saved&&Number.isFinite(saved.wallet)){wallet=saved.wallet;sites.forEach((s,i)=>s.done=!!saved.sites?.[i]);found=sites.filter(s=>s.done).length;}
-function save(){try{localStorage.setItem('osgard:omega3d:v1',JSON.stringify({wallet,sites:sites.map(s=>s.done)}))}catch{}}
-const notice=document.getElementById('notice');let noticeUntil=0;function show(msg){notice.textContent=msg;notice.hidden=false;noticeUntil=performance.now()+3200}
-function toggle(){walk=!walk;if(walk){player.x=car.x+4;player.z=car.z+3;show('Вы вышли из машины. Подойдите к бирюзовому маяку и нажмите F.')}else if(Math.hypot(player.x-car.x,player.z-car.z)<12){show('Вы снова за рулём.')}else{walk=true;show('Вернитесь к машине (до 12 м).')}document.getElementById('mode').textContent=walk?'E · Сесть в машину':'E · Выйти из машины'}
-function interact(){if(!walk){show('Сначала выйдите из машины клавишей E');return}let closest=sites.find(s=>!s.done&&Math.hypot(player.x-s.x,player.z-s.z)<10);if(!closest){show('Подойдите к светящемуся монументу');return}closest.done=true;found++;wallet+=60;save();show('Открыта достопримечательность! +60 ₽')}
-function newRoute(){if(walk){show('Маршрут доступен только на автомобиле');return}step=0;show('Автошкола: пройдите 5 контрольных точек')}
-function input(k){if(k==='e')toggle();else if(k==='f')interact();else if(k==='t')newRoute()}
-addEventListener('keydown',e=>{const k=e.key.toLowerCase();if(['w','a','s','d',' ','arrowup','arrowdown','arrowleft','arrowright'].includes(k))e.preventDefault();if(!e.repeat)input(k);keys[k]=true});addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);addEventListener('blur',()=>keys={});
-document.getElementById('mode').onclick=toggle;document.getElementById('route').onclick=newRoute;document.getElementById('reset').onclick=()=>{if(confirm('Сбросить прогресс и начать заново?')){localStorage.removeItem('osgard:omega3d:v1');location.reload()}};
-for(const b of document.querySelectorAll('[data-k]')){let k=b.dataset.k;b.addEventListener('pointerdown',e=>{e.preventDefault();keys[k]=true;b.setPointerCapture(e.pointerId)});for(const name of ['pointerup','pointercancel','lostpointercapture'])b.addEventListener(name,()=>keys[k]=false)}
-function cube(vp,x,y,z,sx,sy,sz,color,angle=0){gl.uniformMatrix4fv(loc.world,false,transform(x,y,z,sx,sy,sz,angle));gl.uniform3fv(loc.tint,color);gl.drawArrays(gl.TRIANGLES,0,36)}
-function frame(t){requestAnimationFrame(frame);let dt=Math.min(.035,(t-(frame.last||t))/1000);frame.last=t;let forward=(keys.w||keys.arrowup?1:0)-(keys.s||keys.arrowdown?1:0),steer=(keys.a||keys.arrowleft?1:0)-(keys.d||keys.arrowright?1:0);
-if(walk){let l=Math.hypot(forward,steer)||1;player.x+=steer/l*12*dt;player.z-=forward/l*12*dt}else{let acc=forward>0?9.5:10.5;let target=forward>0?28:forward<0?-9:0;let effort=keys[' ']?22:forward?acc:2.4;car.speed+=Math.sign(target-car.speed)*Math.min(Math.abs(target-car.speed),effort*dt);car.heading+=car.speed/3.35*Math.tan(steer*.5/(1+Math.abs(car.speed)*.035))*dt;car.x-=Math.sin(car.heading)*car.speed*dt;car.z-=Math.cos(car.heading)*car.speed*dt;car.fuel=Math.max(0,car.fuel-Math.abs(car.speed)*dt*.00065);if(car.fuel===0)car.speed*=.98;let goal=route[step];if(goal&&Math.hypot(goal.x-car.x,goal.z-car.z)<12){step++;show(step===route.length?'Маршрут завершён! +250 ₽':'Контрольная точка '+step+' из '+route.length);if(step===route.length){wallet+=250;save()}}}
-const pos=walk?player:car;const w=canvas.clientWidth,h=canvas.clientHeight,ratio=Math.min(devicePixelRatio,1.7);let W=Math.floor(w*ratio),H=Math.floor(h*ratio);if(canvas.width!==W||canvas.height!==H){canvas.width=W;canvas.height=H}gl.viewport(0,0,W,H);gl.clearColor(.035,.078,.13,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
-let angle=walk?car.heading:car.heading;const eye=[pos.x+Math.sin(angle)*31,walk?13:17,pos.z+Math.cos(angle)*31],at=[pos.x,walk?2:3,pos.z];const vp=matMul(perspective(Math.PI/3.5,W/H,.1,1100),cameraMatrix(eye,at));gl.uniformMatrix4fv(loc.vp,false,vp);
-for(const b of blocks)cube(vp,b.x,b.y,b.z,b.sx,b.sy,b.sz,b.color,b.ang);
-for(const site of sites){cube(vp,site.x,1.2,site.z,1.1,2.3,1.1,site.done?[.20,.28,.33]:[.3,.92,.79]);if(!site.done)cube(vp,site.x,3.0,site.z,2,.24,2,[.72,1,.87]);}
-if(step<route.length){let q=route[step];cube(vp,q.x-6,3,q.z,.5,6,.5,[.15,.9,.84]);cube(vp,q.x+6,3,q.z,.5,6,.5,[.15,.9,.84]);cube(vp,q.x,6,q.z,12,.5,.5,[.15,.9,.84]);}
-cube(vp,car.x,1.1,car.z,1.8,.78,3.7,[.83,.61,.29],car.heading);cube(vp,car.x,1.95,car.z+.2,1.5,.48,1.6,[.15,.29,.34],car.heading);
-if(walk)cube(vp,player.x,1.1,player.z,.65,1.7,.65,[.96,.88,.7]);
-document.getElementById('speed').textContent=Math.round(Math.abs(car.speed)*3.6);document.getElementById('gear').textContent=car.speed<-.35?'R':car.speed>.35?'D':'N';document.getElementById('found').textContent=found+' / 12';document.getElementById('wallet').textContent=wallet+' ₽';document.getElementById('progress').textContent='Контрольные точки '+step+' / '+route.length;document.getElementById('gate').textContent='Состояние '+Math.round(car.health)+'% · Топливо '+Math.round(car.fuel)+'%';if(!notice.hidden&&t>noticeUntil)notice.hidden=true;
-const mc=document.getElementById('map'),ctx=mc.getContext('2d');ctx.clearRect(0,0,180,180);ctx.fillStyle='#0b1924';ctx.fillRect(0,0,180,180);let to=(v)=>90+v*.34;ctx.strokeStyle='#344e59';for(let i=-4;i<=4;i++){let c=to(i*52);ctx.beginPath();ctx.moveTo(c,0);ctx.lineTo(c,180);ctx.stroke();ctx.beginPath();ctx.moveTo(0,c);ctx.lineTo(180,c);ctx.stroke()}for(let s of sites){ctx.fillStyle=s.done?'#546974':'#6be3bb';ctx.fillRect(to(s.x)-2,to(s.z)-2,4,4)}if(route[step]){ctx.strokeStyle='#edcb83';ctx.strokeRect(to(route[step].x)-4,to(route[step].z)-4,8,8)}ctx.fillStyle='#f3e1b0';ctx.beginPath();ctx.arc(to(pos.x),to(pos.z),4,0,Math.PI*2);ctx.fill()}
-requestAnimationFrame(frame);show('Это самостоятельный интерактивный 3D-прототип. Экспорт Godot будет отдельным релизом.');
-})();
-</script></body></html>
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0">
+		<title>OSGARD EMPIRE Ω — Open World Prototype</title>
+		<style>
+html, body, #canvas {
+	margin: 0;
+	padding: 0;
+	border: 0;
+}
+
+body {
+	color: white;
+	background-color: black;
+	overflow: hidden;
+	touch-action: none;
+}
+
+#canvas {
+	display: block;
+}
+
+#canvas:focus {
+	outline: none;
+}
+
+#status, #status-splash, #status-progress {
+	position: absolute;
+	left: 0;
+	right: 0;
+}
+
+#status, #status-splash {
+	top: 0;
+	bottom: 0;
+}
+
+#status {
+	background-color: #242424;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+	visibility: hidden;
+}
+
+#status-splash {
+	max-height: 100%;
+	max-width: 100%;
+	margin: auto;
+}
+
+#status-splash.show-image--false {
+	display: none;
+}
+
+#status-splash.fullsize--true {
+	height: 100%;
+	width: 100%;
+	object-fit: contain;
+}
+
+#status-splash.use-filter--false {
+	image-rendering: pixelated;
+}
+
+#status-progress, #status-notice {
+	display: none;
+}
+
+#status-progress {
+	bottom: 10%;
+	width: 50%;
+	margin: 0 auto;
+}
+
+#status-notice {
+	background-color: #5b3943;
+	border-radius: 0.5rem;
+	border: 1px solid #9b3943;
+	color: #e0e0e0;
+	font-family: 'Noto Sans', 'Droid Sans', Arial, sans-serif;
+	line-height: 1.3;
+	margin: 0 2rem;
+	overflow: hidden;
+	padding: 1rem;
+	text-align: center;
+	z-index: 1;
+}
+		</style>
+		
+	</head>
+	<body>
+		<canvas id="canvas">
+			Your browser does not support the canvas tag.
+		</canvas>
+
+		<noscript>
+			Your browser does not support JavaScript.
+		</noscript>
+
+		<div id="status">
+			<img id="status-splash" class="show-image--true fullsize--true use-filter--true" src="index.png" alt="">
+			<progress id="status-progress"></progress>
+			<div id="status-notice"></div>
+		</div>
+
+		<script src="index.js"></script>
+		<script>
+const GODOT_CONFIG = {"args":[],"canvasResizePolicy":2,"ensureCrossOriginIsolationHeaders":true,"executable":"index","experimentalVK":false,"fileSizes":{"index.pck":515568,"index.wasm":43699190},"focusCanvas":true,"gdextensionLibs":[]};
+const GODOT_THREADS_ENABLED = false;
+const engine = new Engine(GODOT_CONFIG);
+
+(function () {
+	const statusOverlay = document.getElementById('status');
+	const statusProgress = document.getElementById('status-progress');
+	const statusNotice = document.getElementById('status-notice');
+
+	let initializing = true;
+	let statusMode = '';
+
+	function setStatusMode(mode) {
+		if (statusMode === mode || !initializing) {
+			return;
+		}
+		if (mode === 'hidden') {
+			statusOverlay.remove();
+			initializing = false;
+			return;
+		}
+		statusOverlay.style.visibility = 'visible';
+		statusProgress.style.display = mode === 'progress' ? 'block' : 'none';
+		statusNotice.style.display = mode === 'notice' ? 'block' : 'none';
+		statusMode = mode;
+	}
+
+	function setStatusNotice(text) {
+		while (statusNotice.lastChild) {
+			statusNotice.removeChild(statusNotice.lastChild);
+		}
+		const lines = text.split('\n');
+		lines.forEach((line) => {
+			statusNotice.appendChild(document.createTextNode(line));
+			statusNotice.appendChild(document.createElement('br'));
+		});
+	}
+
+	function displayFailureNotice(err) {
+		console.error(err);
+		if (err instanceof Error) {
+			setStatusNotice(err.message);
+		} else if (typeof err === 'string') {
+			setStatusNotice(err);
+		} else {
+			setStatusNotice('An unknown error occurred.');
+		}
+		setStatusMode('notice');
+		initializing = false;
+	}
+
+	const missing = Engine.getMissingFeatures({
+		threads: GODOT_THREADS_ENABLED,
+	});
+
+	if (missing.length !== 0) {
+		if (GODOT_CONFIG['serviceWorker'] && GODOT_CONFIG['ensureCrossOriginIsolationHeaders'] && 'serviceWorker' in navigator) {
+			let serviceWorkerRegistrationPromise;
+			try {
+				serviceWorkerRegistrationPromise = navigator.serviceWorker.getRegistration();
+			} catch (err) {
+				serviceWorkerRegistrationPromise = Promise.reject(new Error('Service worker registration failed.'));
+			}
+			// There's a chance that installing the service worker would fix the issue
+			Promise.race([
+				serviceWorkerRegistrationPromise.then((registration) => {
+					if (registration != null) {
+						return Promise.reject(new Error('Service worker already exists.'));
+					}
+					return registration;
+				}).then(() => engine.installServiceWorker()),
+				// For some reason, `getRegistration()` can stall
+				new Promise((resolve) => {
+					setTimeout(() => resolve(), 2000);
+				}),
+			]).then(() => {
+				// Reload if there was no error.
+				window.location.reload();
+			}).catch((err) => {
+				console.error('Error while registering service worker:', err);
+			});
+		} else {
+			// Display the message as usual
+			const missingMsg = 'Error\nThe following features required to run Godot projects on the Web are missing:\n';
+			displayFailureNotice(missingMsg + missing.join('\n'));
+		}
+	} else {
+		setStatusMode('progress');
+		engine.startGame({
+			'onProgress': function (current, total) {
+				if (current > 0 && total > 0) {
+					statusProgress.value = current;
+					statusProgress.max = total;
+				} else {
+					statusProgress.removeAttribute('value');
+					statusProgress.removeAttribute('max');
+				}
+			},
+		}).then(() => {
+			setStatusMode('hidden');
+		}, displayFailureNotice);
+	}
+}());
+		</script>
+	</body>
+</html>
+
