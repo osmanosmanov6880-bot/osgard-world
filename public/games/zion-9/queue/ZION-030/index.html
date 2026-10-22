@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="en">
+<html lang="ru">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#070a12">
 
-<title>THE SHADE PROTOCOL — ZION-030</title>
+<title>ТЕНЕВОЙ ПРОТОКОЛ — интерактивная игра про охлаждение города | OSGARD</title>
 <style>
 :root{color-scheme:dark;--bg:#070a12;--panel:#0d1320;--fg:#f3f6ff;--muted:#9eabc0;--line:rgba(255,255,255,.14);--cyan:#8de9f5;--hot:#ff805e;--green:#72e6b1}
 *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:var(--bg);color:var(--fg);font:14px/1.5 Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}body{background:radial-gradient(ellipse at 70% 0%,rgba(255,115,78,.11),transparent 35%),radial-gradient(ellipse at 0% 80%,rgba(70,139,215,.10),transparent 35%),var(--bg)}
@@ -14,7 +14,7 @@ main{width:min(1240px,100%);margin:auto;padding:22px clamp(14px,3vw,32px) 44px}h
 @media(max-width:850px){.layout{grid-template-columns:1fr}.panel{order:-1}.modules{grid-template-columns:repeat(3,minmax(0,1fr))}.module{align-items:flex-start;flex-direction:column}.scene,.stage{min-height:430px}.hero{align-items:flex-start;flex-direction:column}.live-ref{display:flex;align-items:center;gap:10px;width:100%;min-width:0}.live-ref strong{margin:0}.live-ref span{margin-left:auto}}
 @media(max-width:520px){main{padding:14px 10px 30px}.hero{padding:23px 0 15px}.stage,.scene{min-height:375px}.panel{padding:15px}.modules{gap:6px}.module{padding:8px;border-radius:11px}.module-icon{width:29px;height:29px;font-size:14px}.module strong{font-size:10px}.module small{font-size:9px}.below{grid-template-columns:1fr}.stage-bottom{left:8px;right:8px;bottom:8px}.stage-top{left:8px;right:8px;top:8px}.pill{font-size:8px;padding:6px 8px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important}}
-</style><meta name="description" content="Теневой протокол. Выберите дерево, навес или дождевой сад и закройте три горячие точки. Бюджет — три размещения."><link rel="canonical" href="https://osgard.world/games/zion-9/queue/ZION-030/index.html"><meta property="og:title" content="Теневой протокол — OSGARD PLAY"><meta property="og:description" content="Выберите дерево, навес или дождевой сад и закройте три горячие точки. Бюджет — три размещения."><meta property="og:image" content="https://osgard.world/games/zion-9/covers/zion-030.svg"><link rel="icon" href="/games/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="../../entry.css"></head>
+</style><meta name="description" content="Теневой протокол. Выберите дерево, навес или дождевой сад и закройте три горячие точки. Бюджет — три размещения."><link rel="canonical" href="https://osgard.world/games/zion-9/queue/ZION-030/index.html"><meta property="og:title" content="Теневой протокол — OSGARD PLAY"><meta property="og:description" content="Выберите дерево, навес или дождевой сад и закройте три горячие точки. Бюджет — три размещения."><meta property="og:image" content="https://osgard.world/games/zion-9/covers/zion-030.svg"><link rel="icon" href="/games/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="../../entry.css"><link rel="stylesheet" href="./premium.css?v=22"></head>
 <body><main><nav class="z9-osgard-nav" aria-label="OSGARD PLAY"><a href="/games/">← Все игры OSGARD</a><a href="./v21/index.html" style="color:#b1ffe9;font-weight:750" aria-label="Играть в Теневой протокол v21">НОВАЯ ВЕРСИЯ v21 ↗</a><a href="/play/world/zion-030">О мире и управлении</a><span>ZION-030 / 3D-головоломка</span></nav>
 <aside class="z9-entry" aria-label="Перед началом"><p class="z9-entry-label">ПЕРЕД НАЧАЛОМ · 3D-ГОЛОВОЛОМКА</p><p>Выберите дерево, навес или дождевой сад и закройте три горячие точки. Бюджет — три размещения.</p><p class="z9-entry-controls">Мышь или касание — клетка. Стрелки — выбор клетки, Enter — размещение, 1–3 — модуль, R — заново.</p><div class="z9-entry-state"><span>Сохранение: только текущая сессия</span><span>Одиночный режим · онлайн отсутствует</span><span>Русский / English</span></div><p class="z9-entry-note">После обновления страницы прохождение начнётся заново. Избранное каталога сохраняет ссылку на мир, а не игровой прогресс.</p><a class="z9-entry-action" href="#world-play">Перейти к игре ↓</a></aside>
 <div id="world-play" tabindex="-1">
@@ -326,7 +326,16 @@ function startThreeGame(){
 window.addEventListener("zion-three-ready",startThreeGame,{once:true});
 window.addEventListener("zion-three-failed",showThreeFallback,{once:true});
 if(window.THREE)startThreeGame();
+
+// New premium Canvas2D renderer uses the same game state and rules as WebGL.
+window.ZION030_GAME=Object.freeze({
+ select:type=>{if(["tree","shade","water"].includes(type))setModule(type);},
+ cursor:(x,z)=>{if(Number.isFinite(x)&&Number.isFinite(z)){cursor.x=Math.max(-GRID,Math.min(GRID,Math.round(x)));cursor.z=Math.max(-GRID,Math.min(GRID,Math.round(z)));updateCursor();}},
+ place:(x,z,type)=>placeModuleAt(x,z,type),
+ reset:()=>reset(),
+ state:()=>({selected,placed:placed.map(p=>({x:p.x,z:p.z,type:p.type})),score:HOT.filter(p=>placed.some(m=>Math.hypot(m.x-p.x,m.z-p.z)<=1.35)).length,won,lost,ready:gameReady,cursor:{...cursor},renderer:renderingMode})
+});
 updateCursor();
 })();
-</script><script src="../../language.js?v=osgard-20261017"></script>
+</script><script src="../../language.js?v=osgard-20261017"></script><script defer src="./premium.js?v=22"></script>
 </body></html>
