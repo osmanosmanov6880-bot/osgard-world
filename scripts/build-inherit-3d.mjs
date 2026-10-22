@@ -14,7 +14,7 @@ const result=await build({
  format:'iife',
  target:['es2022'],
  treeShaking:true,
- legalComments:'none',
+ legalComments:'eof',
  sourcemap:false,
  write:!check,
  logLevel:'warning'
