@@ -217,18 +217,46 @@
       const base = patternTexture(i), emissive = patternTexture(i, true);
       facade.push(new THREE.MeshStandardMaterial({ map: base, emissiveMap: emissive, emissive: '#ffbe7d', emissiveIntensity: .73, metalness: .2, roughness: .62 }));
     }
+    // Identical central-block silhouettes, but one draw call per facade/roof batch
+    // rather than hundreds of independent meshes: keeps street mode responsive on low-end GPUs.
+    const centerUnit = new THREE.BoxGeometry(1, 1, 1);
+    const centerBatches = Array.from({ length: 4 }, () => []);
+    const crownBatch = [], trimBatch = [], redBatch = [];
+    const centerDummy = new THREE.Object3D();
+    const centerBox = (batch, x, y, z, w, h, d) => {
+      centerDummy.position.set(x, y + h / 2, z);
+      centerDummy.scale.set(w, h, d);
+      centerDummy.updateMatrix();
+      batch.push(centerDummy.matrix.clone());
+    };
     for (let x = -7; x <= 7; x++) for (let z = -7; z <= 7; z++) {
       if (!terrainBuilding(x, z)) continue;
-      const r = rand(x, z); const h = 2.6 + r * 5.15;
+      const r = rand(x, z), h = 2.6 + r * 5.15;
       const w = .68 + rand(z, x) * .18, d = .68 + rand(x + 5, z - 4) * .17;
-      const building = drawBox(scene, x, .015, z, w, h, d, facade[Math.floor(rand(x + 7, z) * 4)], true);
-      world.buildings.push(building);
-      drawBox(scene, x, h + .014, z, w + .07, .095, d + .07, crown, true);
-      drawBox(scene, x, .045, z, w + .04, .11, d + .04, trim);
-      if (r > .65) { drawBox(scene, x, h + .11, z, .16, .36, .16, trim); drawBox(scene, x + w * .15, h + .16, z, .11, .07, .08, redAccent); }
-      if (r > .78) drawBox(scene, x, h + .2, z, .018, 1.1, .018, trim);
-      if (r < .64) drawBox(scene, x, .08, z + d / 2 + .06, w * .85, .12, .18, crown);
+      centerBox(centerBatches[Math.floor(rand(x + 7, z) * 4)], x, .015, z, w, h, d);
+      centerBox(crownBatch, x, h + .014, z, w + .07, .095, d + .07);
+      centerBox(trimBatch, x, .045, z, w + .04, .11, d + .04);
+      if (r > .65) {
+        centerBox(trimBatch, x, h + .11, z, .16, .36, .16);
+        centerBox(redBatch, x + w * .15, h + .16, z, .11, .07, .08);
+      }
+      if (r > .78) centerBox(trimBatch, x, h + .2, z, .018, 1.1, .018);
+      if (r < .64) centerBox(crownBatch, x, .08, z + d / 2 + .06, w * .85, .12, .18);
     }
+    [[facade[0],centerBatches[0],true],
+     [facade[1],centerBatches[1],true],
+     [facade[2],centerBatches[2],true],
+     [facade[3],centerBatches[3],true],
+     [crown,crownBatch,false], [trim,trimBatch,false], [redAccent,redBatch,false]].forEach(([mat,batch,isFacade]) => {
+      if (!batch.length) return;
+      const mesh = new THREE.InstancedMesh(centerUnit, mat, batch.length);
+      batch.forEach((matrix, i) => mesh.setMatrixAt(i, matrix));
+      mesh.instanceMatrix.needsUpdate = true;
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      scene.add(mesh);
+      if (isFacade) world.buildings.push(mesh);
+    });
     addOuterCity(facade, crown);
     // Non-interactive skyline outside the playable streets produces depth without expanding mission physics.
     const farMaterials = [makeMat('#111d2d'), makeMat('#152c3b'), makeMat('#1e2b3e')];
