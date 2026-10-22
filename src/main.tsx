@@ -146,6 +146,6 @@ function RoutedRoot(){
   const url = new URL(href, 'https://osgard.world')
   const path = normalizeReactPath(url.pathname)
   const theme = path==='/'&&(url.searchParams.has('project')||url.hash==='#project-studio')?'intelligence':path==='/play/partners'?'world':path==='/play'||path.startsWith('/play/')||path==='/games'||path==='/entertainment'||path.startsWith('/games/')?'play':path==='/intelligence'||path.startsWith('/learning')||path==='/academy'||path.startsWith('/lectures')||path==='/osa-cinema'?'intelligence':'world'
-  return <OsgardTransitionProvider><BrandShell theme={theme}><RouteBoundary key={revision}><Suspense fallback={<OsgardRouteSkeleton theme={theme} />}><MeasuredRoute path={path} href={href} revision={revision} /></Suspense></RouteBoundary></BrandShell></OsgardTransitionProvider>
+  return <OsgardTransitionProvider><BrandShell theme={theme}><RouteBoundary key={revision}><Suspense fallback={<OsgardRouteSkeleton theme={theme} path={path} />}><MeasuredRoute path={path} href={href} revision={revision} /></Suspense></RouteBoundary></BrandShell></OsgardTransitionProvider>
 }
 createRoot(document.getElementById('root')!).render(<StrictMode><RoutedRoot /></StrictMode>)
