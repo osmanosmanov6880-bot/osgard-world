@@ -25,6 +25,15 @@ func _run() -> void:
     game.save_path = SAVE
     root.add_child(game)
     await process_frame
+    var wave4_reactor: Node3D = game.get_node_or_null("LivingCity/ChronoCore/Wave4ChronoReactor") as Node3D
+    var civic: Node3D = game.get_node_or_null("LivingCity/Wave4AuthoredLandmarks/SpireWestPBR") as Node3D
+    var civic_2: Node3D = game.get_node_or_null("LivingCity/Wave4AuthoredLandmarks/SpireEastPBR") as Node3D
+    _check(wave4_reactor != null and civic != null and civic_2 != null, "imported GLB reactor and two architectural landmarks")
+    if wave4_reactor != null:
+        _check(game.Wave4Assets.triangle_count(wave4_reactor) > 70000, "native reactor uses true 80k triangle sculpted PBR asset")
+    if civic != null:
+        _check(game.Wave4Assets.triangle_count(civic) > 85000, "unique civic spire contains over 100k triangle model")
+    _check(load("res://assets/wave4/civic_spire_web.glb") is PackedScene, "Web LOD architectural mesh independently imported")
     _check(game.get_node_or_null("LivingCity/Wave3Metropolis") != null, "WAVE3 physical metropolis authored")
     var city_mesh_instance: MultiMeshInstance3D = game.get_node_or_null("LivingCity/SkylineTowers") as MultiMeshInstance3D
     _check(city_mesh_instance != null and city_mesh_instance.multimesh.mesh is ArrayMesh, "mass-market city tower batch uses unique sculpted loft silhouettes")

@@ -2,6 +2,7 @@ extends Node3D
 const UltraDetail = preload("res://scripts/ultra_detail_kit.gd")
 const HeroDetailV2 = preload("res://scripts/hero_detail_v2.gd")
 const Wave3Metropolis = preload("res://scripts/wave3_metropolis.gd")
+const Wave4Assets = preload("res://scripts/wave4_assets.gd")
 ## OSGARD TIME EMPIRE — CHRONOS CITY. Original Godot 4.7.2 strategy vertical slice.
 ## No art ripped from any reference titles. Procedural 3D visuals; gameplay is stateful.
 
@@ -62,6 +63,7 @@ func _ready() -> void:
     UltraDetail.decorate_city(get_node("LivingCity"), core, traffic_agents)
     HeroDetailV2.build(get_node("LivingCity"), core, traffic_agents)
     Wave3Metropolis.build(get_node("LivingCity"), core, traffic_agents)
+    Wave4Assets.decorate(get_node("LivingCity"), core)
     _build_ui()
     _load_game()
     _refresh_ui()
@@ -105,6 +107,16 @@ func _build_world() -> void:
     _omni(Vector3(0, 12, 0), GOLD, 2.8, 22.0)
     _omni(Vector3(-15, 6, -15), CYAN, 1.5, 17.0)
     _omni(Vector3(15, 6, 15), GOLD, 1.8, 16.0)
+
+    # High-CRI warm sun plus cool bounced light for material readability.
+    sunlight.shadow_enabled = not OS.has_feature("web")
+    var civic_fill := OmniLight3D.new()
+    civic_fill.name = "Wave4ArchitecturalFill"
+    civic_fill.position = Vector3(-11.0, 19.0, 8.0)
+    civic_fill.light_color = Color(0.68, 0.81, 0.96)
+    civic_fill.light_energy = 2.3
+    civic_fill.omni_range = 26.0
+    add_child(civic_fill)
 
     camera = Camera3D.new()
     camera.name = "StrategyCamera"
