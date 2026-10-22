@@ -187,7 +187,77 @@ export function makeArchipelago({quality='high'}={}){
   dummy.position.set(x,fieldHeight(x,z)+.05,z);dummy.rotation.set(i*.19,i*.46,i*.19);
   const s=.09+hash(i,1,77)*.31;dummy.scale.set(s*1.5,s*.64,s);dummy.updateMatrix();pebbles.setMatrixAt(i,dummy.matrix);
  }
+
  pebbles.instanceMatrix.needsUpdate=true;terrain.add(pebbles);
+ // Sculptural undergrowth: tapered reeds, ferns and tiny flowering plants.
+ // Hundreds of unique clumps remain THREE instanced — 2-3 draw calls total.
+ const grassGoal=quality==='high'?980:quality==='medium'?540:165;
+ const blade=new THREE.InstancedMesh(new THREE.ConeGeometry(.095,.61,4),
+  new THREE.MeshStandardMaterial({color:0x6c986b,roughness:1,side:THREE.DoubleSide}),grassGoal);
+ blade.castShadow=false;blade.receiveShadow=true;
+ const blossomGoal=quality==='high'?180:quality==='medium'?90:22;
+ const blossoms=new THREE.InstancedMesh(new THREE.IcosahedronGeometry(.085,1),
+  new THREE.MeshStandardMaterial({color:0xe0d1b1,roughness:.82}),blossomGoal);
+ const colorLeaf=new THREE.Color(),colorBloom=new THREE.Color();
+ let gIndex=0,fIndex=0;
+ for(let k=0;k<grassGoal*7&&gIndex<grassGoal;k++){
+  const a=hash(k*11,3,911)*Math.PI*2;
+  const radial=Math.sqrt(hash(k*13,4,1997));
+  const x=Math.cos(a)*21*radial,z=Math.sin(a)*18*radial;
+  if(Math.abs(z-(.22*x+2*Math.sin(x*.19)))<1.85)continue;
+  if(Math.abs(x-1.8-Math.sin(z*.17+1.3)*2.1-Math.sin(z*.41)*.45)<1.2)continue;
+  dummy.position.set(x,fieldHeight(x,z)+.22,z);
+  dummy.rotation.set(0,hash(k,9,316)*6.283,Math.sin(k*2.4)*.11);
+  const size=.65+hash(k,5,27)*1.16;
+  dummy.scale.set(size,.65+size*.62,size);dummy.updateMatrix();
+  blade.setMatrixAt(gIndex,dummy.matrix);
+  colorLeaf.setHSL(.255+hash(k,31,13)*.07,.31+hash(k,9,881)*.15,.28+hash(k,77,76)*.17);
+  blade.setColorAt(gIndex,colorLeaf);gIndex++;
+  if(fIndex<blossomGoal&&k%4===0){
+   dummy.position.y+=.37*size;dummy.scale.setScalar(.48+hash(k,7,61)*.48);
+   dummy.updateMatrix();blossoms.setMatrixAt(fIndex,dummy.matrix);
+   colorBloom.setHSL(k%3===0?.95:k%3===1?.13:.48,.29,.78);
+   blossoms.setColorAt(fIndex,colorBloom);fIndex++;
+  }
+ }
+ blade.count=gIndex;blossoms.count=fIndex;
+ blade.instanceMatrix.needsUpdate=true;blossoms.instanceMatrix.needsUpdate=true;
+ if(blade.instanceColor)blade.instanceColor.needsUpdate=true;
+ if(blossoms.instanceColor)blossoms.instanceColor.needsUpdate=true;
+ terrain.add(blade,blossoms);
+ // A hand-built little wooden crossing adds recognizable architectural
+ // structure without changing any actual player's editable world objects.
+ const bridge=new THREE.Group();bridge.name='Fictional carved woodland footbridge';
+ const timber=new THREE.MeshStandardMaterial({color:0x755b45,roughness:.88}),
+  weathered=new THREE.MeshStandardMaterial({color:0x997a58,roughness:.92}),
+  metal=new THREE.MeshStandardMaterial({color:0xb7a178,metalness:.73,roughness:.35});
+ const plankCount=21;
+ const deck=new THREE.InstancedMesh(new THREE.BoxGeometry(1,1,1),weathered,plankCount);
+ for(let i=0;i<plankCount;i++){
+  const x=1.45+i*.215,z=1.30;
+  dummy.position.set(x,fieldHeight(x,z)+.35+.19*Math.sin(i/(plankCount-1)*Math.PI),z);
+  dummy.rotation.set(0,.035*Math.sin(i*1.71),0);
+  dummy.scale.set(.202,.13,1.72);
+  dummy.updateMatrix();deck.setMatrixAt(i,dummy.matrix);
+ }
+ deck.instanceMatrix.needsUpdate=true;deck.castShadow=quality==='high';deck.receiveShadow=true;
+ bridge.add(deck);
+ const posts=new THREE.InstancedMesh(new THREE.CylinderGeometry(.075,.097,.9,8),
+  timber,12);
+ for(let k=0;k<12;k++){
+  const i=k%6,side=k<6?-.8:.8,x=1.45+i*.86,z=1.3+side;
+  dummy.position.set(x,fieldHeight(x,1.3)+.84,z);
+  dummy.rotation.set(0,0,0);dummy.scale.set(1,1,1);dummy.updateMatrix();posts.setMatrixAt(k,dummy.matrix);
+ }
+ posts.instanceMatrix.needsUpdate=true;posts.castShadow=quality==='high';bridge.add(posts);
+ for(const side of [-.8,.8]){
+  const rail=new THREE.Mesh(new THREE.BoxGeometry(4.5,.11,.10),timber);
+  rail.position.set(3.61,fieldHeight(3.6,1.3)+1.27,1.3+side);rail.receiveShadow=true;
+  rail.castShadow=quality==='high';bridge.add(rail);
+  const cap=new THREE.Mesh(new THREE.BoxGeometry(4.5,.035,.035),metal);
+  cap.position.set(3.61,fieldHeight(3.6,1.3)+1.345,1.3+side);bridge.add(cap);
+ }
+ terrain.add(bridge);
  const landmarks=new THREE.Group();landmarks.name='Fictional template landmarks';
  const ancient=makeHeroTree();ancient.position.set(-7.2,fieldHeight(-7.2,-5),-5);landmarks.add(ancient);
  const sapling=makeTrace('tree',{size:1.25});sapling.position.set(11,fieldHeight(11,3),3);landmarks.add(sapling);
