@@ -301,7 +301,7 @@ jobs:
       - run: npm run preflight:frontend
       - run: npm run qa:skillcred
       - name: Verify Imperium of Time visuals and real diagnostics
-        run: npm run qa:time-ui
+        run: npm run qa:time-ui && node scripts/omega-city-3d-smoke.mjs
       - name: Check deployment shell syntax
         run: bash -n scripts/activate-frontend-remote.sh
       - name: Package HTML assets and matching Nginx config

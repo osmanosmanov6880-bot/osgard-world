@@ -1,12 +1,25 @@
 {
   "schema_version": 1,
-  "product": "OSGARD EMPIRE Ω — Империя времени",
-  "release": "v0.22-browser-companion",
+  "product": "OSGARD EMPIRE Ω — Живой город 3D",
+  "release": "v0.23-interactive-3d-city",
   "route": "/games/time-omega-preview/",
   "source_path": "public/games/time-omega-preview/index.html",
-  "source_blob_sha": "d62bb0b2dfc44a802fefb98c0e3becc22f0b8189",
-  "artifact_type": "standalone HTML browser strategy",
+  "source_blob_sha": "a6c815d55f8a36974c97ad4409a2af81d149af5c",
+  "artifact_type": "interactive WebGL2/Canvas city game with separate legacy strategy",
   "godot_3d_exported": false,
   "integrity_check": "scripts/time-prototype-smoke.mjs",
-  "save_recovery": "not-claimed"
+  "save_recovery": "not-claimed",
+  "runtime": [
+    "WebGL2",
+    "Canvas2D fallback"
+  ],
+  "features": [
+    "215 procedural buildings",
+    "driveable cars",
+    "6 missions",
+    "12 discoverable monuments",
+    "3-language UI",
+    "local autosave",
+    "legacy strategy preserved"
+  ]
 }
