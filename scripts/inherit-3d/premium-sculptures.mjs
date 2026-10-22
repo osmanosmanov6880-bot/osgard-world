@@ -37,22 +37,56 @@ function grain(seed=1,type='stone'){
  return tex;
 }
 const grainStone=grain(197,'stone'),grainBark=grain(661,'bark'),grainBrass=grain(417,'metal');
+// High-frequency tactile microstructure, derived solely from our local seeded
+// bump textures. GPU-readable tangent normals + roughness variation make carved
+// limestone, weathered bark and patinated brass visibly different in close-ups.
+// Three shared 96px packs = six extra tiny textures, not dozens of downloads.
+function microstructure(height,strength=.8){
+ const n=height.image.width,src=height.image.data;
+ const normals=new Uint8Array(n*n*4),roughness=new Uint8Array(n*n*4);
+ const grey=(x,y)=>src[((((y+n)%n)*n+((x+n)%n))*4)];
+ for(let y=0;y<n;y++)for(let x=0;x<n;x++){
+  const i=(y*n+x)*4, center=grey(x,y);
+  const dx=(grey(x+1,y)-grey(x-1,y))/255*strength;
+  const dy=(grey(x,y+1)-grey(x,y-1))/255*strength;
+  const inv=1/Math.hypot(dx,dy,1);
+  normals[i]=Math.round(255*(1-dx*inv)*.5);
+  normals[i+1]=Math.round(255*(1-dy*inv)*.5);
+  normals[i+2]=Math.round(255*(1+inv)*.5);
+  normals[i+3]=255;
+  const rough=THREE.MathUtils.clamp(.58+center/255*.42,.48,1);
+  const amount=Math.round(rough*255);
+  roughness[i]=roughness[i+1]=roughness[i+2]=amount;
+  roughness[i+3]=255;
+ }
+ const texture=(bytes)=>{
+  const t=new THREE.DataTexture(bytes,n,n,THREE.RGBAFormat);
+  t.wrapS=t.wrapT=THREE.RepeatWrapping;
+  t.minFilter=THREE.LinearMipmapLinearFilter;t.magFilter=THREE.LinearFilter;
+  t.generateMipmaps=true;t.needsUpdate=true;return t;
+ };
+ return Object.freeze({normalMap:texture(normals),roughnessMap:texture(roughness)});
+}
+const microStone=microstructure(grainStone,1.22);
+const microBark=microstructure(grainBark,1.83);
+const microBrass=microstructure(grainBrass,.31);
+
 const mat=(color,roughness=0.9,extra={})=>new THREE.MeshStandardMaterial({color,roughness,...extra});
 const P={
- bark:mat(0x594434,.97,{bumpMap:grainBark,bumpScale:.073}),
- barkDeep:mat(0x332c25,1,{bumpMap:grainBark,bumpScale:.11}),
- barkWarm:mat(0x926746,.9,{bumpMap:grainBark,bumpScale:.04}),
+ bark:mat(0x594434,.97,{bumpMap:grainBark,bumpScale:.073,...microBark,normalScale:new THREE.Vector2(.67,.83)}),
+ barkDeep:mat(0x332c25,1,{bumpMap:grainBark,bumpScale:.11,...microBark,normalScale:new THREE.Vector2(.78,.95)}),
+ barkWarm:mat(0x926746,.9,{bumpMap:grainBark,bumpScale:.04,...microBark,normalScale:new THREE.Vector2(.55,.69)}),
  foliage:mat(0x426d51,.86,{side:THREE.DoubleSide}),
  foliageDeep:mat(0x284e43,.95,{side:THREE.DoubleSide}),
  foliageGold:mat(0x94ad68,.83,{side:THREE.DoubleSide}),
  foliageBright:mat(0xc4bd7a,.82,{side:THREE.DoubleSide}),
- stone:mat(0x8e9b8f,.96,{bumpMap:grainStone,bumpScale:.065}),
+ stone:mat(0x8e9b8f,.96,{bumpMap:grainStone,bumpScale:.06,...microStone,normalScale:new THREE.Vector2(.7,.7)5,...microStone,normalScale:new THREE.Vector2(.72,.72)}),
  limestone:mat(0xc5c8ae,.91,{bumpMap:grainStone,bumpScale:.06}),
- stoneDark:mat(0x596969,.99,{bumpMap:grainStone,bumpScale:.1}),
+ stoneDark:mat(0x596969,.99,{bumpMap:grainStone,bumpScale:.1,...microStone,normalScale:new THREE.Vector2(.86,.86)}),
  stoneMoss:mat(0x65806a,.99,{bumpMap:grainStone,bumpScale:.1}),
- slate:mat(0x72837f,.91,{bumpMap:grainStone,bumpScale:.07}),
- brass:mat(0xc5a36c,.24,{metalness:.84,bumpMap:grainBrass,bumpScale:.015}),
- brassDark:mat(0x77583a,.43,{metalness:.65,bumpMap:grainBrass,bumpScale:.024}),
+ slate:mat(0x72837f,.91,{bumpMap:grainStone,bumpScale:.07,...microStone,normalScale:new THREE.Vector2(.8,.8)}),
+ brass:mat(0xc5a36c,.24,{metalness:.84,bumpMap:grainBrass,bumpScale:.015,...microBrass,normalScale:new THREE.Vector2(.25,.3)}),
+ brassDark:mat(0x77583a,.43,{metalness:.65,bumpMap:grainBrass,bumpScale:.024,...microBrass,normalScale:new THREE.Vector2(.3,.38)}),
  bronze:mat(0x9d875f,.46,{metalness:.59}),
  gold:mat(0xe8cb88,.22,{metalness:.73}),
  cord:mat(0xd4c7a3,.92),
@@ -370,5 +404,5 @@ export function makePremiumTrace(tool,{size=1,quality='high',cast=true,seed=173,
  return group;
 }
 export function premiumAssetsInfo(){
- return {quality:['high','medium'],materials:Object.keys(P).length,bumpTextures:3,batched:true,externalAssets:0};
+ return {quality:['high','medium'],materials:Object.keys(P).length,bumpTextures:3,normalTextures:3,roughnessTextures:3,batched:true,externalAssets:0};
 }
