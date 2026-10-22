@@ -207,3 +207,33 @@ html[data-motion=off] :is(.world-case:hover img,.world-case:focus-visible img,.p
   .theme-play.play-catalog-shell .brand-motion {min-width:35px;min-height:35px;margin-left:auto}
   .theme-play.play-catalog-shell>.brand-local-bar {position:relative;top:auto;right:auto;padding:13px 19px;background:#03101b;border-bottom:1px solid #17394c;min-height:53px;order:0;transform:none;display:none}
 }
+
+/* Unified World mobile navigation: prevent font-swap row wrapping (CLS regression). */
+/* In the 390px throttled mobile lab, Inter's late arrival widened five World
+   links and wrapped 'Контакт' onto a second row. That moved #product-main down
+   41px (CLS 0.282). Reserve one stable row before any lazy hero or font loads.
+   The complete World/Development navigation remains reachable by touch/keys. */
+@media(max-width:760px){
+  .brand-system.theme-world>.brand-local-bar{min-width:0;max-width:100%}
+  .brand-system.theme-world>.brand-local-bar nav{
+    display:flex;
+    flex-wrap:nowrap;
+    justify-content:flex-start;
+    gap:18px;
+    width:100%;
+    min-width:0;
+    max-width:100%;
+    overflow-x:auto;
+    overflow-y:hidden;
+    overscroll-behavior-x:contain;
+    -webkit-overflow-scrolling:touch;
+    scrollbar-width:none;
+    padding:3px 0 6px;
+  }
+  .brand-system.theme-world>.brand-local-bar nav::-webkit-scrollbar{display:none}
+  .brand-system.theme-world>.brand-local-bar nav>a{
+    flex:0 0 auto;
+    white-space:nowrap;
+    min-height:44px;
+  }
+}
