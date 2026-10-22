@@ -248,3 +248,77 @@ main{width:min(2500px,98vw)!important;padding:10px clamp(12px,1.5vw,30px) 36px!i
  .module-detail b,.module-detail i{font-size:12px}
 }
 @media(prefers-reduced-motion:reduce){.how-step{transition:none!important}}
+
+
+/* v25 THERMAL RESCUE / ATHENS — real interface and interactive tactical city. */
+.premium-mode{--premium-hot:#ff945e;--premium-cold:#75ffe0}
+.premium-mode .hero{min-height:166px!important;padding-top:18px!important;padding-bottom:18px!important;box-shadow:inset 0 0 0 1px #3aa6bb32,0 16px 40px #0008!important}
+.premium-mode .premium-hero-copy>p{max-width:590px!important;color:#d7eafa!important}
+.premium-mode .layout{grid-template-columns:minmax(282px,.92fr) minmax(525px,2.35fr) minmax(340px,1.1fr)!important;gap:15px!important}
+.premium-mode .stage{min-height:600px!important;border-color:#318eaa!important;background:#061b30!important;box-shadow:0 14px 42px #0007,inset 0 1px #6eeeff36!important}
+.premium-mode .premium-mission{padding:16px!important}
+.premium-mode .mission-block{padding:11px 2px!important}
+.premium-mode .mission-block p{margin-left:2px!important}
+.premium-mode .athens-illustration{height:102px;margin:10px 0 6px}
+.premium-districts{display:grid;gap:8px;border-top:1px solid #27657c;margin-top:10px;padding-top:12px}
+.premium-districts>h2{font-size:16px!important;letter-spacing:.05em;margin:0!important;color:#a1ffed}
+.premium-districts>p{font-size:14px!important;color:#b4d9e5;line-height:1.42;margin:0!important}
+.premium-district-rows{display:grid;gap:7px}
+.premium-district{display:flex;align-items:center;gap:9px;padding:9px 10px;width:100%;border:1px solid #326b80;border-radius:10px;background:linear-gradient(110deg,#132c41,#092238);color:#ecfffb;text-align:left;cursor:pointer}
+.premium-district:hover:not(:disabled),.premium-district.is-selected{border-color:#ffab70;box-shadow:inset 0 0 0 1px #ffb47e45,0 0 18px #f76c303a;background:linear-gradient(110deg,#3d2e30,#0f2c41)}
+.premium-district:focus-visible{outline:3px solid #9ffff3;outline-offset:2px}
+.premium-district:disabled{cursor:default;opacity:.88}
+.district-index{flex:0 0 37px;display:grid;place-items:center;border:1px solid #49798a;border-radius:9px;padding:8px 2px;color:#98cfe0;font-size:14px;font-weight:800}
+.district-info{flex:1;min-width:0;display:grid;gap:3px}.district-info strong{font-size:14px!important;line-height:1.25;color:#e5f9ff}
+.district-info small{font-size:11px!important;color:#ffb693;font-weight:750;letter-spacing:.045em}
+.district-temp{font-size:19px;color:#ff9867}
+.premium-district.is-cooled{background:linear-gradient(110deg,#0f3736,#082a32);border-color:#388d7b}
+.premium-district.is-cooled .district-temp,.premium-district.is-cooled .district-progress{color:#8affdd}
+.premium-hint-button{background:linear-gradient(120deg,#0b4857,#0c4250);border:1px solid #61dfc5;border-radius:10px;padding:11px 9px;color:#e6fff9;font-size:13px!important;font-weight:850;letter-spacing:.01em;cursor:pointer}
+.premium-hint-button[aria-pressed="true"]{background:#186957}
+.premium-hint-button:hover{filter:brightness(1.2)}
+.premium-mode .premium-hot-marker:not(:disabled):hover strong{box-shadow:0 0 20px #fa703baa}
+.premium-mode .premium-map-advice>span{font-size:13px!important}
+.premium-mode .premium-selection-guide{background:linear-gradient(120deg,#073f4ce8,#12656bd9);border-color:#85ffdd;box-shadow:0 8px 20px #0008}
+.premium-mode .premium-selection-guide strong{font-size:14px}
+.premium-mode .premium-selection-guide span{font-size:17px}
+.premium-mode .premium-place{font-size:19px!important}
+.premium-mode .premium-guidance{border-color:#3ddbbd}
+.premium-mode .module[aria-pressed="true"]{border-color:#75ffdd!important;box-shadow:inset 0 0 0 1px #a3fff977,0 0 21px #13e4c341!important}
+@media(max-width:1800px){
+ .premium-mode .layout{grid-template-columns:minmax(254px,.94fr) minmax(445px,2.27fr) minmax(310px,1.05fr)!important;gap:12px!important}
+}
+@media (min-width:1200px) and (max-height:990px){
+ .premium-mode .hero{min-height:151px!important;margin-bottom:11px!important;padding-top:12px!important;padding-bottom:12px!important}
+ .premium-mode .stage{min-height:550px!important}
+ .premium-mode .mission-block{padding:9px 2px!important}
+ .premium-mode .athens-illustration{height:82px}
+ .premium-districts{gap:6px;padding-top:8px;margin-top:6px}
+ .premium-district{padding:7px 8px}
+ .premium-mode .module{min-height:104px!important}
+ .premium-mode .module-icon{height:86px!important}
+ .premium-mode .module-icon svg{height:82px!important}
+}
+@media(max-width:1190px){
+ .premium-mode .layout{grid-template-columns:minmax(0,1fr) minmax(310px,.82fr)!important}
+ .premium-mode .premium-mission{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;align-items:start}
+ .premium-districts{grid-column:1/-1}
+ .premium-district-rows{grid-template-columns:repeat(3,minmax(0,1fr))}
+ .district-index{display:none}
+ .premium-mode .stage{min-height:550px!important}
+}
+@media(max-width:780px){
+ .premium-mode .layout{grid-template-columns:minmax(0,1fr)!important}
+ .premium-mode .premium-mission{grid-column:auto;display:block}
+ .premium-district-rows{grid-template-columns:1fr}
+ .district-index{display:grid}
+ .premium-mode .stage{min-height:510px!important}
+ .premium-mode .premium-hot-marker strong{font-size:18px!important}
+ .premium-mode .premium-spot-prompt{top:64px!important;font-size:12px!important}
+}
+@media(max-width:460px){
+ .premium-mode .stage{min-height:445px!important}
+ .premium-mode .hero{min-height:0!important}
+ .premium-mode .premium-hot-marker strong{font-size:16px!important;padding:5px 8px!important}
+ .premium-mode .premium-selection-guide{bottom:96px}
+}
