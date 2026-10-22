@@ -74,10 +74,44 @@
       return t;
     }
     const masonryMap=makeTexture(1),metalMap=makeTexture(2),asphaltMap=makeTexture(3),woodMap=makeTexture(4);
+    // Matching linear normal/roughness atlases supply real microrelief under
+    // grazing sunrise lights and keep their memory bounded to the active tier.
+    function microMap(kind,normal){
+      if(lite||typeof document==='undefined'||!THREE.CanvasTexture)return null;
+      const c=document.createElement('canvas');c.width=c.height=texSize;
+      const g=c.getContext('2d');if(!g)return null;
+      const pixels=g.createImageData(texSize,texSize);
+      for(let y=0;y<texSize;y++)for(let x=0;x<texSize;x++){
+        const p=(y*texSize+x)*4;
+        const grain=((x*73856093)^(y*19349663)^(kind*83492791))>>>0;
+        const cut=kind===1&&(y%24===0||(x%52===0&&Math.floor(y/24)%2===0));
+        if(normal){
+          pixels.data[p]=Math.max(0,Math.min(255,128+((grain&31)-15)-(cut?18:0)));
+          pixels.data[p+1]=Math.max(0,Math.min(255,128+(((grain>>>7)&31)-15)-(cut?18:0)));
+          pixels.data[p+2]=245;
+        }else{
+          const v=Math.max(40,Math.min(250,180+(grain&31)*1.7-(cut?50:0)));
+          pixels.data[p]=pixels.data[p+1]=pixels.data[p+2]=v;
+        }
+        pixels.data[p+3]=255;
+      }
+      g.putImageData(pixels,0,0);
+      const tex=new THREE.CanvasTexture(c);
+      tex.colorSpace=THREE.NoColorSpace;
+      tex.wrapS=tex.wrapT=THREE.RepeatWrapping;
+      if(kind===3)tex.repeat.set(12,12);
+      tex.anisotropy=2;
+      ownedTextures.push(tex);stats.textureMaps++;
+      return tex;
+    }
+    const masonryNormal=microMap(1,true),masonryRough=microMap(1,false);
+    const asphaltNormal=microMap(3,true),asphaltRough=microMap(3,false);
     function mat(color,roughness=.72,metalness=.05,emissive=0,intensity=0,map=null,alpha=1){
       const opts={color,roughness,metalness,transparent:alpha<1,opacity:alpha};
       if(emissive){opts.emissive=emissive;opts.emissiveIntensity=intensity;}
       if(map)opts.map=map;
+      if(map===masonryMap&&masonryNormal){opts.normalMap=masonryNormal;opts.roughnessMap=masonryRough;}
+      if(map===asphaltMap&&asphaltNormal){opts.normalMap=asphaltNormal;opts.roughnessMap=asphaltRough;}
       const m=lite?new THREE.MeshLambertMaterial(opts):new THREE.MeshStandardMaterial(opts);
       ownedMats.push(m);return m;
     }
@@ -308,13 +342,16 @@
         asphalt.material.color.setHex(0x9ca9b3);
         asphalt.material.roughness=.96;
         asphalt.material.metalness=.04;
+        if(asphaltNormal){asphalt.material.normalMap=asphaltNormal;asphalt.material.roughnessMap=asphaltRough;}
         asphalt.material.needsUpdate=true;
       }
       if(masonryMap){
         scene.traverse?.(o=>{
           if(!o.isInstancedMesh || !o.material || !o.name?.startsWith('ZION30 /'))return;
           if(o.name.includes('/ stone /')||o.name.includes('/ sandstone /')){
-            o.material.map=masonryMap;o.material.needsUpdate=true;
+            o.material.map=masonryMap;
+            if(masonryNormal){o.material.normalMap=masonryNormal;o.material.roughnessMap=masonryRough;}
+            o.material.needsUpdate=true;
           }
         });
       }
