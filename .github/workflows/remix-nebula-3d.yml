@@ -1,0 +1,131 @@
+name: REMIX NEBULA 3D native Web release
+on:
+  push:
+    branches: [master]
+    paths:
+      - "godot/nebula-3d/**"
+      - ".github/workflows/remix-nebula-3d.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+  statuses: write
+
+concurrency:
+  group: remix-nebula3d-native
+  cancel-in-progress: false
+
+jobs:
+  native-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - name: Unpack pinned 3D sources
+        run: |
+          set -euo pipefail
+          base64 -d godot/nebula-3d/r2-source.tar.xz.b64 > /tmp/nebula.tar.xz
+          echo '6477fe1c457071068e847c0b4490eba4fb0a34528d22faa30efd86bd31b6871a  /tmp/nebula.tar.xz' | sha256sum -c -
+          tar -tJf /tmp/nebula.tar.xz > /tmp/nebula-list
+          ! grep -E '(^/|(^|/)\.\.(/|$))' /tmp/nebula-list
+          tar -xJf /tmp/nebula.tar.xz -C godot/nebula-3d
+          test -s godot/nebula-3d/scripts/world.gd
+          test -s godot/nebula-3d/tests/runtime_smoke.gd
+      - name: Install official Godot 4.7.2 and Web templates
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/nebula-godot "$HOME/.local/share/godot/export_templates/4.7.2.stable"
+          curl -fL --retry 3 https://github.com/godotengine/godot-builds/releases/download/4.7.2-stable/Godot_v4.7.2-stable_linux.x86_64.zip -o /tmp/nebula-godot/engine.zip
+          unzip -q /tmp/nebula-godot/engine.zip -d /tmp/nebula-godot
+          chmod +x /tmp/nebula-godot/Godot_v4.7.2-stable_linux.x86_64
+          /tmp/nebula-godot/Godot_v4.7.2-stable_linux.x86_64 --version
+          curl -fL --retry 3 https://github.com/godotengine/godot-builds/releases/download/4.7.2-stable/Godot_v4.7.2-stable_export_templates.tpz -o /tmp/nebula-godot/templates.tpz
+          mkdir -p /tmp/nebula-godot/unpacked
+          unzip -q /tmp/nebula-godot/templates.tpz -d /tmp/nebula-godot/unpacked
+          cp -a /tmp/nebula-godot/unpacked/templates/. "$HOME/.local/share/godot/export_templates/4.7.2.stable/"
+          test -s "$HOME/.local/share/godot/export_templates/4.7.2.stable/web_nothreads_release.zip"
+      - name: Parse native GDScript in editor
+        run: |
+          set -uo pipefail
+          timeout 150s /tmp/nebula-godot/Godot_v4.7.2-stable_linux.x86_64 --headless --editor --path godot/nebula-3d --quit > /tmp/nebula-import.log 2>&1
+          rc=$?
+          cat /tmp/nebula-import.log
+          if [ "$rc" -ne 0 ] || grep -Eq 'SCRIPT ERROR:|Parse Error:|Failed to load script' /tmp/nebula-import.log; then
+            error="$(grep -Em1 'SCRIPT ERROR:|Parse Error:|ERROR:' /tmp/nebula-import.log || true)"
+            echo "NEBULA_ERROR=$error" >> "$GITHUB_ENV"
+            exit 1
+          fi
+      - name: Test scene, combat, missions and persistent upgrades
+        run: |
+          set -uo pipefail
+          timeout 150s /tmp/nebula-godot/Godot_v4.7.2-stable_linux.x86_64 --headless --path godot/nebula-3d --script res://tests/runtime_smoke.gd > /tmp/nebula-runtime.log 2>&1
+          rc=$?
+          cat /tmp/nebula-runtime.log
+          if [ "$rc" -ne 0 ] || grep -Eq 'SCRIPT ERROR:|Parse Error:|NEBULA_SMOKE_FAILURE:' /tmp/nebula-runtime.log; then
+            error="$(grep -Em1 'SCRIPT ERROR:|Parse Error:|NEBULA_SMOKE_FAILURE:' /tmp/nebula-runtime.log || true)"
+            echo "NEBULA_ERROR=$error" >> "$GITHUB_ENV"
+            exit 1
+          fi
+          grep -Fq 'NEBULA_SMOKE_SUCCESS' /tmp/nebula-runtime.log
+      - name: Build real WebAssembly game
+        run: |
+          set -uo pipefail
+          output="$GITHUB_WORKSPACE/public/games/remix/arena-v2/nebula-3d"
+          mkdir -p "$output"
+          timeout 240s /tmp/nebula-godot/Godot_v4.7.2-stable_linux.x86_64 --headless --path godot/nebula-3d --export-release Web "$output/index.html" > /tmp/nebula-export.log 2>&1
+          rc=$?
+          cat /tmp/nebula-export.log
+          if [ "$rc" -ne 0 ] || grep -Eq 'SCRIPT ERROR:|Parse Error:' /tmp/nebula-export.log; then
+            error="$(grep -Em1 'SCRIPT ERROR:|Parse Error:|ERROR:' /tmp/nebula-export.log || true)"
+            echo "NEBULA_ERROR=$error" >> "$GITHUB_ENV"
+            exit 1
+          fi
+          test -s "$output/index.html"
+          test -s "$output/index.js"
+          test -s "$output/index.wasm"
+          test -s "$output/index.pck"
+          grep -Fq 'REMIX ARENA' "$output/index.html"
+          du -ah "$output" | tail -n 12
+      - name: Commit native sources and verified Web export
+        run: |
+          set -euo pipefail
+          git config user.name osgard-godot-ci
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -f godot/nebula-3d/project.godot godot/nebula-3d/export_presets.cfg godot/nebula-3d/scenes/world.tscn godot/nebula-3d/scripts/*.gd godot/nebula-3d/tests/runtime_smoke.gd
+          git add -f public/games/remix/arena-v2/nebula-3d/
+          if ! git diff --cached --quiet; then
+            git commit -m "build(remix3d): native-tested Godot 4.7.2 Web export"
+            git pull --rebase origin master
+            git push origin HEAD:master
+          fi
+      - name: Dispatch existing isolated production SSH release
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner, repo: context.repo.repo,
+              workflow_id: 'deploy-remix-arena-static.yml', ref: 'master'
+            });
+      - name: Record native QA status on source commit
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+          OUTCOME: ${{ job.status }}
+          FIRST_ERROR: ${{ env.NEBULA_ERROR }}
+        run: |
+          python3 - <<'PY'
+          import json,os,urllib.request
+          state='success' if os.getenv('OUTCOME')=='success' else 'failure'
+          detail='Godot 4.7.2 runtime and wasm export passed; SSH queued' if state=='success' else 'Native build failed: '+(os.getenv('FIRST_ERROR') or 'check Actions logs')
+          data=json.dumps({'state':state,'context':'remix/nebula3d-native-build','description':detail[:135],'target_url':'https://osgard.world/games/remix/arena-v2/nebula-3d/'}).encode()
+          req=urllib.request.Request('https://api.github.com/repos/'+os.environ['REPO']+'/statuses/'+os.environ['SHA'],data=data,headers={'Authorization':'Bearer '+os.environ['GH_TOKEN'],'Accept':'application/vnd.github+json','Content-Type':'application/json'},method='POST')
+          try:
+              with urllib.request.urlopen(req,timeout=20) as r:print('Status recorded:',state,r.status)
+          except Exception as exc:print('Status not recorded:',str(exc))
+          PY
