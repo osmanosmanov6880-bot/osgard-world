@@ -208,3 +208,19 @@ assert.ok(home.includes('academy-journey-steps') && home.includes('academy-journ
 assert.ok(home.includes('criteriaRated') && home.includes('reviewedProjects') && home.includes('selfChecks===3'), 'Learning pathway must reflect course mastery and project rubric progress')
 assert.ok(home.includes("addEventListener('osgard-academy-progress'") && studio.includes("dispatchEvent(new Event('osgard-academy-progress'))"), 'Dashboard progress must refresh immediately when project drafts or rubric scores change')
 assert.ok(styles.includes('.academy-journey-steps') && styles.includes('@media(max-width:760px)'), 'Learning pathway must be responsive')
+
+assert.ok(studioStyles.includes('#academy-studio-backup-input{') &&
+  studioStyles.includes('inline-size:1px!important') &&
+  studioStyles.includes('.academy-studio-import-button{position:relative}'),
+  'Backup import must remain keyboard accessible without creating page-wide horizontal overflow')
+
+// Premium Academy cockpit shows only canonical, browser-local progress rather than invented certificates.
+assert.ok(home.includes('academy-learning-console') && home.includes('academy-console-dial') &&
+  home.includes('academy-console-continue') && home.includes('academy-console-quicklinks'),
+  'Academy first viewport must provide usable real progress, resume and lesson catalogue actions')
+assert.ok(home.includes('aria-valuenow={completedScenes}') && home.includes('const coursePercentage =') &&
+  home.includes('learningProgress.lessonCompletions') && home.includes('learningProgress.projectChecks'),
+  'Cockpit progress indicators must be calculated from the existing canonical learning store')
+assert.ok(home.includes('academy-hero-topline') && !home.includes('academy-compact-header') &&
+  home.includes('academy-language') && styles.includes('.academy-learning-console') && styles.includes('@media(max-width:420px)'),
+  'Academy must avoid a fourth navigation header while preserving bilingual, responsive controls')
