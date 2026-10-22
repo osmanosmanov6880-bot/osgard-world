@@ -1,4 +1,5 @@
 extends Node3D
+const ImportedHangarR8Scene = preload("res://assets/models/industrial_hangar_r8.gltf")
 ## NEBULA R6: industrial megadocks with mesh-based hangar arches, PBR deck
 ## tiles, gantry cranes and architectural trusses. Six sector instances.
 ## Long-range repeated parts are batched into MultiMesh, not hundreds of lights.
@@ -166,6 +167,16 @@ func _hangar(where: Vector3, direction: float, sector: int, side: int) -> void:
     roof_node.material_override = alloy
     roof_node.position.y = wall * 1.93
     root.add_child(roof_node)
+    # Replace the earlier coarse roof with a real independent 3D asset.
+    var imported_r8 := ImportedHangarR8Scene.instantiate()
+    imported_r8.name = "R8_IndustrialHangarAsset"
+    root.add_child(imported_r8)
+    roof_node.visible = false
+    # Keep close-range details near the six ports without rendering distant
+    # 13k-triangle hangars across the entire open-world skyline.
+    for part in imported_r8.find_children("*", "MeshInstance3D", true, false):
+        part.visibility_range_end = 430.0
+        part.visibility_range_end_margin = 70.0
     # Physical hangar walls and airlock doors stop high-speed ships, unlike R5 props.
     _collision_box(root, "HangarLeftWallCollision", Vector3(-18.1, wall, 0), Vector3(1.5, wall * 1.95, 29.0))
     _collision_box(root, "HangarRightWallCollision", Vector3(18.1, wall, 0), Vector3(1.5, wall * 1.95, 29.0))
