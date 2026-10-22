@@ -1,4 +1,4 @@
-export { cases } from './featuredCases'
+export { cases } from './featuredCases.ts'
 export type PlayGame = {
  id:string;title:string;genre:string;mode:'solo'|'service';description:string;controls:string;
  platform:string;save:string;online:string;href:string;asset:string;accent:string;
