@@ -60,7 +60,7 @@ function make(config){
   }
   const car=new T.Group(),avatar=new T.Group()
   kit.detailCar(car);kit.detailAvatar(avatar)
-  assert.ok(stats.vehicleParts>15&&stats.avatarParts>5)
+  assert.ok(kit.stats.vehicleParts>15&&kit.stats.avatarParts>5)
   assert.ok(car.children.length>0&&avatar.children.length>0)
   assert.equal(scene.children[1].visible,config.softwareGL?false:!config.mobile)
   kit.setQuality('eco')
@@ -74,7 +74,7 @@ function make(config){
   kit.syncEnvironment({raining:false,dayMode:2})
   assert.equal(puddles.visible,false)
   assert.ok(car.children[0].children.length>=5,'Visible car uses batched material groups')
-  assert.ok(stats.vehicleBatches<=14,'Body and wheel detail must remain GPU-instanced')
+  assert.ok(kit.stats.vehicleBatches<=14,'Body and wheel detail must remain GPU-instanced')
   kit.dispose()
   assert.equal(scene.children.length,0)
   return {...stats}
