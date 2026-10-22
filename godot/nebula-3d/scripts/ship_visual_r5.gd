@@ -2,6 +2,7 @@ extends Node3D
 const ShipHeroR6Script = preload("res://scripts/ship_hero_detail_r6.gd")
 const ShipFinishR7Script = preload("res://scripts/ship_finish_r7.gd")
 const ImportedHeroR8Scene = preload("res://assets/models/nx08_interceptor_r8.gltf")
+const SurfaceLibraryR9Script = preload("res://scripts/surface_library_r9.gd")
 ## R5 authored procedural interceptor model. GL Compatibility friendly, no external assets.
 ## Mesh geometry is real: beveled planform, inset armor, turbine housings and service details.
 ## Gameplay physics remain in ship.gd; this node provides visual geometry only.
@@ -45,17 +46,18 @@ func _ready() -> void:
     var imported_r8 := ImportedHeroR8Scene.instantiate()
     imported_r8.name = "R8_ImportedHeroMesh"
     add_child(imported_r8)
-    # Preserve each authored glTF base-color, metal and roughness slot but add
-    # the existing painted-metal tangent-space normal texture to metal panels.
+    # R9 replaces the flat tinted metallic slots with real shared PBR maps.
+    # Retain the transparent-ish cockpit and luminous engine glass unaltered.
     for draw in imported_r8.find_children("*", "MeshInstance3D", true, false):
         if draw.mesh == null:continue
         for surface in draw.mesh.get_surface_count():
-            var mat := draw.mesh.surface_get_material(surface) as StandardMaterial3D
-            if mat == null or mat.metallic < 0.40:continue
-            var weathered := mat.duplicate() as StandardMaterial3D
-            weathered.normal_enabled = true
-            weathered.normal_texture = finish_r7.panel_material.normal_texture
-            weathered.normal_scale = 0.24
+            var original := draw.mesh.surface_get_material(surface) as StandardMaterial3D
+            if original == null:continue
+            var surface_name: String = original.resource_name.to_lower()
+            if original.emission_enabled or "glass" in surface_name or "exciter" in surface_name:
+                continue
+            var profile: int = SurfaceLibraryR9Script.get_profile(original)
+            var weathered: StandardMaterial3D = SurfaceLibraryR9Script.coat(original, profile)
             draw.set_surface_override_material(surface, weathered)
     # Preserve the established detail, thruster animation and save format.
     # Remove the redundant simple silhouette surfaces beneath R8 sculpting.
