@@ -3,11 +3,12 @@ import { readFileSync } from 'node:fs'
 
 const page = readFileSync('src/OSAMonetizationPage.tsx', 'utf8')
 const router = readFileSync('src/main.tsx', 'utf8')
+const routeSeo = readFileSync('src/routeSeo.ts', 'utf8')
 const dashboard = readFileSync('src/OSALearningDashboard.tsx', 'utf8')
 
 assert.ok(router.includes("path === '/learning/pricing'"))
 assert.ok(router.includes('<OSAMonetizationPage />'))
-assert.ok(router.includes("'/learning/pricing':"))
+assert.ok(routeSeo.includes("'/learning/pricing':"), 'Pricing SEO metadata lives in the lazy registry, not the router')
 assert.ok(dashboard.includes('href="/learning/pricing"'))
 
 for (const phrase of [
