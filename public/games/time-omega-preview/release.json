@@ -1,11 +1,12 @@
 {
   "schema_version": 1,
   "product": "OSGARD EMPIRE Ω — Империя времени",
-  "release": "v0.21-browser-companion",
+  "release": "v0.21.1-browser-companion-save-recovery",
   "route": "/games/time-omega-preview/",
   "source_path": "public/games/time-omega-preview/index.html",
-  "source_blob_sha": "4cd777fa1d8bfbf9530b788ce01b10e0333db32c",
+  "source_blob_sha": "ad6208d3eb857dee282e4e8b83aa102d78b1d6be",
   "artifact_type": "standalone HTML browser strategy",
   "godot_3d_exported": false,
-  "integrity_check": "scripts/time-prototype-smoke.mjs"
+  "integrity_check": "scripts/time-prototype-smoke.mjs",
+  "save_recovery": "validated-backup-with-corruption-fallback"
 }

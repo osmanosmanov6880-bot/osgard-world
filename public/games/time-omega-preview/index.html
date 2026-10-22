@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ru">
 <head>
-  <meta name="osgard-omega-preview" content="v0.21-browser-companion">
+  <meta name="osgard-omega-preview" content="v0.21.1-save-recovery">
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="dark">
@@ -492,7 +492,7 @@ ru: {
   crisisBlocked:'Сначала разрешите городскую чрезвычайную ситуацию.',
   history:'ЛЕТОПИСЬ ИМПЕРИИ',historyEmpty:'Решения и события появятся здесь после первых действий.',
   historyLabels:{turn:'Новый такт',build:'Строительство',decision:'Указ',research:'Открытие',incident:'Кризис',resolve:'Кризис разрешён',chapter:'Новая глава',reward:'Награда',victory:'Победа',defeat:'Поражение',legacy:'Из старого сохранения'},
-  success:'Действие выполнено',saved:'Игра сохранена',resetAsk:'Начать новую игру? Текущий прогресс будет удалён.',resetDone:'Новая кампания начата',
+  success:'Действие выполнено',saved:'Игра сохранена',saveRecovered:'Прогресс восстановлен из резервной копии',resetAsk:'Начать новую игру? Текущий прогресс будет удалён.',resetDone:'Новая кампания начата',
   export:'Экспортировать',import:'Импортировать',imported:'Сохранение загружено',importError:'Не удалось прочитать сохранение. Проверьте файл.',download:'Скачать JSON',
   errors:{invalid:'Недопустимое действие',ended:'Кампания завершена. Начните новую игру.',noActions:'Два действия этого такта уже использованы',maxLevel:'Здание достигло максимального уровня',notEnough:'Недостаточно денег в казне',alreadyActed:'Этот указ уже принят в текущем такте',noDebt:'Нет долга для погашения',researched:'Технология уже исследована',prerequisite:'Сначала откройте необходимые технологии',notScience:'Недостаточно научных очков',incident:'Сначала разрешите кризис',noIncident:'Нет активного кризиса'},
   victory:'ИМПЕРИЯ ПРОЦВЕТАЕТ',victoryDesc:'Три главы пройдены. Вы создали устойчивую городскую систему.',defeat:'ГОРОД ПОТЕРЯН',defeatDesc:'Продолжительный коллапс казны или стабильности прервал кампанию.',
@@ -514,7 +514,7 @@ en: {
   researchTitle:'TECHNOLOGY & RESEARCH',researchHint:'Schools create science points. Technologies change the economy.',researchButton:'Research',researched:'RESEARCHED',requires:'Requires:',tech:{grid:['Smart grids','+9 electricity supply'],filtration:['Modern filtration','+11 water, cleaner industry'],councilAI:['Digital governance','More stability, trust, and science'],commerce:['Global trade','+27 revenue per turn'],agronomy:['Agritech','+13 food supply'],automation:['Automated empire','Cheaper buildings, more power and revenue']},
   crisis:'EMERGENCY',crises:{drought:['Aqueduct drought','Water reserves are shrinking.'],strike:['Artisans strike','Workers demand better conditions.'],fire:['Market fire','Flames threaten the local economy.'],blackout:['Grid failure','Neighborhoods lose electricity.'],epidemic:['Sanitation crisis','Poor supply and care impact public health.']},crisisChoices:['Emergency funding','Mobilize residents','Accept the impact'],crisisDetails:['−175 ₽ · stabilize and restore resources','No cost · lower trust, partial recovery','−80 ₽ · major stability loss'],crisisBlocked:'Resolve the emergency before ending the turn.',
   history:'EMPIRE CHRONICLE',historyEmpty:'New decisions and events will appear here.',historyLabels:{turn:'New turn',build:'Construction',decision:'Decree',research:'Discovery',incident:'Emergency',resolve:'Resolved',chapter:'New chapter',reward:'Reward',victory:'Victory',defeat:'Defeat',legacy:'Imported entry'},
-  success:'Action completed',saved:'Game saved',resetAsk:'Start a new game? Current progress will be deleted.',resetDone:'New campaign started',export:'Export',import:'Import',imported:'Save imported',importError:'Could not read this save. Verify the file.',download:'Download JSON',errors:{invalid:'Invalid action',ended:'Campaign ended. Start a new game.',noActions:'No actions left this turn',maxLevel:'Maximum building level reached',notEnough:'Not enough treasury funds',alreadyActed:'This decree was already passed',noDebt:'No outstanding debt',researched:'Already researched',prerequisite:'Unlock prerequisites first',notScience:'Not enough research points',incident:'Resolve the emergency first',noIncident:'No active emergency'},
+  success:'Action completed',saved:'Game saved',saveRecovered:'Progress restored from a backup',resetAsk:'Start a new game? Current progress will be deleted.',resetDone:'New campaign started',export:'Export',import:'Import',imported:'Save imported',importError:'Could not read this save. Verify the file.',download:'Download JSON',errors:{invalid:'Invalid action',ended:'Campaign ended. Start a new game.',noActions:'No actions left this turn',maxLevel:'Maximum building level reached',notEnough:'Not enough treasury funds',alreadyActed:'This decree was already passed',noDebt:'No outstanding debt',researched:'Already researched',prerequisite:'Unlock prerequisites first',notScience:'Not enough research points',incident:'Resolve the emergency first',noIncident:'No active emergency'},
   victory:'EMPIRE PROSPERS',victoryDesc:'All three chapters completed. You built a resilient city.',defeat:'THE CITY HAS FALLEN',defeatDesc:'An extended treasury or stability collapse ended the campaign.',tutorialTitle:'Your first turn',tutorialSteps:[['Explore the map','Four districts provide very different public services.'],['Choose actions','Council sets policy. Construction and Research shape long-term growth.'],['End the turn','Read the forecast and prepare for emergencies and consequences.']],tutorialStart:'Begin ruling',tutorialAgain:'How to play',helpTitle:'RULER’S FIELD GUIDE',help:'Keep power, water, food, and public confidence healthy. Markets raise revenue, housing adds capacity, research lowers risks. Decisions matter.',offline:'Standalone offline prototype. Not connected to osgard.world; no real payments.',loadingError:'Local saves are unavailable in this browser',resourceStatus:['Critical','Warning','Stable']
 },
 zh: {
@@ -525,7 +525,7 @@ zh: {
   buildTitle:'建设选中城区',buildHint:'每回合可执行两次建设或研究。',buildButton:'建设',maxLevel:'最高等级',noBuildings:'请先选择城区',buildings:{council:['议会大厦','稳定和市民信任'],clinic:['诊所','健康与人口增长'],academy:['学院','每回合获取科研点'],homes:['住宅楼','增加居住容量'],gardens:['城市花园','粮食与居民生活'],school:['研究所','科研与公共服务'],market:['市场','税收与粮食贸易'],factory:['工业工厂','高收入但增加耗电'],depot:['物流中心','供应与货运收入'],plant:['发电站','稳定的电力生产'],purifier:['净水厂','洁净水与卫生'],reservoir:['蓄水池','增加供水储备']},
   researchTitle:'技术与科研',researchHint:'教育建筑产生科研点。技术会改变经济。',researchButton:'研究',researched:'已完成',requires:'前置条件：',tech:{grid:['智能电网','供电 +9'],filtration:['现代过滤','供水 +11，减少污染'],councilAI:['数字治理','增加稳定、信任与科研'],commerce:['国际贸易','每回合收入 +27'],agronomy:['农业科技','粮食生产 +13'],automation:['自动化帝国','降低建造费用、增加能源与收入']},
   crisis:'紧急事件',crises:{drought:['供水危机','水资源储备不足。'],strike:['工匠罢工','工人要求改善待遇。'],fire:['市场火灾','火灾威胁经济。'],blackout:['电网故障','居民区失去电力。'],epidemic:['卫生危机','健康服务与供应紧张。']},crisisChoices:['紧急拨款','动员居民','承受损失'],crisisDetails:['−175 ₽ · 恢复资源和稳定','免费 · 降低信任，部分恢复','−80 ₽ · 稳定度大幅下降'],crisisBlocked:'请先处理紧急事件。',
-  history:'帝国编年史',historyEmpty:'您的决策将在这里记录。',historyLabels:{turn:'新回合',build:'建设',decision:'命令',research:'发现',incident:'危机',resolve:'已解决',chapter:'新篇章',reward:'奖励',victory:'胜利',defeat:'失败',legacy:'旧版记录'},success:'操作完成',saved:'已保存',resetAsk:'开始新游戏？将删除当前进度。',resetDone:'新战役开始',export:'导出',import:'导入',imported:'存档已导入',importError:'存档无效，请检查文件。',download:'导出 JSON',errors:{invalid:'操作无效',ended:'战役已结束，请开始新游戏。',noActions:'本回合的行动次数已用完',maxLevel:'已达到最高等级',notEnough:'国库资金不足',alreadyActed:'本回合已执行该命令',noDebt:'没有债务',researched:'已经研究',prerequisite:'请先完成前置研究',notScience:'科研点不足',incident:'请先处理危机',noIncident:'没有危机'},victory:'帝国繁荣',victoryDesc:'您已完成三章并建设了稳健的城市。',defeat:'城市陷落',defeatDesc:'持续的财政或稳定危机结束了战役。',tutorialTitle:'您的第一回合',tutorialSteps:[['探索地图','四个城区提供不同的功能。'],['选择行动','议会决定政策；建设和科研影响未来。'],['结束回合','研究预测，应对危机，体验决策的后果。']],tutorialStart:'开始治理',tutorialAgain:'如何游玩',helpTitle:'治理指南',help:'关注能源、水、粮食和民众信任。市场带来收入，住宅提升人口上限，研究减少风险。',offline:'独立离线原型，与 osgard.world 无连接，不包含真实支付。',loadingError:'浏览器无法访问本地存档',resourceStatus:['危险','警告','稳定']
+  history:'帝国编年史',historyEmpty:'您的决策将在这里记录。',historyLabels:{turn:'新回合',build:'建设',decision:'命令',research:'发现',incident:'危机',resolve:'已解决',chapter:'新篇章',reward:'奖励',victory:'胜利',defeat:'失败',legacy:'旧版记录'},success:'操作完成',saved:'已保存',saveRecovered:'已从备份恢复游戏进度',resetAsk:'开始新游戏？将删除当前进度。',resetDone:'新战役开始',export:'导出',import:'导入',imported:'存档已导入',importError:'存档无效，请检查文件。',download:'导出 JSON',errors:{invalid:'操作无效',ended:'战役已结束，请开始新游戏。',noActions:'本回合的行动次数已用完',maxLevel:'已达到最高等级',notEnough:'国库资金不足',alreadyActed:'本回合已执行该命令',noDebt:'没有债务',researched:'已经研究',prerequisite:'请先完成前置研究',notScience:'科研点不足',incident:'请先处理危机',noIncident:'没有危机'},victory:'帝国繁荣',victoryDesc:'您已完成三章并建设了稳健的城市。',defeat:'城市陷落',defeatDesc:'持续的财政或稳定危机结束了战役。',tutorialTitle:'您的第一回合',tutorialSteps:[['探索地图','四个城区提供不同的功能。'],['选择行动','议会决定政策；建设和科研影响未来。'],['结束回合','研究预测，应对危机，体验决策的后果。']],tutorialStart:'开始治理',tutorialAgain:'如何游玩',helpTitle:'治理指南',help:'关注能源、水、粮食和民众信任。市场带来收入，住宅提升人口上限，研究减少风险。',offline:'独立离线原型，与 osgard.world 无连接，不包含真实支付。',loadingError:'浏览器无法访问本地存档',resourceStatus:['危险','警告','稳定']
 }
 };
 const langCodes = ['ru','en','zh'];
@@ -556,21 +556,36 @@ const $=id=>document.getElementById(id);
 const create=(tag,className,text)=>{const x=document.createElement(tag);if(className)x.className=className;if(text!==undefined)x.textContent=String(text);return x;};
 const clear=node=>node.replaceChildren();
 const storeKey='osgard-time-omega-v3';
+const backupKey=storeKey+'-backup';
 const oldKey='osgard-time-omega-v1';
 const langKey='osgard-time-omega-lang';
 const themeKey='osgard-time-omega-theme';
 function readLocal(key){try{return localStorage.getItem(key);}catch{return null;}}
 function writeLocal(key,value){try{localStorage.setItem(key,value);return true;}catch{return false;}}
+function removeLocal(key){try{localStorage.removeItem(key);return true;}catch{return false;}}
 let lang=readLocal(langKey)||readLocal(oldKey+'-lang')||'ru';
 if(!langCodes.includes(lang))lang='ru';
 let theme=readLocal(themeKey)==='command'?'command':'imperial';
 let state=createGame();
 let loadError='';
+let loadRecovered=false;
 try{
   const latest=readLocal(storeKey);
+  const backup=readLocal(backupKey);
   const legacy=readLocal(oldKey);
-  if(latest)state=parseSave(latest);
-  else if(legacy){state=parseSave(legacy);writeLocal(storeKey,serializeSave(state));}
+  if(latest){
+    try{state=parseSave(latest);}
+    catch(primaryError){
+      if(!backup)throw primaryError;
+      state=parseSave(backup);
+      loadRecovered=true;
+      writeLocal(storeKey,serializeSave(state));
+    }
+  }else if(backup){
+    state=parseSave(backup);
+    loadRecovered=true;
+    writeLocal(storeKey,serializeSave(state));
+  }else if(legacy){state=parseSave(legacy);writeLocal(storeKey,serializeSave(state));}
 }catch(e){loadError=String(e.message||'error');state=createGame();}
 let toastTimer=null;
 function dict(){return words(lang);}
@@ -582,7 +597,14 @@ function changeState(result,{quiet=false}={}){
   saveSilently();render();
   return true;
 }
-function saveSilently(){return writeLocal(storeKey,serializeSave(state));}
+function saveSilently(){
+  const next=serializeSave(state);
+  const previous=readLocal(storeKey);
+  if(previous){
+    try{parseSave(previous);writeLocal(backupKey,previous);}catch{/* Never back up a corrupted save. */}
+  }
+  return writeLocal(storeKey,next);
+}
 function notify(message,error=false){const div=$('toast');div.textContent=message;div.hidden=false;div.classList.toggle('error',!!error);clearTimeout(toastTimer);toastTimer=setTimeout(()=>div.hidden=true,3300);}
 function flashSuccess(){notify(dict().success);}
 function setText(id,text){$(id).textContent=text;}
@@ -834,8 +856,8 @@ $('next').addEventListener('click',()=>{
   if(state.incident){notify(dict().crisisBlocked,true);return;}
   if(changeState(advanceTurn(state)))notify(dict().historyLabels.turn+' '+state.turn);
 });
-$('save').addEventListener('click',()=>notify(saveSilently()?dict().saved:dict().loadingError,!readLocal(storeKey)));
-$('reset').addEventListener('click',()=>{if(confirm(dict().resetAsk)){state=createGame();saveSilently();render();notify(dict().resetDone);}});
+$('save').addEventListener('click',()=>{const ok=saveSilently();notify(ok?dict().saved:dict().loadingError,!ok);});
+$('reset').addEventListener('click',()=>{if(confirm(dict().resetAsk)){state=createGame();const ok=saveSilently();if(ok)removeLocal(backupKey);render();notify(ok?dict().resetDone:dict().loadingError,!ok);}});
 $('theme').addEventListener('click',()=>{theme=theme==='imperial'?'command':'imperial';writeLocal(themeKey,theme);render();});
 $('lang').addEventListener('change',e=>{lang=langCodes.includes(e.target.value)?e.target.value:'ru';writeLocal(langKey,lang);render();});
 document.querySelectorAll('[data-district]').forEach(spot=>{
@@ -853,7 +875,7 @@ $('importGame').addEventListener('click',()=>$('importFile').click());
 $('importFile').addEventListener('change',async e=>{
   const file=e.target.files?.[0];e.target.value='';if(!file)return;
   try{if(file.size>250000)throw new Error('too-large');const imported=parseSave(await file.text());
-    state=imported;saveSilently();render();notify(dict().imported);
+    state=imported;const ok=saveSilently();if(ok)writeLocal(backupKey,serializeSave(state));render();notify(ok?dict().imported:dict().loadingError,!ok);
   }catch{notify(dict().importError,true);}
 });
 $('help').addEventListener('click',()=>$('tutorial').showModal());
@@ -862,7 +884,8 @@ $('tutorialStart').addEventListener('click',()=>{
 });
 render();
 if(!state.tutorialSeen){try{$('tutorial').showModal();}catch{}}
-if(loadError){console.warn('Save migration failed:',loadError);notify(dict().importError,true);}
+if(loadRecovered)notify(dict().saveRecovered);
+else if(loadError){console.warn('Save migration failed:',loadError);notify(dict().importError,true);}
 
 })();
 </script>
