@@ -1,4 +1,5 @@
 extends SceneTree
+const SurfaceLibraryR9Script = preload("res://scripts/surface_library_r9.gd")
 ## Native Godot runtime test: parses real scene, creates procedural city, drives missions,
 ## validates persistent progression, shields, damage and the radar.
 func _initialize() -> void:
@@ -70,6 +71,19 @@ func _run() -> void:
             if coated != null and coated.normal_enabled:
                 ship_normal_surfaces += 1
     if not check(ship_normal_surfaces >= 2, "R8 metal normal-map integration missing"):return
+    var r9_ship_orm: int = 0
+    for draw in imported_r8.find_children("*", "MeshInstance3D", true, false):
+        if draw.mesh == null:continue
+        for surface in draw.mesh.get_surface_count():
+            var coated := draw.get_surface_override_material(surface) as StandardMaterial3D
+            if coated != null and coated.roughness_texture != null and coated.metallic_texture != null and coated.ao_texture != null:
+                r9_ship_orm += 1
+    if not check(r9_ship_orm >= 3, "R9 physically packed ship textures missing"):return
+    var mechanisms = interceptor.get_node_or_null("R9_AnimatedAirframeMechanics")
+    if not check(mechanisms != null, "R9 animated ship mechanics not instantiated"):return
+    if not check(mechanisms.gear_count == 3, "R9 hydraulic landing gear not present"):return
+    if not check(mechanisms.control_surfaces == 6, "R9 animated elevons not present"):return
+    if not check(mechanisms.compressor_shutters == 36, "R9 turbine shutters not present"):return
     var fleet_r7 = world.get_node_or_null("CapitalFleetR7")
     if not check(fleet_r7 != null, "R7 monumental capital fleet missing"):return
     if not check(fleet_r7.carrier_count == 6, "Expected six true 3D capital ships"):return
@@ -98,14 +112,33 @@ func _run() -> void:
             if coated != null and coated.normal_enabled:
                 hangar_normal_surfaces += 1
     if not check(hangar_normal_surfaces >= 2, "R8 hangar normal-mapped alloy missing"):return
-    if not check(megadocks.get_node("R6_EnclosedHangar_00_0/SegmentedCurvedTitaniumRoof").visible == false,
-        "Legacy low-poly roof was not retired"):return
+    var r9_hangar_orm: int = 0
+    for draw in imported_hangar.find_children("*", "MeshInstance3D", true, false):
+        if draw.mesh == null:continue
+        for surface in draw.mesh.get_surface_count():
+            var mat := draw.get_surface_override_material(surface) as StandardMaterial3D
+            if mat != null and mat.ao_texture != null and mat.roughness_texture != null:
+                r9_hangar_orm += 1
+    if not check(r9_hangar_orm >= 3, "R9 port roughness/occlusion maps missing"):return
+    var distant_roof = megadocks.get_node("R6_EnclosedHangar_00_0/SegmentedCurvedTitaniumRoof")
+    if not check(distant_roof.visible and distant_roof.visibility_range_begin >= 350.0,
+        "R9 distant roof LOD transition missing"):return
     if not check(megadocks.panels_instanced >= 1600, "PBR deck tiles not installed"):return
     if not check(megadocks.structural_instances >= 2100, "R6 GPU-instanced docking details missing"):return
     var skyline_r6 = world.get_node_or_null("SculpturalSkylineR6")
     if not check(skyline_r6 != null, "R6 sculptural skyline missing"):return
     if not check(skyline_r6.landmark_count == 6, "Six 3D arcologies required"):return
     if not check(skyline_r6.facade_fins >= 1000, "3D tower mullions insufficient"):return
+    var industry = world.get_node_or_null("OrbitalIndustryR9")
+    if not check(industry != null, "R9 industrial spaceport absent"):return
+    if not check(industry.silo_count == 24, "R9 high-detail 24 pressure vessels missing"):return
+    if not check(industry.docking_clamps == 12, "R9 animated dock loading platforms missing"):return
+    if not check(industry.panel_instances >= 1700, "R9 industrial mesh instancing budget unmet"):return
+    if not check(industry.work_lights.size() == 12, "R9 physically colored dock worklights missing"):return
+    if not check(industry.get_node_or_null("R9_PressureVesselCollision_00") is StaticBody3D,
+        "R9 pressure vessel physics body missing"):return
+    if not check(SurfaceLibraryR9Script.atlas_count() >= 3,
+        "R9 shared PBR textures not generated"):return
     var hangar_solid = world.get_node_or_null("HeroMegadocksR6/R6_EnclosedHangar_00_0/HangarLeftWallCollision")
     if not check(hangar_solid is StaticBody3D, "Hangar collision missing"):return
     var arcology_solid = world.get_node_or_null("SculpturalSkylineR6/R6_SculptedArcology_00/ArcologyCollision")
@@ -135,5 +168,5 @@ func _run() -> void:
     world.ship.take_damage(10.0)
     if not check(world.ship.shield < shield_before,"Damage does not reduce shield"):return
     if not check(previous_credits >= 0,"Invalid credits"):return
-    print("NEBULA_SMOKE_SUCCESS missions=1 upgrades=1 drones=%d premium3d=r8 imported-hero-glTF=true imported-hangar-glTF=true" % world.drones.size())
+    print("NEBULA_SMOKE_SUCCESS missions=1 upgrades=1 drones=%d premium3d=r9 pbr-orm=true articulated-gear=3 pressure-vessels=24" % world.drones.size())
     quit(0)

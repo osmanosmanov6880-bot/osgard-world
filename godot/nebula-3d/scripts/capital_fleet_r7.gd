@@ -1,4 +1,5 @@
 extends Node3D
+const SurfaceLibraryR9Script = preload("res://scripts/surface_library_r9.gd")
 ## NEBULA R7: monumental capital fleet. Authored hull lofts, armor sections,
 ## turret systems, mechanical fins, cooling vents and real mesh instancing.
 ## One shared PBR-like texture set for all six ships; GL Compatibility safe.
@@ -17,6 +18,18 @@ var plasma: StandardMaterial3D
 
 func _ready() -> void:
     hull_material = _create_hull_pbr()
+    # Retain the existing 512px ship colors, upgrade specularity and
+    # occlusion with the shared packed material maps.
+    var hull_orm: Dictionary = SurfaceLibraryR9Script.maps(2)
+    hull_material.ao_enabled = true
+    hull_material.ao_texture = hull_orm["orm"]
+    hull_material.ao_texture_channel = BaseMaterial3D.TEXTURE_CHANNEL_RED
+    hull_material.roughness = 1.0
+    hull_material.roughness_texture = hull_orm["orm"]
+    hull_material.roughness_texture_channel = BaseMaterial3D.TEXTURE_CHANNEL_GREEN
+    hull_material.metallic = 1.0
+    hull_material.metallic_texture = hull_orm["orm"]
+    hull_material.metallic_texture_channel = BaseMaterial3D.TEXTURE_CHANNEL_BLUE
     dark = _mat(Color(0.024, 0.035, 0.045), 0.48)
     alloy = _mat(Color(0.38, 0.43, 0.46), 0.31)
     copper = _mat(Color(0.58, 0.36, 0.17), 0.39)
