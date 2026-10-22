@@ -143,7 +143,7 @@ check('R8 is cached, translated on change, and opened with Atlas only',()=>{
  for(const file of ['generation-timelapse-core.js','generation-timelapse.js','generation-timelapse.css']){
   assert.ok(html.includes('./'+file));assert.ok(sw.includes('/games/inherit/'+file));
  }
- assert.match(sw,/inherit-shell-v26/);
+ assert.match(sw,/inherit-shell-v27/);
  assert.ok(ui.includes('window.InheritTimeLapseUI?.refresh?.()'));
  assert.ok(atlasUI.includes('window.InheritTimeLapseUI?.refresh?.()'));
  assert.ok(atlasUI.includes("dialog.showModal()"));
