@@ -1,0 +1,92 @@
+name: OSGARD Omega verified Godot direct SSH deploy
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - ".github/workflows/omega-web-direct-deploy.yml"
+  workflow_dispatch:
+  workflow_run:
+    workflows: ["OSGARD frontend deploy"]
+    types: [completed]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: osgard-omega-direct-ssh
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: ${{ github.event_name != 'workflow_run' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'master') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify exact native Godot binary artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,hashlib,pathlib
+          directory=pathlib.Path('public/games/omega-3d-preview')
+          m=json.loads((directory/'release.json').read_text())
+          assert m.get('engine')=='Godot 4.4.1'
+          assert m.get('native_tests')=='passed'
+          assert m.get('artifact_kind')=='native-Godot-HTML5-export'
+          manifest=m.get('files',{})
+          for needed in ('index.html','index.js','index.wasm','index.pck'):
+              assert needed in manifest,needed
+          assert (directory/'index.wasm').stat().st_size>1_000_000
+          assert (directory/'index.pck').stat().st_size>100_000
+          with (directory/'SHA256SUMS.txt').open('w') as output:
+              for name,digest in sorted(manifest.items()):
+                  path=directory/name
+                  assert path.is_file(),name
+                  actual=hashlib.sha256(path.read_bytes()).hexdigest()
+                  assert actual==digest,f'{name}: checksum mismatch'
+                  output.write(f'{digest}  {name}\n')
+          print('PASS:',len(manifest),'official Godot Web assets checksum matched')
+          PY
+          (cd public/games/omega-3d-preview && sha256sum -c SHA256SUMS.txt)
+          mkdir -p "$RUNNER_TEMP/omega-native"
+          tar -czf "$RUNNER_TEMP/omega-native/game.tgz" -C public/games/omega-3d-preview .
+      - name: Configure SSH to existing OSGARD VPS
+        env:
+          DEPLOY_HOST: ${{ secrets.OSGARD_DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.OSGARD_DEPLOY_USER }}
+          DEPLOY_KEY: ${{ secrets.OSGARD_DEPLOY_KEY }}
+        run: |
+          set -euo pipefail
+          test -n "$DEPLOY_HOST" && test -n "$DEPLOY_USER" && test -n "$DEPLOY_KEY"
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$DEPLOY_KEY" > ~/.ssh/osgard_omega_deploy
+          chmod 600 ~/.ssh/osgard_omega_deploy
+          ssh-keyscan -T 10 -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
+          test -s ~/.ssh/known_hosts
+      - name: Upload verified Godot game, activate with rollback
+        env:
+          DEPLOY_HOST: ${{ secrets.OSGARD_DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.OSGARD_DEPLOY_USER }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          remote="/tmp/osgard-omega-native-${RUN_ID}"
+          ssh -o BatchMode=yes -i ~/.ssh/osgard_omega_deploy "$DEPLOY_USER@$DEPLOY_HOST" "mkdir -p '$remote'"
+          scp -i ~/.ssh/osgard_omega_deploy "$RUNNER_TEMP/omega-native/game.tgz" "$DEPLOY_USER@$DEPLOY_HOST:$remote/game.tgz"
+          scp -i ~/.ssh/osgard_omega_deploy scripts/deploy-omega-native-remote.sh "$DEPLOY_USER@$DEPLOY_HOST:$remote/deploy.sh"
+          ssh -o BatchMode=yes -i ~/.ssh/osgard_omega_deploy "$DEPLOY_USER@$DEPLOY_HOST" "bash '$remote/deploy.sh' '$RUN_ID'"
+      - name: Verify live Godot route and WebAssembly
+        run: |
+          set -euo pipefail
+          url="https://osgard.world/games/omega-3d-preview"
+          curl --fail --show-error --silent --retry 4 --retry-delay 3 --max-time 30 "$url/release.json?verify=$GITHUB_RUN_ID" -o /tmp/omega-live-release.json
+          python3 - <<'PY'
+          import json
+          m=json.load(open('/tmp/omega-live-release.json'))
+          assert m.get('engine')=='Godot 4.4.1'
+          assert m.get('native_tests')=='passed'
+          print('PASS: public URL serves verified native Godot Web release')
+          PY
+          curl --fail --show-error --silent --head --retry 3 --max-time 30 "$url/index.wasm?verify=$GITHUB_RUN_ID" | head -n 20
