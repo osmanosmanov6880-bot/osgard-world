@@ -43,7 +43,8 @@ func _run() -> void:
 		car.apply_variant("compact")
 		var coating: StandardMaterial3D = shell.material_override as StandardMaterial3D if shell!=null else null
 		expect(coating!=null and coating.metallic>=0.6,"garage repaint affects visible metallic mesh")
-		art.call("simulate_chassis",21.0,0.4,-7.0,0.9,true,[0.1,0.0,0.1,0.0],0.016)
+		var sample_contacts: Array[float] = [0.1,0.0,0.1,0.0]
+		art.call("simulate_chassis",21.0,0.4,-7.0,0.9,true,sample_contacts,0.016)
 		expect(absf(float(art.get("roll_angle")))>0.0,"curved body responds to suspension")
 	var detail: Node3D = SCENERY.new()
 	root.add_child(detail)
