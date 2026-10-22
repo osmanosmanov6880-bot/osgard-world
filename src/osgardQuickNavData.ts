@@ -40,13 +40,25 @@ const caseCommands: readonly OsgardCommand[] = cases.map(item => ({
 }))
 /** Direct links to all 19 games. The light breadcrumb registry provides only
  * confirmed game ids/titles; heavy Play content is still loaded on its route. */
+const gameAliases: Readonly<Record<string, string>> = {
+  'time': 'империя времени экономическая стратегия city управление городом',
+  'empire-orbit': 'империя орбита космос стратегия',
+  'vector-zero': 'магнит полярность импульс физика вектор зеро',
+  'null-shift': 'рейд тактика ядро эвакуация нулл шифт',
+  'inherit': 'наследие поколения семья sandbox',
+  'remix': 'ремикс кооператив совместная игра',
+  'swarm': 'рой swarm стратегия',
+  'afterimage-run': 'раннер бег afterimage',
+  'zion-030': 'добавь тень охлаждение дождевой сад климат город',
+}
+
 const gameCommands: readonly OsgardCommand[] = Object.entries(playGameTitles).map(([id, title]) => ({
   id: 'game-' + id,
   label: title,
   description: 'Игровой мир · сведения и варианты запуска',
   href: '/play/world/' + id,
   group: 'Игры',
-  keywords: [id, title, 'игра', 'игровой', 'мир', 'play', 'game'].join(' '),
+  keywords: [id, title, gameAliases[id] || '', 'игра', 'игровой', 'мир', 'play', 'game'].join(' '),
 }))
 
 /** Eight real lesson routes from the single OSA slug and breadcrumb registries.
@@ -64,13 +76,36 @@ export const osgardCommands: readonly OsgardCommand[] = [...baseCommands, ...cas
 
 const normalize = (value: string) => value.toLocaleLowerCase('ru-RU').replace(/ё/g, 'е').trim()
 
-/** A stable, tiny command search; aliases are authored rather than hallucinated. */
+/** Recover a frequent keyboard-layout mistake, without calling a server or AI.
+ * Example: "frfltvbz" typed on an English keyboard means "академия". */
+const englishKeys = "qwertyuiop[]asdfghjkl;'zxcvbnm,."
+const russianKeys = "йцукенгшщзхъфывапролджэячсмитьбю"
+export function recoverRussianKeyboard(query: string): string {
+  if (!/^[a-z\\[\\]\\;\\',.\\/\\s-]+$/i.test(query) || query.length > 100) return query
+  return [...query.toLowerCase()].map(char => {
+    const index = englishKeys.indexOf(char)
+    return index < 0 ? char : russianKeys[index]
+  }).join('')
+}
+
+/** Fully local deterministic command search. Only previously approved routes
+ * can appear, and keyboard-layout recovery happens only on zero exact matches. */
 export function searchOsgardCommands(query: string, recentlyOpened: readonly string[] = []): OsgardCommand[] {
-  const words = normalize(query).split(/\s+/).filter(Boolean)
-  const matches = osgardCommands.filter(command => {
+  const makeWords = (value: string) => normalize(value).slice(0, 120).split(/\s+/).filter(Boolean)
+  let words = makeWords(query)
+  const find = (terms: readonly string[]) => osgardCommands.filter(command => {
     const text = normalize([command.label, command.description, command.group, command.keywords].join(' '))
-    return words.every(word => text.includes(word))
+    return terms.every(word => text.includes(word))
   })
+  let matches = find(words)
+  if (words.length && !matches.length) {
+    const corrected = recoverRussianKeyboard(query)
+    if (corrected !== query) {
+      const correctedWords = makeWords(corrected)
+      const recovered = find(correctedWords)
+      if (recovered.length) { words = correctedWords; matches = recovered }
+    }
+  }
   if (words.length) {
     // A direct matching case should beat a generic portfolio link. All
     // results still come exclusively from the vetted, local route registry.
