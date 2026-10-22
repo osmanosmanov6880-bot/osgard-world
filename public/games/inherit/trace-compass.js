@@ -91,14 +91,15 @@ function resetGhost(){ghost.hidden=true;armed=false;d.body.classList.remove('inh
 // the dock. Only after the player arms a real choice do we reveal the island.
 // This never clicks it, spends budget, or alters saved coordinates.
 function revealArmedWorld(){
- if(!armed||ghost.hidden||!window.matchMedia?.('(max-width:740px)').matches)return;
+ if(!armed||ghost.hidden)return;
  const stage=d.querySelector('#world');
  if(!stage)return;
  const marker=ghost.getBoundingClientRect(),x=marker.left+marker.width/2,y=marker.top+marker.height/2;
  const top=x>=0&&x<innerWidth&&y>=0&&y<innerHeight?d.elementFromPoint(x,y):null;
- if(!top?.closest('#world')||top.closest('button,.dock,[data-memory]')){
-  stage.scrollIntoView({block:'start',inline:'nearest',behavior:'auto'});
- }
+ // The native dialog restores focus to its toolbar trigger, which can scroll
+ // the proposed world coordinate offscreen even on desktop. Return to the
+ // genuine gameplay hit region; never place an object programmatically.
+ stage.scrollIntoView({block:'start',inline:'nearest',behavior:'instant'});
 }
 function labelFor(rule,c){return c.rules[rule.id]||rule.id}
 function addStat(value,label){const item=el('div','inherit-compass-stat');item.append(el('strong','',value),el('small','',label));stats.append(item)}
