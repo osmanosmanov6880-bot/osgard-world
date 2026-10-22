@@ -2378,6 +2378,9 @@ test('INHERIT R16 genuine Three.js island renders the original saved world witho
    const beforeToggle=await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()));
    await page.locator('.aaa3d-quality').click();
    expect(await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()))).toBe(beforeToggle);
+   // Quality now changes *real landmark geometry*, not only CSS and shadows.
+   await expect.poll(()=>page.evaluate(()=>window.InheritAAA3D.getState().heritageDetails.stoneBlocks)).toBe(144);
+   expect(await page.evaluate(()=>window.InheritAAA3D.getState().environmentTier)).toBe('high');
   }
   await expect.poll(()=>page.evaluate(()=>window.InheritAAA3D.getState().detailTiers.high)).toBeGreaterThan(0);
   const sculpt=await page.evaluate(()=>window.InheritAAA3D.getState());
