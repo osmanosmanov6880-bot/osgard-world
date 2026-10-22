@@ -75,7 +75,7 @@ assert.ok(script.includes('new THREE.InstancedMesh') && script.includes('createC
 assert.ok(script.includes('rules.drivingStep') && script.includes('rules.route('))
 assert.ok(script.includes('person.nextPlanAt'), 'NPC replanning must be throttled if a route fails')
 assert.ok(script.includes('toggleNavigation') && script.includes('oc-nav-mode'), 'Players must be able to route toward side contracts')
-assert.ok(script.includes("world.quality === 'eco' ? .64"), 'ECO render scaling must work on touch devices')
+assert.ok(script.includes("world.quality === 'eco' ? .55") && script.includes("reduceMotion.matches ? .34"), 'ECO and reduced-motion resolution limits must both work')
 assert.ok(script.includes('game().place(dest.x, dest.z, state.selected)'), 'Original cooling action must remain authoritative')
 assert.ok(script.includes('localStorage.setItem') && script.includes('completeNearbyContract'))
 assert.ok(css.includes('.oc-contract') && css.includes('.oc-drive-hud') && css.includes('@media(max-width:760px)'))
