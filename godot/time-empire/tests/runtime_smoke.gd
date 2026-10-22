@@ -25,6 +25,12 @@ func _run() -> void:
     game.save_path = SAVE
     root.add_child(game)
     await process_frame
+    _check(game.get_node_or_null("LivingCity/HeroCitySculpturesV2") != null, "independent sculpted civic geometry kit")
+    _check(game.get_node_or_null("LivingCity/ChronoCore/HeroChronoReactorV2/ChronoEnergyHelix_00") is MeshInstance3D, "reactor uses real triangulated helical conductor")
+    _check(game.get_node_or_null("LivingCity/HeroCitySculpturesV2/ExpressRailRealTubularMesh") is MeshInstance3D, "high detail elevated transit is curved 3D geometry")
+    _check(game.get_node_or_null("LivingCity/HeroCitySculpturesV2/LoftedCivicMonument_00/TwistingParametricPavilion") is MeshInstance3D, "unique twisted civic monument mesh")
+    var twisted: MeshInstance3D = game.get_node_or_null("LivingCity/HeroCitySculpturesV2/LoftedCivicMonument_00/TwistingParametricPavilion") as MeshInstance3D
+    _check(twisted != null and twisted.mesh is ArrayMesh and twisted.mesh.surface_get_array_len(0) > 300, "custom indexed architecture surface has meaningful polygon density")
     _check(game.get_node_or_null("LivingCity/Chronos_UltraCityArchitecture") != null, "original high density metropolitan 3D kit")
     _check(game.get_node_or_null("LivingCity/ChronoCore/Chronos_HighPolyReactor") != null, "sculpted chronoreactor with machined PBR hardware")
     _check(game.get_node_or_null("LivingCity/Chronos_UltraCityArchitecture/SculptedLandmark_00") != null, "unique tiered tower and sculptural landmark kit")
