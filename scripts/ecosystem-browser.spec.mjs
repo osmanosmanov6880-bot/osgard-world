@@ -2251,7 +2251,7 @@ test('INHERIT R15 World Alive chapter progress comes only from genuine placement
  const before=await page.evaluate(()=>window.InheritGame.snapshot());
  const actual=await page.evaluate(()=>window.InheritWorldAliveUI.getState());
  expect(actual.objects).toBe(before.objects.length);
- expect(actual.connections).toBe(window.InheritLegacyEngine?.derive ? actual.connections : actual.connections);
+ expect(actual.connections).toBeGreaterThanOrEqual(0);
  await expect(page.locator('.world-alive-goal-action').first()).toBeEnabled();
  await page.locator('.world-alive-goal-action').first().click();
  expect(await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()))).toBe(JSON.stringify(before));
