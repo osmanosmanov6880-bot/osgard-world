@@ -40,6 +40,18 @@ func _run() -> void:
     if not check(interceptor != null, "R5 ship visual model missing"):return
     if not check(interceptor.detail_count > 100, "R5 ship is not high detail"):return
     if not check(world.ship.engine_flames.size() == 3, "R5 player ship should have triple animated turbines"):return
+    var hero_r6 = interceptor.get_node_or_null("R6_HeroHullDetail")
+    if not check(hero_r6 != null, "R6 aircraft hero model missing"):return
+    if not check(hero_r6.hero_parts > 170, "R6 ship detail budget not reached"):return
+    if not check(hero_r6.fasteners >= 80, "R6 instanced aircraft fasteners absent"):return
+    if not check(hero_r6.gun_count == 4, "Four magnetic accelerator barrels required"):return
+    if not check(hero_r6.animated_rotors.size() == 3, "Three real internal turbines required"):return
+    var megadocks = world.get_node_or_null("HeroMegadocksR6")
+    if not check(megadocks != null, "R6 industrial orbital megadocks absent"):return
+    if not check(megadocks.hangar_count == 12, "Twelve curved hangars missing"):return
+    if not check(megadocks.crane_count == 12, "Twelve detailed cargo cranes missing"):return
+    if not check(megadocks.panels_instanced >= 1600, "PBR deck tiles not installed"):return
+    if not check(megadocks.structural_instances >= 2100, "R6 GPU-instanced docking details missing"):return
     if not check(is_instance_valid(world.hud_objective),"Cinematic HUD objective missing"):return
     if not check(world.drones.size() >= 22, "Traffic simulation missing"):return
     if not check(is_instance_valid(world.radar), "Mission radar missing"):return
@@ -65,5 +77,5 @@ func _run() -> void:
     world.ship.take_damage(10.0)
     if not check(world.ship.shield < shield_before,"Damage does not reduce shield"):return
     if not check(previous_credits >= 0,"Invalid credits"):return
-    print("NEBULA_SMOKE_SUCCESS missions=1 upgrades=1 drones=%d premium3d=r5 fins=1440 docks=6 triple-engine=true" % world.drones.size())
+    print("NEBULA_SMOKE_SUCCESS missions=1 upgrades=1 drones=%d premium3d=r6 fins=1440 docks=6 triple-engine=true curved-hangars=12" % world.drones.size())
     quit(0)
