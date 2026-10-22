@@ -79,14 +79,15 @@ function batch(){
  const transform=new THREE.Object3D();
  const add=(geometry,material,pos=[0,0,0],scale=[1,1,1],rot=[0,0,0],quat=null)=>{
   transform.position.set(...pos);transform.scale.set(...scale);
-  transform.rotation.set(...rot);if(quat)transform.quaternion.copy(quat);
+  if(quat)transform.quaternion.copy(quat);
+  else transform.rotation.set(...(Array.isArray(rot)?rot:[0,0,0]));
   transform.updateMatrix();
   const transformed=geometry.clone();
   transformed.applyMatrix4(transform.matrix);
   if(!containers.has(material))containers.set(material,[]);
   containers.get(material).push(transformed);
  };
- const box=(material,p,s,rot=0)=>add(UNIT.box,material,p,s,[0,rot,0]);
+ const box=(material,p,s,rot=0)=>add(UNIT.box,material,p,s,Array.isArray(rot)?rot:[0,rot,0]);
  const rock=(material,p,s,rot=0)=>add(UNIT.stone,material,p,s,[.18,rot,.1]);
  const pebble=(material,p,s,rot=0)=>add(UNIT.rock,material,p,s,[.1,rot,.2]);
  const orb=(material,p,s,rot=[0,0,0])=>add(UNIT.leaf,material,p,s,rot);
