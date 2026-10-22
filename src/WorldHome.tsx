@@ -2,7 +2,6 @@ import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react'
 import './omegaWorld.css'
 import './developmentSignature.css'
-import OsgardEcosystemIndex from './OsgardEcosystemIndex'
 import { cases } from './redesignCatalog'
 import { BrandMark } from './BrandMark'
 import { formatEnquiry, validateEnquiry } from './projectEnquiry'
@@ -10,6 +9,7 @@ import { recordBrandEvent } from './brandTelemetry'
 import type { GlobeChapter, GlobeMode, GlobeView, GlobeQuality } from './OmegaGlobe'
 
 const OmegaGlobe = lazy(() => import('./OmegaGlobe'))
+const OsgardEcosystemIndex = lazy(() => import('./OsgardEcosystemIndex'))
 
 const readOmegaMode = (): GlobeMode => {
   try {
@@ -230,7 +230,9 @@ export default function WorldHome({ development = false }: { development?: boole
       </div>
       <div className="world-workspace-link"><p>Работаешь над своей идеей? Собери план и материалы в одном месте.</p><a className="brand-text-link" href="/workspace">Открыть рабочее пространство ↗</a></div>
     </section>
-    <OsgardEcosystemIndex />
+    <Suspense fallback={<div className="ecosystem-index-skeleton" aria-hidden="true" />}>
+      <OsgardEcosystemIndex />
+    </Suspense>
     </>}
     <section id="cases" className="brand-section" aria-labelledby="world-cases-title">
       <div className="brand-section-heading"><p className="brand-eyebrow">02 / ИЗБРАННЫЕ ПРОЕКТЫ</p><h2 id="world-cases-title">У каждой задачи<br />свой характер.</h2><p>Откройте кейс: посмотрите интерфейс, доступные возможности и стадию проекта. Статус указан на каждой карточке.</p></div>
