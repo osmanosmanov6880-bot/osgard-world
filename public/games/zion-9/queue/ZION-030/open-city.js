@@ -507,7 +507,7 @@
   function toggleRain() { world.raining = !world.raining; updateAtmosphere(); announce(world.raining ? 'Начался дождь. Асфальт остыл.' : 'Дождь закончился.'); }
   function toggleQuality() {
     world.quality = world.quality === 'eco' ? 'high' : 'eco';
-    world.gpuScale = world.quality === 'eco' ? .55 : reduceMotion.matches ? .34 : world.softwareGL ? .4 : mobile.matches ? 1.05 : 1.35;
+    world.gpuScale = world.quality === 'eco' ? (reduceMotion.matches ? .34 : world.softwareGL ? .4 : .55) : reduceMotion.matches ? .34 : world.softwareGL ? .4 : mobile.matches ? 1.05 : 1.35;
     renderer.shadowMap.enabled = world.quality === 'high' && !mobile.matches && !reduceMotion.matches;
     $('oc-quality').textContent = world.quality === 'eco' ? '◈ ECO' : '◈ HIGH';
     resize(); announce(world.quality === 'eco' ? 'Экономичный режим' : 'Улучшенная графика');
