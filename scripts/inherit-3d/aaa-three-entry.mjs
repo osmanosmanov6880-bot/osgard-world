@@ -37,9 +37,11 @@ const controls=make('div','aaa3d-controls');controls.setAttribute('role','group'
 controls.setAttribute('aria-label','3D world controls');
 const heading=make('span','aaa3d-brand');
 const switcher=make('button','aaa3d-switch'),orbit=make('button','aaa3d-orbit'),detail=make('button','aaa3d-quality'),effects=make('button','aaa3d-fx');
+const monitor=make('button','aaa3d-monitor');
+const metrics=make('output','aaa3d-metrics');metrics.hidden=true;
 const live=make('span','aaa3d-live');live.setAttribute('role','status');live.setAttribute('aria-live','polite');
-for(const btn of [switcher,orbit,detail,effects])btn.type='button';
-controls.append(heading,switcher,orbit,detail,effects,live);
+for(const btn of [switcher,orbit,detail,effects,monitor])btn.type='button';
+controls.append(heading,switcher,orbit,detail,effects,monitor,live,metrics);
 // Keep the 3D control rail OUTSIDE the island: a formerly absolute overlay
 // intercepted genuine Legacy, research and Atlas buttons on both viewports.
 world.parentElement.insertBefore(controls,world);
@@ -64,7 +66,7 @@ window.InheritAAA3D=Object.freeze({
  },
  toggle:()=>switcher.click()
 });
-let renderer,scene,camera,staticWorld,traceRoot,sun,hemi,cold,adapter=null,pipeline=null,postWanted=false,adaptivePixelScale=1;
+let renderer,scene,camera,staticWorld,traceRoot,sun,hemi,cold,adapter=null,pipeline=null,postWanted=false,adaptivePixelScale=1,monitorOpen=false,lastMetricsUpdate=0;
 let waterUniforms,raf=0,lastFrame=0,sceneVisible=true,modeEnabled=true,flybyStart=0,flyby=false;
 let signature='',lastSeason='',aspect=1.84,firstDraw=false;
 const traceCache=new Map(); // Reuse unchanged sculpted meshes across generations and building moves.
@@ -95,6 +97,9 @@ function updateLabels(){
  effects.textContent=postWanted?fxLabels[lang()].on:fxLabels[lang()].off;
  effects.disabled=!status.available;
  effects.setAttribute('aria-pressed',String(postWanted));
+ monitor.textContent=monitorOpen?'FPS ✕':'FPS';
+ monitor.setAttribute('aria-pressed',String(monitorOpen));
+ monitor.setAttribute('aria-label',lang()==='ru'?'Показать замеры FPS':lang()==='zh'?'显示帧率测量':'Show measured FPS');
  detail.setAttribute('aria-pressed',String(quality==='high'));
  orbit.textContent=flyby?t.orbitBusy:t.orbit;
  orbit.disabled=!status.active||flyby||motion.matches;
@@ -283,6 +288,17 @@ function renderOnce(time){
  frameBudget.record(time,cpuSubmissionMs,renderer,renderer.getPixelRatio());
  status.performance=frameBudget.snapshot();
  status.ambientLife=active?.life?.stats()||null;
+ if(monitorOpen&&time-lastMetricsUpdate>1050){
+  lastMetricsUpdate=time;
+  const p=status.performance;
+  const fmt=v=>Number.isFinite(v)?v.toFixed(1):'—';
+  metrics.textContent='FPS '+fmt(p.fps)+
+   ' · p95 '+fmt(p.frameIntervalP95Ms)+' мс'+
+   ' · CPU '+fmt(p.cpuSubmissionP95Ms)+' мс'+
+   ' · draw '+(p.renderer?.calls??'—')+
+   ' · tris '+(p.renderer?.triangles??'—')+
+   ' · '+(status.adapter?.isSoftware?'SwiftShader / software GPU':'GPU: '+(status.adapter?.model||'unknown'));
+ }
  status.frames+=1;firstDraw=true;
  // Dynamically recover frame pacing by lowering pixel density without
  // deleting user-built objects, altering saves or silently switching modes.
@@ -334,6 +350,10 @@ orbit.addEventListener('click',doFlyby);
 effects.addEventListener('click',()=>{
  if(!status.available)return;
  postWanted=!postWanted;configurePostFx();renderOnce(performance.now());updateLabels();
+});
+monitor.addEventListener('click',()=>{
+ monitorOpen=!monitorOpen;metrics.hidden=!monitorOpen;
+ lastMetricsUpdate=0;renderOnce(performance.now());updateLabels();
 });
 // User-origin mouse clicks must not accidentally place traces during a camera tour.
 world.addEventListener('click',event=>{
