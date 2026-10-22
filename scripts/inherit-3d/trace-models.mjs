@@ -19,6 +19,7 @@ const trunkGeo=new THREE.CylinderGeometry(.14,.24,2.7,7);
 const boulderGeo=new THREE.IcosahedronGeometry(1,1);
 const crownGeo=new THREE.IcosahedronGeometry(1,1);
 const sphereGeo=new THREE.SphereGeometry(1,12,8);
+const sharedGeometries=new Set([trunkGeo,boulderGeo,crownGeo,sphereGeo]);
 function mesh(geometry,material,position,scale){
  const item=new THREE.Mesh(geometry,material);
  if(position)item.position.set(...position);
@@ -112,9 +113,9 @@ export function disposeTraces(group){
  for(const child of [...group.children]){
    group.remove(child);
    child.traverse(o=>{
-     if(o.isPointLight)return;
-     // Geometry is shared by many props; material is module-level and reused.
-     // The scene owns disposal at teardown. This only clears scene nodes.
+     // Release disposable geometry from old imported worlds and generation
+     // handoffs; keep shared primitives and PBR materials alive for reuse.
+     if(o.isMesh&&o.geometry&&!sharedGeometries.has(o.geometry))o.geometry.dispose();
    });
  }
 }
