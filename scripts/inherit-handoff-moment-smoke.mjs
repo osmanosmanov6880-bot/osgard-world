@@ -83,7 +83,7 @@ check('UI is nonmodal, localized, accessible and leaves the real game controls a
  assert.match(css,/\.inherit-handoff-moment\{pointer-events:none\}/);
  assert.ok(read('index.html').includes('InheritHandoffMomentUI?.dismiss?.()'));
  assert.match(css,/focus-visible/);
- assert.match(sw,/inherit-shell-v24/);
+ assert.match(sw,/inherit-shell-v27/);
  assert.ok(lang.includes('InheritHandoffMomentUI?.refresh?.()'));
  new vm.Script(js);new vm.Script(read('handoff-moment-core.js'));
 });

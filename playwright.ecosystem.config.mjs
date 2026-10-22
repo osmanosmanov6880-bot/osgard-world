@@ -11,7 +11,7 @@ export default defineConfig({
   reporter: [['list'], ['html', { outputFolder: 'browser-report', open: 'never' }]],
   use: {
     baseURL: 'http://127.0.0.1:4175',
-    channel: 'chromium', // Use the installed full browser in new headless mode.
+    channel: process.env.OSGARD_BROWSER_CHANNEL === 'chrome' ? 'chrome' : 'chromium', // Use the preinstalled Chrome when CI requests it; otherwise retain pinned Chromium.
     locale: 'ru-RU',
     contextOptions: { reducedMotion: 'reduce' },
     trace: 'retain-on-failure',

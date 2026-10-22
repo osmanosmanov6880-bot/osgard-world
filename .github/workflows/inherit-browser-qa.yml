@@ -1,0 +1,57 @@
+name: INHERIT real desktop and mobile QA
+
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - "public/games/inherit/**"
+      - "scripts/ecosystem-browser.spec.mjs"
+      - ".github/workflows/inherit-browser-qa.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: inherit-browser-qa-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  inherit-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install the locked application
+        run: npm ci
+      - name: Build the actual production site
+        run: npm run build
+      - name: Include all published game assets
+        run: cp -a public/games/. dist/games/
+      - name: Use real Chrome on the runner or pinned fallback
+        run: |
+          npm install --no-save --package-lock=false @playwright/test@1.58.2
+          if command -v google-chrome >/dev/null 2>&1; then
+            google-chrome --version
+            echo "OSGARD_BROWSER_CHANNEL=chrome" >> "$GITHUB_ENV"
+          else
+            npx playwright install --with-deps --no-shell chromium
+          fi
+      - name: Verify all genuine INHERIT journeys on desktop and mobile
+        run: npx playwright test --config playwright.ecosystem.config.mjs --grep "INHERIT" --workers 2
+      - name: Retain real interaction screenshots and traces
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: inherit-real-browser-evidence
+          path: |
+            browser-report/
+            test-results/
+          if-no-files-found: warn
+          retention-days: 14
