@@ -37,7 +37,7 @@ controls.append(heading,switcher,orbit,detail,live);world.append(controls);
 const canvas=make('canvas','aaa3d-canvas');canvas.setAttribute('aria-hidden','true');
 canvas.setAttribute('tabindex','-1');canvas.style.pointerEvents='none';
 island.prepend(canvas);
-const status={available:false,active:false,frames:0,traces:0,generation:null,quality,season:'',fallback:null,flyby:false,renderer:'WebGL Three.js'};
+const status={available:false,active:false,frames:0,traces:0,generation:null,quality,season:'',fallback:null,flyby:false,renderer:'WebGL Three.js',detailTiers:{high:0,medium:0,low:0},detailTriangles:0,detailDrawCalls:0};
 window.InheritAAA3D=Object.freeze({getState:()=>({...status}),toggle:()=>switcher.click()});
 let renderer,scene,camera,staticWorld,traceRoot,sun,hemi,cold;
 let waterUniforms,raf=0,lastFrame=0,sceneVisible=true,modeEnabled=true,flybyStart=0,flyby=false;
@@ -122,15 +122,42 @@ function syncState(force=false){
  if(!force&&next===signature)return;
  signature=next;
  const items=stableObjects(current,MAX_SAVED);
+ // Prioritize the objects closest to the visible center, not the oldest save.
+ // GPU draw calls are bounded: deep sculpting near camera, medium detail behind
+ // it, lightweight legacy meshes in dense worlds and on lower-power devices.
+ const detailBudget=quality==='high'
+  ?(lowPower?{high:7,medium:19}:{high:30,medium:70})
+  :(lowPower?{high:0,medium:0}:{high:0,medium:14});
+ const sorted=items.map((o,i)=>({i,dist:Math.hypot((o.x-50)*1.0,(o.y-46)*1.12)}))
+  .sort((a,b)=>a.dist-b.dist||a.i-b.i);
+ const tiers=new Map();
+ sorted.forEach((item,rank)=>{
+  tiers.set(item.i,rank<detailBudget.high?'high':rank<detailBudget.high+detailBudget.medium?'medium':'low');
+ });
  disposeTraces(traceRoot);
+ const counts={high:0,medium:0,low:0};
+ let triangles=0,drawCalls=0,activeLanterns=0;
  for(let i=0;i<items.length;i++){
   const o=items[i],p=screenToTerrain(o.x,o.y,aspect,ORTHO_HEIGHT,ELEVATION);
-  const value=makeTrace(o.tool,{size:o.tool==='tree'?.61:o.tool==='arch'?.72:.86,cast:quality==='high'});
+  const tier=tiers.get(i)||'low';
+  const lightAllowed=o.tool==='light'&&quality==='high'&&activeLanterns<2&&tier==='high';
+  if(lightAllowed)activeLanterns++;
+  const value=makeTrace(o.tool,{
+   size:o.tool==='tree'?.61:o.tool==='arch'?.72:.86,cast:quality==='high',
+   quality:tier,seed:(173+Math.round(o.x*173+o.y*311)+i*19)>>>0,allowLight:lightAllowed
+  });
   value.position.set(p.x,p.y+.06,p.z);
   value.userData.nativeTrace={tool:o.tool,x:o.x,y:o.y};
+  value.userData.detailTier=tier;
   value.rotation.y=((i*0.6180339887)%1)*Math.PI*2;
   traceRoot.add(value);
+  counts[tier]++;
+  triangles+=value.userData.detailTriangles||0;
+  drawCalls+=value.userData.detailDrawCalls||value.children.filter(c=>c.isMesh).length;
  }
+ status.detailTiers=counts;
+ status.detailTriangles=triangles;
+ status.detailDrawCalls=drawCalls;
  status.traces=items.length;
  status.generation=current?.generation??null;
  updateEnvironment();
@@ -181,7 +208,7 @@ detail.addEventListener('click',()=>{
  quality=quality==='high'?'low':'high';status.quality=quality;
  renderer.shadowMap.enabled=quality==='high'&&!lowPower;
  sun.castShadow=renderer.shadowMap.enabled;
- resize();updateLabels();
+ resize();syncState(true);renderOnce(performance.now());updateLabels();
 });
 orbit.addEventListener('click',doFlyby);
 // User-origin mouse clicks must not accidentally place traces during a camera tour.
