@@ -126,7 +126,10 @@ export function BrandShell({ theme, children }: { theme: ProductTheme; children:
       <OsgardFooter product={product} motion={motion} reduced={reduced} />
     </Suspense>
     <Suspense fallback={null}>
-      {quickOpen && <OsgardQuickNav onClose={closeQuickNav} onNavigate={() => setQuickOpen(false)} />}
+      {quickOpen && <OsgardQuickNav onClose={closeQuickNav} onNavigate={() => {
+          setQuickOpen(false)
+          requestAnimationFrame(() => document.getElementById('product-main')?.focus({ preventScroll: true }))
+        }} />}
     </Suspense>
   </div>
 }
