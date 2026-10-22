@@ -19,11 +19,29 @@ func _ready() -> void:
         "light": _pbr(Color(0.14, 0.68, 0.85), 0.42, 0.16, 1.15),
         "amber": _pbr(Color(0.96, 0.45, 0.14), 0.41, 0.18, 0.72)
     }
+    # Shared tangent-space microstructure on painted metal, without heavy external textures.
+    var normal_map := _brushed_normal_map()
+    for key in ["carbon", "titanium", "armor", "ceramic", "gold"]:
+        var surface: StandardMaterial3D = mats[key]
+        surface.normal_enabled = true
+        surface.normal_texture = normal_map
+        surface.normal_scale = 0.24
     _build_airframe()
     _build_wings()
     _build_canopy()
     _build_propulsion()
     _build_surface_details()
+
+func _brushed_normal_map() -> ImageTexture:
+    # Tangent-space 128px micro-scratches; repeatable on every UV-mapped mesh.
+    var image := Image.create(128, 128, false, Image.FORMAT_RGB8)
+    for y in 128:
+        for x in 128:
+            var scratch: float = sin(float(x) * 0.61 + sin(float(y) * 0.07) * 2.0)
+            var grain: float = cos(float(y) * 0.47 + float(x) * 0.08)
+            image.set_pixel(x, y, Color(0.5 + 0.034 * scratch, 0.5 + 0.022 * grain, 1.0))
+    image.generate_mipmaps()
+    return ImageTexture.create_from_image(image)
 
 func _pbr(tint: Color, roughness: float, metallic: float, glow: float = 0.0) -> StandardMaterial3D:
     var mat := StandardMaterial3D.new()
