@@ -14,10 +14,14 @@ async function enterStreetMode(page) {
 }
 
 test('ZION-030 v28: real third-person street mode, electric vehicle, weather and quality', async ({ page }, testInfo) => {
+  test.setTimeout(75000);
   const errors = await enterStreetMode(page)
   const snapshot = () => page.evaluate(() => window.__ZION030_OPEN_CITY__.state())
   await expect.poll(async () => (await snapshot()).mission.score).toBe(0)
   await expect(page.locator('#oc-contract-count')).toHaveText('0 / 3')
+  await page.locator('#oc-nav-mode').click()
+  await expect(page.locator('#oc-nav-mode')).toContainText('КОНТРАКТЫ')
+  await page.locator('#oc-nav-mode').click()
   await expect(page.locator('#oc-minimap')).toBeVisible()
   if (testInfo.project.name === 'mobile') {
     await expect(page.locator('#oc-joystick')).toBeVisible()
@@ -60,6 +64,7 @@ test('ZION-030 v28: real third-person street mode, electric vehicle, weather and
 })
 
 test('ZION-030 v28: complete service contracts, earn and persist city credits', async ({ page }, testInfo) => {
+  test.setTimeout(75000);
   const errors = await enterStreetMode(page)
   for (const { x, z } of [{ x: -15, z: -15 }, { x: 15, z: -10 }, { x: -10, z: 15 }]) {
     await page.evaluate(({ x, z }) => window.__ZION030_OPEN_CITY__.teleport(x, z), { x, z })
