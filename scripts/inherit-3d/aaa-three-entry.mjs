@@ -142,6 +142,7 @@ function updateEnvironment(){
  hemi.intensity=season==='mist'?1.7:2.2;
  renderer.toneMappingExposure=p.exposure;
  waterUniforms.uDawn.value=p.water;
+ if(waterUniforms.uWind)waterUniforms.uWind.value=season==='wind'?1.28:season==='mist'?.17:.62;
 }
 function syncState(force=false){
  if(!game.snapshot)return;
