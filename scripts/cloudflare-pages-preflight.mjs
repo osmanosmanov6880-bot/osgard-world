@@ -6,7 +6,10 @@ const root = resolve(process.argv[2] || 'dist')
 const required = [
   'index.html', '_headers', '_redirects', 'robots.txt', 'sitemap.xml',
   'brand/osa-transition.js', 'games/index.html', 'games/ecosystem-intermission.js',
-  'games/null-shift-godot/index.html', 'osa-library/index.html', 'osa-library/media-inventory.csv', 'osa-library/media-manifest.json', 'skillcred/index.html', 'privacy/index.html',
+  'games/null-shift-godot/index.html',
+  'games/omega-3d-preview/index.html', 'games/omega-3d-preview/index.js',
+  'games/omega-3d-preview/index.wasm', 'games/omega-3d-preview/index.pck', 'games/omega-3d-preview/release.json',
+  'osa-library/index.html', 'osa-library/media-inventory.csv', 'osa-library/media-manifest.json', 'skillcred/index.html', 'privacy/index.html',
   'terms/index.html', 'entertainment/index.html', 'entertainment/noir-auto/index.html',
   'entertainment/noir-auto/en/index.html', 'entertainment/noir-auto/ar/index.html',
   'entertainment/noir-auto/og.svg', 'development/index.html',
@@ -52,14 +55,19 @@ const headers = await readFile(join(root, '_headers'), 'utf8')
 assert.ok(headers.includes('X-Content-Type-Options: nosniff'), '_headers must include nosniff')
 assert.ok(headers.includes('Referrer-Policy: strict-origin-when-cross-origin'), '_headers must include a safe referrer policy')
 assert.ok(headers.includes('/index.html'), '_headers must prevent stale root HTML')
-assert.ok(headers.includes('/games/null-shift-godot/*.wasm') && headers.includes('Content-Encoding: gzip'), 'Packaged Godot WASM must be served with gzip encoding')
+for (const game of ['null-shift-godot', 'omega-3d-preview']) {
+  assert.ok(headers.includes('/games/' + game + '/*.wasm'), 'Packaged Godot WASM path is missing for ' + game)
+}
+assert.ok(headers.includes('Content-Encoding: gzip'), 'Packaged Godot WASM must be served with gzip encoding')
 assert.ok(headers.includes('Content-Type: application/wasm'), 'Packaged Godot WASM must retain the WebAssembly MIME type')
 const redirects = await readFile(join(root, '_redirects'), 'utf8')
 assert.ok(redirects.includes('/games/time-empire /games/time 301'), 'Legacy time-empire route redirect is missing')
 assert.ok(redirects.includes('/games/time-empire/ /games/time 301'), 'Legacy time-empire slash route redirect is missing')
 
-const wasm = await readFile(join(root, 'games/null-shift-godot/index.wasm'))
-assert.equal(wasm.subarray(0, 2).toString('hex'), '1f8b', 'Godot WASM must be gzip-packaged before Pages upload')
+for (const game of ['null-shift-godot', 'omega-3d-preview']) {
+  const wasm = await readFile(join(root, 'games', game, 'index.wasm'))
+  assert.equal(wasm.subarray(0, 2).toString('hex'), '1f8b', 'Godot WASM must be gzip-packaged before Pages upload: ' + game)
+}
 const maxFiles = Number(process.env.CLOUDFLARE_PAGES_MAX_FILES || 20000)
 const maxAssetBytes = 25 * 1024 * 1024
 const files = []
