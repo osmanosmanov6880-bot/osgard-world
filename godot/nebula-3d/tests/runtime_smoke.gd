@@ -32,7 +32,14 @@ func _run() -> void:
     if not check(premium.dock_count == 6,"Multilevel sector docks missing"):return
     if not check(premium.get_node_or_null("PremiumFacadeFins") != null,"Facade mesh absent"):return
     if not check(premium.get_node_or_null("NebulaDistantPlanet") != null,"Planet backdrop absent"):return
-    if not check(world.ship.engine_flames.size() == 2,"Player ship should have dual animated thrusters"):return
+    var detail = world.get_node_or_null("HighDetailCityR5")
+    if not check(detail != null, "R5 city dressing pass missing"):return
+    if not check(detail.instanced_parts > 8000, "R5 skyscraper and dock detailing not instantiated"):return
+    if not check(detail.landmark_count == 6, "Expected six signature R5 citadels"):return
+    var interceptor = world.ship.get_node_or_null("AnimatedShip/HighDetailInterceptorR5")
+    if not check(interceptor != null, "R5 ship visual model missing"):return
+    if not check(interceptor.detail_count > 100, "R5 ship is not high detail"):return
+    if not check(world.ship.engine_flames.size() == 3, "R5 player ship should have triple animated turbines"):return
     if not check(is_instance_valid(world.hud_objective),"Cinematic HUD objective missing"):return
     if not check(world.drones.size() >= 22, "Traffic simulation missing"):return
     if not check(is_instance_valid(world.radar), "Mission radar missing"):return
@@ -58,5 +65,5 @@ func _run() -> void:
     world.ship.take_damage(10.0)
     if not check(world.ship.shield < shield_before,"Damage does not reduce shield"):return
     if not check(previous_credits >= 0,"Invalid credits"):return
-    print("NEBULA_SMOKE_SUCCESS missions=1 upgrades=1 drones=%d premium3d=true fins=1440 docks=6" % world.drones.size())
+    print("NEBULA_SMOKE_SUCCESS missions=1 upgrades=1 drones=%d premium3d=r5 fins=1440 docks=6 triple-engine=true" % world.drones.size())
     quit(0)
