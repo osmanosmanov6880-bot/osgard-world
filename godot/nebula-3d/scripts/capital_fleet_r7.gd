@@ -226,10 +226,12 @@ func _turrets(boat: Node3D) -> void:
 
 func _engines(boat: Node3D) -> void:
     for x in [-13.0, -4.5, 4.5, 13.0]:
-        _cylinder(boat, "R7_ExternalDriveHousing", 3.0, 13.0,
-                  Vector3(x, -0.5, 52.0), dark, 28).rotation.x = PI * 0.5
-        _cylinder(boat, "R7_InternalIonChamber", 1.65, 0.7,
-                  Vector3(x, -0.5, 59.0), plasma, 28).rotation.x = PI * 0.5
+        var drive := _cylinder(boat, "R7_ExternalDriveHousing", 3.0, 13.0,
+                              Vector3(x, -0.5, 52.0), dark, 28)
+        drive.rotation.x = PI * 0.5
+        var core := _cylinder(boat, "R7_InternalIonChamber", 1.65, 0.7,
+                             Vector3(x, -0.5, 59.0), plasma, 28)
+        core.rotation.x = PI * 0.5
         for z in [46.0, 50.0, 54.0, 58.0]:
             _torus(boat, "R7_RadiatorClamp", 3.25, 0.19,
                    Vector3(x, -0.5, z), alloy)
