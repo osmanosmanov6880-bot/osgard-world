@@ -1,0 +1,153 @@
+/* ZION-030 OPEN CITY v27 · Immersive 3D game mode, not a static render. */
+#world-play .stage{isolation:isolate}
+#world-play .oc-entry{position:absolute;z-index:15;top:66px;left:14px;border:1px solid #92e9ff;background:linear-gradient(112deg,#0b6d81,#0a3648);color:#f4feff;padding:13px 20px;font:900 13px/1.25 system-ui,-apple-system,sans-serif;letter-spacing:.055em;border-radius:12px;box-shadow:0 0 0 4px #042a3b77,0 10px 32px #0008,0 0 27px #19b3bd55;cursor:pointer;transition:transform .2s,filter .2s}
+#world-play .oc-entry:hover{transform:translateY(-2px);filter:brightness(1.16)}
+#world-play .oc-entry:focus-visible{outline:3px solid white;outline-offset:3px}
+#world-play .oc-entry:disabled{opacity:.72;cursor:not-allowed}
+.oc-stage-active{position:fixed!important;inset:0!important;z-index:99999!important;width:100vw!important;height:100dvh!important;max-width:none!important;min-height:0!important;max-height:none!important;margin:0!important;padding:0!important;border:0!important;border-radius:0!important;box-shadow:none!important;overflow:hidden!important;background:#041321!important;isolation:isolate!important}
+body.oc-body-active{overflow:hidden!important}
+.oc-stage-active>:not(.oc-shell):not(.oc-entry){visibility:hidden!important;pointer-events:none!important}
+.oc-stage-active>.oc-entry{position:fixed!important;z-index:100000!important;top:auto!important;left:auto!important;right:20px!important;bottom:22px!important;background:#061e30f5!important;border-color:#558da5!important;font-size:11px!important;padding:10px 14px!important;opacity:0;pointer-events:none}
+.oc-shell,.oc-shell *{box-sizing:border-box}
+.oc-shell[hidden],.oc-shell [hidden]{display:none!important}
+.oc-shell{position:absolute;z-index:80;inset:0;overflow:hidden;color:#f2faff;font-family:Inter,ui-sans-serif,system-ui,-apple-system,'Segoe UI',sans-serif;background:#071725;--oc-aqua:#64eddf;--oc-cyan:#46d6ef;--oc-orange:#ff985a;--oc-ink:#0a1e2c;--oc-border:#5481987a;letter-spacing:0}
+.oc-shell .oc-viewport{position:absolute;inset:0;overflow:hidden;touch-action:none;cursor:grab;background:radial-gradient(ellipse at 50% 25%,#34526e,#0a182a 70%)}
+.oc-shell .oc-viewport:active{cursor:grabbing}
+.oc-shell .oc-render{display:block;width:100%;height:100%;object-fit:cover;touch-action:none}
+.oc-shell .oc-grain,.oc-shell .oc-vignette{pointer-events:none;position:absolute;inset:0;z-index:2}
+.oc-shell .oc-grain{opacity:.19;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.48' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='.19'/%3E%3C/svg%3E");background-size:180px}
+.oc-shell .oc-vignette{background:linear-gradient(180deg,#010c1ac4,transparent 20%,transparent 74%,#01111dbf),radial-gradient(ellipse at 50% 50%,transparent 34%,#010b18a6 100%)}
+.oc-shell .oc-crosshair{position:absolute;z-index:3;top:50%;left:50%;width:11px;height:11px;border:1px solid #e8ffff75;border-radius:50%;transform:translate(-50%,-50%);pointer-events:none}
+.oc-shell .oc-crosshair i{display:block;position:absolute;inset:4px;background:#ecffffc7;border-radius:50%;box-shadow:0 0 10px #d6fdff}
+.oc-shell .oc-header{position:absolute;z-index:12;top:0;left:0;right:0;padding:clamp(13px,2vw,25px) clamp(16px,2.4vw,42px);display:flex;align-items:flex-start;justify-content:space-between;gap:20px;pointer-events:none}
+.oc-shell .oc-brand{display:flex;align-items:center;gap:14px;filter:drop-shadow(0 2px 7px #0009)}
+.oc-shell .oc-diamond{width:46px;height:46px;display:grid;place-items:center;background:#0c5160aa;border:1px solid #60e6f080;border-radius:12px;font-size:27px;color:#74fff1;box-shadow:0 0 25px #02f0d420}
+.oc-shell .oc-brand strong{display:block;font-size:clamp(17px,1.55vw,25px);letter-spacing:.08em;font-weight:950;line-height:1.2}
+.oc-shell .oc-brand small{display:block;margin-top:5px;color:#b1cddd;font-size:10px;font-weight:850;letter-spacing:.19em}
+.oc-shell .oc-top-right{display:flex;gap:13px;align-items:center;pointer-events:auto}
+.oc-shell .oc-live{background:#071f2bd7;padding:11px 16px;border-radius:10px;border:1px solid #397a86;font-size:11px;font-weight:900;letter-spacing:.13em;white-space:nowrap}
+.oc-shell .oc-live b{display:inline-block;width:8px;height:8px;border-radius:50%;background:#6fffc7;margin-right:7px;box-shadow:0 0 8px #69f7ce}
+.oc-shell button{font-family:inherit;touch-action:manipulation;cursor:pointer}
+.oc-shell button:focus-visible{outline:3px solid #fff!important;outline-offset:3px}
+.oc-shell .oc-glass{background:#092333e8;border:1px solid #4a8195;color:#effdff;border-radius:9px;padding:11px 16px;font-size:12px;font-weight:900;letter-spacing:.04em}
+.oc-shell .oc-glass:hover{background:#185064}
+.oc-shell .oc-objective{position:absolute;z-index:9;top:115px;left:clamp(16px,2.4vw,42px);width:min(348px,28vw);border:1px solid #699caa80;border-radius:14px;padding:20px 20px 15px;background:linear-gradient(153deg,#062637e8,#04121ecf);box-shadow:0 20px 55px #0006,0 0 50px #0f90991d;backdrop-filter:blur(15px)}
+.oc-shell .oc-eyebrow{font-size:11px;color:#59ecdf;font-weight:900;letter-spacing:.14em;line-height:1.45}
+.oc-shell .oc-objective>strong{display:block;font-size:clamp(20px,2vw,27px);line-height:1.13;letter-spacing:-.025em;margin:10px 0 7px;font-weight:950}
+.oc-shell .oc-objective p{font-size:13px;color:#c1dbe8;line-height:1.55;margin:0 0 19px}
+.oc-shell .oc-progress{height:7px;border-radius:6px;overflow:hidden;background:#082538;border:1px solid #3b6b79}
+.oc-shell .oc-progress>span{display:block;width:0;height:100%;border-radius:6px;background:linear-gradient(90deg,#18b3c7,#80f5bc);box-shadow:0 0 12px #45ffd9;transition:width .42s ease}
+.oc-shell .oc-progress-label{display:flex;justify-content:space-between;gap:8px;margin-top:12px;color:#c9f9ff;font-size:11px;letter-spacing:.045em;font-weight:950}
+.oc-shell .oc-progress-label span:last-child{color:#9bb7c5}
+.oc-shell .oc-right-hud{position:absolute;z-index:9;right:clamp(16px,2.4vw,42px);top:115px;width:205px;display:flex;flex-direction:column;gap:12px}
+.oc-shell .oc-map-frame{padding:12px 12px 10px;border:1px solid #5888988c;border-radius:14px;background:linear-gradient(150deg,#092438ef,#061722d9);box-shadow:0 14px 43px #0007}
+.oc-shell .oc-map-frame canvas{width:100%;height:auto;display:block;aspect-ratio:1;background:#0b2a3b;border:1px solid #396779;border-radius:7px}
+.oc-shell .oc-map-frame>span{display:block;text-align:center;font-size:10px;color:#b7d6e3;font-weight:900;letter-spacing:.075em;margin-top:9px}
+.oc-shell .oc-weather{display:flex;align-items:center;gap:6px;padding:11px 12px;border-radius:11px;border:1px solid #375e78;background:#071c2bdc;color:#f6ae78}
+.oc-shell .oc-weather strong{font-size:19px}.oc-shell .oc-weather small{margin-left:auto;color:#b4c8d1;font-size:9px;font-weight:850;letter-spacing:.04em}
+.oc-shell .oc-location{position:absolute;z-index:9;bottom:125px;left:clamp(16px,2.4vw,42px);display:flex;align-items:center;gap:12px;background:#041c2beb;border:1px solid #3f8393a8;border-radius:12px;padding:12px 18px;box-shadow:0 12px 29px #0008;min-width:258px}
+.oc-shell .oc-target-icon{font-size:34px;color:#ff9e67;line-height:1}
+.oc-shell .oc-location small{display:block;color:#96c1ce;font-size:10px;font-weight:900;letter-spacing:.14em}
+.oc-shell .oc-location strong{display:block;font-size:16px;letter-spacing:.02em;margin:4px 0 2px;font-weight:950}
+.oc-shell .oc-location em{display:block;color:#ffb689;font-size:11px;font-weight:850;font-style:normal}
+.oc-shell .oc-toolbar{position:absolute;z-index:10;left:50%;transform:translateX(-50%);bottom:32px;display:flex;align-items:stretch;gap:6px;border-radius:14px;background:#051a28e8;border:1px solid #51839391;padding:7px;box-shadow:0 15px 34px #000a;backdrop-filter:blur(11px)}
+.oc-shell .oc-toolbar button{display:flex;align-items:center;gap:10px;color:#b9d1d9;background:transparent;border:1px solid transparent;border-radius:10px;padding:12px 16px;font-size:21px;white-space:nowrap;transition:background .18s,border-color .18s}
+.oc-shell .oc-toolbar button:hover{background:#163e4b}
+.oc-shell .oc-toolbar button[aria-pressed="true"]{color:#efffff;border-color:#53dacb;background:linear-gradient(155deg,#136377,#0b3c4a);box-shadow:inset 0 0 12px #52f5e21f}
+.oc-shell .oc-toolbar button>span{color:#8ab7c5;display:grid;place-items:center;border:1px solid #508296;border-radius:5px;font-size:10px;font-weight:950;width:20px;height:20px}
+.oc-shell .oc-toolbar button>b{font-size:11px;letter-spacing:.05em;font-weight:950}
+.oc-shell .oc-interact{position:absolute;z-index:10;bottom:115px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:13px;background:#062c33f2;border:1px solid #5dedd9;border-radius:12px;padding:11px 21px;color:#f2ffff;font-size:12px;font-weight:950;white-space:nowrap;box-shadow:0 0 25px #31ddba42}
+.oc-shell kbd{font-family:inherit;color:#fff;background:#1b4f62;border:1px solid #6fadb8;border-bottom-width:3px;border-radius:6px;padding:5px 8px;font-size:11px;font-weight:950}
+.oc-shell .oc-interact kbd{font-size:17px;padding:7px 13px;background:#247a70}
+.oc-shell .oc-controls{position:absolute;z-index:8;right:clamp(16px,2.4vw,42px);bottom:33px;display:flex;flex-direction:column;gap:7px;color:#bed0d9;font-size:10px;font-weight:850}
+.oc-shell .oc-controls>span{display:flex;align-items:center;gap:7px}
+.oc-shell .oc-controls kbd{font-size:9px;padding:3px 6px;min-width:46px;text-align:center}
+.oc-shell .oc-world-message{position:absolute;z-index:11;top:27%;left:50%;transform:translate(-50%,-12px);background:#063b3ff4;border:1px solid #6afbd0;border-radius:10px;padding:15px 25px;color:#eafff6;font-size:clamp(13px,1.5vw,19px);font-weight:950;text-align:center;opacity:0;transition:opacity .25s,transform .25s;pointer-events:none;white-space:nowrap}
+.oc-shell .oc-world-message.oc-visible{opacity:1;transform:translate(-50%,0)}
+.oc-shell .oc-start,.oc-shell .oc-complete{position:absolute;z-index:30;inset:0;display:grid;place-items:center;padding:25px;background:radial-gradient(ellipse at 60% 50%,#052a3e8c,transparent 67%),#010916b9;backdrop-filter:blur(9px)}
+.oc-shell .oc-start-panel,.oc-shell .oc-complete>div{width:min(590px,100%);max-height:95%;overflow:auto;border-radius:22px;padding:clamp(24px,3vw,47px);background:linear-gradient(155deg,#12344af2,#051827f4 73%);border:1px solid #6dc8d79c;box-shadow:0 26px 90px #000b,0 0 80px #00b9db1c}
+.oc-shell .oc-start h2,.oc-shell .oc-complete h2{font-weight:1000;font-size:clamp(49px,5vw,82px);line-height:.99;letter-spacing:-.065em;margin:23px 0 16px!important;color:#effaff;text-shadow:0 4px 25px #0008}
+.oc-shell .oc-start h2 em,.oc-shell .oc-complete h2 em{font-style:normal;background:linear-gradient(110deg,#4bdeeb,#a4ffd0);-webkit-background-clip:text;background-clip:text;color:transparent}
+.oc-shell .oc-start p,.oc-shell .oc-complete p{color:#c4dce4;max-width:460px;font-size:15px;line-height:1.65;margin:0 0 22px}
+.oc-shell .oc-start-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:0 0 24px}
+.oc-shell .oc-start-grid>span{color:#5cddde;border-radius:11px;padding:13px 10px;border:1px solid #3b7380;background:#0b33418c;font-size:23px;line-height:1.1}
+.oc-shell .oc-start-grid b{display:block;color:#e8fbff;font-size:10px;line-height:1.35;margin-top:10px;letter-spacing:.05em}
+.oc-shell .oc-start-grid small{display:block;color:#9dc5d1;font-size:10px;line-height:1.4;margin-top:4px}
+.oc-shell #oc-start-play,.oc-shell .oc-complete button{display:flex;justify-content:space-between;align-items:center;gap:30px;width:100%;border:1px solid #a7ffee;border-radius:12px;padding:18px 22px;background:linear-gradient(110deg,#159ea1,#0c6477);color:white;font-size:15px;font-weight:950;letter-spacing:.055em;box-shadow:0 7px 30px #00cbb83f}
+.oc-shell #oc-start-play:hover,.oc-shell .oc-complete button:hover{filter:brightness(1.13)}
+.oc-shell #oc-start-play span{font-size:26px}
+.oc-shell .oc-start-foot{display:block;margin-top:15px;color:#8bb5bf;font-size:11px;line-height:1.6}
+.oc-shell .oc-complete button{margin-top:9px;justify-content:center}
+.oc-shell .oc-complete button+button{background:#0b293c;border-color:#547f91;box-shadow:none}
+.oc-shell .oc-joystick{display:none}
+.oc-shell .oc-action{display:none}
+@media(max-width:1100px){
+  .oc-shell .oc-objective{width:min(285px,31vw);padding:15px}
+  .oc-shell .oc-objective p{font-size:12px}
+  .oc-shell .oc-right-hud{width:156px}
+  .oc-shell .oc-weather{flex-wrap:wrap;font-size:12px}
+  .oc-shell .oc-weather strong{font-size:16px}
+  .oc-shell .oc-weather small{font-size:8px}
+  .oc-shell .oc-controls{display:none}
+  .oc-shell .oc-toolbar{bottom:16px}
+  .oc-shell .oc-location{bottom:106px}
+}
+@media(max-width:760px){
+  #world-play .oc-entry{font-size:13px;top:65px;left:12px;padding:11px 14px;right:auto;max-width:calc(100% - 22px)}
+  .oc-shell .oc-header{padding:11px 12px}
+  .oc-shell .oc-diamond{width:35px;height:35px;font-size:21px;border-radius:9px}
+  .oc-shell .oc-brand{gap:7px}
+  .oc-shell .oc-brand strong{font-size:12px;letter-spacing:.04em}
+  .oc-shell .oc-brand small{font-size:8px;margin-top:2px;letter-spacing:.065em}
+  .oc-shell .oc-live{display:none}
+  .oc-shell .oc-glass{padding:9px 9px;font-size:12px}
+  .oc-shell .oc-glass span{display:none}
+  .oc-shell .oc-objective{top:58px;left:9px;width:204px;padding:10px 12px;border-radius:10px}
+  .oc-shell .oc-objective .oc-eyebrow{font-size:8px;letter-spacing:.05em}
+  .oc-shell .oc-objective>strong{font-size:14px;line-height:1.1;margin:5px 0 8px}
+  .oc-shell .oc-objective p{display:none}
+  .oc-shell .oc-progress{height:5px}
+  .oc-shell .oc-progress-label{font-size:9px;margin-top:6px}
+  .oc-shell .oc-right-hud{top:60px;right:8px;width:108px;gap:3px}
+  .oc-shell .oc-map-frame{padding:5px;border-radius:8px}
+  .oc-shell .oc-map-frame>span{font-size:6px;margin-top:4px;letter-spacing:0}
+  .oc-shell .oc-weather{font-size:10px;padding:5px;gap:4px}
+  .oc-shell .oc-weather strong{font-size:14px}
+  .oc-shell .oc-weather small{font-size:7px}
+  .oc-shell .oc-crosshair{display:none}
+  .oc-shell .oc-location{bottom:174px;left:10px;min-width:0;width:min(205px,57vw);padding:8px 10px;gap:7px}
+  .oc-shell .oc-target-icon{font-size:21px}
+  .oc-shell .oc-location small{font-size:8px}
+  .oc-shell .oc-location strong{font-size:12px;margin:2px 0}
+  .oc-shell .oc-location em{font-size:9px}
+  .oc-shell .oc-toolbar{bottom:max(9px,env(safe-area-inset-bottom));gap:3px;padding:4px;max-width:calc(100vw - 22px)}
+  .oc-shell .oc-toolbar button{padding:10px 7px;gap:5px;font-size:17px}
+  .oc-shell .oc-toolbar button b{font-size:9px}
+  .oc-shell .oc-toolbar button>span{display:none}
+  .oc-shell .oc-interact{bottom:155px;left:auto;right:12px;transform:none;max-width:45vw;white-space:normal;padding:7px 10px;font-size:10px;gap:6px}
+  .oc-shell .oc-interact kbd{display:none}
+  .oc-shell .oc-joystick{position:absolute;bottom:72px;left:25px;z-index:17;display:block;width:116px;height:116px;border:2px solid #6fdce387;border-radius:50%;background:radial-gradient(circle,#32c0cc3d,#11314696 76%);touch-action:none;box-shadow:0 0 28px #0dd8d32a}
+  .oc-shell .oc-joystick:before,.oc-shell .oc-joystick:after{position:absolute;content:"";background:#a8f5eb55;pointer-events:none}
+  .oc-shell .oc-joystick:before{width:1px;height:65%;top:17%;left:50%}
+  .oc-shell .oc-joystick:after{height:1px;width:65%;left:17%;top:50%}
+  .oc-shell .oc-joystick>div{position:absolute;z-index:3;left:calc(50% - 23px);top:calc(50% - 23px);width:46px;height:46px;border-radius:50%;border:2px solid #c3fffb;background:linear-gradient(#33a2b0,#125566);box-shadow:0 4px 20px #0009}
+  .oc-shell .oc-action:not([hidden]){display:block;position:absolute;z-index:17;bottom:90px;right:24px;width:118px;height:62px;border-radius:15px;border:1px solid #99ffde;background:linear-gradient(130deg,#0da591,#08787a);color:white;font-size:13px;font-weight:950;box-shadow:0 0 27px #09e0ae58}
+  .oc-shell .oc-start,.oc-shell .oc-complete{padding:10px}
+  .oc-shell .oc-start-panel,.oc-shell .oc-complete>div{padding:24px 18px;border-radius:16px}
+  .oc-shell .oc-start h2,.oc-shell .oc-complete h2{font-size:clamp(37px,11vw,58px);margin:14px 0!important}
+  .oc-shell .oc-start p,.oc-shell .oc-complete p{font-size:13px;margin-bottom:16px}
+  .oc-shell .oc-start-grid{gap:5px;margin-bottom:16px}
+  .oc-shell .oc-start-grid>span{padding:10px 6px;font-size:18px}
+  .oc-shell .oc-start-grid b{font-size:9px;margin-top:6px}
+  .oc-shell .oc-start-grid small{font-size:8px}
+  .oc-shell #oc-start-play,.oc-shell .oc-complete button{padding:14px;font-size:12px}
+  .oc-shell .oc-world-message{top:27%;font-size:11px;padding:12px;width:max-content;max-width:calc(100vw - 35px);white-space:normal}
+}
+@media(max-height:640px) and (min-width:761px){
+  .oc-shell .oc-objective{top:90px;padding:10px 14px}
+  .oc-shell .oc-objective p{display:none}
+  .oc-shell .oc-right-hud{top:85px;width:150px}
+  .oc-shell .oc-location{bottom:88px}
+  .oc-shell .oc-toolbar{bottom:15px}
+}
+@media(prefers-reduced-motion:reduce){.oc-shell *,#world-play .oc-entry{transition:none!important;animation:none!important}.oc-shell .oc-grain{display:none}}
