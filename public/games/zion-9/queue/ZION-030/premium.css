@@ -343,3 +343,35 @@ main{width:min(2500px,98vw)!important;padding:10px clamp(12px,1.5vw,30px) 36px!i
 .mission-background summary:focus-visible{outline:3px solid #adffe9;outline-offset:2px}
 .mission-background p{padding:0 12px 12px;margin:0;font-size:14px;line-height:1.54;color:#cfdfed}
 @media(max-width:780px){.mission-focus strong{font-size:16px}.mission-focus p{font-size:16px}}
+
+
+/* v26: mobile GAME FIRST; actions stay next to the interactive city. */
+.premium-mobile-place,.premium-mobile-score{display:none}
+@media(max-width:780px){
+ .premium-mode .layout{grid-template-columns:minmax(0,1fr)!important}
+ .premium-mode .stage{order:-2!important;min-height:515px!important}
+ .premium-mode .panel{order:-1!important}
+ .premium-mode .premium-mission{order:0!important}
+ .premium-mobile-place{position:absolute;z-index:11;display:block;bottom:104px;left:10px;width:calc(100% - 20px);min-height:50px;padding:12px 14px;border:1px solid #bcfff0;border-radius:12px;background:linear-gradient(110deg,#087c9b,#0ab9bc);color:#f9fffd;font-size:clamp(15px,4vw,19px);font-weight:850;line-height:1.25;text-align:center;box-shadow:0 0 0 2px #4affee31,0 8px 24px #021320a8;cursor:pointer}
+ .premium-mobile-place:disabled{background:#24485d;color:#e2edf4;box-shadow:none;border-color:#5c92a7;cursor:not-allowed}
+ .premium-mobile-place:not(:disabled):active{transform:translateY(1px)}
+ .premium-mobile-place:focus-visible{outline:3px solid #d4fff4;outline-offset:3px}
+ .premium-mobile-score{display:block;position:absolute;z-index:8;right:11px;top:71px;border:1px solid #4cefd1;border-radius:9px;padding:8px 10px;background:#052b39e8;color:#afffe6;font-size:13px;font-weight:850;line-height:1.2;pointer-events:none}
+ .premium-mode .premium-spot-prompt{display:none!important}
+ .premium-mode .premium-selection-guide{left:10px;right:10px;max-width:none!important;bottom:167px!important;padding:10px 12px;box-shadow:0 6px 16px #0007}
+ .premium-mode .premium-selection-guide strong{font-size:12px!important}
+ .premium-mode .premium-selection-guide span{font-size:14px!important}
+ .premium-mode .premium-legend{bottom:13px;left:10px}
+ .premium-mode .premium-zoom{bottom:13px;right:10px}
+ .premium-mode .z9-keyboard-controls{display:none!important}
+ .premium-how #premiumPlace{display:none!important}
+ .premium-mode .premium-goal{padding:15px 17px!important}
+ .premium-mode .premium-hero-copy>p{font-size:17px!important;line-height:1.48!important}
+ .premium-mode .premium-districts p{font-size:15px!important}
+}
+@media(max-width:430px){
+ .premium-mode .stage{min-height:470px!important}
+ .premium-mobile-place{bottom:94px;min-height:47px;font-size:15px}
+ .premium-mode .premium-selection-guide{bottom:150px!important}
+ .premium-mobile-score{top:60px;padding:7px 9px;font-size:12px}
+}
