@@ -6,6 +6,18 @@ const getResponse = async (page, path = '/') => {
   expect(response?.status(), path + ' status').toBe(200)
 }
 
+// Production keeps advanced controls behind a native disclosure to protect the
+// cinematic first screen. Verify the real user action before touching them.
+const openPlanetSettings = async (page) => {
+  const panel = page.locator('.omega-experience-panel')
+  const summary = panel.locator('summary')
+  await expect(summary).toBeVisible()
+  await expect(panel).not.toHaveAttribute('open', '')
+  await summary.click()
+  await expect(panel).toHaveAttribute('open', '')
+  await expect(panel.getByRole('group', { name: 'Выберите режим 3D-сцены' })).toBeVisible()
+}
+
 test('public historical NASA Earth imagery and credits are served by OSGARD', async ({ request, page }) => {
   const manifestResponse = await request.get(URL + '/brand/earth/manifest.json')
   expect(manifestResponse.status()).toBe(200)
@@ -23,6 +35,7 @@ test('public historical NASA Earth imagery and credits are served by OSGARD', as
   expect(bytes.length).toBeGreaterThan(100000)
   await page.emulateMedia({ reducedMotion: 'no-preference' })
   await getResponse(page)
+  await openPlanetSettings(page)
   await expect(page.getByRole('link', { name: 'NASA Blue Marble ↗' })).toBeVisible()
   await expect(page.locator('.omega-imagery-credit')).toContainText('не прямой эфир')
   const stage = page.locator('.omega-webgl-stage')
@@ -41,6 +54,7 @@ test('public OSGARD Earth and three-mode controller are deployed', async ({ page
 
   await page.emulateMedia({ reducedMotion: 'no-preference' })
   await getResponse(page)
+  await openPlanetSettings(page)
   const hero = page.locator('.omega-hero')
   const controls = page.getByRole('group', { name: 'Выберите режим 3D-сцены' })
   await expect(hero).toBeVisible()
@@ -62,6 +76,7 @@ test('public OSGARD Earth and three-mode controller are deployed', async ({ page
 test('public cinema, 3D-world and hybrid modes work and persist', async ({ page }, testInfo) => {
   await page.emulateMedia({ reducedMotion: 'no-preference' })
   await getResponse(page)
+  await openPlanetSettings(page)
   const hero = page.locator('.omega-hero')
   const switcher = page.getByRole('group', { name: 'Выберите режим 3D-сцены' })
   await switcher.getByRole('button', { name: 'Кино' }).click()
@@ -83,6 +98,7 @@ test('public cinema, 3D-world and hybrid modes work and persist', async ({ page 
   await expect(hero).toHaveAttribute('data-omega-distance', '5.70')
 
   await page.reload({ waitUntil: 'domcontentloaded' })
+  await openPlanetSettings(page)
   await expect(hero).toHaveAttribute('data-omega-mode', 'world')
   await switcher.getByRole('button', { name: 'Гибрид' }).click()
   await expect(hero).toHaveAttribute('data-omega-mode', 'hybrid')
@@ -93,6 +109,7 @@ test('public cinema, 3D-world and hybrid modes work and persist', async ({ page 
 test('public GPU detail selector controls real render settings without breaking pages', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'no-preference' })
   await getResponse(page)
+  await openPlanetSettings(page)
   const picker = page.getByRole('combobox', { name: 'Качество 3D-глобуса' })
   const stage = page.locator('.omega-webgl-stage')
   await expect(picker).toHaveValue('auto')
@@ -120,6 +137,7 @@ test('public GPU detail selector controls real render settings without breaking 
 test('public website provides non-WebGL low-motion fallback and product routes', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await getResponse(page)
+  await openPlanetSettings(page)
   await expect(page.locator('.omega-globe')).toHaveCount(1)
   await expect(page.locator('.omega-hero h1')).toBeVisible()
   await expect(page.locator('.omega-mode-tabs')).toBeVisible()
