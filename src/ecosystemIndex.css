@@ -10,6 +10,17 @@
 .ecosystem-index-quality{display:inline-flex;align-items:center;justify-content:space-between;gap:12px;flex:none;max-width:260px;
   padding:14px 16px;border:1px solid #5c8b9e9c;color:#c5f7fa;border-radius:7px;background:#112737ad;text-decoration:none;font-size:13px;font-weight:650}
 .ecosystem-index-quality:hover{border-color:#a3f4fa;background:#17394d}
+.ecosystem-index-recent{display:flex;align-items:center;gap:18px;flex-wrap:wrap;justify-content:space-between;
+  padding:16px 20px;margin:0 0 24px;border:1px solid #75c7c899;border-radius:9px;
+  background:linear-gradient(105deg,#174353cc,#0c2637d1);box-shadow:0 8px 36px #0003}
+.ecosystem-index-recent>div{display:grid;gap:3px;min-width:0;flex:1}
+.ecosystem-index-recent small{color:#83f3f0;font:650 9px/1.5 'JetBrains Mono',monospace;letter-spacing:.12em}
+.ecosystem-index-recent strong{font:760 18px/1.3 Inter,Arial,sans-serif;color:#f3fcff}
+.ecosystem-index-recent>div>span{color:#bbd4e0;font-size:11px}
+.ecosystem-index-recent a{display:flex;align-items:center;gap:11px;padding:11px 14px;
+  min-height:44px;border-radius:6px;background:#85efeb;color:#052431;font-size:13px;font-weight:750;text-decoration:none}
+.ecosystem-index-recent button{min-height:44px;padding:10px 12px;border:1px solid #648ca7;border-radius:6px;
+  background:#112a3a;color:#d7e8f0;cursor:pointer;font-size:12px}
 .ecosystem-index-controls{display:flex;align-items:end;gap:17px;justify-content:space-between;padding-bottom:19px;border-bottom:1px solid #547c926e}
 .ecosystem-index-tabs{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
 .ecosystem-index-tabs button{min-height:44px;white-space:nowrap;padding:10px 15px;border-radius:7px;border:1px solid #52768b;
@@ -53,6 +64,9 @@
 .ecosystem-index-heading{display:block;margin-bottom:26px}.ecosystem-index-quality{max-width:none;margin-top:15px;min-height:45px}
 .ecosystem-index-heading h2{font-size:clamp(34px,9vw,48px)}
 .ecosystem-index-heading p:last-child{font-size:15px}
+.ecosystem-index-recent{align-items:stretch;gap:10px}
+.ecosystem-index-recent>div{flex-basis:100%}
+.ecosystem-index-recent a{flex:1;justify-content:space-between}
 .ecosystem-index-controls{display:grid;gap:16px}.ecosystem-index-tabs{gap:7px}
 .ecosystem-index-tabs button{font-size:12px;min-height:43px;padding:9px 12px}
 .ecosystem-index-search{max-width:none;min-width:0;width:100%}
