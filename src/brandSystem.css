@@ -237,3 +237,38 @@ html[data-motion=off] :is(.world-case:hover img,.world-case:focus-visible img,.p
     min-height:44px;
   }
 }
+
+/* WAVE 3 — one compact, globally available navigator trigger. Its dialog CSS
+   loads only on demand; trigger geometry is eager to avoid late font/layout CLS. */
+.brand-system .brand-header .brand-quick-trigger{
+  display:inline-flex;align-items:center;justify-content:center;gap:9px;
+  min-height:44px;min-width:108px;padding:8px 10px;
+  border:1px solid var(--line);border-radius:7px;background:var(--surface);
+  color:var(--ink);font:650 13px/1.3 Inter,Arial,sans-serif;
+  cursor:pointer;white-space:nowrap;flex:none;
+}
+.brand-system .brand-header .brand-quick-trigger:hover,
+.brand-system .brand-header .brand-quick-trigger[aria-expanded=true]{
+  color:var(--accent);border-color:var(--accent);
+}
+.brand-system .brand-header .brand-quick-trigger:focus-visible{
+  outline:3px solid var(--accent);outline-offset:3px;
+}
+.brand-system .brand-quick-symbol{font:600 24px/1 Inter,Arial,sans-serif}
+.brand-system .brand-quick-trigger kbd{
+  font:700 9px/1 'JetBrains Mono',monospace;color:var(--muted);
+  border:1px solid var(--line);padding:5px 4px;border-radius:4px;
+}
+@media(max-width:1200px){
+  .brand-system .brand-quick-trigger kbd{display:none}
+}
+@media(max-width:760px){
+  .brand-system .brand-header .brand-quick-trigger{
+    min-width:44px;min-height:44px;padding:7px 10px;gap:5px;
+  }
+  .brand-system .brand-quick-trigger .brand-quick-label{font-size:12px}
+}
+@media(max-width:420px){
+  .brand-system .brand-header .brand-quick-trigger{width:44px;padding:6px}
+  .brand-system .brand-quick-trigger .brand-quick-label{display:none}
+}
