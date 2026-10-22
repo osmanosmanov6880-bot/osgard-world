@@ -8,7 +8,7 @@ import { createHash } from 'node:crypto'
  */
 const origin = process.env.OSGARD_BASE_URL || 'https://osgard.world'
 const root = 'public/games/zion-9/queue/ZION-030/'
-const assets = ['index.html', 'premium.js', 'premium.css', 'athens-skyline.svg']
+const assets = ['index.html', 'premium.js', 'premium.css', 'athens-skyline.svg', 'open-city-rules.js', 'open-city.js', 'open-city.css', 'open-city-details.js']
 const checksum = b => createHash('sha256').update(b).digest('hex')
 const evidence = []
 for(const asset of assets){
@@ -23,4 +23,4 @@ for(const asset of assets){
   console.log(JSON.stringify(result))
 }
 assert.ok(evidence.every(x => x.matches), 'ZION-030 public assets do not match the activated release; see per-file checksums above')
-console.log('PASS exact ZION-030 deployment: 4 assets byte-identical on public HTTPS')
+console.log(`PASS exact ZION-030 deployment: ${assets.length} assets byte-identical on public HTTPS`)
