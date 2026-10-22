@@ -7,6 +7,7 @@ test('Academy learning cockpit displays real beginner progress with meaningful r
   await expect(page.locator('h1')).toHaveCount(1)
   const cockpit = page.locator('.academy-learning-console')
   await expect(cockpit).toBeVisible()
+  await expect(page.locator('main.academy-home')).toHaveAttribute('lang', 'ru')
   await expect(page.getByRole('navigation', { name: 'Продукты OSGARD' })).toBeVisible()
   await expect(page.getByRole('navigation', { name: 'Продукты OSGARD' }).getByRole('link')).toHaveCount(4)
   await expect(page.getByRole('navigation', { name: 'Разделы академии' })).toHaveCount(0)
@@ -36,4 +37,28 @@ test('Academy cockpit language switch preserves destinations, keyboard focus and
   await expect(action).toBeFocused()
   await expect(page.getByRole('button', { name: 'Переключить на русский' })).toBeVisible()
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true)
+})
+
+test('Academy deep links open the intended real studio and follow SPA history', async ({ page }) => {
+  const errors = []
+  page.on('pageerror', error => errors.push(error.message))
+  await page.goto('/academy?project=privacy#project-studio')
+  const studio = page.locator('#project-studio')
+  const tabs = studio.locator('.academy-studio-projects button')
+  await expect(studio).toBeVisible()
+  await expect(tabs).toHaveCount(3)
+  await expect(tabs.nth(1)).toHaveAttribute('aria-pressed', 'true')
+  await expect(page.locator('.academy-skills-grid .academy-skill-card a')).toHaveCount(3)
+  for (const [index, kind] of ['evidence', 'privacy', 'decision'].entries()) {
+    await expect(page.locator('.academy-skills-grid .academy-skill-card').nth(index).getByRole('link'))
+      .toHaveAttribute('href', '/academy?project=' + kind + '#project-studio')
+  }
+  await page.locator('.academy-skills-grid .academy-skill-card').nth(2).getByRole('link').click()
+  await expect(page).toHaveURL(/\/academy\?project=decision#project-studio$/)
+  await expect(tabs.nth(2)).toHaveAttribute('aria-pressed', 'true')
+  await page.goBack()
+  await expect(page).toHaveURL(/\/academy\?project=privacy#project-studio$/)
+  await expect(tabs.nth(1)).toHaveAttribute('aria-pressed', 'true')
+  await expect(page.locator('main.academy-home')).toBeVisible()
+  expect(errors).toEqual([])
 })
