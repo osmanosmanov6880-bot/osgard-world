@@ -23,9 +23,9 @@ try {
   // Enforce exact title parity so an added game never receives a stale label.
   const gameCatalogText = readFileSync(join(repo, 'src/redesignCatalog.ts'), 'utf8')
   const lightweightTitlesText = readFileSync(join(repo, 'src/playGameTitles.ts'), 'utf8')
-  const catalogTitles = [...gameCatalogText.matchAll(/"id":\\s*"([^"]+)"\\s*,\\s*"title":\\s*"([^"]+)"/g)]
+  const catalogTitles = [...gameCatalogText.matchAll(/"id":\s*"([^"]+)"\s*,\s*"title":\s*"([^"]+)"/g)]
     .map((match) => [match[1], match[2]])
-  const breadcrumbTitles = [...lightweightTitlesText.matchAll(/^\\s*"([^"]+)": "([^"]+)",/gm)]
+  const breadcrumbTitles = [...lightweightTitlesText.matchAll(/^\s*"([^"]+)": "([^"]+)",/gm)]
     .map((match) => [match[1], match[2]])
   assert.equal(catalogTitles.length, 19, 'Expected all nineteen source game titles')
   assert.deepEqual(breadcrumbTitles, catalogTitles, 'Breadcrumb metadata must match source game titles')
