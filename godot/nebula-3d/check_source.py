@@ -32,6 +32,8 @@ ship_visual = require(
     "func _build_propulsion(",
     "func _brushed_normal_map(",
     "st.generate_tangents()",
+    'preload("res://scripts/ship_hero_detail_r6.gd")',
+    'hero_r6.name = "R6_HeroHullDetail"',
 )
 world = require(
     "scripts/world.gd",
@@ -39,6 +41,8 @@ world = require(
     "const SAVE_PATH",
     'preload("res://scripts/city_set_dressing_r5.gd")',
     "detail_r5.build(tower_data, SECTOR_POSITIONS)",
+    'preload("res://scripts/orbital_docks_r6.gd")',
+    "docks_r6.build(SECTOR_POSITIONS, SECTOR_COLORS)",
 )
 city = require(
     "scripts/city_set_dressing_r5.gd",
@@ -47,6 +51,22 @@ city = require(
     "func _hero_spire(",
     "MultiMesh.new()",
 )
+r6_ship = require(
+    "scripts/ship_hero_detail_r6.gd",
+    "func _sculpt_underbody(",
+    "func _surface_fasteners(",
+    "func _engine_microgeometry(",
+    "R6_WingRivets_Batched",
+)
+r6_docks = require(
+    "scripts/orbital_docks_r6.gd",
+    "func _hangar_roof(",
+    "func _make_deck_material(",
+    "func _crane(",
+    "R6_PBR_DeckPanels",
+)
+assert "st.generate_tangents()" in r6_ship
+assert "st.generate_tangents()" in r6_docks
 require("scripts/architectural_detail_r4.gd", "func build(")
 premium = require("scripts/premium_architecture.gd", "func make_facade_material(", "emission_image")
 require("scripts/drone.gd", "extends")
@@ -55,6 +75,8 @@ smoke = require(
     "tests/runtime_smoke.gd",
     "R5 ship visual model missing",
     "R5 city dressing pass missing",
+    "R6 aircraft hero model missing",
+    "R6 industrial orbital megadocks absent",
     "NEBULA_SMOKE_SUCCESS",
 )
 assert "func _make_ship(" not in ship, "R3 low-poly ship builder is still active"
@@ -64,4 +86,4 @@ assert "image.generate_mipmaps()" in ship_visual
 assert premium.count("Image.create(") >= 2, "separate facade albedo/emission atlases missing"
 assert "high-detail" not in project.lower(), "project identity may remain stable"
 assert len(smoke) > 1500 and len(city) > 5000 and len(world) > 10000
-print("NEBULA_R5_SOURCE_SUCCESS: authored mesh, material and simulation references verified")
+print("NEBULA_R6_SOURCE_SUCCESS: true 3D hero meshes and instanced megadocks verified")
