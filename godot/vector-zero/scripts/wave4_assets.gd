@@ -17,9 +17,22 @@ static func decorate(magnet: Node3D, receiver: Node3D) -> void:
     magnet_model.name = "Wave4CNCMagnet"
     magnet.add_child(magnet_model)
 
+    # New PBR machinery replaces previous overlapping placeholder cages.
+    for legacy_name in ["HighPolyMagnetAssembly", "HeroMagnetV2", "Wave3MagnetAssembly"]:
+        var old_node: Node3D = magnet.get_node_or_null(legacy_name) as Node3D
+        if old_node != null:
+            old_node.visible = false
+    magnet_model.position.z = 0.65
+
     var receiver_model: Node3D = load_hero("blackfield_receiver")
     receiver_model.name = "Wave4CaptureIris"
     receiver.add_child(receiver_model)
+
+    for legacy_name in ["HighPolyReceiverAssembly", "HeroCaptureIrisV2", "Wave3CaptureGate"]:
+        var old_node: Node3D = receiver.get_node_or_null(legacy_name) as Node3D
+        if old_node != null:
+            old_node.visible = false
+    receiver_model.position.z = 0.38
 
 static func triangle_count(n: Node) -> int:
     var triangles: int = 0

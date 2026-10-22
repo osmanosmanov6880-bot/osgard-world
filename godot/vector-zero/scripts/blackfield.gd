@@ -81,7 +81,16 @@ func _build_world() -> void:
     env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
     env.ambient_light_color = Color(0.35, 0.43, 0.51)
     env.ambient_light_energy = 1.0
-    env.reflected_light_source = Environment.REFLECTION_SOURCE_BG
+    # Physically useful reflection environment for imported PBR metal textures.
+    var wave4_sky := Sky.new()
+    var sky_material := ProceduralSkyMaterial.new()
+    sky_material.sky_top_color = Color(0.25, 0.36, 0.48)
+    sky_material.sky_horizon_color = Color(0.60, 0.67, 0.73)
+    sky_material.ground_horizon_color = Color(0.28, 0.39, 0.48)
+    sky_material.ground_bottom_color = Color(0.10, 0.15, 0.21)
+    wave4_sky.sky_material = sky_material
+    env.sky = wave4_sky
+    env.reflected_light_source = Environment.REFLECTION_SOURCE_SKY
     env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
     env.glow_enabled = true
     env.glow_intensity = 0.24
