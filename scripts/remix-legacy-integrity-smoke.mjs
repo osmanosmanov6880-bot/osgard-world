@@ -24,6 +24,10 @@ function componentFixture(file) {
       if (id === 'react/jsx-runtime') return { jsx, jsxs: jsx, Fragment: 'fragment' }
       if (id === 'lucide-react') return new Proxy({}, { get: (_target, name) => 'icon-' + String(name) })
       if (id === './core/eventQueue') return { recordOsgardEvent: (...args) => events.push(args) }
+      // The real catalog now re-exports static case metadata. This fixture only
+      // examines playGames, so an inert case value preserves strict import
+      // isolation without executing unrelated portfolio data or network calls.
+      if (id === './featuredCases.ts') return { cases: Object.freeze([]) }
       if (id === './core/playerApi') return Object.fromEntries(['startPlayerSession', 'completePlayerSession'].map(name => [name, (...args) => { apiCalls.push([name, ...args]); return Promise.resolve(null) }]))
       throw Error('Unexpected fixture import: ' + id)
     },
