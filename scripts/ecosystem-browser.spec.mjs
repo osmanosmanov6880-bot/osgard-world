@@ -215,6 +215,36 @@ test('OSGARD raymarched cloud scene retains navigation, motion fallback and on-s
   expect(errors).toEqual([])
 })
 
+test('World mobile navigation keeps one stable row after fonts load without hiding any destination', async ({ page }, info) => {
+  test.skip(info.project.name !== 'mobile', 'The mobile navigation and its CLS risk are viewport-specific')
+  await page.goto('/')
+  const nav = page.getByRole('navigation', { name: 'Навигация раздела' })
+  const links = nav.getByRole('link')
+  await expect(links).toHaveCount(5)
+  await page.evaluate(async () => { await document.fonts.ready })
+  const layout = await nav.evaluate(node => {
+    const boxes = [...node.querySelectorAll('a')].map(link => link.getBoundingClientRect())
+    const style = getComputedStyle(node)
+    return {
+      flexWrap: style.flexWrap,
+      overflowX: style.overflowX,
+      tops: boxes.map(box => Math.round(box.top)),
+      clientWidth: node.clientWidth,
+      scrollWidth: node.scrollWidth,
+      viewport: innerWidth,
+      documentWidth: document.documentElement.scrollWidth,
+    }
+  })
+  expect(layout.flexWrap).toBe('nowrap')
+  expect(layout.overflowX).toBe('auto')
+  expect(new Set(layout.tops).size, 'Font loading cannot wrap a World link onto a second navigation row').toBe(1)
+  expect(layout.documentWidth).toBeLessThanOrEqual(layout.viewport + 1)
+  const finalLink = nav.getByRole('link', { name: 'Контакт' })
+  await finalLink.focus()
+  await expect(finalLink).toBeFocused()
+  await expect(finalLink).toHaveAttribute('href', '/#contact')
+})
+
 test('World Cosmic Portal makes real product routes obvious and keeps Earth settings accessible', async ({ page }) => {
   await page.goto('/')
   const hero = page.locator('.omega-command')
