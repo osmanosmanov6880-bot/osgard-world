@@ -98,20 +98,21 @@ func _create_environment() -> void:
 	env.background_mode = Environment.BG_SKY
 	var sky := Sky.new()
 	var proc_sky := ProceduralSkyMaterial.new()
-	proc_sky.sky_top_color = Color("10233e")
-	proc_sky.sky_horizon_color = Color("687a91")
-	proc_sky.ground_bottom_color = Color("131e2c")
-	proc_sky.ground_horizon_color = Color("3b4751")
+	proc_sky.sky_top_color = Color("638db2")
+	proc_sky.sky_horizon_color = Color("e0b18f")
+	proc_sky.ground_bottom_color = Color("354855")
+	proc_sky.ground_horizon_color = Color("8396a1")
 	sky.sky_material = proc_sky
 	env.sky = sky
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
+	env.ambient_light_energy = 1.45
 	env.reflected_light_source = Environment.REFLECTION_SOURCE_BG
 	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 	sky_environment.environment = env
 	add_child(sky_environment)
 	sun = DirectionalLight3D.new()
 	sun.light_color = Color("ffe2b1")
-	sun.light_energy = 1.15
+	sun.light_energy = 1.9
 	sun.shadow_enabled = true
 	sun.rotation_degrees = Vector3(-52,-35,0)
 	add_child(sun)
@@ -121,14 +122,14 @@ func _create_terrain() -> void:
 	for dx in [-1,1]:
 		for dz in [-1,1]:
 			var id := district_id(Vector3(dx,0,dz))
-			var color: Color = DISTRICT_COLORS[id].darkened(0.75)
+			var color: Color = DISTRICT_COLORS[id].darkened(0.43)
 			_box(city_root,id + "_ground",Vector3(224,0.12,224),Vector3(dx*112,-0.035,dz*112),color)
 	_box(city_root,"River",Vector3(460,0.1,22),Vector3(0,0.075,0),Color("153e4c"))
 	for x in [-208,-156,-104,-52,0,52,104,156,208]:
 		_box(city_root,"Bridge",Vector3(10,0.36,31),Vector3(x,0.24,0),Color("384451"))
 
 func _create_roads() -> void:
-	var asphalt := Color("25313a")
+	var asphalt := Color("43505a")
 	for index in range(-4,5):
 		var p := float(index) * ROAD_INTERVAL
 		_box(city_root,"EastWestRoad",Vector3(454,0.16,10),Vector3(0,0.095,p),asphalt)
@@ -136,8 +137,8 @@ func _create_roads() -> void:
 		for step in range(-10,11):
 			var q := float(step) * 21.0
 			if absf(q) < 219:
-				_box(city_root,"RoadDash",Vector3(7,0.03,0.19),Vector3(q,0.19,p),Color("9b967d"))
-				_box(city_root,"RoadDash",Vector3(0.19,0.03,7),Vector3(p,0.195,q),Color("9b967d"))
+				_box(city_root,"RoadDash",Vector3(7,0.03,0.19),Vector3(q,0.19,p),Color("dec99b"))
+				_box(city_root,"RoadDash",Vector3(0.19,0.03,7),Vector3(p,0.195,q),Color("dec99b"))
 	# Sidewalk lips provide visual read without blocking the character controller.
 	for index in range(-4,5):
 		var p := float(index) * ROAD_INTERVAL
@@ -392,8 +393,8 @@ func update_weather(kind: String) -> void:
 	var sky: Sky = sky_environment.environment.sky
 	var material: ProceduralSkyMaterial = sky.sky_material as ProceduralSkyMaterial
 	if material != null:
-		material.sky_top_color = Color("101a29") if kind == "storm" else (Color("263346") if kind == "rain" or kind == "cloudy" else Color("10233e"))
-		material.sky_horizon_color = Color("404c59") if kind == "storm" else Color("687a91")
+		material.sky_top_color = Color("30445c") if kind == "storm" else (Color("577995") if kind == "rain" or kind == "cloudy" else Color("638db2"))
+		material.sky_horizon_color = Color("83909d") if kind == "storm" else Color("e0b18f")
 
 func _create_trees() -> void:
 	for i in range(85):
@@ -511,6 +512,8 @@ func objective_position() -> Vector3:
 func update_daynight(day_clock: float) -> void:
 	var phase := (day_clock - 7.0) / 24.0 * TAU
 	sun.rotation_degrees.x = -55.0 + 70.0 * sin(phase)
-	var brightness := clampf(0.25 + 0.75 * maxf(0.0,cos(phase)),0.22,1.2)
-	sun.light_energy = brightness * 1.3 * (0.65 if weather_mode == "storm" else (0.84 if weather_mode == "rain" or weather_mode == "cloudy" else 1.0))
+	var brightness: float = clampf(0.65 + 0.9 * maxf(0.0,cos(phase)),0.65,1.55)
+	sun.light_energy = brightness * 1.6 * (0.65 if weather_mode == "storm" else (0.85 if weather_mode == "rain" or weather_mode == "cloudy" else 1.0))
+	if sky_environment != null:
+		sky_environment.environment.ambient_light_energy = 0.95 + brightness * 0.45
 	_update_windows(day_clock,int(GameState.data["energy"]))
