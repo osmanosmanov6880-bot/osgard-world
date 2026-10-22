@@ -194,11 +194,11 @@ function render(){
  confirmText.textContent=c.success;focusPass.textContent=c.focusPass;dismiss.textContent=c.dismiss;
 }
 function revealWorld(){
- if(!window.matchMedia?.('(max-width:740px)').matches)return;
- const stage=d.querySelector('#world');
- const rect=ghost.getBoundingClientRect(),x=rect.left+rect.width/2,y=rect.top+rect.height/2;
- if(x<0||y<0||x>=innerWidth||y>=innerHeight||
-  !d.elementFromPoint(x,y)?.closest('#world'))stage?.scrollIntoView({block:'start',behavior:'auto'});
+ if(!armed||ghost.hidden)return;
+ // Bring the actual native island hit surface into view after modal focus
+ // restoration. A marker at the last visible pixel is not safely tappable;
+ // scrolling never performs the move or changes saved coordinates.
+ d.querySelector('#world')?.scrollIntoView({block:'start',inline:'nearest',behavior:'instant'});
 }
 function arm(){
  const current=snapshot(),goal=plan?.goals?.[selected],c=tr();
