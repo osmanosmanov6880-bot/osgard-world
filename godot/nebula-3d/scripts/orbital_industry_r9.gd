@@ -104,8 +104,9 @@ func _beam(a: Vector3, b: Vector3, width: float) -> Transform3D:
 func _box(parent: Node3D, name: String, pos: Vector3, size: Vector3, mat: Material) -> MeshInstance3D:
     var block := MeshInstance3D.new()
     block.name = name
-    block.mesh = BoxMesh.new()
-    block.mesh.size = size
+    var geometry := BoxMesh.new()
+    geometry.size = size
+    block.mesh = geometry
     block.position = pos
     block.material_override = mat
     parent.add_child(block)
