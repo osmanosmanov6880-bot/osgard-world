@@ -23,6 +23,14 @@ func _run() -> void:
     var game: Node3D = scene.instantiate()
     root.add_child(game)
     await process_frame
+    _assert_case(game.get_node_or_null("Wave3Foundry") != null, "WAVE3 physical engineering laboratory installed")
+    _assert_case(game.get_node_or_null("Wave3Foundry/CNCBridgeGantry_-112") != null, "machined overhead crane assembly")
+    _assert_case(game.get_node_or_null("Wave3Foundry/ServiceFrameFasteners_144") is MultiMeshInstance3D, "engineering fasteners are GPU-instanced")
+    _assert_case(game.get_node_or_null("PlayerEnergyCore/Wave3PrecisionProjectile/MachinedGyroNose_120") is MeshInstance3D, "new projectile housing is real 3D")
+    _assert_case(game.get_node_or_null("ReceiverAssembly/Wave3CaptureGate/OpticalCaptureContactRail") is MeshInstance3D, "new sensor geometry exists")
+    _assert_case(game.get_node_or_null("MagnetAssembly/Wave3MagnetAssembly/RadiationScannerRotor") is Node3D, "animated magnet scanner exists")
+    var conduit: MeshInstance3D = game.get_node_or_null("MagnetAssembly/Wave3MagnetAssembly/CryoCoilCopperSpiral_0") as MeshInstance3D
+    _assert_case(conduit != null and conduit.mesh is ArrayMesh and conduit.mesh.surface_get_array_len(0) > 2000, "copper spiral uses UV-mapped high-density indexed triangles")
     _assert_case(game.get_node_or_null("HeroFacilityV2/PrecisionInjectorV2") != null, "five-axis launcher machined assembly is present")
     _assert_case(game.get_node_or_null("MagnetAssembly/HeroMagnetV2/HelicalSuperconductor_A") is MeshInstance3D, "continuous parametric superconducting helix is a mesh")
     _assert_case(game.get_node_or_null("ReceiverAssembly/HeroCaptureIrisV2/Iris_ServoJaws_12") is MultiMeshInstance3D, "receiver has a GPU-instanced 12-jaw capture iris")

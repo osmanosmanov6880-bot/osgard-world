@@ -5,6 +5,7 @@ extends Node3D
 const Sim = preload("res://scripts/magnetic_sim.gd")
 const UltraDetail = preload("res://scripts/ultra_detail_kit.gd")
 const HeroDetailV2 = preload("res://scripts/hero_detail_v2.gd")
+const Wave3Foundry = preload("res://scripts/wave3_foundry.gd")
 const CYAN := Color(0.24, 0.83, 1.0)
 const VIOLET := Color(0.64, 0.43, 1.0)
 const MINT := Color(0.37, 1.0, 0.75)
@@ -33,6 +34,7 @@ var elapsed: float = 0.0
 var shots: int = 0
 var camera_tactical: bool = false
 var camera_shake: float = 0.0
+var wave3_scanner: Node3D
 var mobile_hud: bool = false
 var time_elapsed: float = 0.0
 
@@ -61,6 +63,8 @@ func _ready() -> void:
     _build_game_objects()
     UltraDetail.build(self, core_root, magnet_root, target_root)
     HeroDetailV2.build(self, core_root, magnet_root, target_root)
+    Wave3Foundry.build(self, core_root, magnet_root, target_root)
+    wave3_scanner = magnet_root.get_node_or_null("Wave3MagnetAssembly/RadiationScannerRotor") as Node3D
     _build_ui()
     _load_stage(0)
     get_viewport().size_changed.connect(_on_viewport_changed)
@@ -524,6 +528,8 @@ func _process(delta: float) -> void:
     time_elapsed += delta
     core_root.rotate_y(delta * 1.15)
     core_root.rotate_x(delta * 0.35)
+    if wave3_scanner != null:
+        wave3_scanner.rotate_y(delta * (0.42 if polarity > 0 else -0.42))
     for i in range(dynamo_rings.size()):
         dynamo_rings[i].rotate_y((0.15 + 0.13 * i) * delta * float(polarity))
         dynamo_rings[i].rotate_x(0.10 * delta)
