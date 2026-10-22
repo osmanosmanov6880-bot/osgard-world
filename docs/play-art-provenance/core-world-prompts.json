@@ -1,0 +1,451 @@
+{
+  "generator": "built-in image_gen.imagegen",
+  "asset_type": "Original AI-generated cinematic illustrations, not screenshots of gameplay",
+  "assets": [
+    {
+      "id": "vector-zero",
+      "title": "VECTOR//ZERO",
+      "prompt": "Use case: stylized-concept. Asset type: original high-resolution cinematic game cover artwork for a premium science-fiction game portal.\nPrimary request: a breathtaking futuristic physics arena suspended in the atmosphere, immense magnetic accelerator rings, disjointed anti-gravity platforms, sharply defined cyan energy wave ribbons bending through space, metallic engineered structures with blue luminous inlays. A tiny faceless player silhouette far away establishes architectural scale. The arena is the protagonist.\nStyle: AAA photorealistic science-fiction environment concept art, cinematic Unreal Engine 5 visual fidelity, precise physically plausible hard-surface materials, atmospheric depth, realistic volumetric illumination and reflections, immense engineered scale.\nComposition: landscape 3:2, preferably 1536×1024 or higher. Keep the main magnetic ring and raised platforms in the upper two thirds, central focus safe for square cropping. Lower third is a naturally darker foreground platform with subtle blue reflections and restrained detail, suitable for real HTML titles overlaid later.\nColor: deep space navy #020814, electric cyan #56F4F5, neon blue #168DFF, restrained violet accent; turquoise energy is dominant.\nConstraints: artwork only; absolutely NO words, letters, labels, numbers, logos, watermarks, UI, interface frames, buttons, border, title treatment, collage or multiple panels. No gradients replacing the environment. No generic floating sphere replacing the arena.",
+      "generated_source": "covers/vector-zero.png",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "files": [
+        "covers/vector-zero.png",
+        "covers/vector-zero-640.webp",
+        "covers/vector-zero.webp"
+      ],
+      "sizes_bytes": {
+        "covers/vector-zero.png": 2927903,
+        "covers/vector-zero-640.webp": 83290,
+        "covers/vector-zero.webp": 412776
+      },
+      "sha256": {
+        "covers/vector-zero.png": "3c0e4f4ced70ab9db68f01412c3facca504245851c8fb3aa15807cb2fcea6a56",
+        "covers/vector-zero-640.webp": "d366eba735e1aa9c0770669c0c2ff88f3dd14af29b0e149439805c17545d071d",
+        "covers/vector-zero.webp": "74e05997f1440126de75ec6495b623bb537d9f110d46cc7dbc265b136c5d42f6"
+      },
+      "review": "Visually reviewed: original composition, no text or interface, distinct scene per game, no claim that artwork is a gameplay screenshot.",
+      "file_inventory": [
+        {
+          "path": "covers/vector-zero.png",
+          "width": 1536,
+          "height": 1024,
+          "size_bytes": 2927903,
+          "sha256": "3c0e4f4ced70ab9db68f01412c3facca504245851c8fb3aa15807cb2fcea6a56"
+        },
+        {
+          "path": "covers/vector-zero-640.webp",
+          "width": 640,
+          "height": 427,
+          "size_bytes": 83290,
+          "sha256": "d366eba735e1aa9c0770669c0c2ff88f3dd14af29b0e149439805c17545d071d"
+        },
+        {
+          "path": "covers/vector-zero.webp",
+          "width": 1536,
+          "height": 1024,
+          "size_bytes": 412776,
+          "sha256": "74e05997f1440126de75ec6495b623bb537d9f110d46cc7dbc265b136c5d42f6"
+        }
+      ]
+    },
+    {
+      "id": "time",
+      "title": "Империя времени",
+      "prompt": "Use case: stylized-concept. Asset type: original high-resolution cinematic game cover artwork for a premium science-fiction game portal.\nPrimary request: a grand strategic civilization stretching across an alien plateau: monumental future city towers, enormous orbital engineering, a monumental luminous temporal gateway linking epochs, formations of tiny distant armies on elevated causeways, suspended citadels and winding layered terraces. An enormous planet is partly visible beyond the skyline. This is an empire at the crossroads of time, architectural and strategic rather than an action shooter.\nStyle: AAA photorealistic science-fiction civilization concept art, cinematic Unreal Engine 5 visual fidelity, intricate monumental architecture, believable weathered metallic and stone materials, beautiful atmospheric perspective, detailed volumetric light.\nComposition: landscape 3:2, preferably 1536×1024 or higher. A slightly elevated wide view with the temporal gateway in the upper middle and a clear sweeping road leading toward it. Main buildings and gateway in upper two thirds, focal composition safe for square crop; lower third naturally dark with foreground terraces for real HTML titles overlaid later.\nColor: deep navy #020814 and luminous cyan #56F4F5, time portal violet #B65AFF, selective warm peach sunlight at the horizon, cinematic purple atmosphere.\nConstraints: artwork only; absolutely NO words, letters, labels, numbers, logos, watermarks, UI, interface frames, buttons, borders, title treatment, collage or multiple panels. No medieval fantasy armor, no cartoon, no flat schematic.",
+      "generated_source": "covers/time.png",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "files": [
+        "covers/time.png",
+        "covers/time-640.webp",
+        "covers/time.webp"
+      ],
+      "sizes_bytes": {
+        "covers/time.png": 2940481,
+        "covers/time-640.webp": 77940,
+        "covers/time.webp": 405222
+      },
+      "sha256": {
+        "covers/time.png": "668b44f021272fb183ab6227e0811a12b929c7e7bec4957a8e0384051cbdbba7",
+        "covers/time-640.webp": "9e4978510c42b895cdc0ad73ae7e08103409dc08cefd7fdc6494bd7775d9cbee",
+        "covers/time.webp": "86ca5bfe9438d9edcf346dd491443d8ae513cad736142a3fd8f810ff9cd0346d"
+      },
+      "review": "Visually reviewed: original composition, no text or interface, distinct scene per game, no claim that artwork is a gameplay screenshot.",
+      "file_inventory": [
+        {
+          "path": "covers/time.png",
+          "width": 1536,
+          "height": 1024,
+          "size_bytes": 2940481,
+          "sha256": "668b44f021272fb183ab6227e0811a12b929c7e7bec4957a8e0384051cbdbba7"
+        },
+        {
+          "path": "covers/time-640.webp",
+          "width": 640,
+          "height": 427,
+          "size_bytes": 77940,
+          "sha256": "9e4978510c42b895cdc0ad73ae7e08103409dc08cefd7fdc6494bd7775d9cbee"
+        },
+        {
+          "path": "covers/time.webp",
+          "width": 1536,
+          "height": 1024,
+          "size_bytes": 405222,
+          "sha256": "86ca5bfe9438d9edcf346dd491443d8ae513cad736142a3fd8f810ff9cd0346d"
+        }
+      ]
+    },
+    {
+      "id": "null-shift",
+      "title": "NULL//SHIFT",
+      "prompt": "Use case: stylized-concept. Asset type: original high-resolution cinematic game cover artwork for a premium science-fiction game portal.\nPrimary request: an intense high-tech tactical arena inside a colossal cybernetic orbital structure. One sharply designed anonymous futuristic armored combatant seen in three-quarter rear view at left of center, holding a science-fiction weapon in a poised tactical stance; two smaller distant opponents across angular cover. Towering cybernetic geometry, luminous blue energy conduits, violet illuminated panels and a massive circular reactor above the battlefield. The visual tells a tactical multiplayer arena story without blood or gore.\nStyle: AAA realistic futuristic game key art, cinematic Unreal Engine 5 visual fidelity, beautiful authored armor and environment detail, photorealistic metal, rim lighting, atmospheric fog, polished reflections with subtle wear. Premium, composed, not chaotic.\nComposition: landscape 3:2, preferably 1536×1024 or higher. The combatant head and arena reactor in the upper two thirds; central focus and combatant safe for square card crop. Lower third is dark reflective arena floor with restrained details for real HTML titles overlaid later.\nColor: midnight navy #020814, neon blue #168DFF, energetic violet #B65AFF, precise cyan rim light #56F4F5. Violet is more dominant here than in the physics arena.\nConstraints: artwork only; absolutely NO words, letters, labels, numbers, logos, watermarks, UI, targeting reticles, interface frames, buttons, borders, title treatment, collage or multiple panels. No recognizable copyrighted characters or armor designs. No gore.",
+      "generated_source": "covers/null-shift.png",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "files": [
+        "covers/null-shift.png",
+        "covers/null-shift-640.webp",
+        "covers/null-shift.webp"
+      ],
+      "sizes_bytes": {
+        "covers/null-shift.png": 2862347,
+        "covers/null-shift-640.webp": 77168,
+        "covers/null-shift.webp": 360154
+      },
+      "sha256": {
+        "covers/null-shift.png": "dcca1a21c59e0b6961a258bf5572bd90ff64909a3cc7b64517f7908f74e41c50",
+        "covers/null-shift-640.webp": "7cb92aa53dcf300b05d91b6ebb991eea8e359d4c410858effb453103867c29fa",
+        "covers/null-shift.webp": "6331af4e4b67739aac446cab1a8b5787a81bf7cbdda622d6a8bfa74c8109cdfd"
+      },
+      "review": "Visually reviewed: original composition, no text or interface, distinct scene per game, no claim that artwork is a gameplay screenshot.",
+      "file_inventory": [
+        {
+          "path": "covers/null-shift.png",
+          "width": 1536,
+          "height": 1024,
+          "size_bytes": 2862347,
+          "sha256": "dcca1a21c59e0b6961a258bf5572bd90ff64909a3cc7b64517f7908f74e41c50"
+        },
+        {
+          "path": "covers/null-shift-640.webp",
+          "width": 640,
+          "height": 427,
+          "size_bytes": 77168,
+          "sha256": "7cb92aa53dcf300b05d91b6ebb991eea8e359d4c410858effb453103867c29fa"
+        },
+        {
+          "path": "covers/null-shift.webp",
+          "width": 1536,
+          "height": 1024,
+          "size_bytes": 360154,
+          "sha256": "6331af4e4b67739aac446cab1a8b5787a81bf7cbdda622d6a8bfa74c8109cdfd"
+        }
+      ]
+    },
+    {
+      "id": "zion-030",
+      "title": "Добавь тень. Измени город",
+      "prompt": "Use case: stylized-concept. Asset type: original high-resolution cinematic game cover artwork for a premium science-fiction game portal.\nPrimary request: an atmospheric spatial-puzzle city at blue hour. Elegant alien architecture of dark monolithic towers and elevated pedestrian passages encloses a quiet urban plaza. Several luminous cyan geometric solids — a cube, an angular prism and a slender floating frame — cast carefully aligned elongated architectural shadows across the plaza. A distant anonymous lone explorer gazes toward a glowing doorway that appears where light and shadow intersect. The scene suggests changing the city by manipulating spatial light and shadow, contemplative and mysterious.\nStyle: AAA photorealistic science-fiction puzzle game environment concept art, cinematic Unreal Engine 5 visual fidelity, art-directed architecture, realistic concrete and brushed dark metal, delicate fog, believable luminous objects with crisp readable shadows and cyan reflections.\nComposition: landscape 3:2, preferably 1536×1024 or higher. Strong geometric perspective, main glowing solids and city doorway in upper two thirds, focal composition safe for square card cropping; lower third is a naturally dark floor with diagonal shadows and restrained detail for real HTML titles overlaid later.\nColor: deep ink navy #020814, cyan #56F4F5 as the primary light, a subtle indigo-violet distant atmosphere. Calmer, cleaner, more enigmatic than an action game.\nConstraints: artwork only; absolutely NO words, letters, labels, numbers, logos, watermarks, UI, interface frames, buttons, border, title treatment, collage or multiple panels. No cartoon, no flat geometric icon art, no abstract gradient background, no combat, no generic busy neon signage.",
+      "generated_source": "covers/zion-030.png",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "files": [
+        "covers/zion-030.png",
+        "covers/zion-030-640.webp",
+        "covers/zion-030.webp"
+      ],
+      "sizes_bytes": {
+        "covers/zion-030.png": 2604478,
+        "covers/zion-030-640.webp": 44686,
+        "covers/zion-030.webp": 260188
+      },
+      "sha256": {
+        "covers/zion-030.png": "61904c2c383626586d1189bc501c3e2a02234361b02935b0ec12410d32ca847a",
+        "covers/zion-030-640.webp": "12a07c7a8724e2771e18ded82c2dcb5acfc48fa73d6e85cec507789d5ee8e7d0",
+        "covers/zion-030.webp": "c4e4ebc8f38158402f0e445415c8fef09d968fc52ee179cbe9505f444f811022"
+      },
+      "review": "Visually reviewed: original composition, no text or interface, distinct scene per game, no claim that artwork is a gameplay screenshot.",
+      "file_inventory": [
+        {
+          "path": "covers/zion-030.png",
+          "width": 1536,
+          "height": 1024,
+          "size_bytes": 2604478,
+          "sha256": "61904c2c383626586d1189bc501c3e2a02234361b02935b0ec12410d32ca847a"
+        },
+        {
+          "path": "covers/zion-030-640.webp",
+          "width": 640,
+          "height": 427,
+          "size_bytes": 44686,
+          "sha256": "12a07c7a8724e2771e18ded82c2dcb5acfc48fa73d6e85cec507789d5ee8e7d0"
+        },
+        {
+          "path": "covers/zion-030.webp",
+          "width": 1536,
+          "height": 1024,
+          "size_bytes": 260188,
+          "sha256": "c4e4ebc8f38158402f0e445415c8fef09d968fc52ee179cbe9505f444f811022"
+        }
+      ],
+      "catalog_title": "Теневой протокол"
+    },
+    {
+      "id": "empire-orbit",
+      "title": "Империя времени: Орбита",
+      "prompt": "Use case: stylized-concept. Asset type: original cinematic cover illustration for an existing browser game in the OSGARD science-fiction portal. This is artistic world illustration, not a screenshot and not a claim about playable graphics. AAA photorealistic science-fiction concept art, realistic materials, volumetric lighting, authored environmental detail, atmospheric depth. Landscape 3:2, 1536×1024 or higher. Main scene and essential features in upper two thirds, safe for square crop; lower third naturally darker foreground for later real HTML title overlay. Shared deep navy #020814, cyan #56F4F5, electric blue #168DFF, restrained violet #B65AFF art direction. No text, letters, numbers, logos, watermarks, interface, controls, screen UI, border, collage or multiple panels. No named copyrighted characters.\nPrimary scene: a stunning orbital viewing platform outside an immense imperial space station, looking across three distinct planetary worlds aligned in depth beyond the transparent atmospheric barrier. Closest: a luminous blue civilization planet with orbital transport rings, more distant: a purple nebular world and a muted amber world. One tiny anonymous observer stands on a dark balcony in the foreground. Monumental station architecture frames the scene at the edges; tiny transport vessels provide scale. Emphasize the orbital vista and world selection theme, not warfare. Subtle champagne-gold metal accents. Low angle with vast open celestial space across the upper image.",
+      "generated_source": "covers/empire-orbit.png",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "files": [
+        "covers/empire-orbit.png",
+        "covers/empire-orbit-640.webp",
+        "covers/empire-orbit.webp"
+      ],
+      "sizes_bytes": {
+        "covers/empire-orbit.png": 2901999,
+        "covers/empire-orbit-640.webp": 72528,
+        "covers/empire-orbit.webp": 380504
+      },
+      "sha256": {
+        "covers/empire-orbit.png": "4d85a2dabfefe2d274f14f079e2c6abb2b3ef77a7ddcb0255f676e4a75226a63",
+        "covers/empire-orbit-640.webp": "30ae15a73f308a9eb021bc385d97d7a76a76336b2e5e96c362a1ed5889b22cca",
+        "covers/empire-orbit.webp": "8e2e5fcb37c1ccba667adcccc07361f44679347a3b85ae9b4bff6e0695d31704"
+      },
+      "review": "Visually reviewed: original composition, no text or interface, distinct scene per game, no claim that artwork is a gameplay screenshot.",
+      "file_inventory": [
+        {
+          "path": "covers/empire-orbit.png",
+          "width": 1536,
+          "height": 1024,
+          "size_bytes": 2901999,
+          "sha256": "4d85a2dabfefe2d274f14f079e2c6abb2b3ef77a7ddcb0255f676e4a75226a63"
+        },
+        {
+          "path": "covers/empire-orbit-640.webp",
+          "width": 640,
+          "height": 427,
+          "size_bytes": 72528,
+          "sha256": "30ae15a73f308a9eb021bc385d97d7a76a76336b2e5e96c362a1ed5889b22cca"
+        },
+        {
+          "path": "covers/empire-orbit.webp",
+          "width": 1536,
+          "height": 1024,
+          "size_bytes": 380504,
+          "sha256": "8e2e5fcb37c1ccba667adcccc07361f44679347a3b85ae9b4bff6e0695d31704"
+        }
+      ]
+    },
+    {
+      "id": "swarm",
+      "title": "SWARM",
+      "prompt": "Use case: stylized-concept. Asset type: original cinematic cover illustration for an existing browser game in the OSGARD science-fiction portal. This is artistic world illustration, not a screenshot and not a claim about playable graphics. AAA photorealistic science-fiction concept art, realistic materials, volumetric lighting, authored environmental detail, atmospheric depth. Landscape 3:2, 1536×1024 or higher. Main scene and essential features in upper two thirds, safe for square crop; lower third naturally darker foreground for later real HTML title overlay. Shared deep navy #020814, cyan #56F4F5, electric blue #168DFF, restrained violet #B65AFF art direction. No text, letters, numbers, logos, watermarks, interface, controls, screen UI, border, collage or multiple panels. No named copyrighted characters.\nPrimary scene: a futuristic tactical training facility with a small group of anonymous armored role-specialist figures moving in formation toward a suspended cyan energy core; geometric cover, an elevated extraction doorway, engineered multi-level platforms, visible training-space architecture. Different silhouettes and equipment imply complementary roles. The scene is a composed artistic vision of training and coordination; no fantasy creatures, no blood, no claim of multiplayer gameplay. Three-quarter high angle, diagonal formation leading from lower left toward upper right, cyan luminous core near upper center. Indigo armor with discrete blue-violet light details.",
+      "generated_source": "covers/swarm.png",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "files": [
+        "covers/swarm.png",
+        "covers/swarm-640.webp",
+        "covers/swarm.webp"
+      ],
+      "sizes_bytes": {
+        "covers/swarm.png": 2754803,
+        "covers/swarm-640.webp": 69212,
+        "covers/swarm.webp": 336278
+      },
+      "sha256": {
+        "covers/swarm.png": "53aa27ddd0f6f3a9bdabd44125bd1e337c0c9f7cf62b53f014c8d0291806a31d",
+        "covers/swarm-640.webp": "e052bc4a14e2b30650cba4951d23018dd5c65f93aad271b88ee4e5e8e9abd28b",
+        "covers/swarm.webp": "bf31ad482f939a451ba557d84ec3e21bb23eb29e4e99a85e62572e2bb2ecbc67"
+      },
+      "review": "Visually reviewed: original composition, no text or interface, distinct scene per game, no claim that artwork is a gameplay screenshot.",
+      "file_inventory": [
+        {
+          "path": "covers/swarm.png",
+          "width": 1536,
+          "height": 1024,
+          "size_bytes": 2754803,
+          "sha256": "53aa27ddd0f6f3a9bdabd44125bd1e337c0c9f7cf62b53f014c8d0291806a31d"
+        },
+        {
+          "path": "covers/swarm-640.webp",
+          "width": 640,
+          "height": 427,
+          "size_bytes": 69212,
+          "sha256": "e052bc4a14e2b30650cba4951d23018dd5c65f93aad271b88ee4e5e8e9abd28b"
+        },
+        {
+          "path": "covers/swarm.webp",
+          "width": 1536,
+          "height": 1024,
+          "size_bytes": 336278,
+          "sha256": "bf31ad482f939a451ba557d84ec3e21bb23eb29e4e99a85e62572e2bb2ecbc67"
+        }
+      ]
+    },
+    {
+      "id": "inherit",
+      "title": "INHERIT",
+      "prompt": "Use case: stylized-concept. Asset type: original cinematic cover illustration for an existing browser game in the OSGARD science-fiction portal. This is artistic world illustration, not a screenshot and not a claim about playable graphics. AAA photorealistic science-fiction concept art, realistic materials, volumetric lighting, authored environmental detail, atmospheric depth. Landscape 3:2, 1536×1024 or higher. Main scene and essential features in upper two thirds, safe for square crop; lower third naturally darker foreground for later real HTML title overlay. Shared deep navy #020814, cyan #56F4F5, electric blue #168DFF, restrained violet #B65AFF art direction. No text, letters, numbers, logos, watermarks, interface, controls, screen UI, border, collage or multiple panels. No named copyrighted characters.\nPrimary scene: a serene evolving alien garden-world at twilight, where a human-made stone path winds between ancient rocks, young luminous trees and a few softly glowing lantern-like sources of light. In the distance, traces of older pathways and archways blend into forest beneath elegant futuristic ruins, suggesting a world passed to a next generation. A small solitary explorer kneels to plant a sapling. Photorealistic bark, moss, stone and mist; warm amber against cool cyan luminescence. A lush natural environment with civilization traces, not an arena. Path creates a strong S curve toward a radiant tree in the upper middle. Quiet, warm, contemplative and hopeful.",
+      "generated_source": "covers/inherit.png",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "files": [
+        "covers/inherit.png",
+        "covers/inherit-640.webp",
+        "covers/inherit.webp"
+      ],
+      "sizes_bytes": {
+        "covers/inherit.png": 3020896,
+        "covers/inherit-640.webp": 85698,
+        "covers/inherit.webp": 429546
+      },
+      "sha256": {
+        "covers/inherit.png": "2b8c5ece8d6615fa2ba7bc00acb0d4755028e3393371bdc4d9f7999a4af94268",
+        "covers/inherit-640.webp": "f945fca7087ed739ba4349f7bbce3d00c4d2e9f20a15f38df0a53caa489c4496",
+        "covers/inherit.webp": "ff19c17b962db12a334a605668f1f5062c0996b1b3560db9195c1b711188dacd"
+      },
+      "review": "Visually reviewed: original composition, no text or interface, distinct scene per game, no claim that artwork is a gameplay screenshot.",
+      "file_inventory": [
+        {
+          "path": "covers/inherit.png",
+          "width": 1536,
+          "height": 1024,
+          "size_bytes": 3020896,
+          "sha256": "2b8c5ece8d6615fa2ba7bc00acb0d4755028e3393371bdc4d9f7999a4af94268"
+        },
+        {
+          "path": "covers/inherit-640.webp",
+          "width": 640,
+          "height": 427,
+          "size_bytes": 85698,
+          "sha256": "f945fca7087ed739ba4349f7bbce3d00c4d2e9f20a15f38df0a53caa489c4496"
+        },
+        {
+          "path": "covers/inherit.webp",
+          "width": 1536,
+          "height": 1024,
+          "size_bytes": 429546,
+          "sha256": "ff19c17b962db12a334a605668f1f5062c0996b1b3560db9195c1b711188dacd"
+        }
+      ]
+    },
+    {
+      "id": "remix",
+      "title": "REMIX",
+      "prompt": "Use case: stylized-concept. Asset type: original cinematic cover illustration for an existing browser game in the OSGARD science-fiction portal. This is artistic world illustration, not a screenshot and not a claim about playable graphics. AAA photorealistic science-fiction concept art, realistic materials, volumetric lighting, authored environmental detail, atmospheric depth. Landscape 3:2, 1536×1024 or higher. Main scene and essential features in upper two thirds, safe for square crop; lower third naturally darker foreground for later real HTML title overlay. Shared deep navy #020814, cyan #56F4F5, electric blue #168DFF, restrained violet #B65AFF art direction. No text, letters, numbers, logos, watermarks, interface, controls, screen UI, border, collage or multiple panels. No named copyrighted characters.\nPrimary scene: a colossal modular science-fiction test arena built from staggered angular platforms and reconfigurable dark-metal obstacle blocks. Luminous cyan and violet paths trace possible movement through the space, suspended rings and geometric frames suggest repeated trials and variation. One anonymous tiny test runner stands in front of the arena at a distance. The location feels like an authored environment for movement experiments, not a rendered software console. Wide symmetrical perspective with a bright central destination and varied platforms on both sides. Sleek purple illuminated architecture, reflective dark floor in bottom third. No computer screens or diagnostic text.",
+      "generated_source": "covers/remix.png",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "files": [
+        "covers/remix.png",
+        "covers/remix-640.webp",
+        "covers/remix.webp"
+      ],
+      "sizes_bytes": {
+        "covers/remix.png": 2821927,
+        "covers/remix-640.webp": 66826,
+        "covers/remix.webp": 348292
+      },
+      "sha256": {
+        "covers/remix.png": "fbb21feac3ad46f995fa13dce83c9db9a1b2a0175a3de126a25111c361a96db8",
+        "covers/remix-640.webp": "c45b657d7bca90d1b0e3672a8b01c639d36e52c54ded6bf07b6bfc0e599fc948",
+        "covers/remix.webp": "3fde88d213b3093f1927fe4abfd4c44c1557896c6b551757c961827bd7a6e79f"
+      },
+      "review": "Visually reviewed: original composition, no text or interface, distinct scene per game, no claim that artwork is a gameplay screenshot.",
+      "file_inventory": [
+        {
+          "path": "covers/remix.png",
+          "width": 1536,
+          "height": 1024,
+          "size_bytes": 2821927,
+          "sha256": "fbb21feac3ad46f995fa13dce83c9db9a1b2a0175a3de126a25111c361a96db8"
+        },
+        {
+          "path": "covers/remix-640.webp",
+          "width": 640,
+          "height": 427,
+          "size_bytes": 66826,
+          "sha256": "c45b657d7bca90d1b0e3672a8b01c639d36e52c54ded6bf07b6bfc0e599fc948"
+        },
+        {
+          "path": "covers/remix.webp",
+          "width": 1536,
+          "height": 1024,
+          "size_bytes": 348292,
+          "sha256": "3fde88d213b3093f1927fe4abfd4c44c1557896c6b551757c961827bd7a6e79f"
+        }
+      ]
+    },
+    {
+      "id": "afterimage-run",
+      "title": "AFTERIMAGE//RUN",
+      "prompt": "Use case: stylized-concept. Asset type: original cinematic cover illustration for an existing browser game in the OSGARD science-fiction portal. This is artistic world illustration, not a screenshot and not a claim about playable graphics. AAA photorealistic science-fiction concept art, realistic materials, volumetric lighting, authored environmental detail, atmospheric depth. Landscape 3:2, 1536×1024 or higher. Main scene and essential features in upper two thirds, safe for square crop; lower third naturally darker foreground for later real HTML title overlay. Shared deep navy #020814, cyan #56F4F5, electric blue #168DFF, restrained violet #B65AFF art direction. No text, letters, numbers, logos, watermarks, interface, controls, screen UI, border, collage or multiple panels. No named copyrighted characters.\nPrimary scene: a dynamic futuristic runner leaping between elevated city platforms toward a luminous phase gate, with two translucent blue-violet afterimage silhouettes tracing the runner's own earlier positions. The trail clearly depicts one person's motion echo, not opponents. Distant sci-fi skyscrapers, enormous planet edge, glowing rails and a sequence of spaced obstacles form a readable route. Athletic anonymous character in an original sleek dark suit, face not visible. Cinematic side-on three-quarter camera, strong diagonal momentum from left to right, phase gate in the upper center-right. Bright cyan highlights and violet spectral trails above dark reflective foreground. Premium photoreal key art, no gore, no guns.",
+      "generated_source": "covers/afterimage-run.png",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "files": [
+        "covers/afterimage-run.png",
+        "covers/afterimage-run-640.webp",
+        "covers/afterimage-run.webp"
+      ],
+      "sizes_bytes": {
+        "covers/afterimage-run.png": 2760060,
+        "covers/afterimage-run-640.webp": 73814,
+        "covers/afterimage-run.webp": 362608
+      },
+      "sha256": {
+        "covers/afterimage-run.png": "de89b39ab8ffc221e4e830e4127f40e1d83e5c0b727a481ce0b60cb06af483d9",
+        "covers/afterimage-run-640.webp": "fe172000c18e921360ba7cb7e664f583bb729da68cb43a876a6761d053c239cc",
+        "covers/afterimage-run.webp": "ff7576ddd768ce4daaf745ac5e7e8905bf57416992ec2a952b104501e4db9bd9"
+      },
+      "review": "Visually reviewed: original composition, no text or interface, distinct scene per game, no claim that artwork is a gameplay screenshot.",
+      "file_inventory": [
+        {
+          "path": "covers/afterimage-run.png",
+          "width": 1536,
+          "height": 1024,
+          "size_bytes": 2760060,
+          "sha256": "de89b39ab8ffc221e4e830e4127f40e1d83e5c0b727a481ce0b60cb06af483d9"
+        },
+        {
+          "path": "covers/afterimage-run-640.webp",
+          "width": 640,
+          "height": 427,
+          "size_bytes": 73814,
+          "sha256": "fe172000c18e921360ba7cb7e664f583bb729da68cb43a876a6761d053c239cc"
+        },
+        {
+          "path": "covers/afterimage-run.webp",
+          "width": 1536,
+          "height": 1024,
+          "size_bytes": 362608,
+          "sha256": "ff7576ddd768ce4daaf745ac5e7e8905bf57416992ec2a952b104501e4db9bd9"
+        }
+      ]
+    }
+  ],
+  "technical_processing": "PNG copied unchanged from image_gen; RGB WebP quality 88/method 6; proportional 640px thumbnail WebP quality 85; no artistic manipulation.",
+  "source_path_base": "osgard-art/",
+  "path_normalization": "Source paths are relative to the original art folder; prompt text is preserved verbatim."
+}

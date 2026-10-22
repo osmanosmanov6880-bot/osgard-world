@@ -305,7 +305,10 @@ export default function OmegaGlobe({ quality, mode, chapter, view, onViewChange 
     }
     const resize = () => {
       if (!renderer || !camera) return
-      const bounds = sky.getBoundingClientRect()
+      // The cinematic homepage intentionally positions the planet off-centre.
+      // Size the GPU backbuffer to its actual stage, not the larger star field:
+      // matching canvas pixels and the stage aspect avoids an oval Earth.
+      const bounds = stage.getBoundingClientRect()
       const width = Math.max(1, Math.round(bounds.width))
       const height = Math.max(1, Math.round(bounds.height))
       renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, adaptiveDpr))
