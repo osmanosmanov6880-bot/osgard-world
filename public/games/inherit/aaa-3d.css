@@ -107,3 +107,27 @@ body.living-legacy .world:has(>.aaa3d-controls)>.objective{
  body.living-legacy .aaa3d-controls,
  body.living-legacy .aaa3d-controls button{transition:none!important;animation:none!important}
 }
+
+
+/* R16.5 critical gameplay fix: 3D controls belong to document flow, not over
+ * the native island. No overlay may intercept history, Legacy or quest clicks. */
+body.living-legacy .app > .aaa3d-controls{
+ position:relative!important;inset:auto!important;
+ top:auto!important;right:auto!important;bottom:auto!important;left:auto!important;
+ z-index:2!important;display:flex;order:0;justify-content:flex-end;
+ align-self:stretch;width:auto;max-width:none!important;min-height:66px;
+ margin:7px clamp(12px,2vw,32px) 3px;
+ padding:9px 14px;border-radius:13px;
+}
+body.living-legacy .app > .aaa3d-controls .aaa3d-brand{flex:1 1 auto}
+body.living-legacy .app > .aaa3d-controls .aaa3d-live{flex:0 1 160px;text-align:left}
+@media(max-width:740px){
+ body.living-legacy .app > .aaa3d-controls{
+  order:0;top:auto!important;right:auto!important;left:auto!important;
+  min-height:94px;margin:5px 4vw 3px;padding:9px;
+  justify-content:space-between;gap:7px
+ }
+ body.living-legacy .app > .aaa3d-controls .aaa3d-brand{flex:1 1 100%}
+ body.living-legacy .app > .aaa3d-controls button{flex:1 1 27%;min-width:0}
+ body.living-legacy .app > .aaa3d-controls .aaa3d-live{flex:1 1 100%;text-align:left}
+}
