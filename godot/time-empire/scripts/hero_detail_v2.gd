@@ -261,11 +261,7 @@ static func _rooftop_detail(root:Node3D)->void:
         var mesh:=BoxMesh.new()
         mesh.size=Vector3.ONE
         _batch(art,"InstancedParametricFacadeFins",mesh,panels,color)
-        _lathe(art,"RoofCNCObservationCrown",PackedVector2Array([
-            Vector2(0.62,height-0.2),Vector2(1.50,height-0.2),
-            Vector2(1.72,height),Vector2(1.72,height+0.12),
-            Vector2(1.45,height+0.27),Vector2(0.62,height+0.27)
-        ]),"bronze",Vector3.ZERO,48)
+        # Per-landmark height varies: facades are attached, no floating roof disks.
     # Four free-form civic monuments in the existing outside promenade, low enough
     # to leave a clean sightline to the central chrono reactor.
     var monuments:Array[Vector3]=[
@@ -284,9 +280,9 @@ static func _rooftop_detail(root:Node3D)->void:
             Vector2(1.77,0.36),Vector2(1.56,0.45),Vector2(0.45,0.45)
         ]),"ivory",Vector3.ZERO,64)
         _lathe(site,"FloatingObservationCanopy",PackedVector2Array([
-            Vector2(0.2,7.04),Vector2(1.5,7.04),Vector2(1.7,7.14),
-            Vector2(1.7,7.28),Vector2(1.48,7.40),Vector2(0.2,7.40)
-        ]),"titanium",Vector3.ZERO,64)
+            Vector2(0.01,7.04),Vector2(1.4,7.04),Vector2(1.53,7.14),
+            Vector2(1.53,7.28),Vector2(1.38,7.40),Vector2(0.01,7.40)
+        ]),"ivory",Vector3.ZERO,64)
 
 static func _civic_transit(root:Node3D)->void:
     # A visible third dimension to transit, with milled guide couplings.
