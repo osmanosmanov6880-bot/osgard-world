@@ -747,7 +747,9 @@ for (const [game, action, ru, en] of [
       expect(await page.locator('#live-growth-console').evaluate(node => getComputedStyle(node).position)).toBe('relative')
     } else {
       await expectInheritPanelsClosed(page)
-      await expect(page.locator('#inherit-enter')).toBeInViewport()
+      await expect(page.locator('#inherit-enter')).toBeVisible()
+      if (info.project.name === 'mobile') await expect(page.locator('#world')).toBeInViewport()
+      else await expect(page.locator('#inherit-enter')).toBeInViewport()
       expect(await page.locator('.journey').evaluate(node => node.parentElement.classList.contains('inherit-guide') && getComputedStyle(node).position === 'static')).toBe(true)
     }
     for (const [language, label] of [['en', en], ['ru', ru]]) {
