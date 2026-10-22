@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react'
 import './omegaWorld.css'
+import './developmentSignature.css'
 import { cases } from './redesignCatalog'
 import { BrandMark } from './BrandMark'
 import { formatEnquiry, validateEnquiry } from './projectEnquiry'
@@ -8,6 +9,7 @@ import { recordBrandEvent } from './brandTelemetry'
 import type { GlobeChapter, GlobeMode, GlobeView, GlobeQuality } from './OmegaGlobe'
 
 const OmegaGlobe = lazy(() => import('./OmegaGlobe'))
+const OsgardEcosystemIndex = lazy(() => import('./OsgardEcosystemIndex'))
 
 const readOmegaMode = (): GlobeMode => {
   try {
@@ -85,22 +87,51 @@ export default function WorldHome({ development = false }: { development?: boole
     } catch { setError('Не удалось создать файл. Скопируйте описание задачи и отправьте его на указанный адрес.') }
   }
 
-  return <main className="world-home brand-container">
+  return <main className={development ? 'world-home brand-container development-signature' : 'world-home brand-container world-command'}>
     {development ? <>
-      <section className="omega-dev-hero" aria-labelledby="world-title">
-        <div className="omega-dev-hero-art" aria-hidden="true"><img src="/brand/omega-development.svg" width="1600" height="1000" alt="" decoding="async" /><span className="omega-dev-orbit omega-dev-orbit-a"/><span className="omega-dev-orbit omega-dev-orbit-b"/></div>
-        <div className="omega-dev-intro">
-          <p className="brand-eyebrow">OSGARD / DEVELOPMENT / DIGITAL ENGINEERING</p>
-          <h1 id="world-title">СОЗДАЁМ<br/><span>ЦИФРОВЫЕ</span><br/>РЕШЕНИЯ.</h1>
-          <p className="brand-lead">Проектируем интерфейсы и цифровые продукты — от первых сценариев до проверяемых демонстраций. Смотрите реальные кейсы, возможности и текущую стадию каждого проекта.</p>
-          <div className="brand-actions"><a className="brand-button primary" href="#cases">Смотреть проекты <span aria-hidden="true">↗</span></a><a className="brand-button" href="#contact">Обсудить разработку <span aria-hidden="true">→</span></a></div>
-          <p className="brand-meta">СТРАТЕГИЯ / ПРОТОТИП / ИНТЕРФЕЙС / ЗАПУСК</p>
+      <section className="omega-dev-hero signature-hero" aria-labelledby="world-title">
+        <div className="omega-dev-hero-art" aria-hidden="true">
+          <img src="/brand/omega-development.svg" width="1600" height="1000" alt="" decoding="async" />
+          <span className="omega-dev-orbit omega-dev-orbit-a" />
+          <span className="omega-dev-orbit omega-dev-orbit-b" />
         </div>
-        <div className="omega-dev-console" aria-label="Принцип работы студии">
-          <span>OSGARD ENGINEERING / 001</span>
-          <strong>От идеи — к работающему сценарию.</strong>
-          <p>Технология ценна, когда результат можно открыть, попробовать и проверить.</p>
-          <a href="#approach">Как мы работаем <span aria-hidden="true">↘</span></a>
+        <div className="omega-dev-intro signature-intro">
+          <p className="brand-eyebrow">OSGARD / DEVELOPMENT / DIGITAL CRAFT</p>
+          <h1 id="world-title">СОЗДАЁМ<br /><span>ЦИФРОВЫЕ</span><br />РЕШЕНИЯ.</h1>
+          <p className="brand-lead">От первых сценариев до открытых демонстраций. Показываем настоящие интерфейсы, рабочие действия и честный статус каждого проекта.</p>
+          <div className="brand-actions signature-hero-actions">
+            <a className="brand-button primary" href="#cases">Смотреть проекты <span aria-hidden="true">↗</span></a>
+            <a className="brand-button signature-secondary" href="#contact">Обсудить разработку <span aria-hidden="true">→</span></a>
+          </div>
+          <div className="signature-hero-facts" aria-label="Принципы разработки">
+            <span><strong>{cases.length}</strong><small>публичных кейса</small></span>
+            <span><strong>UX → CODE</strong><small>дизайн и реализация</small></span>
+            <span><strong>OPEN DEMOS</strong><small>посмотрите сами</small></span>
+          </div>
+          <p className="signature-caption">ПРОТОТИПЫ · КОНФИГУРАТОРЫ · ЦИФРОВЫЕ ПРОДУКТЫ</p>
+        </div>
+        <div className="signature-showcase" aria-label="Демонстрация работ студии">
+          <div className="signature-showcase-top"><span>SELECTED WORK / 2026</span><span>01 — 03 / 04</span></div>
+          <a className="signature-featured-case" href={cases[1].href}>
+            <div className="signature-featured-image">
+              <img src={cases[1].art} width="1200" height="800" alt={'Скриншот открытого проекта ' + cases[1].name}
+                decoding="async" fetchPriority="high" />
+              <span>{cases[1].type} / 02</span>
+            </div>
+            <div className="signature-featured-copy">
+              <div><small>АРХИТЕКТУРА / КОНФИГУРАТОР</small><strong>{cases[1].name}</strong></div>
+              <span>Открыть кейс <b aria-hidden="true">↗</b></span>
+            </div>
+          </a>
+          <div className="signature-case-pair" aria-label="Другие проекты">
+            {[cases[0],cases[2]].map((item) => <a key={item.id} href={item.href}>
+              <img src={item.art} alt={'Скриншот проекта ' + item.name} width="380" height="255"
+                loading="lazy" decoding="async" />
+              <span><small>{item.type}</small><strong>{item.name}</strong></span>
+              <b aria-hidden="true">↗</b>
+            </a>)}
+          </div>
+          <p className="signature-showcase-note">Снимки публичных страниц. Демо не подтверждает работу серверов, продаж или коммерческий запуск.</p>
         </div>
       </section>
       <section id="products" className="brand-section omega-dev-capabilities" aria-labelledby="dev-capabilities-title">
@@ -112,16 +143,54 @@ export default function WorldHome({ development = false }: { development?: boole
         </div>
       </section>
     </> : <>
-    <section className={`omega-hero omega-experience-${omegaMode}`} data-omega-mode={omegaMode} data-omega-yaw={omegaView.yaw.toFixed(2)} data-omega-distance={omegaView.distance.toFixed(2)} aria-labelledby="world-title"
+    <section className={'omega-hero omega-command omega-experience-' + omegaMode}
+      data-omega-mode={omegaMode} data-omega-yaw={omegaView.yaw.toFixed(2)}
+      data-omega-distance={omegaView.distance.toFixed(2)}
+      aria-labelledby="world-title"
       tabIndex={omegaMode === 'world' ? 0 : undefined} onKeyDown={onWorldKeyDown}>
-      <div className="omega-sky" aria-hidden="true"><div className="omega-stars"/><Suspense fallback={null}><OmegaGlobe key={omegaQuality} quality={omegaQuality} mode={omegaMode} chapter={omegaChapter} view={omegaView} onViewChange={setOmegaView} /></Suspense><div className="omega-orbit omega-orbit-one"/><div className="omega-orbit omega-orbit-two"/><div className="omega-globe"><div className="omega-continent omega-c-one"/><div className="omega-continent omega-c-two"/><div className="omega-continent omega-c-three"/></div><div className="omega-platform"/></div>
+      <div className="omega-sky" aria-hidden="true">
+        <div className="omega-stars" />
+        <div className="omega-command-nebula" />
+        <Suspense fallback={null}><OmegaGlobe key={omegaQuality} quality={omegaQuality} mode={omegaMode}
+          chapter={omegaChapter} view={omegaView} onViewChange={setOmegaView} /></Suspense>
+        <div className="omega-globe" />
+        <div className="omega-orbit omega-orbit-one" />
+        <div className="omega-orbit omega-orbit-two" />
+        <div className="omega-command-terminator" />
+      </div>
       <div className="omega-copy">
-        <p className="brand-eyebrow">OSGARD DIGITAL UNIVERSE / НОВАЯ ТОЧКА ВХОДА</p>
+        <p className="brand-eyebrow omega-command-eyebrow">OSGARD WORLD <span>/ ЦИФРОВАЯ ВСЕЛЕННАЯ</span></p>
         <h1 id="world-title">ТЕХНОЛОГИИ,<br/><span>КОТОРЫЕ</span><br/>СОЕДИНЯЮТ<br/>МИРЫ<span className="omega-period">.</span></h1>
-        <p className="brand-lead">Искусственный интеллект, интерактивные миры и разработка цифровых продуктов. Три направления — одна понятная экосистема OSGARD.</p>
-        <div className="brand-actions"><a className="brand-button primary" href="#products">Исследовать экосистему <span aria-hidden="true">↗</span></a><a className="brand-button" href="#approach">Как это работает <span aria-hidden="true">↓</span></a></div>
-        <div className="omega-experience-panel" aria-label="Управление 3D-пространством">
-          <div className="omega-experience-title"><span>OSGARD CORE / РЕЖИМ ПРОСМОТРА</span><span className="omega-experience-live"><span aria-hidden="true" /> ONLINE</span></div>
+        <p className="brand-lead">Искусственный интеллект, интерактивные миры и создание цифровых продуктов. Три понятных направления — одна вселенная OSGARD.</p>
+        <div className="brand-actions omega-command-actions">
+          <a className="brand-button primary" href="#products">Исследовать экосистему <span aria-hidden="true">↗</span></a>
+          <a className="brand-button omega-command-secondary" href="/play">Перейти в Play <span aria-hidden="true">↗</span></a>
+        </div>
+        <p className="omega-command-promise">ПОНИМАТЬ ИИ <span>•</span> ИГРАТЬ <span>•</span> СОЗДАВАТЬ</p>
+      </div>
+      <p className="omega-command-planet-caption">BLUE MARBLE / ЗЕМЛЯ <span>NASA · СПУТНИКОВАЯ ТЕКСТУРА</span></p>
+      <nav className="omega-gate" aria-label="Три направления экосистемы">
+        <p className="brand-eyebrow">ВЫБЕРИ СВОЙ ПУТЬ <span>01—03 / OSGARD</span></p>
+        <a href="/intelligence">
+          <span className="omega-glyph" aria-hidden="true">◇</span>
+          <span><small>01 / ЗНАНИЯ</small><strong>OSA Intelligence</strong><em>Понимай ИИ, проверяй ответы и учись.</em></span>
+          <b aria-hidden="true">↗</b>
+        </a>
+        <a href="/play">
+          <span className="omega-glyph" aria-hidden="true">✦</span>
+          <span><small>02 / ИГРОВЫЕ МИРЫ</small><strong>OSGARD Play</strong><em>Выбирай мир, открывай игру, исследуй.</em></span>
+          <b aria-hidden="true">↗</b>
+        </a>
+        <a href="/development">
+          <span className="omega-glyph" aria-hidden="true">⌘</span>
+          <span><small>03 / ПРОЕКТЫ</small><strong>Development</strong><em>Смотри реальные проекты и их возможности.</em></span>
+          <b aria-hidden="true">↗</b>
+        </a>
+      </nav>
+      <details className="omega-experience-panel" aria-label="Настройки 3D-глобуса">
+        <summary><span className="omega-settings-mark" aria-hidden="true">◈</span> Настройки планеты <span className="omega-settings-chevron" aria-hidden="true">⌄</span></summary>
+        <div className="omega-experience-content">
+          <div className="omega-experience-title"><span>ГЛОБУС / РЕЖИМ ПРОСМОТРА</span><span className="omega-experience-live"><span aria-hidden="true" /> СЦЕНА</span></div>
           <div className="omega-mode-tabs" role="group" aria-label="Выберите режим 3D-сцены">
             <button type="button" aria-pressed={omegaMode === 'cinema'} onClick={() => setOmegaMode('cinema')}>Кино</button>
             <button type="button" aria-pressed={omegaMode === 'world'} onClick={() => setOmegaMode('world')}>3D-мир</button>
@@ -130,14 +199,13 @@ export default function WorldHome({ development = false }: { development?: boole
           <p className="omega-mode-description" aria-live="polite">{omegaHelp[omegaMode]}</p>
           <div className="omega-quality-switch">
             <label htmlFor="omega-quality">Детализация 3D</label>
-            <select id="omega-quality" value={omegaQuality} onChange={e => setOmegaQuality(e.target.value as GlobeQuality)}
+            <select id="omega-quality" value={omegaQuality} onChange={event => setOmegaQuality(event.target.value as GlobeQuality)}
               aria-label="Качество 3D-глобуса">
               <option value="auto">Авто · оптимально</option>
               <option value="eco">Экономно · быстрый режим</option>
               <option value="ultra">Ультра · до 4K текстур</option>
             </select>
           </div>
-          <p className="omega-imagery-credit">Земля: <a href="https://science.nasa.gov/earth/earth-observatory/blue-marble-next-generation/base-map/" target="_blank" rel="noreferrer">NASA Blue Marble ↗</a> · ночные огни 2016 · облака процедурные, не прогноз погоды и не прямой эфир.</p>
           {omegaMode === 'cinema' && <div className="omega-cinema-chapters" role="group" aria-label="Кинематографические главы">
             {omegaChapters.map((name, index) => <button type="button" key={name} aria-pressed={omegaChapter === index}
               onClick={() => setOmegaChapter(index as GlobeChapter)}>{String(index + 1).padStart(2, '0')} / {name}</button>)}
@@ -149,16 +217,10 @@ export default function WorldHome({ development = false }: { development?: boole
             <button type="button" onClick={() => moveWorld('farther')} aria-label="Отдалить глобус">−</button>
             <button type="button" onClick={() => moveWorld('reset')} className="omega-reset-view">Сбросить</button>
           </div>}
+          <p className="omega-imagery-credit">Земля: <a href="https://science.nasa.gov/earth/earth-observatory/blue-marble-next-generation/base-map/" target="_blank" rel="noreferrer">NASA Blue Marble ↗</a> · ночные огни 2016 · облака процедурные. Это визуализация, не прямой эфир.</p>
         </div>
-        <p className="brand-meta">ЗНАНИЯ / МИРЫ / СОЗДАНИЕ</p>
-      </div>
-      <nav className="omega-gate" aria-label="Три направления экосистемы"><p className="brand-eyebrow">ВХОД В ЭКОСИСТЕМУ <span>01 / 03</span></p>
-        <a href="/intelligence"><span className="omega-glyph">◇</span><span><small>01 / ИНТЕЛЛЕКТ</small><strong>OSA INTELLIGENCE</strong><em>Понимай ИИ. Проверяй ответы. Учись и принимай решения.</em></span><b aria-hidden="true">↗</b></a>
-        <a href="/play"><span className="omega-glyph">✧</span><span><small>02 / МИРЫ</small><strong>OSGARD PLAY</strong><em>Игры и интерактивные миры. Исследуй, играй, создавай.</em></span><b aria-hidden="true">↗</b></a>
-        <a href="/development"><span className="omega-glyph">⌘</span><span><small>03 / СОЗДАНИЕ</small><strong>DEVELOPMENT</strong><em>Реальные кейсы и цифровые продукты от идеи до запуска.</em></span><b aria-hidden="true">↗</b></a>
-      </nav>
+      </details>
     </section>
-    <div className="omega-benefits" aria-label="Возможности OSGARD"><span>◇ <b>ОБУЧАЙСЯ</b> <small>Понимай и проверяй</small></span><span>✧ <b>ИССЛЕДУЙ</b> <small>Открывай игровые миры</small></span><span>⌘ <b>СОЗДАВАЙ</b> <small>Развивай свои проекты</small></span></div>
     <section id="products" className="brand-section omega-products" aria-labelledby="world-products-title">
       <div className="brand-section-heading"><p className="brand-eyebrow">01 / НАПРАВЛЕНИЯ OSGARD</p><h2 id="world-products-title">ТРИ МИРА. <span>ОДНА ВСЕЛЕННАЯ.</span></h2><p>Выбери свой путь. Каждое направление показывает конкретные возможности, доступные действия и ограничения.</p></div>
       <div className="omega-cards">
@@ -168,6 +230,9 @@ export default function WorldHome({ development = false }: { development?: boole
       </div>
       <div className="world-workspace-link"><p>Работаешь над своей идеей? Собери план и материалы в одном месте.</p><a className="brand-text-link" href="/workspace">Открыть рабочее пространство ↗</a></div>
     </section>
+    <Suspense fallback={<div className="ecosystem-index-skeleton" aria-hidden="true" />}>
+      <OsgardEcosystemIndex />
+    </Suspense>
     </>}
     <section id="cases" className="brand-section" aria-labelledby="world-cases-title">
       <div className="brand-section-heading"><p className="brand-eyebrow">02 / ИЗБРАННЫЕ ПРОЕКТЫ</p><h2 id="world-cases-title">У каждой задачи<br />свой характер.</h2><p>Откройте кейс: посмотрите интерфейс, доступные возможности и стадию проекта. Статус указан на каждой карточке.</p></div>

@@ -14,10 +14,11 @@ const viewports = [
 ]
 const routes = [
   { name: 'world', path: '/', selector: '.world-home', heading: /ТЕХНОЛОГИИ|Цифровые продукты/i, product: 'OSGARD' },
-  { name: 'intelligence', path: '/intelligence', selector: '.intelligence-home', heading: /Понимать ИИ/, product: 'Intelligence' },
-  { name: 'play', path: '/play', selector: '.play-home', heading: /ДОБАВЬ ТЕНЬ/, product: 'Play' },
+  { name: 'intelligence', path: '/intelligence', selector: '.intelligence-proof-console', heading: /Понимать ИИ/, product: 'Intelligence' },
+  { name: 'development', path: '/development', selector: '.signature-showcase', heading: /СОЗДАЁМ/, product: 'Development' },
+  { name: 'play', path: '/play', selector: '.play-universe', heading: /^OSGARD\s*Play$/, product: 'Play' },
   { name: 'portal', path: '/portal', selector: '.world-home', heading: /ТЕХНОЛОГИИ|Цифровые продукты/i, product: 'OSGARD' },
-  { name: 'academy', path: '/academy', selector: 'body' },
+  { name: 'academy', path: '/academy', selector: '.academy-learning-console', heading: /Понимайте ИИ/, product: 'Intelligence' }
   { name: 'lectures', path: '/lectures', selector: '.lecture-library' },
   { name: 'lesson-detail', path: '/lectures/intelligence-and-imitation', selector: '.osa-lesson-page' },
   { name: 'media-library', path: '/osa-library/', selector: '.hero' },
@@ -25,6 +26,7 @@ const routes = [
   { name: 'games', path: '/games/', selector: '#catalog' },
   { name: 'skillcred', path: '/skillcred/', selector: '.site-header' },
   { name: 'entertainment', path: '/entertainment/', selector: 'header' },
+  { name: 'entertainment-archive', path: '/entertainment/archive/', selector: '.entertainment-premium .hero-spotlight' },
   { name: 'elbrus', path: '/entertainment/elbrus/', selector: 'main' },
   { name: 'elbrus-en', path: '/entertainment/elbrus/en/', selector: 'main' },
   { name: 'elbrus-ar', path: '/entertainment/elbrus/ar/', selector: 'main' },
@@ -41,6 +43,91 @@ const routes = [
   { name: 'merakki-ar', path: '/development/merakki/ar/', selector: 'body' }
 ]
 
+// Observe real mounts without changing animation clocks, navigation or product state.
+// Short transitions may finish between Playwright round trips; retain their DOM evidence.
+function observeCinematics() {
+  window.__osa5CinematicTrace = []
+  window.__osa5PendingSeen = false
+  window.__osa5DocumentToken = Math.random().toString(36).slice(2)
+  const mounted = new Map()
+  new MutationObserver(() => {
+    if (document.querySelector('[data-osgard-pending]')) window.__osa5PendingSeen = true
+    for (const element of document.querySelectorAll('.osgard-cinematic')) {
+      if (mounted.has(element)) continue
+      const style = getComputedStyle(element)
+      const content = document.querySelector('[data-osgard-content]')
+      const record = {
+        kind: element.dataset.kind, path: location.pathname,
+        startedAt: performance.now(), endedAt: null,
+        role: element.getAttribute('role'), modal: element.getAttribute('aria-modal'),
+        inert: content?.inert === true, hidden: content?.getAttribute('aria-hidden'),
+        animation: style.animationName, duration: parseFloat(style.animationDuration),
+        portal: Boolean(element.querySelector('.oc-portal-depth'))
+      }
+      mounted.set(element, record)
+      window.__osa5CinematicTrace.push(record)
+    }
+    for (const [element, record] of mounted) {
+      if (!element.isConnected) {
+        record.endedAt = performance.now()
+        mounted.delete(element)
+      }
+    }
+  }).observe(document, { childList: true, subtree: true })
+}
+
+async function waitForCinematicRelease(page, replay = false) {
+  try {
+    await page.waitForFunction(isReplay => {
+      const content = document.querySelector('[data-osgard-content]')
+      const focus = document.activeElement
+      return !document.querySelector('.osgard-cinematic, [data-osgard-pending]') &&
+        !document.documentElement.hasAttribute('data-osgard-cinematic') &&
+        content?.inert === false && content.getAttribute('aria-hidden') !== 'true' &&
+        (isReplay ? focus?.textContent?.trim() === 'Повторить заставку' : focus?.id === 'product-main')
+    }, replay, { timeout: 2500 })
+  } catch (error) {
+    // Preserve meaningful evidence when the overlay is gone but keyboard focus
+    // did not recover; an anonymous timeout hides genuine accessibility bugs.
+    const state = await page.evaluate(() => {
+      const active = document.activeElement
+      const content = document.querySelector('[data-osgard-content]')
+      const trigger = Array.from(document.querySelectorAll('button')).find(button => button.textContent?.trim() === 'Повторить заставку')
+      return {
+        path: location.pathname,
+        focus: { tag: active?.tagName, id: active?.id, text: active?.textContent?.trim().slice(0, 80),
+          disabled: active instanceof HTMLButtonElement && active.disabled },
+        mainConnected: document.getElementById('product-main')?.isConnected,
+        contentInert: content?.inert, contentHidden: content?.getAttribute('aria-hidden'),
+        overlayCount: document.querySelectorAll('.osgard-cinematic, [data-osgard-pending]').length,
+        htmlCinematic: document.documentElement.dataset.osgardCinematic ?? null,
+        replayDisabled: trigger?.disabled, replayIsFocused: trigger === active,
+        latestSession: window.__osa5CinematicTrace?.at(-1) ?? null,
+      }
+    }).catch(cause => ({ evaluateError: String(cause) }))
+    throw new Error('Cinematic release/focus mismatch: ' + JSON.stringify({ replay, state, reason: String(error) }))
+  }
+}
+
+async function assertNaturalCinematic(page, index, kind, path) {
+  await page.waitForFunction(position => window.__osa5CinematicTrace[position]?.endedAt !== null &&
+    window.__osa5CinematicTrace[position]?.endedAt !== undefined, index, { timeout: 6000 })
+  const record = await page.evaluate(position => window.__osa5CinematicTrace[position], index)
+  assert.equal(record.kind, kind, 'Cinematic kind must match the actual navigation')
+  assert.equal(record.path, path, 'Cinematic must cover the destination route')
+  assert.equal(record.role, 'dialog', 'Cinematic must expose a dialog')
+  assert.equal(record.modal, 'true', 'Cinematic must expose modal state')
+  assert.equal(record.inert, true, 'Background must be inert while the cinematic is mounted')
+  assert.equal(record.hidden, 'true', 'Background must be hidden from the accessibility tree')
+  assert.equal(record.portal, kind === 'play', 'Portal depth must appear only on entry to Play')
+  assert.equal(record.animation, kind === 'intro' ? 'oc-intro-lifetime' : 'oc-transition-lifetime')
+  const seconds = kind === 'intro' ? 3.6 : 0.9
+  assert.equal(record.duration, seconds, 'Cinematic CSS must retain its finite timeline')
+  assert.ok(record.endedAt - record.startedAt >= seconds * 1000 - 250, 'Cinematic ended before its visual timeline completed')
+  assert.ok(record.endedAt - record.startedAt <= seconds * 1000 + 1500, 'Cinematic exceeded its completion deadline')
+  await waitForCinematicRelease(page)
+}
+
 const problems = []
 const screenshots = []
 const browser = await chromium.launch({ headless: true })
@@ -53,6 +140,7 @@ try {
     await context.addInitScript(() => {
       try { sessionStorage.setItem('osgard-preloader-seen-v3', '1') } catch {}
     })
+    await context.addInitScript(observeCinematics)
 
     for (const route of routes) {
       const page = await context.newPage()
@@ -75,6 +163,9 @@ try {
         await page.waitForTimeout(180)
         if (route.heading) {
           await page.getByRole('heading', { level: 1, name: route.heading }).waitFor({ state: 'visible', timeout: 5000 })
+          assert.equal(await page.evaluate(() => window.__osa5CinematicTrace.length), 0, 'Reduced motion must bypass cinematic mounts')
+          assert.equal(await page.evaluate(() => window.__osa5PendingSeen), false, 'Reduced motion must bypass the pending intro')
+          assert.equal(await page.locator('[data-osgard-content]').evaluate(element => element.inert), false, 'Reduced motion must leave the page interactive')
           const products = page.getByRole('navigation', { name: 'Продукты OSGARD', exact: true })
           for (const [name, href] of [['OSGARD', '/'], ['Intelligence', '/intelligence'], ['Play', '/play'], ['Development', '/development']]) {
             const link = products.getByRole('link', { name, exact: true })
@@ -85,6 +176,21 @@ try {
         }
         const title = await page.title()
         if (!title.trim()) problems.push(route.name + ' @ ' + viewport.name + ': empty document title')
+
+        if (route.name === 'play') {
+          await page.waitForFunction(() => {
+            const image = document.querySelector('.cp-hero-art img')
+            return image?.complete && image.naturalWidth > 0
+          }, null, { timeout: 8000 })
+          const heroSource = await page.locator('.cp-hero-art img').evaluate(image => new URL(image.currentSrc).pathname)
+          assert.match(heroSource, viewport.width <= 600 ? /\/hero-mobile(?:-780)?\.webp$/ : /\/hero-megacity(?:-1280|-1920)?\.webp$/, 'Hero must load the appropriate desktop or mobile composition')
+          assert.match(await page.locator('.cp-hero-slogan').innerText(), /ИГРЫ\. МИРЫ\.\s*ТЫ ВНУТРИ\./)
+          assert.equal(await page.getByRole('link', { name: 'Исследовать миры', exact: true }).getAttribute('href'), '#featured')
+          const trailer = page.getByRole('button', { name: 'Смотреть трейлер', exact: true })
+          assert.equal(await trailer.isDisabled(), true, 'Unpublished trailer must not pretend to play')
+          assert.equal(await trailer.getAttribute('aria-describedby'), 'trailer-status')
+          assert.match(await page.locator('#trailer-status').innerText(), /Трейлер пока не опубликован/)
+        }
 
         if (route.name === 'skillcred') {
           const stylesheets = await page.evaluate(() => Array.from(document.styleSheets)
@@ -154,6 +260,19 @@ try {
         const screenshot = resolve(output, viewport.name + '-' + route.name + '.png')
         await page.screenshot({ path: screenshot, animations: 'disabled' })
         screenshots.push(viewport.name + '-' + route.name + '.png')
+        if (route.name === 'play') {
+          // Request the real lazy catalogue through its visible link after capturing the hero.
+          await page.locator('.cp-glass-panel a[href="#catalog"]').click()
+          await page.locator('#catalog').waitFor({ state: 'visible', timeout: 8000 })
+          await page.waitForFunction(() => document.querySelectorAll('#catalog .play-card[data-world-id]').length === 19, null, { timeout: 5000 })
+          const ids = await page.locator('#catalog .play-card[data-world-id]').evaluateAll(cards => cards.map(card => card.dataset.worldId))
+          assert.equal(new Set(ids).size, 19, 'Catalogue must expose 19 distinct real projects')
+          for (const id of ['vector-zero', 'time', 'null-shift', 'zion-030']) assert.ok(ids.includes(id), 'Catalogue lost existing game ' + id)
+          assert.equal(await page.locator('.play-universe iframe').count(), 0, 'Browsing the catalogue must not start an embedded game')
+          assert.equal(await page.evaluate(() => window.__osa5CinematicTrace.length), 0, 'Reduced-motion catalogue navigation must not start a transition')
+          const catalogFits = await page.evaluate(() => Math.max(document.documentElement.scrollWidth, document.body.scrollWidth) <= innerWidth + 2)
+          assert.equal(catalogFits, true, 'The fully loaded catalogue must not overflow the viewport')
+        }
         for (const message of pageErrors) problems.push(route.name + ' @ ' + viewport.name + ': uncaught page error: ' + message)
       } catch (error) {
         problems.push(route.name + ' @ ' + viewport.name + ': ' + String(error?.message || error))
@@ -223,41 +342,103 @@ try {
     await lectureContext.close()
   }
 
-  // Real browser navigation: a cross-profile click shows the one-shot overlay, then consumes its intent.
+  // First visit, finite intro, SPA transitions, replay and live reduced-motion changes.
   const transitionContext = await browser.newContext({
     viewport: { width: 1280, height: 800 },
     reducedMotion: 'no-preference'
   })
-  await transitionContext.addInitScript(() => {
-    try { sessionStorage.setItem('osgard-preloader-seen-v3', '1') } catch {}
-    const observer = new MutationObserver(() => {
-      if (document.querySelector('.osgard-portal-transition')) {
-        window.__osa5TransitionSeen = true
-        observer.disconnect()
-      }
-    })
-    observer.observe(document, { childList: true, subtree: true })
-  })
+  await transitionContext.addInitScript(observeCinematics)
   const transitionPage = await transitionContext.newPage()
+  const transitionErrors = []
+  transitionPage.on('pageerror', error => transitionErrors.push(error.message))
   try {
     await transitionPage.goto(base + '/play', { waitUntil: 'domcontentloaded', timeout: 25000 })
-    const brandLink = transitionPage.getByRole('navigation', { name: 'Продукты OSGARD', exact: true }).getByRole('link', { name: 'OSGARD', exact: true })
-    await brandLink.waitFor({ state: 'visible', timeout: 5000 })
+    await transitionPage.locator('.osgard-cinematic[data-kind="intro"]').waitFor({ state: 'attached', timeout: 5000 })
+    await transitionPage.waitForFunction(() => document.activeElement?.matches('.oc-skip') === true, null, { timeout: 2000 })
+    for (const key of ['Tab', 'Shift+Tab']) {
+      await transitionPage.keyboard.press(key)
+      assert.equal(await transitionPage.evaluate(() => document.activeElement?.matches('.oc-skip')), true, 'Intro must trap keyboard focus in its skip control')
+    }
+    await transitionPage.waitForFunction(() => {
+      const scene = document.querySelector('.osgard-cinematic[data-kind="intro"]')
+      const letters = scene?.querySelectorAll('.oc-wordmark span')
+      const images = scene?.querySelectorAll('img')
+      return letters?.length === 6 && Array.from(letters).every(letter => Number(getComputedStyle(letter).opacity) > 0.9) &&
+        images?.length === 2 && Array.from(images).every(image => image.complete && image.naturalWidth > 0)
+    }, null, { timeout: 4000 })
+    // Disabling finite CSS animations would emit animationend and falsify the lifecycle test.
+    await transitionPage.screenshot({ path: resolve(output, 'desktop-osgard-intro.png'), animations: 'allow' })
+    screenshots.push('desktop-osgard-intro.png')
+    await assertNaturalCinematic(transitionPage, 0, 'intro', '/play')
+    assert.equal(await transitionPage.evaluate(() => window.__osa5CinematicTrace.length), 1, 'A first visit must create exactly one intro')
+    assert.equal(await transitionPage.evaluate(() => localStorage.getItem('osgard:intro:v1')), 'seen', 'First intro must persist the versioned once-only marker')
+    assert.equal(await transitionPage.locator('.osgard-portal-transition').count(), 0, 'Legacy and global overlays must not compete')
+    const documentToken = await transitionPage.evaluate(() => window.__osa5DocumentToken)
+
+    for (const [name, path, kind] of [['OSGARD', '/', 'transition'], ['Play', '/play', 'play']]) {
+      const index = await transitionPage.evaluate(() => window.__osa5CinematicTrace.length)
+      const link = transitionPage.getByRole('navigation', { name: 'Продукты OSGARD', exact: true }).getByRole('link', { name, exact: true })
+      await Promise.all([
+        transitionPage.waitForURL(url => url.pathname === path, { timeout: 12000 }),
+        link.click()
+      ])
+      assert.equal(await transitionPage.evaluate(() => window.__osa5DocumentToken), documentToken, 'Product navigation must preserve the SPA document')
+      await assertNaturalCinematic(transitionPage, index, kind, path)
+      assert.equal(await transitionPage.evaluate(() => window.__osa5CinematicTrace.length), index + 1, 'A product click must create exactly one transition')
+      await transitionPage.getByRole('heading', { level: 1, name: path === '/play' ? /^OSGARD\s*Play$/ : /ТЕХНОЛОГИИ|Цифровые продукты/i }).waitFor({ state: 'visible', timeout: 5000 })
+    }
+
+    // A game detail is within Play: preserve the document without replaying the global portal.
+    const beforeDetail = await transitionPage.evaluate(() => window.__osa5CinematicTrace.length)
+    await Promise.all([
+      transitionPage.waitForURL(url => url.pathname === '/play/world/vector-zero', { timeout: 12000 }),
+      transitionPage.locator('#featured a[href^="/play/world/vector-zero"]').first().click()
+    ])
+    await transitionPage.getByRole('heading', { level: 1, name: 'VECTOR//ZERO', exact: true }).waitFor({ state: 'visible', timeout: 8000 })
+    assert.equal(await transitionPage.evaluate(() => window.__osa5DocumentToken), documentToken, 'Opening a world must preserve the SPA document')
+    assert.equal(await transitionPage.evaluate(() => window.__osa5CinematicTrace.length), beforeDetail, 'Same-section navigation must not replay the global portal')
+    assert.equal(await transitionPage.locator('.play-game-detail iframe').count(), 0, 'A game must wait for an explicit launch')
+    await Promise.all([
+      transitionPage.waitForURL(url => url.pathname === '/play', { timeout: 12000 }),
+      transitionPage.locator('.play-detail-back').first().click()
+    ])
+    await transitionPage.getByRole('heading', { level: 1, name: /^OSGARD\s*Play$/ }).waitFor({ state: 'visible', timeout: 8000 })
+    assert.equal(await transitionPage.evaluate(() => window.__osa5CinematicTrace.length), beforeDetail, 'Returning to the catalogue must stay within Play')
+
+    await transitionPage.reload({ waitUntil: 'domcontentloaded' })
+    await transitionPage.getByRole('heading', { level: 1, name: /^OSGARD\s*Play$/ }).waitFor({ state: 'visible', timeout: 8000 })
+    await transitionPage.waitForTimeout(180)
+    assert.equal(await transitionPage.evaluate(() => window.__osa5CinematicTrace.length), 0, 'Reload must not repeat a seen intro')
+    assert.equal(await transitionPage.evaluate(() => window.__osa5PendingSeen), false, 'Reload must not block content with a pending intro')
+    assert.equal(await transitionPage.locator('[data-osgard-content]').evaluate(element => element.inert), false)
+
+    const replay = transitionPage.getByRole('button', { name: 'Повторить заставку', exact: true })
+    for (const action of ['escape', 'skip', 'reduce']) {
+      await replay.click()
+      await transitionPage.locator('.osgard-cinematic[data-kind="intro"]').waitFor({ state: 'attached', timeout: 5000 })
+      if (action === 'escape') await transitionPage.keyboard.press('Escape')
+      else if (action === 'skip') await transitionPage.getByRole('button', { name: 'Пропустить', exact: true }).click()
+      else await transitionPage.emulateMedia({ reducedMotion: 'reduce' })
+      await waitForCinematicRelease(transitionPage, action !== 'reduce')
+    }
+    const reducedCount = await transitionPage.evaluate(() => window.__osa5CinematicTrace.length)
     await Promise.all([
       transitionPage.waitForURL(url => url.pathname === '/', { timeout: 12000 }),
-      brandLink.click()
+      transitionPage.getByRole('navigation', { name: 'Продукты OSGARD', exact: true }).getByRole('link', { name: 'OSGARD', exact: true }).click()
     ])
-    await transitionPage.waitForFunction(() => window.__osa5TransitionSeen === true, null, { timeout: 5000 })
-    const intentConsumed = await transitionPage.evaluate(() => sessionStorage.getItem('osgard:portal-navigation:v2') === null)
-    if (!intentConsumed) problems.push('transition: one-shot navigation intent was not consumed on the destination')
-    await transitionPage.locator('.osgard-portal-transition').waitFor({ state: 'detached', timeout: 3000 })
-    await transitionPage.reload({ waitUntil: 'domcontentloaded' })
-    await transitionPage.waitForTimeout(180)
-    const replayCount = await transitionPage.locator('.osgard-portal-transition').count()
-    if (replayCount !== 0) problems.push('transition: overlay replayed after its one-shot intent was consumed')
+    await transitionPage.getByRole('heading', { level: 1, name: /ТЕХНОЛОГИИ|Цифровые продукты/i }).waitFor({ state: 'visible', timeout: 8000 })
+    assert.equal(await transitionPage.evaluate(() => window.__osa5CinematicTrace.length), reducedCount, 'Reduced motion must bypass cross-product transitions')
+    const motion = transitionPage.getByRole('button', { name: 'Меньше движения', exact: true })
+    assert.equal(await motion.isDisabled(), true, 'Live system preference must disable the optional motion control')
+    assert.equal(await motion.getAttribute('aria-pressed'), 'true')
   } catch (error) {
-    problems.push('cross-portal transition integration: ' + String(error?.message || error))
+    problems.push('cinematic intro and SPA transition integration: ' + String(error?.message || error))
+    try {
+      await transitionPage.screenshot({ path: resolve(output, 'desktop-osgard-cinematic-failure.png'), animations: 'allow' })
+      screenshots.push('desktop-osgard-cinematic-failure.png')
+    } catch {}
   } finally {
+    for (const message of transitionErrors) problems.push('cinematic integration: uncaught page error: ' + message)
     await transitionContext.close()
   }
 
@@ -342,15 +523,19 @@ try {
     await tableContext.close()
   }
 
-  // Keyboard and motion controls for the current shared product shell.
+  // Returning visitors start with the shell's skip link; first-visit focus is checked above.
   const accessibilityContext = await browser.newContext({
     viewport: { width: 1280, height: 800 },
     reducedMotion: 'no-preference'
+  })
+  await accessibilityContext.addInitScript(() => {
+    localStorage.setItem('osgard:intro:v1', 'seen')
   })
   const accessibilityPage = await accessibilityContext.newPage()
   try {
     await accessibilityPage.goto(base + '/', { waitUntil: 'domcontentloaded', timeout: 25000 })
     await accessibilityPage.getByRole('heading', { level: 1, name: /ТЕХНОЛОГИИ|Цифровые продукты/i }).waitFor({ state: 'visible', timeout: 8000 })
+    assert.equal(await accessibilityPage.locator('.osgard-cinematic, [data-osgard-pending]').count(), 0, 'A returning visitor must reach the keyboard navigation immediately')
     await accessibilityPage.keyboard.press('Tab')
     const skipFocused = await accessibilityPage.evaluate(() => document.activeElement?.matches('.brand-skip') === true)
     if (!skipFocused) problems.push('keyboard: first Tab did not focus the skip link')
