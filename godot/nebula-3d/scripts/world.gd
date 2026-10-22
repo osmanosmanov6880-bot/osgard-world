@@ -6,6 +6,7 @@ const ShipScript = preload("res://scripts/ship.gd")
 const DroneScript = preload("res://scripts/drone.gd")
 const RadarScript = preload("res://scripts/radar.gd")
 const PremiumArchitectureScript = preload("res://scripts/premium_architecture.gd")
+const ArchitecturalDetailR4Script = preload("res://scripts/architectural_detail_r4.gd")
 const SAVE_PATH = "user://nebula_3d_save.json"
 const SECTOR_COLORS = [Color(0.10,0.68,0.97), Color(0.64,0.35,1.0), Color(0.98,0.73,0.40), Color(1.0,0.46,0.34), Color(0.87,0.27,0.88), Color(0.24,0.92,0.88)]
 const SECTOR_NAMES = ["ПОРТ АВРОРА","НЕОНОВЫЙ КВАРТАЛ","ЦИТАДЕЛЬ","ЧЁРНЫЙ РЫНОК","РАЗЛОМ","НЕКСУС"]
@@ -187,6 +188,10 @@ func _build_city() -> void:
         var base: Vector3 = SECTOR_POSITIONS[i]
         _build_sector(base,SECTOR_COLORS[i],SECTOR_NAMES[i],i)
     premium_architecture.build(tower_data,SECTOR_POSITIONS,SECTOR_COLORS)
+    var architectural_detail_r4 := ArchitecturalDetailR4Script.new()
+    architectural_detail_r4.name = "ArchitecturalDetailR4"
+    add_child(architectural_detail_r4)
+    architectural_detail_r4.build(tower_data, SECTOR_POSITIONS)
     _build_starfield()
 
 func _build_sector(center: Vector3, tint: Color, name: String, index: int) -> void:
