@@ -31,7 +31,7 @@ test('Navigator opens a real Development section, keeps only per-tab recent shor
   await page.goto('/intelligence')
   await page.keyboard.press('Control+k')
   const search = quickDialog(page).getByRole('combobox')
-  await search.fill('TEDES')
+  await search.fill('Портфолио проектов')
   await expect(quickDialog(page).getByRole('option')).toHaveCount(1)
   await expect(quickDialog(page).getByRole('option')).toHaveAttribute('href', '/development#cases')
   await search.press('Enter')
