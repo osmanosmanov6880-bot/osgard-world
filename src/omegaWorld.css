@@ -297,3 +297,10 @@ html[data-motion="off"] .omega-mode-tabs button{transition:none!important}
 html[data-motion="off"] .world-command .omega-command .omega-globe{animation:none!important;opacity:.9!important}
 html[data-motion="off"] .world-command .omega-command .omega-webgl-stage{display:none!important}
 html[data-motion="off"] .world-command .omega-command .omega-gate a{transition:none!important}
+
+/* Reserve below-the-fold directory space while its independently split module loads. */
+.world-command .ecosystem-index-skeleton{min-height:360px;margin:28px 0 42px;border-top:1px solid #3c68817d;
+  background:linear-gradient(100deg,transparent,#1c496135,transparent);background-size:200% 100%;
+  border-radius:9px;position:relative}
+.world-command .ecosystem-index-skeleton::after{content:'Направления OSGARD загружаются…';
+  position:absolute;top:65px;left:5px;font:650 14px/1.6 Inter,Arial,sans-serif;color:#a3c9d9}
