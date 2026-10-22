@@ -84,7 +84,7 @@ const normalize = (value: string) => value.toLocaleLowerCase('ru-RU').replace(/�
 const englishKeys = "qwertyuiop[]asdfghjkl;'zxcvbnm,."
 const russianKeys = "йцукенгшщзхъфывапролджэячсмитьбю"
 export function recoverRussianKeyboard(query: string): string {
-  if (!/^[a-z\\[\\]\\;\\',.\\/\\s-]+$/i.test(query) || query.length > 100) return query
+  if (query.length > 100 || [...query.toLowerCase()].some(char => !englishKeys.includes(char) && char !== ' ' && char !== '-')) return query
   return [...query.toLowerCase()].map(char => {
     const index = englishKeys.indexOf(char)
     return index < 0 ? char : russianKeys[index]
