@@ -51,6 +51,24 @@ test('Navigator opens a real Development section, keeps only per-tab recent shor
   await expect(trigger(page)).toBeFocused()
 })
 
+test('Navigator ranks TEDES before portfolio and opens its real public case', async ({ page }) => {
+  const errors = []
+  page.on('pageerror', error => errors.push(error.message))
+  await page.goto('/development')
+  await page.keyboard.press('Control+k')
+  const dialog = quickDialog(page)
+  const search = dialog.getByRole('combobox', { name: 'Поиск по разделам OSGARD' })
+  await search.fill('TEDES')
+  const results = dialog.getByRole('option')
+  await expect(results).toHaveCount(2)
+  await expect(results.nth(0)).toHaveAttribute('href', '/development/tedes/')
+  await expect(results.nth(1)).toHaveAttribute('href', '/development#cases')
+  await search.press('Enter')
+  await expect(page).toHaveURL(/\/development\/tedes\/?$/)
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('TEDES')
+  expect(errors).toEqual([])
+})
+
 test('Navigator fits on mobile and opens real seven-game archive without replacing full Play', async ({ page }) => {
   await page.goto('/play')
   await trigger(page).click()
