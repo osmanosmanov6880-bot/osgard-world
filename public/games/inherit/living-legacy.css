@@ -182,3 +182,16 @@ body.living-legacy .world>.objective{background:#0b333acc;border-radius:12px}
    bottom:185px;
  }
 }
+
+
+/* The first-play coach and the chapter headline are two full-size text panels
+ * in the same upper-left area. Preserve the story in the DOM but do not paint
+ * it behind the actual onboarding choices; it returns when the coach closes. */
+body.living-legacy .world:has(>.inherit-first-steps:not([hidden]))>.hero{
+ opacity:0;
+ pointer-events:none;
+}
+body.living-legacy .world:has(>.inherit-first-steps:not([hidden]))>.hint{
+ opacity:0;
+ pointer-events:none;
+}
