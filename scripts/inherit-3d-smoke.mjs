@@ -5,9 +5,10 @@ import {spawnSync} from 'node:child_process';
 import {coastline,fieldHeight,hash,noise,screenToTerrain,nativeValidPoint,stableObjects,vegetation,worldStateSignature} from './inherit-3d/terrain-core.mjs';
 import * as THREE from 'three';
 import {makeTrace,disposeTraces,premiumAssetsInfo} from './inherit-3d/trace-models.mjs';
+import {makeHeritageEnvironment,heritageEnvironmentInfo} from './inherit-3d/heritage-environment.mjs';
 const get=path=>readFileSync(path,'utf8');
 const root='public/games/inherit/';
-const src=['scripts/inherit-3d/aaa-three-entry.mjs','scripts/inherit-3d/world-geometry.mjs','scripts/inherit-3d/trace-models.mjs','scripts/inherit-3d/premium-sculptures.mjs','scripts/inherit-3d/artifact-atelier.mjs','scripts/inherit-3d/terrain-core.mjs'];
+const src=['scripts/inherit-3d/aaa-three-entry.mjs','scripts/inherit-3d/world-geometry.mjs','scripts/inherit-3d/trace-models.mjs','scripts/inherit-3d/premium-sculptures.mjs','scripts/inherit-3d/artifact-atelier.mjs','scripts/inherit-3d/heritage-environment.mjs','scripts/inherit-3d/terrain-core.mjs'];
 const index=get(root+'index.html'),css=get(root+'aaa-3d.css'),sw=get(root+'sw.js'),
   entry=get(src[0]),world=get(src[1]),props=get(src[2]),pkg=JSON.parse(get('package.json'));
 let total=0;const check=(title,fn)=>{fn();console.log('PASS',title);total++};
@@ -82,6 +83,78 @@ check('Dense saved worlds choose quality by visible center and cap local point l
 check('Instanced environment includes multi-layer canopies, woodland flora and a real footbridge',()=>{
  for(const term of ['crownsPerTree','branchPerTree','new THREE.InstancedMesh','grassGoal','blossomGoal','plankCount','bridge.add(deck)'])
   assert.ok(world.includes(term),'Missing '+term);
+});
+check('High-detail architectural landmarks are genuine offline PBR geometry, not a billboard',()=>{
+ const source=get('scripts/inherit-3d/heritage-environment.mjs');
+ const high=makeHeritageEnvironment({quality:'high'});
+ const medium=makeHeritageEnvironment({quality:'medium'});
+ const low=makeHeritageEnvironment({quality:'low'});
+ assert.deepEqual(high.children.map(c=>c.userData.heritageSite),['sanctuary','harbor']);
+ assert.equal(high.children[1].children.some(o=>o.userData.heritageSite==='skiff'),true);
+ assert.equal(high.userData.quality,'high');
+ let highTriangles=0,lowTriangles=0,drawCalls=0,instancedMeshes=0,normalMaps=0;
+ const inspect=(root,includeStats)=>{
+  let triangles=0;
+  root.traverse(o=>{
+   if(!o.isMesh)return;
+   const geometry=o.geometry;
+   assert.ok(geometry?.attributes.position, 'Architectural mesh has no vertices: '+o.name);
+   const arr=geometry.attributes.position.array;
+   assert.ok(arr.length>0);
+   for(const n of arr)assert.ok(Number.isFinite(n),'Non-finite monument/harbor vertex');
+   const tris=(geometry.index?geometry.index.count:geometry.attributes.position.count)/3;
+   triangles+=tris*(o.isInstancedMesh?o.count:1);
+   if(includeStats){
+    drawCalls++;
+    if(o.isInstancedMesh){instancedMeshes++;assert.ok(o.count<=144);}
+    if(o.material?.normalMap)normalMaps++;
+   }
+  });
+  return triangles;
+ };
+ highTriangles=inspect(high,true);
+ const medTriangles=inspect(medium,false);
+ lowTriangles=inspect(low,false);
+ assert.ok(highTriangles>medTriangles && medTriangles>lowTriangles,'LOD tiers must be visibly different');
+ assert.ok(highTriangles>=lowTriangles*1.7,'Desktop architectural detail too low');
+ assert.ok(drawCalls<125,'Too many draw calls for optional architectural ensemble');
+ assert.ok(instancedMeshes>=12,'Stone courses, mosaics and driftwood must be batched');
+ assert.ok(normalMaps>=3,'Stone surfaces must have real micro normal maps');
+ assert.match(source,/new THREE\.DataTexture/);
+ assert.match(source,/new THREE\.TubeGeometry/);
+ assert.match(source,/new THREE\.InstancedMesh/);
+ assert.match(source,/new THREE\.MeshStandardMaterial/);
+ assert.doesNotMatch(source,/fetch\s*\(|XMLHttpRequest|https?:\/\//);
+ assert.match(world,/makeHeritageEnvironment\(\{quality\}\)/);
+ const info=heritageEnvironmentInfo();
+ assert.equal(info.externalAssets,0);
+ assert.equal(info.proceduralNormalTextures,1);
+ assert.equal(info.proceduralRoughnessTextures,1);
+ assert.ok(info.sites.includes('skiff'));
+ console.log('  3D geometry: high='+Math.round(highTriangles)+' triangles, medium='+Math.round(medTriangles)+
+  ', low='+Math.round(lowTriangles)+', materials='+info.materials+', meshes='+drawCalls+', instanced='+instancedMeshes);
+});
+check('Coastal heritage meshes are seeded, finite and bounded for mobile',()=>{
+ const low=makeHeritageEnvironment({quality:'low'});
+ const low2=makeHeritageEnvironment({quality:'low'});
+ const info=heritageEnvironmentInfo();
+ assert.ok(info.tiers.high.columns>=info.tiers.medium.columns*1.3);
+ assert.ok(info.tiers.medium.columns>=info.tiers.low.columns);
+ const getMeshes=root=>{
+  const out=[];
+  root.traverse(o=>{
+   if(o.isInstancedMesh)out.push({name:o.name,count:o.count,matrix:Array.from(o.instanceMatrix.array.slice(0,48))});
+  });
+  return out;
+ };
+ assert.deepEqual(getMeshes(low),getMeshes(low2),'Procedural terrain props must be deterministic');
+ assert.ok(getMeshes(low).every(x=>x.count<=48),'Mobile detail mesh cap exceeded');
+ assert.equal(low.userData.assetStats.flutedColumns,6);
+ assert.equal(low.userData.assetStats.harborPlanks,16);
+ assert.equal(low.userData.assetStats.boatHullSegments,96);
+ const high=makeHeritageEnvironment({quality:'high'});
+ assert.ok(high.userData.assetStats.stoneBlocks>low.userData.assetStats.stoneBlocks);
+ assert.ok(high.userData.assetStats.coastalDebris>low.userData.assetStats.coastalDebris);
 });
 check('Artifact Atelier has genuinely lit HD geometry and read-only controls',()=>{
  const atelier=get('scripts/inherit-3d/artifact-atelier.mjs');
