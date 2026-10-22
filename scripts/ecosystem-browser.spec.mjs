@@ -2283,3 +2283,29 @@ test('INHERIT R15 never grants account editing rights or autoplay audio',async({
  expect(await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()))).toBe(before);
  expect(errors).toEqual([]);
 });
+
+
+test('INHERIT R15 mobile action rail stays tappable without a viewport-fixed overlay',async({page},info)=>{
+ if(info.project.name!=='mobile')test.skip();
+ const errors=await prepareStandaloneGame(page);
+ await page.goto('/games/inherit/?lang=ru',{waitUntil:'domcontentloaded'});
+ const dock=page.locator('.dock.cine-dock');
+ await expect(dock).toBeVisible();
+ expect(await dock.evaluate(el=>getComputedStyle(el).position)).toBe('relative');
+ const pass=page.locator('#pass');
+ await expect(pass).toBeInViewport();
+ const world=page.locator('#world');
+ await expect(world).toBeInViewport();
+ // An action below the island must accept a genuine pointer click, even
+ // after the browser scrolls the element into view.
+ const enter=page.locator('#inherit-enter');
+ await enter.click({timeout:10000});
+ await expect(world).toBeFocused();
+ await world.press('Enter');
+ await expect(page.locator('#objects>.placed')).toHaveCount(1);
+ const inspector=page.locator('.inherit-trace-launcher');
+ await expect(inspector).toBeEnabled();
+ await inspector.click({timeout:10000});
+ await expect(page.locator('.inherit-trace-inspector')).toBeVisible();
+ expect(errors).toEqual([]);
+});
