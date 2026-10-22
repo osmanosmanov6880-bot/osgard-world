@@ -62,6 +62,8 @@ function run(settings){
   const latest=kit.stats
   assert.ok(latest.vehicleParts>=50)
   assert.ok(latest.vehicleBatches<=18)
+  assert.equal(latest.vehicleCount,1)
+  assert.ok(latest.maxVehicleBatches<=18)
   assert.ok(latest.characterParts>=5)
   assert.ok(car.children.some(g=>g.children.some(m=>m.isInstancedMesh)))
   kit.setQuality('eco')
