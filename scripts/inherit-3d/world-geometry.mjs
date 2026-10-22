@@ -3,17 +3,18 @@ import * as THREE from 'three';
 import {coastline,fieldHeight,vegetation,hash} from './terrain-core.mjs';
 import {makeHeroTree,makeTrace} from './trace-models.mjs';
 import {makeHeritageEnvironment} from './heritage-environment.mjs';
+import {makeSurfaceMaterial,surfacePackStats} from './cinematic-surfaces.mjs';
 const earth=new THREE.MeshStandardMaterial({color:0x655f4d,roughness:1});
 const rock=new THREE.MeshStandardMaterial({color:0x697b75,roughness:.95});
 const waterStream=new THREE.MeshStandardMaterial({color:0x3b9f9b,metalness:.28,roughness:.27,transparent:true,opacity:.91,emissive:0x105b63,emissiveIntensity:.16});
 function mesh(geo,mat){const m=new THREE.Mesh(geo,mat);m.castShadow=true;m.receiveShadow=true;return m;}
 function topGeometry({rings=29,segments=92}={}){
- const positions=[],colors=[],indices=[],c=new THREE.Color();
+ const positions=[],colors=[],uvs=[],indices=[],c=new THREE.Color();
  for(let ring=0;ring<=rings;ring++){
   const radius=ring/rings;
   for(let i=0;i<segments;i++){
    const a=i/segments*Math.PI*2,p=coastline(a),x=p.x*radius,z=p.z*radius,y=fieldHeight(x,z);
-   positions.push(x,y,z);
+   positions.push(x,y,z);uvs.push(x/9,z/9);
    const variation=(hash(x*1.47,z*1.28,78)-.5)*.10;
    if(radius>.89)c.setHSL(.116,.34,.63+variation);
    else if(radius>.67)c.setHSL(.27,.30,.38+variation);
@@ -26,17 +27,18 @@ function topGeometry({rings=29,segments=92}={}){
  }
  const geo=new THREE.BufferGeometry();
  geo.setIndex(indices);geo.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
- geo.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));geo.computeVertexNormals();
+ geo.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));
+ geo.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));geo.computeVertexNormals();
  return geo;
 }
 function cliffGeometry(){
- const edges=92,vertical=7,positions=[],indices=[],colors=[],c=new THREE.Color();
+ const edges=92,vertical=7,positions=[],indices=[],colors=[],uvs=[],c=new THREE.Color();
  for(let j=0;j<=vertical;j++){
   const fraction=j/vertical;
   for(let i=0;i<edges;i++){
    const a=i/edges*Math.PI*2,p=coastline(a),scale=1-fraction*.054;
    const x=p.x*scale,z=p.z*scale,y=fieldHeight(p.x,p.z)-fraction*(3.1+.4*Math.sin(4*a));
-   positions.push(x,y,z);c.setHSL(.10,.09,.34-fraction*.17+(hash(i,j,19)-.5)*.09);
+   positions.push(x,y,z);uvs.push(i/edges*7,j/vertical*1.5);c.setHSL(.10,.09,.34-fraction*.17+(hash(i,j,19)-.5)*.09);
    colors.push(c.r,c.g,c.b);
    if(j<vertical){
     const k=j*edges+i,n=j*edges+(i+1)%edges;indices.push(k,k+edges,n,n,k+edges,n+edges);
@@ -45,7 +47,8 @@ function cliffGeometry(){
  }
  const geo=new THREE.BufferGeometry();geo.setIndex(indices);
  geo.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
- geo.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));geo.computeVertexNormals();return geo;
+ geo.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));
+ geo.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));geo.computeVertexNormals();return geo;
 }
 function ribbon(points,width,mat){
  const positions=[],ind=[];
@@ -112,10 +115,10 @@ const waterFragment=[
 ].join('\n');
 export function makeArchipelago({quality='high'}={}){
  const terrain=new THREE.Group();terrain.name='Original playable 3D island';
- const grassMat=new THREE.MeshStandardMaterial({vertexColors:true,roughness:.96,side:THREE.DoubleSide});
+ const grassMat=makeSurfaceMaterial('forest',{quality,vertexColors:true,side:THREE.DoubleSide});
  terrain.add(mesh(topGeometry({rings:quality==='low'?19:29,segments:quality==='low'?60:92}),grassMat));
- terrain.add(mesh(cliffGeometry(),new THREE.MeshStandardMaterial({vertexColors:true,roughness:.99,side:THREE.DoubleSide})));
- const undershell=mesh(new THREE.CylinderGeometry(18.6,15.2,1.2,12),earth);
+ terrain.add(mesh(cliffGeometry(),makeSurfaceMaterial('basalt',{quality,vertexColors:true,side:THREE.DoubleSide})));
+ const undershell=mesh(new THREE.CylinderGeometry(18.6,15.2,1.2,12),makeSurfaceMaterial('earth',{quality}));
  undershell.scale.z=1.19;undershell.position.y=-2.5;terrain.add(undershell);
  const sea=new THREE.Mesh(new THREE.PlaneGeometry(140,110,20,20),new THREE.ShaderMaterial({
   uniforms:{uTime:{value:0},uDawn:{value:.53}},
@@ -130,11 +133,11 @@ export function makeArchipelago({quality='high'}={}){
  const crownsPerTree=quality==='high'?8:quality==='medium'?5:2;
  const branchPerTree=quality==='high'?5:quality==='medium'?3:0;
  const trunkInst=new THREE.InstancedMesh(new THREE.CylinderGeometry(.11,.24,2.7,quality==='high'?12:7),
-  new THREE.MeshStandardMaterial({color:0x695137,roughness:.98}),trees.length);
+  makeSurfaceMaterial('bark',{quality}),trees.length);
  const crownInst=new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1,quality==='high'?2:1),
-  new THREE.MeshStandardMaterial({color:0x639166,roughness:.95}),trees.length*crownsPerTree);
+  makeSurfaceMaterial('forest',{quality}),trees.length*crownsPerTree);
  const branchInst=new THREE.InstancedMesh(new THREE.CylinderGeometry(.55,1,1,7),
-  new THREE.MeshStandardMaterial({color:0x67523a,roughness:.97}),trees.length*branchPerTree);
+  makeSurfaceMaterial('bark',{quality}),trees.length*branchPerTree);
  trunkInst.castShadow=true;trunkInst.receiveShadow=true;
  crownInst.castShadow=true;crownInst.receiveShadow=true;
  branchInst.castShadow=quality==='high';
@@ -173,7 +176,7 @@ export function makeArchipelago({quality='high'}={}){
  if(branchPerTree){branchInst.instanceMatrix.needsUpdate=true;terrain.add(branchInst);}
  else{branchInst.geometry.dispose();branchInst.material.dispose();}
  const shrubs=new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1,1),
-  new THREE.MeshStandardMaterial({color:0x6d9c69,roughness:1}),bushes.length);
+  makeSurfaceMaterial('fern',{quality}),bushes.length);
  shrubs.castShadow=true;
  for(let i=0;i<bushes.length;i++){
   const p=bushes[i],s=p.size*.54;dummy.position.set(p.x,p.y+.4*s,p.z);
@@ -181,7 +184,7 @@ export function makeArchipelago({quality='high'}={}){
  }
  shrubs.instanceMatrix.needsUpdate=true;terrain.add(shrubs);
  const count=quality==='low'?44:125;
- const pebbles=new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1,0),rock,count);
+ const pebbles=new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1,0),makeSurfaceMaterial('basalt',{quality}),count);
  for(let i=0;i<count;i++){
   const theta=i*2.399963,rad=4+Math.sqrt((i+1)/count)*18.5;
   const x=Math.cos(theta)*rad,z=Math.sin(theta)*rad*.82;
@@ -194,7 +197,7 @@ export function makeArchipelago({quality='high'}={}){
  // Hundreds of unique clumps remain THREE instanced — 2-3 draw calls total.
  const grassGoal=quality==='high'?980:quality==='medium'?540:165;
  const blade=new THREE.InstancedMesh(new THREE.ConeGeometry(.095,.61,4),
-  new THREE.MeshStandardMaterial({color:0x6c986b,roughness:1,side:THREE.DoubleSide}),grassGoal);
+  makeSurfaceMaterial('fern',{quality,side:THREE.DoubleSide}),grassGoal);
  blade.castShadow=false;blade.receiveShadow=true;
  const blossomGoal=quality==='high'?180:quality==='medium'?90:22;
  const blossoms=new THREE.InstancedMesh(new THREE.IcosahedronGeometry(.085,1),
@@ -274,5 +277,5 @@ export function makeArchipelago({quality='high'}={}){
  const beacon=makeTrace('light',{size:1.25,quality:landmarkQuality,seed:56,allowLight:quality==='high'});
  beacon.position.set(-3,fieldHeight(-3,4),4);landmarks.add(beacon);
  terrain.add(landmarks);
- return {root:terrain,waterUniforms:sea.material.uniforms,landmarks,heritage};
+ return {root:terrain,waterUniforms:sea.material.uniforms,landmarks,heritage,surfaceStats:surfacePackStats()};
 }
