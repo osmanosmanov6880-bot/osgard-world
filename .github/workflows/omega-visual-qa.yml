@@ -4,6 +4,7 @@ on:
     branches: [master]
     paths:
       - 'godot/empire-omega/tests/horizon_capture.gd'
+      - 'godot/empire-omega/tests/horizon_driving_capture.gd'
       - '.github/workflows/omega-visual-qa.yml'
   workflow_dispatch:
 permissions:
@@ -38,6 +39,10 @@ jobs:
               --script res://tests/horizon_capture.gd
           test -s screenshots/omega_1600x900.png
           test -s screenshots/omega_1366x768.png
+          timeout --signal=TERM --kill-after=8s 120s xvfb-run -a -s '-screen 0 1920x1080x24' \
+            godot --path godot/empire-omega --rendering-method gl_compatibility \
+              --script res://tests/horizon_driving_capture.gd
+          test -s screenshots/omega_horizon_r3_driving_1600x900.png
           file screenshots/*.png
       - uses: actions/upload-artifact@v4
         if: always()
