@@ -4,7 +4,7 @@
   "release": "v0.22-browser-companion",
   "route": "/games/time-omega-preview/",
   "source_path": "public/games/time-omega-preview/index.html",
-  "source_blob_sha": "c2a9a5eb9ae8aba5eaf7dc215b6fe495ea23ca16",
+  "source_blob_sha": "d62bb0b2dfc44a802fefb98c0e3becc22f0b8189",
   "artifact_type": "standalone HTML browser strategy",
   "godot_3d_exported": false,
   "integrity_check": "scripts/time-prototype-smoke.mjs",
