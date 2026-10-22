@@ -113,7 +113,7 @@ test('UI has localized, accessible read-only graph and separate manual placement
   assert.ok(html.includes('./'+asset),asset);
   assert.ok(sw.includes('/games/inherit/'+asset),asset);
  }
- assert.match(sw,/inherit-shell-v27/);
+ assert.match(sw,/inherit-shell-v28/);
  for(const needed of ['ru:','en:','zh:','showModal','aria-labelledby','createElementNS','pointer-events:none','requestAnimationFrame']){
   assert.ok((ui+css).includes(needed),needed);
  }
