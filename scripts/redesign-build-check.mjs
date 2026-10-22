@@ -21,7 +21,7 @@ for(const route of ['src/WorldHome.tsx','src/IntelligenceHome.tsx','src/PlayHome
  assert.ok([...keys].every(k=>!k.includes('osaLessonGuides')&&!k.includes('osaLessonReading')),'Full lesson content leaked into '+route)
  if(route==='src/PlayHome.tsx')assert.ok([...keys].every(key=>!['PlayGameRoute','PlayExploreSections'].includes(manifest[key].name)),'Deferred PLAY sections or session controller leaked into catalogue entry')
  const jsGzipBytes=files.reduce((sum,file)=>sum+gzipSync(readFileSync('dist/'+file)).length,0)
- assert.ok(jsGzipBytes<=95*1024,'Landing JavaScript exceeds the 95 KiB gzip budget: '+route)
+ assert.ok(jsGzipBytes<=95*1024,'Landing JavaScript exceeds the 95 KiB gzip budget: '+route+' ('+jsGzipBytes+' / '+(95*1024)+' bytes)')
  const css=[...new Set([...keys].flatMap(k=>manifest[k].css||[]))]
  assert.ok(css.every(f=>!f.includes('legacyStyles')),'Legacy styles leaked into new landing')
  reports.push({route,jsFiles:files,jsGzipBytes,cssFiles:css,cssGzipBytes:css.reduce((sum,file)=>sum+gzipSync(readFileSync('dist/'+file)).length,0)})
