@@ -14,7 +14,7 @@ permissions:
 
 concurrency:
   group: remix-nebula3d-native
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   native-build:
@@ -27,13 +27,15 @@ jobs:
       - name: Unpack pinned 3D sources
         run: |
           set -euo pipefail
-          base64 -d godot/nebula-3d/r2-source.tar.xz.b64 > /tmp/nebula.tar.xz
-          echo '6477fe1c457071068e847c0b4490eba4fb0a34528d22faa30efd86bd31b6871a  /tmp/nebula.tar.xz' | sha256sum -c -
+          base64 -d godot/nebula-3d/r3-source.tar.xz.b64 > /tmp/nebula.tar.xz
+          echo 'cc4845ec9d2aa1bb5dec358566f473b9fc9331180e874ca04334e70ff209d26c  /tmp/nebula.tar.xz' | sha256sum -c -
           tar -tJf /tmp/nebula.tar.xz > /tmp/nebula-list
           ! grep -E '(^/|(^|/)\.\.(/|$))' /tmp/nebula-list
           tar -xJf /tmp/nebula.tar.xz -C godot/nebula-3d
           test -s godot/nebula-3d/scripts/world.gd
           test -s godot/nebula-3d/tests/runtime_smoke.gd
+          test -s godot/nebula-3d/scripts/premium_architecture.gd
+          python3 godot/nebula-3d/check_source.py
       - name: Install official Godot 4.7.2 and Web templates
         run: |
           set -euo pipefail
@@ -122,7 +124,7 @@ jobs:
           python3 - <<'PY'
           import json,os,urllib.request
           state='success' if os.getenv('OUTCOME')=='success' else 'failure'
-          detail='Godot 4.7.2 runtime and wasm export passed; SSH queued' if state=='success' else 'Native build failed: '+(os.getenv('FIRST_ERROR') or 'check Actions logs')
+          detail='Premium 3D R3: engine smoke and WebAssembly passed; SSH queued' if state=='success' else 'Native build failed: '+(os.getenv('FIRST_ERROR') or 'check Actions logs')
           data=json.dumps({'state':state,'context':'remix/nebula3d-native-build','description':detail[:135],'target_url':'https://osgard.world/games/remix/arena-v2/nebula-3d/'}).encode()
           req=urllib.request.Request('https://api.github.com/repos/'+os.environ['REPO']+'/statuses/'+os.environ['SHA'],data=data,headers={'Authorization':'Bearer '+os.environ['GH_TOKEN'],'Accept':'application/vnd.github+json','Content-Type':'application/json'},method='POST')
           try:
