@@ -29,7 +29,7 @@ try {
     .map((match) => [match[1], match[2]])
   assert.equal(catalogTitles.length, 19, 'Expected all nineteen source game titles')
   assert.deepEqual(breadcrumbTitles, catalogTitles, 'Breadcrumb metadata must match source game titles')
-  assert.ok(gameCatalogText.includes("export { cases } from './featuredCases'"), 'Case cards must have one source')
+  assert.ok(gameCatalogText.includes("export { cases } from './featuredCases.ts'"), 'Case cards must have one source')
   const rootSchemas = scripts(readFileSync(join(repo, 'index.html'), 'utf8'))
   const originalGraph = rootSchemas.find(schema => Array.isArray(schema.data['@graph']))?.data
   assert.ok(originalGraph, 'root Organization/WebSite graph is required')
