@@ -56,6 +56,10 @@ func _run() -> void:
     if not check(skyline_r6 != null, "R6 sculptural skyline missing"):return
     if not check(skyline_r6.landmark_count == 6, "Six 3D arcologies required"):return
     if not check(skyline_r6.facade_fins >= 1000, "3D tower mullions insufficient"):return
+    var hangar_solid = world.get_node_or_null("HeroMegadocksR6/R6_EnclosedHangar_00_0/HangarLeftWallCollision")
+    if not check(hangar_solid is StaticBody3D, "Hangar collision missing"):return
+    var arcology_solid = world.get_node_or_null("SculpturalSkylineR6/R6_SculptedArcology_00/ArcologyCollision")
+    if not check(arcology_solid is StaticBody3D, "Arcology navigation collision missing"):return
     if not check(is_instance_valid(world.hud_objective),"Cinematic HUD objective missing"):return
     if not check(world.drones.size() >= 22, "Traffic simulation missing"):return
     if not check(is_instance_valid(world.radar), "Mission radar missing"):return
