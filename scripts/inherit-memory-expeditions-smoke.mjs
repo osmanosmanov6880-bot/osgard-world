@@ -155,7 +155,7 @@ check('R12 client assets remain localized, offline and strictly no game writes',
   assert.ok(html.includes('./'+name),'HTML missing '+name);
   assert.ok(sw.includes('/games/inherit/'+name),'PWA missing '+name);
  }
- assert.match(sw,/inherit-shell-v26/);
+ assert.match(sw,/inherit-shell-v27/);
  for(const label of ['ru:','en:','zh:'])assert.ok(ui.includes(label));
  for(const forbidden of ['fetch(', 'navigator.sendBeacon(', 'localStorage.setItem(', 'InheritGame.apply(', 'innerHTML=']){
   assert.ok(!ui.includes(forbidden),'unexpected action '+forbidden);
