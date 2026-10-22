@@ -59,7 +59,9 @@ assert.ok(shell.includes('Control+K Meta+K') && shell.includes("event.key.toLowe
 assert.ok(shell.includes('aria-expanded={quickOpen}') && shell.includes('onClose={closeQuickNav}'), 'Trigger and modal state must be accessible')
 assert.ok(palette.includes('role="dialog" aria-modal="true"') && palette.includes("onKeyDown={handleInputKey}"), 'Dialog and keyboard search contract required')
 assert.ok(palette.includes('navigateBrowserUrl(command.href)') && palette.includes('hasUnsavedChanges()'), 'Navigator must preserve SPA and dirty-form guards')
-assert.ok(palette.includes("document.body.style.overflow = before") && palette.includes("document.removeEventListener('keydown'"), 'Scroll lock and key listeners must clean up')
+assert.ok(palette.includes("document.body.style.overflow = before") && palette.includes("document.removeEventListener('keydown'") &&
+  palette.includes('previousInert') && palette.includes('observer?.disconnect()') &&
+  palette.includes('element.inert = inert'), 'Modal must release scroll, listeners and previous background inert state')
 assert.ok(page.includes("<OsgardRouteSkeleton theme={theme} />"), 'Deferred sections must render the honest loading shell')
 assert.ok(loading.includes('aria-busy="true"') && loading.includes('role="status"') && loading.includes('min-height') === false, 'Loading state must be semantic and CSS-driven')
 assert.ok(navCss.includes('@media(max-width:720px)') && navCss.includes('max-height:100dvh'), 'Navigator must fit the mobile viewport')
