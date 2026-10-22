@@ -310,6 +310,7 @@ try{
  cold=new THREE.DirectionalLight(0xa2ccd0,.86);cold.position.set(25,12,12);scene.add(cold);
  const built=makeArchipelago({quality:lowPower?'low':quality});
  staticWorld=built.root;waterUniforms=built.waterUniforms;
+ status.heritageDetails=built.heritage?.userData?.assetStats||null;
  scene.add(staticWorld);
  traceRoot=new THREE.Group();traceRoot.name='Actual saved traces';scene.add(traceRoot);
  status.available=true;
