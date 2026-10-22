@@ -79,6 +79,8 @@ test('Original 2.5D placement remains clickable beneath decoration',()=>{
  assert.match(css,/world-alive-handoff\{[^}]*pointer-events:none/s);
  assert.match(css,/world-alive-burst\{[^}]*pointer-events:none/s);
  assert.match(css,/@media\(max-width:740px\)/);
+ assert.match(js,/dock\.insertAdjacentElement\('afterend',section\)/);
+ assert.match(css,/\.app>\.world-alive-hub\{[^}]*order:4/s);
 });
 test('Exact game delivery includes the three new assets',()=>{
  for(const name of ['world-alive-engine.js','world-alive-ui.js','world-alive.css']){
