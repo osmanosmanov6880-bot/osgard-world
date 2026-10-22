@@ -154,7 +154,11 @@ function init(){
  message.textContent='';detail.textContent='';
  footer.append(message,effects,audio);
  section.append(header,stats,gameRow,footer,detail);
- journey.append(section);
+ // Keep the island visible in the first viewport on desktop and mobile.
+ // The extended goals hub follows the actual controls, never pushes the playfield below the fold.
+ const dock=q('.app > .dock');
+ if(!dock)return;
+ dock.insertAdjacentElement('afterend',section);
  const feedback=make('span','world-alive-feedback');feedback.setAttribute('role','status');
  feedback.setAttribute('aria-live','polite');
  feedback.setAttribute('aria-atomic','true');section.append(feedback);
