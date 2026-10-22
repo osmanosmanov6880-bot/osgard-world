@@ -56,6 +56,11 @@ on:
       - "scripts/production-health-watch.mjs"
       - "scripts/activate-frontend-remote.sh"
       - "scripts/deploy-workflow-smoke.mjs"
+      # Accept new production Omega acceptance contracts and replay SSH deployment
+      # even when application assets have not otherwise changed.
+      - "scripts/omega-production.spec.mjs"
+      - "playwright.omega-production.config.mjs"
+      - ".github/workflows/omega-production-acceptance.yml"
       - "scripts/tedes-case-smoke.mjs"
       - "scripts/phantom-case-smoke.mjs"
       - "scripts/auto-style-case-smoke.mjs"
