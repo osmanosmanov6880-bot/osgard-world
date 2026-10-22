@@ -71,6 +71,8 @@ check('Scene does not steal native pointer events',()=>{
  assert.match(css,/pointer-events:none/);
  assert.match(entry,/canvas\.style\.pointerEvents='none'/);
  assert.match(entry,/world\.addEventListener\('click',event=>/);
+ assert.match(entry,/raycaster\.intersectObjects\(traceRoot\.children,true\)/);
+ assert.match(entry,/target\.click\(\)/);
  assert.match(entry,/event\.stopImmediatePropagation\(\)/);
 });
 check('WebGL loss, reduced motion and offline 2D fallback are implemented',()=>{
