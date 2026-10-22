@@ -453,7 +453,7 @@ jobs:
           REMOTE_SCRIPT="/tmp/activate-frontend-remote-${GITHUB_RUN_ID}.sh"
           scp -i ~/.ssh/osgard_deploy scripts/activate-frontend-remote.sh "$USER@$HOST:$REMOTE_SCRIPT"
           ssh -i ~/.ssh/osgard_deploy "$USER@$HOST" "docker cp '$REMOTE_RELEASE_DIR/osgard-world-release.tgz' osgard-world:'$REMOTE_ARCHIVE' && chmod 700 '$REMOTE_SCRIPT' && OSGARD_ARCHIVE='$REMOTE_ARCHIVE' OSGARD_CORE_IMAGE='osgard-core-api:${GITHUB_SHA}' OSGARD_REMIX_GUARD_IMAGE='osgard-remix-guard:${GITHUB_SHA}' OSGARD_CONTAINER=osgard-world '$REMOTE_SCRIPT'"
-      - name: Verify byte-identical published INHERIT R14 files after SSH activation
+      - name: Verify exact INHERIT R14 public files after SSH activation
         env:
           OSGARD_BASE_URL: https://osgard.world
         run: node scripts/inherit-living-live-assets.mjs
