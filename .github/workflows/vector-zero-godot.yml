@@ -58,4 +58,6 @@ jobs:
         with:
           name: vector-zero-blackfield-godot-web
           path: godot/vector-zero/.build-web/
+          include-hidden-files: true
+          if-no-files-found: error
           retention-days: 14
