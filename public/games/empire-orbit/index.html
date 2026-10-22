@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#050a13">
   <meta name="color-scheme" content="dark">
-  <meta name="generator" content="OSGARD EMPIRE standalone v20">
+  <meta name="generator" content="OSGARD EMPIRE standalone v25">
   <meta name="description" content="OSGARD: EMPIRE — Империя времени. Живая галактика, соперничающие державы, торговля, кризисы и стратегические победы. Три языка, локальное сохранение.">
   <meta property="og:title" content="OSGARD: EMPIRE — Империя времени">
   <meta property="og:description" content="Стратегическая игра о времени, развитии и выборе. Локальное сохранение в браузере.">
@@ -551,11 +551,334 @@ html[data-quality='low'] .rift-ring{animation:none!important;filter:none}html[da
   border-left-color:#df6775;color:#ffd8db}
 .pilot-control-banner[hidden]{display:none!important}
 
+/* ============================================================================
+   OSGARD AURORA / FIVE WAVES 2026
+   W1 clarity · W2 premium visuals · W3 legible data · W4 responsive smoothness
+   W5 accessible performance rules. Existing game and server rules are unchanged.
+   ============================================================================ */
+:root{
+  --void:#050a15;--night:#071324;--panel:#0d1a2c;--panel-2:#10263b;
+  --gold:#edbd71;--light-gold:#ffe1a6;--muted-gold:#ba9965;
+  --text:#f3f6fd;--muted:#b3c3d3;--line:rgba(146,181,220,.2);
+  --line-bright:rgba(242,199,123,.5);--r:18px;
+  --wave-cyan:#58d8ec;--wave-violet:#9b8bea;--wave-success:#78e4b7;
+}
+html[data-theme='nebula']{
+  --void:#060b1b;--night:#09132a;--panel:#111a35;--panel-2:#181f44;
+  --gold:#f4a6b9;--light-gold:#ffe0e8;--muted-gold:#ba7a98;
+  --line:rgba(153,151,237,.24);--line-bright:rgba(245,165,195,.51);
+  --wave-cyan:#75ddf6;--wave-violet:#c994ff;
+}
+html{scroll-padding-top:100px}
+body{
+  font-size:14px;line-height:1.55;letter-spacing:.006em;
+  background:
+   radial-gradient(ellipse 58% 26% at 53% 20%,rgba(33,90,126,.30),transparent 75%),
+   radial-gradient(ellipse 34% 24% at 100% 0%,rgba(110,60,158,.19),transparent 77%),
+   radial-gradient(ellipse 34% 23% at 0% 55%,rgba(24,119,125,.10),transparent 77%),
+   linear-gradient(180deg,#081222 0%,#050a13 48%,#07101e 100%);
+  color:var(--text);
+}
+.ambient-stars{opacity:.45;mask-image:linear-gradient(#000,#0008 80%,transparent)}
+.app-shell{max-width:1680px;padding-inline:clamp(18px,3.2vw,58px)}
+.global-top{
+  z-index:40;position:relative;display:flex;align-items:center;gap:20px;
+  min-height:81px;height:auto;padding:12px 0;border-color:var(--line);
+}
+.identity{gap:11px;flex:0 0 auto}
+.identity-mark{width:42px;height:42px;border-radius:10px;box-shadow:0 0 28px rgba(114,191,216,.1),inset 0 0 20px rgba(244,202,134,.13)}
+.identity-type strong{font-size:16px;letter-spacing:.09em}
+.identity-type small{font-size:10px;letter-spacing:.04em}
+.global-nav{align-self:stretch;align-items:center;gap:7px;flex:1;min-width:0}
+.global-nav>.nav-link{padding:12px 15px;border-radius:12px;font-size:13px;color:#c8d4e3;transition:background .2s ease, color .2s ease}
+.global-nav>.nav-link:hover,.global-nav>.nav-link.active{color:#fff;background:rgba(123,169,196,.14)}
+.global-nav>.nav-link.active:after{left:15px;right:15px;bottom:4px;height:2px;border-radius:4px}
+.wave-more-menu{position:relative;z-index:60;margin-left:4px}
+.wave-more-menu summary{list-style:none;display:flex;align-items:center;gap:9px;min-height:44px;border:1px solid var(--line);border-radius:12px;padding:0 15px;color:#d6e4ed;font-size:13px;font-weight:750;cursor:pointer;white-space:nowrap;background:rgba(15,31,47,.75)}
+.wave-more-menu summary::-webkit-details-marker{display:none}
+.wave-more-menu summary:after{content:'⌄';font-size:17px;color:var(--gold)}
+.wave-more-menu[open] summary{background:#1c2c41;border-color:var(--line-bright)}
+.wave-more-popover{position:absolute;top:calc(100% + 9px);right:0;width:min(275px,75vw);padding:9px;border:1px solid rgba(186,212,240,.35);border-radius:16px;background:#0b172a;box-shadow:0 20px 60px rgba(0,0,0,.64);display:grid;gap:2px}
+.wave-more-popover>.nav-link{display:block;width:100%;min-height:45px;padding:11px 13px!important;text-align:left;font-size:13px!important;white-space:normal;border-radius:9px;order:unset;max-width:none;background:transparent;color:#d6e1ee}
+.wave-more-popover>.nav-link:hover{background:#22324b;color:white}
+.wave-more-popover>.nav-link:after{display:none}
+.top-tools{gap:7px;margin-left:auto;flex-shrink:0}
+.tool-button{width:40px;height:40px;border-radius:11px;background:rgba(19,39,57,.78);font-size:18px}
+.language-select select{height:40px;border-radius:10px;padding:0 11px;background:rgba(19,39,57,.88);color:#fff}
+.back-link{font-size:11px;padding-left:8px}
+.headline{align-items:center;padding:28px 0 20px;gap:20px}
+.headline h1{margin:8px 0 9px;font:500 clamp(52px,5vw,82px)/.98 var(--serif);letter-spacing:-.025em}
+.headline h1 i{color:#f3c581;text-shadow:0 8px 55px rgba(255,194,112,.2)}
+.headline .overline,.overline{font-size:10.8px;letter-spacing:.105em}
+.headline-copy{max-width:670px;font-size:14px;line-height:1.55;color:#b6c7d6;letter-spacing:0}
+.ranking{min-width:200px;border:1px solid var(--line);border-radius:14px;padding:13px 17px;background:linear-gradient(135deg,rgba(21,43,69,.8),rgba(13,22,40,.8))}
+.ranking strong{font-size:27px;color:#f9e7c9}
+.ranking span:last-child{font-size:10px;color:#a7c6d7}
+.wave-hero-actions{display:flex;flex-wrap:wrap;align-items:center;gap:15px;margin-top:16px}
+.wave-hero-play{display:inline-flex;align-items:center;justify-content:center;gap:23px;min-height:48px;padding:11px 22px;border:1px solid rgba(253,215,157,.7);border-radius:12px;background:linear-gradient(110deg,#ffe2ae,#d9a85f);color:#201c22;font-size:14px;font-weight:850;box-shadow:0 10px 35px rgba(231,172,101,.18);transition:transform .23s ease,box-shadow .23s ease}
+.wave-hero-play:hover{transform:translateY(-2px);box-shadow:0 13px 37px rgba(231,172,101,.3)}
+.wave-hero-play span:last-child{font-size:22px;font-weight:400}
+.wave-save-status{display:flex;align-items:center;gap:7px;color:#94d2bd;font-size:11px;line-height:1.45}
+.wave-save-status:before{content:'';width:7px;height:7px;border-radius:50%;background:var(--wave-success);box-shadow:0 0 12px rgba(126,227,185,.6);flex-shrink:0}
+.metrics{grid-template-columns:1.32fr repeat(3,1fr);border-color:var(--line);background:transparent;box-shadow:0 16px 35px rgba(0,0,0,.17);border-radius:18px}
+.metric,.metric-highlight{min-height:108px;padding:16px 20px;background:linear-gradient(138deg,#101e30d9,#0b1729cf)}
+.metric-highlight{background:linear-gradient(125deg,#152a42,#111d2f 65%,#0c1b2b)}
+.metric:not(:last-child):after{top:18px;height:72px}
+.metric small{font-size:10px;font-family:var(--sans);font-weight:850;letter-spacing:.07em;color:#a8c4d9}
+.metric-highlight small{color:#f5d29a}
+.metric-row strong{font-family:var(--sans);font-size:clamp(24px,2.25vw,34px);font-weight:800;letter-spacing:-.04em}
+.metric-sub{font-family:var(--sans);font-size:10px;color:#aec2d3;letter-spacing:0}
+.metric-icon{font-size:24px;color:var(--wave-cyan)}
+.metric .meter{margin:7px 0 4px;height:5px;background:#253347}
+.metric .meter i{background:linear-gradient(90deg,#55c6ed,#f5c879)}
+.wave-chart{position:absolute;right:8px;bottom:7px;width:32%;height:30px;opacity:.74;overflow:visible;pointer-events:none}
+.wave-chart path{fill:none;stroke:var(--wave-cyan);stroke-width:2.3;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke}
+.wave-chart #waveChartArea{stroke:none;fill:rgba(71,220,245,.09)}
+.wave-journey{display:flex;align-items:center;gap:7px;min-height:66px;margin-top:13px;padding:9px 17px;border:1px solid var(--line);border-radius:15px;background:linear-gradient(95deg,rgba(14,34,53,.89),rgba(15,27,47,.85));box-shadow:0 10px 34px #03071124}
+.wave-journey-label{font-size:10px;font-weight:850;white-space:nowrap;color:#a8cbdc;letter-spacing:.11em;margin-right:8px}
+.wave-step{display:flex;align-items:center;gap:9px;flex:1;min-width:0;min-height:44px;border:1px solid transparent;border-radius:11px;padding:7px 9px;background:transparent;color:#9daec2;transition:color .25s,background .25s,border-color .25s,transform .25s}
+.wave-step b{display:grid;place-items:center;flex-shrink:0;width:27px;height:27px;border-radius:9px;background:#273548;color:#afc3d8;font:800 11px var(--sans)}
+.wave-step span{font-size:12px;font-weight:800;line-height:1.3;text-align:left;min-width:0}
+.wave-step i{display:none}
+.wave-step.current{color:#f9f3e5;border-color:rgba(236,200,134,.45);background:linear-gradient(120deg,#75604431,#25475b3a)}
+.wave-step.current b{background:linear-gradient(140deg,#f8d59d,#d2a464);color:#1b2632}
+.wave-step.completed{color:#b7decf}
+.wave-step.completed b{background:#24584b;color:#9cf0c4}
+.wave-step.completed i{display:block;font-size:10px;color:#8be8b8;font-style:normal;margin-left:auto}
+.wave-connector{flex:0 0 17px;height:1px;background:rgba(150,184,213,.45)}
+.advisor{display:flex;align-items:center;gap:16px;min-height:93px;margin-top:13px;padding:14px 20px;border:1px solid rgba(120,185,211,.31);border-radius:16px;background:linear-gradient(120deg,#142a42ea,#132338ed 61%,#30243cbd)}
+.advisor-symbol{flex:0 0 44px;width:44px;height:44px;border-color:#73b4c3;color:#d8f8ff}
+.advisor-body{flex:1;min-width:0}
+.advisor-body h2{font-size:24px;line-height:1.15;letter-spacing:-.01em;margin:4px 0}
+.advisor-body p{font-size:13px;color:#c2d2df;margin:3px 0}
+.wave-advisor-controls{display:flex;align-items:center;gap:14px}
+.wave-afford{font-size:11px;max-width:170px;text-align:right;color:#a9cbd5;line-height:1.4}
+.advisor-action{min-height:45px;min-width:116px;padding:10px 15px;white-space:nowrap;border-radius:11px;background:rgba(255,213,138,.10)}
+.command-grid{margin-top:13px;grid-template-columns:minmax(185px,.78fr) minmax(400px,1.84fr) minmax(260px,1.04fr);gap:14px}
+.command-grid>.side-left{gap:14px}
+.panel{border-color:var(--line);border-radius:16px;background:linear-gradient(148deg,rgba(18,36,56,.89),rgba(10,23,37,.94));box-shadow:0 10px 32px rgba(0,0,0,.15)}
+.chapter-card{min-height:0;padding:17px;background:radial-gradient(ellipse at 90% 100%,rgba(67,105,139,.15),transparent 70%),linear-gradient(145deg,#14263b,#0d1829)}
+.chapter-card h2{font-size:27px;margin:13px 0 6px;color:#fff}
+.chapter-card p:not(.overline),.objective-card p,.shop-help{font-size:12px;line-height:1.5;color:#b2c2d2}
+.objective-card{min-height:0;padding:17px}
+.objective-card h3{font-size:23px;margin-top:9px}
+.objective-bottom{margin:12px 0}
+.map-teaser{min-height:0;padding:17px}
+.mini-map{height:73px}
+.scene{
+  min-height:575px;border-radius:20px;border-color:rgba(111,177,220,.40);
+  background:radial-gradient(ellipse at 47% 51%,rgba(45,112,159,.34),transparent 49%),
+    radial-gradient(ellipse at 75% 25%,rgba(79,49,123,.31),transparent 59%),
+    radial-gradient(ellipse at 55% 70%,rgba(130,83,40,.22),transparent 61%),
+    linear-gradient(150deg,#0d1f36,#080f20 71%);
+  box-shadow:inset 0 0 65px #08111a95,0 15px 55px #03060e8f;
+}
+.scene:after{content:'';position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 80% 22%,rgba(64,201,219,.14),transparent 43%);opacity:.7;transform:translate3d(0,0,0)}
+.scene-world{z-index:1;isolation:isolate}
+.scene-top,.scene-caption,.scene-actions,.scene-footnote,.wave-scene-helper,.wave-focus{position:relative;z-index:4}
+.scene-top{margin:17px 22px 0}
+.scene-top .coordinate{font-size:10px;color:#a7cade}
+.planet{box-shadow:0 0 45px rgba(249,183,104,.20),0 0 120px rgba(65,172,203,.16);transition:transform .18s cubic-bezier(.2,.8,.2,1),box-shadow .3s ease}
+.planet:hover{transform:scale(1.035)}
+.planet:active,.planet.is-hit{transform:scale(.965)}
+.planet-halo{filter:hue-rotate(12deg) saturate(1.2)}
+.scene-caption{font-size:13px;color:#d6e7ef;text-align:center}
+.wave-scene-helper{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:8px;margin:5px 0 3px;color:#badbe8;font-size:11px;font-weight:750;letter-spacing:.025em;text-align:center}
+#waveNextTip{display:inline-flex;align-items:center;min-height:25px;border-radius:9px;padding:3px 10px;background:rgba(92,202,226,.16);color:#9ceeff;font-weight:900;white-space:nowrap}
+.scene-actions{padding-inline:22px}
+.scene-actions .primary-btn,#harvest{min-height:58px;border-radius:12px;font-size:14px;font-weight:900;letter-spacing:.04em;box-shadow:0 14px 34px rgba(217,158,75,.26)}
+.scene-footnote{font-size:11px;color:#acc1d3;text-align:center;margin:6px auto}
+.wave-focus{align-self:center;margin:1px auto 12px;min-height:32px;border:0;background:transparent;color:#c5cedf;font-size:11px;text-decoration:underline;text-underline-offset:3px}
+.wave-focus:hover{color:white}
+.side-right .shop-title h2{font-size:28px;color:#fff}
+.side-right .shop-help{margin-top:5px}
+.side-right .module-name strong{font-size:13px;color:#ecf3f9}
+.side-right .module-name span{font-size:11px;color:#b5c4d3}
+.side-right .module-buy{min-height:46px;border-radius:10px;font-size:12px}
+.side-right .shop-tab{min-height:43px;font-size:11px}
+.side-right .batch-control{min-height:38px;min-width:39px}
+.wave-mobile-dock{display:none}
+html[data-wave-focus='true'] .command-grid{grid-template-columns:minmax(0,1.8fr) minmax(270px,.95fr)}
+html[data-wave-focus='true'] .command-grid .side-left{display:none}
+@media(min-width:1180px){
+ .scene-world{min-height:370px}
+}
+@media(max-width:1200px){
+  .global-top{gap:12px}.global-nav{gap:3px}.global-nav>.nav-link{padding:10px 9px;font-size:12px}
+  .command-grid{grid-template-columns:minmax(0,1.6fr) minmax(270px,.95fr)}
+  .command-grid .side-left{grid-column:1/-1;grid-row:2;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:start}
+  .command-grid .side-left .panel{min-width:0}
+  .command-grid .scene{grid-column:1;grid-row:1}
+  .command-grid .side-right{grid-column:2;grid-row:1}
+  .wave-journey-label{display:none}
+}
+@media(max-width:800px){
+  .global-top{flex-wrap:wrap;justify-content:space-between;padding:11px 0 0;gap:6px}
+  .global-nav{order:3;width:100%;flex:1 0 100%;align-self:auto;justify-content:space-between;border-top:1px solid var(--line);gap:4px;margin-top:7px;padding:3px 0 4px}
+  .global-nav>.nav-link{flex:1;min-height:40px;padding:5px 7px;font-size:12px}
+  .wave-more-menu{flex:1;display:flex;margin-left:0}
+  .wave-more-menu summary{width:100%;justify-content:center;padding:0 7px;min-height:39px;font-size:12px}
+  .wave-more-popover{right:0}
+  .top-tools{margin-left:auto}
+  .identity-type strong{font-size:14px}
+  .identity-type small{font-size:9px}
+  .headline{padding:21px 0 15px}
+  .headline h1{font-size:clamp(48px,8vw,66px)}
+  .ranking{display:none}
+  .metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .metric{min-height:102px}
+  .metric:not(:last-child):after{display:none}
+  .metric:first-child{border-bottom:1px solid var(--line);border-right:1px solid var(--line)}
+  .metric:nth-child(2){border-bottom:1px solid var(--line)}
+  .metric:nth-child(3){border-right:1px solid var(--line)}
+  .wave-journey{overflow-x:auto;scrollbar-width:thin;gap:4px;padding:8px}
+  .wave-step{flex:0 0 auto;padding:7px 10px}
+  .wave-step span{font-size:11px}
+  .wave-connector{flex:0 0 9px}
+  .wave-advisor-controls{gap:10px}
+  .wave-afford{font-size:10px}
+  .command-grid,.command-grid .side-left{display:flex;flex-direction:column;gap:13px}
+  .command-grid .scene{order:0;min-height:515px;width:100%}
+  .command-grid .side-right{order:1;width:100%}
+  .command-grid .side-left{order:2;width:100%}
+  html[data-wave-focus='true'] .command-grid .side-left{display:none}
+  .side-left .chapter-card,.side-left .objective-card,.side-left .map-teaser{min-height:0;width:100%}
+}
+@media(max-width:600px){
+  html{scroll-padding-top:85px}
+  body{padding-bottom:68px}
+  .app-shell{padding-inline:15px}
+  .global-top{padding-top:10px}
+  .identity-mark{width:34px;height:34px}
+  .identity-type strong{font-size:13px}
+  .identity-type small{font-size:8px}
+  .top-tools{gap:5px}
+  .top-tools .tool-button{height:36px;width:36px;font-size:16px}
+  .language-select select{height:36px}
+  .back-link{display:none}
+  .headline{padding:17px 0 13px}
+  .headline h1{font-size:clamp(42px,11.5vw,62px);line-height:1.01}
+  .headline .overline{font-size:9px}
+  .headline-copy{font-size:13px;max-width:330px}
+  .wave-hero-actions{margin-top:12px;gap:10px}
+  .wave-hero-play{min-height:42px;padding:7px 17px;font-size:13px}
+  .wave-save-status{max-width:143px;font-size:10px}
+  .metrics{border-radius:14px}
+  .metric{min-height:95px;padding:13px 13px}
+  .metric small{font-size:10px;letter-spacing:0}
+  .metric-row{margin-top:3px}
+  .metric-row strong{font-size:25px}
+  .metric-sub{font-size:9.5px}
+  .wave-chart{width:36%;height:20px;right:4px;bottom:5px}
+  .wave-journey{margin-top:10px;min-height:57px}
+  .advisor{padding:12px 14px;margin-top:9px;gap:10px;min-height:76px}
+  .advisor-symbol{display:none}
+  .advisor-body h2{font-size:21px}
+  .advisor-body p{font-size:11px;line-height:1.45}
+  .wave-advisor-controls{flex-direction:column;gap:4px;align-items:flex-end}
+  .wave-afford{display:none}
+  .advisor-action{min-width:96px;min-height:41px;font-size:10px}
+  .command-grid{margin-top:10px}
+  .scene{min-height:530px;border-radius:17px}
+  .scene-top{margin:13px 13px 0}
+  .scene-top .coordinate{font-size:8px}
+  .scene-world{min-height:300px}
+  .scene-caption{padding-inline:14px}
+  .wave-scene-helper{font-size:10px}
+  .scene-actions{padding-inline:13px}
+  .scene-footnote{padding-inline:16px}
+  .wave-mobile-dock{
+    position:fixed;z-index:50;bottom:0;left:0;right:0;display:grid;
+    grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;
+    padding:6px max(10px,env(safe-area-inset-left)) calc(6px + env(safe-area-inset-bottom));
+    border-top:1px solid rgba(144,197,229,.38);
+    background:rgba(6,17,32,.95);backdrop-filter:blur(18px);box-shadow:0 -15px 36px #0008;
+  }
+  .wave-mobile-dock button{min-width:0;min-height:51px;display:grid;place-items:center;align-content:center;gap:2px;padding:4px;border:0;border-radius:10px;color:#daeaf6;background:transparent}
+  .wave-mobile-dock button:first-child{background:linear-gradient(105deg,#23415b,#344456);color:#ffe9bf}
+  .wave-mobile-dock button span{font-size:20px;line-height:1}
+  .wave-mobile-dock button small{font-size:10px;font-weight:800;white-space:nowrap}
+}
+@media(prefers-reduced-motion:reduce){
+  .wave-step,.wave-hero-play,.planet,.wave-mobile-dock button{transition:none!important;animation:none!important}
+  .ambient-stars{opacity:.16}
+  .scene:after{display:none}
+}
+/* Premium command composition: the actual playable sphere starts above the fold. */
+@media(min-width:1151px){
+  .global-top>.identity{order:0}
+  .global-top>.global-nav{order:1;justify-content:center}
+  .global-top>.top-tools{order:2}
+  main{display:grid;grid-template-columns:minmax(0,1.75fr) minmax(320px,.85fr);gap:15px;align-items:stretch}
+  main>.headline{grid-column:1/-1;grid-row:1}
+  main>.command-grid{display:contents}
+  .command-grid>.scene{grid-column:1;grid-row:2;min-height:635px}
+  main>.metrics{grid-column:2;grid-row:2;align-self:start;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;border:0;background:transparent;box-shadow:none;overflow:visible}
+  main>.metrics .metric{border:1px solid var(--line);min-height:146px;border-radius:15px;padding:16px 15px}
+  main>.metrics .metric:after{display:none}
+  main>.metrics .metric-row strong{font-size:clamp(23px,2.1vw,33px)}
+  main>.metrics .metric:first-child{background:linear-gradient(127deg,#18354c,#0e1d33)}
+  main>.advisor{grid-column:2;grid-row:2;align-self:end;margin:0;flex-direction:column;align-items:flex-start;justify-content:center;gap:9px;min-height:260px;padding:20px}
+  main>.advisor .advisor-symbol{display:none}
+  main>.advisor .advisor-body h2{font-size:30px}
+  main>.advisor .advisor-body p{font-size:14px}
+  main>.advisor .wave-advisor-controls{width:100%;justify-content:space-between;align-items:center}
+  main>.advisor .wave-afford{text-align:left}
+  main>.wave-journey{grid-column:1/-1;grid-row:3;margin:0}
+  .command-grid>.side-left{grid-column:1;grid-row:4;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;align-items:stretch}
+  .command-grid>.side-left .panel{min-height:0;padding:16px}
+  .command-grid>.side-left .map-teaser{height:auto}
+  .command-grid>.side-right{grid-column:2;grid-row:4}
+  main>.systems-section,main>.time-section,main>.frontier-section,main>.galaxy-section,main>.coop-section,main>.bottom-section{grid-column:1/-1}
+}
+@media(max-width:600px){
+  main{display:flex;flex-direction:column;gap:0}
+  main>.command-grid{display:contents}
+  main>.headline{order:0}
+  .command-grid>.scene{order:1;margin:4px 0 12px}
+  main>.metrics{order:2}
+  main>.wave-journey{order:3}
+  main>.advisor{order:4}
+  .command-grid>.side-right{order:5;margin-top:12px}
+  .command-grid>.side-left{order:6;margin-top:12px}
+  main>.systems-section{order:7}
+  main>.time-section{order:8}
+  main>.frontier-section{order:9}
+  main>.galaxy-section{order:10}
+  main>.coop-section{order:11}
+  main>.bottom-section{order:12}
+}
+/* W5: first launch is a three-action guide, not a wall of instructions. */
+.wave-help-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:16px}
+.wave-help-step{min-width:0;min-height:172px;padding:18px 17px;border:1px solid rgba(143,197,222,.28);border-radius:15px;background:linear-gradient(145deg,#132b44,#0c1b30)}
+.wave-help-step b{display:grid;place-items:center;width:36px;height:36px;margin-bottom:12px;border-radius:11px;background:linear-gradient(145deg,#ffe0a6,#c9a069);color:#17202e;font:900 12px var(--sans)}
+.wave-help-step p{margin:0;color:#e2eaf3;font-size:14px;line-height:1.6}
+.wave-help-advanced{margin-top:18px;border:1px solid var(--line);border-radius:12px;padding:13px 15px;background:#0d1c2d}
+.wave-help-advanced summary{color:#c2d9e8;cursor:pointer;font-weight:750;font-size:13px}
+.wave-help-advanced .help-steps{margin-top:15px}
+.wave-help-start{min-height:49px!important;margin-top:18px!important;padding-inline:30px!important;border-radius:11px!important;background:linear-gradient(105deg,#f8d798,#d4a55d)!important;color:#131c28!important;font-weight:900!important}
+@media(max-width:600px){
+  .command-grid .scene{min-height:481px}
+  .command-grid .scene-world{min-height:245px}
+  .wave-help-grid{grid-template-columns:1fr;gap:8px}
+  .wave-help-step{min-height:0;display:flex;gap:12px;align-items:center;padding:12px}
+  .wave-help-step b{flex:0 0 30px;margin:0}
+  .wave-help-step p{font-size:13px}
+}
+/* Keep campaign, goal and map teaser at intrinsic height, never giant empty columns. */
+@media(min-width:1151px){.command-grid>.side-left{align-items:start}.command-grid>.side-left .panel{height:auto;align-self:start}}
+
 </style>
   
 </head>
 <body>
   <div class="ambient-stars" aria-hidden="true"></div>
+  <nav class="wave-mobile-dock" aria-label="Быстрые игровые действия">
+    <button type="button" data-wave-go="harvest"><span aria-hidden="true">◈</span><small data-wave-i18n="dockPlay">Играть</small></button>
+    <button type="button" data-wave-go="upgrade"><span aria-hidden="true">✦</span><small data-wave-i18n="dockUpgrade">Развитие</small></button>
+    <button type="button" data-wave-go="sectors"><span aria-hidden="true">◎</span><small data-wave-i18n="dockMap">Миры</small></button>
+    <button type="button" data-wave-go="galaxy"><span aria-hidden="true">✧</span><small data-wave-i18n="dockGalaxy">Галактика</small></button>
+  </nav>
   <div class="app-shell" id="app">
     <header class="global-top">
       <div class="identity" aria-label="OSGARD PLAY"><span class="identity-mark">O<span>✦</span></span><span class="identity-type"><strong>OSGARD <em>EMPIRE</em></strong><small data-i18n="brandSub">ИМПЕРИЯ ВРЕМЕНИ / WORLD 08</small></span></div>
@@ -563,13 +886,18 @@ html[data-quality='low'] .rift-ring{animation:none!important;filter:none}html[da
         <button type="button" class="nav-link active" data-tab="empire" data-i18n="tabEmpire">Империя</button>
         <button type="button" class="nav-link" data-tab="sectors" data-i18n="tabSectors">Карта миров</button>
         <button type="button" class="nav-link" data-tab="missions" data-i18n="tabMissions">Задания</button>
-        <button type="button" class="nav-link" data-jump="exploration" data-i18n="explorationNav">Экспедиции</button>
-        <button type="button" class="nav-link strategy-link" data-jump="timeRifts" data-i18n="strategyNav">Стратегия</button>
-        <button type="button" class="nav-link" data-tab="chronicle" data-i18n="tabChronicle">Хроники</button>
+        <details class="wave-more-menu" id="waveMoreMenu">
+          <summary data-wave-i18n="moreMenu">Ещё разделы</summary>
+          <div class="wave-more-popover">
+            <button type="button" class="nav-link" data-jump="exploration" data-i18n="explorationNav">Экспедиции</button>
+            <button type="button" class="nav-link" data-jump="timeRifts" data-i18n="strategyNav">Стратегия</button>
+            <button type="button" class="nav-link" data-tab="chronicle" data-i18n="tabChronicle">Хроники</button>
+            <button class="nav-link council-nav" type="button" data-jump="frontier" data-i18n="frontierNav">Совет Галактики</button>
+            <button class="nav-link galaxy-nav" type="button" data-jump="galaxy" data-i18n="galaxyNav">Живая Галактика</button>
+            <button class="nav-link coop-nav" type="button" data-jump="coop" data-i18n="coopNav">Совместная игра</button>
+          </div>
+        </details>
       </nav>
-      <button class="nav-link council-nav" type="button" data-jump="frontier" data-i18n="frontierNav">СОВЕТ ГАЛАКТИКИ ↓</button>
-      <button class="nav-link galaxy-nav" type="button" data-jump="galaxy" data-i18n="galaxyNav">ЖИВАЯ ГАЛАКТИКА ↓</button>
-      <button class="nav-link coop-nav" type="button" data-jump="coop" data-i18n="coopNav">СОВМЕСТНАЯ ИГРА ↓</button>
       <div class="top-tools">
         <div class="language-select"><label class="sr-only" for="lang" data-i18n="language">Язык</label><select id="lang" aria-label="Язык интерфейса"><option value="ru">RU</option><option value="en">EN</option><option value="zh">中文</option></select></div>
         <button class="tool-button theme-toggle" type="button" id="themeButton" aria-label="Переключить стиль" title="Переключить стиль" aria-pressed="false">◐</button>
@@ -582,21 +910,33 @@ html[data-quality='low'] .rift-ring{animation:none!important;filter:none}html[da
     <main>
       <section class="headline">
         <div><p class="overline"><span class="signal-dot"></span><span data-i18n="overline">ОРБИТАЛЬНАЯ СИСТЕМА ONLINE</span><span class="line-tag">◆ 08 / 12</span></p>
-          <h1 data-i18n="headline">Империя <i>времени</i></h1><p class="headline-copy" data-i18n="tagline">Пробуди ядро. Покори орбиты. Построй цивилизацию, которой подвластно время.</p></div>
+          <h1 data-i18n="headline">Империя <i>времени</i></h1><p class="headline-copy" data-i18n="tagline">Пробуди ядро. Покори орбиты. Построй цивилизацию, которой подвластно время.</p>
+          <div class="wave-hero-actions"><button class="wave-hero-play" type="button" data-wave-go="play"><span data-wave-i18n="playNow">Начать играть</span><span aria-hidden="true">↗</span></button><span class="wave-save-status" id="waveSaveStatus" role="status" data-wave-i18n="saveLocal">Прогресс сохраняется на этом устройстве</span></div>
+        </div>
         <div class="ranking"><span class="overline" data-i18n="rankLabel">ВАШ СТАТУС</span><strong id="rank">АРХИТЕКТОР</strong><span id="rankDesc">ПЕРВАЯ ЭПОХА</span></div>
       </section>
 
       <section class="metrics" aria-label="Игровые показатели">
-        <div class="metric metric-highlight"><small data-i18n="balance">ХРОНОЭНЕРГИЯ</small><div class="metric-row"><strong id="balance" class="tabular">0</strong><span class="metric-icon">◈</span></div><div class="meter" role="progressbar" id="storageBar" aria-label="Заполнение хранилища" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i id="fillBar"></i></div><span class="metric-sub" id="storage">0 / 5 000</span></div>
+        <div class="metric metric-highlight"><small data-i18n="balance">ХРОНОЭНЕРГИЯ</small><div class="metric-row"><strong id="balance" class="tabular">0</strong><span class="metric-icon">◈</span></div><div class="meter" role="progressbar" id="storageBar" aria-label="Заполнение хранилища" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i id="fillBar"></i></div><span class="metric-sub" id="storage">0 / 5 000</span><svg class="wave-chart" id="waveChart" viewBox="0 0 200 34" preserveAspectRatio="none" role="img" aria-label="Изменение хроноэнергии во время текущей игровой сессии"><path id="waveChartArea" d=""/><path id="waveChartLine" d=""/></svg></div>
         <div class="metric"><small data-i18n="income">ПРОИЗВОДСТВО</small><div class="metric-row"><strong id="income" class="tabular">+0</strong><span class="metric-icon muted">↗</span></div><span class="metric-sub" data-i18n="perSecond">ЭНЕРГИИ В СЕКУНДУ</span></div>
         <div class="metric"><small data-i18n="impact">СИЛА КАСАНИЯ</small><div class="metric-row"><strong id="impact" class="tabular">+1</strong><span class="metric-icon muted">⌁</span></div><span class="metric-sub" data-i18n="tapBonus">ЗА АКТИВАЦИЮ ЯДРА</span></div>
         <div class="metric"><small data-i18n="territories">ОТКРЫТО СЕКТОРОВ</small><div class="metric-row"><strong id="territories" class="tabular">1 <span>/ 6</span></strong><span class="metric-icon muted">◎</span></div><span class="metric-sub" data-i18n="worldExplore">РАСШИРЯЙ ГРАНИЦЫ</span></div>
       </section>
 
+      <section class="wave-journey" id="waveJourney" aria-label="Путь развития империи">
+        <span class="wave-journey-label" data-wave-i18n="journey">Твой путь</span>
+        <button type="button" class="wave-step current" data-wave-go="harvest" data-wave-step="0"><b>01</b><span data-wave-i18n="stepHarvest">Добывай время</span><i aria-hidden="true">●</i></button>
+        <span class="wave-connector" aria-hidden="true"></span>
+        <button type="button" class="wave-step" data-wave-go="upgrade" data-wave-step="1"><b>02</b><span data-wave-i18n="stepBuild">Усиль ядро</span><i aria-hidden="true">●</i></button>
+        <span class="wave-connector" aria-hidden="true"></span>
+        <button type="button" class="wave-step" data-wave-go="sectors" data-wave-step="2"><b>03</b><span data-wave-i18n="stepExpand">Открой миры</span><i aria-hidden="true">●</i></button>
+        <span class="wave-connector" aria-hidden="true"></span>
+        <button type="button" class="wave-step" data-wave-go="galaxy" data-wave-step="3"><b>04</b><span data-wave-i18n="stepRule">Управляй галактикой</span><i aria-hidden="true">●</i></button>
+      </section>
       <section class="advisor" aria-label="Навигатор империи">
         <div class="advisor-symbol" aria-hidden="true">✧</div>
         <div class="advisor-body"><span class="overline" data-i18n="advisorEyebrow">КОМАНДНЫЙ ЦЕНТР</span><h2 id="advisorTitle">Твой следующий шаг</h2><p id="advisorDesc">Развивай империю постепенно</p></div>
-        <button type="button" id="advisorButton" class="secondary-btn advisor-action" data-i18n="advisorGo">ПЕРЕЙТИ</button>
+        <div class="wave-advisor-controls"><span id="waveAfford" class="wave-afford" aria-live="off"></span><button type="button" id="advisorButton" class="secondary-btn advisor-action" data-i18n="advisorGo">ПЕРЕЙТИ</button></div>
       </section>
 
       <div class="command-grid">
@@ -630,8 +970,10 @@ html[data-quality='low'] .rift-ring{animation:none!important;filter:none}html[da
             <div id="floaters" class="floaters" aria-hidden="true"></div>
           </div>
           <div class="scene-caption"><span class="status-ring">◉</span><span id="sceneMessage" data-i18n="scenePrompt">Нажми на ядро, чтобы добыть время</span></div>
+          <div class="wave-scene-helper"><span id="waveStageCaption" data-wave-i18n="coreAction">НАЖМИ НА СФЕРУ</span><span id="waveNextTip" role="status">+1 ◈</span></div>
           <div class="scene-actions"><button type="button" class="primary-btn" id="harvest"><span class="primary-icon">✦</span><span id="harvestLabel">ДОБЫТЬ ВРЕМЯ · +1</span><span class="primary-arrow">↗</span></button><button class="icon-outline" type="button" data-open="help" data-i18n-aria="help" title="Помощь">?</button></div>
           <p class="scene-footnote" data-i18n="tapLimit">До 15 активаций в секунду · прогресс сохраняется на этом устройстве</p>
+          <button type="button" id="waveFocus" class="wave-focus" aria-pressed="false" data-wave-i18n="focusOn">◩ Режим фокуса</button>
         </section>
 
         <aside class="side side-right" aria-label="Модули развития">
@@ -1027,6 +1369,7 @@ html[data-quality='low'] .rift-ring{animation:none!important;filter:none}html[da
   <div class="overlay" id="overlay" hidden><div class="dialog" role="dialog" aria-modal="true" aria-labelledby="dialogTitle"><div class="dialog-top"><span class="overline" id="dialogEyebrow">OSGARD / EMPIRE</span><button type="button" id="dialogClose" class="close-button" aria-label="Закрыть">×</button></div><h2 id="dialogTitle"></h2><div id="dialogBody" class="dialog-content"></div></div></div>
   <input type="file" id="importFile" accept="application/json,.json" hidden>
 <script>
+const OSGARD_EMPIRE_STANDALONE=true;
 /**
  * OSGARD: EMPIRE v10 — deterministic, testable single-player rules.
  * All values are fictional game resources; no real currency or payments.
@@ -1916,7 +2259,7 @@ const L = {
     coopPreviewTitle:'СЕРВЕРНЫЙ ПРОГНОЗ',coopPreviewButton:'ПОСЧИТАТЬ ПОСЛЕДСТВИЯ',coopPreviewIntro:'Проверь цену и последствия выбранного приказа до голосования или исполнения.',coopPreviewPossible:'ДЕЙСТВИЕ ДОСТУПНО ПО ПРАВИЛАМ',coopPreviewImpossible:'ДЕЙСТВИЕ ПОКА НЕВОЗМОЖНО',coopPreviewVoteNeeded:'Не хватает голосов для исполнения.',coopPreviewCaptainNeeded:'Командование сейчас у другого игрока.',coopPreviewReady:'Капитан может подтвердить приказ.',coopPreviewStale:'Галактика изменилась — пересчитай прогноз.',coopPreviewError:'Не удалось рассчитать прогноз.',coopPreviewSame:'Изменений ресурсов нет.',coopPreviewPlanet:'Изменение планеты',coopPreviewTerms:'Прогноз не списывает ресурсы и не резервирует решение.',
     coopRecoveryTitle:'ВОССТАНОВЛЕНИЕ ЭКИПАЖА',coopRecoveryExplanation:'Сохрани одноразовый код отдельно от браузера. Он вернёт доступ, если вкладка закроется. Новый код отменяет старый.',coopRecoveryPrompt:'Одноразовый код восстановления',coopRecover:'ВОССТАНОВИТЬ ДОСТУП',coopRotateRecovery:'ОБНОВИТЬ КОД ВОССТАНОВЛЕНИЯ',coopCopyRecovery:'СКОПИРОВАТЬ КОД',coopHideRecovery:'Я СОХРАНИЛ КОД',coopRecoveryReady:'Код восстановления создан — сохрани его сейчас.',coopRecoveryFailure:'Неверный или уже использованный код. Восстановление не выполнено.',coopRecoveryDone:'Доступ восстановлен; старый токен отключён.',coopRecoverySaved:'Код скопирован. Храни его в безопасном месте.',coopRecoveryHelp:'Есть код восстановления? Введи его вместе с кодом комнаты. Имя и пароль приглашения не нужны.',
     brandSub:'ИМПЕРИЯ ВРЕМЕНИ / WORLD 08',language:'Язык',tabEmpire:'Империя',tabSectors:'Карта миров',tabMissions:'Задания',tabChronicle:'Хроники',catalog:'Все миры ↗',settings:'Настройки',sound:'Звук',
-    overline:'ОРБИТАЛЬНАЯ СИСТЕМА ONLINE',headline:'Империя времени',tagline:'Пробуди ядро. Покори орбиты. Построй цивилизацию, которой подвластно время.',rankLabel:'ВАШ СТАТУС',rankNovice:'АРХИТЕКТОР',rankExplorer:'НАМЕСТНИК',rankMaster:'ХРОНОМАРШАЛ',rankEternal:'ПОВЕЛИТЕЛЬ ЭПОХ',rankEpoch:'ПЕРВАЯ ЭПОХА',rankSeal:'ПЕЧАТЕЙ ВРЕМЕНИ',
+    overline:'ОРБИТАЛЬНАЯ КАМПАНИЯ · SOLO',headline:'Империя времени',tagline:'Пробуди ядро. Покори орбиты. Построй цивилизацию, которой подвластно время.',rankLabel:'ВАШ СТАТУС',rankNovice:'АРХИТЕКТОР',rankExplorer:'НАМЕСТНИК',rankMaster:'ХРОНОМАРШАЛ',rankEternal:'ПОВЕЛИТЕЛЬ ЭПОХ',rankEpoch:'ПЕРВАЯ ЭПОХА',rankSeal:'ПЕЧАТЕЙ ВРЕМЕНИ',
     balance:'ХРОНОЭНЕРГИЯ',income:'ПРОИЗВОДСТВО',impact:'СИЛА КАСАНИЯ',territories:'ОТКРЫТО СЕКТОРОВ',perSecond:'ЭНЕРГИИ В СЕКУНДУ',tapBonus:'ЗА АКТИВАЦИЮ ЯДРА',worldExplore:'РАСШИРЯЙ ГРАНИЦЫ',
     campaignLabel:'АКТ I / ПРОБУЖДЕНИЕ',campaignTitle:'Всё начинается со времени',campaignText:'Запусти первое ядро, открой сектор и узнай, кем станет твоя империя.',chronicleGo:'ОТКРЫТЬ ХРОНИКИ →',nextGoal:'СЛЕДУЮЩАЯ ЦЕЛЬ',claimReward:'ЗАБРАТЬ НАГРАДУ',starMap:'ЗВЁЗДНАЯ КАРТА',live:'LIVE',stable:'ЯДРО СТАБИЛЬНО',tapCore:'Активировать хроно-ядро и добыть время',coreName:'ХРОНО-ЯДРО',scenePrompt:'Нажми на ядро, чтобы добыть время',tapLimit:'До 15 активаций в секунду · прогресс сохраняется на этом устройстве',help:'Как играть',
     engineering:'ИНЖЕНЕРНАЯ ПАЛАТА',upgrades:'Модули развития',shopHelp:'Улучшения ускоряют добычу, повышают вместимость и открывают новые возможности.',tabBuild:'РАЗВИТИЕ',achievements:'НАГРАДЫ',unlockSectors:'ИССЛЕДОВАТЬ СЕКТОРА ↗',fieldLog:'ПОЛЕВОЙ ЖУРНАЛ',logInit:'Система ожидает первого действия...',prestige:'ВОСХОЖДЕНИЕ',prestigeTitle:'За пределы эпохи',ascend:'ВОСХОЖДЕНИЕ ↗',localOnly:'Игровая энергия — только внутриигровая валюта. Нет связи с реальными платежами или кошельком.',dataSettings:'ДАННЫЕ И НАСТРОЙКИ',
@@ -1935,7 +2278,7 @@ const L = {
   en: {
     coopPreviewTitle:'SERVER ORDER PREVIEW',coopPreviewButton:'PREVIEW CONSEQUENCES',coopPreviewIntro:'Check the cost and expected consequences before voting or issuing an order.',coopPreviewPossible:'GAME RULES ALLOW THIS ORDER',coopPreviewImpossible:'ORDER NOT AVAILABLE YET',coopPreviewVoteNeeded:'Not enough votes to execute.',coopPreviewCaptainNeeded:'Another player currently has command.',coopPreviewReady:'The captain may execute this order.',coopPreviewStale:'The galaxy has changed — calculate a new preview.',coopPreviewError:'Could not calculate the order preview.',coopPreviewSame:'No resource changes.',coopPreviewPlanet:'Planet change',coopPreviewTerms:'A preview neither spends resources nor reserves the order.',
     coopRecoveryTitle:'CREW ACCESS RECOVERY',coopRecoveryExplanation:'Save this single-use code outside your browser. It restores access if your tab closes. A new code invalidates the previous one.',coopRecoveryPrompt:'Single-use recovery code',coopRecover:'RESTORE ACCESS',coopRotateRecovery:'GENERATE NEW RECOVERY CODE',coopCopyRecovery:'COPY CODE',coopHideRecovery:'I SAVED MY CODE',coopRecoveryReady:'Recovery code created — save it now.',coopRecoveryFailure:'Invalid or already used code. Access was not restored.',coopRecoveryDone:'Access restored; the old token has been revoked.',coopRecoverySaved:'Code copied. Store it securely.',coopRecoveryHelp:'Have a recovery code? Enter it with your room code. No name or invite password required.',
-    brandSub:'TIME EMPIRE / WORLD 08',language:'Language',tabEmpire:'Empire',tabSectors:'Star map',tabMissions:'Missions',tabChronicle:'Chronicles',catalog:'All worlds ↗',settings:'Settings',sound:'Sound',overline:'ORBITAL SYSTEM ONLINE',headline:'Empire of Time',tagline:'Awaken the core. Conquer the orbits. Build a civilization beyond time.',rankLabel:'YOUR STATUS',rankNovice:'ARCHITECT',rankExplorer:'VICEROY',rankMaster:'CHRONOMARSHAL',rankEternal:'MASTER OF ERAS',rankEpoch:'FIRST EPOCH',rankSeal:'TIME SEALS',balance:'CHRONO ENERGY',income:'PRODUCTION',impact:'TAP POWER',territories:'SECTORS UNLOCKED',perSecond:'ENERGY PER SECOND',tapBonus:'PER CORE ACTIVATION',worldExplore:'EXPAND YOUR EMPIRE',campaignLabel:'ACT I / AWAKENING',campaignTitle:'It begins with time',campaignText:'Activate your first core, unlock a sector and shape the destiny of your empire.',chronicleGo:'OPEN CHRONICLES →',nextGoal:'NEXT OBJECTIVE',claimReward:'CLAIM REWARD',starMap:'STAR MAP',live:'LIVE',stable:'CORE STABLE',tapCore:'Activate the chrono core to harvest time',coreName:'CHRONO CORE',scenePrompt:'Tap the core to harvest time',tapLimit:'Up to 15 activations per second · progress stays on this device',help:'How to play',engineering:'ENGINEERING CHAMBER',upgrades:'Development modules',shopHelp:'Upgrades increase production, storage capacity and unlock new possibilities.',tabBuild:'UPGRADES',achievements:'ACHIEVEMENTS',unlockSectors:'EXPLORE SECTORS ↗',fieldLog:'FIELD LOG',logInit:'System awaiting first action...',prestige:'ASCENSION',prestigeTitle:'Beyond this epoch',ascend:'ASCEND ↗',localOnly:'Energy is an in-game resource only, unrelated to payments or external wallets.',dataSettings:'DATA & SETTINGS',harvest:'HARVEST TIME',level:'LEVEL',maxLevel:'MAX LEVEL',locked:'LOCKED',shopUnlock:'Unlock another sector',shopUnlocked:'MODULE AVAILABLE',buy:'UPGRADE',
+    brandSub:'TIME EMPIRE / WORLD 08',language:'Language',tabEmpire:'Empire',tabSectors:'Star map',tabMissions:'Missions',tabChronicle:'Chronicles',catalog:'All worlds ↗',settings:'Settings',sound:'Sound',overline:'ORBITAL CAMPAIGN · SOLO',headline:'Empire of Time',tagline:'Awaken the core. Conquer the orbits. Build a civilization beyond time.',rankLabel:'YOUR STATUS',rankNovice:'ARCHITECT',rankExplorer:'VICEROY',rankMaster:'CHRONOMARSHAL',rankEternal:'MASTER OF ERAS',rankEpoch:'FIRST EPOCH',rankSeal:'TIME SEALS',balance:'CHRONO ENERGY',income:'PRODUCTION',impact:'TAP POWER',territories:'SECTORS UNLOCKED',perSecond:'ENERGY PER SECOND',tapBonus:'PER CORE ACTIVATION',worldExplore:'EXPAND YOUR EMPIRE',campaignLabel:'ACT I / AWAKENING',campaignTitle:'It begins with time',campaignText:'Activate your first core, unlock a sector and shape the destiny of your empire.',chronicleGo:'OPEN CHRONICLES →',nextGoal:'NEXT OBJECTIVE',claimReward:'CLAIM REWARD',starMap:'STAR MAP',live:'LIVE',stable:'CORE STABLE',tapCore:'Activate the chrono core to harvest time',coreName:'CHRONO CORE',scenePrompt:'Tap the core to harvest time',tapLimit:'Up to 15 activations per second · progress stays on this device',help:'How to play',engineering:'ENGINEERING CHAMBER',upgrades:'Development modules',shopHelp:'Upgrades increase production, storage capacity and unlock new possibilities.',tabBuild:'UPGRADES',achievements:'ACHIEVEMENTS',unlockSectors:'EXPLORE SECTORS ↗',fieldLog:'FIELD LOG',logInit:'System awaiting first action...',prestige:'ASCENSION',prestigeTitle:'Beyond this epoch',ascend:'ASCEND ↗',localOnly:'Energy is an in-game resource only, unrelated to payments or external wallets.',dataSettings:'DATA & SETTINGS',harvest:'HARVEST TIME',level:'LEVEL',maxLevel:'MAX LEVEL',locked:'LOCKED',shopUnlock:'Unlock another sector',shopUnlocked:'MODULE AVAILABLE',buy:'UPGRADE',
     core:'Chrono core',coreDesc:'+0.25 / sec',orbit:'Orbital impulse',orbitDesc:'+1 per tap',vault:'Vault',vaultDesc:'+800 capacity',forge:'Star forge',forgeDesc:'+3.5 / sec',stabilizer:'Stabilizer',stabilizerDesc:'+1,500 capacity + bonus',archive:'Eternal archive',archiveDesc:'+16 / sec',
     sectorTitle:'Galactic Atlas',sectorIntro:'Six orbital sectors. Unlock worlds with in-game chrono energy and decide the future of your civilization. Decisions are saved locally.',sectorOpen:'SECTOR OPEN',sectorLocked:'UNEXPLORED',sectorUnlock:'UNLOCK FOR',sectorReach:'Unlock the previous sector first',sectorEffect:'Production bonus',sectorDecision:'CHOOSE A SECTOR PATH',decisionOrder:'ENFORCE ORDER',decisionFreedom:'SUPPORT CITIZENS',decisionDone:'PATH CHOSEN',orderInfo:'Influence +12 · trust −6 · production +7%',freedomInfo:'Trust +12 · influence −5 · tap power +7%',s0:'Citadel of Origins',s1:'Lunar Frontier',s2:'Rings of Atlas',s3:'Zero Forge',s4:'Star Archive',s5:'Throne of Eternity',s0d:'Where the first impulse of time began.',s1d:'Orbital stations on the edge of known space.',s2d:'Research rings around a silent star.',s3d:'An immense network of energy reactors.',s4d:'The memory of civilizations spanning millennia.',s5d:'The last horizon beyond all known eras.',
     missionTitle:'Empire missions',missionIntro:'Rewards are earned through real actions. No fake “mark as complete” buttons.',daily:'DAILY MISSION · UTC',dailyTaps:'Activate the core 25 times',dailyBuy:'Purchase two upgrades',dailyEarn:'Harvest 450 chrono energy',dailyClaim:'CLAIM DAILY REWARD',questDone:'CLAIMED',questPending:'IN PROGRESS',qSpark:'First impulse',qSparkDesc:'Activate the chrono core once.',qArchitect:'Birth of a machine',qArchitectDesc:'Purchase three upgrades.',qPioneer:'Beyond the map',qPioneerDesc:'Unlock the second sector.',qEternity:'Empire scale',qEternityDesc:'Harvest 1,800 time in total.',achievementsTitle:'Hall of achievements',achievementsIntro:'Achievements reflect real progress, not decorative button presses.',aFirst:'Spark',aHundred:'Chrono engineer',aEngineer:'Systems master',aExplorer:'Pioneer',aEmperor:'Six horizons',aEternal:'Seal of eternity',unlocked:'UNLOCKED',notYet:'LOCKED',
@@ -1946,7 +2289,7 @@ const L = {
   zh: {
     coopPreviewTitle:'服务器指令预览',coopPreviewButton:'预测指令结果',coopPreviewIntro:'投票或执行指令前查看成本与预期后果。',coopPreviewPossible:'此指令符合游戏规则',coopPreviewImpossible:'暂时无法执行该指令',coopPreviewVoteNeeded:'尚未获得足够票数。',coopPreviewCaptainNeeded:'当前由另一位玩家指挥。',coopPreviewReady:'舰长可以执行此指令。',coopPreviewStale:'银河状态已变化，请重新计算。',coopPreviewError:'无法计算指令预览。',coopPreviewSame:'资源没有变化。',coopPreviewPlanet:'星球变化',coopPreviewTerms:'预览不会消耗资源，也不会预留指令。',
     coopRecoveryTitle:'舰队访问恢复',coopRecoveryExplanation:'请在浏览器外保存此一次性恢复码。关闭标签页后可用它恢复访问。生成新码后旧码失效。',coopRecoveryPrompt:'一次性恢复码',coopRecover:'恢复访问',coopRotateRecovery:'生成新的恢复码',coopCopyRecovery:'复制恢复码',coopHideRecovery:'我已保存恢复码',coopRecoveryReady:'恢复码已生成，请立即保存。',coopRecoveryFailure:'恢复码无效或已使用，访问未恢复。',coopRecoveryDone:'已恢复访问，旧令牌已撤销。',coopRecoverySaved:'恢复码已复制，请安全保存。',coopRecoveryHelp:'如果有恢复码，请输入房间代码和恢复码，无需姓名或邀请密码。',
-    brandSub:'时间帝国 / 世界 08',language:'语言',tabEmpire:'帝国',tabSectors:'星图',tabMissions:'任务',tabChronicle:'编年史',catalog:'所有世界 ↗',settings:'设置',sound:'声音',overline:'轨道系统运行中',headline:'时间帝国',tagline:'唤醒核心，征服轨道，建立超越时间的文明。',rankLabel:'你的身份',rankNovice:'建筑师',rankExplorer:'星域总督',rankMaster:'时间元帅',rankEternal:'纪元之主',rankEpoch:'第一个纪元',rankSeal:'时间印记',balance:'时间能量',income:'生产速率',impact:'点击收益',territories:'已解锁星区',perSecond:'每秒获得能量',tapBonus:'每次激活',worldExplore:'扩张你的帝国',campaignLabel:'第一幕 / 觉醒',campaignTitle:'一切始于时间',campaignText:'启动第一个核心，解锁星区，决定帝国的命运。',chronicleGo:'查看编年史 →',nextGoal:'下一个目标',claimReward:'领取奖励',starMap:'星图',live:'运行中',stable:'核心稳定',tapCore:'激活时间核心以获取能量',coreName:'时间核心',scenePrompt:'点击核心以获取时间能量',tapLimit:'每秒最多激活 15 次 · 进度仅保存在本设备',help:'玩法说明',engineering:'工程中心',upgrades:'发展模块',shopHelp:'升级可增加生产、储存容量并解锁新能力。',tabBuild:'升级',achievements:'成就',unlockSectors:'探索星区 ↗',fieldLog:'事件日志',logInit:'等待第一次操作……',prestige:'飞升',prestigeTitle:'超越当前纪元',ascend:'飞升 ↗',localOnly:'能量仅为游戏资源，与真实支付或钱包无关。',dataSettings:'数据与设置',harvest:'采集时间能量',level:'等级',maxLevel:'已满级',locked:'尚未解锁',shopUnlock:'先解锁更多星区',shopUnlocked:'模块可用',buy:'升级',
+    brandSub:'时间帝国 / 世界 08',language:'语言',tabEmpire:'帝国',tabSectors:'星图',tabMissions:'任务',tabChronicle:'编年史',catalog:'所有世界 ↗',settings:'设置',sound:'声音',overline:'轨道战役 · 单人',headline:'时间帝国',tagline:'唤醒核心，征服轨道，建立超越时间的文明。',rankLabel:'你的身份',rankNovice:'建筑师',rankExplorer:'星域总督',rankMaster:'时间元帅',rankEternal:'纪元之主',rankEpoch:'第一个纪元',rankSeal:'时间印记',balance:'时间能量',income:'生产速率',impact:'点击收益',territories:'已解锁星区',perSecond:'每秒获得能量',tapBonus:'每次激活',worldExplore:'扩张你的帝国',campaignLabel:'第一幕 / 觉醒',campaignTitle:'一切始于时间',campaignText:'启动第一个核心，解锁星区，决定帝国的命运。',chronicleGo:'查看编年史 →',nextGoal:'下一个目标',claimReward:'领取奖励',starMap:'星图',live:'运行中',stable:'核心稳定',tapCore:'激活时间核心以获取能量',coreName:'时间核心',scenePrompt:'点击核心以获取时间能量',tapLimit:'每秒最多激活 15 次 · 进度仅保存在本设备',help:'玩法说明',engineering:'工程中心',upgrades:'发展模块',shopHelp:'升级可增加生产、储存容量并解锁新能力。',tabBuild:'升级',achievements:'成就',unlockSectors:'探索星区 ↗',fieldLog:'事件日志',logInit:'等待第一次操作……',prestige:'飞升',prestigeTitle:'超越当前纪元',ascend:'飞升 ↗',localOnly:'能量仅为游戏资源，与真实支付或钱包无关。',dataSettings:'数据与设置',harvest:'采集时间能量',level:'等级',maxLevel:'已满级',locked:'尚未解锁',shopUnlock:'先解锁更多星区',shopUnlocked:'模块可用',buy:'升级',
     core:'时间核心',coreDesc:'每秒 +0.25',orbit:'轨道脉冲',orbitDesc:'每次点击 +1',vault:'储存仓',vaultDesc:'容量 +800',forge:'恒星熔炉',forgeDesc:'每秒 +3.5',stabilizer:'稳定器',stabilizerDesc:'容量 +1,500 及加成',archive:'永恒档案',archiveDesc:'每秒 +16',
     sectorTitle:'银河星图',sectorIntro:'六个轨道星区。使用游戏内时间能量解锁世界、决定文明的未来。所有选择保存在本设备。',sectorOpen:'已解锁',sectorLocked:'尚未探索',sectorUnlock:'解锁需要',sectorReach:'请先解锁上一个星区',sectorEffect:'生产加成',sectorDecision:'选择星区的发展方向',decisionOrder:'加强秩序',decisionFreedom:'支持居民',decisionDone:'路线已确定',orderInfo:'影响力 +12 · 信任 −6 · 产量 +7%',freedomInfo:'信任 +12 · 影响力 −5 · 点击 +7%',s0:'起源城堡',s1:'月球边疆',s2:'阿特拉斯之环',s3:'零点熔炉',s4:'星辰档案馆',s5:'永恒王座',s0d:'时间第一道脉冲的诞生之地。',s1d:'已知星域边缘的轨道基地。',s2d:'环绕寂静恒星的研究设施。',s3d:'庞大的能源反应堆网络。',s4d:'保存千年文明的记忆。',s5d:'所有已知纪元之外的终极地平线。',
     missionTitle:'帝国任务',missionIntro:'奖励必须通过实际游戏行为获得，不能直接标记完成。',daily:'每日任务 · UTC',dailyTaps:'激活核心 25 次',dailyBuy:'购买 2 次升级',dailyEarn:'获得 450 时间能量',dailyClaim:'领取每日奖励',questDone:'已领取',questPending:'进行中',qSpark:'第一次脉冲',qSparkDesc:'激活核心一次。',qArchitect:'机器的诞生',qArchitectDesc:'购买三次升级。',qPioneer:'星图之外',qPioneerDesc:'解锁第二个星区。',qEternity:'帝国规模',qEternityDesc:'累计获得 1,800 时间能量。',achievementsTitle:'成就殿堂',achievementsIntro:'所有成就都基于真实的游戏进度。',aFirst:'火花',aHundred:'时间工程师',aEngineer:'系统大师',aExplorer:'开拓者',aEmperor:'六重地平线',aEternal:'永恒之印',unlocked:'已解锁',notYet:'尚未解锁',
@@ -2882,8 +3225,8 @@ function strategyAction(type,id,aux){
   else toast(t('toastStrategyBlocked'));
 }
 
-function renderAll() { renderLanguage(); renderStats();renderAdvisor();renderPulseClock();renderObjectives();renderModules();renderSystems();renderRifts();renderFrontier();renderGalaxy(); $('#upgradesTab').classList.toggle('selected',shopMode==='modules'); $('#achievementsTab').classList.toggle('selected',shopMode==='achievements'); $('#sound').setAttribute('aria-pressed',String(game.settings.sound)); }
-function tick() { advance(game,Date.now()); renderStats();renderAdvisor();renderPulseClock(); renderObjectives(); if (Date.now() - lastUi >= 1100) { renderModules(); lastUi=Date.now(); if(modal==='missions') paintModal('missions'); renderSystems(); renderRifts();renderGalaxy(); if(Date.now()-frontierLastPaint>1800){renderFrontier();frontierLastPaint=Date.now();} } renderExpeditionClock(); save(); }
+function renderAll() { renderLanguage(); renderStats();renderAdvisor();renderPulseClock();renderObjectives();renderModules();renderSystems();renderRifts();renderFrontier();renderGalaxy(); waveTranslate(); waveDashboard(); $('#upgradesTab').classList.toggle('selected',shopMode==='modules'); $('#achievementsTab').classList.toggle('selected',shopMode==='achievements'); $('#sound').setAttribute('aria-pressed',String(game.settings.sound)); }
+function tick() { advance(game,Date.now()); renderStats();renderAdvisor();renderPulseClock(); renderObjectives(); if (Date.now() - lastUi >= 1100) { renderModules(); lastUi=Date.now(); if(modal==='missions') paintModal('missions'); renderSystems(); renderRifts();renderGalaxy(); waveDashboard(); if(Date.now()-frontierLastPaint>1800){renderFrontier();frontierLastPaint=Date.now();} } renderExpeditionClock(); save(); }
 function floatAt(x,y,value) {
   if(document.documentElement.dataset.quality==='low')return;
   const box = $('#sceneWorld').getBoundingClientRect();
@@ -2898,7 +3241,7 @@ function harvest(event) {
   if(hitTimes.length>=15) {toast(t('toastTooFast'));return;}
   if(game.time>=capacity(game)){toast(t('toastFull'));return;}
   hitTimes.push(n);const gained=tap(game,n);if(!gained)return;
-  beep();vibrate();save(true);renderStats();renderObjectives();renderAdvisor();renderRifts();
+  beep();vibrate();save(true);renderStats();renderObjectives();renderAdvisor();renderRifts();waveDashboard(true);
   const rect=$('#planet').getBoundingClientRect();const x=event?.clientX && event.target?.id==='planet'?event.clientX:rect.left+rect.width/2;
   const y=event?.clientY && event.target?.id==='planet'?event.clientY:rect.top+rect.height*.35;
   floatAt(x,y,gained);
@@ -2943,7 +3286,12 @@ function renderSettings() {
   return `<p class="dialog-intro">${escapeHTML(t('settingsIntro'))}</p><div class="settings-list"><div class="settings-row"><div><strong>${escapeHTML(t('graphics'))}</strong><p>${escapeHTML(t('graphicsText'))}</p></div><select id="quality"><option value="auto">${escapeHTML(t('qualityAuto'))}</option><option value="high">${escapeHTML(t('qualityHigh'))}</option><option value="low">${escapeHTML(t('qualityLow'))}</option></select></div><div class="settings-row"><div><strong>${escapeHTML(t('audio'))}</strong><p>${escapeHTML(t('audioText'))}</p></div><button type="button" id="dialogSound" class="dialog-button">${escapeHTML(t(game.settings.sound?'enabled':'disabled'))}</button></div></div><div class="setting-actions"><button class="dialog-button" type="button" id="export">${escapeHTML(t('export'))}</button><button class="dialog-button" type="button" id="import">${escapeHTML(t('import'))}</button><button class="dialog-button" type="button" id="share">${escapeHTML(t('share'))}</button><button class="dialog-button" type="button" id="reset">${escapeHTML(t('reset'))}</button></div><p class="settings-danger">${escapeHTML(t('settingsNote'))}</p>`;
 }
 function renderHelp() {
-  return `<p class="dialog-intro">${escapeHTML(t('helpIntro'))}</p><div class="help-steps">${[1,2,3,4,5,6,7,8,9,10].map(n=>`<p>${escapeHTML(t('help'+n))}</p>`).join('')}</div><p class="overline" style="margin:24px 0 7px">${escapeHTML(t('shortcuts'))}</p><p>${escapeHTML(t('shortcutsDesc'))}</p><button type="button" class="dialog-button primary-dialog" id="start" style="margin-top:16px">${escapeHTML(t('start'))}</button>`;
+  const quick=[1,2,3].map((n)=>`<article class="wave-help-step"><b>0${n}</b><p>${escapeHTML(t('help'+n))}</p></article>`).join('');
+  const advanced=[4,5,6,7,8,9,10].map(n=>`<p>${escapeHTML(t('help'+n))}</p>`).join('');
+  return `<p class="dialog-intro">${escapeHTML(waveText('helpQuick'))}</p><div class="wave-help-grid">${quick}</div>
+    <details class="wave-help-advanced"><summary>${escapeHTML(waveText('helpAdvanced'))}</summary><div class="help-steps">${advanced}</div></details>
+    <p class="overline" style="margin:24px 0 7px">${escapeHTML(t('shortcuts'))}</p><p>${escapeHTML(t('shortcutsDesc'))}</p>
+    <button type="button" class="dialog-button primary-dialog wave-help-start" id="start">${escapeHTML(t('start'))} ↗</button>`;
 }
 const modalDefs = { sectors:['starMap','sectorTitle',renderSectors],missions:['tabMissions','missionTitle',renderMissions],achievements:['achievements','achievementsTitle',renderAchievements],chronicle:['tabChronicle','chronicleTitle',renderChronicle],settings:['dataSettings','settingsTitle',renderSettings],help:['help','helpTitle',renderHelp] };
 function paintModal(name) {
@@ -3118,21 +3466,143 @@ function applyQuality() {const mem=Number(navigator.deviceMemory||8);const autoL
 function toggleSound(){game.settings.sound=!game.settings.sound;$('#sound').setAttribute('aria-pressed',String(game.settings.sound));toast(t(game.settings.sound?'toastSoundOn':'toastSoundOff'));save(true);if(modal==='settings')paintModal('settings');}
 function downloadSave(){save(true);const data=new Blob([JSON.stringify(game,null,2)],{type:'application/json'});const url=URL.createObjectURL(data),a=document.createElement('a');a.href=url;a.download=`osgard-empire-${new Date().toISOString().slice(0,10)}.json`;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),3000);toast(t('toastSaved'));}
 async function importSave(file){if(!file||file.size>65536){toast(t('toastInvalid'));return;}try{const raw=JSON.parse(await file.text());if(!raw||![2,3,4,5,6,7,8,9].includes(raw.version)||!raw.modules||!Array.isArray(raw.sectors)){toast(t('toastInvalid'));return;}if(!window.confirm(t('importWarn')))return;game=sanitize(raw,Date.now());game.savedAt=Date.now();applyTheme();applyQuality();save(true);closeModal();renderAll();toast(t('toastImported'));}catch{toast(t('toastInvalid'));}}
-function resetGame(){if(!window.confirm(t('resetWarn')))return;const settings={...game.settings};game=newGame();game.settings=settings;applyTheme();save(true);closeModal();logLines=[];renderAll();toast(t('toastReset'));}
+function resetGame(){if(!window.confirm(t('resetWarn')))return;const settings={...game.settings};game=newGame();game.settings=settings;applyTheme();save(true);closeModal();logLines=[];waveEnergySamples.length=0;waveSampleTime=0;renderAll();toast(t('toastReset'));}
 function ascendAction(){if(!canAscend(game)){if(game.convoy)toast(t('ascensionBusyTrade'));else if(game.expedition)toast(t('ascensionBusy'));return;}if(!window.confirm(t('ascensionConfirm')))return;const n=ascend(game);if(!n)return;save(true);renderAll();log(`${t('toastAscended')}: +${n}`);toast(`${t('toastAscended')}: +${n}`);}
 async function share(){const url=window.location.href.split('#')[0];const data={title:'OSGARD: EMPIRE',text:`${t('headline')} · ${game.sectors.length}/6`,url};try{if(navigator.share)await navigator.share(data);else if(navigator.clipboard)await navigator.clipboard.writeText(url);else throw Error('no clipboard');toast(t('toastCopy'));}catch{toast(t('toastError'));}}
 
 function initCanvas(){
   const canvas=$('#universe'),ctx=canvas.getContext('2d',{alpha:true}); if(!ctx)return;
-  function resize(){const rect=canvas.getBoundingClientRect(); canvasDpr=Math.min(2,window.devicePixelRatio||1);canvasW=rect.width;canvasH=rect.height;canvas.width=Math.max(1,Math.floor(canvasW*canvasDpr));canvas.height=Math.max(1,Math.floor(canvasH*canvasDpr));ctx.setTransform(canvasDpr,0,0,canvasDpr,0,0);let seed=103;const rnd=()=>{seed=(seed*16807)%2147483647;return(seed-1)/2147483646;};stars=Array.from({length:Math.min(130,Math.round(canvasW*canvasH/2300))},()=>({x:rnd()*canvasW,y:rnd()*canvasH,r:0.45+rnd()*.9,speed:rnd(),opacity:.2+rnd()*.6}));}
-  function draw(ts){frameId=requestAnimationFrame(draw);if(document.hidden||document.documentElement.dataset.quality==='low'&&ts-lastFrame<100||ts-lastFrame<36)return;lastFrame=ts;ctx.clearRect(0,0,canvasW,canvasH);const time=ts*.00045;
+  let visible=true;
+  const observer=typeof IntersectionObserver!=='undefined'?new IntersectionObserver(entries=>{visible=entries[0]?.isIntersecting!==false;},{rootMargin:'80px'}):null;
+  if(observer)observer.observe(canvas);
+  function resize(){const rect=canvas.getBoundingClientRect(); const low=document.documentElement.dataset.quality==='low';canvasDpr=Math.min(low?1:1.5,window.devicePixelRatio||1);canvasW=rect.width;canvasH=rect.height;canvas.width=Math.max(1,Math.floor(canvasW*canvasDpr));canvas.height=Math.max(1,Math.floor(canvasH*canvasDpr));ctx.setTransform(canvasDpr,0,0,canvasDpr,0,0);let seed=103;const rnd=()=>{seed=(seed*16807)%2147483647;return(seed-1)/2147483646;};stars=Array.from({length:Math.min(low?42:75,Math.round(canvasW*canvasH/3300))},()=>({x:rnd()*canvasW,y:rnd()*canvasH,r:0.45+rnd()*.9,speed:rnd(),opacity:.2+rnd()*.6}));}
+  function draw(ts){frameId=requestAnimationFrame(draw);const low=document.documentElement.dataset.quality==='low';if(document.hidden||!visible||ts-lastFrame<(low?33:16))return;lastFrame=ts;ctx.clearRect(0,0,canvasW,canvasH);const time=ts*.00045;
     for(const star of stars){ctx.globalAlpha=star.opacity*(.85+.15*Math.sin(time*2+star.x));ctx.fillStyle=star.speed>.8?'#ffe0a1':'#e1ebff';ctx.beginPath();ctx.arc(star.x,star.y,star.r,0,Math.PI*2);ctx.fill();}ctx.globalAlpha=1;
     const cx=canvasW/2,cy=canvasH/2,rx=Math.min(canvasW*.35,270),ry=rx*.25;
     ctx.save();ctx.translate(cx,cy);ctx.rotate(-.13);ctx.lineWidth=.6;ctx.strokeStyle='rgba(226,184,115,.18)';ctx.beginPath();ctx.ellipse(0,0,rx,ry,0,0,Math.PI*2);ctx.stroke();
     for(let i=0;i<3;i++){const a=time*(.55+i*.21)+i*Math.PI*2/3;const x=Math.cos(a)*rx,y=Math.sin(a)*ry;ctx.fillStyle=i===0?'#fae0a7':'#d6a75d';ctx.shadowBlur=13;ctx.shadowColor='#e1b568';ctx.beginPath();ctx.arc(x,y,i===0?2.1:1.45,0,Math.PI*2);ctx.fill();}ctx.restore();ctx.shadowBlur=0;
   }
-  resize();window.addEventListener('resize',resize,{passive:true});frameId=requestAnimationFrame(draw);window.addEventListener('pagehide',()=>cancelAnimationFrame(frameId),{once:true});
+  resize();window.addEventListener('resize',resize,{passive:true});frameId=requestAnimationFrame(draw);window.addEventListener('pagehide',()=>{cancelAnimationFrame(frameId);observer?.disconnect();},{once:true});
 }
+
+// ============================================================================
+// WAVES 01–05: premium player experience. These functions are presentation-only.
+// They read the existing engine state and never award or mutate game resources.
+// ============================================================================
+const WAVE_TEXT = Object.freeze({
+  ru: {
+    helpAdvanced:'Другие игровые системы (по желанию)',helpQuick:'С чего начать — три действия',moreMenu:'Больше разделов',playNow:'Начать играть',saveLocal:'Прогресс сохранён локально',saveBlocked:'Сохранение недоступно · экспортируй игру',journey:'КАК ПОБЕДИТЬ',
+    stepHarvest:'Добывай',stepBuild:'Развивай ядро',stepExpand:'Открывай миры',stepRule:'Управляй галактикой',
+    coreAction:'КАСАЙСЯ ЯДРА — ПОЛУЧАЙ ЭНЕРГИЮ',focusOn:'◩ Сосредоточиться на игре',focusOff:'◧ Вернуть все панели',
+    dockPlay:'Ядро',dockUpgrade:'Улучшить',dockMap:'Миры',dockGalaxy:'Галактика',
+    etaReady:'Уже хватает на развитие',etaNext:'До следующего улучшения',etaWait:'Добывай ◈ для развития',
+    chartLabel:'Изменение энергии в текущем сеансе',rewardOne:'Нажми на ядро',rewardTwo:'Построй первый генератор',rewardThree:'Открой второй мир',rewardFour:'Выбери свою стратегию'
+  },
+  en: {
+    helpAdvanced:'Other game systems (optional)',helpQuick:'Get started in three steps',moreMenu:'More sections',playNow:'Start playing',saveLocal:'Saved on this device',saveBlocked:'Local save unavailable · export your game',journey:'YOUR PATH',
+    stepHarvest:'Harvest',stepBuild:'Upgrade core',stepExpand:'Discover worlds',stepRule:'Rule the galaxy',
+    coreAction:'TAP THE CORE TO HARVEST ENERGY',focusOn:'◩ Focus on gameplay',focusOff:'◧ Show all panels',
+    dockPlay:'Core',dockUpgrade:'Upgrade',dockMap:'Worlds',dockGalaxy:'Galaxy',
+    etaReady:'Upgrade available now',etaNext:'Next upgrade in',etaWait:'Harvest ◈ to upgrade',
+    chartLabel:'Energy movement in this play session',rewardOne:'Tap the core',rewardTwo:'Build the first generator',rewardThree:'Discover a second world',rewardFour:'Choose your strategy'
+  },
+  zh: {
+    helpAdvanced:'更多玩法（可选）',helpQuick:'三步开始',moreMenu:'更多板块',playNow:'开始游戏',saveLocal:'进度保存在本设备',saveBlocked:'无法本地保存 · 请导出存档',journey:'你的成长路线',
+    stepHarvest:'采集能量',stepBuild:'升级核心',stepExpand:'探索世界',stepRule:'统治银河',
+    coreAction:'点击核心获取能量',focusOn:'◩ 专注模式',focusOff:'◧ 显示全部面板',
+    dockPlay:'核心',dockUpgrade:'升级',dockMap:'世界',dockGalaxy:'银河',
+    etaReady:'现在可以升级',etaNext:'距离下次升级',etaWait:'采集 ◈ 来升级',
+    chartLabel:'本次游戏的能量变化',rewardOne:'点击核心',rewardTwo:'建造首个发生器',rewardThree:'探索第二个世界',rewardFour:'规划你的战略'
+  }
+});
+const waveText = key => WAVE_TEXT[lang()]?.[key] ?? WAVE_TEXT.ru[key] ?? key;
+const waveEnergySamples = [];
+let waveSampleTime = 0;
+let waveFocused = false;
+try { waveFocused = localStorage.getItem('osgard-empire-ui-focus-v25') === 'true'; } catch {}
+function wavePhase() {
+  if (game.taps < 1) return 0;
+  if ((game.modules.core || 0) < 1) return 1;
+  if (game.sectors.length < 2) return 2;
+  return 3;
+}
+function waveTranslate() {
+  document.querySelectorAll('[data-wave-i18n]').forEach(el=>{el.textContent=waveText(el.dataset.waveI18n);});
+  $('#waveChart')?.setAttribute('aria-label',waveText('chartLabel'));
+  const focus=$('#waveFocus');
+  if(focus){focus.textContent=waveText(waveFocused?'focusOff':'focusOn');focus.setAttribute('aria-pressed',String(waveFocused));}
+}
+function waveChartDraw(forceSample=false) {
+  const time=Date.now();
+  if (forceSample || !waveSampleTime || time-waveSampleTime>=4000) {
+    waveSampleTime=time;
+    waveEnergySamples.push(Math.max(0,Number(game.time)||0));
+    if(waveEnergySamples.length>48)waveEnergySamples.shift();
+  }
+  const values=waveEnergySamples;
+  if(!values.length)return;
+  const low=Math.min(...values), high=Math.max(...values);
+  const span=Math.max(1,high-low);
+  const points=values.map((value,i)=>{
+    const x=values.length===1?0:i*200/(values.length-1);
+    return [x,28-(value-low)/span*22];
+  });
+  if(points.length===1)points.push([200,points[0][1]]);
+  const line=points.map(([x,y],i)=>`${i?'L':'M'}${x.toFixed(2)},${y.toFixed(2)}`).join(' ');
+  $('#waveChartLine')?.setAttribute('d',line);
+  $('#waveChartArea')?.setAttribute('d',`${line} L200,34 L0,34 Z`);
+}
+function waveDashboard(forceSample=false){
+  const phase=wavePhase();
+  $$('.wave-step').forEach((el,index)=>{
+    const current=index===phase,done=index<phase;
+    el.classList.toggle('current',current);
+    el.classList.toggle('completed',done);
+    el.setAttribute('aria-current',current?'step':'false');
+    el.title=[waveText('rewardOne'),waveText('rewardTwo'),waveText('rewardThree'),waveText('rewardFour')][index];
+  });
+  $('#waveSaveStatus').textContent=waveText(storageOk?'saveLocal':'saveBlocked');
+  $('#waveNextTip').textContent=`+${fmt(perTap(game),0)} ◈`;
+  const caption=['rewardOne','rewardTwo','rewardThree','rewardFour'][phase];
+  $('#waveStageCaption').textContent=waveText(caption).toUpperCase();
+  let nextCost=0;
+  if(phase<2){const m=MODULES.find(x=>x.id==='core');nextCost=m?price(m,game):0;}
+  else if(phase===2){nextCost=SECTORS.find(x=>!game.sectors.includes(x.id))?.price||0;}
+  const remaining=Math.max(0,nextCost-game.time);
+  if(phase===3)$('#waveAfford').textContent=waveText('rewardFour');
+  else if(!remaining)$('#waveAfford').textContent=waveText('etaReady');
+  else {
+    const income=perSecond(game);
+    $('#waveAfford').textContent=income>.01?`${waveText('etaNext')}: ${Math.ceil(remaining/income)}s` : waveText('etaWait');
+  }
+  waveChartDraw(forceSample);
+}
+function waveNavigate(action){
+  const target=action==='play'||action==='harvest'?'sceneWorld':action==='upgrade'?'modules':action==='galaxy'?'galaxy':null;
+  if(action==='sectors'){openModal('sectors');return;}
+  if(target){
+    const el=document.getElementById(target);if(!el)return;
+    const motion=matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth';
+    el.scrollIntoView({behavior:motion,block:action==='galaxy'?'start':'center'});
+    if(action==='harvest'||action==='play')$('#planet')?.focus({preventScroll:true});
+  }
+}
+document.addEventListener('click',event=>{
+  const btn=event.target.closest('[data-wave-go],#waveFocus');
+  if(!btn)return;
+  if(btn.id==='waveFocus'){
+    waveFocused=!waveFocused;
+    document.documentElement.dataset.waveFocus=String(waveFocused);
+    try{localStorage.setItem('osgard-empire-ui-focus-v25',String(waveFocused));}catch{}
+    waveTranslate();return;
+  }
+  waveNavigate(btn.dataset.waveGo);
+  const more=$('#waveMoreMenu');if(more)more.open=false;
+});
+document.addEventListener('click',event=>{
+  if(event.target.closest('#waveMoreMenu button'))$('#waveMoreMenu').open=false;
+});
+document.documentElement.dataset.waveFocus=String(waveFocused);
 
 // Event delegation survives modal redraws and never trusts imported HTML as executable markup.
 document.addEventListener('click',handleAction);
@@ -4017,7 +4487,7 @@ function initWebGLGalaxy(id,seed){
 initWebGLGalaxy('galaxyWebGL',137);initWebGLGalaxy('coopWebGL',557);
 
 // Installability is only enabled on a real secure hosted origin. The offline HTML stays self-contained.
-if('serviceWorker' in navigator&&(location.protocol==='https:'||['localhost','127.0.0.1'].includes(location.hostname))){
+if(typeof OSGARD_EMPIRE_STANDALONE==='undefined'&&'serviceWorker' in navigator&&(location.protocol==='https:'||['localhost','127.0.0.1'].includes(location.hostname))){
   window.addEventListener('load',()=>{
     navigator.serviceWorker.register('/games/empire-orbit/sw.js',{scope:'/games/empire-orbit/'}).catch(()=>{});
   },{once:true});
