@@ -107,6 +107,17 @@ func _box(parent: Node3D, name: String, size: Vector3, pos: Vector3, mat: Materi
     parent.add_child(node)
     return node
 
+func _collision_box(parent: Node3D, name: String, pos: Vector3, size: Vector3) -> void:
+    var solid := StaticBody3D.new()
+    solid.name = name
+    solid.position = pos
+    parent.add_child(solid)
+    var shape := CollisionShape3D.new()
+    var box := BoxShape3D.new()
+    box.size = size
+    shape.shape = box
+    solid.add_child(shape)
+
 func _emit(st: SurfaceTool, a: Vector3, uv_a: Vector2, b: Vector3, uv_b: Vector2, c: Vector3, uv_c: Vector2) -> void:
     st.set_uv(uv_a)
     st.add_vertex(a)
@@ -155,6 +166,11 @@ func _hangar(where: Vector3, direction: float, sector: int, side: int) -> void:
     roof_node.material_override = alloy
     roof_node.position.y = wall * 1.93
     root.add_child(roof_node)
+    # Physical hangar walls and airlock doors stop high-speed ships, unlike R5 props.
+    _collision_box(root, "HangarLeftWallCollision", Vector3(-18.1, wall, 0), Vector3(1.5, wall * 1.95, 29.0))
+    _collision_box(root, "HangarRightWallCollision", Vector3(18.1, wall, 0), Vector3(1.5, wall * 1.95, 29.0))
+    _collision_box(root, "HangarLeftDoorCollision", Vector3(-7.56, 9.3, -15.75), Vector3(14.6, 16.7, 0.68))
+    _collision_box(root, "HangarRightDoorCollision", Vector3(7.56, 9.3, -15.75), Vector3(14.6, 16.7, 0.68))
     for side_x in [-1.0, 1.0]:
         _box(root, "HydraulicDoorSleeve", Vector3(2.2, 17.5, 3.4),
              Vector3(side_x * 15.7, 9.1, -16.0), bronze)
@@ -188,7 +204,9 @@ func _crane(where: Vector3, facing: float, sector: int, side: int) -> void:
     root.rotation.y = facing
     add_child(root)
     _box(root, "TowerBase", Vector3(13, 5, 13), Vector3(0, 2.5, 0), armor)
+    _collision_box(root, "CraneTowerBaseCollision", Vector3(0, 2.5, 0), Vector3(13, 5, 13))
     for x in [-4.2, 4.2]:
+        _collision_box(root, "CraneSupportCollision", Vector3(x, 29, 0), Vector3(0.85, 50.0, 0.95))
         _box(root, "LatticeColumn", Vector3(0.85, 50.0, 0.95),
              Vector3(x, 29, 0), alloy)
         _box(root, "RailGuide", Vector3(0.36, 51, 0.30),
