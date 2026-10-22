@@ -1,0 +1,66 @@
+/* WAVE 2 / OSGARD Ecosystem Index — real cross-product navigation */
+.world-command .ecosystem-index{padding-block:80px 96px;isolation:isolate}
+.ecosystem-index{--ei-line:#47708a7a;--ei-ink:#f3faff;--ei-muted:#bbd0e1;min-width:0}
+.ecosystem-index-heading{display:flex;justify-content:space-between;align-items:flex-end;gap:22px;margin:0 0 34px}
+.ecosystem-index-heading>div{max-width:730px}
+.ecosystem-index-heading .brand-eyebrow{color:#79eff4;letter-spacing:.16em;font-size:11px}
+.ecosystem-index-heading h2{margin:15px 0 16px;font:770 clamp(34px,4.2vw,59px)/1.08 Inter,Arial,sans-serif;letter-spacing:-.056em;color:var(--ei-ink)}
+.ecosystem-index-heading h2 span{color:#80dfef}
+.ecosystem-index-heading p:last-child{max-width:650px;color:var(--ei-muted);font-size:16px;line-height:1.75}
+.ecosystem-index-quality{display:inline-flex;align-items:center;justify-content:space-between;gap:12px;flex:none;max-width:260px;
+  padding:14px 16px;border:1px solid #5c8b9e9c;color:#c5f7fa;border-radius:7px;background:#112737ad;text-decoration:none;font-size:13px;font-weight:650}
+.ecosystem-index-quality:hover{border-color:#a3f4fa;background:#17394d}
+.ecosystem-index-controls{display:flex;align-items:end;gap:17px;justify-content:space-between;padding-bottom:19px;border-bottom:1px solid #547c926e}
+.ecosystem-index-tabs{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.ecosystem-index-tabs button{min-height:44px;white-space:nowrap;padding:10px 15px;border-radius:7px;border:1px solid #52768b;
+  background:#0d2232b3;color:#c4dbe8;font-size:13px;font-weight:630;cursor:pointer;transition:background .2s,border-color .2s}
+.ecosystem-index-tabs button[aria-pressed=true]{background:#80efee;color:#082433;border-color:#b1ffff;box-shadow:0 4px 23px #69ddee22}
+.ecosystem-index-tabs button:hover:not([aria-pressed=true]){border-color:#91e8f2;color:#f6ffff}
+.ecosystem-index-search{display:grid;gap:7px;max-width:345px;min-width:200px;flex:1;font-size:12px;font-weight:670;color:#acccdb}
+.ecosystem-index-search input{font:500 14px/1.5 Inter,Arial,sans-serif;min-height:46px;width:100%;max-width:100%;
+  color:#f6fdff;background:#0b2030;border:1px solid #547b91;border-radius:7px;padding:12px 14px}
+.ecosystem-index-search input::placeholder{color:#9bb6c8}
+.ecosystem-index :is(a,button,input):focus-visible{outline:3px solid #91f5fb;outline-offset:3px}
+.ecosystem-index-count{margin:15px 0 23px;color:#a4c6d7;font:600 11px/1.5 'JetBrains Mono',monospace;letter-spacing:.08em}
+.ecosystem-index-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:17px}
+.ecosystem-index-card{display:flex;flex-direction:column;min-width:0;min-height:350px;background:linear-gradient(155deg,#132d42,#081826);
+  border:1px solid var(--ei-line);border-radius:11px;overflow:hidden;color:inherit;text-decoration:none;
+  box-shadow:0 12px 38px #0004;transition:border-color .23s,transform .23s,box-shadow .23s}
+.ecosystem-index-card:hover{border-color:#9befef;transform:translateY(-5px);box-shadow:0 20px 60px #0009,0 0 25px #58d6e81a}
+.ecosystem-index-card.is-build{border-color:#967d816b;background:linear-gradient(150deg,#232c3c,#101b2a)}
+.ecosystem-index-card.is-play{border-color:#5a94ba79;background:linear-gradient(150deg,#102c45,#071929)}
+.ecosystem-index-art{height:145px;position:relative;overflow:hidden;background:#0b2134}
+.ecosystem-index-art::after{content:'';position:absolute;inset:0;background:linear-gradient(0deg,#071927a6,transparent 62%);pointer-events:none}
+.ecosystem-index-art img{display:block;width:100%;height:100%;object-fit:cover;filter:saturate(.95) contrast(1.02);
+  transition:transform .3s}
+.ecosystem-index-card:hover .ecosystem-index-art img{transform:scale(1.045)}
+.ecosystem-index-content{display:flex;flex-direction:column;padding:21px 23px 24px;flex:1;gap:0}
+.ecosystem-index-content small{color:#8fdbe9;font:680 10px/1.45 'JetBrains Mono',monospace;letter-spacing:.12em}
+.ecosystem-index-card.is-build .ecosystem-index-content small{color:#dcc7ac}
+.ecosystem-index-content h3{font:750 clamp(21px,2vw,27px)/1.2 Inter,Arial,sans-serif;letter-spacing:-.04em;margin:10px 0;color:#f3faff}
+.ecosystem-index-content p{color:#bfd2e0;font-size:14px;line-height:1.66;margin:0 0 22px}
+.ecosystem-index-content>span{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-top:14px;margin-top:auto;
+  border-top:1px solid #54798b72;color:#a2f4f3;font-size:13px;font-weight:720}
+.ecosystem-index-content>span b{font-size:20px;font-weight:550}
+.ecosystem-index-empty{padding:32px 25px;border:1px dashed #5b8fa3;border-radius:10px;background:#0e2739b3}
+.ecosystem-index-empty p{font-size:15px;line-height:1.65;color:#d1e8f5}
+.ecosystem-index-empty button{border:1px solid #a8fff8;border-radius:6px;background:#84f0eb;color:#092233;cursor:pointer;
+  font-size:14px;font-weight:720;min-height:46px;padding:10px 17px}
+.ecosystem-index-note{margin:24px 0 0;color:#a5bfd0;font-size:12px;line-height:1.7}
+@media(max-width:1080px){.ecosystem-index-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+.ecosystem-index-heading{align-items:start}.ecosystem-index-quality{max-width:195px;font-size:12px}}
+@media(max-width:700px){.world-command .ecosystem-index{padding-block:55px 60px}
+.ecosystem-index-heading{display:block;margin-bottom:26px}.ecosystem-index-quality{max-width:none;margin-top:15px;min-height:45px}
+.ecosystem-index-heading h2{font-size:clamp(34px,9vw,48px)}
+.ecosystem-index-heading p:last-child{font-size:15px}
+.ecosystem-index-controls{display:grid;gap:16px}.ecosystem-index-tabs{gap:7px}
+.ecosystem-index-tabs button{font-size:12px;min-height:43px;padding:9px 12px}
+.ecosystem-index-search{max-width:none;min-width:0;width:100%}
+.ecosystem-index-grid{grid-template-columns:1fr;gap:12px}
+.ecosystem-index-card{min-height:0}
+.ecosystem-index-art{height:165px}
+.ecosystem-index-content{padding:18px 20px 20px}
+.ecosystem-index-content h3{font-size:25px}
+}
+@media(prefers-reduced-motion:reduce){.ecosystem-index :is(.ecosystem-index-card,.ecosystem-index-art img,.ecosystem-index-tabs button){transition:none!important;transform:none!important}}
+html[data-motion=off] .ecosystem-index :is(.ecosystem-index-card,.ecosystem-index-art img,.ecosystem-index-tabs button){transition:none!important;transform:none!important}
