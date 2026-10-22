@@ -69,6 +69,7 @@
       t.wrapS=t.wrapT=THREE.RepeatWrapping;
       t.colorSpace=THREE.SRGBColorSpace;
       t.anisotropy=2;
+      if(kind===3)t.repeat.set(12,12);
       ownedTextures.push(t);stats.textureMaps++;
       return t;
     }
@@ -263,7 +264,7 @@
       add(highCar,anodized,0,.82,.13,.64,.019,.13);
       add(highCar,glass,0,.84,.16,.34,.014,.36);
       parent.add(group);
-      highCar.visible=ultra;
+      highCar.visible=high.visible;
       optionalCars.push(highCar);
     }
     const optionalCars=[];
@@ -311,12 +312,12 @@
       currentNight=dayMode===1;
       if(puddleBatch)puddleBatch.visible=currentRaining;
       if(asphalt?.material){
-        asphalt.material.roughness=currentRaining?.23:.96;
-        asphalt.material.metalness=currentRaining?.3:.04;
+        asphalt.material.roughness=currentRaining ? .23 : .96;
+        asphalt.material.metalness=currentRaining ? .30 : .04;
       }
-      amber.emissiveIntensity=currentNight?1.4:.4;
-      cyan.emissiveIntensity=currentNight?1.1:.5;
-      if(glass.emissive)glass.emissiveIntensity=currentNight?.19:.07;
+      amber.emissiveIntensity=currentNight ? 1.4 : .4;
+      cyan.emissiveIntensity=currentNight ? 1.1 : .5;
+      if(glass.emissive)glass.emissiveIntensity=currentNight ? .19 : .07;
     }
     function setQuality(q){
       high.visible=ultra&&q!=='eco'&&q!=='adaptive';
