@@ -227,7 +227,7 @@ function playMotif(){
 }
 function resize(){if(flatCanvas){drawFlatBoard();return;}if(!renderer||!camera)return;const w=Math.max(1,root.clientWidth),h=Math.max(1,root.clientHeight);renderer.setSize(w,h);camera.aspect=w/h;camera.updateProjectionMatrix();}
 function animate(time){
- if(!renderer||document.hidden)return;
+ if(!renderer||document.hidden||document.body.classList.contains("oc-body-active"))return;
  frameCounter++;
  if(!perfSampleStart){perfSampleStart=time;perfSampleFrame=frameCounter;}
  else if(time-perfSampleStart>=1000){
