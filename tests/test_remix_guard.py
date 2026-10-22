@@ -423,7 +423,13 @@ class GuardTests(unittest.TestCase):
         self.assertEqual(status, 503)
         self.assertLess(elapsed, 0.22)
         self.assertEqual(self.legacy.input_count, 0)
-        self.assertEqual(len(self.legacy.calls), 1)
+        # Under load, the strict 100ms absolute budget can expire before the
+        # loopback HTTP server receives the GET. That is a valid fail-closed
+        # outcome, not evidence of a retried or forwarded gameplay action.
+        # Allow zero or one state read, but never an input POST or duplicate.
+        self.assertLessEqual(len(self.legacy.calls), 1)
+        self.assertTrue(all(method == 'GET' and path == f'/v1/matches/{MATCH}/state'
+                            for method, path, *_ in self.legacy.calls))
 
     def test_watchdog_eof_without_content_length_is_not_a_successful_post(self):
         self.stop_guard()
