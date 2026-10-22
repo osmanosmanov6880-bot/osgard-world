@@ -101,7 +101,24 @@ function updateEnvironment(){
 function syncState(force=false){
  if(!game.snapshot)return;
  let current;try{current=game.snapshot()}catch{return}
- const next=worldStateSignature(current);
+ // The history Atlas renders past traces inside the native #objects element
+ // without changing the authoritative current save. Mirror *that* read-only
+ // historical display while replay is active instead of showing today's 3D.
+ const replay=d.body.classList.contains('replay-mode');
+ if(replay){
+  const shown=[...objects.querySelectorAll('.placed')].map(btn=>{
+   const tool=['tree','stone','light','path','flower','arch','chime','moss','cairn','marker']
+    .find(type=>btn.classList.contains(type));
+   return {tool,x:Number.parseFloat(btn.style.left),y:Number.parseFloat(btn.style.top)};
+  });
+  const replayInfo=el('#replay-copy')?.textContent||'';
+  const number=replayInfo.match(/\d+/)?.[0];
+  current={...current,
+    generation:number!==undefined?Number(number):current.generation,
+    objects:shown
+  };
+ }
+ const next=worldStateSignature(current)+(replay?'|history':'|present');
  if(!force&&next===signature)return;
  signature=next;
  const items=stableObjects(current,MAX_SAVED);
@@ -177,7 +194,7 @@ world.addEventListener('click',event=>{
 // Select the REAL native trace inspector when the user directly clicks a
 // rendered 3D object. The raycaster never writes the world or spends a move.
 world.addEventListener('click',event=>{
- if(!status.active||flyby||!camera||!traceRoot||!(event.target instanceof Element)||
+ if(!status.active||flyby||d.body.classList.contains('replay-mode')||!camera||!traceRoot||!(event.target instanceof Element)||
     !event.target.closest('#island')||event.target.closest('button,[data-memory]'))return;
  const rect=canvas.getBoundingClientRect();
  if(!rect.width||!rect.height)return;
