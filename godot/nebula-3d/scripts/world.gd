@@ -13,6 +13,7 @@ const SculpturalSkylineR6Script = preload("res://scripts/sculptural_skyline_r6.g
 const CapitalFleetR7Script = preload("res://scripts/capital_fleet_r7.gd")
 const OrbitalIndustryR9Script = preload("res://scripts/orbital_industry_r9.gd")
 const AegisMegadockR10Script = preload("res://scripts/aegis_megadock_r10.gd")
+const CityCladdingR10Script = preload("res://scripts/city_cladding_r10.gd")
 const SAVE_PATH = "user://nebula_3d_save.json"
 const SECTOR_COLORS = [Color(0.10,0.68,0.97), Color(0.64,0.35,1.0), Color(0.98,0.73,0.40), Color(1.0,0.46,0.34), Color(0.87,0.27,0.88), Color(0.24,0.92,0.88)]
 const SECTOR_NAMES = ["ПОРТ АВРОРА","НЕОНОВЫЙ КВАРТАЛ","ЦИТАДЕЛЬ","ЧЁРНЫЙ РЫНОК","РАЗЛОМ","НЕКСУС"]
@@ -57,6 +58,7 @@ var hud_objective: Label
 var hud_panel: PanelContainer
 var hud_canvas: CanvasLayer
 var aegis_r10: Node3D
+var city_cladding_r10: Node3D
 var graphics_quality: int = 0
 
 func _ready() -> void:
@@ -225,6 +227,10 @@ func _build_city() -> void:
     aegis_r10.name = "AegisMegadocksR10"
     add_child(aegis_r10)
     aegis_r10.build(SECTOR_POSITIONS)
+    city_cladding_r10 = CityCladdingR10Script.new()
+    city_cladding_r10.name = "R10_ArchitecturalCladding"
+    add_child(city_cladding_r10)
+    city_cladding_r10.build(tower_data, SECTOR_POSITIONS)
     _build_starfield()
 
 func _build_sector(center: Vector3, tint: Color, name: String, index: int) -> void:
@@ -637,6 +643,8 @@ func _set_graphics_quality(mode: int) -> void:
     graphics_quality = clampi(mode, 0, 2)
     if is_instance_valid(aegis_r10):
         aegis_r10.set_quality(graphics_quality)
+    if is_instance_valid(city_cladding_r10):
+        city_cladding_r10.set_quality(graphics_quality)
     _show_notice("ГРАФИКА · " + ["МАКСИМУМ", "ВЫСОКАЯ", "ОПТИМИЗАЦИЯ"][graphics_quality])
 
 func _upgrade_docked(slot: int) -> void:
