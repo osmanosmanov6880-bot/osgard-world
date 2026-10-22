@@ -1,4 +1,3 @@
-**/.godot/
-**/.build-web/
-**/output/
-*.tmp
+.godot/
+.build-web/
+screenshots-ci/

@@ -347,7 +347,7 @@ func _on_viewport_changed() -> void:
         for button in button_row.get_children():
             var b := button as Button
             b.custom_minimum_size = Vector2(0.0 if is_mobile else 140.0, 58.0)
-            b.add_theme_font_size_override("font_size", 13 if is_mobile else 18)
+            b.add_theme_font_size_override("font_size", 15 if is_mobile else 18)
     var forecast := get_node_or_null("RussianGameHUD/ForecastPanel") as PanelContainer
     if forecast:
         forecast.visible = not is_mobile
@@ -363,7 +363,7 @@ func _on_viewport_changed() -> void:
         tip.visible = not is_mobile
     _update_controls()
     if state == "aiming":
-        launch_button.text = "▶ ПУСК" if mobile_hud else "ПРОБЕЛ · ЗАПУСТИТЬ"
+        launch_button.text = "▶ ЗАПУСК" if mobile_hud else "ПРОБЕЛ · ЗАПУСТИТЬ"
 
 func _load_stage(next_stage: int) -> void:
     stage_index = next_stage % STAGES.size()
@@ -413,7 +413,7 @@ func _restart() -> void:
     elapsed = 0.0
     accumulator = 0.0
     status_label.text = "ГОТОВО К ЗАПУСКУ"
-    launch_button.text = "▶ ПУСК" if mobile_hud else "ПРОБЕЛ · ЗАПУСТИТЬ"
+    launch_button.text = "▶ ЗАПУСК" if mobile_hud else "ПРОБЕЛ · ЗАПУСТИТЬ"
     launch_button.disabled = false
     _draw_preview()
     _update_controls()
@@ -429,11 +429,11 @@ func _update_controls() -> void:
     if polarity == 1:
         polarity_label.text = "ПОЛЕ: ПРИТЯЖЕНИЕ"
         polarity_label.add_theme_color_override("font_color", VIOLET)
-        polarity_button.text = "Q · ПРИТЯЖ." if mobile_hud else "Q · ПРИТЯЖЕНИЕ"
+        polarity_button.text = "Q · ПОЛЕ +" if mobile_hud else "Q · ПРИТЯЖЕНИЕ"
     else:
         polarity_label.text = "ПОЛЕ: ОТТАЛКИВАНИЕ"
         polarity_label.add_theme_color_override("font_color", GOLD)
-        polarity_button.text = "Q · ОТТАЛК." if mobile_hud else "Q · ОТТАЛКИВАНИЕ"
+        polarity_button.text = "Q · ПОЛЕ −" if mobile_hud else "Q · ОТТАЛКИВАНИЕ"
     angle_label.text = "← →  %.0f°" % launch_angle if mobile_hud else "← →  Угол запуска: %.0f°" % launch_angle
 
 func _toggle_camera() -> void:

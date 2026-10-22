@@ -53,6 +53,22 @@ jobs:
           assert wasm.open('rb').read(4) == b'\x00asm', 'WebAssembly magic mismatch'
           assert next(root.glob('*.pck')).stat().st_size >= 1024, 'Godot PCK too small'
           PYCODE
+      - name: Capture authentic Godot renderer frame (optional GPU QA)
+        shell: bash
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          command -v xvfb-run
+          timeout 90s xvfb-run -a -s "-screen 0 1600x900x24" godot --rendering-method gl_compatibility --path godot/vector-zero --script res://tests/capture.gd
+          test -s godot/vector-zero/screenshots-ci/vector-zero-blackfield-native.png
+      - name: Attach original renderer screenshot for art review
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vector-zero-blackfield-native-render
+          path: godot/vector-zero/screenshots-ci/*.png
+          if-no-files-found: warn
+          retention-days: 14
       - name: Publish playable build as CI artifact (not production)
         uses: actions/upload-artifact@v4
         with:
