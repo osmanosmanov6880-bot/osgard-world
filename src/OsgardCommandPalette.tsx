@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react'
 import { playGameTitles } from './playGameTitles'
+import { cases } from './featuredCases'
 import { navigateBrowserUrl } from './browserNavigation'
 import './osgardCommandPalette.css'
 
@@ -25,6 +26,7 @@ const destinations: Destination[] = [
   { id: 'assessment', label: 'Самопроверка', subtitle: 'Проверка учебных знаний', href: '/learning/assessment', section: 'ОБУЧЕНИЕ', keywords: 'экзамен тест проверка' },
   { id: 'favorites', label: 'Избранные игры', subtitle: 'Миры, сохранённые в браузере', href: '/play?view=favorites#catalog', section: 'ИГРЫ', keywords: 'любимые коллекция сохраненные' },
   { id: 'recent', label: 'Недавние игры', subtitle: 'Последние открытые миры', href: '/play?view=recent#catalog', section: 'ИГРЫ', keywords: 'история игры' },
+  { id: 'archive', label: 'Архив Entertainment', subtitle: 'Семь игр из истории OSGARD', href: '/entertainment/index.html', section: 'ИГРЫ', keywords: 'архив семь 7 старые игры entertainment' },
   { id: 'partners', label: 'Партнёрам Play', subtitle: 'Сотрудничество и интеграции', href: '/play/partners', section: 'ОБРАТНАЯ СВЯЗЬ' },
   { id: 'quality', label: 'Состояние сборки', subtitle: 'Проверки и ограничения платформы', href: '/quality', section: 'ОБРАТНАЯ СВЯЗЬ', keywords: 'качество статус техническая проверка' },
 ]
@@ -32,7 +34,24 @@ const games: Destination[] = Object.entries(playGameTitles).map(([id, label]) =>
   id: 'game-' + id, label, subtitle: 'Открыть страницу игрового мира',
   href: '/play/world/' + id, section: 'ИГРОВЫЕ МИРЫ', keywords: id.replaceAll('-', ' '),
 }))
-const allDestinations = [...destinations, ...games]
+const portfolio: Destination[] = cases.map(item => ({
+  id: 'case-' + item.id, label: item.name,
+  subtitle: item.type + ' · ' + item.category,
+  href: item.href, section: 'ПРОЕКТЫ', keywords: item.id + ' ' + item.description,
+}))
+const allDestinations = [...destinations, ...portfolio, ...games]
+const routeSuggestions = (path: string): string[] => {
+  if (path.startsWith('/play') || path === '/games' || path === '/entertainment') {
+    return ['play','favorites','recent','archive','game-vector-zero','game-time','academy','intelligence','world']
+  }
+  if (path === '/development' || path.startsWith('/development/')) {
+    return ['development','case-tedes','case-phantom','case-merakki','case-essentia','world','intelligence','play','quality']
+  }
+  if (path === '/intelligence' || path.startsWith('/learning') || path.startsWith('/lectures') || path === '/academy') {
+    return ['intelligence','academy','lectures','learning','assessment','world','play','development','quality']
+  }
+  return ['world','intelligence','play','development','academy','lectures','learning','quality','archive']
+}
 const normal = (value: string): string => value.trim().toLocaleLowerCase('ru')
 
 export function OsgardCommandPalette({ path }: { path: string }) {
@@ -44,11 +63,14 @@ export function OsgardCommandPalette({ path }: { path: string }) {
   const prevPath = useRef(path)
   const matches = useMemo(() => {
     const term = normal(query)
-    return (term
-      ? allDestinations.filter(item => normal([item.label,item.subtitle,item.section,item.keywords || ''].join(' ')).includes(term))
-      : destinations.slice(0, 9)
-    ).slice(0, 14)
-  }, [query])
+    if (term) return allDestinations.filter(item =>
+      normal([item.label,item.subtitle,item.section,item.keywords || ''].join(' ')).includes(term)).slice(0, 14)
+    const byId = new Map(allDestinations.map(item => [item.id, item]))
+    return routeSuggestions(path).flatMap(id => {
+      const item = byId.get(id)
+      return item ? [item] : []
+    }).slice(0, 9)
+  }, [query, path])
 
   useEffect(() => {
     const key = (event: KeyboardEvent) => {
@@ -145,7 +167,8 @@ export function OsgardCommandPalette({ path }: { path: string }) {
         </p>
         <nav className="osgard-command-results" aria-label="Результаты быстрого перехода">
           {matches.length ? <ul>{matches.map((item, index) => <li key={item.id}>
-            <a data-command-result href={item.href} onClick={close}>
+            <a data-command-result href={item.href} onClick={close}
+              aria-current={(item.href.split(/[?#]/)[0].replace(/\\/+$/, '') || '/') === path ? 'page' : undefined}>
               <span className="osgard-command-result-index" aria-hidden="true">{String(index + 1).padStart(2,'0')}</span>
               <span className="osgard-command-result-copy">
                 <span className="osgard-command-result-title">{item.label}</span>
