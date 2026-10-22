@@ -28,6 +28,7 @@
     "qa:null-shift-godot": "node scripts/null-shift-godot-smoke.mjs",
     "qa:partners-page": "node scripts/partners-page-smoke.mjs",
     "qa:ecosystem": "node scripts/ecosystem-integrity-smoke.mjs",
+    "qa:unified": "node scripts/osgard-unified-release-smoke.mjs",
     "qa:remix-growth": "node scripts/remix-growth-smoke.mjs",
     "qa:academy": "node scripts/academy-home-smoke.mjs",
     "qa:lectures": "node scripts/lecture-library-smoke.mjs",
