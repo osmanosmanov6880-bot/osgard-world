@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>QA — OSGARD cinematic viewport</title>
+  <style>
+    html,body{margin:0;background:#020814;color:#e5f3ff;font:14px/1.5 Inter,Arial,sans-serif}
+    .qa-controls{padding:16px;max-width:1400px;margin:auto}.qa-controls h1{font-size:19px;margin:0 0 8px}.qa-controls p{margin:6px 0;color:#adc3d7}
+    .qa-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:12px}.qa-row label{display:flex;gap:7px;align-items:center}
+    .qa-row button,.qa-row select,.qa-row a{min-height:40px;box-sizing:border-box;padding:8px 12px;color:#e5f3ff;background:#061527;border:1px solid #467987;border-radius:4px;font:inherit}
+    .qa-row button{cursor:pointer}.qa-row button:disabled{opacity:.5;cursor:wait}.qa-row a{text-decoration:underline}.qa-row :focus-visible{outline:2px solid #56f4f5;outline-offset:3px}
+    #qa-stage{position:relative;margin:16px auto 0}#qa-frame{position:absolute;inset:0;border:1px solid #385869;display:block;transform-origin:0 0;box-sizing:content-box}
+    #qa-status{min-height:22px}.qa-idle{min-height:100dvh;display:grid;place-content:center;text-align:center;color:#adc3d7;margin:0;padding:24px;box-sizing:border-box}
+    body.qa-frame{overflow:hidden}.qa-frame .qa-controls,.qa-frame #qa-stage{display:none}
+  </style>
+</head>
+<body>
+  <header class="qa-controls">
+    <h1>QA: настоящий OsgardCinematic в заданном viewport</h1>
+    <p>Тестовая страница Vite. Анимация идёт в реальном времени; интерфейс и ограничения production Provider не изменяются.</p>
+    <div class="qa-row">
+      <label>Размер <select id="qa-width"><option value="390">390 × 844</option><option value="768">768 × 1024</option><option value="1440">1440 × 900</option><option value="1920">1920 × 1080</option></select></label>
+      <label>Сцена <select id="qa-kind"><option value="intro">Вступление · 3,6 с</option><option value="play">Переход PLAY · 0,9 с</option><option value="transition">Переход раздела · 0,9 с</option></select></label>
+      <label><input id="qa-low" type="checkbox"> lowPower</label>
+      <label><input id="qa-fit" type="checkbox" checked> Вписать в окно</label>
+      <button id="qa-play" type="button" disabled>Воспроизвести</button>
+    </div>
+    <div class="qa-row">
+      <button id="qa-first-visit" type="button">Сбросить только ключ intro и открыть Play</button>
+      <a href="/play">Обычный Play</a>
+    </div>
+    <p id="qa-status" role="status">Подготавливается настоящий компонент…</p>
+  </header>
+  <div id="qa-stage"><iframe id="qa-frame" title="Проверяемая заставка OSGARD"></iframe></div>
+  <div id="qa-root"></div>
+  <script type="module">
+    import { INTRO_STORAGE_KEY } from '/src/osgardRouting.ts'
+    import '/src/brandFonts.css'
+    import '/src/brandSystem.css'
+
+    const sizes = new Map([[390, 844], [768, 1024], [1440, 900], [1920, 1080]])
+    const kinds = new Set(['intro', 'play', 'transition'])
+    const query = new URLSearchParams(location.search)
+    const status = document.getElementById('qa-status')
+
+    async function boot() {
+      if (!import.meta.env.DEV) { status.textContent = 'Эта fixture работает только через Vite dev server.'; return }
+      if (query.get('frame') === '1') {
+        document.body.classList.add('qa-frame')
+        const [{ default: React, useState, useEffect }, { createRoot }, { default: OsgardCinematic }] = await Promise.all([
+          import('react'), import('react-dom/client'), import('/src/OsgardCinematic.tsx'),
+        ])
+        const report = text => parent.postMessage({ type: 'osgard-cinematic-qa-status', text }, location.origin)
+        function Fixture() {
+          const [session, setSession] = useState(null)
+          useEffect(() => {
+            let nextId = 0
+            const receive = event => {
+              if (event.origin !== location.origin || event.source !== parent || event.data?.type !== 'osgard-cinematic-qa-play') return
+              const kind = kinds.has(event.data.kind) ? event.data.kind : 'intro'
+              setSession({ id: ++nextId, kind, lowPower: event.data.lowPower === true, phase: kind === 'intro' ? 'awakening' : 'activation', started: performance.now() })
+            }
+            window.addEventListener('message', receive)
+            parent.postMessage({ type: 'osgard-cinematic-qa-ready', width: innerWidth, height: innerHeight }, location.origin)
+            return () => window.removeEventListener('message', receive)
+          }, [])
+          const finish = (id, reason) => setSession(current => {
+            if (!current || current.id !== id) return current
+            report(reason + ' · ' + Math.round(performance.now() - current.started) + ' мс · ' + innerWidth + ' × ' + innerHeight)
+            return null
+          })
+          useEffect(() => {
+            if (!session) return
+            const id = session.id
+            const phase = value => setSession(current => current?.id === id ? { ...current, phase: value } : current)
+            const phases = session.kind === 'intro' ? [[650, 'activation'], [1350, 'reveal'], [2150, 'online'], [3000, 'enter']] : [[550, 'enter']]
+            const timers = phases.map(([delay, value]) => setTimeout(() => phase(value), delay))
+            // The component's real CSS animationend normally completes it; this
+            // finite fallback also cleans up if the browser suppresses that event.
+            timers.push(setTimeout(() => finish(id, 'Таймлайн завершён'), session.kind === 'intro' ? 3600 : 900))
+            const escape = event => { if (event.key === 'Escape') { event.preventDefault(); finish(id, 'Пропущено') } }
+            window.addEventListener('keydown', escape)
+            report('Воспроизведение · ' + innerWidth + ' × ' + innerHeight + ' · lowPower=' + session.lowPower)
+            return () => { timers.forEach(clearTimeout); window.removeEventListener('keydown', escape) }
+          }, [session?.id])
+          return session ? React.createElement(OsgardCinematic, {
+            key: session.id, kind: session.kind, phase: session.phase, lowPower: session.lowPower,
+            onComplete: () => finish(session.id, 'Анимация завершена'), onSkip: () => finish(session.id, 'Пропущено'),
+          }) : React.createElement('p', { className: 'qa-idle' }, 'Нажмите «Воспроизвести» в панели QA. Это контейнер проверки, а не страница продукта.')
+        }
+        createRoot(document.getElementById('qa-root')).render(React.createElement(Fixture))
+        return
+      }
+
+      const frame = document.getElementById('qa-frame'), stage = document.getElementById('qa-stage')
+      const widthControl = document.getElementById('qa-width'), kindControl = document.getElementById('qa-kind')
+      const low = document.getElementById('qa-low'), fit = document.getElementById('qa-fit'), play = document.getElementById('qa-play')
+      widthControl.value = String(sizes.has(Number(query.get('width'))) ? Number(query.get('width')) : 1440)
+      kindControl.value = kinds.has(query.get('kind')) ? query.get('kind') : 'intro'
+      low.checked = query.get('lowPower') === '1'
+      fit.checked = query.get('fit') !== '0'
+      const layout = () => {
+        const width = Number(widthControl.value), height = sizes.get(width)
+        const availableHeight = Math.max(300, innerHeight - document.querySelector('.qa-controls').offsetHeight - 34)
+        const scale = fit.checked ? Math.min(1, Math.max(320, innerWidth - 36) / width, availableHeight / height) : 1
+        frame.width = String(width); frame.height = String(height)
+        frame.style.transform = 'scale(' + scale + ')'
+        stage.style.width = width * scale + 'px'; stage.style.height = height * scale + 'px'
+        frame.title = 'Настоящая заставка OSGARD: ' + width + ' × ' + height
+      }
+      const load = () => {
+        play.disabled = true; layout(); status.textContent = 'Подготавливается настоящий компонент…'
+        const url = new URL(location.pathname, location.origin); url.searchParams.set('frame', '1')
+        url.searchParams.set('width', widthControl.value); frame.src = url.pathname + url.search
+      }
+      window.addEventListener('message', event => {
+        if (event.origin !== location.origin || event.source !== frame.contentWindow) return
+        if (event.data?.type === 'osgard-cinematic-qa-ready') { play.disabled = false; status.textContent = 'Готово: реальный viewport ' + event.data.width + ' × ' + event.data.height + '. Нажмите «Воспроизвести».' }
+        if (event.data?.type === 'osgard-cinematic-qa-status') status.textContent = event.data.text
+      })
+      play.addEventListener('click', () => frame.contentWindow.postMessage({ type: 'osgard-cinematic-qa-play', kind: kindControl.value, lowPower: low.checked }, location.origin))
+      widthControl.addEventListener('change', load); fit.addEventListener('change', layout); window.addEventListener('resize', layout)
+      document.getElementById('qa-first-visit').addEventListener('click', () => {
+        if (window.top !== window.self) { status.textContent = 'Откройте основную QA-страницу в верхнем окне.'; return }
+        try { localStorage.removeItem(INTRO_STORAGE_KEY) }
+        catch { status.textContent = 'Браузер не разрешил удалить ключ intro; данные не менялись.'; return }
+        location.assign('/play')
+      })
+      load()
+    }
+    boot().catch(error => { status.textContent = 'Fixture не загрузилась: ' + error.message })
+  </script>
+</body>
+</html>

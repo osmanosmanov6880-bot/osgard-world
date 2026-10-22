@@ -1,0 +1,172 @@
+/* OSGARD DIGITAL UNIVERSE — finite, layered scenes. No canvas or WebGL runtime. */
+.osgard-cinematic{--oc-cyan:#56f4f5;--oc-ice:#e0fbff;--oc-black:#010710;position:fixed;inset:0;z-index:100010;isolation:isolate;overflow:hidden;color:var(--oc-ice);background:var(--oc-black);font-family:Inter,Arial,sans-serif;perspective:1100px;animation:oc-intro-lifetime 3.6s linear both;contain:layout paint;touch-action:manipulation}
+.osgard-cinematic *{box-sizing:border-box}
+.osgard-cinematic .oc-cosmos{position:absolute;inset:0;overflow:hidden;pointer-events:none;animation:oc-cosmos-awake 3.6s both}
+.osgard-cinematic .oc-environment{position:absolute;inset:-2%;display:block;transform-origin:50% 63%;animation:oc-environment-dolly 3.6s ease-out both}
+.osgard-cinematic .oc-environment img{display:block;width:100%;height:100%;object-fit:cover;object-position:center 65%;opacity:.72;transform:translateY(7dvh)}
+.osgard-cinematic .oc-environment-shade{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 38%,#020b1400 5%,#01071045 57%,#010710ad 100%),linear-gradient(0deg,#010710 0%,transparent 19%,transparent 82%,#010710a1);pointer-events:none}
+.osgard-cinematic .oc-guides{position:absolute;inset:0;opacity:.4}
+.osgard-cinematic .oc-guides i{position:absolute;top:0;bottom:0;width:1px;left:9%;background:linear-gradient(transparent 9%,#35d7e370 33%,transparent 55%,#248dc74d 86%,transparent)}
+.osgard-cinematic .oc-guides i:nth-child(2){left:18%;opacity:.34}
+.osgard-cinematic .oc-guides i:nth-child(3){left:82%;opacity:.34}
+.osgard-cinematic .oc-guides i:nth-child(4){left:91%}
+.osgard-cinematic .oc-beam{position:absolute;top:-5%;bottom:16%;width:1px;left:50%;background:linear-gradient(transparent,#a6ffff8c 27%,#49e1f593 68%,#9bffff);box-shadow:0 0 9px #49dfff,0 0 30px 4px #00bbdf38;transform-origin:center bottom;animation:oc-beam-awake 3.6s both}
+.osgard-cinematic .oc-horizon{position:absolute;bottom:17%;left:8%;right:8%;height:1px;opacity:.5;background:linear-gradient(90deg,transparent,#116999 18%,#d4ffff 50%,#116999 82%,transparent);box-shadow:0 0 25px 2px #28d0fa44;animation:oc-horizon-awake 3.6s both}
+.osgard-cinematic .oc-particles{position:absolute;inset:0}
+.osgard-cinematic .oc-particles i{position:absolute;width:2px;height:2px;border-radius:50%;background:#acfaff;box-shadow:0 0 8px #68e7f7;opacity:.55;animation:oc-particle-drift 3.6s ease-out both;animation-delay:calc(var(--particle)*-35ms)}
+.osgard-cinematic .oc-particles i:nth-child(6n){width:1px;height:1px;opacity:.35;background:#b281f1}
+.osgard-cinematic .oc-platform{position:absolute;bottom:-2%;left:50%;width:min(86vw,1200px);height:auto;transform:translateX(-50%);filter:drop-shadow(0 0 7px #00d8f366);animation:oc-platform-awake 3.6s both}
+.osgard-cinematic .oc-floor-ring{transform-origin:600px 142px;animation:oc-floor-sequence 3.6s both}
+.osgard-cinematic .oc-floor-ring-two{animation-delay:.08s}
+.osgard-cinematic .oc-floor-ring-three{animation-delay:.14s}
+.osgard-cinematic .oc-floor-ring-four{animation-delay:.22s}
+.osgard-cinematic .oc-floor-reflection{filter:blur(3px)}
+.osgard-cinematic .oc-brand-scene{position:absolute;left:50%;top:45%;width:max-content;max-width:95vw;display:flex;flex-direction:column;align-items:center;transform:translate(-50%,-50%);transform-origin:50% 39%;animation:oc-brand-timeline 3.6s cubic-bezier(.2,.65,.2,1) both}
+.osgard-cinematic .oc-logo-space{position:relative;width:min(56vw,48dvh,550px);aspect-ratio:1;flex:none;isolation:isolate}
+.osgard-cinematic .oc-core{position:absolute;inset:5%;border-radius:50%;background:radial-gradient(ellipse,#0edaf529,transparent 65%);filter:blur(10px);animation:oc-core-awake 3.6s both}
+.osgard-cinematic .oc-orbits{position:absolute;inset:-21%;width:142%;height:142%;color:#4ad0ed;overflow:visible;animation:oc-orbits-awake 3.6s ease-out both}
+.osgard-cinematic .oc-orbit-exterior{transform-origin:center;animation:oc-orbit-turn 3.6s linear both}
+.osgard-cinematic .oc-orbit-wide{opacity:.24}
+.osgard-cinematic .oc-orbit-node{position:absolute;width:14px;height:14px;left:-5%;top:40%;border-radius:50%;background:radial-gradient(circle at 25% 25%,#93cee6,#123243 48%,#010610 76%);box-shadow:-1px -1px 2px #95e3fa70;animation:oc-nodes-awake 3.6s both}
+.osgard-cinematic .oc-orbit-node-two{width:21px;height:21px;left:104%;top:67%;background:radial-gradient(circle at 72% 20%,#99d8e3,#264557 39%,#010910 70%)}
+.osgard-cinematic .oc-orbit-node-three{width:9px;height:9px;left:93%;top:90%}
+.osgard-cinematic .oc-emblem{position:absolute;inset:0;isolation:isolate}
+.osgard-cinematic .oc-emblem-image{display:block;width:100%;height:100%;object-fit:contain;animation:oc-emblem-solid 3.6s both}
+.osgard-cinematic .oc-emblem-shards{position:absolute;inset:0;animation:oc-emblem-shards 3.6s both}
+.osgard-cinematic .oc-emblem-shards i{position:absolute;inset:0;background:url('/brand/intro/osgard-emblem-640.webp') center/contain no-repeat;filter:drop-shadow(0 0 4px #47edf8);clip-path:polygon(0 0,100% 0,100% 34%,0 34%);animation:oc-assemble-upper 3.6s both}
+.osgard-cinematic .oc-emblem-shards i:nth-child(2){clip-path:polygon(0 34%,100% 34%,100% 66%,0 66%);animation-name:oc-assemble-center}
+.osgard-cinematic .oc-emblem-shards i:nth-child(3){clip-path:polygon(0 66%,100% 66%,100% 100%,0 100%);animation-name:oc-assemble-lower}
+.osgard-cinematic .oc-emblem-rim,.osgard-cinematic .oc-emblem-sweep{position:absolute;inset:0;pointer-events:none;mask:url('/brand/intro/osgard-emblem-640.webp') center/contain no-repeat;-webkit-mask:url('/brand/intro/osgard-emblem-640.webp') center/contain no-repeat}
+.osgard-cinematic .oc-emblem-rim{opacity:0;background:#42e5f1;mix-blend-mode:screen;animation:oc-rim-awake 3.6s both}
+.osgard-cinematic .oc-emblem-sweep{opacity:0;background:linear-gradient(112deg,transparent 35%,#d5ffff00 42%,#efffff9c 49%,#83faff19 53%,transparent 59%) -110% 0/220% 100% no-repeat;mix-blend-mode:screen;animation:oc-metal-sweep 3.6s both}
+.osgard-cinematic .oc-star{position:absolute;left:86%;top:17%;width:9px;height:9px;border-radius:50%;background:#eaffff;box-shadow:0 0 10px 5px #56e5ff99,0 0 38px 13px #4cdaff40;animation:oc-star-reveal 3.6s both}
+.osgard-cinematic .oc-star::before,.osgard-cinematic .oc-star::after{content:'';position:absolute;width:70px;height:1px;left:50%;top:50%;transform:translate(-50%,-50%) rotate(-15deg);background:linear-gradient(90deg,transparent,#d9fdff,transparent)}
+.osgard-cinematic .oc-star::after{width:50px;transform:translate(-50%,-50%) rotate(75deg)}
+.osgard-cinematic .oc-star-violet{left:1%;top:85%;width:5px;height:5px;background:#edceff;box-shadow:0 0 8px 3px #e175ff7a,0 0 22px 7px #d257c71c}
+.osgard-cinematic .oc-star-violet::before{width:40px;background:linear-gradient(90deg,transparent,#f4c8ff,transparent)}
+.osgard-cinematic .oc-star-violet::after{width:24px}
+.osgard-cinematic .oc-wordmark{display:flex;justify-content:center;margin:5dvh 0 0;padding-left:.09em;font-family:'Space Grotesk',Inter,Arial,sans-serif;font-size:clamp(50px,10.8dvh,126px);font-weight:600;line-height:.9;letter-spacing:.075em;transform:scaleX(1.14);filter:drop-shadow(0 4px 0 #020812) drop-shadow(0 0 13px #1dbbe225)}
+.osgard-cinematic .oc-wordmark span{display:block;color:#cbe5ef;background:linear-gradient(167deg,#effeff 6%,#a9ddeb 28%,#e6faff 43%,#5587a3 49%,#9cc9de 59%,#d4edf5 83%,#4f87a2 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;-webkit-text-stroke:.7px #c4f3ff;animation:oc-letter-assemble 3.6s both;animation-delay:calc(var(--letter)*55ms)}
+.osgard-cinematic .oc-wordmark span:nth-child(4){background:linear-gradient(153deg,#f0ffff 20%,#90eeff 50%,#3ed9f0 64%,#a9f7ff 80%);-webkit-background-clip:text;background-clip:text}
+.osgard-cinematic .oc-universe{display:flex;align-items:center;justify-content:center;gap:32px;margin:25px 0 0;color:#b8deef;font:500 clamp(10px,1.9dvh,19px)/1.4 'Space Grotesk',Inter,sans-serif;letter-spacing:.64em;padding-left:.64em;white-space:nowrap;animation:oc-subtitle-assemble 3.6s both}
+.osgard-cinematic .oc-universe i{display:block;flex:none;width:44px;height:1px;background:#55e4f6;box-shadow:0 0 9px #31ccef44}
+.osgard-cinematic .oc-brand-coordinate{height:42px;margin-top:20px;position:relative;display:flex;flex-direction:column;align-items:center;gap:11px;animation:oc-coordinate-awake 3.6s both}
+.osgard-cinematic .oc-brand-coordinate i{width:11px;height:11px;transform:rotate(45deg);border:1px solid #79ecff;box-shadow:0 0 7px #20dafa66}
+.osgard-cinematic .oc-brand-coordinate span{height:3px;width:3px;border-radius:50%;background:#e899ff;box-shadow:0 0 6px #b381ff}
+.osgard-cinematic .oc-brand-coordinate b{height:3px;width:3px;border-radius:50%;background:#64defa;box-shadow:0 0 7px #31dffb}
+.osgard-cinematic .oc-arrival-light{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 42%,#3cd4e72a,transparent 62%);opacity:0;animation:oc-arrival 3.6s both}
+.osgard-cinematic .oc-caption{position:absolute;left:50%;bottom:35px;transform:translateX(-50%);display:flex;align-items:center;gap:11px;color:#8cb9ce;font:9px/1.6 'JetBrains Mono',monospace;letter-spacing:.2em;white-space:nowrap;animation:oc-caption-in .6s ease both .3s}
+.osgard-cinematic .oc-caption-signal{height:4px;width:4px;background:#7bffff;box-shadow:0 0 7px #66efff;transform:rotate(45deg)}
+.osgard-cinematic .oc-skip{position:absolute;right:clamp(18px,3.6vw,65px);bottom:24px;display:flex;align-items:center;justify-content:center;gap:21px;min-width:142px;min-height:44px;padding:10px 17px;border:1px solid #57839693;border-radius:2px;background:#03111cd6;color:#cce9f5;cursor:pointer;font:500 11px/1.5 Inter,Arial,sans-serif;letter-spacing:.04em;z-index:5;transition:border-color .15s,background .15s;touch-action:manipulation}
+.osgard-cinematic .oc-skip:hover{border-color:#9bf5ff;background:#0c2637;color:#fff}
+.osgard-cinematic .oc-skip:focus-visible{outline:2px solid #8cfaff;outline-offset:5px}
+.osgard-cinematic .oc-keyboard-hint{position:absolute;left:clamp(18px,3.6vw,65px);bottom:40px;color:#789bae;font:8px/1.5 'JetBrains Mono',monospace;letter-spacing:.13em}
+
+/* The short crossing is a distinct sequence; the incoming application already renders underneath. */
+.osgard-cinematic[data-kind=transition],.osgard-cinematic[data-kind=play]{animation:oc-transition-lifetime .9s cubic-bezier(.3,.65,.2,1) both}
+.osgard-cinematic[data-kind=transition] .oc-cosmos,.osgard-cinematic[data-kind=play] .oc-cosmos{animation:oc-transition-cosmos .9s both}
+.osgard-cinematic[data-kind=transition] .oc-environment,.osgard-cinematic[data-kind=play] .oc-environment{animation:none;opacity:.34}
+.osgard-cinematic[data-kind=transition] .oc-brand-scene,.osgard-cinematic[data-kind=play] .oc-brand-scene{animation:oc-transition-brand .9s cubic-bezier(.2,.65,.2,1) both;top:46%}
+.osgard-cinematic[data-kind=transition] .oc-logo-space,.osgard-cinematic[data-kind=play] .oc-logo-space{width:min(38vw,33dvh,320px)}
+.osgard-cinematic[data-kind=transition] .oc-wordmark,.osgard-cinematic[data-kind=play] .oc-wordmark{font-size:clamp(32px,4.6dvh,61px);margin-top:3dvh}
+.osgard-cinematic[data-kind=transition] .oc-universe,.osgard-cinematic[data-kind=play] .oc-universe{font-size:9px;letter-spacing:.39em;margin-top:17px;gap:18px}
+.osgard-cinematic[data-kind=transition] .oc-universe i,.osgard-cinematic[data-kind=play] .oc-universe i{width:24px}
+.osgard-cinematic:not([data-kind=intro]) :is(.oc-emblem-image,.oc-wordmark span,.oc-universe,.oc-orbits,.oc-orbit-node,.oc-core,.oc-platform,.oc-floor-ring,.oc-beam,.oc-horizon,.oc-brand-coordinate){animation:none;opacity:1}
+.osgard-cinematic:not([data-kind=intro]) :is(.oc-emblem-shards,.oc-keyboard-hint,.oc-caption){display:none}
+.osgard-cinematic:not([data-kind=intro]) .oc-emblem-rim{animation:oc-short-rim .9s both}
+.osgard-cinematic:not([data-kind=intro]) .oc-emblem-sweep{animation:oc-short-sweep .9s both}
+.osgard-cinematic:not([data-kind=intro]) .oc-star{animation:oc-short-star .9s both}
+.osgard-cinematic:not([data-kind=intro]) .oc-arrival-light{background:linear-gradient(90deg,transparent,#79f8ff75,transparent);inset:49% 0 auto;height:1px;box-shadow:0 0 14px #22d8ff80;animation:oc-short-line .9s both}
+.osgard-cinematic:not([data-kind=intro]) .oc-beam{opacity:.45}
+.osgard-cinematic[data-kind=play]{background:transparent}
+.osgard-cinematic[data-kind=play] .oc-cosmos{background:#010710}
+.osgard-cinematic[data-kind=play] .oc-environment{opacity:.6}
+.osgard-cinematic[data-kind=play] .oc-brand-scene{animation-name:oc-play-brand}
+.osgard-cinematic[data-kind=play] .oc-orbit-exterior{animation:oc-play-orbit .9s both}
+.osgard-cinematic .oc-portal-depth{position:absolute;inset:0;pointer-events:none;overflow:hidden;perspective:800px}
+.osgard-cinematic .oc-portal-depth i{position:absolute;left:50%;top:42%;width:min(40vw,36dvh);aspect-ratio:1;border:1px solid #55e5f3;box-shadow:0 0 34px #33dcf554,inset 0 0 32px #33dcf52b;border-radius:50%;transform:translate(-50%,-50%) scale(.4);animation:oc-portal-flight .9s cubic-bezier(.45,.1,.38,1) both}
+.osgard-cinematic .oc-portal-depth i:nth-child(2){animation-delay:.07s;border-style:dashed;border-width:.7px;opacity:.5}
+.osgard-cinematic .oc-portal-depth i:nth-child(3){animation-delay:.14s;opacity:.25}
+.osgard-cinematic .oc-portal-depth span{position:absolute;inset:0;animation:oc-portal-aperture .9s both;background:radial-gradient(ellipse at 50% 42%,transparent 0%,#041f2c80 29%,#010710de 58%)}
+
+/* A light, finite reveal after the overlay; content stays interactive and visible on animation failure. */
+html[data-osgard-reveal=true]:not([data-motion=off]) .brand-header{animation:oc-page-nav .45s ease-out both .08s}
+html[data-osgard-reveal=true]:not([data-motion=off]) #product-main{animation:oc-page-background .45s ease-out both}
+html[data-osgard-reveal=true]:not([data-motion=off]) #product-main h1{animation:oc-page-title .55s ease-out both .12s}
+html[data-osgard-reveal=true]:not([data-motion=off]) .play-universe .cp-hero-art{animation:oc-page-background .55s ease-out both}
+html[data-osgard-reveal=true]:not([data-motion=off]) .play-universe .cp-hero-copy>:not(h1){animation:oc-page-title .55s ease-out both .2s}
+html[data-osgard-reveal=true]:not([data-motion=off]) .play-universe .cp-glass-panel{animation:oc-page-title .6s ease-out both .25s}
+html[data-osgard-reveal=true]:not([data-motion=off]) .play-universe .cp-world{animation:oc-card-depth .6s ease-out both .16s}
+html[data-osgard-reveal=true]:not([data-motion=off]) .play-universe .cp-world:nth-child(2){animation-delay:.22s}
+html[data-osgard-reveal=true]:not([data-motion=off]) .play-universe .cp-world:nth-child(3){animation-delay:.28s}
+
+@keyframes oc-intro-lifetime{0%,83%{opacity:1}100%{opacity:0}}
+@keyframes oc-cosmos-awake{0%{opacity:0}16%{opacity:.37}38%,83%{opacity:1}100%{opacity:0}}
+@keyframes oc-environment-dolly{from{transform:scale(1.06)}82%{transform:scale(1)}to{transform:scale(1.07)}}
+@keyframes oc-beam-awake{0%,3%{opacity:0;transform:scaleY(.18)}17%{opacity:.9;transform:scaleY(1)}43%,81%{opacity:.62;transform:scaleY(1)}100%{opacity:0;transform:scaleY(1.12)}}
+@keyframes oc-horizon-awake{0%,10%{opacity:0;transform:scaleX(.15)}30%,83%{opacity:.55;transform:scaleX(1)}to{opacity:0;transform:scaleX(1.15)}}
+@keyframes oc-platform-awake{0%,7%{opacity:0}27%,84%{opacity:1}to{opacity:0}}
+@keyframes oc-floor-sequence{0%,11%{opacity:0;transform:scale(.94)}31%,86%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(1.03)}}
+@keyframes oc-brand-timeline{0%,14%{opacity:0;transform:translate(-50%,-50%) scale(.92)}29%{opacity:1}39%,82%{opacity:1;transform:translate(-50%,-50%) scale(1)}91%{opacity:.7;transform:translate(-50%,-50%) scale(.89)}100%{opacity:0;transform:translate(-50%,-50%) scale(1.18)}}
+@keyframes oc-core-awake{0%,14%{opacity:0;transform:scale(.7)}37%{opacity:.85;transform:scale(1.07)}65%,85%{opacity:.7;transform:scale(1)}100%{opacity:0;transform:scale(1.15)}}
+@keyframes oc-orbits-awake{0%,17%{opacity:0;transform:scale(.83) rotate(-7deg)}36%{opacity:.75}83%{opacity:.8;transform:scale(1) rotate(0)}100%{opacity:0;transform:scale(1.12) rotate(2deg)}}
+@keyframes oc-orbit-turn{from{transform:rotate(-12deg)}to{transform:rotate(6deg)}}
+@keyframes oc-nodes-awake{0%,30%{opacity:0}47%,82%{opacity:.8}to{opacity:0}}
+@keyframes oc-emblem-solid{0%,34%{opacity:0}40%,100%{opacity:1}}
+@keyframes oc-emblem-shards{0%,35%{opacity:1}42%,100%{opacity:0}}
+@keyframes oc-assemble-upper{0%,15%{opacity:0;transform:translate(-14px,-16px)}22%{opacity:.55}36%,100%{opacity:1;transform:translate(0,0)}}
+@keyframes oc-assemble-center{0%,18%{opacity:0;transform:translate(16px,0)}27%{opacity:.75}37%,100%{opacity:1;transform:translate(0,0)}}
+@keyframes oc-assemble-lower{0%,20%{opacity:0;transform:translate(-6px,15px)}30%{opacity:.7}38%,100%{opacity:1;transform:translate(0,0)}}
+@keyframes oc-rim-awake{0%,22%{opacity:0}31%{opacity:.35}41%{opacity:.12}60%,100%{opacity:0}}
+@keyframes oc-metal-sweep{0%,36%{opacity:0;background-position:-110% 0}39%{opacity:.72}58%{opacity:.8;background-position:210% 0}64%,100%{opacity:0;background-position:210% 0}}
+@keyframes oc-star-reveal{0%,34%{opacity:0;transform:scale(.3)}44%{opacity:.85;transform:scale(1)}59%,86%{opacity:.5;transform:scale(.65)}100%{opacity:0}}
+@keyframes oc-letter-assemble{0%,39%{opacity:0;transform:translateY(9px) scale(.98)}55%,100%{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes oc-subtitle-assemble{0%,49%{opacity:0;transform:translateY(5px)}64%,100%{opacity:1;transform:translateY(0)}}
+@keyframes oc-coordinate-awake{0%,58%{opacity:0}72%,100%{opacity:.8}}
+@keyframes oc-arrival{0%,81%{opacity:0;transform:scale(.75)}87%{opacity:.8;transform:scale(1)}100%{opacity:0;transform:scale(1.12)}}
+@keyframes oc-caption-in{from{opacity:0}to{opacity:.85}}
+@keyframes oc-particle-drift{0%{opacity:0;transform:translateY(15px)}22%{opacity:.5}84%{opacity:.65;transform:translateY(-9px)}100%{opacity:0;transform:translateY(-17px)}}
+@keyframes oc-transition-lifetime{0%{opacity:0}18%,61%{opacity:1}100%{opacity:0}}
+@keyframes oc-transition-cosmos{0%{opacity:0}21%,55%{opacity:1}100%{opacity:0}}
+@keyframes oc-transition-brand{0%{opacity:0;transform:translate(-50%,-50%) scale(.9)}23%,56%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-50%) scale(.78)}}
+@keyframes oc-play-brand{0%{opacity:0;transform:translate(-50%,-50%) scale(.81)}24%,51%{opacity:1;transform:translate(-50%,-50%) scale(1)}80%{opacity:.4;transform:translate(-50%,-50%) scale(.83)}100%{opacity:0;transform:translate(-50%,-50%) scale(1.3)}}
+@keyframes oc-short-rim{0%,15%{opacity:0}39%{opacity:.2}85%,100%{opacity:0}}
+@keyframes oc-short-sweep{0%,15%{opacity:0;background-position:-110% 0}29%{opacity:.5}64%{opacity:.5;background-position:210% 0}100%{opacity:0;background-position:210% 0}}
+@keyframes oc-short-star{0%,12%{opacity:0}38%{opacity:.85}74%,100%{opacity:0}}
+@keyframes oc-short-line{0%{opacity:0;transform:scaleX(.02)}22%{opacity:.65;transform:scaleX(1)}46%,100%{opacity:0;transform:scaleX(1)}}
+@keyframes oc-play-orbit{from{transform:rotate(-18deg)}to{transform:rotate(20deg)}}
+@keyframes oc-portal-flight{0%,18%{opacity:0;transform:translate(-50%,-50%) scale(.55)}37%{opacity:.6}100%{opacity:0;transform:translate(-50%,-50%) scale(6.5)}}
+@keyframes oc-portal-aperture{0%,33%{opacity:1;transform:scale(1)}to{opacity:0;transform:scale(2)}}
+@keyframes oc-page-nav{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+@keyframes oc-page-background{from{opacity:.55}to{opacity:1}}
+@keyframes oc-page-title{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:none}}
+@keyframes oc-card-depth{from{opacity:0;transform:translateY(15px) scale(.986);filter:brightness(.8)}to{opacity:1;transform:none;filter:brightness(1)}}
+
+@media(min-aspect-ratio:2/1){.osgard-cinematic .oc-logo-space{width:45dvh}.osgard-cinematic .oc-brand-scene{top:46%}.osgard-cinematic .oc-wordmark{font-size:9.4dvh;margin-top:3dvh}.osgard-cinematic .oc-universe{margin-top:18px;font-size:1.7dvh}.osgard-cinematic .oc-brand-coordinate{margin-top:14px}}
+@media(max-width:760px){.osgard-cinematic .oc-caption{bottom:92px;font-size:8px;letter-spacing:.12em}.osgard-cinematic .oc-keyboard-hint{bottom:41px;font-size:7px}.osgard-cinematic .oc-orbit-node-two{width:14px;height:14px}.osgard-cinematic .oc-guides i:nth-child(2),.osgard-cinematic .oc-guides i:nth-child(3){display:none}}
+@media(max-width:600px){
+  .osgard-cinematic .oc-environment{inset:0}.osgard-cinematic .oc-environment img{object-position:center 61%;opacity:.8;transform:none}
+  .osgard-cinematic .oc-brand-scene{top:43%;max-width:94vw}.osgard-cinematic .oc-logo-space{width:min(78vw,43dvh)}
+  .osgard-cinematic .oc-wordmark{font-size:clamp(40px,11.6vw,67px);letter-spacing:.04em;margin-top:5dvh;transform:scaleX(1.08);padding-left:.04em}
+  .osgard-cinematic .oc-universe{font-size:clamp(9px,2.5vw,12px);letter-spacing:.38em;padding-left:.38em;gap:15px;margin-top:22px}.osgard-cinematic .oc-universe i{width:20px}
+  .osgard-cinematic .oc-platform{width:190vw;bottom:9%}.osgard-cinematic .oc-brand-coordinate{margin-top:26px}
+  .osgard-cinematic .oc-horizon{bottom:19%;left:0;right:0}.osgard-cinematic .oc-beam{bottom:19%}
+  .osgard-cinematic .oc-skip{bottom:max(23px,env(safe-area-inset-bottom));right:22px;min-width:132px}
+  .osgard-cinematic .oc-particles i:nth-child(n+11){display:none}.osgard-cinematic .oc-orbits{inset:-16%;width:132%;height:132%}
+  .osgard-cinematic:not([data-kind=intro]) .oc-logo-space{width:58vw}.osgard-cinematic:not([data-kind=intro]) .oc-wordmark{font-size:9vw}
+  .osgard-cinematic .oc-portal-depth i{width:65vw}
+}
+@media(max-height:580px){.osgard-cinematic .oc-logo-space{width:40dvh}.osgard-cinematic .oc-brand-scene{top:42%}.osgard-cinematic .oc-wordmark{font-size:10dvh;margin-top:3dvh}.osgard-cinematic .oc-universe{font-size:9px;margin-top:14px}.osgard-cinematic .oc-brand-coordinate{display:none}.osgard-cinematic .oc-caption{bottom:29px;font-size:7px}.osgard-cinematic .oc-platform{bottom:-8%;width:100vw}}
+.osgard-cinematic[data-low-power=true] :is(.oc-particles i,.oc-orbit-exterior,.oc-environment){animation:none}
+.osgard-cinematic[data-low-power=true] :is(.oc-emblem-shards,.oc-floor-reflection,.oc-portal-depth i:nth-child(n+2)){display:none}
+.osgard-cinematic[data-low-power=true] :is(.oc-platform,.oc-core,.oc-wordmark){filter:none}
+.osgard-cinematic[data-low-power=true][data-kind=intro] .oc-emblem-image{animation:oc-subtitle-assemble 3.6s both}
+.osgard-cinematic[data-reduced=true]{animation:oc-reduced-lifetime .12s both}
+.osgard-cinematic[data-reduced=true] *{animation:none!important;transition:none!important;filter:none!important}
+.osgard-cinematic[data-reduced=true] .oc-emblem-shards,.osgard-cinematic[data-reduced=true] .oc-portal-depth{display:none}
+@keyframes oc-reduced-lifetime{from{opacity:1}to{opacity:0}}
+@media(prefers-reduced-motion:reduce){
+  .osgard-cinematic{animation:oc-reduced-lifetime .12s both!important}.osgard-cinematic *{animation:none!important;transition:none!important;filter:none!important}
+  .osgard-cinematic .oc-emblem-shards,.osgard-cinematic .oc-portal-depth{display:none}
+  html[data-osgard-reveal=true] :is(.brand-header,#product-main,#product-main h1,.play-universe .cp-hero-art,.play-universe .cp-hero-copy>*,.play-universe .cp-glass-panel,.play-universe .cp-world){animation:none!important}
+}

@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
+import vm from 'node:vm'
+import ts from 'typescript'
 
 const read = path => readFileSync(path, 'utf8')
 const main = read('src/main.tsx')
@@ -16,14 +18,81 @@ const html = read('index.html')
 const sitemap = read('public/sitemap.xml')
 const routeMatrix = read('scripts/production-route-matrix.mjs')
 
-assert.ok(main.includes("if (path === '/' && (new URLSearchParams(location.search).has('project') || location.hash === '#project-studio')) return <><Seo path=\"/academy\" /><AcademyHome /></>"), 'Legacy practical-project deep links must continue to open the Academy')
-assert.ok(main.includes("if (path === '/') return <><Seo path=\"/\" /><WorldHome /></>") && main.includes("if (path === '/intelligence')"), 'Brand map must separate WORLD root and OSA Intelligence')
-assert.ok(main.includes("if (path === '/academy') return <><Seo path=\"/academy\" /><AcademyHome /></>"), 'Previous Academy homepage must remain available at /academy')
+// Execute the real route selectors with successive browser snapshots. JSX and
+// hooks are observation boundaries; no routing decision is reimplemented here.
+// Reading a stale global location is an error: the latest SPA href owns routing.
+const source = ts.createSourceFile('main.tsx', main, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
+const routeDeclarations = ['RoutedRoot', 'RoutedContent'].map(name => {
+  const declaration = source.statements.find(node => ts.isFunctionDeclaration(node) && node.name?.text === name)
+  assert.ok(declaration, 'The application must expose its actual ' + name + ' route selector')
+  return declaration
+})
+const componentNames = new Set()
+const visit = node => {
+  if ((ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)) && ts.isIdentifier(node.tagName) && /^[A-Z]/.test(node.tagName.text)) componentNames.add(node.tagName.text)
+  ts.forEachChild(node, visit)
+}
+routeDeclarations.forEach(visit)
+const jsx = (type, props) => ({ type, props: props || {} })
+const runtime = { jsx, jsxs: jsx, Fragment: Symbol('Fragment') }
+const compile = text => ts.transpileModule(text, { compilerOptions: {
+  target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX,
+} }).outputText
+const routing = { exports: {} }
+vm.runInNewContext(compile(read('src/osgardRouting.ts')), { module: routing, exports: routing.exports }, { filename: 'actual-osgardRouting.ts' })
+let snapshot = { href: '/', revision: 0, action: 'initial' }
+const selectedRoutes = { exports: {} }
+vm.runInNewContext(compile(routeDeclarations.map(node => node.getText(source)).join('\n') + '\nexport { RoutedRoot, RoutedContent };'), {
+  ...Object.fromEntries([...componentNames].map(name => [name, name])),
+  URL, normalizeReactPath: routing.exports.normalizeReactPath,
+  React: { useState: initial => [initial, () => {}], useSyncExternalStore: (_subscribe, getSnapshot) => getSnapshot() },
+  subscribeBrowserNavigation: () => () => {}, getBrowserSnapshot: () => snapshot, getServerSnapshot: () => snapshot,
+  location: new Proxy({}, { get() { throw Error('Route selection must use the current browser snapshot, not global location') } }),
+  module: selectedRoutes, exports: selectedRoutes.exports,
+  require(name) { assert.equal(name, 'react/jsx-runtime'); return runtime },
+}, { filename: 'actual-main-route-selectors.tsx' })
+const find = (node, type) => {
+  if (!node || typeof node !== 'object') return null
+  if (Array.isArray(node)) return node.map(child => find(child, type)).find(Boolean) || null
+  return node.type === type ? node : find(node.props?.children, type)
+}
+const routeCases = [
+  ['/?project=evidence', 'AcademyHome', '/academy', 'intelligence'],
+  ['/?project', 'AcademyHome', '/academy', 'intelligence'],
+  ['/?project=&lang=en#notes', 'AcademyHome', '/academy', 'intelligence'],
+  ['/?project=privacy#project-studio', 'AcademyHome', '/academy', 'intelligence'],
+  ['/?%70roject=decision', 'AcademyHome', '/academy', 'intelligence'],
+  ['/#project-studio', 'AcademyHome', '/academy', 'intelligence'],
+  ['/?utm_source=course#project-studio', 'AcademyHome', '/academy', 'intelligence'],
+  ['/', 'WorldHome', '/', 'world'],
+  ['/?utm_source=course', 'WorldHome', '/', 'world'],
+  ['/?projectile=evidence', 'WorldHome', '/', 'world'],
+  ['/?Project=evidence', 'WorldHome', '/', 'world'],
+  ['/#project-studio-extra', 'WorldHome', '/', 'world'],
+  ['/?fragment=%23project-studio', 'WorldHome', '/', 'world'],
+  ['/academy', 'AcademyHome', '/academy', 'intelligence'],
+  ['/academy/', 'AcademyHome', '/academy', 'intelligence'],
+  ['/intelligence?project=evidence#project-studio', 'IntelligenceHome', '/intelligence', 'intelligence'],
+  ['/portal?project=privacy#project-studio', 'WorldHome', '/', 'world'],
+  ['/osa-cinema', 'OSACinema', '/osa-cinema', 'intelligence'],
+  ['/play?project=evidence#project-studio', 'PlayHome', '/play', 'play'],
+]
+for (const [href, component, seoPath, theme] of routeCases) {
+  snapshot = { href, revision: snapshot.revision + 1, action: 'push' }
+  const root = selectedRoutes.exports.RoutedRoot()
+  assert.equal(find(root, 'BrandShell')?.props.theme, theme, href + ': correct product theme')
+  const measured = find(root, 'MeasuredRoute')
+  assert.ok(measured, href + ': the real route must remain mounted')
+  assert.equal(measured.props.href, href, href + ': query and fragment must reach the route unchanged')
+  assert.equal(measured.props.revision, snapshot.revision, href + ': latest navigation revision must reach the route')
+  const content = selectedRoutes.exports.RoutedContent(measured.props)
+  assert.ok(find(content, component), href + ': expected ' + component)
+  assert.equal(find(content, 'Seo')?.props.path, seoPath, href + ': correct route metadata')
+}
+console.log('PASS ' + routeCases.length + ' actual route cases: Academy deep links, current SPA snapshots, preserved product routes, themes and SEO')
 assert.ok(osaHome.includes('OSA INTELLIGENCE') && osaHome.includes("'/osa-cinema'") && osaHome.includes("'/academy'") && osaHome.includes('href="/learning"'), 'OSA homepage must link to the existing course, preserved Academy, and ecosystem portal')
 assert.ok(osaHome.includes('Гостевой прогресс') && osaHome.includes('хранится в этом браузере') && osaHome.includes('isOSALearningProgressPersistent') && osaHome.includes('href="/learning/campus"') && osaHome.includes('Статус аудио и видео'), 'OSA homepage must distinguish guest persistence from server projects and disclose media limits')
 assert.ok(osaStyles.includes('@media(max-width:760px)') && osaStyles.includes('@media(prefers-reduced-motion:reduce)') && osaStyles.includes(':focus-visible'), 'OSA homepage must be responsive, keyboard-accessible, and respect reduced motion')
-assert.ok(main.includes("if (path === '/portal') return <><Seo path=\"/\" /><WorldHome /></>"), 'Previous ecosystem homepage URL must resolve to the current OSGARD WORLD homepage at /portal')
-assert.ok(main.includes("if (path === '/osa-cinema') return <><Seo path={path} /><OSACinema /></>"), 'Existing OSA Original course URL must remain registered')
 assert.ok(home.includes("import AcademyStudio from './AcademyStudio'") && home.includes('<AcademyStudio locale={locale} />'), 'Academy must integrate the bilingual project studio into the learning journey')
 assert.ok(studio.includes("KEY='osgard-academy-studio-v1'") && studio.includes('localStorage.setItem(KEY'), 'Project drafts and self-assessments must persist locally')
 assert.ok(studio.includes("id:'evidence'") && studio.includes("id:'privacy'") && studio.includes("id:'decision'"), 'Project studio must include verification, privacy and human-decision assignments')
@@ -47,9 +116,10 @@ assert.ok(home.includes('labFeedback') && home.includes('Score each criterion fr
 assert.ok(styles.includes('.academy-lab-difficulty') && styles.includes('.academy-lab-rubric'), 'Difficulty and rubric controls must be styled')
 assert.ok(styles.includes('.academy-lab-panel') && styles.includes('@media(max-width:760px)'), 'Practical lab must have responsive layout styling')
 assert.ok(home.includes('/osa-cinema?scene=') && cinema.includes("new URLSearchParams(window.location.search).get('scene')"), 'Lesson cards must deep-link to their corresponding course scene')
-assert.ok(home.includes('lessonPractice') && home.includes('/?project=${project}#project-studio'), 'Each lesson must offer a direct link to a mapped practical project')
+assert.ok(home.includes('lessonPractice') && home.includes('/academy?project=${project}#project-studio'), 'Each lesson must offer a direct link to a mapped practical project')
 assert.ok(home.includes("sceneIndex === 5 ? 'privacy' : sceneIndex === 3 || sceneIndex === 4 ? 'evidence' : 'decision'"), 'Lessons must map to the matching privacy, evidence or decision project')
 assert.ok(studio.includes("new URLSearchParams(window.location.search).get('project')") && studio.includes("['evidence','privacy','decision'].includes(requested)"), 'Project studio must open a requested project safely from a lesson link')
+assert.ok(!home.includes('/?project=') && studio.includes('subscribeBrowserNavigation') && studio.includes('setActive(requestedProject)'), 'Project links must remain in Academy and update the current SPA project without stale tabs')
 assert.ok(studio.includes("has('project')") && studio.includes("scrollIntoView({behavior:'auto',block:'start'})"), 'Opening a mapped project must scroll the learner to the project workspace')
 assert.ok(styles.includes('.academy-lesson-link') && styles.includes('.academy-lesson-practice'), 'Lesson and project actions must have distinct visual styles')
 assert.ok(styles.includes('.academy-lesson-filters') && styles.includes('@media(prefers-reduced-motion:reduce)'), 'Curriculum filters must have responsive and reduced-motion styling')
@@ -139,3 +209,19 @@ assert.ok(home.includes('academy-journey-steps') && home.includes('academy-journ
 assert.ok(home.includes('criteriaRated') && home.includes('reviewedProjects') && home.includes('selfChecks===3'), 'Learning pathway must reflect course mastery and project rubric progress')
 assert.ok(home.includes("addEventListener('osgard-academy-progress'") && studio.includes("dispatchEvent(new Event('osgard-academy-progress'))"), 'Dashboard progress must refresh immediately when project drafts or rubric scores change')
 assert.ok(styles.includes('.academy-journey-steps') && styles.includes('@media(max-width:760px)'), 'Learning pathway must be responsive')
+
+assert.ok(studioStyles.includes('#academy-studio-backup-input{') &&
+  studioStyles.includes('inline-size:1px!important') &&
+  studioStyles.includes('.academy-studio-import-button{position:relative}'),
+  'Backup import must remain keyboard accessible without creating page-wide horizontal overflow')
+
+// Premium Academy cockpit shows only canonical, browser-local progress rather than invented certificates.
+assert.ok(home.includes('academy-learning-console') && home.includes('academy-console-dial') &&
+  home.includes('academy-console-continue') && home.includes('academy-console-quicklinks'),
+  'Academy first viewport must provide usable real progress, resume and lesson catalogue actions')
+assert.ok(home.includes('aria-valuenow={completedScenes}') && home.includes('const coursePercentage =') &&
+  home.includes('learningProgress.lessonCompletions') && home.includes('learningProgress.projectChecks'),
+  'Cockpit progress indicators must be calculated from the existing canonical learning store')
+assert.ok(home.includes('academy-hero-topline') && !home.includes('academy-compact-header') &&
+  home.includes('academy-language') && styles.includes('.academy-learning-console') && styles.includes('@media(max-width:420px)'),
+  'Academy must avoid a fourth navigation header while preserving bilingual, responsive controls')
