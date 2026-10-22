@@ -2,7 +2,13 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import vm from 'node:vm'
 import path from 'node:path'
+import {execFileSync} from 'node:child_process'
 
+// Validate the actual SSH-release asset verifier before this branch can merge.
+const verifier=path.resolve('scripts/zion-030-live-assets.mjs')
+execFileSync(process.execPath,['--check',verifier],{stdio:'pipe'})
+const verifierSource=fs.readFileSync(verifier,'utf8')
+assert.ok(verifierSource.includes("'open-city-landmarks.js'"),'Deploy must verify the new landmark assets')
 const base=path.resolve('public/games/zion-9/queue/ZION-030')
 const js=fs.readFileSync(path.join(base,'open-city-landmarks.js'),'utf8')
 const original=fs.readFileSync(path.join(base,'open-city.js'),'utf8')
