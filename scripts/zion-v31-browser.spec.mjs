@@ -28,6 +28,8 @@ test('ZION-030 v31: cinematic PBR architecture, drivable detailing and weather-a
   await expect(page.locator('#oc-shell')).toBeVisible()
   await page.locator('#oc-rain').click()
   await expect.poll(async()=>(await state()).cinematic.wetVisible).toBe(true)
+  await page.locator('#oc-time').click()
+  await page.screenshot({path:testInfo.outputPath('zion-v31-cinematic-night-rain.png')})
   await page.locator('#oc-rain').click()
   await expect.poll(async()=>(await state()).cinematic.wetVisible).toBe(false)
   await page.locator('#oc-quality').click()
