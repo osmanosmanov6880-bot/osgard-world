@@ -1,4 +1,5 @@
 extends CharacterBody3D
+const ShipVisualR5Script = preload("res://scripts/ship_visual_r5.gd")
 ## Physics-driven spacecraft used by the optional native 3D prototype.
 
 signal fired(origin: Vector3, direction: Vector3)
@@ -18,8 +19,11 @@ func _ready() -> void:
     visual = Node3D.new()
     visual.name = "AnimatedShip"
     add_child(visual)
-    visual.scale=Vector3.ONE*1.35
-    _make_ship()
+    visual.scale=Vector3.ONE*1.25
+    var model := ShipVisualR5Script.new()
+    model.name = "HighDetailInterceptorR5"
+    visual.add_child(model)
+    engine_flames = model.engine_flames
     var shape := SphereShape3D.new()
     shape.radius = 1.9
     var collision := CollisionShape3D.new()
