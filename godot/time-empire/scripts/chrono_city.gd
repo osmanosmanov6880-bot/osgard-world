@@ -40,6 +40,7 @@ var camera: Camera3D
 var sunlight: DirectionalLight3D
 var core: Node3D
 var core_rings: Array[Node3D] = []
+var traffic_agents: Array[Node3D] = []
 var plots: Node3D
 var root_ui: Control
 var resource_label: Label
@@ -66,24 +67,24 @@ func _build_world() -> void:
     world_environment.name = "ChronosAtmosphere"
     var env := Environment.new()
     env.background_mode = Environment.BG_COLOR
-    env.background_color = Color(0.017, 0.035, 0.072)
+    env.background_color = Color(0.075, 0.125, 0.185)
     env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
     env.ambient_light_color = Color(0.32, 0.41, 0.57)
-    env.ambient_light_energy = 0.6
+    env.ambient_light_energy = 0.92
     env.reflected_light_source = Environment.REFLECTION_SOURCE_BG
     env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
     env.glow_enabled = true
-    env.glow_intensity = 0.45
+    env.glow_intensity = 0.28
     env.fog_enabled = true
     env.fog_light_color = Color(0.24, 0.37, 0.46)
-    env.fog_density = 0.003
+    env.fog_density = 0.0015
     world_environment.environment = env
     add_child(world_environment)
 
     sunlight = DirectionalLight3D.new()
     sunlight.name = "ChronosSun"
     sunlight.rotation_degrees = Vector3(-54.0, -26.0, 0.0)
-    sunlight.light_color = Color(0.98, 0.8, 0.58)
+    sunlight.light_color = Color(1.0, 0.84, 0.68)
     sunlight.light_energy = 1.1
     add_child(sunlight)
     _omni(Vector3(0, 12, 0), GOLD, 2.8, 22.0)
@@ -115,6 +116,7 @@ func _build_city() -> void:
         _box(city, "AvenueLight", Vector3(0.11, 0.03, 0.76), Vector3(0.0, 0.29, float(mark)), GOLD, 0.0, 0.1, 2.0)
         _box(city, "AvenueLight", Vector3(0.76, 0.03, 0.11), Vector3(float(mark), 0.29, 0.0), GOLD, 0.0, 0.1, 2.0)
     _populate_skyline(city)
+    _build_city_life(city)
 
     core = Node3D.new()
     core.name = "ChronoCore"
@@ -122,8 +124,8 @@ func _build_city() -> void:
     _cylinder(core, "ReactorPedestal", Vector3(0, 0.75, 0), 3.6, 1.5, STEEL, 0.85, 0.21)
     _cylinder(core, "ReactorCollar", Vector3(0, 1.8, 0), 2.2, 0.8, Color(0.39, 0.47, 0.54), 0.85, 0.16)
     _cylinder(core, "ReactorShaft", Vector3(0, 4.25, 0), 0.95, 5.0, Color(0.18, 0.26, 0.32), 0.78, 0.25)
-    _sphere(core, "ChronoEnergyHeart", Vector3(0, 6.5, 0), 1.62, GOLD, 0.24, 0.18, 2.8)
-    _sphere(core, "EnergyFilament", Vector3(0, 6.5, 0), 0.84, Color(1.0, 0.96, 0.75), 0.0, 0.10, 3.3)
+    _sphere(core, "ChronoEnergyHeart", Vector3(0, 6.5, 0), 1.62, GOLD, 0.24, 0.18, 1.25)
+    _sphere(core, "EnergyFilament", Vector3(0, 6.5, 0), 0.84, Color(1.0, 0.96, 0.75), 0.0, 0.10, 1.5)
     for i in range(3):
         var ring_root := Node3D.new()
         ring_root.name = "ChronoRing_%d" % i
@@ -156,10 +158,16 @@ func _build_city() -> void:
         _torus(city, "PlotOutline", site + Vector3(0, 0.49, 0), 3.0, 0.05, CYAN, 0.15, 0.24, 1.2)
 
 func _populate_skyline(parent: Node3D) -> void:
-    # Dense 3D skyline in two draw calls (PBR blocks + emissive windows).
-    # MultiMesh keeps the browser renderer fast despite the city scale.
-    var buildings: Array[Transform3D] = []
+    # Art direction: contrasting massing, podiums, roof crowns and window ribbons.
+    # Material batches are GPU-instanced rather than hundreds of unique draw calls.
+    var silver: Array[Transform3D] = []
+    var basalt: Array[Transform3D] = []
+    var bronze: Array[Transform3D] = []
+    var teal: Array[Transform3D] = []
     var windows: Array[Transform3D] = []
+    var crowns: Array[Transform3D] = []
+    var ribs: Array[Transform3D] = []
+    var antennas: Array[Transform3D] = []
     for ix in range(-10, 11):
         for iz in range(-10, 11):
             var x: float = float(ix) * 2.45
@@ -167,20 +175,83 @@ func _populate_skyline(parent: Node3D) -> void:
             var r: float = Vector2(x, z).length()
             if r < 8.9 or r > 25.2 or abs(ix) <= 1 or abs(iz) <= 1:
                 continue
-            # Reserved sites for user-built districts are physically clear.
             var reserved := false
-            for slot in PLOTS:
-                if Vector2(x - slot.x, z - slot.z).length() < 4.5:
+            for plot in PLOTS:
+                if Vector2(x - plot.x, z - plot.z).length() < 4.5:
                     reserved = true
                     break
             if reserved:
                 continue
-            var h: float = 2.3 + float(abs(ix * 31 + iz * 19) % 11) * 0.50
-            buildings.append(Transform3D(Basis().scaled(Vector3(1.52, h, 1.52)), Vector3(x, h * 0.5 + 0.38, z)))
-            for floor_index in range(1, int(h / 1.0)):
-                windows.append(Transform3D(Basis().scaled(Vector3(0.83, 0.075, 0.08)), Vector3(x, 0.38 + float(floor_index), z + 0.80)))
-    _batch_mesh(parent, "SkylineTowers", buildings, _material(Color(0.27, 0.37, 0.43), 0.83, 0.24))
-    _batch_mesh(parent, "IlluminatedWindows", windows, _material(Color(0.8, 0.83, 0.74), 0.18, 0.17, 1.45))
+            var style: int = absi(ix * 23 + iz * 17) % 4
+            var variation: int = absi(ix * 37 + iz * 13) % 7
+            var h: float = 3.6 + float(variation) * 0.8
+            if style == 1:
+                h *= 1.6
+            elif style == 2:
+                h *= 1.28
+            elif style == 3:
+                h *= 0.75
+            var w: float = 1.55 if style != 1 else 1.15
+            var d: float = 1.60 if style != 2 else 1.22
+            var transform := Transform3D(Basis().scaled(Vector3(w, h, d)), Vector3(x, h * 0.5 + 0.38, z))
+            if style == 0:
+                silver.append(transform)
+            elif style == 1:
+                basalt.append(transform)
+            elif style == 2:
+                bronze.append(transform)
+            else:
+                teal.append(transform)
+            crowns.append(Transform3D(Basis().scaled(Vector3(w * 1.16, 0.20, d * 1.15)), Vector3(x, h + 0.48, z)))
+            if style == 1 or style == 2:
+                antennas.append(Transform3D(Basis().scaled(Vector3(0.06, 0.8, 0.06)), Vector3(x, h + 0.9, z)))
+            for floor_index in range(1, int(h / 0.74)):
+                if (floor_index + variation) % 4 == 0:
+                    continue
+                var yy: float = 0.38 + float(floor_index) * 0.74
+                windows.append(Transform3D(Basis().scaled(Vector3(w * 0.75, 0.075, 0.08)), Vector3(x, yy, z + d * 0.52)))
+                if style == 1 or style == 3:
+                    windows.append(Transform3D(Basis().scaled(Vector3(0.07, 0.075, d * 0.58)), Vector3(x + w * 0.52, yy, z)))
+            for rib in [-1.0, 1.0]:
+                ribs.append(Transform3D(Basis().scaled(Vector3(0.058, h * 0.95, 0.10)), Vector3(x + rib * w * 0.46, h * 0.52 + 0.38, z + d * 0.52)))
+    # Legacy node identities retained for existing native regression tests.
+    _batch_mesh(parent, "SkylineTowers", silver, _material(Color(0.50, 0.57, 0.60), 0.85, 0.28))
+    _batch_mesh(parent, "SkylineBasaltTowers", basalt, _material(Color(0.12, 0.19, 0.24), 0.78, 0.35))
+    _batch_mesh(parent, "SkylineBronzePavilions", bronze, _material(Color(0.52, 0.38, 0.27), 0.88, 0.31))
+    _batch_mesh(parent, "SkylineTealResidences", teal, _material(Color(0.24, 0.39, 0.43), 0.72, 0.34))
+    _batch_mesh(parent, "IlluminatedWindows", windows, _material(Color(0.74, 0.86, 0.85), 0.12, 0.21, 0.62))
+    _batch_mesh(parent, "MetalRoofCrowns", crowns, _material(Color(0.56, 0.59, 0.57), 0.92, 0.24))
+    _batch_mesh(parent, "SkylineAntennaArray", antennas, _material(GOLD, 0.5, 0.21, 0.55))
+    _batch_mesh(parent, "FacadeRibs", ribs, _material(Color(0.46, 0.57, 0.59), 0.82, 0.25))
+
+func _build_city_life(parent: Node3D) -> void:
+    # Walkable parks and active transit ring make this a functioning city scene,
+    # not a static skyline texture.
+    for k in range(16):
+        var angle: float = float(k) * TAU / 16.0
+        var radius: float = 15.4 if k % 2 == 0 else 24.1
+        var x: float = cos(angle) * radius
+        var z: float = sin(angle) * radius
+        var clear: bool = true
+        for plot in PLOTS:
+            if Vector2(x - plot.x, z - plot.z).length() < 4.2:
+                clear = false
+                break
+        if not clear:
+            continue
+        _cylinder(parent, "CivicGarden", Vector3(x, 0.45, z), 1.05, 0.16, Color(0.15, 0.35, 0.27), 0.08, 0.88)
+        _cylinder(parent, "GardenPlanter", Vector3(x, 0.28, z), 1.12, 0.22, Color(0.48, 0.52, 0.49), 0.78, 0.42)
+        for i in range(3):
+            var a: float = TAU * float(i) / 3.0 + angle
+            _sphere(parent, "GardenCanopy", Vector3(x + cos(a) * 0.45, 1.0, z + sin(a) * 0.45), 0.46, Color(0.20, 0.43, 0.34), 0.04, 0.92)
+    for i in range(16):
+        var shuttle := Node3D.new()
+        shuttle.name = "ChronoShuttle_%02d" % i
+        parent.add_child(shuttle)
+        _box(shuttle, "ShuttleHull", Vector3(0.40, 0.22, 1.0), Vector3.ZERO, Color(0.65, 0.71, 0.74) if i % 2 == 0 else Color(0.20, 0.33, 0.42), 0.89, 0.2)
+        _box(shuttle, "ShuttleGlazing", Vector3(0.30, 0.13, 0.53), Vector3(0, 0.14, 0), Color(0.20, 0.60, 0.72), 0.37, 0.14)
+        _box(shuttle, "Propulsion", Vector3(0.25, 0.05, 0.1), Vector3(0, -0.06, 0.5), CYAN, 0.11, 0.19, 1.3)
+        traffic_agents.append(shuttle)
 
 func _batch_mesh(parent: Node3D, item_name: String, locations: Array[Transform3D], material: Material) -> void:
     var mesh := BoxMesh.new()
@@ -270,6 +341,12 @@ func _process(delta: float) -> void:
     for i in range(core_rings.size()):
         core_rings[i].rotate_y(delta * (0.12 + float(i) * 0.05) * (1.0 + float(core_level - 1) * 0.14))
         core_rings[i].rotate_x(delta * (0.035 + float(i) * 0.025))
+    for i in range(traffic_agents.size()):
+        var shuttle: Node3D = traffic_agents[i]
+        var phase: float = elapsed * (0.10 + float(i % 5) * 0.018) + TAU * float(i) / float(traffic_agents.size())
+        var lane: float = 19.4 + float(i % 3) * 0.63
+        shuttle.position = Vector3(cos(phase) * lane, 1.2 + float(i % 3) * 0.34, sin(phase) * lane)
+        shuttle.rotation.y = -phase
     if camera != null:
         var high: float = 1.1 if map_mode else 0.70
         var r: float = camera_radius * (1.18 if map_mode else 1.0)
@@ -277,7 +354,7 @@ func _process(delta: float) -> void:
         camera.position = camera.position.lerp(destination, minf(delta * 2.5, 1.0))
         camera.look_at(Vector3(0.0, 3.4, 0.0))
     if sunlight != null:
-        sunlight.light_energy = 0.92 + sin(elapsed * 0.045) * 0.2
+        sunlight.light_energy = 1.35 + sin(elapsed * 0.045) * 0.16
     if notification > 0.0:
         notification = maxf(0.0, notification - delta)
     if resource_label != null:
