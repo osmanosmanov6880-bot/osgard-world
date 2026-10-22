@@ -18,7 +18,7 @@ R16 introduces a real Three.js / WebGL scene inside the existing INHERIT browser
 
 The renderer reads the existing InheritGame.snapshot() API. It never writes the game, calls its APIs or invents achievements. World coordinates remain native x/y percentages. The original DOM click handler, placement budget, account authorization, atlas, first-run coaching, replay mode, handoffs and saved format remain unchanged.
 
-The GPU canvas has pointer-events:none. Underlying native game buttons remain intact. Choosing 2D restores the old painted world without reload or lost data; GPU failure leaves the older game playable.
+The GPU canvas has pointer-events:none. Underlying native game buttons remain intact. 3D hit selection uses a read-only raycast and delegates opening the selected object's real memory to its original native button; placing items still follows the normal world handler. Choosing 2D restores the old painted world without reload or lost data; GPU failure leaves the older game playable.
 
 ## Build and release verification
 
