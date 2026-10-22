@@ -23,6 +23,13 @@ func _run() -> void:
     var game: Node3D = scene.instantiate()
     root.add_child(game)
     await process_frame
+    _assert_case(game.get_node_or_null("HeroFacilityV2/PrecisionInjectorV2") != null, "five-axis launcher machined assembly is present")
+    _assert_case(game.get_node_or_null("MagnetAssembly/HeroMagnetV2/HelicalSuperconductor_A") is MeshInstance3D, "continuous parametric superconducting helix is a mesh")
+    _assert_case(game.get_node_or_null("ReceiverAssembly/HeroCaptureIrisV2/Iris_ServoJaws_12") is MultiMeshInstance3D, "receiver has a GPU-instanced 12-jaw capture iris")
+    _assert_case(game.get_node_or_null("PlayerEnergyCore/HeroPlasmaCoreV2/MachinedCoreContainmentShell") is MeshInstance3D, "hero core has CNC-contoured shell")
+    var helix: MeshInstance3D = game.get_node_or_null("MagnetAssembly/HeroMagnetV2/HelicalSuperconductor_A") as MeshInstance3D
+    _assert_case(helix != null and helix.mesh is ArrayMesh and helix.mesh.surface_get_array_len(0) > 2500, "true high-density indexed 3D geometry, not UI illustration")
+    _assert_case(game.get_node_or_null("HeroFacilityV2/InstancedCoolantPipeSeals_112") is MultiMeshInstance3D, "environment details use GPU instancing")
     _assert_case(game.get_node_or_null("UltraDetailArchitecture") != null, "original industrial ultra detail kit loaded")
     _assert_case(game.get_node_or_null("PlayerEnergyCore/HighPolyCoreAssembly") != null, "multi-layer machined energy core asset")
     _assert_case(game.get_node_or_null("MagnetAssembly/HighPolyMagnetAssembly") != null, "high density superconducting magnet asset")

@@ -4,6 +4,7 @@ extends Node3D
 
 const Sim = preload("res://scripts/magnetic_sim.gd")
 const UltraDetail = preload("res://scripts/ultra_detail_kit.gd")
+const HeroDetailV2 = preload("res://scripts/hero_detail_v2.gd")
 const CYAN := Color(0.24, 0.83, 1.0)
 const VIOLET := Color(0.64, 0.43, 1.0)
 const MINT := Color(0.37, 1.0, 0.75)
@@ -59,6 +60,7 @@ func _ready() -> void:
     _build_environment()
     _build_game_objects()
     UltraDetail.build(self, core_root, magnet_root, target_root)
+    HeroDetailV2.build(self, core_root, magnet_root, target_root)
     _build_ui()
     _load_stage(0)
     get_viewport().size_changed.connect(_on_viewport_changed)
