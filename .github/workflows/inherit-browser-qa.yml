@@ -30,6 +30,8 @@ jobs:
           cache: npm
       - name: Install the locked application
         run: npm ci
+      - name: Validate genuine 3D source and offline bundle
+        run: npm run qa:inherit-3d
       - name: Build the actual production site
         run: npm run build
       - name: Include all published game assets
