@@ -4,8 +4,10 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
+    "predev": "node scripts/build-inherit-3d.mjs",
     "dev": "vite --host 0.0.0.0",
     "sync:swarm": "node scripts/sync-swarm-assets.mjs",
+    "prebuild": "node scripts/build-inherit-3d.mjs",
     "build": "npm run sync:swarm && tsc -b && vite build",
     "check": "tsc -b --pretty false",
     "preflight:frontend": "node scripts/frontend-archive-preflight.mjs dist",
@@ -86,6 +88,7 @@
     "qa:game-interface": "node scripts/game-interface-smoke.mjs",
     "qa:inherit-living": "node scripts/inherit-living-legacy-smoke.mjs",
     "qa:inherit-world-alive": "node scripts/inherit-world-alive-smoke.mjs",
+    "qa:inherit-3d": "node scripts/inherit-3d-smoke.mjs",
     "qa:inherit-i18n": "node scripts/inherit-i18n-smoke.mjs && node scripts/inherit-cinematic-smoke.mjs",
     "qa:inherit-legacy": "node scripts/inherit-legacy-smoke.mjs",
     "qa:inherit-story": "node scripts/inherit-story-smoke.mjs",
