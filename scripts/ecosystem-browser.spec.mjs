@@ -2479,3 +2479,24 @@ test('INHERIT R16 Artifact Atelier displays authentic HD 3D models without spend
  expect(await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()))).toBe(start);
  expect(errors).toEqual([]);
 });
+
+
+
+test('INHERIT R16 3D controls never cover real Legacy, history or research buttons',async({page})=>{
+ const errors=await prepareStandaloneGame(page);
+ await page.goto('/games/inherit/?lang=ru',{waitUntil:'domcontentloaded'});
+ const safe=await page.evaluate(()=>{
+  const rail=document.querySelector('.aaa3d-controls');
+  const stage=document.querySelector('#world');
+  return {outside:!stage.contains(rail),position:getComputedStyle(rail).position};
+ });
+ expect(safe.outside).toBe(true);
+ expect(safe.position).not.toBe('absolute');
+ for(const selector of ['.inherit-legacy-trigger','.inherit-trace-launcher']){
+  const button=page.locator(selector);
+  await expect(button).toBeVisible();
+  await button.click({timeout:7000});
+  await page.keyboard.press('Escape');
+ }
+ expect(errors).toEqual([]);
+});
