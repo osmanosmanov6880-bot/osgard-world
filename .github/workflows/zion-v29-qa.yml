@@ -30,10 +30,15 @@ jobs:
         run: npm run build
       - name: Include static game assets required by preview
         run: cp -a public/games/. dist/games/
-      - name: Install pinned browser toolchain
+      - name: Install browser tooling with Chrome-first fallback
         run: |
           npm install --no-save --package-lock=false @playwright/test@1.58.2
-          npx playwright install --with-deps --no-shell chromium
+          if command -v google-chrome >/dev/null 2>&1; then
+            echo "OSGARD_BROWSER_CHANNEL=chrome" >> "$GITHUB_ENV"
+            echo "Using preinstalled Google Chrome for browser acceptance"
+          else
+            npx playwright install --with-deps --no-shell chromium
+          fi
       - name: Verify ZION-030 desktop and mobile gameplay only
         run: npx playwright test --config playwright.ecosystem.config.mjs --grep 'ZION' --workers=2
       - name: Preserve evidence
