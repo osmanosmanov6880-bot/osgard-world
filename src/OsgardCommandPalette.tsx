@@ -95,9 +95,15 @@ export function OsgardCommandPalette({ path, initialOpen = false }: { path: stri
   useEffect(() => {
     if (!open) return
     const previousOverflow = document.body.style.overflow
+    const appRoot = document.getElementById('root')
+    const previousInert = appRoot?.inert ?? false
     document.body.style.overflow = 'hidden'
+    // The dialog lives in a portal outside #root. Disable interaction with
+    // background routes for both pointer users and assistive technology.
+    if (appRoot) appRoot.inert = true
     input.current?.focus({ preventScroll: true })
     return () => {
+      if (appRoot) appRoot.inert = previousInert
       document.body.style.overflow = previousOverflow
       trigger.current?.focus({ preventScroll: true })
     }
