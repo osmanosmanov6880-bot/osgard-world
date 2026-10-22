@@ -149,6 +149,17 @@ func build(centers: Array, tints: Array) -> void:
         mesh.mesh = _body_mesh(h, r, sides, twist, sector)
         mesh.material_override = windows
         hub.add_child(mesh)
+        # Solid core collision for high-speed flight navigation; render-mesh independent.
+        var hull_collider := StaticBody3D.new()
+        hull_collider.name = "ArcologyCollision"
+        hull_collider.position.y = h * 0.5
+        hub.add_child(hull_collider)
+        var solid := CollisionShape3D.new()
+        var shape := CylinderShape3D.new()
+        shape.radius = r * 1.17
+        shape.height = h
+        solid.shape = shape
+        hull_collider.add_child(solid)
         _box(hub, "ThreeStoreyServicePod", Vector3(0, 10, 0), Vector3(r * 2.5, 19, r * 2.3), inset)
         for level in range(3):
             var y: float = h * (0.27 + float(level) * 0.25)
