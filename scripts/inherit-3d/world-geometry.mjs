@@ -2,6 +2,7 @@
 import * as THREE from 'three';
 import {coastline,fieldHeight,vegetation,hash} from './terrain-core.mjs';
 import {makeHeroTree,makeTrace} from './trace-models.mjs';
+import {makeHeritageEnvironment} from './heritage-environment.mjs';
 const earth=new THREE.MeshStandardMaterial({color:0x655f4d,roughness:1});
 const rock=new THREE.MeshStandardMaterial({color:0x697b75,roughness:.95});
 const waterStream=new THREE.MeshStandardMaterial({color:0x3b9f9b,metalness:.28,roughness:.27,transparent:true,opacity:.91,emissive:0x105b63,emissiveIntensity:.16});
@@ -258,6 +259,10 @@ export function makeArchipelago({quality='high'}={}){
   cap.position.set(3.61,fieldHeight(3.6,1.3)+1.345,1.3+side);bridge.add(cap);
  }
  terrain.add(bridge);
+ // Optional authored cinematic structures. Instanced fine detail at high
+ // quality, simplified silhouettes on mobile; completely non-interactive.
+ const heritage=makeHeritageEnvironment({quality});
+ terrain.add(heritage);
  const landmarks=new THREE.Group();landmarks.name='Fictional template landmarks';
  const landmarkQuality=quality==='high'?'high':quality==='medium'?'medium':'low';
  const ancient=quality==='high'?makeHeroTree():makeTrace('tree',{size:2.45,quality:landmarkQuality,seed:173});
@@ -269,5 +274,5 @@ export function makeArchipelago({quality='high'}={}){
  const beacon=makeTrace('light',{size:1.25,quality:landmarkQuality,seed:56,allowLight:quality==='high'});
  beacon.position.set(-3,fieldHeight(-3,4),4);landmarks.add(beacon);
  terrain.add(landmarks);
- return {root:terrain,waterUniforms:sea.material.uniforms,landmarks};
+ return {root:terrain,waterUniforms:sea.material.uniforms,landmarks,heritage};
 }
