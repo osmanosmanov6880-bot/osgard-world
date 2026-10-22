@@ -11,6 +11,7 @@ export default defineConfig({
   reporter: [['list'], ['html', { outputFolder: 'browser-report', open: 'never' }]],
   use: {
     baseURL: 'http://127.0.0.1:4175',
+    channel: 'chromium', // Use the installed full browser in new headless mode.
     locale: 'ru-RU',
     contextOptions: { reducedMotion: 'reduce' },
     trace: 'retain-on-failure',
