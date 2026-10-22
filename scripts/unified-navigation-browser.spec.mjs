@@ -12,6 +12,11 @@ for (const [path, surface] of [
     await expect(trigger).toBeVisible()
     await expect(trigger).toHaveAttribute('aria-expanded', 'false')
     await trigger.click()
+    // Opening the palette must never rewrite a Play alias to /play and silently
+    // unmount the lazy dialog while keyboard users are interacting with it.
+    if (path === '/entertainment') {
+      await expect(page).toHaveURL(/\/entertainment\/?$/)
+    }
     const dialog = page.getByRole('dialog', { name: 'Куда отправимся?' })
     await expect(dialog).toBeVisible()
     await expect(page.locator('.brand-system .osgard-command-trigger')).toHaveAttribute('aria-expanded', 'true')
