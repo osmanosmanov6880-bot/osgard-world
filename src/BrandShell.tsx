@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 import { BrandLockup } from './BrandMark'
 import { brandAreaForPath, brandBreadcrumbs, globalNavigationState } from './brandNavigation'
 import { getPlayGameTitle } from './playGameTitles'
-import { OsgardCommandPalette } from './OsgardCommandPalette'
+import { OsgardCommandLauncher } from './OsgardCommandLauncher'
 import { getBrowserSnapshot, getServerSnapshot, subscribeBrowserNavigation } from './browserNavigation'
 import { MOTION_CHANGE_EVENT, REPLAY_INTRO_EVENT, introEligible } from './osgardRouting'
 import type { ProductTheme } from './BrandMark'
@@ -87,7 +87,7 @@ export function BrandShell({ theme, children }: { theme: ProductTheme; children:
       <nav aria-label="Продукты OSGARD" className="brand-global-nav">
         {globalLinks.map(([name, href]) => <a key={href} href={href} aria-current={globalNavigationState(path, product, href)}>{name}</a>)}
       </nav>
-      <OsgardCommandPalette path={path} />
+      <OsgardCommandLauncher path={path} />
       <button type="button" className="brand-motion" aria-pressed={reduced || !motion} disabled={reduced}
         aria-label="Меньше движения" title={reduced ? 'Уменьшение движения включено в настройках устройства' : 'Отключить необязательную анимацию'} onClick={toggleMotion}>
         <span className="brand-motion-state" aria-hidden="true">{reduced || !motion ? '◌' : '◉'}</span> Меньше движения
