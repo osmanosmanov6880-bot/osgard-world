@@ -5,6 +5,7 @@ import {makeHeroTree,makeTrace} from './trace-models.mjs';
 import {makeHeritageEnvironment} from './heritage-environment.mjs';
 import {makeSurfaceMaterial,surfacePackStats} from './cinematic-surfaces.mjs';
 import {makeLivingAtmosphere} from './living-atmosphere.mjs';
+import {waterVertex,waterFragment} from './cinematic-water.mjs';
 const earth=new THREE.MeshStandardMaterial({color:0x655f4d,roughness:1});
 const rock=new THREE.MeshStandardMaterial({color:0x697b75,roughness:.95});
 const waterStream=new THREE.MeshStandardMaterial({color:0x3b9f9b,metalness:.28,roughness:.27,transparent:true,opacity:.91,emissive:0x105b63,emissiveIntensity:.16});
@@ -84,36 +85,6 @@ function makeBeachFoam(){
  const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(pts,3));
  return new THREE.LineSegments(geo,new THREE.LineBasicMaterial({color:0xe3e5ce,transparent:true,opacity:.6,depthWrite:false}));
 }
-const waterVertex=[
-'precision mediump float;',
-'uniform float uTime;',
-'varying vec2 vPos;',
-'varying float vWave;',
-'void main(){',
-' vec3 p=position;',
-' float wave=sin(p.x*.24+uTime*.55)*.08+cos(p.y*.28-uTime*.36)*.09;',
-' p.z+=wave;vPos=p.xy;vWave=wave;',
-' gl_Position=projectionMatrix*modelViewMatrix*vec4(p,1.);',
-'}'
-].join('\n');
-const waterFragment=[
-'precision mediump float;',
-'uniform float uTime;',
-'uniform float uDawn;',
-'varying vec2 vPos;',
-'varying float vWave;',
-'void main(){',
-' float ribbons=pow(max(0.,sin(vPos.x*.55+uTime*.5+sin(vPos.y*.23+uTime*.31))),13.);',
-' float ribbons2=pow(max(0.,sin(vPos.y*.41-uTime*.27)),10.);',
-' float ripples=.5+.5*sin(vPos.x*.37+vPos.y*.29+uTime*.62);',
-' vec3 night=vec3(.045,.27,.33),day=vec3(.18,.51,.55);',
-' vec3 base=mix(night,day,clamp(ripples*.65+uDawn*.38,0.,1.));',
-' base+=vec3(.23,.29,.20)*ribbons*.28;',
-' base+=vec3(.25,.38,.30)*ribbons2*.12;',
-' base+=vWave*.16;',
-' gl_FragColor=vec4(base,1.);',
-'}'
-].join('\n');
 export function makeArchipelago({quality='high'}={}){
  const terrain=new THREE.Group();terrain.name='Original playable 3D island';
  const life=makeLivingAtmosphere({quality});
@@ -124,7 +95,7 @@ export function makeArchipelago({quality='high'}={}){
  const undershell=mesh(new THREE.CylinderGeometry(18.6,15.2,1.2,12),makeSurfaceMaterial('earth',{quality}));
  undershell.scale.z=1.19;undershell.position.y=-2.5;terrain.add(undershell);
  const sea=new THREE.Mesh(new THREE.PlaneGeometry(140,110,20,20),new THREE.ShaderMaterial({
-  uniforms:{uTime:{value:0},uDawn:{value:.53}},
+  uniforms:{uTime:{value:0},uDawn:{value:.53},uWind:{value:.58}},
   vertexShader:waterVertex,fragmentShader:waterFragment,side:THREE.DoubleSide,depthWrite:true
  }));
  sea.rotation.x=-Math.PI/2;sea.position.y=-2.21;terrain.add(sea);
