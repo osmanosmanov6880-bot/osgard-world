@@ -2366,7 +2366,22 @@ test('INHERIT R16 genuine Three.js island renders the original saved world witho
  const after=await page.evaluate(()=>window.InheritGame.snapshot());
  expect(after.budget).toBe(before.budget-1);
  expect(after.pending.length).toBe(before.pending.length+1);
- if(initial.available)await expect.poll(()=>page.evaluate(()=>window.InheritAAA3D.getState().traces)).toBe(after.objects.length);
+ if(initial.available){
+  await expect.poll(()=>page.evaluate(()=>window.InheritAAA3D.getState().traces)).toBe(after.objects.length);
+  // The new sculpture mesh must actually be rendered, not an HTML silhouette.
+  if((await page.evaluate(()=>window.InheritAAA3D.getState().quality))==='low'){
+   const beforeToggle=await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()));
+   await page.locator('.aaa3d-quality').click();
+   expect(await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()))).toBe(beforeToggle);
+  }
+  await expect.poll(()=>page.evaluate(()=>window.InheritAAA3D.getState().detailTiers.high)).toBeGreaterThan(0);
+  const sculpt=await page.evaluate(()=>window.InheritAAA3D.getState());
+  expect(sculpt.detailTriangles).toBeGreaterThan(240);
+  expect(sculpt.detailDrawCalls).toBeLessThan(16);
+  const details=info.outputPath('inherit-r16-high-detail-model.png');
+  await page.screenshot({path:details,fullPage:false,animations:'disabled'});
+  await info.attach('INHERIT actual ultra-detailed sculpted 3D item',{path:details,contentType:'image/png'});
+ }
  expect(errors).toEqual([]);
 });
 
