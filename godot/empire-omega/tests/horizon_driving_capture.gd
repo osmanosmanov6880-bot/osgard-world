@@ -16,8 +16,8 @@ func _run() -> void:
 		push_error("Real car/citizen not loaded")
 		quit(2)
 		return
-	car.global_position = Vector3(-52.0,1.2,-104.0)
-	car.rotation.y = PI*0.5
+	car.global_position = Vector3(-156.0,1.2,-104.0)
+	car.rotation.y = -PI*0.5
 	player.global_position = car.global_position+Vector3(3,0,0)
 	game.set("cam_yaw",car.rotation.y)
 	game.set("cam_pitch",0.23)
@@ -32,11 +32,12 @@ func _run() -> void:
 	root.size = size
 	DisplayServer.window_set_size(size)
 	Input.action_press("move_forward")
-	Input.action_press("move_left")
-	for i in range(65): await physics_frame
+	for i in range(84): await physics_frame
 	Input.action_release("move_forward")
-	Input.action_release("move_left")
 	for i in range(8): await process_frame
+	var hud: Node = game.get("hud") as Node
+	if hud != null and hud.get("toast_panel") != null:
+		(hud.get("toast_panel") as Control).visible = false
 	await RenderingServer.frame_post_draw
 	var photo: Image = root.get_viewport().get_texture().get_image()
 	if photo.is_empty() or photo.get_size()!=size or absf(float(car.get("speed")))<2.5:
