@@ -37,6 +37,8 @@ on:
       - "scripts/time-prototype-smoke.mjs"
       - "scripts/games-portal-smoke.mjs"
       - "scripts/academy-home-smoke.mjs"
+      - "scripts/osgard-unified-release-smoke.mjs"
+      - "scripts/unified-navigation-browser.spec.mjs"
       - "scripts/games-lighthouse-report.mjs"
       - ".github/workflows/games-lighthouse.yml"
       - "public/games/**"
@@ -78,6 +80,8 @@ jobs:
         run: npm run check
       - name: Verify three product surfaces and all game entry points
         run: npm run qa:redesign
+      - name: Guard unified six-surface release and existing game assets
+        run: npm run qa:unified
       - name: Verify locally published ZION gameplay
         run: npm run qa:zion-local
       - name: Verify navigation, guest progress and resilient game interfaces
