@@ -42,6 +42,7 @@ window.InheritAAA3D=Object.freeze({getState:()=>({...status}),toggle:()=>switche
 let renderer,scene,camera,staticWorld,traceRoot,sun,hemi,cold;
 let waterUniforms,raf=0,lastFrame=0,sceneVisible=true,modeEnabled=true,flybyStart=0,flyby=false;
 let signature='',lastSeason='',aspect=1.84,firstDraw=false;
+const raycaster=new THREE.Raycaster(),pointer=new THREE.Vector2();
 const preferences=()=>{try{return localStorage.getItem('inherit:3d:v1')}catch{return null}};
 const savePreference=val=>{try{localStorage.setItem('inherit:3d:v1',val)}catch{}};
 function notify(message){live.textContent=message;}
@@ -109,6 +110,7 @@ function syncState(force=false){
   const o=items[i],p=screenToTerrain(o.x,o.y,aspect,ORTHO_HEIGHT,ELEVATION);
   const value=makeTrace(o.tool,{size:o.tool==='tree'?.61:o.tool==='arch'?.72:.86,cast:quality==='high'});
   value.position.set(p.x,p.y+.06,p.z);
+  value.userData.nativeTrace={tool:o.tool,x:o.x,y:o.y};
   value.rotation.y=((i*0.6180339887)%1)*Math.PI*2;
   traceRoot.add(value);
  }
@@ -170,6 +172,31 @@ world.addEventListener('click',event=>{
  if(!flyby)return;
  if(event.target instanceof Element&&event.target.closest('#island')){
   event.preventDefault();event.stopImmediatePropagation();
+ }
+},true);
+// Select the REAL native trace inspector when the user directly clicks a
+// rendered 3D object. The raycaster never writes the world or spends a move.
+world.addEventListener('click',event=>{
+ if(!status.active||flyby||!camera||!traceRoot||!(event.target instanceof Element)||
+    !event.target.closest('#island')||event.target.closest('button,[data-memory]'))return;
+ const rect=canvas.getBoundingClientRect();
+ if(!rect.width||!rect.height)return;
+ pointer.set((event.clientX-rect.left)/rect.width*2-1,1-(event.clientY-rect.top)/rect.height*2);
+ if(Math.abs(pointer.x)>1||Math.abs(pointer.y)>1)return;
+ raycaster.setFromCamera(pointer,camera);
+ const hit=raycaster.intersectObjects(traceRoot.children,true)[0];
+ if(!hit)return;
+ let node=hit.object;
+ while(node&&node.parent!==traceRoot)node=node.parent;
+ const saved=node?.userData.nativeTrace;
+ if(!saved)return;
+ const target=[...objects.querySelectorAll('.placed')].find(btn=>{
+  const x=Number.parseFloat(btn.style.left),y=Number.parseFloat(btn.style.top);
+  return btn.classList.contains(saved.tool)&&Math.abs(x-saved.x)<.001&&Math.abs(y-saved.y)<.001;
+ });
+ if(target){
+  event.preventDefault();event.stopImmediatePropagation();
+  target.click(); // original owned game's non-mutating memory display
  }
 },true);
 d.addEventListener('visibilitychange',()=>{if(d.hidden)stop();else start();});
