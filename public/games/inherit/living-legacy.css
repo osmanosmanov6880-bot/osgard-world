@@ -258,3 +258,15 @@ body.living-legacy .world:has(>.inherit-first-steps:not([hidden]))>.hint{
 /* The historical mobile CSS put the tools in a 2-row fixed panel.
  * These rules deliberately keep its menu and history button available and
  * make all subsequent controls reachable by regular document scrolling. */
+
+
+/* The utility drawer used to open UP from the fixed bottom dock. With the
+ * controls in normal flow, open DOWN into the scene without leaving the page
+ * or making any feature unreachable. */
+@media(max-width:740px){
+ body.living-legacy .app>.dock.cine-dock>.cine-utility{
+   top:calc(100% + 5px);bottom:auto;left:4vw;right:4vw;
+   width:auto;max-height:min(60svh,500px);z-index:60;
+   overscroll-behavior:contain;
+ }
+}
