@@ -1,0 +1,95 @@
+name: Publish REMIX ARENA standalone
+on:
+  push:
+    branches: [master]
+    paths:
+      - "public/games/remix/arena-v2/**"
+      - ".github/workflows/deploy-remix-arena-static.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: osgard-frontend-deploy
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate isolated game artifact
+        run: |
+          set -euo pipefail
+          test -s public/games/remix/arena-v2/index.html
+          grep -Fq 'REMIX ARENA | Independent Edition v2.0' public/games/remix/arena-v2/index.html
+          grep -Fq 'deploymentBackendNotice' public/games/remix/arena-v2/index.html
+          mkdir -p release
+          cp -a public/games/remix/arena-v2/. release/
+          tar -czf remix-arena-release.tgz -C release .
+          sha256sum remix-arena-release.tgz > remix-arena-release.sha256
+      - name: Verify SSH environment
+        env:
+          HOST: ${{ secrets.OSGARD_DEPLOY_HOST }}
+          USER: ${{ secrets.OSGARD_DEPLOY_USER }}
+          KEY: ${{ secrets.OSGARD_DEPLOY_KEY }}
+        run: |
+          set -euo pipefail
+          test -n "$HOST" && test -n "$USER" && test -n "$KEY" || { echo "::error::Missing OSGARD_DEPLOY_HOST, OSGARD_DEPLOY_USER or OSGARD_DEPLOY_KEY"; exit 1; }
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$KEY" > ~/.ssh/osgard_remix_key
+          chmod 600 ~/.ssh/osgard_remix_key
+          ssh-keyscan -T 10 -H "$HOST" > ~/.ssh/known_hosts
+          test -s ~/.ssh/known_hosts
+      - name: Upload and activate isolated game with rollback
+        env:
+          HOST: ${{ secrets.OSGARD_DEPLOY_HOST }}
+          USER: ${{ secrets.OSGARD_DEPLOY_USER }}
+        run: |
+          set -euo pipefail
+          release_id="${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          remote_dir="/tmp/remix-arena-publish-${release_id}"
+          ssh -i ~/.ssh/osgard_remix_key -o BatchMode=yes "$USER@$HOST" "mkdir -p '$remote_dir'"
+          scp -i ~/.ssh/osgard_remix_key remix-arena-release.tgz remix-arena-release.sha256 "$USER@$HOST:$remote_dir/"
+          ssh -i ~/.ssh/osgard_remix_key -o BatchMode=yes "$USER@$HOST" "RELEASE_DIR='$remote_dir' RELEASE_ID='$release_id' bash -s" <<'REMOTE'
+          set -euo pipefail
+          trap 'rm -rf "$RELEASE_DIR"' EXIT
+          cd "$RELEASE_DIR"
+          sha256sum -c remix-arena-release.sha256
+          mkdir -p game
+          tar -xzf remix-arena-release.tgz -C game
+          test -s game/index.html
+          container=osgard-world
+          docker inspect "$container" --format '{{.State.Running}}' | grep -qx true
+          docker cp game "$container:/tmp/remix-arena-candidate-$RELEASE_ID"
+          docker exec -e RELEASE_ID="$RELEASE_ID" "$container" sh -ec '
+            destination=/usr/share/nginx/html/games/remix/arena-v2
+            candidate="/tmp/remix-arena-candidate-$RELEASE_ID"
+            backup="/tmp/remix-arena-previous-$RELEASE_ID"
+            test -s "$candidate/index.html"
+            mkdir -p /usr/share/nginx/html/games/remix
+            if [ -e "$destination" ]; then mv "$destination" "$backup"; fi
+            if ! mv "$candidate" "$destination"; then
+              if [ -d "$backup" ]; then mv "$backup" "$destination"; fi
+              exit 1
+            fi
+            if ! wget -q -O /tmp/remix-arena-http-check.html -T 10 http://127.0.0.1/games/remix/arena-v2/; then
+              rm -rf "$destination"
+              if [ -d "$backup" ]; then mv "$backup" "$destination"; fi
+              echo "REMIX ARENA HTTP healthcheck failed; restored previous release" >&2
+              exit 1
+            fi
+            if ! grep -Fq "deploymentBackendNotice" /tmp/remix-arena-http-check.html; then
+              rm -rf "$destination"
+              if [ -d "$backup" ]; then mv "$backup" "$destination"; fi
+              echo "REMIX ARENA content check failed; restored previous release" >&2
+              exit 1
+            fi
+            echo "REMIX ARENA static page activated and verified inside production Nginx"
+          '
+          REMOTE
+      - name: Explain multiplayer deployment boundary
+        run: |
+          echo "Static REMIX ARENA verified. Multiplayer still requires independently deployed Node REMIX Gateway."
