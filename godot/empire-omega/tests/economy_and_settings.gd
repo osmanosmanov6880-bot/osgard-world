@@ -75,8 +75,9 @@ func _run() -> void:
 	verify(InputMap.has_action("jump") and InputMap.has_action("governor"),"movement and strategy actions registered")
 	var previous: int = int(prefs.keys["jump"])
 	verify(not prefs.rebind("jump",int(prefs.keys["interact"])),"conflicting key is rejected")
-	verify(prefs.rebind("jump",KEY_J),"free key can be assigned")
-	verify(int(prefs.keys["jump"]) == KEY_J,"remap persisted in current configuration")
+	# J is now reserved for the citizen-dialogue action; F6 remains unassigned.
+	verify(prefs.rebind("jump",KEY_F6),"free key can be assigned")
+	verify(int(prefs.keys["jump"]) == KEY_F6,"remap persisted in current configuration")
 	verify(prefs.rebind("jump",previous),"default binding restored")
 	prefs.reset_bindings()
 	prefs.set_reduced_motion(false)
