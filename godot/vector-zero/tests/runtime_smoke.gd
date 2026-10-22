@@ -23,6 +23,13 @@ func _run() -> void:
     var game: Node3D = scene.instantiate()
     root.add_child(game)
     await process_frame
+    _assert_case(game.get_node_or_null("UltraDetailArchitecture") != null, "original industrial ultra detail kit loaded")
+    _assert_case(game.get_node_or_null("PlayerEnergyCore/HighPolyCoreAssembly") != null, "multi-layer machined energy core asset")
+    _assert_case(game.get_node_or_null("MagnetAssembly/HighPolyMagnetAssembly") != null, "high density superconducting magnet asset")
+    _assert_case(game.get_node_or_null("ReceiverAssembly/HighPolyReceiverAssembly") != null, "cinematic CNC target dock asset")
+    _assert_case(game.get_node_or_null("UltraDetailArchitecture/PrecisionLauncher_Assembly") != null, "detailed electro-magnetic launcher asset")
+    var armor: MeshInstance3D = game.get_node_or_null("MagnetAssembly/HighPolyMagnetAssembly/GraphiteClampingFlange") as MeshInstance3D
+    _assert_case(armor != null and armor.material_override is StandardMaterial3D, "magnet has physically-based metallic materials")
     _assert_case(game.get_node_or_null("CinematicCamera") != null, "3D cinematic camera exists")
     _assert_case(game.get_node_or_null("PlayerEnergyCore") != null, "physical projectile exists")
     _assert_case(game.get_node_or_null("MagnetAssembly") != null, "electromagnet exists")
