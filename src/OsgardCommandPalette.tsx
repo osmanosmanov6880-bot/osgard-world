@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react'
 import { playGameTitles } from './playGameTitles'
 import { navigateBrowserUrl } from './browserNavigation'
@@ -121,7 +122,7 @@ export function OsgardCommandPalette({ path }: { path: string }) {
       <span className="osgard-command-trigger-label">Быстрый переход</span>
       <kbd aria-hidden="true">⌘ K</kbd>
     </button>
-    {open && <div className="osgard-command-backdrop" role="presentation" onMouseDown={event => {
+    {open && createPortal(<div className="osgard-command-backdrop" role="presentation" onMouseDown={event => {
       if (event.target === event.currentTarget) close()
     }}>
       <div className="osgard-command-dialog" role="dialog" aria-modal="true"
@@ -159,6 +160,6 @@ export function OsgardCommandPalette({ path }: { path: string }) {
         <div className="osgard-command-footer"><span>{matches.length} {query ? 'совпадений' : 'быстрых направлений'}</span>
           <span>Без регистрации · реальные маршруты OSGARD</span></div>
       </div>
-    </div>}
+    </div>, document.body)}
   </>
 }
