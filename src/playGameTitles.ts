@@ -21,4 +21,5 @@ export const playGameTitles: Readonly<Record<string, string>> = {
   "zion-029": "Синий интервал",
   "zion-030": "Теневой протокол",
 }
-export const getPlayGameTitle = (id: string): string | undefined => playGameTitles[id]
+export const getPlayGameTitle = (id: string): string | undefined =>
+  Object.hasOwn(playGameTitles, id) ? playGameTitles[id] : undefined
