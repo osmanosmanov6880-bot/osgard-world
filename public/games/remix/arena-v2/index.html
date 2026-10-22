@@ -584,7 +584,16 @@ html,body{overflow-x:clip}
 </style>
 <style id="nebula-openworld-entry">
 .nebula-nav{color:#ffdf9b!important;border:1px solid #e2b66877!important;border-radius:5px!important;padding:11px 12px!important;text-decoration:none!important;font-size:12px!important;font-weight:850!important;white-space:nowrap}.nebula-nav:hover{background:#dba85425!important}.nebula-cta{display:flex;align-items:center;justify-content:space-between;gap:18px;margin:8px 0 24px;padding:20px 25px;background:linear-gradient(110deg,#113656f0,#11132d,#1d335a);border:1px solid #dcbb78a6;border-radius:12px;box-shadow:0 10px 35px #0006,0 0 25px #dba85415}.nebula-cta-copy small{display:block;color:#f7c679;font-size:11px;font-weight:850;letter-spacing:.15em}.nebula-cta-copy strong{display:block;margin:7px 0 5px;color:#f9f9ff;font-size:clamp(19px,2.3vw,32px);font-weight:900}.nebula-cta-copy p{margin:0;color:#c6d5eb;font-size:14px;line-height:1.5}.nebula-cta-btn{display:inline-flex;align-items:center;justify-content:center;padding:17px 22px;background:#f1cc82;color:#15233b!important;font-size:15px;font-weight:900;border-radius:7px;text-decoration:none!important;min-height:52px;white-space:nowrap}.nebula-cta-btn:hover{background:#ffe4ae}@media(max-width:700px){.nebula-cta{flex-direction:column;align-items:flex-start;padding:16px}.nebula-cta-btn{width:100%;font-size:14px}.nebula-nav{font-size:10px!important;padding:8px!important}}
-</style></head>
+</style><style id="nebula3d-launch-style">
+.nebula3d-banner{display:flex;align-items:center;justify-content:space-between;gap:22px;margin:0 0 22px;padding:24px 26px;min-height:135px;background:radial-gradient(ellipse at 92% 20%,#4065a159,transparent 42%),linear-gradient(116deg,#0a2b44,#121c41 62%,#23143b);border:1px solid #7baff2a3;border-radius:13px;box-shadow:0 14px 42px #0008,inset 0 1px #c9edff20}
+.nebula3d-copy small{display:block;color:#8eefff;font:850 11px/1.5 system-ui,sans-serif;letter-spacing:.15em}
+.nebula3d-copy strong{display:block;color:#f7faff;font:900 clamp(22px,2.5vw,36px)/1.13 system-ui,sans-serif;margin:7px 0}
+.nebula3d-copy p{font:550 14px/1.6 system-ui,sans-serif;margin:0;color:#d6e9ff;max-width:660px}
+.nebula3d-button{flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;min-height:57px;padding:18px 25px;background:#8feafe;border:1px solid #b4fbff;border-radius:7px;text-decoration:none!important;color:#061e3b!important;font:900 15px/1 system-ui,sans-serif;white-space:nowrap;box-shadow:0 0 32px #65dfff4d}
+.nebula3d-button:hover{background:#b7f5ff}
+@media(max-width:700px){.nebula3d-banner{padding:18px;flex-direction:column;align-items:stretch;gap:16px}.nebula3d-copy strong{font-size:25px}.nebula3d-copy p{font-size:15px}.nebula3d-button{width:100%}}
+</style>
+</head>
 <body>
   <div class="ambient" aria-hidden="true"></div>
   <div class="app">
@@ -643,6 +652,11 @@ html,body{overflow-x:clip}
 
       <section id="play" class="page" aria-labelledby="playTitle">
         <div class="nebula-cta" id="nebulaCityLaunch"><div class="nebula-cta-copy"><small>REMIX // NEBULA CITY // OPEN WORLD</small><strong>НЕБУЛА СИТИ — СВОБОДНЫЙ МИР</strong><p>Летай по городу, выполняй миссии, уходи от патрулей и улучшай корабль. Новая самостоятельная игра.</p></div><a class="nebula-cta-btn" href="./open-world/" aria-label="Начать игру НЕБУЛА СИТИ">НАЧАТЬ СВОБОДНЫЙ ПОЛЁТ ↗</a></div>
+        <section class="nebula3d-banner" aria-label="Новая трёхмерная игра REMIX">
+  <div class="nebula3d-copy"><small>НОВЫЙ РЕЖИМ · GODOT 4.7.2 · НАСТОЯЩИЙ 3D</small><strong>NEBULA 3D — ОРБИТАЛЬНЫЙ ГОРОД</strong>
+  <p>Шесть районов, объёмная архитектура, управление кораблём, дроны и сюжет. Отдельная экспериментальная 3D-игра.</p></div>
+  <a href="./nebula-3d/" class="nebula3d-button" aria-label="Открыть настоящий 3D-мир Godot">ИГРАТЬ В 3D ↗</a>
+</section>
         <div class="sectionhead">
           <div><div class="eyebrow" data-i18n="trial">REMIX / ИСПЫТАТЕЛЬНЫЙ ПОЛИГОН</div><h2 id="playTitle" data-i18n="choose">Выбери свою арену</h2></div>
           <div class="modebox"><span data-i18n="display">ВИЗУАЛЬНЫЙ РЕЖИМ</span><div class="seg">
