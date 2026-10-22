@@ -76,6 +76,8 @@ jobs:
         run: npm ci
       - name: Type-check the frontend
         run: npm run check
+      - name: Verify six-surface integration, game parity, accessible low-power World
+        run: node scripts/osgard-unified-release-smoke.mjs
       - name: Verify three product surfaces and all game entry points
         run: npm run qa:redesign
       - name: Verify locally published ZION gameplay
