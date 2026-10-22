@@ -1,0 +1,33 @@
+import { test, expect } from '@playwright/test'
+
+// Browser acceptance for the actual procedural geometry, not screenshot-only promises.
+test('ZION-030 v30: ultra-detailed city assets load without replacing the original mission', async ({ page }, testInfo) => {
+  test.setTimeout(90000)
+  const uncaught = []
+  page.on('pageerror', error => uncaught.push(error.message))
+  await page.goto('/games/zion-9/queue/ZION-030/index.html?test=1')
+  await page.waitForFunction(() => window.__ZION030_OPEN_CITY__?.state().ready, null, { timeout: 30000 })
+  const state = await page.evaluate(() => window.__ZION030_OPEN_CITY__.state())
+  expect(state.detail).toBeTruthy()
+  expect(state.detail.version).toBe('30.0')
+  expect(state.detail.buildings).toBeGreaterThan(40)
+  expect(state.detail.windows).toBeGreaterThan(500)
+  expect(state.detail.instances).toBeGreaterThan(4000)
+  expect(state.detail.batchedDrawCalls).toBeLessThanOrEqual(45)
+  expect(state.detail.chargingPoints).toBe(3)
+  expect(state.detail.carDetails).toBeGreaterThan(5)
+  expect(state.detail.characterDetails).toBeGreaterThan(3)
+  if (testInfo.project.name === 'mobile') expect(['MOBILE', 'LITE']).toContain(state.detail.tier)
+  else expect(['ULTRA', 'LITE']).toContain(state.detail.tier)
+  await page.locator('#oc-entry').click()
+  await page.locator('#oc-start-play').click()
+  await expect(page.locator('#oc-shell')).toBeVisible()
+  await expect(page.locator('#oc-minimap')).toBeVisible()
+  await page.locator('#oc-quality').click()
+  await expect(page.locator('#oc-quality')).toContainText('ECO')
+  await expect.poll(() => page.evaluate(() => window.__ZION030_OPEN_CITY__.state().detail.instances)).toBe(state.detail.instances)
+  await page.locator('#oc-exit').click()
+  await expect(page.locator('#oc-shell')).toBeHidden()
+  await expect(page.locator('#premiumPlace')).toBeAttached()
+  expect(uncaught).toEqual([])
+})

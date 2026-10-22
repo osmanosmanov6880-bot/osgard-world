@@ -220,5 +220,123 @@ body.oc-body-active{overflow:hidden!important}
 .oc-shell #oc-nav-mode{display:block;width:100%;margin-top:6px;min-height:30px;background:#113a50;border:1px solid #4d96a2;border-radius:8px;color:#a8eff6;font-size:10px;font-weight:950;letter-spacing:.07em}
 .oc-shell #oc-nav-mode:hover{background:#19556b;color:white}
 @media(max-width:760px){.oc-shell #oc-nav-mode{font-size:9px;min-height:26px;margin-top:4px}}
+
 /* Fast and legible UI on devices using reduced-motion mode or software rendering. */
 @media(prefers-reduced-motion:reduce){.oc-shell .oc-objective,.oc-shell .oc-contract,.oc-shell .oc-status-bar,.oc-shell .oc-toolbar,.oc-shell .oc-start,.oc-shell .oc-complete{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}.oc-shell .oc-grain{display:none!important}}
+/* v29 | Cinematic City: story, input, advanced urban HUD. */
+.oc-shell .oc-journal-trigger,.oc-shell .oc-pause-trigger{
+  position:absolute;z-index:17;top:24px;right:255px;border:1px solid #67b8c0aa;
+  background:linear-gradient(135deg,#072a3aee,#0b4354ed);color:#e9feff;border-radius:10px;
+  min-height:43px;padding:8px 15px;font-size:12px;letter-spacing:.035em;font-weight:900;
+  box-shadow:0 10px 24px #0007;white-space:nowrap;
+}
+.oc-shell .oc-journal-trigger kbd{margin-left:8px;padding:3px 6px;font-size:10px}
+.oc-shell .oc-pause-trigger{right:423px}
+.oc-shell .oc-journal-trigger:hover,.oc-shell .oc-pause-trigger:hover{background:#186178}
+.oc-shell .oc-chapter{position:absolute;z-index:10;top:79px;left:clamp(16px,2.4vw,42px);pointer-events:none;text-shadow:0 2px 10px #000}
+.oc-shell .oc-chapter small{display:block;color:#65f0e5;font-size:9px;font-weight:950;letter-spacing:.2em}
+.oc-shell .oc-chapter strong{display:block;margin-top:2px;color:#e7ffff;font-size:12px;font-weight:950;letter-spacing:.08em}
+.oc-shell .oc-career{position:absolute;z-index:10;left:clamp(16px,2.4vw,42px);bottom:235px;
+  width:210px;padding:10px 13px;border:1px solid #437e91;border-radius:10px;
+  background:linear-gradient(150deg,#061c2be8,#0b3541ed);pointer-events:none}
+.oc-shell .oc-career>span{display:flex;justify-content:space-between;gap:8px;font-size:10px;font-weight:900;color:#c1e8ed;letter-spacing:.08em}
+.oc-shell .oc-career b{font-size:12px;color:#f8ffec}
+.oc-shell .oc-meter{height:6px;border-radius:5px;background:#071d2b;overflow:hidden;margin:7px 0 9px;border:1px solid #316277}
+.oc-shell .oc-meter>i{height:100%;display:block;width:100%;background:linear-gradient(90deg,#25abc5,#86f5c3);transition:width .15s ease}
+.oc-shell .oc-radio{position:absolute;z-index:16;left:50%;bottom:210px;transform:translate(-50%,7px);min-width:240px;max-width:480px;
+  border:1px solid #71d6e29c;border-radius:10px;padding:10px 15px;background:#061f30ed;box-shadow:0 13px 40px #000a;
+  opacity:0;pointer-events:none;transition:opacity .25s,transform .25s}
+.oc-shell .oc-radio-active{opacity:1;transform:translate(-50%,0)}
+.oc-shell .oc-radio>span{display:block;font-size:10px;color:#76eddd;letter-spacing:.14em;font-weight:950;margin-bottom:4px}
+.oc-shell .oc-radio>p{margin:0;color:#eaffff;font-size:14px;line-height:1.42;font-weight:850}
+.oc-shell .oc-vehicle-charge{position:absolute;z-index:10;right:clamp(16px,2.4vw,42px);bottom:135px;width:145px;
+  background:#071e2de8;border:1px solid #4cb8a6b3;border-radius:10px;padding:10px 12px}
+.oc-shell .oc-vehicle-charge>span{color:#7debd3;font-size:10px;font-weight:900}
+.oc-shell .oc-vehicle-charge strong{float:right;color:#f8fdff;font-size:15px}
+.oc-shell .oc-vehicle-charge .oc-meter{clear:both;margin:8px 0 0}
+.oc-shell .oc-journal,.oc-shell .oc-pause{position:absolute;z-index:60;inset:0;display:grid;place-items:center;overflow:auto;
+  background:#010b14e9;backdrop-filter:blur(12px);padding:32px max(18px,env(safe-area-inset-left));color:#f4fdff}
+.oc-shell .oc-modal-card{width:min(930px,100%);max-height:min(900px,calc(100dvh - 40px));overflow:auto;
+  background:linear-gradient(155deg,#0c293b,#061421);border:1px solid #6597a6;border-radius:19px;padding:clamp(18px,3vw,36px);box-shadow:0 32px 110px #000b}
+.oc-shell .oc-modal-card>header{display:flex;gap:12px;justify-content:space-between;align-items:center}
+.oc-shell .oc-modal-card h2{margin:5px 0;font-size:clamp(22px,3.3vw,36px);letter-spacing:.035em}
+.oc-shell .oc-modal-card header small,.oc-shell .oc-pause-card>small:first-child{font-size:11px;font-weight:950;color:#80ebdf;letter-spacing:.17em}
+.oc-shell .oc-modal-card header button{height:41px;width:44px;flex:none;border-radius:10px;background:#133e52;border:1px solid #5599a8;color:#fff;font-size:18px}
+.oc-shell .oc-modal-sub{font-size:14px;line-height:1.55;color:#bfd5df;margin:13px 0 20px}
+.oc-shell .oc-journal-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.oc-shell .oc-quest-row{display:grid;grid-template-columns:1fr auto;column-gap:12px;row-gap:7px;text-align:left;min-height:95px;
+  padding:16px;border:1px solid #3a7489;border-radius:11px;background:linear-gradient(145deg,#0b3143,#082335);color:#ebfbff}
+.oc-shell .oc-quest-row strong{font-size:16px;line-height:1.2}
+.oc-shell .oc-quest-row span{grid-column:1/2;font-size:12px;color:#accbd5;line-height:1.4}
+.oc-shell .oc-quest-row small{grid-column:2;grid-row:1/-1;align-self:center;color:#f7d38e;font-size:13px;font-weight:950}
+.oc-shell .oc-quest-row[aria-pressed='true']{border-color:#9bf5da;background:#115161;box-shadow:inset 0 0 17px #23b6bc3b}
+.oc-shell .oc-quest-row:hover{border-color:#b2faff}
+.oc-shell .oc-garage{border-top:1px solid #416b7d;margin-top:19px;padding-top:17px}
+.oc-shell .oc-garage h3{font-size:17px;letter-spacing:.07em;margin:0 0 6px}
+.oc-shell .oc-garage p{font-size:13px;color:#a8cad4;line-height:1.45;margin:0 0 11px}
+.oc-shell .oc-garage-options{display:flex;flex-wrap:wrap;gap:9px}
+.oc-shell .oc-garage-options button{min-height:46px;padding:12px 16px;color:white;background:#10566a;border:1px solid #69cfc5;border-radius:10px;font-size:13px;font-weight:950}
+.oc-shell .oc-garage-options button:disabled{opacity:.45;cursor:not-allowed}
+.oc-shell .oc-modal-main,.oc-shell .oc-pause-card button{min-height:50px;padding:12px 20px;background:#137c83;border:1px solid #8bfde7;border-radius:12px;color:#fff;font-size:15px;font-weight:950}
+.oc-shell .oc-modal-main{width:100%;margin-top:20px}
+.oc-shell .oc-pause-card{width:min(500px,95vw);display:flex;flex-direction:column;gap:13px;text-align:center;
+  padding:clamp(22px,4vw,40px);border:1px solid #79bfbe;border-radius:20px;background:linear-gradient(145deg,#0a3547,#061723);box-shadow:0 20px 100px #000c}
+.oc-shell .oc-pause-card h2{font-size:clamp(30px,5vw,52px);margin:5px 0}
+.oc-shell .oc-pause-card p{margin:0 0 9px;font-size:14px;color:#c0dce6;line-height:1.5}
+.oc-shell .oc-pause-card #oc-exit-to-map{background:#15374b;border-color:#6695a8}
+.oc-shell .oc-pause-card>small:last-child{color:#82abb9;font-size:11px;line-height:1.6}
+.oc-shell .oc-view-button,.oc-shell .oc-jump-button{display:none}
+.oc-shell.oc-map-expanded .oc-right-hud{z-index:35;top:75px;right:50%;transform:translateX(50%);width:min(470px,85vw);pointer-events:none}
+.oc-shell.oc-map-expanded .oc-map-frame canvas{max-height:min(65vh,440px);width:100%;object-fit:contain}
+.oc-shell.oc-map-expanded .oc-map-frame{box-shadow:0 0 0 800px #0007,0 24px 80px #000e}
+@media(max-width:1250px) and (min-width:761px){
+ .oc-shell .oc-pause-trigger{right:343px}.oc-shell .oc-journal-trigger{right:188px}
+ .oc-shell .oc-pause-trigger,.oc-shell .oc-journal-trigger{padding:8px 10px;font-size:10px}
+ .oc-shell .oc-career{bottom:216px;width:185px}
+}
+@media(max-width:760px){
+ .oc-shell .oc-contract{display:none!important}
+ .oc-shell .oc-objective{max-width:200px}
+ .oc-shell .oc-chapter{top:187px;left:10px;max-width:195px}
+ .oc-shell .oc-chapter small{font-size:8px}.oc-shell .oc-chapter strong{font-size:10px}
+ .oc-shell .oc-career{top:225px;bottom:auto;left:10px;width:min(200px,55vw);padding:7px 9px}
+ .oc-shell .oc-career>span{font-size:8px}.oc-shell .oc-career b{font-size:10px}
+ .oc-shell .oc-journal-trigger,.oc-shell .oc-pause-trigger{right:10px;top:226px;padding:7px 9px;min-height:35px;font-size:10px;border-radius:8px}
+ .oc-shell .oc-journal-trigger{top:268px}.oc-shell .oc-journal-trigger kbd{font-size:9px;padding:2px 3px;margin-left:4px}
+ .oc-shell .oc-radio{bottom:284px;width:min(95vw,340px);max-width:calc(100vw - 20px);padding:8px 10px}
+ .oc-shell .oc-radio>p{font-size:12px}.oc-shell .oc-radio>span{font-size:9px}
+ .oc-shell .oc-vehicle-charge{right:10px;bottom:233px;width:116px;padding:6px 8px}
+ .oc-shell .oc-vehicle-charge>span{font-size:9px}.oc-shell .oc-vehicle-charge strong{font-size:12px}
+ .oc-shell .oc-view-button,.oc-shell .oc-jump-button{display:block;position:absolute;z-index:18;right:10px;min-width:112px;min-height:41px;
+   color:#f7ffff;background:#0b4254e8;border:1px solid #88cad2;border-radius:10px;font-size:10px;font-weight:950}
+ .oc-shell .oc-view-button{bottom:334px}.oc-shell .oc-jump-button{bottom:218px}
+ .oc-shell .oc-pause,.oc-shell .oc-journal{padding:10px;z-index:90}
+ .oc-shell .oc-modal-card{padding:15px;max-height:calc(100dvh - 16px);border-radius:14px}
+ .oc-shell .oc-modal-card h2{font-size:19px}.oc-shell .oc-modal-sub{font-size:12px;margin:9px 0 13px}
+ .oc-shell .oc-journal-list{grid-template-columns:1fr;gap:7px}
+ .oc-shell .oc-quest-row{min-height:68px;padding:10px;gap:4px}
+ .oc-shell .oc-quest-row strong{font-size:14px}.oc-shell .oc-quest-row span{font-size:11px}.oc-shell .oc-quest-row small{font-size:10px}
+ .oc-shell .oc-garage{padding-top:10px;margin-top:12px}.oc-shell .oc-garage h3{font-size:14px}.oc-shell .oc-garage p{font-size:11px}
+ .oc-shell .oc-garage-options button{padding:8px 9px;min-height:40px;font-size:11px}
+ .oc-shell .oc-modal-main{min-height:42px;margin-top:12px;font-size:12px}
+ .oc-shell .oc-journal-trigger kbd{display:none}
+ .oc-shell.oc-map-expanded .oc-right-hud{top:90px;width:min(300px,83vw)}
+}
+@media(max-height:680px) and (min-width:761px){.oc-shell .oc-career{display:none}.oc-shell .oc-chapter{display:none}.oc-shell .oc-radio{bottom:175px}}
+@media(prefers-reduced-motion:reduce){.oc-shell .oc-radio,.oc-shell .oc-career .oc-meter>i{transition:none!important}
+ .oc-shell .oc-journal,.oc-shell .oc-pause{backdrop-filter:none}}
+
+/* v29.1: mobile-first navigation and all three garage upgrades remain reachable. */
+.oc-shell #oc-nav-mobile{display:none}
+.oc-shell .oc-garage-balance{font-size:13px;font-weight:900;color:#8bf3df;padding:7px 10px;margin:0 0 11px;border-radius:8px;background:#0d3445;border:1px solid #377184}
+@media(max-width:760px){
+  .oc-shell #oc-nav-mobile{display:block;position:absolute;z-index:22;right:10px;top:310px;width:126px;min-height:36px;padding:7px 8px;border:1px solid #7ad3cb;border-radius:9px;background:#08374bdc;color:#e3ffff;font-size:10px;font-weight:950;letter-spacing:.015em}
+  .oc-shell #oc-nav-mobile:focus-visible{outline:3px solid #d7ffff;outline-offset:2px}
+  .oc-shell .oc-garage-balance{font-size:11px}
+  .oc-shell .oc-garage-options button{min-height:44px}
+}
+
+/* Keep mobile quality/weather controls clear of the camera and GPS buttons. */
+@media(max-width:760px){
+  .oc-shell .oc-status-bar{top:354px;bottom:auto;right:8px}
+}
