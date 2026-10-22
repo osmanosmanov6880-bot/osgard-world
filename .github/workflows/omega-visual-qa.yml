@@ -1,0 +1,48 @@
+name: OSGARD Horizon authentic Godot screenshot QA
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'godot/empire-omega/tests/horizon_capture.gd'
+      - '.github/workflows/omega-visual-qa.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  actual-frame:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: false
+      - name: Prepare original project resources
+        run: |
+          python3 godot/empire-omega/tools/generate_audio.py
+          python3 godot/empire-omega/tools/generate_patrol_audio.py
+          godot --headless --editor --path godot/empire-omega --import --quit
+      - name: Install offscreen OpenGL display
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y xvfb libgl1-mesa-dri
+      - name: Render genuine 1600x900 and 1366x768 scene screenshots
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p screenshots
+          timeout --signal=TERM --kill-after=8s 120s xvfb-run -a -s '-screen 0 1920x1080x24' \
+            godot --path godot/empire-omega --rendering-method gl_compatibility \
+              --script res://tests/horizon_capture.gd
+          test -s screenshots/omega_1600x900.png
+          test -s screenshots/omega_1366x768.png
+          file screenshots/*.png
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: osgard-horizon-native-frames
+          path: screenshots/*.png
+          if-no-files-found: warn
+          retention-days: 7
