@@ -1,4 +1,4 @@
-/* ZION-030 OPEN CITY v27 — immersive third-person WebGL mode.
+/* ZION-030 OPEN CITY v28 — playable living district, driving and open-world service contracts.
  * Uses the already-shipped local Three.js library and the original game-state API.
  * The original strategic city and its winning rules stay authoritative.
  */
@@ -7,7 +7,9 @@
   const root = document.getElementById('world-play');
   const stage = root?.querySelector('.stage');
   const game = () => window.ZION030_GAME;
-  if (!root || !stage || !game()) return;
+  const rules = window.ZION030_CITY_RULES;
+  if (!root || !stage || !game() || !rules) return;
+  const CONTRACTS = rules.CONTRACTS;
 
   const HOT = [
     { x: -4, z: -3, temp: 58, name: 'Жилой двор' },
@@ -42,34 +44,41 @@
       <div class="oc-world-message" id="oc-world-message" aria-live="polite"></div>
     </div>
     <header class="oc-header">
-      <div class="oc-brand"><span class="oc-diamond">◈</span><span><strong>ТЕНЕВОЙ ПРОТОКОЛ</strong><small>OPEN CITY · АФИНЫ · ЭПИЗОД 01</small></span></div>
+      <div class="oc-brand"><span class="oc-diamond">◈</span><span><strong>ТЕНЕВОЙ ПРОТОКОЛ</strong><small>OPEN CITY · АФИНЫ · ЭПИЗОД 02</small></span></div>
       <div class="oc-top-right"><span class="oc-live"><b></b> LIVE 3D</span><button type="button" id="oc-exit" class="oc-glass">✕ <span>К КАРТЕ</span></button></div>
     </header>
     <aside class="oc-objective" aria-label="Цель миссии">
       <span class="oc-eyebrow">ЗАДАНИЕ 01 / СНИЗИТЬ ПЕРЕГРЕВ</span>
       <strong>Охлади три горячие зоны</strong>
-      <p>Пройди по улицам, подойди к оранжевому сигналу и установи зелёную инфраструктуру.</p>
+      <p>Основная сюжетная миссия. Оранжевые маяки — перегретые зоны. Голубые маяки — городские контракты.</p>
       <div class="oc-progress"><span id="oc-progress-bar"></span></div>
       <div class="oc-progress-label"><span id="oc-score">0 / 3 ЗОНЫ</span><span id="oc-remaining">3 МОДУЛЯ</span></div>
     </aside>
     <div class="oc-right-hud"><div class="oc-map-frame"><canvas id="oc-minimap" width="230" height="230" aria-label="Миникарта трёх районов"></canvas><span>АФИНЫ · КВАРТАЛ 03</span></div>
-    <div class="oc-weather">◌ <strong>27°C</strong><small>ВЕЧЕР · СИМУЛЯЦИЯ</small></div></div>
+    <div class="oc-weather"><span id="oc-weather-symbol">☀</span> <strong id="oc-weather-temp">27°C</strong><small id="oc-weather-label">ВЕЧЕР · СИМУЛЯЦИЯ</small></div></div>
+    <aside class="oc-contract" aria-label="Контракты города"><div class="oc-contract-head"><span>КОНТРАКТЫ ГОРОДА</span><strong id="oc-contract-count">0 / 3</strong></div>
+      <strong id="oc-contract-title">Исследуй дальние улицы</strong><p id="oc-contract-hint">Найди голубой маяк и восстанови инфраструктуру района.</p>
+      <div class="oc-contract-stats"><span>◈ <b id="oc-credit">0</b> КРЕДИТОВ</span><span>★ <b id="oc-reputation">0</b> РЕПУТАЦИЯ</span></div>
+      <button id="oc-upgrade" type="button" disabled>УЛУЧШИТЬ ЭЛЕКТРОМОБИЛЬ · 300 ◈</button><button id="oc-nav-mode" type="button">⌖ GPS: СЮЖЕТ</button>
+    </aside>
+    <div class="oc-status-bar" aria-label="Параметры симуляции"><button id="oc-time" type="button" title="Сменить время суток (T)">☼ ВЕЧЕР</button><button id="oc-rain" type="button" title="Переключить дождь (P)">☂ ДОЖДЬ</button><button id="oc-quality" type="button" title="Качество графики (Q)">◈ HIGH</button></div>
+    <div class="oc-drive-hud" id="oc-drive-hud" hidden><span>ЭЛЕКТРОМОБИЛЬ · CITY RUNNER</span><strong id="oc-speed">0 <small>км/ч</small></strong><div class="oc-charge">▰▰▰▰▰ <b>100% БАТАРЕЯ</b></div><small>W — ГАЗ · S — НАЗАД · A/D — ПОВОРОТ · F — ВЫХОД</small></div>
     <div class="oc-location"><span class="oc-target-icon">⌖</span><span><small>БЛИЖАЙШАЯ ЦЕЛЬ</small><strong id="oc-target">ОСМОТРИ ГОРОД</strong><em id="oc-distance">Найди оранжевую метку</em></span></div>
     <div class="oc-toolbar" role="group" aria-label="Инструмент охлаждения">
       <button type="button" data-oc-tool="tree" aria-pressed="true"><span>1</span>🌳 <b>ДЕРЕВО</b></button>
       <button type="button" data-oc-tool="shade" aria-pressed="false"><span>2</span>▤ <b>НАВЕС</b></button>
       <button type="button" data-oc-tool="water" aria-pressed="false"><span>3</span>🌿 <b>САД</b></button>
     </div>
-    <div class="oc-interact" id="oc-interact" hidden><kbd>E</kbd><span id="oc-interact-text">УСТАНОВИТЬ ОХЛАЖДЕНИЕ</span></div>
-    <button class="oc-action" id="oc-action" type="button" hidden>✓ УСТАНОВИТЬ</button>
-    <div class="oc-controls"><span><kbd>W A S D</kbd> ИДТИ</span><span><kbd>SHIFT</kbd> БЕГ</span><span><kbd>МЫШЬ</kbd> КАМЕРА</span><span><kbd>E</kbd> ДЕЙСТВИЕ</span></div>
+    <div class="oc-interact" id="oc-interact" hidden><kbd id="oc-interact-key">E</kbd><span id="oc-interact-text">УСТАНОВИТЬ ОХЛАЖДЕНИЕ</span></div>
+    <button class="oc-action" id="oc-action" type="button" hidden>✓ ВЫПОЛНИТЬ</button><button class="oc-drive-action" id="oc-drive-action" type="button">🚘 СЕСТЬ В МАШИНУ</button>
+    <div class="oc-controls"><span><kbd>W A S D</kbd> ИДТИ</span><span><kbd>SHIFT</kbd> БЕГ</span><span><kbd>МЫШЬ</kbd> КАМЕРА</span><span><kbd>E</kbd> ДЕЙСТВИЕ</span><span><kbd>F</kbd> МАШИНА</span><span><kbd>T / P / Q</kbd> ВРЕМЯ / ДОЖДЬ / ГРАФИКА</span><span><kbd>G</kbd> GPS</span></div>
     <div class="oc-joystick" id="oc-joystick" aria-label="Сенсорное управление движением"><div id="oc-stick"></div></div>
-    <div class="oc-start" id="oc-start"><div class="oc-start-panel"><span class="oc-eyebrow">НОВЫЙ РЕЖИМ · ЖИВОЙ 3D-ГОРОД</span>
+    <div class="oc-start" id="oc-start"><div class="oc-start-panel"><span class="oc-eyebrow">ЭПИЗОД 02 · ЖИВОЙ ОТКРЫТЫЙ РАЙОН</span>
       <h2>ГОРОД<br><em>ЖДЁТ ТЕБЯ.</em></h2>
-      <p>Свободно гуляй между домами, исследуй улицы и охлаждай район прямо от лица персонажа. Карта и достижения общие с оригинальной игрой.</p>
-      <div class="oc-start-grid"><span>◉ <b>ОТКРЫТЫЙ КВАРТАЛ</b><small>Живые 3D-улицы</small></span><span>↗ <b>СВОБОДА ДВИЖЕНИЯ</b><small>WASD или джойстик</small></span><span>✦ <b>ТРИ МИССИИ</b><small>Реальное игровое состояние</small></span></div>
+      <p>Исследуй большой район Афин пешком или за рулём электромобиля. Выполни три контракта городской службы, меняй погоду и время суток, охлаждай перегретые кварталы. Прогресс сохраняется на устройстве.</p>
+      <div class="oc-start-grid"><span>◉ <b>БОЛЬШОЙ ГОРОД</b><small>Улицы, транспорт и прохожие</small></span><span>↗ <b>АВТО И ПРОГУЛКА</b><small>WASD / F / джойстик</small></span><span>✦ <b>МИССИИ + КОНТРАКТЫ</b><small>Заработай репутацию</small></span></div>
       <button type="button" id="oc-start-play">НАЧАТЬ ПРОГУЛКУ <span>→</span></button>
-      <small class="oc-start-foot">На мобильном используй левый джойстик и веди пальцем по экрану для поворота камеры.</small>
+      <small class="oc-start-foot">ПК: WASD — идти/управлять машиной · F — сесть/выйти · E — задание · T/P/Q — освещение/дождь/качество. Телефон: левый джойстик, пальцем по экрану — камера, кнопка 🚘 — автомобиль.</small>
     </div></div>
     <div class="oc-complete" id="oc-complete" hidden><div><span class="oc-eyebrow">МИССИЯ ВЫПОЛНЕНА</span><h2>ГОРОД<br><em>ОХЛАЖДЁН.</em></h2><p>Все три зоны получили охлаждение. Ты можешь продолжить прогулку или начать миссию заново.</p><button type="button" id="oc-keep-walking">ПРОДОЛЖИТЬ ПРОГУЛКУ</button><button type="button" id="oc-again">НОВАЯ МИССИЯ ↗</button></div></div>`;
   stage.append(shell);
@@ -79,29 +88,27 @@
   const keys = new Set();
   const joystick = { x: 0, y: 0, pointer: null, centerX: 0, centerY: 0 };
   const player = { x: 0, z: 0, y: 0, yaw: 0, cameraYaw: 0.35, pitch: 0.28, speed: 0, moving: false };
-  const world = { ready: false, active: false, initialised: false, last: 0, frame: 0, assets: [], buildings: [], rings: [], dust: [], foliage: [], lamps: [], pulse: 0, fpsFrames: 0, fpsTime: 0, fpsSample: 0, quality: 'high', gpuScale: 1.35 };
-  let scene, camera, renderer, avatar, legL, legR, armL, armR, sun, minimapCtx, targetIndex = -1;
+  const world = { ready: false, active: false, initialised: false, last: 0, frame: 0, assets: [], buildings: [], rings: [], dust: [], foliage: [], lamps: [], pulse: 0, fpsFrames: 0, fpsTime: 0, fpsSample: 0, quality: 'high', gpuScale: 1.35, softwareGL: false, lastRender: 0, navMode: 'main', people: [], traffic: [], contractMarkers: [], car: null, rain: null, dayMode: 0, raining: false, path: [], routeTo: '', pathCell: '' };
+  let scene, camera, renderer, avatar, legL, legR, armL, armR, sun, minimapCtx, targetIndex = -1, hemi, keyLight, blueFill;
   let dragId = null, dragX = 0, dragY = 0, audio, animationId = 0;
+  const PROFILE_KEY = 'osgard:zion030:open-city:v28';
+  let profile = rules.defaultProfile();
+  try { profile = rules.sanitizeProfile(JSON.parse(localStorage.getItem(PROFILE_KEY) || 'null')); } catch (_) { /* Storage may be blocked. */ }
+  const persist = () => { try { localStorage.setItem(PROFILE_KEY, JSON.stringify(profile)); } catch (_) { /* Play offline without saving if storage is unavailable. */ } };
+  function announce(message, time = 1800) {
+    const panel = $('oc-world-message'); panel.textContent = message; panel.classList.add('oc-visible');
+    clearTimeout(announce.timer); announce.timer = window.setTimeout(() => panel.classList.remove('oc-visible'), time);
+  }
   const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
   const rand = (x, z, salt = 0) => { const a = Math.sin((x + salt) * 127.1 + (z - salt) * 311.7 + 74.7) * 43758.5453; return a - Math.floor(a); };
-  const terrainBuilding = (x, z) => {
-    if (x < -6 || x > 6 || z < -6 || z > 6) return false;
-    if (Math.abs(x) <= 2 && Math.abs(z) <= 2) return false;
-    if (HOT.some(h => Math.hypot(h.x - x, h.z - z) < 1.55)) return false;
-    return rand(x, z) >= .49;
-  };
+  const terrainBuilding = rules.buildingAt;
   const occupied = new Set();
-  for (let x = -7; x <= 7; x++) for (let z = -7; z <= 7; z++) if (terrainBuilding(x, z)) occupied.add(`${x},${z}`);
-  const collides = (px, pz) => {
-    if (Math.abs(px) > 7.15 || Math.abs(pz) > 7.15) return true;
-    const cx = Math.round(px), cz = Math.round(pz);
-    for (let x = cx - 1; x <= cx + 1; x++) for (let z = cz - 1; z <= cz + 1; z++) {
-      if (occupied.has(`${x},${z}`) && Math.abs(px - x) < .55 && Math.abs(pz - z) < .55) return true;
-    }
-    return false;
-  };
+  for (let x = -19; x <= 19; x++) for (let z = -19; z <= 19; z++) if (terrainBuilding(x, z)) occupied.add(`${x},${z}`);
+  const collides = (px, pz, radius = .25) => rules.blocked(px, pz, radius);
   function makeMat(color, roughness = .83, metalness = .07, emissive = 0x000000, intensity = 0) {
-    return new THREE.MeshStandardMaterial({ color, roughness, metalness, emissive, emissiveIntensity: intensity });
+    return reduceMotion.matches || world.softwareGL
+      ? new THREE.MeshLambertMaterial({ color, emissive, emissiveIntensity: intensity })
+      : new THREE.MeshStandardMaterial({ color, roughness, metalness, emissive, emissiveIntensity: intensity });
   }
   const drawBox = (parent, x, y, z, w, h, d, mat, shadow = false) => {
     const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
@@ -152,7 +159,7 @@
     const road = makeMat('#132433', .73, .23), stone = makeMat('#304454', .81), edge = makeMat('#73818a', .75);
     const ground = new THREE.Mesh(new THREE.PlaneGeometry(150, 150), makeMat('#0b1723'));
     ground.rotation.x = -Math.PI / 2; ground.position.y = -.075; ground.receiveShadow = true; scene.add(ground);
-    const asphalt = new THREE.Mesh(new THREE.PlaneGeometry(15.8, 15.8), road);
+    const asphalt = new THREE.Mesh(new THREE.PlaneGeometry(41, 41), road);
     asphalt.rotation.x = -Math.PI / 2; asphalt.position.y = -.035; asphalt.receiveShadow = true; scene.add(asphalt);
     const plaza = new THREE.Mesh(new THREE.PlaneGeometry(5.6, 5.6), stone);
     plaza.rotation.x = -Math.PI / 2; plaza.position.y = -.018; plaza.receiveShadow = true; scene.add(plaza);
@@ -163,6 +170,26 @@
       xMark.receiveShadow = zMark.receiveShadow = false;
     }
     // Pedestrian routes are visually legible and remain traversable in the actual physics map.
+    const street = makeMat('#192f3c', .85, .15), walk = makeMat('#354854', .82);
+    // Major roads form a connected 40x40 district; strips and shoulders distinguish traffic lanes.
+    const marks = [];
+    const tmp = new THREE.Object3D();
+    const mark = (x, z, w, d) => {
+      tmp.position.set(x, -.024, z); tmp.scale.set(w, .006, d); tmp.updateMatrix(); marks.push(tmp.matrix.clone());
+    };
+    for (let n = -15; n <= 15; n += 5) {
+      if (n !== 0) {
+        drawBox(scene, n, -.036, 0, 1.12, .008, 40, street);
+        drawBox(scene, 0, -.036, n, 40, .008, 1.12, street);
+      }
+      for (let k = -19; k <= 19; k += 2) {
+        if (Math.abs(k) <= 7 && Math.abs(n) <= 7) continue;
+        mark(n, k, .035, .54); mark(k, n, .54, .035);
+      }
+    }
+    const laneMarks = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), walk, marks.length);
+    marks.forEach((matrix, i) => laneMarks.setMatrixAt(i, matrix));
+    laneMarks.instanceMatrix.needsUpdate = true; laneMarks.frustumCulled = false; scene.add(laneMarks);
     const stripe = makeMat('#bccacc', .57);
     for (const p of [[-3, -5], [5, 3], [0, 5], [-5, 1]]) {
       for (let a = -3; a <= 3; a++) drawBox(scene, p[0] + a * .23, .003, p[1], .13, .008, .62, stripe);
@@ -190,25 +217,54 @@
       const base = patternTexture(i), emissive = patternTexture(i, true);
       facade.push(new THREE.MeshStandardMaterial({ map: base, emissiveMap: emissive, emissive: '#ffbe7d', emissiveIntensity: .73, metalness: .2, roughness: .62 }));
     }
+    // Identical central-block silhouettes, but one draw call per facade/roof batch
+    // rather than hundreds of independent meshes: keeps street mode responsive on low-end GPUs.
+    const centerUnit = new THREE.BoxGeometry(1, 1, 1);
+    const centerBatches = Array.from({ length: 4 }, () => []);
+    const crownBatch = [], trimBatch = [], redBatch = [];
+    const centerDummy = new THREE.Object3D();
+    const centerBox = (batch, x, y, z, w, h, d) => {
+      centerDummy.position.set(x, y + h / 2, z);
+      centerDummy.scale.set(w, h, d);
+      centerDummy.updateMatrix();
+      batch.push(centerDummy.matrix.clone());
+    };
     for (let x = -7; x <= 7; x++) for (let z = -7; z <= 7; z++) {
       if (!terrainBuilding(x, z)) continue;
-      const r = rand(x, z); const h = 2.6 + r * 5.15;
+      const r = rand(x, z), h = 2.6 + r * 5.15;
       const w = .68 + rand(z, x) * .18, d = .68 + rand(x + 5, z - 4) * .17;
-      const building = drawBox(scene, x, .015, z, w, h, d, facade[Math.floor(rand(x + 7, z) * 4)], true);
-      world.buildings.push(building);
-      drawBox(scene, x, h + .014, z, w + .07, .095, d + .07, crown, true);
-      drawBox(scene, x, .045, z, w + .04, .11, d + .04, trim);
-      if (r > .65) { drawBox(scene, x, h + .11, z, .16, .36, .16, trim); drawBox(scene, x + w * .15, h + .16, z, .11, .07, .08, redAccent); }
-      if (r > .78) drawBox(scene, x, h + .2, z, .018, 1.1, .018, trim);
-      if (r < .64) drawBox(scene, x, .08, z + d / 2 + .06, w * .85, .12, .18, crown);
+      centerBox(centerBatches[Math.floor(rand(x + 7, z) * 4)], x, .015, z, w, h, d);
+      centerBox(crownBatch, x, h + .014, z, w + .07, .095, d + .07);
+      centerBox(trimBatch, x, .045, z, w + .04, .11, d + .04);
+      if (r > .65) {
+        centerBox(trimBatch, x, h + .11, z, .16, .36, .16);
+        centerBox(redBatch, x + w * .15, h + .16, z, .11, .07, .08);
+      }
+      if (r > .78) centerBox(trimBatch, x, h + .2, z, .018, 1.1, .018);
+      if (r < .64) centerBox(crownBatch, x, .08, z + d / 2 + .06, w * .85, .12, .18);
     }
+    [[facade[0],centerBatches[0],true],
+     [facade[1],centerBatches[1],true],
+     [facade[2],centerBatches[2],true],
+     [facade[3],centerBatches[3],true],
+     [crown,crownBatch,false], [trim,trimBatch,false], [redAccent,redBatch,false]].forEach(([mat,batch,isFacade]) => {
+      if (!batch.length) return;
+      const mesh = new THREE.InstancedMesh(centerUnit, mat, batch.length);
+      batch.forEach((matrix, i) => mesh.setMatrixAt(i, matrix));
+      mesh.instanceMatrix.needsUpdate = true;
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      scene.add(mesh);
+      if (isFacade) world.buildings.push(mesh);
+    });
+    addOuterCity(facade, crown);
     // Non-interactive skyline outside the playable streets produces depth without expanding mission physics.
     const farMaterials = [makeMat('#111d2d'), makeMat('#152c3b'), makeMat('#1e2b3e')];
     const towerGeo = new THREE.BoxGeometry(1, 1, 1);
     for (let band = 0; band < 3; band++) {
       const matrices = [];
       for (let i = -22; i <= 22; i += 2) {
-        for (const [x, z] of [[i, -12 - band * 3], [i, 12 + band * 3], [-12 - band * 3, i], [12 + band * 3, i]]) {
+        for (const [x, z] of [[i, -26 - band * 3], [i, 26 + band * 3], [-26 - band * 3, i], [26 + band * 3, i]]) {
           const h = 3 + rand(x, z) * 14; const obj = new THREE.Object3D();
           obj.position.set(x, h / 2 - .09, z); obj.scale.set(1.2 + rand(z, x) * 1.2, h, 1.2 + rand(x, z + 9)); obj.updateMatrix(); matrices.push(obj.matrix.clone());
         }
@@ -260,6 +316,270 @@
         g.position.set(x, 0, 6.7); scene.add(g);
       }
     }
+  }
+  // V28: outer district is instanced so large streets do not create thousands of draw calls.
+  function addOuterCity(facades, roofMaterial) {
+    const box = new THREE.BoxGeometry(1, 1, 1);
+    const batches = [[], [], [], []], roofs = [];
+    const dummy = new THREE.Object3D();
+    for (let x = -19; x <= 19; x++) for (let z = -19; z <= 19; z++) {
+      if (Math.abs(x) <= 7 && Math.abs(z) <= 7 || !terrainBuilding(x, z)) continue;
+      const height = 2.5 + rand(x, z, 4) * 7.1;
+      const w = .67 + rand(z, x, 5) * .15, d = .65 + rand(x, z, 7) * .2;
+      dummy.position.set(x, height / 2, z); dummy.scale.set(w, height, d); dummy.updateMatrix();
+      batches[Math.floor(rand(x, z, 8) * 4)].push(dummy.matrix.clone());
+      dummy.position.set(x, height + .05, z); dummy.scale.set(w + .035, .1, d + .035); dummy.updateMatrix();
+      roofs.push(dummy.matrix.clone());
+    }
+    for (let index = 0; index < 4; index++) {
+      if (!batches[index].length) continue;
+      const mesh = new THREE.InstancedMesh(box, facades[index], batches[index].length);
+      batches[index].forEach((matrix, i) => mesh.setMatrixAt(i, matrix));
+      mesh.instanceMatrix.needsUpdate = true; mesh.castShadow = false; mesh.receiveShadow = false;
+      scene.add(mesh);
+    }
+    const top = new THREE.InstancedMesh(box, roofMaterial, roofs.length);
+    roofs.forEach((matrix, i) => top.setMatrixAt(i, matrix)); top.instanceMatrix.needsUpdate = true;
+    scene.add(top);
+    // Large landmark silhouettes give players navigational anchors on outer streets.
+    const landmarkMat = makeMat('#255371', .52, .29, '#0d5a6b', .14);
+    const glass = makeMat('#7dcfdf', .15, .55, '#37abc6', .35);
+    for (const [x, z, h] of [[-16, 12, 14], [13, 14, 17], [-12, -14, 12], [16, -16, 19]]) {
+      if (terrainBuilding(Math.round(x), Math.round(z))) continue;
+      const tower = new THREE.Group();
+      drawBox(tower, 0, 0, 0, .38, h, .38, landmarkMat);
+      drawBox(tower, 0, h, 0, .55, .34, .55, glass);
+      const flare = glowSprite(0x54dff5, .5); flare.position.y = h + .3; flare.scale.set(2, 2, 1); tower.add(flare);
+      tower.position.set(x, 0, z); scene.add(tower);
+    }
+  }
+  function createCar(bodyColor = '#15abc0') {
+    const shellMesh = new THREE.Group();
+    const body = makeMat(bodyColor, .29, .68), glass = makeMat('#071f38', .13, .75), trim = makeMat('#afcad9', .34, .77);
+    const rubber = makeMat('#111b25', .97), light = new THREE.MeshBasicMaterial({ color: 0xe4f9ff });
+    drawBox(shellMesh, 0, .27, 0, .81, .27, 1.55, body, true);
+    drawBox(shellMesh, 0, .53, .1, .73, .42, .84, glass, true);
+    drawBox(shellMesh, 0, .81, .1, .76, .055, .88, body);
+    drawBox(shellMesh, 0, .26, -.77, .68, .09, .08, trim);
+    for (const x of [-.39, .39]) for (const z of [-.49, .52]) {
+      const wheel = new THREE.Mesh(new THREE.CylinderGeometry(.18, .18, .13, 12), rubber);
+      wheel.rotation.z = Math.PI / 2; wheel.position.set(x, .20, z); wheel.castShadow = true; shellMesh.add(wheel);
+    }
+    for (const x of [-.26, .26]) {
+      const headlight = new THREE.Mesh(new THREE.PlaneGeometry(.16, .075), light);
+      headlight.position.set(x, .38, -.79); shellMesh.add(headlight);
+    }
+    const strip = new THREE.Mesh(new THREE.PlaneGeometry(.5, .055), new THREE.MeshBasicMaterial({ color: 0x41dbff }));
+    strip.position.set(0, .42, .781); strip.rotation.y = Math.PI; shellMesh.add(strip);
+    return shellMesh;
+  }
+  function makePerson(index, x, z) {
+    const group = new THREE.Group(), clothes = [0x5e8392, 0x976960, 0x447d83, 0x857c9a, 0xc3a36b];
+    const coat = makeMat(clothes[index % clothes.length]);
+    const skin = makeMat(index % 2 ? '#bc8d6d' : '#dec19e'), dark = makeMat('#172938');
+    const torso = new THREE.Mesh(new THREE.CapsuleGeometry(.13, .26, 2, 6), coat); torso.position.y = .81; group.add(torso);
+    const head = new THREE.Mesh(new THREE.SphereGeometry(.13, 8, 7), skin); head.position.y = 1.22; group.add(head);
+    const legs = [];
+    for (const a of [-.09, .09]) {
+      const pivot = new THREE.Group(); pivot.position.set(a, .6, 0);
+      drawBox(pivot, 0, -.45, 0, .095, .48, .13, dark); group.add(pivot); legs.push(pivot);
+    }
+    group.position.set(x, 0, z); scene.add(group);
+    return { group, legs, x, z, yaw: 0, index, path: [], waypoint: 0, phase: index * .7, pace: .48 + rand(index, 5) * .34 };
+  }
+  function updatePedestrians(dt, t) {
+    for (const person of world.people) {
+      if (person.waypoint >= person.path.length && t >= (person.nextPlanAt || 0)) {
+        const x = person.x + Math.floor(rand(person.index, Math.floor(t / 7), 2) * 15) - 7;
+        const z = person.z + Math.floor(rand(Math.floor(t / 7), person.index, 6) * 15) - 7;
+        person.path = rules.route(person, rules.nearestFree(x, z));
+        person.waypoint = 1;
+        person.nextPlanAt = t + (person.path.length > 1 ? .8 : 4);
+      }
+      const next = person.path[person.waypoint];
+      if (next) {
+        const dx = next.x - person.x, dz = next.z - person.z, dist = Math.hypot(dx, dz);
+        if (dist < .09) person.waypoint++;
+        else {
+          const step = Math.min(dist, dt * person.pace);
+          const nx = person.x + dx / dist * step, nz = person.z + dz / dist * step;
+          if (!collides(nx, nz, .12)) { person.x = nx; person.z = nz; }
+          else person.waypoint++;
+          person.yaw = Math.atan2(-dx, -dz);
+        }
+      }
+      person.group.position.set(person.x, 0, person.z);
+      person.group.rotation.y = person.yaw;
+      const stride = reduceMotion.matches ? 0 : Math.sin(t * 6 + person.phase) * .28;
+      person.legs[0].rotation.x = stride; person.legs[1].rotation.x = -stride;
+    }
+  }
+  function createContractLandmark(contract) {
+    const group = new THREE.Group(); group.position.set(contract.x, 0, contract.z);
+    const silver = makeMat('#9ec1ce', .41, .75), green = makeMat('#54e0b4', .31, .5, '#1b7f78', .35);
+    const panel = makeMat('#145c79', .2, .68, '#137bac', .27), dark = makeMat('#172d3c');
+    const pedestal = new THREE.Mesh(new THREE.CylinderGeometry(.61, .73, .19, 12), dark);
+    pedestal.position.y = .12; group.add(pedestal);
+    if (contract.id === 'solar') {
+      drawBox(group, 0, .24, 0, .14, 1.10, .14, silver);
+      const solar = drawBox(group, 0, 1.23, 0, 1.55, .08, 1.02, panel);
+      solar.rotation.x = -.31;
+      for (const dx of [-.45, 0, .45]) drawBox(group, dx, 1.28, 0, .022, .021, 1.02, silver);
+    } else if (contract.id === 'water') {
+      const bowl = new THREE.Mesh(new THREE.CylinderGeometry(.64, .70, .3, 24), silver);
+      bowl.position.y = .37; group.add(bowl);
+      const water = new THREE.Mesh(new THREE.CylinderGeometry(.55, .55, .015, 24), green);
+      water.position.y = .53; group.add(water);
+      drawBox(group, 0, .54, 0, .10, 1.19, .10, silver);
+      const emitter = glowSprite(0x54ddeb, .75); emitter.position.y = 1.75; emitter.scale.set(1.2, 1.2, 1); group.add(emitter);
+    } else {
+      drawBox(group, 0, .2, 0, .12, 1.8, .12, silver);
+      const receiver = new THREE.Mesh(new THREE.SphereGeometry(.30, 16, 12), panel);
+      receiver.position.y = 2.13; group.add(receiver);
+      for (const dx of [-.32, .32]) drawBox(group, dx, 1.37, 0, .05, .23, .48, silver);
+    }
+    const halo = new THREE.Mesh(new THREE.RingGeometry(.85, .95, 40), new THREE.MeshBasicMaterial({ color: 0x43edff, transparent: true, opacity: .9, side: THREE.DoubleSide }));
+    halo.rotation.x = -Math.PI / 2; halo.position.y = .016; group.add(halo);
+    const orb = glowSprite(0x52efff, .85); orb.position.y = 2.6; orb.scale.set(1.5, 1.5, 1); group.add(orb);
+    scene.add(group);
+    return { contract, group, orb, halo };
+  }
+  function addRain() {
+    const count = mobile.matches ? 150 : 320;
+    const positions = new Float32Array(count * 3), seeds = [];
+    for (let i = 0; i < count; i++) {
+      const x = (rand(i, 81) - .5) * 26, y = rand(i, 42) * 12, z = (rand(i, 14) - .5) * 26;
+      positions[i * 3] = x; positions[i * 3 + 1] = y; positions[i * 3 + 2] = z;
+      seeds.push(.7 + rand(i, 19) * 1.5);
+    }
+    const geometry = new THREE.BufferGeometry(); geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    const material = new THREE.PointsMaterial({ color: 0xb9dffe, size: .052, transparent: true, opacity: .72, depthWrite: false, sizeAttenuation: true });
+    const rain = new THREE.Points(geometry, material); rain.frustumCulled = false; rain.visible = false; scene.add(rain);
+    world.rain = { rain, positions, seeds, attribute: geometry.getAttribute('position') };
+  }
+  function addLivingWorld() {
+    const carMesh = createCar(); scene.add(carMesh);
+    world.car = { x: .7, z: -1.65, heading: -Math.PI / 2, speed: 0, occupied: false, mesh: carMesh };
+    carMesh.position.set(world.car.x, .02, world.car.z); carMesh.rotation.y = world.car.heading;
+    // Four autonomous municipal vehicles, separate from the player's driveable car.
+    const routes = [
+      [[-15, -15], [15, -15], [15, 15], [-15, 15]],
+      [[15, 15], [15, -15], [-15, -15], [-15, 15]],
+      [[-10, 10], [10, 10], [10, -10], [-10, -10]],
+      [[10, -10], [10, 10], [-10, 10], [-10, -10]]
+    ];
+    const palette = ['#d4ac72', '#518ab9', '#617c79', '#a86d70'];
+    routes.forEach((route, i) => {
+      const mesh = createCar(palette[i]); scene.add(mesh);
+      const a = route[i % route.length]; mesh.position.set(a[0], .02, a[1]);
+      world.traffic.push({ mesh, route, segment: i % route.length, progress: (i % 3) * .19, speed: 1.6 + i * .23 });
+    });
+    for (let i = 0; i < (mobile.matches ? 9 : 18); i++) {
+      let x = Math.round((rand(i, 35) - .5) * 34), z = Math.round((rand(i, 65) - .5) * 34);
+      const safe = rules.nearestFree(x, z); x = safe.x; z = safe.z;
+      world.people.push(makePerson(i, x, z));
+    }
+    CONTRACTS.forEach(c => world.contractMarkers.push(createContractLandmark(c)));
+    addRain();
+  }
+  function updateTraffic(dt) {
+    for (const car of world.traffic) {
+      let step = dt * car.speed;
+      // Traffic follows fixed clear arterial routes. Never teleport through buildings.
+      while (step > 0) {
+        const a = car.route[car.segment], b = car.route[(car.segment + 1) % car.route.length];
+        const length = Math.hypot(b[0] - a[0], b[1] - a[1]);
+        const free = (1 - car.progress) * length;
+        const moved = Math.min(free, step);
+        car.progress += moved / length; step -= moved;
+        if (car.progress >= 1 - 1e-9) { car.segment = (car.segment + 1) % car.route.length; car.progress = 0; }
+      }
+      const a = car.route[car.segment], b = car.route[(car.segment + 1) % car.route.length];
+      const x = a[0] + (b[0] - a[0]) * car.progress, z = a[1] + (b[1] - a[1]) * car.progress;
+      car.mesh.position.set(x, .02, z);
+      car.mesh.rotation.y = Math.atan2(-(b[0] - a[0]), -(b[1] - a[1]));
+    }
+  }
+  function updateRain(dt) {
+    const r = world.rain;
+    if (!r || !world.raining) return;
+    r.rain.position.set(player.x, 0, player.z);
+    for (let i = 0; i < r.seeds.length; i++) {
+      const index = i * 3;
+      r.positions[index + 1] -= dt * (8 + r.seeds[i] * 5);
+      if (r.positions[index + 1] < .08) r.positions[index + 1] = 10.5;
+    }
+    r.attribute.needsUpdate = true;
+  }
+  function updateAtmosphere() {
+    if (!scene || !renderer) return;
+    const isNight = world.dayMode === 1, isDay = world.dayMode === 2;
+    if (world.skySphere) world.skySphere.material.color.setHex(isNight ? 0x324063 : isDay ? 0xeaf9ff : 0xffffff);
+    scene.background.setHex(isNight ? 0x030918 : isDay ? 0x698ea7 : 0x122a3a);
+    scene.fog.color.setHex(isNight ? 0x08182b : isDay ? 0x8fb2c3 : 0x1e3445);
+    scene.fog.density = world.raining ? .029 : isNight ? .024 : .015;
+    hemi.intensity = isNight ? 1.0 : isDay ? 3.0 : 2.25;
+    keyLight.intensity = isNight ? .4 : isDay ? 3.3 : 2.45;
+    blueFill.intensity = isNight ? 1.5 : .8;
+    renderer.toneMappingExposure = world.raining ? 1.0 : isNight ? .86 : isDay ? 1.65 : 1.42;
+    if (sun) sun.visible = !isNight;
+    if (world.rain) world.rain.rain.visible = world.raining;
+    $('oc-time').textContent = isNight ? '☾ НОЧЬ' : isDay ? '☼ ДЕНЬ' : '◐ ВЕЧЕР';
+    $('oc-rain').setAttribute('aria-pressed', String(world.raining));
+    $('oc-weather-symbol').textContent = world.raining ? '☂' : isNight ? '☾' : '☀';
+    $('oc-weather-temp').textContent = world.raining ? '19°C' : isNight ? '22°C' : isDay ? '33°C' : '27°C';
+    $('oc-weather-label').textContent = (isNight ? 'НОЧЬ' : isDay ? 'ДЕНЬ' : 'ВЕЧЕР') + (world.raining ? ' · ДОЖДЬ' : ' · СУХО');
+  }
+  function toggleNavigation() { world.navMode = world.navMode === 'main' ? 'contract' : 'main'; world.routeTo = ''; syncGame(); drawMiniMap(); announce(world.navMode === 'main' ? 'GPS: сюжетные тепловые зоны' : 'GPS: контракты городской службы'); }
+  function cycleTime() { world.dayMode = (world.dayMode + 1) % 3; updateAtmosphere(); announce('Время суток изменено'); }
+  function toggleRain() { world.raining = !world.raining; updateAtmosphere(); announce(world.raining ? 'Начался дождь. Асфальт остыл.' : 'Дождь закончился.'); }
+  function toggleQuality() {
+    world.quality = world.quality === 'eco' ? 'high' : 'eco';
+    world.gpuScale = world.quality === 'eco' ? (reduceMotion.matches ? .34 : world.softwareGL ? .4 : .55) : reduceMotion.matches ? .34 : world.softwareGL ? .4 : mobile.matches ? 1.05 : 1.35;
+    renderer.shadowMap.enabled = world.quality === 'high' && !mobile.matches && !reduceMotion.matches;
+    $('oc-quality').textContent = world.quality === 'eco' ? '◈ ECO' : '◈ HIGH';
+    resize(); announce(world.quality === 'eco' ? 'Экономичный режим' : 'Улучшенная графика');
+  }
+  function distanceToCar() { const c = world.car; return c ? Math.hypot(player.x - c.x, player.z - c.z) : Infinity; }
+  function toggleCar() {
+    const c = world.car;
+    if (!c || !world.active || !world.ready || !$('oc-start').hidden) return false;
+    if (c.occupied) {
+      for (const [dx, dz] of [[1.0, 0], [-1.0, 0], [0, 1.15], [0, -1.15], [1.15, .9]]) {
+        const x = c.x + dx, z = c.z + dz;
+        if (!collides(x, z) && !CONTRACTS.some(q => Math.hypot(q.x - x, q.z - z) < .3)) {
+          c.occupied = false; c.speed = 0; player.x = x; player.z = z;
+          avatar.visible = true; announce('Ты вышел из электромобиля'); syncGame(); return true;
+        }
+      }
+      announce('Нет свободного места для выхода'); return false;
+    }
+    if (distanceToCar() > 1.65) { announce('Подойди к электромобилю и нажми F'); return false; }
+    c.occupied = true; avatar.visible = false; c.speed = 0;
+    player.x = c.x; player.z = c.z; player.cameraYaw = c.heading;
+    announce('За рулём CITY RUNNER · W/S газ · A/D поворот · F выход'); syncGame(); return true;
+  }
+  function nearestContract() {
+    return CONTRACTS.filter(c => !profile.completed.includes(c.id))
+      .map(c => ({ ...c, dist: Math.hypot(player.x - c.x, player.z - c.z) }))
+      .sort((a, b) => a.dist - b.dist)[0] || null;
+  }
+  function completeNearbyContract() {
+    if (world.car?.occupied) { announce('Для работы с оборудованием сначала выйди из автомобиля'); return false; }
+    const nearest = nearestContract();
+    if (!nearest || nearest.dist > 1.7) return false;
+    const result = rules.completeContract(profile, nearest.id);
+    if (!result.changed) return false;
+    profile = result.profile; persist();
+    const marker = world.contractMarkers.find(m => m.contract.id === nearest.id);
+    if (marker) { marker.halo.material.color.setHex(0x4cffc5); marker.orb.material.color.setHex(0x4cffb8); }
+    soundSuccess(); announce(`✓ ${nearest.short} · +${nearest.reward} КРЕДИТОВ`, 2200);
+    syncGame(); drawMiniMap(); return true;
+  }
+  function buyUpgrade() {
+    const r = rules.purchaseUpgrade(profile);
+    if (!r.changed) return;
+    profile = r.profile; persist(); syncGame(); announce('CITY RUNNER · Улучшенный двигатель разблокирован!');
   }
   function createCoolingProp(type, x, z) {
     const group = new THREE.Group(); group.position.set(x, 0, z);
@@ -331,7 +651,7 @@
     gr.addColorStop(0, '#030d1b'); gr.addColorStop(.45, '#0b2436'); gr.addColorStop(.73, '#40556b'); gr.addColorStop(1, '#ab7363');
     g.fillStyle = gr; g.fillRect(0, 0, 16, 512);
     const sphere = new THREE.Mesh(new THREE.SphereGeometry(84, 32, 20), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(sky), side: THREE.BackSide, fog: false, depthWrite: false }));
-    sphere.scale.y = .77; scene.add(sphere);
+    sphere.scale.y = .77; scene.add(sphere); world.skySphere = sphere;
     const sunGlow = glowSprite(0xff9873, .66); sunGlow.scale.set(24, 24, 1); sunGlow.position.set(-29, 14, -45); scene.add(sunGlow); sun = sunGlow;
     const haze = new THREE.Mesh(new THREE.PlaneGeometry(38, 7), new THREE.MeshBasicMaterial({ color: 0x5c85a1, transparent: true, opacity: .055, side: THREE.DoubleSide, depthWrite: false }));
     haze.position.set(0, 3, -14); scene.add(haze);
@@ -348,33 +668,51 @@
     if (!game()?.state()?.ready) { window.setTimeout(bootThree, 140); return; }
     world.initialised = true;
     try {
-      scene = new THREE.Scene(); scene.background = new THREE.Color(0x0b1c2c); scene.fog = new THREE.FogExp2(0x122536, .026);
-      camera = new THREE.PerspectiveCamera(68, 1, .08, 100);
-      renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance', alpha: false, stencil: false });
+      scene = new THREE.Scene(); scene.background = new THREE.Color(0x0b1c2c); scene.fog = new THREE.FogExp2(0x122536, .015);
+      camera = new THREE.PerspectiveCamera(68, 1, .08, 160);
+      renderer = new THREE.WebGLRenderer({ antialias: !mobile.matches && !reduceMotion.matches, powerPreference: 'high-performance', alpha: false, stencil: false });
+      // Detect software-only WebGL and prefer low-cost lighting/resolution. Gameplay stays fully interactive.
+      const gl = renderer.getContext();
+      const debugGL = gl.getExtension('WEBGL_debug_renderer_info');
+      const glName = String(debugGL ? gl.getParameter(debugGL.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER) || '').toLowerCase();
+      world.softwareGL = /swiftshader|llvmpipe|software|softpipe|lavapipe/.test(glName);
       renderer.outputColorSpace = THREE.SRGBColorSpace;
       renderer.toneMapping = THREE.ACESFilmicToneMapping;
       renderer.toneMappingExposure = 1.42;
-      renderer.shadowMap.enabled = !mobile.matches;
+      renderer.shadowMap.enabled = !mobile.matches && !reduceMotion.matches;
       renderer.shadowMap.type = THREE.PCFSoftShadowMap;
       renderer.domElement.className = 'oc-render';
       renderer.domElement.setAttribute('aria-label', 'Живой 3D-мир. Иди клавишами WASD и вращай камеру мышью.');
       viewport.prepend(renderer.domElement);
-      scene.add(new THREE.HemisphereLight(0xb2e6ff, 0x6e443f, 2.25));
+      hemi = new THREE.HemisphereLight(0xb2e6ff, 0x6e443f, 2.25); scene.add(hemi);
       const key = new THREE.DirectionalLight(0xffcda3, 2.45); key.position.set(-10, 18, 6);
-      key.castShadow = !mobile.matches; key.shadow.mapSize.set(1024, 1024);
+      key.castShadow = !mobile.matches && !reduceMotion.matches; key.shadow.mapSize.set(1024, 1024); keyLight = key;
       key.shadow.camera.left = key.shadow.camera.bottom = -12;
       key.shadow.camera.right = key.shadow.camera.top = 12;
       key.shadow.normalBias = .065; scene.add(key);
-      const blueFill = new THREE.DirectionalLight(0x2e9fca, .9); blueFill.position.set(9, 7, -8); scene.add(blueFill);
+      blueFill = new THREE.DirectionalLight(0x2e9fca, .9); blueFill.position.set(9, 7, -8); scene.add(blueFill);
       const plazaLight = new THREE.PointLight(0x43c9dd, 9, 9); plazaLight.position.set(0, 4, .7); scene.add(plazaLight);
-      addAtmosphere(); addGround(); addCity(); makeHotMarkers(); makeAvatar();
+      addAtmosphere(); addGround(); addCity(); makeHotMarkers(); makeAvatar(); addLivingWorld(); updateAtmosphere();
       minimapCtx = $('oc-minimap').getContext('2d');
+      world.gpuScale = reduceMotion.matches ? .34 : world.softwareGL ? .4 : mobile.matches ? 1.05 : 1.35;
+      if (reduceMotion.matches || world.softwareGL) { world.quality = 'adaptive'; $('oc-quality').textContent = '◈ AUTO'; }
       world.ready = true; resize(); syncGame(); drawMiniMap();
       window.__ZION030_OPEN_CITY__ = {
-        state: () => ({ ready: world.ready, active: world.active, player: { x: player.x, z: player.z }, mission: game()?.state(), quality: world.quality }),
+        state: () => ({ ready: world.ready, active: world.active, player: { x: player.x, z: player.z }, mission: game()?.state(), quality: world.quality, driving: Boolean(world.car?.occupied), vehicle: world.car ? { x: world.car.x, z: world.car.z, speed: world.car.speed } : null, contracts: [...profile.completed], credits: profile.credits, raining: world.raining, dayMode: world.dayMode }),
         enter, exit, walk: (dx, dz) => { if (!collides(player.x + dx, player.z + dz)) { player.x += dx; player.z += dz; } },
+        drive: toggleCar, time: cycleTime, rain: toggleRain, quality: toggleQuality, gps: toggleNavigation, contract: completeNearbyContract,
         interact
       };
+      // Diagnostics exist only under the explicitly opted-in ?test=1 route.
+      if (new URLSearchParams(location.search).has('test')) {
+        window.__ZION030_OPEN_CITY__.teleport = (x, z) => {
+          if (world.car?.occupied) { world.car.occupied = false; world.car.speed = 0; avatar.visible = true; }
+          const safe = rules.nearestFree(x, z);
+          player.x = safe.x; player.z = safe.z;
+          avatar.position.set(player.x, 0, player.z); syncGame(); drawMiniMap();
+          return { x: player.x, z: player.z };
+        };
+      }
       button.disabled = false;
     } catch (err) {
       console.error('ZION-030 Open City WebGL startup failed', err);
@@ -386,7 +724,8 @@
   function resize() {
     if (!world.ready) return;
     const w = Math.max(1, viewport.clientWidth), h = Math.max(1, viewport.clientHeight);
-    const dpr = Math.min(window.devicePixelRatio || 1, mobile.matches ? 1.12 : world.gpuScale);
+    const cap = world.quality === 'eco' ? Math.min(.55, world.gpuScale) : reduceMotion.matches ? Math.min(.34, world.gpuScale) : world.softwareGL ? Math.min(.4, world.gpuScale) : mobile.matches ? Math.min(1.05, world.gpuScale) : world.gpuScale;
+    const dpr = Math.min(window.devicePixelRatio || 1, cap);
     renderer.setPixelRatio(dpr); renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix();
   }
   function closest() {
@@ -416,41 +755,90 @@
         record.disc.material.color.setHex(cooled ? 0x20e6bd : 0xff5b35);
       }
     }
+    for (const marker of world.contractMarkers) {
+      const done = profile.completed.includes(marker.contract.id);
+      marker.halo.material.color.setHex(done ? 0x4cffc5 : 0x43edff);
+      marker.orb.material.color.setHex(done ? 0x4cffb8 : 0x52efff);
+    }
     shell.querySelectorAll('[data-oc-tool]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.ocTool === state.selected)));
     if (state.won && !$('oc-complete').dataset.dismissed) $('oc-complete').hidden = false;
     if (!state.won) { $('oc-complete').hidden = true; delete $('oc-complete').dataset.dismissed; }
+    $('oc-contract-count').textContent = `${profile.completed.length} / ${CONTRACTS.length}`;
+    $('oc-credit').textContent = String(profile.credits);
+    $('oc-reputation').textContent = String(profile.reputation);
+    $('oc-upgrade').disabled = profile.credits < 300 || profile.fastCar;
+    $('oc-upgrade').textContent = profile.fastCar ? '✓ CITY RUNNER · ДВИГАТЕЛЬ УЛУЧШЕН' : 'УЛУЧШИТЬ ЭЛЕКТРОМОБИЛЬ · 300 ◈';
+    const contract = nearestContract();
+    $('oc-contract-title').textContent = contract ? contract.name : 'Все городские контракты выполнены!';
+    $('oc-contract-hint').textContent = contract ? `Ищи голубой маяк. ${Math.round(contract.dist * 12)} м до точки · +${contract.reward} кредитов` : 'Район восстановлен. Продолжай исследование и охлаждение.';
+    const c = world.car;
+    $('oc-drive-hud').hidden = !c?.occupied;
+    if (c?.occupied) $('oc-speed').innerHTML = `${Math.round(Math.abs(c.speed) * 12)} <small>км/ч</small>`;
     const dest = closest();
     targetIndex = dest?.i ?? -1;
-    $('oc-target').textContent = dest ? dest.name.toUpperCase() : 'ВСЕ ЗОНЫ ОХЛАЖДЕНЫ';
-    $('oc-distance').textContent = dest ? `${Math.max(0, Math.round(dest.dist * 12))} М ДО ЦЕЛИ` : 'Город стал зеленее';
-    const near = dest && dest.dist <= 1.65 && !state.lost && !state.won;
-    $('oc-interact').hidden = !near;
-    $('oc-action').hidden = !near || !mobile.matches;
-    if (near) $('oc-interact-text').textContent = `ОХЛАДИТЬ · ${TOOLS[state.selected].label.toUpperCase()}`;
-    else if (state.lost) { $('oc-target').textContent = 'МОДУЛИ ЗАКОНЧИЛИСЬ'; $('oc-distance').textContent = 'На карте нажми «Заново»'; }
+    const navGoal = world.navMode === 'contract' ? (contract || dest) : (dest || contract);
+    $('oc-target').textContent = navGoal ? ('short' in navGoal ? navGoal.short : navGoal.name.toUpperCase()) : 'МИССИИ ВЫПОЛНЕНЫ';
+    $('oc-nav-mode').textContent = world.navMode === 'contract' ? '⌖ GPS: КОНТРАКТЫ' : '⌖ GPS: СЮЖЕТ';
+    $('oc-distance').textContent = navGoal ? `${Math.round(Math.hypot(player.x - navGoal.x, player.z - navGoal.z) * 12)} М ДО ЦЕЛИ` : 'Весь город открыт для прогулки';
+    const nearHeat = dest && dest.dist <= 1.65 && !state.lost && !state.won && !c?.occupied;
+    const nearSide = contract && contract.dist <= 1.7 && !c?.occupied;
+    const nearCar = !c?.occupied && distanceToCar() <= 1.65;
+    const canInteract = Boolean(nearHeat || nearSide);
+    $('oc-interact').hidden = !canInteract && !nearCar && !c?.occupied;
+    $('oc-action').hidden = !canInteract || !mobile.matches;
+    $('oc-action').textContent = nearHeat ? '✓ ОХЛАДИТЬ' : '✓ ВЫПОЛНИТЬ КОНТРАКТ';
+    $('oc-interact-key').textContent = canInteract ? 'E' : 'F';
+    $('oc-interact-text').textContent = nearHeat ? `ОХЛАДИТЬ · ${TOOLS[state.selected].label.toUpperCase()}` : nearSide ? 'ВЫПОЛНИТЬ ГОРОДСКОЙ КОНТРАКТ' : c?.occupied ? 'ВЫЙТИ ИЗ ЭЛЕКТРОМОБИЛЯ' : 'СЕСТЬ В ЭЛЕКТРОМОБИЛЬ';
+    const driveButton = $('oc-drive-action');
+    driveButton.hidden = !mobile.matches || (!c?.occupied && !nearCar);
+    driveButton.textContent = c?.occupied ? '↩ ВЫЙТИ ИЗ АВТО' : '🚘 СЕСТЬ В МАШИНУ';
+    if (state.lost) { $('oc-target').textContent = 'МОДУЛИ ЗАКОНЧИЛИСЬ'; $('oc-distance').textContent = 'На карте нажми «Заново»'; }
   }
   function drawMiniMap() {
     const g = minimapCtx; if (!g) return;
-    const w = 230, h = 230, tile = 13.4, origin = (w - tile * 15) / 2;
+    const w = 230, h = 230, tile = 13, radius = 8.7;
+    const centerX = player.x, centerZ = player.z;
+    const point = (x, z) => ({ x: w / 2 + (x - centerX) * tile, y: h / 2 + (z - centerZ) * tile });
     g.clearRect(0, 0, w, h);
-    const grd = g.createLinearGradient(0, 0, w, h); grd.addColorStop(0, '#0b2a3b'); grd.addColorStop(1, '#041522');
-    g.fillStyle = grd; g.fillRect(0, 0, w, h);
-    for (let x = -7; x <= 7; x++) for (let z = -7; z <= 7; z++) {
-      const px = origin + (x + 7) * tile, py = origin + (z + 7) * tile;
-      g.fillStyle = occupied.has(`${x},${z}`) ? '#3b5867' : (Math.abs(x) <= 2 && Math.abs(z) <= 2 ? '#286778' : '#173b4c');
-      g.fillRect(px + .5, py + .5, tile - 1, tile - 1);
+    const bg = g.createLinearGradient(0, 0, w, h); bg.addColorStop(0, '#082335'); bg.addColorStop(1, '#04131f');
+    g.fillStyle = bg; g.fillRect(0, 0, w, h);
+    for (let x = Math.floor(centerX - radius); x <= Math.ceil(centerX + radius); x++) {
+      for (let z = Math.floor(centerZ - radius); z <= Math.ceil(centerZ + radius); z++) {
+        const p = point(x, z);
+        g.fillStyle = occupied.has(`${x},${z}`) ? '#446072' : (Math.abs(x) <= 2 && Math.abs(z) <= 2 ? '#245868' : '#18374a');
+        g.fillRect(p.x - tile / 2 + .5, p.y - tile / 2 + .5, tile - 1, tile - 1);
+      }
+    }
+    const heat = closest(), side = nearestContract(), goal = world.navMode === 'contract' ? (side || heat) : (heat || side);
+    const destination = goal ? goal.x + ',' + goal.z : '';
+    const origin = Math.round(centerX) + ',' + Math.round(centerZ);
+    if (destination !== world.routeTo || origin !== world.pathCell) {
+      world.routeTo = destination; world.pathCell = origin;
+      world.path = goal ? rules.route({ x: centerX, z: centerZ }, goal) : [];
+    }
+    if (world.path.length > 1) {
+      g.beginPath();
+      world.path.forEach((step, i) => { const p = point(step.x, step.z); i ? g.lineTo(p.x, p.y) : g.moveTo(p.x, p.y); });
+      g.strokeStyle = 'rgba(86,233,242,.76)'; g.lineWidth = 2.4; g.stroke();
+    }
+    function blip(x, z, fill, size = 5) {
+      const p = point(x, z), px = rules.clamp(p.x, 9, w - 9), py = rules.clamp(p.y, 9, h - 9);
+      g.beginPath(); g.arc(px, py, size, 0, Math.PI * 2); g.fillStyle = fill; g.fill();
+      g.lineWidth = 1.5; g.strokeStyle = '#edfaff'; g.stroke();
     }
     const state = game()?.state();
-    for (const [i, hspot] of HOT.entries()) {
-      const cooled = state?.placed.some(m => Math.hypot(m.x - hspot.x, m.z - hspot.z) <= 1.35);
-      const x = origin + (hspot.x + 7.5) * tile, y = origin + (hspot.z + 7.5) * tile;
-      g.beginPath(); g.arc(x, y, i === targetIndex ? 7 : 5, 0, Math.PI * 2);
-      g.fillStyle = cooled ? '#58ffd2' : '#ff784c'; g.fill(); g.lineWidth = 2; g.strokeStyle = '#fff'; g.stroke();
+    for (const item of HOT) {
+      const cooled = state?.placed.some(m => Math.hypot(m.x - item.x, m.z - item.z) <= 1.35);
+      blip(item.x, item.z, cooled ? '#58ffd2' : '#ff784c', 5.5);
     }
-    const px = origin + (player.x + 7.5) * tile, py = origin + (player.z + 7.5) * tile;
-    g.save(); g.translate(px, py); g.rotate(player.yaw); g.beginPath(); g.moveTo(0, -10); g.lineTo(7, 7); g.lineTo(0, 4); g.lineTo(-7, 7); g.closePath();
+    for (const q of CONTRACTS) blip(q.x, q.z, profile.completed.includes(q.id) ? '#65bc97' : '#4ee5ff', 4.5);
+    for (const t of world.traffic) blip(t.mesh.position.x, t.mesh.position.z, '#7b9aa9', 2);
+    if (world.car && !world.car.occupied) blip(world.car.x, world.car.z, '#f3d989', 4);
+    g.save(); g.translate(w / 2, h / 2); g.rotate(player.yaw);
+    g.beginPath(); g.moveTo(0, -10); g.lineTo(7, 7); g.lineTo(0, 4); g.lineTo(-7, 7); g.closePath();
     g.fillStyle = '#f2ffff'; g.shadowBlur = 10; g.shadowColor = '#60deef'; g.fill(); g.restore();
-    g.fillStyle = '#86b8c4'; g.font = 'bold 12px system-ui'; g.fillText('N ↑', 10, 18);
+    g.fillStyle = '#a5ced9'; g.font = 'bold 12px system-ui'; g.fillText('N ↑', 10, 18);
+    g.strokeStyle = '#6edbdc75'; g.lineWidth = 1; g.strokeRect(.5, .5, w - 1, h - 1);
   }
   function soundSuccess() {
     try {
@@ -465,57 +853,77 @@
   }
   function interact() {
     if (!world.active || !world.ready || !game()?.state()?.ready) return false;
-    const s = game().state(), near = closest();
-    if (!near || near.dist > 1.65 || s.won || s.lost) {
-      $('oc-world-message').textContent = 'Подойди ближе к оранжевой зоне.';
-      $('oc-world-message').classList.add('oc-visible');
-      window.setTimeout(() => $('oc-world-message').classList.remove('oc-visible'), 1450);
-      return false;
+    const state = game().state(), dest = closest();
+    if (world.car?.occupied) { announce('Выйди из электромобиля клавишей F, чтобы выполнять задания'); return false; }
+    if (dest && dest.dist <= 1.65 && !state.won && !state.lost) {
+      const ok = game().place(dest.x, dest.z, state.selected);
+      if (ok) { soundSuccess(); syncGame(); drawMiniMap(); announce(`✓ ${dest.name}: ЗОНА ОХЛАЖДЕНА`); return true; }
     }
-    const ok = game().place(near.x, near.z, s.selected);
-    if (ok) { soundSuccess(); syncGame(); drawMiniMap();
-      $('oc-world-message').textContent = `✓ ${near.name}: ЗОНА ОХЛАЖДЕНА`;
-      $('oc-world-message').classList.add('oc-visible');
-      window.setTimeout(() => $('oc-world-message').classList.remove('oc-visible'), 1750);
-      return true;
-    }
+    if (completeNearbyContract()) return true;
+    if (distanceToCar() <= 1.65) { announce('Нажми F, чтобы сесть в электромобиль'); return false; }
+    announce('Подойди к оранжевой цели или голубому маяку задания.');
     return false;
   }
   function move(dt, t) {
+    const c = world.car;
     let xx = ((keys.has('KeyD') || keys.has('ArrowRight')) ? 1 : 0) - ((keys.has('KeyA') || keys.has('ArrowLeft')) ? 1 : 0) + joystick.x;
     let yy = ((keys.has('KeyW') || keys.has('ArrowUp')) ? 1 : 0) - ((keys.has('KeyS') || keys.has('ArrowDown')) ? 1 : 0) - joystick.y;
     const length = Math.hypot(xx, yy);
     if (length > 1) { xx /= length; yy /= length; }
     const running = keys.has('ShiftLeft') || keys.has('ShiftRight');
-    const spd = running ? 4.1 : 2.55, strafeX = Math.cos(player.cameraYaw), strafeZ = -Math.sin(player.cameraYaw);
-    const fwdX = -Math.sin(player.cameraYaw), fwdZ = -Math.cos(player.cameraYaw);
-    const dx = (fwdX * yy + strafeX * xx) * spd * dt;
-    const dz = (fwdZ * yy + strafeZ * xx) * spd * dt;
-    if (Math.abs(dx) + Math.abs(dz) > .0001) {
-      const nx = player.x + dx, nz = player.z + dz;
-      if (!collides(nx, player.z)) player.x = nx;
-      if (!collides(player.x, nz)) player.z = nz;
-      player.yaw = Math.atan2(dx, -dz);
+    if (c?.occupied) {
+      const result = rules.drivingStep(c, { throttle: yy, steer: xx, brake: keys.has('Space') }, dt, profile.fastCar);
+      Object.assign(c, result);
+      c.mesh.position.set(c.x, .02, c.z); c.mesh.rotation.y = c.heading;
+      player.x = c.x; player.z = c.z; player.yaw = c.heading;
+      // A slightly elevated chase camera makes vehicle steering legible.
+      let delta = c.heading - player.cameraYaw;
+      while (delta > Math.PI) delta -= Math.PI * 2;
+      while (delta < -Math.PI) delta += Math.PI * 2;
+      player.cameraYaw += delta * (1 - Math.exp(-dt * 2.9));
+      if (result.collision && Math.abs(yy) > .1 && t - (world.lastCollisionToast || 0) > 1.25) { world.lastCollisionToast = t; announce('Препятствие · поверни или сдай назад', 900); }
+    } else {
+      const spd = running ? 4.3 : 2.7, strafeX = Math.cos(player.cameraYaw), strafeZ = -Math.sin(player.cameraYaw);
+      const fwdX = -Math.sin(player.cameraYaw), fwdZ = -Math.cos(player.cameraYaw);
+      const dx = (fwdX * yy + strafeX * xx) * spd * dt;
+      const dz = (fwdZ * yy + strafeZ * xx) * spd * dt;
+      if (Math.abs(dx) + Math.abs(dz) > .0001) {
+        const nx = player.x + dx, nz = player.z + dz;
+        if (!collides(nx, player.z)) player.x = nx;
+        if (!collides(player.x, nz)) player.z = nz;
+        player.yaw = Math.atan2(dx, -dz);
+      }
+      player.speed += ((length > .12 ? 1 : 0) - player.speed) * rules.clamp(dt * 13, 0, 1);
+      player.moving = length > .12;
+      const walk = Math.sin(t * (running ? 12 : 8)) * player.speed;
+      legL.rotation.x = walk * .46; legR.rotation.x = -walk * .46;
+      armL.rotation.x = -walk * .33; armR.rotation.x = walk * .33;
+      avatar.position.set(player.x, Math.abs(Math.sin(t * 8)) * .027 * player.speed, player.z);
+      avatar.rotation.y = player.yaw;
     }
-    player.speed += ((length > .12 ? 1 : 0) - player.speed) * clamp(dt * 13, 0, 1);
-    player.moving = length > .12;
-    const walk = Math.sin(t * (running ? 12 : 8)) * player.speed;
-    legL.rotation.x = walk * .46; legR.rotation.x = -walk * .46;
-    armL.rotation.x = -walk * .33; armR.rotation.x = walk * .33;
-    avatar.position.set(player.x, Math.abs(Math.sin(t * 8)) * .027 * player.speed, player.z);
-    avatar.rotation.y = player.yaw;
-    const follow = mobile.matches ? 5.2 : 4.65;
-    const dist = follow, pitch = player.pitch;
-    const desired = new THREE.Vector3(player.x + Math.sin(player.cameraYaw) * Math.cos(pitch) * dist,
-      1.25 + Math.sin(pitch) * dist, player.z + Math.cos(player.cameraYaw) * Math.cos(pitch) * dist);
+    // Visibility-safe chase camera: sample against the same deterministic buildings used by physics.
+    let distance = c?.occupied ? 6.5 : mobile.matches ? 5.2 : 4.65;
+    const pitch = c?.occupied ? Math.max(.32, player.pitch) : player.pitch;
+    for (let d = .6; d <= distance; d += .27) {
+      const testX = player.x + Math.sin(player.cameraYaw) * Math.cos(pitch) * d;
+      const testZ = player.z + Math.cos(player.cameraYaw) * Math.cos(pitch) * d;
+      if (collides(testX, testZ, .12)) { distance = Math.max(.7, d - .35); break; }
+    }
+    const lookHeight = c?.occupied ? .9 : 1.20;
+    const desired = new THREE.Vector3(player.x + Math.sin(player.cameraYaw) * Math.cos(pitch) * distance,
+      lookHeight + Math.sin(pitch) * distance, player.z + Math.cos(player.cameraYaw) * Math.cos(pitch) * distance);
     camera.position.lerp(desired, 1 - Math.exp(-dt * 9));
-    camera.lookAt(player.x, 1.2, player.z);
+    camera.lookAt(player.x, lookHeight, player.z);
+    updateTraffic(dt); updatePedestrians(dt, t); updateRain(dt);
     world.rings.forEach((r, i) => {
       const phase = reduceMotion.matches ? 0 : t * 2.2 + i;
       r.ring.scale.setScalar(1 + Math.sin(phase) * .06);
       r.tip.scale.setScalar(1.35 + Math.sin(phase) * .18);
       r.beacon.rotation.y = t;
       r.beacon.position.y = 1.83 + (reduceMotion.matches ? 0 : Math.sin(t * 2.4 + i) * .09);
+    });
+    world.contractMarkers.forEach((marker, i) => {
+      marker.orb.scale.setScalar(1.3 + (reduceMotion.matches ? 0 : Math.sin(t * 1.6 + i) * .15));
     });
   }
   function frame(time) {
@@ -526,11 +934,16 @@
     if (world.frame % 70 === 0) {
       if (world.fpsTime) {
         const fps = (world.frame - world.fpsFrames) * 1000 / (time - world.fpsTime);
-        if (fps < 28 && world.gpuScale > .8) { world.gpuScale = Math.max(.8, world.gpuScale * .79); world.quality = 'adaptive'; resize(); }
+        if (fps < 28 && world.gpuScale > .36) { world.gpuScale = Math.max(.36, world.gpuScale * .78); world.quality = 'adaptive'; resize(); }
       }
       world.fpsTime = time; world.fpsFrames = world.frame;
     }
-    renderer.render(scene, camera);
+    // Reduced-motion mode keeps gameplay responsive on software WebGL; render at a bounded cadence.
+    const renderEvery = reduceMotion.matches || world.softwareGL ? 500 : mobile.matches ? 50 : 16;
+    if (!world.lastRender || time - world.lastRender >= renderEvery) {
+      world.lastRender = time;
+      renderer.render(scene, camera);
+    }
     animationId = window.requestAnimationFrame(frame);
   }
   function enter() {
@@ -548,11 +961,13 @@
     world.last = 0; keys.clear();
     syncGame(); resize(); drawMiniMap();
     if (animationId) window.cancelAnimationFrame(animationId);
-    animationId = window.requestAnimationFrame(frame);
+    // The scene is paused behind the start overlay so the Start button never competes with a heavy WebGL frame.
+    animationId = 0;
     $('oc-start-play').focus({ preventScroll: true });
   }
   function exit() {
     world.active = false; world.last = 0; keys.clear(); joystick.x = joystick.y = 0;
+    if (world.car?.occupied) { world.car.occupied = false; world.car.speed = 0; avatar.visible = true; player.x = world.car.x; player.z = world.car.z; }
     if (animationId) window.cancelAnimationFrame(animationId); animationId = 0;
     stage.classList.remove('oc-stage-active'); document.body.classList.remove('oc-body-active');
     shell.hidden = true; button.textContent = '◈ ГУЛЯТЬ ПО ГОРОДУ · 3D';
@@ -561,20 +976,33 @@
   }
   button.addEventListener('click', () => world.active ? exit() : enter());
   $('oc-exit').addEventListener('click', exit);
-  $('oc-start-play').addEventListener('click', () => { $('oc-start').hidden = true; viewport.focus?.(); });
+  $('oc-start-play').addEventListener('click', () => { $('oc-start').hidden = true; viewport.focus?.(); if (world.active && !animationId) animationId = window.requestAnimationFrame(frame); });
   $('oc-action').addEventListener('click', interact);
+  $('oc-drive-action').addEventListener('click', toggleCar);
+  $('oc-time').addEventListener('click', cycleTime);
+  $('oc-rain').addEventListener('click', toggleRain);
+  $('oc-quality').addEventListener('click', toggleQuality);
+  $('oc-upgrade').addEventListener('click', buyUpgrade);
+  $('oc-nav-mode').addEventListener('click', toggleNavigation);
   $('oc-complete').addEventListener('click', e => { if (e.target === $('oc-complete')) $('oc-complete').hidden = true; });
   $('oc-keep-walking').addEventListener('click', () => { $('oc-complete').hidden = true; $('oc-complete').dataset.dismissed = 'true'; });
   $('oc-again').addEventListener('click', () => { game()?.reset?.(); $('oc-complete').hidden = true; delete $('oc-complete').dataset.dismissed; syncGame(); drawMiniMap(); });
   shell.querySelectorAll('[data-oc-tool]').forEach(b => b.addEventListener('click', () => { game()?.select(b.dataset.ocTool); syncGame(); }));
   window.addEventListener('keydown', e => {
-    if (!world.active || $('oc-start').hidden === false || $('oc-complete').hidden === false) return;
-    if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space', 'KeyE', 'ShiftLeft', 'ShiftRight', 'Digit1', 'Digit2', 'Digit3'].includes(e.code)) {
-      e.preventDefault(); e.stopImmediatePropagation();
-    }
+    if (!world.active || !$('oc-start').hidden || !$('oc-complete').hidden) return;
+    const gameplayCodes = ['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space','KeyE','KeyF','KeyH','KeyT','KeyP','KeyQ','KeyG','ShiftLeft','ShiftRight','Digit1','Digit2','Digit3'];
+    if (gameplayCodes.includes(e.code)) { e.preventDefault(); e.stopImmediatePropagation(); }
     keys.add(e.code);
-    if (e.code === 'KeyE' || e.code === 'Enter' || e.code === 'Space') interact();
-    if (['Digit1', 'Digit2', 'Digit3'].includes(e.code)) game().select(['tree', 'shade', 'water'][Number(e.code.slice(-1)) - 1]);
+    if (e.repeat) return;
+    if (e.code === 'KeyF') toggleCar();
+    else if (e.code === 'KeyE' || e.code === 'Enter') interact();
+    else if (e.code === 'Space' && !world.car?.occupied) interact();
+    else if (e.code === 'KeyG') toggleNavigation();
+    else if (e.code === 'KeyT') cycleTime();
+    else if (e.code === 'KeyP') toggleRain();
+    else if (e.code === 'KeyQ') toggleQuality();
+    else if (e.code === 'KeyH' && world.car?.occupied) soundSuccess();
+    else if (['Digit1', 'Digit2', 'Digit3'].includes(e.code)) game().select(['tree', 'shade', 'water'][Number(e.code.slice(-1)) - 1]);
   }, true);
   window.addEventListener('keyup', e => { keys.delete(e.code); }, true);
   window.addEventListener('keydown', e => { if (world.active && e.key === 'Escape') { if ($('oc-start').hidden) exit(); else { $('oc-start').hidden = true; } } }, true);

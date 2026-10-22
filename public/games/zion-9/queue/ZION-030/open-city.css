@@ -1,4 +1,4 @@
-/* ZION-030 OPEN CITY v27 · Immersive 3D game mode, not a static render. */
+/* ZION-030 OPEN CITY v28 · Immersive 3D game mode, not a static render. */
 #world-play .stage{isolation:isolate}
 #world-play .oc-entry{position:absolute;z-index:15;top:66px;left:14px;border:1px solid #92e9ff;background:linear-gradient(112deg,#0b6d81,#0a3648);color:#f4feff;padding:13px 20px;font:900 13px/1.25 system-ui,-apple-system,sans-serif;letter-spacing:.055em;border-radius:12px;box-shadow:0 0 0 4px #042a3b77,0 10px 32px #0008,0 0 27px #19b3bd55;cursor:pointer;transition:transform .2s,filter .2s}
 #world-play .oc-entry:hover{transform:translateY(-2px);filter:brightness(1.16)}
@@ -151,3 +151,74 @@ body.oc-body-active{overflow:hidden!important}
   .oc-shell .oc-toolbar{bottom:15px}
 }
 @media(prefers-reduced-motion:reduce){.oc-shell *,#world-play .oc-entry{transition:none!important;animation:none!important}.oc-shell .oc-grain{display:none}}
+
+/* ZION-030 v28 · playable open-world HUD and polished traffic interface. */
+.oc-shell .oc-contract{position:absolute;z-index:9;top:344px;left:clamp(16px,2.4vw,42px);width:min(348px,28vw);padding:16px 18px 15px;border:1px solid #4d8998ab;border-radius:13px;background:linear-gradient(150deg,#052b38e8,#041724da);backdrop-filter:blur(15px);box-shadow:0 12px 38px #0008}
+.oc-shell .oc-contract-head{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:9px;font-size:10px;font-weight:950;letter-spacing:.12em;color:#69deec}
+.oc-shell .oc-contract-head strong{border:1px solid #4397a6;background:#0b5268;padding:4px 7px;border-radius:6px;color:#f6ffff;font-size:11px}
+.oc-shell .oc-contract>strong{display:block;color:#f2fdff;font-size:clamp(15px,1.3vw,19px);font-weight:950;line-height:1.27;margin:3px 0 8px}
+.oc-shell .oc-contract>p{margin:0 0 12px;color:#a8ced9;font-size:12px;line-height:1.5}
+.oc-shell .oc-contract-stats{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:11px}
+.oc-shell .oc-contract-stats>span{font-size:10px;font-weight:850;letter-spacing:.035em;color:#e1c394;background:#0d2a3b;border-radius:7px;padding:6px 7px}
+.oc-shell .oc-contract-stats b{font-size:12px;color:#fff}
+.oc-shell #oc-upgrade{display:block;width:100%;min-height:35px;border:1px solid #58b6a8;background:linear-gradient(100deg,#115d67,#0e3f51);color:#eafff9;border-radius:8px;padding:8px 10px;font-size:10px;letter-spacing:.025em;font-weight:950}
+.oc-shell #oc-upgrade:disabled{background:#102837;border-color:#376373;color:#8fb6c1;cursor:not-allowed}
+.oc-shell .oc-status-bar{position:absolute;z-index:11;top:clamp(82px,8.4vh,105px);left:50%;transform:translateX(-50%);display:flex;gap:6px;padding:5px;border:1px solid #54869b9e;border-radius:11px;background:#061b2ae7;backdrop-filter:blur(16px);box-shadow:0 13px 32px #0006}
+.oc-shell .oc-status-bar button{border:1px solid transparent;background:#12354695;color:#d2edf4;padding:9px 12px;border-radius:8px;font-weight:950;font-size:10px;letter-spacing:.07em;white-space:nowrap;min-width:76px}
+.oc-shell .oc-status-bar button[aria-pressed="true"]{background:#15617c;color:white;border-color:#5ad8e3}
+.oc-shell .oc-status-bar button:hover{background:#176276}
+.oc-shell .oc-drive-hud{position:absolute;z-index:10;left:50%;transform:translateX(-50%);bottom:125px;padding:11px 22px 10px;border:1px solid #f6c77c9a;border-radius:13px;background:linear-gradient(140deg,#0d2435ea,#122936e6);text-align:center;min-width:258px;box-shadow:0 18px 40px #0009}
+.oc-shell .oc-drive-hud>span{font-size:10px;letter-spacing:.1em;font-weight:950;color:#b5d6e3}
+.oc-shell .oc-drive-hud>strong{display:block;color:#fff3c8;font-size:37px;font-weight:950;line-height:1.1;letter-spacing:-.04em;margin:4px 0}
+.oc-shell .oc-drive-hud strong small{font-size:13px;letter-spacing:0;color:#b8ccd5}
+.oc-shell .oc-charge{font-size:11px;color:#52e2cc;font-weight:950;letter-spacing:.06em}
+.oc-shell .oc-charge b{font-size:9px;color:#9abfc9;margin-left:7px}
+.oc-shell .oc-drive-hud>small{display:block;color:#acccd6;font-size:9px;margin-top:5px;font-weight:700}
+.oc-shell .oc-drive-action{display:none}
+@media(max-height:850px) and (min-width:761px){
+  .oc-shell .oc-contract{top:300px;padding:11px 14px 10px}
+  .oc-shell .oc-contract>p{display:none}
+  .oc-shell .oc-contract-head{margin-bottom:6px}
+  .oc-shell .oc-contract-stats{margin-bottom:6px}
+  .oc-shell .oc-objective{padding:14px 16px 12px}
+  .oc-shell .oc-objective p{margin-bottom:11px}
+}
+@media(max-width:1100px){
+  .oc-shell .oc-contract{width:min(285px,31vw);top:330px}
+  .oc-shell .oc-contract>strong{font-size:15px}
+  .oc-shell .oc-contract>p{font-size:11px}
+  .oc-shell .oc-contract-stats span{font-size:9px}
+  .oc-shell .oc-status-bar{top:88px}
+}
+@media(max-width:760px){
+  .oc-shell .oc-contract{top:169px;left:9px;width:min(204px,56vw);padding:8px 9px;border-radius:9px}
+  .oc-shell .oc-contract-head{font-size:8px;letter-spacing:.03em;margin-bottom:5px}
+  .oc-shell .oc-contract-head strong{font-size:9px;padding:2px 4px}
+  .oc-shell .oc-contract>strong{font-size:12px;line-height:1.15;margin:3px 0 5px}
+  .oc-shell .oc-contract>p{display:none}
+  .oc-shell .oc-contract-stats{margin-bottom:5px;gap:3px}
+  .oc-shell .oc-contract-stats>span{padding:3px 4px;font-size:8px}
+  .oc-shell .oc-contract-stats b{font-size:9px}
+  .oc-shell #oc-upgrade{min-height:28px;padding:5px 4px;font-size:8px}
+  .oc-shell .oc-status-bar{top:auto;bottom:clamp(250px,34vh,290px);left:auto;transform:none;right:8px;gap:3px;padding:3px;flex-wrap:wrap;max-width:142px;justify-content:flex-end}
+  .oc-shell .oc-status-bar button{min-width:0;padding:7px 8px;font-size:8px}
+  .oc-shell .oc-drive-hud{bottom:165px;left:50%;width:155px;min-width:0;padding:7px 5px;border-radius:9px}
+  .oc-shell .oc-drive-hud>span{font-size:8px}
+  .oc-shell .oc-drive-hud>strong{font-size:25px;margin:2px 0}
+  .oc-shell .oc-charge{font-size:8px}
+  .oc-shell .oc-charge b,.oc-shell .oc-drive-hud>small{display:none}
+  .oc-shell .oc-drive-action:not([hidden]){display:block;position:absolute;z-index:17;right:17px;bottom:92px;min-height:61px;width:120px;border:1px solid #ffe4a4;border-radius:13px;background:linear-gradient(120deg,#1a616e,#124258);font-size:12px;font-weight:950;color:#fff;box-shadow:0 0 21px #32c5df38}
+  .oc-shell .oc-joystick{bottom:72px}
+  .oc-shell .oc-location{bottom:177px}
+}
+@media(max-width:370px){
+  .oc-shell .oc-contract{width:calc(100vw - 145px)}
+  .oc-shell .oc-contract-stats>span:last-child{display:none}
+  .oc-shell .oc-objective{width:calc(100vw - 145px)}
+}
+@media(prefers-reduced-motion:reduce){.oc-shell .oc-drive-hud,.oc-shell .oc-status-bar,.oc-shell .oc-contract{transition:none!important}}
+.oc-shell #oc-nav-mode{display:block;width:100%;margin-top:6px;min-height:30px;background:#113a50;border:1px solid #4d96a2;border-radius:8px;color:#a8eff6;font-size:10px;font-weight:950;letter-spacing:.07em}
+.oc-shell #oc-nav-mode:hover{background:#19556b;color:white}
+@media(max-width:760px){.oc-shell #oc-nav-mode{font-size:9px;min-height:26px;margin-top:4px}}
+/* Fast and legible UI on devices using reduced-motion mode or software rendering. */
+@media(prefers-reduced-motion:reduce){.oc-shell .oc-objective,.oc-shell .oc-contract,.oc-shell .oc-status-bar,.oc-shell .oc-toolbar,.oc-shell .oc-start,.oc-shell .oc-complete{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}.oc-shell .oc-grain{display:none!important}}
