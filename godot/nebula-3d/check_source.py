@@ -34,6 +34,8 @@ ship_visual = require(
     "st.generate_tangents()",
     'preload("res://scripts/ship_hero_detail_r6.gd")',
     'hero_r6.name = "R6_HeroHullDetail"',
+    'preload("res://scripts/ship_finish_r7.gd")',
+    'finish_r7.name = "R7_PBRSurfaceFinish"',
 )
 world = require(
     "scripts/world.gd",
@@ -45,6 +47,8 @@ world = require(
     "docks_r6.build(SECTOR_POSITIONS, SECTOR_COLORS)",
     'preload("res://scripts/sculptural_skyline_r6.gd")',
     "skyline_r6.build(SECTOR_POSITIONS, SECTOR_COLORS)",
+    'preload("res://scripts/capital_fleet_r7.gd")',
+    "fleet_r7.build(SECTOR_POSITIONS)",
 )
 city = require(
     "scripts/city_set_dressing_r5.gd",
@@ -77,6 +81,24 @@ skyline = require(
     "st.generate_tangents()",
 )
 
+fleet_r7 = require(
+    "scripts/capital_fleet_r7.gd",
+    "func _loft_hull(",
+    "func _create_hull_pbr(",
+    "func _carriers_bridge(",
+    "R7_RailgunBattery",
+    "st.generate_tangents()",
+)
+surface_r7 = require(
+    "scripts/ship_finish_r7.gd",
+    "func _create_painted_alloy(",
+    "func _engine_heat_shielding(",
+    "R7_ThrusterCoolingBlades",
+    "R7_WingSerial",
+)
+assert "Image.create(512, 512" in fleet_r7
+assert "Image.create(256, 256" in surface_r7
+
 require("scripts/architectural_detail_r4.gd", "func build(")
 premium = require("scripts/premium_architecture.gd", "func make_facade_material(", "emission_image")
 require("scripts/drone.gd", "extends")
@@ -88,6 +110,8 @@ smoke = require(
     "R6 aircraft hero model missing",
     "R6 industrial orbital megadocks absent",
     "R6 sculptural skyline missing",
+    "R7 monumental capital fleet missing",
+    "R7 physical PBR surface details missing",
     "NEBULA_SMOKE_SUCCESS",
 )
 assert "func _make_ship(" not in ship, "R3 low-poly ship builder is still active"
@@ -97,4 +121,4 @@ assert "image.generate_mipmaps()" in ship_visual
 assert premium.count("Image.create(") >= 2, "separate facade albedo/emission atlases missing"
 assert "high-detail" not in project.lower(), "project identity may remain stable"
 assert len(smoke) > 1500 and len(city) > 5000 and len(world) > 10000
-print("NEBULA_R6_SOURCE_SUCCESS: true 3D hero meshes and instanced megadocks verified")
+print("NEBULA_R7_SOURCE_SUCCESS: 3D capital fleet, coated armor and reduced holograms")
