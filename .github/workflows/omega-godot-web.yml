@@ -39,7 +39,7 @@ jobs:
           set -euo pipefail
           for test_file in godot/empire-omega/tests/*.gd; do
             echo "=== NATIVE ${test_file##*/} ==="
-            godot --headless --path godot/empire-omega --script "res://tests/${test_file##*/}"
+            timeout --signal=TERM --kill-after=10s 55s godot --headless --path godot/empire-omega --script "res://tests/${test_file##*/}"
           done
       - name: Export authentic Godot 4.4.1 Web application
         shell: bash
