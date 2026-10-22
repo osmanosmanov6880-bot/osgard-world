@@ -38,7 +38,7 @@ function threeMock(){
   class Material{constructor(o){this.color=o.color||null;this.emissiveIntensity=o.emissiveIntensity||0;this.roughness=o.roughness;this.metalness=o.metalness}dispose(){}}
   class Mesh extends Obj{constructor(geo,mat){super();this.geometry=geo;this.material=mat;this.isMesh=true}}
   class Inst extends Mesh{constructor(geo,mat,count){super(geo,mat);this.count=count;this.matrices=[];this.instanceMatrix={needsUpdate:false};this.isInstancedMesh=true}
-    setMatrixAt(i,v){this.matrices[i]=v}}
+    setMatrixAt(i,v){this.matrices[i]=typeof v.clone==='function'?v.clone():v}}
   class Texture{constructor(){this.colorSpace=null}dispose(){}}
   return {Group:Obj,Object3D:Obj,Vector2:V,BoxGeometry:Geo,CylinderGeometry:Geo,TorusGeometry:Geo,
     Shape,Path,ExtrudeGeometry:Geo,LatheGeometry:Geo,BufferGeometry:BG,Float32BufferAttribute:BufferAttr,
