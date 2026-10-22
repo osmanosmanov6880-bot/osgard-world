@@ -52,7 +52,7 @@ function ribbon(points,width,mat){
   const p=points[i],a=points[Math.max(0,i-1)],b=points[Math.min(points.length-1,i+1)];
   const dx=b.x-a.x,dz=b.z-a.z,len=Math.hypot(dx,dz)||1,nx=-dz/len,nz=dx/len,y=fieldHeight(p.x,p.z)+.085;
   positions.push(p.x+nx*width/2,y,p.z+nz*width/2,p.x-nx*width/2,y,p.z-nz*width/2);
-  if(i){const k=i*2;ind.push(k-2,k-1,k,k-1,k+1);}
+  if(i){const k=i*2;ind.push(k-2,k,k-1,k,k+1,k-1);}
  }
  const geo=new THREE.BufferGeometry();
  geo.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));geo.setIndex(ind);geo.computeVertexNormals();
