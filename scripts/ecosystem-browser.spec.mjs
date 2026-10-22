@@ -2212,3 +2212,69 @@ test('OSA Evidence Command previews real claim checks and synchronises the full 
   expect(pageErrors).toEqual([])
 })
 
+test('INHERIT R14 keeps native history and inspector reachable with readable gameplay', async ({page}) => {
+  const errors=await prepareStandaloneGame(page);
+  await page.goto('/games/inherit/?lang=ru',{waitUntil:'domcontentloaded'});
+  await expect(page.locator('.living-journey')).toBeVisible();
+  await expect(page.locator('.living-actions-strip .chronicle-button')).toBeVisible();
+  // Native launcher mounts in the visible guide-actions row on mobile, not in the header rail.
+  await expect(page.locator('.inherit-trace-launcher')).toBeVisible();
+  await expect(page.locator('.living-library-toggle')).toBeVisible();
+  await expect(page.locator('.hero h1')).toContainText('Кто-то проложил путь');
+  const original=await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()));
+  await page.locator('.living-font-toggle').click();
+  await expect(page.locator('body')).toHaveAttribute('data-living-text','large');
+  expect(await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()))).toBe(original);
+  await page.locator('.tool[data-tool=tree]').click();
+  await expect(page.locator('.living-step.is-current .living-step-name')).toContainText('Оставь след');
+  await page.locator('#world').focus();
+  await page.locator('#world').press('Enter');
+  await expect(page.locator('#objects > .placed.tree .living-object-art')).toHaveCount(1);
+  await expect(page.locator('.living-step.is-current .living-step-name')).toContainText('Передай мир');
+  await page.locator('.chronicle-button').click();
+  await expect(page.locator('.chronicle')).toBeVisible();
+  await page.locator('.chronicle .close').click();
+  await expect(page.locator('.chronicle')).toBeHidden();
+  expect(errors).toEqual([]);
+});
+
+
+test('INHERIT R15 World Alive chapter progress comes only from genuine placements',async({page})=>{
+ const errors=await prepareStandaloneGame(page);
+ await page.goto('/games/inherit/?lang=ru',{waitUntil:'domcontentloaded'});
+ const hub=page.locator('.world-alive-hub');
+ await expect(hub).toBeVisible();
+ await expect(page.locator('.world-alive-goal')).toHaveCount(3);
+ await expect(page.locator('.world-alive-metric')).toHaveCount(3);
+ await expect(page.locator('.world-alive-ocean')).toHaveCount(1);
+ await expect(page.locator('.world-alive-setting').last()).toHaveAttribute('aria-pressed','false');
+ const before=await page.evaluate(()=>window.InheritGame.snapshot());
+ const actual=await page.evaluate(()=>window.InheritWorldAliveUI.getState());
+ expect(actual.objects).toBe(before.objects.length);
+ expect(actual.connections).toBeGreaterThanOrEqual(0);
+ await expect(page.locator('.world-alive-goal-action').first()).toBeEnabled();
+ await page.locator('.world-alive-goal-action').first().click();
+ expect(await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()))).toBe(JSON.stringify(before));
+ await page.locator('#world').focus();
+ await page.locator('#world').press('Enter');
+ await expect.poll(()=>page.evaluate(()=>window.InheritGame.snapshot().objects.length)).toBe(before.objects.length+1);
+ const after=await page.evaluate(()=>window.InheritGame.snapshot());
+ expect(after.budget).toBe(before.budget-1);
+ expect(after.pending.length).toBe(before.pending.length+1);
+ await expect(page.locator('.world-alive-metric').first()).toContainText(String(after.objects.length));
+ expect(await page.evaluate(()=>window.InheritWorldAliveUI.getState().completed)).toBeGreaterThanOrEqual(1);
+ expect(errors).toEqual([]);
+});
+
+test('INHERIT R15 never grants account editing rights or autoplay audio',async({page})=>{
+ const errors=await prepareStandaloneGame(page);
+ await page.goto('/games/inherit/?mode=account&lang=ru',{waitUntil:'domcontentloaded'});
+ await expect(page.locator('.world-alive-hub')).toBeVisible();
+ await expect(page.locator('.world-alive-goal-action').first()).toBeDisabled();
+ const before=await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()));
+ expect(await page.evaluate(()=>window.InheritWorldAliveUI.getSoundEnabled())).toBe(false);
+ await expect(page.locator('.world-alive-setting').last()).toHaveAttribute('aria-pressed','false');
+ await expect(page.locator('.world-alive-truth')).toContainText('художественные эффекты');
+ expect(await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()))).toBe(before);
+ expect(errors).toEqual([]);
+});
