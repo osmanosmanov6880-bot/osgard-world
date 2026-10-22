@@ -1,4 +1,7 @@
 import { cases } from './featuredCases.ts'
+import { playGameTitles } from './playGameTitles.ts'
+import { OSA_LESSON_SLUGS } from './osaLessonRegistry.ts'
+import { lessonTitles } from './brandNavigation.ts'
 
 /** Local, actionable destinations. No generated pages, fake results or account claims. */
 export type OsgardCommand = Readonly<{
@@ -35,7 +38,29 @@ const caseCommands: readonly OsgardCommand[] = cases.map(item => ({
   group: 'Проекты',
   keywords: [item.id, item.name, item.category, 'кейс', 'портфолио', 'открыть'].join(' '),
 }))
-export const osgardCommands: readonly OsgardCommand[] = [...baseCommands, ...caseCommands]
+/** Direct links to all 19 games. The light breadcrumb registry provides only
+ * confirmed game ids/titles; heavy Play content is still loaded on its route. */
+const gameCommands: readonly OsgardCommand[] = Object.entries(playGameTitles).map(([id, title]) => ({
+  id: 'game-' + id,
+  label: title,
+  description: 'Игровой мир · сведения и варианты запуска',
+  href: '/play/world/' + id,
+  group: 'Игры',
+  keywords: [id, title, 'игра', 'игровой', 'мир', 'play', 'game'].join(' '),
+}))
+
+/** Eight real lesson routes from the single OSA slug and breadcrumb registries.
+ * No invented completion status or server-side learning progress. */
+const lessonCommands: readonly OsgardCommand[] = OSA_LESSON_SLUGS.map((slug, index) => ({
+  id: 'lesson-' + slug,
+  label: lessonTitles[slug],
+  description: 'Урок ' + (index + 1) + ' из ' + OSA_LESSON_SLUGS.length + ' · материалы и задания',
+  href: '/lectures/' + slug,
+  group: 'Знания',
+  keywords: [slug, lessonTitles[slug], 'урок', 'лекция', 'lesson', 'academy'].join(' '),
+}))
+
+export const osgardCommands: readonly OsgardCommand[] = [...baseCommands, ...caseCommands, ...gameCommands, ...lessonCommands]
 
 const normalize = (value: string) => value.toLocaleLowerCase('ru-RU').replace(/ё/g, 'е').trim()
 
