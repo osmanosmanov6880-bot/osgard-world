@@ -13,7 +13,7 @@ import {makeTrace,disposeTraces} from './trace-models.mjs';
 const d=document,el=(s,root=d)=>root.querySelector(s),game=window.InheritGame;
 if(!game||typeof game.snapshot!=='function')return;
 const world=el('#world'),island=el('#island'),objects=el('#objects');
-if(!world||!island||!objects||!window.WebGLRenderingContext)return;
+if(!world||!island||!objects)return;
 const memory=(typeof navigator.deviceMemory==='number'?navigator.deviceMemory:8);
 const lowPower=memory<=3||window.matchMedia('(max-width:700px)').matches;
 const motion=window.matchMedia('(prefers-reduced-motion:reduce)');
