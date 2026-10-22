@@ -14,6 +14,8 @@ func _ready() -> void:
 	_build_lamps()
 	_build_mountains()
 	_build_festival_gate()
+	var richer_scenery: Node3D = preload("res://scripts/horizon_scenery_r4.gd").new()
+	add_child(richer_scenery)
 
 func _mat(color: Color, metal: float = 0.0, rough: float = 0.8, glow: bool = false) -> StandardMaterial3D:
 	var material := StandardMaterial3D.new()

@@ -113,9 +113,9 @@ func _build_perimeter_safety() -> void:
 				reflectors.append(Transform3D(Basis().scaled(Vector3(.37,.11,.37)),Vector3(x,1.04,z)))
 				reflector_colors.append(Color("e7ceb0") if index%2==0 else Color("a5c6b8"))
 				if index < 34:
-					beams.append(Transform3D(Basis().scaled(Vector3(.12,.24,6.0) if vertical else Vector3(6.0,.24,.12)),Vector3(x,.88,z+3.0 if vertical else z)))
-					if not vertical:
-						beams[beams.size()-1].origin = Vector3(x+3.0,.88,z)
+					var beam_at: Vector3 = Vector3(x,.88,z+3.0) if vertical else Vector3(x+3.0,.88,z)
+					var beam_size: Vector3 = Vector3(.12,.24,6.0) if vertical else Vector3(6.0,.24,.12)
+					beams.append(Transform3D(Basis().scaled(beam_size),beam_at))
 					beam_colors.append(Color("899aa2"))
 	var block := BoxMesh.new()
 	block.size = Vector3.ONE
