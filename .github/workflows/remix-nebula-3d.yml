@@ -118,6 +118,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
           SHA: ${{ github.sha }}
+          RUN_ID: ${{ github.run_id }}
           OUTCOME: ${{ job.status }}
           FIRST_ERROR: ${{ env.NEBULA_ERROR }}
         run: |
@@ -125,7 +126,7 @@ jobs:
           import json,os,urllib.request
           state='success' if os.getenv('OUTCOME')=='success' else 'failure'
           detail='Premium 3D R3: engine smoke and WebAssembly passed; SSH queued' if state=='success' else 'Native build failed: '+(os.getenv('FIRST_ERROR') or 'check Actions logs')
-          data=json.dumps({'state':state,'context':'remix/nebula3d-native-build','description':detail[:135],'target_url':'https://osgard.world/games/remix/arena-v2/nebula-3d/'}).encode()
+          data=json.dumps({'state':state,'context':'remix/nebula3d-native-build','description':detail[:135],'target_url':'https://github.com/'+os.environ['REPO']+'/actions/runs/'+os.environ['RUN_ID']}).encode()
           req=urllib.request.Request('https://api.github.com/repos/'+os.environ['REPO']+'/statuses/'+os.environ['SHA'],data=data,headers={'Authorization':'Bearer '+os.environ['GH_TOKEN'],'Accept':'application/vnd.github+json','Content-Type':'application/json'},method='POST')
           try:
               with urllib.request.urlopen(req,timeout=20) as r:print('Status recorded:',state,r.status)
