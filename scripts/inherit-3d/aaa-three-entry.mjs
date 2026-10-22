@@ -9,6 +9,8 @@ import {screenToTerrain,stableObjects,worldStateSignature,ISLAND_SEED} from './t
 import {makeArchipelago} from './world-geometry.mjs';
 import {makeTrace,disposeTraces} from './trace-models.mjs';
 import {mountArtifactAtelier} from './artifact-atelier.mjs';
+import {makeCinematicPipeline,detectAdapter} from './cinematic-postfx.mjs';
+import {makeFrameBudget} from './frame-budget.mjs';
 (()=>{
 'use strict';
 const d=document,el=(s,root=d)=>root.querySelector(s),game=window.InheritGame;
@@ -34,19 +36,35 @@ function make(tag,cls){const node=d.createElement(tag);node.className=cls;return
 const controls=make('div','aaa3d-controls');controls.setAttribute('role','group');
 controls.setAttribute('aria-label','3D world controls');
 const heading=make('span','aaa3d-brand');
-const switcher=make('button','aaa3d-switch'),orbit=make('button','aaa3d-orbit'),detail=make('button','aaa3d-quality');
+const switcher=make('button','aaa3d-switch'),orbit=make('button','aaa3d-orbit'),detail=make('button','aaa3d-quality'),effects=make('button','aaa3d-fx');
 const live=make('span','aaa3d-live');live.setAttribute('role','status');live.setAttribute('aria-live','polite');
-for(const btn of [switcher,orbit,detail])btn.type='button';
-controls.append(heading,switcher,orbit,detail,live);
+for(const btn of [switcher,orbit,detail,effects])btn.type='button';
+controls.append(heading,switcher,orbit,detail,effects,live);
 // Keep the 3D control rail OUTSIDE the island: a formerly absolute overlay
 // intercepted genuine Legacy, research and Atlas buttons on both viewports.
 world.parentElement.insertBefore(controls,world);
 const canvas=make('canvas','aaa3d-canvas');canvas.setAttribute('aria-hidden','true');
 canvas.setAttribute('tabindex','-1');canvas.style.pointerEvents='none';
 island.prepend(canvas);
-const status={available:false,active:false,frames:0,traces:0,generation:null,quality,season:'',fallback:null,flyby:false,renderer:'WebGL Three.js',detailTiers:{high:0,medium:0,low:0},detailTriangles:0,detailDrawCalls:0,cachedTraces:0,createdTraces:0,heritageDetails:null,environmentTier:null,cameraFocus:'island'};
-window.InheritAAA3D=Object.freeze({getState:()=>({...status}),toggle:()=>switcher.click()});
-let renderer,scene,camera,staticWorld,traceRoot,sun,hemi,cold;
+const status={available:false,active:false,postFX:'off',adapter:null,materials:null,ambientLife:null,performance:null,frames:0,traces:0,generation:null,quality,season:'',fallback:null,flyby:false,renderer:'WebGL Three.js',detailTiers:{high:0,medium:0,low:0},detailTriangles:0,detailDrawCalls:0,cachedTraces:0,createdTraces:0,heritageDetails:null,environmentTier:null,cameraFocus:'island'};
+const frameBudget=makeFrameBudget();
+window.InheritAAA3D=Object.freeze({
+ getState:()=>({...status}),
+ getPerformanceReport:()=>({...frameBudget.snapshot(),adapter:status.adapter,
+  quality,statusPostFX:status.postFX,materials:status.materials,ambientLife:status.ambientLife}),
+ samplePerformance:async({minFrames=36,maxWaitMs=10000}={})=>{
+  const start=performance.now(),frames=frameBudget.snapshot().samples;
+  return new Promise(resolve=>{
+   const poll=()=>{
+    if(frameBudget.snapshot().samples-frames>=minFrames||performance.now()-start>=maxWaitMs||!status.active)
+     return resolve(window.InheritAAA3D.getPerformanceReport());
+    setTimeout(poll,110);
+   };poll();
+  });
+ },
+ toggle:()=>switcher.click()
+});
+let renderer,scene,camera,staticWorld,traceRoot,sun,hemi,cold,adapter=null,pipeline=null,postWanted=false,adaptivePixelScale=1;
 let waterUniforms,raf=0,lastFrame=0,sceneVisible=true,modeEnabled=true,flybyStart=0,flyby=false;
 let signature='',lastSeason='',aspect=1.84,firstDraw=false;
 const traceCache=new Map(); // Reuse unchanged sculpted meshes across generations and building moves.
@@ -54,6 +72,19 @@ const sceneryCache=new Map(); // Only two explicit quality tiers; no per-frame r
 const raycaster=new THREE.Raycaster(),pointer=new THREE.Vector2();
 const preferences=()=>{try{return localStorage.getItem('inherit:3d:v1')}catch{return null}};
 const savePreference=val=>{try{localStorage.setItem('inherit:3d:v1',val)}catch{}};
+const fxLabels={
+ ru:{on:'Киноэффекты: вкл',off:'Киноэффекты: выкл'},
+ en:{on:'Cinematic FX: on',off:'Cinematic FX: off'},
+ zh:{on:'电影特效：开',off:'电影特效：关'}
+};
+function configurePostFx(){
+ if(!renderer||!scene||!camera)return;
+ pipeline?.dispose?.();
+ pipeline=makeCinematicPipeline({renderer,scene,camera,quality,adapter,wanted:postWanted});
+ status.postFX=pipeline.mode;
+ const width=Math.max(2,island.clientWidth),height=Math.max(2,island.clientHeight);
+ pipeline.resize(width,height,renderer.getPixelRatio());
+}
 function notify(message){live.textContent=message;}
 function updateLabels(){
  const t=words();
@@ -61,6 +92,9 @@ function updateLabels(){
  switcher.setAttribute('aria-pressed',String(status.active));
  switcher.setAttribute('aria-label',status.active?t.mode2d:t.mode3d);
  detail.textContent=quality==='high'?t.qualityHigh:t.qualityLow;
+ effects.textContent=postWanted?fxLabels[lang()].on:fxLabels[lang()].off;
+ effects.disabled=!status.available;
+ effects.setAttribute('aria-pressed',String(postWanted));
  detail.setAttribute('aria-pressed',String(quality==='high'));
  orbit.textContent=flyby?t.orbitBusy:t.orbit;
  orbit.disabled=!status.active||flyby||motion.matches;
@@ -86,8 +120,10 @@ function resize(){
  camera.left=-ORTHO_HEIGHT*aspect/2;camera.right=ORTHO_HEIGHT*aspect/2;
  camera.top=ORTHO_HEIGHT/2;camera.bottom=-ORTHO_HEIGHT/2;
  camera.updateProjectionMatrix();
- renderer.setPixelRatio(quality==='high'?Math.min(window.devicePixelRatio||1,1.6):Math.min(window.devicePixelRatio||1,1));
+ const baseRatio=quality==='high'?Math.min(window.devicePixelRatio||1,1.6):Math.min(window.devicePixelRatio||1,1);
+ renderer.setPixelRatio(Math.max(.7,baseRatio*adaptivePixelScale));
  renderer.setSize(width,height,false);
+ pipeline?.resize(width,height,renderer.getPixelRatio());
  const previous=signature;signature='';if(previous)syncState(true);
  renderOnce(performance.now());
 }
@@ -203,6 +239,8 @@ function activateScenery(tier){
  scene.add(staticWorld);
  status.heritageDetails=built.heritage?.userData?.assetStats||null;
  status.environmentTier=tier;
+ status.materials=built.surfaceStats;
+ status.ambientLife=built.life?.stats()||null;
  lastSeason='';updateEnvironment();
 }
 const FLYBY_VIEWS=[
@@ -234,8 +272,24 @@ function renderOnce(time){
  if(!renderer||!status.active||!sceneVisible||d.hidden||d.body.classList.contains('aaa-atelier-open'))return;
  if(waterUniforms&&!motion.matches)waterUniforms.uTime.value=time*.001;
  updateEnvironment();
- renderer.render(scene,camera);
+ const active=sceneryCache.get(status.environmentTier);
+ active?.life?.update(motion.matches?0:time,lastSeason,renderer.getPixelRatio());
+ renderer.info.reset();
+ const cpuStart=performance.now();
+ if(pipeline)pipeline.render(time,Math.min(.08,Math.max(.008,(time-lastFrame)/1000||.033)),motion.matches);
+ else renderer.render(scene,camera);
+ const cpuSubmissionMs=performance.now()-cpuStart;
+ frameBudget.record(time,cpuSubmissionMs,renderer,renderer.getPixelRatio());
+ status.performance=frameBudget.snapshot();
+ status.ambientLife=active?.life?.stats()||null;
  status.frames+=1;firstDraw=true;
+ // Dynamically recover frame pacing by lowering pixel density without
+ // deleting user-built objects, altering saves or silently switching modes.
+ if(quality==='high'&&frameBudget.shouldReduceResolution()&&adaptivePixelScale===1){
+  adaptivePixelScale=.8;
+  frameBudget.markReduced();
+  resize();
+ }
 }
 function stop(){if(raf)cancelAnimationFrame(raf);raf=0;}
 function shouldRun(){return status.active&&sceneVisible&&!d.hidden&&!d.body.classList.contains('aaa-atelier-open')&&(flyby||!motion.matches);}
@@ -269,12 +323,17 @@ switcher.addEventListener('click',()=>{
 });
 detail.addEventListener('click',()=>{
  quality=quality==='high'?'low':'high';status.quality=quality;
+ adaptivePixelScale=1;frameBudget.reset();
  renderer.shadowMap.enabled=quality==='high'&&!lowPower;
  sun.castShadow=renderer.shadowMap.enabled;
- activateScenery(quality);resize();syncState(true);
+ activateScenery(quality);configurePostFx();resize();syncState(true);
  renderOnce(performance.now());updateLabels();
 });
 orbit.addEventListener('click',doFlyby);
+effects.addEventListener('click',()=>{
+ if(!status.available)return;
+ postWanted=!postWanted;configurePostFx();renderOnce(performance.now());updateLabels();
+});
 // User-origin mouse clicks must not accidentally place traces during a camera tour.
 world.addEventListener('click',event=>{
  if(!flyby)return;
@@ -333,6 +392,9 @@ try{
  renderer.toneMappingExposure=1.1;
  renderer.shadowMap.enabled=quality==='high'&&!lowPower;
  renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+ renderer.info.autoReset=false;
+ adapter=detectAdapter(renderer);status.adapter=adapter;
+ postWanted=quality==='high'&&!lowPower&&!adapter.isSoftware;
  scene=new THREE.Scene();scene.background=new THREE.Color(0x789f9f);
  scene.fog=new THREE.FogExp2(0x789f9f,.009);
  camera=new THREE.OrthographicCamera(-25,25,15,-15,.1,270);cameraAtDefault();
@@ -348,6 +410,7 @@ try{
  activateScenery(quality);
  traceRoot=new THREE.Group();traceRoot.name='Actual saved traces';scene.add(traceRoot);
  status.available=true;
+ configurePostFx();
  resize();
  setMode(preferences()!=='2d');
 }catch(error){
