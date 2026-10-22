@@ -218,12 +218,14 @@ close.addEventListener('click',()=>dialog.close());
 dialog.addEventListener('click',event=>{if(event.target===dialog)dialog.close()});
 dialog.addEventListener('close',()=>{if(!armed)clearGhost()});
 function revealWorld(){
- if(!armed||ghost.hidden||!window.matchMedia?.('(max-width:740px)').matches)return;
+ if(!armed||ghost.hidden)return;
  const stage=d.querySelector('#world');if(!stage)return;
  const marker=ghost.getBoundingClientRect(),x=marker.left+marker.width/2,y=marker.top+marker.height/2;
  const above=x>=0&&x<innerWidth&&y>=0&&y<innerHeight?d.elementFromPoint(x,y):null;
- if(!above?.closest('#world')||above.closest('button,.dock,[data-memory]'))
-  stage.scrollIntoView({block:'start',inline:'nearest',behavior:'auto'});
+ // The native dialog restores focus to its toolbar trigger, which can scroll
+ // the proposed world coordinate offscreen even on desktop. Return to the
+ // genuine gameplay hit region; never place an object programmatically.
+ stage.scrollIntoView({block:'start',inline:'nearest',behavior:'instant'});
 }
 choose.addEventListener('click',()=>{
  if(!suggestion||suggestion.status!=='suggested'||d.body.classList.contains('replay-mode'))return;
