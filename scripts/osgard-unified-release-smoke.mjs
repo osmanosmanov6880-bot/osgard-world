@@ -96,7 +96,7 @@ check('command palette points to the actual archive and keeps all section sugges
   assert.ok(command.includes("href: '/entertainment/archive/'"))
   assert.ok(!command.includes("href: '/entertainment/index.html'"), 'wrong archive destination')
   assert.ok(command.includes("return ['world','intelligence','play','development','academy'"))
-  assert.ok(test.includes("search.fill('архив entertainment')"), 'archive browser navigation regression must run')
+  assert.ok(read('scripts/unified-navigation-browser.spec.mjs').includes("search.fill('архив entertainment')"), 'archive browser navigation regression must run')
 })
 process.stdout.write('\n' + pass.length + '/10 unified release checks passed\n')
 if (process.exitCode) process.exit(process.exitCode)
