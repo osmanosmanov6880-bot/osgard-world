@@ -160,6 +160,8 @@ jobs:
         run: npm run qa:merakki-case
       - name: Verify Academy-first homepage and preserved portal route
         run: npm run qa:academy
+      - name: Verify unified command navigation and accessible route loading
+        run: npm run qa:unified-shell
       - name: Verify the OSA media-player contract
         run: npm run qa:osa-media
       - name: Verify precompressed shared-brand JavaScript
