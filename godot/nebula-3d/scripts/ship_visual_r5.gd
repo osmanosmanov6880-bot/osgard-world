@@ -82,20 +82,39 @@ func _torus(name: String, radius: float, ring_width: float, where: Vector3, mate
     return node
 
 func _poly(name: String, contour: Array[Vector2], bottom: float, top: float, material: Material) -> MeshInstance3D:
-    # Extrude a convex x/z silhouette to give wings and plates real thickness.
+    # Correct top, bottom, and outside normals for either mirrored wing winding.
+    var signed_area: float = 0.0
+    for i in contour.size():
+        var j: int = (i + 1) % contour.size()
+        signed_area += contour[i].x * contour[j].y - contour[j].x * contour[i].y
+    var clockwise: bool = signed_area < 0.0
     var st := SurfaceTool.new()
     st.begin(Mesh.PRIMITIVE_TRIANGLES)
     for i in range(1, contour.size() - 1):
-        _tri(st, Vector3(contour[0].x, top, contour[0].y), Vector3(contour[i].x, top, contour[i].y), Vector3(contour[i + 1].x, top, contour[i + 1].y))
-        _tri(st, Vector3(contour[i + 1].x, bottom, contour[i + 1].y), Vector3(contour[i].x, bottom, contour[i].y), Vector3(contour[0].x, bottom, contour[0].y))
+        var t0 := Vector3(contour[0].x, top, contour[0].y)
+        var t1 := Vector3(contour[i].x, top, contour[i].y)
+        var t2 := Vector3(contour[i + 1].x, top, contour[i + 1].y)
+        var b0 := Vector3(contour[0].x, bottom, contour[0].y)
+        var b1 := Vector3(contour[i].x, bottom, contour[i].y)
+        var b2 := Vector3(contour[i + 1].x, bottom, contour[i + 1].y)
+        if clockwise:
+            _tri(st, t0, t1, t2)
+            _tri(st, b0, b2, b1)
+        else:
+            _tri(st, t0, t2, t1)
+            _tri(st, b0, b1, b2)
     for i in contour.size():
-        var k: int = (i + 1) % contour.size()
+        var j: int = (i + 1) % contour.size()
         var a := Vector3(contour[i].x, bottom, contour[i].y)
-        var b := Vector3(contour[k].x, bottom, contour[k].y)
-        var c := Vector3(contour[k].x, top, contour[k].y)
+        var b := Vector3(contour[j].x, bottom, contour[j].y)
+        var c := Vector3(contour[j].x, top, contour[j].y)
         var d := Vector3(contour[i].x, top, contour[i].y)
-        _tri(st, a, b, c)
-        _tri(st, a, c, d)
+        if clockwise:
+            _tri(st, a, b, c)
+            _tri(st, a, c, d)
+        else:
+            _tri(st, a, c, b)
+            _tri(st, a, d, c)
     st.generate_normals()
     var surface := MeshInstance3D.new()
     surface.name = name
