@@ -22,8 +22,10 @@ func _capture() -> void:
 		destination += "/screenshots"
 	DirAccess.make_dir_recursive_absolute(destination)
 	for dimensions in [Vector2i(1600,900),Vector2i(1366,768)]:
-		DisplayServer.window_set_size(dimensions)
+		root.content_scale_mode = Window.CONTENT_SCALE_MODE_DISABLED
 		root.content_scale_size = dimensions
+		root.size = dimensions
+		DisplayServer.window_set_size(dimensions)
 		for tick in range(24):
 			await process_frame
 		await RenderingServer.frame_post_draw
