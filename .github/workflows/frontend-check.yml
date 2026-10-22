@@ -185,7 +185,7 @@ jobs:
 
   browser:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     steps:
       - name: Check out source
         uses: actions/checkout@v4
@@ -203,9 +203,16 @@ jobs:
       - name: Install pinned browser test tooling
         run: |
           npm install --no-save --package-lock=false @playwright/test@1.58.2
-          # The full Chromium channel runs Playwright's new headless mode.
-          # Do not depend on the separate headless-shell CDN certificate.
-          npx playwright install --with-deps --no-shell chromium
+          # GitHub's Ubuntu image already carries an installed Chrome browser.
+          # Prefer that real Chrome channel; avoid spending the test budget
+          # reinstalling system libraries and downloading another 167 MB browser.
+          if command -v google-chrome >/dev/null 2>&1; then
+            google-chrome --version
+            echo "OSGARD_BROWSER_CHANNEL=chrome" >> "$GITHUB_ENV"
+          else
+            # Fallback retains the pinned Playwright-provided full browser.
+            npx playwright install --with-deps --no-shell chromium
+          fi
       - name: Check desktop and mobile user journeys
         run: npx playwright test --config playwright.ecosystem.config.mjs
       - name: Keep screenshots and browser evidence
