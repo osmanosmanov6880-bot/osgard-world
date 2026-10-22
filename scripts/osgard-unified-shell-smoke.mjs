@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, resolve } from 'node:path'
-import { osgardCommands, searchOsgardCommands, readQuickNavRecent, rememberQuickNav, clearQuickNavRecent } from '../src/osgardQuickNavData.ts'
+import { osgardCommands, getOsgardContextSuggestions, searchOsgardCommands, readQuickNavRecent, rememberQuickNav, clearQuickNavRecent } from '../src/osgardQuickNavData.ts'
 
 const repo = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const read = path => readFileSync(resolve(repo, path), 'utf8')
@@ -37,6 +37,12 @@ for (const id of ['phantom','tedes','merakki','essentia']) {
   assert.equal(result?.href, '/development/' + id + '/')
 }
 assert.deepEqual(searchOsgardCommands('Портфолио проектов').map(x => x.id), ['cases'])
+assert.equal(osgardCommands.filter(item => item.art?.startsWith('/brand/play/')).length, 19)
+assert.ok(osgardCommands.filter(item => item.id.startsWith('case-')).every(item => item.art?.startsWith('/')), 'Real portfolio art is self-hosted')
+assert.deepEqual(getOsgardContextSuggestions('/play/world/zion-030').map(x => x.id), ['play','favorites','recent-games'])
+assert.deepEqual(getOsgardContextSuggestions('/lectures/verify-an-ai-answer').map(x => x.id), ['academy','lectures','progress'])
+assert.deepEqual(getOsgardContextSuggestions('/development/tedes/').map(x => x.id), ['development','cases','case-tedes'])
+assert.deepEqual(getOsgardContextSuggestions('/').map(x => x.id), ['intelligence','play','development'])
 assert.ok(searchOsgardCommands('игры').some(item => item.id === 'play'))
 assert.deepEqual(searchOsgardCommands('ё'), searchOsgardCommands('е'), 'Russian ё and е must search identically')
 assert.deepEqual(searchOsgardCommands('', ['cases', 'academy']).slice(0, 2).map(x => x.id), ['cases', 'academy'])
@@ -73,6 +79,10 @@ assert.ok(shell.includes("lazy(() => import('./OsgardFooter'))") && read('src/Os
 assert.ok(shell.includes('Control+K Meta+K') && shell.includes("event.key.toLowerCase() !== 'k'"), 'Keyboard shortcut must be exposed and functional')
 assert.ok(shell.includes('aria-expanded={quickOpen}') && shell.includes('onClose={closeQuickNav}'), 'Trigger and modal state must be accessible')
 assert.ok(palette.includes('role="dialog" aria-modal="true"') && palette.includes("onKeyDown={handleInputKey}"), 'Dialog and keyboard search contract required')
+assert.ok(palette.includes('aria-label="Фильтр по направлениям"') &&
+  palette.includes('aria-pressed={group === value}') &&
+  palette.includes('getOsgardContextSuggestions(location.pathname)') &&
+  palette.includes('command.art &&'), 'Navigator must have real group filters, context actions and image previews')
 assert.ok(palette.includes('navigateBrowserUrl(command.href)') && palette.includes('hasUnsavedChanges()'), 'Navigator must preserve SPA and dirty-form guards')
 assert.ok(palette.includes("document.body.style.overflow = before") && palette.includes("document.removeEventListener('keydown'") &&
   palette.includes('previousInert') && palette.includes('observer?.disconnect()') &&
