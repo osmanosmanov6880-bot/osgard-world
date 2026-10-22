@@ -259,10 +259,15 @@ export function makeArchipelago({quality='high'}={}){
  }
  terrain.add(bridge);
  const landmarks=new THREE.Group();landmarks.name='Fictional template landmarks';
- const ancient=makeHeroTree();ancient.position.set(-7.2,fieldHeight(-7.2,-5),-5);landmarks.add(ancient);
- const sapling=makeTrace('tree',{size:1.25});sapling.position.set(11,fieldHeight(11,3),3);landmarks.add(sapling);
- const arch=makeTrace('arch',{size:1.35});arch.position.set(8.8,fieldHeight(8.8,-6),-6);landmarks.add(arch);
- const beacon=makeTrace('light',{size:1.25});beacon.position.set(-3,fieldHeight(-3,4),4);landmarks.add(beacon);
+ const landmarkQuality=quality==='high'?'high':quality==='medium'?'medium':'low';
+ const ancient=quality==='high'?makeHeroTree():makeTrace('tree',{size:2.45,quality:landmarkQuality,seed:173});
+ ancient.position.set(-7.2,fieldHeight(-7.2,-5),-5);landmarks.add(ancient);
+ const sapling=makeTrace('tree',{size:1.25,quality:landmarkQuality,seed:71});
+ sapling.position.set(11,fieldHeight(11,3),3);landmarks.add(sapling);
+ const arch=makeTrace('arch',{size:1.35,quality:landmarkQuality,seed:345});
+ arch.position.set(8.8,fieldHeight(8.8,-6),-6);landmarks.add(arch);
+ const beacon=makeTrace('light',{size:1.25,quality:landmarkQuality,seed:56,allowLight:quality==='high'});
+ beacon.position.set(-3,fieldHeight(-3,4),4);landmarks.add(beacon);
  terrain.add(landmarks);
  return {root:terrain,waterUniforms:sea.material.uniforms,landmarks};
 }
