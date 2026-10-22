@@ -43,6 +43,8 @@ world = require(
     "detail_r5.build(tower_data, SECTOR_POSITIONS)",
     'preload("res://scripts/orbital_docks_r6.gd")',
     "docks_r6.build(SECTOR_POSITIONS, SECTOR_COLORS)",
+    'preload("res://scripts/sculptural_skyline_r6.gd")',
+    "skyline_r6.build(SECTOR_POSITIONS, SECTOR_COLORS)",
 )
 city = require(
     "scripts/city_set_dressing_r5.gd",
@@ -67,6 +69,14 @@ r6_docks = require(
 )
 assert "st.generate_tangents()" in r6_ship
 assert "st.generate_tangents()" in r6_docks
+skyline = require(
+    "scripts/sculptural_skyline_r6.gd",
+    "func _body_mesh(",
+    "func _window_atlas(",
+    "R6_ArcologyExteriorMullions",
+    "st.generate_tangents()",
+)
+
 require("scripts/architectural_detail_r4.gd", "func build(")
 premium = require("scripts/premium_architecture.gd", "func make_facade_material(", "emission_image")
 require("scripts/drone.gd", "extends")
@@ -77,6 +87,7 @@ smoke = require(
     "R5 city dressing pass missing",
     "R6 aircraft hero model missing",
     "R6 industrial orbital megadocks absent",
+    "R6 sculptural skyline missing",
     "NEBULA_SMOKE_SUCCESS",
 )
 assert "func _make_ship(" not in ship, "R3 low-poly ship builder is still active"
