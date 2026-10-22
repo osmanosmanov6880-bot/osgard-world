@@ -3,9 +3,11 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {spawnSync} from 'node:child_process';
 import {coastline,fieldHeight,hash,noise,screenToTerrain,nativeValidPoint,stableObjects,vegetation,worldStateSignature} from './inherit-3d/terrain-core.mjs';
+import * as THREE from 'three';
+import {makeTrace,disposeTraces,premiumAssetsInfo} from './inherit-3d/trace-models.mjs';
 const get=path=>readFileSync(path,'utf8');
 const root='public/games/inherit/';
-const src=['scripts/inherit-3d/aaa-three-entry.mjs','scripts/inherit-3d/world-geometry.mjs','scripts/inherit-3d/trace-models.mjs','scripts/inherit-3d/terrain-core.mjs'];
+const src=['scripts/inherit-3d/aaa-three-entry.mjs','scripts/inherit-3d/world-geometry.mjs','scripts/inherit-3d/trace-models.mjs','scripts/inherit-3d/premium-sculptures.mjs','scripts/inherit-3d/terrain-core.mjs'];
 const index=get(root+'index.html'),css=get(root+'aaa-3d.css'),sw=get(root+'sw.js'),
   entry=get(src[0]),world=get(src[1]),props=get(src[2]),pkg=JSON.parse(get('package.json'));
 let total=0;const check=(title,fn)=>{fn();console.log('PASS',title);total++};
@@ -15,6 +17,57 @@ check('Source files are valid ES modules under Node',()=>{
 check('Offline browser bundle compiles the exact installed Three.js API',()=>{
  const run=spawnSync(process.execPath,['scripts/build-inherit-3d.mjs','--check'],{encoding:'utf8',timeout:90000});
  assert.equal(run.status,0,run.stdout+run.stderr);
+});
+check('All 10 new premium sculptures produce distinct finite high-detail 3D geometry',()=>{
+ const kinds=['tree','stone','light','path','flower','arch','chime','moss','cairn','marker'];
+ const holder=new THREE.Group();
+ let highTriangles=0,mediumTriangles=0;
+ for(const kind of kinds){
+  const high=makeTrace(kind,{quality:'high',seed:6880,cast:true});
+  const medium=makeTrace(kind,{quality:'medium',seed:6880,cast:false});
+  const classic=makeTrace(kind,{quality:'low'});
+  assert.ok(high.userData.detailTriangles>medium.userData.detailTriangles,kind+' is not detailed');
+  assert.ok(high.userData.detailDrawCalls<=14,kind+' exceeds material batching budget');
+  assert.ok(high.userData.detailTriangles>=120,kind+' has too few triangles to be an upgraded 3D model');
+  assert.ok(high.children.some(c=>c.isMesh),kind+' has no real mesh');
+  assert.ok(classic.children.length>0,kind+' loses its fallback mesh');
+  for(const obj of high.children){
+   if(!obj.isMesh)continue;
+   const position=obj.geometry.attributes.position?.array;
+   assert.ok(position?.length>0);
+   for(const value of position)assert.ok(Number.isFinite(value),kind+' has invalid geometry');
+   assert.ok(obj.material.isMeshStandardMaterial,kind+' is missing PBR materials');
+  }
+  highTriangles+=high.userData.detailTriangles;
+  mediumTriangles+=medium.userData.detailTriangles;
+  holder.add(high,medium,classic);
+ }
+ assert.ok(highTriangles>mediumTriangles*1.15);
+ assert.ok(highTriangles>7500,'Aggregate high quality meshes remain too cheap');
+ assert.deepEqual(premiumAssetsInfo(),{quality:['high','medium'],materials:27,bumpTextures:3,batched:true,externalAssets:0});
+ disposeTraces(holder);
+ assert.equal(holder.children.length,0);
+});
+check('Premium models reuse exactly three deterministic local height textures without downloads',()=>{
+ const premium=get('scripts/inherit-3d/premium-sculptures.mjs');
+ assert.match(premium,/new THREE\.DataTexture/);
+ assert.match(premium,/mergeGeometries\(geometryList,false\)/);
+ assert.match(premium,/grainBark/);
+ assert.match(premium,/grainStone/);
+ assert.match(premium,/grainBrass/);
+ assert.doesNotMatch(premium,/fetch\s*\(|https?:\/\//);
+});
+check('Dense saved worlds choose quality by visible center and cap local point lighting',()=>{
+ assert.match(entry,/const detailBudget=quality==='high'/);
+ assert.match(entry,/tiers\.set\(item\.i/);
+ assert.match(entry,/allowLight:lightAllowed/);
+ assert.match(entry,/activeLanterns<2/);
+ assert.match(entry,/status\.detailTriangles=triangles/);
+ assert.match(entry,/syncState\(true\);renderOnce/);
+});
+check('Instanced environment includes multi-layer canopies, woodland flora and a real footbridge',()=>{
+ for(const term of ['crownsPerTree','branchPerTree','new THREE.InstancedMesh','grassGoal','blossomGoal','plankCount','bridge.add(deck)'])
+  assert.ok(world.includes(term),'Missing '+term);
 });
 check('Native game and 3D scene have no new game mutation API',()=>{
  assert.match(entry,/game\.snapshot\(\)/);
