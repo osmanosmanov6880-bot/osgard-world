@@ -183,3 +183,16 @@ body.living-legacy .world[data-living-stage=ancient] .island .ruin{filter:bright
  body.living-legacy .world-alive-handoff{display:none}
  body.living-legacy .world-alive-ocean{display:none}
 }
+
+
+/* Keep playable world prominent: the richer mission center follows the dock. */
+body.living-legacy .app>.world-alive-hub{
+ margin:18px clamp(20px,5vw,84px) 26px;
+}
+@media(max-width:740px){
+ body.living-legacy .app>.world-alive-hub{
+   order:4;margin:10px 4vw 17px;
+ }
+ body.living-legacy .app>.living-actions-strip{order:5}
+ body.living-legacy .app>.inherit-guide{order:6}
+}
