@@ -1109,7 +1109,14 @@
       const lookHeight=c?.occupied?.9:1.2+player.height;
       const desired=new THREE.Vector3(player.x+Math.sin(player.cameraYaw)*Math.cos(pitch)*distance,
         lookHeight+Math.sin(pitch)*distance,player.z+Math.cos(player.cameraYaw)*Math.cos(pitch)*distance);
-      camera.position.lerp(desired,1-Math.exp(-dt*9));camera.lookAt(player.x,lookHeight,player.z);
+      // Prevent interpolation from leaving the chase camera inside a facade.
+      // The spring arm still eases normally in clear space and keeps the game grid authoritative.
+      if(collides(desired.x,desired.z,.16)){
+        desired.set(player.x,lookHeight+.65,player.z);
+      }
+      camera.position.lerp(desired,1-Math.exp(-dt*9));
+      if(collides(camera.position.x,camera.position.z,.16))camera.position.copy(desired);
+      camera.lookAt(player.x,lookHeight,player.z);
     }
     const desiredFov=player.cameraMode==='first'?64:c?.occupied?74:player.moving&&player.stamina<99?72:68;
     const fov= camera.fov+(desiredFov-camera.fov)*(1-Math.exp(-dt*4));
