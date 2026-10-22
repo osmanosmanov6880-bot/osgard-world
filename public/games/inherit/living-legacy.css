@@ -270,3 +270,9 @@ body.living-legacy .world:has(>.inherit-first-steps:not([hidden]))>.hint{
    overscroll-behavior:contain;
  }
 }
+
+
+/* A genuine user-armed Memory Expedition must have the same clear tap target
+ * as Compass and Legacy Network. Only hide the introductory overlay while
+ * armed; leave first-run progress intact and restore the coach afterward. */
+body.inherit-expedition-armed .world>.inherit-first-steps{display:none!important}
