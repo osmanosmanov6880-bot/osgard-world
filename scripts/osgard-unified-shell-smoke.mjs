@@ -27,6 +27,11 @@ for (const item of osgardCommands) {
 assert.deepEqual(searchOsgardCommands('аКаДеМиЯ').map(x => x.id), ['academy'])
 assert.deepEqual(searchOsgardCommands('несуществующий-раздел').map(x => x.id), [], 'Unknown routes must never be fabricated')
 assert.deepEqual(searchOsgardCommands('TEDES').map(x => x.id), ['case-tedes', 'cases'])
+assert.equal(searchOsgardCommands('frfltvbz')[0]?.id, 'academy', 'Recover English keyboard layout for academy')
+assert.ok(searchOsgardCommands('buhs').some(item => item.id === 'play'), 'English layout can find game catalog')
+assert.equal(searchOsgardCommands('добавь тень')[0]?.id, 'game-zion-030', 'Mechanic alias finds genuine shadow game')
+assert.equal(searchOsgardCommands('империя времени')[0]?.id, 'game-time', 'Exact game title outranks sequel')
+assert.equal(searchOsgardCommands('проверьте ответ ии')[0]?.id, 'lesson-verify-an-ai-answer', 'Find direct evidence lesson')
 for (const id of ['phantom','tedes','merakki','essentia']) {
   const result = osgardCommands.find(command => command.id === 'case-' + id)
   assert.equal(result?.href, '/development/' + id + '/')
