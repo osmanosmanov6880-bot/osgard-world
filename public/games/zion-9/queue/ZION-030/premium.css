@@ -333,3 +333,13 @@ main{width:min(2500px,98vw)!important;padding:10px clamp(12px,1.5vw,30px) 36px!i
 .premium-result-inner button{width:100%;min-height:58px;padding:12px 15px;font-size:17px;font-weight:850;cursor:pointer;color:#082336;border:1px solid #b6fff6;border-radius:12px;background:linear-gradient(120deg,#6affd9,#2dc3d7);box-shadow:0 9px 27px #15d0c756}
 .premium-result-inner button:hover{filter:brightness(1.08)}
 .premium-result-inner button:focus-visible{outline:3px solid white;outline-offset:3px}
+
+/* v25: disclosure-only secondary context, primary next action always visible. */
+.mission-focus{margin:12px 0;padding:13px 14px;border:1px solid #247e87;border-radius:10px;background:linear-gradient(110deg,#10434c,#0a293c)}
+.mission-focus strong{font-size:15px;letter-spacing:.03em;color:#9cffe2}
+.mission-focus p{font-size:15px;line-height:1.5;color:#e6f8ff;margin:7px 0 0}
+.mission-background{border:1px solid #2a5872;border-radius:9px;margin:0 0 10px;background:#091c30}
+.mission-background summary{padding:11px 12px;font-size:13px;font-weight:800;letter-spacing:.025em;color:#b9dff2;cursor:pointer}
+.mission-background summary:focus-visible{outline:3px solid #adffe9;outline-offset:2px}
+.mission-background p{padding:0 12px 12px;margin:0;font-size:14px;line-height:1.54;color:#cfdfed}
+@media(max-width:780px){.mission-focus strong{font-size:16px}.mission-focus p{font-size:16px}}
