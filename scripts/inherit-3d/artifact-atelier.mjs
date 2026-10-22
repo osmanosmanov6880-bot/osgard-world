@@ -212,7 +212,13 @@ export function mountArtifactAtelier({dock}={}){
   }
   raf=requestAnimationFrame(loop);
  }
- function start(){if(raf||!dialog.open||!renderer||document.hidden)return;raf=requestAnimationFrame(loop);}
+ function start(){
+  if(!dialog.open||!renderer||document.hidden)return;
+  // Reduced motion renders a still studio until the user explicitly drags,
+  // picks a model or zooms. Do not waste a constant GPU animation loop.
+  if(reduce.matches){drawOnce();return;}
+  if(!raf)raf=requestAnimationFrame(loop);
+ }
  function stop(){if(raf)cancelAnimationFrame(raf);raf=0;}
  function selectType(type){
   if(!TYPES.includes(type))return;
