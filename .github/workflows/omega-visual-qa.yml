@@ -1,3 +1,4 @@
+# Horizon R3.1 visual acceptance: smoothed world-space asphalt and physically driven sports-car frame.
 name: OSGARD Horizon authentic Godot screenshot QA
 on:
   push:
