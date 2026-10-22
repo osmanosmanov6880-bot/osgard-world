@@ -195,3 +195,66 @@ body.living-legacy .world:has(>.inherit-first-steps:not([hidden]))>.hint{
  opacity:0;
  pointer-events:none;
 }
+
+
+/* R15.1 mobile input accessibility:
+ * The old viewport-fixed tools intercepted every lower-page control even
+ * after the browser scrolled it into view. Put controls in normal flow BEFORE
+ * the island on narrow screens so every button can be physically tapped.
+ * Desktop dock and the real placement mechanics are unchanged. */
+@media(max-width:740px){
+ body.living-legacy .app>.dock.cine-dock{
+   position:relative;top:auto;right:auto;bottom:auto;left:auto;
+   width:100%;height:auto;max-height:none;min-height:0;
+   z-index:14;order:1;
+   display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);
+   grid-template-rows:minmax(54px,auto) minmax(59px,auto);
+   gap:8px 10px;align-content:stretch;
+   padding:12px 4vw;
+   box-shadow:0 8px 28px #09263085;
+   border-block:1px solid #e6d09c73;
+ }
+ body.living-legacy .app>.dock.cine-dock>.turn{display:none}
+ body.living-legacy .app>.dock.cine-dock>#pass{
+   position:static;grid-column:1;grid-row:1;
+   min-height:58px;height:auto;width:100%;max-width:none;
+   padding:11px 12px;font-size:calc(15px * var(--living-scale))!important;
+ }
+ body.living-legacy .app>.dock.cine-dock>.cine-menu-toggle{
+   position:static;grid-column:2;grid-row:1;
+   min-height:58px;height:auto;width:100%;
+   padding:11px 9px;font-size:calc(14px * var(--living-scale))!important;
+ }
+ body.living-legacy .app>.dock.cine-dock>.tools{
+   grid-column:1/-1;grid-row:2;display:flex;flex-wrap:nowrap;
+   align-items:center;width:100%;height:61px;max-height:none;min-width:0;
+   overflow-x:auto;overflow-y:hidden;gap:8px;padding:0 0 3px;
+   scroll-snap-type:x proximity;
+ }
+ body.living-legacy .app>.dock.cine-dock>.tools>.tool,
+ body.living-legacy .app>.dock.cine-dock>.tools>.catalog-button,
+ body.living-legacy .app>.dock.cine-dock>.tools>.cine-undo{
+   flex:0 0 auto;min-width:120px;min-height:52px;height:54px;
+   scroll-snap-align:start
+ }
+ body.living-legacy .app>.dock.cine-dock>.tools>.tool{
+   display:flex;justify-content:center;gap:7px;padding:3px 10px!important
+ }
+ body.living-legacy .app>.dock.cine-dock>.tools>.tool .living-icon{
+   width:39px;height:43px;flex:0 0 auto;
+ }
+ body.living-legacy .app>.dock.cine-dock>#showHistory{
+   position:static;grid-row:3;grid-column:1/-1;
+   justify-self:start;margin:0;min-height:37px;
+ }
+ body.living-legacy .app>#world{order:2}
+ body.living-legacy .app>.living-journey{order:3}
+ body.living-legacy .app>.world-alive-hub{order:4}
+ body.living-legacy .app>.living-actions-strip{order:5}
+ body.living-legacy .app>.inherit-guide{order:6}
+ body.living-legacy .app{padding-bottom:24px}
+ body.living-legacy .toast{bottom:22px}
+}
+/* The historical mobile CSS put the tools in a 2-row fixed panel.
+ * These rules deliberately keep its menu and history button available and
+ * make all subsequent controls reachable by regular document scrolling. */
