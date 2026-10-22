@@ -88,6 +88,7 @@ jobs:
           npm run qa:osa-progress
           npm run qa:game-interface
           npm run qa:inherit-living
+          npm run qa:inherit-world-alive
           npm run qa:inherit-i18n
           npm run qa:inherit-legacy
           npm run qa:inherit-story
