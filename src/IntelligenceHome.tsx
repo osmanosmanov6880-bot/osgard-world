@@ -49,7 +49,7 @@ export default function IntelligenceHome() {
           <span className="omega-intelligence-pulse omega-intelligence-pulse-a" />
           <span className="omega-intelligence-pulse omega-intelligence-pulse-b" />
         </div>
-        <section id="proof-card" className="intelligence-proof-console" aria-labelledby="intelligence-proof-title">
+        <section id="proof-card" className="intelligence-proof-console" aria-labelledby="intelligence-proof-title" tabIndex={-1}>
           <div className="intelligence-proof-topbar">
             <span>OSA / EVIDENCE LAB</span>
             <span><i aria-hidden="true" /> ИНТЕРАКТИВНЫЙ ПРИМЕР</span>
