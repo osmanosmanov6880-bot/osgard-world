@@ -26,7 +26,7 @@
     let currentRaining=false,currentNight=false;
     const stats={version:VERSION,tier:lite?'LITE':mobile?'MOBILE':'ULTRA',facades:0,balconyRails:0,
       rooftopAssets:0,streetFixtures:0,foliageAssets:0,vehicleParts:0,avatarParts:0,
-      instances:0,drawCallBatches:0,textureMaps:0,wetSurfaces:0,signs:0,wetVisible:false,highDetailVisible:false};
+      instances:0,drawCallBatches:0,vehicleBatches:0,textureMaps:0,wetSurfaces:0,signs:0,wetVisible:false,highDetailVisible:false};
     const texSize=ultra?256:128;
     function makeTexture(kind){
       if(lite||typeof document==='undefined'||!THREE.CanvasTexture)return null;
@@ -233,12 +233,17 @@
       group.name='ZION31 / City Runner handcrafted body';
       const highCar=new THREE.Group(); highCar.name='ZION31 / optional rims and cockpit';
       group.add(highCar);
+      // One instanced draw call per body material / geometry instead of
+      // a separate draw call for every wheel spoke on every moving car.
+      const carBins=new Map(),carDummy=new THREE.Object3D();
       const add=(into,m,x,y,z,w,h,d,shape='cube')=>{
-        const mesh=new THREE.Mesh(pick[shape],m);
-        mesh.position.set(x,y,z);mesh.scale.set(w,h,d);
-        if(shape==='cylinder')mesh.rotation.z=Math.PI/2;
-        mesh.castShadow=false;into.add(mesh);stats.vehicleParts++;
-        return mesh;
+        const key=(into===highCar?'hi':'base')+':'+ownedMats.indexOf(m)+':'+shape;
+        if(!carBins.has(key))carBins.set(key,{into,m,shape,matrices:[]});
+        carDummy.position.set(x,y,z);carDummy.scale.set(w,h,d);
+        carDummy.rotation.set(0,0,shape==='cylinder'?Math.PI/2:0);
+        carDummy.updateMatrix();
+        carBins.get(key).matrices.push(carDummy.matrix.clone());
+        stats.vehicleParts++;
       };
       // Lower bumper, light guides, windscreen molding and sporty diffusers.
       add(group,blackMetal,0,.17,-.80,.72,.09,.095);
@@ -263,6 +268,13 @@
       add(highCar,copper,0,.61,.54,.55,.016,.018);
       add(highCar,anodized,0,.82,.13,.64,.019,.13);
       add(highCar,glass,0,.84,.16,.34,.014,.36);
+      for(const b of carBins.values()){
+        const mesh=new THREE.InstancedMesh(pick[b.shape],b.m,b.matrices.length);
+        b.matrices.forEach((matrix,i)=>mesh.setMatrixAt(i,matrix));
+        mesh.instanceMatrix.needsUpdate=true;
+        mesh.frustumCulled=false;mesh.castShadow=false;
+        b.into.add(mesh);stats.vehicleBatches++;
+      }
       parent.add(group);
       highCar.visible=high.visible;
       optionalCars.push(highCar);
