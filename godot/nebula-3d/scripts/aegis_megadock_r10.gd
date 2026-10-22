@@ -5,7 +5,7 @@ extends Node3D
 
 const HeroPortR10Scene = preload("res://assets/models/aegis_megadock_r10.gltf")
 const SurfaceLibraryR9Script = preload("res://scripts/surface_library_r9.gd")
-const QUALITY_RANGES := [900.0, 610.0, 340.0]
+const QUALITY_RANGES = [900.0, 610.0, 340.0]
 
 var megadock_count: int = 0
 var modeled_triangles: int = 0
