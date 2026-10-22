@@ -111,3 +111,140 @@ main{width:min(1680px,100%)!important;max-width:none!important;padding:7px clamp
 @media(max-width:1050px){.premium-spot-prompt{font-size:9px;top:57px}}
 @media(max-width:700px){.premium-spot-prompt{top:53px;max-width:74%;font-size:8px;padding:6px}.premium-hot-marker strong{font-size:12px}}
 @media(prefers-reduced-motion:reduce){.premium-hot-marker i,.premium-mode .module{transition:none!important}}
+
+
+/* PREMIUM V24: readable, roomy, game-first layout. Real DOM and live Canvas. */
+body{font-size:16px!important}
+main{width:min(2500px,98vw)!important;padding:10px clamp(12px,1.5vw,30px) 36px!important}
+.premium-mode .layout{grid-template-columns:minmax(255px,.82fr) minmax(470px,2.25fr) minmax(345px,1.06fr)!important;gap:16px!important}
+.premium-mode .hero{min-height:220px!important;padding:23px clamp(22px,2vw,38px)!important;margin-bottom:16px!important;gap:26px}
+.premium-kicker{font-size:14px!important;letter-spacing:.1em}
+.premium-hero-copy h1{font-size:clamp(42px,4.1vw,80px)!important}
+.premium-hero-copy>strong{font-size:clamp(19px,1.42vw,26px)!important}
+.premium-hero-copy>p{font-size:clamp(17px,1.13vw,20px)!important;line-height:1.5!important;max-width:680px!important}
+.premium-goal{padding:20px 24px!important;min-height:152px}
+.premium-goal h2{font-size:clamp(18px,1.2vw,22px)!important}
+.premium-goal p{font-size:clamp(18px,1.1vw,21px)!important;line-height:1.5!important}
+.premium-goal small{font-size:15px!important}
+.premium-goal small b{font-size:23px!important}
+.goal-thermometers{padding:14px 19px;min-width:155px}
+.premium-mission{padding:20px!important}
+.mission-loc{font-size:15px!important}
+.mission-loc small{font-size:13px!important}
+.athens-illustration{height:145px}
+.mission-block{padding:20px 2px!important}
+.mission-block h2{font-size:clamp(17px,1.1vw,21px)!important;line-height:1.3}
+.premium-mode .mission-block p{font-size:clamp(16px,1.05vw,19px)!important;line-height:1.58!important;color:#d2e6f3!important;margin:9px 0 0!important}
+.premium-progress{padding:15px;gap:15px}
+.premium-progress .ring{flex:0 0 74px;width:74px;height:74px}
+.premium-progress strong{font-size:clamp(27px,2vw,37px)!important}
+.premium-progress small{font-size:16px!important}
+.premium-mode .stage{min-height:680px!important;border-radius:16px!important;box-shadow:0 18px 48px #0008!important}
+.premium-map-advice{left:17px;right:17px;top:17px}
+.premium-map-advice>span{font-size:14px!important;padding:9px 13px}
+.view-modes button{font-size:15px!important;min-height:43px;padding:9px 17px}
+.premium-spot-prompt{left:17px;top:80px!important;max-width:min(82%,570px);font-size:14px!important;line-height:1.4;padding:12px 15px}
+.premium-hot-marker strong{font-size:clamp(19px,1.17vw,24px)!important;padding:7px 11px;border-radius:9px}
+.premium-hot-marker i{width:31px;height:31px}
+.premium-selection-guide{position:absolute;z-index:8;left:17px;bottom:115px;max-width:calc(100% - 150px);display:grid;gap:4px;padding:13px 16px;pointer-events:none;background:linear-gradient(115deg,#092b41eb,#084b57d9);border:1px solid #59efdf;border-radius:11px;box-shadow:0 8px 23px #001b299c}
+.premium-selection-guide strong{font-size:14px;color:#7effe9;letter-spacing:.05em}
+.premium-selection-guide span{font-size:17px;color:#f0fffb;line-height:1.3;font-weight:750}
+.premium-legend{left:17px;bottom:16px;min-width:265px;padding:13px 16px}
+.premium-legend small{font-size:12px;line-height:1.4}
+.legend-values{font-size:15px}
+.premium-zoom{right:17px;bottom:16px}
+.premium-zoom button{width:44px;height:46px}
+.premium-mode .panel{padding:20px 15px!important}
+.premium-mode .panel>h2{font-size:clamp(18px,1.18vw,22px)!important;line-height:1.3;margin:1px 7px 8px}
+.premium-mode .panel>.sub{font-size:clamp(16px,1.01vw,19px)!important;margin:0 7px 15px;line-height:1.45}
+.premium-mode .modules{gap:12px!important}
+.premium-mode .module{min-height:129px!important;gap:14px!important;padding:11px!important;border-radius:12px!important}
+.premium-mode .module-icon{width:109px!important;min-width:109px!important;height:104px!important}
+.premium-mode .module-icon svg{width:101px!important;height:96px!important}
+.premium-mode .module-info strong{font-size:clamp(18px,1.13vw,21px)!important;line-height:1.3}
+.premium-mode .module-info small{font-size:clamp(15px,.95vw,18px)!important;line-height:1.45;color:#cce4f1!important}
+.module-detail b,.module-detail i{font-size:13px}
+.premium-metrics{margin-top:14px;padding:14px 10px}
+.premium-metrics h3{font-size:14px;margin-bottom:11px}
+.metric-row{gap:8px}
+.metric-row>div{padding:10px 7px}
+.metric-row strong{font-size:clamp(21px,1.5vw,29px)}
+.metric-row small{font-size:13px;line-height:1.35}
+.premium-guidance{margin-top:15px;padding:15px 16px;background:linear-gradient(110deg,#083247,#0b2137);border-color:#3bb4b7}
+.premium-guidance strong{font-size:16px}
+.premium-guidance p{font-size:clamp(15px,.95vw,18px)!important;line-height:1.52!important}
+.premium-mode .controls .btn{min-height:43px!important;font-size:13px!important;padding:8px 5px!important}
+.premium-mode .footnote{font-size:13px!important}
+.premium-how{grid-template-columns:minmax(130px,.75fr) repeat(3,minmax(0,1fr)) minmax(225px,1.15fr);gap:12px;margin-top:15px;padding:18px}
+.how-caption b{font-size:18px}
+.how-caption small{font-size:14px}
+.how-step{padding:9px;border:1px solid transparent;border-radius:12px;gap:12px}
+.how-step>b{flex:0 0 50px;width:50px;height:50px;font-size:27px}
+.how-step strong{font-size:clamp(16px,1.02vw,20px)}
+.how-step small{font-size:14px}
+.how-step.is-active{border-color:#4bece1;background:rgba(15,108,120,.32)}
+.how-step.is-done>b{background:#165b4d;border-color:#6bffbf}
+.premium-place{min-height:71px!important;font-size:clamp(17px,1.07vw,21px)!important;line-height:1.3;padding:12px 16px}
+.premium-place:disabled{opacity:.78!important;box-shadow:none!important;background:#25475c!important;color:#deedf3!important}
+.premium-hint{font-size:15px;line-height:1.5;padding:14px 17px;margin-top:11px}
+.premium-hint strong{font-size:16px}
+.premium-mode .z9-keyboard-controls p{font-size:14px!important}
+.premium-mode .z9-keyboard-controls button{min-width:44px!important;min-height:44px!important;font-size:18px!important}
+.premium-mode .info p{font-size:14px!important}
+.premium-mode footer,.z9-osgard-nav a{font-size:13px!important}
+.premium-mode .premium-topbar{display:flex!important;flex-wrap:wrap;align-items:center;gap:9px}
+.premium-font-toggle{margin-left:auto;border:1px solid #55e4d6;border-radius:10px;background:#0b344c;color:#effffb;padding:10px 14px;font-size:14px;font-weight:800;cursor:pointer}
+.premium-font-toggle[aria-pressed="true"]{background:#0c655e;border-color:#b5fff2}
+.premium-mode.premium-extra-readable .mission-block p,.premium-mode.premium-extra-readable .module-info small,.premium-mode.premium-extra-readable .premium-guidance p,.premium-mode.premium-extra-readable .how-step small,.premium-mode.premium-extra-readable .premium-hero-copy>p{font-size:21px!important;line-height:1.65!important}
+.premium-mode.premium-extra-readable .module-info strong,.premium-mode.premium-extra-readable .mission-block h2,.premium-mode.premium-extra-readable .panel>h2{font-size:24px!important}
+.premium-mode.premium-extra-readable .premium-place{font-size:23px!important}
+@media(max-width:1660px){
+ .premium-mode .layout{grid-template-columns:minmax(245px,.85fr) minmax(390px,2.12fr) minmax(320px,1.05fr)!important;gap:12px!important}
+ .premium-mode .module-icon{width:93px!important;min-width:93px!important;height:90px!important}
+ .premium-mode .module-icon svg{width:88px!important;height:84px!important}
+ .premium-how{grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+ .how-caption{grid-column:1/-1}.premium-place{grid-column:1/-1}
+}
+@media(max-width:1180px){
+ .premium-mode .layout{grid-template-columns:minmax(0,1fr) 330px!important}
+ .premium-mission{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+ .premium-mission .mission-loc,.premium-mission .athens-illustration{display:none}
+ .mission-block{border:0!important;padding:7px!important}
+ .premium-mode .hero{grid-template-columns:1fr 1fr;gap:15px}.goal-thermometers{display:none}
+ .premium-mode .stage{min-height:605px!important}
+}
+@media(max-width:760px){
+ main{width:100%!important;padding:8px 10px 28px!important}
+ .premium-mode .layout{grid-template-columns:minmax(0,1fr)!important}
+ .premium-mode .hero{grid-template-columns:1fr;min-height:0!important;padding:18px!important}
+ .premium-hero-copy h1{font-size:clamp(35px,8.4vw,60px)!important}
+ .premium-mission{display:block;grid-column:auto}
+ .premium-mission .mission-loc,.premium-mission .athens-illustration{display:flex}
+ .premium-mission .athens-illustration{display:block;height:115px}
+ .mission-block{border-bottom:1px solid #27576e!important;padding:12px 2px!important}
+ .premium-mode .stage{min-height:525px!important}
+ .premium-mode .panel{padding:14px!important}
+ .premium-mode .module{min-height:110px!important}
+ .premium-spot-prompt{top:65px!important;font-size:12px!important;padding:8px 10px}
+ .premium-selection-guide{left:10px;bottom:109px;max-width:calc(100% - 28px);padding:9px 12px}
+ .premium-selection-guide strong{font-size:12px}.premium-selection-guide span{font-size:14px}
+ .premium-hot-marker strong{font-size:17px!important;padding:5px 8px}
+ .premium-legend{min-width:190px;padding:10px;left:10px}
+ .premium-legend small{font-size:10px}
+ .premium-zoom{right:10px}.premium-zoom button{width:36px;height:38px}
+ .premium-how{grid-template-columns:1fr}.how-caption,.premium-place{grid-column:auto}
+}
+@media(max-width:440px){
+ .premium-hero-copy h1{font-size:clamp(31px,8vw,43px)!important}
+ .premium-mode .stage{min-height:465px!important}
+ .premium-map-advice>span{font-size:10px!important;padding:7px 8px}
+ .view-modes button{font-size:12px!important;padding:7px 9px;min-height:34px}
+ .premium-spot-prompt{top:55px!important;font-size:10px!important}
+ .premium-selection-guide{bottom:98px}.premium-selection-guide span{font-size:13px}
+ .premium-mode .module-icon{width:84px!important;min-width:84px!important;height:82px!important}
+ .premium-mode .module-icon svg{width:79px!important;height:76px!important}
+ .premium-mode .module-info strong{font-size:17px!important}
+ .premium-mode .module-info small{font-size:14px!important}
+ .module-detail b,.module-detail i{font-size:12px}
+}
+@media(prefers-reduced-motion:reduce){.how-step{transition:none!important}}

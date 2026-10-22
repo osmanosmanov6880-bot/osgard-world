@@ -17,27 +17,25 @@ if(!root||!stage||!layout||!panel||!hero)return;
 document.documentElement.lang='ru';
 document.title='Теневой протокол — охлади город | OSGARD PLAY';
 root.classList.add('premium-mode');
-hero.innerHTML='<div class="premium-hero-copy"><div class="premium-kicker">АФИНЫ · КЛИМАТИЧЕСКАЯ АДАПТАЦИЯ · ИНТЕРАКТИВНАЯ ЛАБОРАТОРИЯ</div><h1>ТЕНЕВОЙ <em>ПРОТОКОЛ</em></h1><strong>Прохладный город — в твоих решениях.</strong><p>Три решения. Три горячие точки. Преврати раскалённый городской квартал в более комфортное пространство.</p></div><div class="premium-goal"><div><h2>◎ &nbsp; ЦЕЛЬ МИССИИ</h2><p>Охлади <b>3 горячие зоны</b>, используя три модуля.</p><small>Учебный ориентир: <b class="orange">60°C</b> → <b class="aqua">30°C</b></small></div><div class="goal-thermometers" aria-hidden="true"><span>♨<b>60°C</b></span><i>→</i><span>♧<b>30°C</b></span></div></div>';
-const left=element('aside','premium-mission',
-'<div class="mission-loc"><span>⌖</span> АФИНЫ, ГРЕЦИЯ <small>СЦЕНАРИЙ 1/3</small></div>'+
-'<div class="athens-illustration" role="img" aria-label="Ночной горизонт Афин"><div class="acropolis"></div></div>'+
-'<section class="mission-block"><h2><span class="sun">☀</span> ПРОБЛЕМА</h2><p>Солнце нагревает городские кварталы. Бетон и асфальт удерживают тепло, а тени и зелени не хватает.</p></section>'+
-'<section class="mission-block"><h2><span class="cyan">◎</span> ТВОЯ ЗАДАЧА</h2><p>Выбирай охлаждающие решения и размещай их рядом с красными маркерами. Закрой <b>3 горячие зоны</b>.</p></section>'+
-'<section class="mission-block"><h2>ПРОГРЕСС МИССИИ</h2><div class="premium-progress"><div id="premiumRing" class="ring"></div><div><strong id="premiumProgress">0 / 3</strong><small>Горячих зон охлаждено</small></div></div></section>');
+hero.innerHTML=`<div class="premium-hero-copy"><div class="premium-kicker">АФИНЫ · ГОРОДСКАЯ СТРАТЕГИЯ</div><h1>ТЕНЕВОЙ <em>ПРОТОКОЛ</em></h1><strong>Охлади город за три хода.</strong><p>Выбери дерево, навес или сад. Нажми на красную зону и размести охлаждение рядом.</p></div><div class="premium-goal"><div><h2>◎ &nbsp; ЦЕЛЬ МИССИИ</h2><p>Охлади <b>3 горячие зоны</b> за <b>3 размещения</b>.</p><small>Условная цель игры: <b class="orange">60°C</b> → <b class="aqua">30°C</b></small></div><div class="goal-thermometers" aria-hidden="true"><span>♨<b>60°C</b></span><i>→</i><span>❄<b>30°C</b></span></div></div>`;
+const left=element('aside','premium-mission',`<div class="mission-loc"><span>⌖</span> АФИНЫ, ГРЕЦИЯ <small>МИССИЯ 1/3</small></div><div class="athens-illustration" role="img" aria-label="Панорама вечерних Афин"></div>
+<section class="mission-block"><h2><span class="sun">☀</span> ПОЧЕМУ ЖАРКО?</h2><p>Бетон нагревается. Деревьев и тени мало.</p></section>
+<section class="mission-block"><h2><span class="cyan">◎</span> ТВОЯ ЗАДАЧА</h2><p>Охлади <b>все три красные точки</b>. У тебя только <b>три модуля</b>.</p></section>
+<section class="mission-block"><h2>ТВОЙ ПРОГРЕСС</h2><div class="premium-progress"><div id="premiumRing" class="ring" aria-hidden="true"></div><div><strong id="premiumProgress">0 / 3</strong><small>Зон охлаждено</small></div></div></section>`);
 layout.insertBefore(left,stage);
 const toolList=panel.querySelector('.modules');
 const heading=panel.querySelector('h2');
-if(heading)heading.textContent='♧  ИНСТРУМЕНТЫ ОХЛАЖДЕНИЯ';
+if(heading)heading.textContent='♧  ВЫБЕРИ ИНСТРУМЕНТ';
 const sub=panel.querySelector('.sub');
-if(sub)sub.textContent='Выбери модуль и размести его в городе.';
+if(sub)sub.textContent='Нажми на одну из трёх карточек.';
 for(const button of toolList.querySelectorAll('.module')){
  const type=button.dataset.type;
- button.innerHTML='<span class="module-icon">'+symbols[type]+'</span><span class="module-info"><strong>'+names[type]+'</strong><small>'+desc[type]+'</small><span class="module-detail"><b>❄ Охлаждение</b><i>Радиус: 1 клетка</i></span></span>';
+ button.innerHTML='<span class="module-icon">'+symbols[type]+'</span><span class="module-info"><strong>'+names[type]+'</strong><small>'+desc[type]+'</small><span class="module-detail"><b>✓ Выбрать</b><i>Охлаждает соседние клетки</i></span></span>';
 }
 const stats=panel.querySelector('.stats');
 const metrics=element('section','premium-metrics','<h3>◈ ТЕКУЩЕЕ СОСТОЯНИЕ</h3><div class="metric-row"><div><span>♨</span><strong id="premiumHeat">56°C</strong><small>Условный<br>индекс</small></div><div><span>⬡</span><strong id="premiumLeft">3</strong><small>Доступно<br>модулей</small></div><div><span>◎</span><strong id="premiumZones">0 / 3</strong><small>Зон<br>охлаждено</small></div></div>');
 panel.insertBefore(metrics,stats);
-const status=element('div','premium-guidance','<strong id="premiumStatusTitle">ТВОЙ ПЕРВЫЙ ХОД</strong><p id="premiumStatusText">1. Выбери модуль справа. 2. Нажми на свободную клетку около красного маркера. 3. Подтверди размещение.</p>');
+const status=element('div','premium-guidance','<strong id="premiumStatusTitle">ШАГ 2 · ВЫБЕРИ МЕСТО</strong><p id="premiumStatusText">Дерево уже выбрано. Нажми на красную метку на карте.</p>');status.setAttribute('aria-live','polite');
 panel.insertBefore(status,panel.querySelector('.status'));
 const advice=element('div','premium-map-advice','<span>◉ ТЕПЛОВАЯ КАРТА</span><div class="view-modes"><button id="premium3d" type="button" aria-pressed="true">3D</button><button id="premiumMap" type="button" aria-pressed="false">КАРТА</button></div>');
 stage.append(advice);
@@ -45,24 +43,24 @@ const overlay=element('div','premium-hotspots','');
 stage.append(overlay);
 const spotPrompt=element('div','premium-spot-prompt','НАЖМИ НА КРАСНУЮ МЕТКУ, ЧТОБЫ ВЫБРАТЬ ЦЕЛЬ');
 stage.append(spotPrompt);
+const selectionGuide=element('div','premium-selection-guide','<strong id="premiumSelectionTitle">ТВОЙ СЛЕДУЮЩИЙ ШАГ</strong><span id="premiumSelectionText">Нажми на красный маркер</span>');selectionGuide.setAttribute('aria-live','polite');stage.append(selectionGuide);
 const legend=element('div','premium-legend','<small>УСЛОВНАЯ ТЕМПЕРАТУРА ПОВЕРХНОСТИ</small><div class="temperature-gradient"></div><div class="legend-values"><b>30°C</b><b>60°C</b></div>');
 stage.append(legend);
 const zoomCtrl=element('div','premium-zoom','<button type="button" id="premiumZoomIn" aria-label="Увеличить">＋</button><button type="button" id="premiumZoomOut" aria-label="Уменьшить">−</button><button type="button" id="premiumZoomReset" aria-label="Вернуть камеру">⌖</button>');
 stage.append(zoomCtrl);
 const canvas=document.createElement('canvas');canvas.id='premiumCity';canvas.className='premium-city';canvas.tabIndex=0;
-canvas.setAttribute('role','img');canvas.setAttribute('aria-label','Интерактивный изометрический квартал. Клик выберет клетку, кнопка размещения установит модуль.');
+canvas.setAttribute('role','application');canvas.setAttribute('aria-label','Интерактивный изометрический квартал. Клик выберет клетку, кнопка размещения установит модуль.');
 stage.append(canvas);
 const ctx=canvas.getContext('2d',{alpha:false});
 const nav=root.querySelector('header');
-if(nav)nav.classList.add('premium-topbar');
-const how=element('section','premium-how',
-'<div class="how-caption"><b>КАК ИГРАТЬ</b><small>Три простых шага<br>к прохладному городу.</small></div>'+
-'<div class="how-step"><b>1</b><span><strong>Выбери модуль</strong><small>Дерево, навес или дождевой сад.</small></span></div>'+
-'<div class="how-step"><b>2</b><span><strong>Найди горячую зону</strong><small>Выбери клетку возле красного маркера.</small></span></div>'+
-'<div class="how-step"><b>3</b><span><strong>Размести решение</strong><small>Подтверди свой выбор.</small></span></div>'+
-'<button type="button" class="premium-place" id="premiumPlace">➤ &nbsp; Разместить модуль</button>');
+if(nav){nav.classList.add('premium-topbar');const fontToggle=element('button','premium-font-toggle','А+ &nbsp; ЕЩЁ КРУПНЕЕ');fontToggle.type='button';fontToggle.setAttribute('aria-pressed','false');fontToggle.addEventListener('click',()=>{const big=root.classList.toggle('premium-extra-readable');fontToggle.setAttribute('aria-pressed',String(big));fontToggle.textContent=big?'А−  ОБЫЧНЫЙ ТЕКСТ':'А+  ЕЩЁ КРУПНЕЕ';});nav.append(fontToggle);}
+const how=element('section','premium-how',`<div class="how-caption"><b>КАК ИГРАТЬ</b><small>Три понятных шага</small></div>
+<div class="how-step is-done"><b>1</b><span><strong>Выбери модуль</strong><small>Дерево уже выбрано</small></span></div>
+<div class="how-step is-active"><b>2</b><span><strong>Найди место</strong><small>Нажми красную точку</small></span></div>
+<div class="how-step"><b>3</b><span><strong>Размести</strong><small>Нажми большую кнопку</small></span></div>
+<button type="button" class="premium-place" id="premiumPlace" disabled>⌖ Сначала выбери место</button>`);
 layout.after(how);
-const help=element('div','premium-hint','<strong>ⓘ ПОДСКАЗКА</strong><span>Для победы размести по одному решению рядом с каждой из трёх горячих точек.</span><span>♧ Пробуй разные стратегии</span>');
+const help=element('div','premium-hint','<strong>ⓘ СОВЕТ</strong><span>Начни с одного модуля рядом с каждой красной точкой.</span>');
 how.after(help);
 const originalIntro=document.querySelector('.z9-entry');if(originalIntro)originalIntro.setAttribute('data-visual-collapsed','true');
 const oldStatus=panel.querySelector('.status');if(oldStatus)oldStatus.classList.add('premium-underlying-status');
@@ -76,8 +74,8 @@ if(buttons[2])buttons[2].textContent='↺ ЗАНОВО';if(buttons[3])buttons[3]
 const foot=panel.querySelector('.footnote');if(foot)foot.textContent='Игра использует условные показатели, а не реальные измерения температуры.';
 const instructions=document.querySelector('#board-controls-help');if(instructions)instructions.textContent='Стрелки — выбор клетки, Enter — размещение, 1–3 — выбор модуля, R — заново. Красные точки: X −4 / Z −3, X 2 / Z 2, X 4 / Z −2.';
 const placeOriginal=$('place-keyboard');if(placeOriginal)placeOriginal.textContent='Разместить здесь';
-const state={mode:'3d',zoom:1,hover:null,cell:{x:0,z:0},scale:1,w:900,h:560,refresh:false};
-root.dataset.premiumVersion='23';
+const state={mode:'3d',zoom:1,hover:null,cell:{x:0,z:0},hasSelectedPlace:false,scale:1,w:900,h:560,refresh:false};
+root.dataset.premiumVersion='24';
 const S=(x,z,h=0)=>{
  if(state.mode==='map'){const u=Math.min(state.w-30,state.h-65)*state.zoom/15;return {x:state.w/2+x*u,y:state.h*.49+z*u-h*u};}
  return {x:state.w*.5+(x-z)*state.scale*1.1,y:state.h*.49+(x+z)*state.scale*.52-h*state.scale*1.63};
@@ -201,20 +199,35 @@ for(const [i,p] of hot.entries()){
 }
 function refresh(){
  const b=game();if(!b)return;const s=b.state();
- $('premiumProgress').textContent=s.score+' / 3';$('premiumHeat').textContent=[56,47,39,30][s.score]+'°C';
- $('premiumLeft').textContent=String(Math.max(0,3-s.placed.length));$('premiumZones').textContent=s.score+' / 3';
+ $('premiumProgress').textContent=s.score+' / 3';
+ $('premiumHeat').textContent=[56,47,39,30][s.score]+'°C';
+ $('premiumLeft').textContent=String(Math.max(0,3-s.placed.length));
+ $('premiumZones').textContent=s.score+' / 3';
  $('premiumRing').style.setProperty('--progress',String(s.score/3*100)+'%');
- spotPrompt.textContent=s.won?'✓ ГОРОД ОХЛАЖДЁН · МИССИЯ ВЫПОЛНЕНА':s.lost?'ПОПРОБУЙ ЕЩЁ РАЗ · НАЖМИ «ЗАНОВО»':s.score?'ОСТАЛОСЬ ОХЛАДИТЬ '+(3-s.score)+' ЗОНЫ · ВЫБЕРИ КРАСНУЮ МЕТКУ':'НАЖМИ НА КРАСНУЮ МЕТКУ И ВЫБЕРИ МЕСТО';
+ spotPrompt.textContent=s.won?'✓ МИССИЯ ВЫПОЛНЕНА':s.lost?'ПОПРОБУЙ ЕЩЁ РАЗ':s.score?'ОСТАЛОСЬ '+(3-s.score)+' ГОРЯЧИХ ЗОНЫ · НАЖМИ НА КРАСНЫЙ МАРКЕР':'НАЖМИ НА КРАСНЫЙ МАРКЕР И ВЫБЕРИ МЕСТО';
  for(const [i,marker] of overlay.querySelectorAll('.premium-hot-marker').entries()){
   const zone=hot[i],covered=coverage(s,zone);
   marker.setAttribute('aria-label',(covered?'Охлаждена зона ':'Выбрать горячую зону ')+(i+1)+(covered?'':', '+zone.temp+' градусов'));
-  marker.classList.toggle('selected',!covered&&state.cell.x===zone.x&&state.cell.z===zone.z);
+  marker.classList.toggle('selected',state.hasSelectedPlace&&!covered&&state.cell.x===zone.x&&state.cell.z===zone.z);
   marker.disabled=covered||s.won||s.lost;
  }
- $('premiumPlace').disabled=!s.ready||s.won||s.lost;
- for(const button of toolList.querySelectorAll('.module'))button.setAttribute('aria-pressed',String(button.dataset.type===s.selected));
- $('premiumStatusTitle').textContent=s.won?'МИССИЯ ВЫПОЛНЕНА':s.lost?'ПОПРОБУЙ ЕЩЁ РАЗ':s.placed.length?'ПРОДОЛЖАЙ ОХЛАЖДЕНИЕ':'ТВОЙ ПЕРВЫЙ ХОД';
- $('premiumStatusText').textContent=s.won?'Все три горячие зоны охлаждены. Отличная работа!':s.lost?'Модули закончились. Нажми «ЗАНОВО» и размещай ближе к красным точкам.':'Выбрано: '+names[s.selected]+'. Клетка X '+state.cell.x+' / Z '+state.cell.z+'. Нажми на карту для выбора клетки, затем «Разместить модуль».';
+ const occupied=s.placed.some(p=>p.x===state.cell.x&&p.z===state.cell.z);
+ const allowed=s.ready&&state.hasSelectedPlace&&!occupied&&!s.won&&!s.lost;
+ $('premiumPlace').disabled=!allowed;
+ $('premiumPlace').textContent=s.won?'✓ ГОРОД ОХЛАЖДЁН':s.lost?'↺ НАЧНИ ЗАНОВО':allowed?'✓ РАЗМЕСТИТЬ '+names[s.selected].toUpperCase():'⌖ СНАЧАЛА ВЫБЕРИ МЕСТО';
+ for(const [i,step] of [...how.querySelectorAll('.how-step')].entries()){
+  step.classList.toggle('is-active',!s.won&&!s.lost&&(state.hasSelectedPlace?3:2)===i+1);
+  step.classList.toggle('is-done',s.won||(state.hasSelectedPlace?3:2)>i+1);
+ }
+ for(const button of toolList.querySelectorAll('.module')){
+  const active=button.dataset.type===s.selected;
+  button.setAttribute('aria-pressed',String(active));
+  button.setAttribute('aria-label',(active?'Выбрано: ':'Выбрать: ')+names[button.dataset.type]);
+ }
+ $('premiumStatusTitle').textContent=s.won?'✓ ПОБЕДА':s.lost?'↺ ПОПРОБУЙ ЕЩЁ РАЗ':allowed?'ШАГ 3 · РАЗМЕСТИ МОДУЛЬ':state.hasSelectedPlace?'ЭТА КЛЕТКА НЕДОСТУПНА':'ШАГ 2 · ВЫБЕРИ МЕСТО';
+ $('premiumStatusText').textContent=s.won?'Все три зоны охлаждены!':s.lost?'Модули закончились. Нажми «ЗАНОВО».':occupied?'Клетка уже занята. Нажми на свободную рядом.':state.hasSelectedPlace?'Выбрано: '+names[s.selected]+'. Клетка X '+state.cell.x+' / Z '+state.cell.z+'. Нажми большую кнопку.':'Выбран модуль «'+names[s.selected]+'». Нажми на красную метку в городе.';
+ $('premiumSelectionTitle').textContent=s.won?'✓ МИССИЯ ПРОЙДЕНА':s.lost?'↺ НОВАЯ ПОПЫТКА':allowed?'МЕСТО ВЫБРАНО':'ШАГ 2 ИЗ 3 · НАЙДИ ГОРЯЧУЮ ЗОНУ';
+ $('premiumSelectionText').textContent=s.won?'3 / 3 охлаждено':s.lost?'Нажми «ЗАНОВО»':allowed?'X '+state.cell.x+' / Z '+state.cell.z+' · '+names[s.selected]:'Нажми красный маркер на карте';
  paint();
 }
 function at(clientX,clientY){
@@ -227,12 +240,12 @@ function at(clientX,clientY){
  return {x:Math.max(-7,Math.min(7,Math.round((sx+sy)/2))),z:Math.max(-7,Math.min(7,Math.round((sy-sx)/2)))};
 }
 function select(x,z){
- state.cell={x,z};const b=game();if(b?.cursor)b.cursor(x,z);
+ state.cell={x,z};state.hasSelectedPlace=true;const b=game();if(b?.cursor)b.cursor(x,z);
  refresh();
 }
 function place(){
  const b=game();if(!b||!b.state().ready)return;
- b.place(state.cell.x,state.cell.z,b.state().selected);refresh();
+ const outcome=b.place(state.cell.x,state.cell.z,b.state().selected);if(outcome?.ok)state.hasSelectedPlace=false;refresh();
 }
 canvas.addEventListener('pointerdown',e=>{const p=at(e.clientX,e.clientY);select(p.x,p.z);canvas.focus();});
 let hoverFrame=0;
@@ -255,7 +268,7 @@ canvas.addEventListener('keydown',e=>{
 });
 $('premiumPlace').addEventListener('click',place);
 for(const button of toolList.querySelectorAll('.module'))button.addEventListener('click',()=>{refresh();});
-$('reset')?.addEventListener('click',()=>{state.cell={x:0,z:0};requestAnimationFrame(refresh);});
+$('reset')?.addEventListener('click',()=>{state.cell={x:0,z:0};state.hasSelectedPlace=false;requestAnimationFrame(refresh);});
 $('premium3d').addEventListener('click',()=>{state.mode='3d';$('premium3d').setAttribute('aria-pressed','true');$('premiumMap').setAttribute('aria-pressed','false');refresh();});
 $('premiumMap').addEventListener('click',()=>{state.mode='map';$('premium3d').setAttribute('aria-pressed','false');$('premiumMap').setAttribute('aria-pressed','true');refresh();});
 $('premiumZoomIn').addEventListener('click',()=>{state.zoom=Math.min(1.6,state.zoom+.15);refresh();});
