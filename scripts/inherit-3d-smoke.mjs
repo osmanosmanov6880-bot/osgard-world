@@ -152,6 +152,7 @@ check('Coastal heritage meshes are seeded, finite and bounded for mobile',()=>{
  assert.equal(low.userData.assetStats.flutedColumns,6);
  assert.equal(low.userData.assetStats.harborPlanks,16);
  assert.equal(low.userData.assetStats.boatHullSegments,96);
+ assert.match(entry,/status\.heritageDetails=built\.heritage/);
  const high=makeHeritageEnvironment({quality:'high'});
  assert.ok(high.userData.assetStats.stoneBlocks>low.userData.assetStats.stoneBlocks);
  assert.ok(high.userData.assetStats.coastalDebris>low.userData.assetStats.coastalDebris);
