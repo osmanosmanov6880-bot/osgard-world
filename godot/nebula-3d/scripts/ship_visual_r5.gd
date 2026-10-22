@@ -45,6 +45,18 @@ func _ready() -> void:
     var imported_r8 := ImportedHeroR8Scene.instantiate()
     imported_r8.name = "R8_ImportedHeroMesh"
     add_child(imported_r8)
+    # Preserve each authored glTF base-color, metal and roughness slot but add
+    # the existing painted-metal tangent-space normal texture to metal panels.
+    for draw in imported_r8.find_children("*", "MeshInstance3D", true, false):
+        if draw.mesh == null:continue
+        for surface in draw.mesh.get_surface_count():
+            var mat := draw.mesh.surface_get_material(surface) as StandardMaterial3D
+            if mat == null or mat.metallic < 0.40:continue
+            var weathered := mat.duplicate() as StandardMaterial3D
+            weathered.normal_enabled = true
+            weathered.normal_texture = finish_r7.panel_material.normal_texture
+            weathered.normal_scale = 0.24
+            draw.set_surface_override_material(surface, weathered)
     # Preserve the established detail, thruster animation and save format.
     # Remove the redundant simple silhouette surfaces beneath R8 sculpting.
     for old_part in get_children():
