@@ -48,10 +48,12 @@ jobs:
           else
             npx playwright install --with-deps --no-shell chromium
           fi
-      - name: Verify all genuine INHERIT journeys on desktop and mobile
+      - name: Verify complete classic and R15 INHERIT journeys on desktop and mobile
+        run: npx playwright test --config playwright.ecosystem.config.mjs --grep "INHERIT" --grep-invert "INHERIT R16" --workers 2
+      - name: Prove actual R16 GPU WebGL frames and real fallbacks in Chrome
         env:
           OSGARD_ENABLE_SWIFTSHADER: "1"
-        run: npx playwright test --config playwright.ecosystem.config.mjs --grep "INHERIT" --workers 2
+        run: npx playwright test --config playwright.ecosystem.config.mjs --grep "INHERIT R16" --workers 1
       - name: Retain real interaction screenshots and traces
         if: always()
         uses: actions/upload-artifact@v4
