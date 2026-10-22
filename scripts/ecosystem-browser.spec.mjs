@@ -2246,6 +2246,9 @@ test('INHERIT R15 World Alive chapter progress comes only from genuine placement
  await page.goto('/games/inherit/?lang=ru',{waitUntil:'domcontentloaded'});
  const hub=page.locator('.world-alive-hub');
  await expect(hub).toBeVisible();
+ await expect(page.locator('.inherit-first-steps')).toBeVisible();
+ // The real first-play coach must not paint over the narrative headline.
+ await expect(page.locator('.world > .hero')).toHaveCSS('opacity','0');
  await expect(page.locator('.world-alive-goal')).toHaveCount(3);
  await expect(page.locator('.world-alive-metric')).toHaveCount(3);
  await expect(page.locator('.world-alive-ocean')).toHaveCount(1);
