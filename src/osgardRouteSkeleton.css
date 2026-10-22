@@ -10,6 +10,11 @@
 .brand-system .osgard-route-skeleton[data-skeleton-theme=world]{--skeleton-accent:#85d8f7}
 .brand-system .osgard-route-skeleton[data-skeleton-theme=intelligence]{--skeleton-accent:#8ceee5}
 .brand-system .osgard-route-skeleton[data-skeleton-theme=play]{--skeleton-accent:#a08cff}
+/* Distinguish the actual route without introducing fake cards or data. */
+.brand-system .osgard-route-skeleton[data-skeleton-area=academy]{--skeleton-accent:#b7a7ff}
+.brand-system .osgard-route-skeleton[data-skeleton-area=lectures]{--skeleton-accent:#84d7fa}
+.brand-system .osgard-route-skeleton[data-skeleton-area=development]{--skeleton-accent:#e9d3b2}
+.brand-system .osgard-route-skeleton[data-skeleton-area=entertainment]{--skeleton-accent:#79dff4}
 .osgard-skeleton-ambient{position:absolute;inset:0;pointer-events:none;z-index:-1;
   background:radial-gradient(ellipse at 72% 45%,color-mix(in srgb,var(--skeleton-accent) 20%,transparent),transparent 55%),
     radial-gradient(ellipse at 22% 92%,#557ea31c,transparent 44%)}
