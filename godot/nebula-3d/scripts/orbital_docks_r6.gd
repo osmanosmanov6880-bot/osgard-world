@@ -177,6 +177,16 @@ func _hangar(where: Vector3, direction: float, sector: int, side: int) -> void:
     for part in imported_r8.find_children("*", "MeshInstance3D", true, false):
         part.visibility_range_end = 430.0
         part.visibility_range_end_margin = 70.0
+        # The metal now has microscopic brushed relief, not merely flat tints.
+        if part.mesh == null:continue
+        for surface in part.mesh.get_surface_count():
+            var mat := part.mesh.surface_get_material(surface) as StandardMaterial3D
+            if mat == null or mat.metallic < 0.40:continue
+            var weathered := mat.duplicate() as StandardMaterial3D
+            weathered.normal_enabled = true
+            weathered.normal_texture = deck_material.normal_texture
+            weathered.normal_scale = 0.21
+            part.set_surface_override_material(surface, weathered)
     # Physical hangar walls and airlock doors stop high-speed ships, unlike R5 props.
     _collision_box(root, "HangarLeftWallCollision", Vector3(-18.1, wall, 0), Vector3(1.5, wall * 1.95, 29.0))
     _collision_box(root, "HangarRightWallCollision", Vector3(18.1, wall, 0), Vector3(1.5, wall * 1.95, 29.0))
