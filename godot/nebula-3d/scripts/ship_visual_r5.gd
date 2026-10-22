@@ -36,7 +36,7 @@ func _pbr(tint: Color, roughness: float, metallic: float, glow: float = 0.0) -> 
         mat.emission_energy_multiplier = glow
     return mat
 
-func _box(name: String, size: Vector3, offset: Vector3, material: Material, parent: Node3D = self) -> MeshInstance3D:
+func _box(name: String, size: Vector3, offset: Vector3, material: Material) -> MeshInstance3D:
     var box := BoxMesh.new()
     box.size = size
     var part := MeshInstance3D.new()
@@ -44,7 +44,7 @@ func _box(name: String, size: Vector3, offset: Vector3, material: Material, pare
     part.mesh = box
     part.material_override = material
     part.position = offset
-    parent.add_child(part)
+    add_child(part)
     detail_count += 1
     return part
 
