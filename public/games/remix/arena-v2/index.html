@@ -690,6 +690,7 @@ body.reduce-motion *,body.reduce-motion *::before,body.reduce-motion *::after { 
           <h2 id="netTitle" data-i18n="netTitle">Сетевая дуэль</h2>
           <p class="subtitle" data-i18n="netLead">Два игрока соревнуются за энергетические ядра. Сервер проверяет движение и очки; одиночный прогресс не меняется.</p>
           <p id="netStorageInfo" class="net-help" role="status" aria-live="polite" data-i18n="netStorageOffline">Серверная база доступна только в сетевой версии.</p>
+          <p id="deploymentBackendNotice" role="status" aria-live="polite" hidden style="border:1px solid #ddac62;border-radius:9px;padding:16px;background:#302519;color:#ffdeab;font-size:15px;line-height:1.6;margin:16px 0;">Сетевой сервер сейчас недоступен. Одиночные арены работают; для регистрации и сетевых дуэлей нужен отдельно запущенный REMIX Gateway.</p>
         </div></div>
         <div class="network-layout">
           <div class="network-stage">
@@ -5584,6 +5585,17 @@ body.reduce-motion *,body.reduce-motion *::before,body.reduce-motion *::after { 
   void refresh();
 })();
 
+</script>
+<script data-remix-static-deploy-probe>
+(()=>{const notice=document.getElementById('deploymentBackendNotice');if(!notice)return;
+  async function check(){const controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),3500);
+    try{const response=await fetch('/healthz',{cache:'no-store',signal:controller.signal});
+      if(!response.ok||!(response.headers.get('content-type')||'').includes('application/json'))throw Error('gateway unavailable');
+      const data=await response.json();if(data.gateway!==true||data.identity?.enabled!==true)throw Error('identity unavailable');
+      notice.hidden=true;
+    }catch{notice.hidden=false;}finally{clearTimeout(timeout);}
+  }check();document.querySelectorAll('[data-page="network"]').forEach(x=>x.addEventListener('click',check));
+})();
 </script>
 </body>
 </html>
