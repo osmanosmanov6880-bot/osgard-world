@@ -6,10 +6,12 @@ const SPRINT_SPEED = 12.0
 const ACCELERATION = 17.0
 const GRAVITY = 24.0
 const JUMP_SPEED = 8.0
+const HORIZON_CITIZEN = preload("res://scripts/horizon_citizen_art.gd")
 
 var active := true
 var camera_heading := 0.0
 var distance_walked := 0.0
+var citizen_visual: Node3D
 
 func _ready() -> void:
 	name = "PlayableCitizen"
@@ -44,6 +46,12 @@ func _ready() -> void:
 	jacket.position.y = 0.27
 	jacket.material_override = _mat(Color("1a364a"))
 	add_child(jacket)
+	# Retain original player collision and legacy nodes for compatibility,
+	# while the original animated silhouette is rendered instead.
+	citizen_visual = HORIZON_CITIZEN.new()
+	add_child(citizen_visual)
+	for old in [body,head,jacket]:
+		old.visible = false
 
 func _mat(color: Color) -> StandardMaterial3D:
 	var material := StandardMaterial3D.new()
@@ -71,5 +79,7 @@ func _physics_process(delta: float) -> void:
 		rotation.y = lerp_angle(rotation.y,atan2(-direction.x,-direction.z),delta * 11.0)
 		distance_walked += delta * Vector2(velocity.x,velocity.z).length()
 	move_and_slide()
+	if citizen_visual != null:
+		citizen_visual.call("animate_walk",Vector2(velocity.x,velocity.z).length(),delta)
 	if position.y < -20:
 		global_position = Vector3(-112,1.2,-104)
