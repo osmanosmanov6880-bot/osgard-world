@@ -186,8 +186,8 @@ func _update_cargo_physics() -> void:
 	car.cargo_fuel_factor = 1.0+float(weight)*0.006
 
 func _save_positions() -> void:
-	var p := player.global_position
-	var v := car.global_position
+	var p: Vector3 = player.global_position
+	var v: Vector3 = car.global_position
 	GameState.data["player_position"] = [p.x,p.y,p.z]
 	GameState.data["vehicle_position"] = [v.x,v.y,v.z]
 	GameState.data["vehicle_heading"] = car.rotation.y
@@ -729,7 +729,7 @@ func _interact_city_case() -> void:
 	hud.show_city_case()
 
 func _buy_market() -> void:
-	var point := car.global_position if driving else player.global_position
+	var point: Vector3 = car.global_position if driving else player.global_position
 	if world.closest_location(point,29.0) != "market":
 		hud.announce(hud.t("too_far"))
 		return

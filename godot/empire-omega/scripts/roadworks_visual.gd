@@ -5,7 +5,8 @@ const MOBILITY = preload("res://scripts/city_mobility.gd")
 var markers: Dictionary = {}
 
 func _ready() -> void:
-	sync_state(GameState.data)
+	var simulation: Variant = get_node_or_null('/root/GameState')
+	if simulation != null: sync_state(simulation.data)
 
 func _paint(color: Color) -> StandardMaterial3D:
 	var material := StandardMaterial3D.new()

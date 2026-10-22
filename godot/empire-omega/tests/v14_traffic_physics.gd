@@ -49,6 +49,7 @@ func _run() -> void:
 		await physics_frame
 	check(traffic.travelled_metres>3.0,"vehicle moved on route")
 	check(traffic.global_position.z>-27.0,"vehicle did not pass through blocked lane")
+	print("TRAFFIC DIAGNOSTICS: speed=%.3f stopped=%.3f z=%.3f distance=%.3f" % [traffic.speed,traffic.stopped_seconds,traffic.global_position.z,traffic.travelled_metres])
 	check(traffic.speed<1.5,"vehicle braked to a stop")
 	check(traffic.stopped_seconds>0.5,"vehicle remained stopped")
 	var citizen = PEDESTRIAN.new()

@@ -39,7 +39,8 @@ func _ready() -> void:
 		crystal.material_override = material
 		monument.add_child(crystal)
 		monuments[str(site["id"])] = monument
-	sync_state(GameState.data)
+	var simulation: Variant = get_node_or_null('/root/GameState')
+	if simulation != null: sync_state(simulation.data)
 
 func sync_state(state: Dictionary) -> void:
 	var completed: Array = state.get("discovered_sites",[])

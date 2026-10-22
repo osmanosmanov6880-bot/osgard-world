@@ -17,9 +17,14 @@ func _ok(condition: bool, label: String) -> void:
 		failures += 1
 
 func _run() -> void:
-	GameState.data = GameState.new_game()
-	var data: Dictionary = GameState.data
-	_ok(GameState._valid_state(data),"new game road state valid")
+	var sim: Variant = root.get_node_or_null("GameState")
+	if sim == null:
+		push_error("GameState autoload is missing")
+		quit(2)
+		return
+	sim.data = sim.new_game()
+	var data: Dictionary = sim.data
+	_ok(sim._valid_state(data),"new game road state valid")
 	_ok(int(data["road_quality"]) == 75,"road health initialized")
 	_ok(MOBILITY.catalog().get("incidents",[]).size() == 12,"12 incidents loaded from JSON")
 	var incident: Dictionary = MOBILITY.active_incidents(data)[0]
@@ -36,29 +41,29 @@ func _run() -> void:
 	var materials: int = int(data["inventories"]["materials"])
 	var wallet: int = int(data["wallet"])
 	var freight_before: float = MOBILITY.freight_efficiency(data)
-	_ok(GameState.repair_road(id),"first repair allowed")
+	_ok(sim.repair_road(id),"first repair allowed")
 	_ok(int(data["treasury"]) == treasury-120,"cash deducted from treasury")
 	_ok(int(data["inventories"]["materials"]) == materials-6,"materials deducted")
 	_ok(int(data["wallet"]) == wallet,"private wallet unaffected")
-	_ok(not GameState.repair_road(id),"cannot collect repair twice")
+	_ok(not sim.repair_road(id),"cannot collect repair twice")
 	_ok(MOBILITY.freight_efficiency(data) > freight_before,"repair improves logistics")
 	var fixed: Array[Vector3] = MOBILITY.find_route(start,end,data)
 	_ok(MOBILITY.length(fixed) + 1.0 < detour,"repaired edge shortens route")
-	_ok(GameState.maintain_roads(),"preventive repair available")
+	_ok(sim.maintain_roads(),"preventive repair available")
 	_ok(int(data["road_quality"]) == 92,"infrastructure health updated")
-	_ok(not GameState.maintain_roads(),"no extra free actions")
-	_ok(GameState._valid_state(data),"modified state validates")
-	var json_state: Variant = JSON.parse_string(JSON.stringify(GameState._save_state_payload()))
-	_ok(json_state is Dictionary and GameState._valid_state(json_state["state"]),"roundtrip road data valid")
+	_ok(not sim.maintain_roads(),"no extra free actions")
+	_ok(sim._valid_state(data),"modified state validates")
+	var json_state: Variant = JSON.parse_string(JSON.stringify(sim._save_state_payload()))
+	_ok(json_state is Dictionary and sim._valid_state(json_state["state"]),"roundtrip road data valid")
 	var malformed: Dictionary = data.duplicate(true)
 	malformed["roads_cleared"] = ["made_up_edge"]
-	_ok(not GameState._valid_state(malformed),"unknown repairs rejected")
+	_ok(not sim._valid_state(malformed),"unknown repairs rejected")
 	malformed["roads_cleared"] = [id,id]
-	_ok(not GameState._valid_state(malformed),"repeated repairs rejected")
+	_ok(not sim._valid_state(malformed),"repeated repairs rejected")
 	# Complete turn should remove the transient traffic block clearing record.
-	_ok(GameState.advance_turn(),"economic turn advances")
+	_ok(sim.advance_turn(),"economic turn advances")
 	_ok(data["roads_cleared"].is_empty(),"repair expires after turn")
-	_ok(GameState._valid_state(data),"post-turn road state valid")
+	_ok(sim._valid_state(data),"post-turn road state valid")
 	var visual: Node3D = ROADWORKS.new()
 	root.add_child(visual)
 	await process_frame

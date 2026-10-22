@@ -30,12 +30,14 @@ func _ready() -> void:
 	_refresh_schedule()
 
 func _refresh_schedule() -> void:
-	var day_clock: float = float(GameState.data.get("day_clock",8.0))
-	var plan: Dictionary = ROUTINE.plan(citizen_id,day_clock,int(GameState.data.get("unemployment",40)),int(GameState.data["stability"]))
+	var simulation: Variant = get_node_or_null('/root/GameState')
+	if simulation == null: return
+	var day_clock: float = float(simulation.data.get("day_clock",8.0))
+	var plan: Dictionary = ROUTINE.plan(citizen_id,day_clock,int(simulation.data.get("unemployment",40)),int(simulation.data["stability"]))
 	if activity == str(plan["activity"]): return
 	activity = str(plan["activity"])
 	var target: Vector3 = plan["destination"]
-	route = ROUTER.find_route(global_position,target,GameState.data)
+	route = ROUTER.find_route(global_position,target,simulation.data)
 	next_waypoint = 1 if route.size() > 1 else 0
 
 func _yield_to_vehicle() -> bool:

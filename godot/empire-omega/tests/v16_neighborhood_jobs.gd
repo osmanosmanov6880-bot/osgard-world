@@ -16,12 +16,17 @@ func _initialize() -> void:
 	call_deferred("run_tests")
 
 func run_tests() -> void:
+	var sim: Variant = root.get_node_or_null("GameState")
+	if sim == null:
+		push_error("GameState autoload is missing")
+		quit(2)
+		return
 	var catalog: Array = JOBS.catalog()
 	check(catalog.size() == 12,"twelve translated jobs load from JSON")
 	for entry in catalog:
 		check(JOBS._valid_entry(entry),"valid: " + str(entry["id"]))
 	for region in JOBS.REGIONS:
-		var fresh: Dictionary = GameState.new_game()
+		var fresh: Dictionary = sim.new_game()
 		var offered: Dictionary = JOBS.offer(fresh,0,region)
 		check(not offered.is_empty(),"district offer: " + region)
 		check(JOBS.accept(fresh,0,region),"accept resident's request")
@@ -45,25 +50,25 @@ func run_tests() -> void:
 		check(int(fresh["wallet"]) == wallet_start-int(offered["supply_cost"])+int(offered["reward"]),"exact money conserved for one contract")
 		check(int(fresh["neighborhood_completed"]) == 1,"completed counter only once")
 		check(JOBS.interact(fresh,destination,true,true,0.0) == "not_active","cannot collect the same reward again")
-		check(JOBS.valid(fresh) and GameState._valid_state(fresh),"entire save validates after delivery")
+		check(JOBS.valid(fresh) and sim._valid_state(fresh),"entire save validates after delivery")
 		var json_copy: Variant = JSON.parse_string(JSON.stringify(fresh))
-		check(json_copy is Dictionary and GameState._valid_state(json_copy),"JSON round trip validates")
-		var legacy: Dictionary = GameState.new_game()
+		check(json_copy is Dictionary and sim._valid_state(json_copy),"JSON round trip validates")
+		var legacy: Dictionary = sim.new_game()
 		for field in ["neighborhood_active","neighborhood_history","neighborhood_completed","neighborhood_last_turn"]:
 			legacy.erase(field)
-		check(GameState._valid_state(legacy),"previous v4 snapshot remains accepted")
-		var restored: Dictionary = GameState._upgrade_state(legacy)
+		check(sim._valid_state(legacy),"previous v4 snapshot remains accepted")
+		var restored: Dictionary = sim._upgrade_state(legacy)
 		check(JOBS.valid(restored),"previous snapshot receives neutral defaults")
-	var failing: Dictionary = GameState.new_game()
+	var failing: Dictionary = sim.new_game()
 	check(JOBS.accept(failing,2,"forum"),"accept expiring request")
 	failing["turn"] = int(failing["neighborhood_active"]["due_turn"])+1
 	check(JOBS.expire(failing) != "","expired request consumed")
 	check(JOBS.expire(failing) == "","no duplicate expiration")
 	check(int(failing["neighborhood_history"][0]["reward"]) == 0,"no payout on expiration")
-	check(GameState._valid_state(failing),"expired-state save validates")
-	var corrupt: Dictionary = GameState.new_game()
+	check(sim._valid_state(failing),"expired-state save validates")
+	var corrupt: Dictionary = sim.new_game()
 	check(JOBS.accept(corrupt,0,"forum"),"accept for tampering validation")
 	corrupt["neighborhood_active"]["id"] = "../not-a-job"
-	check(not GameState._valid_state(corrupt),"reject invalid job identifier in save")
+	check(not sim._valid_state(corrupt),"reject invalid job identifier in save")
 	print("Native neighborhood acceptance: %d checks, %d failures" % [assertions,failures])
 	quit(0 if failures == 0 else 1)

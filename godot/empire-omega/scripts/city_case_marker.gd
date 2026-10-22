@@ -35,7 +35,8 @@ func _ready() -> void:
 	inscription.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	inscription.no_depth_test = true
 	add_child(inscription)
-	sync_state(GameState.data)
+	var simulation: Variant = get_node_or_null('/root/GameState')
+	if simulation != null: sync_state(simulation.data)
 
 func sync_state(state: Dictionary) -> void:
 	var case: Dictionary = CASES.current(state)
@@ -45,7 +46,9 @@ func sync_state(state: Dictionary) -> void:
 	if not visible: return
 	var at: Vector3 = SITE_POSITIONS[place]
 	position = at + Vector3(0.0,36.0,0.0)
-	inscription.text = str(case["title"].get(GameState.locale,case["title"]["ru"])) + "\n[C]"
+	var simulation: Variant = get_node_or_null('/root/GameState')
+	var locale: String = str(simulation.locale) if simulation != null else "ru"
+	inscription.text = str(case["title"].get(locale,case["title"]["ru"])) + "\n[C]"
 
 func _process(delta: float) -> void:
 	pulse_time += delta
