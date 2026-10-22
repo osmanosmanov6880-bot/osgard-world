@@ -81,6 +81,7 @@ assert.ok(premiumJS.includes("futureCoverage") && premiumJS.includes("showHints:
 assert.ok(premiumCSS.includes("v25 THERMAL RESCUE") && premiumCSS.includes(".premium-district.is-cooled"), "v25 accessibility and task states")
 assert.ok(premiumJS.includes('premiumMobilePlace') && premiumJS.includes('premiumMobileScore'), 'Mobile in-map placement and live goal meter are required')
 assert.ok(premiumCSS.includes('mobile GAME FIRST') && premiumCSS.includes('.premium-mode .stage{order:-2'), 'Game must appear before long explanations on phones')
+assert.ok(!premiumCSS.includes('.z9-keyboard-controls{display:none!important}'), 'Accessible mobile arrow controls must remain visible when WebGL is unavailable')
 new vm.Script(premiumJS, { filename: 'zion-premium.js' })
 
 
