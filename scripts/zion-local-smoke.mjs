@@ -223,3 +223,37 @@ if (process.env.ZION_BASE_URL) {
   }
 }
 console.log('PASS local ZION release: 19 unique catalog entries; 11 complete local worlds; RU default/EN choice; dependency closure; exact format and persistence disclosures; reset-race fixes; INHERIT history returns to the present without changing saved world data; actual keyboard, win/loss/reset behavior in the lightweight renderer. GPU rendering and visual layout require browser QA.')
+
+
+// ZION-030 OPEN CITY v27: inspect actual source and gameplay contracts.
+{
+  const js = text(resolve(root, 'queue/ZION-030/open-city.js'))
+  const css = text(resolve(root, 'queue/ZION-030/open-city.css'))
+  new vm.Script(js, { filename: 'zion-open-city.js' })
+  assert.ok(shade.includes('open-city.js?v=27') && shade.includes('open-city.css?v=27'), 'Open City must be loaded on the published game')
+  assert.ok(js.includes('new THREE.WebGLRenderer') && js.includes('new THREE.PerspectiveCamera'), 'Open City needs a real perspective WebGL engine')
+  assert.ok(js.includes('game().place(near.x, near.z, s.selected)'), 'New walk mode must use the authoritative original mission state')
+  assert.ok(js.includes("keys.has('KeyW')") && js.includes('joystick.pointer'), 'Keyboard and touch movement must be implemented')
+  assert.ok(js.includes('collides(nx, player.z)') && js.includes('collides(player.x, nz)'), 'Walk mode requires city collisions')
+  assert.ok(js.includes('world.gpuScale') && js.includes('renderer.shadowMap.enabled'), 'Quality and adaptive performance are required')
+  assert.ok(css.includes('.oc-stage-active') && css.includes('.oc-joystick'), 'Fullscreen and touch styles are required')
+  assert.ok(css.includes('prefers-reduced-motion'), 'Reduced-motion accessibility is required')
+  const hot = [[-4, -3], [2, 2], [4, -2]]
+  const random = (x, z) => { const n = Math.sin(x * 127.1 + z * 311.7 + 74.7) * 43758.5453; return n - Math.floor(n) }
+  const blocks = new Set()
+  for (let x = -6; x <= 6; x++) for (let z = -6; z <= 6; z++) {
+    if (Math.abs(x) <= 2 && Math.abs(z) <= 2) continue
+    if (hot.some(([hx, hz]) => Math.hypot(hx - x, hz - z) < 1.55)) continue
+    if (random(x, z) >= .49) blocks.add(x + ',' + z)
+  }
+  const reached = new Set(['0,0']), queue = [[0, 0]]
+  while (queue.length) {
+    const [x, z] = queue.shift()
+    for (const [dx, dz] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) {
+      const nx = x + dx, nz = z + dz, key = nx + ',' + nz
+      if (Math.abs(nx) > 7 || Math.abs(nz) > 7 || blocks.has(key) || reached.has(key)) continue
+      reached.add(key); queue.push([nx, nz])
+    }
+  }
+  assert.ok(hot.every(([x, z]) => reached.has(x + ',' + z)), 'Every mission hotspot must be reachable on foot')
+}
