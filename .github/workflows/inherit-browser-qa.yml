@@ -54,6 +54,11 @@ jobs:
         env:
           OSGARD_ENABLE_SWIFTSHADER: "1"
         run: npx playwright test --config playwright.ecosystem.config.mjs --grep "INHERIT R16" --workers 1
+      - name: Record real-Chrome CPU and WebGL performance evidence
+        env:
+          OSGARD_ENABLE_SWIFTSHADER: "1"
+          OSGARD_BENCHMARK_OUTPUT: "browser-report/inherit-r17-performance.json"
+        run: node scripts/inherit-hardware-benchmark.mjs --serve --swiftshader --require-webgl
       - name: Retain real interaction screenshots and traces
         if: always()
         uses: actions/upload-artifact@v4
