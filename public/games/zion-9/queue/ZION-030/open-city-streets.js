@@ -200,7 +200,7 @@
         const g=new THREE.PlaneGeometry(.54,.145);
         const uv=g.attributes.uv;
         for(let j=0;j<uv.count;j++){
-          uv.setXY(j,(i%4+uv.getX(j))/4,(1-Math.floor(i/4)-1+uv.getY(j))/2);
+          uv.setXY(j,(i%4+uv.getX(j))/4,(1-Math.floor(i/4)+uv.getY(j))/2);
         }
         uv.needsUpdate=true;
         allGeos.push(g);
