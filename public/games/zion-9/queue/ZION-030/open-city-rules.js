@@ -58,7 +58,7 @@
       if (origin === dest) { found = true; break; }
       for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
         const nx = p.x + dx, nz = p.z + dz, next = key(nx, nz);
-        if (prev.has(next) || blocked(nx, nz)) continue;
+        if (prev.has(next) || Math.abs(nx) > 19 || Math.abs(nz) > 19 || buildingAt(nx, nz)) continue;
         prev.set(next, origin); queue.push({ x: nx, z: nz });
       }
     }
