@@ -1,14 +1,11 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {createRequire} from 'node:module';
 import vm from 'node:vm';
-const require=createRequire(import.meta.url);
 const dir='public/games/inherit/';
 const read=(name)=>readFileSync(dir+name,'utf8');
-require('../public/games/inherit/legacy-engine.js');
-require('../public/games/inherit/story-engine.js');
-require('../public/games/inherit/world-cycle-engine.js');
-const core=require('../public/games/inherit/world-alive-engine.js');
+const runtime={};runtime.window=runtime;
+for(const file of ['legacy-engine.js','story-engine.js','world-cycle-engine.js','world-alive-engine.js'])vm.runInNewContext(read(file),runtime,{filename:file});
+const core=runtime.InheritWorldAliveEngine;
 const html=read('index.html'),js=read('world-alive-ui.js'),css=read('world-alive.css'),sw=read('sw.js');
 let n=0;
 function test(label,callback){callback();n++;console.log('PASS',label)}
@@ -18,7 +15,7 @@ test('New UI and engine parse without external dependencies',()=>{
  new vm.Script(js);
 });
 test('Blank world shows genuine zero counts and three unearned goals',()=>{
- const a=core.summarize(first,globalThis);
+ const a=core.summarize(first,runtime);
  assert.equal(a.generation,173);assert.equal(a.objects,0);assert.equal(a.connections,0);
  assert.equal(a.completed,0);assert.equal(a.goalCount,3);assert.equal(a.readonly,false);
  assert.equal(a.season,'sun');
@@ -27,7 +24,7 @@ test('Real nearby path and light produce a genuine combination',()=>{
  const placed=[{tool:'path',x:44,y:42},{tool:'light',x:50,y:45}];
  const world={...first,budget:98,objects:placed,pending:placed,changes:['path','light']};
  const before=JSON.stringify(world);
- const a=core.summarize(world,globalThis);
+ const a=core.summarize(world,runtime);
  assert.equal(a.objects,2);assert.equal(a.connections,1);assert.equal(a.completed,3);
  assert.equal(a.goals.every(g=>g.done),true);assert.equal(a.readonly,false);
  assert.equal(JSON.stringify(world),before,'Summary must not mutate a stored game world');
@@ -35,24 +32,24 @@ test('Real nearby path and light produce a genuine combination',()=>{
 test('A matching pair far apart is not a connection',()=>{
  const far={...first,budget:98,objects:[{tool:'path',x:10,y:15},{tool:'light',x:88,y:75}],
    pending:[{type:'path',x:10,y:15},{type:'light',x:88,y:75}]};
- const a=core.summarize(far,globalThis);
+ const a=core.summarize(far,runtime);
  assert.equal(a.connections,0);assert.equal(a.completed,2);
 });
 test('An inherited pair is not falsely credited as a new chapter goal',()=>{
  const saved={...first,budget:100,objects:[{tool:'path',x:44,y:42},{tool:'light',x:50,y:45}],pending:[]};
- const a=core.summarize(saved,globalThis);
+ const a=core.summarize(saved,runtime);
  assert.equal(a.connections,1);assert.equal(a.completed,0);
 });
 test('Generation change recalculates real chapter and season',()=>{
- const next=core.summarize({...first,generation:174},globalThis);
+ const next=core.summarize({...first,generation:174},runtime);
  assert.equal(next.chapter,'haven');assert.equal(next.season,'wind');
  assert.equal(next.completed,0);
 });
 test('Invalid or truncated saved world fails safely',()=>{
- const invalid=core.summarize({generation:-2,budget:5,objects:[]},globalThis);
+ const invalid=core.summarize({generation:-2,budget:5,objects:[]},runtime);
  assert.equal(invalid.readonly,true);assert.equal(invalid.validWorld,false);
  assert.equal(invalid.next,null);
- const corrupted=core.summarize({generation:173,budget:100,objects:[{tool:'unknown',x:1,y:2}],pending:[{tool:'unknown',x:1,y:2}]},globalThis);
+ const corrupted=core.summarize({generation:173,budget:100,objects:[{tool:'unknown',x:1,y:2}],pending:[{tool:'unknown',x:1,y:2}]},runtime);
  assert.equal(corrupted.readonly,true);
 });
 test('Legacy core goals and optics use the existing real engines',()=>{
