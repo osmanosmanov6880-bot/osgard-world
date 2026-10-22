@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react'
 import './omegaWorld.css'
+import './developmentSignature.css'
 import { cases } from './redesignCatalog'
 import { BrandMark } from './BrandMark'
 import { formatEnquiry, validateEnquiry } from './projectEnquiry'
@@ -85,22 +86,51 @@ export default function WorldHome({ development = false }: { development?: boole
     } catch { setError('Не удалось создать файл. Скопируйте описание задачи и отправьте его на указанный адрес.') }
   }
 
-  return <main className={development ? 'world-home brand-container' : 'world-home brand-container world-command'}>
+  return <main className={development ? 'world-home brand-container development-signature' : 'world-home brand-container world-command'}>
     {development ? <>
-      <section className="omega-dev-hero" aria-labelledby="world-title">
-        <div className="omega-dev-hero-art" aria-hidden="true"><img src="/brand/omega-development.svg" width="1600" height="1000" alt="" decoding="async" /><span className="omega-dev-orbit omega-dev-orbit-a"/><span className="omega-dev-orbit omega-dev-orbit-b"/></div>
-        <div className="omega-dev-intro">
-          <p className="brand-eyebrow">OSGARD / DEVELOPMENT / DIGITAL ENGINEERING</p>
-          <h1 id="world-title">СОЗДАЁМ<br/><span>ЦИФРОВЫЕ</span><br/>РЕШЕНИЯ.</h1>
-          <p className="brand-lead">Проектируем интерфейсы и цифровые продукты — от первых сценариев до проверяемых демонстраций. Смотрите реальные кейсы, возможности и текущую стадию каждого проекта.</p>
-          <div className="brand-actions"><a className="brand-button primary" href="#cases">Смотреть проекты <span aria-hidden="true">↗</span></a><a className="brand-button" href="#contact">Обсудить разработку <span aria-hidden="true">→</span></a></div>
-          <p className="brand-meta">СТРАТЕГИЯ / ПРОТОТИП / ИНТЕРФЕЙС / ЗАПУСК</p>
+      <section className="omega-dev-hero signature-hero" aria-labelledby="world-title">
+        <div className="omega-dev-hero-art" aria-hidden="true">
+          <img src="/brand/omega-development.svg" width="1600" height="1000" alt="" decoding="async" />
+          <span className="omega-dev-orbit omega-dev-orbit-a" />
+          <span className="omega-dev-orbit omega-dev-orbit-b" />
         </div>
-        <div className="omega-dev-console" aria-label="Принцип работы студии">
-          <span>OSGARD ENGINEERING / 001</span>
-          <strong>От идеи — к работающему сценарию.</strong>
-          <p>Технология ценна, когда результат можно открыть, попробовать и проверить.</p>
-          <a href="#approach">Как мы работаем <span aria-hidden="true">↘</span></a>
+        <div className="omega-dev-intro signature-intro">
+          <p className="brand-eyebrow">OSGARD / DEVELOPMENT / DIGITAL CRAFT</p>
+          <h1 id="world-title">СОЗДАЁМ<br /><span>ЦИФРОВЫЕ</span><br />РЕШЕНИЯ.</h1>
+          <p className="brand-lead">От первых сценариев до открытых демонстраций. Показываем настоящие интерфейсы, рабочие действия и честный статус каждого проекта.</p>
+          <div className="brand-actions signature-hero-actions">
+            <a className="brand-button primary" href="#cases">Смотреть проекты <span aria-hidden="true">↗</span></a>
+            <a className="brand-button signature-secondary" href="#contact">Обсудить разработку <span aria-hidden="true">→</span></a>
+          </div>
+          <div className="signature-hero-facts" aria-label="Принципы разработки">
+            <span><strong>{cases.length}</strong><small>публичных кейса</small></span>
+            <span><strong>UX → CODE</strong><small>дизайн и реализация</small></span>
+            <span><strong>OPEN DEMOS</strong><small>посмотрите сами</small></span>
+          </div>
+          <p className="signature-caption">ПРОТОТИПЫ · КОНФИГУРАТОРЫ · ЦИФРОВЫЕ ПРОДУКТЫ</p>
+        </div>
+        <div className="signature-showcase" aria-label="Демонстрация работ студии">
+          <div className="signature-showcase-top"><span>SELECTED WORK / 2026</span><span>01 — 03 / 04</span></div>
+          <a className="signature-featured-case" href={cases[1].href}>
+            <div className="signature-featured-image">
+              <img src={cases[1].art} width="1200" height="800" alt={'Скриншот открытого проекта ' + cases[1].name}
+                decoding="async" fetchPriority="high" />
+              <span>{cases[1].type} / 02</span>
+            </div>
+            <div className="signature-featured-copy">
+              <div><small>АРХИТЕКТУРА / КОНФИГУРАТОР</small><strong>{cases[1].name}</strong></div>
+              <span>Открыть кейс <b aria-hidden="true">↗</b></span>
+            </div>
+          </a>
+          <div className="signature-case-pair" aria-label="Другие проекты">
+            {[cases[0],cases[2]].map((item) => <a key={item.id} href={item.href}>
+              <img src={item.art} alt={'Скриншот проекта ' + item.name} width="380" height="255"
+                loading="lazy" decoding="async" />
+              <span><small>{item.type}</small><strong>{item.name}</strong></span>
+              <b aria-hidden="true">↗</b>
+            </a>)}
+          </div>
+          <p className="signature-showcase-note">Снимки публичных страниц. Демо не подтверждает работу серверов, продаж или коммерческий запуск.</p>
         </div>
       </section>
       <section id="products" className="brand-section omega-dev-capabilities" aria-labelledby="dev-capabilities-title">
