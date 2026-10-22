@@ -7,6 +7,7 @@ test('Academy learning cockpit displays real beginner progress with meaningful r
   await expect(page.locator('h1')).toHaveCount(1)
   const cockpit = page.locator('.academy-learning-console')
   await expect(cockpit).toBeVisible()
+  await expect(page.locator('main.academy-home')).toHaveAttribute('lang', 'ru')
   await expect(page.getByRole('navigation', { name: 'Продукты OSGARD' })).toBeVisible()
   await expect(page.getByRole('navigation', { name: 'Продукты OSGARD' }).getByRole('link')).toHaveCount(4)
   await expect(page.getByRole('navigation', { name: 'Разделы академии' })).toHaveCount(0)
