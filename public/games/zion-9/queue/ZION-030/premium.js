@@ -4,6 +4,7 @@
 const $=id=>document.getElementById(id);
 const game=()=>window.ZION030_GAME;
 const hot=[{x:-4,z:-3,temp:58},{x:2,z:2,temp:56},{x:4,z:-2,temp:54}];
+const districtNames=['ЖИЛОЙ ДВОР','ГОРОДСКАЯ ПЛОЩАДЬ','ШКОЛЬНЫЙ МАРШРУТ'];
 const names={tree:"Городское дерево",shade:"Охлаждающий навес",water:"Дождевой сад"};
 const desc={tree:"Создаёт тень и охлаждает пространство.",shade:"Затеняет поверхность и снижает нагрев.",water:"Растения и вода охлаждают город."};
 const symbols={
@@ -23,6 +24,8 @@ const left=element('aside','premium-mission',`<div class="mission-loc"><span>⌖
 <section class="mission-block"><h2><span class="cyan">◎</span> ТВОЯ ЗАДАЧА</h2><p>Охлади <b>все три красные точки</b>. У тебя только <b>три модуля</b>.</p></section>
 <section class="mission-block"><h2>ТВОЙ ПРОГРЕСС</h2><div class="premium-progress"><div id="premiumRing" class="ring" aria-hidden="true"></div><div><strong id="premiumProgress">0 / 3</strong><small>Зон охлаждено</small></div></div></section>`);
 layout.insertBefore(left,stage);
+const districts=element('section','premium-districts','<h2>◎ ТРИ ГОРЯЧИЕ ЗОНЫ</h2><p>Нажми на район, чтобы выбрать точку охлаждения.</p><div id="premiumDistrictRows" class="premium-district-rows"></div><button type="button" id="premiumShowHints" class="premium-hint-button" aria-pressed="false">◈ ПОКАЗАТЬ ПОДХОДЯЩИЕ КЛЕТКИ</button>');
+left.append(districts);
 const toolList=panel.querySelector('.modules');
 const heading=panel.querySelector('h2');
 if(heading)heading.textContent='♧  ВЫБЕРИ ИНСТРУМЕНТ';
@@ -51,6 +54,13 @@ stage.append(zoomCtrl);
 const canvas=document.createElement('canvas');canvas.id='premiumCity';canvas.className='premium-city';canvas.tabIndex=0;
 canvas.setAttribute('role','application');canvas.setAttribute('aria-label','Интерактивный изометрический квартал. Клик выберет клетку, кнопка размещения установит модуль.');
 stage.append(canvas);
+const districtButtons=[];
+for(const [i,p] of hot.entries()){
+ const btn=element('button','premium-district','<span class="district-index">0'+(i+1)+'</span><span class="district-info"><strong>'+districtNames[i]+'</strong><small class="district-progress">НУЖНО ОХЛАДИТЬ</small></span><b class="district-temp">'+p.temp+'°</b>');
+ btn.type='button';btn.setAttribute('aria-label','Выбрать район '+districtNames[i]+', '+p.temp+' градусов');
+ btn.addEventListener('click',()=>{select(p.x,p.z);canvas.focus();});
+ $('premiumDistrictRows').append(btn);districtButtons.push(btn);
+}
 const ctx=canvas.getContext('2d',{alpha:false});
 const nav=root.querySelector('header');
 if(nav){nav.classList.add('premium-topbar');const fontToggle=element('button','premium-font-toggle','А+ &nbsp; ЕЩЁ КРУПНЕЕ');fontToggle.type='button';fontToggle.setAttribute('aria-pressed','false');fontToggle.addEventListener('click',()=>{const big=root.classList.toggle('premium-extra-readable');fontToggle.setAttribute('aria-pressed',String(big));fontToggle.textContent=big?'А−  ОБЫЧНЫЙ ТЕКСТ':'А+  ЕЩЁ КРУПНЕЕ';});nav.append(fontToggle);}
@@ -74,8 +84,14 @@ if(buttons[2])buttons[2].textContent='↺ ЗАНОВО';if(buttons[3])buttons[3]
 const foot=panel.querySelector('.footnote');if(foot)foot.textContent='Игра использует условные показатели, а не реальные измерения температуры.';
 const instructions=document.querySelector('#board-controls-help');if(instructions)instructions.textContent='Стрелки — выбор клетки, Enter — размещение, 1–3 — выбор модуля, R — заново. Красные точки: X −4 / Z −3, X 2 / Z 2, X 4 / Z −2.';
 const placeOriginal=$('place-keyboard');if(placeOriginal)placeOriginal.textContent='Разместить здесь';
-const state={mode:'3d',zoom:1,hover:null,cell:{x:0,z:0},hasSelectedPlace:false,scale:1,w:900,h:560,refresh:false};
-root.dataset.premiumVersion='24';
+const state={mode:'3d',zoom:1,hover:null,cell:{x:0,z:0},hasSelectedPlace:false,showHints:false,scale:1,w:900,h:560,refresh:false};
+root.dataset.premiumVersion='25';
+$('premiumShowHints').addEventListener('click',()=>{
+ state.showHints=!state.showHints;const button=$('premiumShowHints');
+ button.setAttribute('aria-pressed',String(state.showHints));
+ button.textContent=state.showHints?'✓ СКРЫТЬ ПОДСКАЗКИ':'◈ ПОКАЗАТЬ ПОДХОДЯЩИЕ КЛЕТКИ';
+ refresh();
+});
 const S=(x,z,h=0)=>{
  if(state.mode==='map'){const u=Math.min(state.w-30,state.h-65)*state.zoom/15;return {x:state.w/2+x*u,y:state.h*.49+z*u-h*u};}
  return {x:state.w*.5+(x-z)*state.scale*1.1,y:state.h*.49+(x+z)*state.scale*.52-h*state.scale*1.63};
@@ -114,7 +130,15 @@ function placeArt(x,z,type){
  }
 }
 function drawBuilding(x,z){
- const b=seed(x,z),height=1+b*3.45;const width=.38+seed(z,x)*.05;
+ const b=seed(x,z),height=.85+b*2.5;const width=.38+seed(z,x)*.05;
+ // True plan view: footprints and rooftops at ground level, not towering 3D facades.
+ if(state.mode==='map'){
+  const nearHot=hot.some(p=>Math.hypot(x-p.x,z-p.z)<3.1);
+  poly(cellCorners(x,z,.03,width),nearHot?'#694b46':'#385264',nearHot?'#f4a26b':'#6b9bb1',1);
+  poly(cellCorners(x,z,.04,width*.77),'#1b3546','#829dac',.8);
+  if(b>.66){const c=S(x,z,0);ctx.strokeStyle='#8cb2c3';ctx.lineWidth=1;ctx.strokeRect(c.x-state.scale*.13,c.y-state.scale*.13,state.scale*.26,state.scale*.26);}
+  return;
+ }
  const base=cellCorners(x,z,0,width),roof=cellCorners(x,z,height,width);
  const isHot=seed(x-11,z+6)>.4;
  const north=isHot?'#765046':'#2d4155',east=isHot?'#4f3435':'#223448';
@@ -162,6 +186,7 @@ function paint(){
    if(isRoad)c=heat?'#92523f':isCool?'#13727a':'#1b3d51';
    poly(cellCorners(x,z,.001,.49),c,'rgba(76,128,151,.22)',.5);
    if(isRoad&&(x+z)%2===0){const lane=S(x,z,.008);circ(lane.x,lane.y,Math.max(.9,state.scale*.065),heat?'#ffb17e':'#83bed1');}
+   if(isRoad&&(x-z)%6===0){const cross=S(x,z,.012);ctx.strokeStyle=heat?'rgba(255,171,104,.38)':'rgba(138,196,219,.34)';ctx.lineWidth=Math.max(1,state.scale*.08);ctx.beginPath();ctx.moveTo(cross.x-3,cross.y-2);ctx.lineTo(cross.x+3,cross.y+2);ctx.stroke();}
    if((x+z)%3===0){const center=S(x,z,.02);circ(center.x,center.y,Math.max(.65,state.scale*.05),'rgba(91,164,192,.45)');}
   }
   for(let x=-7;x<=7;x++){const z=depth-x;if(z< -7||z>7)continue;
@@ -182,11 +207,30 @@ function paint(){
   ctx.strokeStyle=covered?'#72ffe3':'#ffa36b';ctx.lineWidth=2.5;ctx.stroke();
   circ(c.x,c.y,Math.max(2,state.scale*.12),covered?'#85ffe5':'#ffb088');
  }
- const hover=state.hover||state.cell;
- if(hover){poly(cellCorners(hover.x,hover.z,.06,.5),'rgba(66,222,246,.16)','#a6fcff',2);}
+ // Green points are legal intervention sites near still-hot corridors.
+ if(state.showHints&&!s.won&&!s.lost){
+  for(const p of hot){if(coverage(s,p))continue;
+   for(let dx=-1;dx<=1;dx++)for(let dz=-1;dz<=1;dz++){
+    const x=p.x+dx,z=p.z+dz;
+    if(Math.abs(x)>7||Math.abs(z)>7||Math.hypot(dx,dz)>1.35||building(x,z)||s.placed.some(q=>q.x===x&&q.z===z))continue;
+    const c=S(x,z,.07);circ(c.x,c.y,Math.max(2,state.scale*.19),'rgba(69,255,201,.88)');
+   }
+  }
+ }
+ // Real cooling preview calculated using the exact 1.35-cell game radius.
+ if(state.hasSelectedPlace&&!s.won&&!s.lost){
+  const cell=state.cell,c=S(cell.x,cell.z,.1),blocked=building(cell.x,cell.z)||s.placed.some(q=>q.x===cell.x&&q.z===cell.z);
+  const affected=hot.filter(p=>!coverage(s,p)&&Math.hypot(p.x-cell.x,p.z-cell.z)<=1.35);
+  glowing(c.x,c.y,Math.max(24,state.scale*2.35),blocked?'rgba(255,83,72,.3)':affected.length?'rgba(26,255,198,.35)':'rgba(255,188,68,.26)');
+  ctx.save();ctx.lineWidth=2.5;ctx.setLineDash([7,5]);ctx.strokeStyle=blocked?'#ff695b':affected.length?'#72ffe1':'#ffc371';
+  ctx.beginPath();ctx.ellipse(c.x,c.y,Math.max(13,state.scale*1.42),Math.max(8,state.scale*(state.mode==='map'?1.4:.72)),0,0,Math.PI*2);ctx.stroke();ctx.restore();
+  if(!blocked){ctx.save();ctx.globalAlpha=.56;placeArt(cell.x,cell.z,s.selected);ctx.restore();}
+ }
+ const hover=state.hover||(state.hasSelectedPlace?state.cell:null);
+ if(hover){poly(cellCorners(hover.x,hover.z,.06,.5),'rgba(66,222,246,.14)','#a6fcff',2);}
  const markers=overlay.querySelectorAll('.premium-hot-marker');
  hot.forEach((p,i)=>{
-  const pos=S(p.x,p.z,2.5),covered=coverage(s,p),marker=markers[i];if(!marker)return;
+  const pos=S(p.x,p.z,state.mode==='map'?.15:2.17),covered=coverage(s,p),marker=markers[i];if(!marker)return;
   marker.style.left=pos.x+'px';marker.style.top=pos.y+'px';marker.classList.toggle('cool',covered);
   marker.querySelector('strong').textContent=covered?'✓':p.temp+'°C';
  });
@@ -210,9 +254,17 @@ function refresh(){
   marker.setAttribute('aria-label',(covered?'Охлаждена зона ':'Выбрать горячую зону ')+(i+1)+(covered?'':', '+zone.temp+' градусов'));
   marker.classList.toggle('selected',state.hasSelectedPlace&&!covered&&state.cell.x===zone.x&&state.cell.z===zone.z);
   marker.disabled=covered||s.won||s.lost;
+  const button=districtButtons[i];
+  button.classList.toggle('is-cooled',covered);
+  button.classList.toggle('is-selected',state.hasSelectedPlace&&!covered&&state.cell.x===zone.x&&state.cell.z===zone.z);
+  button.querySelector('.district-progress').textContent=covered?'✓ ОХЛАЖДЕНО':'◉ ТРЕБУЕТ РЕШЕНИЯ';
+  button.querySelector('.district-temp').textContent=covered?'✓':zone.temp+'°';
+  button.disabled=covered||s.won||s.lost;
  }
  const occupied=s.placed.some(p=>p.x===state.cell.x&&p.z===state.cell.z);
- const allowed=s.ready&&state.hasSelectedPlace&&!occupied&&!s.won&&!s.lost;
+ const physicallyBlocked=building(state.cell.x,state.cell.z);
+ const allowed=s.ready&&state.hasSelectedPlace&&!occupied&&!physicallyBlocked&&!s.won&&!s.lost;
+ const futureCoverage=allowed?hot.filter(p=>!coverage(s,p)&&Math.hypot(state.cell.x-p.x,state.cell.z-p.z)<=1.35).length:0;
  $('premiumPlace').disabled=!allowed;
  $('premiumPlace').textContent=s.won?'✓ ГОРОД ОХЛАЖДЁН':s.lost?'↺ НАЧНИ ЗАНОВО':allowed?'✓ РАЗМЕСТИТЬ '+names[s.selected].toUpperCase():'⌖ СНАЧАЛА ВЫБЕРИ МЕСТО';
  for(const [i,step] of [...how.querySelectorAll('.how-step')].entries()){
@@ -225,9 +277,9 @@ function refresh(){
   button.setAttribute('aria-label',(active?'Выбрано: ':'Выбрать: ')+names[button.dataset.type]);
  }
  $('premiumStatusTitle').textContent=s.won?'✓ ПОБЕДА':s.lost?'↺ ПОПРОБУЙ ЕЩЁ РАЗ':allowed?'ШАГ 3 · РАЗМЕСТИ МОДУЛЬ':state.hasSelectedPlace?'ЭТА КЛЕТКА НЕДОСТУПНА':'ШАГ 2 · ВЫБЕРИ МЕСТО';
- $('premiumStatusText').textContent=s.won?'Все три зоны охлаждены!':s.lost?'Модули закончились. Нажми «ЗАНОВО».':occupied?'Клетка уже занята. Нажми на свободную рядом.':state.hasSelectedPlace?'Выбрано: '+names[s.selected]+'. Клетка X '+state.cell.x+' / Z '+state.cell.z+'. Нажми большую кнопку.':'Выбран модуль «'+names[s.selected]+'». Нажми на красную метку в городе.';
+ $('premiumStatusText').textContent=s.won?'Все три зоны охлаждены!':s.lost?'Модули закончились. Нажми «ЗАНОВО».':occupied?'Клетка уже занята. Нажми на свободную рядом.':physicallyBlocked?'Здесь здание. Выбери свободную клетку.':state.hasSelectedPlace?'Выбран '+names[s.selected]+'. Этот ход охладит '+futureCoverage+' новых зон. '+(futureCoverage?'Нажми «Разместить».':'Выбери клетку ближе к красной метке.'):'Выбран модуль «'+names[s.selected]+'». Нажми на красную метку в городе.';
  $('premiumSelectionTitle').textContent=s.won?'✓ МИССИЯ ПРОЙДЕНА':s.lost?'↺ НОВАЯ ПОПЫТКА':allowed?'МЕСТО ВЫБРАНО':'ШАГ 2 ИЗ 3 · НАЙДИ ГОРЯЧУЮ ЗОНУ';
- $('premiumSelectionText').textContent=s.won?'3 / 3 охлаждено':s.lost?'Нажми «ЗАНОВО»':allowed?'X '+state.cell.x+' / Z '+state.cell.z+' · '+names[s.selected]:'Нажми красный маркер на карте';
+ $('premiumSelectionText').textContent=s.won?'3 / 3 охлаждено':s.lost?'Нажми «ЗАНОВО»':allowed?'Охладит зон: '+futureCoverage+' · '+names[s.selected]:'Нажми красный маркер на карте';
  paint();
 }
 function at(clientX,clientY){
