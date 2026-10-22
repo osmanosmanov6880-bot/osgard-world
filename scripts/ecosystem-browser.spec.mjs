@@ -2212,3 +2212,27 @@ test('OSA Evidence Command previews real claim checks and synchronises the full 
   expect(pageErrors).toEqual([])
 })
 
+test('INHERIT R14 keeps native history and inspector reachable with readable gameplay', async ({page}) => {
+  const errors=await prepareStandaloneGame(page);
+  await page.goto('/games/inherit/?lang=ru',{waitUntil:'domcontentloaded'});
+  await expect(page.locator('.living-journey')).toBeVisible();
+  await expect(page.locator('.living-actions-strip .chronicle-button')).toBeVisible();
+  await expect(page.locator('.living-actions-strip .inherit-trace-launcher')).toBeVisible();
+  await expect(page.locator('.living-library-toggle')).toBeVisible();
+  await expect(page.locator('.hero h1')).toContainText('Кто-то проложил путь');
+  const original=await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()));
+  await page.locator('.living-font-toggle').click();
+  await expect(page.locator('body')).toHaveAttribute('data-living-text','large');
+  expect(await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()))).toBe(original);
+  await page.locator('.tool[data-tool=tree]').click();
+  await expect(page.locator('.living-step.is-current .living-step-name')).toContainText('Оставь след');
+  await page.locator('#world').focus();
+  await page.locator('#world').press('Enter');
+  await expect(page.locator('#objects > .placed.tree .living-object-art')).toHaveCount(1);
+  await expect(page.locator('.living-step.is-current .living-step-name')).toContainText('Передай мир');
+  await page.locator('.chronicle-button').click();
+  await expect(page.locator('.chronicle')).toBeVisible();
+  await page.locator('.chronicle .close').click();
+  await expect(page.locator('.chronicle')).toBeHidden();
+  expect(errors).toEqual([]);
+});
