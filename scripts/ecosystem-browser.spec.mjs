@@ -2500,3 +2500,55 @@ test('INHERIT R16 3D controls never cover real Legacy, history or research butto
  }
  expect(errors).toEqual([]);
 });
+
+
+test('INHERIT R17 renders physical materials, living atmosphere, cinematic FX and measured device frames',async({page},info)=>{
+ test.setTimeout(85000);
+ const errors=await prepareStandaloneGame(page);
+ await page.emulateMedia({reducedMotion:'no-preference'});
+ await page.goto('/games/inherit/?lang=ru',{waitUntil:'domcontentloaded'});
+ const api=page.evaluate(()=>window.InheritAAA3D.getState());
+ const before=JSON.stringify(await page.evaluate(()=>window.InheritGame.snapshot()));
+ await page.locator('#island').scrollIntoViewIfNeeded();
+ const initial=await api;
+ if(process.env.OSGARD_ENABLE_SWIFTSHADER==='1')expect(initial.available).toBe(true);
+ if(initial.available){
+  await expect.poll(()=>page.evaluate(()=>window.InheritAAA3D.getState().frames),
+   {timeout:19000}).toBeGreaterThan(2);
+  const state=await page.evaluate(()=>window.InheritAAA3D.getState());
+  expect(state.materials).toBeTruthy();
+  expect(state.ambientLife.particles).toBeGreaterThan(0);
+  if(state.quality==='high')expect(state.materials.packs).toBeGreaterThan(3);
+  const first=await page.evaluate(()=>window.InheritAAA3D.getPerformanceReport());
+  expect(first.adapter).toBeTruthy();
+  expect(first.renderer).toBeTruthy();
+  // A setting must change the actual framebuffer pipeline, never saves.
+  await page.locator('.aaa3d-fx').click();
+  const changed=await page.evaluate(()=>window.InheritAAA3D.getState());
+  expect(changed.postFX).not.toBe(state.postFX);
+  await page.locator('.aaa3d-fx').click();
+  await page.locator('.aaa3d-monitor').click();
+  await expect(page.locator('.aaa3d-metrics')).toBeVisible();
+  await page.locator('#island').scrollIntoViewIfNeeded();
+  const measured=await page.evaluate(()=>window.InheritAAA3D.samplePerformance({minFrames:12,maxWaitMs:11000}));
+  expect(measured.intervalSamples).toBeGreaterThan(1);
+  expect(measured.fps).toBeGreaterThan(0);
+  expect(measured.frameIntervalP95Ms).toBeGreaterThan(0);
+  expect(measured.cpuSubmissionP95Ms).toBeGreaterThanOrEqual(0);
+  expect(measured.gpuTimerMs).toBe(null);
+  expect(measured.adapter.model).toBeTruthy();
+  expect(measured.renderer.calls).toBeGreaterThan(0);
+  const payload=JSON.stringify({device:info.project.name,renderer:measured.adapter,
+    metrics:measured,scene:changed},null,2);
+  await info.attach('R17 measured browser performance evidence',
+    {body:Buffer.from(payload),contentType:'application/json'});
+  const shot=info.outputPath('inherit-r17-real-3d-cinematic-'+info.project.name+'.png');
+  await page.screenshot({path:shot,animations:'disabled'});
+  await info.attach('Real INHERIT R17 cinematic scene',{path:shot,contentType:'image/png'});
+ }else{
+  await expect(page.locator('#island')).not.toHaveClass(/aaa3d-active/);
+  await expect(page.locator('.aaa3d-switch')).toBeDisabled();
+ }
+ expect(JSON.stringify(await page.evaluate(()=>window.InheritGame.snapshot()))).toBe(before);
+ expect(errors).toEqual([]);
+});
