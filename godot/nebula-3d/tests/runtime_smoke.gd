@@ -46,6 +46,19 @@ func _run() -> void:
     if not check(hero_r6.fasteners >= 80, "R6 instanced aircraft fasteners absent"):return
     if not check(hero_r6.gun_count == 4, "Four magnetic accelerator barrels required"):return
     if not check(hero_r6.animated_rotors.size() == 3, "Three real internal turbines required"):return
+    var finish_r7 = interceptor.get_node_or_null("R7_PBRSurfaceFinish")
+    if not check(finish_r7 != null, "R7 physical PBR surface details missing"):return
+    if not check(finish_r7.finish_instances >= 340, "R7 batched surface microgeometry missing"):return
+    if not check(finish_r7.optical_sensors == 2, "Player navigation optical sensors missing"):return
+    if not check(finish_r7.decal_count == 2, "Player wing serial insignia missing"):return
+    var fleet_r7 = world.get_node_or_null("CapitalFleetR7")
+    if not check(fleet_r7 != null, "R7 monumental capital fleet missing"):return
+    if not check(fleet_r7.carrier_count == 6, "Expected six true 3D capital ships"):return
+    if not check(fleet_r7.turret_count == 36, "Carrier turret assemblies missing"):return
+    if not check(fleet_r7.engine_count == 24, "Capital ship engines missing"):return
+    if not check(fleet_r7.armor_instances >= 3100, "Instanced capital ship armor details missing"):return
+    if not check(fleet_r7.get_node_or_null("R7_CapitalCarrier_00/CarrierHullCollision") is StaticBody3D,
+        "Hero ship collision volume missing"):return
     var megadocks = world.get_node_or_null("HeroMegadocksR6")
     if not check(megadocks != null, "R6 industrial orbital megadocks absent"):return
     if not check(megadocks.hangar_count == 12, "Twelve curved hangars missing"):return
@@ -85,5 +98,5 @@ func _run() -> void:
     world.ship.take_damage(10.0)
     if not check(world.ship.shield < shield_before,"Damage does not reduce shield"):return
     if not check(previous_credits >= 0,"Invalid credits"):return
-    print("NEBULA_SMOKE_SUCCESS missions=1 upgrades=1 drones=%d premium3d=r6 fins=1440 docks=6 triple-engine=true curved-hangars=12" % world.drones.size())
+    print("NEBULA_SMOKE_SUCCESS missions=1 upgrades=1 drones=%d premium3d=r7 fins=1440 docks=6 carriers=6 gun-batteries=36" % world.drones.size())
     quit(0)

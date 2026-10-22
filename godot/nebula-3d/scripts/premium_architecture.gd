@@ -208,9 +208,35 @@ func _build_station(center: Vector3, tint: Color, index: int) -> void:
         _box(station,pos+Vector3(0,29,0),Vector3(8,58,8),dark)
         _box(station,pos+Vector3(0,59,0),Vector3(10,4.0,10),trim)
         _box(station,pos+Vector3(0,40,0),Vector3(11,2,11),steel)
-    var ring := _ring(station,17.0,0.25,18.0,trim)
-    ring.rotation.x=PI*0.32
-    animated_holos.append(ring)
+    # R7: eliminate the old floating cyan holographic ring.
+    # Replace it with a physical gantry spanning the departure corridor.
+    var framing := _material(Color(0.24, 0.31, 0.34), 0.0, 0.82, 0.42)
+    var signage := _material(Color(0.69, 0.43, 0.19), 0.24, 0.76, 0.36)
+    for side in [-1.0, 1.0]:
+        _box(station, Vector3(side * 26.0, 25.0, -28.0),
+             Vector3(3.8, 42.0, 5.5), dark)
+        _box(station, Vector3(side * 26.0, 33.0, -31.0),
+             Vector3(1.0, 24.0, 1.3), framing)
+        _box(station, Vector3(side * 26.0, 4.3, -28.0),
+             Vector3(8.2, 1.4, 8.5), steel)
+        for tier in 6:
+            _box(station, Vector3(side * 26.0, 12.0 + float(tier) * 5.4, -31.0),
+                 Vector3(4.5, 0.40, 1.5), framing)
+    _box(station, Vector3(0, 47.0, -28.0), Vector3(56.0, 3.0, 6.5), dark)
+    _box(station, Vector3(0, 48.6, -28.0), Vector3(62.0, 0.65, 7.0), steel)
+    _box(station, Vector3(0, 43.2, -31.5), Vector3(24.0, 0.6, 0.8), signage)
+    for j in 7:
+        var x: float = -21.0 + float(j) * 7.0
+        _box(station, Vector3(x, 48.1, -32.3),
+             Vector3(0.6, 3.2, 0.5), framing)
+    # Real maintenance housings and readable low-energy approach lights.
+    for side in [-1.0, 1.0]:
+        for j in 4:
+            var z: float = -8.0 + float(j) * 10.0
+            _box(station, Vector3(side * 38.0, 5.5, z),
+                 Vector3(2.2, 2.3, 4.7), steel)
+            _box(station, Vector3(side * 38.0, 7.0, z),
+                 Vector3(0.9, 0.15, 1.2), signage)
     var label := Label3D.new()
     label.text = "OSGARD // %02d" % (index+1)
     label.font_size = 44
