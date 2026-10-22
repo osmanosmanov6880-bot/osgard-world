@@ -157,3 +157,16 @@ body.living-legacy .world>.objective{background:#0b333acc;border-radius:12px}
 @media(prefers-reduced-motion:reduce){
  body.living-legacy *,body.living-legacy *:before,body.living-legacy *:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
 }
+
+/* Mobile game-first composition: real island controls must be in view on entry.
+ * Secondary research, help and the action rail follow the playable scene.
+ * DOM state/handlers and island placement geometry remain unchanged. */
+@media(max-width:740px){
+ body.living-legacy .app{display:flex;flex-direction:column}
+ body.living-legacy .app>header{order:0;flex:0 0 auto}
+ body.living-legacy .app>#world{order:1;flex:0 0 auto}
+ body.living-legacy .app>.living-journey{order:2;flex:0 0 auto}
+ body.living-legacy .app>.dock{order:3;flex:0 0 auto}
+ body.living-legacy .app>.living-actions-strip{order:4;flex:0 0 auto}
+ body.living-legacy .app>.inherit-guide{order:5;flex:0 0 auto}
+}
