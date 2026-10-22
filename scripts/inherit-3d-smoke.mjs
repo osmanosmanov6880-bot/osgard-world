@@ -7,7 +7,7 @@ import * as THREE from 'three';
 import {makeTrace,disposeTraces,premiumAssetsInfo} from './inherit-3d/trace-models.mjs';
 const get=path=>readFileSync(path,'utf8');
 const root='public/games/inherit/';
-const src=['scripts/inherit-3d/aaa-three-entry.mjs','scripts/inherit-3d/world-geometry.mjs','scripts/inherit-3d/trace-models.mjs','scripts/inherit-3d/premium-sculptures.mjs','scripts/inherit-3d/terrain-core.mjs'];
+const src=['scripts/inherit-3d/aaa-three-entry.mjs','scripts/inherit-3d/world-geometry.mjs','scripts/inherit-3d/trace-models.mjs','scripts/inherit-3d/premium-sculptures.mjs','scripts/inherit-3d/artifact-atelier.mjs','scripts/inherit-3d/terrain-core.mjs'];
 const index=get(root+'index.html'),css=get(root+'aaa-3d.css'),sw=get(root+'sw.js'),
   entry=get(src[0]),world=get(src[1]),props=get(src[2]),pkg=JSON.parse(get('package.json'));
 let total=0;const check=(title,fn)=>{fn();console.log('PASS',title);total++};
@@ -48,8 +48,14 @@ check('All 10 new premium sculptures produce distinct finite high-detail 3D geom
  assert.deepEqual(info.quality,['high','medium']);
  assert.ok(info.materials>=25);
  assert.equal(info.bumpTextures,3);
+ assert.equal(info.normalTextures,3);
+ assert.equal(info.roughnessTextures,3);
  assert.equal(info.batched,true);
  assert.equal(info.externalAssets,0);
+ const premium=get('scripts/inherit-3d/premium-sculptures.mjs');
+ assert.match(premium,/microstructure\(height,strength/);
+ assert.match(premium,/normalMap:texture\(normals\)/);
+ assert.match(premium,/roughnessMap:texture\(roughness\)/);
  disposeTraces(holder);
  assert.equal(holder.children.length,0);
 });
@@ -76,6 +82,20 @@ check('Dense saved worlds choose quality by visible center and cap local point l
 check('Instanced environment includes multi-layer canopies, woodland flora and a real footbridge',()=>{
  for(const term of ['crownsPerTree','branchPerTree','new THREE.InstancedMesh','grassGoal','blossomGoal','plankCount','bridge.add(deck)'])
   assert.ok(world.includes(term),'Missing '+term);
+});
+check('Artifact Atelier has genuinely lit HD geometry and read-only controls',()=>{
+ const atelier=get('scripts/inherit-3d/artifact-atelier.mjs');
+ assert.match(entry,/mountArtifactAtelier\(\{dock:/);
+ for(const word of ['new THREE.WebGLRenderer','new THREE.PerspectiveCamera','new THREE.DirectionalLight',
+  "quality:'high'","makeTrace(type","new THREE.Raycaster","pointermove","aria-haspopup","dialog.showModal","aaa-atelier-close"])
+  assert.ok(atelier.includes(word),'missing 3D studio '+word);
+ assert.doesNotMatch(atelier,/InheritGame\.apply\(|\.saveDraft\(|budget\s*--|fetch\s*\(/);
+ assert.match(atelier,/disposeTraces\(old\)/);
+ assert.ok(index.includes('aaa-atelier.css'));
+ assert.ok(sw.includes('/games/inherit/aaa-atelier.css'));
+ const galleryCSS=get(root+'aaa-atelier.css');
+ assert.ok(galleryCSS.includes('.aaa-atelier-stage'));
+ assert.ok(galleryCSS.includes('@media(max-width:550px)'));
 });
 check('Native game and 3D scene have no new game mutation API',()=>{
  assert.match(entry,/game\.snapshot\(\)/);
