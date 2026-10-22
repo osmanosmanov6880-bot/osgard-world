@@ -7,6 +7,9 @@ const UltraDetail = preload("res://scripts/ultra_detail_kit.gd")
 const HeroDetailV2 = preload("res://scripts/hero_detail_v2.gd")
 const Wave3Foundry = preload("res://scripts/wave3_foundry.gd")
 const Wave4Assets = preload("res://scripts/wave4_assets.gd")
+const Wave5Environment = preload("res://scripts/wave5_environment.gd")
+const Wave5FX = preload("res://scripts/wave5_cinematic_fx.gd")
+const Wave5Profiler = preload("res://scripts/wave5_profiler.gd")
 const CYAN := Color(0.24, 0.83, 1.0)
 const VIOLET := Color(0.64, 0.43, 1.0)
 const MINT := Color(0.37, 1.0, 0.75)
@@ -56,6 +59,8 @@ var polarity_button: Button
 var angle_label: Label
 var steel_texture: Texture2D
 var material_cache: Dictionary = {}
+var wave5_profile: String = "web"
+var wave5_profiler: CanvasLayer
 
 func _ready() -> void:
     steel_texture = _create_brushed_steel_texture()
@@ -66,6 +71,17 @@ func _ready() -> void:
     HeroDetailV2.build(self, core_root, magnet_root, target_root)
     Wave3Foundry.build(self, core_root, magnet_root, target_root)
     Wave4Assets.decorate(magnet_root, target_root)
+    wave5_profile = Wave5FX.initial_profile()
+    var wave5_build := Wave5Environment.new()
+    wave5_build.name = "Wave5DetailedEnvironment"
+    wave5_build.configure(self)
+    add_child(wave5_build)
+    var wave5_environment: WorldEnvironment = get_node_or_null("CinematicEnvironment") as WorldEnvironment
+    Wave5FX.apply(wave5_environment.environment, wave5_profile)
+    wave5_profiler = Wave5Profiler.new()
+    wave5_profiler.name = "Wave5PerformanceProfiler"
+    wave5_profiler.configure("vector-zero", wave5_profile)
+    add_child(wave5_profiler)
     wave3_scanner = magnet_root.get_node_or_null("Wave3MagnetAssembly/RadiationScannerRotor") as Node3D
     _build_ui()
     _load_stage(0)
@@ -504,6 +520,15 @@ func _toggle_camera() -> void:
 func _unhandled_key_input(event: InputEvent) -> void:
     if not event is InputEventKey or not event.pressed or event.echo:
         return
+    if event.keycode == KEY_F8:
+        _wave5_toggle_quality()
+        return
+    if event.keycode == KEY_F9:
+        wave5_profiler.toggle_overlay()
+        return
+    if event.keycode == KEY_F10:
+        wave5_profiler.export_report()
+        return
     match event.keycode:
         KEY_SPACE:
             _primary_action()
@@ -523,6 +548,17 @@ func _unhandled_key_input(event: InputEvent) -> void:
                 launch_angle = minf(70.0, launch_angle + 1.0)
                 _update_controls()
                 _draw_preview()
+
+func _wave5_toggle_quality() -> void:
+    if not Wave5FX.supports_ultra():
+        wave5_profile = "web"
+    elif wave5_profile == "ultra":
+        wave5_profile = "balanced"
+    else:
+        wave5_profile = "ultra"
+    var environment: WorldEnvironment = get_node_or_null("CinematicEnvironment") as WorldEnvironment
+    Wave5FX.apply(environment.environment, wave5_profile)
+    wave5_profiler.set_profile(wave5_profile)
 
 func _physics_process(delta: float) -> void:
     if state != "flying":
