@@ -62,6 +62,7 @@ func update_cues(driving: bool, velocity: float, weather: String, wanted: int = 
 		if driving and engine.stream != null and not engine.playing: engine.play()
 		var desired: float = clampf(-27.0 + absf(velocity)*0.3,-27.0,-16.0) if driving else -65.0
 		engine.volume_db = lerpf(engine.volume_db,desired,0.1)
+		engine.pitch_scale = clampf(0.72 + absf(velocity)*0.025,0.72,1.48) if driving else 0.72
 		if not driving and engine.playing and engine.volume_db < -62.0: engine.stop()
 	if rain != null:
 		var wet: bool = weather == "rain" or weather == "storm"

@@ -5,6 +5,7 @@ extends CharacterBody3D
 signal mileage_changed(meters: float)
 
 const DYNAMICS = preload("res://scripts/driving_dynamics.gd")
+const HORIZON_BODY = preload("res://scripts/horizon_vehicle_art.gd")
 const MAX_FORWARD = 29.0
 const MAX_REVERSE = 9.0
 const ACCELERATION = 9.5
@@ -12,6 +13,7 @@ const BRAKING = 10.5
 const DRAG = 2.4
 
 var driving := false
+var horizon_visual: Node3D
 var wheel_nodes: Array[MeshInstance3D] = []
 var brake_lamp_nodes: Array[MeshInstance3D] = []
 var brake_lights_on := false
@@ -51,6 +53,13 @@ func _ready() -> void:
 	for x in [-0.82,0.82]:
 		_add_part("Headlight",Vector3(0.45,0.22,0.07),Vector3(x,-0.22,-2.63),Color("cbe9dc"),true)
 		_add_part("Taillight",Vector3(0.45,0.22,0.07),Vector3(x,-0.22,2.63),Color("e35d54"),true)
+	# Keep original named prototype nodes for compatibility with existing saves/tests,
+	# but use the original PBR Horizon silhouette and real cylindrical wheels.
+	horizon_visual = HORIZON_BODY.new()
+	add_child(horizon_visual)
+	for part in get_children():
+		if part is MeshInstance3D and (part.name == "LowerChassis" or part.name == "UpperCabin" or part.name == "Windscreen" or part.name == "Wheel"):
+			part.visible = false
 	brake_lights_on = true
 	_set_brake_lights(false)
 
@@ -88,6 +97,8 @@ func apply_variant(id: String) -> void:
 			var material: StandardMaterial3D = (piece.material_override as StandardMaterial3D).duplicate() as StandardMaterial3D
 			material.albedo_color = paint if piece.name == "LowerChassis" else paint.lightened(0.16)
 			piece.material_override = material
+	if horizon_visual != null:
+		horizon_visual.call("set_paint",paint)
 
 func gear_label() -> String:
 	return DYNAMICS.gear(speed)
@@ -96,6 +107,8 @@ func _set_brake_lights(enabled: bool) -> void:
 	if enabled == brake_lights_on:
 		return
 	brake_lights_on = enabled
+	if horizon_visual != null:
+		horizon_visual.call("set_brake_lights",enabled)
 	for lamp in brake_lamp_nodes:
 		var material: StandardMaterial3D = lamp.material_override as StandardMaterial3D
 		if material == null:
@@ -154,6 +167,8 @@ func _physics_process(delta: float) -> void:
 		covered = 0.0
 	mileage += covered
 	var spin: float = covered / 0.44 * signf(speed)
+	if horizon_visual != null:
+		horizon_visual.call("roll_wheels",covered * signf(speed),steering_filter)
 	for wheel in wheel_nodes:
 		wheel.rotate_x(spin)
 		if wheel.position.z < 0.0:

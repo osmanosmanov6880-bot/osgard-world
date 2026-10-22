@@ -286,7 +286,7 @@ func _physics_process(delta: float) -> void:
 		if absf(joystick_x) > 0.18: cam_yaw -= joystick_x * delta * 2.3
 		if absf(joystick_y) > 0.18: cam_pitch = clampf(cam_pitch - joystick_y * delta * 1.6,0.08,1.18)
 	player.camera_heading = cam_yaw
-	var distance := 12.0 if driving else 7.2
+	var distance: float = (12.0 + minf(absf(car.speed)*0.12,3.4)) if driving else 7.2
 	var ideal := focus + Vector3(sin(cam_yaw)*cos(cam_pitch)*distance,sin(cam_pitch)*distance+1.0,cos(cam_yaw)*cos(cam_pitch)*distance)
 	var query := PhysicsRayQueryParameters3D.create(focus,ideal)
 	query.exclude = [player.get_rid(),car.get_rid()]
@@ -296,7 +296,7 @@ func _physics_process(delta: float) -> void:
 	camera.global_position = ideal if GameSettings.reduced_motion else camera.global_position.lerp(ideal,clampf(delta*8.0,0.0,1.0))
 	camera.look_at(focus,Vector3.UP)
 	# Speed-responsive perspective, disabled for players who request less motion.
-	var desired_fov: float = (79.0 + minf(absf(car.speed)*0.25,7.0)) if driving else 76.0
+	var desired_fov: float = (79.0 + minf(absf(car.speed)*0.27,9.0)) if driving else 76.0
 	camera.fov = desired_fov if GameSettings.reduced_motion else lerpf(camera.fov,desired_fov,clampf(delta*2.2,0.0,1.0))
 	var protagonist: Vector3 = car.global_position if driving else player.global_position
 	_tick_driving_trial(delta)

@@ -37,6 +37,7 @@ var window_points: Array[Transform3D] = []
 var facade_windows: MultiMeshInstance3D
 var last_window_mode := -1
 var waypoint_marker: Node3D
+var horizon_scenic: Node3D
 
 func _ready() -> void:
 	rng.seed = 428753
@@ -54,6 +55,9 @@ func _ready() -> void:
 	_create_property_markers()
 	_create_weather_particles()
 	_create_trees()
+	# GPU-instanced scenic art has no colliders and preserves all traffic/missions.
+	horizon_scenic = preload("res://scripts/horizon_roadscape.gd").new()
+	add_child(horizon_scenic)
 	update_development()
 
 func _material(color: Color, metallic: float = 0.0, roughness: float = 0.8, glow: bool = false) -> StandardMaterial3D:
