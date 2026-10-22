@@ -335,3 +335,8 @@ body.oc-body-active{overflow:hidden!important}
   .oc-shell .oc-garage-balance{font-size:11px}
   .oc-shell .oc-garage-options button{min-height:44px}
 }
+
+/* Keep mobile quality/weather controls clear of the camera and GPS buttons. */
+@media(max-width:760px){
+  .oc-shell .oc-status-bar{top:354px;bottom:auto;right:8px}
+}
