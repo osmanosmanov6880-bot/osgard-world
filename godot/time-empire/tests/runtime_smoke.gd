@@ -25,6 +25,13 @@ func _run() -> void:
     game.save_path = SAVE
     root.add_child(game)
     await process_frame
+    _check(game.get_node_or_null("LivingCity/Wave3Metropolis") != null, "WAVE3 physical metropolis authored")
+    _check(game.get_node_or_null("LivingCity/Wave3Metropolis/CivicArrivalPort_00") != null, "precision transit landing port")
+    _check(game.get_node_or_null("LivingCity/ChronoCore/Wave3ChronoEngine/MachinedInductionCrown") is MeshInstance3D, "CNC chronoreactor outer housing")
+    _check(game.get_node_or_null("LivingCity/ChronoCore/Wave3ChronoEngine/ChronoPlantFasteners192") is MultiMeshInstance3D, "energy plant fasteners GPU-instanced")
+    var crown: MeshInstance3D = game.get_node_or_null("LivingCity/ChronoCore/Wave3ChronoEngine/MachinedInductionCrown") as MeshInstance3D
+    _check(crown != null and crown.mesh is ArrayMesh and crown.mesh.surface_get_array_len(0) > 350, "chronoreactor crown is true UV-indexed surface")
+    _check(game.get_node_or_null("LivingCity/Wave3Metropolis/CivicArrivalPort_01/SuspendedRoof") is MeshInstance3D, "transport entrance has structural roof")
     _check(game.get_node_or_null("LivingCity/HeroCitySculpturesV2") != null, "independent sculpted civic geometry kit")
     _check(game.get_node_or_null("LivingCity/ChronoCore/HeroChronoReactorV2/ChronoEnergyHelix_00") is MeshInstance3D, "reactor uses real triangulated helical conductor")
     _check(game.get_node_or_null("LivingCity/HeroCitySculpturesV2/ExpressRailRealTubularMesh") is MeshInstance3D, "high detail elevated transit is curved 3D geometry")
@@ -54,6 +61,7 @@ func _run() -> void:
     _check(game.district_count == 1 and game.production_rate == 5.0, "new district increases production")
     _check(game.get_node_or_null("LivingCity/DistrictPlots/District_01") != null, "building appears in the 3D world")
     _check(game.get_node_or_null("LivingCity/DistrictPlots/District_01/HighDensityDistrict_00") != null, "constructed district has detailed equipment asset")
+    _check(game.get_node_or_null("LivingCity/DistrictPlots/District_01/Wave3UtilityDistrict_00") != null, "new construction places Wave3 power generation equipment")
     _check(game.time_units < before + 10.1 and game.time_units > 0.0, "district cost is deducted")
     var old_mode: bool = game.map_mode
     game._toggle_map()
