@@ -287,7 +287,7 @@ function makeSkiff(q){
 function makeHarbor(q){
  const group=new THREE.Group();group.name='Joined timber quay and coastal objects';
  // Actual shore near x=21, z=9.5. Pier projects into the modeled sea.
- group.position.set(20.8,0,9.5);
+ group.position.set(17.8,0,9.5);
  const deckY=-.86,extent=7.12;
  instanced(group,BASE_BOX,MAT.amberTimber,q.planks,'Individually weathered pier deck planks',(i,d,m)=>{
   const u=i/(q.planks-1),x=.4+extent*u;
@@ -320,7 +320,8 @@ function makeHarbor(q){
  const steps=q.details?9:5;
  for(let i=0;i<steps;i++){
   const u=(i+.5)/steps,x=-2.1+u*2.2;
-  box(group,i%2?MAT.stone:MAT.pale,[x,.16-u*.87,0],[2.4/steps,.21,2.62]);
+  const ground=fieldHeight(15.7,9.5);
+  box(group,i%2?MAT.stone:MAT.pale,[x,ground+(deckY-ground)*u,0],[2.4/steps,.21,2.62]);
  }
  // Harbor lanterns: emissive glass without overloading shadow budget.
  for(const x of [.55,6.7]){
@@ -336,7 +337,7 @@ function makeHarbor(q){
    'Storm washed driftwood',(i,d,m)=>{
     const a=i*2.399963,rad=2.9+hash(i,24,18)*3.0;
     const x=-2.7+Math.cos(a)*rad,z=Math.sin(a)*rad*1.05;
-    d.position.set(x,fieldHeight(20.8+x,9.5+z)+.10,z);
+    d.position.set(x,fieldHeight(17.8+x,9.5+z)+.10,z);
     d.rotation.set(.4,a,PI/2);
     const k=.45+hash(i,17,99);
     d.scale.set(k,k*.85,k);
