@@ -9,6 +9,7 @@ const required = [
   'games/null-shift-godot/index.html',
   'games/omega-3d-preview/index.html', 'games/omega-3d-preview/index.js',
   'games/omega-3d-preview/index.wasm', 'games/omega-3d-preview/index.pck', 'games/omega-3d-preview/release.json',
+  'games/remix/arena-v2/nebula-3d/index.html', 'games/remix/arena-v2/nebula-3d/index.wasm', 'games/remix/arena-v2/nebula-3d/index.pck',
   'osa-library/index.html', 'osa-library/media-inventory.csv', 'osa-library/media-manifest.json', 'skillcred/index.html', 'privacy/index.html',
   'terms/index.html', 'entertainment/index.html', 'entertainment/noir-auto/index.html',
   'entertainment/noir-auto/en/index.html', 'entertainment/noir-auto/ar/index.html',
@@ -55,7 +56,7 @@ const headers = await readFile(join(root, '_headers'), 'utf8')
 assert.ok(headers.includes('X-Content-Type-Options: nosniff'), '_headers must include nosniff')
 assert.ok(headers.includes('Referrer-Policy: strict-origin-when-cross-origin'), '_headers must include a safe referrer policy')
 assert.ok(headers.includes('/index.html'), '_headers must prevent stale root HTML')
-for (const game of ['null-shift-godot', 'omega-3d-preview']) {
+for (const game of ['null-shift-godot', 'omega-3d-preview', 'remix/arena-v2/nebula-3d']) {
   assert.ok(headers.includes('/games/' + game + '/*.wasm'), 'Packaged Godot WASM path is missing for ' + game)
 }
 assert.ok(headers.includes('Content-Encoding: gzip'), 'Packaged Godot WASM must be served with gzip encoding')
@@ -64,7 +65,7 @@ const redirects = await readFile(join(root, '_redirects'), 'utf8')
 assert.ok(redirects.includes('/games/time-empire /games/time 301'), 'Legacy time-empire route redirect is missing')
 assert.ok(redirects.includes('/games/time-empire/ /games/time 301'), 'Legacy time-empire slash route redirect is missing')
 
-for (const game of ['null-shift-godot', 'omega-3d-preview']) {
+for (const game of ['null-shift-godot', 'omega-3d-preview', 'remix/arena-v2/nebula-3d']) {
   const wasm = await readFile(join(root, 'games', game, 'index.wasm'))
   assert.equal(wasm.subarray(0, 2).toString('hex'), '1f8b', 'Godot WASM must be gzip-packaged before Pages upload: ' + game)
 }
