@@ -34,10 +34,14 @@ jobs:
           python3 -m pip install --disable-pip-version-check -q numpy==2.3.5 Pillow==12.3.0 trimesh==4.11.1
           python3 scripts/build_osgard_wave4_assets.py --project time-empire
           python3 scripts/validate_wave4_assets.py --project time-empire
+          python3 scripts/build_osgard_wave5_environment.py --project time-empire
+          python3 scripts/validate_osgard_wave5.py --project time-empire
       - name: Import Godot city scene
         run: godot --headless --rendering-method gl_compatibility --editor --path godot/time-empire --import --quit
       - name: Validate city, economy, UI, save and load
         run: godot --headless --rendering-method gl_compatibility --path godot/time-empire --script res://tests/runtime_smoke.gd
+      - name: Validate Wave 5 city, performance telemetry and cinematic materials
+        run: godot --headless --rendering-method gl_compatibility --path godot/time-empire --script res://tests/wave5_smoke.gd
       - name: Export playable Godot Web build
         shell: bash
         run: |
@@ -63,6 +67,19 @@ jobs:
           command -v xvfb-run
           timeout 90s xvfb-run -a -s "-screen 0 1600x900x24" godot --rendering-method gl_compatibility --path godot/time-empire --script res://tests/capture.gd
           test -s godot/time-empire/screenshots-ci/time-empire-chronos-city-native.png
+      - name: CI software renderer performance sample (not real GPU certification)
+        shell: bash
+        continue-on-error: true
+        run: |
+          timeout 120s xvfb-run -a -s "-screen 0 1280x720x24" godot --rendering-method gl_compatibility --path godot/time-empire --script res://tests/wave5_perf_ci.gd
+      - name: Attach CI rendering measurements separately from hardware QA
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: time-empire-wave5-ci-performance-not-hardware
+          path: godot/time-empire/benchmark-ci/*.json
+          if-no-files-found: warn
+          retention-days: 14
       - name: Attach real native scene screenshot
         if: always()
         uses: actions/upload-artifact@v4
@@ -96,6 +113,8 @@ jobs:
           assert pack.exists() and pack.stat().st_size > 100000, "Missing Godot PCK game resources"
           print("PASS WINDOWS PC ULTRA:", exe.stat().st_size, pack.stat().st_size)
           VERIFYEXE
+      - name: Package Windows hardware test instructions
+        run: cp tools/VERIFY_WINDOWS_GPU_RU.cmd godot/time-empire/.build-windows/
       - name: Attach independent Windows PC Ultra build
         uses: actions/upload-artifact@v4
         with:
@@ -117,6 +136,11 @@ jobs:
             godot/time-empire/tests/
             godot/time-empire/README.md
             godot/time-empire/assets/wave4/
+            godot/time-empire/assets/wave5/
+            scripts/build_osgard_wave5_environment.py
+            scripts/validate_osgard_wave5.py
+            docs/games/OSGARD_WAVE5_RELEASE_AND_GPU_QA_RU.md
+            tools/VERIFY_WINDOWS_GPU_RU.cmd
             scripts/build_osgard_wave4_assets.py
             scripts/validate_wave4_assets.py
           if-no-files-found: error

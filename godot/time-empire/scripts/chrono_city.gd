@@ -3,6 +3,9 @@ const UltraDetail = preload("res://scripts/ultra_detail_kit.gd")
 const HeroDetailV2 = preload("res://scripts/hero_detail_v2.gd")
 const Wave3Metropolis = preload("res://scripts/wave3_metropolis.gd")
 const Wave4Assets = preload("res://scripts/wave4_assets.gd")
+const Wave5Environment = preload("res://scripts/wave5_environment.gd")
+const Wave5FX = preload("res://scripts/wave5_cinematic_fx.gd")
+const Wave5Profiler = preload("res://scripts/wave5_profiler.gd")
 ## OSGARD TIME EMPIRE — CHRONOS CITY. Original Godot 4.7.2 strategy vertical slice.
 ## No art ripped from any reference titles. Procedural 3D visuals; gameplay is stateful.
 
@@ -38,6 +41,8 @@ var elapsed: float = 0.0
 var notification: float = 0.0
 var materials: Dictionary = {}
 var metal_texture: ImageTexture
+var wave5_profile: String = "web"
+var wave5_profiler: CanvasLayer
 
 var world_environment: WorldEnvironment
 var camera: Camera3D
@@ -64,6 +69,17 @@ func _ready() -> void:
     HeroDetailV2.build(get_node("LivingCity"), core, traffic_agents)
     Wave3Metropolis.build(get_node("LivingCity"), core, traffic_agents)
     Wave4Assets.decorate(get_node("LivingCity"), core)
+    wave5_profile = Wave5FX.initial_profile()
+    var wave5_build := Wave5Environment.new()
+    wave5_build.name = "Wave5DetailedEnvironment"
+    wave5_build.configure(self)
+    add_child(wave5_build)
+    var wave5_environment: WorldEnvironment = get_node_or_null("ChronosAtmosphere") as WorldEnvironment
+    Wave5FX.apply(wave5_environment.environment, wave5_profile)
+    wave5_profiler = Wave5Profiler.new()
+    wave5_profiler.name = "Wave5PerformanceProfiler"
+    wave5_profiler.configure("time-empire", wave5_profile)
+    add_child(wave5_profiler)
     _build_ui()
     _load_game()
     _refresh_ui()
@@ -374,6 +390,17 @@ func _toggle_map() -> void:
     status_label.text = "Карта: смотри на районы сверху" if map_mode else "Камера вернулась к городу"
     notification = 2.0
 
+func _wave5_toggle_quality() -> void:
+    if not Wave5FX.supports_ultra():
+        wave5_profile = "web"
+    elif wave5_profile == "ultra":
+        wave5_profile = "balanced"
+    else:
+        wave5_profile = "ultra"
+    var environment: WorldEnvironment = get_node_or_null("ChronosAtmosphere") as WorldEnvironment
+    Wave5FX.apply(environment.environment, wave5_profile)
+    wave5_profiler.set_profile(wave5_profile)
+
 func _process(delta: float) -> void:
     elapsed += delta
     if delta > 0.0:
@@ -412,6 +439,15 @@ func _unhandled_input(event: InputEvent) -> void:
     elif event is InputEventMouseMotion and drag_camera:
         orbit += event.relative.x * 0.008
     elif event is InputEventKey and event.pressed and not event.echo:
+        if event.keycode == KEY_F8:
+            _wave5_toggle_quality()
+            return
+        if event.keycode == KEY_F9:
+            wave5_profiler.toggle_overlay()
+            return
+        if event.keycode == KEY_F10:
+            wave5_profiler.export_report()
+            return
         match event.keycode:
             KEY_B:
                 _build_district()
