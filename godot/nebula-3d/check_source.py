@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Source-structure guard for NEBULA R5. Native engine tests follow this check."""
 from pathlib import Path
+import base64
+import json
 
 BASE = Path(__file__).resolve().parent
 
@@ -36,6 +38,8 @@ ship_visual = require(
     'hero_r6.name = "R6_HeroHullDetail"',
     'preload("res://scripts/ship_finish_r7.gd")',
     'finish_r7.name = "R7_PBRSurfaceFinish"',
+    'preload("res://assets/models/nx08_interceptor_r8.gltf")',
+    'imported_r8.name = "R8_ImportedHeroMesh"',
 )
 world = require(
     "scripts/world.gd",
@@ -70,6 +74,8 @@ r6_docks = require(
     "func _make_deck_material(",
     "func _crane(",
     "R6_PBR_DeckPanels",
+    'preload("res://assets/models/industrial_hangar_r8.gltf")',
+    'imported_r8.name = "R8_IndustrialHangarAsset"',
 )
 assert "st.generate_tangents()" in r6_ship
 assert "st.generate_tangents()" in r6_docks
@@ -99,6 +105,27 @@ surface_r7 = require(
 assert "Image.create(512, 512" in fleet_r7
 assert "Image.create(256, 256" in surface_r7
 
+def check_gltf(path: str, min_vertices: int, min_materials: int) -> None:
+    asset = json.loads((BASE / path).read_text(encoding="utf-8"))
+    assert asset.get("asset", {}).get("version") == "2.0", path
+    assert len(asset["materials"]) >= min_materials, path
+    uri = asset["buffers"][0]["uri"]
+    assert uri.startswith("data:application/octet-stream;base64,"), path
+    actual = base64.b64decode(uri.split(",", 1)[1], validate=True)
+    assert len(actual) == asset["buffers"][0]["byteLength"], path
+    vertex_total = 0
+    for mesh in asset["meshes"]:
+        for primitive in mesh["primitives"]:
+            attribs = primitive["attributes"]
+            assert "NORMAL" in attribs and "TEXCOORD_0" in attribs
+            vertex_total += asset["accessors"][attribs["POSITION"]]["count"]
+    assert vertex_total >= min_vertices, (path, vertex_total)
+
+
+check_gltf("assets/models/nx08_interceptor_r8.gltf", 14000, 7)
+check_gltf("assets/models/industrial_hangar_r8.gltf", 25000, 6)
+
+
 require("scripts/architectural_detail_r4.gd", "func build(")
 premium = require("scripts/premium_architecture.gd", "func make_facade_material(", "emission_image")
 require("scripts/drone.gd", "extends")
@@ -112,6 +139,8 @@ smoke = require(
     "R6 sculptural skyline missing",
     "R7 monumental capital fleet missing",
     "R7 physical PBR surface details missing",
+    "Importable R8 interceptor glTF missing",
+    "R8 imported curved hangar geometry missing",
     "NEBULA_SMOKE_SUCCESS",
 )
 assert "func _make_ship(" not in ship, "R3 low-poly ship builder is still active"
@@ -121,4 +150,4 @@ assert "image.generate_mipmaps()" in ship_visual
 assert premium.count("Image.create(") >= 2, "separate facade albedo/emission atlases missing"
 assert "high-detail" not in project.lower(), "project identity may remain stable"
 assert len(smoke) > 1500 and len(city) > 5000 and len(world) > 10000
-print("NEBULA_R7_SOURCE_SUCCESS: 3D capital fleet, coated armor and reduced holograms")
+print("NEBULA_R8_SOURCE_SUCCESS: original textured-UV glTF ship and hangar binaries verified")

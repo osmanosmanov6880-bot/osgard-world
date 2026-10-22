@@ -1,6 +1,7 @@
 extends Node3D
 const ShipHeroR6Script = preload("res://scripts/ship_hero_detail_r6.gd")
 const ShipFinishR7Script = preload("res://scripts/ship_finish_r7.gd")
+const ImportedHeroR8Scene = preload("res://assets/models/nx08_interceptor_r8.gltf")
 ## R5 authored procedural interceptor model. GL Compatibility friendly, no external assets.
 ## Mesh geometry is real: beveled planform, inset armor, turbine housings and service details.
 ## Gameplay physics remain in ship.gd; this node provides visual geometry only.
@@ -39,6 +40,32 @@ func _ready() -> void:
     var finish_r7 := ShipFinishR7Script.new()
     finish_r7.name = "R7_PBRSurfaceFinish"
     add_child(finish_r7)
+    # R8 uses an independently authored, importable glTF mesh instead of
+    # building the visible primary airframe from primitive boxes.
+    var imported_r8 := ImportedHeroR8Scene.instantiate()
+    imported_r8.name = "R8_ImportedHeroMesh"
+    add_child(imported_r8)
+    # Preserve each authored glTF base-color, metal and roughness slot but add
+    # the existing painted-metal tangent-space normal texture to metal panels.
+    for draw in imported_r8.find_children("*", "MeshInstance3D", true, false):
+        if draw.mesh == null:continue
+        for surface in draw.mesh.get_surface_count():
+            var mat := draw.mesh.surface_get_material(surface) as StandardMaterial3D
+            if mat == null or mat.metallic < 0.40:continue
+            var weathered := mat.duplicate() as StandardMaterial3D
+            weathered.normal_enabled = true
+            weathered.normal_texture = finish_r7.panel_material.normal_texture
+            weathered.normal_scale = 0.24
+            draw.set_surface_override_material(surface, weathered)
+    # Preserve the established detail, thruster animation and save format.
+    # Remove the redundant simple silhouette surfaces beneath R8 sculpting.
+    for old_part in get_children():
+        if old_part is MeshInstance3D and old_part.name in [
+            "CentralChineArmor", "VentralBelly", "UpperSpine",
+            "SweptArmorWing", "InsetWingTile", "CeramicLeadingEdge",
+            "CeramicCoatedCanopy", "MultiPaneCockpitRim"
+        ]:
+            old_part.visible = false
 
 func _brushed_normal_map() -> ImageTexture:
     # Tangent-space 128px micro-scratches; repeatable on every UV-mapped mesh.
