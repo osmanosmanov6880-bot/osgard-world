@@ -1,0 +1,49 @@
+name: VECTOR ZERO Blackfield native Godot validation
+
+on:
+  pull_request:
+    paths:
+      - 'godot/vector-zero/**'
+      - '.github/workflows/vector-zero-godot.yml'
+  push:
+    branches:
+      - 'feat/vector-zero-blackfield*'
+    paths:
+      - 'godot/vector-zero/**'
+      - '.github/workflows/vector-zero-godot.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test-and-export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Godot 4.7.2 and Web export templates
+        uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.7.2
+          use-dotnet: false
+          include-templates: true
+      - name: Import main scene and compile scripts
+        run: godot --headless --editor --path godot/vector-zero --import --quit
+      - name: Execute gameplay, level, and UI smoke tests
+        run: godot --headless --path godot/vector-zero --script res://tests/runtime_smoke.gd
+      - name: Export real Godot Web runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p godot/vector-zero/.build-web
+          godot --headless --path godot/vector-zero --export-release Web "$GITHUB_WORKSPACE/godot/vector-zero/.build-web/index.html"
+          test -s godot/vector-zero/.build-web/index.html
+          test -n "$(find godot/vector-zero/.build-web -maxdepth 1 -name '*.wasm' -size +100k -print -quit)"
+          test -n "$(find godot/vector-zero/.build-web -maxdepth 1 -name '*.pck' -size +100k -print -quit)"
+      - name: Publish playable build as CI artifact (not production)
+        uses: actions/upload-artifact@v4
+        with:
+          name: vector-zero-blackfield-godot-web
+          path: godot/vector-zero/.build-web/
+          retention-days: 14
