@@ -137,7 +137,7 @@ check('High-detail architectural landmarks are genuine offline PBR geometry, not
 check('Scenery quality selector swaps actual high-poly architecture and camera visits all sites',()=>{
  assert.match(entry,/const sceneryCache=new Map\(\)/);
  assert.match(entry,/function activateScenery\(tier\)/);
- assert.match(entry,/activateScenery\(quality\);resize\(\);syncState\(true\)/);
+ assert.match(entry,/activateScenery\(quality\);configurePostFx\(\);resize\(\);syncState\(true\)/);
  assert.match(entry,/const FLYBY_VIEWS=\[/);
  assert.match(entry,/name:'sanctuary'/);
  assert.match(entry,/name:'harbor'/);
