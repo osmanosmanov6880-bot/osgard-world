@@ -40,9 +40,15 @@ for(const [path,title,description,theme] of routes){
  for(const [selector,value] of [['name="robots"',privateRoute?'noindex,follow':'index,follow'],['name="description"',description],['name="twitter:card"','summary_large_image'],['property="og:image:alt"',title],['property="og:title"',title],['property="og:description"',description],['property="og:url"','https://osgard.world/'+path],['property="og:image"','https://osgard.world/brand/preview-'+theme+'.png'],['name="twitter:title"',title],['name="twitter:description"',description],['name="twitter:image"','https://osgard.world/brand/preview-'+theme+'.png']]){
   const regex=new RegExp(`(<meta ${selector} content=")[^"]*("[^>]*>)`);html=regex.test(html)?html.replace(regex,(_,a,b)=>a+esc(value)+b):html.replace('</head>',`<meta ${selector} content="${esc(value)}"/>\n</head>`)
  }
- html=html.replace(/(<link rel="canonical" href=")[^"]+/,`$1https://osgard.world/${path==='games'||path==='entertainment'?'play':path}`)
+ const canonical='https://osgard.world/'+(path==='games'||path==='entertainment'?'play':path)
+ html=html.replace(/(<link rel="canonical" href=")[^"]+/,(_,prefix)=>prefix+canonical)
  html=html.replace('<html lang="ru">',`<html lang="ru" data-product="${theme}">`)
- // Root Organization/WebSite graph stays valid; route-specific WebPage is added by the runtime.
+ // Initial canonical-matching pages skip the runtime metadata import. Supply
+ // their own WebPage now while preserving the separate Organization/WebSite graph.
+ const pageSchema={'@context':'https://schema.org','@type':'WebPage',name:title,description,url:canonical,isPartOf:{'@type':'WebSite',name:'OSGARD WORLD',url:'https://osgard.world/'}}
+ const schemaScript='<script type="application/ld+json" data-route-seo>'+JSON.stringify(pageSchema).replaceAll('<','\\u003c')+'</script>'
+ const routeSchema=/<script\b(?=[^>]*\sdata-route-seo(?:\s|=|>))[^>]*>[\s\S]*?<\/script>/i
+ html=routeSchema.test(html)?html.replace(routeSchema,()=>schemaScript):html.replace('</head>',schemaScript+'\n</head>')
  await mkdir('dist/'+path,{recursive:true});await writeFile('dist/'+path+'/index.html',html)
 }
 console.log('Brand route shells: '+routes.length+' titles, descriptions, canonicals and PNG previews')

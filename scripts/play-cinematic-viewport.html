@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="ru">
+<meta charset="utf-8">
+<title>OSGARD Play — viewport verification</title>
+<style>
+html,body{margin:0;padding:0;background:#020814}
+iframe{display:block;border:0;margin:0}
+</style>
+<iframe id="play-viewport" title="Проверяемый интерфейс OSGARD Play"></iframe>
+<script>
+// Development-only harness: the iframe renders the real application and its viewport media queries.
+// Vite's production build does not include this file.
+const params=new URLSearchParams(location.search);
+const width=[390,768,1280,1440,1920].includes(Number(params.get('width')))?Number(params.get('width')):1440;
+const height=Math.max(500,Math.min(8000,Number(params.get('height'))||900));
+const route=params.get('route')||'/play';
+const safeRoute=/^\/play(?:\/world\/[a-z0-9-]+)?(?:[?#].*)?$/.test(route)?route:'/play';
+const frame=document.getElementById('play-viewport');
+frame.width=String(width);frame.height=String(height);frame.src=safeRoute;
+document.body.style.width=width+'px';
+</script>
+</html>

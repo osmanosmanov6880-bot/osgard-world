@@ -1,0 +1,150 @@
+{
+  "schema_version": 1,
+  "created_date": "2026-10-21",
+  "source": "Built-in Imagegen",
+  "classification": "Cinematic website intro art derived from the user-provided reference; separate environment plates and an isolated metallic brand emblem, not screenshots or gameplay.",
+  "reference": {
+    "role": "Authorized source for close visual matching and emblem extraction",
+    "included": false,
+    "sha256": "1b975bfb5453e2a1988cd29b998a49f1008a1f96252b5dc19a5cbbcb86f3b35c",
+    "dimensions": [
+      1254,
+      1254
+    ]
+  },
+  "source_path_base": "osgard-art/intro/",
+  "assets": [
+    {
+      "id": "energy-platform",
+      "transparent_background": false,
+      "prompt": "Use case: precise-object-edit.\nAsset type: cinematic science-fiction intro BACKGROUND layer, 16:9 wide landscape at the highest available resolution.\nInput image 1: authorized visual reference. Match its architecture, palette, optical lighting, reflective materials and floor energy platform very closely. Remove the entire central metallic OSGARD symbol and all lettering, words, logo, small planets, orbital ellipses, UI and graphic marks. Reconstruct their space as a rich deep navy almost-black atmospheric void. This is a separate background plate, a live HTML and SVG logo will be composited above it later.\nScene: vast monumental dark futuristic chamber, black titanium architectural pillars with thin cyan edges at extreme sides, low distant spires fading in blue fog, polished black floor. An intricate broad circular energy dais occupies the lowest quarter of the picture, viewed at low frontal eye level. Many physical concentric machined rings with turquoise light inlay and tiny violet accents, exactly the cinematic platform from the reference, bright pinpoint of cyan light at its centre, soft reflections toward the camera. Fine faint blue dust and atmospheric shafts.\nComposition: bilaterally balanced, camera centered. Expand the original square reference horizontally into a full 16:9 scene. Energy platform centered at x50%, y84%; leave the central 60% of canvas above y70% very dark and calm for a large separately layered emblem and live text. Put tall detailed architectural silhouettes toward the edges, not across the central logo-safe area. Floor is only bottom 20%. No floating vertical circle, no giant beam, no portal emblem baked into the background.\nStyle: premium photorealistic cinematic 3D science fiction, realistically brushed metal, deep and restrained black #020814/navy #061527, luminous cyan #56F4F5, tiny violet accents. Crisp intricate engineered dais, volumetric ambience, high material fidelity, dramatic but quiet. Keep central background close to the supplied image's darkness.\nConstraints: absolutely no text, letters, wordmarks, logos, G shape, symbols, circular upright logo, watermark, UI frame or people. Only background environment and floor energy platform. Do not create a whole poster. Output wide landscape, not square.",
+      "original_path": "energy-platform.png",
+      "original": {
+        "path": "energy-platform.png",
+        "width": 1672,
+        "height": 941,
+        "mode": "RGB",
+        "size_bytes": 1647253,
+        "sha256": "64859ce769164837fee2d11dde7b6f17b8b92d05341fcb6ab1ebc0803e6b230c"
+      },
+      "variants": [
+        {
+          "repository_path": "public/brand/intro/energy-platform.webp",
+          "public_path": "/brand/intro/energy-platform.webp",
+          "width": 1672,
+          "height": 941,
+          "mode": "RGB",
+          "size_bytes": 83834,
+          "sha256": "c7b70b7a57a3ddf40430db03faf767413d77de56c637c70f87db27c6ad977268"
+        },
+        {
+          "repository_path": "public/brand/intro/energy-platform-1280.webp",
+          "public_path": "/brand/intro/energy-platform-1280.webp",
+          "width": 1280,
+          "height": 720,
+          "mode": "RGB",
+          "size_bytes": 49848,
+          "sha256": "2c53dfd3a5facc8d4b3367699a5f8bfc687b645fb9364ee91786055dc71aaacc"
+        }
+      ]
+    },
+    {
+      "id": "energy-platform-mobile",
+      "transparent_background": false,
+      "prompt": "Use case: precise-object-edit.\nAsset type: separate cinematic science-fiction BACKGROUND plate for a mobile intro, portrait 2:3 at the highest available resolution.\nInput image 1: authorized visual reference. Preserve its atmosphere and extraordinary floor platform craft, adapt the environment intentionally for a vertical screen. Remove the entire central metallic OSGARD symbol, all lettering, words, small planets, orbit lines and interface marks; replace their space by continuous rich near-black navy atmospheric void. This background will receive real HTML and SVG logo elements, so never bake in any emblem or letters.\nScene: dark immense futuristic titanium chamber with very tall distant slender monoliths at the far left and right sides only, thin cyan edge lights, blue fog near floor, very faint sparse motes. At bottom y82% a broad low circular physical platform with exquisite engineered concentric ring inlays glowing turquoise, hints of violet, a small pinpoint cyan source at its centre. Polished black floor reflects fine cyan ring edges toward camera. A few low spires at distant horizon.\nComposition: vertical portrait, camera centered and low, calm center with generous deep dark negative space in upper 72% for a separately composed emblem and text. Intricate platform spans bottom width but all its inner rings and core are visible. Floor bottom 18%, pillars at the outer edges frame the composition. The dais is a horizontal ellipse in perspective, never a standing portal. No large pillar or heavy lightbeam through the logo-safe area.\nStyle: premium photorealistic cinematic 3D, match reference brushed black titanium, restrained navy #020814 and #061527, cyan #56F4F5 highlights and minute magenta accents. Deep black, polished materials, exquisite mechanical detail, restrained subtle volume light.\nConstraints: absolutely no typography, letters, logos, G symbol, standing circular emblem, planets, orbits, UI, text, watermark or people. Not a finished poster, only clean background environment for mobile. Output portrait 2:3.",
+      "original_path": "energy-platform-mobile.png",
+      "original": {
+        "path": "energy-platform-mobile.png",
+        "width": 1024,
+        "height": 1536,
+        "mode": "RGB",
+        "size_bytes": 1671441,
+        "sha256": "b36601b0c4ba635a4ce87125b875b4eb14645d86e96bb84434c5daf93de6adbd"
+      },
+      "variants": [
+        {
+          "repository_path": "public/brand/intro/energy-platform-mobile.webp",
+          "public_path": "/brand/intro/energy-platform-mobile.webp",
+          "width": 1024,
+          "height": 1536,
+          "mode": "RGB",
+          "size_bytes": 77582,
+          "sha256": "91f4fde99af5b1b8545bb9a967ec56adf99db2374de1c063db5133617618b95a"
+        },
+        {
+          "repository_path": "public/brand/intro/energy-platform-mobile-780.webp",
+          "public_path": "/brand/intro/energy-platform-mobile-780.webp",
+          "width": 780,
+          "height": 1170,
+          "mode": "RGB",
+          "size_bytes": 45922,
+          "sha256": "9b18b777c6c271ceba0b1b64795b7c7210f6aded66de532bee9fa9843e7b5fed"
+        }
+      ]
+    },
+    {
+      "id": "osgard-emblem",
+      "transparent_background": true,
+      "prompt": "Use case: background-extraction.\nAsset type: exact original-reference metallic OSGARD emblem isolated as a high-resolution transparent PNG graphic, square canvas.\nInput image 1: authorized EDIT TARGET. Extract and faithfully preserve ONLY the large metallic circular OSGARD emblem located in the top-middle of the reference, including its separate upper-right triangular curved sector. Preserve its exact outline, diagonal slit, proportions, weight, open inner counter, brushed metal bevels and cyan rim light. Do not redesign it and do not replace it with a font G.\nImportant geometry from the reference: thick almost circular ring with an opening across the upper-right diagonal at around 1:30; thick inner horizontal arm extends from roughly lower-left of center at the 7:30-to-1:30 diagonal into the right side; a separate wedge-like curved upper-right segment points toward the diagonal opening. The diagonal cut runs from about lower-left inner middle to upper-right rim. Main outer round silhouette and negative space match the source. A three-dimensional machined dark titanium/silver face, inner bevels illuminated white-cyan, turquoise edge glow, restrained lilac reflection at lower left.\nCrop/reframe the extracted emblem larger into a square 1536px or best-available high-resolution canvas with around 10% transparent margin. Keep the front view and very subtle depth of the reference, not a perspective tilt. Preserve all material detail and the small crisp edge highlights. Transparent alpha around and INSIDE its openings.\nRemove ALL background, ALL planets, orbit lines and elliptical rings, ALL vertical beams, sparkles outside emblem, ALL wordmark letters and text including OSGARD and DIGITAL UNIVERSE, and the floor platform. Do not retain any background glow rectangle or black fill inside the negative spaces. No new elements, no watermark. Only the single exact metallic emblem with a modest soft cyan edge light on genuine transparency.",
+      "original_path": "osgard-emblem.png",
+      "original": {
+        "path": "osgard-emblem.png",
+        "width": 1254,
+        "height": 1254,
+        "mode": "RGBA",
+        "size_bytes": 1777994,
+        "sha256": "c6bae61a3d9d0735640f74947be313506bdbadda4b8ef8eb62cf24b4976d95c1",
+        "alpha_extrema": [
+          0,
+          255
+        ],
+        "alpha_bbox": [
+          0,
+          49,
+          1224,
+          1218
+        ]
+      },
+      "variants": [
+        {
+          "repository_path": "public/brand/intro/osgard-emblem.webp",
+          "public_path": "/brand/intro/osgard-emblem.webp",
+          "width": 1254,
+          "height": 1254,
+          "mode": "RGBA",
+          "size_bytes": 379894,
+          "sha256": "d32835359afe4db38749db7204d8d0110f42dbed6b0ded0e774b0440516a599a",
+          "alpha_extrema": [
+            0,
+            255
+          ],
+          "alpha_bbox": [
+            0,
+            49,
+            1224,
+            1218
+          ]
+        },
+        {
+          "repository_path": "public/brand/intro/osgard-emblem-640.webp",
+          "public_path": "/brand/intro/osgard-emblem-640.webp",
+          "width": 640,
+          "height": 640,
+          "mode": "RGBA",
+          "size_bytes": 107294,
+          "sha256": "a4ba2b9f9cca57173f1dc008ef5f40c01326b7b27d25445b743be3a5a6737471",
+          "alpha_extrema": [
+            0,
+            255
+          ],
+          "alpha_bbox": [
+            30,
+            25,
+            615,
+            610
+          ]
+        }
+      ]
+    }
+  ]
+}

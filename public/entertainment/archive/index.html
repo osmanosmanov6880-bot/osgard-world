@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="ru" dir="ltr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>OSGARD Entertainment</title>
+  <style>
+    :root{color-scheme:dark;--ink:#eaf2ff;--muted:#9eb2c8;--line:#28445a;--gold:#f3d795}
+    *{box-sizing:border-box}body{margin:0;background:#050914;color:var(--ink);font:14px Inter,Arial,sans-serif}
+    header{height:74px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 clamp(18px,6vw,88px);letter-spacing:.16em;color:#9eb2c8}
+    header a{color:var(--gold);text-decoration:none;font-weight:700}header span{font-size:10px}
+    .wrap{max-width:1320px;margin:auto;padding:clamp(64px,10vw,130px) clamp(18px,6vw,88px) 100px}
+    .hero{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:48px;align-items:end;padding-bottom:58px;border-bottom:1px solid var(--line)}
+    .eyebrow{color:var(--gold);font-size:10px;letter-spacing:.22em}.hero h1{font:300 clamp(46px,7vw,94px)/.94 Georgia,serif;margin:18px 0;color:#f4f0e7}.hero p{max-width:560px;color:var(--muted);line-height:1.8}
+    .count{border:1px solid #806d43;padding:22px 28px;text-align:center}.count b{display:block;font:300 74px/.85 Georgia,serif;color:#fff}.count span{font-size:9px;color:var(--gold);letter-spacing:.18em}
+    .grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:14px;padding-top:42px}.card{grid-column:span 4;min-height:430px;display:flex;flex-direction:column;border:1px solid var(--line);background:#091525;color:inherit;text-decoration:none;transition:.25s}.card:nth-child(1),.card:nth-child(4){grid-column:span 6}.card:hover,.card:focus-visible{transform:translateY(-7px);border-color:var(--accent);outline:none;box-shadow:0 24px 60px -32px #000,0 0 28px color-mix(in srgb,var(--accent) 22%,transparent)}
+    .art{height:220px;display:grid;place-items:center;position:relative;overflow:hidden;background:radial-gradient(circle,color-mix(in srgb,var(--accent) 35%,transparent),transparent 28%),linear-gradient(140deg,var(--dark),#050914 75%)}.art:before,.art:after{content:"";position:absolute;border:1px solid color-mix(in srgb,var(--accent) 55%,transparent);border-radius:50%;width:72%;aspect-ratio:1;transform:rotate(28deg)}.art:after{width:42%;border-style:dashed;transform:rotate(-42deg)}.art b{position:relative;z-index:1;font:300 clamp(58px,8vw,118px)/.8 Georgia,serif;color:#f7f9ff}.art small{position:absolute;z-index:2;top:18px;left:20px;color:var(--gold);font:10px monospace;letter-spacing:.2em}.copy{display:flex;flex-direction:column;flex:1;padding:24px}.copy h2{margin:0;color:#f4f0e7;font:300 clamp(28px,3vw,46px)/.95 Georgia,serif;letter-spacing:.04em}.copy p{margin:14px 0;color:var(--muted);line-height:1.65}.launch{margin-top:auto;padding-top:18px;color:var(--gold);font-size:10px;letter-spacing:.14em;text-transform:uppercase}.time{--accent:#e2b65d;--dark:#382412}.swarm{--accent:#62e4d2;--dark:#0d3030}.shift{--accent:#8eaefe;--dark:#172350}.inherit{--accent:#a7d581;--dark:#193421}.remix{--accent:#f27ba9;--dark:#35142b}.vector-zero{--accent:#5ce1e6;--dark:#0b1b2a}
+    @media(max-width:900px){.card,.card:nth-child(1),.card:nth-child(4){grid-column:span 6}}@media(max-width:620px){header{height:64px;padding:0 16px}.hero{grid-template-columns:1fr}.count{justify-self:start}.grid{grid-template-columns:1fr;padding-top:24px}.card,.card:nth-child(1),.card:nth-child(4){grid-column:1;min-height:0}.art{height:205px}}
+  
+    /* Selected digital experience — ELBRUS case */
+    .case-shelf{margin-top:78px;padding-top:38px;border-top:1px solid var(--line)}
+    .case-shelf__head{display:grid;grid-template-columns:minmax(0,1fr) minmax(240px,.72fr);gap:34px;align-items:end}
+    .case-shelf__head h2{font:300 clamp(34px,4.7vw,60px)/.98 Georgia,serif;letter-spacing:-.035em;margin:16px 0 0;color:#f4f0e7}
+    .case-shelf__head p{max-width:440px;color:var(--muted);line-height:1.8;margin:0}
+    .case-feature{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);margin-top:30px;min-height:330px;border:1px solid var(--line);background:#091525;color:inherit;text-decoration:none;transition:transform .25s,border-color .25s,box-shadow .25s}
+    .case-feature:hover,.case-feature:focus-visible{transform:translateY(-5px);border-color:#c5a46d;box-shadow:0 24px 60px -32px #000,0 0 28px #c5a46d22;outline:none}
+    .case-feature__visual{position:relative;min-height:330px;overflow:hidden;display:flex;align-items:flex-end;padding:26px;background:radial-gradient(ellipse at 50% 43%,#c5a46d36,transparent 34%),linear-gradient(135deg,#18293a 0%,#0b1420 55%,#060a14 100%)}
+    .case-feature__visual:before,.case-feature__visual:after{content:"";position:absolute;border:1px solid #c5a46d6b;inset:12% 17%;clip-path:polygon(0 73%,18% 40%,31% 57%,49% 15%,64% 44%,78% 31%,100% 72%,100% 100%,0 100%)}
+    .case-feature__visual:after{inset:23% 28% 12%;opacity:.48;transform:rotate(10deg);border-color:#e9d8b3}
+    .case-feature__wordmark{position:relative;z-index:1;font:300 clamp(56px,8vw,106px)/.8 Georgia,serif;letter-spacing:.13em;color:#f4f0e7}
+    .case-feature__stamp{position:absolute;top:20px;left:23px;color:var(--gold);font:10px monospace;letter-spacing:.2em}
+    .case-feature__copy{display:flex;flex-direction:column;justify-content:center;padding:clamp(26px,4vw,48px)}
+    .case-feature__eyebrow{font-size:9px;letter-spacing:.2em;color:var(--gold);text-transform:uppercase}
+    .case-feature__copy h3{font:300 clamp(34px,4vw,53px)/.98 Georgia,serif;letter-spacing:-.025em;margin:18px 0 14px;color:#f4f0e7}
+    .case-feature__copy p{margin:0;color:var(--muted);line-height:1.8;max-width:470px}
+    .case-feature__meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px}
+    .case-feature__meta span{border:1px solid #28445a;padding:7px 9px;font-size:8px;color:#c8d2df;letter-spacing:.08em}
+    .case-feature__launch{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:26px;padding-top:16px;border-top:1px solid var(--line);font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--gold)}
+    @media(max-width:760px){.case-shelf{margin-top:54px;padding-top:27px}.case-shelf__head{grid-template-columns:1fr;gap:14px}.case-feature{grid-template-columns:1fr}.case-feature__visual{min-height:230px}.case-feature__copy{padding:26px}.case-feature__copy h3{font-size:38px}}
+
+    /* NOIR AUTO automotive case card */
+    .case-feature--noir .case-feature__visual{background:radial-gradient(ellipse at 50% 48%,#c5c9ce24,transparent 42%),linear-gradient(135deg,#20252c,#080a0d 72%)}
+    .case-feature--noir .case-feature__visual:before{inset:38% 7% 22%;background:linear-gradient(180deg,#bfc6cf4c,#101318);border-color:#c5c9ce;clip-path:polygon(0 75%,8% 48%,23% 41%,35% 5%,64% 5%,79% 45%,94% 55%,100% 78%,98% 100%,2% 100%)}
+    .case-feature--noir .case-feature__visual:after{inset:auto 18% 11%;height:24%;border:0;transform:none;background:radial-gradient(circle at 12% 40%,#080a0c 0 8%,#c5c9ce 8.6% 10%,#171a20 10.6% 17%,transparent 17.5%),radial-gradient(circle at 88% 40%,#080a0c 0 8%,#c5c9ce 8.6% 10%,#171a20 10.6% 17%,transparent 17.5%);clip-path:none;opacity:.9}
+    .case-feature--noir .case-feature__wordmark{font-family:Arial,sans-serif;font-weight:700;letter-spacing:.16em;font-size:clamp(36px,5vw,66px);line-height:.92}
+
+    .lang-switch{display:flex;align-items:center;gap:6px;letter-spacing:0;white-space:nowrap}
+    .lang-switch a{display:inline-flex;align-items:center;justify-content:center;min-width:34px;padding:7px 8px;border:1px solid #28445a;color:#9eb2c8;text-decoration:none;font-size:10px;letter-spacing:.04em}
+    .lang-switch a[aria-current="page"]{background:#18293a;border-color:#806d43;color:#f3d795}
+    .lang-switch a:focus-visible{outline:2px solid #f3d795;outline-offset:3px}
+    header{gap:16px}.site-home{white-space:nowrap}
+    html[dir="rtl"] body{font-family:"Noto Sans Arabic",Tahoma,Arial,sans-serif;text-align:right}
+    html[dir="rtl"] .art small{left:auto;right:20px}
+    html[dir="rtl"] .case-feature__visual{direction:ltr}
+    html[dir="rtl"] .case-feature__stamp{left:auto;right:23px}
+    html[dir="rtl"] .case-feature__launch{flex-direction:row-reverse}
+    @media(max-width:620px){header{gap:8px}.lang-switch{gap:3px}.lang-switch a{min-width:29px;padding:6px 5px}header span{font-size:8px}}
+    @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition-duration:.01ms!important;animation-duration:.01ms!important;animation-iteration-count:1!important}}
+
+  </style>
+<!-- GLOBAL HUB SEO -->
+<meta name="description" content="OSGARD Entertainment — игровые миры и цифровые впечатления. Исследуйте игры OSGARD и кейсы ELBRUS и NOIR AUTO.">
+<meta name="robots" content="index,follow,max-image-preview:large">
+<link rel="canonical" href="https://osgard.world/entertainment/archive/">
+<link rel="alternate" hreflang="ru" href="https://osgard.world/entertainment/archive/">
+<link rel="alternate" hreflang="en" href="https://osgard.world/entertainment/archive/en/">
+<link rel="alternate" hreflang="ar" href="https://osgard.world/entertainment/archive/ar/">
+<link rel="alternate" hreflang="x-default" href="https://osgard.world/entertainment/archive/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="OSGARD WORLD">
+<meta property="og:locale" content="ru_RU">
+<meta property="og:locale:alternate" content="en_US">
+<meta property="og:locale:alternate" content="ar_AR">
+<meta property="og:title" content="OSGARD Entertainment">
+<meta property="og:description" content="OSGARD Entertainment — игровые миры и цифровые впечатления. Исследуйте игры OSGARD и кейсы ELBRUS и NOIR AUTO.">
+<meta property="og:url" content="https://osgard.world/entertainment/archive/">
+<meta property="og:image" content="https://osgard.world/entertainment/archive/og.svg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="OSGARD Entertainment">
+<meta name="twitter:description" content="OSGARD Entertainment — игровые миры и цифровые впечатления. Исследуйте игры OSGARD и кейсы ELBRUS и NOIR AUTO.">
+<meta name="twitter:image" content="https://osgard.world/entertainment/archive/og.svg">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"CollectionPage","name":"OSGARD Entertainment","description":"OSGARD Entertainment — игровые миры и цифровые впечатления. Исследуйте игры OSGARD и кейсы ELBRUS и NOIR AUTO.","url":"https://osgard.world/entertainment/archive/","inLanguage":"ru","isPartOf":{"@type":"WebSite","name":"OSGARD WORLD","url":"https://osgard.world/"},"about":{"@type":"Thing","name":"Interactive entertainment and digital experiences"}}</script>
+  <link rel="stylesheet" href="/brand/osa5-portals.css">
+  <link rel="stylesheet" href="/entertainment/premium.css">
+</head>
+<body class="entertainment-premium">
+  <header><a class="osa5-legacy-brand" href="/" aria-label="OSGARD WORLD · OSA 5.0"><img src="/brand/portal-play.svg" alt="" width="29" height="29">OSGARD WORLD</a><nav class="lang-switch" aria-label="Язык"><a href="/entertainment/archive/" hreflang="ru" lang="ru" aria-current="page">RU</a><a href="/entertainment/en/" hreflang="en" lang="en">EN</a><a href="/entertainment/ar/" hreflang="ar" lang="ar">AR</a></nav><span>АРХИВ / 07</span></header>
+  <main class="wrap">
+    <section class="hero"><div><div class="eyebrow">OSGARD / PLAYABLE WORLDS</div><h1>Выбери мир.<br>Начни игру.</h1><p>Семь самостоятельных игр. У каждой свой ритм, правила и визуальный язык. Выбери карточку, чтобы войти в мир.</p><a class="hero-cta" href="/play">Открыть все миры OSGARD Play <span aria-hidden="true">↗</span></a></div><div class="hero-side"><a class="hero-spotlight" href="/play" aria-label="ПОЛНАЯ КОЛЛЕКЦИЯ ИГР"><img src="/brand/omega-play.svg" width="1200" height="675" alt="" decoding="async" fetchpriority="high"><span>ПОЛНАЯ КОЛЛЕКЦИЯ ИГР <b aria-hidden="true">↗</b></span></a><div class="count"><b>07</b><span>АРХИВНЫХ ИГР</span></div></div></section>
+    <div class="archive-intro"><div class="eyebrow">OSGARD / WORLD SELECT</div><h2>Семь миров из нашей истории</h2><p>Это отдельный архив семи игровых проектов. Полная коллекция, фильтры и новые миры доступны в OSGARD Play.</p></div>
+    <section class="grid" aria-label="Все игры OSGARD">
+      <a class="card time" href="/games/time-empire/"><div class="art"><small>01 / LIVE WORLD</small><img src="/brand/world-time.svg" alt="" loading="lazy" decoding="async" width="1200" height="675"><b aria-hidden="true">ET</b></div><div class="copy"><h2>Империя времени</h2><p>Город, нефть, фракции и решения.</p><span class="launch">Войти в игру &#8599;</span></div></a>
+      <a class="card swarm" href="/games/swarm/index.html"><div class="art"><small>02 / LIVE WORLD</small><img src="/brand/world-swarm.svg" alt="" loading="lazy" decoding="async" width="1200" height="675"><b aria-hidden="true">SW</b></div><div class="copy"><h2>SWARM</h2><p>Синхронно добудьте ядро и выйдите до тревоги.</p><span class="launch">Войти в игру &#8599;</span></div></a>
+      <a class="card shift" href="/games/null-shift-godot/index.html"><div class="art"><small>03 / LIVE WORLD</small><img src="/brand/world-null.svg" alt="" loading="lazy" decoding="async" width="1200" height="675"><b aria-hidden="true">NS</b></div><div class="copy"><h2>NULL//SHIFT</h2><p>Взломайте узел, смените слой и заберите ядро.</p><span class="launch">Войти в игру &#8599;</span></div></a>
+      <a class="card inherit" href="/games/inherit/index.html"><div class="art"><small>04 / LIVE WORLD</small><img src="/brand/world-inherit.svg" alt="" loading="lazy" decoding="async" width="1200" height="675"><b aria-hidden="true">IN</b></div><div class="copy"><h2>INHERIT</h2><p>Наследие, память и решения поколений.</p><span class="launch">Войти в игру &#8599;</span></div></a>
+      <a class="card remix" href="/games/remix/index.html"><div class="art"><small>05 / LIVE WORLD</small><img src="/brand/world-remix.svg" alt="" loading="lazy" decoding="async" width="1200" height="675"><b aria-hidden="true">RX</b></div><div class="copy"><h2>REMIX</h2><p>Создавай испытания и оставляй свой replay.</p><span class="launch">Войти в игру &#8599;</span></div></a>
+      <a class="card vector-zero" href="/games/vector-zero/"><div class="art"><small>06 / FIELD EXPERIMENT</small><img src="/brand/world-vector.svg" alt="" loading="lazy" decoding="async" width="1200" height="675"><b aria-hidden="true">VZ</b></div><div class="copy"><h2>VECTOR//ZERO</h2><p>Управляй полярностью энергетического ядра и проводи его сквозь магнитное поле.</p><span class="launch">Войти в игру &#8599;</span></div></a>
+    <a class="card afterimage" data-afterimage-card href="/games/afterimage-run/"><div class="art"><small>07 / DAILY GHOST</small><img src="/brand/world-afterimage-run.svg" alt="" loading="lazy" decoding="async" width="1200" height="675"><b aria-hidden="true">AF</b></div><div class="copy"><h2>AFTERIMAGE//RUN</h2><p>Один daily seed, призрак личного рекорда и вызов другу на тот же маршрут.</p><span class="launch">Войти в игру &#8599;</span></div></a>
+    </section>
+
+    <section class="case-shelf" aria-labelledby="selected-case-title">
+      <div class="case-shelf__head">
+        <div><div class="eyebrow">OSGARD / SELECTED DIGITAL EXPERIENCE</div><h2 id="selected-case-title">Цифровые миры — не только игры.</h2></div>
+        <p>Мы создаём цельные цифровые впечатления: от визуального языка бренда до интерфейсов, которые помогают человеку выбрать следующий шаг.</p>
+      </div>
+      <a class="case-feature" href="/entertainment/elbrus/" aria-label="Открыть кейс ELBRUS — цифровой опыт гостеприимства">
+        <div class="case-feature__visual" aria-hidden="true"><span class="case-feature__stamp">HOSPITALITY / CASE 001</span><span class="case-feature__wordmark">ELBRUS</span></div>
+        <div class="case-feature__copy"><span class="case-feature__eyebrow">Digital brand · Hospitality</span><h3>ELBRUS</h3>
+          <p>Премиальная цифровая концепция для дагестанской кухни: редакционная подача, меню, интерактивный выбор и внимательный путь гостя.</p>
+          <div class="case-feature__meta"><span>BRAND SYSTEM</span><span>MENU UX</span><span>MOBILE FIRST</span><span>RU · EN · AR</span></div>
+          <div class="case-feature__launch"><span>Открыть кейс</span><span aria-hidden="true">↗</span></div>
+        </div>
+      </a>
+<a class="case-feature case-feature--noir" href="/entertainment/noir-auto/" aria-label="NOIR AUTO case"><div class="case-feature__visual" aria-hidden="true"><span class="case-feature__stamp">AUTOMOTIVE / CASE 002</span><span class="case-feature__wordmark">NOIR<br>AUTO</span></div><div class="case-feature__copy"><span class="case-feature__eyebrow">Цифровой продукт · Автомобильные услуги</span><h3>NOIR AUTO</h3><p>Премиальная многостраничная концепция: автоуслуги, каталог номерных знаков, консультации и путь заказа. Демо — реальные заявки и оплата отключены.</p><div class="case-feature__meta"><span>AUTOMOTIVE UX</span><span>SERVICE CATALOG</span><span>ORDER JOURNEY</span><span>RU · EN · AR</span></div><div class="case-feature__launch"><span>Открыть кейс</span><span aria-hidden="true">↗</span></div></div></a>
+
+      <a class="case-feature" href="/entertainment/the-hummer-gym/" aria-label="Открыть концептуальный кейс THE HUMMER GYM"><div class="case-feature__visual" aria-hidden="true"><span class="case-feature__stamp">BOXING / CASE 002</span><span class="case-feature__wordmark">HUMMER</span></div><div class="case-feature__copy"><span class="case-feature__eyebrow">Digital concept · Sports</span><h3>THE HUMMER GYM</h3><p>Премиальная цифровая концепция боксерского клуба: визуальная система, продуманный UX и честный статус проекта.</p><div class="case-feature__meta"><span>BRAND DIRECTION</span><span>UX CONCEPT</span><span>MOBILE FIRST</span><span>RU · EN · AR</span></div><div class="case-feature__launch"><span>Открыть кейс</span><span aria-hidden="true">↗</span></div></div></a>
+    <a class="case-feature" href="/entertainment/euromotors/" aria-label="Открыть кейс EUROMOTORS — цифровой автосалон"><div class="case-feature__visual" aria-hidden="true" style="background:radial-gradient(ellipse at 50% 52%,#d6ff5a24,transparent 36%),linear-gradient(135deg,#252b28,#07090b 78%);border-color:#444b42"><span class="case-feature__stamp">AUTOMOTIVE / CASE 003</span><span class="case-feature__wordmark" style="letter-spacing:.02em">EURO<span style="color:#c3b8a0">MOTORS</span></span></div><div class="case-feature__copy"><span class="case-feature__eyebrow">Digital showroom · Automotive</span><h3>EUROMOTORS</h3><p>Премиальная концепция цифрового автосалона: выразительная витрина моделей и понятный путь к выбору автомобиля.</p><div class="case-feature__meta"><span>AUTOMOTIVE UX</span><span>MODEL DISCOVERY</span><span>MOBILE FIRST</span><span>RU · EN · AR</span></div><div class="case-feature__launch"><span>Открыть кейс</span><span aria-hidden="true">↗</span></div></div></a>
+    </section>
+
+
+  </main>
+  <script defer src="/brand/osa-transition.js"></script>
+</body>
+</html>

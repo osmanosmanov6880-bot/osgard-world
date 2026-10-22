@@ -4,14 +4,47 @@ import { createRequire } from 'node:module'
 import assert from 'node:assert/strict'
 const output='node_modules/.tmp/redesign-render.cjs'
 await mkdir('node_modules/.tmp',{recursive:true})
-const source=`import React from 'react';import {renderToStaticMarkup} from 'react-dom/server';import {BrandShell} from './src/BrandShell';import WorldHome from './src/WorldHome';import IntelligenceHome from './src/IntelligenceHome';import PlayHome from './src/PlayHome';import BrandPages from './src/BrandPages';import DataCenter from './src/DataCenter';import CoreWorkspace from './src/CoreWorkspace';import LearningCampus from './src/LearningCampus';import ServerLessonProgress from './src/ServerLessonProgress';import PilotOrganizer from './src/PilotOrganizer';import AccountPage from './src/AccountPage';import ReleaseAcceptance from './src/ReleaseAcceptance';import DeliveryPanel from './src/DeliveryPanel';import OperationsPage from './src/OperationsPage';import ClientPortal from './src/ClientPortal';import TeamsPage from './src/TeamsPage';
-export function renderPage(page,gameId){globalThis.location={pathname:gameId?'/play/world/'+gameId:page==='world'?'/':'/'+page,search:''};globalThis.localStorage={getItem:()=>null};const theme=['intelligence','campus','lesson-bridge','organizer'].includes(page)?'intelligence':['world','quality','brand','data','workspace','account','acceptance','delivery','operations','deliveries','teams'].includes(page)?'world':'play';return renderToStaticMarkup(<BrandShell theme={theme}>{page==='teams'?<TeamsPage/>:page==='deliveries'?<ClientPortal/>:page==='operations'?<OperationsPage/>:page==='delivery'?<><h1>Передача</h1><DeliveryPanel project={{id:'a'.repeat(32),version:1,role:'viewer',data:{consents:{studio:true,business:true}}}} userId='viewer' disabled={false} onDirty={()=>{}} onAction={async()=>{}}/></>:page==='acceptance'?<><h1>Приёмка</h1><ReleaseAcceptance project={{id:'a'.repeat(32),version:1,role:'viewer'}} userId='viewer' disabled={false} onDirty={()=>{}} onReview={async()=>{}}/></>:page==='account'?<AccountPage/>:page==='organizer'?<PilotOrganizer/>:page==='campus'?<LearningCampus/>:page==='lesson-bridge'?<><h1>Lesson bridge</h1><ServerLessonProgress slug="how-language-models-work" answer={null} locale="ru"/></>:page==='workspace'?<CoreWorkspace/>:page==='data'?<DataCenter/>:page==='world'?<WorldHome/>:page==='intelligence'?<IntelligenceHome/>:page==='quality'||page==='brand'?<BrandPages quality={page==='quality'}/>:<PlayHome gameId={gameId}/>}</BrandShell>)};`
+const source=`import React from 'react';import {renderToPipeableStream} from 'react-dom/server';import {Writable} from 'node:stream';import {BrandShell} from './src/BrandShell';import WorldHome from './src/WorldHome';import IntelligenceHome from './src/IntelligenceHome';import PlayHome from './src/PlayHome';import PlayGameRoute from './src/PlayGameRoute';import BrandPages from './src/BrandPages';import DataCenter from './src/DataCenter';import CoreWorkspace from './src/CoreWorkspace';import LearningCampus from './src/LearningCampus';import ServerLessonProgress from './src/ServerLessonProgress';import PilotOrganizer from './src/PilotOrganizer';import AccountPage from './src/AccountPage';import ReleaseAcceptance from './src/ReleaseAcceptance';import DeliveryPanel from './src/DeliveryPanel';import OperationsPage from './src/OperationsPage';import ClientPortal from './src/ClientPortal';import TeamsPage from './src/TeamsPage';
+function renderComplete(element) {
+  return new Promise((resolve, reject) => {
+    const chunks = []
+    let settled = false
+    let renderer
+    const destination = new Writable({
+      write(chunk, _encoding, callback) { chunks.push(Buffer.from(chunk)); callback() },
+    })
+    const timer = setTimeout(() => fail(new Error('Full React SSR did not finish within 10 seconds')), 10000)
+    function fail(error) {
+      if (settled) return
+      settled = true
+      clearTimeout(timer)
+      renderer?.abort()
+      destination.destroy()
+      reject(error)
+    }
+    destination.on('error', fail)
+    destination.on('finish', () => {
+      if (settled) return
+      settled = true
+      clearTimeout(timer)
+      resolve(Buffer.concat(chunks).toString('utf8'))
+    })
+    try {
+      renderer = renderToPipeableStream(element, {
+        onAllReady() { if (!settled) renderer.pipe(destination) },
+        onError: fail,
+        onShellError: fail,
+      })
+    } catch (error) { fail(error) }
+  })
+}
+export async function renderPage(page,gameId){globalThis.location={pathname:gameId?'/play/world/'+gameId:page==='world'?'/':'/'+page,search:''};globalThis.localStorage={getItem:()=>null};const theme=['intelligence','campus','lesson-bridge','organizer'].includes(page)?'intelligence':['world','quality','brand','data','workspace','account','acceptance','delivery','operations','deliveries','teams'].includes(page)?'world':'play';return renderComplete(<BrandShell theme={theme}>{page==='teams'?<TeamsPage/>:page==='deliveries'?<ClientPortal/>:page==='operations'?<OperationsPage/>:page==='delivery'?<><h1>Передача</h1><DeliveryPanel project={{id:'a'.repeat(32),version:1,role:'viewer',data:{consents:{studio:true,business:true}}}} userId='viewer' disabled={false} onDirty={()=>{}} onAction={async()=>{}}/></>:page==='acceptance'?<><h1>Приёмка</h1><ReleaseAcceptance project={{id:'a'.repeat(32),version:1,role:'viewer'}} userId='viewer' disabled={false} onDirty={()=>{}} onReview={async()=>{}}/></>:page==='account'?<AccountPage/>:page==='organizer'?<PilotOrganizer/>:page==='campus'?<LearningCampus/>:page==='lesson-bridge'?<><h1>Lesson bridge</h1><ServerLessonProgress slug="how-language-models-work" answer={null} locale="ru"/></>:page==='workspace'?<CoreWorkspace/>:page==='data'?<DataCenter/>:page==='world'?<WorldHome/>:page==='intelligence'?<IntelligenceHome/>:page==='quality'||page==='brand'?<BrandPages quality={page==='quality'}/>:gameId?<PlayGameRoute gameId={gameId}/>:<PlayHome/>}</BrandShell>)};`
 const result=await build({stdin:{contents:source,resolveDir:process.cwd(),loader:'tsx'},bundle:true,format:'cjs',platform:'node',packages:'external',write:false,loader:{'.css':'empty'},jsx:'automatic'})
 await writeFile(output,result.outputFiles[0].text)
 try{
  const require=createRequire(import.meta.url),{renderPage}=require('../'+output)
  for(const name of ['world','intelligence','play','quality','brand','data','workspace','campus','lesson-bridge','organizer','account','acceptance','delivery','operations','deliveries','teams']){
-  const html=renderPage(name)
+  const html=await renderPage(name)
   assert.equal((html.match(/<h1\b/g)||[]).length,1,name+' requires one primary heading')
   assert.ok(html.includes('aria-label="Продукты OSGARD"')&&html.includes('id="product-main"'),name+' shell')
   assert.ok(html.includes('href="/intelligence"')&&html.includes('href="/play"'))
@@ -30,8 +63,8 @@ try{
   if(name==='data')assert.ok(html.includes('Скачать текущие данные')&&html.includes('type="file"'))
   if(name==='play')assert.equal((html.match(/class="play-card"/g)||[]).length,19)
  }
- const godot=renderPage('play','null-shift');assert.ok(godot.includes('data-game-launch="null-shift"')&&godot.includes('/games/null-shift/')&&godot.includes('WebGL 2'))
- const ready=renderPage('play','vector-zero');assert.ok(ready.includes('data-game-launch="vector-zero"')&&ready.includes('Избранное и история открытия'))
- const notFound=renderPage('play','unknown');assert.ok(notFound.includes('Мир не найден'))
+ const godot=await renderPage('play','null-shift');assert.ok(godot.includes('data-game-launch="null-shift"')&&godot.includes('/games/null-shift/')&&godot.includes('WebGL 2'))
+ const ready=await renderPage('play','vector-zero');assert.ok(ready.includes('data-game-launch="vector-zero"')&&ready.includes('Избранное и история открытия'))
+ const notFound=await renderPage('play','unknown');assert.ok(notFound.includes('Мир не найден'))
  console.log('Server rendering checks passed: sixteen surfaces, landmarks, demo controls, nineteen worlds and verified source-specific launch states')
 }finally{await unlink(output)}

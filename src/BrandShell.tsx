@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useSyncExternalStore } from 'react'
 import type { ReactNode } from 'react'
 import { BrandLockup } from './BrandMark'
 import { brandAreaForPath, brandBreadcrumbs, globalNavigationState } from './brandNavigation'
 import { getPlayGame } from './redesignCatalog'
-import { BROWSER_LOCATION_EVENT, browserLocationKey } from './browserNavigation'
+import { getBrowserSnapshot, getServerSnapshot, subscribeBrowserNavigation } from './browserNavigation'
+import { MOTION_CHANGE_EVENT, REPLAY_INTRO_EVENT, introEligible } from './osgardRouting'
 import type { ProductTheme } from './BrandMark'
 import './brandFonts.css'
 import './brandSystem.css'
@@ -22,10 +23,10 @@ const footerGroups = [
 export function BrandShell({ theme, children }: { theme: ProductTheme; children: ReactNode }) {
   const [motion, setMotion] = useState(readMotion)
   const [reduced, setReduced] = useState(false)
-  const [currentLocation, setCurrentLocation] = useState(browserLocationKey)
-  const currentUrl = new URL(currentLocation, 'https://osgard.world')
+  const currentLocation = useSyncExternalStore(subscribeBrowserNavigation, getBrowserSnapshot, getServerSnapshot)
+  const currentUrl = new URL(currentLocation.href, 'https://osgard.world')
   const hash = currentUrl.hash
-  const path = location.pathname.replace(/\/+$/, '') || '/'
+  const path = currentUrl.pathname.replace(/\/+$/, '') || '/'
   const product = brandAreaForPath(path, theme)
   const development = path === '/development' || path.startsWith('/development/')
   const game = path.startsWith('/play/world/') ? getPlayGame(path.slice('/play/world/'.length)) : undefined
@@ -52,20 +53,10 @@ export function BrandShell({ theme, children }: { theme: ProductTheme; children:
     update()
     media?.addEventListener('change', update)
     const syncStorage = (event: StorageEvent) => { if (event.key === 'osgard:motion' || event.key === null) setMotion(readMotion()) }
-    const syncLocation = () => setCurrentLocation(browserLocationKey())
     window.addEventListener('storage', syncStorage)
-    window.addEventListener('hashchange', syncLocation)
-    window.addEventListener('popstate', syncLocation)
-    window.addEventListener('pageshow', syncLocation)
-    window.addEventListener(BROWSER_LOCATION_EVENT, syncLocation)
-    syncLocation()
     return () => {
       media?.removeEventListener('change', update)
       window.removeEventListener('storage', syncStorage)
-      window.removeEventListener('hashchange', syncLocation)
-      window.removeEventListener('popstate', syncLocation)
-      window.removeEventListener('pageshow', syncLocation)
-      window.removeEventListener(BROWSER_LOCATION_EVENT, syncLocation)
     }
   }, [])
 
@@ -82,9 +73,11 @@ export function BrandShell({ theme, children }: { theme: ProductTheme; children:
     const enabled = !motion
     setMotion(enabled)
     try { localStorage.setItem('osgard:motion', enabled ? 'on' : 'off') } catch { /* The setting still applies to this open page. */ }
+    document.documentElement.dataset.motion = enabled ? 'on' : 'off'
+    window.dispatchEvent(new Event(MOTION_CHANGE_EVENT))
   }
 
-  return <div className={`brand-system theme-${theme}`}>
+  return <div className={`brand-system theme-${theme}${theme === 'play' && (path === '/play' || path === '/games' || path === '/entertainment') ? ' play-catalog-shell' : ''}`}>
     <a className="brand-skip" href="#product-main">Перейти к содержанию</a>
     <header className="brand-header">
       <a href={productHomes[product]} aria-label={productNames[product]}><BrandLockup theme={product} /></a>
@@ -108,7 +101,7 @@ export function BrandShell({ theme, children }: { theme: ProductTheme; children:
     </nav>
     <div id="product-main" tabIndex={-1}>{children}</div>
     <footer className="brand-footer">
-      <div className="brand-footer-intro"><BrandLockup theme={product} /><p>Одна экосистема.<br />Разные способы двигаться вперёд.</p></div>
+      <div className="brand-footer-intro"><BrandLockup theme={product} /><p>Одна экосистема.<br />Разные способы двигаться вперёд.</p><button type="button" className="brand-button" onClick={() => window.dispatchEvent(new Event(REPLAY_INTRO_EVENT))} disabled={reduced || !motion || !introEligible()} title={reduced || !motion ? 'Заставка отключена настройкой уменьшения движения' : !introEligible() ? 'Заставка недоступна в этом режиме или на этом устройстве' : 'Повторить заставку OSGARD'}>Повторить заставку</button></div>
       {footerGroups.map(group => <nav key={group.title} aria-label={group.title} className="brand-footer-group"><h2>{group.title}</h2>{group.links.map(([label, href]) => <a key={href} href={href}>{label}</a>)}</nav>)}
       <small className="brand-footer-note">Гостевой прогресс остаётся в этом браузере. Серверные проекты доступны через аккаунт. <a href="/quality#measurements">Посмотреть и удалить локальный журнал действий →</a></small>
     </footer>

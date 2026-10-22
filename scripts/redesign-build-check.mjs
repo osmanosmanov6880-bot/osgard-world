@@ -3,12 +3,23 @@ import { readFileSync,existsSync,writeFileSync } from 'node:fs'
 import { gzipSync } from 'node:zlib'
 const manifest=JSON.parse(readFileSync('dist/.vite/manifest.json','utf8'))
 const collect=(key,result=new Set())=>{if(result.has(key))return result;const item=manifest[key];assert.ok(item,'Missing manifest entry '+key);result.add(key);for(const child of item.imports||[])collect(child,result);return result}
+// Rollup may combine a dynamic entry with helpers shared by its deferred child.
+// Resolve that actual entry by its unique name and its edge from the main app;
+// every static dependency and the same 95 KiB limit are still counted below.
+const resolveRoute=route=>{
+ if(manifest[route])return route
+ const name=route.split('/').at(-1).replace(/\.tsx$/,'')
+ const matches=(manifest['index.html'].dynamicImports||[]).filter(key=>manifest[key]?.isDynamicEntry&&manifest[key].name===name)
+ assert.equal(matches.length,1,'Missing or ambiguous dynamic manifest entry '+route)
+ return matches[0]
+}
 const reports=[]
 for(const route of ['src/WorldHome.tsx','src/IntelligenceHome.tsx','src/PlayHome.tsx']){
- const keys=new Set([...collect('index.html'),...collect(route)])
+ const keys=new Set([...collect('index.html'),...collect(resolveRoute(route))])
  const files=[...new Set([...keys].map(k=>manifest[k].file))]
  assert.ok(files.every(f=>!f.includes('/three-')&&!f.includes('LivingGlobe')&&!f.includes('TimePrototype')),'3D/game runtime leaked into '+route)
  assert.ok([...keys].every(k=>!k.includes('osaLessonGuides')&&!k.includes('osaLessonReading')),'Full lesson content leaked into '+route)
+ if(route==='src/PlayHome.tsx')assert.ok([...keys].every(key=>!['PlayGameRoute','PlayExploreSections'].includes(manifest[key].name)),'Deferred PLAY sections or session controller leaked into catalogue entry')
  const jsGzipBytes=files.reduce((sum,file)=>sum+gzipSync(readFileSync('dist/'+file)).length,0)
  assert.ok(jsGzipBytes<=95*1024,'Landing JavaScript exceeds the 95 KiB gzip budget: '+route)
  const css=[...new Set([...keys].flatMap(k=>manifest[k].css||[]))]
