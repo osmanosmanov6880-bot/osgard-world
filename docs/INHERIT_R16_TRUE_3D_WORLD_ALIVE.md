@@ -44,3 +44,15 @@ The GPU canvas has pointer-events:none. Underlying native game buttons remain in
 This is a real-time 3D upgrade with authored procedural art, not a pre-rendered picture. It is NOT a completed photorealistic AAA console game. Hand-authored photogrammetry, character animation, real-time GI, cinematic storytelling, voice acting, large-scale exploration and a verified Godot/Unreal export are outside R16.
 
 A future Godot 4.7+ vertical slice can re-use the saved-world coordinate model, game mechanics and art direction, but must pass its own build and performance tests before being called finished.
+
+## R16.4 — authored monumental environment, not repeated low-poly props
+
+The playable scene now generates original, physically shaded high-detail environmental objects. These are fictional landmarks, not player-owned saved traces.
+
+- **Sanctuary:** layered twelve-sided limestone foundations; separately offset stone courses; colored stone mosaics; twelve fluted columns with capitals; keystone arch; octagonal lookout tower with carved masonry, crenellations, copper roof, windows, vines, rubble and lanterns.
+- **Harbor:** timber pier with separate planks, piling joints, sagging rope railings, coastal stairs, weathered lanterns and deterministic driftwood.
+- **Rowing skiff:** curved genuinely three-dimensional hollow hull, independent ribs, bench seats, hull rails, fittings, ropes and wooden oars.
+- **Physically based materials:** seeded 96px stone normal and roughness maps with local stone, wood, copper, brass and glass.
+- **Performance:** high/medium/low geometric budgets, instanced repeated masonry, mosaic stones, vines, debris and pilings. Low mode retains silhouettes while reducing triangles and fine detail.
+
+The heritage-environment.mjs module exports the complete real 3D ensemble and geometry budget statistics. Node tests assert finite vertices, actual PBR normal maps, instancing, tier differences and offline-only assets. This is authored procedural geometry, not scan-based photorealistic production art.
