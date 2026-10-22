@@ -236,7 +236,7 @@ console.log('PASS local ZION release: 19 unique catalog entries; 11 complete loc
   assert.ok(js.includes('new THREE.WebGLRenderer') && js.includes('new THREE.PerspectiveCamera'), 'Open City needs a real perspective WebGL engine')
   assert.ok(js.includes('game().place(dest.x, dest.z, state.selected)'), 'New walk mode must use the authoritative original mission state')
   assert.ok(js.includes("keys.has('KeyW')") && js.includes('joystick.pointer'), 'Keyboard and touch movement must be implemented')
-  assert.ok(js.includes('collides(nx, player.z)') && js.includes('collides(player.x, nz)'), 'Walk mode requires city collisions')
+  assert.ok(js.includes('rules.walkStep(player,') && js.includes('dt,collides)'), 'Walk mode must use the shared swept-collision physics')
   assert.ok(js.includes('world.gpuScale') && js.includes('renderer.shadowMap.enabled'), 'Quality and adaptive performance are required')
   assert.ok(css.includes('.oc-stage-active') && css.includes('.oc-joystick'), 'Fullscreen and touch styles are required')
   assert.ok(css.includes('prefers-reduced-motion'), 'Reduced-motion accessibility is required')
