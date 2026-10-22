@@ -11,7 +11,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: osgard-frontend-deploy
+  group: osgard-remix-arena-static-deploy
   cancel-in-progress: false
 
 jobs:
@@ -56,6 +56,10 @@ jobs:
           ssh -i ~/.ssh/osgard_remix_key -o BatchMode=yes "$USER@$HOST" "RELEASE_DIR='$remote_dir' RELEASE_ID='$release_id' bash -s" <<'REMOTE'
           set -euo pipefail
           trap 'rm -rf "$RELEASE_DIR"' EXIT
+          activation_lock=/run/lock/osgard-frontend-activation.lock
+          test ! -L "$activation_lock" || { echo "Unsafe activation lock symlink" >&2; exit 1; }
+          exec 9>> "$activation_lock"
+          flock -w 420 9 || { echo "Timed out waiting for the OSGARD frontend deployment lock" >&2; exit 1; }
           cd "$RELEASE_DIR"
           sha256sum -c remix-arena-release.sha256
           mkdir -p game
