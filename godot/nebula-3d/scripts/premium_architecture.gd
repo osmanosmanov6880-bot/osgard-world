@@ -191,12 +191,12 @@ func _build_station(center: Vector3, tint: Color, index: int) -> void:
     add_child(station)
     var dark := _material(Color(0.065,0.11,0.19),0.0)
     var steel := _material(Color(0.16,0.25,0.35))
-    var trim := _material(tint.darkened(0.12),1.15)
+    var trim := _material(tint.darkened(0.32),0.42)
     # Matte hub, precise rings, service decks and visible landing architecture.
     _cylinder(station,47.0,7.0,Vector3(0,0,0),dark)
     _cylinder(station,35.0,0.45,Vector3(0,3.7,0),steel)
-    _ring(station,49.0,0.8,4.0,trim)
-    _ring(station,35.0,0.28,4.1,trim)
+    _ring(station,49.0,0.32,4.0,trim)
+    _ring(station,35.0,0.13,4.1,trim)
     for i in 8:
         var angle: float=TAU*float(i)/8.0
         var ux: float=cos(angle)
@@ -208,7 +208,7 @@ func _build_station(center: Vector3, tint: Color, index: int) -> void:
         _box(station,pos+Vector3(0,29,0),Vector3(8,58,8),dark)
         _box(station,pos+Vector3(0,59,0),Vector3(10,4.0,10),trim)
         _box(station,pos+Vector3(0,40,0),Vector3(11,2,11),steel)
-    var ring := _ring(station,17.0,1.0,18.0,trim)
+    var ring := _ring(station,17.0,0.25,18.0,trim)
     ring.rotation.x=PI*0.32
     animated_holos.append(ring)
     var label := Label3D.new()

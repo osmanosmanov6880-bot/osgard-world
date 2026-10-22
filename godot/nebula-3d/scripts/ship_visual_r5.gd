@@ -1,4 +1,5 @@
 extends Node3D
+const ShipHeroR6Script = preload("res://scripts/ship_hero_detail_r6.gd")
 ## R5 authored procedural interceptor model. GL Compatibility friendly, no external assets.
 ## Mesh geometry is real: beveled planform, inset armor, turbine housings and service details.
 ## Gameplay physics remain in ship.gd; this node provides visual geometry only.
@@ -31,6 +32,9 @@ func _ready() -> void:
     _build_canopy()
     _build_propulsion()
     _build_surface_details()
+    var hero_r6 := ShipHeroR6Script.new()
+    hero_r6.name = "R6_HeroHullDetail"
+    add_child(hero_r6)
 
 func _brushed_normal_map() -> ImageTexture:
     # Tangent-space 128px micro-scratches; repeatable on every UV-mapped mesh.
