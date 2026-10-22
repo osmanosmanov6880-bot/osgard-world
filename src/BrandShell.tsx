@@ -4,24 +4,19 @@ import { BrandLockup } from './BrandMark'
 import { brandAreaForPath, brandBreadcrumbs, globalNavigationState } from './brandNavigation'
 import { getPlayGameTitle } from './playGameTitles'
 import { getBrowserSnapshot, getServerSnapshot, subscribeBrowserNavigation } from './browserNavigation'
-import { MOTION_CHANGE_EVENT, REPLAY_INTRO_EVENT, introEligible } from './osgardRouting'
+import { MOTION_CHANGE_EVENT } from './osgardRouting'
 import type { ProductTheme } from './BrandMark'
 import './brandFonts.css'
 import './brandSystem.css'
 import './omegaSystems.css'
 
 const OsgardQuickNav = lazy(() => import('./OsgardQuickNav'))
+const OsgardFooter = lazy(() => import('./OsgardFooter'))
 
 const readMotion = () => { try { return localStorage.getItem('osgard:motion') !== 'off' } catch { return true } }
 const productHomes = { world: '/', intelligence: '/intelligence', play: '/play' }
 const productNames = { world: 'OSGARD WORLD', intelligence: 'OSA Intelligence', play: 'OSGARD PLAY' }
 const globalLinks = [['OSGARD', '/'], ['Intelligence', '/intelligence'], ['Play', '/play'], ['Development', '/development']] as const
-const footerGroups = [
-  { title: 'Продукты', links: [['OSGARD WORLD', '/'], ['OSA Intelligence', '/intelligence'], ['OSGARD PLAY', '/play'], ['Разработка', '/development']] },
-  { title: 'Моя работа', links: [['Рабочий центр', '/workspace/overview'], ['Проекты', '/workspace'], ['Команды', '/teams'], ['Полученные материалы', '/deliveries'], ['Покупки', '/purchases'], ['Аккаунт', '/account'], ['Мои данные', '/data']] },
-  { title: 'Информация', links: [['Фирменная система', '/brand'], ['Состояние сборки', '/quality'], ['Приватность', '/privacy/'], ['Условия', '/terms/'], ['Связаться', '/#contact']] },
-]
-
 export function BrandShell({ theme, children }: { theme: ProductTheme; children: ReactNode }) {
   const [motion, setMotion] = useState(readMotion)
   const [reduced, setReduced] = useState(false)
@@ -127,11 +122,9 @@ export function BrandShell({ theme, children }: { theme: ProductTheme; children:
       <ol>{crumbs.map((item, index) => <li key={index}>{item.href ? <a href={item.href}>{item.label}</a> : <span aria-current="page">{item.label}</span>}</li>)}</ol>
     </nav>
     <div id="product-main" tabIndex={-1}>{children}</div>
-    <footer className="brand-footer">
-      <div className="brand-footer-intro"><BrandLockup theme={product} /><p>Одна экосистема.<br />Разные способы двигаться вперёд.</p><button type="button" className="brand-button" onClick={() => window.dispatchEvent(new Event(REPLAY_INTRO_EVENT))} disabled={reduced || !motion || !introEligible()} title={reduced || !motion ? 'Заставка отключена настройкой уменьшения движения' : !introEligible() ? 'Заставка недоступна в этом режиме или на этом устройстве' : 'Повторить заставку OSGARD'}>Повторить заставку</button></div>
-      {footerGroups.map(group => <nav key={group.title} aria-label={group.title} className="brand-footer-group"><h2>{group.title}</h2>{group.links.map(([label, href]) => <a key={href} href={href}>{label}</a>)}</nav>)}
-      <small className="brand-footer-note">Гостевой прогресс остаётся в этом браузере. Серверные проекты доступны через аккаунт. <a href="/quality#measurements">Посмотреть и удалить локальный журнал действий →</a></small>
-    </footer>
+    <Suspense fallback={<footer className="brand-footer brand-footer-loading" aria-label="Загрузка ссылок" />}>
+      <OsgardFooter product={product} motion={motion} reduced={reduced} />
+    </Suspense>
     <Suspense fallback={null}>
       {quickOpen && <OsgardQuickNav onClose={closeQuickNav} onNavigate={() => setQuickOpen(false)} />}
     </Suspense>
