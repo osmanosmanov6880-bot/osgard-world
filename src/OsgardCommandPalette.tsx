@@ -4,7 +4,6 @@ import type { KeyboardEvent as ReactKeyboardEvent } from 'react'
 import { playGameTitles } from './playGameTitles'
 import { cases } from './featuredCases'
 import { navigateBrowserUrl } from './browserNavigation'
-import './osgardCommandPalette.css'
 
 type Destination = {
   id: string
@@ -54,8 +53,8 @@ const routeSuggestions = (path: string): string[] => {
 }
 const normal = (value: string): string => value.trim().toLocaleLowerCase('ru')
 
-export function OsgardCommandPalette({ path }: { path: string }) {
-  const [open, setOpen] = useState(false)
+export function OsgardCommandPalette({ path, initialOpen = false }: { path: string; initialOpen?: boolean }) {
+  const [open, setOpen] = useState(initialOpen)
   const [query, setQuery] = useState('')
   const trigger = useRef<HTMLButtonElement>(null)
   const input = useRef<HTMLInputElement>(null)
