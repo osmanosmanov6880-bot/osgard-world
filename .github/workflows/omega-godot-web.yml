@@ -36,11 +36,18 @@ jobs:
       - name: Execute native Godot city-smoke and gameplay regression tests
         shell: bash
         run: |
-          set -euo pipefail
+          set -uo pipefail
+          failures=0
           for test_file in godot/empire-omega/tests/*.gd; do
             echo "=== NATIVE ${test_file##*/} ==="
-            timeout --signal=TERM --kill-after=10s 55s godot --headless --path godot/empire-omega --script "res://tests/${test_file##*/}"
+            if timeout --signal=TERM --kill-after=10s 55s godot --headless --path godot/empire-omega --script "res://tests/${test_file##*/}"; then
+              echo "PASS: ${test_file##*/}"
+            else
+              echo "::error::Failed Godot test: ${test_file##*/}"
+              failures=1
+            fi
           done
+          exit "$failures"
       - name: Export authentic Godot 4.4.1 Web application
         shell: bash
         run: |
