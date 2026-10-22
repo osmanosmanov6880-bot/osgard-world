@@ -64,17 +64,21 @@ assert.ok(shade.includes('renderingMode="canvas2d"'), 'A WebGL failure must stil
 
 const premiumJS = text(resolve(root, 'queue/ZION-030/premium.js'))
 const premiumCSS = text(resolve(root, 'queue/ZION-030/premium.css'))
-assert.ok(shade.includes('premium.js?v=24') && shade.includes('premium.css?v=24'), 'The published game must load the implemented premium UI')
+assert.ok(shade.includes('premium.js?v=25') && shade.includes('premium.css?v=25'), 'The published game must load the implemented premium UI')
 assert.ok(shade.includes('ZION030_GAME=Object.freeze'), 'The new view must use the real game mechanics')
 assert.ok(premiumJS.includes("canvas.getContext('2d'") && premiumJS.includes("game()?.state?.()"), 'The isometric world must be a live canvas, not a static image')
 assert.ok(premiumJS.includes('premiumPlace') && premiumJS.includes('premiumMap'), 'Placement and map view must be interactive')
 assert.ok(premiumCSS.includes('.premium-mission') && premiumCSS.includes('.premium-how') && premiumCSS.includes('.premium-mode .layout'), 'The approved three-column layout must be styled')
 assert.ok(!premiumCSS.includes('data:image/png;base64'), 'The premium interface must not disguise a screenshot as gameplay')
 assert.ok(premiumJS.includes("element('button','premium-hot-marker'") && premiumJS.includes("marker.addEventListener('click'"), 'Hotspots are real accessible gameplay targets')
-assert.ok(premiumJS.includes("root.dataset.premiumVersion='24'") && premiumCSS.includes('athens-skyline.svg'), 'V23 interactive redesign must be active')
+assert.ok(premiumJS.includes("root.dataset.premiumVersion='25'") && premiumCSS.includes('athens-skyline.svg'), 'V23 interactive redesign must be active')
 assert.ok(premiumCSS.includes('PREMIUM V24') && premiumCSS.includes('.premium-extra-readable'), 'Large readable font mode should be available')
 assert.ok(premiumJS.includes('hasSelectedPlace:false') && premiumJS.includes('state.hasSelectedPlace=true'), 'Explicit placement location must be selected')
 assert.ok(premiumJS.includes('premiumSelectionTitle') && premiumJS.includes('how.querySelectorAll'), 'Live next-step guide is required')
+assert.ok(premiumJS.includes("districtButtons") && premiumJS.includes("premiumShowHints"), "v25 interactive district objective cards")
+assert.ok(premiumJS.includes("state.mode==='map'") && premiumJS.includes("const pos=S(p.x,p.z,state.mode==="), "v25 true overhead map markers")
+assert.ok(premiumJS.includes("futureCoverage") && premiumJS.includes("showHints:false"), "v25 live cooling preview and opt-in site highlights")
+assert.ok(premiumCSS.includes("v25 THERMAL RESCUE") && premiumCSS.includes(".premium-district.is-cooled"), "v25 accessibility and task states")
 new vm.Script(premiumJS, { filename: 'zion-premium.js' })
 
 
