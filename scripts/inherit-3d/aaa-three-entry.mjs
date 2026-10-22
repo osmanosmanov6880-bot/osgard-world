@@ -37,11 +37,12 @@ controls.append(heading,switcher,orbit,detail,live);world.append(controls);
 const canvas=make('canvas','aaa3d-canvas');canvas.setAttribute('aria-hidden','true');
 canvas.setAttribute('tabindex','-1');canvas.style.pointerEvents='none';
 island.prepend(canvas);
-const status={available:false,active:false,frames:0,traces:0,generation:null,quality,season:'',fallback:null,flyby:false,renderer:'WebGL Three.js',detailTiers:{high:0,medium:0,low:0},detailTriangles:0,detailDrawCalls:0};
+const status={available:false,active:false,frames:0,traces:0,generation:null,quality,season:'',fallback:null,flyby:false,renderer:'WebGL Three.js',detailTiers:{high:0,medium:0,low:0},detailTriangles:0,detailDrawCalls:0,cachedTraces:0,createdTraces:0};
 window.InheritAAA3D=Object.freeze({getState:()=>({...status}),toggle:()=>switcher.click()});
 let renderer,scene,camera,staticWorld,traceRoot,sun,hemi,cold;
 let waterUniforms,raf=0,lastFrame=0,sceneVisible=true,modeEnabled=true,flybyStart=0,flyby=false;
 let signature='',lastSeason='',aspect=1.84,firstDraw=false;
+const traceCache=new Map(); // Reuse unchanged sculpted meshes across generations and building moves.
 const raycaster=new THREE.Raycaster(),pointer=new THREE.Vector2();
 const preferences=()=>{try{return localStorage.getItem('inherit:3d:v1')}catch{return null}};
 const savePreference=val=>{try{localStorage.setItem('inherit:3d:v1',val)}catch{}};
@@ -134,27 +135,47 @@ function syncState(force=false){
  sorted.forEach((item,rank)=>{
   tiers.set(item.i,rank<detailBudget.high?'high':rank<detailBudget.high+detailBudget.medium?'medium':'low');
  });
- disposeTraces(traceRoot);
  const counts={high:0,medium:0,low:0};
- let triangles=0,drawCalls=0,activeLanterns=0;
+ const visible=new Set(),occur=new Map();
+ let triangles=0,drawCalls=0,activeLanterns=0,reused=0,created=0;
+ function release(object){
+  const orphan=new THREE.Group();orphan.add(object);
+  disposeTraces(orphan); // Dispose merged GPU buffers, retain shared PBR maps.
+ }
  for(let i=0;i<items.length;i++){
   const o=items[i],p=screenToTerrain(o.x,o.y,aspect,ORTHO_HEIGHT,ELEVATION);
   const tier=tiers.get(i)||'low';
   const lightAllowed=o.tool==='light'&&quality==='high'&&activeLanterns<2&&tier==='high';
   if(lightAllowed)activeLanterns++;
-  const value=makeTrace(o.tool,{
-   size:o.tool==='tree'?.61:o.tool==='arch'?.72:.86,cast:quality==='high',
-   quality:tier,seed:(173+Math.round(o.x*173+o.y*311)+i*19)>>>0,allowLight:lightAllowed
-  });
+  const tuple=o.tool+'|'+o.x.toFixed(3)+'|'+o.y.toFixed(3);
+  const ordinal=occur.get(tuple)||0;occur.set(tuple,ordinal+1);
+  const cacheKey=tuple+'|'+ordinal;
+  const shapeKey=tier+'|'+(quality==='high'?'shadows':'simple')+'|'+(lightAllowed?'lit':'unlit');
+  visible.add(cacheKey);
+  let value=traceCache.get(cacheKey);
+  if(value?.userData.shapeKey!==shapeKey){
+   if(value)release(value);
+   value=makeTrace(o.tool,{
+    size:o.tool==='tree'?.61:o.tool==='arch'?.72:.86,cast:quality==='high',
+    quality:tier,seed:(173+Math.round(o.x*173+o.y*311)+i*19)>>>0,allowLight:lightAllowed
+   });
+   value.userData.shapeKey=shapeKey;
+   traceCache.set(cacheKey,value);
+   traceRoot.add(value);created++;
+  }else reused++;
   value.position.set(p.x,p.y+.06,p.z);
   value.userData.nativeTrace={tool:o.tool,x:o.x,y:o.y};
   value.userData.detailTier=tier;
   value.rotation.y=((i*0.6180339887)%1)*Math.PI*2;
-  traceRoot.add(value);
   counts[tier]++;
   triangles+=value.userData.detailTriangles||0;
   drawCalls+=value.userData.detailDrawCalls||value.children.filter(c=>c.isMesh).length;
  }
+ for(const [cacheKey,node] of traceCache){
+  if(!visible.has(cacheKey)){release(node);traceCache.delete(cacheKey);}
+ }
+ status.cachedTraces=reused;
+ status.createdTraces=created;
  status.detailTiers=counts;
  status.detailTriangles=triangles;
  status.detailDrawCalls=drawCalls;
