@@ -24,6 +24,24 @@ export default function OsgardQuickNav({ onClose, onNavigate }: Props) {
   useEffect(() => {
     const before = document.body.style.overflow
     document.body.style.overflow = 'hidden'
+    // aria-modal alone does not stop assistive technologies from exploring the
+    // page underneath. Keep only this dialog interactive while it is open.
+    // Observe direct shell children because the footer is lazy-loaded.
+    const dialog = dialogRef.current
+    const shell = dialog?.closest<HTMLElement>('.brand-system')
+    const overlay = dialog?.closest<HTMLElement>('.osgard-quick-overlay')
+    const previousInert = new Map<HTMLElement, boolean>()
+    const lockBackground = () => {
+      if (!shell) return
+      for (const child of Array.from(shell.children)) {
+        if (!(child instanceof HTMLElement) || child === overlay) continue
+        if (!previousInert.has(child)) previousInert.set(child, child.inert)
+        child.inert = true
+      }
+    }
+    lockBackground()
+    const observer = shell ? new MutationObserver(lockBackground) : null
+    if (shell) observer?.observe(shell, { childList: true })
     const frame = requestAnimationFrame(() => inputRef.current?.focus())
     const onKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
@@ -49,6 +67,8 @@ export default function OsgardQuickNav({ onClose, onNavigate }: Props) {
     return () => {
       cancelAnimationFrame(frame)
       document.removeEventListener('keydown', onKey, true)
+      observer?.disconnect()
+      for (const [element, inert] of previousInert) element.inert = inert
       document.body.style.overflow = before
     }
   }, [])
