@@ -66,13 +66,46 @@
 .osgard-quick-bottom{display:flex;flex-wrap:wrap;gap:12px 21px;padding:14px 29px;
   border-top:1px solid #55768b5e;color:#95bdcf;
   font:640 10px/1.5 'JetBrains Mono',monospace;letter-spacing:.08em}
+/* WAVE 3 — show existing worlds visually, not as a 43-item wall of text. */
+.osgard-quick-categories{display:flex;gap:7px;min-width:0;overflow-x:auto;flex:none;
+  padding:13px 29px 2px;scrollbar-width:thin;scrollbar-color:#62899b transparent}
+.brand-system .osgard-quick-categories button{display:flex;align-items:center;gap:8px;
+  flex:none;min-height:44px;border:1px solid #547e95a8;border-radius:8px;
+  background:#0b2233;color:#d4eafa;white-space:nowrap;
+  padding:10px 12px;font:650 12px/1.4 Inter,Arial,sans-serif;cursor:pointer}
+.brand-system .osgard-quick-categories button[aria-pressed="true"]{border-color:#a1f3f4;
+  background:#184557;color:#fff;box-shadow:inset 0 0 0 1px #aaf5ff20}
+.brand-system .osgard-quick-categories button:focus-visible,
+.brand-system .osgard-quick-context a:focus-visible{outline:3px solid #a0ffff;outline-offset:2px}
+.osgard-quick-categories button span{color:#93c4d6;font:700 11px/1.2 'JetBrains Mono',monospace}
+.osgard-quick-context{padding:9px 29px 0;min-width:0;flex:none}
+.osgard-quick-context>span{display:block;font:700 10px/1.5 'JetBrains Mono',monospace;
+  color:#90c5d9;letter-spacing:.13em;margin-bottom:9px}
+.osgard-quick-context nav{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.osgard-quick-context nav a{display:flex;align-items:center;justify-content:space-between;gap:6px;
+  min-width:0;min-height:48px;padding:9px 12px;text-decoration:none;
+  font:630 12px/1.4 Inter,Arial,sans-serif;color:#e7f7ff;border:1px solid #537f94;
+  border-radius:7px;background:#0e2d42b8;overflow-wrap:anywhere}
+.osgard-quick-context nav a:hover{background:#1a4a60;border-color:#89e7ec}
+.osgard-quick-context nav a span{font-size:18px;flex:none;color:#8eeaf0}
+.brand-system .osgard-quick-result.has-art{grid-template-columns:27px 76px minmax(0,1fr) 23px;gap:12px}
+.osgard-quick-thumb{display:block;overflow:hidden;width:76px;height:58px;flex:none;border-radius:7px;
+  background:#143248;border:1px solid #5687a377}
+.osgard-quick-thumb img{display:block;width:100%;height:100%;object-fit:cover}
+
 @media(max-width:720px){
   .brand-system .osgard-quick-overlay{padding:0;align-items:stretch}
   .brand-system .osgard-quick-dialog{height:100dvh;max-height:100dvh;width:100%;border:0;
     border-radius:0;padding-top:max(8px,env(safe-area-inset-top));padding-bottom:env(safe-area-inset-bottom)}
   .osgard-quick-top{padding:20px 20px 12px}
   .osgard-quick-search{margin:7px 20px 0;min-height:54px}
-  .osgard-quick-meta{padding:16px 20px 10px}
+  .osgard-quick-categories{padding:10px 17px 3px}
+  .osgard-quick-context{padding:8px 17px 0}
+  .osgard-quick-context nav{gap:5px}
+  .osgard-quick-context nav a{font-size:11px;padding:9px 8px;min-height:47px}
+  .brand-system .osgard-quick-result.has-art{grid-template-columns:22px 61px minmax(0,1fr) 18px;gap:9px}
+  .osgard-quick-thumb{width:61px;height:50px}
+    .osgard-quick-meta{padding:16px 20px 10px}
   .osgard-quick-results{padding:0 10px 16px}
   .brand-system .osgard-quick-result{min-height:78px;padding:12px}
   .osgard-quick-info strong{font-size:17px}
