@@ -363,7 +363,10 @@ main{width:min(2500px,98vw)!important;padding:10px clamp(12px,1.5vw,30px) 36px!i
  .premium-mode .premium-selection-guide span{font-size:14px!important}
  .premium-mode .premium-legend{bottom:13px;left:10px}
  .premium-mode .premium-zoom{bottom:13px;right:10px}
- .premium-mode .z9-keyboard-controls{display:none!important}
+ .premium-mode .z9-keyboard-controls{display:flex!important;flex-wrap:wrap;align-items:center;gap:8px;padding:12px!important}
+ .premium-mode .z9-keyboard-controls p{width:100%;margin:0 0 6px!important;color:#c3e6ef}
+ .premium-mode .z9-keyboard-controls [data-cursor]{min-width:46px!important;min-height:46px!important}
+ .premium-mode .z9-keyboard-controls #place-keyboard{min-height:46px!important;flex:1 1 136px;background:#104b5c!important;border:1px solid #55cfcc;color:#edfffd}
  .premium-how #premiumPlace{display:none!important}
  .premium-mode .premium-goal{padding:15px 17px!important}
  .premium-mode .premium-hero-copy>p{font-size:17px!important;line-height:1.48!important}
