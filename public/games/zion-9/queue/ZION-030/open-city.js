@@ -94,13 +94,14 @@
       <div class="oc-modal-card"><header><div><small>\u0414\u0418\u0421\u041f\u0415\u0422\u0427\u0415\u0420\u0421\u041a\u0410\u042f \u0421\u041b\u0423\u0416\u0411\u0410</small><h2>\u041a\u041e\u041d\u0422\u0420\u0410\u041a\u0422\u042b \u0413\u041e\u0420\u041e\u0414\u0410</h2></div><button type="button" id="oc-journal-close" aria-label="\u0417\u0430\u043a\u0440\u044b\u0442\u044c">\u2715</button></header>
       <p class="oc-modal-sub">\u041f\u044f\u0442\u044c \u043c\u043d\u043e\u0433\u043e\u044d\u0442\u0430\u043f\u043d\u044b\u0445 \u043c\u0438\u0441\u0441\u0438\u0439. \u0412\u044b\u0431\u0435\u0440\u0438 \u0437\u0430\u0434\u0430\u043d\u0438\u0435: GPS \u043f\u0440\u043e\u043b\u043e\u0436\u0438\u0442 \u043f\u0443\u0442\u044c. E \u2014 \u0432\u0437\u0430\u0438\u043c\u043e\u0434\u0435\u0439\u0441\u0442\u0432\u0438\u0435.</p>
       <div id="oc-journal-list" class="oc-journal-list"></div>
-      <div class="oc-garage"><h3>\u0413\u0410\u0420\u0410\u0416 · CITY RUNNER</h3><p>\u0423\u043b\u0443\u0447\u0448\u0435\u043d\u0438\u044f \u043e\u043f\u043b\u0430\u0447\u0438\u0432\u0430\u044e\u0442\u0441\u044f \u043a\u0440\u0435\u0434\u0438\u0442\u0430\u043c\u0438 \u0437\u0430 \u043c\u0438\u0441\u0441\u0438\u0438, \u0431\u0435\u0437 \u0434\u043e\u043d\u0430\u0442\u0430.</p><div class="oc-garage-options"><button id="oc-upgrade-grip" type="button">\u041f\u041e\u0414\u0412\u0415\u0421\u041a\u0410 · 260 \u25c8</button><button id="oc-upgrade-battery" type="button">\u0411\u0410\u0422\u0410\u0420\u0415\u042f · 230 \u25c8</button></div></div>
+      <div class="oc-garage"><h3>\u0413\u0410\u0420\u0410\u0416 · CITY RUNNER</h3><p>\u0423\u043b\u0443\u0447\u0448\u0435\u043d\u0438\u044f \u043e\u043f\u043b\u0430\u0447\u0438\u0432\u0430\u044e\u0442\u0441\u044f \u043a\u0440\u0435\u0434\u0438\u0442\u0430\u043c\u0438 \u0437\u0430 \u043c\u0438\u0441\u0441\u0438\u0438, \u0431\u0435\u0437 \u0434\u043e\u043d\u0430\u0442\u0430.</p><div id="oc-garage-balance" class="oc-garage-balance" aria-live="polite"></div><div class="oc-garage-options"><button id="oc-upgrade-speed" type="button">ДВИГАТЕЛЬ · 300 ◈</button><button id="oc-upgrade-grip" type="button">\u041f\u041e\u0414\u0412\u0415\u0421\u041a\u0410 · 260 \u25c8</button><button id="oc-upgrade-battery" type="button">\u0411\u0410\u0422\u0410\u0420\u0415\u042f · 230 \u25c8</button></div></div>
       <button type="button" class="oc-modal-main" id="oc-journal-resume">\u0412\u0415\u0420\u041d\u0423\u0422\u042c\u0421\u042f \u0412 \u0413\u041e\u0420\u041e\u0414</button></div>
     </section>
     <section class="oc-pause" id="oc-pause" role="dialog" aria-modal="true" aria-label="\u041c\u0435\u043d\u044e \u043f\u0430\u0443\u0437\u044b" hidden><div class="oc-pause-card"><small>OPEN CITY · \u041f\u0410\u0423\u0417\u0410</small><h2>\u041f\u0420\u041e\u0414\u041e\u041b\u0416\u0418\u041c?</h2><p>\u0417\u0430\u0434\u0430\u043d\u0438\u044f, \u043d\u0430\u0433\u0440\u0430\u0434\u044b \u0438 \u0443\u043b\u0443\u0447\u0448\u0435\u043d\u0438\u044f \u0441\u043e\u0445\u0440\u0430\u043d\u044f\u044e\u0442\u0441\u044f \u0432 \u0431\u0440\u0430\u0443\u0437\u0435\u0440\u0435.</p><button type="button" id="oc-resume">\u041f\u0420\u041e\u0414\u041e\u041b\u0416\u0418\u0422\u042c</button><button type="button" id="oc-pause-journal">\u0416\u0423\u0420\u041d\u0410\u041b \u0418 \u0413\u0410\u0420\u0410\u0416</button><button type="button" id="oc-exit-to-map">\u0412\u042b\u0419\u0422\u0418 \u041d\u0410 \u041a\u0410\u0420\u0422\u0423</button><small>WASD \u2014 \u0445\u043e\u0434\u044c\u0431\u0430 · SPACE \u2014 \u043f\u0440\u044b\u0436\u043e\u043a · V \u2014 \u043a\u0430\u043c\u0435\u0440\u0430 · J \u2014 \u0436\u0443\u0440\u043d\u0430\u043b · M \u2014 \u043a\u0430\u0440\u0442\u0430</small></div></section>
     <div class="oc-vehicle-charge" id="oc-vehicle-charge" hidden><span>\u26a1 \u0417\u0410\u0420\u042f\u0414</span><strong id="oc-battery-readout">100%</strong><div class="oc-meter"><i id="oc-battery-bar"></i></div></div>
   `);
   shell.querySelector('.oc-start-foot').append(' · SPACE: прыжок · V: камера · J: журнал · M: карта · ESC: пауза');
+  shell.insertAdjacentHTML('beforeend', '<button id="oc-nav-mobile" type="button" aria-label="Переключить маршрут GPS">⌖ GPS: СЮЖЕТ</button>');
   shell.insertAdjacentHTML('beforeend', '<button id="oc-view-button" class="oc-view-button" type="button" aria-label="\u0421\u043c\u0435\u043d\u0438\u0442\u044c \u043a\u0430\u043c\u0435\u0440\u0443">\u25c9 \u041a\u0410\u041c\u0415\u0420\u0410</button><button id="oc-jump-button" class="oc-jump-button" type="button" aria-label="\u041f\u0440\u044b\u0433\u043d\u0443\u0442\u044c">\u21e7 \u041f\u0420\u042b\u0416\u041e\u041a</button>');
 
 
@@ -126,6 +127,7 @@
   function pauseGame() { if (!world.active || !$('oc-start').hidden) return; $('oc-journal').hidden = true; $('oc-pause').hidden = false; keys.clear(); $('oc-resume').focus({ preventScroll:true }); }
   function resumeGame() { $('oc-pause').hidden = true; world.last = 0; keys.clear(); viewport.focus?.({ preventScroll:true }); }
   function updateJournal() {
+    $('oc-garage-balance').textContent = 'Баланс: ' + profile.credits + ' ◈ · Репутация: ' + profile.reputation;
     const list=$('oc-journal-list'); list.replaceChildren();
     for (const quest of DISPATCHES) {
       const done=profile.dispatchDone.includes(quest.id),stageIndex=profile.dispatchSteps[quest.id]||0;
@@ -137,8 +139,8 @@
       row.addEventListener('click',()=>{ const result=rules.selectDispatch(profile,quest.id); profile=result.profile; persist(); world.navMode='dispatch'; world.routeTo=''; updateJournal(); syncGame(); drawMiniMap(); radio(quest.name); });
       list.append(row);
     }
-    for(const [id,type,price,done] of [['oc-upgrade-grip','grip',260,profile.grip],['oc-upgrade-battery','battery',230,profile.batteryUpgrade]]) {
-      const button=$(id);button.disabled=done||profile.credits<price;button.textContent=done?'\u2713 \u0423\u041b\u0423\u0427\u0428\u0415\u041d\u041e':type==='grip'?'\u041f\u041e\u0414\u0412\u0415\u0421\u041a\u0410 · 260 \u25c8':'\u0411\u0410\u0422\u0410\u0420\u0415\u042f · 230 \u25c8';
+    for(const [id,type,price,done] of [['oc-upgrade-speed','speed',300,profile.fastCar],['oc-upgrade-grip','grip',260,profile.grip],['oc-upgrade-battery','battery',230,profile.batteryUpgrade]]) {
+      const button=$(id);button.disabled=done||profile.credits<price;button.textContent=done?'✓ УЛУЧШЕНО':type==='speed'?'ДВИГАТЕЛЬ · 300 ◈':type==='grip'?'ПОДВЕСКА · 260 ◈':'БАТАРЕЯ · 230 ◈';
     }
   }
   function upgrade(type) { const r=rules.purchaseUpgrade(profile,type);if(!r.changed){radio('\u041d\u0435\u0434\u043e\u0441\u0442\u0430\u0442\u043e\u0447\u043d\u043e \u043a\u0440\u0435\u0434\u0438\u0442\u043e\u0432');return false;}profile=r.profile;persist();updateJournal();syncGame();radio('\u0423\u043b\u0443\u0447\u0448\u0435\u043d\u0438\u0435 CITY RUNNER \u043a\u0443\u043f\u043b\u0435\u043d\u043e');return true; }
@@ -920,6 +922,7 @@
     const navGoal=navigationGoal();
     $('oc-target').textContent = navGoal ? (navGoal.text || navGoal.short || navGoal.name || '').toUpperCase() : 'МИССИИ ВЫПОЛНЕНЫ';
     $('oc-nav-mode').textContent = world.navMode==='dispatch'?'⌖ GPS: МИССИИ':world.navMode === 'contract' ? '⌖ GPS: КОНТРАКТЫ' : '⌖ GPS: СЮЖЕТ';
+    $('oc-nav-mobile').textContent = $('oc-nav-mode').textContent;
     $('oc-distance').textContent = navGoal ? `${Math.round(Math.hypot(player.x - navGoal.x, player.z - navGoal.z) * 12)} М ДО ЦЕЛИ` : 'Весь город открыт для прогулки';
     const nearHeat = dest && dest.dist <= 1.65 && !state.lost && !state.won && !c?.occupied;
     const nearSide = contract && contract.dist <= 1.7 && !c?.occupied;
@@ -1161,6 +1164,7 @@
   $('oc-quality').addEventListener('click', toggleQuality);
   $('oc-upgrade').addEventListener('click', buyUpgrade);
   $('oc-nav-mode').addEventListener('click', toggleNavigation);
+  $('oc-nav-mobile').addEventListener('click', toggleNavigation);
   $('oc-journal-button').addEventListener('click',showJournal);
   $('oc-journal-close').addEventListener('click',closeJournal);
   $('oc-journal-resume').addEventListener('click',closeJournal);
@@ -1168,6 +1172,7 @@
   $('oc-resume').addEventListener('click',resumeGame);
   $('oc-pause-journal').addEventListener('click',showJournal);
   $('oc-exit-to-map').addEventListener('click',exit);
+  $('oc-upgrade-speed').addEventListener('click',()=>upgrade('speed'));
   $('oc-upgrade-grip').addEventListener('click',()=>upgrade('grip'));
   $('oc-upgrade-battery').addEventListener('click',()=>upgrade('battery'));
   $('oc-view-button').addEventListener('click',cycleCamera);
