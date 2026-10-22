@@ -322,3 +322,14 @@ main{width:min(2500px,98vw)!important;padding:10px clamp(12px,1.5vw,30px) 36px!i
  .premium-mode .premium-hot-marker strong{font-size:16px!important;padding:5px 8px!important}
  .premium-mode .premium-selection-guide{bottom:96px}
 }
+
+/* v25 result state: large type, real win/loss flow. */
+.premium-result{position:absolute;inset:0;z-index:12;display:grid;place-items:center;padding:16px;background:linear-gradient(120deg,rgba(3,16,31,.93),rgba(5,37,45,.85));backdrop-filter:blur(6px)}
+.premium-result[hidden]{display:none!important}
+.premium-result-inner{width:min(550px,100%);display:grid;justify-items:center;gap:17px;padding:clamp(18px,3vw,42px);text-align:center;border:1px solid #6cead0;border-radius:20px;background:radial-gradient(circle at 50% 0%,rgba(31,149,140,.28),transparent 60%),linear-gradient(155deg,#10304b,#071926);box-shadow:0 0 0 1px #7cffe72c,0 28px 65px #001624b3}
+.premium-result-inner>span{font-size:13px;color:#83f6da;letter-spacing:.13em;font-weight:850}
+.premium-result-inner h2{margin:0;font-size:clamp(27px,3vw,47px);line-height:1.07;color:#f0fff9;letter-spacing:-.035em}
+.premium-result-inner p{margin:0;max-width:40ch;font-size:clamp(17px,1.15vw,21px);line-height:1.55;color:#c2e4e9}
+.premium-result-inner button{width:100%;min-height:58px;padding:12px 15px;font-size:17px;font-weight:850;cursor:pointer;color:#082336;border:1px solid #b6fff6;border-radius:12px;background:linear-gradient(120deg,#6affd9,#2dc3d7);box-shadow:0 9px 27px #15d0c756}
+.premium-result-inner button:hover{filter:brightness(1.08)}
+.premium-result-inner button:focus-visible{outline:3px solid white;outline-offset:3px}
