@@ -62,6 +62,14 @@ func _run() -> void:
             r8_ship_vertices += draw.mesh.surface_get_array_len(surface)
     if not check(r8_ship_vertices >= 8000, "R8 sculpted interceptor mesh resolution too low"):return
     if not check(r8_ship_surfaces >= 5, "R8 PBR material surfaces missing"):return
+    var ship_normal_surfaces: int = 0
+    for draw in imported_r8.find_children("*", "MeshInstance3D", true, false):
+        if draw.mesh == null:continue
+        for surface in draw.mesh.get_surface_count():
+            var coated := draw.get_surface_override_material(surface) as StandardMaterial3D
+            if coated != null and coated.normal_enabled:
+                ship_normal_surfaces += 1
+    if not check(ship_normal_surfaces >= 2, "R8 metal normal-map integration missing"):return
     var fleet_r7 = world.get_node_or_null("CapitalFleetR7")
     if not check(fleet_r7 != null, "R7 monumental capital fleet missing"):return
     if not check(fleet_r7.carrier_count == 6, "Expected six true 3D capital ships"):return
@@ -82,6 +90,14 @@ func _run() -> void:
         for surface in draw.mesh.get_surface_count():
             r8_hangar_vertices += draw.mesh.surface_get_array_len(surface)
     if not check(r8_hangar_vertices >= 16000, "R8 architectural mesh resolution too low"):return
+    var hangar_normal_surfaces: int = 0
+    for draw in imported_hangar.find_children("*", "MeshInstance3D", true, false):
+        if draw.mesh == null:continue
+        for surface in draw.mesh.get_surface_count():
+            var coated := draw.get_surface_override_material(surface) as StandardMaterial3D
+            if coated != null and coated.normal_enabled:
+                hangar_normal_surfaces += 1
+    if not check(hangar_normal_surfaces >= 2, "R8 hangar normal-mapped alloy missing"):return
     if not check(megadocks.get_node("R6_EnclosedHangar_00_0/SegmentedCurvedTitaniumRoof").visible == false,
         "Legacy low-poly roof was not retired"):return
     if not check(megadocks.panels_instanced >= 1600, "PBR deck tiles not installed"):return
