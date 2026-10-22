@@ -148,6 +148,14 @@ func _run() -> void:
         "R10 twelve animated loader arms missing"):return
     if not check(aegis_r10.instanced_details >= 1600,
         "R10 batched architectural tech details missing"):return
+    var cladding_r10 = world.get_node_or_null("R10_ArchitecturalCladding")
+    if not check(cladding_r10 != null, "R10 detailed city window facades missing"):return
+    if not check(cladding_r10.serviced_towers >= 100,
+        "R10 high-detail serviced skyscraper count too low"):return
+    if not check(cladding_r10.facade_count >= 10000,
+        "R10 physically extruded facade elements too few"):return
+    if not check(cladding_r10.chunks.size() == 24,
+        "R10 district-separated GPU instancing incorrect"):return
     var r10_first = aegis_r10.get_node_or_null("R10_AegisPort_00")
     if not check(r10_first != null, "First cinematic Aegis port missing"):return
     if not check(r10_first.get_node_or_null("R10_OverheadBridgeCollision") is StaticBody3D,
@@ -159,6 +167,8 @@ func _run() -> void:
     world._set_graphics_quality(2)
     if not check(aegis_r10.quality_mode == 2 and world.graphics_quality == 2,
         "R10 selectable low-range LOD not working"):return
+    if not check(cladding_r10.quality_mode == 2,
+        "R10 cladding LOD ignores graphics quality"):return
     var first_r10_draw = aegis_r10.imports[0].find_children("*", "MeshInstance3D", true, false)
     if not check(first_r10_draw.size() > 0 and first_r10_draw[0].visibility_range_end < 400.0,
         "R10 geometry not responding to dynamic quality switch"):return
