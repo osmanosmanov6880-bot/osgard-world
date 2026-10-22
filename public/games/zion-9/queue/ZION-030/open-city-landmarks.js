@@ -44,7 +44,7 @@
       heroLandmarks:0,rooftopBuildings:0,roofFixtures:0,columns:0,
       greenhouseRibs:0,clockFaces:0,solarArrays:0,planters:0,
       streetLamps:0,drainageUnits:0,details:0,instances:0,
-      drawCallBatches:0,vehicleParts:0,vehicleBatches:0,characterParts:0,
+      drawCallBatches:0,vehicleParts:0,vehicleBatches:0,vehicleCount:0,maxVehicleBatches:0,characterParts:0,
       fineVisible:false,night:false,wetVisible:false};
     const finite=v=>Number.isFinite(v);
     function put(tier,key,x,y,z,w,h,d,shape='cube',yaw=0,pitch=0,roll=0){
@@ -284,13 +284,17 @@
       piece('brushed',0,.82,-.10,.54,.020,.55);
       piece('iron',0,.22,-.82,.32,.075,.035);
       piece('bronze',0,.50,.775,.38,.020,.022,'cube',true);
+      let batchCount=0;
       for(const slot of batches.values()){
         const mesh=new THREE.InstancedMesh(geometry[slot.shape],mats[slot.material],slot.m.length);
         slot.m.forEach((m,i)=>mesh.setMatrixAt(i,m));
         mesh.instanceMatrix.needsUpdate=true;mesh.frustumCulled=false;
         (slot.fine?fineCar:baseCar).add(mesh);
         stats.vehicleBatches++;
+        batchCount++;
       }
+      stats.vehicleCount++;
+      stats.maxVehicleBatches=Math.max(stats.maxVehicleBatches,batchCount);
       parent.add(baseCar);
       fineCar.visible=high.visible;
       extraCarGroups.push(fineCar);
