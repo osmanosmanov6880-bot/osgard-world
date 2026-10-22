@@ -10,7 +10,7 @@ const game = fs.readFileSync(path.join(directory, 'open-city.js'),'utf8');
 const html = fs.readFileSync(path.join(directory, 'index.html'),'utf8');
 new vm.Script(code,{filename:'open-city-details.js'});
 assert.match(html, /open-city-details\.js\?v=30/);
-assert.ok(html.indexOf('open-city-details.js?v=30') < html.indexOf('open-city.js?v=30'),'Detail kit must be loaded before main game');
+assert.ok(html.indexOf('open-city-details.js?v=30') < html.indexOf('open-city.js?v=31'),'Detail kit must be loaded before main game');
 assert.ok(game.includes('ZION030_DETAIL_KIT') && game.includes('detailKit.detailCar('),'Live scene must use advanced car models');
 assert.ok(game.includes('detailKit.detailAvatar('),'Character detail must be integrated');
 assert.ok(game.includes('detailKit?.setQuality('),'Graphics menu must dynamically control expensive details');
