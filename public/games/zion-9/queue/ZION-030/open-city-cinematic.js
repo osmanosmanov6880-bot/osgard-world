@@ -26,7 +26,7 @@
     let currentRaining=false,currentNight=false;
     const stats={version:VERSION,tier:lite?'LITE':mobile?'MOBILE':'ULTRA',facades:0,balconyRails:0,
       rooftopAssets:0,streetFixtures:0,foliageAssets:0,vehicleParts:0,avatarParts:0,
-      instances:0,drawCallBatches:0,textureMaps:0,wetSurfaces:0,signs:0};
+      instances:0,drawCallBatches:0,textureMaps:0,wetSurfaces:0,signs:0,wetVisible:false,highDetailVisible:false};
     const texSize=ultra?256:128;
     function makeTexture(kind){
       if(lite||typeof document==='undefined'||!THREE.CanvasTexture)return null;
@@ -311,6 +311,7 @@
       currentRaining=Boolean(raining);
       currentNight=dayMode===1;
       if(puddleBatch)puddleBatch.visible=currentRaining;
+      stats.wetVisible=Boolean(puddleBatch&&currentRaining);
       if(asphalt?.material){
         asphalt.material.roughness=currentRaining ? .23 : .96;
         asphalt.material.metalness=currentRaining ? .30 : .04;
@@ -321,6 +322,7 @@
     }
     function setQuality(q){
       high.visible=ultra&&q!=='eco'&&q!=='adaptive';
+      stats.highDetailVisible=high.visible;
       for(const g of optionalCars)g.visible=high.visible;
       return high.visible?'CINEMATIC':'BALANCED';
     }
