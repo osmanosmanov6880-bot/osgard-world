@@ -67,7 +67,14 @@ export function BrandShell({ theme, children }: { theme: ProductTheme; children:
   }
   useEffect(() => {
     const shortcut = (event: KeyboardEvent) => {
-      if (event.defaultPrevented || event.altKey || event.shiftKey || !(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== 'k') return
+      if (event.defaultPrevented || event.altKey || event.shiftKey) return
+      const modifierShortcut = (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k'
+      const inputTarget = event.target instanceof HTMLElement &&
+        Boolean(event.target.closest('input, textarea, select, [contenteditable="true"], [role="textbox"]'))
+      const inGame = path.startsWith('/play/world/') || path.startsWith('/games/')
+      const slashShortcut = event.key === '/' && !event.ctrlKey && !event.metaKey &&
+        !quickOpen && !inputTarget && !inGame
+      if (!modifierShortcut && !slashShortcut) return
       if (document.querySelector('.osgard-cinematic, [data-osgard-pending]')) return
       event.preventDefault()
       if (quickOpen) closeQuickNav()
@@ -75,7 +82,7 @@ export function BrandShell({ theme, children }: { theme: ProductTheme; children:
     }
     window.addEventListener('keydown', shortcut)
     return () => window.removeEventListener('keydown', shortcut)
-  }, [quickOpen])
+  }, [quickOpen, path])
   useEffect(() => { setQuickOpen(false) }, [path])
 
   const localState = (href: string): 'page' | 'location' | undefined => {
@@ -103,7 +110,7 @@ export function BrandShell({ theme, children }: { theme: ProductTheme; children:
         {globalLinks.map(([name, href]) => <a key={href} href={href} aria-current={globalNavigationState(path, product, href)}>{name}</a>)}
       </nav>
       <button type="button" ref={quickTrigger} className="brand-quick-trigger" aria-haspopup="dialog" aria-expanded={quickOpen}
-        aria-keyshortcuts="Control+K Meta+K" aria-label="Быстрый переход по разделам OSGARD" onClick={() => quickOpen ? closeQuickNav() : setQuickOpen(true)}>
+        aria-keyshortcuts="Control+K Meta+K /" aria-label="Быстрый переход по разделам OSGARD" title="Найти раздел: Ctrl/⌘+K или /" onClick={() => quickOpen ? closeQuickNav() : setQuickOpen(true)}>
         <span aria-hidden="true" className="brand-quick-symbol">⌕</span><span className="brand-quick-label">Разделы</span><kbd>⌘K</kbd>
       </button>
       <button type="button" className="brand-motion" aria-pressed={reduced || !motion} disabled={reduced}
