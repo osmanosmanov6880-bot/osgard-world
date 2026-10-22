@@ -1,4 +1,7 @@
 import { cases } from './featuredCases.ts'
+import { playGameTitles } from './playGameTitles.ts'
+import { OSA_LESSON_SLUGS } from './osaLessonRegistry.ts'
+import { lessonTitles } from './brandNavigation.ts'
 
 /** Local, actionable destinations. No generated pages, fake results or account claims. */
 export type OsgardCommand = Readonly<{
@@ -8,6 +11,7 @@ export type OsgardCommand = Readonly<{
   href: string
   group: 'Экосистема' | 'Знания' | 'Игры' | 'Проекты'
   keywords: string
+  art?: string
 }>
 
 const baseCommands: readonly OsgardCommand[] = [
@@ -32,20 +36,79 @@ const caseCommands: readonly OsgardCommand[] = cases.map(item => ({
   label: item.name,
   description: item.type + ' · ' + item.category,
   href: item.href,
+  art: item.art,
   group: 'Проекты',
   keywords: [item.id, item.name, item.category, 'кейс', 'портфолио', 'открыть'].join(' '),
 }))
-export const osgardCommands: readonly OsgardCommand[] = [...baseCommands, ...caseCommands]
+/** Direct links to all 19 games. The light breadcrumb registry provides only
+ * confirmed game ids/titles; heavy Play content is still loaded on its route. */
+const gameAliases: Readonly<Record<string, string>> = {
+  'time': 'империя времени экономическая стратегия city управление городом',
+  'empire-orbit': 'империя орбита космос стратегия',
+  'vector-zero': 'магнит полярность импульс физика вектор зеро',
+  'null-shift': 'рейд тактика ядро эвакуация нулл шифт',
+  'inherit': 'наследие поколения семья sandbox',
+  'remix': 'ремикс кооператив совместная игра',
+  'swarm': 'рой swarm стратегия',
+  'afterimage-run': 'раннер бег afterimage',
+  'zion-030': 'добавь тень охлаждение дождевой сад климат город',
+}
+
+const gameCommands: readonly OsgardCommand[] = Object.entries(playGameTitles).map(([id, title]) => ({
+  id: 'game-' + id,
+  label: title,
+  description: 'Игровой мир · сведения и варианты запуска',
+  href: '/play/world/' + id,
+  art: '/brand/play/' + id + '-640.webp',
+  group: 'Игры',
+  keywords: [id, title, gameAliases[id] || '', 'игра', 'игровой', 'мир', 'play', 'game'].join(' '),
+}))
+
+/** Eight real lesson routes from the single OSA slug and breadcrumb registries.
+ * No invented completion status or server-side learning progress. */
+const lessonCommands: readonly OsgardCommand[] = OSA_LESSON_SLUGS.map((slug, index) => ({
+  id: 'lesson-' + slug,
+  label: lessonTitles[slug],
+  description: 'Урок ' + (index + 1) + ' из ' + OSA_LESSON_SLUGS.length + ' · материалы и задания',
+  href: '/lectures/' + slug,
+  group: 'Знания',
+  keywords: [slug, lessonTitles[slug], 'урок', 'лекция', 'lesson', 'academy'].join(' '),
+}))
+
+export const osgardCommands: readonly OsgardCommand[] = [...baseCommands, ...caseCommands, ...gameCommands, ...lessonCommands]
 
 const normalize = (value: string) => value.toLocaleLowerCase('ru-RU').replace(/ё/g, 'е').trim()
 
-/** A stable, tiny command search; aliases are authored rather than hallucinated. */
+/** Recover a frequent keyboard-layout mistake, without calling a server or AI.
+ * Example: "frfltvbz" typed on an English keyboard means "академия". */
+const englishKeys = "qwertyuiop[]asdfghjkl;'zxcvbnm,."
+const russianKeys = "йцукенгшщзхъфывапролджэячсмитьбю"
+export function recoverRussianKeyboard(query: string): string {
+  if (query.length > 100 || [...query.toLowerCase()].some(char => !englishKeys.includes(char) && char !== ' ' && char !== '-')) return query
+  return [...query.toLowerCase()].map(char => {
+    const index = englishKeys.indexOf(char)
+    return index < 0 ? char : russianKeys[index]
+  }).join('')
+}
+
+/** Fully local deterministic command search. Only previously approved routes
+ * can appear, and keyboard-layout recovery happens only on zero exact matches. */
 export function searchOsgardCommands(query: string, recentlyOpened: readonly string[] = []): OsgardCommand[] {
-  const words = normalize(query).split(/\s+/).filter(Boolean)
-  const matches = osgardCommands.filter(command => {
+  const makeWords = (value: string) => normalize(value).slice(0, 120).split(/\s+/).filter(Boolean)
+  let words = makeWords(query)
+  const find = (terms: readonly string[]) => osgardCommands.filter(command => {
     const text = normalize([command.label, command.description, command.group, command.keywords].join(' '))
-    return words.every(word => text.includes(word))
+    return terms.every(word => text.includes(word))
   })
+  let matches = find(words)
+  if (words.length && !matches.length) {
+    const corrected = recoverRussianKeyboard(query)
+    if (corrected !== query) {
+      const correctedWords = makeWords(corrected)
+      const recovered = find(correctedWords)
+      if (recovered.length) { words = correctedWords; matches = recovered }
+    }
+  }
   if (words.length) {
     // A direct matching case should beat a generic portfolio link. All
     // results still come exclusively from the vetted, local route registry.
@@ -85,4 +148,18 @@ export function rememberQuickNav(id: string): string[] {
 }
 export function clearQuickNavRecent(): void {
   try { sessionStorage.removeItem(recentKey) } catch { /* Keep the UI usable. */ }
+}
+
+/** Suggestions are drawn from the exact same safe destination registry, never
+ * injected HTML or arbitrary URLs. They are independent of private activity. */
+export function getOsgardContextSuggestions(path: string): OsgardCommand[] {
+  const clean = path.replace(/\/+$/, '') || '/'
+  const ids = clean === '/play' || clean === '/entertainment' || clean.startsWith('/play/') || clean.startsWith('/games/')
+    ? ['play', 'favorites', 'recent-games']
+    : clean === '/intelligence' || clean === '/academy' || clean === '/osa-cinema' || clean.startsWith('/learning') || clean.startsWith('/lectures')
+      ? ['academy', 'lectures', 'progress']
+      : clean === '/development' || clean.startsWith('/development/')
+        ? ['development', 'cases', 'case-tedes']
+        : ['intelligence', 'play', 'development']
+  return ids.map(id => osgardCommands.find(command => command.id === id)).filter((item): item is OsgardCommand => Boolean(item))
 }
