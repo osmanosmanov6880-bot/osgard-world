@@ -57,8 +57,8 @@ var hud_flight: Label
 var hud_objective: Label
 var hud_panel: PanelContainer
 var hud_canvas: CanvasLayer
-var aegis_r10: Node3D
-var city_cladding_r10: Node3D
+var aegis_r10
+var city_cladding_r10
 var graphics_quality: int = 0
 
 func _ready() -> void:
