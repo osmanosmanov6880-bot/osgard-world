@@ -72,9 +72,18 @@ func _build_world() -> void:
     world_environment = WorldEnvironment.new()
     world_environment.name = "ChronosAtmosphere"
     var env := Environment.new()
-    env.background_mode = Environment.BG_COLOR
-    env.background_color = Color(0.075, 0.125, 0.185)
-    env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+    # A physically shaded sky gradient gives the dense city a believable horizon.
+    # Native and Web builds use the same atmosphere, no separate fake background.
+    var sky := Sky.new()
+    var sky_material := ProceduralSkyMaterial.new()
+    sky_material.sky_top_color = Color(0.024, 0.055, 0.11)
+    sky_material.sky_horizon_color = Color(0.32, 0.37, 0.42)
+    sky_material.ground_horizon_color = Color(0.20, 0.27, 0.32)
+    sky_material.ground_bottom_color = Color(0.035, 0.06, 0.085)
+    sky.sky_material = sky_material
+    env.sky = sky
+    env.background_mode = Environment.BG_SKY
+    env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
     env.ambient_light_color = Color(0.32, 0.41, 0.57)
     env.ambient_light_energy = 0.92
     env.reflected_light_source = Environment.REFLECTION_SOURCE_BG
@@ -227,10 +236,10 @@ func _populate_skyline(parent: Node3D) -> void:
             for rib in [-1.0, 1.0]:
                 ribs.append(Transform3D(Basis().scaled(Vector3(0.058, h * 0.95, 0.10)), Vector3(x + rib * w * 0.46, h * 0.52 + 0.38, z + d * 0.52)))
     # Legacy node identities retained for existing native regression tests.
-    _batch_mesh(parent, "SkylineTowers", silver, _material(Color(0.50, 0.57, 0.60), 0.85, 0.28))
-    _batch_mesh(parent, "SkylineBasaltTowers", basalt, _material(Color(0.12, 0.19, 0.24), 0.78, 0.35))
-    _batch_mesh(parent, "SkylineBronzePavilions", bronze, _material(Color(0.52, 0.38, 0.27), 0.88, 0.31))
-    _batch_mesh(parent, "SkylineTealResidences", teal, _material(Color(0.24, 0.39, 0.43), 0.72, 0.34))
+    _batch_mesh(parent, "SkylineTowers", silver, _material(Color(0.50, 0.57, 0.60), 0.85, 0.28), 0)
+    _batch_mesh(parent, "SkylineBasaltTowers", basalt, _material(Color(0.12, 0.19, 0.24), 0.78, 0.35), 1)
+    _batch_mesh(parent, "SkylineBronzePavilions", bronze, _material(Color(0.52, 0.38, 0.27), 0.88, 0.31), 2)
+    _batch_mesh(parent, "SkylineTealResidences", teal, _material(Color(0.24, 0.39, 0.43), 0.72, 0.34), 3)
     _batch_mesh(parent, "IlluminatedWindows", windows, _material(Color(0.74, 0.86, 0.85), 0.12, 0.21, 0.62))
     _batch_mesh(parent, "MetalRoofCrowns", crowns, _material(Color(0.56, 0.59, 0.57), 0.92, 0.24))
     _batch_mesh(parent, "SkylineAntennaArray", antennas, _material(GOLD, 0.5, 0.21, 0.55))
@@ -265,9 +274,14 @@ func _build_city_life(parent: Node3D) -> void:
         _box(shuttle, "Propulsion", Vector3(0.25, 0.05, 0.1), Vector3(0, -0.06, 0.5), CYAN, 0.11, 0.19, 1.3)
         traffic_agents.append(shuttle)
 
-func _batch_mesh(parent: Node3D, item_name: String, locations: Array[Transform3D], material: Material) -> void:
-    var mesh := BoxMesh.new()
-    mesh.size = Vector3.ONE
+func _batch_mesh(parent: Node3D, item_name: String, locations: Array[Transform3D], material: Material, shape_style: int = -1) -> void:
+    var mesh: Mesh
+    if shape_style >= 0:
+        mesh = Wave3Metropolis.make_skyline_mesh(shape_style)
+    else:
+        var cube := BoxMesh.new()
+        cube.size = Vector3.ONE
+        mesh = cube
     var multi := MultiMesh.new()
     multi.transform_format = MultiMesh.TRANSFORM_3D
     multi.mesh = mesh

@@ -26,6 +26,11 @@ func _run() -> void:
     root.add_child(game)
     await process_frame
     _check(game.get_node_or_null("LivingCity/Wave3Metropolis") != null, "WAVE3 physical metropolis authored")
+    var city_mesh_instance: MultiMeshInstance3D = game.get_node_or_null("LivingCity/SkylineTowers") as MultiMeshInstance3D
+    _check(city_mesh_instance != null and city_mesh_instance.multimesh.mesh is ArrayMesh, "mass-market city tower batch uses unique sculpted loft silhouettes")
+    _check(city_mesh_instance != null and city_mesh_instance.multimesh.instance_count > 10, "lofted skyline retains efficient GPU instancing")
+    var world: WorldEnvironment = game.get_node_or_null("ChronosAtmosphere") as WorldEnvironment
+    _check(world != null and world.environment.background_mode == Environment.BG_SKY, "city has procedural atmospheric sky")
     _check(game.get_node_or_null("LivingCity/Wave3Metropolis/CivicArrivalPort_00") != null, "precision transit landing port")
     _check(game.get_node_or_null("LivingCity/ChronoCore/Wave3ChronoEngine/MachinedInductionCrown") is MeshInstance3D, "CNC chronoreactor outer housing")
     _check(game.get_node_or_null("LivingCity/ChronoCore/Wave3ChronoEngine/ChronoPlantFasteners192") is MultiMeshInstance3D, "energy plant fasteners GPU-instanced")

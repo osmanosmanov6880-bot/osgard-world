@@ -13,6 +13,60 @@ const GOLD := Color(0.97, 0.77, 0.48)
 const GREEN := Color(0.19, 0.41, 0.32)
 const AQUA := Color(0.26, 0.79, 0.88)
 
+
+static func make_skyline_mesh(style: int) -> ArrayMesh:
+    # Normalized UV-mapped loft, scaled by the existing GPU MultiMesh transforms.
+    # Replaces hundreds of anonymous cubes with four distinctly shaped building
+    # silhouettes WITHOUT adding one draw call per tower.
+    var levels: Array[Vector2] = []
+    match style:
+        0:
+            levels = [Vector2(-0.5, 0.47), Vector2(-0.40, 0.49), Vector2(0.10, 0.49),
+                Vector2(0.12, 0.45), Vector2(0.35, 0.44), Vector2(0.39, 0.40), Vector2(0.48, 0.34), Vector2(0.5, 0.30)]
+        1:
+            levels = [Vector2(-0.5, 0.48), Vector2(-0.4, 0.47), Vector2(0.05, 0.44),
+                Vector2(0.32, 0.42), Vector2(0.39, 0.39), Vector2(0.50, 0.20)]
+        2:
+            levels = [Vector2(-0.5, 0.50), Vector2(-0.42, 0.47), Vector2(-0.1, 0.47),
+                Vector2(0.12, 0.44), Vector2(0.30, 0.40), Vector2(0.33, 0.36), Vector2(0.5, 0.34)]
+        _:
+            levels = [Vector2(-0.5, 0.49), Vector2(-0.40, 0.46), Vector2(0.07, 0.45),
+                Vector2(0.28, 0.40), Vector2(0.42, 0.35), Vector2(0.5, 0.26)]
+    var angular: int = 12 if style % 2 == 0 else 16
+    var exponent: float = 0.48 if style == 0 else 0.75 if style == 1 else 0.42 if style == 2 else 0.87
+    var vertices := PackedVector3Array()
+    var normals := PackedVector3Array()
+    var uv := PackedVector2Array()
+    var indices := PackedInt32Array()
+    for j in range(levels.size()):
+        var ring := levels[j]
+        var previous := levels[maxi(j - 1, 0)]
+        var following := levels[mini(j + 1, levels.size() - 1)]
+        var rise := maxf(0.001, following.x - previous.x)
+        var slant := (following.y - previous.y) / rise
+        for side in range(angular + 1):
+            var a := TAU * float(side) / float(angular)
+            var ca := cos(a)
+            var sa := sin(a)
+            var footprint := Vector2(signf(ca) * pow(absf(ca), exponent), signf(sa) * pow(absf(sa), exponent))
+            vertices.append(Vector3(footprint.x * ring.y, ring.x, footprint.y * ring.y))
+            normals.append(Vector3(footprint.x, -slant, footprint.y).normalized())
+            uv.append(Vector2(float(side) / float(angular), ring.x + 0.5))
+    for row in range(levels.size() - 1):
+        for side in range(angular):
+            var k := row * (angular + 1) + side
+            var n := k + angular + 1
+            indices.append_array(PackedInt32Array([k, n, k + 1, n, n + 1, k + 1]))
+    var arrays: Array = []
+    arrays.resize(Mesh.ARRAY_MAX)
+    arrays[Mesh.ARRAY_VERTEX] = vertices
+    arrays[Mesh.ARRAY_NORMAL] = normals
+    arrays[Mesh.ARRAY_TEX_UV] = uv
+    arrays[Mesh.ARRAY_INDEX] = indices
+    var out := ArrayMesh.new()
+    out.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+    return out
+
 static func build(city: Node3D, core: Node3D, traffic: Array[Node3D]) -> void:
     _setup()
     var root := Node3D.new()
