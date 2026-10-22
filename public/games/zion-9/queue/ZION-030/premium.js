@@ -245,7 +245,7 @@ function select(x,z){
 }
 function place(){
  const b=game();if(!b||!b.state().ready)return;
- const outcome=b.place(state.cell.x,state.cell.z,b.state().selected);if(outcome?.ok)state.hasSelectedPlace=false;refresh();
+ const outcome=b.place(state.cell.x,state.cell.z,b.state().selected);if(outcome===true||outcome?.ok===true)state.hasSelectedPlace=false;refresh();
 }
 canvas.addEventListener('pointerdown',e=>{const p=at(e.clientX,e.clientY);select(p.x,p.z);canvas.focus();});
 let hoverFrame=0;
