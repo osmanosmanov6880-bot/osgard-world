@@ -1,5 +1,5 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
-import type { MouseEvent as ReactMouseEvent } from 'react'
+import type { MouseEvent as ReactMouseEvent, KeyboardEvent as ReactKeyboardEvent } from 'react'
 import { hasUnsavedChanges, navigateBrowserUrl } from './browserNavigation'
 import { isReactRoute } from './osgardRouting'
 import { clearQuickNavRecent, readQuickNavRecent, rememberQuickNav, searchOsgardCommands } from './osgardQuickNavData'
@@ -86,7 +86,7 @@ export default function OsgardQuickNav({ onClose, onNavigate }: Props) {
     const element = document.getElementById(listId + '-option-' + active)
     if (element instanceof HTMLAnchorElement) element.click()
   }
-  const handleInputKey = (event: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleInputKey = (event: ReactKeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'ArrowDown') { event.preventDefault(); setActive(i => (i + 1) % Math.max(results.length, 1)) }
     if (event.key === 'ArrowUp') { event.preventDefault(); setActive(i => (i - 1 + Math.max(results.length, 1)) % Math.max(results.length, 1)) }
     if (event.key === 'Enter' && results.length) { event.preventDefault(); selectActive() }
