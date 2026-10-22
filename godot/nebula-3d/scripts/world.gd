@@ -9,6 +9,7 @@ const PremiumArchitectureScript = preload("res://scripts/premium_architecture.gd
 const ArchitecturalDetailR4Script = preload("res://scripts/architectural_detail_r4.gd")
 const CitySetDressingR5Script = preload("res://scripts/city_set_dressing_r5.gd")
 const OrbitalDocksR6Script = preload("res://scripts/orbital_docks_r6.gd")
+const SculpturalSkylineR6Script = preload("res://scripts/sculptural_skyline_r6.gd")
 const SAVE_PATH = "user://nebula_3d_save.json"
 const SECTOR_COLORS = [Color(0.10,0.68,0.97), Color(0.64,0.35,1.0), Color(0.98,0.73,0.40), Color(1.0,0.46,0.34), Color(0.87,0.27,0.88), Color(0.24,0.92,0.88)]
 const SECTOR_NAMES = ["ПОРТ АВРОРА","НЕОНОВЫЙ КВАРТАЛ","ЦИТАДЕЛЬ","ЧЁРНЫЙ РЫНОК","РАЗЛОМ","НЕКСУС"]
@@ -202,6 +203,10 @@ func _build_city() -> void:
     docks_r6.name = "HeroMegadocksR6"
     add_child(docks_r6)
     docks_r6.build(SECTOR_POSITIONS, SECTOR_COLORS)
+    var skyline_r6 := SculpturalSkylineR6Script.new()
+    skyline_r6.name = "SculpturalSkylineR6"
+    add_child(skyline_r6)
+    skyline_r6.build(SECTOR_POSITIONS, SECTOR_COLORS)
     _build_starfield()
 
 func _build_sector(center: Vector3, tint: Color, name: String, index: int) -> void:
