@@ -39,6 +39,10 @@ jobs:
           set -uo pipefail
           failures=0
           for test_file in godot/empire-omega/tests/*.gd; do
+            if [[ "$test_file" == *"/horizon_capture.gd" ]]; then
+              echo "Skip GPU screenshot in headless logic tests (covered by xvfb visual QA)"
+              continue
+            fi
             echo "=== NATIVE ${test_file##*/} ==="
             if timeout --signal=TERM --kill-after=5s 15s godot --headless --path godot/empire-omega --script "res://tests/${test_file##*/}"; then
               echo "PASS: ${test_file##*/}"
