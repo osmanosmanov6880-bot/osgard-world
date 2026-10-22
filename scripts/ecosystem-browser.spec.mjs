@@ -2068,6 +2068,7 @@ test('INHERIT R12 restores only a real past location and never invents an owner 
  await expect(dialog.locator('.inherit-expedition-goal-text')).toContainText('A Stone was recorded');
  await dialog.locator('.inherit-expedition-use').click();
  await expect(page.locator('.inherit-expedition-ghost')).toBeVisible();
+ await expect(page.locator('.inherit-first-steps')).toBeHidden(); // Active planning cannot cover the real tap point
  expect(await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()))).toBe(original);
  await expect.poll(()=>page.evaluate(()=>{
   const dot=document.querySelector('.inherit-expedition-ghost').getBoundingClientRect();
