@@ -76,9 +76,14 @@ const navCss = read('src/osgardQuickNav.css')
 const loadCss = read('src/osgardRouteSkeleton.css')
 assert.ok(shell.includes("lazy(() => import('./OsgardQuickNav'))"), 'Navigator must not enter the eager app shell')
 assert.ok(shell.includes("lazy(() => import('./OsgardFooter'))") && read('src/OsgardFooter.tsx').includes('Повторить заставку'), 'Footer must be deferred without losing core navigation or replay')
-assert.ok(shell.includes('Control+K Meta+K') && shell.includes("event.key.toLowerCase() !== 'k'"), 'Keyboard shortcut must be exposed and functional')
+assert.ok(shell.includes('Control+K Meta+K') && shell.includes("event.key.toLowerCase() === 'k'") &&
+  shell.includes("event.key === '/'") && shell.includes('!inputTarget && !inGame'),
+  'Ctrl/Meta+K and slash shortcuts must skip editable inputs, games and cinematic overlays')
 assert.ok(shell.includes('aria-expanded={quickOpen}') && shell.includes('onClose={closeQuickNav}'), 'Trigger and modal state must be accessible')
 assert.ok(palette.includes('role="dialog" aria-modal="true"') && palette.includes("onKeyDown={handleInputKey}"), 'Dialog and keyboard search contract required')
+assert.ok(palette.includes("if (event.key === 'Home')") && palette.includes("if (event.key === 'End')") &&
+  palette.includes("scrollIntoView({ block: 'nearest'") && palette.includes('selectedIndex'),
+  'Keyboard list selection must stay visible, bounded and screen-reader discoverable')
 assert.ok(palette.includes('aria-label="Фильтр по направлениям"') &&
   palette.includes('aria-pressed={group === value}') &&
   palette.includes('getOsgardContextSuggestions(location.pathname)') &&
