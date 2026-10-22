@@ -84,6 +84,7 @@
     "qa:pilot-scorecard": "python3 -m unittest discover -s tests -p test_pilot_scorecard.py -v",
     "qa:core-recovery": "python3 -m unittest discover -s tests -p 'test_core_*' -v",
     "qa:game-interface": "node scripts/game-interface-smoke.mjs",
+    "qa:inherit-living": "node scripts/inherit-living-legacy-smoke.mjs",
     "qa:inherit-i18n": "node scripts/inherit-i18n-smoke.mjs && node scripts/inherit-cinematic-smoke.mjs",
     "qa:inherit-legacy": "node scripts/inherit-legacy-smoke.mjs",
     "qa:inherit-story": "node scripts/inherit-story-smoke.mjs",

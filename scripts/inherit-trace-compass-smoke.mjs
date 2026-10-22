@@ -129,7 +129,7 @@ test('all required assets, offline shell and localization hooks are shipped',()=
   assert.ok(html.includes('./'+p),'HTML: '+p);
   assert.ok(sw.includes('/games/inherit/'+p),'PWA: '+p);
  }
- assert.match(sw,/inherit-shell-v24/);
+ assert.match(sw,/inherit-shell-v26/);
  assert.ok(lang.includes('window.InheritTraceCompassUI?.refresh?.()'));
  const ui=read('trace-compass.js'),css=read('trace-compass.css');
  for(const word of ['ru:','en:','zh:','showModal','aria-pressed','ghost.hidden','copy[lang()]'])

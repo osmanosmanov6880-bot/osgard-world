@@ -10,6 +10,7 @@ const healthMonitor = readFileSync('scripts/production-health-watch.mjs', 'utf8'
 const nginx = readFileSync('nginx.conf', 'utf8')
 const productionRoutes = readFileSync('scripts/production-route-matrix.mjs', 'utf8')
 const compose = readFileSync('docker-compose.production.yml', 'utf8')
+const liveAssetVerifier = readFileSync('scripts/inherit-living-live-assets.mjs', 'utf8')
 
 for (const secret of ['OSGARD_DEPLOY_HOST', 'OSGARD_DEPLOY_USER', 'OSGARD_DEPLOY_KEY']) {
   assert.ok(workflow.includes(`secrets.${secret}`), `Deployment workflow must use ${secret}`)
@@ -68,6 +69,11 @@ assert.ok(nginx.includes('location = /index.html') && nginx.includes('no-store, 
 assert.ok(nginx.includes('^/brand/(?:osa-transition\\.js|osa5-portals\\.css)$') && nginx.includes('gzip_static on;') && nginx.includes('gzip_min_length 64;') && nginx.includes('gzip_types application/javascript text/css;'), 'Versioned shared-brand assets must be served with gzip')
 assert.ok(workflow.includes(' -le 4096') && workflow.includes('content_length'), 'Small shared-brand assets must remain within the response-size budget if gzip is unavailable')
 assert.ok(!workflow.includes('echo "$DEPLOY_KEY"'), 'Workflow must not print the private key')
+assert.ok(workflow.includes('- name: Verify exact INHERIT R14 public files after SSH activation'), 'R14 byte verification must run after remote activation')
+assert.ok(workflow.includes('node scripts/inherit-living-live-assets.mjs'), 'Deploy must run the exact R14 production asset verifier')
+assert.ok(workflow.indexOf('Verify exact INHERIT R14 public files after SSH activation') > workflow.indexOf('REMOTE_SCRIPT=') && workflow.indexOf('Verify exact INHERIT R14 public files after SSH activation') < workflow.indexOf('Verify published REMIX guard readiness'), 'R14 files must be checked after activation and before remaining release checks')
+assert.ok(liveAssetVerifier.includes("const items=['index.html','living-legacy.js','living-legacy.css','living-legacy-sprites.svg']") && liveAssetVerifier.includes('createHash(\'sha256\')'), 'R14 public verification must cover all four original assets by exact SHA-256')
+assert.ok(liveAssetVerifier.includes('AbortSignal.timeout(15000)') && liveAssetVerifier.includes('attempt<=4'), 'R14 public verification must bound requests and retry activation/cache propagation')
 
 assert.ok(workflow.includes('Preserve Godot Web export for static-only releases'), 'Static-only deploys must preserve generated Godot artifacts instead of deleting them')
 assert.ok(workflow.includes("steps.godot-changes.outputs.changed == 'false'") && workflow.includes('/tmp/osgard-gh-previous/games/null-shift-godot'), 'Static-only recovery must fall back to the prior verified Godot export when the active release is incomplete')
