@@ -24,6 +24,8 @@ for (const [path, surface] of [
     const search = dialog.getByRole('searchbox', { name: 'Поиск по OSGARD' })
     await expect(search).toBeFocused()
     await expect(dialog.getByRole('navigation', { name: 'Результаты быстрого перехода' }).getByRole('link')).toHaveCount(9)
+    await search.fill('архив entertainment')
+    await expect(dialog.getByRole('link', { name: /Архив Entertainment/ })).toHaveAttribute('href', '/entertainment/archive/')
     await search.fill('теневой протокол')
     const result = dialog.getByRole('link', { name: /Теневой протокол/ })
     await expect(result).toHaveCount(1)

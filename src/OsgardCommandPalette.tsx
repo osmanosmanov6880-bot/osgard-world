@@ -25,7 +25,7 @@ const destinations: Destination[] = [
   { id: 'assessment', label: 'Самопроверка', subtitle: 'Проверка учебных знаний', href: '/learning/assessment', section: 'ОБУЧЕНИЕ', keywords: 'экзамен тест проверка' },
   { id: 'favorites', label: 'Избранные игры', subtitle: 'Миры, сохранённые в браузере', href: '/play?view=favorites#catalog', section: 'ИГРЫ', keywords: 'любимые коллекция сохраненные' },
   { id: 'recent', label: 'Недавние игры', subtitle: 'Последние открытые миры', href: '/play?view=recent#catalog', section: 'ИГРЫ', keywords: 'история игры' },
-  { id: 'archive', label: 'Архив Entertainment', subtitle: 'Семь игр из истории OSGARD', href: '/entertainment/index.html', section: 'ИГРЫ', keywords: 'архив семь 7 старые игры entertainment' },
+  { id: 'archive', label: 'Архив Entertainment', subtitle: 'Семь игр из истории OSGARD', href: '/entertainment/archive/', section: 'ИГРЫ', keywords: 'архив семь 7 старые игры entertainment' },
   { id: 'partners', label: 'Партнёрам Play', subtitle: 'Сотрудничество и интеграции', href: '/play/partners', section: 'ОБРАТНАЯ СВЯЗЬ' },
   { id: 'quality', label: 'Состояние сборки', subtitle: 'Проверки и ограничения платформы', href: '/quality', section: 'ОБРАТНАЯ СВЯЗЬ', keywords: 'качество статус техническая проверка' },
 ]
