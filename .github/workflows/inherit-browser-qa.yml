@@ -5,6 +5,9 @@ on:
     branches: [master]
     paths:
       - "public/games/inherit/**"
+      - "scripts/inherit-3d/**"
+      - "scripts/build-inherit-3d.mjs"
+      - "scripts/inherit-3d-smoke.mjs"
       - "scripts/ecosystem-browser.spec.mjs"
       - ".github/workflows/inherit-browser-qa.yml"
   workflow_dispatch:
