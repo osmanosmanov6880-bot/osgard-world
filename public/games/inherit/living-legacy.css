@@ -170,3 +170,15 @@ body.living-legacy .world>.objective{background:#0b333acc;border-radius:12px}
  body.living-legacy .app>.living-actions-strip{order:4;flex:0 0 auto}
  body.living-legacy .app>.inherit-guide{order:5;flex:0 0 auto}
 }
+
+/* Armed gameplay previews must remain a *real clickable* island target even
+ * when the compact native bottom dock overlays the lower part of the stage.
+ * This moves only the painted island while a native planner hint is armed;
+ * it never changes saved coordinates, game budget or placement events. */
+@media(max-width:740px){
+ body.living-legacy.inherit-compass-armed #island,
+ body.living-legacy.inherit-network-armed #island,
+ body.living-legacy.inherit-expedition-armed #island{
+   bottom:185px;
+ }
+}
