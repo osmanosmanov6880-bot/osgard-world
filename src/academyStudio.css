@@ -8,3 +8,13 @@
 .academy-studio-examples{margin-top:10px}.academy-studio-examples>p{margin:0 0 7px;font-size:10px;font-weight:600;color:var(--muted)}.academy-studio-examples>div{display:grid;gap:6px}.academy-studio-examples>div>span{display:block;padding:8px 10px;border-left:2px solid var(--line);background:color-mix(in srgb,var(--bg) 75%,transparent);font-size:10px;line-height:1.65;color:var(--muted)}.academy-studio-examples strong{display:block;margin-bottom:3px;color:var(--ink);font-size:10px}.academy-studio-criterion{align-items:start}
 
 .academy-studio-next-step{margin:7px 0 9px;padding:8px 10px;border-left:2px solid var(--accent);background:color-mix(in srgb,var(--panel) 82%,transparent);font-size:11px;line-height:1.6;color:var(--ink)}.academy-studio-next-step strong{color:var(--ink)}
+
+/* Keep the accessible backup file picker inside its visible label. Some global
+   form rules expand unstyled file inputs to viewport width; the visually hidden
+   control must never enlarge the document or create horizontal scrolling. */
+.academy-studio-import-button{position:relative}
+#academy-studio-backup-input{position:absolute!important;inset:0 auto auto 0!important;display:block!important;
+  inline-size:1px!important;block-size:1px!important;width:1px!important;height:1px!important;
+  min-width:1px!important;min-height:1px!important;max-width:1px!important;max-height:1px!important;
+  padding:0!important;margin:0!important;border:0!important;overflow:hidden!important;
+  white-space:nowrap!important;clip:rect(0,0,0,0)!important;clip-path:inset(50%)!important;opacity:0!important}

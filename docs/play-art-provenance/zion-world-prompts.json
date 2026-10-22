@@ -1,0 +1,359 @@
+{
+  "generator": "built-in image_gen",
+  "created_date": "2026-10-21",
+  "role": "original concept cover art, not gameplay screenshot",
+  "assets": [
+    {
+      "id": "zion-020",
+      "title": "Базальтовая колыбель",
+      "theme": "An alien cathedral formed from towering black hexagonal basalt columns and hanging mineral formations beside an underground abyss. Three monumental resonance pylons of increasing height stand on a basalt dais, their crystalline cores glowing turquoise and emitting delicate concentric cymatic light ripples through thin mist. The formations look ancient yet technologically precise; polished black rock, tiny mineral lights and violet-blue fissures. Far in the narrow ceiling opening a small pale moon and stars. View from low foreground obsidian steps toward three resonating columns, monumental but quiet and contemplative, a lullaby made visible. Distinct rugged geology, not a regular city.",
+      "prompt": "Production cinematic science-fiction game cover illustration, landscape 1536x1024, 3:2 aspect ratio. One original richly detailed continuous image, premium realistic environment concept art with tactile materials, elegant epic architecture, volumetric atmosphere, sophisticated lighting, strong foreground-to-background depth. Shared OSGARD universe color direction: very deep navy and black-blue shadows, luminous electric cyan, restrained violet, pearl-white highlights. Main subject fills upper two thirds, lower foreground slightly darker for real HTML caption overlay. No text, lettering, numbers, logos, watermarks, user interface, frames, cards, panels or webpage mockup. This is promotional artwork for a small interactive prototype, not a claimed gameplay screenshot.\nSpecific world: An alien cathedral formed from towering black hexagonal basalt columns and hanging mineral formations beside an underground abyss. Three monumental resonance pylons of increasing height stand on a basalt dais, their crystalline cores glowing turquoise and emitting delicate concentric cymatic light ripples through thin mist. The formations look ancient yet technologically precise; polished black rock, tiny mineral lights and violet-blue fissures. Far in the narrow ceiling opening a small pale moon and stars. View from low foreground obsidian steps toward three resonating columns, monumental but quiet and contemplative, a lullaby made visible. Distinct rugged geology, not a regular city.",
+      "source_path": "zion/zion-020.png",
+      "outputs": {
+        "original": "zion/zion-020.png",
+        "web": "zion/zion-020.webp",
+        "small": "zion/zion-020-640.webp"
+      },
+      "file_inventory": [
+        {
+          "path": "zion/zion-020.png",
+          "width": 1536,
+          "height": 1024,
+          "size_bytes": 2762271,
+          "sha256": "6b8f05bc91e257541090c944de1117fcfa992a3b1799ac11cb756f9b84b4dc67"
+        },
+        {
+          "path": "zion/zion-020-640.webp",
+          "width": 640,
+          "height": 427,
+          "size_bytes": 63846,
+          "sha256": "888165326f1cef94cbf06696777063ef666ca5eb89b897433301385aea94efd6"
+        },
+        {
+          "path": "zion/zion-020.webp",
+          "width": 1536,
+          "height": 1024,
+          "size_bytes": 283948,
+          "sha256": "463db1e45bebea78eadab251c34b838ce2a5d7a84280c1cc5dd33396e5ad8ce2"
+        }
+      ]
+    },
+    {
+      "id": "zion-021",
+      "title": "Тихий архив",
+      "theme": "A silent colossal memory archive inside an alien orbital library: staggeringly tall translucent crystalline shelves and curving ribbed silver vaulted architecture extend into infinity. Floating thin glass data plates catch lavender light; a single blank luminous pale sheet or tablet, absolutely no writing, rests suspended over a central dark pedestal approached by three sequential cyan signal lights. Delicate violet haze, tiny geometric storage lights, mysterious lost knowledge, strong symmetrical perspective, tactile glass and brushed titanium, no humans, no city panorama. The central illuminated page is the focal point amid rich shadow and silent grandeur.",
+      "prompt": "Production cinematic science-fiction game cover illustration, landscape 1536x1024, 3:2 aspect ratio. One original richly detailed continuous image, premium realistic environment concept art with tactile materials, elegant epic architecture, volumetric atmosphere, sophisticated lighting, strong foreground-to-background depth. Shared OSGARD universe color direction: very deep navy and black-blue shadows, luminous electric cyan, restrained violet, pearl-white highlights. Main subject fills upper two thirds, lower foreground slightly darker for real HTML caption overlay. No text, lettering, numbers, logos, watermarks, user interface, frames, cards, panels or webpage mockup. This is promotional artwork for a small interactive prototype, not a claimed gameplay screenshot.\nSpecific world: A silent colossal memory archive inside an alien orbital library: staggeringly tall translucent crystalline shelves and curving ribbed silver vaulted architecture extend into infinity. Floating thin glass data plates catch lavender light; a single blank luminous pale sheet or tablet, absolutely no writing, rests suspended over a central dark pedestal approached by three sequential cyan signal lights. Delicate violet haze, tiny geometric storage lights, mysterious lost knowledge, strong symmetrical perspective, tactile glass and brushed titanium, no humans, no city panorama. The central illuminated page is the focal point amid rich shadow and silent grandeur.",
+      "source_path": "zion/zion-021.png",
+      "outputs": {
+        "original": "zion/zion-021.png",
+        "web": "zion/zion-021.webp",
+        "small": "zion/zion-021-640.webp"
+      },
+      "file_inventory": [
+        {
+          "path": "zion/zion-021.png",
+          "width": 1536,
+          "height": 1024,
+          "size_bytes": 2986447,
+          "sha256": "dba7b93271c4fa91d78b70a1a22e13d3fec88a35739aee01c2e90fc8b5ed5913"
+        },
+        {
+          "path": "zion/zion-021-640.webp",
+          "width": 640,
+          "height": 427,
+          "size_bytes": 75932,
+          "sha256": "8f4ef1768b5cfc6942b922b22b51ac2d9553b4c448f459be29a6cbb59bc6c231"
+        },
+        {
+          "path": "zion/zion-021.webp",
+          "width": 1536,
+          "height": 1024,
+          "size_bytes": 355766,
+          "sha256": "d9cb4a5f1bd1cb569c10633efdbaf2cd94ca235c374b1599c4962b93214635e0"
+        }
+      ]
+    },
+    {
+      "id": "zion-022",
+      "title": "Стеклянный сад",
+      "theme": "An otherworldly living glass orchard inside a futuristic transparent biodome on a distant planet. A magnificent translucent crystalline fruit tree rises at the right, branches made of clear smoky glass containing luminous cyan veins, jewel-like pale gold fruits and tiny violet glass blossoms. Visible elaborate glowing roots spread across dark damp reflective ground; smaller trees recede into mist, curved blue titanium greenhouse ribs above, a distant soft blue planet visible through the roof. A scene about flower, fruit, and root, intensely tactile transparent materials and organic shapes, lush yet technological, awe and gentleness. Low cinematic viewpoint, delicate cyan refractions, no humans.",
+      "prompt": "Production cinematic science-fiction game cover illustration, landscape 1536x1024, 3:2 aspect ratio. One original richly detailed continuous image, premium realistic environment concept art with tactile materials, elegant epic architecture, volumetric atmosphere, sophisticated lighting, strong foreground-to-background depth. Shared OSGARD universe color direction: very deep navy and black-blue shadows, luminous electric cyan, restrained violet, pearl-white highlights. Main subject fills upper two thirds, lower foreground slightly darker for real HTML caption overlay. No text, lettering, numbers, logos, watermarks, user interface, frames, cards, panels or webpage mockup. This is promotional artwork for a small interactive prototype, not a claimed gameplay screenshot.\nSpecific world: An otherworldly living glass orchard inside a futuristic transparent biodome on a distant planet. A magnificent translucent crystalline fruit tree rises at the right, branches made of clear smoky glass containing luminous cyan veins, jewel-like pale gold fruits and tiny violet glass blossoms. Visible elaborate glowing roots spread across dark damp reflective ground; smaller trees recede into mist, curved blue titanium greenhouse ribs above, a distant soft blue planet visible through the roof. A scene about flower, fruit, and root, intensely tactile transparent materials and organic shapes, lush yet technological, awe and gentleness. Low cinematic viewpoint, delicate cyan refractions, no humans.",
+      "source_path": "zion/zion-022.png",
+      "outputs": {
+        "original": "zion/zion-022.png",
+        "web": "zion/zion-022.webp",
+        "small": "zion/zion-022-640.webp"
+      },
+      "file_inventory": [
+        {
+          "path": "zion/zion-022.png",
+          "width": 1536,
+          "height": 1024,
+          "size_bytes": 3630137,
+          "sha256": "75d35c7ccc9e056a42b85beb87b819a6342a33e22921ce14adc75dee7cffe6d8"
+        },
+        {
+          "path": "zion/zion-022-640.webp",
+          "width": 640,
+          "height": 427,
+          "size_bytes": 107196,
+          "sha256": "882685b69f2127bdffa74aadc89c61061fbb417b331bd76dbaa99868933b9bc8"
+        },
+        {
+          "path": "zion/zion-022.webp",
+          "width": 1536,
+          "height": 1024,
+          "size_bytes": 493748,
+          "sha256": "6045a5e98bf8acb34f463cb1c5cea82b256cd5add1b82c873000e1f4c9e816d5"
+        }
+      ]
+    },
+    {
+      "id": "zion-023",
+      "title": "Последний приливный механизм",
+      "theme": "The last functioning alien tide engine standing alone in a vast midnight ocean: an immense intricate titanium and weathered bronze turbine ring rises from monumental futuristic piers, three luminous cyan conduits channel the rhythm of tidal water through its machinery. Foaming turquoise waves rush around dark angular foundations, suspended mechanical arches and deep conduits catch violet accents. Blue moonlight shafts cut storm haze, distant silhouetted coastal towers, a dramatic low wide viewpoint from wet sea-wall foreground. The machine feels ancient, enormous and still breathing with the sea; physical water, engineered metal, intricate functioning parts. No humans, no text or mechanical gauges with digits.",
+      "prompt": "Production cinematic science-fiction game cover illustration, landscape 1536x1024, 3:2 aspect ratio. One original richly detailed continuous image, premium realistic environment concept art with tactile materials, elegant epic architecture, volumetric atmosphere, sophisticated lighting, strong foreground-to-background depth. Shared OSGARD universe color direction: very deep navy and black-blue shadows, luminous electric cyan, restrained violet, pearl-white highlights. Main subject fills upper two thirds, lower foreground slightly darker for real HTML caption overlay. No text, lettering, numbers, logos, watermarks, user interface, frames, cards, panels or webpage mockup. This is promotional artwork for a small interactive prototype, not a claimed gameplay screenshot.\nSpecific world: The last functioning alien tide engine standing alone in a vast midnight ocean: an immense intricate titanium and weathered bronze turbine ring rises from monumental futuristic piers, three luminous cyan conduits channel the rhythm of tidal water through its machinery. Foaming turquoise waves rush around dark angular foundations, suspended mechanical arches and deep conduits catch violet accents. Blue moonlight shafts cut storm haze, distant silhouetted coastal towers, a dramatic low wide viewpoint from wet sea-wall foreground. The machine feels ancient, enormous and still breathing with the sea; physical water, engineered metal, intricate functioning parts. No humans, no text or mechanical gauges with digits.",
+      "source_path": "zion/zion-023.png",
+      "outputs": {
+        "original": "zion/zion-023.png",
+        "web": "zion/zion-023.webp",
+        "small": "zion/zion-023-640.webp"
+      },
+      "file_inventory": [
+        {
+          "path": "zion/zion-023.png",
+          "width": 1536,
+          "height": 1024,
+          "size_bytes": 3125654,
+          "sha256": "bc0658b6e6bd4a37a74c1ac2ec65d8d420d26ea536456e37f4eef265ae2bee61"
+        },
+        {
+          "path": "zion/zion-023-640.webp",
+          "width": 640,
+          "height": 427,
+          "size_bytes": 75182,
+          "sha256": "64cf0194544bf87abc708871209195833d22b78875fbf1db946b9337050782ed"
+        },
+        {
+          "path": "zion/zion-023.webp",
+          "width": 1536,
+          "height": 1024,
+          "size_bytes": 358126,
+          "sha256": "4247d63894a020a640382315de785a8b82703eea6658ab64bd4ddf02d1a29d6a"
+        }
+      ]
+    },
+    {
+      "id": "zion-024",
+      "title": "Бархатная частота",
+      "theme": "A mysterious alien radio observatory at night, an enormous elegant concave receiver made of dark satin-black metal and curved violet acoustic ribs fills the left and center, its rim lit delicate cyan. Fine suspended silver resonance filaments and tiny coils shimmer in the foreground; a distant array of receivers recedes into a deep blue fog valley. Above, a soft violet and electric-blue aurora flows like a velvet wave through a densely starred sky, suggesting hiss, hum and silence. Rich velvety shadows, tactile satin surfaces, quiet contemplative atmosphere, architectural science fiction, deep plum-violet accent stronger than cyan. No speakers labeled with numbers, no HUD or drawn waveform graph.",
+      "prompt": "Production cinematic science-fiction game cover illustration, landscape 1536x1024, 3:2 aspect ratio. One original richly detailed continuous image, premium realistic environment concept art with tactile materials, elegant epic architecture, volumetric atmosphere, sophisticated lighting, strong foreground-to-background depth. Shared OSGARD universe color direction: very deep navy and black-blue shadows, luminous electric cyan, restrained violet, pearl-white highlights. Main subject fills upper two thirds, lower foreground slightly darker for real HTML caption overlay. No text, lettering, numbers, logos, watermarks, user interface, frames, cards, panels or webpage mockup. This is promotional artwork for a small interactive prototype, not a claimed gameplay screenshot.\nSpecific world: A mysterious alien radio observatory at night, an enormous elegant concave receiver made of dark satin-black metal and curved violet acoustic ribs fills the left and center, its rim lit delicate cyan. Fine suspended silver resonance filaments and tiny coils shimmer in the foreground; a distant array of receivers recedes into a deep blue fog valley. Above, a soft violet and electric-blue aurora flows like a velvet wave through a densely starred sky, suggesting hiss, hum and silence. Rich velvety shadows, tactile satin surfaces, quiet contemplative atmosphere, architectural science fiction, deep plum-violet accent stronger than cyan. No speakers labeled with numbers, no HUD or drawn waveform graph.",
+      "source_path": "zion/zion-024.png",
+      "outputs": {
+        "original": "zion/zion-024.png",
+        "web": "zion/zion-024.webp",
+        "small": "zion/zion-024-640.webp"
+      },
+      "file_inventory": [
+        {
+          "path": "zion/zion-024.png",
+          "width": 1536,
+          "height": 1024,
+          "size_bytes": 3021010,
+          "sha256": "81491c7b86df228211ab63fbc943de3e7ed336189e2ac33f7d08bc39fea2f351"
+        },
+        {
+          "path": "zion/zion-024-640.webp",
+          "width": 640,
+          "height": 427,
+          "size_bytes": 64836,
+          "sha256": "fe82a757e3b7df3cbb29e2d83978d56b20cca566ebbe93c60bf153e02a814752"
+        },
+        {
+          "path": "zion/zion-024.webp",
+          "width": 1536,
+          "height": 1024,
+          "size_bytes": 323702,
+          "sha256": "d432dd9720323753c12944d8992b4cd889f1248791ea7c557ec1165b1122aacd"
+        }
+      ]
+    },
+    {
+      "id": "zion-025",
+      "title": "Бледное уравнение",
+      "theme": "An abandoned high-altitude futuristic light laboratory suspended over a dark alien city. A monumental tall curved observation window at upper right casts a precise pale-white shaft of light through floating fine chalk-like mineral dust onto a dark sculptural worktable. Several physical translucent geometric prisms and a delicate levitating polyhedron refract pearl-white and pale-gold light; curved titanium instrument structures, thin cyan seams, deep navy walls and violet dusk beyond the huge window. Emphasize light, chalk and a window as tactile objects in a grand serene photorealistic environment. Strong asymmetric diagonal composition with brighter upper-right and shadowed foreground. No actual equation, mathematics, letters, blackboard writing or UI.",
+      "prompt": "Production cinematic science-fiction game cover illustration, landscape 1536x1024, 3:2 aspect ratio. One original richly detailed continuous image, premium realistic environment concept art with tactile materials, elegant epic architecture, volumetric atmosphere, sophisticated lighting, strong foreground-to-background depth. Shared OSGARD universe color direction: very deep navy and black-blue shadows, luminous electric cyan, restrained violet, pearl-white highlights. Main subject fills upper two thirds, lower foreground slightly darker for real HTML caption overlay. No text, lettering, numbers, logos, watermarks, user interface, frames, cards, panels or webpage mockup. This is promotional artwork for a small interactive prototype, not a claimed gameplay screenshot.\nSpecific world: An abandoned high-altitude futuristic light laboratory suspended over a dark alien city. A monumental tall curved observation window at upper right casts a precise pale-white shaft of light through floating fine chalk-like mineral dust onto a dark sculptural worktable. Several physical translucent geometric prisms and a delicate levitating polyhedron refract pearl-white and pale-gold light; curved titanium instrument structures, thin cyan seams, deep navy walls and violet dusk beyond the huge window. Emphasize light, chalk and a window as tactile objects in a grand serene photorealistic environment. Strong asymmetric diagonal composition with brighter upper-right and shadowed foreground. No actual equation, mathematics, letters, blackboard writing or UI.",
+      "source_path": "zion/zion-025.png",
+      "outputs": {
+        "original": "zion/zion-025.png",
+        "web": "zion/zion-025.webp",
+        "small": "zion/zion-025-640.webp"
+      },
+      "file_inventory": [
+        {
+          "path": "zion/zion-025.png",
+          "width": 1536,
+          "height": 1024,
+          "size_bytes": 2640916,
+          "sha256": "847d9117bd706b6d9de2ff67e89089a7a31167ad7c537065ccf56553c5860a3c"
+        },
+        {
+          "path": "zion/zion-025-640.webp",
+          "width": 640,
+          "height": 427,
+          "size_bytes": 56998,
+          "sha256": "5413e10b159d58d8e444d45a96c37bb4f62e866d06db56b2ca72281051606394"
+        },
+        {
+          "path": "zion/zion-025.webp",
+          "width": 1536,
+          "height": 1024,
+          "size_bytes": 256032,
+          "sha256": "2d154ad3870b2537a512d56b8ffbbfac1e571b2ffd2b510f47dd1271e79f1592"
+        }
+      ]
+    },
+    {
+      "id": "zion-026",
+      "title": "Север сна",
+      "theme": "A vast dreamlike polar plain on a distant planet under a brilliant north star and immense quiet blue-violet aurora. Fine windblown snow crosses dark blue ice, a solitary chain of footprints starts in the lower left foreground and leads toward a slender futuristic polar observatory and a small silent shelter on a remote ridge. Faceted ice pillars echo alien architecture, distant frozen mountain needles, tiny cyan navigational lights receding into depth. A monumental pale moon low over the horizon, wind, star and traces are the narrative. Epic contemplative nighttime Arctic science fiction, crisp snow crystal materials and volumetric cold mist, pale cyan dominant with delicate violet aurora; no people required, no text, no compass letters, no cityscape repetition.",
+      "prompt": "Production cinematic science-fiction game cover illustration, landscape 1536x1024, 3:2 aspect ratio. One original richly detailed continuous image, premium realistic environment concept art with tactile materials, elegant epic architecture, volumetric atmosphere, sophisticated lighting, strong foreground-to-background depth. Shared OSGARD universe color direction: very deep navy and black-blue shadows, luminous electric cyan, restrained violet, pearl-white highlights. Main subject fills upper two thirds, lower foreground slightly darker for real HTML caption overlay. No text, lettering, numbers, logos, watermarks, user interface, frames, cards, panels or webpage mockup. This is promotional artwork for a small interactive prototype, not a claimed gameplay screenshot.\nSpecific world: A vast dreamlike polar plain on a distant planet under a brilliant north star and immense quiet blue-violet aurora. Fine windblown snow crosses dark blue ice, a solitary chain of footprints starts in the lower left foreground and leads toward a slender futuristic polar observatory and a small silent shelter on a remote ridge. Faceted ice pillars echo alien architecture, distant frozen mountain needles, tiny cyan navigational lights receding into depth. A monumental pale moon low over the horizon, wind, star and traces are the narrative. Epic contemplative nighttime Arctic science fiction, crisp snow crystal materials and volumetric cold mist, pale cyan dominant with delicate violet aurora; no people required, no text, no compass letters, no cityscape repetition.",
+      "source_path": "zion/zion-026.png",
+      "outputs": {
+        "original": "zion/zion-026.png",
+        "web": "zion/zion-026.webp",
+        "small": "zion/zion-026-640.webp"
+      },
+      "file_inventory": [
+        {
+          "path": "zion/zion-026.png",
+          "width": 1536,
+          "height": 1024,
+          "size_bytes": 3108487,
+          "sha256": "67f2c324896562225a198f839d910a5df9e0a51bed3198f63bffc663c8e88475"
+        },
+        {
+          "path": "zion/zion-026-640.webp",
+          "width": 640,
+          "height": 427,
+          "size_bytes": 65390,
+          "sha256": "e5722256eb72b7840268c489412b44482285f47eddc86d72a90b03245ca1526a"
+        },
+        {
+          "path": "zion/zion-026.webp",
+          "width": 1536,
+          "height": 1024,
+          "size_bytes": 335764,
+          "sha256": "a941a760155bc89711efc143ddd5997610b05e516a4bde3420513b1b8f954635"
+        }
+      ]
+    },
+    {
+      "id": "zion-027",
+      "title": "Бронзовый час",
+      "theme": "The interior of an enormous alien astronomical clock tower, immense interlocking bronze and dark titanium gears rising through the upper frame, an elegant huge bronze bell hangs near a cyan-lit tower opening. The gear geometry casts long dramatic shadows across an obsidian floor. The tower overlooks a distant futuristic city under a blue-violet planet and deep starry night, seen through tall narrow windows. Antique bronze patina meets exquisite futuristic engineering, restrained amber rim highlights on finely machined gear teeth and graceful suspension cables, cyan pinlights, majestic silence and the sense of a single suspended hour. Cinematic low angle toward one giant mechanism. No clock numerals, no readable clock face, no engravings or text.",
+      "prompt": "Production cinematic science-fiction game cover illustration, landscape 1536x1024, 3:2 aspect ratio. One original richly detailed continuous image, premium realistic environment concept art with tactile materials, elegant epic architecture, volumetric atmosphere, sophisticated lighting, strong foreground-to-background depth. Shared OSGARD universe color direction: very deep navy and black-blue shadows, luminous electric cyan, restrained violet, pearl-white highlights. Main subject fills upper two thirds, lower foreground slightly darker for real HTML caption overlay. No text, lettering, numbers, logos, watermarks, user interface, frames, cards, panels or webpage mockup. This is promotional artwork for a small interactive prototype, not a claimed gameplay screenshot.\nSpecific world: The interior of an enormous alien astronomical clock tower, immense interlocking bronze and dark titanium gears rising through the upper frame, an elegant huge bronze bell hangs near a cyan-lit tower opening. The gear geometry casts long dramatic shadows across an obsidian floor. The tower overlooks a distant futuristic city under a blue-violet planet and deep starry night, seen through tall narrow windows. Antique bronze patina meets exquisite futuristic engineering, restrained amber rim highlights on finely machined gear teeth and graceful suspension cables, cyan pinlights, majestic silence and the sense of a single suspended hour. Cinematic low angle toward one giant mechanism. No clock numerals, no readable clock face, no engravings or text.",
+      "source_path": "zion/zion-027.png",
+      "outputs": {
+        "original": "zion/zion-027.png",
+        "web": "zion/zion-027.webp",
+        "small": "zion/zion-027-640.webp"
+      },
+      "file_inventory": [
+        {
+          "path": "zion/zion-027.png",
+          "width": 1536,
+          "height": 1024,
+          "size_bytes": 2836705,
+          "sha256": "a79fd4c60a57df5165fdef530829e30dfd70d28e195ca69b47f3bb204b4cfb07"
+        },
+        {
+          "path": "zion/zion-027-640.webp",
+          "width": 640,
+          "height": 427,
+          "size_bytes": 70368,
+          "sha256": "5250842a0f3de1ce27785c7390877e965733ed5f6be15f63aae76d36e56cef9d"
+        },
+        {
+          "path": "zion/zion-027.webp",
+          "width": 1536,
+          "height": 1024,
+          "size_bytes": 328168,
+          "sha256": "281bd3b836586c4b9f23bc97c068ef8b1871337b42eb1cfdcb902ce25b3b4732"
+        }
+      ]
+    },
+    {
+      "id": "zion-028",
+      "title": "Зеркальная погода",
+      "theme": "A surreal futuristic weather observatory plaza built around three colossal polished mirrored arch sculptures and glass monoliths. Rain beads roll down the closest dark mirror; another reflects wind bending luminous reed-like alien plants; a far silver arch catches a pale sunbeam breaking through violet storm clouds. It is one seamless richly detailed physical landscape, not three panels: mirrored architecture, wet obsidian paving, mist curling around reflective columns, distant futuristic skyline, star-streaked blue atmospheric upper sky. The mirrors subtly show different weather moods of rain, wind, and sun while sharing one alien environment. Precise photorealistic reflections, cyan edge lights, silver-blue and restrained violet colors, mysterious scientific-poetic mood. No overlay panels, no forecast text, no weather icons or numbers.",
+      "prompt": "Production cinematic science-fiction game cover illustration, landscape 1536x1024, 3:2 aspect ratio. One original richly detailed continuous image, premium realistic environment concept art with tactile materials, elegant epic architecture, volumetric atmosphere, sophisticated lighting, strong foreground-to-background depth. Shared OSGARD universe color direction: very deep navy and black-blue shadows, luminous electric cyan, restrained violet, pearl-white highlights. Main subject fills upper two thirds, lower foreground slightly darker for real HTML caption overlay. No text, lettering, numbers, logos, watermarks, user interface, frames, cards, panels or webpage mockup. This is promotional artwork for a small interactive prototype, not a claimed gameplay screenshot.\nSpecific world: A surreal futuristic weather observatory plaza built around three colossal polished mirrored arch sculptures and glass monoliths. Rain beads roll down the closest dark mirror; another reflects wind bending luminous reed-like alien plants; a far silver arch catches a pale sunbeam breaking through violet storm clouds. It is one seamless richly detailed physical landscape, not three panels: mirrored architecture, wet obsidian paving, mist curling around reflective columns, distant futuristic skyline, star-streaked blue atmospheric upper sky. The mirrors subtly show different weather moods of rain, wind, and sun while sharing one alien environment. Precise photorealistic reflections, cyan edge lights, silver-blue and restrained violet colors, mysterious scientific-poetic mood. No overlay panels, no forecast text, no weather icons or numbers.",
+      "source_path": "zion/zion-028.png",
+      "outputs": {
+        "original": "zion/zion-028.png",
+        "web": "zion/zion-028.webp",
+        "small": "zion/zion-028-640.webp"
+      },
+      "file_inventory": [
+        {
+          "path": "zion/zion-028.png",
+          "width": 1536,
+          "height": 1024,
+          "size_bytes": 3190774,
+          "sha256": "29434938db978d6a7857cd5eff6e2529246dbb4a819eaf3e95ca9cb2c8e9cf36"
+        },
+        {
+          "path": "zion/zion-028-640.webp",
+          "width": 640,
+          "height": 427,
+          "size_bytes": 83120,
+          "sha256": "dcd8e82ee2475358b7d1c80036448ca29e017803e0b46a113667923aafe79fa6"
+        },
+        {
+          "path": "zion/zion-028.webp",
+          "width": 1536,
+          "height": 1024,
+          "size_bytes": 387866,
+          "sha256": "c641314318a55bd515e47336d9aee1004ebeb8dc7644b6e708ab6029c53c6bab"
+        }
+      ]
+    },
+    {
+      "id": "zion-029",
+      "title": "Синий интервал",
+      "theme": "A serene immense cobalt-blue resonance chamber above an alien ocean. An exquisite gigantic silver-and-dark-titanium harp-like physical instrument spans a gap between curved architectural ribs; thin luminous cyan resonator strings hang in ordered groups with a conspicuous empty interval of silence between them. Three sculptural tuning-fork towers rise beyond a reflective shallow water floor, delicate blue light ripples fading into darkness. A huge open circular observation window shows a deep blue planet and a still cosmic horizon. Cinematic sweeping curved architecture, intense blue and restrained violet, meticulous tactile instrument materials, poetic atmosphere of notes separated by a pause. No musical notation, no note symbols, no letters or interface, no human performer, no generic empty abstract gradient.",
+      "prompt": "Production cinematic science-fiction game cover illustration, landscape 1536x1024, 3:2 aspect ratio. One original richly detailed continuous image, premium realistic environment concept art with tactile materials, elegant epic architecture, volumetric atmosphere, sophisticated lighting, strong foreground-to-background depth. Shared OSGARD universe color direction: very deep navy and black-blue shadows, luminous electric cyan, restrained violet, pearl-white highlights. Main subject fills upper two thirds, lower foreground slightly darker for real HTML caption overlay. No text, lettering, numbers, logos, watermarks, user interface, frames, cards, panels or webpage mockup. This is promotional artwork for a small interactive prototype, not a claimed gameplay screenshot.\nSpecific world: A serene immense cobalt-blue resonance chamber above an alien ocean. An exquisite gigantic silver-and-dark-titanium harp-like physical instrument spans a gap between curved architectural ribs; thin luminous cyan resonator strings hang in ordered groups with a conspicuous empty interval of silence between them. Three sculptural tuning-fork towers rise beyond a reflective shallow water floor, delicate blue light ripples fading into darkness. A huge open circular observation window shows a deep blue planet and a still cosmic horizon. Cinematic sweeping curved architecture, intense blue and restrained violet, meticulous tactile instrument materials, poetic atmosphere of notes separated by a pause. No musical notation, no note symbols, no letters or interface, no human performer, no generic empty abstract gradient.",
+      "source_path": "zion/zion-029.png",
+      "outputs": {
+        "original": "zion/zion-029.png",
+        "web": "zion/zion-029.webp",
+        "small": "zion/zion-029-640.webp"
+      },
+      "file_inventory": [
+        {
+          "path": "zion/zion-029.png",
+          "width": 1536,
+          "height": 1024,
+          "size_bytes": 2748104,
+          "sha256": "1d0ba04cde73069a17ad13e53dcc44145eb3631a5694dfc6a1f20920822f4b6e"
+        },
+        {
+          "path": "zion/zion-029-640.webp",
+          "width": 640,
+          "height": 427,
+          "size_bytes": 62290,
+          "sha256": "dd700c7a385936708d07923f6a044b72abc52bef2af4a39e745891ce772155a8"
+        },
+        {
+          "path": "zion/zion-029.webp",
+          "width": 1536,
+          "height": 1024,
+          "size_bytes": 283886,
+          "sha256": "8f902fe9a14fd0c0c0a03d70cee90ca333ff989780f7398fdc65ac7941677184"
+        }
+      ]
+    }
+  ],
+  "source_path_base": "osgard-art/",
+  "path_normalization": "Source paths are relative to the original art folder; prompt text is preserved verbatim."
+}

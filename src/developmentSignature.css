@@ -1,0 +1,206 @@
+/* OSGARD Development — Signature Projects.
+   Real screenshots and source-backed catalog statuses, no fictitious launches. */
+.brand-system .development-signature{
+  --bg:#07111d;--surface:#0e1c2b;--ink:#f6f8fc;--muted:#bdc9d6;
+  --accent:#eed8bb;--line:#39516a85;
+  color:#f3f7fb;
+  background:radial-gradient(ellipse at 83% 11%,#2b3e6151,transparent 50%),
+             radial-gradient(ellipse at 11% 47%,#1b253c55,transparent 50%),
+             #070f19;
+}
+.development-signature .signature-hero{
+  display:grid;grid-template-columns:minmax(0,1fr) minmax(400px,1.03fr);
+  gap:clamp(26px,4.2vw,65px);align-items:center;
+  min-height:720px;padding:clamp(58px,6vw,93px) 0 78px;overflow:visible;
+}
+.development-signature .signature-hero .omega-dev-hero-art{
+  inset:0 -4vw;z-index:-1;background:radial-gradient(ellipse at 79% 22%,#2d5e8557,transparent 45%),
+    radial-gradient(ellipse at 20% 72%,#2e355654,transparent 48%),#060f1c;
+  overflow:hidden;
+}
+.development-signature .signature-hero .omega-dev-hero-art img{
+  left:38%;width:85%;height:95%;top:2%;opacity:.27;filter:blur(2px) saturate(.7);
+}
+.development-signature .signature-hero .omega-dev-hero-art::after{
+  background:linear-gradient(90deg,#060f1be8 0%,#060f1bb0 32%,transparent 76%),
+             linear-gradient(0deg,#06101bd5,transparent 43%);
+}
+.development-signature .signature-hero .omega-dev-orbit{opacity:.17;box-shadow:none}
+.development-signature .signature-intro{max-width:680px;align-self:center}
+.development-signature .signature-intro .brand-eyebrow{
+  color:#ebd3ad;font-size:12px;margin:0 0 32px;letter-spacing:.15em;
+}
+.development-signature .signature-intro h1{
+  font:790 clamp(48px,5.3vw,85px)/1.02 Inter,Arial,sans-serif;
+  color:#f6f7f8;letter-spacing:-.068em;text-shadow:0 5px 35px #020712a0;
+}
+.development-signature .signature-intro h1 span{color:#f0d4a6}
+.development-signature .signature-intro .brand-lead{
+  font-size:clamp(16px,1.4vw,19px);line-height:1.72;max-width:575px;
+  color:#d0dbe4;margin:27px 0 0;
+}
+.development-signature .signature-hero-actions{gap:12px;margin:28px 0 0}
+.development-signature .signature-hero-actions .brand-button{
+  min-height:54px;min-width:0;border-radius:5px;gap:30px;
+  font-size:15px;padding:13px 19px;font-weight:680;
+}
+.development-signature .signature-hero-actions .brand-button.primary{
+  background:#efd8b5;color:#0e1e2a;border:1px solid #ffe7c3;
+  box-shadow:0 10px 35px #e8d0ad25;
+}
+.development-signature .signature-hero-actions .brand-button.primary:hover{background:#fff0d5;color:#15232b}
+.development-signature .signature-hero-actions .signature-secondary{
+  background:#0c2436b0;color:#f1f6fd;border:1px solid #809bb080;
+}
+.development-signature .signature-hero-facts{
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-top:37px;
+  border-top:1px solid #7a8fa65c;padding-top:19px;
+}
+.development-signature .signature-hero-facts span{min-width:0;display:flex;flex-direction:column;gap:5px}
+.development-signature .signature-hero-facts strong{
+  font:750 clamp(14px,1.4vw,21px)/1.3 Inter,Arial,sans-serif;
+  letter-spacing:-.02em;color:#f0e3c9;white-space:nowrap;
+}
+.development-signature .signature-hero-facts small{
+  color:#abc0d1;font:500 11px/1.5 Inter,Arial,sans-serif;
+}
+.development-signature .signature-intro .signature-caption{
+  color:#8faabb;font:620 10px/1.6 'JetBrains Mono',monospace;
+  letter-spacing:.08em;margin:24px 0 0;
+}
+.development-signature .signature-showcase{
+  position:relative;z-index:2;min-width:0;padding:17px;
+  border:1px solid #6e86917e;border-radius:15px;
+  background:linear-gradient(145deg,#162a3cc9,#091622eb);
+  box-shadow:0 24px 80px #000a,inset 0 1px 0 #f7f4e81e;
+  backdrop-filter:blur(18px);
+}
+.signature-showcase-top{display:flex;justify-content:space-between;gap:12px;margin-bottom:14px;
+  color:#e6d6b8;font:650 10px/1.6 'JetBrains Mono',monospace;letter-spacing:.13em}
+.development-signature .signature-featured-case{
+  display:block;overflow:hidden;background:#081621;
+  border:1px solid #657b91b3;border-radius:10px;color:inherit;
+  transition:transform .2s,border-color .2s;
+}
+.development-signature .signature-featured-case:hover{border-color:#fae2bd;transform:translateY(-3px)}
+.signature-featured-image{position:relative;aspect-ratio:1.6;overflow:hidden;background:#0d273d}
+.signature-featured-image img{width:100%;height:100%;object-fit:cover;display:block;
+  filter:saturate(.97);transition:transform .35s}
+.signature-featured-case:hover img{transform:scale(1.035)}
+.signature-featured-image>span{position:absolute;top:13px;left:13px;
+  background:#101c2de9;border:1px solid #eed6b891;border-radius:4px;
+  padding:7px 10px;color:#ffead3;letter-spacing:.1em;font-size:10px;font-weight:700}
+.signature-featured-copy{display:flex;justify-content:space-between;gap:15px;
+  align-items:end;padding:17px 18px 19px}
+.signature-featured-copy>div{display:grid;gap:5px}
+.signature-featured-copy small{font:600 10px/1.45 'JetBrains Mono',monospace;
+  color:#d6bda2;letter-spacing:.07em}
+.signature-featured-copy strong{font:760 clamp(25px,2.4vw,36px)/1.08 Inter,Arial,sans-serif;
+  color:#f3f8ff;letter-spacing:-.04em}
+.signature-featured-copy>span{display:flex;align-items:center;gap:10px;
+  color:#e8d7bb;font-size:13px;white-space:nowrap}
+.signature-featured-copy b{font-weight:650;font-size:20px}
+.signature-case-pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:10px;margin-top:10px}
+.signature-case-pair>a{display:flex;align-items:center;gap:9px;
+  min-width:0;min-height:90px;overflow:hidden;
+  background:#0a1c2b;border:1px solid #586d81a3;border-radius:8px;
+  transition:border-color .18s,transform .18s}
+.signature-case-pair>a:hover{border-color:#f1d3a6;transform:translateY(-2px)}
+.signature-case-pair img{width:38%;height:90px;object-fit:cover;align-self:stretch}
+.signature-case-pair a>span{display:grid;gap:6px;min-width:0}
+.signature-case-pair small{color:#c8b89e;font:600 10px/1.35 Inter,Arial,sans-serif}
+.signature-case-pair strong{font:760 clamp(13px,1.25vw,16px)/1.3 Inter,Arial,sans-serif;color:#f3faff;
+  overflow-wrap:anywhere}
+.signature-case-pair a>b{flex:none;margin-left:auto;margin-right:11px;color:#e6cdab;font-size:17px}
+.development-signature .signature-showcase-note{
+  color:#afc2d3;font-size:11px;line-height:1.7;margin:12px 2px 0;
+}
+.development-signature .brand-section{border-top-color:#5d73876b}
+.development-signature .brand-section-heading{max-width:100%}
+.development-signature .brand-section-heading>.brand-eyebrow{color:#e5ceae}
+.development-signature .brand-section-heading h2{
+  font:760 clamp(34px,4.25vw,60px)/1.12 Inter,Arial,sans-serif;
+  letter-spacing:-.055em;color:#f3f7ff
+}
+.development-signature .brand-section-heading>p:last-child{font-size:16px;color:#bdcedc;max-width:590px}
+.development-signature .omega-dev-capabilities h2 span{color:#f0d3a7}
+.development-signature .omega-dev-capability-grid>a{
+  background:linear-gradient(145deg,#142a3b,#0a1b2a);
+  border:1px solid #536a7da3;border-radius:10px;
+  min-height:225px;padding:24px;
+}
+.development-signature .omega-dev-capability-grid>a:hover{border-color:#e8d3b5}
+.development-signature .omega-dev-capability-grid>a>span{color:#e9d3b7}
+.development-signature .omega-dev-capability-grid strong{font-size:24px}
+.development-signature .omega-dev-capability-grid p{font-size:15px;color:#c4d3e1}
+.development-signature .omega-dev-capability-grid em{font-size:14px;color:#f3d9b5}
+.development-signature .world-case-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:24px}
+.development-signature .world-case{display:flex;flex-direction:column;min-width:0;overflow:hidden;
+  background:linear-gradient(150deg,#132939,#081724);border:1px solid #4c687f;
+  border-radius:13px;transition:transform .25s,border-color .25s,box-shadow .25s}
+.development-signature .world-case:hover{border-color:#eed1a9;transform:translateY(-4px);
+  box-shadow:0 16px 56px #0008}
+.development-signature .world-case-art{background:#122637;aspect-ratio:1.65}
+.development-signature .world-case-art img{width:100%;height:100%;object-fit:cover}
+.development-signature .world-case-art .brand-status{background:#111c2cea;color:#f5dfc6;
+  border:1px solid #cfb28ea1;font-size:12px;padding:9px 12px}
+.development-signature .world-case-title{padding:22px 26px 26px;flex:1;display:flex;flex-direction:column}
+.development-signature .world-case-title>span{font-size:11px;line-height:1.5;color:#c9b9a1}
+.development-signature .world-case-title h3{font:760 clamp(28px,2.65vw,38px)/1.15 Inter,Arial,sans-serif;
+  color:#f6f8fb;letter-spacing:-.045em;margin:15px 0}
+.development-signature .world-case-title p{font-size:15px;color:#bdcfdd;line-height:1.67;max-width:none}
+.development-signature .world-case-title .world-case-open{margin-top:auto;padding-top:18px;color:#f3d5b2}
+.development-signature .world-case-legend{
+  background:#0d1d2c;border:1px solid #536779;border-radius:8px;
+  color:#b9cad7;font-size:14px;line-height:1.75;max-width:none}
+.development-signature .world-case-legend strong{color:#ead6b8}
+.development-signature .world-process li{border-top-color:#e1c59e9b}
+.development-signature .world-process h3{color:#f0f6fb;font-size:22px}
+.development-signature .world-process p{color:#c2d1df;font-size:15px}
+.development-signature .world-contact form{min-width:0}
+.development-signature .world-contact form :is(input,textarea){color:#f5faff;background:#102338}
+@media(max-width:1100px){
+  .development-signature .signature-hero{grid-template-columns:minmax(0,.93fr) minmax(365px,1.07fr);gap:22px}
+  .development-signature .signature-intro h1{font-size:clamp(45px,5.3vw,71px)}
+  .development-signature .signature-showcase{padding:12px}
+  .signature-featured-copy{padding:14px}
+  .signature-case-pair>a{min-height:75px}.signature-case-pair img{height:75px}
+}
+@media(max-width:820px){
+  .development-signature .signature-hero{grid-template-columns:1fr;padding:53px 0 60px;min-height:0;gap:33px}
+  .development-signature .signature-intro{max-width:680px}
+  .development-signature .signature-showcase{width:100%;max-width:700px;margin:0 auto}
+  .development-signature .world-case-grid{gap:15px}
+}
+@media(max-width:610px){
+  .development-signature .signature-hero{padding:30px 0 53px;gap:27px}
+  .development-signature .signature-intro h1{font-size:clamp(37px,9.4vw,53px);line-height:1.03}
+  .development-signature .signature-intro .brand-eyebrow{font-size:10px;margin-bottom:19px}
+  .development-signature .signature-intro .brand-lead{font-size:15px;margin:18px 0 0}
+  .development-signature .signature-hero-actions{display:grid;grid-template-columns:1fr;gap:9px;margin-top:24px}
+  .development-signature .signature-hero-actions .brand-button{min-height:50px;font-size:15px}
+  .development-signature .signature-hero-facts{margin-top:22px;padding-top:16px;gap:7px}
+  .development-signature .signature-hero-facts strong{font-size:clamp(13px,3.2vw,17px)}
+  .development-signature .signature-hero-facts small{font-size:10px}
+  .development-signature .signature-intro .signature-caption{font-size:9px;margin-top:18px}
+  .development-signature .signature-showcase{padding:11px;border-radius:11px}
+  .signature-showcase-top{font-size:9px;letter-spacing:.08em}
+  .signature-featured-image{aspect-ratio:1.45}
+  .signature-featured-copy{padding:14px 12px}
+  .signature-featured-copy strong{font-size:25px}
+  .signature-featured-copy>span{font-size:12px}
+  .signature-case-pair{grid-template-columns:1fr}
+  .signature-case-pair>a{min-height:76px}
+  .signature-case-pair img{width:32%;height:76px}
+  .signature-case-pair strong{font-size:16px}
+  .development-signature .world-case-grid{grid-template-columns:1fr}
+  .development-signature .world-case-title{padding:20px}
+  .development-signature .omega-dev-capability-grid>a{padding:20px;min-height:0}
+}
+@media(prefers-reduced-motion:reduce){
+  .development-signature :is(.signature-featured-case,.signature-case-pair>a,.world-case,
+    .signature-hero-actions .brand-button){transition:none!important;transform:none!important}
+  .development-signature .signature-featured-image img{transition:none!important;transform:none!important}
+}
+html[data-motion=off] .development-signature :is(.signature-featured-case,.signature-case-pair>a,.world-case){transition:none!important;transform:none!important}

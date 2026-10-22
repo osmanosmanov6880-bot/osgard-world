@@ -161,3 +161,49 @@ html[data-motion=off] :is(.world-case:hover img,.world-case:focus-visible img,.p
 .brand-logo-downloads a{color:var(--accent);font-size:12px;line-height:1.65;text-underline-offset:3px}
 .brand-system .brand-logo-grid .brand-variant-label{font-size:13px;line-height:1.65;margin:0}
 @media(max-width:760px){.brand-system .brand-table-caption{padding-left:12px}.brand-swatch{font-size:14px}.brand-swatch code{font-size:12px}}
+
+/* Reserve the final catalog navigation before the lazy hero/style chunk.
+ * Its old late :has(.play-universe) activation moved #product-main by 200px
+ * on throttled mobile (CLS 0.237). Partners/detail routes remain unchanged. */
+/* The navigation's final geometry exists before the lazy Play module loads. */
+.theme-play.play-catalog-shell {background:#020814;--ink:#f7fbff;--muted:#a7b9cc;--accent:#56f4f5;--line:#214456}
+.theme-play.play-catalog-shell>.brand-header {position:absolute;left:0;right:0;top:0;min-height:82px;padding:17px clamp(18px,4.3vw,82px);background:linear-gradient(180deg,#020814de,#02081470,transparent);border:0;z-index:5}
+.theme-play.play-catalog-shell .brand-global-nav {gap:34px}
+.theme-play.play-catalog-shell .brand-global-nav a {color:#e6f3ff;font-size:12px}
+.theme-play.play-catalog-shell .brand-global-nav a[aria-current=page] {color:#56f4f5}
+.theme-play.play-catalog-shell .brand-lockup b {font-size:21px;letter-spacing:.14em}
+.theme-play.play-catalog-shell .brand-lockup small {color:#c2dfef;font-size:8px}
+.theme-play.play-catalog-shell .brand-lockup>svg {width:45px;height:45px}
+.theme-play.play-catalog-shell .brand-motion {color:#b0f8ff;border-color:#6599b180;background:#06152773;backdrop-filter:blur(10px);padding:9px 13px;font-size:9px}
+.theme-play.play-catalog-shell>.brand-local-bar {position:absolute;top:88px;right:clamp(18px,4.3vw,82px);z-index:4;min-height:32px;padding:0;border:0;background:transparent}
+.theme-play.play-catalog-shell>.brand-local-bar>span {display:none}
+.theme-play.play-catalog-shell>.brand-local-bar nav {gap:22px}
+.theme-play.play-catalog-shell>.brand-local-bar a {font-size:10px;color:#ceecf6;min-height:32px;border-bottom:1px solid transparent}
+.theme-play.play-catalog-shell>.brand-local-bar a:hover {border-color:#56f4f5}
+.theme-play.play-catalog-shell>.brand-breadcrumbs {display:none}
+.theme-play.play-catalog-shell>.brand-footer {background:#020814;border-color:#13374a}
+
+
+@media(max-width:1150px){
+  .theme-play.play-catalog-shell .brand-global-nav {gap:23px}
+  .theme-play.play-catalog-shell .brand-motion-value {display:none}
+}
+@media(max-width:900px){
+  .theme-play.play-catalog-shell>.brand-header {gap:20px}
+  .theme-play.play-catalog-shell .brand-global-nav {gap:16px}
+  .theme-play.play-catalog-shell .brand-lockup b {font-size:17px}
+  .theme-play.play-catalog-shell .brand-lockup small {font-size:7px}
+  .theme-play.play-catalog-shell .brand-lockup>svg {width:37px;height:37px}
+  .theme-play.play-catalog-shell .brand-motion {font-size:0;min-width:36px;padding:8px}
+  .theme-play.play-catalog-shell .brand-motion-state {font-size:14px}
+  .theme-play.play-catalog-shell>.brand-local-bar {top:86px}
+}
+@media(max-width:600px){
+  .theme-play.play-catalog-shell>.brand-header {display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:15px 19px 0;min-height:90px}
+  .theme-play.play-catalog-shell .brand-lockup b {font-size:17px}
+  .theme-play.play-catalog-shell .brand-lockup small {font-size:7px}
+  .theme-play.play-catalog-shell .brand-global-nav {order:3;width:100%;justify-content:space-between;gap:8px}
+  .theme-play.play-catalog-shell .brand-global-nav a {font-size:10px;min-height:34px}
+  .theme-play.play-catalog-shell .brand-motion {min-width:35px;min-height:35px;margin-left:auto}
+  .theme-play.play-catalog-shell>.brand-local-bar {position:relative;top:auto;right:auto;padding:13px 19px;background:#03101b;border-bottom:1px solid #17394c;min-height:53px;order:0;transform:none;display:none}
+}
