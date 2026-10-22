@@ -1,0 +1,24 @@
+; REMIX ARENA - NEBULA 3D experimental Godot 4 source project.
+; Independent of the production browser game and its saves.
+config_version=5
+
+[application]
+config/name="REMIX ARENA - NEBULA 3D"
+run/main_scene="res://scenes/world.tscn"
+config/description="Experimental real-time 3D orbital city, spacecraft and mission prototype"
+
+[display]
+window/size/viewport_width=1280
+window/size/viewport_height=720
+window/stretch/mode="canvas_items"
+
+[rendering]
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+textures/default_filters/use_nearest_mipmap_filter=false
+
+[physics]
+3d/default_gravity=0.0
+
+[application/run]
+max_fps=60
