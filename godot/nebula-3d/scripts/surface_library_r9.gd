@@ -126,5 +126,8 @@ static func get_profile(original: StandardMaterial3D) -> int:
         return 2
     return 1
 
+static func maps(kind: int) -> Dictionary:
+    return _atlas(kind)
+
 static func atlas_count() -> int:
     return _atlases.size()
