@@ -283,7 +283,7 @@
       piece('glass',0,.76,-.12,.61,.026,.56);
       piece('brushed',0,.82,-.10,.54,.020,.55);
       piece('iron',0,.22,-.82,.32,.075,.035);
-      piece('bronze',0,.50,.775,.38,.020,.022,true?'cube':'cube',true);
+      piece('bronze',0,.50,.775,.38,.020,.022,'cube',true);
       for(const slot of batches.values()){
         const mesh=new THREE.InstancedMesh(geometry[slot.shape],mats[slot.material],slot.m.length);
         slot.m.forEach((m,i)=>mesh.setMatrixAt(i,m));
@@ -327,7 +327,7 @@
     }
     function syncEnvironment({raining=false,dayMode=0}={}){
       stats.night=dayMode===1;
-      stats.wetVisible=Boolean(raining);
+      stats.wetVisible=Boolean(raining&&wetMeshes.length);
       wetMeshes.forEach(m=>m.visible=Boolean(raining));
       amber.emissiveIntensity=stats.night?1.6:.48;
       cyan.emissiveIntensity=stats.night?1.5:.55;
