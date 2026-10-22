@@ -1,4 +1,5 @@
 extends Node3D
+const UltraDetail = preload("res://scripts/ultra_detail_kit.gd")
 ## OSGARD TIME EMPIRE — CHRONOS CITY. Original Godot 4.7.2 strategy vertical slice.
 ## No art ripped from any reference titles. Procedural 3D visuals; gameplay is stateful.
 
@@ -56,6 +57,7 @@ func _ready() -> void:
     metal_texture = _metal_microtexture()
     _build_world()
     _build_city()
+    UltraDetail.decorate_city(get_node("LivingCity"), core, traffic_agents)
     _build_ui()
     _load_game()
     _refresh_ui()
@@ -308,6 +310,8 @@ func _place_district(index: int) -> void:
         var a: float = float(tower) * TAU / 4.0
         _cylinder(district, "DistrictPylon", Vector3(cos(a) * 2.0, 1.6, sin(a) * 2.0), 0.25, 2.4, STEEL, 0.85, 0.33)
         _sphere(district, "SignalLamp", Vector3(cos(a) * 2.0, 3.0, sin(a) * 2.0), 0.18, MINT, 0.0, 0.15, 2.3)
+
+    UltraDetail.decorate_district(district, index)
 
 func _calculate_rate() -> float:
     return BASE_RATE + float(district_count) * 3.0 + float(core_level - 1) * 2.0

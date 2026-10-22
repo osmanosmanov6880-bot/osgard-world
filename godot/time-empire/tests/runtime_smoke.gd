@@ -25,6 +25,11 @@ func _run() -> void:
     game.save_path = SAVE
     root.add_child(game)
     await process_frame
+    _check(game.get_node_or_null("LivingCity/Chronos_UltraCityArchitecture") != null, "original high density metropolitan 3D kit")
+    _check(game.get_node_or_null("LivingCity/ChronoCore/Chronos_HighPolyReactor") != null, "sculpted chronoreactor with machined PBR hardware")
+    _check(game.get_node_or_null("LivingCity/Chronos_UltraCityArchitecture/SculptedLandmark_00") != null, "unique tiered tower and sculptural landmark kit")
+    _check(game.get_node_or_null("LivingCity/Chronos_UltraCityArchitecture/SculptedLandmark_01") != null, "two-spire civic tower asset")
+    _check(game.get_node_or_null("LivingCity/Chronos_UltraCityArchitecture/SculptedLandmark_02") != null, "octagonal observation tower asset")
     _check(game.get_node_or_null("ChronosAtmosphere") != null, "3D environment exists")
     _check(game.get_node_or_null("StrategyCamera") != null, "strategy camera exists")
     _check(game.get_node_or_null("LivingCity/ChronoCore") != null, "real chrono reactor geometry exists")
@@ -42,6 +47,7 @@ func _run() -> void:
     _check(game._build_district(), "new city district can be built")
     _check(game.district_count == 1 and game.production_rate == 5.0, "new district increases production")
     _check(game.get_node_or_null("LivingCity/DistrictPlots/District_01") != null, "building appears in the 3D world")
+    _check(game.get_node_or_null("LivingCity/DistrictPlots/District_01/HighDensityDistrict_00") != null, "constructed district has detailed equipment asset")
     _check(game.time_units < before + 10.1 and game.time_units > 0.0, "district cost is deducted")
     var old_mode: bool = game.map_mode
     game._toggle_map()
