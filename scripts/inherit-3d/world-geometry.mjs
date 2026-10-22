@@ -124,26 +124,53 @@ export function makeArchipelago({quality='high'}={}){
  terrain.add(makeBeachFoam(),makeRiver(),makeRoad());
  const layout=vegetation(173,quality==='low'?34:quality==='medium'?57:91);
  const trees=layout.filter(x=>x.type==='tree'),bushes=layout.filter(x=>x.type==='bush');
- const trunkInst=new THREE.InstancedMesh(new THREE.CylinderGeometry(.14,.22,2.7,7),
+ // Art-director upgrade: foliage layers, tapered trunks and visible lower
+ // branches are instanced, so 91 rich trees still use only three draw calls.
+ const crownsPerTree=quality==='high'?8:quality==='medium'?5:2;
+ const branchPerTree=quality==='high'?5:quality==='medium'?3:0;
+ const trunkInst=new THREE.InstancedMesh(new THREE.CylinderGeometry(.11,.24,2.7,quality==='high'?12:7),
   new THREE.MeshStandardMaterial({color:0x695137,roughness:.98}),trees.length);
- const crownInst=new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1,1),
-  new THREE.MeshStandardMaterial({color:0x639166,roughness:.95}),trees.length*2);
- trunkInst.castShadow=true;trunkInst.receiveShadow=true;crownInst.castShadow=true;crownInst.receiveShadow=true;
+ const crownInst=new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1,quality==='high'?2:1),
+  new THREE.MeshStandardMaterial({color:0x639166,roughness:.95}),trees.length*crownsPerTree);
+ const branchInst=new THREE.InstancedMesh(new THREE.CylinderGeometry(.55,1,1,7),
+  new THREE.MeshStandardMaterial({color:0x67523a,roughness:.97}),trees.length*branchPerTree);
+ trunkInst.castShadow=true;trunkInst.receiveShadow=true;
+ crownInst.castShadow=true;crownInst.receiveShadow=true;
+ branchInst.castShadow=quality==='high';
  const dummy=new THREE.Object3D(),color=new THREE.Color();
+ const origin=new THREE.Vector3(),end=new THREE.Vector3(),up=new THREE.Vector3(0,1,0);
  for(let i=0;i<trees.length;i++){
   const p=trees[i],s=p.size;
   dummy.position.set(p.x,p.y+1.32*s,p.z);dummy.rotation.set(0,p.hue*6.28,0);dummy.scale.setScalar(s);
   dummy.updateMatrix();trunkInst.setMatrixAt(i,dummy.matrix);
-  for(let j=0;j<2;j++){
-   dummy.position.set(p.x+(j?-.48:.24)*s,p.y+(j?3.25:2.9)*s,p.z+(j?.13:0)*s);
-   dummy.scale.set(s*(j?.85:1.12),s*(j?.94:1.05),s*(j?.89:1.15));dummy.updateMatrix();
-   const k=i*2+j;crownInst.setMatrixAt(k,dummy.matrix);
-   color.setHSL(.27+p.hue*.075,.32+p.hue*.1,.27+(i%4)*.045);crownInst.setColorAt(k,color);
+  for(let j=0;j<crownsPerTree;j++){
+   const phase=j*2.399963+p.hue*6.28,spread=Math.sqrt((j+.5)/crownsPerTree);
+   dummy.position.set(p.x+Math.sin(phase)*spread*.8*s,
+     p.y+(2.74+.74*(1-spread)+Math.sin(j*1.78)*.3)*s,
+     p.z+Math.cos(phase)*spread*.72*s);
+   dummy.rotation.set(.08*Math.cos(phase),phase,.1*Math.sin(phase));
+   dummy.scale.set(s*(.65+.34*(1-spread)),s*(.72+.25*(1-spread)),s*(.64+.29*(1-spread)));
+   dummy.updateMatrix();const k=i*crownsPerTree+j;
+   crownInst.setMatrixAt(k,dummy.matrix);
+   color.setHSL(.27+p.hue*.075,.28+p.hue*.12,.23+(j%5)*.044);
+   crownInst.setColorAt(k,color);
+  }
+  for(let k=0;k<branchPerTree;k++){
+   const angle=k*2.39996+p.hue*7,reach=(.85+(k%3)*.25)*s;
+   origin.set(p.x,p.y+(1.42+k*.21)*s,p.z);
+   end.set(p.x+Math.sin(angle)*reach,p.y+(2.22+k*.24)*s,p.z+Math.cos(angle)*reach);
+   const dir=end.clone().sub(origin);
+   dummy.position.copy(origin).add(end).multiplyScalar(.5);
+   dummy.quaternion.setFromUnitVectors(up,dir.clone().normalize());
+   dummy.scale.set(.115*s,dir.length(),.115*s);
+   dummy.updateMatrix();branchInst.setMatrixAt(i*branchPerTree+k,dummy.matrix);
   }
  }
  trunkInst.instanceMatrix.needsUpdate=true;crownInst.instanceMatrix.needsUpdate=true;
  if(crownInst.instanceColor)crownInst.instanceColor.needsUpdate=true;
  terrain.add(trunkInst,crownInst);
+ if(branchPerTree){branchInst.instanceMatrix.needsUpdate=true;terrain.add(branchInst);}
+ else{branchInst.geometry.dispose();branchInst.material.dispose();}
  const shrubs=new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1,1),
   new THREE.MeshStandardMaterial({color:0x6d9c69,roughness:1}),bushes.length);
  shrubs.castShadow=true;
