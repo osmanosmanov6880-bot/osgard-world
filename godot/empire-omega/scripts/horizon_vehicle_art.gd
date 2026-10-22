@@ -1,5 +1,6 @@
 extends Node3D
 const SPRING = preload("res://scripts/horizon_chassis_spring.gd")
+const SCULPT = preload("res://scripts/horizon_coupe_sculpt.gd")
 ## OSGARD HORIZON DRIVE: original PBR sports coupe assembled in Godot.
 ## These are editable original meshes, not meshes or assets from Forza.
 ## Built for Godot 4.4.1 GL Compatibility / HTML5.
@@ -90,6 +91,27 @@ func _create_body() -> void:
 	_glass_quad("RearGlass",Vector3(-.93,.66,.83),Vector3(.93,.66,.83),Vector3(1.01,.13,1.40),Vector3(-1.01,.13,1.40))
 	_glass_quad("LeftSideGlass",Vector3(-1.035,.64,-.65),Vector3(-1.035,.64,.71),Vector3(-1.06,.10,.87),Vector3(-1.06,.10,-.98))
 	_glass_quad("RightSideGlass",Vector3(1.035,.64,-.65),Vector3(1.035,.64,.71),Vector3(1.06,.10,.87),Vector3(1.06,.10,-.98))
+	# The legacy cubes are still present (preserving garage references and
+	# rollback tests) but never drawn. The actual silhouette is made of
+	# 1,200+ individually shaded triangles and tapers around wheel arches.
+	for old_mesh in body_parts:
+		if old_mesh.name in ["FrontNose","RearDeck","Cabin","Roof","HoodHighlight"]:
+			old_mesh.visible = false
+	var painted_finish := _mat(body_paint,0.68,0.21)
+	painted_finish.cull_mode = BaseMaterial3D.CULL_DISABLED
+	var sports_shell: MeshInstance3D = SCULPT.sculpt("FlowBody",SCULPT.BODY_PROFILE,painted_finish)
+	add_child(sports_shell)
+	body_parts.append(sports_shell)
+	body_rest.append(sports_shell.transform)
+	painted_parts.append(sports_shell)
+	var tinted_finish := _mat(Color("203440"),0.31,0.13)
+	tinted_finish.cull_mode = BaseMaterial3D.CULL_DISABLED
+	var upper_shell: MeshInstance3D = SCULPT.sculpt("AerodynamicGreenhouse",SCULPT.CANOPY_PROFILE,tinted_finish)
+	add_child(upper_shell)
+	body_parts.append(upper_shell)
+	body_rest.append(upper_shell.transform)
+	# Separate slim metal roof seam, lit naturally rather than as a neon bar.
+	_part("RoofCentreRail",Vector3(0.12,0.026,1.28),Vector3(0,0.85,0.04),Color("a4b9bd"),0.73,0.21)
 
 func _create_wheels() -> void:
 	for side in [-1.0,1.0]:
@@ -135,6 +157,18 @@ func _create_wheels() -> void:
 			cap.rotation.z = PI*0.5
 			cap.material_override = _mat(Color("293844"),0.6,0.28)
 			rolling.add_child(cap)
+			# Five real alloy spokes on the outboard face of each wheel.
+			for spoke in range(5):
+				var theta: float = float(spoke)*TAU/5.0
+				var ray := MeshInstance3D.new()
+				ray.name = "MachinedSpoke_%d" % spoke
+				var spoke_mesh := BoxMesh.new()
+				spoke_mesh.size = Vector3(0.055,0.33,0.072)
+				ray.mesh = spoke_mesh
+				ray.material_override = _mat(Color("c8d2d7"),0.86,0.2)
+				ray.position = Vector3(signf(side)*0.216,sin(theta)*0.17,cos(theta)*0.17)
+				ray.rotation.x = theta
+				rolling.add_child(ray)
 
 func _create_lighting() -> void:
 	# Emissive surfaces, not expensive realtime omni lights per vehicle.
