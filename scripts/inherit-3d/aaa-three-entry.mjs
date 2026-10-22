@@ -37,7 +37,10 @@ const heading=make('span','aaa3d-brand');
 const switcher=make('button','aaa3d-switch'),orbit=make('button','aaa3d-orbit'),detail=make('button','aaa3d-quality');
 const live=make('span','aaa3d-live');live.setAttribute('role','status');live.setAttribute('aria-live','polite');
 for(const btn of [switcher,orbit,detail])btn.type='button';
-controls.append(heading,switcher,orbit,detail,live);world.append(controls);
+controls.append(heading,switcher,orbit,detail,live);
+// Keep the 3D control rail OUTSIDE the island: a formerly absolute overlay
+// intercepted genuine Legacy, research and Atlas buttons on both viewports.
+world.parentElement.insertBefore(controls,world);
 const canvas=make('canvas','aaa3d-canvas');canvas.setAttribute('aria-hidden','true');
 canvas.setAttribute('tabindex','-1');canvas.style.pointerEvents='none';
 island.prepend(canvas);
