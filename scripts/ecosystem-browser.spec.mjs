@@ -184,6 +184,9 @@ test('OSGARD Earth GPU quality changes real texture detail with safe remount', a
 })
 
 test('OSGARD raymarched cloud scene retains navigation, motion fallback and on-screen actions', async ({ page }) => {
+  // Software WebGL on shared CI can render the raymarched scene slowly.
+  // Keep all visual/status assertions but allow its GPU work to complete.
+  test.setTimeout(90_000)
   const errors = []
   page.on('pageerror', error => errors.push(error.message))
   await page.emulateMedia({ reducedMotion: 'no-preference' })
@@ -269,8 +272,13 @@ test('OSGARD Earth uses bundled NASA satellite data with fallback if blocked', a
     await expect(stage).toHaveAttribute('data-cloud-layers', '2')
     await expect(stage).toHaveAttribute('data-earth-resolution', /^(512|1024|2048|4096)$/)
   }
-  await expect(page.getByText(/ночные огни 2016/)).toBeVisible()
-  await expect(page.getByRole('link', { name: 'NASA Blue Marble ↗' })).toHaveAttribute('href', /science\.nasa\.gov/)
+  // Satellite source and historical night-light date live in a real disclosure.
+  // The closed control is intentional; expand it before testing provenance.
+  const settings = page.locator('.omega-experience-panel')
+  await settings.locator('summary').click()
+  await expect(settings).toHaveAttribute('open', '')
+  await expect(settings.getByText(/ночные огни 2016/)).toBeVisible()
+  await expect(settings.getByRole('link', { name: 'NASA Blue Marble ↗' })).toHaveAttribute('href', /science\.nasa\.gov/)
 })
 
 test('OSGARD Earth falls back to coastlines if NASA texture assets cannot load', async ({ page }) => {
