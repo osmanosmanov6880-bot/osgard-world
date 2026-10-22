@@ -130,7 +130,7 @@ async function assertNaturalCinematic(page, index, kind, path) {
 
 const problems = []
 const screenshots = []
-const browser = await chromium.launch({ headless: true })
+const browser = await chromium.launch({ headless: true, channel: 'chromium' })
 try {
   for (const viewport of viewports) {
     const context = await browser.newContext({
