@@ -11,6 +11,7 @@ const CitySetDressingR5Script = preload("res://scripts/city_set_dressing_r5.gd")
 const OrbitalDocksR6Script = preload("res://scripts/orbital_docks_r6.gd")
 const SculpturalSkylineR6Script = preload("res://scripts/sculptural_skyline_r6.gd")
 const CapitalFleetR7Script = preload("res://scripts/capital_fleet_r7.gd")
+const OrbitalIndustryR9Script = preload("res://scripts/orbital_industry_r9.gd")
 const SAVE_PATH = "user://nebula_3d_save.json"
 const SECTOR_COLORS = [Color(0.10,0.68,0.97), Color(0.64,0.35,1.0), Color(0.98,0.73,0.40), Color(1.0,0.46,0.34), Color(0.87,0.27,0.88), Color(0.24,0.92,0.88)]
 const SECTOR_NAMES = ["ПОРТ АВРОРА","НЕОНОВЫЙ КВАРТАЛ","ЦИТАДЕЛЬ","ЧЁРНЫЙ РЫНОК","РАЗЛОМ","НЕКСУС"]
@@ -212,6 +213,10 @@ func _build_city() -> void:
     fleet_r7.name = "CapitalFleetR7"
     add_child(fleet_r7)
     fleet_r7.build(SECTOR_POSITIONS)
+    var industry_r9 := OrbitalIndustryR9Script.new()
+    industry_r9.name = "OrbitalIndustryR9"
+    add_child(industry_r9)
+    industry_r9.build(SECTOR_POSITIONS)
     _build_starfield()
 
 func _build_sector(center: Vector3, tint: Color, name: String, index: int) -> void:
