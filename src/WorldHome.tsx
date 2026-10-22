@@ -6,6 +6,7 @@ import { cases } from './featuredCases'
 import { BrandMark } from './BrandMark'
 import { formatEnquiry, validateEnquiry } from './projectEnquiry'
 import { recordBrandEvent } from './brandTelemetry'
+import { MOTION_CHANGE_EVENT } from './osgardRouting'
 import type { GlobeChapter, GlobeMode, GlobeView, GlobeQuality } from './OmegaGlobe'
 
 const OmegaGlobe = lazy(() => import('./OmegaGlobe'))
@@ -16,6 +17,14 @@ const readOmegaMode = (): GlobeMode => {
     return value === 'cinema' || value === 'world' || value === 'hybrid' ? value : 'hybrid'
   } catch { return 'hybrid' }
 }
+const preferStillWorld = () => {
+  if (typeof window === 'undefined') return false
+  if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return true
+  if (document.documentElement.dataset.motion === 'off') return true
+  try { if (localStorage.getItem('osgard:motion') === 'off') return true } catch { /* Browsers can restrict storage. */ }
+  return Boolean((navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData)
+}
+
 const omegaChapters = ['Планета', 'Связи', 'Миры'] as const
 const omegaHelp: Record<GlobeMode, string> = {
   cinema: 'Камера сама показывает Землю с разных ракурсов. Выберите главу или перейдите к продуктам.',
@@ -42,6 +51,25 @@ export default function WorldHome({ development = false }: { development?: boole
   const [omegaChapter, setOmegaChapter] = useState<GlobeChapter>(0)
   const [omegaQuality, setOmegaQuality] = useState<GlobeQuality>('auto')
   const [omegaView, setOmegaView] = useState<GlobeView>({ yaw: 0, pitch: -0.14, distance: 5.7 })
+  // Reduced-motion and Save-Data visitors should never fetch the 3D chunk.
+  // The existing NASA satellite globe remains a usable photographic fallback.
+  const [stillWorld, setStillWorld] = useState(preferStillWorld)
+  useEffect(() => {
+    const media = window.matchMedia?.('(prefers-reduced-motion: reduce)')
+    const connection = (navigator as Navigator & { connection?: EventTarget & { saveData?: boolean } }).connection
+    const sync = () => setStillWorld(preferStillWorld())
+    media?.addEventListener?.('change', sync)
+    connection?.addEventListener?.('change', sync)
+    window.addEventListener(MOTION_CHANGE_EVENT, sync)
+    window.addEventListener('storage', sync)
+    sync()
+    return () => {
+      media?.removeEventListener?.('change', sync)
+      connection?.removeEventListener?.('change', sync)
+      window.removeEventListener(MOTION_CHANGE_EVENT, sync)
+      window.removeEventListener('storage', sync)
+    }
+  }, [])
   useEffect(() => {
     try { localStorage.setItem('osgard:omega-world-mode', omegaMode) } catch { /* The mode still works for this visit. */ }
   }, [omegaMode])
@@ -150,8 +178,8 @@ export default function WorldHome({ development = false }: { development?: boole
       <div className="omega-sky" aria-hidden="true">
         <div className="omega-stars" />
         <div className="omega-command-nebula" />
-        <Suspense fallback={null}><OmegaGlobe key={omegaQuality} quality={omegaQuality} mode={omegaMode}
-          chapter={omegaChapter} view={omegaView} onViewChange={setOmegaView} /></Suspense>
+        {!stillWorld && <Suspense fallback={null}><OmegaGlobe key={omegaQuality} quality={omegaQuality} mode={omegaMode}
+          chapter={omegaChapter} view={omegaView} onViewChange={setOmegaView} /></Suspense>}
         <div className="omega-globe" />
         <div className="omega-orbit omega-orbit-one" />
         <div className="omega-orbit omega-orbit-two" />
@@ -196,9 +224,10 @@ export default function WorldHome({ development = false }: { development?: boole
             <button type="button" aria-pressed={omegaMode === 'hybrid'} onClick={() => setOmegaMode('hybrid')}>Гибрид</button>
           </div>
           <p className="omega-mode-description" aria-live="polite">{omegaHelp[omegaMode]}</p>
+          {stillWorld && <p className="omega-mode-description" role="status">Режим экономии ресурсов: отображается фотография Земли. 3D станет доступно, когда в устройстве и OSGARD разрешено движение и выключена экономия трафика.</p>}
           <div className="omega-quality-switch">
             <label htmlFor="omega-quality">Детализация 3D</label>
-            <select id="omega-quality" value={omegaQuality} onChange={event => setOmegaQuality(event.target.value as GlobeQuality)}
+            <select id="omega-quality" value={omegaQuality} disabled={stillWorld} onChange={event => setOmegaQuality(event.target.value as GlobeQuality)}
               aria-label="Качество 3D-глобуса">
               <option value="auto">Авто · оптимально</option>
               <option value="eco">Экономно · быстрый режим</option>
