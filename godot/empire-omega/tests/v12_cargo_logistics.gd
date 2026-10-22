@@ -16,6 +16,11 @@ func check(ok: bool, message: String) -> void:
 		push_error("CARGO FAIL: " + message)
 
 func _run() -> void:
+	var contracts: Variant = root.get_node_or_null("ContractManager")
+	if contracts == null:
+		push_error("ContractManager singleton unavailable")
+		quit(2)
+		return
 	var sim: Variant = root.get_node_or_null("GameState")
 	if sim == null:
 		push_error("GameState autoload is missing")
@@ -23,16 +28,16 @@ func _run() -> void:
 		return
 	sim.data = sim.new_game()
 	var initial: Dictionary = sim.data
-	var offer: Dictionary = ContractManager.current_offer()
+	var offer: Dictionary = contracts.current_offer()
 	check(not offer.is_empty(),"contract catalog available")
-	check(ContractManager.interact(str(offer["pickup"])) == "accepted","cargo accepted at origin")
+	check(contracts.interact(str(offer["pickup"])) == "accepted","cargo accepted at origin")
 	var active: Dictionary = sim.data["active_contract"]
 	var required: float = float(active["cargo_progress"]["required"])
 	check(required >= 65.0 and required <= 1500.0,"required journey is finite")
 	check(sim._valid_state(initial),"active cargo serializes")
-	check(ContractManager.interact(str(offer["dropoff"]),false,0.0) == "vehicle_required","walking delivery rejected")
-	check(ContractManager.interact(str(offer["dropoff"]),true,5.0) == "stop_vehicle","unsafe moving unload rejected")
-	check(ContractManager.interact(str(offer["dropoff"]),true,0.0) == "travel_more","teleporting to destination is not delivery")
+	check(contracts.interact(str(offer["dropoff"]),false,0.0) == "vehicle_required","walking delivery rejected")
+	check(contracts.interact(str(offer["dropoff"]),true,5.0) == "stop_vehicle","unsafe moving unload rejected")
+	check(contracts.interact(str(offer["dropoff"]),true,0.0) == "travel_more","teleporting to destination is not delivery")
 	check(not sim.complete_courier(active,5000),"direct free payout rejected before driving")
 	sim.data["wallet"] = 9000
 	sim.data["reputation"] = 100
@@ -52,7 +57,7 @@ func _run() -> void:
 	var expected_goods: int = CARGO.delivered_quantity(active)
 	check(expected_goods <= int(offer["quantity"]),"damaged cargo cannot create supplies")
 	check(not sim.complete_courier(active,lower_payment+1),"arbitrary payout rejected")
-	check(ContractManager.interact(str(offer["dropoff"]),true,0.0) == "completed","parked delivery settles once")
+	check(contracts.interact(str(offer["dropoff"]),true,0.0) == "completed","parked delivery settles once")
 	check(int(sim.data["inventories"][str(offer["cargo"])]) == prior_stocks + expected_goods,"received city stocks match intact cargo")
 	check(int(sim.data["contracts_completed"]) == 1,"one completed contract counted")
 	check(not sim.complete_courier(active,lower_payment),"duplicate settlement blocked")

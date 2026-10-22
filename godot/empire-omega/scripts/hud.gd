@@ -916,7 +916,7 @@ func _redraw_strategy() -> void:
 	var policies := HBoxContainer.new()
 	strategy_contents.add_child(policies)
 	for course in ["balance","industry","energy","welfare"]:
-		var localization := "energy_policy" if course == "energy" else course
+		var localization: String = "energy_policy" if course == "energy" else str(course)
 		_button(policies,("◈ " if d["course"] == course else "")+t(localization),Callable(self,"_choose_policy").bind(course))
 	_separator(strategy_contents)
 	_label(strategy_contents,t("business"),20,true)

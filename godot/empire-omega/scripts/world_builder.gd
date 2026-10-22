@@ -72,6 +72,7 @@ func _box(parent: Node3D, label: String, size: Vector3, position: Vector3, color
 	if solid:
 		var static_body := StaticBody3D.new()
 		var collision := CollisionShape3D.new()
+		collision.name = 'CollisionShape3D'
 		var shape := BoxShape3D.new()
 		shape.size = size
 		collision.shape = shape

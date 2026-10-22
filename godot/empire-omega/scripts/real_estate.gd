@@ -44,7 +44,8 @@ static func project(state: Dictionary, district_scores: Dictionary) -> Dictionar
 		var unemployment: int = int(state.get("unemployment",40))
 		var utilities: int = mini(int(state["energy"]),int(state["water"]))
 		# The forecast remains deterministic and occupancy cannot exceed 100%.
-		var occupation: int = clampi(45 + wellbeing / 2 - unemployment / 3 + (utilities - 60) / 6,10,98)
+		var outage_penalty: int = maxi(0,40-utilities)*2
+		var occupation: int = clampi(45 + wellbeing / 2 - unemployment / 3 + (utilities - 60) / 6 - outage_penalty,5,98)
 		var rent: int = roundi(float(int(spec["rent"])) * (1.0 + float(level-1)*0.65) * float(occupation) / 100.0)
 		var upkeep: int = int(spec["upkeep"]) + (level-1)*roundi(float(spec["upkeep"])*0.55)
 		revenue += rent

@@ -148,6 +148,8 @@ func _physics_process(delta: float) -> void:
 	after_corner.y = 0.0
 	var bend_limit: float = SAFETY.corner_speed(heading,after_corner,displacement.length(),cruising_speed)
 	var goal: float = minf(bend_limit,SAFETY.desired_speed(cruising_speed,obstacle,signal_distance,wetness))
+	# A conservative full stop prevents perpetual low-speed creep into road barriers.
+	if obstacle <= SAFETY.MIN_GAP + 4.0: goal = 0.0
 	var previous_speed: float = speed
 	speed = SAFETY.approach_speed(speed,goal,delta)
 	var braking: bool = SAFETY.should_brake(cruising_speed,speed) or previous_speed-speed > 0.2
