@@ -4,7 +4,7 @@ extends Node3D
 ## always-visible 360-tower batch. Existing tower collisions remain authoritative.
 
 const SurfaceLibraryR9Script = preload("res://scripts/surface_library_r9.gd")
-const QUALITY_RANGES := [730.0, 460.0, 250.0]
+const QUALITY_RANGES = [730.0, 460.0, 250.0]
 
 var quality_mode: int = 0
 var facade_count: int = 0
