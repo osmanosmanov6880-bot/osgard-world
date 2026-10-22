@@ -28,6 +28,13 @@ jobs:
           grep -Fq 'REMIX ARENA | Independent Edition v2.0' public/games/remix/arena-v2/index.html
           grep -Fq 'deploymentBackendNotice' public/games/remix/arena-v2/index.html
           test -s public/games/remix/arena-v2/open-world/index.html
+          if test -e public/games/remix/arena-v2/nebula-3d/index.html; then
+            test -s public/games/remix/arena-v2/nebula-3d/index.html
+            test -s public/games/remix/arena-v2/nebula-3d/index.js
+            test -s public/games/remix/arena-v2/nebula-3d/index.wasm
+            test -s public/games/remix/arena-v2/nebula-3d/index.pck
+            grep -Fq 'REMIX ARENA' public/games/remix/arena-v2/nebula-3d/index.html
+          fi
           grep -Fq 'NEBULA CITY - Open World' public/games/remix/arena-v2/open-world/index.html
           mkdir -p release
           cp -a public/games/remix/arena-v2/. release/
@@ -100,6 +107,17 @@ jobs:
               if [ -d "$backup" ]; then mv "$backup" "$destination"; fi
               echo "REMIX NEBULA CITY route verification failed; restored previous release" >&2
               exit 1
+            fi
+            if [ -f "$destination/nebula-3d/index.html" ]; then
+              if [ ! -s "$destination/nebula-3d/index.wasm" ] ||
+                 [ ! -s "$destination/nebula-3d/index.pck" ] ||
+                 ! wget -q -O /tmp/nebula3d-verify.html -T 12 http://127.0.0.1/games/remix/arena-v2/nebula-3d/ ||
+                 ! grep -Fq "REMIX ARENA" /tmp/nebula3d-verify.html; then
+                rm -rf "$destination"
+                if [ -d "$backup" ]; then mv "$backup" "$destination"; fi
+                echo "Native Godot 3D Web export verification failed; restored previous release" >&2
+                exit 1
+              fi
             fi
             echo "REMIX ARENA static page activated and verified inside production Nginx"
           '
