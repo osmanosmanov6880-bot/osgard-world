@@ -35,5 +35,22 @@ func _capture() -> void:
         quit(1)
         return
     print("VISUAL_QA_SCREENSHOT: ", file, " ", picture.get_width(), "x", picture.get_height())
+    # Native portrait viewport verification. Capture must use the real game
+    # HUD after its resize callback, not a composited mockup.
+    root.size = Vector2i(390, 844)
+    for frame in range(18):
+        await process_frame
+    await RenderingServer.frame_post_draw
+    var portrait: Image = root.get_texture().get_image()
+    if portrait.is_empty() or portrait.get_width() != 390 or portrait.get_height() != 844:
+        push_error("Mobile render resolution mismatch")
+        quit(1)
+        return
+    var mobile_file: String = folder.path_join("vector-zero-blackfield-mobile.png")
+    if portrait.save_png(mobile_file) != OK:
+        push_error("Godot mobile viewport screenshot save failed")
+        quit(1)
+        return
+    print("VISUAL_QA_MOBILE: ", mobile_file, " 390x844")
     game.queue_free()
     quit(0)
