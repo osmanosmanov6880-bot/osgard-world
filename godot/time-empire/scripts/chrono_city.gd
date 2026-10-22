@@ -29,6 +29,7 @@ var orbit: float = 0.78
 var camera_radius: float = 31.0
 var map_mode: bool = false
 var drag_camera: bool = false
+var mobile_hud: bool = false
 var elapsed: float = 0.0
 var notification: float = 0.0
 var materials: Dictionary = {}
@@ -257,7 +258,7 @@ func _upgrade_core() -> bool:
 
 func _toggle_map() -> void:
     map_mode = not map_mode
-    map_button.text = "ВЕРНУТЬСЯ В ГОРОД" if map_mode else "КАРТА ГОРОДА"
+    map_button.text = "ГОРОД" if map_mode and mobile_hud else "КАРТА" if mobile_hud else "ВЕРНУТЬСЯ В ГОРОД" if map_mode else "КАРТА ГОРОДА"
     status_label.text = "Карта: смотри на районы сверху" if map_mode else "Камера вернулась к городу"
     notification = 2.0
 
@@ -402,23 +403,29 @@ func _build_ui() -> void:
 
 func _resize_ui() -> void:
     var mobile: bool = get_viewport().get_visible_rect().size.x < 850.0
+    mobile_hud = mobile
     var bar := root_ui.get_node_or_null("TopBar") as PanelContainer
     var action_bar := root_ui.get_node_or_null("PrimaryActions") as PanelContainer
     var hint := root_ui.get_node_or_null("HintPanel") as PanelContainer
     if bar:
         var row := bar.get_child(0) as HBoxContainer
         row.get_node("Brand").visible = not mobile
-        row.get_node("CurrentMission").visible = not mobile
-        resource_label.add_theme_font_size_override("font_size", 19 if mobile else 23)
+        row.get_node("CurrentMission").visible = true
+        mission_label.add_theme_font_size_override("font_size", 15 if mobile else 22)
+        resource_label.add_theme_font_size_override("font_size", 17 if mobile else 23)
     if action_bar:
         action_bar.anchor_left = 0.02 if mobile else 0.15
         action_bar.anchor_right = 0.98 if mobile else 0.85
         var buttons := action_bar.get_node("VBoxContainer/Buttons") as HBoxContainer
+        var action_column := action_bar.get_child(0) as VBoxContainer
+        action_column.get_child(1).visible = not mobile
+        action_bar.offset_top = -117.0 if mobile else -162.0
         for child in buttons.get_children():
             var b := child as Button
-            b.add_theme_font_size_override("font_size", 12 if mobile else 17)
+            b.add_theme_font_size_override("font_size", 15 if mobile else 17)
     if hint:
         hint.visible = not mobile
+    _refresh_ui()
 
 func _refresh_ui() -> void:
     if resource_label == null:
@@ -427,16 +434,17 @@ func _refresh_ui() -> void:
     rate_label.text = "ДОХОД  +%.1f / сек" % production_rate
     city_label.text = "РАЙОНОВ  %d/6   ·   ЯДРО  УРОВЕНЬ %d" % [district_count, core_level]
     if district_count == 0:
-        mission_label.text = "Построй первый хроногенератор"
+        mission_label.text = "Построй генератор" if mobile_hud else "Построй первый хроногенератор"
     elif core_level == 1:
-        mission_label.text = "Улучши хроноядро до уровня 2"
+        mission_label.text = "Улучши ядро" if mobile_hud else "Улучши хроноядро до уровня 2"
     elif district_count < PLOTS.size():
-        mission_label.text = "Расширяй город новыми районами"
+        mission_label.text = "Строй районы" if mobile_hud else "Расширяй город новыми районами"
     else:
-        mission_label.text = "Империя развивается — продолжай улучшения"
-    build_button.text = "СТРОИТЬ  ·  %d" % int(_district_cost()) if district_count < PLOTS.size() else "РАЙОНЫ ГОТОВЫ"
+        mission_label.text = "Развивай город" if mobile_hud else "Империя развивается — продолжай улучшения"
+    build_button.text = "СТРОИТЬ" if mobile_hud else "СТРОИТЬ  ·  %d" % int(_district_cost()) if district_count < PLOTS.size() else "РАЙОНЫ ГОТОВЫ"
     build_button.disabled = time_units < _district_cost() or district_count >= PLOTS.size()
-    upgrade_button.text = "ЯДРО +1  ·  %d" % int(_upgrade_cost())
+    upgrade_button.text = "УЛУЧШИТЬ" if mobile_hud else "ЯДРО +1  ·  %d" % int(_upgrade_cost())
+    map_button.text = "ГОРОД" if map_mode and mobile_hud else "КАРТА" if mobile_hud else "ВЕРНУТЬСЯ В ГОРОД" if map_mode else "КАРТА ГОРОДА"
     upgrade_button.disabled = time_units < _upgrade_cost()
     if notification <= 0.0:
         status_label.text = "Построй район: +3 времени/сек. Улучши ядро: +2/сек."

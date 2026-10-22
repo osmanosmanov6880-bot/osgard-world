@@ -49,6 +49,22 @@ jobs:
                   print(f'PASS {f.name}: {f.stat().st_size:,} bytes')
           assert next(folder.glob('*.wasm')).open('rb').read(4) == b'\x00asm'
           PYCODE
+      - name: Capture actual native 3D city screenshot (optional renderer QA)
+        shell: bash
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          command -v xvfb-run
+          timeout 90s xvfb-run -a -s "-screen 0 1600x900x24" godot --rendering-method gl_compatibility --path godot/time-empire --script res://tests/capture.gd
+          test -s godot/time-empire/screenshots-ci/time-empire-chronos-city-native.png
+      - name: Attach real native scene screenshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: time-empire-chronos-city-native-render
+          path: godot/time-empire/screenshots-ci/*.png
+          if-no-files-found: warn
+          retention-days: 14
       - name: Attach playable Web build for approval; do not touch production
         uses: actions/upload-artifact@v4
         with:
