@@ -168,7 +168,7 @@ export function OsgardCommandPalette({ path }: { path: string }) {
         <nav className="osgard-command-results" aria-label="Результаты быстрого перехода">
           {matches.length ? <ul>{matches.map((item, index) => <li key={item.id}>
             <a data-command-result href={item.href} onClick={close}
-              aria-current={(item.href.split(/[?#]/)[0].replace(/\\/+$/, '') || '/') === path ? 'page' : undefined}>
+              aria-current={item.href.split(/[?#]/)[0].split('/').filter(Boolean).join('/') === path.split('/').filter(Boolean).join('/') ? 'page' : undefined}>
               <span className="osgard-command-result-index" aria-hidden="true">{String(index + 1).padStart(2,'0')}</span>
               <span className="osgard-command-result-copy">
                 <span className="osgard-command-result-title">{item.label}</span>
