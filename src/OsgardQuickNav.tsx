@@ -2,25 +2,34 @@ import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import type { MouseEvent as ReactMouseEvent, KeyboardEvent as ReactKeyboardEvent } from 'react'
 import { hasUnsavedChanges, navigateBrowserUrl } from './browserNavigation'
 import { isReactRoute } from './osgardRouting'
-import { clearQuickNavRecent, readQuickNavRecent, rememberQuickNav, searchOsgardCommands } from './osgardQuickNavData'
+import { clearQuickNavRecent, getOsgardContextSuggestions, osgardCommands, readQuickNavRecent, rememberQuickNav, searchOsgardCommands } from './osgardQuickNavData'
 import type { OsgardCommand } from './osgardQuickNavData'
 import './osgardQuickNav.css'
 
+const groups = ['Все', 'Игры', 'Знания', 'Проекты', 'Экосистема'] as const
+type GroupFilter = typeof groups[number]
 type Props = { onClose: () => void; onNavigate: () => void }
 
 /** A real cross-product shortcut, not an AI search or a list of invented features. */
 export default function OsgardQuickNav({ onClose, onNavigate }: Props) {
   const [query, setQuery] = useState('')
+  const [group, setGroup] = useState<GroupFilter>('Все')
   const [recent, setRecent] = useState(readQuickNavRecent)
   const [active, setActive] = useState(0)
-  const results = useMemo(() => searchOsgardCommands(query, recent), [query, recent])
+  const results = useMemo(() => searchOsgardCommands(query, recent).filter(command => group === 'Все' || command.group === group), [query, recent, group])
+  const contextSuggestions = getOsgardContextSuggestions(location.pathname)
+  const selectedIndex = Math.min(active, Math.max(results.length - 1, 0))
   const listId = useId()
   const dialogRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const latestClose = useRef(onClose)
   latestClose.current = onClose
 
-  useEffect(() => { setActive(0) }, [query])
+  useEffect(() => { setActive(0) }, [query, group])
+  useEffect(() => {
+    if (document.activeElement !== inputRef.current || results.length === 0) return
+    document.getElementById(listId + '-option-' + selectedIndex)?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+  }, [selectedIndex, results, listId])
   useEffect(() => {
     const before = document.body.style.overflow
     document.body.style.overflow = 'hidden'
@@ -103,12 +112,14 @@ export default function OsgardQuickNav({ onClose, onNavigate }: Props) {
     onNavigate()
   }
   const selectActive = () => {
-    const element = document.getElementById(listId + '-option-' + active)
+    const element = document.getElementById(listId + '-option-' + selectedIndex)
     if (element instanceof HTMLAnchorElement) element.click()
   }
   const handleInputKey = (event: ReactKeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'ArrowDown') { event.preventDefault(); setActive(i => (i + 1) % Math.max(results.length, 1)) }
     if (event.key === 'ArrowUp') { event.preventDefault(); setActive(i => (i - 1 + Math.max(results.length, 1)) % Math.max(results.length, 1)) }
+    if (event.key === 'Home') { event.preventDefault(); setActive(0) }
+    if (event.key === 'End') { event.preventDefault(); setActive(Math.max(results.length - 1, 0)) }
     if (event.key === 'Enter' && results.length) { event.preventDefault(); selectActive() }
   }
 
@@ -129,10 +140,24 @@ export default function OsgardQuickNav({ onClose, onNavigate }: Props) {
         <input ref={inputRef} type="search" value={query} onChange={event => setQuery(event.target.value)}
           onKeyDown={handleInputKey}
           role="combobox" aria-autocomplete="list" aria-expanded="true"
-          aria-controls={listId + '-results'} aria-activedescendant={results.length ? listId + '-option-' + Math.min(active, results.length - 1) : undefined}
+          aria-controls={listId + '-results'} aria-activedescendant={results.length ? listId + '-option-' + selectedIndex : undefined}
           aria-label="Поиск по разделам OSGARD" placeholder="Например: игры, уроки, TEDES…" autoComplete="off" />
         <kbd>ESC</kbd>
       </div>
+      <div className="osgard-quick-categories" role="group" aria-label="Фильтр по направлениям">
+        {groups.map(value => <button key={value} type="button" aria-pressed={group === value}
+          onClick={() => setGroup(value)}>
+          {value}<span aria-hidden="true">{value === 'Все' ? osgardCommands.length : osgardCommands.filter(command => command.group === value).length}</span>
+        </button>)}
+      </div>
+      {!query.trim() && group === 'Все' && <div className="osgard-quick-context">
+        <span>КУДА ДАЛЬШЕ</span>
+        <nav aria-label="Быстрые действия текущего раздела">
+          {contextSuggestions.map(command => <a href={command.href} key={command.id} onClick={event => select(event, command)}>
+            {command.label}<span aria-hidden="true">↗</span>
+          </a>)}
+        </nav>
+      </div>}
       <div className="osgard-quick-meta">
         <span aria-live="polite">{results.length ? 'НАЙДЕНО: ' + results.length : 'НИЧЕГО НЕ НАЙДЕНО'}</span>
         {recent.length > 0 && <button type="button" onClick={() => { clearQuickNavRecent(); setRecent([]); setActive(0) }}>
@@ -142,17 +167,19 @@ export default function OsgardQuickNav({ onClose, onNavigate }: Props) {
       <div className="osgard-quick-results" id={listId + '-results'} role="listbox" aria-label="Доступные разделы">
         {results.length ? results.map((command, index) =>
           <a key={command.id} id={listId + '-option-' + index} href={command.href} role="option"
-            aria-selected={index === Math.min(active, results.length - 1)}
-            data-command-id={command.id} className={index === active ? 'osgard-quick-result is-active' : 'osgard-quick-result'}
+            aria-selected={index === selectedIndex}
+            data-command-id={command.id} className={'osgard-quick-result' + (command.art ? ' has-art' : '') + (index === selectedIndex ? ' is-active' : '')}
             onMouseEnter={() => setActive(index)} onFocus={() => setActive(index)}
             onClick={event => select(event, command)}>
             <span className="osgard-quick-number">{String(index + 1).padStart(2, '0')}</span>
+            {command.art && <span className="osgard-quick-thumb" aria-hidden="true"><img src={command.art}
+              width="96" height="68" loading="lazy" decoding="async" alt="" /></span>}
             <span className="osgard-quick-info"><small>{recent.includes(command.id) && !query ? 'НЕДАВНО · ' : ''}{command.group}</small><strong>{command.label}</strong><em>{command.description}</em></span>
             <span className="osgard-quick-arrow" aria-hidden="true">↗</span>
           </a>
         ) : <div className="osgard-quick-empty"><strong>Такого раздела нет.</strong><p>Попробуйте «игры», «академия», «проекты» или «ИИ».</p></div>}
       </div>
-      <div className="osgard-quick-bottom"><span>↑ ↓ Выбрать</span><span>ENTER Открыть</span><span>ESC Закрыть</span><span>Ctrl / ⌘ + K</span></div>
+      <div className="osgard-quick-bottom"><span>↑ ↓ Выбрать</span><span>Home / End</span><span>ENTER Открыть</span><span>ESC Закрыть</span><span>Ctrl / ⌘ + K</span></div>
     </div>
   </div>
 }
