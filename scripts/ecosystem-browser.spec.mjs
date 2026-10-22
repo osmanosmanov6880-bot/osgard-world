@@ -2077,7 +2077,15 @@ test('INHERIT R12 restores only a real past location and never invents an owner 
     Boolean(node?.closest('#world'))&&!node?.closest('button,.dock,[data-memory]');
  }),{timeout:9000}).toBe(true);
  const rect=await page.locator('#island').boundingBox();
- await page.mouse.click(rect.x+rect.width*goal.x/100,rect.y+rect.height*goal.y/100);
+ const click={x:rect.x+rect.width*goal.x/100,y:rect.y+rect.height*goal.y/100};
+ const hit=await page.evaluate(({x,y})=>{
+   const target=document.elementFromPoint(x,y);
+   return {inViewport:x>=0&&x<innerWidth&&y>=0&&y<innerHeight,
+     onWorld:!!target?.closest('#world'),blocked:!!target?.closest('button,.dock,[data-memory]')};
+ },click);
+ expect(hit.inViewport).toBe(true);
+ expect(hit.onWorld&&!hit.blocked).toBe(true);
+ await page.mouse.click(click.x,click.y);
  await expect.poll(()=>page.evaluate(()=>window.InheritGame.snapshot().objects.length)).toBe(1);
  const verified=await page.evaluate(()=>window.InheritMemoryExpeditionsUI.getResult());
  expect(verified.status).toBe('observed-placement');expect(verified.kind).toBe('restore');
