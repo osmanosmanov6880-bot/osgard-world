@@ -40,6 +40,9 @@ ship_visual = require(
     'finish_r7.name = "R7_PBRSurfaceFinish"',
     'preload("res://assets/models/nx08_interceptor_r8.gltf")',
     'imported_r8.name = "R8_ImportedHeroMesh"',
+    'preload("res://scripts/ship_mechanics_r9.gd")',
+    'mechanisms_r9.name = "R9_AnimatedAirframeMechanics"',
+    'SurfaceLibraryR9Script.coat(',
 )
 world = require(
     "scripts/world.gd",
@@ -53,6 +56,8 @@ world = require(
     "skyline_r6.build(SECTOR_POSITIONS, SECTOR_COLORS)",
     'preload("res://scripts/capital_fleet_r7.gd")',
     "fleet_r7.build(SECTOR_POSITIONS)",
+    'preload("res://scripts/orbital_industry_r9.gd")',
+    "industry_r9.build(SECTOR_POSITIONS)",
 )
 city = require(
     "scripts/city_set_dressing_r5.gd",
@@ -76,6 +81,8 @@ r6_docks = require(
     "R6_PBR_DeckPanels",
     'preload("res://assets/models/industrial_hangar_r8.gltf")',
     'imported_r8.name = "R8_IndustrialHangarAsset"',
+    "roof_node.visibility_range_begin = 370.0",
+    'SurfaceLibraryR9Script.coat(',
 )
 assert "st.generate_tangents()" in r6_ship
 assert "st.generate_tangents()" in r6_docks
@@ -126,6 +133,30 @@ check_gltf("assets/models/nx08_interceptor_r8.gltf", 14000, 7)
 check_gltf("assets/models/industrial_hangar_r8.gltf", 25000, 6)
 
 
+pbr_r9 = require(
+    "scripts/surface_library_r9.gd",
+    "static func _atlas(",
+    "static func coat(",
+    "static func maps(",
+    "mat.roughness_texture_channel",
+    "mat.metallic_texture_channel",
+    "mat.ao_texture_channel",
+)
+industry_r9 = require(
+    "scripts/orbital_industry_r9.gd",
+    "func _lathe_vessel(",
+    "func _make_mobile_loader(",
+    "func build(centers: Array)",
+    "R9_PBRPressureSilos_24",
+    "SurfaceLibraryR9Script.coat(",
+)
+mechanics_r9 = require(
+    "scripts/ship_mechanics_r9.gd",
+    "func _landing_gear(",
+    "func _animated_elevons(",
+    "func _engine_iris(",
+    "gear_requested",
+)
 require("scripts/architectural_detail_r4.gd", "func build(")
 premium = require("scripts/premium_architecture.gd", "func make_facade_material(", "emission_image")
 require("scripts/drone.gd", "extends")
@@ -141,6 +172,9 @@ smoke = require(
     "R7 physical PBR surface details missing",
     "Importable R8 interceptor glTF missing",
     "R8 imported curved hangar geometry missing",
+    "R9 physically packed ship textures missing",
+    "R9 industrial spaceport absent",
+    "R9 animated ship mechanics not instantiated",
     "NEBULA_SMOKE_SUCCESS",
 )
 assert "func _make_ship(" not in ship, "R3 low-poly ship builder is still active"
@@ -150,4 +184,4 @@ assert "image.generate_mipmaps()" in ship_visual
 assert premium.count("Image.create(") >= 2, "separate facade albedo/emission atlases missing"
 assert "high-detail" not in project.lower(), "project identity may remain stable"
 assert len(smoke) > 1500 and len(city) > 5000 and len(world) > 10000
-print("NEBULA_R8_SOURCE_SUCCESS: original textured-UV glTF ship and hangar binaries verified")
+print("NEBULA_R9_SOURCE_SUCCESS: shared PBR ORM, mechanical animation and industrial port QA verified")
