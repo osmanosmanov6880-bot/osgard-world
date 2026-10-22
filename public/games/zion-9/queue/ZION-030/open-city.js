@@ -1,4 +1,4 @@
-/* ZION-030 OPEN CITY v28 — playable living district, driving and open-world service contracts.
+/* ZION-030 OPEN CITY v29 — playable living district, driving and open-world service contracts.
  * Uses the already-shipped local Three.js library and the original game-state API.
  * The original strategic city and its winning rules stay authoritative.
  */
@@ -10,6 +10,7 @@
   const rules = window.ZION030_CITY_RULES;
   if (!root || !stage || !game() || !rules) return;
   const CONTRACTS = rules.CONTRACTS;
+  const DISPATCHES = rules.DISPATCHES;
 
   const HOT = [
     { x: -4, z: -3, temp: 58, name: 'Жилой двор' },
@@ -82,19 +83,66 @@
     </div></div>
     <div class="oc-complete" id="oc-complete" hidden><div><span class="oc-eyebrow">МИССИЯ ВЫПОЛНЕНА</span><h2>ГОРОД<br><em>ОХЛАЖДЁН.</em></h2><p>Все три зоны получили охлаждение. Ты можешь продолжить прогулку или начать миссию заново.</p><button type="button" id="oc-keep-walking">ПРОДОЛЖИТЬ ПРОГУЛКУ</button><button type="button" id="oc-again">НОВАЯ МИССИЯ ↗</button></div></div>`;
   stage.append(shell);
+  // v29: gameplay surfaces are real controls layered over the existing 3D world.
+  shell.insertAdjacentHTML('beforeend', `
+    <div class="oc-chapter" id="oc-chapter" aria-live="polite"><small>\u0420\u0410\u0419\u041e\u041d</small><strong id="oc-district-name">\u0426\u0415\u041d\u0422\u0420 \u0410\u0424\u0418\u041d</strong></div>
+    <div class="oc-career" id="oc-career"><span>\u0421\u0422\u0410\u041c\u0418\u041d\u0410 <b id="oc-stamina-text">100%</b></span><div class="oc-meter"><i id="oc-stamina-bar"></i></div><span>\u0414\u0418\u0421\u041f\u0415\u0422\u0427\u0415\u0420 <b id="oc-dispatch-counter">0 / 5</b></span></div>
+    <button class="oc-journal-trigger" id="oc-journal-button" type="button" aria-haspopup="dialog" aria-controls="oc-journal">\u2637 \u041c\u0418\u0421\u0421\u0418\u0418 <kbd>J</kbd></button>
+    <button class="oc-pause-trigger" id="oc-pause-button" type="button" aria-haspopup="dialog" aria-controls="oc-pause">\u2161\u2161 \u041f\u0410\u0423\u0417\u0410</button>
+    <aside class="oc-radio" id="oc-radio" role="status" aria-live="polite"><span>\u25c8 \u0414\u0418\u0421\u041f\u0415\u0422\u0427\u0415\u0420</span><p id="oc-radio-text">\u0413\u043e\u0440\u043e\u0434\u0441\u043a\u0430\u044f \u0441\u0432\u044f\u0437\u044c \u0430\u043a\u0442\u0438\u0432\u043d\u0430.</p></aside>
+    <section class="oc-journal" id="oc-journal" role="dialog" aria-label="\u0416\u0443\u0440\u043d\u0430\u043b \u0437\u0430\u0434\u0430\u043d\u0438\u0439" aria-modal="true" hidden>
+      <div class="oc-modal-card"><header><div><small>\u0414\u0418\u0421\u041f\u0415\u0422\u0427\u0415\u0420\u0421\u041a\u0410\u042f \u0421\u041b\u0423\u0416\u0411\u0410</small><h2>\u041a\u041e\u041d\u0422\u0420\u0410\u041a\u0422\u042b \u0413\u041e\u0420\u041e\u0414\u0410</h2></div><button type="button" id="oc-journal-close" aria-label="\u0417\u0430\u043a\u0440\u044b\u0442\u044c">\u2715</button></header>
+      <p class="oc-modal-sub">\u041f\u044f\u0442\u044c \u043c\u043d\u043e\u0433\u043e\u044d\u0442\u0430\u043f\u043d\u044b\u0445 \u043c\u0438\u0441\u0441\u0438\u0439. \u0412\u044b\u0431\u0435\u0440\u0438 \u0437\u0430\u0434\u0430\u043d\u0438\u0435: GPS \u043f\u0440\u043e\u043b\u043e\u0436\u0438\u0442 \u043f\u0443\u0442\u044c. E \u2014 \u0432\u0437\u0430\u0438\u043c\u043e\u0434\u0435\u0439\u0441\u0442\u0432\u0438\u0435.</p>
+      <div id="oc-journal-list" class="oc-journal-list"></div>
+      <div class="oc-garage"><h3>\u0413\u0410\u0420\u0410\u0416 · CITY RUNNER</h3><p>\u0423\u043b\u0443\u0447\u0448\u0435\u043d\u0438\u044f \u043e\u043f\u043b\u0430\u0447\u0438\u0432\u0430\u044e\u0442\u0441\u044f \u043a\u0440\u0435\u0434\u0438\u0442\u0430\u043c\u0438 \u0437\u0430 \u043c\u0438\u0441\u0441\u0438\u0438, \u0431\u0435\u0437 \u0434\u043e\u043d\u0430\u0442\u0430.</p><div class="oc-garage-options"><button id="oc-upgrade-grip" type="button">\u041f\u041e\u0414\u0412\u0415\u0421\u041a\u0410 · 260 \u25c8</button><button id="oc-upgrade-battery" type="button">\u0411\u0410\u0422\u0410\u0420\u0415\u042f · 230 \u25c8</button></div></div>
+      <button type="button" class="oc-modal-main" id="oc-journal-resume">\u0412\u0415\u0420\u041d\u0423\u0422\u042c\u0421\u042f \u0412 \u0413\u041e\u0420\u041e\u0414</button></div>
+    </section>
+    <section class="oc-pause" id="oc-pause" role="dialog" aria-modal="true" aria-label="\u041c\u0435\u043d\u044e \u043f\u0430\u0443\u0437\u044b" hidden><div class="oc-pause-card"><small>OPEN CITY · \u041f\u0410\u0423\u0417\u0410</small><h2>\u041f\u0420\u041e\u0414\u041e\u041b\u0416\u0418\u041c?</h2><p>\u0417\u0430\u0434\u0430\u043d\u0438\u044f, \u043d\u0430\u0433\u0440\u0430\u0434\u044b \u0438 \u0443\u043b\u0443\u0447\u0448\u0435\u043d\u0438\u044f \u0441\u043e\u0445\u0440\u0430\u043d\u044f\u044e\u0442\u0441\u044f \u0432 \u0431\u0440\u0430\u0443\u0437\u0435\u0440\u0435.</p><button type="button" id="oc-resume">\u041f\u0420\u041e\u0414\u041e\u041b\u0416\u0418\u0422\u042c</button><button type="button" id="oc-pause-journal">\u0416\u0423\u0420\u041d\u0410\u041b \u0418 \u0413\u0410\u0420\u0410\u0416</button><button type="button" id="oc-exit-to-map">\u0412\u042b\u0419\u0422\u0418 \u041d\u0410 \u041a\u0410\u0420\u0422\u0423</button><small>WASD \u2014 \u0445\u043e\u0434\u044c\u0431\u0430 · SPACE \u2014 \u043f\u0440\u044b\u0436\u043e\u043a · V \u2014 \u043a\u0430\u043c\u0435\u0440\u0430 · J \u2014 \u0436\u0443\u0440\u043d\u0430\u043b · M \u2014 \u043a\u0430\u0440\u0442\u0430</small></div></section>
+    <div class="oc-vehicle-charge" id="oc-vehicle-charge" hidden><span>\u26a1 \u0417\u0410\u0420\u042f\u0414</span><strong id="oc-battery-readout">100%</strong><div class="oc-meter"><i id="oc-battery-bar"></i></div></div>
+  `);
+  shell.querySelector('.oc-start-foot').append(' · SPACE: прыжок · V: камера · J: журнал · M: карта · ESC: пауза');
+  shell.insertAdjacentHTML('beforeend', '<button id="oc-view-button" class="oc-view-button" type="button" aria-label="\u0421\u043c\u0435\u043d\u0438\u0442\u044c \u043a\u0430\u043c\u0435\u0440\u0443">\u25c9 \u041a\u0410\u041c\u0415\u0420\u0410</button><button id="oc-jump-button" class="oc-jump-button" type="button" aria-label="\u041f\u0440\u044b\u0433\u043d\u0443\u0442\u044c">\u21e7 \u041f\u0420\u042b\u0416\u041e\u041a</button>');
+
+
 
   const $ = (id) => document.getElementById(id);
   const viewport = $('oc-viewport');
   const keys = new Set();
   const joystick = { x: 0, y: 0, pointer: null, centerX: 0, centerY: 0 };
-  const player = { x: 0, z: 0, y: 0, yaw: 0, cameraYaw: 0.35, pitch: 0.28, speed: 0, moving: false };
-  const world = { ready: false, active: false, initialised: false, last: 0, frame: 0, assets: [], buildings: [], rings: [], dust: [], foliage: [], lamps: [], pulse: 0, fpsFrames: 0, fpsTime: 0, fpsSample: 0, quality: 'high', gpuScale: 1.35, softwareGL: false, lastRender: 0, navMode: 'main', people: [], traffic: [], contractMarkers: [], car: null, rain: null, dayMode: 0, raining: false, path: [], routeTo: '', pathCell: '' };
+  const player = { x: 0, z: 0, y: 0, yaw: 0, cameraYaw: 0.35, pitch: 0.28, speed: 0, moving: false, vx:0, vz:0, stamina:100, height:0, vy:0, cameraMode:'chase' };
+  const world = { ready: false, active: false, initialised: false, last: 0, frame: 0, assets: [], buildings: [], rings: [], dust: [], foliage: [], lamps: [], pulse: 0, fpsFrames: 0, fpsTime: 0, fpsSample: 0, quality: 'high', gpuScale: 1.35, softwareGL: false, lastRender: 0, navMode: 'main', people: [], traffic: [], contractMarkers: [], dispatchMarkers: [], streetLife: [], jumpQueued:false, car: null, rain: null, dayMode: 0, raining: false, path: [], routeTo: '', pathCell: '' };
   let scene, camera, renderer, avatar, legL, legR, armL, armR, sun, minimapCtx, targetIndex = -1, hemi, keyLight, blueFill;
-  let dragId = null, dragX = 0, dragY = 0, audio, animationId = 0;
+  let dragId = null, dragX = 0, dragY = 0, audio, animationId = 0, lastDistrict = '', lastHudUpdate = 0;
   const PROFILE_KEY = 'osgard:zion030:open-city:v28';
   let profile = rules.defaultProfile();
   try { profile = rules.sanitizeProfile(JSON.parse(localStorage.getItem(PROFILE_KEY) || 'null')); } catch (_) { /* Storage may be blocked. */ }
   const persist = () => { try { localStorage.setItem(PROFILE_KEY, JSON.stringify(profile)); } catch (_) { /* Play offline without saving if storage is unavailable. */ } };
+  const getDispatch = () => rules.nextDispatchStep(profile);
+  const modalOpen = () => !$('oc-pause').hidden || !$('oc-journal').hidden;
+  const selectedDispatch = () => DISPATCHES.find(d => d.id === profile.activeDispatch);
+  function radio(message) { $('oc-radio-text').textContent = message; $('oc-radio').classList.add('oc-radio-active'); clearTimeout(radio.timer); radio.timer = window.setTimeout(() => $('oc-radio').classList.remove('oc-radio-active'), 5500); }
+  function showJournal() { if (!world.active || !$('oc-start').hidden) return; $('oc-pause').hidden = true; $('oc-journal').hidden = false; keys.clear(); updateJournal(); $('oc-journal-close').focus({ preventScroll:true }); }
+  function closeJournal() { $('oc-journal').hidden = true; keys.clear(); $('oc-journal-button').focus({ preventScroll:true }); world.last = 0; }
+  function pauseGame() { if (!world.active || !$('oc-start').hidden) return; $('oc-journal').hidden = true; $('oc-pause').hidden = false; keys.clear(); $('oc-resume').focus({ preventScroll:true }); }
+  function resumeGame() { $('oc-pause').hidden = true; world.last = 0; keys.clear(); viewport.focus?.({ preventScroll:true }); }
+  function updateJournal() {
+    const list=$('oc-journal-list'); list.replaceChildren();
+    for (const quest of DISPATCHES) {
+      const done=profile.dispatchDone.includes(quest.id),stageIndex=profile.dispatchSteps[quest.id]||0;
+      const row=document.createElement('button');row.type='button';row.className='oc-quest-row';
+      row.setAttribute('aria-pressed',String(profile.activeDispatch===quest.id));
+      const header=document.createElement('strong'); header.textContent=(done ? '\u2713 ' : '\u25c8 ')+quest.name;
+      const detail=document.createElement('span'); detail.textContent=done?'\u0412\u042b\u041f\u041e\u041b\u041d\u0415\u041d\u041e':quest.steps[stageIndex].text+'  ·  '+(stageIndex+1)+' / '+quest.steps.length;
+      const reward=document.createElement('small');reward.textContent='+'+quest.reward+' \u25c8'; row.append(header,detail,reward);
+      row.addEventListener('click',()=>{ const result=rules.selectDispatch(profile,quest.id); profile=result.profile; persist(); world.navMode='dispatch'; world.routeTo=''; updateJournal(); syncGame(); drawMiniMap(); radio(quest.name); });
+      list.append(row);
+    }
+    for(const [id,type,price,done] of [['oc-upgrade-grip','grip',260,profile.grip],['oc-upgrade-battery','battery',230,profile.batteryUpgrade]]) {
+      const button=$(id);button.disabled=done||profile.credits<price;button.textContent=done?'\u2713 \u0423\u041b\u0423\u0427\u0428\u0415\u041d\u041e':type==='grip'?'\u041f\u041e\u0414\u0412\u0415\u0421\u041a\u0410 · 260 \u25c8':'\u0411\u0410\u0422\u0410\u0420\u0415\u042f · 230 \u25c8';
+    }
+  }
+  function upgrade(type) { const r=rules.purchaseUpgrade(profile,type);if(!r.changed){radio('\u041d\u0435\u0434\u043e\u0441\u0442\u0430\u0442\u043e\u0447\u043d\u043e \u043a\u0440\u0435\u0434\u0438\u0442\u043e\u0432');return false;}profile=r.profile;persist();updateJournal();syncGame();radio('\u0423\u043b\u0443\u0447\u0448\u0435\u043d\u0438\u0435 CITY RUNNER \u043a\u0443\u043f\u043b\u0435\u043d\u043e');return true; }
+
   function announce(message, time = 1800) {
     const panel = $('oc-world-message'); panel.textContent = message; panel.classList.add('oc-visible');
     clearTimeout(announce.timer); announce.timer = window.setTimeout(() => panel.classList.remove('oc-visible'), time);
@@ -444,6 +492,78 @@
     scene.add(group);
     return { contract, group, orb, halo };
   }
+  // v29 urban kit: instanced streetlights, benches, parks and charging points (GPU-batched).
+  function addStreetLife() {
+    const unit = new THREE.BoxGeometry(1,1,1), ico = new THREE.IcosahedronGeometry(1,1);
+    const mats={pole:makeMat('#627886',.63,.28), lamp:new THREE.MeshBasicMaterial({color:0xffe7aa}),
+      trunk:makeMat('#775e4c'),leaf:makeMat('#2a906b'),leaf2:makeMat('#4cab79'),
+      seat:makeMat('#967963'),charger:makeMat('#36c7da',.27,.48,'#046780',.28)};
+    const batches={pole:[],lamp:[],trunk:[],leaf:[],leaf2:[],seat:[],charger:[]};
+    const dummy=new THREE.Object3D();
+    function put(key,x,y,z,w,h,d){dummy.position.set(x,y,z);dummy.scale.set(w,h,d);dummy.updateMatrix();batches[key].push(dummy.matrix.clone());}
+    for(let x=-15;x<=15;x+=5)for(let z=-15;z<=15;z+=5) {
+      const px=x+.58,pz=z+.58;
+      if(!collides(px,pz,.12)){
+        put('pole',px,1.22,pz,.058,2.44,.058);
+        put('lamp',px,2.45,pz,.2,.10,.2);
+        put('seat',px+.19,.23,pz+.4,.8,.13,.23);
+      }
+    }
+    for(let x=-19;x<=19;x+=2)for(let z=-19;z<=19;z+=2) {
+      if(Math.abs(x)<4&&Math.abs(z)<4)continue;
+      if(rand(x,z,23)<.67)continue;
+      const tx=x+.42,tz=z+.35;
+      if(collides(tx,tz,.14)||HOT.some(h=>Math.hypot(tx-h.x,tz-h.z)<1.7))continue;
+      const scale=.82+rand(z,x,33)*.40;
+      put('trunk',tx,.46*scale,tz,.15*scale,.92*scale,.15*scale);
+      put(rand(x,z,52)>.5?'leaf':'leaf2',tx,1.15*scale,tz,.55*scale,.75*scale,.53*scale);
+    }
+    for(const station of rules.CHARGERS) {
+      put('charger',station.x+.52,.5,station.z, .26,1,.25);
+      put('lamp',station.x+.52,1.05,station.z, .25,.08,.23);
+      put('pole',station.x+.52,.06,station.z,.63,.09,.65);
+    }
+    for(const [key,mat] of Object.entries(mats)) {
+      const collection=batches[key];if(!collection.length)continue;
+      const geom=key==='leaf'||key==='leaf2'?ico:unit;
+      const mesh=new THREE.InstancedMesh(geom,mat,collection.length);
+      collection.forEach((matrix,index)=>mesh.setMatrixAt(index,matrix));
+      mesh.instanceMatrix.needsUpdate=true;mesh.castShadow=false;mesh.receiveShadow=false;
+      scene.add(mesh);world.streetLife.push(mesh);
+    }
+    // Eight readable district landmarks; these are lightweight, real 3D signboards.
+    const signs=[[-15,8,'CLINIC'],[10,13,'SCHOOL'],[15,-3,'WATER'],[1,-15,'METRO'],[-10,-2,'LAB'],
+      [-15,-11,'SOLAR'],[14,14,'PARK'],[-8,12,'GARDEN']];
+    for(const [x,z,name] of signs){
+      const tex=billboardTexture(name,'OSGARD · NEW ATHENS');
+      const sign=new THREE.Mesh(new THREE.PlaneGeometry(1.55,.47),new THREE.MeshBasicMaterial({map:tex,side:THREE.DoubleSide,transparent:true}));
+      sign.position.set(x,2.55,z);scene.add(sign);
+    }
+  }
+  function addDispatchMarkers() {
+    const ringMaterial = new THREE.MeshBasicMaterial({color:0x9cf1ff,transparent:true,opacity:.85,side:THREE.DoubleSide,depthWrite:false});
+    const tagMaterial = new THREE.MeshBasicMaterial({color:0x8cf4ff});
+    for(let i=0;i<DISPATCHES.length;i++){
+      const mission=DISPATCHES[i], group=new THREE.Group();
+      const ring=new THREE.Mesh(new THREE.RingGeometry(.63,.75,30),ringMaterial.clone());ring.rotation.x=-Math.PI/2;ring.position.y=.035;group.add(ring);
+      const tag=new THREE.Mesh(new THREE.OctahedronGeometry(.18,0),tagMaterial.clone());tag.position.y=2.6;group.add(tag);
+      const pole=new THREE.Mesh(new THREE.CylinderGeometry(.018,.018,2.0,6),new THREE.MeshBasicMaterial({color:0x65b9c6,transparent:true,opacity:.38}));pole.position.y=1.3;group.add(pole);
+      scene.add(group);world.dispatchMarkers.push({mission,group,ring,tag,lastStep:-1});
+    }
+    syncDispatchMarkers();
+  }
+  function syncDispatchMarkers() {
+    for(const marker of world.dispatchMarkers){
+      const done=profile.dispatchDone.includes(marker.mission.id),stage=profile.dispatchSteps[marker.mission.id]||0;
+      const step=marker.mission.steps[Math.min(stage,marker.mission.steps.length-1)];
+      marker.group.visible=!done;
+      marker.group.position.set(step.x,0,step.z);
+      const active=profile.activeDispatch===marker.mission.id;
+      marker.ring.material.color.setHex(active?0xffe2a0:0x5fd8e9);
+      marker.tag.material.color.setHex(active?0xffcf8c:0x84f3ff);
+      marker.lastStep=stage;
+    }
+  }
   function addRain() {
     const count = mobile.matches ? 150 : 320;
     const positions = new Float32Array(count * 3), seeds = [];
@@ -459,7 +579,7 @@
   }
   function addLivingWorld() {
     const carMesh = createCar(); scene.add(carMesh);
-    world.car = { x: .7, z: -1.65, heading: -Math.PI / 2, speed: 0, occupied: false, mesh: carMesh };
+    world.car = { x: .7, z: -1.65, heading: -Math.PI / 2, speed: 0, occupied: false, battery:100, mesh: carMesh };
     carMesh.position.set(world.car.x, .02, world.car.z); carMesh.rotation.y = world.car.heading;
     // Four autonomous municipal vehicles, separate from the player's driveable car.
     const routes = [
@@ -480,7 +600,7 @@
       world.people.push(makePerson(i, x, z));
     }
     CONTRACTS.forEach(c => world.contractMarkers.push(createContractLandmark(c)));
-    addRain();
+    addStreetLife(); addDispatchMarkers(); addRain();
   }
   function updateTraffic(dt) {
     for (const car of world.traffic) {
@@ -530,7 +650,7 @@
     $('oc-weather-temp').textContent = world.raining ? '19°C' : isNight ? '22°C' : isDay ? '33°C' : '27°C';
     $('oc-weather-label').textContent = (isNight ? 'НОЧЬ' : isDay ? 'ДЕНЬ' : 'ВЕЧЕР') + (world.raining ? ' · ДОЖДЬ' : ' · СУХО');
   }
-  function toggleNavigation() { world.navMode = world.navMode === 'main' ? 'contract' : 'main'; world.routeTo = ''; syncGame(); drawMiniMap(); announce(world.navMode === 'main' ? 'GPS: сюжетные тепловые зоны' : 'GPS: контракты городской службы'); }
+  function toggleNavigation() { world.navMode = world.navMode === 'main' ? 'contract' : world.navMode==='contract' ? 'dispatch' : 'main';world.routeTo='';syncGame();drawMiniMap();announce(world.navMode==='main'?'GPS: \u0442\u0435\u043f\u043b\u043e\u0432\u044b\u0435 \u0437\u043e\u043d\u044b':world.navMode==='contract'?'GPS: \u043a\u043e\u043d\u0442\u0440\u0430\u043a\u0442\u044b':'GPS: \u043c\u0438\u0441\u0441\u0438\u0438 \u0434\u0438\u0441\u043f\u0435\u0442\u0447\u0435\u0440\u0430'); }
   function cycleTime() { world.dayMode = (world.dayMode + 1) % 3; updateAtmosphere(); announce('Время суток изменено'); }
   function toggleRain() { world.raining = !world.raining; updateAtmosphere(); announce(world.raining ? 'Начался дождь. Асфальт остыл.' : 'Дождь закончился.'); }
   function toggleQuality() {
@@ -549,7 +669,7 @@
         const x = c.x + dx, z = c.z + dz;
         if (!collides(x, z) && !CONTRACTS.some(q => Math.hypot(q.x - x, q.z - z) < .3)) {
           c.occupied = false; c.speed = 0; player.x = x; player.z = z;
-          avatar.visible = true; announce('Ты вышел из электромобиля'); syncGame(); return true;
+          avatar.visible = player.cameraMode !== 'first'; announce('Ты вышел из электромобиля'); syncGame(); return true;
         }
       }
       announce('Нет свободного места для выхода'); return false;
@@ -576,10 +696,31 @@
     soundSuccess(); announce(`✓ ${nearest.short} · +${nearest.reward} КРЕДИТОВ`, 2200);
     syncGame(); drawMiniMap(); return true;
   }
+  function advanceNearbyDispatch() {
+    const step=getDispatch();if(!step)return false;
+    const c=world.car;
+    const result=rules.advanceDispatch(profile,{x:player.x,z:player.z,inCar:Boolean(c?.occupied),speed:c?.speed||0});
+    if(!result.changed){
+      if(result.reason==='park'&&Math.hypot(player.x-step.x,player.z-step.z)<1.7)radio('\u0417\u0430\u043f\u0430\u0440\u043a\u0443\u0439 \u0430\u0432\u0442\u043e\u043c\u043e\u0431\u0438\u043b\u044c \u0438 \u043e\u0441\u0442\u0430\u043d\u043e\u0432\u0438\u0441\u044c');
+      if(result.reason==='onfoot'&&Math.hypot(player.x-step.x,player.z-step.z)<1.7)radio('\u0412\u044b\u0439\u0434\u0438 \u0438\u0437 \u043c\u0430\u0448\u0438\u043d\u044b \u0438 \u043d\u0430\u0436\u043c\u0438 E');
+      return false;
+    }
+    profile=result.profile;persist();syncDispatchMarkers();world.routeTo='';
+    if(result.complete){ soundSuccess();radio('\u2713 '+result.mission.name+' · +'+result.mission.reward+' \u043a\u0440\u0435\u0434\u0438\u0442\u043e\u0432'); }
+    else radio('\u042d\u0422\u0410\u041f '+(result.step.index+1)+' / '+result.mission.steps.length+' \u0433\u043e\u0442\u043e\u0432. \u0421\u043b\u0435\u0434\u0443\u0439 \u043d\u043e\u0432\u043e\u043c\u0443 GPS.');
+    const done=profile.dispatchDone.length;
+    if(done===DISPATCHES.length)radio('\u0412\u0441\u0435 \u0433\u043e\u0440\u043e\u0434\u0441\u043a\u0438\u0435 \u0437\u0430\u0434\u0430\u043d\u0438\u044f \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043d\u044b!');
+    updateJournal();syncGame();drawMiniMap();return true;
+  }
+  function cycleCamera() {
+    const values=['chase','near','first'];player.cameraMode=values[(values.indexOf(player.cameraMode)+1)%values.length];
+    const first=player.cameraMode==='first';if(avatar)avatar.visible=!world.car?.occupied&&!first;
+    announce(first?'\u041a\u0430\u043c\u0435\u0440\u0430 \u043e\u0442 \u043f\u0435\u0440\u0432\u043e\u0433\u043e \u043b\u0438\u0446\u0430':player.cameraMode==='near'?'\u041a\u0430\u043c\u0435\u0440\u0430 \u0437\u0430 \u043f\u043b\u0435\u0447\u043e\u043c':'\u041a\u0430\u043c\u0435\u0440\u0430 \u043e\u0442 \u0442\u0440\u0435\u0442\u044c\u0435\u0433\u043e \u043b\u0438\u0446\u0430');
+  }
   function buyUpgrade() {
     const r = rules.purchaseUpgrade(profile);
     if (!r.changed) return;
-    profile = r.profile; persist(); syncGame(); announce('CITY RUNNER · Улучшенный двигатель разблокирован!');
+    profile = r.profile; persist(); syncGame(); updateJournal(); announce('CITY RUNNER · Улучшенный двигатель разблокирован!');
   }
   function createCoolingProp(type, x, z) {
     const group = new THREE.Group(); group.position.set(x, 0, z);
@@ -698,17 +839,17 @@
       if (reduceMotion.matches || world.softwareGL) { world.quality = 'adaptive'; $('oc-quality').textContent = '◈ AUTO'; }
       world.ready = true; resize(); syncGame(); drawMiniMap();
       window.__ZION030_OPEN_CITY__ = {
-        state: () => ({ ready: world.ready, active: world.active, player: { x: player.x, z: player.z }, mission: game()?.state(), quality: world.quality, driving: Boolean(world.car?.occupied), vehicle: world.car ? { x: world.car.x, z: world.car.z, speed: world.car.speed } : null, contracts: [...profile.completed], credits: profile.credits, raining: world.raining, dayMode: world.dayMode }),
+        state: () => ({ ready: world.ready, active: world.active, player: { x: player.x, z: player.z, stamina:player.stamina, height:player.height, cameraMode:player.cameraMode }, mission: game()?.state(), quality: world.quality, driving: Boolean(world.car?.occupied), vehicle: world.car ? { x: world.car.x, z: world.car.z, speed: world.car.speed, battery: world.car.battery } : null, contracts: [...profile.completed], credits: profile.credits, raining: world.raining, dayMode: world.dayMode, dispatch:{done:[...profile.dispatchDone],steps:{...profile.dispatchSteps},active:profile.activeDispatch}, garage:{speed:profile.fastCar,grip:profile.grip,battery:profile.batteryUpgrade}, district:rules.districtAt(player.x,player.z) }),
         enter, exit, walk: (dx, dz) => { if (!collides(player.x + dx, player.z + dz)) { player.x += dx; player.z += dz; } },
         drive: toggleCar, time: cycleTime, rain: toggleRain, quality: toggleQuality, gps: toggleNavigation, contract: completeNearbyContract,
-        interact
+        interact, camera:cycleCamera, journal:showJournal, pause:pauseGame, resume:resumeGame, dispatch:advanceNearbyDispatch
       };
       // Diagnostics exist only under the explicitly opted-in ?test=1 route.
       if (new URLSearchParams(location.search).has('test')) {
         window.__ZION030_OPEN_CITY__.teleport = (x, z) => {
           if (world.car?.occupied) { world.car.occupied = false; world.car.speed = 0; avatar.visible = true; }
           const safe = rules.nearestFree(x, z);
-          player.x = safe.x; player.z = safe.z;
+          player.x=safe.x;player.z=safe.z;player.vx=player.vz=0;player.height=player.vy=0;
           avatar.position.set(player.x, 0, player.z); syncGame(); drawMiniMap();
           return { x: player.x, z: player.z };
         };
@@ -773,26 +914,45 @@
     $('oc-contract-hint').textContent = contract ? `Ищи голубой маяк. ${Math.round(contract.dist * 12)} м до точки · +${contract.reward} кредитов` : 'Район восстановлен. Продолжай исследование и охлаждение.';
     const c = world.car;
     $('oc-drive-hud').hidden = !c?.occupied;
-    if (c?.occupied) $('oc-speed').innerHTML = `${Math.round(Math.abs(c.speed) * 12)} <small>км/ч</small>`;
+    if(c?.occupied)$('oc-speed').innerHTML=`${Math.round(Math.abs(c.speed)*12)} <small>км/ч</small>`;
     const dest = closest();
     targetIndex = dest?.i ?? -1;
-    const navGoal = world.navMode === 'contract' ? (contract || dest) : (dest || contract);
-    $('oc-target').textContent = navGoal ? ('short' in navGoal ? navGoal.short : navGoal.name.toUpperCase()) : 'МИССИИ ВЫПОЛНЕНЫ';
-    $('oc-nav-mode').textContent = world.navMode === 'contract' ? '⌖ GPS: КОНТРАКТЫ' : '⌖ GPS: СЮЖЕТ';
+    const navGoal=navigationGoal();
+    $('oc-target').textContent = navGoal ? (navGoal.text || navGoal.short || navGoal.name || '').toUpperCase() : 'МИССИИ ВЫПОЛНЕНЫ';
+    $('oc-nav-mode').textContent = world.navMode==='dispatch'?'⌖ GPS: МИССИИ':world.navMode === 'contract' ? '⌖ GPS: КОНТРАКТЫ' : '⌖ GPS: СЮЖЕТ';
     $('oc-distance').textContent = navGoal ? `${Math.round(Math.hypot(player.x - navGoal.x, player.z - navGoal.z) * 12)} М ДО ЦЕЛИ` : 'Весь город открыт для прогулки';
     const nearHeat = dest && dest.dist <= 1.65 && !state.lost && !state.won && !c?.occupied;
     const nearSide = contract && contract.dist <= 1.7 && !c?.occupied;
     const nearCar = !c?.occupied && distanceToCar() <= 1.65;
-    const canInteract = Boolean(nearHeat || nearSide);
+    const dispatch=getDispatch(),nearDispatch=dispatch&&Math.hypot(player.x-dispatch.x,player.z-dispatch.z)<1.65;
+    const canInteract=Boolean(nearHeat||nearSide||nearDispatch);
     $('oc-interact').hidden = !canInteract && !nearCar && !c?.occupied;
     $('oc-action').hidden = !canInteract || !mobile.matches;
-    $('oc-action').textContent = nearHeat ? '✓ ОХЛАДИТЬ' : '✓ ВЫПОЛНИТЬ КОНТРАКТ';
-    $('oc-interact-key').textContent = canInteract ? 'E' : 'F';
-    $('oc-interact-text').textContent = nearHeat ? `ОХЛАДИТЬ · ${TOOLS[state.selected].label.toUpperCase()}` : nearSide ? 'ВЫПОЛНИТЬ ГОРОДСКОЙ КОНТРАКТ' : c?.occupied ? 'ВЫЙТИ ИЗ ЭЛЕКТРОМОБИЛЯ' : 'СЕСТЬ В ЭЛЕКТРОМОБИЛЬ';
+    $('oc-action').textContent = nearHeat ? '✓ ОХЛАДИТЬ' : nearSide?'✓ КОНТРАКТ':'✓ ЭТАП МИССИИ';
+    $('oc-interact-key').textContent = canInteract?'E':'F';
+    $('oc-interact-text').textContent=nearHeat?'ОХЛАДИТЬ':nearSide?'ГОРОДСКОЙ КОНТРАКТ':nearDispatch?'ЭТАП МИССИИ':c?.occupied?'ВЫЙТИ ИЗ АВТО':'СЕСТЬ В АВТО';
     const driveButton = $('oc-drive-action');
     driveButton.hidden = !mobile.matches || (!c?.occupied && !nearCar);
     driveButton.textContent = c?.occupied ? '↩ ВЫЙТИ ИЗ АВТО' : '🚘 СЕСТЬ В МАШИНУ';
     if (state.lost) { $('oc-target').textContent = 'МОДУЛИ ЗАКОНЧИЛИСЬ'; $('oc-distance').textContent = 'На карте нажми «Заново»'; }
+    $('oc-dispatch-counter').textContent=profile.dispatchDone.length+' / '+DISPATCHES.length;
+    $('oc-stamina-text').textContent=Math.round(player.stamina)+'%';
+    $('oc-stamina-bar').style.width=player.stamina+'%';
+    const charge=c?.battery??100;
+    $('oc-battery-readout').textContent=Math.ceil(charge)+'%';
+    $('oc-battery-bar').style.width=charge+'%';
+    $('oc-vehicle-charge').hidden=!c?.occupied;
+    const district=rules.districtAt(player.x,player.z);
+    $('oc-district-name').textContent=district;
+    if(lastDistrict && district!==lastDistrict)radio(district);
+    lastDistrict=district;
+
+  }
+  function navigationGoal() {
+    const dispatch=getDispatch(),side=nearestContract(),heat=closest();
+    if(world.navMode==='dispatch')return dispatch || side || heat;
+    if(world.navMode==='contract')return side || dispatch || heat;
+    return heat || dispatch || side;
   }
   function drawMiniMap() {
     const g = minimapCtx; if (!g) return;
@@ -809,7 +969,7 @@
         g.fillRect(p.x - tile / 2 + .5, p.y - tile / 2 + .5, tile - 1, tile - 1);
       }
     }
-    const heat = closest(), side = nearestContract(), goal = world.navMode === 'contract' ? (side || heat) : (heat || side);
+    const goal=navigationGoal();
     const destination = goal ? goal.x + ',' + goal.z : '';
     const origin = Math.round(centerX) + ',' + Math.round(centerZ);
     if (destination !== world.routeTo || origin !== world.pathCell) {
@@ -832,6 +992,8 @@
       blip(item.x, item.z, cooled ? '#58ffd2' : '#ff784c', 5.5);
     }
     for (const q of CONTRACTS) blip(q.x, q.z, profile.completed.includes(q.id) ? '#65bc97' : '#4ee5ff', 4.5);
+    const step=getDispatch();if(step)blip(step.x,step.z,'#ffde9c',6.0);
+    for(const dock of rules.CHARGERS)blip(dock.x,dock.z,'#7dffd0',2.7);
     for (const t of world.traffic) blip(t.mesh.position.x, t.mesh.position.z, '#7b9aa9', 2);
     if (world.car && !world.car.occupied) blip(world.car.x, world.car.z, '#f3d989', 4);
     g.save(); g.translate(w / 2, h / 2); g.rotate(player.yaw);
@@ -852,84 +1014,99 @@
     } catch (_err) { /* Browsers may block audio: gameplay remains unaffected. */ }
   }
   function interact() {
-    if (!world.active || !world.ready || !game()?.state()?.ready) return false;
+    if (!world.active || !world.ready || !game()?.state()?.ready || modalOpen()) return false;
     const state = game().state(), dest = closest();
-    if (world.car?.occupied) { announce('Выйди из электромобиля клавишей F, чтобы выполнять задания'); return false; }
+    if (world.car?.occupied) { if(advanceNearbyDispatch())return true;announce('\u0412\u044b\u0439\u0434\u0438 \u0438\u0437 \u043c\u0430\u0448\u0438\u043d\u044b \u0438\u043b\u0438 \u0437\u0430\u043f\u0430\u0440\u043a\u0443\u0439 \u0430\u0432\u0442\u043e'); return false; }
     if (dest && dest.dist <= 1.65 && !state.won && !state.lost) {
       const ok = game().place(dest.x, dest.z, state.selected);
       if (ok) { soundSuccess(); syncGame(); drawMiniMap(); announce(`✓ ${dest.name}: ЗОНА ОХЛАЖДЕНА`); return true; }
     }
     if (completeNearbyContract()) return true;
+    if(advanceNearbyDispatch())return true;
     if (distanceToCar() <= 1.65) { announce('Нажми F, чтобы сесть в электромобиль'); return false; }
     announce('Подойди к оранжевой цели или голубому маяку задания.');
     return false;
   }
   function move(dt, t) {
-    const c = world.car;
-    let xx = ((keys.has('KeyD') || keys.has('ArrowRight')) ? 1 : 0) - ((keys.has('KeyA') || keys.has('ArrowLeft')) ? 1 : 0) + joystick.x;
-    let yy = ((keys.has('KeyW') || keys.has('ArrowUp')) ? 1 : 0) - ((keys.has('KeyS') || keys.has('ArrowDown')) ? 1 : 0) - joystick.y;
-    const length = Math.hypot(xx, yy);
-    if (length > 1) { xx /= length; yy /= length; }
-    const running = keys.has('ShiftLeft') || keys.has('ShiftRight');
-    if (c?.occupied) {
-      const result = rules.drivingStep(c, { throttle: yy, steer: xx, brake: keys.has('Space') }, dt, profile.fastCar);
-      Object.assign(c, result);
-      c.mesh.position.set(c.x, .02, c.z); c.mesh.rotation.y = c.heading;
-      player.x = c.x; player.z = c.z; player.yaw = c.heading;
-      // A slightly elevated chase camera makes vehicle steering legible.
-      let delta = c.heading - player.cameraYaw;
-      while (delta > Math.PI) delta -= Math.PI * 2;
-      while (delta < -Math.PI) delta += Math.PI * 2;
-      player.cameraYaw += delta * (1 - Math.exp(-dt * 2.9));
-      if (result.collision && Math.abs(yy) > .1 && t - (world.lastCollisionToast || 0) > 1.25) { world.lastCollisionToast = t; announce('Препятствие · поверни или сдай назад', 900); }
+    const c=world.car;
+    let xx=((keys.has('KeyD')||keys.has('ArrowRight'))?1:0)-((keys.has('KeyA')||keys.has('ArrowLeft'))?1:0)+joystick.x;
+    let yy=((keys.has('KeyW')||keys.has('ArrowUp'))?1:0)-((keys.has('KeyS')||keys.has('ArrowDown'))?1:0)-joystick.y;
+    const magnitude=Math.hypot(xx,yy);if(magnitude>1){xx/=magnitude;yy/=magnitude;}
+    if(c?.occupied){
+      const powered=c.battery>.1;
+      const control={throttle:powered?yy:Math.min(0,yy),steer:xx,brake:keys.has('Space')};
+      const result=rules.drivingStep(c,control,dt,profile.fastCar,{rain:world.raining,grip:profile.grip});
+      const trafficBlock=world.traffic.some(other=>Math.hypot(result.x-other.mesh.position.x,result.z-other.mesh.position.z)<.83);
+      if(trafficBlock){result.x=c.x;result.z=c.z;result.speed=0;result.collision=true;}
+      Object.assign(c,result);
+      const nearStation=rules.CHARGERS.some(q=>Math.hypot(q.x-c.x,q.z-c.z)<1.7);
+      c.battery=rules.vehicleEnergy(c.battery,c,control,dt,profile.batteryUpgrade,nearStation);
+      c.mesh.position.set(c.x,.02,c.z);c.mesh.rotation.y=c.heading;
+      player.x=c.x;player.z=c.z;player.yaw=c.heading;
+      let delta=c.heading-player.cameraYaw;
+      while(delta>Math.PI)delta-=Math.PI*2;
+      while(delta< -Math.PI)delta+=Math.PI*2;
+      player.cameraYaw+=delta*(1-Math.exp(-dt*2.9));
+      if(result.collision&&Math.abs(yy)>.1&&t-(world.lastCollisionToast||0)>1.25){world.lastCollisionToast=t;announce('\u041f\u0440\u0435\u043f\u044f\u0442\u0441\u0442\u0432\u0438\u0435 · \u0441\u0434\u0430\u0439 \u043d\u0430\u0437\u0430\u0434',900);}
+      if(!powered&&!nearStation&&t-(world.lastEnergyToast||0)>7){world.lastEnergyToast=t;radio('\u0411\u0430\u0442\u0430\u0440\u0435\u044f \u043f\u0443\u0441\u0442\u0430. \u0421\u0442\u0430\u043d\u0446\u0438\u044f \u0437\u0430\u0440\u044f\u0434\u043a\u0438 \u043e\u0442\u043c\u0435\u0447\u0435\u043d\u0430 \u0437\u0435\u043b\u0451\u043d\u044b\u043c.');}
     } else {
-      const spd = running ? 4.3 : 2.7, strafeX = Math.cos(player.cameraYaw), strafeZ = -Math.sin(player.cameraYaw);
-      const fwdX = -Math.sin(player.cameraYaw), fwdZ = -Math.cos(player.cameraYaw);
-      const dx = (fwdX * yy + strafeX * xx) * spd * dt;
-      const dz = (fwdZ * yy + strafeZ * xx) * spd * dt;
-      if (Math.abs(dx) + Math.abs(dz) > .0001) {
-        const nx = player.x + dx, nz = player.z + dz;
-        if (!collides(nx, player.z)) player.x = nx;
-        if (!collides(player.x, nz)) player.z = nz;
-        player.yaw = Math.atan2(dx, -dz);
+      const fwdX=-Math.sin(player.cameraYaw),fwdZ=-Math.cos(player.cameraYaw);
+      const strafeX=Math.cos(player.cameraYaw),strafeZ=-Math.sin(player.cameraYaw);
+      const step=rules.walkStep(player,{x:fwdX*yy+strafeX*xx,z:fwdZ*yy+strafeZ*xx,
+        sprint:keys.has('ShiftLeft')||keys.has('ShiftRight'),jump:world.jumpQueued},dt,collides);
+      world.jumpQueued=false;
+      Object.assign(player,step);
+      player.moving=magnitude>.12;
+      player.speed=Math.min(1,step.speed/2.85);
+      if(step.speed>.12)player.yaw=Math.atan2(player.vx,-player.vz);
+      const stride=reduceMotion.matches?0:Math.sin(t*(step.sprinting?12:8))*player.speed;
+      legL.rotation.x=stride*.47;legR.rotation.x=-stride*.47;
+      armL.rotation.x=-stride*.36;armR.rotation.x=stride*.36;
+      avatar.position.set(player.x,player.height+(reduceMotion.matches?0:Math.abs(Math.sin(t*8))*.023*player.speed),player.z);
+      avatar.rotation.y=player.yaw;
+      avatar.visible=player.cameraMode!=='first';
+    }
+    const eyeHeight=c?.occupied?1.17:1.65+player.height;
+    if(player.cameraMode==='first'){
+      camera.position.set(player.x,eyeHeight,player.z);
+      camera.lookAt(player.x-Math.sin(player.cameraYaw)*13,
+        eyeHeight-Math.tan(player.pitch-.25)*13,player.z-Math.cos(player.cameraYaw)*13);
+    }else{
+      let distance=c?.occupied?6.5:player.cameraMode==='near'?2.55:mobile.matches?5.2:4.65;
+      const pitch=c?.occupied?Math.max(.32,player.pitch):player.pitch;
+      for(let d=.6;d<=distance;d+=.27){
+        const tx=player.x+Math.sin(player.cameraYaw)*Math.cos(pitch)*d;
+        const tz=player.z+Math.cos(player.cameraYaw)*Math.cos(pitch)*d;
+        if(collides(tx,tz,.12)){distance=Math.max(.7,d-.35);break;}
       }
-      player.speed += ((length > .12 ? 1 : 0) - player.speed) * rules.clamp(dt * 13, 0, 1);
-      player.moving = length > .12;
-      const walk = Math.sin(t * (running ? 12 : 8)) * player.speed;
-      legL.rotation.x = walk * .46; legR.rotation.x = -walk * .46;
-      armL.rotation.x = -walk * .33; armR.rotation.x = walk * .33;
-      avatar.position.set(player.x, Math.abs(Math.sin(t * 8)) * .027 * player.speed, player.z);
-      avatar.rotation.y = player.yaw;
+      const lookHeight=c?.occupied?.9:1.2+player.height;
+      const desired=new THREE.Vector3(player.x+Math.sin(player.cameraYaw)*Math.cos(pitch)*distance,
+        lookHeight+Math.sin(pitch)*distance,player.z+Math.cos(player.cameraYaw)*Math.cos(pitch)*distance);
+      camera.position.lerp(desired,1-Math.exp(-dt*9));camera.lookAt(player.x,lookHeight,player.z);
     }
-    // Visibility-safe chase camera: sample against the same deterministic buildings used by physics.
-    let distance = c?.occupied ? 6.5 : mobile.matches ? 5.2 : 4.65;
-    const pitch = c?.occupied ? Math.max(.32, player.pitch) : player.pitch;
-    for (let d = .6; d <= distance; d += .27) {
-      const testX = player.x + Math.sin(player.cameraYaw) * Math.cos(pitch) * d;
-      const testZ = player.z + Math.cos(player.cameraYaw) * Math.cos(pitch) * d;
-      if (collides(testX, testZ, .12)) { distance = Math.max(.7, d - .35); break; }
-    }
-    const lookHeight = c?.occupied ? .9 : 1.20;
-    const desired = new THREE.Vector3(player.x + Math.sin(player.cameraYaw) * Math.cos(pitch) * distance,
-      lookHeight + Math.sin(pitch) * distance, player.z + Math.cos(player.cameraYaw) * Math.cos(pitch) * distance);
-    camera.position.lerp(desired, 1 - Math.exp(-dt * 9));
-    camera.lookAt(player.x, lookHeight, player.z);
-    updateTraffic(dt); updatePedestrians(dt, t); updateRain(dt);
-    world.rings.forEach((r, i) => {
-      const phase = reduceMotion.matches ? 0 : t * 2.2 + i;
-      r.ring.scale.setScalar(1 + Math.sin(phase) * .06);
-      r.tip.scale.setScalar(1.35 + Math.sin(phase) * .18);
-      r.beacon.rotation.y = t;
-      r.beacon.position.y = 1.83 + (reduceMotion.matches ? 0 : Math.sin(t * 2.4 + i) * .09);
+    const desiredFov=player.cameraMode==='first'?64:c?.occupied?74:player.moving&&player.stamina<99?72:68;
+    const fov= camera.fov+(desiredFov-camera.fov)*(1-Math.exp(-dt*4));
+    if(Math.abs(fov-camera.fov)>.025){camera.fov=fov;camera.updateProjectionMatrix();}
+    updateTraffic(dt);updatePedestrians(dt,t);updateRain(dt);
+    world.rings.forEach((r,i)=>{
+      const phase=reduceMotion.matches?0:t*2.2+i;
+      r.ring.scale.setScalar(1+Math.sin(phase)*.06);
+      r.tip.scale.setScalar(1.35+Math.sin(phase)*.18);
+      r.beacon.rotation.y=t;
+      r.beacon.position.y=1.83+(reduceMotion.matches?0:Math.sin(t*2.4+i)*.09);
     });
-    world.contractMarkers.forEach((marker, i) => {
-      marker.orb.scale.setScalar(1.3 + (reduceMotion.matches ? 0 : Math.sin(t * 1.6 + i) * .15));
+    world.contractMarkers.forEach((marker,i)=>{
+      marker.orb.scale.setScalar(1.3+(reduceMotion.matches?0:Math.sin(t*1.6+i)*.15));
+    });
+    world.dispatchMarkers.forEach((marker,i)=>{
+      marker.tag.rotation.y=t*.7;
+      marker.tag.position.y=2.6+(reduceMotion.matches?0:Math.sin(t*1.8+i)*.18);
     });
   }
   function frame(time) {
     if (!world.active || !world.ready) return;
     const dt = clamp((time - (world.last || time)) / 1000, 0, .06); world.last = time; world.frame++;
-    move(dt, time * .001);
+    if(!modalOpen())move(dt,time*.001);else world.jumpQueued=false;
     if (world.frame % 9 === 0) { syncGame(); drawMiniMap(); }
     if (world.frame % 70 === 0) {
       if (world.fpsTime) {
@@ -958,16 +1135,16 @@
     shell.hidden = false;
     $('oc-start').hidden = false;
     button.textContent = '← ВЕРНУТЬСЯ НА КАРТУ';
-    world.last = 0; keys.clear();
-    syncGame(); resize(); drawMiniMap();
+    world.last=0; keys.clear(); lastDistrict='';
+    syncGame(); updateJournal(); resize(); drawMiniMap();
     if (animationId) window.cancelAnimationFrame(animationId);
     // The scene is paused behind the start overlay so the Start button never competes with a heavy WebGL frame.
     animationId = 0;
     $('oc-start-play').focus({ preventScroll: true });
   }
   function exit() {
-    world.active = false; world.last = 0; keys.clear(); joystick.x = joystick.y = 0;
-    if (world.car?.occupied) { world.car.occupied = false; world.car.speed = 0; avatar.visible = true; player.x = world.car.x; player.z = world.car.z; }
+    world.active = false;world.last=0;keys.clear();world.jumpQueued=false;joystick.x=joystick.y=0;$('oc-pause').hidden=true;$('oc-journal').hidden=true;
+    if (world.car?.occupied) {world.car.occupied=false;world.car.speed=0;avatar.visible=player.cameraMode!=='first';player.x=world.car.x;player.z=world.car.z;}
     if (animationId) window.cancelAnimationFrame(animationId); animationId = 0;
     stage.classList.remove('oc-stage-active'); document.body.classList.remove('oc-body-active');
     shell.hidden = true; button.textContent = '◈ ГУЛЯТЬ ПО ГОРОДУ · 3D';
@@ -984,19 +1161,34 @@
   $('oc-quality').addEventListener('click', toggleQuality);
   $('oc-upgrade').addEventListener('click', buyUpgrade);
   $('oc-nav-mode').addEventListener('click', toggleNavigation);
+  $('oc-journal-button').addEventListener('click',showJournal);
+  $('oc-journal-close').addEventListener('click',closeJournal);
+  $('oc-journal-resume').addEventListener('click',closeJournal);
+  $('oc-pause-button').addEventListener('click',pauseGame);
+  $('oc-resume').addEventListener('click',resumeGame);
+  $('oc-pause-journal').addEventListener('click',showJournal);
+  $('oc-exit-to-map').addEventListener('click',exit);
+  $('oc-upgrade-grip').addEventListener('click',()=>upgrade('grip'));
+  $('oc-upgrade-battery').addEventListener('click',()=>upgrade('battery'));
+  $('oc-view-button').addEventListener('click',cycleCamera);
+  $('oc-jump-button').addEventListener('click',()=>{if(!world.car?.occupied)world.jumpQueued=true;});
+
   $('oc-complete').addEventListener('click', e => { if (e.target === $('oc-complete')) $('oc-complete').hidden = true; });
   $('oc-keep-walking').addEventListener('click', () => { $('oc-complete').hidden = true; $('oc-complete').dataset.dismissed = 'true'; });
   $('oc-again').addEventListener('click', () => { game()?.reset?.(); $('oc-complete').hidden = true; delete $('oc-complete').dataset.dismissed; syncGame(); drawMiniMap(); });
   shell.querySelectorAll('[data-oc-tool]').forEach(b => b.addEventListener('click', () => { game()?.select(b.dataset.ocTool); syncGame(); }));
   window.addEventListener('keydown', e => {
-    if (!world.active || !$('oc-start').hidden || !$('oc-complete').hidden) return;
-    const gameplayCodes = ['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space','KeyE','KeyF','KeyH','KeyT','KeyP','KeyQ','KeyG','ShiftLeft','ShiftRight','Digit1','Digit2','Digit3'];
+    if (!world.active || !$('oc-start').hidden || !$('oc-complete').hidden || modalOpen()) return;
+    const gameplayCodes = ['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space','KeyE','KeyF','KeyH','KeyT','KeyP','KeyQ','KeyG','KeyV','KeyJ','KeyM','ShiftLeft','ShiftRight','Digit1','Digit2','Digit3'];
     if (gameplayCodes.includes(e.code)) { e.preventDefault(); e.stopImmediatePropagation(); }
     keys.add(e.code);
     if (e.repeat) return;
+    if(e.code==='Space'&&!world.car?.occupied)world.jumpQueued=true;
     if (e.code === 'KeyF') toggleCar();
     else if (e.code === 'KeyE' || e.code === 'Enter') interact();
-    else if (e.code === 'Space' && !world.car?.occupied) interact();
+    else if (e.code === 'KeyV') cycleCamera();
+    else if (e.code === 'KeyJ') showJournal();
+    else if (e.code === 'KeyM') shell.classList.toggle('oc-map-expanded');
     else if (e.code === 'KeyG') toggleNavigation();
     else if (e.code === 'KeyT') cycleTime();
     else if (e.code === 'KeyP') toggleRain();
@@ -1005,10 +1197,10 @@
     else if (['Digit1', 'Digit2', 'Digit3'].includes(e.code)) game().select(['tree', 'shade', 'water'][Number(e.code.slice(-1)) - 1]);
   }, true);
   window.addEventListener('keyup', e => { keys.delete(e.code); }, true);
-  window.addEventListener('keydown', e => { if (world.active && e.key === 'Escape') { if ($('oc-start').hidden) exit(); else { $('oc-start').hidden = true; } } }, true);
+  window.addEventListener('keydown',e=>{if(!world.active||e.key!=='Escape')return;e.preventDefault();e.stopImmediatePropagation();if(!$('oc-journal').hidden)closeJournal();else if(!$('oc-pause').hidden)resumeGame();else if(!$('oc-start').hidden){$('oc-start').hidden=true;world.last=0;animationId=window.requestAnimationFrame(frame);}else pauseGame();},true);
   window.addEventListener('blur', () => keys.clear());
   viewport.addEventListener('pointerdown', e => {
-    if (!world.active || !$('oc-start').hidden || !$('oc-complete').hidden) return;
+    if (!world.active || !$('oc-start').hidden || !$('oc-complete').hidden || modalOpen()) return;
     if (e.target.closest('button')) return;
     if (dragId !== null) return;
     dragId = e.pointerId; dragX = e.clientX; dragY = e.clientY;
