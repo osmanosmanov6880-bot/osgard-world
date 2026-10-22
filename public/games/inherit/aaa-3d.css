@@ -131,3 +131,16 @@ body.living-legacy .app > .aaa3d-controls .aaa3d-live{flex:0 1 160px;text-align:
  body.living-legacy .app > .aaa3d-controls button{flex:1 1 27%;min-width:0}
  body.living-legacy .app > .aaa3d-controls .aaa3d-live{flex:1 1 100%;text-align:left}
 }
+
+
+/* Optional evidence monitor; uses actual measured data, never estimated FPS. */
+body.living-legacy .app > .aaa3d-controls .aaa3d-metrics{
+ flex:1 1 100%;padding:7px 12px 8px;border-radius:9px;
+ background:#061c25;color:#c8eadc;outline:1px solid #ffffff20;
+ font:700 12px/1.55 ui-monospace,SFMono-Regular,Consolas,monospace;
+ font-variant-numeric:tabular-nums;overflow-wrap:anywhere
+}
+body.living-legacy .app > .aaa3d-controls .aaa3d-metrics[hidden]{display:none!important}
+body.living-legacy .app > .aaa3d-controls .aaa3d-monitor[aria-pressed=true]{
+ background:#d6eee3;color:#102b2d;border-color:#fff7dc
+}
