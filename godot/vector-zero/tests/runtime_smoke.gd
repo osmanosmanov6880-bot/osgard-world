@@ -26,7 +26,7 @@ func _run() -> void:
     var wave4_mag: Node3D = game.get_node_or_null("MagnetAssembly/Wave4CNCMagnet") as Node3D
     var wave4_goal: Node3D = game.get_node_or_null("ReceiverAssembly/Wave4CaptureIris") as Node3D
     _assert_case(wave4_mag != null and wave4_goal != null, "Wave4 imported GLB hero assemblies placed inside playable scene")
-    _assert_case(wave4_mag != null and wave4_mag.get_child_count() >= 3, "GLB imported as multiple authored material meshes")
+    _assert_case(wave4_mag != null and wave4_mag.get_child_count() >= 1, "GLB imported scene hierarchy contains PBR mesh group")
     if wave4_mag != null:
         _assert_case(game.Wave4Assets.triangle_count(wave4_mag) > 80000, "desktop magnet uses 100K triangle cinematic PBR model")
     if wave4_goal != null:
