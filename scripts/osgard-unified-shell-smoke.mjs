@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
+import { readFileSync, existsSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, resolve } from 'node:path'
 import { osgardCommands, getOsgardContextSuggestions, searchOsgardCommands, readQuickNavRecent, rememberQuickNav, clearQuickNavRecent } from '../src/osgardQuickNavData.ts'
@@ -9,6 +9,10 @@ const read = path => readFileSync(resolve(repo, path), 'utf8')
 
 assert.equal(osgardCommands.length, 43, 'Twelve core routes, four portfolio pages, 19 games and eight lessons must be indexed')
 assert.equal(osgardCommands.filter(item => item.id.startsWith('game-')).length, 19)
+for (const item of osgardCommands.filter(item => item.art)) {
+  assert.ok(item.art.startsWith('/') && !item.art.startsWith('//'), 'Only local preview assets are supported')
+  assert.ok(existsSync(resolve(repo, 'public', item.art.slice(1))), 'Preview file must be real: ' + item.art)
+}
 assert.equal(osgardCommands.filter(item => item.id.startsWith('lesson-')).length, 8)
 for (const item of osgardCommands.filter(item => item.id.startsWith('game-'))) {
   assert.match(item.href, /^\/play\/world\/[a-z0-9-]+$/, 'Direct game route must use the real Play detail page')
@@ -98,5 +102,9 @@ assert.ok(page.includes("<OsgardRouteSkeleton theme={theme} path={path} />") &&
   'Lazy routes must show honest product-specific loading without invented data')
 assert.ok(loading.includes('aria-busy="true"') && loading.includes('role="status"') && loading.includes('min-height') === false, 'Loading state must be semantic and CSS-driven')
 assert.ok(navCss.includes('@media(max-width:720px)') && navCss.includes('max-height:100dvh'), 'Navigator must fit the mobile viewport')
+assert.ok(navCss.includes('.osgard-quick-categories') && navCss.includes('.osgard-quick-thumb') &&
+  navCss.includes('overflow-x:auto'), 'Categories and previews must be usable on small screens')
+assert.ok(read('playwright.ecosystem.config.mjs').includes('osgard-discovery-browser.spec.mjs'),
+  'Desktop and mobile deep-route QA must run in the standard frontend CI')
 assert.ok(loadCss.includes('min-height:clamp') && loadCss.includes('prefers-reduced-motion:reduce'), 'Loading state must reserve layout and respect reduced motion')
 console.log('PASS: 43 first-party commands, safe session history, keyboard dialog, SPA guard, mobile shell and honest route loading')
