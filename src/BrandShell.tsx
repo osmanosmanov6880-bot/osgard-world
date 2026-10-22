@@ -2,7 +2,7 @@ import { useEffect, useState, useSyncExternalStore } from 'react'
 import type { ReactNode } from 'react'
 import { BrandLockup } from './BrandMark'
 import { brandAreaForPath, brandBreadcrumbs, globalNavigationState } from './brandNavigation'
-import { getPlayGame } from './redesignCatalog'
+import { getPlayGameTitle } from './playGameTitles'
 import { getBrowserSnapshot, getServerSnapshot, subscribeBrowserNavigation } from './browserNavigation'
 import { MOTION_CHANGE_EVENT, REPLAY_INTRO_EVENT, introEligible } from './osgardRouting'
 import type { ProductTheme } from './BrandMark'
@@ -29,8 +29,8 @@ export function BrandShell({ theme, children }: { theme: ProductTheme; children:
   const path = currentUrl.pathname.replace(/\/+$/, '') || '/'
   const product = brandAreaForPath(path, theme)
   const development = path === '/development' || path.startsWith('/development/')
-  const game = path.startsWith('/play/world/') ? getPlayGame(path.slice('/play/world/'.length)) : undefined
-  const crumbs = brandBreadcrumbs(path, product, game?.title)
+  const gameTitle = path.startsWith('/play/world/') ? getPlayGameTitle(path.slice('/play/world/'.length)) : undefined
+  const crumbs = brandBreadcrumbs(path, product, gameTitle)
   const worldBase = development ? '/development' : '/'
   const local = product === 'world'
     ? [['Продукты', worldBase + '#products'], ['Кейсы', worldBase + '#cases'], ['Подход', worldBase + '#approach'], ['О компании', worldBase + '#about'], ['Контакт', worldBase + '#contact']]
