@@ -419,6 +419,9 @@ func _input(event: InputEvent) -> void:
 			return
 		hud.toggle_strategy()
 		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("field_journal") and not hud.is_strategy_open():
+		hud.toggle_field_journal()
+		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("language"):
 		hud.switch_language()
 		world.update_language(GameState.locale)

@@ -1,0 +1,2 @@
+# AURORA CITY - Native UI v0.23.1
+Change from permanently stacked panels to contextual HUD; one active objective; a single scrollable field journal on H; readable driving telemetry; short walkthrough commands; 3D city stays visible. Secondary governance remains under Tab. Currency symbols with missing glyph are written as credits. Tested only when Godot native CI succeeds.

@@ -12,7 +12,7 @@ const DEFAULT_KEYS = {
 	"interact": KEY_F, "talk_citizen": KEY_J, "city_case": KEY_C, "dispatch_service": KEY_R, "enter_vehicle": KEY_E,
 	"governor": KEY_TAB, "pause_game": KEY_ESCAPE,
 	"advance_turn": KEY_N, "buy_business": KEY_B,
-	"show_map": KEY_M, "drive_trial": KEY_T, "enter_interior": KEY_I, "diagnostics": KEY_F3, "save_game": KEY_F5,
+	"show_map": KEY_M, "field_journal": KEY_H, "drive_trial": KEY_T, "enter_interior": KEY_I, "diagnostics": KEY_F3, "save_game": KEY_F5,
 	"load_game": KEY_F9, "language": KEY_L, "pay_traffic_fines": KEY_P
 }
 const PAD_BUTTONS = {

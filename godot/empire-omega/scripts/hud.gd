@@ -22,8 +22,8 @@ const BUILDS = {
 	"reservoir":["Резервуар","Reservoir","水库"]
 }
 const ESTATE_UI = {
-	"ru":{"title":"НЕДВИЖИМОСТЬ И АРЕНДА","occupancy":"Заселение","rent":"Арендная прибыль","renovate":"УЛУЧШИТЬ","acquire":"КУПИТЬ","level":"Уровень","weather":"Погода","reputation":"Репутация","income_personal":"Личный доход/такт","private_debt":"Личный долг","repay":"ПОГАСИТЬ 250 ₽ ДОЛГА"},
-	"en":{"title":"PROPERTY AND RENTALS","occupancy":"Occupancy","rent":"Rental profit","renovate":"UPGRADE","acquire":"BUY","level":"Level","weather":"Weather","reputation":"Reputation","income_personal":"Private income/turn","private_debt":"Private debt","repay":"REPAY 250 ₽ DEBT"},
+	"ru":{"title":"НЕДВИЖИМОСТЬ И АРЕНДА","occupancy":"Заселение","rent":"Арендная прибыль","renovate":"УЛУЧШИТЬ","acquire":"КУПИТЬ","level":"Уровень","weather":"Погода","reputation":"Репутация","income_personal":"Личный доход/такт","private_debt":"Личный долг","repay":"ПОГАСИТЬ 250 кр. ДОЛГА"},
+	"en":{"title":"PROPERTY AND RENTALS","occupancy":"Occupancy","rent":"Rental profit","renovate":"UPGRADE","acquire":"BUY","level":"Level","weather":"Weather","reputation":"Reputation","income_personal":"Private income/turn","private_debt":"Private debt","repay":"REPAY 250 кр. DEBT"},
 	"zh":{"title":"房产与租赁","occupancy":"入住率","rent":"出租收益","renovate":"升级","acquire":"购买","level":"等级","weather":"天气","reputation":"声望","income_personal":"每回合个人收入","private_debt":"个人债务","repay":"偿还250卢布债务"}
 }
 
@@ -55,7 +55,7 @@ const DIST_NAMES = {
 }
 const TRANSLATIONS = {
 	"ru":{
-		"repair_hint":"Для ремонта автомобиля нужно %d игровых ₽",
+		"repair_hint":"Для ремонта автомобиля нужно %d игровых кр.",
 		"condition":"Состояние","repaired":"Машина отремонтирована",
 		"paused":"ПАУЗА · OSGARD Ω",
 		"pause_description":"Время в городе остановлено. Продолжайте, сохраняйте игру или настройте управление.",
@@ -97,7 +97,7 @@ const TRANSLATIONS = {
 		"action_interact":"Взаимодействовать","action_talk_citizen":"Поговорить с жителем","action_city_case":"Районное событие",
 		"action_governor":"Управление городом",
 		"action_pause_game":"Пауза",
-		"action_show_map":"Мини-карта",
+		"action_show_map":"Мини-карта","action_field_journal":"Полевой журнал",
 		"action_enter_interior":"Войти / выйти из здания",
 		"action_diagnostics":"Производительность (F3)",
 		"action_buy_business":"Купить бизнес",
@@ -106,15 +106,15 @@ const TRANSLATIONS = {
 		"action_load_game":"Загрузить",
 		"action_language":"Сменить язык",
 		"action_pay_traffic_fines":"Оплатить штраф у мэрии","brand":"OSGARD  ·  ИМПЕРИЯ Ω","market_hint":"B — купить торговый бизнес","budget_graph":"ИСТОРИЯ КАЗНЫ / ЛИЧНЫХ ДЕНЕГ","sub":"ОТКРЫТЫЙ МИР / ПРАВЛЕНИЕ",
-		"cash":"Казна","wallet":"Личные деньги","business_income":"Доход бизнеса","invest":"ВЛОЖИТЬ 250 ₽ В ГОРОД","contracts":"КОММЕРЧЕСКИЕ РЕЙСЫ","fuel":"Топливо","refueled":"Машина заправлена: −85 ₽","refuel_hint":"Для заправки нужно 85 ₽ и неполный бак","accepted":"Груз принят: следуйте к пункту доставки","completed":"Доставка выполнена","unavailable":"Задания временно недоступны","population":"Население","stability":"Стабильность","energy":"Энергия","water":"Вода","food":"Продовольствие",
+		"cash":"Казна","wallet":"Личные деньги","business_income":"Доход бизнеса","invest":"ВЛОЖИТЬ 250 кр. В ГОРОД","contracts":"КОММЕРЧЕСКИЕ РЕЙСЫ","fuel":"Топливо","refueled":"Машина заправлена: −85 кр.","refuel_hint":"Для заправки нужно 85 кр. и неполный бак","accepted":"Груз принят: следуйте к пункту доставки","completed":"Доставка выполнена","unavailable":"Задания временно недоступны","population":"Население","stability":"Стабильность","energy":"Энергия","water":"Вода","food":"Продовольствие",
 		"turn":"Такт","mission":"МИССИЯ","hint":"WASD — идти · E — авто · F — действие · J — житель · T — автошкола · C — события · R — помощь · I — здание · Tab — правление · F3 — FPS",
 		"strategy":"КАБИНЕТ ПРАВИТЕЛЯ","close":"ЗАКРЫТЬ (Tab)","district":"РАЙОН","development":"СТРОИТЕЛЬСТВО","research":"ИССЛЕДОВАНИЯ",
 		"business":"БИЗНЕС","tax":"Налог","tax_minus":"− 2%","tax_plus":"+ 2%","policy":"Курс политики","balance":"Баланс","industry":"Промышленность","energy_policy":"Энергетика","welfare":"Социальный курс",
 		"forecast":"ПРОГНОЗ СЛЕДУЮЩЕГО ТАКТА","income":"Доходы","expenses":"Расходы","net":"Итог","science":"Наука","actions":"Действий осталось","start_turn":"ЗАВЕРШИТЬ ТАКТ (N)",
 		"owned":"Куплено","buy":"Купить","max":"МАКС","unlocked":"Изучено","save":"СОХРАНИТЬ (F5)","load":"ЗАГРУЗИТЬ (F9)","import":"ИМПОРТ СОХРАНЕНИЯ v3","reset":"НОВАЯ ИГРА","restart_confirm":"Новая игра удалит текущий прогресс. Продолжить?",
-		"crisis":"КРИЗИС","aid":"Помощь городу (175 ₽)","ignore":"Отложить (штраф)","need":"Недостаточно ресурсов или лимит действий","success":"Действие выполнено","bought":"Компания приобретена!","too_far":"Подойдите к объекту ближе","interact":"F: взаимодействие","drive":"E: автомобиль","free":"Свободная игра","speed":"Скорость","handbrake":"РУЧНИК","saved":"Игра сохранена","loaded":"Игра загружена","load_failed":"Не удалось загрузить сохранение","save_recovered":"Прогресс восстановлен из аварийной копии","autosave_failed":"Автосохранение не удалось: проверьте место на диске","save_failed":"Ошибка сохранения","imported":"Сохранение v3 импортировано","import_failed":"Импорт не выполнен: проверьте формат и версию","cancel":"ОТМЕНА","confirm":"ПОДТВЕРДИТЬ"},
+		"crisis":"КРИЗИС","aid":"Помощь городу (175 кр.)","ignore":"Отложить (штраф)","need":"Недостаточно ресурсов или лимит действий","success":"Действие выполнено","bought":"Компания приобретена!","too_far":"Подойдите к объекту ближе","interact":"F: взаимодействие","drive":"E: автомобиль","free":"Свободная игра","speed":"Скорость","handbrake":"РУЧНИК","saved":"Игра сохранена","loaded":"Игра загружена","load_failed":"Не удалось загрузить сохранение","save_recovered":"Прогресс восстановлен из аварийной копии","autosave_failed":"Автосохранение не удалось: проверьте место на диске","save_failed":"Ошибка сохранения","imported":"Сохранение v3 импортировано","import_failed":"Импорт не выполнен: проверьте формат и версию","cancel":"ОТМЕНА","confirm":"ПОДТВЕРДИТЬ"},
 	"en":{
-		"repair_hint":"Vehicle repair costs %d game ₽",
+		"repair_hint":"Vehicle repair costs %d game кр.",
 		"condition":"Condition","repaired":"Vehicle repaired",
 		"paused":"PAUSED · OSGARD Ω",
 		"pause_description":"The city is paused. Resume, save your progress, or customize your controls.",
@@ -156,7 +156,7 @@ const TRANSLATIONS = {
 		"action_interact":"Interact","action_talk_citizen":"Talk to a resident","action_city_case":"District incident",
 		"action_governor":"Govern city",
 		"action_pause_game":"Pause",
-		"action_show_map":"Mini-map",
+		"action_show_map":"Mini-map","action_field_journal":"Field journal",
 		"action_enter_interior":"Enter / exit building",
 		"action_diagnostics":"Performance (F3)",
 		"action_buy_business":"Buy business",
@@ -165,13 +165,13 @@ const TRANSLATIONS = {
 		"action_load_game":"Load",
 		"action_language":"Change language",
 		"action_pay_traffic_fines":"Pay city fine","brand":"OSGARD  ·  EMPIRE Ω","market_hint":"B — purchase market business","budget_graph":"TREASURY / WALLET HISTORY","sub":"OPEN WORLD / GOVERNANCE",
-		"cash":"Treasury","wallet":"Your wallet","business_income":"Business income","invest":"INVEST 250 ₽ INTO CITY","contracts":"COURIER CONTRACTS","fuel":"Fuel","refueled":"Refueled: −85 ₽","refuel_hint":"Refueling needs 85 ₽ and a non-full tank","accepted":"Cargo collected: go to destination","completed":"Delivery completed","unavailable":"Contracts are unavailable","population":"Population","stability":"Stability","energy":"Energy","water":"Water","food":"Food",
+		"cash":"Treasury","wallet":"Your wallet","business_income":"Business income","invest":"INVEST 250 кр. INTO CITY","contracts":"COURIER CONTRACTS","fuel":"Fuel","refueled":"Refueled: −85 кр.","refuel_hint":"Refueling needs 85 кр. and a non-full tank","accepted":"Cargo collected: go to destination","completed":"Delivery completed","unavailable":"Contracts are unavailable","population":"Population","stability":"Stability","energy":"Energy","water":"Water","food":"Food",
 		"turn":"Turn","mission":"MISSION","hint":"WASD — move · E — car · F — act · J — residents · T — academy · C — incidents · R — service · I — interior · Tab — govern · F3 — FPS",
 		"strategy":"GOVERNOR'S CABINET","close":"CLOSE (Tab)","district":"DISTRICT","development":"CONSTRUCTION","research":"RESEARCH",
 		"business":"BUSINESS","tax":"Tax","tax_minus":"− 2%","tax_plus":"+ 2%","policy":"Policy","balance":"Balance","industry":"Industry","energy_policy":"Energy","welfare":"Welfare",
 		"forecast":"NEXT-TURN FORECAST","income":"Revenue","expenses":"Expenses","net":"Net","science":"Science","actions":"Actions left","start_turn":"ADVANCE TURN (N)",
 		"owned":"Owned","buy":"Buy","max":"MAX","unlocked":"Researched","save":"SAVE (F5)","load":"LOAD (F9)","import":"IMPORT v3 SAVE","reset":"NEW GAME","restart_confirm":"New game replaces your current progress. Continue?",
-		"crisis":"CRISIS","aid":"Emergency assistance (175 ₽)","ignore":"Defer (penalty)","need":"Insufficient resources or action limit","success":"Action completed","bought":"Business acquired!","too_far":"Move closer to the destination","interact":"F: interact","drive":"E: vehicle","free":"Free play","speed":"Speed","handbrake":"HANDBRAKE","saved":"Game saved","loaded":"Game loaded","load_failed":"Could not load saved game","save_recovered":"Progress recovered from a recovery file","autosave_failed":"Autosave failed: check available disk space","save_failed":"Save failed","imported":"v3 save imported","import_failed":"Import failed: check file version and format","cancel":"CANCEL","confirm":"CONFIRM"},
+		"crisis":"CRISIS","aid":"Emergency assistance (175 кр.)","ignore":"Defer (penalty)","need":"Insufficient resources or action limit","success":"Action completed","bought":"Business acquired!","too_far":"Move closer to the destination","interact":"F: interact","drive":"E: vehicle","free":"Free play","speed":"Speed","handbrake":"HANDBRAKE","saved":"Game saved","loaded":"Game loaded","load_failed":"Could not load saved game","save_recovered":"Progress recovered from a recovery file","autosave_failed":"Autosave failed: check available disk space","save_failed":"Save failed","imported":"v3 save imported","import_failed":"Import failed: check file version and format","cancel":"CANCEL","confirm":"CONFIRM"},
 	"zh":{
 		"repair_hint":"修车需要 %d 游戏卢布",
 		"condition":"车况","repaired":"车辆已修好",
@@ -215,7 +215,7 @@ const TRANSLATIONS = {
 		"action_interact":"互动","action_talk_citizen":"与居民交谈","action_city_case":"地区事件",
 		"action_governor":"城市管理",
 		"action_pause_game":"暂停",
-		"action_show_map":"小地图",
+		"action_show_map":"小地图","action_field_journal":"任务日志",
 		"action_enter_interior":"进入 / 离开建筑",
 		"action_diagnostics":"性能 (F3)",
 		"action_buy_business":"购买企业",
@@ -224,13 +224,13 @@ const TRANSLATIONS = {
 		"action_load_game":"读取",
 		"action_language":"切换语言",
 		"action_pay_traffic_fines":"在市政厅缴纳罚款","brand":"OSGARD · 帝国 Ω","market_hint":"按 B 购买市场商铺","budget_graph":"国库 / 钱包历史","sub":"开放世界 / 城市治理",
-		"cash":"国库","wallet":"个人资金","business_income":"企业收入","invest":"向城市投资 250 ₽","contracts":"配送合同","fuel":"燃油","refueled":"加油成功：−85 ₽","refuel_hint":"加油需要 85 ₽ 且油箱未满","accepted":"已接货：前往目的地","completed":"配送完成","unavailable":"暂无配送合同","population":"人口","stability":"稳定度","energy":"能源","water":"水资源","food":"粮食",
+		"cash":"国库","wallet":"个人资金","business_income":"企业收入","invest":"向城市投资 250 кр.","contracts":"配送合同","fuel":"燃油","refueled":"加油成功：−85 кр.","refuel_hint":"加油需要 85 кр. 且油箱未满","accepted":"已接货：前往目的地","completed":"配送完成","unavailable":"暂无配送合同","population":"人口","stability":"稳定度","energy":"能源","water":"水资源","food":"粮食",
 		"turn":"回合","mission":"任务","hint":"WASD 移动/驾驶 · E 汽车 · F 互动/维修 · J 居民 · T 驾考 · R 公共服务 · I 室内 · Tab 治理 · F3 性能 · L 语言",
 		"strategy":"执政官办公室","close":"关闭 (Tab)","district":"城区","development":"建设","research":"研究",
 		"business":"企业","tax":"税率","tax_minus":"− 2%","tax_plus":"+ 2%","policy":"政策方向","balance":"平衡","industry":"工业","energy_policy":"能源","welfare":"民生",
 		"forecast":"下回合预测","income":"收入","expenses":"支出","net":"结余","science":"科研","actions":"剩余行动","start_turn":"结束回合 (N)",
 		"owned":"已购买","buy":"购买","max":"最高级","unlocked":"已研究","save":"保存 (F5)","load":"读取 (F9)","import":"导入 v3 存档","reset":"新游戏","restart_confirm":"开始新游戏将清除当前进度，继续吗？",
-		"crisis":"危机","aid":"紧急援助 (175 ₽)","ignore":"延后处理（惩罚）","need":"资源不足或行动次数不足","success":"操作成功","bought":"企业已购买！","too_far":"请靠近目标","interact":"F：交互","drive":"E：车辆","free":"自由游戏","speed":"速度","handbrake":"手刹","saved":"已保存","loaded":"游戏已加载","load_failed":"无法加载存档","save_recovered":"已从恢复文件还原进度","autosave_failed":"自动保存失败：请检查磁盘空间","save_failed":"保存失败","imported":"成功导入 v3 存档","import_failed":"导入失败：请检查文件格式和版本","cancel":"取消","confirm":"确认"}
+		"crisis":"危机","aid":"紧急援助 (175 кр.)","ignore":"延后处理（惩罚）","need":"资源不足或行动次数不足","success":"操作成功","bought":"企业已购买！","too_far":"请靠近目标","interact":"F：交互","drive":"E：车辆","free":"自由游戏","speed":"速度","handbrake":"手刹","saved":"已保存","loaded":"游戏已加载","load_failed":"无法加载存档","save_recovered":"已从恢复文件还原进度","autosave_failed":"自动保存失败：请检查磁盘空间","save_failed":"保存失败","imported":"成功导入 v3 存档","import_failed":"导入失败：请检查文件格式和版本","cancel":"取消","confirm":"确认"}
 }
 
 var open := false
@@ -245,6 +245,12 @@ var neighborhood_label: Label
 var context_label: Label
 var hint_label: Label
 var speed_label: Label
+var mission_distance_label: Label
+var journal_panel: PanelContainer
+var speed_panel: PanelContainer
+var toast_panel: PanelContainer
+var toast_label: Label
+var toast_until_ms: int = 0
 var map
 var diagnostic_panel: PanelContainer
 var diagnostic_label: Label
@@ -278,7 +284,7 @@ var awaiting_binding := ""
 var status_binding := ""
 const EDITABLE_ACTIONS = [
 	"move_forward", "move_backward", "move_left", "move_right", "jump", "sprint",
-	"enter_vehicle", "drive_trial", "interact", "talk_citizen", "city_case", "enter_interior", "governor", "pause_game", "show_map", "diagnostics",
+	"enter_vehicle", "drive_trial", "interact", "talk_citizen", "city_case", "enter_interior", "governor", "pause_game", "show_map", "field_journal", "diagnostics",
 	"buy_business", "advance_turn", "save_game", "load_game", "language", "pay_traffic_fines"
 ]
 
@@ -337,7 +343,7 @@ func _panel(bounds: Rect2, anchor_right: float = 0.0, anchor_bottom: float = 0.0
 	panel.offset_top = bounds.position.y
 	panel.offset_right = bounds.position.x + bounds.size.x
 	panel.offset_bottom = bounds.position.y + bounds.size.y
-	panel.add_theme_stylebox_override("panel",_style(Color("0a1624",0.94),Color("355268")))
+	panel.add_theme_stylebox_override("panel",_style(Color("0a1929",0.86),Color("426476")))
 	root.add_child(panel)
 	return panel
 
@@ -346,7 +352,7 @@ func _label(parent: Node, text: String, font_size: int = 18, highlight: bool = f
 	label.text = text
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	label.add_theme_font_size_override("font_size",font_size)
-	label.add_theme_color_override("font_color",Color("e8d6aa") if highlight else Color("d7e4ec"))
+	label.add_theme_color_override("font_color",Color("f3dca7") if highlight else Color("f4f8fc"))
 	parent.add_child(label)
 	return label
 
@@ -367,65 +373,74 @@ func _separator(parent: Node) -> void:
 	parent.add_child(line)
 
 func _make_hud() -> void:
-	var header := _panel(Rect2(18,14,-36,74),1.0,0.0)
-	header.anchor_left = 0.0
-	var cols := HBoxContainer.new()
-	cols.alignment = BoxContainer.ALIGNMENT_CENTER
-	header.add_child(cols)
-	header_value = _label(cols,"OSGARD  ·  ИМПЕРИЯ Ω",27,true)
-	header_value.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	meters_label = _label(cols,"",18)
-	var left := _panel(Rect2(18,103,345,200))
-	var stats := VBoxContainer.new()
-	stats.add_theme_constant_override("separation",6)
-	left.add_child(stats)
-	_label(stats,"OSGARD Ω   /   GOVERNANCE",13,true)
-	context_label = _label(stats,"",19)
-	law_label = _label(stats,"",15,true)
-	var local_panel := _panel(Rect2(18,317,345,106))
-	var local_stack := VBoxContainer.new()
-	local_panel.add_child(local_stack)
-	_label(local_stack,_v08("◆  ПОРУЧЕНИЯ ЖИТЕЛЕЙ / J", "◆  NEIGHBORHOOD / J", "◆  居民委托 / J"),13,true)
-	neighborhood_label = _label(local_stack,"",14)
-	var academy := _panel(Rect2(18,433,345,110))
-	var academy_stack := VBoxContainer.new()
-	academy.add_child(academy_stack)
-	_label(academy_stack,"DRIVING ACADEMY / T",13,true)
-	trial_label = _label(academy_stack,"",15)
-	var mission := _panel(Rect2(-430,103,412,125),1.0)
-	var mission_stack := VBoxContainer.new()
-	mission_stack.add_theme_constant_override("separation",9)
-	mission.add_child(mission_stack)
-	_label(mission_stack,"◆  MISSION CONTROL",13,true)
-	mission_label = _label(mission_stack,"",18)
-	var contract_panel := _panel(Rect2(-430,242,412,102),1.0)
-	var contract_stack := VBoxContainer.new()
-	contract_panel.add_child(contract_stack)
-	_label(contract_stack,"◈  COURIER / CONTRACTS",13,true)
-	contract_label = _label(contract_stack,"",15)
-	var service_panel := _panel(Rect2(-430,472,412,102),1.0)
-	var service_stack := VBoxContainer.new()
-	service_panel.add_child(service_stack)
-	_label(service_stack,"◆  PUBLIC SERVICE / R",13,true)
-	service_label = _label(service_stack,"",15)
-	var incident_panel := _panel(Rect2(-430,356,412,111),1.0)
-	var incident_stack := VBoxContainer.new()
-	incident_panel.add_child(incident_stack)
-	_label(incident_stack,"◈  CITY / INCIDENTS",13,true)
-	city_case_label = _label(incident_stack,"",14)
-	var bottom := _panel(Rect2(18,-78,-36,60),1.0,1.0)
-	bottom.anchor_left = 0.0
-	var hints := HBoxContainer.new()
-	bottom.add_child(hints)
-	hint_label = _label(hints,"",14)
-	hint_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	speed_label = _label(hints,"",16,true)
-	var map_panel := _panel(Rect2(-224,-304,206,206),1.0,1.0)
+	# AURORA CITY: show the city, not seven overlapping dashboards.
+	var header := _panel(Rect2(24,20,420,86))
+	var brand_stack := VBoxContainer.new()
+	brand_stack.add_theme_constant_override("separation",3)
+	header.add_child(brand_stack)
+	header_value = _label(brand_stack,"OSGARD EMPIRE",23,true)
+	meters_label = _label(brand_stack,"",16)
+	var objective := _panel(Rect2(-476,20,452,150),1.0)
+	var objective_stack := VBoxContainer.new()
+	objective_stack.add_theme_constant_override("separation",7)
+	objective.add_child(objective_stack)
+	_label(objective_stack,_v08("ВАША ЦЕЛЬ","YOUR OBJECTIVE","当前目标"),15,true)
+	mission_label = _label(objective_stack,"",22)
+	mission_distance_label = _label(objective_stack,"",16,true)
+	journal_panel = _panel(Rect2(-476,186,452,440),1.0)
+	journal_panel.visible = false
+	var journal_scroll := ScrollContainer.new()
+	journal_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	journal_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	journal_panel.add_child(journal_scroll)
+	var details := VBoxContainer.new()
+	details.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	details.add_theme_constant_override("separation",9)
+	journal_scroll.add_child(details)
+	_label(details,_v08("ПУЛЬС ГОРОДА · H — СКРЫТЬ","CITY JOURNAL · H — CLOSE","城市日志 · H 关闭"),18,true)
+	_label(details,_v08("ЭКОНОМИКА И БЕЗОПАСНОСТЬ","ECONOMY AND SAFETY","经济和安全"),14,true)
+	context_label = _label(details,"",16)
+	law_label = _label(details,"",16,true)
+	_separator(details)
+	_label(details,_v08("ПОМОЩЬ ЖИТЕЛЯМ · J","NEIGHBORHOOD · J","社区任务 · J"),14,true)
+	neighborhood_label = _label(details,"",16)
+	_separator(details)
+	_label(details,_v08("АВТОШКОЛА · T","DRIVING ACADEMY · T","驾校 · T"),14,true)
+	trial_label = _label(details,"",16)
+	_separator(details)
+	_label(details,_v08("ДОСТАВКИ","DELIVERIES","配送任务"),14,true)
+	contract_label = _label(details,"",16)
+	_separator(details)
+	_label(details,_v08("ГОРОДСКИЕ СЛУЖБЫ · R","CITY SERVICES · R","城市服务 · R"),14,true)
+	service_label = _label(details,"",16)
+	_separator(details)
+	_label(details,_v08("СОБЫТИЯ · C","CITY EVENTS · C","城市事件 · C"),14,true)
+	city_case_label = _label(details,"",16)
+	var map_panel := _panel(Rect2(24,-276,248,252),0.0,1.0)
 	map = preload("res://scripts/minimap.gd").new()
+	map.custom_minimum_size = Vector2(208,208)
 	map_panel.add_child(map)
-	diagnostic_panel = _panel(Rect2(-430,590,412,104),1.0)
+	var controls := _panel(Rect2(290,-92,-672,68),1.0,1.0)
+	controls.anchor_left = 0.0
+	hint_label = _label(controls,"",17)
+	speed_panel = _panel(Rect2(-360,-132,336,108),1.0,1.0)
+	speed_panel.visible = false
+	speed_label = _label(speed_panel,"",20,true)
+	toast_panel = _panel(Rect2(-252,24,504,64),0.5)
+	toast_panel.visible = false
+	toast_label = _label(toast_panel,"",18,true)
+	toast_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	diagnostic_panel = _panel(Rect2(24,116,360,105))
 	diagnostic_panel.visible = false
 	diagnostic_label = _label(diagnostic_panel,"PERFORMANCE",15,true)
+
+func toggle_field_journal() -> void:
+	if journal_panel != null and not open and not pause_open:
+		journal_panel.visible = not journal_panel.visible
+
+func _process(_delta: float) -> void:
+	if toast_panel != null and toast_panel.visible and Time.get_ticks_msec() > toast_until_ms:
+		toast_panel.visible = false
 
 func _make_strategy() -> void:
 	overlay = ColorRect.new()
@@ -559,7 +574,7 @@ func show_citizen(citizen_id: int, district: String) -> void:
 	if not local_job.is_empty():
 		citizen_popup.dialog_text += "\n\n" + str(local_job["title"].get(GameState.locale,local_job["title"]["ru"]))
 		citizen_popup.dialog_text += "\n" + str(local_job["description"].get(GameState.locale,local_job["description"]["ru"]))
-		citizen_popup.dialog_text += "\n" + _v08("Материалы: ","Supplies: ","物资成本：") + str(local_job["supply_cost"]) + " ₽  →  " + str(local_job["reward"]) + " ₽"
+		citizen_popup.dialog_text += "\n" + _v08("Материалы: ","Supplies: ","物资成本：") + str(local_job["supply_cost"]) + " кр.  →  " + str(local_job["reward"]) + " кр."
 	neighborhood_button.text = _v08("Взять поручение","Accept errand","接受委托")
 	neighborhood_button.disabled = not GameState.NEIGHBORHOOD.can_accept(GameState.data,citizen_id,district)
 	citizen_popup.ok_button_text = str(messages["support"])
@@ -606,16 +621,16 @@ func _refresh() -> void:
 	if header_value == null: return
 	header_value.text = t("brand")
 	var d: Dictionary = GameState.data
-	meters_label.text = "%s %d   |   %s %d ₽   |   %s %d ₽" % [t("turn"),d["turn"],t("wallet"),d["wallet"],t("cash"),d["treasury"]]
-	context_label.text = "%s: %s\n%s: %d\n%s: %d%%  |  %s: %d%%\n%s: %d%%  |  %s: %d%%" % [t("cash"),str(d["treasury"])+" ₽",t("population"),d["population"],t("stability"),d["stability"],t("energy"),d["energy"],t("water"),d["water"],t("food"),d["food"]]
+	meters_label.text = "%s %d   ·   %s %d кр.   ·   %s %d кр." % [t("turn"),d["turn"],t("wallet"),d["wallet"],t("cash"),d["treasury"]]
+	context_label.text = "%s: %s\n%s: %d\n%s: %d%%  |  %s: %d%%\n%s: %d%%  |  %s: %d%%" % [t("cash"),str(d["treasury"])+" кр.",t("population"),d["population"],t("stability"),d["stability"],t("energy"),d["energy"],t("water"),d["water"],t("food"),d["food"]]
 	if law_label != null:
 		var law: Dictionary = d.get("law",{})
 		var heat: int = int(law.get("heat",0))
 		var fine: int = int(law.get("fine",0))
 		if heat>0:
-			law_label.text = _v08("РОЗЫСК ","WANTED ","通缉 ") + "★".repeat(heat) + "  ·  " + str(fine) + " ₽"
+			law_label.text = _v08("РОЗЫСК ","WANTED ","通缉 ") + "★".repeat(heat) + "  ·  " + str(fine) + " кр."
 		elif fine>0:
-			law_label.text = _v08("ШТРАФ ","FINE ","罚款 ") + str(fine) + " ₽  ·  P"
+			law_label.text = _v08("ШТРАФ ","FINE ","罚款 ") + str(fine) + " кр.  ·  P"
 		else:
 			law_label.text = _v08("Патрули: спокойно","Patrols: clear","巡逻：正常")
 	mission_label.text = MissionManager.title(GameState.locale)
@@ -624,7 +639,7 @@ func _refresh() -> void:
 		var route: Dictionary = GameState.TRIALS.find_route(str(session.get("id",""))) if not session.is_empty() else GameState.TRIALS.offer(d)
 		var route_title: Dictionary = route.get("title",{})
 		if session.is_empty():
-			trial_label.text = _v08("T у дворца в машине · 35 ₽", "T in your car at City Hall · 35 ₽", "市政厅车内按 T · 35 ₽") + "\n" + str(route_title.get(GameState.locale,route_title.get("ru","")))
+			trial_label.text = _v08("T у дворца в машине · 35 кр.", "T in your car at City Hall · 35 кр.", "市政厅车内按 T · 35 кр.") + "\n" + str(route_title.get(GameState.locale,route_title.get("ru","")))
 		else:
 			trial_label.text = str(route_title.get(GameState.locale,route_title.get("ru",""))) + "\n" + "%d/%d  ·  %ds / %ds" % [int(session["step"]),route["checkpoints"].size(),roundi(float(session["elapsed"])),int(route["limit_seconds"])]
 	contract_label.text = ContractManager.goal_text(GameState.locale) if contract_label != null else ""
@@ -636,7 +651,7 @@ func _refresh() -> void:
 			city_case_label.text = _v08("Районы спокойны · ждём новых событий", "Districts are quiet · no pending incident", "各区平静 · 暂无事件")
 		else:
 			city_case_label.text = str(case["title"].get(GameState.locale,case["title"]["ru"])) + "\n" + _v08("Решить до такта ","Resolve before turn ","处理截止回合 ") + str(d["city_case"]["due_turn"]) + "  ·  C / Tab"
-	hint_label.text = t("hint")
+	hint_label.text = _v08("WASD — идти · E — авто · F — действие · Tab — город · H — журнал","WASD — move · E — car · F — interact · Tab — city · H — journal","WASD 移动 · E 上车 · F 互动 · Tab 城市 · H 日志")
 	if open:
 		_redraw_strategy()
 
@@ -657,12 +672,19 @@ func update_world_context(player_at: Vector3, vehicle_at: Vector3, goal_at: Vect
 		trial_label.text = str(route["title"].get(GameState.locale,route["title"]["ru"])) + "\n" + "%d/%d  ·  %ds / %ds" % [int(session["step"]),route["checkpoints"].size(),roundi(float(session["elapsed"])),int(route["limit_seconds"])]
 	if neighborhood_label != null and not GameState.data.get("neighborhood_active",{}).is_empty():
 		neighborhood_label.text = GameState.NEIGHBORHOOD.goal_text(GameState.data,GameState.locale)
+	if mission_distance_label != null:
+		var travel_distance: float = Vector2(player_at.x-goal_at.x,player_at.z-goal_at.z).length()
+		mission_distance_label.text = _v08("ДО ЦЕЛИ","DISTANCE TO GOAL","目标距离") + ": %d м" % roundi(travel_distance)
+	if speed_panel != null:
+		speed_panel.visible = is_driving
 	if is_driving:
-		speed_label.text = "%s: %d km/h  ·  %s: %d%%  ·  %s: %d%%  ·  %s" % [t("speed"),roundi(absf(speed)*3.6),t("fuel"),roundi(fuel),t("condition"),roundi(condition),gear]
-		if handbrake:
-			speed_label.text += " · " + t("handbrake")
+		speed_label.text = "%d км/ч   ·   %s" % [roundi(absf(speed)*3.6),gear]
+		speed_label.text += "\n%s %d%%  ·  %s %d%%" % [t("fuel"),roundi(fuel),t("condition"),roundi(condition)]
+		if handbrake: speed_label.text += " · " + t("handbrake")
+		hint_label.text = _v08("W / S — газ и тормоз · A / D — руль · Пробел — ручник · E — выйти","W / S — drive and brake · A / D — steer · Space — handbrake · E — exit","W / S 油门刹车 · A / D 方向 · 空格 手刹 · E 下车")
 	else:
-		speed_label.text = ("F: " + nearest) if nearest != "" else ""
+		speed_label.text = ""
+		hint_label.text = ("F: "+nearest) if nearest != "" else _v08("WASD — идти · E — авто · F — действие · Tab — город · H — журнал","WASD — move · E — car · F — interact · Tab — city · H — journal","WASD 移动 · E 上车 · F 互动 · Tab 城市 · H 日志")
 
 func toggle_diagnostics() -> void:
 	diagnostic_visible = not diagnostic_visible
@@ -676,12 +698,16 @@ func update_diagnostics(fps: int, chunks: int, total_chunks: int, citizens: int,
 
 func announce(message: String) -> void:
 	last_announcement = message
-	mission_label.text = message + "\n" + MissionManager.title(GameState.locale)
+	if toast_label != null and toast_panel != null:
+		toast_label.text = message
+		toast_panel.visible = true
+		toast_until_ms = Time.get_ticks_msec() + 4400
 
 func toggle_strategy() -> void:
 	if pause_open: return
 	open = not open
 	overlay.visible = open
+	if journal_panel != null: journal_panel.visible = false
 	if open:
 		_redraw_strategy()
 	strategy_changed.emit(open)
@@ -725,11 +751,11 @@ func _redraw_strategy() -> void:
 	var d: Dictionary = GameState.data
 	var forecast: Dictionary = GameState.forecast()
 	_label(strategy_contents,"%s %d  ·  %s %d  ·  %s %d" % [t("turn"),d["turn"],t("science"),d["science"],t("actions"),d["actions_left"]],16,true)
-	_label(strategy_contents,"%s: %d ₽   |   %s: %d ₽   |   %s: %d ₽ / %s" % [t("wallet"),d["wallet"],t("cash"),d["treasury"],t("business_income"),GameState.private_turn_income(),t("turn")],16)
-	_label(strategy_contents,"%s: %d ₽   ·   %s: %d/100   ·   %s: %s" % [estate_text("income_personal"),forecast["personal_income"],estate_text("reputation"),d.get("reputation",35),estate_text("weather"),GameState.CITY_WEATHER.LABELS[GameState.current_weather()["kind"]].get(GameState.locale,"Clear")],16)
+	_label(strategy_contents,"%s: %d кр.   |   %s: %d кр.   |   %s: %d кр. / %s" % [t("wallet"),d["wallet"],t("cash"),d["treasury"],t("business_income"),GameState.private_turn_income(),t("turn")],16)
+	_label(strategy_contents,"%s: %d кр.   ·   %s: %d/100   ·   %s: %s" % [estate_text("income_personal"),forecast["personal_income"],estate_text("reputation"),d.get("reputation",35),estate_text("weather"),GameState.CITY_WEATHER.LABELS[GameState.current_weather()["kind"]].get(GameState.locale,"Clear")],16)
 	_button(strategy_contents,t("invest"),Callable(self,"_invest"),int(d["wallet"]) < 250)
 	if int(d.get("personal_debt",0)) > 0:
-		_label(strategy_contents,"%s: %d ₽" % [estate_text("private_debt"),d["personal_debt"]],17)
+		_label(strategy_contents,"%s: %d кр." % [estate_text("private_debt"),d["personal_debt"]],17)
 		_button(strategy_contents,estate_text("repay"),Callable(self,"_pay_private_debt"),int(d["wallet"]) < 1)
 	_separator(strategy_contents)
 	_separator(strategy_contents)
@@ -752,7 +778,7 @@ func _redraw_strategy() -> void:
 			_label(strategy_contents,str(details.get(GameState.locale,details["ru"])),13)
 	_separator(strategy_contents)
 	_label(strategy_contents,t("forecast"),20,true)
-	_label(strategy_contents,"%s: %d ₽     %s: %d ₽     %s: %+d ₽" % [t("income"),forecast["revenue"],t("expenses"),forecast["expenses"],t("net"),forecast["net"]],17)
+	_label(strategy_contents,"%s: %d кр.     %s: %d кр.     %s: %+d кр." % [t("income"),forecast["revenue"],t("expenses"),forecast["expenses"],t("net"),forecast["net"]],17)
 	_label(strategy_contents,"%s %d%%   ·   %s %d%%   ·   %s %d%%" % [t("energy"),forecast["energy"],t("water"),forecast["water"],t("food"),forecast["food"]],16)
 	if d["history"].size() >= 2:
 		_label(strategy_contents,t("budget_graph"),15,true)
@@ -776,7 +802,7 @@ func _redraw_strategy() -> void:
 	for measure in GameState.POLITICS.MEASURE_ORDER:
 		var definition: Dictionary = GameState.POLITICS.MEASURES[measure]
 		var name_label: String = str(definition["title"].get(GameState.locale,definition["title"]["ru"]))
-		var price: String = "  ·  %d ₽" % int(definition["treasury"])
+		var price: String = "  ·  %d кр." % int(definition["treasury"])
 		if int(definition["materials"]) > 0: price += " · %d " % int(definition["materials"]) + t("materials")
 		if int(definition["goods"]) > 0: price += " · %d " % int(definition["goods"]) + t("goods")
 		var support_label: String = ""
@@ -797,12 +823,12 @@ func _redraw_strategy() -> void:
 	_label(strategy_contents,_v08("ЛОГИСТИКА И ДОРОГИ", "TRANSPORT & ROAD REPAIRS", "物流与道路维护") + "  ·  %d%%" % roundi(freight*100.0),19,true)
 	_label(strategy_contents,_v08("Состояние дорожной сети", "Road network condition", "道路状况") + "  %d/100  ·  %d" % [int(d.get("road_quality",75)),int(d.get("roads_repaired_total",0))],15)
 	var maintenance_available: bool = int(d.get("road_quality",75)) < 100 and int(d["actions_left"]) > 0 and int(d["treasury"]) >= 190 and int(d["inventories"].get("materials",0)) >= 8
-	_button(strategy_contents,_v08("ПРОФИЛАКТИКА ДОРОГ · 190 ₽ / 8 материалов", "ROAD MAINTENANCE · 190 ₽ / 8 materials", "道路维护 · 190 ₽ / 8 材料"),Callable(self,"_do_road_maintenance"),not maintenance_available)
+	_button(strategy_contents,_v08("ПРОФИЛАКТИКА ДОРОГ · 190 кр. / 8 материалов", "ROAD MAINTENANCE · 190 кр. / 8 materials", "道路维护 · 190 кр. / 8 材料"),Callable(self,"_do_road_maintenance"),not maintenance_available)
 	for blocked in GameState.MOBILITY.active_incidents(d):
 		var road_id: String = str(blocked["id"])
 		var road_name: String = str(blocked.get(GameState.locale,blocked["ru"]))
 		var can_repair: bool = int(d["actions_left"]) > 0 and int(d["treasury"]) >= 120 and int(d["inventories"].get("materials",0)) >= 6
-		_button(strategy_contents,road_name + "  ·  " + _v08("ОТКРЫТЬ · 120 ₽ / 6 материалов", "REOPEN · 120 ₽ / 6 materials", "修复 · 120 ₽ / 6 材料"),Callable(self,"_do_road_repair").bind(road_id),not can_repair)
+		_button(strategy_contents,road_name + "  ·  " + _v08("ОТКРЫТЬ · 120 кр. / 6 материалов", "REOPEN · 120 кр. / 6 materials", "修复 · 120 кр. / 6 材料"),Callable(self,"_do_road_repair").bind(road_id),not can_repair)
 	var active_case: Dictionary = GameState.CITY_CASES.current(d)
 	if not active_case.is_empty():
 		_separator(strategy_contents)
@@ -826,7 +852,7 @@ func _redraw_strategy() -> void:
 		var job: Dictionary = GameState.NEIGHBORHOOD.by_id(str(record["id"]))
 		var localized: String = str(job.get("title",{}).get(GameState.locale,str(record["id"])))
 		var status: String = _v08("Выполнено","Completed","已完成") if record["status"] == "completed" else _v08("Просрочено","Expired","已逾期")
-		_label(strategy_contents,"%s · %s · %d ₽" % [localized,status,int(record["reward"])],14)
+		_label(strategy_contents,"%s · %s · %d кр." % [localized,status,int(record["reward"])],14)
 	if int(d.get("contracts_completed",0)) > 0:
 		var quality_avg: int = roundi(float(d.get("cargo_quality_sum",100*int(d["contracts_completed"])))/float(d["contracts_completed"]))
 		_label(strategy_contents,_v08("КАЧЕСТВО ДОСТАВОК", "DELIVERY QUALITY", "配送货物完好率") + "  ·  %d%%" % quality_avg,15)
@@ -845,8 +871,8 @@ func _redraw_strategy() -> void:
 		var trade_row := HBoxContainer.new()
 		strategy_contents.add_child(trade_row)
 		_label(trade_row,t(product)+"  ·  "+str(stocks.get(product,0)),16)
-		_button(trade_row,_v08("Купить","Buy","买入")+"  %d ₽" % int(buy_quote["total"]),Callable(self,"_do_trade").bind(product,true),not bool(buy_quote["allowed"]))
-		_button(trade_row,_v08("Продать","Sell","卖出")+"  %d ₽" % int(sell_quote["total"]),Callable(self,"_do_trade").bind(product,false),not bool(sell_quote["allowed"]))
+		_button(trade_row,_v08("Купить","Buy","买入")+"  %d кр." % int(buy_quote["total"]),Callable(self,"_do_trade").bind(product,true),not bool(buy_quote["allowed"]))
+		_button(trade_row,_v08("Продать","Sell","卖出")+"  %d кр." % int(sell_quote["total"]),Callable(self,"_do_trade").bind(product,false),not bool(sell_quote["allowed"]))
 	_separator(strategy_contents)
 	_label(strategy_contents,_v08("АВТОПАРК · КУПИТЬ / ВЫБРАТЬ","GARAGE · BUY / SELECT","车库 · 购买 / 选择"),20,true)
 	for vehicle_id in GameState.VEHICLE_CATALOG.ORDER:
@@ -862,7 +888,7 @@ func _redraw_strategy() -> void:
 		elif owned:
 			vehicle_label += "  ·  " + _v08("ВЫБРАТЬ","SELECT","选择")
 		else:
-			vehicle_label += "  ·  %d ₽  /  ★ %d" % [int(profile["price"]),int(profile["reputation"])]
+			vehicle_label += "  ·  %d кр.  /  ★ %d" % [int(profile["price"]),int(profile["reputation"])]
 		_button(strategy_contents,vehicle_label,Callable(self,"_do_vehicle").bind(vehicle_id),selected or (not owned and (int(d["wallet"]) < int(profile["price"]) or int(d["reputation"]) < int(profile["reputation"]))))
 	_separator(strategy_contents)
 	_label(strategy_contents,t("district"),20,true)
@@ -876,7 +902,7 @@ func _redraw_strategy() -> void:
 		if GameState.BUILDINGS[id]["district"] != d["selected"]: continue
 		var level: int = d["buildings"][id]
 		var price: int = GameState.get_build_cost(id)
-		var desc := "%s   Lv. %d/4   ·   %d ₽" % [translated(BUILDS[id]),level,price]
+		var desc := "%s   Lv. %d/4   ·   %d кр." % [translated(BUILDS[id]),level,price]
 		_button(strategy_contents,desc,Callable(self,"_do_build").bind(id),level>=4 or d["treasury"]<price or d["actions_left"]<1)
 	_separator(strategy_contents)
 	_label(strategy_contents,_v08("ГОРОДСКИЕ ИНИЦИАТИВЫ · СРОК / РЕСУРСЫ", "CITY INITIATIVES · TIME / RESOURCES", "城市发展项目 · 工期与资源"),20,true)
@@ -891,7 +917,7 @@ func _redraw_strategy() -> void:
 			var remaining: int = int(d["projects_active"][project_id]["remaining"])
 			_label(strategy_contents,title_text + "  ·  " + str(remaining) + " " + _v08("тактов", "turns", "回合"),16)
 		else:
-			var detail: String = "%s  ·  %d ₽  ·  %d M / %d G  ·  %d t" % [title_text,int(project["cost"]),int(project["materials"]),int(project["goods"]),int(project["turns"])]
+			var detail: String = "%s  ·  %d кр.  ·  %d M / %d G  ·  %d t" % [title_text,int(project["cost"]),int(project["materials"]),int(project["goods"]),int(project["turns"])]
 			_button(strategy_contents,detail,Callable(self,"_do_initiative").bind(project_id),not GameState.INITIATIVES.can_start(d,project_id))
 	_separator(strategy_contents)
 	_label(strategy_contents,t("research"),20,true)
@@ -901,7 +927,7 @@ func _redraw_strategy() -> void:
 	for id in GameState.RESEARCH_ORDER:
 		var tech: Dictionary = GameState.TECH[id]
 		var checked: bool = d["technologies"][id]
-		var desc := translated(TECH_NAMES[id]) + ("  ✓" if checked else "  %d⚛ / %d ₽" % [tech["science"],tech["cost"]])
+		var desc := translated(TECH_NAMES[id]) + ("  ✓" if checked else "  %d⚛ / %d кр." % [tech["science"],tech["cost"]])
 		var available: bool = not checked and d["science"] >= tech["science"] and d["treasury"] >= tech["cost"] and d["actions_left"] > 0
 		for dep in tech["requires"]:
 			available = available and d["technologies"][dep]
@@ -923,18 +949,18 @@ func _redraw_strategy() -> void:
 	for id in GameState.BUSINESSES:
 		var company: Dictionary = GameState.BUSINESSES[id]
 		var owned: bool = d["businesses"][id]
-		var desc := "%s  ·  %d ₽ / %s  ·  %d ₽" % [translated(BUSINESS_NAMES[id]),company["income"],t("turn"),company["cost"]]
+		var desc := "%s  ·  %d кр. / %s  ·  %d кр." % [translated(BUSINESS_NAMES[id]),company["income"],t("turn"),company["cost"]]
 		_button(strategy_contents,desc + ("  ✓ " + t("owned") if owned else ""),Callable(self,"_buy_business").bind(id),owned or d["wallet"]<company["cost"])
 	_separator(strategy_contents)
 	_label(strategy_contents,estate_text("title"),20,true)
 	var estate_result: Dictionary = forecast["real_estate"]
-	_label(strategy_contents,"%s: %+d ₽  ·  %s: %d%%" % [estate_text("rent"),estate_result["net"],estate_text("occupancy"),estate_result["mean_occupancy"]],16)
+	_label(strategy_contents,"%s: %+d кр.  ·  %s: %d%%" % [estate_text("rent"),estate_result["net"],estate_text("occupancy"),estate_result["mean_occupancy"]],16)
 	for property_id in GameState.REAL_ESTATE.PROPERTY_IDS:
 		var level: int = int(d["properties"].get(property_id,0))
 		var cost: int = GameState.property_cost(property_id)
 		var label_text: String = "%s   ·   %s %d/3" % [property_name(property_id),estate_text("level"),level]
 		if level < GameState.REAL_ESTATE.MAX_LEVEL:
-			label_text += "   ·   %s %d ₽" % [estate_text("acquire") if level == 0 else estate_text("renovate"),cost]
+			label_text += "   ·   %s %d кр." % [estate_text("acquire") if level == 0 else estate_text("renovate"),cost]
 		else:
 			label_text += "   ✓ " + t("max")
 		_button(strategy_contents,label_text,Callable(self,"_property_transaction").bind(property_id),cost < 0 or int(d["wallet"]) < cost)
