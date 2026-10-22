@@ -22,7 +22,7 @@ test('pilot landing, local console and research engine ship as static files',()=
  for(const file of ['pilot/index.html','pilot/report.html','pilot/landing.js','pilot/report.js','pilot/pilot.css','pilot-metrics.js'])
    assert.ok(sw.includes("'/games/inherit/"+file+"'"),file);
  for(const name of ['pilot/landing.js','pilot/report.js','pilot/pilot.css'])assert.ok(html.includes('./'+name.split('/').pop())||report.includes('./'+name.split('/').pop()),name);
- assert.match(sw,/inherit-shell-v26/);
+ assert.match(sw,/inherit-shell-v27/);
  assert.match(sw,/mjs\|js\|css/);
  assert.ok(sw.includes("path.endsWith('/report.html')"));
  assert.ok(sw.includes("'/games/inherit/pilot/report.html'"));
