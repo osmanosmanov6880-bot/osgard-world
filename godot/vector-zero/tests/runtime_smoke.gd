@@ -31,7 +31,11 @@ func _run() -> void:
     _assert_case(game.get_node_or_null("RussianGameHUD/GameControls") != null, "RU HUD exists")
     _assert_case(game.state == "aiming", "game ready on initial scene")
     _assert_case(game.launch_button.text.contains("ЗАПУСТИТЬ"), "Russian launch CTA")
-    _assert_case(game.trajectory_root.get_child_count() > 8, "3D trajectory preview built")
+    var preview := game.trajectory_root.get_node_or_null("FlightForecast") as MultiMeshInstance3D
+    _assert_case(preview != null, "3D forecast renderer exists")
+    _assert_case(preview != null and preview.multimesh.instance_count > 8, "forecast batches segments into one draw group")
+    _assert_case(game.trajectory_root.get_child_count() == 1, "prediction does not spawn hundreds of scene nodes")
+
 
     var origin := Vector3(-8.8, 2.3, 0.0)
     var a: Dictionary = Sim.step(origin, Vector3(11.0, 7.0, 0.0), Vector3(0.0, 5.0, 0.0), 1, 7.0, Sim.STEP)
@@ -58,6 +62,11 @@ func _run() -> void:
                 break
         _assert_case(solvable, "stage %s has a working solution" % (stage + 1))
 
+    game._load_stage(2)
+    game.launch_angle = 70.0
+    game._draw_preview()
+    var extreme := game.trajectory_root.get_node_or_null("FlightForecast") as MultiMeshInstance3D
+    _assert_case(extreme != null and extreme.multimesh.instance_count > 0, "extreme shot preview has valid segments")
     game._load_stage(0)
     game._toggle_polarity()
     _assert_case(game.polarity == -1, "Q toggles polarity")

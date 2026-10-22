@@ -39,8 +39,20 @@ jobs:
           mkdir -p godot/vector-zero/.build-web
           godot --headless --path godot/vector-zero --export-release Web "$GITHUB_WORKSPACE/godot/vector-zero/.build-web/index.html"
           test -s godot/vector-zero/.build-web/index.html
-          test -n "$(find godot/vector-zero/.build-web -maxdepth 1 -name '*.wasm' -size +100k -print -quit)"
-          test -n "$(find godot/vector-zero/.build-web -maxdepth 1 -name '*.pck' -size +100k -print -quit)"
+          ls -lah godot/vector-zero/.build-web/
+          python3 - <<'PYCODE'
+          from pathlib import Path
+          root = Path('godot/vector-zero/.build-web')
+          for ext in ('.html', '.js', '.wasm', '.pck'):
+              matching = sorted(root.glob('*' + ext))
+              assert matching, f'Missing Godot Web export extension: {ext}'
+              for file in matching:
+                  assert file.stat().st_size > 0, f'Empty Web export file: {file}'
+                  print(f'PASS {file.name}: {file.stat().st_size:,} bytes')
+          wasm = next(root.glob('*.wasm'))
+          assert wasm.open('rb').read(4) == b'\x00asm', 'WebAssembly magic mismatch'
+          assert next(root.glob('*.pck')).stat().st_size >= 1024, 'Godot PCK too small'
+          PYCODE
       - name: Publish playable build as CI artifact (not production)
         uses: actions/upload-artifact@v4
         with:

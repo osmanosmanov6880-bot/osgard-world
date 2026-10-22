@@ -26,6 +26,9 @@ for text in ["_build_world", "_build_environment", "_build_game_objects", "_buil
 assert 'Sim.step(' in world and 'Sim.simulate(' in world, 'prediction physics must equal gameplay physics'
 assert all(x in world for x in ["Доставь ядро в приёмник", "СЛЕДУЮЩЕЕ ИСПЫТАНИЕ", "ПОЛЯРНОСТЬ"] if x != "ПОЛЯРНОСТЬ")
 assert "Godot 4.7.2" in checks["CI"].read_text()
+assert "FlightForecast" in world and "MultiMeshInstance3D" in world, "batched trajectory must be present"
+assert "direction.is_finite()" in world and "length < 0.001" in world, "degenerate segments guard"
+assert "*.pck" not in checks["CI"].read_text() or "size +100k" not in checks["CI"].read_text(), "Web exporter must allow small valid PCK"
 assert "game._physics_process" in tests, 'runtime must test real integrator'
 
 # Catch common accidental write errors in the GDScript indentation structure.

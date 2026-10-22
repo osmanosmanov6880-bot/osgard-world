@@ -49,8 +49,11 @@ var info_label: Label
 var launch_button: Button
 var polarity_button: Button
 var angle_label: Label
+var steel_texture: Texture2D
+var material_cache: Dictionary = {}
 
 func _ready() -> void:
+    steel_texture = _create_brushed_steel_texture()
     _build_world()
     _build_environment()
     _build_game_objects()
@@ -145,7 +148,11 @@ func _build_environment() -> void:
     # Layered science-fiction machinery, with material response and silhouette.
     for x in [-10.3, -6.3, 5.2, 10.3]:
         var chassis := _box(self, "Cryopump", Vector3(1.5, 3.2, 1.6), Vector3(x, 1.6, -5.8), STEEL, 0.92, 0.24)
-        _box(self, "GlassReservoir", Vector3(1.2, 1.8, 0.1), Vector3(x, 1.7, -4.9), Color(0.12, 0.35, 0.45), 0.54, 0.13, 0.55)
+        var glass := _box(self, "GlassReservoir", Vector3(1.2, 1.8, 0.1), Vector3(x, 1.7, -4.9), Color(0.12, 0.35, 0.45), 0.54, 0.13, 0.55)
+        var glass_material := (glass.material_override as StandardMaterial3D).duplicate() as StandardMaterial3D
+        glass_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+        glass_material.albedo_color.a = 0.58
+        glass.material_override = glass_material
         _box(self, "CryopumpCap", Vector3(1.75, 0.22, 1.9), Vector3(x, 3.22, -5.8), Color(0.43, 0.5, 0.56), 0.88, 0.23)
         for yy in [0.7, 1.0, 2.5]:
             _box(chassis, "Readout", Vector3(0.03, 0.06, 0.25), Vector3(-0.74, (yy - 1.6), 0.0), MINT, 0.08, 0.12, 2.0)
@@ -517,14 +524,36 @@ func _draw_preview() -> void:
     _clear_preview()
     var result: Dictionary = Sim.simulate(launch_origin, _launch_velocity(), magnet_position, polarity, field_strength, target_position, 420, 5)
     var points: Array[Vector3] = result["samples"]
+    # Single GPU draw group instead of hundreds of heavyweight MeshInstance3D nodes.
+    # Degenerate samples (at the receiver/floor) must never produce a zero-vector quaternion.
+    var transforms: Array[Transform3D] = []
     for i in range(1, points.size()):
         if i % 3 == 0:
             continue
-        _beam(trajectory_root, points[i - 1], points[i], 0.038, CYAN, 2.0)
-    if result["outcome"] == "reached":
-        info_label.text = "Прогноз: успешное попадание"
-    else:
-        info_label.text = "Прогноз: настрой угол или полярность"
+        var direction: Vector3 = points[i] - points[i - 1]
+        var length: float = direction.length()
+        if length < 0.001 or not direction.is_finite():
+            continue
+        var frame := Basis(Quaternion(Vector3.UP, direction / length))
+        transforms.append(Transform3D(frame.scaled(Vector3(0.040, length, 0.040)), (points[i] + points[i - 1]) * 0.5))
+    if not transforms.is_empty():
+        var segment_mesh := CylinderMesh.new()
+        segment_mesh.top_radius = 1.0
+        segment_mesh.bottom_radius = 1.0
+        segment_mesh.height = 1.0
+        segment_mesh.radial_segments = 8
+        var bundle := MultiMesh.new()
+        bundle.transform_format = MultiMesh.TRANSFORM_3D
+        bundle.mesh = segment_mesh
+        bundle.instance_count = transforms.size()
+        for j in range(transforms.size()):
+            bundle.set_instance_transform(j, transforms[j])
+        var path_renderer := MultiMeshInstance3D.new()
+        path_renderer.name = "FlightForecast"
+        path_renderer.multimesh = bundle
+        path_renderer.material_override = _standard(CYAN, 0.08, 0.14, 2.6)
+        trajectory_root.add_child(path_renderer)
+    info_label.text = "Прогноз: успешное попадание" if result["outcome"] == "reached" else "Прогноз: настрой угол или полярность"
 
 func _clear_preview() -> void:
     for child in trajectory_root.get_children():
@@ -573,15 +602,39 @@ func _button(content: String, ink: Color, background: Color) -> Button:
     btn.add_theme_stylebox_override("focus", hover)
     return btn
 
+func _create_brushed_steel_texture() -> ImageTexture:
+    # Generated original microtexture: no external AAA game assets are copied.
+    # Subtle grain and horizontal brushed-metal tooling marks catch specular light.
+    var image := Image.create(128, 128, false, Image.FORMAT_RGBA8)
+    var noise := FastNoiseLite.new()
+    noise.seed = 270106
+    noise.frequency = 0.045
+    for y in range(128):
+        for x in range(128):
+            var grain: float = noise.get_noise_2d(float(x), float(y))
+            var stroke: float = sin(float(y) * 1.3 + grain * 1.7) * 0.045
+            var scratch: float = -0.12 if (x * 37 + y * 19) % 263 < 2 else 0.0
+            var shine: float = clampf(0.9 + grain * 0.10 + stroke + scratch, 0.60, 1.0)
+            image.set_pixel(x, y, Color(shine, shine * 0.99, shine * 0.97, 1.0))
+    image.generate_mipmaps()
+    return ImageTexture.create_from_image(image)
+
 func _standard(albedo: Color, metal: float, rough: float, glow: float = 0.0) -> StandardMaterial3D:
+    var key := "%s|%.3f|%.3f|%.3f" % [albedo.to_html(), metal, rough, glow]
+    if material_cache.has(key):
+        return material_cache[key] as StandardMaterial3D
     var mat := StandardMaterial3D.new()
     mat.albedo_color = albedo
     mat.metallic = metal
     mat.roughness = rough
+    if metal >= 0.7 and glow <= 0.0 and steel_texture != null:
+        mat.albedo_texture = steel_texture
+        mat.uv1_scale = Vector3(2.0, 2.0, 1.0)
     if glow > 0.0:
         mat.emission_enabled = true
         mat.emission = albedo
         mat.emission_energy_multiplier = glow
+    material_cache[key] = mat
     return mat
 
 func _box(parent: Node3D, item_name: String, size: Vector3, pos: Vector3, albedo: Color, metal: float = 0.0, rough: float = 0.5, glow: float = 0.0) -> MeshInstance3D:
@@ -633,13 +686,6 @@ func _cylinder(parent: Node3D, item_name: String, pos: Vector3, radius: float, h
     node.material_override = _standard(albedo, metal, rough)
     node.position = pos
     parent.add_child(node)
-    return node
-
-func _beam(parent: Node3D, from: Vector3, to: Vector3, thickness: float, albedo: Color, glow: float) -> MeshInstance3D:
-    var delta: Vector3 = to - from
-    var node := _cylinder(parent, "TrajectorySegment", (from + to) * 0.5, thickness, delta.length(), albedo, 0.3, 0.15)
-    node.material_override = _standard(albedo, 0.08, 0.14, glow)
-    node.quaternion = Quaternion(Vector3.UP, delta.normalized())
     return node
 
 func _omni(pos: Vector3, color: Color, energy: float, light_range: float) -> OmniLight3D:
