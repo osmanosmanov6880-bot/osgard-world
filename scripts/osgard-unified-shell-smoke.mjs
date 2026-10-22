@@ -62,7 +62,10 @@ assert.ok(palette.includes('navigateBrowserUrl(command.href)') && palette.includ
 assert.ok(palette.includes("document.body.style.overflow = before") && palette.includes("document.removeEventListener('keydown'") &&
   palette.includes('previousInert') && palette.includes('observer?.disconnect()') &&
   palette.includes('element.inert = inert'), 'Modal must release scroll, listeners and previous background inert state')
-assert.ok(page.includes("<OsgardRouteSkeleton theme={theme} />"), 'Deferred sections must render the honest loading shell')
+assert.ok(page.includes("<OsgardRouteSkeleton theme={theme} path={path} />") &&
+  loading.includes("data-skeleton-area={area}") &&
+  ['academy', 'development', 'lectures', 'entertainment'].every(route => loading.includes(route)),
+  'Lazy routes must show honest product-specific loading without invented data')
 assert.ok(loading.includes('aria-busy="true"') && loading.includes('role="status"') && loading.includes('min-height') === false, 'Loading state must be semantic and CSS-driven')
 assert.ok(navCss.includes('@media(max-width:720px)') && navCss.includes('max-height:100dvh'), 'Navigator must fit the mobile viewport')
 assert.ok(loadCss.includes('min-height:clamp') && loadCss.includes('prefers-reduced-motion:reduce'), 'Loading state must reserve layout and respect reduced motion')
