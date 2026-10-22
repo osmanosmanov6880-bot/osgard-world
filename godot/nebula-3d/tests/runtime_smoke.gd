@@ -52,6 +52,10 @@ func _run() -> void:
     if not check(megadocks.crane_count == 12, "Twelve detailed cargo cranes missing"):return
     if not check(megadocks.panels_instanced >= 1600, "PBR deck tiles not installed"):return
     if not check(megadocks.structural_instances >= 2100, "R6 GPU-instanced docking details missing"):return
+    var skyline_r6 = world.get_node_or_null("SculpturalSkylineR6")
+    if not check(skyline_r6 != null, "R6 sculptural skyline missing"):return
+    if not check(skyline_r6.landmark_count == 6, "Six 3D arcologies required"):return
+    if not check(skyline_r6.facade_fins >= 1000, "3D tower mullions insufficient"):return
     if not check(is_instance_valid(world.hud_objective),"Cinematic HUD objective missing"):return
     if not check(world.drones.size() >= 22, "Traffic simulation missing"):return
     if not check(is_instance_valid(world.radar), "Mission radar missing"):return
