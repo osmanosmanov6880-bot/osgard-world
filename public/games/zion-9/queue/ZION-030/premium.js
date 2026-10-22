@@ -43,6 +43,8 @@ const advice=element('div','premium-map-advice','<span>◉ ТЕПЛОВАЯ КА
 stage.append(advice);
 const overlay=element('div','premium-hotspots','');
 stage.append(overlay);
+const spotPrompt=element('div','premium-spot-prompt','НАЖМИ НА КРАСНУЮ МЕТКУ, ЧТОБЫ ВЫБРАТЬ ЦЕЛЬ');
+stage.append(spotPrompt);
 const legend=element('div','premium-legend','<small>УСЛОВНАЯ ТЕМПЕРАТУРА ПОВЕРХНОСТИ</small><div class="temperature-gradient"></div><div class="legend-values"><b>30°C</b><b>60°C</b></div>');
 stage.append(legend);
 const zoomCtrl=element('div','premium-zoom','<button type="button" id="premiumZoomIn" aria-label="Увеличить">＋</button><button type="button" id="premiumZoomOut" aria-label="Уменьшить">−</button><button type="button" id="premiumZoomReset" aria-label="Вернуть камеру">⌖</button>');
@@ -75,6 +77,7 @@ const foot=panel.querySelector('.footnote');if(foot)foot.textContent='Игра �
 const instructions=document.querySelector('#board-controls-help');if(instructions)instructions.textContent='Стрелки — выбор клетки, Enter — размещение, 1–3 — выбор модуля, R — заново. Красные точки: X −4 / Z −3, X 2 / Z 2, X 4 / Z −2.';
 const placeOriginal=$('place-keyboard');if(placeOriginal)placeOriginal.textContent='Разместить здесь';
 const state={mode:'3d',zoom:1,hover:null,cell:{x:0,z:0},scale:1,w:900,h:560,refresh:false};
+root.dataset.premiumVersion='23';
 const S=(x,z,h=0)=>{
  if(state.mode==='map'){const u=Math.min(state.w-30,state.h-65)*state.zoom/15;return {x:state.w/2+x*u,y:state.h*.49+z*u-h*u};}
  return {x:state.w*.5+(x-z)*state.scale*1.1,y:state.h*.49+(x+z)*state.scale*.52-h*state.scale*1.63};
@@ -119,8 +122,12 @@ function drawBuilding(x,z){
  const north=isHot?'#765046':'#2d4155',east=isHot?'#4f3435':'#223448';
  poly([roof[3],roof[2],base[2],base[3]],north,'#17293b',.5);
  poly([roof[1],roof[2],base[2],base[1]],east,'#162a3a',.5);
- poly(roof,isHot?'#5f5555':'#475c6d','#5e7987',.6);
+ poly(roof,isHot?'#786361':'#475c6d','#5e7987',.6);
  const inset=cellCorners(x,z,height+.045,width*.79);poly(inset,'#1a3348','#568497',.6);
+ if(b>.67){const up=S(x-.15,z-.12,height+.08),down=S(x+.19,z+.1,height+.08);
+  ctx.strokeStyle='#9dbbcb';ctx.lineWidth=Math.max(1,state.scale*.09);
+  ctx.strokeRect(Math.min(up.x,down.x),Math.min(up.y,down.y),Math.max(3,Math.abs(up.x-down.x)),Math.max(3,Math.abs(up.y-down.y)));
+ }
  for(let floor=0.32;floor<height-.16;floor+=.43){
   for(const fraction of [-.59,-.19,.21,.61]){
    const u=(fraction+1)/2;
@@ -142,14 +149,21 @@ function paint(){
  const s=game()?.state?.()||{placed:[],score:0,selected:'tree'};
  glowing(w*.5,h*.41,Math.max(w,h)*.48,'rgba(35,108,142,.24)');
  const floor=cellCorners(0,0,-.07,7.55);poly(floor,'#091b29','#23506a',2);
+ // The heat field is a live, game-state-dependent glow underneath real buildings.
+ for(const p of hot){const c=S(p.x,p.z,-.04),cooled=coverage(s,p);
+  glowing(c.x,c.y,Math.max(54,state.scale*5.7),cooled?'rgba(17,239,210,.27)':'rgba(255,74,28,.32)');
+  if(!cooled)glowing(c.x,c.y,Math.max(28,state.scale*2.9),'rgba(255,139,60,.26)');
+ }
  for(let depth=-14;depth<=14;depth++){
   for(let x=-7;x<=7;x++){const z=depth-x;if(z< -7||z>7)continue;
    const dist=Math.min(...hot.map(p=>Math.hypot(p.x-x,p.z-z)));
    const isCool=hot.some(p=>coverage(s,p)&&Math.hypot(p.x-x,p.z-z)<2.6);
    const heat=dist<3.5&&!isCool;
    let c=heat?(dist<1.5?'#773f32':'#443740'):isCool?'#105b62':'#152d3e';
-   if((x+7)%3===0||(z+7)%3===0)c=heat?'#92523f':isCool?'#13727a':'#1b3d51';
+   const isRoad=(x+7)%3===0||(z+7)%3===0;
+   if(isRoad)c=heat?'#92523f':isCool?'#13727a':'#1b3d51';
    poly(cellCorners(x,z,.001,.49),c,'rgba(76,128,151,.22)',.5);
+   if(isRoad&&(x+z)%2===0){const lane=S(x,z,.008);circ(lane.x,lane.y,Math.max(.9,state.scale*.065),heat?'#ffb17e':'#83bed1');}
    if((x+z)%3===0){const center=S(x,z,.02);circ(center.x,center.y,Math.max(.65,state.scale*.05),'rgba(91,164,192,.45)');}
   }
   for(let x=-7;x<=7;x++){const z=depth-x;if(z< -7||z>7)continue;
@@ -180,7 +194,9 @@ function paint(){
  });
 }
 for(const [i,p] of hot.entries()){
- const marker=element('div','premium-hot-marker','<strong>'+p.temp+'°C</strong><i></i>');
+ const marker=element('button','premium-hot-marker','<strong>'+p.temp+'°C</strong><i aria-hidden="true"></i>');
+ marker.type='button';marker.setAttribute('aria-label','Выбрать горячую зону '+(i+1));
+ marker.addEventListener('click',()=>{select(p.x,p.z);canvas.focus();});
  overlay.append(marker);
 }
 function refresh(){
@@ -188,6 +204,13 @@ function refresh(){
  $('premiumProgress').textContent=s.score+' / 3';$('premiumHeat').textContent=[56,47,39,30][s.score]+'°C';
  $('premiumLeft').textContent=String(Math.max(0,3-s.placed.length));$('premiumZones').textContent=s.score+' / 3';
  $('premiumRing').style.setProperty('--progress',String(s.score/3*100)+'%');
+ spotPrompt.textContent=s.won?'✓ ГОРОД ОХЛАЖДЁН · МИССИЯ ВЫПОЛНЕНА':s.lost?'ПОПРОБУЙ ЕЩЁ РАЗ · НАЖМИ «ЗАНОВО»':s.score?'ОСТАЛОСЬ ОХЛАДИТЬ '+(3-s.score)+' ЗОНЫ · ВЫБЕРИ КРАСНУЮ МЕТКУ':'НАЖМИ НА КРАСНУЮ МЕТКУ И ВЫБЕРИ МЕСТО';
+ for(const [i,marker] of overlay.querySelectorAll('.premium-hot-marker').entries()){
+  const zone=hot[i],covered=coverage(s,zone);
+  marker.setAttribute('aria-label',(covered?'Охлаждена зона ':'Выбрать горячую зону ')+(i+1)+(covered?'':', '+zone.temp+' градусов'));
+  marker.classList.toggle('selected',!covered&&state.cell.x===zone.x&&state.cell.z===zone.z);
+  marker.disabled=covered||s.won||s.lost;
+ }
  $('premiumPlace').disabled=!s.ready||s.won||s.lost;
  for(const button of toolList.querySelectorAll('.module'))button.setAttribute('aria-pressed',String(button.dataset.type===s.selected));
  $('premiumStatusTitle').textContent=s.won?'МИССИЯ ВЫПОЛНЕНА':s.lost?'ПОПРОБУЙ ЕЩЁ РАЗ':s.placed.length?'ПРОДОЛЖАЙ ОХЛАЖДЕНИЕ':'ТВОЙ ПЕРВЫЙ ХОД';
@@ -212,8 +235,12 @@ function place(){
  b.place(state.cell.x,state.cell.z,b.state().selected);refresh();
 }
 canvas.addEventListener('pointerdown',e=>{const p=at(e.clientX,e.clientY);select(p.x,p.z);canvas.focus();});
-canvas.addEventListener('pointermove',e=>{if(e.pointerType==='touch')return;state.hover=at(e.clientX,e.clientY);paint();});
-canvas.addEventListener('pointerleave',()=>{state.hover=null;paint();});
+let hoverFrame=0;
+const scheduleHoverPaint=()=>{if(!hoverFrame)hoverFrame=requestAnimationFrame(()=>{hoverFrame=0;paint();});};
+canvas.addEventListener('pointermove',e=>{if(e.pointerType==='touch')return;const p=at(e.clientX,e.clientY);
+ if(state.hover&&p.x===state.hover.x&&p.z===state.hover.z)return;
+ state.hover=p;scheduleHoverPaint();});
+canvas.addEventListener('pointerleave',()=>{state.hover=null;scheduleHoverPaint();});
 canvas.addEventListener('keydown',e=>{
  const k=e.key.toLowerCase();
  if(k==='arrowleft')state.cell.x=Math.max(-7,state.cell.x-1);

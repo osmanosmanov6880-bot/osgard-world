@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="540" viewBox="0 0 1600 540" role="img" aria-label="Illustrated evening panorama of Athens">
+<defs>
+ <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#061326"/><stop offset=".38" stop-color="#193351"/><stop offset=".69" stop-color="#7c5060"/><stop offset=".83" stop-color="#bd7354"/><stop offset="1" stop-color="#13283c"/></linearGradient>
+ <linearGradient id="hill" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#364459"/><stop offset="1" stop-color="#111f36"/></linearGradient>
+ <linearGradient id="build" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#29445c"/><stop offset="1" stop-color="#0b1729"/></linearGradient>
+ <radialGradient id="glow"><stop stop-color="#ffb35a" stop-opacity=".5"/><stop offset="1" stop-color="#ffb35a" stop-opacity="0"/></radialGradient>
+ <pattern id="lights" width="17" height="17" patternUnits="userSpaceOnUse"><rect x="3" y="4" width="2" height="3" fill="#f8bc76" opacity=".55"/><rect x="12" y="12" width="2" height="2" fill="#ffd8a0" opacity=".27"/></pattern>
+</defs>
+<rect width="1600" height="540" fill="url(#sky)"/>
+<ellipse cx="900" cy="318" rx="520" ry="210" fill="url(#glow)"/>
+<g fill="#c5e6ff" opacity=".57"><circle cx="62" cy="41" r="1"/><circle cx="310" cy="81" r="1.2"/><circle cx="451" cy="33" r="1"/><circle cx="681" cy="73" r="1"/><circle cx="1089" cy="56" r="1.4"/><circle cx="1215" cy="96" r="1"/><circle cx="1464" cy="39" r="1"/><circle cx="1548" cy="118" r="1"/></g>
+<path d="M0 280Q160 257 288 285T590 256Q712 221 807 249T1090 259Q1260 282 1379 251T1600 277V540H0Z" fill="#203349"/>
+<path d="M0 338 114 327 158 295 258 320 390 301 468 322 562 279 651 273 714 237 774 228 830 250 940 281 1043 316 1144 294 1240 276 1360 308 1490 284 1600 299V540H0Z" fill="url(#hill)"/>
+<g opacity=".78"><path d="M0 371V342h26v-37h36v23h20v-48h37v45h22v-33h46v37h22v-64h36v63h30v-28h29v23h23v-46h49v62h20v-29h36v23h18v-43h35v43h44v-53h38v29h29v-35h37v49h29v-37h40v37h32v-27h29v47h24v-36h39v53h46v-44h37v30h42v-57h35v43h28v-20h34v33h29v-38h43v49h31v-44h37v31h21v-44h43v38h31v-27h47v32h43v-33h31v44h42v-38h37v29h44v-26h36v29h36V540H0Z" fill="url(#build)"/><path d="M0 371V342h26v-37h36v23h20v-48h37v45h22v-33h46v37h22v-64h36v63h30v-28h29v23h23v-46h49v62h20v-29h36v23h18v-43h35v43h44v-53h38v29h29v-35h37v49h29v-37h40v37h32v-27h29v47h24v-36h39v53h46v-44h37v30h42v-57h35v43h28v-20h34v33h29v-38h43v49h31v-44h37v31h21v-44h43v38h31v-27h47v32h43v-33h31v44h42v-38h37v29h44v-26h36v29h36V540H0Z" fill="url(#lights)"/></g>
+<g transform="translate(718 179)" stroke-linejoin="round">
+<ellipse cx="109" cy="124" rx="176" ry="37" fill="#c88a62" opacity=".32"/>
+<path d="M-32 125Q48 85 121 79L253 120 245 151-47 145Z" fill="#746565"/>
+<rect x="37" y="21" width="177" height="78" fill="#9f9988"/>
+<path d="M29 22 58 5 196 5 223 22Z" fill="#d3b799"/>
+<path d="M31 24h192M33 96h190" stroke="#f0bc80" stroke-width="6"/>
+<g fill="#cdb79c" stroke="#534b4c" stroke-width="2"><rect x="47" y="26" width="16" height="66"/><rect x="73" y="26" width="16" height="66"/><rect x="99" y="26" width="16" height="66"/><rect x="125" y="26" width="16" height="66"/><rect x="151" y="26" width="16" height="66"/><rect x="177" y="26" width="16" height="66"/></g>
+<path d="M26 17 53 1 200 1 230 17" fill="none" stroke="#ffe0ac" stroke-width="4"/>
+</g>
+<path d="M0 424Q144 410 255 429T489 402Q676 378 805 413T1080 395Q1309 386 1600 409V540H0Z" fill="#13283a" opacity=".93"/>
+<g fill="url(#lights)" opacity=".45"><rect y="357" width="1600" height="183"/></g>
+<g fill="#efb778" opacity=".47"><circle cx="219" cy="391" r="1.5"/><circle cx="332" cy="419" r="1.7"/><circle cx="512" cy="400" r="1.5"/><circle cx="639" cy="372" r="1.3"/><circle cx="954" cy="395" r="1.4"/><circle cx="1180" cy="414" r="1.6"/><circle cx="1386" cy="394" r="1.7"/></g>
+<path d="M0 468q420-39 789-14T1600 450V540H0Z" fill="#091727" opacity=".88"/>
+</svg>
