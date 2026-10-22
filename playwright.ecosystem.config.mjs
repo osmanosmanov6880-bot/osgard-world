@@ -2,7 +2,7 @@ import { defineConfig } from '@playwright/test'
 
 export default defineConfig({
   testDir: './scripts',
-  testMatch: ['unified-six-surfaces.spec.mjs', 'osgard-quick-nav.spec.mjs', 'academy-cockpit-browser.spec.mjs', 'ecosystem-browser.spec.mjs', 'ecosystem-mobile-lab.spec.mjs', 'program-enrollment-browser.spec.mjs', 'remix-console-browser.spec.mjs', 'remix-owned-browser.spec.mjs', 'remix-invitations-browser.spec.mjs', 'inherit-account-browser.spec.mjs'],
+  testMatch: ['unified-six-surfaces.spec.mjs', 'osgard-quick-nav.spec.mjs', 'osgard-discovery-browser.spec.mjs', 'academy-cockpit-browser.spec.mjs', 'ecosystem-browser.spec.mjs', 'ecosystem-mobile-lab.spec.mjs', 'program-enrollment-browser.spec.mjs', 'remix-console-browser.spec.mjs', 'remix-owned-browser.spec.mjs', 'remix-invitations-browser.spec.mjs', 'inherit-account-browser.spec.mjs'],
   fullyParallel: true,
   workers: 2,
   retries: 1,
