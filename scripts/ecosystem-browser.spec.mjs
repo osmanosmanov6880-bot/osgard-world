@@ -2392,3 +2392,24 @@ test('INHERIT R16 gracefully falls back to fully interactive 2D when GPU context
  await expect.poll(()=>page.evaluate(()=>window.InheritGame.snapshot().objects.length)).toBe(before.objects.length+1);
  expect(errors).toEqual([]);
 });
+
+
+test('INHERIT R16 3D Atlas replay shows real past traces and restores current state unchanged',async({page})=>{
+ const errors=await prepareStandaloneGame(page);
+ await page.goto('/games/inherit/?lang=ru',{waitUntil:'domcontentloaded'});
+ const before=await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()));
+ const initial=await page.evaluate(()=>window.InheritAAA3D.getState());
+ if(initial.available){
+  const past=[{tool:'tree',x:39,y:48},{tool:'light',x:58,y:42}];
+  await page.evaluate(items=>window.InheritGame.showSnapshot(169,items),past);
+  await expect(page.locator('body')).toHaveClass(/replay-mode/);
+  await expect.poll(()=>page.evaluate(()=>window.InheritAAA3D.getState().traces)).toBe(2);
+  expect(await page.evaluate(()=>window.InheritAAA3D.getState().generation)).toBe(169);
+  expect(await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()))).toBe(before);
+  await page.evaluate(()=>window.InheritGame.returnToToday());
+  await expect(page.locator('body')).not.toHaveClass(/replay-mode/);
+  await expect.poll(()=>page.evaluate(()=>window.InheritAAA3D.getState().traces)).toBe(JSON.parse(before).objects.length);
+ }
+ expect(await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()))).toBe(before);
+ expect(errors).toEqual([]);
+});
