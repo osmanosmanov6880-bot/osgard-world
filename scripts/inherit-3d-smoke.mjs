@@ -87,7 +87,7 @@ check('Artifact Atelier has genuinely lit HD geometry and read-only controls',()
  const atelier=get('scripts/inherit-3d/artifact-atelier.mjs');
  assert.match(entry,/mountArtifactAtelier\(\{dock:/);
  for(const word of ['new THREE.WebGLRenderer','new THREE.PerspectiveCamera','new THREE.DirectionalLight',
-  "quality:'high'","makeTrace(type","new THREE.Raycaster","pointermove","aria-haspopup","dialog.showModal","aaa-atelier-close"])
+  "quality:'high'","makeTrace(type","new THREE.CylinderGeometry","pointermove","aria-haspopup","dialog.showModal","aaa-atelier-close"])
   assert.ok(atelier.includes(word),'missing 3D studio '+word);
  assert.doesNotMatch(atelier,/InheritGame\.apply\(|\.saveDraft\(|budget\s*--|fetch\s*\(/);
  assert.match(atelier,/disposeTraces\(old\)/);
