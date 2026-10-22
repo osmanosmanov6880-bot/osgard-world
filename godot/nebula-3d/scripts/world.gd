@@ -7,6 +7,7 @@ const DroneScript = preload("res://scripts/drone.gd")
 const RadarScript = preload("res://scripts/radar.gd")
 const PremiumArchitectureScript = preload("res://scripts/premium_architecture.gd")
 const ArchitecturalDetailR4Script = preload("res://scripts/architectural_detail_r4.gd")
+const CitySetDressingR5Script = preload("res://scripts/city_set_dressing_r5.gd")
 const SAVE_PATH = "user://nebula_3d_save.json"
 const SECTOR_COLORS = [Color(0.10,0.68,0.97), Color(0.64,0.35,1.0), Color(0.98,0.73,0.40), Color(1.0,0.46,0.34), Color(0.87,0.27,0.88), Color(0.24,0.92,0.88)]
 const SECTOR_NAMES = ["ПОРТ АВРОРА","НЕОНОВЫЙ КВАРТАЛ","ЦИТАДЕЛЬ","ЧЁРНЫЙ РЫНОК","РАЗЛОМ","НЕКСУС"]
@@ -77,7 +78,7 @@ func _setup_environment() -> void:
     env.background_mode = Environment.BG_SKY
     env.sky = sky
     env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
-    env.ambient_light_energy = 0.44
+    env.ambient_light_energy = 0.61
     env.reflected_light_source = Environment.REFLECTION_SOURCE_BG
     env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
     env.fog_enabled = true
@@ -89,7 +90,7 @@ func _setup_environment() -> void:
     sun.name = "OrbitalSun"
     sun.rotation_degrees = Vector3(-34.0,-52.0,0.0)
     sun.light_color = Color(1.0,0.85,0.70)
-    sun.light_energy = 1.5
+    sun.light_energy = 1.82
     sun.shadow_enabled = true
     add_child(sun)
     var fill := DirectionalLight3D.new()
@@ -192,6 +193,10 @@ func _build_city() -> void:
     architectural_detail_r4.name = "ArchitecturalDetailR4"
     add_child(architectural_detail_r4)
     architectural_detail_r4.build(tower_data, SECTOR_POSITIONS)
+    var detail_r5 := CitySetDressingR5Script.new()
+    detail_r5.name = "HighDetailCityR5"
+    add_child(detail_r5)
+    detail_r5.build(tower_data, SECTOR_POSITIONS)
     _build_starfield()
 
 func _build_sector(center: Vector3, tint: Color, name: String, index: int) -> void:
