@@ -11,6 +11,7 @@ export type OsgardCommand = Readonly<{
   href: string
   group: 'Экосистема' | 'Знания' | 'Игры' | 'Проекты'
   keywords: string
+  art?: string
 }>
 
 const baseCommands: readonly OsgardCommand[] = [
@@ -35,6 +36,7 @@ const caseCommands: readonly OsgardCommand[] = cases.map(item => ({
   label: item.name,
   description: item.type + ' · ' + item.category,
   href: item.href,
+  art: item.art,
   group: 'Проекты',
   keywords: [item.id, item.name, item.category, 'кейс', 'портфолио', 'открыть'].join(' '),
 }))
@@ -57,6 +59,7 @@ const gameCommands: readonly OsgardCommand[] = Object.entries(playGameTitles).ma
   label: title,
   description: 'Игровой мир · сведения и варианты запуска',
   href: '/play/world/' + id,
+  art: '/brand/play/' + id + '-640.webp',
   group: 'Игры',
   keywords: [id, title, gameAliases[id] || '', 'игра', 'игровой', 'мир', 'play', 'game'].join(' '),
 }))
@@ -145,4 +148,18 @@ export function rememberQuickNav(id: string): string[] {
 }
 export function clearQuickNavRecent(): void {
   try { sessionStorage.removeItem(recentKey) } catch { /* Keep the UI usable. */ }
+}
+
+/** Suggestions are drawn from the exact same safe destination registry, never
+ * injected HTML or arbitrary URLs. They are independent of private activity. */
+export function getOsgardContextSuggestions(path: string): OsgardCommand[] {
+  const clean = path.replace(/\/+$/, '') || '/'
+  const ids = clean === '/play' || clean === '/entertainment' || clean.startsWith('/play/') || clean.startsWith('/games/')
+    ? ['play', 'favorites', 'recent-games']
+    : clean === '/intelligence' || clean === '/academy' || clean === '/osa-cinema' || clean.startsWith('/learning') || clean.startsWith('/lectures')
+      ? ['academy', 'lectures', 'progress']
+      : clean === '/development' || clean.startsWith('/development/')
+        ? ['development', 'cases', 'case-tedes']
+        : ['intelligence', 'play', 'development']
+  return ids.map(id => osgardCommands.find(command => command.id === id)).filter((item): item is OsgardCommand => Boolean(item))
 }
