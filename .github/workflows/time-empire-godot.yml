@@ -73,3 +73,17 @@ jobs:
           include-hidden-files: true
           if-no-files-found: error
           retention-days: 14
+
+      - name: Archive exact native Godot sources at this validated commit
+        uses: actions/upload-artifact@v4
+        with:
+          name: time-empire-cinematic-source
+          path: |
+            godot/time-empire/project.godot
+            godot/time-empire/export_presets.cfg
+            godot/time-empire/scenes/
+            godot/time-empire/scripts/
+            godot/time-empire/tests/
+            godot/time-empire/README.md
+          if-no-files-found: error
+          retention-days: 14
