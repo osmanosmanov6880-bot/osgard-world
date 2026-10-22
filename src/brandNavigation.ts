@@ -23,7 +23,7 @@ export function globalNavigationState(path: string, theme: BrandArea, href: stri
   return undefined
 }
 
-const lessonTitles: Record<string, string> = {
+export const lessonTitles: Readonly<Record<string, string>> = {
   'intelligence-and-imitation': 'Интеллект и имитация',
   'how-language-models-work': 'Как работают языковые модели',
   'power-of-knowledge': 'Власть знаний',
