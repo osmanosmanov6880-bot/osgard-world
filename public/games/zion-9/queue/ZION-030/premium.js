@@ -47,6 +47,11 @@ stage.append(overlay);
 const spotPrompt=element('div','premium-spot-prompt','НАЖМИ НА КРАСНУЮ МЕТКУ, ЧТОБЫ ВЫБРАТЬ ЦЕЛЬ');
 stage.append(spotPrompt);
 const selectionGuide=element('div','premium-selection-guide','<strong id="premiumSelectionTitle">ТВОЙ СЛЕДУЮЩИЙ ШАГ</strong><span id="premiumSelectionText">Нажми на красный маркер</span>');selectionGuide.setAttribute('aria-live','polite');stage.append(selectionGuide);
+const mobilePlace=element('button','premium-mobile-place','⌖ ВЫБЕРИ ГОРЯЧУЮ ЗОНУ');
+mobilePlace.id='premiumMobilePlace';mobilePlace.type='button';mobilePlace.disabled=true;
+mobilePlace.setAttribute('aria-label','Выбери место охлаждения на карте');stage.append(mobilePlace);
+const mobileScore=element('span','premium-mobile-score','◎ 0 / 3 ЗОН');
+mobileScore.id='premiumMobileScore';mobileScore.setAttribute('aria-live','polite');stage.append(mobileScore);
 const resultPanel=element('div','premium-result','<div class="premium-result-inner"><span>ТЕНЕВОЙ ПРОТОКОЛ · ИТОГ</span><h2 id="premiumResultTitle">МИССИЯ ВЫПОЛНЕНА</h2><p id="premiumResultText"></p><button type="button" id="premiumReplay">↺ ПОПРОБОВАТЬ ЕЩЁ РАЗ</button></div>');
 resultPanel.hidden=true;resultPanel.setAttribute('aria-live','polite');stage.append(resultPanel);
 $('premiumReplay').addEventListener('click',()=>{$('reset')?.click();});
@@ -88,7 +93,7 @@ const foot=panel.querySelector('.footnote');if(foot)foot.textContent='Игра �
 const instructions=document.querySelector('#board-controls-help');if(instructions)instructions.textContent='Стрелки — выбор клетки, Enter — размещение, 1–3 — выбор модуля, R — заново. Красные точки: X −4 / Z −3, X 2 / Z 2, X 4 / Z −2.';
 const placeOriginal=$('place-keyboard');if(placeOriginal)placeOriginal.textContent='Разместить здесь';
 const state={mode:'3d',zoom:1,hover:null,cell:{x:0,z:0},hasSelectedPlace:false,showHints:false,scale:1,w:900,h:560,refresh:false};
-root.dataset.premiumVersion='25';
+root.dataset.premiumVersion='26';
 $('premiumShowHints').addEventListener('click',()=>{
  state.showHints=!state.showHints;const button=$('premiumShowHints');
  button.setAttribute('aria-pressed',String(state.showHints));
@@ -247,6 +252,7 @@ for(const [i,p] of hot.entries()){
 function refresh(){
  const b=game();if(!b)return;const s=b.state();
  $('premiumProgress').textContent=s.score+' / 3';
+ mobileScore.textContent='◎ '+s.score+' / 3 ЗОН';
  $('premiumHeat').textContent=[56,47,39,30][s.score]+'°C';
  $('premiumLeft').textContent=String(Math.max(0,3-s.placed.length));
  $('premiumZones').textContent=s.score+' / 3';
@@ -275,6 +281,9 @@ function refresh(){
  const futureCoverage=allowed?hot.filter(p=>!coverage(s,p)&&Math.hypot(state.cell.x-p.x,state.cell.z-p.z)<=1.35).length:0;
  $('premiumPlace').disabled=!allowed;
  $('premiumPlace').textContent=s.won?'✓ ГОРОД ОХЛАЖДЁН':s.lost?'↺ НАЧНИ ЗАНОВО':allowed?'✓ РАЗМЕСТИТЬ '+names[s.selected].toUpperCase():'⌖ СНАЧАЛА ВЫБЕРИ МЕСТО';
+ mobilePlace.disabled=!allowed;
+ mobilePlace.textContent=allowed?'✓ РАЗМЕСТИТЬ '+names[s.selected].toUpperCase():'⌖ ВЫБЕРИ ГОРЯЧУЮ ЗОНУ';
+ mobilePlace.setAttribute('aria-label',allowed?'Разместить '+names[s.selected]+' в выбранном месте':'Сначала выбери горячую зону на карте');
  for(const [i,step] of [...how.querySelectorAll('.how-step')].entries()){
   step.classList.toggle('is-active',!s.won&&!s.lost&&(state.hasSelectedPlace?3:2)===i+1);
   step.classList.toggle('is-done',s.won||(state.hasSelectedPlace?3:2)>i+1);
@@ -327,6 +336,7 @@ canvas.addEventListener('keydown',e=>{
  e.preventDefault();select(state.cell.x,state.cell.z);
 });
 $('premiumPlace').addEventListener('click',place);
+mobilePlace.addEventListener('click',place);
 for(const button of toolList.querySelectorAll('.module'))button.addEventListener('click',()=>{refresh();});
 $('reset')?.addEventListener('click',()=>{state.cell={x:0,z:0};state.hasSelectedPlace=false;requestAnimationFrame(refresh);});
 $('premium3d').addEventListener('click',()=>{state.mode='3d';$('premium3d').setAttribute('aria-pressed','true');$('premiumMap').setAttribute('aria-pressed','false');refresh();});
