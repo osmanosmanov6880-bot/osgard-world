@@ -139,6 +139,42 @@ func _run() -> void:
         "R9 pressure vessel physics body missing"):return
     if not check(SurfaceLibraryR9Script.atlas_count() >= 3,
         "R9 shared PBR textures not generated"):return
+    var aegis_r10 = world.get_node_or_null("AegisMegadocksR10")
+    if not check(aegis_r10 != null, "R10 hero megadock parent absent"):return
+    if not check(aegis_r10.megadock_count == 6, "R10 six sculpted megadocks missing"):return
+    if not check(aegis_r10.modeled_triangles > 160000,
+        "R10 authored megadock triangle coverage below target"):return
+    if not check(aegis_r10.loading_arms == 12,
+        "R10 twelve animated loader arms missing"):return
+    if not check(aegis_r10.instanced_details >= 1600,
+        "R10 batched architectural tech details missing"):return
+    var cladding_r10 = world.get_node_or_null("R10_ArchitecturalCladding")
+    if not check(cladding_r10 != null, "R10 detailed city window facades missing"):return
+    if not check(cladding_r10.serviced_towers >= 100,
+        "R10 high-detail serviced skyscraper count too low"):return
+    if not check(cladding_r10.facade_count >= 10000,
+        "R10 physically extruded facade elements too few"):return
+    if not check(cladding_r10.chunks.size() == 24,
+        "R10 district-separated GPU instancing incorrect"):return
+    var r10_first = aegis_r10.get_node_or_null("R10_AegisPort_00")
+    if not check(r10_first != null, "First cinematic Aegis port missing"):return
+    if not check(r10_first.get_node_or_null("R10_OverheadBridgeCollision") is StaticBody3D,
+        "R10 accessible overhead bridge collision missing"):return
+    if not check(r10_first.get_node_or_null("R10_ImportedHeroMegadock") != null,
+        "R10 glTF superstructure not imported"):return
+    if not check(world.graphics_quality == 0,
+        "Maximum image quality must be default"):return
+    world._set_graphics_quality(2)
+    if not check(aegis_r10.quality_mode == 2 and world.graphics_quality == 2,
+        "R10 selectable low-range LOD not working"):return
+    if not check(cladding_r10.quality_mode == 2,
+        "R10 cladding LOD ignores graphics quality"):return
+    var first_r10_draw = aegis_r10.imports[0].find_children("*", "MeshInstance3D", true, false)
+    if not check(first_r10_draw.size() > 0 and first_r10_draw[0].visibility_range_end < 400.0,
+        "R10 geometry not responding to dynamic quality switch"):return
+    world._set_graphics_quality(0)
+    if not check(aegis_r10.quality_mode == 0 and first_r10_draw[0].visibility_range_end >= 800.0,
+        "R10 maximum quality was not restored"):return
     var hangar_solid = world.get_node_or_null("HeroMegadocksR6/R6_EnclosedHangar_00_0/HangarLeftWallCollision")
     if not check(hangar_solid is StaticBody3D, "Hangar collision missing"):return
     var arcology_solid = world.get_node_or_null("SculpturalSkylineR6/R6_SculptedArcology_00/ArcologyCollision")
@@ -168,5 +204,5 @@ func _run() -> void:
     world.ship.take_damage(10.0)
     if not check(world.ship.shield < shield_before,"Damage does not reduce shield"):return
     if not check(previous_credits >= 0,"Invalid credits"):return
-    print("NEBULA_SMOKE_SUCCESS missions=1 upgrades=1 drones=%d premium3d=r9 pbr-orm=true articulated-gear=3 pressure-vessels=24" % world.drones.size())
+    print("NEBULA_SMOKE_SUCCESS missions=1 upgrades=1 drones=%d premium3d=r10 AEGIS=6 sculpted-megadocks gltf=true" % world.drones.size())
     quit(0)

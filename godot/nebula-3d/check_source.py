@@ -58,6 +58,11 @@ world = require(
     "fleet_r7.build(SECTOR_POSITIONS)",
     'preload("res://scripts/orbital_industry_r9.gd")',
     "industry_r9.build(SECTOR_POSITIONS)",
+    'preload("res://scripts/aegis_megadock_r10.gd")',
+    "aegis_r10.build(SECTOR_POSITIONS)",
+    'preload("res://scripts/city_cladding_r10.gd")',
+    "city_cladding_r10.build(tower_data, SECTOR_POSITIONS)",
+    "func _set_graphics_quality(",
 )
 city = require(
     "scripts/city_set_dressing_r5.gd",
@@ -131,6 +136,7 @@ def check_gltf(path: str, min_vertices: int, min_materials: int) -> None:
 
 check_gltf("assets/models/nx08_interceptor_r8.gltf", 14000, 7)
 check_gltf("assets/models/industrial_hangar_r8.gltf", 25000, 6)
+check_gltf("assets/models/aegis_megadock_r10.gltf", 60000, 7)
 
 
 pbr_r9 = require(
@@ -157,6 +163,24 @@ mechanics_r9 = require(
     "func _engine_iris(",
     "gear_requested",
 )
+r10_port = require(
+    "scripts/aegis_megadock_r10.gd",
+    "func _make_gate(",
+    "func _make_loader(",
+    "func set_quality(",
+    "QUALITY_RANGES",
+    "R10_BatchedTaxiwayMarkings",
+    'preload("res://assets/models/aegis_megadock_r10.gltf")',
+)
+assert "SurfaceLibraryR9Script.coat(" in r10_port
+r10_cladding = require(
+    "scripts/city_cladding_r10.gd",
+    "func build(tower_data: Array[Dictionary], centres: Array)",
+    "func set_quality(",
+    "R10_D%02d_DeepArchitecturalWindowBays",
+    "SurfaceLibraryR9Script.coat(",
+)
+assert "QUALITY_RANGES" in r10_cladding
 require("scripts/architectural_detail_r4.gd", "func build(")
 premium = require("scripts/premium_architecture.gd", "func make_facade_material(", "emission_image")
 require("scripts/drone.gd", "extends")
@@ -175,6 +199,9 @@ smoke = require(
     "R9 physically packed ship textures missing",
     "R9 industrial spaceport absent",
     "R9 animated ship mechanics not instantiated",
+    "R10 hero megadock parent absent",
+    "R10 maximum quality was not restored",
+    "R10 detailed city window facades missing",
     "NEBULA_SMOKE_SUCCESS",
 )
 assert "func _make_ship(" not in ship, "R3 low-poly ship builder is still active"
@@ -184,4 +211,4 @@ assert "image.generate_mipmaps()" in ship_visual
 assert premium.count("Image.create(") >= 2, "separate facade albedo/emission atlases missing"
 assert "high-detail" not in project.lower(), "project identity may remain stable"
 assert len(smoke) > 1500 and len(city) > 5000 and len(world) > 10000
-print("NEBULA_R9_SOURCE_SUCCESS: shared PBR ORM, mechanical animation and industrial port QA verified")
+print("NEBULA_R10_SOURCE_SUCCESS: 67k-vertex sculpted megadock asset and LOD game systems verified")

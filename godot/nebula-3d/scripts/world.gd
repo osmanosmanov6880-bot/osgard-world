@@ -12,6 +12,8 @@ const OrbitalDocksR6Script = preload("res://scripts/orbital_docks_r6.gd")
 const SculpturalSkylineR6Script = preload("res://scripts/sculptural_skyline_r6.gd")
 const CapitalFleetR7Script = preload("res://scripts/capital_fleet_r7.gd")
 const OrbitalIndustryR9Script = preload("res://scripts/orbital_industry_r9.gd")
+const AegisMegadockR10Script = preload("res://scripts/aegis_megadock_r10.gd")
+const CityCladdingR10Script = preload("res://scripts/city_cladding_r10.gd")
 const SAVE_PATH = "user://nebula_3d_save.json"
 const SECTOR_COLORS = [Color(0.10,0.68,0.97), Color(0.64,0.35,1.0), Color(0.98,0.73,0.40), Color(1.0,0.46,0.34), Color(0.87,0.27,0.88), Color(0.24,0.92,0.88)]
 const SECTOR_NAMES = ["ПОРТ АВРОРА","НЕОНОВЫЙ КВАРТАЛ","ЦИТАДЕЛЬ","ЧЁРНЫЙ РЫНОК","РАЗЛОМ","НЕКСУС"]
@@ -54,6 +56,10 @@ var cinematic_velocity: Vector3 = Vector3.ZERO
 var hud_flight: Label
 var hud_objective: Label
 var hud_panel: PanelContainer
+var hud_canvas: CanvasLayer
+var aegis_r10
+var city_cladding_r10
+var graphics_quality: int = 0
 
 func _ready() -> void:
     rng.seed = 20261022
@@ -217,6 +223,14 @@ func _build_city() -> void:
     industry_r9.name = "OrbitalIndustryR9"
     add_child(industry_r9)
     industry_r9.build(SECTOR_POSITIONS)
+    aegis_r10 = AegisMegadockR10Script.new()
+    aegis_r10.name = "AegisMegadocksR10"
+    add_child(aegis_r10)
+    aegis_r10.build(SECTOR_POSITIONS)
+    city_cladding_r10 = CityCladdingR10Script.new()
+    city_cladding_r10.name = "R10_ArchitecturalCladding"
+    add_child(city_cladding_r10)
+    city_cladding_r10.build(tower_data, SECTOR_POSITIONS)
     _build_starfield()
 
 func _build_sector(center: Vector3, tint: Color, name: String, index: int) -> void:
@@ -294,6 +308,7 @@ func _make_hud() -> void:
     var ui := CanvasLayer.new()
     ui.layer = 5
     add_child(ui)
+    hud_canvas = ui
     var surface := Control.new()
     surface.set_anchors_preset(Control.PRESET_FULL_RECT)
     surface.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -328,7 +343,7 @@ func _make_hud() -> void:
     hud_status.add_theme_color_override("font_color",Color(0.86,0.95,1.0))
     stack.add_child(hud_status)
     hud_controls = Label.new()
-    hud_controls.text = "WASD — полёт    Q / E — высота    Shift — форсаж    Space — огонь    F5 — сохранить"
+    hud_controls.text = "WASD — полёт    Q/E — высота    Shift — форсаж    Space — огонь    F3 — качество    F4 — HUD    F5 — сохранить"
     hud_controls.add_theme_font_size_override("font_size",15)
     hud_controls.add_theme_color_override("font_color",Color(0.81,0.91,1.0))
     hud_controls.anchor_top=1.0
@@ -615,10 +630,22 @@ func _unhandled_key_input(event: InputEvent) -> void:
             lens_mode=(lens_mode+1)%3
             camera_distance=[14.5,23.0,33.0][lens_mode]
             _show_notice("КАМЕРА · " + str(lens_mode+1) + "/3")
+        elif event.keycode==KEY_F3:
+            _set_graphics_quality((graphics_quality+1)%3)
+        elif event.keycode==KEY_F4:
+            hud_canvas.visible = not hud_canvas.visible
         elif event.keycode==KEY_1 or event.keycode==KEY_2 or event.keycode==KEY_3:
             _upgrade_docked(event.keycode-KEY_1)
         elif event.keycode==KEY_F1:
             _show_notice("WASD ПОЛЁТ · Q/E ВЫСОТА · SHIFT ФОРСАЖ · SPACE ОГОНЬ")
+
+func _set_graphics_quality(mode: int) -> void:
+    graphics_quality = clampi(mode, 0, 2)
+    if is_instance_valid(aegis_r10):
+        aegis_r10.set_quality(graphics_quality)
+    if is_instance_valid(city_cladding_r10):
+        city_cladding_r10.set_quality(graphics_quality)
+    _show_notice("ГРАФИКА · " + ["МАКСИМУМ", "ВЫСОКАЯ", "ОПТИМИЗАЦИЯ"][graphics_quality])
 
 func _upgrade_docked(slot: int) -> void:
     if ship.global_position.distance_to(SECTOR_POSITIONS[0])>115.0:
