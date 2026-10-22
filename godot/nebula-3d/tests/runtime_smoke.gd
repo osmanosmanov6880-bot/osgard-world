@@ -51,6 +51,17 @@ func _run() -> void:
     if not check(finish_r7.finish_instances >= 340, "R7 batched surface microgeometry missing"):return
     if not check(finish_r7.optical_sensors == 2, "Player navigation optical sensors missing"):return
     if not check(finish_r7.decal_count == 2, "Player wing serial insignia missing"):return
+    var imported_r8 = interceptor.get_node_or_null("R8_ImportedHeroMesh")
+    if not check(imported_r8 != null, "Importable R8 interceptor glTF missing"):return
+    var r8_ship_vertices: int = 0
+    var r8_ship_surfaces: int = 0
+    for draw in imported_r8.find_children("*", "MeshInstance3D", true, false):
+        if draw.mesh == null:continue
+        r8_ship_surfaces += draw.mesh.get_surface_count()
+        for surface in draw.mesh.get_surface_count():
+            r8_ship_vertices += draw.mesh.surface_get_array_len(surface)
+    if not check(r8_ship_vertices >= 8000, "R8 sculpted interceptor mesh resolution too low"):return
+    if not check(r8_ship_surfaces >= 5, "R8 PBR material surfaces missing"):return
     var fleet_r7 = world.get_node_or_null("CapitalFleetR7")
     if not check(fleet_r7 != null, "R7 monumental capital fleet missing"):return
     if not check(fleet_r7.carrier_count == 6, "Expected six true 3D capital ships"):return
@@ -63,6 +74,16 @@ func _run() -> void:
     if not check(megadocks != null, "R6 industrial orbital megadocks absent"):return
     if not check(megadocks.hangar_count == 12, "Twelve curved hangars missing"):return
     if not check(megadocks.crane_count == 12, "Twelve detailed cargo cranes missing"):return
+    var imported_hangar = megadocks.get_node_or_null("R6_EnclosedHangar_00_0/R8_IndustrialHangarAsset")
+    if not check(imported_hangar != null, "R8 imported curved hangar geometry missing"):return
+    var r8_hangar_vertices: int = 0
+    for draw in imported_hangar.find_children("*", "MeshInstance3D", true, false):
+        if draw.mesh == null:continue
+        for surface in draw.mesh.get_surface_count():
+            r8_hangar_vertices += draw.mesh.surface_get_array_len(surface)
+    if not check(r8_hangar_vertices >= 16000, "R8 architectural mesh resolution too low"):return
+    if not check(megadocks.get_node("R6_EnclosedHangar_00_0/SegmentedCurvedTitaniumRoof").visible == false,
+        "Legacy low-poly roof was not retired"):return
     if not check(megadocks.panels_instanced >= 1600, "PBR deck tiles not installed"):return
     if not check(megadocks.structural_instances >= 2100, "R6 GPU-instanced docking details missing"):return
     var skyline_r6 = world.get_node_or_null("SculpturalSkylineR6")
@@ -98,5 +119,5 @@ func _run() -> void:
     world.ship.take_damage(10.0)
     if not check(world.ship.shield < shield_before,"Damage does not reduce shield"):return
     if not check(previous_credits >= 0,"Invalid credits"):return
-    print("NEBULA_SMOKE_SUCCESS missions=1 upgrades=1 drones=%d premium3d=r7 fins=1440 docks=6 carriers=6 gun-batteries=36" % world.drones.size())
+    print("NEBULA_SMOKE_SUCCESS missions=1 upgrades=1 drones=%d premium3d=r8 imported-hero-glTF=true imported-hangar-glTF=true" % world.drones.size())
     quit(0)
