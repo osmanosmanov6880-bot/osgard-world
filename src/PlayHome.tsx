@@ -62,7 +62,14 @@ export default function PlayHome({ partners = false }: { partners?: boolean }) {
   usePlayMotion(page)
 
   useEffect(() => {
-    if (!partners) replaceBrowserUrl(playCatalogHref(filters).replace(/#catalog$/, location.hash || ''))
+    if (partners) return
+    // /games and /entertainment are public aliases of Play. Preserve the
+    // visited alias when synchronizing query filters, otherwise changing the
+    // pathname during palette lazy-load unmounts the accessible dialog.
+    const currentPath = location.pathname.replace(/\/+$/, '') || '/'
+    const prefix = currentPath === '/games' || currentPath === '/entertainment' ? currentPath : '/play'
+    const target = playCatalogHref(filters).replace(/^\/play/, prefix)
+    replaceBrowserUrl(target.replace(/#catalog$/, location.hash || ''))
   }, [query, genre, mode, view, partners])
   useEffect(() => {
     if (partners) return
