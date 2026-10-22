@@ -8,12 +8,16 @@ import * as THREE from 'three';
 import {screenToTerrain,stableObjects,worldStateSignature,ISLAND_SEED} from './terrain-core.mjs';
 import {makeArchipelago} from './world-geometry.mjs';
 import {makeTrace,disposeTraces} from './trace-models.mjs';
+import {mountArtifactAtelier} from './artifact-atelier.mjs';
 (()=>{
 'use strict';
 const d=document,el=(s,root=d)=>root.querySelector(s),game=window.InheritGame;
 if(!game||typeof game.snapshot!=='function')return;
 const world=el('#world'),island=el('#island'),objects=el('#objects');
 if(!world||!island||!objects)return;
+// One on-demand close-up studio: detailed artifact inspection without
+// consuming a move or creating another always-on render loop.
+mountArtifactAtelier({dock:el('.dock.cine-dock')||el('.dock')});
 const memory=(typeof navigator.deviceMemory==='number'?navigator.deviceMemory:8);
 const lowPower=memory<=3||window.matchMedia('(max-width:700px)').matches;
 const motion=window.matchMedia('(prefers-reduced-motion:reduce)');
@@ -188,14 +192,16 @@ function cameraAtDefault(){
  camera.lookAt(0,0,0);camera.updateMatrixWorld();
 }
 function renderOnce(time){
- if(!renderer||!status.active||!sceneVisible||d.hidden)return;
+ if(!renderer||!status.active||!sceneVisible||d.hidden||d.body.classList.contains('aaa-atelier-open'))return;
  if(waterUniforms&&!motion.matches)waterUniforms.uTime.value=time*.001;
  updateEnvironment();
  renderer.render(scene,camera);
  status.frames+=1;firstDraw=true;
 }
 function stop(){if(raf)cancelAnimationFrame(raf);raf=0;}
-function shouldRun(){return status.active&&sceneVisible&&!d.hidden&&(flyby||!motion.matches);}
+function shouldRun(){return status.active&&sceneVisible&&!d.hidden&&!d.body.classList.contains('aaa-atelier-open')&&(flyby||!motion.matches);}
+window.addEventListener('aaa-atelier-open',stop);
+window.addEventListener('aaa-atelier-close',()=>{renderOnce(performance.now());start();});
 function nextFrame(time){
  raf=0;
  if(!shouldRun())return;
