@@ -34,8 +34,8 @@ var player
 var car
 var camera: Camera3D
 var hud
-var cam_yaw := 0.0
-var cam_pitch := 0.35
+var cam_yaw := 0.32
+var cam_pitch := 0.38
 var mouse_sensitivity := 0.003
 var driving := false
 var autosave_accumulator := 0.0

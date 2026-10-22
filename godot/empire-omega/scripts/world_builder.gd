@@ -109,14 +109,14 @@ func _create_environment() -> void:
 	sky.sky_material = proc_sky
 	env.sky = sky
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
-	env.ambient_light_energy = 1.45
+	env.ambient_light_energy = 1.0
 	env.reflected_light_source = Environment.REFLECTION_SOURCE_BG
 	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 	sky_environment.environment = env
 	add_child(sky_environment)
 	sun = DirectionalLight3D.new()
 	sun.light_color = Color("ffe2b1")
-	sun.light_energy = 1.9
+	sun.light_energy = 1.15
 	sun.shadow_enabled = true
 	sun.rotation_degrees = Vector3(-52,-35,0)
 	add_child(sun)
@@ -516,8 +516,8 @@ func objective_position() -> Vector3:
 func update_daynight(day_clock: float) -> void:
 	var phase := (day_clock - 7.0) / 24.0 * TAU
 	sun.rotation_degrees.x = -55.0 + 70.0 * sin(phase)
-	var brightness: float = clampf(0.65 + 0.9 * maxf(0.0,cos(phase)),0.65,1.55)
-	sun.light_energy = brightness * 1.6 * (0.65 if weather_mode == "storm" else (0.85 if weather_mode == "rain" or weather_mode == "cloudy" else 1.0))
+	var brightness: float = clampf(0.70 + 0.55 * maxf(0.0,cos(phase)),0.70,1.25)
+	sun.light_energy = brightness * 1.02 * (0.65 if weather_mode == "storm" else (0.85 if weather_mode == "rain" or weather_mode == "cloudy" else 1.0))
 	if sky_environment != null:
-		sky_environment.environment.ambient_light_energy = 0.95 + brightness * 0.45
+		sky_environment.environment.ambient_light_energy = 0.60 + brightness * 0.38
 	_update_windows(day_clock,int(GameState.data["energy"]))

@@ -23,11 +23,15 @@ func _capture() -> void:
 	DirAccess.make_dir_recursive_absolute(destination)
 	for dimensions in [Vector2i(1600,900),Vector2i(1366,768)]:
 		DisplayServer.window_set_size(dimensions)
+		root.content_scale_size = dimensions
 		for tick in range(24):
 			await process_frame
 		await RenderingServer.frame_post_draw
 		var viewport: Viewport = root.get_viewport()
 		var photo: Image = viewport.get_texture().get_image()
+		if not photo.is_empty() and (photo.get_width() != dimensions.x or photo.get_height() != dimensions.y):
+			push_error("Screenshot viewport did not resize: %s for %s" % [str(photo.get_size()),str(dimensions)])
+			failed = true
 		if photo.is_empty():
 			push_error("Godot viewport image is empty: "+str(dimensions))
 			failed = true
@@ -38,8 +42,8 @@ func _capture() -> void:
 				var pixel: Color = photo.get_pixel(clampi((col*photo.get_width())/20,0,photo.get_width()-1),clampi((row*photo.get_height())/12,0,photo.get_height()-1))
 				total_luma += pixel.r*0.2126 + pixel.g*0.7152 + pixel.b*0.0722
 		var mean: float = total_luma/240.0
-		if mean < 0.055:
-			push_error("Rendered game is too dark: "+str(mean))
+		if mean < 0.055 or mean > 0.76:
+			push_error("Rendered game is outside usable brightness range: "+str(mean))
 			failed = true
 		var file_name: String = destination.path_join("omega_%dx%d.png" % [dimensions.x,dimensions.y])
 		var saved: Error = photo.save_png(file_name)
