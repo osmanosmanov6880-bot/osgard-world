@@ -1,5 +1,6 @@
 extends Node3D
 const ImportedHangarR8Scene = preload("res://assets/models/industrial_hangar_r8.gltf")
+const SurfaceLibraryR9Script = preload("res://scripts/surface_library_r9.gd")
 ## NEBULA R6: industrial megadocks with mesh-based hangar arches, PBR deck
 ## tiles, gantry cranes and architectural trusses. Six sector instances.
 ## Long-range repeated parts are batched into MultiMesh, not hundreds of lights.
@@ -171,21 +172,20 @@ func _hangar(where: Vector3, direction: float, sector: int, side: int) -> void:
     var imported_r8 := ImportedHangarR8Scene.instantiate()
     imported_r8.name = "R8_IndustrialHangarAsset"
     root.add_child(imported_r8)
-    roof_node.visible = false
-    # Keep close-range details near the six ports without rendering distant
-    # 13k-triangle hangars across the entire open-world skyline.
+    # R9 high/low LOD transition: near = sculpted 13k-triangle glTF,
+    # far = inexpensive original roof. Hangars no longer pop out of view.
+    roof_node.visible = true
+    roof_node.visibility_range_begin = 370.0
+    roof_node.visibility_range_begin_margin = 75.0
     for part in imported_r8.find_children("*", "MeshInstance3D", true, false):
         part.visibility_range_end = 430.0
-        part.visibility_range_end_margin = 70.0
-        # The metal now has microscopic brushed relief, not merely flat tints.
+        part.visibility_range_end_margin = 75.0
         if part.mesh == null:continue
         for surface in part.mesh.get_surface_count():
-            var mat := part.mesh.surface_get_material(surface) as StandardMaterial3D
-            if mat == null or mat.metallic < 0.40:continue
-            var weathered := mat.duplicate() as StandardMaterial3D
-            weathered.normal_enabled = true
-            weathered.normal_texture = deck_material.normal_texture
-            weathered.normal_scale = 0.21
+            var original := part.mesh.surface_get_material(surface) as StandardMaterial3D
+            if original == null:continue
+            var profile: int = SurfaceLibraryR9Script.get_profile(original)
+            var weathered: StandardMaterial3D = SurfaceLibraryR9Script.coat(original, profile)
             part.set_surface_override_material(surface, weathered)
     # Physical hangar walls and airlock doors stop high-speed ships, unlike R5 props.
     _collision_box(root, "HangarLeftWallCollision", Vector3(-18.1, wall, 0), Vector3(1.5, wall * 1.95, 29.0))
