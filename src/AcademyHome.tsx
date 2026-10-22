@@ -159,7 +159,7 @@ export default function AcademyHome() {
     { number:'03', title:t.practical3, body:t.practical3Body }
   ]
 
-  return <main className="academy-home">
+  return <main className="academy-home" lang={locale}>
 
 
     <section className="academy-hero">
