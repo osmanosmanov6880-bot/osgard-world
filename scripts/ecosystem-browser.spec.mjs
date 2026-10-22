@@ -2342,6 +2342,11 @@ test('INHERIT R16 genuine Three.js island renders the original saved world witho
  if(process.env.OSGARD_ENABLE_SWIFTSHADER==='1')expect(initial.available).toBe(true);
  const before=await page.evaluate(()=>window.InheritGame.snapshot());
  if(initial.available){
+  // Assert the authored sanctuary, quay and skiff exist in the actual GPU scene.
+  expect(initial.heritageDetails).toBeTruthy();
+  expect(initial.heritageDetails.stoneBlocks).toBeGreaterThanOrEqual(info.project.name==='mobile'?32:144);
+  expect(initial.heritageDetails.flutedColumns).toBeGreaterThanOrEqual(info.project.name==='mobile'?6:12);
+  expect(initial.heritageDetails.boatHullSegments).toBeGreaterThanOrEqual(info.project.name==='mobile'?96:540);
   await expect(page.locator('#island')).toHaveClass(/aaa3d-active/);
   await expect(canvas).toBeVisible();
   await expect.poll(()=>page.evaluate(()=>window.InheritAAA3D.getState().frames)).toBeGreaterThan(0);
