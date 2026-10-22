@@ -32,7 +32,7 @@ check('Accessible menu, fonts, reduced motion and placement preview',()=>{
 });
 check('Offline shell contains every new game resource',()=>{
  for(const file of ['living-legacy.js','living-legacy.css','living-legacy-sprites.svg'])assert.ok(sw.includes(file),file);
- assert.match(sw,/inherit-shell-v26/);
+ assert.match(sw,/inherit-shell-v27/);
  assert.match(sw,/webmanifest\|mjs\|js\|css\|svg\|woff2\?/);
 });
 check('New presentation remains multilingual',()=>{for(const lang of ['ru:','en:','zh:'])assert.ok(script.includes(lang),lang)});
