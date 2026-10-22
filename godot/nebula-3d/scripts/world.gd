@@ -10,6 +10,7 @@ const ArchitecturalDetailR4Script = preload("res://scripts/architectural_detail_
 const CitySetDressingR5Script = preload("res://scripts/city_set_dressing_r5.gd")
 const OrbitalDocksR6Script = preload("res://scripts/orbital_docks_r6.gd")
 const SculpturalSkylineR6Script = preload("res://scripts/sculptural_skyline_r6.gd")
+const CapitalFleetR7Script = preload("res://scripts/capital_fleet_r7.gd")
 const SAVE_PATH = "user://nebula_3d_save.json"
 const SECTOR_COLORS = [Color(0.10,0.68,0.97), Color(0.64,0.35,1.0), Color(0.98,0.73,0.40), Color(1.0,0.46,0.34), Color(0.87,0.27,0.88), Color(0.24,0.92,0.88)]
 const SECTOR_NAMES = ["ПОРТ АВРОРА","НЕОНОВЫЙ КВАРТАЛ","ЦИТАДЕЛЬ","ЧЁРНЫЙ РЫНОК","РАЗЛОМ","НЕКСУС"]
@@ -26,7 +27,7 @@ const MISSIONS = [
 var rng := RandomNumberGenerator.new()
 var ship
 var chase_camera: Camera3D
-var camera_distance: float = 19.0
+var camera_distance: float = 16.0
 var drones: Array[Node3D] = []
 var mission_index: int = 0
 var credits: int = 950
@@ -73,19 +74,19 @@ func _setup_environment() -> void:
     var sky := Sky.new()
     var atmosphere := ProceduralSkyMaterial.new()
     atmosphere.sky_top_color = Color(0.008,0.024,0.078)
-    atmosphere.sky_horizon_color = Color(0.18,0.27,0.39)
+    atmosphere.sky_horizon_color = Color(0.115,0.18,0.28)
     atmosphere.ground_bottom_color = Color(0.008,0.012,0.028)
     atmosphere.ground_horizon_color = Color(0.10,0.15,0.24)
     sky.sky_material = atmosphere
     env.background_mode = Environment.BG_SKY
     env.sky = sky
     env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
-    env.ambient_light_energy = 0.61
+    env.ambient_light_energy = 0.46
     env.reflected_light_source = Environment.REFLECTION_SOURCE_BG
     env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
     env.fog_enabled = true
-    env.fog_light_color = Color(0.18,0.29,0.44)
-    env.fog_density = 0.00065
+    env.fog_light_color = Color(0.11,0.18,0.26)
+    env.fog_density = 0.00044
     node.environment = env
     add_child(node)
     var sun := DirectionalLight3D.new()
@@ -207,6 +208,10 @@ func _build_city() -> void:
     skyline_r6.name = "SculpturalSkylineR6"
     add_child(skyline_r6)
     skyline_r6.build(SECTOR_POSITIONS, SECTOR_COLORS)
+    var fleet_r7 := CapitalFleetR7Script.new()
+    fleet_r7.name = "CapitalFleetR7"
+    add_child(fleet_r7)
+    fleet_r7.build(SECTOR_POSITIONS)
     _build_starfield()
 
 func _build_sector(center: Vector3, tint: Color, name: String, index: int) -> void:
@@ -603,7 +608,7 @@ func _unhandled_key_input(event: InputEvent) -> void:
             _show_notice("ИГРА СОХРАНЕНА")
         elif event.keycode==KEY_F2:
             lens_mode=(lens_mode+1)%3
-            camera_distance=[16.0,24.0,33.0][lens_mode]
+            camera_distance=[14.5,23.0,33.0][lens_mode]
             _show_notice("КАМЕРА · " + str(lens_mode+1) + "/3")
         elif event.keycode==KEY_1 or event.keycode==KEY_2 or event.keycode==KEY_3:
             _upgrade_docked(event.keycode-KEY_1)
