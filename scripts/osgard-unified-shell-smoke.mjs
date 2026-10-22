@@ -7,7 +7,17 @@ import { osgardCommands, searchOsgardCommands, readQuickNavRecent, rememberQuick
 const repo = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const read = path => readFileSync(resolve(repo, path), 'utf8')
 
-assert.equal(osgardCommands.length, 16, 'Twelve core routes and four source-backed portfolio pages must be indexed')
+assert.equal(osgardCommands.length, 43, 'Twelve core routes, four portfolio pages, 19 games and eight lessons must be indexed')
+assert.equal(osgardCommands.filter(item => item.id.startsWith('game-')).length, 19)
+assert.equal(osgardCommands.filter(item => item.id.startsWith('lesson-')).length, 8)
+for (const item of osgardCommands.filter(item => item.id.startsWith('game-'))) {
+  assert.match(item.href, /^\/play\/world\/[a-z0-9-]+$/, 'Direct game route must use the real Play detail page')
+  assert.ok(item.label && !/undefined|null/.test(item.label), 'No missing game title')
+}
+for (const item of osgardCommands.filter(item => item.id.startsWith('lesson-'))) {
+  assert.match(item.href, /^\/lectures\/[a-z0-9-]+$/, 'Direct OSA lesson route must exist in the registry')
+  assert.ok(item.label && !/undefined|null/.test(item.label), 'No missing lesson title')
+}
 assert.equal(new Set(osgardCommands.map(item => item.id)).size, osgardCommands.length, 'Command ids must be unique')
 assert.equal(new Set(osgardCommands.map(item => item.href)).size, osgardCommands.length, 'Route destinations must not duplicate')
 for (const item of osgardCommands) {
@@ -69,4 +79,4 @@ assert.ok(page.includes("<OsgardRouteSkeleton theme={theme} path={path} />") &&
 assert.ok(loading.includes('aria-busy="true"') && loading.includes('role="status"') && loading.includes('min-height') === false, 'Loading state must be semantic and CSS-driven')
 assert.ok(navCss.includes('@media(max-width:720px)') && navCss.includes('max-height:100dvh'), 'Navigator must fit the mobile viewport')
 assert.ok(loadCss.includes('min-height:clamp') && loadCss.includes('prefers-reduced-motion:reduce'), 'Loading state must reserve layout and respect reduced motion')
-console.log('PASS: sixteen first-party commands, safe session history, keyboard dialog, SPA guard, mobile shell and honest route loading')
+console.log('PASS: 43 first-party commands, safe session history, keyboard dialog, SPA guard, mobile shell and honest route loading')
