@@ -134,6 +134,17 @@ check('High-detail architectural landmarks are genuine offline PBR geometry, not
  console.log('  3D geometry: high='+Math.round(highTriangles)+' triangles, medium='+Math.round(medTriangles)+
   ', low='+Math.round(lowTriangles)+', materials='+info.materials+', meshes='+drawCalls+', instanced='+instancedMeshes);
 });
+check('Scenery quality selector swaps actual high-poly architecture and camera visits all sites',()=>{
+ assert.match(entry,/const sceneryCache=new Map\(\)/);
+ assert.match(entry,/function activateScenery\(tier\)/);
+ assert.match(entry,/activateScenery\(quality\);resize\(\);syncState\(true\)/);
+ assert.match(entry,/const FLYBY_VIEWS=\[/);
+ assert.match(entry,/name:'sanctuary'/);
+ assert.match(entry,/name:'harbor'/);
+ assert.match(entry,/name:'skiff'/);
+ assert.match(entry,/function applyFlyby\(time\)/);
+ assert.match(entry,/status\.environmentTier=tier/);
+});
 check('Coastal heritage meshes are seeded, finite and bounded for mobile',()=>{
  const low=makeHeritageEnvironment({quality:'low'});
  const low2=makeHeritageEnvironment({quality:'low'});
