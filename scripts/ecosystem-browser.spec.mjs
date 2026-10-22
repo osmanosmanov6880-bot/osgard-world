@@ -2296,6 +2296,15 @@ test('INHERIT R15 mobile action rail stays tappable without a viewport-fixed ove
  await expect(pass).toBeInViewport();
  const world=page.locator('#world');
  await expect(world).toBeInViewport();
+ // Optional features remain visible and keyboard-dismissible beneath the new dock.
+ const all=page.locator('.dock.cine-dock>.cine-menu-toggle');
+ await all.click();
+ const more=page.locator('.dock.cine-dock>.cine-utility');
+ await expect(more).toBeVisible();
+ const dockBounds=await dock.boundingBox(),menuBounds=await more.boundingBox();
+ expect(menuBounds.y).toBeGreaterThanOrEqual(dockBounds.y+dockBounds.height-2);
+ await page.keyboard.press('Escape');
+ await expect(more).toBeHidden();
  // An action below the island must accept a genuine pointer click, even
  // after the browser scrolls the element into view.
  const enter=page.locator('#inherit-enter');
