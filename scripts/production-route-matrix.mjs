@@ -252,7 +252,22 @@ for (const [device, userAgent] of Object.entries(agents)) for (const route of ro
     }))
     const assetsOk = assetChecks.every(asset => asset.ok)
     const statusOk = route.startsWith('/api/v1/') ? [401, 403].includes(response.status) : response.status === 200
-    results.push({ device, route, status: response.status, assets: assetChecks, ok: statusOk && shellOk && assetsOk, durationMs: Date.now() - started })
+    results.push({
+      device, route, status: response.status, assets: assetChecks,
+      ok: statusOk && shellOk && assetsOk,
+      durationMs: Date.now() - started,
+      ...(!statusOk || !shellOk || !assetsOk ? {
+        diagnostic: {
+          statusOk, shellOk, assetsOk,
+          observedTitle: text.match(/<title[^>]*>([^<]{0,180})<\/title>/i)?.[1] || null,
+          observedContentType: response.headers.get('content-type'),
+          observedBytes: text.length,
+          observedStart: text.slice(0, 100).replace(/\s+/g, ' '),
+          cacheAge: response.headers.get('age'),
+          cacheStatus: response.headers.get('cf-cache-status')
+        }
+      } : {})
+    })
   } catch (error) { results.push({ device, route, status: 0, ok: false, error: String(error), durationMs: Date.now() - started }) }
 }
 const failed = results.filter(item => !item.ok)
