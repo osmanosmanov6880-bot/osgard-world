@@ -52,7 +52,7 @@ func build(tower_data: Array[Dictionary], centres: Array) -> void:
         var district_towers: int = 0
         for index in tower_data.size():
             var t: Dictionary = tower_data[index]
-            if int(t["sector"]) != district or index % 3 == 1:
+            if int(t["sector"]) != district or int(index / 6) % 3 == 1:
                 continue
             var pos: Vector3 = t["pos"]
             var w: float = t["w"]
