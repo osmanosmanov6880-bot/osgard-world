@@ -1,3 +1,5 @@
+import { cases } from './featuredCases.ts'
+
 /** Local, actionable destinations. No generated pages, fake results or account claims. */
 export type OsgardCommand = Readonly<{
   id: string
@@ -8,7 +10,7 @@ export type OsgardCommand = Readonly<{
   keywords: string
 }>
 
-export const osgardCommands: readonly OsgardCommand[] = [
+const baseCommands: readonly OsgardCommand[] = [
   { id: 'world', label: 'OSGARD World', description: 'Главная страница и направления экосистемы', href: '/', group: 'Экосистема', keywords: 'главная дом земля globe home portal' },
   { id: 'intelligence', label: 'OSA Intelligence', description: 'Практика проверки утверждений и источников', href: '/intelligence', group: 'Знания', keywords: 'ии ai интеллект доказательства evidence nist проверка ответы' },
   { id: 'academy', label: 'Академия OSA', description: 'Учебный кабинет и мой прогресс', href: '/academy', group: 'Знания', keywords: 'академия обучение academy cockpit прогресс' },
@@ -23,6 +25,18 @@ export const osgardCommands: readonly OsgardCommand[] = [
   { id: 'cases', label: 'Портфолио проектов', description: 'TEDES, PHANTOM, MERAKKI и ESSENTIA', href: '/development#cases', group: 'Проекты', keywords: 'кейсы cases portfolio проекты tedes phantom merakki essentia' },
 ]
 
+/** Four real portfolio pages, sourced from the case registry to avoid stale
+ * marketing labels or invented statuses in the search experience. */
+const caseCommands: readonly OsgardCommand[] = cases.map(item => ({
+  id: 'case-' + item.id,
+  label: item.name,
+  description: item.type + ' · ' + item.category,
+  href: item.href,
+  group: 'Проекты',
+  keywords: [item.id, item.name, item.category, 'кейс', 'портфолио', 'открыть'].join(' '),
+}))
+export const osgardCommands: readonly OsgardCommand[] = [...baseCommands, ...caseCommands]
+
 const normalize = (value: string) => value.toLocaleLowerCase('ru-RU').replace(/ё/g, 'е').trim()
 
 /** A stable, tiny command search; aliases are authored rather than hallucinated. */
@@ -32,7 +46,18 @@ export function searchOsgardCommands(query: string, recentlyOpened: readonly str
     const text = normalize([command.label, command.description, command.group, command.keywords].join(' '))
     return words.every(word => text.includes(word))
   })
-  if (words.length) return matches
+  if (words.length) {
+    // A direct matching case should beat a generic portfolio link. All
+    // results still come exclusively from the vetted, local route registry.
+    const phrase = words.join(' ')
+    const rank = (command: OsgardCommand) => {
+      const label = normalize(command.label)
+      if (label === phrase) return 0
+      if (label.startsWith(phrase)) return 1
+      return words.every(word => label.includes(word)) ? 2 : 3
+    }
+    return matches.sort((a, b) => rank(a) - rank(b))
+  }
   const score = (id: string) => recentlyOpened.indexOf(id)
   return matches.sort((a, b) => {
     const aIndex = score(a.id), bIndex = score(b.id)
