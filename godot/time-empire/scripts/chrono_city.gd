@@ -528,9 +528,9 @@ func _refresh_ui() -> void:
         mission_label.text = "Строй районы" if mobile_hud else "Расширяй город новыми районами"
     else:
         mission_label.text = "Развивай город" if mobile_hud else "Империя развивается — продолжай улучшения"
-    build_button.text = "СТРОИТЬ" if mobile_hud else "СТРОИТЬ  ·  %d" % int(_district_cost()) if district_count < PLOTS.size() else "РАЙОНЫ ГОТОВЫ"
+    build_button.text = "СТРОИТЬ · %d" % int(_district_cost()) if mobile_hud else "ПОСТРОИТЬ РАЙОН · %d" % int(_district_cost()) if district_count < PLOTS.size() else "РАЙОНЫ ГОТОВЫ"
     build_button.disabled = time_units < _district_cost() or district_count >= PLOTS.size()
-    upgrade_button.text = "УЛУЧШИТЬ" if mobile_hud else "ЯДРО +1  ·  %d" % int(_upgrade_cost())
+    upgrade_button.text = "ЯДРО · %d" % int(_upgrade_cost()) if mobile_hud else "УЛУЧШИТЬ ЯДРО · %d" % int(_upgrade_cost())
     map_button.text = "ГОРОД" if map_mode and mobile_hud else "КАРТА" if mobile_hud else "ВЕРНУТЬСЯ В ГОРОД" if map_mode else "КАРТА ГОРОДА"
     upgrade_button.disabled = time_units < _upgrade_cost()
     if notification <= 0.0:
