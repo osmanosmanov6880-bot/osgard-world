@@ -69,6 +69,9 @@ check('Dense saved worlds choose quality by visible center and cap local point l
  assert.match(entry,/activeLanterns<2/);
  assert.match(entry,/status\.detailTriangles=triangles/);
  assert.match(entry,/syncState\(true\);renderOnce/);
+ assert.match(entry,/const traceCache=new Map\(\)/);
+ assert.match(entry,/status\.cachedTraces=reused/);
+ assert.match(entry,/for\(const \[cacheKey,node\] of traceCache\)/);
 });
 check('Instanced environment includes multi-layer canopies, woodland flora and a real footbridge',()=>{
  for(const term of ['crownsPerTree','branchPerTree','new THREE.InstancedMesh','grassGoal','blossomGoal','plankCount','bridge.add(deck)'])
