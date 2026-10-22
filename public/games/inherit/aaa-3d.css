@@ -1,0 +1,107 @@
+/* INHERIT R16 | REAL TIME 3D / A progressive enhancement to Living Legacy.
+   Gameplay, saved coordinate hit-tests and native interactions stay unchanged. */
+body.living-legacy .aaa3d-controls{
+ position:absolute;z-index:31;right:clamp(15px,3.5vw,58px);top:clamp(16px,4vw,39px);
+ display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:7px;
+ max-width:min(680px,65%);
+ padding:9px;
+ background:linear-gradient(145deg,#082935ed,#0a3434db);
+ border:1px solid #eed2a782;border-radius:16px;box-shadow:0 16px 48px #001e29a1;
+ backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)
+}
+body.living-legacy .aaa3d-brand{
+ flex:1 1 180px;min-width:130px;
+ padding:0 10px;
+ font:850 calc(12px * var(--living-scale))/1.35 Manrope,system-ui,sans-serif;
+ letter-spacing:.09em;color:#f2d49a
+}
+body.living-legacy .aaa3d-controls button{
+ flex:0 0 auto;min-height:43px;padding:9px 12px;
+ background:#134848;color:#f8f4df;
+ border:1px solid #bcd6c77d;border-radius:11px;
+ font:750 calc(13px * var(--living-scale))/1.3 Manrope,system-ui,sans-serif;
+ cursor:pointer;white-space:normal
+}
+body.living-legacy .aaa3d-controls button:hover:not(:disabled){background:#2b6962;border-color:#f0d79f}
+body.living-legacy .aaa3d-controls button:focus-visible{outline:3px solid #ffe6ad;outline-offset:3px}
+body.living-legacy .aaa3d-switch[aria-pressed=true]{
+ background:linear-gradient(135deg,#f3d899,#dec078);color:#1d3937;border-color:#fff0c0
+}
+body.living-legacy .aaa3d-controls button:disabled{opacity:.45;cursor:default}
+body.living-legacy .aaa3d-live{
+ display:block;flex:1 1 100%;text-align:right;min-height:15px;
+ font:600 11px/1.3 Manrope,system-ui,sans-serif;color:#d3ddd2
+}
+body.living-legacy #island>.aaa3d-canvas{
+ display:none;position:absolute;inset:0;width:100%;height:100%;
+ z-index:4;pointer-events:none;touch-action:none;
+ filter:saturate(1.14) contrast(1.045)
+}
+body.living-legacy #island.aaa3d-active>.aaa3d-canvas{display:block}
+/* Hide only the pictorial layer once WebGL renders a frame; keep every original
+   native DOM button and pointer hit target for accessibility, save-safe gameplay,
+   generation history and browser regression coverage. */
+body.living-legacy #island.aaa3d-active>.shore,
+body.living-legacy #island.aaa3d-active>.land,
+body.living-legacy #island.aaa3d-active>.river,
+body.living-legacy #island.aaa3d-active>.ring{opacity:0!important}
+body.living-legacy #island.aaa3d-active>.tree,
+body.living-legacy #island.aaa3d-active>.ruin,
+body.living-legacy #island.aaa3d-active>.beacon,
+body.living-legacy #island.aaa3d-active>.objects .placed{
+ opacity:.003!important;
+ background:transparent!important;
+ box-shadow:none!important;
+ filter:none!important
+}
+body.living-legacy #island.aaa3d-active>.objects{
+ z-index:7;pointer-events:none
+}
+body.living-legacy #island.aaa3d-active>.objects .placed{
+ pointer-events:auto
+}
+body.living-legacy #island.aaa3d-active>.living-island-decor{opacity:0!important}
+body.living-legacy .world.aaa3d-active>.world-alive-ocean{opacity:.05!important}
+body.living-legacy .world.aaa3d-active>.mist{opacity:.14!important}
+body.living-legacy .world.aaa3d-active>.mountain{opacity:.52!important}
+body.living-legacy .world.aaa3d-active>.hero{z-index:24}
+body.living-legacy .world.aaa3d-active>.hint{z-index:23}
+body.living-legacy .world.aaa3d-active #island{
+ filter:drop-shadow(0 28px 0 #17454aa0) drop-shadow(0 55px 35px #00222a91)
+}
+body.living-legacy .world:has(>.aaa3d-controls)>.objective{
+ max-width:min(48%,460px)
+}
+@media(max-width:1040px){
+ body.living-legacy .aaa3d-controls{
+  top:14px;right:14px;max-width:min(430px,65%);
+  gap:5px;padding:7px
+ }
+ body.living-legacy .aaa3d-controls button{min-height:42px;padding:8px 10px;font-size:13px}
+ body.living-legacy .aaa3d-brand{min-width:90px;flex-basis:100%;padding:3px 5px;font-size:11px}
+}
+@media(max-width:740px){
+ body.living-legacy .aaa3d-controls{
+  top:66px;right:4vw;left:4vw;
+  max-width:none;
+  justify-content:space-between;gap:6px;
+  padding:8px;border-radius:12px
+ }
+ body.living-legacy .aaa3d-brand{flex:1 1 100%;min-width:0;letter-spacing:.05em;font-size:11px}
+ body.living-legacy .aaa3d-controls button{
+  min-height:44px;flex:1 1 28%;font-size:12px;line-height:1.25;padding:8px 6px
+ }
+ body.living-legacy .aaa3d-live{font-size:11px;line-height:1.25}
+ body.living-legacy .world.aaa3d-active>.hero{top:275px}
+ body.living-legacy .world.aaa3d-active>.island{bottom:3%}
+ body.living-legacy .world:has(>.aaa3d-controls)>.objective{max-width:90vw}
+}
+@media(max-width:430px){
+ body.living-legacy .aaa3d-controls{top:88px}
+ body.living-legacy .world.aaa3d-active>.hero{top:305px}
+ body.living-legacy .world.aaa3d-active>.island{bottom:1%}
+}
+@media(prefers-reduced-motion:reduce){
+ body.living-legacy .aaa3d-controls,
+ body.living-legacy .aaa3d-controls button{transition:none!important;animation:none!important}
+}
