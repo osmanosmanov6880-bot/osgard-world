@@ -15,7 +15,7 @@ Status: implemented in source on feature branch and subject to GitHub CI + SSH d
 - Unit smoke v33: 68 archways, hundreds of real window details, valid transforms, indexed car geometry with normals, real wheel-animation matrix changes, all three LOD tiers, 8 atlas signs on hardware tiers, climate/quality switches, source-order contract.
 - Browser v33: entry/exit and original game preserved; recorded screenshot in rainy/night street scene; mobile and desktop, quality switching.
 - All prior v26–v32 gameplay and v31/v32 detailed art tests remain enabled.
-- The SSH verifier is syntax checked during QA and requires byte-identical delivery of **11** v33 public game assets after activation.
+- The SSH verifier is syntax checked during QA and requires byte-identical delivery of **13** v33 public game assets after activation.
 - No production deployment, no FPS claims and no independent Unreal build may be announced before their actual evidence exists.
 
 ## Next design gates (not yet claimed)
@@ -24,3 +24,9 @@ Status: implemented in source on feature branch and subject to GitHub CI + SSH d
 - more non-repeating materials, human-authored PBR texture atlases and sculpted hero props;
 - skeleton/ragdoll-ready character animations, true NPC navigation and fully accessible walkable interiors;
 - accessible HUD density mode so detailed streets are not hidden by mission panels.
+
+## Optional cinematic HUD
+- The in-game header now exposes a **КИНО / HUD** switch, also mapped to **H** on desktop.
+- Focus mode removes secondary contract, career and help panels but retains target progress, mini-map, mission/journal access, weather controls and mobile movement/action buttons.
+- It is opt-in and user-preference persistent; existing default gameplay and prior tests are unchanged.
+- The browser acceptance verifies that focus mode actually reduces overlays and screenshot evidence is taken after transient weather notifications disappear.
