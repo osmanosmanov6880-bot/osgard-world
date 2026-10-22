@@ -59,7 +59,7 @@
     <aside class="oc-contract" aria-label="Контракты города"><div class="oc-contract-head"><span>КОНТРАКТЫ ГОРОДА</span><strong id="oc-contract-count">0 / 3</strong></div>
       <strong id="oc-contract-title">Исследуй дальние улицы</strong><p id="oc-contract-hint">Найди голубой маяк и восстанови инфраструктуру района.</p>
       <div class="oc-contract-stats"><span>◈ <b id="oc-credit">0</b> КРЕДИТОВ</span><span>★ <b id="oc-reputation">0</b> РЕПУТАЦИЯ</span></div>
-      <button id="oc-upgrade" type="button" disabled>УЛУЧШИТЬ ЭЛЕКТРОМОБИЛЬ · 300 ◈</button>
+      <button id="oc-upgrade" type="button" disabled>УЛУЧШИТЬ ЭЛЕКТРОМОБИЛЬ · 300 ◈</button><button id="oc-nav-mode" type="button">⌖ GPS: СЮЖЕТ</button>
     </aside>
     <div class="oc-status-bar" aria-label="Параметры симуляции"><button id="oc-time" type="button" title="Сменить время суток (T)">☼ ВЕЧЕР</button><button id="oc-rain" type="button" title="Переключить дождь (P)">☂ ДОЖДЬ</button><button id="oc-quality" type="button" title="Качество графики (Q)">◈ HIGH</button></div>
     <div class="oc-drive-hud" id="oc-drive-hud" hidden><span>ЭЛЕКТРОМОБИЛЬ · CITY RUNNER</span><strong id="oc-speed">0 <small>км/ч</small></strong><div class="oc-charge">▰▰▰▰▰ <b>100% БАТАРЕЯ</b></div><small>W — ГАЗ · S — НАЗАД · A/D — ПОВОРОТ · F — ВЫХОД</small></div>
@@ -71,7 +71,7 @@
     </div>
     <div class="oc-interact" id="oc-interact" hidden><kbd id="oc-interact-key">E</kbd><span id="oc-interact-text">УСТАНОВИТЬ ОХЛАЖДЕНИЕ</span></div>
     <button class="oc-action" id="oc-action" type="button" hidden>✓ ВЫПОЛНИТЬ</button><button class="oc-drive-action" id="oc-drive-action" type="button">🚘 СЕСТЬ В МАШИНУ</button>
-    <div class="oc-controls"><span><kbd>W A S D</kbd> ИДТИ</span><span><kbd>SHIFT</kbd> БЕГ</span><span><kbd>МЫШЬ</kbd> КАМЕРА</span><span><kbd>E</kbd> ДЕЙСТВИЕ</span><span><kbd>F</kbd> МАШИНА</span><span><kbd>T / P / Q</kbd> ВРЕМЯ / ДОЖДЬ / ГРАФИКА</span></div>
+    <div class="oc-controls"><span><kbd>W A S D</kbd> ИДТИ</span><span><kbd>SHIFT</kbd> БЕГ</span><span><kbd>МЫШЬ</kbd> КАМЕРА</span><span><kbd>E</kbd> ДЕЙСТВИЕ</span><span><kbd>F</kbd> МАШИНА</span><span><kbd>T / P / Q</kbd> ВРЕМЯ / ДОЖДЬ / ГРАФИКА</span><span><kbd>G</kbd> GPS</span></div>
     <div class="oc-joystick" id="oc-joystick" aria-label="Сенсорное управление движением"><div id="oc-stick"></div></div>
     <div class="oc-start" id="oc-start"><div class="oc-start-panel"><span class="oc-eyebrow">ЭПИЗОД 02 · ЖИВОЙ ОТКРЫТЫЙ РАЙОН</span>
       <h2>ГОРОД<br><em>ЖДЁТ ТЕБЯ.</em></h2>
@@ -88,7 +88,7 @@
   const keys = new Set();
   const joystick = { x: 0, y: 0, pointer: null, centerX: 0, centerY: 0 };
   const player = { x: 0, z: 0, y: 0, yaw: 0, cameraYaw: 0.35, pitch: 0.28, speed: 0, moving: false };
-  const world = { ready: false, active: false, initialised: false, last: 0, frame: 0, assets: [], buildings: [], rings: [], dust: [], foliage: [], lamps: [], pulse: 0, fpsFrames: 0, fpsTime: 0, fpsSample: 0, quality: 'high', gpuScale: 1.35, people: [], traffic: [], contractMarkers: [], car: null, rain: null, dayMode: 0, raining: false, path: [], routeTo: '', pathCell: '' };
+  const world = { ready: false, active: false, initialised: false, last: 0, frame: 0, assets: [], buildings: [], rings: [], dust: [], foliage: [], lamps: [], pulse: 0, fpsFrames: 0, fpsTime: 0, fpsSample: 0, quality: 'high', gpuScale: 1.35, navMode: 'main', people: [], traffic: [], contractMarkers: [], car: null, rain: null, dayMode: 0, raining: false, path: [], routeTo: '', pathCell: '' };
   let scene, camera, renderer, avatar, legL, legR, armL, armR, sun, minimapCtx, targetIndex = -1, hemi, keyLight, blueFill;
   let dragId = null, dragX = 0, dragY = 0, audio, animationId = 0;
   const PROFILE_KEY = 'osgard:zion030:open-city:v28';
@@ -359,11 +359,12 @@
   }
   function updatePedestrians(dt, t) {
     for (const person of world.people) {
-      if (person.waypoint >= person.path.length) {
+      if (person.waypoint >= person.path.length && t >= (person.nextPlanAt || 0)) {
         const x = person.x + Math.floor(rand(person.index, Math.floor(t / 7), 2) * 15) - 7;
         const z = person.z + Math.floor(rand(Math.floor(t / 7), person.index, 6) * 15) - 7;
         person.path = rules.route(person, rules.nearestFree(x, z));
         person.waypoint = 1;
+        person.nextPlanAt = t + (person.path.length > 1 ? .8 : 4);
       }
       const next = person.path[person.waypoint];
       if (next) {
@@ -499,12 +500,13 @@
     $('oc-weather-temp').textContent = world.raining ? '19°C' : isNight ? '22°C' : isDay ? '33°C' : '27°C';
     $('oc-weather-label').textContent = (isNight ? 'НОЧЬ' : isDay ? 'ДЕНЬ' : 'ВЕЧЕР') + (world.raining ? ' · ДОЖДЬ' : ' · СУХО');
   }
+  function toggleNavigation() { world.navMode = world.navMode === 'main' ? 'contract' : 'main'; world.routeTo = ''; syncGame(); drawMiniMap(); announce(world.navMode === 'main' ? 'GPS: сюжетные тепловые зоны' : 'GPS: контракты городской службы'); }
   function cycleTime() { world.dayMode = (world.dayMode + 1) % 3; updateAtmosphere(); announce('Время суток изменено'); }
   function toggleRain() { world.raining = !world.raining; updateAtmosphere(); announce(world.raining ? 'Начался дождь. Асфальт остыл.' : 'Дождь закончился.'); }
   function toggleQuality() {
     world.quality = world.quality === 'eco' ? 'high' : 'eco';
-    world.gpuScale = world.quality === 'eco' ? .77 : 1.35;
-    renderer.shadowMap.enabled = world.quality === 'high' && !mobile.matches;
+    world.gpuScale = world.quality === 'eco' ? .64 : reduceMotion.matches ? .67 : mobile.matches ? 1.05 : 1.35;
+    renderer.shadowMap.enabled = world.quality === 'high' && !mobile.matches && !reduceMotion.matches;
     $('oc-quality').textContent = world.quality === 'eco' ? '◈ ECO' : '◈ HIGH';
     resize(); announce(world.quality === 'eco' ? 'Экономичный режим' : 'Улучшенная графика');
   }
@@ -638,18 +640,18 @@
     try {
       scene = new THREE.Scene(); scene.background = new THREE.Color(0x0b1c2c); scene.fog = new THREE.FogExp2(0x122536, .015);
       camera = new THREE.PerspectiveCamera(68, 1, .08, 160);
-      renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance', alpha: false, stencil: false });
+      renderer = new THREE.WebGLRenderer({ antialias: !mobile.matches && !reduceMotion.matches, powerPreference: 'high-performance', alpha: false, stencil: false });
       renderer.outputColorSpace = THREE.SRGBColorSpace;
       renderer.toneMapping = THREE.ACESFilmicToneMapping;
       renderer.toneMappingExposure = 1.42;
-      renderer.shadowMap.enabled = !mobile.matches;
+      renderer.shadowMap.enabled = !mobile.matches && !reduceMotion.matches;
       renderer.shadowMap.type = THREE.PCFSoftShadowMap;
       renderer.domElement.className = 'oc-render';
       renderer.domElement.setAttribute('aria-label', 'Живой 3D-мир. Иди клавишами WASD и вращай камеру мышью.');
       viewport.prepend(renderer.domElement);
       hemi = new THREE.HemisphereLight(0xb2e6ff, 0x6e443f, 2.25); scene.add(hemi);
       const key = new THREE.DirectionalLight(0xffcda3, 2.45); key.position.set(-10, 18, 6);
-      key.castShadow = !mobile.matches; key.shadow.mapSize.set(1024, 1024); keyLight = key;
+      key.castShadow = !mobile.matches && !reduceMotion.matches; key.shadow.mapSize.set(1024, 1024); keyLight = key;
       key.shadow.camera.left = key.shadow.camera.bottom = -12;
       key.shadow.camera.right = key.shadow.camera.top = 12;
       key.shadow.normalBias = .065; scene.add(key);
@@ -657,11 +659,12 @@
       const plazaLight = new THREE.PointLight(0x43c9dd, 9, 9); plazaLight.position.set(0, 4, .7); scene.add(plazaLight);
       addAtmosphere(); addGround(); addCity(); makeHotMarkers(); makeAvatar(); addLivingWorld(); updateAtmosphere();
       minimapCtx = $('oc-minimap').getContext('2d');
+      world.gpuScale = reduceMotion.matches ? .67 : mobile.matches ? 1.05 : 1.35;
       world.ready = true; resize(); syncGame(); drawMiniMap();
       window.__ZION030_OPEN_CITY__ = {
         state: () => ({ ready: world.ready, active: world.active, player: { x: player.x, z: player.z }, mission: game()?.state(), quality: world.quality, driving: Boolean(world.car?.occupied), vehicle: world.car ? { x: world.car.x, z: world.car.z, speed: world.car.speed } : null, contracts: [...profile.completed], credits: profile.credits, raining: world.raining, dayMode: world.dayMode }),
         enter, exit, walk: (dx, dz) => { if (!collides(player.x + dx, player.z + dz)) { player.x += dx; player.z += dz; } },
-        drive: toggleCar, time: cycleTime, rain: toggleRain, quality: toggleQuality, contract: completeNearbyContract,
+        drive: toggleCar, time: cycleTime, rain: toggleRain, quality: toggleQuality, gps: toggleNavigation, contract: completeNearbyContract,
         interact
       };
       // Diagnostics exist only under the explicitly opted-in ?test=1 route.
@@ -685,7 +688,8 @@
   function resize() {
     if (!world.ready) return;
     const w = Math.max(1, viewport.clientWidth), h = Math.max(1, viewport.clientHeight);
-    const dpr = Math.min(window.devicePixelRatio || 1, mobile.matches ? 1.12 : world.gpuScale);
+    const cap = world.quality === 'eco' ? .64 : reduceMotion.matches ? Math.min(.67, world.gpuScale) : mobile.matches ? Math.min(1.05, world.gpuScale) : world.gpuScale;
+    const dpr = Math.min(window.devicePixelRatio || 1, cap);
     renderer.setPixelRatio(dpr); renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix();
   }
   function closest() {
@@ -736,8 +740,9 @@
     if (c?.occupied) $('oc-speed').innerHTML = `${Math.round(Math.abs(c.speed) * 12)} <small>км/ч</small>`;
     const dest = closest();
     targetIndex = dest?.i ?? -1;
-    const navGoal = dest || contract;
-    $('oc-target').textContent = dest ? dest.name.toUpperCase() : contract ? contract.short : 'МИССИИ ВЫПОЛНЕНЫ';
+    const navGoal = world.navMode === 'contract' ? (contract || dest) : (dest || contract);
+    $('oc-target').textContent = navGoal ? ('short' in navGoal ? navGoal.short : navGoal.name.toUpperCase()) : 'МИССИИ ВЫПОЛНЕНЫ';
+    $('oc-nav-mode').textContent = world.navMode === 'contract' ? '⌖ GPS: КОНТРАКТЫ' : '⌖ GPS: СЮЖЕТ';
     $('oc-distance').textContent = navGoal ? `${Math.round(Math.hypot(player.x - navGoal.x, player.z - navGoal.z) * 12)} М ДО ЦЕЛИ` : 'Весь город открыт для прогулки';
     const nearHeat = dest && dest.dist <= 1.65 && !state.lost && !state.won && !c?.occupied;
     const nearSide = contract && contract.dist <= 1.7 && !c?.occupied;
@@ -768,7 +773,7 @@
         g.fillRect(p.x - tile / 2 + .5, p.y - tile / 2 + .5, tile - 1, tile - 1);
       }
     }
-    const heat = closest(), side = nearestContract(), goal = heat || side;
+    const heat = closest(), side = nearestContract(), goal = world.navMode === 'contract' ? (side || heat) : (heat || side);
     const destination = goal ? goal.x + ',' + goal.z : '';
     const origin = Math.round(centerX) + ',' + Math.round(centerZ);
     if (destination !== world.routeTo || origin !== world.pathCell) {
@@ -897,7 +902,8 @@
       }
       world.fpsTime = time; world.fpsFrames = world.frame;
     }
-    renderer.render(scene, camera);
+    // Reduced-motion mode keeps gameplay responsive on software WebGL; render at a bounded cadence.
+    if (!reduceMotion.matches || time - (world.lastRender || 0) > 90) { renderer.render(scene, camera); world.lastRender = time; }
     animationId = window.requestAnimationFrame(frame);
   }
   function enter() {
@@ -915,7 +921,8 @@
     world.last = 0; keys.clear();
     syncGame(); resize(); drawMiniMap();
     if (animationId) window.cancelAnimationFrame(animationId);
-    animationId = window.requestAnimationFrame(frame);
+    // The scene is paused behind the start overlay so the Start button never competes with a heavy WebGL frame.
+    animationId = 0;
     $('oc-start-play').focus({ preventScroll: true });
   }
   function exit() {
@@ -929,26 +936,28 @@
   }
   button.addEventListener('click', () => world.active ? exit() : enter());
   $('oc-exit').addEventListener('click', exit);
-  $('oc-start-play').addEventListener('click', () => { $('oc-start').hidden = true; viewport.focus?.(); });
+  $('oc-start-play').addEventListener('click', () => { $('oc-start').hidden = true; viewport.focus?.(); if (world.active && !animationId) animationId = window.requestAnimationFrame(frame); });
   $('oc-action').addEventListener('click', interact);
   $('oc-drive-action').addEventListener('click', toggleCar);
   $('oc-time').addEventListener('click', cycleTime);
   $('oc-rain').addEventListener('click', toggleRain);
   $('oc-quality').addEventListener('click', toggleQuality);
   $('oc-upgrade').addEventListener('click', buyUpgrade);
+  $('oc-nav-mode').addEventListener('click', toggleNavigation);
   $('oc-complete').addEventListener('click', e => { if (e.target === $('oc-complete')) $('oc-complete').hidden = true; });
   $('oc-keep-walking').addEventListener('click', () => { $('oc-complete').hidden = true; $('oc-complete').dataset.dismissed = 'true'; });
   $('oc-again').addEventListener('click', () => { game()?.reset?.(); $('oc-complete').hidden = true; delete $('oc-complete').dataset.dismissed; syncGame(); drawMiniMap(); });
   shell.querySelectorAll('[data-oc-tool]').forEach(b => b.addEventListener('click', () => { game()?.select(b.dataset.ocTool); syncGame(); }));
   window.addEventListener('keydown', e => {
     if (!world.active || !$('oc-start').hidden || !$('oc-complete').hidden) return;
-    const gameplayCodes = ['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space','KeyE','KeyF','KeyH','KeyT','KeyP','KeyQ','ShiftLeft','ShiftRight','Digit1','Digit2','Digit3'];
+    const gameplayCodes = ['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space','KeyE','KeyF','KeyH','KeyT','KeyP','KeyQ','KeyG','ShiftLeft','ShiftRight','Digit1','Digit2','Digit3'];
     if (gameplayCodes.includes(e.code)) { e.preventDefault(); e.stopImmediatePropagation(); }
     keys.add(e.code);
     if (e.repeat) return;
     if (e.code === 'KeyF') toggleCar();
     else if (e.code === 'KeyE' || e.code === 'Enter') interact();
     else if (e.code === 'Space' && !world.car?.occupied) interact();
+    else if (e.code === 'KeyG') toggleNavigation();
     else if (e.code === 'KeyT') cycleTime();
     else if (e.code === 'KeyP') toggleRain();
     else if (e.code === 'KeyQ') toggleQuality();
