@@ -20,8 +20,8 @@ document.title='Теневой протокол — охлади город | OS
 root.classList.add('premium-mode');
 hero.innerHTML=`<div class="premium-hero-copy"><div class="premium-kicker">АФИНЫ · ГОРОДСКАЯ СТРАТЕГИЯ</div><h1>ТЕНЕВОЙ <em>ПРОТОКОЛ</em></h1><strong>Охлади город за три хода.</strong><p>Выбери дерево, навес или сад. Нажми на красную зону и размести охлаждение рядом.</p></div><div class="premium-goal"><div><h2>◎ &nbsp; ЦЕЛЬ МИССИИ</h2><p>Охлади <b>3 горячие зоны</b> за <b>3 размещения</b>.</p><small>Условная цель игры: <b class="orange">60°C</b> → <b class="aqua">30°C</b></small></div><div class="goal-thermometers" aria-hidden="true"><span>♨<b>60°C</b></span><i>→</i><span>❄<b>30°C</b></span></div></div>`;
 const left=element('aside','premium-mission',`<div class="mission-loc"><span>⌖</span> АФИНЫ, ГРЕЦИЯ <small>МИССИЯ 1/3</small></div><div class="athens-illustration" role="img" aria-label="Панорама вечерних Афин"></div>
-<section class="mission-block"><h2><span class="sun">☀</span> ПОЧЕМУ ЖАРКО?</h2><p>Бетон нагревается. Деревьев и тени мало.</p></section>
-<section class="mission-block"><h2><span class="cyan">◎</span> ТВОЯ ЗАДАЧА</h2><p>Охлади <b>все три красные точки</b>. У тебя только <b>три модуля</b>.</p></section>
+<section class="mission-focus"><strong>◎ ТВОЯ ЗАДАЧА · 3 ХОДА</strong><p>Выбери красную зону, поставь охлаждение и проверь результат.</p></section>
+<details class="mission-background"><summary>☀ ПОЧЕМУ ГОРОД ЖАРКИЙ?</summary><p>Бетон и асфальт накапливают тепло. Деревья, тень и зелёные зоны помогают его уменьшить.</p></details>
 <section class="mission-block"><h2>ТВОЙ ПРОГРЕСС</h2><div class="premium-progress"><div id="premiumRing" class="ring" aria-hidden="true"></div><div><strong id="premiumProgress">0 / 3</strong><small>Зон охлаждено</small></div></div></section>`);
 layout.insertBefore(left,stage);
 const districts=element('section','premium-districts','<h2>◎ ТРИ ГОРЯЧИЕ ЗОНЫ</h2><p>Нажми на район, чтобы выбрать точку охлаждения.</p><div id="premiumDistrictRows" class="premium-district-rows"></div><button type="button" id="premiumShowHints" class="premium-hint-button" aria-pressed="false">◈ ПОКАЗАТЬ ПОДХОДЯЩИЕ КЛЕТКИ</button>');
