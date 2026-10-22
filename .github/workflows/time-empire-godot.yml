@@ -80,6 +80,31 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
+      - name: Export Windows native PC Ultra executable
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p godot/time-empire/.build-windows
+          godot --headless --rendering-method gl_compatibility --path godot/time-empire --export-release "Windows Desktop" "$GITHUB_WORKSPACE/godot/time-empire/.build-windows/OSGARD_CHRONOS_CITY_PC_ULTRA.exe"
+          python3 - <<'VERIFYEXE'
+          from pathlib import Path
+          directory = Path("godot/time-empire/.build-windows")
+          exe = directory / "OSGARD_CHRONOS_CITY_PC_ULTRA.exe"
+          pack = exe.with_suffix(".pck")
+          assert exe.exists() and exe.stat().st_size > 100000, "Missing Windows executable"
+          assert exe.open("rb").read(2) == b"MZ", "Not a Windows PE executable"
+          assert pack.exists() and pack.stat().st_size > 100000, "Missing Godot PCK game resources"
+          print("PASS WINDOWS PC ULTRA:", exe.stat().st_size, pack.stat().st_size)
+          VERIFYEXE
+      - name: Attach independent Windows PC Ultra build
+        uses: actions/upload-artifact@v4
+        with:
+          name: time-empire-chronos-windows-pc-ultra
+          path: godot/time-empire/.build-windows/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 14
+
       - name: Archive exact native Godot sources at this validated commit
         uses: actions/upload-artifact@v4
         with:
