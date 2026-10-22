@@ -62,6 +62,17 @@ assert.ok(shade.includes('motionPreference.matches'), 'Reduced motion must affec
 assert.ok(shade.includes('addEventListener("keydown"'), 'The placement puzzle needs a keyboard route')
 assert.ok(shade.includes('renderingMode="canvas2d"'), 'A WebGL failure must still leave the same puzzle playable')
 
+const premiumJS = text(resolve(root, 'queue/ZION-030/premium.js'))
+const premiumCSS = text(resolve(root, 'queue/ZION-030/premium.css'))
+assert.ok(shade.includes('premium.js?v=22') && shade.includes('premium.css?v=22'), 'The published game must load the implemented premium UI')
+assert.ok(shade.includes('ZION030_GAME=Object.freeze'), 'The new view must use the real game mechanics')
+assert.ok(premiumJS.includes("canvas.getContext('2d'") && premiumJS.includes("game()?.state?.()"), 'The isometric world must be a live canvas, not a static image')
+assert.ok(premiumJS.includes('premiumPlace') && premiumJS.includes('premiumMap'), 'Placement and map view must be interactive')
+assert.ok(premiumCSS.includes('.premium-mission') && premiumCSS.includes('.premium-how') && premiumCSS.includes('.premium-mode .layout'), 'The approved three-column layout must be styled')
+assert.ok(!premiumCSS.includes('data:image/png;base64'), 'The premium interface must not disguise a screenshot as gameplay')
+new vm.Script(premiumJS, { filename: 'zion-premium.js' })
+
+
 // Execute actual game scripts with a small DOM/Canvas harness. This proves game
 // state and input behavior; it deliberately does not claim GPU or visual QA.
 class Element {
