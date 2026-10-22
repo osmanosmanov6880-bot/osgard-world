@@ -1,0 +1,142 @@
+{
+  "generator": "built-in image_gen",
+  "created_date": "2026-10-21",
+  "reference": "user supplied OSGARD Play reference image",
+  "assets": [
+    {
+      "name": "hero-megacity",
+      "original_path": "hero/hero-megacity.png",
+      "prompt": "Use case: stylized-concept / cinematic science-fiction environment.\nAsset type: production hero background art for OSGARD Play desktop website, 2560 by 1440 landscape composition.\nInput image is a reference and edit target: take ONLY the scene behind the interface in the TOP HERO HALF of this attached OSGARD design. Reconstruct that scene as a standalone clean wide landscape, preserving the reference's striking architecture, viewpoint, giant planet, waterfalls and atmosphere. Remove every text, word, letter, logo, menu, button, statistic, frame, card, UI panel, border, and graphic overlay. Do NOT reproduce the page below the top hero.\nScene: colossal alien-futuristic megacity suspended over a luminous cloud chasm; extraordinarily tall slender obsidian silver towers at center and right; orbital rings and elegant sweeping bridges with turquoise and soft violet lighting; hovering transport platforms and several distant streamlined spaceships; lush floating islands with huge radiant waterfalls falling into mist; a brilliant huge blue-violet planet dominates the upper center-right sky. One tiny dark human explorer seen from behind stands on an observation platform at bottom center, x=56%, facing the immense city. Position the planet and principal city center between x=48% and x=78%, with a spacious dark atmospheric architectural left third that can receive live HTML headings.\nComposition: cinematic widescreen panorama viewed at human eye level from a foreground circular platform, strong layered depth, city towers silhouetted against planet rim, human about 12% of image height. Keep the scene rich and monumental, not empty gradient. Cool black-blue shadows, electric cyan 56F4F5, neon blue 168DFF, subtle violet B65AFF, pearl-white and pink dawn rim light. Photorealistic material detail, AAA science fiction environment concept art, finely detailed architecture, volumetric atmosphere, elegant controlled luminous highlights. Match the reference visual composition closely.\nOutput is JUST the clean cinematic world background image. Absolutely no visible text or logo, no UI, no webpage screenshot, no split panels, no borders.",
+      "role": "cinematic promotional illustration, not gameplay screenshot",
+      "width": 1983,
+      "height": 793,
+      "original_bytes": 2987662,
+      "sha256_original": "9a4875fb4b1e34edbf4baa0846875f7cd4aedea966b867f846b2111077f73d51",
+      "webp_bytes": 421844,
+      "outputs": [
+        "hero/hero-megacity.png",
+        "hero/hero-megacity.webp",
+        "hero/hero-megacity-1920.webp",
+        "hero/hero-megacity-1280.webp"
+      ],
+      "file_inventory": [
+        {
+          "path": "hero/hero-megacity.png",
+          "width": 1983,
+          "height": 793,
+          "size_bytes": 2987662,
+          "sha256": "9a4875fb4b1e34edbf4baa0846875f7cd4aedea966b867f846b2111077f73d51"
+        },
+        {
+          "path": "hero/hero-megacity-1280.webp",
+          "width": 1280,
+          "height": 512,
+          "size_bytes": 196476,
+          "sha256": "9b97dcc7c512b479e59a52ea31154cfe8844f64ec5bb9849c2becfdf134a5dcd"
+        },
+        {
+          "path": "hero/hero-megacity-1920.webp",
+          "width": 1920,
+          "height": 768,
+          "size_bytes": 353924,
+          "sha256": "483a6395cda734250f0e76958addbd046dbc904fef38b8ec5ea01d1d4b8d3bc0"
+        },
+        {
+          "path": "hero/hero-megacity.webp",
+          "width": 1983,
+          "height": 793,
+          "size_bytes": 421844,
+          "sha256": "d30d1f8844203385934e8f2877d1832985d6830f5554a8bc5962af4a5eb9fe40"
+        }
+      ]
+    },
+    {
+      "name": "hero-mobile",
+      "original_path": "hero/hero-mobile.png",
+      "prompt": "Use case: stylized-concept. Asset type: OSGARD Play mobile website background, vertical portrait image, 1024 by 1536 pixels, 2:3 aspect ratio.\nThe attached image is a visual reference for this alien futuristic world. Recompose ONLY its upper cinematic world scene into a vertical mobile painting, preserving the elegant obsidian skyscrapers, giant blue-violet planet, cyan and violet lights, elevated circular bridges, waterfalls and cloud chasms. This MUST be an independently composed portrait scene, not a crop or webpage.\nVertical composition: giant luminous planet in upper center-right, delicate massive towers rising from the lower half and along far left and right; dark fine stars and low-contrast planet atmosphere in the upper left and upper middle for live HTML title and body text. Lower third: a small lone human explorer viewed from behind near the center bottom on a wet metallic overlook ring lit electric cyan; floating terraces and monumental waterfalls descending into volumetric clouds beyond. A spaceship cruises far above the skyline. Distribute depth vertically so both the planet and human remain in frame, including the person's feet. Heroism through huge scale, rich environmental detail, dark blue palette #020814 and #061527 with electric cyan #56F4F5, subtle violet #B65AFF and white-pink dawn glow. Premium realistic science-fiction environment art, cinematic materials, ray-traced feeling, atmospheric perspective.\nNo text, no letters, no logos including no central G-shaped logo, no buttons, menus, UI panels, borders or drawn interface. The output is one continuous clean portrait artwork, with no panels or typography.",
+      "role": "independently composed mobile promotional illustration, not a crop or gameplay screenshot",
+      "width": 1024,
+      "height": 1536,
+      "original_bytes": 2890033,
+      "sha256_original": "f068eacabbf87a9ded593a76959367f77d220dad7338a6884d6af8cd68c3a925",
+      "webp_bytes": 388548,
+      "outputs": [
+        "hero/hero-mobile.png",
+        "hero/hero-mobile.webp",
+        "hero/hero-mobile-780.webp"
+      ],
+      "file_inventory": [
+        {
+          "path": "hero/hero-mobile.png",
+          "width": 1024,
+          "height": 1536,
+          "size_bytes": 2890033,
+          "sha256": "f068eacabbf87a9ded593a76959367f77d220dad7338a6884d6af8cd68c3a925"
+        },
+        {
+          "path": "hero/hero-mobile-780.webp",
+          "width": 780,
+          "height": 1170,
+          "size_bytes": 223086,
+          "sha256": "8754fa00f10eff3db2b7ef72f23963f066e5176b4fb2b7c7985aea5f26886854"
+        },
+        {
+          "path": "hero/hero-mobile.webp",
+          "width": 1024,
+          "height": 1536,
+          "size_bytes": 388548,
+          "sha256": "b02356ee93d102cf169730b5e54fdfa400b52ef7fbb1a73129bcf4c79cc1880a"
+        }
+      ]
+    },
+    {
+      "name": "panorama-discover",
+      "original_path": "hero/panorama-discover.png",
+      "prompt": "Use case: stylized-concept. Asset type: OSGARD Play final call-to-action environmental background, ultrawide landscape image 2560 by 1024, aspect ratio 2.5:1.\nUse ONLY the LOWERMOST panoramic scene at the bottom of the reference as the visual composition guide; expand it into a full standalone clean cinematic landscape. A lone human explorer seen from behind stands on a circular metal terrace in the left quarter of the frame, cyan light under their feet, elegant curving railings and purple-cyan light trails. Beyond: immense alien megacity and graceful thin futuristic towers on floating islands above clouds, enormous luminous waterfalls on the right, blue-white planet arc across the distant horizon, small moon upper left, small ships and hovering islands. Deep blue night sky, fine stars, atmospheric volumetric light, cyan and violet highlights, premium photorealistic science-fiction environment concept art, complex intricate details, epic and welcoming, same world as reference.\nImportant composition: panorama spans whole frame; left quarter human/foreground platform, right quarter floating waterfall cliffs and towers, middle remains lower contrast luminous cloud basin and distant skyline for real HTML title/button overlay. Horizon around middle height. Preserve spectacular depth without busy central shapes.\nNo text, no title, no letter, no logo or symbol, no UI, no buttons, no cards, no border, no webpage screenshot. This is a single clean background artwork.",
+      "role": "cinematic promotional illustration, not gameplay screenshot",
+      "width": 1983,
+      "height": 793,
+      "original_bytes": 2850995,
+      "sha256_original": "50a6491d73dbc574a8f2ebfe34010063af07848e49718e358c3a47c2c334de78",
+      "webp_bytes": 383222,
+      "outputs": [
+        "hero/panorama-discover.png",
+        "hero/panorama-discover.webp",
+        "hero/panorama-discover-1920.webp",
+        "hero/panorama-discover-1280.webp"
+      ],
+      "file_inventory": [
+        {
+          "path": "hero/panorama-discover.png",
+          "width": 1983,
+          "height": 793,
+          "size_bytes": 2850995,
+          "sha256": "50a6491d73dbc574a8f2ebfe34010063af07848e49718e358c3a47c2c334de78"
+        },
+        {
+          "path": "hero/panorama-discover-1280.webp",
+          "width": 1280,
+          "height": 512,
+          "size_bytes": 174238,
+          "sha256": "7b5f923bf077dfc6841209028c73e3d87badb76d986a17a720edee21f29d6132"
+        },
+        {
+          "path": "hero/panorama-discover-1920.webp",
+          "width": 1920,
+          "height": 768,
+          "size_bytes": 309696,
+          "sha256": "ee8549d309140f095e6587ba61773b98cd9aa532a7641409389c103b521facd6"
+        },
+        {
+          "path": "hero/panorama-discover.webp",
+          "width": 1983,
+          "height": 793,
+          "size_bytes": 383222,
+          "sha256": "b695a7c775c061eef52454d35478fcb8fcbb652124927553349bf0c6bb02a6a1"
+        }
+      ]
+    }
+  ],
+  "source_path_base": "osgard-art/",
+  "path_normalization": "Source paths are relative to the original art folder; prompt text is preserved verbatim."
+}

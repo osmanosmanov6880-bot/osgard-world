@@ -7,8 +7,14 @@ import {
   BUILDINGS, COUNCIL_ACTIONS, POLICIES, applyCouncilAction, buildStructure, createTimeState, getTurnForecast, hasUsedCouncilAction, resolveTimeTurn,
   type BuildingId, type ChronicleEntry, type CouncilActionId, type DistrictId, type PolicyId, type TimeState,
 } from './core/timeState'
-import { recordOsgardEvent } from './core/eventQueue'
+import { recordOsgardEvent as recordCoreEvent } from './core/eventQueue'
 import { completePlayerSession, startPlayerSession } from './core/playerApi'
+
+// Optional telemetry must never block local gameplay. HTTP preview contexts
+// can omit crypto.randomUUID; production's shared event queue is unchanged.
+function recordOsgardEvent(...args: Parameters<typeof recordCoreEvent>) {
+  try { return recordCoreEvent(...args) } catch { /* Gameplay and local saves remain available. */ }
+}
 
 type Tab = 'council' | 'construction' | 'chronicle'
 type MapLayer = 'prosperity' | 'politics' | 'infrastructure'

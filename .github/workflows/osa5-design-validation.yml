@@ -95,7 +95,8 @@ jobs:
       - name: Install isolated Playwright Chromium for responsive QA
         run: |
           npm install --no-save --no-package-lock playwright@1.56.1
-          npx playwright install --with-deps chromium
+          # Full Chromium is verified over TLS; avoid the separate headless-shell download.
+          npx playwright install --with-deps --no-shell chromium
       - name: Stage the same static game and entertainment surfaces used in production
         run: |
           mkdir -p dist/games dist/entertainment

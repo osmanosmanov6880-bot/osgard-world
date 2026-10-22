@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useSyncExternalStore } from 'react'
+import { getBrowserSnapshot, getServerSnapshot, subscribeBrowserNavigation } from './browserNavigation'
 import { ArrowDownToLine, Archive, RotateCcw, Upload } from 'lucide-react'
 import type { OSACinemaLocale } from './OSACinema'
 import './academyStudio.css'
@@ -88,7 +89,16 @@ const copy = {
 
 export default function AcademyStudio({locale}:{locale:OSACinemaLocale}){
   const t=copy[locale]
+  const navigation = useSyncExternalStore(subscribeBrowserNavigation, getBrowserSnapshot, getServerSnapshot)
+  const requestedProject = (() => {
+    try { return new URL(navigation.href, 'https://osgard.world').searchParams.get('project') } catch { return null }
+  })()
   const [active,setActive]=useState(()=>{try{const requested=new URLSearchParams(window.location.search).get('project');return requested&&['evidence','privacy','decision'].includes(requested)?requested:'evidence'}catch{return 'evidence'}})
+  // The Academy stays mounted during SPA query changes. Respect deep links
+  // instead of preserving an outdated tab selected on the previous URL.
+  useEffect(() => {
+    if (requestedProject && ['evidence','privacy','decision'].includes(requestedProject)) setActive(requestedProject)
+  }, [requestedProject])
   const [submissions,setSubmissions]=useState<Record<string,Submission>>({})
   const [ready,setReady]=useState(false)
   const [saveFailed,setSaveFailed]=useState(false)

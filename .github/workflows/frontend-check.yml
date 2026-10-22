@@ -76,6 +76,8 @@ jobs:
         run: npm ci
       - name: Type-check the frontend
         run: npm run check
+      - name: Verify six-surface integration, game parity, accessible low-power World
+        run: node scripts/osgard-unified-release-smoke.mjs
       - name: Verify three product surfaces and all game entry points
         run: npm run qa:redesign
       - name: Verify locally published ZION gameplay
@@ -160,6 +162,8 @@ jobs:
         run: npm run qa:merakki-case
       - name: Verify Academy-first homepage and preserved portal route
         run: npm run qa:academy
+      - name: Verify unified command navigation and accessible route loading
+        run: npm run qa:unified-shell
       - name: Verify the OSA media-player contract
         run: npm run qa:osa-media
       - name: Verify precompressed shared-brand JavaScript
@@ -197,7 +201,9 @@ jobs:
       - name: Install pinned browser test tooling
         run: |
           npm install --no-save --package-lock=false @playwright/test@1.58.2
-          npx playwright install --with-deps chromium
+          # The full Chromium channel runs Playwright's new headless mode.
+          # Do not depend on the separate headless-shell CDN certificate.
+          npx playwright install --with-deps --no-shell chromium
       - name: Check desktop and mobile user journeys
         run: npx playwright test --config playwright.ecosystem.config.mjs
       - name: Keep screenshots and browser evidence

@@ -2,7 +2,7 @@ import { defineConfig } from '@playwright/test'
 
 export default defineConfig({
   testDir: './scripts',
-  testMatch: ['ecosystem-browser.spec.mjs', 'ecosystem-mobile-lab.spec.mjs', 'program-enrollment-browser.spec.mjs', 'remix-console-browser.spec.mjs', 'remix-owned-browser.spec.mjs', 'remix-invitations-browser.spec.mjs', 'inherit-account-browser.spec.mjs'],
+  testMatch: ['unified-six-surfaces.spec.mjs', 'osgard-quick-nav.spec.mjs', 'academy-cockpit-browser.spec.mjs', 'ecosystem-browser.spec.mjs', 'ecosystem-mobile-lab.spec.mjs', 'program-enrollment-browser.spec.mjs', 'remix-console-browser.spec.mjs', 'remix-owned-browser.spec.mjs', 'remix-invitations-browser.spec.mjs', 'inherit-account-browser.spec.mjs'],
   fullyParallel: true,
   workers: 2,
   retries: 1,
@@ -11,6 +11,7 @@ export default defineConfig({
   reporter: [['list'], ['html', { outputFolder: 'browser-report', open: 'never' }]],
   use: {
     baseURL: 'http://127.0.0.1:4175',
+    channel: 'chromium', // Use the installed full browser in new headless mode.
     locale: 'ru-RU',
     contextOptions: { reducedMotion: 'reduce' },
     trace: 'retain-on-failure',

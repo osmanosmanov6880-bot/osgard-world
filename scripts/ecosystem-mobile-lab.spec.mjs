@@ -16,8 +16,8 @@ const profile = {
 }
 const surfaces = [
   { path: '/', product: 'world', heading: 'ТЕХНОЛОГИИ,', primary: '.omega-hero .brand-button.primary', href: /^#products$/ },
-  { path: '/intelligence', product: 'intelligence', heading: 'Понимать ИИ.', primary: '.intelligence-hero .brand-button.primary', href: /^\/learning\/program$/ },
-  { path: '/play', product: 'play', heading: 'ДОБАВЬ ТЕНЬ.', primary: '.play-hero .brand-button.primary', href: /^\/play\/world\/zion-030(?:\?|$)/ },
+  { path: '/intelligence', product: 'intelligence', heading: 'Понимать ИИ.', primary: '.intelligence-hero .brand-button.primary', href: /^#proof-card$/ },
+  { path: '/play', product: 'play', heading: /OSGARD\s*Play/i, primary: '.cp-hero-actions .cp-button-primary', href: /^#featured$/ },
 ]
 
 // Keep these samples sequential within this file, even under fullyParallel.
@@ -51,6 +51,7 @@ test.describe('OSGARD slow mobile laboratory', () => {
         throttleApplied: false,
         ready: false,
         primaryAction: null,
+        catalogNavigation: null,
         metrics: null,
         fieldMeasurement: false,
         p75: null,
@@ -63,7 +64,7 @@ test.describe('OSGARD slow mobile laboratory', () => {
           'HTTP cache is bypassed; DNS, connection establishment and browser process warmth are not standardized.',
           'LCP is the latest observed candidate and CLS is the largest session window before the first input, not the full visit.',
           'The observation ends after main, fonts, viewport images, load and two rendering frames; later content can change metrics.',
-          'The primary link is checked for actionability and destination; no course, game, form or payment is launched.',
+          'Primary-link actionability is checked after measurement. Play then opens featured worlds and the catalog; no course, game, form or payment is launched.',
           'INP, production origin latency, CDN behavior and real user p75 are not measured by this test.',
         ],
       }
@@ -106,7 +107,7 @@ test.describe('OSGARD slow mobile laboratory', () => {
             const initialLoading = document.querySelector('#product-main .route-loading[role="status"]')
             if (initialLoading && domMilestones.initialLoadingInsertedAtMs === null) domMilestones.initialLoadingInsertedAtMs = atMs
             if (!initialLoading && domMilestones.initialLoadingInsertedAtMs !== null && domMilestones.initialLoadingRemovedAtMs === null) domMilestones.initialLoadingRemovedAtMs = atMs
-            if (domMilestones.productHeroInsertedAtMs === null && document.querySelector('#product-main .world-hero, #product-main .intelligence-hero, #product-main .play-hero')) domMilestones.productHeroInsertedAtMs = atMs
+            if (domMilestones.productHeroInsertedAtMs === null && document.querySelector('#product-main .world-hero, #product-main .intelligence-hero, #product-main .cp-hero')) domMilestones.productHeroInsertedAtMs = atMs
           }
           const domObserver = new MutationObserver(() => {
             recordDomMilestones()
@@ -208,6 +209,7 @@ test.describe('OSGARD slow mobile laboratory', () => {
         await expect(primary).toBeVisible({ timeout: 60_000 })
         await expect(primary).toBeEnabled()
         await expect(primary).toHaveAttribute('href', surface.href)
+        if (surface.product === 'play') await expect(primary).toContainText('Исследовать миры')
         evidence.mainAndActionVisibleAtMs = await page.evaluate(() => performance.now())
 
         // Readiness signals, not an arbitrary sleep or a networkidle heuristic.
@@ -235,6 +237,9 @@ test.describe('OSGARD slow mobile laboratory', () => {
         expect(evidence.metrics.lcpMs, 'A paint candidate must be observed; this is not an LCP speed threshold').not.toBeNull()
         expect(evidence.visualReadiness.fontsStatus).toBe('loaded')
         expect(evidence.visualReadiness.viewportImages.every(image => image.loaded), 'Visible images must load under the profile').toBe(true)
+        evidence.initialLayout = await page.evaluate(() => ({ width: innerWidth, documentWidth: document.documentElement.scrollWidth, bodyWidth: document.body.scrollWidth }))
+        expect(evidence.initialLayout.documentWidth, 'The initial mobile document must not overflow horizontally').toBeLessThanOrEqual(evidence.initialLayout.width + 1)
+        expect(evidence.initialLayout.bodyWidth, 'The initial mobile body must not overflow horizontally').toBeLessThanOrEqual(evidence.initialLayout.width + 1)
 
         // Trial performs hit-target/stability checks, but does not navigate or click.
         await primary.click({ trial: true, timeout: 20_000 })
@@ -242,6 +247,43 @@ test.describe('OSGARD slow mobile laboratory', () => {
           text: (await primary.innerText()).trim(), href: await primary.getAttribute('href'),
           actionable: true, trialOnly: true,
           checkedAtMs: await page.evaluate(() => performance.now()),
+        }
+        if (surface.product === 'play') {
+          // Exercise the real two-step journey only after the initial-load
+          // observers have stopped and the original trial-click has passed.
+          await primary.click({ timeout: 20_000 })
+          await expect(page).toHaveURL(url => url.pathname === '/play' && url.hash === '#featured')
+          const featured = page.locator('#featured')
+          await expect(featured).toBeInViewport()
+          await expect(featured.locator('.cp-featured-world')).toHaveCount(3)
+          await expect(featured.getByRole('button', { name: 'Предыдущие избранные миры', exact: true })).toBeEnabled()
+          await expect(featured.getByRole('button', { name: 'Следующие избранные миры', exact: true })).toBeEnabled()
+          const catalogLink = page.locator('.cp-glass-panel a[href="#catalog"]')
+          await expect(catalogLink).toHaveAttribute('href', '#catalog')
+          await catalogLink.click({ timeout: 20_000 })
+          await expect(page).toHaveURL(url => url.pathname === '/play' && url.hash === '#catalog')
+          const catalog = page.locator('#catalog')
+          await expect(catalog).toBeInViewport({ timeout: 60_000 })
+          await expect(catalog.locator('.play-card')).toHaveCount(19, { timeout: 60_000 })
+          const search = catalog.getByRole('searchbox', { name: 'Найти свой мир', exact: true })
+          await expect(search).toBeEnabled()
+          await expect(catalog.getByLabel('Жанр', { exact: true })).toBeEnabled()
+          await expect(catalog.getByLabel('Доступность', { exact: true })).toBeEnabled()
+          await expect(catalog.getByRole('group', { name: 'Моя коллекция', exact: true }).getByRole('button')).toHaveCount(3)
+          await search.fill('ZION-030')
+          await expect(catalog.locator('.play-card')).toHaveCount(1)
+          await expect(catalog.locator('.play-card[data-world-id="zion-030"] h3 a')).toHaveAttribute('href', /^\/play\/world\/zion-030(?:\?|$)/)
+          await search.fill('')
+          await expect(catalog.locator('.play-card')).toHaveCount(19)
+          const layout = await page.evaluate(() => ({ width: innerWidth, documentWidth: document.documentElement.scrollWidth, bodyWidth: document.body.scrollWidth }))
+          expect(layout.documentWidth, 'The full mobile catalog must not overflow horizontally').toBeLessThanOrEqual(layout.width + 1)
+          expect(layout.bodyWidth, 'The full mobile catalog body must not overflow horizontally').toBeLessThanOrEqual(layout.width + 1)
+          evidence.catalogNavigation = {
+            observationBoundary: 'after-initial-load-measurement-and-trial',
+            primaryDestination: '#featured', href: page.url(),
+            cards: await catalog.locator('.play-card').count(), searchVerified: true, layout,
+            checkedAtMs: await page.evaluate(() => performance.now()),
+          }
         }
         expect(pageErrors, 'The main page must remain usable under throttling').toEqual([])
         evidence.ready = true

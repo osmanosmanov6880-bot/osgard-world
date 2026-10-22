@@ -30,6 +30,7 @@
     "qa:ecosystem": "node scripts/ecosystem-integrity-smoke.mjs",
     "qa:remix-growth": "node scripts/remix-growth-smoke.mjs",
     "qa:academy": "node scripts/academy-home-smoke.mjs",
+    "qa:unified-shell": "node --experimental-strip-types scripts/osgard-unified-shell-smoke.mjs",
     "qa:lectures": "node scripts/lecture-library-smoke.mjs",
     "qa:deploy-workflow": "node scripts/deploy-workflow-smoke.mjs",
     "qa:elbrus-case": "node scripts/elbrus-case-smoke.mjs",

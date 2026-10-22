@@ -1,0 +1,65 @@
+/* WAVE 4 — honest, theme-aware route loading; no fake cards or fake data. */
+.brand-system .osgard-route-skeleton{
+  --skeleton-accent:#72e2ef;
+  position:relative;isolation:isolate;overflow:hidden;min-height:clamp(510px,78svh,850px);
+  display:grid;grid-template-columns:minmax(0,1fr) minmax(250px,.85fr);
+  gap:clamp(25px,5vw,75px);align-items:center;
+  padding:clamp(50px,7vw,105px) var(--brand-gutter);
+  background:linear-gradient(115deg,#061423,#0b2339 67%,#081424);
+}
+.brand-system .osgard-route-skeleton[data-skeleton-theme=world]{--skeleton-accent:#85d8f7}
+.brand-system .osgard-route-skeleton[data-skeleton-theme=intelligence]{--skeleton-accent:#8ceee5}
+.brand-system .osgard-route-skeleton[data-skeleton-theme=play]{--skeleton-accent:#a08cff}
+/* Distinguish the actual route without introducing fake cards or data. */
+.brand-system .osgard-route-skeleton[data-skeleton-area=academy]{--skeleton-accent:#b7a7ff}
+.brand-system .osgard-route-skeleton[data-skeleton-area=lectures]{--skeleton-accent:#84d7fa}
+.brand-system .osgard-route-skeleton[data-skeleton-area=development]{--skeleton-accent:#e9d3b2}
+.brand-system .osgard-route-skeleton[data-skeleton-area=entertainment]{--skeleton-accent:#79dff4}
+.osgard-skeleton-ambient{position:absolute;inset:0;pointer-events:none;z-index:-1;
+  background:radial-gradient(ellipse at 72% 45%,color-mix(in srgb,var(--skeleton-accent) 20%,transparent),transparent 55%),
+    radial-gradient(ellipse at 22% 92%,#557ea31c,transparent 44%)}
+.osgard-skeleton-copy{position:relative;max-width:660px}
+.osgard-skeleton-eyebrow{color:var(--skeleton-accent);
+  font:750 11px/1.5 'JetBrains Mono',monospace;letter-spacing:.17em;margin:0 0 23px}
+.osgard-skeleton-eyebrow span{color:#90aec1}
+.brand-system .osgard-route-skeleton h2{
+  font:760 clamp(35px,4.3vw,68px)/1.08 Inter,Arial,sans-serif;
+  letter-spacing:-.055em;margin:0 0 21px;color:#f5fbff}
+.osgard-skeleton-copy>p:not(.osgard-skeleton-eyebrow){font:450 16px/1.65 Inter,Arial,sans-serif;
+  color:#bbcedd;max-width:490px}
+.osgard-skeleton-actions{display:flex;gap:12px;margin-top:35px}
+.osgard-skeleton-actions span{display:block;height:52px;width:min(200px,43%);
+  border-radius:6px;background:linear-gradient(100deg,#366b7c8b,#709bab9c,#3760778b);
+  animation:osgard-skeleton-breathe 2.4s ease-in-out infinite alternate}
+.osgard-skeleton-actions span+span{background:#17374b80;width:min(175px,38%);animation-delay:.5s}
+.osgard-skeleton-bars{display:grid;gap:12px;margin-top:45px}
+.osgard-skeleton-bars>span{display:block;width:95%;height:11px;border-radius:9px;
+  background:#52758858;animation:osgard-skeleton-breathe 2.4s ease-in-out infinite alternate}
+.osgard-skeleton-bars>span:nth-child(2){width:77%;animation-delay:.3s}
+.osgard-skeleton-bars>span:nth-child(3){width:61%;animation-delay:.6s}
+.osgard-skeleton-art{position:relative;aspect-ratio:1;min-width:0;max-width:610px;
+  display:grid;place-items:center}
+.osgard-skeleton-ring{width:78%;aspect-ratio:1;border-radius:50%;
+  background:radial-gradient(circle at 34% 32%,#b9f5ff1b,transparent 45%),radial-gradient(circle at 50% 50%,#143e5e,#041426 73%);
+  box-shadow:inset 0 0 0 1px #9ccff751,0 0 0 18px #84b7f507,0 0 100px #539feb21;position:relative}
+.osgard-skeleton-ring::before,.osgard-skeleton-ring::after{content:'';position:absolute;inset:-15%;border:1px solid #83c9e929;border-radius:50%;
+  transform:rotateX(67deg) rotateZ(-15deg)}
+.osgard-skeleton-ring::after{inset:-27%;opacity:.45;transform:rotateX(70deg) rotateZ(24deg)}
+.osgard-skeleton-ring>span{position:absolute;inset:0;border-radius:50%;
+  background:linear-gradient(120deg,#97f4ff00,#b7edfc19 30%,#000000aa 89%)}
+.osgard-skeleton-grid{position:absolute;inset:5%;opacity:.35;display:grid;
+  grid-template-columns:repeat(3,1fr);gap:10px;transform:rotate(-11deg)}
+.osgard-skeleton-grid span{border:1px solid #69a8c81e}
+@keyframes osgard-skeleton-breathe{from{opacity:.55}to{opacity:1}}
+@media(max-width:760px){
+  .brand-system .osgard-route-skeleton{min-height:clamp(460px,70svh,730px);
+    grid-template-columns:1fr;padding:50px var(--brand-gutter);gap:0}
+  .brand-system .osgard-route-skeleton h2{font-size:clamp(34px,8vw,52px)}
+  .osgard-skeleton-copy{z-index:2}
+  .osgard-skeleton-art{position:absolute;right:-85px;bottom:-75px;opacity:.32;width:min(73vw,390px);pointer-events:none}
+  .osgard-skeleton-bars{margin-top:30px}
+}
+@media(prefers-reduced-motion:reduce){
+  .brand-system .osgard-route-skeleton *{animation:none!important;transition:none!important}
+}
+html[data-motion=off] .brand-system .osgard-route-skeleton *{animation:none!important;transition:none!important}

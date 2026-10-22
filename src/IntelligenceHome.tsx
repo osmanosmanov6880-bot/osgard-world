@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
-import { BrandMark } from './BrandMark'
 import { getOSALearningProgress, isOSALearningProgressPersistent, subscribeOSALearningProgress } from './osaProgress'
 import { getOSANextLesson } from './osaLearningTracks'
 import { OSA_LESSON_SLUGS } from './osaLessonRegistry'
+import './intelligenceCommand.css'
 
 const claims = [
   'Модель может выдать правдоподобный, но неверный ответ.',
@@ -24,37 +24,60 @@ export default function IntelligenceHome() {
   const completed = progress.lessonCompletions.length
   const total = OSA_LESSON_SLUGS.length
 
-  return <main className="intelligence-home brand-container">
-    <section className="intelligence-hero" aria-labelledby="intelligence-title">
-      <div>
-        <p className="brand-eyebrow">OSA INTELLIGENCE / МЫШЛЕНИЕ И ПРАКТИКА</p>
+  return <main className="intelligence-home brand-container intelligence-command">
+    <section className="intelligence-hero intelligence-command-hero" aria-labelledby="intelligence-title">
+      <div className="intelligence-command-copy">
+        <p className="brand-eyebrow intelligence-command-eyebrow">OSA INTELLIGENCE <span>/ KNOWLEDGE ENGINE</span></p>
         <h1 id="intelligence-title">Понимать ИИ.<br /><em>Проверять ответы.</em><br />Решать осознанно.</h1>
-        <p className="brand-lead">Разберитесь, как работает ИИ. Научитесь находить основания для ответа и применять знания в собственной задаче.</p>
-        <div className="brand-actions">
-          <a className="brand-button primary" href="/learning/program">Начать обучение <span aria-hidden="true">↗</span></a>
-          <a className="brand-button" href="#demo">Посмотреть, как это работает <span aria-hidden="true">↓</span></a>
+        <p className="brand-lead">Разбирайтесь в сложных ответах, находите проверяемые основания и принимайте собственные решения. Начните с короткого упражнения — без регистрации.</p>
+        <div className="brand-actions intelligence-command-actions">
+          <a className="brand-button primary" href="#proof-card">Проверить утверждения <span aria-hidden="true">↘</span></a>
+          <a className="brand-button intelligence-command-secondary" href="/learning/program">Программа обучения <span aria-hidden="true">↗</span></a>
         </div>
-        <p className="brand-meta">{total} УРОКОВ / ПРАКТИКА / ПРОВЕРКА ИСТОЧНИКОВ</p>
-        <nav className="omega-osa-trails" aria-label="Быстрый старт обучения">
-          <a href="/learning/program"><span>01 / ЗНАНИЯ</span><strong>Программа</strong><small>Уроки и маршрут</small></a>
-          <a href="#demo"><span>02 / ПРОВЕРКА</span><strong>Практика</strong><small>Проверка утверждений</small></a>
-          <a href="/learning"><span>03 / РЕЗУЛЬТАТ</span><strong>Мой прогресс</strong><small>Сохранённые уроки</small></a>
-        </nav>
+        <div className="intelligence-command-progress">
+          <div className="intelligence-progress-heading"><span>МОЙ УЧЕБНЫЙ МАРШРУТ</span><strong>{completed} / {total} УРОКОВ</strong></div>
+          <div className="intelligence-progress-rail" role="progressbar" aria-label="Пройденные уроки OSA" aria-valuemin={0} aria-valuemax={total} aria-valuenow={completed}>
+            <span style={{width: (100 * completed / Math.max(total, 1)) + '%'}} />
+          </div>
+          <p>{persistent ? 'Отметки сохраняются в этом браузере.' : 'Сейчас постоянное сохранение недоступно.'}</p>
+        </div>
+
       </div>
-      <div className="intelligence-lens omega-intelligence-lens" aria-hidden="true">
-        <span className="brand-eyebrow">OSA LAB / KNOWLEDGE ENGINE</span>
-        <div className="omega-intelligence-scene">
+      <div className="intelligence-lens omega-intelligence-lens intelligence-command-lens">
+        <div className="omega-intelligence-scene intelligence-command-art" aria-hidden="true">
           <img src="/brand/omega-osa.svg" alt="" width="1600" height="1000" decoding="async" fetchPriority="high" />
-          <span className="omega-intelligence-pulse omega-intelligence-pulse-a"/>
-          <span className="omega-intelligence-pulse omega-intelligence-pulse-b"/>
-          <span className="omega-intelligence-hud hud-one">01 / ПОНИМАНИЕ</span>
-          <span className="omega-intelligence-hud hud-two">02 / ДОКАЗАТЕЛЬСТВА</span>
-          <span className="omega-intelligence-hud hud-three">03 / ПРАКТИКА</span>
-          <div className="lens-ring"><BrandMark theme="intelligence" /></div>
+          <span className="omega-intelligence-pulse omega-intelligence-pulse-a" />
+          <span className="omega-intelligence-pulse omega-intelligence-pulse-b" />
         </div>
-        <p>Ответ — начало.<br /><i>Доказательство — опора.</i></p>
-        <small>МОДЕЛЬ → ИСТОЧНИК → РЕШЕНИЕ</small>
+        <section id="proof-card" className="intelligence-proof-console" aria-labelledby="intelligence-proof-title" tabIndex={-1}>
+          <div className="intelligence-proof-topbar">
+            <span>OSA / EVIDENCE LAB</span>
+            <span><i aria-hidden="true" /> ИНТЕРАКТИВНЫЙ ПРИМЕР</span>
+          </div>
+          <p className="intelligence-proof-eyebrow">ПРАКТИКА · 01 / 03</p>
+          <h2 id="intelligence-proof-title">Какие утверждения стоит проверить?</h2>
+          <p className="intelligence-proof-lead">Нажмите на формулировки, которым нужны основания. Отметки сразу появятся в подробном разборе ниже.</p>
+          <div className="intelligence-proof-claims" role="group" aria-label="Выберите утверждения для проверки">
+            {claims.map((claim,index)=><button key={claim} type="button" className={marked.includes(index) ? 'intelligence-proof-claim is-selected' : 'intelligence-proof-claim'}
+              aria-pressed={marked.includes(index)}
+              onClick={() => setMarked(previous => previous.includes(index) ? previous.filter(value => value !== index) : [...previous,index])}>
+              <span className="intelligence-proof-index" aria-hidden="true">0{index+1}</span>
+              <span className="intelligence-proof-statement">{claim}</span>
+              <span className="intelligence-proof-marker" aria-hidden="true">{marked.includes(index)?'✓':'+'}</span>
+            </button>)}
+          </div>
+          <div className="intelligence-proof-summary">
+            <span>ОТМЕЧЕНО <strong>{marked.length} / {claims.length}</strong></span>
+            <a href="#demo" onClick={() => setSources(true)}>Посмотреть доказательства <span aria-hidden="true">↗</span></a>
+          </div>
+          <p className="intelligence-proof-note">Это подготовленный учебный пример, а не ответ подключённой нейросети. Источники и ограничения указаны в разборе.</p>
+        </section>
       </div>
+      <nav className="omega-osa-trails intelligence-command-trails" aria-label="Быстрый старт обучения">
+        <a href="/learning/program"><span>01 / ЗНАНИЯ</span><strong>8 уроков</strong><small>Начать программу</small></a>
+        <a href="#demo"><span>02 / ПРОВЕРКА</span><strong>Разбор</strong><small>Источники и границы</small></a>
+        <a href="/learning"><span>03 / РЕЗУЛЬТАТ</span><strong>Прогресс</strong><small>Мой учебный маршрут</small></a>
+      </nav>
     </section>
 
     <section id="method" className="brand-section" aria-labelledby="intelligence-method-title">
