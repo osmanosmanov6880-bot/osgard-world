@@ -551,6 +551,28 @@ body.high-contrast{--panel:#0b1420;filter:contrast(1.13)}body.high-contrast butt
 @media(max-width:760px){.corridor-kpis,.corridor-districts,.corridor-results{grid-template-columns:repeat(2,minmax(0,1fr))}.corridor-layout{grid-template-columns:1fr}.corridor-map{max-width:390px}.corridor-emblem{display:none}}
 @media(max-width:430px){.corridor-campaign{padding:12px}.corridor-kpis,.corridor-districts{gap:6px}.corridor-route-list{grid-template-columns:1fr}.corridor-hint{grid-template-columns:1fr}.corridor-hint button{grid-column:1;grid-row:auto}.corridor-toolbar button,.corridor-import{flex:1}.corridor-submit{grid-template-columns:1fr}.corridor-submit button,.corridor-submit p{grid-column:1}}
 @media(prefers-reduced-motion:reduce){.corridor-campaign *{scroll-behavior:auto!important;animation:none!important;transition:none!important}}
+
+/* Premium Shadow Protocol v21 gameplay redesign; original game engine remains active. */
+:root{--cyan:#29e2f4;--muted:#b4d0e2;--surface:#071f32;--edge:#176b92}
+body{background:radial-gradient(ellipse at 50% 1%,#183b60,#071629 52%,#020712)!important;color:#e9f8ff;font-size:15px}
+main{max-width:1720px!important;width:calc(100% - 32px)!important;margin:auto}
+.intro h1{font-size:clamp(38px,4vw,72px)!important;line-height:1.06!important;color:#fff;letter-spacing:-.055em;text-shadow:0 4px 25px #0009}
+.intro h1 span{color:#59caff!important;text-shadow:0 0 25px #1ca6fd77}
+.intro-desc{font-size:17px!important;color:#d6e9f7!important;max-width:630px}
+.play-layout{display:grid!important;grid-template-columns:minmax(235px,.85fr) minmax(480px,2.12fr) minmax(300px,1.1fr)!important;gap:12px!important;align-items:start!important}
+.lux-brief,.play-layout>.world-card,.play-layout>.control-panel{min-width:0;border:1px solid #16799c!important;border-radius:14px!important;background:linear-gradient(145deg,#0a2a41,#041426 70%)!important;box-shadow:0 12px 35px #0007!important}
+.lux-brief{padding:18px;display:grid;gap:13px}.lux-brief>strong{color:#60e8ff;font-size:12px;letter-spacing:.11em}.lux-brief h3{font-size:14px;color:#30edfa;border-top:1px solid #235777;padding-top:14px;margin:0}.lux-brief p{margin:0;color:#c4dced;font-size:14px;line-height:1.6}.lux-brief>small{font-size:11px;color:#8fb2c8}
+.lux-city-art{height:150px;border:1px solid #267ca3;border-radius:10px;display:flex;flex-direction:column;justify-content:end;padding:15px;gap:5px;background:radial-gradient(ellipse at 49% 85%,#e68e657c,transparent 65%),linear-gradient(145deg,#102746,#255277 43%,#b97367 79%,#12283e)}.lux-city-art b{font-size:16px;color:white}.lux-city-art span{font-size:11px;letter-spacing:.13em;color:#ffe8bc}
+.lux-count{display:grid;gap:4px;padding:12px;border:1px solid #2c6b8d;background:#071d31;border-radius:10px}.lux-count span{font-size:25px;font-weight:900}.lux-count small{font-size:12px;color:#bcd5e5}
+.lux-goal{margin:0 0 14px auto;max-width:590px;display:flex;justify-content:space-between;align-items:center;gap:16px;padding:15px;border:1px solid #147db0;border-radius:13px;background:linear-gradient(125deg,#0a324d,#07182d)}.lux-goal div{display:grid;gap:4px}.lux-goal b{font-size:12px;color:#2bddfa;letter-spacing:.13em}.lux-goal strong{font-size:18px}.lux-goal small{font-size:12px;color:#a5c4d7}.lux-goal>span{font-size:23px;font-weight:900;color:#ff995f;white-space:nowrap}
+.lux-guide{display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1.3fr;gap:10px;align-items:center;margin:10px 0 17px;padding:13px;border:1px solid #1d80a2;border-radius:13px;background:linear-gradient(105deg,#08273d,#0b344e)}.lux-guide>div{display:grid;gap:5px;position:relative}.lux-guide b{font-size:13px;color:#f5fbff}.lux-guide div:first-child b{color:#31e4f1}.lux-guide small{font-size:11px;color:#b9d8e9}.lux-guide em{font-style:normal;position:absolute;left:-2px;top:-31px;font-size:20px;color:#48e7f6}.lux-guide>button,#place{background:linear-gradient(115deg,#0672a8,#189de5,#0877ae)!important;border:1px solid #57dffc!important;color:white!important;box-shadow:0 0 16px #15bdfa55,inset 0 1px #ccfaff66!important;font-weight:900!important;border-radius:10px!important}.lux-guide>button{min-height:53px;cursor:pointer}
+.render-area{height:min(56vw,690px)!important;min-height:500px!important;background:radial-gradient(ellipse at 35% 35%,#fb673026,transparent 43%),radial-gradient(ellipse at 67% 65%,#20d7fb22,transparent 35%),#051323!important}
+.lux-heat{position:absolute;z-index:8;bottom:48px;left:13px;width:188px;padding:10px;background:#061728e8;border:1px solid #32758a;border-radius:9px;pointer-events:none;display:grid;gap:6px}.lux-heat b{font-size:10px;color:#dceff6}.lux-heat span{height:14px;border-radius:8px;background:linear-gradient(90deg,#0baefb,#4cdec9,#efb448,#ef411c)}.lux-heat small{font-size:9px;color:#aae6f4}
+.lux-tools{font-size:13px;font-weight:900;color:#45e7ff;letter-spacing:.08em;display:grid;gap:5px;padding:10px 0}.lux-tools small{font-size:12px;font-weight:400;color:#c4dae8;letter-spacing:0}
+.control-panel{padding:14px!important}.control-title h2{font-size:19px!important}.modules{display:grid;gap:9px}.module{min-height:105px!important;border:1px solid #275c7b!important;border-radius:12px!important;background:linear-gradient(120deg,#0b2b43,#09243a)!important;padding:12px!important}.module[aria-pressed=true],.module.active{border-color:#12e3f7!important;background:linear-gradient(120deg,#104963,#0c344d)!important;box-shadow:0 0 18px #08d7f522!important}.module-meta strong{font-size:15px!important;color:#f1fbff}.module-meta small{font-size:12px!important;color:#b8d8e8}.module-pictogram{width:70px!important;height:70px!important;background:radial-gradient(circle,#176e80,#041a31)!important;border-radius:10px!important}.module-pictogram span{font-size:33px!important}
+#place{min-height:54px!important}.metric{border-color:#1b688e!important;background:#092b43!important}
+@media(max-width:1260px){.play-layout{grid-template-columns:minmax(210px,1fr) minmax(450px,2fr)!important}.play-layout>.control-panel{grid-column:1/-1}.lux-guide{grid-template-columns:repeat(2,1fr)}.lux-guide button{grid-column:1/-1}}
+@media(max-width:800px){main{width:calc(100% - 16px)!important}.play-layout{grid-template-columns:1fr!important}.play-layout>.control-panel{grid-column:auto}.lux-guide{grid-template-columns:1fr}.lux-guide button{grid-column:auto}.lux-brief{gap:9px}.render-area{height:420px!important;min-height:350px!important}.lux-goal{margin:12px 0}.metrics{grid-template-columns:repeat(2,1fr)!important}}
 </style>
 </head>
 <body>
@@ -592,7 +614,7 @@ body.high-contrast{--panel:#0b1420;filter:contrast(1.13)}body.high-contrast butt
       <div class="metric metric-goal"><span class="metric-icon metric-icon-red">△</span><div class="metric-copy"><span class="metric-title" data-i="threshold">ЦЕЛЕВОЙ ПОРОГ</span><div class="metric-value"><span id="targetTemp">44</span><small>°C</small></div><span class="metric-sub" data-i="gameModel">Значения условные · игровая модель</span></div></div>
     </section>
 
-    <section class="studio-strip" aria-label="Управление проектами">
+    <div class="lux-goal"><div><b>◎ ЦЕЛЬ МИССИИ</b><strong>Защити все горячие зоны</strong><small>Три шага к более прохладному городу</small></div><span>60°　⟶　30°</span></div><section class="studio-strip" aria-label="Управление проектами">
       <div class="studio-strip-copy"><span class="studio-eyebrow" data-i="studioKicker">НОВЫЙ УРОВЕНЬ / ЛАБОРАТОРИЯ</span>
         <strong data-i="studioTitle">Создавай собственные городские испытания</strong>
         <small data-i="studioSubtitle">Построй сценарий для класса, сохрани прогресс или обменяйся заданием в JSON.</small></div>
@@ -607,7 +629,7 @@ body.high-contrast{--panel:#0b1420;filter:contrast(1.13)}body.high-contrast butt
       </div>
     </section>
 
-    <section class="play-layout" id="play" aria-label="Игровой процесс">
+    <div class="lux-guide"><div><b>КАК ИГРАТЬ</b><small>Три простых шага</small></div><div><em>1</em><b>Выбери модуль</b><small>Дерево, навес или сад</small></div><div><em>2</em><b>Укажи место</b><small>Нажми на клетку карты</small></div><div><em>3</em><b>Размести решение</b><small>Следи за результатом</small></div><button id="luxPlace" type="button">➤ РАЗМЕСТИТЬ МОДУЛЬ</button></div><section class="play-layout" id="play" aria-label="Игровой процесс"><aside class="lux-brief"><strong>◉ АФИНЫ, ГРЕЦИЯ</strong><div class="lux-city-art"><b>ТЕНЕВОЙ ПРОТОКОЛ</b><span>ГОРОД ПОД СОЛНЦЕМ</span></div><h3>☀ ПРОБЛЕМА</h3><p>Жара перегревает городские кварталы. Бетон и асфальт удерживают тепло.</p><h3>◎ ТВОЯ ЗАДАЧА</h3><p>Выбери охлаждающее решение, укажи свободную клетку на карте и защити горячие точки.</p><h3>ПРОГРЕСС МИССИИ</h3><div class="lux-count"><span id="luxDone">0 / 3</span><small>Горячие зоны защищены</small></div><small>Учебная симуляция: температуры условные.</small></aside>
       <div class="world-card">
         <div class="world-top">
           <div class="world-identity"><span class="world-logo">✧</span><div><strong data-i="modelName">ЦИФРОВОЙ ДВОЙНИК КВАРТАЛА</strong><small id="scenarioSubtext">СЦЕНАРИЙ 01 · ПОВЕРХНОСТНЫЙ ПЕРЕГРЕВ</small></div></div>
@@ -622,7 +644,7 @@ body.high-contrast{--panel:#0b1420;filter:contrast(1.13)}body.high-contrast butt
             <button class="utility-icon" id="zoomIn" aria-label="Приблизить камеру" type="button">+</button>
           </div>
         </div>
-        <div class="render-area" id="renderArea">
+        <div class="render-area" id="renderArea"><div class="lux-heat"><b>ТЕПЛОВАЯ НАГРУЗКА</b><span></span><small>ПРОХЛАДНО &nbsp;&nbsp;&nbsp;&nbsp; ГОРЯЧО</small></div>
           <canvas id="world3d" aria-label="Трёхмерная карта города. Выберите свободную клетку для размещения объекта."></canvas>
           <canvas id="worldFx" aria-hidden="true"></canvas>
           <div class="render-vignette" aria-hidden="true"></div>
@@ -716,7 +738,7 @@ body.high-contrast{--panel:#0b1420;filter:contrast(1.13)}body.high-contrast butt
         </div>
       </div>
 
-      <aside class="control-panel" aria-labelledby="operationHeading">
+      <aside class="control-panel" aria-labelledby="operationHeading"><div class="lux-tools">♧ ИНСТРУМЕНТЫ ОХЛАЖДЕНИЯ <small>Выбери модуль и размести его в городе</small></div>
         <div class="control-title"><div class="control-kicker"><span class="control-live"></span><span data-i="commandCenter">ЦЕНТР УПРАВЛЕНИЯ</span></div><h2 id="operationHeading" data-i="deploy">РАЗМЕСТИ ОХЛАЖДЕНИЕ</h2><p data-i="deployDesc">Выбери технологию и свободную клетку на карте. Стоимость и расстояние влияют на результат.</p></div>
         <div class="module-heading"><span data-i="availableTechnologies">ДОСТУПНЫЕ ТЕХНОЛОГИИ</span><span id="placementCount">0 / 3</span></div>
         <div class="modules" role="group" aria-label="Технологии охлаждения">
@@ -6143,5 +6165,5 @@ render();
 SP.corridorUI={getState:()=>{const r=state();return r?{phase:r.phase,index:r.index,credits:r.credits,assisted:r.assisted,completed:r.completed.length,grade:r.grade,events:r.events.length}:null;}};
 })(typeof window!=='undefined'?window:globalThis);
 </script>
-</body>
+<script>(function(){const a=document.getElementById('luxPlace'),b=document.getElementById('place');a?.addEventListener('click',()=>b?.click());const sync=()=>{if(a&&b)a.disabled=b.disabled;const n=document.getElementById('protectedNow'),t=document.getElementById('totalSpots'),out=document.getElementById('luxDone');if(out&&n)out.textContent=n.textContent+' / '+(t?.textContent||'3').replace(/[^0-9]/g,'');};const n=document.getElementById('protectedNow');if(n)new MutationObserver(sync).observe(n,{childList:true,characterData:true,subtree:true});if(b)new MutationObserver(sync).observe(b,{attributes:true,attributeFilter:['disabled']});sync();})();</script></body>
 </html>
