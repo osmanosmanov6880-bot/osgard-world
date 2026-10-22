@@ -16,7 +16,7 @@ type Destination = {
 
 const destinations: Destination[] = [
   { id: 'world', label: 'OSGARD World', subtitle: 'Главная · шесть направлений', href: '/', section: 'НАПРАВЛЕНИЯ', keywords: 'главная портал планета мир' },
-  { id: 'osa', label: 'OSA Intelligence', subtitle: 'Проверка утверждений и источников', href: '/intelligence', section: 'НАПРАВЛЕНИЯ', keywords: 'ии искусственный интеллект доказательства nist' },
+  { id: 'intelligence', label: 'OSA Intelligence', subtitle: 'Проверка утверждений и источников', href: '/intelligence', section: 'НАПРАВЛЕНИЯ', keywords: 'ии искусственный интеллект доказательства nist' },
   { id: 'play', label: 'OSGARD Play', subtitle: 'Все 19 игровых миров', href: '/play', section: 'НАПРАВЛЕНИЯ', keywords: 'игры играть каталог' },
   { id: 'development', label: 'Development', subtitle: 'Кейсы, демо и прототипы', href: '/development', section: 'НАПРАВЛЕНИЯ', keywords: 'разработка проекты кейсы' },
   { id: 'academy', label: 'OSA Academy', subtitle: 'Учебный кабинет и прогресс', href: '/academy', section: 'ОБУЧЕНИЕ', keywords: 'академия образование кабинет' },
