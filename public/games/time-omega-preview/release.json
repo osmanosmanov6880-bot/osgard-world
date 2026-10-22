@@ -4,7 +4,7 @@
   "release": "v0.23-interactive-3d-city",
   "route": "/games/time-omega-preview/",
   "source_path": "public/games/time-omega-preview/index.html",
-  "source_blob_sha": "a6c815d55f8a36974c97ad4409a2af81d149af5c",
+  "source_blob_sha": "1310e253dfa561ae2adb9d5a86818fabd7e98261",
   "artifact_type": "interactive WebGL2/Canvas city game with separate legacy strategy",
   "godot_3d_exported": false,
   "integrity_check": "scripts/time-prototype-smoke.mjs",
