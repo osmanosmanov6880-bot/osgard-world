@@ -26,6 +26,8 @@ jobs:
           test -s public/games/remix/arena-v2/index.html
           grep -Fq 'REMIX ARENA | Independent Edition v2.0' public/games/remix/arena-v2/index.html
           grep -Fq 'deploymentBackendNotice' public/games/remix/arena-v2/index.html
+          test -s public/games/remix/arena-v2/open-world/index.html
+          grep -Fq 'NEBULA CITY - Open World' public/games/remix/arena-v2/open-world/index.html
           mkdir -p release
           cp -a public/games/remix/arena-v2/. release/
           tar -czf remix-arena-release.tgz -C release .
@@ -65,6 +67,7 @@ jobs:
           mkdir -p game
           tar -xzf remix-arena-release.tgz -C game
           test -s game/index.html
+          test -s game/open-world/index.html
           container=osgard-world
           docker inspect "$container" --format '{{.State.Running}}' | grep -qx true
           docker cp game "$container:/tmp/remix-arena-candidate-$RELEASE_ID"
@@ -89,6 +92,12 @@ jobs:
               rm -rf "$destination"
               if [ -d "$backup" ]; then mv "$backup" "$destination"; fi
               echo "REMIX ARENA content check failed; restored previous release" >&2
+              exit 1
+            fi
+            if ! wget -q -O /tmp/remix-nebula-http-check.html -T 10 http://127.0.0.1/games/remix/arena-v2/open-world/ || ! grep -Fq "NEBULA CITY - Open World" /tmp/remix-nebula-http-check.html; then
+              rm -rf "$destination"
+              if [ -d "$backup" ]; then mv "$backup" "$destination"; fi
+              echo "REMIX NEBULA CITY route verification failed; restored previous release" >&2
               exit 1
             fi
             echo "REMIX ARENA static page activated and verified inside production Nginx"
