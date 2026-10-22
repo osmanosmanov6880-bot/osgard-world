@@ -54,6 +54,23 @@ const destinations: {
 ]
 
 export default function OsgardEcosystemIndex() {
+  const [recentId, setRecentId] = useState<string | null>(() => {
+    try {
+      const value = localStorage.getItem('osgard:recent-destination:v1')
+      return destinations.some(item => item.id === value) ? value : null
+    } catch { return null }
+  })
+  const remember = (id: string) => {
+    setRecentId(id)
+    try { localStorage.setItem('osgard:recent-destination:v1', id) }
+    catch { /* Navigation works without browser storage. */ }
+  }
+  const forget = () => {
+    setRecentId(null)
+    try { localStorage.removeItem('osgard:recent-destination:v1') }
+    catch { /* In-memory state is sufficient. */ }
+  }
+  const recent = destinations.find(item => item.id === recentId)
   const [active, setActive] = useState<'all' | Category>('all')
   const [query, setQuery] = useState('')
   const items = useMemo(() => {
@@ -73,6 +90,11 @@ export default function OsgardEcosystemIndex() {
       </div>
       <a href="/quality" className="ecosystem-index-quality">Что действительно работает? <span aria-hidden="true">↗</span></a>
     </div>
+    {recent && <div className="ecosystem-index-recent" aria-label="Последнее открытое направление">
+      <div><small>ПРОДОЛЖИТЬ С ТОГО МЕСТА</small><strong>{recent.title}</strong><span>История хранится только в этом браузере.</span></div>
+      <a href={recent.href} onClick={() => remember(recent.id)}>Открыть снова <span aria-hidden="true">↗</span></a>
+      <button type="button" onClick={forget} aria-label="Очистить историю направления">Очистить</button>
+    </div>}
     <div className="ecosystem-index-controls">
       <div className="ecosystem-index-tabs" role="group" aria-label="Фильтр направлений">
         {filters.map(filter => <button key={filter.id} type="button"
@@ -90,7 +112,8 @@ export default function OsgardEcosystemIndex() {
     {items.length > 0
       ? <div className="ecosystem-index-grid">
           {items.map(item => <a className={'ecosystem-index-card is-' + item.category}
-            href={item.href} key={item.id} aria-label={item.title + '. ' + item.action}>
+            href={item.href} key={item.id} onClick={() => remember(item.id)}
+            aria-label={item.title + '. ' + item.action}>
             <div className="ecosystem-index-art" aria-hidden="true">
               <img src={item.image} alt="" width="960" height="600" loading="lazy" decoding="async" />
             </div>
@@ -106,6 +129,6 @@ export default function OsgardEcosystemIndex() {
           <p>По этому запросу ничего не найдено. Попробуйте другое слово или покажите все направления.</p>
           <button type="button" onClick={() => { setQuery(''); setActive('all') }}>Показать все</button>
         </div>}
-    <p className="ecosystem-index-note">Демо и локальные проекты доступны без регистрации. Серверные функции, мультиплеер и коммерческие статусы проверяются отдельно.</p>
+    <p className="ecosystem-index-note">Демо и локальные проекты доступны без регистрации. Недавно открытое направление сохраняется только в вашем браузере, историю можно очистить. Серверные функции и мультиплеер проверяются отдельно.</p>
   </section>
 }
