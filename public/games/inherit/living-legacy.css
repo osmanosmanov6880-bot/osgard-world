@@ -1,0 +1,172 @@
+/* INHERIT: THE LIVING LEGACY — original, responsive, no-asset gameplay redesign. */
+body.living-legacy{--living-cream:#fff2d8;--living-gold:#f4cf8c;--living-deep:#092b31;--living-panel:#0a2732;--living-border:#a9c5b759;--living-scale:1;color:#fff5e4;background:#071c25}
+body.living-legacy[data-living-text=large]{--living-scale:1.16}
+body.living-legacy .app{background:linear-gradient(160deg,#174548,#052a34 55%,#061924)}
+body.living-legacy .app>header{background:#082630ee;border-bottom:1px solid #f4dba94d;gap:12px;min-height:82px}
+body.living-legacy .app>header .logo{font-size:clamp(22px,2.4vw,29px);color:#fff3d7;letter-spacing:.15em}
+body.living-legacy .app>header .meta{font-size:14px;color:#d7e7dd}
+body.living-legacy .app>header .inherit-atlas-trigger{font-size:calc(16px * var(--living-scale));padding:13px 20px;min-height:50px;border:1px solid #ecce91a6;background:#1a4b4a;color:#ffebbd;border-radius:12px}
+body.living-legacy .app>header .inherit-atlas-trigger:hover{background:#275e53}
+body.living-legacy .living-font-toggle{background:transparent;border:1px solid #bfdcd78c;border-radius:11px;color:#f3efe2;min-height:48px;padding:10px 15px;font:700 calc(15px * var(--living-scale))/1.4 Manrope,sans-serif;cursor:pointer}
+body.living-legacy .living-font-toggle[aria-pressed=true]{background:#efcf91;color:#153634}
+body.living-legacy .living-library{position:relative;z-index:60}
+body.living-legacy .living-library-toggle{list-style:none;display:flex;align-items:center;gap:12px;min-height:50px;background:#edcf94;border:1px solid #ffe3b2;border-radius:12px;color:#173537;padding:11px 18px;font:800 calc(16px * var(--living-scale))/1.4 Manrope,sans-serif;cursor:pointer}
+body.living-legacy .living-library-toggle::-webkit-details-marker{display:none}
+body.living-legacy .living-library-toggle:after{content:'☰';font-size:21px}
+body.living-legacy .living-library[open] .living-library-toggle:after{content:'×'}
+body.living-legacy .living-library-panel{position:absolute;right:0;top:calc(100% + 12px);z-index:70;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;width:min(510px,90vw);max-height:75dvh;overflow:auto;background:#0b2b37f5;border:1px solid #f4d49b99;box-shadow:0 25px 70px #000a;border-radius:18px;padding:17px;backdrop-filter:blur(24px)}
+body.living-legacy .living-library:not([open]) .living-library-panel{display:none}
+
+/* Secondary systems remain visibly operable in a single scrollable rail.
+   Native action buttons are never hidden in closed menus or duplicated. */
+body.living-legacy .living-actions-strip{position:relative;z-index:12;display:flex;align-items:center;gap:9px;max-width:100%;padding:9px clamp(18px,4vw,70px);overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;scrollbar-width:thin;scrollbar-color:#a3b5a477 #0a2b35;background:#0b2e38;border-bottom:1px solid #a9c5b759}
+body.living-legacy .living-actions-strip:empty{display:none}
+body.living-legacy .living-actions-strip :is(button,a){flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;min-height:44px;max-width:260px;padding:9px 14px;border:1px solid #9ab6ac6b;border-radius:9px;background:#18424a;color:#e6eeda;font:650 calc(14px * var(--living-scale))/1.4 Manrope,sans-serif;text-decoration:none;white-space:normal;text-transform:none;letter-spacing:0;cursor:pointer}
+body.living-legacy .living-actions-strip :is(button,a):hover{background:#265c5b;border-color:#e9d099}
+body.living-legacy .living-actions-strip :is(button,a):focus-visible{outline:3px solid #ffeab6;outline-offset:-3px}
+
+body.living-legacy .living-library-panel button,body.living-legacy .living-library-panel a{min-height:54px;border:1px solid #c3d7c07d;background:#123945;color:#f8f3e8;padding:10px 13px;border-radius:10px;font:650 calc(15px * var(--living-scale))/1.4 Manrope,sans-serif;text-decoration:none;cursor:pointer;white-space:normal;text-align:center}
+body.living-legacy .living-library-panel button:hover{background:#24565a;border-color:#f1d396}
+body.living-legacy .inherit-guide.cine-compact{padding-block:14px;background:#0e343a}
+body.living-legacy .inherit-guide.cine-compact h2{font-size:25px}
+body.living-legacy .inherit-guide.cine-compact .game-language button{font-size:15px;min-height:46px}
+body.living-legacy .living-journey{position:relative;z-index:7;display:grid;grid-template-columns:minmax(205px,.8fr) minmax(0,2.25fr);gap:12px 20px;padding:17px clamp(20px,5vw,82px);background:linear-gradient(100deg,#0c3439,#154c4b 54%,#0b343c);border-bottom:1px solid #eacb8a72}
+body.living-legacy .living-journey[hidden]{display:none!important}
+body.living-legacy .living-journey-intro{align-content:center;display:grid;gap:5px}
+body.living-legacy .living-journey-overline{color:#f0d29c;font:750 12px/1.5 Manrope,sans-serif;letter-spacing:.1em}
+body.living-legacy .living-journey-title{font:700 calc(22px * var(--living-scale))/1.2 Manrope,sans-serif;color:#fff0d3}
+body.living-legacy .living-journey-steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+body.living-legacy .living-step{display:flex;align-items:center;gap:11px;background:#e5f0e909;border:1px solid #d5e7c747;border-radius:13px;padding:10px 12px;min-width:0}
+body.living-legacy .living-step.is-current{background:#f2d99c26;border-color:#f5dcab;box-shadow:inset 0 0 0 1px #ffdb9880}
+body.living-legacy .living-step-count{display:grid;place-items:center;flex:0 0 37px;width:37px;height:37px;color:#efcf8b;border:1px solid #e2ce9f85;border-radius:50%;font:750 19px Manrope,sans-serif}
+body.living-legacy .living-step.is-current .living-step-count{color:#143d38;background:#f4d597;border-color:#f4d597}
+body.living-legacy .living-step-copy{display:grid;gap:3px}
+body.living-legacy .living-step-name{color:#fff3dc;font:750 calc(15px * var(--living-scale))/1.3 Manrope,sans-serif}
+body.living-legacy .living-step-detail{color:#c9dfd6;font:550 calc(12px * var(--living-scale))/1.4 Manrope,sans-serif}
+body.living-legacy .living-journey-status{grid-column:1/-1;color:#e5e9cf;margin:0;font:600 calc(15px * var(--living-scale))/1.4 Manrope,sans-serif}
+body.living-legacy .world{background:radial-gradient(circle at 65% 13%,#76aaa4aa,transparent 38%),linear-gradient(180deg,#4b9b9b 0%,#679c94 34%,#2a7980 63%,#123d4e 100%)!important;height:clamp(640px,70svh,890px);min-height:620px;isolation:isolate}
+body.living-legacy .world:before{z-index:2;background:linear-gradient(90deg,#123a4477,transparent 38%),linear-gradient(0deg,#032a35c9,transparent 26%)}
+body.living-legacy .world:after{box-shadow:inset 0 -40px 100px #0d2c47b5,inset 0 22px 45px #c2e1b721}
+body.living-legacy #inherit-cosmos{filter:brightness(1.3) sepia(.13) hue-rotate(10deg);opacity:.55}
+body.living-legacy .world>.stars{opacity:.08}
+body.living-legacy .world>.mountain{background:linear-gradient(170deg,#4d8980 3%,#2e635d 51%,#163e4b);opacity:.72;bottom:8%}
+body.living-legacy .world>.mist{background:#d1d5a855;opacity:.4}
+body.living-legacy .world>.hero{top:18%;left:clamp(20px,5vw,90px);width:35%;max-width:470px;padding:20px;background:linear-gradient(90deg,#072e36a6,#092e3500);border-radius:18px}
+body.living-legacy .world>.hero:before{display:none}
+body.living-legacy .world>.hero .eyebrow{font-size:calc(13px * var(--living-scale));color:#ffe7a7;letter-spacing:.1em}
+body.living-legacy .world>.hero h1{font:650 clamp(43px,5vw,72px)/1.06 Georgia,serif;letter-spacing:-.035em;margin:13px 0;color:#fff5df}
+body.living-legacy .world>.hero p{font-size:calc(17px * var(--living-scale));color:#f1f1df;line-height:1.5}
+body.living-legacy .world>.hint{bottom:4%;right:4%;max-width:320px;border:1px solid #f2ddaa85;background:#082f3de8;color:#fff2d1;padding:12px 16px;border-radius:12px;font-size:calc(16px * var(--living-scale))}
+body.living-legacy .world>.island{left:62%;bottom:3%;width:min(940px,73vw);height:510px;min-height:420px;transform:translateX(-50%) rotate(-3deg);filter:drop-shadow(0 40px 0 #113e43) drop-shadow(0 65px 32px #06252dcb)}
+body.living-legacy .island .shore{background:radial-gradient(ellipse at 38% 25%,#d5deb3 0%,#9fb999 33%,#557f6d 72%,#1d555d 98%);box-shadow:inset 0 12px 45px #fff2b580,inset 0 -25px 35px #0c473eb0,0 14px 0 #284e51,0 22px 0 #143943}
+body.living-legacy .island .land{background:radial-gradient(circle at 30% 28%,#bfdf9e 0%,transparent 23%),radial-gradient(circle at 75% 43%,#9dcf95 0%,transparent 27%),radial-gradient(ellipse at 50% 47%,#8dbc76 0%,#6eac75 53%,#35715a 83%,#27545b 99%);box-shadow:inset 15px 16px 35px #e8ecad47,inset -35px -40px 55px #1c564cb0}
+body.living-legacy .island .river{background:linear-gradient(90deg,#1b6778,#4aabb5 30%,#a8dfce 48%,#438fa0 70%,#155566);box-shadow:0 0 35px #abe8cd77,inset 8px 0 10px #17576a}
+body.living-legacy .island .tree:after{background:radial-gradient(circle at 30% 19%,#d9e7a7 0%,transparent 34%),linear-gradient(145deg,#95bd77,#518864 65%,#315e58)}
+body.living-legacy .island .tree:before{background:linear-gradient(90deg,#523e2a,#95784f,#3b422f)}
+body.living-legacy .island .beacon:after{background:#ffdc90;box-shadow:0 0 25px 12px #ffe394ad,0 0 80px 35px #e5be6b52}
+body.living-legacy .island .ruin{border-color:#c2c4a4}
+body.living-legacy .living-island-decor{position:absolute;inset:0;pointer-events:none;z-index:1}
+body.living-legacy .living-island-decor i{position:absolute;display:block}
+body.living-legacy .living-decor-tuft,body.living-legacy .living-decor-grass{width:35px;height:27px;border-bottom:4px solid #376e49;border-radius:50%;background:repeating-conic-gradient(from 150deg at 50% 100%,transparent 0 17deg,#426c40 19deg 23deg,transparent 26deg 40deg)}
+body.living-legacy .living-decor-grass{width:47px;height:33px;background:repeating-conic-gradient(from 160deg at 50% 100%,transparent 0 15deg,#e4d692 16deg 19deg,transparent 23deg 37deg)}
+body.living-legacy .living-decor-flower{width:11px;height:11px;border-radius:50%;background:#ffeaba;box-shadow:9px -3px #f0b6b3,-8px -5px #ffdeb9,5px 7px #caa6cf,-10px 10px #fff3cd;filter:drop-shadow(1px 5px 2px #295b44)}
+body.living-legacy .living-decor-rock{width:34px;height:21px;background:linear-gradient(130deg,#e0dec3,#829b86 65%,#506f6a);clip-path:polygon(7% 74%,25% 13%,62% 0,96% 57%,87% 100%,0 100%);filter:drop-shadow(3px 5px 2px #255a4b)}
+body.living-legacy .island .placed{overflow:visible;border:0;background:transparent!important;box-shadow:none!important;filter:drop-shadow(3px 7px 4px #123e36b0)}
+body.living-legacy .island .placed:after,body.living-legacy .island .placed:before{display:none!important}
+body.living-legacy .island .placed:has(.living-object-art){min-width:41px;min-height:51px;width:54px;height:63px;display:block;transform:translate(-50%,-55%);transition:filter .18s,scale .18s}
+body.living-legacy .island .placed:has(.living-object-art):hover{scale:1.12;filter:drop-shadow(1px 4px 8px #ffdd9c91)}
+body.living-legacy .living-object-art{display:block;width:100%;height:100%;filter:drop-shadow(1px 5px 1px #17473b)}
+body.living-legacy .island .placed.path:has(.living-object-art){width:75px;height:55px}
+body.living-legacy .living-placement-preview{position:absolute;z-index:18;width:80px;height:94px;transform:translate(-50%,-78%);pointer-events:none;filter:drop-shadow(0 10px 7px #0a413c) drop-shadow(0 0 8px #fff0b5);opacity:.78}
+body.living-legacy .living-placement-preview[hidden]{display:none!important}
+body.living-legacy .living-placement-preview:after{content:'';position:absolute;left:19%;bottom:0;width:62%;height:15px;border:2px solid #ffe3a9;border-radius:50%;background:#f9e7b52c;box-shadow:0 0 10px #fff7bf}
+body.living-legacy .living-placement-preview .living-icon{width:100%;height:100%}
+body.living-legacy .dock.cine-dock{display:grid;grid-template-columns:minmax(92px,115px) minmax(0,1fr) minmax(230px,auto) auto;align-items:center;gap:15px;padding:17px clamp(18px,4vw,70px);background:#082b34f7;box-shadow:0 -8px 35px #092d3888;border-top:1px solid #e6d09c73}
+body.living-legacy .dock .turn strong{font-size:38px;color:#ffdf9f}
+body.living-legacy .dock .turn small{font-size:calc(13px * var(--living-scale))}
+body.living-legacy .dock .tools{display:flex;flex-wrap:wrap;gap:8px;border:0;padding:0}
+body.living-legacy .dock .tools .tool{display:grid;grid-template-columns:52px auto;align-items:center;gap:7px;min-width:108px;min-height:73px;padding:6px 10px!important;border:1px solid #c0d5b969;border-radius:13px;background:#eaf5dd0a;color:#f5f0de;font:700 calc(15px * var(--living-scale))/1.2 Manrope,sans-serif!important}
+body.living-legacy .dock .tools .tool .living-icon{width:52px;height:58px}
+body.living-legacy .dock .tools .tool.active{background:#d9c78c28;border:2px solid #f4cf87;box-shadow:inset 0 0 0 1px #ead2a54a,0 0 19px #e1cb852a}
+body.living-legacy .dock .tools .tool:hover{background:#e9db9e29}
+body.living-legacy .dock .tools .tool .living-item-label{max-width:112px;overflow-wrap:anywhere}
+body.living-legacy .dock #pass{min-height:74px;border-radius:14px;background:linear-gradient(135deg,#fff0bd,#e7bc76);border:1px solid #ffe8ac;color:#143235;font:850 calc(17px * var(--living-scale))/1.3 Manrope,sans-serif!important;padding:15px 20px;white-space:normal;max-width:290px;box-shadow:0 9px 30px #f6c7843e}
+body.living-legacy .dock #pass:hover{background:#fff2ce;box-shadow:0 11px 40px #f6c7847d}
+body.living-legacy .dock .cine-menu-toggle{min-height:56px;font-size:calc(15px * var(--living-scale));border-radius:12px;background:#1c4650}
+body.living-legacy .dock .tools .cine-undo{min-height:60px;font-size:14px;padding:12px;border-radius:10px}
+body.living-legacy :is(.inherit-first-steps,.inherit-atlas-dialog,.inherit-handoff-panel,.inherit-expedition-dialog,.inherit-network-dialog){border-radius:16px}
+body.living-legacy :is(.inherit-first-steps,.inherit-atlas-dialog,.inherit-handoff-panel) :is(p,button,label,select,small){font-size:calc(15px * var(--living-scale));line-height:1.55}
+body.living-legacy .inherit-first-steps-description{font-size:calc(17px * var(--living-scale))!important}
+body.living-legacy .inherit-first-steps{background:#09313be9}
+body.living-legacy button:focus-visible,body.living-legacy a:focus-visible,body.living-legacy summary:focus-visible{outline:3px solid #ffeab6;outline-offset:4px}
+body.living-legacy .world>.community-signal{bottom:14%;background:#0b333acc;border-color:#e3d4996b}
+body.living-legacy .world>.objective{background:#0b333acc;border-radius:12px}
+@media(max-width:1250px){
+ body.living-legacy .dock.cine-dock{grid-template-columns:90px minmax(0,1fr) auto;gap:10px}
+ body.living-legacy .dock .tools{grid-column:2/-1}
+ body.living-legacy .dock #pass{grid-column:2;max-width:none}
+ body.living-legacy .dock .cine-menu-toggle{grid-column:3}
+ body.living-legacy .living-journey{grid-template-columns:1fr}
+}
+@media(max-width:850px){
+ body.living-legacy .world{height:690px;min-height:640px}
+ body.living-legacy .world>.hero{top:15%;width:min(455px,65vw)}
+ body.living-legacy .world>.island{left:53%;width:810px;height:440px;min-height:0;bottom:5%}
+ body.living-legacy .world>.hero h1{font-size:clamp(39px,6vw,58px)}
+ body.living-legacy .living-step{padding:10px 7px}
+}
+@media(max-width:740px){
+ body.living-legacy .app>header{padding:14px 4vw;gap:9px}
+ body.living-legacy .app>header .logo{width:100%;font-size:24px}
+ body.living-legacy .app>header .inherit-atlas-trigger{font-size:14px;padding:8px 10px;min-height:44px}
+ body.living-legacy .app>header .living-library-toggle{padding:9px 12px;min-height:46px;font-size:14px}
+ body.living-legacy .app>header .living-font-toggle{min-height:44px}
+ body.living-legacy .living-library-panel{right:0;grid-template-columns:1fr;width:min(360px,94vw)}
+ body.living-legacy .living-journey{padding:15px 4vw;gap:10px}
+ body.living-legacy .living-journey-steps{gap:4px}
+ body.living-legacy .living-step{display:grid;justify-items:center;text-align:center;gap:5px;padding:9px 5px}
+ body.living-legacy .living-step-copy{align-items:center}
+ body.living-legacy .living-step-name{font-size:calc(13px * var(--living-scale))}
+ body.living-legacy .living-step-detail{font-size:calc(11px * var(--living-scale))}
+ body.living-legacy .living-journey-title{font-size:calc(19px * var(--living-scale))}
+ body.living-legacy .world{height:810px;min-height:810px}
+ body.living-legacy .world>.hero{top:250px;left:5vw;max-width:90vw;width:90vw;padding:10px}
+ body.living-legacy .world>.hero h1{font-size:clamp(36px,8vw,52px);max-width:380px}
+ body.living-legacy .world>.hero p{font-size:15px;max-width:250px}
+ body.living-legacy .world>.island{left:50%;bottom:8%;width:740px;height:385px}
+ body.living-legacy .world>.objective{position:absolute;top:10px;bottom:auto;left:5vw;right:auto;max-width:90vw;margin:0}
+ body.living-legacy .world>.hint{right:5vw;bottom:2%;font-size:14px;max-width:240px}
+ body.living-legacy .world>.community-signal{position:absolute;top:132px;bottom:auto;right:5vw;max-width:190px;margin:0}
+ body.living-legacy .dock.cine-dock{display:flex;flex-direction:column;align-items:stretch;padding:14px 4vw;gap:10px}
+ body.living-legacy .dock .turn{display:flex;align-items:center;gap:9px;border:0}
+ body.living-legacy .dock .turn strong{font-size:30px}
+ body.living-legacy .dock .tools{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+ body.living-legacy .dock .tools .tool{min-width:0;min-height:64px;grid-template-columns:48px 1fr;text-align:left;padding:5px!important}
+ body.living-legacy .dock .tools .tool .living-icon{width:45px;height:51px}
+ body.living-legacy .dock #pass{width:100%;max-width:none;min-height:66px}
+ body.living-legacy .dock .cine-menu-toggle{width:100%}
+}
+@media(max-width:420px){
+ body.living-legacy .living-journey-status{font-size:13px}
+ body.living-legacy .living-step-detail{display:none}
+ body.living-legacy .world>.hero{top:265px}
+ body.living-legacy .world>.hero h1{font-size:37px}
+ body.living-legacy .world>.island{width:650px;height:375px}
+ body.living-legacy .dock .tools .tool{font-size:14px!important}
+}
+@media(prefers-reduced-motion:reduce){
+ body.living-legacy *,body.living-legacy *:before,body.living-legacy *:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+}
+
+/* Mobile game-first composition: real island controls must be in view on entry.
+ * Secondary research, help and the action rail follow the playable scene.
+ * DOM state/handlers and island placement geometry remain unchanged. */
+@media(max-width:740px){
+ body.living-legacy .app{display:flex;flex-direction:column}
+ body.living-legacy .app>header{order:0;flex:0 0 auto}
+ body.living-legacy .app>#world{order:1;flex:0 0 auto}
+ body.living-legacy .app>.living-journey{order:2;flex:0 0 auto}
+ body.living-legacy .app>.dock{order:3;flex:0 0 auto}
+ body.living-legacy .app>.living-actions-strip{order:4;flex:0 0 auto}
+ body.living-legacy .app>.inherit-guide{order:5;flex:0 0 auto}
+}
