@@ -272,3 +272,8 @@ html[data-motion=off] :is(.world-case:hover img,.world-case:focus-visible img,.p
   .brand-system .brand-header .brand-quick-trigger{width:44px;padding:6px}
   .brand-system .brand-quick-trigger .brand-quick-label{display:none}
 }
+
+/* Deferred footer reserves its approximate below-the-fold space until the
+   secondary navigation chunk resolves; no fabricated placeholder links. */
+.brand-system .brand-footer-loading{min-height:290px;visibility:hidden;pointer-events:none}
+@media(max-width:760px){.brand-system .brand-footer-loading{min-height:520px}}
