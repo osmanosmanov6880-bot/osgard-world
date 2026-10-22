@@ -41,12 +41,13 @@ controls.append(heading,switcher,orbit,detail,live);world.append(controls);
 const canvas=make('canvas','aaa3d-canvas');canvas.setAttribute('aria-hidden','true');
 canvas.setAttribute('tabindex','-1');canvas.style.pointerEvents='none';
 island.prepend(canvas);
-const status={available:false,active:false,frames:0,traces:0,generation:null,quality,season:'',fallback:null,flyby:false,renderer:'WebGL Three.js',detailTiers:{high:0,medium:0,low:0},detailTriangles:0,detailDrawCalls:0,cachedTraces:0,createdTraces:0};
+const status={available:false,active:false,frames:0,traces:0,generation:null,quality,season:'',fallback:null,flyby:false,renderer:'WebGL Three.js',detailTiers:{high:0,medium:0,low:0},detailTriangles:0,detailDrawCalls:0,cachedTraces:0,createdTraces:0,heritageDetails:null,environmentTier:null,cameraFocus:'island'};
 window.InheritAAA3D=Object.freeze({getState:()=>({...status}),toggle:()=>switcher.click()});
 let renderer,scene,camera,staticWorld,traceRoot,sun,hemi,cold;
 let waterUniforms,raf=0,lastFrame=0,sceneVisible=true,modeEnabled=true,flybyStart=0,flyby=false;
 let signature='',lastSeason='',aspect=1.84,firstDraw=false;
 const traceCache=new Map(); // Reuse unchanged sculpted meshes across generations and building moves.
+const sceneryCache=new Map(); // Only two explicit quality tiers; no per-frame rebuilding.
 const raycaster=new THREE.Raycaster(),pointer=new THREE.Vector2();
 const preferences=()=>{try{return localStorage.getItem('inherit:3d:v1')}catch{return null}};
 const savePreference=val=>{try{localStorage.setItem('inherit:3d:v1',val)}catch{}};
@@ -187,6 +188,41 @@ function syncState(force=false){
  status.generation=current?.generation??null;
  updateEnvironment();
 }
+function activateScenery(tier){
+ if(!scene)return;
+ if(staticWorld)scene.remove(staticWorld);
+ let built=sceneryCache.get(tier);
+ if(!built){
+  built=makeArchipelago({quality:tier});
+  sceneryCache.set(tier,built);
+ }
+ staticWorld=built.root;waterUniforms=built.waterUniforms;
+ scene.add(staticWorld);
+ status.heritageDetails=built.heritage?.userData?.assetStats||null;
+ status.environmentTier=tier;
+ lastSeason='';updateEnvironment();
+}
+const FLYBY_VIEWS=[
+ {t:0,eye:[0,39,50],focus:[0,0,0],name:'island'},
+ {t:.26,eye:[-27,22,19],focus:[-14,2.9,-9],name:'sanctuary'},
+ {t:.46,eye:[-17,14,8],focus:[-14,3.2,-9],name:'sanctuary'},
+ {t:.73,eye:[27,20,29],focus:[18,-.5,10],name:'harbor'},
+ {t:.88,eye:[34,13,20],focus:[26,-1.3,12],name:'skiff'},
+ {t:1,eye:[0,39,50],focus:[0,0,0],name:'island'}
+];
+const flyEye=new THREE.Vector3(),flyFocus=new THREE.Vector3();
+function applyFlyby(time){
+ const t=Math.min((time-flybyStart)/9300,1);
+ if(t>=1)return false;
+ let i=0;while(i<FLYBY_VIEWS.length-2&&t>FLYBY_VIEWS[i+1].t)i++;
+ const a=FLYBY_VIEWS[i],b=FLYBY_VIEWS[i+1];
+ const raw=(t-a.t)/(b.t-a.t),ease=raw*raw*(3-2*raw);
+ flyEye.set(...a.eye).lerp(new THREE.Vector3(...b.eye),ease);
+ flyFocus.set(...a.focus).lerp(new THREE.Vector3(...b.focus),ease);
+ camera.position.copy(flyEye);camera.lookAt(flyFocus);
+ status.cameraFocus=ease<.5?a.name:b.name;
+ return true;
+}
 function cameraAtDefault(){
  camera.position.set(0,Math.sin(ELEVATION)*63,Math.cos(ELEVATION)*63);
  camera.lookAt(0,0,0);camera.updateMatrixWorld();
@@ -209,12 +245,9 @@ function nextFrame(time){
  if(time-lastFrame>=target){
   lastFrame=time;
   if(flyby){
-   const t=Math.min((time-flybyStart)/6500,1);
-   if(t>=1){flyby=false;status.flyby=false;cameraAtDefault();notify(words().continue);updateLabels();}
-   else{
-    const ease=t*t*(3-2*t),angle=ease*Math.PI*2;
-    camera.position.set(Math.sin(angle)*47,34+8*Math.sin(Math.PI*t),Math.cos(angle)*47);
-    camera.lookAt(0,0,0);
+   if(!applyFlyby(time)){
+    flyby=false;status.flyby=false;status.cameraFocus='island';
+    cameraAtDefault();notify(words().continue);updateLabels();
    }
   }
   syncState();renderOnce(time);
@@ -235,7 +268,8 @@ detail.addEventListener('click',()=>{
  quality=quality==='high'?'low':'high';status.quality=quality;
  renderer.shadowMap.enabled=quality==='high'&&!lowPower;
  sun.castShadow=renderer.shadowMap.enabled;
- resize();syncState(true);renderOnce(performance.now());updateLabels();
+ activateScenery(quality);resize();syncState(true);
+ renderOnce(performance.now());updateLabels();
 });
 orbit.addEventListener('click',doFlyby);
 // User-origin mouse clicks must not accidentally place traces during a camera tour.
@@ -308,10 +342,7 @@ try{
  sun.shadow.bias=-.00045;
  scene.add(sun);
  cold=new THREE.DirectionalLight(0xa2ccd0,.86);cold.position.set(25,12,12);scene.add(cold);
- const built=makeArchipelago({quality:lowPower?'low':quality});
- staticWorld=built.root;waterUniforms=built.waterUniforms;
- status.heritageDetails=built.heritage?.userData?.assetStats||null;
- scene.add(staticWorld);
+ activateScenery(quality);
  traceRoot=new THREE.Group();traceRoot.name='Actual saved traces';scene.add(traceRoot);
  status.available=true;
  resize();
