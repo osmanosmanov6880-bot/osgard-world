@@ -27,7 +27,7 @@ var core_level: int = 1
 var district_count: int = 0
 var lifetime_earned: float = 0.0
 var orbit: float = 0.78
-var camera_radius: float = 31.0
+var camera_radius: float = 41.0
 var map_mode: bool = false
 var drag_camera: bool = false
 var mobile_hud: bool = false
@@ -100,7 +100,7 @@ func _build_world() -> void:
     camera.near = 0.1
     camera.far = 250.0
     add_child(camera)
-    camera.position = Vector3(24.0, 24.0, 29.0)
+    camera.position = Vector3(29.0, 33.0, 30.0)
     camera.look_at(Vector3(0.0, 3.5, 0.0))
 
 func _build_city() -> void:
@@ -176,6 +176,12 @@ func _populate_skyline(parent: Node3D) -> void:
             var z: float = float(iz) * 2.45
             var r: float = Vector2(x, z).length()
             if r < 8.9 or r > 25.2 or abs(ix) <= 1 or abs(iz) <= 1:
+                continue
+            # A readable diagonal civic boulevard keeps the reactor visible from
+            # the first camera angle. Low-density plazas are deliberate, not LOD holes.
+            if x > 5.0 and z > 5.0 and absf(x - z) < 4.0:
+                continue
+            if absi(ix * 7 + iz * 5) % 7 == 0:
                 continue
             var reserved := false
             for plot in PLOTS:
@@ -352,7 +358,7 @@ func _process(delta: float) -> void:
         shuttle.position = Vector3(cos(phase) * lane, 1.2 + float(i % 3) * 0.34, sin(phase) * lane)
         shuttle.rotation.y = -phase
     if camera != null:
-        var high: float = 1.1 if map_mode else 0.70
+        var high: float = 1.25 if map_mode else 0.93
         var r: float = camera_radius * (1.18 if map_mode else 1.0)
         var destination := Vector3(cos(orbit) * r, r * high, sin(orbit) * r)
         camera.position = camera.position.lerp(destination, minf(delta * 2.5, 1.0))
@@ -371,7 +377,7 @@ func _unhandled_input(event: InputEvent) -> void:
         if event.pressed and event.button_index == MOUSE_BUTTON_WHEEL_UP:
             camera_radius = maxf(20.0, camera_radius - 2.0)
         if event.pressed and event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
-            camera_radius = minf(55.0, camera_radius + 2.0)
+            camera_radius = minf(62.0, camera_radius + 2.0)
     elif event is InputEventMouseMotion and drag_camera:
         orbit += event.relative.x * 0.008
     elif event is InputEventKey and event.pressed and not event.echo:
