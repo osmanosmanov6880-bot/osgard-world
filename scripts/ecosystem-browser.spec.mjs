@@ -2428,3 +2428,46 @@ test('INHERIT R16 3D Atlas replay shows real past traces and restores current st
  expect(await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()))).toBe(before);
  expect(errors).toEqual([]);
 });
+
+
+test('INHERIT R16 Artifact Atelier displays authentic HD 3D models without spending moves',async({page})=>{
+ const errors=await prepareStandaloneGame(page);
+ await page.goto('/games/inherit/?lang=ru',{waitUntil:'domcontentloaded'});
+ const start=await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()));
+ const launcher=page.locator('.aaa-artifact-action');
+ await expect(launcher).toBeVisible();
+ await launcher.click();
+ const dialog=page.locator('.aaa-atelier-dialog');
+ await expect(dialog).toBeVisible();
+ await expect(page.locator('.aaa-atelier-grid>.aaa-atelier-pick')).toHaveCount(10);
+ await expect.poll(()=>page.evaluate(()=>window.InheritArtifactAtelier.getState().open)).toBe(true);
+ await page.locator('.aaa-atelier-pick[data-tool="arch"]').click();
+ await expect(page.locator('.aaa-atelier-item-title')).toHaveText(/Арка|arch|拱门/i);
+ const state=await page.evaluate(()=>window.InheritArtifactAtelier.getState());
+ expect(state.tool).toBe('arch');
+ if(process.env.OSGARD_ENABLE_SWIFTSHADER==='1')expect(state.available).toBe(true);
+ if(state.available){
+  expect(state.triangles).toBeGreaterThan(750);
+  expect(state.meshes).toBeGreaterThan(3);
+  await expect.poll(()=>page.evaluate(()=>window.InheritArtifactAtelier.getState().frames)).toBeGreaterThan(0);
+  const view=page.locator('.aaa-atelier-canvas');
+  await expect(view).toBeVisible();
+  const rect=await view.boundingBox();
+  await page.mouse.move(rect.x+rect.width*.35,rect.y+rect.height*.48);
+  await page.mouse.down();
+  await page.mouse.move(rect.x+rect.width*.65,rect.y+rect.height*.48,{steps:5});
+  await page.mouse.up();
+  await expect.poll(()=>page.evaluate(()=>window.InheritArtifactAtelier.getState().dragged)).toBeGreaterThan(0);
+ }
+ expect(await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()))).toBe(start);
+ await page.locator('.aaa-atelier-close').click();
+ await expect(dialog).toBeHidden();
+ await expect.poll(()=>page.evaluate(()=>window.InheritArtifactAtelier.getState().open)).toBe(false);
+ await launcher.click();
+ await page.locator('.aaa-atelier-pick[data-tool="tree"]').click();
+ await page.locator('.aaa-atelier-select').click();
+ await expect(dialog).toBeHidden();
+ await expect(page.locator('.tool[data-tool="tree"]')).toHaveClass(/active/);
+ expect(await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()))).toBe(start);
+ expect(errors).toEqual([]);
+});
