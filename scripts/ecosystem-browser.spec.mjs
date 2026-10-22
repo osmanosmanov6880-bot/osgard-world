@@ -2327,3 +2327,66 @@ test('INHERIT R15 mobile action rail stays tappable without a viewport-fixed ove
  await expect(page.locator('.inherit-trace-inspector')).toBeVisible();
  expect(errors).toEqual([]);
 });
+
+
+test('INHERIT R16 genuine Three.js island renders the original saved world without changing its rules',async({page},info)=>{
+ const errors=await prepareStandaloneGame(page);
+ await page.goto('/games/inherit/?lang=ru',{waitUntil:'domcontentloaded'});
+ const buttons=page.locator('.aaa3d-controls');
+ await expect(buttons).toBeVisible();
+ const canvas=page.locator('#island>.aaa3d-canvas');
+ await expect(canvas).toHaveCount(1);
+ const initial=await page.evaluate(()=>window.InheritAAA3D.getState());
+ expect(initial.renderer).toBe('WebGL Three.js');
+ const before=await page.evaluate(()=>window.InheritGame.snapshot());
+ if(initial.available){
+  await expect(page.locator('#island')).toHaveClass(/aaa3d-active/);
+  await expect(canvas).toBeVisible();
+  await expect.poll(()=>page.evaluate(()=>window.InheritAAA3D.getState().frames)).toBeGreaterThan(0);
+  expect(await canvas.evaluate(el=>el.width*el.height)).toBeGreaterThan(50000);
+  expect(await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()))).toBe(JSON.stringify(before));
+  await page.locator('.aaa3d-switch').click();
+  await expect(page.locator('#island')).not.toHaveClass(/aaa3d-active/);
+  await page.locator('.aaa3d-switch').click();
+  await expect(page.locator('#island')).toHaveClass(/aaa3d-active/);
+  const shot=info.outputPath('inherit-r16-real-webgl-world.png');
+  await page.screenshot({path:shot,fullPage:false,animations:'disabled'});
+  await info.attach('INHERIT R16 real WebGL scene',{path:shot,contentType:'image/png'});
+ }else{
+  // Headless Chrome without GPU must preserve the exact native 2D gameplay.
+  await expect(page.locator('#island')).not.toHaveClass(/aaa3d-active/);
+  await expect(canvas).toBeHidden();
+  await expect(page.locator('.aaa3d-switch')).toBeDisabled();
+ }
+ await page.locator('#world').focus();
+ await page.locator('#world').press('Enter');
+ await expect.poll(()=>page.evaluate(()=>window.InheritGame.snapshot().objects.length)).toBe(before.objects.length+1);
+ const after=await page.evaluate(()=>window.InheritGame.snapshot());
+ expect(after.budget).toBe(before.budget-1);
+ expect(after.pending.length).toBe(before.pending.length+1);
+ if(initial.available)await expect.poll(()=>page.evaluate(()=>window.InheritAAA3D.getState().traces)).toBe(after.objects.length);
+ expect(errors).toEqual([]);
+});
+
+test('INHERIT R16 gracefully falls back to fully interactive 2D when GPU context cannot be created',async({page})=>{
+ const errors=await prepareStandaloneGame(page);
+ await page.addInitScript(()=>{
+  const original=HTMLCanvasElement.prototype.getContext;
+  HTMLCanvasElement.prototype.getContext=function(kind,...options){
+   if(kind==='webgl'||kind==='webgl2'||kind==='experimental-webgl')return null;
+   return original.call(this,kind,...options);
+  };
+ });
+ await page.goto('/games/inherit/?lang=ru',{waitUntil:'domcontentloaded'});
+ await expect(page.locator('.aaa3d-controls')).toBeVisible();
+ const state=await page.evaluate(()=>window.InheritAAA3D.getState());
+ expect(state.available).toBe(false);
+ expect(state.active).toBe(false);
+ await expect(page.locator('#island')).not.toHaveClass(/aaa3d-active/);
+ await expect(page.locator('.aaa3d-switch')).toBeDisabled();
+ const before=await page.evaluate(()=>window.InheritGame.snapshot());
+ await page.locator('#world').focus();
+ await page.locator('#world').press('Enter');
+ await expect.poll(()=>page.evaluate(()=>window.InheritGame.snapshot().objects.length)).toBe(before.objects.length+1);
+ expect(errors).toEqual([]);
+});
