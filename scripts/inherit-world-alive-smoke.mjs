@@ -87,6 +87,6 @@ test('Exact game delivery includes the three new assets',()=>{
    assert.ok(html.includes('./'+name),name+' missing from game HTML');
    assert.ok(sw.includes('/games/inherit/'+name),name+' missing from offline shell');
  }
- assert.match(sw,/inherit-shell-v27/);
+ assert.match(sw,/inherit-shell-v28/);
 });
 console.log('INHERIT World Alive R15:',n,'passed.');
