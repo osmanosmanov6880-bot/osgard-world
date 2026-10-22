@@ -7,7 +7,7 @@ import { osgardCommands, searchOsgardCommands, readQuickNavRecent, rememberQuick
 const repo = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const read = path => readFileSync(resolve(repo, path), 'utf8')
 
-assert.equal(osgardCommands.length, 12, 'All real top-level and secondary destinations must be indexed')
+assert.equal(osgardCommands.length, 16, 'Twelve core routes and four source-backed portfolio pages must be indexed')
 assert.equal(new Set(osgardCommands.map(item => item.id)).size, osgardCommands.length, 'Command ids must be unique')
 assert.equal(new Set(osgardCommands.map(item => item.href)).size, osgardCommands.length, 'Route destinations must not duplicate')
 for (const item of osgardCommands) {
@@ -16,7 +16,12 @@ for (const item of osgardCommands) {
 }
 assert.deepEqual(searchOsgardCommands('аКаДеМиЯ').map(x => x.id), ['academy'])
 assert.deepEqual(searchOsgardCommands('несуществующий-раздел').map(x => x.id), [], 'Unknown routes must never be fabricated')
-assert.deepEqual(searchOsgardCommands('TEDES').map(x => x.id), ['cases'])
+assert.deepEqual(searchOsgardCommands('TEDES').map(x => x.id), ['case-tedes', 'cases'])
+for (const id of ['phantom','tedes','merakki','essentia']) {
+  const result = osgardCommands.find(command => command.id === 'case-' + id)
+  assert.equal(result?.href, '/development/' + id + '/')
+}
+assert.deepEqual(searchOsgardCommands('Портфолио проектов').map(x => x.id), ['cases'])
 assert.ok(searchOsgardCommands('игры').some(item => item.id === 'play'))
 assert.deepEqual(searchOsgardCommands('ё'), searchOsgardCommands('е'), 'Russian ё and е must search identically')
 assert.deepEqual(searchOsgardCommands('', ['cases', 'academy']).slice(0, 2).map(x => x.id), ['cases', 'academy'])
@@ -59,4 +64,4 @@ assert.ok(page.includes("<OsgardRouteSkeleton theme={theme} />"), 'Deferred sect
 assert.ok(loading.includes('aria-busy="true"') && loading.includes('role="status"') && loading.includes('min-height') === false, 'Loading state must be semantic and CSS-driven')
 assert.ok(navCss.includes('@media(max-width:720px)') && navCss.includes('max-height:100dvh'), 'Navigator must fit the mobile viewport')
 assert.ok(loadCss.includes('min-height:clamp') && loadCss.includes('prefers-reduced-motion:reduce'), 'Loading state must reserve layout and respect reduced motion')
-console.log('PASS: twelve first-party commands, safe session history, keyboard dialog, SPA guard, mobile shell and honest route loading')
+console.log('PASS: sixteen first-party commands, safe session history, keyboard dialog, SPA guard, mobile shell and honest route loading')
