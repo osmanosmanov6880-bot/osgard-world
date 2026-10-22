@@ -5,6 +5,7 @@ extends Node3D
 const ShipScript = preload("res://scripts/ship.gd")
 const DroneScript = preload("res://scripts/drone.gd")
 const RadarScript = preload("res://scripts/radar.gd")
+const PremiumArchitectureScript = preload("res://scripts/premium_architecture.gd")
 const SAVE_PATH = "user://nebula_3d_save.json"
 const SECTOR_COLORS = [Color(0.10,0.68,0.97), Color(0.64,0.35,1.0), Color(0.98,0.73,0.40), Color(1.0,0.46,0.34), Color(0.87,0.27,0.88), Color(0.24,0.92,0.88)]
 const SECTOR_NAMES = ["ПОРТ АВРОРА","НЕОНОВЫЙ КВАРТАЛ","ЦИТАДЕЛЬ","ЧЁРНЫЙ РЫНОК","РАЗЛОМ","НЕКСУС"]
@@ -21,7 +22,7 @@ const MISSIONS = [
 var rng := RandomNumberGenerator.new()
 var ship
 var chase_camera: Camera3D
-var camera_distance: float = 24.0
+var camera_distance: float = 19.0
 var drones: Array[Node3D] = []
 var mission_index: int = 0
 var credits: int = 950
@@ -41,6 +42,12 @@ var world_pulse: float = 0.0
 var lens_mode: int = 0
 var last_notice: String = ""
 var world_events: int = 0
+var premium_architecture
+var cinematic_shake: float = 0.0
+var cinematic_velocity: Vector3 = Vector3.ZERO
+var hud_flight: Label
+var hud_objective: Label
+var hud_panel: PanelContainer
 
 func _ready() -> void:
     rng.seed = 20261022
@@ -51,30 +58,51 @@ func _ready() -> void:
     _make_hud()
     _load_progress()
     _start_mission()
-    _show_notice("НЕБУЛА 3D · СИСТЕМА АКТИВНА")
+    _show_notice("NEBULA ASCENSION · CINEMATIC 3D")
+    get_viewport().size_changed.connect(_fit_hud)
+    _fit_hud()
 
 func _setup_environment() -> void:
     var node := WorldEnvironment.new()
     var env := Environment.new()
-    env.background_mode = Environment.BG_COLOR
-    env.background_color = Color(0.014,0.026,0.071)
-    env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-    env.ambient_light_color = Color(0.21,0.36,0.66)
-    env.ambient_light_energy = 0.68
+    # A cinematic sky and softer physical light, without unsupported Web-only SSR effects.
+    var sky := Sky.new()
+    var atmosphere := ProceduralSkyMaterial.new()
+    atmosphere.sky_top_color = Color(0.008,0.024,0.078)
+    atmosphere.sky_horizon_color = Color(0.18,0.27,0.39)
+    atmosphere.ground_bottom_color = Color(0.008,0.012,0.028)
+    atmosphere.ground_horizon_color = Color(0.10,0.15,0.24)
+    sky.sky_material = atmosphere
+    env.background_mode = Environment.BG_SKY
+    env.sky = sky
+    env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
+    env.ambient_light_energy = 0.44
+    env.reflected_light_source = Environment.REFLECTION_SOURCE_BG
     env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
+    env.fog_enabled = true
+    env.fog_light_color = Color(0.18,0.29,0.44)
+    env.fog_density = 0.00065
     node.environment = env
     add_child(node)
     var sun := DirectionalLight3D.new()
-    sun.rotation_degrees = Vector3(-48.0,-34.0,0.0)
-    sun.light_color = Color(0.67,0.84,1.0)
-    sun.light_energy = 1.45
+    sun.name = "OrbitalSun"
+    sun.rotation_degrees = Vector3(-34.0,-52.0,0.0)
+    sun.light_color = Color(1.0,0.85,0.70)
+    sun.light_energy = 1.5
+    sun.shadow_enabled = true
     add_child(sun)
+    var fill := DirectionalLight3D.new()
+    fill.name = "DeepBlueFill"
+    fill.rotation_degrees = Vector3(-18,128,0)
+    fill.light_color = Color(0.22,0.48,1.0)
+    fill.light_energy = 0.45
+    add_child(fill)
     var deck := MeshInstance3D.new()
     var plane := PlaneMesh.new()
     plane.size = Vector2(4100,4100)
     deck.mesh = plane
-    deck.material_override = _mat(Color(0.016,0.05,0.09),0.08)
-    deck.position.y = -2.0
+    deck.material_override = _mat(Color(0.023,0.040,0.075))
+    deck.position.y = -5.0
     add_child(deck)
 
 func _mat(col: Color, glow: float = 0.0) -> StandardMaterial3D:
@@ -107,10 +135,11 @@ func _build_city() -> void:
     tower.size = Vector3.ONE
     multimesh.mesh = tower
     multimesh.instance_count = 360
-    var tower_material := StandardMaterial3D.new()
-    tower_material.vertex_color_use_as_albedo = true
-    tower_material.metallic = 0.78
-    tower_material.roughness = 0.30
+    premium_architecture = PremiumArchitectureScript.new()
+    premium_architecture.name = "PremiumArchitecture"
+    add_child(premium_architecture)
+    var tower_material: StandardMaterial3D = premium_architecture.make_facade_material()
+    var tower_data: Array[Dictionary] = []
     var inst := MultiMeshInstance3D.new()
     inst.name = "CityTowers_MultiMesh"
     inst.multimesh = multimesh
@@ -140,6 +169,7 @@ func _build_city() -> void:
         var depth: float = rng.randf_range(12.0,29.0)
         var pos := center + Vector3(cos(bearing)*radius,height*0.5,sin(bearing)*radius)
         multimesh.set_instance_transform(i,Transform3D(Basis.IDENTITY.scaled(Vector3(w,height,depth)),pos))
+        tower_data.append({"pos":pos,"w":w,"depth":depth,"h":height,"sector":sector})
         var col: Color = SECTOR_COLORS[sector].darkened(rng.randf_range(0.42,0.70))
         multimesh.set_instance_color(i,col)
         skylights.set_instance_transform(i,Transform3D(Basis.IDENTITY.scaled(Vector3(w+2.0,2.6,depth+2.0)), pos + Vector3(0,height*0.5+1.6,0)))
@@ -156,45 +186,37 @@ func _build_city() -> void:
     for i in SECTOR_POSITIONS.size():
         var base: Vector3 = SECTOR_POSITIONS[i]
         _build_sector(base,SECTOR_COLORS[i],SECTOR_NAMES[i],i)
+    premium_architecture.build(tower_data,SECTOR_POSITIONS,SECTOR_COLORS)
     _build_starfield()
 
 func _build_sector(center: Vector3, tint: Color, name: String, index: int) -> void:
+    # Landmark navigation tower; premium_architecture builds the actual dock.
+    # R2's enormous emission toruses have been removed: they crossed the camera
+    # and blew out the full frame on WebGL.
     var group := Node3D.new()
     group.name = name
-    group.position = center
+    group.position = center + Vector3(91.0,0,-88.0)
     add_child(group)
-    _box(Vector3(0,3,0),Vector3(95,6,95),_mat(Color(0.07,0.15,0.25),0.1),group)
-    for k in 12:
-        var ang: float = TAU*float(k)/12.0
-        var px: float = cos(ang)*105.0
-        var pz: float = sin(ang)*105.0
-        _box(Vector3(px,32,pz),Vector3(9,62,9),_mat(tint.darkened(0.44),0.18),group)
-        _box(Vector3(px,65,pz),Vector3(12,4,12),_mat(tint,1.5),group)
-    for h in 4:
-        var ring := MeshInstance3D.new()
-        var torus := TorusMesh.new()
-        torus.inner_radius = 68.0 + h*9.0
-        torus.outer_radius = 70.0 + h*9.0
-        ring.mesh = torus
-        ring.material_override = _mat(tint,1.7)
-        ring.position.y = 11.0+h*13.0
-        group.add_child(ring)
+    _box(Vector3(0,26,0),Vector3(12,52,12),_mat(Color(0.09,0.15,0.22)),group)
+    _box(Vector3(0,55,0),Vector3(19,7,19),_mat(tint.darkened(0.28),0.40),group)
+    _box(Vector3(0,74,0),Vector3(4,33,4),_mat(Color(0.12,0.23,0.34)),group)
+    _box(Vector3(0,91,0),Vector3(8,2,8),_mat(tint,1.4),group)
+    for side in [-1.0,1.0]:
+        _box(Vector3(side*11,28,0),Vector3(1.2,42,4),_mat(tint.darkened(0.3),0.65),group)
     var text := Label3D.new()
     text.text = name
-    text.font_size = 58
-    text.pixel_size = 0.12
-    text.modulate = tint.lightened(0.35)
+    text.font_size = 50
+    text.pixel_size = 0.085
+    text.modulate = tint.lightened(0.28)
     text.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-    text.position = Vector3(0,90,0)
+    text.position = Vector3(0,111,0)
     group.add_child(text)
     var light := OmniLight3D.new()
     light.light_color = tint
-    light.light_energy = 3.0
-    light.omni_range = 115.0
-    light.position.y = 44.0
+    light.light_energy = 1.15
+    light.omni_range = 50.0
+    light.position.y = 60.0
     group.add_child(light)
-    if index==0:
-        _box(Vector3(0,9,0),Vector3(115,2,115),_mat(Color(0.26,0.75,1.0),1.2),group)
 
 func _build_starfield() -> void:
     var mm := MultiMesh.new()
@@ -221,9 +243,9 @@ func _spawn_player() -> void:
     ship.fired.connect(_on_ship_fire)
     chase_camera = Camera3D.new()
     chase_camera.current = true
-    chase_camera.fov = 72.0
+    chase_camera.fov = 63.0
     add_child(chase_camera)
-    chase_camera.global_position = ship.global_position+Vector3(0,9,25)
+    chase_camera.global_position = ship.global_position+Vector3(0,7,21)
 
 func _spawn_civilians_and_pirates() -> void:
     for i in 22:
@@ -250,11 +272,11 @@ func _make_hud() -> void:
     block.set_anchors_preset(Control.PRESET_TOP_LEFT)
     block.offset_left = 22
     block.offset_top = 22
-    block.offset_right = 480
-    block.offset_bottom = 167
+    block.offset_right = 560
+    block.offset_bottom = 168
     var frame := StyleBoxFlat.new()
-    frame.bg_color = Color(0.025,0.085,0.16,0.91)
-    frame.border_color = Color(0.55,0.8,0.95,0.65)
+    frame.bg_color = Color(0.018,0.038,0.074,0.87)
+    frame.border_color = Color(0.67,0.77,0.92,0.38)
     frame.set_border_width_all(1)
     frame.set_corner_radius_all(12)
     frame.content_margin_left = 17
@@ -263,12 +285,13 @@ func _make_hud() -> void:
     frame.content_margin_bottom = 12
     block.add_theme_stylebox_override("panel",frame)
     surface.add_child(block)
+    hud_panel = block
     var stack := VBoxContainer.new()
     stack.add_theme_constant_override("separation",9)
     block.add_child(stack)
     hud_mission = Label.new()
-    hud_mission.add_theme_font_size_override("font_size",25)
-    hud_mission.add_theme_color_override("font_color",Color(1.0,0.88,0.62))
+    hud_mission.add_theme_font_size_override("font_size",26)
+    hud_mission.add_theme_color_override("font_color",Color(0.99,0.81,0.50))
     stack.add_child(hud_mission)
     hud_status = Label.new()
     hud_status.add_theme_font_size_override("font_size",15)
@@ -276,18 +299,56 @@ func _make_hud() -> void:
     stack.add_child(hud_status)
     hud_controls = Label.new()
     hud_controls.text = "WASD — полёт    Q / E — высота    Shift — форсаж    Space — огонь    F5 — сохранить"
-    hud_controls.add_theme_font_size_override("font_size",16)
+    hud_controls.add_theme_font_size_override("font_size",15)
     hud_controls.add_theme_color_override("font_color",Color(0.81,0.91,1.0))
-    hud_controls.position = Vector2(22,640)
+    hud_controls.anchor_top=1.0
+    hud_controls.anchor_bottom=1.0
+    hud_controls.offset_left=28.0
+    hud_controls.offset_top=-49.0
+    hud_controls.offset_right=1150.0
+    hud_controls.offset_bottom=-17.0
     surface.add_child(hud_controls)
     radar = RadarScript.new()
     radar.name = "WaypointRadar"
-    radar.position = Vector2(20, 430)
+    radar.anchor_top = 1.0
+    radar.anchor_bottom = 1.0
+    radar.offset_left = 16.0
+    radar.offset_right = 236.0
+    radar.offset_top = -282.0
+    radar.offset_bottom = -62.0
     surface.add_child(radar)
+    hud_flight = Label.new()
+    hud_flight.text = "REMIX ARENA   /   NEBULA ASCENSION"
+    hud_flight.add_theme_font_size_override("font_size",17)
+    hud_flight.add_theme_color_override("font_color",Color(0.82,0.90,1.0))
+    hud_flight.anchor_left=1.0
+    hud_flight.anchor_right=1.0
+    hud_flight.offset_left=-458.0
+    hud_flight.offset_right=-23.0
+    hud_flight.offset_top=27.0
+    hud_flight.offset_bottom=57.0
+    hud_flight.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+    surface.add_child(hud_flight)
+    hud_objective = Label.new()
+    hud_objective.add_theme_font_size_override("font_size",19)
+    hud_objective.add_theme_color_override("font_color",Color(0.99,0.82,0.49))
+    hud_objective.anchor_left=1.0
+    hud_objective.anchor_right=1.0
+    hud_objective.offset_left=-450.0
+    hud_objective.offset_right=-24.0
+    hud_objective.offset_top=66.0
+    hud_objective.offset_bottom=101.0
+    hud_objective.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+    surface.add_child(hud_objective)
     hud_notice = Label.new()
     hud_notice.add_theme_font_size_override("font_size",30)
     hud_notice.add_theme_color_override("font_color",Color(1.0,0.83,0.47))
-    hud_notice.position = Vector2(510,55)
+    hud_notice.set_anchors_preset(Control.PRESET_CENTER_TOP)
+    hud_notice.offset_left=-250.0
+    hud_notice.offset_top=160.0
+    hud_notice.offset_right=250.0
+    hud_notice.offset_bottom=210.0
+    hud_notice.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
     surface.add_child(hud_notice)
 
 func _process(delta: float) -> void:
@@ -300,9 +361,13 @@ func _process(delta: float) -> void:
     notice_timer = maxf(0.0, notice_timer-delta)
     if notice_timer <= 0.0: hud_notice.text = ""
     var basis: Basis = ship.global_transform.basis
-    var ideal: Vector3 = ship.global_position + basis.z*camera_distance + Vector3(0,10.0,0)
-    chase_camera.global_position = chase_camera.global_position.lerp(ideal,minf(1.0,delta*3.3))
-    chase_camera.look_at(ship.global_position + Vector3(0,2.0,0),Vector3.UP)
+    var speed: float = ship.velocity.length()
+    var desired_distance: float = camera_distance + minf(6.0,speed*0.06)
+    var desired_height: float = 5.5 + minf(3.0,speed*0.025)
+    var ideal: Vector3 = ship.global_position + basis.z*desired_distance + Vector3(0,desired_height,0)
+    chase_camera.global_position = chase_camera.global_position.lerp(ideal,minf(1.0,delta*4.0))
+    chase_camera.look_at(ship.global_position - basis.z*12.0 + Vector3(0,2.0,0),Vector3.UP)
+    chase_camera.fov = lerpf(chase_camera.fov,66.0 + minf(9.0,speed*0.12),minf(1.0,delta*1.4))
     _mission_tick(delta)
     if ship.hull <= 0.0:
         ship.global_position = Vector3(0,20,75)
@@ -466,13 +531,50 @@ func _show_notice(message: String) -> void:
 func _update_hud() -> void:
     if not is_instance_valid(hud_status):return
     if mission_index>=MISSIONS.size():
+        hud_objective.text = "ИССЛЕДОВАНИЕ ШЕСТИ РАЙОНОВ"
         hud_mission.text="НЕБУЛА · СВОБОДНЫЙ МИР"
         hud_status.text="Сюжет завершён. Исследуй шесть районов.\nКредиты: %d   XP: %d   Щит: %d%%   Корпус: %d%%" % [credits,xp,roundi(ship.shield),roundi(ship.hull)]
     else:
         var m: Dictionary=MISSIONS[mission_index]
         var d: int=roundi(ship.global_position.distance_to(m["position"]))
         hud_mission.text="%02d · %s" % [mission_index+1,m["title"]]
+        hud_objective.text="ЦЕЛЬ МИССИИ · %d М" % d
         hud_status.text="%s · %d м\nКредиты: %d   XP: %d   Щит: %d%%   Корпус: %d%%   Форсаж: %d%%" % [m["hint"],d,credits,xp,roundi(ship.shield),roundi(ship.hull),roundi(ship.boost)]
+
+func _fit_hud() -> void:
+    var width: float = get_viewport().get_visible_rect().size.x
+    if width < 820.0:
+        if is_instance_valid(hud_panel):
+            hud_panel.offset_left=8.0
+            hud_panel.offset_top=7.0
+            hud_panel.offset_right=minf(460.0,width-8.0)
+            hud_panel.offset_bottom=125.0
+        if is_instance_valid(hud_mission):hud_mission.add_theme_font_size_override("font_size",19)
+        if is_instance_valid(hud_status):hud_status.add_theme_font_size_override("font_size",12)
+        if is_instance_valid(radar):
+            radar.scale=Vector2(0.77,0.77)
+            radar.offset_top=-228.0
+        hud_controls.visible = false
+        if is_instance_valid(hud_flight):hud_flight.visible = false
+        if is_instance_valid(hud_objective):
+            hud_objective.offset_left=-230.0
+            hud_objective.add_theme_font_size_override("font_size",13)
+    else:
+        if is_instance_valid(hud_panel):
+            hud_panel.offset_left=22.0
+            hud_panel.offset_top=22.0
+            hud_panel.offset_right=560.0
+            hud_panel.offset_bottom=168.0
+        if is_instance_valid(hud_mission):hud_mission.add_theme_font_size_override("font_size",26)
+        if is_instance_valid(hud_status):hud_status.add_theme_font_size_override("font_size",15)
+        if is_instance_valid(radar):
+            radar.scale=Vector2.ONE
+            radar.offset_top=-282.0
+        hud_controls.visible = true
+        if is_instance_valid(hud_flight):hud_flight.visible = true
+        if is_instance_valid(hud_objective):
+            hud_objective.offset_left=-450.0
+            hud_objective.add_theme_font_size_override("font_size",19)
 
 func _unhandled_key_input(event: InputEvent) -> void:
     if event is InputEventKey and event.pressed and not event.echo:

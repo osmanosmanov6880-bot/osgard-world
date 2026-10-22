@@ -12,27 +12,45 @@ var elapsed: float = 0.0
 var body: MeshInstance3D
 var laser_cooldown: float = 0.6
 
-func _ready() -> void:
-    var mesh := SphereMesh.new()
-    mesh.radius = 1.25
-    mesh.height = 2.5
-    body = MeshInstance3D.new()
-    body.mesh = mesh
-    var mat := StandardMaterial3D.new()
-    mat.albedo_color = Color(0.82,0.18,0.34) if hostile else Color(0.15,0.74,0.88)
-    mat.metallic = 0.50
-    mat.roughness = 0.3
-    mat.emission_enabled = true
-    mat.emission = mat.albedo_color
-    mat.emission_energy_multiplier = 1.4
-    body.material_override = mat
-    add_child(body)
-    var wing := BoxMesh.new()
-    wing.size = Vector3(4.6,0.18,0.68)
+func _metal(tint: Color, energy: float = 0.0) -> StandardMaterial3D:
+    var m := StandardMaterial3D.new()
+    m.albedo_color = tint
+    m.metallic = 0.72
+    m.roughness = 0.27
+    if energy > 0.0:
+        m.emission_enabled = true
+        m.emission = tint
+        m.emission_energy_multiplier = energy
+    return m
+
+func _part(size: Vector3, offset: Vector3, material: Material) -> MeshInstance3D:
     var part := MeshInstance3D.new()
-    part.mesh = wing
-    part.material_override = mat
+    var mesh := BoxMesh.new()
+    mesh.size=size
+    part.mesh=mesh
+    part.material_override=material
+    part.position=offset
     add_child(part)
+    return part
+
+func _ready() -> void:
+    var primary: Color = Color(0.82,0.28,0.31) if hostile else Color(0.18,0.64,0.86)
+    var hull_mat := _metal(Color(0.12,0.20,0.30))
+    var neon := _metal(primary,2.0)
+    var sphere := SphereMesh.new()
+    sphere.radius=1.12
+    sphere.height=2.24
+    body=MeshInstance3D.new()
+    body.mesh=sphere
+    body.scale=Vector3(1.0,0.48,1.6)
+    body.material_override=hull_mat
+    add_child(body)
+    _part(Vector3(4.8,0.16,0.74),Vector3(0,0,0.42),hull_mat)
+    _part(Vector3(3.1,0.12,0.12),Vector3(0,0.14,0.46),neon)
+    for x in [-2.24,2.24]:
+        _part(Vector3(0.54,0.44,0.98),Vector3(x,-0.11,0.55),hull_mat)
+        _part(Vector3(0.34,0.30,0.24),Vector3(x,0.0,1.14),neon)
+    _part(Vector3(0.25,0.22,0.88),Vector3(0,0.32,-0.62),neon)
 
 func _process(delta: float) -> void:
     elapsed += delta

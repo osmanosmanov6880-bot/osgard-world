@@ -24,6 +24,16 @@ func _run() -> void:
     if not check(world.ship is CharacterBody3D, "Ship is not a physics body"):return
     if not check(world.get_node_or_null("CityTowers_MultiMesh") != null, "City architecture missing"):return
     if not check(world.get_node_or_null("SkylineNeonCrowns") != null, "Neon skyline detail missing"):return
+    var premium = world.get_node_or_null("PremiumArchitecture")
+    if not check(premium != null,"Cinematic architecture not instantiated"):return
+    if not check(premium.towers_built == 360,"Expected 360 textured high-rises"):return
+    if not check(premium.window_instances == 1440,"Instanced metallic façade fins missing"):return
+    if not check(premium.corridor_count == 5,"Sky transit corridors missing"):return
+    if not check(premium.dock_count == 6,"Multilevel sector docks missing"):return
+    if not check(premium.get_node_or_null("PremiumFacadeFins") != null,"Facade mesh absent"):return
+    if not check(premium.get_node_or_null("NebulaDistantPlanet") != null,"Planet backdrop absent"):return
+    if not check(world.ship.engine_flames.size() == 2,"Player ship should have dual animated thrusters"):return
+    if not check(is_instance_valid(world.hud_objective),"Cinematic HUD objective missing"):return
     if not check(world.drones.size() >= 22, "Traffic simulation missing"):return
     if not check(is_instance_valid(world.radar), "Mission radar missing"):return
     var start_credits: int = world.credits
@@ -48,5 +58,5 @@ func _run() -> void:
     world.ship.take_damage(10.0)
     if not check(world.ship.shield < shield_before,"Damage does not reduce shield"):return
     if not check(previous_credits >= 0,"Invalid credits"):return
-    print("NEBULA_SMOKE_SUCCESS missions=1 upgrades=1 drones=%d real3d=true" % world.drones.size())
+    print("NEBULA_SMOKE_SUCCESS missions=1 upgrades=1 drones=%d premium3d=true fins=1440 docks=6" % world.drones.size())
     quit(0)
