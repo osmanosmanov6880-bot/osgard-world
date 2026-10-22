@@ -1,0 +1,185 @@
+/* INHERIT R15 / WORLD ALIVE — premium, responsive mission center and
+ * cinematic environmental layers. A presentation-only extension. */
+body.living-legacy .world-alive-hub{
+ grid-column:1/-1;display:grid;gap:19px;min-width:0;
+ background:radial-gradient(ellipse at 94% 0,#5b8c7840,transparent 50%),linear-gradient(135deg,#123f40,#092c37 65%,#0c2930);
+ border:1px solid #c9d4a56a;border-radius:21px;
+ padding:clamp(19px,2.5vw,31px);box-shadow:0 14px 38px #061f2966,inset 0 1px #ffecbb30;
+ color:#f6f0df;
+}
+body.living-legacy .world-alive-hub-head{
+ display:flex;justify-content:space-between;gap:18px;align-items:center;flex-wrap:wrap
+}
+body.living-legacy .world-alive-heading{display:grid;gap:5px;max-width:650px}
+body.living-legacy .world-alive-overline{
+ font:800 calc(13px * var(--living-scale))/1.5 Manrope,system-ui,sans-serif;
+ letter-spacing:.11em;color:#efcf90
+}
+body.living-legacy .world-alive-title{
+ margin:0;font:600 clamp(25px,3vw,35px)/1.2 Georgia,serif;color:#ffefce
+}
+body.living-legacy .world-alive-meta{display:flex;flex-wrap:wrap;gap:8px}
+body.living-legacy .world-alive-meta span{
+ display:inline-flex;align-items:center;justify-content:center;min-height:40px;
+ border:1px solid #e9d49b79;background:#f2daaa12;border-radius:99px;
+ padding:9px 14px;color:#f6e4bd;font:700 calc(14px * var(--living-scale))/1.3 Manrope,system-ui,sans-serif
+}
+body.living-legacy .world-alive-metrics{
+ display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px
+}
+body.living-legacy .world-alive-metric{
+ display:flex;align-items:center;gap:12px;min-width:0;padding:14px 18px;
+ border:1px solid #c0d9c14c;border-radius:13px;background:#082c344d
+}
+body.living-legacy .world-alive-metric strong{
+ display:block;min-width:30px;font:750 clamp(27px,3.2vw,43px)/1 Manrope,system-ui,sans-serif;
+ color:#ffe2a3;letter-spacing:-.035em;font-variant-numeric:tabular-nums
+}
+body.living-legacy .world-alive-metric small{
+ color:#c6dfd7;font:700 calc(15px * var(--living-scale))/1.35 Manrope,system-ui,sans-serif
+}
+body.living-legacy .world-alive-goal-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+body.living-legacy .world-alive-goal{
+ display:grid;grid-template-columns:45px minmax(0,1fr);grid-template-rows:auto 1fr;
+ align-items:start;gap:10px 13px;padding:17px;border-radius:15px;
+ border:1px solid #bed5c170;background:linear-gradient(148deg,#20554c80,#10363b99);
+ box-shadow:inset 0 1px #ffffff13;
+ min-height:184px
+}
+body.living-legacy .world-alive-goal.is-complete{
+ background:linear-gradient(150deg,#3d65494a,#153d3980);border-color:#acd1a17f
+}
+body.living-legacy .world-alive-goal-index{
+ display:grid;place-items:center;width:43px;height:43px;border-radius:13px;
+ border:1px solid #eed39d88;background:#eed39d1c;color:#f6dbac;
+ font:750 21px Manrope,system-ui,sans-serif
+}
+body.living-legacy .world-alive-goal.is-complete .world-alive-goal-index{
+ background:#afdcad;color:#234735;border-color:#afdcad
+}
+body.living-legacy .world-alive-goal-copy{min-width:0;display:grid;gap:6px}
+body.living-legacy .world-alive-goal-title{
+ font:750 calc(18px * var(--living-scale))/1.25 Manrope,system-ui,sans-serif;
+ margin:0;color:#fff2d8
+}
+body.living-legacy .world-alive-goal-description{
+ font:500 calc(14px * var(--living-scale))/1.55 Manrope,system-ui,sans-serif;
+ color:#c8e1d3;margin:0
+}
+body.living-legacy .world-alive-goal-action{
+ grid-column:1/-1;align-self:end;min-height:50px;max-width:none;padding:10px 14px;
+ border:1px solid #f0d29d;border-radius:10px;
+ background:linear-gradient(135deg,#eddaa9,#e5bd79);color:#173b36;
+ font:800 calc(15px * var(--living-scale))/1.35 Manrope,system-ui,sans-serif;
+ text-align:center;cursor:pointer;transition:transform .15s ease,background .15s ease
+}
+body.living-legacy .world-alive-goal-action:hover:not(:disabled){
+ background:#ffedbf;transform:translateY(-1px)
+}
+body.living-legacy .world-alive-goal-action:disabled{
+ opacity:.48;cursor:not-allowed;background:#879f89;color:#193e3a
+}
+body.living-legacy .world-alive-goal-action[hidden],body.living-legacy .world-alive-goal[hidden]{display:none!important}
+body.living-legacy .world-alive-footer{display:flex;align-items:center;gap:9px 12px;flex-wrap:wrap}
+body.living-legacy .world-alive-help{
+ flex:1 1 370px;color:#e3eacf;font:550 calc(15px * var(--living-scale))/1.55 Manrope,system-ui,sans-serif;margin:0
+}
+body.living-legacy .world-alive-setting{
+ border:1px solid #cedbc28c;border-radius:10px;background:#082a345c;
+ color:#f6eacb;min-height:45px;padding:10px 14px;cursor:pointer;
+ font:700 calc(14px * var(--living-scale))/1.35 Manrope,system-ui,sans-serif
+}
+body.living-legacy .world-alive-setting:hover:not(:disabled){background:#366259}
+body.living-legacy .world-alive-setting[aria-pressed=true]{border-color:#ffde9e;background:#f4dc9b21}
+body.living-legacy .world-alive-setting:disabled{opacity:.58;cursor:default}
+body.living-legacy .world-alive-truth{
+ color:#b5cbcb;font:500 calc(12px * var(--living-scale))/1.45 Manrope,system-ui,sans-serif
+}
+body.living-legacy .world-alive-feedback:empty{display:none}
+body.living-legacy .world-alive-feedback:not(:empty){
+ display:block;grid-column:1/-1;padding:12px 16px;border:1px solid #f5deaa;
+ background:#133e3b;color:#f5e9bd;font:700 calc(15px * var(--living-scale))/1.5 Manrope,system-ui,sans-serif;border-radius:11px
+}
+/* All effects are behind the original clickable 2.5D scene. The stage,
+ * island geometry, existing landmarks and saved trace coordinates are untouched. */
+body.living-legacy .world>.world-alive-ocean{
+ position:absolute;inset:0;z-index:3;width:100%;height:100%;pointer-events:none;
+ opacity:.90;filter:saturate(1.13)
+}
+body.living-legacy .world>.world-alive-handoff{
+ position:absolute;inset:0;z-index:19;pointer-events:none;opacity:0;
+ background:radial-gradient(ellipse at 60% 55%,#fff3c988,#d8bd7a36 37%,transparent 74%)
+}
+body.living-legacy .world>.world-alive-handoff.is-active{
+ animation:world-alive-handoff .95s cubic-bezier(.21,.62,.2,1) both
+}
+@keyframes world-alive-handoff{
+ 0%{opacity:0;filter:blur(25px)}38%{opacity:.8;filter:blur(2px)}
+ 70%{opacity:.42;filter:blur(8px)}100%{opacity:0;filter:blur(22px)}
+}
+body.living-legacy .world>.world-alive-burst{
+ position:absolute;z-index:17;width:10px;height:10px;border-radius:50%;
+ pointer-events:none;transform:translate(-50%,-50%);border:2px solid #ffeab4;
+ box-shadow:0 0 16px #ffd78ec5;animation:world-alive-burst .9s ease-out forwards
+}
+body.living-legacy .world>.world-alive-burst i{
+ --angle:calc(var(--i)*45deg);
+ position:absolute;left:50%;top:50%;width:5px;height:15px;border-radius:99px;
+ background:linear-gradient(#fff7d0,#e9c48500);transform:translate(-50%,-50%) rotate(var(--angle)) translateY(-14px);
+ animation:world-alive-ray .85s ease-out forwards
+}
+@keyframes world-alive-burst{
+ 0%{opacity:0;scale:.4}25%{opacity:1;scale:1.1}100%{opacity:0;scale:1.6}
+}
+@keyframes world-alive-ray{
+ 0%{opacity:1;transform:translate(-50%,-50%) rotate(var(--angle)) translateY(-6px)}
+ 100%{opacity:0;transform:translate(-50%,-50%) rotate(var(--angle)) translateY(-48px)}
+}
+body.living-legacy .world.world-alive-fx-off>.world-alive-ocean{display:none}
+/* World atmosphere derives from the real generation's fictional season. */
+body.living-legacy .world[data-living-season=tide]{
+ background:radial-gradient(ellipse at 67% 9%,#a5c5b17a,transparent 35%),linear-gradient(180deg,#5e9d9c,#387c83 56%,#164f5f)!important
+}
+body.living-legacy .world[data-living-season=sun]{
+ background:radial-gradient(ellipse at 77% 8%,#fbe6abcf,transparent 32%),linear-gradient(180deg,#8fbb9e,#679f93 40%,#286b79)!important
+}
+body.living-legacy .world[data-living-season=wind]{
+ background:radial-gradient(ellipse at 62% 13%,#d2dbc785,transparent 45%),linear-gradient(180deg,#689d91,#497f83 45%,#16485c)!important
+}
+body.living-legacy .world[data-living-season=mist]{
+ background:radial-gradient(ellipse at 54% 23%,#c2ded9ae,transparent 52%),linear-gradient(180deg,#729d9f,#48797d 53%,#2a5963)!important
+}
+body.living-legacy .world[data-living-season=mist]>.mist{opacity:.8;filter:blur(52px)}
+body.living-legacy .world[data-living-season=sun] .island .shore{
+ box-shadow:inset 0 12px 45px #fff2bdc9,inset 0 -25px 35px #0c473eb0,0 14px 0 #284e51,0 22px 0 #143943
+}
+body.living-legacy .world[data-living-season=wind]>.mountain{opacity:.5}
+body.living-legacy .world[data-living-season=tide] .island .river{filter:brightness(1.2)}
+body.living-legacy .world[data-living-stage=ancient] .island .ruin{filter:brightness(1.18) drop-shadow(0 1px 6px #ffe7b56a)}
+@media(max-width:1100px){
+ body.living-legacy .world-alive-goal-row{grid-template-columns:repeat(2,minmax(0,1fr))}
+ body.living-legacy .world-alive-goal{min-height:164px}
+}
+@media(max-width:740px){
+ body.living-legacy .world-alive-hub{padding:17px 14px;gap:13px;border-radius:16px;margin-top:8px}
+ body.living-legacy .world-alive-metrics{gap:6px}
+ body.living-legacy .world-alive-metric{display:grid;gap:3px;justify-items:center;text-align:center;padding:10px 6px}
+ body.living-legacy .world-alive-metric strong{font-size:clamp(25px,6vw,36px)}
+ body.living-legacy .world-alive-metric small{font-size:calc(12px * var(--living-scale))}
+ body.living-legacy .world-alive-meta span{min-height:36px;font-size:calc(13px * var(--living-scale))}
+ body.living-legacy .world-alive-goal-row{grid-template-columns:1fr;gap:9px}
+ body.living-legacy .world-alive-goal{min-height:0;grid-template-columns:37px minmax(0,1fr) auto;grid-template-rows:auto;align-items:center;padding:12px;gap:9px}
+ body.living-legacy .world-alive-goal-index{width:35px;height:35px;border-radius:10px;font-size:19px}
+ body.living-legacy .world-alive-goal-title{font-size:calc(16px * var(--living-scale))}
+ body.living-legacy .world-alive-goal-description{font-size:calc(12px * var(--living-scale))}
+ body.living-legacy .world-alive-goal-action{grid-column:1/-1;width:100%;min-height:48px}
+ body.living-legacy .world-alive-setting{flex:1 1 135px;min-height:48px}
+ body.living-legacy .world-alive-truth{font-size:calc(12px * var(--living-scale))}
+}
+@media(prefers-reduced-motion:reduce){
+ body.living-legacy .world-alive-handoff,
+ body.living-legacy .world-alive-burst,
+ body.living-legacy .world-alive-burst i{animation:none!important}
+ body.living-legacy .world-alive-handoff{display:none}
+ body.living-legacy .world-alive-ocean{display:none}
+}
