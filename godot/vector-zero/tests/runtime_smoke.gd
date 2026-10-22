@@ -24,6 +24,8 @@ func _run() -> void:
     root.add_child(game)
     await process_frame
     _assert_case(game.get_node_or_null("Wave3Foundry") != null, "WAVE3 physical engineering laboratory installed")
+    _assert_case(game.get_node_or_null("Wave3Foundry/CryogenicBank_-1_0/MachinedVacuumPressureVessel") is MeshInstance3D, "large-scale machined coolant plant installed")
+    _assert_case(game.get_node_or_null("Wave3Foundry/CalibratedIndustrialLight_0") is OmniLight3D, "cinematic practical light setup has proper scene lights")
     _assert_case(game.get_node_or_null("Wave3Foundry/CNCBridgeGantry_-112") != null, "machined overhead crane assembly")
     _assert_case(game.get_node_or_null("Wave3Foundry/ServiceFrameFasteners_144") is MultiMeshInstance3D, "engineering fasteners are GPU-instanced")
     _assert_case(game.get_node_or_null("PlayerEnergyCore/Wave3PrecisionProjectile/MachinedGyroNose_120") is MeshInstance3D, "new projectile housing is real 3D")

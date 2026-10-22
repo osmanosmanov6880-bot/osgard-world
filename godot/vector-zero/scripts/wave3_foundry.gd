@@ -18,7 +18,9 @@ static func build(world: Node3D, core: Node3D, magnet: Node3D, receiver: Node3D)
     foundry.name = "Wave3Foundry"
     world.add_child(foundry)
     _architecture(foundry)
+    _cryogenic_banks(foundry)
     _control_room(foundry)
+    _light_the_machinery(foundry)
     var gyroscope := Node3D.new()
     gyroscope.name = "Wave3PrecisionProjectile"
     core.add_child(gyroscope)
@@ -207,6 +209,62 @@ static func _architecture(root: Node3D) -> void:
             for yy in [-0.8, -0.2, 0.4, 1.0]:
                 _box(airlock, "PressureRib", Vector3(0, yy, 0.2), Vector3(1.46, 0.05, 0.11), "ceramic")
             _lathe(airlock, "CNCActuatorBarrel", PackedVector2Array([Vector2(0.10,-0.43), Vector2(0.27,-0.42), Vector2(0.32,-0.35), Vector2(0.32,0.34), Vector2(0.23,0.41), Vector2(0.08,0.44)]), "bronze", Vector3(0.90, 0.0, 0.3))
+
+static func _cryogenic_banks(root: Node3D) -> void:
+    # Large detailed shapes frame the arena, visible from the player's camera.
+    # The four pressure vessels sit against the walls and do not touch the
+    # energy-core trajectory or the receiver's interaction volume.
+    for side in [-1.0, 1.0]:
+        for bank_id in range(2):
+            var tank := Node3D.new()
+            tank.name = "CryogenicBank_%d_%d" % [int(side), bank_id]
+            tank.position = Vector3(side * 12.05, 0.0, -4.4 + float(bank_id) * 7.0)
+            root.add_child(tank)
+            _lathe(tank, "MachinedVacuumPressureVessel", PackedVector2Array([
+                Vector2(0.10, 0.35), Vector2(0.90, 0.35), Vector2(1.04, 0.48),
+                Vector2(1.08, 0.82), Vector2(0.99, 1.20), Vector2(0.99, 4.54),
+                Vector2(1.10, 4.97), Vector2(1.10, 5.18), Vector2(0.88, 5.40),
+                Vector2(0.27, 5.49)
+            ]), "steel")
+            for h in [0.67, 1.90, 3.32, 4.79]:
+                _lathe(tank, "CNCFluidLockCollar", PackedVector2Array([
+                    Vector2(1.0, h - 0.095), Vector2(1.20, h - 0.045),
+                    Vector2(1.24, h + 0.035), Vector2(1.0, h + 0.095)
+                ]), "bronze")
+            for s in range(12):
+                var a := float(s) * TAU / 12.0
+                var rib := Node3D.new()
+                rib.name = "PrecisionRadialRib_%02d" % s
+                rib.rotation.y = a
+                tank.add_child(rib)
+                _box(rib, "PressureJacketBeam", Vector3(0, 2.85, 1.05), Vector3(0.10, 3.50, 0.14), "gun")
+                _box(rib, "CalibrationMarker", Vector3(0, 4.05, 1.15), Vector3(0.08, 0.24, 0.10), "cyan")
+            _box(tank, "CryogenicTelemetryChassis", Vector3(0.0, 3.12, 1.22), Vector3(0.74, 0.98, 0.21), "gun")
+            _box(tank, "CryogenicTelemetryPanel", Vector3(0.0, 3.12, 1.36), Vector3(0.59, 0.77, 0.04), "ceramic")
+            for k in range(4):
+                _box(tank, "AnalogFluidLevelScale", Vector3(-0.19 + float(k) * 0.12, 3.05, 1.40), Vector3(0.045, 0.34 + float(k % 2) * 0.17, 0.035), "warning")
+            _lathe(tank, "PressureVentHead", PackedVector2Array([
+                Vector2(0.14, 5.39), Vector2(0.54, 5.39), Vector2(0.58, 5.51),
+                Vector2(0.50, 5.65), Vector2(0.42, 5.85), Vector2(0.15, 5.90)
+            ]), "gun")
+
+static func _light_the_machinery(root: Node3D) -> void:
+    # Practical scene lighting: cool front fill and restrained warm rim lights.
+    # No gratuitous light-emitting floor meshes.
+    var locations := [
+        Vector3(0.0, 8.4, 9.2),
+        Vector3(-11.0, 7.0, 4.8),
+        Vector3(11.0, 7.0, 4.8)
+    ]
+    for i in range(locations.size()):
+        var light := OmniLight3D.new()
+        light.name = "CalibratedIndustrialLight_%d" % i
+        light.position = locations[i]
+        light.light_color = Color(0.73, 0.85, 0.95) if i == 0 else Color(1.0, 0.74, 0.46)
+        light.light_energy = 2.0 if i == 0 else 1.15
+        light.omni_range = 23.0 if i == 0 else 13.0
+        light.shadow_enabled = false
+        root.add_child(light)
 
 static func _control_room(root: Node3D) -> void:
     # Sensor consoles are aligned to wall, with finite physical display housings.
