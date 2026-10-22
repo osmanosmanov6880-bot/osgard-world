@@ -1,47 +1,241 @@
-import { useEffect,useRef,useState } from 'react'
-import { getPlayGame,playGames } from './redesignCatalog'
-import { PLAY_COLLECTION_KEY,emptyPlayCollection,parsePlayCollection,toggleFavorite,visitGame } from './playCollection'
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react'
+import type { CSSProperties } from 'react'
+import { ArrowDown, ArrowRight, ArrowUpRight, Bookmark, Box, ChevronLeft, ChevronRight, Film, Gamepad2, InfinityIcon, Layers3, Orbit, ShieldCheck } from './PlayIcons'
+import { getPlayGame, playGames } from './redesignCatalog'
+import { PLAY_COLLECTION_KEY, emptyPlayCollection, parsePlayCollection, toggleFavorite } from './playCollection'
 import type { PlayCollection } from './playCollection'
-import { playCatalogHref,playReturnHref,playWorldHref,readPlayFilters } from './playFilters'
-import { recordBrandEvent } from './brandTelemetry'
+import { playCatalogHref, readPlayFilters } from './playFilters'
 import { replaceBrowserUrl } from './browserNavigation'
-const ids=playGames.map(g=>g.id)
-const genres=[...new Set(playGames.map(g=>g.genre))]
-const featured=playGames.find(g=>g.id==='zion-030')||playGames[0]
-function loadCollection():PlayCollection{
- const current=localStorage.getItem(PLAY_COLLECTION_KEY)
- if(current){try{return parsePlayCollection(current,ids)}catch{/* Recover from malformed optional storage without blocking games. */}}
- const readLegacy=(key:string):string[]=>{try{const value=JSON.parse(localStorage.getItem(key)||'[]');return Array.isArray(value)?value.filter((v):v is string=>typeof v==='string'&&ids.includes(v)):[]}catch{return []}}
- return parsePlayCollection(JSON.stringify({favorites:readLegacy('osgard.games.favorites.v1'),recent:readLegacy('osgard.games.recent.v1')}),ids)
-}
-export default function PlayHome({gameId,partners=false}:{gameId?:string;partners?:boolean}){
- const catalogSearch=useRef<HTMLInputElement>(null)
- const game=gameId?getPlayGame(gameId):undefined
- const initial=readPlayFilters(location.search,genres)
- const [query,setQuery]=useState(initial.query),[genre,setGenre]=useState(initial.genre),[mode,setMode]=useState(initial.mode),[view,setView]=useState(initial.view)
- const filters={query,genre,mode,view}
- const returnTo=playReturnHref(location.search,genres)
- useEffect(()=>{if(!gameId&&!partners)replaceBrowserUrl(playCatalogHref(filters).replace(/#catalog$/,location.hash||''))},[query,genre,mode,view,gameId,partners])
- const [collection,setCollection]=useState<PlayCollection>(emptyPlayCollection),[message,setMessage]=useState('')
- useEffect(()=>{const read=()=>{try{setCollection(loadCollection())}catch{setMessage('Коллекция недоступна. Каталог и запуск работают без сохранения.')}};read();const changed=(e:StorageEvent)=>{if(e.key===PLAY_COLLECTION_KEY||e.key===null)read()};window.addEventListener('storage',changed);return()=>window.removeEventListener('storage',changed)},[])
- const mutate=(change:(p:PlayCollection)=>PlayCollection)=>{try{const p=loadCollection();const next=change(p);localStorage.setItem(PLAY_COLLECTION_KEY,JSON.stringify(next));setCollection(next);setMessage('Коллекция сохранена на этом устройстве.');return true}catch{setMessage('Не удалось сохранить коллекцию на устройстве. Игры по-прежнему можно открывать.');return false}}
- useEffect(()=>{if(game)mutate(p=>visitGame(p,game.id))},[game?.id])
- const launch=()=>{if(game)recordBrandEvent('game_launch_clicked',game.id)}
- const filtered=playGames.filter(g=>[g.id,g.title,g.searchTerms,g.description,g.format].join(' ').toLocaleLowerCase('ru').includes(query.trim().toLocaleLowerCase('ru'))&&(genre==='all'||g.genre===genre)&&(mode==='all'||g.mode===mode)&&(view==='all'||(view==='favorites'?collection.favorites:collection.recent).includes(g.id)))
- if(view==='recent')filtered.sort((a,b)=>collection.recent.indexOf(a.id)-collection.recent.indexOf(b.id))
- if(partners)return <main className="brand-container play-partners"><section className="brand-section"><p className="brand-eyebrow">OSGARD PLAY / PARTNERS</p><h1>Сначала подходящий формат.<br/>Потом — интеграция.</h1><p className="brand-lead">Обсуждаем брендированные испытания, отдельные игровые миры и размещения после сессии. Это приглашение к разговору, а не предложение действующей рекламной сети.</p><div className="brand-actions"><a className="brand-button primary" href="/#contact">Подготовить бриф →</a><a className="brand-button" href="/play">Вернуться в каталог</a></div></section><section className="brand-section"><h2>Что потребуется согласовать</h2><ol><li>Аудитория, задача и содержание интеграции.</li><li>Платформы, управление и требования к игровому сервису.</li><li>Доступность, отсутствие помех игровому управлению и маркировка.</li><li>События измерения, условия кампании и техническая проверка.</li></ol><a className="brand-text-link" href="/games/partners/">Существующий партнёрский маршрут ↗</a></section></main>
- if(gameId&&!game)return <main className="brand-container"><section className="brand-section"><h1>Мир не найден.</h1><a className="brand-button primary" href={returnTo}>Вернуться в каталог →</a></section></main>
- if(game)return <main className="brand-container play-detail"><section className="play-detail-hero"><div><p className="brand-eyebrow">OSGARD PLAY / {game.genre.toUpperCase()}</p><h1>{game.title}</h1><p className="brand-lead">{game.description}</p><div className="brand-actions">{game.launchable?<a className="brand-button primary" data-game-launch={game.id} href={game.href} onClick={launch}>{game.launchLabel} <span>↗</span></a>:<button className="brand-button" disabled>Сборка недоступна</button>}{game.alternate&&<a className="brand-button" href={game.alternate.href}>{game.alternate.label} ↗</a>}<a className="brand-button" href={returnTo}>← Каталог миров</a></div><p className="play-launch-warning">{game.warning}</p></div><img className="play-detail-art" src={game.asset} alt={'Иллюстрация мира '+game.title} width="1000" height="760" fetchPriority="high"/></section><section className="brand-section play-specs"><div><p className="brand-eyebrow">01 / УПРАВЛЕНИЕ</p><h2>Перед входом</h2><p>{game.controls}</p></div><dl>{[['Формат',game.format],['Платформа',game.platform],['Сохранение',game.save],['Онлайн',game.online]].map(([name,value])=><div key={name}><dt>{name}</dt><dd>{value}</dd></div>)}</dl></section><section className="brand-section"><h2>Ваши миры</h2><button className="brand-button" aria-pressed={collection.favorites.includes(game.id)} onClick={()=>mutate(p=>toggleFavorite(p,game.id))}>{collection.favorites.includes(game.id)?'★ Убрать из избранного':'☆ Добавить в избранное'}</button><p>Избранное и история открытия сохраняются в каталоге этого браузера. Они не заменяют сохранение внутри игры.</p><p role="status">{message}</p></section></main>
- return <main className="brand-container play-home"><section className="play-hero omega-play-hero"><div className="omega-play-city" aria-hidden="true"><img src="/brand/omega-play.svg" width="1600" height="1000" alt="" decoding="async" /><span className="omega-play-light omega-play-light-one"/><span className="omega-play-light omega-play-light-two"/></div><img className="omega-play-feature-art" src={featured.asset} alt="Иллюстрация доступной миссии ZION-030" width="1000" height="760" decoding="async"/><div><p className="brand-eyebrow">ВЫБРАННЫЙ МИР / ZION-030</p><p className="play-signal">ГОРОДСКАЯ ГОЛОВОЛОМКА · БРАУЗЕР</p><h1>ДОБАВЬ ТЕНЬ.<br/><span>ИЗМЕНИ ГОРОД.</span></h1><p>Три горячие точки. Три решения. Размести дерево, навес и дождевой сад так, чтобы охладить свой квартал.</p><div className="omega-play-actions"><a className="brand-button primary" href={playWorldHref(featured.id,filters)}>Играть <span>↗</span></a><a className="brand-button" href="#catalog">Все игровые миры <span aria-hidden="true">↓</span></a></div><p className="play-launch-warning">Одиночная учебная миссия. Прогресс только в текущей сессии. 3D или облегчённое поле, управление мышью и клавиатурой.</p></div><span className="play-hero-coordinate">ZION-030 / ТРИ ТОЧКИ · ОДНА МИССИЯ</span></section>
- <section className="omega-play-discovery" aria-label="С чего начать знакомство с OSGARD PLAY">
-  <div className="omega-play-discovery-heading"><span>ПОПРОБУЙ РАЗНЫЕ ФОРМАТЫ</span><h2>ТВОЙ СЛЕДУЮЩИЙ МИР.</h2><p>Три коротких маршрута в существующие игровые прототипы. У каждой игры указаны формат и ограничения.</p></div>
-  <div className="omega-play-shortcuts">
-    <a href={playWorldHref('vector-zero',filters)}><span>01 / ФИЗИКА</span><strong>VECTOR//ZERO</strong><small>Магнитные поля и головоломка</small><em aria-hidden="true">↗</em></a>
-    <a href={playWorldHref('time',filters)}><span>02 / СТРАТЕГИЯ</span><strong>Империя времени</strong><small>Казна, энергия и управление</small><em aria-hidden="true">↗</em></a>
-    <a href={playWorldHref('null-shift',filters)}><span>03 / ТАКТИКА</span><strong>NULL//SHIFT</strong><small>Тактическая миссия · WebGL 2</small><em aria-hidden="true">↗</em></a>
-  </div>
- </section>
- <section id="catalog" className="brand-section"><div className="brand-section-heading"><p className="brand-eyebrow">ВЫБЕРИ СВОЮ СЛЕДУЮЩУЮ РЕАЛЬНОСТЬ</p><h2>Каталог миров<span className="play-count">{playGames.length.toString().padStart(2,'0')}</span></h2><p className="brand-lead">8 игр OSGARD и 11 миров ZION-9. У каждого — свой формат, понятное управление и условия сохранения.</p></div><div className="play-filters"><label>Поиск<input ref={catalogSearch} type="search" maxLength={80} value={query} onChange={e=>setQuery(e.target.value)} placeholder="Название игры"/></label><label>Жанр<select value={genre} onChange={e=>setGenre(e.target.value)}><option value="all">Все жанры</option>{[...new Set(playGames.map(g=>g.genre))].map(v=><option key={v}>{v}</option>)}</select></label><label>Способ игры<select value={mode} onChange={e=>setMode(e.target.value as 'all'|'solo'|'service')}><option value="all">Все способы</option><option value="solo">Одиночная</option><option value="service">Требует сервиса</option></select></label><label>Коллекция<select value={view} onChange={e=>setView(e.target.value as 'all'|'favorites'|'recent')}><option value="all">Все миры</option><option value="favorites">Избранное</option><option value="recent">Недавно открытые</option></select></label></div><p role="status" className="brand-meta">Найдено: {filtered.length} / {playGames.length}. {message}</p>
- {filtered.length===0?<div className="play-empty"><h3>Здесь пока тихо.</h3><p>{view==='favorites'?'Добавляйте миры в избранное с помощью звезды.':view==='recent'?'Откройте страницу мира — он появится здесь.':'Попробуйте другое название или сбросьте фильтры.'}</p><button className="brand-button" onClick={()=>{catalogSearch.current?.focus();setQuery('');setGenre('all');setMode('all');setView('all')}}>Показать все миры</button></div>:<div className="play-grid">{filtered.map(g=><article key={g.id} className="play-card" style={{'--world-accent':g.accent} as React.CSSProperties}><a className="play-card-art" href={playWorldHref(g.id,filters)}><img src={g.asset} alt={'Иллюстрация '+g.title} width="1000" height="760" loading="lazy"/><span className="brand-status">{g.status}</span></a><div className="play-card-body"><p className="brand-eyebrow">{g.genre} / {g.mode==='solo'?'ОДИНОЧНАЯ':'НУЖЕН СЕРВИС'}</p><h3><a href={playWorldHref(g.id,filters)}>{g.title}</a></h3><p>{g.description}</p><dl><div><dt>Платформа</dt><dd>{g.platform}</dd></div><div><dt>Сохранение</dt><dd>{g.save}</dd></div><div><dt>Онлайн</dt><dd>{g.online}</dd></div><div><dt>Управление</dt><dd>{g.controls}</dd></div></dl><div className="play-card-actions"><a className="brand-text-link" href={playWorldHref(g.id,filters)}>{g.format==='Интерактивная история'?'Открыть историю ↗':'Открыть мир ↗'}</a><button aria-label={(collection.favorites.includes(g.id)?'Убрать из избранного: ':'В избранное: ')+g.title} aria-pressed={collection.favorites.includes(g.id)} onClick={()=>{if(mutate(p=>toggleFavorite(p,g.id))&&view==='favorites')catalogSearch.current?.focus()}}>{collection.favorites.includes(g.id)?'★':'☆'}</button></div><p className="play-card-caveat">{g.warning}</p></div></article>)}</div>}</section><section className="brand-section play-partner-strip"><div><p className="brand-eyebrow">ДЛЯ БРЕНДОВ И КОМАНД</p><h2>Создадим мир<br/>вокруг вашей идеи.</h2></div><a className="brand-button" href="/play/partners">Обсудить партнёрство ↗</a></section></main>
+import { FEATURED_WORLD_IDS, PLAY_ART_ROOT } from './playCinematicData'
+import PlayWorldCard from './PlayWorldCard'
+import { usePlayMotion } from './PlayMotion'
+import { magnet, resetMagnet } from './playButtonMotion'
+import './playCinematic.css'
+
+const PlayExploreSections = lazy(() => import('./PlayExploreSections'))
+
+function exploreAnchor(hash: string) {
+  return /^#(catalog|experience|discover|guest-access)$/.exec(hash)?.[1] || ''
 }
 
+const ids = playGames.map(game => game.id)
+const genres = [...new Set(playGames.map(game => game.genre))]
+const featuredWorlds = FEATURED_WORLD_IDS.map(id => getPlayGame(id)).filter(game => game !== undefined)
+
+function loadCollection(): PlayCollection {
+  const current = localStorage.getItem(PLAY_COLLECTION_KEY)
+  if (current) {
+    try { return parsePlayCollection(current, ids) } catch { /* Recover optional storage without blocking the catalogue. */ }
+  }
+  const readLegacy = (key: string): string[] => {
+    try {
+      const value = JSON.parse(localStorage.getItem(key) || '[]')
+      return Array.isArray(value) ? value.filter((v): v is string => typeof v === 'string' && ids.includes(v)) : []
+    } catch { return [] }
+  }
+  return parsePlayCollection(JSON.stringify({
+    favorites: readLegacy('osgard.games.favorites.v1'),
+    recent: readLegacy('osgard.games.recent.v1'),
+  }), ids)
+}
+
+
+export default function PlayHome({ partners = false }: { partners?: boolean }) {
+  const page = useRef<HTMLElement>(null)
+  const exploration = useRef<HTMLDivElement>(null)
+  const initial = readPlayFilters(location.search, genres)
+  const [filters, setFilters] = useState(initial)
+  const { query, genre, mode, view } = filters
+  const initialTarget = exploreAnchor(location.hash || '') ||
+    (initial.query || initial.genre !== 'all' || initial.mode !== 'all' || initial.view !== 'all' ? 'catalog' : '')
+  const pendingAnchor = useRef(initialTarget)
+  const anchorFrame = useRef(0)
+  const mountedExploration = useRef(false)
+  // Async server rendering includes the full catalogue. In the browser the
+  // import begins only for an explicit destination or the proximity observer.
+  const [exploreRequested, setExploreRequested] = useState(() => typeof window === 'undefined' || Boolean(initialTarget))
+  const [exploreReady, setExploreReady] = useState(false)
+  const [collection, setCollection] = useState<PlayCollection>(emptyPlayCollection)
+  const [message, setMessage] = useState('')
+  const [featuredOffset, setFeaturedOffset] = useState(0)
+  const [artState, setArtState] = useState<'loading' | 'loaded' | 'failed'>('loading')
+  usePlayMotion(page)
+
+  useEffect(() => {
+    if (partners) return
+    // /games and /entertainment are public aliases of Play. Preserve the
+    // visited alias when synchronizing query filters, otherwise changing the
+    // pathname during palette lazy-load unmounts the accessible dialog.
+    const currentPath = location.pathname.replace(/\/+$/, '') || '/'
+    const prefix = currentPath === '/games' || currentPath === '/entertainment' ? currentPath : '/play'
+    const target = playCatalogHref(filters).replace(/^\/play/, prefix)
+    replaceBrowserUrl(target.replace(/#catalog$/, location.hash || ''))
+  }, [query, genre, mode, view, partners])
+  useEffect(() => {
+    if (partners) return
+    let observer: IntersectionObserver | undefined
+    const request = (anchor = '') => {
+      if (anchor) pendingAnchor.current = anchor
+      observer?.disconnect()
+      setExploreRequested(true)
+    }
+    const hashChanged = () => {
+      const anchor = exploreAnchor(location.hash)
+      if (anchor && !mountedExploration.current) request(anchor)
+      else pendingAnchor.current = ''
+    }
+    const clicked = (event: MouseEvent) => {
+      if (mountedExploration.current || event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
+      const link = event.target instanceof Element ? event.target.closest<HTMLAnchorElement>('a[href]') : null
+      if (!link || link.target && link.target !== '_self' || link.hasAttribute('download')) return
+      const url = new URL(link.href, location.href)
+      if (url.origin === location.origin && url.pathname === location.pathname && url.search === location.search) {
+        const anchor = exploreAnchor(url.hash)
+        if (anchor) request(anchor)
+      }
+    }
+    window.addEventListener('hashchange', hashChanged)
+    document.addEventListener('click', clicked)
+    if (!exploreRequested) {
+      if (typeof window.IntersectionObserver === 'function') {
+        observer = new IntersectionObserver(entries => {
+          if (entries.some(entry => entry.isIntersecting)) request()
+        }, { rootMargin: '200px', threshold: 0 })
+        if (exploration.current) observer.observe(exploration.current)
+      } else request()
+    }
+    return () => {
+      observer?.disconnect()
+      cancelAnimationFrame(anchorFrame.current)
+      window.removeEventListener('hashchange', hashChanged)
+      document.removeEventListener('click', clicked)
+    }
+  }, [partners])
+  const onExploreReady = useCallback(() => {
+    mountedExploration.current = true
+    setExploreReady(true)
+    anchorFrame.current = requestAnimationFrame(() => {
+      const id = pendingAnchor.current
+      pendingAnchor.current = ''
+      const target = id && document.getElementById(id)
+      if (target) {
+        target.scrollIntoView({ behavior: 'instant', block: 'start' })
+        target.tabIndex = -1
+        target.focus({ preventScroll: true })
+      }
+    })
+  }, [])
+  useEffect(() => {
+    const read = () => {
+      try { setCollection(loadCollection()) }
+      catch { setMessage('Коллекция недоступна. Каталог и запуск работают без сохранения.') }
+    }
+    read()
+    const changed = (event: StorageEvent) => { if (event.key === PLAY_COLLECTION_KEY || event.key === null) read() }
+    window.addEventListener('storage', changed)
+    return () => window.removeEventListener('storage', changed)
+  }, [])
+  const mutate = (change: (previous: PlayCollection) => PlayCollection) => {
+    try {
+      const next = change(loadCollection())
+      localStorage.setItem(PLAY_COLLECTION_KEY, JSON.stringify(next))
+      setCollection(next)
+      setMessage('Коллекция сохранена на этом устройстве.')
+      return true
+    } catch {
+      setMessage('Не удалось сохранить коллекцию на устройстве. Игры по-прежнему можно открывать.')
+      return false
+    }
+  }
+
+  if (partners) return <main className="brand-container play-partners">
+    <section className="brand-section"><p className="brand-eyebrow">OSGARD PLAY / PARTNERS</p>
+      <h1>Сначала подходящий формат.<br />Потом — интеграция.</h1>
+      <p className="brand-lead">Обсуждаем брендированные испытания, отдельные игровые миры и размещения после сессии. Это приглашение к разговору, а не предложение действующей рекламной сети.</p>
+      <div className="brand-actions"><a className="brand-button primary" href="/#contact">Подготовить бриф →</a><a className="brand-button" href="/play">Вернуться в каталог</a></div>
+    </section><section className="brand-section"><h2>Что потребуется согласовать</h2><ol>
+      <li>Аудитория, задача и содержание интеграции.</li><li>Платформы, управление и требования к игровому сервису.</li>
+      <li>Доступность, отсутствие помех игровому управлению и маркировка.</li><li>События измерения, условия кампании и техническая проверка.</li>
+    </ol><a className="brand-text-link" href="/games/partners/">Существующий партнёрский маршрут ↗</a></section>
+  </main>
+
+  const selectedWorlds = Array.from({ length: 3 }, (_, index) => featuredWorlds[(featuredOffset + index) % featuredWorlds.length])
+
+  return <main className="play-universe" ref={page} data-art-state={artState} data-hero-visible="true">
+    <section className="cp-hero" aria-labelledby="play-title">
+      <picture className="cp-hero-art" aria-hidden="true">
+        <source media="(max-width: 600px)" srcSet={PLAY_ART_ROOT + 'hero-mobile-780.webp 780w, ' + PLAY_ART_ROOT + 'hero-mobile.webp 1024w'} sizes="100vw" />
+        <img src={PLAY_ART_ROOT + 'hero-megacity.webp'}
+          srcSet={PLAY_ART_ROOT + 'hero-megacity-1280.webp 1280w, ' + PLAY_ART_ROOT + 'hero-megacity-1920.webp 1920w, ' + PLAY_ART_ROOT + 'hero-megacity.webp 1983w'}
+          sizes="100vw" alt="" width="1983" height="793" fetchPriority="high" decoding="async"
+          onLoad={() => setArtState('loaded')} onError={() => setArtState('failed')} />
+      </picture>
+      <div className="cp-hero-shade" aria-hidden="true" />
+      <div className="cp-atmosphere" aria-hidden="true">
+        {Array.from({ length: 10 }, (_, index) => <i key={index} style={{
+          '--i': index, left: ((index * 37 + 19) % 94) + '%', top: ((index * 23 + 13) % 83) + '%',
+        } as CSSProperties} />)}
+        <span className="cp-vessel cp-vessel-one" /><span className="cp-vessel cp-vessel-two" />
+      </div>
+      {artState === 'loading' && <div className="cp-art-loading" aria-hidden="true"><Orbit /><span>OSGARD PLAY</span></div>}
+      <div className="cp-hero-layout cp-container">
+        <div className="cp-hero-copy">
+          <p className="cp-eyebrow cp-hero-eyebrow">ИНТЕРАКТИВНЫЕ МИРЫ<br />В ЦИФРОВОЙ ВСЕЛЕННОЙ</p>
+          <h1 id="play-title">OSGARD<span>Play</span></h1>
+          <p className="cp-hero-slogan">ИГРЫ. МИРЫ. <span>ТЫ ВНУТРИ.</span></p>
+          <p className="cp-hero-description">Интерактивные миры нового поколения. Исследуй, создавай, играй и открывай новые возможности в цифровой вселенной OSGARD.</p>
+          <div className="cp-hero-actions">
+            <a className="cp-button cp-button-primary" href="#featured" onPointerMove={magnet} onPointerLeave={resetMagnet}>
+              Исследовать миры <ArrowUpRight size={19} aria-hidden="true" />
+            </a>
+            <button className="cp-button cp-trailer" type="button" disabled aria-describedby="trailer-status">
+              <Film size={18} aria-hidden="true" /> Смотреть трейлер
+            </button>
+          </div>
+          <span id="trailer-status" className="cp-trailer-note">Трейлер пока не опубликован. Игры доступны в каталоге.</span>
+        </div>
+        <aside className="cp-glass-panel" aria-label="Возможности OSGARD Play">
+          <p>БОЛЬШЕ, ЧЕМ КАРТИНКА.<br />МИРЫ, В КОТОРЫЕ МОЖНО ВОЙТИ.</p>
+          <a href="#catalog"><Layers3 aria-hidden="true" /><span><strong>{playGames.length} миров</strong><small>ИГРЫ И ИСТОРИИ В КАТАЛОГЕ</small></span><ArrowRight className="cp-panel-arrow" aria-hidden="true" /></a>
+          <a href="#experience"><Gamepad2 aria-hidden="true" /><span><strong>Твой выбор</strong><small>ФИЗИКА · СТРАТЕГИЯ · ТАКТИКА</small></span><ArrowRight className="cp-panel-arrow" aria-hidden="true" /></a>
+          <a href="#guest-access"><ShieldCheck aria-hidden="true" /><span><strong>Гостевой вход</strong><small>ЗНАКОМСТВО БЕЗ РЕГИСТРАЦИИ</small></span><ArrowRight className="cp-panel-arrow" aria-hidden="true" /></a>
+        </aside>
+      </div>
+      <div className="cp-hero-foot cp-container"><span>OSGARD MEGACITY / ХУДОЖЕСТВЕННАЯ ВСЕЛЕННАЯ</span><a href="#featured">ЛИСТАЙ. ОТКРЫВАЙ. <ArrowDown size={15} aria-hidden="true" /></a></div>
+      {artState === 'failed' && <p className="cp-image-error" role="status">Фон не загрузился. Каталог и игры доступны ниже.</p>}
+    </section>
+
+    <div className="cp-signal-strip" aria-label="Коротко о платформе">
+      <div className="cp-container">
+        <a href="#catalog"><InfinityIcon aria-hidden="true" /><span>РАЗНЫЕ МИРЫ<br /><b>ОДНА ВСЕЛЕННАЯ</b></span></a>
+        <a href="#guest-access"><ShieldCheck aria-hidden="true" /><span>ГОСТЕВОЙ ДОСТУП<br /><b>БЕЗ РЕГИСТРАЦИИ</b></span></a>
+        <a href="#experience"><Box aria-hidden="true" /><span>ИГРОВЫЕ МЕХАНИКИ<br /><b>ВЫБЕРИ СВОЮ</b></span></a>
+        <a href="/play?view=favorites#catalog"><Bookmark aria-hidden="true" /><span>ТВОЯ КОЛЛЕКЦИЯ<br /><b>НА ЭТОМ УСТРОЙСТВЕ</b></span></a>
+        <a href="#discover"><Orbit aria-hidden="true" /><span>НОВЫЕ ВПЕЧАТЛЕНИЯ<br /><b>В КАЖДОМ МИРЕ</b></span></a>
+      </div>
+    </div>
+
+    <section id="featured" className="cp-section cp-container cp-featured" aria-labelledby="featured-title" data-reveal>
+      <div className="cp-section-top">
+        <div><p className="cp-eyebrow">ИЗБРАННЫЕ МИРЫ</p><h2 id="featured-title">ИССЛЕДУЙ. ИГРАЙ. <span>ОТКРЫВАЙ.</span></h2></div>
+        <div className="cp-featured-navigation"><p>Разные жанры. Собственные правила.<br />Твой следующий мир — здесь.</p>
+          <button type="button" aria-label="Предыдущие избранные миры" onClick={() => setFeaturedOffset(previous => (previous + featuredWorlds.length - 1) % featuredWorlds.length)}><ChevronLeft aria-hidden="true" /></button>
+          <button type="button" aria-label="Следующие избранные миры" onClick={() => setFeaturedOffset(previous => (previous + 1) % featuredWorlds.length)}><ChevronRight aria-hidden="true" /></button>
+        </div>
+      </div>
+      <div className="cp-feature-grid">
+        {selectedWorlds.map(item => <PlayWorldCard key={item.id} game={item} filters={filters}
+          index={FEATURED_WORLD_IDS.indexOf(item.id as typeof FEATURED_WORLD_IDS[number])}
+          featured favorite={collection.favorites.includes(item.id)} onFavorite={() => mutate(previous => toggleFavorite(previous, item.id))} />)}
+      </div>
+      <p className="cp-art-disclosure">Обложки — художественные иллюстрации миров. Графика и возможности каждой игры показаны при запуске.</p>
+    </section>
+
+    <div className="cp-explore" ref={exploration} data-explore-state={exploreReady ? 'ready' : exploreRequested ? 'requested' : 'deferred'}>
+      {exploreRequested ? <Suspense fallback={<div className="cp-explore-placeholder"><p className="cp-explore-loading" role="status" aria-live="polite"><Orbit aria-hidden="true" /> Загружаем миры и каталог…</p></div>}>
+        <PlayExploreSections filters={filters} onFiltersChange={setFilters} collection={collection} message={message}
+          onFavorite={id => mutate(previous => toggleFavorite(previous, id))} onReady={onExploreReady} />
+      </Suspense> : <div className="cp-explore-placeholder"><a className="cp-button cp-explore-entry" href="#catalog">Открыть каталог миров <ArrowUpRight size={18} aria-hidden="true" /></a></div>}
+    </div>
+  </main>
+}

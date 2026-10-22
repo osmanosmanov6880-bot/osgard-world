@@ -37,6 +37,8 @@ on:
       - "scripts/time-prototype-smoke.mjs"
       - "scripts/games-portal-smoke.mjs"
       - "scripts/academy-home-smoke.mjs"
+      - "scripts/osgard-unified-release-smoke.mjs"
+      - "scripts/unified-navigation-browser.spec.mjs"
       - "scripts/games-lighthouse-report.mjs"
       - ".github/workflows/games-lighthouse.yml"
       - "public/games/**"
@@ -78,6 +80,8 @@ jobs:
         run: npm run check
       - name: Verify three product surfaces and all game entry points
         run: npm run qa:redesign
+      - name: Guard unified six-surface release and existing game assets
+        run: npm run qa:unified
       - name: Verify locally published ZION gameplay
         run: npm run qa:zion-local
       - name: Verify navigation, guest progress and resilient game interfaces
@@ -197,7 +201,9 @@ jobs:
       - name: Install pinned browser test tooling
         run: |
           npm install --no-save --package-lock=false @playwright/test@1.58.2
-          npx playwright install --with-deps chromium
+          # The full Chromium channel runs Playwright's new headless mode.
+          # Do not depend on the separate headless-shell CDN certificate.
+          npx playwright install --with-deps --no-shell chromium
       - name: Check desktop and mobile user journeys
         run: npx playwright test --config playwright.ecosystem.config.mjs
       - name: Keep screenshots and browser evidence
