@@ -18,7 +18,7 @@ const contains = (path, fragments) => {
 
 const world = contains('src/WorldHome.tsx', [
   "import './developmentSignature.css'",
-  "import OsgardEcosystemIndex from './OsgardEcosystemIndex'",
+  "lazy(() => import('./OsgardEcosystemIndex'))",
   "development-signature",
   "world-command",
   'omega-command',
