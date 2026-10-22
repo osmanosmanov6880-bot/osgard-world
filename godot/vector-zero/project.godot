@@ -6,7 +6,7 @@ config_version=5
 config/name="VECTOR//ZERO — BLACKFIELD PROTOCOL"
 run/main_scene="res://scenes/main.tscn"
 config/description="OSGARD PLAY: magnetic puzzle inside a 3D research facility"
-config/features=PackedStringArray("4.7", "GL Compatibility")
+config/features=PackedStringArray("4.7", "Forward Plus")
 
 [display]
 window/size/viewport_width=1600
@@ -14,7 +14,8 @@ window/size/viewport_height=900
 window/stretch/mode="canvas_items"
 
 [rendering]
-renderer/rendering_method="gl_compatibility"
+renderer/rendering_method="forward_plus"
+renderer/rendering_method.web="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
 environment/defaults/default_clear_color=Color(0.015,0.024,0.032,1)
 textures/default_filters/use_nearest_mipmap_filter=false
@@ -26,4 +27,4 @@ textures/default_filters/use_nearest_mipmap_filter=false
 theme/default_font_size=20
 
 [application/config]
-features=PackedStringArray("4.7", "GL Compatibility")
+features=PackedStringArray("4.7", "Forward Plus")

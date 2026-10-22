@@ -6,6 +6,7 @@ const Sim = preload("res://scripts/magnetic_sim.gd")
 const UltraDetail = preload("res://scripts/ultra_detail_kit.gd")
 const HeroDetailV2 = preload("res://scripts/hero_detail_v2.gd")
 const Wave3Foundry = preload("res://scripts/wave3_foundry.gd")
+const Wave4Assets = preload("res://scripts/wave4_assets.gd")
 const CYAN := Color(0.24, 0.83, 1.0)
 const VIOLET := Color(0.64, 0.43, 1.0)
 const MINT := Color(0.37, 1.0, 0.75)
@@ -64,6 +65,7 @@ func _ready() -> void:
     UltraDetail.build(self, core_root, magnet_root, target_root)
     HeroDetailV2.build(self, core_root, magnet_root, target_root)
     Wave3Foundry.build(self, core_root, magnet_root, target_root)
+    Wave4Assets.decorate(magnet_root, target_root)
     wave3_scanner = magnet_root.get_node_or_null("Wave3MagnetAssembly/RadiationScannerRotor") as Node3D
     _build_ui()
     _load_stage(0)
@@ -110,6 +112,18 @@ func _build_world() -> void:
     _omni(Vector3(9.0, 11.2, 5.0), GOLD, 3.0, 20.0)
     _omni(Vector3(0.0, 11.5, -5.5), CYAN, 1.5, 24.0)
     _omni(Vector3(0.0, 5.0, 0.0), VIOLET, 1.5, 7.5)
+
+    # Key light with real shadowing reveals grooves and faceted PBR metalwork.
+    var hero_key := SpotLight3D.new()
+    hero_key.name = "Wave4MachineryKeyLight"
+    hero_key.position = Vector3(1.6, 12.8, 7.1)
+    hero_key.light_color = Color(0.88, 0.94, 1.0)
+    hero_key.light_energy = 2.7
+    hero_key.spot_range = 27.0
+    hero_key.spot_angle = 66.0
+    hero_key.shadow_enabled = not OS.has_feature("web")
+    add_child(hero_key)
+    hero_key.look_at(Vector3(0.0, 3.7, 0.0))
 
     _box(self, "LowerFoundation", Vector3(29.0, 0.9, 22.0), Vector3(0.0, -0.9, 0.0), DARK, 0.93, 0.32)
     _box(self, "MainDeck", Vector3(28.0, 0.3, 16.0), Vector3(0.0, -0.26, -1.0), STEEL, 0.94, 0.3)

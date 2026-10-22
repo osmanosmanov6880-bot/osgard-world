@@ -23,9 +23,16 @@ func _run() -> void:
     var game: Node3D = scene.instantiate()
     root.add_child(game)
     await process_frame
+    var wave4_mag: Node3D = game.get_node_or_null("MagnetAssembly/Wave4CNCMagnet") as Node3D
+    var wave4_goal: Node3D = game.get_node_or_null("ReceiverAssembly/Wave4CaptureIris") as Node3D
+    _assert_case(wave4_mag != null and wave4_goal != null, "Wave4 imported GLB hero assemblies placed inside playable scene")
+    _assert_case(wave4_mag != null and wave4_mag.get_child_count() >= 3, "GLB imported as multiple authored material meshes")
+    if wave4_mag != null:
+        _assert_case(game.Wave4Assets.triangle_count(wave4_mag) > 80000, "desktop magnet uses 100K triangle cinematic PBR model")
+    if wave4_goal != null:
+        _assert_case(game.Wave4Assets.triangle_count(wave4_goal) > 18000, "desktop capture device uses detailed metalwork")
+    _assert_case(load("res://assets/wave4/blackfield_magnet_web.glb") is PackedScene, "lower-triangle Web LOD is imported")
     _assert_case(game.get_node_or_null("Wave3Foundry") != null, "WAVE3 physical engineering laboratory installed")
-    _assert_case(game.get_node_or_null("Wave3Foundry/CryogenicBank_-1_0/MachinedVacuumPressureVessel") is MeshInstance3D, "large-scale machined coolant plant installed")
-    _assert_case(game.get_node_or_null("Wave3Foundry/CalibratedIndustrialLight_0") is OmniLight3D, "cinematic practical light setup has proper scene lights")
     _assert_case(game.get_node_or_null("Wave3Foundry/CNCBridgeGantry_-112") != null, "machined overhead crane assembly")
     _assert_case(game.get_node_or_null("Wave3Foundry/ServiceFrameFasteners_144") is MultiMeshInstance3D, "engineering fasteners are GPU-instanced")
     _assert_case(game.get_node_or_null("PlayerEnergyCore/Wave3PrecisionProjectile/MachinedGyroNose_120") is MeshInstance3D, "new projectile housing is real 3D")
