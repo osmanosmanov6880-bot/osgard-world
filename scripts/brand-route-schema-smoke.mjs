@@ -17,7 +17,19 @@ const decode = text => text.replaceAll('&quot;', '"').replaceAll('&lt;', '<').re
 try {
   mkdirSync(join(temporary, 'src')); mkdirSync(join(temporary, 'dist'))
   copyFileSync(join(repo, 'src/redesignCatalog.ts'), join(temporary, 'src/redesignCatalog.ts'))
+  copyFileSync(join(repo, 'src/featuredCases.ts'), join(temporary, 'src/featuredCases.ts'))
   copyFileSync(join(repo, 'index.html'), join(temporary, 'dist/index.html'))
+  // Breadcrumb names are small and eager; full game definitions stay lazy.
+  // Enforce exact title parity so an added game never receives a stale label.
+  const gameCatalogText = readFileSync(join(repo, 'src/redesignCatalog.ts'), 'utf8')
+  const lightweightTitlesText = readFileSync(join(repo, 'src/playGameTitles.ts'), 'utf8')
+  const catalogTitles = [...gameCatalogText.matchAll(/"id":\\s*"([^"]+)"\\s*,\\s*"title":\\s*"([^"]+)"/g)]
+    .map((match) => [match[1], match[2]])
+  const breadcrumbTitles = [...lightweightTitlesText.matchAll(/^\\s*"([^"]+)": "([^"]+)",/gm)]
+    .map((match) => [match[1], match[2]])
+  assert.equal(catalogTitles.length, 19, 'Expected all nineteen source game titles')
+  assert.deepEqual(breadcrumbTitles, catalogTitles, 'Breadcrumb metadata must match source game titles')
+  assert.ok(gameCatalogText.includes("export { cases } from './featuredCases'"), 'Case cards must have one source')
   const rootSchemas = scripts(readFileSync(join(repo, 'index.html'), 'utf8'))
   const originalGraph = rootSchemas.find(schema => Array.isArray(schema.data['@graph']))?.data
   assert.ok(originalGraph, 'root Organization/WebSite graph is required')
