@@ -31,7 +31,8 @@ jobs:
           echo 'cc4845ec9d2aa1bb5dec358566f473b9fc9331180e874ca04334e70ff209d26c  /tmp/nebula.tar.xz' | sha256sum -c -
           tar -tJf /tmp/nebula.tar.xz > /tmp/nebula-list
           ! grep -E '(^/|(^|/)\.\.(/|$))' /tmp/nebula-list
-          tar -xJf /tmp/nebula.tar.xz -C godot/nebula-3d
+          # Keep the tracked current source: the R3 snapshot provides only missing support files.
+          tar -xJf /tmp/nebula.tar.xz -C godot/nebula-3d --skip-old-files
           test -s godot/nebula-3d/scripts/world.gd
           test -s godot/nebula-3d/tests/runtime_smoke.gd
           test -s godot/nebula-3d/scripts/premium_architecture.gd
