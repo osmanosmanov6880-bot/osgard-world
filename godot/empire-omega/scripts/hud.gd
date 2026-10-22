@@ -655,7 +655,7 @@ func _refresh() -> void:
 	if open:
 		_redraw_strategy()
 
-func update_world_context(player_at: Vector3, vehicle_at: Vector3, goal_at: Vector3, is_driving: bool, speed: float, fuel: float, nearest: String, condition: float = 100.0, handbrake: bool = false, gear: String = "N") -> void:
+func update_world_context(player_at: Vector3, vehicle_at: Vector3, goal_at: Vector3, is_driving: bool, speed: float, fuel: float, nearest: String, condition: float = 100.0, handbrake: bool = false, gear: String = "N", drift_score: int = 0) -> void:
 	if map != null:
 		map.player_world = player_at
 		map.vehicle_world = vehicle_at
@@ -681,6 +681,7 @@ func update_world_context(player_at: Vector3, vehicle_at: Vector3, goal_at: Vect
 		speed_label.text = "%d км/ч   ·   %s" % [roundi(absf(speed)*3.6),gear]
 		speed_label.text += "\n%s %d%%  ·  %s %d%%" % [t("fuel"),roundi(fuel),t("condition"),roundi(condition)]
 		if handbrake: speed_label.text += " · " + t("handbrake")
+		if drift_score >= 12: speed_label.text += " · DRIFT %d" % drift_score
 		hint_label.text = _v08("W / S — газ и тормоз · A / D — руль · Пробел — ручник · E — выйти","W / S — drive and brake · A / D — steer · Space — handbrake · E — exit","W / S 油门刹车 · A / D 方向 · 空格 手刹 · E 下车")
 	else:
 		speed_label.text = ""

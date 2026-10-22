@@ -3,9 +3,11 @@ extends CharacterBody3D
 ## Production upgrade: replace with calibrated VehicleBody3D / suspension and traffic collision.
 
 signal mileage_changed(meters: float)
+signal drift_reward_earned(credits: int, score: int)
 
 const DYNAMICS = preload("res://scripts/driving_dynamics.gd")
 const HORIZON_BODY = preload("res://scripts/horizon_vehicle_art.gd")
+const TIRE_MODEL = preload("res://scripts/horizon_tire_model.gd")
 const MAX_FORWARD = 29.0
 const MAX_REVERSE = 9.0
 const ACCELERATION = 9.5
@@ -25,6 +27,11 @@ var fuel := 100.0
 var health := 100.0
 var traction_factor := 1.0
 var collision_cooldown := 0.0
+var lateral_speed := 0.0
+var current_yaw_rate := 0.0
+var drift_chain_score := 0.0
+var drift_chain_duration := 0.0
+var drift_release_clock := 0.0
 const FUEL_COST_PER_METER = 0.033
 const CATALOG = preload("res://scripts/vehicle_catalog.gd")
 var variant_id := "compact"
@@ -116,6 +123,41 @@ func _set_brake_lights(enabled: bool) -> void:
 		material.emission_energy_multiplier = 2.6 if enabled else 0.25
 		material.albedo_color = Color("ff4058") if enabled else Color("e35d54")
 
+func _sample_wheel_contacts() -> Array[float]:
+	var values: Array[float] = []
+	var space: PhysicsDirectSpaceState3D = get_world_3d().direct_space_state
+	# Four independent wheel-ground probes, deliberately excluding other cars/NPCs.
+	for side in [-1.34,1.34]:
+		for longitudinal in [-1.75,1.76]:
+			var start: Vector3 = to_global(Vector3(side,0.75,longitudinal))
+			var finish: Vector3 = to_global(Vector3(side,-1.35,longitudinal))
+			var ray := PhysicsRayQueryParameters3D.create(start,finish,1)
+			ray.exclude = [get_rid()]
+			var result: Dictionary = space.intersect_ray(ray)
+			if result.is_empty():
+				values.append(0.0)
+			else:
+				var wheel_axle: float = to_global(Vector3(side,-0.28,longitudinal)).y
+				var ground_y: float = (result["position"] as Vector3).y
+				values.append(clampf(ground_y+0.57-wheel_axle,-0.1,0.18))
+	return values
+
+func _update_drift_score(delta: float) -> void:
+	var gain: float = TIRE_MODEL.drift_gain(speed,lateral_speed,handbrake_on,delta) if driving else 0.0
+	if gain > 0.0:
+		drift_chain_score = minf(900.0,drift_chain_score+gain)
+		drift_chain_duration += minf(delta,0.1)
+		drift_release_clock = 0.0
+	elif drift_chain_score > 0.0:
+		drift_release_clock += minf(delta,0.1)
+		if drift_release_clock >= 0.9:
+			var credits: int = TIRE_MODEL.bank_reward(drift_chain_score,drift_chain_duration)
+			if credits > 0:
+				drift_reward_earned.emit(credits,roundi(drift_chain_score))
+			drift_chain_score = 0.0
+			drift_chain_duration = 0.0
+			drift_release_clock = 0.0
+
 func _physics_process(delta: float) -> void:
 	if not is_on_floor():
 		velocity.y -= 24.0 * delta
@@ -133,6 +175,7 @@ func _physics_process(delta: float) -> void:
 		throttle = 0.0
 	collision_cooldown = maxf(0.0,collision_cooldown-delta)
 	steering_filter = move_toward(steering_filter,steering,minf(delta,0.1)*4.0)
+	var prior_speed: float = speed
 	var condition: float = clampf(health/100.0,0.32,1.0)
 	var forward_limit: float = MAX_FORWARD * speed_factor * cargo_speed_factor
 	var reverse_limit: float = MAX_REVERSE * speed_factor
@@ -140,11 +183,14 @@ func _physics_process(delta: float) -> void:
 	speed = DYNAMICS.speed_step(speed,throttle,traction_factor,condition,forward_limit,reverse_limit,forward_accel,BRAKING,DRAG,handbrake_on,delta)
 	if not driving and absf(speed) < 0.35:
 		speed = 0.0
-	rotation.y += DYNAMICS.yaw_rate(speed,steering_filter*handling_factor,traction_factor,handbrake_on) * minf(delta,0.1)
+	current_yaw_rate = DYNAMICS.yaw_rate(speed,steering_filter*handling_factor,traction_factor,handbrake_on)
+	rotation.y += current_yaw_rate * minf(delta,0.1)
+	lateral_speed = TIRE_MODEL.step_lateral(lateral_speed,speed,current_yaw_rate,traction_factor,handbrake_on,delta)
 	_set_brake_lights(DYNAMICS.brake_lamps(speed,throttle,handbrake_on))
 	var forward: Vector3 = Vector3(-sin(rotation.y),0.0,-cos(rotation.y))
-	velocity.x = forward.x * speed
-	velocity.z = forward.z * speed
+	var right: Vector3 = Vector3(cos(rotation.y),0.0,-sin(rotation.y))
+	velocity.x = forward.x * speed + right.x * lateral_speed
+	velocity.z = forward.z * speed + right.z * lateral_speed
 	var pre_position: Vector3 = global_position
 	var pre_collision_speed: float = absf(speed)
 	move_and_slide()
@@ -169,6 +215,9 @@ func _physics_process(delta: float) -> void:
 	var spin: float = covered / 0.44 * signf(speed)
 	if horizon_visual != null:
 		horizon_visual.call("roll_wheels",covered * signf(speed),steering_filter)
+		var longitudinal_acceleration: float = (speed-prior_speed)/maxf(delta,0.001)
+		horizon_visual.call("simulate_chassis",speed,current_yaw_rate,longitudinal_acceleration,traction_factor,handbrake_on,_sample_wheel_contacts(),delta)
+	_update_drift_score(delta)
 	for wheel in wheel_nodes:
 		wheel.rotate_x(spin)
 		if wheel.position.z < 0.0:

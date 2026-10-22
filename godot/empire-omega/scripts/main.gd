@@ -108,6 +108,7 @@ func _ready() -> void:
 	hud.wants_save.connect(_save)
 	hud.wants_load.connect(_load)
 	hud.wants_reset.connect(_new_game)
+	car.drift_reward_earned.connect(_on_drift_reward_earned)
 	GameState.state_changed.connect(_on_game_changed)
 	GameState.alert_created.connect(_on_alert)
 	GameSettings.preferences_changed.connect(_apply_preferences)
@@ -118,6 +119,13 @@ func _ready() -> void:
 	if GameState.last_load_source == "backup" or GameState.last_load_source == "staged":
 		hud.announce(hud.t("save_recovered"))
 	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+
+func _on_drift_reward_earned(credits: int, score: int) -> void:
+	# Authority uses GameState's existing reward ledger, with a per-chain cap.
+	if credits < 1 or credits > 55 or score < 45: return
+	if int(GameState.data["wallet"])+credits > 30000000: return
+	GameState.add_reward(credits,"horizon_drift")
+	hud.announce(_three("ДРИФТ · %d очков · +%d кр." % [score,credits],"DRIFT · %d points · +%d credits" % [score,credits],"漂移 · %d 分 · +%d" % [score,credits]))
 
 func _sync_positions_from_state() -> void:
 	var p: Array = GameState.data["player_position"]
@@ -349,7 +357,7 @@ func _physics_process(delta: float) -> void:
 		hud.map.case_active = case_site != "" and world.locations.has(case_site)
 		if hud.map.case_active: hud.map.case_world = world.locations[case_site]["position"]
 	if Engine.get_physics_frames() % 3 == 0:
-		hud.update_world_context(protagonist,car.global_position,goal,driving,car.speed,car.fuel,near_name,car.health,car.handbrake_on,car.gear_label())
+		hud.update_world_context(protagonist,car.global_position,goal,driving,car.speed,car.fuel,near_name,car.health,car.handbrake_on,car.gear_label(),roundi(car.drift_chain_score))
 	# Patrols use shared physical roads and do not warp while pursuing the player.
 	if patrols != null:
 		var heat: int = int(GameState.data.get("law",{}).get("heat",0))

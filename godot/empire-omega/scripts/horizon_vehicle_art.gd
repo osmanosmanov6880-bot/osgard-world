@@ -1,4 +1,5 @@
 extends Node3D
+const SPRING = preload("res://scripts/horizon_chassis_spring.gd")
 ## OSGARD HORIZON DRIVE: original PBR sports coupe assembled in Godot.
 ## These are editable original meshes, not meshes or assets from Forza.
 ## Built for Godot 4.4.1 GL Compatibility / HTML5.
@@ -8,6 +9,14 @@ var wheel_rigs: Array[Node3D] = []
 var brake_strip: MeshInstance3D
 var body_paint: Color = Color("d45835")
 var first_build := true
+var body_parts: Array[MeshInstance3D] = []
+var body_rest: Array[Transform3D] = []
+var roll_angle := 0.0
+var roll_velocity := 0.0
+var pitch_angle := 0.0
+var pitch_velocity := 0.0
+var ride_bob := 0.0
+var ride_bob_velocity := 0.0
 
 func _ready() -> void:
 	name = "HorizonCoupe"
@@ -36,6 +45,8 @@ func _part(id: String, size: Vector3, at: Vector3, tint: Color, metal: float = 0
 	visual.position = at
 	visual.material_override = _mat(tint,metal,rough,emissive)
 	add_child(visual)
+	body_parts.append(visual)
+	body_rest.append(visual.transform)
 	if painted:
 		painted_parts.append(visual)
 	return visual
@@ -53,6 +64,8 @@ func _glass_quad(id: String, a: Vector3, b: Vector3, c: Vector3, d: Vector3) -> 
 	glass.cull_mode = BaseMaterial3D.CULL_DISABLED
 	visual.material_override = glass
 	add_child(visual)
+	body_parts.append(visual)
+	body_rest.append(visual.transform)
 
 func _create_body() -> void:
 	# Vehicle forward is -Z. Tapered upper surfaces visually reduce blockiness.
@@ -152,3 +165,29 @@ func set_brake_lights(on: bool) -> void:
 	var mat := brake_strip.material_override as StandardMaterial3D
 	if mat != null:
 		mat.emission_energy_multiplier = 3.5 if on else 0.45
+
+func simulate_chassis(forward_speed: float, yaw_rate: float, forward_acceleration: float, grip: float, handbrake: bool, contacts: Array[float], dt: float) -> void:
+	# Visual spring-damper layer; do not replace the collision body authority.
+	if dt <= 0.0: return
+	var target_lean: float = SPRING.target_roll(forward_speed,yaw_rate,grip,handbrake)
+	var target_squat: float = SPRING.target_pitch(forward_acceleration)
+	var roll_result: Vector2 = SPRING.integrate(roll_angle,roll_velocity,target_lean,dt,4.2)
+	roll_angle = roll_result.x
+	roll_velocity = roll_result.y
+	var pitch_result: Vector2 = SPRING.integrate(pitch_angle,pitch_velocity,target_squat,dt,4.8)
+	pitch_angle = pitch_result.x
+	pitch_velocity = pitch_result.y
+	var sum_contact: float = 0.0
+	for contact in contacts:
+		sum_contact += contact
+	var bob_target: float = clampf(sum_contact/float(maxi(contacts.size(),1))*0.45,-0.065,0.07)
+	var vertical: Vector2 = SPRING.integrate(ride_bob,ride_bob_velocity,bob_target,dt,5.2)
+	ride_bob = vertical.x
+	ride_bob_velocity = vertical.y
+	var lean := Basis.from_euler(Vector3(pitch_angle,0.0,roll_angle))
+	for index in range(body_parts.size()):
+		if not is_instance_valid(body_parts[index]): continue
+		body_parts[index].transform = Transform3D(lean,Vector3(0,ride_bob,0))*body_rest[index]
+	for index in range(wheel_rigs.size()):
+		if index >= contacts.size(): break
+		wheel_rigs[index].position.y = lerpf(wheel_rigs[index].position.y,-0.28+clampf(contacts[index],-0.10,0.18),clampf(dt*13.0,0.0,1.0))

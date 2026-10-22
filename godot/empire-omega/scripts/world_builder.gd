@@ -38,9 +38,14 @@ var facade_windows: MultiMeshInstance3D
 var last_window_mode := -1
 var waypoint_marker: Node3D
 var horizon_scenic: Node3D
+const ROAD_MATERIALS = preload("res://scripts/horizon_road_materials.gd")
+var asphalt_pbr: StandardMaterial3D
+var concrete_pbr: StandardMaterial3D
 
 func _ready() -> void:
 	rng.seed = 428753
+	asphalt_pbr = ROAD_MATERIALS.asphalt()
+	concrete_pbr = ROAD_MATERIALS.concrete()
 	city_root = Node3D.new()
 	city_root.name = "ProceduralDistricts"
 	add_child(city_root)
@@ -92,7 +97,12 @@ func _box(parent: Node3D, label: String, size: Vector3, position: Vector3, color
 	var mesh := BoxMesh.new()
 	mesh.size = size
 	geometry.mesh = mesh
-	geometry.material_override = _material(color, 0.12, 0.62, glow)
+	if label == "EastWestRoad" or label == "NorthSouthRoad":
+		geometry.material_override = asphalt_pbr
+	elif label == "Sidewalk":
+		geometry.material_override = concrete_pbr
+	else:
+		geometry.material_override = _material(color, 0.12, 0.62, glow)
 	holder.add_child(geometry)
 	return holder
 
