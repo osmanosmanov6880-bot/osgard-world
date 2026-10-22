@@ -15,10 +15,10 @@ for (const item of osgardCommands) {
   assert.ok(item.label.length > 2 && item.description.length > 10 && item.group, 'Honest descriptive labels required')
 }
 assert.deepEqual(searchOsgardCommands('аКаДеМиЯ').map(x => x.id), ['academy'])
-assert.deepEqual(searchOsgardCommands('T e d e s').map(x => x.id), [], 'Multi-token query must not fabricate a result')
+assert.deepEqual(searchOsgardCommands('несуществующий-раздел').map(x => x.id), [], 'Unknown routes must never be fabricated')
 assert.deepEqual(searchOsgardCommands('TEDES').map(x => x.id), ['cases'])
 assert.ok(searchOsgardCommands('игры').some(item => item.id === 'play'))
-assert.ok(searchOsgardCommands('ё').length >= 0, 'Normalized search must be safe')
+assert.deepEqual(searchOsgardCommands('ё'), searchOsgardCommands('е'), 'Russian ё and е must search identically')
 assert.deepEqual(searchOsgardCommands('', ['cases', 'academy']).slice(0, 2).map(x => x.id), ['cases', 'academy'])
 
 const oldSession = globalThis.sessionStorage
