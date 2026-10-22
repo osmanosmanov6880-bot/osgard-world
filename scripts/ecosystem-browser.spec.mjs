@@ -2338,6 +2338,8 @@ test('INHERIT R16 genuine Three.js island renders the original saved world witho
  await expect(canvas).toHaveCount(1);
  const initial=await page.evaluate(()=>window.InheritAAA3D.getState());
  expect(initial.renderer).toBe('WebGL Three.js');
+ // The dedicated CI run deliberately enables SwiftShader and MUST render true WebGL.
+ if(process.env.OSGARD_ENABLE_SWIFTSHADER==='1')expect(initial.available).toBe(true);
  const before=await page.evaluate(()=>window.InheritGame.snapshot());
  if(initial.available){
   await expect(page.locator('#island')).toHaveClass(/aaa3d-active/);
