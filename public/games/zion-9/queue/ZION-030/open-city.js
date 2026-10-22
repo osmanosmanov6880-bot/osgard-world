@@ -112,7 +112,7 @@
   const joystick = { x: 0, y: 0, pointer: null, centerX: 0, centerY: 0 };
   const player = { x: 0, z: 0, y: 0, yaw: 0, cameraYaw: 0.35, pitch: 0.28, speed: 0, moving: false, vx:0, vz:0, stamina:100, height:0, vy:0, cameraMode:'chase' };
   const world = { ready: false, active: false, initialised: false, last: 0, frame: 0, assets: [], buildings: [], rings: [], dust: [], foliage: [], lamps: [], pulse: 0, fpsFrames: 0, fpsTime: 0, fpsSample: 0, quality: 'high', gpuScale: 1.35, softwareGL: false, lastRender: 0, navMode: 'main', people: [], traffic: [], contractMarkers: [], dispatchMarkers: [], streetLife: [], jumpQueued:false, car: null, rain: null, dayMode: 0, raining: false, path: [], routeTo: '', pathCell: '' };
-  let scene, camera, renderer, avatar, legL, legR, armL, armR, sun, minimapCtx, targetIndex = -1, hemi, keyLight, blueFill;
+  let scene, camera, renderer, avatar, legL, legR, armL, armR, sun, minimapCtx, targetIndex = -1, hemi, keyLight, blueFill, detailKit = null;
   let dragId = null, dragX = 0, dragY = 0, audio, animationId = 0, lastDistrict = '', lastHudUpdate = 0;
   const PROFILE_KEY = 'osgard:zion030:open-city:v28';
   let profile = rules.defaultProfile();
@@ -421,6 +421,7 @@
     }
     const strip = new THREE.Mesh(new THREE.PlaneGeometry(.5, .055), new THREE.MeshBasicMaterial({ color: 0x41dbff }));
     strip.position.set(0, .42, .781); strip.rotation.y = Math.PI; shellMesh.add(strip);
+    if (detailKit) detailKit.detailCar(shellMesh);
     return shellMesh;
   }
   function makePerson(index, x, z) {
@@ -659,7 +660,8 @@
     world.quality = world.quality === 'eco' ? 'high' : 'eco';
     world.gpuScale = world.quality === 'eco' ? (reduceMotion.matches ? .34 : world.softwareGL ? .4 : .55) : reduceMotion.matches ? .34 : world.softwareGL ? .4 : mobile.matches ? 1.05 : 1.35;
     renderer.shadowMap.enabled = world.quality === 'high' && !mobile.matches && !reduceMotion.matches;
-    $('oc-quality').textContent = world.quality === 'eco' ? '◈ ECO' : '◈ HIGH';
+    detailKit?.setQuality(world.quality);
+    $('oc-quality').textContent = world.quality === 'eco' ? '◈ ECO' : (detailKit?.stats.tier === 'ULTRA' ? '◈ ULTRA' : '◈ HIGH');
     resize(); announce(world.quality === 'eco' ? 'Экономичный режим' : 'Улучшенная графика');
   }
   function distanceToCar() { const c = world.car; return c ? Math.hypot(player.x - c.x, player.z - c.z) : Infinity; }
@@ -786,6 +788,7 @@
     armR = buildLimb(jacket, .31, 1.39, 0, .13, .59, .14);
     const shade = new THREE.Mesh(new THREE.CircleGeometry(.35, 28), new THREE.MeshBasicMaterial({ color: 0x020d16, transparent: true, opacity: .28, depthWrite: false }));
     shade.rotation.x = -Math.PI / 2; shade.position.y = .018; avatar.add(shade);
+    if (detailKit) detailKit.detailAvatar(avatar);
     scene.add(avatar); return avatar;
   }
   function addAtmosphere() {
@@ -835,13 +838,23 @@
       key.shadow.normalBias = .065; scene.add(key);
       blueFill = new THREE.DirectionalLight(0x2e9fca, .9); blueFill.position.set(9, 7, -8); scene.add(blueFill);
       const plazaLight = new THREE.PointLight(0x43c9dd, 9, 9); plazaLight.position.set(0, 4, .7); scene.add(plazaLight);
-      addAtmosphere(); addGround(); addCity(); makeHotMarkers(); makeAvatar(); addLivingWorld(); updateAtmosphere();
+      addAtmosphere(); addGround(); addCity();
+      // Detail kit is optional when a legacy browser cache loads; the puzzle remains playable.
+      try {
+        if (window.ZION030_DETAIL_KIT) detailKit = window.ZION030_DETAIL_KIT.install({
+          THREE, scene, rules, softwareGL: world.softwareGL,
+          reducedMotion: reduceMotion.matches, mobile: mobile.matches
+        });
+      } catch (error) { console.warn('ZION-030 high-detail asset fallback', error); }
+      makeHotMarkers(); makeAvatar(); addLivingWorld(); updateAtmosphere();
       minimapCtx = $('oc-minimap').getContext('2d');
       world.gpuScale = reduceMotion.matches ? .34 : world.softwareGL ? .4 : mobile.matches ? 1.05 : 1.35;
       if (reduceMotion.matches || world.softwareGL) { world.quality = 'adaptive'; $('oc-quality').textContent = '◈ AUTO'; }
+      else if (detailKit?.stats.tier === 'ULTRA') $('oc-quality').textContent = '◈ ULTRA';
+      detailKit?.setQuality(world.quality);
       world.ready = true; resize(); syncGame(); drawMiniMap();
       window.__ZION030_OPEN_CITY__ = {
-        state: () => ({ ready: world.ready, active: world.active, player: { x: player.x, z: player.z, stamina:player.stamina, height:player.height, cameraMode:player.cameraMode }, mission: game()?.state(), quality: world.quality, driving: Boolean(world.car?.occupied), vehicle: world.car ? { x: world.car.x, z: world.car.z, speed: world.car.speed, battery: world.car.battery } : null, contracts: [...profile.completed], credits: profile.credits, raining: world.raining, dayMode: world.dayMode, dispatch:{done:[...profile.dispatchDone],steps:{...profile.dispatchSteps},active:profile.activeDispatch}, garage:{speed:profile.fastCar,grip:profile.grip,battery:profile.batteryUpgrade}, district:rules.districtAt(player.x,player.z) }),
+        state: () => ({ ready: world.ready, active: world.active, player: { x: player.x, z: player.z, stamina:player.stamina, height:player.height, cameraMode:player.cameraMode }, mission: game()?.state(), quality: world.quality, driving: Boolean(world.car?.occupied), vehicle: world.car ? { x: world.car.x, z: world.car.z, speed: world.car.speed, battery: world.car.battery } : null, contracts: [...profile.completed], credits: profile.credits, raining: world.raining, dayMode: world.dayMode, dispatch:{done:[...profile.dispatchDone],steps:{...profile.dispatchSteps},active:profile.activeDispatch}, garage:{speed:profile.fastCar,grip:profile.grip,battery:profile.batteryUpgrade}, district:rules.districtAt(player.x,player.z), detail: detailKit?.stats ?? null }),
         enter, exit, walk: (dx, dz) => { if (!collides(player.x + dx, player.z + dz)) { player.x += dx; player.z += dz; } },
         drive: toggleCar, time: cycleTime, rain: toggleRain, quality: toggleQuality, gps: toggleNavigation, contract: completeNearbyContract,
         interact, camera:cycleCamera, journal:showJournal, pause:pauseGame, resume:resumeGame, dispatch:advanceNearbyDispatch
