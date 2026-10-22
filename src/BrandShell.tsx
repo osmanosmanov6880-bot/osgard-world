@@ -1,4 +1,4 @@
-import { useEffect, useState, useSyncExternalStore } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import type { ReactNode } from 'react'
 import { BrandLockup } from './BrandMark'
 import { brandAreaForPath, brandBreadcrumbs, globalNavigationState } from './brandNavigation'
@@ -9,6 +9,8 @@ import type { ProductTheme } from './BrandMark'
 import './brandFonts.css'
 import './brandSystem.css'
 import './omegaSystems.css'
+
+const OsgardQuickNav = lazy(() => import('./OsgardQuickNav'))
 
 const readMotion = () => { try { return localStorage.getItem('osgard:motion') !== 'off' } catch { return true } }
 const productHomes = { world: '/', intelligence: '/intelligence', play: '/play' }
@@ -23,6 +25,8 @@ const footerGroups = [
 export function BrandShell({ theme, children }: { theme: ProductTheme; children: ReactNode }) {
   const [motion, setMotion] = useState(readMotion)
   const [reduced, setReduced] = useState(false)
+  const [quickOpen, setQuickOpen] = useState(false)
+  const quickTrigger = useRef<HTMLButtonElement>(null)
   const currentLocation = useSyncExternalStore(subscribeBrowserNavigation, getBrowserSnapshot, getServerSnapshot)
   const currentUrl = new URL(currentLocation.href, 'https://osgard.world')
   const hash = currentUrl.hash
@@ -62,6 +66,23 @@ export function BrandShell({ theme, children }: { theme: ProductTheme; children:
     }
   }, [])
 
+  const closeQuickNav = () => {
+    setQuickOpen(false)
+    requestAnimationFrame(() => quickTrigger.current?.focus({ preventScroll: true }))
+  }
+  useEffect(() => {
+    const shortcut = (event: KeyboardEvent) => {
+      if (event.defaultPrevented || event.altKey || event.shiftKey || !(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== 'k') return
+      if (document.querySelector('.osgard-cinematic, [data-osgard-pending]')) return
+      event.preventDefault()
+      if (quickOpen) closeQuickNav()
+      else setQuickOpen(true)
+    }
+    window.addEventListener('keydown', shortcut)
+    return () => window.removeEventListener('keydown', shortcut)
+  }, [quickOpen])
+  useEffect(() => { setQuickOpen(false) }, [path])
+
   const localState = (href: string): 'page' | 'location' | undefined => {
     const target = new URL(href, 'https://osgard.world')
     if ((target.pathname.replace(/\/+$/, '') || '/') !== path) return undefined
@@ -86,6 +107,10 @@ export function BrandShell({ theme, children }: { theme: ProductTheme; children:
       <nav aria-label="Продукты OSGARD" className="brand-global-nav">
         {globalLinks.map(([name, href]) => <a key={href} href={href} aria-current={globalNavigationState(path, product, href)}>{name}</a>)}
       </nav>
+      <button type="button" ref={quickTrigger} className="brand-quick-trigger" aria-haspopup="dialog" aria-expanded={quickOpen}
+        aria-keyshortcuts="Control+K Meta+K" aria-label="Быстрый переход по разделам OSGARD" onClick={() => quickOpen ? closeQuickNav() : setQuickOpen(true)}>
+        <span aria-hidden="true" className="brand-quick-symbol">⌕</span><span className="brand-quick-label">Разделы</span><kbd>⌘K</kbd>
+      </button>
       <button type="button" className="brand-motion" aria-pressed={reduced || !motion} disabled={reduced}
         aria-label="Меньше движения" title={reduced ? 'Уменьшение движения включено в настройках устройства' : 'Отключить необязательную анимацию'} onClick={toggleMotion}>
         <span className="brand-motion-state" aria-hidden="true">{reduced || !motion ? '◌' : '◉'}</span> Меньше движения
@@ -107,5 +132,8 @@ export function BrandShell({ theme, children }: { theme: ProductTheme; children:
       {footerGroups.map(group => <nav key={group.title} aria-label={group.title} className="brand-footer-group"><h2>{group.title}</h2>{group.links.map(([label, href]) => <a key={href} href={href}>{label}</a>)}</nav>)}
       <small className="brand-footer-note">Гостевой прогресс остаётся в этом браузере. Серверные проекты доступны через аккаунт. <a href="/quality#measurements">Посмотреть и удалить локальный журнал действий →</a></small>
     </footer>
+    <Suspense fallback={null}>
+      {quickOpen && <OsgardQuickNav onClose={closeQuickNav} onNavigate={() => setQuickOpen(false)} />}
+    </Suspense>
   </div>
 }
