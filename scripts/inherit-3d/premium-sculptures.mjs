@@ -82,7 +82,9 @@ function batch(){
   if(quat)transform.quaternion.copy(quat);
   else transform.rotation.set(...(Array.isArray(rot)?rot:[0,0,0]));
   transform.updateMatrix();
-  const transformed=geometry.clone();
+  const transformed=geometry.index?geometry.toNonIndexed():geometry.clone();
+  // Box/Cylinder are indexed while sculpted polyhedra are not: normalize
+  // topology before batch merge, preserving normals/UVs and legal materials.
   transformed.applyMatrix4(transform.matrix);
   if(!containers.has(material))containers.set(material,[]);
   containers.get(material).push(transformed);
