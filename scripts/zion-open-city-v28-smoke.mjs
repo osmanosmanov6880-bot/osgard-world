@@ -69,7 +69,7 @@ assert.ok(malicious.credits <= 450)
 // Asset wiring and minimum functioning scenes, never a painted screenshot.
 const script = read('open-city.js'), css = read('open-city.css'), html = read('index.html')
 new vm.Script(script, { filename: 'open-city.js' })
-assert.ok(html.includes('open-city-rules.js?v=29') && html.includes('open-city.js?v=30') && html.includes('open-city.css?v=29'))
+assert.ok(html.includes('open-city-rules.js?v=29') && html.includes('open-city.js?v=31') && html.includes('open-city.css?v=29'))
 assert.ok(script.includes('new THREE.WebGLRenderer') && script.includes('new THREE.PerspectiveCamera'))
 assert.ok(script.includes('new THREE.InstancedMesh') && script.includes('createCar(') && script.includes('makePerson('))
 assert.ok(script.includes('rules.drivingStep') && script.includes('rules.route('))
