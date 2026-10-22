@@ -7,8 +7,8 @@ const CYAN := Color(0.24, 0.83, 1.0)
 const VIOLET := Color(0.64, 0.43, 1.0)
 const MINT := Color(0.37, 1.0, 0.75)
 const GOLD := Color(1.0, 0.66, 0.3)
-const STEEL := Color(0.19, 0.27, 0.32)
-const DARK := Color(0.045, 0.072, 0.095)
+const STEEL := Color(0.27, 0.35, 0.40)
+const DARK := Color(0.075, 0.107, 0.14)
 
 const STAGES: Array[Dictionary] = [
     {"name": "МАГНИТНЫЙ РАЗЛОМ", "hint": "Притягивай ядро к катушке, чтобы изменить дугу полёта.", "magnet": Vector3(-0.4, 5.3, 0.0), "target": Vector3(8.8, 3.65, 0.0), "field": 6.0, "angle": 32.0},
@@ -67,17 +67,17 @@ func _build_world() -> void:
     world_environment.name = "CinematicEnvironment"
     var env := Environment.new()
     env.background_mode = Environment.BG_COLOR
-    env.background_color = Color(0.011, 0.023, 0.036)
+    env.background_color = Color(0.022, 0.042, 0.064)
     env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-    env.ambient_light_color = Color(0.18, 0.28, 0.38)
-    env.ambient_light_energy = 0.6
+    env.ambient_light_color = Color(0.35, 0.43, 0.51)
+    env.ambient_light_energy = 1.0
     env.reflected_light_source = Environment.REFLECTION_SOURCE_BG
     env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
     env.glow_enabled = true
-    env.glow_intensity = 0.38
+    env.glow_intensity = 0.24
     env.fog_enabled = true
     env.fog_light_color = Color(0.09, 0.19, 0.27)
-    env.fog_density = 0.011
+    env.fog_density = 0.004
     world_environment.environment = env
     add_child(world_environment)
 
@@ -95,11 +95,11 @@ func _build_world() -> void:
     directional.name = "AtriumMoonlight"
     directional.rotation_degrees = Vector3(-50.0, 35.0, 0.0)
     directional.light_color = Color(0.52, 0.75, 1.0)
-    directional.light_energy = 0.55
+    directional.light_energy = 1.20
     add_child(directional)
 
-    _omni(Vector3(-9.0, 11.2, 5.0), CYAN, 3.2, 15.0)
-    _omni(Vector3(9.0, 11.2, 5.0), GOLD, 2.7, 15.0)
+    _omni(Vector3(-9.0, 11.2, 5.0), CYAN, 3.8, 20.0)
+    _omni(Vector3(9.0, 11.2, 5.0), GOLD, 3.0, 20.0)
     _omni(Vector3(0.0, 11.5, -5.5), CYAN, 1.5, 24.0)
     _omni(Vector3(0.0, 5.0, 0.0), VIOLET, 1.5, 7.5)
 
@@ -140,6 +140,30 @@ func _build_world() -> void:
             _box(self, "PlinthCap", Vector3(2.45, 0.1, 2.55), Vector3(x, 0.39, z), Color(0.42, 0.48, 0.51), 0.85, 0.24)
     for z in [-7.0, -4.0, 3.0, 6.0]:
         _box(self, "ServiceConduit", Vector3(26.0, 0.12, 0.18), Vector3(0.0, 0.17, z), Color(0.51, 0.36, 0.21), 0.73, 0.47)
+    # Architectural art pass: observation gallery, glass partitions and
+    # recognizable industrial silhouettes behind the core playable objects.
+    for x in [-11.0, -7.5, -4.0, 4.0, 7.5, 11.0]:
+        _box(self, "ObservationWindowFrame", Vector3(2.0, 4.2, 0.23), Vector3(x, 8.3, -7.3), Color(0.43, 0.52, 0.57), 0.87, 0.24)
+        var glazing := _box(self, "ObservationWindow", Vector3(1.74, 3.92, 0.08), Vector3(x, 8.3, -7.16), Color(0.12, 0.32, 0.43), 0.46, 0.12)
+        var glaze := (glazing.material_override as StandardMaterial3D).duplicate() as StandardMaterial3D
+        glaze.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+        glaze.albedo_color.a = 0.33
+        glazing.material_override = glaze
+        for i in range(3):
+            var yy: float = 7.0 + float(i) * 1.1
+            _box(self, "ObservationBrace", Vector3(2.05, 0.06, 0.16), Vector3(x, yy, -7.03), STEEL, 0.91, 0.3)
+        _box(self, "ObservationSill", Vector3(2.25, 0.23, 0.55), Vector3(x, 6.08, -6.99), Color(0.48, 0.51, 0.52), 0.87, 0.25)
+    for x in [-11.3, 11.3]:
+        _box(self, "ElevatedGallery", Vector3(2.1, 0.24, 15.0), Vector3(x, 6.0, -0.7), Color(0.38, 0.44, 0.49), 0.86, 0.32)
+        for z in [-6.4, -4.1, -1.8, 0.5, 2.8, 5.1]:
+            _box(self, "RailSupport", Vector3(0.08, 1.3, 0.08), Vector3(x - (0.78 if x > 0.0 else -0.78), 6.6, z), Color(0.65, 0.70, 0.71), 0.85, 0.19)
+        _box(self, "WalkwayGuard", Vector3(0.08, 0.14, 15.0), Vector3(x - (0.78 if x > 0.0 else -0.78), 7.25, -0.7), Color(0.59, 0.63, 0.65), 0.88, 0.26)
+    for x in [-10.8, 10.8]:
+        for z in [-4.0, 3.5]:
+            _box(self, "EngineeringConsole", Vector3(1.2, 1.4, 0.82), Vector3(x, 0.7, z), Color(0.36, 0.43, 0.46), 0.84, 0.33)
+            _box(self, "ConsoleDisplay", Vector3(0.95, 0.63, 0.04), Vector3(x, 1.07, z+0.44), Color(0.20, 0.67, 0.81), 0.26, 0.12, 0.95)
+    for y in [2.5, 3.0, 3.5]:
+        _box(self, "HazardStripe", Vector3(25.8, 0.03, 0.07), Vector3(0.0, -0.04, float(y)), Color(0.67, 0.48, 0.14), 0.34, 0.33)
     # Large plate steel wall typography stays in-world, not in floating HUD.
     _sign("B L A C K F I E L D", Vector3(0.0, 11.8, -7.25), 115, CYAN, 0.007)
     _sign("M A G N E T I C   T E S T   F A C I L I T Y   /   0 1", Vector3(0.0, 10.7, -7.25), 47, Color(0.58, 0.75, 0.8), 0.007)
@@ -179,10 +203,17 @@ func _build_game_objects() -> void:
     magnet_root.name = "MagnetAssembly"
     add_child(magnet_root)
     _cylinder(magnet_root, "SuperconductingStator", Vector3.ZERO, 1.0, 4.0, STEEL, 0.88, 0.3)
+    _torus(magnet_root, "StatorWarningRing", 1.55, 0.12, GOLD, 0.8, 0.21, 1.0).position.y = -2.0
     _cylinder(magnet_root, "MagneticConductor", Vector3.ZERO, 0.66, 4.6, Color(0.21, 0.18, 0.36), 0.8, 0.2)
     for i in range(7):
         var side: float = -1.65 + float(i) * 0.55
         _torus(magnet_root, "CoilSegment", 1.33, 0.14, VIOLET, 0.72, 0.19, 1.6).position.y = side
+    var halo := _sphere(magnet_root, "ContainmentField", 1.84, Color(0.26, 0.18, 0.48), 0.0, 0.12, 0.12)
+    var halo_material := (halo.material_override as StandardMaterial3D).duplicate() as StandardMaterial3D
+    halo_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+    halo_material.albedo_color.a = 0.09
+    halo_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+    halo.material_override = halo_material
     for i in range(3):
         var ring := Node3D.new()
         ring.name = "ChargedGyro_%s" % i
