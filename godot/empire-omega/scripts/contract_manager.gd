@@ -30,16 +30,23 @@ func _ready() -> void:
 	if offers.is_empty():
 		push_error("OSGARD: contract catalog missing/invalid")
 
+func _json_integer_between(raw: Variant, minimum: int, maximum: int) -> bool:
+	# Godot's JSON parser may represent integral JSON numbers as floats.
+	# Accept only finite, exactly integral values; reject booleans and fractions.
+	if not (raw is int or raw is float): return false
+	var number: float = float(raw)
+	return is_finite(number) and number == floorf(number) and number >= minimum and number <= maximum
+
 func _safe_offer(value: Variant) -> bool:
 	if not (value is Dictionary): return false
 	if not (value.get("id", null) is String): return false
 	if not POSITIONS.has(value.get("pickup","")) or not POSITIONS.has(value.get("dropoff","")): return false
 	if value["pickup"] == value["dropoff"]: return false
-	if not (value.get("reward",null) is int) or value["reward"] < 50 or value["reward"] > 2000: return false
-	if not (value.get("limit_turns",null) is int) or value["limit_turns"] < 1 or value["limit_turns"] > 10: return false
+	if not _json_integer_between(value.get("reward",null),50,2000): return false
+	if not _json_integer_between(value.get("limit_turns",null),1,10): return false
 	if not (value.get("title",null) is Dictionary): return false
 	if not (str(value.get("cargo", "goods")) in ["grain","materials","goods"]): return false
-	if not (value.get("quantity",12) is int) or int(value.get("quantity",12)) < 1 or int(value.get("quantity",12)) > 100: return false
+	if not _json_integer_between(value.get("quantity",12),1,100): return false
 	for lang in ["ru","en","zh"]:
 		if not (value["title"].get(lang,null) is String): return false
 	return true
