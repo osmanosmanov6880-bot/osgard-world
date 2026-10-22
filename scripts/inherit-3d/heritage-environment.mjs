@@ -90,7 +90,7 @@ function flutedColumn(){
  for(let i=0;i<positions.count;i++){
   const x=positions.getX(i),z=positions.getZ(i);
   const flutes=1-.065*(.5+.5*Math.cos(Math.atan2(z,x)*14));
-  positions.setXZ(i,x*flutes,z*flutes);
+  positions.setXYZ(i,x*flutes,positions.getY(i),z*flutes);
  }
  positions.needsUpdate=true;geometry.computeVertexNormals();return geometry;
 }
