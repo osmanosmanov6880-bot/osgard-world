@@ -137,7 +137,7 @@ export default function AcademyHome() {
       ? { title:t.actionResumeTitle, body:t.actionResumeBody, label:t.actionResumeLabel, href:`/osa-cinema?scene=${learningProgress.index}` }
       : learningProgress.selfChecks < 3
         ? { title:t.actionChecksTitle, body:t.actionChecksBody, label:t.actionChecksLabel, href:'/osa-cinema' }
-        : { title:t.actionProjectTitle, body:t.actionProjectBody, label:t.actionProjectLabel, href:`/?project=${learningProgress.nextProject}#project-studio` }
+        : { title:t.actionProjectTitle, body:t.actionProjectBody, label:t.actionProjectLabel, href:`/academy?project=${learningProgress.nextProject}#project-studio` }
   const lessons = getOSACinemaLessons(locale)
   const completedScenes = learningProgress.completed ? lessons.length : Math.min(lessons.length, Math.max(learningProgress.index, learningProgress.answers))
   const coursePercentage = Math.round(completedScenes / Math.max(1, lessons.length) * 100)
@@ -159,7 +159,7 @@ export default function AcademyHome() {
     { number:'03', title:t.practical3, body:t.practical3Body }
   ]
 
-  return <main className="academy-home">
+  return <main className="academy-home" lang={locale}>
 
 
     <section className="academy-hero">
@@ -211,7 +211,7 @@ export default function AcademyHome() {
       <article className="academy-next-action" aria-labelledby="academy-next-action-title"><div><p className="academy-eyebrow">{t.actionEyebrow}</p><h3 id="academy-next-action-title">{nextLearningAction.title}</h3><p>{nextLearningAction.body}</p></div><a className="academy-button academy-button-primary" href={nextLearningAction.href}>{nextLearningAction.label}<ArrowRight size={15} aria-hidden="true" /></a></article>
       <div className="academy-progress-grid">
         <article className="academy-progress-card"><div className="academy-progress-card-top"><BookOpen size={18} aria-hidden="true" /><span>{t.progressCourse}</span></div><strong>{learningProgress.completed ? t.progressComplete : learningProgress.started ? `${learningProgress.index + 1} / ${lessons.length}` : t.progressNotStarted}</strong><div className="academy-progress-track" aria-label={`${Math.round((learningProgress.completed ? lessons.length : learningProgress.index) / Math.max(1, lessons.length) * 100)}%`}><span style={{width:`${learningProgress.completed ? 100 : Math.round(learningProgress.index / Math.max(1, lessons.length) * 100)}%`}} /></div><p>{learningProgress.answers} · {t.progressChoices} · {learningProgress.selfChecks}/3 {t.progressSelfCheck}</p><p>{learningProgress.lessonCompletions}/{OSA_LESSON_SLUGS.length} {t.lessonDetailCount}</p><a href="/lectures">{t.lessonDetailCatalog}<ArrowRight size={14} aria-hidden="true" /></a></article>
-        <article className="academy-progress-card"><div className="academy-progress-card-top"><Sparkles size={18} aria-hidden="true" /><span>{t.progressDrafts}</span></div><strong>{learningProgress.drafts} / 3</strong><p>{locale === 'ru' ? 'Проектов с черновиками на этом устройстве' : 'Projects with drafts on this device'}</p><p className="academy-progress-project-detail">{learningProgress.projectChecks} {locale === 'ru' ? 'пунктов чек-листа выполнено' : 'checklist items completed'} · {learningProgress.projectsCompleted}/3 {locale === 'ru' ? 'проектов с полным чек-листом' : 'projects with complete checklists'}</p><a href={`/?project=${learningProgress.nextProject}#project-studio`}>{locale === 'ru' ? `Продолжить: ${learningProgress.nextProject === 'evidence' ? 'проверка источников' : learningProgress.nextProject === 'privacy' ? 'защита данных' : 'решение с ИИ'}` : `Continue: ${learningProgress.nextProject === 'evidence' ? 'source verification' : learningProgress.nextProject === 'privacy' ? 'data privacy' : 'AI-assisted decision'}`}<ArrowRight size={14} aria-hidden="true" /></a></article>
+        <article className="academy-progress-card"><div className="academy-progress-card-top"><Sparkles size={18} aria-hidden="true" /><span>{t.progressDrafts}</span></div><strong>{learningProgress.drafts} / 3</strong><p>{locale === 'ru' ? 'Проектов с черновиками на этом устройстве' : 'Projects with drafts on this device'}</p><p className="academy-progress-project-detail">{learningProgress.projectChecks} {locale === 'ru' ? 'пунктов чек-листа выполнено' : 'checklist items completed'} · {learningProgress.projectsCompleted}/3 {locale === 'ru' ? 'проектов с полным чек-листом' : 'projects with complete checklists'}</p><a href={`/academy?project=${learningProgress.nextProject}#project-studio`}>{locale === 'ru' ? `Продолжить: ${learningProgress.nextProject === 'evidence' ? 'проверка источников' : learningProgress.nextProject === 'privacy' ? 'защита данных' : 'решение с ИИ'}` : `Continue: ${learningProgress.nextProject === 'evidence' ? 'source verification' : learningProgress.nextProject === 'privacy' ? 'data privacy' : 'AI-assisted decision'}`}<ArrowRight size={14} aria-hidden="true" /></a></article>
       </div>
     </section>
 
@@ -221,8 +221,8 @@ export default function AcademyHome() {
         {([
           {title:locale==='ru'?'Изучить основы':'Learn the foundations',body:locale==='ru'?'Пройдите интерактивный курс OSA Original.':'Complete the OSA Original interactive course.',done:learningProgress.completed,href:'/osa-cinema',status:learningProgress.completed?(locale==='ru'?'Курс завершён':'Course complete'):(learningProgress.started?(locale==='ru'?'В процессе':'In progress'):(locale==='ru'?'Не начато':'Not started'))},
           {title:locale==='ru'?'Проверить понимание':'Check your understanding',body:locale==='ru'?'Отметьте три пункта самопроверки после курса.':'Complete the three post-course self-checks.',done:learningProgress.selfChecks===3,href:'/osa-cinema',status:`${learningProgress.selfChecks}/3 ${locale==='ru'?'отмечено':'completed'}`},
-          {title:locale==='ru'?'Создать практический результат':'Create a practical deliverable',body:locale==='ru'?'Заполните проект и отметьте необходимые результаты.':'Write a project draft and check off the required deliverables.',done:learningProgress.projectsCompleted>0,href:`/?project=${learningProgress.nextProject}#project-studio`,status:`${learningProgress.projectChecks}/12 ${locale==='ru'?'пунктов':'items'}`},
-          {title:locale==='ru'?'Оценить качество':'Assess the quality',body:locale==='ru'?'Оцените точность, пользу, ясность и риски по рубрике.':'Rate accuracy, usefulness, clarity and risks with the rubric.',done:learningProgress.reviewedProjects>0,href:`/?project=${learningProgress.nextProject}#project-studio`,status:`${learningProgress.criteriaRated}/12 ${locale==='ru'?'критериев':'criteria'}`}
+          {title:locale==='ru'?'Создать практический результат':'Create a practical deliverable',body:locale==='ru'?'Заполните проект и отметьте необходимые результаты.':'Write a project draft and check off the required deliverables.',done:learningProgress.projectsCompleted>0,href:`/academy?project=${learningProgress.nextProject}#project-studio`,status:`${learningProgress.projectChecks}/12 ${locale==='ru'?'пунктов':'items'}`},
+          {title:locale==='ru'?'Оценить качество':'Assess the quality',body:locale==='ru'?'Оцените точность, пользу, ясность и риски по рубрике.':'Rate accuracy, usefulness, clarity and risks with the rubric.',done:learningProgress.reviewedProjects>0,href:`/academy?project=${learningProgress.nextProject}#project-studio`,status:`${learningProgress.criteriaRated}/12 ${locale==='ru'?'критериев':'criteria'}`}
         ]).map((step,index)=><li className={step.done?'is-complete':''} key={step.title}><span className="academy-journey-number" aria-hidden="true">{step.done?'✓':String(index+1).padStart(2,'0')}</span><div className="academy-journey-copy"><h3>{step.title}</h3><p>{step.body}</p><span>{step.status}</span></div><a href={step.href} aria-label={`${locale==='ru'?'Перейти к этапу':'Go to step'}: ${step.title}`}>{step.done?(locale==='ru'?'Повторить':'Review'):(locale==='ru'?'Продолжить':'Continue')}<ArrowRight size={14} aria-hidden="true" /></a></li>)}
       </ol>
     </section>
@@ -231,9 +231,9 @@ export default function AcademyHome() {
       <div className="academy-section-heading"><div><p className="academy-eyebrow">{t.skillsEyebrow}</p><h2 id="academy-skills-title">{t.skillsTitle}</h2></div><p>{t.skillsIntro}</p></div>
       <div className="academy-skills-grid">
         {([
-          {id:'evidence',title:t.skillEvidence,count:learningProgress.evidenceChecks,href:'/?project=evidence#project-studio',icon:'01'},
-          {id:'privacy',title:t.skillPrivacy,count:learningProgress.privacyChecks,href:'/?project=privacy#project-studio',icon:'02'},
-          {id:'decision',title:t.skillDecision,count:learningProgress.decisionChecks,href:'/?project=decision#project-studio',icon:'03'}
+          {id:'evidence',title:t.skillEvidence,count:learningProgress.evidenceChecks,href:'/academy?project=evidence#project-studio',icon:'01'},
+          {id:'privacy',title:t.skillPrivacy,count:learningProgress.privacyChecks,href:'/academy?project=privacy#project-studio',icon:'02'},
+          {id:'decision',title:t.skillDecision,count:learningProgress.decisionChecks,href:'/academy?project=decision#project-studio',icon:'03'}
         ]).map(skill=><article className="academy-skill-card" key={skill.id}>
           <div className="academy-skill-card-top"><span>{skill.icon}</span><span>{skill.count>=4?t.skillComplete:skill.count>0?t.skillInProgress:t.skillNotStarted}</span></div>
           <h3>{skill.title}</h3>
@@ -278,7 +278,7 @@ export default function AcademyHome() {
           return <article className="academy-lesson-card" key={lesson.id}>
             <span>{lesson.tag}</span><h3>{lesson.title}</h3><p>{lesson.body}</p>
             <a className="academy-lesson-link" href={`/osa-cinema?scene=${sceneIndex}`}>{t.lessonAction}<ArrowUpRight size={15} aria-hidden="true" /></a>
-            <a className="academy-lesson-practice" href={`/?project=${project}#project-studio`}>{t.lessonPractice}<ArrowUpRight size={15} aria-hidden="true" /></a>
+            <a className="academy-lesson-practice" href={`/academy?project=${project}#project-studio`}>{t.lessonPractice}<ArrowUpRight size={15} aria-hidden="true" /></a>
           </article>
         })}
       </div>
