@@ -22,32 +22,52 @@ func _material(color: Color, emission: float = 0.0, metallic: float = 0.76, roug
     return m
 
 func make_facade_material() -> StandardMaterial3D:
-    # Windows are real textured surfaces. A repeated procedural atlas gives each
-    # tower dozens of lit floors without generating one draw call per window.
-    var image := Image.create(128, 256, false, Image.FORMAT_RGBA8)
-    for y in range(256):
-        for x in range(128):
-            var ix: int = int(x / 17)
-            var iy: int = int(y / 13)
-            var inside: bool = x % 17 >= 4 and x % 17 <= 13 and y % 13 >= 3 and y % 13 <= 9
-            var lit: bool = (ix * 11 + iy * 7 + int(iy * ix / 3)) % 13 < 8
-            var color := Color(0.115, 0.19, 0.265)
-            if x % 17 <= 1 or y % 13 <= 1:
-                color = Color(0.027, 0.055, 0.08)
-            elif inside:
-                color = Color(0.60, 0.78, 0.84) if lit else Color(0.08, 0.14, 0.19)
-            image.set_pixel(x, y, color)
-    var texture := ImageTexture.create_from_image(image)
+    # R5 256x512 day/night facade atlas: 16 columns x 32 floors of varied glazing.
+    # Albedo and emission are separated so concrete and steel DO NOT glow.
+    var albedo_image := Image.create(256, 512, false, Image.FORMAT_RGBA8)
+    var emission_image := Image.create(256, 512, false, Image.FORMAT_RGBA8)
+    for y in 512:
+        var floor_id: int = int(y / 16)
+        var ly: int = y % 16
+        for x in 256:
+            var column: int = int(x / 16)
+            var lx: int = x % 16
+            var hash_value: int = (floor_id * 73 + column * 131 + floor_id * column * 17) % 100
+            var mullion: bool = lx <= 2 or lx >= 14
+            var lintel: bool = ly <= 2 or ly >= 14
+            var glass: bool = not mullion and not lintel
+            var lit: bool = hash_value < 38 and floor_id % 7 != 0
+            var warm: bool = hash_value % 4 == 0
+            var pane := Color(0.044, 0.075, 0.104)
+            var glow := Color.BLACK
+            if mullion or lintel:
+                pane = Color(0.021, 0.034, 0.052) if lx % 2 == 0 else Color(0.038, 0.055, 0.069)
+            elif glass:
+                if lit:
+                    var source := Color(0.81, 0.62, 0.37) if warm else Color(0.37, 0.65, 0.78)
+                    # Vertical shading and dark lintels keep each pane volumetric.
+                    var exposure: float = 0.69 + float(ly) / 31.0
+                    pane = source * exposure
+                    glow = source * (0.48 if warm else 0.40)
+                else:
+                    var reflection: float = 0.73 + float((column * 11 + floor_id * 3) % 7) / 32.0
+                    pane = Color(0.039, 0.099, 0.145) * reflection
+                if lx == 4 or lx == 13:
+                    pane = pane.darkened(0.29)
+            albedo_image.set_pixel(x, y, pane)
+            emission_image.set_pixel(x, y, glow)
+    albedo_image.generate_mipmaps()
+    emission_image.generate_mipmaps()
     var m := StandardMaterial3D.new()
     m.vertex_color_use_as_albedo = true
-    m.albedo_texture = texture
-    m.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
-    m.metallic = 0.66
-    m.roughness = 0.42
+    m.albedo_texture = ImageTexture.create_from_image(albedo_image)
     m.emission_enabled = true
-    m.emission_texture = texture
-    m.emission = Color(0.23, 0.42, 0.67)
-    m.emission_energy_multiplier = 0.32
+    m.emission_texture = ImageTexture.create_from_image(emission_image)
+    m.emission = Color.WHITE
+    m.emission_energy_multiplier = 0.72
+    m.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+    m.metallic = 0.69
+    m.roughness = 0.32
     return m
 
 func _box(parent: Node3D, position: Vector3, size: Vector3, material: Material, angle: float = 0.0) -> MeshInstance3D:
