@@ -88,7 +88,7 @@
   const keys = new Set();
   const joystick = { x: 0, y: 0, pointer: null, centerX: 0, centerY: 0 };
   const player = { x: 0, z: 0, y: 0, yaw: 0, cameraYaw: 0.35, pitch: 0.28, speed: 0, moving: false };
-  const world = { ready: false, active: false, initialised: false, last: 0, frame: 0, assets: [], buildings: [], rings: [], dust: [], foliage: [], lamps: [], pulse: 0, fpsFrames: 0, fpsTime: 0, fpsSample: 0, quality: 'high', gpuScale: 1.35, navMode: 'main', people: [], traffic: [], contractMarkers: [], car: null, rain: null, dayMode: 0, raining: false, path: [], routeTo: '', pathCell: '' };
+  const world = { ready: false, active: false, initialised: false, last: 0, frame: 0, assets: [], buildings: [], rings: [], dust: [], foliage: [], lamps: [], pulse: 0, fpsFrames: 0, fpsTime: 0, fpsSample: 0, quality: 'high', gpuScale: 1.35, softwareGL: false, lastRender: 0, navMode: 'main', people: [], traffic: [], contractMarkers: [], car: null, rain: null, dayMode: 0, raining: false, path: [], routeTo: '', pathCell: '' };
   let scene, camera, renderer, avatar, legL, legR, armL, armR, sun, minimapCtx, targetIndex = -1, hemi, keyLight, blueFill;
   let dragId = null, dragX = 0, dragY = 0, audio, animationId = 0;
   const PROFILE_KEY = 'osgard:zion030:open-city:v28';
@@ -106,7 +106,9 @@
   for (let x = -19; x <= 19; x++) for (let z = -19; z <= 19; z++) if (terrainBuilding(x, z)) occupied.add(`${x},${z}`);
   const collides = (px, pz, radius = .25) => rules.blocked(px, pz, radius);
   function makeMat(color, roughness = .83, metalness = .07, emissive = 0x000000, intensity = 0) {
-    return new THREE.MeshStandardMaterial({ color, roughness, metalness, emissive, emissiveIntensity: intensity });
+    return reduceMotion.matches || world.softwareGL
+      ? new THREE.MeshLambertMaterial({ color, emissive, emissiveIntensity: intensity })
+      : new THREE.MeshStandardMaterial({ color, roughness, metalness, emissive, emissiveIntensity: intensity });
   }
   const drawBox = (parent, x, y, z, w, h, d, mat, shadow = false) => {
     const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
@@ -505,7 +507,7 @@
   function toggleRain() { world.raining = !world.raining; updateAtmosphere(); announce(world.raining ? 'Начался дождь. Асфальт остыл.' : 'Дождь закончился.'); }
   function toggleQuality() {
     world.quality = world.quality === 'eco' ? 'high' : 'eco';
-    world.gpuScale = world.quality === 'eco' ? .64 : reduceMotion.matches ? .67 : mobile.matches ? 1.05 : 1.35;
+    world.gpuScale = world.quality === 'eco' ? .55 : reduceMotion.matches ? .34 : world.softwareGL ? .4 : mobile.matches ? 1.05 : 1.35;
     renderer.shadowMap.enabled = world.quality === 'high' && !mobile.matches && !reduceMotion.matches;
     $('oc-quality').textContent = world.quality === 'eco' ? '◈ ECO' : '◈ HIGH';
     resize(); announce(world.quality === 'eco' ? 'Экономичный режим' : 'Улучшенная графика');
@@ -641,6 +643,11 @@
       scene = new THREE.Scene(); scene.background = new THREE.Color(0x0b1c2c); scene.fog = new THREE.FogExp2(0x122536, .015);
       camera = new THREE.PerspectiveCamera(68, 1, .08, 160);
       renderer = new THREE.WebGLRenderer({ antialias: !mobile.matches && !reduceMotion.matches, powerPreference: 'high-performance', alpha: false, stencil: false });
+      // Detect software-only WebGL and prefer low-cost lighting/resolution. Gameplay stays fully interactive.
+      const gl = renderer.getContext();
+      const debugGL = gl.getExtension('WEBGL_debug_renderer_info');
+      const glName = String(debugGL ? gl.getParameter(debugGL.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER) || '').toLowerCase();
+      world.softwareGL = /swiftshader|llvmpipe|software|softpipe|lavapipe/.test(glName);
       renderer.outputColorSpace = THREE.SRGBColorSpace;
       renderer.toneMapping = THREE.ACESFilmicToneMapping;
       renderer.toneMappingExposure = 1.42;
@@ -659,7 +666,8 @@
       const plazaLight = new THREE.PointLight(0x43c9dd, 9, 9); plazaLight.position.set(0, 4, .7); scene.add(plazaLight);
       addAtmosphere(); addGround(); addCity(); makeHotMarkers(); makeAvatar(); addLivingWorld(); updateAtmosphere();
       minimapCtx = $('oc-minimap').getContext('2d');
-      world.gpuScale = reduceMotion.matches ? .67 : mobile.matches ? 1.05 : 1.35;
+      world.gpuScale = reduceMotion.matches ? .34 : world.softwareGL ? .4 : mobile.matches ? 1.05 : 1.35;
+      if (reduceMotion.matches || world.softwareGL) { world.quality = 'adaptive'; $('oc-quality').textContent = '◈ AUTO'; }
       world.ready = true; resize(); syncGame(); drawMiniMap();
       window.__ZION030_OPEN_CITY__ = {
         state: () => ({ ready: world.ready, active: world.active, player: { x: player.x, z: player.z }, mission: game()?.state(), quality: world.quality, driving: Boolean(world.car?.occupied), vehicle: world.car ? { x: world.car.x, z: world.car.z, speed: world.car.speed } : null, contracts: [...profile.completed], credits: profile.credits, raining: world.raining, dayMode: world.dayMode }),
@@ -688,7 +696,7 @@
   function resize() {
     if (!world.ready) return;
     const w = Math.max(1, viewport.clientWidth), h = Math.max(1, viewport.clientHeight);
-    const cap = world.quality === 'eco' ? .64 : reduceMotion.matches ? Math.min(.67, world.gpuScale) : mobile.matches ? Math.min(1.05, world.gpuScale) : world.gpuScale;
+    const cap = world.quality === 'eco' ? Math.min(.55, world.gpuScale) : reduceMotion.matches ? Math.min(.34, world.gpuScale) : world.softwareGL ? Math.min(.4, world.gpuScale) : mobile.matches ? Math.min(1.05, world.gpuScale) : world.gpuScale;
     const dpr = Math.min(window.devicePixelRatio || 1, cap);
     renderer.setPixelRatio(dpr); renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix();
   }
@@ -898,12 +906,16 @@
     if (world.frame % 70 === 0) {
       if (world.fpsTime) {
         const fps = (world.frame - world.fpsFrames) * 1000 / (time - world.fpsTime);
-        if (fps < 28 && world.gpuScale > .8) { world.gpuScale = Math.max(.8, world.gpuScale * .79); world.quality = 'adaptive'; resize(); }
+        if (fps < 28 && world.gpuScale > .36) { world.gpuScale = Math.max(.36, world.gpuScale * .78); world.quality = 'adaptive'; resize(); }
       }
       world.fpsTime = time; world.fpsFrames = world.frame;
     }
     // Reduced-motion mode keeps gameplay responsive on software WebGL; render at a bounded cadence.
-    if (!reduceMotion.matches || time - (world.lastRender || 0) > 90) { renderer.render(scene, camera); world.lastRender = time; }
+    const renderEvery = reduceMotion.matches || world.softwareGL ? 500 : mobile.matches ? 50 : 16;
+    if (!world.lastRender || time - world.lastRender >= renderEvery) {
+      world.lastRender = time;
+      renderer.render(scene, camera);
+    }
     animationId = window.requestAnimationFrame(frame);
   }
   function enter() {
