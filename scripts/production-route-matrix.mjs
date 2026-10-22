@@ -218,6 +218,12 @@ for (const [device, userAgent] of Object.entries(agents)) for (const route of ro
                       : false
             : isGodot
             ? content.length > 100000
+            : isEmpireOmegaGodot
+              ? path.endsWith('index.js') && content.length > 100000
+              : path.startsWith('/games/time-omega-preview/')
+                ? path.endsWith('.css')
+                  ? content.includes('.driving-hud') && content.includes('@media(max-width:540px)')
+                  : content.includes("getContext('webgl2'") && content.includes('function renderFallback') && content.includes('function completeMission') && content.includes('function updateGame')
           : path.startsWith('/games/null-shift/')
             ? path.endsWith('engine-3d.js')
               ? content.includes("getContext('webgl'") && content.includes('NULL_SHIFT_GET_SCENE_STATE') && content.includes('function cube(){') && content.includes('NULL_SHIFT_SCREEN_TO_WORLD') && content.includes('drawParticles') && content.includes('ANGLE_instanced_arrays') && content.includes('renderInstanced') && content.includes('gpuFrameStats.triangles') && content.includes('function updateAdaptiveResolution(') && content.includes('adaptiveScale') && content.includes('renderCost.toFixed(1)') && content.includes('lastStats=0') && content.includes('renderCost=0') && content.includes('function softShadow(') && content.includes('aVertexAlpha') && content.includes('G.shadow')
