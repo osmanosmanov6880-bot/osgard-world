@@ -47,6 +47,9 @@ stage.append(overlay);
 const spotPrompt=element('div','premium-spot-prompt','НАЖМИ НА КРАСНУЮ МЕТКУ, ЧТОБЫ ВЫБРАТЬ ЦЕЛЬ');
 stage.append(spotPrompt);
 const selectionGuide=element('div','premium-selection-guide','<strong id="premiumSelectionTitle">ТВОЙ СЛЕДУЮЩИЙ ШАГ</strong><span id="premiumSelectionText">Нажми на красный маркер</span>');selectionGuide.setAttribute('aria-live','polite');stage.append(selectionGuide);
+const resultPanel=element('div','premium-result','<div class="premium-result-inner"><span>ТЕНЕВОЙ ПРОТОКОЛ · ИТОГ</span><h2 id="premiumResultTitle">МИССИЯ ВЫПОЛНЕНА</h2><p id="premiumResultText"></p><button type="button" id="premiumReplay">↺ ПОПРОБОВАТЬ ЕЩЁ РАЗ</button></div>');
+resultPanel.hidden=true;resultPanel.setAttribute('aria-live','polite');stage.append(resultPanel);
+$('premiumReplay').addEventListener('click',()=>{$('reset')?.click();});
 const legend=element('div','premium-legend','<small>УСЛОВНАЯ ТЕМПЕРАТУРА ПОВЕРХНОСТИ</small><div class="temperature-gradient"></div><div class="legend-values"><b>30°C</b><b>60°C</b></div>');
 stage.append(legend);
 const zoomCtrl=element('div','premium-zoom','<button type="button" id="premiumZoomIn" aria-label="Увеличить">＋</button><button type="button" id="premiumZoomOut" aria-label="Уменьшить">−</button><button type="button" id="premiumZoomReset" aria-label="Вернуть камеру">⌖</button>');
@@ -248,6 +251,11 @@ function refresh(){
  $('premiumLeft').textContent=String(Math.max(0,3-s.placed.length));
  $('premiumZones').textContent=s.score+' / 3';
  $('premiumRing').style.setProperty('--progress',String(s.score/3*100)+'%');
+ resultPanel.hidden=!s.won&&!s.lost;
+ if(s.won||s.lost){
+  $('premiumResultTitle').textContent=s.won?'ГОРОД ОХЛАЖДЁН!':'СЛЕДУЮЩАЯ ПОПЫТКА';
+  $('premiumResultText').textContent=s.won?'Три горячие зоны защищены. Отличная работа: '+s.score+' из 3!':'Три модуля использованы, но ещё остались горячие зоны. Пересмотри расположение и попробуй новую стратегию.';
+ }
  spotPrompt.textContent=s.won?'✓ МИССИЯ ВЫПОЛНЕНА':s.lost?'ПОПРОБУЙ ЕЩЁ РАЗ':s.score?'ОСТАЛОСЬ '+(3-s.score)+' ГОРЯЧИХ ЗОНЫ · НАЖМИ НА КРАСНЫЙ МАРКЕР':'НАЖМИ НА КРАСНЫЙ МАРКЕР И ВЫБЕРИ МЕСТО';
  for(const [i,marker] of overlay.querySelectorAll('.premium-hot-marker').entries()){
   const zone=hot[i],covered=coverage(s,zone);
