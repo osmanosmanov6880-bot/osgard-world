@@ -425,6 +425,17 @@ test('contact form reports errors and exports a brief without submitting', async
   await expect(page.locator('#brief-feedback')).toContainText('Заявка не отправлена')
 })
 
+test('unknown Play worlds cannot spoof inherited object keys or crash navigation', async ({ page }) => {
+  const runtimeErrors = []
+  page.on('pageerror', error => runtimeErrors.push(error.message))
+  for (const slug of ['__proto__', 'constructor', 'toString']) {
+    await page.goto('/play/world/' + slug)
+    await expect(page.getByRole('heading', { level: 1, name: 'Мир не найден.' })).toBeVisible()
+    await expect(page.getByRole('link', { name: 'Вернуться в каталог' })).toHaveAttribute('href', /play/)
+  }
+  expect(runtimeErrors).toEqual([])
+})
+
 test('catalog filters, return path and favorites survive reload', async ({ page }) => {
   test.slow() // Includes a real iframe runtime, stop/focus recovery and a full persistence reload.
   await page.goto('/play')
