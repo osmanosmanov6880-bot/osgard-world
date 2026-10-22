@@ -1,0 +1,173 @@
+{
+  "schema": 2,
+  "contracts": [
+    {
+      "id": "market_supplies",
+      "pickup": "market",
+      "dropoff": "depot",
+      "reward": 430,
+      "limit_turns": 2,
+      "title": {
+        "ru": "Поставка на логистический терминал",
+        "en": "Supplies to the logistics depot",
+        "zh": "向物流中心运送物资"
+      },
+      "cargo": "goods",
+      "quantity": 18
+    },
+    {
+      "id": "energy_parts",
+      "pickup": "depot",
+      "dropoff": "power",
+      "reward": 560,
+      "limit_turns": 3,
+      "title": {
+        "ru": "Запчасти для электростанции",
+        "en": "Parts for the power station",
+        "zh": "电站零件运输"
+      },
+      "cargo": "materials",
+      "quantity": 24
+    },
+    {
+      "id": "council_docs",
+      "pickup": "power",
+      "dropoff": "cityhall",
+      "reward": 340,
+      "limit_turns": 2,
+      "title": {
+        "ru": "Технические документы в мэрию",
+        "en": "Technical documents to city hall",
+        "zh": "向市政厅运送技术文件"
+      },
+      "cargo": "materials",
+      "quantity": 14
+    },
+    {
+      "id": "market_permit",
+      "pickup": "cityhall",
+      "dropoff": "market",
+      "reward": 390,
+      "limit_turns": 2,
+      "title": {
+        "ru": "Торговые разрешения",
+        "en": "Commerce permits delivery",
+        "zh": "商业许可证配送"
+      },
+      "cargo": "goods",
+      "quantity": 22
+    },
+    {
+      "id": "industrial_tools",
+      "pickup": "depot",
+      "dropoff": "market",
+      "reward": 490,
+      "limit_turns": 3,
+      "title": {
+        "ru": "Инструменты для предпринимателей",
+        "en": "Tools for entrepreneurs",
+        "zh": "企业工具配送"
+      },
+      "cargo": "materials",
+      "quantity": 30
+    },
+    {
+      "id": "planning_archive",
+      "pickup": "market",
+      "dropoff": "cityhall",
+      "reward": 370,
+      "limit_turns": 2,
+      "title": {
+        "ru": "Архив для городского совета",
+        "en": "Records for the city council",
+        "zh": "向市议会运送档案"
+      },
+      "cargo": "grain",
+      "quantity": 20
+    },
+    {
+      "id": "hospital_supply",
+      "pickup": "cityhall",
+      "dropoff": "power",
+      "reward": 450,
+      "limit_turns": 3,
+      "title": {
+        "ru": "Экстренное снабжение электростанции",
+        "en": "Emergency support for the power plant",
+        "zh": "发电站紧急物资"
+      },
+      "cargo": "materials",
+      "quantity": 22
+    },
+    {
+      "id": "fertilizer_run",
+      "pickup": "power",
+      "dropoff": "depot",
+      "reward": 390,
+      "limit_turns": 2,
+      "title": {
+        "ru": "Удобрения для городских ферм",
+        "en": "Fertilizer to urban farms",
+        "zh": "城市农场肥料运输"
+      },
+      "cargo": "grain",
+      "quantity": 25
+    },
+    {
+      "id": "food_delivery",
+      "pickup": "depot",
+      "dropoff": "cityhall",
+      "reward": 530,
+      "limit_turns": 3,
+      "title": {
+        "ru": "Государственный продовольственный резерв",
+        "en": "Public emergency food reserve",
+        "zh": "城市应急粮食储备"
+      },
+      "cargo": "grain",
+      "quantity": 45
+    },
+    {
+      "id": "retail_restock",
+      "pickup": "cityhall",
+      "dropoff": "depot",
+      "reward": 420,
+      "limit_turns": 3,
+      "title": {
+        "ru": "Обновление складских запасов",
+        "en": "Restock the logistics warehouse",
+        "zh": "补充物流仓库库存"
+      },
+      "cargo": "goods",
+      "quantity": 28
+    },
+    {
+      "id": "clinic_goods",
+      "pickup": "power",
+      "dropoff": "market",
+      "reward": 475,
+      "limit_turns": 2,
+      "title": {
+        "ru": "Оборудование для городской клиники",
+        "en": "Equipment for the city clinic",
+        "zh": "市立诊所医疗设备"
+      },
+      "cargo": "materials",
+      "quantity": 27
+    },
+    {
+      "id": "tech_parts",
+      "pickup": "market",
+      "dropoff": "power",
+      "reward": 610,
+      "limit_turns": 4,
+      "title": {
+        "ru": "Комплектующие для энергосети",
+        "en": "Components for the power grid",
+        "zh": "电网设备运输"
+      },
+      "cargo": "materials",
+      "quantity": 38
+    }
+  ]
+}

@@ -1,0 +1,87 @@
+name: OSGARD Empire Omega native Godot Web
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'godot/empire-omega/**'
+      - '.github/workflows/omega-godot-web.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+  actions: write
+concurrency:
+  group: omega-godot-web-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: true
+      - name: Regenerate original prototype audio
+        run: |
+          python3 godot/empire-omega/tools/generate_audio.py
+          python3 godot/empire-omega/tools/generate_patrol_audio.py
+          test -s godot/empire-omega/assets/audio/city_air.wav
+          test -s godot/empire-omega/assets/audio/patrol_alert.wav
+      - name: Import scripts, resources and native scenes
+        run: godot --headless --editor --path godot/empire-omega --import --quit
+      - name: Execute native Godot city-smoke and gameplay regression tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          for test_file in godot/empire-omega/tests/*.gd; do
+            echo "=== NATIVE ${test_file##*/} ==="
+            godot --headless --path godot/empire-omega --script "res://tests/${test_file##*/}"
+          done
+      - name: Export authentic Godot 4.4.1 Web application
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p godot/empire-omega/.build-web
+          godot --headless --path godot/empire-omega --export-release Web "$GITHUB_WORKSPACE/godot/empire-omega/.build-web/index.html"
+          test -s godot/empire-omega/.build-web/index.html
+          test -n "$(find godot/empire-omega/.build-web -maxdepth 1 -name '*.wasm' -size +100k -print -quit)"
+          test -n "$(find godot/empire-omega/.build-web -maxdepth 1 -name '*.pck' -size +100k -print -quit)"
+      - name: Verify origin of the exported runtime and stage it without overwriting other games
+        shell: bash
+        run: |
+          set -euo pipefail
+          target=public/games/omega-3d-preview
+          rm -rf "$target"
+          mkdir -p "$target"
+          cp -a godot/empire-omega/.build-web/. "$target/"
+          python3 - <<'PYCODE'
+          from pathlib import Path
+          import hashlib,json
+          p=Path('public/games/omega-3d-preview')
+          files=sorted(x for x in p.iterdir() if x.is_file())
+          required={'.html','.js','.wasm','.pck'}
+          assert required <= {x.suffix for x in files},'Godot export incomplete'
+          d={'engine':'Godot 4.4.1','source_path':'godot/empire-omega',
+             'source_commit':'${{ github.sha }}','native_tests':'passed',
+             'artifact_kind':'native-Godot-HTML5-export',
+             'files':{x.name:hashlib.sha256(x.read_bytes()).hexdigest() for x in files}}
+          (p/'release.json').write_text(json.dumps(d,indent=2)+'\n')
+          print('Godot Web export verified:',len(files),'files')
+          PYCODE
+      - name: Commit verified native runtime and request existing SSH deployment
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -f public/games/omega-3d-preview
+          git commit -m 'build(games): publish tested Godot 4.4.1 Omega Web runtime' || exit 0
+          git pull --rebase origin master
+          git push origin HEAD:master
+          gh workflow run deploy-frontend.yml --ref master

@@ -1,0 +1,30 @@
+; OSGARD EMPIRE OMEGA / Godot 4.x
+; Generated source, no third-party artwork or assets.
+config_version=5
+
+[application]
+config/name="OSGARD EMPIRE Ω — Open World Prototype"
+run/main_scene="res://scenes/main.tscn"
+config/description="Russian-first 3D open-world city and governance simulation"
+
+[autoload]
+GameState="*res://scripts/game_state.gd"
+MissionManager="*res://scripts/mission_manager.gd"
+ContractManager="*res://scripts/contract_manager.gd"
+GameSettings="*res://scripts/game_settings.gd"
+
+[display]
+window/size/viewport_width=1600
+window/size/viewport_height=900
+window/stretch/mode="canvas_items"
+
+[rendering]
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+textures/default_filters/use_nearest_mipmap_filter=false
+
+[physics]
+3d/default_gravity=24.0
+
+[application/config]
+features=PackedStringArray("4.2", "GL Compatibility")

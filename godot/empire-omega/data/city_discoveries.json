@@ -1,0 +1,221 @@
+{
+  "schema": 1,
+  "sites": [
+    {
+      "id": "forum_gate",
+      "district": "forum",
+      "position": [
+        -156,
+        -156
+      ],
+      "name": {
+        "ru": "Арка Форума",
+        "en": "Forum Gateway",
+        "zh": "广场拱门"
+      },
+      "description": {
+        "ru": "Древняя арка у северных ворот города",
+        "en": "Old archway of the northern city gate",
+        "zh": "城市北门旁的古老拱门"
+      }
+    },
+    {
+      "id": "senate_archive",
+      "district": "forum",
+      "position": [
+        -104,
+        -52
+      ],
+      "name": {
+        "ru": "Архив сената",
+        "en": "Senate Archive",
+        "zh": "元老院档案馆"
+      },
+      "description": {
+        "ru": "Каменные таблички о прежних правителях",
+        "en": "Stone records of the city’s former rulers",
+        "zh": "记载历代统治者的石刻档案"
+      }
+    },
+    {
+      "id": "watchtower",
+      "district": "forum",
+      "position": [
+        -52,
+        -156
+      ],
+      "name": {
+        "ru": "Сторожевая башня",
+        "en": "Watchtower",
+        "zh": "瞭望塔"
+      },
+      "description": {
+        "ru": "Площадка с видом на четыре квартала",
+        "en": "Lookout spanning all four districts",
+        "zh": "可俯瞰四个城区的观景台"
+      }
+    },
+    {
+      "id": "housing_garden",
+      "district": "housing",
+      "position": [
+        52,
+        -156
+      ],
+      "name": {
+        "ru": "Сад соседей",
+        "en": "Community Garden",
+        "zh": "社区花园"
+      },
+      "description": {
+        "ru": "Сад, который жители создали своими силами",
+        "en": "Garden built and maintained by residents",
+        "zh": "居民自主修建的社区花园"
+      }
+    },
+    {
+      "id": "tram_square",
+      "district": "housing",
+      "position": [
+        156,
+        -156
+      ],
+      "name": {
+        "ru": "Старая площадь",
+        "en": "Old Plaza",
+        "zh": "旧广场"
+      },
+      "description": {
+        "ru": "Историческое место встреч и торговли",
+        "en": "Historic meeting point and trading square",
+        "zh": "历史悠久的集会与交易广场"
+      }
+    },
+    {
+      "id": "school_mural",
+      "district": "housing",
+      "position": [
+        104,
+        -52
+      ],
+      "name": {
+        "ru": "Мозаика школы",
+        "en": "School Mural",
+        "zh": "学校壁画"
+      },
+      "description": {
+        "ru": "Мозаика о первых поколениях города",
+        "en": "Mosaic celebrating the city’s first generations",
+        "zh": "纪念城市早期居民的马赛克"
+      }
+    },
+    {
+      "id": "foundry_gate",
+      "district": "lower",
+      "position": [
+        -156,
+        52
+      ],
+      "name": {
+        "ru": "Литейные ворота",
+        "en": "Foundry Gate",
+        "zh": "铸造厂大门"
+      },
+      "description": {
+        "ru": "Памятник мастерству первых инженеров",
+        "en": "Tribute to the city’s earliest engineers",
+        "zh": "纪念城市首批工程师的纪念门"
+      }
+    },
+    {
+      "id": "canal_bridge",
+      "district": "lower",
+      "position": [
+        -104,
+        156
+      ],
+      "name": {
+        "ru": "Канальный мост",
+        "en": "Canal Bridge",
+        "zh": "运河桥"
+      },
+      "description": {
+        "ru": "Место старого водного маршрута",
+        "en": "Crossing of a historic water trade route",
+        "zh": "古代水上商路的桥梁"
+      }
+    },
+    {
+      "id": "workers_square",
+      "district": "lower",
+      "position": [
+        -52,
+        52
+      ],
+      "name": {
+        "ru": "Площадь мастеров",
+        "en": "Artisan Square",
+        "zh": "工匠广场"
+      },
+      "description": {
+        "ru": "Место собраний рабочих гильдий",
+        "en": "Traditional gathering of worker guilds",
+        "zh": "工匠行会的传统集会地"
+      }
+    },
+    {
+      "id": "aqueduct_pillar",
+      "district": "aqueduct",
+      "position": [
+        52,
+        52
+      ],
+      "name": {
+        "ru": "Опора акведука",
+        "en": "Aqueduct Pillar",
+        "zh": "高架渠石柱"
+      },
+      "description": {
+        "ru": "Уцелевшая опора первой водной системы",
+        "en": "Surviving pillar of the first water network",
+        "zh": "第一代供水网络留下的石柱"
+      }
+    },
+    {
+      "id": "observatory",
+      "district": "aqueduct",
+      "position": [
+        156,
+        52
+      ],
+      "name": {
+        "ru": "Старая обсерватория",
+        "en": "Old Observatory",
+        "zh": "旧天文台"
+      },
+      "description": {
+        "ru": "Здесь когда-то измеряли время по звёздам",
+        "en": "Where time was once measured by starlight",
+        "zh": "先民曾在此通过星光测量时间"
+      }
+    },
+    {
+      "id": "reservoir_steps",
+      "district": "aqueduct",
+      "position": [
+        104,
+        156
+      ],
+      "name": {
+        "ru": "Ступени резервуара",
+        "en": "Reservoir Steps",
+        "zh": "蓄水池台阶"
+      },
+      "description": {
+        "ru": "Ступени древнего городского водохранилища",
+        "en": "Stairs of the old city cistern",
+        "zh": "古城蓄水池的台阶"
+      }
+    }
+  ]
+}

@@ -1,0 +1,854 @@
+{
+  "schema": 1,
+  "cases": [
+    {
+      "id": "terminal_delay",
+      "site": "depot",
+      "district": "lower",
+      "min_turn": 2,
+      "title": {
+        "ru": "Грузы застряли на терминале",
+        "en": "Freight terminal bottleneck",
+        "zh": "货运站拥堵"
+      },
+      "description": {
+        "ru": "Поставки материалов задержаны. Нужно помочь разгрузке или привлечь местных добровольцев.",
+        "en": "Supplies are delayed. Fund crews or coordinate volunteers.",
+        "zh": "物资运送延误。可资助工人或组织志愿者。"
+      },
+      "options": [
+        {
+          "id": "invest",
+          "title": {
+            "ru": "Оплатить дополнительные смены",
+            "en": "Fund extra shifts",
+            "zh": "资助加班"
+          },
+          "cost": {
+            "treasury": 120,
+            "materials": 3
+          },
+          "effects": {
+            "trust": 6,
+            "stability": 2,
+            "road_quality": 3
+          }
+        },
+        {
+          "id": "mobilize",
+          "title": {
+            "ru": "Организовать волонтёров",
+            "en": "Organize volunteers",
+            "zh": "组织志愿者"
+          },
+          "cost": {
+            "wallet": 60
+          },
+          "effects": {
+            "trust": 4,
+            "reputation": 7
+          }
+        }
+      ],
+      "expire_effects": {
+        "stability": -3,
+        "trust": -5
+      }
+    },
+    {
+      "id": "water_warning",
+      "site": "power",
+      "district": "aqueduct",
+      "min_turn": 2,
+      "title": {
+        "ru": "Угроза водоснабжению",
+        "en": "Water supply warning",
+        "zh": "供水预警"
+      },
+      "description": {
+        "ru": "Жители жалуются на давление в трубах. Подрядчик предлагает срочный ремонт.",
+        "en": "Residents report low pressure. A contractor offers emergency repairs.",
+        "zh": "居民反映水压偏低，承包商提出紧急维修。"
+      },
+      "options": [
+        {
+          "id": "invest",
+          "title": {
+            "ru": "Заменить аварийные трубы",
+            "en": "Replace damaged pipes",
+            "zh": "更换受损水管"
+          },
+          "cost": {
+            "treasury": 170,
+            "materials": 5
+          },
+          "effects": {
+            "water": 13,
+            "trust": 5
+          }
+        },
+        {
+          "id": "mobilize",
+          "title": {
+            "ru": "Провести общественную проверку",
+            "en": "Launch community inspection",
+            "zh": "进行社区检测"
+          },
+          "cost": {
+            "wallet": 75
+          },
+          "effects": {
+            "reputation": 9,
+            "water": 4,
+            "trust": 2
+          }
+        }
+      ],
+      "expire_effects": {
+        "water": -9,
+        "stability": -3
+      }
+    },
+    {
+      "id": "market_prices",
+      "site": "market",
+      "district": "housing",
+      "min_turn": 2,
+      "title": {
+        "ru": "Скачок цен на рынке",
+        "en": "Market price shock",
+        "zh": "市场价格飙升"
+      },
+      "description": {
+        "ru": "Мелкие торговцы повышают цены на базовые товары.",
+        "en": "Small merchants are increasing prices of essential goods.",
+        "zh": "小商贩正在提高基本商品的价格。"
+      },
+      "options": [
+        {
+          "id": "invest",
+          "title": {
+            "ru": "Субсидировать поставки",
+            "en": "Subsidize deliveries",
+            "zh": "补贴物资供应"
+          },
+          "cost": {
+            "treasury": 135,
+            "goods": 4
+          },
+          "effects": {
+            "food": 6,
+            "trust": 6
+          }
+        },
+        {
+          "id": "mobilize",
+          "title": {
+            "ru": "Встретиться с торговцами",
+            "en": "Negotiate with merchants",
+            "zh": "与商户协商"
+          },
+          "cost": {
+            "wallet": 45
+          },
+          "effects": {
+            "reputation": 6,
+            "trust": 3
+          }
+        }
+      ],
+      "expire_effects": {
+        "food": -5,
+        "trust": -4
+      }
+    },
+    {
+      "id": "clinic_shift",
+      "site": "cityhall",
+      "district": "forum",
+      "min_turn": 3,
+      "title": {
+        "ru": "Перегружена городская клиника",
+        "en": "Clinic staff shortage",
+        "zh": "诊所人手不足"
+      },
+      "description": {
+        "ru": "Врачам требуется помощь: очереди растут, доверие падает.",
+        "en": "Medical staff need support as queues lengthen.",
+        "zh": "医疗人员需要帮助，候诊队伍越来越长。"
+      },
+      "options": [
+        {
+          "id": "invest",
+          "title": {
+            "ru": "Оплатить дополнительные смены",
+            "en": "Fund medical overtime",
+            "zh": "资助医护加班"
+          },
+          "cost": {
+            "treasury": 180
+          },
+          "effects": {
+            "stability": 6,
+            "trust": 5
+          }
+        },
+        {
+          "id": "mobilize",
+          "title": {
+            "ru": "Поддержать волонтёров лично",
+            "en": "Coordinate volunteers",
+            "zh": "协调志愿者"
+          },
+          "cost": {
+            "wallet": 80
+          },
+          "effects": {
+            "reputation": 8,
+            "stability": 2
+          }
+        }
+      ],
+      "expire_effects": {
+        "stability": -6,
+        "trust": -5
+      }
+    },
+    {
+      "id": "flood_gates",
+      "site": "power",
+      "district": "aqueduct",
+      "min_turn": 3,
+      "title": {
+        "ru": "Прорыв у шлюзов",
+        "en": "Levee pressure",
+        "zh": "防洪闸门险情"
+      },
+      "description": {
+        "ru": "Поднимается вода у шлюзов акведука. Нужно принимать решение быстро.",
+        "en": "Water levels rise by the aqueduct gates. A quick decision is needed.",
+        "zh": "引水渠闸门附近水位正在上升，必须迅速决策。"
+      },
+      "options": [
+        {
+          "id": "invest",
+          "title": {
+            "ru": "Укрепить дамбу",
+            "en": "Reinforce the levee",
+            "zh": "加固堤坝"
+          },
+          "cost": {
+            "treasury": 190,
+            "materials": 7
+          },
+          "effects": {
+            "water": 8,
+            "stability": 5
+          }
+        },
+        {
+          "id": "mobilize",
+          "title": {
+            "ru": "Закупить переносные насосы",
+            "en": "Buy portable pumps",
+            "zh": "采购移动泵"
+          },
+          "cost": {
+            "wallet": 110
+          },
+          "effects": {
+            "water": 5,
+            "reputation": 7
+          }
+        }
+      ],
+      "expire_effects": {
+        "water": -10,
+        "stability": -6
+      }
+    },
+    {
+      "id": "housing_heat",
+      "site": "market",
+      "district": "housing",
+      "min_turn": 3,
+      "title": {
+        "ru": "Холодные дома",
+        "en": "Homes without heat",
+        "zh": "居民楼供暖不足"
+      },
+      "description": {
+        "ru": "В жилом квартале плохо работает отопление.",
+        "en": "Heating has failed in parts of the residential district.",
+        "zh": "部分住宅区的供暖系统出现故障。"
+      },
+      "options": [
+        {
+          "id": "invest",
+          "title": {
+            "ru": "Обновить теплотрассу",
+            "en": "Repair heating network",
+            "zh": "维修供暖管网"
+          },
+          "cost": {
+            "treasury": 160,
+            "materials": 5
+          },
+          "effects": {
+            "energy": 6,
+            "stability": 3,
+            "trust": 6
+          }
+        },
+        {
+          "id": "mobilize",
+          "title": {
+            "ru": "Открыть пункт обогрева",
+            "en": "Open warming station",
+            "zh": "开放供暖站"
+          },
+          "cost": {
+            "wallet": 65
+          },
+          "effects": {
+            "reputation": 6,
+            "trust": 3
+          }
+        }
+      ],
+      "expire_effects": {
+        "stability": -5,
+        "energy": -4
+      }
+    },
+    {
+      "id": "factory_smoke",
+      "site": "depot",
+      "district": "lower",
+      "min_turn": 4,
+      "title": {
+        "ru": "Дым над мастерскими",
+        "en": "Smoke over workshops",
+        "zh": "工坊烟雾问题"
+      },
+      "description": {
+        "ru": "Производство загрязняет район. Жители требуют проверки.",
+        "en": "Factory emissions have triggered calls for an inspection.",
+        "zh": "工厂排放引发了居民对检查的要求。"
+      },
+      "options": [
+        {
+          "id": "invest",
+          "title": {
+            "ru": "Профинансировать фильтры",
+            "en": "Fund pollution filters",
+            "zh": "资助污染过滤器"
+          },
+          "cost": {
+            "treasury": 190,
+            "materials": 4
+          },
+          "effects": {
+            "stability": 4,
+            "trust": 7
+          }
+        },
+        {
+          "id": "mobilize",
+          "title": {
+            "ru": "Провести публичную экспертизу",
+            "en": "Organize public audit",
+            "zh": "组织公开审查"
+          },
+          "cost": {
+            "wallet": 70
+          },
+          "effects": {
+            "reputation": 9,
+            "trust": 2
+          }
+        }
+      ],
+      "expire_effects": {
+        "trust": -7,
+        "stability": -4
+      }
+    },
+    {
+      "id": "night_route",
+      "site": "market",
+      "district": "housing",
+      "min_turn": 4,
+      "title": {
+        "ru": "Опасный ночной переход",
+        "en": "Unsafe night crossing",
+        "zh": "夜间行路危险"
+      },
+      "description": {
+        "ru": "Неосвещённый путь между домами и рынком вызывает жалобы.",
+        "en": "A poorly lit route between homes and market is causing complaints.",
+        "zh": "住宅和市场之间的道路照明不足，居民纷纷投诉。"
+      },
+      "options": [
+        {
+          "id": "invest",
+          "title": {
+            "ru": "Установить освещение",
+            "en": "Install street lighting",
+            "zh": "安装路灯"
+          },
+          "cost": {
+            "treasury": 150,
+            "materials": 3
+          },
+          "effects": {
+            "energy": -2,
+            "stability": 5,
+            "trust": 5
+          }
+        },
+        {
+          "id": "mobilize",
+          "title": {
+            "ru": "Организовать сопровождение",
+            "en": "Organize escorts",
+            "zh": "组织护送"
+          },
+          "cost": {
+            "wallet": 55
+          },
+          "effects": {
+            "reputation": 7,
+            "trust": 3
+          }
+        }
+      ],
+      "expire_effects": {
+        "stability": -4,
+        "trust": -4
+      }
+    },
+    {
+      "id": "school_roof",
+      "site": "cityhall",
+      "district": "forum",
+      "min_turn": 5,
+      "title": {
+        "ru": "Крыша школы протекает",
+        "en": "School roof leak",
+        "zh": "学校屋顶漏水"
+      },
+      "description": {
+        "ru": "Ученики не могут заниматься в нескольких классах.",
+        "en": "Several classrooms cannot be used because of roof damage.",
+        "zh": "学校的几间教室因为屋顶受损无法使用。"
+      },
+      "options": [
+        {
+          "id": "invest",
+          "title": {
+            "ru": "Провести капитальный ремонт",
+            "en": "Repair school roof",
+            "zh": "修缮学校屋顶"
+          },
+          "cost": {
+            "treasury": 200,
+            "materials": 6
+          },
+          "effects": {
+            "trust": 6,
+            "science": 15,
+            "stability": 2
+          }
+        },
+        {
+          "id": "mobilize",
+          "title": {
+            "ru": "Собрать частное пожертвование",
+            "en": "Organize donations",
+            "zh": "募集私人捐款"
+          },
+          "cost": {
+            "wallet": 90
+          },
+          "effects": {
+            "reputation": 8,
+            "science": 8
+          }
+        }
+      ],
+      "expire_effects": {
+        "trust": -5,
+        "science": -8
+      }
+    },
+    {
+      "id": "black_market",
+      "site": "market",
+      "district": "housing",
+      "min_turn": 5,
+      "title": {
+        "ru": "Нелегальный рынок",
+        "en": "Unauthorized market stalls",
+        "zh": "无证摊贩"
+      },
+      "description": {
+        "ru": "На площади работают неучтённые прилавки. Владельцы просят легальные условия.",
+        "en": "Unregistered vendors are asking for legal business permits.",
+        "zh": "无证摊贩请求获得合法经营许可。"
+      },
+      "options": [
+        {
+          "id": "invest",
+          "title": {
+            "ru": "Легализовать торговые места",
+            "en": "Issue vendor permits",
+            "zh": "发放摊贩许可证"
+          },
+          "cost": {
+            "treasury": 125
+          },
+          "effects": {
+            "trust": 4,
+            "stability": 3,
+            "reputation": 2
+          }
+        },
+        {
+          "id": "mobilize",
+          "title": {
+            "ru": "Провести переговоры",
+            "en": "Mediate directly",
+            "zh": "直接调解"
+          },
+          "cost": {
+            "wallet": 40
+          },
+          "effects": {
+            "reputation": 7,
+            "trust": 2
+          }
+        }
+      ],
+      "expire_effects": {
+        "stability": -4,
+        "trust": -4
+      }
+    },
+    {
+      "id": "bridge_crack",
+      "site": "depot",
+      "district": "lower",
+      "min_turn": 6,
+      "title": {
+        "ru": "Трещины в мосту",
+        "en": "Bridge inspection",
+        "zh": "桥梁裂缝"
+      },
+      "description": {
+        "ru": "Старый грузовой мост требует срочной инженерной экспертизы.",
+        "en": "An old freight bridge requires an urgent engineering inspection.",
+        "zh": "一座旧货运桥梁急需工程检测。"
+      },
+      "options": [
+        {
+          "id": "invest",
+          "title": {
+            "ru": "Провести укрепление",
+            "en": "Reinforce the bridge",
+            "zh": "加固桥梁"
+          },
+          "cost": {
+            "treasury": 230,
+            "materials": 8
+          },
+          "effects": {
+            "road_quality": 7,
+            "trust": 6
+          }
+        },
+        {
+          "id": "mobilize",
+          "title": {
+            "ru": "Оплатить независимую проверку",
+            "en": "Commission independent audit",
+            "zh": "委托独立检测"
+          },
+          "cost": {
+            "wallet": 100
+          },
+          "effects": {
+            "reputation": 9,
+            "road_quality": 2
+          }
+        }
+      ],
+      "expire_effects": {
+        "road_quality": -8,
+        "stability": -4
+      }
+    },
+    {
+      "id": "library_revival",
+      "site": "cityhall",
+      "district": "forum",
+      "min_turn": 6,
+      "title": {
+        "ru": "Библиотеке нужны ресурсы",
+        "en": "Library funding appeal",
+        "zh": "图书馆经费申请"
+      },
+      "description": {
+        "ru": "Общественная библиотека может закрыть вечерние занятия.",
+        "en": "The public library may suspend evening classes.",
+        "zh": "公共图书馆可能取消晚间课程。"
+      },
+      "options": [
+        {
+          "id": "invest",
+          "title": {
+            "ru": "Продлить работу библиотеки",
+            "en": "Fund evening classes",
+            "zh": "资助夜间课程"
+          },
+          "cost": {
+            "treasury": 155
+          },
+          "effects": {
+            "science": 23,
+            "trust": 4
+          }
+        },
+        {
+          "id": "mobilize",
+          "title": {
+            "ru": "Создать частный фонд",
+            "en": "Start a private fund",
+            "zh": "设立私人基金"
+          },
+          "cost": {
+            "wallet": 75
+          },
+          "effects": {
+            "reputation": 8,
+            "science": 12
+          }
+        }
+      ],
+      "expire_effects": {
+        "science": -10,
+        "trust": -3
+      }
+    },
+    {
+      "id": "reservoir_leak",
+      "site": "power",
+      "district": "aqueduct",
+      "min_turn": 7,
+      "title": {
+        "ru": "Утечка из резервуара",
+        "en": "Reservoir leak",
+        "zh": "水库漏水"
+      },
+      "description": {
+        "ru": "Вода уходит из накопителя быстрее, чем поступает.",
+        "en": "A reservoir is losing water faster than it can be replenished.",
+        "zh": "储水池的水流失速度快于补充速度。"
+      },
+      "options": [
+        {
+          "id": "invest",
+          "title": {
+            "ru": "Отремонтировать резервуар",
+            "en": "Repair the reservoir",
+            "zh": "修复储水池"
+          },
+          "cost": {
+            "treasury": 210,
+            "materials": 6
+          },
+          "effects": {
+            "water": 15,
+            "trust": 4
+          }
+        },
+        {
+          "id": "mobilize",
+          "title": {
+            "ru": "Организовать поиск утечки",
+            "en": "Find and isolate the leak",
+            "zh": "定位并隔离漏点"
+          },
+          "cost": {
+            "wallet": 85
+          },
+          "effects": {
+            "water": 6,
+            "reputation": 6
+          }
+        }
+      ],
+      "expire_effects": {
+        "water": -12,
+        "stability": -3
+      }
+    },
+    {
+      "id": "small_firms",
+      "site": "market",
+      "district": "housing",
+      "min_turn": 7,
+      "title": {
+        "ru": "Предпринимателям нечем платить аренду",
+        "en": "Small business cash crunch",
+        "zh": "小企业资金紧张"
+      },
+      "description": {
+        "ru": "Мастерские рискуют закрыться. Нужна поддержка или реструктуризация.",
+        "en": "Workshops risk closure and are seeking a support plan.",
+        "zh": "多家作坊面临倒闭风险，急需支持方案。"
+      },
+      "options": [
+        {
+          "id": "invest",
+          "title": {
+            "ru": "Фонд малому бизнесу",
+            "en": "Create microgrant fund",
+            "zh": "设立小企业补助"
+          },
+          "cost": {
+            "treasury": 175
+          },
+          "effects": {
+            "trust": 6,
+            "unemployment": -4
+          }
+        },
+        {
+          "id": "mobilize",
+          "title": {
+            "ru": "Организовать консультации",
+            "en": "Offer business advice",
+            "zh": "提供经营咨询"
+          },
+          "cost": {
+            "wallet": 65
+          },
+          "effects": {
+            "reputation": 7,
+            "unemployment": -2
+          }
+        }
+      ],
+      "expire_effects": {
+        "unemployment": 7,
+        "trust": -4
+      }
+    },
+    {
+      "id": "weather_damage",
+      "site": "power",
+      "district": "aqueduct",
+      "min_turn": 8,
+      "title": {
+        "ru": "Ураган повредил подстанцию",
+        "en": "Storm-damaged substation",
+        "zh": "风暴损坏变电站"
+      },
+      "description": {
+        "ru": "Сильный ветер повредил оборудование станции.",
+        "en": "High winds have damaged key electrical equipment.",
+        "zh": "强风损坏了电力设备。"
+      },
+      "options": [
+        {
+          "id": "invest",
+          "title": {
+            "ru": "Купить резервные детали",
+            "en": "Buy replacement parts",
+            "zh": "采购替换零件"
+          },
+          "cost": {
+            "treasury": 225,
+            "materials": 7
+          },
+          "effects": {
+            "energy": 13,
+            "stability": 3
+          }
+        },
+        {
+          "id": "mobilize",
+          "title": {
+            "ru": "Привлечь частных инженеров",
+            "en": "Hire freelance engineers",
+            "zh": "聘请私人工程师"
+          },
+          "cost": {
+            "wallet": 110
+          },
+          "effects": {
+            "energy": 6,
+            "reputation": 7
+          }
+        }
+      ],
+      "expire_effects": {
+        "energy": -12,
+        "stability": -4
+      }
+    },
+    {
+      "id": "community_festival",
+      "site": "cityhall",
+      "district": "forum",
+      "min_turn": 8,
+      "title": {
+        "ru": "Горожане планируют фестиваль",
+        "en": "Neighborhood celebration",
+        "zh": "居民筹办节日"
+      },
+      "description": {
+        "ru": "Организаторы хотят безопасный праздник для всех районов.",
+        "en": "Organizers want a safe celebration for the entire city.",
+        "zh": "组织者希望为全城举办安全的庆祝活动。"
+      },
+      "options": [
+        {
+          "id": "invest",
+          "title": {
+            "ru": "Поддержать фестиваль",
+            "en": "Sponsor the festival",
+            "zh": "赞助节日"
+          },
+          "cost": {
+            "treasury": 140,
+            "goods": 4
+          },
+          "effects": {
+            "trust": 8,
+            "stability": 3
+          }
+        },
+        {
+          "id": "mobilize",
+          "title": {
+            "ru": "Помочь организаторам лично",
+            "en": "Volunteer with organizers",
+            "zh": "志愿协助筹备"
+          },
+          "cost": {
+            "wallet": 60
+          },
+          "effects": {
+            "reputation": 9,
+            "trust": 4
+          }
+        }
+      ],
+      "expire_effects": {
+        "trust": -3
+      }
+    }
+  ]
+}

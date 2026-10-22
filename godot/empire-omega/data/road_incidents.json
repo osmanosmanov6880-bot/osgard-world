@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "grid": {"size": 9, "spacing": 52.0, "minimum": -208.0},
+  "repairs": {"treasury": 120, "materials": 6, "actions": 1},
+  "incidents": [
+    {"id":"north_canal","a":[3,1],"b":[4,1],"ru":"Северный канал","en":"North Canal","zh":"北运河"},
+    {"id":"freight_ramp","a":[2,5],"b":[3,5],"ru":"Грузовая развязка","en":"Freight Junction","zh":"货运枢纽"},
+    {"id":"waterfront","a":[5,6],"b":[6,6],"ru":"Набережная","en":"Waterfront","zh":"滨水大道"},
+    {"id":"forum_cross","a":[3,3],"b":[4,3],"ru":"Форумский перекрёсток","en":"Forum Crossing","zh":"广场路口"},
+    {"id":"market_gate","a":[6,2],"b":[6,3],"ru":"Рыночные ворота","en":"Market Gate","zh":"市场大门"},
+    {"id":"southern_arc","a":[4,7],"b":[5,7],"ru":"Южная дуга","en":"Southern Arc","zh":"南环路"},
+    {"id":"aqueduct_link","a":[5,4],"b":[5,5],"ru":"Акведук","en":"Aqueduct Link","zh":"渡槽连接路"},
+    {"id":"northern_ring","a":[1,2],"b":[1,3],"ru":"Северное кольцо","en":"Northern Ring","zh":"北环线"},
+    {"id":"residential","a":[6,1],"b":[7,1],"ru":"Жилой бульвар","en":"Residential Boulevard","zh":"住宅大道"},
+    {"id":"industrial","a":[2,6],"b":[2,7],"ru":"Промышленная улица","en":"Industrial Road","zh":"工业街"},
+    {"id":"river_cross","a":[4,4],"b":[4,5],"ru":"Речной мост","en":"River Bridge","zh":"河桥"},
+    {"id":"west_hall","a":[1,4],"b":[2,4],"ru":"Западная площадь","en":"Western Square","zh":"西广场"}
+  ]
+}

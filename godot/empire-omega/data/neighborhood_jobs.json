@@ -1,0 +1,269 @@
+{
+  "schema": 1,
+  "jobs": [
+    {
+      "id": "forum_medicine",
+      "district": "forum",
+      "pickup": "market",
+      "dropoff": "cityhall",
+      "supply_cost": 32,
+      "reward": 136,
+      "min_drive": 80,
+      "due_turns": 2,
+      "effect": "stability",
+      "impact": 2,
+      "title": {
+        "ru": "Лекарства для приёмной",
+        "en": "Medicine for the reception",
+        "zh": "接待处药品"
+      },
+      "description": {
+        "ru": "Пациенты ожидают поставку аптечных товаров.",
+        "en": "Patients are waiting for essential medical supplies.",
+        "zh": "患者正在等待必需药品。"
+      }
+    },
+    {
+      "id": "forum_documents",
+      "district": "forum",
+      "pickup": "depot",
+      "dropoff": "cityhall",
+      "supply_cost": 36,
+      "reward": 144,
+      "min_drive": 80,
+      "due_turns": 2,
+      "effect": "science",
+      "impact": 3,
+      "title": {
+        "ru": "Архивные документы",
+        "en": "Archive transfer",
+        "zh": "档案运送"
+      },
+      "description": {
+        "ru": "Передайте документы для городского архива.",
+        "en": "Transport documents to the city archive.",
+        "zh": "将文件运至城市档案馆。"
+      }
+    },
+    {
+      "id": "forum_food",
+      "district": "forum",
+      "pickup": "market",
+      "dropoff": "cityhall",
+      "supply_cost": 29,
+      "reward": 123,
+      "min_drive": 80,
+      "due_turns": 2,
+      "effect": "food",
+      "impact": 2,
+      "title": {
+        "ru": "Продукты для столовой",
+        "en": "Canteen supplies",
+        "zh": "食堂物资"
+      },
+      "description": {
+        "ru": "Городской столовой не хватает продуктов.",
+        "en": "The civic canteen needs additional food.",
+        "zh": "市民食堂需要更多食物。"
+      }
+    },
+    {
+      "id": "housing_food",
+      "district": "housing",
+      "pickup": "depot",
+      "dropoff": "market",
+      "supply_cost": 26,
+      "reward": 112,
+      "min_drive": 80,
+      "due_turns": 2,
+      "effect": "food",
+      "impact": 3,
+      "title": {
+        "ru": "Запасы для семей",
+        "en": "Family provisions",
+        "zh": "家庭补给"
+      },
+      "description": {
+        "ru": "Семьи просят доставить свежие запасы.",
+        "en": "Families need fresh provisions delivered.",
+        "zh": "家庭需要配送新鲜补给。"
+      }
+    },
+    {
+      "id": "housing_books",
+      "district": "housing",
+      "pickup": "cityhall",
+      "dropoff": "market",
+      "supply_cost": 22,
+      "reward": 121,
+      "min_drive": 80,
+      "due_turns": 2,
+      "effect": "science",
+      "impact": 3,
+      "title": {
+        "ru": "Книги для кружка",
+        "en": "Community books",
+        "zh": "社区图书"
+      },
+      "description": {
+        "ru": "Детский кружок ждёт учебные материалы.",
+        "en": "A community class awaits learning materials.",
+        "zh": "社区课堂正在等待学习材料。"
+      }
+    },
+    {
+      "id": "housing_repairs",
+      "district": "housing",
+      "pickup": "power",
+      "dropoff": "market",
+      "supply_cost": 38,
+      "reward": 165,
+      "min_drive": 80,
+      "due_turns": 2,
+      "effect": "stability",
+      "impact": 3,
+      "title": {
+        "ru": "Материалы для домов",
+        "en": "Residential repairs",
+        "zh": "住宅维修"
+      },
+      "description": {
+        "ru": "Для ремонта жилья нужны запчасти.",
+        "en": "Housing repairs need replacement parts.",
+        "zh": "住房维修需要备件。"
+      }
+    },
+    {
+      "id": "lower_tools",
+      "district": "lower",
+      "pickup": "market",
+      "dropoff": "depot",
+      "supply_cost": 43,
+      "reward": 176,
+      "min_drive": 80,
+      "due_turns": 2,
+      "effect": "unemployment",
+      "impact": -2,
+      "title": {
+        "ru": "Инструменты для рабочих",
+        "en": "Tools for workers",
+        "zh": "工人工具"
+      },
+      "description": {
+        "ru": "Мастерская просит срочно доставить инструмент.",
+        "en": "A workshop needs tools delivered urgently.",
+        "zh": "工坊急需运送工具。"
+      }
+    },
+    {
+      "id": "lower_spares",
+      "district": "lower",
+      "pickup": "power",
+      "dropoff": "depot",
+      "supply_cost": 45,
+      "reward": 184,
+      "min_drive": 80,
+      "due_turns": 2,
+      "effect": "road_quality",
+      "impact": 3,
+      "title": {
+        "ru": "Запчасти для транспорта",
+        "en": "Transport spares",
+        "zh": "车辆备件"
+      },
+      "description": {
+        "ru": "В автопарке закончились запасные части.",
+        "en": "The fleet is running low on spare parts.",
+        "zh": "车队备件不足。"
+      }
+    },
+    {
+      "id": "lower_food",
+      "district": "lower",
+      "pickup": "market",
+      "dropoff": "depot",
+      "supply_cost": 27,
+      "reward": 118,
+      "min_drive": 80,
+      "due_turns": 2,
+      "effect": "food",
+      "impact": 2,
+      "title": {
+        "ru": "Обед для смены",
+        "en": "Meals for the shift",
+        "zh": "值班餐食"
+      },
+      "description": {
+        "ru": "Смена на терминале осталась без питания.",
+        "en": "Depot crews need meals for their shift.",
+        "zh": "仓库工作人员需要餐食。"
+      }
+    },
+    {
+      "id": "aqueduct_filters",
+      "district": "aqueduct",
+      "pickup": "depot",
+      "dropoff": "power",
+      "supply_cost": 42,
+      "reward": 176,
+      "min_drive": 80,
+      "due_turns": 2,
+      "effect": "water",
+      "impact": 4,
+      "title": {
+        "ru": "Фильтры для водоканала",
+        "en": "Water filters",
+        "zh": "水处理滤芯"
+      },
+      "description": {
+        "ru": "Водоканал просит новые фильтры.",
+        "en": "The waterworks need replacement filters.",
+        "zh": "水厂需要更换滤芯。"
+      }
+    },
+    {
+      "id": "aqueduct_components",
+      "district": "aqueduct",
+      "pickup": "market",
+      "dropoff": "power",
+      "supply_cost": 48,
+      "reward": 188,
+      "min_drive": 80,
+      "due_turns": 2,
+      "effect": "energy",
+      "impact": 4,
+      "title": {
+        "ru": "Детали для подстанции",
+        "en": "Substation parts",
+        "zh": "变电站零件"
+      },
+      "description": {
+        "ru": "Подстанции нужны комплектующие.",
+        "en": "The power substation needs replacement components.",
+        "zh": "变电站需要更换部件。"
+      }
+    },
+    {
+      "id": "aqueduct_cables",
+      "district": "aqueduct",
+      "pickup": "cityhall",
+      "dropoff": "power",
+      "supply_cost": 35,
+      "reward": 153,
+      "min_drive": 80,
+      "due_turns": 2,
+      "effect": "energy",
+      "impact": 3,
+      "title": {
+        "ru": "Кабели энергосети",
+        "en": "Power grid cables",
+        "zh": "电网电缆"
+      },
+      "description": {
+        "ru": "Бригада ждёт новые кабели для ремонта.",
+        "en": "Crews need power cables for repairs.",
+        "zh": "维修人员需要新的电力电缆。"
+      }
+    }
+  ]
+}

@@ -1,0 +1,161 @@
+{
+  "version": 1,
+  "requests": [
+    {
+      "id": "medic_transfer",
+      "destination": "market",
+      "reward": 420,
+      "effect": "stability",
+      "impact": 5,
+      "duration": 2,
+      "title": {
+        "ru": "\u041f\u0435\u0440\u0435\u0432\u0435\u0437\u0442\u0438 \u0432\u0440\u0430\u0447\u0435\u0439 \u043d\u0430 \u0440\u044b\u043d\u043e\u043a",
+        "en": "Transport doctors to market",
+        "zh": "\u9001\u533b\u751f\u524d\u5f80\u5e02\u573a"
+      }
+    },
+    {
+      "id": "generator_repair",
+      "destination": "power",
+      "reward": 540,
+      "effect": "energy",
+      "impact": 9,
+      "duration": 2,
+      "title": {
+        "ru": "\u0410\u0432\u0430\u0440\u0438\u0439\u043d\u0430\u044f \u0431\u0440\u0438\u0433\u0430\u0434\u0430 \u043d\u0430 \u0441\u0442\u0430\u043d\u0446\u0438\u044e",
+        "en": "Deliver the power repair team",
+        "zh": "\u9001\u7ef4\u4fee\u961f\u5230\u7535\u7ad9"
+      }
+    },
+    {
+      "id": "depot_food",
+      "destination": "depot",
+      "reward": 480,
+      "effect": "food",
+      "impact": 8,
+      "duration": 2,
+      "title": {
+        "ru": "\u0421\u043d\u0430\u0431\u0436\u0435\u043d\u0438\u0435 \u0433\u043e\u0440\u043e\u0434\u0441\u043a\u043e\u0433\u043e \u0441\u043a\u043b\u0430\u0434\u0430",
+        "en": "Emergency depot supplies",
+        "zh": "\u7d27\u6025\u8865\u5145\u4ed3\u5e93"
+      }
+    },
+    {
+      "id": "river_pumps",
+      "destination": "power",
+      "reward": 540,
+      "effect": "water",
+      "impact": 7,
+      "duration": 2,
+      "title": {
+        "ru": "\u041f\u043e\u043c\u043e\u0449\u044c \u043d\u0430\u0441\u043e\u0441\u043d\u043e\u0439 \u0441\u0442\u0430\u043d\u0446\u0438\u0438",
+        "en": "Restore water pumping",
+        "zh": "\u6062\u590d\u4f9b\u6c34\u6cf5\u7ad9"
+      }
+    },
+    {
+      "id": "public_transport",
+      "destination": "market",
+      "reward": 385,
+      "effect": "trust",
+      "impact": 4,
+      "duration": 2,
+      "title": {
+        "ru": "\u041f\u043e\u043c\u043e\u0447\u044c \u0441 \u0442\u0440\u0430\u043d\u0441\u043f\u043e\u0440\u0442\u043e\u043c \u0436\u0438\u0442\u0435\u043b\u044f\u043c",
+        "en": "Support public transport",
+        "zh": "\u534f\u52a9\u5e02\u6c11\u51fa\u884c"
+      }
+    },
+    {
+      "id": "depot_engineers",
+      "destination": "depot",
+      "reward": 525,
+      "effect": "stability",
+      "impact": 6,
+      "duration": 2,
+      "title": {
+        "ru": "\u041f\u0435\u0440\u0435\u0432\u0435\u0437\u0442\u0438 \u0438\u043d\u0436\u0435\u043d\u0435\u0440\u043e\u0432 \u043d\u0430 \u0441\u043a\u043b\u0430\u0434",
+        "en": "Transport engineers to depot",
+        "zh": "\u8fd0\u9001\u5de5\u7a0b\u5e08\u5230\u4ed3\u5e93"
+      }
+    },
+    {
+      "id": "night_shift",
+      "destination": "power",
+      "reward": 465,
+      "effect": "energy",
+      "impact": 6,
+      "duration": 2,
+      "title": {
+        "ru": "\u041d\u043e\u0447\u043d\u0430\u044f \u0441\u043c\u0435\u043d\u0430 \u044d\u043d\u0435\u0440\u0433\u0435\u0442\u0438\u043a\u043e\u0432",
+        "en": "Night shift for power plant",
+        "zh": "\u8fd0\u9001\u7535\u7ad9\u591c\u73ed"
+      }
+    },
+    {
+      "id": "harvest_aid",
+      "destination": "depot",
+      "reward": 420,
+      "effect": "food",
+      "impact": 7,
+      "duration": 2,
+      "title": {
+        "ru": "\u041f\u043e\u043c\u043e\u0449\u044c \u0432 \u0434\u043e\u0441\u0442\u0430\u0432\u043a\u0435 \u0443\u0440\u043e\u0436\u0430\u044f",
+        "en": "Deliver harvest assistance",
+        "zh": "\u7d27\u6025\u9001\u8fbe\u6536\u83b7\u652f\u63f4"
+      }
+    },
+    {
+      "id": "clinic_equipment",
+      "destination": "market",
+      "reward": 430,
+      "effect": "stability",
+      "impact": 4,
+      "duration": 2,
+      "title": {
+        "ru": "\u041c\u0435\u0434\u0438\u0446\u0438\u043d\u0441\u043a\u043e\u0435 \u043e\u0431\u043e\u0440\u0443\u0434\u043e\u0432\u0430\u043d\u0438\u0435",
+        "en": "Deliver medical equipment",
+        "zh": "\u8fd0\u9001\u533b\u7597\u8bbe\u5907"
+      }
+    },
+    {
+      "id": "water_lab",
+      "destination": "power",
+      "reward": 510,
+      "effect": "water",
+      "impact": 8,
+      "duration": 2,
+      "title": {
+        "ru": "\u042d\u043a\u0441\u043f\u0435\u0440\u0442\u044b \u043f\u043e \u043e\u0447\u0438\u0441\u0442\u043a\u0435 \u0432\u043e\u0434\u044b",
+        "en": "Water purification specialists",
+        "zh": "\u6c34\u51c0\u5316\u4e13\u5bb6"
+      }
+    },
+    {
+      "id": "depot_safety",
+      "destination": "depot",
+      "reward": 405,
+      "effect": "trust",
+      "impact": 5,
+      "duration": 2,
+      "title": {
+        "ru": "\u041f\u0440\u043e\u0432\u0435\u0440\u043a\u0430 \u0431\u0435\u0437\u043e\u043f\u0430\u0441\u043d\u043e\u0441\u0442\u0438 \u0441\u043a\u043b\u0430\u0434\u0430",
+        "en": "Depot safety inspection",
+        "zh": "\u4ed3\u5e93\u5b89\u5168\u68c0\u67e5"
+      }
+    },
+    {
+      "id": "housing_support",
+      "destination": "market",
+      "reward": 390,
+      "effect": "trust",
+      "impact": 4,
+      "duration": 2,
+      "title": {
+        "ru": "\u041f\u043e\u043c\u043e\u0449\u044c \u0436\u0438\u043b\u043e\u043c\u0443 \u043a\u0432\u0430\u0440\u0442\u0430\u043b\u0443",
+        "en": "Support a housing district",
+        "zh": "\u652f\u63f4\u4f4f\u5b85\u533a"
+      }
+    }
+  ]
+}

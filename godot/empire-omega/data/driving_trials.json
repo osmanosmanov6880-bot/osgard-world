@@ -1,0 +1,193 @@
+{
+  "schema": 1,
+  "routes": [
+    {
+      "id": "forum_loop",
+      "title": {
+        "ru": "Учебный круг форума",
+        "en": "Forum beginner circuit",
+        "zh": "广场入门赛"
+      },
+      "checkpoints": [
+        [
+          -156,
+          -104
+        ],
+        [
+          -104,
+          -104
+        ],
+        [
+          -52,
+          -104
+        ],
+        [
+          -52,
+          -52
+        ]
+      ],
+      "limit_seconds": 185,
+      "reward": 360
+    },
+    {
+      "id": "north_avenue",
+      "title": {
+        "ru": "Северный проспект",
+        "en": "North avenue trial",
+        "zh": "北方大道赛"
+      },
+      "checkpoints": [
+        [
+          -104,
+          -156
+        ],
+        [
+          -52,
+          -156
+        ],
+        [
+          0,
+          -156
+        ],
+        [
+          0,
+          -104
+        ],
+        [
+          52,
+          -104
+        ]
+      ],
+      "limit_seconds": 215,
+      "reward": 450
+    },
+    {
+      "id": "residential",
+      "title": {
+        "ru": "Жилые кварталы",
+        "en": "Residential streets",
+        "zh": "住宅街道赛"
+      },
+      "checkpoints": [
+        [
+          52,
+          -104
+        ],
+        [
+          104,
+          -104
+        ],
+        [
+          156,
+          -104
+        ],
+        [
+          156,
+          -52
+        ],
+        [
+          104,
+          -52
+        ]
+      ],
+      "limit_seconds": 215,
+      "reward": 480
+    },
+    {
+      "id": "southern_depot",
+      "title": {
+        "ru": "К логистическому терминалу",
+        "en": "Southern depot run",
+        "zh": "南方仓库赛"
+      },
+      "checkpoints": [
+        [
+          -156,
+          52
+        ],
+        [
+          -104,
+          52
+        ],
+        [
+          -52,
+          52
+        ],
+        [
+          0,
+          52
+        ]
+      ],
+      "limit_seconds": 205,
+      "reward": 430
+    },
+    {
+      "id": "riverline",
+      "title": {
+        "ru": "Вдоль набережной",
+        "en": "Riverline circuit",
+        "zh": "滨河赛道"
+      },
+      "checkpoints": [
+        [
+          -104,
+          156
+        ],
+        [
+          -52,
+          156
+        ],
+        [
+          0,
+          156
+        ],
+        [
+          52,
+          156
+        ],
+        [
+          104,
+          156
+        ]
+      ],
+      "limit_seconds": 225,
+      "reward": 520
+    },
+    {
+      "id": "grand_tour",
+      "title": {
+        "ru": "Большой городской маршрут",
+        "en": "Grand city tour",
+        "zh": "城市全景赛"
+      },
+      "checkpoints": [
+        [
+          0,
+          0
+        ],
+        [
+          52,
+          0
+        ],
+        [
+          52,
+          52
+        ],
+        [
+          104,
+          52
+        ],
+        [
+          104,
+          104
+        ],
+        [
+          156,
+          104
+        ]
+      ],
+      "limit_seconds": 270,
+      "reward": 650
+    }
+  ]
+}
