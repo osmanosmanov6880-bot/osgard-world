@@ -2237,3 +2237,44 @@ test('INHERIT R14 keeps native history and inspector reachable with readable gam
   await expect(page.locator('.chronicle')).toBeHidden();
   expect(errors).toEqual([]);
 });
+
+
+test('INHERIT R15 World Alive chapter progress comes only from genuine placements',async({page})=>{
+ const errors=await prepareStandaloneGame(page);
+ await page.goto('/games/inherit/?lang=ru',{waitUntil:'domcontentloaded'});
+ const hub=page.locator('.world-alive-hub');
+ await expect(hub).toBeVisible();
+ await expect(page.locator('.world-alive-goal')).toHaveCount(3);
+ await expect(page.locator('.world-alive-metric')).toHaveCount(3);
+ await expect(page.locator('.world-alive-ocean')).toHaveCount(1);
+ await expect(page.locator('.world-alive-setting').last()).toHaveAttribute('aria-pressed','false');
+ const before=await page.evaluate(()=>window.InheritGame.snapshot());
+ const actual=await page.evaluate(()=>window.InheritWorldAliveUI.getState());
+ expect(actual.objects).toBe(before.objects.length);
+ expect(actual.connections).toBe(window.InheritLegacyEngine?.derive ? actual.connections : actual.connections);
+ await expect(page.locator('.world-alive-goal-action').first()).toBeEnabled();
+ await page.locator('.world-alive-goal-action').first().click();
+ expect(await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()))).toBe(JSON.stringify(before));
+ await page.locator('#world').focus();
+ await page.locator('#world').press('Enter');
+ await expect.poll(()=>page.evaluate(()=>window.InheritGame.snapshot().objects.length)).toBe(before.objects.length+1);
+ const after=await page.evaluate(()=>window.InheritGame.snapshot());
+ expect(after.budget).toBe(before.budget-1);
+ expect(after.pending.length).toBe(before.pending.length+1);
+ await expect(page.locator('.world-alive-metric').first()).toContainText(String(after.objects.length));
+ expect(await page.evaluate(()=>window.InheritWorldAliveUI.getState().completed)).toBeGreaterThanOrEqual(1);
+ expect(errors).toEqual([]);
+});
+
+test('INHERIT R15 never grants account editing rights or autoplay audio',async({page})=>{
+ const errors=await prepareStandaloneGame(page);
+ await page.goto('/games/inherit/?mode=account&lang=ru',{waitUntil:'domcontentloaded'});
+ await expect(page.locator('.world-alive-hub')).toBeVisible();
+ await expect(page.locator('.world-alive-goal-action').first()).toBeDisabled();
+ const before=await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()));
+ expect(await page.evaluate(()=>window.InheritWorldAliveUI.getSoundEnabled())).toBe(false);
+ await expect(page.locator('.world-alive-setting').last()).toHaveAttribute('aria-pressed','false');
+ await expect(page.locator('.world-alive-truth')).toContainText('художественные эффекты');
+ expect(await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()))).toBe(before);
+ expect(errors).toEqual([]);
+});
