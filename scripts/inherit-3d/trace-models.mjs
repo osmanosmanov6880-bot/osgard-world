@@ -1,5 +1,7 @@
 // INHERIT R16 — real three-dimensional models for ten native saved trace types.
 import * as THREE from 'three';
+import {makePremiumTrace,premiumAssetsInfo} from './premium-sculptures.mjs';
+export {premiumAssetsInfo};
 const bark=new THREE.MeshStandardMaterial({color:0x5a4230,roughness:.93});
 const darkBark=new THREE.MeshStandardMaterial({color:0x493a2d,roughness:.96});
 const leaf=new THREE.MeshStandardMaterial({color:0x5a8a5e,roughness:.95,metalness:0});
@@ -35,7 +37,8 @@ function bulb(g,y=2.6){
  const light=new THREE.PointLight(0xffd68a,1.8,10,2);
  light.position.set(0,y+.1,0);light.castShadow=false;g.add(light);return light;
 }
-export function makeTrace(tool,{size=1,cast=true}={}){
+export function makeTrace(tool,{size=1,cast=true,quality='low',seed=173,allowLight=false}={}){
+ if(quality==='high'||quality==='medium')return makePremiumTrace(tool,{size,cast,quality,seed,allowLight});
  const g=new THREE.Group();g.name='Trace '+tool;
  if(tool==='tree'){
   g.add(mesh(trunkGeo,bark,[0,1.25,0],[1,1,1]));
@@ -106,7 +109,7 @@ export function makeTrace(tool,{size=1,cast=true}={}){
  return g;
 }
 export function makeHeroTree(){
- const g=makeTrace('tree',{size:2.45});
+ const g=makeTrace('tree',{size:2.45,quality:'high',seed:173,cast:true});
  g.rotation.y=.3;return g;
 }
 export function disposeTraces(group){
