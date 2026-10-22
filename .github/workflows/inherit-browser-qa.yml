@@ -46,6 +46,8 @@ jobs:
             npx playwright install --with-deps --no-shell chromium
           fi
       - name: Verify all genuine INHERIT journeys on desktop and mobile
+        env:
+          OSGARD_ENABLE_SWIFTSHADER: "1"
         run: npx playwright test --config playwright.ecosystem.config.mjs --grep "INHERIT" --workers 2
       - name: Retain real interaction screenshots and traces
         if: always()
