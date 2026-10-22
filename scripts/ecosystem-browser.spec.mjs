@@ -2217,7 +2217,8 @@ test('INHERIT R14 keeps native history and inspector reachable with readable gam
   await page.goto('/games/inherit/?lang=ru',{waitUntil:'domcontentloaded'});
   await expect(page.locator('.living-journey')).toBeVisible();
   await expect(page.locator('.living-actions-strip .chronicle-button')).toBeVisible();
-  await expect(page.locator('.living-actions-strip .inherit-trace-launcher')).toBeVisible();
+  // Native launcher mounts in the visible guide-actions row on mobile, not in the header rail.
+  await expect(page.locator('.inherit-trace-launcher')).toBeVisible();
   await expect(page.locator('.living-library-toggle')).toBeVisible();
   await expect(page.locator('.hero h1')).toContainText('Кто-то проложил путь');
   const original=await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()));
