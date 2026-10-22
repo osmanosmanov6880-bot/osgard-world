@@ -5,6 +5,7 @@ import {createHash} from 'node:crypto';
 import {join} from 'node:path';
 const root='public/games/inherit';
 const items=['index.html','living-legacy.js','living-legacy.css','living-legacy-sprites.svg'];
+const extensions=['world-alive-engine.js','world-alive-ui.js','world-alive.css'];
 const origin=(process.env.OSGARD_BASE_URL||'https://osgard.world').replace(/\/+$/,'');
 const version=(process.env.GITHUB_SHA||'release').slice(0,12);
 const sha=b=>createHash('sha256').update(b).digest('hex');
@@ -25,7 +26,7 @@ async function verify(name){
       return;
     }catch(error){reason=error.message;console.error('ATTEMPT '+attempt+' '+name+': '+reason);if(attempt<4)await pause(3000)}
   }
-  throw Error('R14 public file validation failed: '+reason);
+  throw Error('R15 public file validation failed: '+reason);
 }
-for(const name of items)await verify(name);
+for(const name of [...items,...extensions])await verify(name);
 console.log('INHERIT Living Legacy: all original release files byte-identical on production.');
