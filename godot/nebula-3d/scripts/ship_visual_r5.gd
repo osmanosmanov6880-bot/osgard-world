@@ -134,6 +134,7 @@ func _poly(name: String, contour: Array[Vector2], bottom: float, top: float, mat
             _tri(st, a, c, b)
             _tri(st, a, d, c)
     st.generate_normals()
+    st.generate_tangents()
     var surface := MeshInstance3D.new()
     surface.name = name
     surface.mesh = st.commit()
