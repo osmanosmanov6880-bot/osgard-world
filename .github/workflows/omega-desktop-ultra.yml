@@ -1,0 +1,109 @@
+name: OSGARD Horizon ULTRA Windows Desktop Forward+
+on:
+  push:
+    branches: [master]
+    paths:
+      - '.github/workflows/omega-desktop-ultra.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  windows:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: true
+      - name: Generate original game audio and prepare independent high-end project
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 godot/empire-omega/tools/generate_audio.py
+          python3 godot/empire-omega/tools/generate_patrol_audio.py
+          mkdir -p "$RUNNER_TEMP/omega-ultra"
+          cp -a godot/empire-omega/. "$RUNNER_TEMP/omega-ultra/"
+          rm -rf "$RUNNER_TEMP/omega-ultra/.godot" "$RUNNER_TEMP/omega-ultra/.build-web"
+          python3 - <<'PY'
+          import os,pathlib
+          path=pathlib.Path(os.environ['RUNNER_TEMP'])/'omega-ultra/project.godot'
+          text=path.read_text()
+          needle='renderer/rendering_method="gl_compatibility"'
+          assert text.count(needle)==1
+          text=text.replace(needle,'renderer/rendering_method="forward_plus"')
+          text += '''
+          ; Dedicated high-end desktop path; never applied to the web build.
+          [rendering/renderer]
+          rendering_method.web="gl_compatibility"
+
+          [rendering/anti_aliasing/quality]
+          use_taa=true
+          use_debanding=true
+          '''
+          # Use standard Godot ProjectSettings names under the rendering section.
+          text=text.replace('''[rendering/renderer]
+          rendering_method.web="gl_compatibility"
+
+          [rendering/anti_aliasing/quality]
+          use_taa=true
+          use_debanding=true''','''[rendering]
+          renderer/rendering_method.web="gl_compatibility"
+          anti_aliasing/quality/use_taa=true
+          anti_aliasing/quality/use_debanding=true''')
+          # Merge the additional options into the existing [rendering] section:
+          # avoid duplicate [rendering] config sections in the final project.
+          base,extra=text.split('; Dedicated high-end desktop path; never applied to the web build.')
+          extras='renderer/rendering_method.web="gl_compatibility"\nanti_aliasing/quality/use_taa=true\nanti_aliasing/quality/use_debanding=true\n'
+          base=base.replace('[rendering]\n','[rendering]\n'+extras,1)
+          path.write_text(base)
+          assert 'renderer/rendering_method="forward_plus"' in base
+          assert 'renderer/rendering_method.web="gl_compatibility"' in base
+          print('ULTRA renderer prepared: desktop Forward+, Web compatibility')
+          PY
+      - name: Import high-end Godot 4.4.1 project
+        shell: bash
+        run: |
+          set -euo pipefail
+          godot --headless --editor --path "$RUNNER_TEMP/omega-ultra" --import --quit
+      - name: Build signed-independent Windows x64 executable
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p desktop_release
+          godot --headless --path "$RUNNER_TEMP/omega-ultra" --export-release "Windows Desktop" \
+            "$GITHUB_WORKSPACE/desktop_release/OSGARD_EMPIRE_OMEGA_HORIZON_ULTRA.exe"
+          test -s desktop_release/OSGARD_EMPIRE_OMEGA_HORIZON_ULTRA.exe
+          test -s desktop_release/OSGARD_EMPIRE_OMEGA_HORIZON_ULTRA.pck
+          file desktop_release/OSGARD_EMPIRE_OMEGA_HORIZON_ULTRA.exe
+          (cd desktop_release && sha256sum OSGARD_EMPIRE_OMEGA_HORIZON_ULTRA.* > SHA256SUMS.txt)
+          cat > desktop_release/README_RU.txt <<'EOF'
+          OSGARD EMPIRE OMEGA - HORIZON ULTRA (Godot 4.4.1)
+
+          Windows x64 / Godot Forward+ renderer (Vulkan-capable desktop GPU).
+          Unpack EXE and PCK TO THE SAME FOLDER, then run the EXE.
+          Unsigned independent game build. If Windows SmartScreen warns, verify source.
+          Game controls: WASD, E vehicle, Space handbrake, F interact, H journal, Tab city.
+          This release improves original sports-car visuals and city scenery but does
+          NOT reproduce or include Forza Horizon 5 assets, code or AAA photorealism.
+          Lower-end/older PCs: use the OSGARD browser GL Compatibility version.
+          EOF
+          python3 - <<'PY'
+          import pathlib,zipfile
+          folder=pathlib.Path('desktop_release')
+          out=pathlib.Path('OSGARD_EMPIRE_OMEGA_HORIZON_ULTRA_WINDOWS.zip')
+          with zipfile.ZipFile(out,'w',zipfile.ZIP_DEFLATED,compresslevel=6) as z:
+              for file in folder.iterdir():
+                  if file.is_file():
+                      z.write(file,file.name)
+          assert zipfile.ZipFile(out).testzip() is None
+          print('Windows Ultra bundle:',out.stat().st_size,'bytes')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: OSGARD-HORIZON-ULTRA-Windows-x64
+          path: OSGARD_EMPIRE_OMEGA_HORIZON_ULTRA_WINDOWS.zip
+          if-no-files-found: error
+          retention-days: 10
