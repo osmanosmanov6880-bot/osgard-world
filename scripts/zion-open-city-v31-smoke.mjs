@@ -73,7 +73,8 @@ function make(config){
   assert.equal(puddles.visible,true)
   kit.syncEnvironment({raining:false,dayMode:2})
   assert.equal(puddles.visible,false)
-  assert.ok(car.children[0].children.length>10)
+  assert.ok(car.children[0].children.length>=5,'Visible car uses batched material groups')
+  assert.ok(stats.vehicleBatches<=14,'Body and wheel detail must remain GPU-instanced')
   kit.dispose()
   assert.equal(scene.children.length,0)
   return {...stats}
