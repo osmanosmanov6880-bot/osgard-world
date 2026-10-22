@@ -116,7 +116,7 @@ assert.ok(home.includes('labFeedback') && home.includes('Score each criterion fr
 assert.ok(styles.includes('.academy-lab-difficulty') && styles.includes('.academy-lab-rubric'), 'Difficulty and rubric controls must be styled')
 assert.ok(styles.includes('.academy-lab-panel') && styles.includes('@media(max-width:760px)'), 'Practical lab must have responsive layout styling')
 assert.ok(home.includes('/osa-cinema?scene=') && cinema.includes("new URLSearchParams(window.location.search).get('scene')"), 'Lesson cards must deep-link to their corresponding course scene')
-assert.ok(home.includes('lessonPractice') && home.includes('/?project=${project}#project-studio'), 'Each lesson must offer a direct link to a mapped practical project')
+assert.ok(home.includes('lessonPractice') && home.includes('/academy?project=${project}#project-studio'), 'Each lesson must offer a direct link to a mapped practical project')
 assert.ok(home.includes("sceneIndex === 5 ? 'privacy' : sceneIndex === 3 || sceneIndex === 4 ? 'evidence' : 'decision'"), 'Lessons must map to the matching privacy, evidence or decision project')
 assert.ok(studio.includes("new URLSearchParams(window.location.search).get('project')") && studio.includes("['evidence','privacy','decision'].includes(requested)"), 'Project studio must open a requested project safely from a lesson link')
 assert.ok(studio.includes("has('project')") && studio.includes("scrollIntoView({behavior:'auto',block:'start'})"), 'Opening a mapped project must scroll the learner to the project workspace')
