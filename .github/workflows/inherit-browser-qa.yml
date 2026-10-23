@@ -9,6 +9,8 @@ on:
       - "scripts/inherit-r18-performance-smoke.mjs"
       - "scripts/inherit-r19-microbiome-smoke.mjs"
       - "scripts/inherit-r19-device-acceptance-smoke.mjs"
+      - "scripts/inherit-r21-surf-smoke.mjs"
+      - "scripts/inherit-r22-geology-smoke.mjs"
       - "scripts/inherit-r20-smoke.mjs"
       - "scripts/inherit-device-acceptance.mjs"
       - "scripts/build-inherit-3d.mjs"
