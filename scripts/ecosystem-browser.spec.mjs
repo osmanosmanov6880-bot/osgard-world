@@ -2331,7 +2331,7 @@ test('INHERIT R15 mobile action rail stays tappable without a viewport-fixed ove
 
 test('INHERIT R16 genuine Three.js island renders the original saved world without changing its rules',async({page},info)=>{
  const errors=await prepareStandaloneGame(page);
- await page.goto('/games/inherit/?lang=ru',{waitUntil:'domcontentloaded'});
+ await page.goto('/games/inherit/?lang=ru&render=3d',{waitUntil:'domcontentloaded'});
  const buttons=page.locator('.aaa3d-controls');
  await expect(buttons).toBeVisible();
  const canvas=page.locator('#island>.aaa3d-canvas');
@@ -2426,7 +2426,7 @@ test('INHERIT R16 gracefully falls back to fully interactive 2D when GPU context
 
 test('INHERIT R16 3D Atlas replay shows real past traces and restores current state unchanged',async({page})=>{
  const errors=await prepareStandaloneGame(page);
- await page.goto('/games/inherit/?lang=ru',{waitUntil:'domcontentloaded'});
+ await page.goto('/games/inherit/?lang=ru&render=3d',{waitUntil:'domcontentloaded'});
  const before=await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()));
  const initial=await page.evaluate(()=>window.InheritAAA3D.getState());
  if(initial.available){
@@ -2513,7 +2513,7 @@ test('INHERIT R17 renders physical materials, living atmosphere, cinematic FX an
  test.setTimeout(85000);
  const errors=await prepareStandaloneGame(page);
  await page.emulateMedia({reducedMotion:'no-preference'});
- await page.goto('/games/inherit/?lang=ru',{waitUntil:'domcontentloaded'});
+ await page.goto('/games/inherit/?lang=ru&render=3d',{waitUntil:'domcontentloaded'});
  const api=page.evaluate(()=>window.InheritAAA3D.getState());
  const before=JSON.stringify(await page.evaluate(()=>window.InheritGame.snapshot()));
  await page.locator('#island').scrollIntoViewIfNeeded();
@@ -2564,7 +2564,7 @@ test('INHERIT R17 renders physical materials, living atmosphere, cinematic FX an
 test('INHERIT R18 opt-in on-device benchmark measures actual frame intervals without mutating saves',async({page},info)=>{
  const errors=await prepareStandaloneGame(page);
  await page.emulateMedia({reducedMotion:'no-preference'});
- await page.goto('/games/inherit/?lang=ru',{waitUntil:'domcontentloaded'});
+ await page.goto('/games/inherit/?lang=ru&render=3d',{waitUntil:'domcontentloaded'});
  const control=page.locator('.aaa3d-benchmark');
  const before=await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()));
  const state=await page.evaluate(()=>window.InheritAAA3D.getState());
@@ -2599,7 +2599,7 @@ test('INHERIT R18 opt-in on-device benchmark measures actual frame intervals wit
 test('INHERIT R19 renders real instanced shoreline detail and responds to fictional seasons without writes',async({page})=>{
  const errors=await prepareStandaloneGame(page);
  await page.emulateMedia({reducedMotion:'no-preference'});
- await page.goto('/games/inherit/?lang=ru',{waitUntil:'domcontentloaded'});
+ await page.goto('/games/inherit/?lang=ru&render=3d',{waitUntil:'domcontentloaded'});
  const initial=await page.evaluate(()=>window.InheritAAA3D.getState());
  const snapshot=await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()));
  if(!initial.available){
