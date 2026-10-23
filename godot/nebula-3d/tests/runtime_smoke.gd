@@ -62,8 +62,8 @@ func _run() -> void:
     if not check(detail != null, "R5 city dressing pass missing"):return
     if not check(detail.instanced_parts > 8000, "R5 skyscraper and dock detailing not instantiated"):return
     if not check(detail.landmark_count == 6, "Expected six signature R5 citadels"):return
-    if not check(detail.original_batch_groups == 8 and
-        detail.sharded_groups >= 40 and detail.per_sector_batch_count() >= 40,
+    if not check(detail.original_batch_groups == 16 and
+        detail.sharded_groups >= 80 and detail.per_sector_batch_count() >= 80,
         "R18 distant R5 facades still drawn as world-wide GPU batches"):return
     if not check(detail.drawn_instances == detail.instanced_parts and
         detail.district_roots.size() == 6,
