@@ -202,7 +202,8 @@ func _run() -> void:
     if not check(monitor_r11 != null and
         monitor_r11.get_node_or_null("R11_HardwarePerformancePanel") != null,
         "R11 live hardware profiler panel missing"):return
-    if not check(monitor_r11._percentile([10.0, 20.0, 30.0, 40.0], 0.95) == 40.0,
+    var percentile_test: Array[float] = [10.0, 20.0, 30.0, 40.0]
+    if not check(monitor_r11._percentile(percentile_test, 0.95) == 40.0,
         "R11 95th percentile calculation failed"):return
     if not check(not monitor_r11.benchmarking and monitor_r11.last_report.is_empty(),
         "R11 performance telemetry is incorrectly fabricated at startup"):return
