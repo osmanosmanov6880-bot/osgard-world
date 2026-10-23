@@ -14,6 +14,9 @@ const CapitalFleetR7Script = preload("res://scripts/capital_fleet_r7.gd")
 const OrbitalIndustryR9Script = preload("res://scripts/orbital_industry_r9.gd")
 const AegisMegadockR10Script = preload("res://scripts/aegis_megadock_r10.gd")
 const CityCladdingR10Script = preload("res://scripts/city_cladding_r10.gd")
+const IndustrialEnvironmentR11Script = preload("res://scripts/industrial_environment_r11.gd")
+const CinematicPostR11Script = preload("res://scripts/cinematic_post_r11.gd")
+const PerformanceLabR11Script = preload("res://scripts/performance_lab_r11.gd")
 const SAVE_PATH = "user://nebula_3d_save.json"
 const SECTOR_COLORS = [Color(0.10,0.68,0.97), Color(0.64,0.35,1.0), Color(0.98,0.73,0.40), Color(1.0,0.46,0.34), Color(0.87,0.27,0.88), Color(0.24,0.92,0.88)]
 const SECTOR_NAMES = ["ПОРТ АВРОРА","НЕОНОВЫЙ КВАРТАЛ","ЦИТАДЕЛЬ","ЧЁРНЫЙ РЫНОК","РАЗЛОМ","НЕКСУС"]
@@ -59,6 +62,9 @@ var hud_panel: PanelContainer
 var hud_canvas: CanvasLayer
 var aegis_r10
 var city_cladding_r10
+var industrial_r11
+var cinematic_post_r11
+var performance_lab_r11
 var graphics_quality: int = 0
 
 func _ready() -> void:
@@ -68,6 +74,12 @@ func _ready() -> void:
     _spawn_player()
     _spawn_civilians_and_pirates()
     _make_hud()
+    cinematic_post_r11 = CinematicPostR11Script.new()
+    cinematic_post_r11.name = "R11_CinematicPost"
+    add_child(cinematic_post_r11)
+    performance_lab_r11 = PerformanceLabR11Script.new()
+    performance_lab_r11.name = "R11_PerformanceLab"
+    add_child(performance_lab_r11)
     _load_progress()
     _start_mission()
     _show_notice("NEBULA ASCENSION · CINEMATIC 3D")
@@ -91,10 +103,19 @@ func _setup_environment() -> void:
     env.ambient_light_energy = 0.46
     env.reflected_light_source = Environment.REFLECTION_SOURCE_BG
     env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
+    # Compatibility renderer supports subtle glow and post-tonemap grading.
+    # Never enable unsupported SSIL, SSR or volumetric fog.
+    env.glow_enabled = true
+    env.glow_bloom = 0.10
+    env.adjustment_enabled = true
+    env.adjustment_brightness = 0.99
+    env.adjustment_contrast = 1.04
+    env.adjustment_saturation = 0.93
     env.fog_enabled = true
     env.fog_light_color = Color(0.11,0.18,0.26)
     env.fog_density = 0.00044
     node.environment = env
+    node.name = "R11_CinematicWorldEnvironment"
     add_child(node)
     var sun := DirectionalLight3D.new()
     sun.name = "OrbitalSun"
@@ -231,6 +252,10 @@ func _build_city() -> void:
     city_cladding_r10.name = "R10_ArchitecturalCladding"
     add_child(city_cladding_r10)
     city_cladding_r10.build(tower_data, SECTOR_POSITIONS)
+    industrial_r11 = IndustrialEnvironmentR11Script.new()
+    industrial_r11.name = "R11_IndustrialHeroEnvironment"
+    add_child(industrial_r11)
+    industrial_r11.build(SECTOR_POSITIONS)
     _build_starfield()
 
 func _build_sector(center: Vector3, tint: Color, name: String, index: int) -> void:
@@ -343,7 +368,7 @@ func _make_hud() -> void:
     hud_status.add_theme_color_override("font_color",Color(0.86,0.95,1.0))
     stack.add_child(hud_status)
     hud_controls = Label.new()
-    hud_controls.text = "WASD — полёт    Q/E — высота    Shift — форсаж    Space — огонь    F3 — качество    F4 — HUD    F5 — сохранить"
+    hud_controls.text = "WASD полёт · Q/E высота · Shift форсаж · Space огонь · F3 графика · F6 FPS · F7 тест"
     hud_controls.add_theme_font_size_override("font_size",15)
     hud_controls.add_theme_color_override("font_color",Color(0.81,0.91,1.0))
     hud_controls.anchor_top=1.0
@@ -634,10 +659,20 @@ func _unhandled_key_input(event: InputEvent) -> void:
             _set_graphics_quality((graphics_quality+1)%3)
         elif event.keycode==KEY_F4:
             hud_canvas.visible = not hud_canvas.visible
+        elif event.keycode==KEY_F6:
+            performance_lab_r11.toggle_panel()
+        elif event.keycode==KEY_F7:
+            performance_lab_r11.start_benchmark()
+            _show_notice("ЗАМЕР FPS · 2 С ПРОГРЕВ + 20 С ТЕСТ")
+        elif event.keycode==KEY_F8:
+            cinematic_post_r11.toggle()
+            _show_notice("КИНОЭФФЕКТЫ · " + ("ВКЛ" if cinematic_post_r11.is_active() else "ВЫКЛ"))
+        elif event.keycode==KEY_F9:
+            performance_lab_r11.copy_report()
         elif event.keycode==KEY_1 or event.keycode==KEY_2 or event.keycode==KEY_3:
             _upgrade_docked(event.keycode-KEY_1)
         elif event.keycode==KEY_F1:
-            _show_notice("WASD ПОЛЁТ · Q/E ВЫСОТА · SHIFT ФОРСАЖ · SPACE ОГОНЬ")
+            _show_notice("WASD ПОЛЁТ · F3 ГРАФИКА · F4 HUD · F6 FPS · F7 ТЕСТ · F8 КИНО · F9 ОТЧЁТ")
 
 func _set_graphics_quality(mode: int) -> void:
     graphics_quality = clampi(mode, 0, 2)
@@ -645,6 +680,12 @@ func _set_graphics_quality(mode: int) -> void:
         aegis_r10.set_quality(graphics_quality)
     if is_instance_valid(city_cladding_r10):
         city_cladding_r10.set_quality(graphics_quality)
+    if is_instance_valid(industrial_r11):
+        industrial_r11.set_quality(graphics_quality)
+    if is_instance_valid(cinematic_post_r11):
+        cinematic_post_r11.set_quality(graphics_quality)
+    if is_instance_valid(performance_lab_r11):
+        performance_lab_r11.set_quality(graphics_quality)
     _show_notice("ГРАФИКА · " + ["МАКСИМУМ", "ВЫСОКАЯ", "ОПТИМИЗАЦИЯ"][graphics_quality])
 
 func _upgrade_docked(slot: int) -> void:
