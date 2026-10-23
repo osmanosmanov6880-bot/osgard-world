@@ -1,0 +1,71 @@
+name: OSGARD Omega payments — native and security gate (NO LIVE CHARGES)
+on:
+  pull_request:
+    paths:
+      - "supabase/**"
+      - "commerce/**"
+      - "godot/empire-omega/scripts/omega_*"
+      - "godot/empire-omega/scripts/main.gd"
+      - "godot/empire-omega/tests/v30_omega_store_security.gd"
+      - ".github/workflows/omega-stripe-commerce-security.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  payments-static-security:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify secure entitlements and no embedded credentials
+        run: python3 -m unittest discover -s commerce/tests -p "test_*.py" -v
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Typecheck actual serverless Checkout & signed webhook
+        run: |
+          deno check --config supabase/deno.json supabase/functions/osgard-store/index.ts
+          deno check --config supabase/deno.json supabase/functions/osgard-stripe-webhook/index.ts
+      - name: Zero payments or production deployment in CI
+        run: |
+          echo "SECURITY GATE ONLY. NO STRIPE KEYS, NO CHARGES, NO SUPABASE DEPLOY."
+  godot-native-shop:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: false
+      - name: Generate historical audio assets
+        run: |
+          python3 godot/empire-omega/tools/generate_audio.py
+          python3 godot/empire-omega/tools/generate_patrol_audio.py
+      - name: Import actual Godot project and checkout UI
+        shell: bash
+        run: |
+          set -euo pipefail
+          godot --headless --editor --path godot/empire-omega --import --quit 2>&1 | tee /tmp/omega-pay-import.log
+          if grep -Eq "SCRIPT ERROR:|Parse Error:|Failed to load script" /tmp/omega-pay-import.log; then
+            echo "::error::Store did not parse in the Godot engine"
+            exit 1
+          fi
+      - name: Check native checkout fails closed before merchant connection
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 45s godot --headless --path godot/empire-omega \
+            --script res://tests/v30_omega_store_security.gd 2>&1 | tee /tmp/omega-shop-native.log
+          grep -q "OMEGA STORE NATIVE" /tmp/omega-shop-native.log
+      - name: Confirm existing core driving game still starts
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 55s godot --headless --path godot/empire-omega --quit-after 70 \
+            2>&1 | tee /tmp/omega-paid-game-start.log
+          if grep -Eq "SCRIPT ERROR:|Parse Error:|Failed to load script" /tmp/omega-paid-game-start.log; then
+            echo "::error::A game regression was observed after mounting the shop"
+            exit 1
+          fi

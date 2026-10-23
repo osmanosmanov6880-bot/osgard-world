@@ -6,6 +6,7 @@ const WORLD_SCENE = preload("res://scripts/world_builder.gd")
 const PLAYER_SCENE = preload("res://scripts/player_controller.gd")
 const CAR_SCENE = preload("res://scripts/vehicle_controller.gd")
 const HUD_SCENE = preload("res://scripts/hud.gd")
+const REAL_MONEY_SHOP = preload("res://scripts/omega_real_money_shop.gd")
 const PEDESTRIAN_SCENE = preload("res://scripts/pedestrian_agent.gd")
 const TRAFFIC_SCENE = preload("res://scripts/traffic_agent.gd")
 const ROUTER = preload("res://scripts/street_router.gd")
@@ -34,6 +35,7 @@ var player
 var car
 var camera: Camera3D
 var hud
+var paid_store
 var cam_yaw := 0.32
 var cam_pitch := 0.38
 var mouse_sensitivity := 0.003
@@ -104,6 +106,10 @@ func _ready() -> void:
 	previous_vehicle_health = car.health
 	hud = HUD_SCENE.new()
 	add_child(hud)
+	# Optional Stripe-hosted cosmetic store; never touches game credits or saved career.
+	paid_store = REAL_MONEY_SHOP.new()
+	add_child(paid_store)
+	paid_store.bind_car(car)
 	world.update_language(GameState.locale)
 	_apply_weather()
 	hud.strategy_changed.connect(_on_strategy_changed)
@@ -423,6 +429,8 @@ func _physics_process(delta: float) -> void:
 			hud.announce(hud.t("autosave_failed"))
 
 func _input(event: InputEvent) -> void:
+	if paid_store != null and paid_store.is_open():
+		return
 	if hud == null or hud.is_pause_open() or hud.is_citizen_open() or hud.is_city_case_open():
 		return
 	if event is InputEventMouseMotion:

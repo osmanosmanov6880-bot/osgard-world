@@ -1,0 +1,9 @@
+# Keep this file in the repository. A Supabase project does not yet exist on the connected account.
+# Link this directory to a real project using Supabase CLI before deploying.
+project_id = "omega-game-store"
+
+[functions.osgard-store]
+verify_jwt = false
+
+[functions.osgard-stripe-webhook]
+verify_jwt = false
