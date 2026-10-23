@@ -42,7 +42,10 @@ Deno.serve(async (request) => {
       .select("sku,title,description,price_pence,currency,active,stripe_price_id").order("price_pence");
     if (error) return send(request, 503, { error: "Catalog unavailable" });
     // Never expose merchant's secret, internal Stripe account ID or sensitive customer info.
-    return send(request, 200, { items: (data ?? []).map(p => ({
+    return send(request, 200, { merchant_name: Deno.env.get("STORE_MERCHANT_LEGAL_NAME") || "",
+      terms_url: Deno.env.get("STORE_TERMS_URL") || "",
+      refund_url: Deno.env.get("STORE_REFUND_URL") || "",
+      items: (data ?? []).map(p => ({
       sku: p.sku, title: p.title, description: p.description, amount_pence: p.price_pence,
       currency: p.currency, purchasable: p.active === true && typeof p.stripe_price_id === "string"
     })) });
@@ -92,9 +95,13 @@ Deno.serve(async (request) => {
   const expectedAccount = Deno.env.get("MERCHANT_STRIPE_ACCOUNT_ID") || "";
   const successUrl = Deno.env.get("STORE_SUCCESS_URL") || "";
   const cancelUrl = Deno.env.get("STORE_CANCEL_URL") || "";
+  const legalName = Deno.env.get("STORE_MERCHANT_LEGAL_NAME") || "";
+  const termsUrl = Deno.env.get("STORE_TERMS_URL") || "";
+  const refundUrl = Deno.env.get("STORE_REFUND_URL") || "";
   if (!["live", "test"].includes(mode) || !key.startsWith(mode === "live" ? "sk_live_" : "sk_test_") ||
       !/^acct_[A-Za-z0-9]+$/.test(expectedAccount) ||
-      !successUrl.startsWith("https://") || !cancelUrl.startsWith("https://"))
+      !successUrl.startsWith("https://") || !cancelUrl.startsWith("https://") ||
+      legalName.trim().length < 3 || !termsUrl.startsWith("https://") || !refundUrl.startsWith("https://"))
     return send(request, 503, { error: "Merchant live activation incomplete" });
 
   try {
