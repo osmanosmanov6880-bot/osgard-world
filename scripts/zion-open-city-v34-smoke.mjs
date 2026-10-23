@@ -25,7 +25,8 @@ for(const anchor of ['gpuRenderMsP95','hardwareClassification','WEBGL_debug_rend
   'EXT_disjoint_timer_query_webgl2','renderFPS','benchmarkValid']){
   assert.ok(perf.includes(anchor),'Missing evidence field: '+anchor)
 }
-for(const anchor of ['uInvRes','vignette','bloom','setRenderTarget','WebGLRenderTarget']){
+for(const anchor of ['uInvRes','vignette','bloom','setRenderTarget','WebGLRenderTarget',
+  'rainCell','safeUv','uDay','filmGrade']){
   assert.ok(post.includes(anchor),'Missing postprocess feature: '+anchor)
 }
 execFileSync(process.execPath,['--check',path.resolve('scripts/zion-030-live-assets.mjs')],{stdio:'pipe'})
