@@ -153,6 +153,7 @@
       const original={map:material.map,normalMap:material.normalMap,
         roughnessMap:material.roughnessMap,normalScale:material.normalScale,
         roughness:material.roughness,metalness:material.metalness,
+        color:material.color?.clone?.(),
         envMapIntensity:material.envMapIntensity};
       const item={material,family,original};mapped.push(item);
       if(!materialByFamily.has(family))materialByFamily.set(family,[]);
@@ -190,6 +191,11 @@
           record.family==='asphalt'?.30:.42):old.normalScale;
         m.roughness=high?(raining?(record.family==='asphalt'?.47:.65):.94):old.roughness;
         m.envMapIntensity=high?record.family==='asphalt'?.74:1.05:old.envMapIntensity;
+        if(m.color&&old.color){
+          if(high&&record.family==='asphalt')m.color.setHex(0x667077);
+          else if(high&&record.family==='limestone'&&record.material===scene.children.find(x=>x.name==='ZION35 plaza surface')?.material)m.color.setHex(0xc7c0ac);
+          else m.color.copy(old.color);
+        }
       }
     }
     // Stream genuine photo-based CC0 material channels when available. These
@@ -397,6 +403,7 @@
         m.map=o.map;m.normalMap=o.normalMap;m.roughnessMap=o.roughnessMap;
         m.normalScale=o.normalScale;m.roughness=o.roughness;
         m.metalness=o.metalness;m.envMapIntensity=o.envMapIntensity;
+        if(o.color&&m.color)m.color.copy(o.color);
         m.needsUpdate=true;
       }
       if(keyLight&&oldLight.key){
