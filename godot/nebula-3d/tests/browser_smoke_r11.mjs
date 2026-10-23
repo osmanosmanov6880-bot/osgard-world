@@ -13,6 +13,39 @@ const browser = await chromium.launch({
     '--disable-features=Vulkan'
   ]
 });
+// Playwright's compositor screenshots may stall under software WebGL, even
+// when the Godot canvas exists. Fall back to direct canvas readback, but only
+// count a substantial PNG as a visual capture. Never mark a blank as a pass.
+async function captureWithFallback(page, destination, errors) {
+  try {
+    await page.screenshot({ path: destination, timeout: 18000, animations: 'disabled' });
+    if (fs.statSync(destination).size >= 12000) return 'compositor';
+    errors.push('Compositor screenshot was too small to confirm a rendered frame');
+  } catch (e) {
+    errors.push('Compositor screenshot unavailable: ' + String(e.message).slice(0, 180));
+  }
+  try {
+    const image = await Promise.race([
+      page.evaluate(() => {
+        const canvas = document.querySelector('canvas');
+        return canvas ? canvas.toDataURL('image/png') : '';
+      }),
+      new Promise(resolve => setTimeout(() => resolve(''), 14000))
+    ]);
+    if (image.startsWith('data:image/png;base64,')) {
+      const raw = Buffer.from(image.slice('data:image/png;base64,'.length), 'base64');
+      if (raw.length >= 12000) {
+        fs.writeFileSync(destination, raw);
+        return 'canvas-readback';
+      }
+      errors.push('Canvas readback was black/empty or too small (' + raw.length + ' bytes)');
+    }
+  } catch (e) {
+    errors.push('Canvas readback unavailable: ' + String(e.message).slice(0, 180));
+  }
+  return 'inconclusive';
+}
+
 const pages = [];
 const result = {
   schema: 'NEBULA_R11_HOSTED_BROWSER_QA',
@@ -50,17 +83,29 @@ try {
       };
     });
     const tag = vp.width + 'x' + vp.height;
-    await page.screenshot({ path: path.join(output, 'r11-' + tag + '-max.png') });
     if (!detail.webgl_available || detail.canvas_width < 300 || detail.canvas_height < 200) {
       throw new Error('Browser failed to initialize a usable WebGL canvas at ' + tag);
+    }
+    const screenshots = {};
+    screenshots.maximum = await captureWithFallback(
+      page, path.join(output, 'r11-' + tag + '-max.png'), errors);
+    if (screenshots.maximum === 'inconclusive') {
+      result.scenes.push({ viewport: tag, ...detail,
+        screenshot_status: screenshots, browser_console_errors: errors });
+      result.errors.push(...errors);
+      // Do not assert visual correctness or waste time testing 1080p when
+      // the hosted software renderer couldn't produce a single 720p frame.
+      throw new Error('Hosted SwiftShader cannot confirm visual frame at ' + tag);
     }
     await page.locator('canvas').first().click({ position: { x: 100, y: 100 } });
     await page.keyboard.press('F3');
     await page.waitForTimeout(1500);
-    await page.screenshot({ path: path.join(output, 'r11-' + tag + '-high.png') });
+    screenshots.high = await captureWithFallback(
+      page, path.join(output, 'r11-' + tag + '-high.png'), errors);
     await page.keyboard.press('F3');
     await page.waitForTimeout(1500);
-    await page.screenshot({ path: path.join(output, 'r11-' + tag + '-eco.png') });
+    screenshots.eco = await captureWithFallback(
+      page, path.join(output, 'r11-' + tag + '-eco.png'), errors);
     if (vp.width === 1280) {
       await page.keyboard.press('F3');
       await page.keyboard.press('F7');
@@ -73,13 +118,16 @@ try {
             'NEBULA_R11_BENCHMARK_JSON:'.length));
         } catch (e) { errors.push('Bench JSON parsing: ' + String(e)); }
       }
-      await page.screenshot({ path: path.join(output, 'r11-' + tag + '-profiler.png') });
+      screenshots.profiler = await captureWithFallback(page,
+        path.join(output, 'r11-' + tag + '-profiler.png'), errors);
     }
     result.scenes.push({
       viewport: tag, init_ms: Date.now() - started,
       ...detail,
       browser_console_errors: errors,
-      benchmark_event_reported: logs.length > 0
+      benchmark_event_reported: logs.length > 0,
+      screenshot_status: screenshots,
+      visual_capture_confirmed: Object.values(screenshots).every(x => x !== 'inconclusive')
     });
     result.errors.push(...errors);
   }
