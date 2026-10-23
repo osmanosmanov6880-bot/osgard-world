@@ -7,6 +7,7 @@
  */
 import {chromium} from '@playwright/test';
 import {spawn} from 'node:child_process';
+import {evaluateWebGLFrameEvidence,evaluateHardwareThroughput} from './inherit-benchmark-gate.mjs';
 import {writeFileSync,mkdirSync} from 'node:fs';
 import {setTimeout as sleep} from 'node:timers/promises';
 const args=new Set(process.argv.slice(2)),software=args.has('--swiftshader')||
@@ -96,6 +97,10 @@ try{
  for(const v of [{name:'desktop-1440x900',width:1440,height:900,dpr:1},
   {name:'mobile-390x844',width:390,height:844,dpr:1}])
    results.push(await profile(v));
+ for(const res of results){
+  res.webglGate=evaluateWebGLFrameEvidence(res);
+  res.hardwareGate=evaluateHardwareThroughput(res);
+ }
  const outputRecord={createdAt:new Date().toISOString(),base,chromeVersion:browser.version(),
   simulatedSoftwareGPU:software,requireGPU,results};
  mkdirSync(output.slice(0,output.lastIndexOf('/'))||'.',{recursive:true});
@@ -109,7 +114,8 @@ try{
    p95FrameIntervalMs:m.frameIntervalP95Ms,
    p95CpuSubmissionMs:m.cpuSubmissionP95Ms,
    drawCalls:m.renderer?.calls,triangles:m.renderer?.triangles,
-   postFX:res.telemetry.postFX,
+   postFX:res.telemetry.postFX,webglGate:res.webglGate.status,
+   hardwareGate:res.hardwareGate.status,
    tenSecondBenchmark:res.telemetry.hardwareBenchmark&&{
     fps:res.telemetry.hardwareBenchmark.averageFps,
     p95FrameMs:res.telemetry.hardwareBenchmark.frameP95Ms,
@@ -122,11 +128,10 @@ try{
  }
  console.log('Benchmark report:',output);
  if(results.some(v=>v.pageErrors.length))throw Error('Browser reported uncaught JS errors');
- if(requireWebGL&&results.some(v=>!v.telemetry.available||v.telemetry.after.samples<12||
-  !v.telemetry.hardwareBenchmark||v.telemetry.hardwareBenchmark.samples<45))
-  throw Error('Insufficient actual WebGL frames to validate 3D');
- if(requireGPU&&results.some(v=>v.evidence!=='hardware-identified'))
-  throw Error('Browser did not report a non-software GPU; independently verified hardware identity is unavailable');
+ if(requireWebGL&&results.some(v=>!v.webglGate.ok))
+  throw Error('Insufficient actual WebGL frame evidence (not an FPS target)');
+ if(requireGPU&&results.some(v=>!v.hardwareGate.ok))
+  throw Error('Hardware throughput gate failed: physical GPU not independently attested');
 }finally{
  await browser?.close();
  if(proc){proc.kill();await sleep(100);}
