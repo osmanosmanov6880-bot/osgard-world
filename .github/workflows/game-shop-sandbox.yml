@@ -1,0 +1,40 @@
+name: OSGARD game shop sandbox security
+on:
+  pull_request:
+    paths:
+      - 'server/core_game_store.py'
+      - 'server/core_server.py'
+      - 'scripts/game-shop-smoke.py'
+      - 'public/games/store/**'
+      - '.github/workflows/game-shop-sandbox.yml'
+  push:
+    branches: ['feat/osgard-game-shop-stripe-sandbox*']
+permissions:
+  contents: read
+jobs:
+  security-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate Python syntax
+        run: python3 -m py_compile server/core_game_store.py server/core_server.py scripts/game-shop-smoke.py
+      - name: Test prices, signature, paid state, refunds, idempotency
+        run: python3 scripts/game-shop-smoke.py -v
+      - name: Validate read-only UK merchant readiness preflight
+        run: |
+          python3 -m py_compile scripts/game-shop-live-preflight.py
+          python3 scripts/game-shop-live-preflight-smoke.py -v
+      - name: Assert no production activation
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          s=Path('server/core_game_store.py').read_text()
+          assert 'verify_webhook' in s
+          assert 'payment_status' in s
+          assert 'livemode' in s
+          assert 'ON CONFLICT' in s
+          assert 'OSGARD_GAME_SHOP_LIVE_APPROVED' in s
+          assert 'OSGARD_GAME_SHOP_WEBHOOK_SECRET' in s
+          assert 'game_shop_revoked_intents' in s
+          assert 'STRIPE_SECRET' not in Path('public/games/store/index.html').read_text()
+          PY

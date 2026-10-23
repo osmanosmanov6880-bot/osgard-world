@@ -26,6 +26,7 @@ import core_client_portal
 import core_teams
 import core_readiness
 import core_commerce
+import core_game_store
 import core_programs
 import core_inherit
 from core_model import Fault, require, text, initial, patch, action, economics, simulation, metrics, now, uid
@@ -59,9 +60,10 @@ class Store:
         Path(path).parent.mkdir(parents=True,exist_ok=True)
         with self.connect() as db:
             require(db.execute('PRAGMA user_version').fetchone()[0] in (0,1),'Версия базы новее этого сервера. Обновите Core.')
-            db.executescript(SCHEMA+core_learning.SCHEMA+core_pilot_reports.SCHEMA+core_account.SCHEMA+core_acceptance.SCHEMA+core_delivery.SCHEMA+core_client_portal.SCHEMA+core_teams.SCHEMA+core_commerce.SCHEMA+core_programs.SCHEMA)
+            db.executescript(SCHEMA+core_learning.SCHEMA+core_pilot_reports.SCHEMA+core_account.SCHEMA+core_acceptance.SCHEMA+core_delivery.SCHEMA+core_client_portal.SCHEMA+core_teams.SCHEMA+core_commerce.SCHEMA+core_game_store.SCHEMA+core_programs.SCHEMA)
             core_inherit.initialize(db)
         self.commerce=core_commerce.Commerce(self,commerce_config,commerce_provider)
+        self.game_shop=core_game_store.Shop(self)
         try:os.chmod(path,0o600)
         except OSError:pass
     @contextmanager
@@ -398,6 +400,8 @@ class Handler(SimpleHTTPRequestHandler):
             require(not origin or origin in self.server.allowed_origins,'Запрос с другого сайта запрещён.','origin',403)
             route=urlsplit(self.path).path.removeprefix('/api/core/').strip('/')
             if method=='GET' and route=='health':return self.output({'status':'ok','mode':'self-hosted-pilot','schemaVersion':1,'payments':self.server.store.commerce.config.enabled,'paymentMode':'live' if self.server.store.commerce.config.livemode else 'test','livePaymentTested':False,'ai':False})
+            if method=='GET' and route=='game-shop/catalog':return self.output({**core_game_store.catalog(),**self.server.store.game_shop.status()})
+            if method=='POST' and route=='game-shop/webhook':return self.output(self.server.store.game_shop.webhook(self.raw_json_body(),self.headers.get('Stripe-Signature')))
             if method=='POST' and route=='commerce/webhook':return self.output(self.server.store.commerce.webhook(self.raw_json_body(),self.headers.get('Stripe-Signature')))
             if method=='POST' and route in ('auth/register','auth/login','auth/recover','auth/password','auth/recovery/prepare'):
                 with self.server.rate_lock:
@@ -420,6 +424,8 @@ class Handler(SimpleHTTPRequestHandler):
                 payload=self.body();handlers={'auth/password':core_account.change_password,'auth/sessions/revoke':core_account.revoke,'auth/recovery/prepare':core_account.prepare_codes,'auth/recovery/activate':core_account.activate_codes}
                 if route=='auth/sessions/revoke-others':return self.output(core_account.revoke_others(self.server.store,actor['id'],auth[7:]))
                 return self.output(handlers[route](self.server.store,actor['id'],auth[7:],payload))
+            if method=='GET' and route=='game-shop/owned':return self.output(self.server.store.game_shop.owned(actor['id']))
+            if method=='POST' and route=='game-shop/checkout':return self.output(self.server.store.game_shop.checkout(actor['id'],self.body()))
             if method=='GET' and route=='auth/me':return self.output({'user':actor})
             if method=='POST' and route=='auth/logout':
                 with self.server.store.transaction() as db:db.execute('DELETE FROM sessions WHERE token_hash=?',(digest(auth[7:]),))
