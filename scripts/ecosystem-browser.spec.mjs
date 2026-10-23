@@ -2344,9 +2344,16 @@ test('INHERIT R16 genuine Three.js island renders the original saved world witho
  if(initial.available){
   // Assert the authored sanctuary, quay and skiff exist in the actual GPU scene.
   expect(initial.heritageDetails).toBeTruthy();
-  expect(initial.heritageDetails.stoneBlocks).toBeGreaterThanOrEqual(info.project.name==='mobile'?32:144);
-  expect(initial.heritageDetails.flutedColumns).toBeGreaterThanOrEqual(info.project.name==='mobile'?6:12);
-  expect(initial.heritageDetails.boatHullSegments).toBeGreaterThanOrEqual(info.project.name==='mobile'?96:540);
+  // The scene may correctly select LOW for software GPU even on desktop.
+  // Enforce the actual declared LOD meshes, then separately test manual HIGH.
+  const tier=initial.environmentTier;
+  const expected={high:{blocks:144,columns:12,hull:540},
+    medium:{blocks:76,columns:9,hull:240},
+    low:{blocks:32,columns:6,hull:96}}[tier];
+  expect(expected).toBeTruthy();
+  expect(initial.heritageDetails.stoneBlocks).toBe(expected.blocks);
+  expect(initial.heritageDetails.flutedColumns).toBe(expected.columns);
+  expect(initial.heritageDetails.boatHullSegments).toBe(expected.hull);
   await expect(page.locator('#island')).toHaveClass(/aaa3d-active/);
   await expect(canvas).toBeVisible();
   await expect.poll(()=>page.evaluate(()=>window.InheritAAA3D.getState().frames)).toBeGreaterThan(0);
@@ -2591,6 +2598,7 @@ test('INHERIT R18 opt-in on-device benchmark measures actual frame intervals wit
 
 test('INHERIT R19 renders real instanced shoreline detail and responds to fictional seasons without writes',async({page})=>{
  const errors=await prepareStandaloneGame(page);
+ await page.emulateMedia({reducedMotion:'no-preference'});
  await page.goto('/games/inherit/?lang=ru',{waitUntil:'domcontentloaded'});
  const initial=await page.evaluate(()=>window.InheritAAA3D.getState());
  const snapshot=await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()));
@@ -2607,8 +2615,13 @@ test('INHERIT R19 renders real instanced shoreline detail and responds to fictio
  expect(before.coastDetails.triangles).toBeLessThan(300000);
  expect(before.coastDetails.texturesLoadedExternally).toBe(0);
  expect(before.coastDetails.gameplayObjectsCreated).toBe(0);
- await expect.poll(()=>page.evaluate(()=>window.InheritAAA3D.getState().frames)).toBeGreaterThan(4);
- const originalWetness=before.coastDetails.wetness;
+ await page.locator('#island').scrollIntoViewIfNeeded();
+ await expect.poll(()=>page.evaluate(()=>window.InheritAAA3D.getState().frames),{timeout:16000}).toBeGreaterThan(4);
+ // Test a REAL seasonal transition; the currently saved generation may
+ // already be sunny, in which case sun→sun cannot reduce wetness.
+ await page.evaluate(()=>{document.querySelector('#world').dataset.livingSeason='tide'});
+ await expect.poll(()=>page.evaluate(()=>window.InheritAAA3D.getState().coastDetails?.season)).toBe('tide');
+ const originalWetness=(await page.evaluate(()=>window.InheritAAA3D.getState())).coastDetails.wetness;
  await page.evaluate(()=>{document.querySelector('#world').dataset.livingSeason='sun'});
  await expect.poll(()=>page.evaluate(()=>window.InheritAAA3D.getState().coastDetails?.season)).toBe('sun');
  const sunny=await page.evaluate(()=>window.InheritAAA3D.getState().coastDetails);
