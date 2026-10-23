@@ -1,7 +1,7 @@
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { ArrowDown, ArrowRight, ArrowUpRight, Bookmark, Box, ChevronLeft, ChevronRight, Film, Gamepad2, InfinityIcon, Layers3, Orbit, ShieldCheck } from './PlayIcons'
-import { getPlayGame, playGames } from './redesignCatalog'
+import { PLAY_GAME_IDS, PLAY_GENRES, FEATURED_PLAY_WORLDS } from './playCatalogIndex'
 import { PLAY_COLLECTION_KEY, emptyPlayCollection, parsePlayCollection, toggleFavorite } from './playCollection'
 import type { PlayCollection } from './playCollection'
 import { playCatalogHref, readPlayFilters } from './playFilters'
@@ -18,9 +18,9 @@ function exploreAnchor(hash: string) {
   return /^#(catalog|experience|discover|guest-access)$/.exec(hash)?.[1] || ''
 }
 
-const ids = playGames.map(game => game.id)
-const genres = [...new Set(playGames.map(game => game.genre))]
-const featuredWorlds = FEATURED_WORLD_IDS.map(id => getPlayGame(id)).filter(game => game !== undefined)
+const ids = PLAY_GAME_IDS
+const genres = PLAY_GENRES
+const featuredWorlds = FEATURED_PLAY_WORLDS
 
 function loadCollection(): PlayCollection {
   const current = localStorage.getItem(PLAY_COLLECTION_KEY)
@@ -189,7 +189,7 @@ export default function PlayHome({ partners = false }: { partners?: boolean }) {
         </div>
         <aside className="cp-glass-panel" aria-label="Возможности OSGARD Play">
           <p>БОЛЬШЕ, ЧЕМ КАРТИНКА.<br />МИРЫ, В КОТОРЫЕ МОЖНО ВОЙТИ.</p>
-          <a href="#catalog"><Layers3 aria-hidden="true" /><span><strong>{playGames.length} миров</strong><small>ИГРЫ И ИСТОРИИ В КАТАЛОГЕ</small></span><ArrowRight className="cp-panel-arrow" aria-hidden="true" /></a>
+          <a href="#catalog"><Layers3 aria-hidden="true" /><span><strong>{PLAY_GAME_IDS.length} миров</strong><small>ИГРЫ И ИСТОРИИ В КАТАЛОГЕ</small></span><ArrowRight className="cp-panel-arrow" aria-hidden="true" /></a>
           <a href="#experience"><Gamepad2 aria-hidden="true" /><span><strong>Твой выбор</strong><small>ФИЗИКА · СТРАТЕГИЯ · ТАКТИКА</small></span><ArrowRight className="cp-panel-arrow" aria-hidden="true" /></a>
           <a href="#guest-access"><ShieldCheck aria-hidden="true" /><span><strong>Гостевой вход</strong><small>ЗНАКОМСТВО БЕЗ РЕГИСТРАЦИИ</small></span><ArrowRight className="cp-panel-arrow" aria-hidden="true" /></a>
         </aside>

@@ -1,12 +1,12 @@
 import { ArrowUpRight, Bookmark } from './PlayIcons'
 import type { CSSProperties } from 'react'
-import type { PlayGame } from './redesignCatalog'
+import type { PlayCatalogCard } from './playCatalogIndex'
 import type { PlayFilters } from './playFilters'
 import { playWorldHref } from './playFilters'
 import { gameArtwork } from './playCinematicData'
 
 type Props = {
-  game: PlayGame
+  game: PlayCatalogCard
   filters: PlayFilters
   index: number
   featured?: boolean
