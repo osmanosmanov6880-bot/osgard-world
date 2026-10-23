@@ -9,6 +9,7 @@ var patrol: Array[Node3D] = []
 var signal_materials: Array[StandardMaterial3D] = []
 var total_mesh_vertices: int = 0
 var pooled_bolts: int = 0
+var focal_ring: Node3D
 var matte_steel: StandardMaterial3D
 var copper: StandardMaterial3D
 var graphite: StandardMaterial3D
@@ -26,6 +27,7 @@ func _ready() -> void:
     light_cyan = _signal(Color(0.29, 0.78, 1.0), 1.6)
     light_amber = _signal(Color(1.0, 0.55, 0.18), 1.0)
     _mount_cnc_station()
+    _build_hero_containment_aperture()
     _build_safety_infrastructure()
     _build_optical_scanners()
     _tune_presentation()
@@ -178,6 +180,41 @@ func _mount_cnc_station() -> void:
     inst.material_override=matte_steel
     stage.add_child(inst)
 
+func _build_hero_containment_aperture() -> void:
+    # A real CNC ring frames the existing magnetic puzzle without new colliders.
+    var magnet: Node3D = game.get_node_or_null("MagnetAssembly") as Node3D
+    if magnet == null:
+        return
+    focal_ring = Node3D.new()
+    focal_ring.name = "Wave8HeroContainmentAperture"
+    focal_ring.position = Vector3(0.0, 0.0, 0.30)
+    magnet.add_child(focal_ring)
+    for spec in [[2.62, 3.02, 0.0, matte_steel, "ForgedOuterCNCAnnulus"], [2.50, 2.58, 0.16, light_cyan, "ActiveMagneticFluxConduit"], [3.04, 3.16, -0.12, copper, "OuterAmberCurrentReturn"]]:
+        var ring_mesh := TorusMesh.new()
+        ring_mesh.inner_radius = spec[0]
+        ring_mesh.outer_radius = spec[1]
+        ring_mesh.rings = 28 if web else 72
+        ring_mesh.ring_segments = 10 if web else 18
+        var ring := MeshInstance3D.new()
+        ring.name = spec[4]
+        ring.mesh = ring_mesh
+        ring.rotation.x = PI * 0.5
+        ring.position.z = spec[2]
+        ring.material_override = spec[3]
+        focal_ring.add_child(ring)
+    for k in range(16):
+        var angle: float = TAU * float(k) / 16.0
+        var brace := _box(focal_ring, "RadialServiceClamper", Vector3(0.38, 0.14, 0.26), Vector3(cos(angle) * 2.89, sin(angle) * 2.89, 0.10), graphite)
+        brace.rotation.z = angle
+    var light := OmniLight3D.new()
+    light.name = "CyanFluxBounce"
+    light.position = Vector3(0, 0, 1.75)
+    light.omni_range = 5.2
+    light.light_energy = 0.34 if web else 0.61
+    light.light_color = Color(0.24, 0.74, 1.0)
+    light.shadow_enabled = false
+    focal_ring.add_child(light)
+
 func _build_safety_infrastructure() -> void:
     var catwalk := Node3D.new()
     catwalk.name = "Wave8StructuralCatwalk"
@@ -234,5 +271,7 @@ func _process(delta: float) -> void:
             rotor.rotation.y=frame_clock*0.48*(1.0 if i%2==0 else -1.0)
         else:
             rotor.rotation.z=sin(frame_clock*0.63+float(i))*0.15
+    if focal_ring != null:
+        focal_ring.rotation.z = sin(frame_clock * 0.33) * 0.034
     var phase: float=0.55+0.45*sin(frame_clock*2.1)
     light_amber.emission_energy_multiplier=0.65+0.6*phase

@@ -31,6 +31,7 @@ func _run() -> void:
         var bolts:=finish.get_node_or_null("Wave8MachinedContaminment/CNCInstancedFasteners") as MultiMeshInstance3D
         _check(bolts!=null and bolts.multimesh.instance_count>=140,"industrial fasteners are GPU instanced")
         _check(finish.get_node_or_null("Wave8SafetyTelemetry")!=null,"physical inspection lighting and scanner")
+        _check(game.get_node_or_null("MagnetAssembly/Wave8HeroContainmentAperture/ForgedOuterCNCAnnulus") is MeshInstance3D, "CNC 3D hero containment ring visible")
         _check(int(finish.get("pooled_bolts"))>=140,"actual instance count recorded")
     _check(game.get_node_or_null("Wave7Lab")!=null,"Wave7 CNC physics arena preserved")
     _check(game.get_node_or_null("Wave6HardwareBenchmark")!=null,"reproducible hardware profiler preserved")
