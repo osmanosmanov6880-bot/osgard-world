@@ -415,6 +415,12 @@ try{
  renderer.shadowMap.type=THREE.PCFSoftShadowMap;
  renderer.info.autoReset=false;
  adapter=detectAdapter(renderer);status.adapter=adapter;
+ // Hosted Linux Chrome often runs SwiftShader; don't make its first scene
+ // pay the cost of a hardware-tier diorama. User can opt into high details.
+ if(adapter.isSoftware&&quality==='high'){
+  quality='low';status.quality='low';
+  renderer.shadowMap.enabled=false;
+ }
  postWanted=quality==='high'&&!lowPower&&!adapter.isSoftware;
  scene=new THREE.Scene();scene.background=new THREE.Color(0x789f9f);
  scene.fog=new THREE.FogExp2(0x789f9f,.009);
