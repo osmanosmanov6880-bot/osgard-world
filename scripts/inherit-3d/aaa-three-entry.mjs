@@ -473,7 +473,9 @@ try{
   viewport:()=>({width:island.clientWidth|0,height:island.clientHeight|0}),
   adapter,active:()=>status.active,reducedMotion:()=>motion.matches,
   busy:()=>flyby||d.body.classList.contains('replay-mode')||d.body.classList.contains('aaa-atelier-open'),
-  requestFrame:()=>{renderOnce(performance.now());start();},notify,localize:lang
+  requestFrame:()=>{renderOnce(performance.now());start();},
+  focusScene:()=>island.scrollIntoView({block:'center',inline:'nearest',behavior:'instant'}),
+  notify,localize:lang
  });
  resize();
  // Hardware-enabled Chrome receives true 3D immediately. Software
