@@ -42,6 +42,13 @@ jobs:
           assert all(len(x["maps"])==3 for x in data["assets"].values())
           print("STRICT GATE: 9 verified scanned PBR source files",sum(y["bytes"] for x in data["assets"].values() for y in x["maps"].values()))
           PY
+      - name: Fetch independently SHA-pinned original detailed CC0 sports car
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 godot/empire-omega/tools/fetch_cc0_hero_car_r6.py \
+            --output godot/empire-omega/assets/r6/vehicles | tee r6_hero.log
+          test -s godot/empire-omega/assets/r6/vehicles/spectral_gt_rs_game_ready.glb
       - name: Native Godot 4.4.1 resource import for all real maps/shaders
         shell: bash
         run: |
@@ -80,7 +87,7 @@ jobs:
           LIBGL_ALWAYS_SOFTWARE=1 xvfb-run -a -s "-screen 0 1600x900x24" \
             timeout 70s godot --rendering-method gl_compatibility --path godot/empire-omega \
             --script res://tests/horizon_r6_showroom_capture.gd
-          test -s screenshots/omega_r6_godot_photo_pbr_showroom_1600x900.png
+          test -s screenshots/omega_r6_godot_photo_pbr_hero_gt_1600x900.png
       - name: Prepare independent Windows high-end renderer (never modifies Web preset)
         shell: bash
         run: |
