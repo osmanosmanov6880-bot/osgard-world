@@ -153,7 +153,9 @@ function updateEnvironment(){
  renderer.toneMappingExposure=p.exposure;
  waterUniforms.uDawn.value=p.water;
  if(waterUniforms.uWind)waterUniforms.uWind.value=season==='wind'?1.28:season==='mist'?.17:.62;
- sceneryCache.get(status.environmentTier)?.setSeason?.(season);
+ const seasonalScene=sceneryCache.get(status.environmentTier);
+ seasonalScene?.setSeason?.(season);
+ status.coastDetails=seasonalScene?.microBiomes?.stats?.()||status.coastDetails;
 }
 function syncState(force=false){
  if(!game.snapshot)return;
