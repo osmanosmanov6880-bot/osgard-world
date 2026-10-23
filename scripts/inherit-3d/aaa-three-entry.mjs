@@ -107,6 +107,7 @@ function updateLabels(){
  orbit.textContent=flyby?t.orbitBusy:t.orbit;
  orbit.disabled=!status.active||flyby||motion.matches;
  orbit.title=flyby?t.flyby:t.hint;
+ perfLab?.update();
 }
 function setMode(enabled,reason){
  const next=!!enabled&&status.available;
@@ -346,6 +347,7 @@ switcher.addEventListener('click',()=>{
  savePreference(status.active?'2d':'3d');setMode(!status.active);
 });
 detail.addEventListener('click',()=>{
+ perfLab?.finish('quality-changed');
  quality=quality==='high'?'low':'high';status.quality=quality;
  adaptivePixelScale=1;frameBudget.reset();
  renderer.shadowMap.enabled=quality==='high'&&!lowPower;
@@ -356,6 +358,7 @@ detail.addEventListener('click',()=>{
 orbit.addEventListener('click',doFlyby);
 effects.addEventListener('click',()=>{
  if(!status.available)return;
+ perfLab?.finish('effects-changed');
  postWanted=!postWanted;configurePostFx();renderOnce(performance.now());updateLabels();
 });
 monitor.addEventListener('click',()=>{
@@ -394,8 +397,8 @@ world.addEventListener('click',event=>{
   target.click(); // original owned game's non-mutating memory display
  }
 },true);
-d.addEventListener('visibilitychange',()=>{if(d.hidden)stop();else start();});
-motion.addEventListener?.('change',()=>{updateLabels();if(motion.matches){stop();renderOnce(performance.now());}else start();});
+d.addEventListener('visibilitychange',()=>{if(d.hidden){perfLab?.finish('tab-hidden');stop();}else start();});
+motion.addEventListener?.('change',()=>{updateLabels();if(motion.matches){perfLab?.finish('reduced-motion');stop();renderOnce(performance.now());}else start();});
 new MutationObserver(()=>{syncState();if(status.active&&motion.matches)renderOnce(performance.now());})
  .observe(objects,{childList:true});
 new MutationObserver(()=>{updateEnvironment();if(status.active&&motion.matches)renderOnce(performance.now());})
