@@ -353,6 +353,38 @@ assert.ok(canvasState.player.y < edgeY - 2, 'Coyote-time jump must work immediat
 key('ArrowRight', 'keyup')
 checks.push('coyote-time jump at the first platform edge')
 
+click('restart')
+click('start')
+const pad = { connected: true, axes: [0.85], buttons: Array.from({ length: 16 }, () => ({ pressed: false })) }
+window.navigator = { getGamepads: () => [pad] }
+pump(15)
+assert.ok(snapshot().x > 150, 'Gamepad left stick must move the player')
+pad.axes[0] = 0
+pad.buttons[3].pressed = true
+pump()
+assert.match(snapshot().polarity, /NEGATIVE/, 'Gamepad Y must switch polarity')
+pump(8)
+assert.match(snapshot().polarity, /NEGATIVE/, 'Holding gamepad Y must not repeatedly switch polarity')
+pad.buttons[3].pressed = false
+pump()
+pad.buttons[3].pressed = true
+pump()
+assert.match(snapshot().polarity, /POSITIVE/, 'A second gamepad Y press must switch back')
+pad.buttons[3].pressed = false
+pad.buttons[9].pressed = true
+pump()
+assert.equal(node('objective-status').textContent, 'PAUSED', 'Gamepad Start must pause')
+pump(5)
+assert.equal(node('objective-status').textContent, 'PAUSED', 'Holding Start must not auto-resume')
+pad.buttons[9].pressed = false
+pump()
+pad.buttons[9].pressed = true
+pump()
+assert.equal(node('objective-status').textContent, 'FIELD ACTIVE', 'Gamepad Start must resume')
+window.navigator = { getGamepads: () => [] }
+pump(3)
+checks.push('gamepad analog movement, Y polarity edge, Start pause/resume and disconnect safety')
+
 console.log(JSON.stringify({ status: 'PASS', source: path.relative(repo, sourcePath), checks,
   frames: framesRun, canvasCalls: canvasState.calls, lifecycleStarts: startedCount(),
   scope: 'Actual inline runtime in Node VM; no browser rendering or production claim.' }, null, 2))
