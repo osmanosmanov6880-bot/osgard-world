@@ -94,6 +94,14 @@ var premium_client_r15
 const R16_BEAM_POOL_SIZE: int = 18
 const R16_RADAR_PERIOD: float = 0.12
 const R16_HUD_PERIOD: float = 0.10
+# R18: six independently culled base-city meshes and six neon clusters.
+# Original 360 building transforms/collisions and all missions unchanged.
+const R18_CITY_LIMIT = [2500.0, 1900.0, 1400.0]
+const R18_NEON_LIMIT = [1100.0, 760.0, 470.0]
+var r18_city_batches: Array[MultiMeshInstance3D] = []
+var r18_neon_batches: Array[MultiMeshInstance3D] = []
+var r18_base_tower_instances: int = 0
+var r18_city_district_chunks: int = 0
 var r16_beams: Array[MeshInstance3D] = []
 var r16_beam_life: Array[float] = []
 var r16_beam_cursor: int = 0
@@ -229,38 +237,57 @@ func _box(pos: Vector3, size: Vector3, mat: Material, parent: Node3D) -> MeshIns
     return instance
 
 func _build_city() -> void:
-    # MultiMesh keeps hundreds of individual high-rise structures inexpensive.
-    var multimesh := MultiMesh.new()
-    multimesh.transform_format = MultiMesh.TRANSFORM_3D
-    multimesh.use_colors = true
-    var tower := BoxMesh.new()
-    tower.size = Vector3.ONE
-    multimesh.mesh = tower
-    multimesh.instance_count = 360
+    # R18: each district is an independent MultiMesh with tight local GPU
+    # bounds. Old global 360-instance batches forced unrelated sectors into
+    # the same frustum/LOD decision and wasted GPU work.
+    var count_per_district: int = int(360 / SECTOR_POSITIONS.size())
+    var tower_geometry := BoxMesh.new()
+    tower_geometry.size = Vector3.ONE
+    var lamp_geometry := BoxMesh.new()
+    lamp_geometry.size = Vector3.ONE
     premium_architecture = PremiumArchitectureScript.new()
     premium_architecture.name = "PremiumArchitecture"
     add_child(premium_architecture)
     var tower_material: StandardMaterial3D = premium_architecture.make_facade_material()
     var tower_data: Array[Dictionary] = []
-    var inst := MultiMeshInstance3D.new()
-    inst.name = "CityTowers_MultiMesh"
-    inst.multimesh = multimesh
-    inst.material_override = tower_material
-    add_child(inst)
-    var skylights := MultiMesh.new()
-    skylights.transform_format = MultiMesh.TRANSFORM_3D
-    skylights.use_colors = true
-    var luminaire := BoxMesh.new()
-    luminaire.size = Vector3.ONE
-    skylights.mesh = luminaire
-    skylights.instance_count = 360
-    var glow_layer := MultiMeshInstance3D.new()
-    glow_layer.name = "SkylineNeonCrowns"
-    glow_layer.multimesh = skylights
+    var main_parent := Node3D.new()
+    main_parent.name = "CityTowers_MultiMesh"
+    add_child(main_parent)
+    var neon_parent := Node3D.new()
+    neon_parent.name = "SkylineNeonCrowns"
+    add_child(neon_parent)
     var glow_material := _mat(Color.WHITE, 0.42)
     glow_material.vertex_color_use_as_albedo = true
-    glow_layer.material_override = glow_material
-    add_child(glow_layer)
+    var multimeshes: Array[MultiMesh] = []
+    var neon_multimeshes: Array[MultiMesh] = []
+    for district in SECTOR_POSITIONS.size():
+        var multimesh := MultiMesh.new()
+        multimesh.transform_format = MultiMesh.TRANSFORM_3D
+        multimesh.use_colors = true
+        multimesh.mesh = tower_geometry
+        multimesh.instance_count = count_per_district
+        multimeshes.append(multimesh)
+        var inst := MultiMeshInstance3D.new()
+        inst.name = "R18_BaseCityDistrict_%02d" % district
+        inst.position = SECTOR_POSITIONS[district]
+        inst.multimesh = multimesh
+        inst.material_override = tower_material
+        main_parent.add_child(inst)
+        r18_city_batches.append(inst)
+        var skylights := MultiMesh.new()
+        skylights.transform_format = MultiMesh.TRANSFORM_3D
+        skylights.use_colors = true
+        skylights.mesh = lamp_geometry
+        skylights.instance_count = count_per_district
+        neon_multimeshes.append(skylights)
+        var glow_layer := MultiMeshInstance3D.new()
+        glow_layer.name = "R18_NeonDistrict_%02d" % district
+        glow_layer.position = SECTOR_POSITIONS[district]
+        glow_layer.multimesh = skylights
+        glow_layer.material_override = glow_material
+        neon_parent.add_child(glow_layer)
+        r18_neon_batches.append(glow_layer)
+    r18_city_district_chunks = r18_city_batches.size()
     for i in range(360):
         var sector: int = i % SECTOR_POSITIONS.size()
         var center: Vector3 = SECTOR_POSITIONS[sector]
@@ -270,12 +297,17 @@ func _build_city() -> void:
         var height: float = rng.randf_range(25.0,170.0)
         var depth: float = rng.randf_range(12.0,29.0)
         var pos := center + Vector3(cos(bearing)*radius,height*0.5,sin(bearing)*radius)
-        multimesh.set_instance_transform(i,Transform3D(Basis.IDENTITY.scaled(Vector3(w,height,depth)),pos))
+        var slot: int = int(i / SECTOR_POSITIONS.size())
+        multimeshes[sector].set_instance_transform(
+            slot, Transform3D(Basis.IDENTITY.scaled(Vector3(w, height, depth)), pos - center))
+        r18_base_tower_instances += 1
         tower_data.append({"pos":pos,"w":w,"depth":depth,"h":height,"sector":sector})
         var col: Color = SECTOR_COLORS[sector].darkened(rng.randf_range(0.42,0.70))
-        multimesh.set_instance_color(i,col)
-        skylights.set_instance_transform(i,Transform3D(Basis.IDENTITY.scaled(Vector3(w+2.0,2.6,depth+2.0)), pos + Vector3(0,height*0.5+1.6,0)))
-        skylights.set_instance_color(i,SECTOR_COLORS[sector].lightened(0.14))
+        multimeshes[sector].set_instance_color(slot, col)
+        neon_multimeshes[sector].set_instance_transform(slot, Transform3D(
+            Basis.IDENTITY.scaled(Vector3(w + 2.0, 2.6, depth + 2.0)),
+            pos - center + Vector3(0, height * 0.5 + 1.6, 0)))
+        neon_multimeshes[sector].set_instance_color(slot, SECTOR_COLORS[sector].lightened(0.14))
         var solid := StaticBody3D.new()
         solid.name = "TowerCollision_%03d" % i
         solid.position = pos
@@ -285,6 +317,7 @@ func _build_city() -> void:
         collision.shape = shape
         solid.add_child(collision)
         add_child(solid)
+    _r18_set_city_quality()
     for i in SECTOR_POSITIONS.size():
         var base: Vector3 = SECTOR_POSITIONS[i]
         _build_sector(base,SECTOR_COLORS[i],SECTOR_NAMES[i],i)
@@ -834,12 +867,33 @@ func _unhandled_key_input(event: InputEvent) -> void:
         elif event.keycode==KEY_F1:
             _show_notice("R12 · F3 ПРОФИЛЬ · F6 FPS · F7 ТЕСТ · F8 ЭФФЕКТЫ · F9 ОТЧЁТ · F10 PNG · F11 АВТО · F12 СВЕТ")
 
+func _r18_set_city_quality() -> void:
+    # Base silhouettes stay visible at long range; detailed neon strips
+    # disappear sooner, without touching tower physical collision bodies.
+    for layer in r18_city_batches:
+        if is_instance_valid(layer):
+            layer.visibility_range_begin = 0.0
+            layer.visibility_range_end = R18_CITY_LIMIT[graphics_quality]
+            layer.visibility_range_end_margin = 250.0
+    for layer in r18_neon_batches:
+        if is_instance_valid(layer):
+            layer.visibility_range_begin = 0.0
+            layer.visibility_range_end = R18_NEON_LIMIT[graphics_quality]
+            layer.visibility_range_end_margin = 170.0
+
 func _set_graphics_quality(mode: int) -> void:
     graphics_quality = clampi(mode, 0, 2)
     if is_instance_valid(aegis_r10):
         aegis_r10.set_quality(graphics_quality)
     if is_instance_valid(city_cladding_r10):
         city_cladding_r10.set_quality(graphics_quality)
+    _r18_set_city_quality()
+    var details_r18 = get_node_or_null("HighDetailCityR5")
+    if details_r18 != null:
+        details_r18.set_quality(graphics_quality)
+    var skyline_r18 = get_node_or_null("SculpturalSkylineR6")
+    if skyline_r18 != null:
+        skyline_r18.set_quality(graphics_quality)
     if is_instance_valid(industrial_r11):
         industrial_r11.set_quality(graphics_quality)
     if is_instance_valid(cinematic_post_r11):

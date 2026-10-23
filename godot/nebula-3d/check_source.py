@@ -362,6 +362,26 @@ require(
     "docs/R17-FAST-START-ACCEPTANCE.md",
     "R17", "384", "21", "SwiftShader", "F7",
 )
+# R18: expensive city GPU batches must be district-local, distance-culled,
+# and share the existing MAX/HIGH/ECO plus adaptive quality controls.
+assert "R18_BaseCityDistrict_" in world
+assert "R18_NeonDistrict_" in world
+assert "r18_base_tower_instances" in world
+assert "r18_city_district_chunks" in world
+assert "func _r18_set_city_quality(" in world
+assert "details_r18.set_quality(graphics_quality)" in world
+assert "skyline_r18.set_quality(graphics_quality)" in world
+assert 'drawn_instances' in city
+assert 'district_roots' in city
+assert 'func _nearest_district(' in city
+assert 'visibility_range_end = DETAIL_RANGE[quality_mode]' in city
+assert 'func _nearest_sector(' in skyline
+assert 'segment_hubs[district].add_child(render)' in skyline
+assert 'visibility_range_end = FACADE_RANGE[quality_mode]' in skyline
+require(
+    "docs/R18-GPU-DISTRICT-CULLING.md",
+    "R18", "360", "6", "F7", "F9", "F10", "WebGL",
+)
 require("scripts/architectural_detail_r4.gd", "func build(")
 premium = require("scripts/premium_architecture.gd", "func make_facade_material(", "emission_image")
 require("scripts/drone.gd", "extends")
@@ -405,6 +425,10 @@ smoke = require(
     "R17 prebaked R9 384px physical texture maps unavailable",
     "R17 R9 WebGL still dynamically computes PBR atlas pixels",
     "R17 R12 WebGL still dynamically computes PBR atlas pixels",
+    "R18 GPU district geometry not placed at its physical origin",
+    "R18 distant R5 facades still drawn as world-wide GPU batches",
+    "R18 original R6 skyline still uses giant all-world steel beam batch",
+    "R18 ECO quality fails to cull distant buildings/architectural micro-detail",
     "NEBULA_R17_PBR_IMPORT_SUCCESS",
     "NEBULA_SMOKE_SUCCESS",
 )
@@ -417,4 +441,4 @@ assert "image.generate_mipmaps()" in ship_visual
 assert premium.count("Image.create(") >= 2, "separate facade albedo/emission atlases missing"
 assert "high-detail" not in project.lower(), "project identity may remain stable"
 assert len(smoke) > 1500 and len(city) > 5000 and len(world) > 10000
-print("NEBULA_R17_SOURCE_SUCCESS: 21 build-baked PBR textures, native runtime no pixel loops, retained R16 combat")
+print("NEBULA_R18_SOURCE_SUCCESS: six sharded GPU city regions, R5 and R6 LOD, preserved R17 baked textures and R16 combat")
