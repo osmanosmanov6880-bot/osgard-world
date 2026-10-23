@@ -24,7 +24,18 @@ func _run_smoke() -> void:
             push_error("Missing physical mechanism: " + name)
             quit(1)
             return
+    await process_frame
+    var hud: Label = instance.get_node("OperationalOverlay/StatusAndControls")
+    if not hud.text.contains("ТОЛЬКО СИМУЛЯЦИЯ") or not hud.text.contains("касание"):
+        push_error("R136 Russian touch guidance missing")
+        quit(1)
+        return
     instance.set_emergency_stop(true)
+    await process_frame
+    if not hud.text.contains("АВАРИЙНАЯ ОСТАНОВКА"):
+        push_error("R136 Russian emergency state missing")
+        quit(1)
+        return
     if not instance.emergency_stopped:
         push_error("Emergency stop failed")
         quit(1)
@@ -35,5 +46,10 @@ func _run_smoke() -> void:
         quit(1)
         return
     instance.set_emergency_stop(false)
-    print("PASS R136 native scene smoke and safety controls")
+    await process_frame
+    if not hud.text.contains("ЦИКЛ"):
+        push_error("R136 cycle state did not recover")
+        quit(1)
+        return
+    print("PASS R136 localized HUD, native scene smoke and safety controls")
     quit(0)

@@ -233,7 +233,9 @@ func _setup_hud_and_post() -> void:
     hud = Label.new()
     hud.name = "StatusAndControls"
     hud.position = Vector2(20, 16)
-    hud.add_theme_font_size_override("font_size", 17)
+    hud.size = Vector2(1100, 100)
+    hud.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+    hud.add_theme_font_size_override("font_size", 15)
     overlay.add_child(hud)
     post_layer = CanvasLayer.new()
     post_layer.name = "FilmicVignette"
@@ -268,7 +270,12 @@ func _process(delta: float) -> void:
         for i in range(fans.size()):
             fans[i].rotation.z += delta * (3.0 + float(i) * 0.35)
     if hud != null:
-        hud.text = "OSGARD R136  |  PRECISION SERVICE CELL  |  SIMULATION ONLY\n" + ("EMERGENCY STOP" if emergency_stopped else "CYCLE %.1fs / 20s" % scene_time) + "  |  " + ("HERO" if hero_enabled else "ECO") + "\nRight-drag: orbit   Wheel: zoom   H: detail   E: stop   X: reset"
+        hud.text = "OSGARD R136  |  ПРЕЦИЗИОННАЯ ЯЧЕЙКА  |  ТОЛЬКО СИМУЛЯЦИЯ\n" + ("АВАРИЙНАЯ ОСТАНОВКА" if emergency_stopped else "ЦИКЛ %.1fс / 20с" % scene_time) + "  |  " + ("ДЕТАЛЬНО" if hero_enabled else "ЭКО") + "\nМышь/касание: обзор   Колесо/щипок: масштаб   H: детали   E: стоп   X: продолжить"
+
+func _orbit_camera(delta: Vector2) -> void:
+    orbit_yaw -= delta.x * 0.006
+    orbit_pitch = clampf(orbit_pitch - delta.y * 0.006, -0.22, 1.10)
+    _update_camera()
 
 func _update_camera() -> void:
     if camera == null:
@@ -290,8 +297,11 @@ func set_emergency_stop(engaged: bool) -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
     if event is InputEventMouseMotion and Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT):
-        orbit_yaw -= event.relative.x * 0.006
-        orbit_pitch = clampf(orbit_pitch - event.relative.y * 0.006, -0.22, 1.10)
+        _orbit_camera(event.relative)
+    elif event is InputEventScreenDrag:
+        _orbit_camera(event.relative)
+    elif event is InputEventMagnifyGesture:
+        orbit_distance = clampf(orbit_distance / maxf(event.factor, 0.1), 4.0, 25.0)
         _update_camera()
     if event is InputEventMouseButton and event.pressed:
         if event.button_index == MOUSE_BUTTON_WHEEL_UP:

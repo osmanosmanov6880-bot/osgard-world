@@ -1,0 +1,91 @@
+name: OSGARD R136 Godot Web release
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'godot/osgard-r136-precision/**'
+      - '.github/workflows/r136-godot-web.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: r136-godot-web-master
+  cancel-in-progress: true
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: true
+      - name: Import, run native smoke, and export Godot Web
+        shell: bash
+        run: |
+          set -euo pipefail
+          godot --headless --editor --path godot/osgard-r136-precision --import --quit
+          godot --headless --path godot/osgard-r136-precision --script res://tests/smoke.gd
+          mkdir -p "$RUNNER_TEMP/r136-web"
+          godot --headless --path godot/osgard-r136-precision --export-release Web "$RUNNER_TEMP/r136-web/index.html"
+          test -s "$RUNNER_TEMP/r136-web/index.html"
+          test -n "$(find "$RUNNER_TEMP/r136-web" -maxdepth 1 -name '*.js' -size +10k -print -quit)"
+          test -n "$(find "$RUNNER_TEMP/r136-web" -maxdepth 1 -name '*.wasm' -size +100k -print -quit)"
+          test -n "$(find "$RUNNER_TEMP/r136-web" -maxdepth 1 -name '*.pck' -size +100k -print -quit)"
+      - name: Record release manifest
+        shell: bash
+        env:
+          BUILD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          python3 - "$RUNNER_TEMP/r136-web" "$BUILD_SHA" <<'PYCODE'
+          from pathlib import Path
+          import hashlib,json,sys
+          root=Path(sys.argv[1]); files=sorted(x for x in root.iterdir() if x.is_file())
+          manifest={"engine":"Godot 4.4.1","source_path":"godot/osgard-r136-precision",
+            "source_commit":sys.argv[2],"native_tests":"passed",
+            "artifact_kind":"native-Godot-HTML5-export",
+            "limitations":["simulation only","no telemetry","WebGL 2 required"],
+            "files":{x.name:hashlib.sha256(x.read_bytes()).hexdigest() for x in files}}
+          (root/"release.json").write_text(json.dumps(manifest,indent=2)+"\n")
+          PYCODE
+      - name: Publish verified runtime and request SSH deployment
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          target=public/games/r136-precision
+          rm -rf "$target"
+          mkdir -p "$target"
+          cp -a "$RUNNER_TEMP/r136-web/." "$target/"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          published=0
+          for attempt in 1 2 3 4 5; do
+            git fetch origin master
+            git reset --mixed origin/master
+            git add -f "$target"
+            if git diff --cached --quiet; then
+              published=1
+              break
+            fi
+            git commit -m 'build(games): publish verified R136 Godot Web simulation'
+            if git push origin HEAD:master; then
+              published=1
+              break
+            fi
+            sleep "$attempt"
+          done
+          test "$published" -eq 1
+          gh workflow run deploy-frontend.yml --ref master

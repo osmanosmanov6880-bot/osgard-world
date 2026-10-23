@@ -5,14 +5,14 @@ This is a **standalone, additive Godot 4.4 Web-compatible reconstruction** creat
 ## Implemented
 - True 3D procedural industrial cell: modular floor, server/circuit trays, fans, wiring headers, fasteners, gantry and hinged service door.
 - Physically separate animated carriage, telescope, jaws, door, and four fans.
-- 20-second bounded mechanical demonstration cycle; emergency stop **E**, reset **X**.
-- ECO / HERO geometry toggle **H**, right-mouse camera orbit and mouse-wheel zoom.
+- 20-second bounded mechanical demonstration cycle; emergency stop **E**, continue **X**.
+- ECO / HERO geometry toggle **H**; camera orbit by right-drag or touch, zoom by wheel or pinch.
 - 12 reusable metallic/dielectric/emissive materials and single-pass vignette.
 - No credential dependencies, network controls, external assets or real machine telemetry.
 
 ## Run
 Open project.godot in Godot 4.4.1 or newer and press F6 on scenes/Main.tscn.
-Native headless smoke: `godot --headless --path . --script res://tests/smoke.gd`.
+Russian HUD and mouse/touch controls. Native headless smoke: `godot --headless --path . --script res://tests/smoke.gd`.
 Web export: `godot --headless --path . --export-release Web build/index.html`.
 
 ## Safety and limitations

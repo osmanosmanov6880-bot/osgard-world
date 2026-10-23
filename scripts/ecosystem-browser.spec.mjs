@@ -14,7 +14,7 @@ async function openPlayCatalog(page) {
   // Use the actual catalogue destination; the primary hero action goes to featured worlds.
   await page.locator('.cp-glass-panel a[href="#catalog"]').click()
   await expect(page.locator('.cp-explore')).toHaveAttribute('data-explore-state', 'ready')
-  await expect(page.locator('#catalog .play-card')).toHaveCount(19)
+  await expect(page.locator('#catalog .play-card')).toHaveCount(22)
 }
 
 async function recordOsgardTransitions(page, returning = false) {

@@ -7,7 +7,7 @@ const html=readFileSync(resolve(root,'index.html'),'utf8')
 const lifecycle=readFileSync(resolve(root,'player-lifecycle.js'),'utf8')
 const nginx=readFileSync(resolve('nginx.conf'),'utf8')
 const admin=readFileSync(resolve(root,'admin/index.html'),'utf8')
-const required=['data-game="null-shift"','data-game="time"','data-game="empire-orbit"','data-game="swarm"','data-game="inherit"','data-game="remix"','data-game="vector-zero"','data-game="afterimage-run"','data-game="empire-omega"','data-filter="narrative"','id="games-grid"','id="game-search"','data-filter="tactical"','id="player-dialog"','id="player-share"','id="player-fullscreen"','id="analytics-toggle"','id="project-form"','https://wa.me/79640027222','osgardbewworld.com','o2system.art','senjorio.com','superday.run','marcosa.club','myosa.world','gold-glamour.online','gardvpn.is','osgardos.com','osgardvanguard.studio','/games/favicon.svg','/privacy/','/terms/']
+const required=['data-game="null-shift"','data-game="time"','data-game="empire-orbit"','data-game="swarm"','data-game="inherit"','data-game="remix"','data-game="vector-zero"','data-game="afterimage-run"','data-game="empire-omega"','data-game="nebula-3d"','data-game="r136-precision"','data-filter="narrative"','id="games-grid"','id="game-search"','data-filter="tactical"','id="player-dialog"','id="player-share"','id="player-fullscreen"','id="analytics-toggle"','id="project-form"','https://wa.me/79640027222','osgardbewworld.com','o2system.art','senjorio.com','superday.run','marcosa.club','myosa.world','gold-glamour.online','gardvpn.is','osgardos.com','osgardvanguard.studio','/games/favicon.svg','/privacy/','/terms/']
 for(const item of required) assert.ok(html.includes(item),'Games hub missing: '+item)
 const zionWorlds=['020','021','022','023','024','025','026','027','028','029','030']
 for(const id of zionWorlds){
@@ -15,10 +15,12 @@ for(const id of zionWorlds){
   assert.ok(html.includes(`/queue/ZION-${id}/index.html`), 'ZION destination missing: '+id)
 }
 for(const title of ['Базальтовая колыбель','Тихий архив','Стеклянный сад','Последний приливный механизм','Бархатная частота','Бледное уравнение','Север сна','Бронзовый час','Зеркальная погода','Синий интервал','Теневой протокол']) assert.ok(html.includes(title),'Russian ZION card title missing: '+title)
-assert.ok(html.includes('9 игр OSGARD')&&html.includes('11 миров ZION-9'),'Hub must explain the 20-game split')
+assert.ok(html.includes('11 игр OSGARD')&&html.includes('11 миров ZION-9'),'Hub must explain the 22-project split')
+assert.ok(html.includes('data-game="nebula-3d"')&&html.includes('href="/games/remix/arena-v2/nebula-3d/"'),'Nebula card must link to Godot build')
+assert.ok(html.includes('data-game="r136-precision"')&&html.includes('href="/games/r136-precision/"'),'R136 card must be discoverable')
 assert.ok(html.includes('href="/games/omega-3d-preview/"')&&html.includes('GODOT 4.4.1 · WEB'),'Native Empire Omega card must clearly launch its verified Godot Web export')
 assert.ok(html.includes('target="_blank" rel="noopener noreferrer"'),'External games must open outside the embedded player')
-for(const path of ['public/games/index.html','public/games/time-empire/index.html','public/games/empire-orbit/index.html','public/games/time-empire/empire-world.js','public/games/time-empire/orbit-gallery.css','public/games/time-empire/orbit-ecosystem.js','public/games/time-empire/orbit-planetary.js','public/games/time-empire/orbit-wow.js','public/games/vector-zero/index.html','public/games/afterimage-run/index.html','public/games/ecosystem-intermission.js','public/games/favicon.svg','public/games/player-lifecycle.js','public/games/admin/index.html','public/privacy/index.html','public/terms/index.html']) assert.ok(existsSync(resolve(path)),'Missing file: '+path)
+for(const path of ['public/games/index.html','public/brand/world-nebula.svg','public/brand/world-r136.svg','public/brand/world-empire-omega.svg','public/games/time-empire/index.html','public/games/empire-orbit/index.html','public/games/time-empire/empire-world.js','public/games/time-empire/orbit-gallery.css','public/games/time-empire/orbit-ecosystem.js','public/games/time-empire/orbit-planetary.js','public/games/time-empire/orbit-wow.js','public/games/vector-zero/index.html','public/games/afterimage-run/index.html','public/games/ecosystem-intermission.js','public/games/favicon.svg','public/games/player-lifecycle.js','public/games/admin/index.html','public/privacy/index.html','public/terms/index.html']) assert.ok(existsSync(resolve(path)),'Missing file: '+path)
 for(const path of ['scripts/games-lighthouse-report.mjs','.github/workflows/games-lighthouse.yml']) assert.ok(existsSync(resolve(path)),'Missing games performance monitoring file: '+path)
 const lighthouseScript=readFileSync(resolve('scripts/games-lighthouse-report.mjs'),'utf8')
 const lighthouseWorkflow=readFileSync(resolve('.github/workflows/games-lighthouse.yml'),'utf8')
@@ -31,7 +33,7 @@ assert.equal(assessReport(fixture({...healthyScores,performance:.84},501,4001),'
 assert.equal(assessReport(fixture({...healthyScores,performance:.89},100,1500),'desktop').pass,false,'Desktop performance below guardrail should fail')
 assert.ok(lighthouseScript.includes('maxTbtMs')&&lighthouseScript.includes('maxLcpMs'),'Lighthouse report must enforce Core Web Vitals guardrails')
 assert.ok(html.includes('type="application/ld+json"'),'SEO ItemList JSON-LD missing')
-assert.ok(html.includes('"numberOfItems":20')&&html.includes('/games/empire-orbit/')&&html.includes('/games/omega-3d-preview/'),'Empire Orbit and the Godot Omega route must appear in the published ItemList')
+assert.ok(html.includes('"numberOfItems":22')&&html.includes('/games/empire-orbit/')&&html.includes('/games/omega-3d-preview/'),'Empire Orbit and the Godot Omega route must appear in the published ItemList')
 assert.match(admin, /<meta name="robots" content="noindex,nofollow,noarchive">/, 'Operator analytics must not be indexed')
 for(const endpoint of ['/api/v1/analytics/summary','/api/v1/analytics/cohorts','/api/v1/analytics/snapshots','/api/v1/analytics/export']) assert.ok(admin.includes(endpoint),'LiveOps is missing protected API surface '+endpoint)
 assert.ok(admin.includes("'X-Moderation-Token':operatorToken"), 'Operator key must be sent only in the protected API request header')
@@ -75,7 +77,7 @@ assert.ok(js.includes("eventIfAllowed('share_created',id)"),'Share action event 
 assert.ok(js.includes('frame.requestFullscreen()'),'Fullscreen action missing')
 assert.ok(!/https?:\/\/(?:fonts\.googleapis\.com|fonts\.gstatic\.com|cdn\.jsdelivr\.net|unpkg\.com)/i.test(html),'External asset CDN found')
 for(const host of ['osgardbewworld.com','o2system.art','senjorio.com','superday.run','marcosa.club','myosa.world','gold-glamour.online','gardvpn.is','osgardos.com','osgardvanguard.studio']) assert.ok(html.includes('utm_source=osgard_games')&&html.includes(host),'Cross-promo UTM missing for '+host)
-assert.ok(html.includes('"numberOfItems":20'),'Game ItemList JSON-LD must contain twenty catalog entries')
+assert.ok(html.includes('"numberOfItems":22'),'Game ItemList JSON-LD must contain twenty catalog entries')
 assert.ok(lifecycle.includes("'vector-zero':{title:'VECTOR//ZERO',url:'/games/vector-zero/'}")&&lifecycle.includes("if(id==='vector-zero')"),'Vector Zero lifecycle registry/readiness missing')
 const vectorHtml=readFileSync(resolve(root,'vector-zero/index.html'),'utf8')
 assert.ok(vectorHtml.includes('<title>VECTOR//ZERO — Разрыв поля</title>')&&vectorHtml.includes('id="field"')&&vectorHtml.includes('id="start"')&&vectorHtml.includes('osgard:game-lifecycle'),'Vector Zero game contract missing')

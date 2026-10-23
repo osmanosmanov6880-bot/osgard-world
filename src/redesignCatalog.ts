@@ -175,6 +175,39 @@ export const playGames:PlayGame[] = [
     "searchTerms": "afterimage run раннер забег призрак"
   },
   {
+    "id": "empire-omega", "title": "OSGARD EMPIRE Ω", "genre": "Симулятор", "mode": "solo",
+    "description": "Исследуйте трёхмерный город за рулём: маршруты, задания, гараж и атлас.",
+    "controls": "WASD — движение; E — войти или выйти из машины; F — действие; M — карта.",
+    "platform": "Godot Web · требуется WebGL 2", "save": "Локально в этом браузере",
+    "online": "Одиночная игра · сервер не нужен", "href": "/games/omega-3d-preview/",
+    "asset": "/brand/world-empire-omega.svg", "accent": "#5CE1E6", "launchable": true,
+    "warning": "Сохранение остаётся в браузере на этом устройстве. Для запуска нужен WebGL 2.",
+    "format": "Городской симулятор", "status": "Опубликованная сборка Godot",
+    "launchLabel": "Запустить город", "searchTerms": "osgard empire omega godot город симулятор автомобиль"
+  },
+  {
+    "id": "nebula-3d", "title": "NEBULA", "genre": "Космический симулятор", "mode": "solo",
+    "description": "Исследуйте космическую станцию и флот в трёхмерной Godot-среде.",
+    "controls": "Управление и доступные режимы описаны в самой игре.",
+    "platform": "Godot Web · требуется WebGL 2", "save": "Статус сохранения зависит от режима игры",
+    "online": "Сетевые функции требуют доступного сервиса", "href": "/games/remix/arena-v2/nebula-3d/",
+    "asset": "/brand/world-nebula.svg", "accent": "#72C8FF", "launchable": true,
+    "warning": "Нужен браузер с WebGL 2 и совместимая видеокарта. Покупки и сетевые функции доступны только при подтверждении сервером.",
+    "format": "Космическая 3D-игра", "status": "Godot-сборка · проверка совместимости продолжается",
+    "launchLabel": "Открыть NEBULA", "searchTerms": "nebula космос станция флот godot 3d"
+  },
+  {
+    "id": "r136-precision", "title": "R136 Precision", "genre": "Симуляция", "mode": "solo",
+    "description": "Короткая интерактивная демонстрация промышленной ячейки с движущимися механизмами.",
+    "controls": "E — аварийная остановка; X — продолжить цикл; H — детализация. Мышь или касание — вращение; прокрутка или жест — масштаб.",
+    "platform": "Godot Web · требуется WebGL 2", "save": "Сохранение не используется",
+    "online": "Офлайн-симуляция · сервер не нужен", "href": "/games/r136-precision/",
+    "asset": "/brand/world-r136.svg", "accent": "#8DE4D7", "launchable": true,
+    "warning": "Лабораторная симуляция, не управление реальным оборудованием. Нет телеметрии и исходного 544 МБ архива.",
+    "format": "Промышленная 3D-симуляция", "status": "Демонстрация · 20-секундный цикл",
+    "launchLabel": "Открыть симуляцию", "searchTerms": "r136 precision промышленная ячейка симуляция godot"
+  },
+  {
     "id": "zion-020",
     "title": "Базальтовая колыбель",
     "genre": "Головоломка",
