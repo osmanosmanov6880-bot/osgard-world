@@ -2,7 +2,11 @@ import assert from 'node:assert/strict'
 import { readFileSync,existsSync } from 'node:fs'
 import { parsePlayCollection,emptyPlayCollection,toggleFavorite,visitGame } from '../src/playCollection.ts'
 import { playGames,cases } from '../src/redesignCatalog.ts'
+import { PLAY_GAME_IDS, PLAY_GENRES, FEATURED_PLAY_WORLDS } from '../src/playCatalogIndex.ts'
 const ids=playGames.map(g=>g.id)
+assert.deepEqual(PLAY_GAME_IDS,ids,'Compact home index must stay aligned with the full game catalog')
+assert.deepEqual(PLAY_GENRES,[...new Set(playGames.map(g=>g.genre))],'Compact home filters must match game genres')
+assert.ok(FEATURED_PLAY_WORLDS.every(g=>ids.includes(g.id)),'Featured worlds must remain in the game catalog')
 let p=toggleFavorite(emptyPlayCollection(),'time');assert.deepEqual(p.favorites,['time']);p=toggleFavorite(p,'time');assert.deepEqual(p.favorites,[])
 p=visitGame(visitGame(visitGame(p,'time'),'swarm'),'time');assert.deepEqual(p.recent,['time','swarm'])
 assert.deepEqual(parsePlayCollection('{"favorites":["time","time","unknown",12],"recent":["swarm"]}',ids),{favorites:['time'],recent:['swarm']})

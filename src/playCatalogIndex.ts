@@ -2,16 +2,16 @@ import type { PlayGame } from './redesignCatalog'
 
 export type PlayCatalogCard = Pick<PlayGame, 'id' | 'title' | 'genre' | 'format' | 'description' | 'status' | 'accent'>
 
-export const PLAY_GAME_IDS = [
+export const PLAY_GAME_IDS: string[] = [
   'null-shift','time','empire-orbit','swarm','inherit','remix','vector-zero','afterimage-run',
   'empire-omega','nebula-3d','r136-precision',
   'zion-020','zion-021','zion-022','zion-023','zion-024','zion-025','zion-026','zion-027','zion-028','zion-029','zion-030',
-] as const
+]
 
-export const PLAY_GENRES = [
+export const PLAY_GENRES: string[] = [
   'Тактика','Стратегия','Кооператив','Симуляция','Арена','Платформер','Раннер',
   'Симулятор','Космический симулятор','Головоломка','История',
-] as const
+]
 
 // Only hero summaries load with the landing page. Full game instructions stay
 // in the deferred catalogue and game detail routes.
