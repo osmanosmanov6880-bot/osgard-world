@@ -34,7 +34,7 @@
    const glTimer=gl?.getExtension?.('EXT_disjoint_timer_query_webgl2')||null;
    const gpuSupported=!!(glTimer&&gl?.createQuery&&gl?.beginQuery&&gl?.getQueryParameter&&gl?.endQuery);
    let running=false,activeQuery=null,pending=[],gpuMs=[],renderIntervals=[],cpuTimes=[],
-     drawCalls=[],triangles=[],startedAt=0,lastRenderedAt=0,lastReport=null,duration=15000;
+     drawCalls=[],triangles=[],startedAt=0,lastRenderedAt=0,lastReport=null,duration=15000,originalAutoReset=null;
    const state={version:VERSION,renderer:name,vendor,classification,
      gpuTimerAvailable:gpuSupported,gpuSamples:0,frames:0,active:false,progress:0,
      durationMs:15000,mobile:Boolean(mobile),softwareGL:Boolean(softwareGL),
@@ -88,6 +88,7 @@
      duration=clamp(Number.isFinite(ms)?ms:15000,3000,60000);
      renderIntervals=[];cpuTimes=[];drawCalls=[];triangles=[];gpuMs=[];
      if(gpuSupported){pollGpu();while(pending.length){try{gl.deleteQuery(pending.shift())}catch(_){}}}
+     if(renderer.info){originalAutoReset=renderer.info.autoReset;renderer.info.autoReset=false;}
      running=true;startedAt=performance.now();lastRenderedAt=0;lastReport=null;
      state.active=true;state.frames=0;state.progress=0;state.durationMs=duration;
      state.gpuSamples=0;state.reportAvailable=false;state.measuredOnPhysicalGpu=false;
@@ -130,6 +131,7 @@
    function stop(){
      if(!running)return lastReport;
      running=false;state.active=false;
+     if(renderer.info&&originalAutoReset!==null){renderer.info.autoReset=originalAutoReset;originalAutoReset=null;}
      if(activeQuery){try{gl.endQuery(glTimer.TIME_ELAPSED_EXT);pending.push(activeQuery)}catch(_){}
        activeQuery=null;}
      pollGpu();
@@ -168,7 +170,7 @@
    startButton.addEventListener('click',()=>{if(!running)start();});
    copyButton.addEventListener('click',async()=>{
      if(!lastReport)return;
-     try{await navigator.clipboard.writeText(JSON.stringify(lastReport,null,2));
+     try{await navigator.clipboard.writeText(JSON.stringify(refreshGpuReport(),null,2));
        copyButton.textContent='✓ СКОПИРОВАНО';}
      catch(_){copyButton.textContent='КОПИЯ НЕДОСТУПНА';}
    });
@@ -178,8 +180,20 @@
      if(!document.getElementById('oc-journal')?.hidden||!document.getElementById('oc-pause')?.hidden)return;
      e.preventDefault();show(panel.hidden);
    });
+   function refreshGpuReport(){
+     if(!lastReport||!gpuSupported)return lastReport;
+     const count=gpuMs.length;pollGpu();
+     if(gpuMs.length!==count){
+       lastReport=Object.freeze({...lastReport,
+         gpuRenderMsP50:percentile(gpuMs,.5),gpuRenderMsP95:percentile(gpuMs,.95),
+         gpuTimerSamples:gpuMs.length});
+       state.gpuSamples=gpuMs.length;
+       if(!running)details.textContent=JSON.stringify(lastReport,null,2);
+     }
+     return lastReport;
+   }
    function snapshot(){
-     return Object.freeze({...state,performanceReport:lastReport});
+     return Object.freeze({...state,performanceReport:refreshGpuReport()});
    }
    function dispose(){
      stop();
@@ -187,7 +201,7 @@
      panel.remove();trigger.remove();
    }
    return Object.freeze({snapshot,start,stop,beginRender,endRender,dispose,
-     toggle:()=>show(panel.hidden),get report(){return lastReport;}});
+     toggle:()=>show(panel.hidden),get report(){return refreshGpuReport();}});
  }
  host.ZION030_HARDWARE_PERF=Object.freeze({VERSION,create});
 })(window);
