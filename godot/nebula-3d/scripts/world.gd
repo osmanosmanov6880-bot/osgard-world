@@ -23,6 +23,7 @@ const AdaptiveQualityR12Script = preload("res://scripts/adaptive_quality_r12.gd"
 const CinematicPortR14Script = preload("res://scripts/cinematic_port_r14.gd")
 const HangarStoreR15Script = preload("res://scripts/hangar_store_r15.gd")
 const FleetCombatR15Script = preload("res://scripts/fleet_combat_r15.gd")
+const PremiumFulfillmentR15Script = preload("res://scripts/premium_fulfillment_r15.gd")
 const SAVE_PATH = "user://nebula_3d_save.json"
 const SECTOR_COLORS = [Color(0.10,0.68,0.97), Color(0.64,0.35,1.0), Color(0.98,0.73,0.40), Color(1.0,0.46,0.34), Color(0.87,0.27,0.88), Color(0.24,0.92,0.88)]
 const SECTOR_NAMES = ["ПОРТ АВРОРА","НЕОНОВЫЙ КВАРТАЛ","ЦИТАДЕЛЬ","ЧЁРНЫЙ РЫНОК","РАЗЛОМ","НЕКСУС"]
@@ -89,6 +90,7 @@ var weapon_r15: String = "weapon_basic"
 var rockets_r15: int = 0
 var wingmen_r15: Array[String] = []
 var premium_r15: Dictionary = {}
+var premium_client_r15
 
 func _ready() -> void:
     rng.seed = 20261022
@@ -107,6 +109,12 @@ func _ready() -> void:
     add_child(store_r15)
     store_r15.credit_purchase_requested.connect(_r15_buy_credit)
     store_r15.premium_purchase_requested.connect(_r15_request_checkout)
+    premium_client_r15 = PremiumFulfillmentR15Script.new()
+    premium_client_r15.name = "R15_VerifiedPaymentFulfillment"
+    add_child(premium_client_r15)
+    premium_client_r15.inventory_synced.connect(_r15_premium_synced)
+    premium_client_r15.purchased_missile_authorized.connect(_r15_paid_missile_authorized)
+    premium_client_r15.sync_failed.connect(_r15_sync_failed)
     cinematic_post_r11 = CinematicPostR11Script.new()
     cinematic_post_r11.name = "R11_CinematicPost"
     add_child(cinematic_post_r11)
@@ -716,7 +724,11 @@ func _unhandled_key_input(event: InputEvent) -> void:
         elif event.keycode==KEY_R:
             if fleet_r15.launch_missile():
                 rockets_r15 = fleet_r15.missiles
+                _save_progress()
                 _show_notice("РАКЕТА ЗАПУЩЕНА · ОСТАЛОСЬ %d" % rockets_r15)
+            elif rockets_r15 <= 0 and int(premium_r15.get("missiles_6",0)) > 0 and is_instance_valid(fleet_r15._nearest_hostile(245.0)) and fleet_r15.cooldown <= 0:
+                premium_client_r15.buy_rocket_consumption()
+                _show_notice("ПРОВЕРЯЕМ ПЛАТНУЮ РАКЕТУ У СЕРВЕРА…")
             else:
                 _show_notice("НЕТ РАКЕТ ИЛИ ЦЕЛИ В РАДИУСЕ")
         elif event.keycode==KEY_F2:
@@ -806,7 +818,11 @@ func _upgrade_docked(slot: int) -> void:
 func _r15_apply_loadout() -> void:
     fleet_r15.set_loadout(equipped_r15, weapon_r15, rockets_r15, wingmen_r15)
     if is_instance_valid(store_r15):
-        store_r15.refresh(credits, owned_r15, equipped_r15)
+        var visible_owned: Dictionary = owned_r15.duplicate()
+        for paid_sku in premium_r15:
+            if int(premium_r15[paid_sku]) > 0 and paid_sku != "missiles_6":
+                visible_owned[paid_sku] = true
+        store_r15.refresh(credits, visible_owned, equipped_r15)
 
 func _r15_buy_credit(sku: String) -> void:
     if not is_instance_valid(ship) or ship.global_position.distance_to(SECTOR_POSITIONS[0]) > 150.0:
@@ -816,11 +832,19 @@ func _r15_buy_credit(sku: String) -> void:
         if str(entry["id"]) != sku:continue
         var cost: int = int(entry["cost"])
         var kind: String = str(entry["kind"])
-        if kind != "ammo" and owned_r15.has(sku):
+        if kind != "ammo" and (owned_r15.has(sku) or int(premium_r15.get(sku,0)) > 0):
             if kind == "ship":
                 equipped_r15 = sku
                 _r15_apply_loadout()
                 _show_notice("КОРАБЛЬ ВЫБРАН · " + sku)
+            elif kind == "weapon":
+                weapon_r15 = sku
+                _r15_apply_loadout()
+                _show_notice("ОРУЖИЕ УСТАНОВЛЕНО")
+            elif kind == "ally" and not wingmen_r15.has(sku) and wingmen_r15.size() < 2:
+                wingmen_r15.append(sku)
+                _r15_apply_loadout()
+                _show_notice("ПОМОЩНИК ПРИСОЕДИНИЛСЯ")
             else:
                 _show_notice("УЖЕ КУПЛЕНО")
             return
@@ -851,9 +875,44 @@ func _r15_buy_credit(sku: String) -> void:
     _show_notice("НЕИЗВЕСТНЫЙ ТОВАР")
 
 func _r15_request_checkout(_sku: String) -> void:
-    # Intentionally disabled until authenticated server-side checkout exists.
-    # Client callbacks, local saves and success URLs are NOT payment proof.
-    _show_notice("ПЛАТЁЖНАЯ КАССА ЕЩЁ НЕ АКТИВИРОВАНА")
+    # The separate account-based shop is allowed to open even when checkout is
+    # disabled. Its buy buttons remain blocked by the server-side catalog.
+    var url: String = "https://osgard.world/games/remix/arena-v2/nebula-3d/hangar.html"
+    if OS.has_feature("web"):
+        JavaScriptBridge.eval("window.location.assign('" + url + "')", true)
+    else:
+        OS.shell_open(url)
+
+func _r15_premium_synced(receipts: Dictionary) -> void:
+    # A Checkout return URL never unlocks goods. Only this authenticated server
+    # inventory response is permitted to change the paid inventory.
+    premium_r15.clear()
+    for sku in receipts:
+        if sku in ["ship_interceptor","ship_guardian","weapon_plasma",
+                   "missiles_6","wingman_escort","wingman_ace",
+                   "skin_obsidian","skin_aurora","hangar_visuals"]:
+            premium_r15[sku] = maxi(0, int(receipts[sku]))
+    if not owned_r15.has(equipped_r15) and int(premium_r15.get(equipped_r15,0)) <= 0:
+        equipped_r15 = "ship_scout"
+    if weapon_r15 != "weapon_basic" and not owned_r15.has(weapon_r15) and int(premium_r15.get(weapon_r15,0)) <= 0:
+        weapon_r15 = "weapon_basic"
+    for i in range(wingmen_r15.size()-1,-1,-1):
+        var wingman: String = wingmen_r15[i]
+        if not owned_r15.has(wingman) and int(premium_r15.get(wingman,0)) <= 0:
+            wingmen_r15.remove_at(i)
+    _r15_apply_loadout()
+    _show_notice("ПРЕМИУМ-АНГАР · ПРАВА ПРОВЕРЕНЫ СЕРВЕРОМ")
+
+func _r15_paid_missile_authorized() -> void:
+    premium_r15["missiles_6"] = maxi(0,int(premium_r15.get("missiles_6",0))-1)
+    fleet_r15.missiles += 1
+    var launched: bool = fleet_r15.launch_missile()
+    rockets_r15 = fleet_r15.missiles
+    _save_progress()
+    _show_notice("РАКЕТА ЗАПУЩЕНА" if launched else "РАКЕТА ДОБАВЛЕНА В ЗАПАС")
+
+func _r15_sync_failed(error: String) -> void:
+    _show_notice("ОПЛАЧЕННЫЕ ПРЕДМЕТЫ · " + error)
 
 func _safe_float(value: Variant, fallback: float) -> float:
     if typeof(value) != TYPE_FLOAT and typeof(value) != TYPE_INT:
