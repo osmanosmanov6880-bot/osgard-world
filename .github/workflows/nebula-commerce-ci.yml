@@ -1,0 +1,57 @@
+name: NEBULA R15 secure commerce and game integration
+on:
+  pull_request:
+    paths:
+      - "server/nebula_payments.py"
+      - "server/core_server.py"
+      - "tests/test_nebula_payments.py"
+      - "public/games/remix/arena-v2/nebula-3d/hangar.*"
+      - "godot/nebula-3d/scripts/**"
+      - "nginx.conf"
+      - ".github/workflows/nebula-commerce-ci.yml"
+  push:
+    branches: [master]
+    paths:
+      - "server/nebula_payments.py"
+      - "server/core_server.py"
+      - "tests/test_nebula_payments.py"
+      - "public/games/remix/arena-v2/nebula-3d/hangar.*"
+      - "nginx.conf"
+permissions:
+  contents: read
+jobs:
+  secure-payment-backend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Python compile
+        run: python -m compileall -q server/nebula_payments.py server/core_server.py
+      - name: Real-route mock Stripe contract tests; no money charged
+        run: python -m unittest discover -s tests -p 'test_nebula_payments.py' -v
+      - name: Check browser premium store script
+        run: node --check public/games/remix/arena-v2/nebula-3d/hangar.js
+      - name: Ensure checkout off by default and no unrestricted payment bypass
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('server/nebula_payments.py').read_text()
+          js=Path('public/games/remix/arena-v2/nebula-3d/hangar.js').read_text()
+          game=Path('godot/nebula-3d/scripts/premium_fulfillment_r15.gd').read_text()
+          assert 'OSGARD_NEBULA_PAYMENTS_ENABLED", "0"' in s
+          assert 'verify_webhook(raw, signature' in s
+          assert 'nebula_webhook_events' in s
+          assert 'ON CONFLICT(order_id) DO NOTHING' in s
+          assert '"sessionStorage"' not in s
+          assert "sessionStorage" in js
+          assert 'inventory_synced' in game
+          assert 'checkout.stripe.com' in js
+          assert "payment_method_types" not in s
+          print('NEBULA_R15_PAYMENT_SECURITY_CONTRACT_SUCCESS')
+          PY
