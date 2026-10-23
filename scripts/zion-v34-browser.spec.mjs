@@ -1,4 +1,5 @@
 import {test,expect} from '@playwright/test'
+import fs from 'node:fs/promises'
 
 test('ZION-030 v34: PBR microgeometry, kinetic props, GPU-safe film pass and measured hardware benchmark',async({page},testInfo)=>{
   test.setTimeout(120000)
@@ -49,6 +50,10 @@ test('ZION-030 v34: PBR microgeometry, kinetic props, GPU-safe film pass and mea
   await expect.poll(async()=>page.evaluate(()=>
     window.__ZION030_PERFORMANCE__.snapshot().reportAvailable),{timeout:28000}).toBe(true)
   const report=await page.evaluate(()=>window.__ZION030_PERFORMANCE__.report)
+  // The actual Chrome GPU identity and timing evidence are retained in CI.
+  // Software WebGL results must remain explicitly labelled software.
+  await fs.writeFile(testInfo.outputPath('zion-v34-measured-browser-performance.json'),
+    JSON.stringify({project:testInfo.project.name,report},null,2)+'\n','utf8')
   expect(report.source).toContain('browser WebGL measured')
   expect(report.renderedFrames).toBeGreaterThan(2)
   expect(report.renderFPS).toBeGreaterThan(0)
