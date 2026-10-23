@@ -1,0 +1,86 @@
+/* ZION-030 v34: real-GPU profiling UI.
+ * The overlay is optional; controls and mission HUD remain accessible.
+ */
+.oc-shell .oc-perf-trigger{min-width:70px;font-size:11px;letter-spacing:.06em;border-color:#638f9e;color:#d7feff;background:#0b3342cd}
+.oc-shell .oc-perf-trigger[aria-pressed="true"]{border-color:#9df4e5;background:#176b6b}
+.oc-shell .oc-perf-panel{position:absolute;z-index:51;right:clamp(12px,2.4vw,42px);top:135px;
+  width:min(405px,calc(100vw - 24px));max-height:min(76vh,650px);overflow:auto;
+  padding:17px 19px;border-radius:15px;border:1px solid #70d8d4;
+  background:linear-gradient(145deg,#082b39f5,#061522f6);box-shadow:0 22px 60px #000a;
+  color:#e7faff;backdrop-filter:blur(12px)}
+.oc-shell .oc-perf-panel[hidden]{display:none!important}
+.oc-shell .oc-perf-panel>strong{display:block;color:#8ff8e9;font-size:15px;font-weight:950;letter-spacing:.075em}
+.oc-shell .oc-perf-panel>p{margin:10px 0;color:#b7d5e4;font-size:12px;line-height:1.55}
+.oc-shell .oc-perf-panel pre{white-space:pre-wrap;word-break:break-word;
+  font:11px/1.5 ui-monospace,Consolas,'Liberation Mono',monospace;color:#d4edfc;
+  background:#071927;border:1px solid #315d70;border-radius:9px;
+  padding:12px;max-height:33vh;overflow:auto;margin:12px 0}
+.oc-shell .oc-perf-panel>div{display:flex;flex-wrap:wrap;gap:7px}
+.oc-shell .oc-perf-panel button{border:1px solid #5dbfbd;background:#155568;color:#edffff;
+  padding:10px 11px;border-radius:9px;font-size:11px;font-weight:850;min-height:41px}
+.oc-shell .oc-perf-panel button:disabled{opacity:.44;cursor:not-allowed}
+.oc-shell .oc-perf-panel button:hover:not(:disabled){background:#197580}
+.oc-shell.oc-focus .oc-perf-trigger{opacity:.8}
+@media(max-width:760px){
+ .oc-shell .oc-perf-trigger{padding:7px 6px;font-size:9px;min-width:48px}
+ .oc-shell .oc-perf-panel{top:75px;left:9px;right:9px;width:auto;max-height:calc(100dvh - 140px);
+   padding:13px 14px;border-radius:11px}
+ .oc-shell .oc-perf-panel>strong{font-size:13px}
+ .oc-shell .oc-perf-panel>p{font-size:11px}
+ .oc-shell .oc-perf-panel button{font-size:10px;padding:9px;min-height:40px}
+}
+@media(prefers-reduced-motion:reduce){.oc-shell .oc-perf-panel{backdrop-filter:none}}
+
+
+/* Accessible single action bar. Overrides legacy absolute-positioned mission
+   and pause buttons; CINEMA and FPS can no longer be intercepted by them. */
+.oc-shell .oc-top-right{gap:8px;align-items:center;flex-shrink:0}
+.oc-shell .oc-top-right .oc-journal-trigger,
+.oc-shell .oc-top-right .oc-pause-trigger{
+  position:static;top:auto;right:auto;inset:auto;transform:none;
+  min-height:42px;padding:9px 11px;font-size:11px;line-height:1.3;
+  flex:0 0 auto;pointer-events:auto;z-index:auto;
+}
+.oc-shell .oc-top-right .oc-journal-trigger kbd{margin-left:4px}
+.oc-shell .oc-top-right .oc-focus-switch,
+.oc-shell .oc-top-right .oc-perf-trigger{flex:0 0 auto;min-height:42px}
+@media (max-width:1250px) and (min-width:761px){
+ .oc-shell .oc-header{gap:10px}
+ .oc-shell .oc-top-right{gap:5px}
+ .oc-shell .oc-top-right .oc-live{display:none}
+ .oc-shell .oc-top-right .oc-journal-trigger,
+ .oc-shell .oc-top-right .oc-pause-trigger{font-size:10px;padding:8px 9px}
+ .oc-shell .oc-top-right .oc-focus-switch,
+ .oc-shell .oc-top-right .oc-perf-trigger{padding:8px;letter-spacing:0}
+ .oc-shell .oc-top-right .oc-glass{padding:8px 9px}
+}
+@media (max-width:760px){
+ .oc-shell .oc-header{align-items:center}
+ .oc-shell .oc-top-right{gap:4px;min-width:0;flex:0 0 auto}
+ .oc-shell .oc-top-right .oc-journal-trigger,
+ .oc-shell .oc-top-right .oc-pause-trigger{
+   position:absolute;z-index:17;right:10px;inset:auto 10px auto auto;
+   min-height:35px;font-size:10px;padding:7px 9px;
+ }
+ .oc-shell .oc-top-right .oc-pause-trigger{top:226px}
+ .oc-shell .oc-top-right .oc-journal-trigger{top:268px}
+ .oc-shell .oc-top-right .oc-journal-trigger kbd{display:none}
+ .oc-shell .oc-top-right .oc-focus-switch,
+ .oc-shell .oc-top-right .oc-perf-trigger{min-height:34px;padding:6px;font-size:9px}
+ .oc-shell .oc-top-right #oc-exit{min-height:34px;padding:6px 8px}
+}
+@media (max-width:360px){
+ .oc-shell .oc-diamond{display:none}
+ .oc-shell .oc-brand{min-width:0}
+ .oc-shell .oc-brand strong{font-size:11px}
+ .oc-shell .oc-brand small{font-size:7px}
+ .oc-shell .oc-top-right{gap:3px}
+}
+
+/* v34 visual QA: remove the duplicate weather card from the phone-sized
+   cinematic overlay; actual day/night/rain toggles stay reachable. */
+@media (max-width:760px){
+ .oc-shell.oc-focus .oc-right-hud .oc-weather{display:none!important}
+ .oc-shell.oc-focus .oc-right-hud{top:59px;right:7px}
+ .oc-shell.oc-focus .oc-status-bar{top:184px}
+}

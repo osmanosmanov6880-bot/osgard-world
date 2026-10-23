@@ -8,7 +8,7 @@ import { createHash } from 'node:crypto'
  */
 const origin = process.env.OSGARD_BASE_URL || 'https://osgard.world'
 const root = 'public/games/zion-9/queue/ZION-030/'
-const assets = ['index.html', 'premium.js', 'premium.css', 'athens-skyline.svg', 'open-city-rules.js', 'open-city.js', 'open-city.css', 'open-city-details.js', 'open-city-cinematic.js', 'open-city-landmarks.js']
+const assets = ['index.html', 'premium.js', 'premium.css', 'athens-skyline.svg', 'open-city-rules.js', 'open-city.js', 'open-city.css', 'open-city-details.js', 'open-city-cinematic.js', 'open-city-landmarks.js', 'open-city-streets.js', 'open-city-focus.css', 'open-city-focus.js', 'open-city-v34.css', 'open-city-pbr34.js', 'open-city-postfx34.js', 'open-city-perf34.js', 'open-city-cooling34.js', 'open-city-surfaces35.js', 'open-city-civic36.js', 'open-city-photoreal37.js', 'open-city-nature38.js', 'open-city-optics39.js', 'open-city-store40.js', 'open-city-store40.css']
 const checksum = b => createHash('sha256').update(b).digest('hex')
 const evidence = []
 for(const asset of assets){

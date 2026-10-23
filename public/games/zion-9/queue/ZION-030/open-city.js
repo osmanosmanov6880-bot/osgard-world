@@ -101,6 +101,15 @@
     <div class="oc-vehicle-charge" id="oc-vehicle-charge" hidden><span>\u26a1 \u0417\u0410\u0420\u042f\u0414</span><strong id="oc-battery-readout">100%</strong><div class="oc-meter"><i id="oc-battery-bar"></i></div></div>
   `);
   shell.querySelector('.oc-start-foot').append(' · SPACE: прыжок · V: камера · J: журнал · M: карта · ESC: пауза');
+  // Keep mission and pause actions inside the same responsive action bar as
+  // CINEMA, FPS and Exit. The old absolute offsets could cover those controls.
+  const headerActions=shell.querySelector('.oc-top-right');
+  const exitButton=shell.querySelector('#oc-exit');
+  for(const id of ['oc-journal-button','oc-pause-button']){
+    const control=shell.querySelector('#'+id);
+    if(headerActions&&exitButton&&control)headerActions.insertBefore(control,exitButton);
+  }
+
   shell.insertAdjacentHTML('beforeend', '<button id="oc-nav-mobile" type="button" aria-label="Переключить маршрут GPS">⌖ GPS: СЮЖЕТ</button>');
   shell.insertAdjacentHTML('beforeend', '<button id="oc-view-button" class="oc-view-button" type="button" aria-label="\u0421\u043c\u0435\u043d\u0438\u0442\u044c \u043a\u0430\u043c\u0435\u0440\u0443">\u25c9 \u041a\u0410\u041c\u0415\u0420\u0410</button><button id="oc-jump-button" class="oc-jump-button" type="button" aria-label="\u041f\u0440\u044b\u0433\u043d\u0443\u0442\u044c">\u21e7 \u041f\u0420\u042b\u0416\u041e\u041a</button>');
 
@@ -112,14 +121,15 @@
   const joystick = { x: 0, y: 0, pointer: null, centerX: 0, centerY: 0 };
   const player = { x: 0, z: 0, y: 0, yaw: 0, cameraYaw: 0.35, pitch: 0.28, speed: 0, moving: false, vx:0, vz:0, stamina:100, height:0, vy:0, cameraMode:'chase' };
   const world = { ready: false, active: false, initialised: false, last: 0, frame: 0, assets: [], buildings: [], rings: [], dust: [], foliage: [], lamps: [], pulse: 0, fpsFrames: 0, fpsTime: 0, fpsSample: 0, quality: 'high', gpuScale: 1.35, softwareGL: false, lastRender: 0, navMode: 'main', people: [], traffic: [], contractMarkers: [], dispatchMarkers: [], streetLife: [], jumpQueued:false, car: null, rain: null, dayMode: 0, raining: false, path: [], routeTo: '', pathCell: '' };
-  let scene, camera, renderer, avatar, legL, legR, armL, armR, sun, minimapCtx, targetIndex = -1, hemi, keyLight, blueFill, detailKit = null, cinematicKit = null, landmarkKit = null;
+  let surfaceKit=null,civicKit=null,photorealKit=null,natureKit=null,opticsKit=null,shopKit=null;
+  let scene, camera, renderer, avatar, legL, legR, armL, armR, sun, minimapCtx, targetIndex = -1, hemi, keyLight, blueFill, detailKit = null, cinematicKit = null, landmarkKit = null, streetKit = null, atelierKit = null, postFxKit = null, perfKit = null, coolingKit = null;
   let dragId = null, dragX = 0, dragY = 0, audio, animationId = 0, lastDistrict = '', lastHudUpdate = 0;
   const PROFILE_KEY = 'osgard:zion030:open-city:v28';
   let profile = rules.defaultProfile();
   try { profile = rules.sanitizeProfile(JSON.parse(localStorage.getItem(PROFILE_KEY) || 'null')); } catch (_) { /* Storage may be blocked. */ }
   const persist = () => { try { localStorage.setItem(PROFILE_KEY, JSON.stringify(profile)); } catch (_) { /* Play offline without saving if storage is unavailable. */ } };
   const getDispatch = () => rules.nextDispatchStep(profile);
-  const modalOpen = () => !$('oc-pause').hidden || !$('oc-journal').hidden;
+  const modalOpen = () => !$('oc-pause').hidden || !$('oc-journal').hidden || shell.dataset.storeOpen==='true';
   const selectedDispatch = () => DISPATCHES.find(d => d.id === profile.activeDispatch);
   function radio(message) { $('oc-radio-text').textContent = message; $('oc-radio').classList.add('oc-radio-active'); clearTimeout(radio.timer); radio.timer = window.setTimeout(() => $('oc-radio').classList.remove('oc-radio-active'), 5500); }
   function showJournal() { if (!world.active || !$('oc-start').hidden) return; $('oc-pause').hidden = true; $('oc-journal').hidden = false; keys.clear(); updateJournal(); $('oc-journal-close').focus({ preventScroll:true }); }
@@ -209,9 +219,9 @@
     const road = makeMat('#132433', .73, .23), stone = makeMat('#304454', .81), edge = makeMat('#73818a', .75);
     const ground = new THREE.Mesh(new THREE.PlaneGeometry(150, 150), makeMat('#0b1723'));
     ground.rotation.x = -Math.PI / 2; ground.position.y = -.075; ground.receiveShadow = true; scene.add(ground);
-    const asphalt = new THREE.Mesh(new THREE.PlaneGeometry(41, 41), road);
+    const asphalt = new THREE.Mesh(new THREE.PlaneGeometry(41, 41), road); asphalt.name='ZION35 asphalt surface';
     asphalt.rotation.x = -Math.PI / 2; asphalt.position.y = -.035; asphalt.receiveShadow = true; scene.add(asphalt);
-    const plaza = new THREE.Mesh(new THREE.PlaneGeometry(5.6, 5.6), stone);
+    const plaza = new THREE.Mesh(new THREE.PlaneGeometry(5.6, 5.6), stone); plaza.name='ZION35 plaza surface';
     plaza.rotation.x = -Math.PI / 2; plaza.position.y = -.018; plaza.receiveShadow = true; scene.add(plaza);
     const markerMat = new THREE.MeshBasicMaterial({ color: 0x7797a3, transparent: true, opacity: .35, depthWrite: false });
     for (let i = -7; i <= 7; i++) {
@@ -424,6 +434,7 @@
     if (detailKit) detailKit.detailCar(shellMesh);
     cinematicKit?.detailCar(shellMesh);
     landmarkKit?.detailCar(shellMesh);
+    streetKit?.detailCar(shellMesh);
     return shellMesh;
   }
   function makePerson(index, x, z) {
@@ -651,6 +662,15 @@
     if (world.rain) world.rain.rain.visible = world.raining;
     cinematicKit?.syncEnvironment({ raining: world.raining, dayMode: world.dayMode });
     landmarkKit?.syncEnvironment({ raining: world.raining, dayMode: world.dayMode });
+    streetKit?.syncEnvironment({ raining: world.raining, dayMode: world.dayMode });
+    atelierKit?.syncEnvironment({ raining: world.raining, dayMode: world.dayMode });
+    surfaceKit?.syncEnvironment({ raining: world.raining, dayMode: world.dayMode });
+    civicKit?.syncEnvironment({ raining: world.raining, dayMode: world.dayMode });
+    photorealKit?.syncEnvironment({ raining: world.raining, dayMode: world.dayMode });
+    natureKit?.syncEnvironment({ raining: world.raining, dayMode: world.dayMode });
+    opticsKit?.syncEnvironment({ raining: world.raining, dayMode: world.dayMode });
+    coolingKit?.syncEnvironment({ raining: world.raining, dayMode: world.dayMode });
+    postFxKit?.syncEnvironment({ raining: world.raining, dayMode: world.dayMode });
     $('oc-time').textContent = isNight ? '☾ НОЧЬ' : isDay ? '☼ ДЕНЬ' : '◐ ВЕЧЕР';
     $('oc-rain').setAttribute('aria-pressed', String(world.raining));
     $('oc-weather-symbol').textContent = world.raining ? '☂' : isNight ? '☾' : '☀';
@@ -667,6 +687,15 @@
     detailKit?.setQuality(world.quality);
     cinematicKit?.setQuality(world.quality);
     landmarkKit?.setQuality(world.quality);
+    streetKit?.setQuality(world.quality);
+    atelierKit?.setQuality(world.quality);
+    surfaceKit?.setQuality(world.quality);
+      civicKit?.setQuality(world.quality);
+      photorealKit?.setQuality(world.quality);
+      natureKit?.setQuality(world.quality);
+      opticsKit?.setQuality(world.quality);
+    coolingKit?.setQuality(world.quality);
+    postFxKit?.setQuality(world.quality);
     $('oc-quality').textContent = world.quality === 'eco' ? '◈ ECO' : (detailKit?.stats.tier === 'ULTRA' ? '◈ ULTRA' : '◈ HIGH');
     resize(); announce(world.quality === 'eco' ? 'Экономичный режим' : 'Улучшенная графика');
   }
@@ -737,7 +766,17 @@
     if (type === 'tree') {
       const trunk = makeMat('#8c6547'), leaf = [makeMat('#49ba80'), makeMat('#65d5a1'), makeMat('#2f9264')];
       const stem = new THREE.Mesh(new THREE.CylinderGeometry(.08, .12, .91, 10), trunk); stem.position.y = .46; group.add(stem);
-      for (let i = 0; i < 8; i++) { const a = i * 2.399; const ball = new THREE.Mesh(new THREE.IcosahedronGeometry(.26 + (i % 3) * .06, 1), leaf[i % 3]); ball.position.set(Math.cos(a) * .29, 1.12 + (i % 3) * .17, Math.sin(a) * .27); group.add(ball); }
+      // These materials are unique to this installation, so the chase camera
+      // may softly fade only the crown that crosses the player's view.
+      const crown = new THREE.Group(); crown.name='cooling-tree-crown';
+      for(const mat of leaf){mat.transparent=true;mat.depthWrite=false;mat.opacity=1;}
+      for (let i = 0; i < 8; i++) {
+        const a=i*2.399,ball=new THREE.Mesh(new THREE.IcosahedronGeometry(.26+(i%3)*.06,1),leaf[i%3]);
+        ball.position.set(Math.cos(a)*.29,1.12+(i%3)*.17,Math.sin(a)*.27);
+        crown.add(ball);
+      }
+      group.add(crown);
+      group.userData.ocCrown=crown;group.userData.ocCrownMats=leaf;group.userData.ocCrownOpacity=1;
     } else if (type === 'shade') {
       const pole = makeMat('#8ca4aa', .35, .76), sheet = makeMat('#99e3eb', .32, .58, '#198a91', .15);
       for (const dx of [-.46, .46]) for (const dz of [-.46, .46]) drawBox(group, dx, 0, dz, .045, 1.60, .045, pole);
@@ -754,6 +793,34 @@
     const halo = new THREE.Mesh(new THREE.RingGeometry(.75, .83, 48), new THREE.MeshBasicMaterial({ color: 0x70ffe0, transparent: true, opacity: .75, side: THREE.DoubleSide, depthWrite: false }));
     halo.rotation.x = -Math.PI / 2; halo.position.y = .03; group.add(halo);
     scene.add(group); return group;
+  }
+  // Keep newly planted greenery immersive without blocking the third-person
+  // camera. Fade crowns crossing the camera-to-player segment (or surrounding
+  // the player), not unrelated trees and not the original solid gameplay.
+  function updateCoolingCrownOcclusion(dt){
+    if(!camera)return;
+    const ax=camera.position.x,ay=camera.position.y,az=camera.position.z;
+    const bx=player.x,by=1.18+player.height,bz=player.z;
+    const vx=bx-ax,vy=by-ay,vz=bz-az;
+    const lengthSq=Math.max(.0001,vx*vx+vy*vy+vz*vz);
+    const speed=1-Math.exp(-Math.max(0,dt)*13);
+    let faded=0;
+    for(const rec of world.rings){
+      const prop=rec.prop,crown=prop?.userData?.ocCrown;
+      if(!crown)continue;
+      const x=prop.position.x,y=1.31,z=prop.position.z;
+      const param=clamp(((x-ax)*vx+(y-ay)*vy+(z-az)*vz)/lengthSq,0,1);
+      const dx=ax+vx*param-x,dy=ay+vy*param-y,dz=az+vz*param-z;
+      const inSight=dx*dx+dy*dy+dz*dz<.64;
+      const onTop=Math.hypot(bx-x,bz-z)<.90;
+      const target=(inSight||onTop)? .035 : 1;
+      const prev=prop.userData.ocCrownOpacity??1;
+      const opacity=prev+(target-prev)*speed;
+      prop.userData.ocCrownOpacity=opacity;
+      for(const material of prop.userData.ocCrownMats)material.opacity=opacity;
+      if(opacity<.50)faded++;
+    }
+    world.coolingCrownsFaded=faded;
   }
   function makeHotMarkers() {
     for (const [i, h] of HOT.entries()) {
@@ -797,6 +864,7 @@
     if (detailKit) detailKit.detailAvatar(avatar);
     cinematicKit?.detailAvatar(avatar);
     landmarkKit?.detailAvatar(avatar);
+    streetKit?.detailAvatar(avatar);
     scene.add(avatar); return avatar;
   }
   function addAtmosphere() {
@@ -829,7 +897,7 @@
       const gl = renderer.getContext();
       const debugGL = gl.getExtension('WEBGL_debug_renderer_info');
       const glName = String(debugGL ? gl.getParameter(debugGL.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER) || '').toLowerCase();
-      world.softwareGL = /swiftshader|llvmpipe|software|softpipe|lavapipe/.test(glName);
+      world.softwareGL = /swiftshader|llvmpipe|software|softpipe|lavapipe|basic render driver|warp|virtualbox|vmware svga/.test(glName);
       renderer.outputColorSpace = THREE.SRGBColorSpace;
       renderer.toneMapping = THREE.ACESFilmicToneMapping;
       renderer.toneMappingExposure = 1.42;
@@ -866,7 +934,68 @@
           reducedMotion: reduceMotion.matches, mobile: mobile.matches
         });
       } catch (error) { console.warn('ZION-030 landmark asset fallback', error); }
-      makeHotMarkers(); makeAvatar(); addLivingWorld(); updateAtmosphere();
+      try {
+        if (window.ZION030_STREET_ATELIER) streetKit = window.ZION030_STREET_ATELIER.install({
+          THREE, scene, rules, softwareGL: world.softwareGL,
+          reducedMotion: reduceMotion.matches, mobile: mobile.matches
+        });
+      } catch (error) { console.warn('ZION-030 street-level asset fallback', error); }
+      try {
+        if (window.ZION030_ATELIER_PBR) atelierKit = window.ZION030_ATELIER_PBR.install({
+          THREE, scene, rules, softwareGL: world.softwareGL,
+          reducedMotion: reduceMotion.matches, mobile: mobile.matches
+        });
+      } catch (error) { console.warn('ZION-030 PBR surface fallback', error); }
+      try {
+        if (window.ZION030_POSTFX) postFxKit = window.ZION030_POSTFX.create({
+          THREE, renderer, scene, camera, softwareGL: world.softwareGL,
+          reducedMotion: reduceMotion.matches, mobile: mobile.matches
+        });
+      } catch (error) { console.warn('ZION-030 postFX fallback', error); }
+      try {
+        if (window.ZION030_HARDWARE_PERF) perfKit = window.ZION030_HARDWARE_PERF.create({
+          THREE, renderer, scene, shell, softwareGL: world.softwareGL, mobile: mobile.matches
+        });
+      } catch (error) { console.warn('ZION-030 hardware profiler unavailable', error); }
+      try {
+        if (window.ZION030_COOLING_FX) coolingKit = window.ZION030_COOLING_FX.install({
+          THREE, scene, softwareGL: world.softwareGL,
+          reducedMotion: reduceMotion.matches, mobile: mobile.matches
+        });
+      } catch (error) { console.warn('ZION-030 microclimate transformation fallback', error); }
+      try {if(window.ZION030_SURFACES35)surfaceKit=window.ZION030_SURFACES35.install({THREE,scene,rules,softwareGL:world.softwareGL,reducedMotion:reduceMotion.matches,mobile:mobile.matches});}
+      catch(error){console.warn('ZION-030 v35 street material fallback',error);}
+      try {if(window.ZION030_CIVIC36)civicKit=window.ZION030_CIVIC36.install({THREE,scene,rules,softwareGL:world.softwareGL,reducedMotion:reduceMotion.matches,mobile:mobile.matches});}
+      catch(error){console.warn('ZION-030 v36 civic architecture fallback',error);}
+      makeHotMarkers(); makeAvatar(); addLivingWorld();
+      // Install v37 after the real car/avatar/lighting and all facade meshes exist.
+      try {
+        if(window.ZION030_PHOTOREAL37)photorealKit=window.ZION030_PHOTOREAL37.install({
+          THREE,scene,renderer,rules,car:world.car,avatar,keyLight,hemi,blueFill,
+          softwareGL:world.softwareGL,reducedMotion:reduceMotion.matches,mobile:mobile.matches
+        });
+      }catch(error){console.warn('ZION-030 v37 physically based visual fallback',error);}
+      try{
+        if(window.ZION030_NATURE38)natureKit=window.ZION030_NATURE38.install({
+          THREE,scene,rules,foliage:world.foliage,mobile:mobile.matches,
+          softwareGL:world.softwareGL,reducedMotion:reduceMotion.matches
+        });
+      }catch(error){console.warn('ZION-030 v38 environment fallback',error);}
+      try{
+        if(window.ZION030_OPTICS39)opticsKit=window.ZION030_OPTICS39.install({
+          THREE,scene,rules,lamps:world.lamps,
+          mobile:mobile.matches,softwareGL:world.softwareGL,
+          reducedMotion:reduceMotion.matches
+        });
+      }catch(error){console.warn('ZION-030 v39 urban optics fallback',error);}
+      // The store never grants access from a success URL. Paid looks are only
+      // applied after the authenticated inventory endpoint confirms them.
+      try{
+        if(window.ZION030_STORE40)shopKit=window.ZION030_STORE40.mount({
+          shell,getCar:()=>world.car,getAvatar:()=>avatar,getLamps:()=>world.lamps
+        });
+      }catch(error){console.warn('ZION-030 v40 payment store unavailable',error);}
+      updateAtmosphere();
       minimapCtx = $('oc-minimap').getContext('2d');
       world.gpuScale = reduceMotion.matches ? .34 : world.softwareGL ? .4 : mobile.matches ? 1.05 : 1.35;
       if (reduceMotion.matches || world.softwareGL) { world.quality = 'adaptive'; $('oc-quality').textContent = '◈ AUTO'; }
@@ -874,15 +1003,47 @@
       detailKit?.setQuality(world.quality);
       cinematicKit?.setQuality(world.quality);
     landmarkKit?.setQuality(world.quality);
+    streetKit?.setQuality(world.quality);
+    atelierKit?.setQuality(world.quality);
+    surfaceKit?.setQuality(world.quality);
+      civicKit?.setQuality(world.quality);
+      photorealKit?.setQuality(world.quality);
+      natureKit?.setQuality(world.quality);
+      opticsKit?.setQuality(world.quality);
+    coolingKit?.setQuality(world.quality);
+    postFxKit?.setQuality(world.quality);
       world.ready = true; resize(); syncGame(); drawMiniMap();
+      atelierKit?.setQuality(world.quality);
+    surfaceKit?.setQuality(world.quality);
+      civicKit?.setQuality(world.quality);
+      photorealKit?.setQuality(world.quality);
+      natureKit?.setQuality(world.quality);
+      opticsKit?.setQuality(world.quality);
+    coolingKit?.setQuality(world.quality);
+      postFxKit?.setQuality(world.quality);
+      coolingKit?.setQuality(world.quality);
+      // Read-only diagnostics and an explicit, opt-in benchmark controller.
+      window.__ZION030_PERFORMANCE__=perfKit||null;
       window.__ZION030_OPEN_CITY__ = {
-        state: () => ({ ready: world.ready, active: world.active, player: { x: player.x, z: player.z, stamina:player.stamina, height:player.height, cameraMode:player.cameraMode }, mission: game()?.state(), quality: world.quality, driving: Boolean(world.car?.occupied), vehicle: world.car ? { x: world.car.x, z: world.car.z, speed: world.car.speed, battery: world.car.battery } : null, contracts: [...profile.completed], credits: profile.credits, raining: world.raining, dayMode: world.dayMode, dispatch:{done:[...profile.dispatchDone],steps:{...profile.dispatchSteps},active:profile.activeDispatch}, garage:{speed:profile.fastCar,grip:profile.grip,battery:profile.batteryUpgrade}, district:rules.districtAt(player.x,player.z), detail: detailKit?.stats ?? null, cinematic: cinematicKit?.stats ?? null, landmarks: landmarkKit?.stats ?? null }),
+        state: () => ({ ready: world.ready, active: world.active, player: { x: player.x, z: player.z, stamina:player.stamina, height:player.height, cameraMode:player.cameraMode }, mission: game()?.state(), quality: world.quality, driving: Boolean(world.car?.occupied), vehicle: world.car ? { x: world.car.x, z: world.car.z, speed: world.car.speed, battery: world.car.battery } : null, contracts: [...profile.completed], credits: profile.credits, raining: world.raining, dayMode: world.dayMode, dispatch:{done:[...profile.dispatchDone],steps:{...profile.dispatchSteps},active:profile.activeDispatch}, garage:{speed:profile.fastCar,grip:profile.grip,battery:profile.batteryUpgrade}, district:rules.districtAt(player.x,player.z), detail: detailKit?.stats ?? null, cinematic: cinematicKit?.stats ?? null, landmarks: landmarkKit?.stats ?? null, street: streetKit?.stats ?? null, atelier: atelierKit?.stats ?? null, surfaces:surfaceKit?.stats ?? null, civic:civicKit?.stats ?? null, photoreal:photorealKit?.stats ?? null, nature:natureKit?.stats ?? null, optics:opticsKit?.stats ?? null, shop:shopKit?.state ?? null, postfx: postFxKit?.stats ?? null, coolingFx: coolingKit?.stats ?? null, coolingCrownsFaded: world.coolingCrownsFaded||0, cameraOcclusionFallback:Boolean(world.cameraOcclusionFallback), perf: perfKit?.snapshot() ?? null }),
         enter, exit, walk: (dx, dz) => { if (!collides(player.x + dx, player.z + dz)) { player.x += dx; player.z += dz; } },
         drive: toggleCar, time: cycleTime, rain: toggleRain, quality: toggleQuality, gps: toggleNavigation, contract: completeNearbyContract,
         interact, camera:cycleCamera, journal:showJournal, pause:pauseGame, resume:resumeGame, dispatch:advanceNearbyDispatch
       };
       // Diagnostics exist only under the explicitly opted-in ?test=1 route.
       if (new URLSearchParams(location.search).has('test')) {
+        // Freeze only the test-only animation loop before screenshot evidence:
+        // no synthetic pixels, no interruption of real gameplay state.
+        window.__ZION030_OPEN_CITY__.freezeForCapture = () => {
+          if(animationId)window.cancelAnimationFrame(animationId);
+          animationId=0;return true;
+        };
+        window.__ZION030_OPEN_CITY__.resumeAfterCapture = () => {
+          if(world.active&&!animationId){
+            world.last=0;animationId=window.requestAnimationFrame(frame);
+          }
+          return Boolean(animationId);
+        };
         window.__ZION030_OPEN_CITY__.teleport = (x, z) => {
           if (world.car?.occupied) { world.car.occupied = false; world.car.speed = 0; avatar.visible = true; }
           const safe = rules.nearestFree(x, z);
@@ -905,6 +1066,7 @@
     const cap = world.quality === 'eco' ? Math.min(.55, world.gpuScale) : reduceMotion.matches ? Math.min(.34, world.gpuScale) : world.softwareGL ? Math.min(.4, world.gpuScale) : mobile.matches ? Math.min(1.05, world.gpuScale) : world.gpuScale;
     const dpr = Math.min(window.devicePixelRatio || 1, cap);
     renderer.setPixelRatio(dpr); renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix();
+    postFxKit?.resize();
   }
   function closest() {
     const s = game().state();
@@ -915,6 +1077,7 @@
   function syncGame() {
     if (!world.ready) return;
     const state = game().state();
+    coolingKit?.syncProgress(state.placed);
     $('oc-score').textContent = `${state.score} / 3 ЗОНЫ`;
     $('oc-remaining').textContent = `${Math.max(0, 3 - state.placed.length)} МОДУЛЯ`;
     $('oc-progress-bar').style.width = `${state.score / 3 * 100}%`;
@@ -1106,6 +1269,7 @@
     }
     const eyeHeight=c?.occupied?1.17:1.65+player.height;
     if(player.cameraMode==='first'){
+      world.cameraOcclusionFallback=false;
       camera.position.set(player.x,eyeHeight,player.z);
       camera.lookAt(player.x-Math.sin(player.cameraYaw)*13,
         eyeHeight-Math.tan(player.pitch-.25)*13,player.z-Math.cos(player.cameraYaw)*13);
@@ -1117,22 +1281,41 @@
         const tz=player.z+Math.cos(player.cameraYaw)*Math.cos(pitch)*d;
         if(collides(tx,tz,.12)){distance=Math.max(.7,d-.35);break;}
       }
-      const lookHeight=c?.occupied?.9:1.2+player.height;
-      const desired=new THREE.Vector3(player.x+Math.sin(player.cameraYaw)*Math.cos(pitch)*distance,
-        lookHeight+Math.sin(pitch)*distance,player.z+Math.cos(player.cameraYaw)*Math.cos(pitch)*distance);
-      // Prevent interpolation from leaving the chase camera inside a facade.
-      // The spring arm still eases normally in clear space and keeps the game grid authoritative.
-      if(collides(desired.x,desired.z,.16)){
-        desired.set(player.x,lookHeight+.65,player.z);
+      // In narrow lanes, a 0.7m chase arm produces a close-up of the
+      // character's head rather than the city. Seamlessly prefer a forward
+      // first-person viewpoint until there is room behind the player again.
+      if(distance<1.45){
+        world.cameraOcclusionFallback=true;
+        avatar.visible=false;
+        const eye=c?.occupied?1.36:1.65+player.height;
+        camera.position.set(player.x,eye,player.z);
+        camera.lookAt(player.x-Math.sin(player.cameraYaw)*13,
+          eye-Math.tan(player.pitch-.25)*13,
+          player.z-Math.cos(player.cameraYaw)*13);
+      }else{
+        world.cameraOcclusionFallback=false;
+        avatar.visible=player.cameraMode!=='first';
+        const lookHeight=c?.occupied?.9:1.2+player.height;
+        const desired=new THREE.Vector3(player.x+Math.sin(player.cameraYaw)*Math.cos(pitch)*distance,
+          lookHeight+Math.sin(pitch)*distance,player.z+Math.cos(player.cameraYaw)*Math.cos(pitch)*distance);
+        if(collides(desired.x,desired.z,.16))desired.set(player.x,lookHeight+.65,player.z);
+        camera.position.lerp(desired,1-Math.exp(-dt*9));
+        if(collides(camera.position.x,camera.position.z,.16))camera.position.copy(desired);
+        camera.lookAt(player.x,lookHeight,player.z);
       }
-      camera.position.lerp(desired,1-Math.exp(-dt*9));
-      if(collides(camera.position.x,camera.position.z,.16))camera.position.copy(desired);
-      camera.lookAt(player.x,lookHeight,player.z);
     }
+    updateCoolingCrownOcclusion(dt);
     const desiredFov=player.cameraMode==='first'?64:c?.occupied?74:player.moving&&player.stamina<99?72:68;
     const fov= camera.fov+(desiredFov-camera.fov)*(1-Math.exp(-dt*4));
     if(Math.abs(fov-camera.fov)>.025){camera.fov=fov;camera.updateProjectionMatrix();}
     updateTraffic(dt);updatePedestrians(dt,t);updateRain(dt);
+    streetKit?.update(dt);
+    atelierKit?.update(dt);
+    surfaceKit?.update(dt);
+    civicKit?.update(dt);
+    photorealKit?.update(dt);
+    natureKit?.update(dt);
+    coolingKit?.update(dt);
     world.rings.forEach((r,i)=>{
       const phase=reduceMotion.matches?0:t*2.2+i;
       r.ring.scale.setScalar(1+Math.sin(phase)*.06);
@@ -1150,21 +1333,44 @@
   }
   function frame(time) {
     if (!world.active || !world.ready) return;
+    // Photo textures begin only after the player enters the interactive city.
+    // This prevents six CDN downloads from competing with initial page load.
+    if (!world.photoMaterialsRequested) { world.photoMaterialsRequested = true; photorealKit?.activate?.(); }
     const dt = clamp((time - (world.last || time)) / 1000, 0, .06); world.last = time; world.frame++;
     if(!modalOpen())move(dt,time*.001);else world.jumpQueued=false;
     if (world.frame % 9 === 0) { syncGame(); drawMiniMap(); }
-    if (world.frame % 70 === 0) {
+    if (world.frame % 70 === 0 && !world.softwareGL && !reduceMotion.matches) {
       if (world.fpsTime) {
-        const fps = (world.frame - world.fpsFrames) * 1000 / (time - world.fpsTime);
-        if (fps < 28 && world.gpuScale > .36) { world.gpuScale = Math.max(.36, world.gpuScale * .78); world.quality = 'adaptive'; resize(); }
+        const fps = ((world.renderedFrameCount||0) - (world.fpsFrames||0)) * 1000 / (time - world.fpsTime);
+        if (fps < (mobile.matches ? 16 : 28) && world.gpuScale > .36) {
+          world.gpuScale = Math.max(.36, world.gpuScale * .78);
+          world.quality = 'adaptive';
+          // LOD downgrade must affect the entire city, not just the new art layer.
+          detailKit?.setQuality('adaptive');
+          cinematicKit?.setQuality('adaptive');
+          landmarkKit?.setQuality('adaptive');
+          streetKit?.setQuality('adaptive');
+          atelierKit?.setQuality('adaptive');
+          surfaceKit?.setQuality('adaptive');
+          civicKit?.setQuality('adaptive');
+          photorealKit?.setQuality('adaptive');
+          natureKit?.setQuality('adaptive');
+          opticsKit?.setQuality('adaptive');
+          coolingKit?.setQuality('adaptive');
+          postFxKit?.setQuality('adaptive');
+          resize();
+        }
       }
-      world.fpsTime = time; world.fpsFrames = world.frame;
+      world.fpsTime = time; world.fpsFrames = world.renderedFrameCount||0;
     }
     // Reduced-motion mode keeps gameplay responsive on software WebGL; render at a bounded cadence.
     const renderEvery = reduceMotion.matches || world.softwareGL ? 500 : mobile.matches ? 50 : 16;
     if (!world.lastRender || time - world.lastRender >= renderEvery) {
       world.lastRender = time;
-      renderer.render(scene, camera);
+      world.renderedFrameCount=(world.renderedFrameCount||0)+1;
+      const frameMark=perfKit?.beginRender() ?? null;
+      try { if(postFxKit)postFxKit.render(time*.001); else renderer.render(scene,camera); }
+      finally {perfKit?.endRender(frameMark);}
     }
     animationId = window.requestAnimationFrame(frame);
   }
@@ -1188,6 +1394,7 @@
     $('oc-start-play').focus({ preventScroll: true });
   }
   function exit() {
+    shopKit?.close();
     world.active = false;world.last=0;keys.clear();world.jumpQueued=false;joystick.x=joystick.y=0;$('oc-pause').hidden=true;$('oc-journal').hidden=true;
     if (world.car?.occupied) {world.car.occupied=false;world.car.speed=0;avatar.visible=player.cameraMode!=='first';player.x=world.car.x;player.z=world.car.z;}
     if (animationId) window.cancelAnimationFrame(animationId); animationId = 0;
@@ -1226,7 +1433,7 @@
   shell.querySelectorAll('[data-oc-tool]').forEach(b => b.addEventListener('click', () => { game()?.select(b.dataset.ocTool); syncGame(); }));
   window.addEventListener('keydown', e => {
     if (!world.active || !$('oc-start').hidden || !$('oc-complete').hidden || modalOpen()) return;
-    const gameplayCodes = ['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space','KeyE','KeyF','KeyH','KeyT','KeyP','KeyQ','KeyG','KeyV','KeyJ','KeyM','ShiftLeft','ShiftRight','Digit1','Digit2','Digit3'];
+    const gameplayCodes = ['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space','KeyE','KeyF','KeyH','KeyT','KeyP','KeyQ','KeyG','KeyV','KeyJ','KeyM','ShiftLeft','ShiftRight','Digit1','Digit2','Digit3','KeyB'];
     if (gameplayCodes.includes(e.code)) { e.preventDefault(); e.stopImmediatePropagation(); }
     keys.add(e.code);
     if (e.repeat) return;
@@ -1240,11 +1447,12 @@
     else if (e.code === 'KeyT') cycleTime();
     else if (e.code === 'KeyP') toggleRain();
     else if (e.code === 'KeyQ') toggleQuality();
-    else if (e.code === 'KeyH' && world.car?.occupied) soundSuccess();
+    else if (e.code === 'KeyH') window.__ZION030_FOCUS_HUD__?.toggle?.();
+    else if (e.code === 'KeyB') perfKit?.toggle?.();
     else if (['Digit1', 'Digit2', 'Digit3'].includes(e.code)) game().select(['tree', 'shade', 'water'][Number(e.code.slice(-1)) - 1]);
   }, true);
   window.addEventListener('keyup', e => { keys.delete(e.code); }, true);
-  window.addEventListener('keydown',e=>{if(!world.active||e.key!=='Escape')return;e.preventDefault();e.stopImmediatePropagation();if(!$('oc-journal').hidden)closeJournal();else if(!$('oc-pause').hidden)resumeGame();else if(!$('oc-start').hidden){$('oc-start').hidden=true;world.last=0;animationId=window.requestAnimationFrame(frame);}else pauseGame();},true);
+  window.addEventListener('keydown',e=>{if(!world.active||e.key!=='Escape'||shell.dataset.storeOpen==='true')return;e.preventDefault();e.stopImmediatePropagation();if(!$('oc-journal').hidden)closeJournal();else if(!$('oc-pause').hidden)resumeGame();else if(!$('oc-start').hidden){$('oc-start').hidden=true;world.last=0;animationId=window.requestAnimationFrame(frame);}else pauseGame();},true);
   window.addEventListener('blur', () => keys.clear());
   viewport.addEventListener('pointerdown', e => {
     if (!world.active || !$('oc-start').hidden || !$('oc-complete').hidden || modalOpen()) return;

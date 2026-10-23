@@ -1,0 +1,80 @@
+name: ZION-030 v37 photo-PBR physical GPU performance matrix
+
+# This NEVER runs on GitHub-hosted SwiftShader runners. Register your own
+# machine under Settings -> Actions -> Runners, with the explicit label
+# zion-gpu. The workflow intentionally stays pending when that runner is absent.
+on:
+  workflow_dispatch:
+    inputs:
+      max_p95_ms:
+        description: "Maximum measured frame interval p95 in ms"
+        required: true
+        default: "33.3"
+        type: string
+      duration_ms:
+        description: "Actual live walking benchmark duration in ms (8000..60000)"
+        required: true
+        default: "15000"
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  physical-gpu-verification:
+    runs-on: [self-hosted, linux, zion-gpu]
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Record physical runner identity
+        run: |
+          echo "runner=$(hostname)"
+          echo "kernel=$(uname -sr)"
+          test -e /dev/dri || command -v nvidia-smi
+          if command -v nvidia-smi >/dev/null 2>&1; then
+            nvidia-smi --query-gpu=name,driver_version --format=csv,noheader || true
+          fi
+          command -v google-chrome >/dev/null 2>&1
+      - name: Install project and pinned browser tooling
+        run: |
+          npm ci
+          npm install --no-save --package-lock=false @playwright/test@1.58.2
+      - name: Build local authentic ZION-030 v37 photoreal game
+        run: |
+          npm run qa:zion-local
+          npm run build
+          mkdir -p dist/games
+          cp -a public/games/. dist/games/
+      - name: Serve the exact built game on loopback
+        run: |
+          ./node_modules/.bin/vite preview --host 127.0.0.1 --port 4173 --strictPort > /tmp/zion-v36-preview.log 2>&1 &
+          echo $! > /tmp/zion-v36-preview.pid
+          for i in 1 2 3 4 5 6 7 8 9 10; do
+            if curl -fsS http://127.0.0.1:4173/games/zion-9/queue/ZION-030/index.html -o /dev/null; then break; fi
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:4173/games/zion-9/queue/ZION-030/index.html -o /dev/null
+      - name: Measure actual city / rain-night / ECO performance with physical GPU
+        env:
+          OSGARD_GPU_BENCH_URL: http://127.0.0.1:4173/games/zion-9/queue/ZION-030/index.html
+          OSGARD_BENCH_DURATION_MS: ${{ inputs.duration_ms }}
+          OSGARD_MAX_FRAME_P95_MS: ${{ inputs.max_p95_ms }}
+          OSGARD_REQUIRE_HARDWARE_GPU: '1'
+          OSGARD_REQUIRE_PHOTO_PBR: '1'
+          OSGARD_HEADLESS: '1'
+          OSGARD_BENCH_OUTPUT: reports/gpu
+        run: node scripts/zion-v36-hardware-matrix.mjs
+      - name: Preserve measured evidence even if the gate fails
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: zion-v37-physical-gpu-photographic-evidence
+          path: |
+            reports/gpu/
+            /tmp/zion-v36-preview.log
+          if-no-files-found: warn
+          retention-days: 30

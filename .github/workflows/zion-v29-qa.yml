@@ -5,6 +5,9 @@ on:
     paths:
       - 'public/games/zion-9/queue/ZION-030/**'
       - 'scripts/zion-*.mjs'
+      - 'scripts/core-game-store-smoke.py'
+      - 'server/core_game_store.py'
+      - 'server/core_server.py'
       - 'playwright.ecosystem.config.mjs'
       - '.github/workflows/zion-v29-qa.yml'
   workflow_dispatch:
@@ -26,6 +29,8 @@ jobs:
         run: npm ci
       - name: Verify authoritative cooling puzzle and v28/v29 open-world rules
         run: npm run qa:zion-local
+      - name: Verify actual game payments are authenticated and webhook-settled
+        run: python3 scripts/core-game-store-smoke.py
       - name: Build the actual release site
         run: npm run build
       - name: Include static game assets required by preview
@@ -40,7 +45,8 @@ jobs:
             npx playwright install --with-deps --no-shell chromium
           fi
       - name: Verify ZION-030 desktop and mobile gameplay only
-        run: npx playwright test --config playwright.ecosystem.config.mjs --grep 'ZION' --workers=2
+        # Avoid simultaneous software-WebGL scenes contending for the same virtual GPU.
+        run: npx playwright test --config playwright.ecosystem.config.mjs --grep 'ZION' --workers=1
       - name: Preserve evidence
         if: always()
         uses: actions/upload-artifact@v4

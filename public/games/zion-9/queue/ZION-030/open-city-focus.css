@@ -1,0 +1,35 @@
+/* ZION-030 v33: opt-in cinematic HUD without hiding game actions or touch controls. */
+.oc-shell .oc-focus-switch{white-space:nowrap;border-color:#68c7c7;background:#0a3846cf;font-size:11px;letter-spacing:.04em}
+.oc-shell .oc-focus-switch[aria-pressed="true"]{background:#12635e;border-color:#a7ffdf;color:#ecfffa}
+.oc-shell.oc-focus .oc-contract,.oc-shell.oc-focus .oc-chapter,
+.oc-shell.oc-focus .oc-career,.oc-shell.oc-focus .oc-controls,
+.oc-shell.oc-focus .oc-radio:not(.oc-radio-active){display:none!important}
+.oc-shell.oc-focus .oc-objective{top:90px;width:min(275px,26vw);padding:12px 14px;background:#041824c8;border-color:#5c919f99;backdrop-filter:blur(8px)}
+.oc-shell.oc-focus .oc-objective p,.oc-shell.oc-focus .oc-objective .oc-progress-label{display:none!important}
+.oc-shell.oc-focus .oc-objective>strong{font-size:17px;margin:7px 0 11px;line-height:1.18}
+.oc-shell.oc-focus .oc-right-hud{width:140px;opacity:.75;transition:opacity .2s}
+.oc-shell.oc-focus .oc-right-hud:hover,.oc-shell.oc-focus .oc-right-hud:focus-within{opacity:1}
+.oc-shell.oc-focus .oc-map-frame{padding:7px;background:#041824bb}
+.oc-shell.oc-focus .oc-map-frame>span{font-size:8px}
+.oc-shell.oc-focus .oc-status-bar{top:81px;opacity:.78}
+.oc-shell.oc-focus .oc-toolbar{bottom:20px;background:#041724be}
+.oc-shell.oc-focus .oc-location{bottom:97px;padding:8px 12px;min-width:0;width:220px;opacity:.87}
+.oc-shell.oc-focus .oc-drive-hud{bottom:110px;transform:translateX(-50%) scale(.88)}
+.oc-shell.oc-focus .oc-vignette{opacity:.58}
+@media(max-width:760px){
+  .oc-shell .oc-focus-switch{min-height:33px;padding:7px 7px;font-size:9px;letter-spacing:0}
+  .oc-shell.oc-focus .oc-objective{top:58px;left:9px;width:min(170px,47vw);padding:9px;border-radius:9px}
+  .oc-shell.oc-focus .oc-objective>strong{font-size:12px;margin:4px 0 7px}
+  .oc-shell.oc-focus .oc-right-hud{top:59px;right:7px;width:95px;opacity:.77}
+  .oc-shell.oc-focus .oc-status-bar{top:178px;left:auto;right:8px;transform:none;max-width:125px;flex-wrap:wrap;justify-content:flex-end;opacity:.78}
+  .oc-shell.oc-focus .oc-status-bar button{padding:4px 5px;min-width:40px;font-size:9px}
+  .oc-shell.oc-focus .oc-location{bottom:155px;left:9px;width:min(185px,50vw);padding:7px 9px}
+  .oc-shell.oc-focus .oc-location strong{font-size:11px}
+  .oc-shell.oc-focus .oc-toolbar{bottom:max(7px,env(safe-area-inset-bottom));padding:4px}
+  .oc-shell.oc-focus .oc-drive-hud{bottom:175px;transform:translateX(-50%) scale(.82)}
+  .oc-shell.oc-focus .oc-vehicle-charge{bottom:200px}
+  .oc-shell.oc-focus .oc-joystick,.oc-shell.oc-focus .oc-action,
+  .oc-shell.oc-focus .oc-drive-action,.oc-shell.oc-focus .oc-view-button,
+  .oc-shell.oc-focus .oc-jump-button{visibility:visible!important}
+}
+@media(prefers-reduced-motion:reduce){.oc-shell.oc-focus .oc-right-hud{transition:none}}
