@@ -195,3 +195,24 @@ body.living-legacy .app > .aaa3d-controls .aaa3d-benchmark-copy:focus-visible{
   animation:none!important
  }
 }
+
+
+/* R20 native hit-region contract: optional 3D and onboarding copy must never
+ * cover a real location armed by Compass, Legacy Network or Memory Expedition.
+ * This applies to both the full GPU mode and the safe 2D fallback. It only
+ * changes painted overlays, never the island geometry or saved coordinates. */
+body.living-legacy:is(.inherit-compass-armed,.inherit-network-armed,.inherit-expedition-armed) #world>.hero,
+body.living-legacy:is(.inherit-compass-armed,.inherit-network-armed,.inherit-expedition-armed) #world>.hint,
+body.living-legacy:is(.inherit-compass-armed,.inherit-network-armed,.inherit-expedition-armed) #world>.objective,
+body.living-legacy:is(.inherit-compass-armed,.inherit-network-armed,.inherit-expedition-armed) #world>.inherit-first-steps{
+ visibility:hidden!important;
+ pointer-events:none!important;
+}
+body.living-legacy:is(.inherit-compass-armed,.inherit-network-armed,.inherit-expedition-armed) #world #island{
+ z-index:15;
+}
+/* The marker is itself pointer-transparent: clicking is always handled by
+ * the existing world placement route, with unchanged budget and permissions. */
+body.living-legacy:is(.inherit-compass-armed,.inherit-network-armed,.inherit-expedition-armed) #island :is(.inherit-compass-ghost,.inherit-network-ghost,.inherit-expedition-ghost){
+ pointer-events:none!important;
+}
