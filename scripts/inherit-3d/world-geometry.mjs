@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import {coastline,fieldHeight,vegetation,hash} from './terrain-core.mjs';
 import {makeHeroTree,makeTrace} from './trace-models.mjs';
 import {makeHeritageEnvironment} from './heritage-environment.mjs';
+import {makeCoastalMicroBiomes} from './coastal-micro-biomes.mjs';
 import {makeSurfaceMaterial,surfacePackStats} from './cinematic-surfaces.mjs';
 import {makeLivingAtmosphere} from './living-atmosphere.mjs';
 import {waterVertex,waterFragment} from './cinematic-water.mjs';
@@ -243,6 +244,10 @@ export function makeArchipelago({quality='high'}={}){
   cap.position.set(3.61,fieldHeight(3.6,1.3)+1.345,1.3+side);bridge.add(cap);
  }
  terrain.add(bridge);
+ // Fine-scale coastal ecology. Seven instanced batches keep high visual
+ // richness bounded even on entry-level hardware and in long generations.
+ const microBiomes=makeCoastalMicroBiomes({quality,registerWind:life.addWindMaterial});
+ terrain.add(microBiomes.root);
  // Optional authored cinematic structures. Instanced fine detail at high
  // quality, simplified silhouettes on mobile; completely non-interactive.
  const heritage=makeHeritageEnvironment({quality});
@@ -268,9 +273,10 @@ export function makeArchipelago({quality='high'}={}){
   cliffMat.roughness=.86-seasonalWetness*.31;
   cliffMat.metalness=.018+seasonalWetness*.044;
   earthMat.roughness=.96-seasonalWetness*.24;
+  microBiomes.setSeason(season);
   return seasonalWetness;
  }
  setSeason('tide');
- return {root:terrain,waterUniforms:sea.material.uniforms,landmarks,heritage,life,
+ return {root:terrain,waterUniforms:sea.material.uniforms,landmarks,heritage,life,microBiomes,
   setSeason,getWetness:()=>seasonalWetness,surfaceStats:surfacePackStats()};
 }
