@@ -4,6 +4,7 @@ import {coastline,fieldHeight,vegetation,hash} from './terrain-core.mjs';
 import {makeHeroTree,makeTrace} from './trace-models.mjs';
 import {makeHeritageEnvironment} from './heritage-environment.mjs';
 import {makeCoastalMicroBiomes} from './coastal-micro-biomes.mjs';
+import {makeSurfaceMicroclimate} from './surface-microclimate.mjs';
 import {makeSurfaceMaterial,surfacePackStats} from './cinematic-surfaces.mjs';
 import {makeLivingAtmosphere} from './living-atmosphere.mjs';
 import {waterVertex,waterFragment} from './cinematic-water.mjs';
@@ -248,6 +249,10 @@ export function makeArchipelago({quality='high'}={}){
  // richness bounded even on entry-level hardware and in long generations.
  const microBiomes=makeCoastalMicroBiomes({quality,registerWind:life.addWindMaterial});
  terrain.add(microBiomes.root);
+ // R20 grounded realism: radial contact occlusion under vegetation, original
+ // clearcoat tide pools and fully-GPU fictional precipitation (0 gameplay writes).
+ const microclimate=makeSurfaceMicroclimate({quality,seed:173});
+ terrain.add(microclimate.root);
  // Optional authored cinematic structures. Instanced fine detail at high
  // quality, simplified silhouettes on mobile; completely non-interactive.
  const heritage=makeHeritageEnvironment({quality});
@@ -274,9 +279,10 @@ export function makeArchipelago({quality='high'}={}){
   cliffMat.metalness=.018+seasonalWetness*.044;
   earthMat.roughness=.96-seasonalWetness*.24;
   microBiomes.setSeason(season);
+  microclimate.setSeason(season);
   return seasonalWetness;
  }
  setSeason('tide');
- return {root:terrain,waterUniforms:sea.material.uniforms,landmarks,heritage,life,microBiomes,
+ return {root:terrain,waterUniforms:sea.material.uniforms,landmarks,heritage,life,microBiomes,microclimate,
   setSeason,getWetness:()=>seasonalWetness,surfaceStats:surfacePackStats()};
 }
