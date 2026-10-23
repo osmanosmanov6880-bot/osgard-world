@@ -92,4 +92,12 @@ test('Hardware tests still require real frame data and never claim verified phys
  assert.match(workflow,/inherit-hardware-benchmark\.mjs/);
  assert.match(workflow,/--require-webgl/);
 });
+test('Cinematic high tier uses true edge-aware FXAA at physical viewport pixel ratio',()=>{
+ const post=source('scripts/inherit-3d/cinematic-postfx.mjs');
+ assert.match(post,/FXAAShader/);
+ assert.match(post,/antialias=new ShaderPass\(FXAAShader\)/);
+ assert.match(post,/antialias\.uniforms\.resolution\.value\.set\(1\/physicalWidth,1\/physicalHeight\)/);
+ assert.match(post,/mode==='cinematic'\?5:mode==='lite'\?3:1/);
+ assert.match(post,/quality==='high'&&!software/);
+});
 console.log('INHERIT R19 coastal micro-biome geometry + physical weather checks:',passed,'passed.');
