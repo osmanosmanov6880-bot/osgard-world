@@ -1,0 +1,32 @@
+name: VECTOR ZERO physics and input QA
+
+on:
+  pull_request:
+    paths:
+      - "public/games/vector-zero/**"
+      - "scripts/vector-zero-runtime-smoke.mjs"
+      - ".github/workflows/vector-zero-runtime.yml"
+      - "package.json"
+  push:
+    branches: [master]
+    paths:
+      - "public/games/vector-zero/**"
+      - "scripts/vector-zero-runtime-smoke.mjs"
+      - ".github/workflows/vector-zero-runtime.yml"
+      - "package.json"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  vector-zero-runtime:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Run shipped VECTOR ZERO runtime in isolated Canvas and DOM harness
+        run: node scripts/vector-zero-runtime-smoke.mjs
