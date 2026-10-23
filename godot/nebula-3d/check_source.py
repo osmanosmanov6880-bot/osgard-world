@@ -304,6 +304,44 @@ r14_ship = require(
 assert 'preload("res://scripts/interceptor_trim_r14.gd")' in ship_visual
 assert "R14_AirframeRefinement" in ship_visual
 require("docs/R14-VISUAL-AND-FPS-ACCEPTANCE.md", "F7", "F10", "FPS", "физическом")
+r16_missile = require(
+    "scripts/guided_missile_r16.gd",
+    "func activate(",
+    "func deactivate(",
+    "func _impact(",
+    "MAX_LIFETIME",
+    "impacted.emit(",
+    "set_process(false)",
+)
+r16_fleet = require(
+    "scripts/fleet_combat_r15.gd",
+    "GuidedMissileR16Script",
+    "MISSILE_POOL_SIZE: int = 8",
+    "helper_rebuilds",
+    "same_formation",
+    "ally_fired.emit(",
+    'rocket.get("armed")',
+    'ready_rocket.call("activate"',
+)
+assert "enemy.hit(missile_damage)" not in r16_fleet, "R16 missiles must have real travel time"
+r16_ship = require(
+    "scripts/ship.gd",
+    "controls_locked",
+    "if controls_locked:",
+)
+assert "func _r16_setup_beam_pool()" in world
+assert "func _r16_update_beam_pool(" in world
+assert "R16_BEAM_POOL_SIZE: int = 18" in world
+assert "R16_RADAR_PERIOD: float = 0.12" in world
+assert "R16_HUD_PERIOD: float = 0.10" in world
+assert "adaptive_r12.set_auto(true)" in world
+assert "ship.controls_locked = true" in world
+assert "ship.controls_locked = false" in world
+assert "create_timer(0.12)" not in world, "Per-shot timer allocations returned"
+require(
+    "docs/R16-SMOOTH-COMBAT-ACCEPTANCE.md",
+    "F7", "F9", "F10", "физической", "Stripe",
+)
 require("scripts/architectural_detail_r4.gd", "func build(")
 premium = require("scripts/premium_architecture.gd", "func make_facade_material(", "emission_image")
 require("scripts/drone.gd", "extends")
@@ -340,6 +378,10 @@ smoke = require(
     "R14 GPU instancing for micro-scale architecture insufficient",
     "R14 real player interceptor refinement missing",
     "R14 CI must not invent physical hardware FPS values",
+    "R16 ammo/receipt refresh is rebuilding combat allies and causing stutter",
+    "R16 weapon fire is allocating new mesh nodes per shot",
+    "R16 missile did not navigate to the enemy and apply delayed damage",
+    "R16 guardian repairs incorrectly capped at scout hull and shields",
     "NEBULA_SMOKE_SUCCESS",
 )
 assert 'ship.position = Vector3(0,19,78)' in world, "Ship spawn must use a local transform before entering the tree"
@@ -351,4 +393,4 @@ assert "image.generate_mipmaps()" in ship_visual
 assert premium.count("Image.create(") >= 2, "separate facade albedo/emission atlases missing"
 assert "high-detail" not in project.lower(), "project identity may remain stable"
 assert len(smoke) > 1500 and len(city) > 5000 and len(world) > 10000
-print("NEBULA_R14_SOURCE_SUCCESS: six original PBR flight ports, machined interceptor geometry and hardware QA contracts")
+print("NEBULA_R16_SOURCE_SUCCESS: pooled combat beams, guided missiles, stable wingmen, 8Hz radar, adaptive browser quality")
