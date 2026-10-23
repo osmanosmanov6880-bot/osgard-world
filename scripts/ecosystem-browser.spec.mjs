@@ -2634,3 +2634,46 @@ test('INHERIT R19 renders real instanced shoreline detail and responds to fictio
  expect(await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()))).toBe(snapshot);
  expect(errors).toEqual([]);
 });
+
+
+test('INHERIT R20 grounds contact shadows, GPU rain and wet clearcoat with verified browser frames',async({page},info)=>{
+ test.setTimeout(85000);
+ const errors=await prepareStandaloneGame(page);
+ await page.emulateMedia({reducedMotion:'no-preference'});
+ await page.goto('/games/inherit/?lang=ru&render=3d',{waitUntil:'domcontentloaded'});
+ const before=await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()));
+ const first=await page.evaluate(()=>window.InheritAAA3D.getState());
+ if(process.env.OSGARD_ENABLE_SWIFTSHADER==='1')expect(first.available).toBe(true);
+ if(first.available){
+  await page.locator('#island').scrollIntoViewIfNeeded();
+  await expect.poll(()=>page.evaluate(()=>window.InheritAAA3D.getState().microclimate?.gpuBatches)).toBeGreaterThanOrEqual(1);
+  const scene=await page.evaluate(()=>window.InheritAAA3D.getState());
+  expect(scene.microclimate.contacts).toBeGreaterThanOrEqual(36);
+  expect(scene.microclimate.pools).toBeGreaterThanOrEqual(0);
+  expect(scene.microclimate.externalTextures).toBe(0);
+  expect(scene.microclimate.gameplayWrites).toBe(0);
+  expect(scene.microclimate.gpuBatches).toBeLessThanOrEqual(3);
+  await page.evaluate(()=>{document.querySelector('#world').dataset.livingSeason='tide'});
+  await expect.poll(()=>page.evaluate(()=>window.InheritAAA3D.getState().microclimate?.season)).toBe('tide');
+  const tide=await page.evaluate(()=>window.InheritAAA3D.getState().microclimate);
+  await page.evaluate(()=>{document.querySelector('#world').dataset.livingSeason='sun'});
+  await expect.poll(()=>page.evaluate(()=>window.InheritAAA3D.getState().microclimate?.season)).toBe('sun');
+  const sun=await page.evaluate(()=>window.InheritAAA3D.getState().microclimate);
+  expect(sun.wetness).toBeLessThan(tide.wetness);
+  expect(sun.rainfall).toBe(0);
+  expect(sun.gpuBatches).toBe(tide.gpuBatches);
+  const perf=await page.evaluate(()=>window.InheritAAA3D.getPerformanceReport());
+  expect(perf.adaptiveResolution.scale).toBeGreaterThanOrEqual(.64);
+  expect(perf.adaptiveResolution.scale).toBeLessThanOrEqual(1);
+  expect(perf.gpuTimerMs).toBeNull();
+  expect(perf.adapter).toBeTruthy();
+  const screenshot=info.outputPath('inherit-r20-true-environment-'+info.project.name+'.png');
+  await page.screenshot({path:screenshot,animations:'disabled'});
+  await info.attach('R20 real microclimate and PBR scene',{path:screenshot,contentType:'image/png'});
+  const actual=JSON.stringify({device:info.project.name,scene:scene.microclimate,wetness:{tide,sun},
+   adapter:perf.adapter,frameIntervals:{samples:perf.samples,p95Ms:perf.frameIntervalP95Ms},gpuVerified:false});
+  await info.attach('R20 real Chromium environment evidence',{body:Buffer.from(actual),contentType:'application/json'});
+ }
+ expect(await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()))).toBe(before);
+ expect(errors).toEqual([]);
+});
