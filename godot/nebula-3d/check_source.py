@@ -69,6 +69,13 @@ world = require(
     "industrial_r11.build(SECTOR_POSITIONS)",
     "performance_lab_r11.start_benchmark()",
     "performance_lab_r11.copy_report()",
+    'preload("res://scripts/engineering_campus_r12.gd")',
+    'preload("res://scripts/cinematic_lighting_r12.gd")',
+    'preload("res://scripts/adaptive_quality_r12.gd")',
+    "engineering_r12.build(SECTOR_POSITIONS)",
+    "performance_lab_r11.capture_frame()",
+    "adaptive_r12.quality_requested.connect(",
+    "func _r12_on_auto_quality(",
 )
 city = require(
     "scripts/city_set_dressing_r5.gd",
@@ -222,6 +229,55 @@ performance_r11 = require(
 )
 assert "MAX_SAMPLES" in performance_r11 and "WARMUP_SECONDS" in performance_r11
 require("docs/R11-HARDWARE-BENCHMARK.md", "F7", "F9", "не является")
+r12_mat = require(
+    "scripts/material_fabric_r12.gd",
+    "static func get_material(",
+    "static func _create(",
+    "albedo.generate_mipmaps()",
+    "mat.normal_texture",
+    "mat.ao_texture_channel",
+    "mat.roughness_texture_channel",
+    "mat.metallic_texture_channel",
+)
+r12_engineering = require(
+    "scripts/engineering_campus_r12.gd",
+    "func _lofted_vessel(",
+    "func _make_port(",
+    "func set_quality(",
+    "R12_LoftedPressureHousing_",
+    "R12_ExternalChromeStrut",
+    "R12_RailMountedCargoArm_",
+    "R12_D%02d_BatchedPanelFasteners",
+)
+r12_lighting = require(
+    "scripts/cinematic_lighting_r12.gd",
+    "func apply_look(",
+    "func toggle_look(",
+    "env.glow_enabled",
+    "sky_shader.sky_top_color",
+)
+r12_adaptive = require(
+    "scripts/adaptive_quality_r12.gd",
+    "func observe_fps(",
+    "DOWNSHIFT_SECONDS",
+    "UPSHIFT_SECONDS",
+    "quality_requested.emit(",
+    "recording",
+)
+r12_profiler = require(
+    "scripts/performance_lab_r11.gd",
+    "NEBULA_R12_HARDWARE_BENCHMARK",
+    "one_percent_low_method",
+    "quality_gate",
+    "func capture_frame()",
+    "Marshalls.raw_to_base64(png)",
+)
+r12_post = require(
+    "scripts/cinematic_post_r11.gd",
+    "uniform float velocity_streak",
+    "func set_flight_velocity(",
+)
+require("docs/R12-PERFORMANCE-ACCEPTANCE.md", "F7", "F10", "F11", "физическом")
 require("scripts/architectural_detail_r4.gd", "func build(")
 premium = require("scripts/premium_architecture.gd", "func make_facade_material(", "emission_image")
 require("scripts/drone.gd", "extends")
@@ -249,6 +305,11 @@ smoke = require(
     "R11 live hardware profiler panel missing",
     "R11 performance telemetry is incorrectly fabricated at startup",
     "R11 low-GPU profile failed to disable heavy postprocess",
+    "R12 aerospace campus not instantiated",
+    "R12 engineering halls missing across six districts",
+    "R12 three physically based shared atlases not generated",
+    "R12 measured low-FPS downshift logic failed",
+    "R12 actual physical hardware results must never be invented in CI",
     "NEBULA_SMOKE_SUCCESS",
 )
 assert 'ship.position = Vector3(0,19,78)' in world, "Ship spawn must use a local transform before entering the tree"
@@ -260,4 +321,4 @@ assert "image.generate_mipmaps()" in ship_visual
 assert premium.count("Image.create(") >= 2, "separate facade albedo/emission atlases missing"
 assert "high-detail" not in project.lower(), "project identity may remain stable"
 assert len(smoke) > 1500 and len(city) > 5000 and len(world) > 10000
-print("NEBULA_R11_SOURCE_SUCCESS: cinematic GPU-safe renderer, industrial assets and real-device telemetry contract")
+print("NEBULA_R12_SOURCE_SUCCESS: original engineering megastructures, multi-channel PBR, filmic light and real-device QA")
