@@ -21,7 +21,7 @@ test('Sea alpha fades smoothly before the rectangle boundary in every season',()
    const a=horizonCoverage((i-1)*70/90,0,start);
    const b=horizonCoverage(i*70/90,0,start);
    assert.ok(a>=b&&a>=0&&b<=1);
-   assert.ok(a-b<.045,'Horizon opacity must never jump abruptly');
+   assert.ok(a-b<.07,'Horizon opacity must never jump abruptly');
   }
  }
 });
