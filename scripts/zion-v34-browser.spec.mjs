@@ -1,0 +1,74 @@
+import {test,expect} from '@playwright/test'
+import fs from 'node:fs/promises'
+
+test('ZION-030 v34: PBR microgeometry, kinetic props, GPU-safe film pass and measured hardware benchmark',async({page},testInfo)=>{
+  test.setTimeout(120000)
+  const errors=[]
+  page.on('pageerror',e=>errors.push(e.message))
+  await page.goto('/games/zion-9/queue/ZION-030/index.html?test=1')
+  await page.waitForFunction(()=>window.__ZION030_OPEN_CITY__?.state()?.ready,
+    null,{timeout:35000})
+  const state=()=>page.evaluate(()=>window.__ZION030_OPEN_CITY__.state())
+  const first=await state()
+  expect(first.atelier).toBeTruthy()
+  expect(first.atelier.version).toBe('34.0')
+  expect(first.atelier.facadeDetails).toBeGreaterThan(300)
+  expect(first.atelier.windActors).toBeGreaterThan(0)
+  expect(first.atelier.meshInstances).toBeGreaterThan(200)
+  expect(first.atelier.drawCallBatches).toBeLessThan(55)
+  expect(first.atelier.textureMaps).toBe(first.atelier.tier==='LITE'?0:9)
+  expect(first.postfx).toBeTruthy()
+  expect(first.postfx.version).toBe('34.0')
+  expect(first.perf).toBeTruthy()
+  expect(first.perf.version).toBe('34.0')
+  expect(['software','unknown','hardware-reported']).toContain(first.perf.classification)
+  if(first.perf.classification==='software')expect(first.postfx.enabled).toBe(false)
+  if(testInfo.project.name==='mobile')expect(['MOBILE','LITE']).toContain(first.atelier.tier)
+  else expect(['ULTRA','LITE']).toContain(first.atelier.tier)
+  await page.locator('#oc-entry').click()
+  await page.locator('#oc-start-play').click()
+  await expect(page.locator('#oc-shell')).toBeVisible()
+  // H must still toggle even though gameplay keyboard capture owns this key.
+  await page.keyboard.press('h')
+  await expect(page.locator('#oc-shell')).toHaveClass(/oc-focus/)
+  await page.keyboard.press('h')
+  await expect(page.locator('#oc-shell')).not.toHaveClass(/oc-focus/)
+  await page.locator('#oc-rain').click()
+  await expect.poll(async()=>(await state()).atelier.rain).toBe(true)
+  await page.locator('#oc-time').click()
+  await expect.poll(async()=>(await state()).atelier.night).toBe(true)
+  await page.locator('#oc-quality').click()
+  await expect(page.locator('#oc-quality')).toContainText('ECO')
+  expect((await state()).atelier.highVisible).toBe(false)
+  expect((await state()).postfx.enabled).toBe(false)
+  await page.locator('#oc-quality').click()
+  expect((await state()).atelier.highVisible).toBe(first.atelier.tier==='ULTRA')
+  // Actual render cadence and GPU classification, NOT a fake FPS value.
+  await page.keyboard.press('b')
+  await expect(page.locator('#oc-perf-panel')).toBeVisible()
+  await page.evaluate(()=>window.__ZION030_PERFORMANCE__.start(3800))
+  await expect.poll(async()=>page.evaluate(()=>
+    window.__ZION030_PERFORMANCE__.snapshot().reportAvailable),{timeout:28000}).toBe(true)
+  const report=await page.evaluate(()=>window.__ZION030_PERFORMANCE__.report)
+  // The actual Chrome GPU identity and timing evidence are retained in CI.
+  // Software WebGL results must remain explicitly labelled software.
+  await fs.writeFile(testInfo.outputPath('zion-v34-measured-browser-performance.json'),
+    JSON.stringify({project:testInfo.project.name,report},null,2)+'\n','utf8')
+  expect(report.source).toContain('browser WebGL measured')
+  expect(report.renderedFrames).toBeGreaterThan(2)
+  expect(report.renderFPS).toBeGreaterThan(0)
+  expect(['software','unknown','hardware-reported']).toContain(report.hardwareClassification)
+  expect(report.physicalGpuConfirmed).toBe(report.hardwareClassification==='hardware-reported')
+  if(report.hardwareClassification==='software'){
+    expect(report.physicalGpuConfirmed).toBe(false)
+    expect(report.warning).toContain('Software WebGL')
+  }
+  await page.locator('#oc-perf-close').click()
+  await page.locator('#oc-focus-switch').click()
+  await expect(page.locator('#oc-shell')).toHaveClass(/oc-focus/)
+  await page.screenshot({path:testInfo.outputPath('zion-v34-kinetic-pbr-postfx-benchmark.png')})
+  await page.locator('#oc-exit').click()
+  await expect(page.locator('#oc-shell')).toBeHidden()
+  await expect(page.locator('#premiumPlace')).toBeAttached()
+  expect(errors).toEqual([])
+})

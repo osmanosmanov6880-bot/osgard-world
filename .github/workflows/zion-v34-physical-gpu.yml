@@ -1,0 +1,65 @@
+name: ZION-030 v34 physical GPU benchmark (opt-in)
+
+# A trusted GPU-equipped computer must register as a self-hosted runner.
+# A GitHub-hosted SwiftShader job cannot count as real GPU evidence.
+on:
+  workflow_dispatch:
+    inputs:
+      target_url:
+        description: 'Exact deployed ZION-030 v34 HTTPS URL'
+        required: true
+        type: string
+        default: 'https://osgard.world/games/zion-9/queue/ZION-030/index.html'
+      frame_p95_limit_ms:
+        description: 'Maximum permitted p95 frame interval in milliseconds'
+        required: true
+        type: string
+        default: '33.3'
+
+permissions:
+  contents: read
+
+jobs:
+  physical-gpu:
+    runs-on: [self-hosted, linux, x64, osgard-gpu]
+    timeout-minutes: 12
+    concurrency:
+      group: zion-v34-gpu-${{ github.ref }}
+      cancel-in-progress: false
+    env:
+      OSGARD_GPU_BENCH_URL: ${{ inputs.target_url }}
+      OSGARD_MAX_FRAME_P95_MS: ${{ inputs.frame_p95_limit_ms }}
+      OSGARD_BENCH_DURATION_MS: '15000'
+      OSGARD_HEADLESS: '0'
+      OSGARD_REQUIRE_HARDWARE_GPU: '1'
+      OSGARD_BENCH_OUTPUT: reports/gpu
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Validate target URL and physical GPU device
+        shell: bash
+        run: |
+          case "$OSGARD_GPU_BENCH_URL" in
+            https://osgard.world/games/zion-9/queue/ZION-030/index.html*) ;;
+            *) echo "Refusing benchmark against non-OSGARD destination" >&2; exit 1 ;;
+          esac
+          if ! ls /dev/dri/renderD* >/dev/null 2>&1 && ! test -e /dev/nvidia0; then
+            echo "No physical GPU device exposed to the self-hosted runner" >&2
+            exit 1
+          fi
+          command -v google-chrome || { echo "Google Chrome is required" >&2; exit 1; }
+      - name: Install locked application dependencies
+        run: npm ci
+      - name: Record browser-measured GPU and frame-time evidence
+        run: node scripts/zion-v34-hardware-benchmark.mjs
+      - name: Preserve benchmark evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: zion-v34-physical-gpu-performance
+          path: reports/gpu/*.json
+          if-no-files-found: warn
+          retention-days: 30
