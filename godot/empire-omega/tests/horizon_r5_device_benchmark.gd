@@ -36,9 +36,9 @@ func _setup() -> void:
 	RenderingServer.viewport_set_measure_render_time(root.get_viewport_rid(),true)
 	city.get_node("HorizonCinematicR5").call("set_profile","cinematic")
 
-func _process(delta: float) -> void:
+func _process(delta: float) -> bool:
 	if city == null:
-		return
+		return false
 	elapsed += delta
 	# Same camera path on every run; no AI/score/save modifications.
 	var t: float = minf(elapsed / (WARMUP+SAMPLE),1.0)
@@ -54,6 +54,7 @@ func _process(delta: float) -> void:
 			draws.append(RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_DRAW_CALLS_IN_FRAME))
 	if elapsed >= WARMUP+SAMPLE:
 		_finish()
+	return false
 
 func _average(numbers: Array) -> float:
 	if numbers.is_empty(): return 0.0
