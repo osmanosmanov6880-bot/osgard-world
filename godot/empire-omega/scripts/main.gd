@@ -78,6 +78,9 @@ func _ready() -> void:
 	add_child(player)
 	car = CAR_SCENE.new()
 	add_child(car)
+	var scanned_r6: Node = world.get_node_or_null("HorizonPhotorealR6")
+	if scanned_r6 != null:
+		scanned_r6.call("bind_car",car)
 	cargo_visual = CARGO_VISUAL_SCENE.new()
 	car.add_child(cargo_visual)
 	cargo_visual.sync_state(GameState.data,GameState.locale)
@@ -481,6 +484,9 @@ func _apply_weather() -> void:
 	var cinematic: Node = world.get_node_or_null("HorizonCinematicR5")
 	if cinematic != null:
 		cinematic.call("set_weather",current_weather_kind)
+	var scanned_weather: Node = world.get_node_or_null("HorizonPhotorealR6")
+	if scanned_weather != null:
+		scanned_weather.call("set_weather",current_weather_kind)
 	car.traction_factor = float(conditions["road_grip"])
 	for traffic in ambient_cars:
 		traffic.wetness = float(conditions["road_grip"])
@@ -491,6 +497,9 @@ func _apply_preferences() -> void:
 	var cinematic: Node = world.get_node_or_null("HorizonCinematicR5")
 	if cinematic != null:
 		cinematic.call("set_profile",GameSettings.graphics)
+	var scanned_quality: Node = world.get_node_or_null("HorizonPhotorealR6")
+	if scanned_quality != null:
+		scanned_quality.call("set_profile",GameSettings.graphics)
 	world.update_language(GameState.locale)
 	if city_case_marker != null: city_case_marker.sync_state(GameState.data)
 	if discovery_markers != null: discovery_markers.sync_state(GameState.data)
