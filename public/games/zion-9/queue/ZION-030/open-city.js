@@ -886,7 +886,7 @@
       const gl = renderer.getContext();
       const debugGL = gl.getExtension('WEBGL_debug_renderer_info');
       const glName = String(debugGL ? gl.getParameter(debugGL.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER) || '').toLowerCase();
-      world.softwareGL = /swiftshader|llvmpipe|software|softpipe|lavapipe/.test(glName);
+      world.softwareGL = /swiftshader|llvmpipe|software|softpipe|lavapipe|basic render driver|warp|virtualbox|vmware svga/.test(glName);
       renderer.outputColorSpace = THREE.SRGBColorSpace;
       renderer.toneMapping = THREE.ACESFilmicToneMapping;
       renderer.toneMappingExposure = 1.42;
