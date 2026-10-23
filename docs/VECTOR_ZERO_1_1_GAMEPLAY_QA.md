@@ -5,6 +5,8 @@
 - **Jump buffering** (140 ms) and **coyote time** (110 ms): forgiving but deterministic platforming.
 - Landing collision uses the player's previous foot position to avoid sticking on side walls.
 - Camera follows the player with frame-rate-independent smoothing.
+- Layered deterministic industrial skyline adds parallax depth without external texture downloads.
+- Mobile canvas uses uniform letterboxing instead of stretching circular magnets into ovals.
 - Predictive magnetic trajectory is cached for 50 ms rather than simulated on every draw, and can be switched off with an accessible AIM control.
 - Press-and-hold repeat on Q, E, Space, R and jump no longer triggers accidental multiple actions.
 - The attempt automatically pauses when the tab becomes hidden; it never resumes itself without a player action.

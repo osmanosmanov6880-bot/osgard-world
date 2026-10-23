@@ -189,14 +189,16 @@ sandbox.devicePixelRatio = 3
 window.dispatch('resize')
 assert.equal(canvas.width, 780)
 assert.equal(canvas.height, 585)
-assert.deepEqual(canvasState.transforms.at(-1), [780 / 1280, 0, 0, 585 / 720, 0, 0])
+const mobileScale = 780 / 1280
+assert.deepEqual(canvasState.transforms.at(-1), [mobileScale, 0, 0, mobileScale, 0, (585 - 720 * mobileScale) / 2])
+assert.equal(canvasState.transforms.at(-1)[0], canvasState.transforms.at(-1)[3], 'Mobile geometry must not stretch magnetic circles')
 const transformCount = canvasState.transforms.length
 rectangle = { width: 0, height: 0 }
 window.dispatch('resize')
 assert.equal(canvasState.transforms.length, transformCount, 'A hidden canvas must not install an invalid transform')
 rectangle = { width: 960, height: 540 }
 window.dispatch('resize')
-checks.push('actual resize listener, mobile backing dimensions, DPR cap and zero-size guard')
+checks.push('mobile uniform letterboxing, un-stretched circles, DPR cap and zero-size guard')
 
 click('help')
 assert.equal(node('title').textContent, 'Управление')
