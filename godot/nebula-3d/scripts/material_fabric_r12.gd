@@ -33,8 +33,7 @@ static func _create(profile: int) -> StandardMaterial3D:
             var scratch: float = sin(float(x) * 1.17 + float(y) * 0.075)
             var crossing: float = sin(float(y) * 1.98 + float(x) * 0.04)
             var seam: bool = local_x <= 1 or local_y <= 1
-            var bolt: bool = (local_x - 10) * (local_x - 10) +
-                (local_y - 10) * (local_y - 10) <= 12
+            var bolt: bool = ((local_x - 10) * (local_x - 10) + (local_y - 10) * (local_y - 10)) <= 12
             var edge: float = 1.0 - smoothstep(0.0, 8.0,
                 float(mini(mini(local_x, 95 - local_x),
                 mini(local_y, 95 - local_y))))
