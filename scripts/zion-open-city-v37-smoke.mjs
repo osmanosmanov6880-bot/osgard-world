@@ -170,6 +170,7 @@ function run(options){
   }
   const metrics={...kit.stats}
   kit.dispose()
+  assert.equal(renderer.toneMappingExposure,1.42)
   assert.equal(heroBody.material,carBody)
   assert.equal(heroGlass.material,carGlass)
   assert.equal(sculptedShell.material,carBody)
