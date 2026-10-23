@@ -9,6 +9,12 @@ test('ZION-030 v34: PBR microgeometry, kinetic props, GPU-safe film pass and mea
     null,{timeout:35000})
   const state=()=>page.evaluate(()=>window.__ZION030_OPEN_CITY__.state())
   const first=await state()
+  expect(first.nature?.version).toBe('38.0')
+  expect(first.nature?.authoredStreetTrees).toBeGreaterThan(0)
+  expect(first.nature?.drawBatches).toBeLessThan(5)
+  expect(first.nature?.leafBlades).toBe(
+    first.nature?.tier==='LITE'?0:first.nature?.tier==='MOBILE'?
+      first.nature.authoredStreetTrees*20:first.nature.authoredStreetTrees*52)
   expect(first.photoreal?.version).toBe('37.0')
   expect(first.photoreal?.originalPhotoSources).toBe(3)
   expect(first.photoreal?.photoLoadingStarted).toBe(false)
@@ -70,6 +76,7 @@ test('ZION-030 v34: PBR microgeometry, kinetic props, GPU-safe film pass and mea
   await expect.poll(async()=>(await state()).surfaces.rain).toBe(true)
   await expect.poll(async()=>(await state()).civic.rain).toBe(true)
   await expect.poll(async()=>(await state()).photoreal.rain).toBe(true)
+  await expect.poll(async()=>(await state()).nature.rain).toBe(true)
   await page.locator('#oc-time').click()
   await expect.poll(async()=>(await state()).atelier.night).toBe(true)
   await page.locator('#oc-quality').click()
@@ -78,6 +85,7 @@ test('ZION-030 v34: PBR microgeometry, kinetic props, GPU-safe film pass and mea
   expect((await state()).surfaces.fineVisible).toBe(false)
   expect((await state()).civic.fineVisible).toBe(false)
   expect((await state()).photoreal.highVisible).toBe(false)
+  expect((await state()).nature.highVisible).toBe(false)
   expect((await state()).postfx.enabled).toBe(false)
   await page.locator('#oc-quality').click()
   expect((await state()).atelier.highVisible).toBe(first.atelier.tier==='ULTRA')
