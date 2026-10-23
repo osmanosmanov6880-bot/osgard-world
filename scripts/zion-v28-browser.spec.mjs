@@ -37,6 +37,9 @@ test('ZION-030 v28: real third-person street mode, electric vehicle, weather and
     await page.keyboard.up('w')
     const after = (await snapshot()).player
     expect(Math.hypot(after.x - before.x, after.z - before.z)).toBeGreaterThan(.09)
+    // Walking was validated above. Move back to the parked car so F tests
+    // vehicle interaction, not distance drift under software WebGL load.
+    await page.evaluate(() => window.__ZION030_OPEN_CITY__.teleport(.7, -1.0))
     await page.keyboard.press('f')
   }
   await expect.poll(async () => (await snapshot()).driving).toBe(true)
