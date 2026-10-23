@@ -30,7 +30,7 @@ const adviceFor=(language,key)=>ADVICE[language]?.[key]||ADVICE.ru[key]||key;
 const fmt=(x,d=1)=>Number.isFinite(x)?Number(x).toFixed(d):'—';
 export function mountHardwareBenchmark({
  controls,renderer,camera,quality,postFX,viewport,adapter,
- active,reducedMotion,busy,requestFrame,notify,localize=()=>document.documentElement.lang?.slice(0,2)
+ active,reducedMotion,busy,requestFrame,focusScene=()=>{},notify,localize=()=>document.documentElement.lang?.slice(0,2)
 }){
  const d=controls.ownerDocument,t=()=>LABELS[localize()]||LABELS.ru;
  const button=d.createElement('button'),copy=d.createElement('button'),result=d.createElement('output');
@@ -78,6 +78,9 @@ export function mountHardwareBenchmark({
  };
  const begin=(options={})=>{
   if(test.running()||!active()||reducedMotion()||busy())return false;
+  // A device benchmark must measure a visible 3D island, not an occluded tab
+  // or an offscreen framebuffer that browsers may throttle.
+  focusScene();
   const duration=Number.isFinite(options.durationMs)?Math.max(1000,Math.min(15000,options.durationMs)):10000;
   // API diagnostics may be short; reports with fewer than 45 intervals remain
   // inconclusive. The visible button always runs a real ten-second sample.
