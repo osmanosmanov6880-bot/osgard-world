@@ -211,7 +211,7 @@ func _build_mountains() -> void:
 				surface.add_vertex(vertex)
 	surface.generate_normals()
 	var mountains := MeshInstance3D.new()
-	mountains.name = "R7ContinuousWeatheredCoastalMountainMesh"
+	mountains.name = "SurroundingMountainRange" # Stable public node contract, R7 geometry inside.
 	mountains.mesh = surface.commit()
 	var strata := _mat(Color.WHITE,0.0,.95)
 	strata.vertex_color_use_as_albedo = true
