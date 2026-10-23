@@ -107,10 +107,17 @@ Deno.serve(async (request) => {
       if (!intent) return response(200, "No associated game purchase");
       if (event.type === "charge.refunded" && (charge.amount_refunded || 0) < (charge.amount || 0))
         return response(200, "Partial refund, entitlement unchanged");
+      // Stripe can deliver refund/dispute BEFORE checkout.session.completed.
+      // Recover order ownership from server-written PaymentIntent metadata, never client text.
+      const paymentIntent = await stripe.paymentIntents.retrieve(intent);
+      const metadataOrder = paymentIntent.metadata?.osgard_order_id ?? "";
+      if (!/^[0-9a-f-]{36}$/i.test(metadataOrder)) return response(200, "Charge unrelated to OSGARD");
       const { data: order, error: queryError } = await db.from("omega_store_orders")
-        .select("id").eq("stripe_payment_intent_id", intent).maybeSingle();
+        .select("id,stripe_payment_intent_id").eq("id", metadataOrder).maybeSingle();
       if (queryError) return response(500, "Refund lookup failed; Stripe will retry");
       if (!order) return response(200, "Charge unrelated to OSGARD");
+      if (order.stripe_payment_intent_id && order.stripe_payment_intent_id !== intent)
+        return response(400, "Refund cannot affect another order");
       const { error: revokeError } = await db.rpc("omega_revoke_paid_order", {
         p_order_id: order.id, p_event_id: event.id,
         p_reason: event.type === "charge.refunded" ? "refunded" : "disputed"
