@@ -153,33 +153,53 @@ func _build_lamps() -> void:
 	lantern_mesh.rings = 4
 	_batch("LanternBatch",lantern_mesh,lanterns,lantern_color,true)
 
+func _horizon_r7_peak(angle: float, belt: int) -> Vector3:
+	# Smooth coastline ridges around the city, not isolated triangular pyramids.
+	var radius: float = 390.0 + float(belt)*44.0
+	radius += sin(angle*11.0+float(belt)*.29)*4.0
+	var ridge: float = 66.0 + 18.0*sin(angle*3.0+.25)
+	ridge += 13.0*sin(angle*7.0+1.39)
+	ridge += 7.0*sin(angle*13.0-1.5)
+	ridge += 3.0*sin(angle*29.0+.33)
+	var slope: Array[float] = [.0,.09,.28,.56,.88,.95,.52,.06]
+	var vertical: float = -12.0 + ridge*slope[belt]
+	return Vector3(cos(angle)*radius,vertical,sin(angle)*radius)
+
 func _build_mountains() -> void:
-	var mesh_builder := SurfaceTool.new()
-	mesh_builder.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var segments: int = 42
+	# 7 concentric terrain belts x 256 angular subdivisions => smooth silhouette.
+	# ~3600 triangles instead of 42 disconnected one-triangle backdrop spikes.
+	# Distant art only: no collisions, no physics, and one mesh draw surface.
+	var surface := SurfaceTool.new()
+	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var segments: int = 256
+	var belts: int = 8
+	var moss := Color("536b64")
+	var limestone := Color("8a8e86")
 	for i in range(segments):
-		var t0: float = float(i) / float(segments) * TAU
-		var t1: float = float(i+1) / float(segments) * TAU
-		var tm: float = (t0+t1)*0.5
-		var radius: float = 430.0
-		var lower_a := Vector3(cos(t0)*radius,-14.0,sin(t0)*radius)
-		var lower_b := Vector3(cos(t1)*radius,-14.0,sin(t1)*radius)
-		var height: float = 28.0 + float((i*13)%9)*7.0
-		var ridge := Vector3(cos(tm)*(radius+50.0),height,sin(tm)*(radius+50.0))
-		mesh_builder.set_color(Color("597c79") if i%2==0 else Color("728d85"))
-		mesh_builder.add_vertex(lower_a)
-		mesh_builder.add_vertex(ridge)
-		mesh_builder.add_vertex(lower_b)
-	mesh_builder.generate_normals()
-	var mountain := MeshInstance3D.new()
-	mountain.name = "SurroundingMountainRange"
-	mountain.mesh = mesh_builder.commit()
-	var rock_mat := _mat(Color.WHITE,0.0,1.0)
-	rock_mat.vertex_color_use_as_albedo = true
-	rock_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
-	mountain.material_override = rock_mat
-	mountain.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	add_child(mountain)
+		var t0: float = TAU*float(i)/float(segments)
+		var t1: float = TAU*float(i+1)/float(segments)
+		var t_mid: float = .5*(t0+t1)
+		for ring in range(belts-1):
+			var a: Vector3 = _horizon_r7_peak(t0,ring)
+			var b: Vector3 = _horizon_r7_peak(t1,ring)
+			var c: Vector3 = _horizon_r7_peak(t0,ring+1)
+			var d: Vector3 = _horizon_r7_peak(t1,ring+1)
+			var weathering: float = .44 + .25*sin(t_mid*17.0+float(ring)*.62)
+			weathering += .09*sin(t_mid*51.0-float(ring)*1.3)
+			var rock: Color = moss.lerp(limestone,clampf(weathering+.055*float(ring),0.0,1.0))
+			for vertex in [a,c,b,c,d,b]:
+				surface.set_color(rock)
+				surface.add_vertex(vertex)
+	surface.generate_normals()
+	var mountains := MeshInstance3D.new()
+	mountains.name = "R7ContinuousWeatheredCoastalMountainMesh"
+	mountains.mesh = surface.commit()
+	var strata := _mat(Color.WHITE,0.0,.95)
+	strata.vertex_color_use_as_albedo = true
+	strata.cull_mode = BaseMaterial3D.CULL_DISABLED
+	mountains.material_override = strata
+	mountains.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(mountains)
 
 func _sculpture_piece(id: String, size: Vector3, point: Vector3, tint: Color, emissive: bool = false) -> void:
 	var cube := BoxMesh.new()
