@@ -1,6 +1,6 @@
 import type { PlayGame } from './redesignCatalog'
 
-export type PlayCatalogCard = Pick<PlayGame, 'id' | 'title' | 'genre' | 'format' | 'description' | 'status' | 'accent'>
+export type PlayCatalogCard = Pick<PlayGame, 'id' | 'title' | 'genre' | 'mode' | 'format' | 'description' | 'status' | 'accent'>
 
 export const PLAY_GAME_IDS: string[] = [
   'null-shift','time','empire-orbit','swarm','inherit','remix','vector-zero','afterimage-run',
