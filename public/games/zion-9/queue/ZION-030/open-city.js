@@ -101,6 +101,15 @@
     <div class="oc-vehicle-charge" id="oc-vehicle-charge" hidden><span>\u26a1 \u0417\u0410\u0420\u042f\u0414</span><strong id="oc-battery-readout">100%</strong><div class="oc-meter"><i id="oc-battery-bar"></i></div></div>
   `);
   shell.querySelector('.oc-start-foot').append(' · SPACE: прыжок · V: камера · J: журнал · M: карта · ESC: пауза');
+  // Keep mission and pause actions inside the same responsive action bar as
+  // CINEMA, FPS and Exit. The old absolute offsets could cover those controls.
+  const headerActions=shell.querySelector('.oc-top-right');
+  const exitButton=shell.querySelector('#oc-exit');
+  for(const id of ['oc-journal-button','oc-pause-button']){
+    const control=shell.querySelector('#'+id);
+    if(headerActions&&exitButton&&control)headerActions.insertBefore(control,exitButton);
+  }
+
   shell.insertAdjacentHTML('beforeend', '<button id="oc-nav-mobile" type="button" aria-label="Переключить маршрут GPS">⌖ GPS: СЮЖЕТ</button>');
   shell.insertAdjacentHTML('beforeend', '<button id="oc-view-button" class="oc-view-button" type="button" aria-label="\u0421\u043c\u0435\u043d\u0438\u0442\u044c \u043a\u0430\u043c\u0435\u0440\u0443">\u25c9 \u041a\u0410\u041c\u0415\u0420\u0410</button><button id="oc-jump-button" class="oc-jump-button" type="button" aria-label="\u041f\u0440\u044b\u0433\u043d\u0443\u0442\u044c">\u21e7 \u041f\u0420\u042b\u0416\u041e\u041a</button>');
 
@@ -112,7 +121,7 @@
   const joystick = { x: 0, y: 0, pointer: null, centerX: 0, centerY: 0 };
   const player = { x: 0, z: 0, y: 0, yaw: 0, cameraYaw: 0.35, pitch: 0.28, speed: 0, moving: false, vx:0, vz:0, stamina:100, height:0, vy:0, cameraMode:'chase' };
   const world = { ready: false, active: false, initialised: false, last: 0, frame: 0, assets: [], buildings: [], rings: [], dust: [], foliage: [], lamps: [], pulse: 0, fpsFrames: 0, fpsTime: 0, fpsSample: 0, quality: 'high', gpuScale: 1.35, softwareGL: false, lastRender: 0, navMode: 'main', people: [], traffic: [], contractMarkers: [], dispatchMarkers: [], streetLife: [], jumpQueued:false, car: null, rain: null, dayMode: 0, raining: false, path: [], routeTo: '', pathCell: '' };
-  let scene, camera, renderer, avatar, legL, legR, armL, armR, sun, minimapCtx, targetIndex = -1, hemi, keyLight, blueFill, detailKit = null, cinematicKit = null, landmarkKit = null;
+  let scene, camera, renderer, avatar, legL, legR, armL, armR, sun, minimapCtx, targetIndex = -1, hemi, keyLight, blueFill, detailKit = null, cinematicKit = null, landmarkKit = null, streetKit = null, atelierKit = null, postFxKit = null, perfKit = null, coolingKit = null;
   let dragId = null, dragX = 0, dragY = 0, audio, animationId = 0, lastDistrict = '', lastHudUpdate = 0;
   const PROFILE_KEY = 'osgard:zion030:open-city:v28';
   let profile = rules.defaultProfile();
@@ -424,6 +433,7 @@
     if (detailKit) detailKit.detailCar(shellMesh);
     cinematicKit?.detailCar(shellMesh);
     landmarkKit?.detailCar(shellMesh);
+    streetKit?.detailCar(shellMesh);
     return shellMesh;
   }
   function makePerson(index, x, z) {
@@ -651,6 +661,10 @@
     if (world.rain) world.rain.rain.visible = world.raining;
     cinematicKit?.syncEnvironment({ raining: world.raining, dayMode: world.dayMode });
     landmarkKit?.syncEnvironment({ raining: world.raining, dayMode: world.dayMode });
+    streetKit?.syncEnvironment({ raining: world.raining, dayMode: world.dayMode });
+    atelierKit?.syncEnvironment({ raining: world.raining, dayMode: world.dayMode });
+    coolingKit?.syncEnvironment({ raining: world.raining, dayMode: world.dayMode });
+    postFxKit?.syncEnvironment({ raining: world.raining, dayMode: world.dayMode });
     $('oc-time').textContent = isNight ? '☾ НОЧЬ' : isDay ? '☼ ДЕНЬ' : '◐ ВЕЧЕР';
     $('oc-rain').setAttribute('aria-pressed', String(world.raining));
     $('oc-weather-symbol').textContent = world.raining ? '☂' : isNight ? '☾' : '☀';
@@ -667,6 +681,10 @@
     detailKit?.setQuality(world.quality);
     cinematicKit?.setQuality(world.quality);
     landmarkKit?.setQuality(world.quality);
+    streetKit?.setQuality(world.quality);
+    atelierKit?.setQuality(world.quality);
+    coolingKit?.setQuality(world.quality);
+    postFxKit?.setQuality(world.quality);
     $('oc-quality').textContent = world.quality === 'eco' ? '◈ ECO' : (detailKit?.stats.tier === 'ULTRA' ? '◈ ULTRA' : '◈ HIGH');
     resize(); announce(world.quality === 'eco' ? 'Экономичный режим' : 'Улучшенная графика');
   }
@@ -737,7 +755,17 @@
     if (type === 'tree') {
       const trunk = makeMat('#8c6547'), leaf = [makeMat('#49ba80'), makeMat('#65d5a1'), makeMat('#2f9264')];
       const stem = new THREE.Mesh(new THREE.CylinderGeometry(.08, .12, .91, 10), trunk); stem.position.y = .46; group.add(stem);
-      for (let i = 0; i < 8; i++) { const a = i * 2.399; const ball = new THREE.Mesh(new THREE.IcosahedronGeometry(.26 + (i % 3) * .06, 1), leaf[i % 3]); ball.position.set(Math.cos(a) * .29, 1.12 + (i % 3) * .17, Math.sin(a) * .27); group.add(ball); }
+      // These materials are unique to this installation, so the chase camera
+      // may softly fade only the crown that crosses the player's view.
+      const crown = new THREE.Group(); crown.name='cooling-tree-crown';
+      for(const mat of leaf){mat.transparent=true;mat.depthWrite=false;mat.opacity=1;}
+      for (let i = 0; i < 8; i++) {
+        const a=i*2.399,ball=new THREE.Mesh(new THREE.IcosahedronGeometry(.26+(i%3)*.06,1),leaf[i%3]);
+        ball.position.set(Math.cos(a)*.29,1.12+(i%3)*.17,Math.sin(a)*.27);
+        crown.add(ball);
+      }
+      group.add(crown);
+      group.userData.ocCrown=crown;group.userData.ocCrownMats=leaf;group.userData.ocCrownOpacity=1;
     } else if (type === 'shade') {
       const pole = makeMat('#8ca4aa', .35, .76), sheet = makeMat('#99e3eb', .32, .58, '#198a91', .15);
       for (const dx of [-.46, .46]) for (const dz of [-.46, .46]) drawBox(group, dx, 0, dz, .045, 1.60, .045, pole);
@@ -754,6 +782,34 @@
     const halo = new THREE.Mesh(new THREE.RingGeometry(.75, .83, 48), new THREE.MeshBasicMaterial({ color: 0x70ffe0, transparent: true, opacity: .75, side: THREE.DoubleSide, depthWrite: false }));
     halo.rotation.x = -Math.PI / 2; halo.position.y = .03; group.add(halo);
     scene.add(group); return group;
+  }
+  // Keep newly planted greenery immersive without blocking the third-person
+  // camera. Fade crowns crossing the camera-to-player segment (or surrounding
+  // the player), not unrelated trees and not the original solid gameplay.
+  function updateCoolingCrownOcclusion(dt){
+    if(!camera)return;
+    const ax=camera.position.x,ay=camera.position.y,az=camera.position.z;
+    const bx=player.x,by=1.18+player.height,bz=player.z;
+    const vx=bx-ax,vy=by-ay,vz=bz-az;
+    const lengthSq=Math.max(.0001,vx*vx+vy*vy+vz*vz);
+    const speed=1-Math.exp(-Math.max(0,dt)*13);
+    let faded=0;
+    for(const rec of world.rings){
+      const prop=rec.prop,crown=prop?.userData?.ocCrown;
+      if(!crown)continue;
+      const x=prop.position.x,y=1.31,z=prop.position.z;
+      const param=clamp(((x-ax)*vx+(y-ay)*vy+(z-az)*vz)/lengthSq,0,1);
+      const dx=ax+vx*param-x,dy=ay+vy*param-y,dz=az+vz*param-z;
+      const inSight=dx*dx+dy*dy+dz*dz<.64;
+      const onTop=Math.hypot(bx-x,bz-z)<.90;
+      const target=(inSight||onTop)? .035 : 1;
+      const prev=prop.userData.ocCrownOpacity??1;
+      const opacity=prev+(target-prev)*speed;
+      prop.userData.ocCrownOpacity=opacity;
+      for(const material of prop.userData.ocCrownMats)material.opacity=opacity;
+      if(opacity<.50)faded++;
+    }
+    world.coolingCrownsFaded=faded;
   }
   function makeHotMarkers() {
     for (const [i, h] of HOT.entries()) {
@@ -797,6 +853,7 @@
     if (detailKit) detailKit.detailAvatar(avatar);
     cinematicKit?.detailAvatar(avatar);
     landmarkKit?.detailAvatar(avatar);
+    streetKit?.detailAvatar(avatar);
     scene.add(avatar); return avatar;
   }
   function addAtmosphere() {
@@ -829,7 +886,7 @@
       const gl = renderer.getContext();
       const debugGL = gl.getExtension('WEBGL_debug_renderer_info');
       const glName = String(debugGL ? gl.getParameter(debugGL.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER) || '').toLowerCase();
-      world.softwareGL = /swiftshader|llvmpipe|software|softpipe|lavapipe/.test(glName);
+      world.softwareGL = /swiftshader|llvmpipe|software|softpipe|lavapipe|basic render driver|warp|virtualbox|vmware svga/.test(glName);
       renderer.outputColorSpace = THREE.SRGBColorSpace;
       renderer.toneMapping = THREE.ACESFilmicToneMapping;
       renderer.toneMappingExposure = 1.42;
@@ -866,6 +923,35 @@
           reducedMotion: reduceMotion.matches, mobile: mobile.matches
         });
       } catch (error) { console.warn('ZION-030 landmark asset fallback', error); }
+      try {
+        if (window.ZION030_STREET_ATELIER) streetKit = window.ZION030_STREET_ATELIER.install({
+          THREE, scene, rules, softwareGL: world.softwareGL,
+          reducedMotion: reduceMotion.matches, mobile: mobile.matches
+        });
+      } catch (error) { console.warn('ZION-030 street-level asset fallback', error); }
+      try {
+        if (window.ZION030_ATELIER_PBR) atelierKit = window.ZION030_ATELIER_PBR.install({
+          THREE, scene, rules, softwareGL: world.softwareGL,
+          reducedMotion: reduceMotion.matches, mobile: mobile.matches
+        });
+      } catch (error) { console.warn('ZION-030 PBR surface fallback', error); }
+      try {
+        if (window.ZION030_POSTFX) postFxKit = window.ZION030_POSTFX.create({
+          THREE, renderer, scene, camera, softwareGL: world.softwareGL,
+          reducedMotion: reduceMotion.matches, mobile: mobile.matches
+        });
+      } catch (error) { console.warn('ZION-030 postFX fallback', error); }
+      try {
+        if (window.ZION030_HARDWARE_PERF) perfKit = window.ZION030_HARDWARE_PERF.create({
+          THREE, renderer, scene, shell, softwareGL: world.softwareGL, mobile: mobile.matches
+        });
+      } catch (error) { console.warn('ZION-030 hardware profiler unavailable', error); }
+      try {
+        if (window.ZION030_COOLING_FX) coolingKit = window.ZION030_COOLING_FX.install({
+          THREE, scene, softwareGL: world.softwareGL,
+          reducedMotion: reduceMotion.matches, mobile: mobile.matches
+        });
+      } catch (error) { console.warn('ZION-030 microclimate transformation fallback', error); }
       makeHotMarkers(); makeAvatar(); addLivingWorld(); updateAtmosphere();
       minimapCtx = $('oc-minimap').getContext('2d');
       world.gpuScale = reduceMotion.matches ? .34 : world.softwareGL ? .4 : mobile.matches ? 1.05 : 1.35;
@@ -874,15 +960,37 @@
       detailKit?.setQuality(world.quality);
       cinematicKit?.setQuality(world.quality);
     landmarkKit?.setQuality(world.quality);
+    streetKit?.setQuality(world.quality);
+    atelierKit?.setQuality(world.quality);
+    coolingKit?.setQuality(world.quality);
+    postFxKit?.setQuality(world.quality);
       world.ready = true; resize(); syncGame(); drawMiniMap();
+      atelierKit?.setQuality(world.quality);
+    coolingKit?.setQuality(world.quality);
+      postFxKit?.setQuality(world.quality);
+      coolingKit?.setQuality(world.quality);
+      // Read-only diagnostics and an explicit, opt-in benchmark controller.
+      window.__ZION030_PERFORMANCE__=perfKit||null;
       window.__ZION030_OPEN_CITY__ = {
-        state: () => ({ ready: world.ready, active: world.active, player: { x: player.x, z: player.z, stamina:player.stamina, height:player.height, cameraMode:player.cameraMode }, mission: game()?.state(), quality: world.quality, driving: Boolean(world.car?.occupied), vehicle: world.car ? { x: world.car.x, z: world.car.z, speed: world.car.speed, battery: world.car.battery } : null, contracts: [...profile.completed], credits: profile.credits, raining: world.raining, dayMode: world.dayMode, dispatch:{done:[...profile.dispatchDone],steps:{...profile.dispatchSteps},active:profile.activeDispatch}, garage:{speed:profile.fastCar,grip:profile.grip,battery:profile.batteryUpgrade}, district:rules.districtAt(player.x,player.z), detail: detailKit?.stats ?? null, cinematic: cinematicKit?.stats ?? null, landmarks: landmarkKit?.stats ?? null }),
+        state: () => ({ ready: world.ready, active: world.active, player: { x: player.x, z: player.z, stamina:player.stamina, height:player.height, cameraMode:player.cameraMode }, mission: game()?.state(), quality: world.quality, driving: Boolean(world.car?.occupied), vehicle: world.car ? { x: world.car.x, z: world.car.z, speed: world.car.speed, battery: world.car.battery } : null, contracts: [...profile.completed], credits: profile.credits, raining: world.raining, dayMode: world.dayMode, dispatch:{done:[...profile.dispatchDone],steps:{...profile.dispatchSteps},active:profile.activeDispatch}, garage:{speed:profile.fastCar,grip:profile.grip,battery:profile.batteryUpgrade}, district:rules.districtAt(player.x,player.z), detail: detailKit?.stats ?? null, cinematic: cinematicKit?.stats ?? null, landmarks: landmarkKit?.stats ?? null, street: streetKit?.stats ?? null, atelier: atelierKit?.stats ?? null, postfx: postFxKit?.stats ?? null, coolingFx: coolingKit?.stats ?? null, coolingCrownsFaded: world.coolingCrownsFaded||0, cameraOcclusionFallback:Boolean(world.cameraOcclusionFallback), perf: perfKit?.snapshot() ?? null }),
         enter, exit, walk: (dx, dz) => { if (!collides(player.x + dx, player.z + dz)) { player.x += dx; player.z += dz; } },
         drive: toggleCar, time: cycleTime, rain: toggleRain, quality: toggleQuality, gps: toggleNavigation, contract: completeNearbyContract,
         interact, camera:cycleCamera, journal:showJournal, pause:pauseGame, resume:resumeGame, dispatch:advanceNearbyDispatch
       };
       // Diagnostics exist only under the explicitly opted-in ?test=1 route.
       if (new URLSearchParams(location.search).has('test')) {
+        // Freeze only the test-only animation loop before screenshot evidence:
+        // no synthetic pixels, no interruption of real gameplay state.
+        window.__ZION030_OPEN_CITY__.freezeForCapture = () => {
+          if(animationId)window.cancelAnimationFrame(animationId);
+          animationId=0;return true;
+        };
+        window.__ZION030_OPEN_CITY__.resumeAfterCapture = () => {
+          if(world.active&&!animationId){
+            world.last=0;animationId=window.requestAnimationFrame(frame);
+          }
+          return Boolean(animationId);
+        };
         window.__ZION030_OPEN_CITY__.teleport = (x, z) => {
           if (world.car?.occupied) { world.car.occupied = false; world.car.speed = 0; avatar.visible = true; }
           const safe = rules.nearestFree(x, z);
@@ -905,6 +1013,7 @@
     const cap = world.quality === 'eco' ? Math.min(.55, world.gpuScale) : reduceMotion.matches ? Math.min(.34, world.gpuScale) : world.softwareGL ? Math.min(.4, world.gpuScale) : mobile.matches ? Math.min(1.05, world.gpuScale) : world.gpuScale;
     const dpr = Math.min(window.devicePixelRatio || 1, cap);
     renderer.setPixelRatio(dpr); renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix();
+    postFxKit?.resize();
   }
   function closest() {
     const s = game().state();
@@ -915,6 +1024,7 @@
   function syncGame() {
     if (!world.ready) return;
     const state = game().state();
+    coolingKit?.syncProgress(state.placed);
     $('oc-score').textContent = `${state.score} / 3 ЗОНЫ`;
     $('oc-remaining').textContent = `${Math.max(0, 3 - state.placed.length)} МОДУЛЯ`;
     $('oc-progress-bar').style.width = `${state.score / 3 * 100}%`;
@@ -1106,6 +1216,7 @@
     }
     const eyeHeight=c?.occupied?1.17:1.65+player.height;
     if(player.cameraMode==='first'){
+      world.cameraOcclusionFallback=false;
       camera.position.set(player.x,eyeHeight,player.z);
       camera.lookAt(player.x-Math.sin(player.cameraYaw)*13,
         eyeHeight-Math.tan(player.pitch-.25)*13,player.z-Math.cos(player.cameraYaw)*13);
@@ -1117,22 +1228,37 @@
         const tz=player.z+Math.cos(player.cameraYaw)*Math.cos(pitch)*d;
         if(collides(tx,tz,.12)){distance=Math.max(.7,d-.35);break;}
       }
-      const lookHeight=c?.occupied?.9:1.2+player.height;
-      const desired=new THREE.Vector3(player.x+Math.sin(player.cameraYaw)*Math.cos(pitch)*distance,
-        lookHeight+Math.sin(pitch)*distance,player.z+Math.cos(player.cameraYaw)*Math.cos(pitch)*distance);
-      // Prevent interpolation from leaving the chase camera inside a facade.
-      // The spring arm still eases normally in clear space and keeps the game grid authoritative.
-      if(collides(desired.x,desired.z,.16)){
-        desired.set(player.x,lookHeight+.65,player.z);
+      // In narrow lanes, a 0.7m chase arm produces a close-up of the
+      // character's head rather than the city. Seamlessly prefer a forward
+      // first-person viewpoint until there is room behind the player again.
+      if(distance<1.45){
+        world.cameraOcclusionFallback=true;
+        avatar.visible=false;
+        const eye=c?.occupied?1.36:1.65+player.height;
+        camera.position.set(player.x,eye,player.z);
+        camera.lookAt(player.x-Math.sin(player.cameraYaw)*13,
+          eye-Math.tan(player.pitch-.25)*13,
+          player.z-Math.cos(player.cameraYaw)*13);
+      }else{
+        world.cameraOcclusionFallback=false;
+        avatar.visible=player.cameraMode!=='first';
+        const lookHeight=c?.occupied?.9:1.2+player.height;
+        const desired=new THREE.Vector3(player.x+Math.sin(player.cameraYaw)*Math.cos(pitch)*distance,
+          lookHeight+Math.sin(pitch)*distance,player.z+Math.cos(player.cameraYaw)*Math.cos(pitch)*distance);
+        if(collides(desired.x,desired.z,.16))desired.set(player.x,lookHeight+.65,player.z);
+        camera.position.lerp(desired,1-Math.exp(-dt*9));
+        if(collides(camera.position.x,camera.position.z,.16))camera.position.copy(desired);
+        camera.lookAt(player.x,lookHeight,player.z);
       }
-      camera.position.lerp(desired,1-Math.exp(-dt*9));
-      if(collides(camera.position.x,camera.position.z,.16))camera.position.copy(desired);
-      camera.lookAt(player.x,lookHeight,player.z);
     }
+    updateCoolingCrownOcclusion(dt);
     const desiredFov=player.cameraMode==='first'?64:c?.occupied?74:player.moving&&player.stamina<99?72:68;
     const fov= camera.fov+(desiredFov-camera.fov)*(1-Math.exp(-dt*4));
     if(Math.abs(fov-camera.fov)>.025){camera.fov=fov;camera.updateProjectionMatrix();}
     updateTraffic(dt);updatePedestrians(dt,t);updateRain(dt);
+    streetKit?.update(dt);
+    atelierKit?.update(dt);
+    coolingKit?.update(dt);
     world.rings.forEach((r,i)=>{
       const phase=reduceMotion.matches?0:t*2.2+i;
       r.ring.scale.setScalar(1+Math.sin(phase)*.06);
@@ -1156,7 +1282,19 @@
     if (world.frame % 70 === 0) {
       if (world.fpsTime) {
         const fps = (world.frame - world.fpsFrames) * 1000 / (time - world.fpsTime);
-        if (fps < 28 && world.gpuScale > .36) { world.gpuScale = Math.max(.36, world.gpuScale * .78); world.quality = 'adaptive'; resize(); }
+        if (fps < 28 && world.gpuScale > .36) {
+          world.gpuScale = Math.max(.36, world.gpuScale * .78);
+          world.quality = 'adaptive';
+          // LOD downgrade must affect the entire city, not just the new art layer.
+          detailKit?.setQuality('adaptive');
+          cinematicKit?.setQuality('adaptive');
+          landmarkKit?.setQuality('adaptive');
+          streetKit?.setQuality('adaptive');
+          atelierKit?.setQuality('adaptive');
+          coolingKit?.setQuality('adaptive');
+          postFxKit?.setQuality('adaptive');
+          resize();
+        }
       }
       world.fpsTime = time; world.fpsFrames = world.frame;
     }
@@ -1164,7 +1302,9 @@
     const renderEvery = reduceMotion.matches || world.softwareGL ? 500 : mobile.matches ? 50 : 16;
     if (!world.lastRender || time - world.lastRender >= renderEvery) {
       world.lastRender = time;
-      renderer.render(scene, camera);
+      const frameMark=perfKit?.beginRender() ?? null;
+      try { if(postFxKit)postFxKit.render(time*.001); else renderer.render(scene,camera); }
+      finally {perfKit?.endRender(frameMark);}
     }
     animationId = window.requestAnimationFrame(frame);
   }
@@ -1226,7 +1366,7 @@
   shell.querySelectorAll('[data-oc-tool]').forEach(b => b.addEventListener('click', () => { game()?.select(b.dataset.ocTool); syncGame(); }));
   window.addEventListener('keydown', e => {
     if (!world.active || !$('oc-start').hidden || !$('oc-complete').hidden || modalOpen()) return;
-    const gameplayCodes = ['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space','KeyE','KeyF','KeyH','KeyT','KeyP','KeyQ','KeyG','KeyV','KeyJ','KeyM','ShiftLeft','ShiftRight','Digit1','Digit2','Digit3'];
+    const gameplayCodes = ['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space','KeyE','KeyF','KeyH','KeyT','KeyP','KeyQ','KeyG','KeyV','KeyJ','KeyM','ShiftLeft','ShiftRight','Digit1','Digit2','Digit3','KeyB'];
     if (gameplayCodes.includes(e.code)) { e.preventDefault(); e.stopImmediatePropagation(); }
     keys.add(e.code);
     if (e.repeat) return;
@@ -1240,7 +1380,8 @@
     else if (e.code === 'KeyT') cycleTime();
     else if (e.code === 'KeyP') toggleRain();
     else if (e.code === 'KeyQ') toggleQuality();
-    else if (e.code === 'KeyH' && world.car?.occupied) soundSuccess();
+    else if (e.code === 'KeyH') window.__ZION030_FOCUS_HUD__?.toggle?.();
+    else if (e.code === 'KeyB') perfKit?.toggle?.();
     else if (['Digit1', 'Digit2', 'Digit3'].includes(e.code)) game().select(['tree', 'shade', 'water'][Number(e.code.slice(-1)) - 1]);
   }, true);
   window.addEventListener('keyup', e => { keys.delete(e.code); }, true);

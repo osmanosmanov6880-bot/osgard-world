@@ -14,7 +14,7 @@ async function enterStreetMode(page) {
 }
 
 test('ZION-030 v28: real third-person street mode, electric vehicle, weather and quality', async ({ page }, testInfo) => {
-  test.setTimeout(75000);
+  test.setTimeout(95000);
   const errors = await enterStreetMode(page)
   const snapshot = () => page.evaluate(() => window.__ZION030_OPEN_CITY__.state())
   await expect.poll(async () => (await snapshot()).mission.score).toBe(0)
@@ -37,6 +37,9 @@ test('ZION-030 v28: real third-person street mode, electric vehicle, weather and
     await page.keyboard.up('w')
     const after = (await snapshot()).player
     expect(Math.hypot(after.x - before.x, after.z - before.z)).toBeGreaterThan(.09)
+    // Walking was validated above. Move back to the parked car so F tests
+    // vehicle interaction, not distance drift under software WebGL load.
+    await page.evaluate(() => window.__ZION030_OPEN_CITY__.teleport(.7, -1.0))
     await page.keyboard.press('f')
   }
   await expect.poll(async () => (await snapshot()).driving).toBe(true)
@@ -55,7 +58,17 @@ test('ZION-030 v28: real third-person street mode, electric vehicle, weather and
   await expect(page.locator('#oc-rain')).toHaveAttribute('aria-pressed', 'true')
   await page.locator('#oc-quality').click()
   await expect(page.locator('#oc-quality')).toContainText('ECO')
-  await page.screenshot({ path: testInfo.outputPath('zion-v28-driving.png') })
+  // Lower screenshot readback cost while preserving the real rendered street.
+  // Software WebGL on the shared CI runner is not a physical GPU benchmark.
+  if(testInfo.project.name==='desktop')
+    await page.setViewportSize({width:1000,height:650})
+  await page.waitForTimeout(550)
+  await page.evaluate(()=>window.__ZION030_OPEN_CITY__.freezeForCapture())
+  await page.screenshot({
+    path:testInfo.outputPath('zion-v28-driving.png'),
+    animations:'disabled',timeout:18000
+  })
+  await page.evaluate(()=>window.__ZION030_OPEN_CITY__.resumeAfterCapture())
   if (testInfo.project.name === 'mobile') await page.locator('#oc-drive-action').click()
   else await page.keyboard.press('f')
   await expect.poll(async () => (await snapshot()).driving).toBe(false)

@@ -1,3 +1,6 @@
+import './zion-open-city-cooling-v34-smoke.mjs'
+import './zion-open-city-v34-smoke.mjs'
+import './zion-open-city-v33-smoke.mjs'
 import './zion-open-city-v32-smoke.mjs'
 import './zion-open-city-v31-smoke.mjs'
 import './zion-open-city-v30-smoke.mjs'
@@ -235,7 +238,7 @@ console.log('PASS local ZION release: 19 unique catalog entries; 11 complete loc
   const js = text(resolve(root, 'queue/ZION-030/open-city.js'))
   const css = text(resolve(root, 'queue/ZION-030/open-city.css'))
   new vm.Script(js, { filename: 'zion-open-city.js' })
-  assert.ok(shade.includes('open-city.js?v=32') && shade.includes('open-city.css?v=29'), 'Open City must be loaded on the published game')
+  assert.ok(shade.includes('open-city.js?v=34') && shade.includes('open-city.css?v=29'), 'Open City must be loaded on the published game')
   assert.ok(js.includes('new THREE.WebGLRenderer') && js.includes('new THREE.PerspectiveCamera'), 'Open City needs a real perspective WebGL engine')
   assert.ok(js.includes('game().place(dest.x, dest.z, state.selected)'), 'New walk mode must use the authoritative original mission state')
   assert.ok(js.includes("keys.has('KeyW')") && js.includes('joystick.pointer'), 'Keyboard and touch movement must be implemented')

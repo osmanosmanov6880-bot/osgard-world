@@ -40,7 +40,8 @@ jobs:
             npx playwright install --with-deps --no-shell chromium
           fi
       - name: Verify ZION-030 desktop and mobile gameplay only
-        run: npx playwright test --config playwright.ecosystem.config.mjs --grep 'ZION' --workers=2
+        # Avoid simultaneous software-WebGL scenes contending for the same virtual GPU.
+        run: npx playwright test --config playwright.ecosystem.config.mjs --grep 'ZION' --workers=1
       - name: Preserve evidence
         if: always()
         uses: actions/upload-artifact@v4
