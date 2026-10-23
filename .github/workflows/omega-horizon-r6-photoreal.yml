@@ -114,11 +114,11 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p "$RUNNER_TEMP/omega-r7-desktop"
-          cp -a godot/empire-omega/. "$RUNNER_TEMP/omega-r6-desktop/"
-          rm -rf "$RUNNER_TEMP/omega-r6-desktop/.godot" "$RUNNER_TEMP/omega-r6-desktop/.build-web"
+          cp -a godot/empire-omega/. "$RUNNER_TEMP/omega-r7-desktop/"
+          rm -rf "$RUNNER_TEMP/omega-r7-desktop/.godot" "$RUNNER_TEMP/omega-r7-desktop/.build-web"
           python3 - <<'PY'
           import os,pathlib
-          cfg=pathlib.Path(os.environ["RUNNER_TEMP"])/"omega-r6-desktop"/"project.godot"
+          cfg=pathlib.Path(os.environ["RUNNER_TEMP"])/"omega-r7-desktop"/"project.godot"
           text=cfg.read_text()
           needle='renderer/rendering_method="gl_compatibility"'
           assert text.count(needle)==1
@@ -138,13 +138,13 @@ jobs:
           settings.write_text(gs)
           print("R7 WINDOWS PROFILE: Forward+, cinematic startup, temporal AA, debanding; Web unchanged")
           PY
-          godot --headless --editor --path "$RUNNER_TEMP/omega-r6-desktop" --import --quit
+          godot --headless --editor --path "$RUNNER_TEMP/omega-r7-desktop" --import --quit
       - name: Build Windows x64 Godot binary containing scanned CC0 source materials
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p desktop_release
-          godot --headless --path "$RUNNER_TEMP/omega-r6-desktop" --export-release "Windows Desktop" \
+          godot --headless --path "$RUNNER_TEMP/omega-r7-desktop" --export-release "Windows Desktop" \
             "$GITHUB_WORKSPACE/desktop_release/OSGARD_HORIZON_R7_CINEMATIC.exe"
           test -s desktop_release/OSGARD_HORIZON_R7_CINEMATIC.exe
           test -s desktop_release/OSGARD_HORIZON_R7_CINEMATIC.pck
