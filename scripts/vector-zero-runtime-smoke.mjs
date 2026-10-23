@@ -54,6 +54,7 @@ class ElementAdapter extends EventTargetAdapter {
     }
   }
   setPointerCapture(pointerId) { this.capturedPointers.push(pointerId) }
+  setAttribute(name, value) { this.attributes[name] = String(value) }
   click() { return this.dispatch('click') }
 }
 
@@ -213,7 +214,17 @@ const tapPolarity = nodes.find(element => element.dataset.tap === 'pol')
 assert.ok(tapPolarity, 'The actual mobile polarity control must exist')
 tapPolarity.click()
 assert.match(snapshot().polarity, /NEGATIVE/)
-checks.push('help before start, real launch, one started event, keyboard/button/mobile polarity')
+const assist = node('assist')
+assert.equal(assist.attributes['aria-pressed'], 'true')
+assist.click()
+assert.equal(assist.attributes['aria-pressed'], 'false')
+assert.equal(assist.textContent, 'AIM / OFF')
+assist.click()
+assert.equal(assist.attributes['aria-pressed'], 'true')
+const beforeRepeat = snapshot().polarity
+window.dispatch('keydown', { key: 'q', repeat: true })
+assert.equal(snapshot().polarity, beforeRepeat, 'Holding Q must not flip polarity on auto-repeat')
+checks.push('help before start, real launch, polarity input de-bounce and trajectory-assist toggle')
 
 key('ArrowRight')
 pump(16)
@@ -300,6 +311,7 @@ assert.ok(snapshot().x - afterBlur < 5, 'Window blur must clear held keyboard in
 key('ArrowRight')
 document.hidden = true
 document.dispatch('visibilitychange')
+assert.equal(node('objective-status').textContent, 'PAUSED', 'Switching tabs must automatically pause the attempt')
 pump(8)
 const afterHidden = snapshot().x
 pump(8)
@@ -311,6 +323,31 @@ assert.ok(lifecycle.some(({ message }) => message.state === 'error' && message.m
 assert.ok([...ids.values()].every(element => !/undefined|NaN/.test(String(element.textContent))), 'HUD must not expose undefined/NaN values')
 assert.equal(animationFrames.size, 1)
 checks.push('error lifecycle forwarding, finite HUD values and a single ongoing animation loop')
+
+document.hidden = false
+click('restart')
+click('start')
+key('w')
+pump(54)
+assert.ok(canvasState.player.y > 500 && canvasState.player.y < 564, 'First jump must be descending toward the platform')
+key('w', 'keyup')
+key('w')
+pump(13)
+assert.ok(canvasState.player.y < 530, 'A jump pressed shortly before landing must be buffered and executed')
+checks.push('buffered jump executes on landing instead of being lost')
+
+click('restart')
+click('start')
+key('ArrowRight')
+let edgeFrames = 0
+while (snapshot().x < 944 && edgeFrames++ < 350 && node('objective-status').textContent === 'FIELD ACTIVE') pump()
+assert.ok(snapshot().x >= 944, 'Player must reach the first platform gap during the actual run')
+const edgeY = canvasState.player.y
+key('w')
+pump(4)
+assert.ok(canvasState.player.y < edgeY - 2, 'Coyote-time jump must work immediately after leaving a ledge')
+key('ArrowRight', 'keyup')
+checks.push('coyote-time jump at the first platform edge')
 
 console.log(JSON.stringify({ status: 'PASS', source: path.relative(repo, sourcePath), checks,
   frames: framesRun, canvasCalls: canvasState.calls, lifecycleStarts: startedCount(),
