@@ -1,5 +1,6 @@
 extends SceneTree
 const SurfaceLibraryR9Script = preload("res://scripts/surface_library_r9.gd")
+const MaterialFabricR12Script = preload("res://scripts/material_fabric_r12.gd")
 ## Native Godot runtime test: parses real scene, creates procedural city, drives missions,
 ## validates persistent progression, shields, damage and the radar.
 func _initialize() -> void:
@@ -221,6 +222,54 @@ func _run() -> void:
     world._set_graphics_quality(0)
     if not check(r11_environment.lod_mode == 0 and film_r11.is_active(),
         "R11 maximum-quality graphic stack not restored"):return
+    var r12 = world.get_node_or_null("R12_AerospaceEngineeringCampus")
+    if not check(r12 != null, "R12 aerospace campus not instantiated"):return
+    if not check(r12.workshop_count == 12,
+        "R12 engineering halls missing across six districts"):return
+    if not check(r12.lofted_pressure_housings == 36,
+        "R12 sculpted curved housing mesh count incorrect"):return
+    if not check(r12.hero_mesh_vertices >= 2800,
+        "R12 reusable high-detail pressure mesh resolution too low"):return
+    if not check(r12.articulated_gates == 24 and r12.articulated_cranes == 12,
+        "R12 functional animated blast doors or gantries missing"):return
+    if not check(r12.detail_instances >= 6000,
+        "R12 instanced PBR fasteners and structural layers below target"):return
+    if not check(r12.get_node_or_null(
+        "R12_MachinedEngineeringHall_00/R12_MainHallCollision") is StaticBody3D,
+        "R12 engineering hall collisions missing"):return
+    if not check(MaterialFabricR12Script.atlas_count() == 3,
+        "R12 three physically based shared atlases not generated"):return
+    for profile in 3:
+        var mat: StandardMaterial3D = MaterialFabricR12Script.get_material(profile)
+        if not check(mat.normal_enabled and mat.ao_texture != null and
+            mat.metallic_texture != null and mat.roughness_texture != null,
+            "R12 PBR maps missing for industrial surface"):return
+    var light_r12 = world.get_node_or_null("R12_CinematicLighting")
+    if not check(light_r12 != null and light_r12.current_look == 0,
+        "R12 professional blue-hour lighting setup missing"):return
+    light_r12.apply_look(1)
+    if not check(light_r12.current_look == 1,
+        "R12 alternate warm cinematic look not working"):return
+    light_r12.apply_look(0)
+    var adaptive_r12 = world.get_node_or_null("R12_AdaptiveQuality")
+    if not check(adaptive_r12 != null and not adaptive_r12.auto_enabled,
+        "R12 automatic performance quality must be opt-in"):return
+    adaptive_r12.set_auto(true)
+    if not check(adaptive_r12.observe_fps(20.0, 9.0) == 1 and
+        world.graphics_quality == 1,
+        "R12 measured low-FPS downshift logic failed"):return
+    if not check(adaptive_r12.observe_fps(21.0, 5.0, true) == -1,
+        "R12 benchmark lockout did not suppress quality shifting"):return
+    adaptive_r12.set_auto(false)
+    world._set_graphics_quality(0)
+    if not check(r12.quality_mode == 0 and light_r12.quality_mode == 0,
+        "R12 maximum-quality view not restored after adaptive test"):return
+    var r12_post = world.get_node_or_null("R11_CinematicPost")
+    r12_post.set_flight_velocity(65.0)
+    if not check(r12_post.motion_hint > 0.0,
+        "R12 dynamic film-streak control missing"):return
+    if not check(monitor_r11.last_report.is_empty(),
+        "R12 actual physical hardware results must never be invented in CI"):return
     var hangar_solid = world.get_node_or_null("HeroMegadocksR6/R6_EnclosedHangar_00_0/HangarLeftWallCollision")
     if not check(hangar_solid is StaticBody3D, "Hangar collision missing"):return
     var arcology_solid = world.get_node_or_null("SculpturalSkylineR6/R6_SculptedArcology_00/ArcologyCollision")
@@ -250,5 +299,5 @@ func _run() -> void:
     world.ship.take_damage(10.0)
     if not check(world.ship.shield < shield_before,"Damage does not reduce shield"):return
     if not check(previous_credits >= 0,"Invalid credits"):return
-    print("NEBULA_SMOKE_SUCCESS missions=1 upgrades=1 drones=%d premium3d=r11 pbr=true gantries=12 performance-lab=real-device" % world.drones.size())
+    print("NEBULA_SMOKE_SUCCESS missions=1 upgrades=1 drones=%d premium3d=r12 36-sculpted-pbr-housings=verified real-hardware-fps=pending" % world.drones.size())
     quit(0)
