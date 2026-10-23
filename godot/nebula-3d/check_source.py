@@ -251,6 +251,8 @@ smoke = require(
     "R11 low-GPU profile failed to disable heavy postprocess",
     "NEBULA_SMOKE_SUCCESS",
 )
+assert 'ship.position = Vector3(0,19,78)' in world, "Ship spawn must use a local transform before entering the tree"
+assert 'ship.global_position = Vector3(0,19,78)\n    add_child(ship)' not in world, "Illegal pre-tree global transform on Godot Node3D"
 assert "func _make_ship(" not in ship, "R3 low-poly ship builder is still active"
 assert ship_visual.count("engine_flames.append(") == 1
 assert "for x in [-1.24, 0.0, 1.24]:" in ship_visual, "three engine array missing"

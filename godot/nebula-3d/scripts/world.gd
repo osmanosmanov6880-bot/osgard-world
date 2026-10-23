@@ -307,7 +307,9 @@ func _build_starfield() -> void:
 func _spawn_player() -> void:
     ship = ShipScript.new()
     ship.name = "PlayerShip"
-    ship.global_position = Vector3(0,19,78)
+    # A Node3D has no global transform before it belongs to the SceneTree.
+    # Use parent-relative spawn transform until add_child completes.
+    ship.position = Vector3(0,19,78)
     add_child(ship)
     ship.fired.connect(_on_ship_fire)
     chase_camera = Camera3D.new()
