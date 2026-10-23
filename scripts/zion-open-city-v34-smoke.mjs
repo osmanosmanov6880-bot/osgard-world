@@ -15,7 +15,7 @@ for(const filename of ['open-city-pbr34.js','open-city-postfx34.js','open-city-p
   assert.ok(entry.indexOf(filename+'?v=34')<entry.indexOf('open-city.js?v=34'))
 }
 assert.ok(entry.includes('open-city-v34.css?v=34'))
-for(const anchor of ['atelierKit?.update(dt)','postFxKit?.render(time*.001)',
+for(const anchor of ['atelierKit?.update(dt)','postFxKit.render(time*.001)',
   'perfKit?.beginRender()','perfKit?.endRender(frameMark)',
   'atelier: atelierKit?.stats ?? null','postfx: postFxKit?.stats ?? null',
   'perf: perfKit?.snapshot() ?? null','window.__ZION030_PERFORMANCE__=perfKit||null']){
