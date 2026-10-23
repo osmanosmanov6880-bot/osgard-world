@@ -1,5 +1,7 @@
 /* ZION-030 v34 / cinematic post FX for the 3D world only.
- * A bounded render target, subtle screen glow, vignette and toning.
+ * A bounded render target, bloom, optically subtle rain-lens refraction,
+ * daylight/night grading, a vignette and restrained temporal film grain.
+ * v36 refinement: no second render target or GPU-expensive temporal pass.
  * The game UI remains an unfiltered DOM overlay.
  */
 (function(host){
@@ -13,12 +15,16 @@
    'precision highp float;',
    'uniform sampler2D tColor;',
    'uniform vec2 uInvRes;',
-   'uniform float uRain,uNight,uTime,uStrength;',
+   'uniform float uRain,uNight,uDay,uTime,uStrength;',
    'varying vec2 vUv;',
    'float luma(vec3 c){return dot(c,vec3(.2126,.7152,.0722));}',
    'void main(){',
    'vec2 px=uInvRes*1.3;',
-   'vec3 src=texture2D(tColor,vUv).rgb;',
+   'vec2 rainCell=fract(vUv*vec2(63.0,41.0)+vec2(0.0,uTime*.006));',
+   'float rainSeed=fract(sin(dot(floor(vUv*vec2(63.0,41.0)),vec2(127.1,311.7)))*43758.5453);',
+   'float rainLens=(1.0-smoothstep(.03,.12,length(rainCell-vec2(.5))))*step(.94,rainSeed)*uRain;',
+   'vec2 safeUv=clamp(vUv+vec2(px.x*2.1,-px.y*2.7)*rainLens,vec2(.002),vec2(.998));',
+   'vec3 src=texture2D(tColor,safeUv).rgb;',
    'vec3 bloom=vec3(0.0);',
    'vec3 p1=texture2D(tColor,vUv+vec2(px.x,0.)).rgb;',
    'vec3 p2=texture2D(tColor,vUv-vec2(px.x,0.)).rgb;',
@@ -30,10 +36,13 @@
    'bloom+=p4*smoothstep(.66,1.10,luma(p4));',
    'bloom*=.0275;',
    'vec2 edge=vUv-.5;',
-   'float vignette=1.0-.12*smoothstep(.08,.53,dot(edge,edge));',
+   'float vignette=1.0-(.11+.025*uNight)*smoothstep(.06,.55,dot(edge,edge));',
    'vec3 split=vec3(texture2D(tColor,vUv+vec2(px.x*.30,0.)).r,',
    ' src.g,texture2D(tColor,vUv-vec2(px.x*.30,0.)).b);',
-   'vec3 color=mix(src,split,.27)*1.018+bloom*(.9+.16*uNight);',
+   'vec3 grade=vec3(1.0)+uNight*vec3(.012,-.004,-.014)+uDay*vec3(.008,.004,-.005);',
+   'vec3 color=mix(src,split,.20)*grade*1.012+bloom*(.85+.13*uNight);',
+   'float rainStreak=pow(max(0.0,sin((vUv.x*129.0+uTime*.014)*6.2831853)),36.0);',
+   'color+=uRain*rainStreak*vec3(.003,.006,.009);',
    'color=mix(color,vec3(luma(color)),.018);',
    'color.r+=(uNight*.008)-(uRain*.004);',
    'color.b+=(uRain*.010)+(uNight*.005);',
@@ -48,7 +57,8 @@
    if(!THREE||!renderer||!scene||!camera)throw Error('ZION34 postFX needs active render pipeline');
    const capable=!!(THREE.WebGLRenderTarget&&THREE.ShaderMaterial&&THREE.OrthographicCamera&&THREE.Vector2);
    const allowed=capable&&!mobile&&!softwareGL&&!reducedMotion;
-   const stats={version:VERSION,available:capable,eligible:allowed,enabled:false,
+   const stats={version:VERSION,filmGrade:'cinematic v36',rainLens:true,
+     available:capable,eligible:allowed,enabled:false,
      width:0,height:0,passes:0,renderedFrames:0,postFrames:0,quality:'high',disabledReason:
        !capable?'missing WebGL postprocessing support':softwareGL?'software WebGL':
          reducedMotion?'reduced motion':mobile?'mobile GPU budget':''};
@@ -65,7 +75,7 @@
        uniforms:{
          tColor:{value:target.texture},
          uInvRes:{value:new THREE.Vector2(.5,.5)},
-         uRain:{value:0},uNight:{value:0},uTime:{value:0},
+         uRain:{value:0},uNight:{value:0},uDay:{value:0},uTime:{value:0},
          uStrength:{value:1.0}
        },vertexShader:vert,fragmentShader:frag
      });
@@ -94,6 +104,7 @@
      if(!material)return;
      material.uniforms.uRain.value=raining?1:0;
      material.uniforms.uNight.value=dayMode===1?1:0;
+     material.uniforms.uDay.value=dayMode===2?1:0;
    }
    function render(time=0){
      if(disposed)throw Error('ZION34 postFX use-after-dispose');
