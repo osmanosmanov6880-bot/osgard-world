@@ -199,20 +199,21 @@
     // fixed timestep; geometry is shared and they never alter hitboxes.
     if(!lite)for(const b of occupied.filter(t=>t.s>.72).slice(0,6)){
       const fan=new THREE.Group();fan.position.set(b.x,b.h+.40,b.z);
+      const rotor=new THREE.Group();fan.add(rotor);
       const hub=new THREE.Mesh(geo.cyl,mats.steel);
       hub.rotation.x=Math.PI/2;hub.scale.set(.10,.08,.10);
-      fan.add(hub);
+      rotor.add(hub);
       for(let k=0;k<4;k++){
         const angle=k*Math.PI/2;
         const blade=new THREE.Mesh(geo.box,mats.copper);
         blade.position.set(Math.cos(angle)*.19,Math.sin(angle)*.19,0);
         blade.rotation.z=angle;blade.scale.set(.31,.052,.026);
-        fan.add(blade);
+        rotor.add(blade);
       }
       const basePlate=new THREE.Mesh(geo.box,mats.slate);
       basePlate.position.y=-.18;basePlate.scale.set(.39,.14,.36);
       fan.add(basePlate);
-      kinetic.add(fan);rotors.push({mesh:fan,phase:rand(b.x,b.z,77)*TAU});
+      kinetic.add(fan);rotors.push({mesh:rotor,phase:rand(b.x,b.z,77)*TAU});
       stats.rotatingFans++;
     }
     // Suspended civic banners are deliberately small, avoiding mission markers.
