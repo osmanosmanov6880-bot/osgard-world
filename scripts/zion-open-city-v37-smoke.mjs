@@ -67,7 +67,7 @@ class M {
   dispose(){this.disposed=true}
 }
 class Mesh extends Object3D{
-  constructor(geo,material){super();this.geometry=geo;this.material=material}
+  constructor(geo,material){super();this.geometry=geo;this.material=material;this.isMesh=true}
 }
 class Inst extends Mesh{
   constructor(geo,material,n){
@@ -120,12 +120,19 @@ function run(options){
   scene.add(street)
   add('ZION33 / limestone / arch',originalMats[2],street)
   add('ZION33 / plaster / box',originalMats[3],street)
+  const vehicleMesh=new Object3D()
+  const carBody=new M({color:0x1a9cba,roughness:.3,metalness:.68})
+  const carGlass=new M({color:0x091b25,roughness:.12,metalness:.08})
+  const heroBody=new Mesh(new G(),carBody),heroGlass=new Mesh(new G(),carGlass)
+  const sculptedShell=new Mesh(new G(),carBody)
+  vehicleMesh.add(heroBody,heroGlass,sculptedShell)
+  const car={mesh:vehicleMesh}
   const renderer={capabilities:{getMaxAnisotropy:()=>8},toneMappingExposure:1.42}
   const keyLight={intensity:2.45,color:new Color(0xffd4a4)}
   const hemi={intensity:2.25},blueFill={intensity:.9}
   const kit=context.window.ZION030_PHOTOREAL37.install({
     THREE,scene,renderer,rules:context.window.ZION030_CITY_RULES,
-    keyLight,hemi,blueFill,...options
+    car,keyLight,hemi,blueFill,...options
   })
   assert.equal(kit.stats.version,'37.0')
   assert.equal(kit.stats.sourceLicense,'Poly Haven CC0')
@@ -136,6 +143,11 @@ function run(options){
   assert.equal(kit.stats.materialFamilies,options.softwareGL||options.reducedMotion?0:3)
   assert.equal(kit.stats.tier,options.softwareGL||options.reducedMotion?'LITE':options.mobile?'MOBILE':'ULTRA')
   if(!options.softwareGL&&!options.reducedMotion){
+    assert.equal(kit.stats.vehicleClearcoatMeshes,2)
+    assert.equal(kit.stats.vehicleGlassMeshes,1)
+    assert.notEqual(heroBody.material,carBody)
+    assert.notEqual(heroGlass.material,carGlass)
+    assert.equal(sculptedShell.material,heroBody.material)
     assert.equal(kit.stats.contactShadows,68)
     assert.ok(kit.stats.heroGlassPanels>150)
     assert.ok(kit.stats.drawBatches>=2&&kit.stats.drawBatches<=5)
@@ -158,6 +170,9 @@ function run(options){
   }
   const metrics={...kit.stats}
   kit.dispose()
+  assert.equal(heroBody.material,carBody)
+  assert.equal(heroGlass.material,carGlass)
+  assert.equal(sculptedShell.material,carBody)
   assert.equal(scene.children.length,3)
   assert.equal(originalMats[0].map,'road old')
   assert.equal(originalMats[1].map,'plaza old')
