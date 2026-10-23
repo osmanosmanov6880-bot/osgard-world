@@ -52,6 +52,8 @@ jobs:
         run: godot --headless --rendering-method gl_compatibility --path godot/vector-zero --script res://tests/wave7_smoke.gd
       - name: Verify Wave 8 professional surfaces, animation and gameplay
         run: godot --headless --rendering-method gl_compatibility --path godot/vector-zero --script res://tests/wave8_smoke.gd
+      - name: Verify Wave 9 hero geometry, optimized detail and gameplay
+        run: godot --headless --rendering-method gl_compatibility --path godot/vector-zero --script res://tests/wave9_smoke.gd
       - name: Export real Godot Web runtime
         shell: bash
         run: |

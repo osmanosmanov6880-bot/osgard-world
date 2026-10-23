@@ -15,6 +15,7 @@ const Wave6ArtDirector = preload("res://scripts/wave6_art_director.gd")
 const Wave6Benchmark = preload("res://scripts/wave6_hardware_benchmark.gd")
 const Wave7Lab = preload("res://scripts/wave7_lab.gd")
 const Wave8Finish = preload("res://scripts/wave8_finish.gd")
+const Wave9PrecisionLab = preload("res://scripts/wave9_precision_lab.gd")
 const CYAN := Color(0.24, 0.83, 1.0)
 const VIOLET := Color(0.64, 0.43, 1.0)
 const MINT := Color(0.37, 1.0, 0.75)
@@ -103,6 +104,10 @@ func _ready() -> void:
     wave8.name = "Wave8Finish"
     wave8.configure(self)
     add_child(wave8)
+    var wave9 := Wave9PrecisionLab.new()
+    wave9.name = "Wave9PrecisionLab"
+    wave9.configure(self)
+    add_child(wave9)
     Wave5Batcher.optimize(self)
     var hardware_bench := Wave6Benchmark.new()
     hardware_bench.name = "Wave6HardwareBenchmark"
