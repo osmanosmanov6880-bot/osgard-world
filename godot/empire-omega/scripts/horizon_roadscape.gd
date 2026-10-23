@@ -1,4 +1,5 @@
 extends Node3D
+const R7_LEAF_WIND = preload("res://shaders/horizon_r7_canopy_wind.gdshader")
 ## OSGARD HORIZON ROADSCAPE - GPU-instanced scenic environment for HTML5.
 ## Original procedural road decoration, low-poly foliage and skyline.
 ## It deliberately has no colliders: traffic and missions retain their geometry.
@@ -43,7 +44,13 @@ func _batch(label: String, mesh: Mesh, placements: Array[Transform3D], colors: A
 	visual.multimesh = instances
 	var paint := _mat(Color.WHITE,0.04,0.9,glowing)
 	paint.vertex_color_use_as_albedo = true
-	visual.material_override = paint
+	if label == "LeafCanopyBatch" or label == "LeafConeBatch":
+		var breeze := ShaderMaterial.new()
+		breeze.shader = R7_LEAF_WIND
+		breeze.set_shader_parameter("wind_strength",.40)
+		visual.material_override = breeze
+	else:
+		visual.material_override = paint
 	visual.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(visual)
 	scenic_batches += 1
@@ -83,6 +90,8 @@ func _build_crosswalks() -> void:
 	_batch("RoadReflectors",block,edge,edge_colors,true)
 
 func _build_trees() -> void:
+	# Original broadleaf clusters: 7 scaled lobes rather than one giant green sphere.
+	# One MultiMesh per leaf/branch family; 1300+ animated canopies cost ~2 draw calls.
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 1042026
 	var trunks: Array[Transform3D] = []
@@ -93,37 +102,47 @@ func _build_trees() -> void:
 	var conifer_colors: Array[Color] = []
 	for ix in range(8):
 		for iz in range(8):
-			var center: Vector3 = Vector3(-182.0+float(ix)*52.0,0,-182.0+float(iz)*52.0)
+			var center := Vector3(-182.0+float(ix)*52.0,0,-182.0+float(iz)*52.0)
 			for i in range(3):
-				var offset_x: float = (17.0 if i != 1 else -17.0) + rng.randf_range(-2.0,2.0)
-				var offset_z: float = (17.0 if i != 2 else -17.0) + rng.randf_range(-2.0,2.0)
-				var height: float = rng.randf_range(2.7,4.3)
-				var point := center + Vector3(offset_x,0.0,offset_z)
-				trunks.append(Transform3D(Basis().scaled(Vector3(0.34,height,0.34)),point+Vector3(0,height*0.5,0)))
-				trunk_colors.append(Color("594a40"))
-				var crown_scale: float = rng.randf_range(2.6,3.6)
-				leaves.append(Transform3D(Basis().scaled(Vector3(crown_scale,2.2,crown_scale)),point+Vector3(0,height+0.75,0)))
-				leaf_colors.append(Color("3c7a53") if (ix+iz)%3==0 else Color("589264"))
-				conifers.append(Transform3D(Basis().scaled(Vector3(crown_scale*.70,2.4,crown_scale*.70)),point+Vector3(0,height+2.1,0)))
-				conifer_colors.append(Color("2d694e") if (ix+iz)%3==0 else Color("3a8158"))
+				var offset_x: float = (17.0 if i != 1 else -17.0)+rng.randf_range(-2.0,2.0)
+				var offset_z: float = (17.0 if i != 2 else -17.0)+rng.randf_range(-2.0,2.0)
+				var stem: float = rng.randf_range(3.0,4.3)
+				var point: Vector3 = center+Vector3(offset_x,0,offset_z)
+				trunks.append(Transform3D(Basis().scaled(Vector3(.27,stem,.27)),point+Vector3(0,stem*.5,0)))
+				trunk_colors.append(Color("504c43"))
+				# Lobe layout is deterministic, asymmetrical and modestly wind animated.
+				for n in range(7):
+					var theta: float = TAU*float(n)/7.0 + rng.randf_range(-.15,.15)
+					var spread: float = rng.randf_range(.38,1.52)
+					var h: float = stem + rng.randf_range(.46,1.64)
+					var size: float = rng.randf_range(.88,1.40)
+					var branch_position := point+Vector3(cos(theta)*spread,h,sin(theta)*spread)
+					leaves.append(Transform3D(Basis(Vector3.UP,theta).scaled(Vector3(size,size*.84,size)),branch_position))
+					leaf_colors.append(Color("4c7251") if (ix+iz+n)%3==0 else (Color("557c57") if (ix+n)%2==0 else Color("648666")))
+				# A few taller evergreen silhouettes, but never pyramid mountains.
+				if (ix+iz+i)%4==0:
+					for layer in range(2):
+						var breadth: float = 1.18-float(layer)*.31
+						conifers.append(Transform3D(Basis().scaled(Vector3(breadth,1.0,breadth)),point+Vector3(0,stem+1.05+float(layer)*.76,0)))
+						conifer_colors.append(Color("4a6b56") if layer==0 else Color("5a7a5c"))
 	var trunk_mesh := CylinderMesh.new()
-	trunk_mesh.top_radius = 0.4
-	trunk_mesh.bottom_radius = 0.55
+	trunk_mesh.top_radius = .31
+	trunk_mesh.bottom_radius = .48
 	trunk_mesh.height = 1.0
-	trunk_mesh.radial_segments = 6
+	trunk_mesh.radial_segments = 10
 	_batch("TrunkBatch",trunk_mesh,trunks,trunk_colors)
 	var crown_mesh := SphereMesh.new()
-	crown_mesh.radius = 0.8
-	crown_mesh.height = 1.6
-	crown_mesh.radial_segments = 9
-	crown_mesh.rings = 5
+	crown_mesh.radius = .84
+	crown_mesh.height = 1.42
+	crown_mesh.radial_segments = 13
+	crown_mesh.rings = 8
 	_batch("LeafCanopyBatch",crown_mesh,leaves,leaf_colors)
-	var tip_mesh := CylinderMesh.new()
-	tip_mesh.top_radius = 0.0
-	tip_mesh.bottom_radius = 0.92
-	tip_mesh.height = 1.0
-	tip_mesh.radial_segments = 7
-	_batch("LeafConeBatch",tip_mesh,conifers,conifer_colors)
+	var top_mesh := CylinderMesh.new()
+	top_mesh.top_radius = 0.0
+	top_mesh.bottom_radius = .9
+	top_mesh.height = 1.0
+	top_mesh.radial_segments = 11
+	_batch("LeafConeBatch",top_mesh,conifers,conifer_colors)
 	tree_count = trunks.size()
 
 func _build_lamps() -> void:
@@ -153,33 +172,53 @@ func _build_lamps() -> void:
 	lantern_mesh.rings = 4
 	_batch("LanternBatch",lantern_mesh,lanterns,lantern_color,true)
 
+func _horizon_r7_peak(angle: float, belt: int) -> Vector3:
+	# Smooth coastline ridges around the city, not isolated triangular pyramids.
+	var radius: float = 390.0 + float(belt)*44.0
+	radius += sin(angle*11.0+float(belt)*.29)*4.0
+	var ridge: float = 66.0 + 18.0*sin(angle*3.0+.25)
+	ridge += 13.0*sin(angle*7.0+1.39)
+	ridge += 7.0*sin(angle*13.0-1.5)
+	ridge += 3.0*sin(angle*29.0+.33)
+	var slope: Array[float] = [.0,.09,.28,.56,.88,.95,.52,.06]
+	var vertical: float = -12.0 + ridge*slope[belt]
+	return Vector3(cos(angle)*radius,vertical,sin(angle)*radius)
+
 func _build_mountains() -> void:
-	var mesh_builder := SurfaceTool.new()
-	mesh_builder.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var segments: int = 42
+	# 7 concentric terrain belts x 256 angular subdivisions => smooth silhouette.
+	# ~3600 triangles instead of 42 disconnected one-triangle backdrop spikes.
+	# Distant art only: no collisions, no physics, and one mesh draw surface.
+	var surface := SurfaceTool.new()
+	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var segments: int = 256
+	var belts: int = 8
+	var moss := Color("536b64")
+	var limestone := Color("8a8e86")
 	for i in range(segments):
-		var t0: float = float(i) / float(segments) * TAU
-		var t1: float = float(i+1) / float(segments) * TAU
-		var tm: float = (t0+t1)*0.5
-		var radius: float = 430.0
-		var lower_a := Vector3(cos(t0)*radius,-14.0,sin(t0)*radius)
-		var lower_b := Vector3(cos(t1)*radius,-14.0,sin(t1)*radius)
-		var height: float = 28.0 + float((i*13)%9)*7.0
-		var ridge := Vector3(cos(tm)*(radius+50.0),height,sin(tm)*(radius+50.0))
-		mesh_builder.set_color(Color("597c79") if i%2==0 else Color("728d85"))
-		mesh_builder.add_vertex(lower_a)
-		mesh_builder.add_vertex(ridge)
-		mesh_builder.add_vertex(lower_b)
-	mesh_builder.generate_normals()
-	var mountain := MeshInstance3D.new()
-	mountain.name = "SurroundingMountainRange"
-	mountain.mesh = mesh_builder.commit()
-	var rock_mat := _mat(Color.WHITE,0.0,1.0)
-	rock_mat.vertex_color_use_as_albedo = true
-	rock_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
-	mountain.material_override = rock_mat
-	mountain.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	add_child(mountain)
+		var t0: float = TAU*float(i)/float(segments)
+		var t1: float = TAU*float(i+1)/float(segments)
+		var t_mid: float = .5*(t0+t1)
+		for ring in range(belts-1):
+			var a: Vector3 = _horizon_r7_peak(t0,ring)
+			var b: Vector3 = _horizon_r7_peak(t1,ring)
+			var c: Vector3 = _horizon_r7_peak(t0,ring+1)
+			var d: Vector3 = _horizon_r7_peak(t1,ring+1)
+			var weathering: float = .44 + .25*sin(t_mid*17.0+float(ring)*.62)
+			weathering += .09*sin(t_mid*51.0-float(ring)*1.3)
+			var rock: Color = moss.lerp(limestone,clampf(weathering+.055*float(ring),0.0,1.0))
+			for vertex in [a,c,b,c,d,b]:
+				surface.set_color(rock)
+				surface.add_vertex(vertex)
+	surface.generate_normals()
+	var mountains := MeshInstance3D.new()
+	mountains.name = "SurroundingMountainRange" # Stable public node contract, R7 geometry inside.
+	mountains.mesh = surface.commit()
+	var strata := _mat(Color.WHITE,0.0,.95)
+	strata.vertex_color_use_as_albedo = true
+	strata.cull_mode = BaseMaterial3D.CULL_DISABLED
+	mountains.material_override = strata
+	mountains.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(mountains)
 
 func _sculpture_piece(id: String, size: Vector3, point: Vector3, tint: Color, emissive: bool = false) -> void:
 	var cube := BoxMesh.new()

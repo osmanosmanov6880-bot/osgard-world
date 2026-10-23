@@ -78,6 +78,9 @@ func _ready() -> void:
 	add_child(player)
 	car = CAR_SCENE.new()
 	add_child(car)
+	var scanned_r6: Node = world.get_node_or_null("HorizonPhotorealR6")
+	if scanned_r6 != null:
+		scanned_r6.call("bind_car",car)
 	cargo_visual = CARGO_VISUAL_SCENE.new()
 	car.add_child(cargo_visual)
 	cargo_visual.sync_state(GameState.data,GameState.locale)
@@ -119,6 +122,14 @@ func _ready() -> void:
 	if GameState.last_load_source == "backup" or GameState.last_load_source == "staged":
 		hud.announce(hud.t("save_recovered"))
 	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+	if OS.get_cmdline_user_args().has("--r7-capture"):
+		var capture_r7: Node = preload("res://scripts/horizon_r7_actual_game_capture.gd").new()
+		add_child(capture_r7)
+		capture_r7.call("initialize",self)
+	elif OS.get_cmdline_user_args().has("--r7-benchmark"):
+		var physical_bench: Node = preload("res://scripts/horizon_r7_device_metrics.gd").new()
+		add_child(physical_bench)
+		physical_bench.call("initialize",self)
 
 func _on_drift_reward_earned(credits: int, score: int) -> void:
 	# Authority uses GameState's existing reward ledger, with a per-chain cap.
@@ -478,6 +489,15 @@ func _apply_weather() -> void:
 	var conditions: Dictionary = GameState.current_weather()
 	current_weather_kind = str(conditions["kind"])
 	world.update_weather(current_weather_kind)
+	var cinematic: Node = world.get_node_or_null("HorizonCinematicR5")
+	if cinematic != null:
+		cinematic.call("set_weather",current_weather_kind)
+	var scanned_weather: Node = world.get_node_or_null("HorizonPhotorealR6")
+	if scanned_weather != null:
+		scanned_weather.call("set_weather",current_weather_kind)
+	var facades: Node = world.get_node_or_null("HorizonArchitectureR7")
+	if facades != null:
+		facades.call("set_weather",current_weather_kind)
 	car.traction_factor = float(conditions["road_grip"])
 	for traffic in ambient_cars:
 		traffic.wetness = float(conditions["road_grip"])
@@ -485,11 +505,20 @@ func _apply_weather() -> void:
 func _apply_preferences() -> void:
 	if world == null: return
 	world.sun.shadow_enabled = GameSettings.graphics != "low"
+	var cinematic: Node = world.get_node_or_null("HorizonCinematicR5")
+	if cinematic != null:
+		cinematic.call("set_profile",GameSettings.graphics)
+	var scanned_quality: Node = world.get_node_or_null("HorizonPhotorealR6")
+	if scanned_quality != null:
+		scanned_quality.call("set_profile",GameSettings.graphics)
 	world.update_language(GameState.locale)
 	if city_case_marker != null: city_case_marker.sync_state(GameState.data)
 	if discovery_markers != null: discovery_markers.sync_state(GameState.data)
 	if world.facade_windows != null:
 		world.facade_windows.visible = GameSettings.graphics != "low"
+	var architecture: Node = world.get_node_or_null("HorizonArchitectureR7")
+	if architecture != null:
+		architecture.call("set_profile",GameSettings.graphics)
 	var at: Vector3 = car.global_position if driving else player.global_position
 	_update_agent_lod(at)
 

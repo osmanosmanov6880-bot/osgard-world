@@ -106,6 +106,9 @@ func apply_variant(id: String) -> void:
 			piece.material_override = material
 	if horizon_visual != null:
 		horizon_visual.call("set_paint",paint)
+	var hero_r6: Node = get_node_or_null("R6HeroBody")
+	if hero_r6 != null:
+		hero_r6.call("set_paint",paint)
 
 func gear_label() -> String:
 	return DYNAMICS.gear(speed)

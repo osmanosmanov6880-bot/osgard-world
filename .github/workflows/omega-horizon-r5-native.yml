@@ -1,0 +1,59 @@
+name: Omega Horizon R5 native validation (non-production)
+on:
+  pull_request:
+    paths:
+      - 'godot/empire-omega/**'
+      - '.github/workflows/omega-horizon-r5-native.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native:
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    steps:
+      - uses: actions/checkout@v4
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: false
+      - name: Generate original audio
+        run: |
+          python3 godot/empire-omega/tools/generate_audio.py
+          python3 godot/empire-omega/tools/generate_patrol_audio.py
+      - name: Import real native Godot resources
+        run: godot --headless --editor --path godot/empire-omega --import --quit
+      - name: Existing racing and visual tests plus R5 graphics
+        shell: bash
+        run: |
+          set -euo pipefail
+          for test in v25_horizon_racing.gd v26_horizon_sculpted_visuals.gd v27_horizon_r5_cinematic.gd; do
+            echo "::group::Native $test"
+            timeout 40s godot --headless --path godot/empire-omega --script "res://tests/$test"
+            echo "::endgroup::"
+          done
+      - name: Validate all legacy native regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          for file in godot/empire-omega/tests/*.gd; do
+            case "$file" in *_capture.gd|*_device_benchmark.gd|*horizon_r7_city_contract.gd) continue ;; esac
+            timeout 40s godot --headless --path godot/empire-omega --script "res://tests/${file##*/}"
+          done
+      - name: Record runner limitations
+        shell: bash
+        run: |
+          mkdir -p reports
+          {
+            echo 'Engine: Godot 4.4.1'
+            echo 'Native shader compilation: executed by imported project'
+            echo 'GPU FPS: NOT measured. GitHub virtual runner is not physical target GPU.'
+            echo 'Release: no deploy and no merge performed.'
+          } > reports/validation.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: omega-r5-native-log-not-hardware-benchmark
+          path: reports/validation.txt
+          retention-days: 7

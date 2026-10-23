@@ -63,6 +63,20 @@ func _ready() -> void:
 	# GPU-instanced scenic art has no colliders and preserves all traffic/missions.
 	horizon_scenic = preload("res://scripts/horizon_roadscape.gd").new()
 	add_child(horizon_scenic)
+	# R5 authored graphics layer: GPU-batched decorative details, no new gameplay colliders.
+	var cinematic_r5: Node3D = preload("res://scripts/horizon_cinematic_r5.gd").new()
+	add_child(cinematic_r5)
+	cinematic_r5.call("bind_world",self)
+	# R6: optional real CC0 photo-scanned materials on high-end desktop; fallback intact.
+	var photoreal_r6: Node = preload("res://scripts/horizon_photoreal_r6.gd").new()
+	photoreal_r6.name = "HorizonPhotorealR6"
+	add_child(photoreal_r6)
+	photoreal_r6.call("bind_world",self,cinematic_r5)
+	# R7: dense, GPU-instanced facade geometry and physically balanced atmosphere.
+	var architecture_r7: Node3D = preload("res://scripts/horizon_architecture_r7.gd").new()
+	architecture_r7.name = "HorizonArchitectureR7"
+	add_child(architecture_r7)
+	architecture_r7.call("bind_world",self,photoreal_r6)
 	update_development()
 
 func _material(color: Color, metallic: float = 0.0, roughness: float = 0.8, glow: bool = false) -> StandardMaterial3D:
