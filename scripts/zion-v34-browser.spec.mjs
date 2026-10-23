@@ -11,6 +11,9 @@ test('ZION-030 v34: PBR microgeometry, kinetic props, GPU-safe film pass and mea
   const first=await state()
   expect(first.atelier).toBeTruthy()
   expect(first.atelier.version).toBe('34.0')
+  expect(first.coolingFx?.version).toBe('34.1')
+  expect(first.coolingFx?.hotspots).toBe(3)
+  expect(first.coolingFx?.cooled).toBe(0)
   expect(first.atelier.facadeDetails).toBeGreaterThan(300)
   expect(first.atelier.windActors).toBeGreaterThan(0)
   expect(first.atelier.meshInstances).toBeGreaterThan(200)
@@ -27,6 +30,13 @@ test('ZION-030 v34: PBR microgeometry, kinetic props, GPU-safe film pass and mea
   await page.locator('#oc-entry').click()
   await page.locator('#oc-start-play').click()
   await expect(page.locator('#oc-shell')).toBeVisible()
+  // Verify visible environmental transformation follows real gameplay state,
+  // rather than hard-coded screenshots or fake cooling counters.
+  await page.evaluate(()=>window.__ZION030_OPEN_CITY__.teleport(-4,-3))
+  await page.keyboard.press('e')
+  await expect.poll(async()=>(await state()).mission.score).toBe(1)
+  await expect.poll(async()=>(await state()).coolingFx.cooled).toBe(1)
+  expect((await state()).coolingFx.modulesVisible).toBe(1)
   // H must still toggle even though gameplay keyboard capture owns this key.
   await page.keyboard.press('h')
   await expect(page.locator('#oc-shell')).toHaveClass(/oc-focus/)
