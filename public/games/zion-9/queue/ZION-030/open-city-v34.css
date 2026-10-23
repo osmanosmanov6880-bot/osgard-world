@@ -76,3 +76,11 @@
  .oc-shell .oc-brand small{font-size:7px}
  .oc-shell .oc-top-right{gap:3px}
 }
+
+/* v34 visual QA: remove the duplicate weather card from the phone-sized
+   cinematic overlay; actual day/night/rain toggles stay reachable. */
+@media (max-width:760px){
+ .oc-shell.oc-focus .oc-right-hud .oc-weather{display:none!important}
+ .oc-shell.oc-focus .oc-right-hud{top:59px;right:7px}
+ .oc-shell.oc-focus .oc-status-bar{top:184px}
+}
