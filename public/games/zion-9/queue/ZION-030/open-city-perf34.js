@@ -4,7 +4,8 @@
  */
 (function(host){
  'use strict';
- const VERSION='34.0',SW=/swiftshader|llvmpipe|lavapipe|software|softpipe|angle.*(d3d11on12|warp)/i;
+ const VERSION='34.0',SW=/swiftshader|llvmpipe|lavapipe|software|softpipe|basic render driver|warp|virtualbox|vmware svga|angle.*d3d11on12/i;
+ const HW=/nvidia|geforce|quadro|radeon|\bamd\b|\bintel\b|apple gpu|\badreno\b|\bmali\b|qualcomm|\barm\b|powervr/i;
  const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
  const percentile=(values,quantile)=>{
    if(!values.length)return null;
@@ -22,7 +23,7 @@
      if(ext){
        vendor=String(gl.getParameter(ext.UNMASKED_VENDOR_WEBGL)||'Unavailable');
        name=String(gl.getParameter(ext.UNMASKED_RENDERER_WEBGL)||'Unavailable');
-       classification=SW.test(vendor+' '+name)?'software':'hardware-reported';
+       classification=SW.test(vendor+' '+name)?'software':HW.test(vendor+' '+name)?'hardware-reported':'unknown';
      }else if(gl){
        vendor=String(gl.getParameter(gl.VENDOR)||'Unavailable');
        name=String(gl.getParameter(gl.RENDERER)||'Unavailable');
@@ -150,9 +151,11 @@
        version:VERSION,source:'browser WebGL measured, not estimated',
        timestamp:new Date().toISOString(),hardwareClassification:classification,
        gpuVendor:vendor,gpuRenderer:name,webglContext:contextName,
-       physicalGpuConfirmed:classification==='hardware-reported',
+       browserHardwareReported:classification==='hardware-reported',
+       // An untrusted WebGL string cannot independently prove physical GPU access.
+       physicalGpuConfirmed:false,
        note:classification==='hardware-reported'?
-         'Hardware acceleration reported by WebGL; device identification is browser supplied.':
+         'WebGL reports an accelerated device, but physical GPU access still requires host driver evidence.':
          'Real physical GPU performance NOT verified on this browser.',
        mobile:state.mobile,softwareGL:state.softwareGL,
        sampleDurationMs:Math.round(elapsed),renderedFrames:cpuTimes.length,
@@ -170,7 +173,7 @@
          classification==='unknown'?'GPU acceleration unknown; run on a device with WEBGL_debug_renderer_info.':null
      };
      lastReport=Object.freeze(report);state.gpuSamples=gpuMs.length;
-     state.reportAvailable=true;state.measuredOnPhysicalGpu=report.physicalGpuConfirmed;
+     state.reportAvailable=true;state.measuredOnPhysicalGpu=false;
      startButton.disabled=false;copyButton.disabled=false;
      details.textContent=JSON.stringify(report,null,2);
      return lastReport;
