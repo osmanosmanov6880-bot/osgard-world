@@ -1,17 +1,19 @@
-; OSGARD EMPIRE OMEGA / Godot 4.x
-; Generated source, no third-party artwork or assets.
+; OSGARD EMPIRE Ω / Godot 4.x
+; Original city game preserved; OSMAN: WORLD DOMINION is an additive gameplay system.
 config_version=5
 
 [application]
-config/name="OSGARD EMPIRE Ω — Open World Prototype"
+config/name="OSMAN: WORLD DOMINION — ОСМАН: МИРОВОЕ ГОСПОДСТВО"
 run/main_scene="res://scenes/main.tscn"
-config/description="Russian-first 3D open-world city and governance simulation"
+config/description="FROM THE CASPIAN TO THE WORLD. Russian-first 3D city game, governance and dynasty."
 
 [autoload]
 GameState="*res://scripts/game_state.gd"
 MissionManager="*res://scripts/mission_manager.gd"
 ContractManager="*res://scripts/contract_manager.gd"
 GameSettings="*res://scripts/game_settings.gd"
+OsmanDynasty="*res://scripts/osman_dynasty.gd"
+OsmanGamePanel="*res://scripts/osman_game_panel.gd"
 
 [display]
 window/size/viewport_width=1600
