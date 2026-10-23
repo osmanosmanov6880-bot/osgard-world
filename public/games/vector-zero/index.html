@@ -25,7 +25,7 @@ function integrate(q,dt){q.vy+=145*dt;for(const m of M){const a=acc(q.x,q.y,q.po
 function queueJump(){if(mode==='playing'&&!paused)jumpBuffer=.14}
 function pollGamepad(){
  let pad;
- try{pad=window.navigator?.getGamepads?.()?.find(p=>p&&p.connected!==false)}catch{}
+ try{pad=Array.from(window.navigator?.getGamepads?.()||[]).find(p=>p&&p.connected!==false)}catch{}
  if(!pad){padAxis=0;padHeld=[false,false,false,false,false];return}
  const raw=Number(pad.axes?.[0]||0),pressed=i=>!!pad.buttons?.[i]?.pressed;
  const dpad=(pressed(15)?1:0)-(pressed(14)?1:0);
