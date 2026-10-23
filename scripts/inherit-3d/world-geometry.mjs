@@ -33,8 +33,10 @@ function topGeometry({rings=29,segments=92}={}){
  geo.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));geo.computeVertexNormals();
  return geo;
 }
-function cliffGeometry(){
- const edges=92,vertical=7,positions=[],indices=[],colors=[],uvs=[],c=new THREE.Color();
+function cliffGeometry(quality='high'){
+ const edges=quality==='high'?144:quality==='medium'?104:70,
+  vertical=quality==='high'?12:quality==='medium'?9:6,
+  positions=[],indices=[],colors=[],uvs=[],c=new THREE.Color();
  for(let j=0;j<=vertical;j++){
   const fraction=j/vertical;
   for(let i=0;i<edges;i++){
@@ -90,9 +92,14 @@ export function makeArchipelago({quality='high'}={}){
  const life=makeLivingAtmosphere({quality});
  terrain.add(life.root);
  const grassMat=makeSurfaceMaterial('forest',{quality,vertexColors:true,side:THREE.DoubleSide});
- terrain.add(mesh(topGeometry({rings:quality==='low'?19:29,segments:quality==='low'?60:92}),grassMat));
- terrain.add(mesh(cliffGeometry(),makeSurfaceMaterial('basalt',{quality,vertexColors:true,side:THREE.DoubleSide})));
- const undershell=mesh(new THREE.CylinderGeometry(18.6,15.2,1.2,12),makeSurfaceMaterial('earth',{quality}));
+ const cliffMat=makeSurfaceMaterial('basalt',{quality,vertexColors:true,side:THREE.DoubleSide});
+ const earthMat=makeSurfaceMaterial('earth',{quality});
+ terrain.add(mesh(topGeometry({
+  rings:quality==='high'?51:quality==='medium'?32:19,
+  segments:quality==='high'?148:quality==='medium'?104:60
+ }),grassMat));
+ terrain.add(mesh(cliffGeometry(quality),cliffMat));
+ const undershell=mesh(new THREE.CylinderGeometry(18.6,15.2,1.2,12),earthMat);
  undershell.scale.z=1.19;undershell.position.y=-2.5;terrain.add(undershell);
  const sea=new THREE.Mesh(new THREE.PlaneGeometry(140,110,20,20),new THREE.ShaderMaterial({
   uniforms:{uTime:{value:0},uDawn:{value:.53},uWind:{value:.58}},
@@ -251,5 +258,19 @@ export function makeArchipelago({quality='high'}={}){
  const beacon=makeTrace('light',{size:1.25,quality:landmarkQuality,seed:56,allowLight:quality==='high'});
  beacon.position.set(-3,fieldHeight(-3,4),4);landmarks.add(beacon);
  terrain.add(landmarks);
- return {root:terrain,waterUniforms:sea.material.uniforms,landmarks,heritage,life,surfaceStats:surfacePackStats()};
+ // The saved generation's *fictional* season changes real PBR roughness:
+ // wet basalt and soil become less diffuse, while bright sunlight dries them.
+ // Only local material uniforms change; not one gameplay or save field.
+ let seasonalWetness=0;
+ function setSeason(season){
+  seasonalWetness=season==='tide'?.82:season==='mist'?.51:season==='wind'?.17:.05;
+  grassMat.roughness=.96-seasonalWetness*.15;
+  cliffMat.roughness=.86-seasonalWetness*.31;
+  cliffMat.metalness=.018+seasonalWetness*.044;
+  earthMat.roughness=.96-seasonalWetness*.24;
+  return seasonalWetness;
+ }
+ setSeason('tide');
+ return {root:terrain,waterUniforms:sea.material.uniforms,landmarks,heritage,life,
+  setSeason,getWetness:()=>seasonalWetness,surfaceStats:surfacePackStats()};
 }
