@@ -193,7 +193,7 @@
         leaf.scale.set(.26,.25,.22);
         canopy.add(leaf);stats.treeCrowns++;
       }
-      kinetic.add(canopy);treeActors.push({mesh:canopy,phase:rand(x,z,12)*TAU});
+      kinetic.add(canopy);treeActors.push({mesh:canopy,phase:rand(x,z,12)*TAU});stats.windActors++;
     }
     // A handful of rooftop fan props rotate in world space at a bounded
     // fixed timestep; geometry is shared and they never alter hitboxes.
