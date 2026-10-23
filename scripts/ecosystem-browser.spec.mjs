@@ -2587,3 +2587,37 @@ test('INHERIT R18 opt-in on-device benchmark measures actual frame intervals wit
  expect(await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()))).toBe(before);
  expect(errors).toEqual([]);
 });
+
+
+test('INHERIT R19 renders real instanced shoreline detail and responds to fictional seasons without writes',async({page})=>{
+ const errors=await prepareStandaloneGame(page);
+ await page.goto('/games/inherit/?lang=ru',{waitUntil:'domcontentloaded'});
+ const initial=await page.evaluate(()=>window.InheritAAA3D.getState());
+ const snapshot=await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()));
+ if(!initial.available){
+  // The GPU-required run cannot treat a 2D fallback as proof of 3D.
+  expect(process.env.OSGARD_ENABLE_SWIFTSHADER).not.toBe('1');
+  await expect(page.locator('#island')).not.toHaveClass(/aaa3d-active/);
+  expect(errors).toEqual([]);
+  return;
+ }
+ await expect.poll(()=>page.evaluate(()=>window.InheritAAA3D.getState().coastDetails?.groups)).toBe(7);
+ const before=await page.evaluate(()=>window.InheritAAA3D.getState());
+ expect(before.coastDetails.instances).toBeGreaterThan(200);
+ expect(before.coastDetails.triangles).toBeLessThan(300000);
+ expect(before.coastDetails.texturesLoadedExternally).toBe(0);
+ expect(before.coastDetails.gameplayObjectsCreated).toBe(0);
+ await expect.poll(()=>page.evaluate(()=>window.InheritAAA3D.getState().frames)).toBeGreaterThan(4);
+ const originalWetness=before.coastDetails.wetness;
+ await page.evaluate(()=>{document.querySelector('#world').dataset.livingSeason='sun'});
+ await expect.poll(()=>page.evaluate(()=>window.InheritAAA3D.getState().coastDetails?.season)).toBe('sun');
+ const sunny=await page.evaluate(()=>window.InheritAAA3D.getState().coastDetails);
+ expect(sunny.wetness).toBeLessThan(originalWetness);
+ expect(sunny.instances).toBe(before.coastDetails.instances);
+ const perf=await page.evaluate(()=>window.InheritAAA3D.getPerformanceReport());
+ expect(perf.samples).toBeGreaterThan(0);
+ expect(perf.renderer.calls).toBeGreaterThan(0);
+ expect(perf.renderer.triangles).toBeGreaterThan(0);
+ expect(await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()))).toBe(snapshot);
+ expect(errors).toEqual([]);
+});
