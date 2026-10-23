@@ -45,6 +45,25 @@ func _run() -> void:
 	root.add_child(car)
 	source.bind_car(car)
 	expect(source.spray != null,"GPU rain spray allocated once on real playable car")
+	var hero_path: String = "res://assets/r6/vehicles/spectral_gt_rs_game_ready.glb"
+	var imported: bool = ResourceLoader.exists(hero_path)
+	if strict:
+		expect(imported,"STRICT R6: SHA-validated detailed CC0 car GLB was imported")
+	var hero: Node3D = car.get_node_or_null("R6HeroBody") as Node3D
+	expect(hero != null,"R6 hero controller mounted on genuine playable CharacterBody")
+	if hero != null:
+		hero.call("set_profile","cinematic")
+		var report: Dictionary = hero.call("diagnostic")
+		if imported:
+			expect(bool(report.get("loaded",false)),"CC0 high-detail GLB scene instantiates")
+			expect(int(report.get("mesh_objects",0))>=40,"Detailed car contains actual mesh geometry")
+			expect(bool(report.get("visible",false)),"Cinematic uses high-detail car, not hidden legacy cuboids")
+			expect(not car.horizon_visual.visible,"Legacy car surface hides only when hero is active")
+		else:
+			expect(car.horizon_visual.visible,"Web/offline fallback preserves original controllable car")
+		hero.call("set_profile","low")
+		expect(car.horizon_visual.visible,"Low setting restores original car visuals")
+
 	if car.horizon_visual != null:
 		var shell: MeshInstance3D = car.horizon_visual.get_node_or_null("FlowBody") as MeshInstance3D
 		expect(shell != null,"real sculpted chassis is present")
