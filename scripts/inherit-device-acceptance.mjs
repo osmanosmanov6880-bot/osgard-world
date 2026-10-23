@@ -7,9 +7,9 @@ import {readFileSync,writeFileSync} from 'node:fs';
 import {pathToFileURL} from 'node:url';
 
 export const DEVICE_BUDGETS=Object.freeze({
- 'desktop-30':Object.freeze({name:'Desktop high-quality 30 FPS',minFps:28,maxP95Ms:37,maxSlow50Ratio:.09,maxCpuP95Ms:20,maxDrawCalls:300,maxTriangles:2800000}),
- 'mobile-30':Object.freeze({name:'Mobile efficient 30 FPS',minFps:26,maxP95Ms:50,maxSlow50Ratio:.14,maxCpuP95Ms:26,maxDrawCalls:230,maxTriangles:1650000}),
- 'entry-24':Object.freeze({name:'Entry device low-quality 24 FPS',minFps:20,maxP95Ms:67,maxSlow50Ratio:.27,maxCpuP95Ms:33,maxDrawCalls:200,maxTriangles:950000})
+ 'desktop-30':Object.freeze({name:'Desktop high-quality 30 FPS',requiredQuality:'high',requiredPostFX:'cinematic',minFps:28,maxP95Ms:37,maxSlow50Ratio:.09,maxCpuP95Ms:20,maxDrawCalls:300,maxTriangles:2800000}),
+ 'mobile-30':Object.freeze({name:'Mobile efficient 30 FPS',requiredQuality:'low',minFps:26,maxP95Ms:50,maxSlow50Ratio:.14,maxCpuP95Ms:26,maxDrawCalls:230,maxTriangles:1650000}),
+ 'entry-24':Object.freeze({name:'Entry device low-quality 24 FPS',requiredQuality:'low',minFps:20,maxP95Ms:67,maxSlow50Ratio:.27,maxCpuP95Ms:33,maxDrawCalls:200,maxTriangles:950000})
 });
 const number=value=>Number.isFinite(value)?value:null;
 const check=(name,actual,rule,threshold)=>({
@@ -36,6 +36,17 @@ export function evaluateDeviceReport(report,{profile='desktop-30'}={}){
   reason:'Collect at least 90 real WebGL frame intervals over a complete 10-second run.',
   independentlyVerifiedHardware:false
  });
+ if(report.qualityTested!==budget.requiredQuality||
+    (budget.requiredPostFX&&report.postFX!==budget.requiredPostFX)){
+  return Object.freeze({
+   status:software?'software-reference-only':'configuration-mismatch',
+   profile,coverage,checks:[],
+   requiredQuality:budget.requiredQuality,requiredPostFX:budget.requiredPostFX||null,
+   testedQuality:report.qualityTested||'unknown',testedPostFX:report.postFX||'off',
+   reason:'Retest the EXACT quality and postprocessing used by this device profile; fast low-quality FPS cannot verify high-quality 3D.',
+   independentlyVerifiedHardware:false
+  });
+ }
  const budgetChecks=[
   check('Observed average frames per second',report.averageFps,'at-least',budget.minFps),
   check('Observed p95 frame time (ms)',report.frameP95Ms,'at-most',budget.maxP95Ms),
