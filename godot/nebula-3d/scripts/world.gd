@@ -115,6 +115,7 @@ func _ready() -> void:
     add_child(fleet_r15)
     fleet_r15.player_ship = ship
     fleet_r15.targets = drones
+    fleet_r15.ally_fired.connect(_r16_ally_fire)
     _make_hud()
     _r16_setup_beam_pool()
     store_r15 = HangarStoreR15Script.new()
@@ -661,6 +662,9 @@ func _on_ship_fire(origin: Vector3, direction: Vector3) -> void:
         endpoint=best.global_position
         best.call("hit",fleet_r15.weapon_damage()+float(ship.weapon_rank))
     _laser_effect(origin,endpoint)
+
+func _r16_ally_fire(origin: Vector3, endpoint: Vector3) -> void:
+    _laser_effect_colored(origin, endpoint, Color(0.37, 0.86, 0.97))
 
 func _laser_effect(a: Vector3,b: Vector3) -> void:
     _laser_effect_colored(a,b,Color(0.25,0.95,1.0))
