@@ -134,7 +134,7 @@
         if(done)count++;
       });
       stats.cooled=count;stats.modulesVisible=count;
-      stats.activeParticles=lite?0:particles.reduce((n,p)=>n+(p.district.visible?
+      stats.activeParticles=lite?0:particles.reduce((n,p)=>n+(p.district.visible&&p.points.visible?
         p.velocity.length:0),0);
       return count;
     }
