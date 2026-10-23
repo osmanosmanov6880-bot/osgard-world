@@ -10,7 +10,7 @@ import { createServer } from 'node:http'
 const ENTRY = '/games/vector-zero/'
 const hex = source => createHash('sha256').update(source).digest('hex')
 function gameSource(html) {
-  const scripts = [...html.matchAll(/<script\\b[^>]*>([\\s\\S]*?)<\\/script\\s*>/gi)]
+  const scripts = [...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script\s*>/gi)]
   const runtime = scripts.map(match => match[1]).find(script => script.includes('function step(dt)') && script.includes('osgard:game-lifecycle'))
   assert.ok(runtime, 'VECTOR//ZERO executable runtime must be present, not a fallback page')
   assert.ok(runtime.includes('function queueJump()'), 'Buffered-jump gameplay must be included')
@@ -26,7 +26,7 @@ async function check(origin, expectedHtml, nonce = String(Date.now())) {
     redirect: 'follow', signal: AbortSignal.timeout(20000),
   })
   assert.equal(response.status, 200, 'VECTOR//ZERO release route must return 200')
-  assert.match(response.headers.get('content-type') || '', /text\\/html/i, 'VECTOR//ZERO must be served as HTML')
+  assert.match(response.headers.get('content-type') || '', /text\/html/i, 'VECTOR//ZERO must be served as HTML')
   const publishedHtml = await response.text()
   const publishedRuntime = gameSource(publishedHtml)
   assert.equal(hex(publishedRuntime), hex(expectedRuntime), 'Published gameplay differs from the candidate release; stale or wrong asset')
