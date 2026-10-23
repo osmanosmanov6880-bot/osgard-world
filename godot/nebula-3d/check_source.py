@@ -225,7 +225,7 @@ performance_r11 = require(
     "one_percent_low_fps",
     "p95_frame_ms",
     "p99_frame_ms",
-    "user://nebula_r11_hardware_benchmark.json",
+    "user://nebula_r12_hardware_benchmark.json",
 )
 assert "MAX_SAMPLES" in performance_r11 and "WARMUP_SECONDS" in performance_r11
 require("docs/R11-HARDWARE-BENCHMARK.md", "F7", "F9", "не является")
