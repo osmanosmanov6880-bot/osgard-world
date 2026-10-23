@@ -16,6 +16,8 @@ for(const id of zionWorlds){
 }
 for(const title of ['Базальтовая колыбель','Тихий архив','Стеклянный сад','Последний приливный механизм','Бархатная частота','Бледное уравнение','Север сна','Бронзовый час','Зеркальная погода','Синий интервал','Теневой протокол']) assert.ok(html.includes(title),'Russian ZION card title missing: '+title)
 assert.ok(html.includes('11 игр OSGARD')&&html.includes('11 миров ZION-9'),'Hub must explain the 22-project split')
+assert.ok(html.includes('<b>01—22</b>')&&html.includes('22 игровых проекта'),'Catalog range and Russian total must match 22 projects')
+assert.ok(html.includes("Intl.PluralRules('ru')"),'Filtered count must use Russian plural forms')
 assert.ok(html.includes('data-game="nebula-3d"')&&html.includes('href="/games/remix/arena-v2/nebula-3d/"'),'Nebula card must link to Godot build')
 assert.ok(html.includes('data-game="r136-precision"')&&html.includes('href="/games/r136-precision/"'),'R136 card must be discoverable')
 assert.ok(html.includes('href="/games/omega-3d-preview/"')&&html.includes('GODOT 4.4.1 · WEB'),'Native Empire Omega card must clearly launch its verified Godot Web export')
