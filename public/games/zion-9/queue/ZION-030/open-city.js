@@ -755,7 +755,17 @@
     if (type === 'tree') {
       const trunk = makeMat('#8c6547'), leaf = [makeMat('#49ba80'), makeMat('#65d5a1'), makeMat('#2f9264')];
       const stem = new THREE.Mesh(new THREE.CylinderGeometry(.08, .12, .91, 10), trunk); stem.position.y = .46; group.add(stem);
-      for (let i = 0; i < 8; i++) { const a = i * 2.399; const ball = new THREE.Mesh(new THREE.IcosahedronGeometry(.26 + (i % 3) * .06, 1), leaf[i % 3]); ball.position.set(Math.cos(a) * .29, 1.12 + (i % 3) * .17, Math.sin(a) * .27); group.add(ball); }
+      // These materials are unique to this installation, so the chase camera
+      // may softly fade only the crown that crosses the player's view.
+      const crown = new THREE.Group(); crown.name='cooling-tree-crown';
+      for(const mat of leaf){mat.transparent=true;mat.depthWrite=false;mat.opacity=1;}
+      for (let i = 0; i < 8; i++) {
+        const a=i*2.399,ball=new THREE.Mesh(new THREE.IcosahedronGeometry(.26+(i%3)*.06,1),leaf[i%3]);
+        ball.position.set(Math.cos(a)*.29,1.12+(i%3)*.17,Math.sin(a)*.27);
+        crown.add(ball);
+      }
+      group.add(crown);
+      group.userData.ocCrown=crown;group.userData.ocCrownMats=leaf;group.userData.ocCrownOpacity=1;
     } else if (type === 'shade') {
       const pole = makeMat('#8ca4aa', .35, .76), sheet = makeMat('#99e3eb', .32, .58, '#198a91', .15);
       for (const dx of [-.46, .46]) for (const dz of [-.46, .46]) drawBox(group, dx, 0, dz, .045, 1.60, .045, pole);
@@ -772,6 +782,34 @@
     const halo = new THREE.Mesh(new THREE.RingGeometry(.75, .83, 48), new THREE.MeshBasicMaterial({ color: 0x70ffe0, transparent: true, opacity: .75, side: THREE.DoubleSide, depthWrite: false }));
     halo.rotation.x = -Math.PI / 2; halo.position.y = .03; group.add(halo);
     scene.add(group); return group;
+  }
+  // Keep newly planted greenery immersive without blocking the third-person
+  // camera. Fade crowns crossing the camera-to-player segment (or surrounding
+  // the player), not unrelated trees and not the original solid gameplay.
+  function updateCoolingCrownOcclusion(dt){
+    if(!camera)return;
+    const ax=camera.position.x,ay=camera.position.y,az=camera.position.z;
+    const bx=player.x,by=1.18+player.height,bz=player.z;
+    const vx=bx-ax,vy=by-ay,vz=bz-az;
+    const lengthSq=Math.max(.0001,vx*vx+vy*vy+vz*vz);
+    const speed=1-Math.exp(-Math.max(0,dt)*13);
+    let faded=0;
+    for(const rec of world.rings){
+      const prop=rec.prop,crown=prop?.userData?.ocCrown;
+      if(!crown)continue;
+      const x=prop.position.x,y=1.31,z=prop.position.z;
+      const param=clamp(((x-ax)*vx+(y-ay)*vy+(z-az)*vz)/lengthSq,0,1);
+      const dx=ax+vx*param-x,dy=ay+vy*param-y,dz=az+vz*param-z;
+      const inSight=dx*dx+dy*dy+dz*dz<.64;
+      const onTop=Math.hypot(bx-x,bz-z)<.90;
+      const target=inSight||onTop?.035:1;
+      const prev=prop.userData.ocCrownOpacity??1;
+      const opacity=prev+(target-prev)*speed;
+      prop.userData.ocCrownOpacity=opacity;
+      for(const material of prop.userData.ocCrownMats)material.opacity=opacity;
+      if(opacity<.50)faded++;
+    }
+    world.coolingCrownsFaded=faded;
   }
   function makeHotMarkers() {
     for (const [i, h] of HOT.entries()) {
@@ -934,7 +972,7 @@
       // Read-only diagnostics and an explicit, opt-in benchmark controller.
       window.__ZION030_PERFORMANCE__=perfKit||null;
       window.__ZION030_OPEN_CITY__ = {
-        state: () => ({ ready: world.ready, active: world.active, player: { x: player.x, z: player.z, stamina:player.stamina, height:player.height, cameraMode:player.cameraMode }, mission: game()?.state(), quality: world.quality, driving: Boolean(world.car?.occupied), vehicle: world.car ? { x: world.car.x, z: world.car.z, speed: world.car.speed, battery: world.car.battery } : null, contracts: [...profile.completed], credits: profile.credits, raining: world.raining, dayMode: world.dayMode, dispatch:{done:[...profile.dispatchDone],steps:{...profile.dispatchSteps},active:profile.activeDispatch}, garage:{speed:profile.fastCar,grip:profile.grip,battery:profile.batteryUpgrade}, district:rules.districtAt(player.x,player.z), detail: detailKit?.stats ?? null, cinematic: cinematicKit?.stats ?? null, landmarks: landmarkKit?.stats ?? null, street: streetKit?.stats ?? null, atelier: atelierKit?.stats ?? null, postfx: postFxKit?.stats ?? null, coolingFx: coolingKit?.stats ?? null, perf: perfKit?.snapshot() ?? null }),
+        state: () => ({ ready: world.ready, active: world.active, player: { x: player.x, z: player.z, stamina:player.stamina, height:player.height, cameraMode:player.cameraMode }, mission: game()?.state(), quality: world.quality, driving: Boolean(world.car?.occupied), vehicle: world.car ? { x: world.car.x, z: world.car.z, speed: world.car.speed, battery: world.car.battery } : null, contracts: [...profile.completed], credits: profile.credits, raining: world.raining, dayMode: world.dayMode, dispatch:{done:[...profile.dispatchDone],steps:{...profile.dispatchSteps},active:profile.activeDispatch}, garage:{speed:profile.fastCar,grip:profile.grip,battery:profile.batteryUpgrade}, district:rules.districtAt(player.x,player.z), detail: detailKit?.stats ?? null, cinematic: cinematicKit?.stats ?? null, landmarks: landmarkKit?.stats ?? null, street: streetKit?.stats ?? null, atelier: atelierKit?.stats ?? null, postfx: postFxKit?.stats ?? null, coolingFx: coolingKit?.stats ?? null, coolingCrownsFaded: world.coolingCrownsFaded||0, perf: perfKit?.snapshot() ?? null }),
         enter, exit, walk: (dx, dz) => { if (!collides(player.x + dx, player.z + dz)) { player.x += dx; player.z += dz; } },
         drive: toggleCar, time: cycleTime, rain: toggleRain, quality: toggleQuality, gps: toggleNavigation, contract: completeNearbyContract,
         interact, camera:cycleCamera, journal:showJournal, pause:pauseGame, resume:resumeGame, dispatch:advanceNearbyDispatch
@@ -1201,6 +1239,7 @@
       if(collides(camera.position.x,camera.position.z,.16))camera.position.copy(desired);
       camera.lookAt(player.x,lookHeight,player.z);
     }
+    updateCoolingCrownOcclusion(dt);
     const desiredFov=player.cameraMode==='first'?64:c?.occupied?74:player.moving&&player.stamina<99?72:68;
     const fov= camera.fov+(desiredFov-camera.fov)*(1-Math.exp(-dt*4));
     if(Math.abs(fov-camera.fov)>.025){camera.fov=fov;camera.updateProjectionMatrix();}
