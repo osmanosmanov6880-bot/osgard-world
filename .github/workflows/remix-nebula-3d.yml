@@ -54,6 +54,32 @@ jobs:
           unzip -q /tmp/nebula-godot/templates.tpz -d /tmp/nebula-godot/unpacked
           cp -a /tmp/nebula-godot/unpacked/templates/. "$HOME/.local/share/godot/export_templates/4.7.2.stable/"
           test -s "$HOME/.local/share/godot/export_templates/4.7.2.stable/web_nothreads_release.zip"
+      - name: Prebake 21 PBR maps on CI CPU, not on the player's WebGL thread
+        run: |
+          set -uo pipefail
+          set +e
+          timeout 180s /tmp/nebula-godot/Godot_v4.7.2-stable_linux.x86_64 --headless --path godot/nebula-3d --script res://tools/bake_r17.gd > /tmp/nebula-r17-bake.log 2>&1
+          rc=$?
+          set -e
+          cat /tmp/nebula-r17-bake.log
+          if [ "$rc" -ne 0 ] || ! grep -Fq 'NEBULA_R17_BAKE_SUCCESS: images=21' /tmp/nebula-r17-bake.log; then
+            echo "NEBULA_ERROR=R17 native PBR baking failure" >> "$GITHUB_ENV"
+            exit 1
+          fi
+          python3 - <<'PY'
+          from pathlib import Path
+          from struct import unpack
+          folder = Path("godot/nebula-3d/assets/r17_pbr")
+          maps = sorted(folder.glob("*.png"))
+          assert len(maps) == 21, f"Expected 21 PBR maps; got {len(maps)}"
+          for item in maps:
+              with item.open("rb") as f:
+                  header = f.read(24)
+              assert header[:8] == b"\\x89PNG\\r\\n\\x1a\\n", item.name
+              assert unpack(">II", header[16:24]) == (384,384), item.name
+              assert item.stat().st_size >= 400, item.name
+          print("NEBULA_R17_ASSET_AUDIT_SUCCESS maps=21 sizes=384x384")
+          PY
       - name: Parse native GDScript in editor
         run: |
           set -uo pipefail
