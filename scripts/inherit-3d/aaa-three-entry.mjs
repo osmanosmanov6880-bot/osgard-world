@@ -122,7 +122,7 @@ function setMode(enabled,reason){
  notify(next?words().enabled:reason?words().unavailable:words().disabled);
 }
 function resize(){
- if(!renderer||!camera)return;
+ if(!renderer||!camera||!scene||!status.available)return;
  if(perfLab?.running())perfLab.finish('viewport-resized');
  const width=Math.max(2,Math.floor(island.clientWidth));
  const height=Math.max(2,Math.floor(island.clientHeight));
@@ -139,6 +139,7 @@ function resize(){
 }
 function seasonFromDOM(){return ['tide','sun','wind','mist'].includes(world.dataset.livingSeason)?world.dataset.livingSeason:'tide';}
 function updateEnvironment(){
+ if(!scene||!sun||!hemi||!renderer||!waterUniforms)return;
  const season=seasonFromDOM();if(season===lastSeason)return;
  lastSeason=season;status.season=season;
  const palettes={
@@ -284,7 +285,7 @@ function cameraAtDefault(){
  camera.lookAt(0,0,0);camera.updateMatrixWorld();
 }
 function renderOnce(time){
- if(!renderer||!status.active||!sceneVisible||d.hidden||d.body.classList.contains('aaa-atelier-open'))return;
+ if(!renderer||!scene||!camera||!status.available||!status.active||!sceneVisible||d.hidden||d.body.classList.contains('aaa-atelier-open'))return;
  if(waterUniforms&&!motion.matches)waterUniforms.uTime.value=time*.001;
  updateEnvironment();
  const active=sceneryCache.get(status.environmentTier);
@@ -321,7 +322,7 @@ function renderOnce(time){
  }
 }
 function stop(){if(raf)cancelAnimationFrame(raf);raf=0;}
-function shouldRun(){return status.active&&sceneVisible&&!d.hidden&&!d.body.classList.contains('aaa-atelier-open')&&(flyby||!motion.matches);}
+function shouldRun(){return status.active&&(sceneVisible||perfLab?.running())&&!d.hidden&&!d.body.classList.contains('aaa-atelier-open')&&(flyby||!motion.matches);}
 window.addEventListener('aaa-atelier-open',stop);
 window.addEventListener('aaa-atelier-close',()=>{renderOnce(performance.now());start();});
 function nextFrame(time){
@@ -466,6 +467,8 @@ try{
 }catch(error){
  status.available=false;status.fallback='no-webgl';
  status.active=false;modeEnabled=false;
+ try{perfLab?.dispose?.();pipeline?.dispose?.();renderer?.dispose?.();}catch{}
+ renderer=null;camera=null;scene=null;traceRoot=null;waterUniforms=null;pipeline=null;
  island.classList.remove('aaa3d-active');world.classList.remove('aaa3d-active');
  canvas.remove();
  orbit.disabled=true;detail.disabled=true;switcher.disabled=true;
