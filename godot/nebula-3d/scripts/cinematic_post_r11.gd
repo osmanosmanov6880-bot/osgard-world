@@ -9,6 +9,7 @@ var post_material: ShaderMaterial
 var quality_mode: int = 0
 var requested_enabled: bool = true
 var shader_compiled: bool = false
+var motion_hint: float = 0.0
 
 func _ready() -> void:
     layer = 3
@@ -27,6 +28,7 @@ uniform float sharpening : hint_range(0.0, 0.5) = 0.18;
 uniform float vignette : hint_range(0.0, 0.5) = 0.15;
 uniform float film_grain : hint_range(0.0, 0.04) = 0.008;
 uniform float color_grade : hint_range(0.0, 1.0) = 0.50;
+uniform float velocity_streak : hint_range(0.0, 1.0) = 0.0;
 void fragment() {
     vec2 uv = SCREEN_UV;
     vec2 px = SCREEN_PIXEL_SIZE;
@@ -45,6 +47,15 @@ void fragment() {
     vec3 warm_highlights = vec3(1.035, 1.010, 0.96);
     vec3 balanced = sharpened * mix(cool_shadows, warm_highlights, smoothstep(0.20, 0.80, luminance));
     balanced = mix(sharpened, balanced, color_grade);
+    // Gentle highlight shoulder preserves rough metallic surfaces.
+    balanced = balanced / (vec3(1.0) + max(balanced - 0.72, vec3(0.0)) * 0.13);
+    // Restrained speed cue; not motion-vector accurate motion blur.
+    if (velocity_streak > 0.02) {
+        vec2 radial = normalize(uv - vec2(0.5) + vec2(0.0001));
+        vec3 trailing = texture(scene_color,
+            clamp(uv - radial * px * 3.0, vec2(0.0), vec2(1.0))).rgb;
+        balanced = mix(balanced, trailing, velocity_streak * 0.10);
+    }
     balanced = (balanced - 0.5) * 1.022 + 0.5;
     float radial = length((uv - 0.5) * vec2(1.15, 1.0));
     float optical_falloff = 1.0 - vignette * smoothstep(0.24, 0.90, radial);
@@ -70,6 +81,14 @@ func set_quality(mode: int) -> void:
     post_material.set_shader_parameter("vignette", [0.15, 0.11, 0.0][quality_mode])
     post_material.set_shader_parameter("color_grade", [0.56, 0.36, 0.0][quality_mode])
     viewport_filter.visible = requested_enabled and quality_mode != 2
+    post_material.set_shader_parameter("velocity_streak",
+        motion_hint * [0.66, 0.29, 0.0][quality_mode])
+
+func set_flight_velocity(speed: float) -> void:
+    motion_hint = clampf((speed - 12.0) / 58.0, 0.0, 1.0)
+    if post_material != null and quality_mode < 2:
+        post_material.set_shader_parameter("velocity_streak",
+            motion_hint * [0.66, 0.29, 0.0][quality_mode])
 
 func toggle() -> void:
     requested_enabled = not requested_enabled
