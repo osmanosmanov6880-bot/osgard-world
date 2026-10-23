@@ -11,14 +11,14 @@ const focusJs=fs.readFileSync(root+'open-city-focus.js','utf8')
 const focusCss=fs.readFileSync(root+'open-city-focus.css','utf8')
 new vm.Script(focusJs,{filename:'open-city-focus.js'})
 assert.ok(html.includes('open-city-focus.css?v=33')&&html.includes('open-city-focus.js?v=33'))
-assert.ok(html.indexOf('open-city.js?v=33')<html.indexOf('open-city-focus.js?v=33'))
+assert.ok(html.indexOf('open-city.js?v=34')<html.indexOf('open-city-focus.js?v=33'))
 assert.ok(focusJs.includes("event.code!=='KeyH'"))
 assert.ok(focusJs.includes('aria-pressed'))
 assert.ok(focusCss.includes('.oc-shell.oc-focus')&&focusCss.includes('.oc-joystick'))
 new vm.Script(source,{filename:'open-city-streets.js'})
-assert.ok(html.includes('open-city-streets.js?v=33')&&html.includes('open-city.js?v=33'))
+assert.ok(html.includes('open-city-streets.js?v=33')&&html.includes('open-city.js?v=34'))
 assert.ok(html.indexOf('open-city-landmarks.js?v=32')<html.indexOf('open-city-streets.js?v=33'))
-assert.ok(html.indexOf('open-city-streets.js?v=33')<html.indexOf('open-city.js?v=33'))
+assert.ok(html.indexOf('open-city-streets.js?v=33')<html.indexOf('open-city.js?v=34'))
 for(const check of ['streetKit?.detailCar(shellMesh)','streetKit?.detailAvatar(avatar)',
   'streetKit?.update(dt)','streetKit?.setQuality(world.quality)',
   'streetKit?.syncEnvironment({ raining: world.raining, dayMode: world.dayMode })',
