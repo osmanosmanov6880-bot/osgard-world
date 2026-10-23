@@ -56,6 +56,9 @@ function attestPhysicalGpu(){
 const url=process.env.OSGARD_GPU_BENCH_URL||
   'https://osgard.world/games/zion-9/queue/ZION-030/index.html'
 const duration=Number(process.env.OSGARD_BENCH_DURATION_MS||15000)
+const scenario=process.env.OSGARD_BENCH_SCENARIO||'high-day'
+if(!['high-day','high-rain-night','eco-rain'].includes(scenario))
+  throw Error('Unrecognized ZION hardware scenario: '+scenario)
 if(!Number.isFinite(duration)||duration<8000||duration>60000)
   throw Error('OSGARD_BENCH_DURATION_MS must be between 8000 and 60000')
 const maxFrameP95=process.env.OSGARD_MAX_FRAME_P95_MS?
@@ -84,6 +87,17 @@ try{
   await page.locator('#oc-entry').click()
   await page.locator('#oc-start-play').click()
   await page.locator('#oc-shell').waitFor({state:'visible'})
+  // Keep the world and camera authentic: switch the actual in-game controls.
+  if(scenario!=='high-day')await page.locator('#oc-rain').click()
+  if(scenario==='high-rain-night')await page.locator('#oc-time').click()
+  if(scenario==='eco-rain')await page.locator('#oc-quality').click()
+  const before=await page.evaluate(()=>window.__ZION030_OPEN_CITY__.state())
+  if(before.civic?.version!=='36.0'||before.surfaces?.version!=='35.0')
+    throw Error('URL does not contain the complete ZION v36 playable graphics release')
+  if(scenario==='eco-rain'&&before.quality!=='eco')
+    throw Error('ECO quality scenario failed to apply')
+  if(scenario!=='eco-rain'&&before.quality!=='high')
+    throw Error('High quality scenario failed to apply')
   const started=await page.evaluate(ms=>window.__ZION030_PERFORMANCE__?.start(ms),duration)
   if(!started)throw Error('GPU benchmark did not start')
   // Genuine motion stresses traversals, pedestrians and car traffic.
@@ -99,19 +113,30 @@ try{
   const browserReport=await page.evaluate(()=>window.__ZION030_PERFORMANCE__?.stop())
   if(!browserReport)throw Error('No measured benchmark report')
   const hardwareAttestation=attestPhysicalGpu()
+  const after=await page.evaluate(()=>window.__ZION030_OPEN_CITY__.state())
   const report={
     ...browserReport,
+    scenario,
+    graphicsStateBefore:{quality:before.quality,raining:before.raining,dayMode:before.dayMode,
+      dpr:before.perf?.pixelRatio??null,civic:before.civic,surfaces:before.surfaces,
+      postfx:before.postfx},
+    graphicsStateAfter:{quality:after.quality,raining:after.raining,dayMode:after.dayMode,
+      civic:after.civic,surfaces:after.surfaces,postfx:after.postfx},
+    dynamicLodTriggered:scenario!=='eco-rain'&&after.quality!=='high',
     hardwareAttestation,
     physicalGpuConfirmed:Boolean(browserReport.browserHardwareReported&&hardwareAttestation.available)
   }
   const outputFolder=process.env.OSGARD_BENCH_OUTPUT||'reports/gpu'
-  const file=path.resolve(outputFolder,'zion-v34-'+new Date().toISOString().replace(/[:.]/g,'-')+'.json')
+  const file=path.resolve(outputFolder,'zion-v36-'+scenario+'-'+new Date().toISOString().replace(/[:.]/g,'-')+'.json')
   await fs.mkdir(path.dirname(file),{recursive:true})
   await fs.writeFile(file,JSON.stringify({url,report,pageErrors:errors},null,2)+'\n','utf8')
+  await page.screenshot({path:path.resolve(outputFolder,'zion-v36-'+scenario+'.png')})
   console.log('HARDWARE REPORT: '+file)
   console.log(JSON.stringify(report,null,2))
   if(errors.length)throw Error('Runtime page errors: '+errors.join('; '))
   if(!report.benchmarkValid)throw Error('Benchmark too short or no rendered frames')
+  if(report.dynamicLodTriggered&&process.env.OSGARD_FORBID_ADAPTIVE_LOD==='1')
+    throw Error('Requested cinematic quality dropped to adaptive during benchmark')
   if(requireGPU&&!report.physicalGpuConfirmed)
     throw Error('Physical GPU NOT independently confirmed: WebGL='+report.hardwareClassification+
       ', OS GPU driver='+hardwareAttestation.available+'. No real-device FPS claim is permitted.')
