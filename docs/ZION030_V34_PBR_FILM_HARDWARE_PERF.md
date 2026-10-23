@@ -63,3 +63,14 @@ A manual GitHub workflow is installed at \`.github/workflows/zion-v34-physical-g
 ### Mission-linked environment
 
 The new \`open-city-cooling34.js\` attaches sculpted non-colliding microclimate fixtures, glowing rings, greenery and mist to the **actual three original hot-zone coordinates**. Completing a mission zone reveals that zone's models. LITE and ECO disable particles to protect lower-end frame budgets; existing saves and mission placement rules are unchanged.
+
+
+### Windows physical GPU acceptance (operator run)
+
+On a Windows gaming PC with Google Chrome, a native graphics driver, Node.js 22+ and the checked-out v34 project, run from PowerShell in the repository root:
+
+~~~powershell
+powershell -NoProfile -File scripts/zion-v34-windows-gpu-check.ps1 -DurationMs 15000 -MaxP95Ms 33.3
+~~~
+
+This installs dependencies with npm ci, runs original game tests, builds the authentic site, serves it ONLY on 127.0.0.1, launches Chrome locally using the machine graphics driver, and stores independent OS-driver and browser frame-time metrics in reports/gpu/. It fails on software rendering or over-budget p95. The script is committed, but the AI has NOT executed it on the user's Windows PC. Physical GPU confirmation must wait for a real JSON result, not fabricated FPS.
