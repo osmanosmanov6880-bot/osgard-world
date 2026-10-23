@@ -455,10 +455,10 @@ class Handler(SimpleHTTPRequestHandler):
         return super().do_HEAD()
     def do_POST(self):return self.api('POST') if self.path.startswith('/api/') else self.send_error(405)
 
-def create_server(root,database,host='127.0.0.1',port=4173,public_origin=None,commerce_config=None,commerce_provider=None):
+def create_server(root,database,host='127.0.0.1',port=4173,public_origin=None,commerce_config=None,commerce_provider=None,nebula_config=None,nebula_provider=None):
     require(not Path(database).resolve().is_relative_to(Path(root).resolve()),'База данных должна быть вне публичной папки сайта.')
     server=ThreadingHTTPServer((host,port),functools.partial(Handler,directory=str(Path(root).resolve())))
-    server.started_monotonic=time.monotonic();server.worker=None;server.store=Store(database,commerce_config or core_commerce.Config.from_env(),commerce_provider);server.rate_limits={};server.rate_lock=threading.Lock()
+    server.started_monotonic=time.monotonic();server.worker=None;server.store=Store(database,commerce_config or core_commerce.Config.from_env(),commerce_provider,nebula_config,nebula_provider);server.rate_limits={};server.rate_lock=threading.Lock()
     actual=server.server_address[1]
     server.allowed_origins={f'http://127.0.0.1:{actual}',f'http://localhost:{actual}'}
     server.allowed_hosts={f'127.0.0.1:{actual}',f'localhost:{actual}'}
