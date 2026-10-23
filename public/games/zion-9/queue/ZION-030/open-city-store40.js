@@ -44,7 +44,9 @@ function mount({shell,getCar,getAvatar,getLamps}={}){
  '<div class="oc-store-actions"><button type="submit">ВОЙТИ</button>'+
  '<a href="/workspace">Создать аккаунт</a></div></form>'+
  '<footer class="oc-store-bottom"><button type="button" class="oc-store-refresh">↻ ОБНОВИТЬ ПОКУПКИ</button>'+
- '<small>Оплата на стороне Stripe. Доступ после подтверждения сервера. Возвраты — через поддержку.</small></footer>'+
+ '<small>Оплата через Stripe. Доступ после подтверждения сервера. Возвраты — через поддержку. '+
+ '<a href="/terms/" target="_blank" rel="noopener noreferrer">Условия</a> · '+
+ '<a href="/privacy/" target="_blank" rel="noopener noreferrer">Конфиденциальность</a></small></footer>'+
  '</div>';
  shell.append(dialog);
  const $=selector=>dialog.querySelector(selector);
