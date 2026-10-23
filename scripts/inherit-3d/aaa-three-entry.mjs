@@ -167,6 +167,9 @@ function updateEnvironment(){
  status.geology=seasonalScene?.geology?.stats?.()||status.geology;
 }
 function syncState(force=false){
+ // WebGL can fail or disappear while the native 2D game still updates.
+ // Never synchronize placements into a missing Three.js scene.
+ if(!status.available||!traceRoot||!scene||!renderer)return;
  if(!game.snapshot)return;
  let current;try{current=game.snapshot()}catch{return}
  // The history Atlas renders past traces inside the native #objects element

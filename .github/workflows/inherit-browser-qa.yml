@@ -2,7 +2,7 @@ name: INHERIT real desktop and mobile QA
 
 on:
   pull_request:
-    branches: [master]
+    branches: [master, feature/inherit-r16-real-threejs-world-20261023]
     paths:
       - "public/games/inherit/**"
       - "scripts/inherit-3d/**"

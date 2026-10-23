@@ -2499,6 +2499,12 @@ test('INHERIT R16 3D controls never cover real Legacy, history or research butto
  });
  expect(safe.outside).toBe(true);
  expect(safe.position).not.toBe('absolute');
+ // The native trace action must remain disabled until the player places an item.
+ // Create a real item so click interception can be tested on enabled actions.
+ await page.locator('#world').focus();
+ await page.locator('#world').press('Enter');
+ await expect.poll(()=>page.evaluate(()=>window.InheritGame.snapshot().objects.length)).toBeGreaterThan(0);
+ await expect(page.locator('.inherit-trace-launcher')).toBeEnabled();
  for(const selector of ['.inherit-legacy-trigger','.inherit-trace-launcher']){
   const button=page.locator(selector);
   await expect(button).toBeVisible();
