@@ -8,6 +8,7 @@ var world
 var previous
 var car
 var spray: GPUParticles3D
+var hero: Node3D
 var bundles: Dictionary = {}
 var originals: Dictionary = {}
 var enhanced_road: bool = false
@@ -100,6 +101,8 @@ func set_profile(mode: String) -> void:
 		elif bundles.has("facade"):
 			node.material_override = bundles["facade"]
 	_bind_photo_asphalt()
+	if hero != null:
+		hero.call("set_profile",quality)
 	_apply_cinematic()
 	_update_spray()
 
@@ -180,6 +183,11 @@ func bind_car(drivable) -> void:
 	spray.emitting = false
 	car.add_child(spray)
 	_update_spray()
+	# Optional high-detail imported CC0 GT replaces only the visible R4 mesh.
+	hero = preload("res://scripts/horizon_hero_r6.gd").new()
+	car.add_child(hero)
+	hero.call("bind_car",car)
+	hero.call("set_profile",quality)
 
 func _update_spray() -> void:
 	if spray == null or car == null:
@@ -196,4 +204,4 @@ func diagnostic() -> Dictionary:
 		"photogrammetry_from_polyhaven":photo_count>0,
 		"scanned_facade_and_sidewalk_meshes":surface_count,
 		"quality":quality,"weather":weather,
-		"spray_installed":spray != null,"actual_target_gpu_fps":"NOT_MEASURED"}
+		"spray_installed":spray != null,"hero_model":hero.call("diagnostic") if hero != null else {},"actual_target_gpu_fps":"NOT_MEASURED"}
