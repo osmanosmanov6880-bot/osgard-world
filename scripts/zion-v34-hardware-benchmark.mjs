@@ -99,8 +99,11 @@ try{
       null,{timeout:25000})
   const before=await page.evaluate(()=>window.__ZION030_OPEN_CITY__.state())
   if(before.civic?.version!=='36.0'||before.surfaces?.version!=='35.0'||
-     before.photoreal?.version!=='37.0')
+     before.photoreal?.version!=='37.0'||before.nature?.version!=='38.0')
     throw Error('URL does not contain the complete ZION v36 playable graphics release')
+  if(scenario!=='eco-rain'&&
+      (!before.nature?.highVisible||before.nature.leafBlades<=0))
+    throw Error('Full v38 foliage is not visible on this hardware and quality setting')
   if(scenario==='eco-rain'&&before.quality!=='eco')
     throw Error('ECO quality scenario failed to apply')
   if(scenario!=='eco-rain'&&before.quality!=='high')
@@ -126,10 +129,10 @@ try{
     scenario,
     graphicsStateBefore:{quality:before.quality,raining:before.raining,dayMode:before.dayMode,
       dpr:before.perf?.pixelRatio??null,civic:before.civic,surfaces:before.surfaces,
-      postfx:before.postfx,photoreal:before.photoreal},
+      postfx:before.postfx,photoreal:before.photoreal,nature:before.nature},
     graphicsStateAfter:{quality:after.quality,raining:after.raining,dayMode:after.dayMode,
       civic:after.civic,surfaces:after.surfaces,postfx:after.postfx,
-      photoreal:after.photoreal},
+      photoreal:after.photoreal,nature:after.nature},
     dynamicLodTriggered:scenario!=='eco-rain'&&after.quality!=='high',
     hardwareAttestation,
     physicalGpuConfirmed:Boolean(browserReport.browserHardwareReported&&hardwareAttestation.available)
