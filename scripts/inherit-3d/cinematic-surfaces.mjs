@@ -50,7 +50,8 @@ function texture(data,size,repeat=1,normal=false){
 }
 export function createSurfacePack(type,{quality='high',seed=173}={}){
  if(!Object.hasOwn(FAMILIES,type))throw Error('Unknown physical surface '+type);
- const size=quality==='high'?192:quality==='medium'?128:64;
+ // Power-of-two tiles keep RepeatWrapping and mipmaps valid on WebGL1 as well.
+ const size=quality==='high'?256:quality==='medium'?128:64;
  const key=type+'|'+size+'|'+seed;
  if(cache.has(key))return cache.get(key);
  const meta=FAMILIES[type],levels=new Float32Array(size*size);
