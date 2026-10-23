@@ -63,6 +63,12 @@ world = require(
     'preload("res://scripts/city_cladding_r10.gd")',
     "city_cladding_r10.build(tower_data, SECTOR_POSITIONS)",
     "func _set_graphics_quality(",
+    'preload("res://scripts/industrial_environment_r11.gd")',
+    'preload("res://scripts/cinematic_post_r11.gd")',
+    'preload("res://scripts/performance_lab_r11.gd")',
+    "industrial_r11.build(SECTOR_POSITIONS)",
+    "performance_lab_r11.start_benchmark()",
+    "performance_lab_r11.copy_report()",
 )
 city = require(
     "scripts/city_set_dressing_r5.gd",
@@ -181,6 +187,41 @@ r10_cladding = require(
     "SurfaceLibraryR9Script.coat(",
 )
 assert "QUALITY_RANGES" in r10_cladding
+studio_r11 = require(
+    "scripts/material_studio_r11.gd",
+    "static func make_weathered_deck(",
+    "Image.create(SIZE, SIZE",
+    "material.ao_texture_channel",
+    "material.roughness_texture_channel",
+    "material.metallic_texture_channel",
+)
+industrial_r11 = require(
+    "scripts/industrial_environment_r11.gd",
+    "func _sculpted_landing_deck(",
+    "func _make_gantry(",
+    "func _make_cart(",
+    "func set_quality(",
+    "R11_D%02d_RivetAndBoltGrid",
+)
+post_r11 = require(
+    "scripts/cinematic_post_r11.gd",
+    "hint_screen_texture",
+    "SCREEN_PIXEL_SIZE",
+    "R11_FullscreenFilmGrade",
+    "func set_quality(",
+)
+performance_r11 = require(
+    "scripts/performance_lab_r11.gd",
+    "Performance.TIME_FPS",
+    "RenderingServer.RENDERING_INFO_TOTAL_DRAW_CALLS_IN_FRAME",
+    "NEBULA_R11_BENCHMARK_JSON:",
+    "one_percent_low_fps",
+    "p95_frame_ms",
+    "p99_frame_ms",
+    "user://nebula_r11_hardware_benchmark.json",
+)
+assert "MAX_SAMPLES" in performance_r11 and "WARMUP_SECONDS" in performance_r11
+require("docs/R11-HARDWARE-BENCHMARK.md", "F7", "F9", "не является")
 require("scripts/architectural_detail_r4.gd", "func build(")
 premium = require("scripts/premium_architecture.gd", "func make_facade_material(", "emission_image")
 require("scripts/drone.gd", "extends")
@@ -202,6 +243,12 @@ smoke = require(
     "R10 hero megadock parent absent",
     "R10 maximum quality was not restored",
     "R10 detailed city window facades missing",
+    "R11 industrial hero environment absent",
+    "R11 true multichannel physically based deck material incomplete",
+    "R11 compatibility cinematic postprocess absent",
+    "R11 live hardware profiler panel missing",
+    "R11 performance telemetry is incorrectly fabricated at startup",
+    "R11 low-GPU profile failed to disable heavy postprocess",
     "NEBULA_SMOKE_SUCCESS",
 )
 assert "func _make_ship(" not in ship, "R3 low-poly ship builder is still active"
@@ -211,4 +258,4 @@ assert "image.generate_mipmaps()" in ship_visual
 assert premium.count("Image.create(") >= 2, "separate facade albedo/emission atlases missing"
 assert "high-detail" not in project.lower(), "project identity may remain stable"
 assert len(smoke) > 1500 and len(city) > 5000 and len(world) > 10000
-print("NEBULA_R10_SOURCE_SUCCESS: 67k-vertex sculpted megadock asset and LOD game systems verified")
+print("NEBULA_R11_SOURCE_SUCCESS: cinematic GPU-safe renderer, industrial assets and real-device telemetry contract")

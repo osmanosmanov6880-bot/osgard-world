@@ -1,0 +1,53 @@
+name: NEBULA R11 Chromium WebGL visual QA
+on:
+  workflow_run:
+    workflows:
+      - "REMIX NEBULA 3D native Web release"
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  screenshot-and-software-gl:
+    if: >-
+      ${{ github.event_name == 'workflow_dispatch' ||
+          (github.event.workflow_run.conclusion == 'success' &&
+           github.event.workflow_run.event == 'push' &&
+           github.event.workflow_run.head_branch == 'master') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: master
+      - name: Install headless Chromium and Playwright
+        run: |
+          set -euo pipefail
+          npm install --no-save playwright@1.57.0
+          npx playwright install --with-deps chromium
+      - name: Confirm exported game files exist
+        run: |
+          set -euo pipefail
+          game=public/games/remix/arena-v2/nebula-3d
+          test -s "$game/index.html"
+          test -s "$game/index.js"
+          test -s "$game/index.pck"
+          test -s "$game/index.wasm"
+      - name: Capture GL render at 720p/1080p and exercise quality controls
+        run: |
+          set -euo pipefail
+          python3 -m http.server 8765 --bind 127.0.0.1 --directory public > /tmp/nebula-http.log 2>&1 &
+          server_pid=$!
+          trap 'kill $server_pid || true' EXIT
+          sleep 2
+          node godot/nebula-3d/tests/browser_smoke_r11.mjs
+      - name: Publish screenshots and hosted-renderer report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nebula-r11-chromium-swiftshader-visual-qa
+          path: r11-browser-qa/
+          if-no-files-found: warn
+          retention-days: 14

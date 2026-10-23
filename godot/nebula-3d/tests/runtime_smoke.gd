@@ -175,6 +175,52 @@ func _run() -> void:
     world._set_graphics_quality(0)
     if not check(aegis_r10.quality_mode == 0 and first_r10_draw[0].visibility_range_end >= 800.0,
         "R10 maximum quality was not restored"):return
+    var r11_environment = world.get_node_or_null("R11_IndustrialHeroEnvironment")
+    if not check(r11_environment != null, "R11 industrial hero environment absent"):return
+    if not check(r11_environment.docking_decks == 12,
+        "R11 twelve PBR sculpted landing bays missing"):return
+    if not check(r11_environment.service_gantries == 12,
+        "R11 articulated cargo cranes missing"):return
+    if not check(r11_environment.moving_carts == 12,
+        "R11 autonomous loading transport missing"):return
+    if not check(r11_environment.instanced_hardware >= 3300,
+        "R11 GPU-batched detailed machinery below target"):return
+    if not check(r11_environment.lod_nodes.size() == 42,
+        "R11 industrial assets must be chunked by district for GPU culling"):return
+    if not check(r11_environment.get_node_or_null(
+        "R11_DetailDock_00/R11_LandingDockCollision") is StaticBody3D,
+        "R11 physical landing collision absent"):return
+    var r11_deck_material = r11_environment.deck_material
+    if not check(r11_deck_material.normal_enabled and
+        r11_deck_material.ao_texture != null and
+        r11_deck_material.roughness_texture != null and
+        r11_deck_material.metallic_texture != null,
+        "R11 true multichannel physically based deck material incomplete"):return
+    var film_r11 = world.get_node_or_null("R11_CinematicPost")
+    if not check(film_r11 != null and film_r11.shader_compiled,
+        "R11 compatibility cinematic postprocess absent"):return
+    if not check(film_r11.is_active(), "R11 maximum-grade film treatment inactive"):return
+    var monitor_r11 = world.get_node_or_null("R11_PerformanceLab")
+    if not check(monitor_r11 != null and
+        monitor_r11.get_node_or_null("R11_HardwarePerformancePanel") != null,
+        "R11 live hardware profiler panel missing"):return
+    var percentile_test: Array[float] = [10.0, 20.0, 30.0, 40.0]
+    if not check(monitor_r11._percentile(percentile_test, 0.95) == 40.0,
+        "R11 95th percentile calculation failed"):return
+    if not check(not monitor_r11.benchmarking and monitor_r11.last_report.is_empty(),
+        "R11 performance telemetry is incorrectly fabricated at startup"):return
+    var cinematic_env = world.get_node_or_null("R11_CinematicWorldEnvironment")
+    if not check(cinematic_env is WorldEnvironment and
+        cinematic_env.environment.glow_enabled and
+        cinematic_env.environment.adjustment_enabled,
+        "R11 filmic tonemapping and controlled glare missing"):return
+    world._set_graphics_quality(2)
+    if not check(r11_environment.lod_mode == 2 and
+        not film_r11.is_active() and monitor_r11.quality_mode == 2,
+        "R11 low-GPU profile failed to disable heavy postprocess"):return
+    world._set_graphics_quality(0)
+    if not check(r11_environment.lod_mode == 0 and film_r11.is_active(),
+        "R11 maximum-quality graphic stack not restored"):return
     var hangar_solid = world.get_node_or_null("HeroMegadocksR6/R6_EnclosedHangar_00_0/HangarLeftWallCollision")
     if not check(hangar_solid is StaticBody3D, "Hangar collision missing"):return
     var arcology_solid = world.get_node_or_null("SculpturalSkylineR6/R6_SculptedArcology_00/ArcologyCollision")
@@ -204,5 +250,5 @@ func _run() -> void:
     world.ship.take_damage(10.0)
     if not check(world.ship.shield < shield_before,"Damage does not reduce shield"):return
     if not check(previous_credits >= 0,"Invalid credits"):return
-    print("NEBULA_SMOKE_SUCCESS missions=1 upgrades=1 drones=%d premium3d=r10 AEGIS=6 sculpted-megadocks gltf=true" % world.drones.size())
+    print("NEBULA_SMOKE_SUCCESS missions=1 upgrades=1 drones=%d premium3d=r11 pbr=true gantries=12 performance-lab=real-device" % world.drones.size())
     quit(0)
