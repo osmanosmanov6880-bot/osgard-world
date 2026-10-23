@@ -41,6 +41,22 @@ OSGARD_GPU_BENCH_URL="https://osgard.world/games/zion-9/queue/ZION-030/index.htm
   node scripts/zion-v34-hardware-benchmark.mjs
 \`\`\`
 
+Windows desktop with Microsoft Edge (no extra browser download required):
+
+```powershell
+npm ci
+npm run dev
+# In a SECOND PowerShell window, inside the same repository:
+$env:OSGARD_GPU_BENCH_URL = "http://localhost:5173/games/zion-9/queue/ZION-030/index.html"
+$env:OSGARD_BENCH_BROWSER_CHANNEL = "msedge"
+node scripts/zion-v34-hardware-benchmark.mjs
+```
+
+A local GPU run uses the checked-out v34 source, so it can be executed before the
+production deploy. On Windows the benchmark defaults to Microsoft Edge; on Linux
+it defaults to Google Chrome. It requires an interactive desktop session and does
+not accept software-only renderer results as proof of physical GPU performance.
+
 The target URL **must actually serve v34** (or a local v34 preview), otherwise the script fails. By default the script rejects any software-only or unknown GPU as non-hardware evidence. The report is saved as timestamped JSON in \`reports/gpu/\`. Set \`OSGARD_MAX_FRAME_P95_MS=33.3\` to enforce a strict desktop timing gate, after first choosing an appropriate target for the hardware class.
 
 A physical device with GPU acceleration is **not connected to the present AI/GitHub CI environment**. GitHub-hosted Chrome may run SwiftShader. A pass in CI is a functional regression, **not** physical-GPU performance certification.
