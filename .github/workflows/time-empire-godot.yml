@@ -54,6 +54,8 @@ jobs:
         run: godot --headless --rendering-method gl_compatibility --path godot/time-empire --script res://tests/wave8_smoke.gd
       - name: Verify Wave 9 hero geometry, optimized detail and gameplay
         run: godot --headless --rendering-method gl_compatibility --path godot/time-empire --script res://tests/wave9_smoke.gd
+      - name: Validate Wave10 clustered forest, urban lighting and construction cinematic
+        run: godot --headless --rendering-method gl_compatibility --path godot/time-empire --script res://tests/wave10_smoke.gd
       - name: Export playable Godot Web build
         shell: bash
         run: |

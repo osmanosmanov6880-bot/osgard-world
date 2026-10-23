@@ -12,6 +12,7 @@ const Wave6Benchmark = preload("res://scripts/wave6_hardware_benchmark.gd")
 const Wave7Region = preload("res://scripts/wave7_region.gd")
 const Wave8Finish = preload("res://scripts/wave8_finish.gd")
 const Wave9CoastalCity = preload("res://scripts/wave9_coastal_city.gd")
+const Wave10CityDirector = preload("res://scripts/wave10_city_director.gd")
 ## OSGARD TIME EMPIRE — CHRONOS CITY. Original Godot 4.7.2 strategy vertical slice.
 ## No art ripped from any reference titles. Procedural 3D visuals; gameplay is stateful.
 
@@ -107,6 +108,10 @@ func _ready() -> void:
     wave9.configure(self)
     add_child(wave9)
     Wave5Batcher.optimize(self)
+    var wave10 := Wave10CityDirector.new()
+    wave10.name = "Wave10CityDirector"
+    wave10.configure(self)
+    add_child(wave10)
     var hardware_bench := Wave6Benchmark.new()
     hardware_bench.name = "Wave6HardwareBenchmark"
     hardware_bench.configure(self, "time-empire", get_node_or_null("ChronosAtmosphere") as WorldEnvironment)
@@ -370,7 +375,11 @@ func _build_district() -> bool:
         notification = 4.0
         return false
     time_units -= cost
-    _place_district(district_count)
+    var new_index: int = district_count
+    _place_district(new_index)
+    var director := get_node_or_null("Wave10CityDirector") as Node3D
+    if director != null:
+        director.on_district_constructed(new_index)
     district_count += 1
     production_rate = _calculate_rate()
     status_label.text = "Новый район построен! Доход увеличился."
