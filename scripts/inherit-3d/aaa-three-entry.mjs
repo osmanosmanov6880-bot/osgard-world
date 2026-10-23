@@ -53,7 +53,7 @@ world.parentElement.insertBefore(controls,world);
 const canvas=make('canvas','aaa3d-canvas');canvas.setAttribute('aria-hidden','true');
 canvas.setAttribute('tabindex','-1');canvas.style.pointerEvents='none';
 island.prepend(canvas);
-const status={available:false,active:false,postFX:'off',adapter:null,materials:null,ambientLife:null,performance:null,frames:0,traces:0,generation:null,quality,season:'',fallback:null,flyby:false,renderer:'WebGL Three.js',detailTiers:{high:0,medium:0,low:0},detailTriangles:0,detailDrawCalls:0,cachedTraces:0,createdTraces:0,heritageDetails:null,coastDetails:null,microclimate:null,surf:null,geology:null,seaStacks:null,skyLighting:null,focusMode:false,environmentTier:null,cameraFocus:'island'};
+const status={available:false,active:false,postFX:'off',adapter:null,materials:null,ambientLife:null,performance:null,frames:0,traces:0,generation:null,quality,season:'',fallback:null,flyby:false,renderer:'WebGL Three.js',detailTiers:{high:0,medium:0,low:0},detailTriangles:0,detailDrawCalls:0,cachedTraces:0,createdTraces:0,heritageDetails:null,coastDetails:null,microclimate:null,surf:null,geology:null,seaStacks:null,skyLighting:null,focusMode:false,oceanFade:.66,environmentTier:null,cameraFocus:'island'};
 const frameBudget=makeFrameBudget();
 const autoResolution=makeAdaptiveResolution();
 const traceMotion=makeSavedTraceMotion({maxAnimated:lowPower?18:58});
@@ -181,6 +181,7 @@ function updateEnvironment(){
  renderer.toneMappingExposure=p.exposure;
  waterUniforms.uDawn.value=p.water;
  waterUniforms.uHorizonFade.value=season==='mist'?.53:season==='wind'?.70:.66;
+ status.oceanFade=waterUniforms.uHorizonFade.value;
  if(waterUniforms.uWind)waterUniforms.uWind.value=season==='wind'?1.28:season==='mist'?.17:.62;
  const seasonalScene=sceneryCache.get(status.environmentTier);
  seasonalScene?.setSeason?.(season);
