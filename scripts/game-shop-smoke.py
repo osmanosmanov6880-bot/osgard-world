@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """No network/no real charges: game shop webhook and entitlement security checks."""
 import os,sys,time,json,hmac,hashlib,sqlite3,tempfile,contextlib,unittest
+from unittest.mock import patch
 from pathlib import Path
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'server'))
 from core_game_store import Shop,SCHEMA,ITEMS,catalog
@@ -20,7 +21,7 @@ class FakeProvider:
  def retrieve_session(self,sid):return self.sessions[sid]
 class FakeCommerce:
  def __init__(self):
-  self.config=type('Config',(),dict(enabled=True,livemode=False,webhook_secret='whsec_testing_secret_for_webhooks',
+  self.config=type('Config',(),dict(enabled=True,livemode=False,account_id='acct_test_123',webhook_secret='whsec_testing_secret_for_webhooks',
     public_origin='https://example.test'))()
   self.fake=FakeProvider()
  def enabled(self):pass
@@ -44,11 +45,13 @@ class FakeStore:
    try:yield db;db.commit()
    except BaseException:db.rollback();raise
 class StoreTests(unittest.TestCase):
- def setUp(self):self.store=FakeStore();self.shop=Shop(self.store)
- def tearDown(self):self.store.temp.cleanup()
+ def setUp(self):
+  self.env=patch.dict(os.environ,{"OSGARD_GAME_SHOP_ENABLED":"1","OSGARD_GAME_SHOP_WEBHOOK_SECRET":"whsec_testing_secret_for_webhooks"},clear=False)
+  self.env.start();self.store=FakeStore();self.shop=Shop(self.store)
+ def tearDown(self):self.store.temp.cleanup();self.env.stop()
  def payload(self,id='evt_1',etype='checkout.session.completed',obj=None):
   obj=obj or {'id':'cs_test_1'}
-  raw=json.dumps({'id':id,'type':etype,'data':{'object':obj}}).encode()
+  raw=json.dumps({'id':id,'type':etype,'livemode':False,'data':{'object':obj}}).encode()
   stamp=str(int(time.time()))
   sig=hmac.new(self.store.commerce.config.webhook_secret.encode(),stamp.encode()+b'.'+raw,hashlib.sha256).hexdigest()
   return raw,'t='+stamp+',v1='+sig
@@ -62,7 +65,7 @@ class StoreTests(unittest.TestCase):
   body,sig=self.payload()
   with self.assertRaises(Fault):self.shop.webhook(body,sig)
   self.assertEqual(self.shop.owned('buyer1')['owned'],[])
-  session=self.store.commerce.fake.sessions['cs_test_1'];session['payment_status']='paid'
+  session=self.store.commerce.fake.sessions['cs_test_1'];session['payment_status']='paid';session['status']='complete'
   bad,sbad=self.payload('evt_tampered')
   session['amount_total']=1
   with self.assertRaises(Fault):self.shop.webhook(bad,sbad)
@@ -83,6 +86,36 @@ class StoreTests(unittest.TestCase):
   b=self.shop.checkout('buyer1',{'sku':'phoenix'})
   self.assertEqual(a['checkoutUrl'],b['checkoutUrl'])
   self.assertEqual(self.store.commerce.fake.calls,1)
+ def test_shop_is_disabled_without_separate_flag(self):
+  os.environ.pop("OSGARD_GAME_SHOP_ENABLED")
+  self.assertFalse(self.shop.status()["enabled"])
+  with self.assertRaises(Fault):self.shop.checkout('buyer1',{'sku':'scout'})
+ def test_live_requires_explicit_account_authorization(self):
+  self.store.commerce.config.livemode=True
+  self.assertFalse(self.shop.status()["realPaymentsEnabled"])
+  with self.assertRaises(Fault):self.shop.checkout('buyer1',{'sku':'scout'})
+  os.environ["OSGARD_GAME_SHOP_LIVE_APPROVED"]="1"
+  os.environ["OSGARD_GAME_SHOP_EXPECTED_ACCOUNT_ID"]="acct_wrong"
+  with self.assertRaises(Fault):self.shop.checkout('buyer1',{'sku':'scout'})
+ def test_paid_session_prevents_duplicate_charge_before_webhook(self):
+  self.shop.checkout('buyer1',{'sku':'plasma'})
+  session=self.store.commerce.fake.sessions['cs_test_1'];session['status']='complete';session['payment_status']='paid'
+  with self.assertRaises(Fault):self.shop.checkout('buyer1',{'sku':'plasma'})
+  self.assertEqual(self.store.commerce.fake.calls,1)
+ def test_revocation_before_confirmation_does_not_reissue(self):
+  self.shop.checkout('buyer1',{'sku':'titan'})
+  session=self.store.commerce.fake.sessions['cs_test_1'];session['payment_status']='paid';session['status']='complete'
+  charge,sig=self.payload('evt_before_refund','charge.refunded',{'payment_intent':'pi_test_123'})
+  self.shop.webhook(charge,sig)
+  completed,signature=self.payload('evt_late_checkout')
+  result=self.shop.webhook(completed,signature)
+  self.assertTrue(result['revoked'])
+  self.assertEqual(self.shop.owned('buyer1')['owned'],[])
+ def test_distinct_game_webhook_secret_required(self):
+  self.shop.checkout('buyer1',{'sku':'iris'})
+  body,sig=self.payload()
+  os.environ.pop('OSGARD_GAME_SHOP_WEBHOOK_SECRET')
+  with self.assertRaises(Fault):self.shop.webhook(body,sig)
  def test_unknown_product_rejected(self):
   with self.assertRaises(Fault):self.shop.checkout('buyer1',{'sku':'free-money'})
 if __name__=='__main__':unittest.main()

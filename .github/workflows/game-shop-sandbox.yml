@@ -29,5 +29,8 @@ jobs:
           assert 'payment_status' in s
           assert 'livemode' in s
           assert 'ON CONFLICT' in s
+          assert 'OSGARD_GAME_SHOP_LIVE_APPROVED' in s
+          assert 'OSGARD_GAME_SHOP_WEBHOOK_SECRET' in s
+          assert 'game_shop_revoked_intents' in s
           assert 'STRIPE_SECRET' not in Path('public/games/store/index.html').read_text()
           PY
