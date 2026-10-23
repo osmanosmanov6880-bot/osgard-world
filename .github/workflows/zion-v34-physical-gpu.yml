@@ -1,4 +1,4 @@
-name: ZION-030 v34 physical GPU performance gate
+name: ZION-030 v36 physical GPU performance matrix
 
 # This NEVER runs on GitHub-hosted SwiftShader runners. Register your own
 # machine under Settings -> Actions -> Runners, with the explicit label
@@ -43,7 +43,7 @@ jobs:
         run: |
           npm ci
           npm install --no-save --package-lock=false @playwright/test@1.58.2
-      - name: Build local authentic ZION-030 v34 game
+      - name: Build local authentic ZION-030 v36 game
         run: |
           npm run qa:zion-local
           npm run build
@@ -51,14 +51,14 @@ jobs:
           cp -a public/games/. dist/games/
       - name: Serve the exact built game on loopback
         run: |
-          ./node_modules/.bin/vite preview --host 127.0.0.1 --port 4173 --strictPort > /tmp/zion-v34-preview.log 2>&1 &
-          echo $! > /tmp/zion-v34-preview.pid
+          ./node_modules/.bin/vite preview --host 127.0.0.1 --port 4173 --strictPort > /tmp/zion-v36-preview.log 2>&1 &
+          echo $! > /tmp/zion-v36-preview.pid
           for i in 1 2 3 4 5 6 7 8 9 10; do
             if curl -fsS http://127.0.0.1:4173/games/zion-9/queue/ZION-030/index.html -o /dev/null; then break; fi
             sleep 1
           done
           curl -fsS http://127.0.0.1:4173/games/zion-9/queue/ZION-030/index.html -o /dev/null
-      - name: Benchmark with a physical GPU and reject SwiftShader
+      - name: Measure actual city / rain-night / ECO performance with physical GPU
         env:
           OSGARD_GPU_BENCH_URL: http://127.0.0.1:4173/games/zion-9/queue/ZION-030/index.html
           OSGARD_BENCH_DURATION_MS: ${{ inputs.duration_ms }}
@@ -66,14 +66,14 @@ jobs:
           OSGARD_REQUIRE_HARDWARE_GPU: '1'
           OSGARD_HEADLESS: '1'
           OSGARD_BENCH_OUTPUT: reports/gpu
-        run: node scripts/zion-v34-hardware-benchmark.mjs
+        run: node scripts/zion-v36-hardware-matrix.mjs
       - name: Preserve measured evidence even if the gate fails
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: zion-v34-physical-gpu-measured-evidence
+          name: zion-v36-physical-gpu-matrix-evidence
           path: |
             reports/gpu/
-            /tmp/zion-v34-preview.log
+            /tmp/zion-v36-preview.log
           if-no-files-found: warn
           retention-days: 30
