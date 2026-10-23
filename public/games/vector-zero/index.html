@@ -22,7 +22,60 @@ function burst(px,py,color,count){if(reducedMotion)return;const col=color==='ora
 function finish(ok,why){if(mode!=='playing')return;mode=ok?'won':'lost';core.active=false;if(ok&&(!best||time<best)){best=time;try{window.localStorage?.setItem(BEST_KEY,String(time))}catch{}}$('overlay').hidden=false;$('title').textContent=ok?'Поле стабилизировано':'Сигнал потерян';$('copy').textContent=ok?'Ядро доставлено, инженер достиг выхода. Время: '+time.toFixed(1)+' с. Лучший результат: '+best.toFixed(1)+' с.':why;$('start').textContent=ok?'ЕЩЁ ОДНА ПОПЫТКА ↗':'ПОВТОРИТЬ ИСПЫТАНИЕ ↗';post('completed',{result:ok?'won':'lost',durationSeconds:time});burst(ok?exitX:player.x,ok?F-55:player.y,ok?'green':'red',32);hud()}
 function acc(px,py,sign,m){const dx=px-m.x,dy=py-m.y,d=Math.hypot(dx,dy);if(d<1||d>m.r)return[0,0];const f=350*(1-d/m.r)*(sign===m.pol?-1:1);return[dx/d*f,dy/d*f]}
 function integrate(q,dt){q.vy+=145*dt;for(const m of M){const a=acc(q.x,q.y,q.pol,m);q.vx+=a[0]*dt;q.vy+=a[1]*dt}const v=Math.hypot(q.vx,q.vy);if(v>660){q.vx*=660/v;q.vy*=660/v}q.x+=q.vx*dt;q.y+=q.vy*dt;q.age+=dt}
-function step(dt){time+=dt;clock+=dt;const axis=(keys.has('right')?1:0)-(keys.has('left')?1:0);if(axis){player.face=axis;player.vx+=axis*1400*dt}else player.vx*=Math.pow(.001,dt);player.vx=Math.max(-290,Math.min(290,player.vx));player.vy+=1450*dt;const bottom=player.y+PH/2;player.x+=player.vx*dt;player.y+=player.vy*dt;player.ground=false;for(const q of plats)if(player.x+PW/2>q.x&&player.x-PW/2<q.x+q.w&&player.vy>=0&&bottom<=q.y+4&&player.y+PH/2>=q.y){player.y=q.y-PH/2;player.vy=0;player.ground=true}player.x=Math.max(0,Math.min(world-20,player.x));if(keys.has('jump')&&player.ground){player.vy=-700;player.ground=false;keys.delete('jump')}if(core.active){integrate(core,dt);core.trail.push({x:core.x,y:core.y});if(core.trail.length>30)core.trail.shift();for(const m of M){const a=acc(player.x+15,player.y-5,pol,m);player.vx+=a[0]*dt*.23;player.vy+=a[1]*dt*.15}if(Math.hypot(core.x-R.x,core.y-R.y)<R.r){core.docked=true;core.active=false;core.x=R.x;core.y=R.y;core.vx=core.vy=0;burst(core.x,core.y,'green',32);$('objective').textContent='Ядро на месте. Иди к зелёному выходу.'}if(core.x>world||core.x< -80||core.y>720||core.age>9){finish(false,'Ядро потеряно. Попробуй другой момент запуска и переключения.');return}}if(player.y>720){finish(false,'Инженер потерян. Используй движение и прыжок.');return}if(player.x+PW/2>laserX-4&&player.x-PW/2<laserX+4&&player.y+PH/2>480&&player.y-PH/2<585){finish(false,'Лазер задел инженера. Прыгни над лучом.');return}if(player.x>exitX){if(core.docked)finish(true);else{player.x=exitX-4;say('СНАЧАЛА ДОСТАВЬ ЯДРО')}}camera=Math.max(0,Math.min(world-W,player.x-350));for(let i=parts.length-1;i>=0;i--){let q=parts[i];q.life-=dt;q.x+=q.vx*dt;q.y+=q.vy*dt;q.vx*=Math.pow(.08,dt);q.vy*=Math.pow(.08,dt);if(q.life<=0)parts.splice(i,1)}to=Math.max(0,to-dt)}
+function queueJump(){if(mode==='playing'&&!paused)jumpBuffer=.14}
+function step(dt){
+ time+=dt;clock+=dt;
+ jumpBuffer=Math.max(0,jumpBuffer-dt);
+ coyote=Math.max(0,coyote-dt);
+ const axis=(keys.has('right')?1:0)-(keys.has('left')?1:0);
+ if(axis){player.face=axis;player.vx+=axis*1400*dt}else player.vx*=Math.pow(.001,dt);
+ player.vx=Math.max(-290,Math.min(290,player.vx));
+ const wasGrounded=player.ground,previousBottom=player.y+PH/2;
+ if(wasGrounded)coyote=.11;
+ player.vy+=1450*dt;
+ player.x+=player.vx*dt;player.y+=player.vy*dt;
+ const landingSpeed=player.vy;
+ player.ground=false;
+ for(const q of plats){
+  if(player.x+PW/2>q.x&&player.x-PW/2<q.x+q.w&&player.vy>=0&&previousBottom<=q.y+4&&player.y+PH/2>=q.y){
+   player.y=q.y-PH/2;player.vy=0;player.ground=true;coyote=.11;
+   if(!wasGrounded&&landingSpeed>220)burst(player.x,q.y,'cyan',8);
+   break;
+  }
+ }
+ player.x=Math.max(0,Math.min(world-20,player.x));
+ if(jumpBuffer>0&&(player.ground||coyote>0)){
+  player.vy=-700;player.ground=false;coyote=0;jumpBuffer=0;
+ }
+ if(core.active){
+  integrate(core,dt);core.trail.push({x:core.x,y:core.y});
+  if(core.trail.length>30)core.trail.shift();
+  for(const m of M){const a=acc(player.x+15,player.y-5,pol,m);player.vx+=a[0]*dt*.23;player.vy+=a[1]*dt*.15}
+  if(Math.hypot(core.x-R.x,core.y-R.y)<R.r){
+   core.docked=true;core.active=false;core.x=R.x;core.y=R.y;core.vx=core.vy=0;
+   burst(core.x,core.y,'green',32);$('objective').textContent='Ядро на месте. Иди к зелёному выходу.'
+  }
+  if(core.x>world||core.x< -80||core.y>720||core.age>9){
+   finish(false,'Ядро потеряно. Попробуй другой момент запуска и переключения.');return
+  }
+ }
+ if(player.y>720){finish(false,'Инженер потерян. Используй движение и прыжок.');return}
+ if(player.x+PW/2>laserX-4&&player.x-PW/2<laserX+4&&player.y+PH/2>480&&player.y-PH/2<585){
+  finish(false,'Лазер задел инженера. Прыгни над лучом.');return
+ }
+ if(player.x>exitX){
+  if(core.docked)finish(true);
+  else{player.x=exitX-4;say('СНАЧАЛА ДОСТАВЬ ЯДРО')}
+ }
+ const targetCamera=Math.max(0,Math.min(world-W,player.x-350));
+ camera+=(targetCamera-camera)*Math.min(1,dt*9);
+ for(let i=parts.length-1;i>=0;i--){
+  const q=parts[i];q.life-=dt;q.x+=q.vx*dt;q.y+=q.vy*dt;
+  q.vx*=Math.pow(.08,dt);q.vy*=Math.pow(.08,dt);
+  if(q.life<=0)parts.splice(i,1)
+ }
+ to=Math.max(0,to-dt)
+}
 function label(s,px,py,col){x.fillStyle=col||'#99b7b7';x.font='10px ui-monospace,monospace';x.fillText(s,px,py)}
 function background(){const g=x.createLinearGradient(0,0,0,H);g.addColorStop(0,'#08121b');g.addColorStop(.6,'#0a1c28');g.addColorStop(1,'#05090d');x.fillStyle=g;x.fillRect(0,0,W,H);for(let i=0;i<75;i++){const px=((i*193-camera*.12)%W+W)%W,py=(i*79)%410;x.globalAlpha=.2+.3*Math.abs(Math.sin((reducedMotion?0:clock)*.3+i));x.fillStyle=i%4?'#9beafa':'#ffcb8a';x.fillRect(px,py,1.4,1.4)}x.globalAlpha=1}
 function ground(){x.save();x.translate(-camera,0);for(const q of plats){const g=x.createLinearGradient(0,q.y,0,H);g.addColorStop(0,'#21333a');g.addColorStop(1,'#0d171c');x.fillStyle=g;x.fillRect(q.x,q.y,q.w,H-q.y);x.strokeStyle='#5ce1e6';x.globalAlpha=.7;x.beginPath();x.moveTo(q.x,q.y);x.lineTo(q.x+q.w,q.y);x.stroke();x.globalAlpha=.2;for(let xx=q.x;xx<q.x+q.w;xx+=40){x.beginPath();x.moveTo(xx,q.y+10);x.lineTo(xx-16,H);x.stroke()}x.globalAlpha=1}label('INITIALIZATION PLATFORM',40,F-14);label('MAGNETIC TEST BAY / 06',800,F-14);x.restore()}
@@ -33,7 +86,21 @@ function gate(){const px=exitX-camera;if(px< -120||px>W+120)return;x.strokeStyle
 function drawCore(){if(!core.active&&!core.docked)return;const px=core.x-camera,col=core.pol>0?'#5ce1e6':'#ffae5f';for(let i=0;i<core.trail.length;i+=2){const q=core.trail[i];x.globalAlpha=(i+1)/(core.trail.length+1)*.3;x.fillStyle=col;x.beginPath();x.arc(q.x-camera,q.y,1.4+i*.04,0,Math.PI*2);x.fill()}x.globalAlpha=1;for(let i=0;i<3;i++){x.globalAlpha=.12;x.strokeStyle=col;x.beginPath();x.arc(px,core.y,22+i*8+Math.sin(clock*2+i)*2,0,Math.PI*2);x.stroke()}x.globalAlpha=1;x.strokeStyle=col;x.beginPath();x.arc(px,core.y,19,clock*.8,clock*.8+Math.PI*1.5);x.stroke();const g=x.createRadialGradient(px-4,core.y-5,2,px,core.y,15);g.addColorStop(0,'#fff');g.addColorStop(.4,col);g.addColorStop(1,'#0a2631');x.fillStyle=g;x.beginPath();x.arc(px,core.y,13,0,Math.PI*2);x.fill()}
 function drawPlayer(){const px=player.x-camera,py=player.y;if(px< -60||px>W+60)return;x.fillStyle='#0008';x.beginPath();x.ellipse(px,py+25,22,7,0,0,Math.PI*2);x.fill();x.strokeStyle='#124254';x.lineWidth=8;x.beginPath();x.moveTo(px-6,py+8);x.lineTo(px-9,py+21);x.moveTo(px+6,py+8);x.lineTo(px+9,py+21);x.stroke();x.fillStyle='#124254';x.fillRect(px-12,py-9,24,20);x.strokeStyle='#5ce1e6';x.lineWidth=1.4;x.strokeRect(px-12,py-9,24,20);x.fillStyle='#102d3d';x.beginPath();x.arc(px,py-19,10,0,Math.PI*2);x.fill();x.strokeStyle='#5898a4';x.stroke();x.fillStyle='#d3ff69';x.fillRect(px-4+player.face*2,py-21,9,3)}
 function drawParticles(){for(const q of parts){x.globalAlpha=Math.max(0,q.life/q.max);x.fillStyle=q.c;x.beginPath();x.arc(q.x-camera,q.y,q.r,0,Math.PI*2);x.fill()}x.globalAlpha=1}
-function drawPath(){if(!core.active||core.docked)return;const t=performance.now(),path=[],q={x:core.x,y:core.y,vx:core.vx,vy:core.vy,pol:pol,age:core.age};for(let i=0;i<56;i++){integrate(q,.045);if(i%3===0)path.push({x:q.x,y:q.y});if(q.x>world||q.y>710||Math.hypot(q.x-R.x,q.y-R.y)<R.r)break}forecast=performance.now()-t;x.save();x.setLineDash([4,7]);x.strokeStyle=core.pol>0?'#5ce1e677':'#ffae5f77';x.beginPath();path.forEach((p,i)=>i?x.lineTo(p.x-camera,p.y):x.moveTo(p.x-camera,p.y));x.stroke();x.setLineDash([]);x.restore()}
+function drawPath(){
+ if(!showForecast||!core.active||core.docked)return;
+ if(forecastAt<0||clock-forecastAt>.05||forecastPol!==core.pol){
+  const t=performance.now(),path=[],q={x:core.x,y:core.y,vx:core.vx,vy:core.vy,pol:pol,age:core.age};
+  for(let i=0;i<56;i++){
+   integrate(q,.045);
+   if(i%3===0)path.push({x:q.x,y:q.y});
+   if(q.x>world||q.y>710||Math.hypot(q.x-R.x,q.y-R.y)<R.r)break
+  }
+  forecastPath=path;forecastAt=clock;forecastPol=core.pol;forecast=performance.now()-t
+ }
+ x.save();x.setLineDash([4,7]);x.strokeStyle=core.pol>0?'#5ce1e677':'#ffae5f77';x.beginPath();
+ forecastPath.forEach((p,i)=>i?x.lineTo(p.x-camera,p.y):x.moveTo(p.x-camera,p.y));
+ x.stroke();x.setLineDash([]);x.restore()
+}
 function render(){background();ground();M.forEach(magnet);laser();receiver();gate();drawParticles();drawCore();drawPlayer();drawPath()}
 function resize(){const r=c.getBoundingClientRect();if(!r.width||!r.height)return;const d=Math.min(2,devicePixelRatio||1);c.width=Math.round(r.width*d);c.height=Math.round(r.height*d);x.setTransform(c.width/W,0,0,c.height/H,0,0);render()}
 function hud(){ $('objective-status').textContent=paused?'PAUSED':mode==='won'?'FIELD STABLE':mode==='lost'?'SIGNAL LOST':mode==='playing'?'FIELD ACTIVE':'SYSTEM READY';$('time').textContent=String(Math.floor(time/60)).padStart(2,'0')+':'+String(Math.floor(time%60)).padStart(2,'0')+'.'+Math.floor(time%1*10);$('speed').textContent=core.active?Math.round(Math.hypot(core.vx,core.vy))+' U/S':core.docked?'DOCKED':'IDLE';$('charge').textContent=pol>0?'+ POSITIVE':'− NEGATIVE';$('charge').style.color=pol>0?'var(--cyan)':'var(--orange)';$('best').textContent=best?best.toFixed(1)+' S':'—';if(to<=0||paused)$('status').textContent=paused?'SIMULATION PAUSED':core.docked?'RECEIVER LOCKED':'LOCAL PHYSICS';$('diag').textContent='FPS '+Math.round(fps)+' · FRAME '+frame.toFixed(2)+' MS · PLAYER X '+Math.round(player.x)+' · CORE '+(core.active?'ACTIVE':'IDLE')+' · SPEED '+Math.round(Math.hypot(core.vx,core.vy))+' · FORECAST '+forecast.toFixed(2)+' MS · FX '+parts.length}
