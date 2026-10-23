@@ -6,6 +6,17 @@ extends Node3D
 var instanced_parts: int = 0
 var landmark_count: int = 0
 var materials: Dictionary = {}
+# R18: six independently culled sectors instead of eight gigantic world-wide
+# MultiMeshes. All original building details remain available at close range.
+const DETAIL_RANGE = [900.0, 580.0, 330.0]
+var quality_mode: int = 0
+var district_origins: Array[Vector3] = []
+var district_roots: Array[Node3D] = []
+var detail_chunks: Array[MultiMeshInstance3D] = []
+var district_draws: Array[int] = []
+var drawn_instances: int = 0
+var original_batch_groups: int = 0
+var sharded_groups: int = 0
 
 func _ready() -> void:
     materials = {
@@ -30,22 +41,49 @@ func _mat(color: Color, rough: float, emission: float = 0.0) -> StandardMaterial
 func _transform(position: Vector3, size: Vector3, radians: float = 0.0) -> Transform3D:
     return Transform3D(Basis(Vector3.UP, radians).scaled(size), position)
 
+func _nearest_district(position: Vector3) -> int:
+    var best: int = 0
+    var d2: float = INF
+    for district in district_origins.size():
+        var distance: float = position.distance_squared_to(district_origins[district])
+        if distance < d2:
+            d2 = distance
+            best = district
+    return best
+
 func _batch(name: String, pieces: Array[Transform3D], material: Material) -> void:
     if pieces.is_empty():
         return
-    var batch := MultiMesh.new()
-    batch.transform_format = MultiMesh.TRANSFORM_3D
-    batch.mesh = BoxMesh.new()
-    batch.instance_count = pieces.size()
-    for n in pieces.size():
-        batch.set_instance_transform(n, pieces[n])
-    var draw := MultiMeshInstance3D.new()
-    draw.name = name
-    draw.multimesh = batch
-    draw.material_override = material
-    # Disable offscreen bounding-box culling errors for large architectural batches.
-    draw.extra_cull_margin = 24.0
-    add_child(draw)
+    original_batch_groups += 1
+    var buckets: Array = []
+    for district in district_origins.size():
+        buckets.append([])
+    for original in pieces:
+        # The source contains world-space building transforms. Convert to
+        # local transforms so the engine computes tight per-sector bounds.
+        var id: int = _nearest_district(original.origin)
+        buckets[id].append(Transform3D(
+            original.basis, original.origin - district_origins[id]))
+    for district in buckets.size():
+        var parts: Array = buckets[district]
+        if parts.is_empty():
+            continue
+        var batch := MultiMesh.new()
+        batch.transform_format = MultiMesh.TRANSFORM_3D
+        batch.mesh = BoxMesh.new()
+        batch.instance_count = parts.size()
+        for n in parts.size():
+            batch.set_instance_transform(n, parts[n])
+        var draw := MultiMeshInstance3D.new()
+        draw.name = "R18_D%02d_%s" % [district, name]
+        draw.multimesh = batch
+        draw.material_override = material
+        draw.extra_cull_margin = 16.0
+        district_roots[district].add_child(draw)
+        detail_chunks.append(draw)
+        district_draws[district] += 1
+        drawn_instances += parts.size()
+        sharded_groups += 1
     instanced_parts += pieces.size()
 
 func _box(parent: Node3D, title: String, position: Vector3, size: Vector3, material: Material) -> MeshInstance3D:
@@ -74,10 +112,31 @@ func _cylinder(parent: Node3D, title: String, position: Vector3, radius: float, 
     return node
 
 func build(towers: Array[Dictionary], centers: Array) -> void:
+    for district in centers.size():
+        var centre: Vector3 = centers[district]
+        district_origins.append(centre)
+        district_draws.append(0)
+        var anchor := Node3D.new()
+        anchor.name = "R18_DistrictVisibility_%02d" % district
+        anchor.position = centre
+        add_child(anchor)
+        district_roots.append(anchor)
     _detail_towers(towers)
     _detail_docks(centers)
     for i in centers.size():
         _hero_spire(centers[i] + Vector3(100, 0, -108), i)
+    set_quality(0)
+
+func set_quality(mode: int) -> void:
+    quality_mode = clampi(mode, 0, 2)
+    for draw in detail_chunks:
+        if is_instance_valid(draw):
+            draw.visibility_range_begin = 0.0
+            draw.visibility_range_end = DETAIL_RANGE[quality_mode]
+            draw.visibility_range_end_margin = 120.0
+
+func per_sector_batch_count() -> int:
+    return detail_chunks.size()
 
 func _detail_towers(towers: Array[Dictionary]) -> void:
     var foundations: Array[Transform3D] = []
