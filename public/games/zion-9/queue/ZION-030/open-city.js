@@ -1200,7 +1200,13 @@
         if (fps < 28 && world.gpuScale > .36) {
           world.gpuScale = Math.max(.36, world.gpuScale * .78);
           world.quality = 'adaptive';
-          atelierKit?.setQuality('adaptive');postFxKit?.setQuality('adaptive');
+          // LOD downgrade must affect the entire city, not just the new art layer.
+          detailKit?.setQuality('adaptive');
+          cinematicKit?.setQuality('adaptive');
+          landmarkKit?.setQuality('adaptive');
+          streetKit?.setQuality('adaptive');
+          atelierKit?.setQuality('adaptive');
+          postFxKit?.setQuality('adaptive');
           resize();
         }
       }
