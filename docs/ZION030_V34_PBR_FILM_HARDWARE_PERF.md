@@ -7,7 +7,7 @@ Source code is implemented in the stacked v34 feature branch. Passing source smo
 ### 1. Physical material response, responsibly budgeted
 
 - Three reusable deterministic CanvasTexture families — travertine/stone masonry, plaster, brushed metallic trim. Each family has **albedo + linear normal + roughness maps**. All layers are generated locally with repeatable noise, grout, grain and milling marks.
-- ULTRA textures are 192 px square; MOBILE textures are 96 px; software WebGL and reduced motion create none. Existing street materials are patched in place and restored on disposal.
+- ULTRA textures are 512 px square with height-derived tangent-space normal maps; MOBILE textures are 192 px; software WebGL and reduced motion create none. Existing street materials are patched in place and restored on disposal.
 - Nine texture maps total on eligible tiers. Allocation is explicitly tracked as estimated uncompressed pixel bytes, **not claimed as actual GPU VRAM**.
 - ECO/adaptive shading releases fragment shader map sampling but retains allocated atlas objects for seamless quality switching. No save-game rules or vehicle physics change.
 
