@@ -63,7 +63,9 @@ test('ZION-030 v34: PBR microgeometry, kinetic props, GPU-safe film pass and mea
   expect(report.renderedFrames).toBeGreaterThan(2)
   expect(report.renderFPS).toBeGreaterThan(0)
   expect(['software','unknown','hardware-reported']).toContain(report.hardwareClassification)
-  expect(report.physicalGpuConfirmed).toBe(report.hardwareClassification==='hardware-reported')
+  expect(report.browserHardwareReported).toBe(report.hardwareClassification==='hardware-reported')
+  // Browser runtime never asserts independently verified host hardware.
+  expect(report.physicalGpuConfirmed).toBe(false)
   if(report.hardwareClassification==='software'){
     expect(report.physicalGpuConfirmed).toBe(false)
     expect(report.warning).toContain('Software WebGL')
