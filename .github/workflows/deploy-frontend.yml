@@ -345,6 +345,12 @@ jobs:
           docker save osgard-remix-guard:${GITHUB_SHA} | gzip -1 > osgard-release/remix-guard-image.tar.gz
           test -s osgard-release/remix-guard-image.tar.gz
           tar -czf osgard-world-release.tgz -C osgard-release .
+      - name: Verify that the packaged INHERIT HTML is versioned before SSH activation
+        run: |
+          set -euo pipefail
+          candidate="osgard-release/html/games/inherit/index.html"
+          test -s "$candidate"
+          grep -Fq "/brand/osa-transition.js?v=${GITHUB_SHA:0:12}" "$candidate"
       - name: Validate deployment secrets
         env:
           DEPLOY_HOST: ${{ secrets.OSGARD_DEPLOY_HOST }}
