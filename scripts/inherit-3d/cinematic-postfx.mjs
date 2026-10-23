@@ -10,6 +10,7 @@ import {RenderPass} from 'three/addons/postprocessing/RenderPass.js';
 import {UnrealBloomPass} from 'three/addons/postprocessing/UnrealBloomPass.js';
 import {ShaderPass} from 'three/addons/postprocessing/ShaderPass.js';
 import {OutputPass} from 'three/addons/postprocessing/OutputPass.js';
+import {FXAAShader} from 'three/addons/shaders/FXAAShader.js';
 const GRADE_SHADER={
  uniforms:{
   tDiffuse:{value:null},
@@ -62,13 +63,18 @@ export function detectAdapter(renderer){
 export function makeCinematicPipeline({renderer,scene,camera,quality='high',adapter,wanted=true}){
  const software=adapter?.isSoftware??true;
  const mode=!wanted?'off':quality==='high'&&!software?'cinematic':'lite';
- let composer=null,bloom=null,grade=null,clock=0,frames=0;
+ let composer=null,bloom=null,grade=null,antialias=null,frames=0;
  if(mode!=='off'){
   composer=new EffectComposer(renderer);
   composer.addPass(new RenderPass(scene,camera));
   if(mode==='cinematic'){
    bloom=new UnrealBloomPass(new THREE.Vector2(512,512),.19,.29,.93);
    composer.addPass(bloom);
+   // Render-target multisampling is not assumed: high-end scenes need a real
+   // edge-aware postprocess for fine leaf silhouettes and engraved sculptures.
+   // Software and low-power adapters remain on the cheaper three-pass path.
+   antialias=new ShaderPass(FXAAShader);
+   composer.addPass(antialias);
   }
   grade=new ShaderPass(GRADE_SHADER);
   grade.uniforms.uVignette.value=mode==='cinematic'?.15:.10;
@@ -85,15 +91,20 @@ export function makeCinematicPipeline({renderer,scene,camera,quality='high',adap
  }
  function resize(width,height,ratio=1){
   if(!composer)return;
-  composer.setPixelRatio(Math.min(1.6,ratio));
+  const pixelRatio=Math.min(1.6,Math.max(.6,ratio));
+  const physicalWidth=Math.max(2,Math.floor(width))*pixelRatio;
+  const physicalHeight=Math.max(2,Math.floor(height))*pixelRatio;
+  composer.setPixelRatio(pixelRatio);
   composer.setSize(Math.max(2,Math.floor(width)),Math.max(2,Math.floor(height)));
+  if(antialias)antialias.uniforms.resolution.value.set(1/physicalWidth,1/physicalHeight);
  }
  function dispose(){
   if(!composer)return;
   bloom?.dispose?.();
+  antialias?.dispose?.();
   grade?.dispose?.();
   composer.dispose?.();
  }
  return {mode,render,resize,dispose,
-  stats:()=>({mode,frames,bloom:!!bloom,grading:!!grade,passes:mode==='cinematic'?4:mode==='lite'?3:1})};
+  stats:()=>({mode,frames,bloom:!!bloom,antiAliasing:!!antialias,grading:!!grade,passes:mode==='cinematic'?5:mode==='lite'?3:1})};
 }
