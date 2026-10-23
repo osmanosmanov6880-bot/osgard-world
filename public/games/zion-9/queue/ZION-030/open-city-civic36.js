@@ -173,11 +173,16 @@
          stats.solarPanels++;
        }
      }
-     // Real HVAC motor, duct and ribbed casing, not a single box.
+     // Low-cost emissive shopfront light strips become genuinely visible
+     // after sunset (shared PBR material, no per-building point lights).
+     if(r>.67)piece('base','warm','box',x,Math.min(1.76,h*.34),
+       front+.055,w*.60,.036,.035);
+          // Real HVAC motor, duct and ribbed casing, not a single box.
      if(r>.58){
        piece('base','dark','box',x,roof+.44,z,.35,.22,.32);
        piece('base','steel','cylinder',x,roof+.59,z,.14,.11,.14);
        piece('base','steel','box',x,roof+.32,z+.20,.12,.12,.25);
+       piece('base','led','box',x,roof+.50,z+.172,.11,.025,.024);
        stats.roofModules++;
        if(ultra){
          for(let k=0;k<5;k++){
