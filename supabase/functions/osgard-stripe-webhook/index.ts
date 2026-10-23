@@ -102,11 +102,19 @@ Deno.serve(async (request) => {
 
     // Only FULL refunds are auto-revoked. Handle partial refunds via merchant policy.
     if (event.type === "charge.refunded" || event.type === "charge.dispute.created") {
-      const charge = event.data.object as Stripe.Charge & Stripe.Dispute;
-      const intent = typeof charge.payment_intent === "string" ? charge.payment_intent : charge.payment_intent?.id;
+      let intent = "";
+      if (event.type === "charge.refunded") {
+        const charge = event.data.object as Stripe.Charge;
+        const ref = charge.payment_intent;
+        intent = typeof ref === "string" ? ref : ref?.id || "";
+        if ((charge.amount_refunded || 0) < (charge.amount || 0))
+          return response(200, "Partial refund, entitlement unchanged");
+      } else {
+        const dispute = event.data.object as Stripe.Dispute;
+        const ref = dispute.payment_intent;
+        intent = typeof ref === "string" ? ref : ref?.id || "";
+      }
       if (!intent) return response(200, "No associated game purchase");
-      if (event.type === "charge.refunded" && (charge.amount_refunded || 0) < (charge.amount || 0))
-        return response(200, "Partial refund, entitlement unchanged");
       // Stripe can deliver refund/dispute BEFORE checkout.session.completed.
       // Recover order ownership from server-written PaymentIntent metadata, never client text.
       const paymentIntent = await stripe.paymentIntents.retrieve(intent);
