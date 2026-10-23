@@ -38,6 +38,7 @@
   });
   window.__ZION030_FOCUS_HUD__=Object.freeze({
     state:()=>focused,
-    set:value=>apply(value)
+    set:value=>apply(value),
+    toggle
   });
 })();
