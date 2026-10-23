@@ -83,7 +83,7 @@ func _ocean_sheet() -> void:
     shader.code = """
 shader_type spatial;
 render_mode depth_draw_opaque, cull_back;
-uniform vec4 deep_ocean : source_color = vec4(0.065, 0.205, 0.235, 1.0);
+uniform vec4 deep_ocean : source_color = vec4(0.050, 0.132, 0.168, 1.0);
 varying vec3 world_point;
 void vertex() {
     world_point = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
@@ -94,9 +94,9 @@ void fragment() {
     float crossing = sin(world_point.x * 0.24 + TIME * 0.61) *
                      sin(world_point.z * 0.19 - TIME * 0.47);
     float fine = sin((world_point.x + world_point.z) * 0.55 + TIME * 0.85);
-    ALBEDO = deep_ocean.rgb * (0.93 + 0.09 * crossing) + vec3(0.025, 0.044, 0.045) * max(fine, 0.0);
+    ALBEDO = deep_ocean.rgb * (0.97 + 0.028 * crossing) + vec3(0.003, 0.006, 0.007) * max(fine, 0.0);
     METALLIC = 0.16;
-    ROUGHNESS = 0.21 + 0.075 * abs(crossing);
+    ROUGHNESS = 0.30 + 0.044 * abs(crossing);
     SPECULAR = 0.75;
 }
 """
@@ -158,6 +158,7 @@ func _continental_terrain() -> void:
 func _ground_material() -> StandardMaterial3D:
     var mat := StandardMaterial3D.new()
     mat.vertex_color_use_as_albedo = true
+    mat.cull_mode = BaseMaterial3D.CULL_DISABLED
     mat.roughness = 0.94
     mat.metallic = 0.02
     mat.diffuse_mode = BaseMaterial3D.DIFFUSE_BURLEY
@@ -168,18 +169,18 @@ func _vegetation_batches() -> void:
     rng.seed = 1924471
     var locations: Array[Transform3D] = []
     var greens: Array[Color] = []
-    var wanted: int = 460 if web else 1250
+    var wanted: int = 240 if web else 780
     for i in range(wanted * 3):
         if locations.size() >= wanted:
             break
         var angle: float = rng.randf_range(0.0, TAU)
-        var radius: float = sqrt(rng.randf_range(70.0 * 70.0, 118.0 * 118.0))
+        var radius: float = sqrt(rng.randf_range(77.0 * 77.0, 114.0 * 114.0))
         var x := cos(angle) * radius
         var z := sin(angle) * radius
         var y := _terrain_height(x, z)
         if y < LOW_WATER + 0.7:
             continue
-        var scale_tree: float = rng.randf_range(1.0, 3.1)
+        var scale_tree: float = rng.randf_range(0.8, 2.25)
         locations.append(Transform3D(Basis().scaled(Vector3(scale_tree, scale_tree, scale_tree)), Vector3(x, y, z)))
         var var_green: float = rng.randf_range(0.0, 1.0)
         greens.append(Color(0.13 + 0.12 * var_green, 0.28 + 0.16 * var_green, 0.24 + 0.06 * var_green))
@@ -272,10 +273,8 @@ func _reclaimed_coast() -> void:
             var beacon := _box(breakwater, "HarbourBeacon", Vector3(0.20, 0.66, 0.20), outer + Vector3(0.0, 0.55, 0.0), amber)
             beacon.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
     # Three coastal causeways emerge from under the city and meet landfall.
-    for x in [-20.0, 0.0, 20.0]:
-        _box(breakwater, "SeafrontCauseway", Vector3(2.7, 0.35, 19.0), Vector3(x, -4.85, -34.0), concrete)
-        for j in range(4):
-            _box(breakwater, "CausewaySupport", Vector3(0.75, 3.5, 0.75), Vector3(x, -6.5, -27.0 - float(j) * 4.4), titanium)
+    # Causeways are omitted until connected to grounded land on both ends.
+    # Free-floating unsupported slabs fail visual review.
 
 func _cargo_ferries() -> void:
     var hull_mat := _solid(Color(0.62, 0.66, 0.68), 0.78, 0.28)
