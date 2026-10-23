@@ -53,11 +53,11 @@ jobs:
             npx playwright install --with-deps --no-shell chromium
           fi
       - name: Verify complete classic and R15 INHERIT journeys on desktop and mobile
-        run: npx playwright test --config playwright.ecosystem.config.mjs --grep "INHERIT" --grep-invert "INHERIT R16|INHERIT R17" --workers 2
+        run: npx playwright test --config playwright.ecosystem.config.mjs --grep "INHERIT" --grep-invert "INHERIT R16|INHERIT R17|INHERIT R19" --workers 2
       - name: Prove actual R16 GPU WebGL frames and real fallbacks in Chrome
         env:
           OSGARD_ENABLE_SWIFTSHADER: "1"
-        run: npx playwright test --config playwright.ecosystem.config.mjs --grep "INHERIT R1[67]" --workers 1
+        run: npx playwright test --config playwright.ecosystem.config.mjs --grep "INHERIT R1[679]" --workers 1
       - name: Record real-Chrome CPU and WebGL performance evidence
         env:
           OSGARD_ENABLE_SWIFTSHADER: "1"
