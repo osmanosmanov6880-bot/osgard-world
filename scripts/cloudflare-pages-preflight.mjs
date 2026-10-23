@@ -10,6 +10,7 @@ const required = [
   'games/omega-3d-preview/index.html', 'games/omega-3d-preview/index.js',
   'games/omega-3d-preview/index.wasm', 'games/omega-3d-preview/index.pck', 'games/omega-3d-preview/release.json',
   'games/remix/arena-v2/nebula-3d/index.html', 'games/remix/arena-v2/nebula-3d/index.wasm', 'games/remix/arena-v2/nebula-3d/index.pck',
+  'games/r136-precision/index.html', 'games/r136-precision/index.js', 'games/r136-precision/index.wasm', 'games/r136-precision/index.pck', 'games/r136-precision/release.json',
   'osa-library/index.html', 'osa-library/media-inventory.csv', 'osa-library/media-manifest.json', 'skillcred/index.html', 'privacy/index.html',
   'terms/index.html', 'entertainment/index.html', 'entertainment/noir-auto/index.html',
   'entertainment/noir-auto/en/index.html', 'entertainment/noir-auto/ar/index.html',
@@ -56,7 +57,7 @@ const headers = await readFile(join(root, '_headers'), 'utf8')
 assert.ok(headers.includes('X-Content-Type-Options: nosniff'), '_headers must include nosniff')
 assert.ok(headers.includes('Referrer-Policy: strict-origin-when-cross-origin'), '_headers must include a safe referrer policy')
 assert.ok(headers.includes('/index.html'), '_headers must prevent stale root HTML')
-for (const game of ['null-shift-godot', 'omega-3d-preview', 'remix/arena-v2/nebula-3d']) {
+for (const game of ['null-shift-godot', 'omega-3d-preview', 'remix/arena-v2/nebula-3d', 'r136-precision']) {
   assert.ok(headers.includes('/games/' + game + '/*.wasm'), 'Packaged Godot WASM path is missing for ' + game)
 }
 assert.ok(headers.includes('Content-Encoding: gzip'), 'Packaged Godot WASM must be served with gzip encoding')
