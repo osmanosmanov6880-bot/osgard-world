@@ -24,6 +24,33 @@ async function captureWithFallback(page, destination, errors) {
   } catch (e) {
     errors.push('Compositor screenshot unavailable: ' + String(e.message).slice(0, 180));
   }
+  // Chrome DevTools can capture the software compositor without forcing a
+  // Playwright DOM screenshot, which is known to stall under SwiftShader.
+  try {
+    const cdp = await page.context().newCDPSession(page);
+    try {
+      const response = await Promise.race([
+        cdp.send('Page.captureScreenshot', {
+          format: 'png', captureBeyondViewport: false, fromSurface: false
+        }),
+        new Promise(resolve => setTimeout(() => resolve(null), 12000))
+      ]);
+      if (response?.data) {
+        const raw = Buffer.from(response.data, 'base64');
+        if (raw.length >= 12000) {
+          fs.writeFileSync(destination, raw);
+          return 'cdp-compositor';
+        }
+        errors.push('Chrome DevTools screenshot too small (' + raw.length + ' bytes)');
+      } else {
+        errors.push('Chrome DevTools screenshot timed out (software compositor)');
+      }
+    } finally {
+      await cdp.detach().catch(() => {});
+    }
+  } catch (e) {
+    errors.push('Chrome DevTools capture unavailable: ' + String(e.message).slice(0, 180));
+  }
   try {
     const image = await Promise.race([
       page.evaluate(() => {
@@ -61,7 +88,15 @@ try {
     pages.push(page);
     const errors = [];
     const logs = [];
-    page.on('pageerror', e => errors.push(String(e.message).slice(0, 400)));
+    page.on('pageerror', e => errors.push('JS exception: ' + String(e.message).slice(0, 400)));
+    page.on('requestfailed', req =>
+      errors.push('Request failure: ' + req.url().slice(0, 220) +
+        ' (' + (req.failure()?.errorText || 'unknown') + ')'));
+    page.on('response', response => {
+      if (response.status() >= 400) {
+        errors.push('HTTP ' + response.status() + ': ' + response.url().slice(0, 200));
+      }
+    });
     page.on('console', m => {
       const text = m.text();
       if (m.type() === 'error') errors.push(text.slice(0, 400));
@@ -79,7 +114,15 @@ try {
         canvas_width: canvas?.width ?? 0,
         canvas_height: canvas?.height ?? 0,
         webgl_available: !!(probe.getContext('webgl2') || probe.getContext('webgl')),
-        device_pixel_ratio: window.devicePixelRatio
+        device_pixel_ratio: window.devicePixelRatio,
+        document_state: document.readyState,
+        gpu_reported: (() => {
+          const gl = probe.getContext('webgl2') || probe.getContext('webgl');
+          const ext = gl?.getExtension('WEBGL_debug_renderer_info');
+          return ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : 'masked-or-missing';
+        })(),
+        page_title: document.title,
+        visible_canvas: !!canvas && canvas.getBoundingClientRect().width > 100,
       };
     });
     const tag = vp.width + 'x' + vp.height;

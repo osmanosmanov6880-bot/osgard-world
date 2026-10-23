@@ -307,6 +307,26 @@ func _run() -> void:
         "R14 maximum-quality restored state inconsistent"):return
     if not check(monitor_r11.last_report.is_empty(),
         "R14 CI must not invent physical hardware FPS values"):return
+    # R17: quality is identical but all seven 384px material atlases must
+    # load from actual CI-imported PNG textures in production instead of
+    # generating >1M pixels on the player's WebGL main thread.
+    for kind in 4:
+        var r17_maps: Dictionary = SurfaceLibraryR9Script.maps(kind)
+        for channel in ["albedo", "normal", "orm"]:
+            var map: Texture2D = r17_maps.get(channel)
+            if not check(map != null and map.get_width() == 384 and map.get_height() == 384,
+                "R17 prebaked R9 384px physical texture maps unavailable"):return
+    if not check(SurfaceLibraryR9Script.baked_count() == 4,
+        "R17 R9 WebGL still dynamically computes PBR atlas pixels"):return
+    for profile in 3:
+        var atlas_material: StandardMaterial3D = MaterialFabricR12Script.get_material(profile)
+        if not check(atlas_material.albedo_texture != null and
+            atlas_material.normal_texture != null and
+            atlas_material.ao_texture != null,
+            "R17 R12 loaded physically based texture channels incomplete"):return
+    if not check(MaterialFabricR12Script.baked_count() == 3,
+        "R17 R12 WebGL still dynamically computes PBR atlas pixels"):return
+    print("NEBULA_R17_PBR_IMPORT_SUCCESS profiles=7 png=21 size=384x384")
     var hangar_r15 = world.get_node_or_null("R15_HangarShop")
     if not check(hangar_r15 != null and hangar_r15.tabs.get_tab_count() == 5,
         "R15 in-game ship/weapon/missile/ally/premium shop missing"):return

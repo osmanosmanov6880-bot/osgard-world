@@ -7,6 +7,25 @@ extends RefCounted
 const RESOLUTION: int = 384
 static var _atlases: Dictionary = {}
 static var _coated: Dictionary = {}
+static var _r17_baked_used: Dictionary = {}
+
+static func _r17_baked_atlas(kind: int) -> Dictionary:
+    # Godot imports the generated PNGs into PCK at build time.
+    # In a fresh developer checkout (no baked textures), the original
+    # 384px procedural generator remains a pixel-for-pixel fallback.
+    var atlas: Dictionary = {}
+    for channel in ["albedo", "normal", "orm"]:
+        var file: String = "res://assets/r17_pbr/r9_%d_%s.png" % [kind, channel]
+        if not ResourceLoader.exists(file):
+            return {}
+        var texture: Texture2D = ResourceLoader.load(file) as Texture2D
+        if texture == null or texture.get_width() != RESOLUTION or texture.get_height() != RESOLUTION:
+            return {}
+        atlas[channel] = texture
+    return atlas
+
+static func baked_count() -> int:
+    return _r17_baked_used.size()
 
 static func _hash(x: int, y: int, seed: int) -> float:
     var value: int = (x * 374761393 + y * 668265263 + seed * 1442691) & 2147483647
@@ -16,6 +35,11 @@ static func _hash(x: int, y: int, seed: int) -> float:
 static func _atlas(kind: int) -> Dictionary:
     if _atlases.has(kind):
         return _atlases[kind]
+    var prebuilt: Dictionary = _r17_baked_atlas(kind)
+    if not prebuilt.is_empty():
+        _atlases[kind] = prebuilt
+        _r17_baked_used[kind] = true
+        return prebuilt
     var albedo := Image.create(RESOLUTION, RESOLUTION, false, Image.FORMAT_RGB8)
     var normal := Image.create(RESOLUTION, RESOLUTION, false, Image.FORMAT_RGB8)
     var orm := Image.create(RESOLUTION, RESOLUTION, false, Image.FORMAT_RGB8)

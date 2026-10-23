@@ -6,6 +6,49 @@ extends RefCounted
 const SIZE: int = 384
 static var _materials: Dictionary = {}
 static var _atlas_images: Dictionary = {}
+static var _r17_baked_used: Dictionary = {}
+
+static func _r17_prebuilt(profile: int) -> Dictionary:
+    var atlas: Dictionary = {}
+    for channel in ["albedo", "normal", "orm"]:
+        var file: String = "res://assets/r17_pbr/r12_%d_%s.png" % [profile, channel]
+        if not ResourceLoader.exists(file):
+            return {}
+        var texture: Texture2D = ResourceLoader.load(file) as Texture2D
+        if texture == null or texture.get_width() != SIZE or texture.get_height() != SIZE:
+            return {}
+        atlas[channel] = texture
+    return atlas
+
+static func baked_count() -> int:
+    return _r17_baked_used.size()
+
+static func _r17_finish_material(profile: int,
+            albedo_tex: Texture2D, normal_tex: Texture2D,
+            packed_tex: Texture2D) -> StandardMaterial3D:
+    var mat := StandardMaterial3D.new()
+    mat.resource_name = [
+        "R12 Wire-brushed machined titanium",
+        "R12 Patinated ceramic panels",
+        "R12 Satin carbon composite"
+    ][profile]
+    mat.albedo_texture = albedo_tex
+    mat.albedo_color = Color(0.96, 0.97, 0.98)
+    mat.normal_enabled = true
+    mat.normal_texture = normal_tex
+    mat.normal_scale = 0.48
+    mat.ao_enabled = true
+    mat.ao_texture = packed_tex
+    mat.ao_texture_channel = BaseMaterial3D.TEXTURE_CHANNEL_RED
+    mat.roughness = 1.0
+    mat.roughness_texture = packed_tex
+    mat.roughness_texture_channel = BaseMaterial3D.TEXTURE_CHANNEL_GREEN
+    mat.metallic = 1.0
+    mat.metallic_texture = packed_tex
+    mat.metallic_texture_channel = BaseMaterial3D.TEXTURE_CHANNEL_BLUE
+    mat.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+    mat.uv1_scale = Vector3(2.0, 2.0, 1.0)
+    return mat
 
 static func _noise(x: int, y: int, seed: int) -> float:
     var n: int = (x * 73856093) ^ (y * 19349663) ^ (seed * 83492791)
@@ -13,6 +56,14 @@ static func _noise(x: int, y: int, seed: int) -> float:
     return float(n % 65521) / 65520.0
 
 static func _create(profile: int) -> StandardMaterial3D:
+    # CI-baked PBR images have the same high-resolution pixels as the legacy
+    # generator. Loading avoids nearly half a million Image.set_pixel calls
+    # per texture profile in a player's browser.
+    var prebuilt: Dictionary = _r17_prebuilt(profile)
+    if not prebuilt.is_empty():
+        _r17_baked_used[profile] = true
+        return _r17_finish_material(profile,
+            prebuilt["albedo"], prebuilt["normal"], prebuilt["orm"])
     var albedo := Image.create(SIZE, SIZE, false, Image.FORMAT_RGB8)
     var normal := Image.create(SIZE, SIZE, false, Image.FORMAT_RGB8)
     var orm := Image.create(SIZE, SIZE, false, Image.FORMAT_RGB8)
@@ -82,30 +133,11 @@ static func _create(profile: int) -> StandardMaterial3D:
     normal.generate_mipmaps()
     orm.generate_mipmaps()
     var packed := ImageTexture.create_from_image(orm)
-    var mat := StandardMaterial3D.new()
-    mat.resource_name = [
-        "R12 Wire-brushed machined titanium",
-        "R12 Patinated ceramic panels",
-        "R12 Satin carbon composite"
-    ][profile]
-    mat.albedo_texture = ImageTexture.create_from_image(albedo)
-    mat.albedo_color = Color(0.96, 0.97, 0.98)
-    mat.normal_enabled = true
-    mat.normal_texture = ImageTexture.create_from_image(normal)
-    mat.normal_scale = 0.48
-    mat.ao_enabled = true
-    mat.ao_texture = packed
-    mat.ao_texture_channel = BaseMaterial3D.TEXTURE_CHANNEL_RED
-    mat.roughness = 1.0
-    mat.roughness_texture = packed
-    mat.roughness_texture_channel = BaseMaterial3D.TEXTURE_CHANNEL_GREEN
-    mat.metallic = 1.0
-    mat.metallic_texture = packed
-    mat.metallic_texture_channel = BaseMaterial3D.TEXTURE_CHANNEL_BLUE
-    mat.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
-    mat.uv1_scale = Vector3(2.0, 2.0, 1.0)
     _atlas_images[profile] = [albedo, normal, orm]
-    return mat
+    return _r17_finish_material(profile,
+        ImageTexture.create_from_image(albedo),
+        ImageTexture.create_from_image(normal),
+        packed)
 
 static func get_material(profile: int) -> StandardMaterial3D:
     var id: int = clampi(profile, 0, 2)
