@@ -1,9 +1,9 @@
-/* INHERIT R17 physical-machine benchmark.
+/* INHERIT R18 physical-device benchmark.
  * Execute locally with `npm run qa:inherit-benchmark` and system Chrome.
  * The same script runs on GitHub CI (typically SwiftShader software).
  * The report ALWAYS records the WebGL vendor/model and never calls CPU
- * submission timing "GPU time". Use --require-gpu for honest discrete/
- * integrated GPU acceptance; this fails on SwiftShader and masked devices.
+ * submission timing "GPU time". --require-gpu rejects browser-reported software
+ * renderers but physical GPU identity is not independently attested.
  */
 import {chromium} from '@playwright/test';
 import {spawn} from 'node:child_process';
@@ -12,7 +12,7 @@ import {setTimeout as sleep} from 'node:timers/promises';
 const args=new Set(process.argv.slice(2)),software=args.has('--swiftshader')||
  process.env.OSGARD_ENABLE_SWIFTSHADER==='1';
 const base=process.env.OSGARD_BASE_URL||'http://127.0.0.1:4175';
-const output=process.env.OSGARD_BENCHMARK_OUTPUT||'browser-report/inherit-r17-hardware-profile.json';
+const output=process.env.OSGARD_BENCHMARK_OUTPUT||'browser-report/inherit-r18-local-device-profile.json';
 const serve=args.has('--serve');
 const requireGPU=args.has('--require-gpu');
 const requireWebGL=args.has('--require-webgl')||requireGPU;
@@ -53,11 +53,23 @@ async function profile({name,width,height,dpr}){
   }catch{}
   const before=controller.getPerformanceReport();
   const after=await controller.samplePerformance({minFrames:55,maxWaitMs:13000});
+  // A full opt-in 10-second test on this actual browser/device, NOT an
+  // estimate based on the 30 FPS normal gameplay pacing.
+  let hardwareBenchmark=null;
+  if(gpu.available){
+   const began=controller.startHardwareBenchmark({durationMs:10000});
+   if(began){
+    const deadline=performance.now()+25000;
+    while(!controller.getHardwareBenchmark()&&performance.now()<deadline)
+     await new Promise(resolve=>setTimeout(resolve,250));
+    hardwareBenchmark=controller.getHardwareBenchmark();
+   }
+  }
   return {
    available:gpu.available,active:gpu.active,quality:gpu.quality,
    adapter:gpu.adapter,postFX:gpu.postFX,
    ambientLife:gpu.ambientLife,materials:gpu.materials,
-   caps,before,after,
+   caps,before,after,hardwareBenchmark,
    deviceMemory:navigator.deviceMemory??null,
    platform:navigator.platform??null,userAgent:navigator.userAgent
   };
@@ -88,7 +100,7 @@ try{
   simulatedSoftwareGPU:software,requireGPU,results};
  mkdirSync(output.slice(0,output.lastIndexOf('/'))||'.',{recursive:true});
  writeFileSync(output,JSON.stringify(outputRecord,null,2)+'\n','utf8');
- console.log('INHERIT R17 actual Chrome frame measurements');
+ console.log('INHERIT R18 measured Chrome / local device frame timings');
  for(const res of results){
   const m=res.telemetry.after;
   console.log(JSON.stringify({
@@ -97,15 +109,24 @@ try{
    p95FrameIntervalMs:m.frameIntervalP95Ms,
    p95CpuSubmissionMs:m.cpuSubmissionP95Ms,
    drawCalls:m.renderer?.calls,triangles:m.renderer?.triangles,
-   postFX:res.telemetry.postFX
+   postFX:res.telemetry.postFX,
+   tenSecondBenchmark:res.telemetry.hardwareBenchmark&&{
+    fps:res.telemetry.hardwareBenchmark.averageFps,
+    p95FrameMs:res.telemetry.hardwareBenchmark.frameP95Ms,
+    trueGpuP95Ms:res.telemetry.hardwareBenchmark.gpuP95Ms,
+    gpuTimerSupported:res.telemetry.hardwareBenchmark.gpuTimerAvailable,
+    adapterClassification:res.telemetry.hardwareBenchmark.rendererClassification,
+    hardwareVerified:false
+   }
   }));
  }
  console.log('Benchmark report:',output);
  if(results.some(v=>v.pageErrors.length))throw Error('Browser reported uncaught JS errors');
- if(requireWebGL&&results.some(v=>!v.telemetry.available||v.telemetry.after.samples<12))
+ if(requireWebGL&&results.some(v=>!v.telemetry.available||v.telemetry.after.samples<12||
+  !v.telemetry.hardwareBenchmark||v.telemetry.hardwareBenchmark.samples<45))
   throw Error('Insufficient actual WebGL frames to validate 3D');
  if(requireGPU&&results.some(v=>v.evidence!=='hardware-identified'))
-  throw Error('Hardware GPU not independently identified; SwiftShader/unknown is not accepted');
+  throw Error('Browser did not report a non-software GPU; independently verified hardware identity is unavailable');
 }finally{
  await browser?.close();
  if(proc){proc.kill();await sleep(100);}
