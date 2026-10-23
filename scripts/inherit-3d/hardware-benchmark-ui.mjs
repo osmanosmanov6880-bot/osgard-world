@@ -21,6 +21,12 @@ const LABELS={
   elapsed:'测量',p95:'95%帧',cpu:'CPU',gpu:'GPU',draws:'绘制调用',
   caution:'不会上传；物理显卡身份未经独立核验。'}
 };
+const ADVICE={
+ ru:{'keep-tested-tier':'Выбранное качество подходит','try-balanced':'Попробуйте режим «Баланс» и повторите тест','try-efficient':'Попробуйте режим «Экономия» и повторите тест','reduce-resolution':'Уменьшите разрешение или включите 2D','try-next-tier-and-retest':'Можно проверить более высокое качество повторным тестом','repeat-valid-test':'Для оценки нужен полный тест 10 секунд'},
+ en:{'keep-tested-tier':'Keep the tested quality','try-balanced':'Try Balanced and retest','try-efficient':'Try Efficient and retest','reduce-resolution':'Lower resolution or use 2D','try-next-tier-and-retest':'Try the next quality tier and retest','repeat-valid-test':'Run a complete 10-second test'},
+ zh:{'keep-tested-tier':'保持当前画质','try-balanced':'尝试均衡画质并重新测试','try-efficient':'尝试节能画质并重新测试','reduce-resolution':'降低分辨率或切换2D','try-next-tier-and-retest':'可以测试更高画质','repeat-valid-test':'请完成完整10秒测试'}
+};
+const adviceFor=(language,key)=>ADVICE[language]?.[key]||ADVICE.ru[key]||key;
 const fmt=(x,d=1)=>Number.isFinite(x)?Number(x).toFixed(d):'—';
 export function mountHardwareBenchmark({
  controls,renderer,camera,quality,postFX,viewport,adapter,
@@ -52,7 +58,7 @@ export function mountHardwareBenchmark({
    c.draws+' '+(r.render?.drawCalls??'—'),
    'tris '+(r.render?.triangles??'—'),
    r.qualityTested.toUpperCase(),r.rendererClassification,
-   c.caution].join(' · ');
+   adviceFor(localize(),r.recommendation),c.caution].join(' · ');
  };
  const restore=()=>{
   if(!restored){
