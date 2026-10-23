@@ -61,6 +61,8 @@
      t?.position&&Number.isFinite(t.position.x)&&Number.isFinite(t.position.z)):[];
    stats.authoredStreetTrees=trees.length;
    const dummy=new THREE.Object3D(),leaves=[],branches=[],groundLeaves=[];
+   let quality=lite?'adaptive':'high',raining=false,night=false,
+     elapsed=0,lastFoliageUpdate=0,disposed=false;
    const leavesPerTree=lite?0:ultra?52:20;
    for(let n=0;n<trees.length;n++){
      const tree=trees[n],x=tree.position.x,z=tree.position.z;
@@ -131,8 +133,8 @@
      const image=g.createImageData(width,height),d=image.data;
      for(let y=0;y<height;y++)for(let x=0;x<width;x++){
        const u=x/width,v=y/height,k=(y*width+x)*4;
-       const channel1=Math.exp(-((u-.25-.025*Math.sin(v*15))/.076)**2);
-       const channel2=Math.exp(-((u-.70+.036*Math.sin(v*10))/.048)**2);
+       const channel1=Math.exp(-Math.pow((u-.25-.025*Math.sin(v*15))/.076,2));
+       const channel2=Math.exp(-Math.pow((u-.70+.036*Math.sin(v*10))/.048,2));
        const blotch=hash(x>>2,y>>3,107)*.28+hash(x,y,109)*.09;
        const fade=Math.pow(Math.max(0,Math.sin(Math.PI*v)),.68);
        const dirt=clamp((channel1*.58+channel2*.37)*(.72+blotch)*fade,0,.84);
@@ -179,8 +181,6 @@
      },'rain drips and ageing facades');
      stats.facadeWaterStains=stains.length;
    }
-   let quality=lite?'adaptive':'high',raining=false,night=false,
-     elapsed=0,lastFoliageUpdate=0,disposed=false;
    function syncEnvironment({raining:rain=false,dayMode=0}={}){
      raining=Boolean(rain);night=dayMode===1;
      stats.rain=raining;stats.night=night;
