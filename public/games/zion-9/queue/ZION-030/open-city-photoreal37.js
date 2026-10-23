@@ -33,7 +33,7 @@
     const root=new THREE.Group();root.name='ZION37 / PBR photorealism pipeline';
     scene.add(root);
     const stats={version:VERSION,tier:lite?'LITE':mobile?'MOBILE':'ULTRA',
-      originalPhotoSources:3,photoTexturesLoaded:0,photoTextureErrors:0,
+      originalPhotoSources:3,photoTexturesLoaded:0,photoTextureErrors:0,photoLoadingStarted:false,
       materialFamilies:0,proceduralTextureMaps:0,estimatedTextureBytes:0,
       livePatchedMaterials:0,reflectionProbe:'none',reflectionReady:false,
       heroGlassPanels:0,contactShadows:0,streetGrime:0,drawBatches:0,
@@ -73,7 +73,7 @@
     };
     function author(family){
       if(lite||typeof document==='undefined')return null;
-      const size=ultra?768:256;
+      const size=ultra?512:256;
       const height=new Float32Array(size*size),value=new Float32Array(size*size);
       const familyIndex=families.indexOf(family);
       for(let y=0;y<size;y++)for(let x=0;x<size;x++){
@@ -202,7 +202,11 @@
     // Stream genuine photo-based CC0 material channels when available. These
     // URLs do not use the live metadata API; failed CORS or offline requests
     // leave the full deterministic PBR fallback in place.
-    if(ultra&&THREE.TextureLoader){
+    let photoStarted=false;
+    function activate(){
+      if(photoStarted||disposed||!ultra||!THREE.TextureLoader)return false;
+      photoStarted=true;stats.photoLoadingStarted=true;
+      {
       const loader=new THREE.TextureLoader();
       if(typeof loader.setCrossOrigin==='function')loader.setCrossOrigin('anonymous');
       for(const family of families)for(const [channel,file] of [
@@ -226,6 +230,8 @@
           },undefined,()=>{if(!disposed)stats.photoTextureErrors++;});
         }catch(_){stats.photoTextureErrors++;}
       }
+      }
+      return true;
     }
     // One soft radial contact-shadow atlas. Multiple buildings share a single
     // InstancedMesh draw; these decals never act as collidable or interactive.
@@ -461,7 +467,7 @@
     }
     setQuality(lite?'adaptive':'high');syncEnvironment();
     return Object.freeze({get stats(){return Object.freeze({...stats});},
-      setQuality,syncEnvironment,update,dispose});
+      activate,setQuality,syncEnvironment,update,dispose});
   }
   host.ZION030_PHOTOREAL37=Object.freeze({VERSION,install,photographs});
 })(window);
