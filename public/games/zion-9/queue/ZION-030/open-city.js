@@ -1304,6 +1304,9 @@
   }
   function frame(time) {
     if (!world.active || !world.ready) return;
+    // Photo textures begin only after the player enters the interactive city.
+    // This prevents six CDN downloads from competing with initial page load.
+    if (!world.photoMaterialsRequested) { world.photoMaterialsRequested = true; photorealKit?.activate?.(); }
     const dt = clamp((time - (world.last || time)) / 1000, 0, .06); world.last = time; world.frame++;
     if(!modalOpen())move(dt,time*.001);else world.jumpQueued=false;
     if (world.frame % 9 === 0) { syncGame(); drawMiniMap(); }
