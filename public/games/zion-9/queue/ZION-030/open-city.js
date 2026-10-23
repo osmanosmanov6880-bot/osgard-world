@@ -1297,7 +1297,7 @@
     if (world.frame % 70 === 0 && !world.softwareGL && !reduceMotion.matches) {
       if (world.fpsTime) {
         const fps = ((world.renderedFrameCount||0) - (world.fpsFrames||0)) * 1000 / (time - world.fpsTime);
-        if (fps < 28 && world.gpuScale > .36) {
+        if (fps < (mobile.matches ? 16 : 28) && world.gpuScale > .36) {
           world.gpuScale = Math.max(.36, world.gpuScale * .78);
           world.quality = 'adaptive';
           // LOD downgrade must affect the entire city, not just the new art layer.
