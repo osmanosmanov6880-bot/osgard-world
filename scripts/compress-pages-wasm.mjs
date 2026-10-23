@@ -7,6 +7,7 @@ const root = resolve(process.argv[2] || 'dist')
 const targets = [
   'games/null-shift-godot/index.wasm',
   'games/omega-3d-preview/index.wasm',
+  'games/r136-precision/index.wasm',
   'games/remix/arena-v2/nebula-3d/index.wasm',
 ]
 const assets = []
