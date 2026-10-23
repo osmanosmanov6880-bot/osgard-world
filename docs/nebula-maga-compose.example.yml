@@ -1,0 +1,14 @@
+# Example only. Install as an UNTRACKED PRIVATE override on the actual VPS.
+# Do not deploy automatically; MAGA merchant must be verified before enabling.
+# docker compose -f docker-compose.production.yml -f docker-compose.nebula-private.yml up -d core-api
+services:
+  core-api:
+    environment:
+      OSGARD_NEBULA_PAYMENTS_ENABLED: "0" # Flip to 1 ONLY after checks and backup
+      OSGARD_NEBULA_STRIPE_ACCOUNT_ID: "acct_REPLACE_WITH_VERIFIED_MAGA_ACCOUNT"
+      OSGARD_NEBULA_STRIPE_LIVEMODE: "1"
+      OSGARD_NEBULA_PUBLIC_ORIGIN: "https://osgard.world"
+      OSGARD_NEBULA_STRIPE_KEY_FILE: "/run/nebula/stripe-api-key"
+      OSGARD_NEBULA_STRIPE_WEBHOOK_SECRET_FILE: "/run/nebula/stripe-webhook-secret"
+    volumes:
+      - /etc/osgard/nebula-secrets:/run/nebula:ro

@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#08111e">
+<meta name="description" content="NEBULA / OSGARD secure premium hangar. Real digital items are fulfilled only after a verified Stripe payment.">
+<title>NEBULA · Премиум-ангар</title>
+<link rel="stylesheet" href="./hangar.css">
+<script src="./hangar.js" defer></script>
+</head>
+<body>
+<header class="masthead">
+  <a class="brand" href="./">◈ OSGARD <span>NEBULA</span></a>
+  <span class="overline">АВРОРА / ПРЕМИУМ-АНГАР</span>
+  <a class="back" href="./">← ВЕРНУТЬСЯ В ИГРУ</a>
+</header>
+<main>
+  <section class="hero">
+    <div class="eyebrow">ORBITAL EQUIPMENT DEPOT · 15</div>
+    <h1>Твоя эскадрилья.<br><em>Твои правила.</em></h1>
+    <p>Корабли, оружие, управляемые ракеты, помощники и редкие окраски. Оплата проводится на защищённой странице Stripe, а имущество выдаёт только сервер после проверки платежа.</p>
+    <div class="system-row">
+      <span id="mode" class="pill">ПРОВЕРКА КАССЫ</span>
+      <span id="session-state" class="quiet">Войди, чтобы привязать покупки к аккаунту</span>
+    </div>
+  </section>
+  <section class="access" aria-label="Аккаунт игрока">
+    <div class="section-heading">
+      <div><div class="eyebrow">01 / ДОСТУП</div><h2>Аккаунт пилота</h2></div>
+      <button id="logout" class="secondary" type="button" hidden>ВЫЙТИ</button>
+    </div>
+    <form id="auth-form" autocomplete="on">
+      <label>Логин <input name="username" id="username" autocomplete="username" minlength="3" maxlength="64" pattern="[A-Za-z0-9_.-]+" placeholder="pilot_001" required></label>
+      <label>Пароль <input name="password" id="password" type="password" autocomplete="current-password" minlength="12" maxlength="256" placeholder="Минимум 12 символов" required></label>
+      <button type="submit" id="login">ВОЙТИ</button>
+      <button type="button" id="register" class="secondary">СОЗДАТЬ АККАУНТ</button>
+    </form>
+    <div id="signed-in" class="signed-in" hidden></div>
+    <p class="quiet">Один аккаунт связывает заказ, право владения и историю операций. Секретный ключ Stripe никогда не находится в браузере.</p>
+  </section>
+  <section class="inventory" aria-label="Купленные товары">
+    <div class="section-heading">
+      <div><div class="eyebrow">02 / СОБСТВЕННОСТЬ</div><h2>Мой ангар</h2></div>
+      <button id="refresh" class="secondary" type="button">ОБНОВИТЬ</button>
+    </div>
+    <div id="owned" class="owned">Войди в аккаунт, чтобы загрузить подтверждённые покупки.</div>
+  </section>
+  <section class="market" aria-label="Каталог магазина">
+    <div class="section-heading"><div><div class="eyebrow">03 / ПРИОБРЕСТИ</div><h2>Премиум-каталог</h2></div><span class="smallhint">GBP · РАЗОВЫЙ ПЛАТЁЖ</span></div>
+    <div id="products" class="products"><p>Загружаем каталог с сервера…</p></div>
+  </section>
+  <section class="notice" aria-live="polite">
+    <div class="eyebrow">ПЛАТЁЖНАЯ БЕЗОПАСНОСТЬ</div>
+    <p id="status">Проверяем доступность защищённой кассы…</p>
+    <p class="quiet">Возврат из Stripe не означает успешную покупку: выдача происходит по подписанному webhook и подтверждённому платежу. Если оплата прошла, но товар ещё не появился, нажми «Обновить» — некоторые платёжные способы подтверждаются позже.</p>
+  </section>
+</main>
+<footer><span>OSGARD · NEBULA DIGITAL GOODS</span><span>Операции и возвраты — согласно условиям продавца и законодательству применимой страны.</span></footer>
+</body>
+</html>

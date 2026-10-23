@@ -21,6 +21,9 @@ const EngineeringCampusR12Script = preload("res://scripts/engineering_campus_r12
 const CinematicLightingR12Script = preload("res://scripts/cinematic_lighting_r12.gd")
 const AdaptiveQualityR12Script = preload("res://scripts/adaptive_quality_r12.gd")
 const CinematicPortR14Script = preload("res://scripts/cinematic_port_r14.gd")
+const HangarStoreR15Script = preload("res://scripts/hangar_store_r15.gd")
+const FleetCombatR15Script = preload("res://scripts/fleet_combat_r15.gd")
+const PremiumFulfillmentR15Script = preload("res://scripts/premium_fulfillment_r15.gd")
 const SAVE_PATH = "user://nebula_3d_save.json"
 const SECTOR_COLORS = [Color(0.10,0.68,0.97), Color(0.64,0.35,1.0), Color(0.98,0.73,0.40), Color(1.0,0.46,0.34), Color(0.87,0.27,0.88), Color(0.24,0.92,0.88)]
 const SECTOR_NAMES = ["ПОРТ АВРОРА","НЕОНОВЫЙ КВАРТАЛ","ЦИТАДЕЛЬ","ЧЁРНЫЙ РЫНОК","РАЗЛОМ","НЕКСУС"]
@@ -31,7 +34,11 @@ const MISSIONS = [
     {"title":"СИГНАЛ ПЕРЕХВАТА","hint":"Очисти сектор от трёх пиратских дронов","position":Vector3(1070,19,330),"type":"combat","reward":900},
     {"title":"ВОЗВРАЩЕНИЕ В ПОРТ","hint":"Доставь разведданные обратно в Аврору","position":Vector3(0,16,0),"type":"reach","reward":600},
     {"title":"РАЗЛОМ","hint":"Открой нестабильный навигационный портал","position":Vector3(480,23,940),"type":"reach","reward":1300},
-    {"title":"НЕКСУС","hint":"Сразись с элитной эскадрильей","position":Vector3(1250,26,-730),"type":"combat","reward":2100}
+    {"title":"НЕКСУС","hint":"Отрази элитную эскадрилью Корпорации Хелиос","position":Vector3(1250,26,-730),"type":"combat","reward":2100},
+    {"title":"ПРОТОКОЛ ХЕЛИОС","hint":"Найди зашифрованный терминал в Неоновом квартале","position":Vector3(690,21,-400),"type":"reach","reward":1700},
+    {"title":"ПОХИЩЕННЫЙ КОНВОЙ","hint":"Уничтожь охрану и освободи транспортные суда","position":Vector3(-500,20,670),"type":"combat","reward":2400},
+    {"title":"СЕРДЦЕ РАЗЛОМА","hint":"Доставь стабилизатор в ядро аномалии","position":Vector3(520,24,1010),"type":"reach","reward":2600},
+    {"title":"ПОСЛЕДНИЙ СИГНАЛ","hint":"Разгроми командную группу Хелиос у Нексуса","position":Vector3(1290,28,-780),"type":"combat","reward":4300}
 ]
 
 var rng := RandomNumberGenerator.new()
@@ -75,6 +82,15 @@ var lighting_r12
 var adaptive_r12
 var post_interval_r12: float = 0.0
 var port_r14
+var store_r15
+var fleet_r15
+var owned_r15: Dictionary = {"ship_scout":true}
+var equipped_r15: String = "ship_scout"
+var weapon_r15: String = "weapon_basic"
+var rockets_r15: int = 0
+var wingmen_r15: Array[String] = []
+var premium_r15: Dictionary = {}
+var premium_client_r15
 
 func _ready() -> void:
     rng.seed = 20261022
@@ -82,7 +98,23 @@ func _ready() -> void:
     _build_city()
     _spawn_player()
     _spawn_civilians_and_pirates()
+    fleet_r15 = FleetCombatR15Script.new()
+    fleet_r15.name = "R15_FleetCombat"
+    add_child(fleet_r15)
+    fleet_r15.player_ship = ship
+    fleet_r15.targets = drones
     _make_hud()
+    store_r15 = HangarStoreR15Script.new()
+    store_r15.name = "R15_HangarShop"
+    add_child(store_r15)
+    store_r15.credit_purchase_requested.connect(_r15_buy_credit)
+    store_r15.premium_purchase_requested.connect(_r15_request_checkout)
+    premium_client_r15 = PremiumFulfillmentR15Script.new()
+    premium_client_r15.name = "R15_VerifiedPaymentFulfillment"
+    add_child(premium_client_r15)
+    premium_client_r15.inventory_synced.connect(_r15_premium_synced)
+    premium_client_r15.purchased_missile_authorized.connect(_r15_paid_missile_authorized)
+    premium_client_r15.sync_failed.connect(_r15_sync_failed)
     cinematic_post_r11 = CinematicPostR11Script.new()
     cinematic_post_r11.name = "R11_CinematicPost"
     add_child(cinematic_post_r11)
@@ -97,6 +129,7 @@ func _ready() -> void:
     add_child(adaptive_r12)
     adaptive_r12.quality_requested.connect(_r12_on_auto_quality)
     _load_progress()
+    _r15_apply_loadout()
     _start_mission()
     _show_notice("NEBULA ASCENSION · CINEMATIC 3D")
     get_viewport().size_changed.connect(_fit_hud)
@@ -394,7 +427,7 @@ func _make_hud() -> void:
     hud_status.add_theme_color_override("font_color",Color(0.86,0.95,1.0))
     stack.add_child(hud_status)
     hud_controls = Label.new()
-    hud_controls.text = "WASD полёт · Q/E высота · Shift форсаж · Space огонь · F3 графика · F6 FPS · F7 тест · F10 фото"
+    hud_controls.text = "WASD полёт · Space огонь · R ракета · H ангар · F3 графика · F6 FPS · F7 тест"
     hud_controls.add_theme_font_size_override("font_size",13)
     hud_controls.add_theme_color_override("font_color",Color(0.81,0.91,1.0))
     hud_controls.anchor_top=1.0
@@ -472,13 +505,13 @@ func _process(delta: float) -> void:
     if ship.hull <= 0.0:
         ship.global_position = Vector3(0,20,75)
         ship.velocity = Vector3.ZERO
-        ship.shield = 100.0
-        ship.hull = 100.0
+        ship.shield = fleet_r15.ship_shield_cap()
+        ship.hull = fleet_r15.ship_hull_cap()
         credits = maxi(0,credits-220)
         _show_notice("КОРАБЛЬ ВОССТАНОВЛЕН · -220 CR")
     elif ship.global_position.distance_to(Vector3(0,19,78))<70:
-        ship.shield = minf(100.0,ship.shield+12.0*delta)
-        ship.hull = minf(100.0,ship.hull+4.0*delta)
+        ship.shield = minf(fleet_r15.ship_shield_cap(),ship.shield+12.0*delta)
+        ship.hull = minf(fleet_r15.ship_hull_cap(),ship.hull+4.0*delta)
     _update_hud()
     if is_instance_valid(radar):
         radar.player_position = ship.global_position
@@ -598,7 +631,7 @@ func _on_ship_fire(origin: Vector3, direction: Vector3) -> void:
             best=candidate
     if is_instance_valid(best):
         endpoint=best.global_position
-        best.call("hit",2.0+float(ship.weapon_rank))
+        best.call("hit",fleet_r15.weapon_damage()+float(ship.weapon_rank))
     _laser_effect(origin,endpoint)
 
 func _laser_effect(a: Vector3,b: Vector3) -> void:
@@ -681,6 +714,23 @@ func _unhandled_key_input(event: InputEvent) -> void:
         if event.keycode==KEY_F5:
             _save_progress()
             _show_notice("ИГРА СОХРАНЕНА")
+        elif event.keycode==KEY_H:
+            if store_r15.visible:
+                store_r15.close()
+            elif ship.global_position.distance_to(SECTOR_POSITIONS[0]) <= 150.0:
+                store_r15.open(credits, owned_r15, equipped_r15)
+            else:
+                _show_notice("МАГАЗИН ТОЛЬКО В ПОРТУ АВРОРА")
+        elif event.keycode==KEY_R:
+            if fleet_r15.launch_missile():
+                rockets_r15 = fleet_r15.missiles
+                _save_progress()
+                _show_notice("РАКЕТА ЗАПУЩЕНА · ОСТАЛОСЬ %d" % rockets_r15)
+            elif rockets_r15 <= 0 and int(premium_r15.get("missiles_6",0)) > 0 and is_instance_valid(fleet_r15._nearest_hostile(245.0)) and fleet_r15.cooldown <= 0:
+                premium_client_r15.buy_rocket_consumption()
+                _show_notice("ПРОВЕРЯЕМ ПЛАТНУЮ РАКЕТУ У СЕРВЕРА…")
+            else:
+                _show_notice("НЕТ РАКЕТ ИЛИ ЦЕЛИ В РАДИУСЕ")
         elif event.keycode==KEY_F2:
             lens_mode=(lens_mode+1)%3
             camera_distance=[14.5,23.0,33.0][lens_mode]
@@ -765,6 +815,105 @@ func _upgrade_docked(slot: int) -> void:
     _save_progress()
     _show_notice("АНГАР · УЛУЧШЕНИЕ УСТАНОВЛЕНО")
 
+func _r15_apply_loadout() -> void:
+    fleet_r15.set_loadout(equipped_r15, weapon_r15, rockets_r15, wingmen_r15)
+    if is_instance_valid(store_r15):
+        var visible_owned: Dictionary = owned_r15.duplicate()
+        for paid_sku in premium_r15:
+            if int(premium_r15[paid_sku]) > 0 and paid_sku != "missiles_6":
+                visible_owned[paid_sku] = true
+        store_r15.refresh(credits, visible_owned, equipped_r15)
+
+func _r15_buy_credit(sku: String) -> void:
+    if not is_instance_valid(ship) or ship.global_position.distance_to(SECTOR_POSITIONS[0]) > 150.0:
+        _show_notice("ПОКУПКИ ТОЛЬКО В АВРОРЕ")
+        return
+    for entry in HangarStoreR15Script.CREDIT_ITEMS:
+        if str(entry["id"]) != sku:continue
+        var cost: int = int(entry["cost"])
+        var kind: String = str(entry["kind"])
+        if kind != "ammo" and (owned_r15.has(sku) or int(premium_r15.get(sku,0)) > 0):
+            if kind == "ship":
+                equipped_r15 = sku
+                _r15_apply_loadout()
+                _show_notice("КОРАБЛЬ ВЫБРАН · " + sku)
+            elif kind == "weapon":
+                weapon_r15 = sku
+                _r15_apply_loadout()
+                _show_notice("ОРУЖИЕ УСТАНОВЛЕНО")
+            elif kind == "ally" and not wingmen_r15.has(sku) and wingmen_r15.size() < 2:
+                wingmen_r15.append(sku)
+                _r15_apply_loadout()
+                _show_notice("ПОМОЩНИК ПРИСОЕДИНИЛСЯ")
+            else:
+                _show_notice("УЖЕ КУПЛЕНО")
+            return
+        if credits < cost:
+            _show_notice("НЕ ХВАТАЕТ КРЕДИТОВ · %d CR" % cost)
+            return
+        if kind == "ally" and wingmen_r15.size() >= 2:
+            _show_notice("МАКСИМУМ ДВА ПОМОЩНИКА")
+            return
+        credits -= cost
+        if kind == "ammo":
+            rockets_r15 = mini(999, rockets_r15 + 6)
+        else:
+            owned_r15[sku] = true
+            if kind == "ship":
+                equipped_r15 = sku
+            elif kind == "weapon":
+                weapon_r15 = sku
+            elif kind == "ally":
+                wingmen_r15.append(sku)
+        _r15_apply_loadout()
+        if kind == "ship":
+            ship.hull = fleet_r15.ship_hull_cap()
+            ship.shield = fleet_r15.ship_shield_cap()
+        _save_progress()
+        _show_notice("АНГАР · ПРИОБРЕТЕНО " + sku)
+        return
+    _show_notice("НЕИЗВЕСТНЫЙ ТОВАР")
+
+func _r15_request_checkout(_sku: String) -> void:
+    # The separate account-based shop is allowed to open even when checkout is
+    # disabled. Its buy buttons remain blocked by the server-side catalog.
+    var url: String = "https://osgard.world/games/remix/arena-v2/nebula-3d/hangar.html"
+    if OS.has_feature("web"):
+        JavaScriptBridge.eval("window.location.assign('" + url + "')", true)
+    else:
+        OS.shell_open(url)
+
+func _r15_premium_synced(receipts: Dictionary) -> void:
+    # A Checkout return URL never unlocks goods. Only this authenticated server
+    # inventory response is permitted to change the paid inventory.
+    premium_r15.clear()
+    for sku in receipts:
+        if sku in ["ship_interceptor","ship_guardian","weapon_plasma",
+                   "missiles_6","wingman_escort","wingman_ace",
+                   "skin_obsidian","skin_aurora","hangar_visuals"]:
+            premium_r15[sku] = maxi(0, int(receipts[sku]))
+    if not owned_r15.has(equipped_r15) and int(premium_r15.get(equipped_r15,0)) <= 0:
+        equipped_r15 = "ship_scout"
+    if weapon_r15 != "weapon_basic" and not owned_r15.has(weapon_r15) and int(premium_r15.get(weapon_r15,0)) <= 0:
+        weapon_r15 = "weapon_basic"
+    for i in range(wingmen_r15.size()-1,-1,-1):
+        var wingman: String = wingmen_r15[i]
+        if not owned_r15.has(wingman) and int(premium_r15.get(wingman,0)) <= 0:
+            wingmen_r15.remove_at(i)
+    _r15_apply_loadout()
+    _show_notice("ПРЕМИУМ-АНГАР · ПРАВА ПРОВЕРЕНЫ СЕРВЕРОМ")
+
+func _r15_paid_missile_authorized() -> void:
+    premium_r15["missiles_6"] = maxi(0,int(premium_r15.get("missiles_6",0))-1)
+    fleet_r15.missiles += 1
+    var launched: bool = fleet_r15.launch_missile()
+    rockets_r15 = fleet_r15.missiles
+    _save_progress()
+    _show_notice("РАКЕТА ЗАПУЩЕНА" if launched else "РАКЕТА ДОБАВЛЕНА В ЗАПАС")
+
+func _r15_sync_failed(error: String) -> void:
+    _show_notice("ОПЛАЧЕННЫЕ ПРЕДМЕТЫ · " + error)
+
 func _safe_float(value: Variant, fallback: float) -> float:
     if typeof(value) != TYPE_FLOAT and typeof(value) != TYPE_INT:
         return fallback
@@ -774,7 +923,7 @@ func _safe_float(value: Variant, fallback: float) -> float:
 func _save_progress() -> void:
     var file:=FileAccess.open(SAVE_PATH,FileAccess.WRITE)
     if file==null:return
-    file.store_string(JSON.stringify({"version":1,"credits":credits,"xp":xp,"mission":mission_index,"player_x":ship.global_position.x,"player_y":ship.global_position.y,"player_z":ship.global_position.z,"engine_rank":ship.engine_rank,"weapon_rank":ship.weapon_rank}))
+    file.store_string(JSON.stringify({"version":1,"credits":credits,"xp":xp,"mission":mission_index,"player_x":ship.global_position.x,"player_y":ship.global_position.y,"player_z":ship.global_position.z,"engine_rank":ship.engine_rank,"weapon_rank":ship.weapon_rank,"owned_r15":owned_r15,"equipped_r15":equipped_r15,"weapon_r15":weapon_r15,"rockets_r15":rockets_r15,"wingmen_r15":wingmen_r15}))
     file.close()
 
 func _load_progress() -> void:
@@ -789,6 +938,25 @@ func _load_progress() -> void:
     xp=clampi(int(_safe_float(raw.get("xp",0),0.0)),0,99999999)
     ship.engine_rank=clampi(int(_safe_float(raw.get("engine_rank",0),0.0)),0,4)
     ship.weapon_rank=clampi(int(_safe_float(raw.get("weapon_rank",0),0.0)),0,4)
+    var saved_owned: Variant = raw.get("owned_r15", {})
+    if typeof(saved_owned) == TYPE_DICTIONARY:
+        for entry in saved_owned:
+            if bool(saved_owned[entry]) and str(entry) in [
+                "ship_scout","ship_interceptor","ship_guardian",
+                "weapon_pulse","weapon_plasma","wingman_escort","wingman_ace"]:
+                owned_r15[str(entry)] = true
+    equipped_r15 = str(raw.get("equipped_r15", "ship_scout"))
+    if not owned_r15.has(equipped_r15) or not equipped_r15.begins_with("ship_"):
+        equipped_r15 = "ship_scout"
+    weapon_r15 = str(raw.get("weapon_r15", "weapon_basic"))
+    if weapon_r15 != "weapon_basic" and not owned_r15.has(weapon_r15):
+        weapon_r15 = "weapon_basic"
+    rockets_r15 = clampi(int(_safe_float(raw.get("rockets_r15",0),0.0)),0,999)
+    var saved_allies: Variant = raw.get("wingmen_r15", [])
+    if typeof(saved_allies) == TYPE_ARRAY:
+        for item in saved_allies:
+            if str(item) in ["wingman_escort","wingman_ace"] and owned_r15.has(str(item)) and wingmen_r15.size() < 2:
+                if not wingmen_r15.has(str(item)):wingmen_r15.append(str(item))
     ship.global_position=Vector3(clampf(_safe_float(raw.get("player_x",0),0.0),-1700,1700),clampf(_safe_float(raw.get("player_y",19),19.0),4,160),clampf(_safe_float(raw.get("player_z",78),78.0),-1700,1700))
 
 # Godot 4.7 source contract: procedural skyline, mission radar, enemy weapons, harbor upgrades.
