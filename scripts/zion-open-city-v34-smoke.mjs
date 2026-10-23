@@ -84,6 +84,9 @@ function runArt(opts){
   assert.ok(metrics.windActors>=1)
   assert.ok(metrics.meshInstances>200)
   assert.ok(metrics.drawCallBatches>5&&metrics.drawCallBatches<55)
+  assert.equal(metrics.litFixtures,metrics.facadeDetails>200?136:0,'Two luminous strips for each of the 68 facades')
+  assert.ok(metrics.kineticDrawCallBatches<=105,'GPU batching required for moving foliage, turbines and banners')
+  assert.ok(metrics.treeCrowns>50,'Volumetric animated canopy assets exist')
   assert.ok(scene.children.some(c=>c.name==='ZION34 / human-scale ground architecture'))
   if(opts.softwareGL){
     assert.equal(metrics.tier,'LITE')
