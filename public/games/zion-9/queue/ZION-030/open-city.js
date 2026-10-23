@@ -112,7 +112,7 @@
   const joystick = { x: 0, y: 0, pointer: null, centerX: 0, centerY: 0 };
   const player = { x: 0, z: 0, y: 0, yaw: 0, cameraYaw: 0.35, pitch: 0.28, speed: 0, moving: false, vx:0, vz:0, stamina:100, height:0, vy:0, cameraMode:'chase' };
   const world = { ready: false, active: false, initialised: false, last: 0, frame: 0, assets: [], buildings: [], rings: [], dust: [], foliage: [], lamps: [], pulse: 0, fpsFrames: 0, fpsTime: 0, fpsSample: 0, quality: 'high', gpuScale: 1.35, softwareGL: false, lastRender: 0, navMode: 'main', people: [], traffic: [], contractMarkers: [], dispatchMarkers: [], streetLife: [], jumpQueued:false, car: null, rain: null, dayMode: 0, raining: false, path: [], routeTo: '', pathCell: '' };
-  let scene, camera, renderer, avatar, legL, legR, armL, armR, sun, minimapCtx, targetIndex = -1, hemi, keyLight, blueFill, detailKit = null, cinematicKit = null, landmarkKit = null, streetKit = null;
+  let scene, camera, renderer, avatar, legL, legR, armL, armR, sun, minimapCtx, targetIndex = -1, hemi, keyLight, blueFill, detailKit = null, cinematicKit = null, landmarkKit = null, streetKit = null, atelierKit = null, postFxKit = null, perfKit = null;
   let dragId = null, dragX = 0, dragY = 0, audio, animationId = 0, lastDistrict = '', lastHudUpdate = 0;
   const PROFILE_KEY = 'osgard:zion030:open-city:v28';
   let profile = rules.defaultProfile();
@@ -653,6 +653,8 @@
     cinematicKit?.syncEnvironment({ raining: world.raining, dayMode: world.dayMode });
     landmarkKit?.syncEnvironment({ raining: world.raining, dayMode: world.dayMode });
     streetKit?.syncEnvironment({ raining: world.raining, dayMode: world.dayMode });
+    atelierKit?.syncEnvironment({ raining: world.raining, dayMode: world.dayMode });
+    postFxKit?.syncEnvironment({ raining: world.raining, dayMode: world.dayMode });
     $('oc-time').textContent = isNight ? '☾ НОЧЬ' : isDay ? '☼ ДЕНЬ' : '◐ ВЕЧЕР';
     $('oc-rain').setAttribute('aria-pressed', String(world.raining));
     $('oc-weather-symbol').textContent = world.raining ? '☂' : isNight ? '☾' : '☀';
@@ -670,6 +672,8 @@
     cinematicKit?.setQuality(world.quality);
     landmarkKit?.setQuality(world.quality);
     streetKit?.setQuality(world.quality);
+    atelierKit?.setQuality(world.quality);
+    postFxKit?.setQuality(world.quality);
     $('oc-quality').textContent = world.quality === 'eco' ? '◈ ECO' : (detailKit?.stats.tier === 'ULTRA' ? '◈ ULTRA' : '◈ HIGH');
     resize(); announce(world.quality === 'eco' ? 'Экономичный режим' : 'Улучшенная графика');
   }
@@ -876,6 +880,23 @@
           reducedMotion: reduceMotion.matches, mobile: mobile.matches
         });
       } catch (error) { console.warn('ZION-030 street-level asset fallback', error); }
+      try {
+        if (window.ZION030_ATELIER_PBR) atelierKit = window.ZION030_ATELIER_PBR.install({
+          THREE, scene, rules, softwareGL: world.softwareGL,
+          reducedMotion: reduceMotion.matches, mobile: mobile.matches
+        });
+      } catch (error) { console.warn('ZION-030 PBR surface fallback', error); }
+      try {
+        if (window.ZION030_POSTFX) postFxKit = window.ZION030_POSTFX.create({
+          THREE, renderer, scene, camera, softwareGL: world.softwareGL,
+          reducedMotion: reduceMotion.matches, mobile: mobile.matches
+        });
+      } catch (error) { console.warn('ZION-030 postFX fallback', error); }
+      try {
+        if (window.ZION030_HARDWARE_PERF) perfKit = window.ZION030_HARDWARE_PERF.create({
+          THREE, renderer, scene, shell, softwareGL: world.softwareGL, mobile: mobile.matches
+        });
+      } catch (error) { console.warn('ZION-030 hardware profiler unavailable', error); }
       makeHotMarkers(); makeAvatar(); addLivingWorld(); updateAtmosphere();
       minimapCtx = $('oc-minimap').getContext('2d');
       world.gpuScale = reduceMotion.matches ? .34 : world.softwareGL ? .4 : mobile.matches ? 1.05 : 1.35;
@@ -885,9 +906,13 @@
       cinematicKit?.setQuality(world.quality);
     landmarkKit?.setQuality(world.quality);
     streetKit?.setQuality(world.quality);
+    atelierKit?.setQuality(world.quality);
+    postFxKit?.setQuality(world.quality);
       world.ready = true; resize(); syncGame(); drawMiniMap();
+      atelierKit?.setQuality(world.quality);
+      postFxKit?.setQuality(world.quality);
       window.__ZION030_OPEN_CITY__ = {
-        state: () => ({ ready: world.ready, active: world.active, player: { x: player.x, z: player.z, stamina:player.stamina, height:player.height, cameraMode:player.cameraMode }, mission: game()?.state(), quality: world.quality, driving: Boolean(world.car?.occupied), vehicle: world.car ? { x: world.car.x, z: world.car.z, speed: world.car.speed, battery: world.car.battery } : null, contracts: [...profile.completed], credits: profile.credits, raining: world.raining, dayMode: world.dayMode, dispatch:{done:[...profile.dispatchDone],steps:{...profile.dispatchSteps},active:profile.activeDispatch}, garage:{speed:profile.fastCar,grip:profile.grip,battery:profile.batteryUpgrade}, district:rules.districtAt(player.x,player.z), detail: detailKit?.stats ?? null, cinematic: cinematicKit?.stats ?? null, landmarks: landmarkKit?.stats ?? null, street: streetKit?.stats ?? null }),
+        state: () => ({ ready: world.ready, active: world.active, player: { x: player.x, z: player.z, stamina:player.stamina, height:player.height, cameraMode:player.cameraMode }, mission: game()?.state(), quality: world.quality, driving: Boolean(world.car?.occupied), vehicle: world.car ? { x: world.car.x, z: world.car.z, speed: world.car.speed, battery: world.car.battery } : null, contracts: [...profile.completed], credits: profile.credits, raining: world.raining, dayMode: world.dayMode, dispatch:{done:[...profile.dispatchDone],steps:{...profile.dispatchSteps},active:profile.activeDispatch}, garage:{speed:profile.fastCar,grip:profile.grip,battery:profile.batteryUpgrade}, district:rules.districtAt(player.x,player.z), detail: detailKit?.stats ?? null, cinematic: cinematicKit?.stats ?? null, landmarks: landmarkKit?.stats ?? null, street: streetKit?.stats ?? null, atelier: atelierKit?.stats ?? null, postfx: postFxKit?.stats ?? null, perf: perfKit?.snapshot() ?? null }),
         enter, exit, walk: (dx, dz) => { if (!collides(player.x + dx, player.z + dz)) { player.x += dx; player.z += dz; } },
         drive: toggleCar, time: cycleTime, rain: toggleRain, quality: toggleQuality, gps: toggleNavigation, contract: completeNearbyContract,
         interact, camera:cycleCamera, journal:showJournal, pause:pauseGame, resume:resumeGame, dispatch:advanceNearbyDispatch
@@ -916,6 +941,7 @@
     const cap = world.quality === 'eco' ? Math.min(.55, world.gpuScale) : reduceMotion.matches ? Math.min(.34, world.gpuScale) : world.softwareGL ? Math.min(.4, world.gpuScale) : mobile.matches ? Math.min(1.05, world.gpuScale) : world.gpuScale;
     const dpr = Math.min(window.devicePixelRatio || 1, cap);
     renderer.setPixelRatio(dpr); renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix();
+    postFxKit?.resize();
   }
   function closest() {
     const s = game().state();
@@ -1145,6 +1171,7 @@
     if(Math.abs(fov-camera.fov)>.025){camera.fov=fov;camera.updateProjectionMatrix();}
     updateTraffic(dt);updatePedestrians(dt,t);updateRain(dt);
     streetKit?.update(dt);
+    atelierKit?.update(dt);
     world.rings.forEach((r,i)=>{
       const phase=reduceMotion.matches?0:t*2.2+i;
       r.ring.scale.setScalar(1+Math.sin(phase)*.06);
@@ -1168,7 +1195,12 @@
     if (world.frame % 70 === 0) {
       if (world.fpsTime) {
         const fps = (world.frame - world.fpsFrames) * 1000 / (time - world.fpsTime);
-        if (fps < 28 && world.gpuScale > .36) { world.gpuScale = Math.max(.36, world.gpuScale * .78); world.quality = 'adaptive'; resize(); }
+        if (fps < 28 && world.gpuScale > .36) {
+          world.gpuScale = Math.max(.36, world.gpuScale * .78);
+          world.quality = 'adaptive';
+          atelierKit?.setQuality('adaptive');postFxKit?.setQuality('adaptive');
+          resize();
+        }
       }
       world.fpsTime = time; world.fpsFrames = world.frame;
     }
@@ -1176,7 +1208,9 @@
     const renderEvery = reduceMotion.matches || world.softwareGL ? 500 : mobile.matches ? 50 : 16;
     if (!world.lastRender || time - world.lastRender >= renderEvery) {
       world.lastRender = time;
-      renderer.render(scene, camera);
+      const frameMark=perfKit?.beginRender() ?? null;
+      try { if(postFxKit)postFxKit.render(time*.001); else renderer.render(scene,camera); }
+      finally {perfKit?.endRender(frameMark);}
     }
     animationId = window.requestAnimationFrame(frame);
   }
@@ -1238,7 +1272,7 @@
   shell.querySelectorAll('[data-oc-tool]').forEach(b => b.addEventListener('click', () => { game()?.select(b.dataset.ocTool); syncGame(); }));
   window.addEventListener('keydown', e => {
     if (!world.active || !$('oc-start').hidden || !$('oc-complete').hidden || modalOpen()) return;
-    const gameplayCodes = ['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space','KeyE','KeyF','KeyH','KeyT','KeyP','KeyQ','KeyG','KeyV','KeyJ','KeyM','ShiftLeft','ShiftRight','Digit1','Digit2','Digit3'];
+    const gameplayCodes = ['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space','KeyE','KeyF','KeyH','KeyT','KeyP','KeyQ','KeyG','KeyV','KeyJ','KeyM','ShiftLeft','ShiftRight','Digit1','Digit2','Digit3','KeyB'];
     if (gameplayCodes.includes(e.code)) { e.preventDefault(); e.stopImmediatePropagation(); }
     keys.add(e.code);
     if (e.repeat) return;
@@ -1252,7 +1286,8 @@
     else if (e.code === 'KeyT') cycleTime();
     else if (e.code === 'KeyP') toggleRain();
     else if (e.code === 'KeyQ') toggleQuality();
-    else if (e.code === 'KeyH' && world.car?.occupied) soundSuccess();
+    else if (e.code === 'KeyH') window.__ZION030_FOCUS_HUD__?.toggle?.();
+    else if (e.code === 'KeyB') perfKit?.toggle?.();
     else if (['Digit1', 'Digit2', 'Digit3'].includes(e.code)) game().select(['tree', 'shade', 'water'][Number(e.code.slice(-1)) - 1]);
   }, true);
   window.addEventListener('keyup', e => { keys.delete(e.code); }, true);
