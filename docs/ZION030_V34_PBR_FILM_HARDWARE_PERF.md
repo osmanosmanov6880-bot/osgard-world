@@ -41,7 +41,7 @@ OSGARD_GPU_BENCH_URL="https://osgard.world/games/zion-9/queue/ZION-030/index.htm
   node scripts/zion-v34-hardware-benchmark.mjs
 \`\`\`
 
-The target URL **must actually serve v34** (or a local v34 preview), otherwise the script fails. By default the script rejects any software-only or unknown GPU as non-hardware evidence. The report is saved as timestamped JSON in \`reports/gpu/\`. Set \`OSGARD_MAX_FRAME_P95_MS=33.3\` to enforce a strict desktop timing gate, after first choosing an appropriate target for the hardware class.
+The target URL **must actually serve v34** (or a local v34 preview), otherwise the script fails. The browser alone only reports acceleration; **physicalGpuConfirmed is never set by a web page**. The native benchmark requires BOTH hardware-reported WebGL and an independently enumerated OS GPU device/driver (Linux DRM/NVIDIA, Windows video controller or macOS graphics). Software, unknown or unattested GPU measurements fail closed. The report is saved as timestamped JSON in \`reports/gpu/\`. Set \`OSGARD_MAX_FRAME_P95_MS=33.3\` to enforce a strict desktop timing gate, after first choosing an appropriate target for the hardware class.
 
 A physical device with GPU acceleration is **not connected to the present AI/GitHub CI environment**. GitHub-hosted Chrome may run SwiftShader. A pass in CI is a functional regression, **not** physical-GPU performance certification.
 
@@ -54,3 +54,12 @@ A physical device with GPU acceleration is **not connected to the present AI/Git
 - CI: software-WebGL data cannot be relabeled as real physical-GPU measurements; physical testing remains pending until the hardware CLI actually produces a \`physicalGpuConfirmed: true\` report.
 
 **Definition of done:** successful local smoke + desktop/mobile browser + production SSH checksum + at least one trusted hardware report with concrete frame-time budget. No claim of 4K/60 FPS or AAA-finished status without that evidence.
+
+
+### Physical-GPU runner (opt-in, never substituted with SwiftShader)
+
+A manual GitHub workflow is installed at \`.github/workflows/zion-v34-physical-gpu.yml\`. It requires a **self-hosted Linux runner with label \`zion-gpu\` and physical render devices available to Chrome**, starts an authentic local build, collects WebGL timings and host driver evidence, enforces p95 <= 33.3 ms by default, and uploads machine-generated JSON regardless of gate status. GitHub-hosted CPU Chrome is never counted as successful physical GPU validation. Do not dispatch this workflow until an actual GPU runner has been registered; it cannot create hardware out of a regular VPS.
+
+### Mission-linked environment
+
+The new \`open-city-cooling34.js\` attaches sculpted non-colliding microclimate fixtures, glowing rings, greenery and mist to the **actual three original hot-zone coordinates**. Completing a mission zone reveals that zone's models. LITE and ECO disable particles to protect lower-end frame budgets; existing saves and mission placement rules are unchanged.
