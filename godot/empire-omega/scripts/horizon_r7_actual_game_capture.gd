@@ -61,7 +61,7 @@ func _capture() -> void:
 		Vector3(-107.0,4.8,-104.0),Vector3(-132.0,4.0,-122.0),54.0,48)
 	# Composition B: close vehicle foreground with genuine building facade.
 	await _frame("omega_r7_real_coupe_urban_1600x900.png",
-		Vector3(-119.0,2.8,-104.0),Vector3(-132.0,1.8,-110.0),48.0,40)
+		Vector3(-119.0,2.8,-104.0),Vector3(-132.0,1.6,-103.0),56.0,40)
 	var details: Dictionary = r7.call("diagnostic")
 	var r6: Node = game.world.get_node_or_null("HorizonPhotorealR6")
 	var metrics := {
