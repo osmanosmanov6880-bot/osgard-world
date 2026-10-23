@@ -33,7 +33,11 @@ const MISSIONS = [
     {"title":"СИГНАЛ ПЕРЕХВАТА","hint":"Очисти сектор от трёх пиратских дронов","position":Vector3(1070,19,330),"type":"combat","reward":900},
     {"title":"ВОЗВРАЩЕНИЕ В ПОРТ","hint":"Доставь разведданные обратно в Аврору","position":Vector3(0,16,0),"type":"reach","reward":600},
     {"title":"РАЗЛОМ","hint":"Открой нестабильный навигационный портал","position":Vector3(480,23,940),"type":"reach","reward":1300},
-    {"title":"НЕКСУС","hint":"Сразись с элитной эскадрильей","position":Vector3(1250,26,-730),"type":"combat","reward":2100}
+    {"title":"НЕКСУС","hint":"Отрази элитную эскадрилью Корпорации Хелиос","position":Vector3(1250,26,-730),"type":"combat","reward":2100},
+    {"title":"ПРОТОКОЛ ХЕЛИОС","hint":"Найди зашифрованный терминал в Неоновом квартале","position":Vector3(690,21,-400),"type":"reach","reward":1700},
+    {"title":"ПОХИЩЕННЫЙ КОНВОЙ","hint":"Уничтожь охрану и освободи транспортные суда","position":Vector3(-500,20,670),"type":"combat","reward":2400},
+    {"title":"СЕРДЦЕ РАЗЛОМА","hint":"Доставь стабилизатор в ядро аномалии","position":Vector3(520,24,1010),"type":"reach","reward":2600},
+    {"title":"ПОСЛЕДНИЙ СИГНАЛ","hint":"Разгроми командную группу Хелиос у Нексуса","position":Vector3(1290,28,-780),"type":"combat","reward":4300}
 ]
 
 var rng := RandomNumberGenerator.new()
@@ -833,13 +837,14 @@ func _r15_buy_credit(sku: String) -> void:
             owned_r15[sku] = true
             if kind == "ship":
                 equipped_r15 = sku
-                ship.hull = fleet_r15.ship_hull_cap()
-                ship.shield = fleet_r15.ship_shield_cap()
             elif kind == "weapon":
                 weapon_r15 = sku
             elif kind == "ally":
                 wingmen_r15.append(sku)
         _r15_apply_loadout()
+        if kind == "ship":
+            ship.hull = fleet_r15.ship_hull_cap()
+            ship.shield = fleet_r15.ship_shield_cap()
         _save_progress()
         _show_notice("АНГАР · ПРИОБРЕТЕНО " + sku)
         return
