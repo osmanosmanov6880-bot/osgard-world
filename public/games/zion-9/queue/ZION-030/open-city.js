@@ -121,7 +121,7 @@
   const joystick = { x: 0, y: 0, pointer: null, centerX: 0, centerY: 0 };
   const player = { x: 0, z: 0, y: 0, yaw: 0, cameraYaw: 0.35, pitch: 0.28, speed: 0, moving: false, vx:0, vz:0, stamina:100, height:0, vy:0, cameraMode:'chase' };
   const world = { ready: false, active: false, initialised: false, last: 0, frame: 0, assets: [], buildings: [], rings: [], dust: [], foliage: [], lamps: [], pulse: 0, fpsFrames: 0, fpsTime: 0, fpsSample: 0, quality: 'high', gpuScale: 1.35, softwareGL: false, lastRender: 0, navMode: 'main', people: [], traffic: [], contractMarkers: [], dispatchMarkers: [], streetLife: [], jumpQueued:false, car: null, rain: null, dayMode: 0, raining: false, path: [], routeTo: '', pathCell: '' };
-  let surfaceKit=null,civicKit=null;
+  let surfaceKit=null,civicKit=null,photorealKit=null;
   let scene, camera, renderer, avatar, legL, legR, armL, armR, sun, minimapCtx, targetIndex = -1, hemi, keyLight, blueFill, detailKit = null, cinematicKit = null, landmarkKit = null, streetKit = null, atelierKit = null, postFxKit = null, perfKit = null, coolingKit = null;
   let dragId = null, dragX = 0, dragY = 0, audio, animationId = 0, lastDistrict = '', lastHudUpdate = 0;
   const PROFILE_KEY = 'osgard:zion030:open-city:v28';
@@ -666,6 +666,7 @@
     atelierKit?.syncEnvironment({ raining: world.raining, dayMode: world.dayMode });
     surfaceKit?.syncEnvironment({ raining: world.raining, dayMode: world.dayMode });
     civicKit?.syncEnvironment({ raining: world.raining, dayMode: world.dayMode });
+    photorealKit?.syncEnvironment({ raining: world.raining, dayMode: world.dayMode });
     coolingKit?.syncEnvironment({ raining: world.raining, dayMode: world.dayMode });
     postFxKit?.syncEnvironment({ raining: world.raining, dayMode: world.dayMode });
     $('oc-time').textContent = isNight ? '☾ НОЧЬ' : isDay ? '☼ ДЕНЬ' : '◐ ВЕЧЕР';
@@ -688,6 +689,7 @@
     atelierKit?.setQuality(world.quality);
     surfaceKit?.setQuality(world.quality);
       civicKit?.setQuality(world.quality);
+      photorealKit?.setQuality(world.quality);
     coolingKit?.setQuality(world.quality);
     postFxKit?.setQuality(world.quality);
     $('oc-quality').textContent = world.quality === 'eco' ? '◈ ECO' : (detailKit?.stats.tier === 'ULTRA' ? '◈ ULTRA' : '◈ HIGH');
@@ -961,7 +963,15 @@
       catch(error){console.warn('ZION-030 v35 street material fallback',error);}
       try {if(window.ZION030_CIVIC36)civicKit=window.ZION030_CIVIC36.install({THREE,scene,rules,softwareGL:world.softwareGL,reducedMotion:reduceMotion.matches,mobile:mobile.matches});}
       catch(error){console.warn('ZION-030 v36 civic architecture fallback',error);}
-      makeHotMarkers(); makeAvatar(); addLivingWorld(); updateAtmosphere();
+      makeHotMarkers(); makeAvatar(); addLivingWorld();
+      // Install v37 after the real car/avatar/lighting and all facade meshes exist.
+      try {
+        if(window.ZION030_PHOTOREAL37)photorealKit=window.ZION030_PHOTOREAL37.install({
+          THREE,scene,renderer,rules,car:world.car,avatar,keyLight,hemi,blueFill,
+          softwareGL:world.softwareGL,reducedMotion:reduceMotion.matches,mobile:mobile.matches
+        });
+      }catch(error){console.warn('ZION-030 v37 physically based visual fallback',error);}
+      updateAtmosphere();
       minimapCtx = $('oc-minimap').getContext('2d');
       world.gpuScale = reduceMotion.matches ? .34 : world.softwareGL ? .4 : mobile.matches ? 1.05 : 1.35;
       if (reduceMotion.matches || world.softwareGL) { world.quality = 'adaptive'; $('oc-quality').textContent = '◈ AUTO'; }
@@ -973,19 +983,21 @@
     atelierKit?.setQuality(world.quality);
     surfaceKit?.setQuality(world.quality);
       civicKit?.setQuality(world.quality);
+      photorealKit?.setQuality(world.quality);
     coolingKit?.setQuality(world.quality);
     postFxKit?.setQuality(world.quality);
       world.ready = true; resize(); syncGame(); drawMiniMap();
       atelierKit?.setQuality(world.quality);
     surfaceKit?.setQuality(world.quality);
       civicKit?.setQuality(world.quality);
+      photorealKit?.setQuality(world.quality);
     coolingKit?.setQuality(world.quality);
       postFxKit?.setQuality(world.quality);
       coolingKit?.setQuality(world.quality);
       // Read-only diagnostics and an explicit, opt-in benchmark controller.
       window.__ZION030_PERFORMANCE__=perfKit||null;
       window.__ZION030_OPEN_CITY__ = {
-        state: () => ({ ready: world.ready, active: world.active, player: { x: player.x, z: player.z, stamina:player.stamina, height:player.height, cameraMode:player.cameraMode }, mission: game()?.state(), quality: world.quality, driving: Boolean(world.car?.occupied), vehicle: world.car ? { x: world.car.x, z: world.car.z, speed: world.car.speed, battery: world.car.battery } : null, contracts: [...profile.completed], credits: profile.credits, raining: world.raining, dayMode: world.dayMode, dispatch:{done:[...profile.dispatchDone],steps:{...profile.dispatchSteps},active:profile.activeDispatch}, garage:{speed:profile.fastCar,grip:profile.grip,battery:profile.batteryUpgrade}, district:rules.districtAt(player.x,player.z), detail: detailKit?.stats ?? null, cinematic: cinematicKit?.stats ?? null, landmarks: landmarkKit?.stats ?? null, street: streetKit?.stats ?? null, atelier: atelierKit?.stats ?? null, surfaces:surfaceKit?.stats ?? null, civic:civicKit?.stats ?? null, postfx: postFxKit?.stats ?? null, coolingFx: coolingKit?.stats ?? null, coolingCrownsFaded: world.coolingCrownsFaded||0, cameraOcclusionFallback:Boolean(world.cameraOcclusionFallback), perf: perfKit?.snapshot() ?? null }),
+        state: () => ({ ready: world.ready, active: world.active, player: { x: player.x, z: player.z, stamina:player.stamina, height:player.height, cameraMode:player.cameraMode }, mission: game()?.state(), quality: world.quality, driving: Boolean(world.car?.occupied), vehicle: world.car ? { x: world.car.x, z: world.car.z, speed: world.car.speed, battery: world.car.battery } : null, contracts: [...profile.completed], credits: profile.credits, raining: world.raining, dayMode: world.dayMode, dispatch:{done:[...profile.dispatchDone],steps:{...profile.dispatchSteps},active:profile.activeDispatch}, garage:{speed:profile.fastCar,grip:profile.grip,battery:profile.batteryUpgrade}, district:rules.districtAt(player.x,player.z), detail: detailKit?.stats ?? null, cinematic: cinematicKit?.stats ?? null, landmarks: landmarkKit?.stats ?? null, street: streetKit?.stats ?? null, atelier: atelierKit?.stats ?? null, surfaces:surfaceKit?.stats ?? null, civic:civicKit?.stats ?? null, photoreal:photorealKit?.stats ?? null, postfx: postFxKit?.stats ?? null, coolingFx: coolingKit?.stats ?? null, coolingCrownsFaded: world.coolingCrownsFaded||0, cameraOcclusionFallback:Boolean(world.cameraOcclusionFallback), perf: perfKit?.snapshot() ?? null }),
         enter, exit, walk: (dx, dz) => { if (!collides(player.x + dx, player.z + dz)) { player.x += dx; player.z += dz; } },
         drive: toggleCar, time: cycleTime, rain: toggleRain, quality: toggleQuality, gps: toggleNavigation, contract: completeNearbyContract,
         interact, camera:cycleCamera, journal:showJournal, pause:pauseGame, resume:resumeGame, dispatch:advanceNearbyDispatch
@@ -1273,6 +1285,7 @@
     atelierKit?.update(dt);
     surfaceKit?.update(dt);
     civicKit?.update(dt);
+    photorealKit?.update(dt);
     coolingKit?.update(dt);
     world.rings.forEach((r,i)=>{
       const phase=reduceMotion.matches?0:t*2.2+i;
@@ -1308,6 +1321,7 @@
           atelierKit?.setQuality('adaptive');
           surfaceKit?.setQuality('adaptive');
           civicKit?.setQuality('adaptive');
+          photorealKit?.setQuality('adaptive');
           coolingKit?.setQuality('adaptive');
           postFxKit?.setQuality('adaptive');
           resize();
