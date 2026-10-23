@@ -409,8 +409,9 @@ func _run() -> void:
         "R16 heavy ship upgrade did not restore physical hull limits"):return
     world.ship.hull = 115.0
     world.ship.shield = 105.0
+    world.credits = 1000 # Prior purchases left insufficient funds for a repair.
     world._upgrade_docked(2)
-    if not check(world.ship.hull == 160.0 and world.ship.shield == 140.0,
+    if not check(world.ship.hull == 160.0 and world.ship.shield == 140.0 and world.credits == 400,
         "R16 guardian repairs incorrectly capped at scout hull and shields"):return
     var hangar_solid = world.get_node_or_null("HeroMegadocksR6/R6_EnclosedHangar_00_0/HangarLeftWallCollision")
     if not check(hangar_solid is StaticBody3D, "Hangar collision missing"):return
