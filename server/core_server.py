@@ -248,6 +248,14 @@ class Store:
             elif route=='projects':
                 require(db.execute('SELECT COUNT(*) FROM projects WHERE owner_id=?',(actor,)).fetchone()[0]<100,'Лимит 100 проектов на аккаунт.',status=409)
                 d=initial(payload.get('title'),payload.get('goal'))
+                # Create Studio explicitly supplies edited, validated structure. Never silently discard it.
+                if 'audience' in payload: d['audience']=text(payload['audience'],1000)
+                if 'projectKind' in payload: require(payload['projectKind'] in ('general','software','business','research'),'Неизвестный тип проекта.')
+                for field in ('tasks','acceptance'):
+                    if field in payload:
+                        items=payload[field]
+                        require(isinstance(items,list) and 1<=len(items)<=30,'Нужен список из 1–30 элементов.')
+                        d[field]=[dict(id=uid(),title=text(item,500,2),done=False) for item in items]
                 if payload.get('templateId'):
                     template=db.execute('SELECT data FROM templates WHERE id=? AND owner_id=?',(payload['templateId'],actor)).fetchone();require(template is not None,'Шаблон не найден.','not_found',404)
                     data=json.loads(template['data']);d['tasks']=[dict(id=uid(),title=t,done=False) for t in data['tasks']];d['acceptance']=[dict(id=uid(),title=t,done=False) for t in data['acceptance']]
