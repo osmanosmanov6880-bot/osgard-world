@@ -27,6 +27,9 @@ var source_name: String = ""
 var device_name: String = ""
 var draw_calls_peak: int = 0
 var triangle_peak: int = 0
+var quality_at_start: int = 0
+var profile_switched_during_test: bool = false
+var screenshot_count: int = 0
 
 func _ready() -> void:
     layer = 7
@@ -67,6 +70,8 @@ func _ready() -> void:
 
 func set_quality(mode: int) -> void:
     quality_mode = clampi(mode, 0, 2)
+    if benchmarking and quality_mode != quality_at_start:
+        profile_switched_during_test = true
 
 func toggle_panel() -> void:
     show_live = not show_live
@@ -86,6 +91,8 @@ func _percentile(sorted_values: Array[float], p: float) -> float:
 func start_benchmark() -> void:
     # Never reuse samples from CI/headless or a previous run.
     benchmarking = true
+    quality_at_start = quality_mode
+    profile_switched_during_test = false
     warmup_remaining = WARMUP_SECONDS
     sample_elapsed = 0.0
     frames_drawn = 0
@@ -110,24 +117,39 @@ func _complete() -> void:
         return
     var mean_ms: float = sum_ms / float(valid_count)
     var mean_fps: float = 1000.0 / maxf(0.001, mean_ms)
+    var slow_count: int = maxi(1, int(ceil(float(valid_count) * 0.01)))
+    var slowest_sum: float = 0.0
+    for i in range(valid_count - slow_count, valid_count):
+        slowest_sum += samples_ms[i]
+    var one_pct_low: float = 1000.0 / maxf(0.001, slowest_sum / float(slow_count))
     var p95_ms: float = _percentile(samples_ms, 0.95)
     var p99_ms: float = _percentile(samples_ms, 0.99)
     var vps: Vector2 = get_viewport().get_visible_rect().size
+    var target_fps: float = [60.0, 40.0, 30.0][quality_at_start]
+    var max_p95_ms: float = [20.0, 30.0, 35.0][quality_at_start]
+    var stable_sample: bool = (invalid_frames <= 2 and not profile_switched_during_test)
+    var gate: String = "UNRELIABLE" if not stable_sample else (
+        "MEETS_TARGET" if mean_fps >= target_fps and p95_ms <= max_p95_ms else "BELOW_TARGET")
     last_report = {
-        "schema": "NEBULA_R11_HARDWARE_BENCHMARK",
+        "schema": "NEBULA_R12_HARDWARE_BENCHMARK",
         "date_unix": Time.get_unix_time_from_system(),
         "engine": Engine.get_version_info().get("string", "unknown"),
         "runtime": source_name,
         "adapter_reported": device_name,
         "adapter_note": "Browsers may mask/spoof GPU identity",
-        "quality": quality_mode,
+        "quality": quality_at_start,
+        "quality_changed": profile_switched_during_test,
+        "quality_gate": gate,
+        "target_average_fps": target_fps,
+        "target_p95_frame_ms": max_p95_ms,
         "resolution_width": int(vps.x),
         "resolution_height": int(vps.y),
         "sample_seconds": sample_elapsed,
         "valid_frames": valid_count,
         "excluded_long_frames": invalid_frames,
         "avg_fps": snappedf(mean_fps, 0.1),
-        "one_percent_low_fps": snappedf(1000.0 / maxf(p99_ms, 0.001), 0.1),
+        "one_percent_low_fps": snappedf(one_pct_low, 0.1),
+        "one_percent_low_method": "Inverse average frame interval of slowest one percent, not p99",
         "avg_frame_ms": snappedf(mean_ms, 0.01),
         "p95_frame_ms": snappedf(p95_ms, 0.01),
         "p99_frame_ms": snappedf(p99_ms, 0.01),
@@ -136,14 +158,52 @@ func _complete() -> void:
         "measurement": "Real in-game frame intervals; not a GPU-only timing measurement"
     }
     var formatted: String = JSON.stringify(last_report)
-    print("NEBULA_R11_BENCHMARK_JSON:" + formatted)
-    var file := FileAccess.open("user://nebula_r11_hardware_benchmark.json", FileAccess.WRITE)
+    print("NEBULA_R12_BENCHMARK_JSON:" + formatted)
+    print("NEBULA_R11_BENCHMARK_JSON:" + formatted) # Older browser tools compatibility.
+    var file := FileAccess.open("user://nebula_r12_hardware_benchmark.json", FileAccess.WRITE)
     if file != null:
         file.store_string(formatted)
         file.close()
-    report_label.text = "ЗАМЕР ЗАВЕРШЁН · F9 КОПИРОВАТЬ\n" + (
+    report_label.text = "R12 · " + gate + " · F9 КОПИРОВАТЬ\n" + (
         "СРЕДНИЙ %.1f FPS · 1%% LOW %.1f FPS\n95%% КАДР %.1f МС · 99%% %.1f МС" %
-        [mean_fps, 1000.0 / maxf(0.001, p99_ms), p95_ms, p99_ms])
+        [mean_fps, one_pct_low, p95_ms, p99_ms])
+    _sync_visibility()
+
+func capture_frame() -> void:
+    # Explicit physical-device capture; this is not a CI screenshot.
+    # GPU readback is triggered only on F10 and may be slow on integrated GPUs.
+    await RenderingServer.frame_post_draw
+    var frame: Image = get_viewport().get_texture().get_image()
+    if frame == null or frame.is_empty():
+        report_label.text = "КАДР НЕ ПОЛУЧЕН · ПРОВЕРЬ WEBGL"
+        show_live = true
+        _sync_visibility()
+        return
+    var png: PackedByteArray = frame.save_png_to_buffer()
+    if png.size() < 4096:
+        report_label.text = "КАДР ПУСТОЙ · СНИМОК НЕ ПОДТВЕРЖДЁН"
+        show_live = true
+        _sync_visibility()
+        return
+    screenshot_count += 1
+    var file_name: String = "nebula-r12-frame-%03d.png" % screenshot_count
+    var stored := FileAccess.open("user://" + file_name, FileAccess.WRITE)
+    if stored != null:
+        stored.store_buffer(png)
+        stored.close()
+    if OS.has_feature("web"):
+        # Download the actual Godot viewport PNG using a user-triggered local
+        # Blob/data URL. No telemetry or remote upload is performed.
+        var encoded: String = Marshalls.raw_to_base64(png)
+        var js: String = "(function(){var a=document.createElement('a');" + (
+            "a.download='" + file_name + "';a.href='data:image/png;base64," +
+            encoded + "';document.body.appendChild(a);a.click();a.remove();" +
+            "return 'requested';})()")
+        var requested: Variant = JavaScriptBridge.eval(js, true)
+        report_label.text = "СКРИНШОТ F10 · ЗАПРОС ЗАГРУЗКИ (" + str(requested) + ")"
+    else:
+        report_label.text = "СНИМОК СОХРАНЁН · user://" + file_name
+    show_live = true
     _sync_visibility()
 
 func copy_report() -> void:
@@ -171,7 +231,7 @@ func _draw_overlay() -> void:
     var resolution: Vector2 = get_viewport().get_visible_rect().size
     var quality_text: String = ["MAX", "HIGH", "ECO"][quality_mode]
     stats_label.text = (
-        "NEBULA R11 · REAL DEVICE MONITOR\n" +
+        "NEBULA R12 · REAL DEVICE MONITOR\n" +
         "FPS %.0f    CPU FRAME %.1f МС\n" +
         "DRAW CALLS %d    ПРИМИТИВЫ %d\n" +
         "RENDER %dx%d    КАЧЕСТВО %s\n" +
