@@ -185,6 +185,8 @@ func _run() -> void:
         "R11 autonomous loading transport missing"):return
     if not check(r11_environment.instanced_hardware >= 3300,
         "R11 GPU-batched detailed machinery below target"):return
+    if not check(r11_environment.lod_nodes.size() == 42,
+        "R11 industrial assets must be chunked by district for GPU culling"):return
     if not check(r11_environment.get_node_or_null(
         "R11_DetailDock_00/R11_LandingDockCollision") is StaticBody3D,
         "R11 physical landing collision absent"):return
