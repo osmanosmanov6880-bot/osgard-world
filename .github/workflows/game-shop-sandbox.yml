@@ -20,6 +20,10 @@ jobs:
         run: python3 -m py_compile server/core_game_store.py server/core_server.py scripts/game-shop-smoke.py
       - name: Test prices, signature, paid state, refunds, idempotency
         run: python3 scripts/game-shop-smoke.py -v
+      - name: Validate read-only UK merchant readiness preflight
+        run: |
+          python3 -m py_compile scripts/game-shop-live-preflight.py
+          python3 scripts/game-shop-live-preflight-smoke.py -v
       - name: Assert no production activation
         run: |
           python3 - <<'PY'

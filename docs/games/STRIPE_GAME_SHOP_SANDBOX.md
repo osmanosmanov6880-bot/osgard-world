@@ -13,3 +13,7 @@ Configure signed Stripe webhook to https://your-domain/api/core/game-shop/webhoo
 - For live charges, OSGARD_GAME_SHOP_LIVE_APPROVED=1 and OSGARD_GAME_SHOP_EXPECTED_ACCOUNT_ID=<actual authorized acct_...> must match the configured merchant account. A separate, valid OSGARD_GAME_SHOP_WEBHOOK_SECRET is mandatory for this webhook endpoint.
 - Never switch the shop to live merely because another Commerce module is live. The merchant account owner must authorize sales, tax/VAT handling and refunds. A third party's Stripe account receives funds as merchant of record; connecting it does not transfer payouts to the game developer.
 - Stripe redirection alone does not prove paid entitlement. Out-of-order refunds/disputes cannot re-grant purchases. Concurrent checkout calls use one pending order and stable provider idempotency key.
+
+## How to verify the UK merchant before real charges
+On the protected backend host run `python3 scripts/game-shop-live-preflight.py` with *vault-provided* restricted Stripe LIVE credentials, never in GitHub or game files. This is read-only. It verifies account ID, GB country, `charges_enabled`, `payouts_enabled`, and submitted account details. A passing result is still not a live launch sign-off: verify real webhook delivery, inventory and fulfillment, UK merchant's permission, refunds, consumer rights, and tax obligations.
+The Stripe plugin connection in ChatGPT does **not** install an API key in the game backend.
