@@ -23,7 +23,7 @@ func _run() -> void:
         var cnc:=finish.get_node_or_null("Wave8MachinedContaminment/CoolingManifold_Left/CNC_PressureShell") as MeshInstance3D
         _check(cnc!=null and cnc.mesh is ArrayMesh,"real CNC custom-indexed shell exists")
         if cnc!=null and cnc.mesh is ArrayMesh:
-            _check(cnc.mesh.surface_get_array_len(0)>500,"CNC mechanical shell has geometric density")
+            _check(cnc.mesh.surface_get_array_index_len(0)>1000,"CNC mechanical shell has geometric density")
             var material:=cnc.material_override as StandardMaterial3D
             _check(material!=null and material.albedo_texture!=null,"authored PBR albedo texture imported")
             _check(material!=null and material.normal_texture!=null and material.normal_enabled,"authored micro-normal map imported")
