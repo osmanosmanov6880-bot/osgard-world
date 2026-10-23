@@ -16,6 +16,7 @@ const Wave6Benchmark = preload("res://scripts/wave6_hardware_benchmark.gd")
 const Wave7Lab = preload("res://scripts/wave7_lab.gd")
 const Wave8Finish = preload("res://scripts/wave8_finish.gd")
 const Wave9PrecisionLab = preload("res://scripts/wave9_precision_lab.gd")
+const Wave10ArtDirection = preload("res://scripts/wave10_art_direction.gd")
 const CYAN := Color(0.24, 0.83, 1.0)
 const VIOLET := Color(0.64, 0.43, 1.0)
 const MINT := Color(0.37, 1.0, 0.75)
@@ -109,6 +110,10 @@ func _ready() -> void:
     wave9.configure(self)
     add_child(wave9)
     Wave5Batcher.optimize(self)
+    var wave10 := Wave10ArtDirection.new()
+    wave10.name = "Wave10ArtDirection"
+    wave10.configure(self)
+    add_child(wave10)
     var hardware_bench := Wave6Benchmark.new()
     hardware_bench.name = "Wave6HardwareBenchmark"
     hardware_bench.configure(self, "vector-zero", get_node_or_null("CinematicEnvironment") as WorldEnvironment)
