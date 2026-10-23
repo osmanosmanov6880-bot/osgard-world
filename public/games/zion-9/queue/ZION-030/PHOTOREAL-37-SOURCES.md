@@ -18,7 +18,7 @@ All remote texture URLs are static asset file URLs under `dl.polyhaven.org`. The
 
 - If a source URL fails or the browser is offline, the city retains a **fully authored deterministic procedural albedo/normal/roughness set**. It is not silently replaced with black or untextured geometry.
 - The authentic photo maps are optional asynchronous visual upgrades, **not included within the production archive**. Their availability is reported as `photoreal.photoTexturesLoaded` and `photoTextureErrors`; do not describe the production build as containing those original JPGs.
-- Hardware benchmark reports both materials and GPU identification. `OSGARD_REQUIRE_PHOTO_PBR=1` can fail a strict GPU capture unless at least four photo channels actually loaded.
+- Hardware benchmark reports both materials and GPU identification. `OSGARD_REQUIRE_PHOTO_PBR=1` can fail a strict GPU capture unless all six photographic diffuse/normal channels actually loaded before sampling begins.
 - Texture quality is 768px per procedural map on accelerated desktop (three families, nine maps), 256px on mobile; software/reduced-motion paths avoid photo downloads and texture synthesis. Real photo maps request 1K.
 - PMREM sky reflections are **procedurally constructed**, not an HDRI photograph or traced global illumination.
 - Cinematic clearcoat, shadows and grading are rasterized Three.js features. This is not path tracing, Unreal Nanite, Lumen, MetaHuman, full-scene photogrammetry or AAA-grade photorealism proof.
