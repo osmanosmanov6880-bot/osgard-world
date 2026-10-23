@@ -2,7 +2,7 @@ name: INHERIT real desktop and mobile QA
 
 on:
   pull_request:
-    branches: [master, feature/inherit-r16-real-threejs-world-20261023]
+    branches: [master, feature/inherit-r16-real-threejs-world-20261023, feature/inherit-r22-coastal-atmosphere-pbr-20261023]
     paths:
       - "public/games/inherit/**"
       - "scripts/inherit-3d/**"
@@ -14,6 +14,8 @@ on:
       - "scripts/inherit-r23-cinematic-smoke.mjs"
       - "scripts/inherit-benchmark-gate.mjs"
       - "scripts/inherit-r23-benchmark-gate-smoke.mjs"
+      - "scripts/inherit-r24-ocean-focus-smoke.mjs"
+      - "scripts/inherit-r24-foliage-smoke.mjs"
       - "scripts/inherit-r20-smoke.mjs"
       - "scripts/inherit-device-acceptance.mjs"
       - "scripts/build-inherit-3d.mjs"
@@ -63,7 +65,7 @@ jobs:
       - name: Prove actual R16 GPU WebGL frames and real fallbacks in Chrome
         env:
           OSGARD_ENABLE_SWIFTSHADER: "1"
-        run: npx playwright test --config playwright.ecosystem.config.mjs --grep "INHERIT R1[679]|INHERIT R23" --workers 1
+        run: npx playwright test --config playwright.ecosystem.config.mjs --grep "INHERIT R1[679]|INHERIT R23|INHERIT R24" --workers 1
       - name: Record real-Chrome CPU and WebGL performance evidence
         env:
           OSGARD_ENABLE_SWIFTSHADER: "1"

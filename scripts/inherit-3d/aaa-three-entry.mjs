@@ -30,9 +30,9 @@ const motion=window.matchMedia('(prefers-reduced-motion:reduce)');
 const ELEVATION=.67,ORTHO_HEIGHT=29,MAX_SAVED=lowPower?150:420;
 let quality=lowPower?'low':'high';
 const strings={
- ru:{label:'РЕАЛЬНЫЙ 3D • ЖИВОЙ ОСТРОВ',mode3d:'3D включён',mode2d:'2D карта',orbit:'Кинооблёт',orbitBusy:'Камера в движении',qualityHigh:'Качество: максимум',qualityMedium:'Качество: баланс',qualityLow:'Качество: экономия',enabled:'Объёмный мир включён',disabled:'Двумерная карта включена',unavailable:'WebGL недоступен — оставлена обычная карта',flyby:'Камера показывает остров. Размещение временно приостановлено.',continue:'Можно снова строить мир',hint:'Все предметы и поколения — из вашей настоящей игры'},
- en:{label:'REAL 3D • LIVING ISLAND',mode3d:'3D enabled',mode2d:'2D map',orbit:'Cinematic flyover',orbitBusy:'Camera moving',qualityHigh:'Quality: high',qualityMedium:'Quality: balanced',qualityLow:'Quality: efficient',enabled:'3D world enabled',disabled:'2D map enabled',unavailable:'WebGL unavailable — native map retained',flyby:'Camera flyover. Placement pauses temporarily.',continue:'You can build again',hint:'Every object and generation comes from the real game'},
- zh:{label:'真实3D • 生机岛屿',mode3d:'3D已启用',mode2d:'2D地图',orbit:'电影环绕',orbitBusy:'镜头移动中',qualityHigh:'画质：高',qualityMedium:'画质：均衡',qualityLow:'画质：省电',enabled:'3D世界已启用',disabled:'2D地图已启用',unavailable:'不支持WebGL，保留原始地图',flyby:'镜头环绕期间暂停放置',continue:'可以继续建造',hint:'物件和世代均来自真实存档'}
+ ru:{label:'РЕАЛЬНЫЙ 3D • ЖИВОЙ ОСТРОВ',mode3d:'3D включён',mode2d:'2D карта',orbit:'Кинооблёт',orbitBusy:'Камера в движении',qualityHigh:'Качество: максимум',qualityMedium:'Качество: баланс',qualityLow:'Качество: экономия',enabled:'Объёмный мир включён',disabled:'Двумерная карта включена',unavailable:'WebGL недоступен — оставлена обычная карта',flyby:'Камера показывает остров. Размещение временно приостановлено.',continue:'Можно снова строить мир',hint:'Все предметы и поколения — из вашей настоящей игры',focusOn:'Киноэкран',focusOff:'Вернуться к игре'},
+ en:{label:'REAL 3D • LIVING ISLAND',mode3d:'3D enabled',mode2d:'2D map',orbit:'Cinematic flyover',orbitBusy:'Camera moving',qualityHigh:'Quality: high',qualityMedium:'Quality: balanced',qualityLow:'Quality: efficient',enabled:'3D world enabled',disabled:'2D map enabled',unavailable:'WebGL unavailable — native map retained',flyby:'Camera flyover. Placement pauses temporarily.',continue:'You can build again',hint:'Every object and generation comes from the real game',focusOn:'Cinema view',focusOff:'Back to game'},
+ zh:{label:'真实3D • 生机岛屿',mode3d:'3D已启用',mode2d:'2D地图',orbit:'电影环绕',orbitBusy:'镜头移动中',qualityHigh:'画质：高',qualityMedium:'画质：均衡',qualityLow:'画质：省电',enabled:'3D世界已启用',disabled:'2D地图已启用',unavailable:'不支持WebGL，保留原始地图',flyby:'镜头环绕期间暂停放置',continue:'可以继续建造',hint:'物件和世代均来自真实存档',focusOn:'电影全景',focusOff:'返回游戏'}
 };
 function lang(){const v=window.InheritUI?.getLanguage?.()||d.documentElement.lang?.slice(0,2)||'ru';return strings[v]?v:'ru';}
 function words(){return strings[lang()];}
@@ -41,18 +41,19 @@ const controls=make('div','aaa3d-controls');controls.setAttribute('role','group'
 controls.setAttribute('aria-label','3D world controls');
 const heading=make('span','aaa3d-brand');
 const switcher=make('button','aaa3d-switch'),orbit=make('button','aaa3d-orbit'),detail=make('button','aaa3d-quality'),effects=make('button','aaa3d-fx');
-const monitor=make('button','aaa3d-monitor');
+const monitor=make('button','aaa3d-monitor'),focus=make('button','aaa3d-focus');
 const metrics=make('output','aaa3d-metrics');metrics.hidden=true;
 const live=make('span','aaa3d-live');live.setAttribute('role','status');live.setAttribute('aria-live','polite');
-for(const btn of [switcher,orbit,detail,effects,monitor])btn.type='button';
-controls.append(heading,switcher,orbit,detail,effects,monitor,live,metrics);
+for(const btn of [switcher,orbit,detail,effects,monitor,focus])btn.type='button';
+controls.append(heading,switcher,orbit,detail,effects,monitor,focus,live,metrics);
+focus.setAttribute('aria-pressed','false');
 // Keep the 3D control rail OUTSIDE the island: a formerly absolute overlay
 // intercepted genuine Legacy, research and Atlas buttons on both viewports.
 world.parentElement.insertBefore(controls,world);
 const canvas=make('canvas','aaa3d-canvas');canvas.setAttribute('aria-hidden','true');
 canvas.setAttribute('tabindex','-1');canvas.style.pointerEvents='none';
 island.prepend(canvas);
-const status={available:false,active:false,postFX:'off',adapter:null,materials:null,ambientLife:null,performance:null,frames:0,traces:0,generation:null,quality,season:'',fallback:null,flyby:false,renderer:'WebGL Three.js',detailTiers:{high:0,medium:0,low:0},detailTriangles:0,detailDrawCalls:0,cachedTraces:0,createdTraces:0,heritageDetails:null,coastDetails:null,microclimate:null,surf:null,geology:null,seaStacks:null,skyLighting:null,environmentTier:null,cameraFocus:'island'};
+const status={available:false,active:false,postFX:'off',adapter:null,materials:null,ambientLife:null,performance:null,frames:0,traces:0,generation:null,quality,season:'',fallback:null,flyby:false,renderer:'WebGL Three.js',detailTiers:{high:0,medium:0,low:0},detailTriangles:0,detailDrawCalls:0,cachedTraces:0,createdTraces:0,heritageDetails:null,coastDetails:null,microclimate:null,surf:null,geology:null,seaStacks:null,fineFoliage:null,skyLighting:null,focusMode:false,oceanFade:.66,environmentTier:null,cameraFocus:'island'};
 const frameBudget=makeFrameBudget();
 const autoResolution=makeAdaptiveResolution();
 const traceMotion=makeSavedTraceMotion({maxAnimated:lowPower?18:58});
@@ -76,7 +77,7 @@ window.InheritAAA3D=Object.freeze({
 });
 let renderer,scene,camera,staticWorld,traceRoot,sun,hemi,cold,adapter=null,pipeline=null,skyLighting=null,postWanted=false,adaptivePixelScale=1,monitorOpen=false,lastMetricsUpdate=0,perfLab=null;
 let waterUniforms,raf=0,lastFrame=0,sceneVisible=true,modeEnabled=true,flybyStart=0,flyby=false;
-let signature='',lastSeason='',aspect=1.84,firstDraw=false;
+let signature='',lastSeason='',aspect=1.84,firstDraw=false,focusMode=false;
 const traceCache=new Map(); // Reuse unchanged sculpted meshes across generations and building moves.
 const sceneryCache=new Map(); // Only two explicit quality tiers; no per-frame rebuilding.
 const raycaster=new THREE.Raycaster(),pointer=new THREE.Vector2();
@@ -103,6 +104,16 @@ function configureSkyLighting(){
  skyLighting.setSeason(seasonFromDOM(),scene);
  status.skyLighting=skyLighting.stats();
 }
+function setFocusMode(value){
+ // Optional visual focus only. The native DOM, saves and hit tests are unchanged.
+ // Always leave this mode when Three.js becomes unavailable.
+ const enabled=!!value&&status.available&&status.active;
+ focusMode=enabled;status.focusMode=enabled;
+ d.body.classList.toggle('inherit-r24-focus',enabled);
+ focus.textContent=enabled?words().focusOff:words().focusOn;
+ focus.setAttribute('aria-pressed',String(enabled));
+ if(renderer&&camera&&scene&&status.available)resize();
+}
 function notify(message){live.textContent=message;}
 function updateLabels(){
  const t=words();
@@ -111,6 +122,9 @@ function updateLabels(){
  switcher.setAttribute('aria-label',status.active?t.mode2d:t.mode3d);
  detail.textContent=quality==='high'?t.qualityHigh:quality==='medium'?t.qualityMedium:t.qualityLow;
  effects.textContent=postWanted?fxLabels[lang()].on:fxLabels[lang()].off;
+ focus.textContent=focusMode?t.focusOff:t.focusOn;
+ focus.disabled=!status.active;
+ focus.setAttribute('aria-pressed',String(focusMode));
  effects.disabled=!status.available;
  effects.setAttribute('aria-pressed',String(postWanted));
  monitor.textContent=monitorOpen?'FPS ✕':'FPS';
@@ -127,7 +141,7 @@ function setMode(enabled,reason){
  status.active=next;modeEnabled=next;status.fallback=reason||null;
  island.classList.toggle('aaa3d-active',next);
  world.classList.toggle('aaa3d-active',next);
- if(!next){perfLab?.finish('2d-switch');stop();}
+ if(!next){setFocusMode(false);perfLab?.finish('2d-switch');stop();}
  else{
   resize();syncState(true);renderOnce(performance.now());start();
  }
@@ -166,6 +180,8 @@ function updateEnvironment(){
  hemi.intensity=season==='mist'?1.7:2.2;
  renderer.toneMappingExposure=p.exposure;
  waterUniforms.uDawn.value=p.water;
+ waterUniforms.uHorizonFade.value=season==='mist'?.53:season==='wind'?.70:.66;
+ status.oceanFade=waterUniforms.uHorizonFade.value;
  if(waterUniforms.uWind)waterUniforms.uWind.value=season==='wind'?1.28:season==='mist'?.17:.62;
  const seasonalScene=sceneryCache.get(status.environmentTier);
  seasonalScene?.setSeason?.(season);
@@ -174,6 +190,7 @@ function updateEnvironment(){
  status.surf=seasonalScene?.surf?.stats?.()||status.surf;
  status.geology=seasonalScene?.geology?.stats?.()||status.geology;
  status.seaStacks=seasonalScene?.seaStacks?.stats?.()||status.seaStacks;
+ status.fineFoliage=seasonalScene?.fineFoliage?.stats?.()||status.fineFoliage;
  skyLighting?.setSeason(season,scene);
  status.skyLighting=skyLighting?.stats?.()||status.skyLighting;
 }
@@ -282,6 +299,7 @@ function activateScenery(tier){
  status.surf=built.surf?.stats?.()||null;
  status.geology=built.geology?.stats?.()||null;
  status.seaStacks=built.seaStacks?.stats?.()||null;
+ status.fineFoliage=built.fineFoliage?.stats?.()||null;
  status.environmentTier=tier;
  status.materials=built.surfaceStats;
  status.ambientLife=built.life?.stats()||null;
@@ -401,6 +419,12 @@ detail.addEventListener('click',()=>{
  renderOnce(performance.now());updateLabels();
 });
 orbit.addEventListener('click',doFlyby);
+focus.addEventListener('click',()=>{setFocusMode(!focusMode);notify(words().enabled);});
+d.addEventListener('keydown',event=>{
+ if(!focusMode||event.key!=='Escape'||event.defaultPrevented)return;
+ if(event.target?.closest?.('dialog,[role="dialog"]')||d.querySelector('dialog[open],[role="dialog"][aria-modal="true"]'))return;
+ setFocusMode(false);
+});
 effects.addEventListener('click',()=>{
  if(!status.available)return;
  perfLab?.finish('effects-changed');

@@ -2720,3 +2720,58 @@ test('INHERIT R23 renders sculpted sea stacks and seasonal lighting without game
  await info.attach('INHERIT R23 GPU sea stack environment',{path:shot,contentType:'image/png'});
  expect(errors).toEqual([]);
 });
+
+
+test('INHERIT R24 ocean fades to the real horizon and focus mode preserves gameplay',async({page},info)=>{
+ test.setTimeout(70000);
+ const errors=await prepareStandaloneGame(page);
+ await page.emulateMedia({reducedMotion:'no-preference'});
+ await page.goto('/games/inherit/?lang=ru&render=3d',{waitUntil:'domcontentloaded'});
+ const controls=page.locator('.aaa3d-controls'),focus=page.locator('.aaa3d-focus');
+ await expect(controls).toBeVisible();
+ await expect(focus).toHaveAttribute('aria-pressed','false');
+ const previous=await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()));
+ const state=await page.evaluate(()=>window.InheritAAA3D.getState());
+ if(!state.available){
+  await expect(focus).toBeDisabled();
+  expect(await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()))).toBe(previous);
+  expect(errors).toEqual([]);
+  return;
+ }
+ await expect(focus).toBeEnabled();
+ await page.evaluate(()=>{document.querySelector('#world').dataset.livingSeason='mist'});
+ await expect.poll(()=>page.evaluate(()=>window.InheritAAA3D.getState().oceanFade)).toBe(.53);
+ await page.evaluate(()=>{document.querySelector('#world').dataset.livingSeason='wind'});
+ await expect.poll(()=>page.evaluate(()=>window.InheritAAA3D.getState().oceanFade)).toBe(.70);
+ const foliage=await page.evaluate(()=>window.InheritAAA3D.getState().fineFoliage);
+ expect(foliage).toBeTruthy();
+ if(state.quality==='low')expect(foliage.leaves).toBe(0);
+ else expect(foliage.leaves).toBeGreaterThan(0);
+ expect(foliage.drawCalls).toBeLessThanOrEqual(1);
+ expect(foliage.gameplayWrites).toBe(0);
+ await focus.click();
+ await expect(page.locator('body')).toHaveClass(/inherit-r24-focus/);
+ await expect(focus).toHaveAttribute('aria-pressed','true');
+ await expect(page.locator('.osgard-static-header')).toBeHidden();
+ await expect(page.locator('.aaa3d-benchmark')).toBeHidden();
+ await expect(focus).toBeVisible();
+ expect(await page.locator('#world').evaluate(node=>getComputedStyle(node).position)).toBe('fixed');
+ expect(await page.evaluate(()=>window.InheritAAA3D.getState().focusMode)).toBe(true);
+ const worldWidth=await page.locator('#world').evaluate(node=>node.getBoundingClientRect().width);
+ const viewportWidth=await page.evaluate(()=>innerWidth);
+ expect(Math.abs(worldWidth-viewportWidth)).toBeLessThan(3);
+ const shot=info.outputPath('inherit-r24-cinematic-focus.png');
+ await page.screenshot({path:shot,fullPage:false,animations:'disabled'});
+ await info.attach('INHERIT R24 true WebGL cinematic ocean view',{path:shot,contentType:'image/png'});
+ await page.keyboard.press('Escape');
+ await expect(page.locator('body')).not.toHaveClass(/inherit-r24-focus/);
+ await expect(page.locator('.osgard-static-header')).toBeVisible();
+ await expect(page.locator('.aaa3d-benchmark')).toBeVisible();
+ await expect(focus).toHaveAttribute('aria-pressed','false');
+ if(info.project.name==='mobile'){
+  const height=await controls.evaluate(node=>node.getBoundingClientRect().height);
+  expect(height).toBeLessThan(210);
+ }
+ expect(await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()))).toBe(previous);
+ expect(errors).toEqual([]);
+});

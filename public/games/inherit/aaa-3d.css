@@ -216,3 +216,115 @@ body.living-legacy:is(.inherit-compass-armed,.inherit-network-armed,.inherit-exp
 body.living-legacy:is(.inherit-compass-armed,.inherit-network-armed,.inherit-expedition-armed) #island :is(.inherit-compass-ghost,.inherit-network-ghost,.inherit-expedition-ghost){
  pointer-events:none!important;
 }
+
+
+/* R24 MOBILE COMPOSITION — fewer rows above the actual world.
+ * All native controls remain usable with minimum 44px touch targets. */
+body.living-legacy .aaa3d-focus[aria-pressed=true]{
+ background:linear-gradient(120deg,#edd7a5,#c4a66b)!important;
+ color:#0b2c2b!important;border-color:#fff0c2!important
+}
+@media(max-width:740px){
+ body.living-legacy .app > .aaa3d-controls{
+  display:grid!important;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  align-items:stretch;gap:5px;padding:7px;
+  min-height:0!important;
+ }
+ body.living-legacy .app > .aaa3d-controls .aaa3d-brand{
+  grid-column:span 2;flex:auto;min-width:0;padding:3px;
+  align-self:center;font-size:10px;letter-spacing:.04em
+ }
+ body.living-legacy .app > .aaa3d-controls button{
+  min-height:44px!important;min-width:0!important;width:100%;
+  padding:6px 4px!important;font-size:11px!important;line-height:1.2!important;
+  overflow-wrap:anywhere
+ }
+ body.living-legacy .app > .aaa3d-controls .aaa3d-benchmark{
+  grid-column:1/-1;min-height:44px!important
+ }
+ body.living-legacy .app > .aaa3d-controls .aaa3d-benchmark-copy,
+ body.living-legacy .app > .aaa3d-controls .aaa3d-metrics,
+ body.living-legacy .app > .aaa3d-controls .aaa3d-benchmark-result{
+  grid-column:1/-1
+ }
+ body.living-legacy .app > .aaa3d-controls .aaa3d-live{
+  position:absolute;width:1px;height:1px;overflow:hidden;
+  clip-path:inset(50%);white-space:nowrap;padding:0;margin:-1px
+ }
+}
+/* R24 OPTIONAL CINEMA VIEW — no native game-world mutations.
+ * Full-viewport scene is always user-triggered and Esc is the exit. */
+body.living-legacy.inherit-r24-focus{overflow:hidden!important}
+body.living-legacy.inherit-r24-focus .app>#world{
+ position:fixed!important;inset:0!important;width:100vw!important;
+ height:100dvh!important;min-height:0!important;z-index:999!important;
+ overflow:hidden!important;isolation:isolate
+}
+body.living-legacy.inherit-r24-focus .app>#world>.island{
+ left:50%!important;bottom:6%!important;
+ width:min(1120px,96vw)!important;height:min(80dvh,740px)!important;
+ min-height:0!important;transform:translateX(-50%) rotate(-1deg)!important
+}
+body.living-legacy.inherit-r24-focus #world>.hero,
+body.living-legacy.inherit-r24-focus #world>.hint,
+body.living-legacy.inherit-r24-focus #world>.objective{
+ display:none!important
+}
+body.living-legacy.inherit-r24-focus .app>.aaa3d-controls{
+ position:fixed!important;z-index:1002!important;
+ left:12px!important;right:12px!important;top:12px!important;bottom:auto!important;
+ width:auto!important;max-width:none!important;margin:0!important;
+ box-shadow:0 10px 28px #001821bf;min-height:0!important
+}
+@media(max-width:740px){
+ body.living-legacy.inherit-r24-focus .app>#world>.island{
+  left:50%!important;bottom:12%!important;width:96vw!important;
+  height:70dvh!important
+ }
+ body.living-legacy.inherit-r24-focus .app>.aaa3d-controls{
+  top:auto!important;bottom:8px!important;left:8px!important;right:8px!important;
+  gap:4px;padding:6px!important
+ }
+ body.living-legacy.inherit-r24-focus #world>.inherit-first-steps{display:none!important}
+}
+@media(prefers-reduced-motion:reduce){
+ body.living-legacy.inherit-r24-focus *{scroll-behavior:auto!important}
+}
+
+
+/* R24 VISUAL ACCEPTANCE: real screenshots proved that the existing site
+ * navigation and dynamically injected quest cards obscure the cinematic view.
+ * Hide only while this user-triggered mode is active; no world mutations.
+ * Keep the exit action visible at all times, including 390px devices. */
+body.living-legacy.inherit-r24-focus > .osgard-static-header{
+ display:none!important
+}
+body.living-legacy.inherit-r24-focus .app>header{
+ visibility:hidden!important;pointer-events:none!important
+}
+body.living-legacy.inherit-r24-focus #world > :not(#island):not(.stars):not(.mist):not(.mountain){
+ visibility:hidden!important;pointer-events:none!important
+}
+body.living-legacy.inherit-r24-focus .app>.aaa3d-controls{
+ display:flex!important;justify-content:flex-end!important;
+ width:min(240px,calc(100vw - 24px))!important;
+ max-width:240px!important;min-height:0!important;
+ left:auto!important;right:12px!important;top:12px!important;bottom:auto!important;
+ padding:5px!important;gap:0!important
+}
+body.living-legacy.inherit-r24-focus .app>.aaa3d-controls > :not(.aaa3d-focus){
+ display:none!important
+}
+body.living-legacy.inherit-r24-focus .app>.aaa3d-controls .aaa3d-focus{
+ flex:1!important;min-width:0!important;min-height:46px!important;
+ width:100%!important;font-size:13px!important;white-space:normal
+}
+@media(max-width:740px){
+ body.living-legacy.inherit-r24-focus .app>.aaa3d-controls{
+  left:auto!important;right:10px!important;
+  top:auto!important;bottom:10px!important;
+  width:min(210px,calc(100vw - 20px))!important;
+  max-width:210px!important
+ }
+}

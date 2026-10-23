@@ -8,6 +8,7 @@ import {makeSurfaceMicroclimate} from './surface-microclimate.mjs';
 import {makeShorelineSurf} from './shoreline-surf.mjs';
 import {makeCoastalGeology} from './coastal-geology.mjs';
 import {makeSeaStackEnvironment} from './sea-stack-erosion.mjs';
+import {makeFineFoliage} from './fine-foliage.mjs';
 import {makeSurfaceMaterial,surfacePackStats} from './cinematic-surfaces.mjs';
 import {makeLivingAtmosphere} from './living-atmosphere.mjs';
 import {waterVertex,waterFragment} from './cinematic-water.mjs';
@@ -97,9 +98,9 @@ export function makeArchipelago({quality='high'}={}){
  terrain.add(mesh(cliffGeometry(quality),cliffMat));
  const undershell=mesh(new THREE.CylinderGeometry(18.6,15.2,1.2,12),earthMat);
  undershell.scale.z=1.19;undershell.position.y=-2.5;terrain.add(undershell);
- const sea=new THREE.Mesh(new THREE.PlaneGeometry(140,110,20,20),new THREE.ShaderMaterial({
-  uniforms:{uTime:{value:0},uDawn:{value:.53},uWind:{value:.58}},
-  vertexShader:waterVertex,fragmentShader:waterFragment,side:THREE.DoubleSide,depthWrite:true
+ const sea=new THREE.Mesh(new THREE.PlaneGeometry(140,110,quality==='high'?42:quality==='medium'?30:20,quality==='high'?34:quality==='medium'?24:20),new THREE.ShaderMaterial({
+  uniforms:{uTime:{value:0},uDawn:{value:.53},uWind:{value:.58},uHorizonFade:{value:.66}},
+  vertexShader:waterVertex,fragmentShader:waterFragment,side:THREE.DoubleSide,transparent:true,depthWrite:false,depthTest:true
  }));
  sea.rotation.x=-Math.PI/2;sea.position.y=-2.21;terrain.add(sea);
  const surf=makeShorelineSurf({quality});
@@ -152,6 +153,8 @@ export function makeArchipelago({quality='high'}={}){
    dummy.updateMatrix();branchInst.setMatrixAt(i*branchPerTree+k,dummy.matrix);
   }
  }
+ const fineFoliage=makeFineFoliage({quality,trees,registerWind:life.addWindMaterial});
+ terrain.add(fineFoliage.root);
  trunkInst.instanceMatrix.needsUpdate=true;crownInst.instanceMatrix.needsUpdate=true;
  if(crownInst.instanceColor)crownInst.instanceColor.needsUpdate=true;
  terrain.add(trunkInst,crownInst);
@@ -282,9 +285,10 @@ export function makeArchipelago({quality='high'}={}){
   surf.setSeason(season);
   geology.setSeason(season);
   seaStacks.setSeason(season);
+  fineFoliage.setSeason(season);
   return seasonalWetness;
  }
  setSeason('tide');
- return {root:terrain,waterUniforms:sea.material.uniforms,landmarks,heritage,life,microBiomes,microclimate,surf,geology,seaStacks,
+ return {root:terrain,waterUniforms:sea.material.uniforms,landmarks,heritage,life,microBiomes,microclimate,surf,geology,seaStacks,fineFoliage,
   setSeason,getWetness:()=>seasonalWetness,surfaceStats:surfacePackStats()};
 }
