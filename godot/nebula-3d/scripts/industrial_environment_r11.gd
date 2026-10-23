@@ -187,12 +187,14 @@ func _make_cart(root: Node3D, bay: int) -> void:
 
 func build(centres: Array) -> void:
     var deck_mesh: ArrayMesh = _sculpted_landing_deck()
-    var struts: Array[Transform3D] = []
-    var vents: Array[Transform3D] = []
-    var markings: Array[Transform3D] = []
-    var cargo: Array[Transform3D] = []
-    var bolts: Array[Transform3D] = []
     for sector in centres.size():
+        # Separate sector MultiMeshes: GPU frustum/distance culling can reject
+        # distant districts instead of treating the entire open world as one AABB.
+        var struts: Array[Transform3D] = []
+        var vents: Array[Transform3D] = []
+        var markings: Array[Transform3D] = []
+        var cargo: Array[Transform3D] = []
+        var bolts: Array[Transform3D] = []
         var center: Vector3 = centres[sector]
         for direction in [-1.0, 1.0]:
             var bay_id: int = sector * 2 + (0 if direction < 0.0 else 1)
@@ -250,11 +252,11 @@ func build(centres: Array) -> void:
                     cargo.append(Transform3D(Basis.IDENTITY.scaled(
                                  Vector3(3.1, 2.4, 3.7)), pos))
             docking_decks += 1
-    _batch("R11_IndustrialPerimeterSupports", struts, steel)
-    _batch("R11_DeckDrainageGrilles", vents, graphite)
-    _batch("R11_WeatheredApproachGuides", markings, copper)
-    _batch("R11_InstancedCargoModules", cargo, deck_material)
-    _batch("R11_RivetAndBoltGrid", bolts, steel)
+        _batch("R11_D%02d_IndustrialPerimeterSupports" % sector, struts, steel)
+        _batch("R11_D%02d_DeckDrainageGrilles" % sector, vents, graphite)
+        _batch("R11_D%02d_WeatheredApproachGuides" % sector, markings, copper)
+        _batch("R11_D%02d_InstancedCargoModules" % sector, cargo, deck_material)
+        _batch("R11_D%02d_RivetAndBoltGrid" % sector, bolts, steel)
     set_quality(0)
 
 func set_quality(mode: int) -> void:
