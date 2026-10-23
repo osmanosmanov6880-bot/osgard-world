@@ -1,18 +1,19 @@
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
-import { ArrowDown, ArrowRight, ArrowUpRight, Bookmark, Box, ChevronLeft, ChevronRight, Film, Gamepad2, InfinityIcon, Layers3, Orbit, ShieldCheck } from './PlayIcons'
-import { getPlayGame, playGames } from './redesignCatalog'
+import { ArrowDown, ArrowRight, ArrowUpRight, Bookmark, Box, Film, Gamepad2, InfinityIcon, Layers3, Orbit, ShieldCheck } from './PlayIcons'
+import { playGames } from './redesignCatalog'
 import { PLAY_COLLECTION_KEY, emptyPlayCollection, parsePlayCollection, toggleFavorite } from './playCollection'
 import type { PlayCollection } from './playCollection'
 import { playCatalogHref, readPlayFilters } from './playFilters'
 import { replaceBrowserUrl } from './browserNavigation'
-import { FEATURED_WORLD_IDS, PLAY_ART_ROOT } from './playCinematicData'
-import PlayWorldCard from './PlayWorldCard'
+import { PLAY_ART_ROOT } from './playCinematicData'
 import { usePlayMotion } from './PlayMotion'
 import { magnet, resetMagnet } from './playButtonMotion'
 import './playCinematic.css'
 
 const PlayExploreSections = lazy(() => import('./PlayExploreSections'))
+const PlayFeaturedSection = lazy(() => import('./PlayFeaturedSection'))
+const PlayPartnerIntro = lazy(() => import('./PlayPartnerIntro'))
 
 function exploreAnchor(hash: string) {
   return /^#(catalog|experience|discover|guest-access)$/.exec(hash)?.[1] || ''
@@ -20,7 +21,6 @@ function exploreAnchor(hash: string) {
 
 const ids = playGames.map(game => game.id)
 const genres = [...new Set(playGames.map(game => game.genre))]
-const featuredWorlds = FEATURED_WORLD_IDS.map(id => getPlayGame(id)).filter(game => game !== undefined)
 
 function loadCollection(): PlayCollection {
   const current = localStorage.getItem(PLAY_COLLECTION_KEY)
@@ -57,7 +57,6 @@ export default function PlayHome({ partners = false }: { partners?: boolean }) {
   const [exploreReady, setExploreReady] = useState(false)
   const [collection, setCollection] = useState<PlayCollection>(emptyPlayCollection)
   const [message, setMessage] = useState('')
-  const [featuredOffset, setFeaturedOffset] = useState(0)
   const [artState, setArtState] = useState<'loading' | 'loaded' | 'failed'>('loading')
   usePlayMotion(page)
 
@@ -141,18 +140,10 @@ export default function PlayHome({ partners = false }: { partners?: boolean }) {
     }
   }
 
-  if (partners) return <main className="brand-container play-partners">
-    <section className="brand-section"><p className="brand-eyebrow">OSGARD PLAY / PARTNERS</p>
-      <h1>Сначала подходящий формат.<br />Потом — интеграция.</h1>
-      <p className="brand-lead">Обсуждаем брендированные испытания, отдельные игровые миры и размещения после сессии. Это приглашение к разговору, а не предложение действующей рекламной сети.</p>
-      <div className="brand-actions"><a className="brand-button primary" href="/#contact">Подготовить бриф →</a><a className="brand-button" href="/play">Вернуться в каталог</a></div>
-    </section><section className="brand-section"><h2>Что потребуется согласовать</h2><ol>
-      <li>Аудитория, задача и содержание интеграции.</li><li>Платформы, управление и требования к игровому сервису.</li>
-      <li>Доступность, отсутствие помех игровому управлению и маркировка.</li><li>События измерения, условия кампании и техническая проверка.</li>
-    </ol><a className="brand-text-link" href="/games/partners/">Существующий партнёрский маршрут ↗</a></section>
-  </main>
+  if (partners) return <Suspense fallback={<main className="brand-container play-partners"><h1>OSGARD PLAY</h1><p>Загружаем информацию для партнёров…</p></main>}>
+    <PlayPartnerIntro />
+  </Suspense>
 
-  const selectedWorlds = Array.from({ length: 3 }, (_, index) => featuredWorlds[(featuredOffset + index) % featuredWorlds.length])
 
   return <main className="play-universe" ref={page} data-art-state={artState} data-hero-visible="true">
     <section className="cp-hero" aria-labelledby="play-title">
@@ -208,21 +199,12 @@ export default function PlayHome({ partners = false }: { partners?: boolean }) {
       </div>
     </div>
 
-    <section id="featured" className="cp-section cp-container cp-featured" aria-labelledby="featured-title" data-reveal>
-      <div className="cp-section-top">
-        <div><p className="cp-eyebrow">ИЗБРАННЫЕ МИРЫ</p><h2 id="featured-title">ИССЛЕДУЙ. ИГРАЙ. <span>ОТКРЫВАЙ.</span></h2></div>
-        <div className="cp-featured-navigation"><p>Разные жанры. Собственные правила.<br />Твой следующий мир — здесь.</p>
-          <button type="button" aria-label="Предыдущие избранные миры" onClick={() => setFeaturedOffset(previous => (previous + featuredWorlds.length - 1) % featuredWorlds.length)}><ChevronLeft aria-hidden="true" /></button>
-          <button type="button" aria-label="Следующие избранные миры" onClick={() => setFeaturedOffset(previous => (previous + 1) % featuredWorlds.length)}><ChevronRight aria-hidden="true" /></button>
-        </div>
-      </div>
-      <div className="cp-feature-grid">
-        {selectedWorlds.map(item => <PlayWorldCard key={item.id} game={item} filters={filters}
-          index={FEATURED_WORLD_IDS.indexOf(item.id as typeof FEATURED_WORLD_IDS[number])}
-          featured favorite={collection.favorites.includes(item.id)} onFavorite={() => mutate(previous => toggleFavorite(previous, item.id))} />)}
-      </div>
-      <p className="cp-art-disclosure">Обложки — художественные иллюстрации миров. Графика и возможности каждой игры показаны при запуске.</p>
-    </section>
+    <Suspense fallback={<section id="featured" className="cp-section cp-container cp-featured" aria-label="Избранные миры">
+      <p className="cp-explore-loading" role="status">Загружаем избранные миры…</p>
+    </section>}>
+      <PlayFeaturedSection filters={filters} collection={collection}
+        onFavorite={id => mutate(previous => toggleFavorite(previous, id))} />
+    </Suspense>
 
     <div className="cp-explore" ref={exploration} data-explore-state={exploreReady ? 'ready' : exploreRequested ? 'requested' : 'deferred'}>
       {exploreRequested ? <Suspense fallback={<div className="cp-explore-placeholder"><p className="cp-explore-loading" role="status" aria-live="polite"><Orbit aria-hidden="true" /> Загружаем миры и каталог…</p></div>}>
