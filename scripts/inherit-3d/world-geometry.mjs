@@ -5,6 +5,8 @@ import {makeHeroTree,makeTrace} from './trace-models.mjs';
 import {makeHeritageEnvironment} from './heritage-environment.mjs';
 import {makeCoastalMicroBiomes} from './coastal-micro-biomes.mjs';
 import {makeSurfaceMicroclimate} from './surface-microclimate.mjs';
+import {makeShorelineSurf} from './shoreline-surf.mjs';
+import {makeCoastalGeology} from './coastal-geology.mjs';
 import {makeSurfaceMaterial,surfacePackStats} from './cinematic-surfaces.mjs';
 import {makeLivingAtmosphere} from './living-atmosphere.mjs';
 import {waterVertex,waterFragment} from './cinematic-water.mjs';
@@ -79,16 +81,7 @@ function makeRoad(){
  const road=ribbon(pts,1.25,new THREE.MeshStandardMaterial({color:0x8c866d,roughness:.98}));
  road.position.y=.06;road.castShadow=false;return road;
 }
-function makeBeachFoam(){
- const pts=[],segments=120;
- for(let i=0;i<segments;i++){
-  const a=i/segments*2*Math.PI,p=coastline(a),q=coastline((i+1)/segments*2*Math.PI);
-  if(i%3===0)continue;
-  pts.push(p.x*1.009,-1.9,p.z*1.015,q.x*1.011,-1.9,q.z*1.015);
- }
- const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(pts,3));
- return new THREE.LineSegments(geo,new THREE.LineBasicMaterial({color:0xe3e5ce,transparent:true,opacity:.6,depthWrite:false}));
-}
+// Flat outline replaced by a physical animated coastal wash (R21).
 export function makeArchipelago({quality='high'}={}){
  const terrain=new THREE.Group();terrain.name='Original playable 3D island';
  const life=makeLivingAtmosphere({quality});
@@ -108,7 +101,10 @@ export function makeArchipelago({quality='high'}={}){
   vertexShader:waterVertex,fragmentShader:waterFragment,side:THREE.DoubleSide,depthWrite:true
  }));
  sea.rotation.x=-Math.PI/2;sea.position.y=-2.21;terrain.add(sea);
- terrain.add(makeBeachFoam(),makeRiver(),makeRoad());
+ const surf=makeShorelineSurf({quality});
+ terrain.add(surf.root,makeRiver(),makeRoad());
+ const geology=makeCoastalGeology({quality});
+ terrain.add(geology.root);
  const layout=vegetation(173,quality==='low'?34:quality==='medium'?57:91);
  const trees=layout.filter(x=>x.type==='tree'),bushes=layout.filter(x=>x.type==='bush');
  // Art-director upgrade: foliage layers, tapered trunks and visible lower
@@ -280,9 +276,11 @@ export function makeArchipelago({quality='high'}={}){
   earthMat.roughness=.96-seasonalWetness*.24;
   microBiomes.setSeason(season);
   microclimate.setSeason(season);
+  surf.setSeason(season);
+  geology.setSeason(season);
   return seasonalWetness;
  }
  setSeason('tide');
- return {root:terrain,waterUniforms:sea.material.uniforms,landmarks,heritage,life,microBiomes,microclimate,
+ return {root:terrain,waterUniforms:sea.material.uniforms,landmarks,heritage,life,microBiomes,microclimate,surf,geology,
   setSeason,getWetness:()=>seasonalWetness,surfaceStats:surfacePackStats()};
 }
