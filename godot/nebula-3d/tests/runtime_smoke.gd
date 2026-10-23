@@ -305,6 +305,39 @@ func _run() -> void:
         "R14 maximum-quality restored state inconsistent"):return
     if not check(monitor_r11.last_report.is_empty(),
         "R14 CI must not invent physical hardware FPS values"):return
+    var hangar_r15 = world.get_node_or_null("R15_HangarShop")
+    if not check(hangar_r15 != null and hangar_r15.tabs.get_tab_count() == 5,
+        "R15 in-game ship/weapon/missile/ally/premium shop missing"):return
+    if not check(world.MISSIONS.size() >= 10, "R15 storyline is shorter than ten missions"):return
+    var combat_r15 = world.get_node_or_null("R15_FleetCombat")
+    if not check(combat_r15 != null, "R15 purchasable player fleet absent"):return
+    var fulfillment_r15 = world.get_node_or_null("R15_VerifiedPaymentFulfillment")
+    if not check(fulfillment_r15 != null and fulfillment_r15.inventory.is_empty(),
+        "R15 real-money entitlements must not be fabricated in Godot CI"):return
+    world.ship.global_position = Vector3(0,19,78)
+    world.credits = 10000
+    world._r15_buy_credit("ship_interceptor")
+    if not check(world.equipped_r15 == "ship_interceptor" and
+        world.fleet_r15.active_ship == "ship_interceptor" and world.ship.turn_speed > 2.3,
+        "R15 credit-funded ship has no effect on player flight"):return
+    world._r15_buy_credit("weapon_plasma")
+    if not check(world.fleet_r15.weapon_damage() >= 10.0,
+        "R15 bought plasma gun has no combat damage effect"):return
+    world._r15_buy_credit("missiles_6")
+    if not check(world.rockets_r15 == 6 and world.fleet_r15.missiles == 6,
+        "R15 credit-funded rockets are not loaded"):return
+    world._r15_buy_credit("wingman_escort")
+    if not check(world.fleet_r15.helpers.size() == 1,
+        "R15 purchasable wingman was not spawned"):return
+    world._r15_premium_synced({"ship_guardian": 1, "weapon_plasma": 1})
+    world._r15_buy_credit("ship_guardian")
+    if not check(world.equipped_r15 == "ship_guardian" and
+        not world.owned_r15.has("ship_guardian"),
+        "R15 paid ship proof incorrectly saved as credit ownership"):return
+    world._r15_premium_synced({})
+    if not check(world.equipped_r15 == "ship_scout" and
+        world.premium_r15.is_empty(),
+        "R15 revoked server entitlement failed to remove premium ship"):return
     var hangar_solid = world.get_node_or_null("HeroMegadocksR6/R6_EnclosedHangar_00_0/HangarLeftWallCollision")
     if not check(hangar_solid is StaticBody3D, "Hangar collision missing"):return
     var arcology_solid = world.get_node_or_null("SculpturalSkylineR6/R6_SculptedArcology_00/ArcologyCollision")
@@ -334,5 +367,5 @@ func _run() -> void:
     world.ship.take_damage(10.0)
     if not check(world.ship.shield < shield_before,"Damage does not reduce shield"):return
     if not check(previous_credits >= 0,"Invalid credits"):return
-    print("NEBULA_SMOKE_SUCCESS missions=1 upgrades=1 drones=%d premium3d=r14 six-sculpted-cinematic-ports pbr=true real-hardware-fps=pending" % world.drones.size())
+    print("NEBULA_SMOKE_SUCCESS missions=1 upgrades=1 drones=%d premium3d=r15 ten-story-missions in-game-ships-weapons-rockets-allies checkout-server-gated" % world.drones.size())
     quit(0)
