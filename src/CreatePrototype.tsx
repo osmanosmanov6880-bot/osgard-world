@@ -5,6 +5,7 @@ import type { CoreProject } from './coreClient'
 import { PROJECT_KINDS, createProjectPayload, newCreateDraft, persistCreateDrafts, readCreateDrafts, validateCreateDraft } from './projectCreation'
 import type { CreateDraft, ProjectKind } from './projectCreation'
 import './create.css'
+import './createStudio.css'
 
 const steps = ['Идея', 'Настройка', 'Структура', 'Работа', 'Проверка', 'Создание']
 const id = () => crypto.randomUUID()
