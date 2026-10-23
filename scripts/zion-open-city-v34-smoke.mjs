@@ -93,7 +93,7 @@ function runArt(opts){
     assert.equal(metrics.textureMaps,9)
     assert.equal(metrics.surfaceFamilies,3)
     assert.ok(metrics.mappedMaterials>=3)
-    assert.ok(metrics.estimatedTextureBytes>=96*96*4*9)
+    assert.equal(metrics.estimatedTextureBytes,(opts.mobile?192:512)**2*4*9)
   }
   assert.ok(metrics.rotatingFans>=0)
   if(!opts.softwareGL)assert.ok(metrics.wetRipples>0)
