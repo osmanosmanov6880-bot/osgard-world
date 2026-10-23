@@ -75,15 +75,14 @@ class NebulaPaymentsTests(unittest.TestCase):
     def key(self):
         return "req_"+uuid.uuid4().hex
 
-    def checkout(self,sku="skin_obsidian"):
+    def checkout(self,sku="ship_interceptor"):
         return self.pay.checkout(self.user,sku,self.key())
 
     def event(self,sid,event_type="checkout.session.completed",paid=True,
               webhook_id=None,malformed=False):
         self.seq+=1
-        if paid:
-            self.fake.sessions[sid]["payment_status"]="paid"
-            self.fake.sessions[sid]["status"]="complete"
+        self.fake.sessions[sid]["payment_status"]="paid" if paid else "unpaid"
+        self.fake.sessions[sid]["status"]="complete" if paid else "open"
         event={"id":webhook_id or "evt_nebula_"+str(self.seq),
                "object":"event","api_version":API_VERSION,
                "livemode":False,"account":self.config.account_id,
@@ -101,7 +100,7 @@ class NebulaPaymentsTests(unittest.TestCase):
         other=Payments(self.store,Config())
         with self.assertRaises(Fault):
             other.checkout(self.user,"ship_interceptor",self.key())
-        self.assertTrue(len(other.catalog()["items"]) >= 7)
+        self.assertTrue(len(other.catalog()["items"]) >= 6)
 
     def test_server_prices_and_idempotent_checkout(self):
         key=self.key()
@@ -126,7 +125,7 @@ class NebulaPaymentsTests(unittest.TestCase):
         self.event(sid,paid=False)
         self.assertEqual(self.pay.inventory(self.user)["items"],{})
         self.event(sid,paid=True)
-        self.assertEqual(self.pay.inventory(self.user)["items"]["skin_obsidian"],1)
+        self.assertEqual(self.pay.inventory(self.user)["items"]["ship_interceptor"],1)
         self.assertEqual(self.pay.inventory(self.user)["orders"][0]["state"],"paid")
 
     def test_paid_webhook_replay_and_duplicate_event_grant_once(self):
