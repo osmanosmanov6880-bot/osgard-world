@@ -8,6 +8,7 @@ import {makeSurfaceMicroclimate} from './surface-microclimate.mjs';
 import {makeShorelineSurf} from './shoreline-surf.mjs';
 import {makeCoastalGeology} from './coastal-geology.mjs';
 import {makeSeaStackEnvironment} from './sea-stack-erosion.mjs';
+import {makeFineFoliage} from './fine-foliage.mjs';
 import {makeSurfaceMaterial,surfacePackStats} from './cinematic-surfaces.mjs';
 import {makeLivingAtmosphere} from './living-atmosphere.mjs';
 import {waterVertex,waterFragment} from './cinematic-water.mjs';
@@ -152,6 +153,8 @@ export function makeArchipelago({quality='high'}={}){
    dummy.updateMatrix();branchInst.setMatrixAt(i*branchPerTree+k,dummy.matrix);
   }
  }
+ const fineFoliage=makeFineFoliage({quality,trees,registerWind:life.addWindMaterial});
+ terrain.add(fineFoliage.root);
  trunkInst.instanceMatrix.needsUpdate=true;crownInst.instanceMatrix.needsUpdate=true;
  if(crownInst.instanceColor)crownInst.instanceColor.needsUpdate=true;
  terrain.add(trunkInst,crownInst);
@@ -282,9 +285,10 @@ export function makeArchipelago({quality='high'}={}){
   surf.setSeason(season);
   geology.setSeason(season);
   seaStacks.setSeason(season);
+  fineFoliage.setSeason(season);
   return seasonalWetness;
  }
  setSeason('tide');
- return {root:terrain,waterUniforms:sea.material.uniforms,landmarks,heritage,life,microBiomes,microclimate,surf,geology,seaStacks,
+ return {root:terrain,waterUniforms:sea.material.uniforms,landmarks,heritage,life,microBiomes,microclimate,surf,geology,seaStacks,fineFoliage,
   setSeason,getWetness:()=>seasonalWetness,surfaceStats:surfacePackStats()};
 }

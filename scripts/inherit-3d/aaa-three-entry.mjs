@@ -53,7 +53,7 @@ world.parentElement.insertBefore(controls,world);
 const canvas=make('canvas','aaa3d-canvas');canvas.setAttribute('aria-hidden','true');
 canvas.setAttribute('tabindex','-1');canvas.style.pointerEvents='none';
 island.prepend(canvas);
-const status={available:false,active:false,postFX:'off',adapter:null,materials:null,ambientLife:null,performance:null,frames:0,traces:0,generation:null,quality,season:'',fallback:null,flyby:false,renderer:'WebGL Three.js',detailTiers:{high:0,medium:0,low:0},detailTriangles:0,detailDrawCalls:0,cachedTraces:0,createdTraces:0,heritageDetails:null,coastDetails:null,microclimate:null,surf:null,geology:null,seaStacks:null,skyLighting:null,focusMode:false,oceanFade:.66,environmentTier:null,cameraFocus:'island'};
+const status={available:false,active:false,postFX:'off',adapter:null,materials:null,ambientLife:null,performance:null,frames:0,traces:0,generation:null,quality,season:'',fallback:null,flyby:false,renderer:'WebGL Three.js',detailTiers:{high:0,medium:0,low:0},detailTriangles:0,detailDrawCalls:0,cachedTraces:0,createdTraces:0,heritageDetails:null,coastDetails:null,microclimate:null,surf:null,geology:null,seaStacks:null,fineFoliage:null,skyLighting:null,focusMode:false,oceanFade:.66,environmentTier:null,cameraFocus:'island'};
 const frameBudget=makeFrameBudget();
 const autoResolution=makeAdaptiveResolution();
 const traceMotion=makeSavedTraceMotion({maxAnimated:lowPower?18:58});
@@ -190,6 +190,7 @@ function updateEnvironment(){
  status.surf=seasonalScene?.surf?.stats?.()||status.surf;
  status.geology=seasonalScene?.geology?.stats?.()||status.geology;
  status.seaStacks=seasonalScene?.seaStacks?.stats?.()||status.seaStacks;
+ status.fineFoliage=seasonalScene?.fineFoliage?.stats?.()||status.fineFoliage;
  skyLighting?.setSeason(season,scene);
  status.skyLighting=skyLighting?.stats?.()||status.skyLighting;
 }
@@ -298,6 +299,7 @@ function activateScenery(tier){
  status.surf=built.surf?.stats?.()||null;
  status.geology=built.geology?.stats?.()||null;
  status.seaStacks=built.seaStacks?.stats?.()||null;
+ status.fineFoliage=built.fineFoliage?.stats?.()||null;
  status.environmentTier=tier;
  status.materials=built.surfaceStats;
  status.ambientLife=built.life?.stats()||null;
