@@ -68,8 +68,11 @@ jobs:
       - name: Test scene, combat, missions and persistent upgrades
         run: |
           set -uo pipefail
+          # GitHub bash -e would abort before printing a failing Godot log.
+          set +e
           timeout 150s stdbuf -oL -eL /tmp/nebula-godot/Godot_v4.7.2-stable_linux.x86_64 --headless --path godot/nebula-3d --script res://tests/runtime_smoke.gd > /tmp/nebula-runtime.log 2>&1
           rc=$?
+          set -e
           cat /tmp/nebula-runtime.log
           echo "NEBULA_RUNTIME_EXIT_CODE=$rc"
           if [ "$rc" -ne 0 ] || grep -Eq 'SCRIPT ERROR:|Parse Error:|NEBULA_SMOKE_FAILURE:' /tmp/nebula-runtime.log; then
