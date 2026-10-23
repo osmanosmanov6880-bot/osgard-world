@@ -88,7 +88,7 @@ func _lofted_vessel() -> ArrayMesh:
     return st.commit()
 
 func _block(root: Node3D, label: String, location: Vector3,
-            size: Vector3, material: Material, track_detail: bool = false) -> MeshInstance3D:
+            size: Vector3, material: Material, track_detail: bool = true) -> MeshInstance3D:
     var mesh := BoxMesh.new()
     mesh.size = size
     var obj := MeshInstance3D.new()
@@ -255,7 +255,7 @@ func build(centres: Array) -> void:
             active_groups.append(site)
             workshop_count += 1
             _block(site, "R12_FarProxyArchitecturalSilhouette",
-                Vector3(0, 20, 0), Vector3(34, 40, 30), carbon)
+                Vector3(0, 20, 0), Vector3(34, 40, 30), carbon, false)
             var distant := site.get_node("R12_FarProxyArchitecturalSilhouette") as MeshInstance3D
             distant_shells.append(distant)
             for row in 34:
@@ -300,8 +300,7 @@ func _process(delta: float) -> void:
     # static GPU instances, not independent per-frame GDScript objects.
     for index in active_groups.size():
         var hall: Node3D = active_groups[index]
-        var nearby: bool = is_instance_valid(player_ship) and
-            player_ship.global_position.distance_squared_to(hall.global_position) < 17500.0
+        var nearby: bool = (is_instance_valid(player_ship) and player_ship.global_position.distance_squared_to(hall.global_position) < 17500.0)
         var left: Node3D = gates[index * 2]
         var right: Node3D = gates[index * 2 + 1]
         var destination: float = 9.1 if nearby else 0.0
