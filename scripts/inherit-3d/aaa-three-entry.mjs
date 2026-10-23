@@ -399,7 +399,9 @@ world.addEventListener('click',event=>{
 // Select the REAL native trace inspector when the user directly clicks a
 // rendered 3D object. The raycaster never writes the world or spends a move.
 world.addEventListener('click',event=>{
- if(!status.active||flyby||perfLab?.running()||d.body.classList.contains('replay-mode')||!camera||!traceRoot||!(event.target instanceof Element)||
+ if(!status.active||flyby||perfLab?.running()||d.body.classList.contains('replay-mode')||
+    ['inherit-compass-armed','inherit-network-armed','inherit-expedition-armed'].some(name=>d.body.classList.contains(name))||
+    !camera||!traceRoot||!(event.target instanceof Element)||
     !event.target.closest('#island')||event.target.closest('button,[data-memory]'))return;
  const rect=canvas.getBoundingClientRect();
  if(!rect.width||!rect.height)return;
