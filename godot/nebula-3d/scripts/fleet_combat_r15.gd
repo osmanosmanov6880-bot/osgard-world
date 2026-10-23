@@ -3,6 +3,7 @@ const GuidedMissileR16Script = preload("res://scripts/guided_missile_r16.gd")
 ## R15 player-owned fleet gameplay. Credit purchases only; premium purchases
 ## are never fulfilled from browser state. Allies assist in real combat.
 signal missile_hit(target: Node3D)
+signal ally_fired(origin: Vector3, endpoint: Vector3)
 var active_ship: String = "ship_scout"
 var active_weapon: String = "weapon_basic"
 var missiles: int = 0
@@ -24,7 +25,7 @@ func _ready() -> void:
         var rocket: Node3D = GuidedMissileR16Script.new()
         rocket.name = "R16_GuidedMissile_%02d" % i
         add_child(rocket)
-        rocket.impacted.connect(_on_missile_impact)
+        rocket.connect("impacted", Callable(self, "_on_missile_impact"))
         missile_pool.append(rocket)
 
 func _on_missile_impact(victim: Node3D) -> void:
@@ -90,6 +91,9 @@ func _process(delta: float) -> void:
         ally_timer = 0.0
         var opponent: Node3D = _nearest_hostile(160.0)
         if is_instance_valid(opponent) and opponent.has_method("hit"):
+            for wingman in helpers:
+                if is_instance_valid(wingman):
+                    ally_fired.emit(wingman.global_position, opponent.global_position)
             opponent.hit(3.5 + float(helpers.size()) * 2.0)
 
 func _nearest_hostile(distance: float) -> Node3D:
@@ -112,14 +116,14 @@ func launch_missile() -> bool:
         return false
     var ready_rocket: Node3D
     for rocket in missile_pool:
-        if not rocket.armed:
+        if not bool(rocket.get("armed")):
             ready_rocket = rocket
             break
     if not is_instance_valid(ready_rocket):
         return false
     var forward: Vector3 = -player_ship.global_basis.z
-    if not ready_rocket.activate(player_ship.global_position + forward * 3.4,
-                                  forward, enemy, missile_damage):
+    if not bool(ready_rocket.call("activate", player_ship.global_position + forward * 3.4,
+                                  forward, enemy, missile_damage)):
         return false
     missiles -= 1
     cooldown = 1.1
