@@ -13,6 +13,7 @@ const Wave5Profiler = preload("res://scripts/wave5_profiler.gd")
 const Wave5Batcher = preload("res://scripts/wave5_static_batcher.gd")
 const Wave6ArtDirector = preload("res://scripts/wave6_art_director.gd")
 const Wave6Benchmark = preload("res://scripts/wave6_hardware_benchmark.gd")
+const Wave7Lab = preload("res://scripts/wave7_lab.gd")
 const CYAN := Color(0.24, 0.83, 1.0)
 const VIOLET := Color(0.64, 0.43, 1.0)
 const MINT := Color(0.37, 1.0, 0.75)
@@ -90,6 +91,11 @@ func _ready() -> void:
     art_director.name = "Wave6ArtDirector"
     art_director.configure(self)
     add_child(art_director)
+    # Wave7 creates actual CNC ArrayMeshes and warm industrial assemblies.
+    var wave7 := Wave7Lab.new()
+    wave7.name = "Wave7Lab"
+    wave7.configure(self)
+    add_child(wave7)
     Wave5Batcher.optimize(self)
     var hardware_bench := Wave6Benchmark.new()
     hardware_bench.name = "Wave6HardwareBenchmark"
