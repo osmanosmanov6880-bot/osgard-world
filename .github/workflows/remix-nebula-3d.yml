@@ -57,8 +57,10 @@ jobs:
       - name: Parse native GDScript in editor
         run: |
           set -uo pipefail
+          set +e
           timeout 150s /tmp/nebula-godot/Godot_v4.7.2-stable_linux.x86_64 --headless --editor --path godot/nebula-3d --quit > /tmp/nebula-import.log 2>&1
           rc=$?
+          set -e
           cat /tmp/nebula-import.log
           if [ "$rc" -ne 0 ] || grep -Eq 'SCRIPT ERROR:|Parse Error:|Failed to load script' /tmp/nebula-import.log; then
             error="$(grep -Em1 'SCRIPT ERROR:|Parse Error:|ERROR:' /tmp/nebula-import.log || true)"
@@ -68,9 +70,13 @@ jobs:
       - name: Test scene, combat, missions and persistent upgrades
         run: |
           set -uo pipefail
-          timeout 150s /tmp/nebula-godot/Godot_v4.7.2-stable_linux.x86_64 --headless --path godot/nebula-3d --script res://tests/runtime_smoke.gd > /tmp/nebula-runtime.log 2>&1
+          # GitHub bash -e would abort before printing a failing Godot log.
+          set +e
+          timeout 150s stdbuf -oL -eL /tmp/nebula-godot/Godot_v4.7.2-stable_linux.x86_64 --headless --path godot/nebula-3d --script res://tests/runtime_smoke.gd > /tmp/nebula-runtime.log 2>&1
           rc=$?
+          set -e
           cat /tmp/nebula-runtime.log
+          echo "NEBULA_RUNTIME_EXIT_CODE=$rc"
           if [ "$rc" -ne 0 ] || grep -Eq 'SCRIPT ERROR:|Parse Error:|NEBULA_SMOKE_FAILURE:' /tmp/nebula-runtime.log; then
             error="$(grep -Em1 'SCRIPT ERROR:|Parse Error:|NEBULA_SMOKE_FAILURE:' /tmp/nebula-runtime.log || true)"
             echo "NEBULA_ERROR=$error" >> "$GITHUB_ENV"
@@ -80,10 +86,12 @@ jobs:
       - name: Build real WebAssembly game
         run: |
           set -uo pipefail
+          set +e
           output="$GITHUB_WORKSPACE/public/games/remix/arena-v2/nebula-3d"
           mkdir -p "$output"
           timeout 240s /tmp/nebula-godot/Godot_v4.7.2-stable_linux.x86_64 --headless --path godot/nebula-3d --export-release Web "$output/index.html" > /tmp/nebula-export.log 2>&1
           rc=$?
+          set -e
           cat /tmp/nebula-export.log
           if [ "$rc" -ne 0 ] || grep -Eq 'SCRIPT ERROR:|Parse Error:' /tmp/nebula-export.log; then
             error="$(grep -Em1 'SCRIPT ERROR:|Parse Error:|ERROR:' /tmp/nebula-export.log || true)"

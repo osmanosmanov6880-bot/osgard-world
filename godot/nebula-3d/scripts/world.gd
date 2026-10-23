@@ -91,6 +91,18 @@ var rockets_r15: int = 0
 var wingmen_r15: Array[String] = []
 var premium_r15: Dictionary = {}
 var premium_client_r15
+const R16_BEAM_POOL_SIZE: int = 18
+const R16_RADAR_PERIOD: float = 0.12
+const R16_HUD_PERIOD: float = 0.10
+var r16_beams: Array[MeshInstance3D] = []
+var r16_beam_life: Array[float] = []
+var r16_beam_cursor: int = 0
+var r16_beam_mesh: CylinderMesh
+var r16_player_laser: Material
+var r16_enemy_laser: Material
+var r16_radar_clock: float = 0.0
+var r16_hud_clock: float = 0.0
+var r16_beam_shots: int = 0
 
 func _ready() -> void:
     rng.seed = 20261022
@@ -103,12 +115,15 @@ func _ready() -> void:
     add_child(fleet_r15)
     fleet_r15.player_ship = ship
     fleet_r15.targets = drones
+    fleet_r15.ally_fired.connect(_r16_ally_fire)
     _make_hud()
+    _r16_setup_beam_pool()
     store_r15 = HangarStoreR15Script.new()
     store_r15.name = "R15_HangarShop"
     add_child(store_r15)
     store_r15.credit_purchase_requested.connect(_r15_buy_credit)
     store_r15.premium_purchase_requested.connect(_r15_request_checkout)
+    store_r15.shop_closed.connect(_r16_hangar_closed)
     premium_client_r15 = PremiumFulfillmentR15Script.new()
     premium_client_r15.name = "R15_VerifiedPaymentFulfillment"
     add_child(premium_client_r15)
@@ -131,7 +146,12 @@ func _ready() -> void:
     _load_progress()
     _r15_apply_loadout()
     _start_mission()
-    _show_notice("NEBULA ASCENSION · CINEMATIC 3D")
+    # Start the browser on HIGH instead of MAX. Real FPS can then
+    # automatically downshift further; native CI retains deterministic MAX.
+    if OS.has_feature("web"):
+        _set_graphics_quality(1)
+        adaptive_r12.set_auto(true)
+    _show_notice("NEBULA ASCENSION · R16 SMOOTH COMBAT")
     get_viewport().size_changed.connect(_fit_hud)
     _fit_hud()
 
@@ -487,6 +507,7 @@ func _process(delta: float) -> void:
     if world_pulse > 92.0 and mission_index > 0 and ship.global_position.distance_to(SECTOR_POSITIONS[0]) > 270.0:
         world_pulse = 0.0
         _spawn_pirate_ambush()
+    _r16_update_beam_pool(delta)
     notice_timer = maxf(0.0, notice_timer-delta)
     if notice_timer <= 0.0: hud_notice.text = ""
     var basis: Basis = ship.global_transform.basis
@@ -512,15 +533,23 @@ func _process(delta: float) -> void:
     elif ship.global_position.distance_to(Vector3(0,19,78))<70:
         ship.shield = minf(fleet_r15.ship_shield_cap(),ship.shield+12.0*delta)
         ship.hull = minf(fleet_r15.ship_hull_cap(),ship.hull+4.0*delta)
-    _update_hud()
-    if is_instance_valid(radar):
+    # UI and radar at 8-10 Hz, not every rendered frame. This also
+    # avoids rebuilding strings and scanning all enemies 60+ times per second.
+    r16_hud_clock += delta
+    if r16_hud_clock >= R16_HUD_PERIOD:
+        r16_hud_clock = fmod(r16_hud_clock, R16_HUD_PERIOD)
+        _update_hud()
+    r16_radar_clock += delta
+    if r16_radar_clock >= R16_RADAR_PERIOD and is_instance_valid(radar):
+        r16_radar_clock = fmod(r16_radar_clock, R16_RADAR_PERIOD)
         radar.player_position = ship.global_position
         radar.player_forward = -ship.global_transform.basis.z
         radar.has_objective = mission_index < MISSIONS.size()
-        if radar.has_objective: radar.objective = MISSIONS[mission_index]["position"]
+        if radar.has_objective:
+            radar.objective = MISSIONS[mission_index]["position"]
         radar.targets.clear()
         for n in drones:
-            if is_instance_valid(n) and n.hostile and n.global_position.distance_to(ship.global_position) < 460.0:
+            if is_instance_valid(n) and n.hostile and n.global_position.distance_squared_to(ship.global_position) < 211600.0:
                 radar.targets.append(n.global_position)
         radar.queue_redraw()
     if world_timer>=25.0:
@@ -634,26 +663,65 @@ func _on_ship_fire(origin: Vector3, direction: Vector3) -> void:
         best.call("hit",fleet_r15.weapon_damage()+float(ship.weapon_rank))
     _laser_effect(origin,endpoint)
 
+func _r16_ally_fire(origin: Vector3, endpoint: Vector3) -> void:
+    _laser_effect_colored(origin, endpoint, Color(0.37, 0.86, 0.97))
+
 func _laser_effect(a: Vector3,b: Vector3) -> void:
     _laser_effect_colored(a,b,Color(0.25,0.95,1.0))
 
-func _laser_effect_colored(a: Vector3,b: Vector3,tint: Color) -> void:
+func _r16_setup_beam_pool() -> void:
+    var parent := Node3D.new()
+    parent.name = "R16_PooledCombatBeams"
+    add_child(parent)
+    r16_beam_mesh = CylinderMesh.new()
+    r16_beam_mesh.top_radius = 0.15
+    r16_beam_mesh.bottom_radius = 0.15
+    r16_beam_mesh.height = 1.0
+    r16_beam_mesh.radial_segments = 8
+    r16_player_laser = _mat(Color(0.25, 0.95, 1.0), 3.8)
+    r16_enemy_laser = _mat(Color(1.0, 0.26, 0.39), 3.8)
+    for i in R16_BEAM_POOL_SIZE:
+        var shaft := MeshInstance3D.new()
+        shaft.name = "Beam_%02d" % i
+        shaft.mesh = r16_beam_mesh
+        shaft.material_override = r16_player_laser
+        shaft.visible = false
+        parent.add_child(shaft)
+        r16_beams.append(shaft)
+        r16_beam_life.append(0.0)
+
+func _r16_update_beam_pool(delta: float) -> void:
+    for i in r16_beam_life.size():
+        if r16_beam_life[i] <= 0.0:
+            continue
+        r16_beam_life[i] -= delta
+        if r16_beam_life[i] <= 0.0:
+            r16_beam_life[i] = 0.0
+            r16_beams[i].visible = false
+
+func _laser_effect_colored(a: Vector3, b: Vector3, tint: Color) -> void:
     var distance: float = a.distance_to(b)
-    if distance<0.01:return
-    var shaft:=MeshInstance3D.new()
-    var tube:=CylinderMesh.new()
-    tube.top_radius=0.15
-    tube.bottom_radius=0.15
-    tube.height=distance
-    shaft.mesh=tube
-    shaft.material_override=_mat(tint,3.8)
-    add_child(shaft)
-    shaft.global_position=(a+b)*0.5
-    shaft.look_at(b,Vector3.UP)
-    shaft.rotate_object_local(Vector3.RIGHT,PI*0.5)
-    get_tree().create_timer(0.12).timeout.connect(func()->void:
-        if is_instance_valid(shaft):shaft.queue_free()
-    )
+    if distance < 0.01 or r16_beams.is_empty():
+        return
+    var slot: int = -1
+    for offset in R16_BEAM_POOL_SIZE:
+        var index: int = (r16_beam_cursor + offset) % R16_BEAM_POOL_SIZE
+        if r16_beam_life[index] <= 0.0:
+            slot = index
+            break
+    if slot < 0:
+        slot = r16_beam_cursor
+    r16_beam_cursor = (slot + 1) % R16_BEAM_POOL_SIZE
+    var shaft: MeshInstance3D = r16_beams[slot]
+    shaft.scale = Vector3.ONE
+    shaft.global_position = (a + b) * 0.5
+    shaft.look_at(b, Vector3.UP)
+    shaft.rotate_object_local(Vector3.RIGHT, PI * 0.5)
+    shaft.scale = Vector3(1.0, distance, 1.0)
+    shaft.material_override = r16_enemy_laser if tint.r > 0.8 else r16_player_laser
+    shaft.visible = true
+    r16_beam_life[slot] = 0.13
+    r16_beam_shots += 1
 
 func _show_notice(message: String) -> void:
     if not is_instance_valid(hud_notice):return
@@ -719,9 +787,12 @@ func _unhandled_key_input(event: InputEvent) -> void:
                 store_r15.close()
             elif ship.global_position.distance_to(SECTOR_POSITIONS[0]) <= 150.0:
                 store_r15.open(credits, owned_r15, equipped_r15)
+                ship.controls_locked = true
             else:
                 _show_notice("МАГАЗИН ТОЛЬКО В ПОРТУ АВРОРА")
         elif event.keycode==KEY_R:
+            if store_r15.visible:
+                return
             if fleet_r15.launch_missile():
                 rockets_r15 = fleet_r15.missiles
                 _save_progress()
@@ -802,9 +873,10 @@ func _upgrade_docked(slot: int) -> void:
         _show_notice("НЕДОСТАТОЧНО КРЕДИТОВ · %d CR" % price)
         return
     if slot == 2:
-        if ship.hull >= 99.0 and ship.shield >= 99.0:return
-        ship.hull=100.0
-        ship.shield=100.0
+        if ship.hull >= fleet_r15.ship_hull_cap() - 1.0 and ship.shield >= fleet_r15.ship_shield_cap() - 1.0:
+            return
+        ship.hull = fleet_r15.ship_hull_cap()
+        ship.shield = fleet_r15.ship_shield_cap()
     elif slot==0:
         if ship.engine_rank>=4:return
         ship.engine_rank+=1
@@ -814,6 +886,10 @@ func _upgrade_docked(slot: int) -> void:
     credits-=price
     _save_progress()
     _show_notice("АНГАР · УЛУЧШЕНИЕ УСТАНОВЛЕНО")
+
+func _r16_hangar_closed() -> void:
+    if is_instance_valid(ship):
+        ship.controls_locked = false
 
 func _r15_apply_loadout() -> void:
     fleet_r15.set_loadout(equipped_r15, weapon_r15, rockets_r15, wingmen_r15)
