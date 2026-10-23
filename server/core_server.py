@@ -26,6 +26,7 @@ import core_client_portal
 import core_teams
 import core_readiness
 import core_commerce
+import nebula_payments
 import core_programs
 import core_inherit
 from core_model import Fault, require, text, initial, patch, action, economics, simulation, metrics, now, uid
@@ -54,14 +55,15 @@ def digest(v): return hashlib.sha256(v.encode()).hexdigest()
 def password_hash(password,salt): return hashlib.pbkdf2_hmac('sha256',password.encode(),bytes.fromhex(salt),600000).hex()
 
 class Store:
-    def __init__(self,path,commerce_config=None,commerce_provider=None):
+    def __init__(self,path,commerce_config=None,commerce_provider=None,nebula_config=None,nebula_provider=None):
         self.path=str(path)
         Path(path).parent.mkdir(parents=True,exist_ok=True)
         with self.connect() as db:
             require(db.execute('PRAGMA user_version').fetchone()[0] in (0,1),'Версия базы новее этого сервера. Обновите Core.')
-            db.executescript(SCHEMA+core_learning.SCHEMA+core_pilot_reports.SCHEMA+core_account.SCHEMA+core_acceptance.SCHEMA+core_delivery.SCHEMA+core_client_portal.SCHEMA+core_teams.SCHEMA+core_commerce.SCHEMA+core_programs.SCHEMA)
+            db.executescript(SCHEMA+core_learning.SCHEMA+core_pilot_reports.SCHEMA+core_account.SCHEMA+core_acceptance.SCHEMA+core_delivery.SCHEMA+core_client_portal.SCHEMA+core_teams.SCHEMA+core_commerce.SCHEMA+nebula_payments.SCHEMA+core_programs.SCHEMA)
             core_inherit.initialize(db)
         self.commerce=core_commerce.Commerce(self,commerce_config,commerce_provider)
+        self.nebula=nebula_payments.Payments(self,nebula_config or nebula_payments.Config.from_env(),nebula_provider)
         try:os.chmod(path,0o600)
         except OSError:pass
     @contextmanager
@@ -397,7 +399,12 @@ class Handler(SimpleHTTPRequestHandler):
             require(host in self.server.allowed_hosts,'Недопустимый адрес сервера.','host',403)
             require(not origin or origin in self.server.allowed_origins,'Запрос с другого сайта запрещён.','origin',403)
             route=urlsplit(self.path).path.removeprefix('/api/core/').strip('/')
-            if method=='GET' and route=='health':return self.output({'status':'ok','mode':'self-hosted-pilot','schemaVersion':1,'payments':self.server.store.commerce.config.enabled,'paymentMode':'live' if self.server.store.commerce.config.livemode else 'test','livePaymentTested':False,'ai':False})
+            if method=='GET' and route=='health':return self.output({'status':'ok','mode':'self-hosted-pilot','schemaVersion':1,'payments':self.server.store.commerce.config.enabled,'paymentMode':'live' if self.server.store.commerce.config.livemode else 'test','livePaymentTested':False,'nebulaPayments':self.server.store.nebula.config.enabled,'nebulaPaymentMode':'live' if self.server.store.nebula.config.livemode else 'test','ai':False})
+            if method=='GET' and route=='nebula/catalog':
+                return self.output(self.server.store.nebula.catalog())
+            if method=='POST' and route=='nebula/webhook':
+                return self.output(self.server.store.nebula.webhook(
+                    self.raw_json_body(), self.headers.get('Stripe-Signature')))
             if method=='POST' and route=='commerce/webhook':return self.output(self.server.store.commerce.webhook(self.raw_json_body(),self.headers.get('Stripe-Signature')))
             if method=='POST' and route in ('auth/register','auth/login','auth/recover','auth/password','auth/recovery/prepare'):
                 with self.server.rate_lock:
@@ -410,6 +417,15 @@ class Handler(SimpleHTTPRequestHandler):
                 if route=='auth/recover':return self.output(core_account.recover(self.server.store,self.body()))
                 if route in ('auth/register','auth/login'):return self.output(self.server.store.auth(route.split('/')[1],self.body(),self.headers.get('User-Agent','')))
             auth=self.headers.get('Authorization','');actor=self.server.store.actor(auth[7:] if auth.startswith('Bearer ') else '')
+            if method=='GET' and route=='nebula/inventory':
+                return self.output(self.server.store.nebula.inventory(actor['id']))
+            if method=='POST' and route=='nebula/checkout':
+                payload=self.body()
+                return self.output(self.server.store.nebula.checkout(
+                    actor['id'],payload.get('sku'),self.headers.get('Idempotency-Key')))
+            if method=='POST' and route=='nebula/consume-missile':
+                return self.output(self.server.store.nebula.consume_missile(
+                    actor['id'],self.headers.get('Idempotency-Key')))
             if method=='POST' and re.fullmatch(r'commerce/orders/[a-f0-9]{32}/(checkout|refund)',route):return self.output(self.server.store.commerce.execute(route,actor['id'],self.body(),self.headers.get('Idempotency-Key')))
             if method=='GET' and route=='overview':
                 report=self.server.store.get(route,actor['id']);worker=getattr(self.server,'worker',None)
