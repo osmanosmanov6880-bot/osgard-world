@@ -11,6 +11,7 @@ import {makeTrace,disposeTraces} from './trace-models.mjs';
 import {mountArtifactAtelier} from './artifact-atelier.mjs';
 import {makeCinematicPipeline,detectAdapter} from './cinematic-postfx.mjs';
 import {makeFrameBudget} from './frame-budget.mjs';
+import {makeAdaptiveResolution} from './adaptive-resolution.mjs';
 import {mountHardwareBenchmark} from './hardware-benchmark-ui.mjs';
 (()=>{
 'use strict';
@@ -51,12 +52,13 @@ canvas.setAttribute('tabindex','-1');canvas.style.pointerEvents='none';
 island.prepend(canvas);
 const status={available:false,active:false,postFX:'off',adapter:null,materials:null,ambientLife:null,performance:null,frames:0,traces:0,generation:null,quality,season:'',fallback:null,flyby:false,renderer:'WebGL Three.js',detailTiers:{high:0,medium:0,low:0},detailTriangles:0,detailDrawCalls:0,cachedTraces:0,createdTraces:0,heritageDetails:null,coastDetails:null,microclimate:null,environmentTier:null,cameraFocus:'island'};
 const frameBudget=makeFrameBudget();
+const autoResolution=makeAdaptiveResolution();
 window.InheritAAA3D=Object.freeze({
  getState:()=>({...status}),
  getHardwareBenchmark:()=>perfLab?.report()||null,
  startHardwareBenchmark:options=>perfLab?.start(options)||false,
  getPerformanceReport:()=>({...frameBudget.snapshot(),adapter:status.adapter,
-  quality,statusPostFX:status.postFX,materials:status.materials,ambientLife:status.ambientLife,microclimate:status.microclimate}),
+  quality,statusPostFX:status.postFX,materials:status.materials,ambientLife:status.ambientLife,microclimate:status.microclimate,adaptiveResolution:autoResolution.snapshot()}),
  samplePerformance:async({minFrames=36,maxWaitMs=10000}={})=>{
   const start=performance.now(),frames=frameBudget.snapshot().samples;
   return new Promise(resolve=>{
@@ -316,12 +318,19 @@ function renderOnce(time){
    ' · '+(status.adapter?.isSoftware?'SwiftShader / software GPU':'GPU: '+(status.adapter?.model||'unknown'));
  }
  status.frames+=1;firstDraw=true;
- // Dynamically recover frame pacing by lowering pixel density without
- // deleting user-built objects, altering saves or silently switching modes.
- if(!perfLab?.running()&&quality==='high'&&frameBudget.shouldReduceResolution()&&adaptivePixelScale===1){
-  adaptivePixelScale=.8;
-  frameBudget.markReduced();
-  resize();
+ // R20 real-device adaptive pixel ratio: sustained measured frame pacing
+ // with an eight-second cooldown. No changes to saved traces or quality tier.
+ // Schedule resize after the GPU submission completes (never nested render).
+ const step=autoResolution.observe({
+  now:time,quality,metrics:status.performance,
+  visible:sceneVisible&&!d.hidden,reducedMotion:motion.matches,
+  benchmark:!!perfLab?.running()||flyby
+ });
+ if(step){
+  adaptivePixelScale=step.scale;
+  queueMicrotask(()=>{
+   if(status.available&&status.active&&!d.hidden)resize();
+  });
  }
 }
 function stop(){if(raf)cancelAnimationFrame(raf);raf=0;}
@@ -358,7 +367,7 @@ switcher.addEventListener('click',()=>{
 detail.addEventListener('click',()=>{
  perfLab?.finish('quality-changed');
  quality=quality==='high'?'medium':quality==='medium'?'low':'high';status.quality=quality;
- adaptivePixelScale=1;frameBudget.reset();
+ adaptivePixelScale=1;frameBudget.reset();autoResolution.reset(performance.now());
  renderer.shadowMap.enabled=quality==='high'&&!lowPower;
  sun.castShadow=renderer.shadowMap.enabled;
  activateScenery(quality);configurePostFx();resize();syncState(true);
