@@ -40,7 +40,7 @@ export function mountHardwareBenchmark({
  controls.append(button,copy,result);
  const test=makeHardwareBenchmark({durationMs:10000,warmupMs:700});
  const timer=makeGpuQueryTimer(renderer.getContext());
- let report=null,restored=false;
+ let report=null,restored=false,stopTimer=null;
  const update=()=>{
   const c=t();
   button.textContent=test.running()?c.cancel:c.start;
@@ -67,6 +67,7 @@ export function mountHardwareBenchmark({
   }
  };
  const finish=(reason='cancelled',already=null)=>{
+  if(stopTimer!==null){clearTimeout(stopTimer);stopTimer=null;}
   if(!test.running()&&!already)return report;
   report=already||test.stop(performance.now(),reason);
   restore();
@@ -84,6 +85,14 @@ export function mountHardwareBenchmark({
    pixelRatio:renderer.getPixelRatio(),viewport:viewport(),adapter,
    gpuTimerAvailable:timer.supported()};
   test.start(performance.now(),optionsBench);
+  // Software WebGL can stall frames for seconds. An independently scheduled
+  // monotonic deadline ensures a test always terminates, even if no rAF
+  // callback completes. Sparse actual samples remain INCONCLUSIVE, never
+  // fabricated as a valid GPU score. The timer never alters saved gameplay.
+  if(stopTimer!==null)clearTimeout(stopTimer);
+  stopTimer=setTimeout(()=>{
+   if(test.running())finish(duration<10000?'diagnostic':'complete');
+  },duration+110);
   report=null;restored=false;
   result.hidden=false;result.textContent=t().running;
   update();requestFrame();return {durationMs:duration,started:true};
@@ -132,6 +141,6 @@ export function mountHardwareBenchmark({
  return Object.freeze({
   running:test.running,start,startFrame,endFrame,moveCamera,
   finish,report:()=>report,update,
-  dispose:()=>{finish('cancelled');timer.dispose();button.remove();copy.remove();result.remove();}
+  dispose:()=>{finish('cancelled');if(stopTimer!==null)clearTimeout(stopTimer);timer.dispose();button.remove();copy.remove();result.remove();}
  });
 }
