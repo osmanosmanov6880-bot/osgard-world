@@ -9,7 +9,7 @@
 - Mobile canvas uses uniform letterboxing instead of stretching circular magnets into ovals.
 - Predictive magnetic trajectory is cached for 50 ms rather than simulated on every draw, and can be switched off with an accessible AIM control.
 - Press-and-hold repeat on Q, E, Space, R and jump no longer triggers accidental multiple actions.
-- The attempt automatically pauses when the tab becomes hidden; it never resumes itself without a player action.
+- The attempt automatically pauses when the tab becomes hidden and skips Canvas rendering while hidden; it never resumes itself without a player action.
 - Short mission status messages remain visible until their timer expires.
 - Best successful time is stored locally with storage-failure protection. No account tracking or payment changes.
 - Reduced-motion preference disables transient particle bursts and moving star twinkle; keyboard focus is visible.

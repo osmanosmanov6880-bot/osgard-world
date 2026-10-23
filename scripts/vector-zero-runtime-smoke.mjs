@@ -314,7 +314,9 @@ key('ArrowRight')
 document.hidden = true
 document.dispatch('visibilitychange')
 assert.equal(node('objective-status').textContent, 'PAUSED', 'Switching tabs must automatically pause the attempt')
+const hiddenCanvasCalls = canvasState.calls
 pump(8)
+assert.equal(canvasState.calls, hiddenCanvasCalls, 'Hidden tab must not waste Canvas rendering work')
 const afterHidden = snapshot().x
 pump(8)
 assert.ok(snapshot().x - afterHidden < 5, 'Hidden document must clear held keyboard input')
