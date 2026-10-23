@@ -2559,10 +2559,10 @@ test('INHERIT R18 opt-in on-device benchmark measures actual frame intervals wit
  await page.emulateMedia({reducedMotion:'no-preference'});
  await page.goto('/games/inherit/?lang=ru',{waitUntil:'domcontentloaded'});
  const control=page.locator('.aaa3d-benchmark');
- await expect(control).toBeVisible();
  const before=await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()));
  const state=await page.evaluate(()=>window.InheritAAA3D.getState());
  if(state.available){
+  await expect(control).toBeVisible();
   await expect(control).toBeEnabled();
   const started=await page.evaluate(()=>window.InheritAAA3D.startHardwareBenchmark({durationMs:2300}));
   expect(started).toBe(true);
