@@ -6,6 +6,7 @@ const Wave4Assets = preload("res://scripts/wave4_assets.gd")
 const Wave5Environment = preload("res://scripts/wave5_environment.gd")
 const Wave5FX = preload("res://scripts/wave5_cinematic_fx.gd")
 const Wave5Profiler = preload("res://scripts/wave5_profiler.gd")
+const Wave5Batcher = preload("res://scripts/wave5_static_batcher.gd")
 ## OSGARD TIME EMPIRE — CHRONOS CITY. Original Godot 4.7.2 strategy vertical slice.
 ## No art ripped from any reference titles. Procedural 3D visuals; gameplay is stateful.
 
@@ -80,6 +81,7 @@ func _ready() -> void:
     wave5_profiler.name = "Wave5PerformanceProfiler"
     wave5_profiler.configure("time-empire", wave5_profile)
     add_child(wave5_profiler)
+    Wave5Batcher.optimize(self)
     _build_ui()
     _load_game()
     _refresh_ui()
