@@ -7,6 +7,7 @@
 - Three quality profiles bound the wave grid: Low 20×20, Medium 30×24, High 42×34 segments; no external image downloads.
 - Compact native mobile 3D controls, every actual action retains an accessible minimum 44px target.
 - User-triggered full-viewport cinematic focus (not fake fullscreen images); Escape returns to ordinary gameplay; unavailable when WebGL falls back to 2D.
+- High and Medium foliage is upgraded to thousands of individually sculpted, color-varied curved PBR leaves in one GPU-instanced draw call; original wind deformation drives them without new JS frame loops. Low tier skips this work entirely.
 - Original game budget, saves, generation transfer, installed offline service-worker and object interaction stay authoritative.
 
 ## Evidence and gates

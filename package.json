@@ -88,7 +88,7 @@
     "qa:game-interface": "node scripts/game-interface-smoke.mjs",
     "qa:inherit-living": "node scripts/inherit-living-legacy-smoke.mjs",
     "qa:inherit-world-alive": "node scripts/inherit-world-alive-smoke.mjs",
-    "qa:inherit-3d": "node scripts/inherit-3d-smoke.mjs && node scripts/inherit-r17-visual-smoke.mjs && node scripts/inherit-r18-performance-smoke.mjs && node scripts/inherit-r19-microbiome-smoke.mjs && node scripts/inherit-r19-device-acceptance-smoke.mjs && node scripts/inherit-r20-smoke.mjs && node scripts/inherit-r21-surf-smoke.mjs && node scripts/inherit-r22-geology-smoke.mjs && node scripts/inherit-r23-cinematic-smoke.mjs && node scripts/inherit-r23-benchmark-gate-smoke.mjs && node scripts/inherit-r24-ocean-focus-smoke.mjs",
+    "qa:inherit-3d": "node scripts/inherit-3d-smoke.mjs && node scripts/inherit-r17-visual-smoke.mjs && node scripts/inherit-r18-performance-smoke.mjs && node scripts/inherit-r19-microbiome-smoke.mjs && node scripts/inherit-r19-device-acceptance-smoke.mjs && node scripts/inherit-r20-smoke.mjs && node scripts/inherit-r21-surf-smoke.mjs && node scripts/inherit-r22-geology-smoke.mjs && node scripts/inherit-r23-cinematic-smoke.mjs && node scripts/inherit-r23-benchmark-gate-smoke.mjs && node scripts/inherit-r24-ocean-focus-smoke.mjs && node scripts/inherit-r24-foliage-smoke.mjs",
     "qa:inherit-benchmark": "npm run build && node scripts/inherit-hardware-benchmark.mjs --serve --require-webgl",
     "qa:inherit-benchmark:gpu": "npm run build && node scripts/inherit-hardware-benchmark.mjs --serve --require-gpu",
     "qa:inherit-i18n": "node scripts/inherit-i18n-smoke.mjs && node scripts/inherit-cinematic-smoke.mjs",

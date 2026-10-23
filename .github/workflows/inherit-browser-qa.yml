@@ -15,6 +15,7 @@ on:
       - "scripts/inherit-benchmark-gate.mjs"
       - "scripts/inherit-r23-benchmark-gate-smoke.mjs"
       - "scripts/inherit-r24-ocean-focus-smoke.mjs"
+      - "scripts/inherit-r24-foliage-smoke.mjs"
       - "scripts/inherit-r20-smoke.mjs"
       - "scripts/inherit-device-acceptance.mjs"
       - "scripts/build-inherit-3d.mjs"

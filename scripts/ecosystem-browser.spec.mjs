@@ -2743,6 +2743,12 @@ test('INHERIT R24 ocean fades to the real horizon and focus mode preserves gamep
  await expect.poll(()=>page.evaluate(()=>window.InheritAAA3D.getState().oceanFade)).toBe(.53);
  await page.evaluate(()=>{document.querySelector('#world').dataset.livingSeason='wind'});
  await expect.poll(()=>page.evaluate(()=>window.InheritAAA3D.getState().oceanFade)).toBe(.70);
+ const foliage=await page.evaluate(()=>window.InheritAAA3D.getState().fineFoliage);
+ expect(foliage).toBeTruthy();
+ if(state.quality==='low')expect(foliage.leaves).toBe(0);
+ else expect(foliage.leaves).toBeGreaterThan(0);
+ expect(foliage.drawCalls).toBeLessThanOrEqual(1);
+ expect(foliage.gameplayWrites).toBe(0);
  await focus.click();
  await expect(page.locator('body')).toHaveClass(/inherit-r24-focus/);
  await expect(focus).toHaveAttribute('aria-pressed','true');
