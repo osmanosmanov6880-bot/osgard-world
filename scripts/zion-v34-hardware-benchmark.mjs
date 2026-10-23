@@ -92,7 +92,8 @@ try{
   if(scenario==='high-rain-night')await page.locator('#oc-time').click()
   if(scenario==='eco-rain')await page.locator('#oc-quality').click()
   const before=await page.evaluate(()=>window.__ZION030_OPEN_CITY__.state())
-  if(before.civic?.version!=='36.0'||before.surfaces?.version!=='35.0')
+  if(before.civic?.version!=='36.0'||before.surfaces?.version!=='35.0'||
+     before.photoreal?.version!=='37.0')
     throw Error('URL does not contain the complete ZION v36 playable graphics release')
   if(scenario==='eco-rain'&&before.quality!=='eco')
     throw Error('ECO quality scenario failed to apply')
@@ -119,9 +120,10 @@ try{
     scenario,
     graphicsStateBefore:{quality:before.quality,raining:before.raining,dayMode:before.dayMode,
       dpr:before.perf?.pixelRatio??null,civic:before.civic,surfaces:before.surfaces,
-      postfx:before.postfx},
+      postfx:before.postfx,photoreal:before.photoreal},
     graphicsStateAfter:{quality:after.quality,raining:after.raining,dayMode:after.dayMode,
-      civic:after.civic,surfaces:after.surfaces,postfx:after.postfx},
+      civic:after.civic,surfaces:after.surfaces,postfx:after.postfx,
+      photoreal:after.photoreal},
     dynamicLodTriggered:scenario!=='eco-rain'&&after.quality!=='high',
     hardwareAttestation,
     physicalGpuConfirmed:Boolean(browserReport.browserHardwareReported&&hardwareAttestation.available)
@@ -135,6 +137,9 @@ try{
   console.log(JSON.stringify(report,null,2))
   if(errors.length)throw Error('Runtime page errors: '+errors.join('; '))
   if(!report.benchmarkValid)throw Error('Benchmark too short or no rendered frames')
+  if(process.env.OSGARD_REQUIRE_PHOTO_PBR==='1'&&scenario!=='eco-rain'&&
+      (report.graphicsStateAfter.photoreal?.photoTexturesLoaded||0)<4)
+    throw Error('Photographic PBR asset load was not verified: local procedural fallback was used')
   if(report.dynamicLodTriggered&&process.env.OSGARD_FORBID_ADAPTIVE_LOD==='1')
     throw Error('Requested cinematic quality dropped to adaptive during benchmark')
   if(requireGPU&&!report.physicalGpuConfirmed)
