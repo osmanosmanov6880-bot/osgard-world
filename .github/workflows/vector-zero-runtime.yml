@@ -5,6 +5,7 @@ on:
     paths:
       - "public/games/vector-zero/**"
       - "scripts/vector-zero-runtime-smoke.mjs"
+      - "scripts/vector-zero-production-smoke.mjs"
       - ".github/workflows/vector-zero-runtime.yml"
       - "package.json"
   push:
@@ -29,4 +30,6 @@ jobs:
         with:
           node-version: "22"
       - name: Run shipped VECTOR ZERO runtime in isolated Canvas and DOM harness
-        run: node scripts/vector-zero-runtime-smoke.mjs
+        run: |
+          node scripts/vector-zero-runtime-smoke.mjs
+          node scripts/vector-zero-production-smoke.mjs --self-test

@@ -20,3 +20,14 @@
 Run `npm run qa:vector-zero` or `node scripts/vector-zero-runtime-smoke.mjs`. The test executes the real inline game with a Canvas/DOM adapter, not a separate physics reimplementation. It covers pause/resume, touchscreen, buffered jump, coyote time, input auto-repeat and render validity.
 
 **Scope:** Browser visuals, GPU performance and production deployment still require separate real-device checks. This is a 2D Canvas game, not a photorealistic Unreal Engine build.
+
+## Production release identity gate
+
+The main OSGARD SSH deployment runs `npm run qa:vector-zero` *before* packaging.
+After activation, `node scripts/vector-zero-production-smoke.mjs osgard-release/html`
+fetches the published `/games/vector-zero/` route with a cache-busting query.
+It extracts the actual inline gameplay runtime and compares its SHA-256 digest with
+the packaged release. This avoids mistaking an old cached game, an HTML fallback,
+or a mismatched published script for a successful release.
+`npm run qa:vector-zero-production` executes the verifier against a local HTTP
+fixture to prove that stale and fallback runtimes are rejected.

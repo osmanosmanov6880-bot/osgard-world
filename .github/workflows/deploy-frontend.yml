@@ -116,6 +116,7 @@ jobs:
           npm run qa:ux
           npm run qa:osa-progress
           npm run qa:game-interface
+          npm run qa:vector-zero
           npm run qa:inherit-handoff
           npm run qa:inherit-account
           npm run qa:inherit-living
@@ -462,6 +463,10 @@ jobs:
         env:
           OSGARD_BASE_URL: https://osgard.world
         run: node scripts/zion-030-live-assets.mjs
+      - name: Verify published VECTOR ZERO runtime matches the released gameplay
+        env:
+          OSGARD_BASE_URL: https://osgard.world
+        run: node scripts/vector-zero-production-smoke.mjs osgard-release/html
       - name: Verify published REMIX guard readiness
         run: npm run qa:remix-health
       - name: Verify one private QA match through the published REMIX API

@@ -85,6 +85,7 @@
     "qa:core-recovery": "python3 -m unittest discover -s tests -p 'test_core_*' -v",
     "qa:game-interface": "node scripts/game-interface-smoke.mjs",
     "qa:vector-zero": "node scripts/vector-zero-runtime-smoke.mjs",
+    "qa:vector-zero-production": "node scripts/vector-zero-production-smoke.mjs --self-test",
     "qa:inherit-living": "node scripts/inherit-living-legacy-smoke.mjs",
     "qa:inherit-world-alive": "node scripts/inherit-world-alive-smoke.mjs",
     "qa:inherit-i18n": "node scripts/inherit-i18n-smoke.mjs && node scripts/inherit-cinematic-smoke.mjs",
