@@ -12,6 +12,7 @@ import {mountArtifactAtelier} from './artifact-atelier.mjs';
 import {makeCinematicPipeline,detectAdapter} from './cinematic-postfx.mjs';
 import {makeFrameBudget} from './frame-budget.mjs';
 import {makeAdaptiveResolution} from './adaptive-resolution.mjs';
+import {makeSavedTraceMotion} from './saved-trace-motion.mjs';
 import {mountHardwareBenchmark} from './hardware-benchmark-ui.mjs';
 (()=>{
 'use strict';
@@ -53,12 +54,13 @@ island.prepend(canvas);
 const status={available:false,active:false,postFX:'off',adapter:null,materials:null,ambientLife:null,performance:null,frames:0,traces:0,generation:null,quality,season:'',fallback:null,flyby:false,renderer:'WebGL Three.js',detailTiers:{high:0,medium:0,low:0},detailTriangles:0,detailDrawCalls:0,cachedTraces:0,createdTraces:0,heritageDetails:null,coastDetails:null,microclimate:null,environmentTier:null,cameraFocus:'island'};
 const frameBudget=makeFrameBudget();
 const autoResolution=makeAdaptiveResolution();
+const traceMotion=makeSavedTraceMotion({maxAnimated:lowPower?18:58});
 window.InheritAAA3D=Object.freeze({
  getState:()=>({...status}),
  getHardwareBenchmark:()=>perfLab?.report()||null,
  startHardwareBenchmark:options=>perfLab?.start(options)||false,
  getPerformanceReport:()=>({...frameBudget.snapshot(),adapter:status.adapter,
-  quality,statusPostFX:status.postFX,materials:status.materials,ambientLife:status.ambientLife,microclimate:status.microclimate,adaptiveResolution:autoResolution.snapshot()}),
+  quality,statusPostFX:status.postFX,materials:status.materials,ambientLife:status.ambientLife,microclimate:status.microclimate,adaptiveResolution:autoResolution.snapshot(),traceMotion:traceMotion.stats()}),
  samplePerformance:async({minFrames=36,maxWaitMs=10000}={})=>{
   const start=performance.now(),frames=frameBudget.snapshot().samples;
   return new Promise(resolve=>{
@@ -198,6 +200,7 @@ function syncState(force=false){
  sorted.forEach((item,rank)=>{
   tiers.set(item.i,rank<detailBudget.high?'high':rank<detailBudget.high+detailBudget.medium?'medium':'low');
  });
+ traceMotion.restore();
  const counts={high:0,medium:0,low:0};
  const visible=new Set(),occur=new Map();
  let triangles=0,drawCalls=0,activeLanterns=0,reused=0,created=0;
@@ -242,6 +245,7 @@ function syncState(force=false){
  status.detailTiers=counts;
  status.detailTriangles=triangles;
  status.detailDrawCalls=drawCalls;
+ traceMotion.bind(quality==='low'?[]:traceRoot.children);
  status.traces=items.length;
  status.generation=current?.generation??null;
  updateEnvironment();
@@ -297,6 +301,7 @@ function renderOnce(time){
  active?.life?.update(motion.matches?0:time,lastSeason,renderer.getPixelRatio());
  active?.microBiomes?.update(motion.matches?0:time);
  active?.microclimate?.update(motion.matches?0:time,{pixelRatio:renderer.getPixelRatio(),reducedMotion:motion.matches});
+ traceMotion.update(motion.matches?0:time,lastSeason,motion.matches);
  renderer.info.reset();
  perfLab?.startFrame(time);
  const cpuStart=performance.now();
