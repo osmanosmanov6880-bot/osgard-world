@@ -20,6 +20,7 @@ const PerformanceLabR11Script = preload("res://scripts/performance_lab_r11.gd")
 const EngineeringCampusR12Script = preload("res://scripts/engineering_campus_r12.gd")
 const CinematicLightingR12Script = preload("res://scripts/cinematic_lighting_r12.gd")
 const AdaptiveQualityR12Script = preload("res://scripts/adaptive_quality_r12.gd")
+const CinematicPortR14Script = preload("res://scripts/cinematic_port_r14.gd")
 const SAVE_PATH = "user://nebula_3d_save.json"
 const SECTOR_COLORS = [Color(0.10,0.68,0.97), Color(0.64,0.35,1.0), Color(0.98,0.73,0.40), Color(1.0,0.46,0.34), Color(0.87,0.27,0.88), Color(0.24,0.92,0.88)]
 const SECTOR_NAMES = ["ПОРТ АВРОРА","НЕОНОВЫЙ КВАРТАЛ","ЦИТАДЕЛЬ","ЧЁРНЫЙ РЫНОК","РАЗЛОМ","НЕКСУС"]
@@ -73,6 +74,7 @@ var engineering_r12
 var lighting_r12
 var adaptive_r12
 var post_interval_r12: float = 0.0
+var port_r14
 
 func _ready() -> void:
     rng.seed = 20261022
@@ -274,6 +276,10 @@ func _build_city() -> void:
     engineering_r12.name = "R12_AerospaceEngineeringCampus"
     add_child(engineering_r12)
     engineering_r12.build(SECTOR_POSITIONS)
+    port_r14 = CinematicPortR14Script.new()
+    port_r14.name = "R14_SculptedCinematicPorts"
+    add_child(port_r14)
+    port_r14.build(SECTOR_POSITIONS)
     _build_starfield()
 
 func _build_sector(center: Vector3, tint: Color, name: String, index: int) -> void:
@@ -362,10 +368,10 @@ func _make_hud() -> void:
     block.set_anchors_preset(Control.PRESET_TOP_LEFT)
     block.offset_left = 22
     block.offset_top = 22
-    block.offset_right = 560
-    block.offset_bottom = 168
+    block.offset_right = 510
+    block.offset_bottom = 157
     var frame := StyleBoxFlat.new()
-    frame.bg_color = Color(0.018,0.038,0.074,0.87)
+    frame.bg_color = Color(0.018,0.028,0.043,0.78)
     frame.border_color = Color(0.67,0.77,0.92,0.38)
     frame.set_border_width_all(1)
     frame.set_corner_radius_all(12)
@@ -380,7 +386,7 @@ func _make_hud() -> void:
     stack.add_theme_constant_override("separation",9)
     block.add_child(stack)
     hud_mission = Label.new()
-    hud_mission.add_theme_font_size_override("font_size",26)
+    hud_mission.add_theme_font_size_override("font_size",23)
     hud_mission.add_theme_color_override("font_color",Color(0.99,0.81,0.50))
     stack.add_child(hud_mission)
     hud_status = Label.new()
@@ -389,7 +395,7 @@ func _make_hud() -> void:
     stack.add_child(hud_status)
     hud_controls = Label.new()
     hud_controls.text = "WASD полёт · Q/E высота · Shift форсаж · Space огонь · F3 графика · F6 FPS · F7 тест · F10 фото"
-    hud_controls.add_theme_font_size_override("font_size",15)
+    hud_controls.add_theme_font_size_override("font_size",13)
     hud_controls.add_theme_color_override("font_color",Color(0.81,0.91,1.0))
     hud_controls.anchor_top=1.0
     hud_controls.anchor_bottom=1.0
@@ -725,6 +731,12 @@ func _set_graphics_quality(mode: int) -> void:
         lighting_r12.set_quality(graphics_quality)
     if is_instance_valid(adaptive_r12):
         adaptive_r12.sync_quality(graphics_quality)
+    if is_instance_valid(port_r14):
+        port_r14.set_quality(graphics_quality)
+    if is_instance_valid(ship):
+        var detail_r14 = ship.get_node_or_null("AnimatedShip/HighDetailInterceptorR5/R14_AirframeRefinement")
+        if detail_r14 != null:
+            detail_r14.set_quality(graphics_quality)
     _show_notice("ГРАФИКА · " + ["МАКСИМУМ", "ВЫСОКАЯ", "ОПТИМИЗАЦИЯ"][graphics_quality])
 
 func _r12_on_auto_quality(mode: int, reason: String) -> void:
