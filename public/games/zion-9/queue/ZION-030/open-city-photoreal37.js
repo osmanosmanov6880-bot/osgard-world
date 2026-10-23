@@ -23,7 +23,7 @@
     const lite=Boolean(softwareGL||reducedMotion);
     const ultra=!lite&&!mobile;
     const mapped=[],ownedTextures=[],ownedMaterials=[],ownedGeometry=[],photoLoaded=[],vehicleRestores=[];
-    const originalEnv=scene.environment;
+    const originalEnv=scene.environment,originalExposure=renderer.toneMappingExposure;
     const oldLight={
       key:keyLight?{intensity:keyLight.intensity,color:keyLight.color.clone()}:null,
       hemi:hemi?hemi.intensity:null,
@@ -422,8 +422,9 @@
       if(carContact&&car?.mesh){
         carContact.position.x=car.mesh.position.x;
         carContact.position.z=car.mesh.position.z;
-        carContact.rotation.z=0;
-        carContact.rotation.y=car.mesh.rotation.y;
+        // Plane was tipped onto XZ; local-Z carries the vehicle heading.
+        carContact.rotation.z=car.mesh.rotation.y;
+        carContact.rotation.y=0;
       }
       if(avatarContact&&avatar){
         avatarContact.position.x=avatar.position.x;
@@ -433,7 +434,9 @@
     }
     function dispose(){
       if(disposed)return;disposed=true;
-      scene.environment=originalEnv;scene.remove(root);
+      scene.environment=originalEnv;
+      renderer.toneMappingExposure=originalExposure;
+      scene.remove(root);
       for(const restored of vehicleRestores)restored.mesh.material=restored.material;
       for(const item of mapped){
         const m=item.material,o=item.original;
