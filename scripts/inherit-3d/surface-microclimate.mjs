@@ -57,7 +57,7 @@ const rainVertex=[
  ' vec4 v=modelViewMatrix*vec4(p,1.0);',
  ' gl_Position=projectionMatrix*v;',
  ' gl_PointSize=clamp(aSize*uPixels*110.0/max(8.0,-v.z),1.4,5.2);',
- ' vFade=smoothstep(-4.0,1.0,p.y)*smoothstep(27.0,19.0,p.y);',
+ ' vFade=smoothstep(-4.0,1.0,p.y)*(1.0-smoothstep(19.0,27.0,p.y));',
  '}'
 ].join('\n');
 const rainFragment=[
