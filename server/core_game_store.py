@@ -96,6 +96,7 @@ class Shop:
   require(signature_secret.startswith("whsec_") and len(signature_secret)>=16,"Webhook магазина не настроен.","shop_webhook_config",503)
   event=verify_webhook(raw,signature,signature_secret)
   require(event.get("livemode")==self.store.commerce.config.livemode,"Режим Stripe webhook не совпадает.","mode_mismatch",409)
+  require(isinstance(event.get("data"),dict),"Нет данных события.","event_invalid",400)
   eid=event.get("id");etype=event.get("type")
   require(type(eid) is str and len(eid)<=255,"Неверное событие.","event_invalid",400)
   if etype not in ("checkout.session.completed","checkout.session.async_payment_succeeded","charge.refunded","charge.dispute.created"):
@@ -124,6 +125,7 @@ class Shop:
      db.execute("UPDATE game_shop_orders SET state='revoked',payment_intent=? WHERE id=?",(intent,order["id"]))
      db.execute("INSERT INTO game_shop_webhook_events VALUES(?)",(eid,))
      return {"received":True,"handled":True,"revoked":True}
+    require(order["state"]!="revoked","Возвращённый заказ нельзя повторно активировать.","order_revoked",409)
     db.execute("UPDATE game_shop_orders SET state='paid',payment_intent=? WHERE id=?",(intent,order["id"]))
     db.execute("""INSERT INTO game_shop_entitlements(user_id,sku,order_id,revoked_at)
                   VALUES(?,?,?,NULL)

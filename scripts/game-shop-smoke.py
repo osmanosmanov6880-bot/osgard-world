@@ -116,6 +116,12 @@ class StoreTests(unittest.TestCase):
   body,sig=self.payload()
   os.environ.pop('OSGARD_GAME_SHOP_WEBHOOK_SECRET')
   with self.assertRaises(Fault):self.shop.webhook(body,sig)
+ def test_invalid_event_shape_rejected(self):
+  self.shop.checkout('buyer1',{'sku':'iris'})
+  raw=json.dumps({'id':'evt_malformed','type':'checkout.session.completed','livemode':False,'data':None}).encode()
+  stamp=str(int(time.time()))
+  sig=hmac.new(self.store.commerce.config.webhook_secret.encode(),stamp.encode()+b'.'+raw,hashlib.sha256).hexdigest()
+  with self.assertRaises(Fault):self.shop.webhook(raw,'t='+stamp+',v1='+sig)
  def test_unknown_product_rejected(self):
   with self.assertRaises(Fault):self.shop.checkout('buyer1',{'sku':'free-money'})
 if __name__=='__main__':unittest.main()
