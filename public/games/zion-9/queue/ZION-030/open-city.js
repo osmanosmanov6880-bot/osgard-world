@@ -101,6 +101,15 @@
     <div class="oc-vehicle-charge" id="oc-vehicle-charge" hidden><span>\u26a1 \u0417\u0410\u0420\u042f\u0414</span><strong id="oc-battery-readout">100%</strong><div class="oc-meter"><i id="oc-battery-bar"></i></div></div>
   `);
   shell.querySelector('.oc-start-foot').append(' · SPACE: прыжок · V: камера · J: журнал · M: карта · ESC: пауза');
+  // Keep mission and pause actions inside the same responsive action bar as
+  // CINEMA, FPS and Exit. The old absolute offsets could cover those controls.
+  const headerActions=shell.querySelector('.oc-top-right');
+  const exitButton=shell.querySelector('#oc-exit');
+  for(const id of ['oc-journal-button','oc-pause-button']){
+    const control=shell.querySelector('#'+id);
+    if(headerActions&&exitButton&&control)headerActions.insertBefore(control,exitButton);
+  }
+
   shell.insertAdjacentHTML('beforeend', '<button id="oc-nav-mobile" type="button" aria-label="Переключить маршрут GPS">⌖ GPS: СЮЖЕТ</button>');
   shell.insertAdjacentHTML('beforeend', '<button id="oc-view-button" class="oc-view-button" type="button" aria-label="\u0421\u043c\u0435\u043d\u0438\u0442\u044c \u043a\u0430\u043c\u0435\u0440\u0443">\u25c9 \u041a\u0410\u041c\u0415\u0420\u0410</button><button id="oc-jump-button" class="oc-jump-button" type="button" aria-label="\u041f\u0440\u044b\u0433\u043d\u0443\u0442\u044c">\u21e7 \u041f\u0420\u042b\u0416\u041e\u041a</button>');
 
