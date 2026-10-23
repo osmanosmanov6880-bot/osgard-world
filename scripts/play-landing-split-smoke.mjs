@@ -1,0 +1,16 @@
+import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
+const read = path => readFileSync(path, 'utf8')
+const home = read('src/PlayHome.tsx')
+const featured = read('src/PlayFeaturedSection.tsx')
+const partners = read('src/PlayPartnerIntro.tsx')
+assert.match(home, /const PlayFeaturedSection = lazy\(\(\) => import\('\.\/PlayFeaturedSection'\)\)/)
+assert.match(home, /const PlayPartnerIntro = lazy\(\(\) => import\('\.\/PlayPartnerIntro'\)\)/)
+assert.doesNotMatch(home, /import PlayWorldCard from/)
+assert.doesNotMatch(home, /import \{.*getPlayGame.*\} from '\.\/redesignCatalog'/)
+assert.match(home, /<Suspense fallback=/)
+assert.match(featured, /<PlayWorldCard/)
+assert.match(featured, /'cp-featured-world'|featured favorite=/)
+assert.match(partners, /OSGARD PLAY \/ PARTNERS/)
+assert.match(home, /<h1 id="play-title">OSGARD/)
+console.log('PASS: PLAY hero does not eagerly import featured world cards or partner route; live catalogue preserved')

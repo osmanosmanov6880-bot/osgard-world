@@ -1,0 +1,41 @@
+name: PLAY landing bundle size and deferred sections
+
+on:
+  pull_request:
+    paths:
+      - "src/PlayHome.tsx"
+      - "src/PlayFeaturedSection.tsx"
+      - "src/PlayPartnerIntro.tsx"
+      - "scripts/play-landing-split-smoke.mjs"
+      - ".github/workflows/play-landing-budget.yml"
+  push:
+    branches: [master]
+    paths:
+      - "src/PlayHome.tsx"
+      - "src/PlayFeaturedSection.tsx"
+      - "src/PlayPartnerIntro.tsx"
+      - "scripts/play-landing-split-smoke.mjs"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  landing-budget:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - name: Confirm featured and partner modules are behind dynamic imports
+        run: node scripts/play-landing-split-smoke.mjs
+      - name: Build exactly what users download
+        run: npm run build
+      - name: Enforce unchanged 95 KiB compressed PLAY landing budget
+        run: npm run qa:redesign-build
+      - name: Verify SSR/route integration for world, intelligence and PLAY
+        run: npm run qa:redesign
