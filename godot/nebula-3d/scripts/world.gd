@@ -17,6 +17,9 @@ const CityCladdingR10Script = preload("res://scripts/city_cladding_r10.gd")
 const IndustrialEnvironmentR11Script = preload("res://scripts/industrial_environment_r11.gd")
 const CinematicPostR11Script = preload("res://scripts/cinematic_post_r11.gd")
 const PerformanceLabR11Script = preload("res://scripts/performance_lab_r11.gd")
+const EngineeringCampusR12Script = preload("res://scripts/engineering_campus_r12.gd")
+const CinematicLightingR12Script = preload("res://scripts/cinematic_lighting_r12.gd")
+const AdaptiveQualityR12Script = preload("res://scripts/adaptive_quality_r12.gd")
 const SAVE_PATH = "user://nebula_3d_save.json"
 const SECTOR_COLORS = [Color(0.10,0.68,0.97), Color(0.64,0.35,1.0), Color(0.98,0.73,0.40), Color(1.0,0.46,0.34), Color(0.87,0.27,0.88), Color(0.24,0.92,0.88)]
 const SECTOR_NAMES = ["ПОРТ АВРОРА","НЕОНОВЫЙ КВАРТАЛ","ЦИТАДЕЛЬ","ЧЁРНЫЙ РЫНОК","РАЗЛОМ","НЕКСУС"]
@@ -66,6 +69,10 @@ var industrial_r11
 var cinematic_post_r11
 var performance_lab_r11
 var graphics_quality: int = 0
+var engineering_r12
+var lighting_r12
+var adaptive_r12
+var post_interval_r12: float = 0.0
 
 func _ready() -> void:
     rng.seed = 20261022
@@ -80,6 +87,13 @@ func _ready() -> void:
     performance_lab_r11 = PerformanceLabR11Script.new()
     performance_lab_r11.name = "R11_PerformanceLab"
     add_child(performance_lab_r11)
+    lighting_r12 = CinematicLightingR12Script.new()
+    lighting_r12.name = "R12_CinematicLighting"
+    add_child(lighting_r12)
+    adaptive_r12 = AdaptiveQualityR12Script.new()
+    adaptive_r12.name = "R12_AdaptiveQuality"
+    add_child(adaptive_r12)
+    adaptive_r12.quality_requested.connect(_r12_on_auto_quality)
     _load_progress()
     _start_mission()
     _show_notice("NEBULA ASCENSION · CINEMATIC 3D")
@@ -256,6 +270,10 @@ func _build_city() -> void:
     industrial_r11.name = "R11_IndustrialHeroEnvironment"
     add_child(industrial_r11)
     industrial_r11.build(SECTOR_POSITIONS)
+    engineering_r12 = EngineeringCampusR12Script.new()
+    engineering_r12.name = "R12_AerospaceEngineeringCampus"
+    add_child(engineering_r12)
+    engineering_r12.build(SECTOR_POSITIONS)
     _build_starfield()
 
 func _build_sector(center: Vector3, tint: Color, name: String, index: int) -> void:
@@ -370,7 +388,7 @@ func _make_hud() -> void:
     hud_status.add_theme_color_override("font_color",Color(0.86,0.95,1.0))
     stack.add_child(hud_status)
     hud_controls = Label.new()
-    hud_controls.text = "WASD полёт · Q/E высота · Shift форсаж · Space огонь · F3 графика · F6 FPS · F7 тест"
+    hud_controls.text = "WASD полёт · Q/E высота · Shift форсаж · Space огонь · F3 графика · F6 FPS · F7 тест · F10 фото"
     hud_controls.add_theme_font_size_override("font_size",15)
     hud_controls.add_theme_color_override("font_color",Color(0.81,0.91,1.0))
     hud_controls.anchor_top=1.0
@@ -434,6 +452,10 @@ func _process(delta: float) -> void:
     if notice_timer <= 0.0: hud_notice.text = ""
     var basis: Basis = ship.global_transform.basis
     var speed: float = ship.velocity.length()
+    post_interval_r12 += delta
+    if post_interval_r12 >= 0.12 and is_instance_valid(cinematic_post_r11):
+        post_interval_r12 = 0.0
+        cinematic_post_r11.set_flight_velocity(speed)
     var desired_distance: float = camera_distance + minf(6.0,speed*0.06)
     var desired_height: float = 5.5 + minf(3.0,speed*0.025)
     var ideal: Vector3 = ship.global_position + basis.z*desired_distance + Vector3(0,desired_height,0)
@@ -658,6 +680,7 @@ func _unhandled_key_input(event: InputEvent) -> void:
             camera_distance=[14.5,23.0,33.0][lens_mode]
             _show_notice("КАМЕРА · " + str(lens_mode+1) + "/3")
         elif event.keycode==KEY_F3:
+            adaptive_r12.set_auto(false)
             _set_graphics_quality((graphics_quality+1)%3)
         elif event.keycode==KEY_F4:
             hud_canvas.visible = not hud_canvas.visible
@@ -671,10 +694,18 @@ func _unhandled_key_input(event: InputEvent) -> void:
             _show_notice("КИНОЭФФЕКТЫ · " + ("ВКЛ" if cinematic_post_r11.is_active() else "ВЫКЛ"))
         elif event.keycode==KEY_F9:
             performance_lab_r11.copy_report()
+        elif event.keycode==KEY_F10:
+            performance_lab_r11.capture_frame()
+            _show_notice("СКРИНШОТ R12 · ЗАХВАТ КАДРА")
+        elif event.keycode==KEY_F11:
+            adaptive_r12.set_auto(not adaptive_r12.auto_enabled)
+            _show_notice("АВТО-ГРАФИКА · " + ("ВКЛ" if adaptive_r12.auto_enabled else "ВЫКЛ"))
+        elif event.keycode==KEY_F12:
+            _show_notice("ОСВЕЩЕНИЕ · " + lighting_r12.toggle_look())
         elif event.keycode==KEY_1 or event.keycode==KEY_2 or event.keycode==KEY_3:
             _upgrade_docked(event.keycode-KEY_1)
         elif event.keycode==KEY_F1:
-            _show_notice("WASD ПОЛЁТ · F3 ГРАФИКА · F4 HUD · F6 FPS · F7 ТЕСТ · F8 КИНО · F9 ОТЧЁТ")
+            _show_notice("R12 · F3 ПРОФИЛЬ · F6 FPS · F7 ТЕСТ · F8 ЭФФЕКТЫ · F9 ОТЧЁТ · F10 PNG · F11 АВТО · F12 СВЕТ")
 
 func _set_graphics_quality(mode: int) -> void:
     graphics_quality = clampi(mode, 0, 2)
@@ -688,7 +719,17 @@ func _set_graphics_quality(mode: int) -> void:
         cinematic_post_r11.set_quality(graphics_quality)
     if is_instance_valid(performance_lab_r11):
         performance_lab_r11.set_quality(graphics_quality)
+    if is_instance_valid(engineering_r12):
+        engineering_r12.set_quality(graphics_quality)
+    if is_instance_valid(lighting_r12):
+        lighting_r12.set_quality(graphics_quality)
+    if is_instance_valid(adaptive_r12):
+        adaptive_r12.sync_quality(graphics_quality)
     _show_notice("ГРАФИКА · " + ["МАКСИМУМ", "ВЫСОКАЯ", "ОПТИМИЗАЦИЯ"][graphics_quality])
+
+func _r12_on_auto_quality(mode: int, reason: String) -> void:
+    _set_graphics_quality(mode)
+    _show_notice("АВТО-ПРОФИЛЬ · " + reason)
 
 func _upgrade_docked(slot: int) -> void:
     if ship.global_position.distance_to(SECTOR_POSITIONS[0])>115.0:
