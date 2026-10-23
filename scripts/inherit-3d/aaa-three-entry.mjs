@@ -49,14 +49,14 @@ world.parentElement.insertBefore(controls,world);
 const canvas=make('canvas','aaa3d-canvas');canvas.setAttribute('aria-hidden','true');
 canvas.setAttribute('tabindex','-1');canvas.style.pointerEvents='none';
 island.prepend(canvas);
-const status={available:false,active:false,postFX:'off',adapter:null,materials:null,ambientLife:null,performance:null,frames:0,traces:0,generation:null,quality,season:'',fallback:null,flyby:false,renderer:'WebGL Three.js',detailTiers:{high:0,medium:0,low:0},detailTriangles:0,detailDrawCalls:0,cachedTraces:0,createdTraces:0,heritageDetails:null,coastDetails:null,environmentTier:null,cameraFocus:'island'};
+const status={available:false,active:false,postFX:'off',adapter:null,materials:null,ambientLife:null,performance:null,frames:0,traces:0,generation:null,quality,season:'',fallback:null,flyby:false,renderer:'WebGL Three.js',detailTiers:{high:0,medium:0,low:0},detailTriangles:0,detailDrawCalls:0,cachedTraces:0,createdTraces:0,heritageDetails:null,coastDetails:null,microclimate:null,environmentTier:null,cameraFocus:'island'};
 const frameBudget=makeFrameBudget();
 window.InheritAAA3D=Object.freeze({
  getState:()=>({...status}),
  getHardwareBenchmark:()=>perfLab?.report()||null,
  startHardwareBenchmark:options=>perfLab?.start(options)||false,
  getPerformanceReport:()=>({...frameBudget.snapshot(),adapter:status.adapter,
-  quality,statusPostFX:status.postFX,materials:status.materials,ambientLife:status.ambientLife}),
+  quality,statusPostFX:status.postFX,materials:status.materials,ambientLife:status.ambientLife,microclimate:status.microclimate}),
  samplePerformance:async({minFrames=36,maxWaitMs=10000}={})=>{
   const start=performance.now(),frames=frameBudget.snapshot().samples;
   return new Promise(resolve=>{
@@ -157,6 +157,7 @@ function updateEnvironment(){
  const seasonalScene=sceneryCache.get(status.environmentTier);
  seasonalScene?.setSeason?.(season);
  status.coastDetails=seasonalScene?.microBiomes?.stats?.()||status.coastDetails;
+ status.microclimate=seasonalScene?.microclimate?.stats?.()||status.microclimate;
 }
 function syncState(force=false){
  if(!game.snapshot)return;
@@ -254,6 +255,7 @@ function activateScenery(tier){
  scene.add(staticWorld);
  status.heritageDetails=built.heritage?.userData?.assetStats||null;
  status.coastDetails=built.microBiomes?.stats?.()||null;
+ status.microclimate=built.microclimate?.stats?.()||null;
  status.environmentTier=tier;
  status.materials=built.surfaceStats;
  status.ambientLife=built.life?.stats()||null;
@@ -291,6 +293,7 @@ function renderOnce(time){
  const active=sceneryCache.get(status.environmentTier);
  active?.life?.update(motion.matches?0:time,lastSeason,renderer.getPixelRatio());
  active?.microBiomes?.update(motion.matches?0:time);
+ active?.microclimate?.update(motion.matches?0:time,{pixelRatio:renderer.getPixelRatio(),reducedMotion:motion.matches});
  renderer.info.reset();
  perfLab?.startFrame(time);
  const cpuStart=performance.now();
