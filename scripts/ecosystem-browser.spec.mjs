@@ -2552,3 +2552,38 @@ test('INHERIT R17 renders physical materials, living atmosphere, cinematic FX an
  expect(JSON.stringify(await page.evaluate(()=>window.InheritGame.snapshot()))).toBe(before);
  expect(errors).toEqual([]);
 });
+
+
+test('INHERIT R18 opt-in on-device benchmark measures actual frame intervals without mutating saves',async({page},info)=>{
+ const errors=await prepareStandaloneGame(page);
+ await page.emulateMedia({reducedMotion:'no-preference'});
+ await page.goto('/games/inherit/?lang=ru',{waitUntil:'domcontentloaded'});
+ const control=page.locator('.aaa3d-benchmark');
+ await expect(control).toBeVisible();
+ const before=await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()));
+ const state=await page.evaluate(()=>window.InheritAAA3D.getState());
+ if(state.available){
+  await expect(control).toBeEnabled();
+  const started=await page.evaluate(()=>window.InheritAAA3D.startHardwareBenchmark({durationMs:2300}));
+  expect(started).toBe(true);
+  await expect(control).toHaveAttribute('aria-pressed','true');
+  await expect.poll(()=>page.evaluate(()=>window.InheritAAA3D.getHardwareBenchmark()),{
+   timeout:16000,intervals:[250,500,700,1000]
+  }).not.toBeNull();
+  const result=await page.evaluate(()=>window.InheritAAA3D.getHardwareBenchmark());
+  expect(result.schema).toBe('INHERIT-3D-HARDWARE-BENCHMARK-v1');
+  expect(result.hardwareVerified).toBe(false);
+  expect(result.reason).toBe('diagnostic');
+  expect(result.valid).toBe(false); // A 2.3-second CI diagnostic is not a full hardware acceptance.
+  expect(result.durationMs).toBeGreaterThan(1000);
+  expect(result.qualityTested).toMatch(/high|medium|low/);
+  expect(result.gpuTimerMeasured===false||result.gpuSamples>0).toBe(true);
+  await expect(page.locator('.aaa3d-benchmark-result')).toBeVisible();
+  await expect(page.locator('.aaa3d-benchmark-copy')).toBeVisible();
+  await expect(control).toHaveAttribute('aria-pressed','false');
+ }else{
+  await expect(control).toBeDisabled();
+ }
+ expect(await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()))).toBe(before);
+ expect(errors).toEqual([]);
+});
