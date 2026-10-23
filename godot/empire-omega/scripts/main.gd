@@ -508,6 +508,9 @@ func _apply_preferences() -> void:
 	if discovery_markers != null: discovery_markers.sync_state(GameState.data)
 	if world.facade_windows != null:
 		world.facade_windows.visible = GameSettings.graphics != "low"
+	var architecture: Node = world.get_node_or_null("HorizonArchitectureR7")
+	if architecture != null:
+		architecture.call("set_profile",GameSettings.graphics)
 	var at: Vector3 = car.global_position if driving else player.global_position
 	_update_agent_lod(at)
 
