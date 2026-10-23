@@ -1,0 +1,27 @@
+name: OSGARD public route matrix verification
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - "scripts/production-route-matrix.mjs"
+      - ".github/workflows/game-route-matrix-live.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-published-routes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Probe live desktop and mobile routes, JSON and Godot shells
+        env:
+          OSGARD_BASE_URL: https://osgard.world
+          SKILLCRED_EXPECT_CURRENT_DESIGN: "1"
+        run: node scripts/production-route-matrix.mjs
