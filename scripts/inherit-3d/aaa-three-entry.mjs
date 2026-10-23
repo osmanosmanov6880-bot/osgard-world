@@ -11,6 +11,7 @@ import {makeTrace,disposeTraces} from './trace-models.mjs';
 import {mountArtifactAtelier} from './artifact-atelier.mjs';
 import {makeCinematicPipeline,detectAdapter} from './cinematic-postfx.mjs';
 import {makeFrameBudget} from './frame-budget.mjs';
+import {mountHardwareBenchmark} from './hardware-benchmark-ui.mjs';
 (()=>{
 'use strict';
 const d=document,el=(s,root=d)=>root.querySelector(s),game=window.InheritGame;
@@ -52,6 +53,8 @@ const status={available:false,active:false,postFX:'off',adapter:null,materials:n
 const frameBudget=makeFrameBudget();
 window.InheritAAA3D=Object.freeze({
  getState:()=>({...status}),
+ getHardwareBenchmark:()=>perfLab?.report()||null,
+ startHardwareBenchmark:options=>perfLab?.start(options)||false,
  getPerformanceReport:()=>({...frameBudget.snapshot(),adapter:status.adapter,
   quality,statusPostFX:status.postFX,materials:status.materials,ambientLife:status.ambientLife}),
  samplePerformance:async({minFrames=36,maxWaitMs=10000}={})=>{
@@ -66,7 +69,7 @@ window.InheritAAA3D=Object.freeze({
  },
  toggle:()=>switcher.click()
 });
-let renderer,scene,camera,staticWorld,traceRoot,sun,hemi,cold,adapter=null,pipeline=null,postWanted=false,adaptivePixelScale=1,monitorOpen=false,lastMetricsUpdate=0;
+let renderer,scene,camera,staticWorld,traceRoot,sun,hemi,cold,adapter=null,pipeline=null,postWanted=false,adaptivePixelScale=1,monitorOpen=false,lastMetricsUpdate=0,perfLab=null;
 let waterUniforms,raf=0,lastFrame=0,sceneVisible=true,modeEnabled=true,flybyStart=0,flyby=false;
 let signature='',lastSeason='',aspect=1.84,firstDraw=false;
 const traceCache=new Map(); // Reuse unchanged sculpted meshes across generations and building moves.
@@ -110,7 +113,7 @@ function setMode(enabled,reason){
  status.active=next;modeEnabled=next;status.fallback=reason||null;
  island.classList.toggle('aaa3d-active',next);
  world.classList.toggle('aaa3d-active',next);
- if(!next)stop();
+ if(!next){perfLab?.finish('2d-switch');stop();}
  else{
   resize();syncState(true);renderOnce(performance.now());start();
  }
@@ -119,6 +122,7 @@ function setMode(enabled,reason){
 }
 function resize(){
  if(!renderer||!camera)return;
+ if(perfLab?.running())perfLab.finish('viewport-resized');
  const width=Math.max(2,Math.floor(island.clientWidth));
  const height=Math.max(2,Math.floor(island.clientHeight));
  aspect=width/height;
@@ -281,10 +285,12 @@ function renderOnce(time){
  const active=sceneryCache.get(status.environmentTier);
  active?.life?.update(motion.matches?0:time,lastSeason,renderer.getPixelRatio());
  renderer.info.reset();
+ perfLab?.startFrame(time);
  const cpuStart=performance.now();
  if(pipeline)pipeline.render(time,Math.min(.08,Math.max(.008,(time-lastFrame)/1000||.033)),motion.matches);
  else renderer.render(scene,camera);
  const cpuSubmissionMs=performance.now()-cpuStart;
+ perfLab?.endFrame(time,cpuSubmissionMs);
  frameBudget.record(time,cpuSubmissionMs,renderer,renderer.getPixelRatio());
  status.performance=frameBudget.snapshot();
  status.ambientLife=active?.life?.stats()||null;
@@ -302,7 +308,7 @@ function renderOnce(time){
  status.frames+=1;firstDraw=true;
  // Dynamically recover frame pacing by lowering pixel density without
  // deleting user-built objects, altering saves or silently switching modes.
- if(quality==='high'&&frameBudget.shouldReduceResolution()&&adaptivePixelScale===1){
+ if(!perfLab?.running()&&quality==='high'&&frameBudget.shouldReduceResolution()&&adaptivePixelScale===1){
   adaptivePixelScale=.8;
   frameBudget.markReduced();
   resize();
@@ -315,9 +321,10 @@ window.addEventListener('aaa-atelier-close',()=>{renderOnce(performance.now());s
 function nextFrame(time){
  raf=0;
  if(!shouldRun())return;
- const target=flyby?33:quality==='high'?33:48;
+ const target=perfLab?.running()?0:flyby?33:quality==='high'?33:48;
  if(time-lastFrame>=target){
   lastFrame=time;
+  if(perfLab?.running())perfLab.moveCamera(time);
   if(flyby){
    if(!applyFlyby(time)){
     flyby=false;status.flyby=false;status.cameraFocus='island';
@@ -330,7 +337,7 @@ function nextFrame(time){
 }
 function start(){if(!raf&&shouldRun())raf=requestAnimationFrame(nextFrame);}
 function doFlyby(){
- if(flyby||motion.matches||!status.active)return;
+ if(flyby||perfLab?.running()||motion.matches||!status.active)return;
  flyby=true;status.flyby=true;flybyStart=performance.now();
  notify(words().flyby);updateLabels();start();
 }
@@ -357,7 +364,7 @@ monitor.addEventListener('click',()=>{
 });
 // User-origin mouse clicks must not accidentally place traces during a camera tour.
 world.addEventListener('click',event=>{
- if(!flyby)return;
+ if(!flyby&&!perfLab?.running())return;
  if(event.target instanceof Element&&event.target.closest('#island')){
   event.preventDefault();event.stopImmediatePropagation();
  }
@@ -365,7 +372,7 @@ world.addEventListener('click',event=>{
 // Select the REAL native trace inspector when the user directly clicks a
 // rendered 3D object. The raycaster never writes the world or spends a move.
 world.addEventListener('click',event=>{
- if(!status.active||flyby||d.body.classList.contains('replay-mode')||!camera||!traceRoot||!(event.target instanceof Element)||
+ if(!status.active||flyby||perfLab?.running()||d.body.classList.contains('replay-mode')||!camera||!traceRoot||!(event.target instanceof Element)||
     !event.target.closest('#island')||event.target.closest('button,[data-memory]'))return;
  const rect=canvas.getBoundingClientRect();
  if(!rect.width||!rect.height)return;
@@ -438,6 +445,14 @@ try{
  traceRoot=new THREE.Group();traceRoot.name='Actual saved traces';scene.add(traceRoot);
  status.available=true;
  configurePostFx();
+ perfLab=mountHardwareBenchmark({
+  controls,renderer,camera,
+  quality:()=>quality,postFX:()=>status.postFX,
+  viewport:()=>({width:island.clientWidth|0,height:island.clientHeight|0}),
+  adapter,active:()=>status.active,reducedMotion:()=>motion.matches,
+  busy:()=>flyby||d.body.classList.contains('replay-mode')||d.body.classList.contains('aaa-atelier-open'),
+  requestFrame:()=>{renderOnce(performance.now());start();},notify,localize:lang
+ });
  resize();
  setMode(preferences()!=='2d');
 }catch(error){
