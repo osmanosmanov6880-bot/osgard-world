@@ -19,7 +19,7 @@
       mappedMaterials:0,textureMaps:0,estimatedTextureBytes:0,surfaceFamilies:0,
       facadeDetails:0,roadDetails:0,drainageGrates:0,metalRailings:0,
       treeCrowns:0,windActors:0,rotatingFans:0,clothBanners:0,wetRipples:0,
-      meshInstances:0,drawCallBatches:0,highVisible:false,
+      meshInstances:0,drawCallBatches:0,kineticDrawCallBatches:0,litFixtures:0,highVisible:false,
       rain:false,night:false,animationsEnabled:!reducedMotion,windRadians:0};
     const geo={
       box:new THREE.BoxGeometry(1,1,1),
@@ -136,7 +136,11 @@
       place('steel',x+w*.40,h*.45,front-.030,.027,h*.8,.032,'cyl');
       place('steel',x-w*.40,h*.45,front-.030,.027,h*.8,.032,'cyl');
       place('copper',x,h-.18,front-.015,w*.93,.032,.07);
-      stats.facadeDetails+=5;
+      // Real night-readable storefront luminaire / luminous glazing geometry.
+      place('honey',x+.22,1.22,front+.09,.16,.055,.028);
+      place('blue',x-.22,1.22,front+.09,.16,.055,.028);
+      stats.litFixtures+=2;
+      stats.facadeDetails+=7;
       if(ultra){
         for(let row=0;row<Math.min(8,Math.floor(h/.65));row++){
           const y=.42+row*.65;
@@ -186,12 +190,20 @@
       place('soil',px,.255,pz,.29,.025,.27);
       place('wood',px,.50,pz,.12,height*.74,.12,'cyl');
       const canopy=new THREE.Group();canopy.position.set(px,height*.90,pz);
+      const leafMatrices={leaf:[],leaf2:[]};
       for(let k=0;k<(ultra?7:mobile?4:3);k++){
         const a=k*2.39996,t=rand(x+k,z-k,80);
-        const leaf=new THREE.Mesh(geo.sphere,k%3?mats.leaf:mats.leaf2);
-        leaf.position.set(Math.cos(a)*(.14+.11*t),.06+(k%3)*.12,Math.sin(a)*(.14+.11*t));
-        leaf.scale.set(.26,.25,.22);
-        canopy.add(leaf);stats.treeCrowns++;
+        dummy.position.set(Math.cos(a)*(.14+.11*t),.06+(k%3)*.12,Math.sin(a)*(.14+.11*t));
+        dummy.scale.set(.26,.25,.22);dummy.rotation.set(0,0,0);dummy.updateMatrix();
+        leafMatrices[k%3?'leaf':'leaf2'].push(dummy.matrix.clone());
+        stats.treeCrowns++;
+      }
+      for(const key of ['leaf','leaf2']){
+        if(!leafMatrices[key].length)continue;
+        const batch=new THREE.InstancedMesh(geo.sphere,mats[key],leafMatrices[key].length);
+        leafMatrices[key].forEach((matrix,i)=>batch.setMatrixAt(i,matrix));
+        batch.instanceMatrix.needsUpdate=true;batch.frustumCulled=false;
+        canopy.add(batch);stats.kineticDrawCallBatches++;
       }
       kinetic.add(canopy);treeActors.push({mesh:canopy,phase:rand(x,z,12)*TAU});stats.windActors++;
     }
@@ -202,17 +214,19 @@
       const rotor=new THREE.Group();fan.add(rotor);
       const hub=new THREE.Mesh(geo.cyl,mats.steel);
       hub.rotation.x=Math.PI/2;hub.scale.set(.10,.08,.10);
-      rotor.add(hub);
+      rotor.add(hub);stats.kineticDrawCallBatches++;
+      const blades=new THREE.InstancedMesh(geo.box,mats.copper,4);
       for(let k=0;k<4;k++){
         const angle=k*Math.PI/2;
-        const blade=new THREE.Mesh(geo.box,mats.copper);
-        blade.position.set(Math.cos(angle)*.19,Math.sin(angle)*.19,0);
-        blade.rotation.z=angle;blade.scale.set(.31,.052,.026);
-        rotor.add(blade);
+        dummy.position.set(Math.cos(angle)*.19,Math.sin(angle)*.19,0);
+        dummy.rotation.set(0,0,angle);dummy.scale.set(.31,.052,.026);
+        dummy.updateMatrix();blades.setMatrixAt(k,dummy.matrix);
       }
+      blades.instanceMatrix.needsUpdate=true;blades.frustumCulled=false;
+      rotor.add(blades);stats.kineticDrawCallBatches++;
       const basePlate=new THREE.Mesh(geo.box,mats.slate);
       basePlate.position.y=-.18;basePlate.scale.set(.39,.14,.36);
-      fan.add(basePlate);
+      fan.add(basePlate);stats.kineticDrawCallBatches++;
       kinetic.add(fan);rotors.push({mesh:rotor,phase:rand(b.x,b.z,77)*TAU});
       stats.rotatingFans++;
     }
@@ -227,6 +241,7 @@
       const hem=new THREE.Mesh(geo.box,mats.copper);
       hem.position.y=-.245;hem.scale.set(.25,.022,.045);group.add(hem);
       kinetic.add(group);bannerActors.push({mesh:group,phase:rand(b.x,b.z,14)*TAU});
+      stats.kineticDrawCallBatches+=3;
       stats.clothBanners++;
     }
     if(!lite){
