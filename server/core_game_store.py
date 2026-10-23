@@ -212,7 +212,12 @@ class GameStore:
                               (order['id'],)).fetchone()
             order=dict(stored)
         metadata=self._metadata(order)
+        # Deterministic for Stripe idempotency, random-looking per opaque UUID.
+        # A distinct 8-letter suffix identifies this Checkout integration.
+        suffix=''.join(chr(97+(n%26)) for n in
+                       hashlib.sha256(order['id'].encode('utf-8')).digest()[:8])
         params=dict(
+            integration_identifier='zion030_'+suffix,
             mode='payment',
             client_reference_id=order['id'],
             metadata=metadata,
