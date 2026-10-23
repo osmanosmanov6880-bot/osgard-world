@@ -26,6 +26,10 @@ create table if not exists public.omega_store_orders (
 );
 create index if not exists omega_store_orders_uid_created_idx
   on public.omega_store_orders(user_id,created_at desc);
+-- Prevent two simultaneous checkouts for the same one-time cosmetic.
+create unique index if not exists omega_one_pending_checkout_per_sku
+  on public.omega_store_orders(user_id,sku) where status='pending';
+
 create table if not exists public.omega_store_entitlements (
   user_id uuid not null references auth.users(id) on delete cascade,
   sku text not null references public.omega_store_catalog(sku),
