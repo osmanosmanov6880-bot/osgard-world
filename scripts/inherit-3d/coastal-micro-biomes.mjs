@@ -17,11 +17,9 @@ export function marineProfile(quality='high'){
  return Object.freeze({...tier,instances:Object.values(tier).reduce((a,b)=>a+b,0),groups:7});
 }
 function h(i,k,seed){return hash(i*1.716+k*.071,k*2.31+i*.13,seed)}
-function islandRadius(x,z){
- return Math.pow(Math.pow(Math.abs(x)/24,3)+Math.pow(Math.abs(z)/21,3),1/3);
-}
+const transform=new THREE.Object3D();
 function setInstance(inst,index,position,scale,rotation,color){
- const dummy=new THREE.Object3D();
+ const dummy=transform;
  dummy.position.set(...position);
  dummy.scale.set(...scale);
  if(rotation)dummy.rotation.set(...rotation);
