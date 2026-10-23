@@ -43,9 +43,7 @@ CATALOG = {
     "missiles_6": ("HOMING MISSILES ×6", "ammo", 249, True, 6),
     "wingman_escort": ("ESCORT DRONE", "ally", 599, False, 1),
     "wingman_ace": ("ACE WINGMAN", "ally", 1099, False, 1),
-    "skin_obsidian": ("OBSIDIAN SKIN", "cosmetic", 399, False, 1),
-    "skin_aurora": ("AURORA CHROME", "cosmetic", 499, False, 1),
-    "hangar_visuals": ("FOUNDER HANGAR", "cosmetic", 899, False, 1),
+    # Visual skins/hangar sets are excluded until their actual Godot visuals ship.
 }
 CURRENCY = "gbp"
 RETRY_WINDOW = 20 * 3600
