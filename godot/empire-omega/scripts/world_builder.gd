@@ -72,6 +72,11 @@ func _ready() -> void:
 	photoreal_r6.name = "HorizonPhotorealR6"
 	add_child(photoreal_r6)
 	photoreal_r6.call("bind_world",self,cinematic_r5)
+	# R7: dense, GPU-instanced facade geometry and physically balanced atmosphere.
+	var architecture_r7: Node3D = preload("res://scripts/horizon_architecture_r7.gd").new()
+	architecture_r7.name = "HorizonArchitectureR7"
+	add_child(architecture_r7)
+	architecture_r7.call("bind_world",self,photoreal_r6)
 	update_development()
 
 func _material(color: Color, metallic: float = 0.0, roughness: float = 0.8, glow: bool = false) -> StandardMaterial3D:
