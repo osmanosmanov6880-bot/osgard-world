@@ -2752,6 +2752,9 @@ test('INHERIT R24 ocean fades to the real horizon and focus mode preserves gamep
  await focus.click();
  await expect(page.locator('body')).toHaveClass(/inherit-r24-focus/);
  await expect(focus).toHaveAttribute('aria-pressed','true');
+ await expect(page.locator('.osgard-static-header')).toBeHidden();
+ await expect(page.locator('.aaa3d-benchmark')).toBeHidden();
+ await expect(focus).toBeVisible();
  expect(await page.locator('#world').evaluate(node=>getComputedStyle(node).position)).toBe('fixed');
  expect(await page.evaluate(()=>window.InheritAAA3D.getState().focusMode)).toBe(true);
  const worldWidth=await page.locator('#world').evaluate(node=>node.getBoundingClientRect().width);
@@ -2762,6 +2765,8 @@ test('INHERIT R24 ocean fades to the real horizon and focus mode preserves gamep
  await info.attach('INHERIT R24 true WebGL cinematic ocean view',{path:shot,contentType:'image/png'});
  await page.keyboard.press('Escape');
  await expect(page.locator('body')).not.toHaveClass(/inherit-r24-focus/);
+ await expect(page.locator('.osgard-static-header')).toBeVisible();
+ await expect(page.locator('.aaa3d-benchmark')).toBeVisible();
  await expect(focus).toHaveAttribute('aria-pressed','false');
  if(info.project.name==='mobile'){
   const height=await controls.evaluate(node=>node.getBoundingClientRect().height);
