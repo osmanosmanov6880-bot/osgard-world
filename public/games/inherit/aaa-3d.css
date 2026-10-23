@@ -144,3 +144,54 @@ body.living-legacy .app > .aaa3d-controls .aaa3d-metrics[hidden]{display:none!im
 body.living-legacy .app > .aaa3d-controls .aaa3d-monitor[aria-pressed=true]{
  background:#d6eee3;color:#102b2d;border-color:#fff7dc
 }
+
+
+/* R18 — genuinely measured on-device 3D benchmark, no uploaded telemetry.
+ * Controls remain in document flow and cannot intercept native game actions. */
+body.living-legacy .app > .aaa3d-controls .aaa3d-benchmark{
+ border-color:#c9debd;
+ background:linear-gradient(125deg,#254c4b,#1b6360);
+ color:#e8f8e9;font-weight:850;
+}
+body.living-legacy .app > .aaa3d-controls .aaa3d-benchmark.running{
+ border-color:#f7dc9e;background:linear-gradient(130deg,#836439,#4b6653);
+ animation:inherit-benchmark-pulse 1.35s ease-in-out infinite alternate;
+}
+body.living-legacy .app > .aaa3d-controls .aaa3d-benchmark-copy{
+ background:#293b49;border-color:#b9d7c5;color:#eaf9de
+}
+body.living-legacy .app > .aaa3d-controls .aaa3d-benchmark-result{
+ flex:1 1 100%;display:block;min-height:48px;
+ padding:12px 14px;border-radius:10px;
+ border:1px solid #d1dbbe77;
+ background:#0b2630;color:#e8f4dc;
+ font:650 12px/1.65 ui-monospace,SFMono-Regular,Consolas,monospace;
+ font-variant-numeric:tabular-nums;
+ overflow-wrap:anywhere;
+}
+body.living-legacy .app > .aaa3d-controls .aaa3d-benchmark-result[hidden],
+body.living-legacy .app > .aaa3d-controls .aaa3d-benchmark-copy[hidden]{
+ display:none!important
+}
+body.living-legacy .app > .aaa3d-controls .aaa3d-benchmark:focus-visible,
+body.living-legacy .app > .aaa3d-controls .aaa3d-benchmark-copy:focus-visible{
+ outline:3px solid #ffe8b5;outline-offset:3px
+}
+@keyframes inherit-benchmark-pulse{
+ from{box-shadow:inset 0 0 0 #ffffff00,0 0 0 #ffdc8900}
+ to{box-shadow:inset 0 1px 20px #fef0af2a,0 0 12px #e6c77d55}
+}
+@media(max-width:740px){
+ body.living-legacy .app > .aaa3d-controls .aaa3d-benchmark,
+ body.living-legacy .app > .aaa3d-controls .aaa3d-benchmark-copy{
+  min-height:48px;flex:1 1 42%;font-size:12px
+ }
+ body.living-legacy .app > .aaa3d-controls .aaa3d-benchmark-result{
+  padding:10px 12px;font-size:12px;line-height:1.6
+ }
+}
+@media(prefers-reduced-motion:reduce){
+ body.living-legacy .app > .aaa3d-controls .aaa3d-benchmark.running{
+  animation:none!important
+ }
+}
