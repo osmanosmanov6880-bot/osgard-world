@@ -28,6 +28,28 @@ func _run() -> void:
     if not check(world.ship is CharacterBody3D, "Ship is not a physics body"):return
     if not check(world.get_node_or_null("CityTowers_MultiMesh") != null, "City architecture missing"):return
     if not check(world.get_node_or_null("SkylineNeonCrowns") != null, "Neon skyline detail missing"):return
+    # R18 world-wide 360+360 GPU draw packages are now six independent
+    # per-sector local bounding boxes; baseline tower geometry stays intact.
+    if not check(world.r18_base_tower_instances == 360 and
+        world.r18_city_district_chunks == 6,
+        "R18 original 360 base skyscrapers not sharded into six GPU districts"):return
+    if not check(world.r18_city_batches.size() == 6 and
+        world.r18_neon_batches.size() == 6,
+        "R18 city/neon independent frustum bounds missing"):return
+    for district in 6:
+        var tower_draw = world.r18_city_batches[district]
+        var neon_draw = world.r18_neon_batches[district]
+        if not check(tower_draw is MultiMeshInstance3D and
+            neon_draw is MultiMeshInstance3D and
+            tower_draw.multimesh.instance_count == 60 and
+            neon_draw.multimesh.instance_count == 60,
+            "R18 GPU subbatch must hold 60 towers and 60 neon caps"):return
+        if not check(tower_draw.position == world.SECTOR_POSITIONS[district] and
+            neon_draw.position == world.SECTOR_POSITIONS[district],
+            "R18 GPU district geometry not placed at its physical origin"):return
+        var local_transform: Transform3D = tower_draw.multimesh.get_instance_transform(0)
+        if not check(local_transform.origin.length() < 390.0,
+            "R18 supposedly local GPU bounds still contain absolute world positions"):return
     var premium = world.get_node_or_null("PremiumArchitecture")
     if not check(premium != null,"Cinematic architecture not instantiated"):return
     if not check(premium.towers_built == 360,"Expected 360 textured high-rises"):return
@@ -40,6 +62,16 @@ func _run() -> void:
     if not check(detail != null, "R5 city dressing pass missing"):return
     if not check(detail.instanced_parts > 8000, "R5 skyscraper and dock detailing not instantiated"):return
     if not check(detail.landmark_count == 6, "Expected six signature R5 citadels"):return
+    if not check(detail.original_batch_groups == 8 and
+        detail.sharded_groups >= 40 and detail.per_sector_batch_count() >= 40,
+        "R18 distant R5 facades still drawn as world-wide GPU batches"):return
+    if not check(detail.drawn_instances == detail.instanced_parts and
+        detail.district_roots.size() == 6,
+        "R18 district shading lost any original R5 architectural instances"):return
+    for cluster in detail.detail_chunks:
+        if not check(cluster.get_parent() is Node3D and
+            cluster.visibility_range_end > 0.0,
+            "R18 R5 facade group missing district-local LOD range"):return
     var interceptor = world.ship.get_node_or_null("AnimatedShip/HighDetailInterceptorR5")
     if not check(interceptor != null, "R5 ship visual model missing"):return
     if not check(interceptor.detail_count > 100, "R5 ship is not high detail"):return
@@ -132,6 +164,12 @@ func _run() -> void:
     if not check(skyline_r6 != null, "R6 sculptural skyline missing"):return
     if not check(skyline_r6.landmark_count == 6, "Six 3D arcologies required"):return
     if not check(skyline_r6.facade_fins >= 1000, "3D tower mullions insufficient"):return
+    if not check(skyline_r6.facade_batches == 18 and
+        skyline_r6.exterior_beam_instances > skyline_r6.facade_fins and
+        skyline_r6.segment_hubs.size() == 6,
+        "R18 original R6 skyline still uses giant all-world steel beam batch"):return
+    if not check(skyline_r6.detail_draws[0].visibility_range_end >= 900.0,
+        "R18 first arcology lacks maximum-range facade geometry"):return
     var industry = world.get_node_or_null("OrbitalIndustryR9")
     if not check(industry != null, "R9 industrial spaceport absent"):return
     if not check(industry.silo_count == 24, "R9 high-detail 24 pressure vessels missing"):return
@@ -178,6 +216,23 @@ func _run() -> void:
     world._set_graphics_quality(0)
     if not check(aegis_r10.quality_mode == 0 and first_r10_draw[0].visibility_range_end >= 800.0,
         "R10 maximum quality was not restored"):return
+    # Check R18 GPU detail LOD responds to the same F3/F11 and automatic
+    # quality events without deleting collision bodies or core skyline.
+    world._set_graphics_quality(2)
+    if not check(world.r18_city_batches[0].visibility_range_end == 1400.0 and
+        world.r18_neon_batches[0].visibility_range_end == 470.0 and
+        detail.quality_mode == 2 and skyline_r6.quality_mode == 2 and
+        detail.detail_chunks[0].visibility_range_end == 330.0 and
+        skyline_r6.detail_draws[0].visibility_range_end == 390.0,
+        "R18 ECO quality fails to cull distant buildings/architectural micro-detail"):return
+    world._set_graphics_quality(0)
+    if not check(detail.quality_mode == 0 and skyline_r6.quality_mode == 0 and
+        detail.detail_chunks[0].visibility_range_end == 900.0 and
+        skyline_r6.detail_draws[0].visibility_range_end == 950.0 and
+        world.r18_city_batches[0].visibility_range_end == 2500.0,
+        "R18 MAX quality restoration must keep detailed city visible"):return
+    print("NEBULA_R18_DISTRICT_CULLING_SUCCESS city=360 facade=%d sharded=%d arcology=%d" % [
+        detail.drawn_instances, detail.sharded_groups, skyline_r6.facade_batches])
     var r11_environment = world.get_node_or_null("R11_IndustrialHeroEnvironment")
     if not check(r11_environment != null, "R11 industrial hero environment absent"):return
     if not check(r11_environment.docking_decks == 12,
