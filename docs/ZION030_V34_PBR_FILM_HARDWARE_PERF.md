@@ -50,7 +50,7 @@ A physical device with GPU acceleration is **not connected to the present AI/Git
 - \`scripts/zion-open-city-v34-smoke.mjs\` runs real construction code with deterministic mock geometry across three tiers, verifying material lifecycles, bounded postprocessing, animation and lack of stale state.
 - \`scripts/zion-v34-browser.spec.mjs\` tests actual Chrome gameplay on desktop/mobile, H/B controls, weather, quality, real browser timing reports, cinematic screenshots and return to the original puzzle.
 - All v26–v33 game tests remain enabled.
-- \`scripts/zion-030-live-assets.mjs\` includes **17** mandatory v34 game assets, compared byte-for-byte over public HTTPS only after SSH activation.
+- \`scripts/zion-030-live-assets.mjs\` includes **18** mandatory v34 game assets, compared byte-for-byte over public HTTPS only after SSH activation.
 - CI: software-WebGL data cannot be relabeled as real physical-GPU measurements; physical testing remains pending until the hardware CLI actually produces a \`physicalGpuConfirmed: true\` report.
 
 **Definition of done:** successful local smoke + desktop/mobile browser + production SSH checksum + at least one trusted hardware report with concrete frame-time budget. No claim of 4K/60 FPS or AAA-finished status without that evidence.
