@@ -109,6 +109,23 @@ jobs:
           assert not x["physical_gpu_benchmark"]
           print("R7 ACTUAL GAME FRAMES",d,"Godot native, Mesa software")
           PY
+      - name: Exercise reproducible in-game frame-time benchmark without claiming GPU hardware
+        shell: bash
+        run: |
+          set -euo pipefail
+          LIBGL_ALWAYS_SOFTWARE=1 xvfb-run -a -s "-screen 0 1600x900x24" \
+            timeout 130s godot --rendering-method gl_compatibility --path godot/empire-omega \
+            -- --r7-benchmark --r7-benchmark-quick 2>&1 | tee r7_mesa_performance.log
+          python3 - <<'PY'
+          import json
+          with open("screenshots/OSGARD_R7_GPU_MEASUREMENTS.json",encoding="utf8") as f:
+            x=json.load(f)
+          assert x["release"]=="R7" and x["capture_completed"]
+          assert len(x["scenarios"])==4 and all(p["frames"]>=5 for p in x["scenarios"])
+          assert x["software_renderer_detected"] and not x["physical_gpu_candidate"]
+          assert x["origin"]=="ACTUAL_GODOT_PLAYABLE_CITY"
+          print("R7 ENGINE FRAME-TIME INSTRUMENTATION PASS (Mesa software ONLY)")
+          PY
       - name: Prepare independent Windows high-end renderer (never modifies Web preset)
         shell: bash
         run: |
