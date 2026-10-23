@@ -38,6 +38,8 @@ jobs:
           python3 scripts/validate_osgard_wave5.py --project time-empire
           python3 scripts/build_osgard_wave6_materials.py --project time-empire
           python3 scripts/validate_osgard_wave6.py --project time-empire
+          python3 scripts/build_osgard_wave8_materials.py --project time-empire
+          python3 scripts/validate_osgard_wave8_materials.py --project time-empire
       - name: Import Godot city scene
         run: godot --headless --rendering-method gl_compatibility --editor --path godot/time-empire --import --quit
       - name: Validate city, economy, UI, save and load
@@ -48,6 +50,8 @@ jobs:
         run: godot --headless --rendering-method gl_compatibility --path godot/time-empire --script res://tests/wave6_smoke.gd
       - name: Verify Wave 7 authored geometry, living environment and preserved gameplay
         run: godot --headless --rendering-method gl_compatibility --path godot/time-empire --script res://tests/wave7_smoke.gd
+      - name: Verify Wave 8 professional surfaces, animation and gameplay
+        run: godot --headless --rendering-method gl_compatibility --path godot/time-empire --script res://tests/wave8_smoke.gd
       - name: Export playable Godot Web build
         shell: bash
         run: |
@@ -147,6 +151,7 @@ jobs:
           cp tools/VERIFY_WINDOWS_GPU_RU.cmd godot/time-empire/.build-windows/
           cp tools/TEST_GPU_WINDOWS_RU.cmd godot/time-empire/.build-windows/
           cp tools/TEST_GPU_WAVE7_ALL.cmd godot/time-empire/.build-windows/
+          cp scripts/check_osgard_wave8_gpu_reports.py godot/time-empire/.build-windows/
           cp tools/CERTIFY_GPU_WAVE7.ps1 godot/time-empire/.build-windows/
       - name: Attach independent Windows PC Ultra build
         uses: actions/upload-artifact@v4
@@ -174,6 +179,11 @@ jobs:
             godot/time-empire/assets/wave4/
             godot/time-empire/assets/wave5/
             godot/time-empire/assets/wave6/
+            godot/time-empire/assets/wave8/
+            scripts/build_osgard_wave8_materials.py
+            scripts/validate_osgard_wave8_materials.py
+            scripts/check_osgard_wave8_gpu_reports.py
+            docs/games/OSGARD_WAVE8_RELEASE_RU.md
             scripts/build_osgard_wave6_materials.py
             scripts/validate_osgard_wave6.py
             tools/TEST_GPU_WINDOWS_RU.cmd
