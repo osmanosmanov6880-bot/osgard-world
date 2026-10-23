@@ -99,7 +99,9 @@ function revealArmedWorld(){
  // The native dialog restores focus to its toolbar trigger, which can scroll
  // the proposed world coordinate offscreen even on desktop. Return to the
  // genuine gameplay hit region; never place an object programmatically.
- stage.scrollIntoView({block:'start',inline:'nearest',behavior:'instant'});
+ // Center the *actual suggested native coordinate*. A long world section can
+ // leave this marker below the viewport if only its top is scrolled into view.
+ ghost.scrollIntoView({block:'center',inline:'nearest',behavior:'instant'});
 }
 function labelFor(rule,c){return c.rules[rule.id]||rule.id}
 function addStat(value,label){const item=el('div','inherit-compass-stat');item.append(el('strong','',value),el('small','',label));stats.append(item)}
