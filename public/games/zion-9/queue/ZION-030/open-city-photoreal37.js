@@ -22,7 +22,7 @@
       throw Error('ZION37 needs the real playable Three.js city');
     const lite=Boolean(softwareGL||reducedMotion);
     const ultra=!lite&&!mobile;
-    const mapped=[],ownedTextures=[],ownedMaterials=[],ownedGeometry=[],photoLoaded=[];
+    const mapped=[],ownedTextures=[],ownedMaterials=[],ownedGeometry=[],photoLoaded=[],vehicleRestores=[];
     const originalEnv=scene.environment;
     const oldLight={
       key:keyLight?{intensity:keyLight.intensity,color:keyLight.color.clone()}:null,
@@ -37,6 +37,7 @@
       materialFamilies:0,proceduralTextureMaps:0,estimatedTextureBytes:0,
       livePatchedMaterials:0,reflectionProbe:'none',reflectionReady:false,
       heroGlassPanels:0,contactShadows:0,streetGrime:0,drawBatches:0,
+      vehicleClearcoatMeshes:0,vehicleGlassMeshes:0,
       shadowResolution:0,rain:false,night:false,environment:'dusk',
       quality:'high',highVisible:false,lightStyle:'neutral-filmic',
       animationTicks:0,sourceLicense:'Poly Haven CC0',
@@ -268,7 +269,42 @@
         if(avatar)avatarContact=movingShadow(.38,.44);
       }
     }
-    // Physically interpreted glazing with clearcoat and a shared geometry:
+    // Existing sculpted playable car: reuse its real meshes, changing only
+    // the hero paint/glass BRDF (clearcoat) rather than adding fake proxy bodies.
+    if(!lite&&car?.mesh&&THREE.MeshPhysicalMaterial){
+      const allMeshes=[];
+      const walk=node=>{
+        if(node?.isMesh&&node.material)allMeshes.push(node);
+        for(const child of node?.children||[])walk(child);
+      };
+      walk(car.mesh);
+      const primary=allMeshes[0]?.material||null;
+      const windshield=allMeshes[1]?.material||null;
+      if(primary?.color){
+        const paint=mat('physical',{
+          color:primary.color.clone(),roughness:.22,metalness:.69,
+          clearcoat:1.0,clearcoatRoughness:.11,
+          envMapIntensity:1.4
+        });
+        for(const mesh of allMeshes)if(mesh.material===primary){
+          vehicleRestores.push({mesh,material:primary});
+          mesh.material=paint;stats.vehicleClearcoatMeshes++;
+        }
+      }
+      if(windshield?.color&&windshield!==primary){
+        const glazing=mat('physical',{
+          color:windshield.color.clone(),roughness:.09,metalness:.08,
+          transparent:true,opacity:.90,
+          clearcoat:.95,clearcoatRoughness:.05,
+          envMapIntensity:1.65
+        });
+        for(const mesh of allMeshes)if(mesh.material===windshield){
+          vehicleRestores.push({mesh,material:windshield});
+          mesh.material=glazing;stats.vehicleGlassMeshes++;
+        }
+      }
+    }
+        // Physically interpreted glazing with clearcoat and a shared geometry:
     // a finite number of accent windows, never opaque blocking props.
     if(!lite){
       const glass=mat('physical',{
@@ -398,6 +434,7 @@
     function dispose(){
       if(disposed)return;disposed=true;
       scene.environment=originalEnv;scene.remove(root);
+      for(const restored of vehicleRestores)restored.mesh.material=restored.material;
       for(const item of mapped){
         const m=item.material,o=item.original;
         m.map=o.map;m.normalMap=o.normalMap;m.roughnessMap=o.roughnessMap;
