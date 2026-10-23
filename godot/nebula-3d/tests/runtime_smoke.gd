@@ -361,7 +361,8 @@ func _run() -> void:
     target_r16.target = world.ship
     world.add_child(target_r16)
     target_r16.global_position = world.ship.global_position + Vector3(0,0,-28)
-    world.fleet_r15.targets = [target_r16]
+    var practice_targets: Array[Node3D] = [target_r16]
+    world.fleet_r15.targets = practice_targets
     var missile_ammo_before: int = world.fleet_r15.missiles
     if not check(world.fleet_r15.launch_missile(),
         "R16 purchased missiles cannot launch"):return
