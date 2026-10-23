@@ -476,7 +476,12 @@ try{
   requestFrame:()=>{renderOnce(performance.now());start();},notify,localize:lang
  });
  resize();
- setMode(preferences()!=='2d');
+ // Hardware-enabled Chrome receives true 3D immediately. Software
+ // rasterizers otherwise get the fully functional original 2D game by
+ // default instead of freezing unrelated input and mobile pages. Opting into
+ // 3D via the button, or ?render=3d in the isolated GPU test, is supported.
+ const requested=new URLSearchParams(location.search).get('render')==='3d';
+ setMode(preferences()==='3d'||(preferences()!=='2d'&&(!adapter.isSoftware||requested)));
 }catch(error){
  status.available=false;status.fallback='no-webgl';
  status.active=false;modeEnabled=false;
