@@ -17,6 +17,24 @@ import time
 from core_model import Fault, require, uid, now
 from core_commerce import StripeProvider, verify_webhook, secret, API_VERSION
 
+
+class VerifiedNebulaStripeProvider(StripeProvider):
+    """Fail closed when the configured merchant cannot receive live payouts."""
+    def verify_account(self):
+        with self.lock:
+            if self.checked:
+                return
+            account = self.client.v1.accounts.retrieve_current()
+            require(account["id"] == self.config.account_id,
+                    "Stripe key belongs to a different merchant account.",
+                    "nebula_merchant_mismatch",503)
+            if self.config.livemode:
+                require(account.get("charges_enabled") is True and
+                        account.get("payouts_enabled") is True,
+                        "Merchant cannot accept and receive live payments yet.",
+                        "nebula_merchant_inactive",503)
+            self.checked = True
+
 # Authoritative GBP minor-unit price catalog. The browser never sends prices.
 CATALOG = {
     "ship_interceptor": ("VORTEX INTERCEPTOR", "ship", 799, False, 1),
@@ -121,7 +139,7 @@ class Payments:
         self.require_enabled()
         with self._lock:
             if self._provider is None:
-                self._provider = StripeProvider(self.config)
+                self._provider = VerifiedNebulaStripeProvider(self.config)
         return self._provider
 
     def catalog(self):
@@ -373,7 +391,7 @@ class Payments:
                     intent=self.provider().retrieve_intent(
                         _strict_id(session.get("payment_intent"),r"pi_[A-Za-z0-9_]+"))
                     charge=self._verified_charge(intent,order)
-                    revoked=bool(charge.get("disputed")) or int(charge.get("amount_refunded",0))>0
+                    revoked=(event_type=="charge.dispute.created" or bool(charge.get("disputed")) or int(charge.get("amount_refunded",0))>0)
         else:
             charge=self._verified_charge(intent,order)
             revoked=bool(charge.get("disputed")) or int(charge.get("amount_refunded",0))>0
