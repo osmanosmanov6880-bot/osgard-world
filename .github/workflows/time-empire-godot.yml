@@ -36,12 +36,16 @@ jobs:
           python3 scripts/validate_wave4_assets.py --project time-empire
           python3 scripts/build_osgard_wave5_environment.py --project time-empire
           python3 scripts/validate_osgard_wave5.py --project time-empire
+          python3 scripts/build_osgard_wave6_materials.py --project time-empire
+          python3 scripts/validate_osgard_wave6.py --project time-empire
       - name: Import Godot city scene
         run: godot --headless --rendering-method gl_compatibility --editor --path godot/time-empire --import --quit
       - name: Validate city, economy, UI, save and load
         run: godot --headless --rendering-method gl_compatibility --path godot/time-empire --script res://tests/runtime_smoke.gd
       - name: Validate Wave 5 city, performance telemetry and cinematic materials
         run: godot --headless --rendering-method gl_compatibility --path godot/time-empire --script res://tests/wave5_smoke.gd
+      - name: Verify Wave6 detailed geometry, materials and gameplay compatibility
+        run: godot --headless --rendering-method gl_compatibility --path godot/time-empire --script res://tests/wave6_smoke.gd
       - name: Export playable Godot Web build
         shell: bash
         run: |
@@ -88,6 +92,29 @@ jobs:
           path: godot/time-empire/screenshots-ci/*.png
           if-no-files-found: warn
           retention-days: 14
+      - name: Reproducible Wave6 software renderer benchmark (not hardware certification)
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p godot/time-empire/benchmark-wave6
+          timeout 160s xvfb-run -a -s "-screen 0 1280x720x24" godot --rendering-method gl_compatibility --path godot/time-empire -- --w6-benchmark --w6-duration=6 --w6-warmup=2 --w6-resolution=1280x720 --w6-profile=balanced "--w6-output=$GITHUB_WORKSPACE/godot/time-empire/benchmark-wave6/ci.json"
+          python3 - <<'PYCODE'
+          import json
+          from pathlib import Path
+          f=Path("godot/time-empire/benchmark-wave6/ci.json")
+          assert f.is_file(), "Benchmark JSON not written"
+          j=json.loads(f.read_text())
+          assert j["frames"] >= 5 and j["measurement_seconds"] >= 4, j
+          assert j["rendering_method"] == "gl_compatibility", j
+          print("PASS WAVE6 CI SOFTWARE MEASURE:",j["adapter"],j["mean_fps"],j["p95_frame_ms"])
+          PYCODE
+      - name: Attach Wave6 CI sample labelled as non-hardware
+        uses: actions/upload-artifact@v4
+        with:
+          name: time-empire-wave6-ci-software-benchmark
+          path: godot/time-empire/benchmark-wave6/ci.json
+          if-no-files-found: error
+          retention-days: 14
       - name: Attach playable Web build for approval; do not touch production
         uses: actions/upload-artifact@v4
         with:
@@ -114,7 +141,9 @@ jobs:
           print("PASS WINDOWS PC ULTRA:", exe.stat().st_size, pack.stat().st_size)
           VERIFYEXE
       - name: Package Windows hardware test instructions
-        run: cp tools/VERIFY_WINDOWS_GPU_RU.cmd godot/time-empire/.build-windows/
+        run: |
+          cp tools/VERIFY_WINDOWS_GPU_RU.cmd godot/time-empire/.build-windows/
+          cp tools/TEST_GPU_WINDOWS_RU.cmd godot/time-empire/.build-windows/
       - name: Attach independent Windows PC Ultra build
         uses: actions/upload-artifact@v4
         with:
@@ -137,6 +166,11 @@ jobs:
             godot/time-empire/README.md
             godot/time-empire/assets/wave4/
             godot/time-empire/assets/wave5/
+            godot/time-empire/assets/wave6/
+            scripts/build_osgard_wave6_materials.py
+            scripts/validate_osgard_wave6.py
+            tools/TEST_GPU_WINDOWS_RU.cmd
+            docs/games/OSGARD_WAVE6_README_RU.md
             scripts/build_osgard_wave5_environment.py
             scripts/validate_osgard_wave5.py
             docs/games/OSGARD_WAVE5_RELEASE_AND_GPU_QA_RU.md

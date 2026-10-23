@@ -7,6 +7,8 @@ const Wave5Environment = preload("res://scripts/wave5_environment.gd")
 const Wave5FX = preload("res://scripts/wave5_cinematic_fx.gd")
 const Wave5Profiler = preload("res://scripts/wave5_profiler.gd")
 const Wave5Batcher = preload("res://scripts/wave5_static_batcher.gd")
+const Wave6ArtDirector = preload("res://scripts/wave6_art_director.gd")
+const Wave6Benchmark = preload("res://scripts/wave6_hardware_benchmark.gd")
 ## OSGARD TIME EMPIRE — CHRONOS CITY. Original Godot 4.7.2 strategy vertical slice.
 ## No art ripped from any reference titles. Procedural 3D visuals; gameplay is stateful.
 
@@ -81,7 +83,16 @@ func _ready() -> void:
     wave5_profiler.name = "Wave5PerformanceProfiler"
     wave5_profiler.configure("time-empire", wave5_profile)
     add_child(wave5_profiler)
+    # Wave 6: PBR material variation, physical modules and reactive animation.
+    var art_director := Wave6ArtDirector.new()
+    art_director.name = "Wave6ArtDirector"
+    art_director.configure(self)
+    add_child(art_director)
     Wave5Batcher.optimize(self)
+    var hardware_bench := Wave6Benchmark.new()
+    hardware_bench.name = "Wave6HardwareBenchmark"
+    hardware_bench.configure(self, "time-empire", get_node_or_null("ChronosAtmosphere") as WorldEnvironment)
+    add_child(hardware_bench)
     _build_ui()
     _load_game()
     _refresh_ui()
