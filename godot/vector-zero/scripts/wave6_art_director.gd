@@ -24,7 +24,7 @@ func _pbr(name: String, rough: float, metallic: float, tiling: Vector3) -> Stand
     material.albedo_texture = load(base + "albedo.png")
     material.normal_enabled = true
     material.normal_texture = load(base + "normal.png")
-    material.normal_scale = 0.85
+    material.normal_scale = 0.38
     material.metallic = metallic
     material.metallic_texture = load(base + "metallic.png")
     material.roughness = rough

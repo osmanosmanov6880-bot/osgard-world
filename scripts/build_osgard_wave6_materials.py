@@ -36,7 +36,7 @@ def color_field(name: str, base, metal: float, rough: float, seed: int, n: int):
     coarse = rng.normal(0, 1, (32, 32)).astype(np.float32)
     macro = np.asarray(Image.fromarray(coarse, mode="F").resize((n, n), Image.Resampling.BICUBIC))
     stroke = np.sin(yy * 2100 + np.sin(xx * 29) * 5) * 0.26
-    relief = 0.22 * fine + 0.54 * macro + 0.09 * stroke
+    relief = 0.075 * fine + 0.50 * macro + 0.075 * stroke
 
     if name == "hazard_deck":
         # A stamped anti-slip diamond pattern; normal map actually reflects it.
@@ -60,10 +60,10 @@ def color_field(name: str, base, metal: float, rough: float, seed: int, n: int):
                 tx = (x0 + delta) % n
                 ty = (y0 + int(delta * 0.045)) % n
                 relief[ty, tx] += 0.38
-    wear = np.clip(0.25 * macro + 0.2 * np.sin(yy * 32 + xx * 11), -0.55, 0.55)
-    illumination = np.clip(1 + relief * 0.065 + wear * 0.12, 0.70, 1.24)
+    wear = np.clip(0.22 * macro + 0.12 * np.sin(yy * 32 + xx * 11), -0.55, 0.55)
+    illumination = np.clip(1 + relief * 0.045 + wear * 0.08, 0.70, 1.24)
     rgb = np.asarray(base, dtype=np.float32)[None, None, :] * illumination[:, :, None]
-    rgb += fine[:, :, None] * np.array([2.0, 2.2, 2.3])[None, None, :]
+    rgb += fine[:, :, None] * np.array([0.75, 0.8, 0.85])[None, None, :]
     rgb = np.uint8(np.clip(rgb, 0, 255))
 
     # Godot StandardMaterial3D samples the green channel for roughness by default.
@@ -71,7 +71,7 @@ def color_field(name: str, base, metal: float, rough: float, seed: int, n: int):
     metal_v = np.uint8(np.clip(255 * (metal - np.maximum(0, wear) * 0.095), 0, 255))
 
     grad_y, grad_x = np.gradient(relief)
-    normal = np.stack((-grad_x * 3.3, -grad_y * 3.3, np.ones_like(relief)), axis=-1)
+    normal = np.stack((-grad_x * 1.75, -grad_y * 1.75, np.ones_like(relief)), axis=-1)
     normal /= np.maximum(np.linalg.norm(normal, axis=-1, keepdims=True), 1e-4)
     normal = np.uint8(np.clip((normal * 0.5 + 0.5) * 255, 0, 255))
     return rgb, rough_v, metal_v, normal
