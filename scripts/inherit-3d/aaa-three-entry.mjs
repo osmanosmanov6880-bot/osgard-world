@@ -27,9 +27,9 @@ const motion=window.matchMedia('(prefers-reduced-motion:reduce)');
 const ELEVATION=.67,ORTHO_HEIGHT=29,MAX_SAVED=lowPower?150:420;
 let quality=lowPower?'low':'high';
 const strings={
- ru:{label:'РЕАЛЬНЫЙ 3D • ЖИВОЙ ОСТРОВ',mode3d:'3D включён',mode2d:'2D карта',orbit:'Кинооблёт',orbitBusy:'Камера в движении',qualityHigh:'Качество: максимум',qualityLow:'Качество: экономия',enabled:'Объёмный мир включён',disabled:'Двумерная карта включена',unavailable:'WebGL недоступен — оставлена обычная карта',flyby:'Камера показывает остров. Размещение временно приостановлено.',continue:'Можно снова строить мир',hint:'Все предметы и поколения — из вашей настоящей игры'},
- en:{label:'REAL 3D • LIVING ISLAND',mode3d:'3D enabled',mode2d:'2D map',orbit:'Cinematic flyover',orbitBusy:'Camera moving',qualityHigh:'Quality: high',qualityLow:'Quality: efficient',enabled:'3D world enabled',disabled:'2D map enabled',unavailable:'WebGL unavailable — native map retained',flyby:'Camera flyover. Placement pauses temporarily.',continue:'You can build again',hint:'Every object and generation comes from the real game'},
- zh:{label:'真实3D • 生机岛屿',mode3d:'3D已启用',mode2d:'2D地图',orbit:'电影环绕',orbitBusy:'镜头移动中',qualityHigh:'画质：高',qualityLow:'画质：省电',enabled:'3D世界已启用',disabled:'2D地图已启用',unavailable:'不支持WebGL，保留原始地图',flyby:'镜头环绕期间暂停放置',continue:'可以继续建造',hint:'物件和世代均来自真实存档'}
+ ru:{label:'РЕАЛЬНЫЙ 3D • ЖИВОЙ ОСТРОВ',mode3d:'3D включён',mode2d:'2D карта',orbit:'Кинооблёт',orbitBusy:'Камера в движении',qualityHigh:'Качество: максимум',qualityMedium:'Качество: баланс',qualityLow:'Качество: экономия',enabled:'Объёмный мир включён',disabled:'Двумерная карта включена',unavailable:'WebGL недоступен — оставлена обычная карта',flyby:'Камера показывает остров. Размещение временно приостановлено.',continue:'Можно снова строить мир',hint:'Все предметы и поколения — из вашей настоящей игры'},
+ en:{label:'REAL 3D • LIVING ISLAND',mode3d:'3D enabled',mode2d:'2D map',orbit:'Cinematic flyover',orbitBusy:'Camera moving',qualityHigh:'Quality: high',qualityMedium:'Quality: balanced',qualityLow:'Quality: efficient',enabled:'3D world enabled',disabled:'2D map enabled',unavailable:'WebGL unavailable — native map retained',flyby:'Camera flyover. Placement pauses temporarily.',continue:'You can build again',hint:'Every object and generation comes from the real game'},
+ zh:{label:'真实3D • 生机岛屿',mode3d:'3D已启用',mode2d:'2D地图',orbit:'电影环绕',orbitBusy:'镜头移动中',qualityHigh:'画质：高',qualityMedium:'画质：均衡',qualityLow:'画质：省电',enabled:'3D世界已启用',disabled:'2D地图已启用',unavailable:'不支持WebGL，保留原始地图',flyby:'镜头环绕期间暂停放置',continue:'可以继续建造',hint:'物件和世代均来自真实存档'}
 };
 function lang(){const v=window.InheritUI?.getLanguage?.()||d.documentElement.lang?.slice(0,2)||'ru';return strings[v]?v:'ru';}
 function words(){return strings[lang()];}
@@ -96,7 +96,7 @@ function updateLabels(){
  heading.textContent=t.label;switcher.textContent=status.active?t.mode3d:t.mode2d;
  switcher.setAttribute('aria-pressed',String(status.active));
  switcher.setAttribute('aria-label',status.active?t.mode2d:t.mode3d);
- detail.textContent=quality==='high'?t.qualityHigh:t.qualityLow;
+ detail.textContent=quality==='high'?t.qualityHigh:quality==='medium'?t.qualityMedium:t.qualityLow;
  effects.textContent=postWanted?fxLabels[lang()].on:fxLabels[lang()].off;
  effects.disabled=!status.available;
  effects.setAttribute('aria-pressed',String(postWanted));
@@ -130,7 +130,7 @@ function resize(){
  camera.left=-ORTHO_HEIGHT*aspect/2;camera.right=ORTHO_HEIGHT*aspect/2;
  camera.top=ORTHO_HEIGHT/2;camera.bottom=-ORTHO_HEIGHT/2;
  camera.updateProjectionMatrix();
- const baseRatio=quality==='high'?Math.min(window.devicePixelRatio||1,1.6):Math.min(window.devicePixelRatio||1,1);
+ const baseRatio=quality==='high'?Math.min(window.devicePixelRatio||1,1.6):quality==='medium'?Math.min(window.devicePixelRatio||1,1.25):Math.min(window.devicePixelRatio||1,1);
  renderer.setPixelRatio(Math.max(.7,baseRatio*adaptivePixelScale));
  renderer.setSize(width,height,false);
  pipeline?.resize(width,height,renderer.getPixelRatio());
@@ -323,7 +323,7 @@ window.addEventListener('aaa-atelier-close',()=>{renderOnce(performance.now());s
 function nextFrame(time){
  raf=0;
  if(!shouldRun())return;
- const target=perfLab?.running()?0:flyby?33:quality==='high'?33:48;
+ const target=perfLab?.running()?0:flyby?33:quality==='high'?33:quality==='medium'?38:48;
  if(time-lastFrame>=target){
   lastFrame=time;
   if(perfLab?.running())perfLab.moveCamera(time);
@@ -349,7 +349,7 @@ switcher.addEventListener('click',()=>{
 });
 detail.addEventListener('click',()=>{
  perfLab?.finish('quality-changed');
- quality=quality==='high'?'low':'high';status.quality=quality;
+ quality=quality==='high'?'medium':quality==='medium'?'low':'high';status.quality=quality;
  adaptivePixelScale=1;frameBudget.reset();
  renderer.shadowMap.enabled=quality==='high'&&!lowPower;
  sun.castShadow=renderer.shadowMap.enabled;
