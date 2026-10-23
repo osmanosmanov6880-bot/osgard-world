@@ -188,7 +188,7 @@
        }
      }
      // Suspended shade is joined to an existing facade and never has a hitbox.
-     if(r<.42){
+     if(r<.61){
        const y=Math.min(2.23,h-.32);
        piece('base','canvas','box',x,y,front+.23,w*.80,.033,.38,-.08);
        for(const side of [-1,1]){
