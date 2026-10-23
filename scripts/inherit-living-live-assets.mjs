@@ -3,7 +3,10 @@
 import {readFileSync} from 'node:fs';
 import {createHash} from 'node:crypto';
 import {join} from 'node:path';
-const root='public/games/inherit';
+// The SHA must describe the exact bytes packed into the SSH release. The
+// deployment pipeline rewrites versioned shared script URLs in HTML, so
+// comparing raw Git source to production creates false mismatches.
+const root=process.env.OSGARD_RELEASE_HTML_ROOT||'public/games/inherit';
 const items=['index.html','living-legacy.js','living-legacy.css','living-legacy-sprites.svg'];
 const extensions=['world-alive-engine.js','world-alive-ui.js','world-alive.css'];
 const origin=(process.env.OSGARD_BASE_URL||'https://osgard.world').replace(/\/+$/,'');

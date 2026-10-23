@@ -458,7 +458,10 @@ jobs:
       - name: Verify exact INHERIT R15 public files after SSH activation
         env:
           OSGARD_BASE_URL: https://osgard.world
-        run: node scripts/inherit-living-live-assets.mjs
+          OSGARD_RELEASE_HTML_ROOT: osgard-release/html/games/inherit
+        run: |
+          test -s "$OSGARD_RELEASE_HTML_ROOT/index.html"
+          node scripts/inherit-living-live-assets.mjs
       - name: Verify byte-identical published ZION-030 files after SSH activation
         env:
           OSGARD_BASE_URL: https://osgard.world
