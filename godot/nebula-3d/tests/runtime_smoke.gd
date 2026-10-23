@@ -329,6 +329,65 @@ func _run() -> void:
     world._r15_buy_credit("wingman_escort")
     if not check(world.fleet_r15.helpers.size() == 1,
         "R15 purchasable wingman was not spawned"):return
+    # R16: repeated loadout refresh must never destroy/recreate wingmen.
+    var escort_instance: int = world.fleet_r15.helpers[0].get_instance_id()
+    var rebuild_count: int = world.fleet_r15.helper_rebuilds
+    for i in 8:
+        world._r15_apply_loadout()
+    if not check(world.fleet_r15.helper_rebuilds == rebuild_count and
+        world.fleet_r15.helpers[0].get_instance_id() == escort_instance,
+        "R16 ammo/receipt refresh is rebuilding combat allies and causing stutter"):return
+    if not check(world.fleet_r15.missile_pool.size() == 8,
+        "R16 guided missile projectile pool missing"):return
+    if not check(world.fleet_r15.missile_pool[0].get_child_count() >= 5,
+        "R16 missile mesh lacks detailed 3D fins and propulsion"):return
+    var beams: Node3D = world.get_node_or_null("R16_PooledCombatBeams")
+    if not check(beams != null and beams.get_child_count() == 18,
+        "R16 reusable combat laser beam pool missing"):return
+    for i in 50:
+        world._laser_effect_colored(Vector3(0,20,0),
+            Vector3(float(i % 7) + 4.0, 20.0, -65.0),
+            Color(1.0,0.26,0.39))
+    if not check(beams.get_child_count() == 18 and world.r16_beam_shots == 50,
+        "R16 weapon fire is allocating new mesh nodes per shot"):return
+    world._r16_update_beam_pool(0.2)
+    for beam in world.r16_beams:
+        if not check(not beam.visible,
+            "R16 laser pool did not recycle expired effects"):return
+    var target_r16 = load("res://scripts/drone.gd").new()
+    target_r16.name = "R16_MissileFlightTarget"
+    target_r16.hostile = true
+    target_r16.health = 40.0
+    target_r16.target = world.ship
+    world.add_child(target_r16)
+    target_r16.global_position = world.ship.global_position + Vector3(0,0,-28)
+    world.fleet_r15.targets = [target_r16]
+    var missile_ammo_before: int = world.fleet_r15.missiles
+    if not check(world.fleet_r15.launch_missile(),
+        "R16 purchased missiles cannot launch"):return
+    if not check(world.fleet_r15.missiles == missile_ammo_before - 1 and
+        target_r16.health == 40.0,
+        "R16 missile must spend ammo and fly visibly, not instant-hit"):return
+    var projectile_r16 = world.fleet_r15.missile_pool[0]
+    if not check(bool(projectile_r16.get("armed")) and projectile_r16.visible,
+        "R16 homing missile is not visible during flight"):return
+    for i in 30:
+        if not bool(projectile_r16.get("armed")):
+            break
+        projectile_r16._process(0.05)
+    if not check(world.fleet_r15.missile_impacts == 1 and
+        target_r16.health < 40.0 and not bool(projectile_r16.get("armed")),
+        "R16 missile did not navigate to the enemy and apply delayed damage"):return
+    world.fleet_r15.targets = world.drones
+    world.rockets_r15 = world.fleet_r15.missiles
+    world.store_r15.open(world.credits, world.owned_r15, world.equipped_r15)
+    world.ship.controls_locked = true
+    world.store_r15.close()
+    if not check(not world.ship.controls_locked,
+        "R16 closing hangar failed to restore player flight controls"):return
+    if not check(world.R16_RADAR_PERIOD >= 0.10 and
+        world.R16_HUD_PERIOD >= 0.09,
+        "R16 radar/HUD must not re-render at full display FPS"):return
     world._r15_premium_synced({"ship_guardian": 1, "weapon_plasma": 1})
     world._r15_buy_credit("ship_guardian")
     if not check(world.equipped_r15 == "ship_guardian" and
@@ -338,6 +397,16 @@ func _run() -> void:
     if not check(world.equipped_r15 == "ship_scout" and
         world.premium_r15.is_empty(),
         "R15 revoked server entitlement failed to remove premium ship"):return
+    # R16 guardian repairs must restore purchased heavy-ship capacity.
+    world._r15_buy_credit("ship_guardian")
+    if not check(world.equipped_r15 == "ship_guardian" and
+        world.fleet_r15.ship_hull_cap() == 160.0,
+        "R16 heavy ship upgrade did not restore physical hull limits"):return
+    world.ship.hull = 115.0
+    world.ship.shield = 105.0
+    world._upgrade_docked(2)
+    if not check(world.ship.hull == 160.0 and world.ship.shield == 140.0,
+        "R16 guardian repairs incorrectly capped at scout hull and shields"):return
     var hangar_solid = world.get_node_or_null("HeroMegadocksR6/R6_EnclosedHangar_00_0/HangarLeftWallCollision")
     if not check(hangar_solid is StaticBody3D, "Hangar collision missing"):return
     var arcology_solid = world.get_node_or_null("SculpturalSkylineR6/R6_SculptedArcology_00/ArcologyCollision")
@@ -367,5 +436,5 @@ func _run() -> void:
     world.ship.take_damage(10.0)
     if not check(world.ship.shield < shield_before,"Damage does not reduce shield"):return
     if not check(previous_credits >= 0,"Invalid credits"):return
-    print("NEBULA_SMOKE_SUCCESS missions=1 upgrades=1 drones=%d premium3d=r15 ten-story-missions in-game-ships-weapons-rockets-allies checkout-server-gated" % world.drones.size())
+    print("NEBULA_SMOKE_SUCCESS missions=1 upgrades=1 drones=%d premium3d=r16 guided-missiles pooled-beams stable-wingmen throttled-HUD checkout-server-gated" % world.drones.size())
     quit(0)
