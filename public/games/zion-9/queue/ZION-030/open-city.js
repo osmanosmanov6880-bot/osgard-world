@@ -941,6 +941,18 @@
       };
       // Diagnostics exist only under the explicitly opted-in ?test=1 route.
       if (new URLSearchParams(location.search).has('test')) {
+        // Freeze only the test-only animation loop before screenshot evidence:
+        // no synthetic pixels, no interruption of real gameplay state.
+        window.__ZION030_OPEN_CITY__.freezeForCapture = () => {
+          if(animationId)window.cancelAnimationFrame(animationId);
+          animationId=0;return true;
+        };
+        window.__ZION030_OPEN_CITY__.resumeAfterCapture = () => {
+          if(world.active&&!animationId){
+            world.last=0;animationId=window.requestAnimationFrame(frame);
+          }
+          return Boolean(animationId);
+        };
         window.__ZION030_OPEN_CITY__.teleport = (x, z) => {
           if (world.car?.occupied) { world.car.occupied = false; world.car.speed = 0; avatar.visible = true; }
           const safe = rules.nearestFree(x, z);
