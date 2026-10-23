@@ -262,7 +262,8 @@ check('Build provides real locally bundled Three.js before Vite',()=>{
 });
 check('Canonical game and PWA load CSS and generated WebGL bundle',()=>{
  assert.ok(index.includes('./aaa-3d.css')&&index.includes('./aaa-three.bundle.js'));
- assert.match(sw,/inherit-shell-v28/);
+ assert.match(sw,/inherit-shell-v29/);
+ assert.match(sw,/path === '\/games\/inherit\/aaa-three\.bundle\.js'/);
  assert.ok(sw.includes('/games/inherit/aaa-three.bundle.js'));
  assert.ok(sw.includes('/games/inherit/aaa-3d.css'));
 });
