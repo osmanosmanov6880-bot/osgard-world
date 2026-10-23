@@ -67,6 +67,11 @@ func _ready() -> void:
 	var cinematic_r5: Node3D = preload("res://scripts/horizon_cinematic_r5.gd").new()
 	add_child(cinematic_r5)
 	cinematic_r5.call("bind_world",self)
+	# R6: optional real CC0 photo-scanned materials on high-end desktop; fallback intact.
+	var photoreal_r6: Node = preload("res://scripts/horizon_photoreal_r6.gd").new()
+	photoreal_r6.name = "HorizonPhotorealR6"
+	add_child(photoreal_r6)
+	photoreal_r6.call("bind_world",self,cinematic_r5)
 	update_development()
 
 func _material(color: Color, metallic: float = 0.0, roughness: float = 0.8, glow: bool = false) -> StandardMaterial3D:
