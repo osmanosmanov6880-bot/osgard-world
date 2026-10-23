@@ -112,7 +112,7 @@ func _apply_cinematic() -> void:
 	if world == null or world.sky_environment == null:
 		return
 	var env: Environment = world.sky_environment.environment
-	var forward_plus: bool = RenderingServer.get_current_rendering_method() == "gl_compatibility" == false
+	var forward_plus: bool = RenderingServer.get_current_rendering_method() == "forward_plus"
 	# Only true Forward+ supports SSR, SSIL and volumetric fog in Godot 4.4.
 	var allow: bool = forward_plus and cinematic
 	var rain: bool = weather == "rain" or weather == "storm"
