@@ -11,6 +11,7 @@ test('ZION-030 v34: PBR microgeometry, kinetic props, GPU-safe film pass and mea
   const first=await state()
   expect(first.photoreal?.version).toBe('37.0')
   expect(first.photoreal?.originalPhotoSources).toBe(3)
+  expect(first.photoreal?.photoLoadingStarted).toBe(false)
   expect(first.photoreal?.lightStyle).toBe('neutral-filmic')
   expect(first.photoreal?.sourceLicense).toBe('Poly Haven CC0')
   expect(first.photoreal?.proceduralTextureMaps)
