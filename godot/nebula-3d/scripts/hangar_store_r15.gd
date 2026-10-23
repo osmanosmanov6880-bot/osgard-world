@@ -18,9 +18,7 @@ const CREDIT_ITEMS = [
     {"id":"wingman_ace","name":"ACE WINGMAN","kind":"ally","cost":3100,"info":"Элитный боевой помощник"}
 ]
 const PREMIUM_ITEMS = [
-    {"id":"skin_obsidian","name":"OBSIDIAN SKIN","price":"€4.99","info":"Только внешний вид · без преимуществ"},
-    {"id":"skin_aurora","name":"AURORA CHROME","price":"€6.99","info":"Только внешний вид · без преимуществ"},
-    {"id":"hangar_visuals","name":"FOUNDER HANGAR","price":"€9.99","info":"Декоративный ангар · не влияет на баланс"}
+    {"id":"premium_hangar","name":"КОСМИЧЕСКИЙ ПРЕМИУМ-АНГАР","price":"GBP","info":"Корабли, вооружение, ракеты, помощники и косметика. Цена подтверждается сервером."}
 ]
 var panel: PanelContainer
 var title_text: Label
@@ -30,7 +28,7 @@ var owned: Dictionary = {"ship_scout":true}
 var equipped_ship: String = "ship_scout"
 var credits: int = 950
 var premium_owned: Dictionary = {}
-var checkout_enabled: bool = false
+var checkout_enabled: bool = false # This is NOT a payment gate; only the server can enable checkout.
 
 func _ready() -> void:
     layer = 13
@@ -132,8 +130,8 @@ func _add_credit_tab(tab_name: String, kind: String) -> void:
                 func() -> void: credit_purchase_requested.emit(sku)))
 
 func _add_premium_tab() -> void:
-    var list := _scroll_tab("ПРЕМИУМ €")
-    list.add_child(_make_label("ПЛАТНЫЕ КОСМЕТИЧЕСКИЕ ТОВАРЫ · НЕТ УСИЛЕНИЯ В БОЮ", 16))
+    var list := _scroll_tab("ПРЕМИУМ GBP")
+    list.add_child(_make_label("ПЛАТНЫЕ ПРЕДМЕТЫ · ЗАЩИЩЁННЫЙ МАГАЗИН STRIPE", 16))
     for item in PREMIUM_ITEMS:
         var row := HBoxContainer.new()
         list.add_child(row)
@@ -143,9 +141,11 @@ func _add_premium_tab() -> void:
         caption.add_child(_make_label(str(item["name"]) + "  ·  " + str(item["price"]), 18))
         caption.add_child(_make_label(str(item["info"]), 13))
         var sku: String = item["id"]
-        row.add_child(_button("КУПИТЬ ЗА ДЕНЬГИ" if checkout_enabled else "ОЖИДАЕТ КАССУ",
-            func() -> void: premium_purchase_requested.emit(sku), checkout_enabled))
-    list.add_child(_make_label("Оплата активируется после подключения аккаунта, HTTPS API, подписанного webhook и базы прав на покупки.", 13))
+        # This opens a separately authenticated shop. Payment buttons on the
+        # website are locked unless the backend verifies a live merchant.
+        row.add_child(_button("ОТКРЫТЬ МАГАЗИН",
+            func() -> void: premium_purchase_requested.emit(sku), true))
+    list.add_child(_make_label("Реальная касса отключена до проверки MAGA live. После покупки сервер выдаёт подтверждённые предметы.", 13))
 
 func open(credit_balance: int, inventory: Dictionary, selected: String) -> void:
     credits = credit_balance
