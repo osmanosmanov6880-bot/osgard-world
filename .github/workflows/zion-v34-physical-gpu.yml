@@ -1,4 +1,4 @@
-name: ZION-030 v36 physical GPU performance matrix
+name: ZION-030 v37 photo-PBR physical GPU performance matrix
 
 # This NEVER runs on GitHub-hosted SwiftShader runners. Register your own
 # machine under Settings -> Actions -> Runners, with the explicit label
@@ -43,7 +43,7 @@ jobs:
         run: |
           npm ci
           npm install --no-save --package-lock=false @playwright/test@1.58.2
-      - name: Build local authentic ZION-030 v36 game
+      - name: Build local authentic ZION-030 v37 photoreal game
         run: |
           npm run qa:zion-local
           npm run build
@@ -64,6 +64,7 @@ jobs:
           OSGARD_BENCH_DURATION_MS: ${{ inputs.duration_ms }}
           OSGARD_MAX_FRAME_P95_MS: ${{ inputs.max_p95_ms }}
           OSGARD_REQUIRE_HARDWARE_GPU: '1'
+          OSGARD_REQUIRE_PHOTO_PBR: '1'
           OSGARD_HEADLESS: '1'
           OSGARD_BENCH_OUTPUT: reports/gpu
         run: node scripts/zion-v36-hardware-matrix.mjs
@@ -71,7 +72,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: zion-v36-physical-gpu-matrix-evidence
+          name: zion-v37-physical-gpu-photographic-evidence
           path: |
             reports/gpu/
             /tmp/zion-v36-preview.log
