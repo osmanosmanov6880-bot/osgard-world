@@ -34,7 +34,7 @@
    const glTimer=gl?.getExtension?.('EXT_disjoint_timer_query_webgl2')||null;
    const gpuSupported=!!(glTimer&&gl?.createQuery&&gl?.beginQuery&&gl?.getQueryParameter&&gl?.endQuery);
    let running=false,activeQuery=null,pending=[],gpuMs=[],renderIntervals=[],cpuTimes=[],
-     drawCalls=[],triangles=[],startedAt=0,lastRenderedAt=0,lastReport=null,duration=15000;
+     drawCalls=[],triangles=[],startedAt=0,lastRenderedAt=0,lastReport=null,duration=15000,originalAutoReset=null;
    const state={version:VERSION,renderer:name,vendor,classification,
      gpuTimerAvailable:gpuSupported,gpuSamples:0,frames:0,active:false,progress:0,
      durationMs:15000,mobile:Boolean(mobile),softwareGL:Boolean(softwareGL),
@@ -89,6 +89,13 @@
      renderIntervals=[];cpuTimes=[];drawCalls=[];triangles=[];gpuMs=[];
      if(gpuSupported){pollGpu();while(pending.length){try{gl.deleteQuery(pending.shift())}catch(_){}}}
      running=true;startedAt=performance.now();lastRenderedAt=0;lastReport=null;
+     // Three.js normally resets render.info after every render() call.
+     // Disable auto-reset temporarily so the world AND postFX draw calls
+     // are included in one truthful per-frame sample.
+     if(renderer.info&&typeof renderer.info.autoReset==='boolean'){
+       originalAutoReset=renderer.info.autoReset;
+       renderer.info.autoReset=false;
+     }
      state.active=true;state.frames=0;state.progress=0;state.durationMs=duration;
      state.gpuSamples=0;state.reportAvailable=false;state.measuredOnPhysicalGpu=false;
      details.textContent='Замер: 0% · двигайся по городу и меняй ракурсы';
@@ -130,6 +137,9 @@
    function stop(){
      if(!running)return lastReport;
      running=false;state.active=false;
+     if(originalAutoReset!==null&&renderer.info){
+       renderer.info.autoReset=originalAutoReset;originalAutoReset=null;
+     }
      if(activeQuery){try{gl.endQuery(glTimer.TIME_ELAPSED_EXT);pending.push(activeQuery)}catch(_){}
        activeQuery=null;}
      pollGpu();
