@@ -38,6 +38,8 @@ jobs:
           python3 scripts/validate_osgard_wave5.py --project vector-zero
           python3 scripts/build_osgard_wave6_materials.py --project vector-zero
           python3 scripts/validate_osgard_wave6.py --project vector-zero
+          python3 scripts/build_osgard_wave8_materials.py --project vector-zero
+          python3 scripts/validate_osgard_wave8_materials.py --project vector-zero
       - name: Import main scene and compile scripts
         run: godot --headless --rendering-method gl_compatibility --editor --path godot/vector-zero --import --quit
       - name: Execute gameplay, level, and UI smoke tests
@@ -48,6 +50,8 @@ jobs:
         run: godot --headless --rendering-method gl_compatibility --path godot/vector-zero --script res://tests/wave6_smoke.gd
       - name: Verify Wave 7 authored geometry, living environment and preserved gameplay
         run: godot --headless --rendering-method gl_compatibility --path godot/vector-zero --script res://tests/wave7_smoke.gd
+      - name: Verify Wave 8 professional surfaces, animation and gameplay
+        run: godot --headless --rendering-method gl_compatibility --path godot/vector-zero --script res://tests/wave8_smoke.gd
       - name: Export real Godot Web runtime
         shell: bash
         run: |
@@ -151,6 +155,7 @@ jobs:
           cp tools/VERIFY_WINDOWS_GPU_RU.cmd godot/vector-zero/.build-windows/
           cp tools/TEST_GPU_WINDOWS_RU.cmd godot/vector-zero/.build-windows/
           cp tools/TEST_GPU_WAVE7_ALL.cmd godot/vector-zero/.build-windows/
+          cp scripts/check_osgard_wave8_gpu_reports.py godot/vector-zero/.build-windows/
           cp tools/CERTIFY_GPU_WAVE7.ps1 godot/vector-zero/.build-windows/
       - name: Attach independent Windows PC Ultra build
         uses: actions/upload-artifact@v4
@@ -178,6 +183,11 @@ jobs:
             godot/vector-zero/assets/wave4/
             godot/vector-zero/assets/wave5/
             godot/vector-zero/assets/wave6/
+            godot/vector-zero/assets/wave8/
+            scripts/build_osgard_wave8_materials.py
+            scripts/validate_osgard_wave8_materials.py
+            scripts/check_osgard_wave8_gpu_reports.py
+            docs/games/OSGARD_WAVE8_RELEASE_RU.md
             scripts/build_osgard_wave6_materials.py
             scripts/validate_osgard_wave6.py
             tools/TEST_GPU_WINDOWS_RU.cmd
