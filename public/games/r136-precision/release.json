@@ -1,0 +1,21 @@
+{
+  "engine": "Godot 4.4.1",
+  "source_path": "godot/osgard-r136-precision",
+  "source_commit": "b8c96d2fe9b84d1c1843651bd2a0d87b2ec27a2c",
+  "native_tests": "passed",
+  "artifact_kind": "native-Godot-HTML5-export",
+  "limitations": [
+    "simulation only",
+    "no telemetry",
+    "WebGL 2 required"
+  ],
+  "files": {
+    "index.audio.position.worklet.js": "347b512529c5dca302093f7b9de6d184dd09d10e9a6fba62cbab098a891b2368",
+    "index.audio.worklet.js": "5b476a9c9ce642c0ee4256436d1bc31d9c38f868aca0f9a8e2a57c18d2dec2a3",
+    "index.html": "832d7fbf60070c369e21d345f06e419584b5f98ffe559b4a20d86378afa6ecb1",
+    "index.js": "19eb180d568bb8e17bcf4c72ca034ed3af44deeb90304deefee4e665562dfe31",
+    "index.pck": "96107dc354b66d1713b003a3f6c2879099c8ec9a65f06cb8a3168f0b8d5bf4b8",
+    "index.png": "3cb4495c0b98dfbe4b663cbf2b6836473572339beb66d902367893162a70be0e",
+    "index.wasm": "e4a43dbae28662b2a68f6136857a94db6695430901515800b9883f6327cb7116"
+  }
+}
