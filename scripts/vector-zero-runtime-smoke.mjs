@@ -356,7 +356,7 @@ checks.push('coyote-time jump at the first platform edge')
 click('restart')
 click('start')
 const pad = { connected: true, axes: [0.85], buttons: Array.from({ length: 16 }, () => ({ pressed: false })) }
-window.navigator = { getGamepads: () => [pad] }
+window.navigator = { getGamepads: () => ({ 0: pad, length: 1 }) } // Array-like GamepadList, not a real Array
 pump(15)
 assert.ok(snapshot().x > 150, 'Gamepad left stick must move the player')
 pad.axes[0] = 0
