@@ -1,0 +1,21 @@
+# ZION-030 live commerce - an EXPLICIT opt-in override.
+# Do NOT include it in regular/staging Compose commands.
+# Secret values are read from files on the deployment HOST (not committed).
+# Requires a verified merchant-authorized Stripe Live account and signed webhooks.
+services:
+  core-api:
+    environment:
+      OSGARD_GAME_STORE_ENABLED: "1"
+      OSGARD_STRIPE_ACCOUNT_ID: "${OSGARD_STRIPE_ACCOUNT_ID:?Set verified merchant Stripe account ID}"
+      OSGARD_STRIPE_LIVEMODE: "1"
+      OSGARD_GAME_STORE_PUBLIC_ORIGIN: "${OSGARD_GAME_STORE_PUBLIC_ORIGIN:-https://osgard.world}"
+      OSGARD_STRIPE_API_KEY_FILE: /run/secrets/zion_stripe_live_key
+      OSGARD_GAME_STRIPE_WEBHOOK_SECRET_FILE: /run/secrets/zion_stripe_live_webhook
+    secrets:
+      - zion_stripe_live_key
+      - zion_stripe_live_webhook
+secrets:
+  zion_stripe_live_key:
+    file: "${OSGARD_ZION_LIVE_KEY_FILE:?Set absolute file path to restricted live Stripe API key}"
+  zion_stripe_live_webhook:
+    file: "${OSGARD_ZION_LIVE_WEBHOOK_FILE:?Set absolute file path to production webhook signing secret}"
