@@ -23,7 +23,7 @@ Deno.serve(async (request) => {
   if (!stripe || !serviceKey || !supabaseUrl || !signingSecret.startsWith("whsec_") ||
       !/^acct_[A-Za-z0-9]+$/.test(expectedAccount) ||
       !["live", "test"].includes(mode) ||
-      !key.startsWith(mode === "live" ? "sk_live_" : "sk_test_"))
+      !(key.startsWith(mode === "live" ? "sk_live_" : "sk_test_") || key.startsWith(mode === "live" ? "rk_live_" : "rk_test_")))
     return response(503, "Merchant not yet configured");
 
   const signature = request.headers.get("stripe-signature") || "";
