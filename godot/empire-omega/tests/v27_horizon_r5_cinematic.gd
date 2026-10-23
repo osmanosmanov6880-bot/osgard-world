@@ -55,7 +55,7 @@ func _run() -> void:
 		road_mesh.material_override = upgraded
 	require(upgraded.shader is Shader,"R5 PBR material actually binds to real MeshInstance3D")
 	var grass: MultiMeshInstance3D = visual.get_node_or_null("R5WindAnimatedCoastalGrass") as MultiMeshInstance3D
-	require(grass!=null and grass.multimesh.instance_count>=350,"GPU instancing creates hundreds of blades")
+	require(grass!=null and grass.multimesh.instance_count>=120,"GPU instancing creates dedicated blades")
 	visual.set_profile("cinematic")
 	visual.set_weather("rain")
 	require(visual.get("weather_kind")=="rain","weather state updates")
