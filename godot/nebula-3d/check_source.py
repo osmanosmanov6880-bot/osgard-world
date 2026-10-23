@@ -201,7 +201,7 @@ industrial_r11 = require(
     "func _make_gantry(",
     "func _make_cart(",
     "func set_quality(",
-    "R11_RivetAndBoltGrid",
+    "R11_D%02d_RivetAndBoltGrid",
 )
 post_r11 = require(
     "scripts/cinematic_post_r11.gd",
