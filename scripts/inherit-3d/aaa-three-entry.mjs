@@ -89,6 +89,7 @@ function configurePostFx(){
  pipeline?.dispose?.();
  pipeline=makeCinematicPipeline({renderer,scene,camera,quality,adapter,wanted:postWanted});
  status.postFX=pipeline.mode;
+ pipeline.setSeason?.(lastSeason||'tide');
  const width=Math.max(2,island.clientWidth),height=Math.max(2,island.clientHeight);
  pipeline.resize(width,height,renderer.getPixelRatio());
 }
@@ -150,7 +151,7 @@ function updateEnvironment(){
   wind:{sky:0x7d9d9c,sun:0xece7ca,water:.45,power:2.15,exposure:1.06},
   mist:{sky:0x8caaa6,sun:0xdde6d7,water:.20,power:1.60,exposure:.94}
  };
- const p=palettes[season];scene.background.setHex(p.sky);
+ const p=palettes[season];pipeline?.setSeason?.(season);scene.background.setHex(p.sky);
  scene.fog.color.setHex(p.sky);sun.color.setHex(p.sun);sun.intensity=p.power;
  hemi.intensity=season==='mist'?1.7:2.2;
  renderer.toneMappingExposure=p.exposure;
