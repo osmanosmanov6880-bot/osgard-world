@@ -69,6 +69,28 @@ func _capture() -> void:
 	scene.add_child(car)
 	car.set_paint(Color("dc704b"))
 	car.rotate_y(-.25)
+	# High-detail native GLB exactly as used by the cinematic driving profile.
+	var hero_path: String = "res://assets/r6/vehicles/spectral_gt_rs_game_ready.glb"
+	if not ResourceLoader.exists(hero_path):
+		push_error("R6 screenshot requires independently license-verified high-detail CC0 GT")
+		quit(2)
+		return
+	var hero_scene: PackedScene = load(hero_path) as PackedScene
+	if hero_scene == null:
+		push_error("R6 GLB was not imported by real Godot")
+		quit(2)
+		return
+	var hero: Node3D = hero_scene.instantiate() as Node3D
+	hero.name = "R6SpectralCC0HighDetail"
+	hero.rotation.y = PI * .5
+	hero.position.y = -.98
+	hero.scale = Vector3.ONE * 1.05
+	scene.add_child(hero)
+	car.visible = false
+	if hero.find_children("*","MeshInstance3D",true,false).size()<40:
+		push_error("Expected mechanical GLB details are missing")
+		quit(2)
+		return
 	var body: MeshInstance3D = car.get_node_or_null("FlowBody") as MeshInstance3D
 	if body != null:
 		var finish: StandardMaterial3D = body.material_override as StandardMaterial3D
@@ -107,7 +129,7 @@ func _capture() -> void:
 	else:
 		folder += "/screenshots"
 	DirAccess.make_dir_recursive_absolute(folder)
-	var filename: String = folder.path_join("omega_r6_godot_photo_pbr_showroom_1600x900.png")
+	var filename: String = folder.path_join("omega_r6_godot_photo_pbr_hero_gt_1600x900.png")
 	if picture.save_png(filename)!=OK:
 		push_error("R6 physical Godot screenshot write failure")
 		quit(2)
