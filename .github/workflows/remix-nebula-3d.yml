@@ -75,7 +75,7 @@ jobs:
           for item in maps:
               with item.open("rb") as f:
                   header = f.read(24)
-              assert header[:8] == b"\\x89PNG\\r\\n\\x1a\\n", item.name
+              assert header[:8] == b"\x89PNG\r\n\x1a\n", item.name
               assert unpack(">II", header[16:24]) == (384,384), item.name
               assert item.stat().st_size >= 400, item.name
           print("NEBULA_R17_ASSET_AUDIT_SUCCESS maps=21 sizes=384x384")
