@@ -10,7 +10,48 @@
  */
 import {chromium} from '@playwright/test'
 import fs from 'node:fs/promises'
+import {existsSync,readdirSync,readFileSync} from 'node:fs'
+import {execFileSync} from 'node:child_process'
 import path from 'node:path'
+
+// Browser renderer strings alone are not independent hardware attestation.
+// Check the machine's actual graphics devices or driver before certifying FPS.
+function attestPhysicalGpu(){
+  const devices=[];
+  const accepted=/nvidia|geforce|quadro|amd|radeon|intel|apple gpu|adreno|mali/i;
+  const rejected=/microsoft basic|remote display|swiftshader|llvmpipe|virtualbox|vmware svga|software/i;
+  const run=(bin,args,timeout=5500)=>{
+    try{return execFileSync(bin,args,{encoding:'utf8',timeout,stdio:['ignore','pipe','ignore']})}
+    catch(_){return ''}
+  };
+  if(process.platform==='linux'){
+    const nvidia=run('nvidia-smi',['--query-gpu=name','--format=csv,noheader']);
+    for(const name of nvidia.split(/\r?\n/).map(x=>x.trim()).filter(Boolean))
+      if(accepted.test(name)&&!rejected.test(name))devices.push('NVIDIA driver: '+name);
+    if(existsSync('/dev/dri'))for(const name of readdirSync('/dev/dri')){
+      if(!/^renderD[0-9]+$/.test(name))continue;
+      try{
+        const vendor=readFileSync('/sys/class/drm/'+name+'/device/vendor','utf8').trim().toLowerCase();
+        if(['0x10de','0x1002','0x8086','0x106b','0x13b5','0x5143'].includes(vendor))
+          devices.push('DRM render node '+name+', PCI vendor '+vendor);
+      }catch(_){}
+    }
+  }else if(process.platform==='win32'){
+    const lines=run('powershell.exe',['-NoProfile','-Command',
+      '(Get-CimInstance Win32_VideoController | Select-Object -ExpandProperty Name)']);
+    for(const name of lines.split(/\r?\n/).map(x=>x.trim()).filter(Boolean))
+      if(accepted.test(name)&&!rejected.test(name))devices.push('Windows GPU driver: '+name);
+  }else if(process.platform==='darwin'){
+    const out=run('system_profiler',['SPDisplaysDataType'],9000);
+    for(const line of out.split(/\r?\n/)){
+      const m=line.match(/Chipset Model:\s*(.+)/i);
+      if(m&&accepted.test(m[1])&&!rejected.test(m[1]))devices.push('macOS GPU: '+m[1].trim());
+    }
+  }
+  return {available:devices.length>0,platform:process.platform,devices,
+    method:'OS/driver device enumeration independent of WebGL renderer text'};
+}
+
 
 const url=process.env.OSGARD_GPU_BENCH_URL||
   'https://osgard.world/games/zion-9/queue/ZION-030/index.html'
@@ -55,8 +96,14 @@ try{
   await page.keyboard.down('w')
   await page.waitForTimeout(Math.ceil(duration*.25)+900)
   await page.keyboard.up('w')
-  const report=await page.evaluate(()=>window.__ZION030_PERFORMANCE__?.stop())
-  if(!report)throw Error('No measured benchmark report')
+  const browserReport=await page.evaluate(()=>window.__ZION030_PERFORMANCE__?.stop())
+  if(!browserReport)throw Error('No measured benchmark report')
+  const hardwareAttestation=attestPhysicalGpu()
+  const report={
+    ...browserReport,
+    hardwareAttestation,
+    physicalGpuConfirmed:Boolean(browserReport.browserHardwareReported&&hardwareAttestation.available)
+  }
   const outputFolder=process.env.OSGARD_BENCH_OUTPUT||'reports/gpu'
   const file=path.resolve(outputFolder,'zion-v34-'+new Date().toISOString().replace(/[:.]/g,'-')+'.json')
   await fs.mkdir(path.dirname(file),{recursive:true})
@@ -66,8 +113,8 @@ try{
   if(errors.length)throw Error('Runtime page errors: '+errors.join('; '))
   if(!report.benchmarkValid)throw Error('Benchmark too short or no rendered frames')
   if(requireGPU&&!report.physicalGpuConfirmed)
-    throw Error('GPU acceleration unverified ('+report.hardwareClassification+
-      '). This browser test CANNOT be reported as real-GPU performance.')
+    throw Error('Physical GPU NOT independently confirmed: WebGL='+report.hardwareClassification+
+      ', OS GPU driver='+hardwareAttestation.available+'. No real-device FPS claim is permitted.')
   if(maxFrameP95!=null&&(!Number.isFinite(maxFrameP95)||report.frameMsP95>maxFrameP95))
     throw Error('Frame-time p95 exceeded maximum: '+report.frameMsP95+' > '+maxFrameP95)
   console.log('PASS ZION-030 v34: measured hardware evidence collected')
