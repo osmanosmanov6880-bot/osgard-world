@@ -92,7 +92,7 @@ const sprayFragment=[
  'varying float vFade;',
  'void main(){',
  ' vec2 uv=gl_PointCoord*2.0-1.0;',
- ' float disk=smoothstep(1.0,.14,dot(uv,uv));',
+ ' float disk=1.0-smoothstep(.14,1.0,dot(uv,uv));',
  ' gl_FragColor=vec4(vec3(.77,.90,.91),disk*vFade*uDensity*.58);',
  '}'
 ].join('\n');
