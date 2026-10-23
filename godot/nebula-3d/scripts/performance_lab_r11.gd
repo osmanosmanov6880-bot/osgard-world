@@ -74,7 +74,7 @@ func toggle_panel() -> void:
 
 func _sync_visibility() -> void:
     if is_instance_valid(overlay):
-        overlay.visible = show_live or benchmarking or not last_report.is_empty()
+        overlay.visible = show_live or benchmarking
 
 func _percentile(sorted_values: Array[float], p: float) -> float:
     if sorted_values.is_empty():
