@@ -21,11 +21,17 @@ const maxFrameP95=process.env.OSGARD_MAX_FRAME_P95_MS?
   Number(process.env.OSGARD_MAX_FRAME_P95_MS):null
 const requireGPU=process.env.OSGARD_REQUIRE_HARDWARE_GPU!=='0'
 const chromePath=process.env.OSGARD_CHROME_PATH
+// Edge is installed by default on the owner's Windows desktop; the same
+// Chromium GPU benchmark works with either Edge or Chrome.
+const channel=process.env.OSGARD_BENCH_BROWSER_CHANNEL||
+  (process.platform==='win32'?'msedge':'chrome')
+if(!['chrome','msedge','chromium'].includes(channel))
+  throw Error('Unsupported OSGARD_BENCH_BROWSER_CHANNEL')
 let browser
 try{
   browser=await chromium.launch({
     headless:process.env.OSGARD_HEADLESS==='1'?true:false,
-    ...(chromePath?{executablePath:chromePath}:{channel:'chrome'}),
+    ...(chromePath?{executablePath:chromePath}:{channel}),
     args:['--enable-gpu-rasterization','--enable-zero-copy','--ignore-gpu-blocklist']
   })
   const page=await browser.newPage({
