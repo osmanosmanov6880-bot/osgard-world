@@ -97,9 +97,9 @@ export function makeArchipelago({quality='high'}={}){
  terrain.add(mesh(cliffGeometry(quality),cliffMat));
  const undershell=mesh(new THREE.CylinderGeometry(18.6,15.2,1.2,12),earthMat);
  undershell.scale.z=1.19;undershell.position.y=-2.5;terrain.add(undershell);
- const sea=new THREE.Mesh(new THREE.PlaneGeometry(140,110,20,20),new THREE.ShaderMaterial({
-  uniforms:{uTime:{value:0},uDawn:{value:.53},uWind:{value:.58}},
-  vertexShader:waterVertex,fragmentShader:waterFragment,side:THREE.DoubleSide,depthWrite:true
+ const sea=new THREE.Mesh(new THREE.PlaneGeometry(140,110,quality==='high'?42:quality==='medium'?30:20,quality==='high'?34:quality==='medium'?24:20),new THREE.ShaderMaterial({
+  uniforms:{uTime:{value:0},uDawn:{value:.53},uWind:{value:.58},uHorizonFade:{value:.66}},
+  vertexShader:waterVertex,fragmentShader:waterFragment,side:THREE.DoubleSide,transparent:true,depthWrite:false,depthTest:true
  }));
  sea.rotation.x=-Math.PI/2;sea.position.y=-2.21;terrain.add(sea);
  const surf=makeShorelineSurf({quality});
