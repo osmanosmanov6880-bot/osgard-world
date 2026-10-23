@@ -58,10 +58,10 @@ func _capture() -> void:
 	game.camera.far = 550.0
 	# Composition A: car in human-scale city hall avenue.
 	await _frame("omega_r7_real_cityhall_driving_1600x900.png",
-		Vector3(-115.0,5.1,-86.0),Vector3(-132.0,3.5,-119.0),58.0,72)
+		Vector3(-107.0,4.8,-104.0),Vector3(-132.0,4.0,-122.0),54.0,48)
 	# Composition B: close vehicle foreground with genuine building facade.
 	await _frame("omega_r7_real_coupe_urban_1600x900.png",
-		Vector3(-123.0,3.0,-91.0),Vector3(-134.0,2.0,-108.0),52.0,56)
+		Vector3(-119.0,2.8,-104.0),Vector3(-132.0,1.8,-110.0),48.0,40)
 	var details: Dictionary = r7.call("diagnostic")
 	var r6: Node = game.world.get_node_or_null("HorizonPhotorealR6")
 	var metrics := {
@@ -82,6 +82,14 @@ func _capture() -> void:
 	get_tree().quit(0 if count==2 and file!=null else 1)
 
 func _frame(label: String, position: Vector3, focus: Vector3, fov: float, settle: int) -> void:
+	# Assert viewpoint is not INSIDE an original building/collision shell.
+	var probe := PhysicsPointQueryParameters3D.new()
+	probe.position = position
+	probe.collide_with_areas = false
+	probe.exclude = [game.car.get_rid(),game.player.get_rid()]
+	if not game.get_world_3d().direct_space_state.intersect_point(probe,8).is_empty():
+		push_error("R7 viewport inside a collision surface: "+label+" at "+str(position))
+		return
 	game.camera.global_position = position
 	game.camera.look_at(focus,Vector3.UP)
 	game.camera.fov = fov
