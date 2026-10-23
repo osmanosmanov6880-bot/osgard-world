@@ -37,6 +37,7 @@ test('ZION-030 v34: PBR microgeometry, kinetic props, GPU-safe film pass and mea
   await expect.poll(async()=>(await state()).mission.score).toBe(1)
   await expect.poll(async()=>(await state()).coolingFx.cooled).toBe(1)
   expect((await state()).coolingFx.modulesVisible).toBe(1)
+  await expect.poll(async()=>(await state()).coolingCrownsFaded).toBeGreaterThan(0)
   // H must still toggle even though gameplay keyboard capture owns this key.
   await page.keyboard.press('h')
   await expect(page.locator('#oc-shell')).toHaveClass(/oc-focus/)
