@@ -342,6 +342,26 @@ require(
     "docs/R16-SMOOTH-COMBAT-ACCEPTANCE.md",
     "F7", "F9", "F10", "физической", "Stripe",
 )
+r17_baker = require(
+    "tools/bake_r17.gd",
+    "const R9",
+    "const R12",
+    "const R9_PROFILES: int = 4",
+    "const R12_PROFILES: int = 3",
+    "get_image()",
+    "save_png(location)",
+    "NEBULA_R17_BAKE_SUCCESS",
+)
+assert 'static func _r17_baked_atlas(' in pbr_r9
+assert "static func baked_count() -> int:" in pbr_r9
+assert 'ResourceLoader.exists(file)' in pbr_r9
+assert 'static func _r17_prebuilt(' in r12_mat
+assert "static func baked_count() -> int:" in r12_mat
+assert 'ResourceLoader.exists(file)' in r12_mat
+require(
+    "docs/R17-FAST-START-ACCEPTANCE.md",
+    "R17", "384", "21", "SwiftShader", "F7",
+)
 require("scripts/architectural_detail_r4.gd", "func build(")
 premium = require("scripts/premium_architecture.gd", "func make_facade_material(", "emission_image")
 require("scripts/drone.gd", "extends")
@@ -382,6 +402,10 @@ smoke = require(
     "R16 weapon fire is allocating new mesh nodes per shot",
     "R16 missile did not navigate to the enemy and apply delayed damage",
     "R16 guardian repairs incorrectly capped at scout hull and shields",
+    "R17 prebaked R9 384px physical texture maps unavailable",
+    "R17 R9 WebGL still dynamically computes PBR atlas pixels",
+    "R17 R12 WebGL still dynamically computes PBR atlas pixels",
+    "NEBULA_R17_PBR_IMPORT_SUCCESS",
     "NEBULA_SMOKE_SUCCESS",
 )
 assert 'ship.position = Vector3(0,19,78)' in world, "Ship spawn must use a local transform before entering the tree"
@@ -393,4 +417,4 @@ assert "image.generate_mipmaps()" in ship_visual
 assert premium.count("Image.create(") >= 2, "separate facade albedo/emission atlases missing"
 assert "high-detail" not in project.lower(), "project identity may remain stable"
 assert len(smoke) > 1500 and len(city) > 5000 and len(world) > 10000
-print("NEBULA_R16_SOURCE_SUCCESS: pooled combat beams, guided missiles, stable wingmen, 8Hz radar, adaptive browser quality")
+print("NEBULA_R17_SOURCE_SUCCESS: 21 build-baked PBR textures, native runtime no pixel loops, retained R16 combat")
