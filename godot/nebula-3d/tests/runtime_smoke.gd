@@ -4,6 +4,7 @@ const MaterialFabricR12Script = preload("res://scripts/material_fabric_r12.gd")
 ## Native Godot runtime test: parses real scene, creates procedural city, drives missions,
 ## validates persistent progression, shields, damage and the radar.
 func _initialize() -> void:
+    print("NEBULA_R16_SMOKE_BOOT")
     call_deferred("_run")
 
 func fail(message: String) -> void:
@@ -21,6 +22,7 @@ func _run() -> void:
     if not check(packed != null, "Main scene resource did not load"):return
     var world: Node3D = packed.instantiate()
     root.add_child(world)
+    print("NEBULA_R16_SCENE_CREATED")
     await process_frame
     if not check(is_instance_valid(world.ship), "PlayerShip missing"):return
     if not check(world.ship is CharacterBody3D, "Ship is not a physics body"):return
@@ -329,6 +331,7 @@ func _run() -> void:
     world._r15_buy_credit("wingman_escort")
     if not check(world.fleet_r15.helpers.size() == 1,
         "R15 purchasable wingman was not spawned"):return
+    print("NEBULA_R16_COMBAT_TESTS_BEGIN")
     # R16: repeated loadout refresh must never destroy/recreate wingmen.
     var escort_instance: int = world.fleet_r15.helpers[0].get_instance_id()
     var rebuild_count: int = world.fleet_r15.helper_rebuilds
@@ -389,6 +392,7 @@ func _run() -> void:
     if not check(world.R16_RADAR_PERIOD >= 0.10 and
         world.R16_HUD_PERIOD >= 0.09,
         "R16 radar/HUD must not re-render at full display FPS"):return
+    print("NEBULA_R16_COMBAT_TESTS_PASSED")
     world._r15_premium_synced({"ship_guardian": 1, "weapon_plasma": 1})
     world._r15_buy_credit("ship_guardian")
     if not check(world.equipped_r15 == "ship_guardian" and
