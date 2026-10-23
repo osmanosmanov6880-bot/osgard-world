@@ -56,3 +56,25 @@ The playable scene now generates original, physically shaded high-detail environ
 - **Performance:** high/medium/low geometric budgets, instanced repeated masonry, mosaic stones, vines, debris and pilings. Low mode retains silhouettes while reducing triangles and fine detail.
 
 The heritage-environment.mjs module exports the complete real 3D ensemble and geometry budget statistics. Node tests assert finite vertices, actual PBR normal maps, instancing, tier differences and offline-only assets. This is authored procedural geometry, not scan-based photorealistic production art.
+
+## R18 — environment craftsmanship and on-device performance evidence
+
+### Visual upgrade
+The high tier now uses 51 radial rings and 148 angular segments across the island top, with 144 angular and 12 vertical segments for eroded cliffs. Medium and low tiers remain less expensive. The existing eight procedural albedo/normal/roughness texture families, GPU-blown vegetation, living pollen, circling wildlife, ocean swell and camera post-effects are retained.
+
+Real PBR material parameters respond to the saved generation's *fictional* season: basalt, grasses and earth become optically wetter under tide/mist than sunshine. These visual changes do not touch gameplay state.
+
+### Actual device benchmark
+
+The on-screen **Тест FPS · 10 с** button runs an opt-in, uncapped ten-second moving-camera stress test. All samples come from the current browser and device: frame intervals, p95, CPU render-submission duration, triangle count and draw calls. GPU duration remains null unless a supported WebGL2 disjoint timer query returns valid measurements. CPU submission is never labeled GPU time.
+
+The report is never sent automatically. **Копировать отчёт** copies measured data only after a user gesture. A browser-reported adapter name is not independent proof of the physical GPU; SwiftShader must be marked software.
+
+To obtain a reproducible desktop Chrome report locally: run npm ci, then npm run qa:inherit-benchmark -- --require-gpu. The script builds and previews the game, measures the 1440×900 desktop and 390×844 mobile-sized *desktop Chrome* viewports and writes local JSON evidence under browser-report. A mobile-sized desktop viewport is NOT a real Android/iPhone test.
+
+### Physical hardware acceptance matrix
+
+- On a real desktop GPU and a real smartphone, run cold startup, warm ten-second benchmark, and ten minutes of extended play to observe throttling. Record OS/browser, DPR, hardware information from the device, battery-saver setting, FPS/p95 and camera/scene load.
+- Desired performance budget: ordinary 30 FPS desktop gameplay and 24–30 FPS mobile gameplay without obscured controls, thermal instability or lost saves. These are targets until real measurements prove them.
+- Retest native item placement, budget, account read-only mode, generations, Atlas, 2D fallback, reduced motion, tab visibility and the inspector while the GPU renderer is enabled.
+- The GitHub runner's software WebGL tests validate compatibility, NOT a retail GPU/phone. No physical device acceptance has yet been conducted in this environment; do not call the release hardware-verified before genuine results exist.
