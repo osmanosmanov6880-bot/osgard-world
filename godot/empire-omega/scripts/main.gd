@@ -487,6 +487,9 @@ func _apply_weather() -> void:
 	var scanned_weather: Node = world.get_node_or_null("HorizonPhotorealR6")
 	if scanned_weather != null:
 		scanned_weather.call("set_weather",current_weather_kind)
+	var facades: Node = world.get_node_or_null("HorizonArchitectureR7")
+	if facades != null:
+		facades.call("set_weather",current_weather_kind)
 	car.traction_factor = float(conditions["road_grip"])
 	for traffic in ambient_cars:
 		traffic.wetness = float(conditions["road_grip"])
