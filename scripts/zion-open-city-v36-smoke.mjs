@@ -19,6 +19,14 @@ for(const signature of ['civicKit?.setQuality(world.quality)','civicKit?.syncEnv
   'civicKit?.update(dt)','civic:civicKit?.stats ?? null',
   'civicKit?.setQuality('])
   assert.ok(core.includes(signature),'Missing v36 live integration: '+signature)
+// Benchmark artifacts must remain independently runnable on actual GPUs.
+for(const file of ['scripts/zion-v34-hardware-benchmark.mjs',
+  'scripts/zion-v36-hardware-matrix.mjs'])
+  execFileSync(process.execPath,['--check',file])
+const matrix=fs.readFileSync('scripts/zion-v36-hardware-matrix.mjs','utf8')
+for(const expected of ['high-day','high-rain-night','eco-rain','physicalGpuConfirmed',
+  'OSGARD_FORBID_ADAPTIVE_LOD'])
+  assert.ok(matrix.includes(expected),'Hardware gate omits '+expected)
 const liveAssets=fs.readFileSync('scripts/zion-030-live-assets.mjs','utf8')
 assert.ok(liveAssets.includes("'open-city-civic36.js'"))
 
