@@ -61,7 +61,7 @@ try{
   if(name==='lesson-bridge')assert.ok(html.includes('Сохранить практику в проект')&&html.includes('Подключить серверный проект'))
   if(name==='workspace')assert.ok(html.includes('OSGARD CORE')&&html.includes('Рубеж пилота')&&!html.includes('type="password"'))
   if(name==='data')assert.ok(html.includes('Скачать текущие данные')&&html.includes('type="file"'))
-  if(name==='play')assert.equal((html.match(/class="play-card"/g)||[]).length,19)
+  if(name==='play')assert.equal((html.match(/class="play-card"/g)||[]).length,22)
  }
  const godot=await renderPage('play','null-shift');assert.ok(godot.includes('data-game-launch="null-shift"')&&godot.includes('/games/null-shift/')&&godot.includes('WebGL 2'))
  const ready=await renderPage('play','vector-zero');assert.ok(ready.includes('data-game-launch="vector-zero"')&&ready.includes('Избранное и история открытия'))

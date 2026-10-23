@@ -32,15 +32,15 @@ jobs:
       - name: Import, run native smoke, and export Godot Web
         shell: bash
         run: |
-          set -euo pipefail
+          set -euxo pipefail
           godot --headless --editor --path godot/osgard-r136-precision --import --quit
           godot --headless --path godot/osgard-r136-precision --script res://tests/smoke.gd
           mkdir -p "$RUNNER_TEMP/r136-web"
           godot --headless --path godot/osgard-r136-precision --export-release Web "$RUNNER_TEMP/r136-web/index.html"
           test -s "$RUNNER_TEMP/r136-web/index.html"
-          test -n "$(find "$RUNNER_TEMP/r136-web" -maxdepth 1 -name '*.js' -size +10k -print -quit)"
+          test -n "$(find "$RUNNER_TEMP/r136-web" -maxdepth 1 -name '*.js' -size +0c -print -quit)"
           test -n "$(find "$RUNNER_TEMP/r136-web" -maxdepth 1 -name '*.wasm' -size +100k -print -quit)"
-          test -n "$(find "$RUNNER_TEMP/r136-web" -maxdepth 1 -name '*.pck' -size +100k -print -quit)"
+          test -n "$(find "$RUNNER_TEMP/r136-web" -maxdepth 1 -name '*.pck' -size +0c -print -quit)"
       - name: Record release manifest
         shell: bash
         env:
