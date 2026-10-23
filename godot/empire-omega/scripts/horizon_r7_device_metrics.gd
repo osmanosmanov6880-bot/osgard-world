@@ -26,7 +26,7 @@ func initialize(root_node) -> void:
 	game = root_node
 	if OS.get_cmdline_user_args().has("--r7-benchmark-quick"):
 		warmup = .40
-		measure = 1.40
+		measure = 2.0
 	call_deferred("_begin")
 
 func _begin() -> void:
@@ -161,7 +161,8 @@ func _finalize() -> void:
 	}
 	var workspace: String = OS.get_environment("GITHUB_WORKSPACE")
 	var filepath: String = "user://OSGARD_R7_GPU_MEASUREMENTS.json" if workspace=="" else workspace+"/screenshots/OSGARD_R7_GPU_MEASUREMENTS.json"
-	DirAccess.make_dir_recursive_absolute(filepath.get_base_dir())
+	if workspace!="":
+		DirAccess.make_dir_recursive_absolute(filepath.get_base_dir())
 	var file: FileAccess=FileAccess.open(filepath,FileAccess.WRITE)
 	if file!=null:
 		file.store_string(JSON.stringify(report,"  "))
