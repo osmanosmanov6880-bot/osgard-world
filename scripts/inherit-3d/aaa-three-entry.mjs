@@ -10,6 +10,7 @@ import {makeArchipelago} from './world-geometry.mjs';
 import {makeTrace,disposeTraces} from './trace-models.mjs';
 import {mountArtifactAtelier} from './artifact-atelier.mjs';
 import {makeCinematicPipeline,detectAdapter} from './cinematic-postfx.mjs';
+import {makeSkyLighting} from './sky-reflections.mjs';
 import {makeFrameBudget} from './frame-budget.mjs';
 import {makeAdaptiveResolution} from './adaptive-resolution.mjs';
 import {makeSavedTraceMotion} from './saved-trace-motion.mjs';
@@ -51,7 +52,7 @@ world.parentElement.insertBefore(controls,world);
 const canvas=make('canvas','aaa3d-canvas');canvas.setAttribute('aria-hidden','true');
 canvas.setAttribute('tabindex','-1');canvas.style.pointerEvents='none';
 island.prepend(canvas);
-const status={available:false,active:false,postFX:'off',adapter:null,materials:null,ambientLife:null,performance:null,frames:0,traces:0,generation:null,quality,season:'',fallback:null,flyby:false,renderer:'WebGL Three.js',detailTiers:{high:0,medium:0,low:0},detailTriangles:0,detailDrawCalls:0,cachedTraces:0,createdTraces:0,heritageDetails:null,coastDetails:null,microclimate:null,environmentTier:null,cameraFocus:'island'};
+const status={available:false,active:false,postFX:'off',adapter:null,materials:null,ambientLife:null,performance:null,frames:0,traces:0,generation:null,quality,season:'',fallback:null,flyby:false,renderer:'WebGL Three.js',detailTiers:{high:0,medium:0,low:0},detailTriangles:0,detailDrawCalls:0,cachedTraces:0,createdTraces:0,heritageDetails:null,coastDetails:null,microclimate:null,surf:null,geology:null,seaStacks:null,skyLighting:null,environmentTier:null,cameraFocus:'island'};
 const frameBudget=makeFrameBudget();
 const autoResolution=makeAdaptiveResolution();
 const traceMotion=makeSavedTraceMotion({maxAnimated:lowPower?18:58});
@@ -73,7 +74,7 @@ window.InheritAAA3D=Object.freeze({
  },
  toggle:()=>switcher.click()
 });
-let renderer,scene,camera,staticWorld,traceRoot,sun,hemi,cold,adapter=null,pipeline=null,postWanted=false,adaptivePixelScale=1,monitorOpen=false,lastMetricsUpdate=0,perfLab=null;
+let renderer,scene,camera,staticWorld,traceRoot,sun,hemi,cold,adapter=null,pipeline=null,skyLighting=null,postWanted=false,adaptivePixelScale=1,monitorOpen=false,lastMetricsUpdate=0,perfLab=null;
 let waterUniforms,raf=0,lastFrame=0,sceneVisible=true,modeEnabled=true,flybyStart=0,flyby=false;
 let signature='',lastSeason='',aspect=1.84,firstDraw=false;
 const traceCache=new Map(); // Reuse unchanged sculpted meshes across generations and building moves.
@@ -94,6 +95,13 @@ function configurePostFx(){
  pipeline.setSeason?.(lastSeason||'tide');
  const width=Math.max(2,island.clientWidth),height=Math.max(2,island.clientHeight);
  pipeline.resize(width,height,renderer.getPixelRatio());
+}
+function configureSkyLighting(){
+ if(!scene)return;
+ skyLighting?.dispose?.();
+ skyLighting=makeSkyLighting({quality,software:!!adapter?.isSoftware});
+ skyLighting.setSeason(seasonFromDOM(),scene);
+ status.skyLighting=skyLighting.stats();
 }
 function notify(message){live.textContent=message;}
 function updateLabels(){
@@ -163,8 +171,16 @@ function updateEnvironment(){
  seasonalScene?.setSeason?.(season);
  status.coastDetails=seasonalScene?.microBiomes?.stats?.()||status.coastDetails;
  status.microclimate=seasonalScene?.microclimate?.stats?.()||status.microclimate;
+ status.surf=seasonalScene?.surf?.stats?.()||status.surf;
+ status.geology=seasonalScene?.geology?.stats?.()||status.geology;
+ status.seaStacks=seasonalScene?.seaStacks?.stats?.()||status.seaStacks;
+ skyLighting?.setSeason(season,scene);
+ status.skyLighting=skyLighting?.stats?.()||status.skyLighting;
 }
 function syncState(force=false){
+ // WebGL can fail or disappear while the native 2D game still updates.
+ // Never synchronize placements into a missing Three.js scene.
+ if(!status.available||!traceRoot||!scene||!renderer)return;
  if(!game.snapshot)return;
  let current;try{current=game.snapshot()}catch{return}
  // The history Atlas renders past traces inside the native #objects element
@@ -263,6 +279,9 @@ function activateScenery(tier){
  status.heritageDetails=built.heritage?.userData?.assetStats||null;
  status.coastDetails=built.microBiomes?.stats?.()||null;
  status.microclimate=built.microclimate?.stats?.()||null;
+ status.surf=built.surf?.stats?.()||null;
+ status.geology=built.geology?.stats?.()||null;
+ status.seaStacks=built.seaStacks?.stats?.()||null;
  status.environmentTier=tier;
  status.materials=built.surfaceStats;
  status.ambientLife=built.life?.stats()||null;
@@ -301,6 +320,8 @@ function renderOnce(time){
  active?.life?.update(motion.matches?0:time,lastSeason,renderer.getPixelRatio());
  active?.microBiomes?.update(motion.matches?0:time);
  active?.microclimate?.update(motion.matches?0:time,{pixelRatio:renderer.getPixelRatio(),reducedMotion:motion.matches});
+ active?.surf?.update(time,{reducedMotion:motion.matches});
+ active?.seaStacks?.update(time,{reducedMotion:motion.matches,pixelRatio:renderer.getPixelRatio()});
  traceMotion.update(motion.matches?0:time,lastSeason,motion.matches);
  renderer.info.reset();
  perfLab?.startFrame(time);
@@ -376,7 +397,7 @@ detail.addEventListener('click',()=>{
  adaptivePixelScale=1;frameBudget.reset();autoResolution.reset(performance.now());
  renderer.shadowMap.enabled=quality==='high'&&!lowPower;
  sun.castShadow=renderer.shadowMap.enabled;
- activateScenery(quality);configurePostFx();resize();syncState(true);
+ configureSkyLighting();activateScenery(quality);configurePostFx();resize();syncState(true);
  renderOnce(performance.now());updateLabels();
 });
 orbit.addEventListener('click',doFlyby);
@@ -470,7 +491,7 @@ try{
  sun.shadow.bias=-.00045;
  scene.add(sun);
  cold=new THREE.DirectionalLight(0xa2ccd0,.86);cold.position.set(25,12,12);scene.add(cold);
- activateScenery(quality);
+ configureSkyLighting();activateScenery(quality);
  traceRoot=new THREE.Group();traceRoot.name='Actual saved traces';scene.add(traceRoot);
  status.available=true;
  configurePostFx();
@@ -494,7 +515,7 @@ try{
 }catch(error){
  status.available=false;status.fallback='no-webgl';
  status.active=false;modeEnabled=false;
- try{perfLab?.dispose?.();pipeline?.dispose?.();renderer?.dispose?.();}catch{}
+ try{perfLab?.dispose?.();pipeline?.dispose?.();skyLighting?.dispose?.();renderer?.dispose?.();}catch{}
  renderer=null;camera=null;scene=null;traceRoot=null;waterUniforms=null;pipeline=null;
  island.classList.remove('aaa3d-active');world.classList.remove('aaa3d-active');
  canvas.remove();

@@ -137,7 +137,7 @@ check('High-detail architectural landmarks are genuine offline PBR geometry, not
 check('Scenery quality selector swaps actual high-poly architecture and camera visits all sites',()=>{
  assert.match(entry,/const sceneryCache=new Map\(\)/);
  assert.match(entry,/function activateScenery\(tier\)/);
- assert.match(entry,/activateScenery\(quality\);configurePostFx\(\);resize\(\);syncState\(true\)/);
+ assert.match(entry,/configureSkyLighting\(\);activateScenery\(quality\);configurePostFx\(\);resize\(\);syncState\(true\)/);
  assert.match(entry,/const FLYBY_VIEWS=\[/);
  assert.match(entry,/name:'sanctuary'/);
  assert.match(entry,/name:'harbor'/);
@@ -230,7 +230,7 @@ check('Vegetation is reproducible and capped for mobile scenes',()=>{
 check('True GPU rendering includes a lit PBR world and water animation',()=>{
  for(const keyword of ['WebGLRenderer','OrthographicCamera','ACESFilmicToneMapping','HemisphereLight','DirectionalLight','shadowMap','requestAnimationFrame','IntersectionObserver'])
   assert.ok(entry.includes(keyword),keyword);
- for(const keyword of ['ShaderMaterial','InstancedMesh','vertexColors:true','cliffGeometry','makeBeachFoam','makeRiver','makeRoad'])
+ for(const keyword of ['ShaderMaterial','InstancedMesh','vertexColors:true','cliffGeometry','makeShorelineSurf','makeRiver','makeRoad'])
   assert.ok(world.includes(keyword),keyword);
 });
 check('Scene does not steal native pointer events',()=>{
@@ -262,7 +262,8 @@ check('Build provides real locally bundled Three.js before Vite',()=>{
 });
 check('Canonical game and PWA load CSS and generated WebGL bundle',()=>{
  assert.ok(index.includes('./aaa-3d.css')&&index.includes('./aaa-three.bundle.js'));
- assert.match(sw,/inherit-shell-v28/);
+ assert.match(sw,/inherit-shell-v29/);
+ assert.match(sw,/path === '\/games\/inherit\/aaa-three\.bundle\.js'/);
  assert.ok(sw.includes('/games/inherit/aaa-three.bundle.js'));
  assert.ok(sw.includes('/games/inherit/aaa-3d.css'));
 });

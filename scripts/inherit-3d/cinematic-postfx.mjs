@@ -18,7 +18,9 @@ const GRADE_SHADER={
   uVignette:{value:.14},
   uGrain:{value:.007},
   uWarmth:{value:.018},
-  uShadowTint:{value:new THREE.Vector3(-.013,.028,.030)}
+  uShadowTint:{value:new THREE.Vector3(-.013,.028,.030)},
+  uTexelSize:{value:new THREE.Vector2(1/1280,1/720)},
+  uHalation:{value:0}
  },
  vertexShader:[
   'varying vec2 vUv;',
@@ -33,6 +35,8 @@ const GRADE_SHADER={
   'uniform float uGrain;',
   'uniform float uWarmth;',
   'uniform vec3 uShadowTint;',
+  'uniform vec2 uTexelSize;',
+  'uniform float uHalation;',
   'float rand(vec2 p){return fract(sin(dot(p,vec2(12.9898,78.233)))*43758.5453123);}',
   'void main(){',
   ' vec4 src=texture2D(tDiffuse,vUv);',
@@ -43,6 +47,15 @@ const GRADE_SHADER={
   ' rgb+=uShadowTint*shaded;',
   ' rgb+=vec3(.28,.12,-.16)*uWarmth*lit;',
   ' rgb=mix(vec3(luminance),rgb,1.035);',
+  // High tier only: restrained cinematic light leakage, no new render target.
+  ' if(uHalation>0.001){',
+  '  vec3 nearBright=texture2D(tDiffuse,vUv+vec2(uTexelSize.x*2.0,0.0)).rgb;',
+  '  nearBright+=texture2D(tDiffuse,vUv-vec2(uTexelSize.x*2.0,0.0)).rgb;',
+  '  nearBright+=texture2D(tDiffuse,vUv+vec2(0.0,uTexelSize.y*2.0)).rgb;',
+  '  nearBright+=texture2D(tDiffuse,vUv-vec2(0.0,uTexelSize.y*2.0)).rgb;',
+  '  float glow=max(dot(nearBright*.25,vec3(.2126,.7152,.0722))-.67,0.0);',
+  '  rgb+=vec3(1.0,.56,.25)*(glow/(1.0+glow))*uHalation;',
+  ' }',
   ' vec2 uv=(vUv-.5)*vec2(1.04,.98);',
   ' float vignette=1.-smoothstep(.15,.72,dot(uv,uv))*uVignette;',
   ' float grain=(rand(gl_FragCoord.xy+uTime*3.)-.5)*uGrain;',
@@ -85,6 +98,7 @@ export function makeCinematicPipeline({renderer,scene,camera,quality='high',adap
   grade=new ShaderPass(GRADE_SHADER);
   grade.uniforms.uVignette.value=mode==='cinematic'?.15:.10;
   grade.uniforms.uGrain.value=mode==='cinematic'?.006:0;
+  grade.uniforms.uHalation.value=mode==='cinematic'?.12:0;
   composer.addPass(grade);
   composer.addPass(new OutputPass());
  }
@@ -92,14 +106,15 @@ export function makeCinematicPipeline({renderer,scene,camera,quality='high',adap
   season=['tide','sun','wind','mist'].includes(next)?next:'tide';
   if(!grade)return;
   const levels={
-   tide:{warmth:.035,shadow:[-.012,.027,.034],bloom:.19},
-   sun:{warmth:.075,shadow:[-.008,.019,.018],bloom:.17},
-   wind:{warmth:.015,shadow:[-.017,.032,.033],bloom:.14},
-   mist:{warmth:.004,shadow:[-.009,.021,.027],bloom:.10}
+   tide:{warmth:.035,shadow:[-.012,.027,.034],bloom:.19,halation:.11},
+   sun:{warmth:.075,shadow:[-.008,.019,.018],bloom:.17,halation:.16},
+   wind:{warmth:.015,shadow:[-.017,.032,.033],bloom:.14,halation:.09},
+   mist:{warmth:.004,shadow:[-.009,.021,.027],bloom:.10,halation:.08}
   };
   const p=levels[season];
   grade.uniforms.uWarmth.value=p.warmth;
   grade.uniforms.uShadowTint.value.set(...p.shadow);
+  grade.uniforms.uHalation.value=mode==='cinematic'?p.halation:0;
   if(bloom)bloom.strength=p.bloom;
  }
  setSeason('tide');
@@ -119,6 +134,7 @@ export function makeCinematicPipeline({renderer,scene,camera,quality='high',adap
   composer.setPixelRatio(pixelRatio);
   composer.setSize(Math.max(2,Math.floor(width)),Math.max(2,Math.floor(height)));
   if(antialias)antialias.uniforms.resolution.value.set(1/physicalWidth,1/physicalHeight);
+  if(grade)grade.uniforms.uTexelSize.value.set(1/physicalWidth,1/physicalHeight);
  }
  function dispose(){
   if(!composer)return;
@@ -128,5 +144,5 @@ export function makeCinematicPipeline({renderer,scene,camera,quality='high',adap
   composer.dispose?.();
  }
  return {mode,render,resize,dispose,setSeason,
-  stats:()=>({mode,frames,bloom:!!bloom,antiAliasing:!!antialias,grading:!!grade,season,passes:mode==='cinematic'?5:mode==='lite'?3:1})};
+  stats:()=>({mode,frames,bloom:!!bloom,antiAliasing:!!antialias,grading:!!grade,halation:mode==='cinematic',season,passes:mode==='cinematic'?5:mode==='lite'?3:1})};
 }
