@@ -11,6 +11,7 @@ on:
       - "scripts/inherit-r19-device-acceptance-smoke.mjs"
       - "scripts/inherit-r21-surf-smoke.mjs"
       - "scripts/inherit-r22-geology-smoke.mjs"
+      - "scripts/inherit-r23-cinematic-smoke.mjs"
       - "scripts/inherit-r20-smoke.mjs"
       - "scripts/inherit-device-acceptance.mjs"
       - "scripts/build-inherit-3d.mjs"
@@ -60,7 +61,7 @@ jobs:
       - name: Prove actual R16 GPU WebGL frames and real fallbacks in Chrome
         env:
           OSGARD_ENABLE_SWIFTSHADER: "1"
-        run: npx playwright test --config playwright.ecosystem.config.mjs --grep "INHERIT R1[679]" --workers 1
+        run: npx playwright test --config playwright.ecosystem.config.mjs --grep "INHERIT R1[679]|INHERIT R23" --workers 1
       - name: Record real-Chrome CPU and WebGL performance evidence
         env:
           OSGARD_ENABLE_SWIFTSHADER: "1"

@@ -2683,3 +2683,40 @@ test('INHERIT R20 grounds contact shadows, GPU rain and wet clearcoat with verif
  expect(await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()))).toBe(before);
  expect(errors).toEqual([]);
 });
+
+
+test('INHERIT R23 renders sculpted sea stacks and seasonal lighting without gameplay writes',async({page},info)=>{
+ test.setTimeout(65000);
+ const errors=await prepareStandaloneGame(page);
+ await page.emulateMedia({reducedMotion:'no-preference'});
+ await page.goto('/games/inherit/?lang=ru&render=3d',{waitUntil:'domcontentloaded'});
+ const original=await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()));
+ const begin=await page.evaluate(()=>window.InheritAAA3D.getState());
+ if(!begin.available){
+  expect(process.env.OSGARD_ENABLE_SWIFTSHADER).not.toBe('1');
+  await expect(page.locator('#island')).not.toHaveClass(/aaa3d-active/);
+  expect(errors).toEqual([]);
+  return;
+ }
+ await expect.poll(()=>page.evaluate(()=>window.InheritAAA3D.getState().seaStacks?.stacks)).toBeGreaterThan(0);
+ await expect.poll(()=>page.evaluate(()=>window.InheritAAA3D.getState().frames)).toBeGreaterThan(3);
+ await page.evaluate(()=>{document.querySelector('#world').dataset.livingSeason='tide'});
+ await expect.poll(()=>page.evaluate(()=>window.InheritAAA3D.getState().seaStacks?.season)).toBe('tide');
+ const initial=await page.evaluate(()=>window.InheritAAA3D.getState());
+ expect(initial.seaStacks.drawCalls).toBeLessThanOrEqual(4);
+ expect(initial.seaStacks.triangles).toBeGreaterThan(200);
+ expect(initial.seaStacks.gameplayWrites).toBe(0);
+ expect(initial.skyLighting).toBeTruthy();
+ if(initial.quality==='low'||initial.adapter?.isSoftware)
+  expect(initial.skyLighting.enabled).toBe(false);
+ await page.evaluate(()=>{document.querySelector('#world').dataset.livingSeason='wind'});
+ await expect.poll(()=>page.evaluate(()=>window.InheritAAA3D.getState().seaStacks?.season)).toBe('wind');
+ const windy=await page.evaluate(()=>window.InheritAAA3D.getState());
+ expect(windy.seaStacks.wetness).toBeLessThan(initial.seaStacks.wetness);
+ await expect.poll(()=>page.evaluate(()=>window.InheritAAA3D.getState().seaStacks?.frames)).toBeGreaterThan(3);
+ expect(await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()))).toBe(original);
+ const shot=info.outputPath('inherit-r23-real-seastacks.png');
+ await page.screenshot({path:shot,fullPage:false,animations:'disabled'});
+ await info.attach('INHERIT R23 GPU sea stack environment',{path:shot,contentType:'image/png'});
+ expect(errors).toEqual([]);
+});
