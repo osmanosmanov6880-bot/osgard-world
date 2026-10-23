@@ -1,0 +1,152 @@
+name: OSGARD Horizon R6 true CC0 photoscans + Windows Forward+ (no deploy)
+on:
+  pull_request:
+    paths:
+      - "godot/empire-omega/**"
+      - ".github/workflows/omega-horizon-r6-photoreal.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native-photogrammetry:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      OSGARD_R6_REQUIRE_PHOTO: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: true
+      - name: Install verified image decoder for licensed source assets
+        run: python3 -m pip install --quiet "Pillow>=10,<13"
+      - name: Regenerate original procedural audio assets
+        run: |
+          python3 godot/empire-omega/tools/generate_audio.py
+          python3 godot/empire-omega/tools/generate_patrol_audio.py
+      - name: Fetch actual scanned PBR CC0 maps and independently verify each MD5
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 godot/empire-omega/tools/fetch_cc0_pbr_r6.py \
+            --output godot/empire-omega/assets/r6/polyhaven --resolution 2k | tee r6_download.log
+          test "$(find godot/empire-omega/assets/r6/polyhaven -type f \( -name '*.jpg' -o -name '*.png' \) | wc -l)" -eq 9
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+          p=Path("godot/empire-omega/assets/r6/polyhaven/MANIFEST_CC0.json")
+          data=json.loads(p.read_text())
+          assert data["license"]=="CC0" and len(data["assets"])==3
+          assert all(len(x["maps"])==3 for x in data["assets"].values())
+          print("STRICT GATE: 9 verified scanned PBR source files",sum(y["bytes"] for x in data["assets"].values() for y in x["maps"].values()))
+          PY
+      - name: Native Godot 4.4.1 resource import for all real maps/shaders
+        shell: bash
+        run: |
+          set -euo pipefail
+          godot --headless --editor --path godot/empire-omega --import --quit 2>&1 | tee r6_import.log
+          if grep -Eq "SCRIPT ERROR:|Failed to load script|Parse Error:" r6_import.log; then
+            echo "::error::Godot import reported a GDScript failure"
+            exit 1
+          fi
+      - name: Assert real photo map and vehicle render contracts in native Godot
+        shell: bash
+        run: |
+          set -euo pipefail
+          for test in v25_horizon_racing.gd v26_horizon_sculpted_visuals.gd v27_horizon_r5_cinematic.gd v28_horizon_r6_photoassets.gd; do
+            echo "NATIVE $test"
+            timeout 45s godot --headless --path godot/empire-omega --script "res://tests/$test"
+          done
+      - name: Run actual native game with autoloads and real photo textures
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 75s godot --headless --path godot/empire-omega --quit-after 100 2>&1 | tee r6_game_start.log
+          if grep -Eq "SCRIPT ERROR:|Parse Error:|Failed to load script" r6_game_start.log; then
+            echo "::error::Game failed script parsing during real startup"
+            exit 1
+          fi
+      - name: Prepare visible Mesa/Xvfb native screenshot (software render not physical GPU)
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! command -v xvfb-run >/dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq xvfb
+          fi
+          mkdir -p screenshots
+          LIBGL_ALWAYS_SOFTWARE=1 xvfb-run -a -s "-screen 0 1600x900x24" \
+            timeout 70s godot --rendering-method gl_compatibility --path godot/empire-omega \
+            --script res://tests/horizon_r6_showroom_capture.gd
+          test -s screenshots/omega_r6_godot_photo_pbr_showroom_1600x900.png
+      - name: Prepare independent Windows high-end renderer (never modifies Web preset)
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/omega-r6-desktop"
+          cp -a godot/empire-omega/. "$RUNNER_TEMP/omega-r6-desktop/"
+          rm -rf "$RUNNER_TEMP/omega-r6-desktop/.godot" "$RUNNER_TEMP/omega-r6-desktop/.build-web"
+          python3 - <<'PY'
+          import os,pathlib
+          cfg=pathlib.Path(os.environ["RUNNER_TEMP"])/"omega-r6-desktop"/"project.godot"
+          text=cfg.read_text()
+          needle='renderer/rendering_method="gl_compatibility"'
+          assert text.count(needle)==1
+          text=text.replace(needle,'renderer/rendering_method="forward_plus"')
+          extra=('renderer/rendering_method.web="gl_compatibility"\n'
+                 'anti_aliasing/quality/use_taa=true\n'
+                 'anti_aliasing/quality/use_debanding=true\n')
+          text=text.replace('[rendering]\n','[rendering]\n'+extra,1)
+          cfg.write_text(text)
+          print("REAL WINDOWS PROFILE: Forward+, temporal AA, debanding; Web remains Compatibility")
+          PY
+          godot --headless --editor --path "$RUNNER_TEMP/omega-r6-desktop" --import --quit
+      - name: Build Windows x64 Godot binary containing scanned CC0 source materials
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p desktop_release
+          godot --headless --path "$RUNNER_TEMP/omega-r6-desktop" --export-release "Windows Desktop" \
+            "$GITHUB_WORKSPACE/desktop_release/OSGARD_HORIZON_R6_PHOTOREAL.exe"
+          test -s desktop_release/OSGARD_HORIZON_R6_PHOTOREAL.exe
+          test -s desktop_release/OSGARD_HORIZON_R6_PHOTOREAL.pck
+          cp godot/empire-omega/assets/r6/polyhaven/MANIFEST_CC0.json desktop_release/CC0_SOURCES.json
+          (cd desktop_release && sha256sum OSGARD_HORIZON_R6_PHOTOREAL.exe OSGARD_HORIZON_R6_PHOTOREAL.pck > SHA256SUMS.txt)
+          cat > desktop_release/README_RU.txt <<'EOF'
+          OSGARD HORIZON R6 Windows / Godot 4.4.1 / Vulkan Forward+
+          This is a native source-based visual upgrade, not a certified AAA game.
+          EXE and PCK must be in the same directory.
+          Real CC0 scanned materials from Poly Haven; see CC0_SOURCES.json.
+          No real Windows physical GPU FPS claim. Validate locally at 1920x1080.
+          Browser still uses low/Compatibility fallback.
+          EOF
+          python3 - <<'PY'
+          from pathlib import Path
+          import zipfile
+          out=Path("OSGARD_HORIZON_R6_PHOTOREAL_WINDOWS.zip")
+          with zipfile.ZipFile(out,"w",compression=zipfile.ZIP_DEFLATED,compresslevel=4) as z:
+            for f in Path("desktop_release").iterdir():
+              if f.is_file():z.write(f,f.name)
+          assert zipfile.ZipFile(out).testzip() is None
+          print("R6 WINDOWS FILE",out.stat().st_size)
+          PY
+      - name: Bundle evidence, checksums, and visual test result
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p evidence
+          cp r6_*.log evidence/ 2>/dev/null || true
+          cp godot/empire-omega/assets/r6/polyhaven/MANIFEST_CC0.json evidence/ 2>/dev/null || true
+          printf "Hardware FPS: NOT MEASURED\nRenderer of CI screenshot: Mesa software (NOT PHYSICAL GPU)\n" > evidence/STATUS.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: OSGARD-R6-Photoscans-Native-Evidence
+          path: |
+            evidence/
+            screenshots/
+            OSGARD_HORIZON_R6_PHOTOREAL_WINDOWS.zip
+          if-no-files-found: warn
+          retention-days: 10
