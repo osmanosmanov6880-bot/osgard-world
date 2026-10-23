@@ -1,0 +1,41 @@
+name: OSGARD PLAY artwork and full catalog integrity
+
+on:
+  pull_request:
+    paths:
+      - "src/playCinematicData.ts"
+      - "src/playCatalogIndex.ts"
+      - "src/redesignCatalog.ts"
+      - "public/brand/play/**"
+      - "public/brand/world-*.svg"
+      - "scripts/play-artwork-inventory-smoke.mjs"
+      - "scripts/play-catalog-test-contract.mjs"
+      - ".github/workflows/play-artwork-integrity.yml"
+  push:
+    branches: [master]
+    paths:
+      - "src/playCinematicData.ts"
+      - "src/playCatalogIndex.ts"
+      - "src/redesignCatalog.ts"
+      - "public/brand/play/**"
+      - "public/brand/world-*.svg"
+      - "scripts/play-artwork-inventory-smoke.mjs"
+      - "scripts/play-catalog-test-contract.mjs"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  catalog-artwork:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - name: Verify all indexed worlds have non-empty artwork
+        run: npm run qa:play-artwork

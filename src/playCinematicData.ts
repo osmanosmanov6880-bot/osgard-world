@@ -5,7 +5,17 @@ export const PLAY_ART_ROOT = '/brand/play/'
 export const FEATURED_WORLD_IDS = ['vector-zero', 'time', 'null-shift', 'zion-030'] as const
 export const PLAY_ART_LABEL = 'Художественная обложка'
 
+// New 3D worlds are represented by their own reviewed artwork until dedicated
+// WebP covers are authored. Never request absent `/brand/play/{id}.webp` files.
+const originalWorldCovers: Record<string, string> = {
+  'empire-omega': '/brand/world-empire-omega.svg',
+  'nebula-3d': '/brand/world-nebula.svg',
+  'r136-precision': '/brand/world-r136.svg',
+}
+
 export function gameArtwork(game: Pick<PlayCatalogCard, 'id'>) {
+  const originalCover = originalWorldCovers[game.id]
+  if (originalCover) return { src: originalCover, srcSet: undefined, label: PLAY_ART_LABEL }
   return {
     src: PLAY_ART_ROOT + game.id + '.webp',
     srcSet: PLAY_ART_ROOT + game.id + '-640.webp 640w, ' + PLAY_ART_ROOT + game.id + '.webp 1536w',

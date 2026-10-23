@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { expectedPlayCatalogIds, expectedPlayCatalogCount } from './play-catalog-test-contract.mjs'
 
 const cinematicOverlay = '.osgard-cinematic, [data-osgard-pending]'
 
@@ -14,7 +15,8 @@ async function openPlayCatalog(page) {
   // Use the actual catalogue destination; the primary hero action goes to featured worlds.
   await page.locator('.cp-glass-panel a[href="#catalog"]').click()
   await expect(page.locator('.cp-explore')).toHaveAttribute('data-explore-state', 'ready')
-  await expect(page.locator('#catalog .play-card')).toHaveCount(22)
+  await expect(page.locator('#catalog .play-card')).toHaveCount(expectedPlayCatalogCount)
+  expect((await page.locator('#catalog .play-card').evaluateAll(items => items.map(item => item.dataset.worldId))).sort()).toEqual([...expectedPlayCatalogIds].sort())
 }
 
 async function recordOsgardTransitions(page, returning = false) {
@@ -473,7 +475,7 @@ test('catalog filters, return path and favorites survive reload', async ({ page 
   const catalog = page.locator('#catalog')
   const cards = catalog.locator('.play-card')
   const search = catalog.getByRole('searchbox', { name: 'Найти свой мир', exact: true })
-  expect(new Set(await cards.evaluateAll(items => items.map(item => item.dataset.worldId))).size).toBe(19)
+  expect(new Set(await cards.evaluateAll(items => items.map(item => item.dataset.worldId))).size).toBe(expectedPlayCatalogCount)
   await catalog.getByRole('combobox', { name: 'Жанр', exact: true }).selectOption('Стратегия')
   await expect(cards).toHaveCount(2)
   expect(await cards.evaluateAll(items => items.map(item => item.dataset.worldId).sort())).toEqual(['empire-orbit', 'time'])
@@ -487,7 +489,7 @@ test('catalog filters, return path and favorites survive reload', async ({ page 
   await expect(cards).toHaveCount(0)
   await catalog.getByRole('button', { name: 'Показать все миры', exact: true }).click()
   await expect(search).toBeFocused()
-  await expect(cards).toHaveCount(19)
+  await expect(cards).toHaveCount(expectedPlayCatalogCount)
   await search.fill('Добавь тень')
   await expect(cards).toHaveCount(1)
   await expect(cards).toHaveAttribute('data-world-id', 'zion-030')
@@ -556,7 +558,7 @@ test('ordinary Play entry stays at the hero and loads the real catalog only on a
   expect(await page.evaluate(() => scrollY)).toBe(0)
   await page.locator('.cp-explore').scrollIntoViewIfNeeded()
   await expect(page.locator('.cp-explore')).toHaveAttribute('data-explore-state', 'ready')
-  await expect(page.locator('#catalog .play-card')).toHaveCount(19)
+  await expect(page.locator('#catalog .play-card')).toHaveCount(expectedPlayCatalogCount)
   expect(new URL(page.url()).hash).toBe('')
 })
 

@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { expectedPlayCatalogCount } from './play-catalog-test-contract.mjs'
 import { createRequire } from 'node:module'
 
 const require = createRequire(import.meta.url)
@@ -264,7 +265,7 @@ test.describe('OSGARD slow mobile laboratory', () => {
           await expect(page).toHaveURL(url => url.pathname === '/play' && url.hash === '#catalog')
           const catalog = page.locator('#catalog')
           await expect(catalog).toBeInViewport({ timeout: 60_000 })
-          await expect(catalog.locator('.play-card')).toHaveCount(19, { timeout: 60_000 })
+          await expect(catalog.locator('.play-card')).toHaveCount(expectedPlayCatalogCount, { timeout: 60_000 })
           const search = catalog.getByRole('searchbox', { name: 'Найти свой мир', exact: true })
           await expect(search).toBeEnabled()
           await expect(catalog.getByLabel('Жанр', { exact: true })).toBeEnabled()
@@ -274,7 +275,7 @@ test.describe('OSGARD slow mobile laboratory', () => {
           await expect(catalog.locator('.play-card')).toHaveCount(1)
           await expect(catalog.locator('.play-card[data-world-id="zion-030"] h3 a')).toHaveAttribute('href', /^\/play\/world\/zion-030(?:\?|$)/)
           await search.fill('')
-          await expect(catalog.locator('.play-card')).toHaveCount(19)
+          await expect(catalog.locator('.play-card')).toHaveCount(expectedPlayCatalogCount)
           const layout = await page.evaluate(() => ({ width: innerWidth, documentWidth: document.documentElement.scrollWidth, bodyWidth: document.body.scrollWidth }))
           expect(layout.documentWidth, 'The full mobile catalog must not overflow horizontally').toBeLessThanOrEqual(layout.width + 1)
           expect(layout.bodyWidth, 'The full mobile catalog body must not overflow horizontally').toBeLessThanOrEqual(layout.width + 1)
