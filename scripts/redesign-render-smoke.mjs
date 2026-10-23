@@ -66,5 +66,5 @@ try{
  const godot=await renderPage('play','null-shift');assert.ok(godot.includes('data-game-launch="null-shift"')&&godot.includes('/games/null-shift/')&&godot.includes('WebGL 2'))
  const ready=await renderPage('play','vector-zero');assert.ok(ready.includes('data-game-launch="vector-zero"')&&ready.includes('Избранное и история открытия'))
  const notFound=await renderPage('play','unknown');assert.ok(notFound.includes('Мир не найден'))
- console.log('Server rendering checks passed: sixteen surfaces, landmarks, demo controls, nineteen worlds and verified source-specific launch states')
+ console.log('Server rendering checks passed: sixteen surfaces, landmarks, demo controls, twenty-two worlds and verified source-specific launch states')
 }finally{await unlink(output)}

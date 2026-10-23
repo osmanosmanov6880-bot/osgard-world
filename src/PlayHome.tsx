@@ -22,6 +22,11 @@ const ids = PLAY_GAME_IDS
 const genres = PLAY_GENRES
 const featuredWorlds = FEATURED_PLAY_WORLDS
 
+function playWorldCountNoun(count: number) {
+  const form = new Intl.PluralRules('ru').select(count)
+  return form === 'one' ? 'мир' : form === 'few' ? 'мира' : 'миров'
+}
+
 function loadCollection(): PlayCollection {
   const current = localStorage.getItem(PLAY_COLLECTION_KEY)
   if (current) {
@@ -189,7 +194,7 @@ export default function PlayHome({ partners = false }: { partners?: boolean }) {
         </div>
         <aside className="cp-glass-panel" aria-label="Возможности OSGARD Play">
           <p>БОЛЬШЕ, ЧЕМ КАРТИНКА.<br />МИРЫ, В КОТОРЫЕ МОЖНО ВОЙТИ.</p>
-          <a href="#catalog"><Layers3 aria-hidden="true" /><span><strong>{PLAY_GAME_IDS.length} миров</strong><small>ИГРЫ И ИСТОРИИ В КАТАЛОГЕ</small></span><ArrowRight className="cp-panel-arrow" aria-hidden="true" /></a>
+          <a href="#catalog"><Layers3 aria-hidden="true" /><span><strong>{PLAY_GAME_IDS.length} {playWorldCountNoun(PLAY_GAME_IDS.length)}</strong><small>ИГРЫ И ИСТОРИИ В КАТАЛОГЕ</small></span><ArrowRight className="cp-panel-arrow" aria-hidden="true" /></a>
           <a href="#experience"><Gamepad2 aria-hidden="true" /><span><strong>Твой выбор</strong><small>ФИЗИКА · СТРАТЕГИЯ · ТАКТИКА</small></span><ArrowRight className="cp-panel-arrow" aria-hidden="true" /></a>
           <a href="#guest-access"><ShieldCheck aria-hidden="true" /><span><strong>Гостевой вход</strong><small>ЗНАКОМСТВО БЕЗ РЕГИСТРАЦИИ</small></span><ArrowRight className="cp-panel-arrow" aria-hidden="true" /></a>
         </aside>
