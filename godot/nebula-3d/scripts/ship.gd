@@ -14,6 +14,7 @@ var cooldown: float = 0.0
 var visual: Node3D
 var engine_flames: Array[MeshInstance3D] = []
 var glow_time: float = 0.0
+var controls_locked: bool = false
 
 func _ready() -> void:
     visual = Node3D.new()
@@ -35,6 +36,13 @@ func _ready() -> void:
 # Ship input, combat, inertia, and persistence remain here.
 
 func _physics_process(delta: float) -> void:
+    if controls_locked:
+        # A docked hangar is a real modal: keyboard input cannot fire weapons
+        # or accelerate while the player is buying and selecting equipment.
+        velocity = Vector3.ZERO
+        boost = minf(100.0, boost + 14.0 * delta)
+        cooldown = maxf(0.0, cooldown - delta)
+        return
     var steer: float = float(Input.is_key_pressed(KEY_D)) - float(Input.is_key_pressed(KEY_A))
     var pitch: float = float(Input.is_key_pressed(KEY_DOWN)) - float(Input.is_key_pressed(KEY_UP))
     var thrust: float = float(Input.is_key_pressed(KEY_W)) - float(Input.is_key_pressed(KEY_S))
