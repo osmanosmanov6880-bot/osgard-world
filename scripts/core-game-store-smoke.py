@@ -237,6 +237,59 @@ class Tests(unittest.TestCase):
             self.assertEqual(self.request('GET','game/inventory',person='buyer')[0],200)
         finally:game.config=old
 
+    def test_09_live_mode_refuses_test_keys_and_unsecured_origins(self):
+        from unittest.mock import patch
+        import os
+        base=dict(
+            OSGARD_GAME_STORE_ENABLED='1',
+            OSGARD_STRIPE_ACCOUNT_ID='acct_verified_fixture',
+            OSGARD_STRIPE_LIVEMODE='1',
+            OSGARD_GAME_STORE_PUBLIC_ORIGIN='https://osgard.world',
+            OSGARD_STRIPE_API_KEY='rk_test_fake_no_real_money_allowed',
+            OSGARD_GAME_STRIPE_WEBHOOK_SECRET='whsec_test_fixture_local_only')
+        with patch.dict(os.environ,base,clear=True):
+            with self.assertRaises(Exception):
+                Config.from_env()
+        base['OSGARD_STRIPE_API_KEY']='rk_live_fake_fixture_not_usable'
+        base['OSGARD_GAME_STORE_PUBLIC_ORIGIN']='http://osgard.world'
+        with patch.dict(os.environ,base,clear=True):
+            with self.assertRaises(Exception):
+                Config.from_env()
+        base['OSGARD_GAME_STORE_PUBLIC_ORIGIN']='https://osgard.world'
+        base['OSGARD_GAME_STRIPE_WEBHOOK_SECRET']=''
+        with patch.dict(os.environ,base,clear=True):
+            with self.assertRaises(Exception):
+                Config.from_env()
+
+    def test_10_checkout_metadata_cannot_be_changed_by_buyer(self):
+        code,result=self.buy('car_onyx',person='friend')
+        self.assertEqual(code,200,result)
+        record=next(s for s in self.provider.sessions.values()
+                    if s['client_reference_id']==result['orderId'])
+        self.assertEqual(record['metadata']['zion_sku'],'car_onyx')
+        self.assertEqual(record['metadata']['zion_buyer_id'],self.users['friend']['user']['id'])
+        self.assertEqual(record['amount_total'],CATALOG['car_onyx']['amountMinor'])
+        self.assertEqual(record['currency'],'eur')
+
+    def test_11_live_deploy_override_never_contains_credentials(self):
+        from pathlib import Path
+        import ast
+        root=Path(__file__).resolve().parents[1]
+        override=(root/'docker-compose.zion-live-payments.yml').read_text()
+        probe=(root/'scripts/zion-live-stripe-preflight.py').read_text()
+        ast.parse(probe)
+        for keyword in ('OSGARD_STRIPE_LIVEMODE','OSGARD_STRIPE_ACCOUNT_ID',
+                        'OSGARD_STRIPE_API_KEY_FILE','OSGARD_GAME_STRIPE_WEBHOOK_SECRET_FILE',
+                        'OSGARD_GAME_STORE_ENABLED'):
+            self.assertIn(keyword,override)
+        self.assertIn('OSGARD_ZION_LIVE_KEY_FILE:?',override)
+        self.assertIn('OSGARD_ZION_LIVE_WEBHOOK_FILE:?',override)
+        self.assertNotIn('rk_live_',override)
+        self.assertNotIn('sk_live_',override)
+        self.assertNotIn('whsec_',override)
+        self.assertIn('verify_account',probe)
+        self.assertNotIn('.create_checkout(',probe)
+
     def test_08_lost_result_safe_idempotency_key(self):
         self.provider.lose=True
         before=self.provider.calls
