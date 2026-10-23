@@ -1,0 +1,30 @@
+; VECTOR//ZERO / BLACKFIELD PROTOCOL — Godot 4.7.2
+; Gameplay-first native 3D vertical slice (no external assets)
+config_version=5
+
+[application]
+config/name="VECTOR//ZERO — BLACKFIELD PROTOCOL"
+run/main_scene="res://scenes/main.tscn"
+config/description="OSGARD PLAY: magnetic puzzle inside a 3D research facility"
+config/features=PackedStringArray("4.7", "Forward Plus")
+
+[display]
+window/size/viewport_width=1600
+window/size/viewport_height=900
+window/stretch/mode="canvas_items"
+
+[rendering]
+renderer/rendering_method="forward_plus"
+renderer/rendering_method.web="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+environment/defaults/default_clear_color=Color(0.015,0.024,0.032,1)
+textures/default_filters/use_nearest_mipmap_filter=false
+
+[physics]
+3d/default_gravity=9.8
+
+[gui]
+theme/default_font_size=20
+
+[application/config]
+features=PackedStringArray("4.7", "Forward Plus")

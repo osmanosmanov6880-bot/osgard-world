@@ -1,0 +1,206 @@
+name: VECTOR ZERO Blackfield native Godot validation
+
+on:
+  pull_request:
+    paths:
+      - 'godot/vector-zero/**'
+      - '.github/workflows/vector-zero-godot.yml'
+  push:
+    branches:
+      - 'feat/vector-zero-blackfield*'
+    paths:
+      - 'godot/vector-zero/**'
+      - '.github/workflows/vector-zero-godot.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test-and-export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Godot 4.7.2 and Web export templates
+        uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.7.2
+          use-dotnet: false
+          include-templates: true
+      - name: Generate original PC Ultra and Web LOD glTF/PBR assets
+        shell: bash
+        run: |
+          python3 -m pip install --disable-pip-version-check -q numpy==2.3.5 Pillow==12.3.0 trimesh==4.11.1
+          python3 scripts/build_osgard_wave4_assets.py --project vector-zero
+          python3 scripts/validate_wave4_assets.py --project vector-zero
+          python3 scripts/build_osgard_wave5_environment.py --project vector-zero
+          python3 scripts/validate_osgard_wave5.py --project vector-zero
+          python3 scripts/build_osgard_wave6_materials.py --project vector-zero
+          python3 scripts/validate_osgard_wave6.py --project vector-zero
+          python3 scripts/build_osgard_wave8_materials.py --project vector-zero
+          python3 scripts/validate_osgard_wave8_materials.py --project vector-zero
+      - name: Import main scene and compile scripts
+        run: godot --headless --rendering-method gl_compatibility --editor --path godot/vector-zero --import --quit
+      - name: Execute gameplay, level, and UI smoke tests
+        run: godot --headless --rendering-method gl_compatibility --path godot/vector-zero --script res://tests/runtime_smoke.gd
+      - name: Validate Wave 5 imported props, PBR surfaces, post-processing and profiler
+        run: godot --headless --rendering-method gl_compatibility --path godot/vector-zero --script res://tests/wave5_smoke.gd
+      - name: Verify Wave6 detailed geometry, materials and gameplay compatibility
+        run: godot --headless --rendering-method gl_compatibility --path godot/vector-zero --script res://tests/wave6_smoke.gd
+      - name: Verify Wave 7 authored geometry, living environment and preserved gameplay
+        run: godot --headless --rendering-method gl_compatibility --path godot/vector-zero --script res://tests/wave7_smoke.gd
+      - name: Verify Wave 8 professional surfaces, animation and gameplay
+        run: godot --headless --rendering-method gl_compatibility --path godot/vector-zero --script res://tests/wave8_smoke.gd
+      - name: Verify Wave 9 hero geometry, optimized detail and gameplay
+        run: godot --headless --rendering-method gl_compatibility --path godot/vector-zero --script res://tests/wave9_smoke.gd
+      - name: Validate Wave10 reactive receiver, polarity feedback and clear HUD
+        run: godot --headless --rendering-method gl_compatibility --path godot/vector-zero --script res://tests/wave10_smoke.gd
+      - name: Export real Godot Web runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p godot/vector-zero/.build-web
+          godot --headless --rendering-method gl_compatibility --path godot/vector-zero --export-release Web "$GITHUB_WORKSPACE/godot/vector-zero/.build-web/index.html"
+          test -s godot/vector-zero/.build-web/index.html
+          ls -lah godot/vector-zero/.build-web/
+          python3 - <<'PYCODE'
+          from pathlib import Path
+          root = Path('godot/vector-zero/.build-web')
+          for ext in ('.html', '.js', '.wasm', '.pck'):
+              matching = sorted(root.glob('*' + ext))
+              assert matching, f'Missing Godot Web export extension: {ext}'
+              for file in matching:
+                  assert file.stat().st_size > 0, f'Empty Web export file: {file}'
+                  print(f'PASS {file.name}: {file.stat().st_size:,} bytes')
+          wasm = next(root.glob('*.wasm'))
+          assert wasm.open('rb').read(4) == b'\x00asm', 'WebAssembly magic mismatch'
+          assert next(root.glob('*.pck')).stat().st_size >= 1024, 'Godot PCK too small'
+          PYCODE
+      - name: Capture authentic Godot renderer frame (optional GPU QA)
+        shell: bash
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          command -v xvfb-run
+          timeout 90s xvfb-run -a -s "-screen 0 1600x900x24" godot --rendering-method gl_compatibility --path godot/vector-zero --script res://tests/capture.gd
+          test -s godot/vector-zero/screenshots-ci/vector-zero-blackfield-native.png
+      - name: CI software renderer performance sample (not real hardware certification)
+        shell: bash
+        continue-on-error: true
+        run: |
+          timeout 120s xvfb-run -a -s "-screen 0 1280x720x24" godot --rendering-method gl_compatibility --path godot/vector-zero --script res://tests/wave5_perf_ci.gd
+      - name: Attach CI performance measurement clearly marked as software-only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vector-zero-wave5-ci-performance-not-hardware
+          path: godot/vector-zero/benchmark-ci/*.json
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Attach original renderer screenshot for art review
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vector-zero-blackfield-native-render
+          path: godot/vector-zero/screenshots-ci/*.png
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Reproducible Wave6 software renderer benchmark (not hardware certification)
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p godot/vector-zero/benchmark-wave6
+          timeout 160s xvfb-run -a -s "-screen 0 1280x720x24" godot --rendering-method gl_compatibility --path godot/vector-zero -- --w6-benchmark --w6-duration=6 --w6-warmup=2 --w6-resolution=1280x720 --w6-profile=balanced "--w6-output=$GITHUB_WORKSPACE/godot/vector-zero/benchmark-wave6/ci.json"
+          python3 - <<'PYCODE'
+          import json
+          from pathlib import Path
+          f=Path("godot/vector-zero/benchmark-wave6/ci.json")
+          assert f.is_file(), "Benchmark JSON not written"
+          j=json.loads(f.read_text())
+          assert j["frames"] >= 5 and j["measurement_seconds"] >= 4, j
+          assert j["rendering_method"] == "gl_compatibility", j
+          print("PASS WAVE6 CI SOFTWARE MEASURE:",j["adapter"],j["mean_fps"],j["p95_frame_ms"])
+          PYCODE
+      - name: Attach Wave6 CI sample labelled as non-hardware
+        uses: actions/upload-artifact@v4
+        with:
+          name: vector-zero-wave6-ci-software-benchmark
+          path: godot/vector-zero/benchmark-wave6/ci.json
+          if-no-files-found: error
+          retention-days: 14
+      - name: Publish playable build as CI artifact (not production)
+        uses: actions/upload-artifact@v4
+        with:
+          name: vector-zero-blackfield-godot-web
+          path: godot/vector-zero/.build-web/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Export Windows native PC Ultra executable
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p godot/vector-zero/.build-windows
+          godot --headless --rendering-method gl_compatibility --path godot/vector-zero --export-release "Windows Desktop" "$GITHUB_WORKSPACE/godot/vector-zero/.build-windows/VECTOR_ZERO_BLACKFIELD_PC_ULTRA.exe"
+          python3 - <<'VERIFYEXE'
+          from pathlib import Path
+          directory = Path("godot/vector-zero/.build-windows")
+          exe = directory / "VECTOR_ZERO_BLACKFIELD_PC_ULTRA.exe"
+          pack = exe.with_suffix(".pck")
+          assert exe.exists() and exe.stat().st_size > 100000, "Missing Windows executable"
+          assert exe.open("rb").read(2) == b"MZ", "Not a Windows PE executable"
+          assert pack.exists() and pack.stat().st_size > 100000, "Missing Godot PCK game resources"
+          print("PASS WINDOWS PC ULTRA:", exe.stat().st_size, pack.stat().st_size)
+          VERIFYEXE
+      - name: Package Windows hardware test instructions
+        run: |
+          cp tools/VERIFY_WINDOWS_GPU_RU.cmd godot/vector-zero/.build-windows/
+          cp tools/TEST_GPU_WINDOWS_RU.cmd godot/vector-zero/.build-windows/
+          cp tools/TEST_GPU_WAVE7_ALL.cmd godot/vector-zero/.build-windows/
+          cp scripts/check_osgard_wave8_gpu_reports.py godot/vector-zero/.build-windows/
+          cp tools/CERTIFY_GPU_WAVE7.ps1 godot/vector-zero/.build-windows/
+      - name: Attach independent Windows PC Ultra build
+        uses: actions/upload-artifact@v4
+        with:
+          name: vector-zero-blackfield-windows-pc-ultra
+          path: godot/vector-zero/.build-windows/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Archive exact native Godot sources at this validated commit
+        uses: actions/upload-artifact@v4
+        with:
+          name: vector-zero-cinematic-source
+          path: |
+            godot/vector-zero/project.godot
+            godot/vector-zero/export_presets.cfg
+            godot/vector-zero/scenes/
+            godot/vector-zero/scripts/
+            godot/vector-zero/tests/
+            docs/games/OSGARD_WAVE7_RELEASE_RU.md
+            tools/TEST_GPU_WAVE7_ALL.cmd
+            tools/CERTIFY_GPU_WAVE7.ps1
+            godot/vector-zero/README.md
+            godot/vector-zero/assets/wave4/
+            godot/vector-zero/assets/wave5/
+            godot/vector-zero/assets/wave6/
+            godot/vector-zero/assets/wave8/
+            scripts/build_osgard_wave8_materials.py
+            scripts/validate_osgard_wave8_materials.py
+            scripts/check_osgard_wave8_gpu_reports.py
+            docs/games/OSGARD_WAVE8_RELEASE_RU.md
+            scripts/build_osgard_wave6_materials.py
+            scripts/validate_osgard_wave6.py
+            tools/TEST_GPU_WINDOWS_RU.cmd
+            docs/games/OSGARD_WAVE6_README_RU.md
+            scripts/build_osgard_wave5_environment.py
+            scripts/validate_osgard_wave5.py
+            docs/games/OSGARD_WAVE5_RELEASE_AND_GPU_QA_RU.md
+            tools/VERIFY_WINDOWS_GPU_RU.cmd
+            scripts/build_osgard_wave4_assets.py
+            scripts/validate_wave4_assets.py
+          if-no-files-found: error
+          retention-days: 14
