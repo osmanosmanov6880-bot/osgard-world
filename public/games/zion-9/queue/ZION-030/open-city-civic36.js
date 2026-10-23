@@ -181,7 +181,7 @@
        stats.roofModules++;
        if(ultra){
          for(let k=0;k<5;k++){
-           piece('fine','metal','box',x-.135+k*.067,roof+.46,z+.171,
+           piece('fine','steel','box',x-.135+k*.067,roof+.46,z+.171,
              .018,.15,.018);
            stats.ventilators++;
          }
