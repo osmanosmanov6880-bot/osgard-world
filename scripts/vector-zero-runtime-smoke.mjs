@@ -381,9 +381,23 @@ pump()
 pad.buttons[9].pressed = true
 pump()
 assert.equal(node('objective-status').textContent, 'FIELD ACTIVE', 'Gamepad Start must resume')
+const beforePadJump = canvasState.player.y
+pad.buttons[0].pressed = true
+pump(3)
+assert.ok(canvasState.player.y < beforePadJump, 'Gamepad A must jump')
+pad.buttons[0].pressed = false
+pump()
+pad.buttons[1].pressed = true
+pump()
+assert.match(node('status').textContent, /FIELD PULSE/, 'Gamepad B must trigger field pulse')
+pad.buttons[1].pressed = false
+pump()
+pad.buttons[2].pressed = true
+pump()
+assert.match(node('status').textContent, /FIELD PULSE/, 'Gamepad X must launch or pulse active core')
 window.navigator = { getGamepads: () => [] }
 pump(3)
-checks.push('gamepad analog movement, Y polarity edge, Start pause/resume and disconnect safety')
+checks.push('gamepad analog movement, A jump, B pulse, X launch, Y polarity, Start pause/resume and disconnect safety')
 
 console.log(JSON.stringify({ status: 'PASS', source: path.relative(repo, sourcePath), checks,
   frames: framesRun, canvasCalls: canvasState.calls, lifecycleStarts: startedCount(),
