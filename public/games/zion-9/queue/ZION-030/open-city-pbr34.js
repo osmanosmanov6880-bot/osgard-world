@@ -44,49 +44,77 @@
       leaf:mk(0x4c9775,.94),leaf2:mk(0x82b88a,.94),soil:mk(0x243f34,.99),
       ripple:mk(0x7fbed3,.14,.35,0,0,.35)
     };
+    // High-resolution deterministic texture authoring. Tangent-space normal
+    // channels are derived from the SAME height field as the albedo/roughness
+    // instead of random, unrelated RGB noise; brick grooves genuinely shade.
     function textures(kind){
       if(lite||!THREE.CanvasTexture||typeof document==='undefined')return null;
-      const size=ultra?192:96;
+      const size=ultra?512:192;
       const names=['albedo','normal','roughness'],result={};
+      const wrap=n=>(n%size+size)%size;
+      const hash=(x,y,salt)=>{
+        let v=(Math.imul(x|0,374761393)^Math.imul(y|0,668265263)^Math.imul(salt|0,2246822519))>>>0;
+        v=Math.imul(v^(v>>>13),1274126177)>>>0;
+        return ((v^(v>>>16))&1023)/1023;
+      };
+      const mix=(a,b,t)=>a+(b-a)*t;
+      const valueNoise=(x,y,freq,salt)=>{
+        const xx=wrap(x)*freq/size,yy=wrap(y)*freq/size,
+          x0=Math.floor(xx),y0=Math.floor(yy);
+        const u=(xx-x0)**2*(3-2*(xx-x0));
+        const v=(yy-y0)**2*(3-2*(yy-y0));
+        return mix(mix(hash(x0%freq,y0%freq,salt),hash((x0+1)%freq,y0%freq,salt),u),
+          mix(hash(x0%freq,(y0+1)%freq,salt),hash((x0+1)%freq,(y0+1)%freq,salt),u),v);
+      };
+      const heightAt=(x,y)=>{
+        const px=wrap(x),py=wrap(y);
+        const grain=valueNoise(px,py,32,kind),bed=valueNoise(px,py,8,kind+5);
+        if(kind===1){
+          const row=Math.floor(py/(size/12));
+          const localX=(px+(row%2)*(size/10))%(size/5);
+          const localY=py%(size/12);
+          const mortar=Math.min(localX,size/5-localX,localY,size/12-localY)<size/240?-.30:0;
+          return .68+grain*.09+bed*.14+mortar;
+        }
+        if(kind===2)return .74+bed*.06+grain*.17;
+        // Fine milled surface with continuous brushed lines.
+        const groove=Math.sin(px*TAU*39/size)*.055;
+        return .78+bed*.025+grain*.025+groove;
+      };
       for(const channel of names){
         const canvas=document.createElement('canvas');canvas.width=canvas.height=size;
         const g=canvas.getContext('2d',{willReadFrequently:false});if(!g)return null;
         const im=g.createImageData(size,size),d=im.data;
         for(let y=0;y<size;y++)for(let x=0;x<size;x++){
-          const idx=(y*size+x)*4;
-          // The noise seed and brick bonds are coordinate-dependent and
-          // independent of Math.random(), so the material is reproducible.
-          const v=((x*73856093)^(y*19349663)^(kind*83492791))>>>0;
-          const grain=((v>>>3)&31)-15;
-          let groove=false;
-          if(kind===1)groove=(y%24<2)||((x+(Math.floor(y/24)%2)*25)%50<2);
-          if(kind===2)groove=(y%61===0)||((x+3*y)%83===0);
-          if(kind===3)groove=(x%37===0)||(y%37===0);
-          const bump=grain-(groove?39:0);
+          const idx=(y*size+x)*4,h=heightAt(x,y);
           if(channel==='normal'){
-            d[idx]=clamp(128+(((v>>>10)&27)-13)-(groove?24:0),0,255);
-            d[idx+1]=clamp(128+(((v>>>15)&27)-13)-(groove?20:0),0,255);
-            d[idx+2]=clamp(252-Math.abs(grain)/8,0,255);
+            const sx=(heightAt(x+1,y)-heightAt(x-1,y))*(kind===1?1.85:1.20);
+            const sy=(heightAt(x,y+1)-heightAt(x,y-1))*(kind===1?1.85:1.20);
+            const len=Math.hypot(sx,sy,1);
+            d[idx]=clamp(128-sx/len*127,0,255);
+            d[idx+1]=clamp(128-sy/len*127,0,255);
+            d[idx+2]=clamp(128+127/len,0,255);
           }else if(channel==='roughness'){
-            const val=clamp((kind===3?164:kind===2?223:201)+grain*.55+(groove?13:0),20,250);
-            d[idx]=d[idx+1]=d[idx+2]=val;
+            const base=kind===1?.81:kind===2?.87:.43;
+            const rough=clamp(base+(h-.72)*.12, .12,.96)*255;
+            d[idx]=d[idx+1]=d[idx+2]=rough;
           }else{
-            const val=clamp(237+bump*.52,140,252);
-            const warm=kind===1?4:kind===2?0:3;
-            d[idx]=val;
-            d[idx+1]=clamp(val-warm,0,255);
-            d[idx+2]=clamp(val-warm*2,0,255);
+            const warm=kind===1?12:kind===2?5:16;
+            const value=clamp(213+(h-.7)*55,132,241);
+            d[idx]=clamp(value+warm,0,255);
+            d[idx+1]=clamp(value,0,255);
+            d[idx+2]=clamp(value-warm,0,255);
           }
           d[idx+3]=255;
         }
         g.putImageData(im,0,0);
-        const tex=new THREE.CanvasTexture(canvas);
-        tex.wrapS=tex.wrapT=THREE.RepeatWrapping;
-        if(tex.repeat?.set)tex.repeat.set(kind===3?3:2,kind===3?3:3);
-        tex.anisotropy=ultra?4:2;
-        if(channel==='albedo')tex.colorSpace=THREE.SRGBColorSpace;
-        else if(THREE.NoColorSpace)tex.colorSpace=THREE.NoColorSpace;
-        ownedTextures.push(tex);result[channel]=tex;
+        const texture=new THREE.CanvasTexture(canvas);
+        texture.wrapS=texture.wrapT=THREE.RepeatWrapping;
+        if(texture.repeat?.set)texture.repeat.set(kind===3?3:2,kind===3?3:3);
+        texture.anisotropy=ultra?8:4;
+        if(channel==='albedo')texture.colorSpace=THREE.SRGBColorSpace;
+        else if(THREE.NoColorSpace)texture.colorSpace=THREE.NoColorSpace;
+        ownedTextures.push(texture);result[channel]=texture;
         stats.textureMaps++;stats.estimatedTextureBytes+=size*size*4;
       }
       return result;
@@ -108,7 +136,7 @@
         normalScale:m.normalScale,roughness:m.roughness};
       patched.push(saved);
       m.map=atlas.albedo;m.normalMap=atlas.normal;m.roughnessMap=atlas.roughness;
-      if(THREE.Vector2)m.normalScale=new THREE.Vector2(.24,.24);
+      if(THREE.Vector2)m.normalScale=new THREE.Vector2(fam==='bronze'?.25:.52,fam==='bronze'?.25:.52);
       m.needsUpdate=true;surfaces.push({material:m,atlas,family:fam});stats.mappedMaterials++;
     }
     stats.surfaceFamilies=Object.values(atlases).filter(Boolean).length;
