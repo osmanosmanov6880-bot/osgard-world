@@ -54,6 +54,7 @@ class ElementAdapter extends EventTargetAdapter {
     }
   }
   setPointerCapture(pointerId) { this.capturedPointers.push(pointerId) }
+  setAttribute(name, value) { this.attributes[name] = String(value) }
   click() { return this.dispatch('click') }
 }
 
@@ -188,14 +189,16 @@ sandbox.devicePixelRatio = 3
 window.dispatch('resize')
 assert.equal(canvas.width, 780)
 assert.equal(canvas.height, 585)
-assert.deepEqual(canvasState.transforms.at(-1), [780 / 1280, 0, 0, 585 / 720, 0, 0])
+const mobileScale = 780 / 1280
+assert.deepEqual(canvasState.transforms.at(-1), [mobileScale, 0, 0, mobileScale, 0, (585 - 720 * mobileScale) / 2])
+assert.equal(canvasState.transforms.at(-1)[0], canvasState.transforms.at(-1)[3], 'Mobile geometry must not stretch magnetic circles')
 const transformCount = canvasState.transforms.length
 rectangle = { width: 0, height: 0 }
 window.dispatch('resize')
 assert.equal(canvasState.transforms.length, transformCount, 'A hidden canvas must not install an invalid transform')
 rectangle = { width: 960, height: 540 }
 window.dispatch('resize')
-checks.push('actual resize listener, mobile backing dimensions, DPR cap and zero-size guard')
+checks.push('mobile uniform letterboxing, un-stretched circles, DPR cap and zero-size guard')
 
 click('help')
 assert.equal(node('title').textContent, 'Управление')
@@ -213,7 +216,17 @@ const tapPolarity = nodes.find(element => element.dataset.tap === 'pol')
 assert.ok(tapPolarity, 'The actual mobile polarity control must exist')
 tapPolarity.click()
 assert.match(snapshot().polarity, /NEGATIVE/)
-checks.push('help before start, real launch, one started event, keyboard/button/mobile polarity')
+const assist = node('assist')
+assert.equal(assist.attributes['aria-pressed'], 'true')
+assist.click()
+assert.equal(assist.attributes['aria-pressed'], 'false')
+assert.equal(assist.textContent, 'AIM / OFF')
+assist.click()
+assert.equal(assist.attributes['aria-pressed'], 'true')
+const beforeRepeat = snapshot().polarity
+window.dispatch('keydown', { key: 'q', repeat: true })
+assert.equal(snapshot().polarity, beforeRepeat, 'Holding Q must not flip polarity on auto-repeat')
+checks.push('help before start, real launch, polarity input de-bounce and trajectory-assist toggle')
 
 key('ArrowRight')
 pump(16)
@@ -300,7 +313,10 @@ assert.ok(snapshot().x - afterBlur < 5, 'Window blur must clear held keyboard in
 key('ArrowRight')
 document.hidden = true
 document.dispatch('visibilitychange')
+assert.equal(node('objective-status').textContent, 'PAUSED', 'Switching tabs must automatically pause the attempt')
+const hiddenCanvasCalls = canvasState.calls
 pump(8)
+assert.equal(canvasState.calls, hiddenCanvasCalls, 'Hidden tab must not waste Canvas rendering work')
 const afterHidden = snapshot().x
 pump(8)
 assert.ok(snapshot().x - afterHidden < 5, 'Hidden document must clear held keyboard input')
@@ -311,6 +327,77 @@ assert.ok(lifecycle.some(({ message }) => message.state === 'error' && message.m
 assert.ok([...ids.values()].every(element => !/undefined|NaN/.test(String(element.textContent))), 'HUD must not expose undefined/NaN values')
 assert.equal(animationFrames.size, 1)
 checks.push('error lifecycle forwarding, finite HUD values and a single ongoing animation loop')
+
+document.hidden = false
+click('restart')
+click('start')
+key('w')
+pump(54)
+assert.ok(canvasState.player.y > 500 && canvasState.player.y < 564, 'First jump must be descending toward the platform')
+key('w', 'keyup')
+key('w')
+pump(13)
+assert.ok(canvasState.player.y < 530, 'A jump pressed shortly before landing must be buffered and executed')
+checks.push('buffered jump executes on landing instead of being lost')
+
+click('restart')
+click('start')
+key('ArrowRight')
+let edgeFrames = 0
+while (snapshot().x < 944 && edgeFrames++ < 350 && node('objective-status').textContent === 'FIELD ACTIVE') pump()
+assert.ok(snapshot().x >= 944, 'Player must reach the first platform gap during the actual run')
+const edgeY = canvasState.player.y
+key('w')
+pump(4)
+assert.ok(canvasState.player.y < edgeY - 2, 'Coyote-time jump must work immediately after leaving a ledge')
+key('ArrowRight', 'keyup')
+checks.push('coyote-time jump at the first platform edge')
+
+click('restart')
+click('start')
+const pad = { connected: true, axes: [0.85], buttons: Array.from({ length: 16 }, () => ({ pressed: false })) }
+window.navigator = { getGamepads: () => ({ 0: pad, length: 1 }) } // Array-like GamepadList, not a real Array
+pump(15)
+assert.ok(snapshot().x > 150, 'Gamepad left stick must move the player')
+pad.axes[0] = 0
+pad.buttons[3].pressed = true
+pump()
+assert.match(snapshot().polarity, /NEGATIVE/, 'Gamepad Y must switch polarity')
+pump(8)
+assert.match(snapshot().polarity, /NEGATIVE/, 'Holding gamepad Y must not repeatedly switch polarity')
+pad.buttons[3].pressed = false
+pump()
+pad.buttons[3].pressed = true
+pump()
+assert.match(snapshot().polarity, /POSITIVE/, 'A second gamepad Y press must switch back')
+pad.buttons[3].pressed = false
+pad.buttons[9].pressed = true
+pump()
+assert.equal(node('objective-status').textContent, 'PAUSED', 'Gamepad Start must pause')
+pump(5)
+assert.equal(node('objective-status').textContent, 'PAUSED', 'Holding Start must not auto-resume')
+pad.buttons[9].pressed = false
+pump()
+pad.buttons[9].pressed = true
+pump()
+assert.equal(node('objective-status').textContent, 'FIELD ACTIVE', 'Gamepad Start must resume')
+const beforePadJump = canvasState.player.y
+pad.buttons[0].pressed = true
+pump(3)
+assert.ok(canvasState.player.y < beforePadJump, 'Gamepad A must jump')
+pad.buttons[0].pressed = false
+pump()
+pad.buttons[1].pressed = true
+pump()
+assert.match(node('status').textContent, /FIELD PULSE/, 'Gamepad B must trigger field pulse')
+pad.buttons[1].pressed = false
+pump()
+pad.buttons[2].pressed = true
+pump()
+assert.match(node('status').textContent, /FIELD PULSE/, 'Gamepad X must launch or pulse active core')
+window.navigator = { getGamepads: () => [] }
+pump(3)
+checks.push('gamepad analog movement, A jump, B pulse, X launch, Y polarity, Start pause/resume and disconnect safety')
 
 console.log(JSON.stringify({ status: 'PASS', source: path.relative(repo, sourcePath), checks,
   frames: framesRun, canvasCalls: canvasState.calls, lifecycleStarts: startedCount(),
