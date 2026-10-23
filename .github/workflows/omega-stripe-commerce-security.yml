@@ -24,8 +24,8 @@ jobs:
           deno-version: v2.x
       - name: Typecheck actual serverless Checkout & signed webhook
         run: |
-          deno check supabase/functions/osgard-store/index.ts
-          deno check supabase/functions/osgard-stripe-webhook/index.ts
+          deno check --config supabase/deno.json supabase/functions/osgard-store/index.ts
+          deno check --config supabase/deno.json supabase/functions/osgard-stripe-webhook/index.ts
       - name: Zero payments or production deployment in CI
         run: |
           echo "SECURITY GATE ONLY. NO STRIPE KEYS, NO CHARGES, NO SUPABASE DEPLOY."
