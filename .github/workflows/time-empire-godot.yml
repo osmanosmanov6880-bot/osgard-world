@@ -46,6 +46,8 @@ jobs:
         run: godot --headless --rendering-method gl_compatibility --path godot/time-empire --script res://tests/wave5_smoke.gd
       - name: Verify Wave6 detailed geometry, materials and gameplay compatibility
         run: godot --headless --rendering-method gl_compatibility --path godot/time-empire --script res://tests/wave6_smoke.gd
+      - name: Verify Wave 7 authored geometry, living environment and preserved gameplay
+        run: godot --headless --rendering-method gl_compatibility --path godot/time-empire --script res://tests/wave7_smoke.gd
       - name: Export playable Godot Web build
         shell: bash
         run: |
@@ -144,6 +146,8 @@ jobs:
         run: |
           cp tools/VERIFY_WINDOWS_GPU_RU.cmd godot/time-empire/.build-windows/
           cp tools/TEST_GPU_WINDOWS_RU.cmd godot/time-empire/.build-windows/
+          cp tools/TEST_GPU_WAVE7_ALL.cmd godot/time-empire/.build-windows/
+          cp tools/CERTIFY_GPU_WAVE7.ps1 godot/time-empire/.build-windows/
       - name: Attach independent Windows PC Ultra build
         uses: actions/upload-artifact@v4
         with:
@@ -163,6 +167,9 @@ jobs:
             godot/time-empire/scenes/
             godot/time-empire/scripts/
             godot/time-empire/tests/
+            docs/games/OSGARD_WAVE7_RELEASE_RU.md
+            tools/TEST_GPU_WAVE7_ALL.cmd
+            tools/CERTIFY_GPU_WAVE7.ps1
             godot/time-empire/README.md
             godot/time-empire/assets/wave4/
             godot/time-empire/assets/wave5/

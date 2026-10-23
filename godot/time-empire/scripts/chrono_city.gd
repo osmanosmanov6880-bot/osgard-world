@@ -9,6 +9,7 @@ const Wave5Profiler = preload("res://scripts/wave5_profiler.gd")
 const Wave5Batcher = preload("res://scripts/wave5_static_batcher.gd")
 const Wave6ArtDirector = preload("res://scripts/wave6_art_director.gd")
 const Wave6Benchmark = preload("res://scripts/wave6_hardware_benchmark.gd")
+const Wave7Region = preload("res://scripts/wave7_region.gd")
 ## OSGARD TIME EMPIRE — CHRONOS CITY. Original Godot 4.7.2 strategy vertical slice.
 ## No art ripped from any reference titles. Procedural 3D visuals; gameplay is stateful.
 
@@ -88,6 +89,11 @@ func _ready() -> void:
     art_director.name = "Wave6ArtDirector"
     art_director.configure(self)
     add_child(art_director)
+    # Wave7 grounds the city in its coastal region and adds real moving vessels.
+    var wave7 := Wave7Region.new()
+    wave7.name = "Wave7Region"
+    wave7.configure(self)
+    add_child(wave7)
     Wave5Batcher.optimize(self)
     var hardware_bench := Wave6Benchmark.new()
     hardware_bench.name = "Wave6HardwareBenchmark"
