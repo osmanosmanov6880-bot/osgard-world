@@ -122,6 +122,10 @@ func _ready() -> void:
 	if GameState.last_load_source == "backup" or GameState.last_load_source == "staged":
 		hud.announce(hud.t("save_recovered"))
 	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+	if OS.get_cmdline_user_args().has("--r7-capture"):
+		var capture_r7: Node = preload("res://scripts/horizon_r7_actual_game_capture.gd").new()
+		add_child(capture_r7)
+		capture_r7.call("initialize",self)
 
 func _on_drift_reward_earned(credits: int, score: int) -> void:
 	# Authority uses GameState's existing reward ledger, with a per-chain cap.
