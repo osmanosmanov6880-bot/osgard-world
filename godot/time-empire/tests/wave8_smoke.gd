@@ -27,6 +27,7 @@ func _run() -> void:
         _check(rails!=null and rails.multimesh.instance_count>=90,"tram sleepers are GPU-instanced geometry")
         _check(finish.get_node_or_null("Wave8ActiveMonorail/AutonomousTram_00") is Node3D,"physical animated transit vehicle")
         _check(finish.get_node_or_null("Wave8HarborTerminal/CargoDeck") is MeshInstance3D,"port has a physical cargo platform")
+        _check(finish.get_node_or_null("Wave8HarborTerminal/DeepWaterQuaySupport") is MeshInstance3D, "deep water quay support piles are present")
         var deck:=finish.get_node_or_null("Wave8PhysicalLandfall/ContinentalCausewayDeck") as MeshInstance3D
         if deck!=null:
             var mat:=deck.material_override as StandardMaterial3D

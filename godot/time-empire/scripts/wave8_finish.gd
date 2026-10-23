@@ -167,6 +167,11 @@ func _build_civic_infrastructure() -> void:
     _box(terminal,"CraneTower",Vector3(0.62,11.2,0.72),Vector3(4.1,5.9,3.0),bronze)
     _box(terminal,"ContainerCraneSpan",Vector3(10.2,0.45,0.55),Vector3(1.35,11.15,3.0),steel)
     _box(terminal,"CargoWinch",Vector3(0.65,2.0,0.65),Vector3(-1.25,9.9,3.0),material_map["signal"])
+    # Support the maritime deck with piles that extend well below the waterline.
+    for x in [-4.8, 4.8]:
+        for z in [-7.8, 0.0, 7.8]:
+            _column(terminal, "DeepWaterQuaySupport", 0.39, 9.0, Vector3(x, -4.78, z), concrete)
+            _box(terminal, "QuayAnchorBrace", Vector3(0.82, 0.35, 0.82), Vector3(x, -0.52, z), bronze)
 
 func _finish_color_pipeline() -> void:
     var world:=game.get_node_or_null("ChronosAtmosphere") as WorldEnvironment
@@ -178,6 +183,9 @@ func _finish_color_pipeline() -> void:
     env.adjustment_contrast=1.038
     env.fog_density=0.00145 if web else 0.0018
     env.glow_intensity=0.16 if web else 0.20
+    var ground:=game.get_node_or_null("Wave7Region/ContinentalTerrain") as MeshInstance3D
+    if ground != null and ground.material_override is StandardMaterial3D:
+        (ground.material_override as StandardMaterial3D).albedo_color=Color(0.87,0.97,0.95)
     # PC shadows and SSR/SSIL remain controlled by the Forward+ quality preset.
 
 func _process(delta:float) -> void:
