@@ -4,6 +4,7 @@ const ShipFinishR7Script = preload("res://scripts/ship_finish_r7.gd")
 const ImportedHeroR8Scene = preload("res://assets/models/nx08_interceptor_r8.gltf")
 const SurfaceLibraryR9Script = preload("res://scripts/surface_library_r9.gd")
 const ShipMechanicsR9Script = preload("res://scripts/ship_mechanics_r9.gd")
+const InterceptorTrimR14Script = preload("res://scripts/interceptor_trim_r14.gd")
 ## R5 authored procedural interceptor model. GL Compatibility friendly, no external assets.
 ## Mesh geometry is real: beveled planform, inset armor, turbine housings and service details.
 ## Gameplay physics remain in ship.gd; this node provides visual geometry only.
@@ -64,6 +65,9 @@ func _ready() -> void:
     var mechanisms_r9 := ShipMechanicsR9Script.new()
     mechanisms_r9.name = "R9_AnimatedAirframeMechanics"
     add_child(mechanisms_r9)
+    var r14_refinement := InterceptorTrimR14Script.new()
+    r14_refinement.name = "R14_AirframeRefinement"
+    add_child(r14_refinement)
     # Preserve the established detail, thruster animation and save format.
     # Remove the redundant simple silhouette surfaces beneath R8 sculpting.
     for old_part in get_children():

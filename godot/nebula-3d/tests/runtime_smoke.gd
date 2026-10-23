@@ -270,6 +270,41 @@ func _run() -> void:
         "R12 dynamic film-streak control missing"):return
     if not check(monitor_r11.last_report.is_empty(),
         "R12 actual physical hardware results must never be invented in CI"):return
+    var r14 = world.get_node_or_null("R14_SculptedCinematicPorts")
+    if not check(r14 != null, "R14 cinematic ports not loaded into real game scene"):return
+    if not check(r14.site_count == 6 and r14.sculpted_decks == 6,
+        "R14 sculpted decks not distributed across six game districts"):return
+    if not check(r14.sculpted_vertices >= 2600,
+        "R14 truly sculpted flight deck geometry below minimum resolution"):return
+    if not check(r14.hydraulic_gantries == 12 and r14.detailed_truss_assemblies >= 200,
+        "R14 articulated loading gear and braced megastructure details absent"):return
+    if not check(r14.instanced_hardware >= 3000,
+        "R14 GPU instancing for micro-scale architecture insufficient"):return
+    if not check(r14.physical_barriers >= 24,
+        "R14 collisions missing on platforms and towers"):return
+    if not check(r14.get_node_or_null("R14_CinematicPort_00/R14_FlightDeckPhysics") is StaticBody3D,
+        "R14 first playable launch platform is not collidable"):return
+    if not check(r14.get_node_or_null("R14_CinematicPort_00/R14_OverheadBridgePhysics") is StaticBody3D,
+        "R14 physical skybridge is missing"):return
+    var ship_trim_r14 = world.ship.get_node_or_null(
+        "AnimatedShip/HighDetailInterceptorR5/R14_AirframeRefinement")
+    if not check(ship_trim_r14 != null, "R14 real player interceptor refinement missing"):return
+    if not check(ship_trim_r14.engine_cowls == 3 and
+        ship_trim_r14.wing_armor_panels == 12 and
+        ship_trim_r14.animated_iris_rings == 3,
+        "R14 shaped engine cases and pressure armor were not built"):return
+    if not check(ship_trim_r14.fastener_instances >= 190,
+        "R14 GPU-instanced aerospace hardware missing"):return
+    world._set_graphics_quality(2)
+    if not check(r14.quality_mode == 2 and ship_trim_r14.quality_mode == 2,
+        "R14 ECO rendering range not applied to both world and airframe"):return
+    if not check(r14.fine_draws[0].visibility_range_end <= 245.0,
+        "R14 ECO should cull expensive near-field sculpted models"):return
+    world._set_graphics_quality(0)
+    if not check(r14.quality_mode == 0 and ship_trim_r14.quality_mode == 0,
+        "R14 maximum-quality restored state inconsistent"):return
+    if not check(monitor_r11.last_report.is_empty(),
+        "R14 CI must not invent physical hardware FPS values"):return
     var hangar_solid = world.get_node_or_null("HeroMegadocksR6/R6_EnclosedHangar_00_0/HangarLeftWallCollision")
     if not check(hangar_solid is StaticBody3D, "Hangar collision missing"):return
     var arcology_solid = world.get_node_or_null("SculpturalSkylineR6/R6_SculptedArcology_00/ArcologyCollision")
@@ -299,5 +334,5 @@ func _run() -> void:
     world.ship.take_damage(10.0)
     if not check(world.ship.shield < shield_before,"Damage does not reduce shield"):return
     if not check(previous_credits >= 0,"Invalid credits"):return
-    print("NEBULA_SMOKE_SUCCESS missions=1 upgrades=1 drones=%d premium3d=r12 36-sculpted-pbr-housings=verified real-hardware-fps=pending" % world.drones.size())
+    print("NEBULA_SMOKE_SUCCESS missions=1 upgrades=1 drones=%d premium3d=r14 six-sculpted-cinematic-ports pbr=true real-hardware-fps=pending" % world.drones.size())
     quit(0)

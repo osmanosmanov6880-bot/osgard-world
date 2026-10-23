@@ -73,6 +73,9 @@ world = require(
     'preload("res://scripts/cinematic_lighting_r12.gd")',
     'preload("res://scripts/adaptive_quality_r12.gd")',
     "engineering_r12.build(SECTOR_POSITIONS)",
+    'preload("res://scripts/cinematic_port_r14.gd")',
+    "port_r14.build(SECTOR_POSITIONS)",
+    "port_r14.set_quality(graphics_quality)",
     "performance_lab_r11.capture_frame()",
     "adaptive_r12.quality_requested.connect(",
     "func _r12_on_auto_quality(",
@@ -278,6 +281,29 @@ r12_post = require(
     "func set_flight_velocity(",
 )
 require("docs/R12-PERFORMANCE-ACCEPTANCE.md", "F7", "F10", "F11", "физическом")
+r14_port = require(
+    "scripts/cinematic_port_r14.gd",
+    "func _curved_flight_deck(",
+    "func _make_facility(",
+    "func _make_gantry(",
+    "func _gpu_batch(",
+    "func set_quality(",
+    "R14_FlightDeckPhysics",
+    "R14_OverheadFlightControlBridge",
+    "MaterialFabricR12Script.get_material(0)",
+)
+r14_ship = require(
+    "scripts/interceptor_trim_r14.gd",
+    "func _make_cowl(",
+    "func _build_engine_cowls(",
+    "func _build_plated_wings(",
+    "func _build_hardware(",
+    "func set_quality(",
+    "R14_SculptedTurbineCowl_",
+)
+assert 'preload("res://scripts/interceptor_trim_r14.gd")' in ship_visual
+assert "R14_AirframeRefinement" in ship_visual
+require("docs/R14-VISUAL-AND-FPS-ACCEPTANCE.md", "F7", "F10", "FPS", "физическом")
 require("scripts/architectural_detail_r4.gd", "func build(")
 premium = require("scripts/premium_architecture.gd", "func make_facade_material(", "emission_image")
 require("scripts/drone.gd", "extends")
@@ -310,6 +336,10 @@ smoke = require(
     "R12 three physically based shared atlases not generated",
     "R12 measured low-FPS downshift logic failed",
     "R12 actual physical hardware results must never be invented in CI",
+    "R14 cinematic ports not loaded into real game scene",
+    "R14 GPU instancing for micro-scale architecture insufficient",
+    "R14 real player interceptor refinement missing",
+    "R14 CI must not invent physical hardware FPS values",
     "NEBULA_SMOKE_SUCCESS",
 )
 assert 'ship.position = Vector3(0,19,78)' in world, "Ship spawn must use a local transform before entering the tree"
@@ -321,4 +351,4 @@ assert "image.generate_mipmaps()" in ship_visual
 assert premium.count("Image.create(") >= 2, "separate facade albedo/emission atlases missing"
 assert "high-detail" not in project.lower(), "project identity may remain stable"
 assert len(smoke) > 1500 and len(city) > 5000 and len(world) > 10000
-print("NEBULA_R12_SOURCE_SUCCESS: original engineering megastructures, multi-channel PBR, filmic light and real-device QA")
+print("NEBULA_R14_SOURCE_SUCCESS: six original PBR flight ports, machined interceptor geometry and hardware QA contracts")
