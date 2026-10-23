@@ -20,7 +20,7 @@ assert.ok(html.includes('open-city-photoreal37.js?v=37'))
 assert.ok(html.indexOf('open-city-photoreal37.js?v=37')<html.indexOf('open-city.js?v=34'))
 assert.ok(manifest.includes("'open-city-photoreal37.js'"))
 for(const contract of [
-  'ZION030_PHOTOREAL37.install','photorealKit?.setQuality(world.quality)',
+  'ZION030_PHOTOREAL37.install','photorealKit?.activate?.()','photorealKit?.setQuality(world.quality)',
   'photorealKit?.syncEnvironment(','photorealKit?.update(dt)',
   'photoreal:photorealKit?.stats ?? null',
   "photorealKit?.setQuality('adaptive')"
@@ -135,6 +135,8 @@ function run(options){
     car,keyLight,hemi,blueFill,...options
   })
   assert.equal(kit.stats.version,'37.0')
+  assert.equal(kit.stats.photoLoadingStarted,false)
+  assert.equal(kit.activate(),false)
   assert.equal(kit.stats.sourceLicense,'Poly Haven CC0')
   assert.equal(kit.stats.originalPhotoSources,3)
   assert.equal(kit.stats.photoTexturesLoaded,0)
@@ -184,7 +186,7 @@ function run(options){
 const ultra=run({mobile:false,softwareGL:false,reducedMotion:false})
 const mobile=run({mobile:true,softwareGL:false,reducedMotion:false})
 const lite=run({mobile:false,softwareGL:true,reducedMotion:true})
-assert.equal(ultra.estimatedTextureBytes,768*768*4*9)
+assert.equal(ultra.estimatedTextureBytes,512*512*4*9)
 assert.equal(mobile.estimatedTextureBytes,256*256*4*9)
 assert.equal(lite.estimatedTextureBytes,0)
 assert.equal(lite.proceduralTextureMaps,0)
