@@ -61,7 +61,7 @@
    Raise it temporarily on a real player-armed placement so the golden marker
    stays ABOVE the tool dock and can be tapped on the island itself. */
 @media(max-width:740px){
- .inherit-compass-armed #island{bottom:-35px}
+ .inherit-compass-armed #island{bottom:22%}
 }
 @media(max-width:740px){.inherit-compass-trigger{margin:0;white-space:normal;text-align:center;font-size:11px}
  .inherit-compass-dialog{max-height:92dvh;padding:17px 13px}
