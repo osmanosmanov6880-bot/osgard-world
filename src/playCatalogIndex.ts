@@ -16,16 +16,16 @@ export const PLAY_GENRES: string[] = [
 // Only hero summaries load with the landing page. Full game instructions stay
 // in the deferred catalogue and game detail routes.
 export const FEATURED_PLAY_WORLDS: PlayCatalogCard[] = [
-  { id:'vector-zero', title:'VECTOR//ZERO', genre:'Платформер', format:'Физическая головоломка',
+  { id:'vector-zero', title:'VECTOR//ZERO', genre:'Платформер', mode:'solo', format:'Физическая головоломка',
     description:'Проведите ядро через магнитное поле и найдите путь к выходу.',
     status:'Игровой прототип', accent:'#5CE1E6' },
-  { id:'time', title:'Империя времени', genre:'Стратегия', format:'Стратегический прототип',
+  { id:'time', title:'Империя времени', genre:'Стратегия', mode:'solo', format:'Стратегический прототип',
     description:'Управляйте ресурсами, районами и фракциями города.',
     status:'Прототип', accent:'#B7F15A' },
-  { id:'null-shift', title:'NULL//SHIFT', genre:'Тактика', format:'Тактическая игра',
+  { id:'null-shift', title:'NULL//SHIFT', genre:'Тактика', mode:'solo', format:'Тактическая игра',
     description:'Отключите охрану, заберите ядро и доберитесь до эвакуации.',
     status:'Опубликованная сборка', accent:'#8DB5CE' },
-  { id:'zion-030', title:'Теневой протокол', genre:'Головоломка', format:'3D-головоломка',
+  { id:'zion-030', title:'Теневой протокол', genre:'Головоломка', mode:'solo', format:'3D-головоломка',
     description:'Выберите модуль и закройте горячие точки городской миссии.',
     status:'Игровой прототип', accent:'#82dfa2' },
 ]
