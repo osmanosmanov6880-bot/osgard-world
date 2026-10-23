@@ -33,6 +33,8 @@ var signed_in_email: String = ""
 var catalog: Array = DEFAULT_CATALOG.duplicate(true)
 var owned: Dictionary = {}
 var merchant_name: String = ""
+var terms_url: String = ""
+var refund_url: String = ""
 var last_response_code: int = 0
 
 func _ready() -> void:
@@ -104,6 +106,10 @@ func _construct_gui() -> void:
 	merchant_label.text = "Продавец: не подтверждён. Реальные платежи отключены."
 	merchant_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	column.add_child(merchant_label)
+	var legal_row := HBoxContainer.new()
+	column.add_child(legal_row)
+	_btn("Условия покупки",legal_row,_open_terms)
+	_btn("Правила возврата",legal_row,_open_refunds)
 	email_field = LineEdit.new()
 	email_field.placeholder_text = "Email игрока — для покупки и восстановления доступа"
 	email_field.custom_minimum_size = Vector2(0,42)
@@ -204,6 +210,18 @@ func _request(kind: String, url: String, method: int, payload: Dictionary, authe
 		pending_kind = ""
 		_status("Сеть временно недоступна (%d)" % err)
 
+func _open_terms() -> void:
+	if terms_url.begins_with("https://"):
+		OS.shell_open(terms_url)
+	else:
+		_status("Условия покупки пока не опубликованы. Оплата недоступна.")
+
+func _open_refunds() -> void:
+	if refund_url.begins_with("https://"):
+		OS.shell_open(refund_url)
+	else:
+		_status("Правила возврата пока не опубликованы. Оплата недоступна.")
+
 func _catalog() -> void:
 	_request("catalog",CFG.shop_url("catalog"),HTTPClient.METHOD_GET,{})
 
@@ -263,6 +281,8 @@ func _on_request_done(result: int, status_code: int, _response_headers: PackedSt
 		return
 	match kind:
 		"catalog":
+			terms_url = str(info.get("terms_url",""))
+			refund_url = str(info.get("refund_url",""))
 			var items: Variant = info.get("items",[])
 			if items is Array:
 				catalog = items
