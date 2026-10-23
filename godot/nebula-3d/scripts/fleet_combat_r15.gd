@@ -1,4 +1,5 @@
 extends Node3D
+const GuidedMissileR16Script = preload("res://scripts/guided_missile_r16.gd")
 ## R15 player-owned fleet gameplay. Credit purchases only; premium purchases
 ## are never fulfilled from browser state. Allies assist in real combat.
 signal missile_hit(target: Node3D)
@@ -13,13 +14,34 @@ var ally_timer: float = 0.0
 var missile_damage: float = 14.0
 var cosmetic_skin: String = ""
 var helper_ids: Array[String] = []
+const MISSILE_POOL_SIZE: int = 8
+var missile_pool: Array[Node3D] = []
+var missile_impacts: int = 0
+var helper_rebuilds: int = 0
+
+func _ready() -> void:
+    for i in MISSILE_POOL_SIZE:
+        var rocket: Node3D = GuidedMissileR16Script.new()
+        rocket.name = "R16_GuidedMissile_%02d" % i
+        add_child(rocket)
+        rocket.impacted.connect(_on_missile_impact)
+        missile_pool.append(rocket)
+
+func _on_missile_impact(victim: Node3D) -> void:
+    missile_impacts += 1
+    missile_hit.emit(victim)
 
 func set_loadout(ship_id: String, weapon_id: String, rockets: int,
                  wingmen: Array[String]) -> void:
     active_ship = ship_id
     active_weapon = weapon_id
     missiles = maxi(0, rockets)
+    var same_formation: bool = helper_ids == wingmen and helpers.size() == mini(wingmen.size(), 2)
+    if same_formation:
+        _apply_ship_stats()
+        return
     helper_ids = wingmen.duplicate()
+    helper_rebuilds += 1
     for node in helpers:
         if is_instance_valid(node): node.queue_free()
     helpers.clear()
@@ -27,6 +49,8 @@ func set_loadout(ship_id: String, weapon_id: String, rockets: int,
         var model := Node3D.new()
         model.name = "R15_Companion_%d" % i
         add_child(model)
+        if is_instance_valid(player_ship):
+            model.global_position = player_ship.global_position + player_ship.global_basis.x * (-8.0 if i == 0 else 8.0)
         var hull := MeshInstance3D.new()
         var box := BoxMesh.new()
         box.size = Vector3(2.7, 0.6, 3.8)
@@ -53,7 +77,6 @@ func _apply_ship_stats() -> void:
 
 func _process(delta: float) -> void:
     if not is_instance_valid(player_ship):return
-    _apply_ship_stats()
     ally_timer += delta
     cooldown = maxf(0.0, cooldown - delta)
     for i in helpers.size():
@@ -87,10 +110,19 @@ func launch_missile() -> bool:
     var enemy: Node3D = _nearest_hostile(245.0)
     if not is_instance_valid(enemy):
         return false
+    var ready_rocket: Node3D
+    for rocket in missile_pool:
+        if not rocket.armed:
+            ready_rocket = rocket
+            break
+    if not is_instance_valid(ready_rocket):
+        return false
+    var forward: Vector3 = -player_ship.global_basis.z
+    if not ready_rocket.activate(player_ship.global_position + forward * 3.4,
+                                  forward, enemy, missile_damage):
+        return false
     missiles -= 1
     cooldown = 1.1
-    enemy.hit(missile_damage)
-    missile_hit.emit(enemy)
     return true
 
 func weapon_damage() -> float:
