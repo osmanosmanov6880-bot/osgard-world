@@ -256,7 +256,8 @@ check('Player enables 3D with real controls and can switch quality and 2D',()=>{
 check('Build provides real locally bundled Three.js before Vite',()=>{
  assert.equal(pkg.scripts.prebuild,'node scripts/build-inherit-3d.mjs');
  assert.equal(pkg.scripts.predev,'node scripts/build-inherit-3d.mjs');
- assert.equal(pkg.scripts['qa:inherit-3d'],'node scripts/inherit-3d-smoke.mjs && node scripts/inherit-r17-visual-smoke.mjs');
+ for(const name of ['inherit-3d-smoke.mjs','inherit-r17-visual-smoke.mjs','inherit-r18-performance-smoke.mjs'])
+  assert.ok(pkg.scripts['qa:inherit-3d'].includes(name),name+' must remain in the required quality gate');
  assert.equal(pkg.dependencies.three,'^0.186.0');
 });
 check('Canonical game and PWA load CSS and generated WebGL bundle',()=>{
