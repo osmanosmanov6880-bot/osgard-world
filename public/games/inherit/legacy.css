@@ -58,7 +58,7 @@ body .world>.inherit-legacy-trigger{
  box-shadow:0 8px 25px #0005;white-space:normal;text-align:center;
 }
 @media(max-width:740px){
- body .world>.inherit-legacy-trigger{top:75px;right:5vw;min-height:40px;max-width:130px;padding:7px 9px;font-size:11px}
+ body .world>.inherit-legacy-trigger{position:fixed;top:72px;right:5vw;z-index:25;min-height:40px;max-width:130px;padding:7px 9px;font-size:11px}
 }
 @media(max-width:360px){
  body .world>.inherit-legacy-trigger{top:177px;right:5vw;max-width:120px;font-size:10px}
