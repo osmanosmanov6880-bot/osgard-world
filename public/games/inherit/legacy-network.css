@@ -84,7 +84,7 @@
 @keyframes inherit-network-glow{50%{box-shadow:0 0 0 9px #f5ca7925,0 0 25px #f2cf86}}
 @media(max-width:800px){.inherit-network-content{grid-template-columns:1fr}
  .inherit-network-visual{min-height:260px}.inherit-network-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:740px){.inherit-network-armed #island{bottom:-35px}}
+@media(max-width:740px){.inherit-network-armed #island{bottom:22%}}
 @media(max-width:560px){.inherit-network-dialog{padding:17px 14px;max-height:94dvh}
  .inherit-network-controls{grid-template-columns:1fr}.inherit-network-stats{gap:7px}
  .inherit-network-visual{min-height:210px}.inherit-network-trigger{min-width:0;margin:0;white-space:normal}
