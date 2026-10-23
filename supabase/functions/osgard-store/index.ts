@@ -98,7 +98,7 @@ Deno.serve(async (request) => {
   const legalName = Deno.env.get("STORE_MERCHANT_LEGAL_NAME") || "";
   const termsUrl = Deno.env.get("STORE_TERMS_URL") || "";
   const refundUrl = Deno.env.get("STORE_REFUND_URL") || "";
-  if (!["live", "test"].includes(mode) || !key.startsWith(mode === "live" ? "sk_live_" : "sk_test_") ||
+  if (!["live", "test"].includes(mode) || !(key.startsWith(mode === "live" ? "sk_live_" : "sk_test_") || key.startsWith(mode === "live" ? "rk_live_" : "rk_test_")) ||
       !/^acct_[A-Za-z0-9]+$/.test(expectedAccount) ||
       !successUrl.startsWith("https://") || !cancelUrl.startsWith("https://") ||
       legalName.trim().length < 3 || !termsUrl.startsWith("https://") || !refundUrl.startsWith("https://"))
