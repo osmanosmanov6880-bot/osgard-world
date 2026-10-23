@@ -91,6 +91,12 @@ try{
   if(scenario!=='high-day')await page.locator('#oc-rain').click()
   if(scenario==='high-rain-night')await page.locator('#oc-time').click()
   if(scenario==='eco-rain')await page.locator('#oc-quality').click()
+  // A strict photoreal performance claim must be measured with the actual
+  // photographic channels present BEFORE the frame-time sampling begins.
+  if(process.env.OSGARD_REQUIRE_PHOTO_PBR==='1'&&scenario!=='eco-rain')
+    await page.waitForFunction(()=>
+      (window.__ZION030_OPEN_CITY__?.state()?.photoreal?.photoTexturesLoaded||0)>=6,
+      null,{timeout:25000})
   const before=await page.evaluate(()=>window.__ZION030_OPEN_CITY__.state())
   if(before.civic?.version!=='36.0'||before.surfaces?.version!=='35.0'||
      before.photoreal?.version!=='37.0')
@@ -138,7 +144,7 @@ try{
   if(errors.length)throw Error('Runtime page errors: '+errors.join('; '))
   if(!report.benchmarkValid)throw Error('Benchmark too short or no rendered frames')
   if(process.env.OSGARD_REQUIRE_PHOTO_PBR==='1'&&scenario!=='eco-rain'&&
-      (report.graphicsStateAfter.photoreal?.photoTexturesLoaded||0)<4)
+      (report.graphicsStateAfter.photoreal?.photoTexturesLoaded||0)<6)
     throw Error('Photographic PBR asset load was not verified: local procedural fallback was used')
   if(report.dynamicLodTriggered&&process.env.OSGARD_FORBID_ADAPTIVE_LOD==='1')
     throw Error('Requested cinematic quality dropped to adaptive during benchmark')
