@@ -802,7 +802,7 @@
       const dx=ax+vx*param-x,dy=ay+vy*param-y,dz=az+vz*param-z;
       const inSight=dx*dx+dy*dy+dz*dz<.64;
       const onTop=Math.hypot(bx-x,bz-z)<.90;
-      const target=inSight||onTop?.035:1;
+      const target=(inSight||onTop)? .035 : 1;
       const prev=prop.userData.ocCrownOpacity??1;
       const opacity=prev+(target-prev)*speed;
       prop.userData.ocCrownOpacity=opacity;
