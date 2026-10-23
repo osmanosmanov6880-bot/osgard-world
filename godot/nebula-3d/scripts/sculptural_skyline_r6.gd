@@ -10,6 +10,15 @@ var windows: StandardMaterial3D
 var inset: StandardMaterial3D
 var copper: StandardMaterial3D
 var light: StandardMaterial3D
+# R18: tower silhouette remains visible; fine mullions, external steel
+# buttresses and crown hardware use sector-level GPU bounds and distance LOD.
+const FACADE_RANGE = [950.0, 650.0, 390.0]
+var quality_mode: int = 0
+var segment_origins: Array[Vector3] = []
+var segment_hubs: Array[Node3D] = []
+var detail_draws: Array[MultiMeshInstance3D] = []
+var facade_batches: int = 0
+var exterior_beam_instances: int = 0
 
 func _ready() -> void:
     steel = _material(Color(0.24, 0.28, 0.34), 0.36)
@@ -144,6 +153,8 @@ func build(centers: Array, tints: Array) -> void:
         hub.name = "R6_SculptedArcology_%02d" % sector
         hub.position = origin
         add_child(hub)
+        segment_origins.append(origin)
+        segment_hubs.append(hub)
         var mesh := MeshInstance3D.new()
         mesh.name = "TwistedSkyscraperMesh_32RingSections"
         mesh.mesh = _body_mesh(h, r, sides, twist, sector)
@@ -192,16 +203,49 @@ func build(centers: Array, tints: Array) -> void:
     _batch_beams("R6_ArcologyConcreteButtresses", landing_braces, inset)
     _batch_beams("R6_AntennaCrownSpars", crowns, copper)
     facade_fins = exterior_ribs.size()
+    set_quality(0)
+
+func _nearest_sector(where: Vector3) -> int:
+    var best: int = 0
+    var d2: float = INF
+    for i in segment_origins.size():
+        var distance: float = where.distance_squared_to(segment_origins[i])
+        if distance < d2:
+            d2 = distance
+            best = i
+    return best
 
 func _batch_beams(label: String, parts: Array[Transform3D], material: Material) -> void:
-    var mm := MultiMesh.new()
-    mm.transform_format = MultiMesh.TRANSFORM_3D
-    mm.mesh = BoxMesh.new()
-    mm.instance_count = parts.size()
-    for i in parts.size():
-        mm.set_instance_transform(i, parts[i])
-    var render := MultiMeshInstance3D.new()
-    render.name = label
-    render.multimesh = mm
-    render.material_override = material
-    add_child(render)
+    var buckets: Array = []
+    for sector in segment_origins.size():
+        buckets.append([])
+    for beam in parts:
+        var id: int = _nearest_sector(beam.origin)
+        buckets[id].append(Transform3D(
+            beam.basis, beam.origin - segment_origins[id]))
+    for district in buckets.size():
+        var items: Array = buckets[district]
+        if items.is_empty():
+            continue
+        var mm := MultiMesh.new()
+        mm.transform_format = MultiMesh.TRANSFORM_3D
+        mm.mesh = BoxMesh.new()
+        mm.instance_count = items.size()
+        for i in items.size():
+            mm.set_instance_transform(i, items[i])
+        var render := MultiMeshInstance3D.new()
+        render.name = "R18_D%02d_%s" % [district, label]
+        render.multimesh = mm
+        render.material_override = material
+        render.extra_cull_margin = 14.0
+        segment_hubs[district].add_child(render)
+        detail_draws.append(render)
+        facade_batches += 1
+        exterior_beam_instances += items.size()
+
+func set_quality(mode: int) -> void:
+    quality_mode = clampi(mode, 0, 2)
+    for detail in detail_draws:
+        if is_instance_valid(detail):
+            detail.visibility_range_end = FACADE_RANGE[quality_mode]
+            detail.visibility_range_end_margin = 135.0
