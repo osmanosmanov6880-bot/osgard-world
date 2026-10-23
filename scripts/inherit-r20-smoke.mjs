@@ -6,6 +6,7 @@ import {readFileSync} from 'node:fs';
 import {spawnSync} from 'node:child_process';
 import {makeSurfaceMicroclimate,microclimateProfile,contactFalloff,wetnessForSeason} from './inherit-3d/surface-microclimate.mjs';
 import {makeAdaptiveResolution,TARGETS} from './inherit-3d/adaptive-resolution.mjs';
+import {makeSavedTraceMotion} from './inherit-3d/saved-trace-motion.mjs';
 import {makeCinematicPipeline} from './inherit-3d/cinematic-postfx.mjs';
 const text=path=>readFileSync(path,'utf8');
 let passed=0;
@@ -93,6 +94,28 @@ test('Performance controller uses quality-specific frame budgets, not GPU guesse
  assert.equal(ctl.snapshot().changes,0);
  assert.match(ctl.snapshot().evidence,/actual browser frame intervals/);
 });
+
+test('Saved 3D models have cosmetic bounded animation and stable real save fields',()=>{
+ const motion=makeSavedTraceMotion({maxAnimated:4});
+ const lamp={isPointLight:true,intensity:2,parent:{}};
+ const model=tool=>({rotation:{z:0},parent:{},
+  userData:{nativeTrace:{tool,x:45,y:52}},
+  traverse:fn=>{if(tool==='light')fn(lamp)}
+ });
+ const props=['tree','chime','flower','light','stone'].map(model);
+ const original=props.map(g=>JSON.stringify(g.userData.nativeTrace));
+ assert.equal(motion.bind(props),4);
+ motion.update(1900,'wind',false);
+ assert.ok(props.some(g=>Math.abs(g.rotation.z)>0));
+ assert.notEqual(lamp.intensity,2);
+ motion.update(2200,'mist',true);
+ assert.ok(props.every(g=>g.rotation.z===0));
+ assert.equal(lamp.intensity,2);
+ assert.equal(motion.stats().gameplayWrites,0);
+ motion.restore();
+ assert.deepEqual(props.map(g=>JSON.stringify(g.userData.nativeTrace)),original);
+});
+
 test('Cinematic grade is real Three.js render-pass code and seasonal, not a CSS filter',()=>{
  assert.equal(typeof makeCinematicPipeline,'function');
  const source=text('scripts/inherit-3d/cinematic-postfx.mjs');
