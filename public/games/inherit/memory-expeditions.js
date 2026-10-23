@@ -198,7 +198,7 @@ function revealWorld(){
  // Bring the actual native island hit surface into view after modal focus
  // restoration. A marker at the last visible pixel is not safely tappable;
  // scrolling never performs the move or changes saved coordinates.
- d.querySelector('#world')?.scrollIntoView({block:'start',inline:'nearest',behavior:'instant'});
+ ghost.scrollIntoView({block:'center',inline:'nearest',behavior:'instant'});
 }
 function arm(){
  const current=snapshot(),goal=plan?.goals?.[selected],c=tr();

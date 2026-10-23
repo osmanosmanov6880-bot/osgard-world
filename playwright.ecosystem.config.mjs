@@ -14,6 +14,10 @@ export default defineConfig({
     channel: process.env.OSGARD_BROWSER_CHANNEL === 'chrome' ? 'chrome' : 'chromium', // Use the preinstalled Chrome when CI requests it; otherwise retain pinned Chromium.
     locale: 'ru-RU',
     contextOptions: { reducedMotion: 'reduce' },
+    // Explicit software WebGL for real GPU validation in CI only.
+    launchOptions: process.env.OSGARD_ENABLE_SWIFTSHADER === '1' ? {
+      args: ['--enable-webgl', '--ignore-gpu-blocklist', '--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'],
+    } : undefined,
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
   },

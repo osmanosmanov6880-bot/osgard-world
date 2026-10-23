@@ -40,6 +40,13 @@ on:
       - "scripts/games-lighthouse-report.mjs"
       - ".github/workflows/games-lighthouse.yml"
       - "public/games/**"
+      - "scripts/inherit-3d/**"
+      - "scripts/inherit-r18-performance-smoke.mjs"
+      - "scripts/inherit-r19-microbiome-smoke.mjs"
+      - "scripts/inherit-r19-device-acceptance-smoke.mjs"
+      - "scripts/inherit-device-acceptance.mjs"
+      - "scripts/build-inherit-3d.mjs"
+      - "scripts/inherit-3d-smoke.mjs"
       - "docs/02_IMPERIUM_OF_TIME_GAME_DESIGN.md"
       - "public/skillcred/**"
       - "scripts/precompress-brand-transition.mjs"
@@ -89,6 +96,7 @@ jobs:
           npm run qa:game-interface
           npm run qa:inherit-living
           npm run qa:inherit-world-alive
+          npm run qa:inherit-3d
           npm run qa:inherit-i18n
           npm run qa:inherit-legacy
           npm run qa:inherit-story

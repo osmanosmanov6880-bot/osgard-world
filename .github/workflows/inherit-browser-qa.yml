@@ -5,6 +5,14 @@ on:
     branches: [master]
     paths:
       - "public/games/inherit/**"
+      - "scripts/inherit-3d/**"
+      - "scripts/inherit-r18-performance-smoke.mjs"
+      - "scripts/inherit-r19-microbiome-smoke.mjs"
+      - "scripts/inherit-r19-device-acceptance-smoke.mjs"
+      - "scripts/inherit-r20-smoke.mjs"
+      - "scripts/inherit-device-acceptance.mjs"
+      - "scripts/build-inherit-3d.mjs"
+      - "scripts/inherit-3d-smoke.mjs"
       - "scripts/ecosystem-browser.spec.mjs"
       - ".github/workflows/inherit-browser-qa.yml"
   workflow_dispatch:
@@ -30,6 +38,8 @@ jobs:
           cache: npm
       - name: Install the locked application
         run: npm ci
+      - name: Validate genuine 3D source and offline bundle
+        run: npm run qa:inherit-3d
       - name: Build the actual production site
         run: npm run build
       - name: Include all published game assets
@@ -43,8 +53,17 @@ jobs:
           else
             npx playwright install --with-deps --no-shell chromium
           fi
-      - name: Verify all genuine INHERIT journeys on desktop and mobile
-        run: npx playwright test --config playwright.ecosystem.config.mjs --grep "INHERIT" --workers 2
+      - name: Verify complete classic and R15 INHERIT journeys on desktop and mobile
+        run: npx playwright test --config playwright.ecosystem.config.mjs --grep "INHERIT" --grep-invert "INHERIT R16|INHERIT R17|INHERIT R19" --workers 2
+      - name: Prove actual R16 GPU WebGL frames and real fallbacks in Chrome
+        env:
+          OSGARD_ENABLE_SWIFTSHADER: "1"
+        run: npx playwright test --config playwright.ecosystem.config.mjs --grep "INHERIT R1[679]" --workers 1
+      - name: Record real-Chrome CPU and WebGL performance evidence
+        env:
+          OSGARD_ENABLE_SWIFTSHADER: "1"
+          OSGARD_BENCHMARK_OUTPUT: "browser-report/inherit-r17-performance.json"
+        run: node scripts/inherit-hardware-benchmark.mjs --serve --swiftshader --require-webgl
       - name: Retain real interaction screenshots and traces
         if: always()
         uses: actions/upload-artifact@v4

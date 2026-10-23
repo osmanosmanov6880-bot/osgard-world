@@ -2327,3 +2327,353 @@ test('INHERIT R15 mobile action rail stays tappable without a viewport-fixed ove
  await expect(page.locator('.inherit-trace-inspector')).toBeVisible();
  expect(errors).toEqual([]);
 });
+
+
+test('INHERIT R16 genuine Three.js island renders the original saved world without changing its rules',async({page},info)=>{
+ const errors=await prepareStandaloneGame(page);
+ await page.goto('/games/inherit/?lang=ru&render=3d',{waitUntil:'domcontentloaded'});
+ const buttons=page.locator('.aaa3d-controls');
+ await expect(buttons).toBeVisible();
+ const canvas=page.locator('#island>.aaa3d-canvas');
+ await expect(canvas).toHaveCount(1);
+ const initial=await page.evaluate(()=>window.InheritAAA3D.getState());
+ expect(initial.renderer).toBe('WebGL Three.js');
+ // The dedicated CI run deliberately enables SwiftShader and MUST render true WebGL.
+ if(process.env.OSGARD_ENABLE_SWIFTSHADER==='1')expect(initial.available).toBe(true);
+ const before=await page.evaluate(()=>window.InheritGame.snapshot());
+ if(initial.available){
+  // Assert the authored sanctuary, quay and skiff exist in the actual GPU scene.
+  expect(initial.heritageDetails).toBeTruthy();
+  // The scene may correctly select LOW for software GPU even on desktop.
+  // Enforce the actual declared LOD meshes, then separately test manual HIGH.
+  const tier=initial.environmentTier;
+  const expected={high:{blocks:144,columns:12,hull:540},
+    medium:{blocks:76,columns:9,hull:240},
+    low:{blocks:32,columns:6,hull:96}}[tier];
+  expect(expected).toBeTruthy();
+  expect(initial.heritageDetails.stoneBlocks).toBe(expected.blocks);
+  expect(initial.heritageDetails.flutedColumns).toBe(expected.columns);
+  expect(initial.heritageDetails.boatHullSegments).toBe(expected.hull);
+  await expect(page.locator('#island')).toHaveClass(/aaa3d-active/);
+  await expect(canvas).toBeVisible();
+  await expect.poll(()=>page.evaluate(()=>window.InheritAAA3D.getState().frames)).toBeGreaterThan(0);
+  expect(await canvas.evaluate(el=>el.width*el.height)).toBeGreaterThan(50000);
+  expect(await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()))).toBe(JSON.stringify(before));
+  await page.locator('.aaa3d-switch').click();
+  await expect(page.locator('#island')).not.toHaveClass(/aaa3d-active/);
+  await page.locator('.aaa3d-switch').click();
+  await expect(page.locator('#island')).toHaveClass(/aaa3d-active/);
+  const shot=info.outputPath('inherit-r16-real-webgl-world.png');
+  await page.screenshot({path:shot,fullPage:false,animations:'disabled'});
+  await info.attach('INHERIT R16 real WebGL scene',{path:shot,contentType:'image/png'});
+ }else{
+  // Headless Chrome without GPU must preserve the exact native 2D gameplay.
+  await expect(page.locator('#island')).not.toHaveClass(/aaa3d-active/);
+  await expect(canvas).toBeHidden();
+  await expect(page.locator('.aaa3d-switch')).toBeDisabled();
+ }
+ await page.locator('#world').focus();
+ await page.locator('#world').press('Enter');
+ await expect.poll(()=>page.evaluate(()=>window.InheritGame.snapshot().objects.length)).toBe(before.objects.length+1);
+ const after=await page.evaluate(()=>window.InheritGame.snapshot());
+ expect(after.budget).toBe(before.budget-1);
+ expect(after.pending.length).toBe(before.pending.length+1);
+ if(initial.available){
+  await expect.poll(()=>page.evaluate(()=>window.InheritAAA3D.getState().traces)).toBe(after.objects.length);
+  // The new sculpture mesh must actually be rendered, not an HTML silhouette.
+  if((await page.evaluate(()=>window.InheritAAA3D.getState().quality))==='low'){
+   const beforeToggle=await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()));
+   await page.locator('.aaa3d-quality').click();
+   expect(await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()))).toBe(beforeToggle);
+   // Quality now changes *real landmark geometry*, not only CSS and shadows.
+   await expect.poll(()=>page.evaluate(()=>window.InheritAAA3D.getState().heritageDetails.stoneBlocks)).toBe(144);
+   expect(await page.evaluate(()=>window.InheritAAA3D.getState().environmentTier)).toBe('high');
+  }
+  await expect.poll(()=>page.evaluate(()=>window.InheritAAA3D.getState().detailTiers.high)).toBeGreaterThan(0);
+  const sculpt=await page.evaluate(()=>window.InheritAAA3D.getState());
+  expect(sculpt.detailTriangles).toBeGreaterThan(240);
+  expect(sculpt.detailDrawCalls).toBeLessThan(16);
+  const details=info.outputPath('inherit-r16-high-detail-model.png');
+  await page.screenshot({path:details,fullPage:false,animations:'disabled'});
+  await info.attach('INHERIT actual ultra-detailed sculpted 3D item',{path:details,contentType:'image/png'});
+ }
+ expect(errors).toEqual([]);
+});
+
+test('INHERIT R16 gracefully falls back to fully interactive 2D when GPU context cannot be created',async({page})=>{
+ const errors=await prepareStandaloneGame(page);
+ await page.addInitScript(()=>{
+  const original=HTMLCanvasElement.prototype.getContext;
+  HTMLCanvasElement.prototype.getContext=function(kind,...options){
+   if(kind==='webgl'||kind==='webgl2'||kind==='experimental-webgl')return null;
+   return original.call(this,kind,...options);
+  };
+ });
+ await page.goto('/games/inherit/?lang=ru',{waitUntil:'domcontentloaded'});
+ await expect(page.locator('.aaa3d-controls')).toBeVisible();
+ const state=await page.evaluate(()=>window.InheritAAA3D.getState());
+ expect(state.available).toBe(false);
+ expect(state.active).toBe(false);
+ await expect(page.locator('#island')).not.toHaveClass(/aaa3d-active/);
+ await expect(page.locator('.aaa3d-switch')).toBeDisabled();
+ const before=await page.evaluate(()=>window.InheritGame.snapshot());
+ await page.locator('#world').focus();
+ await page.locator('#world').press('Enter');
+ await expect.poll(()=>page.evaluate(()=>window.InheritGame.snapshot().objects.length)).toBe(before.objects.length+1);
+ expect(errors).toEqual([]);
+});
+
+
+test('INHERIT R16 3D Atlas replay shows real past traces and restores current state unchanged',async({page})=>{
+ const errors=await prepareStandaloneGame(page);
+ await page.goto('/games/inherit/?lang=ru&render=3d',{waitUntil:'domcontentloaded'});
+ const before=await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()));
+ const initial=await page.evaluate(()=>window.InheritAAA3D.getState());
+ if(initial.available){
+  const past=[{tool:'tree',x:39,y:48},{tool:'light',x:58,y:42}];
+  await page.evaluate(items=>window.InheritGame.showSnapshot(169,items),past);
+  await expect(page.locator('body')).toHaveClass(/replay-mode/);
+  await expect.poll(()=>page.evaluate(()=>window.InheritAAA3D.getState().traces)).toBe(2);
+  expect(await page.evaluate(()=>window.InheritAAA3D.getState().generation)).toBe(169);
+  expect(await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()))).toBe(before);
+  await page.evaluate(()=>window.InheritGame.returnToToday());
+  await expect(page.locator('body')).not.toHaveClass(/replay-mode/);
+  await expect.poll(()=>page.evaluate(()=>window.InheritAAA3D.getState().traces)).toBe(JSON.parse(before).objects.length);
+ }
+ expect(await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()))).toBe(before);
+ expect(errors).toEqual([]);
+});
+
+
+test('INHERIT R16 Artifact Atelier displays authentic HD 3D models without spending moves',async({page})=>{
+ const errors=await prepareStandaloneGame(page);
+ await page.goto('/games/inherit/?lang=ru',{waitUntil:'domcontentloaded'});
+ const start=await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()));
+ const launcher=page.locator('.aaa-artifact-action');
+ await expect(launcher).toBeVisible();
+ await launcher.click();
+ const dialog=page.locator('.aaa-atelier-dialog');
+ await expect(dialog).toBeVisible();
+ await expect(page.locator('.aaa-atelier-grid>.aaa-atelier-pick')).toHaveCount(10);
+ await expect.poll(()=>page.evaluate(()=>window.InheritArtifactAtelier.getState().open)).toBe(true);
+ await page.locator('.aaa-atelier-pick[data-tool="arch"]').click();
+ await expect(page.locator('.aaa-atelier-item-title')).toHaveText(/Арка|arch|拱门/i);
+ const state=await page.evaluate(()=>window.InheritArtifactAtelier.getState());
+ expect(state.tool).toBe('arch');
+ if(process.env.OSGARD_ENABLE_SWIFTSHADER==='1')expect(state.available).toBe(true);
+ if(state.available){
+  expect(state.triangles).toBeGreaterThan(750);
+  expect(state.meshes).toBeGreaterThan(3);
+  await expect.poll(()=>page.evaluate(()=>window.InheritArtifactAtelier.getState().frames)).toBeGreaterThan(0);
+  const view=page.locator('.aaa-atelier-canvas');
+  await expect(view).toBeVisible();
+  const rect=await view.boundingBox();
+  await page.mouse.move(rect.x+rect.width*.35,rect.y+rect.height*.48);
+  await page.mouse.down();
+  await page.mouse.move(rect.x+rect.width*.65,rect.y+rect.height*.48,{steps:5});
+  await page.mouse.up();
+  await expect.poll(()=>page.evaluate(()=>window.InheritArtifactAtelier.getState().dragged)).toBeGreaterThan(0);
+ }
+ expect(await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()))).toBe(start);
+ await page.locator('.aaa-atelier-close').click();
+ await expect(dialog).toBeHidden();
+ await expect.poll(()=>page.evaluate(()=>window.InheritArtifactAtelier.getState().open)).toBe(false);
+ await launcher.click();
+ await page.locator('.aaa-atelier-pick[data-tool="tree"]').click();
+ await page.locator('.aaa-atelier-select').click();
+ await expect(dialog).toBeHidden();
+ await expect(page.locator('.tool[data-tool="tree"]')).toHaveClass(/active/);
+ expect(await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()))).toBe(start);
+ expect(errors).toEqual([]);
+});
+
+
+
+test('INHERIT R16 3D controls never cover real Legacy, history or research buttons',async({page})=>{
+ const errors=await prepareStandaloneGame(page);
+ await page.goto('/games/inherit/?lang=ru',{waitUntil:'domcontentloaded'});
+ const safe=await page.evaluate(()=>{
+  const rail=document.querySelector('.aaa3d-controls');
+  const stage=document.querySelector('#world');
+  return {outside:!stage.contains(rail),position:getComputedStyle(rail).position};
+ });
+ expect(safe.outside).toBe(true);
+ expect(safe.position).not.toBe('absolute');
+ for(const selector of ['.inherit-legacy-trigger','.inherit-trace-launcher']){
+  const button=page.locator(selector);
+  await expect(button).toBeVisible();
+  await button.click({timeout:7000});
+  await page.keyboard.press('Escape');
+ }
+ expect(errors).toEqual([]);
+});
+
+
+test('INHERIT R17 renders physical materials, living atmosphere, cinematic FX and measured device frames',async({page},info)=>{
+ test.setTimeout(85000);
+ const errors=await prepareStandaloneGame(page);
+ await page.emulateMedia({reducedMotion:'no-preference'});
+ await page.goto('/games/inherit/?lang=ru&render=3d',{waitUntil:'domcontentloaded'});
+ const api=page.evaluate(()=>window.InheritAAA3D.getState());
+ const before=JSON.stringify(await page.evaluate(()=>window.InheritGame.snapshot()));
+ await page.locator('#island').scrollIntoViewIfNeeded();
+ const initial=await api;
+ if(process.env.OSGARD_ENABLE_SWIFTSHADER==='1')expect(initial.available).toBe(true);
+ if(initial.available){
+  await expect.poll(()=>page.evaluate(()=>window.InheritAAA3D.getState().frames),
+   {timeout:19000}).toBeGreaterThan(2);
+  const state=await page.evaluate(()=>window.InheritAAA3D.getState());
+  expect(state.materials).toBeTruthy();
+  expect(state.ambientLife.particles).toBeGreaterThan(0);
+  if(state.quality==='high')expect(state.materials.packs).toBeGreaterThan(3);
+  const first=await page.evaluate(()=>window.InheritAAA3D.getPerformanceReport());
+  expect(first.adapter).toBeTruthy();
+  expect(first.renderer).toBeTruthy();
+  // A setting must change the actual framebuffer pipeline, never saves.
+  await page.locator('.aaa3d-fx').click();
+  const changed=await page.evaluate(()=>window.InheritAAA3D.getState());
+  expect(changed.postFX).not.toBe(state.postFX);
+  await page.locator('.aaa3d-fx').click();
+  await page.locator('.aaa3d-monitor').click();
+  await expect(page.locator('.aaa3d-metrics')).toBeVisible();
+  await page.locator('#island').scrollIntoViewIfNeeded();
+  const measured=await page.evaluate(()=>window.InheritAAA3D.samplePerformance({minFrames:12,maxWaitMs:11000}));
+  expect(measured.intervalSamples).toBeGreaterThan(1);
+  expect(measured.fps).toBeGreaterThan(0);
+  expect(measured.frameIntervalP95Ms).toBeGreaterThan(0);
+  expect(measured.cpuSubmissionP95Ms).toBeGreaterThanOrEqual(0);
+  expect(measured.gpuTimerMs).toBe(null);
+  expect(measured.adapter.model).toBeTruthy();
+  expect(measured.renderer.calls).toBeGreaterThan(0);
+  const payload=JSON.stringify({device:info.project.name,renderer:measured.adapter,
+    metrics:measured,scene:changed},null,2);
+  await info.attach('R17 measured browser performance evidence',
+    {body:Buffer.from(payload),contentType:'application/json'});
+  const shot=info.outputPath('inherit-r17-real-3d-cinematic-'+info.project.name+'.png');
+  await page.screenshot({path:shot,animations:'disabled'});
+  await info.attach('Real INHERIT R17 cinematic scene',{path:shot,contentType:'image/png'});
+ }else{
+  await expect(page.locator('#island')).not.toHaveClass(/aaa3d-active/);
+  await expect(page.locator('.aaa3d-switch')).toBeDisabled();
+ }
+ expect(JSON.stringify(await page.evaluate(()=>window.InheritGame.snapshot()))).toBe(before);
+ expect(errors).toEqual([]);
+});
+
+
+test('INHERIT R18 opt-in on-device benchmark measures actual frame intervals without mutating saves',async({page},info)=>{
+ const errors=await prepareStandaloneGame(page);
+ await page.emulateMedia({reducedMotion:'no-preference'});
+ await page.goto('/games/inherit/?lang=ru&render=3d',{waitUntil:'domcontentloaded'});
+ const control=page.locator('.aaa3d-benchmark');
+ const before=await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()));
+ const state=await page.evaluate(()=>window.InheritAAA3D.getState());
+ if(state.available){
+  await expect(control).toBeVisible();
+  await expect(control).toBeEnabled();
+  const started=await page.evaluate(()=>window.InheritAAA3D.startHardwareBenchmark({durationMs:2300}));
+  expect(started).toBe(true);
+  await expect(control).toHaveAttribute('aria-pressed','true');
+  await expect.poll(()=>page.evaluate(()=>window.InheritAAA3D.getHardwareBenchmark()),{
+   timeout:16000,intervals:[250,500,700,1000]
+  }).not.toBeNull();
+  const result=await page.evaluate(()=>window.InheritAAA3D.getHardwareBenchmark());
+  expect(result.schema).toBe('INHERIT-3D-HARDWARE-BENCHMARK-v1');
+  expect(result.hardwareVerified).toBe(false);
+  expect(result.reason).toBe('diagnostic');
+  expect(result.valid).toBe(false); // A 2.3-second CI diagnostic is not a full hardware acceptance.
+  expect(result.durationMs).toBeGreaterThan(1000);
+  expect(result.qualityTested).toMatch(/high|medium|low/);
+  expect(result.gpuTimerMeasured===false||result.gpuSamples>0).toBe(true);
+  await expect(page.locator('.aaa3d-benchmark-result')).toBeVisible();
+  await expect(page.locator('.aaa3d-benchmark-copy')).toBeVisible();
+  await expect(control).toHaveAttribute('aria-pressed','false');
+ }else{
+  await expect(control).toBeDisabled();
+ }
+ expect(await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()))).toBe(before);
+ expect(errors).toEqual([]);
+});
+
+
+test('INHERIT R19 renders real instanced shoreline detail and responds to fictional seasons without writes',async({page})=>{
+ const errors=await prepareStandaloneGame(page);
+ await page.emulateMedia({reducedMotion:'no-preference'});
+ await page.goto('/games/inherit/?lang=ru&render=3d',{waitUntil:'domcontentloaded'});
+ const initial=await page.evaluate(()=>window.InheritAAA3D.getState());
+ const snapshot=await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()));
+ if(!initial.available){
+  // The GPU-required run cannot treat a 2D fallback as proof of 3D.
+  expect(process.env.OSGARD_ENABLE_SWIFTSHADER).not.toBe('1');
+  await expect(page.locator('#island')).not.toHaveClass(/aaa3d-active/);
+  expect(errors).toEqual([]);
+  return;
+ }
+ await expect.poll(()=>page.evaluate(()=>window.InheritAAA3D.getState().coastDetails?.groups)).toBe(7);
+ const before=await page.evaluate(()=>window.InheritAAA3D.getState());
+ expect(before.coastDetails.instances).toBeGreaterThan(200);
+ expect(before.coastDetails.triangles).toBeLessThan(300000);
+ expect(before.coastDetails.texturesLoadedExternally).toBe(0);
+ expect(before.coastDetails.gameplayObjectsCreated).toBe(0);
+ await page.locator('#island').scrollIntoViewIfNeeded();
+ await expect.poll(()=>page.evaluate(()=>window.InheritAAA3D.getState().frames),{timeout:16000}).toBeGreaterThan(4);
+ // Test a REAL seasonal transition; the currently saved generation may
+ // already be sunny, in which case sun→sun cannot reduce wetness.
+ await page.evaluate(()=>{document.querySelector('#world').dataset.livingSeason='tide'});
+ await expect.poll(()=>page.evaluate(()=>window.InheritAAA3D.getState().coastDetails?.season)).toBe('tide');
+ const originalWetness=(await page.evaluate(()=>window.InheritAAA3D.getState())).coastDetails.wetness;
+ await page.evaluate(()=>{document.querySelector('#world').dataset.livingSeason='sun'});
+ await expect.poll(()=>page.evaluate(()=>window.InheritAAA3D.getState().coastDetails?.season)).toBe('sun');
+ const sunny=await page.evaluate(()=>window.InheritAAA3D.getState().coastDetails);
+ expect(sunny.wetness).toBeLessThan(originalWetness);
+ expect(sunny.instances).toBe(before.coastDetails.instances);
+ const perf=await page.evaluate(()=>window.InheritAAA3D.getPerformanceReport());
+ expect(perf.samples).toBeGreaterThan(0);
+ expect(perf.renderer.calls).toBeGreaterThan(0);
+ expect(perf.renderer.triangles).toBeGreaterThan(0);
+ expect(await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()))).toBe(snapshot);
+ expect(errors).toEqual([]);
+});
+
+
+test('INHERIT R20 grounds contact shadows, GPU rain and wet clearcoat with verified browser frames',async({page},info)=>{
+ test.setTimeout(85000);
+ const errors=await prepareStandaloneGame(page);
+ await page.emulateMedia({reducedMotion:'no-preference'});
+ await page.goto('/games/inherit/?lang=ru&render=3d',{waitUntil:'domcontentloaded'});
+ const before=await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()));
+ const first=await page.evaluate(()=>window.InheritAAA3D.getState());
+ if(process.env.OSGARD_ENABLE_SWIFTSHADER==='1')expect(first.available).toBe(true);
+ if(first.available){
+  await page.locator('#island').scrollIntoViewIfNeeded();
+  await expect.poll(()=>page.evaluate(()=>window.InheritAAA3D.getState().microclimate?.gpuBatches)).toBeGreaterThanOrEqual(1);
+  const scene=await page.evaluate(()=>window.InheritAAA3D.getState());
+  expect(scene.microclimate.contacts).toBeGreaterThanOrEqual(36);
+  expect(scene.microclimate.pools).toBeGreaterThanOrEqual(0);
+  expect(scene.microclimate.externalTextures).toBe(0);
+  expect(scene.microclimate.gameplayWrites).toBe(0);
+  expect(scene.microclimate.gpuBatches).toBeLessThanOrEqual(3);
+  await page.evaluate(()=>{document.querySelector('#world').dataset.livingSeason='tide'});
+  await expect.poll(()=>page.evaluate(()=>window.InheritAAA3D.getState().microclimate?.season)).toBe('tide');
+  const tide=await page.evaluate(()=>window.InheritAAA3D.getState().microclimate);
+  await page.evaluate(()=>{document.querySelector('#world').dataset.livingSeason='sun'});
+  await expect.poll(()=>page.evaluate(()=>window.InheritAAA3D.getState().microclimate?.season)).toBe('sun');
+  const sun=await page.evaluate(()=>window.InheritAAA3D.getState().microclimate);
+  expect(sun.wetness).toBeLessThan(tide.wetness);
+  expect(sun.rainfall).toBe(0);
+  expect(sun.gpuBatches).toBe(tide.gpuBatches);
+  const perf=await page.evaluate(()=>window.InheritAAA3D.getPerformanceReport());
+  expect(perf.adaptiveResolution.scale).toBeGreaterThanOrEqual(.64);
+  expect(perf.adaptiveResolution.scale).toBeLessThanOrEqual(1);
+  expect(perf.gpuTimerMs).toBeNull();
+  expect(perf.adapter).toBeTruthy();
+  const screenshot=info.outputPath('inherit-r20-true-environment-'+info.project.name+'.png');
+  await page.screenshot({path:screenshot,animations:'disabled'});
+  await info.attach('R20 real microclimate and PBR scene',{path:screenshot,contentType:'image/png'});
+  const actual=JSON.stringify({device:info.project.name,scene:scene.microclimate,wetness:{tide,sun},
+   adapter:perf.adapter,frameIntervals:{samples:perf.samples,p95Ms:perf.frameIntervalP95Ms},gpuVerified:false});
+  await info.attach('R20 real Chromium environment evidence',{body:Buffer.from(actual),contentType:'application/json'});
+ }
+ expect(await page.evaluate(()=>JSON.stringify(window.InheritGame.snapshot()))).toBe(before);
+ expect(errors).toEqual([]);
+});

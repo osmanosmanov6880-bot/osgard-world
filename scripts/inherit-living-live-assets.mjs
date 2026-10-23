@@ -1,11 +1,12 @@
-// Byte-identical production verification for the INHERIT Living Legacy release.
+// Byte-identical verification against the actual activation archive, not the unversioned source HTML.
+// The release workflow rewrites shared-brand asset URLs in every HTML document before packaging.
 // Run only after the SSH activation step, never as a mock success assertion.
 import {readFileSync} from 'node:fs';
 import {createHash} from 'node:crypto';
 import {join} from 'node:path';
-const root='public/games/inherit';
+const root='osgard-release/html/games/inherit'; // exact packaged bytes; HTML is SHA-versioned during archive creation
 const items=['index.html','living-legacy.js','living-legacy.css','living-legacy-sprites.svg'];
-const extensions=['world-alive-engine.js','world-alive-ui.js','world-alive.css'];
+const extensions=['world-alive-engine.js','world-alive-ui.js','world-alive.css','aaa-3d.css','aaa-three.bundle.js'];
 const origin=(process.env.OSGARD_BASE_URL||'https://osgard.world').replace(/\/+$/,'');
 const version=(process.env.GITHUB_SHA||'release').slice(0,12);
 const sha=b=>createHash('sha256').update(b).digest('hex');
@@ -26,7 +27,7 @@ async function verify(name){
       return;
     }catch(error){reason=error.message;console.error('ATTEMPT '+attempt+' '+name+': '+reason);if(attempt<4)await pause(3000)}
   }
-  throw Error('R15 public file validation failed: '+reason);
+  throw Error('R16 3D public file validation failed: '+reason);
 }
 for(const name of [...items,...extensions])await verify(name);
 console.log('INHERIT Living Legacy: all original release files byte-identical on production.');

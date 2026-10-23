@@ -225,7 +225,9 @@ function revealWorld(){
  // The native dialog restores focus to its toolbar trigger, which can scroll
  // the proposed world coordinate offscreen even on desktop. Return to the
  // genuine gameplay hit region; never place an object programmatically.
- stage.scrollIntoView({block:'start',inline:'nearest',behavior:'instant'});
+ // Center the *actual suggested native coordinate*. A long world section can
+ // leave this marker below the viewport if only its top is scrolled into view.
+ ghost.scrollIntoView({block:'center',inline:'nearest',behavior:'instant'});
 }
 choose.addEventListener('click',()=>{
  if(!suggestion||suggestion.status!=='suggested'||d.body.classList.contains('replay-mode'))return;

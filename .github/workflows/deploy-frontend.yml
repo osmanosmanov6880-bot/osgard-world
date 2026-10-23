@@ -27,6 +27,13 @@ on:
       - "public/skillcred/**"
       - "public/entertainment/**"
       - "public/games/**"
+      - "scripts/inherit-3d/**"
+      - "scripts/inherit-r18-performance-smoke.mjs"
+      - "scripts/inherit-r19-microbiome-smoke.mjs"
+      - "scripts/inherit-r19-device-acceptance-smoke.mjs"
+      - "scripts/inherit-device-acceptance.mjs"
+      - "scripts/build-inherit-3d.mjs"
+      - "scripts/inherit-3d-smoke.mjs"
       - "public/brand/**"
       - "public/privacy/**"
       - "public/osa-library/**"
@@ -120,6 +127,7 @@ jobs:
           npm run qa:inherit-account
           npm run qa:inherit-living
           npm run qa:inherit-world-alive
+          npm run qa:inherit-3d
           npm run qa:inherit-i18n
           npm run qa:inherit-legacy
           npm run qa:inherit-story
@@ -454,7 +462,7 @@ jobs:
           REMOTE_SCRIPT="/tmp/activate-frontend-remote-${GITHUB_RUN_ID}.sh"
           scp -i ~/.ssh/osgard_deploy scripts/activate-frontend-remote.sh "$USER@$HOST:$REMOTE_SCRIPT"
           ssh -i ~/.ssh/osgard_deploy "$USER@$HOST" "docker cp '$REMOTE_RELEASE_DIR/osgard-world-release.tgz' osgard-world:'$REMOTE_ARCHIVE' && chmod 700 '$REMOTE_SCRIPT' && OSGARD_ARCHIVE='$REMOTE_ARCHIVE' OSGARD_CORE_IMAGE='osgard-core-api:${GITHUB_SHA}' OSGARD_REMIX_GUARD_IMAGE='osgard-remix-guard:${GITHUB_SHA}' OSGARD_CONTAINER=osgard-world '$REMOTE_SCRIPT'"
-      - name: Verify exact INHERIT R15 public files after SSH activation
+      - name: Verify exact INHERIT R16 3D public files after SSH activation
         env:
           OSGARD_BASE_URL: https://osgard.world
         run: node scripts/inherit-living-live-assets.mjs
