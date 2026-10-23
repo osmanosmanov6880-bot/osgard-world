@@ -261,7 +261,9 @@ func set_profile(mode: String) -> void:
 		if not is_instance_valid(visual):
 			continue
 		var premium: bool = "Balcony" in visual.name or "RoofHardware" in visual.name or "NightInterior" in visual.name
-		visual.visible = enabled and (ultra or not premium)
+		var illuminated: bool = visual.name.begins_with("R7_NightInterior_")
+		var nighttime: bool = city.sun != null and city.sun.light_energy < .76
+		visual.visible = enabled and (ultra or not premium) and (not illuminated or nighttime)
 		visual.visibility_range_end = 350.0 if ultra else 185.0
 	if city.facade_windows != null:
 		city.facade_windows.visible = not enabled and source_windows_visible
