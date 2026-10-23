@@ -85,6 +85,9 @@
 .inherit-expedition-confirm button{min-height:40px;padding:9px 13px;border:1px solid #385f53;
  border-radius:5px;background:#183b34;color:#f3e8d4;font:700 11px/1.4 Manrope,system-ui,sans-serif;cursor:pointer}
 .inherit-expedition-confirm button+button{background:transparent;color:#193c32}
+@media(max-width:740px){
+ .inherit-expedition-armed #island{bottom:22%}
+}
 @media(max-width:760px){.inherit-expedition-layout{grid-template-columns:1fr}
  .inherit-expedition-choices{grid-template-columns:repeat(2,minmax(0,1fr));max-height:215px}
  .inherit-expedition-option{padding:10px}
