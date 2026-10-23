@@ -972,7 +972,7 @@
       // Read-only diagnostics and an explicit, opt-in benchmark controller.
       window.__ZION030_PERFORMANCE__=perfKit||null;
       window.__ZION030_OPEN_CITY__ = {
-        state: () => ({ ready: world.ready, active: world.active, player: { x: player.x, z: player.z, stamina:player.stamina, height:player.height, cameraMode:player.cameraMode }, mission: game()?.state(), quality: world.quality, driving: Boolean(world.car?.occupied), vehicle: world.car ? { x: world.car.x, z: world.car.z, speed: world.car.speed, battery: world.car.battery } : null, contracts: [...profile.completed], credits: profile.credits, raining: world.raining, dayMode: world.dayMode, dispatch:{done:[...profile.dispatchDone],steps:{...profile.dispatchSteps},active:profile.activeDispatch}, garage:{speed:profile.fastCar,grip:profile.grip,battery:profile.batteryUpgrade}, district:rules.districtAt(player.x,player.z), detail: detailKit?.stats ?? null, cinematic: cinematicKit?.stats ?? null, landmarks: landmarkKit?.stats ?? null, street: streetKit?.stats ?? null, atelier: atelierKit?.stats ?? null, postfx: postFxKit?.stats ?? null, coolingFx: coolingKit?.stats ?? null, coolingCrownsFaded: world.coolingCrownsFaded||0, perf: perfKit?.snapshot() ?? null }),
+        state: () => ({ ready: world.ready, active: world.active, player: { x: player.x, z: player.z, stamina:player.stamina, height:player.height, cameraMode:player.cameraMode }, mission: game()?.state(), quality: world.quality, driving: Boolean(world.car?.occupied), vehicle: world.car ? { x: world.car.x, z: world.car.z, speed: world.car.speed, battery: world.car.battery } : null, contracts: [...profile.completed], credits: profile.credits, raining: world.raining, dayMode: world.dayMode, dispatch:{done:[...profile.dispatchDone],steps:{...profile.dispatchSteps},active:profile.activeDispatch}, garage:{speed:profile.fastCar,grip:profile.grip,battery:profile.batteryUpgrade}, district:rules.districtAt(player.x,player.z), detail: detailKit?.stats ?? null, cinematic: cinematicKit?.stats ?? null, landmarks: landmarkKit?.stats ?? null, street: streetKit?.stats ?? null, atelier: atelierKit?.stats ?? null, postfx: postFxKit?.stats ?? null, coolingFx: coolingKit?.stats ?? null, coolingCrownsFaded: world.coolingCrownsFaded||0, cameraOcclusionFallback:Boolean(world.cameraOcclusionFallback), perf: perfKit?.snapshot() ?? null }),
         enter, exit, walk: (dx, dz) => { if (!collides(player.x + dx, player.z + dz)) { player.x += dx; player.z += dz; } },
         drive: toggleCar, time: cycleTime, rain: toggleRain, quality: toggleQuality, gps: toggleNavigation, contract: completeNearbyContract,
         interact, camera:cycleCamera, journal:showJournal, pause:pauseGame, resume:resumeGame, dispatch:advanceNearbyDispatch
@@ -1216,6 +1216,7 @@
     }
     const eyeHeight=c?.occupied?1.17:1.65+player.height;
     if(player.cameraMode==='first'){
+      world.cameraOcclusionFallback=false;
       camera.position.set(player.x,eyeHeight,player.z);
       camera.lookAt(player.x-Math.sin(player.cameraYaw)*13,
         eyeHeight-Math.tan(player.pitch-.25)*13,player.z-Math.cos(player.cameraYaw)*13);
@@ -1227,17 +1228,28 @@
         const tz=player.z+Math.cos(player.cameraYaw)*Math.cos(pitch)*d;
         if(collides(tx,tz,.12)){distance=Math.max(.7,d-.35);break;}
       }
-      const lookHeight=c?.occupied?.9:1.2+player.height;
-      const desired=new THREE.Vector3(player.x+Math.sin(player.cameraYaw)*Math.cos(pitch)*distance,
-        lookHeight+Math.sin(pitch)*distance,player.z+Math.cos(player.cameraYaw)*Math.cos(pitch)*distance);
-      // Prevent interpolation from leaving the chase camera inside a facade.
-      // The spring arm still eases normally in clear space and keeps the game grid authoritative.
-      if(collides(desired.x,desired.z,.16)){
-        desired.set(player.x,lookHeight+.65,player.z);
+      // In narrow lanes, a 0.7m chase arm produces a close-up of the
+      // character's head rather than the city. Seamlessly prefer a forward
+      // first-person viewpoint until there is room behind the player again.
+      if(distance<1.45){
+        world.cameraOcclusionFallback=true;
+        avatar.visible=false;
+        const eye=c?.occupied?1.36:1.65+player.height;
+        camera.position.set(player.x,eye,player.z);
+        camera.lookAt(player.x-Math.sin(player.cameraYaw)*13,
+          eye-Math.tan(player.pitch-.25)*13,
+          player.z-Math.cos(player.cameraYaw)*13);
+      }else{
+        world.cameraOcclusionFallback=false;
+        avatar.visible=player.cameraMode!=='first';
+        const lookHeight=c?.occupied?.9:1.2+player.height;
+        const desired=new THREE.Vector3(player.x+Math.sin(player.cameraYaw)*Math.cos(pitch)*distance,
+          lookHeight+Math.sin(pitch)*distance,player.z+Math.cos(player.cameraYaw)*Math.cos(pitch)*distance);
+        if(collides(desired.x,desired.z,.16))desired.set(player.x,lookHeight+.65,player.z);
+        camera.position.lerp(desired,1-Math.exp(-dt*9));
+        if(collides(camera.position.x,camera.position.z,.16))camera.position.copy(desired);
+        camera.lookAt(player.x,lookHeight,player.z);
       }
-      camera.position.lerp(desired,1-Math.exp(-dt*9));
-      if(collides(camera.position.x,camera.position.z,.16))camera.position.copy(desired);
-      camera.lookAt(player.x,lookHeight,player.z);
     }
     updateCoolingCrownOcclusion(dt);
     const desiredFov=player.cameraMode==='first'?64:c?.occupied?74:player.moving&&player.stamina<99?72:68;
