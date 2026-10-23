@@ -126,6 +126,10 @@ func _ready() -> void:
 		var capture_r7: Node = preload("res://scripts/horizon_r7_actual_game_capture.gd").new()
 		add_child(capture_r7)
 		capture_r7.call("initialize",self)
+	elif OS.get_cmdline_user_args().has("--r7-benchmark"):
+		var physical_bench: Node = preload("res://scripts/horizon_r7_device_metrics.gd").new()
+		add_child(physical_bench)
+		physical_bench.call("initialize",self)
 
 func _on_drift_reward_earned(credits: int, score: int) -> void:
 	# Authority uses GameState's existing reward ledger, with a per-chain cap.
