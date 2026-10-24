@@ -355,10 +355,12 @@ const keyboardKeepsX=snapshot().x
 pump(7)
 assert.ok(snapshot().x > keyboardKeepsX + 5, 'Releasing a touchscreen pointer must not cancel the held keyboard key')
 window.dispatch('blur')
-pump(8)
+// Release clears thrust immediately; momentum must settle under physics friction,
+// not teleport the player to a stop on the same frame.
+pump(24)
 const afterBlur = snapshot().x
-pump(8)
-assert.ok(snapshot().x - afterBlur < 5, 'Window blur must clear held keyboard input')
+pump(10)
+assert.ok(snapshot().x - afterBlur < 5, 'Window blur must clear held keyboard input without cancelling physical inertia')
 key('ArrowRight')
 document.hidden = true
 document.dispatch('visibilitychange')
