@@ -323,3 +323,19 @@ html[data-motion=off] .intelligence-command .intelligence-command-actions .brand
     letter-spacing: -.045em;
   }
 }
+
+/* OSA evidence page: bilingual controls and crisp crimson signal system */
+.theme-intelligence .intelligence-command .intelligence-language-row{display:flex;align-items:center;justify-content:space-between;gap:18px;margin:0 0 26px}
+.theme-intelligence .intelligence-command .intelligence-language-row .intelligence-command-eyebrow{margin:0}
+.theme-intelligence .intelligence-language-toggle{display:inline-flex;align-items:center;gap:8px;min-height:38px;padding:8px 11px;border:1px solid #7f3544;border-radius:3px;background:#0b1423;color:#eef3fa;font:650 11px/1 Inter,Arial,sans-serif;letter-spacing:.1em;cursor:pointer;transition:background .2s,border-color .2s,transform .2s}
+.theme-intelligence .intelligence-language-toggle:hover{background:#182235;border-color:#cf5263;transform:translateY(-1px)}
+.theme-intelligence .intelligence-language-toggle:focus-visible{outline:2px solid #f1808e;outline-offset:4px}
+.theme-intelligence .intelligence-skip-link{position:absolute;z-index:20;left:12px;top:-60px;padding:10px 14px;background:#111a2a;color:#fff;border:1px solid #b83b4e}
+.theme-intelligence .intelligence-skip-link:focus{top:12px}
+.theme-intelligence .intelligence-command .intelligence-command-eyebrow{color:#c95a69}
+.theme-intelligence .intelligence-command .intelligence-proof-console{border-color:#77404d;background:linear-gradient(145deg,#111d30f5,#081322f8 58%,#050c17fc)}
+.theme-intelligence .intelligence-command .intelligence-proof-claim.is-selected{border-color:#b84455;background:linear-gradient(100deg,#431b28,#101a2a 78%)}
+.theme-intelligence .intelligence-command .intelligence-proof-marker,.theme-intelligence .intelligence-command .brand-status{color:#e07886}
+.theme-intelligence .intelligence-command .intelligence-proof-summary a,.theme-intelligence .intelligence-command .brand-text-link{color:#e07785}
+@media(max-width:620px){.theme-intelligence .intelligence-command .intelligence-language-row{align-items:flex-start}.theme-intelligence .intelligence-language-toggle{flex:none}}
+@media(prefers-reduced-motion:reduce){.theme-intelligence .intelligence-language-toggle{transition:none}}
