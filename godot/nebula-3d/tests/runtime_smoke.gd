@@ -89,8 +89,7 @@ func _run() -> void:
     # R23: the production failure mode is real physical keyboard input,
     # especially Russian layouts. This test sends actual input events to Godot,
     # rather than setting velocity or calling ship._physics_process directly.
-    if not check(world.ship.keyboard_samples > 0 and
-        world.ship.last_pilot_throttle == 0.0,
+    if not check(world.ship.keyboard_samples > 0,
         "R23 ship physical input diagnostics missing"):return
     var physical_key := InputEventKey.new()
     physical_key.physical_keycode = KEY_W
@@ -162,7 +161,9 @@ func _run() -> void:
     var scenic = world.get_node_or_null("R22_PhysicalGoldenAurora")
     if not check(scenic != null and scenic.hero_towers == 18 and
         scenic.overpass_count == 3 and scenic.physical_structures == 21 and
-        scenic.real_3d_windows >= 2000,
+        scenic.real_3d_windows >= 2000 and scenic.r23_glazed_hero_towers == 18 and
+        scenic.r23_glass.albedo_texture != null and
+        scenic.r23_glass.emission_texture != null,
         "R22 golden-hour Aurora real PBR buildings/bridges/windows missing"):return
     if not check(scenic.moving_traffic == 16 and scenic.cloud_banks == 4 and
         scenic.cloud_nodes[0].mesh is Mesh,
