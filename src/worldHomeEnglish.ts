@@ -107,7 +107,19 @@ const worldHomeEnglish: Record<string, string> = {
   "Скачать бриф": "Download brief",
   "Файл подготовлен. Заявка не отправлена — приложите бриф к письму.": "Your file is ready. Nothing was sent — attach the brief to your email.",
   "Данные формы не передаются на сервер и не сохраняются автоматически.": "Form data is not sent to a server or saved automatically.",
-  "Открыть письмо и приложить файл": "Open email and attach the file"
+  "Открыть письмо и приложить файл": "Open email and attach the file",
+  "case.phantom.type": "Prototype",
+  "case.phantom.category": "Gaming / operations interface",
+  "case.phantom.description": "Calendar, capacity rules and booking workflows. The public case shows the interface; server operation is not confirmed.",
+  "case.tedes.type": "Demo",
+  "case.tedes.category": "Architecture / product catalogue",
+  "case.tedes.description": "Door and material catalogue, product selection and a locally saved specification. Paid orders are not enabled.",
+  "case.merakki.type": "Concept",
+  "case.merakki.category": "Hospitality / digital experience",
+  "case.merakki.description": "Editorial presentation of a restaurant brand and a guided introduction to its space. A commercial launch is not confirmed.",
+  "case.essentia.type": "Demo",
+  "case.essentia.category": "Commerce / storefront",
+  "case.essentia.description": "Catalogue, favourites and a local cart. Payments and real orders are not connected."
 }
 
 export default worldHomeEnglish
