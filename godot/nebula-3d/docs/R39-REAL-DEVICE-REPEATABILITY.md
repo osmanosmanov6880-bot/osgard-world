@@ -27,7 +27,12 @@ from actual Android and iOS devices. No remote collection or analytics.
 
 ## Acceptance logic (conservative)
 - Grouping key: anonymous device label + reported resolution + fixed profile.
-- Only reliable reports from non-software renderers are eligible for median.
+- Only reliable reports from non-software renderers with a valid original
+  `date_unix` field are eligible for median. Exact repeated timestamps within
+  the same device/viewport/profile group are treated as duplicate JSON,
+  counted separately but NOT treated as independent trials.
+- Timestamps alone cannot attest phone identity or prevent a deliberately
+  forged report; this guards accidental duplicate uploads, not fraud.
 - >=3 eligible reports per group. FPS spread = (max - min) / median x 100.
 - If FPS spread >20%, mark UNSTABLE, even when median FPS is high.
 - Median targets from the existing R36/R37 definitions:
