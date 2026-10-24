@@ -89,7 +89,9 @@ async function keyboardDiagnostics(page) {
   await expectState(page, x => x?.challenge_active && x?.challenge_step === 0
     && x?.fault_marker_count === 3 && x?.fault_marker_active_index === 0
     && x?.fault_marker_visible_count === 3 && x?.fault_label_visible_count === 1
-    && x?.fault_visual_state === 'active',
+    && x?.fault_visual_state === 'active'
+    && x?.active_caption_depth_override,
+    
     'W5 optical fault must appear in the 3D scene')
   await page.keyboard.press('f') // Safety violation, should be refused.
   await expectState(page, x => x?.challenge_step === 0 && x?.challenge_errors === 1 && x?.lid_target === 0,
@@ -236,7 +238,10 @@ try {
           && x?.button_centers?.length === 8 && x?.fault_marker_count === 3
           && x?.fault_marker_visible_count === 0 && x?.fault_label_visible_count === 0
           && x?.studio_grid_draw_batches === 2 && x?.studio_grid_instances === 18
-          && x?.studio_mesh_nodes <= 8 && x?.prefers_reduced_motion === isMobile,
+          && x?.studio_mesh_nodes <= 8 && x?.prefers_reduced_motion === isMobile
+          && x?.inspection_fill_energy >= 3.5
+          && x?.inspection_fill_shadow_enabled === false
+          && x?.inspection_fill_range >= 12.0,
         'Real W5 Godot ECO rig, 3D markers and controls did not load', 90_000)
       if (boot.quality !== 0 || boot.studio_quality !== 0) throw new Error('Low-memory ECO mode not used on boot')
       const geometry = await page.locator('canvas').first().evaluate(canvas => ({
