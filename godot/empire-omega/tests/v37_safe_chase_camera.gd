@@ -80,7 +80,10 @@ func _run() -> void:
 	var invalid: Dictionary = RIG.solve(focus,Vector3(NAN,0,0),eased,space,exclude,0.1,false)
 	verify(bool(invalid["occluded"]) and (invalid["position"] as Vector3) == focus,"nonfinite target fails safely")
 	var source: String = FileAccess.get_file_as_string("res://scripts/main.gd")
-	verify(source.contains("SAFE_CAMERA.desired_position(focus,cam_yaw,cam_pitch,car.speed,driving,viewport_size)"),"live third-person camera uses R14 portrait framing")
+	verify(source.contains("SAFE_CAMERA.desired_position(focus,cam_yaw,camera_pitch,car.speed,driving,viewport_size)") and
+		source.contains("SAFE_CAMERA.cabinet_pitch(cam_pitch,cabinet_open,viewport_size,GameSettings.reduced_motion)") and
+		source.contains("SAFE_CAMERA.cabinet_focus(focus,cam_yaw,cabinet_open,viewport_size,GameSettings.reduced_motion)"),
+		"real R14 collision-safe portrait camera retains its viewport plus R34 bounded cabinet framing")
 	verify(source.contains("SAFE_CAMERA.solve(focus,ideal,camera.global_position,"),"live third-person camera uses two-stage obstacle safety")
 	verify(not source.contains("ideal = result[\"position\"]"),"old unsafe single-ray camera removed")
 	wall.queue_free()
