@@ -14,6 +14,11 @@ var hero_towers: int = 0
 var r23_glazed_hero_towers: int = 0
 var r23_glass: StandardMaterial3D
 var real_3d_windows: int = 0
+## R25: the R22 facades had fully modeled windows on the front only.
+## The other three visible sides appeared as big flat reflective slabs.
+## Batch all four facades into the same THREE existing GPU multi-meshes.
+var r25_window_faces: int = 0
+var r25_side_and_back_windows: int = 0
 var physical_structures: int = 0
 var overpass_count: int = 0
 var moving_traffic: int = 0
@@ -96,6 +101,10 @@ func _batch(label: String, items: Array[Transform3D], mat: Material) -> void:
 func _window_transform(p: Vector3, size: Vector3) -> Transform3D:
     return Transform3D(Basis.IDENTITY.scaled(size), p)
 
+func _r25_side_window_transform(p: Vector3, size: Vector3) -> Transform3D:
+    # A vertical local XY facade pane, rotated into the two building ends.
+    return Transform3D(Basis(Vector3.UP, PI * 0.5).scaled(size), p)
+
 func _build_tower(root: Node3D, index: int, wall: Array[Transform3D],
                   warm: Array[Transform3D], cool: Array[Transform3D]) -> void:
     var height: float = 105.0 + float((index * 37) % 115)
@@ -135,19 +144,38 @@ func _build_tower(root: Node3D, index: int, wall: Array[Transform3D],
     var floors: int = int((height - 18.0) / 5.6)
     for floor in floors:
         var y: float = 12.0 + float(floor) * 5.6
-        for col in 7:
-            var x: float = (float(col)-3.0) * (width * 0.118)
-            var pane_position: Vector3 = group.position + Vector3(x,y,depth*0.5+0.27)
-            var pane: Transform3D = _window_transform(
-                pane_position,Vector3(width*0.086,2.55,0.15))
-            var selection: int = (index*37+floor*19+col*71) % 17
-            if selection < 5:
-                warm.append(pane)
-            elif selection < 8:
-                cool.append(pane)
-            else:
-                wall.append(pane)
-            real_3d_windows += 1
+        for facade in 4:
+            var count: int = 7 if facade < 2 else 5
+            for col in count:
+                var mid: float = float(col) - float(count-1)*0.5
+                var pane: Transform3D
+                if facade < 2:
+                    var x: float = mid * (width * 0.118)
+                    var front: float = 1.0 if facade == 0 else -1.0
+                    var pane_position: Vector3 = group.position + Vector3(
+                        x, y, front*(depth*0.5+0.27))
+                    pane = _window_transform(pane_position,
+                        Vector3(width*0.086,2.55,0.15))
+                else:
+                    var along_z: float = mid * (depth * 0.164)
+                    var right: float = 1.0 if facade == 2 else -1.0
+                    var pane_position: Vector3 = group.position + Vector3(
+                        right*(width*0.5+0.27),y,along_z)
+                    pane = _r25_side_window_transform(pane_position,
+                        Vector3(depth*0.127,2.55,0.15))
+                # Different floor/side occupancy distributions are deterministic,
+                # with physically modelled dark window recesses between lights.
+                var selection: int = (index*37+floor*19+col*71+facade*59) % 19
+                if selection < 5:
+                    warm.append(pane)
+                elif selection < 9:
+                    cool.append(pane)
+                else:
+                    wall.append(pane)
+                real_3d_windows += 1
+                if facade > 0:
+                    r25_side_and_back_windows += 1
+            r25_window_faces += 1
     for antenna in 2:
         _block(group,"R22_RooftopAntenna",Vector3(
             -width*0.25 + float(antenna)*width*0.50,height+18.0,0),
