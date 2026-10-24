@@ -1,5 +1,6 @@
 extends SceneTree
 const PERSON = preload("res://scripts/player_controller.gd")
+const CIVIC = preload("res://scripts/horizon_civic_gateway.gd")
 var passed := 0
 var failed := 0
 
@@ -30,9 +31,24 @@ func _run() -> void:
 	# Loading WorldBuilder here before the GameState autoload is registered
 	# causes an unrelated standalone ScriptTree compilation error.
 	var world_source: String = FileAccess.get_file_as_string("res://scripts/world_builder.gd")
-	check(world_source.contains("CivicColumn"),"civic facade column source contract")
-	check(world_source.contains("CivicGlazing"),"civic facade window source contract")
-	check(world_source.contains("CivicLightRibbon"),"civic lighting source contract")
+	# R28 intentionally removed obsolete per-mesh CivicColumn / CivicGlazing
+	# and the fluorescent CivicLightRibbon. Assert the live successor instead.
+	check(world_source.contains("CIVIC_GATEWAY.new()"),"world actually instantiates the R28 civic gateway")
+	check(world_source.contains("city_root.add_child(cityhall_gateway)"),"civic gateway is attached to the playable city")
+	var civic: Node3D = CIVIC.new()
+	root.add_child(civic)
+	check(int(civic.get("batches"))==7,"civic landmark uses seven bounded real GPU draw batches")
+	var columns: MultiMeshInstance3D = civic.get_node_or_null("CivicStonePillars") as MultiMeshInstance3D
+	check(columns!=null and columns.multimesh.instance_count==6,"civic has six real rounded stone columns")
+	var glass: MultiMeshInstance3D = civic.get_node_or_null("CivicDarkGlass") as MultiMeshInstance3D
+	check(glass!=null and glass.multimesh.instance_count==20,"civic has twenty real dark-glass windows")
+	var old_ribbon: Node = civic.get_node_or_null("CivicLightRibbon")
+	check(old_ribbon==null,"old harsh neon ribbon was deliberately removed")
+	if columns!=null:
+		var stone: StandardMaterial3D = columns.material_override as StandardMaterial3D
+		check(stone!=null and stone.normal_enabled and stone.normal_texture!=null,"stone columns have genuine PBR normal surface")
+		check(stone!=null and not stone.emission_enabled,"civic surface does not use fake fullbright emission")
+	civic.queue_free()
 	print("HORIZON DETAIL NATIVE: %d pass, %d failures" % [passed,failed])
 	citizen.queue_free()
 	quit(0 if failed==0 else 1)
