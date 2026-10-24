@@ -56,6 +56,7 @@ const process = [
 
 export default function WorldHome({ development = false }: { development?: boolean }) {
   const [locale, setLocale] = useState<Locale>(readWorldLocale)
+  // Fetch long-form English copy only when needed to keep the initial route within its gzip budget.
   const [englishCopy, setEnglishCopy] = useState<Record<string, string> | null>(null)
   useEffect(() => {
     if (locale !== 'en' || englishCopy) return
