@@ -102,6 +102,22 @@ try {
   report.checks.push({label:'QA-only visual trim reported by real engine',
     mode:'real Godot physics, reduced city render only',
     samples:stabilized.samples});
+  const insets = await page.evaluate(() => window.__nebulaSafeArea || null);
+  if (!insets || !['left','top','right','bottom'].every(k =>
+    Number.isFinite(insets[k]) && insets[k] >= 0 && insets[k] <= 96)) {
+    throw new Error('Live CSS safe-area browser probe invalid: ' +
+      JSON.stringify(insets));
+  }
+  if (stabilized.touch_thrust_x <= stabilized.touch_safe_left ||
+      stabilized.touch_thrust_x >=
+        stabilized.touch_view_w - stabilized.touch_safe_right ||
+      stabilized.touch_thrust_y <= stabilized.touch_safe_top ||
+      stabilized.touch_thrust_y >=
+        stabilized.touch_view_h - stabilized.touch_safe_bottom) {
+    throw new Error('GAS target inside cutout: ' + JSON.stringify(stabilized));
+  }
+  report.checks.push({label:'actual DOM CSS safe-area probe and reachable GAS',
+    safe_area: insets, telemetry: stabilized});
   if (ready.locked || ready.cruise) {
     throw new Error('Mobile test began with controls locked or cruise auto-enabled');
   }
@@ -188,6 +204,33 @@ try {
     await send('touchEnd', []);
     await expectTelemetry('landscape touch release clears propulsion',
       s => s?.touch_count === 0 && s.touch_throttle <= 0.01, 20000);
+    // R35: a genuine short portrait phone must receive a distinct 3x3
+    // layout and preserve actual physics control after two rotations.
+    await page.setViewportSize({width:320,height:480});
+    const tiny = await expectTelemetry(
+      'compact portrait phone has reachable 3x3 flight controls',
+      s => s?.touch_view_w <= 322 && s.touch_view_h >= 478 &&
+        s.touch_compact_portrait === true && s.touch_count === 0 &&
+        s.touch_thrust_x > 0 && s.touch_thrust_y > 0,
+      35000);
+    const tinyRect = await page.evaluate(() => {
+      const rect = document.querySelector('#canvas')?.getBoundingClientRect();
+      return rect ? {x:rect.x,y:rect.y,width:rect.width,height:rect.height} : null;
+    });
+    if (!tinyRect || tinyRect.width < 300) {
+      throw new Error('Compact portrait WebGL canvas missing');
+    }
+    const tinyThrust = {
+      x: tinyRect.x + tiny.touch_thrust_x * tinyRect.width / tiny.touch_view_w,
+      y: tinyRect.y + tiny.touch_thrust_y * tinyRect.height / tiny.touch_view_h,
+      id:4,force:1
+    };
+    await send('touchStart',[tinyThrust]);
+    await expectTelemetry('compact portrait GAS drives real Godot ship',
+      s => s?.touch_count >= 1 && s.touch_throttle >= 0.9, 30000);
+    await send('touchEnd',[]);
+    await expectTelemetry('compact portrait GAS release prevents ghost thrust',
+      s => s?.touch_count === 0 && s.touch_throttle <= 0.01, 25000);
   } finally {
     await send('touchEnd', []).catch(() => {});
   }
