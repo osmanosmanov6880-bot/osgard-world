@@ -21,7 +21,10 @@ func _run() -> void:
   var names = ["move_left","move_right","move_backward","move_forward","jump","enter_vehicle","interact","pause_game"]
   controls.call("set_preview",true)
   controls.call("set_mode",true,false)
-  verify(controls.get_child_count()==names.size(),"exactly 8 native multi-touch buttons")
+  var native_buttons := 0
+  for child in controls.get_children():
+    if child is TouchScreenButton: native_buttons += 1
+  verify(native_buttons==names.size(),"exactly 8 native multi-touch buttons; independent utility menu is allowed")
   for action in names:
     verify(InputMap.has_action(action),"input map contains "+action)
     var button: TouchScreenButton = controls.get_node_or_null("Touch_"+action) as TouchScreenButton
