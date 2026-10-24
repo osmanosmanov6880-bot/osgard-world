@@ -62,6 +62,7 @@ func _run() -> void:
 	check(car.global_position==original and is_equal_approx(car.speed,18.0),"spray cannot alter actual vehicle motion")
 	var wet_material: ParticleProcessMaterial = (emitted[0] as GPUParticles3D).process_material
 	check(wet_material.color.b>wet_material.color.r,"rain spray is visibly bluish")
+	var wet_blue: float = wet_material.color.b
 	count=spray.call("update_spray",car,true,"standard",0.016)
 	check(count==2 and (emitted[0] as GPUParticles3D).amount_ratio<=0.41,"STANDARD reduces particle workload")
 	check(int(spray.call("update_spray",car,true,"low",0.016))==0,"LOW GPU disables all effects")
@@ -72,7 +73,7 @@ func _run() -> void:
 	count=spray.call("update_spray",car,true,"cinematic",0.016)
 	check(count==2,"dry handbrake drift produces ground dust")
 	var dust_material: ParticleProcessMaterial = (emitted[0] as GPUParticles3D).process_material
-	check(dust_material.color.b<wet_material.color.b+0.05,"dry dust is less blue than water spray")
+	check(dust_material.color.b < wet_blue-0.20,"dry dust is measurably less blue than original wet mist")
 	check(int(spray.call("update_spray",car,false,"cinematic",0.016))==0,"exiting vehicle immediately stops new spray")
 	car.global_position=Vector3(0,8.0,0)
 	count=spray.call("update_spray",car,true,"cinematic",0.016)
