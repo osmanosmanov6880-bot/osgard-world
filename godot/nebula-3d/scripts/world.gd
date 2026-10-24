@@ -21,6 +21,7 @@ const EngineeringCampusR12Script = preload("res://scripts/engineering_campus_r12
 const CinematicLightingR12Script = preload("res://scripts/cinematic_lighting_r12.gd")
 const AdaptiveQualityR12Script = preload("res://scripts/adaptive_quality_r12.gd")
 const CinematicPortR14Script = preload("res://scripts/cinematic_port_r14.gd")
+const AuroraScenicR22Script = preload("res://scripts/aurora_scenic_r22.gd")
 const HangarStoreR15Script = preload("res://scripts/hangar_store_r15.gd")
 const FleetCombatR15Script = preload("res://scripts/fleet_combat_r15.gd")
 const PremiumFulfillmentR15Script = preload("res://scripts/premium_fulfillment_r15.gd")
@@ -128,6 +129,8 @@ var r21_objective_panel: PanelContainer
 var r21_ui_font: SystemFont
 var r21_mobile_enabled: bool = false
 var r21_launch_protection: float = 9.0
+## R22: real playable golden-hour skyline, not an image/background plate.
+var aurora_scenic_r22: Node3D
 
 func _ready() -> void:
     rng.seed = 20261022
@@ -189,7 +192,7 @@ func _ready() -> void:
     if OS.has_feature("web"):
         _set_graphics_quality(1)
         adaptive_r12.set_auto(true)
-    _show_notice("АВРОРА · СИСТЕМА ПОЛЁТА R21 ГОТОВА")
+    _show_notice("АВРОРА · ЗОЛОТОЙ ЧАС · R22")
     get_viewport().size_changed.connect(_fit_hud)
     _fit_hud()
 
@@ -207,20 +210,20 @@ func _setup_environment() -> void:
     env.background_mode = Environment.BG_SKY
     env.sky = sky
     env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
-    env.ambient_light_energy = 0.38
+    env.ambient_light_energy = 0.52
     env.reflected_light_source = Environment.REFLECTION_SOURCE_BG
     env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
     # Compatibility renderer supports subtle glow and post-tonemap grading.
     # Never enable unsupported SSIL, SSR or volumetric fog.
     env.glow_enabled = true
-    env.glow_bloom = 0.028
+    env.glow_bloom = 0.022
     env.adjustment_enabled = true
-    env.adjustment_brightness = 0.86
-    env.adjustment_contrast = 1.01
-    env.adjustment_saturation = 0.90
+    env.adjustment_brightness = 0.96
+    env.adjustment_contrast = 1.085
+    env.adjustment_saturation = 1.02
     env.fog_enabled = true
-    env.fog_light_color = Color(0.11,0.18,0.26)
-    env.fog_density = 0.00044
+    env.fog_light_color = Color(0.45,0.33,0.26)
+    env.fog_density = 0.00053
     node.environment = env
     node.name = "R11_CinematicWorldEnvironment"
     add_child(node)
@@ -248,8 +251,8 @@ func _setup_environment() -> void:
 func _mat(col: Color, glow: float = 0.0) -> StandardMaterial3D:
     var mat := StandardMaterial3D.new()
     mat.albedo_color = col
-    mat.metallic = 0.62
-    mat.roughness = 0.31
+    mat.metallic = 0.58
+    mat.roughness = 0.46
     if glow > 0.01:
         mat.emission_enabled = true
         mat.emission = col
@@ -286,7 +289,7 @@ func _build_city() -> void:
     var neon_parent := Node3D.new()
     neon_parent.name = "SkylineNeonCrowns"
     add_child(neon_parent)
-    var glow_material := _mat(Color.WHITE, 0.42)
+    var glow_material := _mat(Color(0.78,0.83,0.86), 0.22)
     glow_material.vertex_color_use_as_albedo = true
     var multimeshes: Array[MultiMesh] = []
     var neon_multimeshes: Array[MultiMesh] = []
@@ -402,6 +405,10 @@ func _build_city() -> void:
     port_r14.name = "R14_SculptedCinematicPorts"
     add_child(port_r14)
     port_r14.build(SECTOR_POSITIONS)
+    aurora_scenic_r22 = AuroraScenicR22Script.new()
+    aurora_scenic_r22.name = "R22_PhysicalGoldenAurora"
+    add_child(aurora_scenic_r22)
+    aurora_scenic_r22.build()
     _build_starfield()
 
 func _build_sector(center: Vector3, tint: Color, name: String, index: int) -> void:
@@ -1039,6 +1046,8 @@ func _set_graphics_quality(mode: int) -> void:
         city_cladding_r10.set_quality(graphics_quality)
     if is_instance_valid(premium_architecture):
         premium_architecture.set_quality(graphics_quality)
+    if is_instance_valid(aurora_scenic_r22):
+        aurora_scenic_r22.set_quality(graphics_quality)
     var industry_r19 = get_node_or_null("OrbitalIndustryR9")
     if industry_r19 != null:
         industry_r19.set_quality(graphics_quality)
