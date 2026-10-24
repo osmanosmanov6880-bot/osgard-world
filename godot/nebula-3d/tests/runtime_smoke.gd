@@ -217,7 +217,7 @@ func _run() -> void:
     world.ship.thruster_power = 0.0
     var golden_sky = world.get_node("R11_CinematicWorldEnvironment").environment
     var sunset: ProceduralSkyMaterial = golden_sky.sky.sky_material
-    var golden_sun: DirectionalLight3D = world.get_node("OrbitalSun")
+    var golden_sun := world.get_node("OrbitalSun") as DirectionalLight3D
     if not check(sunset.sky_horizon_color.b >= 0.50 and
         sunset.sky_horizon_color.b > sunset.sky_horizon_color.r and
         golden_sky.fog_light_color.b > golden_sky.fog_light_color.r and
