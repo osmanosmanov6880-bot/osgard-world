@@ -50,9 +50,10 @@ func _run() -> void:
 	var height_before: float = frame.position.y
 	marker.call("_process",0.1)
 	check(absf(frame.position.y-height_before)>0.001,"lightweight animated pulse works")
+	var frozen: float = frame.position.y
 	marker.visible = false
 	marker.call("_process",0.1)
-	check(is_equal_approx(frame.position.y,frame.position.y),"hidden marker animation safe")
+	check(is_equal_approx(frame.position.y,frozen),"hidden marker does not animate")
 	var routes: Array = RACES.catalog()
 	check(routes.size()>=4,"real academy route catalog exists")
 	for route in routes:
