@@ -1,0 +1,47 @@
+name: NEBULA R37 offline hardware report quality gate
+
+on:
+  pull_request:
+    paths:
+      - "public/games/remix/arena-v2/nebula-3d/performance-report.html"
+      - "scripts/test-nebula-r37-performance-reports.mjs"
+      - ".github/workflows/nebula-r37-performance-reports.yml"
+  push:
+    branches: [master]
+    paths:
+      - "public/games/remix/arena-v2/nebula-3d/performance-report.html"
+      - "scripts/test-nebula-r37-performance-reports.mjs"
+      - ".github/workflows/nebula-r37-performance-reports.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nebula-r37-reports-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  report-validation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Test shipped offline HTML against synthetic CI fixtures
+        run: |
+          set -euo pipefail
+          node scripts/test-nebula-r37-performance-reports.mjs
+      - name: Ensure deployed viewer does not need external assets
+        run: |
+          set -euo pipefail
+          file="public/games/remix/arena-v2/nebula-3d/performance-report.html"
+          test -s "$file"
+          grep -Fq 'nebula-r37-comparator' "$file"
+          grep -Fq 'NEBULA / PERFORMANCE LAB' "$file"
+          grep -Fq 'Выбрать JSON-отчёты' "$file"
+          if grep -Eqi '<script[^>]*src=|<link[^>]*href="https?://' "$file"; then
+            echo 'Unexpected external asset; comparator must be self-contained' >&2
+            exit 1
+          fi
