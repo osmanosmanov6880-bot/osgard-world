@@ -302,7 +302,7 @@ func _update_view() -> void:
     # the vertical field of view. W5's 2.75x portrait distance produced a tiny,
     # bottom-aligned inspection target with large unused empty sky.
     camera.keep_aspect = Camera3D.KEEP_WIDTH if portrait else Camera3D.KEEP_HEIGHT
-    camera.fov = 61.0 if portrait else 55.0
+    camera.fov = 57.0 if portrait else (53.0 if view_index == 2 else 55.0)
     var effective_distance: float = distance
     if portrait:
         match view_index:
@@ -321,7 +321,10 @@ func _update_view() -> void:
         # 42%-interpolated carriage X. The head moves as the 16s cycle progresses.
         var optical_head: Node3D = controller.get("head") as Node3D
         if optical_head != null:
-            target_focus = optical_head.global_position + Vector3(-0.15, -0.18, 0.12)
+            # Use rule-of-thirds composition: visible machinery occupies the lower
+            # frame, the lens stays near the upper-right inspection region.
+            var inspection_offset: Vector3 = Vector3(-2.15, -1.85, 0.12) if portrait else Vector3(-1.45, -0.18, 0.12)
+            target_focus = optical_head.global_position + inspection_offset
     elif view_index == 1:
         target_focus = Vector3(-4.72, 0.38, 5.97)
     elif view_index == 3:
@@ -341,9 +344,12 @@ func _camera_target_readout() -> Dictionary:
         "camera_effective_distance": camera_effective_distance,
         "camera_target_visible": false,
         "camera_target_screen_x": -1.0,
-        "camera_target_screen_y": -1.0
+        "camera_target_screen_y": -1.0,
+        "machine_top_screen_y": -1.0
     }
     if view_index == 2 and controller != null:
+        var rail_screen: Vector2 = camera.unproject_position(Vector3(0.0, 3.78, 5.37))
+        frame["machine_top_screen_y"] = rail_screen.y / maxf(size.y, 1.0)
         var optical_head: Node3D = controller.get("head") as Node3D
         if optical_head != null and not camera.is_position_behind(optical_head.global_position):
             var point: Vector2 = camera.unproject_position(optical_head.global_position)
