@@ -31,7 +31,7 @@ try {
   await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 120_000 })
   await page.waitForFunction(
     () => window.__OSGARD_R135_QA?.scene_ready && window.__OSGARD_R135_QA?.loaded?.endsWith('.glb'),
-    { timeout: 120_000 }
+    null, { timeout: 120_000 }
   )
   const release = await page.evaluate(async () => {
     const response = await fetch(new URL('release.json', location.href), { cache: 'no-store' })
