@@ -17,6 +17,7 @@ const expectedOriginals = {
   'empire-omega': '/brand/world-empire-omega.svg',
   'nebula-3d': '/brand/world-nebula.svg',
   'r136-precision': '/brand/world-r136.svg',
+  'r135-service': '/brand/world-r135.svg',
 }
 let checked = 0
 for (const id of expectedPlayCatalogIds) {
