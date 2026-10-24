@@ -34,6 +34,9 @@ func _run() -> void:
 	for i in range(50):
 		metrics.record_frame(0.060)
 	verify(metrics.p95_ms()>59.0,"jank raises p95 as expected")
+	for i in range(10):
+		metrics.record_frame(0.60)
+	verify(metrics.p95_ms()>580.0,"severe sub-second stutters remain measurable")
 	verify(metrics.p99_ms()>=metrics.p95_ms(),"p99 cannot be below p95")
 	var before: int = metrics.samples()
 	metrics.record_frame(3.0)
