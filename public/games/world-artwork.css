@@ -1,0 +1,127 @@
+/* WAVE 02 — all 22 worlds have a dedicated proven cover and a custom SVG badge. */
+#games-grid .card{overflow:hidden;border-color:#2c3a4b;background:linear-gradient(140deg,#131f2b,#101823);border-radius:13px;box-shadow:0 10px 30px #0002}
+#games-grid .card:hover,#games-grid .card:focus-within{border-color:#6de5ee88;box-shadow:0 20px 60px #0007}
+#games-grid .card .art{background:#111c28}
+#games-grid .card .art .game-cover-image{
+  position:absolute;
+  inset:0;
+  z-index:0;
+  display:block;
+  width:100%;
+  height:100%;
+  min-height:0;
+  object-fit:cover;
+  object-position:center;
+  opacity:.95;
+  transform:scale(1);
+  transition:transform .5s ease,opacity .3s ease;
+}
+#games-grid .card:hover .art .game-cover-image,
+#games-grid .card:focus-within .art .game-cover-image{transform:scale(1.045)}
+#games-grid .card .art>svg{opacity:.035;pointer-events:none}
+#games-grid .card .art:before{z-index:1;background:linear-gradient(90deg,#04081044,transparent 73%);pointer-events:none}
+#games-grid .card .art:after{
+  z-index:1;
+  background:linear-gradient(180deg,#050a14bc 0%,#07101b28 36%,#04081055 57%,#040810f2 100%);
+  pointer-events:none;
+}
+#games-grid .card .art small{
+  z-index:2;
+  top:17px;left:18px;
+  padding:6px 9px;
+  border:1px solid #d7eafa45;
+  border-radius:5px;
+  background:#06101bc7;
+  color:#e7f2ff;
+  font-size:10px;
+  line-height:1.3;
+  text-shadow:0 1px 2px #000b;
+}
+#games-grid .card .art small b{color:#c5f4ff;font-weight:750}
+#games-grid .card .art .cover-illustration-note{
+  position:absolute;
+  z-index:2;
+  top:17px;
+  right:16px;
+  border:1px solid #d7eafa3b;
+  border-radius:5px;
+  padding:6px 9px;
+  background:#06101bbd;
+  color:#c3d9e7;
+  font:600 9px/1.4 var(--mono,monospace);
+  letter-spacing:.06em;
+}
+#games-grid .card .art strong{
+  z-index:2;
+  bottom:51px;
+  left:21px;
+  right:26px;
+  color:#fbfdff;
+  font-weight:800;
+  font-size:clamp(27px,3.2vw,46px);
+  line-height:1.02;
+  letter-spacing:-.045em;
+  overflow-wrap:break-word;
+  text-shadow:0 4px 22px #000e,0 1px 3px #000c;
+}
+#games-grid .card.featured .art strong{font-size:clamp(34px,4vw,59px)}
+#games-grid .card .art em{
+  z-index:2;bottom:22px;left:23px;right:58px;
+  color:#e5eefa;
+  font-size:10px;
+  letter-spacing:.09em;
+  text-shadow:0 3px 9px #000e;
+}
+#games-grid .card .art .launch{
+  z-index:2;
+  width:40px;
+  height:40px;
+  bottom:17px;
+  border-color:#a7dbe6a8;
+  color:#e7fbff;
+  background:#08101fc0;
+}
+#games-grid .card .art:focus-visible{outline:3px solid #a5f4f8;outline-offset:-3px}
+#games-grid .card .game-title{display:flex;gap:11px;align-items:center}
+#games-grid .card .game-title .world-emblem{
+  width:52px;height:52px;flex:0 0 52px;
+  display:block;
+  border-radius:13px;
+  background:#0a1924;
+  object-fit:contain;
+  box-shadow:0 4px 20px #0003;
+}
+#games-grid .card .game-title h3{
+  min-width:0;
+  flex:1 1 auto;
+  font-size:clamp(21px,2.55vw,30px);
+  line-height:1.13;
+  letter-spacing:-.035em;
+}
+#games-grid .card .game-title .favorite{
+  flex:0 0 44px;
+  min-width:44px;
+  min-height:44px;
+}
+#games-grid .card .copy{flex:1 1 auto}
+#games-grid .card .art{min-height:255px}
+#games-grid .card.featured .art{min-height:385px}
+#games-grid .card[data-game="empire-omega"] .game-cover-image{object-position:center 55%}
+#games-grid .card[data-game="nebula-3d"] .game-cover-image{object-position:center 46%}
+#games-grid .card[data-game="zion-028"] .game-cover-image{object-position:center 60%}
+@media(max-width:760px){
+  #games-grid .card .art{min-height:255px}
+  #games-grid .card.featured .art{min-height:300px}
+  #games-grid .card .art strong{font-size:clamp(27px,7vw,40px)}
+  #games-grid .card.featured .art strong{font-size:clamp(34px,8vw,49px)}
+  #games-grid .card .game-title .world-emblem{width:44px;height:44px;flex-basis:44px}
+  #games-grid .card .game-title h3{font-size:clamp(21px,5vw,30px)}
+  #games-grid .card .art .cover-illustration-note{font-size:8px;top:18px;right:12px}
+}
+@media(max-width:370px){
+  #games-grid .card .art .cover-illustration-note{top:48px;right:12px}
+}
+@media(prefers-reduced-motion:reduce){
+  #games-grid .card .art .game-cover-image{transition:none!important}
+  #games-grid .card:hover .art .game-cover-image{transform:none}
+}
