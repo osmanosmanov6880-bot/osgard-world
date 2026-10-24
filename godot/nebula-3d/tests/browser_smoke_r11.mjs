@@ -17,6 +17,30 @@ const browser = await chromium.launch({
 // when the Godot canvas exists. Fall back to direct canvas readback, but only
 // count a substantial JPEG as a visual capture. Never mark a blank as a pass.
 async function captureWithFallback(page, destination, errors) {
+  // On heavy software WebGL, requesting a screenshot from the browser
+  // compositor can wedge the renderer before canvas readback gets a chance.
+  // Try actual game pixels FIRST, not after multiple compositor timeouts.
+  try {
+    const image = await Promise.race([
+      page.evaluate(() => {
+        const canvas = document.querySelector('canvas');
+        return canvas ? canvas.toDataURL('image/jpeg', 0.72) : '';
+      }),
+      new Promise(resolve => setTimeout(() => resolve(''), 18000))
+    ]);
+    if (image.startsWith('data:image/jpeg;base64,')) {
+      const raw = Buffer.from(image.slice('data:image/jpeg;base64,'.length), 'base64');
+      if (raw.length >= 12000) {
+        fs.writeFileSync(destination, raw);
+        return 'canvas-readback-early';
+      }
+      errors.push('Canvas readback was black/empty or too small (' + raw.length + ' bytes)');
+    } else {
+      errors.push('Canvas readback did not return usable JPEG data');
+    }
+  } catch (e) {
+    errors.push('Canvas readback unavailable: ' + String(e.message).slice(0, 180));
+  }
   // Ask the live Godot viewport for the current frame. This avoids the
   // Chromium software compositor, which can stall while SwiftShader is busy.
   try {
@@ -77,13 +101,14 @@ async function captureWithFallback(page, destination, errors) {
   } catch (e) {
     errors.push('Chrome DevTools capture unavailable: ' + String(e.message).slice(0, 180));
   }
+  // Retry canvas readback after all methods: a slow first draw may recover.
   try {
     const image = await Promise.race([
       page.evaluate(() => {
         const canvas = document.querySelector('canvas');
         return canvas ? canvas.toDataURL('image/jpeg', 0.72) : '';
       }),
-      new Promise(resolve => setTimeout(() => resolve(''), 14000))
+      new Promise(resolve => setTimeout(() => resolve(''), 18000))
     ]);
     if (image.startsWith('data:image/jpeg;base64,')) {
       const raw = Buffer.from(image.slice('data:image/jpeg;base64,'.length), 'base64');
@@ -92,6 +117,8 @@ async function captureWithFallback(page, destination, errors) {
         return 'canvas-readback';
       }
       errors.push('Canvas readback was black/empty or too small (' + raw.length + ' bytes)');
+    } else {
+      errors.push('Late canvas readback did not return usable JPEG data');
     }
   } catch (e) {
     errors.push('Canvas readback unavailable: ' + String(e.message).slice(0, 180));
@@ -146,7 +173,11 @@ try {
     const started = Date.now();
     await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 45000 });
     await page.locator('canvas').first().waitFor({ state: 'visible', timeout: 65000 });
-    await page.waitForTimeout(10000); // GL init, WebAssembly load, first scene draw
+    // A live WebGL canvas is not proof that Godot has drawn. Wait for game
+    // physics telemetry before attempting capture on the hosted software GPU.
+    await page.waitForFunction(() => window.__nebulaPilotTelemetry?.ready === true,
+      null, {timeout: 90000, polling: 300});
+    await page.waitForTimeout(3000); // let the first scene draw settle
     const detail = await page.evaluate(() => {
       const canvas = document.querySelector('canvas');
       const probe = document.createElement('canvas');
