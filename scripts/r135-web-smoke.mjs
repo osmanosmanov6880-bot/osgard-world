@@ -166,7 +166,10 @@ async function touchDiagnostics(page) {
   await tapSceneButton(page, 5) // Restart drive
   await expectState(page, x => x?.challenge_completed && x?.challenge_score > 0 &&
     x?.challenge_best_score > 0 && x?.motion_enabled
-    && x?.fault_visual_state === 'cleared', 'Touch W5 diagnostic did not complete')
+    && x?.fault_visual_state === 'cleared'
+    && x?.cleared_case_count >= 1
+    && String(x?.challenge_evidence || '').includes('(SIM)'),
+    'Touch W9 simulated case did not record the learning result')
 }
 
 async function verifyAdaptiveHud(page) {
