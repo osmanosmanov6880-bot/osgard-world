@@ -149,6 +149,10 @@ jobs:
           print('PCK:',manifest['optimized_pck_bytes'])
           PY
 
+      - name: Verify signed WebGL archive through real production Nginx rules
+        shell: bash
+        run: bash scripts/r135-nginx-wasm-smoke.sh "$RUNNER_TEMP/r135-optimized"
+
       - name: Retain visual QA screenshots and web artifacts
         uses: actions/upload-artifact@v4
         with:
