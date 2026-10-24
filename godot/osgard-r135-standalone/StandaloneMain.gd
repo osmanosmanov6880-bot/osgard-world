@@ -203,6 +203,9 @@ func _update_layout() -> void:
     _update_view()
 
 func _start_mission() -> void:
+    # Keep the visible PLAY/PAUSE command synchronized with controller state.
+    # Starting a new mission always starts its drive, even after a prior pause.
+    motion = true
     controller.start_mission()
     _refresh_status()
 
