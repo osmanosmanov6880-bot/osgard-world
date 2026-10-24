@@ -46,6 +46,12 @@ var r34_ignore_until_all_released: bool = false
 ## These are browser CSS pixels, not hardware devicePixelRatio pixels.
 var r35_safe_insets: Vector4 = Vector4.ZERO
 var r35_compact_portrait: bool = false
+## R36: monotonic browser DOM dispatch -> Godot poll age, not input-to-photon.
+var r36_input_poll_latency_ms: float = -1.0
+var r36_input_poll_latency_total_ms: float = 0.0
+var r36_input_poll_latency_peak_ms: float = 0.0
+var r36_input_poll_samples: int = 0
+var r36_input_poll_invalid: int = 0
 
 func _ready() -> void:
     name = "R21_ResponsiveMobileController"
@@ -371,6 +377,25 @@ func _r34_poll_browser_contacts() -> void:
     r34_dom_sequence = sequence
     r34_dom_event_count = int(current.get("downs", 0)) + (
         int(current.get("ups", 0))) + int(current.get("cancels", 0))
+    # R36: browser performance.now() uses a monotonic per-page time origin.
+    # Both clock readings come from the same browser page; never compare
+    # browser milliseconds to Godot system UTC timestamps.
+    if sequence > 0:
+        var browser_ms: Variant = JavaScriptBridge.eval(
+            "performance.now()")
+        var event_ms: float = float(current.get("last_event_ms", -1.0))
+        if (typeof(browser_ms) == TYPE_FLOAT or typeof(browser_ms) == TYPE_INT)                 and event_ms >= 0.0:
+            var input_age_ms: float = float(browser_ms) - event_ms
+            if input_age_ms >= 0.0 and input_age_ms <= 30000.0:
+                r36_input_poll_latency_ms = input_age_ms
+                r36_input_poll_latency_total_ms += input_age_ms
+                r36_input_poll_latency_peak_ms = maxf(
+                    r36_input_poll_latency_peak_ms, input_age_ms)
+                r36_input_poll_samples += 1
+            else:
+                r36_input_poll_invalid += 1
+        else:
+            r36_input_poll_invalid += 1
     if _r34_gate_stale_contacts(points):
         return
     var next_seen: Dictionary = {}
