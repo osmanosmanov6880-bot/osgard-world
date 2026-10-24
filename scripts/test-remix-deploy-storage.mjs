@@ -3,6 +3,7 @@
 // Validate the *actual workflow source* order and safety boundaries.
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import {spawnSync} from 'node:child_process';
 const file=process.argv[2]||'.github/workflows/deploy-remix-arena-static.yml';
 const s=fs.readFileSync(file,'utf8');
 function position(token){const p=s.indexOf(token);assert.ok(p>=0,'missing deployment safety step: '+token);return p;}
@@ -33,4 +34,9 @@ assert.ok(!s.includes('docker volume prune'),
  'must never prune persistent volumes or saves');
 assert.ok(!s.includes('rm -rf /usr/share/nginx/html'),
  'must never delete the root production web directory');
-console.log('REMIX_DEPLOY_STORAGE_SAFETY_SUCCESS own staging only, disk preflight, rollback and R37 route verified');
+const start=s.indexOf("<<'REMOTE'\n"),end=s.indexOf("\n          REMOTE",start);
+assert.ok(start>0&&end>start,'missing remote deployment script heredoc');
+const shell=s.slice(start+"<<'REMOTE'\n".length,end);
+const syntax=spawnSync('sh',['-n'],{input:shell,encoding:'utf8'});
+assert.equal(syntax.status,0,'production remote shell syntax invalid: '+syntax.stderr);
+console.log('REMIX_DEPLOY_STORAGE_SAFETY_SUCCESS own staging only, disk preflight, rollback, R37 route and sh syntax');
