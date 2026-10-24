@@ -671,6 +671,11 @@ r31_mobile = require(
     "multitouch release never sticks boost",
     "NEBULA_R31_MOBILE_TOUCH_SUCCESS",
 )
+# R32: prevent reintroducing portrait overlap on compact landscape phones.
+assert "w >= 380.0 and w > h" in r21_mobile
+assert "R32 compact landscape must distinguish GAS from CRUISE" in smoke
+assert "R32 compact landscape action hit targets overlap" in smoke
+assert "R32 small-landscape GAS accidentally triggers autopilot" in smoke
 assert "r31_mobile_qa_enabled" in world
 assert 'state["touch_throttle"] = snappedf(ship.touch_throttle, 0.01)' in world
 assert "get_viewport().get_texture().get_image()" in world
