@@ -1,0 +1,35 @@
+name: OSGARD Omega R10 real road-graph navigation QA
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - 'godot/empire-omega/**'
+      - '.github/workflows/omega-r10-road-navigation-qa.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: false
+      - name: Regenerate original legally owned audio resources
+        run: |
+          python3 godot/empire-omega/tools/generate_audio.py
+          python3 godot/empire-omega/tools/generate_patrol_audio.py
+      - name: Import full authentic Godot game resources
+        run: godot --headless --editor --path godot/empire-omega --import --quit
+      - name: Native gameplay, phone, academy and street route acceptance
+        shell: bash
+        run: |
+          set -euo pipefail
+          for test in v21_vehicle_dynamics v25_horizon_racing v27_driver_assists v28_touch_controls v29_responsive_layout v30_compact_hud v31_academy_navigation v32_road_guidance; do
+            echo "=== Native Godot $test ==="
+            timeout --signal=TERM --kill-after=5s 50s godot --headless --path godot/empire-omega --script "res://tests/$test.gd"
+          done
