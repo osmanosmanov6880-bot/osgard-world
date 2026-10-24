@@ -224,6 +224,7 @@ func toggle_panel() -> void:
 func _sync_visibility() -> void:
     if is_instance_valid(overlay):
         overlay.visible = show_live or benchmarking
+    _r36_relayout()
 
 func _percentile(sorted_values: Array[float], p: float) -> float:
     if sorted_values.is_empty():
@@ -233,6 +234,8 @@ func _percentile(sorted_values: Array[float], p: float) -> float:
     return sorted_values[index]
 
 func start_benchmark() -> void:
+    if benchmarking:
+        return
     # Never reuse samples from CI/headless or a previous run.
     benchmarking = true
     quality_at_start = quality_mode
@@ -247,6 +250,17 @@ func start_benchmark() -> void:
     samples_ms.clear()
     last_report.clear()
     last_timestamp_us = 0
+    r36_touch_start_count = 0
+    r36_touch_start_sum_ms = 0.0
+    r36_touch_start_invalid = 0
+    if is_instance_valid(r36_touch_source):
+        r36_touch_start_count = r36_touch_source.r36_input_poll_samples
+        r36_touch_start_sum_ms = r36_touch_source.r36_input_poll_latency_total_ms
+        r36_touch_start_invalid = r36_touch_source.r36_input_poll_invalid
+    if is_instance_valid(r36_start_button):
+        r36_start_button.disabled = true
+    if is_instance_valid(r36_export_button):
+        r36_export_button.disabled = true
     show_live = true
     _sync_visibility()
     report_label.text = "ПРОГРЕВ 2 СЕК · ЗАТЕМ ЗАМЕР 20 СЕК\nОставь игру активной, лети через порт и город."
@@ -256,7 +270,11 @@ func _complete() -> void:
     samples_ms.sort()
     var valid_count: int = samples_ms.size()
     if valid_count < 120:
-        report_label.text = "НЕДОСТАТОЧНО КАДРОВ ДЛЯ ЗАМЕРА\nПовтори F7 в активной вкладке."
+        report_label.text = "НЕДОСТАТОЧНО КАДРОВ · ПОВТОРИ 20 С" if (
+            r36_mobile) else (
+            "НЕДОСТАТОЧНО КАДРОВ ДЛЯ ЗАМЕРА\nПовтори F7 в активной вкладке.")
+        if is_instance_valid(r36_start_button):
+            r36_start_button.disabled = false
         _sync_visibility()
         return
     var mean_ms: float = sum_ms / float(valid_count)
@@ -272,6 +290,21 @@ func _complete() -> void:
     var target_fps: float = [60.0, 40.0, 30.0][quality_at_start]
     var max_p95_ms: float = [20.0, 30.0, 35.0][quality_at_start]
     var stable_sample: bool = (invalid_frames <= 2 and not profile_switched_during_test)
+    var touch_count: int = 0
+    var touch_invalid: int = 0
+    var touch_mean_ms: Variant = null
+    var touch_peak_ms: Variant = null
+    if is_instance_valid(r36_touch_source):
+        touch_count = maxi(0, r36_touch_source.r36_input_poll_samples -
+            r36_touch_start_count)
+        touch_invalid = maxi(0, r36_touch_source.r36_input_poll_invalid -
+            r36_touch_start_invalid)
+        if touch_count > 0:
+            touch_mean_ms = snappedf(maxf(0.0, (
+                r36_touch_source.r36_input_poll_latency_total_ms -
+                r36_touch_start_sum_ms)) / float(touch_count), 0.1)
+            touch_peak_ms = snappedf(
+                r36_touch_source.r36_input_poll_latency_peak_ms, 0.1)
     var gate: String = "UNRELIABLE" if not stable_sample else (
         "MEETS_TARGET" if mean_fps >= target_fps and p95_ms <= max_p95_ms else "BELOW_TARGET")
     last_report = {
@@ -299,7 +332,13 @@ func _complete() -> void:
         "p99_frame_ms": snappedf(p99_ms, 0.01),
         "max_draw_calls": draw_calls_peak,
         "max_primitives": triangle_peak,
-        "measurement": "Real in-game frame intervals; not a GPU-only timing measurement"
+        "measurement": "Real in-game frame intervals; not a GPU-only timing measurement",
+        "r36_touch_poll_samples": touch_count,
+        "r36_touch_poll_invalid": touch_invalid,
+        "r36_browser_dom_to_engine_avg_ms": touch_mean_ms,
+        "r36_browser_dom_to_engine_peak_since_launch_ms": touch_peak_ms,
+        "r36_touch_delay_scope": "Browser DOM touch dispatch to Godot poll; not input-to-photon, and only measured for actual touch events",
+        "r36_data_policy": "Collected locally in active session; JSON downloaded only after a user click; no remote upload"
     }
     var formatted: String = JSON.stringify(last_report)
     print("NEBULA_R12_BENCHMARK_JSON:" + formatted)
@@ -308,9 +347,17 @@ func _complete() -> void:
     if file != null:
         file.store_string(formatted)
         file.close()
-    report_label.text = "R12 · " + gate + " · F9 КОПИРОВАТЬ\n" + (
-        "СРЕДНИЙ %.1f FPS · 1%% LOW %.1f FPS\n95%% КАДР %.1f МС · 99%% %.1f МС" %
-        [mean_fps, one_pct_low, p95_ms, p99_ms])
+    if r36_mobile:
+        report_label.text = "AVG %.0f FPS · P95 %.0f МС" % [
+            mean_fps, p95_ms]
+    else:
+        report_label.text = "R12 · " + gate + " · F9 КОПИРОВАТЬ\n" + (
+            "СРЕДНИЙ %.1f FPS · 1%% LOW %.1f FPS\n95%% КАДР %.1f МС · 99%% %.1f МС" %
+            [mean_fps, one_pct_low, p95_ms, p99_ms])
+    if is_instance_valid(r36_start_button):
+        r36_start_button.disabled = false
+    if is_instance_valid(r36_export_button):
+        r36_export_button.disabled = false
     _sync_visibility()
 
 func capture_frame() -> void:
@@ -374,17 +421,32 @@ func _draw_overlay() -> void:
         RenderingServer.RENDERING_INFO_TOTAL_PRIMITIVES_IN_FRAME)
     var resolution: Vector2 = get_viewport().get_visible_rect().size
     var quality_text: String = ["MAX", "HIGH", "ECO"][quality_mode]
-    stats_label.text = (
-        "NEBULA R12 · REAL DEVICE MONITOR\n" +
-        "FPS %.0f    CPU FRAME %.1f МС\n" +
-        "DRAW CALLS %d    ПРИМИТИВЫ %d\n" +
-        "RENDER %dx%d    КАЧЕСТВО %s\n" +
-        "F6 МЕТРИКИ · F7 ЗАМЕР · F9 КОПИЯ") % [
-            fps, frame_ms, draw_calls, primitives,
-            int(resolution.x), int(resolution.y), quality_text]
-    if benchmarking and warmup_remaining <= 0.0:
-        report_label.text = "ТЕСТ: %.0f / %.0f СЕК · %d КАДРОВ" % [
-            sample_elapsed, BENCH_SECONDS, samples_ms.size()]
+    if r36_mobile:
+        var age_ms: float = -1.0
+        if is_instance_valid(r36_touch_source):
+            age_ms = r36_touch_source.r36_input_poll_latency_ms
+        stats_label.text = (
+            "REAL FPS %.0f · %s\n" +
+            "CPU %.1f МС · %d DRAW\n" +
+            "ВВОД %.0f МС (DOM)") % [
+                fps, quality_text, frame_ms, draw_calls, age_ms]
+        if benchmarking and warmup_remaining <= 0.0:
+            report_label.text = "ЗАМЕР %.0f / 20 С · %d КАДРОВ" % [
+                sample_elapsed, samples_ms.size()]
+        elif not benchmarking and last_report.is_empty():
+            report_label.text = "ТЕСТ 20 С · ЛОКАЛЬНО"
+    else:
+        stats_label.text = (
+            "NEBULA R12 · REAL DEVICE MONITOR\n" +
+            "FPS %.0f    CPU FRAME %.1f МС\n" +
+            "DRAW CALLS %d    ПРИМИТИВЫ %d\n" +
+            "RENDER %dx%d    КАЧЕСТВО %s\n" +
+            "F6 МЕТРИКИ · F7 ЗАМЕР · F9 КОПИЯ") % [
+                fps, frame_ms, draw_calls, primitives,
+                int(resolution.x), int(resolution.y), quality_text]
+        if benchmarking and warmup_remaining <= 0.0:
+            report_label.text = "ТЕСТ: %.0f / %.0f СЕК · %d КАДРОВ" % [
+                sample_elapsed, BENCH_SECONDS, samples_ms.size()]
 
 func _process(delta: float) -> void:
     elapsed += delta
