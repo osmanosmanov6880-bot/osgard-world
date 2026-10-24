@@ -43,7 +43,15 @@ func _text(label: String, point: Vector2, size: int,
         tint: Color = TEXT, align: HorizontalAlignment = HORIZONTAL_ALIGNMENT_LEFT) -> void:
     if cached_font == null:
         return
-    draw_string(cached_font, point, label, align, -1.0, size, tint)
+    var visual_width: float = cached_font.get_string_size(label,
+        HORIZONTAL_ALIGNMENT_LEFT, -1.0, size).x
+    var p: Vector2 = point
+    if align == HORIZONTAL_ALIGNMENT_RIGHT:
+        p.x -= visual_width
+    elif align == HORIZONTAL_ALIGNMENT_CENTER:
+        p.x -= visual_width * 0.5
+    draw_string(cached_font, p, label, HORIZONTAL_ALIGNMENT_LEFT,
+        -1.0, size, tint)
 
 func _panel(rect: Rect2) -> void:
     draw_rect(rect, BACK, true)
