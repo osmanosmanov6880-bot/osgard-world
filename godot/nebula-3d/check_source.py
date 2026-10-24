@@ -702,7 +702,7 @@ r34_js = require(
 r34_dom_tests = require(
     "../../scripts/test-nebula-r34-dom-touch.mjs",
     "NEBULA_R34_DOM_TOUCH_SOURCE_SUCCESS",
-    "two independent fingers",
+    "both independent fingers remain held",
     "OS touchcancel clears held controls",
 )
 assert "r34_dom_bridge_active" in r21_mobile
