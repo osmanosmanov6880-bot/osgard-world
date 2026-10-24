@@ -297,6 +297,18 @@ func _process(delta: float) -> void:
         var state: Dictionary = controller.summary()
         state["view"] = view_index
         state["scene_ready"] = true
+        state["orbit_yaw"] = orbit_yaw
+        state["orbit_pitch"] = orbit_pitch
+        state["distance"] = distance
+        var area: Vector2 = get_viewport().get_visible_rect().size
+        state["viewport_w"] = area.x
+        state["viewport_h"] = area.y
+        var button_centers: Array[Dictionary] = []
+        for button in action_buttons:
+            var box: Rect2 = button.get_global_rect()
+            var center: Vector2 = box.get_center()
+            button_centers.append({"x":center.x, "y":center.y})
+        state["button_centers"] = button_centers
         JavaScriptBridge.eval("window.__OSGARD_R135_QA = " + JSON.stringify(state) + ";", true)
 
 func _unhandled_input(event: InputEvent) -> void:
