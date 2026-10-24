@@ -53,5 +53,53 @@ func _run() -> void:
     if int(final.get("loading_failures", 0)) != 0 or int(final.get("load_count", 0)) < 3:
         _fail("HERO-ECO-HERO switching failed: " + str(final))
         return
-    print("R135 SMOKE PASS: ECO/HERO scene, camera, motion pause, hatch, and resource swap")
+    # A player must be able to complete a deterministic, four-action mission.
+    # Out-of-order input changes the rig but MUST NOT unlock fake mission progress.
+    instance.call("_start_mission")
+    var opened: Dictionary = rig.call("summary")
+    if not bool(opened.get("mission_active", false)) or int(opened.get("mission_step", -1)) != 0:
+        _fail("Mission did not reset correctly")
+        return
+    instance.call("_toggle_motion") # Wrong order: pause before opening hatch.
+    if int(rig.call("summary").get("mission_step", -1)) != 0:
+        _fail("Out-of-order pause advanced the mission")
+        return
+    instance.call("_toggle_motion") # Resume before beginning the correct sequence.
+    instance.call("_toggle_hatch")
+    if int(rig.call("summary").get("mission_step", -1)) != 1:
+        _fail("Opening the hatch did not clear the first checkpoint")
+        return
+    instance.call("_toggle_motion")
+    if int(rig.call("summary").get("mission_step", -1)) != 2:
+        _fail("Pausing the drive did not clear the second checkpoint")
+        return
+    instance.call("_toggle_hatch")
+    if int(rig.call("summary").get("mission_step", -1)) != 3:
+        _fail("Closing the hatch did not clear the third checkpoint")
+        return
+    instance.call("_toggle_motion")
+    var complete: Dictionary = rig.call("summary")
+    if not bool(complete.get("mission_completed", false)) or int(complete.get("mission_step", 0)) != 4:
+        _fail("Full four-step mission did not complete: " + str(complete))
+        return
+    if not bool(complete.get("motion_enabled", false)) or float(rig.get("lid_target")) > 0.5:
+        _fail("Mission completed with unsafe simulated state")
+        return
+    instance.call("_next_view")
+    if int(instance.get("view_index")) != 1:
+        _fail("NEXT VIEW did not select the service deck")
+        return
+    instance.call("_next_view")
+    if int(instance.get("view_index")) != 2:
+        _fail("NEXT VIEW did not select the optical head")
+        return
+    instance.call("_reset_view")
+    if int(instance.get("view_index")) != 0:
+        _fail("RESET VIEW did not return to overview")
+        return
+    var operator_controls: Node = instance.get_node_or_null("R135ResponsiveOperatorHUD/OperatorControls")
+    if operator_controls == null:
+        _fail("Responsive mission controls missing")
+        return
+    print("R135 SMOKE PASS: ECO/HERO resources, strict 4-step mission, camera presets, accessible action panel")
     quit(0)
