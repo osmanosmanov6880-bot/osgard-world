@@ -1,0 +1,160 @@
+name: OSGARD R135 optimized web candidate
+
+on:
+  push:
+    branches: [feat/r135-web-live-20261024]
+    paths:
+      - ".github/workflows/r135-web-optimized.yml"
+      - "godot/osgard-r135-standalone/**"
+      - "scripts/r135-web-smoke.mjs"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: osgard-r135-web-optimized
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify full original GLBs and PBR before optimizing transfer
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib
+          from pathlib import Path
+          base=Path('godot/osgard-r135-standalone')
+          expected={
+            'eco':'c6bbc41c53e596d5048371e639a662cd2a75d58a02f75c9df93ffced7685533b',
+            'hero':'8ef33e28534c7c41d4adaceee4e479e38da92287a99bbd5fd53b9fc9318c0078'}
+          for quality,sha in expected.items():
+              path=base/'models/r135'/('service_spine_'+quality+'.glb')
+              assert hashlib.sha256(path.read_bytes()).hexdigest()==sha,path
+          assert len(list((base/'textures/r135').glob('*.png')))==36
+          print('Original HERO, ECO, 36 maps: verified')
+          PY
+
+      - name: Prepare optimized Web preset (do not change original source)
+        shell: bash
+        run: |
+          set -euo pipefail
+          # The GLBs carry embedded PBR textures. Standalone authoring PNGs
+          # are duplicated in an all-resources Web pack; exclude ONLY these copies.
+          python3 - <<'PY'
+          from pathlib import Path
+          preset=Path('godot/osgard-r135-standalone/export_presets.cfg')
+          original=preset.read_text()
+          assert 'exclude_filter=""' in original
+          preset.write_text(original.replace('exclude_filter=""',
+                                             'exclude_filter="textures/r135/*.png"'))
+          PY
+
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: true
+
+      - name: Native Godot GLB import and simulated device controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          godot --headless --editor --path godot/osgard-r135-standalone --import --quit
+          timeout --signal=TERM --kill-after=5s 150s godot --headless --path godot/osgard-r135-standalone --script res://tests/smoke.gd
+
+      - name: Optimized genuine Godot HTML5 export
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/r135-optimized"
+          godot --headless --path godot/osgard-r135-standalone --export-release Web "$RUNNER_TEMP/r135-optimized/index.html"
+          node scripts/localize-godot-web-export.mjs "$RUNNER_TEMP/r135-optimized"
+          test -s "$RUNNER_TEMP/r135-optimized/index.html"
+          test -n "$(find "$RUNNER_TEMP/r135-optimized" -maxdepth 1 -name '*.wasm' -size +100k -print -quit)"
+          test -n "$(find "$RUNNER_TEMP/r135-optimized" -maxdepth 1 -name '*.pck' -size +0c -print -quit)"
+          python3 - <<'PY'
+          from pathlib import Path
+          import os
+          p=Path(os.environ['RUNNER_TEMP'])/'r135-optimized/index.pck'
+          old=118659392
+          size=p.stat().st_size
+          print('Original PCK bytes:', old)
+          print('Optimized PCK bytes:', size)
+          print('Saved bytes:', old-size)
+          assert size < old, 'The optimized export is not smaller'
+          assert size < 100_000_000, 'Optimized PCK exceeds safe transfer budget'
+          PY
+
+      - name: Test HTML5 export in an actual Chromium browser (SwiftShader WebGL)
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --no-save --package-lock=false playwright@1.58.2
+          npx playwright install --with-deps chromium
+          python3 -m http.server 8765 --directory "$RUNNER_TEMP/r135-optimized" >/tmp/r135-web-http.log 2>&1 &
+          WEB_PID=$!
+          trap 'kill "$WEB_PID" 2>/dev/null || true' EXIT
+          node scripts/r135-web-smoke.mjs "http://127.0.0.1:8765/index.html" "$RUNNER_TEMP/r135-screens"
+          cat /tmp/r135-web-http.log | tail -n 15
+
+      - name: Package immutable release with SHA-256 and loading metrics
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib,json,os,zipfile
+          from pathlib import Path
+          root=Path(os.environ['RUNNER_TEMP'])/'r135-optimized'
+          output=Path(os.environ['RUNNER_TEMP'])/'r135-optimized-release'
+          output.mkdir(exist_ok=True)
+          files=sorted(p for p in root.iterdir() if p.is_file())
+          manifest={'version':'r135-web-optimized-20261024','engine':'Godot 4.4.1',
+                    'source_commit':os.environ['GITHUB_SHA'],
+                    'game':'OSGARD R135 Service Spine','native_tests':'passed',
+                    'webgl_browser_software_smoke':'passed',
+                    'browser_gpu':'SwiftShader software WebGL; NOT hardware GPU',
+                    'original_pck_bytes':118659392,
+                    'optimized_pck_bytes':(root/'index.pck').stat().st_size,
+                    'original_glbs_preserved':True,
+                    'files':{p.name:{'sha256':hashlib.sha256(p.read_bytes()).hexdigest(),
+                                     'size_bytes':p.stat().st_size} for p in files}}
+          (root/'release.json').write_text(json.dumps(manifest,indent=2)+'\n')
+          archive=output/'OSGARD_R135_OPTIMIZED_WEB.zip'
+          with zipfile.ZipFile(archive,'w',compression=zipfile.ZIP_DEFLATED,compresslevel=6,allowZip64=True) as z:
+              for p in sorted(root.iterdir()):
+                  if p.is_file():z.write(p,p.name)
+          (output/'R135_OPTIMIZED_MANIFEST.json').write_text(json.dumps(manifest,indent=2)+'\n')
+          print('Saved ZIP:',archive,archive.stat().st_size)
+          print('PCK:',manifest['optimized_pck_bytes'])
+          PY
+
+      - name: Retain visual QA screenshots and web artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: osgard-r135-optimized-web-qa
+          path: |
+            ${{ runner.temp }}/r135-screens/
+            ${{ runner.temp }}/r135-optimized-release/R135_OPTIMIZED_MANIFEST.json
+          retention-days: 14
+
+      - name: Publish optimized playable native browser release (not prod deploy)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag=r135-web-optimized-20261024
+          if ! gh release view "$tag" >/dev/null 2>&1; then
+            gh release create "$tag" --target "$GITHUB_SHA" \
+              --title "OSGARD R135 — optimized WebGL 2 build" \
+              --notes "Original R135 HERO + ECO 3D retained, duplicate source PBR PNGs excluded from Web PCK. Tested with Godot 4.4.1 native smoke and Chromium SwiftShader WebGL desktop/mobile emulation. No hardware GPU benchmark." \
+              --latest=false
+          fi
+          gh release upload "$tag" "$RUNNER_TEMP/r135-optimized-release/OSGARD_R135_OPTIMIZED_WEB.zip" "$RUNNER_TEMP/r135-optimized-release/R135_OPTIMIZED_MANIFEST.json" --clobber

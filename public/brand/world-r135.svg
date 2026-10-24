@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-labelledby="t d">
+<title id="t">OSGARD R135 Service Spine</title>
+<desc id="d">Dark sapphire precision service spine with copper frame and cyan mechanical core</desc>
+<defs>
+  <radialGradient id="bg"><stop stop-color="#142638"/><stop offset=".68" stop-color="#081420"/><stop offset="1" stop-color="#03090f"/></radialGradient>
+  <linearGradient id="metal" x2="1" y2="1"><stop stop-color="#f4a66c"/><stop offset=".5" stop-color="#88482e"/><stop offset="1" stop-color="#ffe1ad"/></linearGradient>
+  <linearGradient id="light" x2="0" y2="1"><stop stop-color="#9bf6ff"/><stop offset=".55" stop-color="#42bad2"/><stop offset="1" stop-color="#18527a"/></linearGradient>
+  <filter id="glow"><feGaussianBlur stdDeviation="22"/></filter>
+  <pattern id="grid" width="64" height="64" patternUnits="userSpaceOnUse"><path d="M64 0H0V64" fill="none" stroke="#2a4b5a" stroke-opacity=".23" stroke-width="2"/></pattern>
+</defs>
+<rect width="1024" height="1024" rx="150" fill="url(#bg)"/>
+<rect width="1024" height="1024" rx="150" fill="url(#grid)"/>
+<circle cx="512" cy="500" r="260" fill="#1ff5ff" opacity=".09" filter="url(#glow)"/>
+<path d="M512 122 843 316v392L512 902 181 708V316Z" fill="none" stroke="url(#metal)" stroke-width="29" stroke-linejoin="round"/>
+<path d="M512 168 804 341v344L512 857 220 685V341Z" fill="none" stroke="#2b6b82" stroke-opacity=".55" stroke-width="8"/>
+<g stroke="url(#metal)" stroke-width="25" fill="none" stroke-linejoin="round">
+  <path d="M295 430h434v-67M295 430v161h434V430"/>
+  <path d="M365 352h294M365 668h294"/>
+</g>
+<g fill="url(#light)">
+  <rect x="445" y="300" width="134" height="48" rx="14"/>
+  <path d="m468 348 44 42 44-42 13 45-57 55-57-55Z"/>
+  <rect x="494" y="448" width="36" height="98" rx="12"/>
+  <path d="M432 548h36v68h-36zm124 0h36v68h-36z"/>
+  <rect x="371" y="641" width="282" height="21" rx="11" opacity=".7"/>
+</g>
+<circle cx="512" cy="500" r="70" stroke="#5edff2" stroke-width="7" fill="none"/>
+<circle cx="512" cy="500" r="44" stroke="#ffd0a4" stroke-width="6" fill="none"/>
+<g fill="#ffbd88"><circle cx="288" cy="429" r="17"/><circle cx="729" cy="429" r="17"/><circle cx="288" cy="590" r="17"/><circle cx="729" cy="590" r="17"/></g>
+<text x="512" y="765" text-anchor="middle" font-family="system-ui, sans-serif" font-size="64" font-weight="800" letter-spacing="15" fill="#d9f4fb">R135</text>
+<text x="512" y="821" text-anchor="middle" font-family="system-ui, sans-serif" font-size="24" font-weight="600" letter-spacing="11" fill="#e6a679">PRECISION</text>
+</svg>

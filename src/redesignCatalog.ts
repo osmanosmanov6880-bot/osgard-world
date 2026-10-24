@@ -208,6 +208,30 @@ export const playGames:PlayGame[] = [
     "launchLabel": "Открыть симуляцию", "searchTerms": "r136 precision промышленная ячейка симуляция godot"
   },
   {
+    "id": "r135-service",
+    "title": "OSGARD R135 / SERVICE SPINE",
+    "genre": "Симуляция",
+    "mode": "solo",
+    "description": "Интерактивная промышленная 3D-сцена с оригинальными HERO/ECO-моделями и физически разделёнными механизмами. Осмотри каретку, захват и сервисный люк.",
+    "controls": "Перетаскивание мышью или пальцем — камера; прокрутка — масштаб. Q — качество HERO/ECO, F — люк, Space — пауза, R — сброс камеры.",
+    "platform": "Godot 4.4.1 Web · WebGL 2",
+    "save": "Сохранение не требуется",
+    "online": "Одиночная лабораторная симуляция · без сервера",
+    "href": "/games/r135-service/",
+    "asset": "/brand/world-r135.svg",
+    "accent": "#F3A678",
+    "launchable": true,
+    "warning": "Это техническая симуляция, не управление оборудованием. Нативный Godot и WebGL в программном Chromium проверяются автоматически; FPS на реальных телефонах и видеокартах ещё не измерены.",
+    "format": "Интерактивная 3D-симуляция",
+    "status": "Godot Web · оригинальный R135",
+    "launchLabel": "Запустить R135",
+    "alternate": {
+      "href": "https://github.com/osmanosmanov6880-bot/osgard-world/releases/tag/r135-standalone-20261024",
+      "label": "Скачать исходный проект"
+    },
+    "searchTerms": "r135 osgard service spine промышленная симуляция механика 3d pbr glb hero eco годот"
+  },
+  {
     "id": "zion-020",
     "title": "Базальтовая колыбель",
     "genre": "Головоломка",

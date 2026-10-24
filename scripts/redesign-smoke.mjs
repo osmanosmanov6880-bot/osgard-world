@@ -11,9 +11,9 @@ let p=toggleFavorite(emptyPlayCollection(),'time');assert.deepEqual(p.favorites,
 p=visitGame(visitGame(visitGame(p,'time'),'swarm'),'time');assert.deepEqual(p.recent,['time','swarm'])
 assert.deepEqual(parsePlayCollection('{"favorites":["time","time","unknown",12],"recent":["swarm"]}',ids),{favorites:['time'],recent:['swarm']})
 assert.throws(()=>parsePlayCollection('{',ids));assert.throws(()=>parsePlayCollection(' '.repeat(10001),ids));assert.throws(()=>parsePlayCollection('{"favorites":42}',ids))
-for(const game of playGames){assert.ok(existsSync('public'+game.asset));if(game.launchable&&!['time','null-shift'].includes(game.id)){let path='public'+game.href; if(path.endsWith('/'))path+='index.html';if(game.id==='r136-precision'&&!existsSync(path)){assert.ok(existsSync('.github/workflows/r136-godot-web.yml'),'R136 release workflow missing')}else assert.ok(existsSync(path),'Launch target missing: '+game.id)}assert.ok(game.warning&&game.save&&game.online&&game.controls)}
-assert.equal(playGames.length,22)
-assert.equal(new Set(ids).size,22)
+for(const game of playGames){assert.ok(existsSync('public'+game.asset));if(game.launchable&&!['time','null-shift'].includes(game.id)){let path='public'+game.href; if(path.endsWith('/'))path+='index.html';if(game.id==='r136-precision'&&!existsSync(path)){assert.ok(existsSync('.github/workflows/r136-godot-web.yml'),'R136 release workflow missing')}else if(game.id==='r135-service'&&!existsSync(path)){assert.ok(existsSync('scripts/r135-release-stage.py')&&readFileSync('.github/workflows/deploy-frontend.yml','utf8').includes('Stage verified native R135 Godot Web export'),'R135 runtime must be SHA-verified and staged by deploy')}else assert.ok(existsSync(path),'Launch target missing: '+game.id)}assert.ok(game.warning&&game.save&&game.online&&game.controls)}
+assert.equal(playGames.length,23)
+assert.equal(new Set(ids).size,23)
 const godot=playGames.find(g=>g.id==='null-shift')
 assert.equal(godot.launchable,true)
 assert.equal(godot.href,'/games/null-shift-godot/')

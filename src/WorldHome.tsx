@@ -62,7 +62,14 @@ const process = [
 
 export default function WorldHome({ development = false }: { development?: boolean }) {
   const [locale, setLocale] = useState<Locale>(readWorldLocale)
-  const tx = (ru: string, en: string) => locale === 'ru' ? ru : en
+  const [englishCopy, setEnglishCopy] = useState<Record<string, string> | null>(null)
+  useEffect(() => {
+    if (locale !== 'en' || englishCopy) return
+    let current = true
+    void import('./worldHomeEnglish').then(module => { if (current) setEnglishCopy(module.default) })
+    return () => { current = false }
+  }, [locale, englishCopy])
+  const tx = (ru: string) => locale === 'ru' ? ru : englishCopy?.[ru] || ru
   const changeLocale = () => {
     const next: Locale = locale === 'ru' ? 'en' : 'ru'
     setLocale(next)
@@ -147,48 +154,48 @@ export default function WorldHome({ development = false }: { development?: boole
         <div className="omega-dev-intro signature-intro">
           <div className="world-locale-row"><p className="brand-eyebrow">OSGARD / DEVELOPMENT / DIGITAL CRAFT</p><button type="button" className="world-language-toggle" onClick={changeLocale} aria-label={locale === 'ru' ? 'Switch language to English' : 'Переключить язык на русский'}><Globe2 size={15} aria-hidden="true" />{locale === 'ru' ? 'EN' : 'RU'}</button></div>
           <h1 id="world-title">{locale === 'ru' ? <>СОЗДАЁМ<br /><span>ЦИФРОВЫЕ</span><br />РЕШЕНИЯ.</> : <>WE BUILD<br /><span>DIGITAL</span><br />PRODUCTS.</>}</h1>
-          <p className="brand-lead">{tx('От первых сценариев до открытых демонстраций. Показываем настоящие интерфейсы, рабочие действия и честный статус каждого проекта.','From early flows to open demos. Explore real interfaces, working interactions and an honest status for every project.')}</p>
+          <p className="brand-lead">{tx("От первых сценариев до открытых демонстраций. Показываем настоящие интерфейсы, рабочие действия и честный статус каждого проекта.")}</p>
           <div className="brand-actions signature-hero-actions">
-            <a className="brand-button primary" href="#cases">{tx('Смотреть проекты','View projects')} <span aria-hidden="true">↗</span></a>
-            <a className="brand-button signature-secondary" href="#contact">{tx('Обсудить разработку','Discuss a project')} <span aria-hidden="true">→</span></a>
+            <a className="brand-button primary" href="#cases">{tx("Смотреть проекты")} <span aria-hidden="true">↗</span></a>
+            <a className="brand-button signature-secondary" href="#contact">{tx("Обсудить разработку")} <span aria-hidden="true">→</span></a>
           </div>
-          <div className="signature-hero-facts" aria-label={tx('Принципы разработки','Development principles')}>
-            <span><strong>{cases.length}</strong><small>{tx('публичных кейса','public cases')}</small></span>
-            <span><strong>UX → CODE</strong><small>{tx('дизайн и реализация','design and engineering')}</small></span>
-            <span><strong>OPEN DEMOS</strong><small>{tx('посмотрите сами','try them yourself')}</small></span>
+          <div className="signature-hero-facts" aria-label={tx("Принципы разработки")}>
+            <span><strong>{cases.length}</strong><small>{tx("публичных кейса")}</small></span>
+            <span><strong>UX → CODE</strong><small>{tx("дизайн и реализация")}</small></span>
+            <span><strong>OPEN DEMOS</strong><small>{tx("посмотрите сами")}</small></span>
           </div>
-          <p className="signature-caption">{tx('ПРОТОТИПЫ · КОНФИГУРАТОРЫ · ЦИФРОВЫЕ ПРОДУКТЫ','PROTOTYPES · CONFIGURATORS · DIGITAL PRODUCTS')}</p>
+          <p className="signature-caption">{tx("ПРОТОТИПЫ · КОНФИГУРАТОРЫ · ЦИФРОВЫЕ ПРОДУКТЫ")}</p>
         </div>
         <div className="signature-showcase" aria-label="Демонстрация работ студии">
           <div className="signature-showcase-top"><span>SELECTED WORK / 2026</span><span>01 — 03 / 04</span></div>
           <a className="signature-featured-case" href={cases[1].href}>
             <div className="signature-featured-image">
-              <img src={cases[1].art} width="1200" height="800" alt={tx('Скриншот открытого проекта ','Screenshot of public case ') + cases[1].name}
+              <img src={cases[1].art} width="1200" height="800" alt={tx("Скриншот открытого проекта ") + cases[1].name}
                 decoding="async" fetchPriority="high" />
               <span>{locale === 'en' ? caseEnglish[cases[1].id]?.type : cases[1].type} / 02</span>
             </div>
             <div className="signature-featured-copy">
-              <div><small>{tx('АРХИТЕКТУРА / КОНФИГУРАТОР','ARCHITECTURE / CONFIGURATOR')}</small><strong>{cases[1].name}</strong></div>
-              <span>{tx('Открыть кейс','Open case')} <b aria-hidden="true">↗</b></span>
+              <div><small>{tx("АРХИТЕКТУРА / КОНФИГУРАТОР")}</small><strong>{cases[1].name}</strong></div>
+              <span>{tx("Открыть кейс")} <b aria-hidden="true">↗</b></span>
             </div>
           </a>
-          <div className="signature-case-pair" aria-label={tx('Другие проекты','More projects')}>
+          <div className="signature-case-pair" aria-label={tx("Другие проекты")}>
             {[cases[0],cases[2]].map((item) => <a key={item.id} href={item.href}>
-              <img src={item.art} alt={tx('Скриншот проекта ','Screenshot of case ') + item.name} width="380" height="255"
+              <img src={item.art} alt={tx("Скриншот проекта ") + item.name} width="380" height="255"
                 loading="lazy" decoding="async" />
               <span><small>{locale === 'en' ? caseEnglish[item.id]?.type : item.type}</small><strong>{item.name}</strong></span>
               <b aria-hidden="true">↗</b>
             </a>)}
           </div>
-          <p className="signature-showcase-note">{tx('Снимки публичных страниц. Демо не подтверждает работу серверов, продаж или коммерческий запуск.','Screenshots of public pages. A demo does not confirm server operation, sales or a commercial launch.')}</p>
+          <p className="signature-showcase-note">{tx("Снимки публичных страниц. Демо не подтверждает работу серверов, продаж или коммерческий запуск.")}</p>
         </div>
       </section>
       <section id="products" className="brand-section omega-dev-capabilities" aria-labelledby="dev-capabilities-title">
-        <div className="brand-section-heading"><p className="brand-eyebrow">{tx('01 / ЧТО МЫ ДЕЛАЕМ','01 / WHAT WE DO')}</p><h2 id="dev-capabilities-title">{locale === 'ru' ? <>АРХИТЕКТУРА. <span>ДИЗАЙН. КОД.</span></> : <>ARCHITECTURE. <span>DESIGN. CODE.</span></>}</h2><p>{tx('Начинаем с задачи, показываем логику продукта и доступную реализацию. Без выдуманных результатов и обещаний несуществующих функций.','We start with the problem, show the product logic and available implementation. No invented results or promises about unavailable features.')}</p></div>
+        <div className="brand-section-heading"><p className="brand-eyebrow">{tx("01 / ЧТО МЫ ДЕЛАЕМ")}</p><h2 id="dev-capabilities-title">{locale === 'ru' ? <>АРХИТЕКТУРА. <span>ДИЗАЙН. КОД.</span></> : <>ARCHITECTURE. <span>DESIGN. CODE.</span></>}</h2><p>{tx("Начинаем с задачи, показываем логику продукта и доступную реализацию. Без выдуманных результатов и обещаний несуществующих функций.")}</p></div>
         <div className="omega-dev-capability-grid">
-          <a href="#cases"><span>01 / UX & PRODUCT</span><strong>{tx('Интерфейсы и сценарии','Interfaces and user flows')}</strong><p>{tx('Понятная структура, удобная навигация, адаптация и доступность.','Clear structure, useful navigation, responsive layouts and accessibility.')}</p><em>{tx('Смотреть кейсы','View cases')} ↗</em></a>
-          <a href="/development/tedes/"><span>02 / PROTOTYPES</span><strong>{tx('Конфигураторы и инструменты','Configurators and tools')}</strong><p>{tx('Изучите демонстрацию TEDES с локальной проектной спецификацией.','Explore the TEDES demo with a locally saved project specification.')}</p><em>{tx('Открыть TEDES','Open TEDES')} ↗</em></a>
-          <a href="#contact"><span>03 / ENGINEERING</span><strong>{tx('Разработка и проверка','Engineering and verification')}</strong><p>{tx('Обсуждаем требования, реализуем необходимые функции и проверяем результат.','We clarify requirements, build required features and verify the result.')}</p><em>{tx('Обсудить задачу','Discuss a project')} ↗</em></a>
+          <a href="#cases"><span>01 / UX & PRODUCT</span><strong>{tx("Интерфейсы и сценарии")}</strong><p>{tx("Понятная структура, удобная навигация, адаптация и доступность.")}</p><em>{tx("Смотреть кейсы")} ↗</em></a>
+          <a href="/development/tedes/"><span>02 / PROTOTYPES</span><strong>{tx("Конфигураторы и инструменты")}</strong><p>{tx("Изучите демонстрацию TEDES с локальной проектной спецификацией.")}</p><em>{tx("Открыть TEDES")} ↗</em></a>
+          <a href="#contact"><span>03 / ENGINEERING</span><strong>{tx("Разработка и проверка")}</strong><p>{tx("Обсуждаем требования, реализуем необходимые функции и проверяем результат.")}</p><em>{tx("Обсудить задачу")} ↗</em></a>
         </div>
       </section>
     </> : <>
@@ -208,117 +215,117 @@ export default function WorldHome({ development = false }: { development?: boole
         <div className="omega-command-terminator" />
       </div>
       <div className="omega-copy">
-        <div className="world-locale-row"><p className="brand-eyebrow omega-command-eyebrow">OSGARD WORLD <span>/ {tx('ЦИФРОВАЯ ВСЕЛЕННАЯ','DIGITAL UNIVERSE')}</span></p><button type="button" className="world-language-toggle" onClick={changeLocale} aria-label={locale === 'ru' ? 'Switch language to English' : 'Переключить язык на русский'}><Globe2 size={15} aria-hidden="true" />{locale === 'ru' ? 'EN' : 'RU'}</button></div>
+        <div className="world-locale-row"><p className="brand-eyebrow omega-command-eyebrow">OSGARD WORLD <span>/ {tx("ЦИФРОВАЯ ВСЕЛЕННАЯ")}</span></p><button type="button" className="world-language-toggle" onClick={changeLocale} aria-label={locale === 'ru' ? 'Switch language to English' : 'Переключить язык на русский'}><Globe2 size={15} aria-hidden="true" />{locale === 'ru' ? 'EN' : 'RU'}</button></div>
         <h1 id="world-title">{locale === 'ru' ? <>ТЕХНОЛОГИИ,<br/><span>КОТОРЫЕ</span><br/>СОЕДИНЯЮТ<br/>МИРЫ</> : <>TECHNOLOGY<br/><span>THAT</span><br/>CONNECTS<br/>WORLDS</>}<span className="omega-period">.</span></h1>
-        <p className="brand-lead">{tx('Искусственный интеллект, интерактивные миры и создание цифровых продуктов. Три понятных направления — одна вселенная OSGARD.','AI, interactive worlds and digital product development. Three clear directions in one OSGARD ecosystem.')}</p>
+        <p className="brand-lead">{tx("Искусственный интеллект, интерактивные миры и создание цифровых продуктов. Три понятных направления — одна вселенная OSGARD.")}</p>
         <div className="brand-actions omega-command-actions">
-          <a className="brand-button primary" href="#products">{tx('Исследовать экосистему','Explore the ecosystem')} <span aria-hidden="true">↗</span></a>
-          <a className="brand-button omega-command-secondary" href="/play">{tx('Перейти в Play','Explore Play')} <span aria-hidden="true">↗</span></a>
+          <a className="brand-button primary" href="#products">{tx("Исследовать экосистему")} <span aria-hidden="true">↗</span></a>
+          <a className="brand-button omega-command-secondary" href="/play">{tx("Перейти в Play")} <span aria-hidden="true">↗</span></a>
         </div>
-        <p className="omega-command-promise">{tx('ПОНИМАТЬ ИИ','UNDERSTAND AI')} <span>•</span> {tx('ИГРАТЬ','PLAY')} <span>•</span> {tx('СОЗДАВАТЬ','BUILD')}</p>
+        <p className="omega-command-promise">{tx("ПОНИМАТЬ ИИ")} <span>•</span> {tx("ИГРАТЬ")} <span>•</span> {tx("СОЗДАВАТЬ")}</p>
       </div>
-      <p className="omega-command-planet-caption">BLUE MARBLE / {tx('ЗЕМЛЯ','EARTH')} <span>NASA · {tx('СПУТНИКОВАЯ ТЕКСТУРА','SATELLITE IMAGERY')}</span></p>
-      <nav className="omega-gate" aria-label={tx('Три направления экосистемы','Three OSGARD directions')}>
-        <p className="brand-eyebrow">{tx('ВЫБЕРИ СВОЙ ПУТЬ','CHOOSE YOUR PATH')} <span>01—03 / OSGARD</span></p>
+      <p className="omega-command-planet-caption">BLUE MARBLE / {tx("ЗЕМЛЯ")} <span>NASA · {tx("СПУТНИКОВАЯ ТЕКСТУРА")}</span></p>
+      <nav className="omega-gate" aria-label={tx("Три направления экосистемы")}>
+        <p className="brand-eyebrow">{tx("ВЫБЕРИ СВОЙ ПУТЬ")} <span>01—03 / OSGARD</span></p>
         <a href="/intelligence">
           <span className="omega-glyph" aria-hidden="true">◇</span>
-          <span><small>01 / {tx('ЗНАНИЯ','LEARNING')}</small><strong>OSA Intelligence</strong><em>{tx('Понимай ИИ, проверяй ответы и учись.','Understand AI, verify answers and learn.')}</em></span>
+          <span><small>01 / {tx("ЗНАНИЯ")}</small><strong>OSA Intelligence</strong><em>{tx("Понимай ИИ, проверяй ответы и учись.")}</em></span>
           <b aria-hidden="true">↗</b>
         </a>
         <a href="/play">
           <span className="omega-glyph" aria-hidden="true">✦</span>
-          <span><small>02 / {tx('ИГРОВЫЕ МИРЫ','GAME WORLDS')}</small><strong>OSGARD Play</strong><em>{tx('Выбирай мир, открывай игру, исследуй.','Choose a world, launch a game and explore.')}</em></span>
+          <span><small>02 / {tx("ИГРОВЫЕ МИРЫ")}</small><strong>OSGARD Play</strong><em>{tx("Выбирай мир, открывай игру, исследуй.")}</em></span>
           <b aria-hidden="true">↗</b>
         </a>
         <a href="/development">
           <span className="omega-glyph" aria-hidden="true">⌘</span>
-          <span><small>03 / {tx('ПРОЕКТЫ','PROJECTS')}</small><strong>Development</strong><em>{tx('Смотри реальные проекты и их возможности.','Explore real projects and what they can do.')}</em></span>
+          <span><small>03 / {tx("ПРОЕКТЫ")}</small><strong>Development</strong><em>{tx("Смотри реальные проекты и их возможности.")}</em></span>
           <b aria-hidden="true">↗</b>
         </a>
       </nav>
-      <details className="omega-experience-panel" aria-label={tx('Настройки 3D-глобуса','3D globe settings')}>
-        <summary><span className="omega-settings-mark" aria-hidden="true">◈</span> {tx('Настройки планеты','Planet settings')} <span className="omega-settings-chevron" aria-hidden="true">⌄</span></summary>
+      <details className="omega-experience-panel" aria-label={tx("Настройки 3D-глобуса")}>
+        <summary><span className="omega-settings-mark" aria-hidden="true">◈</span> {tx("Настройки планеты")} <span className="omega-settings-chevron" aria-hidden="true">⌄</span></summary>
         <div className="omega-experience-content">
-          <div className="omega-experience-title"><span>{tx('ГЛОБУС / РЕЖИМ ПРОСМОТРА','GLOBE / VIEW MODE')}</span><span className="omega-experience-live"><span aria-hidden="true" /> {tx('СЦЕНА','SCENE')}</span></div>
-          <div className="omega-mode-tabs" role="group" aria-label={tx('Выберите режим 3D-сцены','Choose a 3D scene mode')}>
-            <button type="button" aria-pressed={omegaMode === 'cinema'} onClick={() => setOmegaMode('cinema')}>{tx('Кино','Cinema')}</button>
-            <button type="button" aria-pressed={omegaMode === 'world'} onClick={() => setOmegaMode('world')}>{tx('3D-мир','3D world')}</button>
-            <button type="button" aria-pressed={omegaMode === 'hybrid'} onClick={() => setOmegaMode('hybrid')}>{tx('Гибрид','Hybrid')}</button>
+          <div className="omega-experience-title"><span>{tx("ГЛОБУС / РЕЖИМ ПРОСМОТРА")}</span><span className="omega-experience-live"><span aria-hidden="true" /> {tx("СЦЕНА")}</span></div>
+          <div className="omega-mode-tabs" role="group" aria-label={tx("Выберите режим 3D-сцены")}>
+            <button type="button" aria-pressed={omegaMode === 'cinema'} onClick={() => setOmegaMode('cinema')}>{tx("Кино")}</button>
+            <button type="button" aria-pressed={omegaMode === 'world'} onClick={() => setOmegaMode('world')}>{tx("3D-мир")}</button>
+            <button type="button" aria-pressed={omegaMode === 'hybrid'} onClick={() => setOmegaMode('hybrid')}>{tx("Гибрид")}</button>
           </div>
           <p className="omega-mode-description" aria-live="polite">{(locale === 'ru' ? omegaHelpRu : omegaHelpEn)[omegaMode]}</p>
-          {stillWorld && <p className="omega-mode-description" role="status">{tx('Режим экономии ресурсов: отображается фотография Земли. 3D станет доступно, когда в устройстве и OSGARD разрешено движение и выключена экономия трафика.','Low-resource mode: a photograph of Earth is shown. 3D becomes available when motion is allowed on your device and in OSGARD, and data saving is off.')}</p>}
+          {stillWorld && <p className="omega-mode-description" role="status">{tx("Режим экономии ресурсов: отображается фотография Земли. 3D станет доступно, когда в устройстве и OSGARD разрешено движение и выключена экономия трафика.")}</p>}
           <div className="omega-quality-switch">
-            <label htmlFor="omega-quality">{tx('Детализация 3D','3D detail')}</label>
+            <label htmlFor="omega-quality">{tx("Детализация 3D")}</label>
             <select id="omega-quality" value={omegaQuality} disabled={stillWorld} onChange={event => setOmegaQuality(event.target.value as GlobeQuality)}
-              aria-label={tx('Качество 3D-глобуса','3D globe quality')}>
-              <option value="auto">{tx('Авто · оптимально','Auto · recommended')}</option>
-              <option value="eco">{tx('Экономно · быстрый режим','Eco · faster')}</option>
-              <option value="ultra">{tx('Ультра · до 4K текстур','Ultra · up to 4K textures')}</option>
+              aria-label={tx("Качество 3D-глобуса")}>
+              <option value="auto">{tx("Авто · оптимально")}</option>
+              <option value="eco">{tx("Экономно · быстрый режим")}</option>
+              <option value="ultra">{tx("Ультра · до 4K текстур")}</option>
             </select>
           </div>
-          {omegaMode === 'cinema' && <div className="omega-cinema-chapters" role="group" aria-label={tx('Кинематографические главы','Cinematic chapters')}>
+          {omegaMode === 'cinema' && <div className="omega-cinema-chapters" role="group" aria-label={tx("Кинематографические главы")}>
             {omegaChapters(locale).map((name, index) => <button type="button" key={name} aria-pressed={omegaChapter === index}
               onClick={() => setOmegaChapter(index as GlobeChapter)}>{String(index + 1).padStart(2, '0')} / {name}</button>)}
           </div>}
-          {omegaMode === 'world' && <div className="omega-world-navigation" role="group" aria-label={tx('Управление вращением и масштабом глобуса','Globe rotation and zoom controls')}>
-            <button type="button" onClick={() => moveWorld('left')} aria-label={tx('Повернуть Землю влево','Rotate Earth left')}>←</button>
-            <button type="button" onClick={() => moveWorld('right')} aria-label={tx('Повернуть Землю вправо','Rotate Earth right')}>→</button>
-            <button type="button" onClick={() => moveWorld('closer')} aria-label={tx('Приблизить глобус','Zoom in')}>+</button>
-            <button type="button" onClick={() => moveWorld('farther')} aria-label={tx('Отдалить глобус','Zoom out')}>−</button>
-            <button type="button" onClick={() => moveWorld('reset')} className="omega-reset-view">{tx('Сбросить','Reset')}</button>
+          {omegaMode === 'world' && <div className="omega-world-navigation" role="group" aria-label={tx("Управление вращением и масштабом глобуса")}>
+            <button type="button" onClick={() => moveWorld('left')} aria-label={tx("Повернуть Землю влево")}>←</button>
+            <button type="button" onClick={() => moveWorld('right')} aria-label={tx("Повернуть Землю вправо")}>→</button>
+            <button type="button" onClick={() => moveWorld('closer')} aria-label={tx("Приблизить глобус")}>+</button>
+            <button type="button" onClick={() => moveWorld('farther')} aria-label={tx("Отдалить глобус")}>−</button>
+            <button type="button" onClick={() => moveWorld('reset')} className="omega-reset-view">{tx("Сбросить")}</button>
           </div>}
-          <p className="omega-imagery-credit">{tx('Земля:','Earth:')} <a href="https://science.nasa.gov/earth/earth-observatory/blue-marble-next-generation/base-map/" target="_blank" rel="noreferrer">NASA Blue Marble ↗</a> · {tx('ночные огни 2016 · облака процедурные. Это визуализация, не прямой эфир.','2016 night lights · procedural clouds. This is a visualization, not a live feed.')}</p>
+          <p className="omega-imagery-credit">{tx("Земля:")} <a href="https://science.nasa.gov/earth/earth-observatory/blue-marble-next-generation/base-map/" target="_blank" rel="noreferrer">NASA Blue Marble ↗</a> · {tx("ночные огни 2016 · облака процедурные. Это визуализация, не прямой эфир.")}</p>
         </div>
       </details>
     </section>
     <section id="products" className="brand-section omega-products" aria-labelledby="world-products-title">
-      <div className="brand-section-heading"><p className="brand-eyebrow">{tx('01 / НАПРАВЛЕНИЯ OSGARD','01 / OSGARD DIRECTIONS')}</p><h2 id="world-products-title">{locale === 'ru' ? <>ТРИ МИРА. <span>ОДНА ВСЕЛЕННАЯ.</span></> : <>THREE WORLDS. <span>ONE ECOSYSTEM.</span></>}</h2><p>{tx('Выбери свой путь. Каждое направление показывает конкретные возможности, доступные действия и ограничения.','Choose a path. Each direction shows its capabilities, available actions and limitations.')}</p></div>
+      <div className="brand-section-heading"><p className="brand-eyebrow">{tx("01 / НАПРАВЛЕНИЯ OSGARD")}</p><h2 id="world-products-title">{locale === 'ru' ? <>ТРИ МИРА. <span>ОДНА ВСЕЛЕННАЯ.</span></> : <>THREE WORLDS. <span>ONE ECOSYSTEM.</span></>}</h2><p>{tx("Выбери свой путь. Каждое направление показывает конкретные возможности, доступные действия и ограничения.")}</p></div>
       <div className="omega-cards">
-        <a href="/intelligence" className="omega-card"><div className="omega-card-art"><img src="/brand/omega-osa.svg" alt={tx('Голографическое интеллектуальное ядро с нейронными связями','Holographic intelligence core with neural connections')} loading="lazy"/><small>01 / {tx('ИНТЕЛЛЕКТ','INTELLIGENCE')}</small></div><div className="omega-card-content"><h3>OSA <span>Intelligence</span></h3><p>{tx('Разберись в возможностях ИИ, научись проверять ответы и применять знания на практике.','Understand AI, learn to verify its answers and apply what you learn.')}</p><strong>{tx('Начать обучение','Start learning')} <span aria-hidden="true">↗</span></strong></div></a>
-        <a href="/play" className="omega-card"><div className="omega-card-art"><img src="/brand/omega-play.svg" alt={tx('Футуристический цифровой город и игровой портал','Futuristic digital city and game portal')} loading="lazy"/><small>02 / {tx('ИГРОВЫЕ МИРЫ','GAME WORLDS')}</small></div><div className="omega-card-content"><h3>OSGARD <span>Play</span></h3><p>{tx('Исследуй интерактивные миры, открывай доступные игры и игровые эксперименты.','Explore interactive worlds, available games and experiments.')}</p><strong>{tx('Исследовать игры','Explore games')} <span aria-hidden="true">↗</span></strong></div></a>
-        <a href="/development" className="omega-card"><div className="omega-card-art"><img src="/brand/omega-development.svg" alt={tx('Голографические 3D-кубы и архитектура программных продуктов','Holographic 3D cubes and digital product architecture')} loading="lazy"/><small>03 / {tx('РАЗРАБОТКА','DEVELOPMENT')}</small></div><div className="omega-card-content"><h3>OSGARD <span>Development</span></h3><p>{tx('Изучи настоящие демонстрации интерфейсов, кейсы и подход к созданию продуктов.','Explore real interface demos, case studies and our approach to product development.')}</p><strong>Смотреть проекты <span aria-hidden="true">↗</span></strong></div></a>
+        <a href="/intelligence" className="omega-card"><div className="omega-card-art"><img src="/brand/omega-osa.svg" alt={tx("Голографическое интеллектуальное ядро с нейронными связями")} loading="lazy"/><small>01 / {tx("ИНТЕЛЛЕКТ")}</small></div><div className="omega-card-content"><h3>OSA <span>Intelligence</span></h3><p>{tx("Разберись в возможностях ИИ, научись проверять ответы и применять знания на практике.")}</p><strong>{tx("Начать обучение")} <span aria-hidden="true">↗</span></strong></div></a>
+        <a href="/play" className="omega-card"><div className="omega-card-art"><img src="/brand/omega-play.svg" alt={tx("Футуристический цифровой город и игровой портал")} loading="lazy"/><small>02 / {tx("ИГРОВЫЕ МИРЫ")}</small></div><div className="omega-card-content"><h3>OSGARD <span>Play</span></h3><p>{tx("Исследуй интерактивные миры, открывай доступные игры и игровые эксперименты.")}</p><strong>{tx("Исследовать игры")} <span aria-hidden="true">↗</span></strong></div></a>
+        <a href="/development" className="omega-card"><div className="omega-card-art"><img src="/brand/omega-development.svg" alt={tx("Голографические 3D-кубы и архитектура программных продуктов")} loading="lazy"/><small>03 / {tx("РАЗРАБОТКА")}</small></div><div className="omega-card-content"><h3>OSGARD <span>Development</span></h3><p>{tx("Изучи настоящие демонстрации интерфейсов, кейсы и подход к созданию продуктов.")}</p><strong>Смотреть проекты <span aria-hidden="true">↗</span></strong></div></a>
       </div>
-      <div className="world-workspace-link"><p>{tx('Работаешь над своей идеей? Собери план и материалы в одном месте.','Working on an idea? Keep its plan and materials together.')}</p><a className="brand-text-link" href="/workspace">{tx('Открыть рабочее пространство','Open workspace')} ↗</a></div>
+      <div className="world-workspace-link"><p>{tx("Работаешь над своей идеей? Собери план и материалы в одном месте.")}</p><a className="brand-text-link" href="/workspace">{tx("Открыть рабочее пространство")} ↗</a></div>
     </section>
     </>}
     <section id="cases" className="brand-section" aria-labelledby="world-cases-title">
-      <div className="brand-section-heading"><p className="brand-eyebrow">{tx('02 / ИЗБРАННЫЕ ПРОЕКТЫ','02 / SELECTED PROJECTS')}</p><h2 id="world-cases-title">{locale === 'ru' ? <>У каждой задачи<br />свой характер.</> : <>EVERY PROJECT<br />HAS ITS OWN CHARACTER.</>}</h2><p>{tx('Откройте кейс: посмотрите интерфейс, доступные возможности и стадию проекта. Статус указан на каждой карточке.','Open a case to see its interface, available features and project stage. Every card shows its status.')}</p></div>
+      <div className="brand-section-heading"><p className="brand-eyebrow">{tx("02 / ИЗБРАННЫЕ ПРОЕКТЫ")}</p><h2 id="world-cases-title">{locale === 'ru' ? <>У каждой задачи<br />свой характер.</> : <>EVERY PROJECT<br />HAS ITS OWN CHARACTER.</>}</h2><p>{tx("Откройте кейс: посмотрите интерфейс, доступные возможности и стадию проекта. Статус указан на каждой карточке.")}</p></div>
       <div className="world-case-grid">{cases.map((item, index) => <a href={item.href} className="world-case" key={item.id}>
-        <div className="world-case-art" style={item.visual === 'screenshot' ? { aspectRatio: '3 / 2' } : undefined}><img src={item.art} alt={(item.visual === 'screenshot' ? tx('Снимок публичной страницы кейса ','Screenshot of public case ') : tx('Визуальное превью ','Visual preview of ')) + item.name} width="1200" height={item.visual === 'screenshot' ? 800 : 630} loading="lazy" decoding="async" /><span className="brand-status">{locale === 'en' ? caseEnglish[item.id]?.type || item.type : item.type}</span></div>
-        <div className="world-case-title"><span>0{index + 1} / {locale === 'en' ? caseEnglish[item.id]?.category || item.category : item.category}</span><h3>{item.name} <span aria-hidden="true">↗</span></h3><p>{locale === 'en' ? caseEnglish[item.id]?.description || item.description : item.description}</p><span className="world-case-open">{tx('Открыть кейс','Open case')} <span aria-hidden="true">→</span></span></div>
+        <div className="world-case-art" style={item.visual === 'screenshot' ? { aspectRatio: '3 / 2' } : undefined}><img src={item.art} alt={(item.visual === 'screenshot' ? tx("Снимок публичной страницы кейса ") : tx("Визуальное превью ")) + item.name} width="1200" height={item.visual === 'screenshot' ? 800 : 630} loading="lazy" decoding="async" /><span className="brand-status">{locale === 'en' ? caseEnglish[item.id]?.type || item.type : item.type}</span></div>
+        <div className="world-case-title"><span>0{index + 1} / {locale === 'en' ? caseEnglish[item.id]?.category || item.category : item.category}</span><h3>{item.name} <span aria-hidden="true">↗</span></h3><p>{locale === 'en' ? caseEnglish[item.id]?.description || item.description : item.description}</p><span className="world-case-open">{tx("Открыть кейс")} <span aria-hidden="true">→</span></span></div>
       </a>)}</div>
-      <p className="world-case-legend"><strong>{tx('Как читать статусы.','How to read the status.')}</strong> {tx('Концепт показывает направление. Демо позволяет попробовать сценарий. Прототип проверяет часть продукта. Коммерческий запуск требует отдельного подтверждения. PHANTOM, TEDES и MERAKKI показаны на реальных снимках публичных страниц кейсов. ESSENTIA — визуальное превью. Снимки не подтверждают работу сервера или коммерческий запуск.','A concept shows a direction. A demo lets you try a flow. A prototype tests part of a product. A commercial launch needs separate confirmation. PHANTOM, TEDES and MERAKKI use screenshots of public case pages. ESSENTIA is a visual preview. Screenshots do not confirm server operation or a commercial launch.')}</p>
+      <p className="world-case-legend"><strong>{tx("Как читать статусы.")}</strong> {tx("Концепт показывает направление. Демо позволяет попробовать сценарий. Прототип проверяет часть продукта. Коммерческий запуск требует отдельного подтверждения. PHANTOM, TEDES и MERAKKI показаны на реальных снимках публичных страниц кейсов. ESSENTIA — визуальное превью. Снимки не подтверждают работу сервера или коммерческий запуск.")}</p>
     </section>
 
     <section id="approach" className="brand-section" aria-labelledby="world-approach-title">
-      <div className="brand-section-heading"><p className="brand-eyebrow">{tx('03 / ПОДХОД','03 / APPROACH')}</p><h2 id="world-approach-title">{locale === 'ru' ? <>Сначала смысл.<br />Потом — каждый пиксель.</> : <>MEANING FIRST.<br />THEN EVERY PIXEL.</>}</h2></div>
+      <div className="brand-section-heading"><p className="brand-eyebrow">{tx("03 / ПОДХОД")}</p><h2 id="world-approach-title">{locale === 'ru' ? <>Сначала смысл.<br />Потом — каждый пиксель.</> : <>MEANING FIRST.<br />THEN EVERY PIXEL.</>}</h2></div>
       <ol className="world-process">{(locale === 'ru' ? process : [['Strategy', 'Clarify the audience, problem and success criteria.'], ['Structure', 'Map user journeys and the main action on each screen.'], ['Design', 'Choose a visual language that serves the product.'], ['Development', 'Build the interface, states and data persistence.'], ['Launch', 'Check the build, dependencies and infrastructure readiness.']]).map(([name, description], index) => <li key={name}><span>0{index + 1}</span><h3>{name}</h3><p>{description}</p></li>)}</ol>
     </section>
 
     <section id="about" className="brand-section world-about" aria-labelledby="world-about-title">
-      <p className="brand-eyebrow">{tx('04 / О СТУДИИ И РЕЗУЛЬТАТАХ','04 / ABOUT AND EVIDENCE')}</p><h2 id="world-about-title">{locale === 'ru' ? <>Работу можно<br />проверить.</> : <>WORK YOU CAN<br />VERIFY.</>}</h2>
-      <div><p>{tx('OSGARD объединяет разработку цифровых продуктов, обучение и интерактивные эксперименты. Для каждого направления мы показываем доступный сценарий и его ограничения.','OSGARD brings together digital product development, learning and interactive experiments. Each direction shows its available flows and limitations.')}</p>
-        <ul><li><a href="/learning/project">{tx('Редактор учебного проекта','Learning project editor')}</a> — {tx('цель, план, локальное сохранение и перенос в JSON.','goal, plan, local saving and JSON export.')}</li><li><a href="/tedes/project/">{tx('Проектная спецификация TEDES','TEDES project specification')}</a> — {tx('подбор и сохранение конфигурации в браузере.','product selection and browser-based saving.')}</li><li><a href="/play/world/vector-zero">VECTOR//ZERO</a> — {tx('одиночный игровой клиент с инструкцией и управлением.','a single-player game client with instructions and controls.')}</li></ul>
-        <p>{tx('Откройте сценарий и попробуйте действие. Доступность конкретной функции указана на её странице.','Open a flow and try it. Each page states which features are available.')}</p><a className="brand-text-link" href="/quality">{tx('Состояние функций и сборки','Feature and build status')} <span aria-hidden="true">→</span></a>
+      <p className="brand-eyebrow">{tx("04 / О СТУДИИ И РЕЗУЛЬТАТАХ")}</p><h2 id="world-about-title">{locale === 'ru' ? <>Работу можно<br />проверить.</> : <>WORK YOU CAN<br />VERIFY.</>}</h2>
+      <div><p>{tx("OSGARD объединяет разработку цифровых продуктов, обучение и интерактивные эксперименты. Для каждого направления мы показываем доступный сценарий и его ограничения.")}</p>
+        <ul><li><a href="/learning/project">{tx("Редактор учебного проекта")}</a> — {tx("цель, план, локальное сохранение и перенос в JSON.")}</li><li><a href="/tedes/project/">{tx("Проектная спецификация TEDES")}</a> — {tx("подбор и сохранение конфигурации в браузере.")}</li><li><a href="/play/world/vector-zero">VECTOR//ZERO</a> — {tx("одиночный игровой клиент с инструкцией и управлением.")}</li></ul>
+        <p>{tx("Откройте сценарий и попробуйте действие. Доступность конкретной функции указана на её странице.")}</p><a className="brand-text-link" href="/quality">{tx("Состояние функций и сборки")} <span aria-hidden="true">→</span></a>
       </div>
     </section>
 
     <section id="contact" className="brand-section world-contact" aria-labelledby="world-contact-title">
-      <div><p className="brand-eyebrow">{tx('05 / СЛЕДУЮЩИЙ ШАГ','05 / NEXT STEP')}</p><h2 id="world-contact-title">{locale === 'ru' ? <>Начнём<br />с вашей задачи.</> : <>LET’S START<br />WITH YOUR PROJECT.</>}</h2>
-        <p>{tx('Опишите цель, аудиторию и желаемый результат. Скачайте бриф и приложите его к письму на адрес ниже. Это подготовка заявки: форма сама ничего не отправляет.','Describe your goal, audience and desired outcome. Download the brief and attach it to an email to the address below. The form prepares a request; it does not send anything.')}</p>
+      <div><p className="brand-eyebrow">{tx("05 / СЛЕДУЮЩИЙ ШАГ")}</p><h2 id="world-contact-title">{locale === 'ru' ? <>Начнём<br />с вашей задачи.</> : <>LET’S START<br />WITH YOUR PROJECT.</>}</h2>
+        <p>{tx("Опишите цель, аудиторию и желаемый результат. Скачайте бриф и приложите его к письму на адрес ниже. Это подготовка заявки: форма сама ничего не отправляет.")}</p>
         <a href="mailto:osman.osmanov0099@gmail.com" onClick={() => recordBrandEvent('contact_opened')}>osman.osmanov0099@gmail.com <span aria-hidden="true">↗</span></a>
-        <p className="world-contact-next">{tx('Первое обсуждение — задача, объём и следующий шаг. Сроки и стоимость определяются после разбора брифа.','The first discussion covers the problem, scope and next step. Timing and cost are set after reviewing the brief.')}</p>
+        <p className="world-contact-next">{tx("Первое обсуждение — задача, объём и следующий шаг. Сроки и стоимость определяются после разбора брифа.")}</p>
       </div>
       <form noValidate onSubmit={event => { event.preventDefault(); const problem = validateEnquiry(brief, contact); if (problem) { setError(problem); briefInput.current?.focus(); return } download() }}>
-        <label htmlFor="project-brief">{tx('Что хотите создать?','What would you like to build?')}</label>
-        <p id="brief-help" className="brand-field-help">{tx('Для кого продукт, какую задачу решает, что уже есть. От 20 до 5000 символов.','Who it is for, what problem it solves and what already exists. 20 to 5,000 characters.')}</p>
-        <textarea id="project-brief" name="project-brief" ref={briefInput} aria-invalid={Boolean(error)} aria-describedby="brief-help brief-feedback" required minLength={20} maxLength={5000} value={brief} onChange={event => { setBrief(event.target.value); setSaved(false); setError('') }} placeholder={tx('Например: сервис записи для небольшого клуба. Нужно показать расписание и собирать заявки…','For example: a booking tool for a small club, with schedules and enquiry capture…')} rows={5} />
-        <label htmlFor="project-contact">{tx('Как с вами связаться?','How can we contact you?')} <span>({tx('необязательно','optional')})</span></label>
-        <input id="project-contact" name="project-contact" value={contact} maxLength={250} onChange={event => { setContact(event.target.value); setSaved(false) }} autoComplete="off" aria-describedby="contact-help" placeholder={tx('Телефон, почта или удобный мессенджер','Phone, email or preferred messenger')} />
-        <p id="contact-help" className="brand-field-help">{tx('Контакт попадёт только в скачанный файл.','Your contact details are included only in the downloaded file.')}</p>
-        <button type="submit" className="brand-button primary">{tx('Скачать бриф','Download brief')} <span aria-hidden="true">↓</span></button>
-        <p id="brief-feedback" className={error ? 'brand-form-feedback is-error' : 'brand-form-feedback'} role={error ? 'alert' : 'status'}>{error || (saved ? tx('Файл подготовлен. Заявка не отправлена — приложите бриф к письму.','Your file is ready. Nothing was sent — attach the brief to your email.') : tx('Данные формы не передаются на сервер и не сохраняются автоматически.','Form data is not sent to a server or saved automatically.'))}</p>
-        {saved && <a className="brand-text-link" href="mailto:osman.osmanov0099@gmail.com?subject=Проект%20для%20OSGARD" onClick={() => recordBrandEvent('contact_opened')}>{tx('Открыть письмо и приложить файл','Open email and attach the file')} <span aria-hidden="true">↗</span></a>}
+        <label htmlFor="project-brief">{tx("Что хотите создать?")}</label>
+        <p id="brief-help" className="brand-field-help">{tx("Для кого продукт, какую задачу решает, что уже есть. От 20 до 5000 символов.")}</p>
+        <textarea id="project-brief" name="project-brief" ref={briefInput} aria-invalid={Boolean(error)} aria-describedby="brief-help brief-feedback" required minLength={20} maxLength={5000} value={brief} onChange={event => { setBrief(event.target.value); setSaved(false); setError('') }} placeholder={tx("Например: сервис записи для небольшого клуба. Нужно показать расписание и собирать заявки…")} rows={5} />
+        <label htmlFor="project-contact">{tx("Как с вами связаться?")} <span>({tx("необязательно")})</span></label>
+        <input id="project-contact" name="project-contact" value={contact} maxLength={250} onChange={event => { setContact(event.target.value); setSaved(false) }} autoComplete="off" aria-describedby="contact-help" placeholder={tx("Телефон, почта или удобный мессенджер")} />
+        <p id="contact-help" className="brand-field-help">{tx("Контакт попадёт только в скачанный файл.")}</p>
+        <button type="submit" className="brand-button primary">{tx("Скачать бриф")} <span aria-hidden="true">↓</span></button>
+        <p id="brief-feedback" className={error ? 'brand-form-feedback is-error' : 'brand-form-feedback'} role={error ? 'alert' : 'status'}>{error || (saved ? tx("Файл подготовлен. Заявка не отправлена — приложите бриф к письму.") : tx("Данные формы не передаются на сервер и не сохраняются автоматически."))}</p>
+        {saved && <a className="brand-text-link" href="mailto:osman.osmanov0099@gmail.com?subject=Проект%20для%20OSGARD" onClick={() => recordBrandEvent('contact_opened')}>{tx("Открыть письмо и приложить файл")} <span aria-hidden="true">↗</span></a>}
       </form>
     </section>
   </main>
