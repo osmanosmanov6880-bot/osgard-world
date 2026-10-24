@@ -27,6 +27,15 @@ var service_lights: Array[SpotLight3D] = []
 var status_beacons: Array[OmniLight3D] = []
 var surface_reflections: ReflectionProbe
 var manual_inspections: int = 0
+# A small playable maintenance sequence, entirely inside this simulated scene.
+const MISSION_GOALS = ["OPEN SERVICE HATCH", "PAUSE THE DRIVE", "CLOSE SERVICE HATCH", "RESUME THE DRIVE"]
+var mission_active: bool = false
+var mission_completed: bool = false
+var mission_step: int = 0
+var mission_elapsed: float = 0.0
+var mission_best_seconds: float = -1.0
+var mission_attempts: int = 0
+var mission_feedback: String = "PRESS START MISSION"
 var scene_label: Label3D
 
 func configure(cam: Camera3D, environment: Environment) -> void:
@@ -196,12 +205,51 @@ func set_quality(index: int) -> void:
         surface_reflections.visible = quality==2
     # The Main quality pipeline retains ownership of SSR/SSAO and dynamic resolution.
 
+func start_mission() -> void:
+    mission_active = true
+    mission_completed = false
+    mission_step = 0
+    mission_elapsed = 0.0
+    mission_attempts += 1
+    mission_feedback = "TASK 1 / 4  -  OPEN THE HATCH"
+    # A repeatable start state makes the objective deterministic.
+    lid_target = 0.0
+    motion_enabled = true
+
+func mission_goal() -> String:
+    if mission_completed:
+        return "MISSION COMPLETE - SERVICE CYCLE RESTORED"
+    if not mission_active:
+        return "PRESS START MISSION TO INSPECT"
+    return "TASK %d/4 - %s" % [mission_step + 1, MISSION_GOALS[mission_step]]
+
+func _mission_event(action: String) -> void:
+    if not mission_active or mission_completed:
+        return
+    var expected: String = ["open", "pause", "close", "resume"][mission_step]
+    if action != expected:
+        mission_feedback = "FOLLOW THE CURRENT OBJECTIVE"
+        return
+    mission_step += 1
+    if mission_step >= MISSION_GOALS.size():
+        mission_active = false
+        mission_completed = true
+        if mission_best_seconds < 0.0 or mission_elapsed < mission_best_seconds:
+            mission_best_seconds = mission_elapsed
+        mission_feedback = "INSPECTION CLEARED - DRIVE RESTORED"
+    else:
+        mission_feedback = "CHECKPOINT %d/4 CLEARED" % mission_step
+
 func set_motion(active: bool) -> void:
+    if motion_enabled == active:
+        return
     motion_enabled = active
+    _mission_event("resume" if active else "pause")
 
 func toggle_access_lid() -> void:
     lid_target = 1.0-lid_target
     manual_inspections += 1
+    _mission_event("open" if lid_target > 0.5 else "close")
 
 static func smooth_unit(t: float) -> float:
     var x: float = clampf(t,0.0,1.0)
@@ -227,6 +275,8 @@ func _physics_process(delta: float) -> void:
     var step: float = clampf(delta,0.0,.05)
     if motion_enabled:
         elapsed += step
+    if mission_active:
+        mission_elapsed += step
     var state: Dictionary = motion_cycle(elapsed)
     if boom != null:
         boom.position.x = -4.55 + 9.12*float(state["travel"])
@@ -250,4 +300,8 @@ func summary() -> Dictionary:
         "physical_telemetry_connected":false,"quality":quality,"loaded":loaded_path,
         "loading_failures":load_failures,"load_count":load_count,
         "motion_enabled":motion_enabled,"phase_seconds":fposmod(elapsed,16.0),
-        "inspect_count":manual_inspections,"fan_count":fan_rotors.size()}
+        "inspect_count":manual_inspections,"fan_count":fan_rotors.size(),
+        "mission_active":mission_active,"mission_completed":mission_completed,
+        "mission_step":mission_step,"mission_goal":mission_goal(),
+        "mission_elapsed":mission_elapsed,"mission_best_seconds":mission_best_seconds,
+        "mission_attempts":mission_attempts,"mission_feedback":mission_feedback}
