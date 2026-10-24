@@ -538,48 +538,58 @@ func _make_hud() -> void:
     add_child(ui)
     hud_canvas = ui
     var surface := Control.new()
+    surface.name = "R21_ApprovedAuroraOverlay"
     surface.set_anchors_preset(Control.PRESET_FULL_RECT)
     surface.mouse_filter = Control.MOUSE_FILTER_IGNORE
     ui.add_child(surface)
+    r21_ui_font = SystemFont.new()
+    r21_ui_font.font_names = PackedStringArray([
+        "Inter", "Manrope", "Segoe UI", "Noto Sans", "Roboto", "Arial"])
     var block := PanelContainer.new()
+    block.name = "R21_GlassMissionBrief"
     block.set_anchors_preset(Control.PRESET_TOP_LEFT)
-    block.offset_left = 22
-    block.offset_top = 22
-    block.offset_right = 510
-    block.offset_bottom = 157
+    block.offset_left = 20.0
+    block.offset_top = 22.0
+    block.offset_right = 540.0
+    block.offset_bottom = 150.0
     var frame := StyleBoxFlat.new()
-    frame.bg_color = Color(0.018,0.028,0.043,0.78)
-    frame.border_color = Color(0.67,0.77,0.92,0.38)
+    frame.bg_color = Color(0.013,0.027,0.040,0.87)
+    frame.border_color = Color(0.29,0.54,0.62,0.72)
     frame.set_border_width_all(1)
-    frame.set_corner_radius_all(12)
-    frame.content_margin_left = 17
-    frame.content_margin_right = 17
-    frame.content_margin_top = 14
-    frame.content_margin_bottom = 12
+    frame.set_corner_radius_all(10)
+    frame.content_margin_left = 18
+    frame.content_margin_right = 18
+    frame.content_margin_top = 15
+    frame.content_margin_bottom = 14
     block.add_theme_stylebox_override("panel",frame)
     surface.add_child(block)
     hud_panel = block
     var stack := VBoxContainer.new()
-    stack.add_theme_constant_override("separation",9)
+    stack.add_theme_constant_override("separation",10)
     block.add_child(stack)
     hud_mission = Label.new()
+    hud_mission.add_theme_font_override("font",r21_ui_font)
     hud_mission.add_theme_font_size_override("font_size",23)
-    hud_mission.add_theme_color_override("font_color",Color(0.99,0.81,0.50))
+    hud_mission.add_theme_color_override("font_color",Color(0.99,0.75,0.39))
+    hud_mission.clip_text = true
     stack.add_child(hud_mission)
     hud_status = Label.new()
+    hud_status.add_theme_font_override("font",r21_ui_font)
     hud_status.add_theme_font_size_override("font_size",15)
-    hud_status.add_theme_color_override("font_color",Color(0.86,0.95,1.0))
+    hud_status.add_theme_color_override("font_color",Color(0.78,0.86,0.89))
+    hud_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
     stack.add_child(hud_status)
     hud_controls = Label.new()
-    hud_controls.text = "WASD полёт · Space огонь · R ракета · H ангар · F3 графика · F6 FPS · F7 тест"
-    hud_controls.add_theme_font_size_override("font_size",13)
-    hud_controls.add_theme_color_override("font_color",Color(0.81,0.91,1.0))
-    hud_controls.anchor_top=1.0
-    hud_controls.anchor_bottom=1.0
-    hud_controls.offset_left=28.0
-    hud_controls.offset_top=-49.0
-    hud_controls.offset_right=1150.0
-    hud_controls.offset_bottom=-17.0
+    hud_controls.text = "WASD — ПОЛЁТ     Q/E — ВЫСОТА     Shift — ФОРСАЖ     Space — ОГОНЬ     R — РАКЕТА     H — АНГАР     F3 — ГРАФИКА"
+    hud_controls.add_theme_font_override("font",r21_ui_font)
+    hud_controls.add_theme_font_size_override("font_size",12)
+    hud_controls.add_theme_color_override("font_color",Color(0.71,0.80,0.83))
+    hud_controls.anchor_top = 1.0
+    hud_controls.anchor_bottom = 1.0
+    hud_controls.offset_left = 24.0
+    hud_controls.offset_top = -45.0
+    hud_controls.offset_right = 1060.0
+    hud_controls.offset_bottom = -16.0
     surface.add_child(hud_controls)
     radar = RadarScript.new()
     radar.name = "WaypointRadar"
@@ -587,41 +597,57 @@ func _make_hud() -> void:
     radar.anchor_bottom = 1.0
     radar.offset_left = 16.0
     radar.offset_right = 236.0
-    radar.offset_top = -282.0
-    radar.offset_bottom = -62.0
+    radar.offset_top = -277.0
+    radar.offset_bottom = -57.0
     surface.add_child(radar)
     hud_flight = Label.new()
-    hud_flight.text = "REMIX ARENA   /   NEBULA ASCENSION"
-    hud_flight.add_theme_font_size_override("font_size",17)
-    hud_flight.add_theme_color_override("font_color",Color(0.82,0.90,1.0))
-    hud_flight.anchor_left=1.0
-    hud_flight.anchor_right=1.0
-    hud_flight.offset_left=-458.0
-    hud_flight.offset_right=-23.0
-    hud_flight.offset_top=27.0
-    hud_flight.offset_bottom=57.0
+    hud_flight.text = "REMIX ARENA  /  NEBULA ASCENSION"
+    hud_flight.add_theme_font_override("font",r21_ui_font)
+    hud_flight.add_theme_font_size_override("font_size",14)
+    hud_flight.add_theme_color_override("font_color",Color(0.54,0.82,0.90))
+    hud_flight.anchor_left = 1.0
+    hud_flight.anchor_right = 1.0
+    hud_flight.offset_left = -380.0
+    hud_flight.offset_right = -20.0
+    hud_flight.offset_top = 25.0
+    hud_flight.offset_bottom = 55.0
     hud_flight.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
     surface.add_child(hud_flight)
+    var objective_panel := PanelContainer.new()
+    objective_panel.name = "R21_GlassObjective"
+    objective_panel.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+    objective_panel.offset_left = -360.0
+    objective_panel.offset_right = -20.0
+    objective_panel.offset_top = 67.0
+    objective_panel.offset_bottom = 119.0
+    var objective_style := StyleBoxFlat.new()
+    objective_style.bg_color = Color(0.016,0.031,0.044,0.87)
+    objective_style.border_color = Color(0.66,0.44,0.23,0.77)
+    objective_style.set_border_width_all(1)
+    objective_style.set_corner_radius_all(8)
+    objective_style.content_margin_left = 13
+    objective_style.content_margin_right = 13
+    objective_style.content_margin_top = 8
+    objective_style.content_margin_bottom = 8
+    objective_panel.add_theme_stylebox_override("panel", objective_style)
+    surface.add_child(objective_panel)
+    r21_objective_panel = objective_panel
     hud_objective = Label.new()
-    hud_objective.add_theme_font_size_override("font_size",19)
-    hud_objective.add_theme_color_override("font_color",Color(0.99,0.82,0.49))
-    hud_objective.anchor_left=1.0
-    hud_objective.anchor_right=1.0
-    hud_objective.offset_left=-450.0
-    hud_objective.offset_right=-24.0
-    hud_objective.offset_top=66.0
-    hud_objective.offset_bottom=101.0
+    hud_objective.add_theme_font_override("font",r21_ui_font)
+    hud_objective.add_theme_font_size_override("font_size",16)
+    hud_objective.add_theme_color_override("font_color",Color(1.0,0.73,0.33))
     hud_objective.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-    surface.add_child(hud_objective)
+    objective_panel.add_child(hud_objective)
     hud_notice = Label.new()
-    hud_notice.add_theme_font_size_override("font_size",30)
-    hud_notice.add_theme_color_override("font_color",Color(1.0,0.83,0.47))
+    hud_notice.add_theme_font_override("font",r21_ui_font)
+    hud_notice.add_theme_font_size_override("font_size",20)
+    hud_notice.add_theme_color_override("font_color",Color(1.0,0.77,0.43))
     hud_notice.set_anchors_preset(Control.PRESET_CENTER_TOP)
-    hud_notice.offset_left=-250.0
-    hud_notice.offset_top=160.0
-    hud_notice.offset_right=250.0
-    hud_notice.offset_bottom=210.0
-    hud_notice.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
+    hud_notice.offset_left = -240.0
+    hud_notice.offset_top = 146.0
+    hud_notice.offset_right = 240.0
+    hud_notice.offset_bottom = 180.0
+    hud_notice.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
     surface.add_child(hud_notice)
 
 func _process(delta: float) -> void:
@@ -878,52 +904,62 @@ func _show_notice(message: String) -> void:
     notice_timer=3.3
 
 func _update_hud() -> void:
-    if not is_instance_valid(hud_status):return
-    if mission_index>=MISSIONS.size():
-        hud_objective.text = "ИССЛЕДОВАНИЕ ШЕСТИ РАЙОНОВ"
-        hud_mission.text="НЕБУЛА · СВОБОДНЫЙ МИР"
-        hud_status.text="Сюжет завершён. Исследуй шесть районов.\nКредиты: %d   XP: %d   Щит: %d%%   Корпус: %d%%" % [credits,xp,roundi(ship.shield),roundi(ship.hull)]
+    if not is_instance_valid(hud_status):
+        return
+    var resource_line: String = "КРЕДИТЫ  %d     XP  %d     ЩИТ  %d%%     КОРПУС  %d%%" % [
+        credits, xp, roundi(ship.shield), roundi(ship.hull)]
+    if mission_index >= MISSIONS.size():
+        hud_mission.text = "НЕБУЛА  /  СВОБОДНЫЙ ПОЛЁТ"
+        hud_objective.text = "МИССИИ ВЫПОЛНЕНЫ"
+        hud_status.text = "Исследуй шесть районов космического города.\n" + resource_line
     else:
-        var m: Dictionary=MISSIONS[mission_index]
-        var d: int=roundi(ship.global_position.distance_to(m["position"]))
-        hud_mission.text="%02d · %s" % [mission_index+1,m["title"]]
-        hud_objective.text="ЦЕЛЬ МИССИИ · %d М" % d
-        hud_status.text="%s · %d м\nКредиты: %d   XP: %d   Щит: %d%%   Корпус: %d%%   Форсаж: %d%%" % [m["hint"],d,credits,xp,roundi(ship.shield),roundi(ship.hull),roundi(ship.boost)]
+        var m: Dictionary = MISSIONS[mission_index]
+        var d: int = roundi(ship.global_position.distance_to(m["position"]))
+        hud_mission.text = "%02d  ·  %s" % [mission_index + 1, m["title"]]
+        hud_objective.text = "◇  ЦЕЛЬ МИССИИ  /  %d М" % d
+        hud_status.text = "%s  ·  %d м\n%s" % [m["hint"], d, resource_line]
 
 func _fit_hud() -> void:
-    var width: float = get_viewport().get_visible_rect().size.x
-    if width < 820.0:
-        if is_instance_valid(hud_panel):
-            hud_panel.offset_left=8.0
-            hud_panel.offset_top=7.0
-            hud_panel.offset_right=minf(460.0,width-8.0)
-            hud_panel.offset_bottom=125.0
-        if is_instance_valid(hud_mission):hud_mission.add_theme_font_size_override("font_size",19)
-        if is_instance_valid(hud_status):hud_status.add_theme_font_size_override("font_size",12)
-        if is_instance_valid(radar):
-            radar.scale=Vector2(0.77,0.77)
-            radar.offset_top=-228.0
+    if not is_instance_valid(hud_panel):
+        return
+    var rect: Vector2 = get_viewport().get_visible_rect().size
+    var width: float = rect.x
+    var height: float = rect.y
+    var compact: bool = width < 940.0 or height < 590.0 or r21_mobile_enabled
+    if compact:
+        hud_panel.offset_left = 8.0
+        hud_panel.offset_top = 8.0
+        hud_panel.offset_right = minf(465.0, width - 8.0)
+        hud_panel.offset_bottom = 124.0
+        hud_mission.add_theme_font_size_override("font_size",19)
+        hud_status.add_theme_font_size_override("font_size",12)
+        hud_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
         hud_controls.visible = false
-        if is_instance_valid(hud_flight):hud_flight.visible = false
-        if is_instance_valid(hud_objective):
-            hud_objective.offset_left=-230.0
-            hud_objective.add_theme_font_size_override("font_size",13)
+        radar.visible = not r21_mobile_enabled and height > 510.0
+        if radar.visible:
+            radar.scale = Vector2(0.67,0.67)
+            radar.offset_top = -209.0
+        hud_flight.visible = false
+        r21_objective_panel.visible = false
+        hud_notice.offset_top = 129.0
     else:
-        if is_instance_valid(hud_panel):
-            hud_panel.offset_left=22.0
-            hud_panel.offset_top=22.0
-            hud_panel.offset_right=560.0
-            hud_panel.offset_bottom=168.0
-        if is_instance_valid(hud_mission):hud_mission.add_theme_font_size_override("font_size",26)
-        if is_instance_valid(hud_status):hud_status.add_theme_font_size_override("font_size",15)
-        if is_instance_valid(radar):
-            radar.scale=Vector2.ONE
-            radar.offset_top=-282.0
+        hud_panel.offset_left = 22.0
+        hud_panel.offset_top = 25.0
+        hud_panel.offset_right = 540.0
+        hud_panel.offset_bottom = 152.0
+        hud_mission.add_theme_font_size_override("font_size",23)
+        hud_status.add_theme_font_size_override("font_size",15)
         hud_controls.visible = true
-        if is_instance_valid(hud_flight):hud_flight.visible = true
-        if is_instance_valid(hud_objective):
-            hud_objective.offset_left=-450.0
-            hud_objective.add_theme_font_size_override("font_size",19)
+        radar.visible = true
+        radar.scale = Vector2.ONE
+        radar.offset_top = -277.0
+        hud_flight.visible = true
+        r21_objective_panel.visible = true
+        hud_notice.offset_top = 146.0
+    if is_instance_valid(r21_dashboard):
+        r21_dashboard._fit_viewport()
+    if is_instance_valid(r21_touch):
+        r21_touch._resize()
 
 func _unhandled_key_input(event: InputEvent) -> void:
     if event is InputEventKey and event.pressed and not event.echo:
