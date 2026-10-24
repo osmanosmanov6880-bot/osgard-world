@@ -76,7 +76,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for test in v28_touch_controls v29_responsive_layout v35_portrait_viewport v36_mobile_car_entry v35_touch_commands; do
+          for test in v28_touch_controls v29_responsive_layout v35_portrait_viewport v36_mobile_car_entry v37_touch_commands; do
             timeout --signal=TERM --kill-after=5s 40s godot --headless --path godot/empire-omega --script "res://tests/$test.gd"
           done
   browser-spec-preflight:
