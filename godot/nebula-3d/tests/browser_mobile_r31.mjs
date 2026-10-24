@@ -244,6 +244,16 @@ try {
     // on Chromium its top was 34 px while the live canvas top became 0,
     // making a nominal y=92.5 mode-button tap land at y=126.5 instead.
     const uiPoint = async (x,y,id) => {
+      // Godot can publish safe-area telemetry before Chromium has finished
+      // its CSS viewport reflow (observed +34 CSS-pixel miss after rotation).
+      // Require the *live* canvas and viewport to agree before any QA tap.
+      await page.waitForFunction(() => {
+        const c = document.querySelector('#canvas');
+        const r = c?.getBoundingClientRect();
+        return !!r && Math.abs(r.left) <= 1.5 && Math.abs(r.top) <= 1.5 &&
+          Math.abs(r.width - window.innerWidth) <= 2 &&
+          Math.abs(r.height - window.innerHeight) <= 2;
+      }, null, {timeout:30000, polling:250});
       const css = await page.evaluate(() => {
         const r = document.querySelector('#canvas')?.getBoundingClientRect();
         return r ? { x:r.x,y:r.y,width:r.width,height:r.height } : null;
