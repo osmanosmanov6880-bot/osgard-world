@@ -84,6 +84,7 @@ try {
   const ready = await expectTelemetry(
     'mobile Godot game, QA diagnostics and real touch controls initialized',
     s => s?.ready && s?.touch_enabled === true &&
+      s.touch_dom_bridge === true &&
       s.touch_view_w > 200 && s.touch_view_h > 200 &&
       s.touch_thrust_x > 0 && s.touch_boost_x > 0,
     100000
@@ -139,7 +140,8 @@ try {
         JSON.stringify(dom));
     }
     await expectTelemetry('real browser touch activates throttle',
-      s => s?.touch_count >= 1 && s.touch_throttle >= 0.9, 25000);
+      s => s?.touch_count >= 1 && s.touch_throttle >= 0.9 &&
+        s.touch_dom_events >= 1 && s.touch_dom_sequence >= 1, 40000);
     const moved = await expectTelemetry('mobile throttle moves actual ship',
       s => s?.flight_distance > ready.flight_distance + 3.0 &&
         s.speed_mps > 1.0, 45000);
@@ -150,7 +152,7 @@ try {
     await send('touchStart', [thrust, boost]);
     await expectTelemetry('real two-finger throttle and boost',
       s => s?.touch_count >= 2 && s.touch_boost === true &&
-        s.touch_throttle >= 0.9, 25000);
+        s.touch_throttle >= 0.9 && s.touch_dom_events >= 2, 35000);
     await expectTelemetry('two-finger flight advances world physics',
       s => s?.flight_distance > moved.flight_distance + 2.0, 40000);
     await send('touchEnd', []);
