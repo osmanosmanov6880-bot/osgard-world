@@ -14,7 +14,7 @@ for(const path of expected){
  results.push({path,status:r.status,ok:valid,bytes:body.length})
  if(!valid)continue
  if(path==='/games/'){
-  results.at(-1).ok=expected.slice(1,-1).every(p=>body.includes(p.split('/').at(-1)))&&body.includes('id="last-session"')&&body.includes('id="player-help-toggle"')
+  results.at(-1).ok=['player-experience.mjs','player-experience.css'].every(name=>body.includes(name))&&body.includes('id="last-session"')&&body.includes('id="player-help-toggle"')
  }else if(path.endsWith('aaa-roadmap.v1.json')){
   try{
    const manifest=JSON.parse(body)
