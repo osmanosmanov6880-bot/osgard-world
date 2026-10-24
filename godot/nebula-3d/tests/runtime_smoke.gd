@@ -112,6 +112,9 @@ func _run() -> void:
         world.r23_cruise_button.text.begins_with("▶"),
         "R23 no visible start-flight button for desktop keyboard failures"):return
     world.r23_cruise_button.pressed.emit()
+    if not check(world.ship.navigation_target_valid and
+        world.ship.navigation_target == world.MISSIONS[0]["position"],
+        "R24 start-flight must navigate toward actual mission beacon"):return
     if not check(world.ship.cruise_assist and
         world.r23_launch_button_events == 1,
         "R23 start-flight UI button not wired to real physics"):return
@@ -119,6 +122,9 @@ func _run() -> void:
     for frame in 28:
         await physics_frame
     var cruise_meters: float = world.ship.global_position.distance_to(before_cruise)
+    if not check(world.ship.navigation_steer_frames > 0 and
+        absf(world.ship.last_pilot_yaw) > 0.01,
+        "R24 launch button must actively steer ship toward off-axis beacon"):return
     if not check(cruise_meters > 2.0 and
         world.ship.cruise_distance > 2.0,
         "R23 clicked START FLIGHT but the ship stayed at 000 km/h"):return

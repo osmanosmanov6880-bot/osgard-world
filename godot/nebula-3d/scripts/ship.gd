@@ -59,6 +59,22 @@ var last_pilot_yaw: float = 0.0
 var keyboard_samples: int = 0
 var browser_input_samples: int = 0
 var cruise_distance: float = 0.0
+# R24 assisted navigation is enabled *only* by the explicit START FLIGHT
+# button. Manual W/A/D input always takes priority; no forced autopilot.
+var navigation_target: Vector3 = Vector3.ZERO
+var navigation_target_valid: bool = false
+var navigation_steer_frames: int = 0
+var navigation_distance_before: float = 0.0
+var navigation_stall_time: float = 0.0
+var navigation_last_gap: float = 0.0
+
+func set_navigation_target(target: Vector3) -> void:
+    navigation_target = target
+    navigation_target_valid = true
+    navigation_last_gap = global_position.distance_to(target)
+
+func clear_navigation_target() -> void:
+    navigation_target_valid = false
 
 func _ready() -> void:
     motion_mode = CharacterBody3D.MOTION_MODE_FLOATING
@@ -141,6 +157,24 @@ func _pilot_axes() -> Vector4:
         cruise_assist = false
     elif cruise_assist and throttle < 0.05:
         throttle = 1.0
+    # The initial mission beacon is diagonally ahead of the craft, not dead
+    # centre. A "Start flight" button which only applies forward thrust can
+    # leave the pilot flying past it. Steer smoothly toward the actual beacon.
+    if cruise_assist and navigation_target_valid and absf(yaw) < 0.05:
+        var to_goal: Vector3 = navigation_target - global_position
+        var horizontal: Vector3 = Vector3(to_goal.x, 0.0, to_goal.z)
+        if horizontal.length_squared() > 225.0:
+            var direction: Vector3 = horizontal.normalized()
+            var forward: Vector3 = -global_basis.z
+            var right: Vector3 = global_basis.x
+            forward.y = 0.0
+            right.y = 0.0
+            var signed_error: float = atan2(direction.dot(right.normalized()),
+                direction.dot(forward.normalized()))
+            yaw = clampf(signed_error * 2.0, -1.0, 1.0)
+            navigation_steer_frames += 1
+        if horizontal.length_squared() < 22500.0 and absf(to_goal.y) > 9.0:
+            altitude = clampf(to_goal.y * 0.035, -1.0, 1.0)
     last_pilot_throttle = throttle
     last_pilot_yaw = yaw
     return Vector4(yaw, pitch, throttle, altitude)
@@ -198,6 +232,14 @@ func _physics_process(delta: float) -> void:
     if cruise_assist:
         cruise_distance += frame_distance
     was_flying = throttle > 0.05 or velocity.length_squared() > 20.0
+    # Diagnostics are used by long-flight regression, not claimed FPS values.
+    if cruise_assist and navigation_target_valid:
+        var gap: float = global_position.distance_to(navigation_target)
+        if gap >= navigation_last_gap - 0.04:
+            navigation_stall_time += delta
+        else:
+            navigation_stall_time = maxf(0.0, navigation_stall_time - delta * 2.0)
+        navigation_last_gap = gap
     # Damage scales with the closing component of the impact, rather than
     # arbitrary frame count; a scrape is gentler than a head-on collision.
     var largest_impact: float = 0.0
