@@ -47,11 +47,15 @@ jobs:
             "$RUNNER_TEMP/r135-w6-evidence/r135-optimized-release/R135_OPTIMIZED_MANIFEST.json" \
             "$RUNNER_TEMP/r135-w6-staged"
 
+      - name: Set up isolated Python for pixel-accurate image QA
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
       - name: Validate real portrait screenshot composition and fault caption
         shell: bash
         run: |
           set -euo pipefail
-          python3 -m pip install --user --disable-pip-version-check "Pillow==11.3.0"
+          python3 -m pip install --disable-pip-version-check "Pillow==11.3.0"
           python3 scripts/r135-pixel-composition-qa.py \
             "$RUNNER_TEMP/r135-w6-evidence/r135-screens/w6-portrait-optical-active.png" \
             | tee "$RUNNER_TEMP/r135-w6-pixel-qa.json"
