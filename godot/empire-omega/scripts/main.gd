@@ -6,6 +6,7 @@ const WORLD_SCENE = preload("res://scripts/world_builder.gd")
 const PLAYER_SCENE = preload("res://scripts/player_controller.gd")
 const CAR_SCENE = preload("res://scripts/vehicle_controller.gd")
 const HUD_SCENE = preload("res://scripts/hud.gd")
+const TOUCH_CONTROLS_SCENE = preload("res://scripts/horizon_touch_controls.gd")
 const PEDESTRIAN_SCENE = preload("res://scripts/pedestrian_agent.gd")
 const TRAFFIC_SCENE = preload("res://scripts/traffic_agent.gd")
 const ROUTER = preload("res://scripts/street_router.gd")
@@ -34,6 +35,7 @@ var player
 var car
 var camera: Camera3D
 var hud
+var touch_controls
 var cam_yaw := 0.32
 var cam_pitch := 0.38
 var mouse_sensitivity := 0.003
@@ -101,6 +103,8 @@ func _ready() -> void:
 	previous_vehicle_health = car.health
 	hud = HUD_SCENE.new()
 	add_child(hud)
+	touch_controls = TOUCH_CONTROLS_SCENE.new()
+	add_child(touch_controls)
 	world.update_language(GameState.locale)
 	_apply_weather()
 	hud.strategy_changed.connect(_on_strategy_changed)
@@ -118,7 +122,7 @@ func _ready() -> void:
 	_sync_trial_marker()
 	if GameState.last_load_source == "backup" or GameState.last_load_source == "staged":
 		hud.announce(hud.t("save_recovered"))
-	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE if DisplayServer.is_touchscreen_available() else Input.MOUSE_MODE_CAPTURED)
 
 func _on_drift_reward_earned(credits: int, score: int) -> void:
 	# Authority uses GameState's existing reward ledger, with a per-chain cap.
@@ -284,8 +288,11 @@ func _stopped_traffic_count() -> int:
 
 func _physics_process(delta: float) -> void:
 	if player == null or car == null or camera == null: return
+	if touch_controls != null and hud != null:
+		var blocked: bool = hud.is_pause_open() or hud.is_strategy_open() or hud.is_citizen_open() or hud.is_city_case_open() or interiors.is_inside()
+		touch_controls.set_mode(driving,blocked)
 	var focus: Vector3 = car.global_position+Vector3(0,2.0,0) if driving else player.global_position+Vector3(0,2.3,0)
-	if driving and Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED:
+	if driving and (Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED or DisplayServer.is_touchscreen_available()):
 		cam_yaw = lerp_angle(cam_yaw,car.rotation.y,clampf(delta*0.35,0.0,1.0))
 	var pads: Array[int] = Input.get_connected_joypads()
 	if not pads.is_empty() and Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED:
