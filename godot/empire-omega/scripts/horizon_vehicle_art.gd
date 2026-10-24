@@ -61,7 +61,7 @@ func _glass_quad(id: String, a: Vector3, b: Vector3, c: Vector3, d: Vector3) -> 
 	var visual := MeshInstance3D.new()
 	visual.name = id
 	visual.mesh = surface.commit()
-	var glass := _mat(Color("39687a"),0.42,0.12)
+	var glass := _mat(Color("39687a"),0.42,0.19)
 	glass.cull_mode = BaseMaterial3D.CULL_DISABLED
 	visual.material_override = glass
 	add_child(visual)
@@ -104,7 +104,7 @@ func _create_body() -> void:
 	body_parts.append(sports_shell)
 	body_rest.append(sports_shell.transform)
 	painted_parts.append(sports_shell)
-	var tinted_finish := _mat(Color("203440"),0.31,0.13)
+	var tinted_finish := _mat(Color("203440"),0.31,0.20)
 	tinted_finish.cull_mode = BaseMaterial3D.CULL_DISABLED
 	var upper_shell: MeshInstance3D = SCULPT.sculpt("AerodynamicGreenhouse",SCULPT.CANOPY_PROFILE,tinted_finish)
 	add_child(upper_shell)
@@ -184,7 +184,12 @@ func set_paint(color: Color) -> void:
 		var mat: StandardMaterial3D = (piece.material_override as StandardMaterial3D).duplicate() as StandardMaterial3D
 		mat.albedo_color = color
 		mat.metallic = 0.62
-		mat.roughness = 0.22
+		mat.roughness = 0.26
+		# R18: physical two-layer clearcoat catches highlights while the
+		# pigmented metallic base stays less mirror-like on narrow WebGL.
+		mat.clearcoat_enabled = true
+		mat.clearcoat = 0.68
+		mat.clearcoat_roughness = 0.12
 		piece.material_override = mat
 
 func roll_wheels(metres: float, steering: float) -> void:

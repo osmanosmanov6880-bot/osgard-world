@@ -28,6 +28,7 @@ var weather_mode := "clear"
 var visual_budget := "standard"
 var rng := RandomNumberGenerator.new()
 var ambience_time := 10.0
+var daylight_brightness := 1.0
 var sun: DirectionalLight3D
 var sky_environment: WorldEnvironment
 var city_root: Node3D
@@ -40,6 +41,7 @@ var last_window_mode := -1
 var waypoint_marker: Node3D
 var horizon_scenic: Node3D
 const ROAD_MATERIALS = preload("res://scripts/horizon_road_materials.gd")
+const LIGHT_GRADE = preload("res://scripts/horizon_light_grade.gd")
 var asphalt_pbr: StandardMaterial3D
 var concrete_pbr: StandardMaterial3D
 
@@ -131,6 +133,7 @@ func _create_environment() -> void:
 	sun.shadow_enabled = true
 	sun.rotation_degrees = Vector3(-52,-35,0)
 	add_child(sun)
+	_apply_lighting()
 
 func _create_terrain() -> void:
 	_box(city_root,"Foundation",Vector3(460,1,460),Vector3(0,-0.6,0),Color("142b29"),true)
@@ -419,6 +422,7 @@ func apply_visual_budget(mode: String) -> void:
 		weather_particles.amount_ratio = 0.25 if visual_budget == "low" else (0.65 if visual_budget == "standard" else 1.0)
 	if horizon_scenic != null:
 		horizon_scenic.visible = visual_budget != "low"
+	_apply_lighting()
 
 func update_weather(kind: String) -> void:
 	if not GameState.CITY_WEATHER.LABELS.has(kind):
@@ -430,13 +434,18 @@ func update_weather(kind: String) -> void:
 		ROAD_MATERIALS.apply_weather(concrete_pbr,kind)
 	if weather_particles != null:
 		weather_particles.emitting = kind == "rain" or kind == "storm"
-	if sky_environment == null:
+	_apply_lighting()
+
+func _apply_lighting() -> void:
+	if sky_environment == null or sky_environment.environment == null or sun == null:
 		return
 	var sky: Sky = sky_environment.environment.sky
-	var material: ProceduralSkyMaterial = sky.sky_material as ProceduralSkyMaterial
-	if material != null:
-		material.sky_top_color = Color("30445c") if kind == "storm" else (Color("577995") if kind == "rain" or kind == "cloudy" else Color("638db2"))
-		material.sky_horizon_color = Color("83909d") if kind == "storm" else Color("e0b18f")
+	if sky == null:
+		return
+	var atmosphere: ProceduralSkyMaterial = sky.sky_material as ProceduralSkyMaterial
+	if atmosphere == null:
+		return
+	LIGHT_GRADE.apply_to(sky_environment.environment,sun,atmosphere,weather_mode,visual_budget,daylight_brightness)
 
 func _create_trees() -> void:
 	for i in range(85):
@@ -554,8 +563,6 @@ func objective_position() -> Vector3:
 func update_daynight(day_clock: float) -> void:
 	var phase := (day_clock - 7.0) / 24.0 * TAU
 	sun.rotation_degrees.x = -55.0 + 70.0 * sin(phase)
-	var brightness: float = clampf(0.70 + 0.55 * maxf(0.0,cos(phase)),0.70,1.25)
-	sun.light_energy = brightness * 1.02 * (0.65 if weather_mode == "storm" else (0.85 if weather_mode == "rain" or weather_mode == "cloudy" else 1.0))
-	if sky_environment != null:
-		sky_environment.environment.ambient_light_energy = 0.60 + brightness * 0.38
+	daylight_brightness = clampf(0.70 + 0.55 * maxf(0.0,cos(phase)),0.70,1.25)
+	_apply_lighting()
 	_update_windows(day_clock,int(GameState.data["energy"]))
