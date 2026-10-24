@@ -810,7 +810,7 @@ func _on_drone_fire(from: Vector3, to: Vector3) -> void:
     if from.distance_to(ship.global_position)<250.0 and ship.global_position.distance_to(to)<7.0:
         # The approved first-flight mission must be playable before pirates
         # drain the starting shield while the player learns the controls.
-        if r21_launch_protection <= 0.0 or mission_index > 0:
+        if mission_index > 0 and r21_launch_protection <= 0.0:
             ship.take_damage(8.0)
 
 func _spawn_pirate_ambush() -> void:
