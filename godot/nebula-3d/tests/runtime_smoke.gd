@@ -27,6 +27,65 @@ func _run() -> void:
     await process_frame
     if not check(is_instance_valid(world.ship), "PlayerShip missing"):return
     if not check(world.ship is CharacterBody3D, "Ship is not a physics body"):return
+    # R21 approved Aurora: the ship starts in a physically clear corridor,
+    # does respond to throttle, and the chase camera cannot remain behind
+    # opaque collision geometry.
+    if not check(world.ship.motion_mode == CharacterBody3D.MOTION_MODE_FLOATING and
+        world.ship.FORWARD_ACCEL >= 65.0 and
+        world.ship.NORMAL_SPEED >= 90.0 and
+        world.ship.AFTERBURNER_SPEED >= 140.0,
+        "R21 inertial spaceship movement was not installed"):return
+    if not check(world.r21_ui_font is SystemFont and
+        world.r21_objective_panel != null and
+        world.get_node_or_null("PlayerShip/AnimatedShip/HighDetailInterceptorR5") != null,
+        "R21 approved premium fonts, objective and real NX08 ship absent"):return
+    if not check(world.r21_dashboard != null and
+        world.r21_dashboard.cached_font is SystemFont and
+        world.r21_touch != null and
+        world.r21_touch.button_centres.size() == 8,
+        "R21 mobile multi-touch and premium flight dashboard missing"):return
+    var collider_probe := SphereShape3D.new()
+    collider_probe.radius = 1.8
+    var collision_query := PhysicsShapeQueryParameters3D.new()
+    collision_query.shape = collider_probe
+    collision_query.exclude = [world.ship.get_rid()]
+    collision_query.transform = Transform3D(Basis.IDENTITY, world.ship.global_position)
+    if not check(world.get_world_3d().direct_space_state.intersect_shape(collision_query, 1).is_empty(),
+        "R21 player spawns stuck inside a building; flight cannot start"):return
+    if not check(world.r21_safe_spawn == world.ship.global_position and
+        world.r21_safe_spawn.y >= 30.0,
+        "R21 collision-aware launch was not installed"):return
+    var pad_position: Vector3 = world.ship.global_position
+    # A real physics-frame test, not a fake velocity assignment.
+    world.ship.set_touch_controls(Vector2.ZERO, 1.0, 0.0, false, false)
+    for tick in 37:
+        await physics_frame
+    var travelled: float = world.ship.global_position.distance_to(pad_position)
+    if not check(travelled >= 6.0 and world.ship.flight_distance >= travelled,
+        "R21 ship still cannot move forward through the playable launch corridor"):return
+    world.ship.clear_touch_controls()
+    world.ship.velocity = Vector3.ZERO
+    world.ship.global_position = pad_position
+    var touch_r21 = world.r21_touch
+    touch_r21.force_mobile_for_tests(true)
+    touch_r21._set_touch(0, touch_r21.stick_center, true)
+    touch_r21._drag_touch(0, touch_r21.stick_center + Vector2(20,-20))
+    touch_r21._set_touch(1, touch_r21.button_centres["THRUST"], true)
+    touch_r21._set_touch(2, touch_r21.button_centres["BOOST"], true)
+    if not check(touch_r21.active_touch_count == 3 and
+        world.ship.touch_throttle == 1.0 and world.ship.touch_boost and
+        absf(world.ship.touch_steering.x) > 0.1,
+        "R21 two-finger phone throttle, joystick and boost cannot be combined"):return
+    for finger in 3:
+        touch_r21._set_touch(finger, Vector2.ZERO, false)
+    if not check(touch_r21.active_touch_count == 0 and
+        not world.ship.touch_boost and
+        absf(world.ship.touch_throttle) < 0.01,
+        "R21 touch release left ship controls stuck"):return
+    touch_r21.force_mobile_for_tests(false)
+    if not check(world.r21_towers_moved >= 0,
+        "R21 original tower count and spawn corridor audit missing"):return
+    print("NEBULA_R21_REAL_FLIGHT_SUCCESS throttle_metres=%.1f mobile_3_touch=verified" % travelled)
     if not check(world.get_node_or_null("CityTowers_MultiMesh") != null, "City architecture missing"):return
     if not check(world.get_node_or_null("SkylineNeonCrowns") != null, "Neon skyline detail missing"):return
     # R18 world-wide 360+360 GPU draw packages are now six independent
@@ -490,11 +549,13 @@ func _run() -> void:
     var beams: Node3D = world.get_node_or_null("R16_PooledCombatBeams")
     if not check(beams != null and beams.get_child_count() == 18,
         "R16 reusable combat laser beam pool missing"):return
+    var prior_combat_beams: int = world.r16_beam_shots
     for i in 50:
         world._laser_effect_colored(Vector3(0,20,0),
             Vector3(float(i % 7) + 4.0, 20.0, -65.0),
             Color(1.0,0.26,0.39))
-    if not check(beams.get_child_count() == 18 and world.r16_beam_shots == 50,
+    if not check(beams.get_child_count() == 18 and
+        world.r16_beam_shots - prior_combat_beams == 50,
         "R16 weapon fire is allocating new mesh nodes per shot"):return
     world._r16_update_beam_pool(0.2)
     for beam in world.r16_beams:
@@ -600,5 +661,5 @@ func _run() -> void:
     world.ship.take_damage(10.0)
     if not check(world.ship.shield < shield_before,"Damage does not reduce shield"):return
     if not check(previous_credits >= 0,"Invalid credits"):return
-    print("NEBULA_SMOKE_SUCCESS missions=1 upgrades=1 drones=%d premium3d=r16 guided-missiles pooled-beams stable-wingmen throttled-HUD checkout-server-gated" % world.drones.size())
+    print("NEBULA_SMOKE_SUCCESS missions=1 upgrades=1 drones=%d premium3d=r21 physics-launch mobile-controls premium-hud controlled-lighting R20-baked-pbr" % world.drones.size())
     quit(0)
