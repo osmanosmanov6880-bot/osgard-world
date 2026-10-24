@@ -268,6 +268,7 @@ var map
 var diagnostic_panel: PanelContainer
 var diagnostic_label: Label
 var diagnostic_visible := false
+var map_visible_before_diagnostics := false
 var overlay: ColorRect
 var strategy_contents: VBoxContainer
 var strategy_title: Label
@@ -728,6 +729,12 @@ func toggle_diagnostics() -> void:
 	diagnostic_visible = not diagnostic_visible
 	if diagnostic_panel != null:
 		diagnostic_panel.visible = diagnostic_visible
+	if compact_hud and map_panel != null:
+		if diagnostic_visible:
+			map_visible_before_diagnostics = map_panel.visible
+			map_panel.visible = false
+		else:
+			map_panel.visible = map_visible_before_diagnostics
 
 func update_diagnostics(fps: int, chunks: int, total_chunks: int, citizens: int, traffic: int, stopped: int = 0, p95: float = 0.0, quality: String = "standard", adaptive: bool = false) -> void:
 	if diagnostic_label == null or not diagnostic_visible:
@@ -1373,6 +1380,7 @@ func _apply_responsive_layout() -> void:
 		_set_panel_frame(pause_panel,panel_frame,0.5,0.5,0.5,0.5)
 		map.custom_minimum_size = Vector2(106,106)
 		if not map_override: map_panel.visible = bool(frames["map_default"])
+		if diagnostic_visible and map_panel != null: map_panel.visible = false
 		header_value.add_theme_font_size_override("font_size",15)
 		meters_label.add_theme_font_size_override("font_size",12)
 		mission_label.add_theme_font_size_override("font_size",16)
