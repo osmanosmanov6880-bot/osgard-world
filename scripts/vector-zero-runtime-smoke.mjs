@@ -78,7 +78,7 @@ for (const match of markup.matchAll(/<([a-z][\w:-]*)(\s[^<>]*?)?\s*\/?>/gi)) {
 const numeric = (values, operation) => {
   assert.ok(values.every(value => typeof value === 'number' && Number.isFinite(value)), `${operation} received non-finite Canvas coordinates`)
 }
-const canvasState = { calls: 0, labels: new Set(), transforms: [], player: null }
+const canvasState = { calls: 0, labels: new Set(), transforms: [], player: null, ghostDraws: 0 }
 const canvasContext = {}
 for (const method of ['beginPath', 'save', 'restore', 'fill', 'stroke']) {
   canvasContext[method] = () => { canvasState.calls++ }
@@ -88,6 +88,7 @@ for (const method of ['fillRect', 'strokeRect', 'translate', 'moveTo', 'lineTo',
     canvasState.calls++
     numeric(values, method)
     if (method === 'setTransform') canvasState.transforms.push([...values])
+    if (method === 'strokeRect' && values[2] === 22 && values[3] === 18) canvasState.ghostDraws++
     if (method === 'strokeRect' && values[2] === 24 && values[3] === 20) {
       canvasState.player = { x: values[0] + 12, y: values[1] + 9 }
     }
@@ -137,6 +138,12 @@ document.querySelectorAll = selector => {
 }
 
 const window = new EventTargetAdapter()
+const storage = new Map()
+window.localStorage = {
+  getItem: key => storage.get(key) ?? null,
+  setItem: (key, value) => { storage.set(key, String(value)) },
+  removeItem: key => { storage.delete(key) },
+}
 const lifecycle = []
 window.parent = { postMessage(message, origin) { lifecycle.push({ message, origin }) } }
 const animationFrames = new Map()
@@ -148,7 +155,13 @@ const sandbox = { window, document, location: { origin: 'https://osgard.test' },
   requestAnimationFrame(callback) { const id = ++frameId; animationFrames.set(id, callback); return id },
   cancelAnimationFrame(id) { animationFrames.delete(id) } }
 const context = vm.createContext(sandbox, { codeGeneration: { strings: false, wasm: false } })
-new vm.Script(scripts[0][2], { filename: sourcePath }).runInContext(context, { timeout: 1500 })
+// Inject only a test-only completion seam into the shipped IIFE. Gameplay,
+ // physics, actual storage and rendering implementations are unchanged.
+const seam = 'requestAnimationFrame(loop)})();'
+assert.ok(scripts[0][2].endsWith(seam), 'The shipped game must end in one RAF loop')
+const instrumented = scripts[0][2].slice(0, -seam.length) +
+  'requestAnimationFrame(loop);window.__vectorQA={complete:()=>finish(true),readGhost:loadGhost};})();'
+new vm.Script(instrumented, { filename: sourcePath }).runInContext(context, { timeout: 1500 })
 
 const checks = []
 const node = id => { assert.ok(ids.has(id), `Missing actual element #${id}`); return ids.get(id) }
@@ -398,6 +411,49 @@ assert.match(node('status').textContent, /FIELD PULSE/, 'Gamepad X must launch o
 window.navigator = { getGamepads: () => [] }
 pump(3)
 checks.push('gamepad analog movement, A jump, B pulse, X launch, Y polarity, Start pause/resume and disconnect safety')
+
+const ghostButton = node('ghost')
+assert.equal(ghostButton.disabled, true, 'Ghost racing remains unavailable before first successful run')
+assert.equal(ghostButton.textContent, 'GHOST / EMPTY')
+click('restart')
+click('start')
+pump(27)
+window.__vectorQA.complete() // Test the real success/storage path; not a claim about level solvability.
+const savedGhost = JSON.parse(storage.get('osgard-vector-zero-ghost-v1'))
+assert.equal(savedGhost.version, 1)
+assert.ok(savedGhost.duration > 0 && savedGhost.duration < 180)
+assert.ok(savedGhost.samples.length >= 3, 'A recorded run needs multiple sampled positions')
+assert.deepEqual(savedGhost.samples[0], [150, 564])
+assert.equal(Number(storage.get('osgard-vector-zero-best-v1')), savedGhost.duration)
+assert.equal(ghostButton.disabled, false, 'Successful record enables ghost racing')
+assert.equal(ghostButton.attributes['aria-pressed'], 'true')
+checks.push('successful run stores a bounded local personal-best trajectory and enables ghost race')
+
+click('restart')
+click('start')
+const ghostDraws = canvasState.ghostDraws
+pump(15)
+assert.ok(canvasState.ghostDraws > ghostDraws, 'The real Canvas must draw saved ghost during a later attempt')
+assert.match(node('ghost-pace').textContent, /^[+-]?\\d+ X$/, 'Ghost race shows player progress against past run')
+click('ghost')
+assert.equal(ghostButton.attributes['aria-pressed'], 'false')
+assert.equal(ghostButton.textContent, 'GHOST / OFF')
+const hiddenGhostDraws = canvasState.ghostDraws
+pump(10)
+assert.equal(canvasState.ghostDraws, hiddenGhostDraws, 'Disabling ghost must skip overlay drawing')
+click('ghost')
+assert.equal(ghostButton.attributes['aria-pressed'], 'true')
+checks.push('ghost replay renders as a toggleable transparent competitor on actual Canvas')
+
+storage.set('osgard-vector-zero-ghost-v1', JSON.stringify({ version: 1, duration: 2, samples: [[100, 564], ['BAD', 888]] }))
+assert.equal(window.__vectorQA.readGhost(), null, 'Malformed browser replay data must never enter Canvas')
+storage.set('osgard-vector-zero-ghost-v1', 'x'.repeat(35001))
+assert.equal(window.__vectorQA.readGhost(), null, 'Oversized replay records must be rejected')
+const getItem = window.localStorage.getItem
+window.localStorage.getItem = () => { throw new Error('Storage access denied') }
+assert.equal(window.__vectorQA.readGhost(), null, 'Denied browser storage must never crash gameplay')
+window.localStorage.getItem = getItem
+checks.push('malformed, oversized and denied-storage ghost records are handled safely')
 
 console.log(JSON.stringify({ status: 'PASS', source: path.relative(repo, sourcePath), checks,
   frames: framesRun, canvasCalls: canvasState.calls, lifecycleStarts: startedCount(),
