@@ -116,6 +116,14 @@ jobs:
             echo "deployed=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
+          # A prior VPS outage was caused by 96 GiB/96 GiB disk usage.
+          # Fail closed before creating staging or transferring any bytes.
+          required_bytes="$(python3 scripts/omega-native-space-budget.py \
+            --archive "$RUNNER_TEMP/omega-native/game.tgz" \
+            --game-dir public/games/omega-3d-preview)"
+          ssh -o BatchMode=yes -i ~/.ssh/osgard_omega_deploy \
+            "$DEPLOY_USER@$DEPLOY_HOST" "bash -s -- '$required_bytes'" \
+            < scripts/omega-native-remote-free-space.sh
           remote="/tmp/osgard-omega-native-${RUN_ID}"
           ssh -o BatchMode=yes -i ~/.ssh/osgard_omega_deploy "$DEPLOY_USER@$DEPLOY_HOST" "mkdir -p '$remote'"
           scp -i ~/.ssh/osgard_omega_deploy "$RUNNER_TEMP/omega-native/game.tgz" "$DEPLOY_USER@$DEPLOY_HOST:$remote/game.tgz"
@@ -132,3 +140,14 @@ jobs:
             --expected public/games/omega-3d-preview/release.json \
             --base https://osgard.world/games/omega-3d-preview \
             --nonce "$OMEGA_RUN_ID"
+      - name: Remove only this release transport staging after exact public SHA attestation
+        if: steps.publish.outputs.deployed == 'true'
+        env:
+          DEPLOY_HOST: ${{ secrets.OSGARD_DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.OSGARD_DEPLOY_USER }}
+        run: |
+          set -euo pipefail
+          # The key is provisioned earlier in this job; never print it.
+          ssh -o BatchMode=yes -i ~/.ssh/osgard_omega_deploy \
+            "$DEPLOY_USER@$DEPLOY_HOST" "bash -s -- '${{ github.run_id }}'" \
+            < scripts/omega-native-remote-cleanup.sh
