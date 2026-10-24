@@ -53,6 +53,7 @@ on:
       - "scripts/frontend-archive-preflight.mjs"
       - "scripts/r135-nginx-wasm-smoke.sh"
       - "scripts/r135-release-stage.py"
+      - "scripts/r135-artifact-fallback.py"
       - "scripts/r135-production-smoke.mjs"
       - "scripts/production-route-matrix.mjs"
       - "scripts/ecosystem-production-smoke.mjs"
