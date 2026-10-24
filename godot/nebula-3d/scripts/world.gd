@@ -127,6 +127,7 @@ var r21_dashboard
 var r21_objective_panel: PanelContainer
 var r21_ui_font: SystemFont
 var r21_mobile_enabled: bool = false
+var r21_launch_protection: float = 9.0
 
 func _ready() -> void:
     rng.seed = 20261022
@@ -654,6 +655,7 @@ func _process(delta: float) -> void:
     if not is_instance_valid(ship): return
     world_timer += delta
     world_pulse += delta
+    r21_launch_protection = maxf(0.0, r21_launch_protection - delta)
     if world_pulse > 92.0 and mission_index > 0 and ship.global_position.distance_to(SECTOR_POSITIONS[0]) > 270.0:
         world_pulse = 0.0
         _spawn_pirate_ambush()
@@ -799,7 +801,10 @@ func _on_drone_fire(from: Vector3, to: Vector3) -> void:
     if not is_instance_valid(ship):return
     _laser_effect_colored(from,to,Color(1.0,0.26,0.39))
     if from.distance_to(ship.global_position)<250.0 and ship.global_position.distance_to(to)<7.0:
-        ship.take_damage(8.0)
+        # The approved first-flight mission must be playable before pirates
+        # drain the starting shield while the player learns the controls.
+        if r21_launch_protection <= 0.0 or mission_index > 0:
+            ship.take_damage(8.0)
 
 func _spawn_pirate_ambush() -> void:
     var nearby := 0
