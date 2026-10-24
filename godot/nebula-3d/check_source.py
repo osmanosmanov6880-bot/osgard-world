@@ -757,7 +757,7 @@ assert "R36_StartReal20SecondBenchmark" in performance_r11
 assert "r36_browser_dom_to_engine_avg_ms" in performance_r11
 assert "r36_touch_delay_scope" in performance_r11
 assert "r36_data_policy" in performance_r11
-assert "no remote upload" in performance_r11.lower()
+assert "no network, identity or background upload" in performance_r11.lower()
 assert "NEBULA_R36_REAL_DEVICE_UI_SUCCESS" in smoke
 assert "R36 local performance JSON export was corrupted" in smoke
 assert "R36 real mobile FPS button opens performance overlay" in r31_mobile
