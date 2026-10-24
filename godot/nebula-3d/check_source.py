@@ -650,6 +650,13 @@ assert "snappedf(ship.flight_distance, 0.01)" in world
 assert "r25_side_and_back_windows" in r22_city
 assert "_r25_side_window_transform" in r22_city
 assert "r25_window_faces" in r22_city
+# R26: R25 E2E proved Godot runs in SwiftShader but window-level W input
+# was missing. Register physical-key capture before engine JS (not </body>).
+assert "const openHead = html.match(/<head[^>]*>/i)" in r21_web
+assert "openHead[0] + '\\n' + pilotScript" in r21_web
+assert "window.__nebulaKeyDebug" in r21_web
+assert "DOM keyboard capture before Godot" in r25_browser
+assert "keyInBrowser.mask & 1" in r25_browser
 assert "NEBULA_R25_FOUR_FACADES_SUCCESS" in smoke
 assert "11064" in smoke and "7837" in smoke
 require(
