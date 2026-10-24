@@ -484,11 +484,65 @@ smoke = require(
     "R20 baked emission/albedo texture dimensions differ from original glazing",
     "R20 real player browser still computes 512x512 heavy weathered metal atlas",
     "NEBULA_R20_BAKED_IMPORT_SUCCESS",
+    "R21 ship still cannot move forward through the playable launch corridor",
+    "R21 two-finger phone throttle, joystick and boost cannot be combined",
+    "R21 touch release left ship controls stuck",
+    "R21 player spawns stuck inside a building; flight cannot start",
+    "NEBULA_R21_REAL_FLIGHT_SUCCESS",
     "NEBULA_R17_PBR_IMPORT_SUCCESS",
     "NEBULA_SMOKE_SUCCESS",
 )
-assert 'ship.position = Vector3(0,19,78)' in world, "Ship spawn must use a local transform before entering the tree"
+assert 'ship.position = R21_LAUNCH_CANDIDATES[0]' in world, "R21 ship must use safe local transform until added to scene tree"
 assert 'ship.global_position = Vector3(0,19,78)\n    add_child(ship)' not in world, "Illegal pre-tree global transform on Godot Node3D"
+# R21: test playable flight and matching approved mobile control sources, not
+# a static screenshot standing in for actual gameplay.
+r21_mobile = require(
+    "scripts/mobile_controls_r21.gd",
+    "func _set_touch(",
+    "func _drag_touch(",
+    "func _refresh_inputs(",
+    "func force_mobile_for_tests(",
+    'set_touch_controls(joystick, forward, height,',
+    "finger_roles",
+    "rocket_requested.emit()",
+    "hangar_requested.emit()",
+)
+r21_hud = require(
+    "scripts/premium_hud_r21.gd",
+    "R21_PremiumFlightDashboard",
+    "SystemFont.new()",
+    "func _gauge(",
+    "func _panel(",
+    "км/ч",
+    "ЩИТ",
+    "ФОРСАЖ",
+)
+r21_web = require(
+    "../../scripts/nebula-r21-mobile-export.mjs",
+    "viewport-fit=cover",
+    "touch-action:none",
+    "100dvh",
+    "aria-label",
+)
+assert "func set_touch_controls(" in ship
+assert "var collision_impacts: int = 0" in ship
+assert "func _pilot_axes()" in ship
+assert "move_and_slide()" in ship
+assert "PhysicsRayQueryParameters3D.create(target, ideal)" in world
+assert "func _r21_rescue_blocked_spawn()" in world
+assert "r21_mobile_enabled = r21_touch.enabled" in world
+assert "const R21_LAUNCH_CANDIDATES" in world
+assert "r21_towers_moved += 1" in world
+assert "func _r21_toggle_hangar()" in world
+assert "func _r21_launch_missile()" in world
+assert "r21_touch.set_shop_open(false)" in world
+assert "SystemFont.new()" in world
+require(
+    "docs/R21-APPROVED-AURORA-MOBILE-FLIGHT.md",
+    "37 real physics frames", "Inter", "F7", "F9", "F10", "Android", "iOS",
+)
+assert "NEBULA_R21_REAL_FLIGHT_SUCCESS" in smoke
+assert "37" in smoke and "r21_touch._set_touch(0" in smoke
 assert "func _make_ship(" not in ship, "R3 low-poly ship builder is still active"
 assert ship_visual.count("engine_flames.append(") == 1
 assert "for x in [-1.24, 0.0, 1.24]:" in ship_visual, "three engine array missing"
@@ -496,4 +550,4 @@ assert "image.generate_mipmaps()" in ship_visual
 assert premium.count("Image.create(") >= 2, "separate facade albedo/emission atlases missing"
 assert "high-detail" not in project.lower(), "project identity may remain stable"
 assert len(smoke) > 1500 and len(city) > 5000 and len(world) > 10000
-print("NEBULA_R20_SOURCE_SUCCESS: 5 original 512px/256px deck+facade atlases baked on native CI; R19/R18/R17/R16 retained")
+print("NEBULA_R21_SOURCE_SUCCESS: approved Aurora HDR-safe cockpit, dynamic flight collision, touch controls and original full R20 content")
