@@ -1,0 +1,56 @@
+name: OSGARD SSH upload storage diagnostics
+on:
+  push:
+    branches: [fix/osgard-deploy-staging-space-audit-20261024]
+    paths: [".github/workflows/osgard-deploy-storage-audit.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      DEPLOY_HOST: ${{ secrets.OSGARD_DEPLOY_HOST }}
+      DEPLOY_USER: ${{ secrets.OSGARD_DEPLOY_USER }}
+      DEPLOY_KEY: ${{ secrets.OSGARD_DEPLOY_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check SSH target secrets without displaying values
+        run: |
+          set -euo pipefail
+          test -n "$DEPLOY_HOST" || { echo "::error::Deployment host missing"; exit 1; }
+          test -n "$DEPLOY_USER" || { echo "::error::Deployment username missing"; exit 1; }
+          test -n "$DEPLOY_KEY" || { echo "::error::Deployment SSH key missing"; exit 1; }
+      - name: Inspect remote filesystem capacity without mutating server
+        shell: bash
+        run: |
+          set -euo pipefail
+          install -m 700 -d "$HOME/.ssh"
+          printf '%s\n' "$DEPLOY_KEY" > "$HOME/.ssh/osgard_audit_key"
+          chmod 600 "$HOME/.ssh/osgard_audit_key"
+          ssh-keyscan -T 10 -H "$DEPLOY_HOST" >> "$HOME/.ssh/known_hosts" 2>/dev/null
+          ssh -o BatchMode=yes -o ConnectTimeout=12 -i "$HOME/.ssh/osgard_audit_key" "$DEPLOY_USER@$DEPLOY_HOST" 'bash -s' <<'REMOTE'
+          set -euo pipefail
+          echo "=== OSGARD SSH RELEASE-STAGING AUDIT / READ ONLY ==="
+          date -u '+utc %Y-%m-%d %H:%M'
+          echo "=== filesystem space ==="
+          df -h / /tmp /var/tmp 2>/dev/null || true
+          echo "=== inode capacity ==="
+          df -i / /tmp 2>/dev/null || true
+          echo "=== release staging directories (size MiB; 20 largest) ==="
+          for d in /tmp/osgard-gh-release-[0-9]*; do
+            if [ -d "$d" ]; then du -sm "$d" 2>/dev/null || true; fi
+          done | sort -nr | head -n 20
+          echo "=== count of release directories ==="
+          find /tmp -maxdepth 1 -type d -name 'osgard-gh-release-[0-9]*' 2>/dev/null | wc -l
+          echo "=== backup/stage directories (size MiB) ==="
+          for d in /tmp/osgard-gh-previous /tmp/osgard-godot-preserve-*; do
+            if [ -d "$d" ]; then du -sm "$d" 2>/dev/null || true; fi
+          done | sort -nr | head -n 20
+          echo "=== docker usage (read only) ==="
+          docker system df 2>/dev/null || true
+          echo "=== ability to create an empty temp file ==="
+          probe="/tmp/osgard-audit-$$.check"
+          : > "$probe" && rm -f "$probe" && echo 'TMP_WRITE_OK'
+          REMOTE
