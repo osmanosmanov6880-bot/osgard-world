@@ -1,0 +1,33 @@
+name: OSGARD HORIZON R26 weather road material and puddle GPU QA
+on:
+  pull_request:
+    branches: [master, feat/horizon-r25-visual-polish-readable-mobile]
+    paths:
+      - 'godot/empire-omega/**'
+      - '.github/workflows/omega-r26-road-wetness-qa.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  godot-road-rain:
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    steps:
+      - uses: actions/checkout@v4
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: false
+      - name: Generate original audio and import Godot runtime
+        run: |
+          python3 godot/empire-omega/tools/generate_audio.py
+          python3 godot/empire-omega/tools/generate_patrol_audio.py
+          godot --headless --editor --path godot/empire-omega --import --quit
+      - name: Real game wet roads, adaptive quality, phone actions and 3D visuals
+        shell: bash
+        run: |
+          set -euo pipefail
+          for suite in v23_horizon_visuals v29_responsive_layout v37_touch_commands v38_adaptive_graphics v48_city_polish v50_rain_puddle_qa; do
+            timeout --signal=TERM --kill-after=5s 100s godot --headless --path godot/empire-omega --script "res://tests/$suite.gd"
+          done
