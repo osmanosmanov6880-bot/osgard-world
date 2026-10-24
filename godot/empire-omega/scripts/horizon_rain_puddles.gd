@@ -6,6 +6,7 @@ const COUNT: int = 72
 const MASK_SIZE: int = 48
 var weather := "clear"
 var detail := "standard"
+var planned_transforms: Array[Transform3D] = []
 
 static func _hash(x: int,y: int,seed: int) -> float:
 	var n: int = (x*15731+y*789221+seed*137) & 0x7fffffff
@@ -53,7 +54,9 @@ func _ready() -> void:
 		var center:=Vector3(road+side,0.183,along) if cross else Vector3(along,0.183,road+side)
 		var angle: float = 0.08*float(i%7)
 		var b:=Basis(Vector3.UP,angle).scaled(Vector3(size_x,1.0,size_z))
-		instances.set_instance_transform(i,Transform3D(b,center))
+		var placement := Transform3D(b,center)
+		planned_transforms.append(placement)
+		instances.set_instance_transform(i,placement)
 	multimesh=instances
 	cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	custom_aabb=AABB(Vector3(-230.0,0.12,-230.0),Vector3(460.0,0.30,460.0))
