@@ -5,6 +5,42 @@ extends RefCounted
 
 const SIZE: int = 512
 static var _cache: Dictionary = {}
+static var _r20_baked_used: bool = false
+
+static func baked_count() -> int:
+    return 1 if _r20_baked_used else 0
+
+static func _r20_load_exact_deck() -> Dictionary:
+    var images: Dictionary = {}
+    for channel in ["albedo", "normal", "orm"]:
+        var name: String = "res://assets/r20_baked/deck_" + channel + ".png"
+        if not ResourceLoader.exists(name):
+            return {}
+        var texture: Texture2D = ResourceLoader.load(name) as Texture2D
+        if texture == null or texture.get_width() != SIZE or texture.get_height() != SIZE:
+            return {}
+        images[channel] = texture
+    return images
+
+static func _assemble(albedo_tex: Texture2D, normal_tex: Texture2D, packed: Texture2D) -> StandardMaterial3D:
+    var material := StandardMaterial3D.new()
+    material.resource_name = "R11 Weathered brushed industrial steel"
+    material.albedo_texture = albedo_tex
+    material.albedo_color = Color(0.87, 0.92, 0.95)
+    material.normal_enabled = true
+    material.normal_texture = normal_tex
+    material.normal_scale = 0.39
+    material.ao_enabled = true
+    material.ao_texture = packed
+    material.ao_texture_channel = BaseMaterial3D.TEXTURE_CHANNEL_RED
+    material.roughness = 1.0
+    material.roughness_texture = packed
+    material.roughness_texture_channel = BaseMaterial3D.TEXTURE_CHANNEL_GREEN
+    material.metallic = 1.0
+    material.metallic_texture = packed
+    material.metallic_texture_channel = BaseMaterial3D.TEXTURE_CHANNEL_BLUE
+    material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+    return material
 
 static func _hash(x: int, y: int, salt: int) -> float:
     var n: int = (x * 73856093) ^ (y * 19349663) ^ (salt * 83492791)
@@ -14,6 +50,13 @@ static func _hash(x: int, y: int, salt: int) -> float:
 static func make_weathered_deck() -> StandardMaterial3D:
     if _cache.has("deck"):
         return _cache["deck"]
+    var packed_assets: Dictionary = _r20_load_exact_deck()
+    if not packed_assets.is_empty():
+        _r20_baked_used = true
+        var ready: StandardMaterial3D = _assemble(
+            packed_assets["albedo"], packed_assets["normal"], packed_assets["orm"])
+        _cache["deck"] = ready
+        return ready
     var diffuse := Image.create(SIZE, SIZE, false, Image.FORMAT_RGB8)
     var bump := Image.create(SIZE, SIZE, false, Image.FORMAT_RGB8)
     var orm := Image.create(SIZE, SIZE, false, Image.FORMAT_RGB8)
@@ -57,24 +100,10 @@ static func make_weathered_deck() -> StandardMaterial3D:
     diffuse.generate_mipmaps()
     bump.generate_mipmaps()
     orm.generate_mipmaps()
-    var material := StandardMaterial3D.new()
-    material.resource_name = "R11 Weathered brushed industrial steel"
-    material.albedo_texture = ImageTexture.create_from_image(diffuse)
-    material.albedo_color = Color(0.87, 0.92, 0.95)
-    material.normal_enabled = true
-    material.normal_texture = ImageTexture.create_from_image(bump)
-    material.normal_scale = 0.39
-    var packed: ImageTexture = ImageTexture.create_from_image(orm)
-    material.ao_enabled = true
-    material.ao_texture = packed
-    material.ao_texture_channel = BaseMaterial3D.TEXTURE_CHANNEL_RED
-    material.roughness = 1.0
-    material.roughness_texture = packed
-    material.roughness_texture_channel = BaseMaterial3D.TEXTURE_CHANNEL_GREEN
-    material.metallic = 1.0
-    material.metallic_texture = packed
-    material.metallic_texture_channel = BaseMaterial3D.TEXTURE_CHANNEL_BLUE
-    material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+    var material: StandardMaterial3D = _assemble(
+        ImageTexture.create_from_image(diffuse),
+        ImageTexture.create_from_image(bump),
+        ImageTexture.create_from_image(orm))
     _cache["deck"] = material
     return material
 

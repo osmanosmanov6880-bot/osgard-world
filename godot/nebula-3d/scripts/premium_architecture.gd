@@ -19,6 +19,32 @@ var r19_facade_chunks: Array[MultiMeshInstance3D] = []
 var r19_roof_chunks: Array[MultiMeshInstance3D] = []
 var r19_facade_instance_count: int = 0
 var r19_roof_instance_count: int = 0
+var r20_facade_baked: bool = false
+
+func _r20_exact_glazing() -> Dictionary:
+    var textures: Dictionary = {}
+    for channel in ["albedo", "emission"]:
+        var resource: String = "res://assets/r20_baked/facade_" + channel + ".png"
+        if not ResourceLoader.exists(resource):
+            return {}
+        var tex: Texture2D = ResourceLoader.load(resource) as Texture2D
+        if tex == null or tex.get_width() != 256 or tex.get_height() != 512:
+            return {}
+        textures[channel] = tex
+    return textures
+
+func _facade_material(albedo_tex: Texture2D, emission_tex: Texture2D) -> StandardMaterial3D:
+    var m := StandardMaterial3D.new()
+    m.vertex_color_use_as_albedo = true
+    m.albedo_texture = albedo_tex
+    m.emission_enabled = true
+    m.emission_texture = emission_tex
+    m.emission = Color.WHITE
+    m.emission_energy_multiplier = 0.72
+    m.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+    m.metallic = 0.69
+    m.roughness = 0.32
+    return m
 
 func _material(color: Color, emission: float = 0.0, metallic: float = 0.76, roughness: float = 0.38) -> StandardMaterial3D:
     var m := StandardMaterial3D.new()
@@ -32,6 +58,10 @@ func _material(color: Color, emission: float = 0.0, metallic: float = 0.76, roug
     return m
 
 func make_facade_material() -> StandardMaterial3D:
+    var exact_atlas: Dictionary = _r20_exact_glazing()
+    if not exact_atlas.is_empty():
+        r20_facade_baked = true
+        return _facade_material(exact_atlas["albedo"], exact_atlas["emission"])
     # R5 256x512 day/night facade atlas: 16 columns x 32 floors of varied glazing.
     # Albedo and emission are separated so concrete and steel DO NOT glow.
     var albedo_image := Image.create(256, 512, false, Image.FORMAT_RGBA8)
@@ -68,17 +98,9 @@ func make_facade_material() -> StandardMaterial3D:
             emission_image.set_pixel(x, y, glow)
     albedo_image.generate_mipmaps()
     emission_image.generate_mipmaps()
-    var m := StandardMaterial3D.new()
-    m.vertex_color_use_as_albedo = true
-    m.albedo_texture = ImageTexture.create_from_image(albedo_image)
-    m.emission_enabled = true
-    m.emission_texture = ImageTexture.create_from_image(emission_image)
-    m.emission = Color.WHITE
-    m.emission_energy_multiplier = 0.72
-    m.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
-    m.metallic = 0.69
-    m.roughness = 0.32
-    return m
+    return _facade_material(
+        ImageTexture.create_from_image(albedo_image),
+        ImageTexture.create_from_image(emission_image))
 
 func _box(parent: Node3D, position: Vector3, size: Vector3, material: Material, angle: float = 0.0) -> MeshInstance3D:
     var mi := MeshInstance3D.new()

@@ -80,6 +80,39 @@ jobs:
               assert item.stat().st_size >= 400, item.name
           print("NEBULA_R17_ASSET_AUDIT_SUCCESS maps=21 sizes=384x384")
           PY
+      - name: Prebake R20 exact industrial steel and illuminated window textures
+        run: |
+          set -uo pipefail
+          set +e
+          timeout 180s /tmp/nebula-godot/Godot_v4.7.2-stable_linux.x86_64 --headless --path godot/nebula-3d --script res://tools/bake_r20.gd > /tmp/nebula-r20-bake.log 2>&1
+          rc=$?
+          set -e
+          cat /tmp/nebula-r20-bake.log
+          if [ "$rc" -ne 0 ] || ! grep -Fq 'NEBULA_R20_BAKE_SUCCESS: images=5' /tmp/nebula-r20-bake.log; then
+            echo "NEBULA_ERROR=R20 true PBR and glazing atlas prebake failed" >> "$GITHUB_ENV"
+            exit 1
+          fi
+          python3 - <<'PY'
+          from pathlib import Path
+          from struct import unpack
+          folder = Path("godot/nebula-3d/assets/r20_baked")
+          expected = {
+              "deck_albedo.png": (512, 512),
+              "deck_normal.png": (512, 512),
+              "deck_orm.png": (512, 512),
+              "facade_albedo.png": (256, 512),
+              "facade_emission.png": (256, 512),
+          }
+          maps = {p.name: p for p in folder.glob("*.png")}
+          assert set(maps) == set(expected), f"Missing or unrecognized R20 assets: {sorted(maps)}"
+          for name, dims in expected.items():
+              with maps[name].open("rb") as f:
+                  header = f.read(24)
+              assert header[:8] == b"\x89PNG\r\n\x1a\n", name
+              assert unpack(">II", header[16:24]) == dims, name
+              assert maps[name].stat().st_size > 400, name
+          print("NEBULA_R20_ASSET_AUDIT_SUCCESS images=5 pixels=1048576")
+          PY
       - name: Parse native GDScript in editor
         run: |
           set -uo pipefail
