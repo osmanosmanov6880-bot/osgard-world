@@ -223,13 +223,13 @@ func _cloud_ribbon(index: int) -> MeshInstance3D:
     return draw
 
 func build() -> void:
-    hull = _paint(Color(0.12,0.17,0.21),0.51,0.69)
+    hull = _paint(Color(0.13,0.20,0.27),0.51,0.69)
     titanium = MaterialFabricR12Script.get_material(0)
-    dark = _paint(Color(0.028,0.048,0.068),0.64,0.46)
-    bronze = _paint(Color(0.42,0.26,0.13),0.40,0.74)
-    led = _paint(Color(0.24,0.65,0.89),0.36,0.2,0.24)
-    window_warm = _paint(Color(0.79,0.52,0.29),0.32,0.12,0.35)
-    window_cool = _paint(Color(0.24,0.57,0.66),0.28,0.16,0.20)
+    dark = _paint(Color(0.028,0.044,0.066),0.58,0.46)
+    bronze = _paint(Color(0.32,0.30,0.30),0.43,0.73)
+    led = _paint(Color(0.35,0.64,0.87),0.36,0.2,0.18)
+    window_warm = _paint(Color(0.82,0.60,0.42),0.32,0.12,0.26)
+    window_cool = _paint(Color(0.35,0.61,0.79),0.31,0.16,0.14)
     var stage := Node3D.new()
     stage.name = "R22_AuroraPhysicalStructures"
     add_child(stage)
