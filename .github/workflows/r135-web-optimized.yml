@@ -164,17 +164,19 @@ jobs:
           retention-days: 14
 
       - name: Publish optimized playable native browser release (not prod deploy)
-        if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/feat/r135-w5-visual-diagnostics-20261024'
+        if: github.ref == 'refs/heads/feat/r135-w5-visual-diagnostics-20261024'
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euo pipefail
           tag=r135-web-visual-diagnostics-w5-20261024
-          if ! gh release view "$tag" >/dev/null 2>&1; then
-            gh release create "$tag" --target "$GITHUB_SHA" \
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "Refusing to overwrite existing immutable W5 candidate release: $tag" >&2
+            exit 1
+          fi
+          gh release create "$tag" --target "$GITHUB_SHA" \
               --title "OSGARD R135 W5 — in-world fault markers and optical camera tracking" \
               --notes "W5 candidate: simulated in-world optical, airflow and interlock 3D markers; portrait camera tracking; same 4-step training, three 5-step diagnostics, safety interlocks and local score. Preserves original R135 HERO/ECO GLBs. Godot 4.4.1 and SwiftShader WebGL tested, NOT physical mobile FPS." \
               --latest=false
-          fi
-          gh release upload "$tag" "$RUNNER_TEMP/r135-optimized-release/OSGARD_R135_OPTIMIZED_WEB.zip" "$RUNNER_TEMP/r135-optimized-release/R135_OPTIMIZED_MANIFEST.json" --clobber
+          gh release upload "$tag" "$RUNNER_TEMP/r135-optimized-release/OSGARD_R135_OPTIMIZED_WEB.zip" "$RUNNER_TEMP/r135-optimized-release/R135_OPTIMIZED_MANIFEST.json"
