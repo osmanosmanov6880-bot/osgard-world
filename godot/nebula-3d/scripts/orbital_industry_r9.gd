@@ -11,6 +11,20 @@ var panel_instances: int = 0
 var work_lights: Array[OmniLight3D] = []
 var animated_gantry: Array[Node3D] = []
 var elapsed: float = 0.0
+## R19: original 24 silos and all industrial details remain present, but
+## GPU geometry is split into six independently culled local-coordinate sets.
+const DETAIL_RANGES = [1020.0, 690.0, 420.0]
+const ACTIVE_DISTANCE_SQUARED = 230400.0 # 480 m
+var r19_quality: int = 0
+var r19_centres: Array = []
+var r19_batches: Array[MultiMeshInstance3D] = []
+var r19_batch_groups: int = 0
+var r19_sharded_groups: int = 0
+var r19_original_instances: int = 0
+var r19_player: Node3D
+var r19_light_checks: int = 0
+var r19_animation_checks: int = 0
+var r19_light_period: float = 0.0
 
 var vessel_material: StandardMaterial3D
 var graphite: StandardMaterial3D
@@ -76,21 +90,50 @@ func _lathe_vessel() -> ArrayMesh:
     st.generate_tangents()
     return st.commit()
 
+func _nearest_district(where: Vector3) -> int:
+    var selected: int = 0
+    var nearest: float = INF
+    for i in r19_centres.size():
+        var dist: float = where.distance_squared_to(r19_centres[i])
+        if dist < nearest:
+            nearest = dist
+            selected = i
+    return selected
+
 func _batch(name: String, mesh: Mesh, transforms: Array[Transform3D], mat: Material) -> void:
     if transforms.is_empty():
         return
-    var multi := MultiMesh.new()
-    multi.transform_format = MultiMesh.TRANSFORM_3D
-    multi.mesh = mesh
-    multi.instance_count = transforms.size()
-    for i in transforms.size():
-        multi.set_instance_transform(i, transforms[i])
-    var draw := MultiMeshInstance3D.new()
-    draw.name = name
-    draw.multimesh = multi
-    draw.material_override = mat
-    draw.extra_cull_margin = 40.0
-    add_child(draw)
+    r19_batch_groups += 1
+    var group := Node3D.new()
+    group.name = name
+    add_child(group)
+    var buckets: Array = []
+    for district in r19_centres.size():
+        buckets.append([])
+    for original in transforms:
+        var district: int = _nearest_district(original.origin)
+        buckets[district].append(Transform3D(
+            original.basis, original.origin - r19_centres[district]))
+    for district in buckets.size():
+        var parts: Array = buckets[district]
+        if parts.is_empty():
+            continue
+        var multi := MultiMesh.new()
+        multi.transform_format = MultiMesh.TRANSFORM_3D
+        multi.mesh = mesh
+        multi.instance_count = parts.size()
+        for i in parts.size():
+            multi.set_instance_transform(i, parts[i])
+        var draw := MultiMeshInstance3D.new()
+        draw.name = "R19_IndustrialSector_%02d" % district
+        draw.position = r19_centres[district]
+        draw.multimesh = multi
+        draw.material_override = mat
+        draw.extra_cull_margin = 14.0
+        group.add_child(draw)
+        r19_batches.append(draw)
+        r19_sharded_groups += 1
+        r19_original_instances += parts.size()
     panel_instances += transforms.size()
 
 func _box_mesh(name: String, positions: Array[Transform3D], mat: Material) -> void:
@@ -148,6 +191,7 @@ func _make_mobile_loader(pos: Vector3, index: int) -> void:
     docking_clamps += 1
 
 func build(centers: Array) -> void:
+    r19_centres = centers.duplicate()
     var tank_locations: Array[Transform3D] = []
     var pipes: Array[Transform3D] = []
     var collars: Array[Transform3D] = []
@@ -237,13 +281,49 @@ func build(centers: Array) -> void:
     _box_mesh("R9_IndustrialSafetyBands", warning_bands, copper)
     _box_mesh("R9_AmberTankIndicators", industrial_light_strips, lights)
     silo_count = idx
+    set_quality(0)
+
+func set_quality(mode: int) -> void:
+    r19_quality = clampi(mode, 0, 2)
+    for draw in r19_batches:
+        if is_instance_valid(draw):
+            draw.visibility_range_begin = 0.0
+            draw.visibility_range_end = DETAIL_RANGES[r19_quality]
+            draw.visibility_range_end_margin = 130.0
+    _r19_refresh_lights()
+
+func _r19_refresh_lights() -> void:
+    if not is_instance_valid(r19_player):
+        r19_player = get_parent().get_node_or_null("PlayerShip")
+    for light in work_lights:
+        if not is_instance_valid(light):
+            continue
+        var close: bool = is_instance_valid(r19_player) and (
+            light.global_position.distance_squared_to(r19_player.global_position) < ACTIVE_DISTANCE_SQUARED)
+        light.visible = r19_quality < 2 and close
+        r19_light_checks += 1
 
 func _process(delta: float) -> void:
     elapsed += delta
+    r19_light_period += delta
+    if r19_light_period >= 0.35:
+        r19_light_period = fmod(r19_light_period, 0.35)
+        _r19_refresh_lights()
+    if not is_instance_valid(r19_player):
+        r19_player = get_parent().get_node_or_null("PlayerShip")
+    if not is_instance_valid(r19_player):
+        return
     for j in animated_gantry.size():
         var boom: Node3D = animated_gantry[j]
-        if is_instance_valid(boom):
+        if not is_instance_valid(boom):
+            continue
+        # Two moving gantries per port. Distant ports keep the last pose
+        # instead of rewriting transforms every physics/render frame.
+        var near: bool = boom.global_position.distance_squared_to(
+            r19_player.global_position) < ACTIVE_DISTANCE_SQUARED
+        if near:
             boom.rotation.y = sin(elapsed * 0.21 + float(j) * 0.9) * 0.17
+            r19_animation_checks += 1
     for light in work_lights:
-        if is_instance_valid(light):
+        if is_instance_valid(light) and light.visible:
             light.light_energy = 0.29 + 0.03 * sin(elapsed * 1.1)
