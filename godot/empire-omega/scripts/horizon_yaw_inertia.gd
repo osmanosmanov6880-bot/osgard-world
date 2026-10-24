@@ -33,6 +33,8 @@ static func yaw_step(previous: float, desired: float, speed: float, grip: float,
 		return 0.0
 	if dt <= 0.0 or not is_finite(dt):
 		return previous
+	if absf(speed) < 0.30:
+		return 0.0
 	var surface: float = clampf(grip,0.35,1.15)
 	# Preserve the existing tyre friction / centripetal-acceleration cap.
 	var cap: float = minf(MAX_YAW_RATE,LATERAL_ACCEL_LIMIT*surface/maxf(absf(speed),0.5))
