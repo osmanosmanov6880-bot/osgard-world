@@ -31,16 +31,16 @@ func apply_look(look: int) -> void:
         # specular reflections. Shadows preserve detail instead of crushed blacks.
         key_sun.rotation_degrees = Vector3(-24.0, -70.0, 0.0)
         key_sun.light_color = Color(1.0, 0.88, 0.71)
-        key_sun.light_energy = 1.48
+        key_sun.light_energy = 1.30
         blue_fill.light_color = Color(0.48, 0.66, 0.90)
-        blue_fill.light_energy = 0.41
+        blue_fill.light_energy = 0.49
         sky_shader.sky_top_color = Color(0.048, 0.12, 0.26)
-        sky_shader.sky_horizon_color = Color(0.68, 0.51, 0.43)
-        sky_shader.ground_horizon_color = Color(0.27, 0.29, 0.36)
-        env.fog_light_color = Color(0.36, 0.37, 0.42)
+        sky_shader.sky_horizon_color = Color(0.82, 0.52, 0.34)
+        sky_shader.ground_horizon_color = Color(0.43, 0.35, 0.34)
+        env.fog_light_color = Color(0.51, 0.39, 0.32)
         env.fog_density = 0.00031
         env.adjustment_brightness = 0.94
-        env.adjustment_contrast = 1.10
+        env.adjustment_contrast = 1.045
         env.adjustment_saturation = 0.95
     else:
         # Warm rim and cooler shadows with clear material separations.
