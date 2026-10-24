@@ -104,7 +104,7 @@ if (!html.includes('nebula-r23-physical-keyboard')) {
   // Godot/engine keyboard listeners. If those capture/stop the event first,
   // even a window-level handler added later never sees W on the Web canvas.
   // Install before the first Godot script while the parser is still in head.
-  const openHead = html.match(/<head(?:\\s[^>]*)?>/i);
+  const openHead = html.match(/<head[^>]*>/i);
   if (!openHead) throw new Error('Godot HTML head missing');
   html = html.replace(openHead[0],openHead[0] + '\n' + pilotScript);
 }
