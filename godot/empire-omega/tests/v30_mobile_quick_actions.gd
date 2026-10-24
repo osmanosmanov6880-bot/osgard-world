@@ -46,7 +46,6 @@ func _run() -> void:
 	controls.call("_activate_quick","drive_trial")
 	verify(not menu.visible,"one-shot action menu closes after mission command")
 	await create_timer(0.2).timeout
-	print("INPUT DEBUG after trial: ",probe.pressed)
 	verify(probe.pressed.has("drive_trial"),"driving academy reaches actual input event pipeline")
 	controls.call("_toggle_quick_actions")
 	controls.call("set_mode",true,true)
@@ -54,13 +53,11 @@ func _run() -> void:
 	probe.pressed.clear()
 	controls.call("_activate_quick","save_game")
 	await create_timer(0.2).timeout
-	print("INPUT DEBUG after blocked save: ",probe.pressed)
 	verify(probe.pressed.is_empty(),"blocked menu cannot trigger save or mutate game")
 	controls.call("set_mode",false,false)
 	verify(toggle.visible,"menu recovers after closing modal")
 	controls.call("_activate_quick","show_map")
 	await create_timer(0.2).timeout
-	print("INPUT DEBUG after map: ",probe.pressed)
 	verify(probe.pressed.has("show_map"),"map toggle reaches native input pipeline")
 	controls.queue_free()
 	probe.queue_free()
