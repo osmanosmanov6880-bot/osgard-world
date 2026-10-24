@@ -1,0 +1,102 @@
+name: R135 W6.4 verified artifact promotion gate
+on:
+  push:
+    branches: [release/r135-w6-verified-promotion-20261024]
+    paths:
+      - ".github/workflows/r135-w6-artifact-gate.yml"
+      - "scripts/r135-release-stage.py"
+      - "scripts/r135-production-smoke.mjs"
+      - "scripts/r135-artifact-fallback.py"
+      - "scripts/r135-pixel-composition-qa.py"
+      - ".github/workflows/deploy-frontend.yml"
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  verify:
+    if: github.ref == 'refs/heads/release/r135-w6-verified-promotion-20261024'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download exact W6.4 successful gameplay artifact (never latest)
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/r135-w6-evidence"
+          gh run download 40109700192 \
+            --repo osmanosmanov6880-bot/osgard-world \
+            --name osgard-r135-optimized-web-qa \
+            --dir "$RUNNER_TEMP/r135-w6-evidence"
+          test -s "$RUNNER_TEMP/r135-w6-evidence/r135-optimized-release/OSGARD_R135_OPTIMIZED_WEB.zip"
+          test -s "$RUNNER_TEMP/r135-w6-evidence/r135-optimized-release/R135_OPTIMIZED_MANIFEST.json"
+          test -s "$RUNNER_TEMP/r135-w6-evidence/r135-screens/w6-portrait-optical-active.png"
+
+      - name: Verify manifest digest SHA, source, all asset hashes and stage
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo '0638f1ad5c0ab26d2d112e63bd1759923e5401a85ad4f2cedd450bbb7def2f61  '$RUNNER_TEMP'/r135-w6-evidence/r135-optimized-release/R135_OPTIMIZED_MANIFEST.json' | sha256sum -c -
+          python3 scripts/r135-release-stage.py \
+            "$RUNNER_TEMP/r135-w6-evidence/r135-optimized-release/OSGARD_R135_OPTIMIZED_WEB.zip" \
+            "$RUNNER_TEMP/r135-w6-evidence/r135-optimized-release/R135_OPTIMIZED_MANIFEST.json" \
+            "$RUNNER_TEMP/r135-w6-staged"
+
+      - name: Validate real portrait screenshot composition and fault caption
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m pip install --user --disable-pip-version-check "Pillow==11.3.0"
+          python3 scripts/r135-pixel-composition-qa.py \
+            "$RUNNER_TEMP/r135-w6-evidence/r135-screens/w6-portrait-optical-active.png" \
+            | tee "$RUNNER_TEMP/r135-w6-pixel-qa.json"
+
+      - name: Serve immutable staged Godot package through actual Nginx rules
+        shell: bash
+        env:
+          OSGARD_EXPECTED_R135_SOURCE: 947b4627080636543ae5e873b88b50e61f13beb4
+          OSGARD_EXPECTED_R135_VERSION: r135-web-framing-w6-20261024
+        run: |
+          set -euo pipefail
+          bash scripts/r135-nginx-wasm-smoke.sh "$RUNNER_TEMP/r135-w6-staged"
+
+      - name: Test W6 artifact-expiry recovery with trusted local HTTP origin
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m py_compile scripts/r135-artifact-fallback.py
+          python3 -m http.server 8876 --bind 127.0.0.1 --directory "$RUNNER_TEMP/r135-w6-staged" > /tmp/r135-w6-http.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 20); do
+            if curl -fsS "http://127.0.0.1:8876/release.json" -o /dev/null; then break; fi
+            sleep 1
+          done
+          python3 - <<'PY'
+          import importlib.util
+          import os
+          from pathlib import Path
+          spec = importlib.util.spec_from_file_location("r135_fallback", "scripts/r135-artifact-fallback.py")
+          module = importlib.util.module_from_spec(spec)
+          spec.loader.exec_module(module)
+          module.BASE = "http://127.0.0.1:8876/"
+          module.restore(Path(os.environ["RUNNER_TEMP"]) / "r135-w6-recovered")
+          PY
+          python3 scripts/r135-release-stage.py \
+            "$RUNNER_TEMP/r135-w6-recovered/OSGARD_R135_OPTIMIZED_WEB.zip" \
+            "$RUNNER_TEMP/r135-w6-recovered/R135_OPTIMIZED_MANIFEST.json" \
+            "$RUNNER_TEMP/r135-w6-recovered-verified"
+
+      - name: Retain W6.4 proof of composition for independent audit
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: r135-w6-promote-gate-evidence
+          path: ${{ runner.temp }}/r135-w6-pixel-qa.json
+          retention-days: 30
+          if-no-files-found: warn
