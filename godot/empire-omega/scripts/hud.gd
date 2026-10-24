@@ -268,6 +268,7 @@ var map
 var diagnostic_panel: PanelContainer
 var diagnostic_label: Label
 var diagnostic_visible := false
+var map_visible_before_diagnostics := false
 var overlay: ColorRect
 var strategy_contents: VBoxContainer
 var strategy_title: Label
@@ -728,11 +729,22 @@ func toggle_diagnostics() -> void:
 	diagnostic_visible = not diagnostic_visible
 	if diagnostic_panel != null:
 		diagnostic_panel.visible = diagnostic_visible
+	if compact_hud and map_panel != null:
+		if diagnostic_visible:
+			map_visible_before_diagnostics = map_panel.visible
+			map_panel.visible = false
+		else:
+			map_panel.visible = map_visible_before_diagnostics
 
-func update_diagnostics(fps: int, chunks: int, total_chunks: int, citizens: int, traffic: int, stopped: int = 0) -> void:
+func update_diagnostics(fps: int, chunks: int, total_chunks: int, citizens: int, traffic: int, stopped: int = 0, p95: float = 0.0, quality: String = "standard", adaptive: bool = false) -> void:
 	if diagnostic_label == null or not diagnostic_visible:
 		return
-	diagnostic_label.text = "FPS: %d   ·   3D NODES: %d\nQUARTERS: %d / %d   ·   NPC: %d   ·   CARS: %d   ·   STOPPED: %d" % [fps,int(Performance.get_monitor(Performance.OBJECT_NODE_COUNT)),chunks,total_chunks,citizens,traffic,stopped]
+	var frame_ms: String = ("%.1f ms" % p95) if is_finite(p95) and p95 > 0.0 else "sampling"
+	var tier: String = quality.to_upper() + (" AUTO" if adaptive else "")
+	diagnostic_label.text = "FPS: %d · P95: %s\nQ: %s · CITY: %d/%d\n3D: %d · NPC: %d · CARS: %d · STOP: %d" % [
+		fps,frame_ms,tier,chunks,total_chunks,
+		int(Performance.get_monitor(Performance.OBJECT_NODE_COUNT)),citizens,traffic,stopped
+	]
 
 func announce(message: String) -> void:
 	last_announcement = message
@@ -1368,6 +1380,7 @@ func _apply_responsive_layout() -> void:
 		_set_panel_frame(pause_panel,panel_frame,0.5,0.5,0.5,0.5)
 		map.custom_minimum_size = Vector2(106,106)
 		if not map_override: map_panel.visible = bool(frames["map_default"])
+		if diagnostic_visible and map_panel != null: map_panel.visible = false
 		header_value.add_theme_font_size_override("font_size",15)
 		meters_label.add_theme_font_size_override("font_size",12)
 		mission_label.add_theme_font_size_override("font_size",16)

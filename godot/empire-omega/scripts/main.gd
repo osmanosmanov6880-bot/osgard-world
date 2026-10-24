@@ -10,6 +10,7 @@ const TOUCH_CONTROLS_SCENE = preload("res://scripts/horizon_touch_controls.gd")
 const SAFE_CAMERA = preload("res://scripts/horizon_camera_collision.gd")
 const PORTRAIT_SCREEN = preload("res://scripts/horizon_portrait_screen.gd")
 const ADAPTIVE_GRAPHICS = preload("res://scripts/horizon_adaptive_graphics.gd")
+const FRAME_METRICS = preload("res://scripts/horizon_frame_metrics.gd")
 const PEDESTRIAN_SCENE = preload("res://scripts/pedestrian_agent.gd")
 const TRAFFIC_SCENE = preload("res://scripts/traffic_agent.gd")
 const ROUTER = preload("res://scripts/street_router.gd")
@@ -52,6 +53,7 @@ var ambient_cars: Array = []
 var lod_timer := 0.0
 var diagnostic_timer := 0.0
 var adaptive_graphics = ADAPTIVE_GRAPHICS.new()
+var frame_metrics = FRAME_METRICS.new()
 var patrols
 var previous_vehicle_health := 100.0
 var speeding_seconds := 0.0
@@ -313,6 +315,9 @@ func _stopped_traffic_count() -> int:
 			stopped += 1
 	return stopped
 
+func _process(delta: float) -> void:
+	frame_metrics.record_frame(delta,DisplayServer.window_is_focused())
+
 func _physics_process(delta: float) -> void:
 	if player == null or car == null or camera == null: return
 	if touch_controls != null and hud != null:
@@ -377,7 +382,7 @@ func _physics_process(delta: float) -> void:
 			_update_agent_lod(protagonist)
 		if cargo_visual != null: cargo_visual.sync_state(GameState.data,GameState.locale)
 		if hud != null:
-			hud.update_diagnostics(Engine.get_frames_per_second(),world.active_chunk_count,world.building_chunks.size(),pedestrians.size(),ambient_cars.size(),_stopped_traffic_count())
+			hud.update_diagnostics(Engine.get_frames_per_second(),world.active_chunk_count,world.building_chunks.size(),pedestrians.size(),ambient_cars.size(),_stopped_traffic_count(),frame_metrics.p95_ms(),adaptive_graphics.effective_quality(),adaptive_graphics.is_adapting())
 	if lod_timer >= 1.1:
 		lod_timer = 0.0
 		_update_agent_lod(protagonist)

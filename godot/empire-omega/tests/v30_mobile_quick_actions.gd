@@ -28,8 +28,8 @@ func _run() -> void:
 	var menu: PanelContainer = controls.get_node("QuickActionsPanel")
 	var toggle: Button = controls.get_node("QuickActionsToggle")
 	var quick: Dictionary = controls.get("_quick_buttons")
-	var actions = ["drive_trial","show_map","governor","field_journal","save_game","language"]
-	verify(quick.size()==6,"six real non-movement game commands")
+	var actions = ["drive_trial","show_map","governor","field_journal","diagnostics","save_game","language"]
+	verify(quick.size()==7,"seven real non-movement game commands")
 	verify(toggle.visible,"accessible button shown on touch")
 	verify(not menu.visible,"action menu starts closed")
 	for action in actions:
