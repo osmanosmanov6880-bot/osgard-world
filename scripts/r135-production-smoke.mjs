@@ -16,7 +16,9 @@ const manifestResponse = await fetch(probe('release.json?verify=' + Date.now()),
 if (!manifestResponse.ok) fail('missing release manifest: ' + manifestResponse.status)
 const manifestBytes = new Uint8Array(await manifestResponse.arrayBuffer())
 const manifestDigest = createHash('sha256').update(manifestBytes).digest('hex')
-if (manifestDigest !== '0638f1ad5c0ab26d2d112e63bd1759923e5401a85ad4f2cedd450bbb7def2f61') fail('W6 manifest SHA-256 mismatch')
+const expectedDigest = process.env.OSGARD_EXPECTED_R135_MANIFEST_SHA256 || '0638f1ad5c0ab26d2d112e63bd1759923e5401a85ad4f2cedd450bbb7def2f61'
+if (!/^[0-9a-f]{64}$/.test(expectedDigest)) fail('invalid expected release SHA-256')
+if (manifestDigest !== expectedDigest) fail('R135 manifest SHA-256 mismatch')
 const manifest = JSON.parse(new TextDecoder().decode(manifestBytes))
 const expectedVersion = process.env.OSGARD_EXPECTED_R135_VERSION || 'r135-web-framing-w6-20261024'
 if (manifest.version !== expectedVersion) fail('wrong R135 release version')
