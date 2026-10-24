@@ -2,7 +2,6 @@ extends SceneTree
 ## HORIZON R15 native regression: mobile governor and GL road materials.
 const GOVERNOR = preload("res://scripts/horizon_adaptive_graphics.gd")
 const MATERIALS = preload("res://scripts/horizon_road_materials.gd")
-const WORLD = preload("res://scripts/world_builder.gd")
 var count := 0
 var failures := 0
 
@@ -63,7 +62,17 @@ func _run() -> void:
 	MATERIALS.apply_weather(concrete,"clear")
 	verify(is_equal_approx(asphalt.roughness,0.81),"dry asphalt restores original roughness")
 	verify(is_equal_approx(concrete.roughness,0.90),"dry pavement restores original roughness")
-	var world = WORLD.new()
+	# Load the world after SceneTree autoloads GameState. A top-level preload
+	# executes before named autoload symbols are registered in --script mode.
+	var game_state: Node = root.get_node_or_null("GameState")
+	verify(game_state != null,"actual GameState autoload is ready")
+	var world_script: Variant = load("res://scripts/world_builder.gd")
+	verify(world_script != null,"real city world script parses after autoload")
+	if world_script == null or game_state == null:
+		print("HORIZON R15 NATIVE: %d passed, %d failed" % [count-failures,failures])
+		quit(1)
+		return
+	var world: Node3D = world_script.new()
 	root.add_child(world)
 	world.apply_visual_budget("low")
 	verify(world.visual_budget == "low","world accepts low quality")
