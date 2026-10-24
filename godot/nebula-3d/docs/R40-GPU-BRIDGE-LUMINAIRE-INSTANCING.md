@@ -33,3 +33,28 @@ measurements must confirm visual equivalence and device performance.
 6. If measurements regress, do not deploy this PR or revert it.
 
 No payment, account, server or data-collection change.
+
+## Candidate build delivery (for real-device testing)
+On PR #342, after its latest CI completes successfully, download the
+`nebula-r40-on-device-candidate` GitHub Actions artifact from the
+`REMIX NEBULA 3D native Web release` run. The archive contains the
+actual exported `index.html`, `index.js`, `index.wasm`, `index.pck`
+and related assets. Keep those files together in one directory.
+
+Serve the package over HTTP(S) from a testing computer accessible to the
+physical phone (a properly configured local network or temporary controlled
+HTTPS testing host). Do not open the files as `file://` URLs. On a trusted
+computer with Python installed, from the unpacked asset directory:
+
+```sh
+python3 -m http.server 8765 --bind 0.0.0.0
+```
+
+Connect only on a trusted/private network, restrict firewall access, and
+avoid exposing the test server to the internet without HTTPS/authentication.
+Use the test computer's LAN address and port in the phone browser. No
+production payment or server activation is involved in this artifact step.
+Baseline control is the published R38 game; experimental candidate is the
+artifact. Match viewport, route, quality profile and device; collect three
+20-second JSON reports per condition. Run R39 viewer locally against both
+sets, recording baseline/candidate labels separately.
