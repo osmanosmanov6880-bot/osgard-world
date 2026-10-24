@@ -13,15 +13,15 @@ const DISCRETE_ACTIONS = ["enter_vehicle","interact","pause_game"]
 const LABELS = {
   "ru": {
     "move_left":"ЛЕВ","move_right":"ПРАВ","move_backward":"ТОРМ","move_forward":"ГАЗ",
-    "jump_driving":"РУЧН.","jump_walking":"ПРЫГ","enter_vehicle":"АВТО","interact":"F","pause_game":"Ⅱ"
+    "jump_driving":"РУЧН.","jump_walking":"ПРЫГ","enter_vehicle":"АВТО","interact":"ДЕЙ","pause_game":"II"
   },
   "en": {
     "move_left":"LEFT","move_right":"RIGHT","move_backward":"BRAKE","move_forward":"GO",
-    "jump_driving":"PARK","jump_walking":"JUMP","enter_vehicle":"CAR","interact":"F","pause_game":"Ⅱ"
+    "jump_driving":"PARK","jump_walking":"JUMP","enter_vehicle":"CAR","interact":"USE","pause_game":"II"
   },
   "zh": {
     "move_left":"左","move_right":"右","move_backward":"刹车","move_forward":"前进",
-    "jump_driving":"手刹","jump_walking":"跳跃","enter_vehicle":"车辆","interact":"F","pause_game":"Ⅱ"
+    "jump_driving":"手刹","jump_walking":"跳跃","enter_vehicle":"车辆","interact":"互动","pause_game":"II"
   }
 }
 const WALK_BACK_LABELS = {"ru":"НАЗАД","en":"BACK","zh":"后退"}
