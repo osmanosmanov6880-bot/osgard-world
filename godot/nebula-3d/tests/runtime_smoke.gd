@@ -758,10 +758,11 @@ func _run() -> void:
         monitor_r11.r36_launcher.offset_right <= 509.0 and
         monitor_r11.r36_launcher.offset_top >= 60.0,
         "R36 mobile FPS launcher is hidden under landscape camera notch"):return
-    if not check(monitor_r11.overlay.offset_right <
+    if not check((monitor_r11.overlay.offset_right <
         touch_r21.button_centres["CAMERA"].x - touch_r21.base_radius * 0.80 or
-        not touch_r21.enabled,
-        "R36 performance panel blocks landscape camera touch control"):return
+        not touch_r21.enabled) and
+        monitor_r11.r38_mode_button.get_parent() == monitor_r11.r38_column,
+        "R38 landscape quality control overlays live CAMERA hit target"):return
     monitor_r11.r36_launcher.pressed.emit()
     if not check(monitor_r11.overlay.visible and
         not monitor_r11.r36_launcher.visible and
@@ -835,8 +836,9 @@ func _run() -> void:
         monitor_r11.r36_launcher.offset_right <
         touch_r21.button_centres["CRUISE"].x - touch_r21.base_radius * 0.8 and
         monitor_r11.overlay.offset_bottom <
-        touch_r21.button_centres["CRUISE"].y - touch_r21.base_radius * 0.8,
-        "R36 compact phone FPS button overlaps start-flight control"):return
+        touch_r21.button_centres["CRUISE"].y - touch_r21.base_radius * 0.8 and
+        monitor_r11.r38_mode_button.get_parent() == monitor_r11.r36_command_row,
+        "R38 compact portrait quality button overlaps start-flight control"):return
     monitor_r11.configure_mobile(false, touch_r21,
         Vector4.ZERO, Vector2(1280, 720))
     adaptive_r12.set_auto(false)
