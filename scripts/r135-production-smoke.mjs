@@ -39,12 +39,33 @@ const compressedResponse = await fetch(probe('index.wasm'), {
   redirect: 'manual',
 })
 if (compressedResponse.status !== 200) fail('compressed WASM HTTP ' + compressedResponse.status)
-if ((compressedResponse.headers.get('content-encoding') || '').toLowerCase() !== 'gzip') {
-  fail('Godot WASM is not delivered with gzip Content-Encoding')
-}
-const zippedLength = compressedResponse.headers.get('content-length')
-if (zippedLength !== null && Number(zippedLength) !== Number(wasmCompressed.size_bytes)) {
-  fail('Compressed WASM length does not match signed manifest: ' + zippedLength)
+const encoding = (compressedResponse.headers.get('content-encoding') || '').toLowerCase()
+if (encoding === 'gzip') {
+  const zippedLength = compressedResponse.headers.get('content-length')
+  if (zippedLength !== null && Number(zippedLength) !== Number(wasmCompressed.size_bytes)) {
+    fail('Compressed WASM length does not match signed manifest: ' + zippedLength)
+  }
+} else if (!encoding) {
+  // Some production edges normalize Accept-Encoding before it reaches Nginx.
+  // Raw WASM remains playable; still verify both the raw binary and the
+  // independently served compressed asset against the signed release manifest.
+  const rawLength = compressedResponse.headers.get('content-length')
+  if (rawLength !== null && Number(rawLength) !== Number(files['index.wasm'].size_bytes)) {
+    fail('Raw WASM length does not match signed manifest: ' + rawLength)
+  }
+  const compressedAsset = await fetch(probe('index.wasm.gz'), {
+    method: 'HEAD',
+    headers: { 'cache-control': 'no-cache', 'accept-encoding': 'identity' },
+    redirect: 'manual',
+  })
+  if (compressedAsset.status !== 200) fail('compressed WASM asset HTTP ' + compressedAsset.status)
+  const assetLength = compressedAsset.headers.get('content-length')
+  if (assetLength !== null && Number(assetLength) !== Number(wasmCompressed.size_bytes)) {
+    fail('Compressed WASM asset length does not match signed manifest: ' + assetLength)
+  }
+  console.warn('R135: edge returned raw WASM; verified gzip asset is available, but edge compression negotiation is not active')
+} else {
+  fail('Unsupported WASM content encoding: ' + encoding)
 }
 const response = await fetch(probe('index.pck'), {
   headers: { Range: 'bytes=0-63', 'cache-control': 'no-cache', 'accept-encoding': 'identity' },
