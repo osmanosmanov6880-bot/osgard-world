@@ -1,6 +1,48 @@
 <!DOCTYPE html>
 <html lang="en">
 	<head>
+
+<script id="nebula-r23-physical-keyboard">
+(() => {
+  const bits = {
+    KeyW:1, KeyS:2, KeyA:4, KeyD:8, KeyE:16, KeyQ:32,
+    ArrowUp:64, ArrowDown:128, ShiftLeft:256, ShiftRight:256,
+    Space:512
+  };
+  window.__nebulaPilotMask = 0;
+  window.__nebulaKeyDebug = {downs:0, ups:0, lastCode:'', lastTarget:'', blurCount:0};
+  const wantsTyping = (event) => {
+    const el = event.target;
+    return el && (el.isContentEditable ||
+      ['INPUT','TEXTAREA','SELECT'].includes(el.tagName));
+  };
+  const onKey = (event, pressed) => {
+    if (wantsTyping(event)) return;
+    const bit = bits[event.code];
+    if (!bit) return;
+    if (pressed) window.__nebulaKeyDebug.downs++;
+    else window.__nebulaKeyDebug.ups++;
+    window.__nebulaKeyDebug.lastCode = event.code;
+    window.__nebulaKeyDebug.lastTarget = event.target?.tagName || 'unknown';
+    if (pressed) window.__nebulaPilotMask |= bit;
+    else window.__nebulaPilotMask &= ~bit;
+    // Prevent WASD and the space bar moving the web page instead of the ship.
+    if (document.visibilityState === 'visible') event.preventDefault();
+    if (pressed && document.activeElement?.id !== 'canvas') {
+      document.getElementById('canvas')?.focus({preventScroll:true});
+    }
+  };
+  window.addEventListener('keydown', (e) => onKey(e,true), {capture:true});
+  window.addEventListener('keyup', (e) => onKey(e,false), {capture:true});
+  window.addEventListener('blur', () => {
+    window.__nebulaKeyDebug.blurCount++;
+    window.__nebulaPilotMask = 0;
+  });
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) window.__nebulaPilotMask = 0;
+  });
+})();
+</script>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
 		<title>REMIX ARENA - NEBULA 3D</title>
@@ -235,40 +277,6 @@ const engine = new Engine(GODOT_CONFIG);
 }());
 		</script>
 	
-<script id="nebula-r23-physical-keyboard">
-(() => {
-  const bits = {
-    KeyW:1, KeyS:2, KeyA:4, KeyD:8, KeyE:16, KeyQ:32,
-    ArrowUp:64, ArrowDown:128, ShiftLeft:256, ShiftRight:256,
-    Space:512
-  };
-  window.__nebulaPilotMask = 0;
-  const wantsTyping = (event) => {
-    const el = event.target;
-    return el && (el.isContentEditable ||
-      ['INPUT','TEXTAREA','SELECT'].includes(el.tagName));
-  };
-  const onKey = (event, pressed) => {
-    if (wantsTyping(event)) return;
-    const bit = bits[event.code];
-    if (!bit) return;
-    if (pressed) window.__nebulaPilotMask |= bit;
-    else window.__nebulaPilotMask &= ~bit;
-    // Prevent WASD and the space bar moving the web page instead of the ship.
-    if (document.visibilityState === 'visible') event.preventDefault();
-    if (pressed && document.activeElement?.id !== 'canvas') {
-      document.getElementById('canvas')?.focus({preventScroll:true});
-    }
-  };
-  window.addEventListener('keydown', (e) => onKey(e,true), {capture:true});
-  window.addEventListener('keyup', (e) => onKey(e,false), {capture:true});
-  window.addEventListener('blur', () => { window.__nebulaPilotMask = 0; });
-  document.addEventListener('visibilitychange', () => {
-    if (document.hidden) window.__nebulaPilotMask = 0;
-  });
-})();
-</script>
-
 <script id="nebula-r22-keyboard-focus">
 (() => {
   const canvas = document.getElementById("canvas");
