@@ -13,12 +13,6 @@ import type { GlobeChapter, GlobeMode, GlobeView, GlobeQuality } from './OmegaGl
 const OmegaGlobe = lazy(() => import('./OmegaGlobe'))
 type Locale = 'ru' | 'en'
 const readWorldLocale = (): Locale => { try { return localStorage.getItem('osa:locale') === 'en' ? 'en' : 'ru' } catch { return 'ru' } }
-const caseEnglish: Record<string, { type: string; category: string; description: string }> = {
-  phantom: { type: 'Prototype', category: 'Gaming / operations interface', description: 'Calendar, capacity rules and booking workflows. The public case shows the interface; server operation is not confirmed.' },
-  tedes: { type: 'Demo', category: 'Architecture / product catalogue', description: 'Door and material catalogue, product selection and a locally saved specification. Paid orders are not enabled.' },
-  merakki: { type: 'Concept', category: 'Hospitality / digital experience', description: 'Editorial presentation of a restaurant brand and a guided introduction to its space. A commercial launch is not confirmed.' },
-  essentia: { type: 'Demo', category: 'Commerce / storefront', description: 'Catalogue, favourites and a local cart. Payments and real orders are not connected.' },
-}
 
 const readOmegaMode = (): GlobeMode => {
   try {
@@ -70,6 +64,7 @@ export default function WorldHome({ development = false }: { development?: boole
     return () => { current = false }
   }, [locale, englishCopy])
   const tx = (ru: string) => locale === 'ru' ? ru : englishCopy?.[ru] || ru
+  const txCase = (id: string, field: 'type' | 'category' | 'description') => englishCopy?.[`case.${id}.${field}`]
   const changeLocale = () => {
     const next: Locale = locale === 'ru' ? 'en' : 'ru'
     setLocale(next)
@@ -172,7 +167,7 @@ export default function WorldHome({ development = false }: { development?: boole
             <div className="signature-featured-image">
               <img src={cases[1].art} width="1200" height="800" alt={tx("Скриншот открытого проекта ") + cases[1].name}
                 decoding="async" fetchPriority="high" />
-              <span>{locale === 'en' ? caseEnglish[cases[1].id]?.type : cases[1].type} / 02</span>
+              <span>{locale === 'en' ? txCase(cases[1].id, 'type') : cases[1].type} / 02</span>
             </div>
             <div className="signature-featured-copy">
               <div><small>{tx("АРХИТЕКТУРА / КОНФИГУРАТОР")}</small><strong>{cases[1].name}</strong></div>
@@ -183,7 +178,7 @@ export default function WorldHome({ development = false }: { development?: boole
             {[cases[0],cases[2]].map((item) => <a key={item.id} href={item.href}>
               <img src={item.art} alt={tx("Скриншот проекта ") + item.name} width="380" height="255"
                 loading="lazy" decoding="async" />
-              <span><small>{locale === 'en' ? caseEnglish[item.id]?.type : item.type}</small><strong>{item.name}</strong></span>
+              <span><small>{locale === 'en' ? txCase(item.id, 'type') : item.type}</small><strong>{item.name}</strong></span>
               <b aria-hidden="true">↗</b>
             </a>)}
           </div>
@@ -291,8 +286,8 @@ export default function WorldHome({ development = false }: { development?: boole
     <section id="cases" className="brand-section" aria-labelledby="world-cases-title">
       <div className="brand-section-heading"><p className="brand-eyebrow">{tx("02 / ИЗБРАННЫЕ ПРОЕКТЫ")}</p><h2 id="world-cases-title">{locale === 'ru' ? <>У каждой задачи<br />свой характер.</> : <>EVERY PROJECT<br />HAS ITS OWN CHARACTER.</>}</h2><p>{tx("Откройте кейс: посмотрите интерфейс, доступные возможности и стадию проекта. Статус указан на каждой карточке.")}</p></div>
       <div className="world-case-grid">{cases.map((item, index) => <a href={item.href} className="world-case" key={item.id}>
-        <div className="world-case-art" style={item.visual === 'screenshot' ? { aspectRatio: '3 / 2' } : undefined}><img src={item.art} alt={(item.visual === 'screenshot' ? tx("Снимок публичной страницы кейса ") : tx("Визуальное превью ")) + item.name} width="1200" height={item.visual === 'screenshot' ? 800 : 630} loading="lazy" decoding="async" /><span className="brand-status">{locale === 'en' ? caseEnglish[item.id]?.type || item.type : item.type}</span></div>
-        <div className="world-case-title"><span>0{index + 1} / {locale === 'en' ? caseEnglish[item.id]?.category || item.category : item.category}</span><h3>{item.name} <span aria-hidden="true">↗</span></h3><p>{locale === 'en' ? caseEnglish[item.id]?.description || item.description : item.description}</p><span className="world-case-open">{tx("Открыть кейс")} <span aria-hidden="true">→</span></span></div>
+        <div className="world-case-art" style={item.visual === 'screenshot' ? { aspectRatio: '3 / 2' } : undefined}><img src={item.art} alt={(item.visual === 'screenshot' ? tx("Снимок публичной страницы кейса ") : tx("Визуальное превью ")) + item.name} width="1200" height={item.visual === 'screenshot' ? 800 : 630} loading="lazy" decoding="async" /><span className="brand-status">{locale === 'en' ? txCase(item.id, 'type') || item.type : item.type}</span></div>
+        <div className="world-case-title"><span>0{index + 1} / {locale === 'en' ? txCase(item.id, 'category') || item.category : item.category}</span><h3>{item.name} <span aria-hidden="true">↗</span></h3><p>{locale === 'en' ? txCase(item.id, 'description') || item.description : item.description}</p><span className="world-case-open">{tx("Открыть кейс")} <span aria-hidden="true">→</span></span></div>
       </a>)}</div>
       <p className="world-case-legend"><strong>{tx("Как читать статусы.")}</strong> {tx("Концепт показывает направление. Демо позволяет попробовать сценарий. Прототип проверяет часть продукта. Коммерческий запуск требует отдельного подтверждения. PHANTOM, TEDES и MERAKKI показаны на реальных снимках публичных страниц кейсов. ESSENTIA — визуальное превью. Снимки не подтверждают работу сервера или коммерческий запуск.")}</p>
     </section>
