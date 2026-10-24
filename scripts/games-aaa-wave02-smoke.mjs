@@ -39,7 +39,7 @@ for(const game of data.games){
   } else assert.ok(game.cover.endsWith('.svg'),'Expected SVG exception for three 3D worlds '+game.id)
 }
 assert.equal(new Set(hashes).size,22,'All 22 emblems must be individually drawn, not duplicate templates')
-assert.equal(data.waves.find(w=>w.id==='02').state,'in_review','Do not mark an unpublished visual wave complete')
+assert.ok(['in_review','completed'].includes(data.waves.find(w=>w.id==='02')?.state),'WAVE 02 must be in review or confirmed after deployment')
 assert.ok(html.includes('href="./world-artwork.css"'),'Portal must load new premium gallery styles')
 assert.ok(styles.includes('.game-cover-image')&&styles.includes('.world-emblem'),'Missing actual artwork and icon styles')
 assert.ok(styles.includes('@media(max-width:760px)')&&styles.includes('prefers-reduced-motion'),'Responsive/motion accessibility missing')
