@@ -1,7 +1,7 @@
 {
   "engine": "Godot 4.4.1",
   "source_path": "godot/osgard-r136-precision",
-  "source_commit": "b8c96d2fe9b84d1c1843651bd2a0d87b2ec27a2c",
+  "source_commit": "e600dd8c14281354f7d4abe569db7750e466639f",
   "native_tests": "passed",
   "artifact_kind": "native-Godot-HTML5-export",
   "limitations": [
@@ -14,7 +14,7 @@
     "index.audio.worklet.js": "5b476a9c9ce642c0ee4256436d1bc31d9c38f868aca0f9a8e2a57c18d2dec2a3",
     "index.html": "838e7de319713aee5deb306892d041af849322a68b4ecc6fd3a37604dde77897",
     "index.js": "19eb180d568bb8e17bcf4c72ca034ed3af44deeb90304deefee4e665562dfe31",
-    "index.pck": "96107dc354b66d1713b003a3f6c2879099c8ec9a65f06cb8a3168f0b8d5bf4b8",
+    "index.pck": "07cd477e69bfc289f0e83c597009ae7f362b7754f62e2b2628b19d0e79e5dd81",
     "index.png": "3cb4495c0b98dfbe4b663cbf2b6836473572339beb66d902367893162a70be0e",
     "index.wasm": "e4a43dbae28662b2a68f6136857a94db6695430901515800b9883f6327cb7116"
   }
