@@ -9,6 +9,8 @@ const file = process.argv[2];
 if (!file) throw new Error('usage: node scripts/test-nebula-r23-input.mjs <export/index.html>');
 const html = fs.readFileSync(file,'utf8');
 assert.match(html, /nebula-r23-physical-keyboard/);
+assert.ok(html.indexOf('nebula-r23-physical-keyboard') < html.indexOf('</head>'),
+  'R26 browser keyboard capture must register BEFORE the game engine JS');
 assert.match(html, /touch-action:none/);
 assert.match(html, /viewport-fit=cover/);
 const match = html.match(/<script id="nebula-r23-physical-keyboard">([\s\S]*?)<\/script>/);
@@ -36,6 +38,8 @@ function send(name,code,key,target={tagName:'CANVAS',isContentEditable:false}) {
 assert.equal(win.__nebulaPilotMask,0);
 assert.equal(send('keydown','KeyW','ц'),true,'non-Latin layout must be handled by physical code');
 assert.equal(win.__nebulaPilotMask,1,'pressed Russian W must feed positive thrust');
+assert.equal(win.__nebulaKeyDebug.downs,1);
+assert.equal(win.__nebulaKeyDebug.lastCode,'KeyW');
 assert.equal(doc.activeElement,node,'window-level input must recover Godot canvas focus');
 assert.equal(send('keydown','KeyD','в'),true);
 assert.equal(win.__nebulaPilotMask,9,'W+D must work concurrently');
@@ -52,4 +56,5 @@ send('keydown','KeyS','ы');
 assert.equal(win.__nebulaPilotMask,2);
 listeners.get('window:blur')();
 assert.equal(win.__nebulaPilotMask,0,'window blur must stop thrust');
+assert.equal(win.__nebulaKeyDebug.blurCount,1);
 console.log('NEBULA_R23_DOM_INPUT_SUCCESS Cyrillic KeyW thrust, key combos, keyup, blur and input focus');
