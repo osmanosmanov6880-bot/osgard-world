@@ -260,7 +260,7 @@ func _ready() -> void:
     if OS.has_feature("web"):
         _set_graphics_quality(1)
         adaptive_r12.set_auto(true)
-    _show_notice("АВРОРА · ЗОЛОТОЙ ЧАС · R22")
+    # Keep the opening skyline clear; mission and objective HUD carry the scene context.
     get_viewport().size_changed.connect(_fit_hud)
     _fit_hud()
     _r25_emit_browser_flight_state()
