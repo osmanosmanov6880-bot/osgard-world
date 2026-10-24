@@ -27,8 +27,8 @@ static func _road_direction(delta: Vector2, yaw: float, tr: Dictionary) -> Strin
 	if side < -absf(ahead)*0.50: return str(tr["left"])
 	return str(tr["ahead"])
 
-static func decorate(base: Dictionary, car: Vector3, yaw: float, path: Array[Vector3], locale: String = "ru") -> Dictionary:
-	if base.is_empty() or not _valid(car) or not is_finite(yaw):
+static func decorate(base: Dictionary, car: Vector3, yaw: float, goal: Vector3, path: Array[Vector3], locale: String = "ru") -> Dictionary:
+	if base.is_empty() or not _valid(car) or not _valid(goal) or not is_finite(yaw):
 		return base
 	var straight_distance: float = float(base.get("distance",0.0))
 	if not is_finite(straight_distance) or straight_distance <= 10.0:
@@ -46,6 +46,8 @@ static func decorate(base: Dictionary, car: Vector3, yaw: float, path: Array[Vec
 		return result # an A* disconnected graph is not a straight-line route
 	if path.size() > 100:
 		return base
+	if not _valid(path[-1]) or _flat(path[-1]).distance_to(_flat(goal)) > 9.0:
+		return base # protect against a cached route to the previous mission
 	var me := _flat(car)
 	var closest_index: int = -1
 	var closest_distance_squared: float = INF
