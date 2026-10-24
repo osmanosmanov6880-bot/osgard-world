@@ -40,6 +40,7 @@ var facade_windows: MultiMeshInstance3D
 var facade_frames: MultiMeshInstance3D
 var architecture_trim: MultiMeshInstance3D
 var streetfront: Node3D
+var road_paint: Node3D
 var cityhall_gateway: Node3D
 var last_window_mode := -1
 var waypoint_marker: Node3D
@@ -50,6 +51,7 @@ const FACADE_MATERIALS = preload("res://scripts/horizon_facade_materials.gd")
 const ARCHITECTURE_TRIM = preload("res://scripts/horizon_architecture_trim.gd")
 const STREETFRONT_SCENE = preload("res://scripts/horizon_streetfront_details.gd")
 const CIVIC_GATEWAY = preload("res://scripts/horizon_civic_gateway.gd")
+const ROAD_PAINT_SCENE = preload("res://scripts/horizon_road_paint_batches.gd")
 var asphalt_pbr: StandardMaterial3D
 var concrete_pbr: StandardMaterial3D
 
@@ -62,7 +64,11 @@ func _ready() -> void:
 	add_child(city_root)
 	_create_environment()
 	_create_terrain()
+	road_paint = ROAD_PAINT_SCENE.new()
 	_create_roads()
+	road_paint.call("record_road_edges")
+	road_paint.call("finish")
+	city_root.add_child(road_paint)
 	architecture_trim = ARCHITECTURE_TRIM.new()
 	streetfront = STREETFRONT_SCENE.new()
 	_create_city()
@@ -171,8 +177,8 @@ func _create_roads() -> void:
 		for step in range(-10,11):
 			var q := float(step) * 21.0
 			if absf(q) < 219:
-				_box(city_root,"RoadDash",Vector3(7,0.03,0.19),Vector3(q,0.19,p),Color("dec99b"))
-				_box(city_root,"RoadDash",Vector3(0.19,0.03,7),Vector3(p,0.195,q),Color("dec99b"))
+				road_paint.call("record_dash",true,q,p)
+				road_paint.call("record_dash",false,q,p)
 	# Sidewalk lips provide visual read without blocking the character controller.
 	for index in range(-4,5):
 		var p := float(index) * ROAD_INTERVAL
@@ -484,6 +490,8 @@ func update_weather(kind: String) -> void:
 		ROAD_MATERIALS.apply_weather(asphalt_pbr,kind)
 	if concrete_pbr != null:
 		ROAD_MATERIALS.apply_weather(concrete_pbr,kind)
+	if road_paint != null:
+		road_paint.call("apply_weather",kind)
 	if weather_particles != null:
 		weather_particles.emitting = kind == "rain" or kind == "storm"
 	_apply_lighting()
