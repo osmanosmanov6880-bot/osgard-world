@@ -54,6 +54,22 @@ func _run() -> void:
     if not check(premium != null,"Cinematic architecture not instantiated"):return
     if not check(premium.towers_built == 360,"Expected 360 textured high-rises"):return
     if not check(premium.window_instances == 1440,"Instanced metallic façade fins missing"):return
+    if not check(premium.r19_facade_instance_count == 1440 and
+        premium.r19_roof_instance_count == 360 and
+        premium.r19_facade_chunks.size() == 6 and premium.r19_roof_chunks.size() == 6,
+        "R19 facade and roof batch sharding lost original premium instances"):return
+    for district in 6:
+        var facades = premium.r19_facade_chunks[district]
+        var roofs = premium.r19_roof_chunks[district]
+        if not check(facades.multimesh.instance_count == 240 and
+            roofs.multimesh.instance_count == 60,
+            "R19 each premium building district should own 240 fins and 60 roofs"):return
+        if not check(facades.position == world.SECTOR_POSITIONS[district] and
+            roofs.position == world.SECTOR_POSITIONS[district],
+            "R19 premium architecture GPU positions must be district-local"):return
+        if not check(facades.multimesh.get_instance_transform(0).origin.length() < 400.0 and
+            roofs.multimesh.get_instance_transform(0).origin.length() < 400.0,
+            "R19 premium GPU bounds are still all-world-sized"):return
     if not check(premium.corridor_count == 5,"Sky transit corridors missing"):return
     if not check(premium.dock_count == 6,"Multilevel sector docks missing"):return
     if not check(premium.get_node_or_null("PremiumFacadeFins") != null,"Facade mesh absent"):return
@@ -173,6 +189,40 @@ func _run() -> void:
     var industry = world.get_node_or_null("OrbitalIndustryR9")
     if not check(industry != null, "R9 industrial spaceport absent"):return
     if not check(industry.silo_count == 24, "R9 high-detail 24 pressure vessels missing"):return
+    if not check(industry.r19_batch_groups == 8 and
+        industry.r19_sharded_groups == 48 and
+        industry.r19_batches.size() == 48 and
+        industry.r19_original_instances == industry.panel_instances,
+        "R19 industrial batches must be independent per district with no lost assets"):return
+    if not check(industry.get_node_or_null(
+        "R9_PBRPressureSilos_24/R19_IndustrialSector_00") is MultiMeshInstance3D,
+        "R19 original pressure silos must be visible in original scene group"):return
+    var visible_silos: int = 0
+    var silo_parent = industry.get_node_or_null("R9_PBRPressureSilos_24")
+    for sector in 6:
+        var draw: MultiMeshInstance3D = silo_parent.get_node(
+            "R19_IndustrialSector_%02d" % sector)
+        visible_silos += draw.multimesh.instance_count
+        if not check(draw.position == world.SECTOR_POSITIONS[sector],
+            "R19 industry GPU batch centres must use local sector coordinates"):return
+        if not check(draw.multimesh.get_instance_transform(0).origin.length() < 150.0,
+            "R19 industrial instance still uses absolute world coordinates"):return
+    if not check(visible_silos == 24, "R19 silo geometry count incorrect"):return
+    industry._r19_refresh_lights()
+    var locally_lit: int = 0
+    for light in industry.work_lights:
+        if light.visible:
+            locally_lit += 1
+    if not check(locally_lit == 2,
+        "R19 player near Aurora should see exactly two local industrial worklights"):return
+    industry.set_quality(2)
+    for light in industry.work_lights:
+        if not check(not light.visible, "R19 ECO profile must remove expensive practical lights"):return
+    if not check(industry.r19_batches[0].visibility_range_end == 420.0,
+        "R19 ECO distant industry culling range not applied"):return
+    industry.set_quality(0)
+    if not check(industry.r19_batches[0].visibility_range_end == 1020.0,
+        "R19 MAX industrial LOD not restored"):return
     if not check(industry.docking_clamps == 12, "R9 animated dock loading platforms missing"):return
     if not check(industry.panel_instances >= 1700, "R9 industrial mesh instancing budget unmet"):return
     if not check(industry.work_lights.size() == 12, "R9 physically colored dock worklights missing"):return
@@ -490,6 +540,21 @@ func _run() -> void:
         "R16 guardian repairs incorrectly capped at scout hull and shields"):return
     var hangar_solid = world.get_node_or_null("HeroMegadocksR6/R6_EnclosedHangar_00_0/HangarLeftWallCollision")
     if not check(hangar_solid is StaticBody3D, "Hangar collision missing"):return
+    # R19: existing F3/F11 quality pipeline must update both new layers.
+    world._set_graphics_quality(2)
+    if not check(premium.r19_quality == 2 and industry.r19_quality == 2 and
+        premium.r19_facade_chunks[0].visibility_range_end == 460.0 and
+        premium.r19_roof_chunks[0].visibility_range_end == 600.0 and
+        industry.r19_batches[0].visibility_range_end == 420.0,
+        "R19 auto / manual ECO change did not disable distant architecture"):return
+    world._set_graphics_quality(0)
+    if not check(premium.r19_quality == 0 and industry.r19_quality == 0 and
+        premium.r19_facade_chunks[0].visibility_range_end == 1180.0 and
+        industry.r19_batches[0].visibility_range_end == 1020.0,
+        "R19 MAX restoration failed"):return
+    print("NEBULA_R19_NEAR_SECTOR_SUCCESS premium=%d roofs=%d industrial=%d chunks=%d" % [
+        premium.r19_facade_instance_count, premium.r19_roof_instance_count,
+        industry.r19_original_instances, industry.r19_sharded_groups])
     var arcology_solid = world.get_node_or_null("SculpturalSkylineR6/R6_SculptedArcology_00/ArcologyCollision")
     if not check(arcology_solid is StaticBody3D, "Arcology navigation collision missing"):return
     if not check(is_instance_valid(world.hud_objective),"Cinematic HUD objective missing"):return
