@@ -1,0 +1,33 @@
+name: OSGARD HORIZON R23 rain spray and dry tyre dust QA
+on:
+  pull_request:
+    branches: [master, feat/horizon-r22-grounded-skid-trails]
+    paths:
+      - 'godot/empire-omega/**'
+      - '.github/workflows/omega-r23-wheel-spray-qa.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native-effects:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: false
+      - name: Generate source audio and import game
+        run: |
+          python3 godot/empire-omega/tools/generate_audio.py
+          python3 godot/empire-omega/tools/generate_patrol_audio.py
+          godot --headless --editor --path godot/empire-omega --import --quit
+      - name: Test actual spray, tyres, traction and mobile regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          for test in v21_vehicle_dynamics v34_real_touch_drive v40_yaw_inertia v44_four_wheel_surface v45_skid_trails v46_ground_spray; do
+            timeout --signal=TERM --kill-after=5s 90s godot --headless --path godot/empire-omega --script "res://tests/$test.gd"
+          done
