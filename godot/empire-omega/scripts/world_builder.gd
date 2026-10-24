@@ -40,6 +40,7 @@ var facade_windows: MultiMeshInstance3D
 var facade_frames: MultiMeshInstance3D
 var architecture_trim: MultiMeshInstance3D
 var streetfront: Node3D
+var cityhall_gateway: Node3D
 var last_window_mode := -1
 var waypoint_marker: Node3D
 var horizon_scenic: Node3D
@@ -48,6 +49,7 @@ const LIGHT_GRADE = preload("res://scripts/horizon_light_grade.gd")
 const FACADE_MATERIALS = preload("res://scripts/horizon_facade_materials.gd")
 const ARCHITECTURE_TRIM = preload("res://scripts/horizon_architecture_trim.gd")
 const STREETFRONT_SCENE = preload("res://scripts/horizon_streetfront_details.gd")
+const CIVIC_GATEWAY = preload("res://scripts/horizon_civic_gateway.gd")
 var asphalt_pbr: StandardMaterial3D
 var concrete_pbr: StandardMaterial3D
 
@@ -348,24 +350,19 @@ func _create_landmarks() -> void:
 		var color: Color = Color("354d5d") if id == "cityhall" else DISTRICT_COLORS[district].lightened(0.16)
 		var h := 24.0 if id == "cityhall" else (24.0 if id == "power" else 16.0)
 		_box(city_root,id + "_ground_plaza",Vector3(40,0.14,40),Vector3(pos.x,0.03,pos.z),Color("455158"))
-		_box(city_root,id + "_landmark",Vector3(25,h,25),Vector3(pos.x,h/2.0,pos.z),color,true)
-		_box(city_root,id + "_spire",Vector3(6,8,6),Vector3(pos.x,h+4,pos.z),Color("9dcfca"),false,true)
+		var landmark_body: Node3D = _box(city_root,id + "_landmark",Vector3(25,h,25),Vector3(pos.x,h/2.0,pos.z),color,true)
 		if id == "cityhall":
-			# The palace is no longer one giant featureless wall beside the spawn.
-			# A recessed colonnade, metal ribs and windows establish realistic scale.
-			for floor_index in range(4):
-				var stripe_y: float = 4.0+float(floor_index)*4.8
-				_box(city_root,"CivicStoneBand",Vector3(25.7,.21,25.7),Vector3(pos.x,stripe_y,pos.z),Color("1f3847"))
-				for col in range(5):
-					var window_x: float = pos.x-8.6+float(col)*4.3
-					_box(city_root,"CivicGlazing",Vector3(1.76,2.72,.09),Vector3(window_x,stripe_y+1.75,pos.z+12.64),Color("263f4c"))
-			for column in range(6):
-				var col_x: float = pos.x-10.0+float(column)*4.0
-				_box(city_root,"CivicColumn",Vector3(1.06,10.8,1.03),Vector3(col_x,5.4,pos.z+14.0),Color("a3a99b"))
-				_box(city_root,"CivicCapital",Vector3(1.65,.32,1.60),Vector3(col_x,10.9,pos.z+14.0),Color("aeb6aa"))
-			_box(city_root,"CivicPortico",Vector3(27.0,.85,5.7),Vector3(pos.x,11.6,pos.z+14.0),Color("355364"))
-			_box(city_root,"CivicPortal",Vector3(5.0,8.0,.16),Vector3(pos.x,4.1,pos.z+12.72),Color("203342"))
-			_box(city_root,"CivicLightRibbon",Vector3(22.0,.13,.12),Vector3(pos.x,12.14,pos.z+16.9),Color("d8b978"),false,true)
+			var wall: MeshInstance3D = landmark_body.get_node("VisualMesh") as MeshInstance3D
+			wall.material_override = FACADE_MATERIALS.facade(Color("536a7a"))
+		_box(city_root,id + "_spire",Vector3(6,8,6),Vector3(pos.x,h+4,pos.z),
+			Color("7b8991") if id=="cityhall" else Color("9dcfca"),false,id!="cityhall")
+		if id == "cityhall":
+			# All first-screen PBR details are now just seven batched meshes.
+			# The existing 25x24x25 collider is preserved, unchanged.
+			cityhall_gateway = CIVIC_GATEWAY.new()
+			cityhall_gateway.position = pos
+			city_root.add_child(cityhall_gateway)
+
 		var marker := Node3D.new()
 		marker.name = "Marker_" + id
 		marker.position = pos + Vector3(0,h+9,0)
@@ -473,6 +470,8 @@ func apply_visual_budget(mode: String) -> void:
 		architecture_trim.visible = visual_budget != "low"
 	if streetfront != null:
 		streetfront.visible = visual_budget != "low"
+	if cityhall_gateway != null:
+		cityhall_gateway.visible = visual_budget != "low"
 	if facade_frames != null:
 		facade_frames.visible = visual_budget != "low"
 	_apply_lighting()
