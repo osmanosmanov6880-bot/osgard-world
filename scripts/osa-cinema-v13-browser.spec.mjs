@@ -7,7 +7,7 @@ test('OSA Cinema V13 renders all cinematic learning controls and preserves progr
   // Check each real media response before route transitions can abort in-flight images.
   for (const name of ['library', 'understand', 'verify', 'decide']) {
     const response = await page.request.get('/osa-cinema/reference/' + name + '.webp')
-    expect(response.ok(), name + ' must be served from this site's origin').toBe(true)
+    expect(response.ok(), name + ' must be served from the same origin').toBe(true)
     expect(response.headers()['content-type'], name + ' should use image/webp').toContain('image/webp')
     const bytes = await response.body()
     expect(bytes.subarray(0, 4).toString()).toBe('RIFF')
