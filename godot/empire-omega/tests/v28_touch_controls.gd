@@ -33,7 +33,9 @@ func _run() -> void:
     verify(button.action==action,"sends real gameplay action: "+action)
     verify(button.shape is CircleShape2D,"generous circular touch area: "+action)
     verify(button.texture_normal != null and button.texture_pressed != null,"normal and pressed state: "+action)
-    verify(button.passby_press,"multi-finger sliding remains supported: "+action)
+    var continuous: bool = not ["enter_vehicle","interact","pause_game"].has(action)
+    verify(button.passby_press == continuous,
+      "continuous steering supports sliding, CAR/USE/PAUSE require intentional touch: "+action)
     verify(button.visible,"touch control is shown in preview mode: "+action)
     var label: Label = button.get_node_or_null("Caption") as Label
     verify(label != null and not label.text.is_empty(),"localized caption: "+action)
