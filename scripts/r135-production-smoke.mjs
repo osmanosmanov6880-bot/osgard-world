@@ -14,7 +14,8 @@ if (!page.includes('index.js') || !page.includes('<canvas')) fail('React fallbac
 const manifestResponse = await fetch(probe('release.json?verify=' + Date.now()), options)
 if (!manifestResponse.ok) fail('missing release manifest: ' + manifestResponse.status)
 const manifest = await manifestResponse.json()
-if (manifest.version !== 'r135-web-visual-diagnostics-w5-20261024') fail('wrong R135 release version')
+const expectedVersion = process.env.OSGARD_EXPECTED_R135_VERSION || 'r135-web-visual-diagnostics-w5-20261024'
+if (manifest.version !== expectedVersion) fail('wrong R135 release version')
 if (!/^[0-9a-f]{40}$/.test(manifest.source_commit || '')) fail('missing valid W5 source commit')
 const expectedSource = process.env.OSGARD_EXPECTED_R135_SOURCE
 if (expectedSource && manifest.source_commit !== expectedSource) fail('wrong W5 source commit')
