@@ -401,7 +401,7 @@ assert 'premium_architecture.set_quality(graphics_quality)' in world
 assert 'industry_r19.set_quality(graphics_quality)' in world
 require(
     "docs/R19-NEAR-SECTOR-GPU-LIGHTS.md",
-    "R19", "1800", "48", "F7", "F9", "F10",
+    "R19", "1,800", "48", "F7", "F9", "F10",
 )
 require("scripts/architectural_detail_r4.gd", "func build(")
 
