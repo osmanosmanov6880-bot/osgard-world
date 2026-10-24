@@ -138,6 +138,11 @@ document.querySelectorAll = selector => {
 }
 
 const window = new EventTargetAdapter()
+window.btoa = value => Buffer.from(value, 'binary').toString('base64')
+window.atob = value => Buffer.from(value, 'base64').toString('binary')
+window.navigator = { getGamepads: () => [] }
+const location = { origin: 'https://osgard.test', href: 'https://osgard.test/games/vector-zero/', pathname: '/games/vector-zero/', search: '', hash: '' }
+window.history = { replaceState(_state, _unused, path) { location.hash = ''; location.href = location.origin + path } }
 const storage = new Map()
 window.localStorage = {
   getItem: key => storage.get(key) ?? null,
@@ -150,7 +155,7 @@ const animationFrames = new Map()
 let frameId = 0
 let now = 0
 let framesRun = 0
-const sandbox = { window, document, location: { origin: 'https://osgard.test' }, devicePixelRatio: 2,
+const sandbox = { window, document, location, URL, devicePixelRatio: 2,
   performance: { now: () => now }, console,
   requestAnimationFrame(callback) { const id = ++frameId; animationFrames.set(id, callback); return id },
   cancelAnimationFrame(id) { animationFrames.delete(id) } }
@@ -160,7 +165,7 @@ const context = vm.createContext(sandbox, { codeGeneration: { strings: false, wa
 const seam = 'requestAnimationFrame(loop)})();'
 assert.ok(scripts[0][2].endsWith(seam), 'The shipped game must end in one RAF loop')
 const instrumented = scripts[0][2].slice(0, -seam.length) +
-  'requestAnimationFrame(loop);window.__vectorQA={complete:()=>finish(true),readGhost:loadGhost};})();'
+  'requestAnimationFrame(loop);window.__vectorQA={complete:()=>finish(true),readGhost:loadGhost,encodeGhost:encodeChallenge,decodeGhost:decodeChallenge,activeGhost};})();'
 new vm.Script(instrumented, { filename: sourcePath }).runInContext(context, { timeout: 1500 })
 
 const checks = []
@@ -415,6 +420,8 @@ checks.push('gamepad analog movement, A jump, B pulse, X launch, Y polarity, Sta
 const ghostButton = node('ghost')
 assert.equal(ghostButton.disabled, true, 'Ghost racing remains unavailable before first successful run')
 assert.equal(ghostButton.textContent, 'GHOST / EMPTY')
+assert.equal(node('share').disabled, true, 'Share stays disabled until a personal best exists')
+assert.equal(node('friend').hidden, true, 'Friend exit stays hidden without an imported link')
 click('restart')
 click('start')
 pump(27)
@@ -427,6 +434,7 @@ assert.deepEqual(savedGhost.samples[0], [150, 564])
 assert.equal(Number(storage.get('osgard-vector-zero-best-v1')), savedGhost.duration)
 assert.equal(ghostButton.disabled, false, 'Successful record enables ghost racing')
 assert.equal(ghostButton.attributes['aria-pressed'], 'true')
+assert.equal(node('share').disabled, false, 'A successful local record enables the share action')
 checks.push('successful run stores a bounded local personal-best trajectory and enables ghost race')
 
 click('restart')
@@ -444,6 +452,62 @@ assert.equal(canvasState.ghostDraws, hiddenGhostDraws, 'Disabling ghost must ski
 click('ghost')
 assert.equal(ghostButton.attributes['aria-pressed'], 'true')
 checks.push('ghost replay renders as a toggleable transparent competitor on actual Canvas')
+
+const encoded = window.__vectorQA.encodeGhost(savedGhost)
+assert.match(encoded, /^[A-Za-z0-9_-]{12,2100}$/, 'Challenge URLs must be compact and base64url-safe')
+const decoded = window.__vectorQA.decodeGhost('#race=' + encoded)
+assert.equal(decoded.source, 'friend')
+assert.ok(Math.abs(decoded.duration - savedGhost.duration) < 0.01)
+assert.equal(decoded.samples[0][0], 150, 'Friend route retains the original start position')
+assert.equal(window.__vectorQA.decodeGhost('#race=' + encoded.slice(0, 20) + '!' + encoded.slice(21)), null, 'Invalid alphabet is rejected')
+const other = encoded[15] === 'A' ? 'B' : 'A'
+const corrupted = encoded.slice(0, 15) + other + encoded.slice(16)
+assert.equal(window.__vectorQA.decodeGhost('#race=' + corrupted), null, 'Tampered coordinate links fail integrity verification')
+assert.equal(window.__vectorQA.decodeGhost('#race=' + 'A'.repeat(3500)), null, 'Oversized URL fragments are rejected before decoding')
+assert.equal(window.__vectorQA.decodeGhost('#race=' + encoded + '&script=1'), null, 'Unexpected extra URL fields are rejected')
+checks.push('coordinate-only compressed friend challenge roundtrip, checksum and payload bounds')
+
+const copied = []
+window.navigator = { getGamepads: () => [], clipboard: { writeText: async link => { copied.push(link) } } }
+click('share')
+await Promise.resolve()
+assert.equal(copied.length, 1, 'SHARE must copy one playable friend URL')
+assert.match(copied[0], /^https:\/\/osgard\.test\/games\/vector-zero\/#race=/)
+assert.match(node('race-note').textContent, /Ссылка скопирована/)
+const challengeUrl = new URL(copied[0])
+location.hash = challengeUrl.hash
+location.href = challengeUrl.href
+window.dispatch('hashchange')
+assert.equal(node('friend').hidden, false, 'Friend exit becomes available when a valid challenge loads')
+assert.equal(node('ghost').textContent, 'FRIEND / ON', 'Friend ghost takes precedence without changing saved personal best')
+assert.match(node('race-note').textContent, /не подтверждён сервером/, 'Shared coordinates must not be represented as verified leaderboard data')
+click('restart')
+click('start')
+pump(15)
+assert.match(node('ghost-pace').textContent, /^[+-]?\d+ X$/, 'A friend challenge must drive the real race HUD')
+assert.equal(Number(storage.get('osgard-vector-zero-best-v1')), savedGhost.duration, 'Loading a friend URL must never overwrite local best')
+click('friend')
+assert.equal(node('friend').hidden, true, 'Exit returns to local ghost')
+assert.equal(node('ghost').textContent, 'GHOST / ON')
+assert.equal(location.hash, '', 'Leaving a friend challenge clears the URL fragment without navigating')
+checks.push('real SHARE button copies a link; hashchange activates friend ghost and EXIT restores local record')
+
+location.hash = '#race=' + corrupted
+location.href = location.origin + location.pathname + location.hash
+window.dispatch('hashchange')
+assert.equal(node('friend').hidden, true, 'Corrupted challenge cannot enter friend mode')
+assert.match(node('race-note').textContent, /Некорректная ссылка/)
+location.hash = ''
+location.href = location.origin + location.pathname
+window.dispatch('hashchange')
+let prompted = ''
+window.prompt = (_label, link) => { prompted = link; return link }
+window.navigator.clipboard.writeText = async () => { throw new Error('NotAllowedError') }
+click('share')
+await Promise.resolve()
+await Promise.resolve()
+assert.match(prompted, /^https:\/\/osgard\.test\/games\/vector-zero\/#race=/, 'Copy-denied browsers must offer a manual copy fallback')
+checks.push('corrupted shared links stay safe and clipboard-denied browsers offer manual copy')
 
 storage.set('osgard-vector-zero-ghost-v1', JSON.stringify({ version: 1, duration: 2, samples: [[100, 564], ['BAD', 888]] }))
 assert.equal(window.__vectorQA.readGhost(), null, 'Malformed browser replay data must never enter Canvas')
