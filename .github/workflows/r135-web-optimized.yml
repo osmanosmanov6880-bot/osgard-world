@@ -159,10 +159,12 @@ jobs:
           name: osgard-r135-optimized-web-qa
           path: |
             ${{ runner.temp }}/r135-screens/
+            ${{ runner.temp }}/r135-optimized-release/OSGARD_R135_OPTIMIZED_WEB.zip
             ${{ runner.temp }}/r135-optimized-release/R135_OPTIMIZED_MANIFEST.json
           retention-days: 14
 
       - name: Publish optimized playable native browser release (not prod deploy)
+        if: github.ref == 'refs/heads/master'
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
