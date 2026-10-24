@@ -7,7 +7,6 @@ const PLAYER_SCENE = preload("res://scripts/player_controller.gd")
 const CAR_SCENE = preload("res://scripts/vehicle_controller.gd")
 const HUD_SCENE = preload("res://scripts/hud.gd")
 const TOUCH_CONTROLS_SCENE = preload("res://scripts/horizon_touch_controls.gd")
-const SAFE_CAMERA = preload("res://scripts/horizon_camera_collision.gd")
 const PORTRAIT_SCREEN = preload("res://scripts/horizon_portrait_screen.gd")
 const PEDESTRIAN_SCENE = preload("res://scripts/pedestrian_agent.gd")
 const TRAFFIC_SCENE = preload("res://scripts/traffic_agent.gd")
@@ -62,6 +61,10 @@ func _refresh_portrait_fit() -> void:
 	# Expanding the canvas without a matching 2D scale makes touch buttons
 	# microscopic on 390px portrait screens. This preserves desktop gameplay.
 	PORTRAIT_SCREEN.apply_to(get_window())
+	if camera != null:
+		# Portrait driving needs vertical scene visibility (car + road + sky),
+		# not the 16:9 desktop horizontal-FOV framing.
+		camera.keep_aspect = Camera3D.KEEP_WIDTH if PORTRAIT_SCREEN.is_phone_portrait(PORTRAIT_SCREEN.web_css_size()) else Camera3D.KEEP_HEIGHT
 
 func _ready() -> void:
 	_refresh_portrait_fit()
@@ -100,6 +103,7 @@ func _ready() -> void:
 	camera.far = 900.0
 	camera.current = true
 	add_child(camera)
+	_refresh_portrait_fit()
 	camera.global_position = player.global_position + Vector3(4,7,10)
 	soundscape = SOUND_SCENE.new()
 	add_child(soundscape)
@@ -313,8 +317,7 @@ func _physics_process(delta: float) -> void:
 		touch_controls.set_mode(driving,blocked)
 	var focus: Vector3 = car.global_position+Vector3(0,2.0,0) if driving else player.global_position+Vector3(0,2.3,0)
 	if driving and (Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED or DisplayServer.is_touchscreen_available()):
-		var phone_view: bool = SAFE_CAMERA.portrait(get_viewport().get_visible_rect().size)
-		cam_yaw = lerp_angle(cam_yaw,car.rotation.y,clampf(delta*SAFE_CAMERA.follow_rate(car.speed,phone_view),0.0,1.0))
+		cam_yaw = lerp_angle(cam_yaw,car.rotation.y,clampf(delta*0.35,0.0,1.0))
 	var pads: Array[int] = Input.get_connected_joypads()
 	if not pads.is_empty() and Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED:
 		var joystick_x: float = Input.get_joy_axis(pads[0],JOY_AXIS_RIGHT_X)
@@ -322,12 +325,14 @@ func _physics_process(delta: float) -> void:
 		if absf(joystick_x) > 0.18: cam_yaw -= joystick_x * delta * 2.3
 		if absf(joystick_y) > 0.18: cam_pitch = clampf(cam_pitch - joystick_y * delta * 1.6,0.08,1.18)
 	player.camera_heading = cam_yaw
-	var viewport_size: Vector2 = get_viewport().get_visible_rect().size
-	var ideal: Vector3 = SAFE_CAMERA.desired_position(focus,cam_yaw,cam_pitch,car.speed,driving,viewport_size)
-	var excluding: Array[RID] = [player.get_rid(),car.get_rid()]
-	var camera_solution: Dictionary = SAFE_CAMERA.solve(focus,ideal,camera.global_position,
-		get_world_3d().direct_space_state,excluding,delta,GameSettings.reduced_motion)
-	camera.global_position = camera_solution["position"]
+	var distance: float = (12.0 + minf(absf(car.speed)*0.12,3.4)) if driving else 7.2
+	var ideal := focus + Vector3(sin(cam_yaw)*cos(cam_pitch)*distance,sin(cam_pitch)*distance+1.0,cos(cam_yaw)*cos(cam_pitch)*distance)
+	var query := PhysicsRayQueryParameters3D.create(focus,ideal)
+	query.exclude = [player.get_rid(),car.get_rid()]
+	var result: Dictionary = get_world_3d().direct_space_state.intersect_ray(query)
+	if not result.is_empty():
+		ideal = result["position"] + (focus-ideal).normalized()*0.5
+	camera.global_position = ideal if GameSettings.reduced_motion else camera.global_position.lerp(ideal,clampf(delta*8.0,0.0,1.0))
 	camera.look_at(focus,Vector3.UP)
 	# Speed-responsive perspective, disabled for players who request less motion.
 	var desired_fov: float = (79.0 + minf(absf(car.speed)*0.27,9.0)) if driving else 76.0
