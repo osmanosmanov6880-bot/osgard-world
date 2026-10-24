@@ -282,6 +282,48 @@ try {
       s => s?.r36_perf_visible === true && s.r36_perf_active === false &&
         s.r36_benchmark_button_x > 0 && s.r36_benchmark_button_y > 0,
       30000);
+    // CDP touch injection can be offset from the DOM event in Chromium's
+    // mobile emulation after repeated viewport rotations (observed +34px).
+    // Calibrate from the REAL browser event that successfully opened FPS.
+    // This is a test-harness coordinate correction, not an engine shortcut.
+    const observedTouch = await page.evaluate(
+      () => window.__nebulaDomTouchQA?.last || null);
+    if (!observedTouch || !Number.isFinite(observedTouch.x) ||
+        !Number.isFinite(observedTouch.y)) {
+      throw new Error('Mobile CDP calibration has no actual DOM touch');
+    }
+    const dispatchOffset = {
+      x: observedTouch.x - fps.x,
+      y: observedTouch.y - fps.y
+    };
+    if (Math.abs(dispatchOffset.x) > 60 ||
+        Math.abs(dispatchOffset.y) > 60) {
+      throw new Error('Unsafe mobile touch translation: ' +
+        JSON.stringify(dispatchOffset));
+    }
+    report.checks.push({
+      label: 'browser CDP→DOM touch offset measured from real FPS button press',
+      dispatchOffset
+    });
+    const calibratedUI = async (target) => {
+      const p = {
+        ...target, x: target.x - dispatchOffset.x,
+        y: target.y - dispatchOffset.y
+      };
+      await send('touchStart', [p]);
+      // Let SwiftShader deliver the touch to the actual Godot Button.
+      await page.waitForTimeout(650);
+      const observed = await page.evaluate(
+        () => window.__nebulaDomTouchQA?.last || null);
+      if (!observed || Math.abs(observed.x - target.x) > 3 ||
+          Math.abs(observed.y - target.y) > 3) {
+        await send('touchEnd', []);
+        throw new Error('CDP touch missed true browser DOM target: ' +
+          JSON.stringify({target, dispatched:p, observed}));
+      }
+      await send('touchEnd', []);
+    };
+
     // R38: the software-GL QA starts in deterministic ECO. Check that
     // actual screen taps cycle ECO -> AUTO/HIGH -> MAX in the real scene.
     if (open.r38_mode_label !== 'ECO' ||
@@ -291,24 +333,17 @@ try {
     }
     const modeButton = await uiPoint(open.r38_mode_button_x,
       open.r38_mode_button_y, 9);
-    await send('touchStart',[modeButton]);
-    // Hosted SwiftShader can stall for hundreds of milliseconds between real
-    // Godot frames. Do not lift the finger before the engine polls touchStart.
-    await page.waitForTimeout(650);
-    await send('touchEnd',[]);
+    await calibratedUI(modeButton);
     await expectTelemetry('R38 mobile quality touch enables real AUTO profile',
       s => s?.r38_auto_enabled === true &&
         s.r38_quality_mode === 1 && s.r38_mode_label === 'АВТО', 30000);
-    await send('touchStart',[modeButton]);
-    await page.waitForTimeout(650);
-    await send('touchEnd',[]);
+    await calibratedUI(modeButton);
     await expectTelemetry('R38 mobile quality touch selects real MAX graphics',
       s => s?.r38_auto_enabled === false &&
         s.r38_quality_mode === 0 && s.r38_mode_label === 'MAX', 30000);
     const runBenchmark = await uiPoint(open.r36_benchmark_button_x,
       open.r36_benchmark_button_y, 8);
-    await send('touchStart',[runBenchmark]);
-    await send('touchEnd',[]);
+    await calibratedUI(runBenchmark);
     await expectTelemetry('R36 real mobile 20-second FPS benchmark starts',
       s => s?.r36_perf_active === true && s.touch_count === 0 &&
         s.r38_quality_mode === 0 && s.r38_auto_enabled === false, 30000);
