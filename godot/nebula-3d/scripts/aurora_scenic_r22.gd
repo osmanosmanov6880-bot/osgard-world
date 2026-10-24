@@ -9,6 +9,10 @@ const TRAFFIC_RANGE = [1100.0, 750.0, 350.0]
 const CLOUD_RANGE = [1700.0, 1050.0, 600.0]
 
 var hero_towers: int = 0
+## R23 reuse the existing R20 baked albedo/emissive glazing on hero tower
+## *surfaces* instead of the old flat brown BoxMesh placeholder walls.
+var r23_glazed_hero_towers: int = 0
+var r23_glass: StandardMaterial3D
 var real_3d_windows: int = 0
 var physical_structures: int = 0
 var overpass_count: int = 0
@@ -29,6 +33,23 @@ var bronze: Material
 var window_warm: Material
 var window_cool: Material
 var led: Material
+
+func _r23_make_real_facade() -> StandardMaterial3D:
+    var surface := StandardMaterial3D.new()
+    surface.resource_name = "R23_RealWindowFacade_PBR"
+    surface.albedo_color = Color(0.69,0.79,0.88)
+    surface.metallic = 0.58
+    surface.roughness = 0.38
+    surface.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+    var albedo_path := "res://assets/r20_baked/facade_albedo.png"
+    var lit_path := "res://assets/r20_baked/facade_emission.png"
+    if ResourceLoader.exists(albedo_path) and ResourceLoader.exists(lit_path):
+        surface.albedo_texture = load(albedo_path) as Texture2D
+        surface.emission_texture = load(lit_path) as Texture2D
+        surface.emission_enabled = true
+        surface.emission = Color(0.88,0.91,1.0)
+        surface.emission_energy_multiplier = 0.16
+    return surface
 
 func _paint(color: Color, rough: float, metallic: float, emission: float = 0.0) -> StandardMaterial3D:
     var mat := StandardMaterial3D.new()
@@ -92,7 +113,9 @@ func _build_tower(root: Node3D, index: int, wall: Array[Transform3D],
     root.add_child(group)
     var center: Vector3 = Vector3(0.0, height * 0.5, 0.0)
     _block(group,"R22_SatinSteelCore", center,
-        Vector3(width, height, depth), hull, false)
+        Vector3(width, height, depth), r23_glass, false)
+    if r23_glass.albedo_texture != null:
+        r23_glazed_hero_towers += 1
     _block(group,"R22_UpperSetback",Vector3(0,height + 5.0,0),
         Vector3(width * 0.69, 10.0, depth * 0.74),titanium,false)
     _block(group,"R22_TopMechanicalHat",Vector3(0,height + 11.3,0),
@@ -224,6 +247,7 @@ func _cloud_ribbon(index: int) -> MeshInstance3D:
 
 func build() -> void:
     hull = _paint(Color(0.13,0.20,0.27),0.51,0.69)
+    r23_glass = _r23_make_real_facade()
     titanium = MaterialFabricR12Script.get_material(0)
     dark = _paint(Color(0.028,0.044,0.066),0.58,0.46)
     bronze = _paint(Color(0.32,0.30,0.30),0.43,0.73)
