@@ -2,6 +2,7 @@ extends Node3D
 ## OSGARD HORIZON ROADSCAPE - GPU-instanced scenic environment for HTML5.
 ## Original procedural road decoration, low-poly foliage and skyline.
 ## It deliberately has no colliders: traffic and missions retain their geometry.
+const ORGANIC_TREES = preload("res://scripts/horizon_organic_foliage.gd")
 
 var tree_count := 0
 var marking_count := 0
@@ -102,28 +103,30 @@ func _build_trees() -> void:
 				trunks.append(Transform3D(Basis().scaled(Vector3(0.34,height,0.34)),point+Vector3(0,height*0.5,0)))
 				trunk_colors.append(Color("594a40"))
 				var crown_scale: float = rng.randf_range(2.6,3.6)
-				leaves.append(Transform3D(Basis().scaled(Vector3(crown_scale,2.2,crown_scale)),point+Vector3(0,height+0.75,0)))
-				leaf_colors.append(Color("3c7a53") if (ix+iz)%3==0 else Color("589264"))
-				conifers.append(Transform3D(Basis().scaled(Vector3(crown_scale*.70,2.4,crown_scale*.70)),point+Vector3(0,height+2.1,0)))
-				conifer_colors.append(Color("2d694e") if (ix+iz)%3==0 else Color("3a8158"))
+				# R26: different species, not one bright sphere AND cone on every trunk.
+				# All crowns are shared GPU meshes. Individual trees differ in
+				# size, orientation, species and muted seasonal green tones.
+				var yaw: float = rng.randf_range(-PI,PI)
+				if (ix+iz+i)%3==0:
+					var pine_base := Basis(Vector3.UP,yaw).scaled(
+						Vector3(crown_scale*0.81,2.3,crown_scale*0.81))
+					conifers.append(Transform3D(pine_base,point+Vector3(0,height+1.8,0)))
+					conifer_colors.append(Color("315644") if (ix+iz)%2==0 else Color("47604c"))
+				else:
+					var leaf_base := Basis(Vector3.UP,yaw).scaled(
+						Vector3(crown_scale,2.0,crown_scale))
+					leaves.append(Transform3D(leaf_base,point+Vector3(0,height+0.86,0)))
+					leaf_colors.append(Color("587859") if (ix+iz)%3==0 else Color("698263"))
+
 	var trunk_mesh := CylinderMesh.new()
 	trunk_mesh.top_radius = 0.4
 	trunk_mesh.bottom_radius = 0.55
 	trunk_mesh.height = 1.0
 	trunk_mesh.radial_segments = 6
 	_batch("TrunkBatch",trunk_mesh,trunks,trunk_colors)
-	var crown_mesh := SphereMesh.new()
-	crown_mesh.radius = 0.8
-	crown_mesh.height = 1.6
-	crown_mesh.radial_segments = 9
-	crown_mesh.rings = 5
-	_batch("LeafCanopyBatch",crown_mesh,leaves,leaf_colors)
-	var tip_mesh := CylinderMesh.new()
-	tip_mesh.top_radius = 0.0
-	tip_mesh.bottom_radius = 0.92
-	tip_mesh.height = 1.0
-	tip_mesh.radial_segments = 7
-	_batch("LeafConeBatch",tip_mesh,conifers,conifer_colors)
+	# New organic crown meshes remain one GPU-instanced call per species.
+	_batch("LeafCanopyBatch",ORGANIC_TREES.leaf_canopy(),leaves,leaf_colors)
+	_batch("LeafConeBatch",ORGANIC_TREES.pine_canopy(),conifers,conifer_colors)
 	tree_count = trunks.size()
 
 func _build_lamps() -> void:
