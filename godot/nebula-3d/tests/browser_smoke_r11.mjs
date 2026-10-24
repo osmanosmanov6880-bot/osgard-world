@@ -17,6 +17,32 @@ const browser = await chromium.launch({
 // when the Godot canvas exists. Fall back to direct canvas readback, but only
 // count a substantial JPEG as a visual capture. Never mark a blank as a pass.
 async function captureWithFallback(page, destination, errors) {
+  // Ask the live Godot viewport for the current frame. This avoids the
+  // Chromium software compositor, which can stall while SwiftShader is busy.
+  try {
+    const requestId = await page.evaluate(() => {
+      const next = Number(window.__nebulaR11CaptureRequestId || 0) + 1;
+      window.__nebulaR11CaptureRequestId = next;
+      return next;
+    });
+    await page.waitForFunction(
+      id => Number(window.__nebulaR11CaptureCompletedId) === id,
+      requestId, { timeout: 15000, polling: 100 });
+    const engineImage = await page.evaluate(() => window.__nebulaR11CaptureData || '');
+    if (engineImage.startsWith('data:image/jpeg;base64,')) {
+      const raw = Buffer.from(engineImage.slice('data:image/jpeg;base64,'.length), 'base64');
+      if (raw.length >= 12000) {
+        fs.writeFileSync(destination, raw);
+        return 'godot-viewport';
+      }
+      errors.push('Godot viewport JPEG too small (' + raw.length + ' bytes)');
+    } else {
+      const reason = await page.evaluate(() => window.__nebulaR11CaptureError || '');
+      errors.push('Godot viewport did not return JPEG' + (reason ? ': ' + reason : ''));
+    }
+  } catch (e) {
+    errors.push('Godot viewport capture unavailable: ' + String(e.message).slice(0, 180));
+  }
   try {
     await page.screenshot({ path: destination, type: 'jpeg', quality: 70, timeout: 18000, animations: 'disabled' });
     if (fs.statSync(destination).size >= 12000) return 'compositor';
