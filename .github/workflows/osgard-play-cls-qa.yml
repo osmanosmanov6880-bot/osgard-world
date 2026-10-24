@@ -1,0 +1,49 @@
+name: OSGARD Play measured mobile CLS stability gate
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - 'src/osgardRouteSkeleton.css'
+      - 'src/PlayHome.tsx'
+      - 'src/playCinematic.css'
+      - 'scripts/ecosystem-mobile-lab.spec.mjs'
+      - '.github/workflows/osgard-play-cls-qa.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  measured-mobile-layout:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install locked build dependencies and pinned Playwright
+        run: |
+          npm ci
+          npm install --no-save --package-lock=false @playwright/test@1.58.2
+          if command -v google-chrome >/dev/null 2>&1; then
+            google-chrome --version
+            echo "OSGARD_BROWSER_CHANNEL=chrome" >> "$GITHUB_ENV"
+          else
+            npx playwright install --with-deps --no-shell chromium
+          fi
+      - name: Build actual release candidate
+        run: |
+          npm run build
+          cp -a public/games/. dist/games/
+      - name: Measure real mobile Play layout without altering CLS budget
+        run: |
+          npx playwright test --config playwright.ecosystem.config.mjs --project=mobile scripts/ecosystem-mobile-lab.spec.mjs --grep "play: usable main action"
+      - name: Preserve test geometry, screenshots and browser trace
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: play-initial-load-cls-measurement
+          path: |
+            browser-report/
+            test-results/
+          if-no-files-found: warn
