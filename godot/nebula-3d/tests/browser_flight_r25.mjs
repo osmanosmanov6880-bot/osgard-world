@@ -36,6 +36,9 @@ try {
   await waitFor(()=>window.__nebulaPilotTelemetry?.ready === true,90000);
   const t0=await checkpoint('real Godot runtime initialized',s=>s?.version==='R25' && s.samples>=1 && Number.isFinite(s.flight_distance));
   if(t0.locked) throw new Error('Player controls are locked at startup');
+  // Real users click the canvas before piloting; emulate the same focus.
+  // R26 also installs physical keyboard listeners before Godot runtime.
+  await page.locator('#canvas').focus();
   // JavaScript KeyboardEvent.code is independent of Cyrillic keyboard layout.
   await page.keyboard.down('w');
   const keyInBrowser = await page.evaluate(() => ({
