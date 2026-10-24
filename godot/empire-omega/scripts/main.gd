@@ -21,6 +21,7 @@ const ROADWORKS_SCENE = preload("res://scripts/roadworks_visual.gd")
 const MOBILITY = preload("res://scripts/city_mobility.gd")
 const SOUND_SCENE = preload("res://scripts/city_soundscape.gd")
 const SKID_SCENE = preload("res://scripts/horizon_skid_trails.gd")
+const GROUND_SPRAY_SCENE = preload("res://scripts/horizon_ground_spray.gd")
 const CASE_MARKER_SCENE = preload("res://scripts/city_case_marker.gd")
 const CARGO_VISUAL_SCENE = preload("res://scripts/cargo_visual.gd")
 const POLICE_SCENE = preload("res://scripts/police_dispatch.gd")
@@ -34,6 +35,7 @@ var traffic_signals
 var roadworks
 var soundscape
 var skid_trails: Node3D
+var ground_spray: Node3D
 var city_case_marker
 var cargo_visual
 var current_weather_kind := "clear"
@@ -117,6 +119,8 @@ func _ready() -> void:
 	soundscape.attach_vehicle(car)
 	skid_trails = SKID_SCENE.new()
 	add_child(skid_trails)
+	ground_spray = GROUND_SPRAY_SCENE.new()
+	add_child(ground_spray)
 	_spawn_traffic()
 	_spawn_citizens()
 	patrols = POLICE_SCENE.new()
@@ -450,6 +454,7 @@ func _physics_process(delta: float) -> void:
 	GameState.sync_vehicle_live(car.fuel,car.health,car.mileage,driving)
 	if soundscape != null: soundscape.update_cues(driving,car.speed,current_weather_kind,int(GameState.data.get("law",{}).get("heat",0)),Input.get_action_strength("move_forward") if driving else 0.0,car.handbrake_on if driving else false,delta)
 	if skid_trails != null: skid_trails.call("update_trails",car,driving,adaptive_graphics.effective_quality(),delta)
+	if ground_spray != null: ground_spray.call("update_spray",car,driving,adaptive_graphics.effective_quality(),delta)
 	GameState.data["day_clock"] = fposmod(float(GameState.data["day_clock"])+delta*0.012,24.0)
 	world.update_daynight(float(GameState.data["day_clock"]))
 	autosave_accumulator += delta
