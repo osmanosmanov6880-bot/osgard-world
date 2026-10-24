@@ -122,7 +122,7 @@ func _browser_mask() -> int:
     # One read per physical tick, not a costly JS bridge call per key.
     # window key listeners use KeyboardEvent.code, unaffected by RU/EN layout.
     browser_input_samples += 1
-    var result: Variant = JavaScriptBridge.eval("Number(window.__nebulaPilotMask || 0)")
+    var result: Variant = JavaScriptBridge.eval("Number(window.__nebulaPilotMask || 0)", true)
     return int(result) if result != null else 0
 
 func _physical_key(code: Key) -> bool:
