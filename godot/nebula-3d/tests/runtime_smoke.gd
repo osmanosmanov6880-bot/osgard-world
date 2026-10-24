@@ -171,6 +171,16 @@ func _run() -> void:
         scenic.r23_glass.albedo_texture != null and
         scenic.r23_glass.emission_texture != null,
         "R22 golden-hour Aurora real PBR buildings/bridges/windows missing"):return
+    if not check(scenic.real_3d_windows == 11064 and
+        scenic.r25_side_and_back_windows == 7837 and
+        scenic.r25_window_faces == 1844,
+        "R25 all-four-sides PBR windows absent from 18 real towers"):return
+    if not check(world.has_method("_r25_emit_browser_flight_state") and
+        world.r25_telemetry_samples == 0,
+        "R25 browser-only true physics telemetry must not run in native editor"):return
+    print("NEBULA_R25_FOUR_FACADES_SUCCESS: modeled_windows=%d back_side=%d faces=%d" % [
+        scenic.real_3d_windows, scenic.r25_side_and_back_windows,
+        scenic.r25_window_faces])
     if not check(scenic.moving_traffic == 16 and scenic.cloud_banks == 4 and
         scenic.cloud_nodes[0].mesh is Mesh,
         "R22 atmospheric scene still lacks actual 3D clouds and moving air traffic"):return

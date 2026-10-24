@@ -623,6 +623,39 @@ require("docs/R23-WASD-PORTRAIT-LANDSCAPE-VISUAL-ACCEPTANCE.md",
     "R23", "physical", "W", "844x390", "390x844", "F7", "F9", "F10")
 assert "NEBULA_R23_REAL_INPUT_SUCCESS" in smoke
 assert "R23 clicked START FLIGHT but the ship stayed at 000 km/h" in smoke
+# R25: live WebAssembly browser pilot testing instead of trusting Godot
+# headless physics as proof of user's real keyboard and clickable controls.
+r25_browser = require(
+    "tests/browser_flight_r25.mjs",
+    "__nebulaPilotTelemetry",
+    "real Godot runtime initialized",
+    "physical W drives real ship motion",
+    "actual clickable cruise switch engaged",
+    "real autopilot rotates ship toward off-axis mission",
+    "real ship approaches mission objective in world units",
+    "NEBULA_R25_BROWSER_FLIGHT_SUCCESS",
+    "flight.json",
+)
+r25_workflow = require(
+    "../../.github/workflows/nebula-r25-real-browser-flight.yml",
+    "workflow_run:",
+    "REMIX NEBULA 3D native Web release",
+    "browser_flight_r25.mjs",
+    "timeout 300s",
+)
+assert "func _r25_emit_browser_flight_state() -> void:" in world
+assert 'JavaScriptBridge.eval("window.__nebulaPilotTelemetry = "' in world
+assert "var r25_telemetry_samples: int = 0" in world
+assert "snappedf(ship.flight_distance, 0.01)" in world
+assert "r25_side_and_back_windows" in r22_city
+assert "_r25_side_window_transform" in r22_city
+assert "r25_window_faces" in r22_city
+assert "NEBULA_R25_FOUR_FACADES_SUCCESS" in smoke
+assert "11064" in smoke and "7837" in smoke
+require(
+    "docs/R25-BROWSER-FLIGHT-AND-FOUR-FACADE-PBR.md",
+    "11,064", "7,837", "Chromium", "SwiftShader", "F7", "F9", "F10",
+)
 assert "func _make_ship(" not in ship, "R3 low-poly ship builder is still active"
 assert ship_visual.count("engine_flames.append(") == 1
 assert "for x in [-1.24, 0.0, 1.24]:" in ship_visual, "three engine array missing"
@@ -630,4 +663,4 @@ assert "image.generate_mipmaps()" in ship_visual
 assert premium.count("Image.create(") >= 2, "separate facade albedo/emission atlases missing"
 assert "high-detail" not in project.lower(), "project identity may remain stable"
 assert len(smoke) > 1500 and len(city) > 5000 and len(world) > 10000
-print("NEBULA_R23_SOURCE_SUCCESS: RU-layout physical WASD and JS keycodes, clickable cruise, nine portrait/landscape controls, R20 textured hero facades and no idle jet cones")
+print("NEBULA_R25_SOURCE_SUCCESS: true WASM browser telemetry, scripted physical W/click/waypoint check and 11k PBR four-sided windows")
