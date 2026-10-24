@@ -2,7 +2,7 @@
 
 ## Product surface
 - OSGARD PLAY game ID: `r135-service`.
-- User route: `/play/r135-service` (React game detail/player iframe).
+- User route: `/play/world/r135-service` (React game detail/player iframe).
 - Native Web runtime route: `/games/r135-service/`.
 - Original editor source: `godot/osgard-r135-standalone/`. R136 files are untouched.
 
