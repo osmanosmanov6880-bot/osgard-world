@@ -266,7 +266,8 @@ func _cloud_ribbon(index: int) -> MeshInstance3D:
     haze.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
     haze.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
     haze.cull_mode = BaseMaterial3D.CULL_DISABLED
-    haze.albedo_color = Color(0.77,0.65,0.52,0.12+float(index)*0.03)
+    # Use a cool, low-opacity deck so it adds depth without tinting the whole skyline beige.
+    haze.albedo_color = Color(0.29,0.40,0.57,0.045+float(index)*0.012)
     draw.material_override = haze
     add_child(draw)
     cloud_banks += 1
