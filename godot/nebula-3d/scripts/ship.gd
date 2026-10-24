@@ -158,9 +158,10 @@ func _physics_process(delta: float) -> void:
     var pitch: float = axes.y
     var throttle: float = axes.z
     var climb: float = axes.w
-    var afterburner: bool = (_physical_key(KEY_SHIFT) or
-        (browser_input_mask & KEY_BOOST) != 0 or touch_boost) and
-        throttle > 0.05 and boost > 1.0
+    var afterburner: bool = (
+        (_physical_key(KEY_SHIFT) or (browser_input_mask & KEY_BOOST) != 0 or touch_boost)
+        and throttle > 0.05 and boost > 1.0
+    )
     # Angular acceleration and damping make heavy craft bank and settle.
     var angular_alpha: float = 1.0 - exp(-TURN_RESPONSE * delta)
     yaw_rate = lerpf(yaw_rate, -yaw * turn_speed, angular_alpha)
@@ -183,8 +184,10 @@ func _physics_process(delta: float) -> void:
     thruster_power = absf(throttle) * (1.0 if afterburner else 0.55)
     boost = clampf(boost + (-23.0 if afterburner else 16.0) * delta, 0.0, 100.0)
     cooldown = maxf(0.0, cooldown - delta)
-    if (_physical_key(KEY_SPACE) or
-        (browser_input_mask & KEY_FIRE) != 0 or touch_fire) and cooldown <= 0.0:
+    if (
+        (_physical_key(KEY_SPACE) or (browser_input_mask & KEY_FIRE) != 0 or touch_fire)
+        and cooldown <= 0.0
+    ):
         cooldown = maxf(0.10, 0.30 - float(weapon_rank) * 0.05)
         fired.emit(global_position + forward * 2.2, forward)
     var pre_collision_velocity: Vector3 = velocity
