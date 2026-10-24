@@ -8,8 +8,9 @@
 
 ## Delivery contract and safety
 - Candidate branch: `feat/r135-w5-visual-diagnostics-20261024`. Do not merge until Godot 4.4.1 import, native smoke, and Chromium desktop/mobile tests pass.
-- W5 CI uses its own release manifest version `r135-web-visual-diagnostics-w5-20261024`. Production staging and production smoke are **still pinned to W4**, deliberately. No production deploy of W5 is claimed.
-- After candidate tests pass, update `scripts/r135-release-stage.py`, `scripts/r135-production-smoke.mjs` and `.github/workflows/deploy-frontend.yml` together to accept the W5 immutable tag, then merge to master, publish asset and run deploy. Never change these production files until a tested W5 release is available.
+- W5 CI creates the release manifest `r135-web-visual-diagnostics-w5-20261024` **only after** Godot, WebGL, Nginx, checksum and touchscreen checks succeed. Publication is from the W5 feature-branch job only, with no automatic overwriting of that tag.
+- Production staging, production smoke and frontend deployment have been **prepared in this unmerged PR**, pinned to the W5 tag and exact validated source SHA `668e42716aaefb0c45eb5347abe9355437dc4b69`. Live `master` still serves W4 until the PR is approved and merged. No W5 production deploy is claimed.
+- Before merge: require a successful candidate release and a downloadable W5 ZIP+manifest. The three production files above are already staged together **inside this isolated PR**. Verify the manifest's `source_commit` matches the pinned SHA, then merge and allow the existing SSH deploy to install the authenticated W5 pack. If W5 build fails, keep PR open and public W4 untouched.
 
 ## QA
 1. Existing native Godot 4.4.1 smoke: 4-step training, 5-step diagnostics, locks, score, HERO/ECO, three marker presence.
@@ -19,3 +20,7 @@
 ## Known risk
 - The W4 smoke checks mechanical state rather than pixel-perfect compositions; W5 visual review also needs saved 1366x768 and portrait screenshots.
 - The W5 branch is not published to the live `/games/r135-service/` route.
+
+## Additional W5 test coverage
+- Native Godot smoke now completes all three scenarios (optics, cooling, interlock), verifies moving-head marker attachment and scene summary states.
+- Chromium desktop and emulated Pixel touchscreen test actual 3D indicator states, the inspected/cleared transition and narrower portrait camera distance compensation. CI captures additional screenshots of the W5 optical view.
