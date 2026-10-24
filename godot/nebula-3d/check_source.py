@@ -667,6 +667,7 @@ r31_mobile = require(
     "real browser touch activates throttle",
     "mobile throttle moves actual ship",
     "real two-finger throttle and boost",
+    "landscape physical touch activates ship throttle",
     "multitouch release never sticks boost",
     "NEBULA_R31_MOBILE_TOUCH_SUCCESS",
 )
