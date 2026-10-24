@@ -1,0 +1,75 @@
+name: EMPIRE Omega R12.1 genuine portrait WebGL pixel acceptance
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - 'godot/empire-omega/**'
+      - 'scripts/omega-portrait-preview.spec.mjs'
+      - 'playwright.omega-portrait-preview.config.mjs'
+      - '.github/workflows/omega-portrait-preview-qa.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  authentic-godot-four-viewport-preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    steps:
+      - uses: actions/checkout@v4
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Prepare original game assets and import real Godot scene
+        run: |
+          python3 godot/empire-omega/tools/generate_audio.py
+          python3 godot/empire-omega/tools/generate_patrol_audio.py
+          godot --headless --editor --path godot/empire-omega --import --quit
+      - name: Confirm original input + existing and new native viewport contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          for suite in v28_touch_controls v29_responsive_layout v34_real_touch_drive v35_portrait_viewport v36_mobile_car_entry v37_full_height_portrait; do
+            timeout --signal=TERM --kill-after=5s 70s godot --headless --path godot/empire-omega --script "res://tests/$suite.gd"
+          done
+      - name: Export actual runtime (WASM and PCK), never a simulated canvas
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p godot/empire-omega/.build-web
+          godot --headless --path godot/empire-omega --export-release Web "$GITHUB_WORKSPACE/godot/empire-omega/.build-web/index.html"
+          node scripts/localize-godot-web-export.mjs godot/empire-omega/.build-web
+          test -s godot/empire-omega/.build-web/index.wasm
+          test -s godot/empire-omega/.build-web/index.pck
+      - name: Install real Chromium and screenshot pixel reader
+        run: |
+          npm ci
+          npm install --no-save --package-lock=false @playwright/test@1.58.2 pngjs@7.0.0
+          npx playwright install --with-deps chromium
+      - name: Serve authentic unpublished Godot build on localhost
+        shell: bash
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 --directory godot/empire-omega/.build-web > /tmp/omega-portrait-server.log 2>&1 &
+          for attempt in 1 2 3 4 5 6 7 8 9 10; do
+            curl -fsS http://127.0.0.1:4173/index.html > /dev/null && exit 0
+            sleep 1
+          done
+          cat /tmp/omega-portrait-server.log
+          exit 1
+      - name: Verify rendered WORLD pixels, no letterbox and actual WebGL2 at four resolutions
+        run: npx playwright test --config playwright.omega-portrait-preview.config.mjs
+      - name: Retain real screenshots and diagnostics even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: original-godot-r12-portrait-webgl-pixel-proof
+          path: |
+            omega-portrait-preview-results/
+            omega-portrait-preview-report/
+          if-no-files-found: ignore
+          retention-days: 12
