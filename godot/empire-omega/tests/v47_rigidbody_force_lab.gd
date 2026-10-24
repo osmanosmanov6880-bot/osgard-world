@@ -47,6 +47,7 @@ func _run() -> void:
 	check(absf(lab.rotation.x)<1.1 and absf(lab.rotation.z)<1.1,"resting chassis does not roll or pitch uncontrollably")
 	check(int(lab.get("grounded_wheels"))>=2,"car has stabilized on at least two wheels")
 	check(float(lab.get("average_spring_force"))>1000.0,"physical spring actually supports mass")
+	var settled_height: float = lab.global_position.y
 	var start: Vector3=lab.global_position
 	lab.set("command_drive",0.72)
 	for i in range(90):
@@ -58,7 +59,8 @@ func _run() -> void:
 	lab.set("command_steer",0.75)
 	for i in range(95):
 		await physics_frame
-	check(absf(wrapf(lab.rotation.y-angle_start,-PI,PI))>0.03,"actual force torque steers rigid body")
+	var turn_delta: float = absf(wrapf(lab.rotation.y-angle_start,-PI,PI))
+	check(turn_delta>0.03,"actual force torque steers rigid body")
 	check(is_finite(lab.global_position.x) and is_finite(lab.global_position.z),"force-based path stays finite")
 	lab.set("command_drive",0.0)
 	lab.set("command_steer",0.0)
@@ -86,9 +88,9 @@ func _run() -> void:
 		"engine":"Godot 4.4.1",
 		"mass_kg":LAB.BODY_MASS,
 		"peak_real_wheel_contacts":peak_contacts,
-		"settled_height_m":lab.global_position.y,
+		"settled_height_m":settled_height,
 		"drive_test_metres":traveled,
-		"yaw_delta_rad":absf(wrapf(lab.rotation.y-angle_start,-PI,PI)),
+		"yaw_delta_rad":turn_delta,
 		"speed_before_brake_mps":fast,
 		"speed_after_brake_mps":slow,
 		"airborne_wheel_contacts":int(above.get("grounded_wheels")),
