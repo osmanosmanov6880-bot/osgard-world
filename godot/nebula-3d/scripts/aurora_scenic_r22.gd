@@ -21,6 +21,9 @@ var r25_window_faces: int = 0
 var r25_side_and_back_windows: int = 0
 var physical_structures: int = 0
 var overpass_count: int = 0
+## R40: avoid one draw submission per tiny bridge lamp (3 x 32 -> 3 batches).
+var r40_bridge_luminaires: int = 0
+var r40_bridge_luminaire_draws: int = 0
 var moving_traffic: int = 0
 var cloud_banks: int = 0
 var quality_mode: int = 0
@@ -205,13 +208,24 @@ func _bridges(root: Node3D) -> void:
             Vector3(269.0,5.4,9.2),dark,false)
         _block(span,"PBRDeckSkin",Vector3(0,3.0,0),
             Vector3(273.0,0.44,11.2),titanium)
+        # R40: 32 identical emissive fixture meshes used to be 32 nodes
+        # per bridge. Retain every *physical 3D fixture* but submit them in
+        # one sector-local MultiMesh draw per bridge (3 batches total).
+        # Keep the existing structural collision bodies entirely untouched.
+        var luminaire_transforms: Array[Transform3D] = []
         for side in [-1.0,1.0]:
             _block(span,"CantileverRails",Vector3(0,4.2,side*5.8),
                 Vector3(267.0,1.20,0.64),bronze)
             for n in 16:
                 var x: float = (float(n)-7.5)*16.0
-                _block(span,"R22_DeckLuminaires",Vector3(x,3.2,side*4.6),
-                    Vector3(1.6,0.10,0.85),led)
+                var local: Vector3 = Vector3(x,3.2,side*4.6)
+                luminaire_transforms.append(Transform3D(
+                    Basis.IDENTITY.scaled(Vector3(1.6,0.10,0.85)),
+                    span.position + local))
+        _batch("R40_BridgeLuminaireBatch_%02d" % i,
+            luminaire_transforms, led)
+        r40_bridge_luminaires += luminaire_transforms.size()
+        r40_bridge_luminaire_draws += 1
         var body := StaticBody3D.new()
         body.name = "R22_PhysicalFlightway"
         var collision := CollisionShape3D.new()
