@@ -33,8 +33,8 @@ async function expectState(page, predicate, label, timeout = 18_000) {
 }
 async function tapSceneButton(page, index) {
   const state = await expectState(page,
-    x => x?.button_centers?.length === 6 && x.viewport_w > 0 && x.viewport_h > 0,
-    'Six rendered mobile Godot controls are required')
+    x => x?.button_centers?.length === 8 && x.viewport_w > 0 && x.viewport_h > 0,
+    'Eight rendered mobile Godot controls are required')
   const point = state.button_centers[index]
   const rect = await page.locator('canvas').first().boundingBox()
   if (!point || !rect) throw new Error('Godot button geometry missing: ' + index)
@@ -69,19 +69,79 @@ async function keyboardMission(page) {
 async function touchMission(page) {
   await tapSceneButton(page, 0)  // START MISSION
   await expectState(page, x => x?.mission_active && x?.mission_step === 0, 'Mobile START tap failed')
-  await tapSceneButton(page, 4)  // OPEN HATCH
+  await tapSceneButton(page, 6)  // OPEN HATCH
   await expectState(page, x => x?.mission_step === 1, 'Mobile OPEN HATCH tap failed')
-  await tapSceneButton(page, 3)  // PLAY/PAUSE
+  await tapSceneButton(page, 5)  // PLAY/PAUSE
   await expectState(page, x => x?.mission_step === 2, 'Mobile PAUSE tap failed')
-  await tapSceneButton(page, 4)  // CLOSE HATCH
+  await tapSceneButton(page, 6)  // CLOSE HATCH
   await expectState(page, x => x?.mission_step === 3, 'Mobile CLOSE HATCH tap failed')
-  await tapSceneButton(page, 3)  // RESUME
+  await tapSceneButton(page, 5)  // RESUME
   await expectState(page, x => x?.mission_completed && x?.mission_step === 4, 'Mobile MISSION completion failed')
-  await tapSceneButton(page, 1)  // NEXT VIEW
+  await tapSceneButton(page, 2)  // NEXT VIEW
   await expectState(page, x => x?.view === 1, 'Mobile camera preset tap failed')
-  await tapSceneButton(page, 5)  // RESET VIEW
+  await tapSceneButton(page, 7)  // RESET VIEW
   await expectState(page, x => x?.view === 0, 'Mobile camera reset tap failed')
 }
+// Each scenario must be solved through actual controls, including the
+// closing/opening hatch physics and a visible camera-based diagnostic target.
+async function keyboardDiagnostics(page) {
+  await page.keyboard.press('c')
+  await expectState(page, x => x?.challenge_active && x?.challenge_step === 0, 'C must start diagnostics')
+  await page.keyboard.press('f') // Safety violation, should be refused.
+  await expectState(page, x => x?.challenge_step === 0 && x?.challenge_errors === 1 && x?.lid_target === 0,
+    'Running machine must refuse hatch access')
+  await page.keyboard.press('Space')
+  await expectState(page, x => x?.challenge_step === 1 && !x?.motion_enabled, 'Diagnostic stop missed')
+  await page.keyboard.press('f')
+  await expectState(page, x => x?.challenge_step === 2 && x?.lid_target === 1, 'Diagnostic hatch opening missed')
+  await expectState(page, x => x?.lid_progress >= .95, 'Hatch never opened completely', 35_000)
+  await page.keyboard.press('v')
+  await page.keyboard.press('e') // Wrong camera angle must not pass.
+  await expectState(page, x => x?.challenge_step === 2 && x?.challenge_errors >= 2,
+    'Wrong inspection camera was accepted')
+  await page.keyboard.press('v')
+  await expectState(page, x => x?.view === x?.challenge_target_view, 'Correct optical view not selected')
+  await page.keyboard.press('e')
+  await expectState(page, x => x?.challenge_step === 3, 'Correct diagnostic scan failed')
+  await page.keyboard.press('f')
+  await expectState(page, x => x?.challenge_step === 4 && x?.lid_target === 0, 'Diagnostic close missed')
+  await page.keyboard.press('Space') // Premature restart must stay blocked.
+  await expectState(page, x => !x?.motion_enabled && x?.challenge_step === 4 && x?.challenge_errors >= 3,
+    'Unsafe restart was not blocked')
+  await expectState(page, x => x?.lid_progress <= .05, 'Hatch never sealed', 35_000)
+  await page.keyboard.press('Space')
+  await expectState(page, x => x?.challenge_completed && x?.challenge_step === 5
+    && x?.challenge_score > 0 && x?.challenge_best_score > 0 && x?.motion_enabled,
+    'Advanced diagnosis did not complete and score')
+}
+async function touchDiagnostics(page) {
+  await tapSceneButton(page, 1) // DIAGNOSTICS, real Godot button
+  await expectState(page, x => x?.challenge_active && x?.challenge_step === 0,
+    'Touch diagnostics start failed')
+  await tapSceneButton(page, 6) // Unsafe hatch press
+  await expectState(page, x => x?.challenge_errors === 1 && x?.lid_target === 0,
+    'Touch safety interlock bypassed')
+  await tapSceneButton(page, 5) // Pause drive
+  await expectState(page, x => x?.challenge_step === 1, 'Touch challenge pause missed')
+  await tapSceneButton(page, 6) // Open hatch
+  await expectState(page, x => x?.challenge_step === 2, 'Touch challenge hatch missed')
+  await expectState(page, x => x?.lid_progress >= .95, 'Touch challenge hatch not open', 35_000)
+  await tapSceneButton(page, 2) // Camera 1
+  await tapSceneButton(page, 3) // Wrong scan target
+  await expectState(page, x => x?.challenge_errors >= 2 && x?.challenge_step === 2,
+    'Touch challenge wrongly accepted scan')
+  await tapSceneButton(page, 2) // Camera 2, optical defect
+  await expectState(page, x => x?.view === x?.challenge_target_view, 'Correct camera not selected')
+  await tapSceneButton(page, 3) // SCAN TARGET
+  await expectState(page, x => x?.challenge_step === 3, 'Touch diagnostic scan failed')
+  await tapSceneButton(page, 6) // Close hatch
+  await expectState(page, x => x?.challenge_step === 4, 'Touch challenge hatch close failed')
+  await expectState(page, x => x?.lid_progress <= .05, 'Touch hatch did not close', 35_000)
+  await tapSceneButton(page, 5) // Restart drive
+  await expectState(page, x => x?.challenge_completed && x?.challenge_score > 0 &&
+    x?.challenge_best_score > 0 && x?.motion_enabled, 'Touch challenge did not complete')
+}
+
 let failed = false
 try {
   for (const [name, opts, isMobile] of [
@@ -106,7 +166,7 @@ try {
       const boot = await expectState(page,
         x => x?.scene_ready && x?.loading_failures === 0
           && x?.loaded?.endsWith('service_spine_eco.glb')
-          && x?.button_centers?.length === 6,
+          && x?.button_centers?.length === 8,
         'Real Godot ECO rig and operator controls did not load', 90_000)
       if (boot.quality !== 0) throw new Error('Low-memory ECO mode not used on boot')
       const geometry = await page.locator('canvas').first().evaluate(canvas => ({
@@ -118,8 +178,10 @@ try {
       }
       if (isMobile) {
         await touchMission(page)
+        await touchDiagnostics(page)
       } else {
         await keyboardMission(page)
+        await keyboardDiagnostics(page)
         await page.keyboard.press('q')
         await expectState(page, x => x?.quality === 2
           && x?.loaded?.endsWith('service_spine_hero.glb') && x?.loading_failures === 0,
@@ -135,7 +197,8 @@ try {
       await page.screenshot({ path: resolve(output, name + '.png'), fullPage: true })
       const final = await readState(page)
       result.push({ device: name, status: 'PASS', verified: 'real mechanics and interaction',
-        mission: final.mission_completed, view: final.view, quality: final.quality,
+        mission: final.mission_completed, challenge: final.challenge_completed,
+        challengeScore: final.challenge_score, view: final.view, quality: final.quality,
         canvas: geometry })
       console.log('R135 gameplay PASS:', name, JSON.stringify(result.at(-1)))
     } catch (error) {
