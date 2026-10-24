@@ -1,5 +1,6 @@
 /* OSGARD WAVE 03 — helpful controls, truthful session recovery and mobile safety. */
-#last-session[hidden],#player-help-panel[hidden],#player-connection-status[hidden]{display:none!important}
+#last-session[hidden],#player-help-panel[hidden],#player-connection-status[hidden],#catalog-connection-status[hidden]{display:none!important}
+#catalog-connection-status.catalog-offline-notice{display:block;margin-block:14px 0;padding:13px 17px;border:1px solid #a17c48;border-radius:9px;color:#ffd79a;background:#302519;font:600 13px/1.5 Inter,system-ui,sans-serif}
 #last-session.last-session{
   display:flex;
   gap:25px;
