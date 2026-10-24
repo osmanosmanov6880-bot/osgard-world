@@ -128,7 +128,10 @@ func update_trails(vehicle: CharacterBody3D, driving: bool, quality: String, dt:
 	if not drift_eligible(speed,lateral,handbrake):
 		_break_streak()
 		return 0
-	var sampled: Dictionary = SURFACE.probe(vehicle)
+	var cached: Variant = vehicle.get("last_wheel_support")
+	var sampled: Dictionary = cached if cached is Dictionary and vehicle.is_physics_processing() else {}
+	if sampled.is_empty() or not sampled.has("points"):
+		sampled = SURFACE.probe(vehicle)
 	var grounded: Array[bool] = sampled["grounded"]
 	var points: Array[Vector3] = sampled["points"]
 	var strength: float = mark_opacity(float(vehicle.get("traction_factor")))
