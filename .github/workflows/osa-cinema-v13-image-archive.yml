@@ -1,0 +1,70 @@
+name: OSA Cinema V13 image archival
+
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - '.github/workflows/osa-cinema-v13-image-archive.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  archive-approved-assets:
+    if: ${{ github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'feature/osa-cinema-v13-cinematic-20261024' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Check out the existing PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          persist-credentials: true
+      - name: Download owner-approved V12 images, with strict format limits
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p public/osa-cinema/reference
+          source_root='https://osa-cinema-beyond-the-model.osman-absolu-5357.chatgpt.site/media/reference'
+          for name in library understand verify decide; do
+            output="public/osa-cinema/reference/${name}.webp"
+            curl --fail --location --silent --show-error --retry 3 --retry-all-errors \
+              --connect-timeout 12 --max-time 65 \
+              -H 'Accept: image/webp' \
+              "${source_root}/${name}.webp" -o "${output}"
+          done
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib
+          import json
+          files = []
+          for name in ("library", "understand", "verify", "decide"):
+              p = Path(f"public/osa-cinema/reference/{name}.webp")
+              data = p.read_bytes()
+              assert 10_000 <= len(data) <= 8_000_000, f"Unexpected image size: {name} ({len(data)})"
+              assert data[0:4] == b"RIFF" and data[8:12] == b"WEBP", f"Not a valid WebP container: {name}"
+              files.append({"name": p.name, "size": len(data), "sha256": hashlib.sha256(data).hexdigest()})
+          manifest = {
+              "source": "https://osa-cinema-beyond-the-model.osman-absolu-5357.chatgpt.site/media/reference/",
+              "owner_site": "OSA CINEMA V12",
+              "note": "Immutable local copy of approved V12 visual references for reliable V13 same-origin delivery.",
+              "files": files,
+          }
+          Path("public/osa-cinema/reference/manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
+          print(json.dumps(files, indent=2))
+          PY
+      - name: Save archived assets on the reviewed PR branch
+        shell: bash
+        env:
+          BRANCH: ${{ github.event.pull_request.head.ref }}
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add public/osa-cinema/reference
+          if git diff --cached --quiet; then
+            echo 'Approved images already present; no changes'
+            exit 0
+          fi
+          git commit -m 'assets(osa-cinema): archive approved V12 cinematic reference images'
+          git push origin "HEAD:refs/heads/${BRANCH}"
