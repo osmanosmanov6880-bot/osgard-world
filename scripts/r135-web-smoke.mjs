@@ -189,7 +189,7 @@ async function verifyAdaptiveHud(page) {
       && rect.y + rect.h <= state.viewport_h + 4
     if (!visible(state.hud_rect) || !visible(state.action_rect)) {
       throw new Error('W8 HUD escaped safe viewport ' + width + 'x' + height +
-        ' : ' + JSON.stringify({ hud: state.hud_rect, actions: state.action_rect }))
+        ' : ' + JSON.stringify({ viewport: [state.viewport_w, state.viewport_h], hud: state.hud_rect, actions: state.action_rect }))
     }
     if (state.hud_rect.y + state.hud_rect.h >= state.action_rect.y - 6) {
       throw new Error('W8 status panel overlaps touch controls at ' + width + 'x' + height)
