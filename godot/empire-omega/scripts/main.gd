@@ -468,7 +468,7 @@ func _input(event: InputEvent) -> void:
 	elif event.is_action_pressed("pay_traffic_fines"):
 		_pay_traffic_fines()
 	elif event.is_action_pressed("show_map"):
-		if hud.map != null: hud.map.visible = not hud.map.visible
+		hud.toggle_map()
 
 func _pay_traffic_fines() -> void:
 	if driving or interiors.is_inside() or player.global_position.distance_to(world.locations["cityhall"]["position"])>35.0:
@@ -541,6 +541,8 @@ func _enter_or_exit_vehicle() -> void:
 		player.active = false
 		player.set_physics_process(false)
 		MissionManager.register_action("enter_vehicle")
+		if DisplayServer.is_touchscreen_available():
+			hud.announce(_three("Машина готова · ГАЗ справа, РУЛЬ слева","Car ready · GAS right, STEER left","已上车 · 右侧油门，左侧转向"))
 	else:
 		if absf(car.speed) > 3.0:
 			hud.announce("Снизьте скорость перед выходом" if GameState.locale == "ru" else "Stop the car first")
@@ -758,12 +760,12 @@ func _buy_market() -> void:
 		hud.announce(hud.t("need"))
 
 func _on_dialogue_changed(is_open: bool) -> void:
-	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE if is_open else Input.MOUSE_MODE_CAPTURED)
+	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE if is_open or DisplayServer.is_touchscreen_available() else Input.MOUSE_MODE_CAPTURED)
 	player.active = not is_open and not driving and not hud.is_strategy_open()
 	car.driving = not is_open and driving and not hud.is_strategy_open()
 
 func _on_strategy_changed(enabled: bool) -> void:
-	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE if enabled else Input.MOUSE_MODE_CAPTURED)
+	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE if enabled or DisplayServer.is_touchscreen_available() else Input.MOUSE_MODE_CAPTURED)
 	player.active = not enabled and not driving
 	car.driving = not enabled and driving
 
