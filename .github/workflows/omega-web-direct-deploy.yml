@@ -29,6 +29,8 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+      - name: Verify release-integrity failure conditions
+        run: python3 scripts/omega-live-integrity.py --self-test
       - name: Verify exact native Godot binary artifacts
         shell: bash
         run: |
@@ -82,16 +84,12 @@ jobs:
           scp -i ~/.ssh/osgard_omega_deploy "$RUNNER_TEMP/omega-native/game.tgz" "$DEPLOY_USER@$DEPLOY_HOST:$remote/game.tgz"
           scp -i ~/.ssh/osgard_omega_deploy scripts/deploy-omega-native-remote.sh "$DEPLOY_USER@$DEPLOY_HOST:$remote/deploy.sh"
           ssh -o BatchMode=yes -i ~/.ssh/osgard_omega_deploy "$DEPLOY_USER@$DEPLOY_HOST" "bash '$remote/deploy.sh' '$RUN_ID'"
-      - name: Verify live Godot route and WebAssembly
+      - name: Verify exact live Godot source and downloaded SHA-256 for every file
+        env:
+          OMEGA_RUN_ID: ${{ github.run_id }}
         run: |
           set -euo pipefail
-          url="https://osgard.world/games/omega-3d-preview"
-          curl --fail --show-error --silent --retry 4 --retry-delay 3 --max-time 30 "$url/release.json?verify=$GITHUB_RUN_ID" -o /tmp/omega-live-release.json
-          python3 - <<'PY'
-          import json
-          m=json.load(open('/tmp/omega-live-release.json'))
-          assert m.get('engine')=='Godot 4.4.1'
-          assert m.get('native_tests')=='passed'
-          print('PASS: public URL serves verified native Godot Web release')
-          PY
-          curl --fail --show-error --silent --head --retry 3 --max-time 30 "$url/index.wasm?verify=$GITHUB_RUN_ID" | head -n 20
+          python3 scripts/omega-live-integrity.py \
+            --expected public/games/omega-3d-preview/release.json \
+            --base https://osgard.world/games/omega-3d-preview \
+            --nonce "$OMEGA_RUN_ID"
