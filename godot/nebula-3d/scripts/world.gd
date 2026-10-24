@@ -149,6 +149,8 @@ var r31_mobile_qa_enabled: bool = false
 var r31_touch_web: bool = false
 var r31_mobile_css_size: Vector2i = Vector2i.ZERO
 var r31_mobile_poll_clock: float = 0.0
+# R33 QA-only render throttle. The full city remains loaded and physical.
+var r33_swiftshader_qa_visuals_trimmed: bool = false
 
 func _r25_emit_browser_flight_state() -> void:
     if not OS.has_feature("web") or not is_instance_valid(ship):
@@ -193,6 +195,7 @@ func _r25_emit_browser_flight_state() -> void:
         state["touch_view_w"] = r21_touch.viewport_pixels.x
         state["touch_view_h"] = r21_touch.viewport_pixels.y
         state["touch_events"] = r21_touch.r31_raw_touch_events
+        state["qa_visuals_trimmed"] = r33_swiftshader_qa_visuals_trimmed
         state["touch_last_x"] = r21_touch.r31_last_touch_position.x
         state["touch_last_y"] = r21_touch.r31_last_touch_position.y
         state["touch_last_role"] = r21_touch.r31_last_touch_role
@@ -203,6 +206,18 @@ func _r25_emit_browser_flight_state() -> void:
         state["touch_boost_x"] = boost_centre.x
         state["touch_boost_y"] = boost_centre.y
     JavaScriptBridge.eval("window.__nebulaPilotTelemetry = " + JSON.stringify(state))
+
+
+func _r33_trim_nonessential_qa_meshes(node: Node) -> void:
+    # Hosted SwiftShader is a software GPU. Mobile input acceptance must still
+    # drive the REAL Godot 3D ship and physics, but need not draw thousands of
+    # city facade meshes again. Never run this outside the explicit QA URL.
+    if node == ship or node is CanvasLayer:
+        return
+    if node is GeometryInstance3D:
+        (node as GeometryInstance3D).visible = false
+    for child in node.get_children():
+        _r33_trim_nonessential_qa_meshes(child)
 
 
 func _r31_sync_touch_viewport() -> void:
@@ -320,6 +335,15 @@ func _ready() -> void:
     if OS.has_feature("web"):
         _set_graphics_quality(1)
         adaptive_r12.set_auto(true)
+    if r31_mobile_qa_enabled:
+        # This branch is strictly URL opt-in for CI and cannot affect normal
+        # players. Physical hull, collisions, controls, missions, input stack
+        # and visible cockpit HUD remain authentic.
+        adaptive_r12.set_auto(false)
+        _set_graphics_quality(2)
+        Engine.max_fps = 20
+        _r33_trim_nonessential_qa_meshes(self)
+        r33_swiftshader_qa_visuals_trimmed = true
     # Startup quality selection posts a toast; clear it so the opening skyline stays visible.
     hud_notice.text = ""
     notice_timer = 0.0
