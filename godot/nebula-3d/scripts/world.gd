@@ -195,6 +195,9 @@ func _r25_emit_browser_flight_state() -> void:
         state["touch_view_w"] = r21_touch.viewport_pixels.x
         state["touch_view_h"] = r21_touch.viewport_pixels.y
         state["touch_events"] = r21_touch.r31_raw_touch_events
+        state["touch_dom_bridge"] = r21_touch.r34_dom_bridge_active
+        state["touch_dom_events"] = r21_touch.r34_dom_event_count
+        state["touch_dom_sequence"] = r21_touch.r34_dom_sequence
         state["qa_visuals_trimmed"] = r33_swiftshader_qa_visuals_trimmed
         state["touch_last_x"] = r21_touch.r31_last_touch_position.x
         state["touch_last_y"] = r21_touch.r31_last_touch_position.y
