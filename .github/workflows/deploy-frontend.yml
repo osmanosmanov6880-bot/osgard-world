@@ -494,6 +494,10 @@ jobs:
           OSGARD_BASE_URL: https://osgard.world
           SKILLCRED_EXPECT_CURRENT_DESIGN: "1"
         run: npm run qa:production-routes
+      - name: Verify public AAA development dashboard and all 22 visual game identities
+        env:
+          OSGARD_BASE_URL: https://osgard.world
+        run: node scripts/games-aaa-wave02-production.mjs
       - name: Verify published Unity runtime and real missing-resource responses
         env:
           OSGARD_BASE_URL: https://osgard.world
