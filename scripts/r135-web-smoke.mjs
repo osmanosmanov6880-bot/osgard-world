@@ -156,6 +156,14 @@ async function touchDiagnostics(page) {
     && x?.camera_target_screen_y > .24 && x?.camera_target_screen_y < .73
     && x?.machine_top_screen_y > .12 && x?.machine_top_screen_y < .37,
     'W6.1 portrait optics and physical upper rail must fit useful scene area')
+  const portraitState = await readState(page)
+  if (!portraitState?.hud_rect || !portraitState?.action_rect ||
+      portraitState.hud_rect.h > portraitState.viewport_h * .28 ||
+      portraitState.hud_rect.y + portraitState.hud_rect.h >= portraitState.action_rect.y - 20) {
+    throw new Error('W10.1 portrait HUD incorrectly shades the 3D machinery: ' +
+      JSON.stringify({ viewport: [portraitState?.viewport_w, portraitState?.viewport_h],
+        hud: portraitState?.hud_rect, actions: portraitState?.action_rect }))
+  }
   await page.screenshot({ path: resolve(output, 'w6-portrait-optical-active.png'), fullPage: true })
   await tapSceneButton(page, 3) // SCAN TARGET
   await expectState(page, x => x?.challenge_step === 3 && x?.fault_visual_state === 'inspected',
@@ -239,6 +247,12 @@ try {
           && x?.studio_mesh_nodes <= 8 && x?.prefers_reduced_motion === isMobile,
         'Real W5 Godot ECO rig, 3D markers and controls did not load', 90_000)
       if (boot.quality !== 0 || boot.studio_quality !== 0) throw new Error('Low-memory ECO mode not used on boot')
+      if (isMobile && (!boot.hud_rect || boot.hud_rect.h > boot.viewport_h * .28
+        || !boot.action_rect || boot.hud_rect.y + boot.hud_rect.h >= boot.action_rect.y - 20)) {
+        throw new Error('W10.1 initial portrait HUD obscures the game scene: ' +
+          JSON.stringify({ viewport: [boot.viewport_w, boot.viewport_h],
+            hud: boot.hud_rect, actions: boot.action_rect }))
+      }
       const geometry = await page.locator('canvas').first().evaluate(canvas => ({
         width: canvas.width, height: canvas.height,
         visible: canvas.getBoundingClientRect().width > 0,
