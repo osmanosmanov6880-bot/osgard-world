@@ -40,7 +40,7 @@ assert.ok(component.includes('target.closest('), 'Media/interactive keyboard foc
 assert.ok(media.includes('isPermanentMediaUrl'), 'Media permanence guard removed')
 assert.ok(progress.includes('OSA_PROGRESS_STORAGE_KEY'), 'Existing progress storage contract missing')
 assert.ok(router.includes("path === '/osa-cinema'"), 'Cinema route removed')
-const resources = [...new Set([...css.matchAll(/url\\("([^"]+)"\\)/g)].map(match => match[1]))]
+const resources = [...new Set(css.split('url("').slice(1).map(chunk => chunk.split('")')[0]))]
 const manifest = JSON.parse(readFileSync('public/osa-cinema/reference/manifest.json', 'utf8'))
 const expectedAssets = ['library.webp', 'understand.webp', 'verify.webp', 'decide.webp']
 assert.equal(manifest.files.length, expectedAssets.length, 'Approved image manifest must list four files')
