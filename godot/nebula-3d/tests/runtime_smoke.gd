@@ -549,11 +549,13 @@ func _run() -> void:
     var beams: Node3D = world.get_node_or_null("R16_PooledCombatBeams")
     if not check(beams != null and beams.get_child_count() == 18,
         "R16 reusable combat laser beam pool missing"):return
+    var prior_combat_beams: int = world.r16_beam_shots
     for i in 50:
         world._laser_effect_colored(Vector3(0,20,0),
             Vector3(float(i % 7) + 4.0, 20.0, -65.0),
             Color(1.0,0.26,0.39))
-    if not check(beams.get_child_count() == 18 and world.r16_beam_shots == 50,
+    if not check(beams.get_child_count() == 18 and
+        world.r16_beam_shots - prior_combat_beams == 50,
         "R16 weapon fire is allocating new mesh nodes per shot"):return
     world._r16_update_beam_pool(0.2)
     for beam in world.r16_beams:
