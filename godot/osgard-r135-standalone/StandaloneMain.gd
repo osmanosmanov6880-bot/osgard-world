@@ -15,6 +15,8 @@ var touches: Dictionary = {}
 var pinch_span: float = 0.0
 var view_index: int = 0
 var readout_clock: float = 0.0
+var optical_tracking: bool = true
+var camera_effective_distance: float = 0.0
 const VIEW_NAMES = ["OVERVIEW", "SERVICE DECK", "OPTICAL HEAD", "SIDE INSPECTION"]
 
 var hud_panel: PanelContainer
@@ -176,10 +178,12 @@ func _update_layout() -> void:
     var size := get_viewport().get_visible_rect().size
     var portrait := _viewport_is_portrait()
     var margin := 24.0 if portrait else 18.0
-    var font_title := 40 if portrait else 25
-    var font_state := 27 if portrait else 18
-    var font_help := 18 if portrait else 12
-    var font_mission := 29 if portrait else 17
+    var compact := portrait and size.y < 1150.0
+    var ui_scale := 0.73 if compact else 1.0
+    var font_title := int(40 * ui_scale) if portrait else 25
+    var font_state := int(27 * ui_scale) if portrait else 18
+    var font_help := int(18 * ui_scale) if portrait else 12
+    var font_mission := int(29 * ui_scale) if portrait else 17
     heading.add_theme_font_size_override("font_size", font_title)
     hud.add_theme_font_size_override("font_size", font_state)
     helper.add_theme_font_size_override("font_size", font_help)
@@ -188,15 +192,15 @@ func _update_layout() -> void:
     grid.add_theme_constant_override("h_separation", 12 if portrait else 9)
     grid.add_theme_constant_override("v_separation", 12 if portrait else 9)
     for b in action_buttons:
-        b.add_theme_font_size_override("font_size", 32 if portrait else 17)
-        b.custom_minimum_size = Vector2(0, 82 if portrait else 43)
+        b.add_theme_font_size_override("font_size", int(32 * ui_scale) if portrait else 17)
+        b.custom_minimum_size = Vector2(0, (62 if compact else 82) if portrait else 43)
         b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 
     if portrait:
         hud_panel.position = Vector2(margin, 42)
         hud_panel.custom_minimum_size = Vector2(size.x - margin * 2, 0)
         action_panel.custom_minimum_size = Vector2(size.x - margin * 2, 0)
-        action_panel.position = Vector2(margin, maxf(0, size.y - 455))
+        action_panel.position = Vector2(margin, maxf(0, size.y - (355 if compact else 455)))
     else:
         hud_panel.position = Vector2(margin, margin)
         hud_panel.custom_minimum_size = Vector2(minf(size.x * 0.48, 510), 0)
@@ -296,15 +300,25 @@ func _update_view() -> void:
     var ratio: float = size.x / maxf(size.y, 1.0)
     # Godot FOV is vertical. Widen the orbit distance on portrait screens
     # instead of cutting the original full-width service-spine geometry.
-    var width_goal: float = 1.11 if view_index == 0 else 0.90
+    var width_goal: float = 1.11 if view_index == 0 else (1.35 if view_index == 2 else 1.06)
     var aspect_compensation: float = maxf(1.0, width_goal / maxf(ratio, 0.42))
     var effective_distance: float = distance * aspect_compensation
+    camera_effective_distance = effective_distance
+    var target_focus: Vector3 = focus
+    # Track the actual moving optical carriage only in the optical inspection view.
+    # In portrait, reserve extra vertical room for the fixed status and touch panels.
+    if view_index == 2 and optical_tracking and controller != null:
+        var carriage: Node3D = controller.get("boom") as Node3D
+        if carriage != null:
+            target_focus.x = lerpf(focus.x, carriage.position.x, 0.42)
+    if ratio < 0.8:
+        target_focus.y -= 0.55 if view_index == 2 else 0.23
     var direction := Vector3(
         sin(orbit_yaw) * cos(orbit_pitch), sin(orbit_pitch),
         cos(orbit_yaw) * cos(orbit_pitch)
     )
-    camera.position = focus + direction * effective_distance
-    camera.look_at(focus, Vector3.UP)
+    camera.position = target_focus + direction * effective_distance
+    camera.look_at(target_focus, Vector3.UP)
 
 func _process(delta: float) -> void:
     readout_clock += delta
@@ -312,6 +326,8 @@ func _process(delta: float) -> void:
         return
     readout_clock = 0.0
     _refresh_status()
+    if view_index == 2 and optical_tracking:
+        _update_view()
     # Read-only browser QA telemetry: simulated state, no credentials,
     # remote control, network calls, or hardware integrations.
     if OS.has_feature("web"):
@@ -321,6 +337,8 @@ func _process(delta: float) -> void:
         state["orbit_yaw"] = orbit_yaw
         state["orbit_pitch"] = orbit_pitch
         state["distance"] = distance
+        state["camera_effective_distance"] = camera_effective_distance
+        state["optical_tracking"] = optical_tracking
         var area: Vector2 = get_viewport().get_visible_rect().size
         state["viewport_w"] = area.x
         state["viewport_h"] = area.y

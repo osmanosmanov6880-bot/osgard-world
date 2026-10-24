@@ -54,6 +54,7 @@ var challenge_errors: int = 0
 var challenge_score: int = 0
 var challenge_best_score: int = 0
 var challenge_feedback: String = "DIAGNOSTICS READY — SELECT CHALLENGE"
+var visual_faults: Node3D
 var scene_label: Label3D
 
 func configure(cam: Camera3D, environment: Environment) -> void:
@@ -61,6 +62,10 @@ func configure(cam: Camera3D, environment: Environment) -> void:
     world = environment
     _build_kinematics()
     _build_lighting()
+    visual_faults = preload("res://R135VisualDiagnostics.gd").new()
+    visual_faults.name = "R135SimulatedFaultIndicators"
+    add_child(visual_faults)
+    visual_faults.call("configure", head)
     _load_challenge_record()
     # Do not load ECO and then HERO at startup. Main.gd selects a preset once.
 
@@ -402,12 +407,15 @@ func _physics_process(delta: float) -> void:
         status_beacons[i].visible = quality >= 1 or challenge_active or challenge_completed
         status_beacons[i].light_color = Color(0.23, 0.85, 0.51) if challenge_completed else Color(0.91, 0.40, 0.15)
         status_beacons[i].light_energy = (.17+.13*(.5+.5*sin(elapsed*1.9+float(i)*PI))) if motion_enabled else .09
+    if visual_faults != null:
+        visual_faults.call("update_visuals", challenge_fault_index, challenge_active, challenge_completed, challenge_step, challenge_elapsed)
     if scene_label != null and (challenge_active or challenge_completed):
         scene_label.text = "R135 / " + ("SIMULATED DIAGNOSTICS" if challenge_active else "SIMULATED FAULT CLEARED")
     elif scene_label != null:
         scene_label.text = "R135 / SIMULATED SERVICE SPINE - NO LIVE DATA"
 
 func summary() -> Dictionary:
+    var visuals: Dictionary = visual_faults.call("snapshot") if visual_faults != null else {}
     return {"schema":"OSGARD_R135_SCENE_STATE_V1","simulation_only":true,
         "physical_telemetry_connected":false,"quality":quality,"loaded":loaded_path,
         "loading_failures":load_failures,"load_count":load_count,
@@ -425,4 +433,8 @@ func summary() -> Dictionary:
         "challenge_target_view":FAULT_VIEWS[challenge_fault_index],
         "challenge_elapsed":challenge_elapsed,"challenge_errors":challenge_errors,
         "challenge_score":challenge_score,"challenge_best_score":challenge_best_score,
-        "challenge_feedback":challenge_feedback}
+        "challenge_feedback":challenge_feedback,
+        "fault_marker_count":int(visuals.get("fault_marker_count", 0)),
+        "fault_marker_visible_count":int(visuals.get("fault_marker_visible_count", 0)),
+        "fault_marker_active_index":int(visuals.get("fault_marker_active_index", -1)),
+        "fault_visual_state":str(visuals.get("fault_visual_state", "idle"))}

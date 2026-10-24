@@ -16,9 +16,16 @@ def reject(reason: str):
 
 
 def stage(archive: Path, manifest_path: Path, destination: Path):
+    # Pin the independently downloaded and verified W5 manifest bytes.
+    # The manifest alone is not a signature; this exact digest is trusted.
+    expected_sha256 = "b3e6b721cce1f4e764117cea59e190aaf74b669a26399284b9625bc30cde3219"
+    if hashlib.sha256(manifest_path.read_bytes()).hexdigest() != expected_sha256:
+        reject("W5 manifest digest differs from independently verified build")
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    if manifest.get("version") != "r135-web-diagnostics-w4-20261024":
+    if manifest.get("version") != "r135-web-visual-diagnostics-w5-20261024":
         reject("wrong release tag")
+    if manifest.get("source_commit") != "cd6132fa5d34cbb701957b124a6aa2aac9210434":
+        reject("W5 archive source commit is not the validated candidate")
     if manifest.get("engine") != "Godot 4.4.1":
         reject("wrong Godot engine")
     files = manifest.get("files")
@@ -38,6 +45,8 @@ def stage(archive: Path, manifest_path: Path, destination: Path):
         reject("WASM gzip savings below mandatory transfer budget")
     if manifest.get("native_tests") != "passed" or not manifest.get("original_glbs_preserved"):
         reject("required native source verification missing")
+    if manifest.get("webgl_browser_software_smoke") != "passed":
+        reject("W5 WebGL gameplay evidence missing")
 
     destination = destination.resolve()
     destination.parent.mkdir(parents=True, exist_ok=True)

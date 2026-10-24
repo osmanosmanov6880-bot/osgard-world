@@ -53,6 +53,7 @@ on:
       - "scripts/frontend-archive-preflight.mjs"
       - "scripts/r135-nginx-wasm-smoke.sh"
       - "scripts/r135-release-stage.py"
+      - "scripts/r135-artifact-fallback.py"
       - "scripts/r135-production-smoke.mjs"
       - "scripts/production-route-matrix.mjs"
       - "scripts/ecosystem-production-smoke.mjs"
@@ -99,6 +100,9 @@ on:
 
 jobs:
   deploy:
+    permissions:
+      actions: read
+      contents: read
     runs-on: ubuntu-latest
     timeout-minutes: 35
     steps:
@@ -257,21 +261,23 @@ jobs:
           /tmp/osgard-godot/Godot_v4.7.2-stable_linux.x86_64 --headless --path godot/null-shift --export-release Web "$GITHUB_WORKSPACE/public/games/null-shift-godot/index.html"
           node scripts/null-shift-godot-smoke.mjs --export-check public/games/null-shift-godot
       - run: npm run build
-      - name: Stage verified native R135 Godot Web export from immutable GitHub Release
+      - name: Stage verified native R135 Godot Web export from pinned GitHub Actions artifact
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           mkdir -p "$RUNNER_TEMP/r135-web-release"
-          gh release download r135-web-diagnostics-w4-20261024 \
+          if ! gh run download 40082233653 \
             --repo osmanosmanov6880-bot/osgard-world \
-            --pattern "OSGARD_R135_OPTIMIZED_WEB.zip" \
-            --pattern "R135_OPTIMIZED_MANIFEST.json" \
-            --dir "$RUNNER_TEMP/r135-web-release"
+            --name osgard-r135-optimized-web-qa \
+            --dir "$RUNNER_TEMP/r135-web-release"; then
+            echo "Pinned Actions artifact unavailable; restoring only from SHA-verified live W5" >&2
+            python3 scripts/r135-artifact-fallback.py "$RUNNER_TEMP/r135-web-release/r135-optimized-release"
+          fi
           python3 scripts/r135-release-stage.py \
-            "$RUNNER_TEMP/r135-web-release/OSGARD_R135_OPTIMIZED_WEB.zip" \
-            "$RUNNER_TEMP/r135-web-release/R135_OPTIMIZED_MANIFEST.json" \
+            "$RUNNER_TEMP/r135-web-release/r135-optimized-release/OSGARD_R135_OPTIMIZED_WEB.zip" \
+            "$RUNNER_TEMP/r135-web-release/r135-optimized-release/R135_OPTIMIZED_MANIFEST.json" \
             dist/games/r135-service
           test -s dist/games/r135-service/index.pck
           test -s dist/games/r135-service/index.wasm
@@ -525,6 +531,7 @@ jobs:
       - name: Verify actual published R135 WebGL pack and byte-range support
         env:
           OSGARD_BASE_URL: https://osgard.world
+          OSGARD_EXPECTED_R135_SOURCE: cd6132fa5d34cbb701957b124a6aa2aac9210434
         run: node scripts/r135-production-smoke.mjs
       - name: Verify published routes and same-origin API proxy
         env:
