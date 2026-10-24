@@ -262,11 +262,15 @@ try {
     const modeButton = uiPoint(open.r38_mode_button_x,
       open.r38_mode_button_y, 9);
     await send('touchStart',[modeButton]);
+    // Hosted SwiftShader can stall for hundreds of milliseconds between real
+    // Godot frames. Do not lift the finger before the engine polls touchStart.
+    await page.waitForTimeout(650);
     await send('touchEnd',[]);
     await expectTelemetry('R38 mobile quality touch enables real AUTO profile',
       s => s?.r38_auto_enabled === true &&
         s.r38_quality_mode === 1 && s.r38_mode_label === 'АВТО', 30000);
     await send('touchStart',[modeButton]);
+    await page.waitForTimeout(650);
     await send('touchEnd',[]);
     await expectTelemetry('R38 mobile quality touch selects real MAX graphics',
       s => s?.r38_auto_enabled === false &&
