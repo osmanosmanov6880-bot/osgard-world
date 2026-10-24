@@ -27,6 +27,7 @@ const WHEEL_OFFSETS = [
 var command_drive: float = 0.0
 var command_steer: float = 0.0
 var command_brake: float = 0.0
+var motor_force_multiplier: float = 1.0 # lab-only tuning; never changes the production car
 var road_grip: float = 1.0
 var grounded_wheels: int = 0
 var average_spring_force: float = 0.0
@@ -114,7 +115,8 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 	var throttle: float = clampf(command_drive if is_finite(command_drive) else 0.0,-1.0,1.0)
 	var brake: float = clampf(command_brake if is_finite(command_brake) else 0.0,0.0,1.0)
 	var steer: float = clampf(command_steer if is_finite(command_steer) else 0.0,-1.0,1.0)
-	apply_central_force(forward*throttle*MOTOR_FORCE*traction_fraction)
+	var calibrated_motor: float = clampf(motor_force_multiplier if is_finite(motor_force_multiplier) else 1.0,0.5,3.5)
+	apply_central_force(forward*throttle*MOTOR_FORCE*calibrated_motor*traction_fraction)
 	var horizontal_velocity: Vector3 = Vector3(state.linear_velocity.x,0.0,state.linear_velocity.z)
 	var speed: float = horizontal_velocity.length()
 	if speed>0.10 and brake>0.0:
