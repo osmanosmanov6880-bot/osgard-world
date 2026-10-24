@@ -5,17 +5,18 @@ extends Control
 signal rocket_requested
 signal hangar_requested
 signal camera_requested
+signal cruise_requested
 
 const TEXT: Color = Color(0.92, 0.97, 0.99)
 const CYAN: Color = Color(0.32, 0.81, 0.94)
 const AMBER: Color = Color(1.0, 0.70, 0.33)
 const JOY_ID: String = "JOYSTICK"
 const CONTROL_KEYS = ["THRUST", "BOOST", "FIRE", "ROCKET",
-    "UP", "DOWN", "HANGAR", "CAMERA"]
+    "UP", "DOWN", "HANGAR", "CAMERA", "CRUISE"]
 const LABELS = {
     "THRUST": "ГАЗ", "BOOST": "ФОРСАЖ", "FIRE": "ОГОНЬ",
     "ROCKET": "РАКЕТА", "UP": "ВЫШЕ", "DOWN": "НИЖЕ",
-    "HANGAR": "АНГАР", "CAMERA": "КАМЕРА"
+    "HANGAR": "АНГАР", "CAMERA": "КАМЕРА", "CRUISE": "ПОЛЁТ"
 }
 var player_ship: CharacterBody3D
 var enabled: bool = false
@@ -77,7 +78,8 @@ func _resize() -> void:
         "UP": Vector2(w - r - 25.0, h - 5.0 * r - 56.0),
         "DOWN": Vector2(w - 3.1 * r - 33.0, h - 5.0 * r - 56.0),
         "HANGAR": Vector2(w - r - 25.0, 188.0),
-        "CAMERA": Vector2(w - 3.1 * r - 33.0, 188.0)
+        "CAMERA": Vector2(w - 3.1 * r - 33.0, 188.0),
+        "CRUISE": Vector2(w - r - 25.0, 252.0)
     }
     # Keep central rear-facing ship and objective free from touch controls.
     queue_redraw()
@@ -105,6 +107,8 @@ func _set_touch(index: int, where: Vector2, pressed: bool) -> void:
             hangar_requested.emit()
         elif role == "CAMERA":
             camera_requested.emit()
+        elif role == "CRUISE":
+            cruise_requested.emit()
     else:
         finger_roles.erase(index)
         finger_positions.erase(index)
@@ -121,8 +125,9 @@ func _input(event: InputEvent) -> void:
         return
     if event is InputEventScreenTouch:
         var touch: InputEventScreenTouch = event
+        var was_control: bool = finger_roles.has(touch.index)
         _set_touch(touch.index, touch.position, touch.pressed)
-        if finger_roles.has(touch.index):
+        if was_control or finger_roles.has(touch.index):
             get_viewport().set_input_as_handled()
     elif event is InputEventScreenDrag:
         var drag: InputEventScreenDrag = event
