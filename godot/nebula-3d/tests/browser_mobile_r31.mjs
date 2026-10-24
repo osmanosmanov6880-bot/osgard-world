@@ -27,6 +27,20 @@ try {
     deviceScaleFactor: 1, isMobile: true, hasTouch: true
   });
   page = await context.newPage();
+  await page.addInitScript(() => {
+    window.__nebulaDomTouchQA = { starts: 0, ends: 0, last: null };
+    window.addEventListener('touchstart', event => {
+      window.__nebulaDomTouchQA.starts++;
+      const t = event.touches[0];
+      window.__nebulaDomTouchQA.last = {
+        x: t?.clientX, y: t?.clientY,
+        target: event.target?.tagName || ''
+      };
+    }, { capture: true, passive: true });
+    window.addEventListener('touchend', () => {
+      window.__nebulaDomTouchQA.ends++;
+    }, { capture: true, passive: true });
+  });
   page.on('pageerror', e => report.errors.push('JS: ' + e.message.slice(0, 250)));
   await page.goto(
     'http://127.0.0.1:8765/games/remix/arena-v2/nebula-3d/?r31-mobile-qa=1',
@@ -34,6 +48,24 @@ try {
   );
   await page.locator('#canvas').waitFor({ state: 'visible', timeout: 70000 });
   const snapshot = () => page.evaluate(() => window.__nebulaPilotTelemetry || null);
+  async function diagnoseBrowserInput() {
+    return Promise.race([
+      page.evaluate(() => {
+        const c = document.querySelector('#canvas');
+        const r = c?.getBoundingClientRect();
+        return {
+          dom_touches: window.__nebulaDomTouchQA || null,
+          css_width: window.innerWidth, css_height: window.innerHeight,
+          drawing_width: c?.width, drawing_height: c?.height,
+          bounds: r ? {x:r.x,y:r.y,w:r.width,h:r.height} : null,
+          document_visible: document.visibilityState,
+          focused: document.hasFocus()
+        };
+      }),
+      new Promise(resolve => setTimeout(
+        () => resolve({ error: 'browser input diagnostics timed out' }), 2500))
+    ]);
+  }
   async function expectTelemetry(label, test, timeout = 35000) {
     const deadline = Date.now() + timeout;
     let latest = null;
@@ -45,7 +77,9 @@ try {
       }
       await page.waitForTimeout(300);
     }
-    throw new Error(label + ': timed out; last physics telemetry=' + JSON.stringify(latest));
+    const browser = await diagnoseBrowserInput();
+    throw new Error(label + ': timed out; last physics telemetry=' +
+      JSON.stringify(latest) + '; actual browser=' + JSON.stringify(browser));
   }
   const ready = await expectTelemetry(
     'mobile Godot game, QA diagnostics and real touch controls initialized',
@@ -54,6 +88,12 @@ try {
       s.touch_thrust_x > 0 && s.touch_boost_x > 0,
     100000
   );
+  await expectTelemetry('real mobile viewport and physics loop stabilized',
+    state => state?.ready && state.samples >= ready.samples + 12 &&
+      Math.abs(state.touch_view_w - state.touch_css_w) <= 2 &&
+      Math.abs(state.touch_view_h - state.touch_css_h) <= 2 &&
+      state.touch_view_h > state.touch_view_w,
+    45000);
   if (ready.locked || ready.cruise) {
     throw new Error('Mobile test began with controls locked or cruise auto-enabled');
   }
@@ -84,6 +124,13 @@ try {
     {type, touchPoints});
   try {
     await send('touchStart', [thrust]);
+    const dom = await diagnoseBrowserInput();
+    report.checks.push({ label: 'native browser touch dispatch', browser: dom });
+    if (!(dom?.dom_touches?.starts >= 1) ||
+        dom.dom_touches.last?.target !== 'CANVAS') {
+      throw new Error('CDP touchscreen did not reach the real game canvas: ' +
+        JSON.stringify(dom));
+    }
     await expectTelemetry('real browser touch activates throttle',
       s => s?.touch_count >= 1 && s.touch_throttle >= 0.9, 25000);
     const moved = await expectTelemetry('mobile throttle moves actual ship',
