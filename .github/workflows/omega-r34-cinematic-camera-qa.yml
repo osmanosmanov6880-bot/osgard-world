@@ -33,3 +33,56 @@ jobs:
           for suite in v21_vehicle_dynamics v29_responsive_layout v38_adaptive_graphics v43_camera_composition v44_four_wheel_surface v54_r32_cinematic_cabinet_wet_grip v55_r33_four_wheel_wet_night_beams v56_r34_cinematic_cabinet_camera; do
             timeout --signal=TERM --kill-after=5s 110s godot --headless --path godot/empire-omega --script "res://tests/$suite.gd"
           done
+
+  original-candidate-webgl-cabinet:
+    runs-on: ubuntu-latest
+    timeout-minutes: 23
+    steps:
+      - uses: actions/checkout@v4
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Import source assets and authentic Godot city scene
+        run: |
+          python3 godot/empire-omega/tools/generate_audio.py
+          python3 godot/empire-omega/tools/generate_patrol_audio.py
+          godot --headless --editor --path godot/empire-omega --import --quit
+      - name: Export unpublished Godot 4.4.1 WebAssembly and game package
+        run: |
+          mkdir -p godot/empire-omega/.build-web
+          godot --headless --path godot/empire-omega --export-release Web "$GITHUB_WORKSPACE/godot/empire-omega/.build-web/index.html"
+          node scripts/localize-godot-web-export.mjs godot/empire-omega/.build-web
+          test -s godot/empire-omega/.build-web/index.wasm
+          test -s godot/empire-omega/.build-web/index.pck
+      - name: Prepare browser with real WebGL canvas and pixel parser
+        run: |
+          npm ci
+          npm install --no-save --package-lock=false @playwright/test@1.58.2 pngjs@7.0.0
+          npx playwright install --with-deps chromium
+      - name: Start local server for genuine candidate only
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 --directory godot/empire-omega/.build-web > /tmp/r34-cinema-http.log 2>&1 &
+          for attempt in 1 2 3 4 5 6 7 8 9 10; do
+            curl -fsS http://127.0.0.1:4173/index.html >/dev/null && exit 0
+            sleep 1
+          done
+          cat /tmp/r34-cinema-http.log
+          exit 1
+      - name: Capture the authentic dock, 3D world and Tab keypress pixels
+        run: npx playwright test --config playwright.omega-r33-cabinet.config.mjs
+      - name: Preserve real screenshot and Chromium trace
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: omega-r34-real-city-cinematic-cabinet
+          path: |
+            omega-r33-cabinet-results/
+            omega-r33-cabinet-report/
+          if-no-files-found: ignore
+          retention-days: 12
