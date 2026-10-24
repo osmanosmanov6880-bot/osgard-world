@@ -41,6 +41,7 @@ func _run() -> void:
 	check(layer.multimesh.instance_count==72,"repeated weather cycles do not allocate additional GPU instances")
 	for i in range(72):
 		var xform: Transform3D=layer.multimesh.get_instance_transform(i)
+		if i<3: print("R26 PUDDLE DEBUG idx=",i," origin=",xform.origin," basis=",xform.basis)
 		check(xform.origin.is_finite() and xform.origin.y>0.176 and xform.origin.y<0.20,"each puddle stays slightly above playable asphalt")
 		check(absf(xform.origin.x)<225.0 and absf(xform.origin.z)<225.0,"all puddles remain inside actual roadway map")
 	layer.queue_free()
