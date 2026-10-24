@@ -53,14 +53,57 @@ const focusScript = `
   if (document.readyState === 'complete') takeFocus();
 })();
 </script>`;
+// R23: capture physical KeyboardEvent.code at WINDOW level so Russian/other
+// letter layouts and Godot WebGL canvas focus cannot silently disable thrust.
+// Godot reads this single bitfield once per physics tick. Never synthesize
+// fake key events; this is a direct, stable real-user keyboard bridge.
+const pilotScript = `
+<script id="nebula-r23-physical-keyboard">
+(() => {
+  const bits = {
+    KeyW:1, KeyS:2, KeyA:4, KeyD:8, KeyE:16, KeyQ:32,
+    ArrowUp:64, ArrowDown:128, ShiftLeft:256, ShiftRight:256,
+    Space:512
+  };
+  window.__nebulaPilotMask = 0;
+  const wantsTyping = (event) => {
+    const el = event.target;
+    return el && (el.isContentEditable ||
+      ['INPUT','TEXTAREA','SELECT'].includes(el.tagName));
+  };
+  const onKey = (event, pressed) => {
+    if (wantsTyping(event)) return;
+    const bit = bits[event.code];
+    if (!bit) return;
+    if (pressed) window.__nebulaPilotMask |= bit;
+    else window.__nebulaPilotMask &= ~bit;
+    // Prevent WASD and the space bar moving the web page instead of the ship.
+    if (document.visibilityState === 'visible') event.preventDefault();
+    if (pressed && document.activeElement?.id !== 'canvas') {
+      document.getElementById('canvas')?.focus({preventScroll:true});
+    }
+  };
+  window.addEventListener('keydown', (e) => onKey(e,true), {capture:true});
+  window.addEventListener('keyup', (e) => onKey(e,false), {capture:true});
+  window.addEventListener('blur', () => { window.__nebulaPilotMask = 0; });
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) window.__nebulaPilotMask = 0;
+  });
+})();
+</script>`;
+if (!html.includes('nebula-r23-physical-keyboard')) {
+  if (!html.includes('</body>')) throw new Error('Godot HTML body missing');
+  html = html.replace('</body>', pilotScript + '\n</body>');
+}
 if (!html.includes('nebula-r22-keyboard-focus')) {
   if (!html.includes('</body>')) throw new Error('Godot export body missing');
   html = html.replace('</body>', focusScript + '\n</body>');
 }
 if (!html.includes('touch-action:none') ||
     !html.includes('viewport-fit=cover') ||
-    !html.includes('nebula-r22-keyboard-focus')) {
+    !html.includes('nebula-r22-keyboard-focus') ||
+    !html.includes('nebula-r23-physical-keyboard')) {
   throw new Error('R21 mobile CSS or responsive viewport not installed');
 }
 fs.writeFileSync(file,html);
-console.log('NEBULA_R22_WEB_INPUT_SUCCESS browser-canvas auto-focus and pointer focus with R21 touch shell');
+console.log('NEBULA_R23_WEB_INPUT_SUCCESS physical keycode capture, WASD Cyrillic-independent + mobile fullscreen shell');
