@@ -86,7 +86,10 @@ async function touchMission(page) {
 // closing/opening hatch physics and a visible camera-based diagnostic target.
 async function keyboardDiagnostics(page) {
   await page.keyboard.press('c')
-  await expectState(page, x => x?.challenge_active && x?.challenge_step === 0, 'C must start diagnostics')
+  await expectState(page, x => x?.challenge_active && x?.challenge_step === 0
+    && x?.fault_marker_count === 3 && x?.fault_marker_active_index === 0
+    && x?.fault_marker_visible_count === 3 && x?.fault_visual_state === 'active',
+    'W5 optical fault must appear in the 3D scene')
   await page.keyboard.press('f') // Safety violation, should be refused.
   await expectState(page, x => x?.challenge_step === 0 && x?.challenge_errors === 1 && x?.lid_target === 0,
     'Running machine must refuse hatch access')
@@ -101,8 +104,10 @@ async function keyboardDiagnostics(page) {
     'Wrong inspection camera was accepted')
   await page.keyboard.press('v')
   await expectState(page, x => x?.view === x?.challenge_target_view, 'Correct optical view not selected')
+  await page.screenshot({ path: resolve(output, 'w5-desktop-optical-active.png'), fullPage: true })
   await page.keyboard.press('e')
-  await expectState(page, x => x?.challenge_step === 3, 'Correct diagnostic scan failed')
+  await expectState(page, x => x?.challenge_step === 3 && x?.fault_visual_state === 'inspected',
+    'W5 optical scan must turn the in-world indicator green')
   await page.keyboard.press('f')
   await expectState(page, x => x?.challenge_step === 4 && x?.lid_target === 0, 'Diagnostic close missed')
   await page.keyboard.press('Space') // Premature restart must stay blocked.
@@ -113,11 +118,15 @@ async function keyboardDiagnostics(page) {
   await expectState(page, x => x?.challenge_completed && x?.challenge_step === 5
     && x?.challenge_score > 0 && x?.challenge_best_score > 0 && x?.motion_enabled,
     'Advanced diagnosis did not complete and score')
+  await expectState(page, x => x?.fault_visual_state === 'cleared'
+    && x?.fault_marker_visible_count === 3, 'Completed W5 fault must be visible as cleared')
 }
 async function touchDiagnostics(page) {
   await tapSceneButton(page, 1) // DIAGNOSTICS, real Godot button
-  await expectState(page, x => x?.challenge_active && x?.challenge_step === 0,
-    'Touch diagnostics start failed')
+  await expectState(page, x => x?.challenge_active && x?.challenge_step === 0
+    && x?.fault_marker_count === 3 && x?.fault_marker_active_index === 0
+    && x?.fault_marker_visible_count === 3,
+    'W5 touch diagnostics start or 3D target failed')
   await tapSceneButton(page, 6) // Unsafe hatch press
   await expectState(page, x => x?.challenge_errors === 1 && x?.lid_target === 0,
     'Touch safety interlock bypassed')
@@ -131,15 +140,20 @@ async function touchDiagnostics(page) {
   await expectState(page, x => x?.challenge_errors >= 2 && x?.challenge_step === 2,
     'Touch challenge wrongly accepted scan')
   await tapSceneButton(page, 2) // Camera 2, optical defect
-  await expectState(page, x => x?.view === x?.challenge_target_view, 'Correct camera not selected')
+  await expectState(page, x => x?.view === x?.challenge_target_view
+    && x?.optical_tracking && x?.camera_effective_distance > x?.distance * 1.1,
+    'W5 portrait optical tracking did not widen the camera')
+  await page.screenshot({ path: resolve(output, 'w5-portrait-optical-active.png'), fullPage: true })
   await tapSceneButton(page, 3) // SCAN TARGET
-  await expectState(page, x => x?.challenge_step === 3, 'Touch diagnostic scan failed')
+  await expectState(page, x => x?.challenge_step === 3 && x?.fault_visual_state === 'inspected',
+    'W5 touch scan did not clear fault light')
   await tapSceneButton(page, 6) // Close hatch
   await expectState(page, x => x?.challenge_step === 4, 'Touch challenge hatch close failed')
   await expectState(page, x => x?.lid_progress <= .05, 'Touch hatch did not close', 35_000)
   await tapSceneButton(page, 5) // Restart drive
   await expectState(page, x => x?.challenge_completed && x?.challenge_score > 0 &&
-    x?.challenge_best_score > 0 && x?.motion_enabled, 'Touch challenge did not complete')
+    x?.challenge_best_score > 0 && x?.motion_enabled
+    && x?.fault_visual_state === 'cleared', 'Touch W5 diagnostic did not complete')
 }
 
 let failed = false
@@ -166,8 +180,9 @@ try {
       const boot = await expectState(page,
         x => x?.scene_ready && x?.loading_failures === 0
           && x?.loaded?.endsWith('service_spine_eco.glb')
-          && x?.button_centers?.length === 8,
-        'Real Godot ECO rig and operator controls did not load', 90_000)
+          && x?.button_centers?.length === 8 && x?.fault_marker_count === 3
+          && x?.fault_marker_visible_count === 0,
+        'Real W5 Godot ECO rig, 3D markers and controls did not load', 90_000)
       if (boot.quality !== 0) throw new Error('Low-memory ECO mode not used on boot')
       const geometry = await page.locator('canvas').first().evaluate(canvas => ({
         width: canvas.width, height: canvas.height,
