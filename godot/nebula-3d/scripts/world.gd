@@ -260,6 +260,10 @@ func _ready() -> void:
     if OS.has_feature("web"):
         _set_graphics_quality(1)
         adaptive_r12.set_auto(true)
+    # Startup quality selection posts a toast; clear it so the opening skyline stays visible.
+    hud_notice.text = ""
+    notice_timer = 0.0
+    last_notice = ""
     # Keep the opening skyline clear; mission and objective HUD carry the scene context.
     get_viewport().size_changed.connect(_fit_hud)
     _fit_hud()
