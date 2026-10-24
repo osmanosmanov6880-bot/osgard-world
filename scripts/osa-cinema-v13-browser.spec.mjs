@@ -53,7 +53,7 @@ test('OSA Cinema V13 keeps RU/EN deep links, focus and source notes usable', asy
   await lang.click()
   await expect(cinema).toHaveAttribute('lang', 'ru')
   await expect(page).toHaveURL(/lang=ru/)
-  await lang.press('ArrowRight')
+  await cinema.locator('.cinema-top-actions button').first().press('ArrowRight')
   await expect(cinema.locator('.cinema-scene')).toHaveClass(/cinema-scene-signal/)
   await page.reload()
   await expect(cinema).toHaveAttribute('lang', 'ru')
