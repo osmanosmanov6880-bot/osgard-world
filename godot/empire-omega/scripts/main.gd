@@ -22,6 +22,7 @@ const MOBILITY = preload("res://scripts/city_mobility.gd")
 const SOUND_SCENE = preload("res://scripts/city_soundscape.gd")
 const SKID_SCENE = preload("res://scripts/horizon_skid_trails.gd")
 const GROUND_SPRAY_SCENE = preload("res://scripts/horizon_ground_spray.gd")
+const ROAD_WETNESS = preload("res://scripts/horizon_rain_puddles.gd")
 const CASE_MARKER_SCENE = preload("res://scripts/city_case_marker.gd")
 const CARGO_VISUAL_SCENE = preload("res://scripts/cargo_visual.gd")
 const POLICE_SCENE = preload("res://scripts/police_dispatch.gd")
@@ -39,6 +40,7 @@ var ground_spray: Node3D
 var city_case_marker
 var cargo_visual
 var current_weather_kind := "clear"
+var base_road_grip := 1.0
 var player
 var car
 var camera: Camera3D
@@ -328,6 +330,10 @@ func _process(delta: float) -> void:
 
 func _physics_process(delta: float) -> void:
 	if player == null or car == null or camera == null: return
+	# Real tyres lose additional traction at the centre of real rainy puddles.
+	# Physics uses the same world positions even if LOW hides their 3D mesh.
+	var wetness: float = world.road_puddles.contact_at(car.global_position) if world.road_puddles != null else 0.0
+	car.traction_factor = ROAD_WETNESS.effective_grip(base_road_grip,wetness)
 	if touch_controls != null and hud != null:
 		var blocked: bool = hud.is_pause_open() or hud.is_strategy_open() or hud.is_citizen_open() or hud.is_city_case_open() or interiors.is_inside()
 		touch_controls.set_mode(driving,blocked)
@@ -531,7 +537,8 @@ func _apply_weather() -> void:
 	var conditions: Dictionary = GameState.current_weather()
 	current_weather_kind = str(conditions["kind"])
 	world.update_weather(current_weather_kind)
-	car.traction_factor = float(conditions["road_grip"])
+	base_road_grip = float(conditions["road_grip"])
+	car.traction_factor = base_road_grip
 	for traffic in ambient_cars:
 		traffic.wetness = float(conditions["road_grip"])
 

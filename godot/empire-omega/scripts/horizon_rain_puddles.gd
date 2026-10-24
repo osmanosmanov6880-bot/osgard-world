@@ -69,3 +69,32 @@ func set_conditions(current_weather: String,quality: String) -> void:
 
 func material_is_bounded() -> bool:
 	return multimesh != null and multimesh.instance_count<=COUNT
+
+# R32: the physical wet patch matches the real 72 visible instanced patches.
+# This inexpensive contact query is independent of detail visibility: LOW
+# does not change gameplay grip or make a rainy course easier.
+static func effective_grip(base_grip: float,wetness: float) -> float:
+	var safe_base: float = clampf(base_grip if is_finite(base_grip) else 1.0,0.35,1.15)
+	var safe_wet: float = clampf(wetness if is_finite(wetness) else 0.0,0.0,1.0)
+	return clampf(safe_base*(1.0-0.16*safe_wet),0.35,1.15)
+
+func contact_at(world_position: Vector3) -> float:
+	if weather != "rain" and weather != "storm":
+		return 0.0
+	if not world_position.is_finite():
+		return 0.0
+	var best: float = 0.0
+	var horizontal := Vector2(world_position.x,world_position.z)
+	for placement in planned_transforms:
+		var offset: Vector2 = horizontal-Vector2(placement.origin.x,placement.origin.z)
+		if offset.length_squared()>4.0:
+			continue
+		var x_axis := Vector2(placement.basis.x.x,placement.basis.x.z)
+		var z_axis := Vector2(placement.basis.z.x,placement.basis.z.z)
+		var local_x: float = offset.dot(x_axis)/maxf(x_axis.length_squared(),0.01)
+		var local_z: float = offset.dot(z_axis)/maxf(z_axis.length_squared(),0.01)
+		if absf(local_x)>0.5 or absf(local_z)>0.5:
+			continue
+		var coverage: float = maxf(0.0,1.0-4.0*(local_x*local_x+local_z*local_z))
+		best = maxf(best,coverage)
+	return best

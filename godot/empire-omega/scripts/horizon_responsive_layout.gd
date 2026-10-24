@@ -42,3 +42,15 @@ static func compute(viewport: Vector2) -> Dictionary:
 		"quick_toggle":quick_toggle, "quick_panel":quick_panel,
 		"touch_safe_top":h-192.0
 	}
+
+# R32 - modal only on touch/compact screens. Desktop strategy is a polished
+# left-hand dock so the original 3D city remains visible while governing.
+static func strategy_dock(viewport: Vector2) -> Rect2:
+	if is_compact(viewport):
+		return compute(viewport)["modal"]
+	var w: float = maxf(MIN_PHONE_WIDTH,viewport.x)
+	var h: float = maxf(410.0,viewport.y)
+	var margin_x: float = clampf(w*0.018,20.0,34.0)
+	var margin_y: float = clampf(h*0.040,24.0,46.0)
+	var width: float = minf(clampf(w*0.365,470.0,600.0),w-margin_x-28.0)
+	return Rect2(margin_x,margin_y,width,h-2.0*margin_y)
