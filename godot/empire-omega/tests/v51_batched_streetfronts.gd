@@ -26,6 +26,12 @@ func _run() -> void:
 		verify(ground_blocked==1,"exactly one street-facing ground-floor window band is replaced by the new storefront")
 	verify(not FRONT.window_allowed(0,0,0) and not FRONT.window_allowed(0,2,1) and not FRONT.window_allowed(0,1,2) and not FRONT.window_allowed(0,3,3),
 		"entry facade orientation agrees with four rotated storefront models")
+		verify(FRONT.road_facing_variant(Vector3(17,0,23),52.0)==1,"storefront on negative X road side faces that road")
+	verify(FRONT.road_facing_variant(Vector3(-17,0,23),52.0)==3,"storefront on positive X road side faces that road")
+	verify(FRONT.road_facing_variant(Vector3(23,0,17),52.0)==0,"storefront on negative Z road side faces that road")
+	verify(FRONT.road_facing_variant(Vector3(23,0,-17),52.0)==2,"storefront on positive Z road side faces that road")
+	verify(FRONT.road_facing_variant(Vector3(-17,0,-17),52.0,true)==3,"street-corner tie-break can face X avenue")
+	verify(FRONT.road_facing_variant(Vector3(-17,0,-17),52.0,false)==2,"street-corner tie-break can face Z avenue")
 	var detail: Node3D = FRONT.new()
 	detail.record(Vector3(10,9,8),12.0,18.0,0)
 	detail.record(Vector3(-20,13,-12),14.0,26.0,1)
@@ -74,6 +80,35 @@ func _run() -> void:
 	verify(int(live.get("batches"))==5,"live complete city preserves five GPU material batches")
 	verify(int(live.call("surface_instance_count"))==8*int(world.get("building_count")),"all real shopfronts instanced without extra draw calls")
 	verify(int(live.get("frontage_count"))<=FRONT.BUILDING_LIMIT,"full city stays within bounded instance pool")
+	# Verify each generated ground-floor entrance is on the side
+	# facing the nearest public road, not buried in a courtyard.
+	var checked_facades := 0
+	var all_doors_face_roads := true
+	var facade_poses: Array = live.get("door_poses")
+	var city_chunks: Dictionary = world.get("building_chunks")
+	for chunk_id in city_chunks:
+		var section: Node3D = city_chunks[chunk_id]["node"]
+		for building in section.get_children():
+			if not String(building.name).begins_with("Building_"):
+				continue
+			var number: int = String(building.name).trim_prefix("Building_").to_int()
+			if number >= facade_poses.size():
+				all_doors_face_roads = false
+				continue
+			var center: Vector3 = building.position
+			var door: Vector3 = (facade_poses[number] as Transform3D).origin
+			var center_road_distance: float = minf(
+				absf(center.x-roundf(center.x/52.0)*52.0),
+				absf(center.z-roundf(center.z/52.0)*52.0))
+			var door_road_distance: float = minf(
+				absf(door.x-roundf(door.x/52.0)*52.0),
+				absf(door.z-roundf(door.z/52.0)*52.0))
+			if door_road_distance>=center_road_distance-1.0:
+				all_doors_face_roads = false
+			checked_facades += 1
+	verify(checked_facades==int(world.get("building_count")),"tested road-facing entrance on every existing city building")
+	verify(all_doors_face_roads,"all real city shopfronts face public roads rather than inaccessible interior walls")
+
 	world.apply_visual_budget("low")
 	verify(not live.visible,"low-quality mobile GPU hides optional street-level facade geometry")
 	world.apply_visual_budget("standard")
