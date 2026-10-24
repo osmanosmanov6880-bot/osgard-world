@@ -660,6 +660,18 @@ assert "r21_touch.ui_font = r21_ui_font" in world
 assert "R30 focus loss must release held mobile thrust and boost" in smoke
 assert "R30 hangar must clear mobile touch counters and throttle" in smoke
 assert "R30 orientation change must cancel stale touch controls" in smoke
+# R31: a visible touch UI alone is not sufficient evidence of actual movement.
+r31_mobile = require(
+    "tests/browser_mobile_r31.mjs",
+    "Input.dispatchTouchEvent",
+    "real browser touch activates throttle",
+    "mobile throttle moves actual ship",
+    "real two-finger throttle and boost",
+    "multitouch release never sticks boost",
+    "NEBULA_R31_MOBILE_TOUCH_SUCCESS",
+)
+assert "r31_mobile_qa_enabled" in world
+assert 'state["touch_throttle"] = snappedf(ship.touch_throttle, 0.01)' in world
 assert "get_viewport().get_texture().get_image()" in world
 assert "window.__nebulaR11CaptureData" in world
 assert "URLSearchParams(window.location.search).get('r11-qa')" in world
