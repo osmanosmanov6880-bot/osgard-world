@@ -55,6 +55,8 @@ on:
       - "scripts/ecosystem-production-smoke.mjs"
       - "scripts/production-health-watch.mjs"
       - "scripts/activate-frontend-remote.sh"
+      - "scripts/preserve-omega-native.sh"
+      - "scripts/omega-frontend-preservation.test.mjs"
       - "scripts/deploy-workflow-smoke.mjs"
       # Accept new production Omega acceptance contracts and replay SSH deployment
       # even when application assets have not otherwise changed.
@@ -311,7 +313,7 @@ jobs:
       - name: Verify Imperium of Time visuals and real diagnostics
         run: npm run qa:time-ui && node scripts/omega-city-3d-smoke.mjs
       - name: Check deployment shell syntax
-        run: bash -n scripts/activate-frontend-remote.sh
+        run: bash -n scripts/activate-frontend-remote.sh && sh -n scripts/preserve-omega-native.sh && node --test scripts/omega-frontend-preservation.test.mjs
       - name: Package HTML assets and matching Nginx config
         run: |
           set -euo pipefail
@@ -337,6 +339,8 @@ jobs:
           test -s osgard-release/html/skillcred/styles.css.gz
           test -s osgard-release/html/skillcred/app.js.gz
           gzip -t osgard-release/html/skillcred/styles.css.gz osgard-release/html/skillcred/app.js.gz
+          cp scripts/preserve-omega-native.sh osgard-release/preserve-omega-native.sh
+          test -s osgard-release/preserve-omega-native.sh
           cp nginx.conf osgard-release/nginx.conf
           docker build --pull -f server/Dockerfile -t osgard-core-api:${GITHUB_SHA} .
           docker save osgard-core-api:${GITHUB_SHA} | gzip -1 > osgard-release/core-api-image.tar.gz
