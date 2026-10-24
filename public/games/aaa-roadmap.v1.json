@@ -39,11 +39,11 @@
     {
       "id": "03",
       "title": "Основа геймплея, управление и сохранения",
-      "state": "in_review",
+      "state": "completed",
       "games": "22",
       "goal": "Единый слой запуска и возврата для 22 игр, достоверные инструкции, обработка offline; общие gamepad/touch/save API движков — отдельные дальнейшие поставки",
       "gate": "22 карточки дают инструкции; браузерные desktop/mobile сценарии проходят, чужие ссылки отвергаются, PR/CI и SSH/HTTPS проверены",
-      "evidence": "PR #251 merged after focused desktop/mobile Playwright + Node CI https://github.com/osmanosmanov6880-bot/osgard-world/actions/runs/40062191664. Live SSH verification pending; browser-local last world is NOT in-game progress."
+      "evidence": "PR #251 merged; focused desktop/mobile Playwright CI https://github.com/osmanosmanov6880-bot/osgard-world/actions/runs/40062191664 success. SHA-verified SSH run https://github.com/osmanosmanov6880-bot/osgard-world/actions/runs/40063090440 success including explicit step 'Verify real game session controls and last-world recovery are published'. This is portal session UX, NOT game cloud saves."
     },
     {
       "id": "04",
@@ -52,7 +52,7 @@
       "games": "1",
       "goal": "Игровой флагман: настоящая 3D-сцена, миссии, трасса, автомобильная физика, сенсорное управление, свет, бюджет FPS; R5/R6 отдельные проверенные исходные блоки",
       "gate": "Игровая сцена, воспроизводимые тесты управления/физики и FPS",
-      "evidence": "Original Godot HORIZON R5 PR #253 merged; R6 PR #256 merged. Native Godot 4.4.1 QA run https://github.com/osmanosmanov6880-bot/osgard-world/actions/runs/40062765088: 14 V21 + 34 V25 + 20 V27 + 70 V28 = 138 passed; actual browser binary export run 40062894372 pending. This is a partial car/input vertical slice, not completed full EMPIRE Ω wave nor AAA graphics."
+      "evidence": "R5 PR #253, R6 PR #256 and R7 PR #261 merged into real Godot 4.4.1 EMPIRE Omega; native test run https://github.com/osmanosmanov6880-bot/osgard-world/actions/runs/40063665126: 447/447 passes across vehicle dynamics, R5 assists, R6 multitouch and R7 responsive/mobile actions; actual 3D city boots 390x844 and 1600x900. Authentic Godot Web export run https://github.com/osmanosmanov6880-bot/osgard-world/actions/runs/40063742700 success, plus SSH game upload run https://github.com/osmanosmanov6880-bot/osgard-world/actions/runs/40063867498 success. Exact live-byte SHA verification and device FPS remain separate, so full WAVE04 is NOT completed."
     },
     {
       "id": "05",
