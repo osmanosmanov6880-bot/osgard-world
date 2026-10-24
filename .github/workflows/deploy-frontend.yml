@@ -525,6 +525,7 @@ jobs:
       - name: Verify actual published R135 WebGL pack and byte-range support
         env:
           OSGARD_BASE_URL: https://osgard.world
+          OSGARD_EXPECTED_R135_SOURCE: cd6132fa5d34cbb701957b124a6aa2aac9210434
         run: node scripts/r135-production-smoke.mjs
       - name: Verify published routes and same-origin API proxy
         env:
