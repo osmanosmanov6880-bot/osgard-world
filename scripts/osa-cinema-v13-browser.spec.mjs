@@ -2,16 +2,17 @@ import { test, expect } from '@playwright/test'
 
 test('OSA Cinema V13 renders all cinematic learning controls and preserves progress', async ({ page }, info) => {
   const errors = []
-  const missingImages = []
   page.on('pageerror', err => errors.push(err.message))
-  page.on('requestfailed', req => {
-    if (req.url().includes('/media/reference/')) missingImages.push(req.url() + ': ' + req.failure()?.errorText)
-  })
-  page.on('response', response => {
-    if (response.url().includes('/media/reference/') && response.status() >= 400) {
-      missingImages.push(response.url() + ': HTTP ' + response.status())
-    }
-  })
+
+  // Check each real media response before route transitions can abort in-flight images.
+  for (const name of ['library', 'understand', 'verify', 'decide']) {
+    const response = await page.request.get('/osa-cinema/reference/' + name + '.webp')
+    expect(response.ok(), name + ' must be served from this site's origin').toBe(true)
+    expect(response.headers()['content-type'], name + ' should use image/webp').toContain('image/webp')
+    const bytes = await response.body()
+    expect(bytes.subarray(0, 4).toString()).toBe('RIFF')
+    expect(bytes.subarray(8, 12).toString()).toBe('WEBP')
+  }
 
   await page.goto('/osa-cinema?lang=ru')
   const cinema = page.locator('main.osa-cinema[data-cinema-design="v13"]')
@@ -21,12 +22,25 @@ test('OSA Cinema V13 renders all cinematic learning controls and preserves progr
   await expect(cinema.locator('.cinema-choice-grid button')).toHaveCount(3)
   await expect(cinema.locator('.cinema-progress')).toContainText('0%')
   const art = await cinema.locator('.scene-art').evaluate(node => getComputedStyle(node).backgroundImage)
-  expect(art).toContain('understand.webp')
+  expect(art).toContain('/osa-cinema/reference/understand.webp')
+  const decoded = await cinema.locator('.scene-art').evaluate(async node => {
+    const css = getComputedStyle(node).backgroundImage
+    const match = css.match(/url\(["']?([^"')]+)/)
+    if (!match) return false
+    const image = new Image()
+    image.src = match[1]
+    try { await image.decode() } catch { return false }
+    return image.naturalWidth >= 360 && image.naturalHeight >= 200
+  })
+  expect(decoded).toBe(true)
   const title = cinema.locator('.scene-content h1')
   await expect(title).toBeVisible()
   expect((await title.boundingBox())?.height).toBeGreaterThan(48)
 
+  await expect(cinema.locator('.cinema-practice-link')).toHaveAttribute('href', '/academy?project=decision#project-studio')
+  await expect(cinema.getByRole('progressbar', {name: /ПРОГРЕСС ПУТЕШЕСТВИЯ/i})).toHaveAttribute('aria-valuenow', '0')
   await cinema.locator('.cinema-choice-grid button').nth(1).click()
+  await expect(cinema.locator('.cinema-choice-grid button').nth(1)).toHaveAttribute('aria-pressed', 'true')
   await expect(cinema.locator('.cinema-choice-result')).toBeVisible()
   await cinema.locator('.cinema-next').click()
   await expect(cinema.locator('.cinema-scene')).toHaveClass(/cinema-scene-network/)
@@ -38,7 +52,6 @@ test('OSA Cinema V13 renders all cinematic learning controls and preserves progr
 
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 2)).toBe(true)
   expect(errors).toEqual([])
-  expect(missingImages).toEqual([])
 })
 
 test('OSA Cinema V13 keeps RU/EN deep links, focus and source notes usable', async ({ page }, info) => {
