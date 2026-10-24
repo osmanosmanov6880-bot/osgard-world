@@ -36,6 +36,12 @@ var r23_landscape_layout: bool = false
 var r31_raw_touch_events: int = 0
 var r31_last_touch_position: Vector2 = Vector2.ZERO
 var r31_last_touch_role: String = ""
+# Browser-owned touch source; native ScreenTouch remains a safe fallback.
+var r34_dom_bridge_active: bool = false
+var r34_dom_sequence: int = -1
+var r34_dom_seen: Dictionary = {}
+var r34_dom_event_count: int = 0
+var r34_ignore_until_all_released: bool = false
 
 func _ready() -> void:
     name = "R21_ResponsiveMobileController"
@@ -48,6 +54,9 @@ func _ready() -> void:
         enabled = bool(JavaScriptBridge.eval(
             "navigator.maxTouchPoints > 0 || window.matchMedia('(pointer: coarse)').matches"))
     visible = enabled
+    if OS.has_feature("web") and enabled:
+        r34_dom_bridge_active = bool(JavaScriptBridge.eval(
+            "Boolean(window.__nebulaDomTouchState && Array.isArray(window.__nebulaDomTouchState.points))"))
     get_viewport().size_changed.connect(_resize)
     _resize()
     set_process(enabled)
@@ -68,6 +77,7 @@ func _notification(what: int) -> void:
     # prevent the matching touch-up event from reaching Godot.
     if what == NOTIFICATION_APPLICATION_FOCUS_OUT or (
             what == NOTIFICATION_WM_WINDOW_FOCUS_OUT):
+        r34_ignore_until_all_released = true
         _clear_active_touches()
 
 func force_mobile_for_tests(on: bool) -> void:
@@ -82,6 +92,7 @@ func force_mobile_for_tests(on: bool) -> void:
 func set_shop_open(on: bool) -> void:
     shop_open = on
     if on:
+        r34_ignore_until_all_released = true
         _clear_active_touches()
     queue_redraw()
 
@@ -103,6 +114,7 @@ func _layout_for_size(pixels: Vector2) -> void:
         viewport_pixels.x >= viewport_pixels.y)
     if not finger_roles.is_empty() and (
             changed_orientation or pixels.distance_to(viewport_pixels) > 24.0):
+        r34_ignore_until_all_released = true
         _clear_active_touches()
     viewport_pixels = pixels
     var w: float = pixels.x
@@ -194,11 +206,19 @@ func _input(event: InputEvent) -> void:
         r31_last_touch_position = touch.position
         if touch.pressed:
             r31_last_touch_role = _role_at(touch.position)
+        if r34_dom_bridge_active:
+            # The DOM bridge owns Web touches to avoid duplicate native
+            # ScreenTouch + DOM events launching a single button twice.
+            get_viewport().set_input_as_handled()
+            return
         var was_control: bool = finger_roles.has(touch.index)
         _set_touch(touch.index, touch.position, touch.pressed)
         if was_control or finger_roles.has(touch.index):
             get_viewport().set_input_as_handled()
     elif event is InputEventScreenDrag:
+        if r34_dom_bridge_active:
+            get_viewport().set_input_as_handled()
+            return
         var drag: InputEventScreenDrag = event
         if finger_roles.has(drag.index):
             _drag_touch(drag.index, drag.position)
@@ -236,9 +256,78 @@ func _update_ship_controls() -> void:
     player_ship.set_touch_controls(joystick, forward, height,
         _pressed("BOOST"), _pressed("FIRE"))
 
+func _r34_gate_stale_contacts(points: Array) -> bool:
+    if not shop_open and not r34_ignore_until_all_released:
+        return false
+    r34_dom_seen.clear()
+    _clear_active_touches()
+    if points.is_empty() and not shop_open:
+        # Closing an already finger-free hangar should accept the next tap.
+        # Previously an unchanged DOM sequence suppressed this release,
+        # forcing users to tap and release a second time.
+        r34_ignore_until_all_released = false
+    return true
+
+
+func _r34_poll_browser_contacts() -> void:
+    if not r34_dom_bridge_active:
+        return
+    # True browser-owned finger contacts from the same canvas used by Godot.
+    # Only change the input state: all acceleration/collision remains in Godot.
+    var raw: Variant = JavaScriptBridge.eval(
+        "JSON.stringify(window.__nebulaDomTouchState || null)")
+    if typeof(raw) != TYPE_STRING:
+        return
+    var parsed: Variant = JSON.parse_string(str(raw))
+    if typeof(parsed) != TYPE_DICTIONARY:
+        return
+    var current: Dictionary = parsed
+    var sequence: int = int(current.get("seq", -1))
+    if sequence < 0:
+        return
+    var entries: Variant = current.get("points", [])
+    if typeof(entries) != TYPE_ARRAY:
+        return
+    var points: Array = entries
+    # Re-evaluate the hangar gate even if the browser sequence has not
+    # changed since the panel closed. Otherwise the first new tap is lost.
+    if sequence == r34_dom_sequence and not (
+            r34_ignore_until_all_released and not shop_open and points.is_empty()):
+        return
+    r34_dom_sequence = sequence
+    r34_dom_event_count = int(current.get("downs", 0)) + (
+        int(current.get("ups", 0))) + int(current.get("cancels", 0))
+    if _r34_gate_stale_contacts(points):
+        return
+    var next_seen: Dictionary = {}
+    for entry in points:
+        if typeof(entry) != TYPE_ARRAY or entry.size() < 3:
+            continue
+        var id: int = int(entry[0])
+        if id < 0 or id > 4096:
+            continue
+        var finger_id: int = 10000 + id
+        # Browser JS stored canvas-local CSS coordinates. Since R31 sets
+        # viewport_pixels to the same CSS viewport, no devicePixelRatio
+        # multiplication is permitted here.
+        var position := Vector2(float(entry[1]), float(entry[2]))
+        next_seen[finger_id] = true
+        if not r34_dom_seen.has(finger_id):
+            r31_last_touch_position = position
+            r31_last_touch_role = _role_at(position)
+            _set_touch(finger_id, position, true)
+        elif finger_positions.has(finger_id):
+            _drag_touch(finger_id, position)
+    for prior in r34_dom_seen:
+        if not next_seen.has(prior):
+            _set_touch(int(prior), Vector2.ZERO, false)
+    r34_dom_seen = next_seen
+
+
 func _process(_delta: float) -> void:
-    # Recomputing is inexpensive; it also recovers if a finger is lifted
-    # outside of the viewport and the browser sends a terminal touch event.
+    if enabled:
+        _r34_poll_browser_contacts()
+    # Keep applying actual throttle while an acknowledged finger is held.
     if enabled and not shop_open:
         _update_ship_controls()
 

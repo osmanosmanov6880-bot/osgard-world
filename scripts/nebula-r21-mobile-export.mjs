@@ -99,6 +99,81 @@ const pilotScript = `
   });
 })();
 </script>`;
+// R34: fail-safe real DOM multitouch capture. Godot Web sometimes stalls or
+// loses native InputEventScreenTouch on software WebGL. This bridge reads
+// actual browser finger positions; the Godot game still handles gameplay
+// and runs its own physics. No synthetic touches or external endpoints.
+const touchScript = `
+<script id="nebula-r34-touch-bridge">
+(() => {
+  const points = new Map();
+  const state = window.__nebulaDomTouchState = {
+    seq: 0, points: [], downs: 0, ups: 0, moves: 0,
+    cancels: 0, blurClears: 0
+  };
+  const canvas = () => document.getElementById('canvas');
+  const fromCanvas = (target) => {
+    const c = canvas();
+    return Boolean(c && (target === c || c.contains(target)));
+  };
+  const coords = (touch) => {
+    const rect = canvas()?.getBoundingClientRect();
+    if (!rect) return null;
+    return [Number(touch.identifier), touch.clientX - rect.left,
+      touch.clientY - rect.top];
+  };
+  const publish = () => {
+    state.seq++;
+    state.points = [...points.values()].sort((a,b) => a[0] - b[0]);
+  };
+  const clear = (reason) => {
+    if (!points.size) return;
+    points.clear();
+    if (reason === 'blur') state.blurClears++;
+    else state.cancels++;
+    publish();
+  };
+  const onTouch = (type, event) => {
+    if (type === 'touchstart' && !fromCanvas(event.target)) return;
+    let changed = false;
+    for (const touch of Array.from(event.changedTouches || [])) {
+      const id = Number(touch.identifier);
+      if (type === 'touchstart') {
+        if (points.size >= 12 || points.has(id)) continue;
+        const p = coords(touch);
+        if (!p) continue;
+        points.set(id, p);
+        state.downs++; changed = true;
+      } else if (type === 'touchmove' && points.has(id)) {
+        const p = coords(touch);
+        if (!p) continue;
+        points.set(id, p);
+        state.moves++; changed = true;
+      } else if (points.has(id) &&
+          (type === 'touchend' || type === 'touchcancel')) {
+        points.delete(id);
+        if (type === 'touchcancel') state.cancels++;
+        else state.ups++;
+        changed = true;
+      }
+    }
+    if (!changed) return;
+    publish();
+    if (event.cancelable) event.preventDefault();
+  };
+  for (const eventName of ['touchstart','touchmove','touchend','touchcancel']) {
+    window.addEventListener(eventName, event => onTouch(eventName, event),
+      { capture: true, passive: false });
+  }
+  window.addEventListener('blur', () => clear('blur'));
+  window.addEventListener('pagehide', () => clear('blur'));
+  window.addEventListener('resize', () => clear('resize'));
+  window.addEventListener('orientationchange', () => clear('resize'));
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) clear('blur');
+  });
+})();
+</script>`;
 if (!html.includes('nebula-r23-physical-keyboard')) {
   // The previous bridge was added at </body>, *after* index.js registered
   // Godot/engine keyboard listeners. If those capture/stop the event first,
@@ -107,6 +182,11 @@ if (!html.includes('nebula-r23-physical-keyboard')) {
   const openHead = html.match(/<head[^>]*>/i);
   if (!openHead) throw new Error('Godot HTML head missing');
   html = html.replace(openHead[0],openHead[0] + '\n' + pilotScript);
+}
+if (!html.includes('nebula-r34-touch-bridge')) {
+  const openHead = html.match(/<head[^>]*>/i);
+  if (!openHead) throw new Error('Godot HTML head missing for touch bridge');
+  html = html.replace(openHead[0],openHead[0] + '\n' + touchScript);
 }
 if (!html.includes('nebula-r22-keyboard-focus')) {
   if (!html.includes('</body>')) throw new Error('Godot export body missing');
@@ -117,8 +197,11 @@ if (!html.includes('touch-action:none') ||
     !html.includes('nebula-r22-keyboard-focus') ||
     !html.includes('nebula-r23-physical-keyboard') ||
     !html.includes('nebulaKeyDebug') ||
+    !html.includes('nebula-r34-touch-bridge') ||
+    !html.includes('__nebulaDomTouchState') ||
+    html.indexOf('nebula-r34-touch-bridge') > html.indexOf('</head>') ||
     html.indexOf('nebula-r23-physical-keyboard') > html.indexOf('</head>')) {
   throw new Error('R21 mobile CSS or responsive viewport not installed');
 }
 fs.writeFileSync(file,html);
-console.log('NEBULA_R23_WEB_INPUT_SUCCESS physical keycode capture, WASD Cyrillic-independent + mobile fullscreen shell');
+console.log('NEBULA_R34_WEB_INPUT_SUCCESS physical keyboard, true multitouch DOM bridge and mobile fullscreen shell');

@@ -688,6 +688,32 @@ assert "r33_swiftshader_qa_visuals_trimmed = true" in world
 assert "if node == ship or node is CanvasLayer:" in world
 assert 'state["qa_visuals_trimmed"] = r33_swiftshader_qa_visuals_trimmed' in world
 assert "state.qa_visuals_trimmed === true" in r31_mobile
+# R34: actual canvas-finger source, not fake engine input or synthetic motion.
+r34_js = require(
+    "../../scripts/nebula-r21-mobile-export.mjs",
+    "nebula-r34-touch-bridge",
+    "__nebulaDomTouchState",
+    "touchcancel",
+    "touchstart",
+    "touchmove",
+    "touchend",
+    "window.addEventListener('blur'",
+)
+r34_dom_tests = require(
+    "../../scripts/test-nebula-r34-dom-touch.mjs",
+    "NEBULA_R34_DOM_TOUCH_SOURCE_SUCCESS",
+    "both independent fingers remain held",
+    "OS touchcancel clears held controls",
+)
+assert "r34_dom_bridge_active" in r21_mobile
+assert "func _r34_poll_browser_contacts()" in r21_mobile
+assert "r34_ignore_until_all_released" in r21_mobile
+assert "func _r34_gate_stale_contacts(points: Array)" in r21_mobile
+assert "R34 finger-free hangar close must allow the next independent tap" in smoke
+assert "R34 browser touch bridge remains blocked after hangar release" in smoke
+assert "if r34_dom_bridge_active:" in r21_mobile
+assert 'state["touch_dom_bridge"] = r21_touch.r34_dom_bridge_active' in world
+assert "s.touch_dom_bridge === true" in r31_mobile
 assert "window.__nebulaDomTouchQA" in r31_mobile
 assert "real mobile viewport and physics loop stabilized" in r31_mobile
 assert "native browser touch dispatch" in r31_mobile

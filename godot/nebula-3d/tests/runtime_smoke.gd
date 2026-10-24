@@ -96,6 +96,17 @@ func _run() -> void:
         world.ship.touch_throttle == 0.0,
         "R30 hangar must clear mobile touch counters and throttle"):return
     touch_r21.set_shop_open(false)
+    # R34: opening a hangar cancels held controls. The next real touch
+    # must not be swallowed when it was already finger-free at close.
+    touch_r21.r34_ignore_until_all_released = true
+    if not check(touch_r21._r34_gate_stale_contacts([[1, 12.0, 14.0]]) and
+        touch_r21.r34_ignore_until_all_released,
+        "R34 hangar must reject contacts that were held before closing"):return
+    if not check(touch_r21._r34_gate_stale_contacts([]) and
+        not touch_r21.r34_ignore_until_all_released,
+        "R34 finger-free hangar close must allow the next independent tap"):return
+    if not check(not touch_r21._r34_gate_stale_contacts([]),
+        "R34 browser touch bridge remains blocked after hangar release"):return
     touch_r21.force_mobile_for_tests(false)
     if not check(world.r21_towers_moved >= 0,
         "R21 original tower count and spawn corridor audit missing"):return
