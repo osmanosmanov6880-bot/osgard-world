@@ -649,6 +649,16 @@ assert "func _r25_emit_browser_flight_state() -> void:" in world
 assert 'JavaScriptBridge.eval("window.__nebulaPilotTelemetry = "' in world
 assert "var r25_telemetry_samples: int = 0" in world
 assert "snappedf(ship.flight_distance, 0.01)" in world
+assert "r11_capture_enabled" in world
+assert "get_viewport().get_texture().get_image()" in world
+assert "window.__nebulaR11CaptureData" in world
+assert "URLSearchParams(window.location.search).get('r11-qa')" in world
+r11_visual = require(
+    "tests/browser_smoke_r11.mjs",
+    "Godot viewport capture",
+    "nebulaR11CaptureRequestId",
+    "Capture actual WebGL frame and exercise quality controls",
+)
 assert "r25_side_and_back_windows" in r22_city
 assert "_r25_side_window_transform" in r22_city
 assert "r25_window_faces" in r22_city
