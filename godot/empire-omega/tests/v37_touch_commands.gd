@@ -51,12 +51,16 @@ func _run() -> void:
     var initial: int = probe.actions.size()
     touch(button,i,true)
     await frames()
+    print("R13 TOUCH DIAG "+action+" down, button="+str(button.is_pressed())+
+      " center="+str(button.position + Vector2.ONE*48.0*button.scale.x)+
+      " events="+str(probe.actions.slice(initial)))
     check(button.is_pressed(),"native button registers finger: "+action)
     check(Input.is_action_pressed(action),"pressed action reaches InputMap: "+action)
     check(probe.actions.slice(initial).count(action+":down")==1,
       "exactly one dispatched _input command event: "+action)
     touch(button,i,false)
     await frames()
+    print("R13 TOUCH DIAG "+action+" up, events="+str(probe.actions.slice(initial)))
     check(not Input.is_action_pressed(action),"native action released: "+action)
     check(probe.actions.slice(initial).count(action+":up")==1,
       "one-shot command release sent to _input: "+action)
@@ -69,6 +73,7 @@ func _run() -> void:
   await frames()
   check(Input.is_action_pressed("move_forward") and Input.is_action_pressed("move_left"),
     "gas and steering both respond to independent fingers")
+  print("R13 TOUCH DIAG held driving="+str(probe.actions.slice(baseline)))
   check(probe.actions.size()==baseline,"continuous driving never dispatches duplicate _input events")
   touch(gas,4,false)
   touch(wheel,5,false)
