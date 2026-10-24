@@ -246,3 +246,54 @@ html[data-motion=off] .intelligence-command .intelligence-command-art img,
 html[data-motion=off] .intelligence-command .intelligence-command-art .omega-intelligence-pulse{animation:none!important}
 html[data-motion=off] .intelligence-command .intelligence-proof-claim,
 html[data-motion=off] .intelligence-command .intelligence-command-actions .brand-button{transition:none!important;transform:none!important}
+
+/* OSA Intelligence art-direction refinement: editorial display face, starfield and scarlet evidence signals. */
+.theme-intelligence.brand-system {
+  --accent: #f04452;
+  background-image:
+    radial-gradient(ellipse at 79% 8%, rgba(240,68,82,.14), transparent 34%),
+    radial-gradient(1px 1px at 12% 20%, rgba(255,255,255,.9) 96%, transparent),
+    radial-gradient(1.5px 1.5px at 43% 11%, rgba(240,68,82,.9) 96%, transparent),
+    radial-gradient(1px 1px at 76% 39%, rgba(174,213,255,.85) 96%, transparent),
+    radial-gradient(1px 1px at 91% 68%, rgba(255,255,255,.7) 96%, transparent);
+  background-size: auto, 223px 193px, 317px 271px, 251px 223px, 359px 307px;
+  background-attachment: fixed;
+}
+.theme-intelligence .intelligence-command {
+  position: relative;
+  isolation: isolate;
+}
+.theme-intelligence .intelligence-command .intelligence-command-hero h1 {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: clamp(46px, 6.1vw, 92px);
+  font-weight: 400;
+  line-height: .98;
+  letter-spacing: -.025em;
+}
+.theme-intelligence .intelligence-command .intelligence-command-hero h1 em {
+  color: #ff4055;
+}
+.theme-intelligence .intelligence-command .intelligence-command-actions .brand-button.primary {
+  background: #e62e45;
+  border-color: #e62e45;
+  color: #fff;
+  box-shadow: 0 0 28px #e62e4545;
+}
+.theme-intelligence .intelligence-command .intelligence-command-actions .brand-button.primary:hover {
+  background: #ff465b;
+  border-color: #ff465b;
+}
+.theme-intelligence .intelligence-command .intelligence-proof-claim.is-selected {
+  border-color: #f04452;
+}
+.theme-intelligence .intelligence-command .intelligence-proof-marker {
+  color: #ff5265;
+}
+@media (max-width: 760px) {
+  .theme-intelligence .intelligence-command .intelligence-command-hero h1 {
+    font-size: clamp(45px, 12vw, 66px);
+  }
+  .theme-intelligence.brand-system {
+    background-attachment: scroll;
+  }
+}
