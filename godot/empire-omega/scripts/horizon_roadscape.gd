@@ -114,7 +114,7 @@ func _build_trees() -> void:
 					conifer_colors.append(Color("315644") if (ix+iz)%2==0 else Color("47604c"))
 				else:
 					var leaf_base := Basis(Vector3.UP,yaw).scaled(
-						Vector3(crown_scale,2.0,crown_scale))
+						Vector3(crown_scale*0.76,1.75,crown_scale*0.76))
 					leaves.append(Transform3D(leaf_base,point+Vector3(0,height+0.86,0)))
 					leaf_colors.append(Color("587859") if (ix+iz)%3==0 else Color("698263"))
 
