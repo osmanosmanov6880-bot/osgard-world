@@ -743,6 +743,76 @@ func _run() -> void:
         "R12 dynamic film-streak control missing"):return
     if not check(monitor_r11.last_report.is_empty(),
         "R12 actual physical hardware results must never be invented in CI"):return
+    # R36: touch-accessible 20-second on-device profiler, no keyboard needed.
+    # Native unit checks the actual controls and local JSON export. It does
+    # NOT fabricate a physical-phone FPS score.
+    touch_r21.force_mobile_for_tests(true)
+    touch_r21.set_safe_insets(Vector4(59, 60, 59, 34))
+    touch_r21._layout_for_size(Vector2(568, 320))
+    monitor_r11.configure_mobile(true, touch_r21,
+        Vector4(59, 60, 59, 34), Vector2(568, 320))
+    if not check(monitor_r11.r36_mobile and
+        monitor_r11.r36_launcher.visible and
+        not monitor_r11.overlay.visible and
+        monitor_r11.r36_launcher.offset_left >= 59.0 and
+        monitor_r11.r36_launcher.offset_right <= 509.0 and
+        monitor_r11.r36_launcher.offset_top >= 60.0,
+        "R36 mobile FPS launcher is hidden under landscape camera notch"):return
+    if not check(monitor_r11.overlay.offset_right <
+        touch_r21.button_centres["CAMERA"].x - touch_r21.base_radius * 0.80 or
+        not touch_r21.enabled,
+        "R36 performance panel blocks landscape camera touch control"):return
+    monitor_r11.r36_launcher.pressed.emit()
+    if not check(monitor_r11.overlay.visible and
+        not monitor_r11.r36_launcher.visible and
+        monitor_r11.r36_command_row.visible,
+        "R36 mobile FPS launcher does not open live GPU/CPU metrics"):return
+    monitor_r11.r36_start_button.pressed.emit()
+    if not check(monitor_r11.benchmarking and
+        monitor_r11.r36_start_button.disabled and
+        monitor_r11.last_report.is_empty(),
+        "R36 phone benchmark did not begin a fresh 20-second measurement"):return
+    # End only the native UI regression (not an actual performance sample).
+    monitor_r11.benchmarking = false
+    monitor_r11.r36_start_button.disabled = false
+    monitor_r11.last_timestamp_us = 0
+    monitor_r11.last_report = {
+        "schema": "R36_CI_EXPORT_FIXTURE_NOT_HARDWARE_MEASUREMENT",
+        "avg_fps": 0
+    }
+    monitor_r11.download_report()
+    var r36_export := FileAccess.open(
+        "user://nebula-r36-real-device-performance.json", FileAccess.READ)
+    if not check(r36_export != null,
+        "R36 local-only JSON export did not create a device file"):return
+    var r36_fixture: Variant = JSON.parse_string(r36_export.get_as_text())
+    r36_export.close()
+    if not check(r36_fixture is Dictionary and
+        r36_fixture.get("schema", "") ==
+        "R36_CI_EXPORT_FIXTURE_NOT_HARDWARE_MEASUREMENT",
+        "R36 local performance JSON export was corrupted"):return
+    monitor_r11.last_report.clear()
+    monitor_r11.r36_close_button.pressed.emit()
+    if not check(not monitor_r11.overlay.visible and
+        monitor_r11.r36_launcher.visible,
+        "R36 mobile performance overlay cannot be closed"):return
+    touch_r21.set_safe_insets(Vector4(0, 55, 0, 34))
+    touch_r21._layout_for_size(Vector2(280, 420))
+    monitor_r11.configure_mobile(true, touch_r21,
+        Vector4(0, 55, 0, 34), Vector2(280, 420))
+    if not check(monitor_r11.r36_launcher.offset_left >= 0.0 and
+        monitor_r11.r36_launcher.offset_right <
+        touch_r21.button_centres["CRUISE"].x - touch_r21.base_radius * 0.8 and
+        monitor_r11.overlay.offset_bottom <
+        touch_r21.button_centres["CRUISE"].y - touch_r21.base_radius * 0.8,
+        "R36 compact phone FPS button overlaps start-flight control"):return
+    monitor_r11.configure_mobile(false, touch_r21,
+        Vector4.ZERO, Vector2(1280, 720))
+    touch_r21.set_safe_insets(Vector4.ZERO)
+    touch_r21.force_mobile_for_tests(false)
+    if not check(not monitor_r11.r36_launcher.visible,
+        "R36 phone FPS button leaked into desktop HUD"):return
+    print("NEBULA_R36_REAL_DEVICE_UI_SUCCESS phone_launcher=1 local_json=1 benchmark_synthetic=0")
     var r14 = world.get_node_or_null("R14_SculptedCinematicPorts")
     if not check(r14 != null, "R14 cinematic ports not loaded into real game scene"):return
     if not check(r14.site_count == 6 and r14.sculpted_decks == 6,

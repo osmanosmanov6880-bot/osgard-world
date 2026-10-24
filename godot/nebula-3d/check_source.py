@@ -742,6 +742,30 @@ assert "compact portrait phone has reachable 3x3 flight controls" in r31_mobile
 assert "compact portrait GAS drives real Godot ship" in r31_mobile
 assert "compact portrait GAS release prevents ghost thrust" in r31_mobile
 assert "actual DOM CSS safe-area probe and reachable GAS" in r31_mobile
+# R36: actual smartphone-accessible benchmark + local-only real-device reports.
+assert "last_event_ms" in r34_js
+assert "performance.now()" in r34_js
+assert "R36 real DOM touch timestamp must use monotonic performance.now" in r34_dom_tests
+assert "r36_input_poll_latency_total_ms" in r21_mobile
+assert "r36_input_poll_samples" in r21_mobile
+assert "get_viewport().set_input_as_handled()" not in r21_mobile.split(
+    "if r34_dom_bridge_active:", 1)[1].split("return", 1)[0]
+assert "func configure_mobile(active: bool, touch_source: Node," in performance_r11
+assert "func download_report() -> void:" in performance_r11
+assert "R36_MobileFPSLauncher" in performance_r11
+assert "R36_StartReal20SecondBenchmark" in performance_r11
+assert "r36_browser_dom_to_engine_avg_ms" in performance_r11
+assert "r36_touch_delay_scope" in performance_r11
+assert "r36_data_policy" in performance_r11
+assert "no network, identity or background upload" in performance_r11.lower()
+assert "NEBULA_R36_REAL_DEVICE_UI_SUCCESS" in smoke
+assert "R36 local performance JSON export was corrupted" in smoke
+assert "R36 real mobile FPS button opens performance overlay" in r31_mobile
+assert "R36 real mobile 20-second FPS benchmark starts" in r31_mobile
+assert 'state["r36_perf_active"] = performance_lab_r11.benchmarking' in world
+assert "performance_lab_r11.configure_mobile(" in world
+require("docs/R36-REAL-MOBILE-PERFORMANCE-ACCEPTANCE.md",
+    "20", "DOM", "Godot", "JSON", "Android", "iOS", "SwiftShader")
 assert "if r34_dom_bridge_active:" in r21_mobile
 assert 'state["touch_dom_bridge"] = r21_touch.r34_dom_bridge_active' in world
 assert "s.touch_dom_bridge === true" in r31_mobile

@@ -27,7 +27,11 @@ const document = {
   addEventListener: (name,cb) => docListeners.set(name,cb)
 };
 const window = { addEventListener: (name,cb) => listeners.set(name,cb) };
-vm.runInNewContext(match[1], {window,document,console,Map,Array,Number},
+// R36: same monotonic browser clock drives event timestamps used by Godot.
+let monotonicMs = 1000;
+const performance = {now:() => {monotonicMs += 7;return monotonicMs;}};
+vm.runInNewContext(match[1],
+  {window,document,console,Map,Array,Number,performance},
   {timeout:3000});
 const state = window.__nebulaDomTouchState;
 assert.equal(state.seq,0);
@@ -44,6 +48,8 @@ function touch(type,contacts,target=canvas) {
   });
 }
 touch('touchstart',[[1,327,772]]);
+assert.equal(state.last_event_ms,1007,
+  'R36 real DOM touch timestamp must use monotonic performance.now');
 assert.equal(state.downs,1);
 assert.equal(state.points.length,1);
 assert.equal(state.points[0][1],327);
@@ -53,6 +59,8 @@ assert.equal(state.downs,2);
 assert.equal(state.points.length,2,'both independent fingers remain held');
 touch('touchmove',[[1,319,740]]);
 assert.equal(state.moves,1);
+assert.ok(state.last_event_ms > 1007,
+  'R36 touch drag must publish a new monotonic dispatch timestamp');
 assert.equal(state.points[0][1],319,'finger drag updates current position');
 touch('touchend',[[1,319,740]]);
 assert.equal(state.ups,1);

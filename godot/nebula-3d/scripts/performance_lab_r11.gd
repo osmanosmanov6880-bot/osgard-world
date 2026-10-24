@@ -30,6 +30,20 @@ var triangle_peak: int = 0
 var quality_at_start: int = 0
 var profile_switched_during_test: bool = false
 var screenshot_count: int = 0
+## R36: on-device mobile performance controls; no remote analytics SDK.
+var r36_touch_source
+var r36_mobile: bool = false
+var r36_safe_area: Vector4 = Vector4.ZERO
+var r36_view_size: Vector2 = Vector2(1280, 720)
+var r36_launcher: Button
+var r36_start_button: Button
+var r36_export_button: Button
+var r36_close_button: Button
+var r36_command_row: HBoxContainer
+var r36_panel_style: StyleBoxFlat
+var r36_touch_start_count: int = 0
+var r36_touch_start_sum_ms: float = 0.0
+var r36_touch_start_invalid: int = 0
 
 func _ready() -> void:
     layer = 7
@@ -51,6 +65,7 @@ func _ready() -> void:
     style.content_margin_right = 14
     style.content_margin_top = 12
     style.content_margin_bottom = 10
+    r36_panel_style = style
     overlay.add_theme_stylebox_override("panel", style)
     add_child(overlay)
     var column := VBoxContainer.new()
@@ -65,8 +80,137 @@ func _ready() -> void:
     report_label.add_theme_color_override("font_color", Color(0.88, 0.73, 0.49))
     report_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
     column.add_child(report_label)
+    r36_command_row = HBoxContainer.new()
+    r36_command_row.name = "R36_MobilePerformanceActions"
+    r36_command_row.add_theme_constant_override("separation", 4)
+    column.add_child(r36_command_row)
+    r36_start_button = Button.new()
+    r36_start_button.text = "20 С"
+    r36_start_button.name = "R36_StartReal20SecondBenchmark"
+    r36_start_button.custom_minimum_size = Vector2(46, 28)
+    r36_start_button.pressed.connect(start_benchmark)
+    r36_command_row.add_child(r36_start_button)
+    r36_export_button = Button.new()
+    r36_export_button.text = "JSON"
+    r36_export_button.name = "R36_SaveLocalReport"
+    r36_export_button.custom_minimum_size = Vector2(52, 28)
+    r36_export_button.pressed.connect(download_report)
+    r36_command_row.add_child(r36_export_button)
+    r36_close_button = Button.new()
+    r36_close_button.text = "×"
+    r36_close_button.name = "R36_ClosePerformancePanel"
+    r36_close_button.custom_minimum_size = Vector2(30, 28)
+    r36_close_button.pressed.connect(_r36_close_mobile_panel)
+    r36_command_row.add_child(r36_close_button)
+    r36_launcher = Button.new()
+    r36_launcher.name = "R36_MobileFPSLauncher"
+    r36_launcher.text = "FPS"
+    r36_launcher.custom_minimum_size = Vector2(70, 30)
+    r36_launcher.pressed.connect(_r36_show_mobile_panel)
+    add_child(r36_launcher)
+    get_viewport().size_changed.connect(_r36_relayout)
     overlay.visible = false
+    r36_launcher.visible = false
+    r36_command_row.visible = false
     _draw_overlay()
+
+func configure_mobile(active: bool, touch_source: Node,
+        safe_area: Vector4, viewport_pixels: Vector2) -> void:
+    r36_mobile = active
+    r36_touch_source = touch_source
+    r36_safe_area = safe_area
+    r36_view_size = viewport_pixels
+    _r36_relayout()
+
+
+func _r36_relayout() -> void:
+    if not is_instance_valid(overlay) or not is_instance_valid(r36_launcher):
+        return
+    r36_command_row.visible = r36_mobile
+    r36_launcher.visible = r36_mobile and not (show_live or benchmarking)
+    if not r36_mobile:
+        overlay.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+        overlay.offset_left = -390.0
+        overlay.offset_right = -18.0
+        overlay.offset_top = -255.0
+        overlay.offset_bottom = -16.0
+        return
+    var size: Vector2 = r36_view_size
+    if size.x < 200.0 or size.y < 200.0:
+        size = get_viewport().get_visible_rect().size
+    var landscape: bool = size.x > size.y and size.y < 530.0
+    var left: float = r36_safe_area.x
+    var top: float = r36_safe_area.y
+    var right: float = r36_safe_area.z
+    var usable_w: float = maxf(180.0, size.x - left - right)
+    overlay.set_anchors_preset(Control.PRESET_TOP_LEFT)
+    overlay.offset_left = left + 8.0
+    overlay.offset_top = top + 8.0
+    overlay.offset_right = overlay.offset_left + minf(
+        164.0 if landscape else 300.0, usable_w - 16.0)
+    overlay.offset_bottom = overlay.offset_top + (
+        108.0 if landscape else 130.0)
+    if is_instance_valid(r36_panel_style):
+        r36_panel_style.content_margin_left = 8
+        r36_panel_style.content_margin_right = 8
+        r36_panel_style.content_margin_top = 6
+        r36_panel_style.content_margin_bottom = 6
+    stats_label.add_theme_font_size_override("font_size", 10)
+    report_label.add_theme_font_size_override("font_size", 10)
+    stats_label.clip_text = true
+    report_label.clip_text = true
+    r36_launcher.set_anchors_preset(Control.PRESET_TOP_LEFT)
+    if landscape:
+        r36_launcher.offset_left = size.x - right - 78.0
+        r36_launcher.offset_top = top + 8.0
+    else:
+        r36_launcher.offset_left = left + 8.0
+        r36_launcher.offset_top = top + 136.0
+    r36_launcher.offset_right = r36_launcher.offset_left + 70.0
+    r36_launcher.offset_bottom = r36_launcher.offset_top + 30.0
+
+
+func _r36_show_mobile_panel() -> void:
+    show_live = true
+    _sync_visibility()
+
+
+func _r36_close_mobile_panel() -> void:
+    if benchmarking:
+        return
+    show_live = false
+    _sync_visibility()
+
+
+func download_report() -> void:
+    if last_report.is_empty():
+        report_label.text = "НЕТ ЗАМЕРА · НАЖМИ 20 С"
+        show_live = true
+        _sync_visibility()
+        return
+    var content: String = JSON.stringify(last_report)
+    var filename: String = "nebula-r36-real-device-performance.json"
+    if OS.has_feature("web"):
+        # Explicit local download; no network, identity or background upload.
+        var encoded: String = Marshalls.raw_to_base64(content.to_utf8_buffer())
+        var js: String = "(function(){const a=document.createElement('a');" + (
+            "a.download='" + filename + "';" +
+            "a.href='data:application/json;base64," + encoded + "';" +
+            "document.body.appendChild(a);a.click();a.remove();" +
+            "return true;})()")
+        JavaScriptBridge.eval(js)
+        report_label.text = "JSON · ЗАПРОС ЗАГРУЗКИ"
+    else:
+        var file := FileAccess.open("user://" + filename, FileAccess.WRITE)
+        if file != null:
+            file.store_string(content)
+            file.close()
+            report_label.text = "JSON · СОХРАНЁН В user://"
+        else:
+            report_label.text = "НЕ УДАЛОСЬ СОХРАНИТЬ JSON"
+    show_live = true
+    _sync_visibility()
+
 
 func set_quality(mode: int) -> void:
     quality_mode = clampi(mode, 0, 2)
@@ -80,6 +224,7 @@ func toggle_panel() -> void:
 func _sync_visibility() -> void:
     if is_instance_valid(overlay):
         overlay.visible = show_live or benchmarking
+    _r36_relayout()
 
 func _percentile(sorted_values: Array[float], p: float) -> float:
     if sorted_values.is_empty():
@@ -89,6 +234,8 @@ func _percentile(sorted_values: Array[float], p: float) -> float:
     return sorted_values[index]
 
 func start_benchmark() -> void:
+    if benchmarking:
+        return
     # Never reuse samples from CI/headless or a previous run.
     benchmarking = true
     quality_at_start = quality_mode
@@ -103,6 +250,17 @@ func start_benchmark() -> void:
     samples_ms.clear()
     last_report.clear()
     last_timestamp_us = 0
+    r36_touch_start_count = 0
+    r36_touch_start_sum_ms = 0.0
+    r36_touch_start_invalid = 0
+    if is_instance_valid(r36_touch_source):
+        r36_touch_start_count = r36_touch_source.r36_input_poll_samples
+        r36_touch_start_sum_ms = r36_touch_source.r36_input_poll_latency_total_ms
+        r36_touch_start_invalid = r36_touch_source.r36_input_poll_invalid
+    if is_instance_valid(r36_start_button):
+        r36_start_button.disabled = true
+    if is_instance_valid(r36_export_button):
+        r36_export_button.disabled = true
     show_live = true
     _sync_visibility()
     report_label.text = "ПРОГРЕВ 2 СЕК · ЗАТЕМ ЗАМЕР 20 СЕК\nОставь игру активной, лети через порт и город."
@@ -112,7 +270,11 @@ func _complete() -> void:
     samples_ms.sort()
     var valid_count: int = samples_ms.size()
     if valid_count < 120:
-        report_label.text = "НЕДОСТАТОЧНО КАДРОВ ДЛЯ ЗАМЕРА\nПовтори F7 в активной вкладке."
+        report_label.text = "НЕДОСТАТОЧНО КАДРОВ · ПОВТОРИ 20 С" if (
+            r36_mobile) else (
+            "НЕДОСТАТОЧНО КАДРОВ ДЛЯ ЗАМЕРА\nПовтори F7 в активной вкладке.")
+        if is_instance_valid(r36_start_button):
+            r36_start_button.disabled = false
         _sync_visibility()
         return
     var mean_ms: float = sum_ms / float(valid_count)
@@ -128,6 +290,21 @@ func _complete() -> void:
     var target_fps: float = [60.0, 40.0, 30.0][quality_at_start]
     var max_p95_ms: float = [20.0, 30.0, 35.0][quality_at_start]
     var stable_sample: bool = (invalid_frames <= 2 and not profile_switched_during_test)
+    var touch_count: int = 0
+    var touch_invalid: int = 0
+    var touch_mean_ms: Variant = null
+    var touch_peak_ms: Variant = null
+    if is_instance_valid(r36_touch_source):
+        touch_count = maxi(0, r36_touch_source.r36_input_poll_samples -
+            r36_touch_start_count)
+        touch_invalid = maxi(0, r36_touch_source.r36_input_poll_invalid -
+            r36_touch_start_invalid)
+        if touch_count > 0:
+            touch_mean_ms = snappedf(maxf(0.0, (
+                r36_touch_source.r36_input_poll_latency_total_ms -
+                r36_touch_start_sum_ms)) / float(touch_count), 0.1)
+            touch_peak_ms = snappedf(
+                r36_touch_source.r36_input_poll_latency_peak_ms, 0.1)
     var gate: String = "UNRELIABLE" if not stable_sample else (
         "MEETS_TARGET" if mean_fps >= target_fps and p95_ms <= max_p95_ms else "BELOW_TARGET")
     last_report = {
@@ -155,7 +332,13 @@ func _complete() -> void:
         "p99_frame_ms": snappedf(p99_ms, 0.01),
         "max_draw_calls": draw_calls_peak,
         "max_primitives": triangle_peak,
-        "measurement": "Real in-game frame intervals; not a GPU-only timing measurement"
+        "measurement": "Real in-game frame intervals; not a GPU-only timing measurement",
+        "r36_touch_poll_samples": touch_count,
+        "r36_touch_poll_invalid": touch_invalid,
+        "r36_browser_dom_to_engine_avg_ms": touch_mean_ms,
+        "r36_browser_dom_to_engine_peak_since_launch_ms": touch_peak_ms,
+        "r36_touch_delay_scope": "Browser DOM touch dispatch to Godot poll; not input-to-photon, and only measured for actual touch events",
+        "r36_data_policy": "Collected locally in active session; JSON downloaded only after a user click; no remote upload"
     }
     var formatted: String = JSON.stringify(last_report)
     print("NEBULA_R12_BENCHMARK_JSON:" + formatted)
@@ -164,9 +347,17 @@ func _complete() -> void:
     if file != null:
         file.store_string(formatted)
         file.close()
-    report_label.text = "R12 · " + gate + " · F9 КОПИРОВАТЬ\n" + (
-        "СРЕДНИЙ %.1f FPS · 1%% LOW %.1f FPS\n95%% КАДР %.1f МС · 99%% %.1f МС" %
-        [mean_fps, one_pct_low, p95_ms, p99_ms])
+    if r36_mobile:
+        report_label.text = "AVG %.0f FPS · P95 %.0f МС" % [
+            mean_fps, p95_ms]
+    else:
+        report_label.text = "R12 · " + gate + " · F9 КОПИРОВАТЬ\n" + (
+            "СРЕДНИЙ %.1f FPS · 1%% LOW %.1f FPS\n95%% КАДР %.1f МС · 99%% %.1f МС" %
+            [mean_fps, one_pct_low, p95_ms, p99_ms])
+    if is_instance_valid(r36_start_button):
+        r36_start_button.disabled = false
+    if is_instance_valid(r36_export_button):
+        r36_export_button.disabled = false
     _sync_visibility()
 
 func capture_frame() -> void:
@@ -230,17 +421,32 @@ func _draw_overlay() -> void:
         RenderingServer.RENDERING_INFO_TOTAL_PRIMITIVES_IN_FRAME)
     var resolution: Vector2 = get_viewport().get_visible_rect().size
     var quality_text: String = ["MAX", "HIGH", "ECO"][quality_mode]
-    stats_label.text = (
-        "NEBULA R12 · REAL DEVICE MONITOR\n" +
-        "FPS %.0f    CPU FRAME %.1f МС\n" +
-        "DRAW CALLS %d    ПРИМИТИВЫ %d\n" +
-        "RENDER %dx%d    КАЧЕСТВО %s\n" +
-        "F6 МЕТРИКИ · F7 ЗАМЕР · F9 КОПИЯ") % [
-            fps, frame_ms, draw_calls, primitives,
-            int(resolution.x), int(resolution.y), quality_text]
-    if benchmarking and warmup_remaining <= 0.0:
-        report_label.text = "ТЕСТ: %.0f / %.0f СЕК · %d КАДРОВ" % [
-            sample_elapsed, BENCH_SECONDS, samples_ms.size()]
+    if r36_mobile:
+        var age_ms: float = -1.0
+        if is_instance_valid(r36_touch_source):
+            age_ms = r36_touch_source.r36_input_poll_latency_ms
+        stats_label.text = (
+            "REAL FPS %.0f · %s\n" +
+            "CPU %.1f МС · %d DRAW\n" +
+            "ВВОД %.0f МС (DOM)") % [
+                fps, quality_text, frame_ms, draw_calls, age_ms]
+        if benchmarking and warmup_remaining <= 0.0:
+            report_label.text = "ЗАМЕР %.0f / 20 С · %d КАДРОВ" % [
+                sample_elapsed, samples_ms.size()]
+        elif not benchmarking and last_report.is_empty():
+            report_label.text = "ТЕСТ 20 С · ЛОКАЛЬНО"
+    else:
+        stats_label.text = (
+            "NEBULA R12 · REAL DEVICE MONITOR\n" +
+            "FPS %.0f    CPU FRAME %.1f МС\n" +
+            "DRAW CALLS %d    ПРИМИТИВЫ %d\n" +
+            "RENDER %dx%d    КАЧЕСТВО %s\n" +
+            "F6 МЕТРИКИ · F7 ЗАМЕР · F9 КОПИЯ") % [
+                fps, frame_ms, draw_calls, primitives,
+                int(resolution.x), int(resolution.y), quality_text]
+        if benchmarking and warmup_remaining <= 0.0:
+            report_label.text = "ТЕСТ: %.0f / %.0f СЕК · %d КАДРОВ" % [
+                sample_elapsed, BENCH_SECONDS, samples_ms.size()]
 
 func _process(delta: float) -> void:
     elapsed += delta

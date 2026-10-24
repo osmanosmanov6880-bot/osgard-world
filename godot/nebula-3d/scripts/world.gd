@@ -205,6 +205,24 @@ func _r25_emit_browser_flight_state() -> void:
         state["touch_dom_bridge"] = r21_touch.r34_dom_bridge_active
         state["touch_dom_events"] = r21_touch.r34_dom_event_count
         state["touch_dom_sequence"] = r21_touch.r34_dom_sequence
+        state["r36_browser_touch_poll_ms"] = snappedf(
+            r21_touch.r36_input_poll_latency_ms, 0.1)
+        state["r36_browser_touch_poll_samples"] = r21_touch.r36_input_poll_samples
+        if is_instance_valid(performance_lab_r11):
+            state["r36_mobile_perf"] = performance_lab_r11.r36_mobile
+            state["r36_perf_visible"] = performance_lab_r11.overlay.visible
+            state["r36_perf_active"] = performance_lab_r11.benchmarking
+            state["r36_perf_report_ready"] = not performance_lab_r11.last_report.is_empty()
+            var fps_button: Button = performance_lab_r11.r36_launcher
+            var benchmark_button: Button = performance_lab_r11.r36_start_button
+            state["r36_fps_button_x"] = (
+                fps_button.global_position.x + fps_button.size.x * 0.5)
+            state["r36_fps_button_y"] = (
+                fps_button.global_position.y + fps_button.size.y * 0.5)
+            state["r36_benchmark_button_x"] = (
+                benchmark_button.global_position.x + benchmark_button.size.x * 0.5)
+            state["r36_benchmark_button_y"] = (
+                benchmark_button.global_position.y + benchmark_button.size.y * 0.5)
         state["qa_visuals_trimmed"] = r33_swiftshader_qa_visuals_trimmed
         state["touch_last_x"] = r21_touch.r31_last_touch_position.x
         state["touch_last_y"] = r21_touch.r31_last_touch_position.y
@@ -335,6 +353,12 @@ func _ready() -> void:
     performance_lab_r11 = PerformanceLabR11Script.new()
     performance_lab_r11.name = "R11_PerformanceLab"
     add_child(performance_lab_r11)
+    # Touch controls already exist, so the R36 FPS launcher knows the real
+    # browser viewport and safe-area offsets from the R35 mobile system.
+    performance_lab_r11.configure_mobile(r21_mobile_enabled, r21_touch,
+        r21_touch.r35_safe_insets,
+        Vector2(r31_mobile_css_size) if r31_touch_web else
+            get_viewport().get_visible_rect().size)
     lighting_r12 = CinematicLightingR12Script.new()
     lighting_r12.name = "R12_CinematicLighting"
     add_child(lighting_r12)
@@ -1235,6 +1259,9 @@ func _fit_hud() -> void:
         r21_dashboard._fit_viewport()
     if is_instance_valid(r21_touch):
         r21_touch._resize()
+    if is_instance_valid(performance_lab_r11) and is_instance_valid(r21_touch):
+        performance_lab_r11.configure_mobile(r21_mobile_enabled, r21_touch,
+            r21_touch.r35_safe_insets, rect)
 
 func _unhandled_key_input(event: InputEvent) -> void:
     if event is InputEventKey and event.pressed and not event.echo:

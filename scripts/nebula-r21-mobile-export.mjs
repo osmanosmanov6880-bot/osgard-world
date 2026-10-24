@@ -109,7 +109,7 @@ const touchScript = `
   const points = new Map();
   const state = window.__nebulaDomTouchState = {
     seq: 0, points: [], downs: 0, ups: 0, moves: 0,
-    cancels: 0, blurClears: 0
+    cancels: 0, blurClears: 0, last_event_ms: -1
   };
   const canvas = () => document.getElementById('canvas');
   const fromCanvas = (target) => {
@@ -123,6 +123,10 @@ const touchScript = `
       touch.clientY - rect.top];
   };
   const publish = () => {
+    // Same monotonic clock as the Godot-side poll. This measures dispatch
+    // -> engine observation, NOT physical finger-to-photon latency.
+    state.last_event_ms = typeof performance !== 'undefined' &&
+      typeof performance.now === 'function' ? performance.now() : -1;
     state.seq++;
     state.points = [...points.values()].sort((a,b) => a[0] - b[0]);
   };
