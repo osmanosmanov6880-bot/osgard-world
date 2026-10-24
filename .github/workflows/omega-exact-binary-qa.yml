@@ -1,0 +1,40 @@
+name: Omega exact published binary verification QA
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - 'scripts/omega-live-integrity.py'
+      - '.github/workflows/omega-web-direct-deploy.yml'
+      - '.github/workflows/omega-exact-binary-qa.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  proof-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Exercise fail-closed manifest, source SHA and byte-level digest checks
+        run: python3 scripts/omega-live-integrity.py --self-test
+      - name: Hash every file of the authentic native-tested repository release
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import json,hashlib
+          base=Path("public/games/omega-3d-preview")
+          release=json.loads((base/"release.json").read_text())
+          assert release["engine"]=="Godot 4.4.1"
+          checked=0
+          for name,digest in release["files"].items():
+              p=base/name
+              assert p.is_file(),f"Missing original Godot Web asset {name}"
+              h=hashlib.sha256()
+              with p.open('rb') as f:
+                  while block:=f.read(1048576): h.update(block)
+              assert h.hexdigest()==digest,f"Wrong SHA for {name}"
+              checked+=1
+          assert checked>=4
+          print(f"PASS: {checked} authentic checked-in Godot Web files match their release manifest")
+          PY
