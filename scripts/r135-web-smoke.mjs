@@ -151,8 +151,9 @@ async function touchDiagnostics(page) {
   await expectState(page, x => x?.camera_target_visible
     && x?.camera_keep_width && x?.camera_fov >= 60
     && x?.camera_target_screen_x > .25 && x?.camera_target_screen_x < .75
-    && x?.camera_target_screen_y > .24 && x?.camera_target_screen_y < .73,
-    'W6 portrait optical head must remain in safe playable zone')
+    && x?.camera_target_screen_y > .24 && x?.camera_target_screen_y < .73
+    && x?.machine_top_screen_y > .12 && x?.machine_top_screen_y < .37,
+    'W6.1 portrait optics and physical upper rail must fit useful scene area')
   await page.screenshot({ path: resolve(output, 'w6-portrait-optical-active.png'), fullPage: true })
   await tapSceneButton(page, 3) // SCAN TARGET
   await expectState(page, x => x?.challenge_step === 3 && x?.fault_visual_state === 'inspected',
