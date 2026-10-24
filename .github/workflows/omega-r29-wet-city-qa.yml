@@ -1,0 +1,37 @@
+name: OSGARD HORIZON R29 wet roads and organic-only foliage QA
+on:
+  pull_request:
+    branches: [master, feat/horizon-r28-road-marking-batches-rebased]
+    paths:
+      - 'godot/empire-omega/**'
+      - '.github/workflows/omega-r29-wet-city-qa.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: omega-r29-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  native-weather:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: false
+      - name: Import the actual Godot game
+        run: |
+          python3 godot/empire-omega/tools/generate_audio.py
+          python3 godot/empire-omega/tools/generate_patrol_audio.py
+          godot --headless --editor --path godot/empire-omega --import --quit
+      - name: Verify rainy PBR road and real city without cuboid trees
+        shell: bash
+        run: |
+          set -euo pipefail
+          for test in v23_horizon_visuals v25_horizon_racing v29_responsive_layout v34_real_touch_drive v38_adaptive_graphics v48_city_polish v50_organic_foliage_mobile_focus v51_batched_streetfronts v52_road_markings_gpu v53_rain_puddles_city_cleanup; do
+            echo "Running Godot native $test"
+            timeout --signal=TERM --kill-after=5s 95s godot --headless --path godot/empire-omega --script "res://tests/$test.gd"
+          done
