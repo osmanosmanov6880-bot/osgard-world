@@ -28,8 +28,8 @@ static func view(route: Dictionary, active: Dictionary, player_position: Vector3
     var distance: float = difference.length()
     if not is_finite(distance):
         return {}
-    var heading := Vector2(-sinf(vehicle_yaw),-cosf(vehicle_yaw))
-    var right := Vector2(cosf(vehicle_yaw),-sinf(vehicle_yaw))
+    var heading := Vector2(-sin(vehicle_yaw),-cos(vehicle_yaw))
+    var right := Vector2(cos(vehicle_yaw),-sin(vehicle_yaw))
     var ahead: float = difference.dot(heading)
     var side: float = difference.dot(right)
     var tr: Dictionary = DIRECTIONS.get(locale,DIRECTIONS["ru"])
