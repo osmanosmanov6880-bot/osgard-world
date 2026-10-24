@@ -56,6 +56,12 @@ test('22-game roadmap shows real image assets and responsive category filtering'
   await page.locator('[data-game-filter="all"]').click()
   await expect(page.locator('.game-visual')).toHaveCount(22)
   await page.locator('[data-wave-filter="in_review"]').click()
-  await expect(page.locator('.wave')).toHaveCount(2)
+  const reviewingCount = await page.evaluate(async () => {
+    const response=await fetch('/games/aaa-roadmap.v1.json')
+    if(!response.ok)throw Error('Missing wave registry')
+    return (await response.json()).waves.filter(w=>w.state==='in_review').length
+  })
+  expect(reviewingCount).toBeGreaterThan(0)
+  await expect(page.locator('.wave')).toHaveCount(reviewingCount)
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2)).toBe(true)
 })

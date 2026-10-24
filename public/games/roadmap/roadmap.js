@@ -48,7 +48,7 @@ function renderGames(data){
   visual.append(cover,emblem,make('span','art-tag','КОНЦЕПТ-АРТ'));
   card.append(visual,make('small','',game.id.toUpperCase()+' · ВОЛНА '+game.wave),make('h3','',game.title),make('p','','Цель: '+game.gameplay));
   const details=make('details'),summary=make('summary','','Художественное направление и эмблема');
-  details.append(summary,make('p','','Референсы: '+game.reference),make('p','','Авторский знак: '+game.emblem));card.append(details);
+  details.append(summary,make('p','','Референсы: '+game.reference),make('p','','Авторский знак: '+game.emblem),make('p','','Управление: '+game.controls),make('p','','Сохранение: '+game.saveBehavior),make('p','','Онлайн: '+game.networkBehavior));card.append(details);
   const link=make('a','','Открыть текущую игру ↗');link.href=game.route;card.append(link);host.append(card);
  }
  if(!games.length)host.append(make('p','','Нет игр в этой категории.'));

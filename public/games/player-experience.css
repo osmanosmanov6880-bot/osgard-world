@@ -1,0 +1,69 @@
+/* OSGARD WAVE 03 — helpful controls, truthful session recovery and mobile safety. */
+#last-session[hidden],#player-help-panel[hidden],#player-connection-status[hidden],#catalog-connection-status[hidden]{display:none!important}
+#catalog-connection-status.catalog-offline-notice{display:block;margin-block:14px 0;padding:13px 17px;border:1px solid #a17c48;border-radius:9px;color:#ffd79a;background:#302519;font:600 13px/1.5 Inter,system-ui,sans-serif}
+#last-session.last-session{
+  display:flex;
+  gap:25px;
+  align-items:center;
+  justify-content:space-between;
+  margin-top:18px;
+  margin-bottom:0;
+  padding-block:22px;
+  border:1px solid #37546b;
+  border-radius:15px;
+  background:linear-gradient(110deg,#101f30,#102735 70%,#08131d);
+  box-shadow:0 14px 37px #03081240;
+}
+#last-session .eyebrow{color:#7fe9f0;font-size:10px}
+#last-session h2{margin:7px 0;color:#f0f7fd;font-size:clamp(20px,2.5vw,33px);line-height:1.2}
+#last-session h2 span{color:#e7c38a}
+#last-session p:last-child{color:#b6c9d7;font-size:13px;line-height:1.6}
+#last-session .last-session-actions{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+#last-session .last-session-actions .btn{min-height:44px;white-space:normal;text-align:center;justify-content:center;cursor:pointer;font-size:12px}
+#player-dialog{position:relative}
+#player-help-panel{
+  position:absolute;
+  top:82px;
+  right:12px;
+  z-index:50;
+  box-sizing:border-box;
+  width:min(475px,calc(100% - 24px));
+  max-height:min(67dvh,610px);
+  overflow-y:auto;
+  padding:21px;
+  border:1px solid #6793a4;
+  border-radius:11px;
+  background:rgba(12,22,35,.98);
+  color:#e8f4fb;
+  box-shadow:0 26px 65px #02070ecc;
+  scrollbar-color:#54798b #101b2b;
+}
+#player-help-panel h3{margin:0 0 12px;font-size:17px;line-height:1.3;color:#e9f5fe}
+#player-help-panel .help-game-title{font-size:14px;font-weight:750;color:#9de6f1}
+#player-help-panel .game-controls-facts{display:grid;grid-template-columns:120px 1fr;gap:12px;margin:12px 0}
+#player-help-panel .game-controls-facts dt{font-size:12px;font-weight:700;color:#e4c58e}
+#player-help-panel .game-controls-facts dd{margin:0;font-size:13px;color:#e4eef7;line-height:1.55;overflow-wrap:anywhere}
+#player-help-panel .help-save-disclaimer{margin:16px 0 0;padding-top:11px;border-top:1px solid #2e4c60;color:#a5becd;font-size:12px;line-height:1.65}
+#player-help-toggle[aria-expanded=true]{background:#224153!important;border-color:#75e4eb!important;color:#d5faff!important}
+#player-connection-status{color:#ffcc8b;font-weight:700}
+#player-dialog .player-tools #player-help-toggle{min-height:44px}
+@media(max-width:760px){
+  #last-session.last-session{flex-direction:column;align-items:stretch;gap:9px;padding-block:15px}
+  #last-session h2{font-size:22px}
+  #last-session .last-session-actions{width:100%}
+  #last-session .last-session-actions .btn{flex:1 1 150px}
+  #player-dialog #player-help-toggle{font-size:0!important;min-width:44px;padding:0 4px!important}
+  #player-dialog #player-help-toggle::before{content:"?";font-size:21px}
+  #player-dialog #player-help-panel{top:72px;right:8px;max-height:min(63dvh,560px);width:calc(100% - 16px);padding:16px}
+  #player-help-panel .game-controls-facts{grid-template-columns:98px 1fr;gap:10px}
+}
+@media(max-width:420px){
+  #player-dialog .player-tools{gap:3px}
+  #player-dialog #player-help-panel{top:66px}
+}
+@media(max-height:520px) and (orientation:landscape){
+  #player-dialog #player-help-panel{top:52px;max-height:calc(100dvh - 83px)}
+}
+@media(prefers-reduced-motion:reduce){
+  #last-session *{transition:none!important}
+}

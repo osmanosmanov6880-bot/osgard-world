@@ -39,10 +39,11 @@
     {
       "id": "03",
       "title": "Основа геймплея, управление и сохранения",
-      "state": "planned",
+      "state": "in_review",
       "games": "22",
-      "goal": "Клавиатура, геймпад, touch, пауза, настройки, игровые состояния, восстановления",
-      "gate": "Desktop/mobile E2E и сценарии отказа, проверка сохранений"
+      "goal": "Единый слой запуска и возврата для 22 игр, достоверные инструкции, обработка offline; общие gamepad/touch/save API движков — отдельные дальнейшие поставки",
+      "gate": "22 карточки дают инструкции; браузерные desktop/mobile сценарии проходят, чужие ссылки отвергаются, PR/CI и SSH/HTTPS проверены",
+      "evidence": "Портал: валидируемый last-world-record, явный возврат к последней игре, управление/сохранения каждого мира из исходного каталога, offline-сообщение и тесты; не заменяет сохранения внутри игровых движков."
     },
     {
       "id": "04",
@@ -114,7 +115,10 @@
       "icon": "/games/icons/null-shift.svg",
       "cover": "/brand/play/null-shift.webp",
       "coverSmall": "/brand/play/null-shift-640.webp",
-      "coverKind": "concept-art"
+      "coverKind": "concept-art",
+      "controls": "WASD и мышь. На телефоне — экранные элементы управления. Полная инструкция внутри игры.",
+      "saveBehavior": "Локальное сохранение в браузере",
+      "networkBehavior": "Одиночная игра"
     },
     {
       "id": "time",
@@ -128,7 +132,10 @@
       "icon": "/games/icons/time.svg",
       "cover": "/brand/play/time.webp",
       "coverSmall": "/brand/play/time-640.webp",
-      "coverKind": "concept-art"
+      "coverKind": "concept-art",
+      "controls": "Кнопки действий, карта города и переход к следующему такту. Мышь или сенсорный экран.",
+      "saveBehavior": "Локальное сохранение в браузере",
+      "networkBehavior": "Одиночный прототип"
     },
     {
       "id": "empire-orbit",
@@ -142,7 +149,10 @@
       "icon": "/games/icons/empire-orbit.svg",
       "cover": "/brand/play/empire-orbit.webp",
       "coverSmall": "/brand/play/empire-orbit-640.webp",
-      "coverKind": "concept-art"
+      "coverKind": "concept-art",
+      "controls": "Выберите мир и нажмите «Войти в Империю». В кампании используйте кнопки добычи и улучшений.",
+      "saveBehavior": "Локальное сохранение в браузере",
+      "networkBehavior": "Одиночный прототип"
     },
     {
       "id": "swarm",
@@ -156,7 +166,10 @@
       "icon": "/games/icons/swarm.svg",
       "cover": "/brand/play/swarm.webp",
       "coverSmall": "/brand/play/swarm-640.webp",
-      "coverKind": "concept-art"
+      "coverKind": "concept-art",
+      "controls": "1–8 — роль; WASD — движение; Space — прыжок; F — захват; Q — усиление.",
+      "saveBehavior": "Тренировка в текущей сессии",
+      "networkBehavior": "Комнаты требуют отдельного API"
     },
     {
       "id": "inherit",
@@ -170,7 +183,10 @@
       "icon": "/games/icons/inherit.svg",
       "cover": "/brand/play/inherit.webp",
       "coverSmall": "/brand/play/inherit-640.webp",
-      "coverKind": "concept-art"
+      "coverKind": "concept-art",
+      "controls": "Выберите инструмент, затем место в мире. Историю и передачу поколения открывают кнопки интерфейса.",
+      "saveBehavior": "Мир сохраняется в этом браузере",
+      "networkBehavior": "Сетевая история не подтверждена"
     },
     {
       "id": "remix",
@@ -184,7 +200,10 @@
       "icon": "/games/icons/remix.svg",
       "cover": "/brand/play/remix.webp",
       "coverSmall": "/brand/play/remix-640.webp",
-      "coverKind": "concept-art"
+      "coverKind": "concept-art",
+      "controls": "A/D или ←/→ — движение; W/↑/пробел — прыжок. Есть экранные кнопки.",
+      "saveBehavior": "Результаты требуют подтверждения API",
+      "networkBehavior": "Нужен работающий API матчей"
     },
     {
       "id": "vector-zero",
@@ -198,7 +217,10 @@
       "icon": "/games/icons/vector-zero.svg",
       "cover": "/brand/play/vector-zero.webp",
       "coverSmall": "/brand/play/vector-zero-640.webp",
-      "coverKind": "concept-art"
+      "coverKind": "concept-art",
+      "controls": "A/D или ←/→ — движение; W/↑ — прыжок; Space — запуск ядра; Q — полярность; E — импульс; R — заново.",
+      "saveBehavior": "Прохождение не сохраняется",
+      "networkBehavior": "Одиночная игра"
     },
     {
       "id": "afterimage-run",
@@ -212,7 +234,10 @@
       "icon": "/games/icons/afterimage-run.svg",
       "cover": "/brand/play/afterimage-run.webp",
       "coverSmall": "/brand/play/afterimage-run-640.webp",
-      "coverKind": "concept-art"
+      "coverKind": "concept-art",
+      "controls": "Space, ↑ или касание арены — прыжок. Shift / кнопка фазового рывка — пройти опасную зону. Esc — пауза.",
+      "saveBehavior": "Рекорд и призрак на этом устройстве",
+      "networkBehavior": "Ссылка-вызов · без серверного рейтинга"
     },
     {
       "id": "empire-omega",
@@ -226,7 +251,10 @@
       "icon": "/games/icons/empire-omega.svg",
       "cover": "/brand/world-empire-omega.svg",
       "coverSmall": "/brand/world-empire-omega.svg",
-      "coverKind": "concept-art"
+      "coverKind": "concept-art",
+      "controls": "WASD — движение; E — войти или выйти из машины; F — действие; M — карта.",
+      "saveBehavior": "Локально в этом браузере",
+      "networkBehavior": "Одиночная игра · отдельный сервер не нужен"
     },
     {
       "id": "nebula-3d",
@@ -240,7 +268,10 @@
       "icon": "/games/icons/nebula-3d.svg",
       "cover": "/brand/world-nebula.svg",
       "coverSmall": "/brand/world-nebula.svg",
-      "coverKind": "concept-art"
+      "coverKind": "concept-art",
+      "controls": "Подсказки и доступные режимы показаны в игре.",
+      "saveBehavior": "Зависит от игрового режима",
+      "networkBehavior": "Сетевые функции требуют доступного сервиса"
     },
     {
       "id": "r136-precision",
@@ -254,7 +285,10 @@
       "icon": "/games/icons/r136-precision.svg",
       "cover": "/brand/world-r136.svg",
       "coverSmall": "/brand/world-r136.svg",
-      "coverKind": "concept-art"
+      "coverKind": "concept-art",
+      "controls": "E — аварийная остановка; X — продолжить; H — детали. На сенсорном экране — вращение и жест масштаба.",
+      "saveBehavior": "Не используется",
+      "networkBehavior": "Офлайн · сервер не нужен"
     },
     {
       "id": "zion-020",
@@ -268,7 +302,10 @@
       "icon": "/games/icons/zion-020.svg",
       "cover": "/brand/play/zion-020.webp",
       "coverSmall": "/brand/play/zion-020-640.webp",
-      "coverKind": "concept-art"
+      "coverKind": "concept-art",
+      "controls": "Нажатие или Tab и Enter. Кнопка «Сбросить сигнал» начинает заново.",
+      "saveBehavior": "Только текущая сессия",
+      "networkBehavior": "Одиночный режим · без онлайна"
     },
     {
       "id": "zion-021",
@@ -282,7 +319,10 @@
       "icon": "/games/icons/zion-021.svg",
       "cover": "/brand/play/zion-021.webp",
       "coverSmall": "/brand/play/zion-021-640.webp",
-      "coverKind": "concept-art"
+      "coverKind": "concept-art",
+      "controls": "Нажатие или Tab и Enter. Кнопка «Сбросить сигнал» начинает заново.",
+      "saveBehavior": "Только текущая сессия",
+      "networkBehavior": "Одиночный режим · без онлайна"
     },
     {
       "id": "zion-022",
@@ -296,7 +336,10 @@
       "icon": "/games/icons/zion-022.svg",
       "cover": "/brand/play/zion-022.webp",
       "coverSmall": "/brand/play/zion-022-640.webp",
-      "coverKind": "concept-art"
+      "coverKind": "concept-art",
+      "controls": "Нажмите заголовок фрагмента или выберите его клавишей Tab и нажмите Enter.",
+      "saveBehavior": "Только текущая сессия",
+      "networkBehavior": "Одиночный режим · без онлайна"
     },
     {
       "id": "zion-023",
@@ -310,7 +353,10 @@
       "icon": "/games/icons/zion-023.svg",
       "cover": "/brand/play/zion-023.webp",
       "coverSmall": "/brand/play/zion-023-640.webp",
-      "coverKind": "concept-art"
+      "coverKind": "concept-art",
+      "controls": "Нажмите заголовок фрагмента или выберите его клавишей Tab и нажмите Enter.",
+      "saveBehavior": "Только текущая сессия",
+      "networkBehavior": "Одиночный режим · без онлайна"
     },
     {
       "id": "zion-024",
@@ -324,7 +370,10 @@
       "icon": "/games/icons/zion-024.svg",
       "cover": "/brand/play/zion-024.webp",
       "coverSmall": "/brand/play/zion-024-640.webp",
-      "coverKind": "concept-art"
+      "coverKind": "concept-art",
+      "controls": "Нажмите заголовок фрагмента или выберите его клавишей Tab и нажмите Enter.",
+      "saveBehavior": "Только текущая сессия",
+      "networkBehavior": "Одиночный режим · без онлайна"
     },
     {
       "id": "zion-025",
@@ -338,7 +387,10 @@
       "icon": "/games/icons/zion-025.svg",
       "cover": "/brand/play/zion-025.webp",
       "coverSmall": "/brand/play/zion-025-640.webp",
-      "coverKind": "concept-art"
+      "coverKind": "concept-art",
+      "controls": "Нажмите заголовок фрагмента или выберите его клавишей Tab и нажмите Enter.",
+      "saveBehavior": "Только текущая сессия",
+      "networkBehavior": "Одиночный режим · без онлайна"
     },
     {
       "id": "zion-026",
@@ -352,7 +404,10 @@
       "icon": "/games/icons/zion-026.svg",
       "cover": "/brand/play/zion-026.webp",
       "coverSmall": "/brand/play/zion-026-640.webp",
-      "coverKind": "concept-art"
+      "coverKind": "concept-art",
+      "controls": "Нажмите заголовок фрагмента или выберите его клавишей Tab и нажмите Enter.",
+      "saveBehavior": "Только текущая сессия",
+      "networkBehavior": "Одиночный режим · без онлайна"
     },
     {
       "id": "zion-027",
@@ -366,7 +421,10 @@
       "icon": "/games/icons/zion-027.svg",
       "cover": "/brand/play/zion-027.webp",
       "coverSmall": "/brand/play/zion-027-640.webp",
-      "coverKind": "concept-art"
+      "coverKind": "concept-art",
+      "controls": "Нажмите заголовок фрагмента или выберите его клавишей Tab и нажмите Enter.",
+      "saveBehavior": "Только текущая сессия",
+      "networkBehavior": "Одиночный режим · без онлайна"
     },
     {
       "id": "zion-028",
@@ -380,7 +438,10 @@
       "icon": "/games/icons/zion-028.svg",
       "cover": "/brand/play/zion-028.webp",
       "coverSmall": "/brand/play/zion-028-640.webp",
-      "coverKind": "concept-art"
+      "coverKind": "concept-art",
+      "controls": "Нажмите заголовок фрагмента или выберите его клавишей Tab и нажмите Enter.",
+      "saveBehavior": "Только текущая сессия",
+      "networkBehavior": "Одиночный режим · без онлайна"
     },
     {
       "id": "zion-029",
@@ -394,7 +455,10 @@
       "icon": "/games/icons/zion-029.svg",
       "cover": "/brand/play/zion-029.webp",
       "coverSmall": "/brand/play/zion-029-640.webp",
-      "coverKind": "concept-art"
+      "coverKind": "concept-art",
+      "controls": "Нажмите заголовок фрагмента или выберите его клавишей Tab и нажмите Enter.",
+      "saveBehavior": "Только текущая сессия",
+      "networkBehavior": "Одиночный режим · без онлайна"
     },
     {
       "id": "zion-030",
@@ -408,7 +472,10 @@
       "icon": "/games/icons/zion-030.svg",
       "cover": "/brand/play/zion-030.webp",
       "coverSmall": "/brand/play/zion-030-640.webp",
-      "coverKind": "concept-art"
+      "coverKind": "concept-art",
+      "controls": "Мышь или касание — клетка. Стрелки — выбор клетки, Enter — размещение, 1–3 — модуль, R — заново.",
+      "saveBehavior": "Только текущая сессия",
+      "networkBehavior": "Одиночный режим · без онлайна"
     }
   ]
 }

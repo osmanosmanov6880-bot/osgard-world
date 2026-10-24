@@ -23,7 +23,7 @@
     "qa:live-bundle": "node scripts/live-bundle-audit.mjs",
     "qa:time-ui": "node scripts/time-prototype-smoke.mjs",
     "qa:null-shift": "node scripts/null-shift-premium-smoke.mjs",
-    "qa:games-portal": "node scripts/games-portal-smoke.mjs && node scripts/games-aaa-wave01-smoke.mjs && node scripts/games-aaa-wave02-smoke.mjs",
+    "qa:games-portal": "node scripts/games-portal-smoke.mjs && node scripts/games-aaa-wave01-smoke.mjs && node scripts/games-aaa-wave02-smoke.mjs && node --test scripts/games-aaa-wave03-session.test.mjs",
     "qa:zion-local": "node scripts/zion-local-smoke.mjs",
     "qa:null-shift-godot": "node scripts/null-shift-godot-smoke.mjs",
     "qa:partners-page": "node scripts/partners-page-smoke.mjs",
