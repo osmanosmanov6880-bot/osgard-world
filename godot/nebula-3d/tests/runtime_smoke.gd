@@ -331,6 +331,18 @@ func _run() -> void:
         "R22_AuroraPhysicalStructures/R22_SuspendedFlightway_00/R22_PhysicalFlightway")
         is StaticBody3D,
         "R22 real suspended flightways must have physical collision"):return
+    # R40: bridge lamps remain real mesh geometry with the same 96 transforms,
+    # but are batched into 3 draw submissions (1 per bridge sector).
+    if not check(scenic.r40_bridge_luminaires == 96 and
+        scenic.r40_bridge_luminaire_draws == 3,
+        "R40 bridge luminaire batch counts changed unexpectedly"):return
+    for bridge_index in 3:
+        var bridge_batch = scenic.get_node_or_null(
+            "R40_BridgeLuminaireBatch_%02d" % bridge_index)
+        if not check(bridge_batch is MultiMeshInstance3D and
+            bridge_batch.multimesh.instance_count == 32 and
+            bridge_batch.material_override == scenic.led,
+            "R40 emissive real bridge luminaire instances missing"):return
     var ambient_0: Vector3 = scenic.traffic_nodes[0].position
     scenic._process(0.1)
     if not check(scenic.traffic_nodes[0].position != ambient_0 and
