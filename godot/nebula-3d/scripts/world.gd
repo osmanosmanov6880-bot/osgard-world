@@ -194,6 +194,13 @@ func _r25_emit_browser_flight_state() -> void:
         state["touch_boost"] = ship.touch_boost
         state["touch_view_w"] = r21_touch.viewport_pixels.x
         state["touch_view_h"] = r21_touch.viewport_pixels.y
+        state["touch_safe_left"] = r21_touch.r35_safe_insets.x
+        state["touch_safe_top"] = r21_touch.r35_safe_insets.y
+        state["touch_safe_right"] = r21_touch.r35_safe_insets.z
+        state["touch_safe_bottom"] = r21_touch.r35_safe_insets.w
+        state["touch_compact_portrait"] = r21_touch.r35_compact_portrait
+        state["touch_stick_x"] = r21_touch.stick_center.x
+        state["touch_stick_y"] = r21_touch.stick_center.y
         state["touch_events"] = r21_touch.r31_raw_touch_events
         state["touch_dom_bridge"] = r21_touch.r34_dom_bridge_active
         state["touch_dom_events"] = r21_touch.r34_dom_event_count
@@ -231,7 +238,13 @@ func _r31_sync_touch_viewport() -> void:
     if css_w < 300 or css_h < 280:
         return
     var css_size := Vector2i(css_w, css_h)
+    # System bars/notches can change without resizing window.innerWidth.
+    var safe_changed: bool = false
+    if is_instance_valid(r21_touch):
+        safe_changed = r21_touch._r35_refresh_safe_insets()
     if css_size == r31_mobile_css_size:
+        if safe_changed and is_instance_valid(hud_panel):
+            _fit_hud()
         return
     r31_mobile_css_size = css_size
     # Godot's 1280x720 desktop content scale must not turn a portrait phone's
@@ -242,7 +255,7 @@ func _r31_sync_touch_viewport() -> void:
     root_window.content_scale_aspect = Window.CONTENT_SCALE_ASPECT_IGNORE
     root_window.content_scale_size = css_size
     if is_instance_valid(r21_touch):
-        r21_touch._layout_for_size(Vector2(css_size))
+        r21_touch._resize()
     if is_instance_valid(hud_panel):
         _fit_hud()
 
@@ -1171,16 +1184,27 @@ func _fit_hud() -> void:
         rect = Vector2(r31_mobile_css_size)
     var width: float = rect.x
     var height: float = rect.y
+    var safe: Vector4 = r21_touch.r35_safe_insets if (
+        is_instance_valid(r21_touch) and r21_mobile_enabled) else Vector4.ZERO
+    var safe_left: float = safe.x
+    var safe_top: float = safe.y
+    var safe_right: float = safe.z
+    var safe_width: float = maxf(200.0, width - safe_left - safe_right)
     var compact: bool = width < 940.0 or height < 590.0 or r21_mobile_enabled
+    var short_landscape: bool = r21_mobile_enabled and height < 530.0 and width > height
     if is_instance_valid(r23_cruise_button):
         r23_cruise_button.visible = not r21_mobile_enabled and width >= 800.0
     if compact:
-        hud_panel.offset_left = 8.0
-        hud_panel.offset_top = 8.0
-        hud_panel.offset_right = minf(465.0, width - 8.0)
-        hud_panel.offset_bottom = 124.0
-        hud_mission.add_theme_font_size_override("font_size",19)
-        hud_status.add_theme_font_size_override("font_size",12)
+        hud_panel.offset_left = safe_left + 8.0
+        hud_panel.offset_top = safe_top + 8.0
+        # Keep top-left briefing away from the R32 landscape action grid.
+        hud_panel.offset_right = minf(width - safe_right - 8.0,
+            safe_left + safe_width * (0.37 if short_landscape else 1.0))
+        hud_panel.offset_bottom = safe_top + (110.0 if short_landscape else 124.0)
+        hud_mission.add_theme_font_size_override("font_size",
+            16 if short_landscape else 19)
+        hud_status.add_theme_font_size_override("font_size",
+            10 if short_landscape else 12)
         hud_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
         hud_controls.visible = false
         radar.visible = not r21_mobile_enabled and height > 510.0
@@ -1189,7 +1213,10 @@ func _fit_hud() -> void:
             radar.offset_top = -209.0
         hud_flight.visible = false
         r21_objective_panel.visible = false
-        hud_notice.offset_top = 129.0
+        hud_notice.offset_top = safe_top + (
+            118.0 if short_landscape else 129.0)
+        hud_notice.offset_left = -minf(240.0, safe_width * 0.45)
+        hud_notice.offset_right = minf(240.0, safe_width * 0.45)
     else:
         hud_panel.offset_left = 22.0
         hud_panel.offset_top = 25.0
