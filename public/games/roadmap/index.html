@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>OSGARD WORLD — AAA ROADMAP</title><meta name="description" content="Проверяемые этапы развития всех 22 игровых миров OSGARD.">
+<link rel="canonical" href="https://osgard.world/games/roadmap/"><link rel="icon" href="/games/favicon.svg" type="image/svg+xml">
+<style>
+:root{color-scheme:dark;font:16px/1.55 Inter,system-ui,sans-serif;background:#080d16;color:#edf5ff}
+*{box-sizing:border-box}body{margin:0}a{color:#7de6f0}button,input{font:inherit}button{cursor:pointer}
+:focus-visible{outline:3px solid #98f1f6;outline-offset:3px}
+.shell{max-width:1250px;margin:auto;padding:clamp(18px,4vw,48px)}
+.back{display:inline-block;margin-bottom:26px;color:#8ce7f1;text-decoration:none}
+.eyebrow{font-size:11px;font-weight:750;letter-spacing:.15em;color:#7de6f0}
+h1{font-size:clamp(38px,7vw,76px);line-height:1;letter-spacing:-.06em;margin:10px 0 20px}h1 span{color:#e0bb76}
+.lead{color:#afc1d0;max-width:820px;font-size:clamp(15px,2vw,19px)}
+.metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:35px 0}
+.metric{border:1px solid #304253;background:#111d2d;padding:18px;border-radius:12px}.metric strong{font-size:clamp(22px,4vw,38px);display:block}.metric span{font-size:12px;color:#aebccc}
+h2{font-size:clamp(24px,4vw,37px);margin-top:40px;letter-spacing:-.04em}
+.filters{display:flex;gap:9px;flex-wrap:wrap;margin:14px 0 22px}
+.filters button{border:1px solid #385467;color:#d8e9f7;background:#101d2b;border-radius:10px;padding:10px 15px;min-height:44px}
+.filters button[aria-pressed=true]{background:#7de6f0;color:#07131a;border-color:#7de6f0}
+.panel{display:grid;gap:10px}
+.wave,.game{border:1px solid #2c4153;background:#111b29;border-radius:14px;padding:18px}
+.wave{display:grid;grid-template-columns:50px minmax(0,1fr);gap:12px}
+.num{display:grid;place-items:center;height:46px;border:1px solid #4b6374;border-radius:9px;font-weight:800;color:#b7d7e7}
+.wave h3,.game h3{margin:0 0 7px;font-size:18px}.wave p,.game p{margin:5px 0;color:#c4d1df;font-size:14px}
+.status{display:inline-block;margin:6px 0;padding:4px 9px;border-radius:5px;background:#253342;color:#d5e0ec;font-size:11px;font-weight:800;letter-spacing:.03em}
+.status.completed{color:#9df0bd;background:#163d2f}.status.in_review{color:#f7d596;background:#493719}
+.evidence{font-size:12px!important;color:#a4b7c7!important}
+.games{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.game small{color:#8de4ee;font-weight:700}.game a{display:inline-block;margin-top:8px;text-underline-offset:4px}
+details{margin-top:9px;border-top:1px solid #304253;padding-top:9px}summary{cursor:pointer;color:#eac891}
+.progress{height:10px;background:#243647;border-radius:999px;overflow:hidden;margin-top:12px}
+.progress>span{display:block;height:100%;background:#72e3ee;max-width:100%}
+.notice{padding:18px;background:#111c2a;border-left:3px solid #e7c183;color:#cbd9e8;margin-top:32px}
+footer{margin:40px 0 0;color:#8fa6b9;font-size:12px}
+[hidden]{display:none!important}
+@media(max-width:650px){.games{grid-template-columns:1fr}.metrics{gap:6px}.metric{padding:11px}.wave{grid-template-columns:39px 1fr;padding:12px}.num{height:38px}.shell{padding:18px}}
+</style></head><body><main class="shell">
+<a class="back" href="/games/">← Вернуться к OSGARD PLAY</a>
+<div class="eyebrow">OSGARD WORLD / DEVELOPMENT RECORD</div>
+<h1>От прототипов<br>к <span>игровым мирам.</span></h1>
+<p class="lead">Интерактивная дорожная карта развития всех 22 проектов. Статус «Готово» ставится только по подтверждённой работе. Референсы — ориентиры, а не обещание готового AAA.</p>
+<section class="metrics" aria-label="Сводка"><div class="metric"><strong id="game-count">22</strong><span>Игры и миры</span></div><div class="metric"><strong id="wave-count">11</strong><span>Крупные волны</span></div><div class="metric"><strong id="completed-count">—</strong><span>Подтверждённые этапы</span></div></section>
+<section aria-labelledby="wave-title"><h2 id="wave-title">Волны разработки</h2><div class="filters" id="wave-filters" aria-label="Фильтр этапов">
+<button type="button" data-wave-filter="all" aria-pressed="true">Все</button><button type="button" data-wave-filter="completed" aria-pressed="false">Подтверждено</button><button type="button" data-wave-filter="in_review" aria-pressed="false">В работе</button><button type="button" data-wave-filter="planned" aria-pressed="false">Запланировано</button></div><div id="waves" class="panel" aria-live="polite"><p>Загрузка проверяемого реестра…</p></div></section>
+<section aria-labelledby="games-title"><h2 id="games-title">Все 22 игры</h2><div class="filters" id="game-filters" aria-label="Фильтр игровых миров">
+<button type="button" data-game-filter="all" aria-pressed="true">Все</button><button type="button" data-game-filter="flagship" aria-pressed="false">Флагманы</button><button type="button" data-game-filter="zion" aria-pressed="false">Антология ZION</button><button type="button" data-game-filter="other" aria-pressed="false">Другие игры</button></div>
+<div id="games" class="games" aria-live="polite"><p>Загрузка списка игр…</p></div></section>
+<div class="notice">Важно: страница отражает план и зафиксированные доказательства в репозитории. Она не приписывает прототипам функции, которых в них пока нет. Проверяй релизы в <a href="https://github.com/osmanosmanov6880-bot/osgard-world/actions">GitHub Actions</a>.</div>
+<footer>OSGARD WORLD · Данные из версии aaa-roadmap.v1.json · <a href="/games/">Каталог</a></footer>
+</main><script src="./roadmap.js" defer></script></body></html>
