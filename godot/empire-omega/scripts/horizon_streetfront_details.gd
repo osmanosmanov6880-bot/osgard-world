@@ -4,6 +4,15 @@ extends Node3D
 ## Visuals only: no new collision bodies, economy items or fictitious shops.
 
 const BUILDING_LIMIT: int = 256
+# Facade order in WorldBuilder: front(-Z), back(+Z), left(-X), right(+X).
+# Entrances rotate 90 degrees every fourth building.
+const DOOR_FACE_ORDER = [0,2,1,3]
+
+static func window_allowed(floor_index: int, facade_index: int, building_variation: int) -> bool:
+	if floor_index>0:
+		return true
+	var yaw_index: int = posmod(building_variation,4)
+	return facade_index != DOOR_FACE_ORDER[yaw_index]
 var frontage_count: int = 0
 var batches: int = 0
 var glass_poses: Array[Transform3D] = []
