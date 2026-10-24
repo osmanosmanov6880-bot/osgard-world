@@ -7,7 +7,7 @@
     "in_review": "Исходники готовятся к CI и публикации — ещё не релиз",
     "planned": "Работа ещё не реализована"
   },
-  "policy": "Отмечаем completed только при наличии кода, успешной CI и подтверждения публикации, если требовалась публикация. AAA не считается достигнутым от одного визуального обновления.",
+  "policy": "Отмечаем completed только при наличии кода, успешной CI и подтверждения публикации, если требовалась публикация. AAA не считается достигнутым от одного визуального обновления. Концепт-арт не равен скриншоту рабочего 3D-геймплея.",
   "waves": [
     {
       "id": "00",
@@ -25,15 +25,16 @@
       "games": "22",
       "goal": "Расширить игровой viewport, улучшить доступность управления, опубликовать проверяемый реестр этапов",
       "gate": "Автоматические проверки HTML/JS и клиентского интерфейса, проверки PR, публикация маршрутов",
-      "evidence": "PR появится после создания исходников и запуска CI"
+      "evidence": "PR #248: код интерактивного трекера и полноразмерного игрока, CI и публикация проверяются"
     },
     {
       "id": "02",
       "title": "Единый премиальный дизайн и 22 авторские эмблемы",
-      "state": "planned",
+      "state": "in_review",
       "games": "22",
-      "goal": "Собственная эмблема и отдельная обложка каждой игре, визуальная иерархия карточек, mobile image budgets",
-      "gate": "22 разных SVG, 22 разных превью 16:9, контраст, responsive QA"
+      "goal": "22 разных SVG-эмблемы, 22 авторских обложки, оптимизированная галерея и интерактивный трекер",
+      "gate": "22 разные SVG, 22 изображения, доступность и performance; успешные CI и live SSH/HTTPS",
+      "evidence": "22 SVG-эмблемы и 22 существующих авторских обложки интегрированы в карточки; CI и публикация ожидаются"
     },
     {
       "id": "03",
@@ -109,7 +110,11 @@
       "emblem": "split-reactor",
       "gameplay": "Godot tactical raid",
       "route": "/games/null-shift-godot/",
-      "wave": "05"
+      "wave": "05",
+      "icon": "/games/icons/null-shift.svg",
+      "cover": "/brand/play/null-shift.webp",
+      "coverSmall": "/brand/play/null-shift-640.webp",
+      "coverKind": "concept-art"
     },
     {
       "id": "time",
@@ -119,7 +124,11 @@
       "emblem": "hourglass-crown",
       "gameplay": "strategy and factions",
       "route": "/games/time",
-      "wave": "08"
+      "wave": "08",
+      "icon": "/games/icons/time.svg",
+      "cover": "/brand/play/time.webp",
+      "coverSmall": "/brand/play/time-640.webp",
+      "coverKind": "concept-art"
     },
     {
       "id": "empire-orbit",
@@ -129,7 +138,11 @@
       "emblem": "triple-orbit",
       "gameplay": "orbital economy",
       "route": "/games/empire-orbit/",
-      "wave": "07"
+      "wave": "07",
+      "icon": "/games/icons/empire-orbit.svg",
+      "cover": "/brand/play/empire-orbit.webp",
+      "coverSmall": "/brand/play/empire-orbit-640.webp",
+      "coverKind": "concept-art"
     },
     {
       "id": "swarm",
@@ -139,7 +152,11 @@
       "emblem": "eight-nodes",
       "gameplay": "role-based co-op",
       "route": "/games/swarm/",
-      "wave": "06"
+      "wave": "06",
+      "icon": "/games/icons/swarm.svg",
+      "cover": "/brand/play/swarm.webp",
+      "coverSmall": "/brand/play/swarm-640.webp",
+      "coverKind": "concept-art"
     },
     {
       "id": "inherit",
@@ -149,7 +166,11 @@
       "emblem": "generation-tree",
       "gameplay": "living-world legacy",
       "route": "/games/inherit/",
-      "wave": "08"
+      "wave": "08",
+      "icon": "/games/icons/inherit.svg",
+      "cover": "/brand/play/inherit.webp",
+      "coverSmall": "/brand/play/inherit-640.webp",
+      "coverKind": "concept-art"
     },
     {
       "id": "remix",
@@ -159,7 +180,11 @@
       "emblem": "paired-chevron",
       "gameplay": "online challenges",
       "route": "/games/remix/",
-      "wave": "06"
+      "wave": "06",
+      "icon": "/games/icons/remix.svg",
+      "cover": "/brand/play/remix.webp",
+      "coverSmall": "/brand/play/remix-640.webp",
+      "coverKind": "concept-art"
     },
     {
       "id": "vector-zero",
@@ -169,7 +194,11 @@
       "emblem": "magnetic-core",
       "gameplay": "magnetic platformer",
       "route": "/games/vector-zero/",
-      "wave": "05"
+      "wave": "05",
+      "icon": "/games/icons/vector-zero.svg",
+      "cover": "/brand/play/vector-zero.webp",
+      "coverSmall": "/brand/play/vector-zero-640.webp",
+      "coverKind": "concept-art"
     },
     {
       "id": "afterimage-run",
@@ -179,7 +208,11 @@
       "emblem": "triple-afterimage",
       "gameplay": "speedrunning",
       "route": "/games/afterimage-run/",
-      "wave": "08"
+      "wave": "08",
+      "icon": "/games/icons/afterimage-run.svg",
+      "cover": "/brand/play/afterimage-run.webp",
+      "coverSmall": "/brand/play/afterimage-run-640.webp",
+      "coverKind": "concept-art"
     },
     {
       "id": "empire-omega",
@@ -189,7 +222,11 @@
       "emblem": "omega-road",
       "gameplay": "driving city",
       "route": "/games/omega-3d-preview/",
-      "wave": "04"
+      "wave": "04",
+      "icon": "/games/icons/empire-omega.svg",
+      "cover": "/brand/world-empire-omega.svg",
+      "coverSmall": "/brand/world-empire-omega.svg",
+      "coverKind": "concept-art"
     },
     {
       "id": "nebula-3d",
@@ -199,7 +236,11 @@
       "emblem": "broken-orbit",
       "gameplay": "space combat and exploration",
       "route": "/games/remix/arena-v2/nebula-3d/",
-      "wave": "07"
+      "wave": "07",
+      "icon": "/games/icons/nebula-3d.svg",
+      "cover": "/brand/world-nebula.svg",
+      "coverSmall": "/brand/world-nebula.svg",
+      "coverKind": "concept-art"
     },
     {
       "id": "r136-precision",
@@ -209,7 +250,11 @@
       "emblem": "precision-gripper",
       "gameplay": "industrial simulation",
       "route": "/games/r136-precision/",
-      "wave": "08"
+      "wave": "08",
+      "icon": "/games/icons/r136-precision.svg",
+      "cover": "/brand/world-r136.svg",
+      "coverSmall": "/brand/world-r136.svg",
+      "coverKind": "concept-art"
     },
     {
       "id": "zion-020",
@@ -219,7 +264,11 @@
       "emblem": "basalt-spires",
       "gameplay": "resonance puzzle",
       "route": "/games/zion-9/queue/ZION-020/index.html",
-      "wave": "09"
+      "wave": "09",
+      "icon": "/games/icons/zion-020.svg",
+      "cover": "/brand/play/zion-020.webp",
+      "coverSmall": "/brand/play/zion-020-640.webp",
+      "coverKind": "concept-art"
     },
     {
       "id": "zion-021",
@@ -229,7 +278,11 @@
       "emblem": "archive-key",
       "gameplay": "archive puzzle",
       "route": "/games/zion-9/queue/ZION-021/index.html",
-      "wave": "09"
+      "wave": "09",
+      "icon": "/games/icons/zion-021.svg",
+      "cover": "/brand/play/zion-021.webp",
+      "coverSmall": "/brand/play/zion-021-640.webp",
+      "coverKind": "concept-art"
     },
     {
       "id": "zion-022",
@@ -239,7 +292,11 @@
       "emblem": "crystal-flower",
       "gameplay": "living glass orchard",
       "route": "/games/zion-9/queue/ZION-022/index.html",
-      "wave": "09"
+      "wave": "09",
+      "icon": "/games/icons/zion-022.svg",
+      "cover": "/brand/play/zion-022.webp",
+      "coverSmall": "/brand/play/zion-022-640.webp",
+      "coverKind": "concept-art"
     },
     {
       "id": "zion-023",
@@ -249,7 +306,11 @@
       "emblem": "tide-gear",
       "gameplay": "tide engine mystery",
       "route": "/games/zion-9/queue/ZION-023/index.html",
-      "wave": "09"
+      "wave": "09",
+      "icon": "/games/icons/zion-023.svg",
+      "cover": "/brand/play/zion-023.webp",
+      "coverSmall": "/brand/play/zion-023-640.webp",
+      "coverKind": "concept-art"
     },
     {
       "id": "zion-024",
@@ -259,7 +320,11 @@
       "emblem": "radio-wave",
       "gameplay": "signal mystery",
       "route": "/games/zion-9/queue/ZION-024/index.html",
-      "wave": "09"
+      "wave": "09",
+      "icon": "/games/icons/zion-024.svg",
+      "cover": "/brand/play/zion-024.webp",
+      "coverSmall": "/brand/play/zion-024-640.webp",
+      "coverKind": "concept-art"
     },
     {
       "id": "zion-025",
@@ -269,7 +334,11 @@
       "emblem": "light-equation",
       "gameplay": "mathematical architecture",
       "route": "/games/zion-9/queue/ZION-025/index.html",
-      "wave": "09"
+      "wave": "09",
+      "icon": "/games/icons/zion-025.svg",
+      "cover": "/brand/play/zion-025.webp",
+      "coverSmall": "/brand/play/zion-025-640.webp",
+      "coverKind": "concept-art"
     },
     {
       "id": "zion-026",
@@ -279,7 +348,11 @@
       "emblem": "north-star",
       "gameplay": "polar expedition",
       "route": "/games/zion-9/queue/ZION-026/index.html",
-      "wave": "09"
+      "wave": "09",
+      "icon": "/games/icons/zion-026.svg",
+      "cover": "/brand/play/zion-026.webp",
+      "coverSmall": "/brand/play/zion-026-640.webp",
+      "coverKind": "concept-art"
     },
     {
       "id": "zion-027",
@@ -289,7 +362,11 @@
       "emblem": "bronze-clock",
       "gameplay": "clockwork puzzles",
       "route": "/games/zion-9/queue/ZION-027/index.html",
-      "wave": "09"
+      "wave": "09",
+      "icon": "/games/icons/zion-027.svg",
+      "cover": "/brand/play/zion-027.webp",
+      "coverSmall": "/brand/play/zion-027-640.webp",
+      "coverKind": "concept-art"
     },
     {
       "id": "zion-028",
@@ -299,7 +376,11 @@
       "emblem": "mirror-cloud",
       "gameplay": "weather mystery",
       "route": "/games/zion-9/queue/ZION-028/index.html",
-      "wave": "09"
+      "wave": "09",
+      "icon": "/games/icons/zion-028.svg",
+      "cover": "/brand/play/zion-028.webp",
+      "coverSmall": "/brand/play/zion-028-640.webp",
+      "coverKind": "concept-art"
     },
     {
       "id": "zion-029",
@@ -309,7 +390,11 @@
       "emblem": "blue-wave",
       "gameplay": "musical world",
       "route": "/games/zion-9/queue/ZION-029/index.html",
-      "wave": "09"
+      "wave": "09",
+      "icon": "/games/icons/zion-029.svg",
+      "cover": "/brand/play/zion-029.webp",
+      "coverSmall": "/brand/play/zion-029-640.webp",
+      "coverKind": "concept-art"
     },
     {
       "id": "zion-030",
@@ -319,7 +404,11 @@
       "emblem": "tree-shadow",
       "gameplay": "urban heat puzzle",
       "route": "/games/zion-9/queue/ZION-030/index.html",
-      "wave": "09"
+      "wave": "09",
+      "icon": "/games/icons/zion-030.svg",
+      "cover": "/brand/play/zion-030.webp",
+      "coverSmall": "/brand/play/zion-030-640.webp",
+      "coverKind": "concept-art"
     }
   ]
 }

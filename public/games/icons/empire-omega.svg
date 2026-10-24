@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-label="empire-omega">
+<defs><linearGradient id="surface" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#122D3D"/><stop offset="1" stop-color="#070D16"/></linearGradient><radialGradient id="glow"><stop stop-color="#76E8ED" stop-opacity=".24"/><stop offset="1" stop-color="#76E8ED" stop-opacity="0"/></radialGradient></defs>
+<rect x="2" y="2" width="124" height="124" rx="25" fill="url(#surface)" stroke="#76E8ED" stroke-opacity=".32" stroke-width="2"/>
+<circle cx="64" cy="58" r="57" fill="url(#glow)"/>
+<path d="M14 20h15M99 108h15" fill="none" stroke="#76E8ED" stroke-width="1.5" opacity=".47"/>
+<g fill="none" stroke="#76E8ED" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M45 91H29V79h12c-14-11-18-35-7-48a39 39 0 0 1 60 0c11 13 7 37-7 48h12v12H83"/><path d="M55 91V69L64 56l9 13v22M64 38v10" stroke-width="5"/><path d="M49 99h30M56 107h16" opacity=".5"/></g>
+</svg>

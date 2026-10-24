@@ -1,0 +1,61 @@
+import { test, expect } from '@playwright/test'
+
+// Browser-level verification of actual /games/ composition — not only source text.
+test('OSGARD PLAY presents 22 distinct visual identities and a usable game window', async ({ page }, info) => {
+  test.setTimeout(60_000)
+  const failures=[]
+  page.on('pageerror',error=>failures.push(error.message))
+  const response=await page.goto('/games/',{waitUntil:'domcontentloaded'})
+  expect(response?.status()).toBe(200)
+  const cards=page.locator('#games-grid article.card[data-game]')
+  await expect(cards).toHaveCount(22)
+  await expect(page.locator('#games-grid .world-emblem')).toHaveCount(22)
+  await expect(page.locator('#games-grid .game-cover-image')).toHaveCount(22)
+  await expect(page.locator('#games-grid .cover-illustration-note')).toHaveCount(22)
+  const ids=await cards.evaluateAll(nodes=>nodes.map(node=>node.dataset.game))
+  expect(new Set(ids).size).toBe(22)
+  const icons=await page.locator('#games-grid .world-emblem').evaluateAll(nodes=>nodes.map(node=>new URL(node.currentSrc||node.src).pathname))
+  expect(new Set(icons).size).toBe(22)
+  const covers=await page.locator('#games-grid .game-cover-image').evaluateAll(nodes=>nodes.map(node=>new URL(node.src).pathname))
+  expect(new Set(covers).size).toBe(22)
+  // Verify the first, a flagship Godot world, and the last ZION world really decode.
+  for(const id of ['null-shift','empire-omega','zion-030']){
+    const card=cards.filter({has:page.locator('[data-game="'+id+'"]')})
+    // Use exact id rather than a screenshot that could pass with an empty texture.
+    const cover=page.locator('#games-grid article.card[data-game="'+id+'"] .game-cover-image')
+    await cover.scrollIntoViewIfNeeded()
+    await expect.poll(()=>cover.evaluate(img=>img.complete&&img.naturalWidth>0)).toBe(true)
+    const icon=page.locator('#games-grid article.card[data-game="'+id+'"] .world-emblem')
+    await expect.poll(()=>icon.evaluate(img=>img.complete&&img.naturalWidth>0)).toBe(true)
+  }
+  const dialog=page.locator('#player-dialog')
+  await dialog.evaluate(el=>el.showModal())
+  await expect(dialog).toBeVisible()
+  const viewport=page.viewportSize()
+  const geometry=await dialog.evaluate(el=>{const r=el.getBoundingClientRect();const view=el.querySelector('.player-view').getBoundingClientRect();return{width:r.width,height:r.height,viewHeight:view.height}})
+  expect(geometry.width).toBeGreaterThan(viewport.width*.9)
+  expect(geometry.height).toBeGreaterThan(viewport.height*.9)
+  expect(geometry.viewHeight).toBeGreaterThan(viewport.height*.58)
+  await page.locator('#player-close').click()
+  await expect(dialog).not.toBeVisible()
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2)).toBe(true)
+  expect(failures).toEqual([])
+})
+
+test('22-game roadmap shows real image assets and responsive category filtering',async ({page})=>{
+  const response=await page.goto('/games/roadmap/',{waitUntil:'domcontentloaded'})
+  expect(response?.status()).toBe(200)
+  await expect(page.locator('.game-visual')).toHaveCount(22)
+  await expect(page.locator('.game-emblem')).toHaveCount(22)
+  await expect(page.locator('.art-tag')).toHaveCount(22)
+  await expect(page.locator('#completed-count')).toHaveText(/^[0-9]+$/)
+  await page.locator('[data-game-filter="flagship"]').click()
+  await expect(page.locator('.game-visual')).toHaveCount(3)
+  await page.locator('[data-game-filter="zion"]').click()
+  await expect(page.locator('.game-visual')).toHaveCount(11)
+  await page.locator('[data-game-filter="all"]').click()
+  await expect(page.locator('.game-visual')).toHaveCount(22)
+  await page.locator('[data-wave-filter="in_review"]').click()
+  await expect(page.locator('.wave')).toHaveCount(2)
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2)).toBe(true)
+})

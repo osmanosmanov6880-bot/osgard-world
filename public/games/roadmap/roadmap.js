@@ -24,7 +24,29 @@ function renderGames(data){
  const games=data.games.filter(g=>filters.game==='all'||(filters.game==='other'&&!['flagship','zion'].includes(g.group))||g.group===filters.game);
  for(const game of games){
   const card=make('article','game');
-  card.append(make('small','',game.id.toUpperCase()+' · ВОЛНА '+game.wave),make('h3','',game.title),make('p','','Цель: '+game.gameplay));
+  const visual=make('a','game-visual');
+  visual.href=game.route;
+  visual.setAttribute('aria-label','Открыть '+game.title);
+  const cover=make('img','game-cover');
+  cover.alt='';
+  cover.loading='lazy';
+  cover.decoding='async';
+  cover.width=1536;
+  cover.height=864;
+  cover.src=game.coverSmall;
+  if(game.cover.endsWith('.webp')){
+    cover.srcset=game.coverSmall+' 640w, '+game.cover+' 1536w';
+    cover.sizes='(max-width:650px) 100vw, 50vw';
+  }
+  const emblem=make('img','game-emblem');
+  emblem.src=game.icon;
+  emblem.alt='';
+  emblem.loading='lazy';
+  emblem.decoding='async';
+  emblem.width=68;
+  emblem.height=68;
+  visual.append(cover,emblem,make('span','art-tag','КОНЦЕПТ-АРТ'));
+  card.append(visual,make('small','',game.id.toUpperCase()+' · ВОЛНА '+game.wave),make('h3','',game.title),make('p','','Цель: '+game.gameplay));
   const details=make('details'),summary=make('summary','','Художественное направление и эмблема');
   details.append(summary,make('p','','Референсы: '+game.reference),make('p','','Авторский знак: '+game.emblem));card.append(details);
   const link=make('a','','Открыть текущую игру ↗');link.href=game.route;card.append(link);host.append(card);

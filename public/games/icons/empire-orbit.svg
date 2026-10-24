@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-label="empire-orbit">
+<defs><linearGradient id="surface" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#30251D"/><stop offset="1" stop-color="#070D16"/></linearGradient><radialGradient id="glow"><stop stop-color="#F1C676" stop-opacity=".24"/><stop offset="1" stop-color="#F1C676" stop-opacity="0"/></radialGradient></defs>
+<rect x="2" y="2" width="124" height="124" rx="25" fill="url(#surface)" stroke="#F1C676" stroke-opacity=".32" stroke-width="2"/>
+<circle cx="64" cy="58" r="57" fill="url(#glow)"/>
+<path d="M14 20h15M99 108h15" fill="none" stroke="#F1C676" stroke-width="1.5" opacity=".47"/>
+<g fill="none" stroke="#F1C676" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="64" cy="64" r="21" fill="#F1C676" fill-opacity=".18"/><ellipse cx="64" cy="64" rx="48" ry="18"/><ellipse cx="64" cy="64" rx="48" ry="18" transform="rotate(64 64 64)" opacity=".75"/><ellipse cx="64" cy="64" rx="48" ry="18" transform="rotate(-64 64 64)" opacity=".5"/><circle cx="24" cy="78" r="6" fill="#F1C676"/><circle cx="93" cy="38" r="5"/></g>
+</svg>
