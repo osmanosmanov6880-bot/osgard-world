@@ -17,7 +17,7 @@ def reject(reason: str):
 
 def stage(archive: Path, manifest_path: Path, destination: Path):
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    if manifest.get("version") != "r135-web-mission-w3-20261024":
+    if manifest.get("version") != "r135-web-mission-w4-20261024":
         reject("wrong release tag")
     if manifest.get("engine") != "Godot 4.4.1":
         reject("wrong Godot engine")
