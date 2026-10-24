@@ -17,6 +17,15 @@ func _initialize() -> void:
 	call_deferred("_run")
 
 func _run() -> void:
+	for variant in range(4):
+		var ground_blocked := 0
+		for facade in range(4):
+			if not FRONT.window_allowed(0,facade,variant):
+				ground_blocked += 1
+			verify(FRONT.window_allowed(1,facade,variant),"upper windows remain intact regardless of entrance direction")
+		verify(ground_blocked==1,"exactly one street-facing ground-floor window band is replaced by the new storefront")
+	verify(not FRONT.window_allowed(0,0,0) and not FRONT.window_allowed(0,2,1) and not FRONT.window_allowed(0,1,2) and not FRONT.window_allowed(0,3,3),
+		"entry facade orientation agrees with four rotated storefront models")
 	var detail: Node3D = FRONT.new()
 	detail.record(Vector3(10,9,8),12.0,18.0,0)
 	detail.record(Vector3(-20,13,-12),14.0,26.0,1)
