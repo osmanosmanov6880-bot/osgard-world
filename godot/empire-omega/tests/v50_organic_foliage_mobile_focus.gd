@@ -29,6 +29,11 @@ func _run() -> void:
 	check(pine_vertices==FOLIAGE.pine_triangle_budget()*3,"three separate evergreen branch whorls have deterministic triangle count")
 	check(leaf_vertices>=900 and leaf_vertices<=1400,"organic tree silhouette adds bounded 3D leaf geometry")
 	check(pine_vertices<=130,"evergreen branch mesh is low-GPU cost")
+	var broadleaf_aabb: AABB = deciduous.get_aabb()
+	var max_width_metres: float = maxf(broadleaf_aabb.size.x,broadleaf_aabb.size.z)*3.6*0.76
+	check(max_width_metres<=6.5,"maximum crown footprint avoids crowding chase camera on narrow phones")
+	var roads_source: String = FileAccess.get_file_as_string("res://scripts/horizon_roadscape.gd")
+	check(roads_source.contains("crown_scale*0.76"),"real city uses photo-verified capped foliage size")
 	var leaf_arrays: Array = deciduous.surface_get_arrays(0)
 	var pine_arrays: Array = evergreen.surface_get_arrays(0)
 	var leaf_colors: PackedColorArray = leaf_arrays[Mesh.ARRAY_COLOR]
