@@ -215,7 +215,89 @@ func _run() -> void:
     touch_r21._set_touch(8, touch_r21.button_centres["THRUST"], false)
     if not check(world.ship.touch_throttle == 0.0,
         "R32 compact-landscape GAS release remains stuck"):return
+    # R35: physical notch/system gesture cutouts must not swallow buttons.
+    # Exercise the real Godot hit-testing map; no screenshot geometry guesses.
+    var r35_cases: Array[Dictionary] = [
+        {"size": Vector2(390, 844), "safe": Vector4(0, 62, 0, 34),
+            "landscape": false, "compact": false},
+        {"size": Vector2(568, 320), "safe": Vector4(59, 0, 59, 21),
+            "landscape": true, "compact": false},
+        {"size": Vector2(568, 320), "safe": Vector4(59, 60, 59, 34),
+            "landscape": true, "compact": false},
+        {"size": Vector2(320, 480), "safe": Vector4(0, 62, 0, 34),
+            "landscape": false, "compact": true},
+        {"size": Vector2(280, 420), "safe": Vector4(0, 55, 0, 34),
+            "landscape": false, "compact": true},
+        {"size": Vector2(844, 390), "safe": Vector4.ZERO,
+            "landscape": true, "compact": false}
+    ]
+    var verified_r35: int = 0
+    for setup in r35_cases:
+        var dims: Vector2 = setup["size"]
+        var safe: Vector4 = setup["safe"]
+        touch_r21.set_safe_insets(safe)
+        touch_r21._layout_for_size(dims)
+        if not check(touch_r21.button_centres.size() == 9 and
+            touch_r21.r23_landscape_layout == bool(setup["landscape"]) and
+            touch_r21.r35_compact_portrait == bool(setup["compact"]),
+            "R35 mobile orientation or compact portrait grid wrong"):return
+        var radius: float = touch_r21.base_radius
+        var margin: float = radius * 0.80
+        var stick: Vector2 = touch_r21.stick_center
+        if not check(stick.x - radius * 1.45 >= safe.x and
+            stick.y - radius * 1.45 >= safe.y and
+            stick.x + radius * 1.45 <= dims.x - safe.z and
+            stick.y + radius * 1.45 <= dims.y - safe.w,
+            "R35 joystick intersects physical safe-area cutout"):return
+        for action in touch_r21.button_centres:
+            var point: Vector2 = touch_r21.button_centres[action]
+            if not check(point.x - margin >= safe.x and
+                point.y - margin >= safe.y and
+                point.x + margin <= dims.x - safe.z and
+                point.y + margin <= dims.y - safe.w and
+                touch_r21._role_at(point) == action,
+                "R35 action button is hidden by screen notch/gesture bar"):return
+            if not check(point.distance_to(stick) >
+                radius * 1.45 + margin + 3.0,
+                "R35 left steering stick overlaps action buttons"):return
+            for other in touch_r21.button_centres:
+                if str(action) < str(other):
+                    if not check(point.distance_to(
+                        touch_r21.button_centres[other]) > margin * 2.0,
+                        "R35 two action hit targets overlap"):return
+        touch_r21._set_touch(99, touch_r21.button_centres["THRUST"], true)
+        if not check(world.ship.touch_throttle >= 0.9 and
+            not world.ship.cruise_assist,
+            "R35 GAS hits a different button on notched phone"):return
+        touch_r21._set_touch(99, touch_r21.button_centres["THRUST"], false)
+        if not check(world.ship.touch_throttle == 0.0,
+            "R35 GAS sticks after finger release"):return
+        verified_r35 += 1
+    # Production mission HUD must not cover landscape GAS/ANGAR controls.
+    touch_r21.set_safe_insets(Vector4(59, 0, 59, 21))
+    world.r21_mobile_enabled = true
+    world.r31_touch_web = true
+    world.r31_mobile_css_size = Vector2i(568, 320)
+    world._fit_hud()
+    touch_r21._layout_for_size(Vector2(568, 320))
+    if not check(world.hud_panel.offset_left >= 59.0 and
+        world.hud_panel.offset_right + 2.0 <
+        touch_r21.button_centres["HANGAR"].x - touch_r21.base_radius * 0.8,
+        "R35 short-landscape HUD blocks the hangar touch target"):return
+    touch_r21.set_safe_insets(Vector4(0, 62, 0, 34))
+    world.r31_mobile_css_size = Vector2i(320, 480)
+    world._fit_hud()
+    if not check(world.hud_panel.offset_top >= 62.0 and
+        world.hud_panel.offset_right <= 320.0 and
+        world.hud_panel.offset_bottom < 230.0,
+        "R35 portrait mission HUD is under camera notch"):return
+    world.r21_mobile_enabled = false
+    world.r31_touch_web = false
+    world.r31_mobile_css_size = Vector2i.ZERO
+    touch_r21.set_safe_insets(Vector4.ZERO)
+    world._fit_hud()
     touch_r21.force_mobile_for_tests(false)
+    print("NEBULA_R35_SAFE_AREA_SUCCESS viewports=%d buttons=9 HUD=verified" % verified_r35)
     print("NEBULA_R23_REAL_INPUT_SUCCESS physical_W_metres=%.1f clicked_cruise_metres=%.1f portrait_landscape=verified" % [
         keyboard_meters,cruise_meters])
 
