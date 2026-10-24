@@ -524,6 +524,8 @@ func _r23_toggle_cruise() -> void:
     if ship.controls_locked:
         return
     ship.set_cruise_assist(not ship.cruise_assist)
+    if ship.cruise_assist and mission_index < MISSIONS.size():
+        ship.set_navigation_target(MISSIONS[mission_index]["position"])
     r23_launch_button_events += 1
     if ship.cruise_assist:
         _show_notice("ПОЛЁТ НАЧАТ · ТЯГА ВКЛЮЧЕНА · S ДЛЯ ТОРМОЖЕНИЯ")
@@ -797,6 +799,11 @@ func _mission_tick(_dt: float) -> void:
 
 func _start_mission() -> void:
     mission_started = false
+    if is_instance_valid(ship):
+        if mission_index < MISSIONS.size():
+            ship.set_navigation_target(MISSIONS[mission_index]["position"])
+        else:
+            ship.clear_navigation_target()
     mission_enemies = 0
     if is_instance_valid(mission_beacon):mission_beacon.queue_free()
     if mission_index>=MISSIONS.size():
