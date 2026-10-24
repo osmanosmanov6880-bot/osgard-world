@@ -25,6 +25,7 @@ button:disabled{opacity:.42;cursor:not-allowed}
 button.secondary{background:transparent;color:#ddd9d1;border-color:#59616a}
 button:focus-visible,.upload-label:focus-within,a:focus-visible{outline:3px solid #d3c0a0;outline-offset:4px}
 input[type=file]{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden}
+.field-group{display:flex;align-items:flex-start;gap:15px;flex-wrap:wrap;margin:16px 0}.field-group label{display:flex;flex-direction:column;gap:7px;font-weight:650}.field-group input{min-height:44px;padding:10px 12px;border-radius:8px;border:1px solid #59616a;background:#10151b;color:#f4f0e7;font:inherit;min-width:min(310px,80vw)}.field-group input:focus-visible{outline:2px solid #d3c0a0;outline-offset:2px}.field-group small{max-width:440px;align-self:center}.summary-note{color:#abb8bf;margin:8px 0 0}
 .stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:16px}
 .stat{padding:18px 20px;background:#222831;border-radius:10px}
 .value{display:block;font-size:1.75rem;font-variant-numeric:tabular-nums;color:#e7d2af}
@@ -54,7 +55,8 @@ small{font-size:.77rem;color:#aeb5bd}
 <p class="lead">Локальная лаборатория FPS для нескольких телефонов. Сравнивайте отчёты, полученные внутри настоящей игры. Никакой отправки файлов на сервер — весь анализ выполняется в браузере.</p>
 <section class="panel" aria-labelledby="instructions">
 <h2 id="instructions">Как собрать результаты</h2>
-<ol><li>Откройте <a href="./">NEBULA 3D</a> на настоящем телефоне и нажмите <strong>FPS</strong>.</li><li>Нажмите <strong>20 С</strong>, летайте 20 секунд после прогрева, затем <strong>JSON</strong>.</li><li>Повторите для MAX, HIGH и ECO, в портретной и горизонтальной ориентации. Вернитесь сюда и выберите полученные файлы.</li></ol>
+<ol><li>Откройте <a href="./">NEBULA 3D</a> на настоящем телефоне и нажмите <strong>FPS</strong>.</li><li>В панели FPS кнопкой профиля выберите <strong>MAX</strong>, <strong>HIGH</strong> или <strong>ECO</strong> (не АВТО), затем нажмите <strong>20 С</strong>. После прогрева летайте одним маршрутом и нажмите <strong>JSON</strong>.</li><li>Для каждого профиля и ориентации проведите <strong>три отдельных замера</strong> на настоящем телефоне. Вернитесь сюда и загрузите файлы одним набором для каждого устройства.</li></ol>
+<div class="field-group"><label for="device-label">Устройство / партия испытаний<input id="device-label" type="text" maxlength="48" placeholder="Например: Android A, Chrome" autocomplete="off"></label><small>Введите свою метку перед выбором файлов. Она нужна только для группировки; по умолчанию каждая загрузка получает отдельный номер партии. Не указывайте личные данные.</small></div>
 <div class="actions"><label class="upload-label" for="reports">Выбрать JSON-отчёты<input id="reports" type="file" accept=".json,application/json" multiple></label><button id="export" class="secondary" type="button" disabled>Сохранить сравнение CSV</button><button id="clear" class="secondary" type="button" disabled>Очистить</button></div>
 <p id="status" aria-live="polite">Отчёты ещё не загружены.</p>
 <ul id="rejected" aria-live="polite"></ul>
@@ -71,6 +73,7 @@ small{font-size:.77rem;color:#aeb5bd}
 <div class="table-scroll"><table><thead><tr><th scope="col">Файл</th><th scope="col">Профиль</th><th scope="col">FPS средн.</th><th scope="col">1% Low</th><th scope="col">P95 мс</th><th scope="col">P99 мс</th><th scope="col">DOM→Godot мс</th><th scope="col">Оценка</th></tr></thead><tbody id="rows"></tbody></table></div>
 <div class="note">Оценка — сравнение с целевыми значениями (MAX: 60 FPS / P95 ≤20 мс; HIGH: 40 / ≤30 мс; ECO: 30 / ≤35 мс). Это не сертификация устройства. Идентификатор GPU в браузере может быть замаскирован. Задержка DOM→Godot — не время от пальца до изображения.</div>
 </div>
+<div class="panel" id="r39-panel"><h2>R39 / повторяемость на устройствах</h2><p class="muted">Группировка: метка устройства + разрешение + профиль. Требуется не менее 3 надёжных независимых измерений (с различным временем исходного замера) на одну группу. Медиана снижает влияние единичного удачного запуска; разброс FPS свыше 20% блокирует вывод о стабильности. Это проверка отчётов, а не доказательство модели телефона или аппаратная сертификация.</p><div class="table-scroll"><table><thead><tr><th scope="col">Устройство</th><th scope="col">Размер</th><th scope="col">Режим</th><th scope="col">Надёжных / всего</th><th scope="col">Медиана FPS</th><th scope="col">Медиана P95 мс</th><th scope="col">Разброс FPS</th><th scope="col">Вывод</th></tr></thead><tbody id="r39-rows"></tbody></table></div><p class="summary-note" id="r39-status" aria-live="polite"></p></div>
 </section>
 <p class="note">Конфиденциальность: страница не использует fetch, XHR, аналитику, cookies или внешние скрипты. Имена выбранных файлов отображаются локально и попадут в CSV только после вашего нажатия. Оригинальные JSON на сервер не загружаются.</p>
 </main>
@@ -79,7 +82,7 @@ small{font-size:.77rem;color:#aeb5bd}
 'use strict';
 const thresholds = [{name:'MAX',fps:60,p95:20},{name:'HIGH',fps:40,p95:30},{name:'ECO',fps:30,p95:35}];
 const safeName = name => String(name || 'report.json').replace(/[\r\n\t]/g,' ').slice(0,80);
-function parseReport(data, filename) {
+function parseReport(data, filename, deviceLabel = 'Партия 1') {
   if (!data || typeof data !== 'object' || Array.isArray(data) ||
       data.schema !== 'NEBULA_R12_HARDWARE_BENCHMARK') {
     throw new Error('Неверная схема: нужен NEBULA_R12_HARDWARE_BENCHMARK');
@@ -113,8 +116,54 @@ function parseReport(data, filename) {
   const delay = data.r36_browser_dom_to_engine_avg_ms;
   const touch = typeof delay === 'number' && Number.isFinite(delay) &&
     delay >= 0 && delay <= 30000 ? delay : null;
-  return {name:safeName(filename),profile:target.name,avg,low,p95,p99,
+  const width=data.resolution_width, height=data.resolution_height;
+  const resolution=Number.isInteger(width)&&Number.isInteger(height)&&
+    width>=200&&height>=200&&width<=16384&&height<=16384 ? `${width}×${height}` : 'НЕ УКАЗАНО';
+  const device=safeName(deviceLabel).slice(0,48)||'Партия 1';
+  const stamp=typeof data.date_unix==='number'&&Number.isFinite(data.date_unix)&&
+    data.date_unix>0 ? data.date_unix : null;
+  return {name:safeName(filename),device,resolution,stamp,profile:target.name,avg,low,p95,p99,
     touch,status,validTest,software,targetFps:target.fps,targetP95:target.p95};
+}
+function median(numbers) {
+  if (!numbers.length) return null;
+  const sorted=[...numbers].sort((a,b)=>a-b);
+  const middle=Math.floor(sorted.length/2);
+  return sorted.length%2 ? sorted[middle] :
+    (sorted[middle-1]+sorted[middle])/2;
+}
+function summarizeRuns(records) {
+  const groups=new Map();
+  for (const row of records) {
+    const key=JSON.stringify([row.device,row.resolution,row.profile]);
+    if (!groups.has(key)) groups.set(key,{
+      device:row.device,resolution:row.resolution,profile:row.profile,
+      total:0,duplicates:0,runStamps:new Set(),usable:[]});
+    const group=groups.get(key);
+    group.total++;
+    if (row.validTest&&!row.software&&row.resolution!=='НЕ УКАЗАНО' &&
+        row.stamp!==null &&
+        (row.status==='ЦЕЛЬ'||row.status==='НИЖЕ ЦЕЛИ')) {
+      if (group.runStamps.has(row.stamp)) group.duplicates++;
+      else { group.runStamps.add(row.stamp);group.usable.push(row); }
+    }
+  }
+  return [...groups.values()].map(group=>{
+    const accepted=group.usable;
+    const medianFps=median(accepted.map(x=>x.avg));
+    const medianP95=median(accepted.map(x=>x.p95));
+    const spread=medianFps && accepted.length>=2 ?
+      (Math.max(...accepted.map(x=>x.avg))-Math.min(...accepted.map(x=>x.avg)))/medianFps*100 : null;
+    const target=thresholds.find(x=>x.name===group.profile);
+    let status='НЕ ХВАТАЕТ ДАННЫХ';
+    if (accepted.length>=3) {
+      status=spread>20?'НЕСТАБИЛЬНО':medianFps>=target.fps&&medianP95<=target.p95 ?
+        'ЦЕЛЬ':'НИЖЕ ЦЕЛИ';
+    }
+    return {device:group.device,resolution:group.resolution,profile:group.profile,
+      total:group.total,duplicates:group.duplicates,valid:accepted.length,
+      medianFps,medianP95,spread,status};
+  });
 }
 function csvCell(s) {
   const v=String(s == null ? '' : s);
@@ -122,18 +171,19 @@ function csvCell(s) {
   return '"' + escaped.replace(/"/g,'""') + '"';
 }
 function makeCSV(rows) {
-  const cols=['Файл','Профиль','FPS','1% Low','P95 мс','P99 мс',
+  const cols=['Устройство','Размер','Файл','Профиль','FPS','1% Low','P95 мс','P99 мс',
     'DOM→Godot мс','Оценка'];
-  return [cols,...rows.map(x=>[x.name,x.profile,x.avg,x.low,x.p95,x.p99,
+  return [cols,...rows.map(x=>[x.device,x.resolution,x.name,x.profile,x.avg,x.low,x.p95,x.p99,
     x.touch,x.status])].map(row=>row.map(csvCell).join(',')).join('\r\n');
 }
-window.NebulaR37 = Object.freeze({parseReport,makeCSV,thresholds});
+window.NebulaR37 = Object.freeze({parseReport,makeCSV,thresholds,summarizeRuns});
 const uploader=document.getElementById('reports');
 if (!uploader) return;
 const tbody=document.getElementById('rows'),rejectList=document.getElementById('rejected');
 const status=document.getElementById('status'),results=document.getElementById('results');
 const exportBtn=document.getElementById('export'),clearBtn=document.getElementById('clear');
 let rows=[];
+let batchNumber=0;
 function render() {
   tbody.replaceChildren();
   for(const r of rows) {
@@ -154,6 +204,31 @@ function render() {
     }
     tbody.appendChild(tr);
   }
+  const summary=summarizeRuns(rows);
+  const reviewBody=document.getElementById('r39-rows');
+  reviewBody.replaceChildren();
+  for (const g of summary) {
+    const tr=document.createElement('tr');
+    const cells=[g.device,g.resolution,g.profile,`${g.valid} / ${g.total}`,
+      g.medianFps===null?'—':g.medianFps.toFixed(1),
+      g.medianP95===null?'—':g.medianP95.toFixed(1),
+      g.spread===null?'—':g.spread.toFixed(1)+'%',g.status];
+    for (const [i,v] of cells.entries()) {
+      const td=document.createElement('td');
+      if (i===cells.length-1) {
+        const marker=document.createElement('span');
+        marker.className='tag '+(g.status==='ЦЕЛЬ'?'good':
+          g.status==='НИЖЕ ЦЕЛИ'?'bad':'neutral');
+        marker.textContent=v;
+        td.appendChild(marker);
+      } else td.textContent=v;
+      tr.appendChild(td);
+    }
+    reviewBody.appendChild(tr);
+  }
+  document.getElementById('r39-status').textContent=summary.length ?
+    `Групп: ${summary.length}. С 3+ надёжными замерами: ${summary.filter(x=>x.valid>=3).length}. Стабильно достигли цели: ${summary.filter(x=>x.status==='ЦЕЛЬ').length}. Повторных JSON: ${summary.reduce((n,g)=>n+g.duplicates,0)}.` :
+    'Для вывода о повторяемости загрузите минимум три настоящих замера для каждого профиля и ориентации.';
   results.hidden=rows.length===0;
   exportBtn.disabled=rows.length===0; clearBtn.disabled=rows.length===0;
   document.getElementById('count').textContent=String(rows.length);
@@ -165,10 +240,13 @@ function render() {
 uploader.addEventListener('change',async()=>{
   rejectList.replaceChildren();
   const incoming=Array.from(uploader.files||[]).slice(0,100);
+  const typed=document.getElementById('device-label').value.trim();
+  const device=typed ? typed.slice(0,48) : 'Партия '+(++batchNumber);
   for(const file of incoming) {
     try {
+      if (rows.length>=100) throw new Error('Лимит 100 отчётов');
       if (file.size > 256000) throw new Error('Файл больше 256 КБ');
-      rows.push(parseReport(JSON.parse(await file.text()),file.name));
+      rows.push(parseReport(JSON.parse(await file.text()),file.name,device));
     } catch(e) {
       const li=document.createElement('li');
       li.textContent=safeName(file.name)+': '+String(e.message).slice(0,160);
@@ -178,11 +256,11 @@ uploader.addEventListener('change',async()=>{
   uploader.value='';
   render();
 });
-clearBtn.addEventListener('click',()=>{rows=[];rejectList.replaceChildren();render();});
+clearBtn.addEventListener('click',()=>{rows=[];batchNumber=0;rejectList.replaceChildren();render();});
 exportBtn.addEventListener('click',()=>{
   const blob=new Blob(['\uFEFF'+makeCSV(rows)],{type:'text/csv;charset=utf-8'});
   const url=URL.createObjectURL(blob),a=document.createElement('a');
-  a.href=url;a.download='nebula-r37-performance-comparison.csv';
+  a.href=url;a.download='nebula-r39-device-repeatability.csv';
   document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
 });
 render();

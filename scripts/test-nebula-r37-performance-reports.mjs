@@ -15,13 +15,14 @@ assert.ok(!/\bfetch\s*\(|XMLHttpRequest|sendBeacon\s*\(|new\s+WebSocket\b/.test(
 assert.ok(!/\.innerHTML\s*=/.test(match[1]),'never inject user filenames as HTML');
 const sandbox={window:{},document:{getElementById(){return null;}},console};
 vm.runInNewContext(match[1],sandbox,{timeout:3500});
-const {parseReport,makeCSV,thresholds}=sandbox.window.NebulaR37;
+const {parseReport,makeCSV,thresholds,summarizeRuns}=sandbox.window.NebulaR37;
 assert.equal(thresholds.length,3);
 const report=values=>({
   schema:'NEBULA_R12_HARDWARE_BENCHMARK',quality:1,quality_changed:false,
   quality_gate:'MEETS_TARGET',sample_seconds:20,valid_frames:800,
   excluded_long_frames:0,adapter_reported:'Browser-reported graphics',
-  runtime:'Web',avg_fps:50,one_percent_low_fps:35,
+  runtime:'Web',resolution_width:390,resolution_height:844,
+  avg_fps:50,one_percent_low_fps:35,
   p95_frame_ms:24,p99_frame_ms:28,r36_browser_dom_to_engine_avg_ms:12,
   ...values
 });
@@ -48,7 +49,41 @@ assert.throws(()=>parseReport(report({sample_seconds:-1}),'bad.json'),/sample_se
 const hostile=parseReport(report({}),'=HYPERLINK("https://phishing.invalid")\n.csv');
 assert.equal(hostile.name.includes('\n'),false);
 const csv=makeCSV([normal,hostile]);
-assert.ok(csv.startsWith('"Файл","Профиль"'));
+assert.ok(csv.startsWith('"Устройство","Размер","Файл","Профиль"'));
 assert.ok(csv.includes('"\'=HYPERLINK'),'CSV formula injection must be escaped');
 assert.ok(!csv.includes('\n.csv'),'CSV line breaks must be sanitized');
+let syntheticTimestamp=1790000000;
+const phone=(fps,p95,filename='trial.json',device='Android QA')=>
+  parseReport(report({date_unix:++syntheticTimestamp,avg_fps:fps,p95_frame_ms:p95}),filename,device);
+const stable=summarizeRuns([phone(48,24),phone(50,22),phone(52,23)]);
+assert.equal(stable.length,1);
+assert.equal(stable[0].valid,3);
+assert.equal(stable[0].medianFps,50);
+assert.equal(stable[0].medianP95,23);
+assert.equal(stable[0].status,'ЦЕЛЬ');
+const jitter=summarizeRuns([phone(30,24),phone(50,22),phone(70,23)]);
+assert.equal(jitter[0].status,'НЕСТАБИЛЬНО');
+const incomplete=summarizeRuns([phone(50,22),phone(51,23)]);
+assert.equal(incomplete[0].status,'НЕ ХВАТАЕТ ДАННЫХ');
+const mix=summarizeRuns([
+  phone(49,22,'a','Phone A'),phone(50,22,'b','Phone A'),phone(51,22,'c','Phone A'),
+  phone(49,22,'a','Phone B'),phone(50,22,'b','Phone B')]);
+assert.equal(mix.length,2);
+assert.equal(mix[1].status,'НЕ ХВАТАЕТ ДАННЫХ');
+const invalid=summarizeRuns([phone(51,22),phone(52,22),
+  parseReport(report({adapter_reported:'SwiftShader'}),'fake.json','Android QA')]);
+assert.equal(invalid[0].valid,2);
+assert.equal(invalid[0].status,'НЕ ХВАТАЕТ ДАННЫХ');
+const original=phone(50,22,'origin.json');
+const duplicates=summarizeRuns([original,original,original]);
+assert.equal(duplicates[0].total,3);
+assert.equal(duplicates[0].valid,1);
+assert.equal(duplicates[0].duplicates,2);
+assert.equal(duplicates[0].status,'НЕ ХВАТАЕТ ДАННЫХ');
+const noStamp=summarizeRuns([parseReport(report({date_unix:null}),'x','Android QA')]);
+assert.equal(noStamp[0].valid,0);
+const noSize=summarizeRuns([parseReport(report({date_unix:1790000009,resolution_width:null}),'x','Android QA')]);
+assert.equal(noSize[0].valid,0);
+assert.ok(makeCSV([phone(49,22,'ok','=CMD()')]).includes('"\'=CMD()"'));
+console.log('NEBULA_R39_REPEATABILITY_QA_SUCCESS synthetic_groups=6 real_hardware_claims=0');
 console.log('NEBULA_R37_OFFLINE_COMPARISON_SUCCESS actual_html_script=executed synthetic_fixtures=17 local_only=true');
