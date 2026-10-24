@@ -11,9 +11,13 @@ on:
     paths:
       - ".github/workflows/omega-web-direct-deploy.yml"
   workflow_dispatch:
+  # The exporter commits its checksum-verified Godot files using GITHUB_TOKEN.
+  # Such commits do NOT trigger push workflows; use workflow_run to activate
+  # the actual game without waiting for unrelated frontend product deployments.
   workflow_run:
-    workflows: ["OSGARD frontend deploy"]
+    workflows: ["OSGARD frontend deploy", "OSGARD Empire Omega native Godot Web"]
     types: [completed]
+    branches: [master]
 
 permissions:
   contents: read
