@@ -88,13 +88,14 @@ try {
   });
   if(!bounds || bounds.width<=0 || bounds.height<=0)
     throw new Error('Game canvas was not interactable: '+JSON.stringify(bounds));
+  const beforeCruise=await snapshot();
   await page.mouse.click(bounds.x+bounds.width/2,bounds.y+bounds.height-70);
   await waitForTelemetry(s=>s && s.cruise === true,15000);
   const start=await checkpoint('actual clickable cruise switch engaged',s=>s?.cruise===true);
-  await waitForTelemetry(s=>s && s.samples>start.samples+5 &&
-    Math.abs(s.heading-start.heading)>0.05,35000);
+  await waitForTelemetry(s=>s && s.samples>beforeCruise.samples+5 &&
+    Math.abs(s.heading-beforeCruise.heading)>0.05,35000);
   const steered=await checkpoint('real autopilot rotates ship toward off-axis mission',
-    s=>s?.cruise===true && Math.abs(s.heading-start.heading)>0.05 && s.throttle>0.5);
+    s=>s?.cruise===true && Math.abs(s.heading-beforeCruise.heading)>0.05 && s.throttle>0.5);
   await waitForTelemetry(s=>s && s.mission_distance < start.mission_distance-2.0,45000);
   const approached=await checkpoint('real ship approaches mission objective in world units',
     s=>s?.mission_distance < start.mission_distance-2.0 && s.flight_distance>moving.flight_distance);
