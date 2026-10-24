@@ -102,6 +102,11 @@ const regressed=compareBuilds(summarizeRuns([
   deviceRun(43,26,'R40'),deviceRun(44,27,'R40'),deviceRun(42,26,'R40')
 ]));
 assert.equal(regressed[0].status,'ХУЖЕ');
+const originals=[deviceRun(50,20,'R38'),deviceRun(51,20,'R38'),deviceRun(52,20,'R38')];
+const mislabeled=originals.map(x=>({...x,variant:'R40'}));
+const crossCopies=compareBuilds(summarizeRuns([...originals,...mislabeled]));
+assert.equal(crossCopies[0].status,'ПОВТОРНЫЕ JSON');
+assert.equal(crossCopies[0].deltaFps,null);
 const noPair=compareBuilds(summarizeRuns([
   deviceRun(40,24,'R38'),deviceRun(41,24,'R38'),deviceRun(42,24,'R38')
 ]));
