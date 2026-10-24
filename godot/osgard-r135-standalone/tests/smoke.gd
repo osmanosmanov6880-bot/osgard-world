@@ -101,5 +101,78 @@ func _run() -> void:
     if operator_controls == null:
         _fail("Responsive mission controls missing")
         return
-    print("R135 SMOKE PASS: ECO/HERO resources, strict 4-step mission, camera presets, accessible action panel")
+    # W4 advanced diagnostics, all five ordered steps plus real hatch movement.
+    instance.call("_start_challenge")
+    var begin: Dictionary = rig.call("summary")
+    if not bool(begin.get("challenge_active", false)) or int(begin.get("challenge_step", -1)) != 0:
+        _fail("Advanced challenge did not initialize")
+        return
+    if int(begin.get("challenge_target_view", -1)) != 2:
+        _fail("Optical target expected on first diagnostic attempt")
+        return
+    instance.call("_toggle_hatch") # Safety interlock: cannot open while moving.
+    var blocked: Dictionary = rig.call("summary")
+    if float(blocked.get("lid_target", 9)) != 0.0 or int(blocked.get("challenge_errors", -1)) != 1:
+        _fail("Interlock failed to reject unsafe moving hatch")
+        return
+    instance.call("_toggle_motion") # Stop
+    if int(rig.call("summary").get("challenge_step", -1)) != 1:
+        _fail("Diagnostic stop drive checkpoint missed")
+        return
+    instance.call("_toggle_hatch") # Open
+    if int(rig.call("summary").get("challenge_step", -1)) != 2:
+        _fail("Diagnostic open hatch checkpoint missed")
+        return
+    instance.call("_scan_component") # Premature opening: reject.
+    if int(rig.call("summary").get("challenge_step", -1)) != 2:
+        _fail("Scan incorrectly accepted while hatch moving")
+        return
+    for tick in range(125):
+        rig.call("_physics_process", 1.0 / 60.0)
+    if float(rig.call("summary").get("lid_progress", 0)) < 0.95:
+        _fail("Hatch did not reach fully open during diagnostic sequence")
+        return
+    instance.call("_apply_view", 1)
+    instance.call("_scan_component") # Wrong camera target.
+    if int(rig.call("summary").get("challenge_step", -1)) != 2:
+        _fail("Wrong camera accepted as a diagnostic scan")
+        return
+    instance.call("_apply_view", 2)
+    instance.call("_scan_component") # Correct optical fault target.
+    if int(rig.call("summary").get("challenge_step", -1)) != 3:
+        _fail("Correct optical scan did not clear the fault")
+        return
+    instance.call("_toggle_hatch") # Close
+    if int(rig.call("summary").get("challenge_step", -1)) != 4:
+        _fail("Diagnostic hatch closing checkpoint missed")
+        return
+    instance.call("_toggle_motion") # Attempt unsafe restart while lid still closing.
+    if bool(rig.call("summary").get("motion_enabled", true)):
+        _fail("Diagnostic drive restarted before hatch fully closed")
+        return
+    for tick in range(125):
+        rig.call("_physics_process", 1.0 / 60.0)
+    if float(rig.call("summary").get("lid_progress", 9)) > 0.05:
+        _fail("Hatch did not seal after diagnostic action")
+        return
+    instance.call("_toggle_motion") # Resume only when sealed.
+    var complete_challenge: Dictionary = rig.call("summary")
+    if not bool(complete_challenge.get("challenge_completed", false)) or int(complete_challenge.get("challenge_step", 0)) != 5:
+        _fail("Five-stage diagnostic challenge did not complete")
+        return
+    if int(complete_challenge.get("challenge_score", 0)) <= 0 or int(complete_challenge.get("challenge_best_score", 0)) <= 0:
+        _fail("Diagnostic score or persistent record was not recorded")
+        return
+    if int(complete_challenge.get("challenge_errors", 0)) < 3:
+        _fail("Deliberate safety, premature scan and wrong-view penalties were not counted")
+        return
+    instance.call("_start_challenge")
+    if int(rig.call("summary").get("challenge_fault_index", -1)) != 1:
+        _fail("A new challenge did not cycle to cooling fault scenario")
+        return
+    var controls: Node = operator_controls.get_child(0)
+    if controls.get_child_count() != 8:
+        _fail("Expected eight real operator buttons for both gameplay modes")
+        return
+    print("R135 SMOKE PASS: original 3D, training mission, 3 diagnostic faults, safety interlocks, gated hatch, camera scan, scoring, 8 buttons")
     quit(0)
