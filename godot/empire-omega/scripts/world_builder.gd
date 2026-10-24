@@ -39,6 +39,7 @@ var window_points: Array[Transform3D] = []
 var facade_windows: MultiMeshInstance3D
 var facade_frames: MultiMeshInstance3D
 var architecture_trim: MultiMeshInstance3D
+var streetfront: Node3D
 var last_window_mode := -1
 var waypoint_marker: Node3D
 var horizon_scenic: Node3D
@@ -46,6 +47,7 @@ const ROAD_MATERIALS = preload("res://scripts/horizon_road_materials.gd")
 const LIGHT_GRADE = preload("res://scripts/horizon_light_grade.gd")
 const FACADE_MATERIALS = preload("res://scripts/horizon_facade_materials.gd")
 const ARCHITECTURE_TRIM = preload("res://scripts/horizon_architecture_trim.gd")
+const STREETFRONT_SCENE = preload("res://scripts/horizon_streetfront_details.gd")
 var asphalt_pbr: StandardMaterial3D
 var concrete_pbr: StandardMaterial3D
 
@@ -60,9 +62,12 @@ func _ready() -> void:
 	_create_terrain()
 	_create_roads()
 	architecture_trim = ARCHITECTURE_TRIM.new()
+	streetfront = STREETFRONT_SCENE.new()
 	_create_city()
 	architecture_trim.call("finalize")
 	city_root.add_child(architecture_trim)
+	streetfront.call("finalize")
+	city_root.add_child(streetfront)
 	_create_window_batch()
 	_create_landmarks()
 	_create_waypoint_marker()
@@ -202,6 +207,7 @@ func _create_city() -> void:
 				var pos := Vector3(x+offset,height*0.5,z+(offset if (ix + iz) % 2 == 0 else -offset))
 				_box(chunk,"Building_%03d" % building_count,Vector3(width,height,width),pos,color,true)
 				architecture_trim.call("record",pos,width,height)
+				streetfront.call("record",pos,width,height,building_count)
 				_record_windows(pos,width,height)
 				building_count += 1
 				# Emissive parapet gives an evening skyline without external textures.
@@ -454,6 +460,8 @@ func apply_visual_budget(mode: String) -> void:
 		horizon_scenic.visible = visual_budget != "low"
 	if architecture_trim != null:
 		architecture_trim.visible = visual_budget != "low"
+	if streetfront != null:
+		streetfront.visible = visual_budget != "low"
 	if facade_frames != null:
 		facade_frames.visible = visual_budget != "low"
 	_apply_lighting()
