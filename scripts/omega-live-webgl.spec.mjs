@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test'
 import { readFileSync } from 'node:fs'
 import { PNG } from 'pngjs'
 import { browserTouchPoint } from './omega-mobile-touch-geometry.mjs'
+import { checkNewerLiveRelease } from './omega-live-release-supersession.mjs'
 
 // This exercises the REAL public Godot 4.4.1 WebAssembly and WebGL renderer,
 // not just the marketing page or HTML canvas shell. Native v34 separately
@@ -66,6 +67,23 @@ test('authentic released Godot runs WebGL2, paints scene, handles real keyboard/
   expect(live.engine).toBe('Godot 4.4.1')
   expect(live.artifact_kind).toBe('native-Godot-HTML5-export')
   expect(live.native_tests).toBe('passed')
+  // A later successful SSH release can replace this job's original
+  // public build during a long Chromium run. Compare ancestry with GitHub
+  // itself. Skip only a proven strict descendant; still FAIL on an older,
+  // divergent, malformed or unprovable release source.
+  if (live.source_commit !== RELEASE.source_commit) {
+    const versionProof = await checkNewerLiveRelease(
+      RELEASE.source_commit,live.source_commit)
+    await testInfo.attach('godot-public-release-source-proof.json',{
+      body:Buffer.from(JSON.stringify({
+        expected_source:RELEASE.source_commit,live_source:live.source_commit,
+        verification:versionProof
+      },null,2)),contentType:'application/json'
+    })
+    if (versionProof.superseded) {
+      test.skip(true,'Superseded by GitHub-proven newer public Godot source; its own SSH-triggered Chromium run is authoritative.')
+    }
+  }
   expect(live.source_commit).toBe(RELEASE.source_commit)
   expect(live.files).toEqual(RELEASE.files)
 

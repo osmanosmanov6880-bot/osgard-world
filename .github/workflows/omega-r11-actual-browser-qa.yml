@@ -13,6 +13,8 @@ on:
       - '.github/workflows/deploy-frontend.yml'
       - 'scripts/omega-cache-policy.contract.test.mjs'
       - 'scripts/omega-live-webgl.spec.mjs'
+      - 'scripts/omega-live-release-supersession.mjs'
+      - 'scripts/omega-live-release-supersession.test.mjs'
       - 'scripts/omega-mobile-touch-geometry.mjs'
       - 'scripts/omega-mobile-touch-geometry.test.mjs'
       - 'playwright.omega-live-webgl.config.mjs'
@@ -92,6 +94,8 @@ jobs:
         run: node --test scripts/omega-mobile-touch-geometry.test.mjs
       - name: Check actual WebGL smoke script is executable before release
         run: node --check scripts/omega-live-webgl.spec.mjs && node --check scripts/omega-mobile-touch-geometry.mjs && node --check playwright.omega-live-webgl.config.mjs
+      - name: Validate superseded-release ancestry and rollback safety
+        run: node --test scripts/omega-live-release-supersession.test.mjs
   # Public WebGL testing is release acceptance, not a PR preflight:
   # a PR cannot honestly test its own unpublished WASM on the live site.
   actual-desktop-phone-webgl:
@@ -114,6 +118,7 @@ jobs:
       - name: Load real public R10/R11 Godot runtime on desktop and emulated touchscreen
         env:
           OSGARD_GAME_ORIGIN: https://osgard.world
+          GITHUB_TOKEN: ${{ github.token }}
         run: npx playwright test --config playwright.omega-live-webgl.config.mjs
       - name: Save actual frame screenshots, console and trace on failure
         if: always()
