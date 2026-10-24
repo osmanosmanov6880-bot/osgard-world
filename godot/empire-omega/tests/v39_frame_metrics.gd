@@ -2,6 +2,7 @@ extends SceneTree
 ## Native 4.4.1 R16 acceptance for bounded frame times and real touch events.
 const METRICS = preload("res://scripts/horizon_frame_metrics.gd")
 const TOUCH = preload("res://scripts/horizon_touch_controls.gd")
+const LAYOUT = preload("res://scripts/horizon_responsive_layout.gd")
 var passed := 0
 var failed := 0
 
@@ -53,6 +54,12 @@ func _run() -> void:
 	verify(main_src.contains("frame_metrics.record_frame(delta,DisplayServer.window_is_focused())"),"real render loop records frame duration")
 	verify(main_src.contains("frame_metrics.p95_ms(),adaptive_graphics.effective_quality()"),"real HUD receives p95 and current tier")
 	verify(hud_src.contains("P95: %s") and hud_src.contains("sampling"),"HUD reports qualified data")
+	for size in [Vector2(320,568),Vector2(390,844),Vector2(860,540)]:
+		var frames: Dictionary = LAYOUT.compute(size)
+		var frame: Rect2 = frames["diagnostics"]
+		verify(not frame.intersects(frames["quick_toggle"]),"FPS card does not cover the native quick-actions toggle")
+		verify(frame.end.y < size.y-120.0,"FPS card leaves room for driving controls")
+	verify(hud_src.contains("map_visible_before_diagnostics"),"HUD saves and restores minimap when diagnostics cover map")
 	var controls: CanvasLayer = TOUCH.new()
 	root.add_child(controls)
 	var probe := ActionProbe.new()
