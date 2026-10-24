@@ -53,6 +53,7 @@ const KEY_NOSE_DOWN = 128
 const KEY_BOOST = 256
 const KEY_FIRE = 512
 var browser_input_mask: int = 0
+var browser_window
 var cruise_assist: bool = false
 var last_pilot_throttle: float = 0.0
 var last_pilot_yaw: float = 0.0
@@ -88,6 +89,8 @@ func _ready() -> void:
     model.name = "HighDetailInterceptorR5"
     visual.add_child(model)
     engine_flames = model.engine_flames
+    if OS.has_feature("web"):
+        browser_window = JavaScriptBridge.get_interface("window")
     # The R8 wing span is large, but collision uses a conservative swept
     # body to preserve flight corridors without an overly sticky hull.
     var shape := SphereShape3D.new()
@@ -122,7 +125,11 @@ func _browser_mask() -> int:
     # One read per physical tick, not a costly JS bridge call per key.
     # window key listeners use KeyboardEvent.code, unaffected by RU/EN layout.
     browser_input_samples += 1
-    var result: Variant = JavaScriptBridge.eval("Number(window.__nebulaPilotMask || 0)", true)
+    if browser_window == null:
+        return 0
+    # Read the exact page-global object where the early HTML key bridge stores
+    # its physical KeyboardEvent.code bitmask; don't eval in engine scope.
+    var result: Variant = browser_window.__nebulaPilotMask
     return int(result) if result != null else 0
 
 func _physical_key(code: Key) -> bool:
