@@ -35,14 +35,14 @@ func _run() -> void:
 			verify(not mat.emission_enabled,"storefront uses physical shading rather than decorative fullbright neon")
 			verify(obj.cast_shadow==GeometryInstance3D.SHADOW_CASTING_SETTING_OFF,"mobile shadow GPU budget unchanged: "+id)
 	var glass: MultiMeshInstance3D = detail.get_node("ShopfrontGlassBatch")
-	var front_glass: Transform3D = glass.multimesh.get_instance_transform(0)
+	var front_glass: Transform3D = (detail.get("glass_poses") as Array)[0]
 	verify(front_glass.origin.z < 8.0-6.0,"first shop glass sits on exterior street-facing wall")
-	print("R27 DEBUG FIRST GLASS=",front_glass.origin)
 	verify(absf(front_glass.origin.y-1.62)<0.01,"shopfront glazing located at plausible pedestrian eye level")
 	verify(glass.multimesh.instance_count==6,"two storefront glass windows per building")
+	var gpu_source: String = FileAccess.get_file_as_string("res://scripts/horizon_streetfront_details.gd")
+	verify(gpu_source.contains("instances.set_instance_transform(i,poses[i])"),"original measured transforms are uploaded into GPU instances")
 	verify((detail.get_node("MetalJambBatch") as MultiMeshInstance3D).multimesh.instance_count==9,"three entrance frame pieces per building")
-	var variation: Transform3D = (detail.get_node("EntranceDoorBatch") as MultiMeshInstance3D).multimesh.get_instance_transform(1)
-	print("R27 DEBUG SECOND DOOR=",variation.origin)
+	var variation: Transform3D = (detail.get("door_poses") as Array)[1]
 	verify(variation.origin.x < -20.0-6.0,"second facade rotates door toward a different street")
 	var collider_count := 0
 	for node in detail.get_children():
