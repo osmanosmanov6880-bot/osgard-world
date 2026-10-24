@@ -74,7 +74,7 @@ func _draw() -> void:
     var boost_pct: int = roundi(craft.boost)
     if compact:
         # Short top-centre flight instrument stays clear of thumb controls.
-        var top := Rect2(Vector2(w * 0.34, 10), Vector2(w * 0.32, 33))
+        var top := Rect2(Vector2(w * 0.34, 145), Vector2(w * 0.32, 33))
         _panel(top)
         _text("%03d км/ч" % speed, top.position+Vector2(9,24), 16,CYAN)
         _text("АССИСТ", top.position+Vector2(top.size.x-10,22),
