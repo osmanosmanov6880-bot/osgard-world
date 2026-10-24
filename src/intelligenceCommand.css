@@ -297,3 +297,29 @@ html[data-motion=off] .intelligence-command .intelligence-command-actions .brand
     background-attachment: scroll;
   }
 }
+
+/* Superseding typography pass: cinematic tech grotesk replaces the editorial serif. */
+.theme-intelligence.brand-system {
+  --bg: #050816;
+  --surface: #0a1222;
+  --line: #26344a;
+  background-color: #050816;
+}
+.theme-intelligence .intelligence-command .intelligence-command-hero h1 {
+  font-family: 'Space Grotesk', Inter, Arial, sans-serif;
+  font-size: clamp(44px, 5.2vw, 82px);
+  font-weight: 600;
+  line-height: 1.02;
+  letter-spacing: -.055em;
+}
+.theme-intelligence .intelligence-command .intelligence-command-hero h1 em {
+  color: #ff4055;
+  font-style: normal;
+  font-weight: 600;
+}
+@media (max-width: 760px) {
+  .theme-intelligence .intelligence-command .intelligence-command-hero h1 {
+    font-size: clamp(40px, 10.5vw, 62px);
+    letter-spacing: -.045em;
+  }
+}
