@@ -21,20 +21,20 @@
     {
       "id": "01",
       "title": "Полноэкранный PLAY и интерактивный трекер",
-      "state": "in_review",
+      "state": "completed",
       "games": "22",
       "goal": "Расширить игровой viewport, улучшить доступность управления, опубликовать проверяемый реестр этапов",
       "gate": "Автоматические проверки HTML/JS и клиентского интерфейса, проверки PR, публикация маршрутов",
-      "evidence": "PR #248: код интерактивного трекера и полноразмерного игрока, CI и публикация проверяются"
+      "evidence": "PR #248 merged; frontend/browser CI success; SSH production deployment run https://github.com/osmanosmanov6880-bot/osgard-world/actions/runs/40059059916 success. Scope: portal launcher and interactive 22-game roadmap only."
     },
     {
       "id": "02",
       "title": "Единый премиальный дизайн и 22 авторские эмблемы",
-      "state": "in_review",
+      "state": "completed",
       "games": "22",
       "goal": "22 разных SVG-эмблемы, 22 авторских обложки, оптимизированная галерея и интерактивный трекер",
       "gate": "22 разные SVG, 22 изображения, доступность и performance; успешные CI и live SSH/HTTPS",
-      "evidence": "22 SVG-эмблемы и 22 существующих авторских обложки интегрированы в карточки; CI и публикация ожидаются"
+      "evidence": "PR #250 merged with frontend/browser QA; live independent HTTPS visual acceptance https://github.com/osmanosmanov6880-bot/osgard-world/actions/runs/40062693538 checked 22 worlds and 44/44 artwork files, 0 errors. Original full SSH workflow had separate NEBULA route-matrix issue, fixed PR #255; this evidence confirms the 22-world artwork, NOT overall product deployment."
     },
     {
       "id": "03",
@@ -43,15 +43,16 @@
       "games": "22",
       "goal": "Единый слой запуска и возврата для 22 игр, достоверные инструкции, обработка offline; общие gamepad/touch/save API движков — отдельные дальнейшие поставки",
       "gate": "22 карточки дают инструкции; браузерные desktop/mobile сценарии проходят, чужие ссылки отвергаются, PR/CI и SSH/HTTPS проверены",
-      "evidence": "Портал: валидируемый last-world-record, явный возврат к последней игре, управление/сохранения каждого мира из исходного каталога, offline-сообщение и тесты; не заменяет сохранения внутри игровых движков."
+      "evidence": "PR #251 merged after focused desktop/mobile Playwright + Node CI https://github.com/osmanosmanov6880-bot/osgard-world/actions/runs/40062191664. Live SSH verification pending; browser-local last world is NOT in-game progress."
     },
     {
       "id": "04",
       "title": "EMPIRE Ω: флагманский город и вождение",
-      "state": "planned",
+      "state": "in_review",
       "games": "1",
-      "goal": "Выверенная геометрия улиц, автомобильная физика, цикл миссии, свет, оптимизация",
-      "gate": "Игровая сцена, воспроизводимые тесты управления/физики и FPS"
+      "goal": "Игровой флагман: настоящая 3D-сцена, миссии, трасса, автомобильная физика, сенсорное управление, свет, бюджет FPS; R5/R6 отдельные проверенные исходные блоки",
+      "gate": "Игровая сцена, воспроизводимые тесты управления/физики и FPS",
+      "evidence": "Original Godot HORIZON R5 PR #253 merged; R6 PR #256 merged. Native Godot 4.4.1 QA run https://github.com/osmanosmanov6880-bot/osgard-world/actions/runs/40062765088: 14 V21 + 34 V25 + 20 V27 + 70 V28 = 138 passed; actual browser binary export run 40062894372 pending. This is a partial car/input vertical slice, not completed full EMPIRE Ω wave nor AAA graphics."
     },
     {
       "id": "05",
