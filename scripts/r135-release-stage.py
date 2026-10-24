@@ -17,7 +17,7 @@ def reject(reason: str):
 
 def stage(archive: Path, manifest_path: Path, destination: Path):
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    if manifest.get("version") != "r135-web-optimized-20261024":
+    if manifest.get("version") != "r135-web-mission-20261024":
         reject("wrong release tag")
     if manifest.get("engine") != "Godot 4.4.1":
         reject("wrong Godot engine")
@@ -66,6 +66,15 @@ def stage(archive: Path, manifest_path: Path, destination: Path):
         if destination.exists():
             shutil.rmtree(destination)
         shutil.copytree(temporary, destination)
+        # TemporaryDirectory is mode 0700. copytree copies its permissions
+        # to the destination, making genuine game files invisible to Nginx's
+        # unprivileged worker (try_files then reports a misleading HTTP 404).
+        # Keep source files public-read-only, allow directory traversal.
+        destination.chmod(0o755)
+        for member in destination.rglob("*"):
+            member.chmod(0o755 if member.is_dir() else 0o644)
+        if (destination.stat().st_mode & 0o111) != 0o111:
+            reject("R135 directory not publicly traversable")
     print(json.dumps({"status": "verified", "files": len(files) + 1,
                       "pck_bytes": size, "destination": str(destination)}))
 

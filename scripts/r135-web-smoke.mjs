@@ -1,5 +1,6 @@
-// OSGARD R135: browser smoke checks real Godot Web export (NOT native GPU QA).
-// Usage: node scripts/r135-web-smoke.mjs http://127.0.0.1:8765/index.html /tmp/screens
+// Actual R135 gameplay smoke in Chromium (SwiftShader WebGL2, not physical GPU).
+// Checks Godot scene boot + ordered maintenance mission with desktop keys
+// and real mobile touchscreen presses, not only existence of a blank canvas.
 import { chromium, devices } from 'playwright'
 import { mkdir } from 'node:fs/promises'
 import { resolve } from 'node:path'
@@ -11,54 +12,135 @@ await mkdir(output, { recursive: true })
 
 const browser = await chromium.launch({
   headless: true,
-  args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-webgl',
-    '--disable-gpu-sandbox', '--no-sandbox'],
+  args: ['--use-gl=angle', '--use-angle=swiftshader',
+    '--enable-webgl', '--disable-gpu-sandbox', '--no-sandbox'],
 })
-let anyFailure = false
+const result = []
 
+const sleep = (page, ms) => page.waitForTimeout(ms)
+async function readState(page) {
+  return page.evaluate(() => window.__OSGARD_R135_QA || null)
+}
+async function expectState(page, predicate, label, timeout = 18_000) {
+  const started = Date.now()
+  let state = null
+  while (Date.now() - started < timeout) {
+    state = await readState(page)
+    if (predicate(state)) return state
+    await sleep(page, 300)
+  }
+  throw new Error(label + '; last scene state: ' + JSON.stringify(state))
+}
+async function tapSceneButton(page, index) {
+  const state = await expectState(page,
+    x => x?.button_centers?.length === 6 && x.viewport_w > 0 && x.viewport_h > 0,
+    'Six rendered mobile Godot controls are required')
+  const point = state.button_centers[index]
+  const rect = await page.locator('canvas').first().boundingBox()
+  if (!point || !rect) throw new Error('Godot button geometry missing: ' + index)
+  const x = rect.x + point.x * rect.width / state.viewport_w
+  const y = rect.y + point.y * rect.height / state.viewport_h
+  if (x < rect.x || x > rect.x + rect.width || y < rect.y || y > rect.y + rect.height) {
+    throw new Error('Button outside touchscreen viewport: ' + index + ', ' + JSON.stringify({ x, y, rect }))
+  }
+  await page.touchscreen.tap(x, y)
+}
+async function keyboardMission(page) {
+  await page.locator('canvas').first().click({ position: { x: 400, y: 350 } })
+  await page.keyboard.press('m')
+  await expectState(page, x => x?.mission_active && x?.mission_step === 0, 'M must start mission')
+  await page.keyboard.press('Space') // Deliberately incorrect action.
+  await expectState(page, x => x?.mission_step === 0 && x?.motion_enabled === false, 'Wrong order must not advance')
+  await page.keyboard.press('Space')
+  await page.keyboard.press('f')
+  await expectState(page, x => x?.mission_step === 1, 'Hatch should advance to task 2')
+  await page.keyboard.press('Space')
+  await expectState(page, x => x?.mission_step === 2, 'Pause should advance to task 3')
+  await page.keyboard.press('f')
+  await expectState(page, x => x?.mission_step === 3, 'Hatch close should advance to task 4')
+  await page.keyboard.press('Space')
+  await expectState(page, x => x?.mission_completed && x?.mission_step === 4
+    && x?.motion_enabled && !x?.mission_active, 'Resume must complete playable mission')
+  await page.keyboard.press('v')
+  await expectState(page, x => x?.view === 1, 'V must select close-up inspection camera')
+  await page.keyboard.press('r')
+  await expectState(page, x => x?.view === 0, 'R must reset the camera')
+}
+async function touchMission(page) {
+  await tapSceneButton(page, 0)  // START MISSION
+  await expectState(page, x => x?.mission_active && x?.mission_step === 0, 'Mobile START tap failed')
+  await tapSceneButton(page, 4)  // OPEN HATCH
+  await expectState(page, x => x?.mission_step === 1, 'Mobile OPEN HATCH tap failed')
+  await tapSceneButton(page, 3)  // PLAY/PAUSE
+  await expectState(page, x => x?.mission_step === 2, 'Mobile PAUSE tap failed')
+  await tapSceneButton(page, 4)  // CLOSE HATCH
+  await expectState(page, x => x?.mission_step === 3, 'Mobile CLOSE HATCH tap failed')
+  await tapSceneButton(page, 3)  // RESUME
+  await expectState(page, x => x?.mission_completed && x?.mission_step === 4, 'Mobile MISSION completion failed')
+  await tapSceneButton(page, 1)  // NEXT VIEW
+  await expectState(page, x => x?.view === 1, 'Mobile camera preset tap failed')
+  await tapSceneButton(page, 5)  // RESET VIEW
+  await expectState(page, x => x?.view === 0, 'Mobile camera reset tap failed')
+}
+let failed = false
 try {
-  for (const [name, opts] of [
-    ['desktop-1366', { viewport: { width: 1366, height: 768 }, deviceScaleFactor: 1 }],
-    ['mobile-390', { ...devices['Pixel 7'] }],
+  for (const [name, opts, isMobile] of [
+    ['desktop-1366', { viewport: { width: 1366, height: 768 }, deviceScaleFactor: 1 }, false],
+    ['mobile-390', { ...devices['Pixel 7'] }, true],
   ]) {
     const context = await browser.newContext(opts)
     const page = await context.newPage()
     const runtimeErrors = []
-    const failures = []
+    const assetErrors = []
     page.on('pageerror', err => runtimeErrors.push(String(err)))
-    page.on('requestfailed', req => failures.push(req.url() + ': ' + (req.failure()?.errorText || 'network error')))
-    console.log('R135 visiting', name, target)
-    let response
+    page.on('requestfailed', req => {
+      if (/\.(?:pck|wasm|js)(?:\?|$)/i.test(req.url())) assetErrors.push(req.url())
+    })
     try {
-      response = await page.goto(target, { waitUntil: 'domcontentloaded', timeout: 120_000 })
-      if (response?.status() !== 200) throw new Error('HTML HTTP status ' + (response?.status() ?? 'none'))
-      const hasWebGL2 = await page.evaluate(() => {
-        const probe = document.createElement('canvas')
-        return Boolean(probe.getContext('webgl2'))
-      })
-      if (!hasWebGL2) throw new Error('No WebGL2 context in Chromium SwiftShader')
+      console.log('R135 WebGL2 gameplay smoke:', name)
+      const response = await page.goto(target, { waitUntil: 'domcontentloaded', timeout: 120_000 })
+      if (response?.status() !== 200) throw new Error('Game HTML HTTP ' + response?.status())
+      const available = await page.evaluate(() => Boolean(document.createElement('canvas').getContext('webgl2')))
+      if (!available) throw new Error('No WebGL2 context')
       await page.locator('canvas').first().waitFor({ state: 'visible', timeout: 120_000 })
-      // The Godot WASM and PCK are asynchronous; wait for download to finish
-      // and exercise a real input path while preserving a visual trace.
-      await page.waitForTimeout(14_000)
-      const canvas = await page.locator('canvas').first().evaluate(canvas => ({
-        width: canvas.width,
-        height: canvas.height,
-        visible: canvas.getBoundingClientRect().width > 0 && canvas.getBoundingClientRect().height > 0,
+      const boot = await expectState(page,
+        x => x?.scene_ready && x?.loading_failures === 0
+          && x?.loaded?.endsWith('service_spine_eco.glb')
+          && x?.button_centers?.length === 6,
+        'Real Godot ECO rig and operator controls did not load', 90_000)
+      if (boot.quality !== 0) throw new Error('Low-memory ECO mode not used on boot')
+      const geometry = await page.locator('canvas').first().evaluate(canvas => ({
+        width: canvas.width, height: canvas.height,
+        visible: canvas.getBoundingClientRect().width > 0,
       }))
-      if (!canvas.visible || canvas.width < 128 || canvas.height < 128) {
-        throw new Error('Godot canvas did not become usable: ' + JSON.stringify(canvas))
+      if (!geometry.visible || geometry.width < 128 || geometry.height < 128) {
+        throw new Error('Godot canvas not usable ' + JSON.stringify(geometry))
+      }
+      if (isMobile) {
+        await touchMission(page)
+      } else {
+        await keyboardMission(page)
+        await page.keyboard.press('q')
+        await expectState(page, x => x?.quality === 2
+          && x?.loaded?.endsWith('service_spine_hero.glb') && x?.loading_failures === 0,
+          'Desktop HERO model switch failed', 45_000)
+        await page.keyboard.press('q')
+        await expectState(page, x => x?.quality === 0
+          && x?.loaded?.endsWith('service_spine_eco.glb') && x?.loading_failures === 0,
+          'Desktop ECO return failed', 45_000)
+      }
+      if (runtimeErrors.length || assetErrors.length) {
+        throw new Error('Browser runtime errors: ' + JSON.stringify({ runtimeErrors, assetErrors }))
       }
       await page.screenshot({ path: resolve(output, name + '.png'), fullPage: true })
-      // Exclude transient font/launcher noise, but reject missing Godot assets
-      // and uncaught JavaScript runtime errors.
-      if (runtimeErrors.length) throw new Error('JS page errors: ' + runtimeErrors.join(' | '))
-      const missing = failures.filter(url => /\.(?:pck|wasm|js)(?:\?|$)/i.test(url))
-      if (missing.length) throw new Error('Godot asset failed: ' + missing.join(' | '))
-      console.log('R135 browser PASS', name, canvas)
-    } catch (err) {
-      anyFailure = true
-      console.error('R135 browser FAIL', name, String(err))
+      const final = await readState(page)
+      result.push({ device: name, status: 'PASS', verified: 'real mechanics and interaction',
+        mission: final.mission_completed, view: final.view, quality: final.quality,
+        canvas: geometry })
+      console.log('R135 gameplay PASS:', name, JSON.stringify(result.at(-1)))
+    } catch (error) {
+      failed = true
+      console.error('R135 gameplay FAIL:', name, String(error))
       try { await page.screenshot({ path: resolve(output, name + '-failure.png'), fullPage: true }) } catch {}
     } finally {
       await context.close()
@@ -67,4 +149,5 @@ try {
 } finally {
   await browser.close()
 }
-if (anyFailure) process.exitCode = 1
+console.log(JSON.stringify({ game: 'OSGARD R135', tests: result, failed }))
+if (failed) process.exitCode = 1

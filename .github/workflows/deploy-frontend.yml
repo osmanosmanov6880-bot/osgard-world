@@ -263,7 +263,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p "$RUNNER_TEMP/r135-web-release"
-          gh release download r135-web-optimized-20261024 \
+          gh release download r135-web-mission-20261024 \
             --repo osmanosmanov6880-bot/osgard-world \
             --pattern "OSGARD_R135_OPTIMIZED_WEB.zip" \
             --pattern "R135_OPTIMIZED_MANIFEST.json" \
@@ -275,6 +275,8 @@ jobs:
           test -s dist/games/r135-service/index.pck
           test -s dist/games/r135-service/index.wasm
           test -s dist/games/r135-service/release.json
+          test "$(stat -c '%a' dist/games/r135-service)" = 755
+          test "$(stat -c '%a' dist/games/r135-service/index.html)" = 644
       - name: Verify Unity runtime delivery through candidate Nginx
         run: npm run qa:nginx-game-delivery
       - name: Verify REMIX result durability through candidate Nginx
@@ -340,6 +342,8 @@ jobs:
           set -euo pipefail
           mkdir -p osgard-release/html
           cp -a dist/. osgard-release/html/
+          test "$(stat -c '%a' osgard-release/html/games/r135-service)" = 755
+          test -s osgard-release/html/games/r135-service/index.pck
           ASSET_VERSION="${GITHUB_SHA:0:12}"
           # Bust immutable edge-cache URLs after changing the shared brand delivery.
           find osgard-release/html -type f -name '*.html' -exec sed -i \
