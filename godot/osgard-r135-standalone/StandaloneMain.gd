@@ -366,6 +366,17 @@ func _process(delta: float) -> void:
         state["studio_quality"] = int(stage_budget["stage_quality"])
         state["prefers_reduced_motion"] = reduced_motion
         state["render_fps_sample"] = Engine.get_frames_per_second()
+        var status_rect: Rect2 = hud_panel.get_global_rect()
+        var control_rect: Rect2 = action_panel.get_global_rect()
+        state["hud_layout_mode"] = "portrait" if _viewport_is_portrait() else "landscape"
+        state["hud_rect"] = {
+            "x": status_rect.position.x, "y": status_rect.position.y,
+            "w": status_rect.size.x, "h": status_rect.size.y
+        }
+        state["action_rect"] = {
+            "x": control_rect.position.x, "y": control_rect.position.y,
+            "w": control_rect.size.x, "h": control_rect.size.y
+        }
         var button_centers: Array[Dictionary] = []
         for button in action_buttons:
             var box: Rect2 = button.get_global_rect()
