@@ -1,4 +1,5 @@
 import { isValidPartnerInventoryText } from './partner-inventory-contract.mjs'
+import { isNativeNebulaShell } from './native-nebula-shell-contract.mjs'
 // Unique query probes prevent stale CDN entries from masking the active SSH release.
 const base = process.env.OSGARD_BASE_URL || 'https://osgard.world'
 const expectCurrentDesign = process.env.SKILLCRED_EXPECT_CURRENT_DESIGN === '1'
@@ -109,7 +110,7 @@ for (const [device, userAgent] of Object.entries(agents)) for (const route of ro
         : route.startsWith('/games/omega-3d-preview/')
           ? text.includes('<title>OSGARD EMPIRE Ω — Open World Prototype</title>') && text.includes('<canvas id="canvas">') && text.includes('new Engine(GODOT_CONFIG)') && text.includes('index.wasm') && text.includes('index.pck') && text.includes("document.documentElement.lang = 'ru'") && text.includes('Для запуска игры требуется WebGL 2.') && text.includes("backLink.href = '/games/#catalog'")
         : route.startsWith('/games/remix/arena-v2/nebula-3d/')
-          ? text.includes('<title>REMIX ARENA - NEBULA 3D</title>') && text.includes('<canvas id="canvas">') && text.includes('new Engine(GODOT_CONFIG)') && text.includes('index.wasm') && text.includes('index.pck') && text.includes("document.documentElement.lang = 'ru'") && text.includes('Для запуска игры требуется WebGL 2.') && text.includes("backLink.href = '/games/#catalog'")
+          ? isNativeNebulaShell(text)
         : route === '/games/r136-precision/release.json'
           ? (() => { try { const release = JSON.parse(text); return release.engine === 'Godot 4.4.1' && release.source_path === 'godot/osgard-r136-precision' && release.native_tests === 'passed' && release.artifact_kind === 'native-Godot-HTML5-export' && typeof release.files?.['index.wasm'] === 'string' && typeof release.files?.['index.pck'] === 'string' } catch { return false } })()
         : route.startsWith('/games/r136-precision/')
