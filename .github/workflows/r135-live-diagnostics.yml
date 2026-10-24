@@ -1,0 +1,64 @@
+name: OSGARD R135 read-only live delivery diagnostic
+
+on:
+  push:
+    branches: [feat/r135-mission-control-20261024]
+    paths:
+      - ".github/workflows/r135-live-diagnostics.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Configure SSH using the existing OSGARD read-only probe
+        shell: bash
+        env:
+          DEPLOY_HOST: ${{ secrets.OSGARD_DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.OSGARD_DEPLOY_USER }}
+          DEPLOY_KEY: ${{ secrets.OSGARD_DEPLOY_KEY }}
+        run: |
+          set -euo pipefail
+          test -n "$DEPLOY_HOST" && test -n "$DEPLOY_USER" && test -n "$DEPLOY_KEY"
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "$DEPLOY_KEY" > ~/.ssh/osgard_r135_diag
+          chmod 600 ~/.ssh/osgard_r135_diag
+          ssh-keyscan -T 10 -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Compare actual container file, local Nginx and external route
+        shell: bash
+        env:
+          DEPLOY_HOST: ${{ secrets.OSGARD_DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.OSGARD_DEPLOY_USER }}
+        run: |
+          set -euo pipefail
+          ssh -i ~/.ssh/osgard_r135_diag -o BatchMode=yes "$DEPLOY_USER@$DEPLOY_HOST" 'sh -s' <<'REMOTE'
+          set -eu
+          docker exec osgard-world sh -lc '
+            echo "== R135 active files =="
+            for p in /usr/share/nginx/html/games/r135-service/index.html /usr/share/nginx/html/games/r135-service/index.wasm /usr/share/nginx/html/games/r135-service/index.pck /usr/share/nginx/html/games/r135-service/release.json; do
+              if [ -s "$p" ]; then
+                echo "PRESENT $p"
+                wc -c "$p"
+              else
+                echo "MISSING $p"
+              fi
+            done
+            echo "== R135 directory (files, not private content) =="
+            ls -lah /usr/share/nginx/html/games/r135-service 2>&1 | head -n 20 || true
+            echo "== Nginx active route config =="
+            grep -n -A 9 -B 2 "location = /games/r135-service" /etc/nginx/conf.d/default.conf || true
+            echo "== Container-local HTTP response =="
+            wget -S -O /dev/null -T 10 http://127.0.0.1/games/r135-service/index.html 2>&1 | head -n 18 || true
+            echo "== Container-local manifest HTTP response =="
+            wget -S -O /dev/null -T 10 http://127.0.0.1/games/r135-service/release.json 2>&1 | head -n 18 || true
+          '
+          REMOTE
+          echo "== External HTTPS response, cache bypass =="
+          curl --max-time 15 -sS -D - -o /dev/null -H 'Cache-Control: no-cache' "https://osgard.world/games/r135-service/index.html?diag=${GITHUB_RUN_ID}" | head -n 22
+          curl --max-time 15 -sS -D - -o /dev/null -H 'Cache-Control: no-cache' "https://osgard.world/games/r135-service/release.json?diag=${GITHUB_RUN_ID}" | head -n 22
