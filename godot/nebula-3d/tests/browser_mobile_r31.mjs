@@ -252,12 +252,32 @@ try {
       s => s?.r36_perf_visible === true && s.r36_perf_active === false &&
         s.r36_benchmark_button_x > 0 && s.r36_benchmark_button_y > 0,
       30000);
+    // R38: the software-GL QA starts in deterministic ECO. Check that
+    // actual screen taps cycle ECO -> AUTO/HIGH -> MAX in the real scene.
+    if (open.r38_mode_label !== 'ECO' ||
+        open.r38_quality_mode !== 2 || open.r38_auto_enabled !== false) {
+      throw new Error('R38 QA profile initialization is not ECO: ' +
+        JSON.stringify(open));
+    }
+    const modeButton = uiPoint(open.r38_mode_button_x,
+      open.r38_mode_button_y, 9);
+    await send('touchStart',[modeButton]);
+    await send('touchEnd',[]);
+    await expectTelemetry('R38 mobile quality touch enables real AUTO profile',
+      s => s?.r38_auto_enabled === true &&
+        s.r38_quality_mode === 1 && s.r38_mode_label === 'АВТО', 30000);
+    await send('touchStart',[modeButton]);
+    await send('touchEnd',[]);
+    await expectTelemetry('R38 mobile quality touch selects real MAX graphics',
+      s => s?.r38_auto_enabled === false &&
+        s.r38_quality_mode === 0 && s.r38_mode_label === 'MAX', 30000);
     const runBenchmark = uiPoint(open.r36_benchmark_button_x,
       open.r36_benchmark_button_y, 8);
     await send('touchStart',[runBenchmark]);
     await send('touchEnd',[]);
     await expectTelemetry('R36 real mobile 20-second FPS benchmark starts',
-      s => s?.r36_perf_active === true && s.touch_count === 0, 30000);
+      s => s?.r36_perf_active === true && s.touch_count === 0 &&
+        s.r38_quality_mode === 0 && s.r38_auto_enabled === false, 30000);
     // Do not invent a 20-second physical-hardware FPS outcome in SwiftShader.
     // The actual device owner can finish a benchmark and download JSON.
   } finally {
