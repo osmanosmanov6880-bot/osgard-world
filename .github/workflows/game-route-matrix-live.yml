@@ -20,8 +20,18 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
+      - name: Verify bounded route probe execution
+        run: node --test scripts/route-probe-pool.test.mjs
       - name: Probe live desktop and mobile routes, JSON and Godot shells
         env:
           OSGARD_BASE_URL: https://osgard.world
           SKILLCRED_EXPECT_CURRENT_DESIGN: "1"
         run: node scripts/production-route-matrix.mjs
+      - name: Save full desktop and mobile route report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: osgard-production-route-matrix
+          path: production-route-matrix-report.json
+          if-no-files-found: warn
+          retention-days: 14
