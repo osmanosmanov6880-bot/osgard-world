@@ -180,7 +180,16 @@ try {
       // the hosted software renderer couldn't produce a single 720p frame.
       throw new Error('Hosted SwiftShader cannot confirm visual frame at ' + tag);
     }
-    await page.locator('canvas').first().click({ position: { x: 100, y: 100 } });
+    const canvasBounds = await page.evaluate(() => {
+      const rect = document.querySelector('#canvas')?.getBoundingClientRect();
+      return rect ? { x: rect.x, y: rect.y, width: rect.width, height: rect.height } : null;
+    });
+    if (!canvasBounds || canvasBounds.width < 100 || canvasBounds.height < 100) {
+      throw new Error('Godot canvas has no usable click area: ' + JSON.stringify(canvasBounds));
+    }
+    // Playwright locator.click waits for this animated WebGL canvas to stop
+    // changing across frames; issue the same real pointer input directly.
+    await page.mouse.click(canvasBounds.x + 100, canvasBounds.y + 100);
     await page.keyboard.press('F3');
     await page.waitForTimeout(1500);
     screenshots.high = await captureWithFallback(
