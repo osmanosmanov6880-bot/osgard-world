@@ -4,7 +4,7 @@ export type PlayCatalogCard = Pick<PlayGame, 'id' | 'title' | 'genre' | 'mode' |
 
 export const PLAY_GAME_IDS: string[] = [
   'null-shift','time','empire-orbit','swarm','inherit','remix','vector-zero','afterimage-run',
-  'empire-omega','nebula-3d','r136-precision',
+  'empire-omega','nebula-3d','r136-precision','r135-service',
   'zion-020','zion-021','zion-022','zion-023','zion-024','zion-025','zion-026','zion-027','zion-028','zion-029','zion-030',
 ]
 
