@@ -29,3 +29,11 @@ Software Chromium with SwiftShader validates behavior and framing but not physic
 - W6.1 now aims portrait inspection **left and below** the moving head to place the highlighted target toward the upper-right scene region and expose more of the equipment. Optical camera FOV uses 57 degrees portrait, 53 landscape.
 - Godot telemetry adds `machine_top_screen_y` projected from a fixed original-geometry reference rail at `Vector3(0, 3.78, 5.37)`. Mobile browser smoke rejects frames where this point falls below 37% of viewport height; the moving optical node must remain within the existing safe area.
 - W6.1 is still candidate-only. Do not merge on numeric target-centering alone: review actual pixel screenshots and regression results before approval.
+
+## W6.2 and W6.3 measured fixes (candidate, not released)
+
+- W6.1 mobile failure, Actions `40084348324`: optical head projected to `x=0.7673` (QA allows maximum 0.75). Main rail projection `y=0.3616`.
+- W6.2 at commit `8ea6047c072cec69694bba7537f3a6657daa2c92`, Actions `40108456405`: optical head moved to `x=0.6190`, `y=0.3646`; rail `y=0.3681`. The game and desktop WebGL passed, but portrait QA still required an obsolete FOV `>= 60` after the actual camera was set to 57 degrees. This was a **test specification error**, not a crash.
+- W6.2 screenshot has no right-edge text cut-off, but large active label overlays the equipment and labels for unrelated faults add noise. Its first substantial blue-geometry row starts at `0.2952` of image height versus W5 `0.4105`, measured using the same fixed color/width heuristic; this is not an objective art quality score.
+- W6.3 at commit `82cc6578468d859170c7e9d0d56f03e335a1374a` changes four files in a single atomic Git commit: move portrait framing slightly upward, reduce fault-label footprint, show only the active in-world fault label while preserving passive markers, expose `fault_label_visible_count`, and assert FOV `56-58` plus only one visible active label on desktop and touch QA.
+- Await GitHub Actions `40108970977` and inspect real portrait screenshot before approving visual promotion. W5 production remains pinned and untouched.
