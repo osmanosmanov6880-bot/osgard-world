@@ -6,8 +6,14 @@ const read = path => {
   return readFileSync(path, 'utf8')
 }
 
+const intelligenceHome = read('src/IntelligenceHome.tsx')
+const intelligenceCss = read('src/intelligenceCommand.css')
 const page = read('public/development/osa-intelligence/index.html')
 const og = read('public/development/osa-intelligence/og.svg')
+assert.ok(intelligenceHome.includes("filmEntry: 'Бесплатно: трейлер и глава 01 OSA Cinema'") && intelligenceHome.includes("filmEntry: 'Free: OSA Cinema trailer + Act 01'"), 'OSA Intelligence must surface the free film entry in both locales.')
+assert.ok(intelligenceHome.includes('?lang=en#watch') && intelligenceHome.includes('?lang=ru#watch') && intelligenceHome.includes('intelligence-cinema-cta'), 'OSA film entry must open the matching localized player.')
+assert.ok(intelligenceCss.includes('.intelligence-cinema-cta a:focus-visible'), 'OSA film link must retain a visible keyboard focus state.')
+
 const mediaLibrary = read('public/osa-library/index.html')
 const mediaManifest = JSON.parse(read('public/osa-library/media-manifest.json'))
 const canonicalDoc = read('docs/OSA_CANONICAL_SOURCE_OF_TRUTH.md')
