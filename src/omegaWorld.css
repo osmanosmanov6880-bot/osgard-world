@@ -297,3 +297,35 @@ html[data-motion="off"] .omega-mode-tabs button{transition:none!important}
 html[data-motion="off"] .world-command .omega-command .omega-globe{animation:none!important;opacity:.9!important}
 html[data-motion="off"] .world-command .omega-command .omega-webgl-stage{display:none!important}
 html[data-motion="off"] .world-command .omega-command .omega-gate a{transition:none!important}
+
+/* OSGARD World art-direction refinement: starfield, scarlet signal, engineered display face. */
+.world-command .omega-command h1,
+.world-command .omega-products h2,
+.theme-world .world-home h2 {
+  font-family: 'Space Grotesk', Inter, Arial, sans-serif;
+  font-weight: 600;
+  letter-spacing: -.04em;
+}
+.world-command .omega-command h1 span,
+.world-command .omega-command h1 .omega-period,
+.world-command .omega-products h2 span {
+  color: #f04452;
+}
+.world-command .omega-command-actions .brand-button.primary {
+  background: #e62e45;
+  border-color: #e62e45;
+  color: #fff;
+  box-shadow: 0 0 28px #e62e4545;
+}
+.world-command .omega-command-actions .brand-button.primary:hover {
+  background: #ff465b;
+  border-color: #ff465b;
+}
+.world-command .omega-stars {
+  opacity: .82;
+  background-image:
+    radial-gradient(1px 1px at 13% 22%, #fff 96%, transparent),
+    radial-gradient(2px 2px at 45% 14%, #ff5265 96%, transparent),
+    radial-gradient(1px 1px at 67% 45%, #a8dfff 96%, transparent),
+    radial-gradient(2px 2px at 88% 19%, #ff334d 96%, transparent);
+}
