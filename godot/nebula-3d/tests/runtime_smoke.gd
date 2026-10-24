@@ -217,9 +217,12 @@ func _run() -> void:
     world.ship.thruster_power = 0.0
     var golden_sky = world.get_node("R11_CinematicWorldEnvironment").environment
     var sunset: ProceduralSkyMaterial = golden_sky.sky.sky_material
-    if not check(sunset.sky_horizon_color.r >= 0.60 and
-        sunset.sky_horizon_color.r > sunset.sky_horizon_color.b,
-        "R22 golden-hour sky and atmosphere still render as flat grey"):return
+    var golden_sun: DirectionalLight3D = world.get_node("OrbitalSun")
+    if not check(sunset.sky_horizon_color.b >= 0.50 and
+        sunset.sky_horizon_color.b > sunset.sky_horizon_color.r and
+        golden_sky.fog_light_color.b > golden_sky.fog_light_color.r and
+        golden_sun.light_color.r > golden_sun.light_color.b,
+        "R29 cool sky/fog must retain the warm golden sun rim"):return
     world._set_graphics_quality(2)
     if not check(scenic.quality_mode == 2 and
         not scenic.traffic_nodes[0].visible and
