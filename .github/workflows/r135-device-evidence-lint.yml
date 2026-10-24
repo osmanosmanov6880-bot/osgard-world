@@ -1,0 +1,21 @@
+name: OSGARD R135 device evidence harness static verification
+on:
+  push:
+    branches: [feat/r135-real-device-evidence-capture-20261024]
+    paths:
+      - "scripts/r135-device-evidence.mjs"
+      - ".github/workflows/r135-device-evidence-lint.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verify actual Node.js capture script syntax
+        run: node --check scripts/r135-device-evidence.mjs
