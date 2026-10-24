@@ -2,8 +2,8 @@
  * OSA CINEMA / cinematic design system V13
  * The visual source is the owner's already published OSA Cinema V12.
  * This stylesheet changes presentation only; learning state and media contracts stay intact.
- * Reference images are temporarily served by the published OSA Cinema site.
- * Before a standalone production rollout, copy approved assets to the project's own origin.
+ * All four approved WebP art references are archived locally under /public/osa-cinema/reference.
+ * No third-party HTTP requests are required to render the cinematic scenes.
  */
 .osa-cinema[data-cinema-design="v13"] {
   --film-bg: #0c0d0e;
@@ -143,7 +143,7 @@
   background-color: #272018;
   background-image:
     linear-gradient(90deg, #151310, transparent 80%),
-    url("https://osa-cinema-beyond-the-model.osman-absolu-5357.chatgpt.site/media/reference/library.webp");
+    url("/osa-cinema/reference/library.webp");
   background-size: cover;
   background-position: 62% center;
   background-repeat: no-repeat;
@@ -152,18 +152,18 @@
 .osa-cinema[data-cinema-design="v13"] .cinema-scene-signal .scene-art {
   background-image:
     linear-gradient(90deg, rgba(15, 12, 10, .35), transparent 82%),
-    url("https://osa-cinema-beyond-the-model.osman-absolu-5357.chatgpt.site/media/reference/understand.webp");
+    url("/osa-cinema/reference/understand.webp");
 }
 .osa-cinema[data-cinema-design="v13"] .cinema-scene-evidence .scene-art {
   background-image:
     linear-gradient(90deg, rgba(13, 12, 10, .25), transparent 82%),
-    url("https://osa-cinema-beyond-the-model.osman-absolu-5357.chatgpt.site/media/reference/verify.webp");
+    url("/osa-cinema/reference/verify.webp");
 }
 .osa-cinema[data-cinema-design="v13"] .cinema-scene-horizon .scene-art,
 .osa-cinema[data-cinema-design="v13"] .cinema-scene-dawn .scene-art {
   background-image:
     linear-gradient(90deg, rgba(13, 12, 10, .25), transparent 82%),
-    url("https://osa-cinema-beyond-the-model.osman-absolu-5357.chatgpt.site/media/reference/decide.webp");
+    url("/osa-cinema/reference/decide.webp");
 }
 .osa-cinema[data-cinema-design="v13"] .scene-sun,
 .osa-cinema[data-cinema-design="v13"] .scene-ring,
@@ -317,7 +317,7 @@
   height: 158px;
   background:
     linear-gradient(0deg, #171512, transparent 70%),
-    url("https://osa-cinema-beyond-the-model.osman-absolu-5357.chatgpt.site/media/reference/library.webp") center / cover no-repeat;
+    url("/osa-cinema/reference/library.webp") center / cover no-repeat;
 }
 .osa-cinema[data-cinema-design="v13"] .cinema-aside > span {
   color: #d2b585;
@@ -425,7 +425,7 @@
   inset: 0;
   z-index: -1;
   opacity: .12;
-  background: url("https://osa-cinema-beyond-the-model.osman-absolu-5357.chatgpt.site/media/reference/verify.webp") center / cover no-repeat;
+  background: url("/osa-cinema/reference/verify.webp") center / cover no-repeat;
 }
 .osa-cinema[data-cinema-design="v13"] .cinema-notes h2 {
   font: 400 clamp(32px, 3vw, 48px)/1.1 "Cormorant Garamond", Georgia, serif;
