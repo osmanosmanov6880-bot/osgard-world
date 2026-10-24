@@ -321,9 +321,10 @@ func _update_view() -> void:
         # 42%-interpolated carriage X. The head moves as the 16s cycle progresses.
         var optical_head: Node3D = controller.get("head") as Node3D
         if optical_head != null:
-            # Use rule-of-thirds composition: visible machinery occupies the lower
-            # frame, the lens stays near the upper-right inspection region.
-            var inspection_offset: Vector3 = Vector3(-2.15, -1.85, 0.12) if portrait else Vector3(-1.45, -0.18, 0.12)
+            # W6.2 screenshot QA: W6.1 head projected at 0.767 horizontal and
+            # cut off its 3D label. Aim 1.15 units farther to the right and
+            # 0.35 lower to recover label padding and usable machine area.
+            var inspection_offset: Vector3 = Vector3(-1.0, -2.20, 0.12) if portrait else Vector3(-1.45, -0.18, 0.12)
             target_focus = optical_head.global_position + inspection_offset
     elif view_index == 1:
         target_focus = Vector3(-4.72, 0.38, 5.97)
