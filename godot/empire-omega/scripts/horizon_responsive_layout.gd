@@ -17,11 +17,11 @@ static func compute(viewport: Vector2) -> Dictionary:
 	var speed_w: float = clampf(w-head_w-36.0,130.0,205.0)
 	var head := Rect2(12.0,12.0,head_w,64.0)
 	var speed := Rect2(w-speed_w-12.0,12.0,speed_w,64.0)
-	var objective := Rect2(12.0,84.0,w-24.0,94.0)
+	var objective := Rect2(12.0,84.0,w-24.0,88.0)
 	# Keep an optional map readable without covering a quarter of a tall phone.
 	var minimap := Rect2(w-148.0,185.0,136.0,136.0)
 	var help_y: float = h-maxf(196.0,minf(242.0,h*0.275))
-	var help := Rect2(12.0,help_y,w-24.0,52.0)
+	var help := Rect2(12.0,help_y,w-24.0,44.0)
 	var journal_height: float = maxf(130.0,minf(355.0,h-335.0))
 	var journal := Rect2(12.0,185.0,w-24.0,journal_height)
 	# Performance overlay sits below the touch menu toggle. The minimap is
@@ -35,7 +35,8 @@ static func compute(viewport: Vector2) -> Dictionary:
 	return {
 		"compact":true, "viewport":Vector2(w,h),
 		"header":head, "speed":speed, "objective":objective,
-		"map":minimap, "map_default":w>=360.0 and h>=690.0,
+		"map":minimap, "map_default":w>=650.0 and h>=690.0,
+		"portrait_focus":w<520.0 and h>w,
 		"help":help, "journal":journal, "diagnostics":diagnostics,
 		"toast":toast, "modal":modal,
 		"quick_toggle":quick_toggle, "quick_panel":quick_panel,
