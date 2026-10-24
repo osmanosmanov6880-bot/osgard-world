@@ -91,6 +91,8 @@ func _button_style(active: bool = false) -> StyleBoxFlat:
 func _button(parent: GridContainer, text: String, action: Callable, prominent: bool) -> void:
     var b := Button.new()
     b.text = text
+    # Avoid text forcing a >360px grid on narrow logical viewports.
+    b.clip_text = true
     b.focus_mode = Control.FOCUS_ALL
     b.add_theme_color_override("font_color", Color(0.90, 0.96, 0.98))
     b.add_theme_color_override("font_hover_color", Color(1.0, 0.96, 0.86))
@@ -111,20 +113,25 @@ func _build_hud() -> void:
     hud_panel.add_theme_stylebox_override("panel", _panel_style())
     overlay.add_child(hud_panel)
     var text_stack := VBoxContainer.new()
+    text_stack.size_flags_horizontal = Control.SIZE_EXPAND_FILL
     text_stack.add_theme_constant_override("separation", 6)
     hud_panel.add_child(text_stack)
     heading = Label.new()
+    heading.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
     heading.text = "OSGARD  /  SERVICE LAB"
     heading.add_theme_color_override("font_color", Color(0.93, 0.78, 0.62))
     text_stack.add_child(heading)
     hud = Label.new()
+    hud.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
     hud.add_theme_color_override("font_color", Color(0.86, 0.95, 0.97))
     text_stack.add_child(hud)
     mission_label = Label.new()
+    mission_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
     mission_label.name = "MissionStatus"
     mission_label.add_theme_color_override("font_color", Color(1.0, 0.71, 0.47))
     text_stack.add_child(mission_label)
     helper = Label.new()
+    helper.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
     helper.text = "M: TRAIN  C: DIAGNOSE  E: SCAN  V: CAMERA  ·  SIMULATION"
     helper.add_theme_color_override("font_color", Color(0.70, 0.76, 0.78))
     text_stack.add_child(helper)
@@ -154,7 +161,7 @@ func _update_layout() -> void:
     var size := get_viewport().get_visible_rect().size
     var portrait := _viewport_is_portrait()
     var margin := 24.0 if portrait else 18.0
-    var compact := portrait and size.y < 1150.0
+    var compact := portrait and (size.y < 1150.0 or size.x < 500.0)
     var ui_scale := 0.73 if compact else 1.0
     var font_title := int(40 * ui_scale) if portrait else 25
     var font_state := int(27 * ui_scale) if portrait else 18
@@ -168,20 +175,22 @@ func _update_layout() -> void:
     grid.add_theme_constant_override("h_separation", 12 if portrait else 9)
     grid.add_theme_constant_override("v_separation", 12 if portrait else 9)
     for b in action_buttons:
-        b.add_theme_font_size_override("font_size", int(32 * ui_scale) if portrait else 17)
+        b.add_theme_font_size_override("font_size", int(28 * ui_scale) if portrait else 17)
         b.custom_minimum_size = Vector2(0, (62 if compact else 82) if portrait else 43)
         b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 
     if portrait:
-        hud_panel.position = Vector2(margin, 42)
-        hud_panel.custom_minimum_size = Vector2(size.x - margin * 2, 0)
-        action_panel.custom_minimum_size = Vector2(size.x - margin * 2, 0)
-        action_panel.position = Vector2(margin, maxf(0, size.y - (355 if compact else 455)))
+        var available_w: float = maxf(250.0, size.x - margin * 2.0)
+        hud_panel.custom_minimum_size = Vector2(available_w, 0.0)
+        action_panel.custom_minimum_size = Vector2(available_w, 0.0)
+        # Anchor actual panel bounds to the bottom even on short devices.
+        action_panel.position = Vector2(margin, maxf(0.0, size.y - action_panel.get_combined_minimum_size().y - margin))
+        hud_panel.position = Vector2(margin, 32.0 if compact else 42.0)
     else:
+        hud_panel.custom_minimum_size = Vector2(minf(size.x * 0.48, 510.0), 0.0)
+        action_panel.custom_minimum_size = Vector2(minf(size.x * 0.85, 990.0), 0.0)
         hud_panel.position = Vector2(margin, margin)
-        hud_panel.custom_minimum_size = Vector2(minf(size.x * 0.48, 510), 0)
-        action_panel.custom_minimum_size = Vector2(minf(size.x * 0.85, 990), 0)
-        action_panel.position = Vector2(margin, maxf(0, size.y - 150))
+        action_panel.position = Vector2(margin, maxf(0.0, size.y - action_panel.get_combined_minimum_size().y - margin))
     _update_view()
 
 func _start_mission() -> void:
