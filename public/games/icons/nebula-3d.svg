@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-label="nebula-3d">
+<defs><linearGradient id="surface" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#17264B"/><stop offset="1" stop-color="#070D16"/></linearGradient><radialGradient id="glow"><stop stop-color="#A9D8FF" stop-opacity=".24"/><stop offset="1" stop-color="#A9D8FF" stop-opacity="0"/></radialGradient></defs>
+<rect x="2" y="2" width="124" height="124" rx="25" fill="url(#surface)" stroke="#A9D8FF" stroke-opacity=".32" stroke-width="2"/>
+<circle cx="64" cy="58" r="57" fill="url(#glow)"/>
+<path d="M14 20h15M99 108h15" fill="none" stroke="#A9D8FF" stroke-width="1.5" opacity=".47"/>
+<g fill="none" stroke="#A9D8FF" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="64" cy="67" r="30" fill="#7B90FF" fill-opacity=".2"/><ellipse cx="64" cy="67" rx="51" ry="15" transform="rotate(-22 64 67)"/><path d="m64 29 8 21 22 7-22 6-8 22-7-22-22-6 22-7Z" fill="#A9D8FF" fill-opacity=".26"/><circle cx="99" cy="45" r="6" fill="#A9D8FF"/><path d="M95 101l11 8M27 27l7 8" opacity=".7"/></g>
+</svg>
