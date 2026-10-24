@@ -6,6 +6,11 @@ on:
       - 'godot/empire-omega/**'
       - 'nginx.conf'
       - 'public/_headers'
+      - 'scripts/preserve-omega-native.sh'
+      - 'scripts/omega-frontend-preservation.test.mjs'
+      - 'scripts/activate-frontend-remote.sh'
+      - 'scripts/deploy-omega-native-remote.sh'
+      - '.github/workflows/deploy-frontend.yml'
       - 'scripts/omega-cache-policy.contract.test.mjs'
       - 'scripts/omega-live-webgl.spec.mjs'
       - 'playwright.omega-live-webgl.config.mjs'
@@ -32,6 +37,10 @@ jobs:
           node-version: '22'
       - name: Verify mutable binary cache correctness and security contracts
         run: node --test scripts/omega-cache-policy.contract.test.mjs
+      - name: Prevent stale frontend from reverting attested Godot and check lock discipline
+        run: node --test scripts/omega-frontend-preservation.test.mjs
+      - name: Validate both real SSH release scripts
+        run: bash -n scripts/activate-frontend-remote.sh && bash -n scripts/deploy-omega-native-remote.sh && sh -n scripts/preserve-omega-native.sh
       - name: Validate real Nginx 1.27 configuration syntax in container
         run: |
           docker run --rm --mount "type=bind,src=$PWD/nginx.conf,dst=/etc/nginx/conf.d/default.conf,readonly" nginx:1.27-alpine nginx -t
