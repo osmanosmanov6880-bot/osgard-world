@@ -45,3 +45,12 @@ Software Chromium with SwiftShader validates behavior and framing but not physic
 - Visual review still identified a **portrait-only occlusion**: the caption overlapped/partially disappeared behind the top beam. Desktop caption was readable. W6.4 raises the portrait caption to 1.34 local units while leaving desktop placement at 0.82, without changing mission logic or camera targeting.
 - Candidate run `40109700192` validates this final caption adjustment. Do not merge or promote until the new screenshot has been inspected.
 - New `scripts/r135-pixel-composition-qa.py` gives a repeatable screenshot gate; W5 fails and the improved W6.3 reference passes. Pillow-based pixel checks are an auxiliary composition metric only, never proof of AAA rendering or hardware FPS.
+
+## W6.4 FINAL CANDIDATE — approved for code merge
+
+- GitHub Actions run `40109700192` completed **success** on engine snapshot `947b4627080636543ae5e873b88b50e61f13beb4`: Godot 4.4.1 native, desktop and Pixel emulation real Chromium gameplay, Nginx WASM and HTTP-206 byte ranges.
+- Immutable workflow artifact `12565818008` contains `OSGARD_R135_OPTIMIZED_WEB.zip`, `R135_OPTIMIZED_MANIFEST.json` and screenshots (retention 14 days).
+- Independently computed manifest SHA-256: `0638f1ad5c0ab26d2d112e63bd1759923e5401a85ad4f2cedd450bbb7def2f61`; version `r135-web-framing-w6-20261024`.
+- Visually inspected `w6-portrait-optical-active.png`: the active optical caption now appears **fully above** the metal rail; no right-edge clipping. The pixel-based gate passed (first blue-geometry structure at 26.25% height, sampled geometric coverage 28.82%). W5 begins at 41.05%.
+- The pass is **software WebGL and mobile emulation**, not physical-device FPS/thermals and not AAA art certification.
+- Code PR can merge safely with W5 production artifact pin unchanged. To publish W6, create a **separate promotion PR** that pins this verified artifact ID, source SHA and manifest digest; require candidate Nginx, local preflight and public SSH health checks with rollback. Do not use unverified latest artifacts.
