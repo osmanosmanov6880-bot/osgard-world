@@ -15,10 +15,10 @@ const browser = await chromium.launch({
 });
 // Playwright's compositor screenshots may stall under software WebGL, even
 // when the Godot canvas exists. Fall back to direct canvas readback, but only
-// count a substantial PNG as a visual capture. Never mark a blank as a pass.
+// count a substantial JPEG as a visual capture. Never mark a blank as a pass.
 async function captureWithFallback(page, destination, errors) {
   try {
-    await page.screenshot({ path: destination, timeout: 18000, animations: 'disabled' });
+    await page.screenshot({ path: destination, type: 'jpeg', quality: 70, timeout: 18000, animations: 'disabled' });
     if (fs.statSync(destination).size >= 12000) return 'compositor';
     errors.push('Compositor screenshot was too small to confirm a rendered frame');
   } catch (e) {
@@ -31,7 +31,7 @@ async function captureWithFallback(page, destination, errors) {
     try {
       const response = await Promise.race([
         cdp.send('Page.captureScreenshot', {
-          format: 'png', captureBeyondViewport: false, fromSurface: false
+          format: 'jpeg', quality: 70, captureBeyondViewport: false, fromSurface: false
         }),
         new Promise(resolve => setTimeout(() => resolve(null), 12000))
       ]);
@@ -55,12 +55,12 @@ async function captureWithFallback(page, destination, errors) {
     const image = await Promise.race([
       page.evaluate(() => {
         const canvas = document.querySelector('canvas');
-        return canvas ? canvas.toDataURL('image/png') : '';
+        return canvas ? canvas.toDataURL('image/jpeg', 0.72) : '';
       }),
       new Promise(resolve => setTimeout(() => resolve(''), 14000))
     ]);
-    if (image.startsWith('data:image/png;base64,')) {
-      const raw = Buffer.from(image.slice('data:image/png;base64,'.length), 'base64');
+    if (image.startsWith('data:image/jpeg;base64,')) {
+      const raw = Buffer.from(image.slice('data:image/jpeg;base64,'.length), 'base64');
       if (raw.length >= 12000) {
         fs.writeFileSync(destination, raw);
         return 'canvas-readback';
@@ -145,7 +145,7 @@ try {
     }
     const screenshots = {};
     screenshots.maximum = await captureWithFallback(
-      page, path.join(output, 'r11-' + tag + '-max.png'), errors);
+      page, path.join(output, 'r11-' + tag + '-max.jpg'), errors);
     if (screenshots.maximum === 'inconclusive') {
       result.scenes.push({ viewport: tag, ...detail,
         screenshot_status: screenshots, browser_console_errors: errors });
@@ -158,11 +158,11 @@ try {
     await page.keyboard.press('F3');
     await page.waitForTimeout(1500);
     screenshots.high = await captureWithFallback(
-      page, path.join(output, 'r11-' + tag + '-high.png'), errors);
+      page, path.join(output, 'r11-' + tag + '-high.jpg'), errors);
     await page.keyboard.press('F3');
     await page.waitForTimeout(1500);
     screenshots.eco = await captureWithFallback(
-      page, path.join(output, 'r11-' + tag + '-eco.png'), errors);
+      page, path.join(output, 'r11-' + tag + '-eco.jpg'), errors);
     if (vp.width === 1280) {
       await page.keyboard.press('F3');
       await page.keyboard.press('F7');
@@ -176,7 +176,7 @@ try {
         } catch (e) { errors.push('Bench JSON parsing: ' + String(e)); }
       }
       screenshots.profiler = await captureWithFallback(page,
-        path.join(output, 'r11-' + tag + '-profiler.png'), errors);
+        path.join(output, 'r11-' + tag + '-profiler.jpg'), errors);
     }
     result.scenes.push({
       viewport: tag, init_ms: Date.now() - started,
