@@ -213,14 +213,16 @@ func _r25_emit_browser_flight_state() -> void:
             state["r36_perf_visible"] = performance_lab_r11.overlay.visible
             state["r36_perf_active"] = performance_lab_r11.benchmarking
             state["r36_perf_report_ready"] = not performance_lab_r11.last_report.is_empty()
+            var fps_button: Button = performance_lab_r11.r36_launcher
+            var benchmark_button: Button = performance_lab_r11.r36_start_button
             state["r36_fps_button_x"] = (
-                performance_lab_r11.r36_launcher.offset_left + 35.0)
+                fps_button.global_position.x + fps_button.size.x * 0.5)
             state["r36_fps_button_y"] = (
-                performance_lab_r11.r36_launcher.offset_top + 15.0)
+                fps_button.global_position.y + fps_button.size.y * 0.5)
             state["r36_benchmark_button_x"] = (
-                performance_lab_r11.overlay.offset_left + 8.0 + 23.0)
+                benchmark_button.global_position.x + benchmark_button.size.x * 0.5)
             state["r36_benchmark_button_y"] = (
-                performance_lab_r11.overlay.offset_bottom - 6.0 - 14.0)
+                benchmark_button.global_position.y + benchmark_button.size.y * 0.5)
         state["qa_visuals_trimmed"] = r33_swiftshader_qa_visuals_trimmed
         state["touch_last_x"] = r21_touch.r31_last_touch_position.x
         state["touch_last_y"] = r21_touch.r31_last_touch_position.y
