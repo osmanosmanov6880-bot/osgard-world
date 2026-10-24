@@ -10,9 +10,9 @@ var stripe_material: StandardMaterial3D
 var copper_material: StandardMaterial3D
 
 func configure() -> void:
-    var stage_mat: StandardMaterial3D = _surface(Color(0.040, 0.050, 0.060), 0.26, 0.79)
-    var wall_mat: StandardMaterial3D = _surface(Color(0.026, 0.036, 0.047), 0.18, 0.87)
-    var frame_mat: StandardMaterial3D = _surface(Color(0.10, 0.13, 0.15), 0.56, 0.52)
+    var stage_mat: StandardMaterial3D = _surface(Color(0.085, 0.098, 0.115), 0.20, 0.83)
+    var wall_mat: StandardMaterial3D = _surface(Color(0.065, 0.078, 0.094), 0.12, 0.90)
+    var frame_mat: StandardMaterial3D = _surface(Color(0.14, 0.17, 0.19), 0.40, 0.62)
     stripe_material = _surface(Color(0.20, 0.28, 0.31), 0.38, 0.74)
     copper_material = _surface(Color(0.48, 0.24, 0.115), 0.42, 0.57, true)
 
