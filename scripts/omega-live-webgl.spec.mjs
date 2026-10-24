@@ -17,16 +17,44 @@ test('authentic released Godot runs WebGL2, paints scene, handles real keyboard/
     if(message.type()==='error'||message.type()==='warning')
       logs.push(`${message.type()}: ${message.text()}`)
   })
-  const manifestResponse=await request.get(GAME+'release.json',{timeout:30000})
+  const nonce=`omega_browser_${Date.now()}_${testInfo.project.name}`
+  // Record the user-visible CDN version separately: a stale unversioned
+  // manifest was ACTUALLY seen after the successful R10 SSH deployment.
+  const ordinary=await request.get(GAME+'release.json',{timeout:30000})
+  expect(ordinary.status()).toBe(200)
+  const ordinaryManifest=await ordinary.json()
+  const manifestResponse=await request.get(GAME+'release.json?omega_verify='+nonce,{
+    timeout:30000,headers:{'Cache-Control':'no-cache','Pragma':'no-cache'}
+  })
   expect(manifestResponse.status()).toBe(200)
   const live=await manifestResponse.json()
+  await testInfo.attach('godot-public-cdn-version.json',{
+    body:Buffer.from(JSON.stringify({
+      normal_source:ordinaryManifest.source_commit,
+      fresh_source:live.source_commit,
+      expected:RELEASE.source_commit,
+      normal_cache_control:ordinary.headers()['cache-control']||null,
+      normal_cf_cache_status:ordinary.headers()['cf-cache-status']||null,
+      normal_age:ordinary.headers().age||null,
+      normal_stale:ordinaryManifest.source_commit!==live.source_commit
+    },null,2)),contentType:'application/json'
+  })
   expect(live.engine).toBe('Godot 4.4.1')
   expect(live.artifact_kind).toBe('native-Godot-HTML5-export')
   expect(live.native_tests).toBe('passed')
   expect(live.source_commit).toBe(RELEASE.source_commit)
   expect(live.files).toEqual(RELEASE.files)
 
-  const response=await page.goto(GAME,{waitUntil:'domcontentloaded',timeout:45000})
+  // Until mutable CDN caching is corrected, explicit cache-busted URLs
+  // verify the EXACT release rather than silently running the older R9.
+  await page.route('**/games/omega-3d-preview/*',async route=>{
+    const asset=new URL(route.request().url())
+    asset.searchParams.set('omega_verify',nonce)
+    await route.continue({url:asset.toString()})
+  })
+  const response=await page.goto(GAME+'?omega_verify='+nonce,{
+    waitUntil:'domcontentloaded',timeout:45000
+  })
   expect(response?.status()).toBe(200)
   await expect(page.locator('#canvas')).toBeVisible()
   // Godot's original page removes #status ONLY after engine.startGame()
