@@ -14,11 +14,13 @@ const OsgardQuickNav = lazy(() => import('./OsgardQuickNav'))
 const OsgardFooter = lazy(() => import('./OsgardFooter'))
 
 const readMotion = () => { try { return localStorage.getItem('osgard:motion') !== 'off' } catch { return true } }
+const readOSALocale = (): 'ru' | 'en' => { try { return localStorage.getItem('osa:locale') === 'en' ? 'en' : 'ru' } catch { return 'ru' } }
 const productHomes = { world: '/', intelligence: '/intelligence', play: '/play' }
 const productNames = { world: 'OSGARD WORLD', intelligence: 'OSA Intelligence', play: 'OSGARD PLAY' }
 const globalLinks = [['OSGARD', '/'], ['Intelligence', '/intelligence'], ['Play', '/play'], ['Development', '/development']] as const
 export function BrandShell({ theme, children }: { theme: ProductTheme; children: ReactNode }) {
   const [motion, setMotion] = useState(readMotion)
+  const [osaLocale, setOSALocale] = useState(readOSALocale)
   const [reduced, setReduced] = useState(false)
   const [quickOpen, setQuickOpen] = useState(false)
   const quickTrigger = useRef<HTMLButtonElement>(null)
@@ -35,15 +37,24 @@ export function BrandShell({ theme, children }: { theme: ProductTheme; children:
     ? [['Продукты', worldBase + '#products'], ['Кейсы', worldBase + '#cases'], ['Подход', worldBase + '#approach'], ['О компании', worldBase + '#about'], ['Контакт', worldBase + '#contact']]
     : product === 'intelligence'
       ? path === '/intelligence'
-        ? [['Проверка', '/intelligence#proof-card'], ['Уроки', '/lectures'], ['Мой прогресс', '/learning']]
-        : [['Метод', '/intelligence#method'], ['Демонстрация', '/intelligence#demo'], ['Программа', '/learning/program'], ['Лекции', '/lectures'], ['Мой прогресс', '/learning'], ['Практика', '/learning/campus']]
+        ? osaLocale === 'en' ? [['Review', '/intelligence#proof-card'], ['Lessons', '/lectures'], ['My progress', '/learning']] : [['Проверка', '/intelligence#proof-card'], ['Уроки', '/lectures'], ['Мой прогресс', '/learning']]
+        : osaLocale === 'en' ? [['Method', '/intelligence#method'], ['Demo', '/intelligence#demo'], ['Programme', '/learning/program'], ['Lectures', '/lectures'], ['My progress', '/learning'], ['Practice', '/learning/campus']] : [['Метод', '/intelligence#method'], ['Демонстрация', '/intelligence#demo'], ['Программа', '/learning/program'], ['Лекции', '/lectures'], ['Мой прогресс', '/learning'], ['Практика', '/learning/campus']]
       : [['Миры', '/play#catalog'], ['Избранное', '/play?view=favorites#catalog'], ['Недавние', '/play?view=recent#catalog'], ['Партнёрам', '/play/partners']]
 
   useEffect(() => {
     document.documentElement.dataset.product = theme
-    document.documentElement.lang = 'ru'
+    document.documentElement.lang = product === 'intelligence' ? osaLocale : 'ru'
     return () => { delete document.documentElement.dataset.product }
-  }, [theme])
+  }, [theme, product, osaLocale])
+  useEffect(() => {
+    const syncLocale = () => setOSALocale(readOSALocale())
+    window.addEventListener('osgard:locale-change', syncLocale)
+    window.addEventListener('storage', syncLocale)
+    return () => {
+      window.removeEventListener('osgard:locale-change', syncLocale)
+      window.removeEventListener('storage', syncLocale)
+    }
+  }, [])
   useEffect(() => {
     document.documentElement.dataset.motion = motion ? 'on' : 'off'
     if (!motion) document.querySelector('.osgard-portal-transition')?.remove()
@@ -96,7 +107,7 @@ export function BrandShell({ theme, children }: { theme: ProductTheme; children:
   }
 
   return <div className={`brand-system theme-${theme}${theme === 'play' && (path === '/play' || path === '/games' || path === '/entertainment') ? ' play-catalog-shell' : ''}`}>
-    <a className="brand-skip" href="#product-main">Перейти к содержанию</a>
+    <a className="brand-skip" href="#product-main">{product === 'intelligence' && osaLocale === 'en' ? 'Skip to content' : 'Перейти к содержанию'}</a>
     <header className="brand-header">
       <a href={productHomes[product]} aria-label={productNames[product]}><BrandLockup theme={product} /></a>
       <nav aria-label="Продукты OSGARD" className="brand-global-nav">
@@ -104,7 +115,7 @@ export function BrandShell({ theme, children }: { theme: ProductTheme; children:
       </nav>
       <button type="button" ref={quickTrigger} className="brand-quick-trigger" aria-haspopup="dialog" aria-expanded={quickOpen}
         aria-keyshortcuts="Control+K Meta+K" aria-label="Быстрый переход по разделам OSGARD" onClick={() => quickOpen ? closeQuickNav() : setQuickOpen(true)}>
-        <span aria-hidden="true" className="brand-quick-symbol">⌕</span><span className="brand-quick-label">Разделы</span><kbd>⌘K</kbd>
+        <span aria-hidden="true" className="brand-quick-symbol">⌕</span><span className="brand-quick-label">{product === 'intelligence' && osaLocale === 'en' ? 'Sections' : 'Разделы'}</span><kbd>⌘K</kbd>
       </button>
       <button type="button" className="brand-motion" aria-pressed={reduced || !motion} disabled={reduced}
         aria-label="Меньше движения" title={reduced ? 'Уменьшение движения включено в настройках устройства' : 'Отключить необязательную анимацию'} onClick={toggleMotion}>
@@ -113,7 +124,7 @@ export function BrandShell({ theme, children }: { theme: ProductTheme; children:
       </button>
     </header>
     <div className="brand-local-bar">
-      <span>{product === 'world' ? development ? 'Development / Разработка продуктов' : 'OSGARD WORLD / Цифровая студия' : product === 'intelligence' ? 'OSA / Понять. Проверить. Решить.' : 'OSGARD PLAY / Игровые миры'}</span>
+      <span>{product === 'world' ? development ? 'Development / Разработка продуктов' : 'OSGARD WORLD / Цифровая студия' : product === 'intelligence' ? osaLocale === 'en' ? 'OSA / Understand. Verify. Decide.' : 'OSA / Понять. Проверить. Решить.' : 'OSGARD PLAY / Игровые миры'}</span>
       <nav aria-label="Навигация раздела">
         {local.map(([name, href]) => <a key={name} href={href} aria-current={localState(href)}>{name}</a>)}
       </nav>

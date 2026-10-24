@@ -65,7 +65,7 @@ const copy = {
     path: [
       ['OSA Original', 'Интерактивные сцены: исследуйте вопрос и разбирайте последствия выбора.', 'Войти в первую сцену'],
       ['Академия', 'Учебные маршруты, упражнения и практика над собственной задачей.', 'Открыть Академию'],
-      ['Каталог лекций', 'тем с учебным материалом, самопроверкой и первоисточниками.', 'Выбрать лекцию'],
+      ['Каталог лекций', ' тем с учебным материалом, самопроверкой и первоисточниками.', 'Выбрать лекцию'],
     ],
     trustLabel: '04 / ПРИНЦИПЫ ДОВЕРИЯ', trustA: 'Источники видны.', trustB: 'Ограничения названы.',
     trustTextA: 'У каждого урока есть цель, практика и ссылки на источники. Самопроверка помогает увидеть пробелы; профессиональную квалификацию она не подтверждает.',
@@ -195,7 +195,7 @@ export default function IntelligenceHome() {
       <div className="intelligence-command-copy">
         <div className="intelligence-language-row">
           <p className="brand-eyebrow intelligence-command-eyebrow">{t.eyebrow}</p>
-          <button className="intelligence-language-toggle" type="button" onClick={changeLocale} aria-label={t.langLabel}>
+          <button className="intelligence-language-toggle" type="button" onClick={() => { changeLocale(); window.dispatchEvent(new Event('osgard:locale-change')) }} aria-label={t.langLabel}>
             <Globe2 size={15} aria-hidden="true" /> {t.lang}
           </button>
         </div>
@@ -221,7 +221,7 @@ export default function IntelligenceHome() {
         </div>
         <section id="proof-card" className="intelligence-proof-console" aria-labelledby="intelligence-proof-title" tabIndex={-1}>
           <div className="intelligence-proof-topbar">
-            <span>OSA / EVIDENCE LAB</span>
+            <span>{t.lab}</span>
             <span><i aria-hidden="true" />{t.example}</span>
           </div>
           <p className="intelligence-proof-eyebrow">{t.practice}</p>

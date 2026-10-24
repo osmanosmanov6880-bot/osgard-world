@@ -336,6 +336,7 @@ html[data-motion=off] .intelligence-command .intelligence-command-actions .brand
 .theme-intelligence .intelligence-command .intelligence-proof-console{border-color:#77404d;background:linear-gradient(145deg,#111d30f5,#081322f8 58%,#050c17fc)}
 .theme-intelligence .intelligence-command .intelligence-proof-claim.is-selected{border-color:#b84455;background:linear-gradient(100deg,#431b28,#101a2a 78%)}
 .theme-intelligence .intelligence-command .intelligence-proof-marker,.theme-intelligence .intelligence-command .brand-status{color:#e07886}
-.theme-intelligence .intelligence-command .intelligence-proof-summary a,.theme-intelligence .intelligence-command .brand-text-link{color:#e07785}
+ .theme-intelligence .intelligence-command .intelligence-proof-summary>a{color:#071827!important}
+.theme-intelligence .intelligence-command .brand-text-link{color:#e07785}
 @media(max-width:620px){.theme-intelligence .intelligence-command .intelligence-language-row{align-items:flex-start}.theme-intelligence .intelligence-language-toggle{flex:none}}
 @media(prefers-reduced-motion:reduce){.theme-intelligence .intelligence-language-toggle{transition:none}}
