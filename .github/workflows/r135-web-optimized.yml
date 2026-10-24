@@ -2,7 +2,7 @@ name: OSGARD R135 optimized web candidate
 
 on:
   push:
-    branches: [feat/r135-mission-control-20261024, feat/r135-wasm-streaming-20261024, feat/r135-diagnostics-w4-20261024, feat/r135-w5-visual-diagnostics-20261024, feat/r135-w6-portrait-target-framing-20261024, feat/r135-w7-studio-lighting-batched-stage-20261024, feat/r135-w8-responsive-hud-matrix-20261024, feat/r135-w9-guided-diagnostics-progress-20261024, feat/r135-w10-release-evidence-qa-20261024, feat/r135-w7-w10-integrated-20261024, master]
+    branches: [feat/r135-mission-control-20261024, feat/r135-wasm-streaming-20261024, feat/r135-diagnostics-w4-20261024, feat/r135-w5-visual-diagnostics-20261024, feat/r135-w6-portrait-target-framing-20261024, feat/r135-w7-studio-lighting-batched-stage-20261024, feat/r135-w8-responsive-hud-matrix-20261024, feat/r135-w9-guided-diagnostics-progress-20261024, feat/r135-w10-release-evidence-qa-20261024, feat/r135-w7-w10-integrated-20261024, fix/r135-w10-first-frame-hud-height-20261024, master]
     paths:
       - ".github/workflows/r135-web-optimized.yml"
       - "godot/osgard-r135-standalone/**"
@@ -130,7 +130,7 @@ jobs:
           output=Path(os.environ['RUNNER_TEMP'])/'r135-optimized-release'
           output.mkdir(exist_ok=True)
           files=sorted(p for p in root.iterdir() if p.is_file())
-          manifest={'version':'r135-web-release-qa-w10-20261024','engine':'Godot 4.4.1',
+          manifest={'version':'r135-web-release-qa-w10-1-20261024','engine':'Godot 4.4.1',
                     'source_commit':os.environ['GITHUB_SHA'],
                     'game':'OSGARD R135 Service Spine','native_tests':'passed',
                     'webgl_browser_software_smoke':'passed',
@@ -158,7 +158,7 @@ jobs:
             --archive "$RUNNER_TEMP/r135-optimized-release/OSGARD_R135_OPTIMIZED_WEB.zip" \
             --manifest "$RUNNER_TEMP/r135-optimized-release/R135_OPTIMIZED_MANIFEST.json" \
             --portrait "$RUNNER_TEMP/r135-screens/w6-portrait-optical-active.png" \
-            --expected-version r135-web-release-qa-w10-20261024 \
+            --expected-version r135-web-release-qa-w10-1-20261024 \
             --expected-source "$GITHUB_SHA" \
             --output "$RUNNER_TEMP/r135-w10-release-evidence.json"
 
@@ -166,7 +166,7 @@ jobs:
         shell: bash
         env:
           OSGARD_EXPECTED_R135_SOURCE: ${{ github.sha }}
-          OSGARD_EXPECTED_R135_VERSION: r135-web-release-qa-w10-20261024
+          OSGARD_EXPECTED_R135_VERSION: r135-web-release-qa-w10-1-20261024
         run: |
           set -euo pipefail
           export OSGARD_EXPECTED_R135_MANIFEST_SHA256="$(sha256sum "$RUNNER_TEMP/r135-optimized/release.json" | awk '{print $1}')"
