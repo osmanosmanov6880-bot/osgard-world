@@ -150,7 +150,7 @@ try {
     const started = Date.now();
     await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 45000 });
     await page.locator('canvas').first().waitFor({ state: 'visible', timeout: 65000 });
-    await page.waitForTimeout(10000); // GL init, WebAssembly load, first scene draw
+    await page.waitForTimeout(45000); // let SwiftShader finish a stable first game frame
     const detail = await page.evaluate(() => {
       const canvas = document.querySelector('canvas');
       const probe = document.createElement('canvas');
