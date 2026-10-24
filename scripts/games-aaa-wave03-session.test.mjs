@@ -46,7 +46,7 @@ test('all 22 worlds have truthful runtime instructions and WAVE 03 stays in-revi
  const source=readFileSync('public/games/player-experience.mjs','utf8')
  const css=readFileSync('public/games/player-experience.css','utf8')
  assert.equal(data.games.length,22)
- assert.equal(data.waves.find(w=>w.id==='03')?.state,'in_review')
+ assert.ok(['in_review','completed'].includes(data.waves.find(w=>w.id==='03')?.state),'WAVE 03 may be in review or completed after verified publication')
  const clean=s=>s.replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim()
  for(const game of data.games){
   const article=html.match(new RegExp('<article\\b[^>]*data-game="'+game.id+'"[^>]*>([\\s\\S]*?)<\\/article>'))?.[1]
