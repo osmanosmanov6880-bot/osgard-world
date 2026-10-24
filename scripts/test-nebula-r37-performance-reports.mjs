@@ -52,8 +52,9 @@ const csv=makeCSV([normal,hostile]);
 assert.ok(csv.startsWith('"Устройство","Размер","Файл","Профиль"'));
 assert.ok(csv.includes('"\'=HYPERLINK'),'CSV formula injection must be escaped');
 assert.ok(!csv.includes('\n.csv'),'CSV line breaks must be sanitized');
+let syntheticTimestamp=1790000000;
 const phone=(fps,p95,filename='trial.json',device='Android QA')=>
-  parseReport(report({avg_fps:fps,p95_frame_ms:p95}),filename,device);
+  parseReport(report({date_unix:++syntheticTimestamp,avg_fps:fps,p95_frame_ms:p95}),filename,device);
 const stable=summarizeRuns([phone(48,24),phone(50,22),phone(52,23)]);
 assert.equal(stable.length,1);
 assert.equal(stable[0].valid,3);
@@ -73,7 +74,15 @@ const invalid=summarizeRuns([phone(51,22),phone(52,22),
   parseReport(report({adapter_reported:'SwiftShader'}),'fake.json','Android QA')]);
 assert.equal(invalid[0].valid,2);
 assert.equal(invalid[0].status,'НЕ ХВАТАЕТ ДАННЫХ');
-const noSize=summarizeRuns([parseReport(report({resolution_width:null}),'x','Android QA')]);
+const original=phone(50,22,'origin.json');
+const duplicates=summarizeRuns([original,original,original]);
+assert.equal(duplicates[0].total,3);
+assert.equal(duplicates[0].valid,1);
+assert.equal(duplicates[0].duplicates,2);
+assert.equal(duplicates[0].status,'НЕ ХВАТАЕТ ДАННЫХ');
+const noStamp=summarizeRuns([parseReport(report({date_unix:null}),'x','Android QA')]);
+assert.equal(noStamp[0].valid,0);
+const noSize=summarizeRuns([parseReport(report({date_unix:1790000009,resolution_width:null}),'x','Android QA')]);
 assert.equal(noSize[0].valid,0);
 assert.ok(makeCSV([phone(49,22,'ok','=CMD()')]).includes('"\'=CMD()"'));
 console.log('NEBULA_R39_REPEATABILITY_QA_SUCCESS synthetic_groups=6 real_hardware_claims=0');
