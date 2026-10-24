@@ -14,7 +14,8 @@ if (!page.includes('index.js') || !page.includes('<canvas')) fail('React fallbac
 const manifestResponse = await fetch(probe('release.json?verify=' + Date.now()), options)
 if (!manifestResponse.ok) fail('missing release manifest: ' + manifestResponse.status)
 const manifest = await manifestResponse.json()
-if (manifest.version !== 'r135-web-diagnostics-w4-20261024') fail('wrong R135 release version')
+if (manifest.version !== 'r135-web-visual-diagnostics-w5-20261024') fail('wrong R135 release version')
+if (manifest.source_commit !== '668e42716aaefb0c45eb5347abe9355437dc4b69') fail('wrong W5 source commit')
 const files = manifest.files
 const pckBytes = Number(manifest.optimized_pck_bytes)
 if (pckBytes < 10_000_000 || pckBytes >= 100_000_000) fail('PCK size outside approved budget')
