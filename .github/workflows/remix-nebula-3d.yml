@@ -179,8 +179,24 @@ jobs:
           git add -f public/games/remix/arena-v2/nebula-3d/
           if ! git diff --cached --quiet; then
             git commit -m "build(remix3d): native-tested Godot 4.7.2 Web export"
-            git pull --rebase origin master
-            git push origin HEAD:master
+            # Another site release may update master after checkout.
+            # Retry a non-force push against the latest remote state.
+            # Preserve unrelated commits and the verified Godot export.
+            pushed=0
+            for attempt in 1 2 3 4 5; do
+              git fetch origin master
+              git rebase origin/master
+              if git push origin HEAD:master; then
+                pushed=1
+                break
+              fi
+              echo "NEBULA_EXPORT_PUSH_RETRY=$attempt"
+              sleep "$((attempt * 2))"
+            done
+            if [ "$pushed" -ne 1 ]; then
+              echo "NEBULA_ERROR=concurrent-master-update-after-five-safe-retries" >> "$GITHUB_ENV"
+              exit 1
+            fi
           fi
       - name: Dispatch existing isolated production SSH release
         if: github.event_name != 'pull_request'
