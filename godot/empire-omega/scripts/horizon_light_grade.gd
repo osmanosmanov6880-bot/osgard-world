@@ -40,12 +40,12 @@ static func apply_to(env: Environment, sun: DirectionalLight3D, sky: ProceduralS
 	sky.sky_top_color = sky_top(valid_kind)
 	sky.sky_horizon_color = sky_horizon(valid_kind)
 	env.adjustment_enabled = true
-	env.adjustment_brightness = 0.90
-	env.adjustment_contrast = 1.06
-	env.adjustment_saturation = 0.94
-	env.ambient_light_energy = clampf(0.50+0.26*safe_brightness,0.5,0.85)
+	env.adjustment_brightness = 0.97
+	env.adjustment_contrast = 1.04
+	env.adjustment_saturation = 0.97
+	env.ambient_light_energy = clampf(0.62+0.28*safe_brightness,0.62,0.98)
 	env.fog_enabled = tier != "low"
 	env.fog_density = fog_density(valid_kind,tier)
 	env.fog_light_color = Color("758b98") if valid_kind == "storm" else Color("a5b5bd")
 	sun.light_color = Color("e2e8ea") if valid_kind == "storm" else (Color("edf0ec") if valid_kind == "rain" or valid_kind == "cloudy" else Color("ffe1bb"))
-	sun.light_energy = clampf(safe_brightness*0.93*sun_multiplier(valid_kind),0.30,1.10)
+	sun.light_energy = clampf(safe_brightness*1.02*sun_multiplier(valid_kind),0.30,1.10)
