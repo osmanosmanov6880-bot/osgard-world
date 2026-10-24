@@ -31,3 +31,10 @@ jobs:
       - name: Legacy real playable car must still pass
         run: |
           timeout --signal=TERM --kill-after=5s 80s godot --headless --path godot/empire-omega --script res://tests/v34_real_touch_drive.gd
+      - name: Upload experimental spring force and driving metrics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: horizon-r24-physics-measurements
+          path: godot/empire-omega/tests/r24-force-metrics.json
+          if-no-files-found: warn
