@@ -434,7 +434,7 @@ click('start')
 const ghostDraws = canvasState.ghostDraws
 pump(15)
 assert.ok(canvasState.ghostDraws > ghostDraws, 'The real Canvas must draw saved ghost during a later attempt')
-assert.match(node('ghost-pace').textContent, /^[+-]?\\d+ X$/, 'Ghost race shows player progress against past run')
+assert.match(node('ghost-pace').textContent, /^[+-]?\d+ X$/, 'Ghost race shows player progress against past run')
 click('ghost')
 assert.equal(ghostButton.attributes['aria-pressed'], 'false')
 assert.equal(ghostButton.textContent, 'GHOST / OFF')
