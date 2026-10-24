@@ -313,7 +313,8 @@ func _physics_process(delta: float) -> void:
 		touch_controls.set_mode(driving,blocked)
 	var focus: Vector3 = car.global_position+Vector3(0,2.0,0) if driving else player.global_position+Vector3(0,2.3,0)
 	if driving and (Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED or DisplayServer.is_touchscreen_available()):
-		cam_yaw = lerp_angle(cam_yaw,car.rotation.y,clampf(delta*0.35,0.0,1.0))
+		var phone_view: bool = SAFE_CAMERA.portrait(get_viewport().get_visible_rect().size)
+		cam_yaw = lerp_angle(cam_yaw,car.rotation.y,clampf(delta*SAFE_CAMERA.follow_rate(car.speed,phone_view),0.0,1.0))
 	var pads: Array[int] = Input.get_connected_joypads()
 	if not pads.is_empty() and Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED:
 		var joystick_x: float = Input.get_joy_axis(pads[0],JOY_AXIS_RIGHT_X)
