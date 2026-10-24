@@ -72,3 +72,36 @@ static func solve(focus: Vector3, ideal: Vector3, previous: Vector3,
 		next = focus + direction * MIN_VIEW_DISTANCE
 	var blocked: bool = not first.is_empty() or not second.is_empty()
 	return {"position":next,"occluded":blocked,"distance":focus.distance_to(next)}
+
+## HORIZON R20: composition and motion control, with no physics authority.
+## Give the road a little more screen room at speed without making the car
+## disappear from the tall-phone viewport. The lookahead is capped in metres.
+static func look_ahead_focus(vehicle_position: Vector3, heading: float,
+		speed: float, yaw_rate: float, viewport: Vector2, reduced_motion: bool) -> Vector3:
+	var base: Vector3 = vehicle_position + Vector3(0.0,2.0,0.0)
+	if not base.is_finite() or not is_finite(heading) or not is_finite(speed) or not is_finite(yaw_rate):
+		return base if base.is_finite() else Vector3(0.0,2.0,0.0)
+	if reduced_motion:
+		return base
+	var ahead: float = clampf((absf(speed)-5.0)*0.060,0.0,1.40)
+	if portrait(viewport):
+		ahead *= 0.75
+	var lateral: float = clampf(yaw_rate*absf(speed)*0.030,-0.45,0.45)
+	var forward: Vector3 = Vector3(-sin(heading),0.0,-cos(heading))
+	var right: Vector3 = Vector3(cos(heading),0.0,-sin(heading))
+	return base + forward*ahead + right*lateral
+
+static func target_fov(speed: float, driving: bool, portrait_mode: bool,
+		reduced_motion: bool) -> float:
+	if not driving or reduced_motion:
+		return 76.0
+	var safe_speed: float = absf(speed) if is_finite(speed) else 0.0
+	var base: float = 75.0 if portrait_mode else 77.0
+	# Earlier chase view reached 88 degrees and exaggerated peripheral motion.
+	# Keep a restrained speed cue without a fish-eye view or motion sickness.
+	return clampf(base+minf(safe_speed*0.20,6.0),75.0,83.0)
+
+static func time_alpha(response: float, dt: float) -> float:
+	if not is_finite(response) or not is_finite(dt) or dt <= 0.0:
+		return 0.0
+	return 1.0-exp(-clampf(dt,0.0,0.10)*clampf(response,0.0,25.0))
