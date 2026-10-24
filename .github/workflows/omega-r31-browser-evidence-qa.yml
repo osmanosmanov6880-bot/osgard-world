@@ -36,7 +36,7 @@ jobs:
           assert 'waitForExactPublishedRelease(' in live
           assert 'expect(live.source_commit).toBe(RELEASE.source_commit)' in live
           assert 'expect(live.files).toEqual(RELEASE.files)' in live
-          assert 'actual rendered world pixels' in live
+          assert 'centralSceneMotion(' in live
           assert 'captureAnimatedWebGLViewport(page)' in pixel
           assert 'measureRealScenePng(png)' in pixel
           assert 'proof.activeFraction' in pixel
