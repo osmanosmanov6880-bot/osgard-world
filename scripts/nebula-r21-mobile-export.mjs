@@ -66,6 +66,7 @@ const pilotScript = `
     Space:512
   };
   window.__nebulaPilotMask = 0;
+  window.__nebulaKeyDebug = {downs:0, ups:0, lastCode:'', lastTarget:'', blurCount:0};
   const wantsTyping = (event) => {
     const el = event.target;
     return el && (el.isContentEditable ||
@@ -75,6 +76,10 @@ const pilotScript = `
     if (wantsTyping(event)) return;
     const bit = bits[event.code];
     if (!bit) return;
+    if (pressed) window.__nebulaKeyDebug.downs++;
+    else window.__nebulaKeyDebug.ups++;
+    window.__nebulaKeyDebug.lastCode = event.code;
+    window.__nebulaKeyDebug.lastTarget = event.target?.tagName || 'unknown';
     if (pressed) window.__nebulaPilotMask |= bit;
     else window.__nebulaPilotMask &= ~bit;
     // Prevent WASD and the space bar moving the web page instead of the ship.
@@ -85,15 +90,23 @@ const pilotScript = `
   };
   window.addEventListener('keydown', (e) => onKey(e,true), {capture:true});
   window.addEventListener('keyup', (e) => onKey(e,false), {capture:true});
-  window.addEventListener('blur', () => { window.__nebulaPilotMask = 0; });
+  window.addEventListener('blur', () => {
+    window.__nebulaKeyDebug.blurCount++;
+    window.__nebulaPilotMask = 0;
+  });
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) window.__nebulaPilotMask = 0;
   });
 })();
 </script>`;
 if (!html.includes('nebula-r23-physical-keyboard')) {
-  if (!html.includes('</body>')) throw new Error('Godot HTML body missing');
-  html = html.replace('</body>', pilotScript + '\n</body>');
+  // The previous bridge was added at </body>, *after* index.js registered
+  // Godot/engine keyboard listeners. If those capture/stop the event first,
+  // even a window-level handler added later never sees W on the Web canvas.
+  // Install before the first Godot script while the parser is still in head.
+  const openHead = html.match(/<head(?:\\s[^>]*)?>/i);
+  if (!openHead) throw new Error('Godot HTML head missing');
+  html = html.replace(openHead[0],openHead[0] + '\n' + pilotScript);
 }
 if (!html.includes('nebula-r22-keyboard-focus')) {
   if (!html.includes('</body>')) throw new Error('Godot export body missing');
@@ -102,7 +115,9 @@ if (!html.includes('nebula-r22-keyboard-focus')) {
 if (!html.includes('touch-action:none') ||
     !html.includes('viewport-fit=cover') ||
     !html.includes('nebula-r22-keyboard-focus') ||
-    !html.includes('nebula-r23-physical-keyboard')) {
+    !html.includes('nebula-r23-physical-keyboard') ||
+    !html.includes('nebulaKeyDebug') ||
+    html.indexOf('nebula-r23-physical-keyboard') > html.indexOf('</head>')) {
   throw new Error('R21 mobile CSS or responsive viewport not installed');
 }
 fs.writeFileSync(file,html);
