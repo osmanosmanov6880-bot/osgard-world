@@ -23,6 +23,17 @@ func _run() -> void:
     if rig == null:
         _fail("R135ServiceSpine controller missing")
         return
+    var studio: Node = instance.get_node_or_null("R135StudioEnvironment")
+    if studio == null:
+        _fail("W7 premium batched stage missing")
+        return
+    var stage_budget: Dictionary = studio.call("render_budget")
+    if int(stage_budget.get("grid_draw_batches", -1)) != 2 or int(stage_budget.get("grid_instances", -1)) != 18:
+        _fail("W7 floor must use two draw batches for all 18 grid strips")
+        return
+    if int(stage_budget.get("single_mesh_nodes", 99)) > 8 or not bool(stage_budget.get("visual_only", false)):
+        _fail("W7 premium environment exceeds simple geometry budget")
+        return
     var first: Dictionary = rig.call("summary")
     if int(first.get("loading_failures", 0)) != 0 or int(first.get("load_count", 0)) < 1:
         _fail("ECO mesh did not load: " + str(first))
@@ -176,6 +187,11 @@ func _run() -> void:
         return
     # W5: three in-world indicators, one linked to actual moving optical head.
     var indicators: Node = rig.get_node_or_null("R135SimulatedFaultIndicators")
+    rig.call("set_reduced_motion", true)
+    if indicators == null or not bool(indicators.get("reduced_motion")):
+        _fail("W7 accessibility setting did not reach active fault renderer")
+        return
+    rig.call("set_reduced_motion", false)
     if indicators == null or indicators.get_child_count() != 2:
         _fail("W5 world fault indicator scene is missing")
         return
@@ -225,5 +241,15 @@ func _run() -> void:
             return
         if expected_fault == 1:
             instance.call("_start_challenge")
-    print("R135 SMOKE PASS: original 3D, training mission, 3 diagnostic faults, safety interlocks, gated hatch, camera scan, scoring, 8 buttons")
+    var completed_learning: Dictionary = rig.call("summary")
+    if int(completed_learning.get("cleared_case_count", -1)) != 3:
+        _fail("W9 lesson progress must record three distinct simulated cases")
+        return
+    if int(completed_learning.get("challenge_error_penalty", -1)) != 12 * int(completed_learning.get("challenge_errors", -2)):
+        _fail("W9 diagnosis penalty explanation must match recorded errors")
+        return
+    if not str(completed_learning.get("challenge_evidence", "")).contains("(SIM)"):
+        _fail("W9 evidence must explicitly be marked simulation-only")
+        return
+    print("R135 SMOKE PASS: original 3D, three lessons, diagnostic scoring, safety interlocks, camera scan, 8 buttons")
     quit(0)

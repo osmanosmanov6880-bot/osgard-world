@@ -166,14 +166,54 @@ async function touchDiagnostics(page) {
   await tapSceneButton(page, 5) // Restart drive
   await expectState(page, x => x?.challenge_completed && x?.challenge_score > 0 &&
     x?.challenge_best_score > 0 && x?.motion_enabled
-    && x?.fault_visual_state === 'cleared', 'Touch W5 diagnostic did not complete')
+    && x?.fault_visual_state === 'cleared'
+    && x?.cleared_case_count >= 1
+    && String(x?.challenge_evidence || '').includes('(SIM)'),
+    'Touch W9 simulated case did not record the learning result')
+}
+
+async function verifyAdaptiveHud(page) {
+  const original = page.viewportSize()
+  for (const [width, height, mode] of [
+    [360, 780, 'portrait'],
+    [430, 932, 'portrait'],
+    [932, 430, 'landscape'],
+  ]) {
+    await page.setViewportSize({ width, height })
+    const state = await expectState(page, x => x?.scene_ready && x?.hud_layout_mode === mode
+      && Math.abs(x.viewport_w / x.viewport_h - width / height) < .012
+      && x?.button_centers?.length === 8 && x?.hud_rect && x?.action_rect,
+      'W8 Godot responsive layout update missing for ' + width + 'x' + height, 25_000)
+    const visible = rect => rect.x >= 0 && rect.y >= 0 && rect.w > 0 && rect.h > 0
+      && rect.x + rect.w <= state.viewport_w + 4
+      && rect.y + rect.h <= state.viewport_h + 4
+    if (!visible(state.hud_rect) || !visible(state.action_rect)) {
+      throw new Error('W8 HUD escaped safe viewport ' + width + 'x' + height +
+        ' : ' + JSON.stringify({ viewport: [state.viewport_w, state.viewport_h], hud: state.hud_rect, actions: state.action_rect }))
+    }
+    if (state.hud_rect.y + state.hud_rect.h >= state.action_rect.y - 6) {
+      throw new Error('W8 status panel overlaps touch controls at ' + width + 'x' + height)
+    }
+    for (const position of state.button_centers) {
+      if (position.x < state.action_rect.x || position.x > state.action_rect.x + state.action_rect.w
+        || position.y < state.action_rect.y || position.y > state.action_rect.y + state.action_rect.h) {
+        throw new Error('W8 button center outside control panel: ' + width + 'x' + height)
+      }
+    }
+    await page.screenshot({ path: resolve(output, 'w8-hud-' + width + 'x' + height + '.png'), fullPage: true })
+  }
+  if (original) {
+    await page.setViewportSize(original)
+    await expectState(page, x => x?.scene_ready && x?.hud_layout_mode === 'portrait',
+      'W8 failed to restore original mobile viewport', 25_000)
+  }
 }
 
 let failed = false
 try {
   for (const [name, opts, isMobile] of [
-    ['desktop-1366', { viewport: { width: 1366, height: 768 }, deviceScaleFactor: 1 }, false],
-    ['mobile-390', { ...devices['Pixel 7'] }, true],
+    ['desktop-1366', { viewport: { width: 1366, height: 768 }, deviceScaleFactor: 1, reducedMotion: 'no-preference' }, false],
+    ['mobile-390', { ...devices['Pixel 7'], reducedMotion: 'reduce' }, true],
   ]) {
     const context = await browser.newContext(opts)
     const page = await context.newPage()
@@ -194,9 +234,11 @@ try {
         x => x?.scene_ready && x?.loading_failures === 0
           && x?.loaded?.endsWith('service_spine_eco.glb')
           && x?.button_centers?.length === 8 && x?.fault_marker_count === 3
-          && x?.fault_marker_visible_count === 0 && x?.fault_label_visible_count === 0,
+          && x?.fault_marker_visible_count === 0 && x?.fault_label_visible_count === 0
+          && x?.studio_grid_draw_batches === 2 && x?.studio_grid_instances === 18
+          && x?.studio_mesh_nodes <= 8 && x?.prefers_reduced_motion === isMobile,
         'Real W5 Godot ECO rig, 3D markers and controls did not load', 90_000)
-      if (boot.quality !== 0) throw new Error('Low-memory ECO mode not used on boot')
+      if (boot.quality !== 0 || boot.studio_quality !== 0) throw new Error('Low-memory ECO mode not used on boot')
       const geometry = await page.locator('canvas').first().evaluate(canvas => ({
         width: canvas.width, height: canvas.height,
         visible: canvas.getBoundingClientRect().width > 0,
@@ -207,16 +249,19 @@ try {
       if (isMobile) {
         await touchMission(page)
         await touchDiagnostics(page)
+        await verifyAdaptiveHud(page)
       } else {
         await keyboardMission(page)
         await keyboardDiagnostics(page)
         await page.keyboard.press('q')
         await expectState(page, x => x?.quality === 2
-          && x?.loaded?.endsWith('service_spine_hero.glb') && x?.loading_failures === 0,
+          && x?.loaded?.endsWith('service_spine_hero.glb') && x?.studio_quality === 2
+          && x?.loading_failures === 0,
           'Desktop HERO model switch failed', 45_000)
         await page.keyboard.press('q')
         await expectState(page, x => x?.quality === 0
-          && x?.loaded?.endsWith('service_spine_eco.glb') && x?.loading_failures === 0,
+          && x?.loaded?.endsWith('service_spine_eco.glb') && x?.studio_quality === 0
+          && x?.loading_failures === 0,
           'Desktop ECO return failed', 45_000)
       }
       if (runtimeErrors.length || assetErrors.length) {
@@ -227,7 +272,11 @@ try {
       result.push({ device: name, status: 'PASS', verified: 'real mechanics and interaction',
         mission: final.mission_completed, challenge: final.challenge_completed,
         challengeScore: final.challenge_score, view: final.view, quality: final.quality,
-        canvas: geometry })
+        canvas: geometry,
+        stageGridDrawBatches: final.studio_grid_draw_batches,
+        stageGridInstances: final.studio_grid_instances,
+        prefersReducedMotion: final.prefers_reduced_motion,
+        softwareRendererFpsSample: final.render_fps_sample })
       console.log('R135 gameplay PASS:', name, JSON.stringify(result.at(-1)))
     } catch (error) {
       failed = true
