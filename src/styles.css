@@ -326,3 +326,31 @@ header nav .nav-skillcred svg{width:14px}
 @media(max-width:900px){.osa-learning{grid-template-columns:1fr;gap:1.8rem}.osa-learning-visual{min-height:300px}.osa-learning-copy{max-width:none}.osa-learning-copy h2{max-width:18ch}}
 @media(max-width:560px){.osa-learning{margin:2rem .8rem;padding:1.1rem;border-radius:18px;gap:1.3rem}.osa-learning-visual{min-height:245px}.osa-learning-core{padding:1.5rem 1.8rem}.osa-learning-signal{font-size:.48rem;letter-spacing:.12em}.osa-learning-chapters{grid-template-columns:1fr;gap:.35rem;margin:1.4rem 0}.osa-learning-chapters>div{display:grid;grid-template-columns:2rem 1fr;column-gap:.5rem;padding:.7rem .5rem}.osa-learning-chapters span{grid-row:span 2}.osa-learning-chapters strong{font-size:.85rem}.osa-learning-chapters small{font-size:.7rem}.osa-learning-actions{align-items:flex-start;flex-direction:column;gap:.8rem}}
 @media(prefers-reduced-motion:reduce){.osa-orbit-a{animation:none}}
+
+/* OSGARD × OSA visual refresh — sculptural graphic system, crimson signal */
+.osgard-world-app{--accent:#a92839;--accent-line:rgba(169,40,57,.42)}
+.osgard-world-app .hero{background:
+  radial-gradient(ellipse 43% 65% at 78% 48%,rgba(55,91,133,.27),transparent 72%),
+  linear-gradient(120deg,#030914 0%,#071528 54%,#030914 100%)}
+.osgard-world-app .hero:before{background:
+  linear-gradient(90deg,rgba(2,7,17,.7),transparent 65%),
+  repeating-linear-gradient(0deg,transparent 0 54px,rgba(139,174,211,.035) 55px 56px)}
+.osgard-world-app .hero:after{border-color:rgba(169,40,57,.25)}
+.osgard-world-app .hero-title,.osgard-world-app h1,.osgard-world-app h2,.osgard-world-app h3{font-family:Inter,Arial,sans-serif;letter-spacing:-.045em;text-transform:none}
+.osgard-world-app .hero-title{font-weight:750;letter-spacing:-.055em}
+.osgard-world-app .hero-title>span.is-gold{background:linear-gradient(110deg,#f4f6fa 0%,#d8e3f2 45%,#a92839 100%);-webkit-background-clip:text;background-clip:text}
+.osgard-world-app .hero .eyebrow{color:#c35b69;letter-spacing:.22em}
+.osgard-world-app .hero-primary{background:#8f1f30;border-color:#a92839;box-shadow:0 12px 42px rgba(169,40,57,.24)}
+.osgard-world-app .hero-primary:hover{background:#b33042}
+.osgard-world-app .hero-secondary{border-color:rgba(169,40,57,.46)}
+.osgard-world-app .hero-art:before{inset:8%;border-radius:0 44% 0 44%;border-color:rgba(154,182,215,.22);box-shadow:0 0 100px rgba(74,118,171,.15),inset 0 0 70px rgba(169,40,57,.07);transform:skewY(-8deg)}
+.osgard-world-app .hero-art:after{content:'';position:absolute;z-index:2;left:-10%;right:-10%;top:68%;height:2px;background:linear-gradient(90deg,transparent,#a92839,rgba(244,129,143,.9),#a92839,transparent);box-shadow:0 0 18px rgba(169,40,57,.75);transform:rotate(-24deg);pointer-events:none;animation:osgardSignalSweep 7s ease-in-out infinite}
+@keyframes osgardSignalSweep{0%,100%{opacity:.35;translate:-2% 14px}50%{opacity:1;translate:2% -14px}}
+.osgard-world-app .globe{filter:drop-shadow(0 0 32px rgba(77,133,195,.24)) drop-shadow(0 0 72px rgba(169,40,57,.12))}
+.osgard-world-app .world-card,.osgard-world-app .cross-benefit{border-color:rgba(169,40,57,.28)}
+.osgard-world-app .world-card:hover{border-color:#c65060;box-shadow:0 42px 72px -22px #000,0 0 30px rgba(169,40,57,.16)}
+.osgard-world-app .world-icon{background:radial-gradient(circle at 35% 30%,#426a91,#14263e 65%,#080e19);border-color:rgba(169,40,57,.7);box-shadow:0 0 28px rgba(169,40,57,.16)}
+.osgard-world-app .world-icon svg,.osgard-world-app .world-card b,.osgard-world-app .world-metric{color:#d9e3ef}
+.osgard-world-app .world-action{border-color:rgba(169,40,57,.52);color:#e2eaf3}
+@media(max-width:760px){.osgard-world-app .hero-art:after{top:62%;opacity:.55}.osgard-world-app .hero-art:before{inset:18%;}}
+@media(prefers-reduced-motion:reduce){.osgard-world-app .hero-art:after{animation:none;opacity:.6}}
