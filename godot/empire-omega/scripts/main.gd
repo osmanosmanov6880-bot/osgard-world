@@ -355,7 +355,12 @@ func _physics_process(delta: float) -> void:
 		if absf(joystick_x) > 0.18: cam_yaw -= joystick_x * delta * 2.3
 		if absf(joystick_y) > 0.18: cam_pitch = clampf(cam_pitch - joystick_y * delta * 1.6,0.08,1.18)
 	player.camera_heading = cam_yaw
-	var ideal: Vector3 = SAFE_CAMERA.desired_position(focus,cam_yaw,cam_pitch,car.speed,driving,viewport_size)
+	# R34: a grounded, street-facing government shot instead of a roof map.
+	# Do not mutate user camera preferences or gameplay while the UI is open.
+	var cabinet_open: bool = hud != null and hud.is_strategy_open()
+	var camera_pitch: float = SAFE_CAMERA.cabinet_pitch(cam_pitch,cabinet_open,viewport_size,GameSettings.reduced_motion)
+	focus = SAFE_CAMERA.cabinet_focus(focus,cam_yaw,cabinet_open,viewport_size,GameSettings.reduced_motion)
+	var ideal: Vector3 = SAFE_CAMERA.desired_position(focus,cam_yaw,camera_pitch,car.speed,driving,viewport_size)
 	var excluding: Array[RID] = [player.get_rid(),car.get_rid()]
 	var camera_solution: Dictionary = SAFE_CAMERA.solve(focus,ideal,camera.global_position,
 		get_world_3d().direct_space_state,excluding,delta,GameSettings.reduced_motion)
