@@ -508,7 +508,7 @@ checks.push('coordinate-only compressed friend challenge roundtrip, checksum and
 const copied = []
 window.navigator = { getGamepads: () => [], clipboard: { writeText: async link => { copied.push(link) } } }
 click('share')
-await Promise.resolve()
+await new Promise(resolve => setImmediate(resolve))
 assert.equal(copied.length, 1, 'SHARE must copy one playable friend URL')
 assert.match(copied[0], /^https:\/\/osgard\.test\/games\/vector-zero\/#race=/)
 assert.match(node('race-note').textContent, /Ссылка скопирована/)
@@ -542,8 +542,7 @@ let prompted = ''
 window.prompt = (_label, link) => { prompted = link; return link }
 window.navigator.clipboard.writeText = async () => { throw new Error('NotAllowedError') }
 click('share')
-await Promise.resolve()
-await Promise.resolve()
+await new Promise(resolve => setImmediate(resolve))
 assert.match(prompted, /^https:\/\/osgard\.test\/games\/vector-zero\/#race=/, 'Copy-denied browsers must offer a manual copy fallback')
 checks.push('corrupted shared links stay safe and clipboard-denied browsers offer manual copy')
 
