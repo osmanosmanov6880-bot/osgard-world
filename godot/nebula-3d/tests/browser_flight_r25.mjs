@@ -92,7 +92,7 @@ try {
   await page.mouse.click(bounds.x+bounds.width/2,bounds.y+bounds.height-70);
   await waitForTelemetry(s=>s && s.cruise === true,15000);
   const start=await checkpoint('actual clickable cruise switch engaged',s=>s?.cruise===true);
-  await waitForTelemetry(s=>s && s.samples>beforeCruise.samples+5 &&
+  await waitForTelemetry(s=>s && s.cruise &&
     Math.abs(s.heading-beforeCruise.heading)>0.05,35000);
   const steered=await checkpoint('real autopilot rotates ship toward off-axis mission',
     s=>s?.cruise===true && Math.abs(s.heading-beforeCruise.heading)>0.05 && s.throttle>0.5);
