@@ -27,18 +27,18 @@ func apply_look(look: int) -> void:
         return
     var env: Environment = world_environment.environment
     if current_look == 0:
-        # Steel-blue ambient with narrow golden edge lighting and controlled
-        # specular reflections. Shadows preserve detail instead of crushed blacks.
+        # Cool blue horizon and distance haze with a restrained gold edge light.
+        # Keep metal highlights warm without laying an amber veil over the city.
         key_sun.rotation_degrees = Vector3(-24.0, -70.0, 0.0)
-        key_sun.light_color = Color(1.0, 0.88, 0.71)
-        key_sun.light_energy = 1.30
+        key_sun.light_color = Color(1.0, 0.92, 0.82)
+        key_sun.light_energy = 1.18
         blue_fill.light_color = Color(0.48, 0.66, 0.90)
         blue_fill.light_energy = 0.49
         sky_shader.sky_top_color = Color(0.048, 0.12, 0.26)
-        sky_shader.sky_horizon_color = Color(0.82, 0.52, 0.34)
-        sky_shader.ground_horizon_color = Color(0.43, 0.35, 0.34)
-        env.fog_light_color = Color(0.51, 0.39, 0.32)
-        env.fog_density = 0.00031
+        sky_shader.sky_horizon_color = Color(0.30, 0.42, 0.60)
+        sky_shader.ground_horizon_color = Color(0.18, 0.25, 0.36)
+        env.fog_light_color = Color(0.29, 0.37, 0.49)
+        env.fog_density = 0.00026
         env.adjustment_brightness = 0.94
         env.adjustment_contrast = 1.045
         env.adjustment_saturation = 0.95

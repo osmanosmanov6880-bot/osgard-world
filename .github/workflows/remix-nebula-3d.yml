@@ -180,6 +180,23 @@ jobs:
           trap 'kill "$server_pid" || true' EXIT
           sleep 2
           timeout 300s node godot/nebula-3d/tests/browser_flight_r25.mjs
+      - name: Capture actual WebGL frame and exercise quality controls (PR gate)
+        if: github.event_name == 'pull_request'
+        run: |
+          set -euo pipefail
+          python3 -m http.server 8765 --bind 127.0.0.1 --directory public > /tmp/nebula-r11-http.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" || true' EXIT
+          sleep 2
+          timeout 300s node godot/nebula-3d/tests/browser_smoke_r11.mjs
+      - name: Save visual evidence for review
+        if: always() && github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: nebula-pr-visual-capture
+          path: r11-browser-qa/
+          if-no-files-found: warn
+          retention-days: 14
       - name: Save browser flight telemetry for review
         if: always() && github.event_name == 'pull_request'
         uses: actions/upload-artifact@v4

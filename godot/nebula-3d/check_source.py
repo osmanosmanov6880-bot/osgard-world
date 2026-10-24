@@ -588,7 +588,9 @@ assert 'aurora_scenic_r22.set_quality(graphics_quality)' in world
 assert 'preload("res://scripts/engine_cinema_r22.gd")' in ship_visual
 assert 'exhaust_r22.name = "R22_RealIonDrive"' in ship_visual
 assert 'if mission_index > 0 and r21_launch_protection <= 0.0:' in world
-assert "sky_shader.sky_horizon_color = Color(0.82, 0.52, 0.34)" in require(
+assert "sky_shader.sky_horizon_color = Color(0.30, 0.42, 0.60)" in require(
+    "scripts/cinematic_lighting_r12.gd")
+assert "env.fog_light_color = Color(0.29, 0.37, 0.49)" in require(
     "scripts/cinematic_lighting_r12.gd")
 assert 'nebula-r22-keyboard-focus' in r21_web
 require(
@@ -649,6 +651,16 @@ assert "func _r25_emit_browser_flight_state() -> void:" in world
 assert 'JavaScriptBridge.eval("window.__nebulaPilotTelemetry = "' in world
 assert "var r25_telemetry_samples: int = 0" in world
 assert "snappedf(ship.flight_distance, 0.01)" in world
+assert "r11_capture_enabled" in world
+assert "get_viewport().get_texture().get_image()" in world
+assert "window.__nebulaR11CaptureData" in world
+assert "URLSearchParams(window.location.search).get('r11-qa')" in world
+r11_visual = require(
+    "tests/browser_smoke_r11.mjs",
+    "Godot viewport capture",
+    "nebulaR11CaptureRequestId",
+    "Hosted SwiftShader cannot confirm visual frame",
+)
 assert "r25_side_and_back_windows" in r22_city
 assert "_r25_side_window_transform" in r22_city
 assert "r25_window_faces" in r22_city
