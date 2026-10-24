@@ -265,7 +265,11 @@ func set_quality(mode: int) -> void:
 func _process(delta: float) -> void:
     clock += delta
     budget_clock += delta
-    if budget_clock < 0.05 or not is_instance_valid(ship):
+    if budget_clock < 0.05:
+        return
+    if not is_instance_valid(ship):
+        ship = get_parent().get_node_or_null("PlayerShip")
+    if not is_instance_valid(ship):
         return
     budget_clock = fmod(budget_clock, 0.05)
     for index in traffic_nodes.size():
