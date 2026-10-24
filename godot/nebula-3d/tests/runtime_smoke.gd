@@ -42,7 +42,7 @@ func _run() -> void:
     if not check(world.r21_dashboard != null and
         world.r21_dashboard.cached_font is SystemFont and
         world.r21_touch != null and
-        world.r21_touch.button_centres.size() == 8,
+        world.r21_touch.button_centres.size() == 9,
         "R21 mobile multi-touch and premium flight dashboard missing"):return
     var collider_probe := SphereShape3D.new()
     collider_probe.radius = 1.8
