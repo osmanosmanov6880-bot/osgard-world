@@ -30,6 +30,20 @@ var triangle_peak: int = 0
 var quality_at_start: int = 0
 var profile_switched_during_test: bool = false
 var screenshot_count: int = 0
+## R36: on-device mobile performance controls; no remote analytics SDK.
+var r36_touch_source: Node
+var r36_mobile: bool = false
+var r36_safe_area: Vector4 = Vector4.ZERO
+var r36_view_size: Vector2 = Vector2(1280, 720)
+var r36_launcher: Button
+var r36_start_button: Button
+var r36_export_button: Button
+var r36_close_button: Button
+var r36_command_row: HBoxContainer
+var r36_panel_style: StyleBoxFlat
+var r36_touch_start_count: int = 0
+var r36_touch_start_sum_ms: float = 0.0
+var r36_touch_start_invalid: int = 0
 
 func _ready() -> void:
     layer = 7
@@ -51,6 +65,7 @@ func _ready() -> void:
     style.content_margin_right = 14
     style.content_margin_top = 12
     style.content_margin_bottom = 10
+    r36_panel_style = style
     overlay.add_theme_stylebox_override("panel", style)
     add_child(overlay)
     var column := VBoxContainer.new()
@@ -65,8 +80,137 @@ func _ready() -> void:
     report_label.add_theme_color_override("font_color", Color(0.88, 0.73, 0.49))
     report_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
     column.add_child(report_label)
+    r36_command_row = HBoxContainer.new()
+    r36_command_row.name = "R36_MobilePerformanceActions"
+    r36_command_row.add_theme_constant_override("separation", 4)
+    column.add_child(r36_command_row)
+    r36_start_button = Button.new()
+    r36_start_button.text = "20 С"
+    r36_start_button.name = "R36_StartReal20SecondBenchmark"
+    r36_start_button.custom_minimum_size = Vector2(46, 28)
+    r36_start_button.pressed.connect(start_benchmark)
+    r36_command_row.add_child(r36_start_button)
+    r36_export_button = Button.new()
+    r36_export_button.text = "JSON"
+    r36_export_button.name = "R36_SaveLocalReport"
+    r36_export_button.custom_minimum_size = Vector2(52, 28)
+    r36_export_button.pressed.connect(download_report)
+    r36_command_row.add_child(r36_export_button)
+    r36_close_button = Button.new()
+    r36_close_button.text = "×"
+    r36_close_button.name = "R36_ClosePerformancePanel"
+    r36_close_button.custom_minimum_size = Vector2(30, 28)
+    r36_close_button.pressed.connect(_r36_close_mobile_panel)
+    r36_command_row.add_child(r36_close_button)
+    r36_launcher = Button.new()
+    r36_launcher.name = "R36_MobileFPSLauncher"
+    r36_launcher.text = "FPS"
+    r36_launcher.custom_minimum_size = Vector2(70, 30)
+    r36_launcher.pressed.connect(_r36_show_mobile_panel)
+    add_child(r36_launcher)
+    get_viewport().size_changed.connect(_r36_relayout)
     overlay.visible = false
+    r36_launcher.visible = false
+    r36_command_row.visible = false
     _draw_overlay()
+
+func configure_mobile(active: bool, touch_source: Node,
+        safe_area: Vector4, viewport_pixels: Vector2) -> void:
+    r36_mobile = active
+    r36_touch_source = touch_source
+    r36_safe_area = safe_area
+    r36_view_size = viewport_pixels
+    _r36_relayout()
+
+
+func _r36_relayout() -> void:
+    if not is_instance_valid(overlay) or not is_instance_valid(r36_launcher):
+        return
+    r36_command_row.visible = r36_mobile
+    r36_launcher.visible = r36_mobile and not (show_live or benchmarking)
+    if not r36_mobile:
+        overlay.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+        overlay.offset_left = -390.0
+        overlay.offset_right = -18.0
+        overlay.offset_top = -255.0
+        overlay.offset_bottom = -16.0
+        return
+    var size: Vector2 = r36_view_size
+    if size.x < 200.0 or size.y < 200.0:
+        size = get_viewport().get_visible_rect().size
+    var landscape: bool = size.x > size.y and size.y < 530.0
+    var left: float = r36_safe_area.x
+    var top: float = r36_safe_area.y
+    var right: float = r36_safe_area.z
+    var usable_w: float = maxf(180.0, size.x - left - right)
+    overlay.set_anchors_preset(Control.PRESET_TOP_LEFT)
+    overlay.offset_left = left + 8.0
+    overlay.offset_top = top + 8.0
+    overlay.offset_right = overlay.offset_left + minf(
+        164.0 if landscape else 300.0, usable_w - 16.0)
+    overlay.offset_bottom = overlay.offset_top + (
+        108.0 if landscape else 130.0)
+    if is_instance_valid(r36_panel_style):
+        r36_panel_style.content_margin_left = 8
+        r36_panel_style.content_margin_right = 8
+        r36_panel_style.content_margin_top = 6
+        r36_panel_style.content_margin_bottom = 6
+    stats_label.add_theme_font_size_override("font_size", 10)
+    report_label.add_theme_font_size_override("font_size", 10)
+    stats_label.clip_text = true
+    report_label.clip_text = true
+    r36_launcher.set_anchors_preset(Control.PRESET_TOP_LEFT)
+    if landscape:
+        r36_launcher.offset_left = size.x - right - 78.0
+        r36_launcher.offset_top = top + 8.0
+    else:
+        r36_launcher.offset_left = left + 8.0
+        r36_launcher.offset_top = top + 136.0
+    r36_launcher.offset_right = r36_launcher.offset_left + 70.0
+    r36_launcher.offset_bottom = r36_launcher.offset_top + 30.0
+
+
+func _r36_show_mobile_panel() -> void:
+    show_live = true
+    _sync_visibility()
+
+
+func _r36_close_mobile_panel() -> void:
+    if benchmarking:
+        return
+    show_live = false
+    _sync_visibility()
+
+
+func download_report() -> void:
+    if last_report.is_empty():
+        report_label.text = "НЕТ ЗАМЕРА · НАЖМИ 20 С"
+        show_live = true
+        _sync_visibility()
+        return
+    var content: String = JSON.stringify(last_report)
+    var filename: String = "nebula-r36-real-device-performance.json"
+    if OS.has_feature("web"):
+        # Explicit local download; no network, identity or background upload.
+        var encoded: String = Marshalls.raw_to_base64(content.to_utf8_buffer())
+        var js: String = "(function(){const a=document.createElement('a');" + (
+            "a.download='" + filename + "';" +
+            "a.href='data:application/json;base64," + encoded + "';" +
+            "document.body.appendChild(a);a.click();a.remove();" +
+            "return true;})()")
+        JavaScriptBridge.eval(js)
+        report_label.text = "JSON · ЗАПРОС ЗАГРУЗКИ"
+    else:
+        var file := FileAccess.open("user://" + filename, FileAccess.WRITE)
+        if file != null:
+            file.store_string(content)
+            file.close()
+            report_label.text = "JSON · СОХРАНЁН В user://"
+        else:
+            report_label.text = "НЕ УДАЛОСЬ СОХРАНИТЬ JSON"
+    show_live = true
+    _sync_visibility()
+
 
 func set_quality(mode: int) -> void:
     quality_mode = clampi(mode, 0, 2)
