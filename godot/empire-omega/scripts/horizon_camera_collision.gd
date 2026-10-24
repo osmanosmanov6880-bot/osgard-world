@@ -89,7 +89,8 @@ static func look_ahead_focus(vehicle_position: Vector3, heading: float,
 	var lateral: float = clampf(yaw_rate*absf(speed)*0.030,-0.45,0.45)
 	var forward: Vector3 = Vector3(-sin(heading),0.0,-cos(heading))
 	var right: Vector3 = Vector3(cos(heading),0.0,-sin(heading))
-	return base + forward*ahead + right*lateral
+	var travel_direction: float = -1.0 if speed < -0.35 else 1.0
+	return base + forward*ahead*travel_direction + right*lateral
 
 static func target_fov(speed: float, driving: bool, portrait_mode: bool,
 		reduced_motion: bool) -> float:
