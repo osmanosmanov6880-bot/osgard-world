@@ -329,3 +329,13 @@ html[data-motion="off"] .world-command .omega-command .omega-gate a{transition:n
     radial-gradient(1px 1px at 67% 45%, #a8dfff 96%, transparent),
     radial-gradient(2px 2px at 88% 19%, #ff334d 96%, transparent);
 }
+
+
+/* Shared RU/EN controls for the OSGARD WORLD hero. */
+.world-locale-row{display:flex;align-items:center;justify-content:space-between;gap:18px}
+.world-locale-row>.brand-eyebrow{margin:0}
+.world-language-toggle{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:38px;padding:8px 11px;border:1px solid rgba(117,201,224,.52);border-radius:4px;background:rgba(6,18,32,.9);color:#f1f7fb;font:650 11px/1 Inter,Arial,sans-serif;letter-spacing:.1em;cursor:pointer;transition:background .2s,border-color .2s,transform .2s}
+.world-language-toggle:hover{background:#102a42;border-color:#8be8f2;transform:translateY(-1px)}
+.world-language-toggle:focus-visible{outline:2px solid #ff6577;outline-offset:4px}
+@media(max-width:680px){.world-locale-row{gap:10px}.world-language-toggle{flex:none;min-height:36px}}
+@media(prefers-reduced-motion:reduce){.world-language-toggle{transition:none}}

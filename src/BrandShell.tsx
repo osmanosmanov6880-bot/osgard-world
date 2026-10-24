@@ -43,7 +43,7 @@ export function BrandShell({ theme, children }: { theme: ProductTheme; children:
 
   useEffect(() => {
     document.documentElement.dataset.product = theme
-    document.documentElement.lang = product === 'intelligence' ? osaLocale : 'ru'
+    document.documentElement.lang = product === 'intelligence' || path === '/' || path === '/development' ? osaLocale : 'ru'
     return () => { delete document.documentElement.dataset.product }
   }, [theme, product, osaLocale])
   useEffect(() => {
@@ -107,7 +107,7 @@ export function BrandShell({ theme, children }: { theme: ProductTheme; children:
   }
 
   return <div className={`brand-system theme-${theme}${theme === 'play' && (path === '/play' || path === '/games' || path === '/entertainment') ? ' play-catalog-shell' : ''}`}>
-    <a className="brand-skip" href="#product-main">{product === 'intelligence' && osaLocale === 'en' ? 'Skip to content' : 'Перейти к содержанию'}</a>
+    <a className="brand-skip" href="#product-main">{(product === 'intelligence' || path === '/' || path === '/development') && osaLocale === 'en' ? 'Skip to content' : 'Перейти к содержанию'}</a>
     <header className="brand-header">
       <a href={productHomes[product]} aria-label={productNames[product]}><BrandLockup theme={product} /></a>
       <nav aria-label="Продукты OSGARD" className="brand-global-nav">
@@ -115,7 +115,7 @@ export function BrandShell({ theme, children }: { theme: ProductTheme; children:
       </nav>
       <button type="button" ref={quickTrigger} className="brand-quick-trigger" aria-haspopup="dialog" aria-expanded={quickOpen}
         aria-keyshortcuts="Control+K Meta+K" aria-label="Быстрый переход по разделам OSGARD" onClick={() => quickOpen ? closeQuickNav() : setQuickOpen(true)}>
-        <span aria-hidden="true" className="brand-quick-symbol">⌕</span><span className="brand-quick-label">{product === 'intelligence' && osaLocale === 'en' ? 'Sections' : 'Разделы'}</span><kbd>⌘K</kbd>
+        <span aria-hidden="true" className="brand-quick-symbol">⌕</span><span className="brand-quick-label">{(product === 'intelligence' || path === '/' || path === '/development') && osaLocale === 'en' ? 'Sections' : 'Разделы'}</span><kbd>⌘K</kbd>
       </button>
       <button type="button" className="brand-motion" aria-pressed={reduced || !motion} disabled={reduced}
         aria-label="Меньше движения" title={reduced ? 'Уменьшение движения включено в настройках устройства' : 'Отключить необязательную анимацию'} onClick={toggleMotion}>
@@ -124,7 +124,7 @@ export function BrandShell({ theme, children }: { theme: ProductTheme; children:
       </button>
     </header>
     <div className="brand-local-bar">
-      <span>{product === 'world' ? development ? 'Development / Разработка продуктов' : 'OSGARD WORLD / Цифровая студия' : product === 'intelligence' ? osaLocale === 'en' ? 'OSA / Understand. Verify. Decide.' : 'OSA / Понять. Проверить. Решить.' : 'OSGARD PLAY / Игровые миры'}</span>
+      <span>{product === 'world' ? development ? 'Development / Разработка продуктов' : 'OSGARD WORLD / Цифровая студия' : product === 'intelligence' ? osaLocale === 'en' ? 'OSA / Understand. Verify. Decide.' : 'OSA / Понять. Проверить. Решить.' : product === 'world' && (path === '/' || path === '/development') ? osaLocale === 'en' ? development ? 'OSGARD DEVELOPMENT / Digital studio' : 'OSGARD WORLD / Digital studio' : development ? 'Development / Разработка продуктов' : 'OSGARD WORLD / Цифровая студия' : 'OSGARD PLAY / Игровые миры'}</span>
       <nav aria-label="Навигация раздела">
         {local.map(([name, href]) => <a key={name} href={href} aria-current={localState(href)}>{name}</a>)}
       </nav>
@@ -134,7 +134,7 @@ export function BrandShell({ theme, children }: { theme: ProductTheme; children:
     </nav>
     <div id="product-main" tabIndex={-1}>{children}</div>
     <Suspense fallback={<footer className="brand-footer brand-footer-loading" aria-label="Загрузка ссылок" />}>
-      <OsgardFooter product={product} motion={motion} reduced={reduced} />
+      <OsgardFooter product={product} motion={motion} reduced={reduced} locale={osaLocale} />
     </Suspense>
     <Suspense fallback={null}>
       {quickOpen && <OsgardQuickNav onClose={closeQuickNav} onNavigate={() => {
