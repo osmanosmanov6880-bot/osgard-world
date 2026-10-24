@@ -17,7 +17,7 @@ test('real Godot runtime and WebGL fallback must remain wired',()=>{
     'index.wasm', 'index.pck',
     "backLink.href = '/games/#catalog'",
     'Для запуска игры требуется WebGL 2.']){
-    assert.equal(isNativeNebulaShell(html.replace(part,'intentionally missing')),false,'Missing essential part '+part)
+    assert.equal(isNativeNebulaShell(html.replaceAll(part,'intentionally missing')),false,'Missing essential part '+part)
   }
 })
 test('reject deceptive, disabled and missing canvas shells',()=>{
