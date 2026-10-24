@@ -759,6 +759,17 @@ assert "r36_touch_delay_scope" in performance_r11
 assert "r36_data_policy" in performance_r11
 assert "no network, identity or background upload" in performance_r11.lower()
 assert "NEBULA_R36_REAL_DEVICE_UI_SUCCESS" in smoke
+# R38: all graphic quality profiles must be selectable without keyboard.
+assert "signal r38_quality_cycle_requested" in performance_r11
+assert "R38_MobileGraphicsProfile" in performance_r11
+assert "r38_mode_button.disabled = true" in performance_r11
+assert "func _r38_cycle_quality() -> void:" in world
+assert 'r38_quality_cycle_requested.connect(_r38_cycle_quality)' in world
+assert 'state["r38_quality_mode"] = graphics_quality' in world
+assert "NEBULA_R38_MOBILE_QUALITY_SUCCESS" in smoke
+assert "R38 graphics preset changed during benchmark" in smoke
+assert "R38 mobile quality touch enables real AUTO profile" in r31_mobile
+assert "R38 mobile quality touch selects real MAX graphics" in r31_mobile
 assert "R36 local performance JSON export was corrupted" in smoke
 assert "R36 real mobile FPS button opens performance overlay" in r31_mobile
 assert "R36 real mobile 20-second FPS benchmark starts" in r31_mobile
