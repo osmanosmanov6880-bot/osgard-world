@@ -40,6 +40,13 @@ var mission_feedback: String = "PRESS START MISSION"
 # W4: the optional advanced diagnostic challenge keeps the existing training
 # mission fully intact. Every fault is simulated; no physical sensor is used.
 const FAULT_TYPES = ["OPTICAL ALIGNMENT", "COOLING AIRFLOW", "SERVICE INTERLOCK"]
+const FAULT_EVIDENCE = ["EDGE OFFSET +0.7 (SIM)", "AIRFLOW BELOW TARGET (SIM)", "CONTACT UNSEALED (SIM)"]
+const FAULT_LESSONS = [
+    "ALIGN OPTICS ONLY AFTER MOTOR STOP",
+    "CHECK AIRFLOW WITH ACCESS HATCH OPEN",
+    "VERIFY INTERLOCK SEAL BEFORE RESTART"
+]
+var cleared_cases: Array[bool] = [false, false, false]
 const FAULT_VIEWS = [2, 3, 1]
 const CHALLENGE_GOALS = ["STOP THE DRIVE", "OPEN THE SERVICE HATCH", "INSPECT THE CORRECT FAULT", "CLOSE THE SERVICE HATCH", "RESTART THE DRIVE"]
 const CHALLENGE_ACTIONS = ["pause", "open", "scan", "close", "resume"]
@@ -275,10 +282,15 @@ func _load_challenge_record() -> void:
     var settings := ConfigFile.new()
     if settings.load(BEST_SCORE_PATH) == OK:
         challenge_best_score = clampi(int(settings.get_value("progress", "best_score", 0)), 0, 150)
+        var saved_cases: Array = settings.get_value("progress", "cleared_cases", [false, false, false])
+        for i in range(cleared_cases.size()):
+            if i < saved_cases.size():
+                cleared_cases[i] = bool(saved_cases[i])
 
 func _save_challenge_record() -> void:
     var settings := ConfigFile.new()
     settings.set_value("progress", "best_score", challenge_best_score)
+    settings.set_value("progress", "cleared_cases", cleared_cases)
     var result: Error = settings.save(BEST_SCORE_PATH)
     if result != OK:
         push_warning("R135 challenge record could not be saved on this device")
@@ -335,7 +347,8 @@ func _challenge_event(action: String, selected_view: int = -1) -> void:
         challenge_score = clampi(150 - int(ceil(challenge_elapsed * 3.0)) - 12 * challenge_errors, 0, 150)
         if challenge_score > challenge_best_score:
             challenge_best_score = challenge_score
-            _save_challenge_record()
+        cleared_cases[challenge_fault_index] = true
+        _save_challenge_record()
         challenge_feedback = "FAULT CLEARED — BEST SCORE %d" % challenge_best_score
 
 func scan_diagnostic(view_index: int) -> void:
@@ -421,6 +434,10 @@ func _physics_process(delta: float) -> void:
 
 func summary() -> Dictionary:
     var visuals: Dictionary = visual_faults.call("snapshot") if visual_faults != null else {}
+    var cleared_count: int = 0
+    for completed in cleared_cases:
+        if completed:
+            cleared_count += 1
     return {"schema":"OSGARD_R135_SCENE_STATE_V1","simulation_only":true,
         "physical_telemetry_connected":false,"quality":quality,"loaded":loaded_path,
         "loading_failures":load_failures,"load_count":load_count,
@@ -438,6 +455,13 @@ func summary() -> Dictionary:
         "challenge_target_view":FAULT_VIEWS[challenge_fault_index],
         "challenge_elapsed":challenge_elapsed,"challenge_errors":challenge_errors,
         "challenge_score":challenge_score,"challenge_best_score":challenge_best_score,
+        "challenge_evidence":FAULT_EVIDENCE[challenge_fault_index],
+        "challenge_learning":FAULT_LESSONS[challenge_fault_index],
+        "challenge_time_penalty":int(ceil(challenge_elapsed * 3.0)),
+        "challenge_error_penalty":12 * challenge_errors,
+        "cleared_case_count":cleared_count,
+        "cleared_case_flags":cleared_cases.duplicate(),
+        "training_status":"ALL 3 SIMULATION CASES CLEARED" if cleared_count == 3 else "SIMULATION CASES %d/3" % cleared_count,
         "challenge_feedback":challenge_feedback,
         "fault_marker_count":int(visuals.get("fault_marker_count", 0)),
         "fault_marker_visible_count":int(visuals.get("fault_marker_visible_count", 0)),
