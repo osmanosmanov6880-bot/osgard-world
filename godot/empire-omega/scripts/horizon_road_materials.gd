@@ -65,3 +65,12 @@ static func asphalt() -> StandardMaterial3D:
 
 static func concrete() -> StandardMaterial3D:
 	return _make_material(true)
+
+## R15 physically-inspired wet road response, without unbounded full-screen
+## reflections or additional WebGL passes. Idempotent for repeated weather ticks.
+static func apply_weather(material: StandardMaterial3D, kind: String) -> void:
+	if material == null:
+		return
+	var wet: bool = kind == "rain" or kind == "storm"
+	material.roughness = (0.36 if wet else 0.81) if material.uv1_scale.x > 0.3 else (0.46 if wet else 0.90)
+	material.specular_mode = BaseMaterial3D.SPECULAR_SCHLICK_GGX
