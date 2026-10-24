@@ -1,0 +1,55 @@
+name: NEBULA R25 Real WebAssembly Flight QA
+on:
+  workflow_run:
+    workflows:
+      - "REMIX NEBULA 3D native Web release"
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  real-browser-flight:
+    if: >-
+      ${{ github.event_name == 'workflow_dispatch' ||
+          (github.event.workflow_run.conclusion == 'success' &&
+           github.event.workflow_run.event == 'push' &&
+           github.event.workflow_run.head_branch == 'master') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: master
+      - name: Install browser automation and software WebGL
+        run: |
+          set -euo pipefail
+          npm install --no-save playwright@1.57.0
+          npx playwright install --with-deps chromium
+      - name: Confirm the real Godot WebAssembly export and input bridges exist
+        run: |
+          set -euo pipefail
+          game=public/games/remix/arena-v2/nebula-3d
+          test -s "$game/index.html"
+          test -s "$game/index.pck"
+          test -s "$game/index.wasm"
+          test -s "$game/index.js"
+          grep -Fq 'nebula-r23-physical-keyboard' "$game/index.html"
+          grep -Fq 'viewport-fit=cover' "$game/index.html"
+      - name: Run real Chromium WASM flight/keyboard/autopilot E2E
+        run: |
+          set -euo pipefail
+          python3 -m http.server 8765 --bind 127.0.0.1 --directory public > /tmp/nebula-r25-http.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" || true' EXIT
+          sleep 2
+          timeout 300s node godot/nebula-3d/tests/browser_flight_r25.mjs
+      - name: Upload true WebAssembly physics telemetry report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nebula-r25-real-browser-flight
+          path: r25-browser-qa/
+          if-no-files-found: warn
+          retention-days: 14
