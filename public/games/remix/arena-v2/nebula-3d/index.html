@@ -2,6 +2,77 @@
 <html lang="en">
 	<head>
 
+<script id="nebula-r34-touch-bridge">
+(() => {
+  const points = new Map();
+  const state = window.__nebulaDomTouchState = {
+    seq: 0, points: [], downs: 0, ups: 0, moves: 0,
+    cancels: 0, blurClears: 0
+  };
+  const canvas = () => document.getElementById('canvas');
+  const fromCanvas = (target) => {
+    const c = canvas();
+    return Boolean(c && (target === c || c.contains(target)));
+  };
+  const coords = (touch) => {
+    const rect = canvas()?.getBoundingClientRect();
+    if (!rect) return null;
+    return [Number(touch.identifier), touch.clientX - rect.left,
+      touch.clientY - rect.top];
+  };
+  const publish = () => {
+    state.seq++;
+    state.points = [...points.values()].sort((a,b) => a[0] - b[0]);
+  };
+  const clear = (reason) => {
+    if (!points.size) return;
+    points.clear();
+    if (reason === 'blur') state.blurClears++;
+    else state.cancels++;
+    publish();
+  };
+  const onTouch = (type, event) => {
+    if (type === 'touchstart' && !fromCanvas(event.target)) return;
+    let changed = false;
+    for (const touch of Array.from(event.changedTouches || [])) {
+      const id = Number(touch.identifier);
+      if (type === 'touchstart') {
+        if (points.size >= 12 || points.has(id)) continue;
+        const p = coords(touch);
+        if (!p) continue;
+        points.set(id, p);
+        state.downs++; changed = true;
+      } else if (type === 'touchmove' && points.has(id)) {
+        const p = coords(touch);
+        if (!p) continue;
+        points.set(id, p);
+        state.moves++; changed = true;
+      } else if (points.has(id) &&
+          (type === 'touchend' || type === 'touchcancel')) {
+        points.delete(id);
+        if (type === 'touchcancel') state.cancels++;
+        else state.ups++;
+        changed = true;
+      }
+    }
+    if (!changed) return;
+    publish();
+    if (event.cancelable) event.preventDefault();
+  };
+  for (const eventName of ['touchstart','touchmove','touchend','touchcancel']) {
+    window.addEventListener(eventName, event => onTouch(eventName, event),
+      { capture: true, passive: false });
+  }
+  window.addEventListener('blur', () => clear('blur'));
+  window.addEventListener('pagehide', () => clear('blur'));
+  window.addEventListener('resize', () => clear('resize'));
+  window.addEventListener('orientationchange', () => clear('resize'));
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) clear('blur');
+  });
+})();
+</script>
+
 <script id="nebula-r23-physical-keyboard">
 (() => {
   const bits = {
@@ -162,7 +233,7 @@ body{padding:0;overflow:hidden;-webkit-user-select:none;user-select:none}
 
 		<script src="index.js"></script>
 		<script>
-const GODOT_CONFIG = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":true,"executable":"index","experimentalVK":false,"fileSizes":{"index.pck":5614532,"index.wasm":39514754},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4};
+const GODOT_CONFIG = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":true,"executable":"index","experimentalVK":false,"fileSizes":{"index.pck":5622708,"index.wasm":39514754},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4};
 const GODOT_THREADS_ENABLED = false;
 const engine = new Engine(GODOT_CONFIG);
 
