@@ -681,6 +681,13 @@ assert "r31_mobile_qa_enabled" in world
 assert "content_scale_size = css_size" in world
 assert "r31_mobile_css_size" in world
 assert "r31_raw_touch_events" in r21_mobile
+# Hosted mobile CI must not silently change real-player graphics or physics.
+assert "func _r33_trim_nonessential_qa_meshes(node: Node)" in world
+assert "if r31_mobile_qa_enabled:" in world
+assert "r33_swiftshader_qa_visuals_trimmed = true" in world
+assert "if node == ship or node is CanvasLayer:" in world
+assert 'state["qa_visuals_trimmed"] = r33_swiftshader_qa_visuals_trimmed' in world
+assert "state.qa_visuals_trimmed === true" in r31_mobile
 assert "window.__nebulaDomTouchQA" in r31_mobile
 assert "real mobile viewport and physics loop stabilized" in r31_mobile
 assert "native browser touch dispatch" in r31_mobile
