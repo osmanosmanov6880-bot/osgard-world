@@ -382,6 +382,26 @@ require(
     "docs/R18-GPU-DISTRICT-CULLING.md",
     "R18", "360", "6", "F7", "F9", "F10", "WebGL",
 )
+# R19: ensure the last world-spanning steel, industrial and roof meshes
+# have per-sector GPU bounds and quality-dependent visibility.
+assert 'R19_FacadeDistrict_' in premium
+assert 'R19_RoofDistrict_' in premium
+assert 'func _sector_sizes(' in premium
+assert 'r19_facade_instance_count' in premium
+assert 'r19_roof_instance_count' in premium
+assert 'func set_quality(' in premium
+assert 'R19_IndustrialSector_' in industry_r9
+assert 'r19_batch_groups' in industry_r9
+assert 'r19_original_instances' in industry_r9
+assert 'func _r19_refresh_lights(' in industry_r9
+assert 'light.visible = r19_quality < 2 and close' in industry_r9
+assert 'func set_quality(' in industry_r9
+assert 'premium_architecture.set_quality(graphics_quality)' in world
+assert 'industry_r19.set_quality(graphics_quality)' in world
+require(
+    "docs/R19-NEAR-SECTOR-GPU-LIGHTS.md",
+    "R19", "1800", "48", "F7", "F9", "F10",
+)
 require("scripts/architectural_detail_r4.gd", "func build(")
 premium = require("scripts/premium_architecture.gd", "func make_facade_material(", "emission_image")
 require("scripts/drone.gd", "extends")
@@ -429,6 +449,10 @@ smoke = require(
     "R18 distant R5 facades still drawn as world-wide GPU batches",
     "R18 original R6 skyline still uses giant all-world steel beam batch",
     "R18 ECO quality fails to cull distant buildings/architectural micro-detail",
+    "R19 facade and roof batch sharding lost original premium instances",
+    "R19 industrial batches must be independent per district with no lost assets",
+    "R19 player near Aurora should see exactly two local industrial worklights",
+    "R19 auto / manual ECO change did not disable distant architecture",
     "NEBULA_R17_PBR_IMPORT_SUCCESS",
     "NEBULA_SMOKE_SUCCESS",
 )
@@ -441,4 +465,4 @@ assert "image.generate_mipmaps()" in ship_visual
 assert premium.count("Image.create(") >= 2, "separate facade albedo/emission atlases missing"
 assert "high-detail" not in project.lower(), "project identity may remain stable"
 assert len(smoke) > 1500 and len(city) > 5000 and len(world) > 10000
-print("NEBULA_R18_SOURCE_SUCCESS: six sharded GPU city regions, R5 and R6 LOD, preserved R17 baked textures and R16 combat")
+print("NEBULA_R19_SOURCE_SUCCESS: premium facades + industrial silos GPU sharded, distance-gated lights, R18/17/16 retained")
