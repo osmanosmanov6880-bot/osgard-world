@@ -5,6 +5,7 @@ on:
     branches: [integration/r135-assets-audit-20261024]
     paths:
       - '.github/workflows/r135-rebuild-publish.yml'
+      - 'godot/osgard-r135-standalone/requirements-r135.txt'
   workflow_dispatch:
 
 permissions:
@@ -61,7 +62,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python -m pip install numpy==2.3.5 Pillow==12.3.0 trimesh==4.11.1 scipy==1.17.0 pytest==9.0.2
+          python -m pip install -r godot/osgard-r135-standalone/requirements-r135.txt
           python godot/osgard-r135-standalone/tools/build_r135_service_spine.py --level both
           python -m pytest -q godot/osgard-r135-standalone/tests/test_asset_integrity.py
           find godot/osgard-r135-standalone/models/r135 -maxdepth 1 -type f -printf '%f: %k KB\n'
