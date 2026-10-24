@@ -1,0 +1,140 @@
+/* OSGARD PLAY WAVE 01 — use the available viewport for actual gameplay. */
+dialog#player-dialog{
+  box-sizing:border-box;
+  width:calc(100dvw - 24px);
+  max-width:none;
+  height:calc(100dvh - 24px);
+  max-height:none;
+  margin:auto;
+  padding:0;
+  overflow:hidden;
+  border:1px solid #40576a;
+  border-radius:12px;
+  background:#070b12;
+  color:#eff5fc;
+  box-shadow:0 24px 100px #000d;
+}
+dialog#player-dialog[open]{display:flex;flex-direction:column}
+#player-dialog .player-head{
+  min-height:76px;
+  flex:0 0 auto;
+  padding:12px clamp(12px,2vw,25px);
+  gap:18px;
+  border-bottom:1px solid #293849;
+  background:#0c1420;
+}
+#player-dialog .player-head>div:first-child{min-width:0}
+#player-dialog .player-head h2{
+  font:650 clamp(19px,2vw,27px)/1.12 Inter,system-ui,sans-serif;
+  letter-spacing:-.025em;
+}
+#player-dialog .player-head .eyebrow{
+  color:#7bdde6;
+  font:600 10px/1.4 var(--mono,monospace);
+}
+#player-dialog #player-status{
+  color:#b5cbda;
+  font:400 12px/1.45 Inter,system-ui,sans-serif;
+}
+#player-dialog .player-view{
+  flex:1 1 0%;
+  height:auto;
+  min-height:0;
+  min-width:0;
+  overflow:hidden;
+  isolation:isolate;
+  background:#040911;
+}
+#player-dialog .player-view iframe{
+  display:block;
+  width:100%;
+  height:100%;
+  min-height:0;
+  max-height:100%;
+  border:0;
+  background:#040911;
+}
+#player-dialog .player-tools{
+  flex:0 1 auto;
+  display:flex;
+  gap:8px;
+  align-items:center;
+  justify-content:flex-end;
+}
+#player-dialog .player-tools button,
+#player-dialog .player-tools a{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:44px;
+  padding:8px 13px;
+  border:1px solid #415669;
+  border-radius:7px;
+  background:#142131;
+  color:#e1edf7;
+  font:600 12px/1.2 Inter,system-ui,sans-serif;
+  text-decoration:none;
+  white-space:nowrap;
+  cursor:pointer;
+}
+#player-dialog .player-tools button:hover,
+#player-dialog .player-tools a:hover{
+  border-color:#72dce6;
+  color:#a7f4f9;
+}
+#player-dialog .player-tools button:focus-visible,
+#player-dialog .player-tools a:focus-visible{
+  outline:3px solid #9aeaf0;
+  outline-offset:2px;
+}
+#player-dialog #player-close{
+  width:44px;
+  min-width:44px;
+  padding:0;
+  font-size:24px;
+}
+#player-dialog .player-foot{
+  flex:0 0 auto;
+  min-height:32px;
+  align-items:center;
+  padding:7px clamp(12px,2vw,25px);
+  border-top:1px solid #263849;
+  color:#bdccda;
+  font-size:11px;
+  line-height:1.4;
+  background:#0c1420;
+}
+#player-dialog .player-foot a{color:#8ee4ee}
+#player-dialog .player-foot a:focus-visible{outline:2px solid #9aeaf0;outline-offset:3px}
+@media(max-width:760px){
+  dialog#player-dialog{width:100dvw;height:100dvh;max-width:none;max-height:none;border:0;border-radius:0}
+  #player-dialog .player-head{min-height:68px;padding:9px 10px;gap:8px}
+  #player-dialog .player-head h2{font-size:18px}
+  #player-dialog .player-head .eyebrow{font-size:9px}
+  #player-dialog #player-status{font-size:11px}
+  #player-dialog .player-tools{gap:5px;max-width:62%}
+  #player-dialog .player-tools button,#player-dialog .player-tools a{
+    min-height:44px;
+    padding:6px 9px;
+    font-size:11px;
+  }
+  #player-dialog #player-share{display:none}
+  #player-dialog .player-view{flex:1 1 0%;height:auto;min-height:0}
+  #player-dialog .player-foot{min-height:27px;padding:4px 10px;font-size:10px}
+}
+@media(max-width:430px){
+  #player-dialog #player-fullscreen{font-size:0}
+  #player-dialog #player-fullscreen::before{content:"⛶";font-size:21px}
+  #player-dialog #player-popout{font-size:0}
+  #player-dialog #player-popout::before{content:"↗";font-size:21px}
+}
+@media(max-height:520px) and (orientation:landscape){
+  #player-dialog .player-head{min-height:48px;padding-block:4px}
+  #player-dialog .player-head h2{font-size:16px}
+  #player-dialog .player-head .eyebrow{display:none}
+  #player-dialog #player-status{font-size:10px;margin-top:2px}
+  #player-dialog .player-foot{min-height:22px;padding-block:2px}
+}
+@media(prefers-reduced-motion:reduce){
+  #player-dialog *,#player-dialog *::before,#player-dialog *::after{transition:none!important}
+}
