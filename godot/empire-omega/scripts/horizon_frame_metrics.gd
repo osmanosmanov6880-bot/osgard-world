@@ -1,11 +1,11 @@
 extends RefCounted
 ## HORIZON R16: measured render-frame time, not a synthetic FPS benchmark.
-## Read from Node._process(delta). Drop large background-resume gaps.
+## Read from Node._process(delta). Keep severe 0.5s hitches; drop only long resume gaps.
 ## Bounded ring storage avoids allocations during gameplay except warmup.
 
 const MAX_SAMPLES: int = 240
 const MIN_FRAME_SECONDS: float = 0.0005
-const MAX_FRAME_SECONDS: float = 0.25
+const MAX_FRAME_SECONDS: float = 1.0
 const MIN_REPORT_SAMPLES: int = 30
 
 var frame_milliseconds := PackedFloat32Array()
