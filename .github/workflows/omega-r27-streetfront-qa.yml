@@ -8,6 +8,9 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+concurrency:
+  group: omega-r27-preview-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 jobs:
   native-live-architecture:
     runs-on: ubuntu-latest
