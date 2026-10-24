@@ -1,0 +1,93 @@
+{
+  "schema": "OSGARD_R135_SERVICE_SPINE_V1",
+  "lod": "eco",
+  "asset": "models/r135/service_spine_eco.glb",
+  "sha256": "c6bbc41c53e596d5048371e639a662cd2a75d58a02f75c9df93ffced7685533b",
+  "triangles": 21116,
+  "material_batches": {
+    "epoxy_floor": {
+      "triangles": 528,
+      "batched_primitives": 12
+    },
+    "brushed_aluminium": {
+      "triangles": 7544,
+      "batched_primitives": 281
+    },
+    "galvanized_steel": {
+      "triangles": 4716,
+      "batched_primitives": 155
+    },
+    "emission_bar": {
+      "triangles": 88,
+      "batched_primitives": 2
+    },
+    "service_paint": {
+      "triangles": 1032,
+      "batched_primitives": 23
+    },
+    "dielectric_gasket": {
+      "triangles": 336,
+      "batched_primitives": 28
+    },
+    "warning_enamel": {
+      "triangles": 156,
+      "batched_primitives": 13
+    },
+    "polymer_jacket": {
+      "triangles": 2496,
+      "batched_primitives": 112
+    },
+    "warm_copper": {
+      "triangles": 2840,
+      "batched_primitives": 86
+    },
+    "ceramic_insulation": {
+      "triangles": 396,
+      "batched_primitives": 11
+    },
+    "frosted_glass": {
+      "triangles": 120,
+      "batched_primitives": 10
+    },
+    "optical_fiber": {
+      "triangles": 864,
+      "batched_primitives": 24
+    }
+  },
+  "batched_mesh_count": 12,
+  "component_count": 757,
+  "semantic_parts": {
+    "access_door": 8,
+    "anti_slip_groove": 48,
+    "cabinet_seal": 8,
+    "cabinet_warning_strip": 8,
+    "cable_tie_plate": 8,
+    "captive_bolt": 142,
+    "ceiling_truss": 2,
+    "centrifugal_pump_body": 5,
+    "cold_containment_screen": 10,
+    "connector_block": 64,
+    "contact_pin": 64,
+    "deck_end_cap": 12,
+    "door_pull": 8,
+    "duct_standing_seam": 26,
+    "fiber_patch_lead": 72,
+    "glass_mullion": 10,
+    "glazing_safety_marker": 5,
+    "maintenance_deck": 12,
+    "manifold_pipe": 33,
+    "pipe_collar": 66,
+    "pump_end_bearing": 5,
+    "pump_heat_sink_fin": 40,
+    "pump_motor_mount": 5,
+    "recessed_light": 2,
+    "supply_louver": 46,
+    "switchgear_cabinet": 8,
+    "top_glazing_seal": 10,
+    "truss_bracket": 18,
+    "ventilation_duct": 2,
+    "vibration_mount": 10
+  },
+  "simulation_only": true,
+  "real_hardware_connected": false
+}

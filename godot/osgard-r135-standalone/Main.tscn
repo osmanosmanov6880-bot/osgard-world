@@ -1,0 +1,9 @@
+[gd_scene load_steps=2 format=3]
+[ext_resource type="Script" path="res://StandaloneMain.gd" id="1_main"]
+[node name="R135Standalone" type="Node3D"]
+script = ExtResource("1_main")
+[node name="CinematicCamera" type="Camera3D" parent="."]
+current = true
+fov = 55.0
+near = 0.05
+far = 150.0
