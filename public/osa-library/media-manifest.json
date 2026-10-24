@@ -994,5 +994,54 @@
         "quality_check_pending"
       ]
     }
-  ]
+  ],
+  "finishedFilmRelease": {
+    "project": "OSA Cinema — Beyond the Model",
+    "pageUrl": "https://osa-cinema-beyond-the-model.osman-absolu-5357.chatgpt.site/",
+    "status": "published_playback_verified",
+    "lastPlaybackCheck": "2026-10-24",
+    "note": "This is a finished film release hosted separately from the original Runway asset inventory. The original inventory metrics below do not include these assembled film files.",
+    "freeAssets": [
+      {
+        "locale": "ru",
+        "kind": "trailer",
+        "url": "https://osa-cinema-beyond-the-model.osman-absolu-5357.chatgpt.site/media/free/trailer-ru.mp4",
+        "durationSeconds": 55.583,
+        "access": "free",
+        "playbackVerified": true
+      },
+      {
+        "locale": "en",
+        "kind": "trailer",
+        "url": "https://osa-cinema-beyond-the-model.osman-absolu-5357.chatgpt.site/media/free/trailer-en.mp4",
+        "durationSeconds": 45.208,
+        "access": "free",
+        "playbackVerified": true
+      },
+      {
+        "locale": "ru",
+        "kind": "act-01",
+        "url": "https://osa-cinema-beyond-the-model.osman-absolu-5357.chatgpt.site/media/free/act-01-ru.mp4",
+        "durationSeconds": 73,
+        "access": "free",
+        "playbackVerified": true
+      },
+      {
+        "locale": "en",
+        "kind": "act-01",
+        "url": "https://osa-cinema-beyond-the-model.osman-absolu-5357.chatgpt.site/media/free/act-01-en.mp4",
+        "durationSeconds": 68.917,
+        "access": "free",
+        "playbackVerified": true
+      }
+    ],
+    "memberRelease": {
+      "acts": [
+        "act-02",
+        "act-03"
+      ],
+      "status": "not_published_or_entitlement_gated",
+      "reason": "Subscription checkout and access control are not connected. Do not expose direct media URLs publicly."
+    }
+  }
 }
