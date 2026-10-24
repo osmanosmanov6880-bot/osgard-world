@@ -170,7 +170,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          tag=r135-web-mission-w3-20261024
+          tag=r135-web-diagnostics-w4-20261024
           if ! gh release view "$tag" >/dev/null 2>&1; then
             gh release create "$tag" --target "$GITHUB_SHA" \
               --title "OSGARD R135 W4 — interactive fault diagnostics and safer maintenance" \
