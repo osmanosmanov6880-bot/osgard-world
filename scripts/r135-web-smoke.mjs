@@ -104,7 +104,12 @@ async function keyboardDiagnostics(page) {
     'Wrong inspection camera was accepted')
   await page.keyboard.press('v')
   await expectState(page, x => x?.view === x?.challenge_target_view, 'Correct optical view not selected')
-  await page.screenshot({ path: resolve(output, 'w5-desktop-optical-active.png'), fullPage: true })
+  await expectState(page, x => x?.camera_target_visible
+    && !x?.camera_keep_width
+    && x?.camera_target_screen_x > .25 && x?.camera_target_screen_x < .75
+    && x?.camera_target_screen_y > .22 && x?.camera_target_screen_y < .78,
+    'W6 desktop optical head must remain inside central 50% of viewport')
+  await page.screenshot({ path: resolve(output, 'w6-desktop-optical-active.png'), fullPage: true })
   await page.keyboard.press('e')
   await expectState(page, x => x?.challenge_step === 3 && x?.fault_visual_state === 'inspected',
     'W5 optical scan must turn the in-world indicator green')
@@ -143,7 +148,12 @@ async function touchDiagnostics(page) {
   await expectState(page, x => x?.view === x?.challenge_target_view
     && x?.optical_tracking && x?.camera_effective_distance > x?.distance * 1.1,
     'W5 portrait optical tracking did not widen the camera')
-  await page.screenshot({ path: resolve(output, 'w5-portrait-optical-active.png'), fullPage: true })
+  await expectState(page, x => x?.camera_target_visible
+    && x?.camera_keep_width && x?.camera_fov >= 60
+    && x?.camera_target_screen_x > .25 && x?.camera_target_screen_x < .75
+    && x?.camera_target_screen_y > .24 && x?.camera_target_screen_y < .73,
+    'W6 portrait optical head must remain in safe playable zone')
+  await page.screenshot({ path: resolve(output, 'w6-portrait-optical-active.png'), fullPage: true })
   await tapSceneButton(page, 3) // SCAN TARGET
   await expectState(page, x => x?.challenge_step === 3 && x?.fault_visual_state === 'inspected',
     'W5 touch scan did not clear fault light')
