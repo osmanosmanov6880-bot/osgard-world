@@ -11,6 +11,12 @@ const MAX_FRAME_SECONDS: float = 1.0 / 20.0
 static func portrait(viewport: Vector2) -> bool:
 	return viewport.x >= 280.0 and viewport.y > viewport.x * 1.12
 
+static func follow_rate(speed: float, portrait_mode: bool) -> float:
+	# A 0.35/sec mobile chase yaw let the car leave portrait framing after a
+	# turn. Catch up in roughly half a second while avoiding snap rotations.
+	var v: float = absf(speed) if is_finite(speed) else 0.0
+	return (1.75 if portrait_mode else 1.30) + minf(v/28.0,1.0)*0.95
+
 static func desired_position(focus: Vector3, yaw: float, pitch: float,
 		speed: float, driving: bool, viewport: Vector2) -> Vector3:
 	var is_phone: bool = portrait(viewport)
