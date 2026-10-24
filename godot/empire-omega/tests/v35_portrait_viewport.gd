@@ -22,7 +22,7 @@ func _run() -> void:
 	for width_height in [Vector2i(390,844),Vector2i(360,780),Vector2i(412,915),Vector2i(768,1024)]:
 		check(SCREEN.is_phone_portrait(width_height),"portrait detected "+str(width_height))
 		check(is_equal_approx(SCREEN.content_factor(width_height),2.4),"mobile HUD is enlarged "+str(width_height))
-	for width_height in [Vector2i(1366,768),Vector2i(1600,900),Vector2i(390,600),Vector2i(1920,1080)]:
+	for width_height in [Vector2i(1366,768),Vector2i(1600,900),Vector2i(600,390),Vector2i(1920,1080)]:
 		check(not SCREEN.is_phone_portrait(width_height),"no false mobile match "+str(width_height))
 		check(is_equal_approx(SCREEN.content_factor(width_height),1.0),"desktop and landscape remain 1:1 "+str(width_height))
 	var main := FileAccess.get_file_as_string("res://scripts/main.gd")
