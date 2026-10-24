@@ -96,11 +96,11 @@ body {
 	</head>
 	<body>
 		<canvas id="canvas">
-			Your browser does not support the canvas tag.
+			Ваш браузер не поддерживает canvas.
 		</canvas>
 
 		<noscript>
-			Your browser does not support JavaScript.
+			Для запуска игры включите JavaScript в браузере.
 		</noscript>
 
 		<div id="status">
@@ -151,12 +151,22 @@ const engine = new Engine(GODOT_CONFIG);
 
 	function displayFailureNotice(err) {
 		console.error(err);
-		if (err instanceof Error) {
-			setStatusNotice(err.message);
-		} else if (typeof err === 'string') {
-			setStatusNotice(err);
+		const errorText = err instanceof Error ? err.message : typeof err === 'string' ? err : '';
+		if (errorText.includes('WebGL2')) {
+			document.documentElement.lang = 'ru';
+			setStatusNotice('Для запуска игры требуется WebGL 2.\nИспользуйте браузер и видеокарту с поддержкой WebGL 2 и включённым аппаратным ускорением.');
+			const backLink = document.createElement('a');
+			backLink.href = '/games/#catalog';
+			backLink.textContent = '← Вернуться к каталогу игр';
+			backLink.setAttribute('aria-label', 'Вернуться к каталогу игр');
+			backLink.style.cssText = 'display:inline-block;margin-top:1rem;color:#83e4dc;font-weight:700;text-decoration:underline;';
+			statusNotice.appendChild(backLink);
+		} else if (errorText) {
+			document.documentElement.lang = 'ru';
+			setStatusNotice(errorText);
 		} else {
-			setStatusNotice('An unknown error occurred.');
+			document.documentElement.lang = 'ru';
+			setStatusNotice('Не удалось запустить игру. Проверьте соединение и попробуйте ещё раз.');
 		}
 		setStatusMode('notice');
 		initializing = false;

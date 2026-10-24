@@ -161,6 +161,7 @@ jobs:
           test -s "$output/index.js"
           test -s "$output/index.wasm"
           test -s "$output/index.pck"
+          node scripts/localize-godot-web-export.mjs "$output"
           grep -Fq 'REMIX ARENA' "$output/index.html"
           du -ah "$output" | tail -n 12
       - name: Commit native sources and verified Web export

@@ -58,6 +58,7 @@ jobs:
           set -euo pipefail
           mkdir -p godot/empire-omega/.build-web
           godot --headless --path godot/empire-omega --export-release Web "$GITHUB_WORKSPACE/godot/empire-omega/.build-web/index.html"
+          node scripts/localize-godot-web-export.mjs godot/empire-omega/.build-web
           test -s godot/empire-omega/.build-web/index.html
           test -n "$(find godot/empire-omega/.build-web -maxdepth 1 -name '*.wasm' -size +100k -print -quit)"
           test -n "$(find godot/empire-omega/.build-web -maxdepth 1 -name '*.pck' -size +100k -print -quit)"
