@@ -264,7 +264,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p "$RUNNER_TEMP/r135-web-release"
-          gh release download r135-web-mission-w4-20261024 \
+          gh release download r135-web-diagnostics-w4-20261024 \
             --repo osmanosmanov6880-bot/osgard-world \
             --pattern "OSGARD_R135_OPTIMIZED_WEB.zip" \
             --pattern "R135_OPTIMIZED_MANIFEST.json" \
