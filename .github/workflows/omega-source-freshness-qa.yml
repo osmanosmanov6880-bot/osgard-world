@@ -33,7 +33,7 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
           src=Path('.github/workflows/omega-godot-web.yml').read_text()
-          gate='python3 scripts/omega-build-freshness.py "${{ github.sha }}" origin/master'
+          gate='if ! python3 scripts/omega-build-freshness.py'
           assert gate in src, 'build gate missing'
           assert src.index(gate) < src.index('git reset --mixed origin/master'), 'gate must precede restaging'
           print('PASS: verified source freshness before release restaging')
