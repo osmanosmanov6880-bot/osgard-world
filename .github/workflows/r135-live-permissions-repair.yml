@@ -1,0 +1,69 @@
+name: OSGARD R135 one-time narrow permission repair
+
+on:
+  push:
+    branches: [feat/r135-mission-control-20261024]
+    paths:
+      - ".github/workflows/r135-live-permissions-repair.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  repair-only-r135:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Configure established OSGARD SSH deployment credential
+        shell: bash
+        env:
+          DEPLOY_HOST: ${{ secrets.OSGARD_DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.OSGARD_DEPLOY_USER }}
+          DEPLOY_KEY: ${{ secrets.OSGARD_DEPLOY_KEY }}
+        run: |
+          set -euo pipefail
+          test -n "$DEPLOY_HOST" && test -n "$DEPLOY_USER" && test -n "$DEPLOY_KEY"
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "$DEPLOY_KEY" > ~/.ssh/osgard_r135_permissions
+          chmod 600 ~/.ssh/osgard_r135_permissions
+          ssh-keyscan -T 10 -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Repair only the pre-existing version-verified R135 game directory
+        shell: bash
+        env:
+          DEPLOY_HOST: ${{ secrets.OSGARD_DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.OSGARD_DEPLOY_USER }}
+        run: |
+          set -euo pipefail
+          ssh -i ~/.ssh/osgard_r135_permissions -o BatchMode=yes "$DEPLOY_USER@$DEPLOY_HOST" 'sh -s' <<'REMOTE'
+          set -eu
+          docker exec osgard-world sh -lc '
+            set -eu
+            target=/usr/share/nginx/html/games/r135-service
+            test -d "$target"
+            test -s "$target/index.html"
+            test -s "$target/index.wasm"
+            test -s "$target/index.pck"
+            test -s "$target/release.json"
+            grep -Fq "r135-web-optimized-20261024" "$target/release.json"
+            # No replacement files, other game writes or container restarts.
+            chmod 755 "$target"
+            test "$(stat -c %a "$target")" = 755
+            echo "R135 permission repaired only for $target"
+            wget -q -O /dev/null -T 12 http://127.0.0.1/games/r135-service/index.html
+            wget -q -O /dev/null -T 12 http://127.0.0.1/games/r135-service/release.json
+            echo "R135 original origin route HTTP 200 verified"
+          '
+          REMOTE
+
+      - name: Verify public R135 HTML and actual Godot manifest after narrow fix
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --max-time 20 -fsS -H 'Cache-Control: no-cache' "https://osgard.world/games/r135-service/index.html?repair=${GITHUB_RUN_ID}" -o /tmp/r135-index.html
+          grep -Fq 'index.js' /tmp/r135-index.html
+          curl --max-time 20 -fsS -H 'Cache-Control: no-cache' "https://osgard.world/games/r135-service/release.json?repair=${GITHUB_RUN_ID}" -o /tmp/r135-manifest.json
+          grep -Fq 'r135-web-optimized-20261024' /tmp/r135-manifest.json
+          printf 'R135 HTML and release manifest: public HTTPS 200, native Godot export confirmed\n'
