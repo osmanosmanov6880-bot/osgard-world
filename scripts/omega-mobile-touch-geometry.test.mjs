@@ -35,9 +35,10 @@ test('game itself retains same authoritative geometry and delivers discrete acti
     '53.0*scale_factor','78.0*scale_factor',
     'viewport_size.y-58.0*scale_factor','viewport_size.y-142.0*scale_factor',
     'var button: TouchScreenButton', 'const DISCRETE_ACTIONS = ["enter_vehicle","interact","pause_game"]',
-    'button.pressed.connect(_relay_discrete_action.bind(action,true))',
-    'Input.parse_input_event(event)'
+    'button.action = action',
+    'button.passby_press = not DISCRETE_ACTIONS.has(action)'
   ])assert.ok(godot.includes(snippet),'Godot/browser contract drift: '+snippet)
+  assert.ok(!godot.includes('_relay_discrete_action'),'Godot already emits native InputEventAction: duplicate relays would double-toggle PAUSE')
   assert.ok(browser.includes('browserTouchPoint(bounds,\'enter_vehicle\')'))
   assert.ok(browser.includes('browserTouchPoint(bounds,\'move_forward\')'))
   assert.ok(browser.includes('browserTouchPoint(bounds,\'move_left\')'))
