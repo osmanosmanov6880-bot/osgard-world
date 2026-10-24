@@ -42,6 +42,11 @@
   max-width:585px;margin:27px 0 27px;
 }
 .theme-intelligence .intelligence-command .intelligence-command-actions{gap:12px;margin:0;flex-wrap:wrap}
+.intelligence-cinema-cta{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:14px 0 0;color:#a9bdca;font-size:12px;line-height:1.5}
+.intelligence-cinema-cta>span{font:700 9px/1.4 'JetBrains Mono',monospace;letter-spacing:.13em;color:#e7a2b0}
+.intelligence-cinema-cta a{color:#a5f3ed;text-decoration:underline;text-decoration-color:#a5f3ed70;text-underline-offset:3px}
+.intelligence-cinema-cta a:hover{color:#effffb;text-decoration-color:currentColor}
+.intelligence-cinema-cta a:focus-visible{outline:2px solid #a5f3ed;outline-offset:3px;border-radius:2px}
 .theme-intelligence .intelligence-command .intelligence-command-actions .brand-button{
   display:inline-flex;align-items:center;justify-content:space-between;
   min-height:55px;gap:15px;padding:14px 19px;border-radius:5px;
