@@ -1371,6 +1371,9 @@ func _apply_responsive_layout() -> void:
 		_set_panel_frame(speed_panel,frames["speed"],0,0,0,0)
 		_set_panel_frame(map_panel,frames["map"],0,0,0,0)
 		_set_panel_frame(controls_panel,frames["help"],0,0,0,0)
+		# The eight native labelled phone buttons already explain the controls.
+		# Remove the duplicate lower instruction bar to expose more road.
+		controls_panel.visible = not bool(frames["portrait_focus"])
 		_set_panel_frame(journal_panel,frames["journal"],0,0,0,0)
 		_set_panel_frame(diagnostic_panel,frames["diagnostics"],0,0,0,0)
 		_set_panel_frame(toast_panel,frames["toast"],0,0,0,0)
@@ -1393,6 +1396,7 @@ func _apply_responsive_layout() -> void:
 		_set_panel_frame(speed_panel,Rect2(-360,-145,336,122),1,1,1,1)
 		_set_panel_frame(map_panel,Rect2(24,-276,248,252),0,0,1,1)
 		_set_panel_frame(controls_panel,Rect2(290,-92,-672,68),0,1,1,1)
+		controls_panel.visible = true
 		_set_panel_frame(journal_panel,Rect2(-476,186,452,440),1,1,0,0)
 		_set_panel_frame(diagnostic_panel,Rect2(24,116,360,105),0,0,0,0)
 		_set_panel_frame(toast_panel,Rect2(-252,24,504,64),0.5,0.5,0,0)
