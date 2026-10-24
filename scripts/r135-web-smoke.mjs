@@ -169,6 +169,43 @@ async function touchDiagnostics(page) {
     && x?.fault_visual_state === 'cleared', 'Touch W5 diagnostic did not complete')
 }
 
+async function verifyAdaptiveHud(page) {
+  const original = page.viewportSize()
+  for (const [width, height, mode] of [
+    [360, 780, 'portrait'],
+    [430, 932, 'portrait'],
+    [932, 430, 'landscape'],
+  ]) {
+    await page.setViewportSize({ width, height })
+    const state = await expectState(page, x => x?.scene_ready && x?.hud_layout_mode === mode
+      && Math.abs(x.viewport_w / x.viewport_h - width / height) < .012
+      && x?.button_centers?.length === 8 && x?.hud_rect && x?.action_rect,
+      'W8 Godot responsive layout update missing for ' + width + 'x' + height, 25_000)
+    const visible = rect => rect.x >= 0 && rect.y >= 0 && rect.w > 0 && rect.h > 0
+      && rect.x + rect.w <= state.viewport_w + 4
+      && rect.y + rect.h <= state.viewport_h + 4
+    if (!visible(state.hud_rect) || !visible(state.action_rect)) {
+      throw new Error('W8 HUD escaped safe viewport ' + width + 'x' + height +
+        ' : ' + JSON.stringify({ hud: state.hud_rect, actions: state.action_rect }))
+    }
+    if (state.hud_rect.y + state.hud_rect.h >= state.action_rect.y - 6) {
+      throw new Error('W8 status panel overlaps touch controls at ' + width + 'x' + height)
+    }
+    for (const position of state.button_centers) {
+      if (position.x < state.action_rect.x || position.x > state.action_rect.x + state.action_rect.w
+        || position.y < state.action_rect.y || position.y > state.action_rect.y + state.action_rect.h) {
+        throw new Error('W8 button center outside control panel: ' + width + 'x' + height)
+      }
+    }
+    await page.screenshot({ path: resolve(output, 'w8-hud-' + width + 'x' + height + '.png'), fullPage: true })
+  }
+  if (original) {
+    await page.setViewportSize(original)
+    await expectState(page, x => x?.scene_ready && x?.hud_layout_mode === 'portrait',
+      'W8 failed to restore original mobile viewport', 25_000)
+  }
+}
+
 let failed = false
 try {
   for (const [name, opts, isMobile] of [
@@ -209,6 +246,7 @@ try {
       if (isMobile) {
         await touchMission(page)
         await touchDiagnostics(page)
+        await verifyAdaptiveHud(page)
       } else {
         await keyboardMission(page)
         await keyboardDiagnostics(page)
