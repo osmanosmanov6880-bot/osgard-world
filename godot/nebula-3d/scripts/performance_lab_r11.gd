@@ -42,6 +42,7 @@ var r36_start_button: Button
 var r36_export_button: Button
 var r36_close_button: Button
 var r36_command_row: HBoxContainer
+var r38_column: VBoxContainer
 var r36_panel_style: StyleBoxFlat
 var r36_touch_start_count: int = 0
 var r36_touch_start_sum_ms: float = 0.0
@@ -73,6 +74,7 @@ func _ready() -> void:
     overlay.add_theme_stylebox_override("panel", style)
     add_child(overlay)
     var column := VBoxContainer.new()
+    r38_column = column
     column.add_theme_constant_override("separation", 7)
     overlay.add_child(column)
     stats_label = Label.new()
@@ -158,9 +160,18 @@ func _r36_relayout() -> void:
     overlay.offset_left = left + 8.0
     overlay.offset_top = top + 8.0
     overlay.offset_right = overlay.offset_left + minf(
-        210.0 if landscape else 300.0, usable_w - 16.0)
+        164.0 if landscape else 300.0, usable_w - 16.0)
     overlay.offset_bottom = overlay.offset_top + (
-        108.0 if landscape else 130.0)
+        152.0 if landscape else 130.0)
+    # R38: the short-landscape action grid begins ~240px from the left.
+    # A wide 4-button row would cover CAMERA on a notched 568x320 phone.
+    # Keep the panel narrow; move the mode button to its own row there.
+    if landscape:
+        if r38_mode_button.get_parent() != r38_column:
+            r38_mode_button.reparent(r38_column)
+    elif r38_mode_button.get_parent() != r36_command_row:
+        r38_mode_button.reparent(r36_command_row)
+        r36_command_row.move_child(r38_mode_button, 2)
     if is_instance_valid(r36_panel_style):
         r36_panel_style.content_margin_left = 8
         r36_panel_style.content_margin_right = 8
