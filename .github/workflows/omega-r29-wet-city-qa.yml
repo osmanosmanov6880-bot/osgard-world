@@ -1,7 +1,7 @@
 name: OSGARD HORIZON R29 wet roads and organic-only foliage QA
 on:
   pull_request:
-    branches: [master, feat/horizon-r28-road-marking-batches-rebased]
+    branches: [master, feat/omega-r28-road-marking-batches-rebased]
     paths:
       - 'godot/empire-omega/**'
       - '.github/workflows/omega-r29-wet-city-qa.yml'
