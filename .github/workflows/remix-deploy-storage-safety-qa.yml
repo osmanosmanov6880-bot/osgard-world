@@ -1,0 +1,36 @@
+name: REMIX isolated Docker storage and rollback QA
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/deploy-remix-arena-static.yml"
+      - ".github/workflows/remix-deploy-storage-safety-qa.yml"
+      - "scripts/test-remix-deploy-storage.mjs"
+  push:
+    branches: [master]
+    paths:
+      - ".github/workflows/deploy-remix-arena-static.yml"
+      - ".github/workflows/remix-deploy-storage-safety-qa.yml"
+      - "scripts/test-remix-deploy-storage.mjs"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: remix-deploy-storage-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  storage-and-rollback-safety:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Check actual production cleanup and rollback shell
+        run: |
+          set -euo pipefail
+          node --check scripts/test-remix-deploy-storage.mjs
+          node scripts/test-remix-deploy-storage.mjs
