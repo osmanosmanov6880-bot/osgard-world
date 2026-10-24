@@ -72,8 +72,21 @@ jobs:
           for test in v28_touch_controls v29_responsive_layout; do
             timeout --signal=TERM --kill-after=5s 40s godot --headless --path godot/empire-omega --script "res://tests/$test.gd"
           done
+  browser-spec-preflight:
+    if: github.event_name != 'workflow_run'
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check actual WebGL smoke script is executable before release
+        run: node --check scripts/omega-live-webgl.spec.mjs && node --check playwright.omega-live-webgl.config.mjs
+  # Public WebGL testing is release acceptance, not a PR preflight:
+  # a PR cannot honestly test its own unpublished WASM on the live site.
   actual-desktop-phone-webgl:
-    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    if: github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'master'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
