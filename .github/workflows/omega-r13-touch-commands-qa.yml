@@ -45,7 +45,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for test in v21_vehicle_dynamics v25_horizon_racing v27_driver_assists v28_touch_controls v29_responsive_layout v30_compact_hud v31_academy_navigation v32_road_guidance v33_checkpoint_gate v34_real_touch_drive v35_touch_commands; do
+          for test in v21_vehicle_dynamics v25_horizon_racing v27_driver_assists v28_touch_controls v29_responsive_layout v30_compact_hud v31_academy_navigation v32_road_guidance v33_checkpoint_gate v34_real_touch_drive v35_portrait_viewport v36_mobile_car_entry v37_touch_commands; do
             echo "Godot R13 native: $test"
             timeout --signal=TERM --kill-after=5s 95s godot --headless --path godot/empire-omega --script "res://tests/$test.gd"
           done
