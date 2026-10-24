@@ -1,0 +1,40 @@
+name: OSGARD Omega stale export protection native Git QA
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - 'scripts/omega-build-freshness.py'
+      - '.github/workflows/omega-godot-web.yml'
+      - '.github/workflows/omega-source-freshness-qa.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-tree-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Verify stale-safety logic against a temporary real Git repository
+        run: python3 scripts/omega-build-freshness.py --self-test
+      - name: Verify current source against the checked-out revision
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/omega-build-freshness.py HEAD HEAD
+          if python3 scripts/omega-build-freshness.py HEAD does-not-exist; then
+            echo 'Missing source revision was incorrectly accepted'
+            exit 1
+          fi
+      - name: Verify the release job calls the source-tree gate before restaging
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          src=Path('.github/workflows/omega-godot-web.yml').read_text()
+          gate='if ! python3 scripts/omega-build-freshness.py'
+          assert gate in src, 'build gate missing'
+          assert src.index(gate) < src.index('git reset --mixed origin/master'), 'gate must precede restaging'
+          print('PASS: verified source freshness before release restaging')
+          PY
