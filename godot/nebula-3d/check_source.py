@@ -672,6 +672,13 @@ r31_mobile = require(
     "NEBULA_R31_MOBILE_TOUCH_SUCCESS",
 )
 assert "r31_mobile_qa_enabled" in world
+# Mobile QA must prove browser touches, layout and engine events separately.
+assert "content_scale_size = css_size" in world
+assert "r31_mobile_css_size" in world
+assert "r31_raw_touch_events" in r21_mobile
+assert "window.__nebulaDomTouchQA" in r31_mobile
+assert "real mobile viewport and physics loop stabilized" in r31_mobile
+assert "native browser touch dispatch" in r31_mobile
 assert 'state["touch_throttle"] = snappedf(ship.touch_throttle, 0.01)' in world
 assert "get_viewport().get_texture().get_image()" in world
 assert "window.__nebulaR11CaptureData" in world
