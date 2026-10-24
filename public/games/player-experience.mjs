@@ -11,6 +11,7 @@ const resumeLink = $('#last-session-link')
 const resumeLabel = $('#last-session-game')
 const resumeClear = $('#last-session-clear')
 const connection = $('#player-connection-status')
+const catalogConnection = $('#catalog-connection-status')
 const cards = new Map([...document.querySelectorAll('#games-grid article.card[data-game]')].map(card => [card.dataset.game, card]))
 const allowedIds = new Set(cards.keys())
 let lastRecord = null
@@ -136,10 +137,12 @@ updateHelp()
 setExpanded(false)
 
 function updateConnection() {
-  if (!connection) return
   const offline = navigator.onLine === false
-  connection.hidden = !offline
-  connection.textContent = offline ? 'Соединение не обнаружено. Сетевые режимы могут быть недоступны.' : ''
+  for (const notice of [catalogConnection, connection]) {
+    if (!notice) continue
+    notice.hidden = !offline
+    notice.textContent = offline ? 'Соединение не обнаружено. Сетевые режимы могут быть недоступны.' : ''
+  }
 }
 window.addEventListener('offline', updateConnection)
 window.addEventListener('online', updateConnection)
