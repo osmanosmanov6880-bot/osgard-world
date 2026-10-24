@@ -37,3 +37,11 @@ Software Chromium with SwiftShader validates behavior and framing but not physic
 - W6.2 screenshot has no right-edge text cut-off, but large active label overlays the equipment and labels for unrelated faults add noise. Its first substantial blue-geometry row starts at `0.2952` of image height versus W5 `0.4105`, measured using the same fixed color/width heuristic; this is not an objective art quality score.
 - W6.3 at commit `82cc6578468d859170c7e9d0d56f03e335a1374a` changes four files in a single atomic Git commit: move portrait framing slightly upward, reduce fault-label footprint, show only the active in-world fault label while preserving passive markers, expose `fault_label_visible_count`, and assert FOV `56-58` plus only one visible active label on desktop and touch QA.
 - Await GitHub Actions `40108970977` and inspect real portrait screenshot before approving visual promotion. W5 production remains pinned and untouched.
+
+## W6.3 passing gameplay + pixel evidence; W6.4 caption refinement
+
+- Candidate run `40108970977` on source `82cc6578468d859170c7e9d0d56f03e335a1374a` completed **SUCCESS**: Godot 4.4.1, real desktop/mobile SwiftShader WebGL mission, Nginx gzip/WASM/PCK 206 and stored QA assets. The artifact is `12565549877` and has an independently inspected W6 manifest (version `r135-web-framing-w6-20261024`).
+- Real 1082x2202 portrait image passed the fixed-color geometry gate: first substantial structure at 27.66% screen height, blue geometry coverage 29.05% of sampled game area. W5 reference started at 41.05%.
+- Visual review still identified a **portrait-only occlusion**: the caption overlapped/partially disappeared behind the top beam. Desktop caption was readable. W6.4 raises the portrait caption to 1.34 local units while leaving desktop placement at 0.82, without changing mission logic or camera targeting.
+- Candidate run `40109700192` validates this final caption adjustment. Do not merge or promote until the new screenshot has been inspected.
+- New `scripts/r135-pixel-composition-qa.py` gives a repeatable screenshot gate; W5 fails and the improved W6.3 reference passes. Pillow-based pixel checks are an auxiliary composition metric only, never proof of AAA rendering or hardware FPS.
