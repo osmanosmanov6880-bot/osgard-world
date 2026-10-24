@@ -95,7 +95,11 @@ func _layout_for_size(pixels: Vector2) -> void:
     viewport_pixels = pixels
     var w: float = pixels.x
     var h: float = pixels.y
-    r23_landscape_layout = h < 530.0 and w >= 640.0
+    # Narrow landscape phones (e.g. 568x320) are not portrait screens.
+    # Portrait coordinates placed CRUISE directly over THRUST there.
+    # The four-column landscape grid still has safe left-stick separation
+    # for widths >= 380 logical pixels.
+    r23_landscape_layout = h < 530.0 and w >= 380.0 and w > h
     # Touch circles maintain legible labels but cannot overlap each other on
     # shallow, 16:9 landscape phones with 9 independent gameplay actions.
     base_radius = clampf(minf(w, h) * (0.079 if r23_landscape_layout else 0.093),
