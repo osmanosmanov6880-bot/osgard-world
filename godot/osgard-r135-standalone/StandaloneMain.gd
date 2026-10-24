@@ -173,6 +173,9 @@ func _update_layout() -> void:
     if hud_panel == null:
         return
     var size := get_viewport().get_visible_rect().size
+    var previous_layout_size: Vector2 = last_layout_size
+    var first_layout: bool = previous_layout_size == Vector2.ZERO
+    var did_resize: bool = not first_layout and size.distance_squared_to(previous_layout_size) > 1.0
     last_layout_size = size
     var portrait := _viewport_is_portrait()
     var margin := 24.0 if portrait else 18.0
@@ -208,6 +211,13 @@ func _update_layout() -> void:
     # panel visible inside a 360-pixel logical viewport.
     hud_panel.custom_minimum_size = Vector2(hud_width, 0.0)
     action_panel.custom_minimum_size = Vector2(control_width, 0.0)
+    # First paint: preserve native PanelContainer sizing until Control layout settles.
+    # Recalculate explicit width/height only on a real viewport transition.
+    if first_layout or not did_resize:
+        hud_panel.position = Vector2(margin, (32.0 if compact else 42.0) if portrait else margin)
+        action_panel.position = Vector2(margin, maxf(0.0, size.y - (355.0 if compact else 455.0) if portrait else size.y - 150.0))
+        _update_view()
+        return
     hud_panel.reset_size()
     action_panel.reset_size()
     hud_panel.size = Vector2(hud_width, hud_panel.get_combined_minimum_size().y)
