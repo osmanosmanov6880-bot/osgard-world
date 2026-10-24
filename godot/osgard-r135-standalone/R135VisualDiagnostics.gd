@@ -30,8 +30,8 @@ func _add_indicator(parent: Node3D, location: Vector3, title: String) -> void:
     var indicator := MeshInstance3D.new()
     indicator.name = "GlowingFaultTarget"
     var disc := CylinderMesh.new()
-    disc.top_radius = 0.14
-    disc.bottom_radius = 0.14
+    disc.top_radius = 0.22
+    disc.bottom_radius = 0.22
     disc.height = 0.045
     disc.radial_segments = 20
     indicator.mesh = disc
@@ -42,9 +42,9 @@ func _add_indicator(parent: Node3D, location: Vector3, title: String) -> void:
     var tag := Label3D.new()
     tag.name = "ReadableFaultTag"
     tag.text = title + "  [SIM]"
-    tag.font_size = 32
-    tag.pixel_size = 0.0028
-    tag.position = Vector3(0, 0.25, 0)
+    tag.font_size = 42
+    tag.pixel_size = 0.0052
+    tag.position = Vector3(0, 0.43, 0)
     tag.billboard = BaseMaterial3D.BILLBOARD_ENABLED
     tag.modulate = Color(0.50, 0.78, 0.87)
     assembly.add_child(tag)
@@ -75,6 +75,13 @@ func update_visuals(fault_index: int, is_active: bool, is_completed: bool, step:
         marker_materials[i].emission = color
         marker_materials[i].emission_energy_multiplier = 0.48 + (0.95 * pulse if highlighted else 0.0)
         marker_labels[i].modulate = color
+        # Text, not color alone, communicates the diagnostic result.
+        var status: String = "READY"
+        if highlighted:
+            status = "CLEARED" if cleared else "INSPECT"
+        var text_value: String = ["OPTICAL 01", "AIRFLOW 02", "INTERLOCK 03"][i] + " / " + status + " [SIM]"
+        if marker_labels[i].text != text_value:
+            marker_labels[i].text = text_value
 
 func snapshot() -> Dictionary:
     var visible_count: int = 0
