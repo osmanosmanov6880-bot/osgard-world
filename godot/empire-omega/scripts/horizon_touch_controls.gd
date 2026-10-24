@@ -1,4 +1,5 @@
 extends CanvasLayer
+const HORIZON_LAYOUT = preload("res://scripts/horizon_responsive_layout.gd")
 ## HORIZON R6 - real multitouch input for the existing Godot game actions.
 ## This is not a simulated on-screen keyboard: TouchScreenButton has native
 ## multi-finger ownership and feeds the SAME InputMap used by the car and player.
@@ -20,9 +21,18 @@ const LABELS = {
   }
 }
 const WALK_BACK_LABELS = {"ru":"НАЗАД","en":"BACK","zh":"后退"}
+const QUICK_ACTIONS = ["drive_trial","show_map","governor","field_journal","save_game","language"]
+const QUICK_LABELS = {
+  "ru":["АВТОШКОЛА · T","КАРТА · M","УПРАВЛЕНИЕ ГОРОДОМ","ЖУРНАЛ · H","СОХРАНИТЬ · F5","ЯЗЫК · L"],
+  "en":["DRIVING TRIAL · T","CITY MAP · M","GOVERN CITY","JOURNAL · H","SAVE · F5","LANGUAGE · L"],
+  "zh":["驾驶考核 · T","地图 · M","城市管理","日志 · H","保存 · F5","语言 · L"]
+}
 
 var _buttons: Dictionary = {}
 var _labels: Dictionary = {}
+var _quick_buttons: Dictionary = {}
+var quick_toggle: Button
+var quick_panel: PanelContainer
 var _preview := false
 var _driving := false
 var _blocked := false
@@ -57,6 +67,7 @@ func _ready() -> void:
     button.add_child(caption)
     _buttons[action] = button
     _labels[action] = caption
+  _make_quick_actions()
   get_viewport().size_changed.connect(_layout)
   _layout()
   set_mode(false,false)
@@ -102,6 +113,14 @@ func _layout() -> void:
     if button == null: continue
     button.scale = Vector2.ONE*(scale_factor*0.74)
     button.position = coords[action]-Vector2.ONE*(float(SIZE)*button.scale.x*0.5)
+  if quick_toggle != null and quick_panel != null:
+    var layout: Dictionary = HORIZON_LAYOUT.compute(viewport_size)
+    var toggle_rect: Rect2 = layout.get("quick_toggle",Rect2(12,180,124,44))
+    var panel_rect: Rect2 = layout.get("quick_panel",Rect2(12,231,176,344))
+    quick_toggle.position = toggle_rect.position
+    quick_toggle.size = toggle_rect.size
+    quick_panel.position = panel_rect.position
+    quick_panel.size = panel_rect.size
 
 func set_preview(enabled: bool) -> void:
   # Only used by the native QA harness; normal users see touchscreen-only controls.
@@ -122,14 +141,18 @@ func set_mode(driving: bool, blocked: bool) -> void:
   var changed: bool = _driving != driving or _locale != _current_locale()
   _driving = driving
   _blocked = blocked
-  var active: bool = (DisplayServer.is_touchscreen_available() or _preview) and not blocked
-  for button in _buttons.values():
-    (button as TouchScreenButton).visible = active
+  _update_visibility()
   if changed: _refresh_labels()
 
 func _refresh_labels() -> void:
   _locale = _current_locale()
   var lang: Dictionary = LABELS[_locale]
+  if quick_toggle != null:
+    quick_toggle.text = "☰ ДЕЙСТВИЯ" if _locale == "ru" else ("☰ ACTIONS" if _locale == "en" else "☰ 操作")
+  for i in range(QUICK_ACTIONS.size()):
+    var action_name: String = QUICK_ACTIONS[i]
+    var btn: Button = _quick_buttons.get(action_name)
+    if btn != null: btn.text = str(QUICK_LABELS[_locale][i])
   for action in ACTIONS:
     var caption: Label = _labels.get(action)
     if caption == null: continue
@@ -141,3 +164,70 @@ func _refresh_labels() -> void:
       caption.text = "ВПЕРЁД" if _locale == "ru" else ("WALK" if _locale == "en" else "前进")
     else:
       caption.text = str(lang[action])
+
+# Additional game features must be available on phones without a T, M, Tab,
+# H, F5 or L keyboard. Buttons inject the existing InputMap actions; no
+# alternate state machine can invent mission rewards or money.
+func _make_quick_actions() -> void:
+  quick_toggle = Button.new()
+  quick_toggle.name = "QuickActionsToggle"
+  quick_toggle.custom_minimum_size = Vector2(124,44)
+  quick_toggle.add_theme_font_size_override("font_size",13)
+  quick_toggle.pressed.connect(_toggle_quick_actions)
+  add_child(quick_toggle)
+  quick_panel = PanelContainer.new()
+  quick_panel.name = "QuickActionsPanel"
+  quick_panel.visible = false
+  var style := StyleBoxFlat.new()
+  style.bg_color = Color("09172A",0.95)
+  style.border_color = Color("769AB0")
+  style.set_border_width_all(1)
+  style.set_corner_radius_all(12)
+  style.set_content_margin_all(9.0)
+  quick_panel.add_theme_stylebox_override("panel",style)
+  add_child(quick_panel)
+  var scroll := ScrollContainer.new()
+  scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+  scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+  quick_panel.add_child(scroll)
+  var stack := VBoxContainer.new()
+  stack.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+  stack.add_theme_constant_override("separation",5)
+  scroll.add_child(stack)
+  for action in QUICK_ACTIONS:
+    assert(InputMap.has_action(action),"Missing quick gameplay action: "+action)
+    var button := Button.new()
+    button.name = "Action_"+action
+    button.custom_minimum_size.y = 40
+    button.add_theme_font_size_override("font_size",12)
+    button.pressed.connect(_activate_quick.bind(action))
+    stack.add_child(button)
+    _quick_buttons[action] = button
+
+func _toggle_quick_actions() -> void:
+  if quick_panel == null or _blocked: return
+  quick_panel.visible = not quick_panel.visible
+  _update_visibility()
+
+func _update_visibility() -> void:
+  var active: bool = (DisplayServer.is_touchscreen_available() or _preview) and not _blocked
+  if quick_panel != null and not active: quick_panel.visible = false
+  if quick_toggle != null: quick_toggle.visible = active
+  var can_move: bool = active and (quick_panel == null or not quick_panel.visible)
+  for button in _buttons.values():
+    (button as TouchScreenButton).visible = can_move
+
+func _activate_quick(action: String) -> void:
+  if _blocked or not QUICK_ACTIONS.has(action) or not InputMap.has_action(action): return
+  if quick_panel != null: quick_panel.visible = false
+  _update_visibility()
+  var down := InputEventAction.new()
+  down.action = action
+  down.pressed = true
+  down.strength = 1.0
+  Input.parse_input_event(down)
+  var up := InputEventAction.new()
+  up.action = action
+  up.pressed = false
+  up.strength = 0.0
+  Input.parse_input_event(up)
