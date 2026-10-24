@@ -1,0 +1,68 @@
+name: OSGARD R135 master native Godot and Web smoke
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'godot/osgard-r135-standalone/**'
+      - '.github/workflows/r135-master-native-smoke.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: r135-native-master-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  native:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check original assets and isolate from existing R136
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s godot/osgard-r136-precision/project.godot
+          test -s godot/osgard-r135-standalone/project.godot
+          python3 - <<'PYCODE'
+          from pathlib import Path
+          import hashlib
+          p=Path('godot/osgard-r135-standalone')
+          hashes={
+              'eco':'c6bbc41c53e596d5048371e639a662cd2a75d58a02f75c9df93ffced7685533b',
+              'hero':'8ef33e28534c7c41d4adaceee4e479e38da92287a99bbd5fd53b9fc9318c0078'}
+          for name, expected in hashes.items():
+              source=(p/'models/r135'/('service_spine_'+name+'.glb'))
+              assert hashlib.sha256(source.read_bytes()).hexdigest()==expected
+          assert len(list((p/'textures/r135').glob('*.png')))==36
+          print('R135 original GLB/PBR integrity and R136 source presence OK')
+          PYCODE
+
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: true
+
+      - name: Import and execute native mechanical smoke tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          godot --headless --editor --path godot/osgard-r135-standalone --import --quit
+          timeout --signal=TERM --kill-after=10s 150s godot --headless --path godot/osgard-r135-standalone --script res://tests/smoke.gd
+
+      - name: Validate native HTML5 export and bundle contents
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/r135-web"
+          godot --headless --path godot/osgard-r135-standalone --export-release Web "$RUNNER_TEMP/r135-web/index.html"
+          node scripts/localize-godot-web-export.mjs "$RUNNER_TEMP/r135-web"
+          test -s "$RUNNER_TEMP/r135-web/index.html"
+          test -n "$(find "$RUNNER_TEMP/r135-web" -maxdepth 1 -name '*.wasm' -size +100k -print -quit)"
+          test -n "$(find "$RUNNER_TEMP/r135-web" -maxdepth 1 -name '*.pck' -size +0c -print -quit)"
+          echo 'R135 native Godot 4.4.1 and actual Web export PASS'
