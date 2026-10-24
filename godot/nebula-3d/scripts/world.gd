@@ -133,6 +133,41 @@ var r23_cruise_button: Button
 var r23_launch_button_events: int = 0
 ## R22: real playable golden-hour skyline, not an image/background plate.
 var aurora_scenic_r22: Node3D
+## R25: Browser E2E receives sanitized read-only real Godot physics state.
+## Previous releases tested only headless native flight; actual WebGL
+## input may differ and SwiftShader image capture has been inconclusive.
+var r25_telemetry_period: float = 0.0
+var r25_telemetry_samples: int = 0
+
+func _r25_emit_browser_flight_state() -> void:
+    if not OS.has_feature("web") or not is_instance_valid(ship):
+        return
+    r25_telemetry_samples += 1
+    var gap: float = -1.0
+    if mission_index < MISSIONS.size():
+        gap = ship.global_position.distance_to(MISSIONS[mission_index]["position"])
+    # No inventory, premium entitlement, player identity, tokens, keys or
+    # other private state is exposed. This is gameplay-only QA telemetry.
+    var state: Dictionary = {
+        "version": "R25", "ready": true,
+        "x": snappedf(ship.global_position.x, 0.01),
+        "y": snappedf(ship.global_position.y, 0.01),
+        "z": snappedf(ship.global_position.z, 0.01),
+        "speed_mps": snappedf(ship.velocity.length(), 0.01),
+        "throttle": ship.last_pilot_throttle,
+        "yaw": ship.last_pilot_yaw,
+        "heading": snappedf(ship.rotation.y, 0.0001),
+        "flight_distance": snappedf(ship.flight_distance, 0.01),
+        "mission_distance": snappedf(gap, 0.01),
+        "cruise": ship.cruise_assist,
+        "locked": ship.controls_locked,
+        "input_mask": ship.browser_input_mask,
+        "browser_input_samples": ship.browser_input_samples,
+        "quality": graphics_quality,
+        "samples": r25_telemetry_samples
+    }
+    JavaScriptBridge.eval("window.__nebulaPilotTelemetry = " + JSON.stringify(state))
+
 
 func _ready() -> void:
     rng.seed = 20261022
@@ -198,6 +233,7 @@ func _ready() -> void:
     _show_notice("АВРОРА · ЗОЛОТОЙ ЧАС · R22")
     get_viewport().size_changed.connect(_fit_hud)
     _fit_hud()
+    _r25_emit_browser_flight_state()
 
 func _setup_environment() -> void:
     var node := WorldEnvironment.new()
@@ -711,6 +747,11 @@ func _process(delta: float) -> void:
     if not is_instance_valid(ship): return
     world_timer += delta
     world_pulse += delta
+    if OS.has_feature("web"):
+        r25_telemetry_period += delta
+        if r25_telemetry_period >= 0.20:
+            r25_telemetry_period = fmod(r25_telemetry_period, 0.20)
+            _r25_emit_browser_flight_state()
     r21_launch_protection = maxf(0.0, r21_launch_protection - delta)
     if world_pulse > 92.0 and mission_index > 0 and ship.global_position.distance_to(SECTOR_POSITIONS[0]) > 270.0:
         world_pulse = 0.0
