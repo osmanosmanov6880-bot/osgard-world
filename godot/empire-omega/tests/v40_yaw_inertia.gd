@@ -79,7 +79,7 @@ func _run() -> void:
 	Input.action_press("move_left")
 	for i in range(50):
 		await physics_frame
-	check(absf(car.rotation.y-previous_y)>0.10,"actual car turns on held steering command")
+	check(absf(car.rotation.y-previous_yaw)>0.10,"actual car turns on held steering command")
 	check(absf(float(car.get("current_yaw_rate")))>0.02,"inertial yaw is wired into physical movement")
 	check(is_finite(car.global_position.x) and is_finite(car.global_position.z),"position remains finite after simultaneous gas and turning")
 	Input.action_release("move_left")
