@@ -138,6 +138,11 @@ var aurora_scenic_r22: Node3D
 ## input may differ and SwiftShader image capture has been inconclusive.
 var r25_telemetry_period: float = 0.0
 var r25_telemetry_samples: int = 0
+## R29: visual QA capture runs through Godot's viewport, not the slow browser compositor.
+var r11_capture_enabled: bool = false
+var r11_capture_busy: bool = false
+var r11_capture_poll_clock: float = 0.0
+var r11_capture_completed_request: int = 0
 
 func _r25_emit_browser_flight_state() -> void:
     if not OS.has_feature("web") or not is_instance_valid(ship):
@@ -171,8 +176,31 @@ func _r25_emit_browser_flight_state() -> void:
     JavaScriptBridge.eval("window.__nebulaPilotTelemetry = " + JSON.stringify(state))
 
 
+func _r11_capture_browser_frame(request_id: int) -> void:
+    await RenderingServer.frame_post_draw
+    var frame: Image = get_viewport().get_texture().get_image()
+    if frame.is_empty():
+        JavaScriptBridge.eval("window.__nebulaR11CaptureError = 'empty Godot viewport image'; window.__nebulaR11CaptureCompletedId = " + str(request_id))
+        r11_capture_busy = false
+        return
+    var jpg: PackedByteArray = frame.save_jpg_to_buffer(0.82)
+    if jpg.is_empty():
+        JavaScriptBridge.eval("window.__nebulaR11CaptureError = 'Godot JPEG encoding returned no data'; window.__nebulaR11CaptureCompletedId = " + str(request_id))
+        r11_capture_busy = false
+        return
+    var encoded: String = Marshalls.raw_to_base64(jpg)
+    JavaScriptBridge.eval("window.__nebulaR11CaptureData = 'data:image/jpeg;base64," + encoded + "'; window.__nebulaR11CaptureError = ''; window.__nebulaR11CaptureCompletedId = " + str(request_id))
+    r11_capture_completed_request = request_id
+    r11_capture_busy = false
+
 func _ready() -> void:
     rng.seed = 20261022
+    r11_capture_enabled = OS.has_feature("web") and bool(JavaScriptBridge.eval(
+        "new URLSearchParams(window.location.search).get('r11-qa') === '1'"))
+    if r11_capture_enabled:
+        # Lower only the software-rendered QA page's loop rate so the frame
+        # can be read back without starving the browser's main thread.
+        Engine.max_fps = 24
     _setup_environment()
     _build_city()
     _spawn_player()
@@ -749,6 +777,15 @@ func _process(delta: float) -> void:
     if not is_instance_valid(ship): return
     world_timer += delta
     world_pulse += delta
+    if r11_capture_enabled:
+        r11_capture_poll_clock += delta
+        if r11_capture_poll_clock >= 0.25 and not r11_capture_busy:
+            r11_capture_poll_clock = 0.0
+            var requested_capture: int = int(JavaScriptBridge.eval(
+                "Number(window.__nebulaR11CaptureRequestId || 0)"))
+            if requested_capture > r11_capture_completed_request:
+                r11_capture_busy = true
+                call_deferred("_r11_capture_browser_frame", requested_capture)
     if OS.has_feature("web"):
         r25_telemetry_period += delta
         if r25_telemetry_period >= 0.20:
