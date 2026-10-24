@@ -160,6 +160,9 @@ func _update_layout() -> void:
     if hud_panel == null:
         return
     var size := get_viewport().get_visible_rect().size
+    var previous_layout_size: Vector2 = last_layout_size
+    var first_layout: bool = previous_layout_size == Vector2.ZERO
+    var did_resize: bool = not first_layout and size.distance_squared_to(previous_layout_size) > 1.0
     last_layout_size = size
     var portrait := _viewport_is_portrait()
     var margin := 24.0 if portrait else 18.0
@@ -195,15 +198,28 @@ func _update_layout() -> void:
     # panel visible inside a 360-pixel logical viewport.
     hud_panel.custom_minimum_size = Vector2(hud_width, 0.0)
     action_panel.custom_minimum_size = Vector2(control_width, 0.0)
+    if first_layout or not did_resize:
+        # Startup is special: PanelContainer children can still be empty when
+        # Main._ready() first lays them out. Calling reset_size() at this point
+        # made the semi-transparent status box fill most of the Pixel screen
+        # until the first orientation change. Use normal container min sizing
+        # on startup; the UI will naturally grow as status labels receive text.
+        hud_panel.position = Vector2(margin, (32.0 if compact else 42.0) if portrait else margin)
+        action_panel.position = Vector2(
+            margin,
+            maxf(0.0, size.y - (355.0 if compact else 455.0) if portrait else size.y - 150.0)
+        )
+        _update_view()
+        return
+    # Only after the engine's visible rect ACTUALLY changes should we reset
+    # the free-standing CanvasLayer panels to their recalculated minimum.
+    # This handles DPR changes and avoids the first-frame full-screen overlay.
     hud_panel.reset_size()
     action_panel.reset_size()
     hud_panel.size = Vector2(hud_width, hud_panel.get_combined_minimum_size().y)
     action_panel.size = Vector2(control_width, action_panel.get_combined_minimum_size().y)
     hud_panel.position = Vector2(margin, (32.0 if compact else 42.0) if portrait else margin)
-    action_panel.position = Vector2(
-        margin,
-        maxf(0.0, size.y - action_panel.size.y - margin)
-    )
+    action_panel.position = Vector2(margin, maxf(0.0, size.y - action_panel.size.y - margin))
     _update_view()
 
 func _start_mission() -> void:
