@@ -2,12 +2,12 @@ extends SceneTree
 ## HORIZON R13: mobile players should see the real CAR button label, not an
 ## invisible desktop keyboard key. UI text must not change mission/reward state.
 const TOUCH_MISSION = preload("res://scripts/horizon_mobile_onboarding.gd")
-var pass := 0
-var fail := 0
+var passed := 0
+var failed := 0
 func check(value: bool, note: String) -> void:
-	if value: pass += 1
+	if value: passed += 1
 	else:
-		fail += 1
+		failed += 1
 		push_error("HORIZON R13 ENTRY: "+note)
 
 func _initialize() -> void:
@@ -34,5 +34,5 @@ func _run() -> void:
 	var main := FileAccess.get_file_as_string("res://scripts/main.gd")
 	check(main.contains("player.global_position.distance_to(car.global_position) > 8.0"),"real entry distance gate remains unchanged")
 	check(main.contains("MissionManager.register_action(\"enter_vehicle\")"),"first actual mission still advances only after real car entry")
-	print("HORIZON R13 ENTRY NATIVE: %d passed, %d failed" % [pass,fail])
-	quit(0 if fail==0 else 1)
+	print("HORIZON R13 ENTRY NATIVE: %d passed, %d failed" % [passed,failed])
+	quit(0 if failed==0 else 1)
