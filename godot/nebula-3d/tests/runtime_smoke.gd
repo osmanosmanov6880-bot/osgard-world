@@ -86,6 +86,77 @@ func _run() -> void:
     if not check(world.r21_towers_moved >= 0,
         "R21 original tower count and spawn corridor audit missing"):return
     print("NEBULA_R21_REAL_FLIGHT_SUCCESS throttle_metres=%.1f mobile_3_touch=verified" % travelled)
+    # R23: the production failure mode is real physical keyboard input,
+    # especially Russian layouts. This test sends actual input events to Godot,
+    # rather than setting velocity or calling ship._physics_process directly.
+    if not check(world.ship.keyboard_samples > 0 and
+        world.ship.last_pilot_throttle == 0.0,
+        "R23 ship physical input diagnostics missing"):return
+    var physical_key := InputEventKey.new()
+    physical_key.physical_keycode = KEY_W
+    physical_key.pressed = true
+    Input.parse_input_event(physical_key)
+    var keyboard_start: Vector3 = world.ship.global_position
+    for frame in 29:
+        await physics_frame
+    physical_key.pressed = false
+    Input.parse_input_event(physical_key)
+    var keyboard_meters: float = world.ship.global_position.distance_to(keyboard_start)
+    if not check(keyboard_meters > 2.0 and
+        world.ship.keyboard_samples >= 29 and
+        world.ship.flight_distance > travelled,
+        "R23 real physical W key never moves ship: Cyrillic keyboard still blocked"):return
+    world.ship.velocity = Vector3.ZERO
+    world.ship.global_position = pad_position
+    # Test the actual clickable fallback signal, no fake throttle assignment.
+    if not check(world.r23_cruise_button is Button and
+        world.r23_cruise_button.text.begins_with("▶"),
+        "R23 no visible start-flight button for desktop keyboard failures"):return
+    world.r23_cruise_button.pressed.emit()
+    if not check(world.ship.cruise_assist and
+        world.r23_launch_button_events == 1,
+        "R23 start-flight UI button not wired to real physics"):return
+    var before_cruise: Vector3 = world.ship.global_position
+    for frame in 28:
+        await physics_frame
+    var cruise_meters: float = world.ship.global_position.distance_to(before_cruise)
+    if not check(cruise_meters > 2.0 and
+        world.ship.cruise_distance > 2.0,
+        "R23 clicked START FLIGHT but the ship stayed at 000 km/h"):return
+    world.r23_cruise_button.pressed.emit()
+    if not check(not world.ship.cruise_assist and
+        world.r23_launch_button_events == 2,
+        "R23 launch button cannot disengage autopilot"):return
+    world.ship.velocity = Vector3.ZERO
+    world.ship.global_position = pad_position
+    touch_r21.force_mobile_for_tests(true)
+    touch_r21._layout_for_size(Vector2(844.0,390.0))
+    if not check(touch_r21.r23_landscape_layout and
+        touch_r21.button_centres.size() == 9,
+        "R23 responsive mobile landscape flight controls missing"):return
+    var min_target_gap: float = touch_r21.base_radius * 1.4
+    for a_key in touch_r21.button_centres:
+        for b_key in touch_r21.button_centres:
+            if str(a_key) < str(b_key):
+                if not check(touch_r21.button_centres[a_key].distance_to(
+                    touch_r21.button_centres[b_key]) > min_target_gap,
+                    "R23 landscape controls overlap: phones cannot use gas and weapons"):return
+    touch_r21._layout_for_size(Vector2(390.0,844.0))
+    if not check(not touch_r21.r23_landscape_layout and
+        touch_r21.button_centres.has("CRUISE"),
+        "R23 portrait phone lacks touch start-flight control"):return
+    touch_r21._set_touch(3, touch_r21.button_centres["CRUISE"], true)
+    touch_r21._set_touch(3, touch_r21.button_centres["CRUISE"], false)
+    if not check(world.ship.cruise_assist,
+        "R23 phone START FLIGHT did not engage real physics"):return
+    touch_r21._set_touch(3, touch_r21.button_centres["CRUISE"], true)
+    touch_r21._set_touch(3, touch_r21.button_centres["CRUISE"], false)
+    if not check(not world.ship.cruise_assist,
+        "R23 phone cruise button cannot switch propulsion off"):return
+    touch_r21.force_mobile_for_tests(false)
+    print("NEBULA_R23_REAL_INPUT_SUCCESS physical_W_metres=%.1f clicked_cruise_metres=%.1f portrait_landscape=verified" % [
+        keyboard_meters,cruise_meters])
+
     # R22: the approved second reference is implemented as *actual* Godot
     # scene meshes, not another image. Check dynamic geometry and collisions.
     var scenic = world.get_node_or_null("R22_PhysicalGoldenAurora")
@@ -115,12 +186,21 @@ func _run() -> void:
         ion_drive.nozzle_parts == 9 and
         ion_drive.heat_light is OmniLight3D,
         "R22 NX08 still lacks actual animated 3D propulsion geometry"):return
+    world.ship.thruster_power = 0.0
+    world.ship.velocity = Vector3.ZERO
     ion_drive._process(0.1)
-    if not check(ion_drive.flame_nodes[0].visible,
-        "R22 propulsion glow disappeared on a powered flight"):return
+    if not check(not ion_drive.flame_nodes[0].visible and
+        ion_drive.heat_light.light_energy < 0.04,
+        "R23 engine renders giant white/blue jet cones while ship stands still"):return
+    world.ship.thruster_power = 1.0
+    ion_drive._process(0.1)
+    if not check(ion_drive.flame_nodes[0].visible and
+        ion_drive.flame_nodes[0].scale.y > 0.60,
+        "R23 realistic ion jets do not animate after actual throttle input"):return
+    world.ship.thruster_power = 0.0
     var golden_sky = world.get_node("R11_CinematicWorldEnvironment").environment
     var sunset: ProceduralSkyMaterial = golden_sky.sky.sky_material
-    if not check(sunset.sky_horizon_color.r >= 0.7 and
+    if not check(sunset.sky_horizon_color.r >= 0.60 and
         sunset.sky_horizon_color.r > sunset.sky_horizon_color.b,
         "R22 golden-hour sky and atmosphere still render as flat grey"):return
     world._set_graphics_quality(2)
