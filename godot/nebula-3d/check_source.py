@@ -738,6 +738,10 @@ assert "NEBULA_R35_SAFE_AREA_SUCCESS" in smoke
 assert "R35 action button is hidden by screen notch/gesture bar" in smoke
 assert "R35 two action hit targets overlap" in smoke
 assert "R35 short-landscape HUD blocks the hangar touch target" in smoke
+assert "compact portrait phone has reachable 3x3 flight controls" in r31_mobile
+assert "compact portrait GAS drives real Godot ship" in r31_mobile
+assert "compact portrait GAS release prevents ghost thrust" in r31_mobile
+assert "actual DOM CSS safe-area probe and reachable GAS" in r31_mobile
 assert "if r34_dom_bridge_active:" in r21_mobile
 assert 'state["touch_dom_bridge"] = r21_touch.r34_dom_bridge_active' in world
 assert "s.touch_dom_bridge === true" in r31_mobile
