@@ -8,6 +8,28 @@ import { PNG } from 'pngjs'
 const RELEASE = JSON.parse(readFileSync('public/games/omega-3d-preview/release.json','utf8'))
 const GAME = '/games/omega-3d-preview/'
 
+// Compare ACTUAL rendered world pixels, excluding top HUD and bottom touch
+// controls. Stationary idle traffic shifts 1-2% of these pixels; entering
+// a vehicle and physically steering must change substantially more.
+function centralSceneMotion(first, second) {
+  const a=PNG.sync.read(first)
+  const b=PNG.sync.read(second)
+  if(a.width!==b.width||a.height!==b.height)throw Error('Screenshot viewport changed during driving')
+  let changed=0,total=0
+  for(let y=Math.floor(a.height*0.25);y<Math.floor(a.height*0.81);y+=3) {
+    for(let x=Math.floor(a.width*0.20);x<Math.floor(a.width*0.80);x+=3) {
+      const index=(y*a.width+x)*4
+      total+=1
+      const delta=Math.max(
+        Math.abs(a.data[index]-b.data[index]),
+        Math.abs(a.data[index+1]-b.data[index+1]),
+        Math.abs(a.data[index+2]-b.data[index+2]))
+      if(delta>35) changed+=1
+    }
+  }
+  return total?changed/total:0
+}
+
 test('authentic released Godot runs WebGL2, paints scene, handles real keyboard/touch',async({page,request},testInfo)=>{
   test.setTimeout(180_000)
   const errors=[]
@@ -122,17 +144,31 @@ test('authentic released Godot runs WebGL2, paints scene, handles real keyboard/
     const bounds=await page.locator('#canvas').boundingBox()
     expect(bounds).toBeTruthy()
     const tap=(x,y)=>({x:Math.round(bounds.x+x/390*bounds.width),y:Math.round(bounds.y+y/844*bounds.height)})
-    // Car entry is a real on-screen TouchScreenButton; native physics v34
-    // verifies accelerator, steering and the InputMap reach the car.
-    const enter=tap(259,702)
+    // Real R12 390x844 browser screenshots place CAR around (304,750),
+    // FORWARD at (355,805) and LEFT at (35,805). The older R11 test used
+    // (259,702)/(337,786)/(53,786), hitting empty space after viewport
+    // expansion and falsely reporting successful mobile interaction.
+    const enter=tap(304,750)
     await page.touchscreen.tap(enter.x,enter.y)
-    await page.waitForTimeout(300)
+    await page.waitForTimeout(900)
+    const entered=await page.screenshot({animations:'disabled',timeout:45000})
+    const entryMotion=centralSceneMotion(frame,entered)
+    await testInfo.attach('godot-mobile-after-enter-car.png',{body:entered,contentType:'image/png'})
+    expect(entryMotion,'tapping the visible CAR button must actually change the world camera').toBeGreaterThan(0.08)
     const cdp=await page.context().newCDPSession(page)
-    const accelerator={...tap(337,786),id:0,radiusX:5,radiusY:5}
-    const steering={...tap(53,786),id:1,radiusX:5,radiusY:5}
+    const accelerator={...tap(355,805),id:0,radiusX:6,radiusY:6}
+    const steering={...tap(35,805),id:1,radiusX:6,radiusY:6}
     await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[accelerator,steering]})
-    await page.waitForTimeout(1600)
+    await page.waitForTimeout(1900)
     await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]})
+    const driven=await page.screenshot({animations:'disabled',timeout:45000})
+    const driveMotion=centralSceneMotion(entered,driven)
+    await testInfo.attach('godot-mobile-after-real-two-finger-drive.png',{body:driven,contentType:'image/png'})
+    await testInfo.attach('godot-mobile-actual-control-evidence.json',{
+      body:Buffer.from(JSON.stringify({entryTap:enter,gasTap:accelerator,steerTap:steering,entryMotion,driveMotion},null,2)),
+      contentType:'application/json'
+    })
+    expect(driveMotion,'accelerating and steering with two real browser touchpoints must visibly move the city camera').toBeGreaterThan(0.08)
   } else {
     // Same actions as touch screen: enter car, accelerate, steer and release.
     await page.keyboard.press('e')
