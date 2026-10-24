@@ -24,6 +24,8 @@ func _run() -> void:
 	var moving_desktop: Vector3 = RIG.look_ahead_focus(car,0.0,27.0,0.0,desktop,false)
 	check(moving_phone.z < at_rest.z,"speed gives more view of road ahead in portrait")
 	check(moving_desktop.z < moving_phone.z,"desktop has more lookahead than tall phone")
+	var reversing: Vector3 = RIG.look_ahead_focus(car,0.0,-9.0,0.0,desktop,false)
+	check(reversing.z > at_rest.z,"reverse gear looks toward actual backward travel")
 	check(at_rest.distance_to(moving_phone)<1.41,"phone camera lookahead stays capped")
 	var corner: Vector3 = RIG.look_ahead_focus(car,0.0,22.0,0.45,desktop,false)
 	check(corner.x > moving_desktop.x,"corner anticipates road toward positive steering")
