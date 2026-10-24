@@ -1,0 +1,27 @@
+name: NEBULA native Godot live route verifier
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - 'scripts/native-nebula-shell-contract.mjs'
+      - 'scripts/nebula-native-shell.contract.test.mjs'
+      - 'scripts/nebula-native-shell.live.mjs'
+      - 'scripts/production-route-matrix.mjs'
+      - 'public/games/remix/arena-v2/nebula-3d/index.html'
+      - '.github/workflows/nebula-live-route-regression.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  public-shell:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify the real native HTML5 WebGL application is recognized
+        run: node --test scripts/nebula-native-shell.contract.test.mjs
+      - name: Verify real published desktop and mobile game routes
+        run: node scripts/nebula-native-shell.live.mjs
