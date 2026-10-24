@@ -24,6 +24,8 @@ const CinematicPortR14Script = preload("res://scripts/cinematic_port_r14.gd")
 const HangarStoreR15Script = preload("res://scripts/hangar_store_r15.gd")
 const FleetCombatR15Script = preload("res://scripts/fleet_combat_r15.gd")
 const PremiumFulfillmentR15Script = preload("res://scripts/premium_fulfillment_r15.gd")
+const MobileControlsR21Script = preload("res://scripts/mobile_controls_r21.gd")
+const PremiumHUDR21Script = preload("res://scripts/premium_hud_r21.gd")
 const SAVE_PATH = "user://nebula_3d_save.json"
 const SECTOR_COLORS = [Color(0.10,0.68,0.97), Color(0.64,0.35,1.0), Color(0.98,0.73,0.40), Color(1.0,0.46,0.34), Color(0.87,0.27,0.88), Color(0.24,0.92,0.88)]
 const SECTOR_NAMES = ["ПОРТ АВРОРА","НЕОНОВЫЙ КВАРТАЛ","ЦИТАДЕЛЬ","ЧЁРНЫЙ РЫНОК","РАЗЛОМ","НЕКСУС"]
@@ -111,6 +113,20 @@ var r16_enemy_laser: Material
 var r16_radar_clock: float = 0.0
 var r16_hud_clock: float = 0.0
 var r16_beam_shots: int = 0
+## R21: confirmed flight corridor, occlusion-aware chase camera and approved HUD.
+const R21_LAUNCH_CANDIDATES = [
+    Vector3(0, 34, 100), Vector3(0, 53, 102), Vector3(0, 79, 103),
+    Vector3(0, 108, 104), Vector3(0, 150, 110), Vector3(0, 215, 112)
+]
+var r21_towers_moved: int = 0
+var r21_spawn_relocations: int = 0
+var r21_safe_spawn: Vector3 = Vector3(0, 34, 100)
+var r21_camera_obstructions: int = 0
+var r21_touch
+var r21_dashboard
+var r21_objective_panel: PanelContainer
+var r21_ui_font: SystemFont
+var r21_mobile_enabled: bool = false
 
 func _ready() -> void:
     rng.seed = 20261022
@@ -125,6 +141,18 @@ func _ready() -> void:
     fleet_r15.targets = drones
     fleet_r15.ally_fired.connect(_r16_ally_fire)
     _make_hud()
+    r21_dashboard = PremiumHUDR21Script.new()
+    r21_dashboard.name = "R21_PremiumFlightDashboard"
+    hud_canvas.add_child(r21_dashboard)
+    r21_dashboard.craft = ship
+    r21_touch = MobileControlsR21Script.new()
+    r21_touch.name = "R21_ResponsiveMobileController"
+    hud_canvas.add_child(r21_touch)
+    r21_touch.player_ship = ship
+    r21_touch.rocket_requested.connect(_r21_launch_missile)
+    r21_touch.hangar_requested.connect(_r21_toggle_hangar)
+    r21_touch.camera_requested.connect(_r21_cycle_camera)
+    r21_mobile_enabled = r21_touch.enabled
     _r16_setup_beam_pool()
     store_r15 = HangarStoreR15Script.new()
     store_r15.name = "R15_HangarShop"
@@ -152,6 +180,7 @@ func _ready() -> void:
     add_child(adaptive_r12)
     adaptive_r12.quality_requested.connect(_r12_on_auto_quality)
     _load_progress()
+    _r21_rescue_blocked_spawn()
     _r15_apply_loadout()
     _start_mission()
     # Start the browser on HIGH instead of MAX. Real FPS can then
@@ -159,7 +188,7 @@ func _ready() -> void:
     if OS.has_feature("web"):
         _set_graphics_quality(1)
         adaptive_r12.set_auto(true)
-    _show_notice("NEBULA ASCENSION · R16 SMOOTH COMBAT")
+    _show_notice("АВРОРА · СИСТЕМА ПОЛЁТА R21 ГОТОВА")
     get_viewport().size_changed.connect(_fit_hud)
     _fit_hud()
 
@@ -297,6 +326,12 @@ func _build_city() -> void:
         var height: float = rng.randf_range(25.0,170.0)
         var depth: float = rng.randf_range(12.0,29.0)
         var pos := center + Vector3(cos(bearing)*radius,height*0.5,sin(bearing)*radius)
+        # Keep the original 360 real towers/colliders, but shift a few away
+        # from the player's takeoff and chase-camera corridor in Aurora.
+        # Previous releases started the ship beside massive bright facades.
+        if sector == 0 and absf(pos.x) < 88.0 and pos.z > -145.0 and pos.z < 245.0:
+            pos.x = (1.0 if pos.x >= 0.0 else -1.0) * (118.0 + absf(pos.x) * 0.18)
+            r21_towers_moved += 1
         var slot: int = int(i / SECTOR_POSITIONS.size())
         multimeshes[sector].set_instance_transform(
             slot, Transform3D(Basis.IDENTITY.scaled(Vector3(w, height, depth)), pos - center))
@@ -419,14 +454,70 @@ func _spawn_player() -> void:
     ship.name = "PlayerShip"
     # A Node3D has no global transform before it belongs to the SceneTree.
     # Use parent-relative spawn transform until add_child completes.
-    ship.position = Vector3(0,19,78)
+    ship.position = R21_LAUNCH_CANDIDATES[0]
     add_child(ship)
     ship.fired.connect(_on_ship_fire)
     chase_camera = Camera3D.new()
     chase_camera.current = true
-    chase_camera.fov = 63.0
+    chase_camera.fov = 64.0
     add_child(chase_camera)
-    chase_camera.global_position = ship.global_position+Vector3(0,7,21)
+    chase_camera.global_position = ship.global_position + Vector3(0,6,19)
+
+func _r21_rescue_blocked_spawn() -> void:
+    # Previous local save locations remain respected if safe. A collided
+    # legacy save or first spawn is rescued onto a collision-clear corridor.
+    var check := SphereShape3D.new()
+    check.radius = 2.2
+    var query := PhysicsShapeQueryParameters3D.new()
+    query.shape = check
+    query.collision_mask = 1
+    query.exclude = [ship.get_rid()]
+    query.transform = Transform3D(Basis.IDENTITY, ship.global_position)
+    var space := get_world_3d().direct_space_state
+    if space.intersect_shape(query, 1).is_empty():
+        r21_safe_spawn = ship.global_position
+        return
+    for candidate in R21_LAUNCH_CANDIDATES:
+        query.transform = Transform3D(Basis.IDENTITY, candidate)
+        if space.intersect_shape(query, 1).is_empty():
+            ship.global_position = candidate
+            ship.velocity = Vector3.ZERO
+            r21_safe_spawn = candidate
+            r21_spawn_relocations += 1
+            return
+    # High-altitude emergency launch point; never leave the player trapped.
+    ship.global_position = Vector3(0, 245, 112)
+    ship.velocity = Vector3.ZERO
+    r21_safe_spawn = ship.global_position
+    r21_spawn_relocations += 1
+
+func _r21_toggle_hangar() -> void:
+    if not is_instance_valid(store_r15):
+        return
+    if store_r15.visible:
+        store_r15.close()
+    elif ship.global_position.distance_to(SECTOR_POSITIONS[0]) <= 150.0:
+        store_r15.open(credits, owned_r15, equipped_r15)
+        ship.controls_locked = true
+        if is_instance_valid(r21_touch):
+            r21_touch.set_shop_open(true)
+    else:
+        _show_notice("АНГАР ДОСТУПЕН ТОЛЬКО В ПОРТУ АВРОРА")
+
+func _r21_launch_missile() -> void:
+    if is_instance_valid(store_r15) and store_r15.visible:
+        return
+    if fleet_r15.launch_missile():
+        rockets_r15 = fleet_r15.missiles
+        _save_progress()
+        _show_notice("РАКЕТА · ОСТАЛОСЬ %d" % rockets_r15)
+    else:
+        _show_notice("РАКЕТЫ / ЦЕЛЬ НЕ ДОСТУПНЫ")
+
+func _r21_cycle_camera() -> void:
+    lens_mode = (lens_mode + 1) % 3
+    camera_distance = [14.5,23.0,33.0][lens_mode]
+    _show_notice("КАМЕРА · %d / 3" % (lens_mode + 1))
 
 func _spawn_civilians_and_pirates() -> void:
     for i in 22:
@@ -549,15 +640,39 @@ func _process(delta: float) -> void:
     if post_interval_r12 >= 0.12 and is_instance_valid(cinematic_post_r11):
         post_interval_r12 = 0.0
         cinematic_post_r11.set_flight_velocity(speed)
-    var desired_distance: float = camera_distance + minf(6.0,speed*0.06)
-    var desired_height: float = 5.5 + minf(3.0,speed*0.025)
-    var ideal: Vector3 = ship.global_position + basis.z*desired_distance + Vector3(0,desired_height,0)
-    chase_camera.global_position = chase_camera.global_position.lerp(ideal,minf(1.0,delta*4.0))
-    chase_camera.look_at(ship.global_position - basis.z*12.0 + Vector3(0,2.0,0),Vector3.UP)
-    chase_camera.fov = lerpf(chase_camera.fov,66.0 + minf(9.0,speed*0.12),minf(1.0,delta*1.4))
+    var desired_distance: float = camera_distance + minf(5.0, speed * 0.035)
+    var desired_height: float = 4.6 + minf(2.6, speed * 0.02)
+    var target: Vector3 = ship.global_position + Vector3.UP * 1.5
+    var ideal: Vector3 = ship.global_position + basis.z * desired_distance + Vector3.UP * desired_height
+    # Camera collision: sweep from the player to the desired camera point.
+    # Buildings behind the aircraft must never occupy the whole screen.
+    var camera_query := PhysicsRayQueryParameters3D.create(target, ideal)
+    camera_query.exclude = [ship.get_rid()]
+    var obstruction: Dictionary = get_world_3d().direct_space_state.intersect_ray(camera_query)
+    if not obstruction.is_empty():
+        var delta_to_wall: Vector3 = obstruction["position"] - target
+        ideal = target + delta_to_wall.limit_length(
+            maxf(2.0, delta_to_wall.length() - 1.1))
+        r21_camera_obstructions += 1
+    chase_camera.global_position = chase_camera.global_position.lerp(ideal,
+        1.0 - exp(-8.0 * delta))
+    # A second collision query prevents lerp from crossing newly approached walls.
+    camera_query.to = chase_camera.global_position
+    obstruction = get_world_3d().direct_space_state.intersect_ray(camera_query)
+    if not obstruction.is_empty():
+        chase_camera.global_position = target + (
+            obstruction["position"] - target) * 0.82
+    chase_camera.look_at(ship.global_position - basis.z * 14.0 +
+        Vector3.UP * 1.2, Vector3.UP)
+    chase_camera.fov = lerpf(chase_camera.fov,
+        65.0 + minf(6.0, speed * 0.060), 1.0 - exp(-1.8 * delta))
     _mission_tick(delta)
+    if is_instance_valid(r21_dashboard):
+        r21_dashboard.show_objective = mission_index < MISSIONS.size()
+        if r21_dashboard.show_objective:
+            r21_dashboard.objective = MISSIONS[mission_index]["position"]
     if ship.hull <= 0.0:
-        ship.global_position = Vector3(0,20,75)
+        ship.global_position = r21_safe_spawn
         ship.velocity = Vector3.ZERO
         ship.shield = fleet_r15.ship_shield_cap()
         ship.hull = fleet_r15.ship_hull_cap()
@@ -816,13 +931,7 @@ func _unhandled_key_input(event: InputEvent) -> void:
             _save_progress()
             _show_notice("ИГРА СОХРАНЕНА")
         elif event.keycode==KEY_H:
-            if store_r15.visible:
-                store_r15.close()
-            elif ship.global_position.distance_to(SECTOR_POSITIONS[0]) <= 150.0:
-                store_r15.open(credits, owned_r15, equipped_r15)
-                ship.controls_locked = true
-            else:
-                _show_notice("МАГАЗИН ТОЛЬКО В ПОРТУ АВРОРА")
+            _r21_toggle_hangar()
         elif event.keycode==KEY_R:
             if store_r15.visible:
                 return
@@ -949,6 +1058,8 @@ func _upgrade_docked(slot: int) -> void:
 func _r16_hangar_closed() -> void:
     if is_instance_valid(ship):
         ship.controls_locked = false
+    if is_instance_valid(r21_touch):
+        r21_touch.set_shop_open(false)
 
 func _r15_apply_loadout() -> void:
     fleet_r15.set_loadout(equipped_r15, weapon_r15, rockets_r15, wingmen_r15)
