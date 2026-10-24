@@ -8,6 +8,7 @@ signal drift_reward_earned(credits: int, score: int)
 const DYNAMICS = preload("res://scripts/driving_dynamics.gd")
 const HORIZON_BODY = preload("res://scripts/horizon_vehicle_art.gd")
 const TIRE_MODEL = preload("res://scripts/horizon_tire_model.gd")
+const DRIVER_ASSISTS = preload("res://scripts/horizon_driver_assists.gd")
 const MAX_FORWARD = 29.0
 const MAX_REVERSE = 9.0
 const ACCELERATION = 9.5
@@ -29,6 +30,10 @@ var traction_factor := 1.0
 var collision_cooldown := 0.0
 var lateral_speed := 0.0
 var current_yaw_rate := 0.0
+## Arcade driving aids can be disabled for unassisted handling; no fake full ESP/ABS claim.
+var assists_enabled := true
+var power_assist_reduction := 0.0
+var steering_assist_correction := 0.0
 var drift_chain_score := 0.0
 var drift_chain_duration := 0.0
 var drift_release_clock := 0.0
@@ -180,10 +185,14 @@ func _physics_process(delta: float) -> void:
 	var forward_limit: float = MAX_FORWARD * speed_factor * cargo_speed_factor
 	var reverse_limit: float = MAX_REVERSE * speed_factor
 	var forward_accel: float = ACCELERATION * acceleration_factor
-	speed = DYNAMICS.speed_step(speed,throttle,traction_factor,condition,forward_limit,reverse_limit,forward_accel,BRAKING,DRAG,handbrake_on,delta)
+	var applied_throttle: float = DRIVER_ASSISTS.drive_power(throttle,speed,lateral_speed,traction_factor,handbrake_on) if driving and assists_enabled else throttle
+	power_assist_reduction = maxf(0.0,throttle-applied_throttle)
+	speed = DYNAMICS.speed_step(speed,applied_throttle,traction_factor,condition,forward_limit,reverse_limit,forward_accel,BRAKING,DRAG,handbrake_on,delta)
 	if not driving and absf(speed) < 0.35:
 		speed = 0.0
-	current_yaw_rate = DYNAMICS.yaw_rate(speed,steering_filter*handling_factor,traction_factor,handbrake_on)
+	var applied_steering: float = DRIVER_ASSISTS.stabilize_steering(steering_filter,speed,lateral_speed,traction_factor,handbrake_on) if driving and assists_enabled else steering_filter
+	steering_assist_correction = absf(steering_filter-applied_steering)
+	current_yaw_rate = DYNAMICS.yaw_rate(speed,applied_steering*handling_factor,traction_factor,handbrake_on)
 	rotation.y += current_yaw_rate * minf(delta,0.1)
 	lateral_speed = TIRE_MODEL.step_lateral(lateral_speed,speed,current_yaw_rate,traction_factor,handbrake_on,delta)
 	_set_brake_lights(DYNAMICS.brake_lamps(speed,throttle,handbrake_on))
@@ -214,14 +223,14 @@ func _physics_process(delta: float) -> void:
 	mileage += covered
 	var spin: float = covered / 0.44 * signf(speed)
 	if horizon_visual != null:
-		horizon_visual.call("roll_wheels",covered * signf(speed),steering_filter)
+		horizon_visual.call("roll_wheels",covered * signf(speed),applied_steering)
 		var longitudinal_acceleration: float = (speed-prior_speed)/maxf(delta,0.001)
 		horizon_visual.call("simulate_chassis",speed,current_yaw_rate,longitudinal_acceleration,traction_factor,handbrake_on,_sample_wheel_contacts(),delta)
 	_update_drift_score(delta)
 	for wheel in wheel_nodes:
 		wheel.rotate_x(spin)
 		if wheel.position.z < 0.0:
-			wheel.rotation.y = steering_filter*0.24
+			wheel.rotation.y = applied_steering*0.24
 	if driving:
 		fuel = maxf(0.0,fuel-covered*FUEL_COST_PER_METER*fuel_factor*cargo_fuel_factor)
 	mileage_changed.emit(mileage)
