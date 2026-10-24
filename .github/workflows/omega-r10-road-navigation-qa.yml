@@ -29,7 +29,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for test in v21_vehicle_dynamics v25_horizon_racing v27_driver_assists v28_touch_controls v29_responsive_layout v30_compact_hud v31_academy_navigation v32_road_guidance; do
+          for test in v21_vehicle_dynamics v25_horizon_racing v27_driver_assists v28_touch_controls v29_responsive_layout v30_compact_hud v31_academy_navigation v32_road_guidance v33_checkpoint_gate; do
             echo "=== Native Godot $test ==="
             timeout --signal=TERM --kill-after=5s 50s godot --headless --path godot/empire-omega --script "res://tests/$test.gd"
           done
