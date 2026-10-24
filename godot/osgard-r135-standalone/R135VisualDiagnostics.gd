@@ -6,6 +6,7 @@ var marker_materials: Array[StandardMaterial3D] = []
 var marker_labels: Array[Label3D] = []
 var current_state: String = "idle"
 var active_index: int = -1
+var reduced_motion: bool = false
 
 func configure(optical_head: Node3D) -> void:
     var optics_parent: Node3D = optical_head if optical_head != null else self
@@ -70,7 +71,7 @@ func update_visuals(fault_index: int, is_active: bool, is_completed: bool, step:
         var color := Color(0.19, 0.42, 0.49)
         if highlighted:
             color = Color(0.28, 0.95, 0.62) if cleared else Color(1.00, 0.42, 0.16)
-        var pulse: float = (0.5 + 0.5 * sin(elapsed * 4.0)) if (highlighted and is_active and not cleared) else 0.0
+        var pulse: float = (0.5 + 0.5 * sin(elapsed * 4.0)) if (highlighted and is_active and not cleared and not reduced_motion) else 0.0
         marker_roots[i].visible = is_active or is_completed
         marker_roots[i].scale = Vector3.ONE * (1.0 + 0.075 * pulse)
         marker_materials[i].albedo_color = color.darkened(0.36)
@@ -102,5 +103,6 @@ func snapshot() -> Dictionary:
         "fault_marker_visible_count": visible_count,
         "fault_label_visible_count": visible_labels,
         "fault_marker_active_index": active_index,
-        "fault_visual_state": current_state
+        "fault_visual_state": current_state,
+        "reduced_motion": reduced_motion
     }
