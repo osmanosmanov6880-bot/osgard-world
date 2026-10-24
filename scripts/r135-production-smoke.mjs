@@ -37,7 +37,7 @@ const response = await fetch(probe('index.pck'), {
 })
 if (response.status !== 206) fail('PCK byte ranges unsupported: ' + response.status)
 const range = response.headers.get('content-range') || ''
-if (!range.startsWith('bytes 0-63/')) fail('wrong PCK content-range: ' + range)
+if (range !== 'bytes 0-63/' + pckBytes) fail('wrong PCK content-range: ' + range)
 const chunk = Buffer.from(await response.arrayBuffer())
 if (chunk.length !== 64) fail('expected exactly 64 PCK bytes, got ' + chunk.length)
 console.log('R135 LIVE PASS', JSON.stringify({
