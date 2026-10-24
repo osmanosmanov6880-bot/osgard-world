@@ -62,6 +62,8 @@ func update_visuals(fault_index: int, is_active: bool, is_completed: bool, step:
         current_state = "inspected"
     elif is_active:
         current_state = "active"
+    var view_size: Vector2 = get_viewport().get_visible_rect().size
+    var portrait: bool = view_size.y > view_size.x * 1.03
     for i in range(marker_roots.size()):
         var highlighted: bool = i == active_index
         var cleared: bool = highlighted and current_state in ["inspected", "cleared"]
@@ -76,6 +78,9 @@ func update_visuals(fault_index: int, is_active: bool, is_completed: bool, step:
         marker_materials[i].emission_energy_multiplier = 0.48 + (0.95 * pulse if highlighted else 0.0)
         marker_labels[i].modulate = color
         marker_labels[i].visible = highlighted
+        # The portrait beam occludes the caption at the desktop elevation.
+        # Keep it linked to the marker while lifting it above the machinery.
+        marker_labels[i].position.y = 1.34 if portrait else 0.82
         # Text, not color alone, communicates the diagnostic result.
         var status: String = "READY"
         if highlighted:
