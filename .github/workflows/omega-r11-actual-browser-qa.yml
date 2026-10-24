@@ -1,0 +1,77 @@
+name: OSGARD HORIZON R11 actual mobile WebGL and physical touch-drive QA
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - 'godot/empire-omega/**'
+      - 'scripts/omega-live-webgl.spec.mjs'
+      - 'playwright.omega-live-webgl.config.mjs'
+      - '.github/workflows/omega-r11-actual-browser-qa.yml'
+  workflow_run:
+    workflows: ['OSGARD Omega verified Godot direct SSH deploy']
+    types: [completed]
+    branches: [master]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: omega-r11-browser-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  native-two-finger-driving:
+    if: github.event_name != 'workflow_run'
+    runs-on: ubuntu-latest
+    timeout-minutes: 16
+    steps:
+      - uses: actions/checkout@v4
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: false
+      - name: Generate original resources and import native engine
+        run: |
+          python3 godot/empire-omega/tools/generate_audio.py
+          python3 godot/empire-omega/tools/generate_patrol_audio.py
+          godot --headless --editor --path godot/empire-omega --import --quit
+      - name: Physically drive the genuine CharacterBody3D using two injected screen touches
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 90s godot --headless --path godot/empire-omega --script res://tests/v34_real_touch_drive.gd
+      - name: Preserve existing V28 touch and V29 responsive gates
+        shell: bash
+        run: |
+          set -euo pipefail
+          for test in v28_touch_controls v29_responsive_layout; do
+            timeout --signal=TERM --kill-after=5s 40s godot --headless --path godot/empire-omega --script "res://tests/$test.gd"
+          done
+  actual-desktop-phone-webgl:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install project and pinned actual Chromium testing framework
+        run: |
+          npm ci
+          npm install --no-save --package-lock=false @playwright/test@1.58.2
+          npx playwright install --with-deps chromium
+      - name: Load real public R10/R11 Godot runtime on desktop and emulated touchscreen
+        env:
+          OSGARD_GAME_ORIGIN: https://osgard.world
+        run: npx playwright test --config playwright.omega-live-webgl.config.mjs
+      - name: Save actual frame screenshots, console and trace on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: osgard-omega-real-webgl-desktop-phone
+          path: |
+            omega-live-webgl-results/
+            omega-live-webgl-report/
+          if-no-files-found: warn
+          retention-days: 10
