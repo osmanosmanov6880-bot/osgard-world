@@ -25,7 +25,7 @@ func _run() -> void:
         check(response.get("checkpoint",0)==1,"first waypoint index "+str(route["id"]))
         check(response.get("total",0)==route["checkpoints"].size(),"actual waypoint count "+str(route["id"]))
         check(response.get("seconds",-1)==int(route["limit_seconds"])-10,"actual time countdown "+str(route["id"]))
-        check((response.get("distance",0.0) as float)>31.0,"actual measured goal distance "+str(route["id"]))
+        check(float(response.get("distance",0.0))>31.0,"actual measured goal distance "+str(route["id"]))
         check(str(response.get("title","")).contains("1/%d" % route["checkpoints"].size()),"compact title shows progress "+str(route["id"]))
         check(str(response.get("details","")).length()<38,"mobile detail remains concise "+str(route["id"]))
         check(active==state_before,"view does not mutate monetary or authoritative race state "+str(route["id"]))
@@ -41,7 +41,7 @@ func _run() -> void:
     var advanced := {"step":1,"elapsed":5.1}
     var next: Dictionary = NAV.view(route,advanced,goal,0.0,"en",false)
     check(next.get("checkpoint",0)==2,"progress updates with actual state")
-    check(next.get("seconds",0)==int(route["limit_seconds"])-6,"countdown rounds up elapsed seconds")
+    check(next.get("seconds",0)==int(route["limit_seconds"])-5,"countdown rounds up remaining seconds")
     check(NAV.view(route,{"step":999},goal,0.0).is_empty(),"out-of-range waypoint rejected")
     check(NAV.view({},state,goal,0.0).is_empty(),"missing route rejected")
     check(NAV.view(route,{},goal,0.0).is_empty(),"missing active session rejected")
