@@ -193,7 +193,10 @@ const safeAreaScript = `
       'padding-right:env(safe-area-inset-right, 0px)',
       'padding-bottom:env(safe-area-inset-bottom, 0px)'
     ].join(';');
-    document.documentElement.appendChild(probe);
+    // The script runs in <head>, before <body> may exist. Attach the
+    // temporary probe to <head> to avoid modifying the parser's HTML tree.
+    const host = document.body || document.head || document.documentElement;
+    host.appendChild(probe);
     const computed = window.getComputedStyle(probe);
     const read = name => {
       const n = Number.parseFloat(computed[name]);
