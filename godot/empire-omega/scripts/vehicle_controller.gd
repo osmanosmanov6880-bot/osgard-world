@@ -9,6 +9,7 @@ const DYNAMICS = preload("res://scripts/driving_dynamics.gd")
 const HORIZON_BODY = preload("res://scripts/horizon_vehicle_art.gd")
 const TIRE_MODEL = preload("res://scripts/horizon_tire_model.gd")
 const DRIVER_ASSISTS = preload("res://scripts/horizon_driver_assists.gd")
+const YAW_INERTIA = preload("res://scripts/horizon_yaw_inertia.gd")
 const MAX_FORWARD = 29.0
 const MAX_REVERSE = 9.0
 const ACCELERATION = 9.5
@@ -179,20 +180,23 @@ func _physics_process(delta: float) -> void:
 	if fuel < 0.1:
 		throttle = 0.0
 	collision_cooldown = maxf(0.0,collision_cooldown-delta)
-	steering_filter = move_toward(steering_filter,steering,minf(delta,0.1)*4.0)
+	steering_filter = YAW_INERTIA.steer_step(steering_filter,steering,speed,traction_factor,delta)
 	var prior_speed: float = speed
 	var condition: float = clampf(health/100.0,0.32,1.0)
 	var forward_limit: float = MAX_FORWARD * speed_factor * cargo_speed_factor
 	var reverse_limit: float = MAX_REVERSE * speed_factor
 	var forward_accel: float = ACCELERATION * acceleration_factor
 	var applied_throttle: float = DRIVER_ASSISTS.drive_power(throttle,speed,lateral_speed,traction_factor,handbrake_on) if driving and assists_enabled else throttle
+	if applied_throttle > 0.0:
+		applied_throttle *= YAW_INERTIA.corner_power_factor(speed,current_yaw_rate,traction_factor,handbrake_on)
 	power_assist_reduction = maxf(0.0,throttle-applied_throttle)
 	speed = DYNAMICS.speed_step(speed,applied_throttle,traction_factor,condition,forward_limit,reverse_limit,forward_accel,BRAKING,DRAG,handbrake_on,delta)
 	if not driving and absf(speed) < 0.35:
 		speed = 0.0
 	var applied_steering: float = DRIVER_ASSISTS.stabilize_steering(steering_filter,speed,lateral_speed,traction_factor,handbrake_on) if driving and assists_enabled else steering_filter
 	steering_assist_correction = absf(steering_filter-applied_steering)
-	current_yaw_rate = DYNAMICS.yaw_rate(speed,applied_steering*handling_factor,traction_factor,handbrake_on)
+	var desired_yaw_rate: float = DYNAMICS.yaw_rate(speed,applied_steering*handling_factor,traction_factor,handbrake_on)
+	current_yaw_rate = YAW_INERTIA.yaw_step(current_yaw_rate,desired_yaw_rate,speed,traction_factor,handbrake_on,delta)
 	rotation.y += current_yaw_rate * minf(delta,0.1)
 	lateral_speed = TIRE_MODEL.step_lateral(lateral_speed,speed,current_yaw_rate,traction_factor,handbrake_on,delta)
 	_set_brake_lights(DYNAMICS.brake_lamps(speed,throttle,handbrake_on))
