@@ -295,30 +295,69 @@ func _update_view() -> void:
     if camera == null:
         return
     orbit_pitch = clampf(orbit_pitch, -1.2, 1.2)
-    distance = clampf(distance, 5.5, 38.0)
-    var size := get_viewport().get_visible_rect().size
-    var ratio: float = size.x / maxf(size.y, 1.0)
-    # Godot FOV is vertical. Widen the orbit distance on portrait screens
-    # instead of cutting the original full-width service-spine geometry.
-    var width_goal: float = 1.11 if view_index == 0 else (1.35 if view_index == 2 else 1.06)
-    var aspect_compensation: float = maxf(1.0, width_goal / maxf(ratio, 0.42))
-    var effective_distance: float = distance * aspect_compensation
+    distance = clampf(distance, 4.5, 38.0)
+    var size: Vector2 = get_viewport().get_visible_rect().size
+    var portrait: bool = size.y > size.x * 1.03
+    # W6: KEEP_WIDTH in portrait preserves horizontal composition while opening
+    # the vertical field of view. W5's 2.75x portrait distance produced a tiny,
+    # bottom-aligned inspection target with large unused empty sky.
+    camera.keep_aspect = Camera3D.KEEP_WIDTH if portrait else Camera3D.KEEP_HEIGHT
+    camera.fov = 57.0 if portrait else (53.0 if view_index == 2 else 55.0)
+    var effective_distance: float = distance
+    if portrait:
+        match view_index:
+            0:
+                effective_distance = maxf(distance, 15.0)
+            1:
+                effective_distance = maxf(distance, 6.8)
+            2:
+                effective_distance = maxf(distance, 7.8)
+            _:
+                effective_distance = maxf(distance, 8.5)
     camera_effective_distance = effective_distance
     var target_focus: Vector3 = focus
-    # Track the actual moving optical carriage only in the optical inspection view.
-    # In portrait, reserve extra vertical room for the fixed status and touch panels.
     if view_index == 2 and optical_tracking and controller != null:
-        var carriage: Node3D = controller.get("boom") as Node3D
-        if carriage != null:
-            target_focus.x = lerpf(focus.x, carriage.position.x, 0.42)
-    if ratio < 0.8:
-        target_focus.y -= 0.55 if view_index == 2 else 0.23
+        # Aim at the actual animated optical head, not a guessed point or
+        # 42%-interpolated carriage X. The head moves as the 16s cycle progresses.
+        var optical_head: Node3D = controller.get("head") as Node3D
+        if optical_head != null:
+            # W6.2 screenshot QA: W6.1 head projected at 0.767 horizontal and
+            # cut off its 3D label. Aim 1.15 units farther to the right and
+            # 0.35 lower to recover label padding and usable machine area.
+            var inspection_offset: Vector3 = Vector3(-1.0, -2.40, 0.12) if portrait else Vector3(-1.45, -0.18, 0.12)
+            target_focus = optical_head.global_position + inspection_offset
+    elif view_index == 1:
+        target_focus = Vector3(-4.72, 0.38, 5.97)
+    elif view_index == 3:
+        target_focus = Vector3(1.54, 3.03, 4.78)
     var direction := Vector3(
         sin(orbit_yaw) * cos(orbit_pitch), sin(orbit_pitch),
         cos(orbit_yaw) * cos(orbit_pitch)
     )
     camera.position = target_focus + direction * effective_distance
     camera.look_at(target_focus, Vector3.UP)
+
+func _camera_target_readout() -> Dictionary:
+    var size: Vector2 = get_viewport().get_visible_rect().size
+    var frame: Dictionary = {
+        "camera_keep_width": camera.keep_aspect == Camera3D.KEEP_WIDTH,
+        "camera_fov": camera.fov,
+        "camera_effective_distance": camera_effective_distance,
+        "camera_target_visible": false,
+        "camera_target_screen_x": -1.0,
+        "camera_target_screen_y": -1.0,
+        "machine_top_screen_y": -1.0
+    }
+    if view_index == 2 and controller != null:
+        var rail_screen: Vector2 = camera.unproject_position(Vector3(0.0, 3.78, 5.37))
+        frame["machine_top_screen_y"] = rail_screen.y / maxf(size.y, 1.0)
+        var optical_head: Node3D = controller.get("head") as Node3D
+        if optical_head != null and not camera.is_position_behind(optical_head.global_position):
+            var point: Vector2 = camera.unproject_position(optical_head.global_position)
+            frame["camera_target_screen_x"] = point.x / maxf(size.x, 1.0)
+            frame["camera_target_screen_y"] = point.y / maxf(size.y, 1.0)
+            frame["camera_target_visible"] = true
+    return frame
 
 func _process(delta: float) -> void:
     readout_clock += delta
@@ -339,6 +378,7 @@ func _process(delta: float) -> void:
         state["distance"] = distance
         state["camera_effective_distance"] = camera_effective_distance
         state["optical_tracking"] = optical_tracking
+        state.merge(_camera_target_readout(), true)
         var area: Vector2 = get_viewport().get_visible_rect().size
         state["viewport_w"] = area.x
         state["viewport_h"] = area.y

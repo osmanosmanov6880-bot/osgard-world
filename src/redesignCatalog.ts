@@ -223,7 +223,7 @@ export const playGames:PlayGame[] = [
     "launchable": true,
     "warning": "Это техническая симуляция, не управление оборудованием. Нативный Godot и WebGL в программном Chromium проверяются автоматически; FPS на реальных телефонах и видеокартах ещё не измерены.",
     "format": "4 шага обучения + 5 шагов диагностики",
-    "status": "Godot 4.4.1 · W5 / 3D-индикация неисправностей",
+    "status": "Godot 4.4.1 · W6.4 / адаптивная камера и 3D-диагностика",
     "launchLabel": "Играть и диагностировать",
     "alternate": {
       "href": "https://github.com/osmanosmanov6880-bot/osgard-world/releases/tag/r135-standalone-20261024",

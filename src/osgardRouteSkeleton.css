@@ -59,6 +59,20 @@
   .osgard-skeleton-art{position:absolute;right:-85px;bottom:-75px;opacity:.32;width:min(73vw,390px);pointer-events:none}
   .osgard-skeleton-bars{margin-top:30px}
 }
+/* R26 release integrity: reserve exactly the real Play hero's height while
+   its deferred module loads. Browser trace 40109265663 measured CLS 0.2998
+   because the brand footer initially appeared at y=590 on a 390x844 phone
+   and jumped off-screen when .cp-hero mounted (actual mobile min-height 960).
+   Real content remains unchanged. Never loosen the CLS <= 0.10 gate. */
+@media(min-width:901px){
+  .brand-system .osgard-route-skeleton[data-skeleton-area=play]{min-height:clamp(660px,48.4vw,930px)}
+}
+@media(min-width:601px) and (max-width:900px){
+  .brand-system .osgard-route-skeleton[data-skeleton-area=play]{min-height:810px}
+}
+@media(max-width:600px){
+  .brand-system .osgard-route-skeleton[data-skeleton-area=play]{min-height:960px}
+}
 @media(prefers-reduced-motion:reduce){
   .brand-system .osgard-route-skeleton *{animation:none!important;transition:none!important}
 }
