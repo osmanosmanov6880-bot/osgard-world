@@ -29,3 +29,10 @@
 - First W5 candidate job `40081630110`: Godot and browser gameplay passed (desktop 89, emulated Pixel 69). The Nginx gate failed because the checked-out W4 production smoke required a W4 manifest against the W5 candidate. Production W4 remained intact.
 - Corrected by allowing production smoke's expected source SHA to be supplied through environment; the W5 candidate Nginx test now uses `github.sha`. The production frontend workflow additionally pins the expected candidate SHA.
 - Re-run must pass both Nginx and archive publication before PR merge. Hardware FPS remains unmeasured.
+
+## 2026-10-24 — GitHub Releases permission fallback
+- W5 complete run `40082233653` passed native Godot, desktop+mobile Chromium, 206 partial PCK and actual Nginx WASM gzip/MIME. The last `gh release create` step failed HTTP 403 from the Actions integration. **Gameplay binary is valid, GitHub Release was not created**.
+- The SHA-verified W5 ZIP and source manifest were retained as Actions artifact `12556235053` (`osgard-r135-optimized-web-qa`) attached to run `40082233653`.
+- Candidate promotion gate `.github/workflows/r135-w5-artifact-gate.yml` verifies a cross-run download of that exact artifact, not an arbitrary latest package.
+- Production frontend staging now downloads that exact run artifact, validates all CRC/ZIP entry hashes and source commit `cd6132fa5d34cbb701957b124a6aa2aac9210434`, and tests staged Nginx before deployment.
+- This Actions artifact has limited retention; a durable archive location is still needed for emergency rebuilds after expiration. Keep the working W4 untouched until the new promotion gate and SSH production smoke pass.
