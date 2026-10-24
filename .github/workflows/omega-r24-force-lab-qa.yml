@@ -1,0 +1,45 @@
+name: OSGARD HORIZON R24 real four-wheel force physics lab
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - 'godot/empire-omega/labs/**'
+      - 'godot/empire-omega/tests/v47_rigidbody_force_lab.gd'
+      - '.github/workflows/omega-r24-force-lab-qa.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  rigid-body-lab:
+    runs-on: ubuntu-latest
+    timeout-minutes: 17
+    steps:
+      - uses: actions/checkout@v4
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: false
+      - name: Import real Godot 4.4.1 project
+        run: |
+          python3 godot/empire-omega/tools/generate_audio.py
+          python3 godot/empire-omega/tools/generate_patrol_audio.py
+          godot --headless --editor --path godot/empire-omega --import --quit
+      - name: Prove four independent spring raycasts and real rigid body physics
+        run: |
+          timeout --signal=TERM --kill-after=5s 120s godot --headless --path godot/empire-omega --script res://tests/v47_rigidbody_force_lab.gd
+      - name: Compare real arcade and rigid-body drive/steer/brake on identical road
+        run: |
+          timeout --signal=TERM --kill-after=5s 120s godot --headless --path godot/empire-omega --script res://tests/v49_physics_ab_comparison.gd
+      - name: Legacy real playable car must still pass
+        run: |
+          timeout --signal=TERM --kill-after=5s 80s godot --headless --path godot/empire-omega --script res://tests/v34_real_touch_drive.gd
+      - name: Upload experimental spring force and driving metrics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: horizon-r24-physics-measurements
+          path: |
+            godot/empire-omega/tests/r24-force-metrics.json
+            godot/empire-omega/tests/r24-comparison.json
+          if-no-files-found: warn
