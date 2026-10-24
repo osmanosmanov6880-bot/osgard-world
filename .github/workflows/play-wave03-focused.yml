@@ -1,0 +1,59 @@
+name: OSGARD PLAY WAVE 03 focused desktop and mobile QA
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - 'public/games/**'
+      - 'scripts/games-aaa-*.mjs'
+      - 'package.json'
+      - 'playwright.ecosystem.config.mjs'
+      - '.github/workflows/play-wave03-focused.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  game-portal-contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 9
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Verify 22 game contracts, privacy and safe resume
+        run: npm run qa:games-portal
+  game-portal-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Stage unmodified live game catalog
+        run: cp -a public/games/. dist/games/
+      - name: Use real pinned browser
+        run: |
+          npm install --no-save --package-lock=false @playwright/test@1.58.2
+          if command -v google-chrome >/dev/null 2>&1; then
+            echo "OSGARD_BROWSER_CHANNEL=chrome" >> "$GITHUB_ENV"
+          else
+            npx playwright install --with-deps --no-shell chromium
+          fi
+      - name: Run focused visual, session, mobile and recovery checks
+        run: npx playwright test --config playwright.ecosystem.config.mjs scripts/games-aaa-visual-browser.spec.mjs scripts/games-aaa-session-browser.spec.mjs --workers=2 --retries=0
+      - name: Preserve failures for diagnosis
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: osgard-wave03-focused-qa
+          path: |
+            browser-report/
+            test-results/
+          if-no-files-found: ignore
+          retention-days: 7
