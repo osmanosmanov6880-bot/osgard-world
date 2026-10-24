@@ -25,7 +25,7 @@ test('R33 REAL desktop Tab opens left Godot government dock while the world stay
   await page.waitForTimeout(600)
   const before=PNG.sync.read((await captureAnimatedWebGLViewport(page)).png)
   // Real keyboard event to the actual focused WebGL runtime, not a simulated UI.
-  await page.locator('#canvas').click({position:{x:680,y:380}})
+  // Godot continuously repaints WebGL, so locator.click() never sees a stable\n  // element. A trusted Playwright mouse event does not require DOM stability.\n  await page.mouse.click(680,380)
   await page.keyboard.press('Tab')
   await page.waitForTimeout(700)
   const screenshot=(await captureAnimatedWebGLViewport(page)).png
