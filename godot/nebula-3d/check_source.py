@@ -494,6 +494,12 @@ smoke = require(
     "R22 real suspended flightways must have physical collision",
     "R22 mobile ECO must cull distant atmospheric and air-traffic detail",
     "NEBULA_R22_AURORA_SCENE_SUCCESS",
+    "R23 real physical W key never moves ship: Cyrillic keyboard still blocked",
+    "R23 clicked START FLIGHT but the ship stayed at 000 km/h",
+    "R23 landscape controls overlap: phones cannot use gas and weapons",
+    "R23 phone START FLIGHT did not engage real physics",
+    "R23 engine renders giant white/blue jet cones while ship stands still",
+    "NEBULA_R23_REAL_INPUT_SUCCESS",
     "NEBULA_R17_PBR_IMPORT_SUCCESS",
     "NEBULA_SMOKE_SUCCESS",
 )
@@ -582,7 +588,7 @@ assert 'aurora_scenic_r22.set_quality(graphics_quality)' in world
 assert 'preload("res://scripts/engine_cinema_r22.gd")' in ship_visual
 assert 'exhaust_r22.name = "R22_RealIonDrive"' in ship_visual
 assert 'if mission_index > 0 and r21_launch_protection <= 0.0:' in world
-assert "sky_shader.sky_horizon_color = Color(0.83, 0.45, 0.27)" in require(
+assert "sky_shader.sky_horizon_color = Color(0.68, 0.51, 0.43)" in require(
     "scripts/cinematic_lighting_r12.gd")
 assert 'nebula-r22-keyboard-focus' in r21_web
 require(
@@ -591,6 +597,32 @@ require(
 )
 assert "NEBULA_R22_AURORA_SCENE_SUCCESS" in smoke
 assert "R22 golden-hour Aurora real PBR buildings/bridges/windows missing" in smoke
+# R23: fixes the user's specific 000 km/h image, not a simulated scene.
+assert "func _browser_mask() -> int:" in ship
+assert "Input.is_physical_key_pressed(code)" in ship
+assert "var cruise_assist: bool = false" in ship
+assert "func set_cruise_assist(" in ship
+assert "last_pilot_throttle" in ship
+assert "R23_StartRealFlight" in world
+assert 'r23_cruise_button.pressed.connect(_r23_toggle_cruise)' in world
+assert "r21_touch.cruise_requested.connect(_r23_toggle_cruise)" in world
+assert 'ship.set_cruise_assist(not ship.cruise_assist)' in world
+assert "func _layout_for_size(pixels: Vector2) -> void:" in r21_mobile
+assert "r23_landscape_layout" in r21_mobile
+assert 'cruise_requested.emit()' in r21_mobile
+assert "nebula-r23-physical-keyboard" in r21_web
+assert "window.__nebulaPilotMask" in r21_web
+assert "KeyboardEvent.code" in r21_web
+assert "window.addEventListener('blur'" in r21_web
+assert 'r23_glazed_hero_towers' in r22_city
+assert 'ResourceLoader.exists(albedo_path)' in r22_city
+assert 'ResourceLoader.exists(lit_path)' in r22_city
+assert "glow_core = _jet_material(Color(0.53,0.82,1.0),0.18,0.25)" in r22_ion
+assert "flame.visible = force > 0.07" in r22_ion
+require("docs/R23-WASD-PORTRAIT-LANDSCAPE-VISUAL-ACCEPTANCE.md",
+    "R23", "physical", "W", "844x390", "390x844", "F7", "F9", "F10")
+assert "NEBULA_R23_REAL_INPUT_SUCCESS" in smoke
+assert "R23 clicked START FLIGHT but the ship stayed at 000 km/h" in smoke
 assert "func _make_ship(" not in ship, "R3 low-poly ship builder is still active"
 assert ship_visual.count("engine_flames.append(") == 1
 assert "for x in [-1.24, 0.0, 1.24]:" in ship_visual, "three engine array missing"
@@ -598,4 +630,4 @@ assert "image.generate_mipmaps()" in ship_visual
 assert premium.count("Image.create(") >= 2, "separate facade albedo/emission atlases missing"
 assert "high-detail" not in project.lower(), "project identity may remain stable"
 assert len(smoke) > 1500 and len(city) > 5000 and len(world) > 10000
-print("NEBULA_R22_SOURCE_SUCCESS: playable 3D golden-hour skyline, 21 physics structures, airborne traffic, modeled engine exhaust and keyboard focus")
+print("NEBULA_R23_SOURCE_SUCCESS: RU-layout physical WASD and JS keycodes, clickable cruise, nine portrait/landscape controls, R20 textured hero facades and no idle jet cones")

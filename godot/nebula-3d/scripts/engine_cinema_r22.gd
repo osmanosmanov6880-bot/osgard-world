@@ -69,9 +69,9 @@ func _ready() -> void:
     ship = get_parent().get_parent().get_parent() as CharacterBody3D
     var brushed: StandardMaterial3D = MaterialFabricR12Script.get_material(0)
     var alloy := _solid(Color(0.06,0.095,0.13),0.48,0.90)
-    var copper := _solid(Color(0.47,0.28,0.12),0.36,0.83)
-    glow_core = _jet_material(Color(0.60,0.87,1.0),0.56,0.58)
-    glow_shell = _jet_material(Color(0.18,0.44,0.92),0.22,0.22)
+    var copper := _solid(Color(0.30,0.28,0.27),0.43,0.83)
+    glow_core = _jet_material(Color(0.53,0.82,1.0),0.18,0.25)
+    glow_shell = _jet_material(Color(0.25,0.51,0.88),0.075,0.10)
     for index in 3:
         var x: float = float(index - 1) * 1.58
         var root := Node3D.new()
@@ -81,8 +81,8 @@ func _ready() -> void:
         _nozzle(root,"R22_MachinedCowl",Vector3.ZERO,0.72,0.91,brushed)
         _nozzle(root,"R22_DarkRecess",Vector3(0,0,0.44),0.50,0.22,alloy)
         _nozzle(root,"R22_CopperHeatShield",Vector3(0,0,0.63),0.59,0.18,copper)
-        _flame(root,"R22_IonCore",Vector3(0,0,1.67),0.35,2.30,glow_core)
-        _flame(root,"R22_ExhaustHalo",Vector3(0,0,2.20),0.57,3.8,glow_shell)
+        _flame(root,"R22_IonCore",Vector3(0,0,1.26),0.24,1.35,glow_core)
+        _flame(root,"R22_ExhaustHalo",Vector3(0,0,1.65),0.38,2.15,glow_shell)
     heat_light = OmniLight3D.new()
     heat_light.name = "R22_NearShipExhaustLight"
     heat_light.light_color = Color(0.43,0.72,1.0)
@@ -98,13 +98,13 @@ func _process(delta: float) -> void:
     time += delta
     var throttle: float = clampf(ship.thruster_power,0.0,1.0)
     var speed: float = clampf(ship.velocity.length() / ship.AFTERBURNER_SPEED,0.0,1.0)
-    var force: float = 0.28 + throttle * 1.4 + speed * 0.35
+    var force: float = throttle * 1.25 + speed * 0.42
     for flame in flame_nodes:
         if not is_instance_valid(flame):
             continue
         var shell: bool = "Halo" in flame.name
-        flame.scale.y = (0.40 if shell else 0.65) + force * (
-            0.60 if shell else 0.72) + sin(time*26.0) * 0.045
-        flame.visible = force > 0.25 and not (shell and speed < 0.12)
+        flame.scale.y = (0.42 if shell else 0.56) + force * (
+            0.55 if shell else 0.61) + sin(time*20.0) * 0.023
+        flame.visible = force > 0.07 and not (shell and speed < 0.10)
     if is_instance_valid(heat_light):
-        heat_light.light_energy = 0.10 + minf(0.52,force*0.28)
+        heat_light.light_energy = minf(0.33,force*0.19)

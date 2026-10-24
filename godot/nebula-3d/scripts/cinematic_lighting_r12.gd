@@ -29,19 +29,19 @@ func apply_look(look: int) -> void:
     if current_look == 0:
         # Steel-blue ambient with narrow golden edge lighting and controlled
         # specular reflections. Shadows preserve detail instead of crushed blacks.
-        key_sun.rotation_degrees = Vector3(-17.0, -78.0, 0.0)
-        key_sun.light_color = Color(1.0, 0.76, 0.48)
-        key_sun.light_energy = 1.23
-        blue_fill.light_color = Color(0.32, 0.52, 0.76)
-        blue_fill.light_energy = 0.31
-        sky_shader.sky_top_color = Color(0.09, 0.18, 0.31)
-        sky_shader.sky_horizon_color = Color(0.83, 0.45, 0.27)
-        sky_shader.ground_horizon_color = Color(0.49, 0.33, 0.27)
-        env.fog_light_color = Color(0.56, 0.37, 0.27)
-        env.fog_density = 0.00055
-        env.adjustment_brightness = 0.96
-        env.adjustment_contrast = 1.075
-        env.adjustment_saturation = 1.045
+        key_sun.rotation_degrees = Vector3(-24.0, -70.0, 0.0)
+        key_sun.light_color = Color(1.0, 0.88, 0.71)
+        key_sun.light_energy = 1.48
+        blue_fill.light_color = Color(0.48, 0.66, 0.90)
+        blue_fill.light_energy = 0.41
+        sky_shader.sky_top_color = Color(0.048, 0.12, 0.26)
+        sky_shader.sky_horizon_color = Color(0.68, 0.51, 0.43)
+        sky_shader.ground_horizon_color = Color(0.27, 0.29, 0.36)
+        env.fog_light_color = Color(0.36, 0.37, 0.42)
+        env.fog_density = 0.00031
+        env.adjustment_brightness = 0.94
+        env.adjustment_contrast = 1.10
+        env.adjustment_saturation = 0.95
     else:
         # Warm rim and cooler shadows with clear material separations.
         key_sun.rotation_degrees = Vector3(-25.0, -81.0, 0.0)
@@ -64,7 +64,7 @@ func set_quality(mode: int) -> void:
     if is_instance_valid(world_environment):
         var env: Environment = world_environment.environment
         env.glow_enabled = quality_mode < 2
-        env.glow_bloom = [0.022, 0.010, 0.0][quality_mode]
+        env.glow_bloom = [0.018, 0.009, 0.0][quality_mode]
         env.fog_enabled = true
 
 func toggle_look() -> String:

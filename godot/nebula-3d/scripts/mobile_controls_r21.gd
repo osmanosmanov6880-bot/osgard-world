@@ -5,17 +5,18 @@ extends Control
 signal rocket_requested
 signal hangar_requested
 signal camera_requested
+signal cruise_requested
 
 const TEXT: Color = Color(0.92, 0.97, 0.99)
 const CYAN: Color = Color(0.32, 0.81, 0.94)
 const AMBER: Color = Color(1.0, 0.70, 0.33)
 const JOY_ID: String = "JOYSTICK"
 const CONTROL_KEYS = ["THRUST", "BOOST", "FIRE", "ROCKET",
-    "UP", "DOWN", "HANGAR", "CAMERA"]
+    "UP", "DOWN", "HANGAR", "CAMERA", "CRUISE"]
 const LABELS = {
     "THRUST": "ГАЗ", "BOOST": "ФОРСАЖ", "FIRE": "ОГОНЬ",
     "ROCKET": "РАКЕТА", "UP": "ВЫШЕ", "DOWN": "НИЖЕ",
-    "HANGAR": "АНГАР", "CAMERA": "КАМЕРА"
+    "HANGAR": "АНГАР", "CAMERA": "КАМЕРА", "CRUISE": "ПОЛЁТ"
 }
 var player_ship: CharacterBody3D
 var enabled: bool = false
@@ -29,6 +30,7 @@ var base_radius: float = 52.0
 var viewport_pixels: Vector2 = Vector2(1280, 720)
 var active_touch_count: int = 0
 var ui_draws: int = 0
+var r23_landscape_layout: bool = false
 
 func _ready() -> void:
     name = "R21_ResponsiveMobileController"
@@ -63,23 +65,48 @@ func set_shop_open(on: bool) -> void:
     queue_redraw()
 
 func _resize() -> void:
-    viewport_pixels = get_viewport().get_visible_rect().size
-    var w: float = viewport_pixels.x
-    var h: float = viewport_pixels.y
-    base_radius = clampf(minf(w, h) * 0.093, 38.0, 68.0)
+    _layout_for_size(get_viewport().get_visible_rect().size)
+
+func _layout_for_size(pixels: Vector2) -> void:
+    viewport_pixels = pixels
+    var w: float = pixels.x
+    var h: float = pixels.y
+    r23_landscape_layout = h < 530.0 and w >= 640.0
+    # Touch circles maintain legible labels but cannot overlap each other on
+    # shallow, 16:9 landscape phones with 9 independent gameplay actions.
+    base_radius = clampf(minf(w, h) * (0.079 if r23_landscape_layout else 0.093),
+        30.0 if r23_landscape_layout else 38.0, 65.0)
     var r: float = base_radius
-    stick_center = Vector2(r + 27.0, h - r - 34.0)
-    button_centres = {
-        "THRUST": Vector2(w - r - 25.0, h - r - 34.0),
-        "BOOST": Vector2(w - 3.1 * r - 33.0, h - r - 34.0),
-        "FIRE": Vector2(w - r - 25.0, h - 3.0 * r - 45.0),
-        "ROCKET": Vector2(w - 3.1 * r - 33.0, h - 3.0 * r - 45.0),
-        "UP": Vector2(w - r - 25.0, h - 5.0 * r - 56.0),
-        "DOWN": Vector2(w - 3.1 * r - 33.0, h - 5.0 * r - 56.0),
-        "HANGAR": Vector2(w - r - 25.0, 188.0),
-        "CAMERA": Vector2(w - 3.1 * r - 33.0, 188.0)
-    }
-    # Keep central rear-facing ship and objective free from touch controls.
+    stick_center = Vector2(r + 30.0, h - r - 30.0)
+    if r23_landscape_layout:
+        var x0: float = w - r - 23.0
+        var row_a: float = h - r - 27.0
+        var row_b: float = h - 3.05 * r - 27.0
+        var row_c: float = h - 5.1 * r - 27.0
+        var step: float = r * 2.12
+        button_centres = {
+            "THRUST": Vector2(x0,row_a),
+            "BOOST": Vector2(x0-step,row_a),
+            "FIRE": Vector2(x0,row_b),
+            "ROCKET": Vector2(x0-step,row_b),
+            "UP": Vector2(x0-step*2.0,row_a),
+            "DOWN": Vector2(x0-step*2.0,row_b),
+            "HANGAR": Vector2(x0-step*3.0,row_a),
+            "CAMERA": Vector2(x0-step*3.0,row_b),
+            "CRUISE": Vector2(x0-step,row_c)
+        }
+    else:
+        button_centres = {
+            "THRUST": Vector2(w - r - 25.0, h - r - 34.0),
+            "BOOST": Vector2(w - 3.1 * r - 33.0, h - r - 34.0),
+            "FIRE": Vector2(w - r - 25.0, h - 3.0 * r - 45.0),
+            "ROCKET": Vector2(w - 3.1 * r - 33.0, h - 3.0 * r - 45.0),
+            "UP": Vector2(w - r - 25.0, h - 5.0 * r - 56.0),
+            "DOWN": Vector2(w - 3.1 * r - 33.0, h - 5.0 * r - 56.0),
+            "HANGAR": Vector2(w - r - 25.0, 188.0),
+            "CAMERA": Vector2(w - 3.1 * r - 33.0, 188.0),
+            "CRUISE": Vector2(w - r - 25.0, 254.0)
+        }
     queue_redraw()
 
 func _role_at(where: Vector2) -> String:
@@ -105,6 +132,8 @@ func _set_touch(index: int, where: Vector2, pressed: bool) -> void:
             hangar_requested.emit()
         elif role == "CAMERA":
             camera_requested.emit()
+        elif role == "CRUISE":
+            cruise_requested.emit()
     else:
         finger_roles.erase(index)
         finger_positions.erase(index)
@@ -121,8 +150,9 @@ func _input(event: InputEvent) -> void:
         return
     if event is InputEventScreenTouch:
         var touch: InputEventScreenTouch = event
+        var was_control: bool = finger_roles.has(touch.index)
         _set_touch(touch.index, touch.position, touch.pressed)
-        if finger_roles.has(touch.index):
+        if was_control or finger_roles.has(touch.index):
             get_viewport().set_input_as_handled()
     elif event is InputEventScreenDrag:
         var drag: InputEventScreenDrag = event
