@@ -17,7 +17,9 @@ permissions:
   statuses: write
 
 concurrency:
-  group: remix-nebula3d-native
+  # Keep new pushes within one PR cancellable, but never cancel a different
+  # feature branch's independent native verification.
+  group: remix-nebula3d-native-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
