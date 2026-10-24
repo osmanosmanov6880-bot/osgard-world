@@ -652,6 +652,14 @@ assert 'JavaScriptBridge.eval("window.__nebulaPilotTelemetry = "' in world
 assert "var r25_telemetry_samples: int = 0" in world
 assert "snappedf(ship.flight_distance, 0.01)" in world
 assert "r11_capture_enabled" in world
+# R30: input lifecycle events should cancel active movement, not keep a ghost finger.
+assert "func _clear_active_touches()" in r21_mobile
+assert "NOTIFICATION_APPLICATION_FOCUS_OUT" in r21_mobile
+assert "changed_orientation" in r21_mobile
+assert "r21_touch.ui_font = r21_ui_font" in world
+assert "R30 focus loss must release held mobile thrust and boost" in smoke
+assert "R30 hangar must clear mobile touch counters and throttle" in smoke
+assert "R30 orientation change must cancel stale touch controls" in smoke
 assert "get_viewport().get_texture().get_image()" in world
 assert "window.__nebulaR11CaptureData" in world
 assert "URLSearchParams(window.location.search).get('r11-qa')" in world

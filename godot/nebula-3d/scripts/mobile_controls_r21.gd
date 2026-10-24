@@ -19,6 +19,7 @@ const LABELS = {
     "HANGAR": "АНГАР", "CAMERA": "КАМЕРА", "CRUISE": "ПОЛЁТ"
 }
 var player_ship: CharacterBody3D
+var ui_font: Font
 var enabled: bool = false
 var shop_open: bool = false
 var finger_roles: Dictionary = {}
@@ -48,7 +49,26 @@ func _ready() -> void:
     set_process(enabled)
     set_process_input(enabled)
 
+func _clear_active_touches() -> void:
+    # A lost finger must never leave the ship firing or accelerating.
+    finger_roles.clear()
+    finger_positions.clear()
+    joystick = Vector2.ZERO
+    active_touch_count = 0
+    if is_instance_valid(player_ship):
+        player_ship.clear_touch_controls()
+    queue_redraw()
+
+func _notification(what: int) -> void:
+    # Mobile interruptions, browser tab changes and phone-call overlays may
+    # prevent the matching touch-up event from reaching Godot.
+    if what == NOTIFICATION_APPLICATION_FOCUS_OUT or (
+            what == NOTIFICATION_WM_WINDOW_FOCUS_OUT):
+        _clear_active_touches()
+
 func force_mobile_for_tests(on: bool) -> void:
+    if not on:
+        _clear_active_touches()
     enabled = on
     visible = on
     set_process(on)
@@ -58,16 +78,20 @@ func force_mobile_for_tests(on: bool) -> void:
 func set_shop_open(on: bool) -> void:
     shop_open = on
     if on:
-        finger_roles.clear()
-        finger_positions.clear()
-        joystick = Vector2.ZERO
-        _update_ship_controls()
+        _clear_active_touches()
     queue_redraw()
 
 func _resize() -> void:
     _layout_for_size(get_viewport().get_visible_rect().size)
 
 func _layout_for_size(pixels: Vector2) -> void:
+    # Keep minor browser-toolbar resizes smooth, but cancel an ongoing hold
+    # when an orientation change moves the controls under another finger.
+    var changed_orientation: bool = (pixels.x >= pixels.y) != (
+        viewport_pixels.x >= viewport_pixels.y)
+    if not finger_roles.is_empty() and (
+            changed_orientation or pixels.distance_to(viewport_pixels) > 24.0):
+        _clear_active_touches()
     viewport_pixels = pixels
     var w: float = pixels.x
     var h: float = pixels.y
@@ -199,7 +223,8 @@ func _process(_delta: float) -> void:
         _update_ship_controls()
 
 func _font() -> Font:
-    return ThemeDB.fallback_font
+    # Match the mission HUD's designed UI font rather than a platform default.
+    return ui_font if ui_font != null else ThemeDB.fallback_font
 
 func _label(text: String, center: Vector2, size: int, tint: Color) -> void:
     var typeface: Font = _font()
