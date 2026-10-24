@@ -213,20 +213,20 @@ func _setup_environment() -> void:
     env.background_mode = Environment.BG_SKY
     env.sky = sky
     env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
-    env.ambient_light_energy = 0.52
+    env.ambient_light_energy = 0.49
     env.reflected_light_source = Environment.REFLECTION_SOURCE_BG
     env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
     # Compatibility renderer supports subtle glow and post-tonemap grading.
     # Never enable unsupported SSIL, SSR or volumetric fog.
     env.glow_enabled = true
-    env.glow_bloom = 0.022
+    env.glow_bloom = 0.018
     env.adjustment_enabled = true
-    env.adjustment_brightness = 0.96
-    env.adjustment_contrast = 1.085
-    env.adjustment_saturation = 1.02
+    env.adjustment_brightness = 0.94
+    env.adjustment_contrast = 1.08
+    env.adjustment_saturation = 0.95
     env.fog_enabled = true
-    env.fog_light_color = Color(0.45,0.33,0.26)
-    env.fog_density = 0.00053
+    env.fog_light_color = Color(0.36,0.39,0.44)
+    env.fog_density = 0.00031
     node.environment = env
     node.name = "R11_CinematicWorldEnvironment"
     add_child(node)
