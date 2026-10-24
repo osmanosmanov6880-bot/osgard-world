@@ -1,0 +1,35 @@
+name: OSGARD Omega R5 native driving quality gate
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - "godot/empire-omega/**"
+      - ".github/workflows/omega-driver-assists-qa.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  godot-native:
+    runs-on: ubuntu-latest
+    timeout-minutes: 16
+    steps:
+      - uses: actions/checkout@v4
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: false
+      - name: Regenerate legal original offline game audio
+        run: |
+          python3 godot/empire-omega/tools/generate_audio.py
+          python3 godot/empire-omega/tools/generate_patrol_audio.py
+      - name: Import actual 3D game resources
+        run: godot --headless --editor --path godot/empire-omega --import --quit
+      - name: Run native vehicle, road and R5 stability physics tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          for name in v21_vehicle_dynamics v25_horizon_racing v27_driver_assists; do
+            echo "### Running native $name"
+            timeout --signal=TERM --kill-after=5s 45s godot --headless --path godot/empire-omega --script "res://tests/$name.gd"
+          done
