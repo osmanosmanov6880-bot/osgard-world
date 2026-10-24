@@ -110,8 +110,16 @@ func set_preview(enabled: bool) -> void:
     (button as TouchScreenButton).visibility_mode = TouchScreenButton.VISIBILITY_ALWAYS if enabled else TouchScreenButton.VISIBILITY_TOUCHSCREEN_ONLY
   set_mode(_driving,_blocked)
 
+func _current_locale() -> String:
+  # Some headless SceneTree harnesses preload scripts without autoload identifiers.
+  # The real game has /root/GameState; default to Russian when it is unavailable.
+  var state: Node = get_node_or_null('/root/GameState')
+  if state == null: return 'ru'
+  var raw: Variant = state.get('locale')
+  return str(raw) if LABELS.has(str(raw)) else 'ru'
+
 func set_mode(driving: bool, blocked: bool) -> void:
-  var changed: bool = _driving != driving or _locale != str(GameState.locale)
+  var changed: bool = _driving != driving or _locale != _current_locale()
   _driving = driving
   _blocked = blocked
   var active: bool = (DisplayServer.is_touchscreen_available() or _preview) and not blocked
@@ -120,7 +128,7 @@ func set_mode(driving: bool, blocked: bool) -> void:
   if changed: _refresh_labels()
 
 func _refresh_labels() -> void:
-  _locale = str(GameState.locale) if LABELS.has(str(GameState.locale)) else "ru"
+  _locale = _current_locale()
   var lang: Dictionary = LABELS[_locale]
   for action in ACTIONS:
     var caption: Label = _labels.get(action)
