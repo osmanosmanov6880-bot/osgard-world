@@ -33,9 +33,31 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - name: Reject superseded Godot source BEFORE any SSH or file upload
+        id: source_gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          manifest_source="$(python3 -c 'import json; print(json.load(open("public/games/omega-3d-preview/release.json"))["source_commit"])')"
+          if ! [[ "$manifest_source" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::Invalid game release source SHA"; exit 1
+          fi
+          git fetch --no-tags --depth=1 origin "+refs/heads/master:refs/remotes/origin/master"
+          git fetch --no-tags --depth=1 origin "$manifest_source"
+          if python3 scripts/omega-build-freshness.py "$manifest_source" origin/master; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+            echo "source_sha=$manifest_source" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::Old native game manifest is superseded by a newer Godot source tree; no SSH upload."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          fi
       - name: Verify release-integrity failure conditions
+        if: steps.source_gate.outputs.ready == 'true'
         run: python3 scripts/omega-live-integrity.py --self-test
       - name: Verify exact native Godot binary artifacts
+        if: steps.source_gate.outputs.ready == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -64,6 +86,7 @@ jobs:
           mkdir -p "$RUNNER_TEMP/omega-native"
           tar -czf "$RUNNER_TEMP/omega-native/game.tgz" -C public/games/omega-3d-preview .
       - name: Configure SSH to existing OSGARD VPS
+        if: steps.source_gate.outputs.ready == 'true'
         env:
           DEPLOY_HOST: ${{ secrets.OSGARD_DEPLOY_HOST }}
           DEPLOY_USER: ${{ secrets.OSGARD_DEPLOY_USER }}
@@ -77,18 +100,30 @@ jobs:
           ssh-keyscan -T 10 -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
           test -s ~/.ssh/known_hosts
       - name: Upload verified Godot game, activate with rollback
+        id: publish
+        if: steps.source_gate.outputs.ready == 'true'
         env:
           DEPLOY_HOST: ${{ secrets.OSGARD_DEPLOY_HOST }}
           DEPLOY_USER: ${{ secrets.OSGARD_DEPLOY_USER }}
           RUN_ID: ${{ github.run_id }}
         run: |
           set -euo pipefail
+          # Revalidate immediately before the remote upload. A newer game
+          # may have merged since checkout or initial source gate.
+          git fetch --no-tags --depth=1 origin "+refs/heads/master:refs/remotes/origin/master"
+          if ! python3 scripts/omega-build-freshness.py "${{ steps.source_gate.outputs.source_sha }}" origin/master; then
+            echo "::notice::Newer game source appeared before SSH; older release skipped."
+            echo "deployed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           remote="/tmp/osgard-omega-native-${RUN_ID}"
           ssh -o BatchMode=yes -i ~/.ssh/osgard_omega_deploy "$DEPLOY_USER@$DEPLOY_HOST" "mkdir -p '$remote'"
           scp -i ~/.ssh/osgard_omega_deploy "$RUNNER_TEMP/omega-native/game.tgz" "$DEPLOY_USER@$DEPLOY_HOST:$remote/game.tgz"
           scp -i ~/.ssh/osgard_omega_deploy scripts/deploy-omega-native-remote.sh "$DEPLOY_USER@$DEPLOY_HOST:$remote/deploy.sh"
           ssh -o BatchMode=yes -i ~/.ssh/osgard_omega_deploy "$DEPLOY_USER@$DEPLOY_HOST" "bash '$remote/deploy.sh' '$RUN_ID'"
+          echo "deployed=true" >> "$GITHUB_OUTPUT"
       - name: Verify exact live Godot source and downloaded SHA-256 for every file
+        if: steps.publish.outputs.deployed == 'true'
         env:
           OMEGA_RUN_ID: ${{ github.run_id }}
         run: |
