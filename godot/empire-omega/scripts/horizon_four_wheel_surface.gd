@@ -72,7 +72,9 @@ static func terrain_attitude(travels: Array[float], grounded: Array[bool] = []) 
 	# invent a road grade.
 	if travels.size()!=4 or (not grounded.is_empty() and grounded.size()!=4):
 		return Vector2.ZERO
-	var support: Array[bool] = grounded if grounded.size()==4 else [true,true,true,true]
+	var support: Array[bool] = [true,true,true,true]
+	if grounded.size()==4:
+		support = grounded
 	var left: float = 0.0
 	var right: float = 0.0
 	var front: float = 0.0
