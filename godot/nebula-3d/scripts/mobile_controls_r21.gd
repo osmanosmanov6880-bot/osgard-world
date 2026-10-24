@@ -384,7 +384,8 @@ func _r34_poll_browser_contacts() -> void:
         var browser_ms: Variant = JavaScriptBridge.eval(
             "performance.now()")
         var event_ms: float = float(current.get("last_event_ms", -1.0))
-        if (typeof(browser_ms) == TYPE_FLOAT or typeof(browser_ms) == TYPE_INT)                 and event_ms >= 0.0:
+        if ((typeof(browser_ms) == TYPE_FLOAT or
+                typeof(browser_ms) == TYPE_INT) and event_ms >= 0.0):
             var input_age_ms: float = float(browser_ms) - event_ms
             if input_age_ms >= 0.0 and input_age_ms <= 30000.0:
                 r36_input_poll_latency_ms = input_age_ms
