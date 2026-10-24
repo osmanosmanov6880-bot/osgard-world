@@ -21,7 +21,7 @@ page.on('console',m=>{
   if(m.type()==='error') log.errors.push('console: '+m.text().slice(0,320));
 });
 const snapshot = () => page.evaluate(() => window.__nebulaPilotTelemetry || null);
-const waitFor = (condition, timeout=25000) => page.waitForFunction(condition,null,{timeout, polling:400});
+const waitFor = (condition, timeout=25000, arg=null) => page.waitForFunction(condition,arg,{timeout, polling:400});
 async function checkpoint(name, condition) {
   const v=await snapshot();
   if(!condition(v))throw new Error(name+' failed with actual ship telemetry: '+JSON.stringify(v));
@@ -51,11 +51,12 @@ try {
   await page.mouse.click(bounds.x+bounds.width/2,bounds.y+bounds.height-70);
   await waitFor(()=>window.__nebulaPilotTelemetry?.cruise === true,15000);
   const start=await checkpoint('actual clickable cruise switch engaged',s=>s?.cruise===true);
-  await waitFor(()=>window.__nebulaPilotTelemetry?.samples>start.samples+5 &&
-    Math.abs(window.__nebulaPilotTelemetry.heading-start.heading)>0.05,35000);
+  await waitFor(({samples,heading})=>window.__nebulaPilotTelemetry?.samples>samples+5 &&
+    Math.abs(window.__nebulaPilotTelemetry.heading-heading)>0.05,35000,
+    {samples:start.samples,heading:start.heading});
   const steered=await checkpoint('real autopilot rotates ship toward off-axis mission',
     s=>s?.cruise===true && Math.abs(s.heading-start.heading)>0.05 && s.throttle>0.5);
-  await waitFor(()=>window.__nebulaPilotTelemetry?.mission_distance < start.mission_distance-2.0,45000);
+  await waitFor((distance)=>window.__nebulaPilotTelemetry?.mission_distance < distance-2.0,45000,start.mission_distance);
   const approached=await checkpoint('real ship approaches mission objective in world units',
     s=>s?.mission_distance < start.mission_distance-2.0 && s.flight_distance>moving.flight_distance);
   // Stop and verify that the user can cancel guided flight.
