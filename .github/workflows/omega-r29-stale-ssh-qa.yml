@@ -1,0 +1,31 @@
+name: OSGARD Omega R29 obsolete SSH release guard QA
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - 'scripts/omega-ssh-stale-gate.contract.test.py'
+      - 'scripts/omega-build-freshness.py'
+      - 'scripts/deploy-omega-native-remote.sh'
+      - '.github/workflows/omega-web-direct-deploy.yml'
+      - '.github/workflows/omega-r29-stale-ssh-qa.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  guard-real-git:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Exercise real source Git trees and obsolete release detection
+        run: python3 scripts/omega-build-freshness.py --self-test
+      - name: Enforce double-check before SSH and guarded live attestation
+        run: python3 scripts/omega-ssh-stale-gate.contract.test.py
+      - name: Validate shell and actual release manifest structure
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash -n scripts/deploy-omega-native-remote.sh
+          python3 scripts/omega-live-integrity.py --self-test
