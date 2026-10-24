@@ -25,7 +25,7 @@ func send_touch(button: TouchScreenButton, finger: int, is_pressed: bool) -> voi
     event.index = finger
     event.position = touch_at(button)
     event.pressed = is_pressed
-    Input.parse_input_event(event)
+    root.push_input(event,true)
 
 func frames(count: int) -> void:
     for i in range(count):
@@ -53,6 +53,7 @@ func _run() -> void:
     var gas: TouchScreenButton = pad.get_node("Touch_move_forward") as TouchScreenButton
     var steer: TouchScreenButton = pad.get_node("Touch_move_left") as TouchScreenButton
     check(gas != null and steer != null,"real native touch surfaces exist")
+    print("R11 TOUCH DIAGNOSTIC: root="+str(root.size)+" gas="+str(gas.position)+" gasCenter="+str(touch_at(gas))+" gasVis="+str(gas.visible)+" shapeCentered="+str(gas.shape_centered))
     await frames(5)
     check(not Input.is_action_pressed("move_forward"),"gas starts released")
     var initial: Vector3 = car.global_position
