@@ -21,3 +21,11 @@ The prior camera multiplied orbit distance by `max(1, 1.35 / aspect)` for the op
 
 ## Performance and quality limits
 Software Chromium with SwiftShader validates behavior and framing but not physical iOS/Android GPU FPS, energy use or thermals. This is a visual usability improvement toward production-quality game UX, not a claim of cinematic photorealistic AAA.
+
+## W6.1 correction after visual artifact review
+
+- First W6 candidate completed full native+Chromium+Nginx CI but did not pass **visual** review. Evidence from `r135-w6-qa.zip`: the main optical unit was easier to spot but the machine occupied only the left portion of the portrait frame.
+- Reproducible image heuristic (blue industrial surfaces, central 70% width, exclude HUD): first substantial equipment row **W5 0.4105 screen height; W6 first cut 0.4214**. This is not an improvement. It is an informal metric, not an image-quality score.
+- W6.1 now aims portrait inspection **left and below** the moving head to place the highlighted target toward the upper-right scene region and expose more of the equipment. Optical camera FOV uses 57 degrees portrait, 53 landscape.
+- Godot telemetry adds `machine_top_screen_y` projected from a fixed original-geometry reference rail at `Vector3(0, 3.78, 5.37)`. Mobile browser smoke rejects frames where this point falls below 37% of viewport height; the moving optical node must remain within the existing safe area.
+- W6.1 is still candidate-only. Do not merge on numeric target-centering alone: review actual pixel screenshots and regression results before approval.
