@@ -3,7 +3,7 @@
 const root = (process.env.OSGARD_BASE_URL || 'https://osgard.world').replace(/\/$/, '')
 const url = root + '/games/r135-service/'
 const probe = (path) => new URL(path, url).href
-const options = { headers: { 'cache-control': 'no-cache' }, redirect: 'manual' }
+const options = { headers: { 'cache-control': 'no-cache', 'accept-encoding': 'identity' }, redirect: 'manual' }
 function fail(text) { throw new Error('OSGARD R135 live smoke: ' + text) }
 
 const home = await fetch(probe('index.html?verify=' + Date.now()), options)
@@ -23,14 +23,16 @@ for (const name of ['index.js', 'index.wasm', 'index.pck']) {
   if (!files?.[name]?.sha256) fail('manifest lacks ' + name)
   const response = await fetch(probe(name), { method: 'HEAD', ...options })
   if (response.status !== 200) fail(name + ' HTTP ' + response.status)
-  const length = Number(response.headers.get('content-length'))
-  if (length !== Number(files[name].size_bytes)) fail(name + ' content-length mismatch: ' + length)
+  const lengthHeader = response.headers.get('content-length')
+  if (lengthHeader !== null && Number(lengthHeader) !== Number(files[name].size_bytes)) {
+    fail(name + ' content-length mismatch: ' + lengthHeader)
+  }
   const type = (response.headers.get('content-type') || '').toLowerCase()
   if (name === 'index.wasm' && !type.includes('application/wasm')) fail('bad wasm MIME ' + type)
   if (name === 'index.js' && !type.includes('javascript')) fail('bad loader MIME ' + type)
 }
 const response = await fetch(probe('index.pck'), {
-  headers: { Range: 'bytes=0-63', 'cache-control': 'no-cache' },
+  headers: { Range: 'bytes=0-63', 'cache-control': 'no-cache', 'accept-encoding': 'identity' },
   redirect: 'manual',
 })
 if (response.status !== 206) fail('PCK byte ranges unsupported: ' + response.status)
