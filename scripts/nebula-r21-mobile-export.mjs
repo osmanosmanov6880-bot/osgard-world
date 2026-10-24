@@ -28,8 +28,39 @@ if (!html.includes('R21 mobile: real full-viewport WebGL game')) {
 }
 html = html.replace('<canvas id="canvas">',
  '<canvas id="canvas" tabindex="0" aria-label="NEBULA: пилотирование космического корабля">');
-if (!html.includes('touch-action:none') || !html.includes('viewport-fit=cover')) {
+// R22: a browser canvas with tabIndex is not *focused* automatically by
+// tabindex. Without focus, W/A/S/D can appear nonfunctional even when the
+// underlying Godot physical spacecraft correctly moves during native tests.
+// Focus after loader is visible, on first pointer event, and after tab resume.
+const focusScript = `
+<script id="nebula-r22-keyboard-focus">
+(() => {
+  const canvas = document.getElementById("canvas");
+  if (!canvas) return;
+  const takeFocus = () => {
+    if (document.visibilityState === 'visible' &&
+        document.activeElement !== canvas) {
+      try { canvas.focus({preventScroll: true}); }
+      catch (_) { canvas.focus(); }
+    }
+  };
+  canvas.addEventListener('pointerdown', takeFocus, {passive: true});
+  canvas.addEventListener('touchstart', takeFocus, {passive: true});
+  window.addEventListener('load', takeFocus, {once: true});
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && document.hasFocus()) takeFocus();
+  });
+  if (document.readyState === 'complete') takeFocus();
+})();
+</script>`;
+if (!html.includes('nebula-r22-keyboard-focus')) {
+  if (!html.includes('</body>')) throw new Error('Godot export body missing');
+  html = html.replace('</body>', focusScript + '\n</body>');
+}
+if (!html.includes('touch-action:none') ||
+    !html.includes('viewport-fit=cover') ||
+    !html.includes('nebula-r22-keyboard-focus')) {
   throw new Error('R21 mobile CSS or responsive viewport not installed');
 }
 fs.writeFileSync(file,html);
-console.log('NEBULA_R21_MOBILE_SHELL_SUCCESS touch-action canvas 100dvh viewport-fit=cover');
+console.log('NEBULA_R22_WEB_INPUT_SUCCESS browser-canvas auto-focus and pointer focus with R21 touch shell');
