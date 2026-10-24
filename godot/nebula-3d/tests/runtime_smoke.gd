@@ -1,6 +1,7 @@
 extends SceneTree
 const SurfaceLibraryR9Script = preload("res://scripts/surface_library_r9.gd")
 const MaterialFabricR12Script = preload("res://scripts/material_fabric_r12.gd")
+const MaterialStudioR11Script = preload("res://scripts/material_studio_r11.gd")
 ## Native Godot runtime test: parses real scene, creates procedural city, drives missions,
 ## validates persistent progression, shields, damage and the radar.
 func _initialize() -> void:
@@ -53,6 +54,16 @@ func _run() -> void:
     var premium = world.get_node_or_null("PremiumArchitecture")
     if not check(premium != null,"Cinematic architecture not instantiated"):return
     if not check(premium.towers_built == 360,"Expected 360 textured high-rises"):return
+    if not check(premium.r20_facade_baked,
+        "R20 city facade still calculates 256x512 glazing pixels during browser load"):return
+    var baked_glazing: StandardMaterial3D = premium.make_facade_material()
+    if not check(baked_glazing.albedo_texture != null and
+        baked_glazing.emission_texture != null and
+        baked_glazing.albedo_texture.get_width() == 256 and
+        baked_glazing.albedo_texture.get_height() == 512 and
+        baked_glazing.emission_texture.get_width() == 256 and
+        baked_glazing.emission_texture.get_height() == 512,
+        "R20 baked emission/albedo texture dimensions differ from original glazing"):return
     if not check(premium.window_instances == 1440,"Instanced metallic façade fins missing"):return
     if not check(premium.r19_facade_instance_count == 1440 and
         premium.r19_roof_instance_count == 360 and
@@ -298,7 +309,14 @@ func _run() -> void:
     if not check(r11_environment.get_node_or_null(
         "R11_DetailDock_00/R11_LandingDockCollision") is StaticBody3D,
         "R11 physical landing collision absent"):return
+    if not check(MaterialStudioR11Script.baked_count() == 1,
+        "R20 real player browser still computes 512x512 heavy weathered metal atlas"):return
     var r11_deck_material = r11_environment.deck_material
+    if not check(r11_deck_material.albedo_texture.get_width() == 512 and
+        r11_deck_material.normal_texture.get_height() == 512 and
+        r11_deck_material.roughness_texture.get_width() == 512,
+        "R20 original 512px PBR textures not imported into the scene"):return
+    print("NEBULA_R20_BAKED_IMPORT_SUCCESS images=5 pixels=1048576")
     if not check(r11_deck_material.normal_enabled and
         r11_deck_material.ao_texture != null and
         r11_deck_material.roughness_texture != null and
