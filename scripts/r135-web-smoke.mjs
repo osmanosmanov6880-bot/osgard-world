@@ -88,7 +88,8 @@ async function keyboardDiagnostics(page) {
   await page.keyboard.press('c')
   await expectState(page, x => x?.challenge_active && x?.challenge_step === 0
     && x?.fault_marker_count === 3 && x?.fault_marker_active_index === 0
-    && x?.fault_marker_visible_count === 3 && x?.fault_visual_state === 'active',
+    && x?.fault_marker_visible_count === 3 && x?.fault_label_visible_count === 1
+    && x?.fault_visual_state === 'active',
     'W5 optical fault must appear in the 3D scene')
   await page.keyboard.press('f') // Safety violation, should be refused.
   await expectState(page, x => x?.challenge_step === 0 && x?.challenge_errors === 1 && x?.lid_target === 0,
@@ -149,8 +150,9 @@ async function touchDiagnostics(page) {
     && x?.optical_tracking && x?.camera_effective_distance > x?.distance * 1.1,
     'W5 portrait optical tracking did not widen the camera')
   await expectState(page, x => x?.camera_target_visible
-    && x?.camera_keep_width && x?.camera_fov >= 60
-    && x?.camera_target_screen_x > .25 && x?.camera_target_screen_x < .75
+    && x?.camera_keep_width && x?.camera_fov >= 56 && x?.camera_fov <= 58
+    && x?.camera_target_screen_x > .35 && x?.camera_target_screen_x < .70
+    && x?.fault_label_visible_count === 1
     && x?.camera_target_screen_y > .24 && x?.camera_target_screen_y < .73
     && x?.machine_top_screen_y > .12 && x?.machine_top_screen_y < .37,
     'W6.1 portrait optics and physical upper rail must fit useful scene area')
@@ -192,7 +194,7 @@ try {
         x => x?.scene_ready && x?.loading_failures === 0
           && x?.loaded?.endsWith('service_spine_eco.glb')
           && x?.button_centers?.length === 8 && x?.fault_marker_count === 3
-          && x?.fault_marker_visible_count === 0,
+          && x?.fault_marker_visible_count === 0 && x?.fault_label_visible_count === 0,
         'Real W5 Godot ECO rig, 3D markers and controls did not load', 90_000)
       if (boot.quality !== 0) throw new Error('Low-memory ECO mode not used on boot')
       const geometry = await page.locator('canvas').first().evaluate(canvas => ({

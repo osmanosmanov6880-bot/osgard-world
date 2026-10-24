@@ -42,9 +42,9 @@ func _add_indicator(parent: Node3D, location: Vector3, title: String) -> void:
     var tag := Label3D.new()
     tag.name = "ReadableFaultTag"
     tag.text = title + "  [SIM]"
-    tag.font_size = 42
-    tag.pixel_size = 0.0052
-    tag.position = Vector3(0, 0.43, 0)
+    tag.font_size = 36
+    tag.pixel_size = 0.0043
+    tag.position = Vector3(0, 0.82, 0)
     tag.billboard = BaseMaterial3D.BILLBOARD_ENABLED
     tag.modulate = Color(0.50, 0.78, 0.87)
     assembly.add_child(tag)
@@ -75,22 +75,27 @@ func update_visuals(fault_index: int, is_active: bool, is_completed: bool, step:
         marker_materials[i].emission = color
         marker_materials[i].emission_energy_multiplier = 0.48 + (0.95 * pulse if highlighted else 0.0)
         marker_labels[i].modulate = color
+        marker_labels[i].visible = highlighted
         # Text, not color alone, communicates the diagnostic result.
         var status: String = "READY"
         if highlighted:
             status = "CLEARED" if cleared else "INSPECT"
-        var text_value: String = ["OPTICAL 01", "AIRFLOW 02", "INTERLOCK 03"][i] + " / " + status + " [SIM]"
+        var text_value: String = ["OPTIC 01", "AIR 02", "LOCK 03"][i] + " / " + status
         if marker_labels[i].text != text_value:
             marker_labels[i].text = text_value
 
 func snapshot() -> Dictionary:
     var visible_count: int = 0
-    for marker in marker_roots:
-        if marker.visible:
+    var visible_labels: int = 0
+    for i in range(marker_roots.size()):
+        if marker_roots[i].visible:
             visible_count += 1
+            if marker_labels[i].visible:
+                visible_labels += 1
     return {
         "fault_marker_count": marker_roots.size(),
         "fault_marker_visible_count": visible_count,
+        "fault_label_visible_count": visible_labels,
         "fault_marker_active_index": active_index,
         "fault_visual_state": current_state
     }
