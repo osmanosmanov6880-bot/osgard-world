@@ -16,6 +16,7 @@ const copy = {
     titleA: 'Понимать ИИ.', titleB: 'Проверять ответы.', titleC: 'Решать осознанно.',
     lead: 'Разбирайтесь в сложных ответах, находите проверяемые основания и принимайте собственные решения. Начните с короткого упражнения — без регистрации.',
     check: 'Проверить утверждения', program: 'Программа обучения',
+    filmEntry: 'Бесплатно: трейлер и глава 01 OSA Cinema',
     route: 'МОЙ УЧЕБНЫЙ МАРШРУТ', lessons: 'УРОКОВ',
     progressLabel: 'Пройденные уроки OSA',
     saved: 'Отметки сохраняются в этом браузере.',
@@ -94,6 +95,7 @@ const copy = {
     titleA: 'Understand AI.', titleB: 'Check its answers.', titleC: 'Decide with care.',
     lead: 'Explore complex answers, find evidence you can verify, and make your own informed decisions. Start with a short exercise — no sign-up required.',
     check: 'Review the claims', program: 'Learning programme',
+    filmEntry: 'Free: OSA Cinema trailer + Act 01',
     route: 'MY LEARNING PATH', lessons: 'LESSONS',
     progressLabel: 'OSA lessons completed',
     saved: 'Progress is saved in this browser.',
@@ -205,6 +207,16 @@ export default function IntelligenceHome() {
           <a className="brand-button primary" href="#proof-card">{t.check} <span aria-hidden="true">↘</span></a>
           <a className="brand-button intelligence-command-secondary" href="/learning/program">{t.program} <span aria-hidden="true">↗</span></a>
         </div>
+        <p className="intelligence-cinema-cta">
+          <span>OSA CINEMA / FREE RELEASE</span>
+          <a
+            href={locale === 'en'
+              ? 'https://osa-cinema-beyond-the-model.osman-absolu-5357.chatgpt.site/?lang=en#watch'
+              : 'https://osa-cinema-beyond-the-model.osman-absolu-5357.chatgpt.site/?lang=ru#watch'}
+            target="_blank"
+            rel="noopener noreferrer"
+          >{t.filmEntry} <span aria-hidden="true">↗</span></a>
+        </p>
         <div className="intelligence-command-progress">
           <div className="intelligence-progress-heading"><span>{t.route}</span><strong>{completed} / {total} {t.lessons}</strong></div>
           <div className="intelligence-progress-rail" role="progressbar" aria-label={t.progressLabel} aria-valuemin={0} aria-valuemax={total} aria-valuenow={completed}>
