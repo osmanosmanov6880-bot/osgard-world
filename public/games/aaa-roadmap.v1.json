@@ -1,0 +1,325 @@
+{
+  "schemaVersion": 1,
+  "project": "OSGARD WORLD AAA DEVELOPMENT",
+  "generatedAt": "2026-10-24",
+  "statusDefinitions": {
+    "completed": "Подтверждено аудитом либо влито и проверено",
+    "in_review": "Исходники готовятся к CI и публикации — ещё не релиз",
+    "planned": "Работа ещё не реализована"
+  },
+  "policy": "Отмечаем completed только при наличии кода, успешной CI и подтверждения публикации, если требовалась публикация. AAA не считается достигнутым от одного визуального обновления.",
+  "waves": [
+    {
+      "id": "00",
+      "title": "Инвентаризация и художественное направление",
+      "state": "completed",
+      "games": "22/22",
+      "goal": "Подтвердить исходники, маршруты, классы игр, референсы и авторские эмблемы",
+      "gate": "22 уникальных игры сопоставлены с кодом, без подмены прототипов релизами",
+      "evidence": "Проверен каталог public/games/index.html"
+    },
+    {
+      "id": "01",
+      "title": "Полноэкранный PLAY и интерактивный трекер",
+      "state": "in_review",
+      "games": "22",
+      "goal": "Расширить игровой viewport, улучшить доступность управления, опубликовать проверяемый реестр этапов",
+      "gate": "Автоматические проверки HTML/JS и клиентского интерфейса, проверки PR, публикация маршрутов",
+      "evidence": "PR появится после создания исходников и запуска CI"
+    },
+    {
+      "id": "02",
+      "title": "Единый премиальный дизайн и 22 авторские эмблемы",
+      "state": "planned",
+      "games": "22",
+      "goal": "Собственная эмблема и отдельная обложка каждой игре, визуальная иерархия карточек, mobile image budgets",
+      "gate": "22 разных SVG, 22 разных превью 16:9, контраст, responsive QA"
+    },
+    {
+      "id": "03",
+      "title": "Основа геймплея, управление и сохранения",
+      "state": "planned",
+      "games": "22",
+      "goal": "Клавиатура, геймпад, touch, пауза, настройки, игровые состояния, восстановления",
+      "gate": "Desktop/mobile E2E и сценарии отказа, проверка сохранений"
+    },
+    {
+      "id": "04",
+      "title": "EMPIRE Ω: флагманский город и вождение",
+      "state": "planned",
+      "games": "1",
+      "goal": "Выверенная геометрия улиц, автомобильная физика, цикл миссии, свет, оптимизация",
+      "gate": "Игровая сцена, воспроизводимые тесты управления/физики и FPS"
+    },
+    {
+      "id": "05",
+      "title": "NULL//SHIFT и VECTOR//ZERO: тактика и физика",
+      "state": "planned",
+      "games": "2",
+      "goal": "Тактический рейд и отдельная физическая игра с работающими целями и обратной связью",
+      "gate": "По одному завершенному игровому циклу и регрессии"
+    },
+    {
+      "id": "06",
+      "title": "SWARM и REMIX: сетевые сессии",
+      "state": "planned",
+      "games": "2",
+      "goal": "Командные сценарии, серверные результаты, антиэксплойт, отказы сети",
+      "gate": "Два клиента проходят матчи и восстановление, журнал серверных проверок"
+    },
+    {
+      "id": "07",
+      "title": "NEBULA и Орбита: симуляции миров",
+      "state": "planned",
+      "games": "2",
+      "goal": "Космос, станции, флот и орбитальная экономика",
+      "gate": "Игровой цикл, контроль ресурсов и GPU/mobile fallback"
+    },
+    {
+      "id": "08",
+      "title": "INHERIT, TIME, R136, AFTERIMAGE: законченные вертикальные срезы",
+      "state": "planned",
+      "games": "4",
+      "goal": "Проработка истории поколений, городского управления, промышленной ячейки, тайм-атак",
+      "gate": "Четыре проверяемые кампании или законченные вертикальные срезы"
+    },
+    {
+      "id": "09",
+      "title": "ZION — антология из 11 интерактивных миров",
+      "state": "planned",
+      "games": "11",
+      "goal": "Единое управление и прогресс, авторские 3D/2.5D-сцены с разными механиками",
+      "gate": "11 самостоятельных интерактивных эпизодов, а не статичные тексты"
+    },
+    {
+      "id": "10",
+      "title": "Релизная оптимизация и премиальный QA",
+      "state": "planned",
+      "games": "22",
+      "goal": "Профили качества ПК/браузер/телефон, стабильная загрузка, доступность, аналитика с согласием",
+      "gate": "Опубликованные контрольные сборки с реальными метриками и проверенным откатом"
+    }
+  ],
+  "games": [
+    {
+      "id": "null-shift",
+      "title": "NULL//SHIFT",
+      "group": "flagship",
+      "reference": "Control · Escape from Tarkov",
+      "emblem": "split-reactor",
+      "gameplay": "Godot tactical raid",
+      "route": "/games/null-shift-godot/",
+      "wave": "05"
+    },
+    {
+      "id": "time",
+      "title": "Империя времени",
+      "group": "systems",
+      "reference": "Frostpunk 2 · Crusader Kings III",
+      "emblem": "hourglass-crown",
+      "gameplay": "strategy and factions",
+      "route": "/games/time",
+      "wave": "08"
+    },
+    {
+      "id": "empire-orbit",
+      "title": "Империя времени: Орбита",
+      "group": "systems",
+      "reference": "Anno 1800 · Dyson Sphere Program",
+      "emblem": "triple-orbit",
+      "gameplay": "orbital economy",
+      "route": "/games/empire-orbit/",
+      "wave": "07"
+    },
+    {
+      "id": "swarm",
+      "title": "SWARM",
+      "group": "multiplayer",
+      "reference": "Helldivers 2 · The Division 2",
+      "emblem": "eight-nodes",
+      "gameplay": "role-based co-op",
+      "route": "/games/swarm/",
+      "wave": "06"
+    },
+    {
+      "id": "inherit",
+      "title": "INHERIT",
+      "group": "worlds",
+      "reference": "Death Stranding 2 · Horizon Forbidden West",
+      "emblem": "generation-tree",
+      "gameplay": "living-world legacy",
+      "route": "/games/inherit/",
+      "wave": "08"
+    },
+    {
+      "id": "remix",
+      "title": "REMIX",
+      "group": "multiplayer",
+      "reference": "THE FINALS · Split Fiction",
+      "emblem": "paired-chevron",
+      "gameplay": "online challenges",
+      "route": "/games/remix/",
+      "wave": "06"
+    },
+    {
+      "id": "vector-zero",
+      "title": "VECTOR//ZERO",
+      "group": "physics",
+      "reference": "Portal 2 · The Talos Principle 2",
+      "emblem": "magnetic-core",
+      "gameplay": "magnetic platformer",
+      "route": "/games/vector-zero/",
+      "wave": "05"
+    },
+    {
+      "id": "afterimage-run",
+      "title": "AFTERIMAGE//RUN",
+      "group": "arcade",
+      "reference": "Ghostrunner 2 · Neon White",
+      "emblem": "triple-afterimage",
+      "gameplay": "speedrunning",
+      "route": "/games/afterimage-run/",
+      "wave": "08"
+    },
+    {
+      "id": "empire-omega",
+      "title": "OSGARD EMPIRE Ω",
+      "group": "flagship",
+      "reference": "Forza Horizon 5 · GTA V",
+      "emblem": "omega-road",
+      "gameplay": "driving city",
+      "route": "/games/omega-3d-preview/",
+      "wave": "04"
+    },
+    {
+      "id": "nebula-3d",
+      "title": "NEBULA",
+      "group": "flagship",
+      "reference": "Star Citizen · Everspace 2",
+      "emblem": "broken-orbit",
+      "gameplay": "space combat and exploration",
+      "route": "/games/remix/arena-v2/nebula-3d/",
+      "wave": "07"
+    },
+    {
+      "id": "r136-precision",
+      "title": "R136 Precision",
+      "group": "simulation",
+      "reference": "Satisfactory · Hardspace: Shipbreaker",
+      "emblem": "precision-gripper",
+      "gameplay": "industrial simulation",
+      "route": "/games/r136-precision/",
+      "wave": "08"
+    },
+    {
+      "id": "zion-020",
+      "title": "Базальтовая колыбель",
+      "group": "zion",
+      "reference": "Hellblade II · The Witness",
+      "emblem": "basalt-spires",
+      "gameplay": "resonance puzzle",
+      "route": "/games/zion-9/queue/ZION-020/index.html",
+      "wave": "09"
+    },
+    {
+      "id": "zion-021",
+      "title": "Тихий архив",
+      "group": "zion",
+      "reference": "Control · The Talos Principle 2",
+      "emblem": "archive-key",
+      "gameplay": "archive puzzle",
+      "route": "/games/zion-9/queue/ZION-021/index.html",
+      "wave": "09"
+    },
+    {
+      "id": "zion-022",
+      "title": "Стеклянный сад",
+      "group": "zion",
+      "reference": "Cocoon · Horizon Forbidden West",
+      "emblem": "crystal-flower",
+      "gameplay": "living glass orchard",
+      "route": "/games/zion-9/queue/ZION-022/index.html",
+      "wave": "09"
+    },
+    {
+      "id": "zion-023",
+      "title": "Последний приливный механизм",
+      "group": "zion",
+      "reference": "Subnautica · The Invincible",
+      "emblem": "tide-gear",
+      "gameplay": "tide engine mystery",
+      "route": "/games/zion-9/queue/ZION-023/index.html",
+      "wave": "09"
+    },
+    {
+      "id": "zion-024",
+      "title": "Бархатная частота",
+      "group": "zion",
+      "reference": "Alan Wake 2 · Oxenfree II",
+      "emblem": "radio-wave",
+      "gameplay": "signal mystery",
+      "route": "/games/zion-9/queue/ZION-024/index.html",
+      "wave": "09"
+    },
+    {
+      "id": "zion-025",
+      "title": "Бледное уравнение",
+      "group": "zion",
+      "reference": "The Talos Principle 2 · Manifold Garden",
+      "emblem": "light-equation",
+      "gameplay": "mathematical architecture",
+      "route": "/games/zion-9/queue/ZION-025/index.html",
+      "wave": "09"
+    },
+    {
+      "id": "zion-026",
+      "title": "Север сна",
+      "group": "zion",
+      "reference": "The Long Dark · Death Stranding 2",
+      "emblem": "north-star",
+      "gameplay": "polar expedition",
+      "route": "/games/zion-9/queue/ZION-026/index.html",
+      "wave": "09"
+    },
+    {
+      "id": "zion-027",
+      "title": "Бронзовый час",
+      "group": "zion",
+      "reference": "Dishonored 2 · Lies of P",
+      "emblem": "bronze-clock",
+      "gameplay": "clockwork puzzles",
+      "route": "/games/zion-9/queue/ZION-027/index.html",
+      "wave": "09"
+    },
+    {
+      "id": "zion-028",
+      "title": "Зеркальная погода",
+      "group": "zion",
+      "reference": "Life is Strange · Alan Wake 2",
+      "emblem": "mirror-cloud",
+      "gameplay": "weather mystery",
+      "route": "/games/zion-9/queue/ZION-028/index.html",
+      "wave": "09"
+    },
+    {
+      "id": "zion-029",
+      "title": "Синий интервал",
+      "group": "zion",
+      "reference": "Journey · GRIS",
+      "emblem": "blue-wave",
+      "gameplay": "musical world",
+      "route": "/games/zion-9/queue/ZION-029/index.html",
+      "wave": "09"
+    },
+    {
+      "id": "zion-030",
+      "title": "Теневой протокол",
+      "group": "zion",
+      "reference": "Terra Nil · Frostpunk 2",
+      "emblem": "tree-shadow",
+      "gameplay": "urban heat puzzle",
+      "route": "/games/zion-9/queue/ZION-030/index.html",
+      "wave": "09"
+    }
+  ]
+}
