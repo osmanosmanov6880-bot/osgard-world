@@ -31,7 +31,7 @@ var quality_at_start: int = 0
 var profile_switched_during_test: bool = false
 var screenshot_count: int = 0
 ## R36: on-device mobile performance controls; no remote analytics SDK.
-var r36_touch_source: Node
+var r36_touch_source
 var r36_mobile: bool = false
 var r36_safe_area: Vector4 = Vector4.ZERO
 var r36_view_size: Vector2 = Vector2(1280, 720)
