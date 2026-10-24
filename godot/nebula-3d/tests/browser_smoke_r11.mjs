@@ -17,28 +17,6 @@ const browser = await chromium.launch({
 // when the Godot canvas exists. Fall back to direct canvas readback, but only
 // count a substantial JPEG as a visual capture. Never mark a blank as a pass.
 async function captureWithFallback(page, destination, errors) {
-  // Preserve the test renderer's WebGL buffer and read the actual game canvas
-  // first. This succeeded in hosted SwiftShader; the compositor paths remain
-  // available if direct canvas readback is unavailable.
-  try {
-    const image = await Promise.race([
-      page.evaluate(() => {
-        const canvas = document.querySelector('canvas');
-        return canvas ? canvas.toDataURL('image/jpeg', 0.72) : '';
-      }),
-      new Promise(resolve => setTimeout(() => resolve(''), 14000))
-    ]);
-    if (image.startsWith('data:image/jpeg;base64,')) {
-      const raw = Buffer.from(image.slice('data:image/jpeg;base64,'.length), 'base64');
-      if (raw.length >= 12000) {
-        fs.writeFileSync(destination, raw);
-        return 'canvas-readback';
-      }
-      errors.push('Canvas readback was black/empty or too small (' + raw.length + ' bytes)');
-    }
-  } catch (e) {
-    errors.push('Canvas readback unavailable: ' + String(e.message).slice(0, 180));
-  }
   // Ask the live Godot viewport for the current frame. This avoids the
   // Chromium software compositor, which can stall while SwiftShader is busy.
   try {
@@ -99,7 +77,25 @@ async function captureWithFallback(page, destination, errors) {
   } catch (e) {
     errors.push('Chrome DevTools capture unavailable: ' + String(e.message).slice(0, 180));
   }
-
+  try {
+    const image = await Promise.race([
+      page.evaluate(() => {
+        const canvas = document.querySelector('canvas');
+        return canvas ? canvas.toDataURL('image/jpeg', 0.72) : '';
+      }),
+      new Promise(resolve => setTimeout(() => resolve(''), 14000))
+    ]);
+    if (image.startsWith('data:image/jpeg;base64,')) {
+      const raw = Buffer.from(image.slice('data:image/jpeg;base64,'.length), 'base64');
+      if (raw.length >= 12000) {
+        fs.writeFileSync(destination, raw);
+        return 'canvas-readback';
+      }
+      errors.push('Canvas readback was black/empty or too small (' + raw.length + ' bytes)');
+    }
+  } catch (e) {
+    errors.push('Canvas readback unavailable: ' + String(e.message).slice(0, 180));
+  }
   return 'inconclusive';
 }
 
@@ -150,7 +146,7 @@ try {
     const started = Date.now();
     await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 45000 });
     await page.locator('canvas').first().waitFor({ state: 'visible', timeout: 65000 });
-    await page.waitForTimeout(45000); // let SwiftShader finish a stable first game frame
+    await page.waitForTimeout(10000); // GL init, WebAssembly load, first scene draw
     const detail = await page.evaluate(() => {
       const canvas = document.querySelector('canvas');
       const probe = document.createElement('canvas');
