@@ -172,8 +172,11 @@ func _font() -> Font:
     return ThemeDB.fallback_font
 
 func _label(text: String, center: Vector2, size: int, tint: Color) -> void:
-    draw_string(_font(), center + Vector2(0, float(size) * 0.33), text,
-        HORIZONTAL_ALIGNMENT_CENTER, -1.0, size, tint)
+    var typeface: Font = _font()
+    var text_width: float = typeface.get_string_size(text,
+        HORIZONTAL_ALIGNMENT_LEFT, -1.0, size).x
+    draw_string(typeface, center + Vector2(-text_width * 0.5, float(size) * 0.33),
+        text, HORIZONTAL_ALIGNMENT_LEFT, -1.0, size, tint)
 
 func _draw() -> void:
     if not enabled or shop_open:
