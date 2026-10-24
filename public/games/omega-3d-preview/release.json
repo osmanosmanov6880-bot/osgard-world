@@ -1,15 +1,15 @@
 {
   "engine": "Godot 4.4.1",
   "source_path": "godot/empire-omega",
-  "source_commit": "79c12fdc7552d9eae533d3ede6c9266926e9bd52",
+  "source_commit": "f30c8b1bbb4d32aa6426f6109218fb7996a3979a",
   "native_tests": "passed",
   "artifact_kind": "native-Godot-HTML5-export",
   "files": {
     "index.audio.position.worklet.js": "347b512529c5dca302093f7b9de6d184dd09d10e9a6fba62cbab098a891b2368",
     "index.audio.worklet.js": "5b476a9c9ce642c0ee4256436d1bc31d9c38f868aca0f9a8e2a57c18d2dec2a3",
-    "index.html": "daf879968bba35234efb2faa4cd13fe28900c7d8a68d21227665e4dc370a5ca4",
+    "index.html": "be2a4b03181ec6438ec934b653fa0c21fae343e97a56c569512e29fdb5a72d63",
     "index.js": "19eb180d568bb8e17bcf4c72ca034ed3af44deeb90304deefee4e665562dfe31",
-    "index.pck": "c946c882508cf87e442a00c98f9ce332f6198be975a9ebff4c32a4ba545323e1",
+    "index.pck": "4850a251a788e1119489b86a5e5c8a76c6e8cad344e2d6910e917664bd5e58be",
     "index.png": "3cb4495c0b98dfbe4b663cbf2b6836473572339beb66d902367893162a70be0e",
     "index.wasm": "e4a43dbae28662b2a68f6136857a94db6695430901515800b9883f6327cb7116"
   }
