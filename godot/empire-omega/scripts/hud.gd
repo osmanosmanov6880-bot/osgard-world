@@ -703,7 +703,7 @@ func update_world_context(player_at: Vector3, vehicle_at: Vector3, goal_at: Vect
 		hint_label.text = _v08("ГАЗ · ТОРМ · РУЛЬ · АВТО","GAS · BRAKE · STEER · CAR","油门 · 刹车 · 转向 · 车辆") if compact_hud else _v08("W / S — газ и тормоз · A / D — руль · Пробел — ручник · E — выйти","W / S — drive and brake · A / D — steer · Space — handbrake · E — exit","W / S 油门刹车 · A / D 方向 · 空格 手刹 · E 下车")
 	else:
 		speed_label.text = ""
-		hint_label.text = ("F: "+nearest) if nearest != "" else _v08("WASD — идти · E — авто · F — действие · Tab — город · H — журнал","WASD — move · E — car · F — interact · Tab — city · H — journal","WASD 移动 · E 上车 · F 互动 · Tab 城市 · H 日志")
+		hint_label.text = ((_v08("РЯДОМ: ","NEAR: ","附近: ")+nearest.left(24)) if nearest != "" else _v08("АВТО · ИДТИ · ДЕЙСТВИЯ","CAR · WALK · ACTIONS","车辆 · 行走 · 操作")) if compact_hud else (("F: "+nearest) if nearest != "" else _v08("WASD — идти · E — авто · F — действие · Tab — город · H — журнал","WASD — move · E — car · F — interact · Tab — city · H — journal","WASD 移动 · E 上车 · F 互动 · Tab 城市 · H 日志"))
 
 func toggle_diagnostics() -> void:
 	diagnostic_visible = not diagnostic_visible
@@ -1156,7 +1156,7 @@ func toggle_pause() -> void:
 		settings_page = false
 		awaiting_binding = ""
 		get_tree().paused = false
-		Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE if open else Input.MOUSE_MODE_CAPTURED)
+		Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE if open or DisplayServer.is_touchscreen_available() else Input.MOUSE_MODE_CAPTURED)
 		return
 	if open:
 		toggle_strategy()
