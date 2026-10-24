@@ -5,6 +5,7 @@ var controller: Node3D
 var camera: Camera3D
 var studio: Node3D
 var reduced_motion: bool = false
+var last_layout_size: Vector2 = Vector2.ZERO
 var orbit_yaw: float = 0.44
 var orbit_pitch: float = 0.21
 var distance: float = 12.8
@@ -159,6 +160,7 @@ func _update_layout() -> void:
     if hud_panel == null:
         return
     var size := get_viewport().get_visible_rect().size
+    last_layout_size = size
     var portrait := _viewport_is_portrait()
     var margin := 24.0 if portrait else 18.0
     var compact := portrait and (size.y < 1150.0 or size.x < 500.0)
@@ -179,18 +181,29 @@ func _update_layout() -> void:
         b.custom_minimum_size = Vector2(0, (62 if compact else 82) if portrait else 43)
         b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 
+    var hud_width: float
+    var control_width: float
     if portrait:
-        var available_w: float = maxf(250.0, size.x - margin * 2.0)
-        hud_panel.custom_minimum_size = Vector2(available_w, 0.0)
-        action_panel.custom_minimum_size = Vector2(available_w, 0.0)
-        # Anchor actual panel bounds to the bottom even on short devices.
-        action_panel.position = Vector2(margin, maxf(0.0, size.y - action_panel.get_combined_minimum_size().y - margin))
-        hud_panel.position = Vector2(margin, 32.0 if compact else 42.0)
+        hud_width = maxf(240.0, size.x - margin * 2.0)
+        control_width = hud_width
     else:
-        hud_panel.custom_minimum_size = Vector2(minf(size.x * 0.48, 510.0), 0.0)
-        action_panel.custom_minimum_size = Vector2(minf(size.x * 0.85, 990.0), 0.0)
-        hud_panel.position = Vector2(margin, margin)
-        action_panel.position = Vector2(margin, maxf(0.0, size.y - action_panel.get_combined_minimum_size().y - margin))
+        hud_width = minf(size.x * 0.48, 510.0)
+        control_width = minf(size.x * 0.85, 990.0)
+    # A CanvasLayer is not a full-rect Container. Its free-standing PanelContainer
+    # keeps its previous computed size when the browser resizes unless explicitly
+    # reset. Merely changing custom_minimum_size left W8's original 1033-pixel
+    # panel visible inside a 360-pixel logical viewport.
+    hud_panel.custom_minimum_size = Vector2(hud_width, 0.0)
+    action_panel.custom_minimum_size = Vector2(control_width, 0.0)
+    hud_panel.reset_size()
+    action_panel.reset_size()
+    hud_panel.size = Vector2(hud_width, hud_panel.get_combined_minimum_size().y)
+    action_panel.size = Vector2(control_width, action_panel.get_combined_minimum_size().y)
+    hud_panel.position = Vector2(margin, (32.0 if compact else 42.0) if portrait else margin)
+    action_panel.position = Vector2(
+        margin,
+        maxf(0.0, size.y - action_panel.size.y - margin)
+    )
     _update_view()
 
 func _start_mission() -> void:
@@ -352,6 +365,10 @@ func _process(delta: float) -> void:
     if readout_clock < 0.18:
         return
     readout_clock = 0.0
+    # Browser viewport changes (especially Playwright Pixel DPR) can change the
+    # engine's visible rect without emitting a reliable root size_changed signal.
+    if get_viewport().get_visible_rect().size.distance_squared_to(last_layout_size) > 1.0:
+        _update_layout()
     _refresh_status()
     if view_index == 2 and optical_tracking:
         _update_view()
