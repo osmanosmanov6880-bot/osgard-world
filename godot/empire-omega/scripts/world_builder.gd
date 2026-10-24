@@ -207,8 +207,12 @@ func _create_city() -> void:
 				var pos := Vector3(x+offset,height*0.5,z+(offset if (ix + iz) % 2 == 0 else -offset))
 				_box(chunk,"Building_%03d" % building_count,Vector3(width,height,width),pos,color,true)
 				architecture_trim.call("record",pos,width,height)
-				streetfront.call("record",pos,width,height,building_count)
-				_record_windows(pos,width,height,building_count)
+				# Entrances and the ground-floor window gap must share the same
+				# street-facing facade; never face an interior wall at random.
+				var entrance_face: int = STREETFRONT_SCENE.road_facing_variant(
+					pos,ROAD_INTERVAL,(ix+iz+n)%2==0)
+				streetfront.call("record",pos,width,height,building_count,entrance_face)
+				_record_windows(pos,width,height,entrance_face)
 				building_count += 1
 				# Emissive parapet gives an evening skyline without external textures.
 				_box(chunk,"RoofLight",Vector3(width+0.35,0.27,width+0.35),Vector3(pos.x,height+0.15,pos.z),Color("69747d"),false,false)
