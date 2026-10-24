@@ -442,7 +442,7 @@ func _physics_process(delta: float) -> void:
 		near_miss_sample = 0.0
 	previous_vehicle_health = car.health
 	GameState.sync_vehicle_live(car.fuel,car.health,car.mileage,driving)
-	if soundscape != null: soundscape.update_cues(driving,car.speed,current_weather_kind,int(GameState.data.get("law",{}).get("heat",0)))
+	if soundscape != null: soundscape.update_cues(driving,car.speed,current_weather_kind,int(GameState.data.get("law",{}).get("heat",0)),Input.get_action_strength("move_forward") if driving else 0.0,car.handbrake_on if driving else false,delta)
 	GameState.data["day_clock"] = fposmod(float(GameState.data["day_clock"])+delta*0.012,24.0)
 	world.update_daynight(float(GameState.data["day_clock"]))
 	autosave_accumulator += delta
