@@ -287,9 +287,9 @@ func _input(event: InputEvent) -> void:
         if touch.pressed:
             r31_last_touch_role = _role_at(touch.position)
         if r34_dom_bridge_active:
-            # The DOM bridge owns Web touches to avoid duplicate native
-            # ScreenTouch + DOM events launching a single button twice.
-            get_viewport().set_input_as_handled()
+            # DOM bridge exclusively sends touch to flight physics. Keep
+            # native events available to real Godot Buttons (FPS/benchmark).
+            # Marking input handled here blocked all touch GUI clicks.
             return
         var was_control: bool = finger_roles.has(touch.index)
         _set_touch(touch.index, touch.position, touch.pressed)
@@ -297,7 +297,7 @@ func _input(event: InputEvent) -> void:
             get_viewport().set_input_as_handled()
     elif event is InputEventScreenDrag:
         if r34_dom_bridge_active:
-            get_viewport().set_input_as_handled()
+            # GUI slider/scroll can still use the native drag.
             return
         var drag: InputEventScreenDrag = event
         if finger_roles.has(drag.index):
