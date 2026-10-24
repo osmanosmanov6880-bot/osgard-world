@@ -40,6 +40,8 @@ def stage(archive: Path, manifest_path: Path, destination: Path):
         reject("WASM gzip savings below mandatory transfer budget")
     if manifest.get("native_tests") != "passed" or not manifest.get("original_glbs_preserved"):
         reject("required native source verification missing")
+    if manifest.get("webgl_browser_software_smoke") != "passed":
+        reject("W5 WebGL gameplay evidence missing")
 
     destination = destination.resolve()
     destination.parent.mkdir(parents=True, exist_ok=True)
