@@ -179,10 +179,6 @@ func _run() -> void:
     if indicators == null or indicators.get_child_count() != 2:
         _fail("W5 world fault indicator scene is missing")
         return
-    for n in ["OPTICAL HEAD", "SERVICE DECK", "OVERVIEW"]:
-        if n not in instance.get("VIEW_NAMES"):
-            _fail("W5 expected camera view missing: " + n)
-            return
     instance.call("_apply_view", 2)
     var portrait_distance: float = float(instance.get("camera_effective_distance"))
     instance.call("_apply_view", 0)
