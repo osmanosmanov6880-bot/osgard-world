@@ -1,5 +1,6 @@
 extends CanvasLayer
 const HORIZON_LAYOUT = preload("res://scripts/horizon_responsive_layout.gd")
+const COMPACT_TELEMETRY = preload("res://scripts/horizon_compact_telemetry.gd")
 ## Russian-first accessible HUD. All controls use the same GameState as the 3D world.
 
 signal strategy_changed(is_open: bool)
@@ -676,7 +677,7 @@ func update_world_context(player_at: Vector3, vehicle_at: Vector3, goal_at: Vect
 		map.vehicle_world = vehicle_at
 		map.goal_world = goal_at
 		map.driving = is_driving
-		map.queue_redraw()
+		if map_panel != null and map_panel.visible: map.queue_redraw()
 	if contract_label != null and not ContractManager.active_contract().is_empty():
 		contract_label.text = ContractManager.goal_text(GameState.locale)
 	if service_label != null and not GameState.data.get("service_active",{}).is_empty():
@@ -693,12 +694,15 @@ func update_world_context(player_at: Vector3, vehicle_at: Vector3, goal_at: Vect
 	if speed_panel != null:
 		speed_panel.visible = is_driving
 	if is_driving:
-		speed_label.text = "%d км/ч · %s" % [roundi(absf(speed)*3.6),gear]
-		speed_label.text += "\n%s %d%% · %d%%" % [t("fuel"),roundi(fuel),roundi(condition)] if compact_hud else "\n%s %d%%  ·  %s %d%%" % [t("fuel"),roundi(fuel),t("condition"),roundi(condition)]
-		if handbrake: speed_label.text += " · " + t("handbrake")
-		if drift_score >= 12: speed_label.text += " · DRIFT %d" % drift_score
+		if compact_hud:
+			speed_label.text = COMPACT_TELEMETRY.speed_lines(speed,gear,fuel,condition,handbrake,drift_score,assist_power,assist_steering,GameState.locale)
+		else:
+			speed_label.text = "%d км/ч · %s" % [roundi(absf(speed)*3.6),gear]
+		if not compact_hud: speed_label.text += "\n%s %d%%  ·  %s %d%%" % [t("fuel"),roundi(fuel),t("condition"),roundi(condition)]
+		if handbrake and not compact_hud: speed_label.text += " · " + t("handbrake")
+		if drift_score >= 12 and not compact_hud: speed_label.text += " · DRIFT %d" % drift_score
 		var assist_intensity: float = clampf(maxf(assist_power,assist_steering*3.0),0.0,1.0)
-		if assist_intensity >= 0.025:
+		if assist_intensity >= 0.025 and not compact_hud:
 			speed_label.text += "\n" + _v08("ПОМОЩЬ СЦЕПЛЕНИЮ","GRIP ASSIST","抓地辅助") + " %d%%" % roundi(assist_intensity*100.0)
 		hint_label.text = _v08("ГАЗ · ТОРМ · РУЛЬ · АВТО","GAS · BRAKE · STEER · CAR","油门 · 刹车 · 转向 · 车辆") if compact_hud else _v08("W / S — газ и тормоз · A / D — руль · Пробел — ручник · E — выйти","W / S — drive and brake · A / D — steer · Space — handbrake · E — exit","W / S 油门刹车 · A / D 方向 · 空格 手刹 · E 下车")
 	else:
@@ -1229,7 +1233,8 @@ func _redraw_pause() -> void:
 	volume_slider.max_value = 1.0
 	volume_slider.step = 0.05
 	volume_slider.value = GameSettings.volume
-	volume_slider.custom_minimum_size = Vector2(560,36)
+	volume_slider.custom_minimum_size = Vector2(0,44)
+	volume_slider.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	volume_slider.value_changed.connect(Callable(GameSettings,"set_volume"))
 	pause_contents.add_child(volume_slider)
 	_label(pause_contents,t("mouse_sensitivity"),18,true)
