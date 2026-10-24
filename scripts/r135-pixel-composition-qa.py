@@ -32,16 +32,27 @@ def metrics(image_path: Path) -> dict:
             nonempty_start = y
     fraction = nonempty_start / height if nonempty_start is not None else None
     coverage = total_blue / ((right - left) * (last - first))
-    passes = fraction is not None and .19 < fraction <= .36 and coverage >= .16
+    # The active 3D fault caption must appear above the upper beam,
+    # in a defined portrait safe band, not behind the machine or HUD.
+    caption_pixels = 0
+    for y in range(int(height * .20), int(height * .24)):
+        for x in range(int(width * .28), int(width * .78)):
+            r, g, b = pixels[x, y]
+            if r > 150 and 35 < g < 175 and b < 105 and r > g * 1.45:
+                caption_pixels += 1
+    passes = (fraction is not None and .19 < fraction <= .36 and
+              coverage >= .16 and caption_pixels >= 280)
     return {
         "image": image_path.name,
         "width": width,
         "height": height,
         "first_structure_fraction": round(fraction, 4) if fraction is not None else None,
         "blue_geometry_coverage": round(coverage, 4),
+        "fault_caption_orange_pixels": caption_pixels,
         "requirements": {
             "first_structure_fraction_max": .36,
-            "blue_geometry_coverage_min": .16
+            "blue_geometry_coverage_min": .16,
+            "fault_caption_orange_pixels_min": 280
         },
         "status": "PASS" if passes else "FAIL",
         "caution": "Fixed RGB heuristic detects industrial scene occupancy, not visual art quality or FPS"

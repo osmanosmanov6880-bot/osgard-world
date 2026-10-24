@@ -268,11 +268,11 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p "$RUNNER_TEMP/r135-web-release"
-          if ! gh run download 40082233653 \
+          if ! gh run download 40109700192 \
             --repo osmanosmanov6880-bot/osgard-world \
             --name osgard-r135-optimized-web-qa \
             --dir "$RUNNER_TEMP/r135-web-release"; then
-            echo "Pinned Actions artifact unavailable; restoring only from SHA-verified live W5" >&2
+            echo "Pinned Actions artifact unavailable; restoring only from SHA-verified live W6" >&2
             python3 scripts/r135-artifact-fallback.py "$RUNNER_TEMP/r135-web-release/r135-optimized-release"
           fi
           python3 scripts/r135-release-stage.py \
@@ -531,7 +531,8 @@ jobs:
       - name: Verify actual published R135 WebGL pack and byte-range support
         env:
           OSGARD_BASE_URL: https://osgard.world
-          OSGARD_EXPECTED_R135_SOURCE: cd6132fa5d34cbb701957b124a6aa2aac9210434
+          OSGARD_EXPECTED_R135_SOURCE: 947b4627080636543ae5e873b88b50e61f13beb4
+          OSGARD_EXPECTED_R135_VERSION: r135-web-framing-w6-20261024
         run: node scripts/r135-production-smoke.mjs
       - name: Verify published routes and same-origin API proxy
         env:
