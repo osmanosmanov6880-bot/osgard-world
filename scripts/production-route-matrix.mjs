@@ -1,16 +1,18 @@
+import { appendFileSync, writeFileSync } from 'node:fs'
+import { runProbes } from './route-probe-pool.mjs'
 import { isValidPartnerInventoryText } from './partner-inventory-contract.mjs'
 // Unique query probes prevent stale CDN entries from masking the active SSH release.
 const base = process.env.OSGARD_BASE_URL || 'https://osgard.world'
 const expectCurrentDesign = process.env.SKILLCRED_EXPECT_CURRENT_DESIGN === '1'
 const routes = ['/development/','/development/essentia/','/development/essentia/og.svg','/development/og.svg','/tedes/','/tedes/catalog/','/tedes/collections/','/tedes/product/?sku=FORMA-ARC-01','/tedes/data/catalog.v1.json','/tedes/materials/','/tedes/project/','/tedes/print/','/development/tedes/','/development/phantom/','/development/phantom/og.svg','/development/merakki/','/development/merakki/en/','/development/merakki/ar/','/development/merakki/og.svg','/development/auto-style/','/development/auto-style/en/','/development/auto-style/ar/','/development/auto-style/og.svg','/development/osa-intelligence/','/development/osa-intelligence/og.svg','/osa-library/','/osa-library/media-manifest.json','/','/api/core/health','/portal','/osa-cinema','/academy','/lectures/intelligence-and-imitation','/lectures/how-language-models-work','/lectures/power-of-knowledge','/lectures/signal-and-noise','/lectures/verify-an-ai-answer','/lectures/privacy-before-prompting','/lectures/human-in-the-loop','/lectures/investigate-the-future','/lectures','/skillcred/','/skillcred/favicon.svg','/skillcred-api/health','/skillcred-api/ready','/skillcred-api/issuer','/entertainment','/entertainment/','/entertainment/archive/','/entertainment/en/','/entertainment/ar/','/entertainment/og.svg','/entertainment/euromotors/','/entertainment/euromotors/en/','/entertainment/euromotors/ar/','/entertainment/euromotors/og.svg','/entertainment/elbrus/','/entertainment/elbrus/en/','/entertainment/elbrus/ar/','/entertainment/elbrus/og.svg','/entertainment/noir-auto/','/entertainment/noir-auto/en/','/entertainment/noir-auto/ar/','/entertainment/noir-auto/og.svg','/entertainment/the-hummer-gym/','/entertainment/the-hummer-gym/en/','/entertainment/the-hummer-gym/ar/','/games/','/games/index.html','/games/partners/','/games/admin/','/games/afterimage-run/','/games/vector-zero/','/games/omega-3d-preview/','/games/omega-3d-preview/index.html','/games/omega-3d-preview/release.json','/games/remix/arena-v2/nebula-3d/','/games/remix/arena-v2/nebula-3d/index.html','/games/r136-precision/','/games/r136-precision/release.json','/games/time-omega-preview/','/games/time-omega-preview/strategy.html','/games/favicon.svg','/privacy/','/terms/','/community','/stream','/archive','/profile','/api/v1/player/profile','/api/v1/analytics/summary?from=0&to=1','/r/1842','/games/time','/games/time-empire/','/games/empire-orbit/','/games/null-shift/','/games/null-shift/index.html','/games/null-shift-godot/','/games/null-shift-godot/index.html','/play/swarm','/play/null-shift','/play/inherit','/play/remix','/media','/business','/create','/mobility']
 const agents = { desktop: 'OSGARD-Route-Matrix/1.1 Desktop', mobile: 'OSGARD-Route-Matrix/1.1 Mobile' }
-const results = []
-for (const [device, userAgent] of Object.entries(agents)) for (const route of routes) {
+const probeJobs = Object.entries(agents).flatMap(([device, userAgent]) => routes.map(route => ({ device, userAgent, route })))
+const results = await runProbes(probeJobs, 3, async ({ device, userAgent, route }) => {
   const started = Date.now()
   try {
     const requestUrl = new URL(route, base)
     requestUrl.searchParams.set('osa_release_probe', `${device}-${encodeURIComponent(route)}-${Date.now()}`)
-    const response = await fetch(requestUrl, { headers: { 'user-agent': userAgent, 'cache-control': 'no-cache', pragma: 'no-cache' } })
+    const response = await fetch(requestUrl, { headers: { 'user-agent': userAgent, 'cache-control': 'no-cache', pragma: 'no-cache' }, signal: AbortSignal.timeout(30000) })
     const text = await response.text()
     const shellOk = route === '/'
       ? text.includes('<title>OSGARD WORLD — цифровые продукты, построенные как системы</title>') && text.includes('name="osgard-app" content="osgard-ecosystem"') &&
@@ -193,10 +195,11 @@ for (const [device, userAgent] of Object.entries(agents)) for (const route of ro
       if (rootBundle) assetPaths.push(rootBundle)
     }
     const assetChecks = await Promise.all(assetPaths.map(async path => {
+      try {
       const expectedType = path.endsWith('.svg') ? 'image/svg+xml' : path.endsWith('.webp') ? 'image' : path.endsWith('.css') ? 'text/css' : path.endsWith('.json') ? 'json' : path.endsWith('.js') ? 'javascript' : path.endsWith('.wasm') ? 'wasm' : path.endsWith('.pck') ? 'pack' : 'font'
       const assetUrl = new URL(path, base)
       assetUrl.searchParams.set('osa_asset_probe', `${device}-${encodeURIComponent(route)}-${Date.now()}`)
-      const asset = await fetch(assetUrl, { headers: { 'user-agent': userAgent, 'cache-control': 'no-cache', pragma: 'no-cache' } })
+      const asset = await fetch(assetUrl, { headers: { 'user-agent': userAgent, 'cache-control': 'no-cache', pragma: 'no-cache' }, signal: AbortSignal.timeout(30000) })
       const contentType = asset.headers.get('content-type') || ''
       const mime = contentType.toLowerCase()
       const typeOk = expectedType === 'image/svg+xml' ? mime.includes('image/svg+xml') : expectedType === 'text/css' ? mime.includes('text/css') : expectedType === 'json' ? mime.includes('application/json') || mime.includes('text/json') || mime.includes('text/plain') : expectedType === 'javascript' ? mime.includes('javascript') || mime.includes('ecmascript') : expectedType === 'wasm' ? mime.includes('wasm') || mime.includes('octet-stream') : expectedType === 'pack' ? mime.length > 0 : expectedType === 'image' ? mime.includes('image/webp') : mime.includes('font/woff2') || mime.includes('application/octet-stream')
@@ -270,10 +273,11 @@ for (const [device, userAgent] of Object.entries(agents)) for (const route of ro
               : content.includes('demo/issue') && content.includes('data-clock-step')
       }
       return { path, status: asset.status, contentType, ok: asset.status === 200 && typeOk && nonEmpty }
+      } catch (error) { return { path, status: 0, ok: false, error: String(error) } }
     }))
     const assetsOk = assetChecks.every(asset => asset.ok)
     const statusOk = route.startsWith('/api/v1/') ? [401, 403].includes(response.status) : response.status === 200
-    results.push({
+    return {
       device, route, status: response.status, assets: assetChecks,
       ok: statusOk && shellOk && assetsOk,
       durationMs: Date.now() - started,
@@ -288,10 +292,19 @@ for (const [device, userAgent] of Object.entries(agents)) for (const route of ro
           cacheStatus: response.headers.get('cf-cache-status')
         }
       } : {})
-    })
-  } catch (error) { results.push({ device, route, status: 0, ok: false, error: String(error), durationMs: Date.now() - started }) }
-}
+    }
+  } catch (error) { return { device, route, status: 0, ok: false, error: String(error), durationMs: Date.now() - started } }
+})
 const failed = results.filter(item => !item.ok)
-const report = { base, checkedAt: new Date().toISOString(), routes: results.length, failed: failed.length, status: failed.length ? 'failed' : 'ready', results }
-console.log(JSON.stringify(report, null, 2))
+const report = { base, checkedAt: new Date().toISOString(), routes: results.length, passed: results.length - failed.length, failed: failed.length, status: failed.length ? 'failed' : 'ready', results }
+const reportFile = 'production-route-matrix-report.json'
+writeFileSync(reportFile, JSON.stringify(report, null, 2) + '\n')
+const summary = [
+  `### OSGARD published routes: ${report.status.toUpperCase()}`,
+  `- Routes checked: ${report.routes}; passed: ${report.passed}; failed: ${report.failed}`,
+  ...failed.slice(0, 40).map(item => `- ${item.device} ${item.route}: HTTP ${item.status}; ${item.error || JSON.stringify(item.diagnostic || item.assets.filter(asset => !asset.ok))}`),
+  ...(failed.length > 40 ? [`- ${failed.length - 40} further failures are available in ${reportFile}`] : []),
+].join('\n')
+console.log(summary)
+if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary + '\n')
 if (failed.length) process.exitCode = 1
