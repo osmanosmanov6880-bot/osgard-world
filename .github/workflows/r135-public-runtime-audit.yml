@@ -1,0 +1,39 @@
+name: OSGARD R135 live immutable manifest and binary verification
+on:
+  push:
+    branches: [audit/r135-public-runtime-check-20261024]
+    paths: [".github/workflows/r135-public-runtime-audit.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  public_r135:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Read public R135 manifest, print runtime provenance without changing server
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --max-time 25 --retry 3 --retry-delay 1 -fsSL \
+            "https://osgard.world/games/r135-service/release.json?qa-run=${GITHUB_RUN_ID}" \
+            -o /tmp/osgard-live-r135.json
+          node -e '
+            const fs=require("fs"),crypto=require("crypto");
+            const bytes=fs.readFileSync("/tmp/osgard-live-r135.json");
+            const r=JSON.parse(bytes);
+            console.log(JSON.stringify({version:r.version,source_commit:r.source_commit,
+              sha256:crypto.createHash("sha256").update(bytes).digest("hex"),
+              pck_bytes:r.optimized_pck_bytes,engine:r.engine,
+              actual_runtime_assets:Object.keys(r.files||{}).length},null,2));
+          '
+      - name: Verify real public R135 source, bytes and HTTP206 streaming (W6.4)
+        env:
+          OSGARD_BASE_URL: https://osgard.world
+          OSGARD_EXPECTED_R135_SOURCE: 947b4627080636543ae5e873b88b50e61f13beb4
+          OSGARD_EXPECTED_R135_VERSION: r135-web-framing-w6-20261024
+        run: node scripts/r135-production-smoke.mjs
