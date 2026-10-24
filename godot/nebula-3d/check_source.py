@@ -403,6 +403,32 @@ require(
     "docs/R19-NEAR-SECTOR-GPU-LIGHTS.md",
     "R19", "1,800", "48", "F7", "F9", "F10",
 )
+# R20: eliminate last 1,048,576 runtime image pixel writes from R11
+# weathered deck and R5 emitting facade without changing the source art.
+r20_baker = require(
+    "tools/bake_r20.gd",
+    "const Studio",
+    "const Architecture",
+    "func _save(",
+    "deck_albedo",
+    "deck_normal",
+    "deck_orm",
+    "facade_albedo",
+    "facade_emission",
+    "NEBULA_R20_BAKE_SUCCESS",
+)
+assert "static func _r20_load_exact_deck()" in studio_r11
+assert "static func baked_count() -> int:" in studio_r11
+assert "static func _assemble(" in studio_r11
+assert 'ResourceLoader.exists(name)' in studio_r11
+assert "func _r20_exact_glazing()" in premium
+assert "func _facade_material(" in premium
+assert 'ResourceLoader.exists(resource)' in premium
+assert "r20_facade_baked = true" in premium
+require(
+    "docs/R20-BAKED-METAL-GLAZING-ACCEPTANCE.md",
+    "R20", "1,048,576", "512x512", "256x512", "F7", "F9", "F10",
+)
 require("scripts/architectural_detail_r4.gd", "func build(")
 
 require("scripts/drone.gd", "extends")
@@ -454,6 +480,10 @@ smoke = require(
     "R19 industrial batches must be independent per district with no lost assets",
     "R19 player near Aurora should see exactly two local industrial worklights",
     "R19 auto / manual ECO change did not disable distant architecture",
+    "R20 city facade still calculates 256x512 glazing pixels during browser load",
+    "R20 baked emission/albedo texture dimensions differ from original glazing",
+    "R20 real player browser still computes 512x512 heavy weathered metal atlas",
+    "NEBULA_R20_BAKED_IMPORT_SUCCESS",
     "NEBULA_R17_PBR_IMPORT_SUCCESS",
     "NEBULA_SMOKE_SUCCESS",
 )
@@ -466,4 +496,4 @@ assert "image.generate_mipmaps()" in ship_visual
 assert premium.count("Image.create(") >= 2, "separate facade albedo/emission atlases missing"
 assert "high-detail" not in project.lower(), "project identity may remain stable"
 assert len(smoke) > 1500 and len(city) > 5000 and len(world) > 10000
-print("NEBULA_R19_SOURCE_SUCCESS: premium facades + industrial silos GPU sharded, distance-gated lights, R18/17/16 retained")
+print("NEBULA_R20_SOURCE_SUCCESS: 5 original 512px/256px deck+facade atlases baked on native CI; R19/R18/R17/R16 retained")
