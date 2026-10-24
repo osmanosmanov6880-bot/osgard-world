@@ -129,6 +129,8 @@ var r21_objective_panel: PanelContainer
 var r21_ui_font: SystemFont
 var r21_mobile_enabled: bool = false
 var r21_launch_protection: float = 9.0
+var r23_cruise_button: Button
+var r23_launch_button_events: int = 0
 ## R22: real playable golden-hour skyline, not an image/background plate.
 var aurora_scenic_r22: Node3D
 
@@ -156,6 +158,7 @@ func _ready() -> void:
     r21_touch.rocket_requested.connect(_r21_launch_missile)
     r21_touch.hangar_requested.connect(_r21_toggle_hangar)
     r21_touch.camera_requested.connect(_r21_cycle_camera)
+    r21_touch.cruise_requested.connect(_r23_toggle_cruise)
     r21_mobile_enabled = r21_touch.enabled
     _r16_setup_beam_pool()
     store_r15 = HangarStoreR15Script.new()
@@ -506,11 +509,26 @@ func _r21_toggle_hangar() -> void:
         store_r15.close()
     elif ship.global_position.distance_to(SECTOR_POSITIONS[0]) <= 150.0:
         store_r15.open(credits, owned_r15, equipped_r15)
+        ship.set_cruise_assist(false)
         ship.controls_locked = true
         if is_instance_valid(r21_touch):
             r21_touch.set_shop_open(true)
     else:
         _show_notice("АНГАР ДОСТУПЕН ТОЛЬКО В ПОРТУ АВРОРА")
+
+func _r23_toggle_cruise() -> void:
+    if not is_instance_valid(ship):
+        return
+    if is_instance_valid(store_r15) and store_r15.visible:
+        return
+    if ship.controls_locked:
+        return
+    ship.set_cruise_assist(not ship.cruise_assist)
+    r23_launch_button_events += 1
+    if ship.cruise_assist:
+        _show_notice("ПОЛЁТ НАЧАТ · ТЯГА ВКЛЮЧЕНА · S ДЛЯ ТОРМОЖЕНИЯ")
+    else:
+        _show_notice("АВТОТЯГА ОТКЛЮЧЕНА · W ДЛЯ ПОЛЁТА")
 
 func _r21_launch_missile() -> void:
     if is_instance_valid(store_r15) and store_r15.visible:
@@ -657,6 +675,35 @@ func _make_hud() -> void:
     hud_notice.offset_bottom = 180.0
     hud_notice.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
     surface.add_child(hud_notice)
+    # A real clickable start/stop control. This makes first flight possible
+    # with a mouse even if the browser swallowed WASD or a non-Latin layout.
+    r23_cruise_button = Button.new()
+    r23_cruise_button.name = "R23_StartRealFlight"
+    r23_cruise_button.focus_mode = Control.FOCUS_NONE
+    r23_cruise_button.text = "▶  НАЧАТЬ ПОЛЁТ"
+    r23_cruise_button.anchor_left = 0.5
+    r23_cruise_button.anchor_right = 0.5
+    r23_cruise_button.anchor_top = 1.0
+    r23_cruise_button.anchor_bottom = 1.0
+    r23_cruise_button.offset_left = -122.0
+    r23_cruise_button.offset_right = 122.0
+    r23_cruise_button.offset_top = -96.0
+    r23_cruise_button.offset_bottom = -45.0
+    r23_cruise_button.add_theme_font_override("font",r21_ui_font)
+    r23_cruise_button.add_theme_font_size_override("font_size",17)
+    r23_cruise_button.add_theme_color_override("font_color",Color(0.91,0.96,0.98))
+    var cruise_style := StyleBoxFlat.new()
+    cruise_style.bg_color = Color(0.025,0.065,0.094,0.93)
+    cruise_style.border_color = Color(0.27,0.76,0.88,0.87)
+    cruise_style.set_border_width_all(1)
+    cruise_style.set_corner_radius_all(8)
+    cruise_style.content_margin_left = 14
+    cruise_style.content_margin_right = 14
+    r23_cruise_button.add_theme_stylebox_override("normal",cruise_style)
+    r23_cruise_button.add_theme_stylebox_override("hover",cruise_style)
+    r23_cruise_button.add_theme_stylebox_override("pressed",cruise_style)
+    r23_cruise_button.pressed.connect(_r23_toggle_cruise)
+    surface.add_child(r23_cruise_button)
 
 func _process(delta: float) -> void:
     if not is_instance_valid(ship): return
@@ -920,6 +967,8 @@ func _update_hud() -> void:
         return
     var resource_line: String = "КРЕДИТЫ  %d     XP  %d     ЩИТ  %d%%     КОРПУС  %d%%" % [
         credits, xp, roundi(ship.shield), roundi(ship.hull)]
+    if is_instance_valid(r23_cruise_button):
+        r23_cruise_button.text = "■  ЗАВЕРШИТЬ ПОЛЁТ" if ship.cruise_assist else "▶  НАЧАТЬ ПОЛЁТ"
     if mission_index >= MISSIONS.size():
         hud_mission.text = "НЕБУЛА  /  СВОБОДНЫЙ ПОЛЁТ"
         hud_objective.text = "МИССИИ ВЫПОЛНЕНЫ"
@@ -938,6 +987,8 @@ func _fit_hud() -> void:
     var width: float = rect.x
     var height: float = rect.y
     var compact: bool = width < 940.0 or height < 590.0 or r21_mobile_enabled
+    if is_instance_valid(r23_cruise_button):
+        r23_cruise_button.visible = not r21_mobile_enabled and width >= 800.0
     if compact:
         hud_panel.offset_left = 8.0
         hud_panel.offset_top = 8.0
