@@ -51,14 +51,22 @@ export async function captureAnimatedWebGLViewport(page) {
   let session=null
   try {
     session=await page.context().newCDPSession(page)
-    const encoded=await Promise.race([
-      session.send('Page.captureScreenshot',{
-        format:'png',
-        captureBeyondViewport:false,
-        fromSurface:true
-      }),
-      new Promise((_,reject)=>setTimeout(()=>reject(new Error('CDP screenshot timed out')),20000))
-    ])
+    let timeoutId=null
+    let encoded
+    try {
+      encoded=await Promise.race([
+        session.send('Page.captureScreenshot',{
+          format:'png',
+          captureBeyondViewport:false,
+          fromSurface:true
+        }),
+        new Promise((_,reject)=>{
+          timeoutId=setTimeout(()=>reject(new Error('CDP screenshot timed out')),20000)
+        })
+      ])
+    } finally {
+      if(timeoutId!==null)clearTimeout(timeoutId)
+    }
     const bytes=Buffer.from(encoded.data,'base64')
     if(bytes.length<9500 || bytes.subarray(0,8).toString('hex')!=='89504e470d0a1a0a') {
       throw new Error('CDP did not capture a real PNG viewport')
@@ -69,6 +77,9 @@ export async function captureAnimatedWebGLViewport(page) {
     // static asset, generated reference or pass without pixel coverage checks.
     try {
       const png=await page.screenshot({timeout:35000,animations:'disabled'})
+      if(!Buffer.isBuffer(png) || png.length<9500 ||
+         png.subarray(0,8).toString('hex')!=='89504e470d0a1a0a')
+        throw new Error('Fallback did not capture a real PNG viewport')
       return {png,method:'playwright-viewport',fallback_reason:String(firstError?.message??firstError).slice(0,200)}
     } catch(secondError) {
       throw new Error(
