@@ -61,6 +61,10 @@ func _refresh_portrait_fit() -> void:
 	# Expanding the canvas without a matching 2D scale makes touch buttons
 	# microscopic on 390px portrait screens. This preserves desktop gameplay.
 	PORTRAIT_SCREEN.apply_to(get_window())
+	if camera != null:
+		# Portrait driving needs vertical scene visibility (car + road + sky),
+		# not the 16:9 desktop horizontal-FOV framing.
+		camera.keep_aspect = Camera3D.KEEP_WIDTH if PORTRAIT_SCREEN.is_phone_portrait(PORTRAIT_SCREEN.web_css_size()) else Camera3D.KEEP_HEIGHT
 
 func _ready() -> void:
 	_refresh_portrait_fit()
@@ -99,6 +103,7 @@ func _ready() -> void:
 	camera.far = 900.0
 	camera.current = true
 	add_child(camera)
+	_refresh_portrait_fit()
 	camera.global_position = player.global_position + Vector3(4,7,10)
 	soundscape = SOUND_SCENE.new()
 	add_child(soundscape)
