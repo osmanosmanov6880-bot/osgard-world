@@ -9,6 +9,7 @@ const HUD_SCENE = preload("res://scripts/hud.gd")
 const TOUCH_CONTROLS_SCENE = preload("res://scripts/horizon_touch_controls.gd")
 const SAFE_CAMERA = preload("res://scripts/horizon_camera_collision.gd")
 const PORTRAIT_SCREEN = preload("res://scripts/horizon_portrait_screen.gd")
+const ADAPTIVE_GRAPHICS = preload("res://scripts/horizon_adaptive_graphics.gd")
 const PEDESTRIAN_SCENE = preload("res://scripts/pedestrian_agent.gd")
 const TRAFFIC_SCENE = preload("res://scripts/traffic_agent.gd")
 const ROUTER = preload("res://scripts/street_router.gd")
@@ -50,6 +51,7 @@ var pedestrians: Array = []
 var ambient_cars: Array = []
 var lod_timer := 0.0
 var diagnostic_timer := 0.0
+var adaptive_graphics = ADAPTIVE_GRAPHICS.new()
 var patrols
 var previous_vehicle_health := 100.0
 var speeding_seconds := 0.0
@@ -370,6 +372,9 @@ func _physics_process(delta: float) -> void:
 	diagnostic_timer += delta
 	if diagnostic_timer >= 1.0:
 		diagnostic_timer = 0.0
+		if adaptive_graphics.observe(float(Engine.get_frames_per_second()),1.0,DisplayServer.window_is_focused()):
+			_apply_visual_budget()
+			_update_agent_lod(protagonist)
 		if cargo_visual != null: cargo_visual.sync_state(GameState.data,GameState.locale)
 		if hud != null:
 			hud.update_diagnostics(Engine.get_frames_per_second(),world.active_chunk_count,world.building_chunks.size(),pedestrians.size(),ambient_cars.size(),_stopped_traffic_count())
@@ -515,19 +520,29 @@ func _apply_weather() -> void:
 
 func _apply_preferences() -> void:
 	if world == null: return
-	world.sun.shadow_enabled = GameSettings.graphics != "low"
+	adaptive_graphics.configure(GameSettings.graphics,OS.has_feature("web") and DisplayServer.is_touchscreen_available())
+	_apply_visual_budget()
+
+func _apply_visual_budget() -> void:
+	if world == null: return
+	var effective: String = adaptive_graphics.effective_quality()
+	world.sun.shadow_enabled = effective != "low"
+	world.apply_visual_budget(effective)
+	if camera != null:
+		camera.far = 520.0 if effective == "low" else (720.0 if effective == "standard" else 900.0)
 	world.update_language(GameState.locale)
 	if city_case_marker != null: city_case_marker.sync_state(GameState.data)
 	if discovery_markers != null: discovery_markers.sync_state(GameState.data)
 	if world.facade_windows != null:
-		world.facade_windows.visible = GameSettings.graphics != "low"
+		world.facade_windows.visible = adaptive_graphics.effective_quality() != "low"
 	var at: Vector3 = car.global_position if driving else player.global_position
 	_update_agent_lod(at)
 
 func _update_agent_lod(player_at: Vector3) -> void:
 	if world != null and not interiors.is_inside():
-		world.update_chunks(player_at,GameSettings.graphics)
-	var distance_limit: float = 75.0 if GameSettings.graphics == "low" else (150.0 if GameSettings.graphics == "standard" else 240.0)
+		world.update_chunks(player_at,adaptive_graphics.effective_quality())
+	var quality: String = adaptive_graphics.effective_quality()
+	var distance_limit: float = 75.0 if quality == "low" else (150.0 if quality == "standard" else 240.0)
 	for person in pedestrians:
 		var active: bool = person.global_position.distance_squared_to(player_at) < distance_limit * distance_limit
 		person.visible = active
