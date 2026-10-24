@@ -20,6 +20,9 @@ const DRAG = 2.4
 var driving := false
 var horizon_visual: Node3D
 var last_wheel_support: Dictionary = {}
+var rear_traction_factor := 1.0
+var axle_grip_active := false
+var headlight_cones: Array[SpotLight3D] = []
 var wheel_nodes: Array[MeshInstance3D] = []
 var brake_lamp_nodes: Array[MeshInstance3D] = []
 var brake_lights_on := false
@@ -77,6 +80,31 @@ func _ready() -> void:
 			part.visible = false
 	brake_lights_on = true
 	_set_brake_lights(false)
+	_make_headlight_beams()
+
+func _make_headlight_beams() -> void:
+	# Only two bounded unshadowed punctual lights; LOW quality disables them.
+	# The emissive lamp geometry stays visible in every graphics tier.
+	for x in [-0.87,0.87]:
+		var beam := SpotLight3D.new()
+		beam.name = "R33BeamLeft" if x < 0.0 else "R33BeamRight"
+		beam.position = Vector3(x,-0.12,-2.70)
+		beam.rotation_degrees = Vector3(-7.0,0.0,0.0)
+		beam.spot_range = 19.0
+		beam.spot_angle = 34.0
+		beam.light_color = Color("fff1d5")
+		beam.light_energy = 0.92
+		beam.shadow_enabled = false
+		beam.visible = false
+		add_child(beam)
+		headlight_cones.append(beam)
+
+func update_headlights(hour: float,quality: String) -> void:
+	var safe_hour: float = fposmod(hour if is_finite(hour) else 12.0,24.0)
+	var active: bool = (safe_hour < 6.75 or safe_hour >= 18.75) and quality != "low"
+	for light in headlight_cones:
+		light.visible = active
+		light.light_energy = 0.56 if quality == "standard" else 0.92
 
 func _add_part(id: String, size: Vector3, at: Vector3, color: Color, emissive: bool = false) -> void:
 	var mesh := MeshInstance3D.new()
@@ -186,7 +214,8 @@ func _physics_process(delta: float) -> void:
 	var desired_yaw_rate: float = DYNAMICS.yaw_rate(speed,applied_steering*handling_factor,traction_factor,handbrake_on)
 	current_yaw_rate = YAW_INERTIA.yaw_step(current_yaw_rate,desired_yaw_rate,speed,traction_factor,handbrake_on,delta)
 	rotation.y += current_yaw_rate * minf(delta,0.1)
-	lateral_speed = TIRE_MODEL.step_lateral(lateral_speed,speed,current_yaw_rate,traction_factor,handbrake_on,delta)
+	var lateral_grip: float = rear_traction_factor if axle_grip_active else traction_factor
+	lateral_speed = TIRE_MODEL.step_lateral(lateral_speed,speed,current_yaw_rate,lateral_grip,handbrake_on,delta)
 	_set_brake_lights(DYNAMICS.brake_lamps(speed,throttle,handbrake_on))
 	var forward: Vector3 = Vector3(-sin(rotation.y),0.0,-cos(rotation.y))
 	var right: Vector3 = Vector3(cos(rotation.y),0.0,-sin(rotation.y))

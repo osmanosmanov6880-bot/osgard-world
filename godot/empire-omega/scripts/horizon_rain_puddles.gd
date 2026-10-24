@@ -98,3 +98,34 @@ func contact_at(world_position: Vector3) -> float:
 		var coverage: float = maxf(0.0,1.0-4.0*(local_x*local_x+local_z*local_z))
 		best = maxf(best,coverage)
 	return best
+
+
+# R33: exactly four ACTUAL physics-ray wheel contacts (LF/LR/RF/RR),
+# not a centre-of-body proxy. Missing/airborne wheels do not fabricate grip.
+func wheel_contact_state(sample: Dictionary, fallback_centre: Vector3) -> Dictionary:
+	var points: Array = sample.get("points",[])
+	var grounded: Array = sample.get("grounded",[])
+	if points.size()!=4 or grounded.size()!=4:
+		return {"wetness":contact_at(fallback_centre),"front":0.0,"rear":0.0,
+			"supported":0,"used_fallback":true}
+	var total: float = 0.0
+	var front: float = 0.0
+	var rear: float = 0.0
+	var supported: int = 0
+	for i in range(4):
+		if not bool(grounded[i]) or not (points[i] is Vector3):
+			continue
+		var point: Vector3 = points[i]
+		if not point.is_finite():
+			continue
+		var amount: float = contact_at(point)
+		total += amount
+		if i==0 or i==2:
+			front += amount
+		else:
+			rear += amount
+		supported += 1
+	# Four tyre slots remain the normalising denominator. One touching
+	# wheel never pretends all four are swimming through the puddle.
+	return {"wetness":total*0.25,"front":front*0.5,"rear":rear*0.5,
+		"supported":supported,"used_fallback":false}
