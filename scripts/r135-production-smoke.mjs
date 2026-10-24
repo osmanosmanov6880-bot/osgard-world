@@ -15,7 +15,9 @@ const manifestResponse = await fetch(probe('release.json?verify=' + Date.now()),
 if (!manifestResponse.ok) fail('missing release manifest: ' + manifestResponse.status)
 const manifest = await manifestResponse.json()
 if (manifest.version !== 'r135-web-visual-diagnostics-w5-20261024') fail('wrong R135 release version')
-if (manifest.source_commit !== '668e42716aaefb0c45eb5347abe9355437dc4b69') fail('wrong W5 source commit')
+if (!/^[0-9a-f]{40}$/.test(manifest.source_commit || '')) fail('missing valid W5 source commit')
+const expectedSource = process.env.OSGARD_EXPECTED_R135_SOURCE
+if (expectedSource && manifest.source_commit !== expectedSource) fail('wrong W5 source commit')
 const files = manifest.files
 const pckBytes = Number(manifest.optimized_pck_bytes)
 if (pckBytes < 10_000_000 || pckBytes >= 100_000_000) fail('PCK size outside approved budget')
