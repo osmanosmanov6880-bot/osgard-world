@@ -256,6 +256,19 @@ func _update_ship_controls() -> void:
     player_ship.set_touch_controls(joystick, forward, height,
         _pressed("BOOST"), _pressed("FIRE"))
 
+func _r34_gate_stale_contacts(points: Array) -> bool:
+    if not shop_open and not r34_ignore_until_all_released:
+        return false
+    r34_dom_seen.clear()
+    _clear_active_touches()
+    if points.is_empty() and not shop_open:
+        # Closing an already finger-free hangar should accept the next tap.
+        # Previously an unchanged DOM sequence suppressed this release,
+        # forcing users to tap and release a second time.
+        r34_ignore_until_all_released = false
+    return true
+
+
 func _r34_poll_browser_contacts() -> void:
     if not r34_dom_bridge_active:
         return
@@ -270,20 +283,21 @@ func _r34_poll_browser_contacts() -> void:
         return
     var current: Dictionary = parsed
     var sequence: int = int(current.get("seq", -1))
-    if sequence < 0 or sequence == r34_dom_sequence:
+    if sequence < 0:
         return
-    r34_dom_sequence = sequence
-    r34_dom_event_count = int(current.get("downs", 0)) + (
-        int(current.get("ups", 0))) + int(current.get("cancels", 0))
     var entries: Variant = current.get("points", [])
     if typeof(entries) != TYPE_ARRAY:
         return
     var points: Array = entries
-    if shop_open or r34_ignore_until_all_released:
-        r34_dom_seen.clear()
-        _clear_active_touches()
-        if points.is_empty() and not shop_open:
-            r34_ignore_until_all_released = false
+    # Re-evaluate the hangar gate even if the browser sequence has not
+    # changed since the panel closed. Otherwise the first new tap is lost.
+    if sequence == r34_dom_sequence and not (
+            r34_ignore_until_all_released and not shop_open and points.is_empty()):
+        return
+    r34_dom_sequence = sequence
+    r34_dom_event_count = int(current.get("downs", 0)) + (
+        int(current.get("ups", 0))) + int(current.get("cancels", 0))
+    if _r34_gate_stale_contacts(points):
         return
     var next_seen: Dictionary = {}
     for entry in points:
