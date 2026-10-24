@@ -96,9 +96,17 @@ jobs:
           # generated release.json even though only the game is being updated.
           # Rebuild the commit from the freshest master tree, staging ONLY
           # the newly exported native game assets.
+          python3 scripts/omega-build-freshness.py --self-test
           published=0
           for attempt in 1 2 3 4 5; do
             git fetch origin master
+            # A newer source revision must own its WebAssembly release.
+            # Website-only changes do not invalidate this build, but any
+            # source change inside godot/empire-omega does.
+            if ! python3 scripts/omega-build-freshness.py "${{ github.sha }}" origin/master; then
+              echo "::notice::A newer Omega game source revision exists; this older export will not be published."
+              exit 0
+            fi
             git reset --mixed origin/master
             git add -f public/games/omega-3d-preview
             if git diff --cached --quiet; then
