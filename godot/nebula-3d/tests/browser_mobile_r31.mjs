@@ -239,12 +239,32 @@ try {
         s.r36_fps_button_x > 0 && s.r36_fps_button_y > 0 &&
         s.r36_browser_touch_poll_samples >= 2,
       30000);
-    const uiPoint = (x,y,id) => ({
-      x:tinyRect.x + x * tinyRect.width / lab.touch_view_w,
-      y:tinyRect.y + y * tinyRect.height / lab.touch_view_h,
-      id,force:1
-    });
-    const fps = uiPoint(lab.r36_fps_button_x, lab.r36_fps_button_y, 7);
+    // The canvas CSS rectangle can move after rotate, safe-area relayout
+    // and opening the performance panel. Never reuse the old tinyRect:
+    // on Chromium its top was 34 px while the live canvas top became 0,
+    // making a nominal y=92.5 mode-button tap land at y=126.5 instead.
+    const uiPoint = async (x,y,id) => {
+      const css = await page.evaluate(() => {
+        const r = document.querySelector('#canvas')?.getBoundingClientRect();
+        return r ? { x:r.x,y:r.y,width:r.width,height:r.height } : null;
+      });
+      const view = await snapshot();
+      if (!css || !view || view.touch_view_w < 200 ||
+          view.touch_view_h < 200) {
+        throw new Error('R38 live canvas geometry unavailable');
+      }
+      const p = {
+        x:css.x + x * css.width / view.touch_view_w,
+        y:css.y + y * css.height / view.touch_view_h,
+        id,force:1
+      };
+      if (p.x < css.x || p.y < css.y ||
+          p.x > css.x + css.width || p.y > css.y + css.height) {
+        throw new Error('R38 touch target outside actual canvas: '+JSON.stringify(p));
+      }
+      return p;
+    };
+    const fps = await uiPoint(lab.r36_fps_button_x, lab.r36_fps_button_y, 7);
     await send('touchStart',[fps]);
     await send('touchEnd',[]);
     const open = await expectTelemetry(
@@ -252,7 +272,7 @@ try {
       s => s?.r36_perf_visible === true && s.r36_perf_active === false &&
         s.r36_benchmark_button_x > 0 && s.r36_benchmark_button_y > 0,
       30000);
-    const runBenchmark = uiPoint(open.r36_benchmark_button_x,
+    const runBenchmark = await uiPoint(open.r36_benchmark_button_x,
       open.r36_benchmark_button_y, 8);
     await send('touchStart',[runBenchmark]);
     await send('touchEnd',[]);
