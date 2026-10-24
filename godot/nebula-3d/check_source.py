@@ -542,7 +542,7 @@ require(
     "37 real physics frames", "Inter", "F7", "F9", "F10", "Android", "iOS",
 )
 assert "NEBULA_R21_REAL_FLIGHT_SUCCESS" in smoke
-assert "37" in smoke and "r21_touch._set_touch(0" in smoke
+assert "37" in smoke and "touch_r21._set_touch(0" in smoke
 assert "func _make_ship(" not in ship, "R3 low-poly ship builder is still active"
 assert ship_visual.count("engine_flames.append(") == 1
 assert "for x in [-1.24, 0.0, 1.24]:" in ship_visual, "three engine array missing"
