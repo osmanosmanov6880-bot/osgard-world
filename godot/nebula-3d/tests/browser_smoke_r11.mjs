@@ -41,6 +41,60 @@ async function captureWithFallback(page, destination, errors) {
   } catch (e) {
     errors.push('Canvas readback unavailable: ' + String(e.message).slice(0, 180));
   }
+  // Read the WebGL drawing buffer directly before asking a software
+  // compositor to synchronize. ReadPixels is a REAL framebuffer capture,
+  // not a replacement illustration or a synthetic passing screenshot.
+  try {
+    const capture = await Promise.race([
+      page.evaluate(() => {
+        const source = document.querySelector('canvas');
+        const gl = source?.getContext('webgl2') || source?.getContext('webgl');
+        if (!gl || !source?.width || !source?.height) {
+          return { error: 'no live WebGL drawing buffer' };
+        }
+        const w = source.width, h = source.height;
+        const pixels = new Uint8Array(w * h * 4);
+        gl.readPixels(0, 0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+        const colors = new Set();
+        const stride = Math.max(4, Math.floor(pixels.length / 600) & ~3);
+        for (let i = 0; i < pixels.length; i += stride) {
+          colors.add(pixels[i] + ':' + pixels[i + 1] + ':' + pixels[i + 2]);
+        }
+        if (colors.size < 8) {
+          return { error: 'blank/flat WebGL buffer', sampled_colors: colors.size };
+        }
+        const flipped = new Uint8ClampedArray(pixels.length);
+        for (let y = 0; y < h; y++) {
+          const from = (h - 1 - y) * w * 4;
+          flipped.set(pixels.subarray(from, from + w * 4), y * w * 4);
+        }
+        const output = document.createElement('canvas');
+        output.width = w; output.height = h;
+        const ctx = output.getContext('2d');
+        if (!ctx) return { error: 'offscreen 2D encoder unavailable' };
+        ctx.putImageData(new ImageData(flipped, w, h), 0, 0);
+        return { jpeg: output.toDataURL('image/jpeg', 0.78),
+          sampled_colors: colors.size };
+      }),
+      new Promise(resolve => setTimeout(
+        () => resolve({error:'WebGL readPixels timed out'}), 16000))
+    ]);
+    if (capture?.jpeg?.startsWith('data:image/jpeg;base64,')) {
+      const raw = Buffer.from(capture.jpeg.slice('data:image/jpeg;base64,'.length),
+        'base64');
+      if (raw.length >= 12000) {
+        fs.writeFileSync(destination, raw);
+        return 'webgl-framebuffer-readpixels';
+      }
+      errors.push('WebGL readPixels JPEG too small (' + raw.length + ' bytes)');
+    } else {
+      errors.push('WebGL framebuffer unavailable: ' +
+        String(capture?.error || 'encoder did not return JPEG'));
+    }
+  } catch (e) {
+    errors.push('WebGL framebuffer capture failed: ' +
+      String(e.message).slice(0, 180));
+  }
   // Ask the live Godot viewport for the current frame. This avoids the
   // Chromium software compositor, which can stall while SwiftShader is busy.
   try {
