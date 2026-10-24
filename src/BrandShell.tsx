@@ -30,7 +30,7 @@ export function BrandShell({ theme, children }: { theme: ProductTheme; children:
   const path = currentUrl.pathname.replace(/\/+$/, '') || '/'
   const product = brandAreaForPath(path, theme)
   const development = path === '/development' || path.startsWith('/development/')
-  const englishChrome = osaLocale === 'en' && (product === 'intelligence' || path === '/' || development)
+  const englishChrome = osaLocale === 'en' && (product === 'intelligence' || product === 'play' || path === '/' || development)
   const gameTitle = path.startsWith('/play/world/') ? getPlayGameTitle(path.slice('/play/world/'.length)) : undefined
   const crumbs = brandBreadcrumbs(path, product, gameTitle)
   const worldBase = development ? '/development' : '/'
@@ -40,7 +40,7 @@ export function BrandShell({ theme, children }: { theme: ProductTheme; children:
       ? path === '/intelligence'
         ? osaLocale === 'en' ? [['Review', '/intelligence#proof-card'], ['Lessons', '/lectures'], ['My progress', '/learning']] : [['Проверка', '/intelligence#proof-card'], ['Уроки', '/lectures'], ['Мой прогресс', '/learning']]
         : osaLocale === 'en' ? [['Method', '/intelligence#method'], ['Demo', '/intelligence#demo'], ['Programme', '/learning/program'], ['Lectures', '/lectures'], ['My progress', '/learning'], ['Practice', '/learning/campus']] : [['Метод', '/intelligence#method'], ['Демонстрация', '/intelligence#demo'], ['Программа', '/learning/program'], ['Лекции', '/lectures'], ['Мой прогресс', '/learning'], ['Практика', '/learning/campus']]
-      : [['Миры', '/play#catalog'], ['Избранное', '/play?view=favorites#catalog'], ['Недавние', '/play?view=recent#catalog'], ['Партнёрам', '/play/partners']]
+      : osaLocale === 'en' ? [['Worlds', '/play#catalog'], ['Favorites', '/play?view=favorites#catalog'], ['Recently opened', '/play?view=recent#catalog'], ['For partners', '/play/partners']] : [['Миры', '/play#catalog'], ['Избранное', '/play?view=favorites#catalog'], ['Недавние', '/play?view=recent#catalog'], ['Партнёрам', '/play/partners']]
 
   useEffect(() => {
     document.documentElement.dataset.product = theme
@@ -119,9 +119,9 @@ export function BrandShell({ theme, children }: { theme: ProductTheme; children:
         <span aria-hidden="true" className="brand-quick-symbol">⌕</span><span className="brand-quick-label">{englishChrome ? 'Sections' : 'Разделы'}</span><kbd>⌘K</kbd>
       </button>
       <button type="button" className="brand-motion" aria-pressed={reduced || !motion} disabled={reduced}
-        aria-label="Меньше движения" title={reduced ? 'Уменьшение движения включено в настройках устройства' : 'Отключить необязательную анимацию'} onClick={toggleMotion}>
-        <span className="brand-motion-state" aria-hidden="true">{reduced || !motion ? '◌' : '◉'}</span> Меньше движения
-        <span className="brand-motion-value">{reduced ? 'Система' : motion ? 'Выкл.' : 'Вкл.'}</span>
+        aria-label={englishChrome ? 'Reduce motion' : 'Меньше движения'} title={englishChrome ? (reduced ? 'Reduced motion is enabled in device settings' : 'Turn off nonessential animation') : (reduced ? 'Уменьшение движения включено в настройках устройства' : 'Отключить необязательную анимацию')} onClick={toggleMotion}>
+        <span className="brand-motion-state" aria-hidden="true">{reduced || !motion ? '◌' : '◉'}</span> {englishChrome ? 'Reduce motion' : 'Меньше движения'}
+        <span className="brand-motion-value">{reduced ? (englishChrome ? 'System' : 'Система') : motion ? (englishChrome ? 'Off' : 'Выкл.') : (englishChrome ? 'On' : 'Вкл.')}</span>
       </button>
     </header>
     <div className="brand-local-bar">
