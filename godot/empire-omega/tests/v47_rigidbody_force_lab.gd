@@ -80,6 +80,28 @@ func _run() -> void:
 	var live_source:=FileAccess.get_file_as_string("res://scripts/main.gd")
 	check(live_source.contains("CAR_SCENE = preload(\"res://scripts/vehicle_controller.gd\")"),"live game car remains unchanged in source")
 	check(not live_source.contains("r24_four_wheel_rigidbody"),"experimental physics cannot silently replace player vehicle")
+	var report: Dictionary = {
+		"experiment":"HORIZON R24 — isolated Godot RigidBody3D candidate",
+		"status":"experimental-not-in-player-game",
+		"engine":"Godot 4.4.1",
+		"mass_kg":LAB.BODY_MASS,
+		"peak_real_wheel_contacts":peak_contacts,
+		"settled_height_m":lab.global_position.y,
+		"drive_test_metres":traveled,
+		"yaw_delta_rad":absf(wrapf(lab.rotation.y-angle_start,-PI,PI)),
+		"speed_before_brake_mps":fast,
+		"speed_after_brake_mps":slow,
+		"airborne_wheel_contacts":int(above.get("grounded_wheels")),
+		"passed":passed,
+		"failed":failed,
+		"device_performance_measured":false
+	}
+	var output: FileAccess = FileAccess.open("res://tests/r24-force-metrics.json",FileAccess.WRITE)
+	if output != null:
+		output.store_string(JSON.stringify(report,"  "))
+		output.close()
+	else:
+		check(false,"native Godot experiment must produce measurable physics report")
 	lab.queue_free()
 	above.queue_free()
 	floor.queue_free()
