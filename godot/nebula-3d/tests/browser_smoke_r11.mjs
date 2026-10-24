@@ -85,6 +85,20 @@ const result = {
 try {
   for (const vp of [{ width: 1280, height: 720 }, { width: 1920, height: 1080 }]) {
     const page = await browser.newPage({ viewport: vp, deviceScaleFactor: 1 });
+    // This is a capture-only test context. Godot normally lets WebGL discard
+    // the back buffer after presentation, so canvas.toDataURL() can only see
+    // black after the compositor screenshot stalls under hosted SwiftShader.
+    // Preserve the test renderer's buffer so the fallback captures the real
+    // game frame. This does not change production export settings.
+    await page.addInitScript(() => {
+      const originalGetContext = HTMLCanvasElement.prototype.getContext;
+      HTMLCanvasElement.prototype.getContext = function(type, attributes) {
+        if (/^(webgl2?|experimental-webgl)$/i.test(String(type))) {
+          attributes = { ...(attributes || {}), preserveDrawingBuffer: true };
+        }
+        return originalGetContext.call(this, type, attributes);
+      };
+    });
     pages.push(page);
     const errors = [];
     const logs = [];
