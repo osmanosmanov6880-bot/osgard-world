@@ -1,0 +1,154 @@
+name: OSGARD R135 permanent source and Web release
+
+on:
+  push:
+    branches: [integration/r135-assets-audit-20261024]
+    paths:
+      - '.github/workflows/r135-package-release.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: r135-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout source and original 3D resources
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Confirm original source GLB hashes and 36 PBR maps
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PYCODE'
+          from pathlib import Path
+          import hashlib
+          p=Path('godot/osgard-r135-standalone')
+          checks={
+            'service_spine_eco.glb':'c6bbc41c53e596d5048371e639a662cd2a75d58a02f75c9df93ffced7685533b',
+            'service_spine_hero.glb':'8ef33e28534c7c41d4adaceee4e479e38da92287a99bbd5fd53b9fc9318c0078',
+          }
+          for filename,expected in checks.items():
+              data=(p/'models/r135'/filename).read_bytes()
+              assert data[:4]==b'glTF'
+              assert hashlib.sha256(data).hexdigest()==expected, filename
+              print('Verified original',filename,len(data),'bytes')
+          assert len(list((p/'textures/r135').glob('*.png')))==36
+          print('Verified 36 original PBR maps')
+          PYCODE
+
+      - name: Remove generated import cache from tracked repository paths
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PYCODE'
+          import subprocess,re
+          prefix='godot/osgard-r135-standalone/'
+          paths=subprocess.check_output(['git','ls-files','-z']).decode().split('\0')
+          junk=[p for p in paths if p.startswith(prefix) and (
+            p.endswith('.import') or
+            re.search(r'/models/r135/service_spine_(?:eco|hero)_\d+\.png$',p))]
+          print('Removing',len(junk),'generated, duplicative Git paths')
+          if junk:
+            subprocess.run(['git','rm','--',*junk],check=True)
+          PYCODE
+
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: true
+
+      - name: Fresh native Godot reimport, functionality and scene smoke
+        shell: bash
+        run: |
+          set -euo pipefail
+          godot --headless --editor --path godot/osgard-r135-standalone --import --quit
+          timeout --signal=TERM --kill-after=10s 150s godot --headless --path godot/osgard-r135-standalone --script res://tests/smoke.gd
+
+      - name: Make authentic browser export
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/r135-web"
+          godot --headless --path godot/osgard-r135-standalone --export-release Web "$RUNNER_TEMP/r135-web/index.html"
+          node scripts/localize-godot-web-export.mjs "$RUNNER_TEMP/r135-web"
+          test -s "$RUNNER_TEMP/r135-web/index.html"
+          test -n "$(find "$RUNNER_TEMP/r135-web" -maxdepth 1 -name '*.wasm' -size +100k -print -quit)"
+          test -n "$(find "$RUNNER_TEMP/r135-web" -maxdepth 1 -name '*.pck' -size +0c -print -quit)"
+
+      - name: Assemble full Godot source and Web downloadable ZIPs
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/r135-release"
+          python3 - <<'PYCODE'
+          from pathlib import Path
+          import hashlib, json, os, re, zipfile
+          project=Path('godot/osgard-r135-standalone')
+          web=Path(os.environ['RUNNER_TEMP'])/'r135-web'
+          out=Path(os.environ['RUNNER_TEMP'])/'r135-release'
+          source=out/'OSGARD_R135_GODOT441_SOURCE_PBR_GLB.zip'
+          browser=out/'OSGARD_R135_GODOT441_WEB_PLAYABLE.zip'
+          manifest={'version':'r135-standalone-20261024','engine':'Godot 4.4.1',
+                    'real_hardware_connected':False,'native_smoke':'passed',
+                    'web_export':'completed','browser_gpu_test':'not performed',
+                    'source_reference':os.environ['GITHUB_SHA']}
+          with zipfile.ZipFile(source,'w',zipfile.ZIP_DEFLATED,compresslevel=6,allowZip64=True) as z:
+            kept=0
+            for path in sorted(project.rglob('*')):
+              if not path.is_file():continue
+              rel=path.relative_to(project).as_posix()
+              if rel.startswith(('.godot/','bootstrap/','.build-web/')):continue
+              if rel.endswith(('.import','.pyc')):continue
+              if '__pycache__/' in rel:continue
+              if re.match(r'models/r135/service_spine_(?:eco|hero)_\d+\.png$',rel):continue
+              z.write(path,arcname='OSGARD_R135_GODOT441/'+rel)
+              kept+=1
+          with zipfile.ZipFile(browser,'w',zipfile.ZIP_DEFLATED,compresslevel=5,allowZip64=True) as z:
+            for path in sorted(web.iterdir()):
+              if path.is_file():z.write(path,path.name)
+          for key,p in [('source',source),('web',browser)]:
+            manifest[key]={'filename':p.name,'size_bytes':p.stat().st_size,
+                           'sha256':hashlib.sha256(p.read_bytes()).hexdigest()}
+          manifest['source']['file_count']=kept
+          (out/'R135_RELEASE_MANIFEST.json').write_text(json.dumps(manifest,indent=2)+'\n')
+          print(json.dumps(manifest,indent=2))
+          PYCODE
+
+      - name: Commit lean original project to integration branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          if ! git diff --cached --quiet; then
+            git commit -m 'chore(r135): remove generated Godot import sidecars (retain original GLB/PBR)'
+            git push origin HEAD:integration/r135-assets-audit-20261024
+          fi
+          echo "RELEASE_COMMIT=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+
+      - name: Publish durable GitHub Release with both ZIP packages
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          tag=r135-standalone-20261024
+          if ! gh release view "$tag" >/dev/null 2>&1; then
+            gh release create "$tag" \
+              --target "$RELEASE_COMMIT" \
+              --title 'OSGARD R135 — rebuilt Godot 4.4.1 standalone (HERO/ECO)' \
+              --notes 'Reconstructed R135 Godot scene. Original HERO/ECO GLBs and all 36 PBR maps verified against original checksums. Native Godot 4.4.1 smoke passed. Includes full original 3D source ZIP and separately the real HTML5 Godot Web export ZIP. Engineering simulation; not an AAA release or GPU hardware benchmark.' \
+              --latest=false
+          fi
+          gh release upload "$tag" "$RUNNER_TEMP/r135-release/OSGARD_R135_GODOT441_SOURCE_PBR_GLB.zip" "$RUNNER_TEMP/r135-release/OSGARD_R135_GODOT441_WEB_PLAYABLE.zip" "$RUNNER_TEMP/r135-release/R135_RELEASE_MANIFEST.json" --clobber
+          gh release view "$tag" --json url,assets,tagName --jq '{url:.url,tag:.tagName,assets:[.assets[].name]}'
