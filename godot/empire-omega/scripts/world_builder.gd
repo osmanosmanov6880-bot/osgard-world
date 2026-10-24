@@ -41,6 +41,7 @@ var facade_frames: MultiMeshInstance3D
 var architecture_trim: MultiMeshInstance3D
 var streetfront: Node3D
 var road_paint: Node3D
+var road_puddles: MultiMeshInstance3D
 var cityhall_gateway: Node3D
 var last_window_mode := -1
 var waypoint_marker: Node3D
@@ -52,6 +53,7 @@ const ARCHITECTURE_TRIM = preload("res://scripts/horizon_architecture_trim.gd")
 const STREETFRONT_SCENE = preload("res://scripts/horizon_streetfront_details.gd")
 const CIVIC_GATEWAY = preload("res://scripts/horizon_civic_gateway.gd")
 const ROAD_PAINT_SCENE = preload("res://scripts/horizon_road_paint_batches.gd")
+const ROAD_PUDDLES = preload("res://scripts/horizon_rain_puddles.gd")
 var asphalt_pbr: StandardMaterial3D
 var concrete_pbr: StandardMaterial3D
 
@@ -69,6 +71,8 @@ func _ready() -> void:
 	road_paint.call("record_road_edges")
 	road_paint.call("finish")
 	city_root.add_child(road_paint)
+	road_puddles = ROAD_PUDDLES.new()
+	city_root.add_child(road_puddles)
 	architecture_trim = ARCHITECTURE_TRIM.new()
 	streetfront = STREETFRONT_SCENE.new()
 	_create_city()
@@ -82,7 +86,8 @@ func _ready() -> void:
 	_create_project_visuals()
 	_create_property_markers()
 	_create_weather_particles()
-	_create_trees()
+	# Original individual 85 cuboid TreeCrown/TreeTrunk decorations removed.
+	# The 192 GPU-instanced R26 trees already provide real leaf and pine meshes.
 	# GPU-instanced scenic art has no colliders and preserves all traffic/missions.
 	horizon_scenic = preload("res://scripts/horizon_roadscape.gd").new()
 	add_child(horizon_scenic)
@@ -476,6 +481,8 @@ func apply_visual_budget(mode: String) -> void:
 		architecture_trim.visible = visual_budget != "low"
 	if streetfront != null:
 		streetfront.visible = visual_budget != "low"
+	if road_puddles != null:
+		road_puddles.set_conditions(weather_mode,visual_budget)
 	if cityhall_gateway != null:
 		cityhall_gateway.visible = visual_budget != "low"
 	if facade_frames != null:
@@ -492,6 +499,8 @@ func update_weather(kind: String) -> void:
 		ROAD_MATERIALS.apply_weather(concrete_pbr,kind)
 	if road_paint != null:
 		road_paint.call("apply_weather",kind)
+	if road_puddles != null:
+		road_puddles.set_conditions(kind,visual_budget)
 	if weather_particles != null:
 		weather_particles.emitting = kind == "rain" or kind == "storm"
 	_apply_lighting()
@@ -506,15 +515,6 @@ func _apply_lighting() -> void:
 	if atmosphere == null:
 		return
 	LIGHT_GRADE.apply_to(sky_environment.environment,sun,atmosphere,weather_mode,visual_budget,daylight_brightness)
-
-func _create_trees() -> void:
-	for i in range(85):
-		var pos := Vector3(rng.randf_range(-220,220),0,rng.randf_range(-220,220))
-		if absf(fposmod(pos.x+26.0,52.0)-26.0) < 9.0 or absf(fposmod(pos.z+26.0,52.0)-26.0) < 9.0:
-			continue
-		if pos.distance_to(Vector3(-130,0,-130)) < 30.0: continue
-		_box(city_root,"TreeTrunk",Vector3(0.75,4.0,0.75),Vector3(pos.x,2,pos.z),Color("56483a"))
-		_box(city_root,"TreeCrown",Vector3(6.0,6.0,6.0),Vector3(pos.x,6,pos.z),Color("246257"))
 
 func update_development() -> void:
 	if not is_node_ready(): return
