@@ -52,7 +52,19 @@ try {
   if (!(keyInBrowser.mask & 1)) {
     throw new Error('R26 W did not reach browser capture bridge: '+JSON.stringify(keyInBrowser));
   }
-  await waitFor(()=>!!(window.__nebulaPilotTelemetry?.input_mask & 1),12000);
+  try {
+    await waitFor(()=>!!(window.__nebulaPilotTelemetry?.input_mask & 1),12000);
+  } catch (error) {
+    const telemetry = await snapshot();
+    const dom = await page.evaluate(() => ({
+      mask:window.__nebulaPilotMask,
+      debug:window.__nebulaKeyDebug,
+      active:document.activeElement?.tagName || '',
+      focused:document.hasFocus()
+    }));
+    log.checks.push({name:'W-to-Godot bridge failure snapshot',telemetry,dom});
+    throw new Error('W-to-Godot bridge failure snapshot: '+JSON.stringify({telemetry,dom})+'; '+error.message);
+  }
   await waitFor(()=>window.__nebulaPilotTelemetry?.flight_distance > 3.5,32000);
   const moving=await checkpoint('physical W drives real ship motion',
     s=>s?.speed_mps>1.0 && s.flight_distance>3.5 && (s.input_mask&1)!==0);
