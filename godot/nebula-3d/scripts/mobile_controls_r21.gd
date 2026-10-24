@@ -42,6 +42,10 @@ var r34_dom_sequence: int = -1
 var r34_dom_seen: Dictionary = {}
 var r34_dom_event_count: int = 0
 var r34_ignore_until_all_released: bool = false
+## R35: true CSS env() safe-area insets (left, top, right, bottom).
+## These are browser CSS pixels, not hardware devicePixelRatio pixels.
+var r35_safe_insets: Vector4 = Vector4.ZERO
+var r35_compact_portrait: bool = false
 
 func _ready() -> void:
     name = "R21_ResponsiveMobileController"
@@ -96,7 +100,38 @@ func set_shop_open(on: bool) -> void:
         _clear_active_touches()
     queue_redraw()
 
+func set_safe_insets(insets: Vector4) -> bool:
+    var safe := Vector4(
+        clampf(insets.x, 0.0, 96.0), clampf(insets.y, 0.0, 96.0),
+        clampf(insets.z, 0.0, 96.0), clampf(insets.w, 0.0, 96.0))
+    if safe.distance_to(r35_safe_insets) < 0.5:
+        return false
+    r35_safe_insets = safe
+    # A dynamic island or system bar can invalidate the old button geometry.
+    if not finger_roles.is_empty():
+        r34_ignore_until_all_released = true
+        _clear_active_touches()
+    _layout_for_size(viewport_pixels)
+    return true
+
+
+func _r35_refresh_safe_insets() -> bool:
+    if not OS.has_feature("web") or not enabled:
+        return false
+    var raw: Variant = JavaScriptBridge.eval(
+        "JSON.stringify(window.__nebulaSafeArea || null)")
+    if typeof(raw) != TYPE_STRING:
+        return false
+    var values: Variant = JSON.parse_string(str(raw))
+    if typeof(values) != TYPE_DICTIONARY:
+        return false
+    return set_safe_insets(Vector4(
+        float(values.get("left", 0.0)), float(values.get("top", 0.0)),
+        float(values.get("right", 0.0)), float(values.get("bottom", 0.0))))
+
+
 func _resize() -> void:
+    _r35_refresh_safe_insets()
     # WebGL can keep a 1280x720 internal drawing surface while CSS displays
     # a portrait phone. Place controls in the browser's physical CSS viewport.
     if OS.has_feature("web") and enabled:
@@ -119,22 +154,39 @@ func _layout_for_size(pixels: Vector2) -> void:
     viewport_pixels = pixels
     var w: float = pixels.x
     var h: float = pixels.y
-    # Narrow landscape phones (e.g. 568x320) are not portrait screens.
-    # Portrait coordinates placed CRUISE directly over THRUST there.
-    # The four-column landscape grid still has safe left-stick separation
-    # for widths >= 380 logical pixels.
-    r23_landscape_layout = h < 530.0 and w >= 380.0 and w > h
-    # Touch circles maintain legible labels but cannot overlap each other on
-    # shallow, 16:9 landscape phones with 9 independent gameplay actions.
-    base_radius = clampf(minf(w, h) * (0.079 if r23_landscape_layout else 0.093),
-        30.0 if r23_landscape_layout else 38.0, 65.0)
-    var r: float = base_radius
-    stick_center = Vector2(r + 30.0, h - r - 30.0)
+    var safe_left: float = r35_safe_insets.x
+    var safe_top: float = r35_safe_insets.y
+    var safe_right: float = r35_safe_insets.z
+    var safe_bottom: float = r35_safe_insets.w
+    var usable_w: float = maxf(200.0, w - safe_left - safe_right)
+    var usable_h: float = maxf(180.0, h - safe_top - safe_bottom)
+    r23_landscape_layout = h < 530.0 and w > h and usable_w >= 335.0
+    # A short portrait screen needs a different 3x3 cluster. The old
+    # 2-column vertical list overlapped CRUISE and UP on 320x480 phones.
+    r35_compact_portrait = not r23_landscape_layout and (
+        usable_h < 680.0 or usable_w < 330.0)
     if r23_landscape_layout:
-        var x0: float = w - r - 23.0
-        var row_a: float = h - r - 27.0
-        var row_b: float = h - 3.05 * r - 27.0
-        var row_c: float = h - 5.1 * r - 27.0
+        base_radius = clampf(minf(usable_w, usable_h) * 0.079, 30.0, 65.0)
+        # Leave room for three rows above the bottom gesture/system bar.
+        base_radius = minf(base_radius, maxf(22.0,
+            (usable_h - 36.0) / 6.2))
+    elif r35_compact_portrait:
+        base_radius = clampf(minf(usable_w, usable_h) * 0.083, 25.0, 37.0)
+        base_radius = minf(base_radius, maxf(23.0,
+            (usable_w - 30.0) / 8.2))
+    else:
+        base_radius = clampf(minf(usable_w, usable_h) * 0.093, 38.0, 65.0)
+    var r: float = base_radius
+    var usable_right: float = w - safe_right
+    var usable_bottom: float = h - safe_bottom
+    stick_center = Vector2(safe_left + r + (
+        22.0 if r35_compact_portrait else 30.0),
+        usable_bottom - r - (28.0 if r35_compact_portrait else 30.0))
+    if r23_landscape_layout:
+        var x0: float = usable_right - r - 23.0
+        var row_a: float = usable_bottom - r - 27.0
+        var row_b: float = usable_bottom - 3.05 * r - 27.0
+        var row_c: float = usable_bottom - 5.1 * r - 27.0
         var step: float = r * 2.12
         button_centres = {
             "THRUST": Vector2(x0,row_a),
@@ -147,17 +199,39 @@ func _layout_for_size(pixels: Vector2) -> void:
             "CAMERA": Vector2(x0-step*3.0,row_b),
             "CRUISE": Vector2(x0-step,row_c)
         }
+    elif r35_compact_portrait:
+        var x0: float = usable_right - r - 18.0
+        var row_a: float = usable_bottom - r - 28.0
+        var step: float = r * 2.08
+        button_centres = {
+            "THRUST": Vector2(x0,row_a),
+            "BOOST": Vector2(x0-step,row_a),
+            "FIRE": Vector2(x0-step*2.0,row_a),
+            "ROCKET": Vector2(x0,row_a-step),
+            "UP": Vector2(x0-step,row_a-step),
+            "DOWN": Vector2(x0-step*2.0,row_a-step),
+            "HANGAR": Vector2(x0,row_a-step*2.0),
+            "CAMERA": Vector2(x0-step,row_a-step*2.0),
+            "CRUISE": Vector2(x0-step*2.0,row_a-step*2.0)
+        }
     else:
         button_centres = {
-            "THRUST": Vector2(w - r - 25.0, h - r - 34.0),
-            "BOOST": Vector2(w - 3.1 * r - 33.0, h - r - 34.0),
-            "FIRE": Vector2(w - r - 25.0, h - 3.0 * r - 45.0),
-            "ROCKET": Vector2(w - 3.1 * r - 33.0, h - 3.0 * r - 45.0),
-            "UP": Vector2(w - r - 25.0, h - 5.0 * r - 56.0),
-            "DOWN": Vector2(w - 3.1 * r - 33.0, h - 5.0 * r - 56.0),
-            "HANGAR": Vector2(w - r - 25.0, 188.0),
-            "CAMERA": Vector2(w - 3.1 * r - 33.0, 188.0),
-            "CRUISE": Vector2(w - r - 25.0, 254.0)
+            "THRUST": Vector2(usable_right - r - 25.0,
+                usable_bottom - r - 34.0),
+            "BOOST": Vector2(usable_right - 3.1 * r - 33.0,
+                usable_bottom - r - 34.0),
+            "FIRE": Vector2(usable_right - r - 25.0,
+                usable_bottom - 3.0 * r - 45.0),
+            "ROCKET": Vector2(usable_right - 3.1 * r - 33.0,
+                usable_bottom - 3.0 * r - 45.0),
+            "UP": Vector2(usable_right - r - 25.0,
+                usable_bottom - 5.0 * r - 56.0),
+            "DOWN": Vector2(usable_right - 3.1 * r - 33.0,
+                usable_bottom - 5.0 * r - 56.0),
+            "HANGAR": Vector2(usable_right - r - 25.0, safe_top + 188.0),
+            "CAMERA": Vector2(usable_right - 3.1 * r - 33.0,
+                safe_top + 188.0),
+            "CRUISE": Vector2(usable_right - r - 25.0, safe_top + 254.0)
         }
     queue_redraw()
 
