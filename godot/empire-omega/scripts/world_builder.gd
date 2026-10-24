@@ -25,6 +25,7 @@ var project_visuals := {}
 var property_markers := {}
 var weather_particles: GPUParticles3D
 var weather_mode := "clear"
+var visual_budget := "standard"
 var rng := RandomNumberGenerator.new()
 var ambience_time := 10.0
 var sun: DirectionalLight3D
@@ -412,10 +413,21 @@ func _create_weather_particles() -> void:
 	weather_particles.emitting = false
 	add_child(weather_particles)
 
+func apply_visual_budget(mode: String) -> void:
+	visual_budget = mode if ["low","standard","cinematic"].has(mode) else "standard"
+	if weather_particles != null:
+		weather_particles.amount_ratio = 0.25 if visual_budget == "low" else (0.65 if visual_budget == "standard" else 1.0)
+	if horizon_scenic != null:
+		horizon_scenic.visible = visual_budget != "low"
+
 func update_weather(kind: String) -> void:
 	if not GameState.CITY_WEATHER.LABELS.has(kind):
 		kind = "clear"
 	weather_mode = kind
+	if asphalt_pbr != null:
+		ROAD_MATERIALS.apply_weather(asphalt_pbr,kind)
+	if concrete_pbr != null:
+		ROAD_MATERIALS.apply_weather(concrete_pbr,kind)
 	if weather_particles != null:
 		weather_particles.emitting = kind == "rain" or kind == "storm"
 	if sky_environment == null:
