@@ -19,6 +19,17 @@ func _run() -> void:
 	var image: Image=texture.get_image()
 	check(image.get_pixel(24,24).a>0.30,"puddle polygon has visible soft centre")
 	check(image.get_pixel(0,0).a<0.02 and image.get_pixel(47,47).a<0.02,"puddle polygon edges are transparent")
+	var probe := MultiMesh.new()
+	probe.transform_format = MultiMesh.TRANSFORM_3D
+	probe.mesh = PlaneMesh.new()
+	probe.instance_count = 1
+	probe.set_instance_transform(0,Transform3D(Basis(),Vector3(3.0,0.183,7.0)))
+	print("R26 DEBUG SINGLE BEFORE NODE ",probe.get_instance_transform(0).origin)
+	var probe_node := MultiMeshInstance3D.new()
+	probe_node.multimesh = probe
+	root.add_child(probe_node)
+	print("R26 DEBUG SINGLE AFTER NODE ",probe.get_instance_transform(0).origin)
+	probe_node.queue_free()
 	var layer: MultiMeshInstance3D=PUDDLES.new()
 	root.add_child(layer)
 	check(layer.material_is_bounded(),"PBR road detail has a strict 72-polygon cap")
