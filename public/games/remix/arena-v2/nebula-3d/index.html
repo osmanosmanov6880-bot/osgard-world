@@ -2,7 +2,7 @@
 <html lang="en">
 	<head>
 		<meta charset="utf-8">
-		<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
 		<title>REMIX ARENA - NEBULA 3D</title>
 		<style>
 html, body, #canvas {
@@ -89,13 +89,22 @@ body {
 	text-align: center;
 	z-index: 1;
 }
-		</style>
+		
+/* R21 mobile: real full-viewport WebGL game rather than letterboxed desktop
+   canvas. Godot canvasResizePolicy=2 still owns its internal pixel resolution. */
+html,body{width:100%;height:100%;height:100dvh;overscroll-behavior:none}
+#canvas{display:block;width:100vw;height:100vh;height:100dvh;touch-action:none;outline:none}
+@supports(height:100svh){#canvas{height:100svh}}
+body{padding:0;overflow:hidden;-webkit-user-select:none;user-select:none}
+#status{font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif}
+
+</style>
 		<link id="-gd-engine-icon" rel="icon" type="image/png" href="index.icon.png" />
 <link rel="apple-touch-icon" href="index.apple-touch-icon.png"/>
 
 	</head>
 	<body>
-		<canvas id="canvas">
+		<canvas id="canvas" tabindex="0" aria-label="NEBULA: пилотирование космического корабля">
 			Ваш браузер не поддерживает canvas.
 		</canvas>
 
@@ -111,7 +120,7 @@ body {
 
 		<script src="index.js"></script>
 		<script>
-const GODOT_CONFIG = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":true,"executable":"index","experimentalVK":false,"fileSizes":{"index.pck":5434572,"index.wasm":39514754},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4};
+const GODOT_CONFIG = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":true,"executable":"index","experimentalVK":false,"fileSizes":{"index.pck":5502972,"index.wasm":39514754},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4};
 const GODOT_THREADS_ENABLED = false;
 const engine = new Engine(GODOT_CONFIG);
 

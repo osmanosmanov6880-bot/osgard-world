@@ -162,6 +162,9 @@ jobs:
           test -s "$output/index.wasm"
           test -s "$output/index.pck"
           node scripts/localize-godot-web-export.mjs "$output"
+          node scripts/nebula-r21-mobile-export.mjs "$output"
+          grep -Fq 'viewport-fit=cover' "$output/index.html"
+          grep -Fq 'touch-action:none' "$output/index.html"
           grep -Fq 'REMIX ARENA' "$output/index.html"
           du -ah "$output" | tail -n 12
       - name: Commit native sources and verified Web export

@@ -4,24 +4,33 @@
 
 Prepare a credible, bilingual commercial offer for OSA Learning without pretending that checkout, paid access, or enrollment processing already exists.
 
-## Implemented in this branch
+## Current public offer page
 
-- Public offer page at \`/learning/pricing\`, linked from the learner dashboard.
-- Russian and English copy for four offer levels: open access, self-paced course, guided cohort, and team pilot.
-- Proposed validation prices: USD 79 for a self-paced program and USD 499 for a guided cohort. These are hypotheses, not approved or active public offers.
-- Offer framing based on practical assignments, a final project, feedback, and a measurable team pilot.
-- Explicit launch-state disclosure: no order, payment, seat reservation, or paid access is currently available.
-- Smoke check registered as \`npm run qa:osa-monetization\` and added to the OSA quality workflow.
+- Public offer page: `/learning/pricing`, linked from the learner dashboard.
+- The page now leads with the learner outcome: understand an AI task, verify an answer against sources and a new example, and save a reviewable project.
+- It describes the current self-paced program as eight practical lessons and a final project, grounded in the existing OSA lessons and server-backed Learning/Core work.
+- It sends visitors to the existing free `/learning` route for immediate use.
+- Russian and English formats distinguish what is available now, what is being prepared, and what is only a proposed format.
+- The existing OSGARD Telegram bot is the team-discussion route. It does not create an order, collect a web form, reserve a seat, or promise delivery.
+- The page explicitly states that the site does not take orders or payments, reserve seats, or grant paid access.
+
+## Verified product boundary
+
+Existing code and pilot documentation support eight lesson practices, knowledge self-checks, personal Core project work, saved progress, and a learner-submitted final project. They do not provide independent expert scoring or a credential. The current flow does not include an operating human mentor, a scheduled paid cohort, a live-review service, automatic lead processing, or a verified production payment path. The public page must keep these limits clear.
 
 ## Commercial model
 
-1. **Open access** introduces the learning experience and sends learners to the existing \`/learning\` route.
-2. **Self-paced course** is a one-time purchase for a structured program and a final project.
-3. **Guided cohort** adds scheduled group reviews and instructor feedback.
-4. **Team pilot** scopes one organization's skill objective, baseline assessment, practice, and outcome report.
+1. **Open access** introduces the learning experience and sends learners to the existing `/learning` route.
+2. **Self-paced course** is the intended first paid offer: a structured eight-practice program and a final project. It is not purchasable yet.
+3. **Guided cohort** remains a future format until an instructor, dates, delivery plan, and feedback capacity are confirmed.
+4. **Team pilot** starts with a scoped conversation about the organization's goal and success criteria. No fixed price or delivery commitment is published.
 5. Consider an ongoing membership only after OSA can deliver recurring new programs, reviews, or community value.
 
 Do not sell a completion badge as an accredited credential. Do not promise employment, income, or business results without evidence.
+
+## Price validation
+
+The displayed USD values `$79` and `$499` are validation hypotheses, not approved or active public offers. Do not enable checkout or present them as payable prices before an operator approves the product scope, localized terms, support plan, and provider setup. Track conversion alongside project completion, learner outcomes, refunds, and support load. Raise price only when the delivered value and evidence improve.
 
 ## Release gates before taking payment
 
@@ -35,18 +44,22 @@ Do not sell a completion badge as an accredited credential. Do not promise emplo
 - Have an operator review the final localized public price and offer terms.
 - Run production checks before enabling purchase buttons.
 
-## Price validation
+## Next monetization experiment
 
-Treat the displayed USD values as internal experiment candidates. Interview target learners and run a small paid cohort before making them active prices. Track conversion alongside project completion, learner outcomes, refunds, and support load. Raise price only when the delivered value and evidence improve.
+1. Route interested learners to the existing free lessons and measure lesson starts and completions.
+2. Invite team prospects to discuss one target workflow, baseline, and acceptance criteria through the existing contact bot.
+3. Use those conversations to validate audience, willingness to pay, and the smallest deliverable program.
+4. Open a paid learner pilot only after curriculum, human support, commercial terms, and checkout are ready.
+5. Compare contribution after refunds, compute, payment fees, mentors, and variable support.
 
 ## Verification
 
 Run:
 
-\`\`\`sh
+```sh
 npm run qa:osa-monetization
 npm run check
 npm run build
-\`\`\`
+```
 
-CI must pass on the updated feature branch. The production site and paid transactions remain unchanged until the payment release gates above are implemented and reviewed.
+CI must pass on the updated master. Paid transactions remain disabled until the payment release gates above are implemented and reviewed.

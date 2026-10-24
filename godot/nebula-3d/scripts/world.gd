@@ -24,6 +24,8 @@ const CinematicPortR14Script = preload("res://scripts/cinematic_port_r14.gd")
 const HangarStoreR15Script = preload("res://scripts/hangar_store_r15.gd")
 const FleetCombatR15Script = preload("res://scripts/fleet_combat_r15.gd")
 const PremiumFulfillmentR15Script = preload("res://scripts/premium_fulfillment_r15.gd")
+const MobileControlsR21Script = preload("res://scripts/mobile_controls_r21.gd")
+const PremiumHUDR21Script = preload("res://scripts/premium_hud_r21.gd")
 const SAVE_PATH = "user://nebula_3d_save.json"
 const SECTOR_COLORS = [Color(0.10,0.68,0.97), Color(0.64,0.35,1.0), Color(0.98,0.73,0.40), Color(1.0,0.46,0.34), Color(0.87,0.27,0.88), Color(0.24,0.92,0.88)]
 const SECTOR_NAMES = ["ПОРТ АВРОРА","НЕОНОВЫЙ КВАРТАЛ","ЦИТАДЕЛЬ","ЧЁРНЫЙ РЫНОК","РАЗЛОМ","НЕКСУС"]
@@ -111,6 +113,21 @@ var r16_enemy_laser: Material
 var r16_radar_clock: float = 0.0
 var r16_hud_clock: float = 0.0
 var r16_beam_shots: int = 0
+## R21: confirmed flight corridor, occlusion-aware chase camera and approved HUD.
+const R21_LAUNCH_CANDIDATES = [
+    Vector3(0, 34, 100), Vector3(0, 53, 102), Vector3(0, 79, 103),
+    Vector3(0, 108, 104), Vector3(0, 150, 110), Vector3(0, 215, 112)
+]
+var r21_towers_moved: int = 0
+var r21_spawn_relocations: int = 0
+var r21_safe_spawn: Vector3 = Vector3(0, 34, 100)
+var r21_camera_obstructions: int = 0
+var r21_touch
+var r21_dashboard
+var r21_objective_panel: PanelContainer
+var r21_ui_font: SystemFont
+var r21_mobile_enabled: bool = false
+var r21_launch_protection: float = 9.0
 
 func _ready() -> void:
     rng.seed = 20261022
@@ -125,6 +142,18 @@ func _ready() -> void:
     fleet_r15.targets = drones
     fleet_r15.ally_fired.connect(_r16_ally_fire)
     _make_hud()
+    r21_dashboard = PremiumHUDR21Script.new()
+    r21_dashboard.name = "R21_PremiumFlightDashboard"
+    hud_canvas.add_child(r21_dashboard)
+    r21_dashboard.craft = ship
+    r21_touch = MobileControlsR21Script.new()
+    r21_touch.name = "R21_ResponsiveMobileController"
+    hud_canvas.add_child(r21_touch)
+    r21_touch.player_ship = ship
+    r21_touch.rocket_requested.connect(_r21_launch_missile)
+    r21_touch.hangar_requested.connect(_r21_toggle_hangar)
+    r21_touch.camera_requested.connect(_r21_cycle_camera)
+    r21_mobile_enabled = r21_touch.enabled
     _r16_setup_beam_pool()
     store_r15 = HangarStoreR15Script.new()
     store_r15.name = "R15_HangarShop"
@@ -152,6 +181,7 @@ func _ready() -> void:
     add_child(adaptive_r12)
     adaptive_r12.quality_requested.connect(_r12_on_auto_quality)
     _load_progress()
+    _r21_rescue_blocked_spawn()
     _r15_apply_loadout()
     _start_mission()
     # Start the browser on HIGH instead of MAX. Real FPS can then
@@ -159,7 +189,7 @@ func _ready() -> void:
     if OS.has_feature("web"):
         _set_graphics_quality(1)
         adaptive_r12.set_auto(true)
-    _show_notice("NEBULA ASCENSION · R16 SMOOTH COMBAT")
+    _show_notice("АВРОРА · СИСТЕМА ПОЛЁТА R21 ГОТОВА")
     get_viewport().size_changed.connect(_fit_hud)
     _fit_hud()
 
@@ -177,17 +207,17 @@ func _setup_environment() -> void:
     env.background_mode = Environment.BG_SKY
     env.sky = sky
     env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
-    env.ambient_light_energy = 0.46
+    env.ambient_light_energy = 0.38
     env.reflected_light_source = Environment.REFLECTION_SOURCE_BG
     env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
     # Compatibility renderer supports subtle glow and post-tonemap grading.
     # Never enable unsupported SSIL, SSR or volumetric fog.
     env.glow_enabled = true
-    env.glow_bloom = 0.10
+    env.glow_bloom = 0.028
     env.adjustment_enabled = true
-    env.adjustment_brightness = 0.99
-    env.adjustment_contrast = 1.04
-    env.adjustment_saturation = 0.93
+    env.adjustment_brightness = 0.86
+    env.adjustment_contrast = 1.01
+    env.adjustment_saturation = 0.90
     env.fog_enabled = true
     env.fog_light_color = Color(0.11,0.18,0.26)
     env.fog_density = 0.00044
@@ -198,14 +228,14 @@ func _setup_environment() -> void:
     sun.name = "OrbitalSun"
     sun.rotation_degrees = Vector3(-34.0,-52.0,0.0)
     sun.light_color = Color(1.0,0.85,0.70)
-    sun.light_energy = 1.82
+    sun.light_energy = 1.05
     sun.shadow_enabled = true
     add_child(sun)
     var fill := DirectionalLight3D.new()
     fill.name = "DeepBlueFill"
     fill.rotation_degrees = Vector3(-18,128,0)
     fill.light_color = Color(0.22,0.48,1.0)
-    fill.light_energy = 0.45
+    fill.light_energy = 0.20
     add_child(fill)
     var deck := MeshInstance3D.new()
     var plane := PlaneMesh.new()
@@ -297,6 +327,12 @@ func _build_city() -> void:
         var height: float = rng.randf_range(25.0,170.0)
         var depth: float = rng.randf_range(12.0,29.0)
         var pos := center + Vector3(cos(bearing)*radius,height*0.5,sin(bearing)*radius)
+        # Keep the original 360 real towers/colliders, but shift a few away
+        # from the player's takeoff and chase-camera corridor in Aurora.
+        # Previous releases started the ship beside massive bright facades.
+        if sector == 0 and absf(pos.x) < 88.0 and pos.z > -145.0 and pos.z < 245.0:
+            pos.x = (1.0 if pos.x >= 0.0 else -1.0) * (118.0 + absf(pos.x) * 0.18)
+            r21_towers_moved += 1
         var slot: int = int(i / SECTOR_POSITIONS.size())
         multimeshes[sector].set_instance_transform(
             slot, Transform3D(Basis.IDENTITY.scaled(Vector3(w, height, depth)), pos - center))
@@ -385,7 +421,7 @@ func _build_sector(center: Vector3, tint: Color, name: String, index: int) -> vo
     var text := Label3D.new()
     text.text = name
     text.font_size = 50
-    text.pixel_size = 0.085
+    text.pixel_size = 0.045
     text.modulate = tint.lightened(0.28)
     text.billboard = BaseMaterial3D.BILLBOARD_ENABLED
     text.position = Vector3(0,111,0)
@@ -419,14 +455,70 @@ func _spawn_player() -> void:
     ship.name = "PlayerShip"
     # A Node3D has no global transform before it belongs to the SceneTree.
     # Use parent-relative spawn transform until add_child completes.
-    ship.position = Vector3(0,19,78)
+    ship.position = R21_LAUNCH_CANDIDATES[0]
     add_child(ship)
     ship.fired.connect(_on_ship_fire)
     chase_camera = Camera3D.new()
     chase_camera.current = true
-    chase_camera.fov = 63.0
+    chase_camera.fov = 64.0
     add_child(chase_camera)
-    chase_camera.global_position = ship.global_position+Vector3(0,7,21)
+    chase_camera.global_position = ship.global_position + Vector3(0,6,19)
+
+func _r21_rescue_blocked_spawn() -> void:
+    # Previous local save locations remain respected if safe. A collided
+    # legacy save or first spawn is rescued onto a collision-clear corridor.
+    var check := SphereShape3D.new()
+    check.radius = 2.2
+    var query := PhysicsShapeQueryParameters3D.new()
+    query.shape = check
+    query.collision_mask = 1
+    query.exclude = [ship.get_rid()]
+    query.transform = Transform3D(Basis.IDENTITY, ship.global_position)
+    var space := get_world_3d().direct_space_state
+    if space.intersect_shape(query, 1).is_empty():
+        r21_safe_spawn = ship.global_position
+        return
+    for candidate in R21_LAUNCH_CANDIDATES:
+        query.transform = Transform3D(Basis.IDENTITY, candidate)
+        if space.intersect_shape(query, 1).is_empty():
+            ship.global_position = candidate
+            ship.velocity = Vector3.ZERO
+            r21_safe_spawn = candidate
+            r21_spawn_relocations += 1
+            return
+    # High-altitude emergency launch point; never leave the player trapped.
+    ship.global_position = Vector3(0, 245, 112)
+    ship.velocity = Vector3.ZERO
+    r21_safe_spawn = ship.global_position
+    r21_spawn_relocations += 1
+
+func _r21_toggle_hangar() -> void:
+    if not is_instance_valid(store_r15):
+        return
+    if store_r15.visible:
+        store_r15.close()
+    elif ship.global_position.distance_to(SECTOR_POSITIONS[0]) <= 150.0:
+        store_r15.open(credits, owned_r15, equipped_r15)
+        ship.controls_locked = true
+        if is_instance_valid(r21_touch):
+            r21_touch.set_shop_open(true)
+    else:
+        _show_notice("АНГАР ДОСТУПЕН ТОЛЬКО В ПОРТУ АВРОРА")
+
+func _r21_launch_missile() -> void:
+    if is_instance_valid(store_r15) and store_r15.visible:
+        return
+    if fleet_r15.launch_missile():
+        rockets_r15 = fleet_r15.missiles
+        _save_progress()
+        _show_notice("РАКЕТА · ОСТАЛОСЬ %d" % rockets_r15)
+    else:
+        _show_notice("РАКЕТЫ / ЦЕЛЬ НЕ ДОСТУПНЫ")
+
+func _r21_cycle_camera() -> void:
+    lens_mode = (lens_mode + 1) % 3
+    camera_distance = [14.5,23.0,33.0][lens_mode]
+    _show_notice("КАМЕРА · %d / 3" % (lens_mode + 1))
 
 func _spawn_civilians_and_pirates() -> void:
     for i in 22:
@@ -447,48 +539,58 @@ func _make_hud() -> void:
     add_child(ui)
     hud_canvas = ui
     var surface := Control.new()
+    surface.name = "R21_ApprovedAuroraOverlay"
     surface.set_anchors_preset(Control.PRESET_FULL_RECT)
     surface.mouse_filter = Control.MOUSE_FILTER_IGNORE
     ui.add_child(surface)
+    r21_ui_font = SystemFont.new()
+    r21_ui_font.font_names = PackedStringArray([
+        "Inter", "Manrope", "Segoe UI", "Noto Sans", "Roboto", "Arial"])
     var block := PanelContainer.new()
+    block.name = "R21_GlassMissionBrief"
     block.set_anchors_preset(Control.PRESET_TOP_LEFT)
-    block.offset_left = 22
-    block.offset_top = 22
-    block.offset_right = 510
-    block.offset_bottom = 157
+    block.offset_left = 20.0
+    block.offset_top = 22.0
+    block.offset_right = 540.0
+    block.offset_bottom = 150.0
     var frame := StyleBoxFlat.new()
-    frame.bg_color = Color(0.018,0.028,0.043,0.78)
-    frame.border_color = Color(0.67,0.77,0.92,0.38)
+    frame.bg_color = Color(0.013,0.027,0.040,0.87)
+    frame.border_color = Color(0.29,0.54,0.62,0.72)
     frame.set_border_width_all(1)
-    frame.set_corner_radius_all(12)
-    frame.content_margin_left = 17
-    frame.content_margin_right = 17
-    frame.content_margin_top = 14
-    frame.content_margin_bottom = 12
+    frame.set_corner_radius_all(10)
+    frame.content_margin_left = 18
+    frame.content_margin_right = 18
+    frame.content_margin_top = 15
+    frame.content_margin_bottom = 14
     block.add_theme_stylebox_override("panel",frame)
     surface.add_child(block)
     hud_panel = block
     var stack := VBoxContainer.new()
-    stack.add_theme_constant_override("separation",9)
+    stack.add_theme_constant_override("separation",10)
     block.add_child(stack)
     hud_mission = Label.new()
+    hud_mission.add_theme_font_override("font",r21_ui_font)
     hud_mission.add_theme_font_size_override("font_size",23)
-    hud_mission.add_theme_color_override("font_color",Color(0.99,0.81,0.50))
+    hud_mission.add_theme_color_override("font_color",Color(0.99,0.75,0.39))
+    hud_mission.clip_text = true
     stack.add_child(hud_mission)
     hud_status = Label.new()
+    hud_status.add_theme_font_override("font",r21_ui_font)
     hud_status.add_theme_font_size_override("font_size",15)
-    hud_status.add_theme_color_override("font_color",Color(0.86,0.95,1.0))
+    hud_status.add_theme_color_override("font_color",Color(0.78,0.86,0.89))
+    hud_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
     stack.add_child(hud_status)
     hud_controls = Label.new()
-    hud_controls.text = "WASD полёт · Space огонь · R ракета · H ангар · F3 графика · F6 FPS · F7 тест"
-    hud_controls.add_theme_font_size_override("font_size",13)
-    hud_controls.add_theme_color_override("font_color",Color(0.81,0.91,1.0))
-    hud_controls.anchor_top=1.0
-    hud_controls.anchor_bottom=1.0
-    hud_controls.offset_left=28.0
-    hud_controls.offset_top=-49.0
-    hud_controls.offset_right=1150.0
-    hud_controls.offset_bottom=-17.0
+    hud_controls.text = "WASD — ПОЛЁТ     Q/E — ВЫСОТА     Shift — ФОРСАЖ     Space — ОГОНЬ     R — РАКЕТА     H — АНГАР     F3 — ГРАФИКА"
+    hud_controls.add_theme_font_override("font",r21_ui_font)
+    hud_controls.add_theme_font_size_override("font_size",12)
+    hud_controls.add_theme_color_override("font_color",Color(0.71,0.80,0.83))
+    hud_controls.anchor_top = 1.0
+    hud_controls.anchor_bottom = 1.0
+    hud_controls.offset_left = 24.0
+    hud_controls.offset_top = -45.0
+    hud_controls.offset_right = 1060.0
+    hud_controls.offset_bottom = -16.0
     surface.add_child(hud_controls)
     radar = RadarScript.new()
     radar.name = "WaypointRadar"
@@ -496,47 +598,64 @@ func _make_hud() -> void:
     radar.anchor_bottom = 1.0
     radar.offset_left = 16.0
     radar.offset_right = 236.0
-    radar.offset_top = -282.0
-    radar.offset_bottom = -62.0
+    radar.offset_top = -277.0
+    radar.offset_bottom = -57.0
     surface.add_child(radar)
     hud_flight = Label.new()
-    hud_flight.text = "REMIX ARENA   /   NEBULA ASCENSION"
-    hud_flight.add_theme_font_size_override("font_size",17)
-    hud_flight.add_theme_color_override("font_color",Color(0.82,0.90,1.0))
-    hud_flight.anchor_left=1.0
-    hud_flight.anchor_right=1.0
-    hud_flight.offset_left=-458.0
-    hud_flight.offset_right=-23.0
-    hud_flight.offset_top=27.0
-    hud_flight.offset_bottom=57.0
+    hud_flight.text = "REMIX ARENA  /  NEBULA ASCENSION"
+    hud_flight.add_theme_font_override("font",r21_ui_font)
+    hud_flight.add_theme_font_size_override("font_size",14)
+    hud_flight.add_theme_color_override("font_color",Color(0.54,0.82,0.90))
+    hud_flight.anchor_left = 1.0
+    hud_flight.anchor_right = 1.0
+    hud_flight.offset_left = -380.0
+    hud_flight.offset_right = -20.0
+    hud_flight.offset_top = 25.0
+    hud_flight.offset_bottom = 55.0
     hud_flight.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
     surface.add_child(hud_flight)
+    var objective_panel := PanelContainer.new()
+    objective_panel.name = "R21_GlassObjective"
+    objective_panel.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+    objective_panel.offset_left = -360.0
+    objective_panel.offset_right = -20.0
+    objective_panel.offset_top = 67.0
+    objective_panel.offset_bottom = 119.0
+    var objective_style := StyleBoxFlat.new()
+    objective_style.bg_color = Color(0.016,0.031,0.044,0.87)
+    objective_style.border_color = Color(0.66,0.44,0.23,0.77)
+    objective_style.set_border_width_all(1)
+    objective_style.set_corner_radius_all(8)
+    objective_style.content_margin_left = 13
+    objective_style.content_margin_right = 13
+    objective_style.content_margin_top = 8
+    objective_style.content_margin_bottom = 8
+    objective_panel.add_theme_stylebox_override("panel", objective_style)
+    surface.add_child(objective_panel)
+    r21_objective_panel = objective_panel
     hud_objective = Label.new()
-    hud_objective.add_theme_font_size_override("font_size",19)
-    hud_objective.add_theme_color_override("font_color",Color(0.99,0.82,0.49))
-    hud_objective.anchor_left=1.0
-    hud_objective.anchor_right=1.0
-    hud_objective.offset_left=-450.0
-    hud_objective.offset_right=-24.0
-    hud_objective.offset_top=66.0
-    hud_objective.offset_bottom=101.0
+    hud_objective.add_theme_font_override("font",r21_ui_font)
+    hud_objective.add_theme_font_size_override("font_size",16)
+    hud_objective.add_theme_color_override("font_color",Color(1.0,0.73,0.33))
     hud_objective.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-    surface.add_child(hud_objective)
+    objective_panel.add_child(hud_objective)
     hud_notice = Label.new()
-    hud_notice.add_theme_font_size_override("font_size",30)
-    hud_notice.add_theme_color_override("font_color",Color(1.0,0.83,0.47))
+    hud_notice.add_theme_font_override("font",r21_ui_font)
+    hud_notice.add_theme_font_size_override("font_size",20)
+    hud_notice.add_theme_color_override("font_color",Color(1.0,0.77,0.43))
     hud_notice.set_anchors_preset(Control.PRESET_CENTER_TOP)
-    hud_notice.offset_left=-250.0
-    hud_notice.offset_top=160.0
-    hud_notice.offset_right=250.0
-    hud_notice.offset_bottom=210.0
-    hud_notice.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
+    hud_notice.offset_left = -240.0
+    hud_notice.offset_top = 146.0
+    hud_notice.offset_right = 240.0
+    hud_notice.offset_bottom = 180.0
+    hud_notice.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
     surface.add_child(hud_notice)
 
 func _process(delta: float) -> void:
     if not is_instance_valid(ship): return
     world_timer += delta
     world_pulse += delta
+    r21_launch_protection = maxf(0.0, r21_launch_protection - delta)
     if world_pulse > 92.0 and mission_index > 0 and ship.global_position.distance_to(SECTOR_POSITIONS[0]) > 270.0:
         world_pulse = 0.0
         _spawn_pirate_ambush()
@@ -549,15 +668,39 @@ func _process(delta: float) -> void:
     if post_interval_r12 >= 0.12 and is_instance_valid(cinematic_post_r11):
         post_interval_r12 = 0.0
         cinematic_post_r11.set_flight_velocity(speed)
-    var desired_distance: float = camera_distance + minf(6.0,speed*0.06)
-    var desired_height: float = 5.5 + minf(3.0,speed*0.025)
-    var ideal: Vector3 = ship.global_position + basis.z*desired_distance + Vector3(0,desired_height,0)
-    chase_camera.global_position = chase_camera.global_position.lerp(ideal,minf(1.0,delta*4.0))
-    chase_camera.look_at(ship.global_position - basis.z*12.0 + Vector3(0,2.0,0),Vector3.UP)
-    chase_camera.fov = lerpf(chase_camera.fov,66.0 + minf(9.0,speed*0.12),minf(1.0,delta*1.4))
+    var desired_distance: float = camera_distance + minf(5.0, speed * 0.035)
+    var desired_height: float = 4.6 + minf(2.6, speed * 0.02)
+    var target: Vector3 = ship.global_position + Vector3.UP * 1.5
+    var ideal: Vector3 = ship.global_position + basis.z * desired_distance + Vector3.UP * desired_height
+    # Camera collision: sweep from the player to the desired camera point.
+    # Buildings behind the aircraft must never occupy the whole screen.
+    var camera_query := PhysicsRayQueryParameters3D.create(target, ideal)
+    camera_query.exclude = [ship.get_rid()]
+    var obstruction: Dictionary = get_world_3d().direct_space_state.intersect_ray(camera_query)
+    if not obstruction.is_empty():
+        var delta_to_wall: Vector3 = obstruction["position"] - target
+        ideal = target + delta_to_wall.limit_length(
+            maxf(2.0, delta_to_wall.length() - 1.1))
+        r21_camera_obstructions += 1
+    chase_camera.global_position = chase_camera.global_position.lerp(ideal,
+        1.0 - exp(-8.0 * delta))
+    # A second collision query prevents lerp from crossing newly approached walls.
+    camera_query.to = chase_camera.global_position
+    obstruction = get_world_3d().direct_space_state.intersect_ray(camera_query)
+    if not obstruction.is_empty():
+        chase_camera.global_position = target + (
+            obstruction["position"] - target) * 0.82
+    chase_camera.look_at(ship.global_position - basis.z * 14.0 +
+        Vector3.UP * 1.2, Vector3.UP)
+    chase_camera.fov = lerpf(chase_camera.fov,
+        65.0 + minf(6.0, speed * 0.060), 1.0 - exp(-1.8 * delta))
     _mission_tick(delta)
+    if is_instance_valid(r21_dashboard):
+        r21_dashboard.show_objective = mission_index < MISSIONS.size()
+        if r21_dashboard.show_objective:
+            r21_dashboard.objective = MISSIONS[mission_index]["position"]
     if ship.hull <= 0.0:
-        ship.global_position = Vector3(0,20,75)
+        ship.global_position = r21_safe_spawn
         ship.velocity = Vector3.ZERO
         ship.shield = fleet_r15.ship_shield_cap()
         ship.hull = fleet_r15.ship_hull_cap()
@@ -614,11 +757,11 @@ func _start_mission() -> void:
     mesh.radius=4.8
     mesh.height=9.6
     sphere.mesh=mesh
-    sphere.material_override=_mat(Color(1.0,0.72,0.28),3.0)
+    sphere.material_override=_mat(Color(1.0,0.72,0.28),0.82)
     beacon.add_child(sphere)
     var lamp := OmniLight3D.new()
     lamp.omni_range=55.0
-    lamp.light_energy=3.0
+    lamp.light_energy=0.75
     lamp.light_color=Color(1.0,0.74,0.32)
     beacon.add_child(lamp)
     add_child(beacon)
@@ -658,7 +801,10 @@ func _on_drone_fire(from: Vector3, to: Vector3) -> void:
     if not is_instance_valid(ship):return
     _laser_effect_colored(from,to,Color(1.0,0.26,0.39))
     if from.distance_to(ship.global_position)<250.0 and ship.global_position.distance_to(to)<7.0:
-        ship.take_damage(8.0)
+        # The approved first-flight mission must be playable before pirates
+        # drain the starting shield while the player learns the controls.
+        if r21_launch_protection <= 0.0 or mission_index > 0:
+            ship.take_damage(8.0)
 
 func _spawn_pirate_ambush() -> void:
     var nearby := 0
@@ -763,52 +909,62 @@ func _show_notice(message: String) -> void:
     notice_timer=3.3
 
 func _update_hud() -> void:
-    if not is_instance_valid(hud_status):return
-    if mission_index>=MISSIONS.size():
-        hud_objective.text = "ИССЛЕДОВАНИЕ ШЕСТИ РАЙОНОВ"
-        hud_mission.text="НЕБУЛА · СВОБОДНЫЙ МИР"
-        hud_status.text="Сюжет завершён. Исследуй шесть районов.\nКредиты: %d   XP: %d   Щит: %d%%   Корпус: %d%%" % [credits,xp,roundi(ship.shield),roundi(ship.hull)]
+    if not is_instance_valid(hud_status):
+        return
+    var resource_line: String = "КРЕДИТЫ  %d     XP  %d     ЩИТ  %d%%     КОРПУС  %d%%" % [
+        credits, xp, roundi(ship.shield), roundi(ship.hull)]
+    if mission_index >= MISSIONS.size():
+        hud_mission.text = "НЕБУЛА  /  СВОБОДНЫЙ ПОЛЁТ"
+        hud_objective.text = "МИССИИ ВЫПОЛНЕНЫ"
+        hud_status.text = "Исследуй шесть районов космического города.\n" + resource_line
     else:
-        var m: Dictionary=MISSIONS[mission_index]
-        var d: int=roundi(ship.global_position.distance_to(m["position"]))
-        hud_mission.text="%02d · %s" % [mission_index+1,m["title"]]
-        hud_objective.text="ЦЕЛЬ МИССИИ · %d М" % d
-        hud_status.text="%s · %d м\nКредиты: %d   XP: %d   Щит: %d%%   Корпус: %d%%   Форсаж: %d%%" % [m["hint"],d,credits,xp,roundi(ship.shield),roundi(ship.hull),roundi(ship.boost)]
+        var m: Dictionary = MISSIONS[mission_index]
+        var d: int = roundi(ship.global_position.distance_to(m["position"]))
+        hud_mission.text = "%02d  ·  %s" % [mission_index + 1, m["title"]]
+        hud_objective.text = "◇  ЦЕЛЬ МИССИИ  /  %d М" % d
+        hud_status.text = "%s  ·  %d м\n%s" % [m["hint"], d, resource_line]
 
 func _fit_hud() -> void:
-    var width: float = get_viewport().get_visible_rect().size.x
-    if width < 820.0:
-        if is_instance_valid(hud_panel):
-            hud_panel.offset_left=8.0
-            hud_panel.offset_top=7.0
-            hud_panel.offset_right=minf(460.0,width-8.0)
-            hud_panel.offset_bottom=125.0
-        if is_instance_valid(hud_mission):hud_mission.add_theme_font_size_override("font_size",19)
-        if is_instance_valid(hud_status):hud_status.add_theme_font_size_override("font_size",12)
-        if is_instance_valid(radar):
-            radar.scale=Vector2(0.77,0.77)
-            radar.offset_top=-228.0
+    if not is_instance_valid(hud_panel):
+        return
+    var rect: Vector2 = get_viewport().get_visible_rect().size
+    var width: float = rect.x
+    var height: float = rect.y
+    var compact: bool = width < 940.0 or height < 590.0 or r21_mobile_enabled
+    if compact:
+        hud_panel.offset_left = 8.0
+        hud_panel.offset_top = 8.0
+        hud_panel.offset_right = minf(465.0, width - 8.0)
+        hud_panel.offset_bottom = 124.0
+        hud_mission.add_theme_font_size_override("font_size",19)
+        hud_status.add_theme_font_size_override("font_size",12)
+        hud_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
         hud_controls.visible = false
-        if is_instance_valid(hud_flight):hud_flight.visible = false
-        if is_instance_valid(hud_objective):
-            hud_objective.offset_left=-230.0
-            hud_objective.add_theme_font_size_override("font_size",13)
+        radar.visible = not r21_mobile_enabled and height > 510.0
+        if radar.visible:
+            radar.scale = Vector2(0.67,0.67)
+            radar.offset_top = -209.0
+        hud_flight.visible = false
+        r21_objective_panel.visible = false
+        hud_notice.offset_top = 129.0
     else:
-        if is_instance_valid(hud_panel):
-            hud_panel.offset_left=22.0
-            hud_panel.offset_top=22.0
-            hud_panel.offset_right=560.0
-            hud_panel.offset_bottom=168.0
-        if is_instance_valid(hud_mission):hud_mission.add_theme_font_size_override("font_size",26)
-        if is_instance_valid(hud_status):hud_status.add_theme_font_size_override("font_size",15)
-        if is_instance_valid(radar):
-            radar.scale=Vector2.ONE
-            radar.offset_top=-282.0
+        hud_panel.offset_left = 22.0
+        hud_panel.offset_top = 25.0
+        hud_panel.offset_right = 540.0
+        hud_panel.offset_bottom = 152.0
+        hud_mission.add_theme_font_size_override("font_size",23)
+        hud_status.add_theme_font_size_override("font_size",15)
         hud_controls.visible = true
-        if is_instance_valid(hud_flight):hud_flight.visible = true
-        if is_instance_valid(hud_objective):
-            hud_objective.offset_left=-450.0
-            hud_objective.add_theme_font_size_override("font_size",19)
+        radar.visible = true
+        radar.scale = Vector2.ONE
+        radar.offset_top = -277.0
+        hud_flight.visible = true
+        r21_objective_panel.visible = true
+        hud_notice.offset_top = 146.0
+    if is_instance_valid(r21_dashboard):
+        r21_dashboard._fit_viewport()
+    if is_instance_valid(r21_touch):
+        r21_touch._resize()
 
 func _unhandled_key_input(event: InputEvent) -> void:
     if event is InputEventKey and event.pressed and not event.echo:
@@ -816,13 +972,7 @@ func _unhandled_key_input(event: InputEvent) -> void:
             _save_progress()
             _show_notice("ИГРА СОХРАНЕНА")
         elif event.keycode==KEY_H:
-            if store_r15.visible:
-                store_r15.close()
-            elif ship.global_position.distance_to(SECTOR_POSITIONS[0]) <= 150.0:
-                store_r15.open(credits, owned_r15, equipped_r15)
-                ship.controls_locked = true
-            else:
-                _show_notice("МАГАЗИН ТОЛЬКО В ПОРТУ АВРОРА")
+            _r21_toggle_hangar()
         elif event.keycode==KEY_R:
             if store_r15.visible:
                 return
@@ -949,6 +1099,8 @@ func _upgrade_docked(slot: int) -> void:
 func _r16_hangar_closed() -> void:
     if is_instance_valid(ship):
         ship.controls_locked = false
+    if is_instance_valid(r21_touch):
+        r21_touch.set_shop_open(false)
 
 func _r15_apply_loadout() -> void:
     fleet_r15.set_loadout(equipped_r15, weapon_r15, rockets_r15, wingmen_r15)
