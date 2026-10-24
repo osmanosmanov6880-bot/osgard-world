@@ -188,5 +188,42 @@ func _run() -> void:
     if int(rig.call("summary").get("fault_marker_count", -1)) != 3:
         _fail("W5 must expose three 3D fault markers")
         return
+    var optic_marker: Node = rig.get_node_or_null("R135_BridgeDrive_16s_Cycle_SIMULATION/Vertical_Optical_Service_Head/SimulatedFault_OPTICAL_01")
+    if optic_marker == null:
+        _fail("Optical visual target is not parented to the moving optical head")
+        return
+    # Exercise cooling and service diagnostics too (W4 browser smoke covered
+    # optical only). Every scenario must be playable through 5 actual actions.
+    for expected_fault in [1, 2]:
+        var fault_state: Dictionary = rig.call("summary")
+        if int(fault_state.get("challenge_fault_index", -1)) != expected_fault:
+            _fail("Expected W5 scenario index %d: %s" % [expected_fault, str(fault_state)])
+            return
+        var target: int = 3 if expected_fault == 1 else 1
+        if int(fault_state.get("challenge_target_view", -1)) != target:
+            _fail("Incorrect camera target in W5 scenario")
+            return
+        rig.call("set_motion", false)
+        rig.call("toggle_access_lid")
+        for tick in range(125):
+            rig.call("_physics_process", 1.0 / 60.0)
+        if int(rig.call("summary").get("fault_marker_active_index", -1)) != expected_fault:
+            _fail("W5 target indicator did not follow the scenario")
+            return
+        rig.call("scan_diagnostic", target)
+        rig.call("_physics_process", 1.0 / 60.0)
+        if int(rig.call("summary").get("challenge_step", -1)) != 3 or str(rig.call("summary").get("fault_visual_state")) != "inspected":
+            _fail("W5 fault scan or 3D inspection indicator failed")
+            return
+        rig.call("toggle_access_lid")
+        for tick in range(125):
+            rig.call("_physics_process", 1.0 / 60.0)
+        rig.call("set_motion", true)
+        var done: Dictionary = rig.call("summary")
+        if not bool(done.get("challenge_completed", false)) or int(done.get("challenge_step", -1)) != 5:
+            _fail("W5 advanced scenario failed: " + str(done))
+            return
+        if expected_fault == 1:
+            instance.call("_start_challenge")
     print("R135 SMOKE PASS: original 3D, training mission, 3 diagnostic faults, safety interlocks, gated hatch, camera scan, scoring, 8 buttons")
     quit(0)
