@@ -73,7 +73,7 @@ small{font-size:.77rem;color:#aeb5bd}
 <div class="table-scroll"><table><thead><tr><th scope="col">Файл</th><th scope="col">Профиль</th><th scope="col">FPS средн.</th><th scope="col">1% Low</th><th scope="col">P95 мс</th><th scope="col">P99 мс</th><th scope="col">DOM→Godot мс</th><th scope="col">Оценка</th></tr></thead><tbody id="rows"></tbody></table></div>
 <div class="note">Оценка — сравнение с целевыми значениями (MAX: 60 FPS / P95 ≤20 мс; HIGH: 40 / ≤30 мс; ECO: 30 / ≤35 мс). Это не сертификация устройства. Идентификатор GPU в браузере может быть замаскирован. Задержка DOM→Godot — не время от пальца до изображения.</div>
 </div>
-<div class="panel" id="r39-panel"><h2>R39 / повторяемость на устройствах</h2><p class="muted">Группировка: метка устройства + разрешение + профиль. Требуется не менее 3 надёжных измерений на одну группу. Медиана снижает влияние единичного удачного запуска; разброс FPS свыше 20% блокирует вывод о стабильности. Это проверка отчётов, а не доказательство модели телефона или аппаратная сертификация.</p><div class="table-scroll"><table><thead><tr><th scope="col">Устройство</th><th scope="col">Размер</th><th scope="col">Режим</th><th scope="col">Надёжных / всего</th><th scope="col">Медиана FPS</th><th scope="col">Медиана P95 мс</th><th scope="col">Разброс FPS</th><th scope="col">Вывод</th></tr></thead><tbody id="r39-rows"></tbody></table></div><p class="summary-note" id="r39-status" aria-live="polite"></p></div>
+<div class="panel" id="r39-panel"><h2>R39 / повторяемость на устройствах</h2><p class="muted">Группировка: метка устройства + разрешение + профиль. Требуется не менее 3 надёжных независимых измерений (с различным временем исходного замера) на одну группу. Медиана снижает влияние единичного удачного запуска; разброс FPS свыше 20% блокирует вывод о стабильности. Это проверка отчётов, а не доказательство модели телефона или аппаратная сертификация.</p><div class="table-scroll"><table><thead><tr><th scope="col">Устройство</th><th scope="col">Размер</th><th scope="col">Режим</th><th scope="col">Надёжных / всего</th><th scope="col">Медиана FPS</th><th scope="col">Медиана P95 мс</th><th scope="col">Разброс FPS</th><th scope="col">Вывод</th></tr></thead><tbody id="r39-rows"></tbody></table></div><p class="summary-note" id="r39-status" aria-live="polite"></p></div>
 </section>
 <p class="note">Конфиденциальность: страница не использует fetch, XHR, аналитику, cookies или внешние скрипты. Имена выбранных файлов отображаются локально и попадут в CSV только после вашего нажатия. Оригинальные JSON на сервер не загружаются.</p>
 </main>
@@ -120,7 +120,9 @@ function parseReport(data, filename, deviceLabel = 'Партия 1') {
   const resolution=Number.isInteger(width)&&Number.isInteger(height)&&
     width>=200&&height>=200&&width<=16384&&height<=16384 ? `${width}×${height}` : 'НЕ УКАЗАНО';
   const device=safeName(deviceLabel).slice(0,48)||'Партия 1';
-  return {name:safeName(filename),device,resolution,profile:target.name,avg,low,p95,p99,
+  const stamp=typeof data.date_unix==='number'&&Number.isFinite(data.date_unix)&&
+    data.date_unix>0 ? data.date_unix : null;
+  return {name:safeName(filename),device,resolution,stamp,profile:target.name,avg,low,p95,p99,
     touch,status,validTest,software,targetFps:target.fps,targetP95:target.p95};
 }
 function median(numbers) {
@@ -136,11 +138,15 @@ function summarizeRuns(records) {
     const key=JSON.stringify([row.device,row.resolution,row.profile]);
     if (!groups.has(key)) groups.set(key,{
       device:row.device,resolution:row.resolution,profile:row.profile,
-      total:0,usable:[]});
+      total:0,duplicates:0,runStamps:new Set(),usable:[]});
     const group=groups.get(key);
     group.total++;
     if (row.validTest&&!row.software&&row.resolution!=='НЕ УКАЗАНО' &&
-        (row.status==='ЦЕЛЬ'||row.status==='НИЖЕ ЦЕЛИ')) group.usable.push(row);
+        row.stamp!==null &&
+        (row.status==='ЦЕЛЬ'||row.status==='НИЖЕ ЦЕЛИ')) {
+      if (group.runStamps.has(row.stamp)) group.duplicates++;
+      else { group.runStamps.add(row.stamp);group.usable.push(row); }
+    }
   }
   return [...groups.values()].map(group=>{
     const accepted=group.usable;
@@ -155,7 +161,8 @@ function summarizeRuns(records) {
         'ЦЕЛЬ':'НИЖЕ ЦЕЛИ';
     }
     return {device:group.device,resolution:group.resolution,profile:group.profile,
-      total:group.total,valid:accepted.length,medianFps,medianP95,spread,status};
+      total:group.total,duplicates:group.duplicates,valid:accepted.length,
+      medianFps,medianP95,spread,status};
   });
 }
 function csvCell(s) {
@@ -220,7 +227,7 @@ function render() {
     reviewBody.appendChild(tr);
   }
   document.getElementById('r39-status').textContent=summary.length ?
-    `Групп: ${summary.length}. С 3+ надёжными замерами: ${summary.filter(x=>x.valid>=3).length}. Стабильно достигли цели: ${summary.filter(x=>x.status==='ЦЕЛЬ').length}.` :
+    `Групп: ${summary.length}. С 3+ надёжными замерами: ${summary.filter(x=>x.valid>=3).length}. Стабильно достигли цели: ${summary.filter(x=>x.status==='ЦЕЛЬ').length}. Повторных JSON: ${summary.reduce((n,g)=>n+g.duplicates,0)}.` :
     'Для вывода о повторяемости загрузите минимум три настоящих замера для каждого профиля и ориентации.';
   results.hidden=rows.length===0;
   exportBtn.disabled=rows.length===0; clearBtn.disabled=rows.length===0;
