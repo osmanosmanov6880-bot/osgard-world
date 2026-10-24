@@ -263,7 +263,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p "$RUNNER_TEMP/r135-web-release"
-          gh release download r135-web-mission-20261024 \
+          gh release download r135-web-mission-w3-20261024 \
             --repo osmanosmanov6880-bot/osgard-world \
             --pattern "OSGARD_R135_OPTIMIZED_WEB.zip" \
             --pattern "R135_OPTIMIZED_MANIFEST.json" \
@@ -274,6 +274,7 @@ jobs:
             dist/games/r135-service
           test -s dist/games/r135-service/index.pck
           test -s dist/games/r135-service/index.wasm
+          test -s dist/games/r135-service/index.wasm.gz
           test -s dist/games/r135-service/release.json
           test "$(stat -c '%a' dist/games/r135-service)" = 755
           test "$(stat -c '%a' dist/games/r135-service/index.html)" = 644
