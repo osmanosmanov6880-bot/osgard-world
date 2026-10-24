@@ -163,6 +163,8 @@ jobs:
           test -s "$output/index.pck"
           node scripts/localize-godot-web-export.mjs "$output"
           node scripts/nebula-r21-mobile-export.mjs "$output"
+          node scripts/test-nebula-r23-input.mjs "$output/index.html"
+          grep -Fq 'nebula-r23-physical-keyboard' "$output/index.html"
           grep -Fq 'viewport-fit=cover' "$output/index.html"
           grep -Fq 'touch-action:none' "$output/index.html"
           grep -Fq 'REMIX ARENA' "$output/index.html"
