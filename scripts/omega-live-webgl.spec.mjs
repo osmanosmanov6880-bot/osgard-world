@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { readFileSync } from 'node:fs'
+import { PNG } from 'pngjs'
 
 // This exercises the REAL public Godot 4.4.1 WebAssembly and WebGL renderer,
 // not just the marketing page or HTML canvas shell. Native v34 separately
@@ -86,6 +87,36 @@ test('authentic released Godot runs WebGL2, paints scene, handles real keyboard/
   expect(frame.subarray(0,8).toString('hex')).toBe('89504e470d0a1a0a')
   expect(frame.length,'rendered world has meaningful nonblank pixels').toBeGreaterThan(9500)
   await testInfo.attach('godot-real-world-initial.png',{body:frame,contentType:'image/png'})
+  // R12 screenshot regression: an authentic pre-fix mobile frame from R11
+  // rendered ONLY rows 312..530 of 844: 74% of the phone stayed black.
+  // Engine.startGame success and a nonempty screenshot were insufficient.
+  if(testInfo.project.name.startsWith('touch')){
+    const png=PNG.sync.read(frame)
+    let alive=0
+    let longest=0
+    let contiguous=0
+    for(let y=0;y<png.height;y++){
+      let seen=0
+      let samples=0
+      for(let x=Math.floor(png.width/4);x<Math.floor(png.width*3/4);x+=7){
+        const off=(y*png.width+x)*4
+        samples+=1
+        if(Math.max(png.data[off],png.data[off+1],png.data[off+2])>25) seen+=1
+      }
+      const filled=seen>=Math.max(2,Math.round(samples*0.15))
+      if(filled){alive+=1;contiguous+=1;longest=Math.max(longest,contiguous)}
+      else contiguous=0
+    }
+    const coverage=alive/png.height
+    await testInfo.attach('omega-portrait-screen-coverage.json',{
+      body:Buffer.from(JSON.stringify({
+        resolution:[png.width,png.height],litRows:alive,coverage,
+        maxContinuousLitFraction:longest/png.height,required:0.68
+      },null,2)),contentType:'application/json'
+    })
+    expect(coverage,'real playable scene must occupy at least 68% of portrait viewport, not a narrow 16:9 strip').toBeGreaterThan(0.68)
+    expect(longest/png.height,'Godot camera should paint an unbroken majority of phone height').toBeGreaterThan(0.62)
+  }
 
   if(testInfo.project.name.startsWith('touch')){
     const bounds=await page.locator('#canvas').boundingBox()

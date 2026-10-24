@@ -7,6 +7,7 @@ const PLAYER_SCENE = preload("res://scripts/player_controller.gd")
 const CAR_SCENE = preload("res://scripts/vehicle_controller.gd")
 const HUD_SCENE = preload("res://scripts/hud.gd")
 const TOUCH_CONTROLS_SCENE = preload("res://scripts/horizon_touch_controls.gd")
+const PORTRAIT_SCREEN = preload("res://scripts/horizon_portrait_screen.gd")
 const PEDESTRIAN_SCENE = preload("res://scripts/pedestrian_agent.gd")
 const TRAFFIC_SCENE = preload("res://scripts/traffic_agent.gd")
 const ROUTER = preload("res://scripts/street_router.gd")
@@ -56,7 +57,15 @@ var police_capture_cooldown := 0.0
 var trial_marker
 var discovery_markers
 
+func _refresh_portrait_fit() -> void:
+	# Expanding the canvas without a matching 2D scale makes touch buttons
+	# microscopic on 390px portrait screens. This preserves desktop gameplay.
+	PORTRAIT_SCREEN.apply_to(get_window())
+
 func _ready() -> void:
+	_refresh_portrait_fit()
+	if OS.has_feature("web"):
+		get_window().size_changed.connect(_refresh_portrait_fit)
 	world = WORLD_SCENE.new()
 	add_child(world)
 	world.update_development()

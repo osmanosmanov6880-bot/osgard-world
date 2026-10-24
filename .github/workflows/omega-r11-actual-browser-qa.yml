@@ -77,7 +77,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for test in v28_touch_controls v29_responsive_layout; do
+          for test in v28_touch_controls v29_responsive_layout v35_portrait_viewport; do
             timeout --signal=TERM --kill-after=5s 40s godot --headless --path godot/empire-omega --script "res://tests/$test.gd"
           done
   browser-spec-preflight:
@@ -106,7 +106,7 @@ jobs:
       - name: Install project and pinned actual Chromium testing framework
         run: |
           npm ci
-          npm install --no-save --package-lock=false @playwright/test@1.58.2
+          npm install --no-save --package-lock=false @playwright/test@1.58.2 pngjs@7.0.0
           npx playwright install --with-deps chromium
       - name: Load real public R10/R11 Godot runtime on desktop and emulated touchscreen
         env:
