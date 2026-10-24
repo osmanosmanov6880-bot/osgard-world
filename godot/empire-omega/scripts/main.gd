@@ -164,7 +164,17 @@ func _sync_trial_marker() -> void:
 	if active.is_empty():
 		trial_marker.visible = false
 	else:
-		trial_marker.show_at(GameState.TRIALS.target(GameState.data))
+		var route: Dictionary = GameState.TRIALS.find_route(str(active.get("id","")))
+		var checkpoint_index: int = int(active.get("step",0))
+		var previous: Vector3 = car.global_position
+		if checkpoint_index > 0:
+			previous = GameState.TRIALS.checkpoint(route,checkpoint_index-1)
+		else:
+			var starting_pair: Variant = active.get("start_point",[])
+			if starting_pair is Array and starting_pair.size() == 2:
+				previous = Vector3(float(starting_pair[0]),1.2,float(starting_pair[1]))
+		var total: int = (route.get("checkpoints",[]) as Array).size()
+		trial_marker.show_at(GameState.TRIALS.target(GameState.data),previous,checkpoint_index+1,total)
 
 func _start_driving_trial() -> void:
 	if interiors.is_inside():

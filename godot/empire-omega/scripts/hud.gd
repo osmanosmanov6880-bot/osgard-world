@@ -2,6 +2,7 @@ extends CanvasLayer
 const HORIZON_LAYOUT = preload("res://scripts/horizon_responsive_layout.gd")
 const COMPACT_TELEMETRY = preload("res://scripts/horizon_compact_telemetry.gd")
 const RACE_NAVIGATOR = preload("res://scripts/horizon_race_navigator.gd")
+const ROAD_GUIDE = preload("res://scripts/horizon_road_guidance.gd")
 ## Russian-first accessible HUD. All controls use the same GameState as the 3D world.
 
 signal strategy_changed(is_open: bool)
@@ -695,6 +696,8 @@ func update_world_context(player_at: Vector3, vehicle_at: Vector3, goal_at: Vect
 		if not session.is_empty():
 			var route: Dictionary = GameState.TRIALS.find_route(str(session.get("id","")))
 			guide = RACE_NAVIGATOR.view(route,session,vehicle_at,vehicle_yaw,GameState.locale,compact_hud)
+			if map != null:
+				guide = ROAD_GUIDE.decorate(guide,vehicle_at,vehicle_yaw,goal_at,map.route,GameState.locale)
 		if not guide.is_empty():
 			mission_label.text = str(guide["title"])
 			mission_distance_label.text = str(guide["details"])
