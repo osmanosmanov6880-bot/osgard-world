@@ -36,6 +36,24 @@ var mission_elapsed: float = 0.0
 var mission_best_seconds: float = -1.0
 var mission_attempts: int = 0
 var mission_feedback: String = "PRESS START MISSION"
+
+# W4: the optional advanced diagnostic challenge keeps the existing training
+# mission fully intact. Every fault is simulated; no physical sensor is used.
+const FAULT_TYPES = ["OPTICAL ALIGNMENT", "COOLING AIRFLOW", "SERVICE INTERLOCK"]
+const FAULT_VIEWS = [2, 3, 1]
+const CHALLENGE_GOALS = ["STOP THE DRIVE", "OPEN THE SERVICE HATCH", "INSPECT THE CORRECT FAULT", "CLOSE THE SERVICE HATCH", "RESTART THE DRIVE"]
+const CHALLENGE_ACTIONS = ["pause", "open", "scan", "close", "resume"]
+const BEST_SCORE_PATH = "user://r135_challenge_record.cfg"
+var challenge_active: bool = false
+var challenge_completed: bool = false
+var challenge_step: int = 0
+var challenge_fault_index: int = 0
+var challenge_attempts: int = 0
+var challenge_elapsed: float = 0.0
+var challenge_errors: int = 0
+var challenge_score: int = 0
+var challenge_best_score: int = 0
+var challenge_feedback: String = "DIAGNOSTICS READY — SELECT CHALLENGE"
 var scene_label: Label3D
 
 func configure(cam: Camera3D, environment: Environment) -> void:
@@ -43,6 +61,7 @@ func configure(cam: Camera3D, environment: Environment) -> void:
     world = environment
     _build_kinematics()
     _build_lighting()
+    _load_challenge_record()
     # Do not load ECO and then HERO at startup. Main.gd selects a preset once.
 
 func _mat(color: Color, metal: float, rough: float, emissive: bool = false) -> StandardMaterial3D:
@@ -206,6 +225,8 @@ func set_quality(index: int) -> void:
     # The Main quality pipeline retains ownership of SSR/SSAO and dynamic resolution.
 
 func start_mission() -> void:
+    challenge_active = false
+    challenge_completed = false
     mission_active = true
     mission_completed = false
     mission_step = 0
@@ -240,16 +261,99 @@ func _mission_event(action: String) -> void:
     else:
         mission_feedback = "CHECKPOINT %d/4 CLEARED" % mission_step
 
+func _load_challenge_record() -> void:
+    var settings := ConfigFile.new()
+    if settings.load(BEST_SCORE_PATH) == OK:
+        challenge_best_score = clampi(int(settings.get_value("progress", "best_score", 0)), 0, 150)
+
+func _save_challenge_record() -> void:
+    var settings := ConfigFile.new()
+    settings.set_value("progress", "best_score", challenge_best_score)
+    var result: Error = settings.save(BEST_SCORE_PATH)
+    if result != OK:
+        push_warning("R135 challenge record could not be saved on this device")
+
+func start_challenge() -> void:
+    mission_active = false
+    mission_completed = false
+    challenge_attempts += 1
+    challenge_fault_index = (challenge_attempts - 1) % FAULT_TYPES.size()
+    challenge_active = true
+    challenge_completed = false
+    challenge_step = 0
+    challenge_elapsed = 0.0
+    challenge_errors = 0
+    challenge_score = 0
+    challenge_feedback = "SIMULATED FAULT FOUND: " + FAULT_TYPES[challenge_fault_index]
+    lid_target = 0.0
+    motion_enabled = true
+
+func challenge_goal() -> String:
+    if challenge_completed:
+        return "DIAGNOSTIC COMPLETE — SCORE %d / 150" % challenge_score
+    if not challenge_active:
+        return "OPTIONAL CHALLENGE: 3 FAULT SCENARIOS"
+    return "FAULT %d/3 | STEP %d/5: %s" % [
+        challenge_fault_index + 1, challenge_step + 1, CHALLENGE_GOALS[challenge_step]
+    ]
+
+func _challenge_penalty(message: String) -> void:
+    if not challenge_active:
+        return
+    challenge_errors += 1
+    challenge_feedback = message + "  /  PENALTY %d" % challenge_errors
+
+func _challenge_event(action: String, selected_view: int = -1) -> void:
+    if not challenge_active or challenge_completed:
+        return
+    if action != CHALLENGE_ACTIONS[challenge_step]:
+        _challenge_penalty("WRONG ORDER — " + CHALLENGE_GOALS[challenge_step])
+        return
+    if action == "scan":
+        if motion_enabled or lid_target < 0.5 or lid_progress < 0.95:
+            _challenge_penalty("WAIT FOR THE STOPPED, OPEN HATCH")
+            return
+        var required_view: int = FAULT_VIEWS[challenge_fault_index]
+        if selected_view != required_view:
+            _challenge_penalty("INCORRECT VIEW — TARGET VIEW %d" % required_view)
+            return
+    challenge_step += 1
+    challenge_feedback = "CHECKPOINT %d/5 CLEARED" % challenge_step
+    if challenge_step == CHALLENGE_GOALS.size():
+        challenge_active = false
+        challenge_completed = true
+        challenge_score = clampi(150 - int(ceil(challenge_elapsed * 3.0)) - 12 * challenge_errors, 0, 150)
+        if challenge_score > challenge_best_score:
+            challenge_best_score = challenge_score
+            _save_challenge_record()
+        challenge_feedback = "FAULT CLEARED — BEST SCORE %d" % challenge_best_score
+
+func scan_diagnostic(view_index: int) -> void:
+    if not challenge_active:
+        challenge_feedback = "START DIAGNOSTICS TO SCAN A TARGET"
+        return
+    _challenge_event("scan", view_index)
+
 func set_motion(active: bool) -> void:
     if motion_enabled == active:
         return
+    # Enforce a genuinely closed hatch before restarting an advanced challenge.
+    if challenge_active and active and (challenge_step != 4 or lid_target > 0.05 or lid_progress > 0.05):
+        _challenge_penalty("SAFETY INTERLOCK: CLOSE THE HATCH FIRST")
+        return
     motion_enabled = active
+    _challenge_event("resume" if active else "pause")
     _mission_event("resume" if active else "pause")
 
 func toggle_access_lid() -> void:
+    if challenge_active and lid_target < 0.5 and motion_enabled:
+        _challenge_penalty("SAFETY INTERLOCK: STOP DRIVE BEFORE OPENING")
+        return
     lid_target = 1.0-lid_target
     manual_inspections += 1
-    _mission_event("open" if lid_target > 0.5 else "close")
+    var action: String = "open" if lid_target > 0.5 else "close"
+    _challenge_event(action)
+    _mission_event(action)
 
 static func smooth_unit(t: float) -> float:
     var x: float = clampf(t,0.0,1.0)
@@ -277,6 +381,8 @@ func _physics_process(delta: float) -> void:
         elapsed += step
     if mission_active:
         mission_elapsed += step
+    if challenge_active:
+        challenge_elapsed += step
     var state: Dictionary = motion_cycle(elapsed)
     if boom != null:
         boom.position.x = -4.55 + 9.12*float(state["travel"])
@@ -293,7 +399,13 @@ func _physics_process(delta: float) -> void:
         motor_speed[i] = move_toward(motor_speed[i],desired,step*7.0)
         fan_rotors[i].rotation.z = fposmod(fan_rotors[i].rotation.z+motor_speed[i]*step,TAU)
     for i in range(status_beacons.size()):
+        status_beacons[i].visible = quality >= 1 or challenge_active or challenge_completed
+        status_beacons[i].light_color = Color(0.23, 0.85, 0.51) if challenge_completed else Color(0.91, 0.40, 0.15)
         status_beacons[i].light_energy = (.17+.13*(.5+.5*sin(elapsed*1.9+float(i)*PI))) if motion_enabled else .09
+    if scene_label != null and (challenge_active or challenge_completed):
+        scene_label.text = "R135 / " + ("SIMULATED DIAGNOSTICS" if challenge_active else "SIMULATED FAULT CLEARED")
+    elif scene_label != null:
+        scene_label.text = "R135 / SIMULATED SERVICE SPINE - NO LIVE DATA"
 
 func summary() -> Dictionary:
     return {"schema":"OSGARD_R135_SCENE_STATE_V1","simulation_only":true,
@@ -304,4 +416,13 @@ func summary() -> Dictionary:
         "mission_active":mission_active,"mission_completed":mission_completed,
         "mission_step":mission_step,"mission_goal":mission_goal(),
         "mission_elapsed":mission_elapsed,"mission_best_seconds":mission_best_seconds,
-        "mission_attempts":mission_attempts,"mission_feedback":mission_feedback}
+        "mission_attempts":mission_attempts,"mission_feedback":mission_feedback,
+        "lid_progress":lid_progress,"lid_target":lid_target,
+        "challenge_active":challenge_active,"challenge_completed":challenge_completed,
+        "challenge_step":challenge_step,"challenge_goal":challenge_goal(),
+        "challenge_fault":FAULT_TYPES[challenge_fault_index],
+        "challenge_fault_index":challenge_fault_index,
+        "challenge_target_view":FAULT_VIEWS[challenge_fault_index],
+        "challenge_elapsed":challenge_elapsed,"challenge_errors":challenge_errors,
+        "challenge_score":challenge_score,"challenge_best_score":challenge_best_score,
+        "challenge_feedback":challenge_feedback}
