@@ -206,17 +206,17 @@ func _setup_environment() -> void:
     env.background_mode = Environment.BG_SKY
     env.sky = sky
     env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
-    env.ambient_light_energy = 0.46
+    env.ambient_light_energy = 0.38
     env.reflected_light_source = Environment.REFLECTION_SOURCE_BG
     env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
     # Compatibility renderer supports subtle glow and post-tonemap grading.
     # Never enable unsupported SSIL, SSR or volumetric fog.
     env.glow_enabled = true
-    env.glow_bloom = 0.10
+    env.glow_bloom = 0.028
     env.adjustment_enabled = true
-    env.adjustment_brightness = 0.99
-    env.adjustment_contrast = 1.04
-    env.adjustment_saturation = 0.93
+    env.adjustment_brightness = 0.86
+    env.adjustment_contrast = 1.01
+    env.adjustment_saturation = 0.90
     env.fog_enabled = true
     env.fog_light_color = Color(0.11,0.18,0.26)
     env.fog_density = 0.00044
@@ -227,14 +227,14 @@ func _setup_environment() -> void:
     sun.name = "OrbitalSun"
     sun.rotation_degrees = Vector3(-34.0,-52.0,0.0)
     sun.light_color = Color(1.0,0.85,0.70)
-    sun.light_energy = 1.82
+    sun.light_energy = 1.05
     sun.shadow_enabled = true
     add_child(sun)
     var fill := DirectionalLight3D.new()
     fill.name = "DeepBlueFill"
     fill.rotation_degrees = Vector3(-18,128,0)
     fill.light_color = Color(0.22,0.48,1.0)
-    fill.light_energy = 0.45
+    fill.light_energy = 0.20
     add_child(fill)
     var deck := MeshInstance3D.new()
     var plane := PlaneMesh.new()
@@ -420,7 +420,7 @@ func _build_sector(center: Vector3, tint: Color, name: String, index: int) -> vo
     var text := Label3D.new()
     text.text = name
     text.font_size = 50
-    text.pixel_size = 0.085
+    text.pixel_size = 0.045
     text.modulate = tint.lightened(0.28)
     text.billboard = BaseMaterial3D.BILLBOARD_ENABLED
     text.position = Vector3(0,111,0)
@@ -755,11 +755,11 @@ func _start_mission() -> void:
     mesh.radius=4.8
     mesh.height=9.6
     sphere.mesh=mesh
-    sphere.material_override=_mat(Color(1.0,0.72,0.28),3.0)
+    sphere.material_override=_mat(Color(1.0,0.72,0.28),0.82)
     beacon.add_child(sphere)
     var lamp := OmniLight3D.new()
     lamp.omni_range=55.0
-    lamp.light_energy=3.0
+    lamp.light_energy=0.75
     lamp.light_color=Color(1.0,0.74,0.32)
     beacon.add_child(lamp)
     add_child(beacon)
