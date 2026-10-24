@@ -2,7 +2,7 @@ name: OSGARD R135 optimized web candidate
 
 on:
   push:
-    branches: [feat/r135-mission-control-20261024, master]
+    branches: [feat/r135-mission-control-20261024, feat/r135-wasm-streaming-20261024, master]
     paths:
       - ".github/workflows/r135-web-optimized.yml"
       - "godot/osgard-r135-standalone/**"
@@ -92,6 +92,20 @@ jobs:
           assert size < 100_000_000, 'Optimized PCK exceeds safe transfer budget'
           PY
 
+      - name: Precompress native WebAssembly for faster mobile delivery
+        shell: bash
+        run: |
+          set -euo pipefail
+          wasm="$RUNNER_TEMP/r135-optimized/index.wasm"
+          test -s "$wasm"
+          gzip -n -9 -k "$wasm"
+          test -s "$wasm.gz"
+          gzip -t "$wasm.gz"
+          raw="$(stat -c %s "$wasm")"
+          packed="$(stat -c %s "$wasm.gz")"
+          printf 'Godot WASM bytes: raw=%s gzip=%s saved=%s\n' "$raw" "$packed" "$((raw-packed))"
+          test "$packed" -lt "$((raw*70/100))"
+
       - name: Test HTML5 export in an actual Chromium browser (SwiftShader WebGL)
         shell: bash
         run: |
@@ -115,7 +129,7 @@ jobs:
           output=Path(os.environ['RUNNER_TEMP'])/'r135-optimized-release'
           output.mkdir(exist_ok=True)
           files=sorted(p for p in root.iterdir() if p.is_file())
-          manifest={'version':'r135-web-mission-20261024','engine':'Godot 4.4.1',
+          manifest={'version':'r135-web-mission-w3-20261024','engine':'Godot 4.4.1',
                     'source_commit':os.environ['GITHUB_SHA'],
                     'game':'OSGARD R135 Service Spine','native_tests':'passed',
                     'webgl_browser_software_smoke':'passed',
@@ -150,10 +164,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          tag=r135-web-mission-20261024
+          tag=r135-web-mission-w3-20261024
           if ! gh release view "$tag" >/dev/null 2>&1; then
             gh release create "$tag" --target "$GITHUB_SHA" \
-              --title "OSGARD R135 — interactive Mission Control WebGL 2" \
+              --title "OSGARD R135 — Mission Control WebGL 2 + precompressed WASM" \
               --notes "Original R135 HERO + ECO assets retained. Playable four-step maintenance mission, 4 inspection cameras, real touch controls, 90MB PCK. Godot native smoke and Chromium desktop/mobile gameplay QA, not a hardware GPU benchmark." \
               --latest=false
           fi
