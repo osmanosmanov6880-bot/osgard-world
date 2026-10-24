@@ -4,7 +4,7 @@ extends RefCounted
 ## No authority over vehicle physics, touch input, saving or mission progress.
 ## FPS is sampled by the real game once per second; no synthetic benchmark claims.
 
-const MODES: Array[String] = ["low", "standard", "cinematic"]
+const MODES = ["low", "standard", "cinematic"]
 const WARMUP_SECONDS: float = 6.0
 const DOWN_FPS: float = 27.0
 const UP_FPS: float = 45.0
