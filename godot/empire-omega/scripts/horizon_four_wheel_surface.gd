@@ -28,12 +28,14 @@ static func probe(body: CollisionObject3D) -> Dictionary:
 	var travels: Array[float] = []
 	var grounded: Array[bool] = []
 	var support_normals: Array[Vector3] = []
+	var contact_points: Array[Vector3] = []
 	if body == null or not body.is_inside_tree():
 		for i in range(4):
 			travels.append(MAX_DROOP)
 			grounded.append(false)
 			support_normals.append(Vector3.UP)
-		return {"travel":travels,"grounded":grounded,"normals":support_normals,"count":0}
+			contact_points.append(Vector3.ZERO)
+		return {"travel":travels,"grounded":grounded,"normals":support_normals,"points":contact_points,"count":0}
 	var state: PhysicsDirectSpaceState3D = body.get_world_3d().direct_space_state
 	var supported := 0
 	for axle in _wheel_origins():
@@ -49,13 +51,15 @@ static func probe(body: CollisionObject3D) -> Dictionary:
 		grounded.append(is_support)
 		support_normals.append(normal if is_support else Vector3.UP)
 		if is_support:
+			contact_points.append(impact["position"])
 			supported += 1
 			var height: float = (impact["position"] as Vector3).y
 			travels.append(clampf(height+WHEEL_RADIUS-(origin.y-0.28),MAX_DROOP,MAX_COMPRESSION))
 		else:
+			contact_points.append(origin-Vector3(0.0,WHEEL_RADIUS,0.0))
 			# Wheel droops when unsupported instead of looking fully compressed.
 			travels.append(MAX_DROOP)
-	return {"travel":travels,"grounded":grounded,"normals":support_normals,"count":supported}
+	return {"travel":travels,"grounded":grounded,"normals":support_normals,"points":contact_points,"count":supported}
 
 static func support_ratio(grounded: Array[bool]) -> float:
 	if grounded.size()!=4:
