@@ -16,6 +16,11 @@ def reject(reason: str):
 
 
 def stage(archive: Path, manifest_path: Path, destination: Path):
+    # Pin the independently downloaded and verified W5 manifest bytes.
+    # The manifest alone is not a signature; this exact digest is trusted.
+    expected_sha256 = "b3e6b721cce1f4e764117cea59e190aaf74b669a26399284b9625bc30cde3219"
+    if hashlib.sha256(manifest_path.read_bytes()).hexdigest() != expected_sha256:
+        reject("W5 manifest digest differs from independently verified build")
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     if manifest.get("version") != "r135-web-visual-diagnostics-w5-20261024":
         reject("wrong release tag")
