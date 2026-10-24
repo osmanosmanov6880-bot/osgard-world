@@ -112,3 +112,28 @@
 
 
 .osa-home-media-hub{max-width:1440px;margin:0 auto clamp(80px,9vw,124px);padding:clamp(22px,3vw,36px);display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:24px;border:1px solid rgba(221,193,139,.27);border-radius:10px;background:linear-gradient(110deg,rgba(24,34,49,.9),rgba(10,15,24,.78))}.osa-home-media-icon{display:grid;place-items:center;width:52px;height:52px;border:1px solid rgba(221,193,139,.32);border-radius:12px;color:var(--osa-gold);background:rgba(221,193,139,.07)}.osa-home-media-copy .osa-home-eyebrow{margin-bottom:8px}.osa-home-media-copy h2{margin:0;font:500 clamp(22px,2.8vw,32px)/1.15 'Jost',sans-serif;letter-spacing:-.035em}.osa-home-media-copy>p:last-child{max-width:760px;margin:10px 0 0;color:var(--osa-muted);font-size:13px;line-height:1.75}.osa-home-media-hub .osa-home-button{white-space:nowrap}@media(max-width:760px){.osa-home-media-hub{grid-template-columns:auto minmax(0,1fr);gap:16px}.osa-home-media-hub>.osa-home-button{grid-column:1/-1;justify-self:stretch}.osa-home-media-icon{width:44px;height:44px}}
+/* OSA Intelligence: dark editorial evidence instrument, paired but distinct from OSGARD */
+.osa-home{
+  --osa-bg:#050914;--osa-panel:rgba(12,20,34,.84);--osa-line:rgba(174,192,219,.16);
+  --osa-muted:#a6b2c4;--osa-text:#eef2f8;--osa-accent:#bd4253;--osa-gold:#bd4253;
+  background:
+   radial-gradient(ellipse at 77% 20%,rgba(54,88,132,.19),transparent 36%),
+   linear-gradient(135deg,#050914 0%,#091222 58%,#050914 100%);
+  font-family:'DM Sans',Inter,ui-sans-serif,system-ui,sans-serif;
+}
+.osa-home-header{border-color:rgba(174,192,219,.18)}
+.osa-home-brand-mark{border-radius:4px;border-color:rgba(189,66,83,.55);background:linear-gradient(145deg,rgba(69,100,142,.25),rgba(189,66,83,.08));color:#d65b6b;box-shadow:0 0 30px rgba(189,66,83,.12)}
+.osa-home-brand strong,.osa-home-copy h1,.osa-home-section h2,.osa-home-card h3{font-family:Manrope,'DM Sans',sans-serif;letter-spacing:-.045em}
+.osa-home-eyebrow span,.osa-home-status i{background:#bd4253;box-shadow:0 0 13px rgba(189,66,83,.6)}
+.osa-home-button-primary{background:#8f1f30!important;border-color:#bd4253!important;color:#fff!important;box-shadow:0 12px 34px rgba(189,66,83,.2)!important}
+.osa-home-button-primary:hover{background:#a92b3d!important}
+.osa-home-button-secondary,.osa-home-language{border-color:rgba(189,66,83,.38)!important}
+.osa-home-art{background:radial-gradient(ellipse at 50% 50%,rgba(37,68,108,.26),rgba(6,13,25,.62) 68%);border-color:rgba(150,177,210,.17)}
+.osa-home-core{border-color:rgba(189,66,83,.58);box-shadow:0 0 44px rgba(189,66,83,.15),0 24px 60px #0008}
+.osa-home-float,.osa-home-art-note{background:rgba(8,17,31,.88);border-color:rgba(167,187,216,.24);backdrop-filter:blur(14px)}
+.osa-home-float-evidence{border-color:rgba(189,66,83,.55)}
+.osa-home-orbit{border-color:rgba(189,66,83,.3)}
+.osa-home-card,.osa-home-proof-card{background:linear-gradient(145deg,rgba(18,30,48,.9),rgba(7,14,26,.9));border-color:rgba(153,178,211,.17)}
+.osa-home-card:hover{border-color:rgba(189,66,83,.62);box-shadow:0 22px 55px rgba(0,0,0,.3),0 0 30px rgba(189,66,83,.1)}
+.osa-home a:focus-visible,.osa-home button:focus-visible{outline:2px solid #e17786;outline-offset:4px}
+@media(prefers-reduced-motion:reduce){.osa-home *,.osa-home *::before,.osa-home *::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
