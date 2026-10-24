@@ -498,6 +498,10 @@ jobs:
         env:
           OSGARD_BASE_URL: https://osgard.world
         run: node scripts/games-aaa-wave02-production.mjs
+      - name: Verify real game session controls and last-world recovery are published
+        env:
+          OSGARD_BASE_URL: https://osgard.world
+        run: node scripts/games-aaa-wave03-production.mjs
       - name: Verify published Unity runtime and real missing-resource responses
         env:
           OSGARD_BASE_URL: https://osgard.world
