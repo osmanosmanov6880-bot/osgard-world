@@ -758,23 +758,55 @@ func _run() -> void:
         monitor_r11.r36_launcher.offset_right <= 509.0 and
         monitor_r11.r36_launcher.offset_top >= 60.0,
         "R36 mobile FPS launcher is hidden under landscape camera notch"):return
-    if not check(monitor_r11.overlay.offset_right <
+    if not check((monitor_r11.overlay.offset_right <
         touch_r21.button_centres["CAMERA"].x - touch_r21.base_radius * 0.80 or
-        not touch_r21.enabled,
-        "R36 performance panel blocks landscape camera touch control"):return
+        not touch_r21.enabled) and
+        monitor_r11.r38_mode_button.get_parent() == monitor_r11.r38_column,
+        "R38 landscape quality control overlays live CAMERA hit target"):return
     monitor_r11.r36_launcher.pressed.emit()
     if not check(monitor_r11.overlay.visible and
         not monitor_r11.r36_launcher.visible and
         monitor_r11.r36_command_row.visible,
         "R36 mobile FPS launcher does not open live GPU/CPU metrics"):return
+    # R38: genuine on-screen mode cycles affect all real 3D quality layers,
+    # without F3/F11. The four-cycle returns to real AUTO hysteresis.
+    world._set_graphics_quality(1)
+    adaptive_r12.set_auto(true)
+    monitor_r11.set_r38_auto_enabled(true)
+    if not check(monitor_r11.r38_mode_button.text == "АВТО",
+        "R38 touch panel must expose the real AUTO profile"):return
+    var r38_states: Array[Dictionary] = [
+        {"mode": 0, "auto": false, "label": "MAX"},
+        {"mode": 1, "auto": false, "label": "HIGH"},
+        {"mode": 2, "auto": false, "label": "ECO"},
+        {"mode": 1, "auto": true, "label": "АВТО"}
+    ]
+    for wanted in r38_states:
+        monitor_r11.r38_mode_button.pressed.emit()
+        if not check(world.graphics_quality == wanted["mode"] and
+            adaptive_r12.auto_enabled == wanted["auto"] and
+            monitor_r11.r38_mode_button.text == wanted["label"] and
+            monitor_r11.quality_mode == wanted["mode"],
+            "R38 mobile quality toggle did not change real 3D scene"):return
+    monitor_r11.r38_mode_button.pressed.emit() # AUTO -> MAX
+    if not check(world.graphics_quality == 0 and
+        not adaptive_r12.auto_enabled,
+        "R38 manual MAX profile did not disable automatic switching"):return
     monitor_r11.r36_start_button.pressed.emit()
     if not check(monitor_r11.benchmarking and
         monitor_r11.r36_start_button.disabled and
+        monitor_r11.r38_mode_button.disabled and
         monitor_r11.last_report.is_empty(),
-        "R36 phone benchmark did not begin a fresh 20-second measurement"):return
+        "R38 on-phone 20-second FPS benchmark did not lock graphics preset"):return
+    monitor_r11.r38_mode_button.pressed.emit() # programmatic request while locked
+    if not check(world.graphics_quality == 0 and
+        not adaptive_r12.auto_enabled and
+        not monitor_r11.profile_switched_during_test,
+        "R38 graphics preset changed during benchmark"):return
     # End only the native UI regression (not an actual performance sample).
     monitor_r11.benchmarking = false
     monitor_r11.r36_start_button.disabled = false
+    monitor_r11.r38_mode_button.disabled = false
     monitor_r11.last_timestamp_us = 0
     monitor_r11.last_report = {
         "schema": "R36_CI_EXPORT_FIXTURE_NOT_HARDWARE_MEASUREMENT",
@@ -804,15 +836,20 @@ func _run() -> void:
         monitor_r11.r36_launcher.offset_right <
         touch_r21.button_centres["CRUISE"].x - touch_r21.base_radius * 0.8 and
         monitor_r11.overlay.offset_bottom <
-        touch_r21.button_centres["CRUISE"].y - touch_r21.base_radius * 0.8,
-        "R36 compact phone FPS button overlaps start-flight control"):return
+        touch_r21.button_centres["CRUISE"].y - touch_r21.base_radius * 0.8 and
+        monitor_r11.r38_mode_button.get_parent() == monitor_r11.r36_command_row,
+        "R38 compact portrait quality button overlaps start-flight control"):return
     monitor_r11.configure_mobile(false, touch_r21,
         Vector4.ZERO, Vector2(1280, 720))
+    adaptive_r12.set_auto(false)
+    world._set_graphics_quality(0)
+    monitor_r11.set_r38_auto_enabled(false)
     touch_r21.set_safe_insets(Vector4.ZERO)
     touch_r21.force_mobile_for_tests(false)
     if not check(not monitor_r11.r36_launcher.visible,
         "R36 phone FPS button leaked into desktop HUD"):return
     print("NEBULA_R36_REAL_DEVICE_UI_SUCCESS phone_launcher=1 local_json=1 benchmark_synthetic=0")
+    print("NEBULA_R38_MOBILE_QUALITY_SUCCESS modes=4 benchmark_lock=true real_scene=true")
     var r14 = world.get_node_or_null("R14_SculptedCinematicPorts")
     if not check(r14 != null, "R14 cinematic ports not loaded into real game scene"):return
     if not check(r14.site_count == 6 and r14.sculpted_decks == 6,

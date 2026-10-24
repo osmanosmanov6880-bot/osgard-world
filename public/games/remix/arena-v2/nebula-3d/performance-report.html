@@ -25,7 +25,7 @@ button:disabled{opacity:.42;cursor:not-allowed}
 button.secondary{background:transparent;color:#ddd9d1;border-color:#59616a}
 button:focus-visible,.upload-label:focus-within,a:focus-visible{outline:3px solid #d3c0a0;outline-offset:4px}
 input[type=file]{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden}
-.field-group{display:flex;align-items:flex-start;gap:15px;flex-wrap:wrap;margin:16px 0}.field-group label{display:flex;flex-direction:column;gap:7px;font-weight:650}.field-group input{min-height:44px;padding:10px 12px;border-radius:8px;border:1px solid #59616a;background:#10151b;color:#f4f0e7;font:inherit;min-width:min(310px,80vw)}.field-group input:focus-visible{outline:2px solid #d3c0a0;outline-offset:2px}.field-group small{max-width:440px;align-self:center}.summary-note{color:#abb8bf;margin:8px 0 0}
+.field-group{display:flex;align-items:flex-start;gap:15px;flex-wrap:wrap;margin:16px 0}.field-group label{display:flex;flex-direction:column;gap:7px;font-weight:650}.field-group input,.field-group select{min-height:44px;padding:10px 12px;border-radius:8px;border:1px solid #59616a;background:#10151b;color:#f4f0e7;font:inherit;min-width:min(310px,80vw)}.field-group input:focus-visible,.field-group select:focus-visible{outline:2px solid #d3c0a0;outline-offset:2px}.field-group small{max-width:440px;align-self:center}.summary-note{color:#abb8bf;margin:8px 0 0}
 .stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:16px}
 .stat{padding:18px 20px;background:#222831;border-radius:10px}
 .value{display:block;font-size:1.75rem;font-variant-numeric:tabular-nums;color:#e7d2af}
@@ -57,7 +57,7 @@ small{font-size:.77rem;color:#aeb5bd}
 <h2 id="instructions">Как собрать результаты</h2>
 <ol><li>Откройте <a href="./">NEBULA 3D</a> на настоящем телефоне и нажмите <strong>FPS</strong>.</li><li>Если в игре уже доступен мобильный переключатель R38, выберите в панели FPS <strong>MAX</strong>, <strong>HIGH</strong> или <strong>ECO</strong> (не АВТО). Нажмите <strong>20 С</strong>, пролетите одинаковый маршрут и сохраните <strong>JSON</strong>.</li><li>Для каждого профиля и ориентации проведите <strong>три отдельных замера</strong> на настоящем телефоне. Вернитесь сюда и загрузите файлы одним набором для каждого устройства.</li></ol>
 <p class="muted"><strong>Требование к мобильной версии:</strong> если в панели FPS нет кнопки MAX/HIGH/ECO, R38 на вашем устройстве ещё не опубликован. До его появления невозможно корректно сравнить фиксированные графические профили с телефона; не считайте АВТО-отчёт измерением MAX/HIGH/ECO.</p>
-<div class="field-group"><label for="device-label">Устройство / партия испытаний<input id="device-label" type="text" maxlength="48" placeholder="Например: Android A, Chrome" autocomplete="off"></label><small>Введите свою метку перед выбором файлов. Она нужна только для группировки; по умолчанию каждая загрузка получает отдельный номер партии. Не указывайте личные данные.</small></div>
+<div class="field-group"><label for="device-label">Устройство / партия испытаний<input id="device-label" type="text" maxlength="48" placeholder="Например: Android A, Chrome" autocomplete="off"></label><label for="build-role">Версия измерения<select id="build-role"><option value="R38">R38 · до оптимизации</option><option value="R40">R40 · кандидат</option></select></label><small>Введите свою метку перед выбором файлов. Она нужна только для группировки; по умолчанию каждая загрузка получает отдельный номер партии. Не указывайте личные данные.</small></div>
 <div class="actions"><label class="upload-label" for="reports">Выбрать JSON-отчёты<input id="reports" type="file" accept=".json,application/json" multiple></label><button id="export" class="secondary" type="button" disabled>Сохранить сравнение CSV</button><button id="clear" class="secondary" type="button" disabled>Очистить</button></div>
 <p id="status" aria-live="polite">Отчёты ещё не загружены.</p>
 <ul id="rejected" aria-live="polite"></ul>
@@ -71,10 +71,15 @@ small{font-size:.77rem;color:#aeb5bd}
 <div class="panel">
 <h2 id="results-title">Сравнение игровых измерений</h2>
 <p class="muted">Одинаковые числовые критерии для каждого профиля. Отчёты программного GPU или ненадёжного теста не подтверждают производительность телефона.</p>
-<div class="table-scroll"><table><thead><tr><th scope="col">Файл</th><th scope="col">Профиль</th><th scope="col">FPS средн.</th><th scope="col">1% Low</th><th scope="col">P95 мс</th><th scope="col">P99 мс</th><th scope="col">DOM→Godot мс</th><th scope="col">Оценка</th></tr></thead><tbody id="rows"></tbody></table></div>
+<div class="table-scroll"><table><thead><tr><th scope="col">Файл</th><th scope="col">Сборка</th><th scope="col">Профиль</th><th scope="col">FPS средн.</th><th scope="col">1% Low</th><th scope="col">P95 мс</th><th scope="col">P99 мс</th><th scope="col">DOM→Godot мс</th><th scope="col">Оценка</th></tr></thead><tbody id="rows"></tbody></table></div>
 <div class="note">Оценка — сравнение с целевыми значениями (MAX: 60 FPS / P95 ≤20 мс; HIGH: 40 / ≤30 мс; ECO: 30 / ≤35 мс). Это не сертификация устройства. Идентификатор GPU в браузере может быть замаскирован. Задержка DOM→Godot — не время от пальца до изображения.</div>
 </div>
-<div class="panel" id="r39-panel"><h2>R39 / повторяемость на устройствах</h2><p class="muted">Группировка: метка устройства + разрешение + профиль. Требуется не менее 3 надёжных независимых измерений (с различным временем исходного замера) на одну группу. Медиана снижает влияние единичного удачного запуска; разброс FPS свыше 20% блокирует вывод о стабильности. Это проверка отчётов, а не доказательство модели телефона или аппаратная сертификация.</p><div class="table-scroll"><table><thead><tr><th scope="col">Устройство</th><th scope="col">Размер</th><th scope="col">Режим</th><th scope="col">Надёжных / всего</th><th scope="col">Медиана FPS</th><th scope="col">Медиана P95 мс</th><th scope="col">Разброс FPS</th><th scope="col">Вывод</th></tr></thead><tbody id="r39-rows"></tbody></table></div><p class="summary-note" id="r39-status" aria-live="polite"></p></div>
+<div class="panel" id="r39-panel"><h2>R39 / повторяемость на устройствах</h2><p class="muted">Группировка: метка устройства + разрешение + профиль. Требуется не менее 3 надёжных независимых измерений (с различным временем исходного замера) на одну группу. Медиана снижает влияние единичного удачного запуска; разброс FPS свыше 20% блокирует вывод о стабильности. Это проверка отчётов, а не доказательство модели телефона или аппаратная сертификация.</p><div class="table-scroll"><table><thead><tr><th scope="col">Устройство</th><th scope="col">Сборка</th><th scope="col">Размер</th><th scope="col">Режим</th><th scope="col">Надёжных / всего</th><th scope="col">Медиана FPS</th><th scope="col">Медиана P95 мс</th><th scope="col">Разброс FPS</th><th scope="col">Вывод</th></tr></thead><tbody id="r39-rows"></tbody></table></div><p class="summary-note" id="r39-status" aria-live="polite"></p></div>
+<div class="panel" id="r40-panel">
+<h2>R40 / сравнение до и после оптимизации</h2>
+<p class="muted">Для одного физического телефона используйте одну метку устройства, одинаковый размер экрана и один ручной профиль. Загружайте три или более независимых отчёта для R38 и для кандидата R40, меняя «Версия измерения» перед каждой загрузкой. Таблица сравнивает медианы и отвергает один и тот же JSON, ошибочно отмеченный одновременно как R38 и R40; это не доказательство причинности или аппаратная сертификация.</p>
+<div class="table-scroll"><table><thead><tr><th scope="col">Устройство</th><th scope="col">Размер</th><th scope="col">Режим</th><th scope="col">R38 FPS</th><th scope="col">R40 FPS</th><th scope="col">Изменение FPS</th><th scope="col">Изменение P95</th><th scope="col">Вывод</th></tr></thead><tbody id="r40-rows"></tbody></table></div>
+<p class="summary-note" id="r40-status" aria-live="polite"></p></div>
 </section>
 <p class="note">Конфиденциальность: страница не использует fetch, XHR, аналитику, cookies или внешние скрипты. Имена выбранных файлов отображаются локально и попадут в CSV только после вашего нажатия. Оригинальные JSON на сервер не загружаются.</p>
 </main>
@@ -83,7 +88,7 @@ small{font-size:.77rem;color:#aeb5bd}
 'use strict';
 const thresholds = [{name:'MAX',fps:60,p95:20},{name:'HIGH',fps:40,p95:30},{name:'ECO',fps:30,p95:35}];
 const safeName = name => String(name || 'report.json').replace(/[\r\n\t]/g,' ').slice(0,80);
-function parseReport(data, filename, deviceLabel = 'Партия 1') {
+function parseReport(data, filename, deviceLabel = 'Партия 1', variant = 'R38') {
   if (!data || typeof data !== 'object' || Array.isArray(data) ||
       data.schema !== 'NEBULA_R12_HARDWARE_BENCHMARK') {
     throw new Error('Неверная схема: нужен NEBULA_R12_HARDWARE_BENCHMARK');
@@ -95,6 +100,7 @@ function parseReport(data, filename, deviceLabel = 'Партия 1') {
     }
     return value;
   };
+  if (variant !== 'R38' && variant !== 'R40') throw new Error('Неизвестная версия замера');
   const profile = data.quality;
   if (!Number.isInteger(profile) || profile < 0 || profile > 2) {
     throw new Error('Неизвестный профиль графики');
@@ -123,7 +129,7 @@ function parseReport(data, filename, deviceLabel = 'Партия 1') {
   const device=safeName(deviceLabel).slice(0,48)||'Партия 1';
   const stamp=typeof data.date_unix==='number'&&Number.isFinite(data.date_unix)&&
     data.date_unix>0 ? data.date_unix : null;
-  return {name:safeName(filename),device,resolution,stamp,profile:target.name,avg,low,p95,p99,
+  return {name:safeName(filename),device,variant,resolution,stamp,profile:target.name,avg,low,p95,p99,
     touch,status,validTest,software,targetFps:target.fps,targetP95:target.p95};
 }
 function median(numbers) {
@@ -136,9 +142,9 @@ function median(numbers) {
 function summarizeRuns(records) {
   const groups=new Map();
   for (const row of records) {
-    const key=JSON.stringify([row.device,row.resolution,row.profile]);
+    const key=JSON.stringify([row.device,row.variant||'R38',row.resolution,row.profile]);
     if (!groups.has(key)) groups.set(key,{
-      device:row.device,resolution:row.resolution,profile:row.profile,
+      device:row.device,variant:row.variant||'R38',resolution:row.resolution,profile:row.profile,
       total:0,duplicates:0,runStamps:new Set(),usable:[]});
     const group=groups.get(key);
     group.total++;
@@ -161,9 +167,42 @@ function summarizeRuns(records) {
       status=spread>20?'НЕСТАБИЛЬНО':medianFps>=target.fps&&medianP95<=target.p95 ?
         'ЦЕЛЬ':'НИЖЕ ЦЕЛИ';
     }
-    return {device:group.device,resolution:group.resolution,profile:group.profile,
+    return {device:group.device,variant:group.variant,resolution:group.resolution,profile:group.profile,
       total:group.total,duplicates:group.duplicates,valid:accepted.length,
-      medianFps,medianP95,spread,status};
+      timestamps:accepted.map(x=>x.stamp),medianFps,medianP95,spread,status};
+  });
+}
+function compareBuilds(summary) {
+  const groups=new Map();
+  for (const g of summary) {
+    const key=JSON.stringify([g.device,g.resolution,g.profile]);
+    if (!groups.has(key)) groups.set(key,{
+      device:g.device,resolution:g.resolution,profile:g.profile,
+      baseline:null,candidate:null});
+    const paired=groups.get(key);
+    if (g.variant==='R40') paired.candidate=g;
+    else paired.baseline=g;
+  }
+  return [...groups.values()].map(g=>{
+    const a=g.baseline,b=g.candidate;
+    let deltaFps=null,deltaP95=null,status='НЕ ХВАТАЕТ ДАННЫХ';
+    if (a && b && a.timestamps.some(stamp=>b.timestamps.includes(stamp))) {
+      // One original JSON may not certify both baseline and candidate.
+      status='ПОВТОРНЫЕ JSON';
+    } else if (a && b && (a.status==='НЕСТАБИЛЬНО'||b.status==='НЕСТАБИЛЬНО')) {
+      status='НЕСТАБИЛЬНО';
+    } else if (a && b && a.valid>=3 && b.valid>=3 &&
+        a.medianFps>0 && a.medianP95>0 &&
+        a.status!=='НЕ ХВАТАЕТ ДАННЫХ' &&
+        b.status!=='НЕ ХВАТАЕТ ДАННЫХ') {
+      deltaFps=(b.medianFps-a.medianFps)/a.medianFps*100;
+      // Positive P95 change denotes fewer milliseconds in the slow-frame tail.
+      deltaP95=(a.medianP95-b.medianP95)/a.medianP95*100;
+      status=deltaFps < -5 || deltaP95 < -5 ? 'ХУЖЕ' :
+        deltaFps > 5 || deltaP95 > 5 ? 'ЛУЧШЕ' : 'БЕЗ ЯВНОГО СДВИГА';
+    }
+    return {...g,deltaFps,deltaP95,status,
+      baselineFps:a?.medianFps??null,candidateFps:b?.medianFps??null};
   });
 }
 function csvCell(s) {
@@ -172,12 +211,12 @@ function csvCell(s) {
   return '"' + escaped.replace(/"/g,'""') + '"';
 }
 function makeCSV(rows) {
-  const cols=['Устройство','Размер','Файл','Профиль','FPS','1% Low','P95 мс','P99 мс',
+  const cols=['Устройство','Сборка','Размер','Файл','Профиль','FPS','1% Low','P95 мс','P99 мс',
     'DOM→Godot мс','Оценка'];
-  return [cols,...rows.map(x=>[x.device,x.resolution,x.name,x.profile,x.avg,x.low,x.p95,x.p99,
+  return [cols,...rows.map(x=>[x.device,x.variant||'R38',x.resolution,x.name,x.profile,x.avg,x.low,x.p95,x.p99,
     x.touch,x.status])].map(row=>row.map(csvCell).join(',')).join('\r\n');
 }
-window.NebulaR37 = Object.freeze({parseReport,makeCSV,thresholds,summarizeRuns});
+window.NebulaR37 = Object.freeze({parseReport,makeCSV,thresholds,summarizeRuns,compareBuilds});
 const uploader=document.getElementById('reports');
 if (!uploader) return;
 const tbody=document.getElementById('rows'),rejectList=document.getElementById('rejected');
@@ -189,7 +228,7 @@ function render() {
   tbody.replaceChildren();
   for(const r of rows) {
     const tr=document.createElement('tr');
-    const values=[r.name,r.profile,r.avg.toFixed(1),r.low.toFixed(1),
+    const values=[r.name,r.variant||'R38',r.profile,r.avg.toFixed(1),r.low.toFixed(1),
       r.p95.toFixed(1),r.p99.toFixed(1),
       r.touch === null ? '—' : r.touch.toFixed(1),r.status];
     for(const [i,v] of values.entries()) {
@@ -210,7 +249,7 @@ function render() {
   reviewBody.replaceChildren();
   for (const g of summary) {
     const tr=document.createElement('tr');
-    const cells=[g.device,g.resolution,g.profile,`${g.valid} / ${g.total}`,
+    const cells=[g.device,g.variant,g.resolution,g.profile,`${g.valid} / ${g.total}`,
       g.medianFps===null?'—':g.medianFps.toFixed(1),
       g.medianP95===null?'—':g.medianP95.toFixed(1),
       g.spread===null?'—':g.spread.toFixed(1)+'%',g.status];
@@ -230,6 +269,32 @@ function render() {
   document.getElementById('r39-status').textContent=summary.length ?
     `Групп: ${summary.length}. С 3+ надёжными замерами: ${summary.filter(x=>x.valid>=3).length}. Стабильно достигли цели: ${summary.filter(x=>x.status==='ЦЕЛЬ').length}. Повторных JSON: ${summary.reduce((n,g)=>n+g.duplicates,0)}.` :
     'Для вывода о повторяемости загрузите минимум три настоящих замера для каждого профиля и ориентации.';
+  const comparisons=compareBuilds(summary);
+  const abBody=document.getElementById('r40-rows');
+  abBody.replaceChildren();
+  for (const p of comparisons) {
+    const tr=document.createElement('tr');
+    const pct=v=>v===null?'—':(v>0?'+':'')+v.toFixed(1)+'%';
+    const cells=[p.device,p.resolution,p.profile,
+      p.baselineFps===null?'—':p.baselineFps.toFixed(1),
+      p.candidateFps===null?'—':p.candidateFps.toFixed(1),
+      pct(p.deltaFps),pct(p.deltaP95),p.status];
+    for (const [i,v] of cells.entries()) {
+      const td=document.createElement('td');
+      if (i===cells.length-1) {
+        const mark=document.createElement('span');
+        mark.className='tag '+(p.status==='ЛУЧШЕ'?'good':
+          p.status==='ХУЖЕ'?'bad':'neutral');
+        mark.textContent=v;
+        td.appendChild(mark);
+      } else td.textContent=v;
+      tr.appendChild(td);
+    }
+    abBody.appendChild(tr);
+  }
+  document.getElementById('r40-status').textContent=comparisons.length ?
+    `Пар устройств/профилей: ${comparisons.length}. С обеими надёжными сериями: ${comparisons.filter(x=>x.deltaFps!==null).length}. Без аппаратных A/B-данных эффект оптимизации не подтверждён.` :
+    'Загрузите R38 и R40 для одного устройства, ориентации и профиля.';
   results.hidden=rows.length===0;
   exportBtn.disabled=rows.length===0; clearBtn.disabled=rows.length===0;
   document.getElementById('count').textContent=String(rows.length);
@@ -243,11 +308,12 @@ uploader.addEventListener('change',async()=>{
   const incoming=Array.from(uploader.files||[]).slice(0,100);
   const typed=document.getElementById('device-label').value.trim();
   const device=typed ? typed.slice(0,48) : 'Партия '+(++batchNumber);
+  const variant=document.getElementById('build-role').value;
   for(const file of incoming) {
     try {
       if (rows.length>=100) throw new Error('Лимит 100 отчётов');
       if (file.size > 256000) throw new Error('Файл больше 256 КБ');
-      rows.push(parseReport(JSON.parse(await file.text()),file.name,device));
+      rows.push(parseReport(JSON.parse(await file.text()),file.name,device,variant));
     } catch(e) {
       const li=document.createElement('li');
       li.textContent=safeName(file.name)+': '+String(e.message).slice(0,160);
@@ -261,7 +327,7 @@ clearBtn.addEventListener('click',()=>{rows=[];batchNumber=0;rejectList.replaceC
 exportBtn.addEventListener('click',()=>{
   const blob=new Blob(['\uFEFF'+makeCSV(rows)],{type:'text/csv;charset=utf-8'});
   const url=URL.createObjectURL(blob),a=document.createElement('a');
-  a.href=url;a.download='nebula-r39-device-repeatability.csv';
+  a.href=url;a.download='nebula-r40-ab-device-comparison.csv';
   document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
 });
 render();
