@@ -220,6 +220,7 @@ func _ready() -> void:
     r21_touch.name = "R21_ResponsiveMobileController"
     hud_canvas.add_child(r21_touch)
     r21_touch.player_ship = ship
+    r21_touch.ui_font = r21_ui_font
     r21_touch.rocket_requested.connect(_r21_launch_missile)
     r21_touch.hangar_requested.connect(_r21_toggle_hangar)
     r21_touch.camera_requested.connect(_r21_cycle_camera)
