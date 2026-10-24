@@ -282,6 +282,32 @@ try {
       s => s?.r36_perf_visible === true && s.r36_perf_active === false &&
         s.r36_benchmark_button_x > 0 && s.r36_benchmark_button_y > 0,
       30000);
+    // Godot Containers lay out on subsequent engine frames. The first
+    // telemetry snapshot after FPS becomes visible can report a provisional
+    // button center (observed y=126.5), then the actual center moves to
+    // y=92.5. Wait for consecutive REAL engine sample updates with stable
+    // control geometry; never tap provisional coordinates.
+    let lastLayoutSample = -1;
+    let lastLayoutKey = '';
+    let stableLayoutFrames = 0;
+    const settled = await expectTelemetry(
+      'R36 performance panel Godot button positions fully settle',
+      s => {
+        if (!s?.r36_perf_visible || s.r36_perf_active ||
+            s.r36_benchmark_button_x <= 0 || s.r36_benchmark_button_y <= 0) {
+          return false;
+        }
+        if (s.samples !== lastLayoutSample) {
+          const key = [
+            s.r36_benchmark_button_x, s.r36_benchmark_button_y,
+            s.r38_mode_button_x || 0, s.r38_mode_button_y || 0
+          ].map(v => Number(v).toFixed(1)).join(',');
+          stableLayoutFrames = key === lastLayoutKey ? stableLayoutFrames + 1 : 0;
+          lastLayoutKey = key;
+          lastLayoutSample = s.samples;
+        }
+        return s.samples >= open.samples + 3 && stableLayoutFrames >= 2;
+      }, 30000);
     // CDP touch injection can be offset from the DOM event in Chromium's
     // mobile emulation after repeated viewport rotations (observed +34px).
     // Calibrate from the REAL browser event that successfully opened FPS.
@@ -324,8 +350,8 @@ try {
       await send('touchEnd', []);
     };
 
-    const runBenchmark = await uiPoint(open.r36_benchmark_button_x,
-      open.r36_benchmark_button_y, 8);
+    const runBenchmark = await uiPoint(settled.r36_benchmark_button_x,
+      settled.r36_benchmark_button_y, 8);
     await calibratedUI(runBenchmark);
     await expectTelemetry('R36 real mobile 20-second FPS benchmark starts',
       s => s?.r36_perf_active === true && s.touch_count === 0, 30000);
