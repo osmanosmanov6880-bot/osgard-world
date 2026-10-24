@@ -34,6 +34,14 @@ details{margin-top:9px;border-top:1px solid #304253;padding-top:9px}summary{curs
 footer{margin:40px 0 0;color:#8fa6b9;font-size:12px}
 [hidden]{display:none!important}
 @media(max-width:650px){.games{grid-template-columns:1fr}.metrics{gap:6px}.metric{padding:11px}.wave{grid-template-columns:39px 1fr;padding:12px}.num{height:38px}.shell{padding:18px}}
+.game{overflow:hidden}
+.game .game-visual{display:block;position:relative;aspect-ratio:16/9;margin:-18px -18px 16px;background:#081521;overflow:hidden;border-radius:14px 14px 0 0}
+.game .game-visual .game-cover{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:transform .35s ease}
+.game .game-visual:hover .game-cover{transform:scale(1.035)}
+.game .game-visual:after{position:absolute;inset:0;content:"";background:linear-gradient(180deg,#030a1344,transparent 35%,#030a13b0);pointer-events:none}
+.game .game-emblem{position:absolute;z-index:2;width:68px;height:68px;bottom:12px;left:14px;border:2px solid #d0f7ff7d;border-radius:16px;background:#07121d}
+.game .art-tag{position:absolute;z-index:2;right:12px;top:12px;padding:5px 9px;color:#ddedf9;font-size:10px;font-weight:700;letter-spacing:.08em;border:1px solid #bceffa55;background:#081420cf;border-radius:5px}
+@media(prefers-reduced-motion:reduce){.game .game-visual .game-cover{transition:none!important}}
 </style></head><body><main class="shell">
 <a class="back" href="/games/">← Вернуться к OSGARD PLAY</a>
 <div class="eyebrow">OSGARD WORLD / DEVELOPMENT RECORD</div>
