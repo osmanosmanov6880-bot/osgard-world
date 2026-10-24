@@ -91,7 +91,7 @@ def validate(archive: Path, manifest_path: Path, portrait: Path,
     check(portrait.is_file(), "real portrait Chromium screenshot missing")
     with portrait.open("rb") as image:
         header = image.read(24)
-    check(len(header) == 24 and header[:8] == b"\\x89PNG\\r\\n\\x1a\\n"
+    check(len(header) == 24 and header[:8] == b"\x89PNG\r\n\x1a\n"
           and header[12:16] == b"IHDR", "not a genuine PNG screenshot")
     width, height = struct.unpack(">II", header[16:24])
     check(width >= 600 and height >= 1000 and height / width >= 1.4,
@@ -99,7 +99,8 @@ def validate(archive: Path, manifest_path: Path, portrait: Path,
     check(archive.stat().st_size < 135_000_000,
           "candidate exceeds reviewed transfer budget")
 
-    archive_hash, _ = hash_stream(archive.open("rb"))
+    with archive.open("rb") as package:
+        archive_hash, _ = hash_stream(package)
     return {
         "status": "PASS",
         "mode": "Godot 4.4.1 genuine browser archive / software GPU QA",
