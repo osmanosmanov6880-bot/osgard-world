@@ -147,7 +147,7 @@ func _build_hud() -> void:
     mission_label.add_theme_color_override("font_color", Color(1.0, 0.71, 0.47))
     text_stack.add_child(mission_label)
     helper = Label.new()
-    helper.text = "DRAG / PINCH TO INSPECT  ·  M: MISSION  ·  V: VIEW  ·  SIM ONLY"
+    helper.text = "M: TRAIN  C: DIAGNOSE  E: SCAN  V: CAMERA  ·  SIMULATION"
     helper.add_theme_color_override("font_color", Color(0.53, 0.79, 0.84))
     text_stack.add_child(helper)
 
@@ -158,7 +158,9 @@ func _build_hud() -> void:
     grid = GridContainer.new()
     action_panel.add_child(grid)
     _button(grid, "START MISSION", _start_mission, true)
+    _button(grid, "DIAGNOSTICS", _start_challenge, true)
     _button(grid, "NEXT VIEW", _next_view, false)
+    _button(grid, "SCAN TARGET", _scan_component, false)
     _button(grid, "ECO / HERO", _toggle_quality, false)
     _button(grid, "PLAY / PAUSE", _toggle_motion, false)
     _button(grid, "OPEN HATCH", _toggle_hatch, false)
@@ -174,32 +176,32 @@ func _update_layout() -> void:
     var size := get_viewport().get_visible_rect().size
     var portrait := _viewport_is_portrait()
     var margin := 24.0 if portrait else 18.0
-    var font_title := 43 if portrait else 25
-    var font_state := 29 if portrait else 18
-    var font_help := 19 if portrait else 12
-    var font_mission := 31 if portrait else 17
+    var font_title := 40 if portrait else 25
+    var font_state := 27 if portrait else 18
+    var font_help := 18 if portrait else 12
+    var font_mission := 29 if portrait else 17
     heading.add_theme_font_size_override("font_size", font_title)
     hud.add_theme_font_size_override("font_size", font_state)
     helper.add_theme_font_size_override("font_size", font_help)
     mission_label.add_theme_font_size_override("font_size", font_mission)
-    grid.columns = 2 if portrait else 3
+    grid.columns = 2 if portrait else 4
     grid.add_theme_constant_override("h_separation", 12 if portrait else 9)
     grid.add_theme_constant_override("v_separation", 12 if portrait else 9)
     for b in action_buttons:
-        b.add_theme_font_size_override("font_size", 37 if portrait else 17)
-        b.custom_minimum_size = Vector2(0, 84 if portrait else 42)
+        b.add_theme_font_size_override("font_size", 32 if portrait else 17)
+        b.custom_minimum_size = Vector2(0, 82 if portrait else 43)
         b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 
     if portrait:
         hud_panel.position = Vector2(margin, 42)
         hud_panel.custom_minimum_size = Vector2(size.x - margin * 2, 0)
         action_panel.custom_minimum_size = Vector2(size.x - margin * 2, 0)
-        action_panel.position = Vector2(margin, maxf(0, size.y - 384))
+        action_panel.position = Vector2(margin, maxf(0, size.y - 455))
     else:
         hud_panel.position = Vector2(margin, margin)
         hud_panel.custom_minimum_size = Vector2(minf(size.x * 0.48, 510), 0)
-        action_panel.custom_minimum_size = Vector2(minf(size.x * 0.70, 780), 0)
-        action_panel.position = Vector2(margin, maxf(0, size.y - 145))
+        action_panel.custom_minimum_size = Vector2(minf(size.x * 0.85, 990), 0)
+        action_panel.position = Vector2(margin, maxf(0, size.y - 150))
     _update_view()
 
 func _start_mission() -> void:
@@ -207,6 +209,16 @@ func _start_mission() -> void:
     # Starting a new mission always starts its drive, even after a prior pause.
     motion = true
     controller.start_mission()
+    _refresh_status()
+
+func _start_challenge() -> void:
+    motion = true
+    controller.start_challenge()
+    _apply_view(0)
+    _refresh_status()
+
+func _scan_component() -> void:
+    controller.scan_diagnostic(view_index)
     _refresh_status()
 
 func _next_view() -> void:
@@ -244,8 +256,9 @@ func _toggle_quality() -> void:
     _refresh_status()
 
 func _toggle_motion() -> void:
-    motion = not motion
-    controller.set_motion(motion)
+    controller.set_motion(not bool(controller.summary()["motion_enabled"]))
+    # The advanced diagnostic interlock may reject an unsafe restart.
+    motion = bool(controller.summary()["motion_enabled"])
     _refresh_status()
 
 func _toggle_hatch() -> void:
@@ -260,12 +273,17 @@ func _refresh_status() -> void:
     var mode := "HERO" if quality == 2 else "ECO"
     var state_text := "RUNNING" if motion else "PAUSED"
     hud.text = "QUALITY  %s  |  DRIVE  %s  |  VIEW  %s" % [mode, state_text, VIEW_NAMES[view_index]]
-    var feedback: String = str(state["mission_feedback"])
-    mission_label.text = str(state["mission_goal"]) + "\n" + feedback
-    if bool(state["mission_active"]):
-        mission_label.text += "  |  %0.1f S" % float(state["mission_elapsed"])
-    elif bool(state["mission_completed"]):
-        mission_label.text += "  |  %0.1f S" % float(state["mission_elapsed"])
+    if bool(state["challenge_active"]) or bool(state["challenge_completed"]):
+        mission_label.text = str(state["challenge_goal"]) + "\n" + str(state["challenge_feedback"])
+        mission_label.text += "  |  %0.1f S" % float(state["challenge_elapsed"])
+        helper.text = "FAULT: %s  |  ERRORS: %d  |  BEST: %d/150  |  SIM" % [
+            str(state["challenge_fault"]), int(state["challenge_errors"]), int(state["challenge_best_score"])
+        ]
+    else:
+        mission_label.text = str(state["mission_goal"]) + "\n" + str(state["mission_feedback"])
+        if bool(state["mission_active"]) or bool(state["mission_completed"]):
+            mission_label.text += "  |  %0.1f S" % float(state["mission_elapsed"])
+        helper.text = "M: TRAIN  C: DIAGNOSE  E: SCAN  V: CAMERA  |  SIM ONLY"
     if int(state["loading_failures"]) > 0:
         hud.text += "\nMODEL LOAD FAILED - CHECK GLB IMPORT"
 
@@ -278,7 +296,7 @@ func _update_view() -> void:
     var ratio: float = size.x / maxf(size.y, 1.0)
     # Godot FOV is vertical. Widen the orbit distance on portrait screens
     # instead of cutting the original full-width service-spine geometry.
-    var width_goal: float = 1.27 if view_index == 0 else 0.90
+    var width_goal: float = 1.11 if view_index == 0 else 0.90
     var aspect_compensation: float = maxf(1.0, width_goal / maxf(ratio, 0.42))
     var effective_distance: float = distance * aspect_compensation
     var direction := Vector3(
@@ -361,4 +379,8 @@ func _unhandled_input(event: InputEvent) -> void:
             _start_mission()
         elif event.keycode == KEY_V:
             _next_view()
+        elif event.keycode == KEY_C:
+            _start_challenge()
+        elif event.keycode == KEY_E:
+            _scan_component()
     _update_view()
