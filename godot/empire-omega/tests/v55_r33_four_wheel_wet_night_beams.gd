@@ -58,6 +58,8 @@ func _run() -> void:
 	var dry_slide: float=TIRE.step_lateral(0,19,0.5,0.80,false,0.25)
 	var wet_slide: float=TIRE.step_lateral(0,19,0.5,car.rear_traction_factor,false,0.25)
 	check(wet_slide>dry_slide,"wet rear axle increases genuine lateral slide")
+	var parsed_main: Variant = load("res://scripts/main.gd")
+	check(parsed_main!=null,"actual Godot main game script parses and loads")
 	var source: String=FileAccess.get_file_as_string("res://scripts/main.gd")
 	check(source.contains("wheel_contact_state(car.last_wheel_support,car.global_position)"),"runtime consumes real four-wheel physics samples")
 	check(source.contains("car.update_headlights("),"night beams react to game time")

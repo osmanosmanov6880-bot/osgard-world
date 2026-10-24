@@ -333,7 +333,7 @@ func _physics_process(delta: float) -> void:
 	# R33: actual 4 wheel-ground ray contacts instead of the car centre.
 	# LOW disables transparent pixels, not physical grip. The fallback
 	# samples the centre only before the first authentic wheel probe.
-	var contact := world.road_puddles.wheel_contact_state(car.last_wheel_support,car.global_position) if world.road_puddles != null else {"wetness":0.0,"rear":0.0,"used_fallback":false}
+	var contact: Dictionary = world.road_puddles.wheel_contact_state(car.last_wheel_support,car.global_position) if world.road_puddles != null else {"wetness":0.0,"rear":0.0,"used_fallback":false}
 	var wetness: float = float(contact["wetness"])
 	car.traction_factor = ROAD_WETNESS.effective_grip(base_road_grip,wetness)
 	car.axle_grip_active = not bool(contact["used_fallback"])
