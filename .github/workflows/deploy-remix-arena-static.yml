@@ -78,7 +78,47 @@ jobs:
           test -s game/open-world/index.html
           container=osgard-world
           docker inspect "$container" --format '{{.State.Running}}' | grep -qx true
-          docker cp game "$container:/tmp/remix-arena-candidate-$RELEASE_ID"
+          # All activations hold this host lock. Previous versions were left
+          # under the container's /tmp on every successful release. They
+          # eventually filled the Docker overlay and broke index.wasm copies.
+          # Remove ONLY our own, non-live temporary release directories.
+          docker exec "$container" sh -ec '
+            for old in /tmp/remix-arena-candidate-[0-9]* /tmp/remix-arena-previous-[0-9]*; do
+              [ -d "$old" ] || continue
+              case "$old" in
+                /tmp/remix-arena-candidate-[0-9]*|/tmp/remix-arena-previous-[0-9]*)
+                  echo "REMIX_OWN_STAGING_CLEANUP: $old"
+                  rm -rf -- "$old"
+                  ;;
+              esac
+            done
+          '
+          candidate_kb="$(du -sk game | awk '{print $1}')"
+          test "$candidate_kb" -gt 0
+          # Allow space for candidate, rollback copy, and filesystem overhead.
+          required_kb="$(( candidate_kb * 2 + 65536 ))"
+          docker exec -e MIN_REQUIRED_KB="$required_kb" "$container" sh -ec '
+            available="$(df -k /tmp | awk "END{print \$4}")"
+            case "$available" in ""|*[!0-9]*)
+              echo "REMIX_STORAGE_ERROR: unable to read container free space" >&2
+              exit 1
+              ;;
+            esac
+            echo "REMIX_STORAGE_PREFLIGHT: available_kb=$available needed_kb=$MIN_REQUIRED_KB"
+            if [ "$available" -lt "$MIN_REQUIRED_KB" ]; then
+              echo "REMIX_STORAGE_ERROR: insufficient container disk; retained active game" >&2
+              exit 1
+            fi
+          '
+          if ! docker cp game "$container:/tmp/remix-arena-candidate-$RELEASE_ID"; then
+            # Failed docker cp may leave a partial large WASM in /tmp.
+            docker exec -e RELEASE_ID="$RELEASE_ID" "$container" sh -ec '
+              case "$RELEASE_ID" in *[!0-9-]*|"") exit 2;; esac
+              rm -rf -- "/tmp/remix-arena-candidate-$RELEASE_ID"
+            ' || true
+            echo "REMIX_COPY_ERROR: cleaned only incomplete own candidate; live game untouched" >&2
+            exit 1
+          fi
           docker exec -e RELEASE_ID="$RELEASE_ID" "$container" sh -ec '
             destination=/usr/share/nginx/html/games/remix/arena-v2
             candidate="/tmp/remix-arena-candidate-$RELEASE_ID"
@@ -119,7 +159,20 @@ jobs:
                 exit 1
               fi
             fi
-            echo "REMIX ARENA static page activated and verified inside production Nginx"
+            if [ -f "$destination/nebula-3d/performance-report.html" ]; then
+              if ! wget -q -O /tmp/nebula-r37-report-verify.html -T 12 http://127.0.0.1/games/remix/arena-v2/nebula-3d/performance-report.html ||
+                 ! grep -Fq "nebula-r37-comparator" /tmp/nebula-r37-report-verify.html; then
+                rm -rf "$destination"
+                if [ -d "$backup" ]; then mv "$backup" "$destination"; fi
+                echo "NEBULA R37 performance-report route failed; previous game restored" >&2
+                exit 1
+              fi
+            fi
+            # A verified release no longer needs its full old-copy rollback
+            # tree. Retaining every one caused the container to run out of disk.
+            if [ -d "$backup" ]; then rm -rf -- "$backup"; fi
+            rm -f /tmp/remix-arena-http-check.html /tmp/remix-nebula-http-check.html /tmp/nebula3d-verify.html /tmp/nebula-r37-report-verify.html
+            echo "REMIX ARENA and optional NEBULA R37 verified inside production Nginx; own rollback staging cleaned"
           '
           REMOTE
       - name: Explain multiplayer deployment boundary
