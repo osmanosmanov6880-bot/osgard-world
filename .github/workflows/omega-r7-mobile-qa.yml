@@ -34,3 +34,20 @@ jobs:
             timeout --signal=TERM --kill-after=5s 30s godot --headless --path godot/empire-omega --script "res://tests/$test.gd"
             echo "::endgroup::"
           done
+      - name: Boot the actual 3D city and responsive HUD at phone and desktop sizes
+        shell: bash
+        run: |
+          set -euo pipefail
+          for screen in 390x844 1600x900; do
+            echo "::group::GODOT CITY RUNTIME $screen"
+            output="$(mktemp)"
+            timeout --signal=TERM --kill-after=5s 50s godot --headless --path godot/empire-omega --resolution "$screen" --quit-after 30 >"$output" 2>&1 || {
+              cat "$output"; exit 1;
+            }
+            tail -n 12 "$output"
+            if grep -E 'SCRIPT ERROR:|Parse Error:|Invalid call\.' "$output"; then
+              echo "::error::Godot failed inside its actual 3D game scene ($screen)"
+              exit 1
+            fi
+            echo "::endgroup::"
+          done
