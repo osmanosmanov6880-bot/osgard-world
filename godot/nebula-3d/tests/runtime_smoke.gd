@@ -177,6 +177,33 @@ func _run() -> void:
     touch_r21._set_touch(3, touch_r21.button_centres["CRUISE"], false)
     if not check(not world.ship.cruise_assist,
         "R23 phone cruise button cannot switch propulsion off"):return
+    # R32: compact real phone landscapes previously used portrait geometry,
+    # placing CRUISE on top of GAS at 568x320.
+    touch_r21._layout_for_size(Vector2(568.0, 320.0))
+    if not check(touch_r21.r23_landscape_layout and
+        touch_r21.button_centres.size() == 9 and
+        touch_r21._role_at(touch_r21.button_centres["THRUST"]) == "THRUST" and
+        touch_r21._role_at(touch_r21.button_centres["CRUISE"]) == "CRUISE",
+        "R32 compact landscape must distinguish GAS from CRUISE"):return
+    var compact_button_gap: float = touch_r21.base_radius * 1.4
+    for a_key in touch_r21.button_centres:
+        var a_centre: Vector2 = touch_r21.button_centres[a_key]
+        if not check(a_centre.x > 20.0 and a_centre.x < 548.0 and
+            a_centre.y > 20.0 and a_centre.y < 300.0 and
+            touch_r21._role_at(a_centre) == a_key,
+            "R32 compact landscape has an unreachable action button"):return
+        for b_key in touch_r21.button_centres:
+            if str(a_key) < str(b_key):
+                if not check(a_centre.distance_to(
+                    touch_r21.button_centres[b_key]) > compact_button_gap,
+                    "R32 compact landscape action hit targets overlap"):return
+    touch_r21._set_touch(8, touch_r21.button_centres["THRUST"], true)
+    if not check(world.ship.touch_throttle >= 0.9 and
+        not world.ship.cruise_assist,
+        "R32 small-landscape GAS accidentally triggers autopilot"):return
+    touch_r21._set_touch(8, touch_r21.button_centres["THRUST"], false)
+    if not check(world.ship.touch_throttle == 0.0,
+        "R32 compact-landscape GAS release remains stuck"):return
     touch_r21.force_mobile_for_tests(false)
     print("NEBULA_R23_REAL_INPUT_SUCCESS physical_W_metres=%.1f clicked_cruise_metres=%.1f portrait_landscape=verified" % [
         keyboard_meters,cruise_meters])
