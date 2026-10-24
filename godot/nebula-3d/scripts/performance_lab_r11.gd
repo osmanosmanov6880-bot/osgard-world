@@ -1,4 +1,6 @@
 extends CanvasLayer
+## R38: manually choose on-phone quality without F3/F11 keyboard keys.
+signal r38_quality_cycle_requested
 ## R11 real-device benchmark. Run IN the player's browser on their actual GPU.
 ## F6 = show/hide live monitor, F7 = 20-second controlled sample,
 ## F9 = copy last real result. CI smoke does not invent hardware FPS.
@@ -44,6 +46,8 @@ var r36_panel_style: StyleBoxFlat
 var r36_touch_start_count: int = 0
 var r36_touch_start_sum_ms: float = 0.0
 var r36_touch_start_invalid: int = 0
+var r38_mode_button: Button
+var r38_auto_enabled: bool = false
 
 func _ready() -> void:
     layer = 7
@@ -96,6 +100,13 @@ func _ready() -> void:
     r36_export_button.custom_minimum_size = Vector2(52, 28)
     r36_export_button.pressed.connect(download_report)
     r36_command_row.add_child(r36_export_button)
+    r38_mode_button = Button.new()
+    r38_mode_button.name = "R38_MobileGraphicsProfile"
+    r38_mode_button.text = "MAX"
+    r38_mode_button.tooltip_text = "АВТО → MAX → HIGH → ECO → АВТО"
+    r38_mode_button.custom_minimum_size = Vector2(52, 28)
+    r38_mode_button.pressed.connect(_r38_request_quality_cycle)
+    r36_command_row.add_child(r38_mode_button)
     r36_close_button = Button.new()
     r36_close_button.text = "×"
     r36_close_button.name = "R36_ClosePerformancePanel"
@@ -147,7 +158,7 @@ func _r36_relayout() -> void:
     overlay.offset_left = left + 8.0
     overlay.offset_top = top + 8.0
     overlay.offset_right = overlay.offset_left + minf(
-        164.0 if landscape else 300.0, usable_w - 16.0)
+        210.0 if landscape else 300.0, usable_w - 16.0)
     overlay.offset_bottom = overlay.offset_top + (
         108.0 if landscape else 130.0)
     if is_instance_valid(r36_panel_style):
@@ -212,10 +223,28 @@ func download_report() -> void:
     _sync_visibility()
 
 
+func _r38_update_mode_text() -> void:
+    if is_instance_valid(r38_mode_button):
+        r38_mode_button.text = "АВТО" if r38_auto_enabled else (
+            ["MAX", "HIGH", "ECO"][quality_mode])
+
+
+func set_r38_auto_enabled(enabled: bool) -> void:
+    r38_auto_enabled = enabled
+    _r38_update_mode_text()
+
+
+func _r38_request_quality_cycle() -> void:
+    if benchmarking:
+        return
+    r38_quality_cycle_requested.emit()
+
+
 func set_quality(mode: int) -> void:
     quality_mode = clampi(mode, 0, 2)
     if benchmarking and quality_mode != quality_at_start:
         profile_switched_during_test = true
+    _r38_update_mode_text()
 
 func toggle_panel() -> void:
     show_live = not show_live
@@ -261,6 +290,8 @@ func start_benchmark() -> void:
         r36_start_button.disabled = true
     if is_instance_valid(r36_export_button):
         r36_export_button.disabled = true
+    if is_instance_valid(r38_mode_button):
+        r38_mode_button.disabled = true
     show_live = true
     _sync_visibility()
     report_label.text = "ПРОГРЕВ 2 СЕК · ЗАТЕМ ЗАМЕР 20 СЕК\nОставь игру активной, лети через порт и город."
@@ -275,6 +306,8 @@ func _complete() -> void:
             "НЕДОСТАТОЧНО КАДРОВ ДЛЯ ЗАМЕРА\nПовтори F7 в активной вкладке.")
         if is_instance_valid(r36_start_button):
             r36_start_button.disabled = false
+        if is_instance_valid(r38_mode_button):
+            r38_mode_button.disabled = false
         _sync_visibility()
         return
     var mean_ms: float = sum_ms / float(valid_count)
@@ -358,6 +391,8 @@ func _complete() -> void:
         r36_start_button.disabled = false
     if is_instance_valid(r36_export_button):
         r36_export_button.disabled = false
+    if is_instance_valid(r38_mode_button):
+        r38_mode_button.disabled = false
     _sync_visibility()
 
 func capture_frame() -> void:
