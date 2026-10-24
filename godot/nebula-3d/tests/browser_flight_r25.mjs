@@ -22,6 +22,16 @@ page.on('console',m=>{
 });
 const snapshot = () => page.evaluate(() => window.__nebulaPilotTelemetry || null);
 const waitFor = (condition, timeout=25000, arg=null) => page.waitForFunction(condition,arg,{timeout, polling:400});
+const waitForTelemetry = async (condition, timeout=25000) => {
+  const deadline = Date.now() + timeout;
+  let latest = null;
+  while (Date.now() < deadline) {
+    latest = await snapshot();
+    if (condition(latest)) return latest;
+    await page.waitForTimeout(250);
+  }
+  throw new Error('telemetry condition timed out: '+JSON.stringify(latest));
+};
 async function checkpoint(name, condition) {
   const v=await snapshot();
   if(!condition(v))throw new Error(name+' failed with actual ship telemetry: '+JSON.stringify(v));
@@ -52,30 +62,46 @@ try {
   if (!(keyInBrowser.mask & 1)) {
     throw new Error('R26 W did not reach browser capture bridge: '+JSON.stringify(keyInBrowser));
   }
-  await waitFor(()=>!!(window.__nebulaPilotTelemetry?.input_mask & 1),12000);
-  await waitFor(()=>window.__nebulaPilotTelemetry?.flight_distance > 3.5,32000);
+  try {
+    await waitForTelemetry(s=>s && (s.input_mask & 1),12000);
+  } catch (error) {
+    const telemetry = await snapshot();
+    const dom = await page.evaluate(() => ({
+      mask:window.__nebulaPilotMask,
+      debug:window.__nebulaKeyDebug,
+      active:document.activeElement?.tagName || '',
+      focused:document.hasFocus()
+    }));
+    log.checks.push({name:'W-to-Godot bridge failure snapshot',telemetry,dom});
+    throw new Error('W-to-Godot bridge failure snapshot: '+JSON.stringify({telemetry,dom})+'; '+error.message);
+  }
+  await waitForTelemetry(s=>s && s.flight_distance > 3.5,32000);
   const moving=await checkpoint('physical W drives real ship motion',
     s=>s?.speed_mps>1.0 && s.flight_distance>3.5 && (s.input_mask&1)!==0);
   await page.keyboard.up('w');
-  await waitFor(()=>!(window.__nebulaPilotTelemetry?.input_mask & 1),12000);
+  await waitForTelemetry(s=>s && !(s.input_mask & 1),12000);
   log.checks.push({name:'keyboard keyup clears browser mask and does not stick',telemetry:await snapshot()});
   // Re-use game's real Godot button, not an external JS command.
-  const bounds=await page.locator('#canvas').boundingBox();
-  if(!bounds)throw new Error('Game canvas was not interactable');
+  const bounds=await page.evaluate(() => {
+    const rect=document.querySelector('#canvas')?.getBoundingClientRect();
+    return rect ? {x:rect.x,y:rect.y,width:rect.width,height:rect.height} : null;
+  });
+  if(!bounds || bounds.width<=0 || bounds.height<=0)
+    throw new Error('Game canvas was not interactable: '+JSON.stringify(bounds));
+  const beforeCruise=await snapshot();
   await page.mouse.click(bounds.x+bounds.width/2,bounds.y+bounds.height-70);
-  await waitFor(()=>window.__nebulaPilotTelemetry?.cruise === true,15000);
+  await waitForTelemetry(s=>s && s.cruise === true,15000);
   const start=await checkpoint('actual clickable cruise switch engaged',s=>s?.cruise===true);
-  await waitFor(({samples,heading})=>window.__nebulaPilotTelemetry?.samples>samples+5 &&
-    Math.abs(window.__nebulaPilotTelemetry.heading-heading)>0.05,35000,
-    {samples:start.samples,heading:start.heading});
+  await waitForTelemetry(s=>s && s.cruise &&
+    Math.abs(s.heading-beforeCruise.heading)>0.05,35000);
   const steered=await checkpoint('real autopilot rotates ship toward off-axis mission',
-    s=>s?.cruise===true && Math.abs(s.heading-start.heading)>0.05 && s.throttle>0.5);
-  await waitFor((distance)=>window.__nebulaPilotTelemetry?.mission_distance < distance-2.0,45000,start.mission_distance);
+    s=>s?.cruise===true && Math.abs(s.heading-beforeCruise.heading)>0.05 && s.throttle>0.5);
+  await waitForTelemetry(s=>s && s.mission_distance < start.mission_distance-2.0,45000);
   const approached=await checkpoint('real ship approaches mission objective in world units',
     s=>s?.mission_distance < start.mission_distance-2.0 && s.flight_distance>moving.flight_distance);
   // Stop and verify that the user can cancel guided flight.
   await page.mouse.click(bounds.x+bounds.width/2,bounds.y+bounds.height-70);
-  await waitFor(()=>window.__nebulaPilotTelemetry?.cruise===false,12000);
+  await waitForTelemetry(s=>s && s.cruise===false,12000);
   await checkpoint('cruise can be disengaged',s=>s?.cruise===false);
   log.passed=true;
   log.summary={keyboard_metres:moving.flight_distance-t0.flight_distance,

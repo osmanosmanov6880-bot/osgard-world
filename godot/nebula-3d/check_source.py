@@ -599,6 +599,8 @@ assert "NEBULA_R22_AURORA_SCENE_SUCCESS" in smoke
 assert "R22 golden-hour Aurora real PBR buildings/bridges/windows missing" in smoke
 # R23: fixes the user's specific 000 km/h image, not a simulated scene.
 assert "func _browser_mask() -> int:" in ship
+assert "browser_window = JavaScriptBridge.get_interface(\"window\")" in ship
+assert "browser_window.__nebulaPilotMask" in ship
 assert "Input.is_physical_key_pressed(code)" in ship
 assert "var cruise_assist: bool = false" in ship
 assert "func set_cruise_assist(" in ship
