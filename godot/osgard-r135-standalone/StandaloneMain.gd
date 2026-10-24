@@ -257,9 +257,11 @@ func _refresh_status() -> void:
     if bool(state["challenge_active"]) or bool(state["challenge_completed"]):
         mission_label.text = str(state["challenge_goal"]) + "\n" + str(state["challenge_feedback"])
         mission_label.text += "  |  %0.1f S" % float(state["challenge_elapsed"])
-        helper.text = "FAULT: %s  |  ERRORS: %d  |  BEST: %d/150  |  SIM" % [
-            str(state["challenge_fault"]), int(state["challenge_errors"]), int(state["challenge_best_score"])
+        helper.text = "SIM CLUE: %s  |  ERRORS %d  |  CASES %d/3" % [
+            str(state["challenge_evidence"]), int(state["challenge_errors"]), int(state["cleared_case_count"])
         ]
+        if bool(state["challenge_completed"]):
+            mission_label.text += "\nLESSON: " + str(state["challenge_learning"])
     else:
         mission_label.text = str(state["mission_goal"]) + "\n" + str(state["mission_feedback"])
         if bool(state["mission_active"]) or bool(state["mission_completed"]):
