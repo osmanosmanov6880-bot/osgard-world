@@ -37,12 +37,25 @@ static func _pose(center: Vector3, width: float, yaw: float,
 	location += orientation*Vector3(offset_x,height,-(width*0.5+push_out))
 	return Transform3D(orientation.scaled(scale),location)
 
-func record(center: Vector3, width: float, height: float, variation: int) -> void:
+## Compute an entrance orientation towards the nearest real road, rather
+## than randomly hiding doors in an inner courtyard. Optional equal-distance
+## axis selector keeps varied facades without losing road access.
+static func road_facing_variant(center: Vector3, road_interval: float, prefer_x: bool = true) -> int:
+	if not center.is_finite() or not is_finite(road_interval) or road_interval<=1.0:
+		return 0
+	var nearest_dx: float = roundf(center.x/road_interval)*road_interval-center.x
+	var nearest_dz: float = roundf(center.z/road_interval)*road_interval-center.z
+	if absf(nearest_dx)<absf(nearest_dz) or (is_equal_approx(absf(nearest_dx),absf(nearest_dz)) and prefer_x):
+		return 1 if nearest_dx<0.0 else 3
+	return 0 if nearest_dz<0.0 else 2
+
+func record(center: Vector3, width: float, height: float, variation: int, street_face: int = -1) -> void:
 	if frontage_count>=BUILDING_LIMIT or not center.is_finite() or not is_finite(width) or not is_finite(height):
 		return
 	if width<9.5 or height<7.0:
 		return
-	var yaw: float = float(posmod(variation,4))*PI*0.5
+	var face: int = posmod(street_face,4) if street_face>=0 else posmod(variation,4)
+	var yaw: float = float(face)*PI*0.5
 	var side_glass: float = maxf(1.1,(width-3.2)*0.5-0.65)
 	var side_x: float = width*0.5-side_glass*0.5-0.34
 	for side in [-1.0,1.0]:
