@@ -2,7 +2,7 @@ name: OSGARD R135 optimized web candidate
 
 on:
   push:
-    branches: [feat/r135-mission-control-20261024, feat/r135-wasm-streaming-20261024, feat/r135-diagnostics-w4-20261024, feat/r135-w5-visual-diagnostics-20261024, feat/r135-w6-portrait-target-framing-20261024, feat/r135-w7-studio-lighting-batched-stage-20261024, master]
+    branches: [feat/r135-mission-control-20261024, feat/r135-wasm-streaming-20261024, feat/r135-diagnostics-w4-20261024, feat/r135-w5-visual-diagnostics-20261024, feat/r135-w6-portrait-target-framing-20261024, feat/r135-w7-studio-lighting-batched-stage-20261024, feat/r135-w8-responsive-hud-matrix-20261024, master]
     paths:
       - ".github/workflows/r135-web-optimized.yml"
       - "godot/osgard-r135-standalone/**"
@@ -129,7 +129,7 @@ jobs:
           output=Path(os.environ['RUNNER_TEMP'])/'r135-optimized-release'
           output.mkdir(exist_ok=True)
           files=sorted(p for p in root.iterdir() if p.is_file())
-          manifest={'version':'r135-web-studio-w7-20261024','engine':'Godot 4.4.1',
+          manifest={'version':'r135-web-adaptive-hud-w8-20261024','engine':'Godot 4.4.1',
                     'source_commit':os.environ['GITHUB_SHA'],
                     'game':'OSGARD R135 Service Spine','native_tests':'passed',
                     'webgl_browser_software_smoke':'passed',
