@@ -35,5 +35,5 @@ for attempt in $(seq 1 15); do
   sleep 1
 done
 docker exec "$container_name" nginx -t
-OSGARD_BASE_URL="http://127.0.0.1:$port" node scripts/r135-production-smoke.mjs
+OSGARD_BASE_URL="http://127.0.0.1:$port" OSGARD_REQUIRE_GZIP=1 node scripts/r135-production-smoke.mjs
 echo "R135 candidate Nginx: original Godot HTML, gzip WASM, correct MIME, verified PCK range PASS"
