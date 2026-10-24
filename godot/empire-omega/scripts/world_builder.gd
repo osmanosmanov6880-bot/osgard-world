@@ -39,6 +39,7 @@ var window_points: Array[Transform3D] = []
 var facade_windows: MultiMeshInstance3D
 var facade_frames: MultiMeshInstance3D
 var architecture_trim: MultiMeshInstance3D
+var road_puddles: MultiMeshInstance3D
 var last_window_mode := -1
 var waypoint_marker: Node3D
 var horizon_scenic: Node3D
@@ -46,6 +47,7 @@ const ROAD_MATERIALS = preload("res://scripts/horizon_road_materials.gd")
 const LIGHT_GRADE = preload("res://scripts/horizon_light_grade.gd")
 const FACADE_MATERIALS = preload("res://scripts/horizon_facade_materials.gd")
 const ARCHITECTURE_TRIM = preload("res://scripts/horizon_architecture_trim.gd")
+const RAIN_PUDDLES = preload("res://scripts/horizon_rain_puddles.gd")
 var asphalt_pbr: StandardMaterial3D
 var concrete_pbr: StandardMaterial3D
 
@@ -59,6 +61,8 @@ func _ready() -> void:
 	_create_environment()
 	_create_terrain()
 	_create_roads()
+	road_puddles = RAIN_PUDDLES.new()
+	city_root.add_child(road_puddles)
 	architecture_trim = ARCHITECTURE_TRIM.new()
 	_create_city()
 	architecture_trim.call("finalize")
@@ -456,12 +460,16 @@ func apply_visual_budget(mode: String) -> void:
 		architecture_trim.visible = visual_budget != "low"
 	if facade_frames != null:
 		facade_frames.visible = visual_budget != "low"
+	if road_puddles != null:
+		road_puddles.call("set_conditions",weather_mode,visual_budget)
 	_apply_lighting()
 
 func update_weather(kind: String) -> void:
 	if not GameState.CITY_WEATHER.LABELS.has(kind):
 		kind = "clear"
 	weather_mode = kind
+	if road_puddles != null:
+		road_puddles.call("set_conditions",kind,visual_budget)
 	if asphalt_pbr != null:
 		ROAD_MATERIALS.apply_weather(asphalt_pbr,kind)
 	if concrete_pbr != null:
