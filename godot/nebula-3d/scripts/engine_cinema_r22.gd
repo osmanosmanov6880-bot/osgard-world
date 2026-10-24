@@ -103,7 +103,7 @@ func _process(delta: float) -> void:
         if not is_instance_valid(flame):
             continue
         var shell: bool = "Halo" in flame.name
-        flame.scale.z = (0.40 if shell else 0.65) + force * (
+        flame.scale.y = (0.40 if shell else 0.65) + force * (
             0.60 if shell else 0.72) + sin(time*26.0) * 0.045
         flame.visible = force > 0.25 and not (shell and speed < 0.12)
     if is_instance_valid(heat_light):
