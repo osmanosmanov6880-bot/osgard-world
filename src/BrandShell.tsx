@@ -125,7 +125,7 @@ export function BrandShell({ theme, children }: { theme: ProductTheme; children:
       </button>
     </header>
     <div className="brand-local-bar">
-      <span>{product === 'world' ? englishChrome ? development ? 'OSGARD DEVELOPMENT / Digital studio' : 'OSGARD WORLD / Digital studio' : development ? 'Development / Разработка продуктов' : 'OSGARD WORLD / Цифровая студия' : product === 'intelligence' ? osaLocale === 'en' ? 'OSA / Understand. Verify. Decide.' : 'OSA / Понять. Проверить. Решить.' : product === 'world' && (path === '/' || path === '/development') ? osaLocale === 'en' ? development ? 'OSGARD DEVELOPMENT / Digital studio' : 'OSGARD WORLD / Digital studio' : development ? 'Development / Разработка продуктов' : 'OSGARD WORLD / Цифровая студия' : 'OSGARD PLAY / Игровые миры'}</span>
+      <span>{product === 'world' ? englishChrome ? development ? 'OSGARD DEVELOPMENT / Digital studio' : 'OSGARD WORLD / Digital studio' : development ? 'Development / Разработка продуктов' : 'OSGARD WORLD / Цифровая студия' : product === 'intelligence' ? osaLocale === 'en' ? 'OSA / Understand. Verify. Decide.' : 'OSA / Понять. Проверить. Решить.' : 'OSGARD PLAY / Игровые миры'}</span>
       <nav aria-label={englishChrome ? 'Section navigation' : 'Навигация раздела'}>
         {local.map(([name, href]) => <a key={name} href={href} aria-current={localState(href)}>{name}</a>)}
       </nav>
