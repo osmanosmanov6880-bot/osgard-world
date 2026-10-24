@@ -40,10 +40,11 @@ func _facade_material(albedo_tex: Texture2D, emission_tex: Texture2D) -> Standar
     m.emission_enabled = true
     m.emission_texture = emission_tex
     m.emission = Color.WHITE
-    m.emission_energy_multiplier = 0.72
+    m.emission_energy_multiplier = 0.24
     m.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
-    m.metallic = 0.69
-    m.roughness = 0.32
+    m.albedo_color = Color(0.65, 0.73, 0.81)
+    m.metallic = 0.61
+    m.roughness = 0.43
     return m
 
 func _material(color: Color, emission: float = 0.0, metallic: float = 0.76, roughness: float = 0.38) -> StandardMaterial3D:
