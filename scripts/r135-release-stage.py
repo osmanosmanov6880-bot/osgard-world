@@ -17,8 +17,10 @@ def reject(reason: str):
 
 def stage(archive: Path, manifest_path: Path, destination: Path):
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    if manifest.get("version") != "r135-web-diagnostics-w4-20261024":
+    if manifest.get("version") != "r135-web-visual-diagnostics-w5-20261024":
         reject("wrong release tag")
+    if manifest.get("source_commit") != "668e42716aaefb0c45eb5347abe9355437dc4b69":
+        reject("W5 archive source commit is not the validated candidate")
     if manifest.get("engine") != "Godot 4.4.1":
         reject("wrong Godot engine")
     files = manifest.get("files")
