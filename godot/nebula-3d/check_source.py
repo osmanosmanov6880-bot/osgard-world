@@ -657,7 +657,7 @@ r11_visual = require(
     "tests/browser_smoke_r11.mjs",
     "Godot viewport capture",
     "nebulaR11CaptureRequestId",
-    "Capture actual WebGL frame and exercise quality controls",
+    "Hosted SwiftShader cannot confirm visual frame",
 )
 assert "r25_side_and_back_windows" in r22_city
 assert "_r25_side_window_transform" in r22_city
