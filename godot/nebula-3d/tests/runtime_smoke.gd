@@ -86,6 +86,56 @@ func _run() -> void:
     if not check(world.r21_towers_moved >= 0,
         "R21 original tower count and spawn corridor audit missing"):return
     print("NEBULA_R21_REAL_FLIGHT_SUCCESS throttle_metres=%.1f mobile_3_touch=verified" % travelled)
+    # R22: the approved second reference is implemented as *actual* Godot
+    # scene meshes, not another image. Check dynamic geometry and collisions.
+    var scenic = world.get_node_or_null("R22_PhysicalGoldenAurora")
+    if not check(scenic != null and scenic.hero_towers == 18 and
+        scenic.overpass_count == 3 and scenic.physical_structures == 21 and
+        scenic.real_3d_windows >= 2000,
+        "R22 golden-hour Aurora real PBR buildings/bridges/windows missing"):return
+    if not check(scenic.moving_traffic == 16 and scenic.cloud_banks == 4 and
+        scenic.cloud_nodes[0].mesh is Mesh,
+        "R22 atmospheric scene still lacks actual 3D clouds and moving air traffic"):return
+    if not check(scenic.get_node_or_null(
+        "R22_AuroraPhysicalStructures/R22_PhysicalAuroraTower_00/R22_TowerBody")
+        is StaticBody3D,
+        "R22 skyline towers must have real physical collision bodies"):return
+    if not check(scenic.get_node_or_null(
+        "R22_AuroraPhysicalStructures/R22_SuspendedFlightway_00/R22_PhysicalFlightway")
+        is StaticBody3D,
+        "R22 real suspended flightways must have physical collision"):return
+    var ambient_0: Vector3 = scenic.traffic_nodes[0].position
+    scenic._process(0.1)
+    if not check(scenic.traffic_nodes[0].position != ambient_0 and
+        scenic.traffic_updates > 0,
+        "R22 skyline traffic must move in the actual Godot world"):return
+    var ion_drive = world.ship.get_node_or_null(
+        "AnimatedShip/HighDetailInterceptorR5/R22_RealIonDrive")
+    if not check(ion_drive != null and ion_drive.plume_count == 6 and
+        ion_drive.nozzle_parts == 9 and
+        ion_drive.heat_light is OmniLight3D,
+        "R22 NX08 still lacks actual animated 3D propulsion geometry"):return
+    ion_drive._process(0.1)
+    if not check(ion_drive.flame_nodes[0].visible,
+        "R22 propulsion glow disappeared on a powered flight"):return
+    var golden_sky = world.get_node("R11_CinematicWorldEnvironment").environment
+    var sunset: ProceduralSkyMaterial = golden_sky.sky.sky_material
+    if not check(sunset.sky_horizon_color.r >= 0.7 and
+        sunset.sky_horizon_color.r > sunset.sky_horizon_color.b,
+        "R22 golden-hour sky and atmosphere still render as flat grey"):return
+    world._set_graphics_quality(2)
+    if not check(scenic.quality_mode == 2 and
+        not scenic.traffic_nodes[0].visible and
+        scenic.cloud_nodes[0].visibility_range_end == 600.0,
+        "R22 mobile ECO must cull distant atmospheric and air-traffic detail"):return
+    world._set_graphics_quality(0)
+    if not check(scenic.quality_mode == 0 and
+        scenic.traffic_nodes[0].visible and
+        scenic.cloud_nodes[0].visibility_range_end == 1700.0,
+        "R22 MAX must restore approved 3D Aurora skyline"):return
+    print("NEBULA_R22_AURORA_SCENE_SUCCESS: towers=%d windows=%d bridges=%d moving_craft=%d engine_plumes=%d" % [
+        scenic.hero_towers,scenic.real_3d_windows,scenic.overpass_count,
+        scenic.moving_traffic,ion_drive.plume_count])
     if not check(world.get_node_or_null("CityTowers_MultiMesh") != null, "City architecture missing"):return
     if not check(world.get_node_or_null("SkylineNeonCrowns") != null, "Neon skyline detail missing"):return
     # R18 world-wide 360+360 GPU draw packages are now six independent

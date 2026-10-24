@@ -489,6 +489,11 @@ smoke = require(
     "R21 touch release left ship controls stuck",
     "R21 player spawns stuck inside a building; flight cannot start",
     "NEBULA_R21_REAL_FLIGHT_SUCCESS",
+    "R22 golden-hour Aurora real PBR buildings/bridges/windows missing",
+    "R22 atmospheric scene still lacks actual 3D clouds and moving air traffic",
+    "R22 real suspended flightways must have physical collision",
+    "R22 mobile ECO must cull distant atmospheric and air-traffic detail",
+    "NEBULA_R22_AURORA_SCENE_SUCCESS",
     "NEBULA_R17_PBR_IMPORT_SUCCESS",
     "NEBULA_SMOKE_SUCCESS",
 )
@@ -543,6 +548,49 @@ require(
 )
 assert "NEBULA_R21_REAL_FLIGHT_SUCCESS" in smoke
 assert "37" in smoke and "touch_r21._set_touch(0" in smoke
+# R22: the approved user screenshot must become genuine realtime 3D,
+# not any generated 2D artwork, frame overlay, backdrop or placeholder card.
+r22_city = require(
+    "scripts/aurora_scenic_r22.gd",
+    "R22_PhysicalAuroraTower_",
+    "R22_TowerBody",
+    "R22_SuspendedFlightway_",
+    "R22_PhysicalFlightway",
+    "R22_CloudDeck_",
+    "R22_LivingCityTraffic_",
+    "func _build_tower(",
+    "func _bridges(",
+    "func _ambient_traffic(",
+    "func _cloud_ribbon(",
+    "func set_quality(",
+    "real_3d_windows",
+    "physical_structures",
+    "moving_traffic",
+)
+r22_ion = require(
+    "scripts/engine_cinema_r22.gd",
+    "R22_CinematicPropulsion_",
+    "R22_NearShipExhaustLight",
+    "plume_count",
+    "nozzle_parts",
+    "ship.thruster_power",
+    "func _process(",
+)
+assert 'preload("res://scripts/aurora_scenic_r22.gd")' in world
+assert 'aurora_scenic_r22.build()' in world
+assert 'aurora_scenic_r22.set_quality(graphics_quality)' in world
+assert 'preload("res://scripts/engine_cinema_r22.gd")' in ship_visual
+assert 'exhaust_r22.name = "R22_RealIonDrive"' in ship_visual
+assert 'if mission_index > 0 and r21_launch_protection <= 0.0:' in world
+assert "sky_shader.sky_horizon_color = Color(0.83, 0.45, 0.27)" in require(
+    "scripts/cinematic_lighting_r12.gd")
+assert 'nebula-r22-keyboard-focus' in r21_web
+require(
+    "docs/R22-REAL-AURORA-GOLDEN-HOUR.md",
+    "18", "2,000", "16", "4", "golden-hour", "F7", "F9", "F10",
+)
+assert "NEBULA_R22_AURORA_SCENE_SUCCESS" in smoke
+assert "R22 golden-hour Aurora real PBR buildings/bridges/windows missing" in smoke
 assert "func _make_ship(" not in ship, "R3 low-poly ship builder is still active"
 assert ship_visual.count("engine_flames.append(") == 1
 assert "for x in [-1.24, 0.0, 1.24]:" in ship_visual, "three engine array missing"
@@ -550,4 +598,4 @@ assert "image.generate_mipmaps()" in ship_visual
 assert premium.count("Image.create(") >= 2, "separate facade albedo/emission atlases missing"
 assert "high-detail" not in project.lower(), "project identity may remain stable"
 assert len(smoke) > 1500 and len(city) > 5000 and len(world) > 10000
-print("NEBULA_R21_SOURCE_SUCCESS: approved Aurora HDR-safe cockpit, dynamic flight collision, touch controls and original full R20 content")
+print("NEBULA_R22_SOURCE_SUCCESS: playable 3D golden-hour skyline, 21 physics structures, airborne traffic, modeled engine exhaust and keyboard focus")
