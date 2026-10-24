@@ -9,6 +9,16 @@ var window_instances: int = 0
 var corridor_count: int = 0
 var dock_count: int = 0
 var animated_holos: Array[Node3D] = []
+## R19: the last 1,800 world-spanning facade/roof instances are six independent
+## local-bound sectors. Buildings retain their colors and physical positions.
+const DETAIL_LIMIT = [1180.0, 820.0, 460.0]
+const ROOF_LIMIT = [1550.0, 1100.0, 600.0]
+var r19_quality: int = 0
+var r19_centres: Array = []
+var r19_facade_chunks: Array[MultiMeshInstance3D] = []
+var r19_roof_chunks: Array[MultiMeshInstance3D] = []
+var r19_facade_instance_count: int = 0
+var r19_roof_instance_count: int = 0
 
 func _material(color: Color, emission: float = 0.0, metallic: float = 0.76, roughness: float = 0.38) -> StandardMaterial3D:
     var m := StandardMaterial3D.new()
@@ -109,64 +119,118 @@ func _cylinder(parent: Node3D, radius: float, height: float, position: Vector3, 
 
 func build(tower_data: Array[Dictionary], sector_centers: Array, sector_colors: Array) -> void:
     towers_built = tower_data.size()
+    r19_centres = sector_centers.duplicate()
     _build_facade_fins(tower_data, sector_colors)
     _build_roof_structures(tower_data, sector_colors)
     _build_skybridges(sector_centers, sector_colors)
     for i in sector_centers.size():
         _build_station(sector_centers[i], sector_colors[i], i)
     _build_distant_planet()
+    set_quality(0)
+
+func _sector_sizes(towers: Array[Dictionary]) -> Array[int]:
+    var totals: Array[int] = []
+    for sector in r19_centres.size():
+        totals.append(0)
+    for tower in towers:
+        var district: int = int(tower["sector"])
+        totals[district] += 1
+    return totals
 
 func _build_facade_fins(towers: Array[Dictionary], colors: Array) -> void:
-    var mm := MultiMesh.new()
-    mm.transform_format = MultiMesh.TRANSFORM_3D
-    mm.use_colors = true
-    mm.mesh = BoxMesh.new()
-    mm.instance_count = towers.size() * 4
-    var node := MultiMeshInstance3D.new()
-    node.name = "PremiumFacadeFins"
-    node.multimesh = mm
-    var metal := _material(Color(0.43,0.67,0.84),0.4)
+    var parent := Node3D.new()
+    parent.name = "PremiumFacadeFins"
+    add_child(parent)
+    var metal := _material(Color(0.43, 0.67, 0.84), 0.4)
     metal.vertex_color_use_as_albedo = true
-    node.material_override = metal
-    add_child(node)
-    for i in towers.size():
-        var t: Dictionary = towers[i]
-        var pos: Vector3 = t["pos"]
+    var sizes: Array[int] = _sector_sizes(towers)
+    var mesh_shape := BoxMesh.new()
+    var batches: Array[MultiMesh] = []
+    var next_slot: Array[int] = []
+    for sector in r19_centres.size():
+        var mesh_batch := MultiMesh.new()
+        mesh_batch.transform_format = MultiMesh.TRANSFORM_3D
+        mesh_batch.use_colors = true
+        mesh_batch.mesh = mesh_shape
+        mesh_batch.instance_count = sizes[sector] * 4
+        batches.append(mesh_batch)
+        next_slot.append(0)
+        var draw := MultiMeshInstance3D.new()
+        draw.name = "R19_FacadeDistrict_%02d" % sector
+        draw.position = r19_centres[sector]
+        draw.multimesh = mesh_batch
+        draw.material_override = metal
+        parent.add_child(draw)
+        r19_facade_chunks.append(draw)
+    for t in towers:
+        var district: int = int(t["sector"])
+        var pos: Vector3 = t["pos"] - r19_centres[district]
         var w: float = t["w"]
         var h: float = t["h"]
         var depth: float = t["depth"]
-        var col: Color = colors[int(t["sector"])].darkened(0.30)
+        var col: Color = colors[district].darkened(0.30)
         var corners: Array[Vector3] = [
             Vector3(-w * 0.46, 0, -depth * 0.51),
             Vector3(w * 0.46, 0, -depth * 0.51),
             Vector3(-w * 0.46, 0, depth * 0.51),
             Vector3(w * 0.46, 0, depth * 0.51)
         ]
-        for j in range(4):
-            var bar_pos: Vector3 = pos + corners[j]
-            mm.set_instance_transform(i*4+j, Transform3D(Basis.IDENTITY.scaled(Vector3(0.85,h,0.85)),bar_pos))
-            mm.set_instance_color(i*4+j,col)
-    window_instances = towers.size() * 4
+        for j in 4:
+            var slot: int = next_slot[district]
+            batches[district].set_instance_transform(slot,
+                Transform3D(Basis.IDENTITY.scaled(Vector3(0.85, h, 0.85)), pos + corners[j]))
+            batches[district].set_instance_color(slot, col)
+            next_slot[district] += 1
+            r19_facade_instance_count += 1
+    window_instances = r19_facade_instance_count
 
 func _build_roof_structures(towers: Array[Dictionary], colors: Array) -> void:
-    var roofs := MultiMesh.new()
-    roofs.transform_format = MultiMesh.TRANSFORM_3D
-    roofs.use_colors = true
-    roofs.mesh = CylinderMesh.new()
-    roofs.instance_count = towers.size()
-    var node := MultiMeshInstance3D.new()
-    node.name = "LuxuryRoofTerraces"
-    node.multimesh = roofs
-    var material := _material(Color.WHITE,0.18)
+    var parent := Node3D.new()
+    parent.name = "LuxuryRoofTerraces"
+    add_child(parent)
+    var material := _material(Color.WHITE, 0.18)
     material.vertex_color_use_as_albedo = true
-    node.material_override = material
-    add_child(node)
-    for i in towers.size():
-        var t: Dictionary=towers[i]
-        var position: Vector3=t["pos"] + Vector3(0,float(t["h"])*0.5+2.6,0)
-        var radius: float=minf(float(t["w"]),float(t["depth"]))*0.31
-        roofs.set_instance_transform(i,Transform3D(Basis.IDENTITY.scaled(Vector3(radius,2.6,radius)),position))
-        roofs.set_instance_color(i,colors[int(t["sector"])].darkened(0.40))
+    var cylinder := CylinderMesh.new()
+    var sizes: Array[int] = _sector_sizes(towers)
+    var batches: Array[MultiMesh] = []
+    var next_slot: Array[int] = []
+    for sector in r19_centres.size():
+        var batch := MultiMesh.new()
+        batch.transform_format = MultiMesh.TRANSFORM_3D
+        batch.use_colors = true
+        batch.mesh = cylinder
+        batch.instance_count = sizes[sector]
+        batches.append(batch)
+        next_slot.append(0)
+        var draw := MultiMeshInstance3D.new()
+        draw.name = "R19_RoofDistrict_%02d" % sector
+        draw.position = r19_centres[sector]
+        draw.multimesh = batch
+        draw.material_override = material
+        parent.add_child(draw)
+        r19_roof_chunks.append(draw)
+    for t in towers:
+        var district: int = int(t["sector"])
+        var position: Vector3 = t["pos"] - r19_centres[district] + Vector3(
+            0, float(t["h"]) * 0.5 + 2.6, 0)
+        var radius: float = minf(float(t["w"]), float(t["depth"])) * 0.31
+        var slot: int = next_slot[district]
+        batches[district].set_instance_transform(slot,
+            Transform3D(Basis.IDENTITY.scaled(Vector3(radius, 2.6, radius)), position))
+        batches[district].set_instance_color(slot, colors[district].darkened(0.40))
+        next_slot[district] += 1
+        r19_roof_instance_count += 1
+
+func set_quality(mode: int) -> void:
+    r19_quality = clampi(mode, 0, 2)
+    for facade in r19_facade_chunks:
+        if is_instance_valid(facade):
+            facade.visibility_range_end = DETAIL_LIMIT[r19_quality]
+            facade.visibility_range_end_margin = 150.0
+    for roof in r19_roof_chunks:
+        if is_instance_valid(roof):
+            roof.visibility_range_end = ROOF_LIMIT[r19_quality]
+            roof.visibility_range_end_margin = 175.0
 
 func _build_skybridges(centers: Array, colors: Array) -> void:
     var alloy := _material(Color(0.08,0.14,0.22))

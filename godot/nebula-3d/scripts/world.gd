@@ -887,6 +887,11 @@ func _set_graphics_quality(mode: int) -> void:
         aegis_r10.set_quality(graphics_quality)
     if is_instance_valid(city_cladding_r10):
         city_cladding_r10.set_quality(graphics_quality)
+    if is_instance_valid(premium_architecture):
+        premium_architecture.set_quality(graphics_quality)
+    var industry_r19 = get_node_or_null("OrbitalIndustryR9")
+    if industry_r19 != null:
+        industry_r19.set_quality(graphics_quality)
     _r18_set_city_quality()
     var details_r18 = get_node_or_null("HighDetailCityR5")
     if details_r18 != null:
