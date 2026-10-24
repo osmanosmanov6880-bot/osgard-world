@@ -18,7 +18,8 @@ static func compute(viewport: Vector2) -> Dictionary:
 	var head := Rect2(12.0,12.0,head_w,64.0)
 	var speed := Rect2(w-speed_w-12.0,12.0,speed_w,64.0)
 	var objective := Rect2(12.0,84.0,w-24.0,94.0)
-	var minimap := Rect2(w-160.0,185.0,148.0,149.0)
+	# Keep an optional map readable without covering a quarter of a tall phone.
+	var minimap := Rect2(w-148.0,185.0,136.0,136.0)
 	var help_y: float = h-maxf(196.0,minf(242.0,h*0.275))
 	var help := Rect2(12.0,help_y,w-24.0,52.0)
 	var journal_height: float = maxf(130.0,minf(355.0,h-335.0))

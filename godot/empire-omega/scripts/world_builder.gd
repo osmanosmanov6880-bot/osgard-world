@@ -37,11 +37,15 @@ var building_chunks := {}
 var active_chunk_count := 0
 var window_points: Array[Transform3D] = []
 var facade_windows: MultiMeshInstance3D
+var facade_frames: MultiMeshInstance3D
+var architecture_trim: MultiMeshInstance3D
 var last_window_mode := -1
 var waypoint_marker: Node3D
 var horizon_scenic: Node3D
 const ROAD_MATERIALS = preload("res://scripts/horizon_road_materials.gd")
 const LIGHT_GRADE = preload("res://scripts/horizon_light_grade.gd")
+const FACADE_MATERIALS = preload("res://scripts/horizon_facade_materials.gd")
+const ARCHITECTURE_TRIM = preload("res://scripts/horizon_architecture_trim.gd")
 var asphalt_pbr: StandardMaterial3D
 var concrete_pbr: StandardMaterial3D
 
@@ -55,7 +59,10 @@ func _ready() -> void:
 	_create_environment()
 	_create_terrain()
 	_create_roads()
+	architecture_trim = ARCHITECTURE_TRIM.new()
 	_create_city()
+	architecture_trim.call("finalize")
+	city_root.add_child(architecture_trim)
 	_create_window_batch()
 	_create_landmarks()
 	_create_waypoint_marker()
@@ -104,6 +111,8 @@ func _box(parent: Node3D, label: String, size: Vector3, position: Vector3, color
 		geometry.material_override = asphalt_pbr
 	elif label == "Sidewalk":
 		geometry.material_override = concrete_pbr
+	elif label.begins_with("Building_"):
+		geometry.material_override = FACADE_MATERIALS.facade(color)
 	else:
 		geometry.material_override = _material(color, 0.12, 0.62, glow)
 	holder.add_child(geometry)
@@ -192,10 +201,11 @@ func _create_city() -> void:
 				var color := base_color.lightened(rng.randf_range(0.05,0.32)) if (ix + iz + n) % 3 == 0 else base_color.darkened(rng.randf_range(0.08,0.28))
 				var pos := Vector3(x+offset,height*0.5,z+(offset if (ix + iz) % 2 == 0 else -offset))
 				_box(chunk,"Building_%03d" % building_count,Vector3(width,height,width),pos,color,true)
+				architecture_trim.call("record",pos,width,height)
 				_record_windows(pos,width,height)
 				building_count += 1
 				# Emissive parapet gives an evening skyline without external textures.
-				_box(chunk,"RoofLight",Vector3(width+0.35,0.27,width+0.35),Vector3(pos.x,height+0.15,pos.z),Color("95b7b7"),false,true)
+				_box(chunk,"RoofLight",Vector3(width+0.35,0.27,width+0.35),Vector3(pos.x,height+0.15,pos.z),Color("69747d"),false,false)
 
 func update_chunks(focus: Vector3, quality: String = "standard") -> void:
 	# Grid-quarter visibility and physics activation. Unlike disk streaming,
@@ -252,6 +262,26 @@ func _create_window_batch() -> void:
 	facade_windows.multimesh = multimesh
 	facade_windows.material_override = mat
 	city_root.add_child(facade_windows)
+	# Instanced satin-metal perimeter behind each dark glass window.
+	# One draw batch, rather than a new draw call per window.
+	var frame_mesh := BoxMesh.new()
+	frame_mesh.size = Vector3(1.27,1.60,0.055)
+	var frame_grid := MultiMesh.new()
+	frame_grid.transform_format = MultiMesh.TRANSFORM_3D
+	frame_grid.mesh = frame_mesh
+	frame_grid.instance_count = window_points.size()
+	for i in range(window_points.size()):
+		frame_grid.set_instance_transform(i,window_points[i])
+	facade_frames = MultiMeshInstance3D.new()
+	facade_frames.name = "InstancedMetalWindowFrames"
+	facade_frames.multimesh = frame_grid
+	var finish := StandardMaterial3D.new()
+	finish.albedo_color = Color("9ba5ad")
+	finish.metallic = 0.20
+	finish.roughness = 0.64
+	facade_frames.material_override = finish
+	facade_frames.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	city_root.add_child(facade_frames)
 	_update_windows(8.0,100)
 
 func _update_windows(hour: float, electricity: int) -> void:
@@ -422,6 +452,10 @@ func apply_visual_budget(mode: String) -> void:
 		weather_particles.amount_ratio = 0.25 if visual_budget == "low" else (0.65 if visual_budget == "standard" else 1.0)
 	if horizon_scenic != null:
 		horizon_scenic.visible = visual_budget != "low"
+	if architecture_trim != null:
+		architecture_trim.visible = visual_budget != "low"
+	if facade_frames != null:
+		facade_frames.visible = visual_budget != "low"
 	_apply_lighting()
 
 func update_weather(kind: String) -> void:

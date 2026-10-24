@@ -1,0 +1,33 @@
+name: OSGARD HORIZON R25 facade and readable mobile controls QA
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - 'godot/empire-omega/**'
+      - '.github/workflows/omega-r25-visual-ui-qa.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native-real-city:
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    steps:
+      - uses: actions/checkout@v4
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: false
+      - name: Generate original source assets and import full 3D world
+        run: |
+          python3 godot/empire-omega/tools/generate_audio.py
+          python3 godot/empire-omega/tools/generate_patrol_audio.py
+          godot --headless --editor --path godot/empire-omega --import --quit
+      - name: Validate PBR stone, metal frames, mobile geometry, real touch and full world
+        shell: bash
+        run: |
+          set -euo pipefail
+          for test in v23_horizon_visuals v26_horizon_sculpted_visuals v29_responsive_layout v28_touch_controls v37_touch_commands v38_adaptive_graphics v48_city_polish; do
+            timeout --signal=TERM --kill-after=5s 95s godot --headless --path godot/empire-omega --script "res://tests/$test.gd"
+          done

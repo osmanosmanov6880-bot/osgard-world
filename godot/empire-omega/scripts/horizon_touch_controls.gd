@@ -63,12 +63,12 @@ func _ready() -> void:
     add_child(button)
     var caption := Label.new()
     caption.name = "Caption"
-    caption.position = Vector2(0.0,30.0)
-    caption.size = Vector2(SIZE,36)
+    caption.position = Vector2(0.0,26.0)
+    caption.size = Vector2(SIZE,42)
     caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
     caption.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
     caption.mouse_filter = Control.MOUSE_FILTER_IGNORE
-    caption.add_theme_font_size_override("font_size",12)
+    caption.add_theme_font_size_override("font_size",18)
     caption.add_theme_color_override("font_color",Color("F3F8FC"))
     button.add_child(caption)
     _buttons[action] = button
@@ -81,9 +81,9 @@ func _ready() -> void:
 func _disc(action: String, pressed: bool) -> Texture2D:
   var image := Image.create(SIZE,SIZE,false,Image.FORMAT_RGBA8)
   image.fill(Color(0,0,0,0))
-  var accent := Color("E5B977") if action in ["jump","enter_vehicle"] else Color("7BE6F1")
-  if action == "pause_game": accent = Color("C8D4E4")
-  var fill := accent.darkened(0.78 if not pressed else 0.53)
+  var accent := Color("F1DBB8") if action in ["jump","enter_vehicle"] else Color("E2EBF2")
+  if action == "pause_game": accent = Color("D1D7DD")
+  var fill := Color("101c29") if not pressed else Color("2f4151")
   for y in range(SIZE):
     for x in range(SIZE):
       var distance: float = Vector2(float(x)-47.5,float(y)-47.5).length()
@@ -91,7 +91,7 @@ func _disc(action: String, pressed: bool) -> Texture2D:
       var fade: float = clampf((45.0-distance)/2.2,0.0,1.0)
       var outline: bool = distance >= 41.5
       var color: Color = accent if outline else fill
-      image.set_pixel(x,y,Color(color.r,color.g,color.b,fade*(0.94 if outline else 0.84)))
+      image.set_pixel(x,y,Color(color.r,color.g,color.b,fade*(0.98 if outline else 0.91)))
   return ImageTexture.create_from_image(image)
 
 func _layout() -> void:
@@ -178,15 +178,15 @@ func _make_quick_actions() -> void:
   quick_toggle = Button.new()
   quick_toggle.name = "QuickActionsToggle"
   quick_toggle.custom_minimum_size = Vector2(124,44)
-  quick_toggle.add_theme_font_size_override("font_size",13)
+  quick_toggle.add_theme_font_size_override("font_size",14)
   quick_toggle.pressed.connect(_toggle_quick_actions)
   add_child(quick_toggle)
   quick_panel = PanelContainer.new()
   quick_panel.name = "QuickActionsPanel"
   quick_panel.visible = false
   var style := StyleBoxFlat.new()
-  style.bg_color = Color("09172A",0.95)
-  style.border_color = Color("769AB0")
+  style.bg_color = Color("141b23",0.97)
+  style.border_color = Color("8f9ca6")
   style.set_border_width_all(1)
   style.set_corner_radius_all(12)
   style.set_content_margin_all(9.0)
@@ -205,7 +205,7 @@ func _make_quick_actions() -> void:
     var button := Button.new()
     button.name = "Action_"+action
     button.custom_minimum_size.y = 40
-    button.add_theme_font_size_override("font_size",12)
+    button.add_theme_font_size_override("font_size",14)
     button.pressed.connect(_activate_quick.bind(action))
     stack.add_child(button)
     _quick_buttons[action] = button

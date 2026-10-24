@@ -359,7 +359,7 @@ func _panel(bounds: Rect2, anchor_right: float = 0.0, anchor_bottom: float = 0.0
 	panel.offset_top = bounds.position.y
 	panel.offset_right = bounds.position.x + bounds.size.x
 	panel.offset_bottom = bounds.position.y + bounds.size.y
-	panel.add_theme_stylebox_override("panel",_style(Color("0a1929",0.86),Color("426476")))
+	panel.add_theme_stylebox_override("panel",_style(Color("141c25",0.90),Color("73828c")))
 	root.add_child(panel)
 	return panel
 
@@ -1381,12 +1381,12 @@ func _apply_responsive_layout() -> void:
 		map.custom_minimum_size = Vector2(106,106)
 		if not map_override: map_panel.visible = bool(frames["map_default"])
 		if diagnostic_visible and map_panel != null: map_panel.visible = false
-		header_value.add_theme_font_size_override("font_size",15)
-		meters_label.add_theme_font_size_override("font_size",12)
+		header_value.add_theme_font_size_override("font_size",16)
+		meters_label.add_theme_font_size_override("font_size",13)
 		mission_label.add_theme_font_size_override("font_size",16)
-		mission_distance_label.add_theme_font_size_override("font_size",12)
-		speed_label.add_theme_font_size_override("font_size",13)
-		hint_label.add_theme_font_size_override("font_size",12)
+		mission_distance_label.add_theme_font_size_override("font_size",13)
+		speed_label.add_theme_font_size_override("font_size",15)
+		hint_label.add_theme_font_size_override("font_size",13)
 	else:
 		_set_panel_frame(header_panel,Rect2(24,20,420,86),0,0,0,0)
 		_set_panel_frame(objective_panel,Rect2(-476,20,452,150),1,1,0,0)
