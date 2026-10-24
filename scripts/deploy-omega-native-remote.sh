@@ -3,6 +3,16 @@
 set -euo pipefail
 run_id="${1:?GitHub run id is required}"
 case "$run_id" in *[!0-9]*|'') echo "Invalid run id" >&2; exit 2;; esac
+# Serialize with the full-site atomic HTML swap: otherwise the older site
+# release can overwrite the freshly validated native engine mid-flight.
+lock_path="/run/lock/osgard-frontend-activation.lock"
+if [ -L "$lock_path" ] || ! command -v flock >/dev/null 2>&1; then
+  echo 'Trusted shared OSGARD activation lock is unavailable' >&2; exit 1
+fi
+exec 9>>"$lock_path"
+if ! flock -w 600 9; then
+  echo 'Timed out waiting for the shared OSGARD activation lock' >&2; exit 1
+fi
 root="/tmp/osgard-omega-native-${run_id}"
 container='osgard-world'
 game_root='/usr/share/nginx/html/games'

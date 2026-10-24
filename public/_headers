@@ -19,10 +19,28 @@
   Content-Encoding: gzip
   Cache-Control: public, max-age=86400, stale-while-revalidate=604800
 
+# The game overwrites index.* every native Godot release; NEVER cache its
+# HTML/manifest without revalidation. A stale manifest can point to R9 when
+# SHA-attested R10 is already published.
+/games/omega-3d-preview/
+  Cache-Control: no-store, max-age=0, must-revalidate
+
+/games/omega-3d-preview/index.html
+  Cache-Control: no-store, max-age=0, must-revalidate
+
+/games/omega-3d-preview/release.json
+  Cache-Control: no-store, max-age=0, must-revalidate
+
+/games/omega-3d-preview/*.js
+  Cache-Control: no-cache, max-age=0, must-revalidate
+
+/games/omega-3d-preview/*.pck
+  Cache-Control: no-cache, max-age=0, must-revalidate
+
 /games/omega-3d-preview/*.wasm
   Content-Type: application/wasm
   Content-Encoding: gzip
-  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+  Cache-Control: no-cache, max-age=0, must-revalidate
 
 /games/remix/arena-v2/nebula-3d/*.wasm
   Content-Type: application/wasm
