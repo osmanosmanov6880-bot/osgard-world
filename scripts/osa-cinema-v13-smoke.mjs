@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
+import { readFileSync, existsSync } from 'node:fs'
+import { createHash } from 'node:crypto'
 
 const component = readFileSync('src/OSACinema.tsx', 'utf8')
 const css = readFileSync('src/osaCinemaV13.css', 'utf8')
@@ -39,14 +40,24 @@ assert.ok(component.includes('target.closest('), 'Media/interactive keyboard foc
 assert.ok(media.includes('isPermanentMediaUrl'), 'Media permanence guard removed')
 assert.ok(progress.includes('OSA_PROGRESS_STORAGE_KEY'), 'Existing progress storage contract missing')
 assert.ok(router.includes("path === '/osa-cinema'"), 'Cinema route removed')
-const resources = [...css.matchAll(/url\("([^"]+)"/g)].map(match => match[1])
+const resources = [...new Set([...css.matchAll(/url\\("([^"]+)"\\)/g)].map(match => match[1]))]
+const manifest = JSON.parse(readFileSync('public/osa-cinema/reference/manifest.json', 'utf8'))
 const expectedAssets = ['library.webp', 'understand.webp', 'verify.webp', 'decide.webp']
+assert.equal(manifest.files.length, expectedAssets.length, 'Approved image manifest must list four files')
+assert.equal(resources.length, expectedAssets.length, 'V13 backgrounds may only load four approved images')
 for (const asset of expectedAssets) {
-  assert.ok(resources.some(resource => resource.endsWith('/media/reference/' + asset)), `Missing approved image ${asset}`)
+  const url = '/osa-cinema/reference/' + asset
+  assert.ok(resources.includes(url), `Missing same-origin reference: ${asset}`)
+  const filePath = 'public' + url
+  assert.ok(existsSync(filePath), `Asset not archived in repository: ${filePath}`)
+  const bytes = readFileSync(filePath)
+  assert.ok(bytes.length >= 10_000 && bytes.length <= 8_000_000, `Invalid asset size: ${asset}`)
+  assert.equal(bytes.toString('ascii', 0, 4), 'RIFF', `RIFF magic mismatch: ${asset}`)
+  assert.equal(bytes.toString('ascii', 8, 12), 'WEBP', `WebP magic mismatch: ${asset}`)
+  const expected = manifest.files.find(item => item.name === asset)
+  assert.ok(expected, `No provenance entry: ${asset}`)
+  assert.equal(bytes.length, expected.size, `Size drift: ${asset}`)
+  assert.equal(createHash('sha256').update(bytes).digest('hex'), expected.sha256, `SHA-256 drift: ${asset}`)
 }
-for (const resource of resources) {
-  const url = new URL(resource)
-  assert.equal(url.protocol, 'https:')
-  assert.equal(url.hostname, 'osa-cinema-beyond-the-model.osman-absolu-5357.chatgpt.site')
-}
-console.log('OSA_CINEMA_V13_SMOKE_PASS: scoped art direction, 390px layout, reduced motion, bilingual URLs, media/progress contracts and image references')
+assert.ok(!css.includes('https://osa-cinema-beyond-the-model.'), 'V13 still relies on an external site for backgrounds')
+console.log('OSA_CINEMA_V13_SMOKE_PASS: accessible navigation, media/progress, scoped responsive UI and 4 SHA-256-attested same-origin WebP assets')
