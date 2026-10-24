@@ -208,7 +208,7 @@ func _create_city() -> void:
 				_box(chunk,"Building_%03d" % building_count,Vector3(width,height,width),pos,color,true)
 				architecture_trim.call("record",pos,width,height)
 				streetfront.call("record",pos,width,height,building_count)
-				_record_windows(pos,width,height)
+				_record_windows(pos,width,height,building_count)
 				building_count += 1
 				# Emissive parapet gives an evening skyline without external textures.
 				_box(chunk,"RoofLight",Vector3(width+0.35,0.27,width+0.35),Vector3(pos.x,height+0.15,pos.z),Color("69747d"),false,false)
@@ -236,19 +236,26 @@ func update_chunks(focus: Vector3, quality: String = "standard") -> void:
 					collision.set_deferred("disabled",not visible_now)
 		building_chunks[key] = entry
 
-func _record_windows(center: Vector3, width: float, height: float) -> void:
-	# Facade windows are a SINGLE GPU-instanced mesh (instead of thousands of nodes).
+func _record_windows(center: Vector3, width: float, height: float, entrance_variant: int = 0) -> void:
+	# R27: each building has a real ground-floor storefront. Do not draw
+	# the old ground-floor window THROUGH its chosen street-facing door.
+	# Keep all three other facades and every upper-floor window intact.
 	var floors: int = maxi(1,int(height / 4.5))
 	for floor_index in range(floors):
 		var y: float = 2.9 + float(floor_index) * 4.4
-		if y > height - 1.1: continue
+		if y > height - 1.1:
+			continue
 		for column in range(3):
 			var offset: float = float(column-1) * width * 0.27
-			window_points.append(Transform3D(Basis(),Vector3(center.x+offset,y,center.z-width*0.5-0.08)))
-			window_points.append(Transform3D(Basis(),Vector3(center.x+offset,y,center.z+width*0.5+0.08)))
 			var side_basis := Basis(Vector3.UP,PI*0.5)
-			window_points.append(Transform3D(side_basis,Vector3(center.x-width*0.5-0.08,y,center.z+offset)))
-			window_points.append(Transform3D(side_basis,Vector3(center.x+width*0.5+0.08,y,center.z+offset)))
+			if STREETFRONT_SCENE.window_allowed(floor_index,0,entrance_variant):
+				window_points.append(Transform3D(Basis(),Vector3(center.x+offset,y,center.z-width*0.5-0.08)))
+			if STREETFRONT_SCENE.window_allowed(floor_index,1,entrance_variant):
+				window_points.append(Transform3D(Basis(),Vector3(center.x+offset,y,center.z+width*0.5+0.08)))
+			if STREETFRONT_SCENE.window_allowed(floor_index,2,entrance_variant):
+				window_points.append(Transform3D(side_basis,Vector3(center.x-width*0.5-0.08,y,center.z+offset)))
+			if STREETFRONT_SCENE.window_allowed(floor_index,3,entrance_variant):
+				window_points.append(Transform3D(side_basis,Vector3(center.x+width*0.5+0.08,y,center.z+offset)))
 
 func _create_window_batch() -> void:
 	var mesh := BoxMesh.new()
