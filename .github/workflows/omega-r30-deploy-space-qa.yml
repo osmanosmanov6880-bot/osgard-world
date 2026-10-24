@@ -1,0 +1,45 @@
+name: OSGARD Omega R30 disk-safe native SSH publication contracts
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - '.github/workflows/omega-web-direct-deploy.yml'
+      - '.github/workflows/omega-r30-deploy-space-qa.yml'
+      - 'scripts/omega-native-space-budget.py'
+      - 'scripts/omega-native-remote-free-space.sh'
+      - 'scripts/omega-native-remote-cleanup.sh'
+      - 'scripts/omega-native-storage.contract.test.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  capacity-and-release-safety:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - name: Native package capacity calculator rejects malformed resources
+        run: python3 scripts/omega-native-space-budget.py --self-test
+      - name: Validate no remote shell mutation in disk read-only preflight
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash -n scripts/omega-native-remote-free-space.sh
+          bash -n scripts/omega-native-remote-cleanup.sh
+          bash scripts/omega-native-remote-free-space.sh 1
+          if bash scripts/omega-native-remote-free-space.sh 'invalid'; then
+            echo 'Untrusted capacity value accepted'; exit 1
+          fi
+          if bash scripts/omega-native-remote-free-space.sh 12884901889; then
+            echo 'Oversized capacity value accepted'; exit 1
+          fi
+          if bash scripts/omega-native-remote-cleanup.sh '../wrong'; then
+            echo 'Unsafe cleanup id accepted'; exit 1
+          fi
+          bash scripts/omega-native-remote-cleanup.sh 99999999999
+      - name: Verify real release source integrity and fail-closed ordering
+        run: |
+          python3 scripts/omega-build-freshness.py --self-test
+          python3 scripts/omega-live-integrity.py --self-test
+          python3 scripts/omega-ssh-stale-gate.contract.test.py
+          python3 scripts/omega-native-storage.contract.test.py

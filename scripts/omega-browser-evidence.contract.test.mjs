@@ -102,5 +102,35 @@ test('failed CDP and invalid fallback fail, never create fake screenshot',async(
     })}),
     screenshot:async()=>Buffer.from('not a png')
   }
-  await assert.rejects(captureAnimatedWebGLViewport(page),/Neither authentic WebGL screenshot method worked/)
+  await assert.rejects(captureAnimatedWebGLViewport(page),/No authentic WebGL pixels could be captured/)
+})
+
+test('canvas readback captures actual animated Godot pixels if CDP freezes',async()=>{
+  const page={
+    context:()=>({newCDPSession:async()=>({
+      send:async()=>{throw new Error('GPU screenshot blocked')},
+      detach:async()=>{}
+    })}),
+    evaluate:async(callback)=>{
+      assert.equal(typeof callback,'function')
+      return 'data:image/png;base64,'+pixel.toString('base64')
+    },
+    screenshot:async()=>{throw new Error('Playwright screenshot should not be used')}
+  }
+  const result=await captureAnimatedWebGLViewport(page)
+  assert.equal(result.method,'chromium-canvas-readback')
+  assert.match(result.fallback_reason,/GPU screenshot blocked/)
+  assert.deepEqual(result.png,pixel)
+})
+
+test('black/invalid canvas readback never counts as verified image',async()=>{
+  const page={
+    context:()=>({newCDPSession:async()=>({
+      send:async()=>{throw new Error('CDP not responding')},
+      detach:async()=>{}
+    })}),
+    evaluate:async()=>{throw new Error('Actual WebGL readback stayed dark')},
+    screenshot:async()=>Buffer.from('placeholder HTML, not pixels')
+  }
+  await assert.rejects(captureAnimatedWebGLViewport(page),/No authentic WebGL pixels could be captured.*readback stayed dark/)
 })
