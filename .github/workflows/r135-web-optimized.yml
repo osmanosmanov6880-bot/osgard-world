@@ -151,9 +151,12 @@ jobs:
 
       - name: Verify signed WebGL archive through real production Nginx rules
         shell: bash
+        env:
+          OSGARD_EXPECTED_R135_SOURCE: ${{ github.sha }}
         run: bash scripts/r135-nginx-wasm-smoke.sh "$RUNNER_TEMP/r135-optimized"
 
       - name: Retain visual QA screenshots and web artifacts
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: osgard-r135-optimized-web-qa
