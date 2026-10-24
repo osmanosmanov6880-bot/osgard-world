@@ -2,7 +2,7 @@ extends SceneTree
 ## HORIZON R27: actual street-level 3D architectural details, one GPU
 ## MultiMesh per facade material; zero new colliders or vehicle actions.
 const FRONT = preload("res://scripts/horizon_streetfront_details.gd")
-const WORLD = preload("res://scripts/world_builder.gd")
+# Load WorldBuilder when SceneTree is running, consistent with R25 world tests.
 var passed := 0
 var failed := 0
 
@@ -37,10 +37,12 @@ func _run() -> void:
 	var glass: MultiMeshInstance3D = detail.get_node("ShopfrontGlassBatch")
 	var front_glass: Transform3D = glass.multimesh.get_instance_transform(0)
 	verify(front_glass.origin.z < 8.0-6.0,"first shop glass sits on exterior street-facing wall")
+	print("R27 DEBUG FIRST GLASS=",front_glass.origin)
 	verify(absf(front_glass.origin.y-1.62)<0.01,"shopfront glazing located at plausible pedestrian eye level")
 	verify(glass.multimesh.instance_count==6,"two storefront glass windows per building")
 	verify((detail.get_node("MetalJambBatch") as MultiMeshInstance3D).multimesh.instance_count==9,"three entrance frame pieces per building")
 	var variation: Transform3D = (detail.get_node("EntranceDoorBatch") as MultiMeshInstance3D).multimesh.get_instance_transform(1)
+	print("R27 DEBUG SECOND DOOR=",variation.origin)
 	verify(variation.origin.x < -20.0-6.0,"second facade rotates door toward a different street")
 	var collider_count := 0
 	for node in detail.get_children():
@@ -52,7 +54,9 @@ func _run() -> void:
 	impossible.record(Vector3(NAN,0,0),12,9,2)
 	impossible.record(Vector3(0,0,0),-12,9,2)
 	verify(int(impossible.get("frontage_count"))==1,"malformed building measurements cannot create broken geometry")
-	var world: Node3D = WORLD.new()
+	var world_script: Variant = load("res://scripts/world_builder.gd")
+	verify(world_script!=null,"full WorldBuilder script loads under native Godot")
+	var world: Node3D = world_script.new()
 	root.add_child(world)
 	var live: Node3D = world.get("streetfront")
 	verify(live!=null,"original playable WorldBuilder creates new details inside game scene")
