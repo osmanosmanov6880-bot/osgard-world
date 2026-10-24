@@ -1,6 +1,7 @@
 extends Node3D
 const SPRING = preload("res://scripts/horizon_chassis_spring.gd")
 const SCULPT = preload("res://scripts/horizon_coupe_sculpt.gd")
+const WHEEL_SURFACE = preload("res://scripts/horizon_four_wheel_surface.gd")
 ## OSGARD HORIZON DRIVE: original PBR sports coupe assembled in Godot.
 ## These are editable original meshes, not meshes or assets from Forza.
 ## Built for Godot 4.4.1 GL Compatibility / HTML5.
@@ -205,11 +206,18 @@ func set_brake_lights(on: bool) -> void:
 	if mat != null:
 		mat.emission_energy_multiplier = 3.5 if on else 0.45
 
-func simulate_chassis(forward_speed: float, yaw_rate: float, forward_acceleration: float, grip: float, handbrake: bool, contacts: Array[float], dt: float) -> void:
-	# Visual spring-damper layer; do not replace the collision body authority.
-	if dt <= 0.0: return
-	var target_lean: float = SPRING.target_roll(forward_speed,yaw_rate,grip,handbrake)
-	var target_squat: float = SPRING.target_pitch(forward_acceleration)
+func simulate_chassis(forward_speed: float, yaw_rate: float, forward_acceleration: float,
+		grip: float, handbrake: bool, contacts: Array[float], dt: float,
+		grounded: Array[bool] = []) -> void:
+	# Visual springs are driven by four real static-world physics contacts.
+	# CharacterBody3D collision authority is deliberately unchanged.
+	if dt<=0.0 or not is_finite(dt):
+		return
+	var road_tilt: Vector2 = WHEEL_SURFACE.terrain_attitude(contacts,grounded)
+	var target_lean: float = clampf(
+		SPRING.target_roll(forward_speed,yaw_rate,grip,handbrake)+road_tilt.x*0.65,-0.15,0.15)
+	var target_squat: float = clampf(
+		SPRING.target_pitch(forward_acceleration)+road_tilt.y*0.75,-0.14,0.14)
 	var roll_result: Vector2 = SPRING.integrate(roll_angle,roll_velocity,target_lean,dt,4.2)
 	roll_angle = roll_result.x
 	roll_velocity = roll_result.y
@@ -217,9 +225,15 @@ func simulate_chassis(forward_speed: float, yaw_rate: float, forward_acceleratio
 	pitch_angle = pitch_result.x
 	pitch_velocity = pitch_result.y
 	var sum_contact: float = 0.0
-	for contact in contacts:
-		sum_contact += contact
-	var bob_target: float = clampf(sum_contact/float(maxi(contacts.size(),1))*0.45,-0.065,0.07)
+	var supported: int = 0
+	for index in range(contacts.size()):
+		var has_support: bool = index>=grounded.size() or grounded[index]
+		if has_support and is_finite(contacts[index]):
+			sum_contact += WHEEL_SURFACE.visual_travel(contacts[index],true)
+			supported += 1
+	# Unsupported vehicle visually settles, instead of treating all four
+	# extended wheels as if they had neutral ground compression.
+	var bob_target: float = clampf(sum_contact/float(maxi(supported,1))*0.45,-0.065,0.07) if supported>0 else -0.045
 	var vertical: Vector2 = SPRING.integrate(ride_bob,ride_bob_velocity,bob_target,dt,5.2)
 	ride_bob = vertical.x
 	ride_bob_velocity = vertical.y
@@ -227,6 +241,9 @@ func simulate_chassis(forward_speed: float, yaw_rate: float, forward_acceleratio
 	for index in range(body_parts.size()):
 		if not is_instance_valid(body_parts[index]): continue
 		body_parts[index].transform = Transform3D(lean,Vector3(0,ride_bob,0))*body_rest[index]
+	var wheel_blend: float = 1.0-exp(-clampf(dt,0.0,0.10)*13.0)
 	for index in range(wheel_rigs.size()):
 		if index >= contacts.size(): break
-		wheel_rigs[index].position.y = lerpf(wheel_rigs[index].position.y,-0.28+clampf(contacts[index],-0.10,0.18),clampf(dt*13.0,0.0,1.0))
+		var has_support: bool = index>=grounded.size() or grounded[index]
+		var wheel_height: float = -0.28+WHEEL_SURFACE.visual_travel(contacts[index],has_support)
+		wheel_rigs[index].position.y = lerpf(wheel_rigs[index].position.y,wheel_height,wheel_blend)

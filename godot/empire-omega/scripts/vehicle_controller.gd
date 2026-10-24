@@ -10,6 +10,7 @@ const HORIZON_BODY = preload("res://scripts/horizon_vehicle_art.gd")
 const TIRE_MODEL = preload("res://scripts/horizon_tire_model.gd")
 const DRIVER_ASSISTS = preload("res://scripts/horizon_driver_assists.gd")
 const YAW_INERTIA = preload("res://scripts/horizon_yaw_inertia.gd")
+const WHEEL_SURFACE = preload("res://scripts/horizon_four_wheel_surface.gd")
 const MAX_FORWARD = 29.0
 const MAX_REVERSE = 9.0
 const ACCELERATION = 9.5
@@ -129,24 +130,10 @@ func _set_brake_lights(enabled: bool) -> void:
 		material.emission_energy_multiplier = 2.6 if enabled else 0.25
 		material.albedo_color = Color("ff4058") if enabled else Color("e35d54")
 
-func _sample_wheel_contacts() -> Array[float]:
-	var values: Array[float] = []
-	var space: PhysicsDirectSpaceState3D = get_world_3d().direct_space_state
-	# Four independent wheel-ground probes, deliberately excluding other cars/NPCs.
-	for side in [-1.34,1.34]:
-		for longitudinal in [-1.75,1.76]:
-			var start: Vector3 = to_global(Vector3(side,0.75,longitudinal))
-			var finish: Vector3 = to_global(Vector3(side,-1.35,longitudinal))
-			var ray := PhysicsRayQueryParameters3D.create(start,finish,1)
-			ray.exclude = [get_rid()]
-			var result: Dictionary = space.intersect_ray(ray)
-			if result.is_empty():
-				values.append(0.0)
-			else:
-				var wheel_axle: float = to_global(Vector3(side,-0.28,longitudinal)).y
-				var ground_y: float = (result["position"] as Vector3).y
-				values.append(clampf(ground_y+0.57-wheel_axle,-0.1,0.18))
-	return values
+func _sample_wheel_contacts() -> Dictionary:
+	# R21 four real Godot world-ray hits; explicitly distinguish a
+	# suspended wheel from a supported spring at neutral travel.
+	return WHEEL_SURFACE.probe(self)
 
 func _update_drift_score(delta: float) -> void:
 	var gain: float = TIRE_MODEL.drift_gain(speed,lateral_speed,handbrake_on,delta) if driving else 0.0
@@ -229,7 +216,8 @@ func _physics_process(delta: float) -> void:
 	if horizon_visual != null:
 		horizon_visual.call("roll_wheels",covered * signf(speed),applied_steering)
 		var longitudinal_acceleration: float = (speed-prior_speed)/maxf(delta,0.001)
-		horizon_visual.call("simulate_chassis",speed,current_yaw_rate,longitudinal_acceleration,traction_factor,handbrake_on,_sample_wheel_contacts(),delta)
+		var wheel_support: Dictionary = _sample_wheel_contacts()
+		horizon_visual.call("simulate_chassis",speed,current_yaw_rate,longitudinal_acceleration,traction_factor,handbrake_on,wheel_support["travel"],delta,wheel_support["grounded"])
 	_update_drift_score(delta)
 	for wheel in wheel_nodes:
 		wheel.rotate_x(spin)
