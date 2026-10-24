@@ -382,6 +382,7 @@ require(
     "docs/R18-GPU-DISTRICT-CULLING.md",
     "R18", "360", "6", "F7", "F9", "F10", "WebGL",
 )
+premium = require("scripts/premium_architecture.gd", "func make_facade_material(", "emission_image")
 # R19: ensure the last world-spanning steel, industrial and roof meshes
 # have per-sector GPU bounds and quality-dependent visibility.
 assert 'R19_FacadeDistrict_' in premium
@@ -403,7 +404,7 @@ require(
     "R19", "1800", "48", "F7", "F9", "F10",
 )
 require("scripts/architectural_detail_r4.gd", "func build(")
-premium = require("scripts/premium_architecture.gd", "func make_facade_material(", "emission_image")
+
 require("scripts/drone.gd", "extends")
 require("scripts/radar.gd", "extends")
 smoke = require(
