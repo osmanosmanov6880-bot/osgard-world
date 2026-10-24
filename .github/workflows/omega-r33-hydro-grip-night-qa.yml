@@ -1,7 +1,7 @@
 name: EMPIRE Omega R33 four wheel wet grip and night lights
 on:
   pull_request:
-    branches: [master]
+    branches: [master, 'feat/omega-r32-cinematic-city-wet-grip']
     paths:
       - 'godot/empire-omega/scripts/horizon_rain_puddles.gd'
       - 'godot/empire-omega/scripts/vehicle_controller.gd'
