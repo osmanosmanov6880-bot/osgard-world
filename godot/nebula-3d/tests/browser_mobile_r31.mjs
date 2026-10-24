@@ -231,6 +231,35 @@ try {
     await send('touchEnd',[]);
     await expectTelemetry('compact portrait GAS release prevents ghost thrust',
       s => s?.touch_count === 0 && s.touch_throttle <= 0.01, 25000);
+    // R36: genuine CDP finger taps on the *real* Godot Button, not an engine
+    // method invocation or DOM-only decorative control.
+    const lab = await expectTelemetry(
+      'R36 mobile performance launcher has real touch coordinates',
+      s => s?.r36_mobile_perf === true && s.r36_perf_visible === false &&
+        s.r36_fps_button_x > 0 && s.r36_fps_button_y > 0 &&
+        s.r36_browser_touch_poll_samples >= 2,
+      30000);
+    const uiPoint = (x,y,id) => ({
+      x:tinyRect.x + x * tinyRect.width / lab.touch_view_w,
+      y:tinyRect.y + y * tinyRect.height / lab.touch_view_h,
+      id,force:1
+    });
+    const fps = uiPoint(lab.r36_fps_button_x, lab.r36_fps_button_y, 7);
+    await send('touchStart',[fps]);
+    await send('touchEnd',[]);
+    const open = await expectTelemetry(
+      'R36 real mobile FPS button opens performance overlay',
+      s => s?.r36_perf_visible === true && s.r36_perf_active === false &&
+        s.r36_benchmark_button_x > 0 && s.r36_benchmark_button_y > 0,
+      30000);
+    const runBenchmark = uiPoint(open.r36_benchmark_button_x,
+      open.r36_benchmark_button_y, 8);
+    await send('touchStart',[runBenchmark]);
+    await send('touchEnd',[]);
+    await expectTelemetry('R36 real mobile 20-second FPS benchmark starts',
+      s => s?.r36_perf_active === true && s.touch_count === 0, 30000);
+    // Do not invent a 20-second physical-hardware FPS outcome in SwiftShader.
+    // The actual device owner can finish a benchmark and download JSON.
   } finally {
     await send('touchEnd', []).catch(() => {});
   }
