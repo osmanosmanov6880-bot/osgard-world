@@ -153,7 +153,7 @@ jobs:
         shell: bash
         env:
           OSGARD_EXPECTED_R135_SOURCE: ${{ github.sha }}
-          OSGARD_EXPECTED_R135_VERSION: r135-web-framing-w6-20261024
+          OSGARD_EXPECTED_R135_VERSION: r135-web-studio-w7-20261024
         run: |
           set -euo pipefail
           export OSGARD_EXPECTED_R135_MANIFEST_SHA256="$(sha256sum "$RUNNER_TEMP/r135-optimized/release.json" | awk '{print $1}')"
