@@ -103,6 +103,35 @@ try {
     await expectTelemetry('multitouch release never sticks boost',
       s => s?.touch_count === 0 && s.touch_boost === false &&
         s.touch_throttle <= 0.01, 20000);
+    // Rotation is performed in the actual browser, not by invoking the
+    // engine's layout helper. Validate that the new controls still work.
+    await page.setViewportSize({ width: 844, height: 390 });
+    const rotated = await expectTelemetry(
+      'landscape phone recalculates genuine touch layout',
+      s => s?.touch_view_w > s?.touch_view_h && s.touch_count === 0 &&
+        s.touch_thrust_x > 0 && s.touch_thrust_y > 0,
+      25000
+    );
+    const landscapeRect = await page.evaluate(() => {
+      const r = document.querySelector('#canvas')?.getBoundingClientRect();
+      return r ? { x:r.x, y:r.y, width:r.width, height:r.height } : null;
+    });
+    if (!landscapeRect || landscapeRect.width < 400) {
+      throw new Error('Rotated phone viewport is not visible');
+    }
+    const landscapeThrust = {
+      x: landscapeRect.x + rotated.touch_thrust_x *
+        landscapeRect.width / rotated.touch_view_w,
+      y: landscapeRect.y + rotated.touch_thrust_y *
+        landscapeRect.height / rotated.touch_view_h,
+      id: 3, force: 1
+    };
+    await send('touchStart', [landscapeThrust]);
+    await expectTelemetry('landscape physical touch activates ship throttle',
+      s => s?.touch_count >= 1 && s.touch_throttle >= 0.9, 25000);
+    await send('touchEnd', []);
+    await expectTelemetry('landscape touch release clears propulsion',
+      s => s?.touch_count === 0 && s.touch_throttle <= 0.01, 20000);
   } finally {
     await send('touchEnd', []).catch(() => {});
   }
