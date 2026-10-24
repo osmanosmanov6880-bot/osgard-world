@@ -17,7 +17,7 @@ def reject(reason: str):
 
 def stage(archive: Path, manifest_path: Path, destination: Path):
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    if manifest.get("version") != "r135-web-mission-20261024":
+    if manifest.get("version") != "r135-web-mission-w3-20261024":
         reject("wrong release tag")
     if manifest.get("engine") != "Godot 4.4.1":
         reject("wrong Godot engine")
@@ -30,6 +30,12 @@ def stage(archive: Path, manifest_path: Path, destination: Path):
         reject("PCK outside safe size budget")
     if files["index.pck"]["size_bytes"] != size:
         reject("PCK size mismatch")
+    wasm = files.get("index.wasm")
+    packed_wasm = files.get("index.wasm.gz")
+    if not isinstance(wasm, dict) or not isinstance(packed_wasm, dict):
+        reject("WASM and precompressed WASM are both required")
+    if packed_wasm.get("size_bytes", 0) <= 0 or packed_wasm.get("size_bytes", 0) >= wasm.get("size_bytes", 0) * 0.70:
+        reject("WASM gzip savings below mandatory transfer budget")
     if manifest.get("native_tests") != "passed" or not manifest.get("original_glbs_preserved"):
         reject("required native source verification missing")
 
