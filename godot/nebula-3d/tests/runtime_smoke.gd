@@ -746,6 +746,9 @@ func _run() -> void:
     # R36: touch-accessible 20-second on-device profiler, no keyboard needed.
     # Native unit checks the actual controls and local JSON export. It does
     # NOT fabricate a physical-phone FPS score.
+    touch_r21.force_mobile_for_tests(true)
+    touch_r21.set_safe_insets(Vector4(59, 60, 59, 34))
+    touch_r21._layout_for_size(Vector2(568, 320))
     monitor_r11.configure_mobile(true, touch_r21,
         Vector4(59, 60, 59, 34), Vector2(568, 320))
     if not check(monitor_r11.r36_mobile and
@@ -801,6 +804,8 @@ func _run() -> void:
         "R36 compact phone FPS button overlaps start-flight control"):return
     monitor_r11.configure_mobile(false, touch_r21,
         Vector4.ZERO, Vector2(1280, 720))
+    touch_r21.set_safe_insets(Vector4.ZERO)
+    touch_r21.force_mobile_for_tests(false)
     if not check(not monitor_r11.r36_launcher.visible,
         "R36 phone FPS button leaked into desktop HUD"):return
     print("NEBULA_R36_REAL_DEVICE_UI_SUCCESS phone_launcher=1 local_json=1 benchmark_synthetic=0")
