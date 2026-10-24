@@ -11,12 +11,18 @@ var dragging: bool = false
 var motion: bool = true
 var quality: int = 0
 var touch_id: int = -1
+var touches: Dictionary = {}
+var pinch_span: float = 0.0
+var view_index: int = 0
+var readout_clock: float = 0.0
+const VIEW_NAMES = ["OVERVIEW", "SERVICE DECK", "OPTICAL HEAD", "SIDE INSPECTION"]
 
 var hud_panel: PanelContainer
 var action_panel: PanelContainer
 var heading: Label
 var hud: Label
 var helper: Label
+var mission_label: Label
 var grid: GridContainer
 var action_buttons: Array[Button] = []
 
@@ -136,8 +142,12 @@ func _build_hud() -> void:
     hud = Label.new()
     hud.add_theme_color_override("font_color", Color(0.86, 0.95, 0.97))
     text_stack.add_child(hud)
+    mission_label = Label.new()
+    mission_label.name = "MissionStatus"
+    mission_label.add_theme_color_override("font_color", Color(1.0, 0.71, 0.47))
+    text_stack.add_child(mission_label)
     helper = Label.new()
-    helper.text = "PBR SERVICE SPINE  ·  SIMULATION ONLY"
+    helper.text = "DRAG / PINCH TO INSPECT  ·  M: MISSION  ·  V: VIEW  ·  SIM ONLY"
     helper.add_theme_color_override("font_color", Color(0.53, 0.79, 0.84))
     text_stack.add_child(helper)
 
@@ -147,7 +157,9 @@ func _build_hud() -> void:
     overlay.add_child(action_panel)
     grid = GridContainer.new()
     action_panel.add_child(grid)
-    _button(grid, "ECO / HERO", _toggle_quality, true)
+    _button(grid, "START MISSION", _start_mission, true)
+    _button(grid, "NEXT VIEW", _next_view, false)
+    _button(grid, "ECO / HERO", _toggle_quality, false)
     _button(grid, "PLAY / PAUSE", _toggle_motion, false)
     _button(grid, "OPEN HATCH", _toggle_hatch, false)
     _button(grid, "RESET VIEW", _reset_view, false)
@@ -162,13 +174,15 @@ func _update_layout() -> void:
     var size := get_viewport().get_visible_rect().size
     var portrait := _viewport_is_portrait()
     var margin := 24.0 if portrait else 18.0
-    var font_title := 48 if portrait else 25
-    var font_state := 35 if portrait else 18
-    var font_help := 26 if portrait else 13
+    var font_title := 43 if portrait else 25
+    var font_state := 29 if portrait else 18
+    var font_help := 19 if portrait else 12
+    var font_mission := 31 if portrait else 17
     heading.add_theme_font_size_override("font_size", font_title)
     hud.add_theme_font_size_override("font_size", font_state)
     helper.add_theme_font_size_override("font_size", font_help)
-    grid.columns = 2 if portrait else 4
+    mission_label.add_theme_font_size_override("font_size", font_mission)
+    grid.columns = 2 if portrait else 3
     grid.add_theme_constant_override("h_separation", 12 if portrait else 9)
     grid.add_theme_constant_override("v_separation", 12 if portrait else 9)
     for b in action_buttons:
@@ -180,12 +194,45 @@ func _update_layout() -> void:
         hud_panel.position = Vector2(margin, 42)
         hud_panel.custom_minimum_size = Vector2(size.x - margin * 2, 0)
         action_panel.custom_minimum_size = Vector2(size.x - margin * 2, 0)
-        action_panel.position = Vector2(margin, maxf(0, size.y - 285))
+        action_panel.position = Vector2(margin, maxf(0, size.y - 384))
     else:
         hud_panel.position = Vector2(margin, margin)
         hud_panel.custom_minimum_size = Vector2(minf(size.x * 0.48, 510), 0)
         action_panel.custom_minimum_size = Vector2(minf(size.x * 0.70, 780), 0)
-        action_panel.position = Vector2(margin, maxf(0, size.y - 95))
+        action_panel.position = Vector2(margin, maxf(0, size.y - 145))
+    _update_view()
+
+func _start_mission() -> void:
+    controller.start_mission()
+    _refresh_status()
+
+func _next_view() -> void:
+    _apply_view((view_index + 1) % VIEW_NAMES.size())
+
+func _apply_view(index: int) -> void:
+    view_index = index
+    match view_index:
+        0:
+            focus = Vector3(0.0, 1.85, 4.95)
+            distance = 12.8
+            orbit_yaw = 0.44
+            orbit_pitch = 0.21
+        1:
+            focus = Vector3(-4.55, 0.65, 5.92)
+            distance = 5.7
+            orbit_yaw = 0.83
+            orbit_pitch = 0.39
+        2:
+            focus = Vector3(-2.5, 3.40, 5.25)
+            distance = 6.3
+            orbit_yaw = 0.57
+            orbit_pitch = 0.16
+        _:
+            focus = Vector3(0.0, 1.65, 5.35)
+            distance = 12.0
+            orbit_yaw = 1.35
+            orbit_pitch = 0.12
+    _refresh_status()
     _update_view()
 
 func _toggle_quality() -> void:
@@ -203,16 +250,19 @@ func _toggle_hatch() -> void:
     _refresh_status()
 
 func _reset_view() -> void:
-    orbit_yaw = 0.44
-    orbit_pitch = 0.21
-    distance = 12.8
-    _update_view()
+    _apply_view(0)
 
 func _refresh_status() -> void:
     var state: Dictionary = controller.summary()
     var mode := "HERO" if quality == 2 else "ECO"
     var state_text := "RUNNING" if motion else "PAUSED"
-    hud.text = "VISUAL QUALITY   %s\nMECHANICAL LOOP   %s" % [mode, state_text]
+    hud.text = "QUALITY  %s  |  DRIVE  %s  |  VIEW  %s" % [mode, state_text, VIEW_NAMES[view_index]]
+    var feedback: String = str(state["mission_feedback"])
+    mission_label.text = str(state["mission_goal"]) + "\n" + feedback
+    if bool(state["mission_active"]):
+        mission_label.text += "  |  %0.1f S" % float(state["mission_elapsed"])
+    elif bool(state["mission_completed"]):
+        mission_label.text += "  |  %0.1f S" % float(state["mission_elapsed"])
     if int(state["loading_failures"]) > 0:
         hud.text += "\nMODEL LOAD FAILED - CHECK GLB IMPORT"
 
@@ -225,7 +275,8 @@ func _update_view() -> void:
     var ratio: float = size.x / maxf(size.y, 1.0)
     # Godot FOV is vertical. Widen the orbit distance on portrait screens
     # instead of cutting the original full-width service-spine geometry.
-    var aspect_compensation: float = maxf(1.0, 1.52 / maxf(ratio, 0.35))
+    var width_goal: float = 1.27 if view_index == 0 else 0.90
+    var aspect_compensation: float = maxf(1.0, width_goal / maxf(ratio, 0.42))
     var effective_distance: float = distance * aspect_compensation
     var direction := Vector3(
         sin(orbit_yaw) * cos(orbit_pitch), sin(orbit_pitch),
@@ -233,6 +284,20 @@ func _update_view() -> void:
     )
     camera.position = focus + direction * effective_distance
     camera.look_at(focus, Vector3.UP)
+
+func _process(delta: float) -> void:
+    readout_clock += delta
+    if readout_clock < 0.18:
+        return
+    readout_clock = 0.0
+    _refresh_status()
+    # Read-only browser QA telemetry: simulated state, no credentials,
+    # remote control, network calls, or hardware integrations.
+    if OS.has_feature("web"):
+        var state: Dictionary = controller.summary()
+        state["view"] = view_index
+        state["scene_ready"] = true
+        JavaScriptBridge.eval("window.__OSGARD_R135_QA = " + JSON.stringify(state) + ";", true)
 
 func _unhandled_input(event: InputEvent) -> void:
     if event is InputEventMouseButton:
@@ -246,10 +311,28 @@ func _unhandled_input(event: InputEvent) -> void:
         orbit_yaw -= event.relative.x * 0.006
         orbit_pitch += event.relative.y * 0.006
     elif event is InputEventScreenTouch:
-        touch_id = event.index if event.pressed else -1
-    elif event is InputEventScreenDrag and event.index == touch_id:
-        orbit_yaw -= event.relative.x * 0.008
-        orbit_pitch += event.relative.y * 0.008
+        if event.pressed:
+            touches[event.index] = event.position
+            touch_id = event.index
+        else:
+            touches.erase(event.index)
+            if touch_id == event.index:
+                touch_id = -1
+        pinch_span = 0.0
+    elif event is InputEventScreenDrag:
+        if touches.has(event.index):
+            touches[event.index] = event.position
+        if touches.size() == 2:
+            var positions: Array = touches.values()
+            var p0: Vector2 = positions[0]
+            var p1: Vector2 = positions[1]
+            var current_span: float = p0.distance_to(p1)
+            if pinch_span > 1.0:
+                distance = clampf(distance * pinch_span / maxf(current_span, 1.0), 4.5, 38.0)
+            pinch_span = current_span
+        elif event.index == touch_id:
+            orbit_yaw -= event.relative.x * 0.008
+            orbit_pitch += event.relative.y * 0.008
     elif event is InputEventKey and event.pressed and not event.echo:
         if event.keycode == KEY_F:
             _toggle_hatch()
@@ -259,4 +342,8 @@ func _unhandled_input(event: InputEvent) -> void:
             _toggle_quality()
         elif event.keycode == KEY_R:
             _reset_view()
+        elif event.keycode == KEY_M:
+            _start_mission()
+        elif event.keycode == KEY_V:
+            _next_view()
     _update_view()
