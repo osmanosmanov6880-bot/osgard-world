@@ -65,7 +65,7 @@ func configure(cam: Camera3D, environment: Environment) -> void:
     visual_faults = preload("res://R135VisualDiagnostics.gd").new()
     visual_faults.name = "R135SimulatedFaultIndicators"
     add_child(visual_faults)
-    visual_faults.configure(head)
+    visual_faults.call("configure", head)
     _load_challenge_record()
     # Do not load ECO and then HERO at startup. Main.gd selects a preset once.
 
@@ -408,14 +408,14 @@ func _physics_process(delta: float) -> void:
         status_beacons[i].light_color = Color(0.23, 0.85, 0.51) if challenge_completed else Color(0.91, 0.40, 0.15)
         status_beacons[i].light_energy = (.17+.13*(.5+.5*sin(elapsed*1.9+float(i)*PI))) if motion_enabled else .09
     if visual_faults != null:
-        visual_faults.update_visuals(challenge_fault_index, challenge_active, challenge_completed, challenge_step, challenge_elapsed)
+        visual_faults.call("update_visuals", challenge_fault_index, challenge_active, challenge_completed, challenge_step, challenge_elapsed)
     if scene_label != null and (challenge_active or challenge_completed):
         scene_label.text = "R135 / " + ("SIMULATED DIAGNOSTICS" if challenge_active else "SIMULATED FAULT CLEARED")
     elif scene_label != null:
         scene_label.text = "R135 / SIMULATED SERVICE SPINE - NO LIVE DATA"
 
 func summary() -> Dictionary:
-    var visuals: Dictionary = visual_faults.snapshot() if visual_faults != null else {}
+    var visuals: Dictionary = visual_faults.call("snapshot") if visual_faults != null else {}
     return {"schema":"OSGARD_R135_SCENE_STATE_V1","simulation_only":true,
         "physical_telemetry_connected":false,"quality":quality,"loaded":loaded_path,
         "loading_failures":load_failures,"load_count":load_count,
