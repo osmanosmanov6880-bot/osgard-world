@@ -14,7 +14,7 @@ if (!page.includes('index.js') || !page.includes('<canvas')) fail('React fallbac
 const manifestResponse = await fetch(probe('release.json?verify=' + Date.now()), options)
 if (!manifestResponse.ok) fail('missing release manifest: ' + manifestResponse.status)
 const manifest = await manifestResponse.json()
-if (manifest.version !== 'r135-web-mission-20261024') fail('wrong R135 release version')
+if (manifest.version !== 'r135-web-mission-w3-20261024') fail('wrong R135 release version')
 const files = manifest.files
 const pckBytes = Number(manifest.optimized_pck_bytes)
 if (pckBytes < 10_000_000 || pckBytes >= 100_000_000) fail('PCK size outside approved budget')
@@ -30,6 +30,21 @@ for (const name of ['index.js', 'index.wasm', 'index.pck']) {
   const type = (response.headers.get('content-type') || '').toLowerCase()
   if (name === 'index.wasm' && !type.includes('application/wasm')) fail('bad wasm MIME ' + type)
   if (name === 'index.js' && !type.includes('javascript')) fail('bad loader MIME ' + type)
+}
+const wasmCompressed = files['index.wasm.gz']
+if (!wasmCompressed?.sha256) fail('Release manifest has no verified compressed WASM')
+const compressedResponse = await fetch(probe('index.wasm'), {
+  method: 'HEAD',
+  headers: { 'accept-encoding': 'gzip', 'cache-control': 'no-cache' },
+  redirect: 'manual',
+})
+if (compressedResponse.status !== 200) fail('compressed WASM HTTP ' + compressedResponse.status)
+if ((compressedResponse.headers.get('content-encoding') || '').toLowerCase() !== 'gzip') {
+  fail('Godot WASM is not delivered with gzip Content-Encoding')
+}
+const zippedLength = compressedResponse.headers.get('content-length')
+if (zippedLength !== null && Number(zippedLength) !== Number(wasmCompressed.size_bytes)) {
+  fail('Compressed WASM length does not match signed manifest: ' + zippedLength)
 }
 const response = await fetch(probe('index.pck'), {
   headers: { Range: 'bytes=0-63', 'cache-control': 'no-cache', 'accept-encoding': 'identity' },
