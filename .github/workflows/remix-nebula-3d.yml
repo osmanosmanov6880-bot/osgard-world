@@ -232,6 +232,16 @@ jobs:
           path: r25-browser-qa/
           if-no-files-found: warn
           retention-days: 14
+      # R40 field-testing builds must be downloadable WITHOUT production deploy.
+      # Upload only for this review branch; never expose secrets or run SSH.
+      - name: Upload isolated R40 candidate for real-device A/B checks
+        if: github.event_name == 'pull_request' && github.head_ref == 'perf/nebula-r40-bridge-batches-after-r38-20261024'
+        uses: actions/upload-artifact@v4
+        with:
+          name: nebula-r40-on-device-candidate
+          path: public/games/remix/arena-v2/nebula-3d/
+          if-no-files-found: error
+          retention-days: 14
       - name: Commit native sources and verified Web export
         if: github.event_name != 'pull_request'
         run: |
