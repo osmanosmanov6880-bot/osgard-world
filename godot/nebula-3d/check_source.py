@@ -708,6 +708,9 @@ r34_dom_tests = require(
 assert "r34_dom_bridge_active" in r21_mobile
 assert "func _r34_poll_browser_contacts()" in r21_mobile
 assert "r34_ignore_until_all_released" in r21_mobile
+assert "func _r34_gate_stale_contacts(points: Array)" in r21_mobile
+assert "R34 finger-free hangar close must allow the next independent tap" in smoke
+assert "R34 browser touch bridge remains blocked after hangar release" in smoke
 assert "if r34_dom_bridge_active:" in r21_mobile
 assert 'state["touch_dom_bridge"] = r21_touch.r34_dom_bridge_active' in world
 assert "s.touch_dom_bridge === true" in r31_mobile
