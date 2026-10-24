@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { mkdir } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { chromium } from 'playwright'
+import { expectedPlayCatalogCount } from './play-catalog-test-contract.mjs'
 
 const base = (process.env.OSA5_BASE_URL || 'http://127.0.0.1:4173').replace(/\/+$/, '')
 const output = resolve('artifacts/osa5-responsive')
@@ -264,9 +265,10 @@ try {
           // Request the real lazy catalogue through its visible link after capturing the hero.
           await page.locator('.cp-glass-panel a[href="#catalog"]').click()
           await page.locator('#catalog').waitFor({ state: 'visible', timeout: 8000 })
-          await page.waitForFunction(() => document.querySelectorAll('#catalog .play-card[data-world-id]').length === 19, null, { timeout: 5000 })
+          await page.waitForFunction(expected => document.querySelectorAll('#catalog .play-card[data-world-id]').length === expected, expectedPlayCatalogCount, { timeout: 8000 })
           const ids = await page.locator('#catalog .play-card[data-world-id]').evaluateAll(cards => cards.map(card => card.dataset.worldId))
-          assert.equal(new Set(ids).size, 19, 'Catalogue must expose 19 distinct real projects')
+          assert.equal(ids.length, expectedPlayCatalogCount, 'All released catalogue cards must render');
+          assert.equal(new Set(ids).size, expectedPlayCatalogCount, 'Catalogue must expose unique real game projects')
           for (const id of ['vector-zero', 'time', 'null-shift', 'zion-030']) assert.ok(ids.includes(id), 'Catalogue lost existing game ' + id)
           assert.equal(await page.locator('.play-universe iframe').count(), 0, 'Browsing the catalogue must not start an embedded game')
           assert.equal(await page.evaluate(() => window.__osa5CinematicTrace.length), 0, 'Reduced-motion catalogue navigation must not start a transition')
