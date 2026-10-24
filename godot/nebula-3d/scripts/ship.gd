@@ -40,6 +40,25 @@ var last_impact_speed: float = 0.0
 var flight_distance: float = 0.0
 var was_flying: bool = false
 var thruster_power: float = 0.0
+## R23: physical keyboard layouts, browser-native scancodes and an explicit
+## mouse-click launch fallback all feed the SAME genuine inertial physics.
+const KEY_THRUST = 1
+const KEY_REVERSE = 2
+const KEY_LEFT = 4
+const KEY_RIGHT = 8
+const KEY_ASCEND = 16
+const KEY_DESCEND = 32
+const KEY_NOSE_UP = 64
+const KEY_NOSE_DOWN = 128
+const KEY_BOOST = 256
+const KEY_FIRE = 512
+var browser_input_mask: int = 0
+var cruise_assist: bool = false
+var last_pilot_throttle: float = 0.0
+var last_pilot_yaw: float = 0.0
+var keyboard_samples: int = 0
+var browser_input_samples: int = 0
+var cruise_distance: float = 0.0
 
 func _ready() -> void:
     motion_mode = CharacterBody3D.MOTION_MODE_FLOATING
@@ -78,11 +97,35 @@ func clear_touch_controls() -> void:
     touch_boost = false
     touch_fire = false
 
+func set_cruise_assist(active: bool) -> void:
+    cruise_assist = active and not controls_locked
+
+func _browser_mask() -> int:
+    if not OS.has_feature("web"):
+        return 0
+    # One read per physical tick, not a costly JS bridge call per key.
+    # window key listeners use KeyboardEvent.code, unaffected by RU/EN layout.
+    browser_input_samples += 1
+    var result: Variant = JavaScriptBridge.eval("Number(window.__nebulaPilotMask || 0)")
+    return int(result) if result != null else 0
+
+func _physical_key(code: Key) -> bool:
+    # KEY_W is a *logical character* and maps to Cyrillic Ц on a Russian
+    # keyboard. Physical scan codes preserve movement on all keyboard layouts.
+    return Input.is_physical_key_pressed(code) or Input.is_key_pressed(code)
+
 func _pilot_axes() -> Vector4:
-    var yaw: float = float(Input.is_key_pressed(KEY_D)) - float(Input.is_key_pressed(KEY_A))
-    var pitch: float = float(Input.is_key_pressed(KEY_DOWN)) - float(Input.is_key_pressed(KEY_UP))
-    var throttle: float = float(Input.is_key_pressed(KEY_W)) - float(Input.is_key_pressed(KEY_S))
-    var altitude: float = float(Input.is_key_pressed(KEY_E)) - float(Input.is_key_pressed(KEY_Q))
+    browser_input_mask = _browser_mask()
+    keyboard_samples += 1
+    var b: int = browser_input_mask
+    var yaw: float = float(_physical_key(KEY_D) or (b & KEY_RIGHT) != 0) - float(
+        _physical_key(KEY_A) or (b & KEY_LEFT) != 0)
+    var pitch: float = float(_physical_key(KEY_DOWN) or (b & KEY_NOSE_DOWN) != 0) - float(
+        _physical_key(KEY_UP) or (b & KEY_NOSE_UP) != 0)
+    var throttle: float = float(_physical_key(KEY_W) or (b & KEY_THRUST) != 0) - float(
+        _physical_key(KEY_S) or (b & KEY_REVERSE) != 0)
+    var altitude: float = float(_physical_key(KEY_E) or (b & KEY_ASCEND) != 0) - float(
+        _physical_key(KEY_Q) or (b & KEY_DESCEND) != 0)
     if touch_enabled:
         if absf(touch_steering.x) > absf(yaw):
             yaw = touch_steering.x
@@ -92,6 +135,14 @@ func _pilot_axes() -> Vector4:
             throttle = touch_throttle
         if absf(touch_vertical) > absf(altitude):
             altitude = touch_vertical
+    # An actual pilot-controlled cruise assist button ensures the player can
+    # move with a mouse even if browser focus/keyboard capture is unavailable.
+    if throttle < -0.05:
+        cruise_assist = false
+    elif cruise_assist and throttle < 0.05:
+        throttle = 1.0
+    last_pilot_throttle = throttle
+    last_pilot_yaw = yaw
     return Vector4(yaw, pitch, throttle, altitude)
 
 func _physics_process(delta: float) -> void:
@@ -107,7 +158,9 @@ func _physics_process(delta: float) -> void:
     var pitch: float = axes.y
     var throttle: float = axes.z
     var climb: float = axes.w
-    var afterburner: bool = (Input.is_key_pressed(KEY_SHIFT) or touch_boost)         and throttle > 0.05 and boost > 1.0
+    var afterburner: bool = (_physical_key(KEY_SHIFT) or
+        (browser_input_mask & KEY_BOOST) != 0 or touch_boost) and
+        throttle > 0.05 and boost > 1.0
     # Angular acceleration and damping make heavy craft bank and settle.
     var angular_alpha: float = 1.0 - exp(-TURN_RESPONSE * delta)
     yaw_rate = lerpf(yaw_rate, -yaw * turn_speed, angular_alpha)
@@ -130,13 +183,17 @@ func _physics_process(delta: float) -> void:
     thruster_power = absf(throttle) * (1.0 if afterburner else 0.55)
     boost = clampf(boost + (-23.0 if afterburner else 16.0) * delta, 0.0, 100.0)
     cooldown = maxf(0.0, cooldown - delta)
-    if (Input.is_key_pressed(KEY_SPACE) or touch_fire) and cooldown <= 0.0:
+    if (_physical_key(KEY_SPACE) or
+        (browser_input_mask & KEY_FIRE) != 0 or touch_fire) and cooldown <= 0.0:
         cooldown = maxf(0.10, 0.30 - float(weapon_rank) * 0.05)
         fired.emit(global_position + forward * 2.2, forward)
     var pre_collision_velocity: Vector3 = velocity
     var previous_position: Vector3 = global_position
     move_and_slide()
-    flight_distance += global_position.distance_to(previous_position)
+    var frame_distance: float = global_position.distance_to(previous_position)
+    flight_distance += frame_distance
+    if cruise_assist:
+        cruise_distance += frame_distance
     was_flying = throttle > 0.05 or velocity.length_squared() > 20.0
     # Damage scales with the closing component of the impact, rather than
     # arbitrary frame count; a scrape is gentler than a head-on collision.
