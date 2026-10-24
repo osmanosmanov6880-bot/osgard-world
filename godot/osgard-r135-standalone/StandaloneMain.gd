@@ -307,8 +307,10 @@ func _update_view() -> void:
     var target_focus: Vector3 = focus
     # Track the actual moving optical carriage only in the optical inspection view.
     # In portrait, reserve extra vertical room for the fixed status and touch panels.
-    if view_index == 2 and optical_tracking and controller != null and controller.boom != null:
-        target_focus.x = lerpf(focus.x, controller.boom.position.x, 0.42)
+    if view_index == 2 and optical_tracking and controller != null:
+        var carriage: Node3D = controller.get("boom") as Node3D
+        if carriage != null:
+            target_focus.x = lerpf(focus.x, carriage.position.x, 0.42)
     if ratio < 0.8:
         target_focus.y -= 0.55 if view_index == 2 else 0.23
     var direction := Vector3(
