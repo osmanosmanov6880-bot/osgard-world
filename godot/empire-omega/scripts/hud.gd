@@ -729,10 +729,15 @@ func toggle_diagnostics() -> void:
 	if diagnostic_panel != null:
 		diagnostic_panel.visible = diagnostic_visible
 
-func update_diagnostics(fps: int, chunks: int, total_chunks: int, citizens: int, traffic: int, stopped: int = 0) -> void:
+func update_diagnostics(fps: int, chunks: int, total_chunks: int, citizens: int, traffic: int, stopped: int = 0, p95: float = 0.0, quality: String = "standard", adaptive: bool = false) -> void:
 	if diagnostic_label == null or not diagnostic_visible:
 		return
-	diagnostic_label.text = "FPS: %d   ·   3D NODES: %d\nQUARTERS: %d / %d   ·   NPC: %d   ·   CARS: %d   ·   STOPPED: %d" % [fps,int(Performance.get_monitor(Performance.OBJECT_NODE_COUNT)),chunks,total_chunks,citizens,traffic,stopped]
+	var frame_ms: String = ("%.1f ms" % p95) if is_finite(p95) and p95 > 0.0 else "sampling"
+	var tier: String = quality.to_upper() + (" AUTO" if adaptive else "")
+	diagnostic_label.text = "FPS: %d · P95: %s\nQ: %s · CITY: %d/%d\n3D: %d · NPC: %d · CARS: %d · STOP: %d" % [
+		fps,frame_ms,tier,chunks,total_chunks,
+		int(Performance.get_monitor(Performance.OBJECT_NODE_COUNT)),citizens,traffic,stopped
+	]
 
 func announce(message: String) -> void:
 	last_announcement = message
