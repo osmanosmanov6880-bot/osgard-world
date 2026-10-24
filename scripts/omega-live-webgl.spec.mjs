@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test'
 import { readFileSync } from 'node:fs'
 import { PNG } from 'pngjs'
+import { browserTouchPoint } from './omega-mobile-touch-geometry.mjs'
 
 // This exercises the REAL public Godot 4.4.1 WebAssembly and WebGL renderer,
 // not just the marketing page or HTML canvas shell. Native v34 separately
@@ -143,12 +144,11 @@ test('authentic released Godot runs WebGL2, paints scene, handles real keyboard/
   if(testInfo.project.name.startsWith('touch')){
     const bounds=await page.locator('#canvas').boundingBox()
     expect(bounds).toBeTruthy()
-    const tap=(x,y)=>({x:Math.round(bounds.x+x/390*bounds.width),y:Math.round(bounds.y+y/844*bounds.height)})
-    // Real R12 390x844 browser screenshots place CAR around (304,750),
-    // FORWARD at (355,805) and LEFT at (35,805). The older R11 test used
-    // (259,702)/(337,786)/(53,786), hitting empty space after viewport
-    // expansion and falsely reporting successful mobile interaction.
-    const enter=tap(304,750)
+    // The actual R12 mobile screenshot shows CAR at (259,702), GAS at
+    // (337,786) and LEFT at (53,786) at 390x844. A previous test tried
+    // CAR at (304,750) — empty roadway, not a game control. Derive every
+    // target from the same Godot _layout() geometry instead of guessing.
+    const enter=browserTouchPoint(bounds,'enter_vehicle')
     await page.touchscreen.tap(enter.x,enter.y)
     await page.waitForTimeout(900)
     const entered=await page.screenshot({animations:'disabled',timeout:45000})
@@ -156,8 +156,8 @@ test('authentic released Godot runs WebGL2, paints scene, handles real keyboard/
     await testInfo.attach('godot-mobile-after-enter-car.png',{body:entered,contentType:'image/png'})
     expect(entryMotion,'tapping the visible CAR button must actually change the world camera').toBeGreaterThan(0.08)
     const cdp=await page.context().newCDPSession(page)
-    const accelerator={...tap(355,805),id:0,radiusX:6,radiusY:6}
-    const steering={...tap(35,805),id:1,radiusX:6,radiusY:6}
+    const accelerator={...browserTouchPoint(bounds,'move_forward'),id:0,radiusX:6,radiusY:6}
+    const steering={...browserTouchPoint(bounds,'move_left'),id:1,radiusX:6,radiusY:6}
     await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[accelerator,steering]})
     await page.waitForTimeout(1900)
     await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]})

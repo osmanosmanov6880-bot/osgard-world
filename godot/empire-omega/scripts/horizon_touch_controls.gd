@@ -6,18 +6,22 @@ const HORIZON_LAYOUT = preload("res://scripts/horizon_responsive_layout.gd")
 
 const SIZE: int = 96
 const ACTIONS = ["move_left","move_right","move_backward","move_forward","jump","enter_vehicle","interact","pause_game"]
+# TouchScreenButton already emits InputEventAction into Node._input()
+# AND updates held InputMap state in native Godot 4.4.1 (confirmed by V37).
+# NEVER re-emit its pressed signal: it executes PAUSE/CAR/USE twice.
+const DISCRETE_ACTIONS = ["enter_vehicle","interact","pause_game"]
 const LABELS = {
   "ru": {
-    "move_left":"◀","move_right":"▶","move_backward":"ТОРМ","move_forward":"ГАЗ",
-    "jump_driving":"РУЧН.","jump_walking":"ПРЫГ","enter_vehicle":"АВТО","interact":"F","pause_game":"Ⅱ"
+    "move_left":"ЛЕВ","move_right":"ПРАВ","move_backward":"ТОРМ","move_forward":"ГАЗ",
+    "jump_driving":"РУЧН.","jump_walking":"ПРЫГ","enter_vehicle":"АВТО","interact":"ДЕЙ","pause_game":"II"
   },
   "en": {
-    "move_left":"◀","move_right":"▶","move_backward":"BRAKE","move_forward":"GO",
-    "jump_driving":"PARK","jump_walking":"JUMP","enter_vehicle":"CAR","interact":"F","pause_game":"Ⅱ"
+    "move_left":"LEFT","move_right":"RIGHT","move_backward":"BRAKE","move_forward":"GO",
+    "jump_driving":"PARK","jump_walking":"JUMP","enter_vehicle":"CAR","interact":"USE","pause_game":"II"
   },
   "zh": {
-    "move_left":"◀","move_right":"▶","move_backward":"刹车","move_forward":"前进",
-    "jump_driving":"手刹","jump_walking":"跳跃","enter_vehicle":"车辆","interact":"F","pause_game":"Ⅱ"
+    "move_left":"左","move_right":"右","move_backward":"刹车","move_forward":"前进",
+    "jump_driving":"手刹","jump_walking":"跳跃","enter_vehicle":"车辆","interact":"互动","pause_game":"II"
   }
 }
 const WALK_BACK_LABELS = {"ru":"НАЗАД","en":"BACK","zh":"后退"}
@@ -47,7 +51,9 @@ func _ready() -> void:
     button.name = "Touch_"+action
     button.action = action
     button.visibility_mode = TouchScreenButton.VISIBILITY_TOUCHSCREEN_ONLY
-    button.passby_press = true
+    # Sliding between accelerator/steering remains smooth. Discrete commands
+    # must require an intentional touch beginning ON the relevant button.
+    button.passby_press = not DISCRETE_ACTIONS.has(action)
     button.texture_normal = _disc(action,false)
     button.texture_pressed = _disc(action,true)
     var shape := CircleShape2D.new()
