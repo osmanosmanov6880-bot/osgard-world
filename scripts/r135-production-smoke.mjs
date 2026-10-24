@@ -24,7 +24,9 @@ for (const name of ['index.js', 'index.wasm', 'index.pck']) {
   const response = await fetch(probe(name), { method: 'HEAD', ...options })
   if (response.status !== 200) fail(name + ' HTTP ' + response.status)
   const lengthHeader = response.headers.get('content-length')
-  if (lengthHeader !== null && Number(lengthHeader) !== Number(files[name].size_bytes)) {
+  // The WASM route intentionally serves its verified .gz sidecar even when
+  // an edge normalizes the request's Accept-Encoding header.
+  if (name !== 'index.wasm' && lengthHeader !== null && Number(lengthHeader) !== Number(files[name].size_bytes)) {
     fail(name + ' content-length mismatch: ' + lengthHeader)
   }
   const type = (response.headers.get('content-type') || '').toLowerCase()
@@ -46,9 +48,11 @@ if (encoding === 'gzip') {
     fail('Compressed WASM length does not match signed manifest: ' + zippedLength)
   }
 } else if (!encoding) {
-  // Some production edges normalize Accept-Encoding before it reaches Nginx.
-  // Raw WASM remains playable; still verify both the raw binary and the
-  // independently served compressed asset against the signed release manifest.
+  if (process.env.OSGARD_REQUIRE_GZIP === '1') {
+    fail('candidate Nginx did not serve precompressed WASM')
+  }
+  // Public production smoke remains diagnostic if an upstream edge strips
+  // Content-Encoding. Verify raw and compressed assets against the manifest.
   const rawLength = compressedResponse.headers.get('content-length')
   if (rawLength !== null && Number(rawLength) !== Number(files['index.wasm'].size_bytes)) {
     fail('Raw WASM length does not match signed manifest: ' + rawLength)
@@ -79,5 +83,5 @@ if (chunk.length !== 64) fail('expected exactly 64 PCK bytes, got ' + chunk.leng
 console.log('R135 LIVE PASS', JSON.stringify({
   route: url, sourceVersion: manifest.version,
   pckBytes, wasmBytes: files['index.wasm'].size_bytes,
-  pckRanges: response.status, status: 'native-Godot-WebGL',
+  pckRanges: response.status, wasmDelivery: encoding === 'gzip' ? 'gzip' : 'raw-edge-fallback', status: 'native-Godot-WebGL',
 }))
