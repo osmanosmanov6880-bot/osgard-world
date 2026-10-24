@@ -19,6 +19,7 @@ const DRAG = 2.4
 
 var driving := false
 var horizon_visual: Node3D
+var last_wheel_support: Dictionary = {}
 var wheel_nodes: Array[MeshInstance3D] = []
 var brake_lamp_nodes: Array[MeshInstance3D] = []
 var brake_lights_on := false
@@ -217,6 +218,7 @@ func _physics_process(delta: float) -> void:
 		horizon_visual.call("roll_wheels",covered * signf(speed),applied_steering)
 		var longitudinal_acceleration: float = (speed-prior_speed)/maxf(delta,0.001)
 		var wheel_support: Dictionary = _sample_wheel_contacts()
+		last_wheel_support = wheel_support
 		horizon_visual.call("simulate_chassis",speed,current_yaw_rate,longitudinal_acceleration,traction_factor,handbrake_on,wheel_support["travel"],delta,wheel_support["grounded"])
 	_update_drift_score(delta)
 	for wheel in wheel_nodes:
