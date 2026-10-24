@@ -16,3 +16,7 @@
 `npm run qa:vector-zero` runs the **actual inline game runtime** with Canvas/DOM adapters. A test-only completion hook reaches the real `finish(true)` code path: this verifies storage and UI, **not that an AI-controlled player solved the level**. Existing physics, keyboard, touch, gamepad, hidden-tab and lifecycle tests remain active.
 
 After code merge, the SSH deployment verifies the exact published VECTOR//ZERO script SHA-256 against the release package. Run human gameplay QA on desktop, mobile and controller independently to assess appearance, player skill and GPU performance.
+
+## Browser QA
+
+The general `OSGARD frontend validation` workflow runs `scripts/vector-zero-ghost-browser.spec.mjs` on real Chromium desktop and mobile projects, checking seeded personal-best replay controls, active gameplay, polarity, pause/restart and malformed-storage fallback. Screenshots/traces are retained on browser failure.
