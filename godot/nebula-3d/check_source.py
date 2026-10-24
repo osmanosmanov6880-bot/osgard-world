@@ -588,7 +588,9 @@ assert 'aurora_scenic_r22.set_quality(graphics_quality)' in world
 assert 'preload("res://scripts/engine_cinema_r22.gd")' in ship_visual
 assert 'exhaust_r22.name = "R22_RealIonDrive"' in ship_visual
 assert 'if mission_index > 0 and r21_launch_protection <= 0.0:' in world
-assert "sky_shader.sky_horizon_color = Color(0.82, 0.52, 0.34)" in require(
+assert "sky_shader.sky_horizon_color = Color(0.30, 0.42, 0.60)" in require(
+    "scripts/cinematic_lighting_r12.gd")
+assert "env.fog_light_color = Color(0.29, 0.37, 0.49)" in require(
     "scripts/cinematic_lighting_r12.gd")
 assert 'nebula-r22-keyboard-focus' in r21_web
 require(
