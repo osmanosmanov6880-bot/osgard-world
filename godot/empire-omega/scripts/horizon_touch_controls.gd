@@ -6,9 +6,9 @@ const HORIZON_LAYOUT = preload("res://scripts/horizon_responsive_layout.gd")
 
 const SIZE: int = 96
 const ACTIONS = ["move_left","move_right","move_backward","move_forward","jump","enter_vehicle","interact","pause_game"]
-# Movement is read by Input.get_action_strength() every physics tick; these
-# one-shot actions are consumed inside Main/HUD _input(event), so they MUST
-# emit an InputEventAction when the virtual button is pressed.
+# TouchScreenButton already emits InputEventAction into Node._input()
+# AND updates held InputMap state in native Godot 4.4.1 (confirmed by V37).
+# NEVER re-emit its pressed signal: it executes PAUSE/CAR/USE twice.
 const DISCRETE_ACTIONS = ["enter_vehicle","interact","pause_game"]
 const LABELS = {
   "ru": {
@@ -54,9 +54,6 @@ func _ready() -> void:
     # Sliding between accelerator/steering remains smooth. Discrete commands
     # must require an intentional touch beginning ON the relevant button.
     button.passby_press = not DISCRETE_ACTIONS.has(action)
-    if DISCRETE_ACTIONS.has(action):
-      button.pressed.connect(_relay_discrete_action.bind(action,true))
-      button.released.connect(_relay_discrete_action.bind(action,false))
     button.texture_normal = _disc(action,false)
     button.texture_pressed = _disc(action,true)
     var shape := CircleShape2D.new()
@@ -137,19 +134,6 @@ func set_preview(enabled: bool) -> void:
   for button in _buttons.values():
     (button as TouchScreenButton).visibility_mode = TouchScreenButton.VISIBILITY_ALWAYS if enabled else TouchScreenButton.VISIBILITY_TOUCHSCREEN_ONLY
   set_mode(_driving,_blocked)
-
-func _relay_discrete_action(action: String, pressed: bool) -> void:
-  if not DISCRETE_ACTIONS.has(action) or not InputMap.has_action(action): return
-  if pressed and _blocked: return
-  # TouchScreenButton maintains the held InputMap state, but Main._input and
-  # HUD._input require an actual event for CAR/INTERACT/PAUSE. Godot 4.4
-  # documents Input.parse_input_event(InputEventAction) for precisely this.
-  # Do not relay continuous axes (gas/brake/steering) or they may double-fire.
-  var event := InputEventAction.new()
-  event.action = action
-  event.pressed = pressed
-  event.strength = 1.0 if pressed else 0.0
-  Input.parse_input_event(event)
 
 func _current_locale() -> String:
   # Some headless SceneTree harnesses preload scripts without autoload identifiers.
