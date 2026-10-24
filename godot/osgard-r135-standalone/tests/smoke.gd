@@ -241,5 +241,15 @@ func _run() -> void:
             return
         if expected_fault == 1:
             instance.call("_start_challenge")
-    print("R135 SMOKE PASS: original 3D, training mission, 3 diagnostic faults, safety interlocks, gated hatch, camera scan, scoring, 8 buttons")
+    var completed_learning: Dictionary = rig.call("summary")
+    if int(completed_learning.get("cleared_case_count", -1)) != 3:
+        _fail("W9 lesson progress must record three distinct simulated cases")
+        return
+    if int(completed_learning.get("challenge_error_penalty", -1)) != 12 * int(completed_learning.get("challenge_errors", -2)):
+        _fail("W9 diagnosis penalty explanation must match recorded errors")
+        return
+    if not str(completed_learning.get("challenge_evidence", "")).contains("(SIM)"):
+        _fail("W9 evidence must explicitly be marked simulation-only")
+        return
+    print("R135 SMOKE PASS: original 3D, three lessons, diagnostic scoring, safety interlocks, camera scan, 8 buttons")
     quit(0)
