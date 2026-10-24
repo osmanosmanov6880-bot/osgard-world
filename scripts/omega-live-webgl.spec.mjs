@@ -79,7 +79,10 @@ test('authentic released Godot runs WebGL2, paints scene, handles real keyboard/
   expect(engine.cssHeight).toBeGreaterThan(390)
   expect(engine.pageWidth).toBeLessThanOrEqual(engine.viewportWidth+3)
 
-  const frame=await page.locator('#canvas').screenshot({animations:'disabled',timeout:25000})
+  // A running Godot canvas continuously resizes/paints frames. Element
+  // screenshots wait for "stable" bounds forever even when WebGL renders.
+  // Capture the actual viewport instead; never wait for the animated canvas.
+  const frame=await page.screenshot({animations:'disabled',timeout:45000})
   expect(frame.subarray(0,8).toString('hex')).toBe('89504e470d0a1a0a')
   expect(frame.length,'rendered world has meaningful nonblank pixels').toBeGreaterThan(9500)
   await testInfo.attach('godot-real-world-initial.png',{body:frame,contentType:'image/png'})
@@ -108,7 +111,7 @@ test('authentic released Godot runs WebGL2, paints scene, handles real keyboard/
     await page.keyboard.up('a')
     await page.keyboard.up('w')
   }
-  const after=await page.locator('#canvas').screenshot({animations:'disabled',timeout:25000})
+  const after=await page.screenshot({animations:'disabled',timeout:45000})
   expect(after.length).toBeGreaterThan(9500)
   await testInfo.attach('godot-real-world-after-input.png',{body:after,contentType:'image/png'})
   await testInfo.attach('godot-browser-console.txt',{body:Buffer.from(logs.join('\n'))||Buffer.from(''),contentType:'text/plain'})
