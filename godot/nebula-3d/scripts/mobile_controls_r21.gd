@@ -32,6 +32,10 @@ var viewport_pixels: Vector2 = Vector2(1280, 720)
 var active_touch_count: int = 0
 var ui_draws: int = 0
 var r23_landscape_layout: bool = false
+## R31: diagnostics count actual Godot touch delivery, not browser DOM alone.
+var r31_raw_touch_events: int = 0
+var r31_last_touch_position: Vector2 = Vector2.ZERO
+var r31_last_touch_role: String = ""
 
 func _ready() -> void:
     name = "R21_ResponsiveMobileController"
@@ -82,6 +86,14 @@ func set_shop_open(on: bool) -> void:
     queue_redraw()
 
 func _resize() -> void:
+    # WebGL can keep a 1280x720 internal drawing surface while CSS displays
+    # a portrait phone. Place controls in the browser's physical CSS viewport.
+    if OS.has_feature("web") and enabled:
+        var css_w: int = int(JavaScriptBridge.eval("Math.round(window.innerWidth)"))
+        var css_h: int = int(JavaScriptBridge.eval("Math.round(window.innerHeight)"))
+        if css_w >= 300 and css_h >= 280:
+            _layout_for_size(Vector2(css_w, css_h))
+            return
     _layout_for_size(get_viewport().get_visible_rect().size)
 
 func _layout_for_size(pixels: Vector2) -> void:
@@ -95,7 +107,11 @@ func _layout_for_size(pixels: Vector2) -> void:
     viewport_pixels = pixels
     var w: float = pixels.x
     var h: float = pixels.y
-    r23_landscape_layout = h < 530.0 and w >= 640.0
+    # Narrow landscape phones (e.g. 568x320) are not portrait screens.
+    # Portrait coordinates placed CRUISE directly over THRUST there.
+    # The four-column landscape grid still has safe left-stick separation
+    # for widths >= 380 logical pixels.
+    r23_landscape_layout = h < 530.0 and w >= 380.0 and w > h
     # Touch circles maintain legible labels but cannot overlap each other on
     # shallow, 16:9 landscape phones with 9 independent gameplay actions.
     base_radius = clampf(minf(w, h) * (0.079 if r23_landscape_layout else 0.093),
@@ -174,6 +190,10 @@ func _input(event: InputEvent) -> void:
         return
     if event is InputEventScreenTouch:
         var touch: InputEventScreenTouch = event
+        r31_raw_touch_events += 1
+        r31_last_touch_position = touch.position
+        if touch.pressed:
+            r31_last_touch_role = _role_at(touch.position)
         var was_control: bool = finger_roles.has(touch.index)
         _set_touch(touch.index, touch.position, touch.pressed)
         if was_control or finger_roles.has(touch.index):

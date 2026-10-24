@@ -660,6 +660,38 @@ assert "r21_touch.ui_font = r21_ui_font" in world
 assert "R30 focus loss must release held mobile thrust and boost" in smoke
 assert "R30 hangar must clear mobile touch counters and throttle" in smoke
 assert "R30 orientation change must cancel stale touch controls" in smoke
+# R31: a visible touch UI alone is not sufficient evidence of actual movement.
+r31_mobile = require(
+    "tests/browser_mobile_r31.mjs",
+    "Input.dispatchTouchEvent",
+    "real browser touch activates throttle",
+    "mobile throttle moves actual ship",
+    "real two-finger throttle and boost",
+    "landscape physical touch activates ship throttle",
+    "multitouch release never sticks boost",
+    "NEBULA_R31_MOBILE_TOUCH_SUCCESS",
+)
+# R32: prevent reintroducing portrait overlap on compact landscape phones.
+assert "w >= 380.0 and w > h" in r21_mobile
+assert "R32 compact landscape must distinguish GAS from CRUISE" in smoke
+assert "R32 compact landscape action hit targets overlap" in smoke
+assert "R32 small-landscape GAS accidentally triggers autopilot" in smoke
+assert "r31_mobile_qa_enabled" in world
+# Mobile QA must prove browser touches, layout and engine events separately.
+assert "content_scale_size = css_size" in world
+assert "r31_mobile_css_size" in world
+assert "r31_raw_touch_events" in r21_mobile
+# Hosted mobile CI must not silently change real-player graphics or physics.
+assert "func _r33_trim_nonessential_qa_meshes(node: Node)" in world
+assert "if r31_mobile_qa_enabled:" in world
+assert "r33_swiftshader_qa_visuals_trimmed = true" in world
+assert "if node == ship or node is CanvasLayer:" in world
+assert 'state["qa_visuals_trimmed"] = r33_swiftshader_qa_visuals_trimmed' in world
+assert "state.qa_visuals_trimmed === true" in r31_mobile
+assert "window.__nebulaDomTouchQA" in r31_mobile
+assert "real mobile viewport and physics loop stabilized" in r31_mobile
+assert "native browser touch dispatch" in r31_mobile
+assert 'state["touch_throttle"] = snappedf(ship.touch_throttle, 0.01)' in world
 assert "get_viewport().get_texture().get_image()" in world
 assert "window.__nebulaR11CaptureData" in world
 assert "URLSearchParams(window.location.search).get('r11-qa')" in world

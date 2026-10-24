@@ -143,6 +143,14 @@ var r11_capture_enabled: bool = false
 var r11_capture_busy: bool = false
 var r11_capture_poll_clock: float = 0.0
 var r11_capture_completed_request: int = 0
+## R31: expose sanitized control geometry and actual touch state only in QA mode.
+var r31_mobile_qa_enabled: bool = false
+## CSS-pixel mobile layout, normalized separately from WebGL framebuffer DPI.
+var r31_touch_web: bool = false
+var r31_mobile_css_size: Vector2i = Vector2i.ZERO
+var r31_mobile_poll_clock: float = 0.0
+# R33 QA-only render throttle. The full city remains loaded and physical.
+var r33_swiftshader_qa_visuals_trimmed: bool = false
 
 func _r25_emit_browser_flight_state() -> void:
     if not OS.has_feature("web") or not is_instance_valid(ship):
@@ -173,7 +181,67 @@ func _r25_emit_browser_flight_state() -> void:
         "quality": graphics_quality,
         "samples": r25_telemetry_samples
     }
+    if r31_mobile_qa_enabled and is_instance_valid(r21_touch):
+        # The browser test must touch the actual on-screen button, not set
+        # ship velocity or inject an engine-side fake input.
+        var thrust_centre: Vector2 = r21_touch.button_centres.get(
+            "THRUST", Vector2.ZERO)
+        var boost_centre: Vector2 = r21_touch.button_centres.get(
+            "BOOST", Vector2.ZERO)
+        state["touch_enabled"] = r21_touch.enabled
+        state["touch_count"] = r21_touch.active_touch_count
+        state["touch_throttle"] = snappedf(ship.touch_throttle, 0.01)
+        state["touch_boost"] = ship.touch_boost
+        state["touch_view_w"] = r21_touch.viewport_pixels.x
+        state["touch_view_h"] = r21_touch.viewport_pixels.y
+        state["touch_events"] = r21_touch.r31_raw_touch_events
+        state["qa_visuals_trimmed"] = r33_swiftshader_qa_visuals_trimmed
+        state["touch_last_x"] = r21_touch.r31_last_touch_position.x
+        state["touch_last_y"] = r21_touch.r31_last_touch_position.y
+        state["touch_last_role"] = r21_touch.r31_last_touch_role
+        state["touch_css_w"] = r31_mobile_css_size.x
+        state["touch_css_h"] = r31_mobile_css_size.y
+        state["touch_thrust_x"] = thrust_centre.x
+        state["touch_thrust_y"] = thrust_centre.y
+        state["touch_boost_x"] = boost_centre.x
+        state["touch_boost_y"] = boost_centre.y
     JavaScriptBridge.eval("window.__nebulaPilotTelemetry = " + JSON.stringify(state))
+
+
+func _r33_trim_nonessential_qa_meshes(node: Node) -> void:
+    # Hosted SwiftShader is a software GPU. Mobile input acceptance must still
+    # drive the REAL Godot 3D ship and physics, but need not draw thousands of
+    # city facade meshes again. Never run this outside the explicit QA URL.
+    if node == ship or node is CanvasLayer:
+        return
+    if node is GeometryInstance3D:
+        (node as GeometryInstance3D).visible = false
+    for child in node.get_children():
+        _r33_trim_nonessential_qa_meshes(child)
+
+
+func _r31_sync_touch_viewport() -> void:
+    if not r31_touch_web:
+        return
+    var css_w: int = int(JavaScriptBridge.eval("Math.round(window.innerWidth)"))
+    var css_h: int = int(JavaScriptBridge.eval("Math.round(window.innerHeight)"))
+    if css_w < 300 or css_h < 280:
+        return
+    var css_size := Vector2i(css_w, css_h)
+    if css_size == r31_mobile_css_size:
+        return
+    r31_mobile_css_size = css_size
+    # Godot's 1280x720 desktop content scale must not turn a portrait phone's
+    # UI into a letterboxed desktop game. Normalize UI to actual CSS pixels
+    # while the WebGL framebuffer remains free to scale for display DPI.
+    var root_window: Window = get_window()
+    root_window.content_scale_mode = Window.CONTENT_SCALE_MODE_CANVAS_ITEMS
+    root_window.content_scale_aspect = Window.CONTENT_SCALE_ASPECT_IGNORE
+    root_window.content_scale_size = css_size
+    if is_instance_valid(r21_touch):
+        r21_touch._layout_for_size(Vector2(css_size))
+    if is_instance_valid(hud_panel):
+        _fit_hud()
 
 
 func _r11_capture_browser_frame(request_id: int) -> void:
@@ -195,6 +263,12 @@ func _r11_capture_browser_frame(request_id: int) -> void:
 
 func _ready() -> void:
     rng.seed = 20261022
+    r31_touch_web = OS.has_feature("web") and bool(JavaScriptBridge.eval(
+        "navigator.maxTouchPoints > 0 || window.matchMedia('(pointer: coarse)').matches"))
+    if r31_touch_web:
+        _r31_sync_touch_viewport()
+    r31_mobile_qa_enabled = OS.has_feature("web") and bool(JavaScriptBridge.eval(
+        "new URLSearchParams(window.location.search).get('r31-mobile-qa') === '1'"))
     r11_capture_enabled = OS.has_feature("web") and bool(JavaScriptBridge.eval(
         "new URLSearchParams(window.location.search).get('r11-qa') === '1'"))
     if r11_capture_enabled:
@@ -261,6 +335,15 @@ func _ready() -> void:
     if OS.has_feature("web"):
         _set_graphics_quality(1)
         adaptive_r12.set_auto(true)
+    if r31_mobile_qa_enabled:
+        # This branch is strictly URL opt-in for CI and cannot affect normal
+        # players. Physical hull, collisions, controls, missions, input stack
+        # and visible cockpit HUD remain authentic.
+        adaptive_r12.set_auto(false)
+        _set_graphics_quality(2)
+        Engine.max_fps = 20
+        _r33_trim_nonessential_qa_meshes(self)
+        r33_swiftshader_qa_visuals_trimmed = true
     # Startup quality selection posts a toast; clear it so the opening skyline stays visible.
     hud_notice.text = ""
     notice_timer = 0.0
@@ -782,6 +865,11 @@ func _process(delta: float) -> void:
     if not is_instance_valid(ship): return
     world_timer += delta
     world_pulse += delta
+    if r31_touch_web:
+        r31_mobile_poll_clock += delta
+        if r31_mobile_poll_clock >= 1.0:
+            r31_mobile_poll_clock = 0.0
+            _r31_sync_touch_viewport()
     if r11_capture_enabled:
         r11_capture_poll_clock += delta
         if r11_capture_poll_clock >= 0.25 and not r11_capture_busy:
@@ -1076,6 +1164,8 @@ func _fit_hud() -> void:
     if not is_instance_valid(hud_panel):
         return
     var rect: Vector2 = get_viewport().get_visible_rect().size
+    if r31_touch_web and r31_mobile_css_size.x > 0:
+        rect = Vector2(r31_mobile_css_size)
     var width: float = rect.x
     var height: float = rect.y
     var compact: bool = width < 940.0 or height < 590.0 or r21_mobile_enabled
