@@ -174,5 +174,23 @@ func _run() -> void:
     if controls.get_child_count() != 8:
         _fail("Expected eight real operator buttons for both gameplay modes")
         return
+    # W5: three in-world indicators, one linked to actual moving optical head.
+    var indicators: Node = rig.get_node_or_null("R135SimulatedFaultIndicators")
+    if indicators == null or indicators.get_child_count() != 2:
+        _fail("W5 world fault indicator scene is missing")
+        return
+    for n in ["OPTICAL HEAD", "SERVICE DECK", "OVERVIEW"]:
+        if n not in instance.get("VIEW_NAMES"):
+            _fail("W5 expected camera view missing: " + n)
+            return
+    instance.call("_apply_view", 2)
+    var portrait_distance: float = float(instance.get("camera_effective_distance"))
+    instance.call("_apply_view", 0)
+    if portrait_distance < 5.5:
+        _fail("W5 optical framing is inside the rig")
+        return
+    if int(rig.call("summary").get("fault_marker_count", -1)) != 3:
+        _fail("W5 must expose three 3D fault markers")
+        return
     print("R135 SMOKE PASS: original 3D, training mission, 3 diagnostic faults, safety interlocks, gated hatch, camera scan, scoring, 8 buttons")
     quit(0)
