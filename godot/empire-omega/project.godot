@@ -14,7 +14,9 @@ ContractManager="*res://scripts/contract_manager.gd"
 GameSettings="*res://scripts/game_settings.gd"
 
 [display]
-window/size/viewport_width=1600
+; Square design base preserves desktop 16:9 via EXPAND and exposes true
+; portrait scene area instead of letterboxing 1600x900 into a 390px strip.
+window/size/viewport_width=900
 window/size/viewport_height=900
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
