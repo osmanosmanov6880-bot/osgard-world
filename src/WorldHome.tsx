@@ -34,7 +34,7 @@ const preferStillWorld = () => {
   return Boolean((navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData)
 }
 
-const omegaChapters = ['Планета', 'Связи', 'Миры'] as const
+const omegaChapters = (locale: Locale) => locale === 'ru' ? ['Планета', 'Связи', 'Миры'] as const : ['Earth', 'Connections', 'Worlds'] as const
 const omegaHelpRu: Record<GlobeMode, string> = {
   cinema: 'Камера сама показывает Землю с разных ракурсов. Выберите главу или перейдите к продуктам.',
   world: 'Вращайте планету мышью или горизонтальным свайпом. Масштаб — колёсиком или кнопками. Остальные разделы доступны сразу.',
@@ -145,50 +145,50 @@ export default function WorldHome({ development = false }: { development?: boole
           <span className="omega-dev-orbit omega-dev-orbit-b" />
         </div>
         <div className="omega-dev-intro signature-intro">
-          <p className="brand-eyebrow">OSGARD / DEVELOPMENT / DIGITAL CRAFT</p>
-          <h1 id="world-title">СОЗДАЁМ<br /><span>ЦИФРОВЫЕ</span><br />РЕШЕНИЯ.</h1>
-          <p className="brand-lead">От первых сценариев до открытых демонстраций. Показываем настоящие интерфейсы, рабочие действия и честный статус каждого проекта.</p>
+          <div className="world-locale-row"><p className="brand-eyebrow">OSGARD / DEVELOPMENT / DIGITAL CRAFT</p><button type="button" className="world-language-toggle" onClick={changeLocale} aria-label={locale === 'ru' ? 'Switch language to English' : 'Переключить язык на русский'}><Globe2 size={15} aria-hidden="true" />{locale === 'ru' ? 'EN' : 'RU'}</button></div>
+          <h1 id="world-title">{locale === 'ru' ? <>СОЗДАЁМ<br /><span>ЦИФРОВЫЕ</span><br />РЕШЕНИЯ.</> : <>WE BUILD<br /><span>DIGITAL</span><br />PRODUCTS.</>}</h1>
+          <p className="brand-lead">{tx('От первых сценариев до открытых демонстраций. Показываем настоящие интерфейсы, рабочие действия и честный статус каждого проекта.','From early flows to open demos. Explore real interfaces, working interactions and an honest status for every project.')}</p>
           <div className="brand-actions signature-hero-actions">
             <a className="brand-button primary" href="#cases">{tx('Смотреть проекты','View projects')} <span aria-hidden="true">↗</span></a>
-            <a className="brand-button signature-secondary" href="#contact">Обсудить разработку <span aria-hidden="true">→</span></a>
+            <a className="brand-button signature-secondary" href="#contact">{tx('Обсудить разработку','Discuss a project')} <span aria-hidden="true">→</span></a>
           </div>
-          <div className="signature-hero-facts" aria-label="Принципы разработки">
-            <span><strong>{cases.length}</strong><small>публичных кейса</small></span>
-            <span><strong>UX → CODE</strong><small>дизайн и реализация</small></span>
-            <span><strong>OPEN DEMOS</strong><small>посмотрите сами</small></span>
+          <div className="signature-hero-facts" aria-label={tx('Принципы разработки','Development principles')}>
+            <span><strong>{cases.length}</strong><small>{tx('публичных кейса','public cases')}</small></span>
+            <span><strong>UX → CODE</strong><small>{tx('дизайн и реализация','design and engineering')}</small></span>
+            <span><strong>OPEN DEMOS</strong><small>{tx('посмотрите сами','try them yourself')}</small></span>
           </div>
-          <p className="signature-caption">ПРОТОТИПЫ · КОНФИГУРАТОРЫ · ЦИФРОВЫЕ ПРОДУКТЫ</p>
+          <p className="signature-caption">{tx('ПРОТОТИПЫ · КОНФИГУРАТОРЫ · ЦИФРОВЫЕ ПРОДУКТЫ','PROTOTYPES · CONFIGURATORS · DIGITAL PRODUCTS')}</p>
         </div>
         <div className="signature-showcase" aria-label="Демонстрация работ студии">
           <div className="signature-showcase-top"><span>SELECTED WORK / 2026</span><span>01 — 03 / 04</span></div>
           <a className="signature-featured-case" href={cases[1].href}>
             <div className="signature-featured-image">
-              <img src={cases[1].art} width="1200" height="800" alt={'Скриншот открытого проекта ' + cases[1].name}
+              <img src={cases[1].art} width="1200" height="800" alt={tx('Скриншот открытого проекта ','Screenshot of public case ') + cases[1].name}
                 decoding="async" fetchPriority="high" />
-              <span>{cases[1].type} / 02</span>
+              <span>{locale === 'en' ? caseEnglish[cases[1].id]?.type : cases[1].type} / 02</span>
             </div>
             <div className="signature-featured-copy">
-              <div><small>АРХИТЕКТУРА / КОНФИГУРАТОР</small><strong>{cases[1].name}</strong></div>
-              <span>Открыть кейс <b aria-hidden="true">↗</b></span>
+              <div><small>{tx('АРХИТЕКТУРА / КОНФИГУРАТОР','ARCHITECTURE / CONFIGURATOR')}</small><strong>{cases[1].name}</strong></div>
+              <span>{tx('Открыть кейс','Open case')} <b aria-hidden="true">↗</b></span>
             </div>
           </a>
-          <div className="signature-case-pair" aria-label="Другие проекты">
+          <div className="signature-case-pair" aria-label={tx('Другие проекты','More projects')}>
             {[cases[0],cases[2]].map((item) => <a key={item.id} href={item.href}>
-              <img src={item.art} alt={'Скриншот проекта ' + item.name} width="380" height="255"
+              <img src={item.art} alt={tx('Скриншот проекта ','Screenshot of case ') + item.name} width="380" height="255"
                 loading="lazy" decoding="async" />
-              <span><small>{item.type}</small><strong>{item.name}</strong></span>
+              <span><small>{locale === 'en' ? caseEnglish[item.id]?.type : item.type}</small><strong>{item.name}</strong></span>
               <b aria-hidden="true">↗</b>
             </a>)}
           </div>
-          <p className="signature-showcase-note">Снимки публичных страниц. Демо не подтверждает работу серверов, продаж или коммерческий запуск.</p>
+          <p className="signature-showcase-note">{tx('Снимки публичных страниц. Демо не подтверждает работу серверов, продаж или коммерческий запуск.','Screenshots of public pages. A demo does not confirm server operation, sales or a commercial launch.')}</p>
         </div>
       </section>
       <section id="products" className="brand-section omega-dev-capabilities" aria-labelledby="dev-capabilities-title">
-        <div className="brand-section-heading"><p className="brand-eyebrow">01 / ЧТО МЫ ДЕЛАЕМ</p><h2 id="dev-capabilities-title">АРХИТЕКТУРА. <span>ДИЗАЙН. КОД.</span></h2><p>Начинаем с задачи, показываем логику продукта и доступную реализацию. Без выдуманных результатов и обещаний несуществующих функций.</p></div>
+        <div className="brand-section-heading"><p className="brand-eyebrow">{tx('01 / ЧТО МЫ ДЕЛАЕМ','01 / WHAT WE DO')}</p><h2 id="dev-capabilities-title">{locale === 'ru' ? <>АРХИТЕКТУРА. <span>ДИЗАЙН. КОД.</span></> : <>ARCHITECTURE. <span>DESIGN. CODE.</span></>}</h2><p>{tx('Начинаем с задачи, показываем логику продукта и доступную реализацию. Без выдуманных результатов и обещаний несуществующих функций.','We start with the problem, show the product logic and available implementation. No invented results or promises about unavailable features.')}</p></div>
         <div className="omega-dev-capability-grid">
-          <a href="#cases"><span>01 / UX & PRODUCT</span><strong>Интерфейсы и сценарии</strong><p>Понятная структура, удобная навигация, адаптация и доступность.</p><em>Смотреть кейсы ↗</em></a>
-          <a href="/development/tedes/"><span>02 / PROTOTYPES</span><strong>Конфигураторы и инструменты</strong><p>Изучите демонстрацию TEDES с локальной проектной спецификацией.</p><em>Открыть TEDES ↗</em></a>
-          <a href="#contact"><span>03 / ENGINEERING</span><strong>Разработка и проверка</strong><p>Обсуждаем требования, реализуем необходимые функции и проверяем результат.</p><em>Обсудить задачу ↗</em></a>
+          <a href="#cases"><span>01 / UX & PRODUCT</span><strong>{tx('Интерфейсы и сценарии','Interfaces and user flows')}</strong><p>{tx('Понятная структура, удобная навигация, адаптация и доступность.','Clear structure, useful navigation, responsive layouts and accessibility.')}</p><em>{tx('Смотреть кейсы','View cases')} ↗</em></a>
+          <a href="/development/tedes/"><span>02 / PROTOTYPES</span><strong>{tx('Конфигураторы и инструменты','Configurators and tools')}</strong><p>{tx('Изучите демонстрацию TEDES с локальной проектной спецификацией.','Explore the TEDES demo with a locally saved project specification.')}</p><em>{tx('Открыть TEDES','Open TEDES')} ↗</em></a>
+          <a href="#contact"><span>03 / ENGINEERING</span><strong>{tx('Разработка и проверка','Engineering and verification')}</strong><p>{tx('Обсуждаем требования, реализуем необходимые функции и проверяем результат.','We clarify requirements, build required features and verify the result.')}</p><em>{tx('Обсудить задачу','Discuss a project')} ↗</em></a>
         </div>
       </section>
     </> : <>
@@ -257,7 +257,7 @@ export default function WorldHome({ development = false }: { development?: boole
             </select>
           </div>
           {omegaMode === 'cinema' && <div className="omega-cinema-chapters" role="group" aria-label={tx('Кинематографические главы','Cinematic chapters')}>
-            {omegaChapters.map((name, index) => <button type="button" key={name} aria-pressed={omegaChapter === index}
+            {omegaChapters(locale).map((name, index) => <button type="button" key={name} aria-pressed={omegaChapter === index}
               onClick={() => setOmegaChapter(index as GlobeChapter)}>{String(index + 1).padStart(2, '0')} / {name}</button>)}
           </div>}
           {omegaMode === 'world' && <div className="omega-world-navigation" role="group" aria-label={tx('Управление вращением и масштабом глобуса','Globe rotation and zoom controls')}>
