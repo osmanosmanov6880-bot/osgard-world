@@ -213,6 +213,15 @@ func _r25_emit_browser_flight_state() -> void:
             state["r36_perf_visible"] = performance_lab_r11.overlay.visible
             state["r36_perf_active"] = performance_lab_r11.benchmarking
             state["r36_perf_report_ready"] = not performance_lab_r11.last_report.is_empty()
+            state["r38_quality_mode"] = graphics_quality
+            state["r38_auto_enabled"] = adaptive_r12.auto_enabled
+            state["r38_mode_label"] = performance_lab_r11.r38_mode_button.text
+            state["r38_mode_button_x"] = (
+                performance_lab_r11.r38_mode_button.global_position.x +
+                performance_lab_r11.r38_mode_button.size.x * 0.5)
+            state["r38_mode_button_y"] = (
+                performance_lab_r11.r38_mode_button.global_position.y +
+                performance_lab_r11.r38_mode_button.size.y * 0.5)
             var fps_button: Button = performance_lab_r11.r36_launcher
             var benchmark_button: Button = performance_lab_r11.r36_start_button
             state["r36_fps_button_x"] = (
@@ -353,6 +362,7 @@ func _ready() -> void:
     performance_lab_r11 = PerformanceLabR11Script.new()
     performance_lab_r11.name = "R11_PerformanceLab"
     add_child(performance_lab_r11)
+    performance_lab_r11.r38_quality_cycle_requested.connect(_r38_cycle_quality)
     # Touch controls already exist, so the R36 FPS launcher knows the real
     # browser viewport and safe-area offsets from the R35 mobile system.
     performance_lab_r11.configure_mobile(r21_mobile_enabled, r21_touch,
@@ -384,6 +394,7 @@ func _ready() -> void:
         Engine.max_fps = 20
         _r33_trim_nonessential_qa_meshes(self)
         r33_swiftshader_qa_visuals_trimmed = true
+    performance_lab_r11.set_r38_auto_enabled(adaptive_r12.auto_enabled)
     # Startup quality selection posts a toast; clear it so the opening skyline stays visible.
     hud_notice.text = ""
     notice_timer = 0.0
@@ -1287,8 +1298,12 @@ func _unhandled_key_input(event: InputEvent) -> void:
             camera_distance=[14.5,23.0,33.0][lens_mode]
             _show_notice("КАМЕРА · " + str(lens_mode+1) + "/3")
         elif event.keycode==KEY_F3:
-            adaptive_r12.set_auto(false)
-            _set_graphics_quality((graphics_quality+1)%3)
+            if performance_lab_r11.benchmarking:
+                _show_notice("ЗАМЕР FPS · ПРОФИЛЬ ЗАБЛОКИРОВАН")
+            else:
+                adaptive_r12.set_auto(false)
+                _set_graphics_quality((graphics_quality+1)%3)
+                performance_lab_r11.set_r38_auto_enabled(false)
         elif event.keycode==KEY_F4:
             hud_canvas.visible = not hud_canvas.visible
         elif event.keycode==KEY_F6:
@@ -1305,8 +1320,12 @@ func _unhandled_key_input(event: InputEvent) -> void:
             performance_lab_r11.capture_frame()
             _show_notice("СКРИНШОТ R12 · ЗАХВАТ КАДРА")
         elif event.keycode==KEY_F11:
-            adaptive_r12.set_auto(not adaptive_r12.auto_enabled)
-            _show_notice("АВТО-ГРАФИКА · " + ("ВКЛ" if adaptive_r12.auto_enabled else "ВЫКЛ"))
+            if performance_lab_r11.benchmarking:
+                _show_notice("ЗАМЕР FPS · АВТО БЛОКИРОВАНО")
+            else:
+                adaptive_r12.set_auto(not adaptive_r12.auto_enabled)
+                performance_lab_r11.set_r38_auto_enabled(adaptive_r12.auto_enabled)
+                _show_notice("АВТО-ГРАФИКА · " + ("ВКЛ" if adaptive_r12.auto_enabled else "ВЫКЛ"))
         elif event.keycode==KEY_F12:
             _show_notice("ОСВЕЩЕНИЕ · " + lighting_r12.toggle_look())
         elif event.keycode==KEY_1 or event.keycode==KEY_2 or event.keycode==KEY_3:
@@ -1371,6 +1390,21 @@ func _set_graphics_quality(mode: int) -> void:
 func _r12_on_auto_quality(mode: int, reason: String) -> void:
     _set_graphics_quality(mode)
     _show_notice("АВТО-ПРОФИЛЬ · " + reason)
+
+
+func _r38_cycle_quality() -> void:
+    # The on-phone benchmark is comparable only if the quality stays fixed.
+    if performance_lab_r11.benchmarking:
+        return
+    if adaptive_r12.auto_enabled:
+        adaptive_r12.set_auto(false)
+        _set_graphics_quality(0)
+    elif graphics_quality < 2:
+        _set_graphics_quality(graphics_quality + 1)
+    else:
+        _set_graphics_quality(1)
+        adaptive_r12.set_auto(true)
+    performance_lab_r11.set_r38_auto_enabled(adaptive_r12.auto_enabled)
 
 func _upgrade_docked(slot: int) -> void:
     if ship.global_position.distance_to(SECTOR_POSITIONS[0])>115.0:
