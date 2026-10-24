@@ -82,6 +82,20 @@ func _run() -> void:
         not world.ship.touch_boost and
         absf(world.ship.touch_throttle) < 0.01,
         "R21 touch release left ship controls stuck"):return
+    # R30: interrupted touches must never leave throttle, boost or fire stuck.
+    touch_r21._set_touch(5, touch_r21.button_centres["THRUST"], true)
+    touch_r21._set_touch(6, touch_r21.button_centres["BOOST"], true)
+    touch_r21._notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
+    if not check(touch_r21.active_touch_count == 0 and
+        touch_r21.finger_roles.is_empty() and
+        world.ship.touch_throttle == 0.0 and not world.ship.touch_boost,
+        "R30 focus loss must release held mobile thrust and boost"):return
+    touch_r21._set_touch(5, touch_r21.button_centres["THRUST"], true)
+    touch_r21.set_shop_open(true)
+    if not check(touch_r21.active_touch_count == 0 and
+        world.ship.touch_throttle == 0.0,
+        "R30 hangar must clear mobile touch counters and throttle"):return
+    touch_r21.set_shop_open(false)
     touch_r21.force_mobile_for_tests(false)
     if not check(world.r21_towers_moved >= 0,
         "R21 original tower count and spawn corridor audit missing"):return
@@ -146,7 +160,12 @@ func _run() -> void:
                 if not check(touch_r21.button_centres[a_key].distance_to(
                     touch_r21.button_centres[b_key]) > min_target_gap,
                     "R23 landscape controls overlap: phones cannot use gas and weapons"):return
+    touch_r21._set_touch(7, touch_r21.button_centres["THRUST"], true)
     touch_r21._layout_for_size(Vector2(390.0,844.0))
+    if not check(touch_r21.active_touch_count == 0 and
+        world.ship.touch_throttle == 0.0 and
+        touch_r21.finger_roles.is_empty(),
+        "R30 orientation change must cancel stale touch controls"):return
     if not check(not touch_r21.r23_landscape_layout and
         touch_r21.button_centres.has("CRUISE"),
         "R23 portrait phone lacks touch start-flight control"):return
