@@ -169,6 +169,25 @@ jobs:
           grep -Fq 'touch-action:none' "$output/index.html"
           grep -Fq 'REMIX ARENA' "$output/index.html"
           du -ah "$output" | tail -n 12
+      - name: Verify the candidate WebAssembly flight in Chromium (PR gate)
+        if: github.event_name == 'pull_request'
+        run: |
+          set -euo pipefail
+          npm install --no-save playwright@1.57.0
+          npx playwright install --with-deps chromium
+          python3 -m http.server 8765 --bind 127.0.0.1 --directory public > /tmp/nebula-pr-http.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" || true' EXIT
+          sleep 2
+          timeout 300s node godot/nebula-3d/tests/browser_flight_r25.mjs
+      - name: Save browser flight telemetry for review
+        if: always() && github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: nebula-pr-browser-flight
+          path: r25-browser-qa/
+          if-no-files-found: warn
+          retention-days: 14
       - name: Commit native sources and verified Web export
         if: github.event_name != 'pull_request'
         run: |
