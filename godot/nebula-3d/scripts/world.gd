@@ -143,6 +143,8 @@ var r11_capture_enabled: bool = false
 var r11_capture_busy: bool = false
 var r11_capture_poll_clock: float = 0.0
 var r11_capture_completed_request: int = 0
+## R31: expose sanitized control geometry and actual touch state only in QA mode.
+var r31_mobile_qa_enabled: bool = false
 
 func _r25_emit_browser_flight_state() -> void:
     if not OS.has_feature("web") or not is_instance_valid(ship):
@@ -173,6 +175,23 @@ func _r25_emit_browser_flight_state() -> void:
         "quality": graphics_quality,
         "samples": r25_telemetry_samples
     }
+    if r31_mobile_qa_enabled and is_instance_valid(r21_touch):
+        # The browser test must touch the actual on-screen button, not set
+        # ship velocity or inject an engine-side fake input.
+        var thrust_centre: Vector2 = r21_touch.button_centres.get(
+            "THRUST", Vector2.ZERO)
+        var boost_centre: Vector2 = r21_touch.button_centres.get(
+            "BOOST", Vector2.ZERO)
+        state["touch_enabled"] = r21_touch.enabled
+        state["touch_count"] = r21_touch.active_touch_count
+        state["touch_throttle"] = snappedf(ship.touch_throttle, 0.01)
+        state["touch_boost"] = ship.touch_boost
+        state["touch_view_w"] = r21_touch.viewport_pixels.x
+        state["touch_view_h"] = r21_touch.viewport_pixels.y
+        state["touch_thrust_x"] = thrust_centre.x
+        state["touch_thrust_y"] = thrust_centre.y
+        state["touch_boost_x"] = boost_centre.x
+        state["touch_boost_y"] = boost_centre.y
     JavaScriptBridge.eval("window.__nebulaPilotTelemetry = " + JSON.stringify(state))
 
 
@@ -195,6 +214,8 @@ func _r11_capture_browser_frame(request_id: int) -> void:
 
 func _ready() -> void:
     rng.seed = 20261022
+    r31_mobile_qa_enabled = OS.has_feature("web") and bool(JavaScriptBridge.eval(
+        "new URLSearchParams(window.location.search).get('r31-mobile-qa') === '1'"))
     r11_capture_enabled = OS.has_feature("web") and bool(JavaScriptBridge.eval(
         "new URLSearchParams(window.location.search).get('r11-qa') === '1'"))
     if r11_capture_enabled:
