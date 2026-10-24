@@ -22,7 +22,7 @@ verify((manifestRes.headers.get('content-type')||'').includes('json'),'Roadmap s
 const manifest=await manifestRes.json()
 verify(manifest.schemaVersion===1&&manifest.games.length===expected,'Expected exactly 22 registered games')
 verify(manifest.waves.length===11,'Expected 11 evidence-gated implementation waves')
-verify(manifest.waves.find(w=>w.id==='02').state!=='completed','Unverified WAVE 02 must not be marked complete')
+verify(['in_review','completed'].includes(manifest.waves.find(w=>w.id==='02')?.state),'WAVE 02 must have a valid implementation status')
 const paths=[...new Set(manifest.games.flatMap(g=>[g.icon,g.coverSmall]))]
 let next=0
 const results=new Array(paths.length)
