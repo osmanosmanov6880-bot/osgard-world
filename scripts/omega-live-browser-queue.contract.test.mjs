@@ -20,7 +20,7 @@ test('only manual or successfully verified master SSH runs can accept the exact 
 test('neither PR nor failed SSH run may report a nonpublished game as browser passing',()=>{
   const header=workflow.slice(workflow.indexOf('  actual-desktop-phone-webgl:'),workflow.indexOf('    steps:',workflow.indexOf('  actual-desktop-phone-webgl:')))
   assert.doesNotMatch(header,/github\.event_name == 'pull_request'/)
-  assert.doesNotMatch(header,/github\\.event_name == 'push'/)
+  assert.doesNotMatch(header,/github\.event_name == 'push'/)
   assert.match(header,/github\.event\.workflow_run\.conclusion == 'success'/)
   assert.match(workflow,/npx playwright test --config playwright\.omega-live-webgl\.config\.mjs/)
 })
