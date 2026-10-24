@@ -1,0 +1,45 @@
+name: OSGARD Omega R31 real browser evidence stability contracts
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - 'scripts/omega-browser-evidence.mjs'
+      - 'scripts/omega-browser-evidence.contract.test.mjs'
+      - 'scripts/omega-live-webgl.spec.mjs'
+      - 'scripts/omega-portrait-preview.spec.mjs'
+      - 'playwright.omega-portrait-preview.config.mjs'
+      - '.github/workflows/omega-r31-browser-evidence-qa.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  browser-evidence-contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify parser and exact-SHA bounded publication logic
+        run: |
+          node --check scripts/omega-browser-evidence.mjs
+          node --check scripts/omega-live-webgl.spec.mjs
+          node --check scripts/omega-portrait-preview.spec.mjs
+          node --test scripts/omega-browser-evidence.contract.test.mjs
+      - name: Ensure both original WebGL checks retain real-pixel requirements
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          live=Path('scripts/omega-live-webgl.spec.mjs').read_text()
+          pixel=Path('scripts/omega-portrait-preview.spec.mjs').read_text()
+          assert 'waitForExactPublishedRelease(' in live
+          assert 'expect(live.source_commit).toBe(RELEASE.source_commit)' in live
+          assert 'expect(live.files).toEqual(RELEASE.files)' in live
+          assert 'actual rendered world pixels' in live
+          assert 'captureAnimatedWebGLViewport(page)' in pixel
+          assert 'measureRealScenePng(png)' in pixel
+          assert 'proof.activeFraction' in pixel
+          assert 'proof.continuousFraction' in pixel
+          print('PASS: no weakening of Godot release and actual pixel acceptance')
+          PY
