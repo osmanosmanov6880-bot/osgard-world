@@ -1,4 +1,5 @@
 extends CanvasLayer
+const HORIZON_LAYOUT = preload("res://scripts/horizon_responsive_layout.gd")
 ## Russian-first accessible HUD. All controls use the same GameState as the 3D world.
 
 signal strategy_changed(is_open: bool)
@@ -235,6 +236,14 @@ const TRANSLATIONS = {
 
 var open := false
 var root: Control
+var header_panel: PanelContainer
+var objective_panel: PanelContainer
+var controls_panel: PanelContainer
+var map_panel: PanelContainer
+var strategy_window: PanelContainer
+var pause_panel: PanelContainer
+var compact_hud := false
+var map_override := false
 var header_value: Label
 var meters_label: Label
 var law_label: Label
@@ -300,6 +309,8 @@ func _ready() -> void:
 	_make_strategy()
 	_make_dialogs()
 	_make_pause_menu()
+	get_viewport().size_changed.connect(_apply_responsive_layout)
+	_apply_responsive_layout()
 	GameState.state_changed.connect(_on_state_changed)
 	MissionManager.mission_updated.connect(_on_mission_changed)
 	_refresh()
@@ -374,13 +385,15 @@ func _separator(parent: Node) -> void:
 
 func _make_hud() -> void:
 	# AURORA CITY: show the city, not seven overlapping dashboards.
-	var header := _panel(Rect2(24,20,420,86))
+	header_panel = _panel(Rect2(24,20,420,86))
+	var header := header_panel
 	var brand_stack := VBoxContainer.new()
 	brand_stack.add_theme_constant_override("separation",3)
 	header.add_child(brand_stack)
 	header_value = _label(brand_stack,"OSGARD EMPIRE",23,true)
 	meters_label = _label(brand_stack,"",16)
-	var objective := _panel(Rect2(-476,20,452,150),1.0)
+	objective_panel = _panel(Rect2(-476,20,452,150),1.0)
+	var objective := objective_panel
 	var objective_stack := VBoxContainer.new()
 	objective_stack.add_theme_constant_override("separation",7)
 	objective.add_child(objective_stack)
@@ -416,11 +429,12 @@ func _make_hud() -> void:
 	_separator(details)
 	_label(details,_v08("СОБЫТИЯ · C","CITY EVENTS · C","城市事件 · C"),14,true)
 	city_case_label = _label(details,"",16)
-	var map_panel := _panel(Rect2(24,-276,248,252),0.0,1.0)
+	map_panel = _panel(Rect2(24,-276,248,252),0.0,1.0)
 	map = preload("res://scripts/minimap.gd").new()
 	map.custom_minimum_size = Vector2(208,208)
 	map_panel.add_child(map)
-	var controls := _panel(Rect2(290,-92,-672,68),1.0,1.0)
+	controls_panel = _panel(Rect2(290,-92,-672,68),1.0,1.0)
+	var controls := controls_panel
 	controls.anchor_left = 0.0
 	hint_label = _label(controls,"",17)
 	speed_panel = _panel(Rect2(-360,-145,336,122),1.0,1.0)
@@ -450,6 +464,7 @@ func _make_strategy() -> void:
 	overlay.visible = false
 	root.add_child(overlay)
 	var window := PanelContainer.new()
+	strategy_window = window
 	window.anchor_left = 0.5
 	window.anchor_right = 0.5
 	window.anchor_top = 0.5
@@ -619,9 +634,9 @@ func _on_mission_changed(_index: int, _title: String) -> void:
 
 func _refresh() -> void:
 	if header_value == null: return
-	header_value.text = t("brand")
+	header_value.text = _v08("EMPIRE Ω","EMPIRE Ω","帝国 Ω") if compact_hud else t("brand")
 	var d: Dictionary = GameState.data
-	meters_label.text = "%s %d   ·   %s %d кр.   ·   %s %d кр." % [t("turn"),d["turn"],t("wallet"),d["wallet"],t("cash"),d["treasury"]]
+	meters_label.text = ("№%d  ·  %d кр." % [d["turn"],d["wallet"]]) if compact_hud else ("%s %d   ·   %s %d кр.   ·   %s %d кр." % [t("turn"),d["turn"],t("wallet"),d["wallet"],t("cash"),d["treasury"]])
 	context_label.text = "%s: %s\n%s: %d\n%s: %d%%  |  %s: %d%%\n%s: %d%%  |  %s: %d%%" % [t("cash"),str(d["treasury"])+" кр.",t("population"),d["population"],t("stability"),d["stability"],t("energy"),d["energy"],t("water"),d["water"],t("food"),d["food"]]
 	if law_label != null:
 		var law: Dictionary = d.get("law",{})
@@ -651,7 +666,7 @@ func _refresh() -> void:
 			city_case_label.text = _v08("Районы спокойны · ждём новых событий", "Districts are quiet · no pending incident", "各区平静 · 暂无事件")
 		else:
 			city_case_label.text = str(case["title"].get(GameState.locale,case["title"]["ru"])) + "\n" + _v08("Решить до такта ","Resolve before turn ","处理截止回合 ") + str(d["city_case"]["due_turn"]) + "  ·  C / Tab"
-	hint_label.text = _v08("WASD — идти · E — авто · F — действие · Tab — город · H — журнал","WASD — move · E — car · F — interact · Tab — city · H — journal","WASD 移动 · E 上车 · F 互动 · Tab 城市 · H 日志")
+	hint_label.text = _v08("АВТО · ИДТИ · ДЕЙСТВИЯ","CAR · WALK · ACTIONS","车辆 · 行走 · 操作") if compact_hud else _v08("WASD — идти · E — авто · F — действие · Tab — город · H — журнал","WASD — move · E — car · F — interact · Tab — city · H — journal","WASD 移动 · E 上车 · F 互动 · Tab 城市 · H 日志")
 	if open:
 		_redraw_strategy()
 
@@ -678,17 +693,17 @@ func update_world_context(player_at: Vector3, vehicle_at: Vector3, goal_at: Vect
 	if speed_panel != null:
 		speed_panel.visible = is_driving
 	if is_driving:
-		speed_label.text = "%d км/ч   ·   %s" % [roundi(absf(speed)*3.6),gear]
-		speed_label.text += "\n%s %d%%  ·  %s %d%%" % [t("fuel"),roundi(fuel),t("condition"),roundi(condition)]
+		speed_label.text = "%d км/ч · %s" % [roundi(absf(speed)*3.6),gear]
+		speed_label.text += "\n%s %d%% · %d%%" % [t("fuel"),roundi(fuel),roundi(condition)] if compact_hud else "\n%s %d%%  ·  %s %d%%" % [t("fuel"),roundi(fuel),t("condition"),roundi(condition)]
 		if handbrake: speed_label.text += " · " + t("handbrake")
 		if drift_score >= 12: speed_label.text += " · DRIFT %d" % drift_score
 		var assist_intensity: float = clampf(maxf(assist_power,assist_steering*3.0),0.0,1.0)
 		if assist_intensity >= 0.025:
 			speed_label.text += "\n" + _v08("ПОМОЩЬ СЦЕПЛЕНИЮ","GRIP ASSIST","抓地辅助") + " %d%%" % roundi(assist_intensity*100.0)
-		hint_label.text = _v08("W / S — газ и тормоз · A / D — руль · Пробел — ручник · E — выйти","W / S — drive and brake · A / D — steer · Space — handbrake · E — exit","W / S 油门刹车 · A / D 方向 · 空格 手刹 · E 下车")
+		hint_label.text = _v08("ГАЗ · ТОРМ · РУЛЬ · АВТО","GAS · BRAKE · STEER · CAR","油门 · 刹车 · 转向 · 车辆") if compact_hud else _v08("W / S — газ и тормоз · A / D — руль · Пробел — ручник · E — выйти","W / S — drive and brake · A / D — steer · Space — handbrake · E — exit","W / S 油门刹车 · A / D 方向 · 空格 手刹 · E 下车")
 	else:
 		speed_label.text = ""
-		hint_label.text = ("F: "+nearest) if nearest != "" else _v08("WASD — идти · E — авто · F — действие · Tab — город · H — журнал","WASD — move · E — car · F — interact · Tab — city · H — journal","WASD 移动 · E 上车 · F 互动 · Tab 城市 · H 日志")
+		hint_label.text = ((_v08("РЯДОМ: ","NEAR: ","附近: ")+nearest.left(24)) if nearest != "" else _v08("АВТО · ИДТИ · ДЕЙСТВИЯ","CAR · WALK · ACTIONS","车辆 · 行走 · 操作")) if compact_hud else (("F: "+nearest) if nearest != "" else _v08("WASD — идти · E — авто · F — действие · Tab — город · H — журнал","WASD — move · E — car · F — interact · Tab — city · H — journal","WASD 移动 · E 上车 · F 互动 · Tab 城市 · H 日志"))
 
 func toggle_diagnostics() -> void:
 	diagnostic_visible = not diagnostic_visible
@@ -1108,6 +1123,7 @@ func _make_pause_menu() -> void:
 	pause_overlay.visible = false
 	root.add_child(pause_overlay)
 	var panel := PanelContainer.new()
+	pause_panel = panel
 	panel.anchor_left = 0.5
 	panel.anchor_right = 0.5
 	panel.anchor_top = 0.5
@@ -1140,7 +1156,7 @@ func toggle_pause() -> void:
 		settings_page = false
 		awaiting_binding = ""
 		get_tree().paused = false
-		Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE if open else Input.MOUSE_MODE_CAPTURED)
+		Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE if open or DisplayServer.is_touchscreen_available() else Input.MOUSE_MODE_CAPTURED)
 		return
 	if open:
 		toggle_strategy()
@@ -1297,3 +1313,69 @@ func _load_from_pause() -> void:
 	_load()
 	status_binding = (t("save_recovered") if GameState.last_load_source != "primary" else t("loaded")) if GameState.last_load_source != "" else t("load_failed")
 	_redraw_pause()
+
+# HORIZON R7 - compact HUD is a screen geometry adaptation, never a gameplay state.
+# Anchor restoration is explicit so rotating a phone or resizing desktop is safe.
+func _set_panel_frame(panel: Control, frame: Rect2, left: float, right: float, top: float, bottom: float) -> void:
+	if panel == null: return
+	panel.anchor_left = left
+	panel.anchor_right = right
+	panel.anchor_top = top
+	panel.anchor_bottom = bottom
+	panel.offset_left = frame.position.x
+	panel.offset_top = frame.position.y
+	panel.offset_right = frame.end.x
+	panel.offset_bottom = frame.end.y
+
+func _apply_responsive_layout() -> void:
+	if header_panel == null or pause_panel == null or strategy_window == null: return
+	var screen: Vector2 = get_viewport().get_visible_rect().size
+	if screen.x < 1.0 or screen.y < 1.0: return
+	var frames: Dictionary = HORIZON_LAYOUT.compute(screen)
+	compact_hud = bool(frames.get("compact",false))
+	if compact_hud:
+		_set_panel_frame(header_panel,frames["header"],0,0,0,0)
+		_set_panel_frame(objective_panel,frames["objective"],0,0,0,0)
+		_set_panel_frame(speed_panel,frames["speed"],0,0,0,0)
+		_set_panel_frame(map_panel,frames["map"],0,0,0,0)
+		_set_panel_frame(controls_panel,frames["help"],0,0,0,0)
+		_set_panel_frame(journal_panel,frames["journal"],0,0,0,0)
+		_set_panel_frame(diagnostic_panel,frames["diagnostics"],0,0,0,0)
+		_set_panel_frame(toast_panel,frames["toast"],0,0,0,0)
+		var modal: Rect2 = frames["modal"]
+		var panel_frame := Rect2(modal.position-screen*0.5,modal.size)
+		_set_panel_frame(strategy_window,panel_frame,0.5,0.5,0.5,0.5)
+		_set_panel_frame(pause_panel,panel_frame,0.5,0.5,0.5,0.5)
+		map.custom_minimum_size = Vector2(106,106)
+		if not map_override: map_panel.visible = bool(frames["map_default"])
+		header_value.add_theme_font_size_override("font_size",15)
+		meters_label.add_theme_font_size_override("font_size",12)
+		mission_label.add_theme_font_size_override("font_size",16)
+		mission_distance_label.add_theme_font_size_override("font_size",12)
+		speed_label.add_theme_font_size_override("font_size",13)
+		hint_label.add_theme_font_size_override("font_size",12)
+	else:
+		_set_panel_frame(header_panel,Rect2(24,20,420,86),0,0,0,0)
+		_set_panel_frame(objective_panel,Rect2(-476,20,452,150),1,1,0,0)
+		_set_panel_frame(speed_panel,Rect2(-360,-145,336,122),1,1,1,1)
+		_set_panel_frame(map_panel,Rect2(24,-276,248,252),0,0,1,1)
+		_set_panel_frame(controls_panel,Rect2(290,-92,-672,68),0,1,1,1)
+		_set_panel_frame(journal_panel,Rect2(-476,186,452,440),1,1,0,0)
+		_set_panel_frame(diagnostic_panel,Rect2(24,116,360,105),0,0,0,0)
+		_set_panel_frame(toast_panel,Rect2(-252,24,504,64),0.5,0.5,0,0)
+		_set_panel_frame(strategy_window,Rect2(-450,-365,900,730),0.5,0.5,0.5,0.5)
+		_set_panel_frame(pause_panel,Rect2(-390,-340,780,680),0.5,0.5,0.5,0.5)
+		map.custom_minimum_size = Vector2(208,208)
+		if not map_override: map_panel.visible = true
+		header_value.add_theme_font_size_override("font_size",23)
+		meters_label.add_theme_font_size_override("font_size",16)
+		mission_label.add_theme_font_size_override("font_size",22)
+		mission_distance_label.add_theme_font_size_override("font_size",16)
+		speed_label.add_theme_font_size_override("font_size",20)
+		hint_label.add_theme_font_size_override("font_size",17)
+	_refresh()
+
+func toggle_map() -> void:
+	if map_panel == null: return
+	map_override = true
+	map_panel.visible = not map_panel.visible
