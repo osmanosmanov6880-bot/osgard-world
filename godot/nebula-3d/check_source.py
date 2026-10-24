@@ -672,7 +672,7 @@ r31_mobile = require(
     "NEBULA_R31_MOBILE_TOUCH_SUCCESS",
 )
 # R32: prevent reintroducing portrait overlap on compact landscape phones.
-assert "w >= 380.0 and w > h" in r21_mobile
+assert "w > h and usable_w >= 335.0" in r21_mobile
 assert "R32 compact landscape must distinguish GAS from CRUISE" in smoke
 assert "R32 compact landscape action hit targets overlap" in smoke
 assert "R32 small-landscape GAS accidentally triggers autopilot" in smoke
@@ -711,6 +711,33 @@ assert "r34_ignore_until_all_released" in r21_mobile
 assert "func _r34_gate_stale_contacts(points: Array)" in r21_mobile
 assert "R34 finger-free hangar close must allow the next independent tap" in smoke
 assert "R34 browser touch bridge remains blocked after hangar release" in smoke
+# R35: real CSS env() safe areas + 9 reachable controls across compact phones.
+r35_probe = require(
+    "../../scripts/nebula-r21-mobile-export.mjs",
+    "nebula-r35-safe-area", "__nebulaSafeArea",
+    "env(safe-area-inset-left, 0px)",
+    "env(safe-area-inset-top, 0px)",
+    "env(safe-area-inset-right, 0px)",
+    "env(safe-area-inset-bottom, 0px)",
+)
+r35_js_test = require(
+    "../../scripts/test-nebula-r35-safe-area.mjs",
+    "NEBULA_R35_SAFE_AREA_JS_SUCCESS",
+    "safe-area probe must register before Godot",
+    "landscape cutout must be read from CSS env()",
+    "portrait notch and home gesture bar detected",
+)
+assert "func set_safe_insets(insets: Vector4) -> bool:" in r21_mobile
+assert "func _r35_refresh_safe_insets() -> bool:" in r21_mobile
+assert "r35_compact_portrait" in r21_mobile
+assert 'r21_touch._r35_refresh_safe_insets()' in world
+assert 'state["touch_safe_left"] = r21_touch.r35_safe_insets.x' in world
+assert "short_landscape: bool" in world
+assert "hud_panel.offset_top = safe_top + 8.0" in world
+assert "NEBULA_R35_SAFE_AREA_SUCCESS" in smoke
+assert "R35 action button is hidden by screen notch/gesture bar" in smoke
+assert "R35 two action hit targets overlap" in smoke
+assert "R35 short-landscape HUD blocks the hangar touch target" in smoke
 assert "if r34_dom_bridge_active:" in r21_mobile
 assert 'state["touch_dom_bridge"] = r21_touch.r34_dom_bridge_active' in world
 assert "s.touch_dom_bridge === true" in r31_mobile
