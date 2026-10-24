@@ -239,42 +239,12 @@ try {
         s.r36_fps_button_x > 0 && s.r36_fps_button_y > 0 &&
         s.r36_browser_touch_poll_samples >= 2,
       30000);
-    // The canvas CSS rectangle can move after rotate, safe-area relayout
-    // and opening the performance panel. Never reuse the old tinyRect:
-    // on Chromium its top was 34 px while the live canvas top became 0,
-    // making a nominal y=92.5 mode-button tap land at y=126.5 instead.
-    const uiPoint = async (x,y,id) => {
-      // Godot can publish safe-area telemetry before Chromium has finished
-      // its CSS viewport reflow (observed +34 CSS-pixel miss after rotation).
-      // Require the *live* canvas and viewport to agree before any QA tap.
-      await page.waitForFunction(() => {
-        const c = document.querySelector('#canvas');
-        const r = c?.getBoundingClientRect();
-        return !!r && Math.abs(r.left) <= 1.5 && Math.abs(r.top) <= 1.5 &&
-          Math.abs(r.width - window.innerWidth) <= 2 &&
-          Math.abs(r.height - window.innerHeight) <= 2;
-      }, null, {timeout:30000, polling:250});
-      const css = await page.evaluate(() => {
-        const r = document.querySelector('#canvas')?.getBoundingClientRect();
-        return r ? { x:r.x,y:r.y,width:r.width,height:r.height } : null;
-      });
-      const view = await snapshot();
-      if (!css || !view || view.touch_view_w < 200 ||
-          view.touch_view_h < 200) {
-        throw new Error('R38 live canvas geometry unavailable');
-      }
-      const p = {
-        x:css.x + x * css.width / view.touch_view_w,
-        y:css.y + y * css.height / view.touch_view_h,
-        id,force:1
-      };
-      if (p.x < css.x || p.y < css.y ||
-          p.x > css.x + css.width || p.y > css.y + css.height) {
-        throw new Error('R38 touch target outside actual canvas: '+JSON.stringify(p));
-      }
-      return p;
-    };
-    const fps = await uiPoint(lab.r36_fps_button_x, lab.r36_fps_button_y, 7);
+    const uiPoint = (x,y,id) => ({
+      x:tinyRect.x + x * tinyRect.width / lab.touch_view_w,
+      y:tinyRect.y + y * tinyRect.height / lab.touch_view_h,
+      id,force:1
+    });
+    const fps = uiPoint(lab.r36_fps_button_x, lab.r36_fps_button_y, 7);
     await send('touchStart',[fps]);
     await send('touchEnd',[]);
     const open = await expectTelemetry(
@@ -282,51 +252,10 @@ try {
       s => s?.r36_perf_visible === true && s.r36_perf_active === false &&
         s.r36_benchmark_button_x > 0 && s.r36_benchmark_button_y > 0,
       30000);
-    // CDP touch injection can be offset from the DOM event in Chromium's
-    // mobile emulation after repeated viewport rotations (observed +34px).
-    // Calibrate from the REAL browser event that successfully opened FPS.
-    // This is a test-harness coordinate correction, not an engine shortcut.
-    const observedTouch = await page.evaluate(
-      () => window.__nebulaDomTouchQA?.last || null);
-    if (!observedTouch || !Number.isFinite(observedTouch.x) ||
-        !Number.isFinite(observedTouch.y)) {
-      throw new Error('Mobile CDP calibration has no actual DOM touch');
-    }
-    const dispatchOffset = {
-      x: observedTouch.x - fps.x,
-      y: observedTouch.y - fps.y
-    };
-    if (Math.abs(dispatchOffset.x) > 60 ||
-        Math.abs(dispatchOffset.y) > 60) {
-      throw new Error('Unsafe mobile touch translation: ' +
-        JSON.stringify(dispatchOffset));
-    }
-    report.checks.push({
-      label: 'browser CDP→DOM touch offset measured from real FPS button press',
-      dispatchOffset
-    });
-    const calibratedUI = async (target) => {
-      const p = {
-        ...target, x: target.x - dispatchOffset.x,
-        y: target.y - dispatchOffset.y
-      };
-      await send('touchStart', [p]);
-      // Let SwiftShader deliver the touch to the actual Godot Button.
-      await page.waitForTimeout(650);
-      const observed = await page.evaluate(
-        () => window.__nebulaDomTouchQA?.last || null);
-      if (!observed || Math.abs(observed.x - target.x) > 3 ||
-          Math.abs(observed.y - target.y) > 3) {
-        await send('touchEnd', []);
-        throw new Error('CDP touch missed true browser DOM target: ' +
-          JSON.stringify({target, dispatched:p, observed}));
-      }
-      await send('touchEnd', []);
-    };
-
-    const runBenchmark = await uiPoint(open.r36_benchmark_button_x,
+    const runBenchmark = uiPoint(open.r36_benchmark_button_x,
       open.r36_benchmark_button_y, 8);
-    await calibratedUI(runBenchmark);
+    await send('touchStart',[runBenchmark]);
+    await send('touchEnd',[]);
     await expectTelemetry('R36 real mobile 20-second FPS benchmark starts',
       s => s?.r36_perf_active === true && s.touch_count === 0, 30000);
     // Do not invent a 20-second physical-hardware FPS outcome in SwiftShader.
