@@ -3,6 +3,8 @@ extends Node3D
 ## No real telemetry. Both HERO and ECO originals remain available in Web.
 var controller: Node3D
 var camera: Camera3D
+var studio: Node3D
+var reduced_motion: bool = false
 var orbit_yaw: float = 0.44
 var orbit_pitch: float = 0.21
 var distance: float = 12.8
@@ -33,81 +35,55 @@ func _ready() -> void:
     var world := WorldEnvironment.new()
     var environment := Environment.new()
     environment.background_mode = Environment.BG_COLOR
-    environment.background_color = Color(0.006, 0.012, 0.022)
+    environment.background_color = Color(0.014, 0.019, 0.025)
     environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-    environment.ambient_light_color = Color(0.42, 0.58, 0.72)
-    environment.ambient_light_energy = 0.85
+    environment.ambient_light_color = Color(0.68, 0.72, 0.77)
+    environment.ambient_light_energy = 0.70
     world.environment = environment
     add_child(world)
     var sun := DirectionalLight3D.new()
     sun.rotation_degrees = Vector3(-48, -34, 0)
-    sun.light_energy = 1.45
+    sun.light_color = Color(1.0, 0.94, 0.87)
+    sun.light_energy = 1.15
     add_child(sun)
     var rim := DirectionalLight3D.new()
     rim.rotation_degrees = Vector3(-32, 140, 0)
-    rim.light_color = Color(0.28, 0.69, 0.96)
-    rim.light_energy = 0.55
+    rim.light_color = Color(0.62, 0.73, 0.81)
+    rim.light_energy = 0.47
     add_child(rim)
-    _build_floor()
+    studio = preload("res://R135StudioEnvironment.gd").new()
+    studio.name = "R135StudioEnvironment"
+    add_child(studio)
+    studio.call("configure")
     controller = preload("res://R135ServiceDirector.gd").new()
     controller.name = "R135ServiceSpine"
     add_child(controller)
     controller.configure(camera, environment)
     controller.set_quality(quality)
+    studio.call("set_quality", quality)
+    if OS.has_feature("web"):
+        reduced_motion = bool(JavaScriptBridge.eval("Boolean(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)", true))
+    controller.call("set_reduced_motion", reduced_motion)
     _build_hud()
     get_viewport().size_changed.connect(_update_layout)
     _update_layout()
     _update_view()
     _refresh_status()
 
-func _floor_material(color: Color, emission: bool = false) -> StandardMaterial3D:
-    var mat := StandardMaterial3D.new()
-    mat.albedo_color = color
-    mat.metallic = 0.58
-    mat.roughness = 0.43
-    if emission:
-        mat.emission_enabled = true
-        mat.emission = color
-        mat.emission_energy_multiplier = 1.3
-    return mat
-
-func _floor_box(name: String, pos: Vector3, size: Vector3, mat: Material) -> void:
-    var node := MeshInstance3D.new()
-    node.name = name
-    var mesh := BoxMesh.new()
-    mesh.size = size
-    node.mesh = mesh
-    node.position = pos
-    node.material_override = mat
-    add_child(node)
-
-func _build_floor() -> void:
-    # A bounded service platform gives depth cues without additional GLBs.
-    var surface := _floor_material(Color(0.023, 0.040, 0.061))
-    var inlay := _floor_material(Color(0.035, 0.14, 0.18), true)
-    _floor_box("LowReflectionIndustrialStage", Vector3(0, -0.20, 4.90), Vector3(22, 0.29, 14), surface)
-    for x in range(-10, 11, 2):
-        _floor_box("StageGridX_%02d" % (x + 10), Vector3(float(x), -0.044, 4.9), Vector3(0.018, 0.009, 13), inlay)
-    for z in range(-1, 13, 2):
-        _floor_box("StageGridZ_%02d" % (z + 1), Vector3(0, -0.044, float(z)), Vector3(20.5, 0.009, 0.018), inlay)
-    var orange := _floor_material(Color(0.62, 0.23, 0.10), true)
-    _floor_box("ServiceBoundaryFront", Vector3(0, -0.029, 11.6), Vector3(21, 0.013, 0.055), orange)
-    _floor_box("ServiceBoundaryRear", Vector3(0, -0.029, -1.75), Vector3(21, 0.013, 0.055), orange)
-
 func _panel_style() -> StyleBoxFlat:
     var style := StyleBoxFlat.new()
-    style.bg_color = Color(0.019, 0.038, 0.058, 0.93)
-    style.border_color = Color(0.28, 0.58, 0.68, 0.75)
-    style.set_border_width_all(2)
-    style.set_corner_radius_all(13)
+    style.bg_color = Color(0.027, 0.034, 0.042, 0.93)
+    style.border_color = Color(0.38, 0.44, 0.47, 0.78)
+    style.set_border_width_all(1)
+    style.set_corner_radius_all(12)
     style.set_content_margin_all(16)
     return style
 
 func _button_style(active: bool = false) -> StyleBoxFlat:
     var style := StyleBoxFlat.new()
-    style.bg_color = Color(0.20, 0.080, 0.046, 0.96) if active else Color(0.045, 0.089, 0.13, 0.95)
-    style.border_color = Color(1.0, 0.59, 0.32) if active else Color(0.31, 0.70, 0.77)
-    style.set_border_width_all(2)
+    style.bg_color = Color(0.24, 0.14, 0.09, 0.95) if active else Color(0.09, 0.11, 0.13, 0.93)
+    style.border_color = Color(0.78, 0.49, 0.32) if active else Color(0.34, 0.41, 0.44)
+    style.set_border_width_all(1)
     style.set_corner_radius_all(8)
     style.set_content_margin_all(10)
     return style
@@ -138,8 +114,8 @@ func _build_hud() -> void:
     text_stack.add_theme_constant_override("separation", 6)
     hud_panel.add_child(text_stack)
     heading = Label.new()
-    heading.text = "OSGARD   /   R135"
-    heading.add_theme_color_override("font_color", Color(1.0, 0.68, 0.43))
+    heading.text = "OSGARD  /  SERVICE LAB"
+    heading.add_theme_color_override("font_color", Color(0.93, 0.78, 0.62))
     text_stack.add_child(heading)
     hud = Label.new()
     hud.add_theme_color_override("font_color", Color(0.86, 0.95, 0.97))
@@ -150,7 +126,7 @@ func _build_hud() -> void:
     text_stack.add_child(mission_label)
     helper = Label.new()
     helper.text = "M: TRAIN  C: DIAGNOSE  E: SCAN  V: CAMERA  ·  SIMULATION"
-    helper.add_theme_color_override("font_color", Color(0.53, 0.79, 0.84))
+    helper.add_theme_color_override("font_color", Color(0.70, 0.76, 0.78))
     text_stack.add_child(helper)
 
     action_panel = PanelContainer.new()
@@ -257,6 +233,7 @@ func _apply_view(index: int) -> void:
 func _toggle_quality() -> void:
     quality = 0 if quality == 2 else 2
     controller.set_quality(quality)
+    studio.call("set_quality", quality)
     _refresh_status()
 
 func _toggle_motion() -> void:
@@ -382,6 +359,13 @@ func _process(delta: float) -> void:
         var area: Vector2 = get_viewport().get_visible_rect().size
         state["viewport_w"] = area.x
         state["viewport_h"] = area.y
+        var stage_budget: Dictionary = studio.call("render_budget")
+        state["studio_grid_draw_batches"] = int(stage_budget["grid_draw_batches"])
+        state["studio_grid_instances"] = int(stage_budget["grid_instances"])
+        state["studio_mesh_nodes"] = int(stage_budget["single_mesh_nodes"])
+        state["studio_quality"] = int(stage_budget["stage_quality"])
+        state["prefers_reduced_motion"] = reduced_motion
+        state["render_fps_sample"] = Engine.get_frames_per_second()
         var button_centers: Array[Dictionary] = []
         for button in action_buttons:
             var box: Rect2 = button.get_global_rect()

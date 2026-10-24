@@ -172,8 +172,8 @@ async function touchDiagnostics(page) {
 let failed = false
 try {
   for (const [name, opts, isMobile] of [
-    ['desktop-1366', { viewport: { width: 1366, height: 768 }, deviceScaleFactor: 1 }, false],
-    ['mobile-390', { ...devices['Pixel 7'] }, true],
+    ['desktop-1366', { viewport: { width: 1366, height: 768 }, deviceScaleFactor: 1, reducedMotion: 'no-preference' }, false],
+    ['mobile-390', { ...devices['Pixel 7'], reducedMotion: 'reduce' }, true],
   ]) {
     const context = await browser.newContext(opts)
     const page = await context.newPage()
@@ -194,9 +194,11 @@ try {
         x => x?.scene_ready && x?.loading_failures === 0
           && x?.loaded?.endsWith('service_spine_eco.glb')
           && x?.button_centers?.length === 8 && x?.fault_marker_count === 3
-          && x?.fault_marker_visible_count === 0 && x?.fault_label_visible_count === 0,
+          && x?.fault_marker_visible_count === 0 && x?.fault_label_visible_count === 0
+          && x?.studio_grid_draw_batches === 2 && x?.studio_grid_instances === 18
+          && x?.studio_mesh_nodes <= 8 && x?.prefers_reduced_motion === isMobile,
         'Real W5 Godot ECO rig, 3D markers and controls did not load', 90_000)
-      if (boot.quality !== 0) throw new Error('Low-memory ECO mode not used on boot')
+      if (boot.quality !== 0 || boot.studio_quality !== 0) throw new Error('Low-memory ECO mode not used on boot')
       const geometry = await page.locator('canvas').first().evaluate(canvas => ({
         width: canvas.width, height: canvas.height,
         visible: canvas.getBoundingClientRect().width > 0,
@@ -212,11 +214,13 @@ try {
         await keyboardDiagnostics(page)
         await page.keyboard.press('q')
         await expectState(page, x => x?.quality === 2
-          && x?.loaded?.endsWith('service_spine_hero.glb') && x?.loading_failures === 0,
+          && x?.loaded?.endsWith('service_spine_hero.glb') && x?.studio_quality === 2
+          && x?.loading_failures === 0,
           'Desktop HERO model switch failed', 45_000)
         await page.keyboard.press('q')
         await expectState(page, x => x?.quality === 0
-          && x?.loaded?.endsWith('service_spine_eco.glb') && x?.loading_failures === 0,
+          && x?.loaded?.endsWith('service_spine_eco.glb') && x?.studio_quality === 0
+          && x?.loading_failures === 0,
           'Desktop ECO return failed', 45_000)
       }
       if (runtimeErrors.length || assetErrors.length) {
@@ -227,7 +231,11 @@ try {
       result.push({ device: name, status: 'PASS', verified: 'real mechanics and interaction',
         mission: final.mission_completed, challenge: final.challenge_completed,
         challengeScore: final.challenge_score, view: final.view, quality: final.quality,
-        canvas: geometry })
+        canvas: geometry,
+        stageGridDrawBatches: final.studio_grid_draw_batches,
+        stageGridInstances: final.studio_grid_instances,
+        prefersReducedMotion: final.prefers_reduced_motion,
+        softwareRendererFpsSample: final.render_fps_sample })
       console.log('R135 gameplay PASS:', name, JSON.stringify(result.at(-1)))
     } catch (error) {
       failed = true

@@ -69,6 +69,11 @@ func configure(cam: Camera3D, environment: Environment) -> void:
     _load_challenge_record()
     # Do not load ECO and then HERO at startup. Main.gd selects a preset once.
 
+func set_reduced_motion(enabled: bool) -> void:
+    # Accessibility affects only simulated marker animations, never physics.
+    if visual_faults != null:
+        visual_faults.set("reduced_motion", enabled)
+
 func _mat(color: Color, metal: float, rough: float, emissive: bool = false) -> StandardMaterial3D:
     var mat: StandardMaterial3D = StandardMaterial3D.new()
     mat.albedo_color = color
