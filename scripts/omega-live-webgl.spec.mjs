@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test'
 import { readFileSync } from 'node:fs'
 import { PNG } from 'pngjs'
 import { browserTouchPoint } from './omega-mobile-touch-geometry.mjs'
+import { waitForExactPublishedRelease } from './omega-browser-evidence.mjs'
 
 // This exercises the REAL public Godot 4.4.1 WebAssembly and WebGL renderer,
 // not just the marketing page or HTML canvas shell. Native v34 separately
@@ -32,7 +33,7 @@ function centralSceneMotion(first, second) {
 }
 
 test('authentic released Godot runs WebGL2, paints scene, handles real keyboard/touch',async({page,request},testInfo)=>{
-  test.setTimeout(180_000)
+  test.setTimeout(260_000)
   const errors=[]
   const logs=[]
   page.on('pageerror',e=>errors.push(e.message))
@@ -47,11 +48,16 @@ test('authentic released Godot runs WebGL2, paints scene, handles real keyboard/
   const ordinary=await request.get(GAME+'release.json',{timeout:30000})
   expect(ordinary.status()).toBe(200)
   const ordinaryManifest=await ordinary.json()
-  const manifestResponse=await request.get(GAME+'release.json?omega_verify='+nonce,{
-    timeout:30000,headers:{'Cache-Control':'no-cache','Pragma':'no-cache'}
+  // The CI runner can launch as an atomic SSH/Nginx release is being
+  // activated. Wait for THIS exact native manifest; never silently accept
+  // an earlier or mismatched WASM/PCK just because a request returned 200.
+  const exactRelease=await waitForExactPublishedRelease(
+    request,GAME+'release.json',RELEASE,nonce,{attempts:10,delayMs:3000}
+  )
+  const live=exactRelease.manifest
+  await testInfo.attach('omega-exact-public-release-propagation.json',{
+    body:Buffer.from(JSON.stringify(exactRelease.observations,null,2)),contentType:'application/json'
   })
-  expect(manifestResponse.status()).toBe(200)
-  const live=await manifestResponse.json()
   await testInfo.attach('godot-public-cdn-version.json',{
     body:Buffer.from(JSON.stringify({
       normal_source:ordinaryManifest.source_commit,
