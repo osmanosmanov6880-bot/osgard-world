@@ -33,3 +33,5 @@ jobs:
             echo "=== Native Godot $test ==="
             timeout --signal=TERM --kill-after=5s 50s godot --headless --path godot/empire-omega --script "res://tests/$test.gd"
           done
+      - name: Verify secure exporter-to-SSH activation and rollback contract
+        run: node --test scripts/omega-direct-publish.contract.test.mjs
