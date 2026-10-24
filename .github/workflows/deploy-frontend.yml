@@ -257,21 +257,20 @@ jobs:
           /tmp/osgard-godot/Godot_v4.7.2-stable_linux.x86_64 --headless --path godot/null-shift --export-release Web "$GITHUB_WORKSPACE/public/games/null-shift-godot/index.html"
           node scripts/null-shift-godot-smoke.mjs --export-check public/games/null-shift-godot
       - run: npm run build
-      - name: Stage verified native R135 Godot Web export from immutable GitHub Release
+      - name: Stage verified native R135 Godot Web export from pinned GitHub Actions artifact
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           mkdir -p "$RUNNER_TEMP/r135-web-release"
-          gh release download r135-web-visual-diagnostics-w5-20261024 \
+          gh run download 40082233653 \
             --repo osmanosmanov6880-bot/osgard-world \
-            --pattern "OSGARD_R135_OPTIMIZED_WEB.zip" \
-            --pattern "R135_OPTIMIZED_MANIFEST.json" \
+            --name osgard-r135-optimized-web-qa \
             --dir "$RUNNER_TEMP/r135-web-release"
           python3 scripts/r135-release-stage.py \
-            "$RUNNER_TEMP/r135-web-release/OSGARD_R135_OPTIMIZED_WEB.zip" \
-            "$RUNNER_TEMP/r135-web-release/R135_OPTIMIZED_MANIFEST.json" \
+            "$RUNNER_TEMP/r135-web-release/r135-optimized-release/OSGARD_R135_OPTIMIZED_WEB.zip" \
+            "$RUNNER_TEMP/r135-web-release/r135-optimized-release/R135_OPTIMIZED_MANIFEST.json" \
             dist/games/r135-service
           test -s dist/games/r135-service/index.pck
           test -s dist/games/r135-service/index.wasm
