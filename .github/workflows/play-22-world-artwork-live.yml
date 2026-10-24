@@ -1,0 +1,32 @@
+name: OSGARD PLAY published 22-world visual acceptance
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - '.github/workflows/play-22-world-artwork-live.yml'
+      - 'scripts/games-aaa-wave02-production.mjs'
+      - 'public/games/aaa-roadmap.v1.json'
+      - 'public/games/icons/**'
+      - 'public/games/world-artwork.css'
+  push:
+    branches: [master]
+    paths:
+      - '.github/workflows/play-22-world-artwork-live.yml'
+      - 'public/games/icons/**'
+      - 'public/games/world-artwork.css'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  public-visuals:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify 22 worlds and 44 owned image files over actual HTTPS
+        env:
+          OSGARD_BASE_URL: https://osgard.world
+        run: node scripts/games-aaa-wave02-production.mjs
