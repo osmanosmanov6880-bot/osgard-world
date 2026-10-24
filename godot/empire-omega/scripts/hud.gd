@@ -2,6 +2,7 @@ extends CanvasLayer
 const HORIZON_LAYOUT = preload("res://scripts/horizon_responsive_layout.gd")
 const COMPACT_TELEMETRY = preload("res://scripts/horizon_compact_telemetry.gd")
 const RACE_NAVIGATOR = preload("res://scripts/horizon_race_navigator.gd")
+const TOUCH_MISSION = preload("res://scripts/horizon_mobile_onboarding.gd")
 const ROAD_GUIDE = preload("res://scripts/horizon_road_guidance.gd")
 ## Russian-first accessible HUD. All controls use the same GameState as the 3D world.
 
@@ -651,7 +652,7 @@ func _refresh() -> void:
 			law_label.text = _v08("ШТРАФ ","FINE ","罚款 ") + str(fine) + " кр.  ·  P"
 		else:
 			law_label.text = _v08("Патрули: спокойно","Patrols: clear","巡逻：正常")
-	mission_label.text = MissionManager.title(GameState.locale)
+	mission_label.text = TOUCH_MISSION.title(MissionManager.title(GameState.locale),int(GameState.data.get("mission",0)),compact_hud,DisplayServer.is_touchscreen_available(),GameState.locale)
 	if trial_label != null:
 		var session: Dictionary = d.get("driving_trial",{})
 		var route: Dictionary = GameState.TRIALS.find_route(str(session.get("id",""))) if not session.is_empty() else GameState.TRIALS.offer(d)
@@ -702,7 +703,7 @@ func update_world_context(player_at: Vector3, vehicle_at: Vector3, goal_at: Vect
 			mission_label.text = str(guide["title"])
 			mission_distance_label.text = str(guide["details"])
 		else:
-			mission_label.text = MissionManager.title(GameState.locale)
+			mission_label.text = TOUCH_MISSION.title(MissionManager.title(GameState.locale),int(GameState.data.get("mission",0)),compact_hud,DisplayServer.is_touchscreen_available(),GameState.locale)
 			var travel_distance: float = Vector2(player_at.x-goal_at.x,player_at.z-goal_at.z).length()
 			mission_distance_label.text = _v08("ДО ЦЕЛИ","DISTANCE TO GOAL","目标距离") + ": %d м" % roundi(travel_distance)
 	if speed_panel != null:
