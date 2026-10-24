@@ -323,10 +323,13 @@ func _physics_process(delta: float) -> void:
 	if touch_controls != null and hud != null:
 		var blocked: bool = hud.is_pause_open() or hud.is_strategy_open() or hud.is_citizen_open() or hud.is_city_case_open() or interiors.is_inside()
 		touch_controls.set_mode(driving,blocked)
-	var focus: Vector3 = car.global_position+Vector3(0,2.0,0) if driving else player.global_position+Vector3(0,2.3,0)
+	var viewport_size: Vector2 = get_viewport().get_visible_rect().size
+	var phone_view: bool = SAFE_CAMERA.portrait(viewport_size)
+	var focus: Vector3 = SAFE_CAMERA.look_ahead_focus(
+		car.global_position,car.rotation.y,car.speed,car.current_yaw_rate,
+		viewport_size,GameSettings.reduced_motion) if driving else player.global_position+Vector3(0,2.3,0)
 	if driving and (Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED or DisplayServer.is_touchscreen_available()):
-		var phone_view: bool = SAFE_CAMERA.portrait(get_viewport().get_visible_rect().size)
-		cam_yaw = lerp_angle(cam_yaw,car.rotation.y,clampf(delta*SAFE_CAMERA.follow_rate(car.speed,phone_view),0.0,1.0))
+		cam_yaw = lerp_angle(cam_yaw,car.rotation.y,SAFE_CAMERA.time_alpha(SAFE_CAMERA.follow_rate(car.speed,phone_view),delta))
 	var pads: Array[int] = Input.get_connected_joypads()
 	if not pads.is_empty() and Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED:
 		var joystick_x: float = Input.get_joy_axis(pads[0],JOY_AXIS_RIGHT_X)
@@ -334,7 +337,6 @@ func _physics_process(delta: float) -> void:
 		if absf(joystick_x) > 0.18: cam_yaw -= joystick_x * delta * 2.3
 		if absf(joystick_y) > 0.18: cam_pitch = clampf(cam_pitch - joystick_y * delta * 1.6,0.08,1.18)
 	player.camera_heading = cam_yaw
-	var viewport_size: Vector2 = get_viewport().get_visible_rect().size
 	var ideal: Vector3 = SAFE_CAMERA.desired_position(focus,cam_yaw,cam_pitch,car.speed,driving,viewport_size)
 	var excluding: Array[RID] = [player.get_rid(),car.get_rid()]
 	var camera_solution: Dictionary = SAFE_CAMERA.solve(focus,ideal,camera.global_position,
@@ -342,8 +344,8 @@ func _physics_process(delta: float) -> void:
 	camera.global_position = camera_solution["position"]
 	camera.look_at(focus,Vector3.UP)
 	# Speed-responsive perspective, disabled for players who request less motion.
-	var desired_fov: float = (79.0 + minf(absf(car.speed)*0.27,9.0)) if driving else 76.0
-	camera.fov = desired_fov if GameSettings.reduced_motion else lerpf(camera.fov,desired_fov,clampf(delta*2.2,0.0,1.0))
+	var desired_fov: float = SAFE_CAMERA.target_fov(car.speed,driving,phone_view,GameSettings.reduced_motion)
+	camera.fov = desired_fov if GameSettings.reduced_motion else lerpf(camera.fov,desired_fov,SAFE_CAMERA.time_alpha(2.2,delta))
 	var protagonist: Vector3 = car.global_position if driving else player.global_position
 	_tick_driving_trial(delta)
 	if world.weather_particles != null:
