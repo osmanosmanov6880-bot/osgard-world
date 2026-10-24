@@ -796,11 +796,15 @@ func _run() -> void:
     if not check(not monitor_r11.overlay.visible and
         monitor_r11.r36_launcher.visible,
         "R36 mobile performance overlay cannot be closed"):return
+    touch_r21.set_safe_insets(Vector4(0, 55, 0, 34))
+    touch_r21._layout_for_size(Vector2(280, 420))
     monitor_r11.configure_mobile(true, touch_r21,
         Vector4(0, 55, 0, 34), Vector2(280, 420))
     if not check(monitor_r11.r36_launcher.offset_left >= 0.0 and
         monitor_r11.r36_launcher.offset_right <
-        touch_r21.button_centres["CRUISE"].x - touch_r21.base_radius * 0.8,
+        touch_r21.button_centres["CRUISE"].x - touch_r21.base_radius * 0.8 and
+        monitor_r11.overlay.offset_bottom <
+        touch_r21.button_centres["CRUISE"].y - touch_r21.base_radius * 0.8,
         "R36 compact phone FPS button overlaps start-flight control"):return
     monitor_r11.configure_mobile(false, touch_r21,
         Vector4.ZERO, Vector2(1280, 720))
