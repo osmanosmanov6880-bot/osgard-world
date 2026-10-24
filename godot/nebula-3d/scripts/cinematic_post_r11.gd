@@ -24,9 +24,9 @@ func _ready() -> void:
 shader_type canvas_item;
 render_mode unshaded;
 uniform sampler2D scene_color : hint_screen_texture, repeat_disable, filter_linear;
-uniform float sharpening : hint_range(0.0, 0.5) = 0.18;
-uniform float vignette : hint_range(0.0, 0.5) = 0.15;
-uniform float film_grain : hint_range(0.0, 0.04) = 0.008;
+uniform float sharpening : hint_range(0.0, 0.5) = 0.11;
+uniform float vignette : hint_range(0.0, 0.5) = 0.095;
+uniform float film_grain : hint_range(0.0, 0.04) = 0.003;
 uniform float color_grade : hint_range(0.0, 1.0) = 0.50;
 uniform float velocity_streak : hint_range(0.0, 1.0) = 0.0;
 void fragment() {
@@ -43,8 +43,8 @@ void fragment() {
     ) * 0.25;
     vec3 sharpened = center + clamp(center - neighbors, vec3(-0.20), vec3(0.20)) * sharpening;
     float luminance = dot(sharpened, vec3(0.2126, 0.7152, 0.0722));
-    vec3 cool_shadows = vec3(0.965, 0.982, 1.035);
-    vec3 warm_highlights = vec3(1.035, 1.010, 0.96);
+    vec3 cool_shadows = vec3(0.986, 0.997, 1.016);
+    vec3 warm_highlights = vec3(1.018, 1.006, 0.980);
     vec3 balanced = sharpened * mix(cool_shadows, warm_highlights, smoothstep(0.20, 0.80, luminance));
     balanced = mix(sharpened, balanced, color_grade);
     // Gentle highlight shoulder preserves rough metallic surfaces.
@@ -56,7 +56,7 @@ void fragment() {
             clamp(uv - radial * px * 3.0, vec2(0.0), vec2(1.0))).rgb;
         balanced = mix(balanced, trailing, velocity_streak * 0.10);
     }
-    balanced = (balanced - 0.5) * 1.022 + 0.5;
+    balanced = (balanced - 0.5) * 1.012 + 0.5;
     float radial = length((uv - 0.5) * vec2(1.15, 1.0));
     float optical_falloff = 1.0 - vignette * smoothstep(0.24, 0.90, radial);
     float noise = fract(sin(dot(floor(uv / max(px, vec2(0.0001))) +
@@ -76,9 +76,9 @@ func set_quality(mode: int) -> void:
     quality_mode = clampi(mode, 0, 2)
     if post_material == null:
         return
-    post_material.set_shader_parameter("sharpening", [0.18, 0.09, 0.0][quality_mode])
-    post_material.set_shader_parameter("film_grain", [0.008, 0.004, 0.0][quality_mode])
-    post_material.set_shader_parameter("vignette", [0.15, 0.11, 0.0][quality_mode])
+    post_material.set_shader_parameter("sharpening", [0.11, 0.065, 0.0][quality_mode])
+    post_material.set_shader_parameter("film_grain", [0.003, 0.001, 0.0][quality_mode])
+    post_material.set_shader_parameter("vignette", [0.095, 0.075, 0.0][quality_mode])
     post_material.set_shader_parameter("color_grade", [0.56, 0.36, 0.0][quality_mode])
     viewport_filter.visible = requested_enabled and quality_mode != 2
     post_material.set_shader_parameter("velocity_streak",
