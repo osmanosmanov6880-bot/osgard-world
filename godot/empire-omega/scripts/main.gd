@@ -364,7 +364,7 @@ func _physics_process(delta: float) -> void:
 		hud.map.case_active = case_site != "" and world.locations.has(case_site)
 		if hud.map.case_active: hud.map.case_world = world.locations[case_site]["position"]
 	if Engine.get_physics_frames() % 3 == 0:
-		hud.update_world_context(protagonist,car.global_position,goal,driving,car.speed,car.fuel,near_name,car.health,car.handbrake_on,car.gear_label(),roundi(car.drift_chain_score),car.power_assist_reduction,car.steering_assist_correction)
+		hud.update_world_context(protagonist,car.global_position,goal,driving,car.speed,car.fuel,near_name,car.health,car.handbrake_on,car.gear_label(),roundi(car.drift_chain_score),car.power_assist_reduction,car.steering_assist_correction,car.rotation.y)
 	# Patrols use shared physical roads and do not warp while pursuing the player.
 	if patrols != null:
 		var heat: int = int(GameState.data.get("law",{}).get("heat",0))
