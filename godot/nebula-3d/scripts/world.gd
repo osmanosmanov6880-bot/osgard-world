@@ -162,6 +162,8 @@ func _r25_emit_browser_flight_state() -> void:
         "cruise": ship.cruise_assist,
         "locked": ship.controls_locked,
         "input_mask": ship.browser_input_mask,
+        "browser_window_ready": ship.browser_window != null,
+        "window_mask": int(ship.browser_window.__nebulaPilotMask) if ship.browser_window != null else -1,
         "browser_input_samples": ship.browser_input_samples,
         "quality": graphics_quality,
         "samples": r25_telemetry_samples
