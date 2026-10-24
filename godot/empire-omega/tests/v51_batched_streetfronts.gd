@@ -26,7 +26,7 @@ func _run() -> void:
 		verify(ground_blocked==1,"exactly one street-facing ground-floor window band is replaced by the new storefront")
 	verify(not FRONT.window_allowed(0,0,0) and not FRONT.window_allowed(0,2,1) and not FRONT.window_allowed(0,1,2) and not FRONT.window_allowed(0,3,3),
 		"entry facade orientation agrees with four rotated storefront models")
-		verify(FRONT.road_facing_variant(Vector3(17,0,23),52.0)==1,"storefront on negative X road side faces that road")
+	verify(FRONT.road_facing_variant(Vector3(17,0,23),52.0)==1,"storefront on negative X road side faces that road")
 	verify(FRONT.road_facing_variant(Vector3(-17,0,23),52.0)==3,"storefront on positive X road side faces that road")
 	verify(FRONT.road_facing_variant(Vector3(23,0,17),52.0)==0,"storefront on negative Z road side faces that road")
 	verify(FRONT.road_facing_variant(Vector3(23,0,-17),52.0)==2,"storefront on positive Z road side faces that road")
