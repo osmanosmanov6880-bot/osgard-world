@@ -13,7 +13,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: osgard-r135-web-optimized
+  group: osgard-r135-web-optimized-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
