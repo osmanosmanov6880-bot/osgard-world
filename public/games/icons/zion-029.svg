@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-label="zion-029">
+<defs><linearGradient id="surface" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#193650"/><stop offset="1" stop-color="#070D16"/></linearGradient><radialGradient id="glow"><stop stop-color="#8BCFFF" stop-opacity=".24"/><stop offset="1" stop-color="#8BCFFF" stop-opacity="0"/></radialGradient></defs>
+<rect x="2" y="2" width="124" height="124" rx="25" fill="url(#surface)" stroke="#8BCFFF" stroke-opacity=".32" stroke-width="2"/>
+<circle cx="64" cy="58" r="57" fill="url(#glow)"/>
+<path d="M14 20h15M99 108h15" fill="none" stroke="#8BCFFF" stroke-width="1.5" opacity=".47"/>
+<g fill="none" stroke="#8BCFFF" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M47 38v48c0 15-23 15-23 2 0-11 17-15 23-9m0-41 42-11v47c0 15-23 15-23 2 0-11 17-15 23-9M47 51l42-11" fill="#8BCFFF" fill-opacity=".11"/><path d="M18 107h92" opacity=".45"/></g>
+</svg>
