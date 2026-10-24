@@ -82,8 +82,12 @@ try {
   await waitForTelemetry(s=>s && !(s.input_mask & 1),12000);
   log.checks.push({name:'keyboard keyup clears browser mask and does not stick',telemetry:await snapshot()});
   // Re-use game's real Godot button, not an external JS command.
-  const bounds=await page.locator('#canvas').boundingBox();
-  if(!bounds)throw new Error('Game canvas was not interactable');
+  const bounds=await page.evaluate(() => {
+    const rect=document.querySelector('#canvas')?.getBoundingClientRect();
+    return rect ? {x:rect.x,y:rect.y,width:rect.width,height:rect.height} : null;
+  });
+  if(!bounds || bounds.width<=0 || bounds.height<=0)
+    throw new Error('Game canvas was not interactable: '+JSON.stringify(bounds));
   await page.mouse.click(bounds.x+bounds.width/2,bounds.y+bounds.height-70);
   await waitForTelemetry(s=>s && s.cruise === true,15000);
   const start=await checkpoint('actual clickable cruise switch engaged',s=>s?.cruise===true);
