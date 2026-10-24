@@ -1,6 +1,7 @@
 extends CanvasLayer
 const HORIZON_LAYOUT = preload("res://scripts/horizon_responsive_layout.gd")
 const COMPACT_TELEMETRY = preload("res://scripts/horizon_compact_telemetry.gd")
+const RACE_NAVIGATOR = preload("res://scripts/horizon_race_navigator.gd")
 ## Russian-first accessible HUD. All controls use the same GameState as the 3D world.
 
 signal strategy_changed(is_open: bool)
@@ -671,7 +672,7 @@ func _refresh() -> void:
 	if open:
 		_redraw_strategy()
 
-func update_world_context(player_at: Vector3, vehicle_at: Vector3, goal_at: Vector3, is_driving: bool, speed: float, fuel: float, nearest: String, condition: float = 100.0, handbrake: bool = false, gear: String = "N", drift_score: int = 0, assist_power: float = 0.0, assist_steering: float = 0.0) -> void:
+func update_world_context(player_at: Vector3, vehicle_at: Vector3, goal_at: Vector3, is_driving: bool, speed: float, fuel: float, nearest: String, condition: float = 100.0, handbrake: bool = false, gear: String = "N", drift_score: int = 0, assist_power: float = 0.0, assist_steering: float = 0.0, vehicle_yaw: float = 0.0) -> void:
 	if map != null:
 		map.player_world = player_at
 		map.vehicle_world = vehicle_at
@@ -689,8 +690,18 @@ func update_world_context(player_at: Vector3, vehicle_at: Vector3, goal_at: Vect
 	if neighborhood_label != null and not GameState.data.get("neighborhood_active",{}).is_empty():
 		neighborhood_label.text = GameState.NEIGHBORHOOD.goal_text(GameState.data,GameState.locale)
 	if mission_distance_label != null:
-		var travel_distance: float = Vector2(player_at.x-goal_at.x,player_at.z-goal_at.z).length()
-		mission_distance_label.text = _v08("ДО ЦЕЛИ","DISTANCE TO GOAL","目标距离") + ": %d м" % roundi(travel_distance)
+		var session: Dictionary = GameState.data.get("driving_trial",{})
+		var guide: Dictionary = {}
+		if not session.is_empty():
+			var route: Dictionary = GameState.TRIALS.find_route(str(session.get("id","")))
+			guide = RACE_NAVIGATOR.view(route,session,vehicle_at,vehicle_yaw,GameState.locale,compact_hud)
+		if not guide.is_empty():
+			mission_label.text = str(guide["title"])
+			mission_distance_label.text = str(guide["details"])
+		else:
+			mission_label.text = MissionManager.title(GameState.locale)
+			var travel_distance: float = Vector2(player_at.x-goal_at.x,player_at.z-goal_at.z).length()
+			mission_distance_label.text = _v08("ДО ЦЕЛИ","DISTANCE TO GOAL","目标距离") + ": %d м" % roundi(travel_distance)
 	if speed_panel != null:
 		speed_panel.visible = is_driving
 	if is_driving:
