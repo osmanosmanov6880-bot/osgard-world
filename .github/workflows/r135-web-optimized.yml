@@ -174,7 +174,7 @@ jobs:
             --archive "$RUNNER_TEMP/r135-optimized-release/OSGARD_R135_OPTIMIZED_WEB.zip" \
             --manifest "$RUNNER_TEMP/r135-optimized-release/R135_OPTIMIZED_MANIFEST.json" \
             --portrait "$RUNNER_TEMP/r135-screens/w6-portrait-optical-active.png" \
-            --expected-version r135-web-release-qa-w10-20261024 \
+            --expected-version r135-web-legibility-w11-20261024 \
             --expected-source "$GITHUB_SHA" \
             --output "$RUNNER_TEMP/r135-w10-release-evidence.json"
 
@@ -182,7 +182,7 @@ jobs:
         shell: bash
         env:
           OSGARD_EXPECTED_R135_SOURCE: ${{ github.sha }}
-          OSGARD_EXPECTED_R135_VERSION: r135-web-release-qa-w10-20261024
+          OSGARD_EXPECTED_R135_VERSION: r135-web-legibility-w11-20261024
         run: |
           set -euo pipefail
           export OSGARD_EXPECTED_R135_MANIFEST_SHA256="$(sha256sum "$RUNNER_TEMP/r135-optimized/release.json" | awk '{print $1}')"
