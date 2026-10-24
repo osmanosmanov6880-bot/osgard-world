@@ -38,3 +38,31 @@ jobs:
         env:
           OSGARD_EXPECTED_R135_SOURCE: cd6132fa5d34cbb701957b124a6aa2aac9210434
         run: bash scripts/r135-nginx-wasm-smoke.sh "$RUNNER_TEMP/r135-w5-staged"
+
+      - name: Verify artifact-expiry recovery without reaching the live site
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m py_compile scripts/r135-artifact-fallback.py
+          python3 -m http.server 8876 --bind 127.0.0.1 --directory "$RUNNER_TEMP/r135-w5-staged" > /tmp/r135-w5-local-http.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
+          for n in $(seq 1 20); do
+            if curl -fsS "http://127.0.0.1:8876/release.json" -o /dev/null; then break; fi
+            sleep 1
+          done
+          python3 - <<'PY'
+          import importlib.util
+          import os
+          from pathlib import Path
+          module_path = Path("scripts/r135-artifact-fallback.py")
+          spec = importlib.util.spec_from_file_location("r135_recovery", module_path)
+          module = importlib.util.module_from_spec(spec)
+          spec.loader.exec_module(module)
+          module.BASE = "http://127.0.0.1:8876/"
+          module.restore(Path(os.environ["RUNNER_TEMP"]) / "r135-w5-restored")
+          PY
+          python3 scripts/r135-release-stage.py \
+            "$RUNNER_TEMP/r135-w5-restored/OSGARD_R135_OPTIMIZED_WEB.zip" \
+            "$RUNNER_TEMP/r135-w5-restored/R135_OPTIMIZED_MANIFEST.json" \
+            "$RUNNER_TEMP/r135-w5-restored-stage"
