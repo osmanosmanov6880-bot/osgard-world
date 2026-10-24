@@ -1,0 +1,61 @@
+name: OSGARD safe stale deployment staging reclaim
+on:
+  push:
+    branches: [fix/osgard-release-space-guard-rebased-20261024]
+    paths: [".github/workflows/osgard-safe-release-reclaim.yml"]
+  workflow_dispatch:
+  schedule:
+    - cron: '30 4 * * 0'
+permissions:
+  contents: read
+jobs:
+  reclaim:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      DEPLOY_HOST: ${{ secrets.OSGARD_DEPLOY_HOST }}
+      DEPLOY_USER: ${{ secrets.OSGARD_DEPLOY_USER }}
+      DEPLOY_KEY: ${{ secrets.OSGARD_DEPLOY_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate SSH secrets and initialize isolated transport
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$DEPLOY_HOST" && test -n "$DEPLOY_USER" && test -n "$DEPLOY_KEY"
+          install -m 700 -d "$HOME/.ssh"
+          printf '%s\n' "$DEPLOY_KEY" > "$HOME/.ssh/osgard_reclaim"
+          chmod 600 "$HOME/.ssh/osgard_reclaim"
+          ssh-keyscan -T 10 -H "$DEPLOY_HOST" >> "$HOME/.ssh/known_hosts" 2>/dev/null
+      - name: Delete only expired OSGARD transport directories (>90min), never backups or Docker
+        shell: bash
+        run: |
+          set -euo pipefail
+          ssh -o BatchMode=yes -o ConnectTimeout=12 -i "$HOME/.ssh/osgard_reclaim" "$DEPLOY_USER@$DEPLOY_HOST" 'bash -s' <<'REMOTE'
+          set -euo pipefail
+          old_free=$(df -Pm /tmp | awk 'NR==2 {print $4}')
+          count=0
+          reclaimed=0
+          while IFS= read -r -d '' dir; do
+            base="${dir##*/}"
+            [[ "$base" =~ ^osgard-gh-release-[0-9]{6,}$ ]] || continue
+            [ -d "$dir" ] && [ ! -L "$dir" ] || continue
+            # Hard guard on our exact /tmp release prefix. No /var/lib/docker,
+            # user uploads, active Nginx trees or rollback directories touched.
+            [[ "$dir" == /tmp/osgard-gh-release-* ]] || continue
+            size=$(du -sm "$dir" 2>/dev/null | awk '{print $1}')
+            size="${size:-0}"
+            rm -rf -- "$dir"
+            count=$((count+1))
+            reclaimed=$((reclaimed+size))
+          done < <(find /tmp -mindepth 1 -maxdepth 1 -type d -name 'osgard-gh-release-[0-9]*' -mmin +90 -print0)
+          new_free=$(df -Pm /tmp | awk 'NR==2 {print $4}')
+          printf 'OSGARD_RECLAIMED_DIRECTORIES=%s\n' "$count"
+          printf 'OSGARD_OLD_ARCHIVE_SPACE_MIB=%s\n' "$reclaimed"
+          printf 'FREE_BEFORE_MIB=%s\n' "$old_free"
+          printf 'FREE_AFTER_MIB=%s\n' "$new_free"
+          df -h /tmp | tail -n 1
+          if [ "$new_free" -lt 1024 ]; then
+            echo "::warning::Less than 1 GiB available; manual review of Docker images required. Not pruning automatically."
+          fi
+          REMOTE
