@@ -21,7 +21,7 @@ const sleep = (page, ms) => page.waitForTimeout(ms)
 async function readState(page) {
   return page.evaluate(() => window.__OSGARD_R135_QA || null)
 }
-async function expectState(page, predicate, label, timeout = 60_000) {
+async function expectState(page, predicate, label, timeout = 18_000) {
   const started = Date.now()
   let state = null
   while (Date.now() - started < timeout) {
@@ -104,10 +104,10 @@ try {
       if (!available) throw new Error('No WebGL2 context')
       await page.locator('canvas').first().waitFor({ state: 'visible', timeout: 120_000 })
       const boot = await expectState(page,
-        x => x?.scene_ready && x?.load_failures === 0
+        x => x?.scene_ready && x?.loading_failures === 0
           && x?.loaded?.endsWith('service_spine_eco.glb')
           && x?.button_centers?.length === 6,
-        'Real Godot ECO rig and operator controls did not load', 120_000)
+        'Real Godot ECO rig and operator controls did not load', 90_000)
       if (boot.quality !== 0) throw new Error('Low-memory ECO mode not used on boot')
       const geometry = await page.locator('canvas').first().evaluate(canvas => ({
         width: canvas.width, height: canvas.height,
@@ -122,12 +122,12 @@ try {
         await keyboardMission(page)
         await page.keyboard.press('q')
         await expectState(page, x => x?.quality === 2
-          && x?.loaded?.endsWith('service_spine_hero.glb') && x?.load_failures === 0,
-          'Desktop HERO model switch failed')
+          && x?.loaded?.endsWith('service_spine_hero.glb') && x?.loading_failures === 0,
+          'Desktop HERO model switch failed', 45_000)
         await page.keyboard.press('q')
         await expectState(page, x => x?.quality === 0
-          && x?.loaded?.endsWith('service_spine_eco.glb') && x?.load_failures === 0,
-          'Desktop ECO return failed')
+          && x?.loaded?.endsWith('service_spine_eco.glb') && x?.loading_failures === 0,
+          'Desktop ECO return failed', 45_000)
       }
       if (runtimeErrors.length || assetErrors.length) {
         throw new Error('Browser runtime errors: ' + JSON.stringify({ runtimeErrors, assetErrors }))
