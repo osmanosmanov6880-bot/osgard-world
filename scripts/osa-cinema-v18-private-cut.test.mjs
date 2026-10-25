@@ -74,3 +74,14 @@ test('Measured private media can never be interpreted as cleared public film', a
   assert.ok(edl.includes('65 shots') && edl.includes('11 shots'))
   assert.ok(edl.includes('not an artistic assessment') || edl.includes('not final edit approvals'))
 })
+
+test('V18 audio rendering independently verifies source identity and the copied packet streams', async () => {
+  const script = await readFile('scripts/osa-cinema-v18-private-four-track.sh', 'utf8')
+  assert.ok(script.includes('SOURCE_PICTURE_AND_TWO_AUDIO_BITSTREAMS_PRESERVED'))
+  assert.ok(script.includes('VIDEO_SHA=') && script.includes('GUIDE_SHA='))
+  assert.ok(script.includes('hash_stream()') && script.includes('0:a:1'))
+  assert.ok(script.includes('alimiter=limit=0.8,volume=-3dB'))
+  assert.ok(script.includes('true peak') || script.includes('True peak'))
+  assert.ok(script.includes('NO PUBLICATION RIGHTS GRANTED'))
+  assert.ok(!script.includes('curl ') && !script.includes('wget '))
+})
