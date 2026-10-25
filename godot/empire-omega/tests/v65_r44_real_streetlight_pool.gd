@@ -2,7 +2,9 @@ extends SceneTree
 ## R44 real Godot night lights: pooled, positioned at actual instanced
 ## lanterns, camera-local and quality-scaled. No fake sky overlay/physics.
 const ROAD = preload("res://scripts/horizon_roadscape.gd")
-const WORLD = preload("res://scripts/world_builder.gd")
+# Load the world AFTER the SceneTree test starts; eager preloading before
+# project singletons exist makes Godot report `Identifier not found: GameState`.
+# Native tests must fail promptly instead of hiding a preload error as timeout.
 var passed := 0
 var failed := 0
 func check(ok: bool,why: String) -> void:
@@ -55,7 +57,13 @@ func _run() -> void:
 	check(int(scenic.get("active_night_lights"))==0,"invalid world position never corrupts light transform")
 	check(pool.size()==4 and poses.size()==162,"repeated settings never leak GPU light nodes")
 	scenic.queue_free()
-	var world: Node3D = WORLD.new()
+	var world_script: Variant = load("res://scripts/world_builder.gd")
+	check(world_script is Script and world_script.can_instantiate(), "live world compiles after singleton initialization")
+	if not (world_script is Script and world_script.can_instantiate()):
+		print("R44 failed to instantiate live Godot world; ending native test explicitly")
+		quit(1)
+		return
+	var world: Node3D = world_script.new()
 	root.add_child(world)
 	var live: Node3D = world.get("horizon_scenic")
 	check(live!=null and live.is_inside_tree(),"actual drivable world owns the original roadscape")
