@@ -10,6 +10,7 @@ const ObsidianStage = preload("res://scripts/OSGARDObsidianStage.gd")
 var rotor: Node3D
 var hatch_hinge: Node3D
 var camera: Camera3D
+var luxury_fill_light: OmniLight3D
 var signal_lights: Array[MeshInstance3D] = []
 var hero_geometry: Array[Node3D] = []
 var _previous_view: int = -1
@@ -72,7 +73,8 @@ func _construct_rig() -> void:
     env.background_color = Color("05080d")
     env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
     env.ambient_light_color = Color("617181")
-    env.ambient_light_energy = 0.22
+    # W47: lift crushed black shadows from actual W43 frames without washing out the gold detail.
+    env.ambient_light_energy = 0.28
     environment.environment = env
     add_child(environment)
 
@@ -151,12 +153,22 @@ func _construct_rig() -> void:
     warm.omni_range = 12.0
     warm.shadow_enabled = false
     add_child(warm)
+    # Real practical illumination across the dark left-hand service bay.
+    # No texture trick or fabricated still frame. ECO switches this off.
+    luxury_fill_light = OmniLight3D.new()
+    luxury_fill_light.name = "GalleryBlueSteelBounce"
+    luxury_fill_light.position = Vector3(-4.25, 3.2, 5.25)
+    luxury_fill_light.light_color = Color("b0c5be")
+    luxury_fill_light.light_energy = 0.74
+    luxury_fill_light.omni_range = 11.5
+    luxury_fill_light.shadow_enabled = false
+    add_child(luxury_fill_light)
     obsidian_stage = ObsidianStage.new()
     obsidian_stage.name = "ObsidianProtocolCinematicComplex"
     add_child(obsidian_stage)
     camera = Camera3D.new()
     camera.name = "OperatorInspectionCamera"
-    camera.fov = 48.0
+    camera.fov = 44.0
     camera.near = 0.12
     camera.far = 70.0
     camera.current = true
@@ -196,21 +208,24 @@ func set_view(index: int) -> void:
     if camera == null or index == _previous_view:
         return
     _previous_view = index
+    camera.fov = 44.0 if index == 0 else 48.0
     if index == 2:
         _shot_target = Vector3(-3.45, 2.45, 5.25)
     elif index == 1:
         _shot_target = Vector3(4.20, 2.75, 5.30)
     else:
-        _shot_target = Vector3(5.65, 3.45, 8.00)
+        _shot_target = Vector3(4.70, 3.05, 6.80)
     if not _shot_initialized:
         camera.position = _shot_target
         _shot_initialized = true
-    camera.look_at(Vector3(0, 1.66, 0.35), Vector3.UP)
+    camera.look_at(Vector3(0, 1.92, 0.52), Vector3.UP)
 
 func set_quality(mode: String) -> void:
     if _previous_quality == mode:
         return
     _previous_quality = mode
+    if luxury_fill_light != null:
+        luxury_fill_light.light_energy = 0.74 if mode == "hero" else 0.0
     for detail in hero_geometry:
         detail.visible = mode == "hero"
     if obsidian_stage != null:
@@ -227,7 +242,7 @@ func apply_simulation(state: Dictionary) -> void:
     var reduced_motion: bool = bool(state.get("reduced_motion", false))
     if _shot_initialized:
         camera.position = _shot_target if reduced_motion else camera.position.lerp(_shot_target, 0.075)
-        camera.look_at(Vector3(0, 1.66, 0.35), Vector3.UP)
+        camera.look_at(Vector3(0, 1.92, 0.52), Vector3.UP)
     set_quality(str(state.get("quality", "hero")))
     if obsidian_stage != null:
         obsidian_stage.set_reduced_motion(reduced_motion)
@@ -268,6 +283,19 @@ func apply_simulation(state: Dictionary) -> void:
         if complete:
             tone = Color("77dfce")
         live_signal_bar.multimesh.set_instance_color(i, tone)
+
+func w47_cinematic_framing_qa() -> Dictionary:
+    return {
+        "real_godot_camera": camera != null,
+        "camera_view": _previous_view,
+        "lens_fov": camera.fov if camera != null else 0.0,
+        "hero_shot_position": _shot_target,
+        "actual_gallery_fill": luxury_fill_light != null,
+        "gallery_fill_energy": luxury_fill_light.light_energy if luxury_fill_light != null else 0.0,
+        "gallery_fill_shadow_disabled": not luxury_fill_light.shadow_enabled if luxury_fill_light != null else false,
+        "hardware_fps_claimed": false,
+        "visual_only": true
+    }
 
 func cinematic_qa_readout() -> Dictionary:
     if obsidian_stage == null:
