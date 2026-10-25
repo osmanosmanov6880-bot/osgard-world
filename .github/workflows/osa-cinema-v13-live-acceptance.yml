@@ -8,6 +8,7 @@ on:
       - 'scripts/osa-cinema-v13-production-smoke.mjs'
       - 'scripts/osa-cinema-v13-production.spec.mjs'
       - 'playwright.osa-cinema-live.config.mjs'
+      - 'scripts/osa-cinema-v15-screening.spec.mjs'
   workflow_run:
     workflows: ["OSGARD frontend deploy"]
     types: [completed]
@@ -56,6 +57,11 @@ jobs:
         env:
           OSGARD_BASE_URL: https://osgard.world
         run: npx playwright test scripts/osa-cinema-v13-production.spec.mjs --config playwright.osa-cinema-live.config.mjs --workers=1
+      - name: Confirm V15 full-screen real production screening on desktop and 390px mobile
+        if: ${{ github.event_name == 'workflow_run' || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/master') }}
+        env:
+          OSGARD_BASE_URL: https://osgard.world
+        run: npx playwright test scripts/osa-cinema-v15-screening.spec.mjs --config playwright.osa-cinema-live.config.mjs --workers=1
       - name: Preserve production screenshots and diagnostics
         if: always()
         uses: actions/upload-artifact@v4

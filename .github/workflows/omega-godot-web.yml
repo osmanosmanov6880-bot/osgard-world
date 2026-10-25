@@ -44,7 +44,14 @@ jobs:
               continue
             fi
             echo "=== NATIVE ${test_file##*/} ==="
-            if timeout --signal=TERM --kill-after=5s 15s godot --headless --path godot/empire-omega --script "res://tests/${test_file##*/}"; then
+            # The calibrated six-candidate R40 RigidBody3D sweep takes ~40s
+            # on actual CI; preserve the 15s gate for all other native suites.
+            test_seconds=15
+            if [[ "${test_file##*/}" == "v59_r40_force_motor_calibration.gd" ]]; then
+              test_seconds=110
+            fi
+            echo "Native test budget: ${test_seconds}s for ${test_file##*/}"
+            if timeout --signal=TERM --kill-after=5s "${test_seconds}s" godot --headless --path godot/empire-omega --script "res://tests/${test_file##*/}"; then
               echo "PASS: ${test_file##*/}"
             else
               echo "::error::Failed Godot test: ${test_file##*/}"

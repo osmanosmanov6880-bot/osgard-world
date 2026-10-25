@@ -6,6 +6,9 @@ on:
     paths:
       - 'src/OSACinema.tsx'
       - 'src/OSACinemaCompanion.tsx'
+      - 'src/OSACinemaScreening.tsx'
+      - 'src/osaCinemaScreening.css'
+      - 'scripts/osa-cinema-v15-screening.spec.mjs'
       - 'src/osaCinemaCompanionText.ts'
       - 'src/osaCinemaCompanion.css'
       - 'scripts/osa-cinema-v14-companion-smoke.mjs'
@@ -68,7 +71,7 @@ jobs:
             npx playwright install --with-deps --no-shell chromium
           fi
       - name: Exercise OSA V13 desktop and 390px touch viewport
-        run: npx playwright test scripts/osa-cinema-v13-browser.spec.mjs scripts/osa-cinema-v14-companion.spec.mjs --config playwright.ecosystem.config.mjs --workers=1
+        run: npx playwright test scripts/osa-cinema-v13-browser.spec.mjs scripts/osa-cinema-v14-companion.spec.mjs scripts/osa-cinema-v15-screening.spec.mjs --config playwright.ecosystem.config.mjs --workers=1
       - name: Publish reproducible browser evidence
         if: always()
         uses: actions/upload-artifact@v4

@@ -1,0 +1,10 @@
+{
+  "schema": "NEBULA_R40_ONESHOT_QA_V1",
+  "source_run_id": "40173218842",
+  "candidate_pr": 375,
+  "candidate_head_sha": "9efb03c246a28a168886e2aa494872e907ea78cd",
+  "staging_only": true,
+  "approved_for_production": false,
+  "qa_path": "/games/remix/nebula-r40-qa/",
+  "purpose": "Run verified R40 PR artifact on isolated staging URL for physical-device performance/visual QA. Does not replace R38 production."
+}

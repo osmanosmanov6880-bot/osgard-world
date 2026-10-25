@@ -1,0 +1,21 @@
+#!/usr/bin/env node
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+const y=fs.readFileSync('.github/workflows/nebula-r40-device-staging.yml','utf8');
+const m=JSON.parse(fs.readFileSync('.github/nebula-r40-qa-one-shot-source.json','utf8'));
+assert.equal(m.schema,'NEBULA_R40_ONESHOT_QA_V1');
+assert.equal(m.staging_only,true);
+assert.equal(m.approved_for_production,false);
+assert.equal(m.candidate_pr,375);
+assert.match(m.source_run_id,/^[0-9]{6,}$/);
+assert.match(m.candidate_head_sha,/^[0-9a-f]{40}$/);
+assert.equal(m.qa_path,'/games/remix/nebula-r40-qa/');
+assert.ok(y.includes('push:\n    branches: [master]\n    paths:\n      - ".github/nebula-r40-qa-one-shot-source.json"'));
+assert.ok(y.includes('test "$head" = "$expected"'));
+assert.ok(y.includes('test "$(printf \'%s\' "$run" | jq -er \'.head_sha\')" = "$head"'));
+assert.ok(y.includes('sha256sum -c R40_DEVICE_ARTIFACT_SHA256.txt'));
+assert.ok(y.includes('grep -Fxq "release_status=HARDWARE_QA_ONLY_NOT_PRODUCTION"'));
+assert.ok(y.includes('dest=/usr/share/nginx/html/games/remix/nebula-r40-qa'));
+assert.ok(!y.includes('dest=/usr/share/nginx/html/games/remix/arena-v2/nebula-3d'));
+assert.ok(y.includes('NEBULA_R40_STAGING_ONLY_SUCCESS'));
+console.log('NEBULA_R40_STAGING_ONESHOT_GUARD_SUCCESS stable_r38_untouched=true');
