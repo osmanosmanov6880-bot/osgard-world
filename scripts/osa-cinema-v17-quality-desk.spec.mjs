@@ -38,6 +38,7 @@ test('Private V17 quality desk cross-references ten masters and seeks measured v
   expect(report.finalCaptionsApproved).toBe(false)
   expect(report.notes).toHaveLength(1)
   expect(report.notes[0].text).toMatch(/23\.83/)
+  expect(report.notes[0].time).toBeCloseTo(23.833, 2)
   await page.locator('#switchlang').click()
   await expect(page.locator('#title')).toHaveText('Picture and sound quality review')
   await page.locator('#asset').selectOption('osa-voice-ru-act-2')
