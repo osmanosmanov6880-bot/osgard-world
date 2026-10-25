@@ -1,0 +1,165 @@
+name: OSGARD R135 W11 independently verified promotion gate
+
+on:
+  push:
+    branches: [release/r135-w11-verified-promotion-20261025]
+    paths:
+      - "scripts/r135-w11-release-pin.json"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: r135-w11-single-immutable-release
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    if: github.ref == 'refs/heads/release/r135-w11-verified-promotion-20261025'
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify exact successful W11 source, immutable run and reviewed SHA pin
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,re
+          from pathlib import Path
+          pin=json.loads(Path("scripts/r135-w11-release-pin.json").read_text())
+          assert pin["version"]=="r135-web-legibility-w11-20261024"
+          assert re.fullmatch(r"[0-9a-f]{40}", pin["source_commit"])
+          assert re.fullmatch(r"[0-9a-f]{64}", pin["manifest_sha256"])
+          assert re.fullmatch(r"[0-9a-f]{64}", pin["archive_sha256"])
+          assert type(pin["artifact_run_id"]) is int and pin["artifact_run_id"]>0
+          assert pin["release_tag"]=="r135-web-legibility-w11-20261025"
+          assert pin.get("reviewed_portrait") is True
+          assert pin.get("reviewed_desktop") is True
+          assert pin.get("software_only") is True
+          print("PIN FORMAT PASS; this metadata alone is NOT independent verification")
+          PY
+          PIN=scripts/r135-w11-release-pin.json
+          RUN_ID="$(jq -r '.artifact_run_id' "$PIN")"
+          SHA="$(jq -r '.source_commit' "$PIN")"
+          gh api "repos/osmanosmanov6880-bot/osgard-world/actions/runs/$RUN_ID" > "$RUNNER_TEMP/r135-w11-upstream.json"
+          jq -e --arg sha "$SHA" '
+            .conclusion=="success" and
+            .status=="completed" and
+            .head_sha==$sha and
+            .head_branch=="feat/r135-w11-legible-studio-lighting-20261024" and
+            .name=="OSGARD R135 optimized web candidate"
+          ' "$RUNNER_TEMP/r135-w11-upstream.json"
+          mkdir -p "$RUNNER_TEMP/r135-w11-upstream"
+          gh run download "$RUN_ID" --repo osmanosmanov6880-bot/osgard-world \
+            --name osgard-r135-optimized-web-qa --dir "$RUNNER_TEMP/r135-w11-upstream"
+          test -s "$RUNNER_TEMP/r135-w11-upstream/r135-optimized-release/OSGARD_R135_OPTIMIZED_WEB.zip"
+          test -s "$RUNNER_TEMP/r135-w11-upstream/r135-optimized-release/R135_OPTIMIZED_MANIFEST.json"
+          test -s "$RUNNER_TEMP/r135-w11-upstream/r135-screens/w6-portrait-optical-active.png"
+          test -s "$RUNNER_TEMP/r135-w11-upstream/r135-screens/w6-desktop-optical-active.png"
+          test -s "$RUNNER_TEMP/r135-w11-upstream/r135-screens/r135-portrait-capture-proof.json"
+          test -s "$RUNNER_TEMP/r135-w11-upstream/r135-w11-readability-evidence.json"
+
+      - name: Independently verify every game byte and genuine portrait evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          PIN=scripts/r135-w11-release-pin.json
+          RELEASE_DIR="$RUNNER_TEMP/r135-w11-upstream/r135-optimized-release"
+          PORTRAIT_DIR="$RUNNER_TEMP/r135-w11-upstream/r135-screens"
+          EXPECTED_MANIFEST="$(jq -r '.manifest_sha256' "$PIN")"
+          EXPECTED_ARCHIVE="$(jq -r '.archive_sha256' "$PIN")"
+          echo "$EXPECTED_MANIFEST  $RELEASE_DIR/R135_OPTIMIZED_MANIFEST.json" | sha256sum -c -
+          echo "$EXPECTED_ARCHIVE  $RELEASE_DIR/OSGARD_R135_OPTIMIZED_WEB.zip" | sha256sum -c -
+          python3 -m unittest discover -s scripts -p test_r135_portrait_proof.py -v
+          python3 scripts/r135-w10-release-readiness.py \
+            --archive "$RELEASE_DIR/OSGARD_R135_OPTIMIZED_WEB.zip" \
+            --manifest "$RELEASE_DIR/R135_OPTIMIZED_MANIFEST.json" \
+            --portrait "$PORTRAIT_DIR/w6-portrait-optical-active.png" \
+            --portrait-evidence "$PORTRAIT_DIR/r135-portrait-capture-proof.json" \
+            --expected-version "$(jq -r '.version' "$PIN")" \
+            --expected-source "$(jq -r '.source_commit' "$PIN")" \
+            --output "$RUNNER_TEMP/r135-w11-independent-binary-evidence.json"
+          python3 scripts/r135-release-stage.py \
+            "$RELEASE_DIR/OSGARD_R135_OPTIMIZED_WEB.zip" \
+            "$RELEASE_DIR/R135_OPTIMIZED_MANIFEST.json" \
+            "$RUNNER_TEMP/r135-w11-staged" "$PIN"
+          test "$(stat -c '%a' "$RUNNER_TEMP/r135-w11-staged")" = 755
+
+      - name: Inspect authentic desktop and portrait pixels
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Fail closed on dark 3D scene or invisible fault caption
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m pip install --disable-pip-version-check "Pillow==11.3.0"
+          DIR="$RUNNER_TEMP/r135-w11-upstream/r135-screens"
+          python3 scripts/r135-w11-readability-qa.py \
+            --portrait "$DIR/w6-portrait-optical-active.png" \
+            --desktop "$DIR/desktop-1366.png" \
+            --output "$RUNNER_TEMP/r135-w11-independent-readable.json"
+          python3 scripts/r135-w11-caption-gate.py \
+            --portrait "$DIR/w6-portrait-optical-active.png" \
+            --desktop "$DIR/w6-desktop-optical-active.png" \
+            --output "$RUNNER_TEMP/r135-w11-independent-caption.json"
+
+      - name: Verify authentic Nginx WASM gzip and PCK HTTP 206 byte range
+        shell: bash
+        run: |
+          set -euo pipefail
+          export OSGARD_EXPECTED_R135_SOURCE="$(jq -r '.source_commit' scripts/r135-w11-release-pin.json)"
+          export OSGARD_EXPECTED_R135_VERSION="$(jq -r '.version' scripts/r135-w11-release-pin.json)"
+          export OSGARD_EXPECTED_R135_MANIFEST_SHA256="$(jq -r '.manifest_sha256' scripts/r135-w11-release-pin.json)"
+          bash scripts/r135-nginx-wasm-smoke.sh "$RUNNER_TEMP/r135-w11-staged"
+
+      - name: Retain independent signed-artifact and pixel QA evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: r135-w11-promotion-evidence
+          path: |
+            ${{ runner.temp }}/r135-w11-upstream.json
+            ${{ runner.temp }}/r135-w11-independent-binary-evidence.json
+            ${{ runner.temp }}/r135-w11-independent-readable.json
+            ${{ runner.temp }}/r135-w11-independent-caption.json
+          retention-days: 30
+          if-no-files-found: warn
+
+      - name: Preserve identical W11 ZIP and manifest in immutable GitHub Release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          PIN=scripts/r135-w11-release-pin.json
+          TAG="$(jq -r '.release_tag' "$PIN")"
+          SHA="$(jq -r '.source_commit' "$PIN")"
+          RELEASE_DIR="$RUNNER_TEMP/r135-w11-upstream/r135-optimized-release"
+          test ! -z "$SHA"
+          # Never overwrite a release/tag even if a different artifact appears later.
+          if gh release view "$TAG" --repo osmanosmanov6880-bot/osgard-world >/dev/null 2>&1; then
+            echo "Refuse to overwrite preexisting W11 release. Audit exact assets manually." >&2
+            exit 1
+          fi
+          gh release create "$TAG" \
+            --repo osmanosmanov6880-bot/osgard-world \
+            --target "$SHA" --draft --latest=false \
+            --title "OSGARD R135 W11 — readable WebGL industrial simulation" \
+            --notes "SHA-pinned Godot 4.4.1 WebGL simulation; real Chromium desktop + emulated phone, W11 optical visibility, PCK/WASM/Nginx and per-file SHA-256 gate passed. No hardware FPS, thermals or AAA photorealism certification."
+          gh release upload "$TAG" \
+            "$RELEASE_DIR/OSGARD_R135_OPTIMIZED_WEB.zip" \
+            "$RELEASE_DIR/R135_OPTIMIZED_MANIFEST.json" \
+            --repo osmanosmanov6880-bot/osgard-world
+          mkdir -p "$RUNNER_TEMP/r135-w11-rediscovered"
+          gh release download "$TAG" --repo osmanosmanov6880-bot/osgard-world \
+            --dir "$RUNNER_TEMP/r135-w11-rediscovered"
+          echo "$(jq -r '.archive_sha256' "$PIN")  $RUNNER_TEMP/r135-w11-rediscovered/OSGARD_R135_OPTIMIZED_WEB.zip" | sha256sum -c -
+          echo "$(jq -r '.manifest_sha256' "$PIN")  $RUNNER_TEMP/r135-w11-rediscovered/R135_OPTIMIZED_MANIFEST.json" | sha256sum -c -
+          gh release edit "$TAG" --repo osmanosmanov6880-bot/osgard-world --draft=false --latest=false
+          echo "W11 immutable candidate preserved. No production deploy performed."
