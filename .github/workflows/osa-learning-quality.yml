@@ -44,6 +44,8 @@ jobs:
         run: node --experimental-strip-types scripts/osa-cinema-v14-companion-smoke.mjs
       - name: OSA Cinema V15 eight-scene edit decision list and source provenance
         run: node scripts/osa-cinema-v15-edit-decision-smoke.mjs
+      - name: Verify V17 objective media QA filters, real-source integrity and no unlicensed publication
+        run: python3 -m unittest scripts/test_osa_cinema_v17_av_qc.py -v
       - name: Verify V16 original workprint provenance and fail-closed film release gates
         run: node --test scripts/osa-cinema-v16-workprint.test.mjs
       - name: Verify six V16 RU/EN narration originals stay blocked without real review
