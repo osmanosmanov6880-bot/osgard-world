@@ -17,12 +17,19 @@ func _initialize() -> void:
 	call_deferred("_run")
 
 func _run() -> void:
-	var original_state: Dictionary = GameState.data.duplicate(true)
-	var original_locale: String = GameState.locale
-	var live: Dictionary = GameState.new_game()
-	GameState.data = live
-	GameState.locale = "ru"
-	var forecast: Dictionary = GameState.forecast()
+	var game: Node = root.get_node_or_null("GameState")
+	var missions: Node = root.get_node_or_null("MissionManager")
+	verify(game != null and missions != null,
+		"original authoritative GameState and MissionManager autoloads are mounted")
+	if game == null or missions == null:
+		quit(1)
+		return
+	var original_state: Dictionary = (game.get("data") as Dictionary).duplicate(true)
+	var original_locale: String = str(game.get("locale"))
+	var live: Dictionary = game.call("new_game")
+	game.set("data",live)
+	game.set("locale","ru")
+	var forecast: Dictionary = game.call("forecast")
 	var dial: Control = DIAL.new()
 	root.add_child(dial)
 	dial.call("set_vehicle",22.0,60.0,80.0)
@@ -48,7 +55,7 @@ func _run() -> void:
 			"dashboard stays inside desktop")
 	var preview: VBoxContainer = DASH.new()
 	root.add_child(preview)
-	preview.call("build",live,forecast,MissionManager.title("ru"),root.world_3d,false,"ru")
+	preview.call("build",live,forecast,str(missions.call("title","ru")),root.world_3d,false,"ru")
 	verify(preview.get("preview")!=null and (preview.get("preview") as SubViewport).world_3d==root.world_3d,
 		"command room renders the real authoritative game 3D world")
 	verify((preview.get("preview") as SubViewport).get_camera_3d()!=null,
@@ -79,8 +86,8 @@ func _run() -> void:
 		hud.call("toggle_strategy")
 		verify(not bool(hud.call("is_strategy_open")),"closed cabinet returns to normal gameplay")
 		hud.queue_free()
-	GameState.data = original_state
-	GameState.locale = original_locale
+	game.set("data",original_state)
+	game.set("locale",original_locale)
 	await process_frame
 	print("EMPIRE OMEGA R90 genuine art direction slice: %d pass, %d fail" % [passed,failed])
 	quit(0 if failed==0 else 1)
