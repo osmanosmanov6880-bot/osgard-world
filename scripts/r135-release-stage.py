@@ -35,7 +35,8 @@ def stage(archive: Path, manifest_path: Path, destination: Path,
             reject("invalid reviewed release pin SHA lengths")
         permitted = {"r135-web-legibility-w11-20261024", "r135-case-progress-w14-20261025",
                      "r135-premium-learning-w18-candidate-20261025",
-                     "r135-luxury-academy-w19-candidate-20261025"}
+                     "r135-luxury-academy-w19-candidate-20261025",
+                     "r135-player-settings-w20-candidate-20261025"}
         if pin.get("version") not in permitted:
             reject("release pin version not in independently tested allowlist")
         if not all(c in "0123456789abcdef" for c in pin["manifest_sha256"] + pin["source_commit"]):
@@ -62,6 +63,22 @@ def stage(archive: Path, manifest_path: Path, destination: Path,
             frames = pin.get("screenshots_sha256")
             if not isinstance(frames, dict) or len(frames) != 13:
                 reject("W19 promotion requires all 13 original PNG image hashes")
+        if pin["version"] == "r135-player-settings-w20-candidate-20261025":
+            for proof in ("reviewed_luxury_desktop", "reviewed_luxury_mobile",
+                          "reviewed_settings_desktop", "reviewed_settings_mobile",
+                          "reviewed_settings_persistence", "reviewed_no_overlap",
+                          "reviewed_ru_en", "browser_three_fault_cases"):
+                if pin.get(proof) is not True:
+                    reject("W20 original user settings and real-game proof missing: " + proof)
+            if pin.get("physical_phone_fps_verified") is not False:
+                reject("W20 Chromium is not physical phone GPU verification")
+            if pin.get("photorealistic_aaa_certified") is not False:
+                reject("W20 settings cannot certify cinema AAA photorealism")
+            if not isinstance(pin.get("native_run_id"), int) or pin["native_run_id"] <= 0:
+                reject("W20 requires exact native Godot workflow run")
+            frames = pin.get("screenshots_sha256")
+            if not isinstance(frames, dict) or len(frames) != 15:
+                reject("W20 requires all 15 original PNG review hashes")
     expected_sha256 = pin["manifest_sha256"]
     if hashlib.sha256(manifest_path.read_bytes()).hexdigest() != expected_sha256:
         reject("release manifest digest differs from independently reviewed build")
