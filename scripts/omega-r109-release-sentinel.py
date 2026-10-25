@@ -44,6 +44,7 @@ TESTS = [
     "v87_r108_native_mountain_ridges",
     "v88_r106_embedded_cc0_road_activation",
     "v89_r111_stable_weather_pbr",
+    "v90_r112_true_camera_inspection",
 ]
 
 
