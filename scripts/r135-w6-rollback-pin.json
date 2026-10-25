@@ -1,0 +1,11 @@
+{
+  "version": "r135-web-framing-w6-20261024",
+  "source_commit": "947b4627080636543ae5e873b88b50e61f13beb4",
+  "artifact_run_id": 40109700192,
+  "artifact_id": 12565818008,
+  "manifest_sha256": "0638f1ad5c0ab26d2d112e63bd1759923e5401a85ad4f2cedd450bbb7def2f61",
+  "archive_sha256": "5f53b6bf964cf494794cd0a22f24f235090fe94e4c3d3b5fd06f264cf5594507",
+  "release_tag": "r135-w6-4-known-good-20261025",
+  "original_glbs_preserved": true,
+  "hardware_gpu_fps_certified": false
+}
