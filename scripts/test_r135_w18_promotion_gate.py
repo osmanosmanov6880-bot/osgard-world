@@ -6,6 +6,9 @@ import importlib.util
 import tempfile
 import unittest
 import zipfile
+import random
+import struct
+import zlib
 from pathlib import Path
 
 SOURCE = Path(__file__).with_name("r135-w18-promotion-qa.py")
@@ -76,6 +79,28 @@ class Contract(unittest.TestCase):
             bad.write_bytes(b"not a png" * 5000)
             with self.assertRaisesRegex(ValueError, "invalid PNG"):
                 gate.verify_png(bad, hashlib.sha256(bad.read_bytes()).hexdigest())
+
+    def test_full_authentic_png_chunks_and_crc_required(self):
+        # This is a locally generated synthetic PNG, never a player screenshot.
+        def chunk(name, payload):
+            return (struct.pack(">I", len(payload)) + name + payload +
+                    struct.pack(">I", zlib.crc32(name + payload) & 0xffffffff))
+        gen = random.Random(13518)
+        width, height = 320, 320
+        raw = b"".join(b"\x00" + gen.randbytes(width * 3) for _ in range(height))
+        ihdr = struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0)
+        png = (b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", ihdr) +
+               chunk(b"IDAT", zlib.compress(raw, 6)) + chunk(b"IEND", b""))
+        with tempfile.TemporaryDirectory() as folder:
+            original = Path(folder) / "original.png"
+            original.write_bytes(png)
+            evidence = gate.verify_png(original, hashlib.sha256(png).hexdigest())
+            self.assertEqual((evidence["width"], evidence["height"]), (320, 320))
+            tampered = bytearray(png)
+            tampered[50] ^= 1
+            original.write_bytes(tampered)
+            with self.assertRaisesRegex(ValueError, "PNG chunk CRC mismatch"):
+                gate.verify_png(original, hashlib.sha256(tampered).hexdigest())
 
     def test_zip_traversal_is_rejected_even_with_declared_hash(self):
         with tempfile.TemporaryDirectory() as d:
