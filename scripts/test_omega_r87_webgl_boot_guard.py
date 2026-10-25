@@ -9,8 +9,9 @@ RUNNER=(ROOT/"scripts/omega-four-viewport-real-ci.sh").read_text()
 R37=(ROOT/".github/workflows/omega-r37-facade-material-qa.yml").read_text()
 PORTRAIT=(ROOT/".github/workflows/omega-portrait-preview-qa.yml").read_text()
 R52=(ROOT/".github/workflows/omega-r52-joined-gameplay-qa.yml").read_text()
+R48=(ROOT/".github/workflows/omega-r48-frame-pacing-qa.yml").read_text()
 
-def verify(spec=SPEC, runner=RUNNER, r37=R37, portrait=PORTRAIT, r52=R52):
+def verify(spec=SPEC, runner=RUNNER, r37=R37, portrait=PORTRAIT, r52=R52, r48=R48):
     assert "await page.waitForFunction(()=>document.querySelector('#status')===null" in spec
     assert "expect(view.webgl2).toBe(true)" in spec
     assert "expect(view.contextLost).toBe(false)" in spec
@@ -37,6 +38,12 @@ def verify(spec=SPEC, runner=RUNNER, r37=R37, portrait=PORTRAIT, r52=R52):
     assert '--retries=0' in r52
     assert 'python3 scripts/test_omega_r87_webgl_boot_guard.py' in r52
     assert 'VIEWPORT: ${{ matrix.viewport }}' in r52
+    assert 'sudo apt-get install -y xvfb libgl1-mesa-dri' in r48
+    assert 'OMEGA_CI_GL_BACKEND=mesa LIBGL_ALWAYS_SOFTWARE=1' in r48
+    assert 'xvfb-run -a' in r48
+    assert '--retries=0' in r48
+    assert 'python3 scripts/test_omega_r87_webgl_boot_guard.py' in r48
+    assert 'VIEWPORT: ${{ matrix.viewport }}' in r48
 
 class WebGLGuardTests(unittest.TestCase):
     def test_originals(self): verify()
@@ -64,6 +71,12 @@ class WebGLGuardTests(unittest.TestCase):
     def test_r52_cannot_retry_flaky_desktop(self):
         with self.assertRaises(AssertionError):
             verify(r52=R52.replace('--retries=0','--retries=1'))
+    def test_r48_mesa_cannot_be_stubbed(self):
+        with self.assertRaises(AssertionError):
+            verify(r48=R48.replace('OMEGA_CI_GL_BACKEND=mesa','OMEGA_CI_GL_BACKEND=stub'))
+    def test_r48_cannot_retry_flaky_desktop(self):
+        with self.assertRaises(AssertionError):
+            verify(r48=R48.replace('--retries=0','--retries=1'))
     def test_browser_isolation_required(self):
         with self.assertRaises(AssertionError):
             verify(r37=R37.replace("bash scripts/omega-four-viewport-real-ci.sh","npx playwright test"))
