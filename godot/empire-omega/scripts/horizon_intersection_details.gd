@@ -4,6 +4,7 @@ extends Node3D
 ## The real 52m road lattice and existing traffic collisions are unchanged.
 const HALF_CITY: float = 224.0
 const MAX_INSTANCES: int = 1024
+const MAX_GRATE_VERTICES: int = 140
 const GRID_RADIUS: int = 4
 var intersection_count := 0
 var batch_count := 0
@@ -77,6 +78,22 @@ func _batch(label: String, geometry: Mesh, poses: Array[Transform3D],
 	add_child(mesh)
 	batch_count += 1
 
+# Five welded rails form real voids between the drainage ribs.
+# A single low-vertex ArrayMesh is instanced 648 times in ONE GPU batch;
+# no static colliders or per-grate draw calls are created.
+func _drain_grate_mesh() -> ArrayMesh:
+	var surface := SurfaceTool.new()
+	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var unit := BoxMesh.new()
+	unit.size = Vector3.ONE
+	for x in [-0.34,0.0,0.34]:
+		surface.append_from(unit,0,Transform3D(
+			Basis().scaled(Vector3(0.075,0.58,0.72)),Vector3(x,0,0)))
+	for z in [-0.44,0.44]:
+		surface.append_from(unit,0,Transform3D(
+			Basis().scaled(Vector3(0.95,0.55,0.12)),Vector3(0,0,z)))
+	return surface.commit()
+
 func _finalize() -> void:
 	var block := BoxMesh.new()
 	block.size = Vector3.ONE
@@ -86,7 +103,7 @@ func _finalize() -> void:
 	post.height = 1.0
 	post.radial_segments = 8
 	_batch("R38RealCurbStones",block,curbs,curb_colors,0.85,0.025)
-	_batch("R38StormDrainGrates",block,drains,drain_colors,0.48,0.70)
+	_batch("R38StormDrainGrates",_drain_grate_mesh(),drains,drain_colors,0.48,0.70)
 	_batch("R38ProtectiveMetalBollards",post,bollards,bollard_colors,0.40,0.63)
 	_batch("R38BollardMetalCaps",block,caps,cap_colors,0.38,0.60)
 	assert(batch_count==4,"R38 uses exactly four shared GPU batches")
