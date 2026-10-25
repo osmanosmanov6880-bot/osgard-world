@@ -36,5 +36,11 @@ jobs:
           gate='if ! python3 scripts/omega-build-freshness.py'
           assert gate in src, 'build gate missing'
           assert src.index(gate) < src.index('git reset --mixed origin/master'), 'gate must precede restaging'
-          print('PASS: verified source freshness before release restaging')
+          # A superseded source must fail the exporter itself; its green
+          # conclusion otherwise incorrectly triggers downstream SSH releases.
+          block=src[src.index(gate):src.index('git reset --mixed origin/master')]
+          assert '::error::SUPERSEDED native export' in block, 'missing stale-export error'
+          assert 'exit 3' in block, 'stale export cannot exit successfully'
+          assert 'exit 0' not in block, 'green no-op would trigger a false deployment'
+          print('PASS: stale native export is non-success before restaging or SSH')
           PY

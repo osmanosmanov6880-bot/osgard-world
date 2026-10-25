@@ -50,3 +50,19 @@ test('eight live assets must be compared byte for byte',()=>{
   assert.match(y,/NEBULA_ACTIVE_VARIANT/);
   assert.match(y,/\.approved_for_production/);
 });
+
+test('live byte integrity runs after every real full frontend deployment',()=>{
+  assert.match(y,/workflow_run:\n    workflows:\n      - "OSGARD frontend deploy"\n    types: \[completed\]\n    branches: \[master\]/);
+  assert.match(y,/if: github\.event_name == 'workflow_run'/);
+  assert.match(y,/UPSTREAM_CONCLUSION:/);
+  assert.match(y,/UPSTREAM_BRANCH:/);
+  assert.match(y,/UPSTREAM_REPOSITORY:/);
+  assert.match(y,/UPSTREAM_EVENT:/);
+  assert.match(y,/test "\$UPSTREAM_REPOSITORY" = "\$GITHUB_REPOSITORY"/);
+  assert.match(y,/test "\$UPSTREAM_BRANCH" = master/);
+  assert.match(y,/push\|workflow_dispatch\) ;;/);
+  assert.match(y,/test "\$UPSTREAM_CONCLUSION" = success/);
+  assert.match(y,/refusing to certify NEBULA QA survival/);
+  assert.match(y,/github\.event\.workflow_run\.id \|\| github\.run_id/);
+  assert.match(y,/cancel-in-progress: false/);
+});

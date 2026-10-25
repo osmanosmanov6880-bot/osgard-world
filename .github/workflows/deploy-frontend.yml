@@ -16,6 +16,8 @@ on:
       - "scripts/check-nginx-remix-owned.sh"
       - "tests/test_remix_*.py"
       - "tests/test_frontend_activation.py"
+      - "scripts/check-frontend-release-freshness.sh"
+      - "scripts/test-frontend-release-freshness.mjs"
       - "docker-compose.production.yml"
       - "public/development/index.html"
       - "public/development/osa-intelligence/**"
@@ -56,6 +58,11 @@ on:
       - "scripts/r135-release-stage.py"
       - "scripts/r135-w11-release-pin.json"
       - "scripts/r135-w14-release-pin.json"
+      - "scripts/r135-w18-release-pin.json"
+      - "scripts/r135-active-release.json"
+      - "scripts/r135-release-selector.sh"
+      - "scripts/r135-w18-deploy-contract.mjs"
+      - "scripts/r135-w18-promotion-qa.py"
       - "scripts/r135-verified-live-recover.py"
       - "scripts/r135-artifact-fallback.py"
       - "scripts/r135-production-smoke.mjs"
@@ -124,7 +131,9 @@ jobs:
           node-version: 22
       - run: npm ci
       - name: Validate deployment workflow safety checks
-        run: npm run qa:deploy-workflow
+        run: |
+          npm run qa:deploy-workflow
+          node scripts/r135-w18-deploy-contract.mjs
       - run: npm run check
       - name: Verify three product surfaces and all game entry points
         run: npm run qa:redesign
@@ -277,26 +286,68 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          PIN=scripts/r135-w14-release-pin.json
-          test -s "$PIN"
+          # Selector persists the reviewed active channel across later deployments.
+          # A skipped negative-test job cannot count as W18 game promotion.
+          PIN="$(bash scripts/r135-release-selector.sh)"
           RUN_ID="$(jq -er '.artifact_run_id' "$PIN")"
           ART_NAME="$(jq -er '.artifact_name' "$PIN")"
-          test "$RUN_ID" = 40175524463
           test "$ART_NAME" = osgard-r135-optimized-web-qa
-          STAGED="$RUNNER_TEMP/r135-web-release/r135-optimized-release"
+          ROOT="$RUNNER_TEMP/r135-web-release"
+          STAGED="$ROOT/r135-optimized-release"
           mkdir -p "$STAGED"
-          if gh run download "$RUN_ID" \
-            --repo osmanosmanov6880-bot/osgard-world \
-            --name "$ART_NAME" \
-            --dir "$RUNNER_TEMP/r135-web-release"; then
-            # ZIP-level hash is independently pinned for the original Actions artifact.
-            ARCHIVE_SHA="$(jq -er '.archive_sha256' "$PIN")"
-            printf '%s  %s\n' "$ARCHIVE_SHA" "$STAGED/OSGARD_R135_OPTIMIZED_WEB.zip" | sha256sum -c -
+          if [[ "$PIN" == scripts/r135-w14-release-pin.json ]]; then
+            test "$RUN_ID" = 40175524463
+            if gh run download "$RUN_ID" \
+              --repo osmanosmanov6880-bot/osgard-world \
+              --name "$ART_NAME" --dir "$ROOT"; then
+              ARCHIVE_SHA="$(jq -er '.archive_sha256' "$PIN")"
+              printf '%s  %s\n' "$ARCHIVE_SHA" "$STAGED/OSGARD_R135_OPTIMIZED_WEB.zip" | sha256sum -c -
+            else
+              # After W18 is live, GitHub Actions W14 may have expired.
+              # Use only the independently archived original GitHub Release,
+              # checked byte-for-byte against the reviewed W14 pin below.
+              TAG=r135-case-progress-w14-verified-rollback-20261025
+              if gh release view "$TAG" --repo osmanosmanov6880-bot/osgard-world >/dev/null 2>&1; then
+                gh release download "$TAG" --repo osmanosmanov6880-bot/osgard-world \
+                  --pattern "OSGARD_R135_OPTIMIZED_WEB.zip" --dir "$STAGED"
+                gh release download "$TAG" --repo osmanosmanov6880-bot/osgard-world \
+                  --pattern "R135_OPTIMIZED_MANIFEST.json" --dir "$STAGED"
+              else
+                # Last resort: only the exact CURRENTLY LIVE W14 bytes are valid.
+                # An active W18 server must fail closed rather than forge a W14 backup.
+                python3 scripts/r135-verified-live-recover.py --pin "$PIN" --target "$STAGED"
+              fi
+            fi
+          elif [[ "$PIN" == scripts/r135-w18-release-pin.json ]]; then
+            GATE_RUN="$(jq -er '.promotion_gate_run_id' scripts/r135-active-release.json)"
+            GATE="$(gh api "repos/osmanosmanov6880-bot/osgard-world/actions/runs/$GATE_RUN")"
+            test "$(jq -er '.conclusion' <<< "$GATE")" = success
+            jq -er '.path' <<< "$GATE" | grep -Fq r135-w18-promotion-gate.yml
+            GATE_JOBS="$(gh api "repos/osmanosmanov6880-bot/osgard-world/actions/runs/$GATE_RUN/jobs?per_page=100")"
+            jq -e '.jobs[] | select(.name == "independently-accept-real-candidate" and .conclusion == "success")' <<< "$GATE_JOBS" >/dev/null
+            GATE_SHA="$(jq -er '.head_sha' <<< "$GATE")"
+            PIN_AT_GATE="$(gh api "repos/osmanosmanov6880-bot/osgard-world/contents/scripts/r135-w18-release-pin.json?ref=$GATE_SHA" --jq '.content' | base64 -d | sha256sum | awk '{print $1}')"
+            test "$PIN_AT_GATE" = "$(sha256sum "$PIN" | awk '{print $1}')"
+            SOURCE="$(jq -er '.source_commit' "$PIN")"
+            RUN="$(gh api "repos/osmanosmanov6880-bot/osgard-world/actions/runs/$RUN_ID")"
+            test "$(jq -er '.head_sha' <<< "$RUN")" = "$SOURCE"
+            test "$(jq -er '.conclusion' <<< "$RUN")" = success
+            ART_ID="$(jq -er '.artifact_id' "$PIN")"
+            ARTIFACTS="$(gh api "repos/osmanosmanov6880-bot/osgard-world/actions/runs/$RUN_ID/artifacts")"
+            jq -e --argjson id "$ART_ID" --arg name "$ART_NAME" \
+              '.artifacts[] | select(.id == $id and .name == $name and .expired == false)' \
+              <<< "$ARTIFACTS" >/dev/null
+            # No server fallback for a new W18; use exact reviewed Actions bytes.
+            gh run download "$RUN_ID" \
+              --repo osmanosmanov6880-bot/osgard-world \
+              --name "$ART_NAME" --dir "$ROOT"
+            python3 scripts/r135-w18-promotion-qa.py --pin "$PIN" --artifact "$ROOT"
           else
-            # Used only after W14 is ALREADY live. A W11 server has a different
-            # digest and is rejected. Never use a floating "latest" artifact.
-            python3 scripts/r135-verified-live-recover.py --pin "$PIN" --target "$STAGED"
+            echo 'Unreviewed R135 channel refused' >&2
+            exit 1
           fi
+          ARCHIVE_SHA="$(jq -er '.archive_sha256' "$PIN")"
+          printf '%s  %s\n' "$ARCHIVE_SHA" "$STAGED/OSGARD_R135_OPTIMIZED_WEB.zip" | sha256sum -c -
           MANIFEST_SHA="$(jq -er '.manifest_sha256' "$PIN")"
           printf '%s  %s\n' "$MANIFEST_SHA" "$STAGED/R135_OPTIMIZED_MANIFEST.json" | sha256sum -c -
           python3 scripts/r135-release-stage.py \
@@ -309,12 +360,13 @@ jobs:
           test -s dist/games/r135-service/release.json
           test "$(stat -c '%a' dist/games/r135-service)" = 755
           test "$(stat -c '%a' dist/games/r135-service/index.html)" = 644
-      - name: Verify exact R135 W14 gzip WASM and PCK byte ranges through candidate Nginx
+      - name: Verify selected SHA-reviewed R135 gzip WASM and PCK byte ranges through candidate Nginx
         run: |
           set -euo pipefail
-          export OSGARD_EXPECTED_R135_SOURCE="$(jq -r '.source_commit' scripts/r135-w14-release-pin.json)"
-          export OSGARD_EXPECTED_R135_VERSION="$(jq -r '.version' scripts/r135-w14-release-pin.json)"
-          export OSGARD_EXPECTED_R135_MANIFEST_SHA256="$(jq -r '.manifest_sha256' scripts/r135-w14-release-pin.json)"
+          PIN="$(bash scripts/r135-release-selector.sh)"
+          export OSGARD_EXPECTED_R135_SOURCE="$(jq -r '.source_commit' "$PIN")"
+          export OSGARD_EXPECTED_R135_VERSION="$(jq -r '.version' "$PIN")"
+          export OSGARD_EXPECTED_R135_MANIFEST_SHA256="$(jq -r '.manifest_sha256' "$PIN")"
           export OSGARD_REQUIRE_R135_REVALIDATION=1
           bash scripts/r135-nginx-wasm-smoke.sh dist/games/r135-service
       - name: Verify Unity runtime delivery through candidate Nginx
@@ -376,7 +428,7 @@ jobs:
       - name: Verify Imperium of Time visuals and real diagnostics
         run: npm run qa:time-ui && node scripts/omega-city-3d-smoke.mjs
       - name: Check deployment shell syntax
-        run: bash -n scripts/activate-frontend-remote.sh && sh -n scripts/preserve-omega-native.sh && sh -n scripts/preserve-nebula-r40-qa.sh && node --test scripts/omega-frontend-preservation.test.mjs scripts/nebula-r40-qa-preservation.test.mjs
+        run: bash -n scripts/activate-frontend-remote.sh && bash -n scripts/check-frontend-release-freshness.sh && sh -n scripts/preserve-omega-native.sh && sh -n scripts/preserve-nebula-r40-qa.sh && node --test scripts/omega-frontend-preservation.test.mjs scripts/nebula-r40-qa-preservation.test.mjs scripts/test-frontend-release-freshness.mjs
       - name: Package HTML assets and matching Nginx config
         run: |
           set -euo pipefail
@@ -523,8 +575,11 @@ jobs:
         env:
           HOST: ${{ secrets.OSGARD_DEPLOY_HOST }}
           USER: ${{ secrets.OSGARD_DEPLOY_USER }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
+          # Block older queued builds BEFORE any SSH transport.
+          bash scripts/check-frontend-release-freshness.sh
           REMOTE_RELEASE_DIR="/tmp/osgard-gh-release-${GITHUB_RUN_ID}"
           local_bytes="$(stat -c %s osgard-world-release.tgz)"
           local_mib="$(( (local_bytes + 1048575) / 1048576 ))"
@@ -549,17 +604,25 @@ jobs:
         env:
           HOST: ${{ secrets.OSGARD_DEPLOY_HOST }}
           USER: ${{ secrets.OSGARD_DEPLOY_USER }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
+          # Recheck AFTER upload and immediately BEFORE activating a release.
+          bash scripts/check-frontend-release-freshness.sh
           REMOTE_RELEASE_DIR="/tmp/osgard-gh-release-${GITHUB_RUN_ID}"
           REMOTE_ARCHIVE="/tmp/osgard-gh-release-${GITHUB_RUN_ID}.tgz"
           REMOTE_SCRIPT="/tmp/activate-frontend-remote-${GITHUB_RUN_ID}.sh"
-          PIN=scripts/r135-w14-release-pin.json
+          PIN="$(bash scripts/r135-release-selector.sh)"
           R135_SHA="$(jq -r '.manifest_sha256' "$PIN")"
           R135_SOURCE="$(jq -r '.source_commit' "$PIN")"
           R135_VERSION="$(jq -r '.version' "$PIN")"
           [[ "$R135_SHA" =~ ^[0-9a-f]{64}$ && "$R135_SOURCE" =~ ^[0-9a-f]{40}$ ]]
-          test "$R135_VERSION" = "r135-case-progress-w14-20261025"
+          if [[ "$PIN" == scripts/r135-w14-release-pin.json ]]; then
+            test "$R135_VERSION" = "r135-case-progress-w14-20261025"
+          else
+            test "$PIN" = scripts/r135-w18-release-pin.json
+            test "$R135_VERSION" = "r135-premium-learning-w18-candidate-20261025"
+          fi
           scp -i ~/.ssh/osgard_deploy scripts/activate-frontend-remote.sh "$USER@$HOST:$REMOTE_SCRIPT"
           ssh -i ~/.ssh/osgard_deploy "$USER@$HOST" "docker cp '$REMOTE_RELEASE_DIR/osgard-world-release.tgz' osgard-world:'$REMOTE_ARCHIVE' && chmod 700 '$REMOTE_SCRIPT' && OSGARD_EXPECTED_R135_MANIFEST_SHA256='$R135_SHA' OSGARD_EXPECTED_R135_SOURCE='$R135_SOURCE' OSGARD_EXPECTED_R135_VERSION='$R135_VERSION' OSGARD_ARCHIVE='$REMOTE_ARCHIVE' OSGARD_CORE_IMAGE='osgard-core-api:${GITHUB_SHA}' OSGARD_REMIX_GUARD_IMAGE='osgard-remix-guard:${GITHUB_SHA}' OSGARD_CONTAINER=osgard-world '$REMOTE_SCRIPT'"
       - name: Verify exact INHERIT R15 public files after SSH activation
@@ -590,14 +653,15 @@ jobs:
           path: remix-live-contract.json
           if-no-files-found: warn
           retention-days: 14
-      - name: Verify actual public W14 source, manifest, WASM and PCK after SSH activation
+      - name: Verify actual selected R135 source, manifest, WASM and PCK after SSH activation
         env:
           OSGARD_BASE_URL: https://osgard.world
         run: |
           set -euo pipefail
-          export OSGARD_EXPECTED_R135_SOURCE="$(jq -r '.source_commit' scripts/r135-w14-release-pin.json)"
-          export OSGARD_EXPECTED_R135_VERSION="$(jq -r '.version' scripts/r135-w14-release-pin.json)"
-          export OSGARD_EXPECTED_R135_MANIFEST_SHA256="$(jq -r '.manifest_sha256' scripts/r135-w14-release-pin.json)"
+          PIN="$(bash scripts/r135-release-selector.sh)"
+          export OSGARD_EXPECTED_R135_SOURCE="$(jq -r '.source_commit' "$PIN")"
+          export OSGARD_EXPECTED_R135_VERSION="$(jq -r '.version' "$PIN")"
+          export OSGARD_EXPECTED_R135_MANIFEST_SHA256="$(jq -r '.manifest_sha256' "$PIN")"
           export OSGARD_REQUIRE_R135_REVALIDATION=1
           node scripts/r135-production-smoke.mjs
       - name: Verify published routes and same-origin API proxy

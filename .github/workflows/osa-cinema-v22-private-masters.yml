@@ -1,0 +1,55 @@
+name: OSA CINEMA V22 real private multilingual master exports
+on:
+  pull_request:
+    paths:
+      - 'scripts/osa-cinema-v22-*'
+      - 'docs/OSA_CINEMA_V22_*'
+      - '.github/workflows/osa-cinema-v22-private-masters.yml'
+  push:
+    branches: [master]
+    paths:
+      - 'scripts/osa-cinema-v22-*'
+      - 'docs/OSA_CINEMA_V22_*'
+      - '.github/workflows/osa-cinema-v22-private-masters.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  private-masters:
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Ensure FFmpeg for actual 5-stream test fixture
+        run: |
+          if ! command -v ffmpeg >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y --no-install-recommends ffmpeg
+          fi
+      - name: Verify FFmpeg/FFprobe and private-only source script syntax
+        run: |
+          ffmpeg -version | head -n 1
+          ffprobe -version | head -n 1
+          node --check scripts/osa-cinema-v22-private-language-export.mjs
+          node --check scripts/osa-cinema-v22-private-language-export.test.mjs
+      - name: Reconcile V18 locked four-track identity and non-release contract
+        run: |
+          node --input-type=module -e '
+            import {readFileSync} from "node:fs";
+            import {validateV18Baseline} from "./scripts/osa-cinema-v22-private-language-export.mjs";
+            const m=validateV18Baseline(JSON.parse(readFileSync("docs/OSA_CINEMA_V18_PRIVATE_FOUR_TRACK_QA.json","utf8")));
+            if(m.sha256!=="f3ce06afd5b64de9be77d5422bc888b79376c8d87d57d4b0a6c234230446deac")throw Error("V18 verified review master SHA changed");
+            console.log("LOCKED_V18_PRIVATE_FOUR_TRACK_ONLY_NO_RIGHTS");'
+      - name: Generate real 5-track FFmpeg fixture, remux all language candidates and reject tampering
+        run: node --test scripts/osa-cinema-v22-private-language-export.test.mjs
+      - name: Assert publication remains blocked
+        run: |
+          node --input-type=module -e '
+            import {readFileSync} from "node:fs";
+            const m=JSON.parse(readFileSync("docs/OSA_CINEMA_V18_PRIVATE_FOUR_TRACK_QA.json","utf8"));
+            for(const k of ["publicationAuthorized","rightsCleared","finalMixApproved","actualVoiceLanguagesApproved","syncedCaptionsApproved","durablePublicUrlsPresent"])
+              if(m[k]!==false)throw Error("V18 release state unexpectedly approved: "+k);
+            console.log("V22_PUBLIC_RECORDED_FILM_HOLD_CONFIRMED");'

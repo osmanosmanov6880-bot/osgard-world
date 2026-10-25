@@ -1,0 +1,33 @@
+name: OSGARD frontend stale-release guard contract
+on:
+  pull_request:
+    paths:
+      - "scripts/check-frontend-release-freshness.sh"
+      - "scripts/test-frontend-release-freshness.mjs"
+      - ".github/workflows/deploy-frontend.yml"
+      - ".github/workflows/frontend-release-freshness-ci.yml"
+  push:
+    branches: [master]
+    paths:
+      - "scripts/check-frontend-release-freshness.sh"
+      - "scripts/test-frontend-release-freshness.mjs"
+      - ".github/workflows/deploy-frontend.yml"
+      - ".github/workflows/frontend-release-freshness-ci.yml"
+permissions:
+  contents: read
+jobs:
+  read-only-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Check shell syntax and deployment YAML syntax
+        run: |
+          set -euo pipefail
+          bash -n scripts/check-frontend-release-freshness.sh
+          ruby -e 'require "yaml"; YAML.parse_file(ARGV.fetch(0)); puts "FRONTEND_WORKFLOW_YAML_VALID"' .github/workflows/deploy-frontend.yml
+      - name: Verify stale SHA, API errors, identity and no-server-write negative cases
+        run: node --test scripts/test-frontend-release-freshness.mjs
