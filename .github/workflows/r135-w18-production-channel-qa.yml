@@ -2,7 +2,7 @@ name: OSGARD R135 W18 immutable channel safety contract
 
 on:
   push:
-    branches: [release/r135-w18-protected-ssh-promotion-20261025]
+    branches: [release/r135-w18-protected-ssh-promotion-20261025, release/r135-w18-activation-after-gate-20261025]
     paths:
       - '.github/workflows/r135-w18-production-channel-qa.yml'
       - '.github/workflows/deploy-frontend.yml'
@@ -13,6 +13,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 jobs:
   selector-security:
@@ -20,7 +21,7 @@ jobs:
     timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
-      - name: Verify production branch retains W14 and rejects unapproved selectors
+      - name: Verify W14/W18 active selector and reject unapproved channels
         shell: bash
         run: |
           set -euo pipefail
@@ -28,3 +29,33 @@ jobs:
           node --check scripts/r135-w18-deploy-contract.mjs
           node scripts/r135-w18-deploy-contract.mjs
           echo 'PASS: this is static and negative selector testing, no SSH or W18 deployment'
+      - name: Confirm W18 original independently reviewed gate and permanent W14 backup before activation
+        if: github.ref_name == 'release/r135-w18-activation-after-gate-20261025'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          PIN="$(bash scripts/r135-release-selector.sh)"
+          test "$PIN" = scripts/r135-w18-release-pin.json
+          RUN_ID="$(jq -er '.artifact_run_id' "$PIN")"
+          ART_ID="$(jq -er '.artifact_id' "$PIN")"
+          ART_NAME="$(jq -er '.artifact_name' "$PIN")"
+          SOURCE="$(jq -er '.source_commit' "$PIN")"
+          GATE_ID="$(jq -er '.promotion_gate_run_id' scripts/r135-active-release.json)"
+          RUN="$(gh api "repos/osmanosmanov6880-bot/osgard-world/actions/runs/$RUN_ID")"
+          test "$(jq -er '.conclusion' <<< "$RUN")" = success
+          test "$(jq -er '.head_sha' <<< "$RUN")" = "$SOURCE"
+          ARTIFACTS="$(gh api "repos/osmanosmanov6880-bot/osgard-world/actions/runs/$RUN_ID/artifacts")"
+          jq -e --argjson id "$ART_ID" --arg name "$ART_NAME" '.artifacts[] | select(.id==$id and .name==$name and .expired==false)' <<< "$ARTIFACTS" >/dev/null
+          GATE="$(gh api "repos/osmanosmanov6880-bot/osgard-world/actions/runs/$GATE_ID")"
+          test "$(jq -er '.conclusion' <<< "$GATE")" = success
+          jq -er '.path' <<< "$GATE" | grep -Fq 'r135-w18-promotion-gate.yml'
+          J="$(gh api "repos/osmanosmanov6880-bot/osgard-world/actions/runs/$GATE_ID/jobs?per_page=100")"
+          jq -e '.jobs[] | select(.name=="independently-accept-real-candidate" and .conclusion=="success")' <<< "$J" >/dev/null
+          GATE_SHA="$(jq -er '.head_sha' <<< "$GATE")"
+          PIN_AT_GATE="$(gh api "repos/osmanosmanov6880-bot/osgard-world/contents/scripts/r135-w18-release-pin.json?ref=$GATE_SHA" --jq '.content' | base64 -d | sha256sum | awk '{print $1}')"
+          test "$PIN_AT_GATE" = "$(sha256sum "$PIN" | awk '{print $1}')"
+          gh release view 'r135-case-progress-w14-verified-rollback-20261025' \
+            --repo osmanosmanov6880-bot/osgard-world >/dev/null
+          echo 'W18 activation preflight PASS: reviewed software bytes, genuine independent gate, permanent W14 rollback. NO SSH or GPU phone certification.'
