@@ -1,0 +1,62 @@
+name: EMPIRE Omega R87 original Godot mission navigation native PR QA
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - 'godot/empire-omega/scripts/horizon_mission_navigation.gd'
+      - 'godot/empire-omega/scripts/world_builder.gd'
+      - 'godot/empire-omega/scripts/minimap.gd'
+      - 'godot/empire-omega/scripts/main.gd'
+      - 'godot/empire-omega/scripts/hud.gd'
+      - 'godot/empire-omega/tests/v76_r87_honest_mission_navigation.gd'
+      - '.github/workflows/omega-r87-mission-native-qa.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  original-godot-objective-ux:
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: false
+      - name: Prepare exact original generated audio source
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 godot/empire-omega/tools/generate_audio.py
+          python3 godot/empire-omega/tools/generate_patrol_audio.py
+          test -s godot/empire-omega/assets/audio/city_air.wav
+      - name: Parse actual Godot project resources with original engine
+        run: godot --headless --editor --path godot/empire-omega --import --quit
+      - name: Execute real mission UI regression and adjacent gameplay/save checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          for name in \
+            v76_r87_honest_mission_navigation.gd \
+            v70_r49_campaign_chapters.gd \
+            v72_r55_forty_mission_event_save.gd \
+            v75_r68_policy_mission_real_change.gd \
+            v29_responsive_layout.gd
+          do
+            echo "NATIVE GODOT QA: $name"
+            timeout --signal=TERM --kill-after=5s 25s godot --headless \
+              --path godot/empire-omega --script "res://tests/$name"
+          done
+      - name: Verify no release or SSH is performed by PR native QA
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          f=Path('.github/workflows/omega-r87-mission-native-qa.yml').read_text()
+          assert 'contents: read' in f
+          assert 'deploy-frontend' not in f and 'upload-artifact' not in f
+          assert 'git push' not in f and 'gh workflow run' not in f
+          print('PASS: source-only PR native verification; Web export/deployment unchanged')
+          PY
