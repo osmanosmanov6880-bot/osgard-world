@@ -43,10 +43,23 @@ function plan(manifest){
   assert(reports>=108&&images>=12,'Minimum hardware matrix incomplete');
   return {lines,reports,images};
 }
+function physicalDestination(out){
+  let cursor=out;const suffix=[];
+  while(!fs.existsSync(cursor)){
+    const parent=path.dirname(cursor);
+    assert(parent!==cursor,'Cannot resolve destination path');
+    suffix.unshift(path.basename(cursor));
+    cursor=parent;
+  }
+  return path.resolve(fs.realpathSync(cursor),...suffix);
+}
 function init(folder){
   const out=path.resolve(folder);
-  assert(!within(ROOT,out),'Private phone evidence must be outside the repository');
-  assert(!within(out,ROOT),'Cannot initialize QA in an ancestor of the repository');
+  const physical=physicalDestination(out);
+  assert(!within(ROOT,out)&&!within(ROOT,physical),
+    'Private phone evidence must be outside the repository (including symlink aliases)');
+  assert(!within(out,ROOT)&&!within(physical,ROOT),
+    'Cannot initialize QA in an ancestor of the repository');
   if(fs.existsSync(out)){
     const info=fs.lstatSync(out);
     assert(info.isDirectory()&&!info.isSymbolicLink(),'Target is not an ordinary directory');
