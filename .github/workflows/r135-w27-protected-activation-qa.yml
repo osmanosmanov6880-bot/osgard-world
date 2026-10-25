@@ -38,5 +38,5 @@ jobs:
           python3 -m unittest discover -s scripts -p test_r135_w20_promotion_gate.py -v
           python3 -m unittest discover -s scripts -p test_r135_w19_promotion_gate.py -v
           python3 -m py_compile scripts/r135-release-stage.py scripts/r135-w27-promotion-qa.py scripts/r135-w27-candidate-pin-draft.py
-      - name: Do not deploy from this branch: exact W27 reviewed pin required
+      - name: "Do not deploy from this branch - exact W27 reviewed pin required"
         run: echo 'PASS means protected W27 selector implementation tested, NOT a live release. Keep W21 deployed.'
