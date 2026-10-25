@@ -74,13 +74,14 @@ static func apply_night_overlay(env: Environment, sun: DirectionalLight3D,
 	if amount<=0.0:
 		return
 	# No full-screen postprocess, HDR glow, fake static background or shadows.
-	# Ambient 0.20 at 22:00 is deliberately not zero: silhouettes stay visible.
-	sun.light_energy = lerpf(sun.light_energy,0.018,amount)
-	env.ambient_light_energy = lerpf(env.ambient_light_energy,0.20,amount)
-	env.adjustment_brightness = lerpf(env.adjustment_brightness,0.86,amount)
+	# Physically dim ambient bounce (0.275, not daylight) keeps the car and
+	# asphalt legible at 22:00 without falsely restoring daytime sunlight.
+	sun.light_energy = lerpf(sun.light_energy,0.023,amount)
+	env.ambient_light_energy = lerpf(env.ambient_light_energy,0.275,amount)
+	env.adjustment_brightness = lerpf(env.adjustment_brightness,0.92,amount)
 	env.adjustment_saturation = lerpf(env.adjustment_saturation,0.91,amount)
 	sky.sky_top_color = sky.sky_top_color.lerp(Color("0b182a"),amount)
-	sky.sky_horizon_color = sky.sky_horizon_color.lerp(Color("1e3045"),amount)
+	sky.sky_horizon_color = sky.sky_horizon_color.lerp(Color("2c4058"),amount)
 	sky.ground_bottom_color = sky.ground_bottom_color.lerp(Color("101923"),amount)
-	sky.ground_horizon_color = sky.ground_horizon_color.lerp(Color("253344"),amount)
+	sky.ground_horizon_color = sky.ground_horizon_color.lerp(Color("314357"),amount)
 	env.fog_light_color = env.fog_light_color.lerp(Color("273749"),amount)
