@@ -58,3 +58,17 @@ Baseline control is the published R38 game; experimental candidate is the
 artifact. Match viewport, route, quality profile and device; collect three
 20-second JSON reports per condition. Run R39 viewer locally against both
 sets, recording baseline/candidate labels separately.
+
+## R40 reporter provenance
+This candidate's real Godot benchmark JSON adds
+`build_variant: "NEBULA_R40_BRIDGE_BATCH_3X32"`. R38 baseline JSON has
+no `build_variant`. The R40 A/B viewer should check this declared field and
+reject accidental baseline/candidate mislabeling. The field is not signed and
+cannot prove phone or runner identity; preserve original files and device logs.
+
+## Exact geometry and physics parity
+Native smoke additionally checks all 96 instance transforms against the
+original R38 bridge-local positions (tolerance 0.001), exact unit-Box scaling
+(1.6 x 0.10 x 0.85), and the 269 x 5.4 x 9.2 flightway collision shape
+on each of three spans. These code-level invariants do not substitute for
+visual inspection or physical hardware GPU timings.
