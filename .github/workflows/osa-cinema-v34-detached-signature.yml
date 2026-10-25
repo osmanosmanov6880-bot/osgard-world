@@ -1,0 +1,55 @@
+name: OSA CINEMA V34 detached publisher signature and strict NO-GO
+on:
+  pull_request:
+    paths:
+      - 'scripts/osa-cinema-v34-detached-signature.mjs'
+      - 'scripts/osa-cinema-v34-detached-signature.test.mjs'
+      - '.github/workflows/osa-cinema-v34-detached-signature.yml'
+      - 'docs/OSA_CINEMA_V34_AUTHENTIC_CODE_DISTRIBUTION_RU.md'
+  push:
+    branches: [master]
+    paths:
+      - 'scripts/osa-cinema-v34-detached-signature.mjs'
+      - 'scripts/osa-cinema-v34-detached-signature.test.mjs'
+      - '.github/workflows/osa-cinema-v34-detached-signature.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  publisher-authenticity:
+    name: Ed25519 code-only authenticity (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Offline positive and negative signer tests
+        shell: bash
+        run: |
+          node --check scripts/osa-cinema-v34-detached-signature.mjs
+          node --check scripts/osa-cinema-v34-detached-signature.test.mjs
+          node --test scripts/osa-cinema-v34-detached-signature.test.mjs
+  publication-unchanged:
+    name: Real film remains NO-GO
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Strict recorded-film release guard
+        shell: bash
+        run: |
+          set +e
+          node scripts/osa-cinema-v20-release-audit.mjs --strict-publication > "$RUNNER_TEMP/osa-v34-no-go.txt" 2>&1
+          result=$?
+          set -e
+          test "$result" -eq 1
+          grep -q 'OSA_CINEMA_V20_NO_PUBLICATION' "$RUNNER_TEMP/osa-v34-no-go.txt"
