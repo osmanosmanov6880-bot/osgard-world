@@ -8,6 +8,7 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { reviewEvidenceMatrix } from './r135-hardware-matrix.mjs'
+import { reviewPilotSessions } from './r135-w28-pilot-evidence.mjs'
 
 const SHA40 = /^[a-f0-9]{40}$/
 const SHA64 = /^[a-f0-9]{64}$/
@@ -96,19 +97,32 @@ export function assessLaunch({ active, pin, software, phoneSessions = [],
         operations.human_hardware_originals_reviewed === true,
         'INDEPENDENT_PHYSICAL_PHONE_HARDWARE_REVIEW_NOT_SIGNED')
 
-  const participants = Number(pilot.independent_volunteers)
-  const safetySuccess = Number(pilot.correct_safety_explanations)
+  // Never trust user-provided aggregate "25 pilot participants" alone:
+  // derive the counters from individual source-matched one-time original
+  // session hashes. Even then software cannot attest that a person is real.
+  let pilotReview = {}
+  if (Array.isArray(pilot.sessions)) {
+    try {
+      pilotReview = reviewPilotSessions(pilot.sessions,pin.source_commit)
+    } catch {
+      blockers.push('ORIGINAL_HUMAN_PILOT_RECORDS_INVALID_OR_UNREVIEWED')
+    }
+  }
+  block(pilotReview.status === 'REVIEW_REQUIRED_NOT_HUMAN_CERTIFIED',
+        'PILOT_INDIVIDUAL_SOURCE_BOUND_SESSION_RECORDS_MISSING')
+  const participants = Number(pilotReview.independent_volunteers)
+  const safetySuccess = Number(pilotReview.correct_safety_explanations)
   block(Number.isSafeInteger(participants) && participants >= 20 && participants <= 50,
         '20_TO_50_VOLUNTARY_HUMAN_BETA_SESSIONS_NOT_DOCUMENTED')
   block(Number.isSafeInteger(safetySuccess) && safetySuccess >= 0 &&
         participants > 0 && safetySuccess <= participants &&
         safetySuccess / participants >= 0.80,
         'SAFETY_EXPLANATIONS_BELOW_80_PERCENT_OR_UNMEASURED')
-  block(pilot.interlock_bypasses === 0 &&
-        pilot.lost_saves === 0 && pilot.blocking_device_crashes === 0,
+  block(pilotReview.interlock_bypasses === 0 &&
+        pilotReview.lost_saves === 0 && pilotReview.blocking_device_crashes === 0,
         'INTERLOCK_DATA_LOSS_OR_DEVICE_BLOCKERS_UNKNOWN')
-  block(pilot.original_session_records_reviewed === true &&
-        pilot.reviewer_confirms_real_humans === true,
+  block(pilotReview.original_session_records_reviewed === true &&
+        pilotReview.reviewer_confirms_real_humans === true,
         'NO_INDEPENDENT_HUMAN_BETA_EVIDENCE')
 
   block(legal.original_pbr_source_license_reviewed === true &&
