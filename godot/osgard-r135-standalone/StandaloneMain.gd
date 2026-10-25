@@ -5,6 +5,14 @@ var controller: Node3D
 var camera: Camera3D
 var studio: Node3D
 var inspection_fill: OmniLight3D
+var audio_cues: Node
+var privacy_metrics: Node
+var previous_mission_completed: bool = false
+var previous_diagnosis_completed: bool = false
+var art_environment: Environment
+var art_key_light: DirectionalLight3D
+var art_rim_light: DirectionalLight3D
+var art_profile: Dictionary = {}
 var reduced_motion: bool = false
 var touch_pixel_ratio: float = 1.0
 var last_layout_size: Vector2 = Vector2.ZERO
@@ -25,6 +33,9 @@ var camera_effective_distance: float = 0.0
 const VIEW_NAMES = ["OVERVIEW", "SERVICE DECK", "OPTICAL HEAD", "SIDE INSPECTION"]
 const R135Locale = preload("res://R135Locale.gd")
 const R135PlayerPreferences = preload("res://R135PlayerPreferences.gd")
+const R135ArtDirection = preload("res://R135ArtDirection.gd")
+const R135AccessibleAudio = preload("res://R135AccessibleAudio.gd")
+const R135PrivacyMetrics = preload("res://R135PrivacyMetrics.gd")
 var ui_locale: String = "ru"
 var preferences_save_ok: bool = true
 var premium_intro: Control
@@ -50,16 +61,19 @@ func _ready() -> void:
     environment.ambient_light_color = Color(0.68, 0.72, 0.77)
     environment.ambient_light_energy = 1.10
     world.environment = environment
+    art_environment = environment
     add_child(world)
     var sun := DirectionalLight3D.new()
     sun.rotation_degrees = Vector3(-48, -34, 0)
     sun.light_color = Color(1.0, 0.94, 0.87)
     sun.light_energy = 1.55
+    art_key_light = sun
     add_child(sun)
     var rim := DirectionalLight3D.new()
     rim.rotation_degrees = Vector3(-32, 140, 0)
     rim.light_color = Color(0.62, 0.73, 0.81)
     rim.light_energy = 0.70
+    art_rim_light = rim
     add_child(rim)
     # W11 visual QA: metal-rich source GLBs were nearly black in ECO on
     # portrait SwiftShader. One camera-targeted, shadow-free fill makes
@@ -82,6 +96,8 @@ func _ready() -> void:
     controller.configure(camera, environment)
     controller.set_quality(quality)
     studio.call("set_quality", quality)
+    art_profile = R135ArtDirection.apply(quality, art_environment,
+        art_key_light, art_rim_light, inspection_fill)
     if OS.has_feature("web"):
         reduced_motion = bool(JavaScriptBridge.eval("Boolean(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)", true))
         # Russian is the approved first-run product language. EN is opt-in.
@@ -105,8 +121,16 @@ func _ready() -> void:
     if quality == 2:
         controller.set_quality(quality)
         studio.call("set_quality", quality)
-        inspection_fill.light_energy = 4.2
+    art_profile = R135ArtDirection.apply(quality, art_environment,
+        art_key_light, art_rim_light, inspection_fill)
     controller.call("set_reduced_motion", reduced_motion)
+    audio_cues = R135AccessibleAudio.new()
+    audio_cues.name = "R135OptInAccessibleCues"
+    add_child(audio_cues)
+    audio_cues.call("switch_locale", ui_locale)
+    privacy_metrics = R135PrivacyMetrics.new()
+    privacy_metrics.name = "R135OptInLocalLearningCounts"
+    add_child(privacy_metrics)
     _build_hud()
     # Actual native Godot overlay: responsive, mouse/touch interactive and
     # safely separate from the eight real W13/W18 gameplay controls.
@@ -339,6 +363,8 @@ func _set_locale(value: String, save_change: bool = false) -> void:
     safety_notice.text = R135Locale.notice(ui_locale)
     if premium_intro != null:
         premium_intro.call("set_language", ui_locale)
+    if audio_cues != null:
+        audio_cues.call("switch_locale", ui_locale)
     if controller != null:
         var faults: Node3D = controller.get("visual_faults") as Node3D
         if faults != null:
@@ -354,6 +380,32 @@ func _toggle_locale() -> void:
 func _persist_preferences() -> void:
     # Local-only settings: no HTTP requests, identifiers or physical equipment.
     preferences_save_ok = R135PlayerPreferences.save_local(ui_locale, quality, reduced_motion)
+
+func _toggle_metrics_consent() -> void:
+    if privacy_metrics != null:
+        privacy_metrics.call("set_consent", not bool(privacy_metrics.get("consent")))
+    if premium_intro != null:
+        premium_intro.call("_refresh_settings")
+    _refresh_status()
+
+
+func _erase_private_metrics() -> void:
+    if privacy_metrics != null:
+        privacy_metrics.call("erase")
+    if premium_intro != null:
+        premium_intro.call("_refresh_settings")
+    _refresh_status()
+
+
+func _toggle_audio() -> void:
+    # W24 sound is a genuine opt-in. The click itself makes no sound.
+    # Caption changes remain fully visible when muted.
+    if audio_cues != null:
+        audio_cues.call("set_muted", not bool(audio_cues.get("muted")))
+    if premium_intro != null:
+        premium_intro.call("_refresh_settings")
+    _refresh_status()
+
 
 func _set_reduced_motion(enabled: bool) -> void:
     reduced_motion = enabled
@@ -373,6 +425,10 @@ func _start_mission() -> void:
     # Starting a new mission always starts its drive, even after a prior pause.
     motion = true
     controller.start_mission()
+    if privacy_metrics != null:
+        privacy_metrics.call("record", "training_started")
+    if audio_cues != null:
+        audio_cues.call("cue", "mission")
     _refresh_status()
 
 func _start_challenge() -> void:
@@ -380,11 +436,39 @@ func _start_challenge() -> void:
         premium_intro.call("on_gameplay_command")
     motion = true
     controller.start_challenge()
+    if privacy_metrics != null:
+        privacy_metrics.call("record", "diagnosis_started")
+    if audio_cues != null:
+        audio_cues.call("cue", "diagnosis")
     _apply_view(0)
     _refresh_status()
 
+func _start_selected_case(index: int) -> bool:
+    if index < 0 or index >= 3:
+        return false
+    var accepted: bool = bool(controller.call("start_selected_challenge", index))
+    if not accepted:
+        _refresh_status()
+        return false
+    if privacy_metrics != null:
+        privacy_metrics.call("record", "diagnosis_started")
+    if audio_cues != null:
+        audio_cues.call("cue", "diagnosis")
+    # Same physically simulated safe initial state as ordinary diagnostics.
+    motion = true
+    _apply_view(0)
+    _refresh_status()
+    return true
+
+
 func _scan_component() -> void:
+    var before: Dictionary = controller.summary()
     controller.scan_diagnostic(view_index)
+    var after: Dictionary = controller.summary()
+    if audio_cues != null:
+        audio_cues.call("cue", "scan" if int(after.get("challenge_step", -1)) > int(before.get("challenge_step", -1)) else "blocked")
+    if privacy_metrics != null and int(after.get("challenge_step", -1)) > int(before.get("challenge_step", -1)):
+        privacy_metrics.call("record", "scan_accepted")
     _refresh_status()
 
 func _next_view() -> void:
@@ -422,20 +506,32 @@ func _toggle_quality() -> void:
     quality = 0 if quality == 2 else 2
     controller.set_quality(quality)
     studio.call("set_quality", quality)
-    inspection_fill.light_energy = 3.8 if quality == 0 else 4.2
+    art_profile = R135ArtDirection.apply(quality, art_environment,
+        art_key_light, art_rim_light, inspection_fill)
     _persist_preferences()
     if premium_intro != null:
         premium_intro.call("_refresh_settings")
     _refresh_status()
 
 func _toggle_motion() -> void:
-    controller.set_motion(not bool(controller.summary()["motion_enabled"]))
+    var before: bool = bool(controller.summary()["motion_enabled"])
+    controller.set_motion(not before)
     # The advanced diagnostic interlock may reject an unsafe restart.
     motion = bool(controller.summary()["motion_enabled"])
+    if audio_cues != null:
+        audio_cues.call("cue", ("drive_start" if motion else "drive_stop") if motion != before else "blocked")
+    if privacy_metrics != null and motion == before:
+        privacy_metrics.call("record", "safety_blocked")
     _refresh_status()
 
 func _toggle_hatch() -> void:
+    var before: float = float(controller.summary()["lid_target"])
     controller.toggle_access_lid()
+    var after: float = float(controller.summary()["lid_target"])
+    if audio_cues != null:
+        audio_cues.call("cue", "hatch" if absf(after - before) > 0.5 else "blocked")
+    if privacy_metrics != null and absf(after - before) < 0.5:
+        privacy_metrics.call("record", "safety_blocked")
     _refresh_status()
 
 func _reset_view() -> void:
@@ -443,6 +539,26 @@ func _reset_view() -> void:
 
 func _refresh_status() -> void:
     var state: Dictionary = controller.summary()
+    var mission_done: bool = bool(state.get("mission_completed", false))
+    var diagnosis_done: bool = bool(state.get("challenge_completed", false))
+    if privacy_metrics != null:
+        if mission_done and not previous_mission_completed:
+            privacy_metrics.call("record", "training_completed")
+        if diagnosis_done and not previous_diagnosis_completed:
+            privacy_metrics.call("record", "diagnosis_completed")
+        state["private_metrics"] = privacy_metrics.call("snapshot")
+    previous_mission_completed = mission_done
+    previous_diagnosis_completed = diagnosis_done
+    if audio_cues != null:
+        var sound: Dictionary = audio_cues.call("snapshot")
+        state["sound_caption"] = sound["caption"]
+        state["sound_last_cue"] = sound["last_cue"]
+        state["sound_muted"] = sound["muted"]
+        state["sound_schema"] = sound["schema"]
+        state["sound_cue_count"] = sound["cue_count"]
+        state["sound_audible_count"] = sound["audible_count"]
+        state["sound_player_autoplay"] = sound["autoplay"]
+        state["sound_save_ok"] = sound["saved"]
     var mode := "HERO" if quality == 2 else "ECO"
     var state_text := "RUNNING" if motion else "PAUSED"
     hud.text = "QUALITY  %s  |  DRIVE  %s  |  VIEW  %s" % [mode, state_text, VIEW_NAMES[view_index]]
@@ -578,6 +694,39 @@ func _process(delta: float) -> void:
         state["studio_grid_instances"] = int(stage_budget["grid_instances"])
         state["studio_mesh_nodes"] = int(stage_budget["single_mesh_nodes"])
         state["studio_quality"] = int(stage_budget["stage_quality"])
+        # W27: source-authentic WebGL renderer telemetry, read only.
+        # Never confuse Chromium SwiftShader frame timing with phone hardware.
+        state["studio_real_pbr_maps"] = int(stage_budget.get("real_pbr_maps", 0))
+        state["studio_real_pbr_failures"] = int(stage_budget.get("real_pbr_load_failures", -1))
+        state["studio_hero_pbr_active"] = bool(stage_budget.get("hero_pbr_active", false))
+        state["studio_hero_gpu_batches"] = int(stage_budget.get("hero_extra_instanced_batches", 0))
+        state["studio_hero_instances"] = int(stage_budget.get("hero_extra_instances", 0))
+        state["studio_hero_extra_casters"] = int(stage_budget.get("hero_extra_casters", -1))
+        if audio_cues != null:
+            var sound: Dictionary = audio_cues.call("snapshot")
+            state["sound_caption"] = sound["caption"]
+            state["sound_last_cue"] = sound["last_cue"]
+            state["sound_muted"] = sound["muted"]
+            state["sound_schema"] = sound["schema"]
+            state["sound_cue_count"] = sound["cue_count"]
+            state["sound_audible_count"] = sound["audible_count"]
+            state["sound_player_autoplay"] = sound["autoplay"]
+            state["sound_save_ok"] = sound["saved"]
+        if privacy_metrics != null:
+            var learning_count: Dictionary = privacy_metrics.call("snapshot")
+            state["private_metrics_schema"] = learning_count["schema"]
+            state["private_metrics_consent"] = learning_count["consent"]
+            state["private_metrics_total"] = learning_count["total"]
+            state["private_metrics_network_uploads"] = learning_count["network_uploads"]
+            state["private_metrics_user_identifiers"] = learning_count["user_identifiers_stored"]
+            state["private_metrics_save_ok"] = learning_count["saved"]
+        state["art_profile"] = str(art_profile.get("profile", "UNKNOWN"))
+        state["art_key_energy"] = float(art_profile.get("key_energy", -1.0))
+        state["art_rim_energy"] = float(art_profile.get("rim_energy", -1.0))
+        state["art_fill_energy"] = float(art_profile.get("fill_energy", -1.0))
+        state["art_ambient_energy"] = float(art_profile.get("ambient_energy", -1.0))
+        state["art_shadow_count_added"] = 0
+        state["art_webgl_expensive_postfx"] = false
         state["prefers_reduced_motion"] = reduced_motion
         state["player_preferences_schema"] = R135PlayerPreferences.SCHEMA_VERSION
         state["player_preferences_save_ok"] = preferences_save_ok
@@ -626,6 +775,28 @@ func _process(delta: float) -> void:
             var coach_click: Vector2 = coach_toggle.get_global_rect().get_center()
             state["coach_toggle_center"] = {"x": coach_click.x, "y": coach_click.y}
             state["coach_button_css_height"] = coach_toggle.get_global_rect().size.y / maxf(1.0, touch_pixel_ratio)
+            # W22 genuine replay hitboxes remain read-only browser evidence.
+            var case_buttons: Array = premium_intro.get("case_selection_buttons")
+            var replay_hitboxes: Array[Dictionary] = []
+            for replay in case_buttons:
+                var rect: Rect2 = (replay as Button).get_global_rect()
+                replay_hitboxes.append({
+                    "x": rect.get_center().x, "y": rect.get_center().y,
+                    "disabled": (replay as Button).disabled,
+                    "w_css": rect.size.x / maxf(1.0, touch_pixel_ratio),
+                    "h_css": rect.size.y / maxf(1.0, touch_pixel_ratio)
+                })
+            state["case_replay_hitboxes"] = replay_hitboxes
+            var scroll: ScrollContainer = premium_intro.get("training_scroll") as ScrollContainer
+            var visible_scroll: Rect2 = scroll.get_global_rect()
+            state["case_replay_scroll_rect"] = {
+                "x": visible_scroll.position.x, "y": visible_scroll.position.y,
+                "w": visible_scroll.size.x, "h": visible_scroll.size.y}
+            state["case_replay_scroll_vertical"] = scroll.scroll_vertical
+            var jump: Button = premium_intro.get("case_jump_button") as Button
+            var jump_center: Vector2 = jump.get_global_rect().get_center()
+            state["case_jump_center"] = {"x": jump_center.x, "y": jump_center.y}
+            state["case_jump_control_css_height"] = jump.get_global_rect().size.y / maxf(1.0, touch_pixel_ratio)
             state["player_settings_open"] = bool(premium_intro.get("settings_open"))
             var settings_button: Button = premium_intro.get("settings_button") as Button
             state["player_settings_control_css_px"] = minf(
@@ -639,6 +810,17 @@ func _process(delta: float) -> void:
                 "w": settings_rect.size.x, "h": settings_rect.size.y}
             var quality_control: Button = premium_intro.get("settings_quality_button") as Button
             var motion_control: Button = premium_intro.get("settings_motion_button") as Button
+            var sound_control: Button = premium_intro.get("settings_audio_button") as Button
+            var sound_center: Vector2 = sound_control.get_global_rect().get_center()
+            state["player_settings_audio_center"] = {"x": sound_center.x, "y": sound_center.y}
+            state["player_settings_audio_css_height"] = sound_control.get_global_rect().size.y / maxf(1.0, touch_pixel_ratio)
+            var privacy_button: Button = premium_intro.get("settings_privacy_button") as Button
+            var privacy_center: Vector2 = privacy_button.get_global_rect().get_center()
+            state["player_settings_privacy_center"] = {"x": privacy_center.x, "y": privacy_center.y}
+            state["player_settings_privacy_css_height"] = privacy_button.get_global_rect().size.y / maxf(1.0, touch_pixel_ratio)
+            var delete_button: Button = premium_intro.get("settings_clear_metrics_button") as Button
+            var delete_center: Vector2 = delete_button.get_global_rect().get_center()
+            state["player_settings_erase_center"] = {"x": delete_center.x, "y": delete_center.y}
             var quality_center: Vector2 = quality_control.get_global_rect().get_center()
             var motion_center: Vector2 = motion_control.get_global_rect().get_center()
             state["player_settings_quality_center"] = {"x": quality_center.x, "y": quality_center.y}

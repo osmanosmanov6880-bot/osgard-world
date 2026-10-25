@@ -117,8 +117,8 @@ static func explain(state: Dictionary, chapter: int = 0, locale: String = "ru") 
             "A moving simulated mechanism must not permit the service hatch to open.",
             language)
         deeper = _lang(
-            "Учебная блокировка предотвращает опасный порядок: остановка → открытие → закрытие → полная фиксация → повторный пуск. Реальная процедура требует отдельного допуска и энергетической изоляции.",
-            "The virtual interlock enforces stop → open → close → full seal → restart. Real equipment requires authorized lockout and verified isolation.",
+            "Учебная блокировка предотвращает опасный порядок: остановка, затем открытие, закрытие, полная фиксация и повторный пуск. Реальная процедура требует отдельного допуска и энергетической изоляции.",
+            "The virtual interlock enforces this sequence: stop, open, close, full seal, then restart. Real equipment requires authorized lockout and verified isolation.",
             language)
         next = _lang(
             "Следуйте текущему этапу безопасного обслуживания.",

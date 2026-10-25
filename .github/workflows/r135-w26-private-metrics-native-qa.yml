@@ -1,0 +1,81 @@
+name: OSGARD R135 W26 consent-only private counters and full native game safety
+
+on:
+  push:
+    branches: [feat/r135-w26-private-learning-analytics-20261025]
+    paths:
+      - 'godot/osgard-r135-standalone/**'
+      - '.github/workflows/r135-w26-private-metrics-native-qa.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  real-godot-no-identifiers-local-analytics:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 35
+      - name: No remote tracking, no IP or phone fingerprint, no timestamp and user erase
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path("godot/osgard-r135-standalone")
+          local=(p/"R135PrivacyMetrics.gd").read_text()
+          game=(p/"StandaloneMain.gd").read_text()
+          course=(p/"R135PremiumOnboarding.gd").read_text()
+          assert 'var consent: bool = false' in local
+          assert 'user://r135_private_learning_metrics_v1.cfg' in local
+          assert 'counts = _defaults()' in local and 'func set_consent(allow: bool)' in local
+          assert 'settings_privacy_button.pressed.connect(_settings_privacy_pressed)' in course
+          assert 'settings_clear_metrics_button.pressed.connect(_settings_clear_metrics_pressed)' in course
+          assert 'privacy_metrics.call("record", "training_started")' in game
+          assert 'privacy_metrics.call("record", "diagnosis_completed")' in game
+          for forbidden in ("HTTPRequest", "HTTPClient", "JavaScriptBridge",
+              "OS.execute", "AnalyticsSDK", "navigator.", "device_id",
+              "user_agent", "IPAddress", "Time.get_datetime", "uuid"):
+            assert forbidden not in local, "Privacy-only local metrics violated: "+forbidden
+          print("W26 no personal tracking, explicit consent and permanent opt-out PASS")
+          PY
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: true
+      - name: Import actual original HERO and ECO GLBs
+        run: |
+          set -euo pipefail
+          godot --headless --editor --path godot/osgard-r135-standalone --import --quit
+      - name: W19 real three faults and safe service interlocks
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 150s godot --headless --path godot/osgard-r135-standalone --script res://tests/smoke.gd
+      - name: W20 actual settings, RU/EN and separated save formats
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 150s godot --headless --path godot/osgard-r135-standalone --script res://tests/preferences_smoke.gd
+      - name: W21 real explainable course and actual wrong input safety
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 150s godot --headless --path godot/osgard-r135-standalone --script res://tests/learning_coach_smoke.gd
+      - name: W22 3 selectable real cases and W14 mastery
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 150s godot --headless --path godot/osgard-r135-standalone --script res://tests/case_mastery_smoke.gd
+      - name: W23 bounded lights ECO/HERO and original 3D draw budget
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 150s godot --headless --path godot/osgard-r135-standalone --script res://tests/art_direction_smoke.gd
+      - name: W24 sound opt-in, bilingual captions and no autoplay
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 150s godot --headless --path godot/osgard-r135-standalone --script res://tests/access_audio_smoke.gd
+      - name: W26 real consent toggle, aggregate counters and permanent opt-out purge
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 150s godot --headless --path godot/osgard-r135-standalone --script res://tests/private_metrics_smoke.gd

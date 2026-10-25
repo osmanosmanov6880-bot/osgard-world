@@ -86,7 +86,12 @@ async function verifyRealLuxuryIntroduction(page, isMobile, name) {
 // and native touch. This is not physical Android/iOS hardware evidence.
 async function verifyW20PlayerSettings(page, isMobile, name) {
   if (!['r135-player-settings-w20-candidate-20261025',
-       'r135-explainable-training-w21-candidate-20261025'].includes(process.env.R135_CANDIDATE_VERSION)) return
+       'r135-explainable-training-w21-candidate-20261025',
+       'r135-case-mastery-w22-candidate-20261025',
+       'r135-luxury-lighting-w23-candidate-20261025',
+         'r135-accessible-audio-w24-candidate-20261025',
+         'r135-private-learning-w26-candidate-20261025',
+       'r135-integrated-w27-candidate-20261025'].includes(process.env.R135_CANDIDATE_VERSION)) return
   const start = await expectState(page, x => x?.player_preferences_schema === 1
     && x?.player_preferences_save_ok === true && x?.player_settings_control_css_px >= 43.5,
     'W20 real player settings not readable, saved, or accessible')
@@ -107,10 +112,27 @@ async function verifyW20PlayerSettings(page, isMobile, name) {
   await expectState(page, x => x?.quality === 2 && x?.player_quality_persisted === 2
     && x?.loaded?.endsWith('service_spine_hero.glb') && x?.player_preferences_save_ok,
     'W20 actual settings button did not load and persist HERO model', 45_000)
+  if (process.env.R135_CANDIDATE_VERSION === 'r135-integrated-w27-candidate-20261025') {
+    await expectState(page, x => x?.studio_real_pbr_maps === 12
+      && x?.studio_real_pbr_failures === 0
+      && x?.studio_hero_pbr_active === true
+      && x?.studio_hero_gpu_batches === 3
+      && x?.studio_hero_instances === 20
+      && x?.studio_hero_extra_casters === 0,
+      'W27 HERO mode must render 12 real original PBR maps and 20 bounded instanced details', 45_000)
+    await captureRealViewport(page, 'w27-' + name + '-hero-12-source-pbr-maps.png')
+  }
   await hitLuxuryControl(page, 'player_settings_quality_center', isMobile)
   await expectState(page, x => x?.quality === 0 && x?.player_quality_persisted === 0
     && x?.loaded?.endsWith('service_spine_eco.glb') && x?.player_preferences_save_ok,
     'W20 real settings button failed to restore ECO model', 45_000)
+  if (process.env.R135_CANDIDATE_VERSION === 'r135-integrated-w27-candidate-20261025') {
+    await expectState(page, x => x?.studio_hero_pbr_active === false
+      && x?.studio_hero_gpu_batches === 0 && x?.studio_hero_instances === 0
+      && x?.studio_grid_draw_batches === 2 && x?.studio_grid_instances === 18,
+      'W27 mobile ECO must restore existing 2-batch grid and zero extra PBR draw calls')
+    await captureRealViewport(page, 'w27-' + name + '-eco-zero-extra-pbr.png')
+  }
   const originalMotion = Boolean(open.prefers_reduced_motion)
   await hitLuxuryControl(page, 'player_settings_motion_center', isMobile)
   await expectState(page, x => x?.prefers_reduced_motion === !originalMotion
@@ -132,7 +154,13 @@ async function verifyW20PlayerSettings(page, isMobile, name) {
 // W21: the WHAT/WHY drill is an actual Godot Control in the same game canvas.
 // The GUI stays safety-locked; no tests inject fictitious scores or faults.
 async function verifyW21CausalLesson(page, isMobile, name) {
-  if (process.env.R135_CANDIDATE_VERSION !== 'r135-explainable-training-w21-candidate-20261025') return
+  // Every later candidate must capture its OWN original W21 causal screenshots.
+  if (!['r135-explainable-training-w21-candidate-20261025',
+         'r135-case-mastery-w22-candidate-20261025',
+         'r135-luxury-lighting-w23-candidate-20261025',
+         'r135-accessible-audio-w24-candidate-20261025',
+         'r135-private-learning-w26-candidate-20261025',
+       'r135-integrated-w27-candidate-20261025'].includes(process.env.R135_CANDIDATE_VERSION)) return
   await hitLuxuryControl(page, 'tutorial_collapse_center', isMobile)
   const initial = await expectState(page, x => x?.tutorial_expanded === true
     && x?.coach_status === 'intro'
@@ -152,6 +180,219 @@ async function verifyW21CausalLesson(page, isMobile, name) {
   await hitLuxuryControl(page, 'tutorial_collapse_center', isMobile)
   await expectState(page, x => x?.tutorial_expanded === false,
     'W21 hiding course must preserve real simulator operator controls')
+}
+
+// W22: scan actual persisted mastery, then select a chosen completed case from
+// a real scrollable Godot panel with genuine pointer/touch events.
+async function verifyW22SelectableCases(page, isMobile, name) {
+  if (!['r135-case-mastery-w22-candidate-20261025',
+         'r135-luxury-lighting-w23-candidate-20261025',
+         'r135-accessible-audio-w24-candidate-20261025',
+         'r135-private-learning-w26-candidate-20261025',
+       'r135-integrated-w27-candidate-20261025'].includes(process.env.R135_CANDIDATE_VERSION)) return
+  const before = await expectState(page, s => s?.case_replay_hitboxes?.length === 3
+    && s?.cleared_case_count === 3 && s?.case_mastery_threshold === 100
+    && s?.case_proficient_flags?.length === 3 && !s?.challenge_active,
+    'W22 genuine course progress and 3 selectable cases are required', 30_000)
+  // The course may already be open after completing diagnostic chapter 6.
+  // Only click the real toggle if it is currently collapsed; otherwise an
+  // unconditional click closes it and yields a false desktop QA failure.
+  if (!before.tutorial_expanded) {
+    await hitLuxuryControl(page, 'tutorial_collapse_center', isMobile)
+  }
+  await expectState(page, s => s?.tutorial_expanded === true
+    && s?.case_replay_hitboxes?.length === 3,
+    'W22 real case selector should be visible after completing diagnostics')
+  // The old test incorrectly accepted a replay center inside the CARD,
+  // even when the *actual clipping ScrollContainer* did not accept clicks.
+  // Genuine desktop Chromium proof revealed that the overlapped PRIMARY
+  // "Finish training" button was hit instead. Test the real visible rect.
+  await expectState(page, s => s?.case_jump_control_css_height >= 43.5 &&
+    s?.case_jump_center?.x > 0 && s?.case_replay_scroll_rect?.h > 50,
+    'W27 always-available genuine replay-jump control is missing')
+  await hitLuxuryControl(page, 'case_jump_center', isMobile)
+  const rect = await page.locator('canvas').first().boundingBox()
+  if (!rect) throw new Error('Godot canvas absent for W22 selected scenario')
+  let active
+  for (let retry = 0; retry < 12; retry++) {
+    const st = await readState(page)
+    const pt = st.case_replay_hitboxes[1]
+    const viewport = st.case_replay_scroll_rect
+    const ratio = Number(st.ui_touch_pixel_ratio || 1)
+    if (pt && viewport && pt.h_css >= 43.5 && !pt.disabled &&
+        pt.y > viewport.y + 16 * ratio &&
+        pt.y < viewport.y + viewport.h - 26 * ratio) {
+      active = st
+      break
+    }
+    const x = rect.x + (viewport.x + viewport.w * .5) * rect.width / st.viewport_w
+    const y = rect.y + (viewport.y + viewport.h * .43) * rect.height / st.viewport_h
+    await page.mouse.move(x, y)
+    await page.mouse.wheel(0, 180)
+    await sleep(page, 270)
+  }
+  if (!active) throw new Error('W27 replay control remains clipped or obstructed inside the genuine Godot scroll viewport')
+  await captureRealViewport(page, 'w22-' + name + '-case-mastery.png')
+  const point = active.case_replay_hitboxes[1]
+  const x = rect.x + point.x * rect.width / active.viewport_w
+  const y = rect.y + point.y * rect.height / active.viewport_h
+  if (isMobile) await page.touchscreen.tap(x, y)
+  else await page.mouse.click(x, y)
+  await expectState(page, st => st?.challenge_active && st?.challenge_fault_index === 1
+    && st?.challenge_step === 0 && st?.challenge_errors === 0
+    && st?.case_replay_hitboxes?.every(b => b.disabled === true),
+    'W22 selected cooling fault must start actual safe five-step case and lock other selectors')
+  console.log('W22 actual replay PASS:', name, 'cooling #2', before.case_proficient_flags)
+}
+
+// W23: real key/rim/fill are changed through the player's EXISTING SET panel.
+// We record honest SwiftShader pixels; no physical-device FPS or AAA claim.
+async function verifyW23ActualLighting(page, isMobile, name) {
+  if (!['r135-luxury-lighting-w23-candidate-20261025',
+         'r135-accessible-audio-w24-candidate-20261025',
+         'r135-private-learning-w26-candidate-20261025',
+       'r135-integrated-w27-candidate-20261025'].includes(process.env.R135_CANDIDATE_VERSION)) return
+  const eco = await expectState(page, s => s?.quality === 0
+    && s?.art_profile === 'ECO' && s?.art_shadow_count_added === 0
+    && s?.art_webgl_expensive_postfx === false
+    && Math.abs(s?.art_key_energy - 1.55) < .02
+    && Math.abs(s?.art_rim_energy - .70) < .02
+    && Math.abs(s?.art_fill_energy - 3.80) < .02,
+    'W23 original ECO inspection lighting budget was changed or unmetered')
+  await hitLuxuryControl(page, 'player_settings_center', isMobile)
+  await expectState(page, s => s?.player_settings_open === true, 'W23 existing quality settings inaccessible')
+  await hitLuxuryControl(page, 'player_settings_quality_center', isMobile)
+  await expectState(page, s => s?.quality === 2 && s?.art_profile === 'HERO'
+    && s?.loaded?.endsWith('service_spine_hero.glb')
+    && Math.abs(s?.art_key_energy - 1.90) < .02
+    && Math.abs(s?.art_rim_energy - .98) < .02
+    && Math.abs(s?.art_fill_energy - 4.20) < .02
+    && s?.art_webgl_expensive_postfx === false
+    && s?.art_shadow_count_added === 0
+    && s?.studio_grid_draw_batches === eco.studio_grid_draw_batches,
+    'W23 actual HERO luxury light grading, original source GLB or GPU batch contract failed', 45_000)
+  await hitLuxuryControl(page, 'player_settings_center', isMobile)
+  await expectState(page, s => s?.player_settings_open === false, 'W23 settings did not dismiss')
+  // Original HERO pixel evidence must come from this very game source and run.
+  await captureRealViewport(page, 'w23-' + name + '-luxury-light.png')
+  await hitLuxuryControl(page, 'player_settings_center', isMobile)
+  await hitLuxuryControl(page, 'player_settings_quality_center', isMobile)
+  await expectState(page, s => s?.quality === 0 && s?.art_profile === 'ECO'
+    && Math.abs(s?.art_key_energy - 1.55) < .02
+    && Math.abs(s?.art_rim_energy - .70) < .02
+    && s?.player_preferences_save_ok === true
+    && s?.case_attempts?.length === 3,
+    'W23 must restore real ECO lighting and preserve saved case outcomes', 45_000)
+  await hitLuxuryControl(page, 'player_settings_center', isMobile)
+  console.log('W23 actual HERO/ECO Godot lighting PASS:', name,
+    { ecoKey: eco.art_key_energy, heroKey: 1.90, echo: 'no extra shadows or drawing' })
+}
+
+// W24 real user consent, not an automatic audio playback test.
+async function verifyW24AudioConsentAndCaptions(page, isMobile, name) {
+  if (!['r135-accessible-audio-w24-candidate-20261025',
+         'r135-private-learning-w26-candidate-20261025',
+       'r135-integrated-w27-candidate-20261025'].includes(process.env.R135_CANDIDATE_VERSION)) return
+  const first = await expectState(page, s => s?.sound_schema === 1
+    && s?.sound_muted === true && s?.sound_audible_count === 0
+    && s?.sound_player_autoplay === false && s?.sound_save_ok === true,
+    'W24 audio should start muted with no autoplay')
+  const openSettings = async () => {
+    await hitLuxuryControl(page, 'player_settings_center', isMobile)
+    await expectState(page, s => s?.player_settings_open === true)
+    const canvas = await page.locator('canvas').first().boundingBox()
+    if (!canvas) throw new Error('W24 actual WebGL canvas missing')
+    for (let attempt = 0; attempt < 12; attempt++) {
+      const state = await readState(page)
+      const point = state.player_settings_audio_center
+      const panel = state.player_settings_rect
+      if (point && state.player_settings_audio_css_height >= 43.5
+          && point.y > panel.y + 35 && point.y < panel.y + panel.h - 65) return
+      const x = canvas.x + (panel.x + panel.w * .45) * canvas.width / state.viewport_w
+      const y = canvas.y + (panel.y + panel.h * .40) * canvas.height / state.viewport_h
+      await page.mouse.move(x, y)
+      await page.mouse.wheel(0, 145)
+      await sleep(page, 220)
+    }
+    throw new Error('W24 opt-in mute button inaccessible through real settings scrolling')
+  }
+  await openSettings()
+  await hitLuxuryControl(page, 'player_settings_audio_center', isMobile)
+  await expectState(page, s => s?.sound_muted === false && s?.sound_save_ok === true
+    && s?.sound_audible_count === 0,
+    'W24 actual settings opt-in auto-played before player action')
+  await hitLuxuryControl(page, 'player_settings_center', isMobile)
+  const before = await readState(page)
+  await tapSceneButton(page, 5)
+  await expectState(page, s => s?.sound_last_cue === 'drive_stop'
+    && s?.sound_audible_count > 0 && s?.sound_caption?.length > 10
+    && s?.sound_player_autoplay === false
+    && s?.challenge_fault_index === before.challenge_fault_index,
+    'W24 genuine drive stop did not produce caption plus consented sound')
+  await openSettings()
+  await hitLuxuryControl(page, 'player_settings_audio_center', isMobile)
+  await expectState(page, s => s?.sound_muted === true && s?.sound_save_ok === true
+    && s?.sound_caption?.length > 10,
+    'W24 audio mute lost visual text equivalent')
+  await captureRealViewport(page, 'w24-' + name + '-accessible-audio.png')
+  await hitLuxuryControl(page, 'player_settings_center', isMobile)
+  console.log('W24 real opt-in/mute/caption PASS:', name,
+    { previouslyAudible: first.sound_audible_count, previousCues: before.sound_cue_count })
+}
+
+// W26: actual consent is a real Godot button, not a silent metric collector.
+// Never upload event or device identity. Verify reversible opt-in and erase.
+async function verifyW26PrivateLearning(page, isMobile, name) {
+  if (!['r135-private-learning-w26-candidate-20261025',
+        'r135-integrated-w27-candidate-20261025'].includes(process.env.R135_CANDIDATE_VERSION)) return
+  const initial = await expectState(page, s => s?.private_metrics_schema === 1
+    && s?.private_metrics_consent === false
+    && s?.private_metrics_total === 0
+    && s?.private_metrics_network_uploads === 0
+    && s?.private_metrics_user_identifiers === false,
+    'W26 first-run silent tracking or non-private game state')
+  async function openPanelAndScroll() {
+    await hitLuxuryControl(page, 'player_settings_center', isMobile)
+    await expectState(page, s => s?.player_settings_open === true)
+    const canvas = await page.locator('canvas').first().boundingBox()
+    if (!canvas) throw new Error('W26 actual Godot canvas missing')
+    for (let attempt = 0; attempt < 15; attempt++) {
+      const s = await readState(page)
+      const panel = s.player_settings_rect
+      const point = s.player_settings_privacy_center
+      if (point && s.player_settings_privacy_css_height >= 43.5
+          && point.y > panel.y + 32 && point.y < panel.y + panel.h - 62) return
+      const x = canvas.x + (panel.x + panel.w * .44) * canvas.width / s.viewport_w
+      const y = canvas.y + (panel.y + panel.h * .41) * canvas.height / s.viewport_h
+      await page.mouse.move(x, y)
+      await page.mouse.wheel(0, 143)
+      await sleep(page, 220)
+    }
+    throw new Error('W26 explicit privacy setting cannot be reached by real touch/scroll')
+  }
+  await openPanelAndScroll()
+  await hitLuxuryControl(page, 'player_settings_privacy_center', isMobile)
+  await expectState(page, s => s?.private_metrics_consent === true
+    && s?.private_metrics_total === 0 && s?.private_metrics_save_ok === true,
+    'W26 actual player consent must not fabricate existing lesson events')
+  await hitLuxuryControl(page, 'player_settings_center', isMobile)
+  await tapSceneButton(page, 0) // A real simulated service mission started by the player.
+  await expectState(page, s => s?.mission_active === true
+    && s?.private_metrics_total > 0 && s?.private_metrics_network_uploads === 0,
+    'W26 opted-in event does not correspond to real game action')
+  await tapSceneButton(page, 6) // Real unsafe hatch press rejected by interlock.
+  await expectState(page, s => String(s?.mission_feedback || '').includes('SAFETY INTERLOCK')
+    && s?.private_metrics_total >= 2,
+    'W26 private counters must reflect actual rejected game input')
+  await openPanelAndScroll()
+  await captureRealViewport(page, 'w26-' + name + '-private-metrics.png')
+  await hitLuxuryControl(page, 'player_settings_privacy_center', isMobile)
+  await expectState(page, s => s?.private_metrics_consent === false
+    && s?.private_metrics_total === 0 && s?.private_metrics_save_ok === true,
+    'W26 consent withdrawal must erase all locally collected counters')
+  await hitLuxuryControl(page, 'player_settings_center', isMobile)
+  console.log('W26 real private-learning opt-in / interlock / permanent opt-out PASS:', name,
+    { defaultEnabled: initial.private_metrics_consent })
 }
 
 async function keyboardMission(page) {
@@ -697,6 +938,10 @@ try {
         stageGridInstances: final.studio_grid_instances,
         prefersReducedMotion: final.prefers_reduced_motion,
         softwareRendererFpsSample: final.render_fps_sample })
+      await verifyW22SelectableCases(page, isMobile, name)
+      await verifyW23ActualLighting(page, isMobile, name)
+      await verifyW24AudioConsentAndCaptions(page, isMobile, name)
+      await verifyW26PrivateLearning(page, isMobile, name)
       console.log('R135 gameplay PASS:', name, JSON.stringify(result.at(-1)))
     } catch (error) {
       failed = true

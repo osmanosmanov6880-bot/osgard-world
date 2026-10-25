@@ -1,0 +1,77 @@
+name: OSGARD R135 W23 real premium lighting, readable RU/EN and safety preservation
+
+on:
+  push:
+    branches: [feat/r135-w23-luxury-lighting-and-legibility-20261025]
+    paths:
+      - 'godot/osgard-r135-standalone/**'
+      - '.github/workflows/r135-w23-art-native-qa.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  genuine-godot-bounded-art:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 30
+      - name: Original HERO/ECO GLBs unchanged; source legibility and lighting contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          base=Path("godot/osgard-r135-standalone")
+          art=(base/"R135ArtDirection.gd").read_text()
+          main=(base/"StandaloneMain.gd").read_text()
+          course=(base/"R135PremiumOnboarding.gd").read_text()
+          coach=(base/"R135LearningCoach.gd").read_text()
+          assert "R135ArtDirection.apply(" in main
+          assert main.count("art_profile = R135ArtDirection.apply(") == 3
+          assert "const PROFILE_ECO" in art and "const PROFILE_HERO" in art
+          assert "key_light.shadow_enabled = false" in art
+          assert "rim_light.shadow_enabled = false" in art
+          assert "inspection_light.shadow_enabled = false" in art
+          assert "HTTPRequest" not in art and "OS.execute" not in art
+          assert "→" not in course and "→" not in coach, "missing fallback arrow font"
+          import subprocess
+          p=subprocess.run(["git","diff","--name-only",
+                            "10e31b4f11a436c7444babf64f046ce61fb5ed6d","HEAD"],
+                            capture_output=True,text=True,check=True)
+          assert not any(x.endswith((".glb",".gltf",".png",".jpeg",".jpg")) for x in p.stdout.splitlines()), "Unreviewed native assets changed"
+          print("W23 original machine assets untouched and no unsupported glyphs PASS")
+          PY
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: true
+      - name: Import actual PBR HERO/ECO original models
+        shell: bash
+        run: |
+          set -euo pipefail
+          godot --headless --editor --path godot/osgard-r135-standalone --import --quit
+      - name: Run original Godot W19 service and 3-fault safety regression
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 150s godot --headless --path godot/osgard-r135-standalone --script res://tests/smoke.gd
+      - name: W20 retained player settings and local save
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 150s godot --headless --path godot/osgard-r135-standalone --script res://tests/preferences_smoke.gd
+      - name: W21 meaningful safety causes and genuine UI
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 150s godot --headless --path godot/osgard-r135-standalone --script res://tests/learning_coach_smoke.gd
+      - name: W22 3 selectable real cases and persisted proficiency
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 150s godot --headless --path godot/osgard-r135-standalone --script res://tests/case_mastery_smoke.gd
+      - name: W23 bounded copper/cyan ECO HERO lighting and no additional draw batches
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 150s godot --headless --path godot/osgard-r135-standalone --script res://tests/art_direction_smoke.gd

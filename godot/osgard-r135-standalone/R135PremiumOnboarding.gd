@@ -29,16 +29,16 @@ const DETAILS_EN = [
 const HELP_RU = [
     "НАЧНИТЕ С КНОПКИ НИЖЕ. 6 учебных глав, без пропуска правил безопасности.",
     "ПОДСКАЗКА: V — ракурс, мышь или палец — камера, колесо или жест — масштаб.",
-    "ПОРЯДОК: остановка → открытие → закрытие → полная фиксация → пуск.",
-    "ПОРЯДОК: остановка → люк → ракурс → сканирование → закрытие → пуск.",
+    "ПОРЯДОК: остановка; открытие; закрытие; полная фиксация; пуск.",
+    "ПОРЯДОК: остановка; люк; ракурс; сканирование; закрытие; пуск.",
     "ПОДСКАЗКА: правильный ракурс указан в задании. Подсвеченный индикатор показывает учебную неисправность.",
     "ВЫ ПРОШЛИ УЧЕБНУЮ ЛАБОРАТОРИЮ. Изучите результаты и повторите испытания для улучшения счёта."
 ]
 const HELP_EN = [
     "START BELOW. Six chapters; safety rules cannot be bypassed.",
     "TIP: V for viewpoints, mouse or touch to orbit; wheel/pinch to zoom.",
-    "ORDER: stop → open → close → fully seal → restart.",
-    "ORDER: stop → hatch → correct viewpoint → scan → close → restart.",
+    "ORDER: stop; open; close; fully seal; restart.",
+    "ORDER: stop; hatch; correct viewpoint; scan; close; restart.",
     "TIP: the objective shows the required camera. The lit marker shows the simulated fault.",
     "TRAINING COMPLETE. Review your results and repeat challenges to improve your score."
 ]
@@ -69,6 +69,12 @@ var title_label: Label
 var description_label: Label
 var hint_label: Label
 var metrics_label: Label
+var case_mastery_label: Label
+var training_scroll: ScrollContainer
+var case_replay_row: HBoxContainer
+var case_jump_button: Button
+var case_selection_caption: Label
+var case_selection_buttons: Array[Button] = []
 var safety_label: Label
 var primary_button: Button
 var guide_button: Button
@@ -91,6 +97,11 @@ var settings_title: Label
 var settings_note: Label
 var settings_quality_button: Button
 var settings_motion_button: Button
+var settings_audio_button: Button
+var audio_caption_label: Label
+var settings_privacy_button: Button
+var settings_clear_metrics_button: Button
+var settings_privacy_summary: Label
 var settings_close_button: Button
 
 func _ready() -> void:
@@ -230,6 +241,8 @@ func _build() -> void:
     rule.custom_minimum_size = Vector2(0, 1)
     stack.add_child(rule)
     var scroll := ScrollContainer.new()
+    training_scroll = scroll
+    scroll.follow_focus = true
     scroll.name = "TrainingScrollableText"
     scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
     scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -255,6 +268,27 @@ func _build() -> void:
     coach_detail.name = "CauseAndNextAction"
     coach_detail.visible = false
     metrics_label = _label(body, Color(0.93, 0.72, 0.49), 13)
+    audio_caption_label = _label(body, Color(0.62, 0.88, 0.82), 13)
+    audio_caption_label.name = "AccessibleSoundCueCaption"
+    audio_caption_label.visible = false
+    # W22: accessible real targeted replay; progress is derived exclusively
+    # from existing W14 per-fault scores and does NOT invent new save formats.
+    case_selection_caption = _label(body, Color(0.98, 0.68, 0.40), 13)
+    case_selection_caption.name = "ReplayAnyFaultLabel"
+    case_mastery_label = _label(body, Color(0.64, 0.88, 0.82), 12)
+    case_mastery_label.name = "TrueMasteryProgress"
+    var replay_row := HBoxContainer.new()
+    case_replay_row = replay_row
+    replay_row.name = "ThreeRealFaultReplayButtons"
+    replay_row.add_theme_constant_override("separation", 5)
+    body.add_child(replay_row)
+    for i in range(3):
+        var replay := _styled_button("0%d" % (i + 1), false)
+        replay.name = "ReplayFault_%d" % (i + 1)
+        replay.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+        replay.pressed.connect(_start_selected_case.bind(i))
+        replay_row.add_child(replay)
+        case_selection_buttons.append(replay)
     safety_label = _label(body, Color(0.69, 0.73, 0.76), 12)
     safety_label.text = "СИМУЛЯЦИЯ • Реальное оборудование требует допуска и проверки отсутствия энергии."
     primary_button = _styled_button("НАЧАТЬ ОБУЧЕНИЕ", true)
@@ -271,6 +305,14 @@ func _build() -> void:
     coach_more_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
     assistance_row.add_child(guide_button)
     assistance_row.add_child(coach_more_button)
+    # The 3 case actions are a long-scroll section. A persistent 44px
+    # footer action scrolls the real Godot ScrollContainer directly to them
+    # instead of making partially clipped options steal the PRIMARY click.
+    case_jump_button = _styled_button("КЕЙСЫ", false)
+    case_jump_button.name = "JumpToThreeFaultCases"
+    case_jump_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+    case_jump_button.pressed.connect(_jump_to_cases)
+    assistance_row.add_child(case_jump_button)
     stack.add_child(assistance_row)
 
     rail = PanelContainer.new()
@@ -319,6 +361,20 @@ func _build() -> void:
     settings_motion_button.name = "PlayerReducedMotionToggle"
     settings_motion_button.pressed.connect(_settings_motion_pressed)
     settings_stack.add_child(settings_motion_button)
+    settings_audio_button = _styled_button("ЗВУК: ВЫКЛЮЧЕН", false)
+    settings_audio_button.name = "PlayerOptInAudioToggle"
+    settings_audio_button.pressed.connect(_settings_audio_pressed)
+    settings_stack.add_child(settings_audio_button)
+    settings_privacy_button = _styled_button("АНАЛИТИКА: ВЫКЛ", false)
+    settings_privacy_button.name = "ExplicitConsentPrivateLearningMetrics"
+    settings_privacy_button.pressed.connect(_settings_privacy_pressed)
+    settings_stack.add_child(settings_privacy_button)
+    settings_privacy_summary = _label(settings_stack, Color(0.70, 0.83, 0.85), 12)
+    settings_privacy_summary.name = "PrivacySummaryNoNetwork"
+    settings_clear_metrics_button = _styled_button("УДАЛИТЬ СТАТИСТИКУ", false)
+    settings_clear_metrics_button.name = "ErasePrivateLearningMetrics"
+    settings_clear_metrics_button.pressed.connect(_settings_clear_metrics_pressed)
+    settings_stack.add_child(settings_clear_metrics_button)
     settings_close_button = _styled_button("НАЗАД К ОБУЧЕНИЮ", false)
     settings_close_button.name = "ReturnToCourse"
     settings_close_button.pressed.connect(_toggle_settings)
@@ -408,7 +464,15 @@ func _layout() -> void:
     coach_detail.add_theme_font_size_override("font_size", int((12 if compact else 13) * ratio))
     coach_more_button.custom_minimum_size = Vector2(0, 44.0 * ratio)
     coach_more_button.add_theme_font_size_override("font_size", int((12 if compact else 13) * ratio))
+    case_jump_button.custom_minimum_size = Vector2(0, 44.0 * ratio)
+    case_jump_button.add_theme_font_size_override("font_size", int((12 if compact else 13) * ratio))
     metrics_label.add_theme_font_size_override("font_size", int(13 * ratio))
+    audio_caption_label.add_theme_font_size_override("font_size", int((12 if compact else 13) * ratio))
+    case_mastery_label.add_theme_font_size_override("font_size", int((11 if compact else 12) * ratio))
+    case_selection_caption.add_theme_font_size_override("font_size", int((12 if compact else 13) * ratio))
+    for replay in case_selection_buttons:
+        replay.custom_minimum_size = Vector2(0, 44.0 * ratio)
+        replay.add_theme_font_size_override("font_size", int((11 if compact else 13) * ratio))
     safety_label.add_theme_font_size_override("font_size", int(11 * ratio))
     primary_button.add_theme_font_size_override("font_size", int((13 if compact else 15) * ratio))
     guide_button.add_theme_font_size_override("font_size", int((12 if compact else 14) * ratio))
@@ -423,7 +487,9 @@ func _layout() -> void:
         maxf(80.0, card.size.y - 28.0 * ratio))
     settings_title.add_theme_font_size_override("font_size", int((18 if compact else 22) * ratio))
     settings_note.add_theme_font_size_override("font_size", int((12 if compact else 14) * ratio))
-    for settings_action in [settings_quality_button, settings_motion_button, settings_close_button]:
+    settings_privacy_summary.add_theme_font_size_override("font_size", int((11 if compact else 12) * ratio))
+    for settings_action in [settings_quality_button, settings_motion_button, settings_audio_button,
+            settings_privacy_button, settings_clear_metrics_button, settings_close_button]:
         settings_action.custom_minimum_size = Vector2(0, 46.0 * ratio)
         settings_action.add_theme_font_size_override("font_size", int((12 if compact else 14) * ratio))
     _refresh_settings()
@@ -458,6 +524,75 @@ func _toggle_expanded() -> void:
     if host != null:
         host.call_deferred("_settle_hud_after_layout")
     call_deferred("_layout")
+
+func _start_selected_case(index: int) -> void:
+    if host == null or index < 0 or index >= 3:
+        return
+    # A replay cannot override a running safety-first service mission.
+    # The game engine validates the active mission and fault index again.
+    var success: bool = bool(host.call("_start_selected_case", index))
+    if success:
+        coach_expanded = false
+        _present()
+
+
+func _refresh_case_selection() -> void:
+    if case_mastery_label == null or case_selection_buttons.size() != 3:
+        return
+    _assign(case_selection_caption, _t("ВЫБЕРИТЕ УЧЕБНЫЙ КЕЙС", "SELECT A SIMULATED FAULT"))
+    var flags: Array = state_cache.get("cleared_case_flags", [false, false, false])
+    var attempts: Array = state_cache.get("case_attempts", [0, 0, 0])
+    var scores: Array = state_cache.get("case_best_scores", [0, 0, 0])
+    var proficient: Array = state_cache.get("case_proficient_flags", [false, false, false])
+    var complete_count: int = 0
+    var badge_count: int = 0
+    var locked: bool = bool(state_cache.get("mission_active", false)) or bool(state_cache.get("challenge_active", false))
+    var titles_ru = ["ОПТИКА", "ВОЗДУХ", "ЛЮК"]
+    var titles_en = ["OPTICS", "COOLING", "HATCH"]
+    for i in range(3):
+        var done: bool = i < flags.size() and bool(flags[i])
+        var mastered: bool = i < proficient.size() and bool(proficient[i])
+        var best: int = maxi(0, int(scores[i])) if i < scores.size() else 0
+        var title: String = str(titles_ru[i]) if locale == "ru" else str(titles_en[i])
+        # Godot compatibility WebGL fallback can omit decorative Unicode stars.
+        var status: String = "M" if mastered else ("OK" if done else "-")
+        case_selection_buttons[i].text = "%d %s %s" % [i + 1, title, status]
+        case_selection_buttons[i].disabled = locked
+        case_selection_buttons[i].tooltip_text = _t(
+            "Лучший балл %d/150, попыток %d. %s" % [best, int(attempts[i]), "Завершите текущий кейс прежде смены." if locked else "Нажмите, чтобы повторить."],
+            "Best %d/150, attempts %d. %s" % [best, int(attempts[i]), "Finish current case before switching." if locked else "Select to replay."]
+        )
+        if done:
+            complete_count += 1
+        if mastered:
+            badge_count += 1
+    _assign(case_mastery_label, _t(
+        "ПРОЙДЕНО %d/3 · МАСТЕРСТВО %d/3 (от 100 баллов)" % [complete_count, badge_count],
+        "CLEARED %d/3 · MASTERY %d/3 (100+ points)" % [complete_count, badge_count]))
+
+
+func _jump_to_cases() -> void:
+    if settings_open:
+        settings_open = false
+    expanded = true
+    _set_expand_state()
+    call_deferred("_layout")
+    call_deferred("_scroll_to_cases")
+
+
+func _scroll_to_cases() -> void:
+    if training_scroll == null or case_replay_row == null or not expanded:
+        return
+    # Position the *entire* real replay row inside the clickable scroll
+    # viewport with breathing room above the fixed tutorial footer.
+    # Visual clip is NOT the same thing as an interactive Button hit region.
+    training_scroll.ensure_control_visible(case_replay_row)
+    var scale: float = maxf(1.0, float(host.get("touch_pixel_ratio")))
+    var bar: VScrollBar = training_scroll.get_v_scroll_bar()
+    var limit: float = maxf(0.0, bar.max_value - bar.page)
+    var requested: float = maxf(0.0, case_replay_row.position.y - 30.0 * scale)
+    training_scroll.scroll_vertical = int(minf(requested, limit))
+
 
 func _toggle_coach_details() -> void:
     coach_expanded = not coach_expanded
@@ -508,6 +643,24 @@ func _settings_motion_pressed() -> void:
     _refresh_settings()
 
 
+func _settings_audio_pressed() -> void:
+    if host != null:
+        host.call("_toggle_audio")
+    _refresh_settings()
+
+
+func _settings_privacy_pressed() -> void:
+    if host != null:
+        host.call("_toggle_metrics_consent")
+    _refresh_settings()
+
+
+func _settings_clear_metrics_pressed() -> void:
+    if host != null:
+        host.call("_erase_private_metrics")
+    _refresh_settings()
+
+
 func _refresh_settings() -> void:
     if host == null or settings_button == null or settings_title == null:
         return
@@ -522,6 +675,22 @@ func _refresh_settings() -> void:
     settings_motion_button.text = _t(
         "АНИМАЦИИ: МЕНЬШЕ" if bool(host.get("reduced_motion")) else "АНИМАЦИИ: ПОЛНЫЕ",
         "MOTION: REDUCED" if bool(host.get("reduced_motion")) else "MOTION: FULL")
+    var sound: Node = host.get("audio_cues") as Node
+    var muted: bool = true if sound == null else bool(sound.get("muted"))
+    settings_audio_button.text = _t(
+        "ЗВУК: ВЫКЛ (субтитры доступны)" if muted else "ЗВУК: ВКЛ (тихие сигналы)",
+        "SOUND: OFF (captions available)" if muted else "SOUND: ON (quiet cues)")
+    var metrics: Node = host.get("privacy_metrics") as Node
+    var enabled: bool = false if metrics == null else bool(metrics.get("consent"))
+    var records: int = 0 if metrics == null else int(metrics.call("total"))
+    settings_privacy_button.text = _t(
+        "АНАЛИТИКА: ВКЛ (только здесь)" if enabled else "АНАЛИТИКА: ВЫКЛ",
+        "LEARNING COUNTS: ON (local only)" if enabled else "LEARNING COUNTS: OFF")
+    _assign(settings_privacy_summary, _t(
+        "Только общие счётчики уроков, без имени, сети и времени. Событий: %d." % records,
+        "Aggregate lesson counters only; no names, network or timestamps. Events: %d." % records))
+    settings_clear_metrics_button.text = _t("УДАЛИТЬ ЛОКАЛЬНУЮ СТАТИСТИКУ", "ERASE LOCAL COUNTERS")
+    settings_clear_metrics_button.disabled = records == 0
     settings_close_button.text = _t("НАЗАД К ОБУЧЕНИЮ", "BACK TO TRAINING")
 
 
@@ -739,6 +908,11 @@ func _present() -> void:
     if finished:
         score_text = _t("ОБУЧЕНИЕ ЗАВЕРШЕНО  •  %d/3 КЕЙСА", "TRAINING FINISHED  •  %d/3 CASES") % completed_cases
     _assign(metrics_label, score_text)
+    var sound_caption: String = str(state_cache.get("sound_caption", ""))
+    audio_caption_label.visible = not sound_caption.is_empty()
+    if not sound_caption.is_empty():
+        _assign(audio_caption_label, _t("СИГНАЛ: ", "CUE: ") + sound_caption)
+    _refresh_case_selection()
     var drive_label: String = _t("ПРИВОД РАБОТАЕТ", "DRIVE RUNNING") if bool(state_cache.get("motion_enabled", true)) else _t("ПРИВОД ОСТАНОВЛЕН", "DRIVE STOPPED")
     var mode: String = "HERO" if int(state_cache.get("quality", 0)) == 2 else "ECO"
     _assign(compact_status_title, "OSGARD  /  %s  •  %s" % [mode, drive_label])
@@ -770,5 +944,6 @@ func _present() -> void:
         rail_rows[j].add_theme_color_override("font_color",
             Color(0.98, 0.68, 0.40) if j == step else (Color(0.44, 0.84, 0.80) if j < step else Color(0.72, 0.78, 0.82)))
     guide_button.text = _t("УПРАВЛЕНИЕ", "CONTROLS")
+    case_jump_button.text = _t("КЕЙСЫ", "CASES")
     if settings_open:
         _refresh_settings()
