@@ -19,6 +19,14 @@ case "$channel" in
     [[ "$gate_run" =~ ^[1-9][0-9]+$ ]]
     test "$(jq -er '.version' "$pin")" = r135-premium-learning-w18-candidate-20261025
     ;;
+  w19)
+    # A W19 selector is valid only after an independent exact-source
+    # promotion gate has passed. No floating latest or inferred promotion.
+    test "$pin" = scripts/r135-w19-release-pin.json
+    gate_run="$(jq -er '.promotion_gate_run_id' "$SELECTOR")"
+    [[ "$gate_run" =~ ^[1-9][0-9]+$ ]]
+    test "$(jq -er '.version' "$pin")" = r135-luxury-academy-w19-candidate-20261025
+    ;;
   *)
     echo "Unexpected R135 release channel" >&2
     exit 1
