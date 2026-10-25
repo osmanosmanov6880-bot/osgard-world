@@ -1,0 +1,62 @@
+name: OSA CINEMA V24-V27 private release evidence, NO-GO
+on:
+  pull_request:
+    paths:
+      - 'scripts/osa-cinema-v24-*'
+      - 'scripts/osa-cinema-v25-*'
+      - 'scripts/osa-cinema-v26-*'
+      - 'scripts/osa-cinema-v27-*'
+      - 'tools/osa-cinema-v27-*'
+      - 'docs/OSA_CINEMA_V24_V27_*'
+      - '.github/workflows/osa-cinema-v24-v27-release-evidence.yml'
+      - 'scripts/osa-cinema-v19-caption-qc.mjs'
+  push:
+    branches: [master]
+    paths:
+      - 'scripts/osa-cinema-v24-*'
+      - 'scripts/osa-cinema-v25-*'
+      - 'scripts/osa-cinema-v26-*'
+      - 'scripts/osa-cinema-v27-*'
+      - 'tools/osa-cinema-v27-*'
+      - 'docs/OSA_CINEMA_V24_V27_*'
+      - '.github/workflows/osa-cinema-v24-v27-release-evidence.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  private-release-evidence:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install FFmpeg for REAL synthetic MP4 encode and full decode
+        run: |
+          if ! command -v ffmpeg >/dev/null 2>&1 || ! command -v ffprobe >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y --no-install-recommends ffmpeg
+          fi
+          ffmpeg -version | head -n 1
+          ffprobe -version | head -n 1
+      - name: Verify V24 four real synthetic H264/AAC masters and valid/invalid WebVTT
+        run: node --test scripts/osa-cinema-v24-final-master-qc.test.mjs
+      - name: Verify V25 document SHA/PDF presence without false legal approval
+        run: node --test scripts/osa-cinema-v25-rights-evidence.test.mjs
+      - name: Verify V26 real loopback HTTP 200/206/416, MIME and source identity
+        run: node --test scripts/osa-cinema-v26-loopback-delivery-qc.test.mjs
+      - name: Verify V27 fail-closed final release board and fully offline UI
+        run: node --test scripts/osa-cinema-v27-release-board.test.mjs scripts/osa-cinema-v27-board-ui.test.mjs
+      - name: Prove V20 commercial publication is still blocked
+        shell: bash
+        run: |
+          set +e
+          node scripts/osa-cinema-v20-release-audit.mjs --strict-publication > "$RUNNER_TEMP/osa-private-release-hold.log" 2>&1
+          result=$?
+          set -e
+          if [ "$result" -ne 1 ] || ! grep -q 'OSA_CINEMA_V20_NO_PUBLICATION' "$RUNNER_TEMP/osa-private-release-hold.log"; then
+            echo 'Canonical strict release gate unexpectedly changed behavior.' >&2
+            exit 1
+          fi
+          echo 'Confirmed: synthetic engineering CI cannot authorize recorded film publication.'
