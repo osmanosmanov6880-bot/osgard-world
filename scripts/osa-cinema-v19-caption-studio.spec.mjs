@@ -35,7 +35,7 @@ test('V19 local-only RU/EN caption editor handles actual 239s source clock, veri
  const vttDownloadPromise=page.waitForEvent('download')
  await page.locator('#exportVtt').click()
  const exported=await vttDownloadPromise
- expect(exported.suggestedFilename()).toContain('PRIVATE_ru_')
+ expect(exported.suggestedFilename()).toBe('OSA_PRIVATE_osa-v15-directors-ru.vtt')
  const actualVtt=await readFile(await exported.path(),'utf8')
  expect(actualVtt).toContain('WEBVTT')
  expect(actualVtt).toContain('00:01:19.000 --> 00:01:21.000')
