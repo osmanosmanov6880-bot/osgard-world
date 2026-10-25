@@ -61,6 +61,9 @@ func _run() -> void:
     if str(instance.get("ui_locale")) != "ru" or operator_buttons[0].text != "НАЧАТЬ":
         _fail("W17 Russian control switch failed")
         return
+    if str(instance.call("_translated", "VIEW OVERVIEW")) != "РАКУРС ОБЗОР":
+        _fail("W17 locale dictionary damaged composite camera labels")
+        return
     var safety: Label = instance.get("safety_notice") as Label
     if safety == null or not safety.text.contains("проверки отсутствия энергии"):
         _fail("W17 Russian energy isolation warning missing")

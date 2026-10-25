@@ -46,7 +46,7 @@ const RU_PHRASES = {
     "ERRORS": "ОШИБКИ", "BEST": "РЕКОРД", "RUNS": "ПОПЫТКИ",
     "STEP": "ШАГ", "TASK": "ЗАДАНИЕ", "QUALITY": "ПРОФИЛЬ",
     "DRIVE": "ПРИВОД", "RUNNING": "РАБОТАЕТ", "PAUSED": "ОСТАНОВЛЕН",
-    "VIEW": "РАКУРС", "OVERVIEW": "ОБЗОР", "SERVICE DECK": "СЕРВИСНАЯ ЗОНА",
+    "OVERVIEW": "ОБЗОР", "VIEW": "РАКУРС", "SERVICE DECK": "СЕРВИСНАЯ ЗОНА",
     "OPTICAL HEAD": "ОПТИКА", "SIDE INSPECTION": "БОКОВОЙ ОСМОТР",
     "TRAIN": "ОБУЧЕНИЕ", "DIAGNOSE": "ДИАГНОСТИКА",
     "SCAN": "СКАНИРОВАТЬ", "CAMERA": "КАМЕРА", "SCORE": "СЧЁТ"
