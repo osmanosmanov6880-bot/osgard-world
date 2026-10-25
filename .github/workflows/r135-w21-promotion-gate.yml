@@ -1,4 +1,4 @@
-name: OSGARD R135 W21 independent real settings, 15 PNG and WebGL release acceptance
+name: OSGARD R135 W21 independently pinned 17 causal learning original PNGs and WebGL
 
 on:
   push:
@@ -130,7 +130,7 @@ jobs:
         run: |
           set -euo pipefail
           PIN=scripts/r135-w21-release-pin.json
-          TAG=r135-player-settings-w21-reviewed-webgl-20261025
+          TAG=r135-explainable-training-w21-reviewed-webgl-20261025
           if gh release view "$TAG" --repo osmanosmanov6880-bot/osgard-world >/dev/null 2>&1; then
             echo 'Already exists: immutable W21 tag is not overwritten' >&2
             exit 1
@@ -151,5 +151,5 @@ jobs:
             "$ROOT/W21_ORIGINAL_SCREENSHOTS_AND_GAMEPLAY_EVIDENCE.zip" \
             --repo osmanosmanov6880-bot/osgard-world \
             --target "$SOURCE" --latest=false \
-            --title "OSGARD R135 W21 — exact-source real player settings Godot WebGL" \
-            --notes "Independent pinned 15-original-frame Godot native and desktop/mobile software WebGL release. NOT automatically promoted. Physical-phone GPU and AAA photorealism remain unverified."
+            --title "OSGARD R135 W21 — exact-source explainable training Godot WebGL" \
+            --notes "Independent pinned 17-original-frame Godot native and desktop/mobile software WebGL release. NOT automatically promoted. Physical-phone GPU and AAA photorealism remain unverified."
