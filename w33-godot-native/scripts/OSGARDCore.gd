@@ -393,7 +393,7 @@ func tick(delta: float) -> void:
     if bool(s["active"]):
         s["seconds"] = minf(18000.0, float(s["seconds"]) + dt)
         if int(s["step"]) == 2:
-            var can_hold := not bool(s["drive_on"]) and float(s["rpm"]) <= RPM_ACCESS_THRESHOLD and float(s["hatch"]) >= 0.995 and desired == 1.0 and int(s["view"]) == FAULT_VIEWS[int(s["fault"])]
+            var can_hold: bool = not bool(s["drive_on"]) and float(s["rpm"]) <= RPM_ACCESS_THRESHOLD and float(s["hatch"]) >= 0.995 and desired == 1.0 and int(s["view"]) == FAULT_VIEWS[int(s["fault"])]
             var cal := analyze(int(s["fault"]), s["puzzle"], 0.0, bool(s["incident_triggered"]))
             if can_hold and bool(cal.get("within_tolerance", false)):
                 var advanced: bool = bool(s["advanced"])

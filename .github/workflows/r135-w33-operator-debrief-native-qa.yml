@@ -1,7 +1,7 @@
 name: OSGARD W33 native 6-case QA, action debrief, WebGL build and original-byte inspection
 on:
   push:
-    branches: [feat/r135-w33-six-mission-godot-port]
+    branches: [feat/r135-w33-six-mission-godot-port-*]
     paths:
       - 'w33-godot-native/**'
       - '.github/workflows/r135-w33-operator-debrief-native-qa.yml'
@@ -18,6 +18,15 @@ jobs:
     timeout-minutes: 24
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Verify checked-out commit is exactly the proposed source SHA
+        shell: bash
+        run: |
+          set -euo pipefail
+          expected="${{ github.event.pull_request.head.sha || github.sha }}"
+          test "$(git rev-parse HEAD)" = "$expected"
       - uses: chickensoft-games/setup-godot@v2
         with:
           version: 4.4.1
@@ -27,7 +36,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          godot --headless --editor --path w33-godot-native --import --quit
+          godot --headless --editor --path w33-godot-native --import --quit 2>&1 | tee "$RUNNER_TEMP/w33-import.log"
+          # Editor import returns exit=0 even with GDScript parse errors.
+          if grep -E 'SCRIPT ERROR:|Parse Error:|Compile Error:|Failed to load script' "$RUNNER_TEMP/w33-import.log"; then
+            echo '::error::Godot import emitted script compilation errors'
+            exit 1
+          fi
       - name: Six W31-reference cases in actual Godot GDScript (blocking)
         shell: bash
         run: |
@@ -56,12 +70,12 @@ jobs:
           set -euo pipefail
           python3 w33-godot-native/ci/verify_web_export.py \
             w33-godot-native/build/web \
-            --sha "${{ github.sha }}" \
+            --sha "${{ github.event.pull_request.head.sha || github.sha }}" \
             --output w33-godot-native/build/web/evidence.json
       - name: Archive exactly generated candidate (not deployed or certified)
         uses: actions/upload-artifact@v4
         with:
-          name: osgard-w33-godot-webgl-${{ github.sha }}
+          name: osgard-w33-godot-webgl-${{ github.event.pull_request.head.sha || github.sha }}
           path: w33-godot-native/build/web/
           if-no-files-found: error
           retention-days: 30
