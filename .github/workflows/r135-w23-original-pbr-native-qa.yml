@@ -1,0 +1,73 @@
+name: OSGARD R135 W23 original PBR 12-map HERO visual and ECO budget native QA
+
+on:
+  push:
+    branches: [feat/r135-w23-real-pbr-luxury-studio-20261025]
+    paths:
+      - 'godot/osgard-r135-standalone/**'
+      - '.github/workflows/r135-w23-original-pbr-native-qa.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  real-pbr-hero-eco-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 27
+    steps:
+      - uses: actions/checkout@v4
+      - name: Original immutable HERO/ECO GLBs, 12 PNG maps, compatibility contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib
+          from pathlib import Path
+          root=Path('godot/osgard-r135-standalone')
+          actual={name:hashlib.sha256((root/'models/r135'/f'service_spine_{name}.glb').read_bytes()).hexdigest()
+                  for name in ('eco','hero')}
+          expected={
+            'eco':'c6bbc41c53e596d5048371e639a662cd2a75d58a02f75c9df93ffced7685533b',
+            'hero':'8ef33e28534c7c41d4adaceee4e479e38da92287a99bbd5fd53b9fc9318c0078'
+          }
+          assert actual==expected, 'Original source HERO/ECO GLBs must remain byte-for-byte identical'
+          assert len(list((root/'textures/r135').glob('*.png')))==36
+          for family in ('epoxy_floor','service_paint','galvanized_steel','warm_copper'):
+            for suff in ('albedo','normal','orm'):
+              assert (root/'textures/r135'/f'{family}_{suff}.png').is_file()
+          studio=(root/'R135StudioEnvironment.gd').read_text()
+          assert 'hero_only_nodes' in studio and 'set_quality(0)' in studio
+          assert 'BaseMaterial3D.TEXTURE_CHANNEL_GREEN' in studio
+          print('W23 imported PBR original assets, ECO backward compatibility and no GLB replacement PASS')
+          PY
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: true
+      - name: Real Godot import all original PBR textures and machine models
+        shell: bash
+        run: |
+          set -euo pipefail
+          godot --headless --editor --path godot/osgard-r135-standalone --import --quit
+      - name: Existing W19 real engine and 3-fault interlocks
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 150s godot --headless --path godot/osgard-r135-standalone --script res://tests/smoke.gd
+      - name: W20 preferences and restart regression
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 150s godot --headless --path godot/osgard-r135-standalone --script res://tests/preferences_smoke.gd
+      - name: W21 actual three-fault explainability regression
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 150s godot --headless --path godot/osgard-r135-standalone --script res://tests/learning_coach_smoke.gd
+      - name: W22 targeted case replay and unchanged W14 save regression
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 150s godot --headless --path godot/osgard-r135-standalone --script res://tests/case_mastery_smoke.gd
+      - name: W23 actual source PBR material channels and bounded HERO/ECO GPU passes
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 150s godot --headless --path godot/osgard-r135-standalone --script res://tests/pbr_studio_smoke.gd
