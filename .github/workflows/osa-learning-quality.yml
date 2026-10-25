@@ -47,6 +47,7 @@ jobs:
       - name: Validate V19 WebVTT parser, timecode safety and private caption editor provenance
         run: |
           node --test scripts/osa-cinema-v19-caption-core.test.mjs
+          node --test scripts/osa-cinema-v19-caption-audit.test.mjs
           node scripts/osa-cinema-v19-caption-studio-smoke.mjs
       - name: Validate V18 real 64/10 shot alignment and four-track private mastering evidence
         run: |
