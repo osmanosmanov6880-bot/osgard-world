@@ -61,6 +61,9 @@ on:
       - "scripts/r135-release-selector.sh"
       - "scripts/r135-w18-deploy-contract.mjs"
       - "scripts/r135-w18-promotion-qa.py"
+      - "scripts/r135-w18-evidence-member-pin.json"
+      - "scripts/r135-w18-release-recover.py"
+      - "scripts/test_r135_w18_release_recover.py"
       - "scripts/r135-verified-live-recover.py"
       - "scripts/r135-artifact-fallback.py"
       - "scripts/r135-production-smoke.mjs"
@@ -132,6 +135,7 @@ jobs:
         run: |
           npm run qa:deploy-workflow
           node scripts/r135-w18-deploy-contract.mjs
+          python3 -m unittest discover -s scripts -p test_r135_w18_release_recover.py -v
       - run: npm run check
       - name: Verify three product surfaces and all game entry points
         run: npm run qa:redesign
@@ -331,14 +335,51 @@ jobs:
             test "$(jq -er '.head_sha' <<< "$RUN")" = "$SOURCE"
             test "$(jq -er '.conclusion' <<< "$RUN")" = success
             ART_ID="$(jq -er '.artifact_id' "$PIN")"
-            ARTIFACTS="$(gh api "repos/osmanosmanov6880-bot/osgard-world/actions/runs/$RUN_ID/artifacts")"
-            jq -e --argjson id "$ART_ID" --arg name "$ART_NAME" \
-              '.artifacts[] | select(.id == $id and .name == $name and .expired == false)' \
-              <<< "$ARTIFACTS" >/dev/null
-            # No server fallback for a new W18; use exact reviewed Actions bytes.
-            gh run download "$RUN_ID" \
-              --repo osmanosmanov6880-bot/osgard-world \
-              --name "$ART_NAME" --dir "$ROOT"
+            # After Actions artifact retention expires, allow ONLY the exact
+            # archived W18 source + 18 full member digests, never an existing
+            # live server or any floating build. Before that, prefer Actions.
+            ARCHIVE_FROM_ACTIONS=0
+            if ARTIFACTS="$(gh api "repos/osmanosmanov6880-bot/osgard-world/actions/runs/$RUN_ID/artifacts" 2>/dev/null)" &&
+               jq -e --argjson id "$ART_ID" --arg name "$ART_NAME" \
+                 '.artifacts[] | select(.id == $id and .name == $name and .expired == false)' \
+                 <<< "$ARTIFACTS" >/dev/null &&
+               gh run download "$RUN_ID" \
+                 --repo osmanosmanov6880-bot/osgard-world \
+                 --name "$ART_NAME" --dir "$ROOT"; then
+              ARCHIVE_FROM_ACTIONS=1
+            fi
+            if [[ "$ARCHIVE_FROM_ACTIONS" != 1 ]]; then
+              TAG=r135-premium-learning-w18-reviewed-archive-20261025
+              RELEASE_META="$(gh api "repos/osmanosmanov6880-bot/osgard-world/releases/tags/$TAG")"
+              test "$(jq -er '.tag_name' <<< "$RELEASE_META")" = "$TAG"
+              test "$(jq -er '.draft' <<< "$RELEASE_META")" = false
+              ZIP_HASH="sha256:$(jq -er '.archive_sha256' "$PIN")"
+              MANIFEST_HASH="sha256:$(jq -er '.manifest_sha256' "$PIN")"
+              jq -e --arg hash "$ZIP_HASH" '.assets[] | select(.name=="OSGARD_R135_OPTIMIZED_WEB.zip" and .digest==$hash and .size>100000000)' <<< "$RELEASE_META" >/dev/null
+              jq -e --arg hash "$MANIFEST_HASH" '.assets[] | select(.name=="R135_OPTIMIZED_MANIFEST.json" and .digest==$hash and .size>1000)' <<< "$RELEASE_META" >/dev/null
+              jq -e '.assets[] | select(.name=="R135_W18_ORIGINAL_EVIDENCE.zip" and .size>100000 and .size<25000000)' <<< "$RELEASE_META" >/dev/null
+              # Clear only the isolated runner temp staging, never a public
+              # asset, W14 rollback or application directory on the host.
+              rm -f "$STAGED/OSGARD_R135_OPTIMIZED_WEB.zip" \
+                    "$STAGED/R135_OPTIMIZED_MANIFEST.json" \
+                    "$ROOT/R135_W18_ORIGINAL_EVIDENCE.zip"
+              rm -rf "$ROOT/r135-screens"
+              gh release download "$TAG" \
+                --repo osmanosmanov6880-bot/osgard-world \
+                --pattern "OSGARD_R135_OPTIMIZED_WEB.zip" --dir "$STAGED"
+              gh release download "$TAG" \
+                --repo osmanosmanov6880-bot/osgard-world \
+                --pattern "R135_OPTIMIZED_MANIFEST.json" --dir "$STAGED"
+              gh release download "$TAG" \
+                --repo osmanosmanov6880-bot/osgard-world \
+                --pattern "R135_W18_ORIGINAL_EVIDENCE.zip" --dir "$ROOT"
+              python3 scripts/r135-w18-release-recover.py \
+                --pin "$PIN" \
+                --member-pin scripts/r135-w18-evidence-member-pin.json \
+                --evidence "$ROOT/R135_W18_ORIGINAL_EVIDENCE.zip" \
+                --target "$ROOT"
+            fi
+            # Both paths re-run the SAME full original-image + binary proof.
             python3 scripts/r135-w18-promotion-qa.py --pin "$PIN" --artifact "$ROOT"
           else
             echo 'Unreviewed R135 channel refused' >&2
