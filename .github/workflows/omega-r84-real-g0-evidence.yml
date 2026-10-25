@@ -11,6 +11,12 @@ on:
     paths:
       - '.github/workflows/omega-r84-real-g0-evidence.yml'
       - 'scripts/omega_r83_release_gate.py'
+  # R89: source-pinned G0 must run AFTER the real SSH release has finished,
+  # not merely when a generated manifest is committed before Nginx activation.
+  workflow_run:
+    workflows: ["OSGARD Omega verified Godot direct SSH deploy"]
+    types: [completed]
+    branches: [master]
   workflow_dispatch:
 permissions:
   contents: read
@@ -39,9 +45,13 @@ jobs:
           PY
   real-public-g0-verified-full-release-HOLD:
     if: >-
-      (github.event_name == 'push' ||
-       github.event_name == 'workflow_dispatch') &&
-      github.ref == 'refs/heads/master'
+      ((github.event_name == 'push' ||
+        github.event_name == 'workflow_dispatch') &&
+       github.ref == 'refs/heads/master') ||
+      (github.event_name == 'workflow_run' &&
+       github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_branch == 'master' &&
+       github.event.workflow_run.head_repository.full_name == github.repository)
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
