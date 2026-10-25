@@ -3,6 +3,9 @@ on:
   pull_request:
     paths:
       - "scripts/nebula-r40-production-preflight.mjs"
+      - "scripts/nebula-r40-device-progress.mjs"
+      - "scripts/nebula-r40-field-kit.mjs"
+      - "scripts/test-nebula-r40-field-kit.mjs"
       - "docs/nebula/R40-FIELD-QA-RUNBOOK.md"
       - "docs/nebula/R40-FINAL-CLOSEOUT-BLOCKS.md"
       - ".github/workflows/nebula-r40-production-preflight.yml"
@@ -10,6 +13,9 @@ on:
     branches: [master]
     paths:
       - "scripts/nebula-r40-production-preflight.mjs"
+      - "scripts/nebula-r40-device-progress.mjs"
+      - "scripts/nebula-r40-field-kit.mjs"
+      - "scripts/test-nebula-r40-field-kit.mjs"
       - "docs/nebula/R40-FIELD-QA-RUNBOOK.md"
       - "docs/nebula/R40-FINAL-CLOSEOUT-BLOCKS.md"
       - ".github/workflows/nebula-r40-production-preflight.yml"
@@ -28,6 +34,9 @@ jobs:
         run: |
           set -euo pipefail
           node --check scripts/nebula-r40-production-preflight.mjs
+          node --check scripts/nebula-r40-field-kit.mjs
+          node --check scripts/nebula-r40-device-progress.mjs
+          node --test scripts/test-nebula-r40-field-kit.mjs
           node scripts/nebula-r40-production-preflight.mjs --selftest
           if node scripts/nebula-r40-production-preflight.mjs docs/nebula/R40-DEVICE-FIELD-MANIFEST.example.json; then
             echo "Empty original phone evidence must never be approved" >&2
