@@ -14,6 +14,8 @@ const SIGNAL := Color("70cbbb")
 const CRITICAL := Color("dc6257")
 
 var hero_only: Array[Node3D] = []
+var smooth_rings: Array[MeshInstance3D] = []
+var precision_fasteners: MultiMeshInstance3D
 var industrial_lights: Array[Light3D] = []
 var alarm_lamps: Array[MeshInstance3D] = []
 var status_lamps: Array[MeshInstance3D] = []
@@ -87,6 +89,52 @@ func _cylinder(parent: Node3D, label: String, radius: float, depth: float, at: V
     else:
         _structure_count += 1
     return obj
+
+func _machined_torus(label: String, radius: float, tube: float, z_depth: float, mat: Material, hero: bool = false) -> MeshInstance3D:
+    # A smooth original torus surface replaces the toy-looking box-ring edge
+    # without changing any of the underlying safety simulation mechanics.
+    var geometry := TorusMesh.new()
+    geometry.inner_radius = radius - tube
+    geometry.outer_radius = radius + tube
+    geometry.rings = 96 if not hero else 112
+    geometry.ring_segments = 16
+    var obj := MeshInstance3D.new()
+    obj.name = label
+    obj.mesh = geometry
+    obj.material_override = mat
+    obj.rotation_degrees.x = 90.0
+    obj.position = Vector3(0.0, 2.32, z_depth)
+    obj.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF if hero else GeometryInstance3D.SHADOW_CASTING_SETTING_ON
+    add_child(obj)
+    smooth_rings.append(obj)
+    if hero:
+        hero_only.append(obj)
+        _detail_count += 1
+    else:
+        _structure_count += 1
+    return obj
+
+func _add_instanced_precision_fasteners() -> void:
+    # 72 teeth form one GPU-instanced mesh, not 72 separate draw submissions.
+    # Moving them to the HERO group protects WebGL ECO performance.
+    var fasteners := MultiMesh.new()
+    fasteners.transform_format = MultiMesh.TRANSFORM_3D
+    var bar := BoxMesh.new()
+    bar.size = Vector3(0.037, 0.11, 0.028)
+    fasteners.mesh = bar
+    fasteners.instance_count = 72
+    for i in range(72):
+        var angle: float = TAU * float(i) / 72.0
+        var center := Vector3(cos(angle) * 1.54, 2.32 + sin(angle) * 1.54, 1.49)
+        fasteners.set_instance_transform(i, Transform3D(Basis(Vector3.FORWARD, -angle), center))
+    precision_fasteners = MultiMeshInstance3D.new()
+    precision_fasteners.name = "A7MachinedKnurl72Instances"
+    precision_fasteners.multimesh = fasteners
+    precision_fasteners.material_override = _material("a69278", 0.89, 0.30)
+    precision_fasteners.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+    add_child(precision_fasteners)
+    hero_only.append(precision_fasteners)
+    _detail_count += 1
 
 func _construct_architecture() -> void:
     var basalt := _material("090f15", 0.17, 0.82)
@@ -170,6 +218,14 @@ func _construct_reactor_skin() -> void:
     _box(self, "A7MainHeader", Vector3(6.45, 0.47, 2.1), Vector3(0, 4.22, -0.20), oxide)
     _box(self, "A7HeaderChamfer", Vector3(6.10, 0.055, 1.85), Vector3(0, 4.47, -0.16), champagne)
     _box(self, "A7LowerSill", Vector3(6.05, 0.22, 1.95), Vector3(0, 0.59, 0.20), oxide)
+    # The machined circular face is deliberately smooth. The W35 bolted box
+    # ring segments remain as forged mechanical insets behind the actual
+    # lathed surfaces, so the original architecture and QA remain compatible.
+    _machined_torus("A7ContinuousForgedBlackOuter", 1.65, 0.095, 1.08, oxide)
+    _machined_torus("A7ContinuousChampagneMachining", 1.46, 0.075, 1.43, champagne)
+    _machined_torus("A7ContinuousTitaniumInnerBearing", 1.23, 0.065, 1.47, silvery)
+    _machined_torus("A7HeroOpticalGlassMicroRim", 1.09, 0.026, 1.51, _material("579a98", 0.35, 0.25, 0.40), true)
+    _add_instanced_precision_fasteners()
     # Concentric high-contrast machined rings in front of the read-only rotor.
     # The actual safety hatch still pivots over this assembly.
     for radius_index in range(3):
@@ -246,6 +302,19 @@ func _construct_lighting() -> void:
     cool.shadow_enabled = false
     add_child(cool)
     industrial_lights.append(cool)
+    # Controlled angled fill reveals the metal profile instead of leaving the
+    # left side of the original W39 screenshot as a featureless black void.
+    var contour := SpotLight3D.new()
+    contour.name = "RakingMachinedMetalContour"
+    contour.position = Vector3(-4.65, 4.35, 4.4)
+    contour.light_color = Color("ecc4a2")
+    contour.light_energy = 0.85
+    contour.spot_range = 13.0
+    contour.spot_angle = 43.0
+    contour.shadow_enabled = false
+    add_child(contour)
+    contour.look_at(Vector3(0.0, 2.24, 0.78), Vector3.UP)
+    industrial_lights.append(contour)
     emergency_glow = OmniLight3D.new()
     emergency_glow.name = "TrueSimulatedEmergencySculpture"
     emergency_glow.position = Vector3(0.0, 4.5, 2.3)
@@ -279,8 +348,11 @@ func set_quality(mode: String) -> void:
         detail.visible = mode == "hero"
     if key_light != null:
         key_light.shadow_enabled = mode == "hero"
-    for light in industrial_lights:
-        light.light_energy = (1.70 if light == industrial_lights[0] else 1.20) * (0.70 if mode == "eco" else 1.0)
+    for i in range(industrial_lights.size()):
+        var lamp: Light3D = industrial_lights[i]
+        var hero_energy: float = 1.70 if i == 0 else 1.20 if i == 1 else 0.85
+        # The extra premium raking spot is off entirely in ECO.
+        lamp.light_energy = (0.0 if mode == "eco" else hero_energy) if i == 2 else hero_energy * (0.70 if mode == "eco" else 1.0)
 
 func set_alarm(danger: bool) -> void:
     if _alarm == danger:
@@ -319,6 +391,12 @@ func qa_readout() -> Dictionary:
         "structures": _structure_count,
         "hero_details": _detail_count,
         "reactor_rings": 3,
+        "continuous_torus_surfaces": smooth_rings.size(),
+        "lathed_torus_meshes": smooth_rings.all(func(ring: MeshInstance3D) -> bool: return ring.mesh is TorusMesh),
+        "instanced_precision_fasteners": precision_fasteners.multimesh.instance_count if precision_fasteners != null else 0,
+        "machined_fastener_batch_visible": precision_fasteners.visible if precision_fasteners != null else false,
+        "cinematic_fill_count": industrial_lights.size(),
+        "contour_light_hero_only": industrial_lights[2].light_energy if industrial_lights.size() > 2 else 0.0,
         "hero_vs_eco": _quality,
         "alarm_reflects_simulation": true,
         "external_asset_dependency": false,
