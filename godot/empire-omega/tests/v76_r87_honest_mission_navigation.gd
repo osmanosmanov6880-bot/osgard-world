@@ -2,8 +2,6 @@ extends SceneTree
 ## R87: forty authored objectives must never show false courier distances.
 ## Uses original GameState, MissionManager, genuine HUD and World script.
 const NAV = preload("res://scripts/horizon_mission_navigation.gd")
-const WORLD = preload("res://scripts/world_builder.gd")
-const HUD = preload("res://scripts/hud.gd")
 var passed := 0
 var failed := 0
 
@@ -29,7 +27,6 @@ func _run() -> void:
 	var state: Dictionary = game.call("new_game")
 	game.set("data",state)
 	game.set("locale","ru")
-	var original_missions: Array = NAV.WORLD_ACTIONS
 	var world_goals := 0
 	var non_spatial := 0
 	for stage in range(40):
@@ -77,7 +74,15 @@ func _run() -> void:
 		"real HUD and minimap honor live mission navigation state")
 	verify(source_map.contains("if goal_active:"),
 		"minimap does not draw a nonexistent goal dot")
-	var world: Node3D = WORLD.new()
+	var world_script: Variant = load("res://scripts/world_builder.gd")
+	verify(world_script is Script and world_script.can_instantiate(),
+		"world compiles AFTER original GameState autoload is initialized")
+	if not (world_script is Script and world_script.can_instantiate()):
+		game.set("data",prior)
+		game.set("locale",prior_locale)
+		quit(1)
+		return
+	var world: Node3D = world_script.new()
 	var beacon := Node3D.new()
 	world.set("waypoint_marker",beacon)
 	world.call("update_waypoint",Vector3(130,0,-130),false)
@@ -88,7 +93,15 @@ func _run() -> void:
 	world.free()
 	# Instantiate the ACTUAL native HUD and validate player-visible wording.
 	state["mission"] = 2
-	var hud: CanvasLayer = HUD.new()
+	var hud_script: Variant = load("res://scripts/hud.gd")
+	verify(hud_script is Script and hud_script.can_instantiate(),
+		"actual HUD compiles after original game autoloads")
+	if not (hud_script is Script and hud_script.can_instantiate()):
+		game.set("data",prior)
+		game.set("locale",prior_locale)
+		quit(1)
+		return
+	var hud: CanvasLayer = hud_script.new()
 	root.add_child(hud)
 	hud.call("_refresh")
 	hud.call("update_world_context", Vector3.ZERO,Vector3.ZERO,Vector3(130,0,-130),
