@@ -92,7 +92,7 @@ class FieldEvidenceTests(unittest.TestCase):
 
     def test_modified_video_rejected(self):
         self.complete()
-        (self.path / "campaign.webm").write_bytes(b"tampered" * 300)
+        (self.path / "campaign.webm").write_bytes(b"\x1a\x45\xdf\xa3" + b"tampered" * 300)
         with self.assertRaisesRegex(r73.EvidenceError, "SHA-256 mismatch"):
             self.verify()
 
