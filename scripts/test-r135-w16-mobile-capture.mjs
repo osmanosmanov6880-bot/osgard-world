@@ -2,6 +2,11 @@
 // Synthetic contract tests. NEVER submit these values as physical device evidence.
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
+import { mkdtemp, writeFile, rm } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { createHash } from 'node:crypto'
+import { collectSessions } from './r135-device-matrix-assemble.mjs'
 import { summarizeRafIntervalsMs } from './r135-frame-metrics.mjs'
 import {
   REQUIRED_RELEASE, detectSupportedDevice, summarizeIntervals,
@@ -63,4 +68,31 @@ assert.match(ui,/fetch\([^\n]*cache:'no-store'/)
 assert.match(ui,/createEvidenceRecord/)
 assert.match(html,/original_frame_reviewed/)
 assert.doesNotMatch(ui,/\bmethod\s*:\s*['"]POST['"]/)
+// Synthetic original-file pairing tests. The bytes below are NOT actual PNG
+// image captures and may never be used for hardware certification.
+const directory=await mkdtemp(join(tmpdir(),'r135-w16-synthetic-'))
+try {
+  for (let i=0;i<2;i++) {
+    const name='synthetic-'+i+'.png'
+    const png=Buffer.alloc(21000, i+1)
+    Buffer.from([137,80,78,71,13,10,26,10]).copy(png)
+    await writeFile(join(directory,name),png)
+    const record=createEvidenceRecord({...base,
+      screenshotSha256:createHash('sha256').update(png).digest('hex'),
+      screenshotName:name,sessionId:'synthetic-file-'+i})
+    await writeFile(join(directory,'r135-w16-synthetic-'+i+'.json'),
+      JSON.stringify({sessions:[record]}))
+  }
+  const paired=await collectSessions(directory)
+  assert.equal(paired.length,2)
+  assert.equal(paired.every(r=>r.user_reviewed_touch===false &&
+    r.original_frame_reviewed===false),true)
+  const tampered=await readFileSync(join(directory,'synthetic-1.png'))
+  tampered[100]^=1
+  await writeFile(join(directory,'synthetic-1.png'),tampered)
+  await assert.rejects(()=>collectSessions(directory),/Screenshot was changed/)
+} finally {
+  await rm(directory,{recursive:true,force:true})
+}
+
 console.log('R135 W16 same-origin portable Android/Safari capture contracts PASS (synthetic test ONLY). No physical devices tested.')
