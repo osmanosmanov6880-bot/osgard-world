@@ -1,0 +1,1149 @@
+{
+  "schemaVersion": 1,
+  "status": "PRIVATE_EDIT_DECISION_CANDIDATES_NOT_APPROVED",
+  "publicationAuthorized": false,
+  "scope": "FFmpeg objective scene-difference hints on original private MP4s; not an artistic assessment",
+  "note": "Shot boundaries are automatic candidates and need manual confirmation. Avoid assuming RU/EN visual identities if cut times differ.",
+  "assets": [
+    {
+      "source": "ru-workprint",
+      "file": "OSA_CINEMA_V15_DIRECTORS_WORKPRINT_RU_1080P.mp4",
+      "threshold": 0.3,
+      "algorithm": "FFmpeg scene-difference, frames downscaled to 320px wide",
+      "sceneCutTimecodes": [
+        5,
+        8.875,
+        11.875,
+        18.833,
+        19.833,
+        23.833,
+        26.792,
+        29.708,
+        39.625,
+        43.5,
+        46.583,
+        49.5,
+        50.792,
+        53.208,
+        54.458,
+        58.25,
+        61.25,
+        64.333,
+        74.792,
+        79,
+        85.958,
+        91.5,
+        94.417,
+        97.417,
+        100.417,
+        103.792,
+        106.75,
+        112.5,
+        117.458,
+        117.792,
+        121.25,
+        125.875,
+        131.458,
+        134.208,
+        134.667,
+        138.625,
+        141.5,
+        143.625,
+        146.583,
+        149.5,
+        153.042,
+        156.583,
+        157,
+        159,
+        162,
+        164.958,
+        171.958,
+        173.792,
+        178.792,
+        184,
+        188.583,
+        192.458,
+        195.542,
+        198.458,
+        205.417,
+        208.333,
+        211.958,
+        215.042,
+        218.208,
+        221.208,
+        224.208,
+        227.542,
+        230.5,
+        233
+      ],
+      "sceneCutCount": 64,
+      "shots": [
+        {
+          "index": 1,
+          "startSeconds": 0,
+          "endSeconds": 5,
+          "durationSeconds": 5
+        },
+        {
+          "index": 2,
+          "startSeconds": 5,
+          "endSeconds": 8.875,
+          "durationSeconds": 3.875
+        },
+        {
+          "index": 3,
+          "startSeconds": 8.875,
+          "endSeconds": 11.875,
+          "durationSeconds": 3
+        },
+        {
+          "index": 4,
+          "startSeconds": 11.875,
+          "endSeconds": 18.833,
+          "durationSeconds": 6.958
+        },
+        {
+          "index": 5,
+          "startSeconds": 18.833,
+          "endSeconds": 19.833,
+          "durationSeconds": 1
+        },
+        {
+          "index": 6,
+          "startSeconds": 19.833,
+          "endSeconds": 23.833,
+          "durationSeconds": 4
+        },
+        {
+          "index": 7,
+          "startSeconds": 23.833,
+          "endSeconds": 26.792,
+          "durationSeconds": 2.958
+        },
+        {
+          "index": 8,
+          "startSeconds": 26.792,
+          "endSeconds": 29.708,
+          "durationSeconds": 2.917
+        },
+        {
+          "index": 9,
+          "startSeconds": 29.708,
+          "endSeconds": 39.625,
+          "durationSeconds": 9.917
+        },
+        {
+          "index": 10,
+          "startSeconds": 39.625,
+          "endSeconds": 43.5,
+          "durationSeconds": 3.875
+        },
+        {
+          "index": 11,
+          "startSeconds": 43.5,
+          "endSeconds": 46.583,
+          "durationSeconds": 3.083
+        },
+        {
+          "index": 12,
+          "startSeconds": 46.583,
+          "endSeconds": 49.5,
+          "durationSeconds": 2.917
+        },
+        {
+          "index": 13,
+          "startSeconds": 49.5,
+          "endSeconds": 50.792,
+          "durationSeconds": 1.292
+        },
+        {
+          "index": 14,
+          "startSeconds": 50.792,
+          "endSeconds": 53.208,
+          "durationSeconds": 2.417
+        },
+        {
+          "index": 15,
+          "startSeconds": 53.208,
+          "endSeconds": 54.458,
+          "durationSeconds": 1.25
+        },
+        {
+          "index": 16,
+          "startSeconds": 54.458,
+          "endSeconds": 58.25,
+          "durationSeconds": 3.792
+        },
+        {
+          "index": 17,
+          "startSeconds": 58.25,
+          "endSeconds": 61.25,
+          "durationSeconds": 3
+        },
+        {
+          "index": 18,
+          "startSeconds": 61.25,
+          "endSeconds": 64.333,
+          "durationSeconds": 3.083
+        },
+        {
+          "index": 19,
+          "startSeconds": 64.333,
+          "endSeconds": 74.792,
+          "durationSeconds": 10.458
+        },
+        {
+          "index": 20,
+          "startSeconds": 74.792,
+          "endSeconds": 79,
+          "durationSeconds": 4.208
+        },
+        {
+          "index": 21,
+          "startSeconds": 79,
+          "endSeconds": 85.958,
+          "durationSeconds": 6.958
+        },
+        {
+          "index": 22,
+          "startSeconds": 85.958,
+          "endSeconds": 91.5,
+          "durationSeconds": 5.542
+        },
+        {
+          "index": 23,
+          "startSeconds": 91.5,
+          "endSeconds": 94.417,
+          "durationSeconds": 2.917
+        },
+        {
+          "index": 24,
+          "startSeconds": 94.417,
+          "endSeconds": 97.417,
+          "durationSeconds": 3
+        },
+        {
+          "index": 25,
+          "startSeconds": 97.417,
+          "endSeconds": 100.417,
+          "durationSeconds": 3
+        },
+        {
+          "index": 26,
+          "startSeconds": 100.417,
+          "endSeconds": 103.792,
+          "durationSeconds": 3.375
+        },
+        {
+          "index": 27,
+          "startSeconds": 103.792,
+          "endSeconds": 106.75,
+          "durationSeconds": 2.958
+        },
+        {
+          "index": 28,
+          "startSeconds": 106.75,
+          "endSeconds": 112.5,
+          "durationSeconds": 5.75
+        },
+        {
+          "index": 29,
+          "startSeconds": 112.5,
+          "endSeconds": 117.458,
+          "durationSeconds": 4.958
+        },
+        {
+          "index": 30,
+          "startSeconds": 117.458,
+          "endSeconds": 117.792,
+          "durationSeconds": 0.333
+        },
+        {
+          "index": 31,
+          "startSeconds": 117.792,
+          "endSeconds": 121.25,
+          "durationSeconds": 3.458
+        },
+        {
+          "index": 32,
+          "startSeconds": 121.25,
+          "endSeconds": 125.875,
+          "durationSeconds": 4.625
+        },
+        {
+          "index": 33,
+          "startSeconds": 125.875,
+          "endSeconds": 131.458,
+          "durationSeconds": 5.583
+        },
+        {
+          "index": 34,
+          "startSeconds": 131.458,
+          "endSeconds": 134.208,
+          "durationSeconds": 2.75
+        },
+        {
+          "index": 35,
+          "startSeconds": 134.208,
+          "endSeconds": 134.667,
+          "durationSeconds": 0.458
+        },
+        {
+          "index": 36,
+          "startSeconds": 134.667,
+          "endSeconds": 138.625,
+          "durationSeconds": 3.958
+        },
+        {
+          "index": 37,
+          "startSeconds": 138.625,
+          "endSeconds": 141.5,
+          "durationSeconds": 2.875
+        },
+        {
+          "index": 38,
+          "startSeconds": 141.5,
+          "endSeconds": 143.625,
+          "durationSeconds": 2.125
+        },
+        {
+          "index": 39,
+          "startSeconds": 143.625,
+          "endSeconds": 146.583,
+          "durationSeconds": 2.958
+        },
+        {
+          "index": 40,
+          "startSeconds": 146.583,
+          "endSeconds": 149.5,
+          "durationSeconds": 2.917
+        },
+        {
+          "index": 41,
+          "startSeconds": 149.5,
+          "endSeconds": 153.042,
+          "durationSeconds": 3.542
+        },
+        {
+          "index": 42,
+          "startSeconds": 153.042,
+          "endSeconds": 156.583,
+          "durationSeconds": 3.542
+        },
+        {
+          "index": 43,
+          "startSeconds": 156.583,
+          "endSeconds": 157,
+          "durationSeconds": 0.417
+        },
+        {
+          "index": 44,
+          "startSeconds": 157,
+          "endSeconds": 159,
+          "durationSeconds": 2
+        },
+        {
+          "index": 45,
+          "startSeconds": 159,
+          "endSeconds": 162,
+          "durationSeconds": 3
+        },
+        {
+          "index": 46,
+          "startSeconds": 162,
+          "endSeconds": 164.958,
+          "durationSeconds": 2.958
+        },
+        {
+          "index": 47,
+          "startSeconds": 164.958,
+          "endSeconds": 171.958,
+          "durationSeconds": 7
+        },
+        {
+          "index": 48,
+          "startSeconds": 171.958,
+          "endSeconds": 173.792,
+          "durationSeconds": 1.833
+        },
+        {
+          "index": 49,
+          "startSeconds": 173.792,
+          "endSeconds": 178.792,
+          "durationSeconds": 5
+        },
+        {
+          "index": 50,
+          "startSeconds": 178.792,
+          "endSeconds": 184,
+          "durationSeconds": 5.208
+        },
+        {
+          "index": 51,
+          "startSeconds": 184,
+          "endSeconds": 188.583,
+          "durationSeconds": 4.583
+        },
+        {
+          "index": 52,
+          "startSeconds": 188.583,
+          "endSeconds": 192.458,
+          "durationSeconds": 3.875
+        },
+        {
+          "index": 53,
+          "startSeconds": 192.458,
+          "endSeconds": 195.542,
+          "durationSeconds": 3.083
+        },
+        {
+          "index": 54,
+          "startSeconds": 195.542,
+          "endSeconds": 198.458,
+          "durationSeconds": 2.917
+        },
+        {
+          "index": 55,
+          "startSeconds": 198.458,
+          "endSeconds": 205.417,
+          "durationSeconds": 6.958
+        },
+        {
+          "index": 56,
+          "startSeconds": 205.417,
+          "endSeconds": 208.333,
+          "durationSeconds": 2.917
+        },
+        {
+          "index": 57,
+          "startSeconds": 208.333,
+          "endSeconds": 211.958,
+          "durationSeconds": 3.625
+        },
+        {
+          "index": 58,
+          "startSeconds": 211.958,
+          "endSeconds": 215.042,
+          "durationSeconds": 3.083
+        },
+        {
+          "index": 59,
+          "startSeconds": 215.042,
+          "endSeconds": 218.208,
+          "durationSeconds": 3.167
+        },
+        {
+          "index": 60,
+          "startSeconds": 218.208,
+          "endSeconds": 221.208,
+          "durationSeconds": 3
+        },
+        {
+          "index": 61,
+          "startSeconds": 221.208,
+          "endSeconds": 224.208,
+          "durationSeconds": 3
+        },
+        {
+          "index": 62,
+          "startSeconds": 224.208,
+          "endSeconds": 227.542,
+          "durationSeconds": 3.333
+        },
+        {
+          "index": 63,
+          "startSeconds": 227.542,
+          "endSeconds": 230.5,
+          "durationSeconds": 2.958
+        },
+        {
+          "index": 64,
+          "startSeconds": 230.5,
+          "endSeconds": 233,
+          "durationSeconds": 2.5
+        },
+        {
+          "index": 65,
+          "startSeconds": 233,
+          "endSeconds": 239,
+          "durationSeconds": 6
+        }
+      ],
+      "medianShotDuration": 3.083,
+      "scanSeconds": 12.29,
+      "verifiedPublished": false,
+      "originalSha256": "74a040f9c67155eca946d6c6bed462e7edfb9c4f866605a0c2ecdd9568202b01",
+      "originalBytes": 120402387,
+      "locale": "ru",
+      "id": "osa-v15-directors-ru",
+      "publicationAuthorized": false
+    },
+    {
+      "source": "en-workprint",
+      "file": "OSA_CINEMA_V15_DIRECTORS_WORKPRINT_EN_1080P.mp4",
+      "threshold": 0.3,
+      "algorithm": "FFmpeg scene-difference, frames downscaled to 320px wide",
+      "sceneCutTimecodes": [
+        5,
+        8.875,
+        11.875,
+        18.833,
+        19.833,
+        23.833,
+        26.792,
+        29.708,
+        39.625,
+        43.5,
+        46.583,
+        49.5,
+        50.792,
+        53.208,
+        54.458,
+        58.25,
+        61.25,
+        64.333,
+        74.792,
+        79,
+        85.958,
+        91.5,
+        94.417,
+        97.417,
+        100.417,
+        103.792,
+        106.75,
+        112.5,
+        117.458,
+        117.792,
+        121.25,
+        125.875,
+        131.458,
+        134.208,
+        134.667,
+        138.625,
+        141.5,
+        143.625,
+        146.583,
+        149.5,
+        153.042,
+        156.583,
+        157,
+        159,
+        162,
+        164.958,
+        171.958,
+        173.792,
+        178.792,
+        184,
+        188.583,
+        192.458,
+        195.542,
+        198.458,
+        205.417,
+        208.333,
+        211.958,
+        215.042,
+        218.208,
+        221.208,
+        224.208,
+        227.542,
+        230.5,
+        233
+      ],
+      "sceneCutCount": 64,
+      "shots": [
+        {
+          "index": 1,
+          "startSeconds": 0,
+          "endSeconds": 5,
+          "durationSeconds": 5
+        },
+        {
+          "index": 2,
+          "startSeconds": 5,
+          "endSeconds": 8.875,
+          "durationSeconds": 3.875
+        },
+        {
+          "index": 3,
+          "startSeconds": 8.875,
+          "endSeconds": 11.875,
+          "durationSeconds": 3
+        },
+        {
+          "index": 4,
+          "startSeconds": 11.875,
+          "endSeconds": 18.833,
+          "durationSeconds": 6.958
+        },
+        {
+          "index": 5,
+          "startSeconds": 18.833,
+          "endSeconds": 19.833,
+          "durationSeconds": 1
+        },
+        {
+          "index": 6,
+          "startSeconds": 19.833,
+          "endSeconds": 23.833,
+          "durationSeconds": 4
+        },
+        {
+          "index": 7,
+          "startSeconds": 23.833,
+          "endSeconds": 26.792,
+          "durationSeconds": 2.958
+        },
+        {
+          "index": 8,
+          "startSeconds": 26.792,
+          "endSeconds": 29.708,
+          "durationSeconds": 2.917
+        },
+        {
+          "index": 9,
+          "startSeconds": 29.708,
+          "endSeconds": 39.625,
+          "durationSeconds": 9.917
+        },
+        {
+          "index": 10,
+          "startSeconds": 39.625,
+          "endSeconds": 43.5,
+          "durationSeconds": 3.875
+        },
+        {
+          "index": 11,
+          "startSeconds": 43.5,
+          "endSeconds": 46.583,
+          "durationSeconds": 3.083
+        },
+        {
+          "index": 12,
+          "startSeconds": 46.583,
+          "endSeconds": 49.5,
+          "durationSeconds": 2.917
+        },
+        {
+          "index": 13,
+          "startSeconds": 49.5,
+          "endSeconds": 50.792,
+          "durationSeconds": 1.292
+        },
+        {
+          "index": 14,
+          "startSeconds": 50.792,
+          "endSeconds": 53.208,
+          "durationSeconds": 2.417
+        },
+        {
+          "index": 15,
+          "startSeconds": 53.208,
+          "endSeconds": 54.458,
+          "durationSeconds": 1.25
+        },
+        {
+          "index": 16,
+          "startSeconds": 54.458,
+          "endSeconds": 58.25,
+          "durationSeconds": 3.792
+        },
+        {
+          "index": 17,
+          "startSeconds": 58.25,
+          "endSeconds": 61.25,
+          "durationSeconds": 3
+        },
+        {
+          "index": 18,
+          "startSeconds": 61.25,
+          "endSeconds": 64.333,
+          "durationSeconds": 3.083
+        },
+        {
+          "index": 19,
+          "startSeconds": 64.333,
+          "endSeconds": 74.792,
+          "durationSeconds": 10.458
+        },
+        {
+          "index": 20,
+          "startSeconds": 74.792,
+          "endSeconds": 79,
+          "durationSeconds": 4.208
+        },
+        {
+          "index": 21,
+          "startSeconds": 79,
+          "endSeconds": 85.958,
+          "durationSeconds": 6.958
+        },
+        {
+          "index": 22,
+          "startSeconds": 85.958,
+          "endSeconds": 91.5,
+          "durationSeconds": 5.542
+        },
+        {
+          "index": 23,
+          "startSeconds": 91.5,
+          "endSeconds": 94.417,
+          "durationSeconds": 2.917
+        },
+        {
+          "index": 24,
+          "startSeconds": 94.417,
+          "endSeconds": 97.417,
+          "durationSeconds": 3
+        },
+        {
+          "index": 25,
+          "startSeconds": 97.417,
+          "endSeconds": 100.417,
+          "durationSeconds": 3
+        },
+        {
+          "index": 26,
+          "startSeconds": 100.417,
+          "endSeconds": 103.792,
+          "durationSeconds": 3.375
+        },
+        {
+          "index": 27,
+          "startSeconds": 103.792,
+          "endSeconds": 106.75,
+          "durationSeconds": 2.958
+        },
+        {
+          "index": 28,
+          "startSeconds": 106.75,
+          "endSeconds": 112.5,
+          "durationSeconds": 5.75
+        },
+        {
+          "index": 29,
+          "startSeconds": 112.5,
+          "endSeconds": 117.458,
+          "durationSeconds": 4.958
+        },
+        {
+          "index": 30,
+          "startSeconds": 117.458,
+          "endSeconds": 117.792,
+          "durationSeconds": 0.333
+        },
+        {
+          "index": 31,
+          "startSeconds": 117.792,
+          "endSeconds": 121.25,
+          "durationSeconds": 3.458
+        },
+        {
+          "index": 32,
+          "startSeconds": 121.25,
+          "endSeconds": 125.875,
+          "durationSeconds": 4.625
+        },
+        {
+          "index": 33,
+          "startSeconds": 125.875,
+          "endSeconds": 131.458,
+          "durationSeconds": 5.583
+        },
+        {
+          "index": 34,
+          "startSeconds": 131.458,
+          "endSeconds": 134.208,
+          "durationSeconds": 2.75
+        },
+        {
+          "index": 35,
+          "startSeconds": 134.208,
+          "endSeconds": 134.667,
+          "durationSeconds": 0.458
+        },
+        {
+          "index": 36,
+          "startSeconds": 134.667,
+          "endSeconds": 138.625,
+          "durationSeconds": 3.958
+        },
+        {
+          "index": 37,
+          "startSeconds": 138.625,
+          "endSeconds": 141.5,
+          "durationSeconds": 2.875
+        },
+        {
+          "index": 38,
+          "startSeconds": 141.5,
+          "endSeconds": 143.625,
+          "durationSeconds": 2.125
+        },
+        {
+          "index": 39,
+          "startSeconds": 143.625,
+          "endSeconds": 146.583,
+          "durationSeconds": 2.958
+        },
+        {
+          "index": 40,
+          "startSeconds": 146.583,
+          "endSeconds": 149.5,
+          "durationSeconds": 2.917
+        },
+        {
+          "index": 41,
+          "startSeconds": 149.5,
+          "endSeconds": 153.042,
+          "durationSeconds": 3.542
+        },
+        {
+          "index": 42,
+          "startSeconds": 153.042,
+          "endSeconds": 156.583,
+          "durationSeconds": 3.542
+        },
+        {
+          "index": 43,
+          "startSeconds": 156.583,
+          "endSeconds": 157,
+          "durationSeconds": 0.417
+        },
+        {
+          "index": 44,
+          "startSeconds": 157,
+          "endSeconds": 159,
+          "durationSeconds": 2
+        },
+        {
+          "index": 45,
+          "startSeconds": 159,
+          "endSeconds": 162,
+          "durationSeconds": 3
+        },
+        {
+          "index": 46,
+          "startSeconds": 162,
+          "endSeconds": 164.958,
+          "durationSeconds": 2.958
+        },
+        {
+          "index": 47,
+          "startSeconds": 164.958,
+          "endSeconds": 171.958,
+          "durationSeconds": 7
+        },
+        {
+          "index": 48,
+          "startSeconds": 171.958,
+          "endSeconds": 173.792,
+          "durationSeconds": 1.833
+        },
+        {
+          "index": 49,
+          "startSeconds": 173.792,
+          "endSeconds": 178.792,
+          "durationSeconds": 5
+        },
+        {
+          "index": 50,
+          "startSeconds": 178.792,
+          "endSeconds": 184,
+          "durationSeconds": 5.208
+        },
+        {
+          "index": 51,
+          "startSeconds": 184,
+          "endSeconds": 188.583,
+          "durationSeconds": 4.583
+        },
+        {
+          "index": 52,
+          "startSeconds": 188.583,
+          "endSeconds": 192.458,
+          "durationSeconds": 3.875
+        },
+        {
+          "index": 53,
+          "startSeconds": 192.458,
+          "endSeconds": 195.542,
+          "durationSeconds": 3.083
+        },
+        {
+          "index": 54,
+          "startSeconds": 195.542,
+          "endSeconds": 198.458,
+          "durationSeconds": 2.917
+        },
+        {
+          "index": 55,
+          "startSeconds": 198.458,
+          "endSeconds": 205.417,
+          "durationSeconds": 6.958
+        },
+        {
+          "index": 56,
+          "startSeconds": 205.417,
+          "endSeconds": 208.333,
+          "durationSeconds": 2.917
+        },
+        {
+          "index": 57,
+          "startSeconds": 208.333,
+          "endSeconds": 211.958,
+          "durationSeconds": 3.625
+        },
+        {
+          "index": 58,
+          "startSeconds": 211.958,
+          "endSeconds": 215.042,
+          "durationSeconds": 3.083
+        },
+        {
+          "index": 59,
+          "startSeconds": 215.042,
+          "endSeconds": 218.208,
+          "durationSeconds": 3.167
+        },
+        {
+          "index": 60,
+          "startSeconds": 218.208,
+          "endSeconds": 221.208,
+          "durationSeconds": 3
+        },
+        {
+          "index": 61,
+          "startSeconds": 221.208,
+          "endSeconds": 224.208,
+          "durationSeconds": 3
+        },
+        {
+          "index": 62,
+          "startSeconds": 224.208,
+          "endSeconds": 227.542,
+          "durationSeconds": 3.333
+        },
+        {
+          "index": 63,
+          "startSeconds": 227.542,
+          "endSeconds": 230.5,
+          "durationSeconds": 2.958
+        },
+        {
+          "index": 64,
+          "startSeconds": 230.5,
+          "endSeconds": 233,
+          "durationSeconds": 2.5
+        },
+        {
+          "index": 65,
+          "startSeconds": 233,
+          "endSeconds": 239,
+          "durationSeconds": 6
+        }
+      ],
+      "medianShotDuration": 3.083,
+      "scanSeconds": 11.66,
+      "verifiedPublished": false,
+      "originalSha256": "2936222a5be4b36ab3177f1577219831ab686e085be9b0744887bbcae05a7e36",
+      "originalBytes": 120340268,
+      "locale": "en",
+      "id": "osa-v15-directors-en",
+      "publicationAuthorized": false
+    },
+    {
+      "source": "ru-preview",
+      "file": "OSA_CINEMA_V15_45SEC_PREVIEW_RU_720P.mp4",
+      "threshold": 0.3,
+      "algorithm": "FFmpeg scene-difference, frames downscaled to 320px wide",
+      "sceneCutTimecodes": [
+        5,
+        8.875,
+        11.875,
+        18.833,
+        19.833,
+        23.833,
+        26.792,
+        29.708,
+        39.625,
+        43.5
+      ],
+      "sceneCutCount": 10,
+      "shots": [
+        {
+          "index": 1,
+          "startSeconds": 0,
+          "endSeconds": 5,
+          "durationSeconds": 5
+        },
+        {
+          "index": 2,
+          "startSeconds": 5,
+          "endSeconds": 8.875,
+          "durationSeconds": 3.875
+        },
+        {
+          "index": 3,
+          "startSeconds": 8.875,
+          "endSeconds": 11.875,
+          "durationSeconds": 3
+        },
+        {
+          "index": 4,
+          "startSeconds": 11.875,
+          "endSeconds": 18.833,
+          "durationSeconds": 6.958
+        },
+        {
+          "index": 5,
+          "startSeconds": 18.833,
+          "endSeconds": 19.833,
+          "durationSeconds": 1
+        },
+        {
+          "index": 6,
+          "startSeconds": 19.833,
+          "endSeconds": 23.833,
+          "durationSeconds": 4
+        },
+        {
+          "index": 7,
+          "startSeconds": 23.833,
+          "endSeconds": 26.792,
+          "durationSeconds": 2.958
+        },
+        {
+          "index": 8,
+          "startSeconds": 26.792,
+          "endSeconds": 29.708,
+          "durationSeconds": 2.917
+        },
+        {
+          "index": 9,
+          "startSeconds": 29.708,
+          "endSeconds": 39.625,
+          "durationSeconds": 9.917
+        },
+        {
+          "index": 10,
+          "startSeconds": 39.625,
+          "endSeconds": 43.5,
+          "durationSeconds": 3.875
+        },
+        {
+          "index": 11,
+          "startSeconds": 43.5,
+          "endSeconds": 45,
+          "durationSeconds": 1.5
+        }
+      ],
+      "medianShotDuration": 3.875,
+      "scanSeconds": 1.06,
+      "verifiedPublished": false,
+      "originalSha256": "64076804caab85f53f860818557eca0debf977d197b7e45ba4830538dbfe6c74",
+      "originalBytes": 4362309,
+      "locale": "ru",
+      "id": "osa-v15-trailer-ru",
+      "publicationAuthorized": false
+    },
+    {
+      "source": "en-preview",
+      "file": "OSA_CINEMA_V15_45SEC_PREVIEW_EN_720P.mp4",
+      "threshold": 0.3,
+      "algorithm": "FFmpeg scene-difference, frames downscaled to 320px wide",
+      "sceneCutTimecodes": [
+        5,
+        8.875,
+        11.875,
+        18.833,
+        19.833,
+        23.833,
+        26.792,
+        29.708,
+        39.625,
+        43.5
+      ],
+      "sceneCutCount": 10,
+      "shots": [
+        {
+          "index": 1,
+          "startSeconds": 0,
+          "endSeconds": 5,
+          "durationSeconds": 5
+        },
+        {
+          "index": 2,
+          "startSeconds": 5,
+          "endSeconds": 8.875,
+          "durationSeconds": 3.875
+        },
+        {
+          "index": 3,
+          "startSeconds": 8.875,
+          "endSeconds": 11.875,
+          "durationSeconds": 3
+        },
+        {
+          "index": 4,
+          "startSeconds": 11.875,
+          "endSeconds": 18.833,
+          "durationSeconds": 6.958
+        },
+        {
+          "index": 5,
+          "startSeconds": 18.833,
+          "endSeconds": 19.833,
+          "durationSeconds": 1
+        },
+        {
+          "index": 6,
+          "startSeconds": 19.833,
+          "endSeconds": 23.833,
+          "durationSeconds": 4
+        },
+        {
+          "index": 7,
+          "startSeconds": 23.833,
+          "endSeconds": 26.792,
+          "durationSeconds": 2.958
+        },
+        {
+          "index": 8,
+          "startSeconds": 26.792,
+          "endSeconds": 29.708,
+          "durationSeconds": 2.917
+        },
+        {
+          "index": 9,
+          "startSeconds": 29.708,
+          "endSeconds": 39.625,
+          "durationSeconds": 9.917
+        },
+        {
+          "index": 10,
+          "startSeconds": 39.625,
+          "endSeconds": 43.5,
+          "durationSeconds": 3.875
+        },
+        {
+          "index": 11,
+          "startSeconds": 43.5,
+          "endSeconds": 45,
+          "durationSeconds": 1.5
+        }
+      ],
+      "medianShotDuration": 3.875,
+      "scanSeconds": 1.01,
+      "verifiedPublished": false,
+      "originalSha256": "0cea3fe492b0cc13bd2e4c9152217ae2d85d8406b291b8b93484b5d8a9bb530e",
+      "originalBytes": 4332303,
+      "locale": "en",
+      "id": "osa-v15-trailer-en",
+      "publicationAuthorized": false
+    }
+  ],
+  "cutSync": {
+    "workprintsMatchedWithin60ms": true,
+    "previewsMatchedWithin60ms": true
+  }
+}

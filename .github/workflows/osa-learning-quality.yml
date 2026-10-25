@@ -44,6 +44,10 @@ jobs:
         run: node --experimental-strip-types scripts/osa-cinema-v14-companion-smoke.mjs
       - name: OSA Cinema V15 eight-scene edit decision list and source provenance
         run: node scripts/osa-cinema-v15-edit-decision-smoke.mjs
+      - name: Validate V18 real 64/10 shot alignment and four-track private mastering evidence
+        run: |
+          bash -n scripts/osa-cinema-v18-private-four-track.sh
+          node --test scripts/osa-cinema-v18-private-cut.test.mjs
       - name: Verify V17 objective media QA filters, real-source integrity and no unlicensed publication
         run: python3 -m unittest scripts/test_osa_cinema_v17_av_qc.py -v
       - name: Verify real RU/EN 239-second private voice guide timing and source integrity
