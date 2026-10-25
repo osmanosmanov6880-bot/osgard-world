@@ -41,6 +41,8 @@ var lead: Label
 var footer: Label
 var slider_a: HSlider
 var slider_b: HSlider
+var dial_a: OSGARDLuxuryDial
+var dial_b: OSGARDLuxuryDial
 var a_title: Label
 var b_title: Label
 var a_value: Label
@@ -366,6 +368,20 @@ func _create_interface() -> void:
     var calibration := _panel(control_grid)
     calibration.name = "DualChannelCalibrationStation"
     cal_title = _label(calibration, "", 15, COPPER)
+    var machined_dials := HBoxContainer.new()
+    machined_dials.name = "A7PhysicalCalibrationDeck"
+    machined_dials.alignment = BoxContainer.ALIGNMENT_CENTER
+    machined_dials.add_theme_constant_override("separation", 24)
+    machined_dials.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+    calibration.add_child(machined_dials)
+    dial_a = OSGARDLuxuryDial.new()
+    dial_a.channel = "A"
+    machined_dials.add_child(dial_a)
+    dial_a.value_requested.connect(_on_dial_requested.bind("a"))
+    dial_b = OSGARDLuxuryDial.new()
+    dial_b.channel = "B"
+    machined_dials.add_child(dial_b)
+    dial_b.value_requested.connect(_on_dial_requested.bind("b"))
     a_title = _label(calibration, "A", 12, MUTED)
     slider_a = HSlider.new()
     slider_a.name = "VirtualCalibrationAxisA"
@@ -563,6 +579,11 @@ func _on_slider_changed(value: float, axis: String) -> void:
     core.adjust_calibration(axis, int(roundf(value)))
     _refresh()
 
+func _on_dial_requested(value: int, axis: String) -> void:
+    # Identical original simulated calibration interlock as keyboard sliders.
+    core.adjust_calibration(axis, value)
+    _refresh()
+
 func _toggle_language() -> void:
     core.set_setting("locale", "en" if core.settings["locale"] == "ru" else "ru")
     _refresh()
@@ -643,11 +664,15 @@ func _refresh() -> void:
     cal_title.text = "%s  ·  %s" % [_t("signal"), _t("select") if active_fault < 0 else _t("base%d" % active_fault)]
     slider_a.editable = bool(snap["inspection_allowed"])
     slider_b.editable = bool(snap["inspection_allowed"])
+    dial_a.set_active(bool(snap["inspection_allowed"]))
+    dial_b.set_active(bool(snap["inspection_allowed"]))
     if active_fault >= 0:
         a_title.text = _t("a%d" % active_fault)
         b_title.text = _t("b%d" % active_fault)
         slider_a.set_value_no_signal(float(snap["puzzle"]["a"]))
         slider_b.set_value_no_signal(float(snap["puzzle"]["b"]))
+        dial_a.set_value_silent(int(snap["puzzle"]["a"]))
+        dial_b.set_value_silent(int(snap["puzzle"]["b"]))
         a_value.text = "%d / 100" % int(snap["puzzle"]["a"])
         b_value.text = "%d / 100" % int(snap["puzzle"]["b"])
         var c: Dictionary = snap["calibration"]
@@ -663,6 +688,10 @@ func _refresh() -> void:
     else:
         slider_a.editable = false
         slider_b.editable = false
+        dial_a.set_active(false)
+        dial_b.set_active(false)
+        dial_a.set_value_silent(0)
+        dial_b.set_value_silent(0)
         a_title.text = "A / CHANNEL"
         b_title.text = "B / CHANNEL"
         signal_progress.value = 0
