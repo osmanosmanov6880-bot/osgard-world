@@ -203,25 +203,35 @@ async function verifyW22SelectableCases(page, isMobile, name) {
   await expectState(page, s => s?.tutorial_expanded === true
     && s?.case_replay_hitboxes?.length === 3,
     'W22 real case selector should be visible after completing diagnostics')
+  // The old test incorrectly accepted a replay center inside the CARD,
+  // even when the *actual clipping ScrollContainer* did not accept clicks.
+  // Genuine desktop Chromium proof revealed that the overlapped PRIMARY
+  // "Finish training" button was hit instead. Test the real visible rect.
+  await expectState(page, s => s?.case_jump_control_css_height >= 43.5 &&
+    s?.case_jump_center?.x > 0 && s?.case_replay_scroll_rect?.h > 50,
+    'W27 always-available genuine replay-jump control is missing')
+  await hitLuxuryControl(page, 'case_jump_center', isMobile)
   const rect = await page.locator('canvas').first().boundingBox()
   if (!rect) throw new Error('Godot canvas absent for W22 selected scenario')
   let active
-  for (let scroll = 0; scroll < 12; scroll++) {
+  for (let retry = 0; retry < 12; retry++) {
     const st = await readState(page)
     const pt = st.case_replay_hitboxes[1]
-    const guide = st.tutorial_rect
-    if (pt && pt.h_css >= 43.5 && !pt.disabled &&
-        pt.y > guide.y + 20 && pt.y < guide.y + guide.h - 85) {
+    const viewport = st.case_replay_scroll_rect
+    const ratio = Number(st.ui_touch_pixel_ratio || 1)
+    if (pt && viewport && pt.h_css >= 43.5 && !pt.disabled &&
+        pt.y > viewport.y + 16 * ratio &&
+        pt.y < viewport.y + viewport.h - 26 * ratio) {
       active = st
       break
     }
-    const x = rect.x + (guide.x + guide.w * .5) * rect.width / st.viewport_w
-    const y = rect.y + (guide.y + guide.h * .46) * rect.height / st.viewport_h
+    const x = rect.x + (viewport.x + viewport.w * .5) * rect.width / st.viewport_w
+    const y = rect.y + (viewport.y + viewport.h * .43) * rect.height / st.viewport_h
     await page.mouse.move(x, y)
-    await page.mouse.wheel(0, 155)
+    await page.mouse.wheel(0, 180)
     await sleep(page, 270)
   }
-  if (!active) throw new Error('W22 selectable cooling fault cannot be reached by real scroll')
+  if (!active) throw new Error('W27 replay control remains clipped or obstructed inside the genuine Godot scroll viewport')
   await captureRealViewport(page, 'w22-' + name + '-case-mastery.png')
   const point = active.case_replay_hitboxes[1]
   const x = rect.x + point.x * rect.width / active.viewport_w
