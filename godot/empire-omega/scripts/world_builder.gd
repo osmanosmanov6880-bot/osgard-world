@@ -50,6 +50,7 @@ var horizon_scenic: Node3D
 const ROAD_MATERIALS = preload("res://scripts/horizon_road_materials.gd")
 const LIGHT_GRADE = preload("res://scripts/horizon_light_grade.gd")
 const FACADE_MATERIALS = preload("res://scripts/horizon_facade_materials.gd")
+const R37_MATERIAL_PACK = preload("res://scripts/horizon_facade_material_pack.gd")
 const ARCHITECTURE_TRIM = preload("res://scripts/horizon_architecture_trim.gd")
 const STREETFRONT_SCENE = preload("res://scripts/horizon_streetfront_details.gd")
 const BALCONIES_SCENE = preload("res://scripts/horizon_facade_balconies.gd")
@@ -135,7 +136,7 @@ func _box(parent: Node3D, label: String, size: Vector3, position: Vector3, color
 	elif label == "Sidewalk":
 		geometry.material_override = concrete_pbr
 	elif label.begins_with("Building_"):
-		geometry.material_override = FACADE_MATERIALS.facade(color)
+		geometry.material_override = R37_MATERIAL_PACK.facade(color,int(label.trim_prefix("Building_")))
 	else:
 		geometry.material_override = _material(color, 0.12, 0.62, glow)
 	holder.add_child(geometry)
