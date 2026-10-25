@@ -122,6 +122,62 @@ jobs:
           path: w33-godot-native/build/web/
           if-no-files-found: error
           retention-days: 30
+      - name: Cross-export real Godot Windows x86_64 game without changing web build
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p w33-godot-native/build/windows
+          godot --headless --path w33-godot-native \
+            --export-release "Windows Desktop" \
+            w33-godot-native/build/windows/OSGARD_FIELD_LAB_W33.exe \
+            2>&1 | tee "$RUNNER_TEMP/w33-windows-export.log"
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/w33-windows-export.log"; then
+            echo '::error::Godot Windows export emitted engine errors'
+            exit 1
+          fi
+      - name: Independently verify Windows PE and external PCK original bytes
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib
+          import json
+          import os
+          import struct
+          folder=Path("w33-godot-native/build/windows")
+          exe=folder/"OSGARD_FIELD_LAB_W33.exe"
+          pck=folder/"OSGARD_FIELD_LAB_W33.pck"
+          for p in (exe,pck):
+              assert p.is_file() and p.stat().st_size>20000, p
+          binary=exe.read_bytes()
+          assert len(binary)>3_000_000, "Real Godot engine executable expected"
+          assert binary[:2]==b"MZ", "Native Win64 executable needs DOS header"
+          pe_pointer=struct.unpack_from("<I",binary,60)[0]
+          assert 60<pe_pointer<len(binary)-25 and binary[pe_pointer:pe_pointer+4]==b"PE\\0\\0".replace(b"\\",b""), "PE signature missing"
+          assert pck.read_bytes()[:4]==b"GDPC", "Native PCK header missing"
+          source=os.environ["GITHUB_SHA"]
+          if os.environ.get("PR_SOURCE_SHA"):
+              source=os.environ["PR_SOURCE_SHA"]
+          manifest={"schema":"OSGARD_W33_WINDOWS_CROSS_EXPORT_V1",
+                    "source_commit":source,"godot_release":"4.4.1",
+                    "architecture":"x86_64","software_export":"PASS",
+                    "real_windows_runtime_certified":False,
+                    "physical_mobile_hardware_certified":False,
+                    "files":[{"name":p.name,"bytes":p.stat().st_size,
+                              "sha256":hashlib.sha256(p.read_bytes()).hexdigest()} for p in (exe,pck)]}
+          (folder/"windows-build.json").write_text(json.dumps(manifest,indent=2)+"\\n")
+          print("WINDOWS CROSS-EXPORT ORIGINAL EXE/PCK PASS",source)
+          PY
+        env:
+          PR_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Preserve checked Windows standalone candidate as build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: osgard-w33-godot-windows-x64-${{ github.event.pull_request.head.sha || github.sha }}
+          path: w33-godot-native/build/windows/
+          if-no-files-found: error
+          retention-days: 30
       - name: Verify no device/GPU/web deployment certification is inferred
         shell: bash
         run: |
