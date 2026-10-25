@@ -35,6 +35,17 @@ func _run() -> void:
     if int(stage_budget.get("grid_draw_batches", -1)) != 2 or int(stage_budget.get("grid_instances", -1)) != 18:
         _fail("W7 floor must use two draw batches for all 18 grid strips")
         return
+    if int(stage_budget.get("detail_draw_batches", -1)) != 3 or int(stage_budget.get("detail_instances", -1)) != 47:
+        _fail("W15 industrial rivets and safety marks must be batched and bounded")
+        return
+    for path in ["W15RearWallFasteners", "W15DeckFasteners", "W15DeckBoundaryMarks"]:
+        var detail_node: Node = studio.get_node_or_null(path)
+        if not (detail_node is MultiMeshInstance3D):
+            _fail("W15 premium service-stage detail not instanced: " + path)
+            return
+    if float(stage_budget.get("fastener_roughness", -1.0)) < 0.65:
+        _fail("W15 ECO finish must remain matte and mobile-friendly")
+        return
     if int(stage_budget.get("single_mesh_nodes", 99)) > 8 or not bool(stage_budget.get("visual_only", false)):
         _fail("W7 premium environment exceeds simple geometry budget")
         return
@@ -47,6 +58,13 @@ func _run() -> void:
         return
     instance.call("_toggle_quality")
     await process_frame
+    var hero_stage: Dictionary = studio.call("render_budget")
+    if int(hero_stage.get("stage_quality", -1)) != 2 or float(hero_stage.get("fastener_roughness", 1.0)) > 0.48:
+        _fail("W15 HERO material finish was not applied to the actual stage")
+        return
+    if float(hero_stage.get("accent_emission", -1.0)) <= float(stage_budget.get("accent_emission", 99.0)):
+        _fail("W15 ECO/HERO accent budget did not change")
+        return
     var second: Dictionary = rig.call("summary")
     if int(second.get("loading_failures", 0)) != 0:
         _fail("HERO mesh failed: " + str(second))
