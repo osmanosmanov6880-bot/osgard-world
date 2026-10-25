@@ -117,6 +117,15 @@ jobs:
             echo '::error::W43 native high-fidelity geometry emitted Godot errors'
             exit 1
           fi
+      - name: W45 actual Godot ScreenTouch calibrated dials and interlock test
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 150s godot --headless --path w33-godot-native --script res://tests/test_w45_touch_input.gd 2>&1 | tee "$RUNNER_TEMP/w45-touch-native.log"
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/w45-touch-native.log"; then
+            echo '::error::W45 native Godot input integration failed'
+            exit 1
+          fi
       - name: Create real Godot 4.4.1 WebGL export from the same native-tested commit
         shell: bash
         run: |
@@ -461,5 +470,45 @@ jobs:
         with:
           name: osgard-w44-real-godot-software-fps-${{ github.event.pull_request.head.sha || github.sha }}
           path: performance-report/
+          if-no-files-found: warn
+          retention-days: 30
+
+  real-mobile-touch-first-mission:
+    name: W45 actual 390px touchscreen gameplay in Chromium (emulated, not hardware)
+    needs: actual-godot-source-parity
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: osgard-w33-godot-webgl-${{ github.event.pull_request.head.sha || github.sha }}
+          path: mobile-input
+      - name: Install pinned original Chromium touch test dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha || github.sha }}"
+          python3 -m py_compile w33-godot-native/ci/mobile_touch_acceptance.py
+          python3 -m venv "$RUNNER_TEMP/w45-touch-venv"
+          "$RUNNER_TEMP/w45-touch-venv/bin/pip" install --disable-pip-version-check --no-cache-dir playwright==1.56.0
+          "$RUNNER_TEMP/w45-touch-venv/bin/python" -m playwright install --with-deps chromium
+      - name: Real touchscreen swipes, camera, interlocked dial calibration and complete mission 0
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$RUNNER_TEMP/w45-touch-venv/bin/python" w33-godot-native/ci/mobile_touch_acceptance.py \
+            --export mobile-input --evidence mobile-touch-evidence --sha "${{ github.event.pull_request.head.sha || github.sha }}"
+      - name: Preserve screenshots, exact source and touch-action trace on failure or success
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: osgard-w45-mobile-touch-real-canvas-evidence-${{ github.event.pull_request.head.sha || github.sha }}
+          path: mobile-touch-evidence/
           if-no-files-found: warn
           retention-days: 30
