@@ -57,8 +57,19 @@ jobs:
         env:
           OSGARD_BASE_URL: https://osgard.world
         run: npx playwright test scripts/osa-cinema-v13-production.spec.mjs --config playwright.osa-cinema-live.config.mjs --workers=1
+      - name: Identify whether this exact published commit includes V15
+        id: published_edition
+        shell: bash
+        run: |
+          if [[ -f scripts/osa-cinema-v15-screening.spec.mjs && -f src/OSACinemaScreening.tsx ]]; then
+            echo "v15_present=true" >> "$GITHUB_OUTPUT"
+            echo "Published commit includes V15"
+          else
+            echo "v15_present=false" >> "$GITHUB_OUTPUT"
+            echo "Older published commit: V15 Chrome tests are not applicable"
+          fi
       - name: Confirm V15 full-screen real production screening on desktop and 390px mobile
-        if: ${{ github.event_name == 'workflow_run' || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/master') }}
+        if: ${{ (github.event_name == 'workflow_run' || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/master')) && steps.published_edition.outputs.v15_present == 'true' }}
         env:
           OSGARD_BASE_URL: https://osgard.world
         run: npx playwright test scripts/osa-cinema-v15-screening.spec.mjs --config playwright.osa-cinema-live.config.mjs --workers=1
