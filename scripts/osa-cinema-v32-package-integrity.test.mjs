@@ -1,13 +1,13 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { mkdtemp,writeFile,readFile,rm,symlink,mkdir } from 'node:fs/promises'
+import { mkdtemp,writeFile,readFile,rm,symlink,mkdir,realpath } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { createHash } from 'node:crypto'
 import { verifyPackage } from './osa-cinema-v32-package-integrity.mjs'
 const sha=bytes=>createHash('sha256').update(bytes).digest('hex')
 test('V32 offline checksum verification safely rejects tampering, missing files and symlinks',async t=>{
-  const folder=await mkdtemp(join(tmpdir(),'osa-v32-check-'))
+  const folder=await mkdtemp(join(await realpath(tmpdir()),'osa-v32-check-'))
   const filename='scripts/owner-safe.mjs',dir=join(folder,'scripts'),source=join(dir,'owner-safe.mjs')
   await mkdir(dir)
   await writeFile(source,'export const NO_GO = true;\n')
