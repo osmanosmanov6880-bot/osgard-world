@@ -258,11 +258,32 @@ func _city_view(parent: Node, world: World3D, forecast: Dictionary, lang: String
 	host.add_child(preview)
 	var camera := Camera3D.new()
 	camera.name = "AerialCommandCamera"
-	camera.fov = 68.0
+	camera.fov = 62.0
 	camera.far = 1000.0
 	preview.add_child(camera)
-	camera.position = Vector3(240,285,270)
-	camera.look_at(Vector3(0.0,0.0,0.0),Vector3.UP)
+	# View from the city edge, not a tiny top-down toy map.
+	camera.position = Vector3(205,170,215)
+	camera.look_at(Vector3(0.0,6.0,0.0),Vector3.UP)
+	var cinema_sky := ProceduralSkyMaterial.new()
+	cinema_sky.sky_top_color = Color("24374d")
+	cinema_sky.sky_horizon_color = Color("a68669")
+	cinema_sky.ground_bottom_color = Color("263341")
+	cinema_sky.ground_horizon_color = Color("645966")
+	var sky := Sky.new()
+	sky.sky_material = cinema_sky
+	var feed_grade := Environment.new()
+	feed_grade.background_mode = Environment.BG_SKY
+	feed_grade.sky = sky
+	feed_grade.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
+	feed_grade.ambient_light_energy = 0.74
+	feed_grade.reflected_light_source = Environment.REFLECTION_SOURCE_BG
+	feed_grade.tonemap_mode = Environment.TONE_MAPPER_FILMIC
+	feed_grade.adjustment_enabled = true
+	feed_grade.adjustment_brightness = 0.90
+	feed_grade.adjustment_contrast = 1.16
+	feed_grade.adjustment_saturation = 0.95
+	# Local camera grade, never change authoritative gameplay day/weather.
+	camera.environment = feed_grade
 	camera.current = true
 	var pin := PanelContainer.new()
 	pin.anchor_left = 0.02

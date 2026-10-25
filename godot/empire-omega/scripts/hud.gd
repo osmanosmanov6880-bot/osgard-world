@@ -927,8 +927,10 @@ func _redraw_strategy() -> void:
 		child.queue_free()
 	var d: Dictionary = GameState.data
 	var forecast: Dictionary = GameState.forecast()
-	# R90: the signed-off glass/gold command screen is built from original state
-	# and a second camera of the live Godot world, not the reference JPG/PNG.
+	# The overview anchor must precede the premium screen so seven top
+	# nav buttons return to the full cabinet, not legacy content below.
+	_mark_strategy_section("overview")
+	# Live camera and data: never a reference PNG in runtime.
 	var operations: Control = R90_DASHBOARD.new()
 	strategy_contents.add_child(operations)
 	operations.connect("navigate",Callable(self,"_jump_to_strategy_section"))
@@ -937,7 +939,6 @@ func _redraw_strategy() -> void:
 	var premium_compact: bool = compact_hud or get_viewport().get_visible_rect().size.x < 1200.0
 	operations.call("build",d,forecast,MissionManager.title(GameState.locale),
 		get_viewport().world_3d,premium_compact,GameState.locale)
-	_mark_strategy_section("overview")
 	_label(strategy_contents,"%s %d  ·  %s %d  ·  %s %d" % [t("turn"),d["turn"],t("science"),d["science"],t("actions"),d["actions_left"]],16,true)
 	var overview := HBoxContainer.new()
 	overview.add_theme_constant_override("separation",7)

@@ -34,17 +34,21 @@ func _build_outer_skyline() -> void:
 	for i in range(SKYLINE_COUNT):
 		var angle: float = TAU*(float(i)+0.15*float(i%3))/float(SKYLINE_COUNT)
 		var radius: float = 248.0 + float(i%6)*16.5
-		var height: float = rng.randf_range(34.0,98.0)
+		var height: float = rng.randf_range(27.0,89.0)
 		var w: float = rng.randf_range(10.0,24.0)
 		var d: float = rng.randf_range(10.0,22.0)
 		var center := Vector3(cos(angle)*radius,height*0.5,sin(angle)*radius)
 		mesh.set_instance_transform(i,Transform3D(Basis().scaled(Vector3(w,height,d)),center))
-		var shade: float = 0.78+0.12*float(i%4)
-		mesh.set_instance_color(i,Color(0.15*shade,0.23*shade,0.30*shade))
+		var shade: float = 0.70+0.09*float(i%5)
+		mesh.set_instance_color(i,Color(0.32*shade,0.39*shade,0.48*shade))
 	skyline = MultiMeshInstance3D.new()
 	skyline.name = "ActualDistantBuildingGeometry"
 	skyline.multimesh = mesh
-	skyline.material_override = _material(Color.WHITE,0.17,0.58)
+	var building_finish := _material(Color("bac6d2"),0.14,0.57)
+	# R90 actual screenshot exposed previous white skyscrapers:
+	# per-instance RGB is ignored until enabled on Godot material.
+	building_finish.vertex_color_use_as_albedo = true
+	skyline.material_override = building_finish
 	skyline.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	skyline.custom_aabb = AABB(Vector3(-340,0,-340),Vector3(680,116,680))
 	add_child(skyline)
