@@ -79,6 +79,43 @@ test('CDP capture is preferred for actual animated Chromium viewport',async()=>{
   assert.equal(detached,1)
 })
 
+test('R51 selects genuine non-surface CDP viewport after SwiftShader GPU surface stalls',async()=>{
+  let first=0,second=0,detached=0
+  const page={context:()=>({newCDPSession:async()=>({
+    send:async(method,options)=>{
+      assert.equal(method,'Page.captureScreenshot')
+      if(options.fromSurface===true){first++;throw new Error('GPU compositor stall')}
+      assert.equal(options.fromSurface,false)
+      second++
+      return {data:pixel.toString('base64')}
+    },
+    detach:async()=>{detached++}
+  })})}
+  const result=await captureAnimatedWebGLViewport(page)
+  assert.equal(result.method,'chromium-cdp-view')
+  assert.match(result.fallback_reason,/GPU compositor stall/)
+  assert.equal(first,1)
+  assert.equal(second,1)
+  assert.equal(detached,1)
+  assert.deepEqual(result.png,pixel)
+})
+
+test('R51 rejects fake CDP viewport instead of passing a failed WebGL game',async()=>{
+  let second=0
+  const page={
+    context:()=>({newCDPSession:async()=>({
+      send:async(method,opts)=>{
+        if(opts.fromSurface===false){second++;return {data:Buffer.from('fake HTML').toString('base64')}}
+        throw new Error('GPU surface blocked')
+      },
+      detach:async()=>{}
+    })}),
+    screenshot:async()=>Buffer.from('DOM mock, not a PNG')
+  }
+  await assert.rejects(captureAnimatedWebGLViewport(page),/No authentic WebGL pixels could be captured/)
+  assert.equal(second,1)
+})
+
 test('only a genuine Playwright PNG is an allowed CDP fallback',async()=>{
   let detached=0
   const page={
