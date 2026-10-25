@@ -56,7 +56,8 @@ jobs:
           from pathlib import Path
           f=Path('.github/workflows/omega-r87-mission-native-qa.yml').read_text()
           assert 'contents: read' in f
-          assert 'deploy-frontend' not in f and 'upload-artifact' not in f
-          assert 'git push' not in f and 'gh workflow run' not in f
+          executable = f.split('      - name: Verify no release or SSH')[0]
+          assert 'deploy-frontend' not in executable and 'upload-artifact' not in executable
+          assert 'git push' not in executable and 'gh workflow run' not in executable
           print('PASS: source-only PR native verification; Web export/deployment unchanged')
           PY
