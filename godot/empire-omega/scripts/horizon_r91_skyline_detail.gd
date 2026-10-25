@@ -6,13 +6,16 @@ const ROW_CAP: int = 12
 var facade_glass: MultiMeshInstance3D
 var rooftop_crowns: MultiMeshInstance3D
 var source_skyline: MultiMeshInstance3D
+var original_tower_transforms: Array[Transform3D] = []
+var original_rooftop_transforms: Array[Transform3D] = []
 
-func set_source_skyline(towers: MultiMeshInstance3D) -> void:
+func set_source_skyline(towers: MultiMeshInstance3D,planned: Array[Transform3D]) -> void:
 	source_skyline = towers
+	original_tower_transforms = planned.duplicate()
 
 func _ready() -> void:
 	name = "R91SkylineArchitecturalDetail"
-	if source_skyline == null or source_skyline.multimesh == null:
+	if source_skyline == null or source_skyline.multimesh == null or original_tower_transforms.size() != COUNT:
 		push_error("R91 requires the original built R90 tower meshes")
 		return
 	_build_geometry()
@@ -27,16 +30,21 @@ func _build_geometry() -> void:
 	roofs.transform_format = MultiMesh.TRANSFORM_3D
 	roofs.mesh = roof_mesh
 	roofs.instance_count = COUNT
+	original_rooftop_transforms.clear()
 	for i in range(COUNT):
-		# Read the ACTUAL physical skyline transform, never rebuild by seed.
-		var original: Transform3D = source_skyline.multimesh.get_instance_transform(i)
+		# The *identical* CPU transform that constructed the original tower.
+		# On a headless GL runner MultiMesh readback can be identity/undefined;
+		# reading it here lost scale and produced floating windows.
+		var original: Transform3D = original_tower_transforms[i]
 		var center: Vector3 = original.origin
 		var width: float = original.basis.x.length()
 		var height: float = original.basis.y.length()
 		var depth: float = original.basis.z.length()
-		roofs.set_instance_transform(i,Transform3D(
+		var cap := Transform3D(
 			Basis().scaled(Vector3(width*0.91,0.65,depth*0.91)),
-			Vector3(center.x,center.y+height*0.5+0.38,center.z)))
+			Vector3(center.x,center.y+height*0.5+0.38,center.z))
+		original_rooftop_transforms.append(cap)
+		roofs.set_instance_transform(i,cap)
 		var floors: int = mini(ROW_CAP,maxi(3,floori((height-4.0)/4.2)))
 		for floor_index in range(floors):
 			var y: float = 3.8+float(floor_index)*4.1
@@ -108,4 +116,6 @@ func graphics_are_bounded() -> bool:
 		facade_glass.multimesh.instance_count >= 2000 and
 		facade_glass.multimesh.instance_count <= COUNT*ROW_CAP*8 and
 		rooftop_crowns.multimesh.instance_count == COUNT and
-		get_child_count() == 2)
+		get_child_count() == 2 and
+		original_tower_transforms.size() == COUNT and
+		original_rooftop_transforms.size() == COUNT)

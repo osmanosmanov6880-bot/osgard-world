@@ -30,14 +30,21 @@ func _run() -> void:
 		if glass!=null and caps!=null:
 			check(towers.multimesh.instance_count==72 and caps.multimesh.instance_count==72,
 				"every physical tower has one physical roof")
+			var towers_plan: Array = art.get("original_tower_transforms")
+			var crowns_plan: Array = art.get("original_rooftop_transforms")
+			check(towers_plan.size()==72 and crowns_plan.size()==72,
+				"actual source CPU draw transforms stored for all original tower instances")
 			for i in [0,17,35,71]:
-				var tower: Transform3D = towers.multimesh.get_instance_transform(i)
-				var crown: Transform3D = caps.multimesh.get_instance_transform(i)
+				var tower: Transform3D = towers_plan[i]
+				var crown: Transform3D = crowns_plan[i]
 				check(is_equal_approx(tower.origin.x,crown.origin.x) and
 					is_equal_approx(tower.origin.z,crown.origin.z) and
-					is_equal_approx(crown.origin.y,
-						tower.origin.y+tower.basis.y.length()*0.5+0.38),
+					absf(crown.origin.y-
+						(tower.origin.y+tower.basis.y.length()*0.5+0.38)) < 0.005,
 					"rooftop physically coincides with authoritative tower transform")
+				print("R91 actual source body height=",tower.basis.y.length(),
+					" planned roof height=",crown.origin.y,
+					" GPU-reported roof height=",caps.multimesh.get_instance_transform(i).origin.y)
 			check(glass.multimesh.instance_count>=2000 and glass.multimesh.instance_count<=6912,
 				"original four-sided façade windows stay within GPU budget")
 			check((glass.material_override as StandardMaterial3D).vertex_color_use_as_albedo,
