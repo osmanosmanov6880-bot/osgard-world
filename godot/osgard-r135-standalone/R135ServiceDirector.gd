@@ -467,4 +467,5 @@ func summary() -> Dictionary:
         "fault_marker_visible_count":int(visuals.get("fault_marker_visible_count", 0)),
         "fault_label_visible_count":int(visuals.get("fault_label_visible_count", 0)),
         "fault_marker_active_index":int(visuals.get("fault_marker_active_index", -1)),
-        "fault_visual_state":str(visuals.get("fault_visual_state", "idle"))}
+        "fault_visual_state":str(visuals.get("fault_visual_state", "idle")),
+        "active_caption_depth_override":bool(visuals.get("active_caption_depth_override", false))}

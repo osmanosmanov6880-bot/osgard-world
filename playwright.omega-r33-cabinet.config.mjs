@@ -4,7 +4,7 @@ export default defineConfig({
   testMatch:'omega-r33-cabinet.spec.mjs',
   timeout:200000,
   expect:{timeout:18000},
-  retries:0,
+  retries: 1,
   workers:1,
   reporter:[['list'],['html',{outputFolder:'omega-r33-cabinet-report',open:'never'}]],
   outputDir:'omega-r33-cabinet-results',

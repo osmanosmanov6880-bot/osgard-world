@@ -23,6 +23,10 @@ func _run() -> void:
     if rig == null:
         _fail("R135ServiceSpine controller missing")
         return
+    var fill: Node = instance.get_node_or_null("R135_ReadableInspectionFill_NoShadows")
+    if not (fill is OmniLight3D) or float(fill.get("light_energy")) < 3.5 or bool(fill.get("shadow_enabled")):
+        _fail("W11 readable ECO fill must be strong and must never cast costly shadows")
+        return
     var studio: Node = instance.get_node_or_null("R135StudioEnvironment")
     if studio == null:
         _fail("W7 premium batched stage missing")

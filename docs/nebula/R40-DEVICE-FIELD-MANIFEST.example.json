@@ -1,0 +1,322 @@
+{
+  "schema": "NEBULA_R40_PHYSICAL_FIELD_V1",
+  "synthetic": false,
+  "field_work": false,
+  "devices": [
+    {
+      "id": "android_low",
+      "platform": "Android",
+      "reviewer": "",
+      "visual": {
+        "portrait": {
+          "approved": false,
+          "notes": "",
+          "baseline_image": "images/android_low-portrait-r38.jpg",
+          "candidate_image": "images/android_low-portrait-r40.jpg"
+        },
+        "landscape": {
+          "approved": false,
+          "notes": "",
+          "baseline_image": "images/android_low-landscape-r38.jpg",
+          "candidate_image": "images/android_low-landscape-r40.jpg"
+        }
+      },
+      "runs": [
+        {
+          "orientation": "portrait",
+          "profile": "MAX",
+          "baseline": [
+            "reports/android_low-portrait-MAX-r38-1.json",
+            "reports/android_low-portrait-MAX-r38-2.json",
+            "reports/android_low-portrait-MAX-r38-3.json"
+          ],
+          "candidate": [
+            "reports/android_low-portrait-MAX-r40-1.json",
+            "reports/android_low-portrait-MAX-r40-2.json",
+            "reports/android_low-portrait-MAX-r40-3.json"
+          ]
+        },
+        {
+          "orientation": "portrait",
+          "profile": "HIGH",
+          "baseline": [
+            "reports/android_low-portrait-HIGH-r38-1.json",
+            "reports/android_low-portrait-HIGH-r38-2.json",
+            "reports/android_low-portrait-HIGH-r38-3.json"
+          ],
+          "candidate": [
+            "reports/android_low-portrait-HIGH-r40-1.json",
+            "reports/android_low-portrait-HIGH-r40-2.json",
+            "reports/android_low-portrait-HIGH-r40-3.json"
+          ]
+        },
+        {
+          "orientation": "portrait",
+          "profile": "ECO",
+          "baseline": [
+            "reports/android_low-portrait-ECO-r38-1.json",
+            "reports/android_low-portrait-ECO-r38-2.json",
+            "reports/android_low-portrait-ECO-r38-3.json"
+          ],
+          "candidate": [
+            "reports/android_low-portrait-ECO-r40-1.json",
+            "reports/android_low-portrait-ECO-r40-2.json",
+            "reports/android_low-portrait-ECO-r40-3.json"
+          ]
+        },
+        {
+          "orientation": "landscape",
+          "profile": "MAX",
+          "baseline": [
+            "reports/android_low-landscape-MAX-r38-1.json",
+            "reports/android_low-landscape-MAX-r38-2.json",
+            "reports/android_low-landscape-MAX-r38-3.json"
+          ],
+          "candidate": [
+            "reports/android_low-landscape-MAX-r40-1.json",
+            "reports/android_low-landscape-MAX-r40-2.json",
+            "reports/android_low-landscape-MAX-r40-3.json"
+          ]
+        },
+        {
+          "orientation": "landscape",
+          "profile": "HIGH",
+          "baseline": [
+            "reports/android_low-landscape-HIGH-r38-1.json",
+            "reports/android_low-landscape-HIGH-r38-2.json",
+            "reports/android_low-landscape-HIGH-r38-3.json"
+          ],
+          "candidate": [
+            "reports/android_low-landscape-HIGH-r40-1.json",
+            "reports/android_low-landscape-HIGH-r40-2.json",
+            "reports/android_low-landscape-HIGH-r40-3.json"
+          ]
+        },
+        {
+          "orientation": "landscape",
+          "profile": "ECO",
+          "baseline": [
+            "reports/android_low-landscape-ECO-r38-1.json",
+            "reports/android_low-landscape-ECO-r38-2.json",
+            "reports/android_low-landscape-ECO-r38-3.json"
+          ],
+          "candidate": [
+            "reports/android_low-landscape-ECO-r40-1.json",
+            "reports/android_low-landscape-ECO-r40-2.json",
+            "reports/android_low-landscape-ECO-r40-3.json"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "android_mid",
+      "platform": "Android",
+      "reviewer": "",
+      "visual": {
+        "portrait": {
+          "approved": false,
+          "notes": "",
+          "baseline_image": "images/android_mid-portrait-r38.jpg",
+          "candidate_image": "images/android_mid-portrait-r40.jpg"
+        },
+        "landscape": {
+          "approved": false,
+          "notes": "",
+          "baseline_image": "images/android_mid-landscape-r38.jpg",
+          "candidate_image": "images/android_mid-landscape-r40.jpg"
+        }
+      },
+      "runs": [
+        {
+          "orientation": "portrait",
+          "profile": "MAX",
+          "baseline": [
+            "reports/android_mid-portrait-MAX-r38-1.json",
+            "reports/android_mid-portrait-MAX-r38-2.json",
+            "reports/android_mid-portrait-MAX-r38-3.json"
+          ],
+          "candidate": [
+            "reports/android_mid-portrait-MAX-r40-1.json",
+            "reports/android_mid-portrait-MAX-r40-2.json",
+            "reports/android_mid-portrait-MAX-r40-3.json"
+          ]
+        },
+        {
+          "orientation": "portrait",
+          "profile": "HIGH",
+          "baseline": [
+            "reports/android_mid-portrait-HIGH-r38-1.json",
+            "reports/android_mid-portrait-HIGH-r38-2.json",
+            "reports/android_mid-portrait-HIGH-r38-3.json"
+          ],
+          "candidate": [
+            "reports/android_mid-portrait-HIGH-r40-1.json",
+            "reports/android_mid-portrait-HIGH-r40-2.json",
+            "reports/android_mid-portrait-HIGH-r40-3.json"
+          ]
+        },
+        {
+          "orientation": "portrait",
+          "profile": "ECO",
+          "baseline": [
+            "reports/android_mid-portrait-ECO-r38-1.json",
+            "reports/android_mid-portrait-ECO-r38-2.json",
+            "reports/android_mid-portrait-ECO-r38-3.json"
+          ],
+          "candidate": [
+            "reports/android_mid-portrait-ECO-r40-1.json",
+            "reports/android_mid-portrait-ECO-r40-2.json",
+            "reports/android_mid-portrait-ECO-r40-3.json"
+          ]
+        },
+        {
+          "orientation": "landscape",
+          "profile": "MAX",
+          "baseline": [
+            "reports/android_mid-landscape-MAX-r38-1.json",
+            "reports/android_mid-landscape-MAX-r38-2.json",
+            "reports/android_mid-landscape-MAX-r38-3.json"
+          ],
+          "candidate": [
+            "reports/android_mid-landscape-MAX-r40-1.json",
+            "reports/android_mid-landscape-MAX-r40-2.json",
+            "reports/android_mid-landscape-MAX-r40-3.json"
+          ]
+        },
+        {
+          "orientation": "landscape",
+          "profile": "HIGH",
+          "baseline": [
+            "reports/android_mid-landscape-HIGH-r38-1.json",
+            "reports/android_mid-landscape-HIGH-r38-2.json",
+            "reports/android_mid-landscape-HIGH-r38-3.json"
+          ],
+          "candidate": [
+            "reports/android_mid-landscape-HIGH-r40-1.json",
+            "reports/android_mid-landscape-HIGH-r40-2.json",
+            "reports/android_mid-landscape-HIGH-r40-3.json"
+          ]
+        },
+        {
+          "orientation": "landscape",
+          "profile": "ECO",
+          "baseline": [
+            "reports/android_mid-landscape-ECO-r38-1.json",
+            "reports/android_mid-landscape-ECO-r38-2.json",
+            "reports/android_mid-landscape-ECO-r38-3.json"
+          ],
+          "candidate": [
+            "reports/android_mid-landscape-ECO-r40-1.json",
+            "reports/android_mid-landscape-ECO-r40-2.json",
+            "reports/android_mid-landscape-ECO-r40-3.json"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "iphone_safari",
+      "platform": "iOS",
+      "reviewer": "",
+      "visual": {
+        "portrait": {
+          "approved": false,
+          "notes": "",
+          "baseline_image": "images/iphone_safari-portrait-r38.jpg",
+          "candidate_image": "images/iphone_safari-portrait-r40.jpg"
+        },
+        "landscape": {
+          "approved": false,
+          "notes": "",
+          "baseline_image": "images/iphone_safari-landscape-r38.jpg",
+          "candidate_image": "images/iphone_safari-landscape-r40.jpg"
+        }
+      },
+      "runs": [
+        {
+          "orientation": "portrait",
+          "profile": "MAX",
+          "baseline": [
+            "reports/iphone_safari-portrait-MAX-r38-1.json",
+            "reports/iphone_safari-portrait-MAX-r38-2.json",
+            "reports/iphone_safari-portrait-MAX-r38-3.json"
+          ],
+          "candidate": [
+            "reports/iphone_safari-portrait-MAX-r40-1.json",
+            "reports/iphone_safari-portrait-MAX-r40-2.json",
+            "reports/iphone_safari-portrait-MAX-r40-3.json"
+          ]
+        },
+        {
+          "orientation": "portrait",
+          "profile": "HIGH",
+          "baseline": [
+            "reports/iphone_safari-portrait-HIGH-r38-1.json",
+            "reports/iphone_safari-portrait-HIGH-r38-2.json",
+            "reports/iphone_safari-portrait-HIGH-r38-3.json"
+          ],
+          "candidate": [
+            "reports/iphone_safari-portrait-HIGH-r40-1.json",
+            "reports/iphone_safari-portrait-HIGH-r40-2.json",
+            "reports/iphone_safari-portrait-HIGH-r40-3.json"
+          ]
+        },
+        {
+          "orientation": "portrait",
+          "profile": "ECO",
+          "baseline": [
+            "reports/iphone_safari-portrait-ECO-r38-1.json",
+            "reports/iphone_safari-portrait-ECO-r38-2.json",
+            "reports/iphone_safari-portrait-ECO-r38-3.json"
+          ],
+          "candidate": [
+            "reports/iphone_safari-portrait-ECO-r40-1.json",
+            "reports/iphone_safari-portrait-ECO-r40-2.json",
+            "reports/iphone_safari-portrait-ECO-r40-3.json"
+          ]
+        },
+        {
+          "orientation": "landscape",
+          "profile": "MAX",
+          "baseline": [
+            "reports/iphone_safari-landscape-MAX-r38-1.json",
+            "reports/iphone_safari-landscape-MAX-r38-2.json",
+            "reports/iphone_safari-landscape-MAX-r38-3.json"
+          ],
+          "candidate": [
+            "reports/iphone_safari-landscape-MAX-r40-1.json",
+            "reports/iphone_safari-landscape-MAX-r40-2.json",
+            "reports/iphone_safari-landscape-MAX-r40-3.json"
+          ]
+        },
+        {
+          "orientation": "landscape",
+          "profile": "HIGH",
+          "baseline": [
+            "reports/iphone_safari-landscape-HIGH-r38-1.json",
+            "reports/iphone_safari-landscape-HIGH-r38-2.json",
+            "reports/iphone_safari-landscape-HIGH-r38-3.json"
+          ],
+          "candidate": [
+            "reports/iphone_safari-landscape-HIGH-r40-1.json",
+            "reports/iphone_safari-landscape-HIGH-r40-2.json",
+            "reports/iphone_safari-landscape-HIGH-r40-3.json"
+          ]
+        },
+        {
+          "orientation": "landscape",
+          "profile": "ECO",
+          "baseline": [
+            "reports/iphone_safari-landscape-ECO-r38-1.json",
+            "reports/iphone_safari-landscape-ECO-r38-2.json",
+            "reports/iphone_safari-landscape-ECO-r38-3.json"
+          ],
+          "candidate": [
+            "reports/iphone_safari-landscape-ECO-r40-1.json",
+            "reports/iphone_safari-landscape-ECO-r40-2.json",
+            "reports/iphone_safari-landscape-ECO-r40-3.json"
+          ]
+        }
+      ]
+    }
+  ]
+}

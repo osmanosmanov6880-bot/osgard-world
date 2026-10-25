@@ -47,7 +47,13 @@ func _add_indicator(parent: Node3D, location: Vector3, title: String) -> void:
     tag.pixel_size = 0.0043
     tag.position = Vector3(0, 0.82, 0)
     tag.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-    tag.modulate = Color(0.50, 0.78, 0.87)
+    # Keep the active fault instruction above opaque rails and the source GLB.
+    # A heavy dark outline maintains readability against bright steel.
+    tag.no_depth_test = true
+    tag.render_priority = 4
+    tag.outline_size = 14
+    tag.outline_modulate = Color(0.01, 0.02, 0.03, 1.0)
+    tag.modulate = Color(1.0, 0.83, 0.52)
     assembly.add_child(tag)
 
     marker_roots.append(assembly)
@@ -77,7 +83,11 @@ func update_visuals(fault_index: int, is_active: bool, is_completed: bool, step:
         marker_materials[i].albedo_color = color.darkened(0.36)
         marker_materials[i].emission = color
         marker_materials[i].emission_energy_multiplier = 0.48 + (0.95 * pulse if highlighted else 0.0)
-        marker_labels[i].modulate = color
+        marker_labels[i].modulate = (
+            Color(0.72, 1.0, 0.79) if cleared
+            else Color(1.0, 0.83, 0.54) if highlighted
+            else Color(0.68, 0.78, 0.82)
+        )
         marker_labels[i].visible = highlighted
         # The portrait beam occludes the caption at the desktop elevation.
         # Keep it linked to the marker while lifting it above the machinery.
@@ -104,5 +114,6 @@ func snapshot() -> Dictionary:
         "fault_label_visible_count": visible_labels,
         "fault_marker_active_index": active_index,
         "fault_visual_state": current_state,
-        "reduced_motion": reduced_motion
+        "reduced_motion": reduced_motion,
+        "active_caption_depth_override": marker_labels[active_index].no_depth_test if active_index >= 0 else false
     }
