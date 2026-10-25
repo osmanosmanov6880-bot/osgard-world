@@ -110,6 +110,9 @@ assert.equal(usages,4,'all four staging, Nginx, SSH and live smoke gates must us
 for(const proof of [
   'scripts/r135-w18-promotion-qa.py',
   'scripts/r135-w19-promotion-qa.py',
+  'scripts/r135-w19-extract-durable-evidence.py',
+  'W19_ORIGINAL_SCREENSHOTS_AND_GAMEPLAY_EVIDENCE.zip',
+  'r135-luxury-academy-w19-reviewed-webgl-20261025',
   'independently-accept-real-w19',
   'r135-w19-promotion-gate.yml',
   'scripts/r135-w19-release-pin.json',
