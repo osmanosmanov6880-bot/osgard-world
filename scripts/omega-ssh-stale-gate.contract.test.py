@@ -55,6 +55,22 @@ class DeployFreshnessContracts(unittest.TestCase):
         self.assertIn('deployed=true',section)
         self.assertLess(section.index('bash \'$remote/deploy.sh\''),section.index('deployed=true'))
 
+    def test_third_freshness_gate_after_scp_before_actual_activation(self):
+        upload = self.body.split('      - name: Upload verified Godot game, activate with rollback', 1)[1]
+        upload = upload.split('      - name: Verify exact live Godot source', 1)[0]
+        stage = 'scp -i ~/.ssh/osgard_omega_deploy scripts/deploy-omega-native-remote.sh'
+        last_scp = upload.index(stage)
+        third = upload.index('if ! python3 scripts/omega-build-freshness.py', last_scp)
+        activate = upload.index("bash '$remote/deploy.sh' '$RUN_ID'", last_scp)
+        self.assertLess(last_scp, third)
+        self.assertLess(third, activate)
+        reject = upload[third:activate]
+        self.assertIn('::error::SUPERSEDED after SCP', reject)
+        self.assertIn('deployed=false', reject)
+        self.assertIn('omega-native-remote-cleanup.sh', reject)
+        self.assertIn('exit 3', reject)
+        self.assertNotIn('exit 0', reject)
+
     def test_live_attestation_only_if_deployed(self):
         section=self.body.split('      - name: Verify exact live Godot source and downloaded SHA-256 for every file',1)[1]
         self.assertIn("if: steps.publish.outputs.deployed == 'true'",section)

@@ -132,6 +132,19 @@ jobs:
           ssh -o BatchMode=yes -i ~/.ssh/osgard_omega_deploy "$DEPLOY_USER@$DEPLOY_HOST" "mkdir -p '$remote'"
           scp -i ~/.ssh/osgard_omega_deploy "$RUNNER_TEMP/omega-native/game.tgz" "$DEPLOY_USER@$DEPLOY_HOST:$remote/game.tgz"
           scp -i ~/.ssh/osgard_omega_deploy scripts/deploy-omega-native-remote.sh "$DEPLOY_USER@$DEPLOY_HOST:$remote/deploy.sh"
+          # A large WASM/PCK SCP can outlive the source tree it was built
+          # from. Reject a new upstream game commit before touching the
+          # actual Nginx game directory; staging alone is NOT a deployment.
+          git fetch --no-tags --depth=1 origin "+refs/heads/master:refs/remotes/origin/master"
+          if ! python3 scripts/omega-build-freshness.py "${{ steps.source_gate.outputs.source_sha }}" origin/master; then
+            echo "::error::SUPERSEDED after SCP, before Nginx activation; no live game changed."
+            echo "deployed=false" >> "$GITHUB_OUTPUT"
+            # Transport is now fully staged; remove only this run's files.
+            ssh -o BatchMode=yes -i ~/.ssh/osgard_omega_deploy \
+              "$DEPLOY_USER@$DEPLOY_HOST" "bash -s -- '$RUN_ID'" \
+              < scripts/omega-native-remote-cleanup.sh || echo "::warning::Old staged transport needs manual inspection."
+            exit 3
+          fi
           ssh -o BatchMode=yes -i ~/.ssh/osgard_omega_deploy "$DEPLOY_USER@$DEPLOY_HOST" "bash '$remote/deploy.sh' '$RUN_ID'"
           echo "deployed=true" >> "$GITHUB_OUTPUT"
       - name: Verify exact live Godot source and downloaded SHA-256 for every file
