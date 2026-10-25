@@ -18,7 +18,16 @@ def quality(frame):
     image=Image.open(io.BytesIO(frame)).convert('RGB')
     tiny=image.resize((128,72))
     colors={(r//16,g//16,b//16) for r,g,b in tiny.getdata()}
-    return {'width':image.width,'height':image.height,
+    # Detect Godot aspect-ratio letterboxing inside the CANVAS itself.
+    # The previous mobile screenshot rendered only ~29% of the 844px height
+    # while the canvas box filled the viewport: an invisible false PASS.
+    columns=image.resize((64,128)).convert('RGB')
+    active_rows=0
+    for y in range(128):
+        if any(max(columns.getpixel((x,y)))>=14 for x in range(12,52)):
+            active_rows+=1
+    return {'active_height_fraction':round(active_rows/128,3),
+            'width':image.width,'height':image.height,
             'color_bins':len(colors),
             'deviation':round(max(ImageStat.Stat(tiny).stddev),2),
             'sha256':hashlib.sha256(frame).hexdigest()}
@@ -72,6 +81,7 @@ def check(directory,out,sha):
                             page.wait_for_timeout(1500)
                         assert stats['width']>=300 and stats['height']>=250,stats
                         assert stats['color_bins']>=18 and stats['deviation']>11,('blank Godot canvas',stats)
+                        assert stats['active_height_fraction']>=0.70,('Godot letterboxed or shrunk canvas; NOT touch-ready',stats)
                         assert not errors,('Uncaught JS errors',errors)
                         filename=name+'.png'
                         (out/filename).write_bytes(frame)
