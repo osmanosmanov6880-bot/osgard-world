@@ -632,7 +632,9 @@ jobs:
           bash scripts/check-frontend-release-freshness.sh || lease_rc=$?
           if (( lease_rc != 0 )); then
             echo "::warning::Abandoning staged upload after freshness gate exit $lease_rc"
-            timeout 30s bash scripts/cleanup-frontend-transport.sh ||               echo "::warning::Could not clean this run's temporary upload; maintenance may be required"
+            if ! timeout 30s bash scripts/cleanup-frontend-transport.sh; then
+              echo "::warning::Could not clean this run's temporary upload; maintenance may be required"
+            fi
             exit "$lease_rc"
           fi
           REMOTE_RELEASE_DIR="/tmp/osgard-gh-release-${GITHUB_RUN_ID}"
