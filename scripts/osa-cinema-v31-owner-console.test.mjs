@@ -90,6 +90,36 @@ test('V31 localhost owner dashboard rejects stolen sessions and external origins
       const foreign=await fetch(url+'/login',{method:'POST',redirect:'manual',headers:{Origin:'https://evil.example'},body:new URLSearchParams({csrf:token2,password:pass})})
       assert.equal(foreign.status,403)
     })
+    await t.test('real Chromium null-Origin same-origin form can sign in, but foreign/null cross-site requests remain blocked',async()=>{
+      const html=await (await fetch(url+'/')).text()
+      const token=html.match(/name="csrf" value="([a-f0-9]{64})"/)?.[1]
+      assert.ok(token)
+      const form=new URLSearchParams({csrf:token,password:pass})
+      const cross=await fetch(url+'/login',{method:'POST',redirect:'manual',
+        headers:{Origin:'null','Sec-Fetch-Site':'cross-site','Content-Type':'application/x-www-form-urlencoded'},body:form})
+      assert.equal(cross.status,403,'Origin null by itself is not proof of same-origin')
+      const missingFetchMetadata=await fetch(url+'/login',{method:'POST',redirect:'manual',
+        headers:{Origin:'null','Content-Type':'application/x-www-form-urlencoded'},body:form})
+      assert.equal(missingFetchMetadata.status,403,'Null Origin requires same-origin Fetch Metadata')
+      const valid=await fetch(url+'/login',{method:'POST',redirect:'manual',
+        headers:{Origin:'null','Sec-Fetch-Site':'same-origin','Content-Type':'application/x-www-form-urlencoded'},body:form})
+      assert.equal(valid.status,303,'Chromium legitimate form navigation must succeed')
+      const cookie=(valid.headers.get('set-cookie')||'').split(';')[0]
+      const loaded=await fetch(url+'/',{headers:{Cookie:cookie}})
+      assert.equal(loaded.status,200)
+      const home=await loaded.text()
+      assert.match(home,/Премьера начинается с доказательств/)
+      const csrf=home.match(/const csrf='([a-f0-9]{64})'/)?.[1]
+      assert.ok(csrf)
+      const foreignApi=await fetch(url+'/api/logout',{method:'POST',redirect:'manual',
+        headers:{Cookie:cookie,Origin:'null','Sec-Fetch-Site':'cross-site','X-OSA-CSRF':csrf}})
+      assert.equal(foreignApi.status,403,'Cross-site logout forbidden even with stolen CSRF')
+      const logout=await fetch(url+'/api/logout',{method:'POST',redirect:'manual',
+        headers:{Cookie:cookie,Origin:'null','Sec-Fetch-Site':'same-origin','X-OSA-CSRF':csrf}})
+      assert.equal(logout.status,200)
+      const expired=await fetch(url+'/api/status',{headers:{Cookie:cookie}})
+      assert.equal(expired.status,401,'Logout must immediately revoke session')
+    })
     const a=await login(url)
     await t.test('authenticated dashboard includes working script and honest NO-GO release state',async()=>{
       const script=a.dashboard.match(/<script nonce="[^"]+">([\s\S]*?)<\/script>/)?.[1]
