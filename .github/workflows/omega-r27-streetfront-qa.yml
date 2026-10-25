@@ -5,6 +5,7 @@ on:
     paths:
       - 'godot/empire-omega/**'
       - 'scripts/omega-four-viewport-real-ci.sh'
+      - 'scripts/omega-four-viewport-real-ci.contract.test.py'
       - '.github/workflows/omega-r27-streetfront-qa.yml'
   workflow_dispatch:
 permissions:
@@ -23,6 +24,12 @@ jobs:
           version: 4.4.1
           use-dotnet: false
           include-templates: false
+      - name: Protect authentic five-workflow original-Godot pixel proof
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash -n scripts/omega-four-viewport-real-ci.sh
+          python3 scripts/omega-four-viewport-real-ci.contract.test.py
       - name: Generate genuine original game assets and import Godot
         run: |
           python3 godot/empire-omega/tools/generate_audio.py
