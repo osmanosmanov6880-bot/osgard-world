@@ -1,0 +1,32 @@
+name: EMPIRE Omega R93 actual civic bars and premium HUD QA
+on:
+  pull_request:
+    branches:
+      - master
+      - feat/omega-r90-aaa-reference-first-slice-20261026
+    paths:
+      - 'godot/empire-omega/scripts/horizon_r93_real_civic_kpis.gd'
+      - 'godot/empire-omega/scripts/horizon_r90_premium_dashboard.gd'
+      - 'godot/empire-omega/tests/v81_r93_live_civic_metrics.gd'
+      - '.github/workflows/omega-r93-live-kpis-qa.yml'
+permissions:
+  contents: read
+jobs:
+  native-no-fabricated-metrics:
+    runs-on: ubuntu-latest
+    timeout-minutes: 17
+    steps:
+      - uses: actions/checkout@v4
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: false
+      - name: Validate strict native Godot script and actual municipal metrics
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 godot/empire-omega/tools/generate_audio.py
+          python3 godot/empire-omega/tools/generate_patrol_audio.py
+          bash scripts/omega-strict-godot-import.sh godot/empire-omega
+          timeout 115s godot --headless --path godot/empire-omega --script res://tests/v81_r93_live_civic_metrics.gd
