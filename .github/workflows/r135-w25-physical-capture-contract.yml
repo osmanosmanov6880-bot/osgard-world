@@ -28,8 +28,9 @@ jobs:
           node --check scripts/r135-w25-physical-capture.mjs
           node --check scripts/test-r135-w25-physical-capture.mjs
           node scripts/test-r135-w25-physical-capture.mjs
-          test "$(jq -r '.channel' scripts/r135-active-release.json)" = w20
-          bash scripts/r135-release-selector.sh | grep -Fq scripts/r135-w20-release-pin.json
+          SELECTED_PIN="$(bash scripts/r135-release-selector.sh)"
+          test -s "$SELECTED_PIN"
+          test "$(jq -er '.pin_file' scripts/r135-active-release.json)" = "$SELECTED_PIN"
       - name: CI must refuse to claim simulated hardware as a real phone
         shell: bash
         run: |
