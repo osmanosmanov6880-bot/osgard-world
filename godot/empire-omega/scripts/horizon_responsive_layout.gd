@@ -53,6 +53,12 @@ static func compute(viewport: Vector2) -> Dictionary:
 		quick_toggle = Rect2(12.0,226.0,124.0,44.0)
 		quick_panel = Rect2(12.0,276.0,minf(w-24.0,176.0),
 			maxf(128.0,minf(h-288.0,344.0)))
+		# R76 actual native R16/R36 regression: the former diagnostic y=244
+		# overlapped the relocated quick toggle y=226..270. Keep the FPS panel
+		# below that 44px button AND above real bottom touch-driving controls.
+		var safe_diagnostic_height: float = minf(diagnostic_height,
+			maxf(80.0,h-192.0-277.0))
+		diagnostics = Rect2(12.0,277.0,minf(w-24.0,330.0),safe_diagnostic_height)
 	return {
 		"compact":true, "viewport":Vector2(w,h),
 		"header":head, "speed":speed, "objective":objective,
