@@ -2,7 +2,7 @@ extends SceneTree
 ## R36 actual game frame reporter regression. Inputs are synthetic unit
 ## samples; hardware proof is provided ONLY by users running real game.
 const BENCH = preload("res://scripts/horizon_device_frame_benchmark.gd")
-const HUD = preload("res://scripts/hud.gd")
+## Load the actual gameplay HUD at runtime after Godot initializes autoloads.
 const LAYOUT = preload("res://scripts/horizon_responsive_layout.gd")
 var passed := 0
 var failed := 0
@@ -47,7 +47,12 @@ func _run() -> void:
 		var panel: Rect2 = LAYOUT.compute(size)["diagnostics"]
 		verify(panel.end.y<size.y-120.0,"expanded panel does not cover phone driving buttons")
 		verify(not panel.intersects(LAYOUT.compute(size)["quick_toggle"]),"benchmark never blocks FPS toggle")
-	var hud: CanvasLayer = HUD.new()
+	var hud_script: Variant = load("res://scripts/hud.gd")
+	verify(hud_script is Script and hud_script.can_instantiate(),"actual game HUD loads after runtime autoload registration")
+	if not (hud_script is Script) or not hud_script.can_instantiate():
+		quit(1)
+		return
+	var hud: CanvasLayer = hud_script.new()
 	root.add_child(hud)
 	hud.benchmark_start_requested.connect(_on_start)
 	hud.benchmark_export_requested.connect(_on_export)
