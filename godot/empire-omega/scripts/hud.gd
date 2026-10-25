@@ -5,6 +5,9 @@ const RACE_NAVIGATOR = preload("res://scripts/horizon_race_navigator.gd")
 const TOUCH_MISSION = preload("res://scripts/horizon_mobile_onboarding.gd")
 const ROAD_GUIDE = preload("res://scripts/horizon_road_guidance.gd")
 const MISSION_NAV = preload("res://scripts/horizon_mission_navigation.gd")
+const R90_STYLE = preload("res://scripts/horizon_r90_reference_style.gd")
+const R90_DASHBOARD = preload("res://scripts/horizon_r90_premium_dashboard.gd")
+const R90_SPEED = preload("res://scripts/horizon_r90_speed_dial.gd")
 ## Russian-first accessible HUD. All controls use the same GameState as the 3D world.
 
 signal strategy_changed(is_open: bool)
@@ -262,6 +265,7 @@ var neighborhood_label: Label
 var context_label: Label
 var hint_label: Label
 var speed_label: Label
+var r90_speed_dial: Control
 var mission_distance_label: Label
 var journal_panel: PanelContainer
 var speed_panel: PanelContainer
@@ -360,16 +364,7 @@ func _style(background: Color, edge: Color, corner: int = 12) -> StyleBoxFlat:
 	return style
 
 func _strategy_style() -> StyleBoxFlat:
-	# Quiet luxury: legible charcoal glass and a narrow brass stroke.
-	var style := _style(Color("0c1925",0.97),Color("b9a178",0.91),18)
-	style.shadow_color = Color(0.0,0.0,0.0,0.46)
-	style.shadow_size = 20
-	style.shadow_offset = Vector2(5,7)
-	style.content_margin_left = 20
-	style.content_margin_right = 20
-	style.content_margin_top = 18
-	style.content_margin_bottom = 18
-	return style
+	return R90_STYLE.panel_style()
 
 func _strategy_stat(parent: Node, heading: String, value: String) -> void:
 	var tile := PanelContainer.new()
@@ -411,7 +406,7 @@ func _panel(bounds: Rect2, anchor_right: float = 0.0, anchor_bottom: float = 0.0
 	panel.offset_top = bounds.position.y
 	panel.offset_right = bounds.position.x + bounds.size.x
 	panel.offset_bottom = bounds.position.y + bounds.size.y
-	panel.add_theme_stylebox_override("panel",_style(Color("141c25",0.90),Color("73828c")))
+	panel.add_theme_stylebox_override("panel",R90_STYLE.card_style())
 	root.add_child(panel)
 	return panel
 
@@ -435,11 +430,8 @@ func _button(parent: Node, title: String, callable: Callable, disabled: bool = f
 	button.add_theme_color_override("font_color",Color("e9e6dc"))
 	button.add_theme_color_override("font_hover_color",Color("fff4d8"))
 	button.add_theme_color_override("font_disabled_color",Color("8a969b"))
-	button.add_theme_stylebox_override("normal",_style(Color("19303c",0.92),Color("4e6269",0.8),9))
-	button.add_theme_stylebox_override("hover",_style(Color("2b4754",0.99),Color("c1a16f",0.96),9))
-	button.add_theme_stylebox_override("pressed",_style(Color("284451"),Color("d2b680"),9))
+	R90_STYLE.style_button(button)
 	button.add_theme_stylebox_override("disabled",_style(Color("101c25",0.72),Color("283641",0.42),9))
-	button.add_theme_stylebox_override("focus",StyleBoxEmpty.new())
 	button.pressed.connect(callable)
 	parent.add_child(button)
 	return button
@@ -505,7 +497,12 @@ func _make_hud() -> void:
 	hint_label = _label(controls,"",17)
 	speed_panel = _panel(Rect2(-360,-145,336,122),1.0,1.0)
 	speed_panel.visible = false
-	speed_label = _label(speed_panel,"",20,true)
+	var speed_row := HBoxContainer.new()
+	speed_row.add_theme_constant_override("separation",12)
+	speed_panel.add_child(speed_row)
+	r90_speed_dial = R90_SPEED.new()
+	speed_row.add_child(r90_speed_dial)
+	speed_label = _label(speed_row,"",20,true)
 	toast_panel = _panel(Rect2(-252,24,504,64),0.5)
 	toast_panel.visible = false
 	toast_label = _label(toast_panel,"",18,true)
@@ -727,7 +724,7 @@ func _on_mission_changed(_index: int, _title: String) -> void:
 
 func _refresh() -> void:
 	if header_value == null: return
-	header_value.text = _v08("EMPIRE Ω","EMPIRE Ω","帝国 Ω") if compact_hud else t("brand")
+	header_value.text = _v08("EMPIRE Ω","EMPIRE Ω","帝国 Ω") if compact_hud else _v08("◆ OSGARD · ИМПЕРИЯ Ω","◆ OSGARD · EMPIRE Ω","◆ 奥斯加德 · 帝国 Ω")
 	var d: Dictionary = GameState.data
 	meters_label.text = ("№%d  ·  %d кр." % [d["turn"],d["wallet"]]) if compact_hud else ("%s %d   ·   %s %d кр.   ·   %s %d кр." % [t("turn"),d["turn"],t("wallet"),d["wallet"],t("cash"),d["treasury"]])
 	context_label.text = "%s: %s\n%s: %d\n%s: %d%%  |  %s: %d%%\n%s: %d%%  |  %s: %d%%" % [t("cash"),str(d["treasury"])+" кр.",t("population"),d["population"],t("stability"),d["stability"],t("energy"),d["energy"],t("water"),d["water"],t("food"),d["food"]]
@@ -803,6 +800,8 @@ func update_world_context(player_at: Vector3, vehicle_at: Vector3, goal_at: Vect
 				mission_distance_label.text = MISSION_NAV.hud_hint(str(MissionManager.get_mission().get("id","complete")),GameState.locale,DisplayServer.is_touchscreen_available())
 	if speed_panel != null:
 		speed_panel.visible = is_driving
+	if r90_speed_dial != null:
+		r90_speed_dial.set_vehicle(speed,fuel,condition)
 	if is_driving:
 		if compact_hud:
 			speed_label.text = COMPACT_TELEMETRY.speed_lines(speed,gear,fuel,condition,handbrake,drift_score,assist_power,assist_steering,GameState.locale)
@@ -910,7 +909,7 @@ func _do_vehicle(id: String) -> void:
 		announce(t("need"))
 
 func _redraw_strategy() -> void:
-	strategy_title.text = t("strategy")
+	strategy_title.text = _v08("OSGARD · КОМАНДНЫЙ ЦЕНТР","OSGARD · OPERATIONS","奥斯加德 · 指挥中心")
 	strategy_close_button.text = _v08("ЗАКРЫТЬ ×","CLOSE ×","关闭 ×")
 	strategy_anchors.clear()
 	var labels := {
@@ -926,6 +925,15 @@ func _redraw_strategy() -> void:
 		child.queue_free()
 	var d: Dictionary = GameState.data
 	var forecast: Dictionary = GameState.forecast()
+	# R90: the signed-off glass/gold command screen is built from original state
+	# and a second camera of the live Godot world, not the reference JPG/PNG.
+	var operations: Control = R90_DASHBOARD.new()
+	strategy_contents.add_child(operations)
+	operations.navigate.connect(Callable(self,"_jump_to_strategy_section"))
+	operations.select_district.connect(Callable(self,"_select_district"))
+	operations.select_vehicle.connect(Callable(self,"_do_vehicle"))
+	operations.build(d,forecast,MissionManager.title(GameState.locale),
+		get_viewport().world_3d,compact_hud,GameState.locale)
 	_mark_strategy_section("overview")
 	_label(strategy_contents,"%s %d  ·  %s %d  ·  %s %d" % [t("turn"),d["turn"],t("science"),d["science"],t("actions"),d["actions_left"]],16,true)
 	var overview := HBoxContainer.new()
@@ -1518,6 +1526,7 @@ func _apply_responsive_layout() -> void:
 		_set_panel_frame(diagnostic_panel,HORIZON_LAYOUT.diagnostics_frame(screen),0,0,0,0)
 		_set_panel_frame(toast_panel,frames["toast"],0,0,0,0)
 		var modal: Rect2 = frames["modal"]
+		r90_speed_dial.visible = false
 		var panel_frame := Rect2(modal.position-screen*0.5,modal.size)
 		_set_panel_frame(strategy_window,panel_frame,0.5,0.5,0.5,0.5)
 		strategy_title.add_theme_font_size_override("font_size",22)
@@ -1529,7 +1538,7 @@ func _apply_responsive_layout() -> void:
 		# Original container has 12+12px vertical padding. A 54px portrait
 		# status/speed box needs 6+6px instead, otherwise native Labels clip.
 		for compact_card in [header_panel,speed_panel]:
-			var card_style: StyleBoxFlat = _style(Color("141c25",0.90),Color("73828c"))
+			var card_style: StyleBoxFlat = R90_STYLE.card_style()
 			if portrait_slim:
 				card_style.content_margin_top = 5
 				card_style.content_margin_bottom = 5
@@ -1558,15 +1567,19 @@ func _apply_responsive_layout() -> void:
 		_set_panel_frame(journal_panel,Rect2(-476,186,452,440),1,1,0,0)
 		_set_panel_frame(diagnostic_panel,HORIZON_LAYOUT.diagnostics_frame(screen),0,0,0,0)
 		_set_panel_frame(toast_panel,Rect2(-252,24,504,64),0.5,0.5,0,0)
-		# The cabinet docks left, leaving the car and the city visible in play.
-		_set_panel_frame(strategy_window,HORIZON_LAYOUT.strategy_dock(screen),0,0,0,0)
+		# Existing left-hand dock remains for smaller desktops. Wide desktop
+		# opens the signed-off full-screen dashboard, using real in-world 3D.
+		var command_frame: Rect2 = HORIZON_LAYOUT.strategy_dock(screen)
+		if screen.x >= 1200.0 and screen.y >= 680.0:
+			command_frame = R90_STYLE.command_center_frame(screen)
+		_set_panel_frame(strategy_window,command_frame,0,0,0,0)
+		r90_speed_dial.visible = true
 		strategy_title.add_theme_font_size_override("font_size",29)
 		_set_panel_frame(pause_panel,Rect2(-390,-340,780,680),0.5,0.5,0.5,0.5)
 		map.custom_minimum_size = Vector2(208,208)
 		if not map_override: map_panel.visible = true
 		for desktop_card in [header_panel,speed_panel]:
-			desktop_card.add_theme_stylebox_override("panel",
-				_style(Color("141c25",0.90),Color("73828c")))
+			desktop_card.add_theme_stylebox_override("panel",R90_STYLE.card_style())
 		var desktop_mission_stack: Node = mission_label.get_parent()
 		if desktop_mission_stack is VBoxContainer:
 			(desktop_mission_stack as VBoxContainer).add_theme_constant_override("separation",7)

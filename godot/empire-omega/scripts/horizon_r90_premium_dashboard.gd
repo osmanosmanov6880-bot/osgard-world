@@ -78,9 +78,13 @@ func build(state: Dictionary, forecast: Dictionary, mission: String,
 	var title: String = local("КОМАНДНЫЙ ЦЕНТР · РЕАЛЬНЫЙ ГОРОД","OPERATIONS · LIVE CITY","指挥中心 · 真实城市",lang)
 	var micro := _label(branding,title,12)
 	micro.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	micro.visible = not compact
 
-	var stats := HBoxContainer.new()
-	stats.add_theme_constant_override("separation",7)
+	var stats: Container = GridContainer.new() if compact else HBoxContainer.new()
+	if stats is GridContainer:
+		(stats as GridContainer).columns = 2
+	else:
+		(stats as HBoxContainer).add_theme_constant_override("separation",7)
 	add_child(stats)
 	var politics: Dictionary = state.get("politics",{})
 	_metric(stats,local("ЛИЧНЫЕ ДЕНЬГИ","PERSONAL FUNDS","个人资产",lang),
@@ -96,7 +100,7 @@ func build(state: Dictionary, forecast: Dictionary, mission: String,
 	_metric(stats,local("МАНДАТ","MANDATE","执政授权",lang),
 		"%d%%" % int(politics.get("mandate",0)),local("ПОЛИТИЧЕСКИЙ РЕСУРС","PUBLIC MANDATE","执政支持",lang))
 
-	var columns := HBoxContainer.new()
+	var columns: BoxContainer = VBoxContainer.new() if compact else HBoxContainer.new()
 	columns.add_theme_constant_override("separation",12)
 	columns.custom_minimum_size.y = 420 if not compact else 0
 	add_child(columns)
@@ -195,8 +199,11 @@ func build(state: Dictionary, forecast: Dictionary, mission: String,
 	_label(selected_card,local("Действующий баланс и показатели берутся из сохранённой партии.",
 		"Values are read from the authoritative live game state.",
 		"所有数值来自当前游戏存档。",lang),13)
-	var nav := HBoxContainer.new()
-	nav.add_theme_constant_override("separation",8)
+	var nav: Container = GridContainer.new() if compact else HBoxContainer.new()
+	if compact:
+		(nav as GridContainer).columns = 2
+	else:
+		(nav as HBoxContainer).add_theme_constant_override("separation",8)
 	selected_card.add_child(nav)
 	for section in ["overview","council","economy","district"]:
 		_action(nav,local({"overview":"КАБИНЕТ","council":"СОВЕТ","economy":"ЭКОНОМИКА","district":"РАЙОНЫ"}[section],
