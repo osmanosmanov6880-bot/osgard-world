@@ -6,6 +6,7 @@ import os
 import struct
 import sys
 import urllib.request
+from urllib.parse import urlsplit
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -72,23 +73,28 @@ def verify():
 
 def fetch():
     OUT.mkdir(parents=True,exist_ok=True)
-    prior = json.loads(LOCK.read_text(encoding="utf-8")) if LOCK.exists() else None
+    # Refuse unreviewed sources: build-time fetch must be reproducible.
+    # Every original asset byte is already approved by the committed lock.
+    if not LOCK.is_file():
+        raise ValueError("missing reviewed CC0 provenance lock; refusing unpinned remote bytes")
+    prior = json.loads(LOCK.read_text(encoding="utf-8"))
     assets = {}
     results = {}
     for kind,name in MAPS.items():
         req = urllib.request.Request(URL+"/"+name,headers={"User-Agent":"OSGARD-Empire-R90-Offline-PBR/1.0","Accept":"image/jpeg"})
         with urllib.request.urlopen(req,timeout=45) as response:
-            if not response.geturl().startswith("https://"):
-                raise ValueError("insecure upstream redirect")
+            actual_url = urlsplit(response.geturl())
+            if actual_url.scheme != "https" or actual_url.hostname != "dl.polyhaven.org":
+                raise ValueError("untrusted upstream redirect: "+actual_url.hostname if actual_url.hostname else "untrusted URL")
             blob = response.read(MAX_BYTES+1)
         value = inspect(kind,blob)
-        if prior is not None and prior["files"].get(kind) != value:
+        if prior["files"].get(kind) != value:
             raise ValueError("upstream changed; manual re-pin is required: "+name)
         assets[name]=blob
         results[kind]=value
     manifest={"asset":ASSET,"source":"https://polyhaven.com/a/"+ASSET,
               "license":"CC0","license_url":"https://polyhaven.com/license","files":results}
-    if prior is not None and manifest != prior:
+    if manifest != prior:
         raise ValueError("manifest changed without review")
     for name,blob in assets.items():
         tmp=OUT/(name+".pending")
