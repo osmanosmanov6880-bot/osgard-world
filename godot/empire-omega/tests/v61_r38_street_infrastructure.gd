@@ -18,6 +18,13 @@ func _run() -> void:
 	check(details.get("batch_count")==4 and details.get_child_count()==4,"only four real draw-call batches")
 	check(details.get_node("R38RealCurbStones") is MultiMeshInstance3D,"real 3D curb stone geometry")
 	check(details.get_node("R38StormDrainGrates") is MultiMeshInstance3D,"real sunken road edge grates")
+	var real_grate_mesh: Mesh = details.get_node("R38StormDrainGrates").multimesh.mesh
+	check(real_grate_mesh is ArrayMesh,"real storm grates contain open sculpted 3D slotted rails")
+	if real_grate_mesh is ArrayMesh:
+		var arrays: Array = real_grate_mesh.surface_get_arrays(0)
+		var vertex_count: int = (arrays[Mesh.ARRAY_VERTEX] as PackedVector3Array).size()
+		check(vertex_count>=50 and vertex_count<=PROPS.MAX_GRATE_VERTICES,
+			"genuine slotted drainage fits bounded polygon budget per instance")
 	check(details.get_node("R38ProtectiveMetalBollards") is MultiMeshInstance3D,"actual metal bollard mesh")
 	check(details.get_node("R38BollardMetalCaps") is MultiMeshInstance3D,"actual metal cap mesh")
 	check(details.call("geometry_instances")==81*20,"exact 1620 real geometry instances across 4 GPU batches")
