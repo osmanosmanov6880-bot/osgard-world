@@ -1,6 +1,6 @@
 extends SceneTree
 ## R90 first acceptance: actual authored Godot UI, source state and 3D.
-const DASH = preload("res://scripts/horizon_r90_premium_dashboard.gd")
+# Defer dashboard class compilation until real Godot autoloads initialize.
 const STYLE = preload("res://scripts/horizon_r90_reference_style.gd")
 const DIAL = preload("res://scripts/horizon_r90_speed_dial.gd")
 const URBAN = preload("res://scripts/horizon_r90_street_dressing.gd")
@@ -53,7 +53,12 @@ func _run() -> void:
 			"dashboard has visual margin")
 		verify(frame.end.x<=dimensions.x and frame.end.y<=dimensions.y,
 			"dashboard stays inside desktop")
-	var preview: VBoxContainer = DASH.new()
+	var premium: Variant = load("res://scripts/horizon_r90_premium_dashboard.gd")
+	verify(premium is Script and premium.can_instantiate(),"R90 dashboard source compiles at runtime")
+	if not (premium is Script and premium.can_instantiate()):
+		quit(1)
+		return
+	var preview: VBoxContainer = premium.new()
 	root.add_child(preview)
 	preview.call("build",live,forecast,str(missions.call("title","ru")),root.world_3d,false,"ru")
 	verify(preview.get("preview")!=null and (preview.get("preview") as SubViewport).world_3d==root.world_3d,
