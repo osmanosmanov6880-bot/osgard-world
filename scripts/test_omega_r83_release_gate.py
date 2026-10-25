@@ -162,7 +162,9 @@ class ReleaseClosureTests(unittest.TestCase):
         path, obj = self.art()
         obj["screenshots"][2]["viewport"] = "844x390"
         path.write_text(json.dumps(obj))
-        with self.assertRaisesRegex(g.FieldError, "duplicate original"):
+        # Either dimension mismatch or duplicate viewport is an equally
+        # valid first refusal for this intentionally forged input.
+        with self.assertRaisesRegex(g.FieldError, "duplicate original|dimensions mismatch"):
             g.art_and_licences(path, self.source)
 
     def test_wrong_mobile_pixel_dimensions_rejected(self):
