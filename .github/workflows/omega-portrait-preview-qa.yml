@@ -51,6 +51,12 @@ jobs:
           npm ci
           npm install --no-save --package-lock=false @playwright/test@1.58.2 pngjs@7.0.0
           npx playwright install --with-deps chromium
+      - name: Install real Mesa/Xvfb display for full desktop WebGL2 readback
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y xvfb libgl1-mesa-dri libegl1 libgl1
       - name: Serve authentic unpublished Godot build on localhost
         shell: bash
         run: |
@@ -72,8 +78,15 @@ jobs:
           for viewport in portrait-390x844 small-phone-320x568 landscape-phone-844x390 desktop-1366x768; do
             echo "CHECK actual WebGL2 scene and edge pixel diversity: $viewport"
             status=0
-            npx playwright test --config playwright.omega-portrait-preview.config.mjs \
-              --project="$viewport" --workers=1 || status=$?
+            if [ "$viewport" = "desktop-1366x768" ]; then
+              OMEGA_CI_GL_BACKEND=mesa LIBGL_ALWAYS_SOFTWARE=1 \
+                xvfb-run -a -s '-screen 0 1920x1080x24' \
+                npx playwright test --config playwright.omega-portrait-preview.config.mjs \
+                  --project="$viewport" --workers=1 || status=$?
+            else
+              npx playwright test --config playwright.omega-portrait-preview.config.mjs \
+                --project="$viewport" --workers=1 || status=$?
+            fi
             mkdir -p "omega-r67-original-viewport-evidence/$viewport"
             if [ -d omega-portrait-preview-results ]; then
               cp -a omega-portrait-preview-results \
