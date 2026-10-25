@@ -109,7 +109,7 @@ func _wave(code: String) -> AudioStreamWAV:
     for i in range(count):
         var time: float = float(i) / SAMPLE_RATE
         var progress: float = clampf(float(i) / float(count), 0.0, 1.0)
-        var envelope: float = powf(1.0 - progress, 2.0)
+        var envelope: float = pow(1.0 - progress, 2.0)
         var w: float = sin(TAU * frequency * time)
         var sample: int = clampi(roundi(w * envelope * 11000.0), -32768, 32767)
         sample_bytes[i * 2] = sample & 255
