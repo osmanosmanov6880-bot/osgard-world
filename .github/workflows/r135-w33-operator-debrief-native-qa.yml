@@ -99,6 +99,15 @@ jobs:
             echo '::error::Cinematic 3D response emitted Godot errors'
             exit 1
           fi
+      - name: W41 native editorial typography and responsive overflow regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 150s godot --headless --path w33-godot-native --script res://tests/test_w41_typography.gd 2>&1 | tee "$RUNNER_TEMP/w41-typography.log"
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/w41-typography.log"; then
+            echo '::error::W41 Godot typography acceptance failed'
+            exit 1
+          fi
       - name: Create real Godot 4.4.1 WebGL export from the same native-tested commit
         shell: bash
         run: |

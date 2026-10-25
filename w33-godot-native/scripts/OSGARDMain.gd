@@ -66,6 +66,8 @@ var _tone_hz := 440.0
 var _audio_player: AudioStreamPlayer
 # W35: Actual responsive cinematic viewport and in-scene editorial HUD.
 var stage_shell: Control
+var brand_mark: Label
+var stage_section_heading: Label
 var control_grid: GridContainer
 var stage_title: Label
 var stage_kicker: Label
@@ -134,6 +136,11 @@ func _publish_web_accessibility(snap: Dictionary) -> void:
         "viewport": [roundi(size.x), roundi(size.y)],
         "scroll": int(scroll.scroll_vertical),
         "hero_stage": _web_control_rect(stage_shell),
+        "brand": _web_control_rect(brand_mark),
+        "heading": _web_control_rect(heading),
+        "stage_section_heading": _web_control_rect(stage_section_heading),
+        "stage_kicker": _web_control_rect(stage_kicker),
+        "stage_edition": _web_control_rect(stage_edition),
         "dial_a": _web_control_rect(dial_a),
         "dial_b": _web_control_rect(dial_b),
         "engine": _web_control_rect(engine_btn),
@@ -273,7 +280,16 @@ func _make_cinematic_overlay(parent: Control) -> void:
     column.add_child(top)
     stage_kicker = _overlay_label(top, "A7Classification", "A7 / RESTRICTED RESEARCH FACILITY", 13, COPPER)
     stage_kicker.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+    stage_kicker.autowrap_mode = TextServer.AUTOWRAP_OFF
+    stage_kicker.clip_text = true
     stage_edition = _overlay_label(top, "SimulationTag", "OFFLINE · SIMULATION", 12, MINT)
+    # Screenshot QA discovered a real W35 defect: unbounded label width turned
+    # 'OFFLINE · SIMULATION' into a vertical ribbon on the right-hand side.
+    stage_edition.autowrap_mode = TextServer.AUTOWRAP_OFF
+    stage_edition.custom_minimum_size = Vector2(190, 22)
+    stage_edition.size_flags_horizontal = Control.SIZE_SHRINK_END
+    stage_edition.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+    stage_edition.clip_text = true
     var space := Control.new()
     space.size_flags_vertical = Control.SIZE_EXPAND_FILL
     space.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -314,7 +330,10 @@ func _create_interface() -> void:
     pad.add_child(body)
 
     var top := _flow(body)
-    _label(top, "OSGARD   /   OBSIDIAN PROTOCOL", 23, COPPER).custom_minimum_size.x = 320
+    brand_mark = _label(top, "OSGARD   /   OBSIDIAN PROTOCOL", 23, COPPER)
+    brand_mark.name = "ObsidianBrandWordmark"
+    brand_mark.autowrap_mode = TextServer.AUTOWRAP_OFF
+    brand_mark.clip_text = true
     lang_btn = _button(top, "RU / EN", _toggle_language, false, 96)
     quality_btn = _button(top, "HERO / ECO", _toggle_quality, false, 150)
     heading = _label(body, "REACTOR A7   /   PRECISION DIVISION", 26, WHITE)
@@ -323,7 +342,10 @@ func _create_interface() -> void:
     var stage_section := _panel(body)
     var stage_frame := stage_section.get_parent() as PanelContainer
     stage_frame.add_theme_stylebox_override("panel", _panel_style(Color("080d13"), Color("49545a"), 12))
-    _label(stage_section, "OBSIDIAN FACILITY  //  REACTOR A7    •    SECURE OBSERVATION", 12, COPPER)
+    stage_section_heading = _label(stage_section, "OBSIDIAN FACILITY  //  REACTOR A7    •    SECURE OBSERVATION", 12, COPPER)
+    stage_section_heading.name = "A7CinemaSectionHeading"
+    stage_section_heading.autowrap_mode = TextServer.AUTOWRAP_OFF
+    stage_section_heading.clip_text = true
     stage_shell = Control.new()
     stage_shell.name = "CinematicHeroShell"
     stage_shell.custom_minimum_size = Vector2(0, 500)
@@ -475,8 +497,12 @@ func _layout_stage_for_screen() -> void:
     visual_container.custom_minimum_size = Vector2(0.0, desired_h)
     control_grid.columns = 1 if size.x < 900.0 else 2
     var narrow: bool = size.x < 640.0
-    stage_edition.visible = not narrow
+    stage_edition.visible = size.x >= 1050.0
     stage_kicker.text = "A7 / SECURE FACILITY" if narrow else "A7 / RESTRICTED RESEARCH FACILITY"
+    stage_section_heading.text = "A7  /  SECURE OBSERVATION" if narrow else "OBSIDIAN FACILITY  //  REACTOR A7    •    SECURE OBSERVATION"
+    brand_mark.text = "OSGARD  /  OBSIDIAN" if narrow else "OSGARD   /   OBSIDIAN PROTOCOL"
+    brand_mark.add_theme_font_size_override("font_size", 18 if narrow else 23)
+    heading.add_theme_font_size_override("font_size", 21 if narrow else 26)
     stage_title.add_theme_font_size_override("font_size", 20 if narrow else 26)
     stage_readout.add_theme_font_size_override("font_size", 11 if narrow else 13)
     var eco: bool = str(core.settings.get("quality", "hero")) == "eco"
@@ -638,7 +664,7 @@ func _refresh() -> void:
         return
     var snap: Dictionary = core.snapshot()
     var locale := str(core.settings["locale"])
-    _assign(heading, "REACTOR A7   /   OBSIDIAN PROTOCOL")
+    _assign(heading, "REACTOR A7" if size.x < 640.0 else "REACTOR A7   /   OBSIDIAN PROTOCOL")
     _assign(lead, _t("lead"))
     _assign(footer, _t("sim") + "   ·   OBSIDIAN PROTOCOL / GODOT 4.4.1 / LOCAL ONLY")
     lang_btn.text = "RU ●" if locale == "ru" else "EN ●"
