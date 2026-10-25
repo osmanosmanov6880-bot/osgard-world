@@ -43,8 +43,8 @@ func _add_indicator(parent: Node3D, location: Vector3, title: String) -> void:
     var tag := Label3D.new()
     tag.name = "ReadableFaultTag"
     tag.text = title + "  [SIM]"
-    tag.font_size = 36
-    tag.pixel_size = 0.0043
+    tag.font_size = 48
+    tag.pixel_size = 0.0076
     tag.position = Vector3(0, 0.82, 0)
     tag.billboard = BaseMaterial3D.BILLBOARD_ENABLED
     # Keep the active fault instruction above opaque rails and the source GLB.

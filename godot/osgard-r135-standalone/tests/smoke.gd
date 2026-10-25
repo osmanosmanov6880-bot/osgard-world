@@ -68,37 +68,62 @@ func _run() -> void:
     if int(final.get("loading_failures", 0)) != 0 or int(final.get("load_count", 0)) < 3:
         _fail("HERO-ECO-HERO switching failed: " + str(final))
         return
-    # A player must be able to complete a deterministic, four-action mission.
-    # Out-of-order input changes the rig but MUST NOT unlock fake mission progress.
+    # W13: the tutorial MUST NOT teach opening a running machine.
+    # Verify the actual service hatch travel and universal interlocks, not
+    # just a mission-step counter or a descriptive UI label.
     instance.call("_start_mission")
-    var opened: Dictionary = rig.call("summary")
-    if not bool(opened.get("mission_active", false)) or int(opened.get("mission_step", -1)) != 0:
-        _fail("Mission did not reset correctly")
+    var started: Dictionary = rig.call("summary")
+    if not bool(started.get("mission_active", false)) or int(started.get("mission_step", -1)) != 0:
+        _fail("W13 mission did not reset to safety-first stop-drive step")
         return
-    instance.call("_toggle_motion") # Wrong order: pause before opening hatch.
-    if int(rig.call("summary").get("mission_step", -1)) != 0:
-        _fail("Out-of-order pause advanced the mission")
+    if float(started.get("lid_progress", 9.0)) > 0.05 or not bool(started.get("motion_enabled", false)):
+        _fail("W13 scenario reset must close the simulated hatch before motor runs")
         return
-    instance.call("_toggle_motion") # Resume before beginning the correct sequence.
-    instance.call("_toggle_hatch")
-    if int(rig.call("summary").get("mission_step", -1)) != 1:
-        _fail("Opening the hatch did not clear the first checkpoint")
+    instance.call("_toggle_hatch") # Unsafe order: hatch before stopping motor.
+    var blocked_hatch: Dictionary = rig.call("summary")
+    if int(blocked_hatch.get("mission_step", -1)) != 0 or float(blocked_hatch.get("lid_target", 9)) > 0.05:
+        _fail("W13 tutorial incorrectly permitted opening moving machinery")
         return
-    instance.call("_toggle_motion")
+    if not str(blocked_hatch.get("mission_feedback", "")).contains("SAFETY INTERLOCK"):
+        _fail("W13 unsafe input must explain why it was rejected")
+        return
+    instance.call("_toggle_motion") # Stop drive FIRST.
+    if int(rig.call("summary").get("mission_step", -1)) != 1 or bool(rig.call("summary").get("motion_enabled", true)):
+        _fail("W13 pause-before-hatch checkpoint failed")
+        return
+    instance.call("_toggle_hatch") # Safe open.
     if int(rig.call("summary").get("mission_step", -1)) != 2:
-        _fail("Pausing the drive did not clear the second checkpoint")
+        _fail("W13 hatch-opening checkpoint failed")
         return
-    instance.call("_toggle_hatch")
+    for tick in range(125):
+        rig.call("_physics_process", 1.0 / 60.0)
+    if float(rig.call("summary").get("lid_progress", 0)) < 0.95:
+        _fail("W13 service hatch did not physically open")
+        return
+    instance.call("_toggle_motion") # Unsafe restart must fail.
+    if bool(rig.call("summary").get("motion_enabled", true)) or int(rig.call("summary").get("mission_step", -1)) != 2:
+        _fail("W13 tutorial restarted while hatch was open")
+        return
+    instance.call("_toggle_hatch") # Close safely.
     if int(rig.call("summary").get("mission_step", -1)) != 3:
-        _fail("Closing the hatch did not clear the third checkpoint")
+        _fail("W13 hatch-closing checkpoint failed")
+        return
+    instance.call("_toggle_motion") # Unsafe restart while lid is still closing.
+    if bool(rig.call("summary").get("motion_enabled", true)):
+        _fail("W13 tutorial drive restarted before hatch fully sealed")
+        return
+    for tick in range(125):
+        rig.call("_physics_process", 1.0 / 60.0)
+    if float(rig.call("summary").get("lid_progress", 9)) > 0.05:
+        _fail("W13 simulated hatch did not reach fully sealed state")
         return
     instance.call("_toggle_motion")
     var complete: Dictionary = rig.call("summary")
     if not bool(complete.get("mission_completed", false)) or int(complete.get("mission_step", 0)) != 4:
-        _fail("Full four-step mission did not complete: " + str(complete))
+        _fail("W13 safety-first service training failed: " + str(complete))
         return
-    if not bool(complete.get("motion_enabled", false)) or float(rig.get("lid_target")) > 0.5:
-        _fail("Mission completed with unsafe simulated state")
+    if not bool(complete.get("motion_enabled", false)) or float(rig.get("lid_target")) > 0.05:
+        _fail("W13 lesson completed with unsafe simulated state")
         return
     instance.call("_next_view")
     if int(instance.get("view_index")) != 1:
@@ -255,5 +280,82 @@ func _run() -> void:
     if not str(completed_learning.get("challenge_evidence", "")).contains("(SIM)"):
         _fail("W9 evidence must explicitly be marked simulation-only")
         return
-    print("R135 SMOKE PASS: original 3D, three lessons, diagnostic scoring, safety interlocks, camera scan, 8 buttons")
+    # W14: case-specific progress persisted, without inventing legacy history.
+    if int(completed_learning.get("record_schema_version", 0)) != 2:
+        _fail("W14 progress schema must be version 2")
+        return
+    var attempts: Array = completed_learning.get("case_attempts", [])
+    var scores: Array = completed_learning.get("case_best_scores", [])
+    var seconds: Array = completed_learning.get("case_best_seconds", [])
+    var mistakes: Array = completed_learning.get("case_total_mistakes", [])
+    if attempts.size() != 3 or scores.size() != 3 or seconds.size() != 3 or mistakes.size() != 3:
+        _fail("W14 progress must track exactly three independent faults")
+        return
+    for i in range(3):
+        if int(attempts[i]) < 1 or int(scores[i]) <= 0 or float(seconds[i]) <= 0.0:
+            _fail("W14 independent case progress was not recorded: " + str(completed_learning))
+            return
+    if int(mistakes[0]) < 3 or not bool(completed_learning.get("local_record_save_ok", false)):
+        _fail("W14 unsafe scenario errors were not saved")
+        return
+    var full_record := ConfigFile.new()
+    if full_record.load("user://r135_challenge_record.cfg") != OK:
+        _fail("W14 actual progress file missing after completing all three faults")
+        return
+    if int(full_record.get_value("progress", "schema_version", 0)) != 2:
+        _fail("W14 actual file not migrated to schema v2")
+        return
+    var restored: Node = preload("res://R135ServiceDirector.gd").new()
+    restored.call("_load_challenge_record")
+    for i in range(3):
+        if int(restored.get("case_attempts")[i]) != int(attempts[i]) or int(restored.get("case_best_scores")[i]) != int(scores[i]):
+            _fail("W14 persisted per-fault data changed after a genuine reload")
+            return
+    restored.free()
+    # Independent legacy test: schema v1 only had best_score + cleared_cases.
+    var legacy := ConfigFile.new()
+    legacy.set_value("progress", "best_score", 95)
+    legacy.set_value("progress", "cleared_cases", [true, false, true])
+    if legacy.save("user://r135_challenge_record.cfg") != OK:
+        _fail("W14 cannot write isolated legacy migration fixture")
+        return
+    var migrated: Node = preload("res://R135ServiceDirector.gd").new()
+    migrated.call("_load_challenge_record")
+    var migrated_attempts: Array = migrated.get("case_attempts")
+    var migrated_cleared: Array = migrated.get("cleared_cases")
+    if int(migrated.get("challenge_best_score")) != 95 or migrated_cleared != [true, false, true]:
+        _fail("W14 legacy best score/case flags changed during migration")
+        return
+    if migrated_attempts != [0, 0, 0]:
+        _fail("W14 invented per-fault attempts in legacy save")
+        return
+    migrated.free()
+    # Corrupted local numeric arrays must clamp/recover, never inject fake
+    # attempts/scores or throw while opening the simulation.
+    var corrupt := ConfigFile.new()
+    corrupt.set_value("progress", "best_score", "INVALID")
+    corrupt.set_value("progress", "cleared_cases", "NOT_AN_ARRAY")
+    corrupt.set_value("progress", "case_attempts", ["bad", -8, 9999999])
+    corrupt.set_value("progress", "case_best_scores", [10000, -5, 32])
+    corrupt.set_value("progress", "case_best_seconds", [-40.0, 3.5, "invalid"])
+    corrupt.set_value("progress", "case_total_mistakes", [0, 9999999999, "bad"])
+    if corrupt.save("user://r135_challenge_record.cfg") != OK:
+        _fail("W14 could not create a malformed local record fixture")
+        return
+    var cleaned: Node = preload("res://R135ServiceDirector.gd").new()
+    cleaned.call("_load_challenge_record")
+    if int(cleaned.get("challenge_best_score")) != 0 or cleaned.get("case_attempts") != [0, 0, 1000000]:
+        _fail("W14 malformed attempt scores were not sanitized")
+        return
+    if cleaned.get("case_best_scores") != [150, 0, 32] or cleaned.get("case_total_mistakes") != [0, 1000000, 0]:
+        _fail("W14 out-of-range scores or mistakes were not clamped")
+        return
+    if cleaned.get("case_best_seconds") != [-1.0, 3.5, -1.0]:
+        _fail("W14 bad finish times did not preserve unknown sentinel")
+        return
+    cleaned.free()
+    if full_record.save("user://r135_challenge_record.cfg") != OK:
+        _fail("W14 could not restore real progress after migration fixture")
+        return
+    print("R135 W14 SMOKE PASS: original 3D, three lessons, diagnostic scoring, safety interlocks, camera scan, 8 buttons")
     quit(0)
