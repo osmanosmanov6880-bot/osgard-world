@@ -66,8 +66,17 @@ function median(nums) {
   const mid=Math.floor(sorted.length/2);
   return sorted.length%2?sorted[mid]:(sorted[mid-1]+sorted[mid])/2;
 }
+function usableFrameReport(r) {
+  // Match exactly the eligibility rules of the published R39/R40 viewer.
+  // Never let an excluded software-GPU, interrupted or unreliable JSON
+  // influence the separate 1%-low/P99 acceptance gate.
+  return r.validTest === true && r.software === false &&
+    r.resolution !== 'НЕ УКАЗАНО' && r.stamp !== null &&
+    (r.status === 'ЦЕЛЬ' || r.status === 'НИЖЕ ЦЕЛИ');
+}
 function framePacing(rows) {
-  const a=rows.filter(r=>r.variant==='R38'),b=rows.filter(r=>r.variant==='R40');
+  const a=rows.filter(r=>r.variant==='R38' && usableFrameReport(r));
+  const b=rows.filter(r=>r.variant==='R40' && usableFrameReport(r));
   check(a.length>=3 && b.length>=3,'Missing before/after frame pacing samples');
   const low38=median(a.map(x=>x.low)),low40=median(b.map(x=>x.low));
   const p9938=median(a.map(x=>x.p99)),p9940=median(b.map(x=>x.p99));
@@ -173,18 +182,36 @@ try {
       one_percent_low_fps:35,p95_frame_ms:23,p99_frame_ms:29};
     check(api.parseReport(fixture,'fixture.json','CI','R40').reportedBuild===
       api.r40CandidateBuildId,'R40 provenance regression');
-    const stable=framePacing([
-      {variant:'R38',low:30,p99:33},{variant:'R38',low:31,p99:34},
-      {variant:'R38',low:29,p99:35},{variant:'R40',low:31,p99:32},
-      {variant:'R40',low:32,p99:33},{variant:'R40',low:30,p99:34}
-    ]);
+    const validFixture=(variant,low,p99,stamp)=>({
+      variant,low,p99,stamp,validTest:true,software:false,
+      status:'ЦЕЛЬ',resolution:'390×844'
+    });
+    const stableFixtures=[
+      validFixture('R38',30,33,1790000001),
+      validFixture('R38',31,34,1790000002),
+      validFixture('R38',29,35,1790000003),
+      validFixture('R40',31,32,1790000004),
+      validFixture('R40',32,33,1790000005),
+      validFixture('R40',30,34,1790000006)
+    ];
+    const stable=framePacing(stableFixtures);
     check(stable.stable && stable.low_improvement_percent > 0,
       'Frame pacing stable synthetic regression');
     const stutter=framePacing([
-      {variant:'R38',low:30,p99:33},{variant:'R38',low:31,p99:34},
-      {variant:'R38',low:29,p99:35},{variant:'R40',low:20,p99:49},
-      {variant:'R40',low:19,p99:48},{variant:'R40',low:21,p99:47}
+      ...stableFixtures.slice(0,3),
+      validFixture('R40',20,49,1790000007),
+      validFixture('R40',19,48,1790000008),
+      validFixture('R40',21,47,1790000009)
     ]);
+    const contaminated=framePacing([
+      ...stableFixtures,
+      {...validFixture('R40',0,50000,1790000010),
+        software:true,validTest:false,status:'SOFTWARE GPU'}
+    ]);
+    check(contaminated.stable &&
+      contaminated.baseline_p99_ms===stable.baseline_p99_ms &&
+      contaminated.candidate_p99_ms===stable.candidate_p99_ms,
+      'Unreliable software-GPU rows must not contaminate frame-pacing medians');
     check(!stutter.stable && stutter.p99_improvement_percent < -5,
       'Severe stutter regression must always be rejected');
     const sampleContent=Buffer.from('synthetic-example-only', 'utf8');
@@ -205,7 +232,7 @@ try {
     catch(e) { repeatedTimeRejected=/Reused benchmark timestamp/.test(String(e.message)); }
     check(repeatedTimeRejected && seenTimes.size===3,
       'Repeated same-device/build timestamps must be rejected');
-    console.log('NEBULA_R40_FIELD_GATE_SELFTEST_SUCCESS synthetic_only=true hardware=0 pacing_cases=2 global_duplicate_negative_cases=2');
+    console.log('NEBULA_R40_FIELD_GATE_SELFTEST_SUCCESS synthetic_only=true hardware=0 pacing_cases=3 global_duplicate_negative_cases=2');
   } else {
     check(process.argv.length===3,
       'Usage: node scripts/nebula-r40-field-release-gate.mjs /path/to/manifest.json');
