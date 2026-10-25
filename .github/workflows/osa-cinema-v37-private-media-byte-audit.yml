@@ -1,0 +1,78 @@
+name: OSA CINEMA V37 exact private MP4 WebVTT bytes and film NO-GO
+on:
+  pull_request:
+    paths:
+      - 'scripts/osa-cinema-v37-verify-private-media.mjs'
+      - 'scripts/osa-cinema-v37-verify-private-media.test.mjs'
+      - 'scripts/osa-cinema-v37-v29-integration.test.mjs'
+      - 'scripts/osa-cinema-v36-verify-private-receipts.mjs'
+      - 'scripts/osa-cinema-v29-owner-preflight.mjs'
+      - 'scripts/osa-cinema-v28-final-intake.mjs'
+      - 'docs/OSA_CINEMA_V16_WORKPRINT_MANIFEST.json'
+      - '.github/workflows/osa-cinema-v37-private-media-byte-audit.yml'
+  push:
+    branches: [master]
+    paths:
+      - 'scripts/osa-cinema-v37-verify-private-media.mjs'
+      - 'scripts/osa-cinema-v37-verify-private-media.test.mjs'
+      - 'scripts/osa-cinema-v37-v29-integration.test.mjs'
+      - 'scripts/osa-cinema-v36-verify-private-receipts.mjs'
+      - 'scripts/osa-cinema-v29-owner-preflight.mjs'
+      - 'scripts/osa-cinema-v28-final-intake.mjs'
+      - 'docs/OSA_CINEMA_V16_WORKPRINT_MANIFEST.json'
+      - '.github/workflows/osa-cinema-v37-private-media-byte-audit.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  private-exact-bytes:
+    name: V37 reject linked/tampered eight media (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: V37 media verifier syntax and synthetic adversarial scenarios
+        shell: bash
+        run: |
+          node --check scripts/osa-cinema-v37-verify-private-media.mjs
+          node --check scripts/osa-cinema-v37-verify-private-media.test.mjs
+          node --test scripts/osa-cinema-v37-verify-private-media.test.mjs
+      - name: Public recorded film and paid checkout must remain strictly blocked
+        shell: bash
+        run: |
+          set +e
+          node scripts/osa-cinema-v20-release-audit.mjs --strict-publication > "$RUNNER_TEMP/osa-v37-no-go.txt" 2>&1
+          rc=$?
+          set -e
+          test "$rc" -eq 1
+          grep -q OSA_CINEMA_V20_NO_PUBLICATION "$RUNNER_TEMP/osa-v37-no-go.txt"
+  real-v29-pipeline:
+    name: V37 V29 real FFmpeg synthetic-only pipeline (Ubuntu)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install FFmpeg and FFprobe if absent
+        shell: bash
+        run: |
+          if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -y ffmpeg
+          fi
+          ffmpeg -version | head -n 1
+          ffprobe -version | head -n 1
+      - name: Real V29 preflight plus V36 reports and V37 byte verification
+        shell: bash
+        run: |
+          node --check scripts/osa-cinema-v37-v29-integration.test.mjs
+          node --test scripts/osa-cinema-v37-v29-integration.test.mjs
