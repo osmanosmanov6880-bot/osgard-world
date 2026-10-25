@@ -10,6 +10,8 @@ on:
       - "scripts/r135-device-evidence.mjs"
       - "scripts/r135-frame-metrics.mjs"
       - "scripts/test-r135-frame-metrics.mjs"
+      - "scripts/r135-hardware-matrix.mjs"
+      - "scripts/test-r135-hardware-matrix.mjs"
       - "scripts/r135-w10-release-readiness.py"
       - "scripts/r135-w11-readability-qa.py"
   workflow_dispatch:
@@ -35,6 +37,7 @@ jobs:
           node --check scripts/r135-web-smoke.mjs
           node --check scripts/r135-device-evidence.mjs
           node scripts/test-r135-frame-metrics.mjs
+          node scripts/test-r135-hardware-matrix.mjs
           python3 - <<'PY'
           from pathlib import Path
           smoke=Path("scripts/r135-web-smoke.mjs").read_text()

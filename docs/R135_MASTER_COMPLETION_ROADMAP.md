@@ -2,6 +2,9 @@
 
 **Last reviewed:** 2026-10-25. The statuses below refer to actual source or release evidence, not aspirational AAA claims.
 
+**Status update:** W12–W14 source integrated in merged PR #393. The original W12/W13/W14 open checkboxes below are historical, superseded by this integration. W14 production publication remains separate PR #397. W15/W17 code under draft PR #405 is NOT live; physical W16 evidence is missing. Current completion gates: docs/R135_W15_W18_EXECUTION_MASTERPLAN.md.
+
+
 ## Release baseline: W11 (complete, software-certified)
 - [x] Godot 4.4.1 original HERO/ECO 3D rig; moving service machinery, mission and three simulated diagnostics, simulated safety interlock in advanced challenges.
 - [x] W11 responsive operator HUD and optical 3D label visibility; original viewport Chromium screenshots and brightness acceptance.
