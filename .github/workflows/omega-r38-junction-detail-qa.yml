@@ -38,6 +38,10 @@ jobs:
   real-4-viewport-junctions:
     runs-on: ubuntu-latest
     timeout-minutes: 28
+    strategy:
+      fail-fast: false
+      matrix:
+        viewport: [desktop-1366x768, portrait-390x844, small-phone-320x568, landscape-phone-844x390]
     steps:
       - uses: actions/checkout@v4
       - uses: chickensoft-games/setup-godot@v2
@@ -75,12 +79,12 @@ jobs:
           cat /tmp/r38-web.log
           exit 1
       - name: Require authentic Godot pixels on all four viewports
-        run: npx playwright test --config playwright.omega-portrait-preview.config.mjs
+        run: npx playwright test --config playwright.omega-portrait-preview.config.mjs --project="${{ matrix.viewport }}"
       - name: Preserve four original browser screenshots and failure trace
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: omega-r38-native-road-junction-webgl
+          name: omega-r38-native-road-junction-webgl-${{ matrix.viewport }}
           path: |
             omega-portrait-preview-results/
             omega-portrait-preview-report/
