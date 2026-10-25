@@ -69,6 +69,9 @@ var title_label: Label
 var description_label: Label
 var hint_label: Label
 var metrics_label: Label
+var case_mastery_label: Label
+var case_selection_caption: Label
+var case_selection_buttons: Array[Button] = []
 var safety_label: Label
 var primary_button: Button
 var guide_button: Button
@@ -255,6 +258,23 @@ func _build() -> void:
     coach_detail.name = "CauseAndNextAction"
     coach_detail.visible = false
     metrics_label = _label(body, Color(0.93, 0.72, 0.49), 13)
+    # W22: accessible real targeted replay; progress is derived exclusively
+    # from existing W14 per-fault scores and does NOT invent new save formats.
+    case_selection_caption = _label(body, Color(0.98, 0.68, 0.40), 13)
+    case_selection_caption.name = "ReplayAnyFaultLabel"
+    case_mastery_label = _label(body, Color(0.64, 0.88, 0.82), 12)
+    case_mastery_label.name = "TrueMasteryProgress"
+    var replay_row := HBoxContainer.new()
+    replay_row.name = "ThreeRealFaultReplayButtons"
+    replay_row.add_theme_constant_override("separation", 5)
+    body.add_child(replay_row)
+    for i in range(3):
+        var replay := _styled_button("0%d" % (i + 1), false)
+        replay.name = "ReplayFault_%d" % (i + 1)
+        replay.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+        replay.pressed.connect(_start_selected_case.bind(i))
+        replay_row.add_child(replay)
+        case_selection_buttons.append(replay)
     safety_label = _label(body, Color(0.69, 0.73, 0.76), 12)
     safety_label.text = "СИМУЛЯЦИЯ • Реальное оборудование требует допуска и проверки отсутствия энергии."
     primary_button = _styled_button("НАЧАТЬ ОБУЧЕНИЕ", true)
@@ -409,6 +429,11 @@ func _layout() -> void:
     coach_more_button.custom_minimum_size = Vector2(0, 44.0 * ratio)
     coach_more_button.add_theme_font_size_override("font_size", int((12 if compact else 13) * ratio))
     metrics_label.add_theme_font_size_override("font_size", int(13 * ratio))
+    case_mastery_label.add_theme_font_size_override("font_size", int((11 if compact else 12) * ratio))
+    case_selection_caption.add_theme_font_size_override("font_size", int((12 if compact else 13) * ratio))
+    for replay in case_selection_buttons:
+        replay.custom_minimum_size = Vector2(0, 44.0 * ratio)
+        replay.add_theme_font_size_override("font_size", int((11 if compact else 13) * ratio))
     safety_label.add_theme_font_size_override("font_size", int(11 * ratio))
     primary_button.add_theme_font_size_override("font_size", int((13 if compact else 15) * ratio))
     guide_button.add_theme_font_size_override("font_size", int((12 if compact else 14) * ratio))
@@ -458,6 +483,51 @@ func _toggle_expanded() -> void:
     if host != null:
         host.call_deferred("_settle_hud_after_layout")
     call_deferred("_layout")
+
+func _start_selected_case(index: int) -> void:
+    if host == null or index < 0 or index >= 3:
+        return
+    # A replay cannot override a running safety-first service mission.
+    # The game engine validates the active mission and fault index again.
+    var success: bool = bool(host.call("_start_selected_case", index))
+    if success:
+        coach_expanded = false
+        _present()
+
+
+func _refresh_case_selection() -> void:
+    if case_mastery_label == null or case_selection_buttons.size() != 3:
+        return
+    _assign(case_selection_caption, _t("ВЫБЕРИТЕ УЧЕБНЫЙ КЕЙС", "SELECT A SIMULATED FAULT"))
+    var flags: Array = state_cache.get("cleared_case_flags", [false, false, false])
+    var attempts: Array = state_cache.get("case_attempts", [0, 0, 0])
+    var scores: Array = state_cache.get("case_best_scores", [0, 0, 0])
+    var proficient: Array = state_cache.get("case_proficient_flags", [false, false, false])
+    var complete_count: int = 0
+    var badge_count: int = 0
+    var locked: bool = bool(state_cache.get("mission_active", false)) or bool(state_cache.get("challenge_active", false))
+    var titles_ru = ["ОПТИКА", "ВОЗДУХ", "ЛЮК"]
+    var titles_en = ["OPTICS", "COOLING", "HATCH"]
+    for i in range(3):
+        var done: bool = i < flags.size() and bool(flags[i])
+        var mastered: bool = i < proficient.size() and bool(proficient[i])
+        var best: int = maxi(0, int(scores[i])) if i < scores.size() else 0
+        var title: String = str(titles_ru[i]) if locale == "ru" else str(titles_en[i])
+        var status: String = "★" if mastered else ("OK" if done else "-")
+        case_selection_buttons[i].text = "%d %s %s" % [i + 1, title, status]
+        case_selection_buttons[i].disabled = locked
+        case_selection_buttons[i].tooltip_text = _t(
+            "Лучший балл %d/150, попыток %d. %s" % [best, int(attempts[i]), "Завершите текущий кейс прежде смены." if locked else "Нажмите, чтобы повторить."],
+            "Best %d/150, attempts %d. %s" % [best, int(attempts[i]), "Finish current case before switching." if locked else "Select to replay."]
+        )
+        if done:
+            complete_count += 1
+        if mastered:
+            badge_count += 1
+    _assign(case_mastery_label, _t(
+        "ПРОЙДЕНО %d/3 · МАСТЕРСТВО %d/3 (от 100 баллов)" % [complete_count, badge_count],
+        "CLEARED %d/3 · MASTERY %d/3 (100+ points)" % [complete_count, badge_count]))
+
 
 func _toggle_coach_details() -> void:
     coach_expanded = not coach_expanded
@@ -739,6 +809,7 @@ func _present() -> void:
     if finished:
         score_text = _t("ОБУЧЕНИЕ ЗАВЕРШЕНО  •  %d/3 КЕЙСА", "TRAINING FINISHED  •  %d/3 CASES") % completed_cases
     _assign(metrics_label, score_text)
+    _refresh_case_selection()
     var drive_label: String = _t("ПРИВОД РАБОТАЕТ", "DRIVE RUNNING") if bool(state_cache.get("motion_enabled", true)) else _t("ПРИВОД ОСТАНОВЛЕН", "DRIVE STOPPED")
     var mode: String = "HERO" if int(state_cache.get("quality", 0)) == 2 else "ECO"
     _assign(compact_status_title, "OSGARD  /  %s  •  %s" % [mode, drive_label])
