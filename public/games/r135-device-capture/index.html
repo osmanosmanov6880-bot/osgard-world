@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<title>OSGARD R135 — W16 физические испытания</title>
+<link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+<main>
+  <header>
+    <p>OSGARD WORLD / R135 / W16</p>
+    <h1>Физические испытания — Android / iPhone</h1>
+    <p class="proof">Инструмент снимает исходные программные измерения. Он НЕ подтверждает аппаратный FPS GPU, температуру, безопасность оборудования или сертификацию устройства.</p>
+  </header>
+  <section class="panel" aria-labelledby="setup-title">
+    <h2 id="setup-title">1. Условия сеанса</h2>
+    <p>Открой страницу на настоящем Android Chrome либо iPhone Safari. Внутри игры выбери <kbd>ECO</kbd> или <kbd>HERO</kbd> и не меняй режим 65 секунд. Для каждого сочетания нужно два независимых сеанса.</p>
+    <div class="row">
+      <label for="mode">Режим
+        <select id="mode"><option>ECO</option><option>HERO</option></select>
+      </label>
+      <label for="physical"><input type="checkbox" id="physical">Подтверждаю, что лично использую настоящий телефон, не эмулятор.</label>
+      <button class="primary" id="start" type="button">Начать замер 65 сек.</button>
+    </div>
+    <p id="status" class="status" role="status" aria-live="polite">Загрузите игровую сцену ниже. Данные не отправляются на сервер.</p>
+    <p class="small">Источник проверяется по SHA-256 настоящего <code>release.json</code> и исходному коммиту W18. Во время сеанса не сворачивайте Safari/Chrome и не поворачивайте телефон.</p>
+  </section>
+  <section class="panel" aria-labelledby="game-title">
+    <h2 id="game-title">2. Настоящая игровая сцена</h2>
+    <iframe id="game" class="game" title="OSGARD R135 Godot WebGL — игра для физического испытания" src="/games/r135-service/" loading="eager"></iframe>
+  </section>
+  <section class="panel" aria-labelledby="evidence-title">
+    <h2 id="evidence-title">3. Оригинальный скриншот и экспорт</h2>
+    <p>После замера сделай обычный скриншот телефона и выбери сохранённый <strong>PNG</strong>. Отчёт и PNG хранятся только на твоём устройстве до передачи независимому проверяющему.</p>
+    <div class="row">
+      <label for="screenshot">Оригинальный PNG
+        <input id="screenshot" type="file" accept="image/png,.png" disabled>
+      </label>
+      <button id="export" disabled type="button">Экспортировать JSON-сеанс</button>
+    </div>
+    <p class="small">Исходный файл PNG не изменяется. SHA-256 рассчитывается непосредственно из выбранных байтов. Экспорт не ставит флаги <code>user_reviewed_touch</code> и <code>original_frame_reviewed</code>: их вправе поставить только независимый проверяющий после испытания реального управления и просмотра оригинала.</p>
+  </section>
+</main>
+<script type="module" src="./device-capture-ui.js"></script>
+</body>
+</html>
