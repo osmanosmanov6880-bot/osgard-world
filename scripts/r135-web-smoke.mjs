@@ -431,8 +431,8 @@ async function verifyAdaptiveHud(page) {
 let failed = false
 try {
   for (const [name, opts, isMobile] of [
-    ['desktop-1366', { viewport: { width: 1366, height: 768 }, deviceScaleFactor: 1, reducedMotion: 'no-preference' }, false],
-    ['mobile-390', { ...devices['Pixel 7'], reducedMotion: 'reduce' }, true],
+    ['desktop-1366', { viewport: { width: 1366, height: 768 }, deviceScaleFactor: 1, reducedMotion: 'no-preference', locale: 'en-US' }, false],
+    ['mobile-390', { ...devices['Pixel 7'], reducedMotion: 'reduce', locale: 'en-US' }, true],
   ]) {
     const context = await browser.newContext(opts)
     const page = await context.newPage()
@@ -455,12 +455,37 @@ try {
           && x?.button_centers?.length === 8 && x?.fault_marker_count === 3
           && x?.fault_marker_visible_count === 0 && x?.fault_label_visible_count === 0
           && x?.studio_grid_draw_batches === 2 && x?.studio_grid_instances === 18
+          && x?.studio_detail_draw_batches === 3 && x?.studio_detail_instances === 47
+          && x?.language_control_visible === true
           && x?.studio_mesh_nodes <= 8 && x?.prefers_reduced_motion === isMobile
           && x?.inspection_fill_energy >= 3.5
           && x?.inspection_fill_shadow_enabled === false
           && x?.inspection_fill_range >= 12.0,
         'Real W5 Godot ECO rig, 3D markers and controls did not load', 90_000)
       if (boot.quality !== 0 || boot.studio_quality !== 0) throw new Error('Low-memory ECO mode not used on boot')
+      if (boot.ui_locale !== 'en') throw new Error('W17 deterministic QA locale did not load')
+      // Actual Godot controls in Chromium, not physical-device evidence.
+      if (isMobile) {
+        for (const wanted of ['ru', 'en']) {
+          const before = await readState(page)
+          const point = before.language_control_center
+          const rect = await page.locator('canvas').first().boundingBox()
+          if (!point || !rect) throw new Error('W17 mobile language switch lacks a hitbox')
+          await page.touchscreen.tap(
+            rect.x + point.x * rect.width / before.viewport_w,
+            rect.y + point.y * rect.height / before.viewport_h,
+          )
+          await expectState(page, x => x?.ui_locale === wanted, 'W17 touch RU/EN switch failed')
+          if (wanted === 'ru') await captureRealViewport(page, 'w17-mobile-ru-operator.png')
+        }
+      } else {
+        await page.locator('canvas').first().click({ position: { x: 400, y: 350 } })
+        await page.keyboard.press('l')
+        await expectState(page, x => x?.ui_locale === 'ru', 'W17 keyboard RU switch failed')
+        await captureRealViewport(page, 'w17-desktop-ru-operator.png')
+        await page.keyboard.press('l')
+        await expectState(page, x => x?.ui_locale === 'en', 'W17 keyboard EN restore failed')
+      }
       if (!boot.hud_rect || !boot.action_rect || boot.hud_rect.h > boot.viewport_h * .28 ||
           boot.hud_rect.y + boot.hud_rect.h >= boot.action_rect.y - 20) {
         throw new Error('W11 initial HUD obscures scene: ' + JSON.stringify({

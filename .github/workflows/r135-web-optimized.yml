@@ -2,7 +2,7 @@ name: OSGARD R135 optimized web candidate
 
 on:
   push:
-    branches: [feat/r135-mission-control-20261024, feat/r135-wasm-streaming-20261024, feat/r135-diagnostics-w4-20261024, feat/r135-w5-visual-diagnostics-20261024, feat/r135-w6-portrait-target-framing-20261024, feat/r135-w7-studio-lighting-batched-stage-20261024, feat/r135-w8-responsive-hud-matrix-20261024, feat/r135-w9-guided-diagnostics-progress-20261024, feat/r135-w10-release-evidence-qa-20261024, feat/r135-w7-w10-integrated-20261024, feat/r135-w11-legible-studio-lighting-20261024, feat/r135-w12-three-fault-webgl-and-device-evidence-20261025, feat/r135-w13-safety-first-service-mission-20261025, feat/r135-w14-per-case-progress-and-save-migration-20261025, feat/r135-w12-w14-verified-integration-20261025, master]
+    branches: [feat/r135-mission-control-20261024, feat/r135-wasm-streaming-20261024, feat/r135-diagnostics-w4-20261024, feat/r135-w5-visual-diagnostics-20261024, feat/r135-w6-portrait-target-framing-20261024, feat/r135-w7-studio-lighting-batched-stage-20261024, feat/r135-w8-responsive-hud-matrix-20261024, feat/r135-w9-guided-diagnostics-progress-20261024, feat/r135-w10-release-evidence-qa-20261024, feat/r135-w7-w10-integrated-20261024, feat/r135-w11-legible-studio-lighting-20261024, feat/r135-w12-three-fault-webgl-and-device-evidence-20261025, feat/r135-w13-safety-first-service-mission-20261025, feat/r135-w14-per-case-progress-and-save-migration-20261025, feat/r135-w12-w14-verified-integration-20261025, feat/r135-w15-w17-premium-localization-20261025, master]
     paths:
       - ".github/workflows/r135-web-optimized.yml"
       - "godot/osgard-r135-standalone/**"
