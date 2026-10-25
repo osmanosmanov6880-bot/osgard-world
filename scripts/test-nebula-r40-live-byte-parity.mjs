@@ -9,6 +9,7 @@ const file='.github/workflows/nebula-r40-live-byte-parity.yml';
 const y=fs.readFileSync(file,'utf8');
 test('the live comparison has strictly read-only repository permissions',()=>{
   assert.match(y,/permissions:\n  contents: read\n  actions: read/);
+  assert.match(y,/pull-requests: read/);
   assert.doesNotMatch(y,/secrets\./);
   assert.doesNotMatch(y,/contents: write|actions: write|deployments: write|id-token: write/);
   assert.doesNotMatch(y,/workflow_call|repository_dispatch/);
