@@ -1,0 +1,37 @@
+name: NEBULA R40 final production evidence preflight
+on:
+  pull_request:
+    paths:
+      - "scripts/nebula-r40-production-preflight.mjs"
+      - "docs/nebula/R40-FIELD-QA-RUNBOOK.md"
+      - "docs/nebula/R40-FINAL-CLOSEOUT-BLOCKS.md"
+      - ".github/workflows/nebula-r40-production-preflight.yml"
+  push:
+    branches: [master]
+    paths:
+      - "scripts/nebula-r40-production-preflight.mjs"
+      - "docs/nebula/R40-FIELD-QA-RUNBOOK.md"
+      - "docs/nebula/R40-FINAL-CLOSEOUT-BLOCKS.md"
+      - ".github/workflows/nebula-r40-production-preflight.yml"
+permissions:
+  contents: read
+jobs:
+  fail-closed:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Verify honest release hold and rejects missing phone evidence
+        run: |
+          set -euo pipefail
+          node --check scripts/nebula-r40-production-preflight.mjs
+          node scripts/nebula-r40-production-preflight.mjs --selftest
+          if node scripts/nebula-r40-production-preflight.mjs docs/nebula/R40-DEVICE-FIELD-MANIFEST.example.json; then
+            echo "Empty original phone evidence must never be approved" >&2
+            exit 1
+          fi
+          node scripts/nebula-production-artifact-guard.mjs
+          echo "NEBULA_R40_FINAL_RELEASE_HELD_CORRECTLY"
