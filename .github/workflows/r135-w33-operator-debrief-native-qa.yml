@@ -144,6 +144,15 @@ jobs:
             echo '::error::W46 native camera rail regression emitted Godot errors'
             exit 1
           fi
+      - name: W47 actual Godot cinematic hero lens, gallery light and ECO shutdown
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 150s godot --headless --path w33-godot-native --script res://tests/test_w47_cinematic_framing.gd 2>&1 | tee "$RUNNER_TEMP/w47-hero-lens.log"
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/w47-hero-lens.log"; then
+            echo '::error::W47 native cinematic framing regression failed'
+            exit 1
+          fi
       - name: Create real Godot 4.4.1 WebGL export from the same native-tested commit
         shell: bash
         run: |
