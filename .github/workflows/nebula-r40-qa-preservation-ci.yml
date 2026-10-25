@@ -1,0 +1,40 @@
+name: NEBULA R40 isolated QA retention through full frontend deployments
+on:
+  pull_request:
+    paths:
+      - "scripts/preserve-nebula-r40-qa.sh"
+      - "scripts/nebula-r40-qa-preservation.test.mjs"
+      - "scripts/activate-frontend-remote.sh"
+      - ".github/workflows/deploy-frontend.yml"
+      - ".github/workflows/nebula-r40-qa-preservation-ci.yml"
+  push:
+    branches: [master]
+    paths:
+      - "scripts/preserve-nebula-r40-qa.sh"
+      - "scripts/nebula-r40-qa-preservation.test.mjs"
+      - "scripts/activate-frontend-remote.sh"
+      - ".github/workflows/deploy-frontend.yml"
+      - ".github/workflows/nebula-r40-qa-preservation-ci.yml"
+permissions:
+  contents: read
+jobs:
+  preserves-qa-not-production:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Reject shell syntax regressions before reading remote code
+        run: |
+          set -euo pipefail
+          bash -n scripts/activate-frontend-remote.sh
+          sh -n scripts/preserve-nebula-r40-qa.sh
+          sh -n scripts/preserve-omega-native.sh
+      - name: Simulate frontend root swap with attested original QA and negative cases
+        run: node --test scripts/nebula-r40-qa-preservation.test.mjs scripts/omega-frontend-preservation.test.mjs
+      - name: Confirm production R38 still pinned and future R40 requires approval
+        run: |
+          node scripts/nebula-production-artifact-guard.mjs
+          node scripts/test-nebula-production-artifact-guard.mjs
