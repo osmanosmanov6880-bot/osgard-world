@@ -1,0 +1,86 @@
+name: OSA CINEMA V38 private owner release dossier strict NO-GO
+on:
+  pull_request:
+    paths:
+      - 'scripts/osa-cinema-v38-owner-release-dossier.mjs'
+      - 'scripts/osa-cinema-v38-owner-release-dossier.test.mjs'
+      - 'scripts/osa-cinema-v38-v29-integration.test.mjs'
+      - 'scripts/osa-cinema-v35-historical-guard.mjs'
+      - 'scripts/osa-cinema-v36-verify-private-receipts.mjs'
+      - 'scripts/osa-cinema-v37-verify-private-media.mjs'
+      - 'scripts/osa-cinema-v30-external-attestations.mjs'
+      - 'docs/OSA_CINEMA_V16_WORKPRINT_MANIFEST.json'
+      - 'docs/OSA_CINEMA_V18_PRIVATE_FOUR_TRACK_QA.json'
+      - 'docs/OSA_CINEMA_V20_PRIVATE_RELEASE_POLICY.json'
+      - '.github/workflows/osa-cinema-v38-owner-offline-dossier.yml'
+  push:
+    branches: [master]
+    paths:
+      - 'scripts/osa-cinema-v38-owner-release-dossier.mjs'
+      - 'scripts/osa-cinema-v38-owner-release-dossier.test.mjs'
+      - 'scripts/osa-cinema-v38-v29-integration.test.mjs'
+      - 'scripts/osa-cinema-v35-historical-guard.mjs'
+      - 'scripts/osa-cinema-v36-verify-private-receipts.mjs'
+      - 'scripts/osa-cinema-v37-verify-private-media.mjs'
+      - 'scripts/osa-cinema-v30-external-attestations.mjs'
+      - 'docs/OSA_CINEMA_V16_WORKPRINT_MANIFEST.json'
+      - 'docs/OSA_CINEMA_V18_PRIVATE_FOUR_TRACK_QA.json'
+      - 'docs/OSA_CINEMA_V20_PRIVATE_RELEASE_POLICY.json'
+      - '.github/workflows/osa-cinema-v38-owner-offline-dossier.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  private-dossier:
+    name: V38 offline NO-GO and threat regressions (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax and V38 negative release tests
+        shell: bash
+        run: |
+          node --check scripts/osa-cinema-v38-owner-release-dossier.mjs
+          node --check scripts/osa-cinema-v38-owner-release-dossier.test.mjs
+          node --check scripts/osa-cinema-v38-v29-integration.test.mjs
+          node --test scripts/osa-cinema-v38-owner-release-dossier.test.mjs
+      - name: Original V16 V18 V20 records must be unchanged
+        shell: bash
+        run: node scripts/osa-cinema-v35-historical-guard.mjs --root .
+      - name: Strict commercial recorded-film release still returns rejection
+        shell: bash
+        run: |
+          set +e
+          node scripts/osa-cinema-v20-release-audit.mjs --strict-publication > "$RUNNER_TEMP/osa-v38-hold.txt" 2>&1
+          rc=$?
+          set -e
+          test "$rc" -eq 1
+          grep -q OSA_CINEMA_V20_NO_PUBLICATION "$RUNNER_TEMP/osa-v38-hold.txt"
+  genuine-pipeline-synthetic-fixture:
+    name: V38 V29 FFmpeg and eight Ed25519 synthetic claims (Ubuntu)
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install FFmpeg tools if missing
+        shell: bash
+        run: |
+          if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -y ffmpeg
+          fi
+          ffmpeg -version | head -n 1
+          ffprobe -version | head -n 1
+      - name: V38 verified real V29 pipeline against synthetic-only test footage
+        shell: bash
+        run: node --test scripts/osa-cinema-v38-v29-integration.test.mjs
