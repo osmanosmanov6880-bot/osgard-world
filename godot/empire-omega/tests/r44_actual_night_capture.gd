@@ -18,6 +18,13 @@ func _snapshot(world: Node3D, hour: float, target: String, size: Vector2i) -> fl
 	state_node.set("data",state)
 	world.call("apply_visual_budget","cinematic")
 	world.call("update_daynight",hour)
+	# R56: the public game switches vehicle lamps with the clock too.
+	# Earlier screenshot tests changed only world lighting, leaving real
+	# car beams OFF at 22:00 and wrongly certifying a black driving road.
+	var gameplay: Node = current_scene
+	var active_car: CharacterBody3D = gameplay.get("car") as CharacterBody3D
+	if active_car != null:
+		active_car.call("update_headlights",hour,"cinematic")
 	for i in range(24):
 		await process_frame
 	await RenderingServer.frame_post_draw
@@ -81,6 +88,37 @@ func _run() -> void:
 	DirAccess.make_dir_recursive_absolute(destination)
 	var day: float = await _snapshot(world,12.0,destination.path_join("omega_r44_real_day_1366x768.png"),size)
 	var night: float = await _snapshot(world,22.0,destination.path_join("omega_r44_real_night_1366x768.png"),size)
+	# Compare two authentic GL framebuffers under an IDENTICAL night sky.
+	# Only switch the real car SpotLight3D pair: headlight luminance must
+	# change original road pixels, not merely toggle decorative geometry.
+	var beams: Array = car.get("headlight_cones")
+	if beams.size()!=2 or not beams[0].visible or not beams[1].visible:
+		push_error("R56 night QA: real nighttime headlight pair missing")
+		failed=true
+	var night_with_beams: Image = root.get_viewport().get_texture().get_image()
+	car.call("update_headlights",12.0,"cinematic")
+	for i in range(12):
+		await process_frame
+	await RenderingServer.frame_post_draw
+	var night_without_beams: Image = root.get_viewport().get_texture().get_image()
+	var lit_sum: float=0.0
+	var dark_sum: float=0.0
+	var samples: int=0
+	for y in range(325,545,10):
+		for x in range(340,1050,12):
+			var on: Color=night_with_beams.get_pixel(x,y)
+			var off: Color=night_without_beams.get_pixel(x,y)
+			lit_sum+=0.2126*on.r+0.7152*on.g+0.0722*on.b
+			dark_sum+=0.2126*off.r+0.7152*off.g+0.0722*off.b
+			samples+=1
+	var lit_mean: float=lit_sum/float(maxi(1,samples))
+	var unlit_mean: float=dark_sum/float(maxi(1,samples))
+	print("R56 REAL CAR HEADLIGHT PIXELS: beam_on=",lit_mean,
+		" beam_off=",unlit_mean," samples=",samples)
+	if lit_mean<=unlit_mean+0.001:
+		push_error("R56 night QA: headlight pair does not brighten the real GL road")
+		failed=true
+	car.call("update_headlights",22.0,"cinematic")
 	var scenic: Node3D = world.get("horizon_scenic") as Node3D
 	var active: int = int(scenic.get("active_night_lights")) if scenic!=null else 0
 	if active==0:
