@@ -761,8 +761,8 @@ func _process(delta: float) -> void:
             state["player_settings_volume_center"] = {"x": volume_center.x, "y": volume_center.y}
             state["player_settings_caption_center"] = {"x": caption_center.x, "y": caption_center.y}
             state["player_settings_accessibility_css_height"] = minf(
-                audio_button.get_global_rect().size.y,
-                volume_button.get_global_rect().size.y,
+                minf(audio_button.get_global_rect().size.y,
+                    volume_button.get_global_rect().size.y),
                 caption_button.get_global_rect().size.y) / maxf(touch_pixel_ratio, 1.0)
             var intro_panel: PanelContainer = premium_intro.get("card") as PanelContainer
             var intro_rect: Rect2 = intro_panel.get_global_rect()
