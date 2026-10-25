@@ -285,6 +285,7 @@ var strategy_contents: VBoxContainer
 var strategy_title: Label
 var strategy_close_button: Button
 var strategy_nav_buttons: Dictionary = {}
+var r90_legacy_navigation: HBoxContainer
 var strategy_anchors: Dictionary = {}
 var strategy_scroll: ScrollContainer
 var importer: FileDialog
@@ -564,6 +565,7 @@ func _make_strategy() -> void:
 	strategy_close_button.custom_minimum_size = Vector2(98,42)
 	strategy_close_button.add_theme_font_size_override("font_size",14)
 	var navigation := HBoxContainer.new()
+	r90_legacy_navigation = navigation
 	navigation.add_theme_constant_override("separation",6)
 	stack.add_child(navigation)
 	for section in ["overview","council","economy","district"]:
@@ -1528,6 +1530,7 @@ func _apply_responsive_layout() -> void:
 		_set_panel_frame(toast_panel,frames["toast"],0,0,0,0)
 		var modal: Rect2 = frames["modal"]
 		r90_speed_dial.visible = false
+		r90_legacy_navigation.visible = true
 		var panel_frame := Rect2(modal.position-screen*0.5,modal.size)
 		_set_panel_frame(strategy_window,panel_frame,0.5,0.5,0.5,0.5)
 		strategy_title.add_theme_font_size_override("font_size",22)
@@ -1574,6 +1577,7 @@ func _apply_responsive_layout() -> void:
 		if screen.x >= 1200.0 and screen.y >= 680.0:
 			command_frame = R90_STYLE.command_center_frame(screen)
 		_set_panel_frame(strategy_window,command_frame,0,0,0,0)
+		r90_legacy_navigation.visible = not (screen.x >= 1200.0 and screen.y >= 680.0)
 		r90_speed_dial.visible = true
 		strategy_title.add_theme_font_size_override("font_size",29)
 		_set_panel_frame(pause_panel,Rect2(-390,-340,780,680),0.5,0.5,0.5,0.5)

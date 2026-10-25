@@ -80,6 +80,28 @@ func build(state: Dictionary, forecast: Dictionary, mission: String,
 	micro.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	micro.visible = not compact
 
+	# Seven functional top-level tabs from the signed-off reference.
+	# Every tab jumps into the original actionable strategy sections.
+	if not compact:
+		var tabs := HBoxContainer.new()
+		tabs.name = "R90NavigationTabs"
+		tabs.add_theme_constant_override("separation",5)
+		add_child(tabs)
+		var tabs_data: Array = [
+			[local("КАБИНЕТ","OVERVIEW","概览",lang),"overview"],
+			[local("ГОРОД","CITY","城市",lang),"district"],
+			[local("ЭКОНОМИКА","ECONOMY","经济",lang),"economy"],
+			[local("РАЙОНЫ","DISTRICTS","城区",lang),"district"],
+			[local("ЛОГИСТИКА","LOGISTICS","物流",lang),"economy"],
+			[local("ЗАДАНИЯ","MISSIONS","任务",lang),"overview"],
+			[local("СТРАТЕГИЯ","STRATEGY","战略",lang),"council"]]
+		for index in range(tabs_data.size()):
+			var tab: Button = _action(tabs,str(tabs_data[index][0]),str(tabs_data[index][1]))
+			tab.name = "R90Tab%d" % index
+			tab.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			tab.custom_minimum_size.y = 39
+			tab.add_theme_font_size_override("font_size",12)
+
 	var stats: Container = GridContainer.new() if compact else HBoxContainer.new()
 	if stats is GridContainer:
 		(stats as GridContainer).columns = 2
@@ -144,7 +166,7 @@ func build(state: Dictionary, forecast: Dictionary, mission: String,
 		middle.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		middle.add_theme_constant_override("separation",8)
 		columns.add_child(middle)
-		_city_view(middle,world,lang)
+		_city_view(middle,world,forecast,lang)
 		var hint := _card(middle,0)
 		_label(hint,local("ЖИВОЙ 3D-ГОРОД · ТА ЖЕ СЦЕНА, ЧТО В ИГРЕ",
 			"LIVE 3D CITY · SAME SCENE AS GAMEPLAY",
@@ -210,7 +232,7 @@ func build(state: Dictionary, forecast: Dictionary, mission: String,
 			{"overview":"OVERVIEW","council":"COUNCIL","economy":"ECONOMY","district":"DISTRICTS"}[section],
 			{"overview":"总览","council":"议会","economy":"经济","district":"城区"}[section],lang),section)
 
-func _city_view(parent: Node, world: World3D, lang: String) -> void:
+func _city_view(parent: Node, world: World3D, forecast: Dictionary, lang: String) -> void:
 	var panel := PanelContainer.new()
 	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -253,3 +275,34 @@ func _city_view(parent: Node, world: World3D, lang: String) -> void:
 	pin.add_theme_stylebox_override("panel",REFERENCE.card_style(true))
 	stage.add_child(pin)
 	_label(pin,local("◆ АТЛАС · ЖИВАЯ СЦЕНА","◆ ATLAS · LIVE SCENE","◆ 城市 · 实时场景",lang),14,true)
+	# Actual district scores are projected as informational touch targets
+	# over the live render, not fabricated economic statistics.
+	var scores: Dictionary = forecast.get("district_scores",{})
+	var pins: Dictionary = {
+		"forum":Vector2(0.21,0.34),
+		"housing":Vector2(0.71,0.34),
+		"lower":Vector2(0.23,0.72),
+		"aqueduct":Vector2(0.71,0.72)}
+	var titles: Dictionary = {
+		"forum":local("СЕНАТСКИЙ ФОРУМ","SENATE FORUM","元老院广场",lang),
+		"housing":local("ЖИЛОЙ КВАРТАЛ","HOUSING","住宅区",lang),
+		"lower":local("НИЖНИЙ ГОРОД","LOWER CITY","下城区",lang),
+		"aqueduct":local("АКВЕДУКИ","AQUEDUCTS","高架水道",lang)}
+	for id in GameState.DISTRICTS:
+		var badge := Button.new()
+		badge.name = "R90DistrictPin_"+str(id)
+		badge.text = "◆ %s · %d/100" % [str(titles[id]),int(scores.get(id,0))]
+		badge.tooltip_text = local("Выбрать район","Select district","选择城区",lang)
+		badge.custom_minimum_size = Vector2(100,32)
+		badge.anchor_left = pins[id].x
+		badge.anchor_right = pins[id].x
+		badge.anchor_top = pins[id].y
+		badge.anchor_bottom = pins[id].y
+		badge.offset_left = -65.0
+		badge.offset_right = 85.0
+		badge.offset_top = -16.0
+		badge.offset_bottom = 16.0
+		badge.add_theme_font_size_override("font_size",11)
+		REFERENCE.style_button(badge)
+		badge.pressed.connect(Callable(self,"_request_district").bind(id))
+		stage.add_child(badge)

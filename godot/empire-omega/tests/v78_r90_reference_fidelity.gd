@@ -53,6 +53,10 @@ func _run() -> void:
 		"command room renders the real authoritative game 3D world")
 	verify((preview.get("preview") as SubViewport).get_camera_3d()!=null,
 		"live command camera is attached to original Godot World3D")
+	verify(preview.get_node_or_null("R90NavigationTabs")!=null,
+		"signed-off seven top tabs exist in actual gameplay")
+	verify(preview.get_node_or_null("R90DistrictPin_forum")!=null,
+		"real city overview shows interactive district markers")
 	verify(preview.get_node_or_null("R90FakeBackground")==null,
 		"no fake reference artwork replaces real world")
 	var calls: Array[String] = []
