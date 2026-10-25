@@ -88,7 +88,10 @@ class SourcePreservingRecoveryTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
             data, game, pins = fixture()
-            data["r135-w11-readability-evidence.json"] = b"fabricated report"
+            key = "r135-w11-readability-evidence.json"
+            # Preserve exact original byte LENGTH to exercise the stronger
+            # SHA-256 tampering guard instead of the earlier size guard.
+            data[key] = b"x" * len(data[key])
             archive(root / "changed.zip", data)
             with self.assertRaisesRegex(ValueError, "substituted"):
                 recover.verified_members(game, pins, root / "changed.zip")
