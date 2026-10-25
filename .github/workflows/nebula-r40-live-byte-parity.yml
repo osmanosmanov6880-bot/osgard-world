@@ -1,0 +1,175 @@
+name: NEBULA R38/R40 public HTTPS exact-byte integrity
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/nebula-r40-live-byte-parity.yml"
+      - "scripts/test-nebula-r40-live-byte-parity.mjs"
+      - "scripts/nebula-r40-ci-pin.mjs"
+      - "scripts/test-nebula-r40-ci-pin.mjs"
+      - ".github/nebula-r40-qa-ci-artifact-pin.json"
+  push:
+    branches: [master]
+    paths:
+      - ".github/workflows/nebula-r40-live-byte-parity.yml"
+      - "scripts/test-nebula-r40-live-byte-parity.mjs"
+      - "scripts/nebula-r40-ci-pin.mjs"
+      - "scripts/test-nebula-r40-ci-pin.mjs"
+      - ".github/nebula-r40-qa-ci-artifact-pin.json"
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+  pull-requests: read
+concurrency:
+  group: nebula-r40-readonly-live-byte-parity-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Ensure read-only verifier cannot promote or replace any game
+        run: node --test scripts/test-nebula-r40-live-byte-parity.mjs scripts/test-nebula-r40-ci-pin.mjs
+  live-byte-parity:
+    needs: contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Confirm pinned R38 policy and pinned isolated R40 candidate
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          node scripts/nebula-production-artifact-guard.mjs
+          node scripts/nebula-r40-ci-pin.mjs --validate
+          policy=.github/nebula-production-allowlist.json
+          qa=.github/nebula-r40-qa-one-shot-source.json
+          variant="$(jq -er '.approved_variant' "$policy")"
+          case "$variant" in R38|R40) ;; *) echo "Unsupported NEBULA production variant" >&2; exit 1;; esac
+          if [ "$variant" = R38 ]; then
+            test "$(jq -er '.approval' "$policy")" = null
+          else
+            test "$(jq -er '.release_status' "$policy")" = R40_HARDWARE_QA_APPROVED
+            test "$(jq -er '.approval.real_device_reviewed' "$policy")" = true
+          fi
+          printf '%s\n' "NEBULA_ACTIVE_VARIANT=$variant" >> "$GITHUB_ENV"
+          test "$(jq -er '.schema' "$qa")" = NEBULA_R40_ONESHOT_QA_V1
+          test "$(jq -er '.staging_only' "$qa")" = true
+          test "$(jq -er '.approved_for_production' "$qa")" = false
+          test "$(jq -er '.qa_path' "$qa")" = /games/remix/nebula-r40-qa/
+          test "$(jq -er '.candidate_pr' "$qa")" = 375
+          run_id="$(jq -er '.source_run_id' "$qa")"
+          case "$run_id" in ''|*[!0-9]*) exit 1;; esac
+          sha="$(jq -er '.candidate_head_sha' "$qa")"
+          pr="$(gh api "repos/$GITHUB_REPOSITORY/pulls/375")"
+          test "$(printf '%s' "$pr" | jq -er '.head.sha')" = "$sha"
+          run="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run_id")"
+          test "$(printf '%s' "$run" | jq -er '.status')" = completed
+          test "$(printf '%s' "$run" | jq -er '.conclusion')" = success
+          test "$(printf '%s' "$run" | jq -er '.event')" = pull_request
+          test "$(printf '%s' "$run" | jq -er '.head_sha')" = "$sha"
+          test "$(printf '%s' "$run" | jq -er '.path')" = .github/workflows/remix-nebula-3d.yml
+          printf '%s\n' "QA_RUN_ID=$run_id" >> "$GITHUB_ENV"
+          printf '%s\n' "QA_HEAD_SHA=$sha" >> "$GITHUB_ENV"
+      - name: Recheck original CI archive when still retained by GitHub
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          # The immutable four-file pin was independently recorded from the
+          # original verified ZIP (sha256:7bc3fb85b7f0...). Actions artifacts
+          # expire; expiry must not silently disable live byte integrity.
+          artifacts="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$QA_RUN_ID/artifacts")"
+          expired="$(printf '%s' "$artifacts" | jq -r '.artifacts[] | select(.name=="nebula-r40-on-device-candidate") | .expired' | head -n 1)"
+          if [ "$expired" = false ]; then
+            mkdir -p "$RUNNER_TEMP/nebula-r40-ci"
+            gh run download "$QA_RUN_ID" --repo "$GITHUB_REPOSITORY" \
+              --name nebula-r40-on-device-candidate --dir "$RUNNER_TEMP/nebula-r40-ci"
+            (
+              cd "$RUNNER_TEMP/nebula-r40-ci"
+              test -s R40_DEVICE_ARTIFACT_SHA256.txt
+              test -s R40_DEVICE_ARTIFACT_PROVENANCE.txt
+              grep -Fxq "pull_request_head_sha=$QA_HEAD_SHA" R40_DEVICE_ARTIFACT_PROVENANCE.txt
+              grep -Fxq "release_status=HARDWARE_QA_ONLY_NOT_PRODUCTION" R40_DEVICE_ARTIFACT_PROVENANCE.txt
+              sha256sum --check R40_DEVICE_ARTIFACT_SHA256.txt
+            )
+            node scripts/nebula-r40-ci-pin.mjs --check-dir "$RUNNER_TEMP/nebula-r40-ci"
+          else
+            echo "::notice::Original GitHub Actions ZIP expired/unavailable. Live bytes will be verified against four immutable SHA-256 values independently extracted from the original checked ZIP. This does NOT certify phone FPS."
+          fi
+      - name: Compare approved live game and isolated QA against immutable CI byte identities
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/nebula-approved-live" "$RUNNER_TEMP/nebula-qa-live"
+          root="https://osgard.world/games/remix"
+          pin=".github/nebula-r40-qa-ci-artifact-pin.json"
+          failures=0
+          compare_ci_pin() {
+            local role="$1" actual="$2" wanted bytes observed length
+            wanted="$(jq -er --arg file "$name" '.files[$file].sha256' "$pin")"
+            bytes="$(jq -er --arg file "$name" '.files[$file].bytes' "$pin")"
+            observed="$(sha256sum "$actual" | awk '{print $1}')"
+            length="$(wc -c < "$actual")"
+            if [ "$wanted" != "$observed" ] || [ "$bytes" != "$length" ]; then
+              echo "::error::NEBULA_QA_BYTE_MISMATCH role=$role file=$name expected_sha=$wanted actual_sha=$observed expected_bytes=$bytes actual_bytes=$length" >&2
+              if [ "$name" = index.html ]; then
+                echo "Observed HTML first 80 bytes (hex):"
+                head -c 80 "$actual" | od -An -tx1
+                if grep -Fq "REMIX ARENA" "$actual"; then
+                  echo "Observed game marker: YES"
+                else
+                  echo "::error::Observed game marker: NO; likely frontend SPA fallback" >&2
+                fi
+              fi
+              failures=$((failures+1))
+            else
+              echo "NEBULA_CI_SHA256_PARITY_OK role=$role file=$name bytes=$length sha256=$wanted"
+            fi
+          }
+          for name in index.html index.js index.wasm index.pck; do
+            echo "Verifying $name"
+            curl --fail --silent --show-error --location --retry 2 \
+              --connect-timeout 12 --max-time 120 -H 'Accept-Encoding: identity' \
+              -w "NEBULA_HTTP_FETCH variant=approved file=$name code=%{http_code} type=%{content_type}\n" \
+              "$root/arena-v2/nebula-3d/$name" -o "$RUNNER_TEMP/nebula-approved-live/$name" || {
+                echo "::error::Approved NEBULA game resource is missing: $name" >&2
+                exit 1
+              }
+            curl --fail --silent --show-error --location --retry 2 \
+              --connect-timeout 12 --max-time 120 -H 'Accept-Encoding: identity' \
+              -w "NEBULA_HTTP_FETCH variant=qa file=$name code=%{http_code} type=%{content_type}\n" \
+              "$root/nebula-r40-qa/$name" -o "$RUNNER_TEMP/nebula-qa-live/$name" || {
+                echo "::error::NEBULA_R40_QA_ROUTE_MISSING: $name unavailable after frontend deployment" >&2
+                exit 1
+              }
+            test -s "$RUNNER_TEMP/nebula-approved-live/$name"
+            test -s "$RUNNER_TEMP/nebula-qa-live/$name"
+            if [ "$NEBULA_ACTIVE_VARIANT" = R38 ]; then
+              cmp "public/games/remix/arena-v2/nebula-3d/$name" \
+                "$RUNNER_TEMP/nebula-approved-live/$name" || {
+                  echo "::error::Public R38 $name differs from approved master baseline" >&2
+                  failures=$((failures+1))
+                }
+            else
+              compare_ci_pin promoted_master "public/games/remix/arena-v2/nebula-3d/$name"
+              compare_ci_pin promoted_live "$RUNNER_TEMP/nebula-approved-live/$name"
+            fi
+            compare_ci_pin isolated_qa "$RUNNER_TEMP/nebula-qa-live/$name"
+          done
+          if [ "$failures" -ne 0 ]; then
+            echo "::error::NEBULA_LIVE_PARITY_FAILED count=$failures; do not promote R40" >&2
+            exit 1
+          fi
+          {
+            echo '## NEBULA live exact-byte integrity'
+            echo ''
+            echo "- Published approved NEBULA ($NEBULA_ACTIVE_VARIANT) four files matched approved source."
+            echo '- Isolated QA R40 matched **independently archived, original CI SHA-256 fingerprints** for HTML/JS/WASM/PCK.'
+            echo '- Source CI outcome and exact original PR head were checked through GitHub API.'
+            echo '- This verifies the served game bytes, **not physical-phone FPS or AAA visuals**.'
+          } >> "$GITHUB_STEP_SUMMARY"
