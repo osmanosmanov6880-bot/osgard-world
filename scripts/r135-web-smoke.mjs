@@ -3,6 +3,7 @@
 // and real mobile touchscreen presses, not only existence of a blank canvas.
 import { chromium, devices } from 'playwright'
 import { mkdir, writeFile } from 'node:fs/promises'
+import { createHash } from 'node:crypto'
 import { captureAnimatedWebGLViewport } from './omega-browser-evidence.mjs'
 import { resolve } from 'node:path'
 import process from 'node:process'
@@ -90,8 +91,44 @@ async function captureRealViewport(page, filename) {
   if (png.length < 9500 || png.subarray(0, 8).toString('hex') !== '89504e470d0a1a0a') {
     throw new Error('Real R135 screenshot is not a valid PNG: ' + filename)
   }
+  const width = png.readUInt32BE(16)
+  const height = png.readUInt32BE(20)
+  if (width < 300 || height < 300) throw new Error('Real R135 screenshot too small: ' + filename)
   await writeFile(resolve(output, filename), png)
-  console.log('R135 screenshot evidence:', filename, method)
+  if (filename === 'w6-portrait-optical-active.png') {
+    // Chromium CDP captures CSS viewport pixels, while the Godot WebGL
+    // render target is denser (devicePixelRatio). Record both unmodified
+    // dimensions; never upscale or manufacture screenshot evidence.
+    const geometry = await page.evaluate(() => {
+      const canvas = document.querySelector('canvas')
+      const qa = window.__OSGARD_R135_QA
+      if (!(canvas instanceof HTMLCanvasElement) || !qa?.scene_ready) {
+        throw new Error('Genuine Godot scene state/canvas unavailable for release evidence')
+      }
+      const rect = canvas.getBoundingClientRect()
+      return {
+        css_viewport: [window.innerWidth, window.innerHeight],
+        device_pixel_ratio: window.devicePixelRatio,
+        canvas_pixels: [canvas.width, canvas.height],
+        canvas_css: [rect.width, rect.height],
+        scene_ready: qa.scene_ready,
+        view: qa.view,
+        camera_target_visible: qa.camera_target_visible,
+        fault_label_visible_count: qa.fault_label_visible_count,
+        active_caption_depth_override: qa.active_caption_depth_override,
+        loading_failures: qa.loading_failures,
+      }
+    })
+    const evidence = {
+      source: 'live Playwright Chromium WebGL Godot canvas and real unscaled PNG',
+      capture_method: method,
+      screenshot_pixels: [width, height],
+      screenshot_sha256: createHash('sha256').update(png).digest('hex'),
+      ...geometry,
+    }
+    await writeFile(resolve(output, 'r135-portrait-capture-proof.json'), JSON.stringify(evidence, null, 2) + '\n')
+  }
+  console.log('R135 screenshot evidence:', filename, method, width + 'x' + height)
 }
 
 async function keyboardDiagnostics(page) {
