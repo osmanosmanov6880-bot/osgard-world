@@ -249,7 +249,8 @@ func _build() -> void:
     coach_more_button = _styled_button("ПОЧЕМУ? ПОДРОБНЕЕ", false)
     coach_more_button.name = "ExpandCauseExplanation"
     coach_more_button.pressed.connect(_toggle_coach_details)
-    body.add_child(coach_more_button)
+    # Keep this button visible beside HELP at the bottom of the training card,
+    # even when the cause text itself must scroll on a 360px device.
     coach_detail = _label(body, Color(0.68, 0.82, 0.86), 13)
     coach_detail.name = "CauseAndNextAction"
     coach_detail.visible = false
@@ -263,7 +264,14 @@ func _build() -> void:
     guide_button = _styled_button("УПРАВЛЕНИЕ И ИНСТРУКЦИЯ", false)
     guide_button.name = "LuxuryGuideButton"
     guide_button.pressed.connect(_show_controls)
-    stack.add_child(guide_button)
+    var assistance_row := HBoxContainer.new()
+    assistance_row.name = "PermanentCourseAssistanceActions"
+    assistance_row.add_theme_constant_override("separation", 6)
+    guide_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+    coach_more_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+    assistance_row.add_child(guide_button)
+    assistance_row.add_child(coach_more_button)
+    stack.add_child(assistance_row)
 
     rail = PanelContainer.new()
     rail.name = "LuxuryTutorialRail"
@@ -405,7 +413,7 @@ func _layout() -> void:
     primary_button.add_theme_font_size_override("font_size", int((13 if compact else 15) * ratio))
     guide_button.add_theme_font_size_override("font_size", int((12 if compact else 14) * ratio))
     primary_button.custom_minimum_size = Vector2(0, 48.0 * ratio)
-    guide_button.custom_minimum_size = Vector2(0, 40.0 * ratio)
+    guide_button.custom_minimum_size = Vector2(0, 44.0 * ratio)
     settings_panel.position = card.position
     settings_panel.custom_minimum_size = Vector2.ZERO
     settings_panel.size = card.size
@@ -465,8 +473,8 @@ func _present_coach() -> void:
     coach_last_status = str(result["status"])
     _assign(coach_heading, str(result["title"]))
     _assign(coach_summary, str(result["cause"]))
-    coach_more_button.text = _t("СКРЫТЬ РАЗБОР", "HIDE EXPLANATION") if coach_expanded else _t(
-        "ПОЧЕМУ? ПОДРОБНЕЕ", "WHY? SHOW DETAILS")
+    coach_more_button.text = _t("СКРЫТЬ РАЗБОР", "HIDE DETAILS") if coach_expanded else _t(
+        "ПОЧЕМУ?", "WHY?")
     coach_detail.visible = coach_expanded
     var detail_text: String = str(result["deeper"]) + "\n\n" + _t("СЛЕДУЮЩЕЕ ДЕЙСТВИЕ: ", "NEXT ACTION: ") + str(result["next"])
     var evidence_text: String = str(result.get("evidence", ""))
@@ -761,6 +769,6 @@ func _present() -> void:
         _assign(rail_rows[j], row_text)
         rail_rows[j].add_theme_color_override("font_color",
             Color(0.98, 0.68, 0.40) if j == step else (Color(0.44, 0.84, 0.80) if j < step else Color(0.72, 0.78, 0.82)))
-    guide_button.text = _t("УПРАВЛЕНИЕ И ИНСТРУКЦИЯ", "CONTROLS & HELP")
+    guide_button.text = _t("УПРАВЛЕНИЕ", "CONTROLS")
     if settings_open:
         _refresh_settings()
