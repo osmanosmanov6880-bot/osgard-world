@@ -73,7 +73,7 @@ func _run() -> void:
 	verify(trunk.multimesh.instance_count==trunk_transforms_before and
 		conifer.multimesh.instance_count==conifers_before,
 		"GPU instance counts, draw calls and all authored trees are never deleted")
-	verify(road.get_child_count()>0 and road.tree_count==192,
+	verify(road.get_child_count()>0 and int(road.get("tree_count"))==192,
 		"actual game city scenery and lamp meshes survive occlusion logic")
 	var main_script: Variant=load("res://scripts/main.gd")
 	verify(main_script is Script and main_script.can_instantiate(),
