@@ -280,5 +280,58 @@ func _run() -> void:
     if not str(completed_learning.get("challenge_evidence", "")).contains("(SIM)"):
         _fail("W9 evidence must explicitly be marked simulation-only")
         return
-    print("R135 SMOKE PASS: original 3D, three lessons, diagnostic scoring, safety interlocks, camera scan, 8 buttons")
+    # W14: case-specific progress persisted, without inventing legacy history.
+    if int(completed_learning.get("record_schema_version", 0)) != 2:
+        _fail("W14 progress schema must be version 2")
+        return
+    var attempts: Array = completed_learning.get("case_attempts", [])
+    var scores: Array = completed_learning.get("case_best_scores", [])
+    var seconds: Array = completed_learning.get("case_best_seconds", [])
+    var mistakes: Array = completed_learning.get("case_total_mistakes", [])
+    if attempts.size() != 3 or scores.size() != 3 or seconds.size() != 3 or mistakes.size() != 3:
+        _fail("W14 progress must track exactly three independent faults")
+        return
+    for i in range(3):
+        if int(attempts[i]) < 1 or int(scores[i]) <= 0 or float(seconds[i]) <= 0.0:
+            _fail("W14 independent case progress was not recorded: " + str(completed_learning))
+            return
+    if int(mistakes[0]) < 3 or not bool(completed_learning.get("local_record_save_ok", false)):
+        _fail("W14 unsafe scenario errors were not saved")
+        return
+    var full_record := ConfigFile.new()
+    if full_record.load("user://r135_challenge_record.cfg") != OK:
+        _fail("W14 actual progress file missing after completing all three faults")
+        return
+    if int(full_record.get_value("progress", "schema_version", 0)) != 2:
+        _fail("W14 actual file not migrated to schema v2")
+        return
+    var restored: Node = preload("res://R135ServiceDirector.gd").new()
+    restored.call("_load_challenge_record")
+    for i in range(3):
+        if int(restored.get("case_attempts")[i]) != int(attempts[i]) or int(restored.get("case_best_scores")[i]) != int(scores[i]):
+            _fail("W14 persisted per-fault data changed after a genuine reload")
+            return
+    restored.free()
+    # Independent legacy test: schema v1 only had best_score + cleared_cases.
+    var legacy := ConfigFile.new()
+    legacy.set_value("progress", "best_score", 95)
+    legacy.set_value("progress", "cleared_cases", [true, false, true])
+    if legacy.save("user://r135_challenge_record.cfg") != OK:
+        _fail("W14 cannot write isolated legacy migration fixture")
+        return
+    var migrated: Node = preload("res://R135ServiceDirector.gd").new()
+    migrated.call("_load_challenge_record")
+    var migrated_attempts: Array = migrated.get("case_attempts")
+    var migrated_cleared: Array = migrated.get("cleared_cases")
+    if int(migrated.get("challenge_best_score")) != 95 or migrated_cleared != [true, false, true]:
+        _fail("W14 legacy best score/case flags changed during migration")
+        return
+    if migrated_attempts != [0, 0, 0]:
+        _fail("W14 invented per-fault attempts in legacy save")
+        return
+    migrated.free()
+    if full_record.save("user://r135_challenge_record.cfg") != OK:
+        _fail("W14 could not restore real progress after migration fixture")
+        return
+    print("R135 W14 SMOKE PASS: original 3D, three lessons, diagnostic scoring, safety interlocks, camera scan, 8 buttons")
     quit(0)
