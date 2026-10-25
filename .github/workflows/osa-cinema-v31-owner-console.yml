@@ -1,0 +1,72 @@
+name: OSA CINEMA V31 real offline owner control room and browser QA
+on:
+  pull_request:
+    paths:
+      - 'scripts/osa-cinema-v31-*'
+      - 'playwright.osa-cinema-v31-private.config.mjs'
+      - 'docs/OSA_CINEMA_V31_*'
+      - 'launchers/RUN_PRIVATE_OWNER_CONSOLE.ps1'
+      - '.github/workflows/osa-cinema-v31-owner-console.yml'
+      - 'scripts/osa-cinema-v29-owner-preflight.mjs'
+      - 'scripts/osa-cinema-v30-external-attestations.mjs'
+  push:
+    branches: [master]
+    paths:
+      - 'scripts/osa-cinema-v31-*'
+      - 'playwright.osa-cinema-v31-private.config.mjs'
+      - '.github/workflows/osa-cinema-v31-owner-console.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  private-owner-control-room:
+    runs-on: ubuntu-latest
+    timeout-minutes: 28
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install pinned application dependencies
+        run: npm ci
+      - name: Install FFmpeg and ffprobe for actual synthetic H264/AAC end-to-end tests
+        run: |
+          if ! command -v ffmpeg >/dev/null 2>&1 || ! command -v ffprobe >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y --no-install-recommends ffmpeg
+          fi
+          ffmpeg -version | head -n 1
+      - name: Real four-MP4 preflight, eight Ed25519 signers, browser authentication and tampering tests
+        run: |
+          node --check scripts/osa-cinema-v31-owner-console.mjs
+          node --check scripts/osa-cinema-v31-owner-console.test.mjs
+          node --test --test-concurrency=1 scripts/osa-cinema-v31-owner-console.test.mjs
+      - name: Install pinned private browser test runner
+        run: |
+          npm install --no-save --package-lock=false @playwright/test@1.58.2
+          npx playwright install --with-deps chromium
+      - name: Real Chromium desktop and 390px touch-screen protected owner control room
+        run: npx playwright test --config playwright.osa-cinema-v31-private.config.mjs --workers=1
+      - name: Verify public recorded-film release still fails closed
+        shell: bash
+        run: |
+          set +e
+          node scripts/osa-cinema-v20-release-audit.mjs --strict-publication > "$RUNNER_TEMP/v31-release-hold.log" 2>&1
+          result=$?
+          set -e
+          if [ "$result" -ne 1 ] || ! grep -q 'OSA_CINEMA_V20_NO_PUBLICATION' "$RUNNER_TEMP/v31-release-hold.log"; then
+            echo 'Recorded-film release gate unexpectedly lifted' >&2
+            exit 1
+          fi
+          echo 'V31 private evidence only, no online film or payment activation.'
+      - name: Save only synthetic browser QA, never owner media or signed documents
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: osa-cinema-v31-synthetic-browser-qa
+          path: |
+            test-results/
+            osa-v31-private-browser-report/
+          retention-days: 14
+          if-no-files-found: warn
