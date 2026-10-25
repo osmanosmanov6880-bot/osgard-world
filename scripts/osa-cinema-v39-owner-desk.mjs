@@ -194,8 +194,8 @@ export async function startPrivateOwnerDesk({password, auditOptions = {}, audit 
         deskState={state:'running',summary:null,runId}
         // Never expose raw audit errors, system paths or names in browser responses.
         Promise.resolve().then(()=>audit({...auditOptions})).then(raw=>verifyV38Summary(raw))
-          .then(summary=>{if(!closed&&deskState.runId===runId)deskState={state:'completed',summary,runId}})
-          .catch(()=>{if(!closed&&deskState.runId===runId)deskState={state:'failed',summary:null,runId}})
+          .then(summary=>{if(!closed&&deskState.runId===runId&&deskState.state==='running')deskState={state:'completed',summary,runId}})
+          .catch(()=>{if(!closed&&deskState.runId===runId&&deskState.state==='running')deskState={state:'failed',summary:null,runId}})
         const timeout=setTimeout(()=>{if(!closed&&deskState.runId===runId&&deskState.state==='running')deskState={state:'failed',summary:null,runId}},auditTimeoutMs)
         timeout.unref()
         return response(res,202,{status:'running',...releaseLocked})
