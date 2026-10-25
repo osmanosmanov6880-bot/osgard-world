@@ -276,7 +276,7 @@ async function browserRemainingFaults(page, isMobile, deviceName) {
       await expectState(page, state => state?.view === view,
         'W12 actual camera button failed at view ' + view)
     }
-    await expectState(page, state => state?.challenge_target_view === targetView
+    const captionProof = await expectState(page, state => state?.challenge_target_view === targetView
       && state?.fault_label_visible_count === 1
       && state?.fault_marker_active_index === index
       && state?.active_fault_caption_on_screen === true
@@ -286,6 +286,14 @@ async function browserRemainingFaults(page, isMobile, deviceName) {
       && state?.active_fault_caption_screen_y <= .85
       && state?.active_fault_caption_height_px_estimate >= 12,
       'W12 active caption is offscreen or too small to read: ' + faultName)
+    // The native Godot projection reports RENDER TARGET pixels. Convert
+    // to real CSS pixels before judging readability on high-DPR phones.
+    const captureDpr = await page.evaluate(() => window.devicePixelRatio)
+    const captionCssHeight = captionProof.active_fault_caption_height_px_estimate / captureDpr
+    if (!Number.isFinite(captionCssHeight) || captionCssHeight < 12) {
+      throw new Error('W12 caption too small in CSS pixels: ' + faultName
+        + ' measured=' + captionCssHeight + ' devicePixelRatio=' + captureDpr)
+    }
     await captureRealViewport(page, 'w12-' + deviceName + '-fault-' + (index + 1) + '-active.png')
     await press('e', 3)
     await expectState(page, state => state?.challenge_step === 3
@@ -314,6 +322,13 @@ async function browserRemainingFaults(page, isMobile, deviceName) {
       index, fault: faultName, targetView,
       errors: done.challenge_errors, score: done.challenge_score,
       elapsed: done.challenge_elapsed, cleared: done.cleared_case_count,
+      caption_projection: {
+        normalized_x: captionProof.active_fault_caption_screen_x,
+        normalized_y: captionProof.active_fault_caption_screen_y,
+        render_target_height_px: captionProof.active_fault_caption_height_px_estimate,
+        device_pixel_ratio: captureDpr,
+        css_height_px: Number(captionCssHeight.toFixed(2)),
+      },
       result: 'PASS', simulated_only: true,
     })
   }
