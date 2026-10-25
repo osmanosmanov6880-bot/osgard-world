@@ -21,6 +21,11 @@ const syntacticW20Pin = JSON.stringify({
   source_commit:'c'.repeat(40),
   manifest_sha256:'d'.repeat(64)
 })
+const syntacticW21Pin = JSON.stringify({
+  version:'r135-explainable-training-w21-candidate-20261025',
+  source_commit:'e'.repeat(40),
+  manifest_sha256:'f'.repeat(64)
+})
 function result(root) {
   return spawnSync('bash', ['scripts/r135-release-selector.sh'], {
     cwd: root, encoding: 'utf8'
@@ -28,7 +33,7 @@ function result(root) {
 }
 const w14Selector = {channel:'w14', pin_file:'scripts/r135-w14-release-pin.json',
   promotion_gate_run_id:null}
-assert.ok(['w14','w18','w19','w20'].includes(current.channel),'only reviewed release channels allowed')
+assert.ok(['w14','w18','w19','w20','w21'].includes(current.channel),'only reviewed release channels allowed')
 if (current.channel === 'w14') {
   assert.deepEqual(
     {channel:current.channel, pin:current.pin_file, gate:current.promotion_gate_run_id},
@@ -40,10 +45,12 @@ if (current.channel === 'w14') {
       ? 'scripts/r135-w18-release-pin.json'
       : current.channel === 'w19'
         ? 'scripts/r135-w19-release-pin.json'
-        : 'scripts/r135-w20-release-pin.json')
+        : current.channel === 'w20'
+          ? 'scripts/r135-w20-release-pin.json'
+          : 'scripts/r135-w21-release-pin.json')
   assert.ok(Number.isSafeInteger(current.promotion_gate_run_id) &&
     current.promotion_gate_run_id > 0,
-    'W18/W19/W20 production requires a specific reviewed independent acceptance run')
+    'W18/W19/W20/W21 production requires a specific reviewed independent acceptance run')
 }
 const liveSelection = result(process.cwd())
 assert.equal(liveSelection.status,0,
@@ -95,6 +102,37 @@ function fixtureW20(mutate = x => x, content = syntacticW20Pin) {
     rmSync(root,{recursive:true,force:true})
   }
 }
+function fixtureW21(mutate = x => x, content = syntacticW21Pin) {
+  const root = mkdtempSync(join(tmpdir(),'r135-w21-selector-'))
+  try {
+    mkdirSync(join(root,'scripts'))
+    writeFileSync(join(root,'scripts/r135-release-selector.sh'),selectorScript)
+    writeFileSync(join(root,'scripts/r135-active-release.json'),
+      JSON.stringify(mutate({channel:'w21',
+        pin_file:'scripts/r135-w21-release-pin.json',
+        promotion_gate_run_id:123456781})))
+    writeFileSync(join(root,'scripts/r135-w21-release-pin.json'),content)
+    return result(root)
+  } finally {
+    rmSync(root,{recursive:true,force:true})
+  }
+}
+assert.equal(fixtureW21().status,0,
+  'W21 must only allow explicit SHA-pinned causal-learning release'); tested++
+for(const mutate of [
+  x => ({...x,promotion_gate_run_id:null}),
+  x => ({...x,promotion_gate_run_id:0}),
+  x => ({...x,promotion_gate_run_id:'latest'}),
+  x => ({...x,pin_file:'scripts/r135-w20-release-pin.json'}),
+]) {
+  assert.notEqual(fixtureW21(mutate).status,0,'Unreviewed W21 selector unexpectedly succeeded')
+  tested++
+}
+assert.notEqual(fixtureW21(x=>x,JSON.stringify({
+  version:'r135-explainable-training-w21-candidate-20261025',
+  source_commit:'forged',manifest_sha256:'f'.repeat(64)
+})).status,0,'W21 invalid source SHA accepted'); tested++
+
 assert.equal(fixtureW20().status,0,
   'W20 must require an explicit pinned selected source rather than floating latest'); tested++
 for (const mutate of [
@@ -149,6 +187,12 @@ for(const proof of [
   'scripts/r135-w18-promotion-qa.py',
   'scripts/r135-w19-promotion-qa.py',
   'scripts/r135-w20-promotion-qa.py',
+  'scripts/r135-w21-promotion-qa.py',
+  'r135-w21-promotion-gate.yml',
+  'independently-review-exact-W21',
+  'r135-explainable-training-w21-reviewed-webgl-20261025',
+  'W21_ORIGINAL_SCREENSHOTS_AND_GAMEPLAY_EVIDENCE.zip',
+  'scripts/r135-w21-release-pin.json',
   'r135-w20-promotion-gate.yml',
   'independently-review-exact-W20',
   'r135-player-settings-w20-reviewed-webgl-20261025',
@@ -188,5 +232,9 @@ assert.ok(deploy.includes('elif [[ "$PIN" == scripts/r135-w20-release-pin.json ]
   'W20 requires separate exact gate and immutable reviewed artifact')
 assert.ok(!deploy.includes('PIN=scripts/r135-w20-release-pin.json'),
   'W20 must not be selected implicitly')
+assert.ok(deploy.includes('elif [[ "$PIN" == scripts/r135-w21-release-pin.json ]]; then'),
+  'W21 requires exact successful independent 17-original-frame gate')
+assert.ok(!deploy.includes('PIN=scripts/r135-w21-release-pin.json'),
+  'W21 must never become implicit release')
 console.log('R135 W18 production fail-closed static/selector tests PASS:',tested,
   'runtime selector cases; no SSH, deploy or hardware was executed.')

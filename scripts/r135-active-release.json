@@ -1,6 +1,6 @@
 {
-  "channel": "w20",
-  "pin_file": "scripts/r135-w20-release-pin.json",
-  "promotion_gate_run_id": 40213913376,
-  "note": "W20 exact native Godot #40212028861, full actual Chromium #40212028856 and independent 15 original-image gate #40213913376 verified on immutable SHA dd0d519a54c643554d5ff8b6001493e255e70dde. W19 and permanent W14/W18 rollback retained; NO physical Android/iPhone thermals/FPS or AAA photorealism certification."
+  "channel": "w21",
+  "pin_file": "scripts/r135-w21-release-pin.json",
+  "promotion_gate_run_id": 40215573327,
+  "note": "W21 actual Godot 4.4.1 native safety and explanatory learning #40212913069; full real desktop/mobile Chromium WebGL three faults #40212913000; 17 unaltered PNG hashes + real Nginx binary and independently successful gate #40215573327, immutable original W21 GH Release. Must run protected SSH and live R135 W21 source/manifest/WASM/PCK verification after merge; keep W20/W19/W18 and W14 backups. No physical GPU thermal/FPS or AAA certification."
 }
