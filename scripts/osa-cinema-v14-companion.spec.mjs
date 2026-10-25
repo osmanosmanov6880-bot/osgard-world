@@ -64,8 +64,8 @@ test('OSA Cinema V14 English deep links, manual sharing and honest narration sta
   await expect(page).toHaveURL(/scene=7/)
   await expect(page).toHaveURL(/source=shared/)
   await guide.getByRole('button', { name: 'Share scene link' }).click()
-  const statusText = await guide.getByRole('status').first().textContent()
-  expect(statusText).toMatch(/Scene link copied|Automatic copying is unavailable/)
+  await expect(guide.locator('.cinema-companion__feedback'))
+    .toHaveText(/Scene link copied|Automatic copying is unavailable/)
   const manual = guide.locator('.cinema-companion__manual')
   if (await manual.count()) {
     await expect(manual).toHaveValue(/lang=en/)
