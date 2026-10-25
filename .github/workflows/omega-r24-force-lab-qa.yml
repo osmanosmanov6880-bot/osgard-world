@@ -6,6 +6,7 @@ on:
       - 'godot/empire-omega/labs/**'
       - 'godot/empire-omega/tests/v47_rigidbody_force_lab.gd'
       - '.github/workflows/omega-r24-force-lab-qa.yml'
+      - 'godot/empire-omega/tests/v59_r40_force_motor_calibration.gd'
   workflow_dispatch:
 permissions:
   contents: read
@@ -31,6 +32,9 @@ jobs:
       - name: Compare real arcade and rigid-body drive/steer/brake on identical road
         run: |
           timeout --signal=TERM --kill-after=5s 120s godot --headless --path godot/empire-omega --script res://tests/v49_physics_ab_comparison.gd
+      - name: Physically simulate 6 candidate motor calibrations plus wet traction
+        run: |
+          timeout --signal=TERM --kill-after=5s 160s godot --headless --path godot/empire-omega --script res://tests/v59_r40_force_motor_calibration.gd
       - name: Legacy real playable car must still pass
         run: |
           timeout --signal=TERM --kill-after=5s 80s godot --headless --path godot/empire-omega --script res://tests/v34_real_touch_drive.gd
@@ -42,4 +46,5 @@ jobs:
           path: |
             godot/empire-omega/tests/r24-force-metrics.json
             godot/empire-omega/tests/r24-comparison.json
+            godot/empire-omega/tests/r40-force-calibration.json
           if-no-files-found: warn
