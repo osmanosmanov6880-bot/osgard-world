@@ -7,7 +7,7 @@
 // any data. User must separately make a continuous screen recording.
 const OSGARDR135PhoneProbe = (() => {
   const SCHEMA = 'osgard-r135-w25-browser-frames-v1'
-  const MAX_SAMPLE = 1800
+  const MAX_SAMPLE = 9000
   const quantile = (sorted, p) => sorted[Math.min(sorted.length - 1,
     Math.max(0, Math.ceil(sorted.length * p) - 1))] ?? null
   const sleep = ms => new Promise(resolve => setTimeout(resolve, ms))
