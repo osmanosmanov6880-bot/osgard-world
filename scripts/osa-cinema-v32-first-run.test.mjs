@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { mkdtemp, mkdir, writeFile, readFile, readdir, symlink, rm, rename, chmod, stat } from 'node:fs/promises'
+import { mkdtemp, mkdir, writeFile, readFile, readdir, symlink, rm, rename, chmod, stat, realpath } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'
 import { createHash } from 'node:crypto'
@@ -35,7 +35,7 @@ async function login(url,password){
 }
 
 test('V32 private first-run — real owner handoff, no fake media, no publication', {timeout:200000}, async t=>{
- const temp=await mkdtemp(join(tmpdir(),'osa-v32-'))
+ const temp=await mkdtemp(join(await realpath(tmpdir()),'osa-v32-'))
  const film=join(temp,'films'), reports=join(temp,'evidence')
  try{
    await t.test('Node 22 and local FFmpeg/FFprobe are actually available',()=>{
