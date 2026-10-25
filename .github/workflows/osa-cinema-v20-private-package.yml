@@ -1,0 +1,48 @@
+name: OSA CINEMA V20 private HLS and release safety
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - 'scripts/osa-cinema-v20-*'
+      - 'docs/OSA_CINEMA_V20_*'
+      - 'docs/OSA_CINEMA_V16_WORKPRINT_MANIFEST.json'
+      - 'docs/OSA_CINEMA_V18_PRIVATE_SCENE_CUT_QC.json'
+      - 'docs/OSA_CINEMA_V18_PRIVATE_FOUR_TRACK_QA.json'
+      - '.github/workflows/osa-cinema-v20-private-package.yml'
+  push:
+    branches: [master]
+    paths:
+      - 'scripts/osa-cinema-v20-*'
+      - 'docs/OSA_CINEMA_V20_*'
+      - '.github/workflows/osa-cinema-v20-private-package.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  private-media-package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Print available FFmpeg version
+        run: ffmpeg -version | head -n 1
+      - name: Verify protected V20 packaging, synthetic HLS render and negative cases
+        run: node --test scripts/osa-cinema-v20-private-hls.test.mjs scripts/osa-cinema-v20-release-audit.test.mjs
+      - name: Assert recorded film remains unpublished
+        run: |
+          node scripts/osa-cinema-v20-release-audit.mjs --report "$RUNNER_TEMP/osa-v20-private-release-audit.json"
+          if node scripts/osa-cinema-v20-release-audit.mjs --strict-publication; then
+            echo 'ERROR: strict release unexpectedly authorized an unlicensed workprint' >&2
+            exit 1
+          fi
+      - name: Upload private engineering evidence without any media bytes
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: osa-cinema-v20-technical-hold-report
+          path: ${{ runner.temp }}/osa-v20-private-release-audit.json
+          retention-days: 14
+          if-no-files-found: warn
