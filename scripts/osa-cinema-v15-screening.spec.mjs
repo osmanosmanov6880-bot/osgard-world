@@ -28,6 +28,20 @@ test('V15 full-screen screening opens, navigates, saves choices, and restores fo
   await expect(page).toHaveURL(/scene=1/)
   await expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow','2')
   await expect(choices).toHaveCount(0)
+  const geometry = await screen.locator('.osa-cinema-screening__stage').evaluate(stage => {
+    const content = stage.querySelector('.osa-cinema-screening__content')
+    const body = stage.querySelector('.osa-cinema-screening__body')
+    const bound = node => node.getBoundingClientRect()
+    return {
+      stageOverflow: stage.scrollWidth - stage.clientWidth,
+      contentRight: bound(content).right,
+      bodyRight: bound(body).right,
+      screenRight: document.documentElement.clientWidth,
+    }
+  })
+  expect(geometry.stageOverflow, 'Full-screen stage should not overflow horizontally').toBeLessThanOrEqual(2)
+  expect(geometry.contentRight, 'Film text must fit the viewport').toBeLessThanOrEqual(geometry.screenRight + 1)
+  expect(geometry.bodyRight, 'Film paragraph must be fully visible').toBeLessThanOrEqual(geometry.screenRight + 1)
   await page.screenshot({path:info.outputPath('osa-v15-ru-screening.png'),fullPage:true,animations:'disabled'})
   await page.keyboard.press('Escape')
   await expect(screen).toHaveCount(0)
@@ -51,6 +65,7 @@ test('V15 English screening completes journey with choice semantics on mobile', 
   await expect(screen.locator('.osa-cinema-screening__art img')).toHaveAttribute('src','/osa-cinema/reference/decide.webp')
   await expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow','8')
   await expect(screen.getByText('not recorded video',{exact:false})).toBeVisible()
+  expect(await screen.locator('.osa-cinema-screening__stage').evaluate(node => node.scrollWidth - node.clientWidth)).toBeLessThanOrEqual(2)
   await screen.getByRole('button',{name:'Complete the journey'}).click()
   await expect(screen).toHaveCount(0)
   await expect(page.locator('.cinema-completion')).toBeVisible()
