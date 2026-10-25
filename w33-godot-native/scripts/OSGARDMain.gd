@@ -225,6 +225,30 @@ func _overlay_label(parent: Control, name_tag: String, title_text: String, font_
     return tag
 
 func _make_cinematic_overlay(parent: Control) -> void:
+    # In-scene dark optical scrim guarantees HUD legibility even when metallic
+    # highlights and simulated alarm flashes cross the camera's lower frame.
+    var scrim := ColorRect.new()
+    scrim.name = "CinematicBottomScrim"
+    scrim.color = Color(0.015, 0.025, 0.034, 0.72)
+    scrim.anchor_left = 0.0
+    scrim.anchor_top = 1.0
+    scrim.anchor_right = 1.0
+    scrim.anchor_bottom = 1.0
+    scrim.offset_top = -119.0
+    scrim.offset_bottom = 0.0
+    scrim.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    parent.add_child(scrim)
+    var trim := ColorRect.new()
+    trim.name = "PreciousMaterialAccent"
+    trim.color = Color("bca27d")
+    trim.anchor_left = 0.0
+    trim.anchor_right = 1.0
+    trim.anchor_top = 1.0
+    trim.anchor_bottom = 1.0
+    trim.offset_top = -119.0
+    trim.offset_bottom = -117.0
+    trim.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    parent.add_child(trim)
     var overlay := MarginContainer.new()
     overlay.name = "ObsidianInSceneHUD"
     overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -420,6 +444,11 @@ func _layout_stage_for_screen() -> void:
         desired_h = clampf(size.y * 0.60, 350.0, 500.0)
     stage_shell.custom_minimum_size = Vector2(0.0, desired_h)
     visual_container.custom_minimum_size = Vector2(0.0, desired_h)
+    var narrow: bool = size.x < 640.0
+    stage_edition.visible = not narrow
+    stage_kicker.text = "A7 / SECURE FACILITY" if narrow else "A7 / RESTRICTED RESEARCH FACILITY"
+    stage_title.add_theme_font_size_override("font_size", 20 if narrow else 26)
+    stage_readout.add_theme_font_size_override("font_size", 11 if narrow else 13)
     var eco: bool = str(core.settings.get("quality", "hero")) == "eco"
     visual_container.stretch_shrink = 2 if eco else 1
 
