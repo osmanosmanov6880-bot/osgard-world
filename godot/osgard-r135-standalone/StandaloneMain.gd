@@ -269,7 +269,9 @@ func _apply_view(index: int) -> void:
             orbit_pitch = 0.16
         _:
             focus = Vector3(0.0, 1.65, 5.35)
-            distance = 12.0
+            # Closer portrait viewpoint: the W12 AIRFLOW tag occupied only a
+            # few real Chromium pixels at 12 world units.
+            distance = 7.2 if _viewport_is_portrait() else 11.0
             orbit_yaw = 1.35
             orbit_pitch = 0.12
     _refresh_status()
@@ -308,6 +310,12 @@ func _refresh_status() -> void:
         ]
         if bool(state["challenge_completed"]):
             mission_label.text += "\nLESSON: " + str(state["challenge_learning"])
+            var active_case: int = int(state["challenge_fault_index"])
+            var saved_scores: Array = state["case_best_scores"]
+            var saved_attempts: Array = state["case_attempts"]
+            helper.text = "SIM | CASE %d/3 | BEST %d/150 | RUNS %d" % [
+                active_case + 1, int(saved_scores[active_case]), int(saved_attempts[active_case])
+            ]
     else:
         mission_label.text = str(state["mission_goal"]) + "\n" + str(state["mission_feedback"])
         if bool(state["mission_active"]) or bool(state["mission_completed"]):
@@ -338,7 +346,7 @@ func _update_view() -> void:
             2:
                 effective_distance = maxf(distance, 7.8)
             _:
-                effective_distance = maxf(distance, 8.5)
+                effective_distance = maxf(distance, 6.9)
     camera_effective_distance = effective_distance
     var target_focus: Vector3 = focus
     if view_index == 2 and optical_tracking and controller != null:
@@ -423,6 +431,37 @@ func _process(delta: float) -> void:
         state["inspection_fill_energy"] = inspection_fill.light_energy
         state["inspection_fill_shadow_enabled"] = inspection_fill.shadow_enabled
         state["inspection_fill_range"] = inspection_fill.omni_range
+        # W12: visibility is not just the Label3D.visible flag. Project the
+        # actual world-space tag into the active camera and ensure the player
+        # could see it inside the useful part of the viewport. Read-only QA.
+        state["active_fault_caption_on_screen"] = false
+        state["active_fault_caption_screen_x"] = -1.0
+        state["active_fault_caption_screen_y"] = -1.0
+        state["active_fault_caption_height_px_estimate"] = 0.0
+        var fault_scene: Node3D = controller.get("visual_faults") as Node3D
+        if fault_scene != null:
+            var fault_labels: Array = fault_scene.get("marker_labels")
+            var active_marker: int = int(state.get("fault_marker_active_index", -1))
+            if active_marker >= 0 and active_marker < fault_labels.size():
+                var active_label: Label3D = fault_labels[active_marker] as Label3D
+                if active_label != null and active_label.visible and not camera.is_position_behind(active_label.global_position):
+                    var label_pixel: Vector2 = camera.unproject_position(active_label.global_position)
+                    var label_frame: Vector2 = get_viewport().get_visible_rect().size
+                    var label_x: float = label_pixel.x / maxf(label_frame.x, 1.0)
+                    var label_y: float = label_pixel.y / maxf(label_frame.y, 1.0)
+                    state["active_fault_caption_screen_x"] = label_x
+                    state["active_fault_caption_screen_y"] = label_y
+                    var glyph_height_world: float = maxf(
+                        float(active_label.font_size) * active_label.pixel_size, 0.001
+                    )
+                    var label_top_screen: Vector2 = camera.unproject_position(
+                        active_label.global_position + Vector3(0.0, glyph_height_world, 0.0)
+                    )
+                    state["active_fault_caption_height_px_estimate"] = absf(label_top_screen.y - label_pixel.y)
+                    state["active_fault_caption_on_screen"] = (
+                        label_x >= 0.10 and label_x <= 0.90
+                        and label_y >= 0.10 and label_y <= 0.85
+                    )
         var status_rect: Rect2 = hud_panel.get_global_rect()
         var control_rect: Rect2 = action_panel.get_global_rect()
         state["hud_layout_mode"] = "portrait" if _viewport_is_portrait() else "landscape"

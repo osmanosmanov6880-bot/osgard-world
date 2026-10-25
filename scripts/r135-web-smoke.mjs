@@ -50,38 +50,87 @@ async function tapSceneButton(page, index) {
 async function keyboardMission(page) {
   await page.locator('canvas').first().click({ position: { x: 400, y: 350 } })
   await page.keyboard.press('m')
-  await expectState(page, x => x?.mission_active && x?.mission_step === 0, 'M must start mission')
-  await page.keyboard.press('Space') // Deliberately incorrect action.
-  await expectState(page, x => x?.mission_step === 0 && x?.motion_enabled === false, 'Wrong order must not advance')
+  await expectState(page, x => x?.mission_active && x?.mission_step === 0
+    && x?.motion_enabled && x?.lid_target === 0, 'W13 training must start with drive running, hatch shut')
+  await page.keyboard.press('f') // Unsafe: opening a running mechanism is prohibited.
+  await expectState(page, x => x?.mission_step === 0 && x?.lid_target === 0
+    && x?.motion_enabled && String(x?.mission_feedback || '').includes('SAFETY INTERLOCK'),
+    'W13 training incorrectly allowed opening hatch while running')
   await page.keyboard.press('Space')
+  await expectState(page, x => x?.mission_step === 1 && !x?.motion_enabled,
+    'W13 stop-drive-first lesson failed')
   await page.keyboard.press('f')
-  await expectState(page, x => x?.mission_step === 1, 'Hatch should advance to task 2')
-  await page.keyboard.press('Space')
-  await expectState(page, x => x?.mission_step === 2, 'Pause should advance to task 3')
+  await expectState(page, x => x?.mission_step === 2 && x?.lid_target === 1,
+    'W13 safe hatch opening failed')
+  await expectState(page, x => x?.lid_progress >= .95,
+    'W13 training hatch did not open completely', 35_000)
+  await page.keyboard.press('Space') // Never restart while the simulated hatch is open.
+  await expectState(page, x => x?.mission_step === 2 && !x?.motion_enabled
+    && String(x?.mission_feedback || '').includes('SAFETY INTERLOCK'),
+    'W13 training bypassed open-hatch interlock')
   await page.keyboard.press('f')
-  await expectState(page, x => x?.mission_step === 3, 'Hatch close should advance to task 4')
-  await page.keyboard.press('Space')
+  await expectState(page, x => x?.mission_step === 3 && x?.lid_target === 0,
+    'W13 closing hatch did not clear checkpoint')
+  await page.keyboard.press('Space') // Genuine unsafe attempt, or legal if already sealed.
+  const keyboardRestart = await expectState(page, x =>
+    (x?.mission_step === 3 && !x?.motion_enabled
+      && String(x?.mission_feedback || '').includes('SAFETY INTERLOCK'))
+    || (x?.mission_completed && x?.mission_step === 4
+      && x?.motion_enabled && x?.lid_progress <= .05 && x?.lid_target === 0),
+    'W13 training restarted before sealing or missed legitimate completed input')
+  if (!keyboardRestart.mission_completed) {
+    await expectState(page, x => x?.lid_progress <= .05 && !x?.motion_enabled,
+      'W13 training hatch did not seal', 35_000)
+    await page.keyboard.press('Space')
+  }
   await expectState(page, x => x?.mission_completed && x?.mission_step === 4
-    && x?.motion_enabled && !x?.mission_active, 'Resume must complete playable mission')
+    && x?.motion_enabled && !x?.mission_active,
+    'W13 safe simulated service mission did not complete')
   await page.keyboard.press('v')
   await expectState(page, x => x?.view === 1, 'V must select close-up inspection camera')
   await page.keyboard.press('r')
   await expectState(page, x => x?.view === 0, 'R must reset the camera')
 }
 async function touchMission(page) {
-  await tapSceneButton(page, 0)  // START MISSION
-  await expectState(page, x => x?.mission_active && x?.mission_step === 0, 'Mobile START tap failed')
-  await tapSceneButton(page, 6)  // OPEN HATCH
-  await expectState(page, x => x?.mission_step === 1, 'Mobile OPEN HATCH tap failed')
-  await tapSceneButton(page, 5)  // PLAY/PAUSE
-  await expectState(page, x => x?.mission_step === 2, 'Mobile PAUSE tap failed')
-  await tapSceneButton(page, 6)  // CLOSE HATCH
-  await expectState(page, x => x?.mission_step === 3, 'Mobile CLOSE HATCH tap failed')
-  await tapSceneButton(page, 5)  // RESUME
-  await expectState(page, x => x?.mission_completed && x?.mission_step === 4, 'Mobile MISSION completion failed')
-  await tapSceneButton(page, 2)  // NEXT VIEW
+  await tapSceneButton(page, 0)
+  await expectState(page, x => x?.mission_active && x?.mission_step === 0
+    && x?.motion_enabled && x?.lid_target === 0, 'W13 mobile training start failed')
+  await tapSceneButton(page, 6) // Unsafe hatch on running drive.
+  await expectState(page, x => x?.mission_step === 0 && x?.lid_target === 0
+    && String(x?.mission_feedback || '').includes('SAFETY INTERLOCK'),
+    'W13 mobile training incorrectly opened running machine')
+  await tapSceneButton(page, 5) // Stop drive.
+  await expectState(page, x => x?.mission_step === 1 && !x?.motion_enabled,
+    'W13 mobile pause-first lesson failed')
+  await tapSceneButton(page, 6) // Safely open hatch.
+  await expectState(page, x => x?.mission_step === 2 && x?.lid_target === 1,
+    'W13 mobile hatch-opening step failed')
+  await expectState(page, x => x?.lid_progress >= .95,
+    'W13 mobile hatch did not open', 35_000)
+  await tapSceneButton(page, 5) // Unsafe restart while hatch open.
+  await expectState(page, x => x?.mission_step === 2 && !x?.motion_enabled,
+    'W13 mobile safety interlock bypassed by restart')
+  await tapSceneButton(page, 6) // Close hatch.
+  await expectState(page, x => x?.mission_step === 3 && x?.lid_target === 0,
+    'W13 mobile hatch closing step failed')
+  await tapSceneButton(page, 5) // May arrive after full seal on slow touch emulation.
+  const mobileRestart = await expectState(page, x =>
+    (x?.mission_step === 3 && !x?.motion_enabled
+      && String(x?.mission_feedback || '').includes('SAFETY INTERLOCK'))
+    || (x?.mission_completed && x?.mission_step === 4
+      && x?.motion_enabled && x?.lid_progress <= .05 && x?.lid_target === 0),
+    'W13 mobile restart bypassed hatch interlock or missed legal completion')
+  if (!mobileRestart.mission_completed) {
+    await expectState(page, x => x?.lid_progress <= .05 && !x?.motion_enabled,
+      'W13 mobile hatch did not seal', 35_000)
+    await tapSceneButton(page, 5)
+  }
+  await expectState(page, x => x?.mission_completed && x?.mission_step === 4
+    && x?.motion_enabled && !x?.mission_active,
+    'W13 mobile safety-first training mission did not complete')
+  await tapSceneButton(page, 2)
   await expectState(page, x => x?.view === 1, 'Mobile camera preset tap failed')
-  await tapSceneButton(page, 7)  // RESET VIEW
+  await tapSceneButton(page, 7)
   await expectState(page, x => x?.view === 0, 'Mobile camera reset tap failed')
 }
 // Each scenario must be solved through actual controls, including the
@@ -221,6 +270,127 @@ async function touchDiagnostics(page) {
     'Touch W9 simulated case did not record the learning result')
 }
 
+// W12: prove that every distinct fault is playable through the real Godot
+// controls on BOTH Chromium desktop and emulated touch. Native Godot alone
+// cannot catch an unreachable camera button or an incorrectly wired UI.
+async function browserRemainingFaults(page, isMobile, deviceName) {
+  const cases = []
+  const press = async (key, button) => {
+    if (isMobile) await tapSceneButton(page, button)
+    else await page.keyboard.press(key)
+  }
+  for (const [index, targetView, faultName] of [
+    [1, 3, 'COOLING AIRFLOW'],
+    [2, 1, 'SERVICE INTERLOCK'],
+  ]) {
+    await press('c', 1)
+    await expectState(page, state =>
+      state?.challenge_active && state?.challenge_step === 0
+      && state?.challenge_fault_index === index
+      && state?.challenge_fault === faultName
+      && state?.challenge_target_view === targetView
+      && state?.fault_marker_active_index === index
+      && state?.fault_marker_visible_count === 3
+      && state?.fault_label_visible_count === 1
+      && state?.active_caption_depth_override === true
+      && state?.fault_visual_state === 'active'
+      && String(state?.challenge_evidence || '').includes('(SIM)'),
+      'W12 ' + deviceName + ' scenario not visibly active: ' + faultName)
+    // A running machine may not open the hatch. The unsafe action must
+    // increment the penalty without skipping a checkpoint.
+    await press('f', 6)
+    await expectState(page, state => state?.challenge_step === 0
+      && state?.challenge_errors === 1 && state?.lid_target === 0
+      && state?.motion_enabled === true,
+      'W12 unsafe hatch was not rejected for ' + faultName)
+    await press('Space', 5)
+    await expectState(page, state => state?.challenge_step === 1
+      && state?.motion_enabled === false,
+      'W12 drive could not stop for ' + faultName)
+    await press('f', 6)
+    await expectState(page, state => state?.challenge_step === 2
+      && state?.lid_target === 1,
+      'W12 hatch could not open for ' + faultName)
+    await expectState(page, state => state?.lid_progress >= .95,
+      'W12 real hatch interpolation never fully opened for ' + faultName, 35_000)
+    await press('r', 7)
+    await expectState(page, state => state?.view === 0,
+      'W12 RESET VIEW did not use the real overview camera')
+    await press('e', 3)
+    await expectState(page, state => state?.challenge_step === 2
+      && state?.challenge_errors === 2 && state?.fault_visual_state === 'active',
+      'W12 wrong-view scan was incorrectly accepted for ' + faultName)
+    for (let view = 1; view <= targetView; view++) {
+      await press('v', 2)
+      await expectState(page, state => state?.view === view,
+        'W12 actual camera button failed at view ' + view)
+    }
+    await expectState(page, state => state?.challenge_target_view === targetView
+      && state?.fault_label_visible_count === 1
+      && state?.fault_marker_active_index === index
+      && state?.active_fault_caption_on_screen === true
+      && state?.active_fault_caption_screen_x >= .10
+      && state?.active_fault_caption_screen_x <= .90
+      && state?.active_fault_caption_screen_y >= .10
+      && state?.active_fault_caption_screen_y <= .85
+      && state?.active_fault_caption_height_px_estimate >= 12,
+      'W12 active caption is offscreen or too small to read: ' + faultName)
+    await captureRealViewport(page, 'w12-' + deviceName + '-fault-' + (index + 1) + '-active.png')
+    await press('e', 3)
+    await expectState(page, state => state?.challenge_step === 3
+      && state?.fault_visual_state === 'inspected',
+      'W12 correct simulated scan did not inspect ' + faultName)
+    await press('f', 6)
+    await expectState(page, state => state?.challenge_step === 4
+      && state?.lid_target === 0,
+      'W12 hatch did not start closing for ' + faultName)
+    // On software-rendered mobile Chromium, an actual touch event may be
+    // delivered AFTER the hatch fully closes. In that case starting is
+    // *correct* and the old fixed "step must remain 4" assertion was flaky.
+    // Wait for proof that the click was processed: either the rejected start
+    // increments errors, or a sealed hatch legitimately completes the case.
+    await press('Space', 5)
+    const restart = await expectState(page, state =>
+      (state?.challenge_step === 4 && !state?.motion_enabled
+        && state?.challenge_errors === 3 && state?.lid_target === 0)
+      || (state?.challenge_step === 5 && state?.challenge_completed
+        && state?.motion_enabled && state?.lid_target === 0
+        && state?.lid_progress <= .05),
+      'W13 restart neither rejected unsafe travel nor safely completed ' + faultName)
+    if (restart.challenge_step === 4) {
+      await expectState(page, state => state?.lid_progress <= .05
+        && state?.lid_target === 0 && !state?.motion_enabled,
+        'W13 hatch did not seal for ' + faultName, 35_000)
+      await press('Space', 5)
+    }
+    const done = await expectState(page, state => state?.challenge_completed
+      && state?.challenge_step === 5 && state?.motion_enabled === true
+      && state?.fault_visual_state === 'cleared'
+      && state?.fault_marker_active_index === index
+      && state?.cleared_case_count === index + 1
+      && typeof state?.challenge_score === 'number'
+      && state?.challenge_score >= 0 && state?.challenge_score <= 150,
+      'W12 successful diagnostic did not persist ' + faultName)
+    cases.push({
+      index, fault: faultName, targetView,
+      errors: done.challenge_errors, score: done.challenge_score,
+      elapsed: done.challenge_elapsed, cleared: done.cleared_case_count,
+      result: 'PASS', simulated_only: true,
+    })
+  }
+  if (cases.length !== 2) throw new Error('W12 must clear both additional cases')
+  const report = {
+    device: deviceName,
+    software_browser_renderer: 'SwiftShader WebGL2; not physical phone GPU',
+    first_case: 'OPTICAL ALIGNMENT: already passed original smoke',
+    new_cases: cases,
+    result: 'three distinct cases cleared in same Godot browser session',
+  }
+  await writeFile(resolve(output, 'w12-' + deviceName + '-three-case-evidence.json'),
+    JSON.stringify(report, null, 2) + '\n')
+  return cases
+}
+
 async function verifyAdaptiveHud(page) {
   const original = page.viewportSize()
   for (const [width, height, mode] of [
@@ -307,10 +477,14 @@ try {
       if (isMobile) {
         await touchMission(page)
         await touchDiagnostics(page)
+        const extraCases = await browserRemainingFaults(page, true, name)
+        if (extraCases.length !== 2) throw new Error('Missing two mobile diagnostic cases')
         await verifyAdaptiveHud(page)
       } else {
         await keyboardMission(page)
         await keyboardDiagnostics(page)
+        const extraCases = await browserRemainingFaults(page, false, name)
+        if (extraCases.length !== 2) throw new Error('Missing two desktop diagnostic cases')
         await page.keyboard.press('q')
         await expectState(page, x => x?.quality === 2
           && x?.loaded?.endsWith('service_spine_hero.glb') && x?.studio_quality === 2
@@ -327,9 +501,11 @@ try {
       }
       await captureRealViewport(page, name + '.png')
       const final = await readState(page)
+      if (final.cleared_case_count !== 3) throw new Error('W12 only ' + final.cleared_case_count + ' diagnostic cases cleared')
       result.push({ device: name, status: 'PASS', verified: 'real mechanics and interaction',
         mission: final.mission_completed, challenge: final.challenge_completed,
-        challengeScore: final.challenge_score, view: final.view, quality: final.quality,
+        challengeScore: final.challenge_score, caseCount: final.cleared_case_count,
+        diagnosticMatrix: 'optical, airflow, interlock', view: final.view, quality: final.quality,
         canvas: geometry,
         stageGridDrawBatches: final.studio_grid_draw_batches,
         stageGridInstances: final.studio_grid_instances,
