@@ -1,6 +1,13 @@
 name: OSA CINEMA V13 live production acceptance
 
 on:
+  pull_request:
+    branches: [master]
+    paths:
+      - '.github/workflows/osa-cinema-v13-live-acceptance.yml'
+      - 'scripts/osa-cinema-v13-production-smoke.mjs'
+      - 'scripts/osa-cinema-v13-production.spec.mjs'
+      - 'playwright.osa-cinema-live.config.mjs'
   workflow_run:
     workflows: ["OSGARD frontend deploy"]
     types: [completed]
@@ -11,19 +18,19 @@ permissions:
   contents: read
 
 concurrency:
-  group: osa-cinema-v13-live-${{ github.event.workflow_run.head_sha || github.sha }}
+  group: osa-cinema-v13-live-${{ github.event.workflow_run.head_sha || github.event.pull_request.head.sha || github.sha }}
   cancel-in-progress: true
 
 jobs:
   live-browser:
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 14
     steps:
       - name: Check out the exact published commit
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          ref: ${{ github.event.workflow_run.head_sha || github.event.pull_request.head.sha || github.sha }}
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
