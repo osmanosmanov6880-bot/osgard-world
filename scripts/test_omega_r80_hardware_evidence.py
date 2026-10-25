@@ -8,6 +8,7 @@ import unittest
 from pathlib import Path
 
 import omega_r80_hardware_evidence as r80
+import omega_r80_prepare_phone_session as draftgen
 
 
 class HardwareEvidenceTests(unittest.TestCase):
@@ -184,6 +185,59 @@ class HardwareEvidenceTests(unittest.TestCase):
         self.metrics["graphics_quality"] = "ultra-hologram"
         self.persist()
         self.reject("graphics preset")
+
+
+    def _make_draft(self, *, kind="android", sha=None):
+        return draftgen.make_draft(
+            self.root / self.report["benchmark_file"],
+            self.root / self.report["recording_file"],
+            sha if sha is not None else self.source,
+            kind,
+            self.root / "unverified-phone-draft.json",
+        )
+
+    def test_generator_autofills_measured_data_but_not_physical_claim(self):
+        draft = self._make_draft()
+        self.assertEqual(draft["p95_frame_ms"], self.metrics["p95_frame_ms"])
+        self.assertEqual(draft["p99_frame_ms"], self.metrics["p99_frame_ms"])
+        self.assertEqual(draft["frame_count"], self.metrics["frame_count"])
+        self.assertEqual(draft["recording_sha256"], self.report["recording_sha256"])
+        self.assertFalse(draft["physical_device"])
+        self.assertEqual(draft["operator"], "")
+        self.assertEqual(draft["_draft_status"], "UNVERIFIED_TEMPLATE_NOT_HARDWARE_EVIDENCE")
+        with self.assertRaisesRegex(r80.EvidenceError, "not a physical phone"):
+            r80.validate_physical_run(self.root / "unverified-phone-draft.json", self.source)
+
+    def test_generator_rejects_unverified_source_sha(self):
+        with self.assertRaisesRegex(r80.EvidenceError, "40 lowercase hex"):
+            self._make_draft(sha="GARBAGE")
+
+    def test_generator_rejects_incomplete_original_godot_json(self):
+        self.metrics["status"] = "not-ready"
+        self.persist()
+        with self.assertRaisesRegex(r80.EvidenceError, "not a completed"):
+            self._make_draft()
+
+    def test_generator_refuses_existing_draft_file(self):
+        self._make_draft()
+        with self.assertRaises(FileExistsError):
+            self._make_draft()
+
+    def test_generator_rejects_symbolic_link_video(self):
+        movie = self.root / self.report["recording_file"]
+        mirror = self.root / "backup.webm"
+        mirror.write_bytes(movie.read_bytes())
+        movie.unlink()
+        movie.symlink_to(mirror)
+        with self.assertRaisesRegex(r80.EvidenceError, "linked"):
+            self._make_draft()
+
+    def test_generator_rejects_fake_video_signature(self):
+        movie = self.root / self.report["recording_file"]
+        movie.write_bytes(b"faked recording" * 150)
+        with self.assertRaisesRegex(r80.EvidenceError, "container header"):
+            self._make_draft()
+
 
 
 if __name__ == "__main__":
