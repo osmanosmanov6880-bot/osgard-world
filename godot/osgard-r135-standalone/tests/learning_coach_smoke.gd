@@ -80,7 +80,11 @@ func _run() -> void:
         return
     button.pressed.emit()
     if not details.visible or not str(details.text).contains("ТОЛЬКО СИМУЛЯЦИЯ"):
-        _fail("Visible deep cause not wired to the actual button")
+        _fail("Visible deep cause not wired to the actual button: " + JSON.stringify({
+            "expanded": course.get("coach_expanded"), "visible": details.visible,
+            "text": details.text, "locale": scene.get("ui_locale"),
+            "parent_visible": details.get_parent().visible
+        }))
         return
     button.pressed.emit()
     if details.visible:
