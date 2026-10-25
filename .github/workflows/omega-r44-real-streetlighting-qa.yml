@@ -127,6 +127,15 @@ jobs:
           test -s screenshots/omega_r44_real_day_1366x768.png
           test -s screenshots/omega_r44_real_night_1366x768.png
           file screenshots/omega_r44_real_*.png
+      - name: Confirm physical MultiMesh transforms with the actual offscreen OpenGL renderer
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Only real GL can attest GPU instance scaling: the Godot headless
+          # dummy renderer returns a fixed 1.0 identity CPU transform.
+          timeout --signal=TERM --kill-after=8s 130s xvfb-run -a -s '-screen 0 1920x1080x24' \
+            godot --path godot/empire-omega --rendering-method gl_compatibility \
+              --script res://tests/v69_r44_foliage_view_clearance.gd
       - name: Preserve genuine Godot screenshots for human art-direction review
         if: always()
         uses: actions/upload-artifact@v4
