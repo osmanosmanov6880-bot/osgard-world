@@ -29,7 +29,7 @@ func _run() -> void:
 		var row := panel.get_node_or_null("R93_"+id)
 		verify(row != null,"named actual Godot row exists: "+id)
 		if row!=null:
-			var indicator: ProgressBar = row.get_node_or_null("R93Bar_"+id)
+			var indicator: ProgressBar = row.get_node_or_null("R93Bar_"+id) as ProgressBar
 			verify(indicator!=null and int(indicator.value)==int(values[id]),
 				"visual fill matches the original integer metric: "+id)
 	state["road_quality"]=144
