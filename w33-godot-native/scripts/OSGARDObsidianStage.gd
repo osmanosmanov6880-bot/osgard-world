@@ -110,7 +110,7 @@ func _construct_architecture() -> void:
     # Monumental bays: industrial fins and inset practical light, no neon flood.
     for side in [-1.0, 1.0]:
         for i in range(4):
-            var px := side * (5.25 + float(i) * 1.67)
+            var px: float = float(side) * (5.25 + float(i) * 1.67)
             _box(self, "MonolithPillar_%d_%02d" % [int(side), i], Vector3(0.54, 7.40, 0.84), Vector3(px, 3.48, -3.40), graphite)
             _box(self, "PillarTitaniumFace_%d_%02d" % [int(side), i], Vector3(0.24, 6.70, 0.09), Vector3(px, 3.55, -2.91), gunmetal)
             _box(self, "PillarRecessedLight_%d_%02d" % [int(side), i], Vector3(0.055, 4.30, 0.045), Vector3(px, 3.50, -2.83), luminous)
