@@ -787,6 +787,16 @@ func _process(delta: float) -> void:
                     "h_css": rect.size.y / maxf(1.0, touch_pixel_ratio)
                 })
             state["case_replay_hitboxes"] = replay_hitboxes
+            var scroll: ScrollContainer = premium_intro.get("training_scroll") as ScrollContainer
+            var visible_scroll: Rect2 = scroll.get_global_rect()
+            state["case_replay_scroll_rect"] = {
+                "x": visible_scroll.position.x, "y": visible_scroll.position.y,
+                "w": visible_scroll.size.x, "h": visible_scroll.size.y}
+            state["case_replay_scroll_vertical"] = scroll.scroll_vertical
+            var jump: Button = premium_intro.get("case_jump_button") as Button
+            var jump_center: Vector2 = jump.get_global_rect().get_center()
+            state["case_jump_center"] = {"x": jump_center.x, "y": jump_center.y}
+            state["case_jump_control_css_height"] = jump.get_global_rect().size.y / maxf(1.0, touch_pixel_ratio)
             state["player_settings_open"] = bool(premium_intro.get("settings_open"))
             var settings_button: Button = premium_intro.get("settings_button") as Button
             state["player_settings_control_css_px"] = minf(

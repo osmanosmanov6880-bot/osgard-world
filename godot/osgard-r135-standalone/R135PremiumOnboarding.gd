@@ -70,6 +70,9 @@ var description_label: Label
 var hint_label: Label
 var metrics_label: Label
 var case_mastery_label: Label
+var training_scroll: ScrollContainer
+var case_replay_row: HBoxContainer
+var case_jump_button: Button
 var case_selection_caption: Label
 var case_selection_buttons: Array[Button] = []
 var safety_label: Label
@@ -238,6 +241,8 @@ func _build() -> void:
     rule.custom_minimum_size = Vector2(0, 1)
     stack.add_child(rule)
     var scroll := ScrollContainer.new()
+    training_scroll = scroll
+    scroll.follow_focus = true
     scroll.name = "TrainingScrollableText"
     scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
     scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -273,6 +278,7 @@ func _build() -> void:
     case_mastery_label = _label(body, Color(0.64, 0.88, 0.82), 12)
     case_mastery_label.name = "TrueMasteryProgress"
     var replay_row := HBoxContainer.new()
+    case_replay_row = replay_row
     replay_row.name = "ThreeRealFaultReplayButtons"
     replay_row.add_theme_constant_override("separation", 5)
     body.add_child(replay_row)
@@ -299,6 +305,14 @@ func _build() -> void:
     coach_more_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
     assistance_row.add_child(guide_button)
     assistance_row.add_child(coach_more_button)
+    # The 3 case actions are a long-scroll section. A persistent 44px
+    # footer action scrolls the real Godot ScrollContainer directly to them
+    # instead of making partially clipped options steal the PRIMARY click.
+    case_jump_button = _styled_button("КЕЙСЫ", false)
+    case_jump_button.name = "JumpToThreeFaultCases"
+    case_jump_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+    case_jump_button.pressed.connect(_jump_to_cases)
+    assistance_row.add_child(case_jump_button)
     stack.add_child(assistance_row)
 
     rail = PanelContainer.new()
@@ -450,6 +464,8 @@ func _layout() -> void:
     coach_detail.add_theme_font_size_override("font_size", int((12 if compact else 13) * ratio))
     coach_more_button.custom_minimum_size = Vector2(0, 44.0 * ratio)
     coach_more_button.add_theme_font_size_override("font_size", int((12 if compact else 13) * ratio))
+    case_jump_button.custom_minimum_size = Vector2(0, 44.0 * ratio)
+    case_jump_button.add_theme_font_size_override("font_size", int((12 if compact else 13) * ratio))
     metrics_label.add_theme_font_size_override("font_size", int(13 * ratio))
     audio_caption_label.add_theme_font_size_override("font_size", int((12 if compact else 13) * ratio))
     case_mastery_label.add_theme_font_size_override("font_size", int((11 if compact else 12) * ratio))
@@ -553,6 +569,29 @@ func _refresh_case_selection() -> void:
     _assign(case_mastery_label, _t(
         "ПРОЙДЕНО %d/3 · МАСТЕРСТВО %d/3 (от 100 баллов)" % [complete_count, badge_count],
         "CLEARED %d/3 · MASTERY %d/3 (100+ points)" % [complete_count, badge_count]))
+
+
+func _jump_to_cases() -> void:
+    if settings_open:
+        settings_open = false
+    expanded = true
+    _set_expand_state()
+    call_deferred("_layout")
+    call_deferred("_scroll_to_cases")
+
+
+func _scroll_to_cases() -> void:
+    if training_scroll == null or case_replay_row == null or not expanded:
+        return
+    # Position the *entire* real replay row inside the clickable scroll
+    # viewport with breathing room above the fixed tutorial footer.
+    # Visual clip is NOT the same thing as an interactive Button hit region.
+    training_scroll.ensure_control_visible(case_replay_row)
+    var scale: float = maxf(1.0, float(host.get("touch_pixel_ratio")))
+    var bar: VScrollBar = training_scroll.get_v_scroll_bar()
+    var limit: float = maxf(0.0, bar.max_value - bar.page)
+    var requested: float = maxf(0.0, case_replay_row.position.y - 30.0 * scale)
+    training_scroll.scroll_vertical = int(minf(requested, limit))
 
 
 func _toggle_coach_details() -> void:
@@ -905,5 +944,6 @@ func _present() -> void:
         rail_rows[j].add_theme_color_override("font_color",
             Color(0.98, 0.68, 0.40) if j == step else (Color(0.44, 0.84, 0.80) if j < step else Color(0.72, 0.78, 0.82)))
     guide_button.text = _t("УПРАВЛЕНИЕ", "CONTROLS")
+    case_jump_button.text = _t("КЕЙСЫ", "CASES")
     if settings_open:
         _refresh_settings()
