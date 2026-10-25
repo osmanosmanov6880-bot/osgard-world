@@ -349,10 +349,26 @@ func _save_challenge_record() -> void:
         push_warning("R135 challenge record could not be saved on this device")
 
 func start_challenge() -> void:
+    # Preserve original W12 cyclic diagnostic selection and W14 save schema.
+    _begin_challenge((challenge_attempts) % FAULT_TYPES.size())
+
+
+func start_selected_challenge(index: int) -> bool:
+    # An explicitly selected replay is allowed only when no live safety-first
+    # mission or diagnostic is in progress. Never skip an active interlock.
+    if index < 0 or index >= FAULT_TYPES.size():
+        return false
+    if mission_active or challenge_active:
+        return false
+    _begin_challenge(index)
+    return true
+
+
+func _begin_challenge(index: int) -> void:
     mission_active = false
     mission_completed = false
     challenge_attempts += 1
-    challenge_fault_index = (challenge_attempts - 1) % FAULT_TYPES.size()
+    challenge_fault_index = index
     case_attempts[challenge_fault_index] = mini(case_attempts[challenge_fault_index] + 1, 1000000)
     _save_challenge_record()
     challenge_active = true
@@ -364,6 +380,30 @@ func start_challenge() -> void:
     challenge_feedback = "SIMULATED FAULT FOUND: " + FAULT_TYPES[challenge_fault_index]
     _reset_simulated_hatch()
     motion_enabled = true
+
+
+func mastery_report() -> Dictionary:
+    # Derive indicators only from persisted W14 records; no new schema, score
+    # invention or server profiles. A score >=100 is a game badge, not licence.
+    var complete: int = 0
+    var proficient: int = 0
+    var badges: Array[bool] = []
+    for i in range(FAULT_TYPES.size()):
+        var done: bool = cleared_cases[i] and case_attempts[i] > 0
+        var badge: bool = done and case_best_scores[i] >= 100
+        badges.append(badge)
+        if done:
+            complete += 1
+        if badge:
+            proficient += 1
+    return {
+        "completed_count": complete,
+        "proficient_count": proficient,
+        "proficient_flags": badges,
+        "simulation_only": true,
+        "max_score_per_case": 150,
+        "mastery_threshold": 100
+    }
 
 func challenge_goal() -> String:
     if challenge_completed:
@@ -514,7 +554,11 @@ func summary() -> Dictionary:
     for completed in cleared_cases:
         if completed:
             cleared_count += 1
+    var mastery: Dictionary = mastery_report()
     return {"schema":"OSGARD_R135_SCENE_STATE_V1","simulation_only":true,
+        "case_proficient_count":mastery["proficient_count"],
+        "case_proficient_flags":mastery["proficient_flags"],
+        "case_mastery_threshold":mastery["mastery_threshold"],
         "physical_telemetry_connected":false,"quality":quality,"loaded":loaded_path,
         "loading_failures":load_failures,"load_count":load_count,
         "motion_enabled":motion_enabled,"phase_seconds":fposmod(elapsed,16.0),
