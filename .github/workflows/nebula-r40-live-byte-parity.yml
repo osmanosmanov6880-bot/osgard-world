@@ -13,6 +13,7 @@ on:
 permissions:
   contents: read
   actions: read
+  pull-requests: read
 concurrency:
   group: nebula-r40-readonly-live-byte-parity-${{ github.ref }}
   cancel-in-progress: true
