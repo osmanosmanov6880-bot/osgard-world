@@ -1,0 +1,69 @@
+name: OSGARD R135 W11 promotion pin safety contracts
+on:
+  push:
+    branches: [release/r135-w11-verified-promotion-20261025]
+    paths:
+      - "scripts/r135-release-stage.py"
+      - "scripts/activate-frontend-remote.sh"
+      - "nginx.conf"
+      - "scripts/r135-production-smoke.mjs"
+      - ".github/workflows/deploy-frontend.yml"
+      - "scripts/test_r135_w11_stage.py"
+      - "scripts/r135-w11-caption-gate.py"
+      - ".github/workflows/r135-w11-artifact-gate.yml"
+      - ".github/workflows/r135-w11-contracts.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Fail-closed W6/W11 signed staging contracts
+        run: python3 -m unittest discover -s scripts -p test_r135_w11_stage.py -v
+      - name: Validate Python and release workflow safety invariants
+        run: |
+          python3 -m py_compile scripts/r135-release-stage.py scripts/r135-w11-caption-gate.py
+          python3 - <<'PY'
+          from pathlib import Path
+          s=Path(".github/workflows/r135-w11-artifact-gate.yml").read_text()
+          for value in (
+            '.head_sha==$sha',
+            '.conclusion=="success"',
+            'sha256sum -c -',
+            'scripts/r135-w11-caption-gate.py',
+            '--portrait-evidence',
+            'scripts/r135-nginx-wasm-smoke.sh',
+            '--draft',
+            'gh release download',
+            '--draft=false',
+          ):
+              assert value in s, f"Missing fail-closed W11 acceptance invariant: {value}"
+          assert "deploy-frontend" not in s, "Gate may not deploy unaccepted game"
+          nginx=Path("nginx.conf").read_text()
+          r135=nginx.split("location ^~ /games/r135-service/",1)[1].split("location /skillcred/",1)[0]
+          assert "no-cache, max-age=0, must-revalidate" in r135, "mutable R135 WASM/PCK may mix with older game"
+          smoke=Path("scripts/r135-production-smoke.mjs").read_text()
+          assert "OSGARD_REQUIRE_R135_REVALIDATION" in smoke
+          deploy=Path(".github/workflows/deploy-frontend.yml").read_text()
+          assert deploy.count("export OSGARD_REQUIRE_R135_REVALIDATION=1") == 2
+          assert "gh release download" in deploy and "scripts/r135-w11-release-pin.json" in deploy
+          activation=Path("scripts/activate-frontend-remote.sh").read_text()
+          assert "R135 W11 source, version and SHA-256 match" in activation
+          assert "OSGARD_EXPECTED_R135_MANIFEST_SHA256" in activation
+          assert "r135_live_sha" in activation
+          assert activation.index("r135_live_sha") < activation.index("activation_committed=1", activation.index("r135_live_sha"))
+          assert "rollback" in activation[activation.index("r135_live_sha"):activation.index("activation_committed=1", activation.index("r135_live_sha"))]
+          assert "OSGARD_EXPECTED_R135_MANIFEST_SHA256='$R135_SHA'" in deploy
+          assert "OSGARD_EXPECTED_R135_SOURCE='$R135_SOURCE'" in deploy
+          assert "OSGARD_EXPECTED_R135_VERSION='$R135_VERSION'" in deploy
+          print("R135 W11 promotion, cache, and precommit rollback invariants PASS")
+          PY
+      - name: Validate remote activation shell syntax
+        run: bash -n scripts/activate-frontend-remote.sh
+          PY
