@@ -64,6 +64,14 @@ func _run() -> void:
     if str(instance.call("_translated", "VIEW OVERVIEW")) != "РАКУРС ОБЗОР":
         _fail("W17 locale dictionary damaged composite camera labels")
         return
+    var translated_line: String = str(instance.call("_translated",
+        "PRESS START MISSION | OPTICAL ALIGNMENT | EDGE OFFSET +0.7 (SIM)"))
+    if translated_line.contains("PRESS START") or translated_line.contains("OPTICAL ALIGNMENT") or translated_line.contains("EDGE OFFSET"):
+        _fail("W17 visible initial feedback or fault names leaked English")
+        return
+    if not translated_line.contains("НАЧНИ ОБУЧЕНИЕ") or not translated_line.contains("СМЕЩЕНИЕ КРАЯ"):
+        _fail("W17 Russian learning instructions must carry the actual meaning")
+        return
     var safety: Label = instance.get("safety_notice") as Label
     if safety == null or not safety.text.contains("проверки отсутствия энергии"):
         _fail("W17 Russian energy isolation warning missing")

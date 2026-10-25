@@ -479,6 +479,8 @@ func _process(delta: float) -> void:
         state["studio_quality"] = int(stage_budget["stage_quality"])
         state["prefers_reduced_motion"] = reduced_motion
         state["ui_locale"] = ui_locale
+        state["ui_mission_text"] = mission_label.text
+        state["ui_safety_text"] = safety_notice.text
         state["language_control_visible"] = language_button.visible
         var switch_center: Vector2 = language_button.get_global_rect().get_center()
         state["language_control_center"] = {"x": switch_center.x, "y": switch_center.y}

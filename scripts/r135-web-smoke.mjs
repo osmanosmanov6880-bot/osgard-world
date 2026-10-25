@@ -475,16 +475,20 @@ try {
             rect.x + point.x * rect.width / before.viewport_w,
             rect.y + point.y * rect.height / before.viewport_h,
           )
-          await expectState(page, x => x?.ui_locale === wanted, 'W17 touch RU/EN switch failed')
+          await expectState(page, x => x?.ui_locale === wanted
+            && (wanted === 'ru'
+              ? x?.ui_mission_text?.includes('НАЧНИ ОБУЧЕНИЕ')
+              : x?.ui_mission_text?.includes('PRESS START MISSION')),
+            'W17 touch RU/EN switch failed to localize actual lesson feedback')
           if (wanted === 'ru') await captureRealViewport(page, 'w17-mobile-ru-operator.png')
         }
       } else {
         await page.locator('canvas').first().click({ position: { x: 400, y: 350 } })
         await page.keyboard.press('l')
-        await expectState(page, x => x?.ui_locale === 'ru', 'W17 keyboard RU switch failed')
+        await expectState(page, x => x?.ui_locale === 'ru' && x?.ui_mission_text?.includes('НАЧНИ ОБУЧЕНИЕ'), 'W17 keyboard RU must translate lesson feedback')
         await captureRealViewport(page, 'w17-desktop-ru-operator.png')
         await page.keyboard.press('l')
-        await expectState(page, x => x?.ui_locale === 'en', 'W17 keyboard EN restore failed')
+        await expectState(page, x => x?.ui_locale === 'en' && x?.ui_mission_text?.includes('PRESS START MISSION'), 'W17 keyboard EN must restore lesson feedback')
       }
       // Run the real resize + original screenshot matrix BEFORE the prolonged
       // 3-case SwiftShader run. A software GPU can become readback-starved after
