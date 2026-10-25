@@ -1,0 +1,455 @@
+{
+  "source": "W31 / unmodified browser src/core.js",
+  "port": "W32 Godot 4.4.1 source",
+  "rules": {
+    "rpmThreshold": 80,
+    "basicHold": 0.45,
+    "advancedHold": 1.25,
+    "incidentAfter": 0.23
+  },
+  "missions": [
+    {
+      "mission": 0,
+      "advanced": false,
+      "incident_count": 0,
+      "cleared": true,
+      "score": 148,
+      "errors": 0,
+      "steps": 5,
+      "calibration": {
+        "type": "optical",
+        "axisA": 68,
+        "axisB": 44,
+        "withinTolerance": true,
+        "ready": true,
+        "holdSeconds": 0.45,
+        "requiredSeconds": 0.45,
+        "holdPercent": 100,
+        "quality": 100,
+        "reading": {
+          "alignmentMm": 0,
+          "beamFocusPercent": 100,
+          "error": 0
+        },
+        "incident": false
+      },
+      "record": {
+        "schema": 1,
+        "best": [
+          148,
+          0,
+          0
+        ],
+        "attempts": [
+          1,
+          0,
+          0
+        ],
+        "cleared": [
+          true,
+          false,
+          false
+        ]
+      },
+      "hatch": 0,
+      "rpm": 0
+    },
+    {
+      "mission": 1,
+      "advanced": false,
+      "incident_count": 0,
+      "cleared": true,
+      "score": 148,
+      "errors": 0,
+      "steps": 5,
+      "calibration": {
+        "type": "cooling",
+        "axisA": 80,
+        "axisB": 75,
+        "withinTolerance": true,
+        "ready": true,
+        "holdSeconds": 0.45,
+        "requiredSeconds": 0.45,
+        "holdPercent": 100,
+        "quality": 91,
+        "reading": {
+          "outletCelsius": 45.7,
+          "airflowPercent": 78
+        },
+        "incident": false
+      },
+      "record": {
+        "schema": 1,
+        "best": [
+          148,
+          148,
+          0
+        ],
+        "attempts": [
+          1,
+          1,
+          0
+        ],
+        "cleared": [
+          true,
+          true,
+          false
+        ]
+      },
+      "hatch": 0,
+      "rpm": 0
+    },
+    {
+      "mission": 2,
+      "advanced": false,
+      "incident_count": 0,
+      "cleared": true,
+      "score": 148,
+      "errors": 0,
+      "steps": 5,
+      "calibration": {
+        "type": "contact",
+        "axisA": 48,
+        "axisB": 55,
+        "withinTolerance": true,
+        "ready": true,
+        "holdSeconds": 0.45,
+        "requiredSeconds": 0.45,
+        "holdPercent": 100,
+        "quality": 100,
+        "reading": {
+          "leftGapMm": 0,
+          "rightGapMm": 0,
+          "contactPercent": 100
+        },
+        "incident": false
+      },
+      "record": {
+        "schema": 1,
+        "best": [
+          148,
+          148,
+          148
+        ],
+        "attempts": [
+          1,
+          1,
+          1
+        ],
+        "cleared": [
+          true,
+          true,
+          true
+        ]
+      },
+      "hatch": 0,
+      "rpm": 0
+    },
+    {
+      "mission": 3,
+      "advanced": true,
+      "incident_count": 1,
+      "cleared": true,
+      "score": 147,
+      "errors": 0,
+      "steps": 5,
+      "calibration": {
+        "type": "optical",
+        "axisA": 56,
+        "axisB": 62,
+        "withinTolerance": true,
+        "ready": true,
+        "holdSeconds": 1.25,
+        "requiredSeconds": 1.25,
+        "holdPercent": 100,
+        "quality": 100,
+        "reading": {
+          "alignmentMm": 0,
+          "beamFocusPercent": 100,
+          "error": 0
+        },
+        "incident": true
+      },
+      "record": {
+        "schema": 1,
+        "best": [
+          147,
+          0,
+          0
+        ],
+        "attempts": [
+          1,
+          0,
+          0
+        ],
+        "cleared": [
+          true,
+          false,
+          false
+        ]
+      },
+      "hatch": 0,
+      "rpm": 0
+    },
+    {
+      "mission": 4,
+      "advanced": true,
+      "incident_count": 1,
+      "cleared": true,
+      "score": 147,
+      "errors": 0,
+      "steps": 5,
+      "calibration": {
+        "type": "cooling",
+        "axisA": 90,
+        "axisB": 86,
+        "withinTolerance": true,
+        "ready": true,
+        "holdSeconds": 1.25,
+        "requiredSeconds": 1.25,
+        "holdPercent": 100,
+        "quality": 87,
+        "reading": {
+          "outletCelsius": 52.1,
+          "airflowPercent": 88
+        },
+        "incident": true
+      },
+      "record": {
+        "schema": 1,
+        "best": [
+          147,
+          147,
+          0
+        ],
+        "attempts": [
+          1,
+          1,
+          0
+        ],
+        "cleared": [
+          true,
+          true,
+          false
+        ]
+      },
+      "hatch": 0,
+      "rpm": 0
+    },
+    {
+      "mission": 5,
+      "advanced": true,
+      "incident_count": 1,
+      "cleared": true,
+      "score": 147,
+      "errors": 0,
+      "steps": 5,
+      "calibration": {
+        "type": "contact",
+        "axisA": 62,
+        "axisB": 40,
+        "withinTolerance": true,
+        "ready": true,
+        "holdSeconds": 1.25,
+        "requiredSeconds": 1.25,
+        "holdPercent": 100,
+        "quality": 100,
+        "reading": {
+          "leftGapMm": 0,
+          "rightGapMm": 0,
+          "contactPercent": 100
+        },
+        "incident": true
+      },
+      "record": {
+        "schema": 1,
+        "best": [
+          147,
+          147,
+          147
+        ],
+        "attempts": [
+          1,
+          1,
+          1
+        ],
+        "cleared": [
+          true,
+          true,
+          true
+        ]
+      },
+      "hatch": 0,
+      "rpm": 0
+    }
+  ],
+  "matrix": [
+    {
+      "case": 0,
+      "incident": false,
+      "target_a": 68,
+      "target_b": 44,
+      "valid": {
+        "quality": 100,
+        "ready": true,
+        "holdPercent": 100,
+        "reading": {
+          "alignmentMm": 0,
+          "beamFocusPercent": 100,
+          "error": 0
+        }
+      },
+      "invalid": {
+        "ready": false,
+        "withinTolerance": false,
+        "quality": 72
+      }
+    },
+    {
+      "case": 0,
+      "incident": true,
+      "target_a": 56,
+      "target_b": 62,
+      "valid": {
+        "quality": 100,
+        "ready": true,
+        "holdPercent": 100,
+        "reading": {
+          "alignmentMm": 0,
+          "beamFocusPercent": 100,
+          "error": 0
+        }
+      },
+      "invalid": {
+        "ready": false,
+        "withinTolerance": false,
+        "quality": 72
+      }
+    },
+    {
+      "case": 1,
+      "incident": false,
+      "target_a": 80,
+      "target_b": 75,
+      "valid": {
+        "quality": 91,
+        "ready": true,
+        "holdPercent": 100,
+        "reading": {
+          "outletCelsius": 45.7,
+          "airflowPercent": 78
+        }
+      },
+      "invalid": {
+        "ready": false,
+        "withinTolerance": true,
+        "quality": 87
+      }
+    },
+    {
+      "case": 1,
+      "incident": true,
+      "target_a": 90,
+      "target_b": 86,
+      "valid": {
+        "quality": 87,
+        "ready": true,
+        "holdPercent": 100,
+        "reading": {
+          "outletCelsius": 52.1,
+          "airflowPercent": 88
+        }
+      },
+      "invalid": {
+        "ready": false,
+        "withinTolerance": false,
+        "quality": 75
+      }
+    },
+    {
+      "case": 2,
+      "incident": false,
+      "target_a": 48,
+      "target_b": 55,
+      "valid": {
+        "quality": 100,
+        "ready": true,
+        "holdPercent": 100,
+        "reading": {
+          "leftGapMm": 0,
+          "rightGapMm": 0,
+          "contactPercent": 100
+        }
+      },
+      "invalid": {
+        "ready": false,
+        "withinTolerance": false,
+        "quality": 52
+      }
+    },
+    {
+      "case": 2,
+      "incident": true,
+      "target_a": 62,
+      "target_b": 40,
+      "valid": {
+        "quality": 100,
+        "ready": true,
+        "holdPercent": 100,
+        "reading": {
+          "leftGapMm": 0,
+          "rightGapMm": 0,
+          "contactPercent": 100
+        }
+      },
+      "invalid": {
+        "ready": false,
+        "withinTolerance": false,
+        "quality": 52
+      }
+    }
+  ],
+  "failures": [
+    {
+      "code": "opening_under_power",
+      "result": "safetyInterlock",
+      "errors": 1,
+      "blocked": true
+    },
+    {
+      "code": "scan_before_open",
+      "result": "wrongOrder",
+      "errors": 1,
+      "blocked": true
+    },
+    {
+      "code": "restart_open",
+      "result": "safetyInterlock",
+      "errors": 1,
+      "blocked": true
+    },
+    {
+      "code": "shift_locked",
+      "result": "shiftLocked",
+      "errors": 0,
+      "blocked": true
+    },
+    {
+      "code": "wrong_view",
+      "result": "wrongView",
+      "errors": 1,
+      "blocked": true
+    },
+    {
+      "code": "wrong_calibration",
+      "result": "calibrationNeeded",
+      "errors": 1,
+      "blocked": true
+    }
+  ],
+  "final": {
+    "cleared": 3,
+    "advanced": 3
+  },
+  "disclaimer": "Synthetic safety-training mechanics only; not real industrial operating instructions."
+}

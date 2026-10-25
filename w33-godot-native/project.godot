@@ -1,0 +1,33 @@
+; OSGARD FIELD LAB W32 — original Godot 4.4.1 source port of six W31 simulated missions.
+; All mechanics are an offline training simulation; no real machine drivers.
+config_version=5
+
+[application]
+config/name="OSGARD FIELD LAB W33 | Operator Debrief"
+run/main_scene="res://Main.tscn"
+config/description="Independent six-mission interactive simulated diagnosis in native Godot"
+
+[display]
+window/size/viewport_width=1280
+window/size/viewport_height=800
+window/size/window_width_override=1280
+window/size/window_height_override=800
+; W33 real mobile readability: native Godot UI controls must retain
+; readable pixel sizes on 390px phones, not shrink 1280px design to 30%.
+; Browser export resizes the canvas to the device; Control/HFlow+Scroll
+; containers handle the actual adaptive layout without forced game scaling.
+window/stretch/mode="disabled"
+window/stretch/aspect="expand"
+
+[rendering]
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+textures/default_filters/use_nearest_mipmap_filter=false
+renderer/rendering_method.web="gl_compatibility"
+environment/defaults/default_clear_color=Color(0.023, 0.04, 0.058, 1)
+
+[physics]
+3d/default_gravity=9.8
+
+[gui]
+theme/default_theme_scale=1.0

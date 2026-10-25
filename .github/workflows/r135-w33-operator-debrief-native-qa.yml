@@ -1,0 +1,281 @@
+name: OSGARD W33 native 6-case QA, action debrief, WebGL build and original-byte inspection
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'w33-godot-native/**'
+      - '.github/workflows/r135-w33-operator-debrief-native-qa.yml'
+  pull_request:
+    paths:
+      - 'w33-godot-native/**'
+      - '.github/workflows/r135-w33-operator-debrief-native-qa.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: w33-native-${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+jobs:
+  actual-godot-source-parity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Verify checked-out commit is exactly the proposed source SHA
+        shell: bash
+        run: |
+          set -euo pipefail
+          expected="${{ github.event.pull_request.head.sha || github.sha }}"
+          test "$(git rev-parse HEAD)" = "$expected"
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: true
+      - name: Real native 3D source import and parse (blocking)
+        shell: bash
+        run: |
+          set -euo pipefail
+          godot --headless --editor --path w33-godot-native --import --quit 2>&1 | tee "$RUNNER_TEMP/w33-import.log"
+          # Editor import returns exit=0 even with GDScript parse errors.
+          if grep -E 'SCRIPT ERROR:|Parse Error:|Compile Error:|Failed to load script' "$RUNNER_TEMP/w33-import.log"; then
+            echo '::error::Godot import emitted script compilation errors'
+            exit 1
+          fi
+      - name: Six W31-reference cases in actual Godot GDScript (blocking)
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 150s godot --headless --path w33-godot-native --script res://tests/test_six_missions.gd 2>&1 | tee "$RUNNER_TEMP/w33-missions.log"
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/w33-missions.log"; then
+            echo '::error::Actual Godot native test emitted engine errors'
+            exit 1
+          fi
+      - name: Real Godot 3D rotor, hatch, camera, bilingual controls and ECO (blocking)
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 150s godot --headless --path w33-godot-native --script res://tests/test_scene_integration.gd 2>&1 | tee "$RUNNER_TEMP/w33-scene.log"
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/w33-scene.log"; then
+            echo '::error::Actual Godot native test emitted engine errors'
+            exit 1
+          fi
+      - name: Real Godot session debrief, retry, bounded log, signal MultiMesh and erase confirmation (blocking)
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 150s godot --headless --path w33-godot-native --script res://tests/test_w33_debrief.gd 2>&1 | tee "$RUNNER_TEMP/w33-debrief.log"
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/w33-debrief.log"; then
+            echo '::error::Actual Godot native test emitted engine errors'
+            exit 1
+          fi
+      - name: Real OBSIDIAN PROTOCOL architecture, A7 3D details and filmic responsive HUD
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 150s godot --headless --path w33-godot-native --script res://tests/test_w35_obsidian.gd 2>&1 | tee "$RUNNER_TEMP/w35-obsidian.log"
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/w35-obsidian.log"; then
+            echo '::error::W35 native art-direction acceptance emitted Godot errors'
+            exit 1
+          fi
+      - name: Create real Godot 4.4.1 WebGL export from the same native-tested commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd w33-godot-native
+          mkdir -p build/web
+          godot --headless --path . --export-release Web build/web/index.html 2>&1 | tee "$RUNNER_TEMP/w33-export.log"
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/w33-export.log"; then
+            echo '::error::Native Godot Web export emitted engine errors'
+            exit 1
+          fi
+      - name: Verify actual Godot generated HTML, JS, WASM and PCK bytes
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 w33-godot-native/ci/verify_web_export.py \
+            w33-godot-native/build/web \
+            --sha "${{ github.event.pull_request.head.sha || github.sha }}" \
+            --output w33-godot-native/build/web/evidence.json
+      - name: Install pinned Chromium for actual exported Godot WebGL
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m py_compile w33-godot-native/ci/browser_webgl_smoke.py
+          python3 -m venv "$RUNNER_TEMP/w33-qa-venv"
+          "$RUNNER_TEMP/w33-qa-venv/bin/pip" install --disable-pip-version-check --no-cache-dir playwright==1.56.0 Pillow==11.3.0
+          "$RUNNER_TEMP/w33-qa-venv/bin/python" -m playwright install --with-deps chromium
+      - name: Actually render same Godot WebGL export in desktop and mobile-emulated Chromium
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$RUNNER_TEMP/w33-qa-venv/bin/python" w33-godot-native/ci/browser_webgl_smoke.py \
+            --export w33-godot-native/build/web \
+            --evidence w33-godot-native/build/browser-evidence \
+            --sha "${{ github.event.pull_request.head.sha || github.sha }}"
+      - name: Play actual exported Godot WebGL through real desktop game controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$RUNNER_TEMP/w33-qa-venv/bin/python" w33-godot-native/ci/browser_gameplay_acceptance.py \
+            --export w33-godot-native/build/web \
+            --evidence w33-godot-native/build/gameplay-evidence \
+            --sha "${{ github.event.pull_request.head.sha || github.sha }}"
+      - name: Preserve real game-control evidence even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: osgard-w33-playable-browser-evidence-${{ github.event.pull_request.head.sha || github.sha }}
+          path: w33-godot-native/build/gameplay-evidence/
+          if-no-files-found: warn
+          retention-days: 30
+      - name: Retain original browser screenshots for diagnostics even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: osgard-w33-original-browser-evidence-${{ github.event.pull_request.head.sha || github.sha }}
+          path: w33-godot-native/build/browser-evidence/
+          if-no-files-found: warn
+          retention-days: 30
+      - name: Archive exactly generated candidate (not deployed or certified)
+        uses: actions/upload-artifact@v4
+        with:
+          name: osgard-w33-godot-webgl-${{ github.event.pull_request.head.sha || github.sha }}
+          path: w33-godot-native/build/web/
+          if-no-files-found: error
+          retention-days: 30
+      - name: Cross-export real Godot Windows x86_64 game without changing web build
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd w33-godot-native
+          mkdir -p build/windows
+          godot --headless --path . \
+            --export-release "Windows Desktop" \
+            build/windows/OSGARD_FIELD_LAB_W33.exe \
+            2>&1 | tee "$RUNNER_TEMP/w33-windows-export.log"
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/w33-windows-export.log"; then
+            echo '::error::Godot Windows export emitted engine errors'
+            exit 1
+          fi
+      - name: Independently verify Windows PE and external PCK original bytes
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib
+          import json
+          import os
+          import struct
+          folder=Path("w33-godot-native/build/windows")
+          exe=folder/"OSGARD_FIELD_LAB_W33.exe"
+          pck=folder/"OSGARD_FIELD_LAB_W33.pck"
+          for p in (exe,pck):
+              assert p.is_file() and p.stat().st_size>20000, p
+          binary=exe.read_bytes()
+          assert len(binary)>3_000_000, "Real Godot engine executable expected"
+          assert binary[:2]==b"MZ", "Native Win64 executable needs DOS header"
+          pe_pointer=struct.unpack_from("<I",binary,60)[0]
+          assert 60<pe_pointer<len(binary)-25 and binary[pe_pointer:pe_pointer+4]==bytes((80,69,0,0)), "PE signature missing"
+          assert pck.read_bytes()[:4]==b"GDPC", "Native PCK header missing"
+          source=os.environ["GITHUB_SHA"]
+          if os.environ.get("PR_SOURCE_SHA"):
+              source=os.environ["PR_SOURCE_SHA"]
+          manifest={"schema":"OSGARD_W33_WINDOWS_CROSS_EXPORT_V1",
+                    "source_commit":source,"godot_release":"4.4.1",
+                    "architecture":"x86_64","software_export":"PASS",
+                    "real_windows_runtime_certified":False,
+                    "physical_mobile_hardware_certified":False,
+                    "files":[{"name":p.name,"bytes":p.stat().st_size,
+                              "sha256":hashlib.sha256(p.read_bytes()).hexdigest()} for p in (exe,pck)]}
+          (folder/"windows-build.json").write_text(json.dumps(manifest,indent=2))
+          print("WINDOWS CROSS-EXPORT ORIGINAL EXE/PCK PASS",source)
+          PY
+        env:
+          PR_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Preserve checked Windows standalone candidate as build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: osgard-w33-godot-windows-x64-${{ github.event.pull_request.head.sha || github.sha }}
+          path: w33-godot-native/build/windows/
+          if-no-files-found: error
+          retention-days: 30
+      - name: Verify no device/GPU/web deployment certification is inferred
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s w33-godot-native/scripts/OSGARDCore.gd
+          test -s w33-godot-native/Main.tscn
+          echo 'Native software verification only. Physical iPhone/Android GPU, HDR and AAA are NOT certified.'
+
+  actual-windows-runner-boot:
+    name: Windows 2022 real EXE execution (not physical device certification)
+    needs: actual-godot-source-parity
+    runs-on: windows-2022
+    timeout-minutes: 12
+    permissions:
+      contents: read
+    steps:
+      - name: Download only exact source-matched Windows Godot artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: osgard-w33-godot-windows-x64-${{ github.event.pull_request.head.sha || github.sha }}
+          path: windows-candidate
+      - name: Verify Windows original bytes and actually boot exported EXE
+        shell: pwsh
+        env:
+          EXPECTED_GODOT_COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          $ErrorActionPreference="Stop"
+          $root = (Resolve-Path "windows-candidate").Path
+          $manifestPath = Join-Path $root "windows-build.json"
+          if (-not (Test-Path -LiteralPath $manifestPath)) { throw "Missing source-bound Windows build manifest" }
+          $manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
+          if ($manifest.source_commit -ne $env:EXPECTED_GODOT_COMMIT) { throw "Windows source SHA mismatch" }
+          if ($manifest.architecture -ne "x86_64") { throw "Incorrect Windows machine architecture" }
+          if ($manifest.files.Count -ne 2) { throw "Expected executable and PCK only" }
+          foreach ($entry in $manifest.files) {
+            $target = Join-Path $root $entry.name
+            if (-not (Test-Path -LiteralPath $target)) { throw "Missing Windows asset $($entry.name)" }
+            $actual = (Get-FileHash -LiteralPath $target -Algorithm SHA256).Hash.ToLowerInvariant()
+            if ($actual -ne $entry.sha256) { throw "Windows artifact changed bytes: $($entry.name)" }
+          }
+          $exe = Join-Path $root "OSGARD_FIELD_LAB_W33.exe"
+          $stdout = Join-Path $root "w34-windows-stdout.txt"
+          $stderr = Join-Path $root "w34-windows-stderr.txt"
+          $proc = Start-Process -FilePath $exe -ArgumentList @("--headless","--quit-after","180") -WorkingDirectory $root -PassThru -RedirectStandardOutput $stdout -RedirectStandardError $stderr
+          if (-not $proc.WaitForExit(90000)) {
+            $proc.Kill()
+            throw "Real Windows Godot process timed out"
+          }
+          $console = (Get-Content -LiteralPath $stdout -Raw -ErrorAction SilentlyContinue) + [System.Environment]::NewLine + (Get-Content -LiteralPath $stderr -Raw -ErrorAction SilentlyContinue)
+          Write-Output $console
+          if ($proc.ExitCode -ne 0) { throw "Godot Windows runtime process returned exit code $($proc.ExitCode)" }
+          if ($console -match "(?m)^(SCRIPT ERROR:|ERROR:|FATAL:)") { throw "Windows Godot runtime emitted engine errors" }
+          $result = @{
+            schema="OSGARD_W34_WINDOWS_ACTUAL_RUNNER_BOOT_V1"
+            source_commit=$env:EXPECTED_GODOT_COMMIT
+            actual_windows_runner_exe_started=$true
+            command_line="--headless --quit-after 180"
+            exit_code=$proc.ExitCode
+            desktop_render_verified=$false
+            player_controls_verified=$false
+            physical_user_device_verified=$false
+          }
+          $result | ConvertTo-Json -Depth 5 | Out-File -FilePath (Join-Path $root "windows-boot-verdict.json") -Encoding utf8
+          Write-Host "PASS: Real Windows 2022 exported Godot EXE boot and exited cleanly"
+      - name: Preserve original Windows runner log and verdict
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: osgard-w34-actual-windows-exe-boot-${{ github.event.pull_request.head.sha || github.sha }}
+          path: |
+            windows-candidate/windows-boot-verdict.json
+            windows-candidate/w34-windows-stdout.txt
+            windows-candidate/w34-windows-stderr.txt
+          if-no-files-found: warn
+          retention-days: 30
