@@ -10,6 +10,7 @@ on:
     branches: [master]
     paths:
       - ".github/workflows/omega-web-direct-deploy.yml"
+      - "scripts/omega-build-freshness.py"
   workflow_dispatch:
   # The exporter commits its checksum-verified Godot files using GITHUB_TOKEN.
   # Such commits do NOT trigger push workflows; use workflow_run to activate

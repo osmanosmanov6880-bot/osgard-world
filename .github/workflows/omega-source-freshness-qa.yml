@@ -28,6 +28,30 @@ jobs:
             echo 'Missing source revision was incorrectly accepted'
             exit 1
           fi
+      - name: Check actual R60 Web release source against current game runtime files
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin "+refs/heads/master:refs/remotes/origin/master"
+          source_sha="$(python3 -c 'import json; print(json.load(open("public/games/omega-3d-preview/release.json"))["source_commit"])')"
+          git fetch --no-tags --depth=1 origin "$source_sha"
+          python3 scripts/omega-build-freshness.py "$source_sha" origin/master
+          echo 'PASS: actual latest Godot runtime equals exported binary source, ignoring only docs Markdown'
+      - name: Verify a source-guard fix triggers fresh protected SSH deployment
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          deploy=Path('.github/workflows/omega-web-direct-deploy.yml').read_text()
+          src=Path('scripts/omega-build-freshness.py').read_text()
+          assert '- "scripts/omega-build-freshness.py"' in deploy, 'no auto-trigger after guard correction'
+          assert 'runtime_fingerprint' in src
+          assert 'relative_path.startswith(b"docs/")' in src
+          assert 'relative_path.lower().endswith(b".md")' in src
+          assert 'exit 3' in deploy, 'stale source must fail closed'
+          print('PASS: guard-only change reactivates honest fail-closed release gate')
+          PY
       - name: Verify the release job calls the source-tree gate before restaging
         run: |
           python3 - <<'PY'
