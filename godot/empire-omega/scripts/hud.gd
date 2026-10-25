@@ -1218,6 +1218,12 @@ func _shift_tax(delta: int) -> void:
 func _choose_policy(course: String) -> void:
 	if GameState.set_course(course):
 		MissionManager.register_action("set_course")
+	else:
+		# R68: don't silently grant the policy-switch mission for clicking
+		# an already-active strategy; explain what the player must do.
+		announce(_v08("Этот курс уже выбран — выберите другой",
+			"This policy is already active — choose a different one",
+			"已选择当前政策，请选择其他政策"))
 
 func _buy_business(id: String) -> void:
 	if GameState.buy_business(id):
