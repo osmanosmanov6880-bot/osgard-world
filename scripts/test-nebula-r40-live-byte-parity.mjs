@@ -37,6 +37,10 @@ test('eight live assets must be compared byte for byte',()=>{
   assert.match(y,/cmp "public\/games\/remix\/arena-v2\/nebula-3d\/\$name"/);
   assert.match(y,/cmp "\$RUNNER_TEMP\/nebula-r40-ci\/\$name"/);
   assert.match(y,/node scripts\/nebula-production-artifact-guard\.mjs/);
-  assert.match(y,/approved_variant' "\$policy"\)" = R38/);
+  assert.match(y,/variant="\$\(jq -er '\.approved_variant'/);
+  assert.match(y,/case "\$variant" in R38\|R40/);
+  assert.match(y,/\.approval\.real_device_reviewed/);
+  assert.match(y,/cmp "\$RUNNER_TEMP\/nebula-r40-ci\/\$name"/);
+  assert.match(y,/NEBULA_ACTIVE_VARIANT/);
   assert.match(y,/\.approved_for_production/);
 });
