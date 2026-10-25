@@ -6,7 +6,10 @@ export default defineConfig({
   fullyParallel: false,
   timeout: 180_000,
   expect: { timeout: 18_000 },
-  retries: 0,
+  // A fresh Chromium process is allowed one bounded retry for transient
+  // Linux SwiftShader screenshot stalls. Both attempts still require
+  // byte-exact public source SHA and authentic car/touch motion evidence.
+  retries: 1,
   workers: 1,
   reporter: [['list'], ['html', { outputFolder: 'omega-live-webgl-report', open: 'never' }]],
   outputDir: 'omega-live-webgl-results',
