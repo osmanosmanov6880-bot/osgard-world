@@ -8,6 +8,8 @@ on:
       - 'scripts/test-r135-w25-physical-capture.mjs'
       - 'scripts/r135-w28-launch-decision.mjs'
       - 'scripts/test-r135-w28-launch-decision.mjs'
+      - 'scripts/r135-w28-pilot-evidence.mjs'
+      - 'scripts/test-r135-w28-pilot-evidence.mjs'
       - '.github/workflows/r135-w28-no-go-hardware-pilot.yml'
   workflow_dispatch:
 
