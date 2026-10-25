@@ -57,7 +57,8 @@ jobs:
             v85_r99_command_visual_geometry \
             v86_r102_real_asphalt_quality \
             v87_r108_native_mountain_ridges \
-            v88_r106_embedded_cc0_road_activation; do
+            v88_r106_embedded_cc0_road_activation \
+            v89_r111_stable_weather_pbr; do
             timeout --signal=TERM --kill-after=6s 120s godot --headless \
               --path godot/empire-omega --script "res://tests/$suite.gd"
           done
