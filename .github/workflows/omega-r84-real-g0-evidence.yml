@@ -10,6 +10,7 @@ on:
     branches: [master]
     paths:
       - '.github/workflows/omega-r84-real-g0-evidence.yml'
+      - 'scripts/omega_r83_release_gate.py'
   workflow_dispatch:
 permissions:
   contents: read

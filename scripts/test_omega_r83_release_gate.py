@@ -201,5 +201,51 @@ class ReleaseClosureTests(unittest.TestCase):
             g.load_object(alias)
 
 
+    def _original_browser(self, size: int = 0):
+        """Synthetic format ONLY; never presented as a real Chromium run."""
+        path = self.root / "original-playwright.json"
+        data = {"stats": {"expected": 0, "unexpected": 0, "flaky": 0},
+                "suites": [], "padding": "x" * size}
+        path.write_text(json.dumps(data), encoding="utf-8")
+        return path
+
+    def test_realistic_multimegabyte_browser_json_loads_but_not_certified(self):
+        path = self._original_browser(3 * 1024 * 1024)
+        report = g.load_original_browser_report(path)
+        self.assertEqual(report["stats"]["flaky"], 0)
+        self.assertGreater(path.stat().st_size, 1024 * 1024)
+        # File size alone CANNOT certify desktop/touch; R50 still rejects
+        # this synthetic no-project reporter after R85 parses it safely.
+        with self.assertRaises(ValueError):
+            g.read_r50_module().validate_browser(report)
+
+    def test_original_browser_report_still_has_finite_size_limit(self):
+        path = self.root / "original-playwright.json"
+        with path.open("wb") as f:
+            f.truncate(g.MAX_ORIGINAL_PLAYWRIGHT_JSON_BYTES + 1)
+        with self.assertRaisesRegex(g.FieldError, "oversized original Playwright"):
+            g.load_original_browser_report(path)
+
+    def test_original_browser_symlink_refused(self):
+        original = self._original_browser()
+        linked = self.root / "browser-link.json"
+        linked.symlink_to(original)
+        with self.assertRaisesRegex(g.FieldError, "linked original Playwright"):
+            g.load_original_browser_report(linked)
+
+    def test_original_browser_requires_real_report_shape(self):
+        path = self.root / "original-playwright.json"
+        path.write_text(json.dumps({"stats": {}, "not_suites": [],
+                                    "padding": "x" * 150}),
+                        encoding="utf-8")
+        with self.assertRaisesRegex(g.FieldError, "requires stats and test suites"):
+            g.load_original_browser_report(path)
+
+    def test_private_field_forms_keep_one_megabyte_limit(self):
+        path = self._original_browser(2 * 1024 * 1024)
+        with self.assertRaisesRegex(g.FieldError, "oversized JSON"):
+            g.load_object(path)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

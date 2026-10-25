@@ -69,6 +69,11 @@ class RealG0WorkflowContracts(unittest.TestCase):
         self.check_replacement_fails(
             "actions/upload-artifact@v4", "actions/checkout@v4")
 
+    def test_changed_original_r83_reporter_forces_fresh_real_public_g0(self):
+        self.check_replacement_fails(
+            "      - 'scripts/omega_r83_release_gate.py'",
+            "      - 'scripts/not-relevant-docs.py'")
+
     def test_unrestricted_push_rejected(self):
         self.check_replacement_fails(
             "  push:\n    branches: [master]",

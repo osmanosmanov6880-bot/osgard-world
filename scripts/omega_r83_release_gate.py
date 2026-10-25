@@ -85,13 +85,36 @@ def read_r50_module():
     return module
 
 
+
+# A real Playwright JSON reporter contains the genuine source test traces and
+# attachments. R84 desktop+touch produced ~3.8 MiB, exceeding the 1-MiB cap
+# intended for simple private field forms. Keep THAT 1-MiB cap unchanged;
+# only the original Chromium reporter gets a bounded, separately validated cap.
+MAX_ORIGINAL_PLAYWRIGHT_JSON_BYTES = 16 * 1024 * 1024
+
+
+def load_original_browser_report(path: Path) -> dict:
+    insist(path.is_file() and not path.is_symlink(),
+           "missing or linked original Playwright JSON report")
+    size = path.stat().st_size
+    insist(100 <= size <= MAX_ORIGINAL_PLAYWRIGHT_JSON_BYTES,
+           "empty or oversized original Playwright JSON report")
+    report = json.loads(path.read_text(encoding="utf-8"))
+    insist(isinstance(report, dict) and isinstance(report.get("stats"), dict)
+           and isinstance(report.get("suites"), list),
+           "original Playwright reporter requires stats and test suites")
+    # These are ONLY framing requirements: R50.validate_browser below must
+    # still verify all genuine desktop and touch results and reject flaky runs.
+    return report
+
+
 def source_bound_public_webgl(manifest: dict, assets: Path,
                               live_path: Path, browser_path: Path) -> None:
     r50 = read_r50_module()
     # Verify ALL original packaged bytes, not just a supplied JSON success flag.
     r50.validate_manifest(manifest, assets, strict_bytes=True)
     r50.validate_live(load_object(live_path), manifest)
-    browser = load_object(browser_path)
+    browser = load_original_browser_report(browser_path)
     project_names = r50.validate_browser(browser)
     insist(set(project_names) == {"desktop-chromium", "touch-phone-chromium"},
            "missing real desktop and touch projects")
