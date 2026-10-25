@@ -19,6 +19,13 @@ class DeployFreshnessContracts(unittest.TestCase):
         self.assertLess(doc.index('id: source_gate'), doc.index('name: Configure SSH'))
         self.assertLess(doc.index('id: source_gate'), doc.index('name: Upload verified Godot game'))
 
+    def test_superseded_source_is_failed_not_successful_noop(self):
+        gate = self.body.split('      - name: Reject superseded Godot source BEFORE any SSH or file upload',1)[1].split('      - name: Verify release-integrity failure conditions',1)[0]
+        self.assertIn('ready=false', gate)
+        self.assertIn('::error::SUPERSEDED', gate)
+        self.assertRegex(gate, r'(?s)ready=false.*exit 3')
+        self.assertNotIn('exit 0', gate)
+
     def test_sha_from_manifest_is_validated(self):
         self.assertIn('release.json"))["source_commit"]',self.body)
         self.assertIn('^'+'[0-9a-f]{40}'+'$',self.body)
@@ -43,7 +50,8 @@ class DeployFreshnessContracts(unittest.TestCase):
         self.assertIn(second_check,section)
         self.assertLess(section.index(second_check),section.index('scp -i ~/.ssh/osgard_omega_deploy'))
         self.assertIn('deployed=false',section)
-        self.assertIn('exit 0',section)
+        self.assertIn('exit 3',section.split('scp -i ~/.ssh/osgard_omega_deploy')[0])
+        self.assertNotIn('exit 0',section.split('scp -i ~/.ssh/osgard_omega_deploy')[0])
         self.assertIn('deployed=true',section)
         self.assertLess(section.index('bash \'$remote/deploy.sh\''),section.index('deployed=true'))
 
