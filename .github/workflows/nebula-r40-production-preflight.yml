@@ -44,3 +44,21 @@ jobs:
           fi
           node scripts/nebula-production-artifact-guard.mjs
           echo "NEBULA_R40_FINAL_RELEASE_HELD_CORRECTLY"
+      - name: Package EMPTY physical QA kit for real phone testers
+        if: github.event_name == 'pull_request'
+        run: |
+          set -euo pipefail
+          node scripts/nebula-r40-field-kit.mjs init "$RUNNER_TEMP/nebula-r40-private-field"
+          test "$(find "$RUNNER_TEMP/nebula-r40-private-field/reports" -type f | wc -l)" -eq 0
+          test "$(find "$RUNNER_TEMP/nebula-r40-private-field/images" -type f | wc -l)" -eq 0
+          (cd "$RUNNER_TEMP" && zip -qr "$GITHUB_WORKSPACE/nebula-r40-empty-field-kit.zip" nebula-r40-private-field)
+          test -s nebula-r40-empty-field-kit.zip
+      - name: Upload empty QA kit (NO measured FPS or images)
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: nebula-r40-empty-physical-device-kit
+          path: nebula-r40-empty-field-kit.zip
+          if-no-files-found: error
+          retention-days: 14
+
