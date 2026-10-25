@@ -264,8 +264,8 @@ func _build_mountains() -> void:
 				2: height = elevation
 				3: height = elevation*0.42-5.0
 				_: height = -25.0
-			var mineral: Color = Color("626d70").lerp(
-				Color("a1a19a"),clampf((height+24.0)/90.0,0.0,1.0))
+			var mineral: Color = Color("3f5260").lerp(
+				Color("697a82"),clampf((height+24.0)/90.0,0.0,1.0))
 			mesh_builder.set_color(mineral)
 			mesh_builder.add_vertex(Vector3(
 				cos(angle)*radius,height,sin(angle)*radius))
@@ -285,7 +285,7 @@ func _build_mountains() -> void:
 	var mountain := MeshInstance3D.new()
 	mountain.name = "SurroundingMountainRange"
 	mountain.mesh = mesh_builder.commit()
-	var rock_mat := _mat(Color.WHITE,0.025,0.91)
+	var rock_mat := _mat(Color.WHITE,0.0,0.97)
 	rock_mat.vertex_color_use_as_albedo = true
 	rock_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
 	mountain.material_override = rock_mat
