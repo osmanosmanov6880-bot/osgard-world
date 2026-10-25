@@ -47,6 +47,10 @@ func _run() -> void:
 				"portrait quick-menu button never hides behind feedback")
 			verify(frame["quick_panel"].end.y <= size.y-12.0,
 				"expanded native quick actions remain on-screen")
+			verify(not frame["diagnostics"].intersects(frame["quick_toggle"]),
+				"native FPS panel never covers the relocated quick toggle")
+			verify(frame["diagnostics"].end.y <= float(frame["touch_safe_top"])+0.1,
+				"FPS controls stop before original lower touch-driving row")
 		verify(frame["quick_toggle"].end.y < help.position.y or size.y<=410.0,"quick menu does not cover hint on common phones")
 		if size.x<360.0 or size.y<690.0:
 			verify(not bool(frame["map_default"]),"optional map hidden in narrow/short modes")
