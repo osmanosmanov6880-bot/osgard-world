@@ -88,7 +88,8 @@ async function verifyW20PlayerSettings(page, isMobile, name) {
   if (!['r135-player-settings-w20-candidate-20261025',
        'r135-explainable-training-w21-candidate-20261025',
        'r135-case-mastery-w22-candidate-20261025',
-       'r135-luxury-lighting-w23-candidate-20261025'].includes(process.env.R135_CANDIDATE_VERSION)) return
+       'r135-luxury-lighting-w23-candidate-20261025',
+         'r135-accessible-audio-w24-candidate-20261025'].includes(process.env.R135_CANDIDATE_VERSION)) return
   const start = await expectState(page, x => x?.player_preferences_schema === 1
     && x?.player_preferences_save_ok === true && x?.player_settings_control_css_px >= 43.5,
     'W20 real player settings not readable, saved, or accessible')
@@ -137,7 +138,8 @@ async function verifyW21CausalLesson(page, isMobile, name) {
   // Every later candidate must capture its OWN original W21 causal screenshots.
   if (!['r135-explainable-training-w21-candidate-20261025',
          'r135-case-mastery-w22-candidate-20261025',
-         'r135-luxury-lighting-w23-candidate-20261025'].includes(process.env.R135_CANDIDATE_VERSION)) return
+         'r135-luxury-lighting-w23-candidate-20261025',
+         'r135-accessible-audio-w24-candidate-20261025'].includes(process.env.R135_CANDIDATE_VERSION)) return
   await hitLuxuryControl(page, 'tutorial_collapse_center', isMobile)
   const initial = await expectState(page, x => x?.tutorial_expanded === true
     && x?.coach_status === 'intro'
@@ -163,7 +165,8 @@ async function verifyW21CausalLesson(page, isMobile, name) {
 // a real scrollable Godot panel with genuine pointer/touch events.
 async function verifyW22SelectableCases(page, isMobile, name) {
   if (!['r135-case-mastery-w22-candidate-20261025',
-         'r135-luxury-lighting-w23-candidate-20261025'].includes(process.env.R135_CANDIDATE_VERSION)) return
+         'r135-luxury-lighting-w23-candidate-20261025',
+         'r135-accessible-audio-w24-candidate-20261025'].includes(process.env.R135_CANDIDATE_VERSION)) return
   const before = await expectState(page, s => s?.case_replay_hitboxes?.length === 3
     && s?.cleared_case_count === 3 && s?.case_mastery_threshold === 100
     && s?.case_proficient_flags?.length === 3 && !s?.challenge_active,
@@ -206,7 +209,8 @@ async function verifyW22SelectableCases(page, isMobile, name) {
 // W23: real key/rim/fill are changed through the player's EXISTING SET panel.
 // We record honest SwiftShader pixels; no physical-device FPS or AAA claim.
 async function verifyW23ActualLighting(page, isMobile, name) {
-  if (process.env.R135_CANDIDATE_VERSION !== 'r135-luxury-lighting-w23-candidate-20261025') return
+  if (!['r135-luxury-lighting-w23-candidate-20261025',
+         'r135-accessible-audio-w24-candidate-20261025'].includes(process.env.R135_CANDIDATE_VERSION)) return
   const eco = await expectState(page, s => s?.quality === 0
     && s?.art_profile === 'ECO' && s?.art_shadow_count_added === 0
     && s?.art_webgl_expensive_postfx === false
@@ -241,6 +245,56 @@ async function verifyW23ActualLighting(page, isMobile, name) {
   await hitLuxuryControl(page, 'player_settings_center', isMobile)
   console.log('W23 actual HERO/ECO Godot lighting PASS:', name,
     { ecoKey: eco.art_key_energy, heroKey: 1.90, echo: 'no extra shadows or drawing' })
+}
+
+// W24 real user consent, not an automatic audio playback test.
+async function verifyW24AudioConsentAndCaptions(page, isMobile, name) {
+  if (process.env.R135_CANDIDATE_VERSION !== 'r135-accessible-audio-w24-candidate-20261025') return
+  const first = await expectState(page, s => s?.sound_schema === 1
+    && s?.sound_muted === true && s?.sound_audible_count === 0
+    && s?.sound_player_autoplay === false && s?.sound_save_ok === true,
+    'W24 audio should start muted with no autoplay')
+  const openSettings = async () => {
+    await hitLuxuryControl(page, 'player_settings_center', isMobile)
+    await expectState(page, s => s?.player_settings_open === true)
+    const canvas = await page.locator('canvas').first().boundingBox()
+    if (!canvas) throw new Error('W24 actual WebGL canvas missing')
+    for (let attempt = 0; attempt < 12; attempt++) {
+      const state = await readState(page)
+      const point = state.player_settings_audio_center
+      const panel = state.player_settings_rect
+      if (point && state.player_settings_audio_css_height >= 43.5
+          && point.y > panel.y + 35 && point.y < panel.y + panel.h - 65) return
+      const x = canvas.x + (panel.x + panel.w * .45) * canvas.width / state.viewport_w
+      const y = canvas.y + (panel.y + panel.h * .40) * canvas.height / state.viewport_h
+      await page.mouse.move(x, y)
+      await page.mouse.wheel(0, 145)
+      await sleep(page, 220)
+    }
+    throw new Error('W24 opt-in mute button inaccessible through real settings scrolling')
+  }
+  await openSettings()
+  await hitLuxuryControl(page, 'player_settings_audio_center', isMobile)
+  await expectState(page, s => s?.sound_muted === false && s?.sound_save_ok === true
+    && s?.sound_audible_count === 0,
+    'W24 actual settings opt-in auto-played before player action')
+  await hitLuxuryControl(page, 'player_settings_center', isMobile)
+  const before = await readState(page)
+  await tapSceneButton(page, 5)
+  await expectState(page, s => s?.sound_last_cue === 'drive_stop'
+    && s?.sound_audible_count > 0 && s?.sound_caption?.length > 10
+    && s?.sound_player_autoplay === false
+    && s?.challenge_fault_index === before.challenge_fault_index,
+    'W24 genuine drive stop did not produce caption plus consented sound')
+  await openSettings()
+  await hitLuxuryControl(page, 'player_settings_audio_center', isMobile)
+  await expectState(page, s => s?.sound_muted === true && s?.sound_save_ok === true
+    && s?.sound_caption?.length > 10,
+    'W24 audio mute lost visual text equivalent')
+  await captureRealViewport(page, 'w24-' + name + '-accessible-audio.png')
+  await hitLuxuryControl(page, 'player_settings_center', isMobile)
+  console.log('W24 real opt-in/mute/caption PASS:', name,
+    { previouslyAudible: first.sound_audible_count, previousCues: before.sound_cue_count })
 }
 
 async function keyboardMission(page) {
@@ -788,6 +842,7 @@ try {
         softwareRendererFpsSample: final.render_fps_sample })
       await verifyW22SelectableCases(page, isMobile, name)
       await verifyW23ActualLighting(page, isMobile, name)
+      await verifyW24AudioConsentAndCaptions(page, isMobile, name)
       console.log('R135 gameplay PASS:', name, JSON.stringify(result.at(-1)))
     } catch (error) {
       failed = true
