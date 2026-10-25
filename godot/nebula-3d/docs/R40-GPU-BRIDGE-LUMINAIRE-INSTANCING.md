@@ -72,3 +72,14 @@ original R38 bridge-local positions (tolerance 0.001), exact unit-Box scaling
 (1.6 x 0.10 x 0.85), and the 269 x 5.4 x 9.2 flightway collision shape
 on each of three spans. These code-level invariants do not substitute for
 visual inspection or physical hardware GPU timings.
+
+## Headless geometry-test limitation
+The expanded native test initially exposed an important false assumption: in
+Godot launched with `--headless`, the dummy RenderingServer can report
+`Transform3D.IDENTITY` for `MultiMesh.get_instance_transform()`, even after
+valid calls to `set_instance_transform()`. It is not a physical 3D render.
+R40 therefore stores an exact, in-memory copy of the **submitted** CPU
+instance transforms and checks every lamp location/scale and bridge collision
+against R38 on the native runner. The real browser tests separately verify
+WebAssembly flight and controls. A true GPU screenshot and real-phone FPS A/B
+remain independent human acceptance requirements.
