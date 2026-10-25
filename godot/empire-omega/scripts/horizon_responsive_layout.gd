@@ -26,7 +26,7 @@ static func compute(viewport: Vector2) -> Dictionary:
 	var journal := Rect2(12.0,185.0,w-24.0,journal_height)
 	# Performance overlay sits below the touch menu toggle. The minimap is
 	# temporarily hidden while diagnostics are open to avoid occlusion.
-	var diagnostics := Rect2(12.0,244.0,minf(w-24.0,330.0),182.0)
+	var diagnostics := Rect2(12.0,244.0,minf(w-24.0,330.0),minf(182.0,maxf(80.0,h-254.0)))
 	var toast := Rect2(12.0,182.0,w-24.0,68.0)
 	var panel_height: float = minf(670.0,h-24.0)
 	var modal := Rect2(12.0,(h-panel_height)*0.5,w-24.0,panel_height)
