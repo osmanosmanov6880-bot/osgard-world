@@ -47,18 +47,23 @@ export async function waitForExactPublishedRelease(request, url, expected, nonce
 
 // Last-resort, renderer-independent collection of pixels from the ACTUAL live
 // Godot WebGL canvas. Never use DOM screenshots, snapshots or synthetic media.
-async function captureLiveGodotCanvas(page) {
+async function captureLiveGodotCanvas(page, limits={}) {
   if (typeof page.evaluate !== 'function') throw new Error('Canvas readback unavailable')
   let timeoutId
   try {
     const dataUrl=await Promise.race([
-      page.evaluate(async()=>{
+      page.evaluate(async(captureLimits)=>{
         const source=document.querySelector('#canvas')
         if (!(source instanceof HTMLCanvasElement) || source.width<160 || source.height<160)
           throw new Error('Real Godot canvas unavailable')
+        // This is a readback of the ORIGINAL live Godot WebGL canvas.
+        // Only the output copy is resampled, never the game viewport/source.
+        const ratio=Math.min(1,
+          (captureLimits.maxWidth??source.width)/source.width,
+          (captureLimits.maxHeight??source.height)/source.height)
         const copy=document.createElement('canvas')
-        copy.width=source.width
-        copy.height=source.height
+        copy.width=Math.max(160,Math.round(source.width*ratio))
+        copy.height=Math.max(160,Math.round(source.height*ratio))
         const ctx=copy.getContext('2d',{willReadFrequently:true})
         if (!ctx) throw new Error('Canvas 2D readback unsupported')
         // Chromium SwiftShader may not have finished the current compositor
@@ -81,7 +86,7 @@ async function captureLiveGodotCanvas(page) {
           if(bright>=Math.max(12,Math.ceil(samples*0.10))) return copy.toDataURL('image/png')
         }
         throw new Error('Actual WebGL readback stayed dark; no valid pixels')
-      }),
+      },limits),
       new Promise((_,reject)=>{
         timeoutId=setTimeout(()=>reject(new Error('Canvas readback timed out')),12000)
       })
@@ -168,6 +173,7 @@ export async function captureAnimatedWebGLViewport(page) {
   // Unlike locator screenshots, CDP does not wait for a continuously painted
   // WebGL canvas to reach the impossible "stable element" state.
   let session=null
+  let earlyCanvasError=null
   try {
     session=await page.context().newCDPSession(page)
     let screencastError=null
@@ -176,6 +182,17 @@ export async function captureAnimatedWebGLViewport(page) {
       return await captureRealChromiumScreencast(session,11500,limits)
     } catch(error) {
       screencastError=error
+    }
+    // At 1366 CSS px, synchronous Chrome screenshots can queue behind a
+    // frozen SwiftShader compositor. Try original canvas readback in a
+    // bounded, smaller offscreen bitmap BEFORE those more costly paths.
+    if(compact) {
+      try {
+        const result=await captureLiveGodotCanvas(page,limits)
+        return {...result,fallback_reason:'CDP screencast='+String(screencastError?.message??screencastError).slice(0,150)}
+      } catch(error) {
+        earlyCanvasError=error
+      }
     }
     let timeoutId=null
     let encoded
@@ -232,12 +249,14 @@ export async function captureAnimatedWebGLViewport(page) {
     }
     // Try real Godot canvas readback before Playwright screenshot. If the
     // framebuffer is blank/unreadable this fails, never inventing evidence.
-    let canvasError
-    try {
-      const result=await captureLiveGodotCanvas(page)
-      return {...result,fallback_reason:('CDP='+String(firstError?.message??firstError)+
-        '; View='+String(alternativeError?.message??alternativeError)).slice(0,240)}
-    } catch(e) {canvasError=e}
+    let canvasError=earlyCanvasError
+    if(!compact) {
+      try {
+        const result=await captureLiveGodotCanvas(page,limits)
+        return {...result,fallback_reason:('CDP='+String(firstError?.message??firstError)+
+          '; View='+String(alternativeError?.message??alternativeError)).slice(0,240)}
+      } catch(e) {canvasError=e}
+    }
     try {
       const png=await page.screenshot({timeout:35000,animations:'disabled'})
       if(!Buffer.isBuffer(png) || png.length<9500 ||
