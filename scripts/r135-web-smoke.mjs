@@ -283,8 +283,9 @@ async function browserRemainingFaults(page, isMobile, deviceName) {
       && state?.active_fault_caption_screen_x >= .10
       && state?.active_fault_caption_screen_x <= .90
       && state?.active_fault_caption_screen_y >= .10
-      && state?.active_fault_caption_screen_y <= .85,
-      'W12 world-space caption is missing or outside real camera view: ' + faultName)
+      && state?.active_fault_caption_screen_y <= .85
+      && state?.active_fault_caption_height_px_estimate >= 12,
+      'W12 active caption is offscreen or too small to read: ' + faultName)
     await captureRealViewport(page, 'w12-' + deviceName + '-fault-' + (index + 1) + '-active.png')
     await press('e', 3)
     await expectState(page, state => state?.challenge_step === 3
