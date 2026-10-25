@@ -8,6 +8,7 @@ on:
       - 'src/OSA*'
       - 'src/LectureLibrary.tsx'
       - 'src/OSALearningDashboard.tsx'
+      - 'tools/osa-cinema*'
       - 'scripts/osa-*'
       - 'scripts/osa6-*'
       - 'docs/OSA-*'
@@ -19,6 +20,7 @@ on:
       - 'src/osa*'
       - 'src/OSA*'
       - 'src/LectureLibrary.tsx'
+      - 'tools/osa-cinema*'
       - 'scripts/osa-*'
       - 'docs/OSA-*'
       - 'package.json'
@@ -48,6 +50,9 @@ jobs:
         run: |
           bash -n scripts/osa-cinema-v18-private-four-track.sh
           node --test scripts/osa-cinema-v18-private-cut.test.mjs
+      - name: V19 caption safety, measured offline shot timeline and fail-closed release matrix
+        run: |
+          node --test scripts/osa-cinema-v19-caption.test.mjs scripts/osa-cinema-v19-private-timeline-smoke.mjs scripts/osa-cinema-v19-release-registry.test.mjs
       - name: Verify V17 objective media QA filters, real-source integrity and no unlicensed publication
         run: python3 -m unittest scripts/test_osa_cinema_v17_av_qc.py -v
       - name: Verify real RU/EN 239-second private voice guide timing and source integrity
