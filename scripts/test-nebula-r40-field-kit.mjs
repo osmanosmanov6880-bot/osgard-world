@@ -98,3 +98,16 @@ test('refuses initialization inside the tracked repository',()=>{
   assert.match(result.stderr,/outside the repository/);
   assert.equal(fs.existsSync(dir),false);
 });
+
+test('rejects symlinked external folder that resolves inside Git checkout',()=>{
+  const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'nebula-r40-symlink-test-'));
+  try{
+    const alias=path.join(tmp,'linked_repo');
+    fs.symlinkSync(ROOT,alias,'dir');
+    const forbidden=path.join(alias,'private-evidence');
+    const result=exec(KIT,'init',forbidden);
+    assert.notEqual(result.status,0);
+    assert.match(result.stderr,/outside the repository/i);
+    assert.equal(fs.existsSync(path.join(ROOT,'private-evidence')),false);
+  }finally{fs.rmSync(tmp,{recursive:true,force:true});}
+});
