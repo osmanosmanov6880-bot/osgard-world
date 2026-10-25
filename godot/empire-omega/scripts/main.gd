@@ -11,6 +11,7 @@ const SAFE_CAMERA = preload("res://scripts/horizon_camera_collision.gd")
 const PORTRAIT_SCREEN = preload("res://scripts/horizon_portrait_screen.gd")
 const ADAPTIVE_GRAPHICS = preload("res://scripts/horizon_adaptive_graphics.gd")
 const FRAME_METRICS = preload("res://scripts/horizon_frame_metrics.gd")
+const DEVICE_BENCHMARK = preload("res://scripts/horizon_device_frame_benchmark.gd")
 const PEDESTRIAN_SCENE = preload("res://scripts/pedestrian_agent.gd")
 const TRAFFIC_SCENE = preload("res://scripts/traffic_agent.gd")
 const ROUTER = preload("res://scripts/street_router.gd")
@@ -60,6 +61,7 @@ var lod_timer := 0.0
 var diagnostic_timer := 0.0
 var adaptive_graphics = ADAPTIVE_GRAPHICS.new()
 var frame_metrics = FRAME_METRICS.new()
+var device_benchmark = DEVICE_BENCHMARK.new()
 var patrols
 var previous_vehicle_health := 100.0
 var speeding_seconds := 0.0
@@ -141,6 +143,8 @@ func _ready() -> void:
 	hud.wants_save.connect(_save)
 	hud.wants_load.connect(_load)
 	hud.wants_reset.connect(_new_game)
+	hud.benchmark_start_requested.connect(_on_benchmark_start)
+	hud.benchmark_export_requested.connect(_on_benchmark_export)
 	car.drift_reward_earned.connect(_on_drift_reward_earned)
 	GameState.state_changed.connect(_on_game_changed)
 	GameState.alert_created.connect(_on_alert)
@@ -327,6 +331,38 @@ func _stopped_traffic_count() -> int:
 
 func _process(delta: float) -> void:
 	frame_metrics.record_frame(delta,DisplayServer.window_is_focused())
+	if device_benchmark.active:
+		var draw_calls: int = maxi(0,int(Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME)))
+		device_benchmark.record_frame(delta,draw_calls,DisplayServer.window_is_focused())
+		if device_benchmark.completed and hud != null:
+			hud.announce(_three("РЕАЛЬНЫЙ ТЕСТ ЗАВЕРШЁН — СОХРАНИТЕ JSON",
+				"REAL FRAME TEST COMPLETE — EXPORT JSON","真实帧测试完成 — 保存 JSON"))
+
+func _on_benchmark_start() -> void:
+	var size: Vector2 = get_viewport().get_visible_rect().size
+	device_benchmark.begin(adaptive_graphics.effective_quality(),size,OS.get_name())
+	if hud != null:
+		hud.update_benchmark_status(0.0,false,"")
+		hud.announce(_three("ТЕСТ КАДРОВ: ПРОГРЕВ 2 С, ЗАМЕР 20 С",
+			"FRAME TEST: 2S WARMUP + 20S CAPTURE","帧测试：预热2秒 + 测量20秒"))
+
+func _on_benchmark_export() -> void:
+	if not device_benchmark.completed:
+		if hud != null:
+			hud.announce(_three("СНАЧАЛА ЗАВЕРШИТЕ ЗАМЕР",
+				"FINISH THE FRAME TEST FIRST","请先完成测试"))
+		return
+	var json: String = JSON.stringify(device_benchmark.report(),"  ")
+	var bytes: PackedByteArray = json.to_utf8_buffer()
+	if OS.has_feature("web"):
+		JavaScriptBridge.download_buffer(bytes,"omega-real-render-frames.json","application/json")
+	else:
+		var output: FileAccess = FileAccess.open("user://omega-real-render-frames.json",FileAccess.WRITE)
+		if output != null:
+			output.store_string(json)
+			output.close()
+		else:
+			push_error("Benchmark JSON cannot be saved on this system")
 
 func _physics_process(delta: float) -> void:
 	if player == null or car == null or camera == null: return
@@ -409,6 +445,7 @@ func _physics_process(delta: float) -> void:
 		if cargo_visual != null: cargo_visual.sync_state(GameState.data,GameState.locale)
 		if hud != null:
 			hud.update_diagnostics(Engine.get_frames_per_second(),world.active_chunk_count,world.building_chunks.size(),pedestrians.size(),ambient_cars.size(),_stopped_traffic_count(),frame_metrics.p95_ms(),adaptive_graphics.effective_quality(),adaptive_graphics.is_adapting())
+			hud.update_benchmark_status(device_benchmark.progress(),device_benchmark.completed,device_benchmark.aborted)
 	if lod_timer >= 1.1:
 		lod_timer = 0.0
 		_update_agent_lod(protagonist)
