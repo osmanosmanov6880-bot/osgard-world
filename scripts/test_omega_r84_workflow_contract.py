@@ -32,8 +32,8 @@ class RealG0WorkflowContracts(unittest.TestCase):
 
     def test_partial_public_hash_evidence_rejected(self):
         self.check_replacement_fails(
-            "assert d['status']=='PASS' and len(d['files'])==7",
-            "assert len(d['files'])>=0")
+            "assert d['status']=='PASS' and d['verified_files']==7",
+            "assert d['status']=='PASS'")
 
     def test_software_renderer_is_actual_mesa(self):
         self.check_replacement_fails(
