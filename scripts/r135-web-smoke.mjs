@@ -278,8 +278,13 @@ async function browserRemainingFaults(page, isMobile, deviceName) {
     }
     await expectState(page, state => state?.challenge_target_view === targetView
       && state?.fault_label_visible_count === 1
-      && state?.fault_marker_active_index === index,
-      'W12 target marker disappeared after camera change: ' + faultName)
+      && state?.fault_marker_active_index === index
+      && state?.active_fault_caption_on_screen === true
+      && state?.active_fault_caption_screen_x >= .10
+      && state?.active_fault_caption_screen_x <= .90
+      && state?.active_fault_caption_screen_y >= .10
+      && state?.active_fault_caption_screen_y <= .85,
+      'W12 world-space caption is missing or outside real camera view: ' + faultName)
     await captureRealViewport(page, 'w12-' + deviceName + '-fault-' + (index + 1) + '-active.png')
     await press('e', 3)
     await expectState(page, state => state?.challenge_step === 3
