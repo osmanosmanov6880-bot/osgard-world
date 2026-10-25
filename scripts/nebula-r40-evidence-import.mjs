@@ -47,11 +47,11 @@ function sourceBytes(filename,kind){
   return {real,sha:digest(bytes)};
 }
 function inventory(manifest){
-  const process=spawnSync(process.execPath,[INVENTORY,manifest],{
+  const child=spawnSync(process.execPath,[INVENTORY,manifest],{
     cwd:REPO,encoding:'utf8',timeout:20000,maxBuffer:1048576
   });
-  assert(process.status===0,'Local progress check failed: '+String(process.stderr).slice(0,500));
-  const result=JSON.parse(process.stdout);
+  assert(child.status===0,'Local progress check failed: '+String(child.stderr).slice(0,500));
+  const result=JSON.parse(child.stdout);
   assert(result.schema==='NEBULA_R40_EVIDENCE_PROGRESS_V2'&&
     result.production_approval===false&&result.invalid_device_labels===0,
     'Unexpected progress report or invalid phone labels');
