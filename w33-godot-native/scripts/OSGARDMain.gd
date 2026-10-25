@@ -3,14 +3,14 @@ class_name OSGARDMain
 ## W32 — an actual Godot Control interface + native 3D viewport, NOT an HTML wrapper.
 ## Launch Main.tscn in Godot 4.4.1. This project never connects to equipment.
 
-const BG := Color("08131d")
-const PANEL := Color("11232c")
-const PANEL_SOFT := Color("142b33")
-const COPPER := Color("d5a573")
-const MINT := Color("6edbce")
-const WHITE := Color("e7f2ef")
-const MUTED := Color("9cafb4")
-const CORAL := Color("ef9c8d")
+const BG := Color("05080d")
+const PANEL := Color("0d131b")
+const PANEL_SOFT := Color("151d26")
+const COPPER := Color("c6a77d")
+const MINT := Color("84cbbc")
+const WHITE := Color("e9ebe8")
+const MUTED := Color("93a2a6")
+const CORAL := Color("e7786f")
 
 var core := OSGARDCore.new()
 var scene_3d: OSGARDRig
@@ -62,6 +62,13 @@ var _tone_remaining := 0.0
 var _tone_phase := 0.0
 var _tone_hz := 440.0
 var _audio_player: AudioStreamPlayer
+# W35: Actual responsive cinematic viewport and in-scene editorial HUD.
+var stage_shell: Control
+var stage_title: Label
+var stage_kicker: Label
+var stage_live: Label
+var stage_readout: Label
+var stage_edition: Label
 # Read-only browser status for assistive technology and genuine WebGL input QA.
 # Never receives commands, never stores metrics and never sends network data.
 var _web_state_element: Variant = null
@@ -142,16 +149,16 @@ func _publish_web_accessibility(snap: Dictionary) -> void:
         _web_last_event_id = event_id
         _web_state_element.textContent = "OSGARD simulated lab, " + str(state["feedback"]) + ", mission " + str(state["mission"] + 1) + ", step " + str(state["step"])
 
-func _panel_style(base: Color = PANEL, outline: Color = Color("365660"), radius: int = 10) -> StyleBoxFlat:
+func _panel_style(base: Color = PANEL, outline: Color = Color("2e3b43"), radius: int = 8) -> StyleBoxFlat:
     var skin := StyleBoxFlat.new()
     skin.bg_color = base
     skin.border_color = outline
     skin.set_border_width_all(1)
     skin.set_corner_radius_all(radius)
-    skin.content_margin_left = 15.0
-    skin.content_margin_right = 15.0
-    skin.content_margin_top = 13.0
-    skin.content_margin_bottom = 13.0
+    skin.content_margin_left = 18.0
+    skin.content_margin_right = 18.0
+    skin.content_margin_top = 16.0
+    skin.content_margin_bottom = 16.0
     return skin
 
 func _panel(parent: Container) -> VBoxContainer:
@@ -160,11 +167,11 @@ func _panel(parent: Container) -> VBoxContainer:
     frame.size_flags_horizontal = Control.SIZE_EXPAND_FILL
     parent.add_child(frame)
     var inner := VBoxContainer.new()
-    inner.add_theme_constant_override("separation", 9)
+    inner.add_theme_constant_override("separation", 12)
     frame.add_child(inner)
     return inner
 
-func _label(parent: Container, value: String = "", font_size: int = 14, color: Color = WHITE) -> Label:
+func _label(parent: Container, value: String = "", font_size: int = 15, color: Color = WHITE) -> Label:
     var node := Label.new()
     node.text = value
     node.add_theme_color_override("font_color", color)
@@ -178,32 +185,75 @@ func _button(parent: Container, value: String, callback: Callable, accent: bool 
     var node := Button.new()
     node.text = value
     node.focus_mode = Control.FOCUS_ALL
-    node.custom_minimum_size = Vector2(min_width, 48)
-    node.add_theme_font_size_override("font_size", 12)
+    node.custom_minimum_size = Vector2(min_width, 52)
+    node.add_theme_font_size_override("font_size", 14)
     node.add_theme_color_override("font_color", WHITE)
     node.add_theme_color_override("font_hover_color", Color("f5e5cf"))
     node.add_theme_color_override("font_focus_color", Color("f5e5cf"))
-    var skin := _panel_style(Color("264945") if accent else PANEL_SOFT, MINT if accent else Color("46606a"), 5)
+    var skin := _panel_style(Color("1c3535") if accent else Color("121920"), MINT if accent else Color("39464e"), 6)
     skin.content_margin_left = 10
     skin.content_margin_right = 10
     skin.content_margin_top = 8
     skin.content_margin_bottom = 8
     node.add_theme_stylebox_override("normal", skin)
-    node.add_theme_stylebox_override("hover", _panel_style(Color("2c5358"), COPPER, 5))
-    node.add_theme_stylebox_override("pressed", _panel_style(Color("355c5c"), COPPER, 5))
-    node.add_theme_stylebox_override("focus", _panel_style(Color.TRANSPARENT, MINT, 5))
-    node.add_theme_stylebox_override("disabled", _panel_style(Color("182631"), Color("30444c"), 5))
+    node.add_theme_stylebox_override("hover", _panel_style(Color("26363b"), COPPER, 6))
+    node.add_theme_stylebox_override("pressed", _panel_style(Color("2c4747"), COPPER, 6))
+    node.add_theme_stylebox_override("focus", _panel_style(Color.TRANSPARENT, MINT, 6))
+    node.add_theme_stylebox_override("disabled", _panel_style(Color("0d1419"), Color("273239"), 6))
     node.pressed.connect(callback)
     parent.add_child(node)
     return node
 
 func _flow(parent: Container) -> HFlowContainer:
     var flow := HFlowContainer.new()
-    flow.add_theme_constant_override("h_separation", 9)
-    flow.add_theme_constant_override("v_separation", 9)
+    flow.add_theme_constant_override("h_separation", 10)
+    flow.add_theme_constant_override("v_separation", 10)
     flow.size_flags_horizontal = Control.SIZE_EXPAND_FILL
     parent.add_child(flow)
     return flow
+
+func _overlay_label(parent: Control, name_tag: String, title_text: String, font_size: int, tone: Color) -> Label:
+    var tag := Label.new()
+    tag.name = name_tag
+    tag.text = title_text
+    tag.add_theme_color_override("font_color", tone)
+    tag.add_theme_font_size_override("font_size", font_size)
+    tag.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+    tag.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    parent.add_child(tag)
+    return tag
+
+func _make_cinematic_overlay(parent: Control) -> void:
+    var overlay := MarginContainer.new()
+    overlay.name = "ObsidianInSceneHUD"
+    overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+    overlay.add_theme_constant_override("margin_left", 20)
+    overlay.add_theme_constant_override("margin_right", 20)
+    overlay.add_theme_constant_override("margin_top", 18)
+    overlay.add_theme_constant_override("margin_bottom", 16)
+    overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    parent.add_child(overlay)
+    var column := VBoxContainer.new()
+    column.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    overlay.add_child(column)
+    var top := HBoxContainer.new()
+    top.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    top.add_theme_constant_override("separation", 8)
+    column.add_child(top)
+    stage_kicker = _overlay_label(top, "A7Classification", "A7 / RESTRICTED RESEARCH FACILITY", 13, COPPER)
+    stage_kicker.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+    stage_edition = _overlay_label(top, "SimulationTag", "OFFLINE · SIMULATION", 12, MINT)
+    var space := Control.new()
+    space.size_flags_vertical = Control.SIZE_EXPAND_FILL
+    space.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    column.add_child(space)
+    var bottom := VBoxContainer.new()
+    bottom.add_theme_constant_override("separation", 5)
+    bottom.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    column.add_child(bottom)
+    stage_live = _overlay_label(bottom, "LiveChamberState", "CHAMBER / STANDBY", 13, MINT)
+    stage_title = _overlay_label(bottom, "ReactorIdentity", "OBSIDIAN CORE  /  A7", 26, WHITE)
+    stage_readout = _overlay_label(bottom, "ReactorRealTelemetry", "ROTOR   1480 RPM     ·     HATCH   SEALED", 13, COPPER)
 
 func _create_interface() -> void:
     var backdrop := ColorRect.new()
@@ -221,45 +271,52 @@ func _create_interface() -> void:
     add_child(scroll)
 
     var pad := MarginContainer.new()
-    pad.add_theme_constant_override("margin_left", 15)
-    pad.add_theme_constant_override("margin_right", 15)
-    pad.add_theme_constant_override("margin_top", 17)
-    pad.add_theme_constant_override("margin_bottom", 22)
+    pad.add_theme_constant_override("margin_left", 18)
+    pad.add_theme_constant_override("margin_right", 18)
+    pad.add_theme_constant_override("margin_top", 16)
+    pad.add_theme_constant_override("margin_bottom", 32)
     pad.size_flags_horizontal = Control.SIZE_EXPAND_FILL
     scroll.add_child(pad)
     body = VBoxContainer.new()
-    body.add_theme_constant_override("separation", 13)
+    body.add_theme_constant_override("separation", 16)
     body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
     pad.add_child(body)
 
     var top := _flow(body)
-    _label(top, "✦  OSGARD / FIELD LAB", 23, COPPER).custom_minimum_size.x = 270
-    lang_btn = _button(top, "RU / EN", _toggle_language, false, 92)
-    quality_btn = _button(top, "HERO / ECO", _toggle_quality, false, 125)
-    heading = _label(body, "КОНТРОЛЬ. ТОЧНОСТЬ. ОТВЕТСТВЕННОСТЬ.", 22, WHITE)
+    _label(top, "OSGARD   /   OBSIDIAN PROTOCOL", 23, COPPER).custom_minimum_size.x = 320
+    lang_btn = _button(top, "RU / EN", _toggle_language, false, 96)
+    quality_btn = _button(top, "HERO / ECO", _toggle_quality, false, 150)
+    heading = _label(body, "REACTOR A7   /   PRECISION DIVISION", 26, WHITE)
     lead = _label(body, "", 14, MUTED)
 
     var stage_section := _panel(body)
-    _label(stage_section, "SERVICE MODULE  //  A7     ·     INTERACTIVE 3D SIMULATION", 12, MINT)
+    var stage_frame := stage_section.get_parent() as PanelContainer
+    stage_frame.add_theme_stylebox_override("panel", _panel_style(Color("080d13"), Color("49545a"), 12))
+    _label(stage_section, "OBSIDIAN FACILITY  //  REACTOR A7    •    SECURE OBSERVATION", 12, COPPER)
+    stage_shell = Control.new()
+    stage_shell.name = "CinematicHeroShell"
+    stage_shell.custom_minimum_size = Vector2(0, 500)
+    stage_shell.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+    stage_section.add_child(stage_shell)
     visual_container = SubViewportContainer.new()
     visual_container.name = "TrueNative3DInspectionViewport"
-    # W33 actual layout is resized to match viewport and quality below.
-    visual_container.custom_minimum_size = Vector2(0, 340)
-    visual_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+    visual_container.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+    visual_container.mouse_filter = Control.MOUSE_FILTER_STOP
     visual_container.stretch = true
     visual_container.stretch_shrink = 1
-    stage_section.add_child(visual_container)
+    stage_shell.add_child(visual_container)
     sub_viewport = SubViewport.new()
     sub_viewport.name = "SourceGodot3DWorld"
-    sub_viewport.size = Vector2i(960, 500)
+    sub_viewport.size = Vector2i(1280, 660)
     sub_viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
     visual_container.add_child(sub_viewport)
     scene_3d = OSGARDRig.new()
     scene_3d.name = "ActualSimulatedServiceRig"
     sub_viewport.add_child(scene_3d)
+    _make_cinematic_overlay(stage_shell)
     var cameras := _flow(stage_section)
     for i in range(3):
-        view_btns.append(_button(cameras, "CAMERA %02d" % (i + 1), _view_selected.bind(i), false, 162))
+        view_btns.append(_button(cameras, "0%d   /   CAMERA" % (i + 1), _view_selected.bind(i), false, 175))
 
     var stats := _panel(body)
     _label(stats, "LIVE READINGS  /  SIMULATED SENSOR FEEDBACK", 12, COPPER)
@@ -353,11 +410,14 @@ func _create_interface() -> void:
 func _layout_stage_for_screen() -> void:
     if visual_container == null or sub_viewport == null:
         return
-    # SubViewportContainer.stretch controls resolution in native Godot.
-    # Writing sub_viewport.size when stretch=true is ignored and logs warnings.
-    # ECO halves framebuffer dimensions and reduces pixel work by ~75%.
-    var available: float = maxf(240.0, size.x - 64.0)
-    var desired_h: float = clampf(available * 0.56, 200.0, 420.0)
+    # W35 cinema-first framing: ~70% of desktop fold is the real 3D scene.
+    # On 360-390px phones, keep it within 300px for reachable native controls.
+    var desired_h: float = clampf(size.y * 0.70, 450.0, 570.0)
+    if size.x < 640.0:
+        desired_h = clampf(size.x * 0.79, 258.0, 300.0)
+    elif size.x < 900.0:
+        desired_h = clampf(size.y * 0.60, 350.0, 500.0)
+    stage_shell.custom_minimum_size = Vector2(0.0, desired_h)
     visual_container.custom_minimum_size = Vector2(0.0, desired_h)
     var eco: bool = str(core.settings.get("quality", "hero")) == "eco"
     visual_container.stretch_shrink = 2 if eco else 1
@@ -512,9 +572,9 @@ func _refresh() -> void:
         return
     var snap: Dictionary = core.snapshot()
     var locale := str(core.settings["locale"])
-    _assign(heading, "OSGARD  /  FIELD LAB")
+    _assign(heading, "REACTOR A7   /   OBSIDIAN PROTOCOL")
     _assign(lead, _t("lead"))
-    _assign(footer, _t("sim") + "   ·   OFFLINE / GODOT 4.4.1 SOURCE PORT")
+    _assign(footer, _t("sim") + "   ·   OBSIDIAN PROTOCOL / GODOT 4.4.1 / LOCAL ONLY")
     lang_btn.text = "RU ●" if locale == "ru" else "EN ●"
     quality_btn.text = _t("quality") + ": " + str(core.settings["quality"]).to_upper()
     motion_btn.text = _t("motion") + (" ✓" if bool(core.settings["reduced_motion"]) else " –")
@@ -526,13 +586,18 @@ func _refresh() -> void:
         _t("rpm"), roundi(float(snap["rpm"])), _t("hatch"), roundi(float(snap["hatch"]) * 100.0), _t("score"), int(snap["score"])])
     _assign(status, "%s: %02d / 06      •      %s: %d      •      %s: %.1f s" % [
         _t("select"), maxi(0, int(snap["mission"]) + 1), _t("progress"), int(snap["step"]), _t("elapsed"), float(snap["seconds"])])
+    # True in-scene state, never a fake video or static rendered mockup.
+    _assign(stage_live, "PROTOCOL / COMPLETE" if bool(snap["complete"]) else "ALERT / CHECK SAFETY" if bool(snap["last_error"]) else "A7 / LIVE DIAGNOSTICS" if bool(snap["active"]) else "A7 / SECURE STANDBY")
+    stage_live.add_theme_color_override("font_color", CORAL if bool(snap["last_error"]) else MINT)
+    _assign(stage_readout, "ROTOR   %04d RPM     /     HATCH   %03d%%     /     SCORE   %03d" % [
+        roundi(float(snap["rpm"])), roundi(float(snap["hatch"]) * 100.0), int(snap["score"])])
     var step_names := [_t("step0"), _t("step1"), _t("step2"), _t("step3"), _t("step4")]
     _assign(progress_text, " → ".join(step_names) + "    |    %d/3 + %d/3" % [int(snap["cleared_count"]), int(snap["shift_cleared_count"])])
     engine_btn.text = _t("drive_stop") if bool(snap["drive_on"]) else _t("drive_start")
     hatch_btn.text = _t("hatch_close") if float(snap["hatch_target"]) == 1.0 else _t("hatch_open")
     scan_btn.text = _t("scan")
     for i in range(3):
-        view_btns[i].text = _t("view%d" % i) + ("  ●" if int(snap["view"]) == i else "")
+        view_btns[i].text = "0%d   /   " % (i + 1) + _t("view%d" % i) + ("  ●" if int(snap["view"]) == i else "")
     var active_fault := int(snap["fault"])
     cal_title.text = "%s  ·  %s" % [_t("signal"), _t("select") if active_fault < 0 else _t("base%d" % active_fault)]
     slider_a.editable = bool(snap["inspection_allowed"])
