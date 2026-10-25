@@ -77,7 +77,7 @@ small{font-size:.77rem;color:#aeb5bd}
 <div class="panel" id="r39-panel"><h2>R39 / повторяемость на устройствах</h2><p class="muted">Группировка: метка устройства + разрешение + профиль. Требуется не менее 3 надёжных независимых измерений (с различным временем исходного замера) на одну группу. Медиана снижает влияние единичного удачного запуска; разброс FPS свыше 20% блокирует вывод о стабильности. Это проверка отчётов, а не доказательство модели телефона или аппаратная сертификация.</p><div class="table-scroll"><table><thead><tr><th scope="col">Устройство</th><th scope="col">Сборка</th><th scope="col">Размер</th><th scope="col">Режим</th><th scope="col">Надёжных / всего</th><th scope="col">Медиана FPS</th><th scope="col">Медиана P95 мс</th><th scope="col">Разброс FPS</th><th scope="col">Вывод</th></tr></thead><tbody id="r39-rows"></tbody></table></div><p class="summary-note" id="r39-status" aria-live="polite"></p></div>
 <div class="panel" id="r40-panel">
 <h2>R40 / сравнение до и после оптимизации</h2>
-<p class="muted">Для одного физического телефона используйте одну метку устройства, одинаковый размер экрана и один ручной профиль. Загружайте три или более независимых отчёта для R38 и для кандидата R40, меняя «Версия измерения» перед каждой загрузкой. Таблица сравнивает медианы и отвергает один и тот же JSON, ошибочно отмеченный одновременно как R38 и R40; это не доказательство причинности или аппаратная сертификация.</p>
+<p class="muted">Для одного физического телефона используйте одну метку устройства, одинаковый размер экрана и один ручной профиль. Загружайте три или более независимых отчёта для R38 и для кандидата R40, меняя «Версия измерения» перед каждой загрузкой. Таблица сравнивает медианы. Кандидат R40 обязан содержать метку <code>NEBULA_R40_BRIDGE_BATCH_3X32</code>, которую записывает сама игра; R38 такой метки не содержит. Старые R40-архивы без метки потребуется пересобрать. Проверка метки предотвращает случайную путаницу сборок, но не является цифровой подписью или аппаратной сертификацией.</p>
 <div class="table-scroll"><table><thead><tr><th scope="col">Устройство</th><th scope="col">Размер</th><th scope="col">Режим</th><th scope="col">R38 FPS</th><th scope="col">R40 FPS</th><th scope="col">Изменение FPS</th><th scope="col">Изменение P95</th><th scope="col">Вывод</th></tr></thead><tbody id="r40-rows"></tbody></table></div>
 <p class="summary-note" id="r40-status" aria-live="polite"></p></div>
 </section>
@@ -87,6 +87,7 @@ small{font-size:.77rem;color:#aeb5bd}
 (() => {
 'use strict';
 const thresholds = [{name:'MAX',fps:60,p95:20},{name:'HIGH',fps:40,p95:30},{name:'ECO',fps:30,p95:35}];
+const r40CandidateBuildId = 'NEBULA_R40_BRIDGE_BATCH_3X32';
 const safeName = name => String(name || 'report.json').replace(/[\r\n\t]/g,' ').slice(0,80);
 function parseReport(data, filename, deviceLabel = 'Партия 1', variant = 'R38') {
   if (!data || typeof data !== 'object' || Array.isArray(data) ||
@@ -101,6 +102,18 @@ function parseReport(data, filename, deviceLabel = 'Партия 1', variant = '
     return value;
   };
   if (variant !== 'R38' && variant !== 'R40') throw new Error('Неизвестная версия замера');
+  // R38 has no build_variant field. Actual R40 reports must carry the
+  // candidate ID written by Godot itself. A dropdown alone isn't evidence.
+  const reportedBuild = data.build_variant;
+  if (reportedBuild !== undefined && reportedBuild !== r40CandidateBuildId) {
+    throw new Error('Неизвестная идентификация игровой сборки');
+  }
+  if (variant === 'R40' && reportedBuild !== r40CandidateBuildId) {
+    throw new Error('Для R40 нужен оригинальный JSON из нового кандидата R40 с меткой сборки');
+  }
+  if (variant === 'R38' && reportedBuild === r40CandidateBuildId) {
+    throw new Error('JSON принадлежит R40; переключите «Версия измерения» на R40');
+  }
   const profile = data.quality;
   if (!Number.isInteger(profile) || profile < 0 || profile > 2) {
     throw new Error('Неизвестный профиль графики');
@@ -129,7 +142,7 @@ function parseReport(data, filename, deviceLabel = 'Партия 1', variant = '
   const device=safeName(deviceLabel).slice(0,48)||'Партия 1';
   const stamp=typeof data.date_unix==='number'&&Number.isFinite(data.date_unix)&&
     data.date_unix>0 ? data.date_unix : null;
-  return {name:safeName(filename),device,variant,resolution,stamp,profile:target.name,avg,low,p95,p99,
+  return {name:safeName(filename),device,variant,reportedBuild:reportedBuild||'R38_LEGACY',resolution,stamp,profile:target.name,avg,low,p95,p99,
     touch,status,validTest,software,targetFps:target.fps,targetP95:target.p95};
 }
 function median(numbers) {
@@ -211,12 +224,12 @@ function csvCell(s) {
   return '"' + escaped.replace(/"/g,'""') + '"';
 }
 function makeCSV(rows) {
-  const cols=['Устройство','Сборка','Размер','Файл','Профиль','FPS','1% Low','P95 мс','P99 мс',
+  const cols=['Устройство','Сборка','Метка JSON','Размер','Файл','Профиль','FPS','1% Low','P95 мс','P99 мс',
     'DOM→Godot мс','Оценка'];
-  return [cols,...rows.map(x=>[x.device,x.variant||'R38',x.resolution,x.name,x.profile,x.avg,x.low,x.p95,x.p99,
+  return [cols,...rows.map(x=>[x.device,x.variant||'R38',x.reportedBuild||'R38_LEGACY',x.resolution,x.name,x.profile,x.avg,x.low,x.p95,x.p99,
     x.touch,x.status])].map(row=>row.map(csvCell).join(',')).join('\r\n');
 }
-window.NebulaR37 = Object.freeze({parseReport,makeCSV,thresholds,summarizeRuns,compareBuilds});
+window.NebulaR37 = Object.freeze({parseReport,makeCSV,thresholds,summarizeRuns,compareBuilds,r40CandidateBuildId});
 const uploader=document.getElementById('reports');
 if (!uploader) return;
 const tbody=document.getElementById('rows'),rejectList=document.getElementById('rejected');
