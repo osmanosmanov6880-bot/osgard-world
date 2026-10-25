@@ -98,6 +98,10 @@ func _report_r70_boot(stage: String) -> void:
 	JavaScriptBridge.eval("window.__omegaRealVehicleQABoot = " + JSON.stringify(proof) + ";",true)
 
 func _ready() -> void:
+	# A real Godot-origin console heartbeat distinguishes a missing scene
+	# from a broken JS bridge. Never generated from the HTML launcher.
+	if OS.has_feature("web"):
+		print("EMPIRE_R70_WEB_SCENE_READY_ENTERED")
 	_refresh_portrait_fit()
 	if OS.has_feature("web"):
 		# This flag can only be enabled by an actual browser URL. Normal
@@ -105,6 +109,7 @@ func _ready() -> void:
 		real_vehicle_browser_qa = JavaScriptBridge.eval(
 			"new URLSearchParams(window.location.search).get('omega_real_vehicle_qa') === 'r70'"
 		) == true
+		print("EMPIRE_R70_WEB_TELEMETRY_OPT_IN:",real_vehicle_browser_qa)
 		_report_r70_boot("startup")
 		get_window().size_changed.connect(_refresh_portrait_fit)
 	world = WORLD_SCENE.new()
@@ -184,6 +189,8 @@ func _ready() -> void:
 		hud.announce(hud.t("save_recovered"))
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE if DisplayServer.is_touchscreen_available() else Input.MOUSE_MODE_CAPTURED)
 	_report_r70_boot("ready")
+	if OS.has_feature("web"):
+		print("EMPIRE_R70_WEB_SCENE_FULLY_READY")
 
 func _on_drift_reward_earned(credits: int, score: int) -> void:
 	# Authority uses GameState's existing reward ledger, with a per-chain cap.

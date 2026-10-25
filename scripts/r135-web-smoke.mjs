@@ -47,6 +47,87 @@ async function tapSceneButton(page, index) {
   }
   await page.touchscreen.tap(x, y)
 }
+async function hitLuxuryControl(page, key, isMobile) {
+  const state = await expectState(page,
+    x => x?.[key]?.x > 0 && x?.[key]?.y > 0 && x?.viewport_w > 0 && x?.viewport_h > 0,
+    'Real rendered luxury control target missing: ' + key)
+  const rect = await page.locator('canvas').first().boundingBox()
+  if (!rect) throw new Error('Godot canvas missing for premium control ' + key)
+  const point = state[key]
+  const x = rect.x + point.x * rect.width / state.viewport_w
+  const y = rect.y + point.y * rect.height / state.viewport_h
+  if (x < rect.x || x > rect.x + rect.width || y < rect.y || y > rect.y + rect.height)
+    throw new Error('Premium tutorial hit target outside viewport: ' + key)
+  if (isMobile) await page.touchscreen.tap(x, y)
+  else await page.mouse.click(x, y)
+}
+async function verifyRealLuxuryIntroduction(page, isMobile, name) {
+  await expectState(page, x => x?.ui_locale === 'ru' && x?.tutorial_step === 0
+    && x?.tutorial_expanded === true && x?.tutorial_started === false
+    && x?.tutorial_welcome_text?.includes('Вы — новый инженер'),
+    'W19 Russian luxury welcome panel did not load')
+  await captureRealViewport(page, 'w19-' + name + '-russian-luxury-welcome.png')
+  await hitLuxuryControl(page, 'tutorial_primary_center', isMobile)
+  await expectState(page, x => x?.tutorial_started && x?.tutorial_step === 1,
+    'W19 start tutorial did not activate six-chapter state')
+  await hitLuxuryControl(page, 'tutorial_primary_center', isMobile)
+  await expectState(page, x => x?.tutorial_step === 2 && x?.view === 1,
+    'W19 guided real camera chapter did not advance')
+  await hitLuxuryControl(page, 'tutorial_collapse_center', isMobile)
+  await expectState(page, x => x?.tutorial_expanded === false && x?.hud_visible === true
+    && x?.hud_rect?.h <= x?.viewport_h * .28
+    && x?.hud_rect?.y + x?.hud_rect?.h < x?.action_rect?.y - 6,
+    'W19 collapsed learning must show real bounded status, not 6851px legacy HUD')
+  if (isMobile) await tapSceneButton(page, 7)
+  else await page.keyboard.press('r')
+  await expectState(page, x => x?.view === 0, 'W19 camera reset after tutorial failed')
+}
+// W20: exercise real Godot-native preferences using Chromium compositor clicks
+// and native touch. This is not physical Android/iOS hardware evidence.
+async function verifyW20PlayerSettings(page, isMobile, name) {
+  if (process.env.R135_CANDIDATE_VERSION !== 'r135-player-settings-w20-candidate-20261025') return
+  const start = await expectState(page, x => x?.player_preferences_schema === 1
+    && x?.player_preferences_save_ok === true && x?.player_settings_control_css_px >= 43.5,
+    'W20 real player settings not readable, saved, or accessible')
+  if (start.player_settings_open) throw new Error('W20 settings should not cover first-run tutorial')
+  const tutorialStep = start.tutorial_step
+  await hitLuxuryControl(page, 'player_settings_center', isMobile)
+  const open = await expectState(page, x => x?.player_settings_open && x?.tutorial_expanded
+    && x?.player_settings_rect?.h > 140 && x?.player_settings_rect?.w > 250,
+    'W20 header SET control did not open an actual player settings view')
+  const panel = open.player_settings_rect
+  if (panel.y < 0 || panel.x < 0 || panel.x + panel.w > open.viewport_w + 4
+      || panel.y + panel.h > open.action_rect.y - 5) {
+    throw new Error('W20 settings overlaps control deck or escapes viewport: '
+      + JSON.stringify({ settings: panel, controls: open.action_rect }))
+  }
+  await captureRealViewport(page, 'w20-' + name + '-player-settings.png')
+  await hitLuxuryControl(page, 'player_settings_quality_center', isMobile)
+  await expectState(page, x => x?.quality === 2 && x?.player_quality_persisted === 2
+    && x?.loaded?.endsWith('service_spine_hero.glb') && x?.player_preferences_save_ok,
+    'W20 actual settings button did not load and persist HERO model', 45_000)
+  await hitLuxuryControl(page, 'player_settings_quality_center', isMobile)
+  await expectState(page, x => x?.quality === 0 && x?.player_quality_persisted === 0
+    && x?.loaded?.endsWith('service_spine_eco.glb') && x?.player_preferences_save_ok,
+    'W20 real settings button failed to restore ECO model', 45_000)
+  const originalMotion = Boolean(open.prefers_reduced_motion)
+  await hitLuxuryControl(page, 'player_settings_motion_center', isMobile)
+  await expectState(page, x => x?.prefers_reduced_motion === !originalMotion
+    && x?.player_preferences_save_ok,
+    'W20 real reduce-motion control failed')
+  await hitLuxuryControl(page, 'player_settings_motion_center', isMobile)
+  await expectState(page, x => x?.prefers_reduced_motion === originalMotion
+    && x?.player_preferences_save_ok, 'W20 accessible motion mode not reversible')
+  await hitLuxuryControl(page, 'player_settings_center', isMobile)
+  await expectState(page, x => !x?.player_settings_open && x?.tutorial_expanded
+    && x?.tutorial_step === tutorialStep,
+    'W20 settings close unexpectedly changed learning progress')
+  await hitLuxuryControl(page, 'tutorial_collapse_center', isMobile)
+  await expectState(page, x => !x?.tutorial_expanded && x?.hud_visible === true,
+    'W20 after settings close must restore real interactive operator HUD')
+  console.log('W20 real Godot settings PASS:', name, { quality: 0, motion: originalMotion })
+}
+
 async function keyboardMission(page) {
   await page.locator('canvas').first().click({ position: { x: 400, y: 350 } })
   await page.keyboard.press('m')
@@ -418,8 +499,13 @@ async function verifyAdaptiveHud(page) {
         }))
     }
     if (!visible(state.hud_rect) || !visible(state.action_rect)) {
-      throw new Error('W8 HUD escaped safe viewport ' + width + 'x' + height +
+      throw new Error('W19 compact HUD or operator controls escaped safe viewport ' + width + 'x' + height +
         ' : ' + JSON.stringify({ viewport: [state.viewport_w, state.viewport_h], hud: state.hud_rect, actions: state.action_rect }))
+    }
+    if (state.tutorial_expanded && (!visible(state.tutorial_rect)
+        || state.tutorial_rect.y + state.tutorial_rect.h > state.action_rect.y - 6)) {
+      throw new Error('W19 visible luxury training overlaps working controls at ' + width + 'x' + height +
+        ': ' + JSON.stringify({tutorial:state.tutorial_rect,actions:state.action_rect}))
     }
     if (state.hud_rect.y + state.hud_rect.h >= state.action_rect.y - 6) {
       throw new Error('W8 status panel overlaps touch controls at ' + width + 'x' + height)
@@ -495,6 +581,7 @@ try {
           && x?.fault_marker_visible_count === 0 && x?.fault_label_visible_count === 0
           && x?.studio_grid_draw_batches === 2 && x?.studio_grid_instances === 18
           && x?.studio_detail_draw_batches === 3 && x?.studio_detail_instances === 47
+          && x?.studio_luxury_batches === 5 && x?.studio_luxury_instances === 41
           && x?.language_control_visible === true
           && x?.studio_mesh_nodes === 8 && x?.prefers_reduced_motion === isMobile
           && (!isMobile || (x?.ui_action_target_min_css_px >= 43.5
@@ -505,10 +592,10 @@ try {
           && x?.inspection_fill_range >= 12.0,
         'Real W5 Godot ECO rig, 3D markers and controls did not load', 90_000)
       if (boot.quality !== 0 || boot.studio_quality !== 0) throw new Error('Low-memory ECO mode not used on boot')
-      if (boot.ui_locale !== 'en') throw new Error('W17 deterministic QA locale did not load')
+      if (boot.ui_locale !== 'ru') throw new Error('Approved Russian-first product did not boot in Russian')
       // Actual Godot controls in Chromium, not physical-device evidence.
       if (isMobile) {
-        for (const wanted of ['ru', 'en']) {
+        for (const wanted of ['en', 'ru']) {
           const before = await readState(page)
           const point = before.language_control_center
           const rect = await page.locator('canvas').first().boundingBox()
@@ -527,11 +614,13 @@ try {
       } else {
         await page.locator('canvas').first().click({ position: { x: 400, y: 350 } })
         await page.keyboard.press('l')
-        await expectState(page, x => x?.ui_locale === 'ru' && x?.ui_mission_text?.includes('НАЧНИ ОБУЧЕНИЕ'), 'W17 keyboard RU must translate lesson feedback')
-        await captureRealViewport(page, 'w17-desktop-ru-operator.png')
-        await page.keyboard.press('l')
         await expectState(page, x => x?.ui_locale === 'en' && x?.ui_mission_text?.includes('PRESS START MISSION'), 'W17 keyboard EN must restore lesson feedback')
+        await page.keyboard.press('l')
+        await expectState(page, x => x?.ui_locale === 'ru' && x?.ui_mission_text?.includes('НАЧНИ ОБУЧЕНИЕ'), 'W19 keyboard RU must restore default Russian')
+        await captureRealViewport(page, 'w17-desktop-ru-operator.png')
       }
+      await verifyRealLuxuryIntroduction(page, isMobile, name)
+      await verifyW20PlayerSettings(page, isMobile, name)
       if (!boot.hud_rect || !boot.action_rect || boot.hud_rect.h > boot.viewport_h * .28 ||
           boot.hud_rect.y + boot.hud_rect.h >= boot.action_rect.y - 20) {
         throw new Error('W11 initial HUD obscures scene: ' + JSON.stringify({

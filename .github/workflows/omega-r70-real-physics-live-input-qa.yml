@@ -92,10 +92,8 @@ jobs:
           npm ci
           npm install --no-save --package-lock=false @playwright/test@1.58.2 pngjs@7.0.0
           npx playwright install --with-deps chromium
-          if [ "${{ matrix.browser }}" = "desktop-chromium" ]; then
-            sudo apt-get update -qq
-            sudo apt-get install -y xvfb libgl1-mesa-dri libegl1 libgl1
-          fi
+          sudo apt-get update -qq
+          sudo apt-get install -y xvfb libgl1-mesa-dri libegl1 libgl1
       - name: Serve real unpublished candidate locally, NEVER production
         shell: bash
         run: |
@@ -112,15 +110,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if [ "${{ matrix.browser }}" = "desktop-chromium" ]; then
-            OMEGA_CI_GL_BACKEND=mesa LIBGL_ALWAYS_SOFTWARE=1 \
-              xvfb-run -a -s '-screen 0 1920x1080x24' \
-              npx playwright test --config playwright.omega-r70.config.mjs \
-                --project=desktop-chromium --workers=1
-          else
+          # Real Mesa OpenGL for both desktop and touch Chromium viewports.
+          # No mock canvas or background retries may count as game evidence.
+          OMEGA_CI_GL_BACKEND=mesa LIBGL_ALWAYS_SOFTWARE=1 \
+            xvfb-run -a -s '-screen 0 1920x1080x24' \
             npx playwright test --config playwright.omega-r70.config.mjs \
-              --project=touch-phone-chromium --workers=1
-          fi
+              --project="${{ matrix.browser }}" --workers=1 --retries=0
       - name: Preserve original gameplay physics reports and rendered frames
         if: always()
         uses: actions/upload-artifact@v4

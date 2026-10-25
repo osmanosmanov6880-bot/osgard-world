@@ -1,0 +1,70 @@
+name: OSGARD R135 W20 real Godot player-settings and safety acceptance
+
+on:
+  push:
+    branches:
+      - feat/r135-w20-player-settings-20261025
+    paths:
+      - 'godot/osgard-r135-standalone/**'
+      - '.github/workflows/r135-w20-preferences-native-qa.yml'
+      - 'docs/OSGARD_R135_W20_W28_COMPLETE_ROADMAP_RU.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  real-godot-player-settings:
+    runs-on: ubuntu-latest
+    timeout-minutes: 19
+    steps:
+      - uses: actions/checkout@v4
+      - name: Enforce isolated settings, W14/W19 records and true interactive controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          base=Path("godot/osgard-r135-standalone")
+          prefs=(base/"R135PlayerPreferences.gd").read_text()
+          main=(base/"StandaloneMain.gd").read_text()
+          ui=(base/"R135PremiumOnboarding.gd").read_text()
+          test=(base/"tests/preferences_smoke.gd").read_text()
+          older=(base/"tests/smoke.gd").read_text()
+          assert "r135_player_preferences_v1.cfg" in prefs
+          assert "r135_challenge_record.cfg" not in prefs
+          assert "r135_luxury_tutorial_v1.cfg" not in prefs
+          assert "schema" in prefs and "quality" in prefs and "reduced_motion" in prefs
+          assert 'query_language in ["ru", "en"]' in main
+          assert 'ui_locale = "en" if bool(JavaScriptBridge.eval(' in main
+          assert "settings_button.pressed.connect(_toggle_settings)" in ui
+          assert "settings_quality_button.pressed.connect(_settings_quality_pressed)" in ui
+          assert "settings_motion_button.pressed.connect(_settings_motion_pressed)" in ui
+          assert "settings_scroll.follow_focus = true" in ui
+          assert "settings_button.pressed.emit()" in test
+          assert "W13 tutorial incorrectly permitted opening moving machinery" in older
+          assert "Six-chapter premium training cannot be finished" in older
+          print("W20 preferences are isolated, real controls connected; W13/14/19 regressions preserved")
+          PY
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: true
+      - name: Godot import original HERO/ECO and all PBR maps
+        shell: bash
+        run: |
+          set -euo pipefail
+          godot --headless --editor --path godot/osgard-r135-standalone --import --quit
+      - name: Existing W19 full six-chapter and three-fault native regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 150s godot --headless \
+            --path godot/osgard-r135-standalone --script res://tests/smoke.gd
+      - name: W20 actual interactive Godot settings, corrupt-save and restart regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 150s godot --headless \
+            --path godot/osgard-r135-standalone --script res://tests/preferences_smoke.gd

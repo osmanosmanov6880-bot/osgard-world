@@ -75,17 +75,42 @@ test('unknown SHA, foreign ref or missing token must fail before API call',()=>{
     }
   }finally{h.cleanup()}
 });
-test('release workflow checks current master before upload AND before SSH activation',()=>{
+test('release workflow rejects stale master early, before expensive builds and both SSH boundaries',()=>{
   const w=fs.readFileSync('.github/workflows/deploy-frontend.yml','utf8');
-  assert.equal((w.match(/bash scripts\/check-frontend-release-freshness\.sh/g)||[]).length,2);
+  const guard='bash scripts/check-frontend-release-freshness.sh';
+  const uses=[...w.matchAll(/bash scripts\/check-frontend-release-freshness\.sh/g)].map(m=>m.index);
+  assert.equal(uses.length,4,'Release must verify source at four independent boundaries');
+  const checkout=w.indexOf('- uses: actions/checkout@v4');
+  const npmInstall=w.indexOf('- run: npm ci');
+  const validation=w.indexOf('- name: Verify release integrity and payment recovery boundaries');
+  const godot=w.indexOf('- name: Validate the Godot game project contract');
   const stage=w.indexOf('- name: Stage archive and verify checksum');
   const activate=w.indexOf('- name: Activate verified archive with config rollback');
-  const first=w.indexOf('bash scripts/check-frontend-release-freshness.sh',stage);
-  const second=w.indexOf('bash scripts/check-frontend-release-freshness.sh',activate);
-  const ssh=w.indexOf('ssh -i ~/.ssh/osgard_deploy',stage);
-  const scp=w.indexOf('scp -i ~/.ssh/osgard_deploy',activate);
-  assert.ok(stage>=0&&activate>stage);
-  assert.ok(first>stage&&first<ssh&&ssh<activate);
-  assert.ok(second>activate&&second<scp);
-  assert.match(w,/GH_TOKEN: \$\{\{ github\.token \}\}/);
+  const stageSsh=w.indexOf('ssh -i ~/.ssh/osgard_deploy',stage);
+  const activateScp=w.indexOf('scp -i ~/.ssh/osgard_deploy',activate);
+  assert.ok(checkout>=0&&npmInstall>checkout&&validation>npmInstall);
+  assert.ok(godot>validation&&stage>godot&&activate>stage);
+  assert.ok(uses[0]>checkout&&uses[0]<npmInstall,
+    'Queued stale commits must fail before downloading npm packages');
+  assert.ok(uses[1]>validation&&uses[1]<godot,
+    'A master changed during checks must fail before Godot/large binary work');
+  assert.ok(uses[2]>stage&&uses[2]<stageSsh&&stageSsh<activate,
+    'Staging can never SSH a stale frontend source');
+  assert.ok(uses[3]>activate&&uses[3]<activateScp,
+    'Activation cannot continue if master changed during upload');
+  const first=w.indexOf('- name: Abort obsolete queued releases');
+  const second=w.indexOf('- name: Recheck release SHA after validations');
+  assert.ok(first>checkout&&first<uses[0]&&second>validation&&second<uses[1]);
+  const protectedStages=[
+    w.slice(first,npmInstall),
+    w.slice(second,godot),
+    w.slice(stage,stageSsh),
+    w.slice(activate,activateScp)
+  ];
+  const authHeader='GH_TOKEN: '+'$'+'{{ github.token }}';
+  for(const stageText of protectedStages){
+    assert.ok(stageText.includes(authHeader),
+      'All four checks need an authenticated, read-only GitHub API token');
+    assert.ok(stageText.includes(guard));
+  }
 });

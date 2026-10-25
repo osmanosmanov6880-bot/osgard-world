@@ -1,0 +1,103 @@
+name: EMPIRE Omega R67 reject Godot splash as real rendered game
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - 'scripts/omega-world-frame-evidence.mjs'
+      - 'scripts/omega-world-frame-evidence.test.mjs'
+      - 'scripts/omega-portrait-preview.spec.mjs'
+      - '.github/workflows/omega-r67-no-splash-false-green-qa.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  real-pixel-splash-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install locked source and pinned PNG decoding library
+        run: |
+          npm ci
+          npm install --no-save --package-lock=false pngjs@7.0.0
+      - name: Refuse loader/logo startup frame and flat gray fake world
+        run: node --test scripts/omega-world-frame-evidence.test.mjs
+  original-godot-two-viewport-proof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Build real original Godot game, not static HTML
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 godot/empire-omega/tools/generate_audio.py
+          python3 godot/empire-omega/tools/generate_patrol_audio.py
+          bash scripts/omega-strict-godot-import.sh godot/empire-omega
+          mkdir -p godot/empire-omega/.build-web
+          godot --headless --path godot/empire-omega --export-release Web \
+            "$GITHUB_WORKSPACE/godot/empire-omega/.build-web/index.html"
+          node scripts/localize-godot-web-export.mjs godot/empire-omega/.build-web
+          test -s godot/empire-omega/.build-web/index.wasm
+          test -s godot/empire-omega/.build-web/index.pck
+      - name: Install exact browser and PNG readback
+        shell: bash
+        run: |
+          npm ci
+          npm install --no-save --package-lock=false @playwright/test@1.58.2 pngjs@7.0.0
+          npx playwright install --with-deps chromium
+          node --test scripts/omega-world-frame-evidence.test.mjs
+      - name: Install Mesa/Xvfb to verify genuine desktop WebGL2 pixels
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y xvfb libgl1-mesa-dri libegl1 libgl1
+      - name: Serve only unpublished candidate locally
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 4173 --bind 127.0.0.1 --directory godot/empire-omega/.build-web > /tmp/r67-original-game-http.log 2>&1 &
+          for attempt in 1 2 3 4 5 6 7 8 9 10; do
+            curl -fsS http://127.0.0.1:4173/index.html >/dev/null && exit 0
+            sleep 1
+          done
+          cat /tmp/r67-original-game-http.log
+          exit 1
+      - name: Prove desktop and portrait pixels are live world, never the Godot startup splash
+        shell: bash
+        run: |
+          set -euo pipefail
+          # R67 CI isolation: Chromium SwiftShader may hang when it tears
+          # down a huge WebGL frame and reuses the same process/worker for the
+          # second viewport. Require BOTH independent native game runs; never
+          # treat a screenshot timeout as a passing visual result.
+          npx playwright test --config playwright.omega-portrait-preview.config.mjs \
+            --project="portrait-390x844" --workers=1
+          OMEGA_CI_GL_BACKEND=mesa LIBGL_ALWAYS_SOFTWARE=1 \
+            xvfb-run -a -s '-screen 0 1920x1080x24' \
+              npx playwright test --config playwright.omega-portrait-preview.config.mjs \
+              --project="desktop-1366x768" --workers=1
+      - name: Retain authentic screenshots and pixel-diversity diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: omega-r67-original-world-not-splash
+          path: |
+            omega-portrait-preview-results/
+            omega-portrait-preview-report/
+          if-no-files-found: warn
+          retention-days: 14

@@ -25,6 +25,10 @@ async function latestPhysics(page) {
 test('unpublished original Godot R70: drive 2m, rotate car and grow odometer, never accept fake pixels',async({page},info)=>{
   test.setTimeout(300_000)
   const errors=[]
+  const godotConsole=[]
+  page.on('console',m=>{
+    if(godotConsole.length<120)godotConsole.push({type:m.type(),text:m.text().slice(0,600)})
+  })
   page.on('pageerror',e=>errors.push(e.message))
   page.on('crash',()=>errors.push('real Chromium renderer crashed'))
 
@@ -63,11 +67,12 @@ test('unpublished original Godot R70: drive 2m, rotate car and grow odometer, ne
         status:document.querySelector('#status')?.textContent??null,
         canvas:canvas?{width:canvas.width,height:canvas.height}:null,
         url:window.location.pathname,
+        has_qa_token:new URLSearchParams(window.location.search).get('omega_real_vehicle_qa')==='r70'
       }
     }).catch(e=>({diagnostic_error:String(e)}))
     await info.attach('r70-authentic-godot-startup-blocker.json',{
       body:Buffer.from(JSON.stringify({project:info.project.name,
-        head:process.env.GITHUB_SHA??'local',diagnostic},null,2)),
+        head:process.env.GITHUB_SHA??'local',diagnostic,errors,godotConsole},null,2)),
       contentType:'application/json'
     })
     throw new Error('Real Godot scene did not complete startup; '+JSON.stringify(diagnostic).slice(0,700)+'; '+String(error))
