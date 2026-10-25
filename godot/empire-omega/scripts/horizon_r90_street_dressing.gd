@@ -4,14 +4,19 @@ extends Node3D
 ## This deliberately does NOT claim imported photogrammetry/AAA assets.
 const SKYLINE_COUNT := 72
 const STREET_BOLLARD_COUNT := 144
+const R91_ARCHITECTURE = preload("res://scripts/horizon_r91_skyline_detail.gd")
 var skyline: MultiMeshInstance3D
 var bollards: MultiMeshInstance3D
+var r91_architecture: Node3D
 var quality := "standard"
 
 func _ready() -> void:
 	name = "R90UrbanAtmosphere"
 	_build_outer_skyline()
 	_build_sidewalk_bollards()
+	r91_architecture = R91_ARCHITECTURE.new()
+	r91_architecture.call("set_source_skyline",skyline)
+	add_child(r91_architecture)
 	set_quality("standard")
 
 func _material(tint: Color,metal: float,rough: float) -> StandardMaterial3D:
@@ -85,8 +90,11 @@ func set_quality(tier: String) -> void:
 		skyline.visible = quality != "low"
 	if bollards != null:
 		bollards.visible = quality == "cinematic"
+	if r91_architecture != null:
+		r91_architecture.call("set_quality",quality)
 
 func graphics_are_bounded() -> bool:
-	return skyline != null and bollards != null and (
+	return skyline != null and bollards != null and r91_architecture != null and (
 		skyline.multimesh.instance_count == SKYLINE_COUNT and
-		bollards.multimesh.instance_count == STREET_BOLLARD_COUNT)
+		bollards.multimesh.instance_count == STREET_BOLLARD_COUNT and
+		bool(r91_architecture.call("graphics_are_bounded")))
