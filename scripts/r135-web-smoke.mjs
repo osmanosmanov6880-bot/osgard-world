@@ -90,7 +90,8 @@ async function verifyW20PlayerSettings(page, isMobile, name) {
        'r135-case-mastery-w22-candidate-20261025',
        'r135-luxury-lighting-w23-candidate-20261025',
          'r135-accessible-audio-w24-candidate-20261025',
-         'r135-private-learning-w26-candidate-20261025'].includes(process.env.R135_CANDIDATE_VERSION)) return
+         'r135-private-learning-w26-candidate-20261025',
+       'r135-integrated-w27-candidate-20261025'].includes(process.env.R135_CANDIDATE_VERSION)) return
   const start = await expectState(page, x => x?.player_preferences_schema === 1
     && x?.player_preferences_save_ok === true && x?.player_settings_control_css_px >= 43.5,
     'W20 real player settings not readable, saved, or accessible')
@@ -111,10 +112,27 @@ async function verifyW20PlayerSettings(page, isMobile, name) {
   await expectState(page, x => x?.quality === 2 && x?.player_quality_persisted === 2
     && x?.loaded?.endsWith('service_spine_hero.glb') && x?.player_preferences_save_ok,
     'W20 actual settings button did not load and persist HERO model', 45_000)
+  if (process.env.R135_CANDIDATE_VERSION === 'r135-integrated-w27-candidate-20261025') {
+    await expectState(page, x => x?.studio_real_pbr_maps === 12
+      && x?.studio_real_pbr_failures === 0
+      && x?.studio_hero_pbr_active === true
+      && x?.studio_hero_gpu_batches === 3
+      && x?.studio_hero_instances === 20
+      && x?.studio_hero_extra_casters === 0,
+      'W27 HERO mode must render 12 real original PBR maps and 20 bounded instanced details', 45_000)
+    await captureRealViewport(page, 'w27-' + name + '-hero-12-source-pbr-maps.png')
+  }
   await hitLuxuryControl(page, 'player_settings_quality_center', isMobile)
   await expectState(page, x => x?.quality === 0 && x?.player_quality_persisted === 0
     && x?.loaded?.endsWith('service_spine_eco.glb') && x?.player_preferences_save_ok,
     'W20 real settings button failed to restore ECO model', 45_000)
+  if (process.env.R135_CANDIDATE_VERSION === 'r135-integrated-w27-candidate-20261025') {
+    await expectState(page, x => x?.studio_hero_pbr_active === false
+      && x?.studio_hero_gpu_batches === 0 && x?.studio_hero_instances === 0
+      && x?.studio_grid_draw_batches === 2 && x?.studio_grid_instances === 18,
+      'W27 mobile ECO must restore existing 2-batch grid and zero extra PBR draw calls')
+    await captureRealViewport(page, 'w27-' + name + '-eco-zero-extra-pbr.png')
+  }
   const originalMotion = Boolean(open.prefers_reduced_motion)
   await hitLuxuryControl(page, 'player_settings_motion_center', isMobile)
   await expectState(page, x => x?.prefers_reduced_motion === !originalMotion
@@ -141,7 +159,8 @@ async function verifyW21CausalLesson(page, isMobile, name) {
          'r135-case-mastery-w22-candidate-20261025',
          'r135-luxury-lighting-w23-candidate-20261025',
          'r135-accessible-audio-w24-candidate-20261025',
-         'r135-private-learning-w26-candidate-20261025'].includes(process.env.R135_CANDIDATE_VERSION)) return
+         'r135-private-learning-w26-candidate-20261025',
+       'r135-integrated-w27-candidate-20261025'].includes(process.env.R135_CANDIDATE_VERSION)) return
   await hitLuxuryControl(page, 'tutorial_collapse_center', isMobile)
   const initial = await expectState(page, x => x?.tutorial_expanded === true
     && x?.coach_status === 'intro'
@@ -169,7 +188,8 @@ async function verifyW22SelectableCases(page, isMobile, name) {
   if (!['r135-case-mastery-w22-candidate-20261025',
          'r135-luxury-lighting-w23-candidate-20261025',
          'r135-accessible-audio-w24-candidate-20261025',
-         'r135-private-learning-w26-candidate-20261025'].includes(process.env.R135_CANDIDATE_VERSION)) return
+         'r135-private-learning-w26-candidate-20261025',
+       'r135-integrated-w27-candidate-20261025'].includes(process.env.R135_CANDIDATE_VERSION)) return
   const before = await expectState(page, s => s?.case_replay_hitboxes?.length === 3
     && s?.cleared_case_count === 3 && s?.case_mastery_threshold === 100
     && s?.case_proficient_flags?.length === 3 && !s?.challenge_active,
@@ -220,7 +240,8 @@ async function verifyW22SelectableCases(page, isMobile, name) {
 async function verifyW23ActualLighting(page, isMobile, name) {
   if (!['r135-luxury-lighting-w23-candidate-20261025',
          'r135-accessible-audio-w24-candidate-20261025',
-         'r135-private-learning-w26-candidate-20261025'].includes(process.env.R135_CANDIDATE_VERSION)) return
+         'r135-private-learning-w26-candidate-20261025',
+       'r135-integrated-w27-candidate-20261025'].includes(process.env.R135_CANDIDATE_VERSION)) return
   const eco = await expectState(page, s => s?.quality === 0
     && s?.art_profile === 'ECO' && s?.art_shadow_count_added === 0
     && s?.art_webgl_expensive_postfx === false
@@ -260,7 +281,8 @@ async function verifyW23ActualLighting(page, isMobile, name) {
 // W24 real user consent, not an automatic audio playback test.
 async function verifyW24AudioConsentAndCaptions(page, isMobile, name) {
   if (!['r135-accessible-audio-w24-candidate-20261025',
-         'r135-private-learning-w26-candidate-20261025'].includes(process.env.R135_CANDIDATE_VERSION)) return
+         'r135-private-learning-w26-candidate-20261025',
+       'r135-integrated-w27-candidate-20261025'].includes(process.env.R135_CANDIDATE_VERSION)) return
   const first = await expectState(page, s => s?.sound_schema === 1
     && s?.sound_muted === true && s?.sound_audible_count === 0
     && s?.sound_player_autoplay === false && s?.sound_save_ok === true,
@@ -311,7 +333,8 @@ async function verifyW24AudioConsentAndCaptions(page, isMobile, name) {
 // W26: actual consent is a real Godot button, not a silent metric collector.
 // Never upload event or device identity. Verify reversible opt-in and erase.
 async function verifyW26PrivateLearning(page, isMobile, name) {
-  if (process.env.R135_CANDIDATE_VERSION !== 'r135-private-learning-w26-candidate-20261025') return
+  if (!['r135-private-learning-w26-candidate-20261025',
+        'r135-integrated-w27-candidate-20261025'].includes(process.env.R135_CANDIDATE_VERSION)) return
   const initial = await expectState(page, s => s?.private_metrics_schema === 1
     && s?.private_metrics_consent === false
     && s?.private_metrics_total === 0
