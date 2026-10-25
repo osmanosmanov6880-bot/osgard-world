@@ -39,8 +39,8 @@ jobs:
           set -uo pipefail
           failures=0
           for test_file in godot/empire-omega/tests/*.gd; do
-            if [[ "$test_file" == *"/horizon_capture.gd" || "$test_file" == *"/horizon_driving_capture.gd" || "$test_file" == *"/horizon_r4_showroom_capture.gd" ]]; then
-              echo "Skip GPU screenshot in headless logic tests (covered by xvfb visual QA)"
+            if [[ "$test_file" == *"/horizon_capture.gd" || "$test_file" == *"/horizon_driving_capture.gd" || "$test_file" == *"/horizon_r4_showroom_capture.gd" || "$test_file" == *"/r44_actual_night_capture.gd" ]]; then
+              echo "Route GPU screenshot test to mandatory real XVFB/OpenGL capture, never headless"
               continue
             fi
             echo "=== NATIVE ${test_file##*/} ==="
@@ -63,6 +63,41 @@ jobs:
             fi
           done
           exit "$failures"
+      - name: Install real OpenGL framebuffer for mandatory night-city acceptance
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y xvfb libgl1-mesa-dri
+      - name: Run genuine 1366x768 day and night Godot framebuffer acceptance
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p screenshots
+          timeout --signal=TERM --kill-after=8s 145s \
+            xvfb-run -a -s '-screen 0 1920x1080x24' \
+            godot --path godot/empire-omega --rendering-method gl_compatibility \
+              --script res://tests/r44_actual_night_capture.gd
+          python3 - <<'PY'
+          from pathlib import Path
+          from struct import unpack
+          for name in ("omega_r44_real_day_1366x768.png","omega_r44_real_night_1366x768.png"):
+              p=Path('screenshots')/name
+              assert p.is_file() and p.stat().st_size>10000, f'missing original GL screenshot: {name}'
+              with p.open('rb') as f:
+                  header=f.read(24)
+              assert header[:8]==bytes.fromhex('89504e470d0a1a0a')
+              assert unpack('>II',header[16:24])==(1366,768),f'wrong real GL resolution: {name}'
+              print('PASS original Godot OpenGL framebuffer:',name,p.stat().st_size,'bytes')
+          PY
+      - name: Preserve actual Godot day and night PNG evidence for external review
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: omega-master-actual-night-opengl-${{ github.run_id }}
+          path: screenshots/
+          if-no-files-found: warn
+          retention-days: 14
       - name: Export authentic Godot 4.4.1 Web application
         shell: bash
         run: |
