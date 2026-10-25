@@ -1,5 +1,11 @@
 name: NEBULA R40 isolated device QA staging
 on:
+  # A single reviewed manifest change triggers QA staging once on master.
+  # Never run this workflow on untrusted pull_request source code.
+  push:
+    branches: [master]
+    paths:
+      - ".github/nebula-r40-qa-one-shot-source.json"
   workflow_dispatch:
     inputs:
       source_run_id:
@@ -25,10 +31,24 @@ jobs:
           RUN_ID: ${{ inputs.source_run_id }}
         run: |
           set -euo pipefail
+          if [ "$GITHUB_EVENT_NAME" = push ]; then
+            pinned=.github/nebula-r40-qa-one-shot-source.json
+            test -s "$pinned"
+            test "$(jq -er '.schema' "$pinned")" = "NEBULA_R40_ONESHOT_QA_V1"
+            test "$(jq -er '.staging_only' "$pinned")" = true
+            test "$(jq -er '.approved_for_production' "$pinned")" = false
+            test "$(jq -er '.qa_path' "$pinned")" = "/games/remix/nebula-r40-qa/"
+            RUN_ID="$(jq -er '.source_run_id' "$pinned")"
+            expected="$(jq -er '.candidate_head_sha' "$pinned")"
+            echo "Pinned staging-only input run=$RUN_ID head=$expected"
+          fi
           case "$RUN_ID" in ''|*[!0-9]*) echo "::error::Numeric run ID required"; exit 1;; esac
           pr="$(gh api "repos/$GH_REPO/pulls/375")"
           head="$(printf '%s' "$pr" | jq -er '.head.sha')"
           branch="$(printf '%s' "$pr" | jq -er '.head.ref')"
+          if [ "$GITHUB_EVENT_NAME" = push ]; then
+            test "$head" = "$expected" || { echo "::error::One-shot staging source head changed; abort"; exit 1; }
+          fi
           test "$branch" = "release/nebula-r40-final-hardware-qa-20261025"
           test "$(printf '%s' "$pr" | jq -er '.state')" = "open"
           run="$(gh api "repos/$GH_REPO/actions/runs/$RUN_ID")"
@@ -36,6 +56,8 @@ jobs:
           test "$(printf '%s' "$run" | jq -er '.conclusion')" = success
           test "$(printf '%s' "$run" | jq -er '.event')" = pull_request
           test "$(printf '%s' "$run" | jq -er '.head_branch')" = "$branch"
+          test "$(printf '%s' "$run" | jq -er '.head_sha')" = "$head" ||
+            { echo "::error::CI artifact run is not from current R40 PR head"; exit 1; }
           test "$(printf '%s' "$run" | jq -er '.path')" = ".github/workflows/remix-nebula-3d.yml"
           printf 'QA_PR_HEAD=%s\n' "$head" >> "$GITHUB_ENV"
       - name: Verify original WebAssembly artifact and checksums
