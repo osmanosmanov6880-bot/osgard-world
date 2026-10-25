@@ -23,7 +23,7 @@ const report=values=>({
   quality_gate:'MEETS_TARGET',sample_seconds:20,valid_frames:800,
   excluded_long_frames:0,adapter_reported:'Browser-reported graphics',
   runtime:'Web',resolution_width:390,resolution_height:844,
-  avg_fps:50,one_percent_low_fps:35,
+  avg_fps:50,one_percent_low_fps:35,max_draw_calls:500,
   p95_frame_ms:24,p99_frame_ms:28,r36_browser_dom_to_engine_avg_ms:12,
   ...values
 });
@@ -32,6 +32,8 @@ assert.equal(normal.status,'ЦЕЛЬ');
 assert.equal(normal.profile,'HIGH');
 assert.equal(normal.touch,12);
 assert.equal(normal.targetFps,40);
+assert.equal(normal.drawCalls,500);
+assert.equal(parseReport(report({max_draw_calls:null}),'null-draws.json').drawCalls,null);
 assert.equal(parseReport(report({avg_fps:38}),'slow.json').status,'НИЖЕ ЦЕЛИ');
 assert.equal(parseReport(report({p95_frame_ms:40}),'stutter.json').status,'НИЖЕ ЦЕЛИ');
 assert.equal(parseReport(report({quality:0,avg_fps:62,p95_frame_ms:18}),'max.json').status,'ЦЕЛЬ');
@@ -88,7 +90,7 @@ assert.equal(noSize[0].valid,0);
 assert.ok(makeCSV([phone(49,22,'ok','=CMD()')]).includes('"\'=CMD()"'));
 const deviceRun=(fps,p95,variant,device='AB Device',filename='run.json')=>
   parseReport(report({date_unix:++syntheticTimestamp,avg_fps:fps,p95_frame_ms:p95,
-      ...(variant==='R40'?{build_variant:r40CandidateBuildId}:{})}),
+      ...(variant==='R40'?{build_variant:r40CandidateBuildId,max_draw_calls:400}:{})}),
     filename,device,variant);
 const paired=compareBuilds(summarizeRuns([
   deviceRun(35,28,'R38'),deviceRun(36,27,'R38'),deviceRun(34,28,'R38'),
@@ -99,6 +101,7 @@ assert.equal(paired[0].baselineFps,35);
 assert.equal(paired[0].candidateFps,46);
 assert.ok(paired[0].deltaFps>30);
 assert.equal(paired[0].status,'ЛУЧШЕ');
+assert.equal(paired[0].deltaDrawCalls,20);
 const regressed=compareBuilds(summarizeRuns([
   deviceRun(60,17,'R38'),deviceRun(61,17,'R38'),deviceRun(59,18,'R38'),
   deviceRun(43,26,'R40'),deviceRun(44,27,'R40'),deviceRun(42,26,'R40')
@@ -113,6 +116,7 @@ const noPair=compareBuilds(summarizeRuns([
   deviceRun(40,24,'R38'),deviceRun(41,24,'R38'),deviceRun(42,24,'R38')
 ]));
 assert.equal(noPair[0].status,'НЕ ХВАТАЕТ ДАННЫХ');
+assert.equal(noPair[0].deltaDrawCalls,null);
 const mixedDevices=compareBuilds(summarizeRuns([
   deviceRun(50,20,'R38','Android A'),deviceRun(51,20,'R38','Android A'),
   deviceRun(52,20,'R38','Android A'),
