@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 // W16 STRUCTURAL evidence gate, not a phone/GPU certification.
 // Synthetic fixtures and user attestations never prove physical devices.
-import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { resolve, basename, dirname, join } from 'node:path'
+import { pathToFileURL } from 'node:url'
 import { createHash } from 'node:crypto'
 import { summarizeRafIntervalsMs } from './r135-frame-metrics.mjs'
 
@@ -125,4 +125,4 @@ function runCli() {
   // An honest missing physical-phone matrix must BLOCK certification.
   if (result.missing.length) process.exitCode = 3
 }
-if (process.argv[1]?.endsWith('r135-hardware-matrix.mjs')) runCli()
+if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) runCli()
