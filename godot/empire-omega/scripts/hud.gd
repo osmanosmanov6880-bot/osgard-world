@@ -370,11 +370,11 @@ func _strategy_style() -> StyleBoxFlat:
 func _strategy_stat(parent: Node, heading: String, value: String) -> void:
 	var tile := PanelContainer.new()
 	tile.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var bg := _style(Color("162a37",0.96),Color("6c7b76",0.74),10)
-	bg.content_margin_left = 9
-	bg.content_margin_right = 9
-	bg.content_margin_top = 8
-	bg.content_margin_bottom = 8
+	var bg := R90_STYLE.card_style()
+	bg.content_margin_left = 14
+	bg.content_margin_right = 14
+	bg.content_margin_top = 12
+	bg.content_margin_bottom = 12
 	tile.add_theme_stylebox_override("panel",bg)
 	parent.add_child(tile)
 	var column := VBoxContainer.new()
@@ -416,7 +416,7 @@ func _label(parent: Node, text: String, font_size: int = 18, highlight: bool = f
 	label.text = text
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	label.add_theme_font_size_override("font_size",font_size)
-	label.add_theme_color_override("font_color",Color("f3dca7") if highlight else Color("f4f8fc"))
+	label.add_theme_color_override("font_color",R90_STYLE.GOLD if highlight else R90_STYLE.SILVER)
 	parent.add_child(label)
 	return label
 
@@ -537,7 +537,7 @@ func _process(_delta: float) -> void:
 
 func _make_strategy() -> void:
 	overlay = ColorRect.new()
-	overlay.color = Color(0.005,0.012,0.025,0.32)
+	overlay.color = Color(0.005,0.008,0.014,0.60)
 	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
 	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
 	overlay.visible = false
@@ -555,7 +555,7 @@ func _make_strategy() -> void:
 	window.add_theme_stylebox_override("panel",_strategy_style())
 	overlay.add_child(window)
 	var stack := VBoxContainer.new()
-	stack.add_theme_constant_override("separation",9)
+	stack.add_theme_constant_override("separation",13)
 	window.add_child(stack)
 	var title_row := HBoxContainer.new()
 	stack.add_child(title_row)
@@ -572,7 +572,7 @@ func _make_strategy() -> void:
 		var tab := _button(navigation,section,Callable(self,"_jump_to_strategy_section").bind(section))
 		tab.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		tab.custom_minimum_size.y = 38
-		tab.add_theme_font_size_override("font_size",12)
+		tab.add_theme_font_size_override("font_size",14)
 		strategy_nav_buttons[section] = tab
 	strategy_scroll = ScrollContainer.new()
 	strategy_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -580,7 +580,7 @@ func _make_strategy() -> void:
 	stack.add_child(strategy_scroll)
 	strategy_contents = VBoxContainer.new()
 	strategy_contents.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	strategy_contents.add_theme_constant_override("separation",9)
+	strategy_contents.add_theme_constant_override("separation",13)
 	strategy_scroll.add_child(strategy_contents)
 
 func _make_dialogs() -> void:
@@ -1597,6 +1597,10 @@ func _apply_responsive_layout() -> void:
 		toast_label.add_theme_font_size_override("font_size",18)
 		speed_label.add_theme_font_size_override("font_size",20)
 		hint_label.add_theme_font_size_override("font_size",17)
+	# The immersive cabinet already carries its own editorial masthead.
+	# Keep the native title on compact screens for orientation, but remove
+	# the redundant duplicate from widescreen command view.
+	strategy_title.visible = compact_hud or screen.x < 1200.0 or screen.y < 680.0
 	_refresh()
 
 func toggle_map() -> void:

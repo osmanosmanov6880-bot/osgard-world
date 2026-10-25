@@ -9,9 +9,9 @@ signal select_district(id: String)
 const REFERENCE = preload("res://scripts/horizon_r90_reference_style.gd")
 const CIVIC_KPIS = preload("res://scripts/horizon_r93_real_civic_kpis.gd")
 const PROJECTIVE_PINS = preload("res://scripts/horizon_r92_projective_districts.gd")
-const GOLD = Color("eac482")
-const WHITE = Color("f6f3ed")
-const MUTED = Color("a8b1bd")
+const GOLD = Color("d9bb83")
+const WHITE = Color("eeeae3")
+const MUTED = Color("c3c2bd")
 var preview: SubViewport
 
 static func local(ru: String,en: String,zh: String,lang: String) -> String:
@@ -23,7 +23,7 @@ func _label(parent: Node, value: String, size: int = 16, accent: bool = false) -
 	var item := Label.new()
 	item.text = value
 	item.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	item.add_theme_font_size_override("font_size",size)
+	item.add_theme_font_size_override("font_size",maxi(14,size))
 	item.add_theme_color_override("font_color",GOLD if accent else WHITE)
 	item.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	parent.add_child(item)
@@ -36,7 +36,7 @@ func _card(parent: Node, min_width: float = 0.0, accent: bool = false) -> VBoxCo
 	panel.add_theme_stylebox_override("panel",REFERENCE.card_style(accent))
 	parent.add_child(panel)
 	var content := VBoxContainer.new()
-	content.add_theme_constant_override("separation",7)
+	content.add_theme_constant_override("separation",10)
 	panel.add_child(content)
 	return content
 
@@ -44,9 +44,9 @@ func _action(parent: Node, title: String, section: String) -> Button:
 	var button := Button.new()
 	button.text = title
 	button.tooltip_text = title
-	button.custom_minimum_size.y = 38
+	button.custom_minimum_size.y = 44
 	button.alignment = HORIZONTAL_ALIGNMENT_LEFT
-	button.add_theme_font_size_override("font_size",14)
+	button.add_theme_font_size_override("font_size",15)
 	REFERENCE.style_button(button)
 	button.pressed.connect(Callable(self,"_request_navigation").bind(section))
 	parent.add_child(button)
@@ -63,26 +63,26 @@ func _request_district(id: String) -> void:
 
 func _metric(parent: Node, caption: String, amount: String, small: String, accent: bool = false) -> void:
 	var content := _card(parent,0.0,accent)
-	_label(content,caption,12,true)
-	_label(content,amount,20)
-	_label(content,small,12)
+	_label(content,caption,14,true)
+	_label(content,amount,24)
+	_label(content,small,14)
 
 func build(state: Dictionary, forecast: Dictionary, mission: String,
 		world: World3D, compact: bool, lang: String) -> void:
 	name = "R90LiveOperationsCabinet"
-	add_theme_constant_override("separation",12)
+	add_theme_constant_override("separation",16)
 	size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var branding := HBoxContainer.new()
-	branding.add_theme_constant_override("separation",12)
+	branding.add_theme_constant_override("separation",16)
 	add_child(branding)
-	_label(branding,local("◆  OSGARD · ИМПЕРИЯ Ω","◆  OSGARD · EMPIRE Ω","◆  奥斯加德 · 帝国 Ω",lang),23,true)
+	_label(branding,local("OSGARD  ·  ИМПЕРИЯ Ω","OSGARD  ·  EMPIRE Ω","OSGARD  ·  帝国 Ω",lang),26,true)
 	var selected: String = str(state.get("selected","forum"))
 	var clock: float = fposmod(float(state.get("day_clock",8.0)),24.0)
 	var hour: int = floori(clock)
 	var minute: int = floori((clock-float(hour))*60.0)
 	var time_value: String = "%02d:%02d" % [hour,minute]
 	var clock_text: String = "%s %d · %s · %s %d/100" % [local("ТАКТ","TURN","回合",lang),int(state.get("turn",1)),time_value,local("РЕПУТАЦИЯ","REPUTATION","声望",lang),int(state.get("reputation",0))]
-	var micro := _label(branding,clock_text,12)
+	var micro := _label(branding,clock_text,14)
 	micro.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	micro.visible = not compact
 
@@ -91,7 +91,7 @@ func build(state: Dictionary, forecast: Dictionary, mission: String,
 	if not compact:
 		var tabs := HBoxContainer.new()
 		tabs.name = "R90NavigationTabs"
-		tabs.add_theme_constant_override("separation",5)
+		tabs.add_theme_constant_override("separation",7)
 		add_child(tabs)
 		var tabs_data: Array = [
 			[local("КАБИНЕТ","OVERVIEW","概览",lang),"overview"],
@@ -105,15 +105,16 @@ func build(state: Dictionary, forecast: Dictionary, mission: String,
 			var tab: Button = _action(tabs,str(tabs_data[index][0]),str(tabs_data[index][1]))
 			tab.name = "R90Tab%d" % index
 			tab.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-			tab.custom_minimum_size.y = 39
-			tab.add_theme_font_size_override("font_size",12)
+			tab.custom_minimum_size.y = 45
+			tab.add_theme_font_size_override("font_size",14)
 
 	var stats: Container = GridContainer.new() if compact else HBoxContainer.new()
+	stats.name = "R97ExecutiveSummary"
 	if stats is GridContainer:
 		(stats as GridContainer).columns = 2
 	else:
 		(stats as HBoxContainer).add_theme_constant_override("separation",7)
-	add_child(stats)
+	# Hero-first composition: financial cards follow the live 3D command view.
 	var politics: Dictionary = state.get("politics",{})
 	_metric(stats,local("ЛИЧНЫЕ ДЕНЬГИ","PERSONAL FUNDS","个人资产",lang),
 		"%d кр." % int(state.get("wallet",0)),local("ЛИЧНЫЙ БАЛАНС","CURRENT BALANCE","当前资金",lang))
@@ -129,21 +130,22 @@ func build(state: Dictionary, forecast: Dictionary, mission: String,
 		"%d%%" % int(politics.get("mandate",0)),local("ПОЛИТИЧЕСКИЙ РЕСУРС","PUBLIC MANDATE","执政支持",lang))
 
 	var columns: BoxContainer = VBoxContainer.new() if compact else HBoxContainer.new()
-	columns.add_theme_constant_override("separation",12)
-	columns.custom_minimum_size.y = 420 if not compact else 0
+	columns.name = "R97CommandColumns"
+	columns.add_theme_constant_override("separation",14)
+	columns.custom_minimum_size.y = 450 if not compact else 0
 	add_child(columns)
 	var left := VBoxContainer.new()
-	left.add_theme_constant_override("separation",10)
-	left.custom_minimum_size.x = 230 if not compact else 0
+	left.add_theme_constant_override("separation",13)
+	left.custom_minimum_size.x = 248 if not compact else 0
 	left.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	columns.add_child(left)
 
 	var missions := _card(left,0,true)
-	_label(missions,local("ТЕКУЩАЯ МИССИЯ","CURRENT MISSION","当前任务",lang),15,true)
-	_label(missions,mission,17)
+	_label(missions,local("ТЕКУЩАЯ МИССИЯ","CURRENT MISSION","当前任务",lang),16,true)
+	_label(missions,mission,20)
 	_label(missions,local("ГЛАВА · %d / 40" % (int(state.get("mission",0))+1),
 		"MISSION · %d / 40" % (int(state.get("mission",0))+1),
-		"任务 · %d / 40" % (int(state.get("mission",0))+1),lang),13,true)
+		"任务 · %d / 40" % (int(state.get("mission",0))+1),lang),14,true)
 	_action(missions,local("ОТКРЫТЬ ЗАДАНИЯ","MISSIONS","任务",lang),"overview")
 
 	var fleet := _card(left,0,false)
@@ -154,10 +156,10 @@ func build(state: Dictionary, forecast: Dictionary, mission: String,
 		if not bool(owned.get(id,false)): continue
 		var spec: Dictionary = GameState.VEHICLE_CATALOG.VEHICLES[id]
 		var item := Button.new()
-		item.text = "◆ " + str(spec.get(lang,spec.get("ru",id)))
+		item.text = str(spec.get(lang,spec.get("ru",id)))
 		item.tooltip_text = local("Выбрать этот транспорт","Select this vehicle","选择车辆",lang)
 		item.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		item.custom_minimum_size.y = 34
+		item.custom_minimum_size.y = 40
 		REFERENCE.style_button(item)
 		item.pressed.connect(Callable(self,"_request_vehicle").bind(id))
 		fleet.add_child(item)
@@ -173,13 +175,6 @@ func build(state: Dictionary, forecast: Dictionary, mission: String,
 		middle.add_theme_constant_override("separation",8)
 		columns.add_child(middle)
 		_city_view(middle,world,forecast,lang)
-		var hint := _card(middle,0)
-		_label(hint,local("ЖИВОЙ 3D-ГОРОД · ТА ЖЕ СЦЕНА, ЧТО В ИГРЕ",
-			"LIVE 3D CITY · SAME SCENE AS GAMEPLAY",
-			"实时三维城市 · 与游戏相同场景",lang),13,true)
-		_label(hint,local("Вид с командной камеры, без поддельного фонового изображения.",
-			"Command camera — not a pre-rendered background.",
-			"实时摄像机画面，非预渲染背景。",lang),12)
 	else:
 		var brief := _card(left,0)
 		_label(brief,local("ГОРОД НА ЭКРАНЕ ИГРЫ","CITY IN GAME WORLD","城市位于游戏世界",lang),13,true)
@@ -188,12 +183,12 @@ func build(state: Dictionary, forecast: Dictionary, mission: String,
 			"为保证手机性能，关闭第二个 3D 渲染通道。",lang),12)
 
 	var right := VBoxContainer.new()
-	right.custom_minimum_size.x = 234 if not compact else 0
+	right.custom_minimum_size.x = 284 if not compact else 0
 	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	right.add_theme_constant_override("separation",10)
+	right.add_theme_constant_override("separation",13)
 	columns.add_child(right)
 	var atlas := _card(right)
-	_label(atlas,local("АТЛАС ГОРОДА","CITY ATLAS","城市地图集",lang),16,true)
+	_label(atlas,local("АТЛАС ГОРОДА","CITY ATLAS","城市地图集",lang),17,true)
 	var discovered: Array = state.get("discovered_sites",[])
 	_label(atlas,local("ОТКРЫТО","DISCOVERED","已发现",lang)+"  %d / 12" % discovered.size(),14)
 	var scores: Dictionary = forecast.get("district_scores",{})
@@ -208,7 +203,8 @@ func build(state: Dictionary, forecast: Dictionary, mission: String,
 		var section_button := Button.new()
 		section_button.text = "%s · %d / 100%s" % [region,int(scores.get(id,0)),"  ◆" if id==selected else ""]
 		section_button.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		section_button.custom_minimum_size.y = 32
+		section_button.custom_minimum_size.y = 40
+		section_button.add_theme_font_size_override("font_size",14)
 		REFERENCE.style_button(section_button)
 		section_button.pressed.connect(Callable(self,"_request_district").bind(id))
 		atlas.add_child(section_button)
@@ -217,20 +213,18 @@ func build(state: Dictionary, forecast: Dictionary, mission: String,
 	# the city simulation. No arbitrary economy or public-safety percentages.
 	var metrics := _card(right,0,false)
 	metrics.name = "R93CityIndicatorsCard"
-	_label(metrics,local("ГОРОДСКИЕ ПОКАЗАТЕЛИ","CITY INDICATORS","城市指标",lang),15,true)
+	_label(metrics,local("ГОРОДСКИЕ ПОКАЗАТЕЛИ","CITY INDICATORS","城市指标",lang),16,true)
 	var indicators: VBoxContainer = CIVIC_KPIS.new()
 	metrics.add_child(indicators)
 	indicators.call("configure",state,forecast,lang)
 	var actions := _card(right,0,true)
-	_label(actions,local("СТРАТЕГИЧЕСКИЕ ДЕЙСТВИЯ","STRATEGIC ACTIONS","战略行动",lang),15,true)
-	_action(actions,local("◆ ГОРОДСКОЙ СОВЕТ","◆ CITY COUNCIL","◆ 市政议会",lang),"council")
-	_action(actions,local("◆ ЭКОНОМИКА / ЛОГИСТИКА","◆ ECONOMY / LOGISTICS","◆ 经济物流",lang),"economy")
-	_action(actions,local("◆ РАЗВИТИЕ РАЙОНОВ","◆ DISTRICT DEVELOPMENT","◆ 街区开发",lang),"district")
-	_label(actions,local("Решения доступны ниже через рабочий список действий.",
-		"Real actions are available in the sections below.",
-		"以下区域可执行实际决策。",lang),12)
+	_label(actions,local("СТРАТЕГИЧЕСКИЕ ДЕЙСТВИЯ","STRATEGIC ACTIONS","战略行动",lang),16,true)
+	_action(actions,local("ГОРОДСКОЙ СОВЕТ","CITY COUNCIL","市政议会",lang),"council")
+	_action(actions,local("ЭКОНОМИКА / ЛОГИСТИКА","ECONOMY / LOGISTICS","经济物流",lang),"economy")
+	_action(actions,local("РАЗВИТИЕ РАЙОНОВ","DISTRICT DEVELOPMENT","街区开发",lang),"district")
 
-	var selected_card := _card(self,0,true)
+	var selected_card := _card(right,0,true)
+	selected_card.name = "R97SelectedDistrictCard"
 	_label(selected_card,local("ВЫБРАННЫЙ РАЙОН","SELECTED DISTRICT","选定城区",lang),13,true)
 	var district_scores: Dictionary = forecast.get("district_scores",{})
 	var chosen: int = clampi(int(district_scores.get(selected,0)),0,100)
@@ -256,15 +250,19 @@ func build(state: Dictionary, forecast: Dictionary, mission: String,
 			{"overview":"OVERVIEW","council":"COUNCIL","economy":"ECONOMY","district":"DISTRICTS"}[section],
 			{"overview":"总览","council":"议会","economy":"经济","district":"城区"}[section],lang),section)
 
+	# The six real authoritative figures remain available directly after the
+	# immersive command stage; no static KPI placeholders or lost controls.
+	add_child(stats)
+
 func _city_view(parent: Node, world: World3D, forecast: Dictionary, lang: String) -> void:
 	var panel := PanelContainer.new()
 	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	panel.custom_minimum_size.y = 410
+	panel.custom_minimum_size.y = 456
 	panel.add_theme_stylebox_override("panel",REFERENCE.card_style(true))
 	parent.add_child(panel)
 	var stage := Control.new()
-	stage.custom_minimum_size = Vector2(420,394)
+	stage.custom_minimum_size = Vector2(450,436)
 	stage.clip_contents = true
 	panel.add_child(stage)
 	var host := SubViewportContainer.new()
@@ -319,7 +317,7 @@ func _city_view(parent: Node, world: World3D, forecast: Dictionary, lang: String
 	pin.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	pin.add_theme_stylebox_override("panel",REFERENCE.card_style(true))
 	stage.add_child(pin)
-	_label(pin,local("◆ АТЛАС · ЖИВАЯ СЦЕНА","◆ ATLAS · LIVE SCENE","◆ 城市 · 实时场景",lang),14,true)
+	_label(pin,local("АТЛАС · ЖИВАЯ СЦЕНА","ATLAS · LIVE SCENE","城市 · 实时场景",lang),15,true)
 	# Actual district scores are projected as informational touch targets
 	# over the live render, not fabricated economic statistics.
 	var scores: Dictionary = forecast.get("district_scores",{})
@@ -332,7 +330,7 @@ func _city_view(parent: Node, world: World3D, forecast: Dictionary, lang: String
 	for id in GameState.DISTRICTS:
 		var badge := Button.new()
 		badge.name = "R90DistrictPin_"+str(id)
-		badge.text = "◆ %s · %d/100" % [str(titles[id]),int(scores.get(id,0))]
+		badge.text = "%s · %d/100" % [str(titles[id]),int(scores.get(id,0))]
 		badge.tooltip_text = local("Выбрать район","Select district","选择城区",lang)
 		badge.custom_minimum_size = Vector2(100,32)
 		var projected: Dictionary = PROJECTIVE_PINS.project_district(camera,id,Vector2(preview.size))
@@ -342,11 +340,11 @@ func _city_view(parent: Node, world: World3D, forecast: Dictionary, lang: String
 		badge.anchor_right = point.x
 		badge.anchor_top = point.y
 		badge.anchor_bottom = point.y
-		badge.offset_left = -65.0
-		badge.offset_right = 85.0
+		badge.offset_left = -82.0
+		badge.offset_right = 98.0
 		badge.offset_top = -16.0
 		badge.offset_bottom = 16.0
-		badge.add_theme_font_size_override("font_size",11)
+		badge.add_theme_font_size_override("font_size",12)
 		REFERENCE.style_button(badge)
 		badge.pressed.connect(Callable(self,"_request_district").bind(id))
 		stage.add_child(badge)
