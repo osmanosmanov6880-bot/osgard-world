@@ -489,6 +489,29 @@ func _create_interface() -> void:
     erase_confirm.confirmed.connect(_confirm_erase)
     add_child(erase_confirm)
 
+func _sync_camera_rail() -> void:
+    # W46: mobile-first instrument rail. Full translated description remains
+    # readable above the 3D scene and in each button tooltip. Three camera
+    # actions can now share a single row at 320-390px viewport widths.
+    var compact: bool = size.x < 640.0
+    var cell_width: float = clampf((size.x - 110.0) / 3.0, 60.0, 98.0) if compact else 175.0
+    var selected: int = int(core.snapshot()["view"])
+    for i in range(3):
+        var camera_button: Button = view_btns[i]
+        if not is_equal_approx(camera_button.custom_minimum_size.x, cell_width):
+            camera_button.custom_minimum_size.x = cell_width
+        var full_name: String = _t("view%d" % i)
+        var short_name: String = "%02d" % (i + 1)
+        var visible_name: String = short_name if compact else full_name
+        if camera_button.text != visible_name:
+            camera_button.text = visible_name
+        camera_button.tooltip_text = full_name
+        camera_button.set_pressed_no_signal(selected == i)
+    if compact:
+        stage_kicker.text = "A7 / " + _t("view%d" % selected)
+    else:
+        stage_kicker.text = "A7 / RESTRICTED RESEARCH FACILITY"
+
 func _layout_stage_for_screen() -> void:
     if visual_container == null or sub_viewport == null:
         return
@@ -504,7 +527,7 @@ func _layout_stage_for_screen() -> void:
     control_grid.columns = 1 if size.x < 900.0 else 2
     var narrow: bool = size.x < 640.0
     stage_edition.visible = size.x >= 1050.0
-    stage_kicker.text = "A7 / SECURE FACILITY" if narrow else "A7 / RESTRICTED RESEARCH FACILITY"
+    _sync_camera_rail()
     stage_section_heading.text = "A7  /  SECURE OBSERVATION" if narrow else "OBSIDIAN FACILITY  //  REACTOR A7    •    SECURE OBSERVATION"
     brand_mark.text = "OSGARD  /  OBSIDIAN" if narrow else "OSGARD   /   OBSIDIAN PROTOCOL"
     brand_mark.add_theme_font_size_override("font_size", 18 if narrow else 23)
@@ -695,12 +718,7 @@ func _refresh() -> void:
     engine_btn.text = _t("drive_stop") if bool(snap["drive_on"]) else _t("drive_start")
     hatch_btn.text = _t("hatch_close") if float(snap["hatch_target"]) == 1.0 else _t("hatch_open")
     scan_btn.text = _t("scan")
-    for i in range(3):
-        # OSGARDText already includes "01 /", "02 /", "03 /".
-        # Do not repeat the index, and rely on true pressed styling instead
-        # of a Unicode bullet that rendered as a missing glyph in W42.
-        view_btns[i].text = _t("view%d" % i)
-        view_btns[i].set_pressed_no_signal(int(snap["view"]) == i)
+    _sync_camera_rail()
     var active_fault := int(snap["fault"])
     cal_title.text = "%s  ·  %s" % [_t("signal"), _t("select") if active_fault < 0 else _t("base%d" % active_fault)]
     slider_a.editable = bool(snap["inspection_allowed"])

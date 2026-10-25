@@ -100,6 +100,14 @@ def check(directory,out,sha):
                             assert stage[3]>=490,('Desktop cinematic stage insufficiently prominent',stage)
                             assert stage[2]>=900,('Desktop stage not full-width',stage)
                         assert 'dial_a' in frame_geometry and 'dial_b' in frame_geometry,('Native W36 knob rectangles missing',frame_geometry)
+                        if touch:
+                            rail=[frame_geometry.get('camera0'),frame_geometry.get('camera1'),frame_geometry.get('camera2')]
+                            assert all(item and len(item)==4 for item in rail),('Mobile camera rail is absent',rail)
+                            assert max(item[1] for item in rail)-min(item[1] for item in rail)<=6,(
+                                'Mobile camera buttons are stacked vertically instead of a single premium rail',rail)
+                            assert all(item[3]>=44 for item in rail),('Mobile camera tap targets too small',rail)
+                            assert rail[0][0]<rail[1][0]<rail[2][0],('Camera rail order broken',rail)
+                            stats['mobile_camera_rail']=rail
                         # W41 catches the actual screenshot defect where the
                         # desktop SIMULATION badge was wrapped letter by letter.
                         edition=frame_geometry.get('stage_edition')
