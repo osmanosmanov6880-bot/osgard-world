@@ -91,40 +91,65 @@ jobs:
           set -euo pipefail
           mkdir -p "$RUNNER_TEMP/nebula-r38-live" "$RUNNER_TEMP/nebula-r40-live"
           root="https://osgard.world/games/remix"
+          failures=0
+          diff_asset() {
+            local role="$1" expected="$2" actual="$3"
+            echo "::error::NEBULA_BYTE_MISMATCH role=$role file=$name" >&2
+            echo "Expected SHA-256 and bytes:"
+            sha256sum "$expected"
+            wc -c "$expected"
+            echo "Observed SHA-256 and bytes:"
+            sha256sum "$actual"
+            wc -c "$actual"
+            if [ "$name" = index.html ]; then
+              echo "Expected HTML first 80 bytes (hex):"
+              head -c 80 "$expected" | od -An -tx1
+              echo "Observed HTML first 80 bytes (hex):"
+              head -c 80 "$actual" | od -An -tx1
+              if grep -Fq "REMIX ARENA" "$actual"; then
+                echo "Observed HTML marker REMIX ARENA: yes"
+              else
+                echo "Observed HTML marker REMIX ARENA: NO (possible fallback page)"
+              fi
+            fi
+            failures=$((failures+1))
+          }
           for name in index.html index.js index.wasm index.pck; do
             curl --fail --silent --show-error --location --retry 2 \
               --connect-timeout 12 --max-time 120 -H 'Accept-Encoding: identity' \
+              -w "NEBULA_HTTP_FETCH variant=approved file=$name code=%{http_code} content_type=%{content_type} final_url=%{url_effective}\n" \
               "$root/arena-v2/nebula-3d/$name" -o "$RUNNER_TEMP/nebula-r38-live/$name"
             curl --fail --silent --show-error --location --retry 2 \
               --connect-timeout 12 --max-time 120 -H 'Accept-Encoding: identity' \
+              -w "NEBULA_HTTP_FETCH variant=qa file=$name code=%{http_code} content_type=%{content_type} final_url=%{url_effective}\n" \
               "$root/nebula-r40-qa/$name" -o "$RUNNER_TEMP/nebula-r40-live/$name"
             test -s "$RUNNER_TEMP/nebula-r38-live/$name"
             test -s "$RUNNER_TEMP/nebula-r40-live/$name"
             if [ "$NEBULA_ACTIVE_VARIANT" = R38 ]; then
               cmp "public/games/remix/arena-v2/nebula-3d/$name" \
                 "$RUNNER_TEMP/nebula-r38-live/$name" || {
-                  echo "::error::Public R38 $name differs from pinned master baseline" >&2
-                  exit 1
+                  diff_asset public_r38 "public/games/remix/arena-v2/nebula-3d/$name" "$RUNNER_TEMP/nebula-r38-live/$name"
                 }
             else
               cmp "$RUNNER_TEMP/nebula-r40-ci/$name" \
                 "public/games/remix/arena-v2/nebula-3d/$name" || {
-                  echo "::error::Promoted R40 master $name differs from original CI $QA_RUN_ID" >&2
-                  exit 1
+                  diff_asset promoted_r40_master "$RUNNER_TEMP/nebula-r40-ci/$name" "public/games/remix/arena-v2/nebula-3d/$name"
                 }
               cmp "$RUNNER_TEMP/nebula-r40-ci/$name" \
                 "$RUNNER_TEMP/nebula-r38-live/$name" || {
-                  echo "::error::Promoted R40 live $name differs from original CI $QA_RUN_ID" >&2
-                  exit 1
+                  diff_asset promoted_r40_live "$RUNNER_TEMP/nebula-r40-ci/$name" "$RUNNER_TEMP/nebula-r38-live/$name"
                 }
             fi
             cmp "$RUNNER_TEMP/nebula-r40-ci/$name" \
               "$RUNNER_TEMP/nebula-r40-live/$name" || {
-                echo "::error::Isolated QA R40 $name differs from pinned CI $QA_RUN_ID" >&2
-                exit 1
+                diff_asset qa_r40_live "$RUNNER_TEMP/nebula-r40-ci/$name" "$RUNNER_TEMP/nebula-r40-live/$name"
               }
             echo "NEBULA_LIVE_ASSET_PARITY_OK=$name approved=$NEBULA_ACTIVE_VARIANT QA_CI_MATCH=true"
           done
+          if [ "$failures" -gt 0 ]; then
+            echo "::error::NEBULA_LIVE_PARITY_FAILED count=$failures; R38 remains pinned; do not promote R40" >&2
+            exit 1
+          fi
           {
             echo '## NEBULA live exact-byte integrity'
             echo ''
