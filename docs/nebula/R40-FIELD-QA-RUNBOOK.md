@@ -71,4 +71,4 @@ The kit creates `manifest.json`, an explicit 42-item collection checklist, priva
 
     node scripts/nebula-r40-device-progress.mjs /private/NEBULA_R40_DEVICE_QA/manifest.json
 
-The conservative inventory always expects at least **108 source JSONs and 12 source images**, even if a manifest row was accidentally removed. It detects duplicate file contents and never grants a production release. The strict field gate, independent physical-device reviewer and separately approved R40 promotion PR remain mandatory.
+The conservative inventory always expects at least **108 source JSONs and 12 source images**, even if a manifest row was accidentally removed. It counts benchmark JSONs only after checking the same native schema as the local viewer, R38/R40 build identity, MAX/HIGH/ECO, screen orientation, frame reliability, software-GPU exclusion and unique timestamp per phone/build. Invalid files remain missing (and are never silently counted as completed testing). It also detects duplicate file contents and never grants a production release. The strict field gate, independent physical-device reviewer and separately approved R40 promotion PR remain mandatory.
