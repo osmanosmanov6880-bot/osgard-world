@@ -1,0 +1,15 @@
+{
+  "version": "r135-case-progress-w14-20261025",
+  "source_commit": "4d1aec6c5f59f07d4f6bf1c4b97a46379d9d7d9e",
+  "artifact_run_id": 40175524463,
+  "artifact_id": 12592898463,
+  "artifact_name": "osgard-r135-optimized-web-qa",
+  "manifest_sha256": "4a2333a8fdaef0da270a224b85ee8a763170f923f2449635018a74626398d05b",
+  "archive_sha256": "704131eda3a1ba1c3a860690c7f2beb0115bae65d818fc7887c0cb44b9817245",
+  "reviewed_portrait": true,
+  "reviewed_desktop": true,
+  "browser_three_fault_cases": true,
+  "physical_phone_fps_verified": false,
+  "retention_note": "GitHub Actions artifact is temporary. After first exact-SHA publication, only an identical live package may be used as a fail-closed fallback.",
+  "rollback_release_tag": "r135-web-legibility-w11-20261025"
+}
