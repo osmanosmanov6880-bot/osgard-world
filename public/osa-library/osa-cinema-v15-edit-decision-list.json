@@ -1,0 +1,555 @@
+{
+  "schemaVersion": 1,
+  "title": "OSA CINEMA V15 — candidate edit decision list (not published media)",
+  "createdOn": "2026-10-25",
+  "sourceOfTruth": "public/osa-library/media-inventory.csv",
+  "courseSceneCount": 8,
+  "releaseStatus": "EDITORIAL_DRAFT_NO_PLAYABLE_SOURCES",
+  "policies": {
+    "shortLivedSignedLinks": false,
+    "requireExportedOriginals": true,
+    "requireRightsClearance": true,
+    "requireMediaMetadata": true,
+    "requireMeasuredTimecodes": true,
+    "requireLanguageQC": true,
+    "requireCaptionsForSpeech": true,
+    "requireSHA256": true,
+    "allowSyntheticNarrationDisclosure": true
+  },
+  "editorialTargets": {
+    "estimatedSceneDurationSeconds": [
+      35,
+      105
+    ],
+    "notMeasured": true,
+    "overallStyle": "premium documentary; historic monumental library, human subject, cinematic natural light, quiet brass tones"
+  },
+  "scenes": [
+    {
+      "index": 0,
+      "slug": "intelligence-and-imitation",
+      "title": {
+        "en": "Intelligence or imitation?",
+        "ru": "Интеллект или имитация?"
+      },
+      "recordingStatus": "NOT_EDITED",
+      "candidateShots": [
+        {
+          "order": 1,
+          "assetId": "6104b990-ee3b-441b-ba33-cca71f2bb685",
+          "inventorySlug": "macro-eye-reflection",
+          "usage": "Opening hook; human observation versus model output",
+          "reviewStatus": "PENDING_ORIGINAL_EXPORT_AND_RIGHTS_QC",
+          "inPointSeconds": null,
+          "outPointSeconds": null,
+          "verifiedDurationSeconds": null,
+          "rightsApproved": false,
+          "visualQC": false,
+          "finalIncluded": false
+        },
+        {
+          "order": 2,
+          "assetId": "15590a37-f024-477f-998d-5fde5da1b44f",
+          "inventorySlug": "city-aerial-opening",
+          "usage": "Knowledge at urban scale",
+          "reviewStatus": "PENDING_ORIGINAL_EXPORT_AND_RIGHTS_QC",
+          "inPointSeconds": null,
+          "outPointSeconds": null,
+          "verifiedDurationSeconds": null,
+          "rightsApproved": false,
+          "visualQC": false,
+          "finalIncluded": false
+        },
+        {
+          "order": 3,
+          "assetId": "0e3d62ee-04fd-4f8a-979d-2f4898f35932",
+          "inventorySlug": "desk-ai-encounter",
+          "usage": "Return to an ordinary human interaction",
+          "reviewStatus": "PENDING_ORIGINAL_EXPORT_AND_RIGHTS_QC",
+          "inPointSeconds": null,
+          "outPointSeconds": null,
+          "verifiedDurationSeconds": null,
+          "rightsApproved": false,
+          "visualQC": false,
+          "finalIncluded": false
+        }
+      ],
+      "narration": {
+        "ru": {
+          "status": "UNRECORDED",
+          "assetId": null
+        },
+        "en": {
+          "status": "UNRECORDED",
+          "assetId": null
+        }
+      },
+      "captionTracks": {
+        "ru": null,
+        "en": null
+      },
+      "masterVideo": {
+        "status": "UNRECORDED",
+        "file": null,
+        "sha256": null
+      },
+      "educationalAccuracyQC": false
+    },
+    {
+      "index": 1,
+      "slug": "how-language-models-work",
+      "title": {
+        "en": "How language models work",
+        "ru": "Как работают языковые модели"
+      },
+      "recordingStatus": "NOT_EDITED",
+      "candidateShots": [
+        {
+          "order": 1,
+          "assetId": "6cc2162c-c468-472c-b4a4-2f85779e2f51",
+          "inventorySlug": "research-table-overhead",
+          "usage": "Human-readable diagrams composited over a research table",
+          "reviewStatus": "PENDING_ORIGINAL_EXPORT_AND_RIGHTS_QC",
+          "inPointSeconds": null,
+          "outPointSeconds": null,
+          "verifiedDurationSeconds": null,
+          "rightsApproved": false,
+          "visualQC": false,
+          "finalIncluded": false
+        },
+        {
+          "order": 2,
+          "assetId": "94287192-1795-4f25-a5b8-4c0ef4dd0d4a",
+          "inventorySlug": "archival-reading-room",
+          "usage": "Transition from text collection to statistical patterns",
+          "reviewStatus": "PENDING_ORIGINAL_EXPORT_AND_RIGHTS_QC",
+          "inPointSeconds": null,
+          "outPointSeconds": null,
+          "verifiedDurationSeconds": null,
+          "rightsApproved": false,
+          "visualQC": false,
+          "finalIncluded": false
+        }
+      ],
+      "narration": {
+        "ru": {
+          "status": "UNRECORDED",
+          "assetId": null
+        },
+        "en": {
+          "status": "UNRECORDED",
+          "assetId": null
+        }
+      },
+      "captionTracks": {
+        "ru": null,
+        "en": null
+      },
+      "masterVideo": {
+        "status": "UNRECORDED",
+        "file": null,
+        "sha256": null
+      },
+      "educationalAccuracyQC": false
+    },
+    {
+      "index": 2,
+      "slug": "power-of-knowledge",
+      "title": {
+        "en": "The power of knowledge",
+        "ru": "Власть знаний"
+      },
+      "recordingStatus": "NOT_EDITED",
+      "candidateShots": [
+        {
+          "order": 1,
+          "assetId": "dd30ba82-45ae-4bc9-b3d8-ee6c1f053f58",
+          "inventorySlug": "historical-library",
+          "usage": "Historical scale and access to knowledge",
+          "reviewStatus": "PENDING_ORIGINAL_EXPORT_AND_RIGHTS_QC",
+          "inPointSeconds": null,
+          "outPointSeconds": null,
+          "verifiedDurationSeconds": null,
+          "rightsApproved": false,
+          "visualQC": false,
+          "finalIncluded": false
+        },
+        {
+          "order": 2,
+          "assetId": "c6639cfd-51e4-4cea-963e-0ba9ace3b442",
+          "inventorySlug": "global-city-night",
+          "usage": "Infrastructure and uneven access",
+          "reviewStatus": "PENDING_ORIGINAL_EXPORT_AND_RIGHTS_QC",
+          "inPointSeconds": null,
+          "outPointSeconds": null,
+          "verifiedDurationSeconds": null,
+          "rightsApproved": false,
+          "visualQC": false,
+          "finalIncluded": false
+        },
+        {
+          "order": 3,
+          "assetId": "fa0e7864-2a52-4a47-aab4-ec2314e9ba56",
+          "inventorySlug": "historical-reenactment",
+          "usage": "Past versus present; avoid suggesting footage is real archival evidence",
+          "reviewStatus": "PENDING_ORIGINAL_EXPORT_AND_RIGHTS_QC",
+          "inPointSeconds": null,
+          "outPointSeconds": null,
+          "verifiedDurationSeconds": null,
+          "rightsApproved": false,
+          "visualQC": false,
+          "finalIncluded": false
+        }
+      ],
+      "narration": {
+        "ru": {
+          "status": "UNRECORDED",
+          "assetId": null
+        },
+        "en": {
+          "status": "UNRECORDED",
+          "assetId": null
+        }
+      },
+      "captionTracks": {
+        "ru": null,
+        "en": null
+      },
+      "masterVideo": {
+        "status": "UNRECORDED",
+        "file": null,
+        "sha256": null
+      },
+      "educationalAccuracyQC": false
+    },
+    {
+      "index": 3,
+      "slug": "signal-and-noise",
+      "title": {
+        "en": "Signal and noise",
+        "ru": "Сигнал и шум"
+      },
+      "recordingStatus": "NOT_EDITED",
+      "candidateShots": [
+        {
+          "order": 1,
+          "assetId": "c5434d77-09af-4294-9d3a-2221793d00a4",
+          "inventorySlug": "macro-eye-alt",
+          "usage": "Visual emphasis on deceptive certainty",
+          "reviewStatus": "PENDING_ORIGINAL_EXPORT_AND_RIGHTS_QC",
+          "inPointSeconds": null,
+          "outPointSeconds": null,
+          "verifiedDurationSeconds": null,
+          "rightsApproved": false,
+          "visualQC": false,
+          "finalIncluded": false
+        },
+        {
+          "order": 2,
+          "assetId": "6cc2162c-c468-472c-b4a4-2f85779e2f51",
+          "inventorySlug": "research-table-overhead",
+          "usage": "Overlay independent versus repeated sources",
+          "reviewStatus": "PENDING_ORIGINAL_EXPORT_AND_RIGHTS_QC",
+          "inPointSeconds": null,
+          "outPointSeconds": null,
+          "verifiedDurationSeconds": null,
+          "rightsApproved": false,
+          "visualQC": false,
+          "finalIncluded": false
+        }
+      ],
+      "narration": {
+        "ru": {
+          "status": "UNRECORDED",
+          "assetId": null
+        },
+        "en": {
+          "status": "UNRECORDED",
+          "assetId": null
+        }
+      },
+      "captionTracks": {
+        "ru": null,
+        "en": null
+      },
+      "masterVideo": {
+        "status": "UNRECORDED",
+        "file": null,
+        "sha256": null
+      },
+      "educationalAccuracyQC": false
+    },
+    {
+      "index": 4,
+      "slug": "verify-an-ai-answer",
+      "title": {
+        "en": "Verify the answer",
+        "ru": "Проверка ответа"
+      },
+      "recordingStatus": "NOT_EDITED",
+      "candidateShots": [
+        {
+          "order": 1,
+          "assetId": "94287192-1795-4f25-a5b8-4c0ef4dd0d4a",
+          "inventorySlug": "archival-reading-room",
+          "usage": "Locate the primary source; demonstrate with fictional claims",
+          "reviewStatus": "PENDING_ORIGINAL_EXPORT_AND_RIGHTS_QC",
+          "inPointSeconds": null,
+          "outPointSeconds": null,
+          "verifiedDurationSeconds": null,
+          "rightsApproved": false,
+          "visualQC": false,
+          "finalIncluded": false
+        },
+        {
+          "order": 2,
+          "assetId": "3af96f23-5eaf-4a99-87a1-981515a54b88",
+          "inventorySlug": "designer-engineer-work",
+          "usage": "A human checking a claim and recording evidence",
+          "reviewStatus": "PENDING_ORIGINAL_EXPORT_AND_RIGHTS_QC",
+          "inPointSeconds": null,
+          "outPointSeconds": null,
+          "verifiedDurationSeconds": null,
+          "rightsApproved": false,
+          "visualQC": false,
+          "finalIncluded": false
+        }
+      ],
+      "narration": {
+        "ru": {
+          "status": "UNRECORDED",
+          "assetId": null
+        },
+        "en": {
+          "status": "UNRECORDED",
+          "assetId": null
+        }
+      },
+      "captionTracks": {
+        "ru": null,
+        "en": null
+      },
+      "masterVideo": {
+        "status": "UNRECORDED",
+        "file": null,
+        "sha256": null
+      },
+      "educationalAccuracyQC": false
+    },
+    {
+      "index": 5,
+      "slug": "privacy-before-prompting",
+      "title": {
+        "en": "Privacy before prompting",
+        "ru": "Приватность перед запросом"
+      },
+      "recordingStatus": "NOT_EDITED",
+      "candidateShots": [
+        {
+          "order": 1,
+          "assetId": "0e3d62ee-04fd-4f8a-979d-2f4898f35932",
+          "inventorySlug": "desk-ai-encounter",
+          "usage": "Illustrate human/device boundary without showing real personal data",
+          "reviewStatus": "PENDING_ORIGINAL_EXPORT_AND_RIGHTS_QC",
+          "inPointSeconds": null,
+          "outPointSeconds": null,
+          "verifiedDurationSeconds": null,
+          "rightsApproved": false,
+          "visualQC": false,
+          "finalIncluded": false
+        },
+        {
+          "order": 2,
+          "assetId": "54fade71-a159-4e09-81ba-30eb1a7791da",
+          "inventorySlug": "observatory-reflection",
+          "usage": "Moment to consider risk and consent",
+          "reviewStatus": "PENDING_ORIGINAL_EXPORT_AND_RIGHTS_QC",
+          "inPointSeconds": null,
+          "outPointSeconds": null,
+          "verifiedDurationSeconds": null,
+          "rightsApproved": false,
+          "visualQC": false,
+          "finalIncluded": false
+        }
+      ],
+      "narration": {
+        "ru": {
+          "status": "UNRECORDED",
+          "assetId": null
+        },
+        "en": {
+          "status": "UNRECORDED",
+          "assetId": null
+        }
+      },
+      "captionTracks": {
+        "ru": null,
+        "en": null
+      },
+      "masterVideo": {
+        "status": "UNRECORDED",
+        "file": null,
+        "sha256": null
+      },
+      "educationalAccuracyQC": false
+    },
+    {
+      "index": 6,
+      "slug": "human-in-the-loop",
+      "title": {
+        "en": "Human-in-the-loop decisions",
+        "ru": "Человек принимает решение"
+      },
+      "recordingStatus": "NOT_EDITED",
+      "candidateShots": [
+        {
+          "order": 1,
+          "assetId": "3af96f23-5eaf-4a99-87a1-981515a54b88",
+          "inventorySlug": "designer-engineer-work",
+          "usage": "Accountable professional at work",
+          "reviewStatus": "PENDING_ORIGINAL_EXPORT_AND_RIGHTS_QC",
+          "inPointSeconds": null,
+          "outPointSeconds": null,
+          "verifiedDurationSeconds": null,
+          "rightsApproved": false,
+          "visualQC": false,
+          "finalIncluded": false
+        },
+        {
+          "order": 2,
+          "assetId": "5902bfab-7c2f-4752-ae92-7fbb4e57c10f",
+          "inventorySlug": "desk-before-sunrise",
+          "usage": "Human review of an important decision",
+          "reviewStatus": "PENDING_ORIGINAL_EXPORT_AND_RIGHTS_QC",
+          "inPointSeconds": null,
+          "outPointSeconds": null,
+          "verifiedDurationSeconds": null,
+          "rightsApproved": false,
+          "visualQC": false,
+          "finalIncluded": false
+        }
+      ],
+      "narration": {
+        "ru": {
+          "status": "UNRECORDED",
+          "assetId": null
+        },
+        "en": {
+          "status": "UNRECORDED",
+          "assetId": null
+        }
+      },
+      "captionTracks": {
+        "ru": null,
+        "en": null
+      },
+      "masterVideo": {
+        "status": "UNRECORDED",
+        "file": null,
+        "sha256": null
+      },
+      "educationalAccuracyQC": false
+    },
+    {
+      "index": 7,
+      "slug": "investigate-the-future",
+      "title": {
+        "en": "Investigate the future",
+        "ru": "Исследуйте будущее"
+      },
+      "recordingStatus": "NOT_EDITED",
+      "candidateShots": [
+        {
+          "order": 1,
+          "assetId": "67ee3e6f-8d56-4873-9bb6-96a0dbeb02c6",
+          "inventorySlug": "human-horizon",
+          "usage": "Hopeful final wide shot",
+          "reviewStatus": "PENDING_ORIGINAL_EXPORT_AND_RIGHTS_QC",
+          "inPointSeconds": null,
+          "outPointSeconds": null,
+          "verifiedDurationSeconds": null,
+          "rightsApproved": false,
+          "visualQC": false,
+          "finalIncluded": false
+        },
+        {
+          "order": 2,
+          "assetId": "5902bfab-7c2f-4752-ae92-7fbb4e57c10f",
+          "inventorySlug": "desk-before-sunrise",
+          "usage": "Concrete personal next step",
+          "reviewStatus": "PENDING_ORIGINAL_EXPORT_AND_RIGHTS_QC",
+          "inPointSeconds": null,
+          "outPointSeconds": null,
+          "verifiedDurationSeconds": null,
+          "rightsApproved": false,
+          "visualQC": false,
+          "finalIncluded": false
+        },
+        {
+          "order": 3,
+          "assetId": "ae6c3ed6-010a-487d-b52d-867793229af2",
+          "inventorySlug": "modern-city-wide",
+          "usage": "Closing perspective on scale and human agency",
+          "reviewStatus": "PENDING_ORIGINAL_EXPORT_AND_RIGHTS_QC",
+          "inPointSeconds": null,
+          "outPointSeconds": null,
+          "verifiedDurationSeconds": null,
+          "rightsApproved": false,
+          "visualQC": false,
+          "finalIncluded": false
+        }
+      ],
+      "narration": {
+        "ru": {
+          "status": "UNRECORDED",
+          "assetId": null
+        },
+        "en": {
+          "status": "UNRECORDED",
+          "assetId": null
+        }
+      },
+      "captionTracks": {
+        "ru": null,
+        "en": null
+      },
+      "masterVideo": {
+        "status": "UNRECORDED",
+        "file": null,
+        "sha256": null
+      },
+      "educationalAccuracyQC": false
+    }
+  ],
+  "musicCandidates": [
+    {
+      "assetId": "4021f6f1-fb5a-455a-9da2-b44d3a699878",
+      "inventorySlug": "knowledge-horizon-music",
+      "status": "PENDING_RIGHTS_AND_MIX_QC"
+    },
+    {
+      "assetId": "0d7362d2-20d1-4ef8-85f8-e8b854efc4e9",
+      "inventorySlug": "beyond-the-model-underscore",
+      "status": "PENDING_RIGHTS_AND_MIX_QC"
+    }
+  ],
+  "voiceCandidates": [
+    {
+      "assetId": "dab2973c-fd32-4e5e-b82c-c7d593b28b27",
+      "inventorySlug": "russian-opening-narration",
+      "status": "PENDING_TRANSCRIPT_RIGHTS_AND_LANGUAGE_QC"
+    },
+    {
+      "assetId": "6be66c9c-16ac-4980-8cac-d1c6716d4d91",
+      "inventorySlug": "russian-opening-teaser",
+      "status": "PENDING_TRANSCRIPT_RIGHTS_AND_LANGUAGE_QC"
+    }
+  ],
+  "publicationGate": {
+    "approvedSceneMasters": 0,
+    "approvedAudioTracks": 0,
+    "approvedSubtitleTracks": 0,
+    "approvedPermanentLinks": 0,
+    "ready": false
+  }
+}
