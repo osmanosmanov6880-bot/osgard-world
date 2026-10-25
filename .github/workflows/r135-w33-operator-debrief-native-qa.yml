@@ -126,10 +126,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p w33-godot-native/build/windows
-          godot --headless --path w33-godot-native \
+          cd w33-godot-native
+          mkdir -p build/windows
+          godot --headless --path . \
             --export-release "Windows Desktop" \
-            w33-godot-native/build/windows/OSGARD_FIELD_LAB_W33.exe \
+            build/windows/OSGARD_FIELD_LAB_W33.exe \
             2>&1 | tee "$RUNNER_TEMP/w33-windows-export.log"
           if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/w33-windows-export.log"; then
             echo '::error::Godot Windows export emitted engine errors'
