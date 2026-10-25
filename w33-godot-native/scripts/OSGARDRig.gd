@@ -1,5 +1,8 @@
 extends Node3D
 class_name OSGARDRig
+## W35 OBSIDIAN PROTOCOL: standalone procedural cinematic architecture.
+## This is visual-only; all simulated safety locks remain in OSGARDCore.
+const ObsidianStage = preload("res://scripts/OSGARDObsidianStage.gd")
 ## Procedurally modelled, original native Godot 3D teaching rig.
 ## Rotor and hatch follow the read-only simulation state; they cannot
 ## bypass the service interlock. Compatibility renderer, HERO/ECO budgets.
@@ -14,6 +17,9 @@ var _previous_quality: String = ""
 # True Godot MultiMesh: ten status segments in ONE draw batch. Color follows
 # read-only simulator data, never commands the simulated mechanism.
 var live_signal_bar: MultiMeshInstance3D
+var obsidian_stage: Node3D
+var _shot_target: Vector3 = Vector3.ZERO
+var _shot_initialized: bool = false
 var _signal_last_signature: String = ""
 
 
@@ -63,10 +69,10 @@ func _construct_rig() -> void:
     environment.name = "StudioAtmosphere"
     var env := Environment.new()
     env.background_mode = Environment.BG_COLOR
-    env.background_color = Color("07121b")
+    env.background_color = Color("05080d")
     env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-    env.ambient_light_color = Color("7f9bb0")
-    env.ambient_light_energy = 0.32
+    env.ambient_light_color = Color("617181")
+    env.ambient_light_energy = 0.22
     environment.environment = env
     add_child(environment)
 
@@ -112,7 +118,10 @@ func _construct_rig() -> void:
     hatch_hinge.position = Vector3(-2.35, 1.05, 1.0)
     add_child(hatch_hinge)
     _mesh_box(hatch_hinge, "InterlockedCopperEdge", Vector3(4.75, 0.12, 0.18), Vector3(2.37, 0, 0.0), brass)
-    _mesh_box(hatch_hinge, "HatchShield", Vector3(4.78, 2.22, 0.18), Vector3(2.37, 1.10, 0), _surface(Color(0.20, 0.36, 0.40, 0.52), 0.08, 0.22))
+    var safety_glass := _surface(Color(0.10, 0.19, 0.22, 0.23), 0.04, 0.15)
+    safety_glass.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+    safety_glass.cull_mode = BaseMaterial3D.CULL_DISABLED
+    _mesh_box(hatch_hinge, "HatchShield", Vector3(4.78, 2.22, 0.075), Vector3(2.37, 1.10, 0), safety_glass)
     _mesh_box(hatch_hinge, "HatchGlassRim", Vector3(4.62, 0.10, 0.28), Vector3(2.37, 2.20, 0), copper)
     for x in [0.15, 4.57]:
         _mesh_box(hatch_hinge, "HatchRim", Vector3(0.11, 2.18, 0.26), Vector3(x, 1.10, 0), copper)
@@ -142,9 +151,14 @@ func _construct_rig() -> void:
     warm.omni_range = 12.0
     warm.shadow_enabled = false
     add_child(warm)
+    obsidian_stage = ObsidianStage.new()
+    obsidian_stage.name = "ObsidianProtocolCinematicComplex"
+    add_child(obsidian_stage)
     camera = Camera3D.new()
     camera.name = "OperatorInspectionCamera"
-    camera.fov = 54.0
+    camera.fov = 48.0
+    camera.near = 0.12
+    camera.far = 70.0
     camera.current = true
     add_child(camera)
     set_view(0)
@@ -183,12 +197,15 @@ func set_view(index: int) -> void:
         return
     _previous_view = index
     if index == 2:
-        camera.position = Vector3(-3.35, 2.65, 5.0)
+        _shot_target = Vector3(-3.45, 2.45, 5.25)
     elif index == 1:
-        camera.position = Vector3(4.5, 3.0, 5.2)
+        _shot_target = Vector3(4.20, 2.75, 5.30)
     else:
-        camera.position = Vector3(6.4, 4.15, 8.5)
-    camera.look_at(Vector3(0, 1.60, 0), Vector3.UP)
+        _shot_target = Vector3(5.65, 3.45, 8.00)
+    if not _shot_initialized:
+        camera.position = _shot_target
+        _shot_initialized = true
+    camera.look_at(Vector3(0, 1.66, 0.35), Vector3.UP)
 
 func set_quality(mode: String) -> void:
     if _previous_quality == mode:
@@ -196,6 +213,8 @@ func set_quality(mode: String) -> void:
     _previous_quality = mode
     for detail in hero_geometry:
         detail.visible = mode == "hero"
+    if obsidian_stage != null:
+        obsidian_stage.set_quality(mode)
 
 func apply_simulation(state: Dictionary) -> void:
     if rotor == null or hatch_hinge == null:
@@ -203,7 +222,14 @@ func apply_simulation(state: Dictionary) -> void:
     rotor.rotation.z = float(state.get("rotor_angle", 0.0))
     hatch_hinge.rotation.z = -float(state.get("hatch", 0.0)) * 1.10
     set_view(int(state.get("view", 0)))
+    # Sine-like interpolation without teleports; visual camera is never a game input.
+    if _shot_initialized:
+        camera.position = camera.position.lerp(_shot_target, 0.075)
+        camera.look_at(Vector3(0, 1.66, 0.35), Vector3.UP)
     set_quality(str(state.get("quality", "hero")))
+    if obsidian_stage != null:
+        obsidian_stage.set_alarm(bool(state.get("incident_triggered", false)) or bool(state.get("last_error", false)))
+        obsidian_stage.set_running(bool(state.get("drive_on", false)))
     var case_id := int(state.get("fault", -1))
     var danger := bool(state.get("incident_triggered", false)) or bool(state.get("last_error", false))
     for i in range(signal_lights.size()):
@@ -239,3 +265,8 @@ func apply_simulation(state: Dictionary) -> void:
         if complete:
             tone = Color("77dfce")
         live_signal_bar.multimesh.set_instance_color(i, tone)
+
+func cinematic_qa_readout() -> Dictionary:
+    if obsidian_stage == null:
+        return {}
+    return obsidian_stage.qa_readout()
