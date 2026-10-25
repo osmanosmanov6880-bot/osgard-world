@@ -7,6 +7,7 @@ import json
 import re
 import struct
 import zipfile
+import zlib
 from pathlib import Path
 
 VERSION = "r135-premium-learning-w18-candidate-20261025"
@@ -68,6 +69,30 @@ def verify_png(path: Path, expected: str) -> dict:
     width, height = struct.unpack(">II", header[16:24])
     require(width >= 300 and height >= 300 and width <= 8000 and height <= 8000,
             "invalid original screenshot dimensions " + path.name)
+    # PNG signature alone is insufficient: require exact CRC-checked original
+    # chunks through IEND, not a forged 24-byte header with arbitrary padding.
+    data = path.read_bytes()
+    offset = 8
+    saw_image = False
+    saw_end = False
+    while offset + 12 <= len(data):
+        length = struct.unpack(">I", data[offset:offset+4])[0]
+        finish = offset + 8 + length
+        require(length <= 50_000_000 and finish + 4 <= len(data),
+                "truncated or oversized PNG chunk " + path.name)
+        marker = data[offset+4:offset+8]
+        expected_crc = struct.unpack(">I", data[finish:finish+4])[0]
+        real_crc = zlib.crc32(data[offset+4:finish]) & 0xffffffff
+        require(expected_crc == real_crc, "PNG chunk CRC mismatch " + path.name)
+        if marker == b"IDAT":
+            saw_image = True
+        if marker == b"IEND":
+            require(length == 0 and finish + 4 == len(data),
+                    "PNG has trailing data or invalid IEND " + path.name)
+            saw_end = True
+            break
+        offset = finish + 4
+    require(saw_image and saw_end, "incomplete real PNG " + path.name)
     require(file_digest(path) == expected, "original image hash does not match review " + path.name)
     return {"width": width, "height": height, "sha256": expected}
 
