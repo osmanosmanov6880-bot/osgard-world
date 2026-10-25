@@ -1501,7 +1501,7 @@ func _apply_responsive_layout() -> void:
 		# Remove the duplicate lower instruction bar to expose more road.
 		controls_panel.visible = not bool(frames["portrait_focus"])
 		_set_panel_frame(journal_panel,frames["journal"],0,0,0,0)
-		_set_panel_frame(diagnostic_panel,frames["diagnostics"],0,0,0,0)
+		_set_panel_frame(diagnostic_panel,HORIZON_LAYOUT.diagnostics_frame(screen),0,0,0,0)
 		_set_panel_frame(toast_panel,frames["toast"],0,0,0,0)
 		var modal: Rect2 = frames["modal"]
 		var panel_frame := Rect2(modal.position-screen*0.5,modal.size)
@@ -1525,7 +1525,7 @@ func _apply_responsive_layout() -> void:
 		_set_panel_frame(controls_panel,Rect2(290,-92,-672,68),0,1,1,1)
 		controls_panel.visible = true
 		_set_panel_frame(journal_panel,Rect2(-476,186,452,440),1,1,0,0)
-		_set_panel_frame(diagnostic_panel,Rect2(24,116,360,182),0,0,0,0)
+		_set_panel_frame(diagnostic_panel,HORIZON_LAYOUT.diagnostics_frame(screen),0,0,0,0)
 		_set_panel_frame(toast_panel,Rect2(-252,24,504,64),0.5,0.5,0,0)
 		# The cabinet docks left, leaving the car and the city visible in play.
 		_set_panel_frame(strategy_window,HORIZON_LAYOUT.strategy_dock(screen),0,0,0,0)
