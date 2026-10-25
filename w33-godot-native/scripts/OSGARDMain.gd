@@ -133,6 +133,8 @@ func _publish_web_accessibility(snap: Dictionary) -> void:
         "viewport": [roundi(size.x), roundi(size.y)],
         "scroll": int(scroll.scroll_vertical),
         "hero_stage": _web_control_rect(stage_shell),
+        "dial_a": _web_control_rect(dial_a),
+        "dial_b": _web_control_rect(dial_b),
         "engine": _web_control_rect(engine_btn),
         "hatch": _web_control_rect(hatch_btn),
         "scan": _web_control_rect(scan_btn),
@@ -516,6 +518,7 @@ func _process(delta: float) -> void:
     if scene_3d != null:
         var visual: Dictionary = core.snapshot()
         visual["quality"] = core.settings["quality"]
+        visual["reduced_motion"] = bool(core.settings["reduced_motion"])
         if bool(core.settings["reduced_motion"]):
             visual["rotor_angle"] = 0.0
         scene_3d.apply_simulation(visual)

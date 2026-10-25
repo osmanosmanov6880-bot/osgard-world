@@ -222,12 +222,15 @@ func apply_simulation(state: Dictionary) -> void:
     rotor.rotation.z = float(state.get("rotor_angle", 0.0))
     hatch_hinge.rotation.z = -float(state.get("hatch", 0.0)) * 1.10
     set_view(int(state.get("view", 0)))
-    # Sine-like interpolation without teleports; visual camera is never a game input.
+    # User accessibility choice: reduced motion is an immediate camera cut.
+    # Otherwise smoothly ease through the 3D vault, not a UI-only transition.
+    var reduced_motion: bool = bool(state.get("reduced_motion", false))
     if _shot_initialized:
-        camera.position = camera.position.lerp(_shot_target, 0.075)
+        camera.position = _shot_target if reduced_motion else camera.position.lerp(_shot_target, 0.075)
         camera.look_at(Vector3(0, 1.66, 0.35), Vector3.UP)
     set_quality(str(state.get("quality", "hero")))
     if obsidian_stage != null:
+        obsidian_stage.set_reduced_motion(reduced_motion)
         obsidian_stage.set_alarm(bool(state.get("incident_triggered", false)) or bool(state.get("last_error", false)))
         obsidian_stage.set_running(bool(state.get("drive_on", false)))
     var case_id := int(state.get("fault", -1))

@@ -1,4 +1,4 @@
-name: OSGARD W33 native 6-case QA, action debrief, WebGL build and original-byte inspection
+name: OSGARD W33-W38 native missions, OBSIDIAN cinema, 6-case WebGL and Win64 QA
 on:
   push:
     branches: [master]
@@ -88,6 +88,15 @@ jobs:
           timeout --signal=TERM --kill-after=5s 150s godot --headless --path w33-godot-native --script res://tests/test_w36_dials.gd 2>&1 | tee "$RUNNER_TEMP/w36-dials.log"
           if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/w36-dials.log"; then
             echo '::error::W36 native dial integration produced engine errors'
+            exit 1
+          fi
+      - name: W37 actual cinematic alarm and reduced-motion camera native regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 150s godot --headless --path w33-godot-native --script res://tests/test_w37_visual_responses.gd 2>&1 | tee "$RUNNER_TEMP/w37-light-camera.log"
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/w37-light-camera.log"; then
+            echo '::error::Cinematic 3D response emitted Godot errors'
             exit 1
           fi
       - name: Create real Godot 4.4.1 WebGL export from the same native-tested commit

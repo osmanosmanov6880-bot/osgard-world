@@ -82,6 +82,22 @@ def check(directory,out,sha):
                         assert stats['width']>=300 and stats['height']>=250,stats
                         assert stats['color_bins']>=18 and stats['deviation']>11,('blank Godot canvas',stats)
                         assert stats['active_height_fraction']>=0.70,('Godot letterboxed or shrunk canvas; NOT touch-ready',stats)
+                        # W38 native Godot HUD geometry, not a mocked HTML image:
+                        # require a dominating PC 3D stage and reachable portrait UI.
+                        marker=page.locator('#osgard-native-state')
+                        marker.wait_for(state='attached',timeout=15000)
+                        frame_geometry=json.loads(marker.get_attribute('data-geometry',timeout=12000))
+                        stage=frame_geometry.get('hero_stage')
+                        assert stage and len(stage)==4,('Actual OBSIDIAN 3D stage missing',frame_geometry)
+                        if touch:
+                            assert 250<=stage[3]<=310,('Phone stage consumes inaccessible height',stage)
+                            assert stage[2]>=290,('Phone stage too narrow',stage)
+                        else:
+                            assert stage[3]>=490,('Desktop cinematic stage insufficiently prominent',stage)
+                            assert stage[2]>=900,('Desktop stage not full-width',stage)
+                        assert 'dial_a' in frame_geometry and 'dial_b' in frame_geometry,('Native W36 knob rectangles missing',frame_geometry)
+                        stats['hero_stage_rectangle']=stage
+                        stats['native_dial_count']=2
                         assert not errors,('Uncaught JS errors',errors)
                         filename=name+'.png'
                         (out/filename).write_bytes(frame)
