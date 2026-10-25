@@ -1,0 +1,490 @@
+extends Control
+## OSGARD R135 / approved luxury UI art direction, implemented as real Godot UI.
+## No external images, invented controls, remote commands or fabricated telemetry.
+## Six guided chapters control the EXISTING safety-first simulation.
+const TITLES_RU = [
+    "ПЕРВОЕ ЗНАКОМСТВО", "ОСМОТР УСТАНОВКИ", "БЕЗОПАСНОЕ ОБСЛУЖИВАНИЕ",
+    "ДИАГНОСТИКА ОПТИКИ", "ТРИ НЕИСПРАВНОСТИ", "ИТОГ И РЕЗУЛЬТАТЫ"
+]
+const TITLES_EN = [
+    "FIRST CONTACT", "INSPECT THE MACHINE", "SAFETY-FIRST SERVICE",
+    "OPTICAL DIAGNOSTICS", "THREE FAULT SCENARIOS", "RESULTS AND REVIEW"
+]
+const DETAILS_RU = [
+    "Вы — новый инженер учебной лаборатории OSGARD. Изучите управление, осмотрите установку и пройдите настоящие игровые сценарии диагностики. Это симуляция, а не инструкция для работы с действующим оборудованием.",
+    "Осмотрите промышленную линию с разных сторон. Смените ракурс кнопкой внизу или клавишей V. Камеру можно вращать мышью или касанием, масштаб — колёсиком или жестом.",
+    "Сначала остановите привод, затем откройте сервисный люк. Закройте его и дождитесь полного запирания перед запуском. Защита должна отклонять опасный порядок действий.",
+    "Запустите диагностический сценарий. Остановите привод, откройте люк, дождитесь открытия, выберите подсвеченный узел и сканируйте его. Затем закройте люк и безопасно возобновите работу.",
+    "Повторите диагностику для трёх учебных неисправностей: оптика, охлаждение и блокировка люка. Для каждой выполняйте настоящий игровой порядок действий и проверяйте обратную связь.",
+    "Сравните результат трёх сценариев, оцените ошибки и время. Пройденные учебные кейсы сохраняются только на вашем устройстве. Любое действие с реальной техникой требует допуска и полной энергетической изоляции."
+]
+const DETAILS_EN = [
+    "You are the new OSGARD training-lab engineer. Learn the controls, inspect the machine and finish real simulated diagnostics. This is a game, NOT a real-equipment maintenance guide.",
+    "Inspect the industrial line from different viewpoints. Use NEXT VIEW or V. Drag the camera with mouse/touch; use wheel or pinch to zoom.",
+    "Stop the drive BEFORE opening the service hatch. Close it and wait until fully sealed before restarting. Unsafe action order must be blocked.",
+    "Start a diagnostic case. Stop the drive, open the hatch, wait for full travel, choose the highlighted view and scan. Close and safely restart.",
+    "Complete all three simulated cases: optics, cooling and hatch interlock. Each uses real game input and gives safety feedback.",
+    "Review your results, elapsed time and errors. Records remain local on your device. Real machinery demands authorization and verified energy isolation."
+]
+const HELP_RU = [
+    "НАЧНИТЕ С КНОПКИ НИЖЕ. 6 учебных глав, без пропуска правил безопасности.",
+    "ПОДСКАЗКА: V — ракурс, мышь или палец — камера, колесо или жест — масштаб.",
+    "ПОРЯДОК: остановка → открытие → закрытие → полная фиксация → пуск.",
+    "ПОРЯДОК: остановка → люк → ракурс → сканирование → закрытие → пуск.",
+    "ПОДСКАЗКА: правильный ракурс указан в задании. Подсвеченный индикатор показывает учебную неисправность.",
+    "ВЫ ПРОШЛИ УЧЕБНУЮ ЛАБОРАТОРИЮ. Изучите результаты и повторите испытания для улучшения счёта."
+]
+const HELP_EN = [
+    "START BELOW. Six chapters; safety rules cannot be bypassed.",
+    "TIP: V for viewpoints, mouse or touch to orbit; wheel/pinch to zoom.",
+    "ORDER: stop → open → close → fully seal → restart.",
+    "ORDER: stop → hatch → correct viewpoint → scan → close → restart.",
+    "TIP: the objective shows the required camera. The lit marker shows the simulated fault.",
+    "TRAINING COMPLETE. Review your results and repeat challenges to improve your score."
+]
+const SAVE_PATH = "user://r135_luxury_tutorial_v1.cfg"
+var host: Node3D
+var locale: String = "ru"
+var begun: bool = false
+var finished: bool = false
+var expanded: bool = true
+var step: int = 0
+var state_cache: Dictionary = {}
+var view_cache: int = 0
+var brand: PanelContainer
+var brand_title: Label
+var brand_subtitle: Label
+var language_button: Button
+var collapse_button: Button
+var card: PanelContainer
+var rail: PanelContainer
+var eyebrow: Label
+var title_label: Label
+var description_label: Label
+var hint_label: Label
+var metrics_label: Label
+var safety_label: Label
+var primary_button: Button
+var guide_button: Button
+var rail_header: Label
+var rail_rows: Array[Label] = []
+
+func _ready() -> void:
+    name = "R135LuxuryTraining"
+    mouse_filter = Control.MOUSE_FILTER_IGNORE
+    set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+    _build()
+    _load_progress()
+    _present()
+    get_viewport().size_changed.connect(_layout)
+    call_deferred("_layout")
+
+func _glass(accent: bool = false) -> StyleBoxFlat:
+    var s := StyleBoxFlat.new()
+    s.bg_color = Color(0.014, 0.022, 0.032, 0.94)
+    s.border_color = Color(0.75, 0.44, 0.22, 0.88) if accent else Color(0.25, 0.36, 0.43, 0.82)
+    s.set_border_width_all(1)
+    s.set_corner_radius_all(12)
+    s.set_content_margin_all(14)
+    s.shadow_color = Color(0.0, 0.0, 0.0, 0.40)
+    s.shadow_size = 12
+    return s
+
+func _button_style(primary: bool = false, hover: bool = false) -> StyleBoxFlat:
+    var s := StyleBoxFlat.new()
+    s.bg_color = Color(0.62, 0.29, 0.10, 0.97) if primary else Color(0.050, 0.090, 0.12, 0.97)
+    if hover:
+        s.bg_color = Color(0.87, 0.44, 0.17, 1.0) if primary else Color(0.10, 0.18, 0.22, 1.0)
+    s.border_color = Color(1.0, 0.63, 0.34, 0.96) if primary else Color(0.28, 0.54, 0.62, 0.86)
+    s.set_border_width_all(1)
+    s.set_corner_radius_all(8)
+    s.set_content_margin_all(10)
+    return s
+
+func _label(parent: Node, color: Color, font_size: int) -> Label:
+    var l := Label.new()
+    l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+    l.add_theme_color_override("font_color", color)
+    l.add_theme_font_size_override("font_size", font_size)
+    parent.add_child(l)
+    return l
+
+func _styled_button(text_value: String, primary: bool) -> Button:
+    var b := Button.new()
+    b.text = text_value
+    b.focus_mode = Control.FOCUS_ALL
+    b.clip_text = true
+    b.custom_minimum_size = Vector2(0, 46)
+    b.add_theme_font_size_override("font_size", 15)
+    b.add_theme_color_override("font_color", Color(0.97, 0.98, 0.97))
+    b.add_theme_stylebox_override("normal", _button_style(primary))
+    b.add_theme_stylebox_override("hover", _button_style(primary, true))
+    b.add_theme_stylebox_override("pressed", _button_style(primary, true))
+    b.add_theme_stylebox_override("focus", _button_style(false, true))
+    return b
+
+func _build() -> void:
+    brand = PanelContainer.new()
+    brand.name = "LuxuryBrandHeader"
+    brand.add_theme_stylebox_override("panel", _glass())
+    add_child(brand)
+    var header := HBoxContainer.new()
+    header.add_theme_constant_override("separation", 9)
+    brand.add_child(header)
+    var icon: Control = preload("res://R135PremiumEmblem.gd").new()
+    icon.custom_minimum_size = Vector2(50, 50)
+    header.add_child(icon)
+    var headings := VBoxContainer.new()
+    headings.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+    headings.add_theme_constant_override("separation", 0)
+    header.add_child(headings)
+    brand_title = _label(headings, Color(0.95, 0.96, 0.97), 23)
+    brand_title.text = "O S G A R D"
+    brand_subtitle = _label(headings, Color(0.97, 0.57, 0.30), 12)
+    brand_subtitle.text = "S E R V I C E   L A B"
+    language_button = _styled_button("EN", false)
+    language_button.name = "LuxurySwitchLanguage"
+    language_button.custom_minimum_size = Vector2(52, 46)
+    language_button.pressed.connect(_switch_language)
+    header.add_child(language_button)
+    collapse_button = _styled_button("−", false)
+    collapse_button.name = "LuxuryToggleGuide"
+    collapse_button.custom_minimum_size = Vector2(46, 46)
+    collapse_button.pressed.connect(_toggle_expanded)
+    header.add_child(collapse_button)
+
+    card = PanelContainer.new()
+    card.name = "LuxuryTrainingCard"
+    card.add_theme_stylebox_override("panel", _glass(true))
+    add_child(card)
+    var stack := VBoxContainer.new()
+    stack.add_theme_constant_override("separation", 8)
+    card.add_child(stack)
+    eyebrow = _label(stack, Color(0.98, 0.58, 0.29), 12)
+    title_label = _label(stack, Color(0.95, 0.98, 0.99), 24)
+    var rule := ColorRect.new()
+    rule.color = Color(0.63, 0.37, 0.19, 0.80)
+    rule.custom_minimum_size = Vector2(0, 1)
+    stack.add_child(rule)
+    var scroll := ScrollContainer.new()
+    scroll.name = "TrainingScrollableText"
+    scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+    scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+    stack.add_child(scroll)
+    var body := VBoxContainer.new()
+    body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+    body.add_theme_constant_override("separation", 11)
+    scroll.add_child(body)
+    description_label = _label(body, Color(0.85, 0.90, 0.93), 16)
+    hint_label = _label(body, Color(0.45, 0.86, 0.94), 14)
+    metrics_label = _label(body, Color(0.93, 0.72, 0.49), 13)
+    safety_label = _label(body, Color(0.69, 0.73, 0.76), 12)
+    safety_label.text = "СИМУЛЯЦИЯ • Реальное оборудование требует допуска и проверки отсутствия энергии."
+    primary_button = _styled_button("НАЧАТЬ ОБУЧЕНИЕ", true)
+    primary_button.name = "LuxuryStartOrNext"
+    primary_button.pressed.connect(_primary_pressed)
+    stack.add_child(primary_button)
+    guide_button = _styled_button("УПРАВЛЕНИЕ И ИНСТРУКЦИЯ", false)
+    guide_button.name = "LuxuryGuideButton"
+    guide_button.pressed.connect(_show_controls)
+    stack.add_child(guide_button)
+
+    rail = PanelContainer.new()
+    rail.name = "LuxuryTutorialRail"
+    rail.add_theme_stylebox_override("panel", _glass())
+    add_child(rail)
+    var rail_stack := VBoxContainer.new()
+    rail_stack.add_theme_constant_override("separation", 12)
+    rail.add_child(rail_stack)
+    rail_header = _label(rail_stack, Color(0.96, 0.58, 0.27), 15)
+    for i in range(6):
+        var label := _label(rail_stack, Color(0.76, 0.85, 0.88), 14)
+        label.name = "Chapter_%d" % i
+        rail_rows.append(label)
+
+func _t(ru: String, en: String) -> String:
+    return ru if locale == "ru" else en
+
+func _assign(label: Label, value: String) -> void:
+    if label.text != value:
+        label.text = value
+
+func _set_expand_state() -> void:
+    card.visible = expanded
+    rail.visible = expanded and get_viewport().get_visible_rect().size.x >= 950
+    collapse_button.text = "−" if expanded else "+"
+    if host != null:
+        host.call_deferred("_settle_hud_after_layout")
+
+func _layout() -> void:
+    if brand == null or host == null:
+        return
+    var area := get_viewport().get_visible_rect().size
+    var portrait: bool = area.y > area.x * 1.03
+    var compact: bool = area.x < 620.0
+    var margin: float = 14.0 if compact else 22.0
+    var header_height: float = 68.0 if compact else 78.0
+    brand.position = Vector2(margin, margin)
+    brand.size = Vector2(minf(area.x - 2.0 * margin, 498.0), header_height)
+    brand_subtitle.visible = not compact
+    brand_title.add_theme_font_size_override("font_size", 19 if compact else 23)
+    language_button.custom_minimum_size = Vector2(48, 44)
+    collapse_button.custom_minimum_size = Vector2(44, 44)
+
+    var action_y: float = area.y - (290.0 if portrait else 133.0)
+    var host_actions: Control = host.get("action_panel") as Control
+    if host_actions != null and host_actions.position.y > 0.0:
+        action_y = host_actions.position.y
+    var top: float = margin + header_height + 12.0
+    var max_height: float = maxf(178.0, action_y - top - 15.0)
+    card.position = Vector2(margin, top)
+    card.size = Vector2(minf(460.0, area.x - margin * 2.0), minf(max_height, 480.0))
+    card.custom_minimum_size = Vector2(0, 0)
+    title_label.add_theme_font_size_override("font_size", 19 if compact else 25)
+    description_label.add_theme_font_size_override("font_size", 14 if compact else 16)
+    hint_label.add_theme_font_size_override("font_size", 13 if compact else 14)
+    primary_button.custom_minimum_size = Vector2(0, 48 if compact else 50)
+    guide_button.custom_minimum_size = Vector2(0, 40 if compact else 45)
+
+    rail.position = Vector2(area.x - margin - 286.0, top)
+    rail.size = Vector2(286, minf(385.0, max_height))
+    rail.visible = expanded and not compact and area.x >= 950.0
+    _set_expand_state()
+
+func is_expanded() -> bool:
+    return expanded
+
+func set_language(value: String) -> void:
+    locale = "en" if value == "en" else "ru"
+    language_button.text = "RU" if locale == "en" else "EN"
+    language_button.tooltip_text = "Переключить на русский" if locale == "en" else "Switch to English"
+    _present()
+    call_deferred("_layout")
+
+func _switch_language() -> void:
+    if host != null:
+        host.call("_toggle_locale")
+
+func _toggle_expanded() -> void:
+    expanded = not expanded
+    _set_expand_state()
+    call_deferred("_layout")
+
+func on_gameplay_command() -> void:
+    # Legacy direct controls remain fully operable; don't force a modal tutorial
+    # onto existing players or browser QA that starts the mission directly.
+    if not begun and expanded:
+        expanded = false
+        _set_expand_state()
+        call_deferred("_layout")
+
+func _load_progress() -> void:
+    var file := ConfigFile.new()
+    if file.load(SAVE_PATH) != OK:
+        return
+    if int(file.get_value("tutorial", "schema", -1)) != 1:
+        return
+    begun = bool(file.get_value("tutorial", "begun", false))
+    finished = bool(file.get_value("tutorial", "finished", false))
+    step = clampi(int(file.get_value("tutorial", "step", 0)), 0, 5)
+    # Always make resumed training discoverable. No mutation of W14 case saves.
+    expanded = true
+
+func _save_progress() -> void:
+    var file := ConfigFile.new()
+    file.set_value("tutorial", "schema", 1)
+    file.set_value("tutorial", "begun", begun)
+    file.set_value("tutorial", "finished", finished)
+    file.set_value("tutorial", "step", step)
+    file.save(SAVE_PATH)
+
+func start_tutorial() -> void:
+    begun = true
+    finished = false
+    step = 1
+    expanded = true
+    _save_progress()
+    _set_expand_state()
+    _present()
+    call_deferred("_layout")
+
+func reset_tutorial() -> void:
+    begun = false
+    finished = false
+    step = 0
+    expanded = true
+    _save_progress()
+    _set_expand_state()
+    _present()
+    call_deferred("_layout")
+
+func sync_game(state: Dictionary, view_index: int) -> void:
+    state_cache = state
+    view_cache = view_index
+    if begun and not finished:
+        var next_step := step
+        if step == 1 and view_cache != 0:
+            next_step = 2
+        elif step == 2 and bool(state.get("mission_completed", false)):
+            next_step = 3
+        elif step == 3 and bool(state.get("challenge_completed", false)) and int(state.get("cleared_case_count", 0)) >= 1:
+            next_step = 4
+        elif step == 4 and int(state.get("cleared_case_count", 0)) >= 3:
+            next_step = 5
+        if next_step != step:
+            step = next_step
+            _save_progress()
+    _present()
+
+func _guided_mission() -> void:
+    if not bool(state_cache.get("mission_active", false)) and not bool(state_cache.get("mission_completed", false)):
+        host.call("_start_mission")
+        return
+    match int(state_cache.get("mission_step", 0)):
+        0:
+            host.call("_toggle_motion")
+        1:
+            host.call("_toggle_hatch")
+        2:
+            if float(state_cache.get("lid_progress", 0.0)) >= 0.95:
+                host.call("_toggle_hatch")
+        3:
+            if float(state_cache.get("lid_progress", 1.0)) <= 0.05:
+                host.call("_toggle_motion")
+
+func _guided_diagnostic() -> void:
+    if not bool(state_cache.get("challenge_active", false)):
+        host.call("_start_challenge")
+        return
+    match int(state_cache.get("challenge_step", 0)):
+        0:
+            host.call("_toggle_motion")
+        1:
+            host.call("_toggle_hatch")
+        2:
+            if float(state_cache.get("lid_progress", 0.0)) >= 0.95:
+                var target := int(state_cache.get("challenge_target_view", 2))
+                if int(host.get("view_index")) != target:
+                    host.call("_apply_view", target)
+                else:
+                    host.call("_scan_component")
+        3:
+            host.call("_toggle_hatch")
+        4:
+            if float(state_cache.get("lid_progress", 1.0)) <= 0.05:
+                host.call("_toggle_motion")
+
+func _primary_pressed() -> void:
+    if host == null:
+        return
+    if finished:
+        reset_tutorial()
+        return
+    if not begun:
+        start_tutorial()
+        return
+    match step:
+        1:
+            host.call("_next_view")
+        2:
+            _guided_mission()
+        3, 4:
+            _guided_diagnostic()
+        5:
+            finished = true
+            _save_progress()
+    var rig: Node3D = host.get("controller") as Node3D
+    if rig != null:
+        sync_game(rig.call("summary"), int(host.get("view_index")))
+    _present()
+
+func _show_controls() -> void:
+    # Actual, implemented input mapping; not a fictional first-person WASD rig.
+    var controls_ru := "МЫШЬ / ПАЛЕЦ — вращение камеры\nКОЛЕСО / ЖЕСТ — приближение\nV — сменить ракурс\nM — начать сервисную миссию\nC — начать диагностику\nE — сканировать учебный узел\nF — люк (только после остановки)\nПРОБЕЛ — остановка / пуск\nQ — ECO / HERO\nR — сброс камеры\nL — русский / English"
+    var controls_en := "MOUSE / TOUCH — orbit camera\nWHEEL / PINCH — zoom\nV — next view\nM — start service mission\nC — begin diagnostics\nE — scan simulated target\nF — hatch (after stopping)\nSPACE — stop / run\nQ — ECO / HERO\nR — reset camera\nL — Russian / English"
+    hint_label.text = _t(controls_ru, controls_en)
+
+func _primary_caption() -> String:
+    if finished:
+        return _t("ПОВТОРИТЬ ОБУЧЕНИЕ", "RESTART TRAINING")
+    if not begun:
+        return _t("НАЧАТЬ ОБУЧЕНИЕ", "START TRAINING")
+    if step == 1:
+        return _t("СМЕНИТЬ РАКУРС · V", "NEXT VIEW · V")
+    if step == 5:
+        return _t("ЗАВЕРШИТЬ ОБУЧЕНИЕ", "FINISH TRAINING")
+    if step == 2:
+        if not bool(state_cache.get("mission_active", false)):
+            return _t("НАЧАТЬ СЕРВИСНУЮ МИССИЮ", "START SERVICE MISSION")
+        var mission_step := int(state_cache.get("mission_step", 0))
+        if mission_step == 0:
+            return _t("ОСТАНОВИТЬ ПРИВОД", "STOP DRIVE")
+        if mission_step == 1:
+            return _t("ОТКРЫТЬ ЛЮК", "OPEN HATCH")
+        if mission_step == 2:
+            return _t("ЗАКРЫТЬ ЛЮК" if float(state_cache.get("lid_progress", 0)) >= 0.95 else "ОЖИДАНИЕ ОТКРЫТИЯ…",
+                "CLOSE HATCH" if float(state_cache.get("lid_progress", 0)) >= 0.95 else "WAIT FOR HATCH…")
+        return _t("ВОЗОБНОВИТЬ ПРИВОД" if float(state_cache.get("lid_progress", 1)) <= 0.05 else "ОЖИДАНИЕ ЗАКРЫТИЯ…",
+            "RESTART DRIVE" if float(state_cache.get("lid_progress", 1)) <= 0.05 else "WAIT UNTIL SEALED…")
+    if not bool(state_cache.get("challenge_active", false)):
+        return _t("НАЧАТЬ ДИАГНОСТИКУ", "START DIAGNOSTICS")
+    match int(state_cache.get("challenge_step", 0)):
+        0:
+            return _t("ОСТАНОВИТЬ ПРИВОД", "STOP DRIVE")
+        1:
+            return _t("ОТКРЫТЬ СЕРВИСНЫЙ ЛЮК", "OPEN HATCH")
+        2:
+            if float(state_cache.get("lid_progress", 0)) < 0.95:
+                return _t("ОЖИДАНИЕ ОТКРЫТИЯ…", "WAIT FOR HATCH…")
+            if view_cache != int(state_cache.get("challenge_target_view", 2)):
+                return _t("ПОКАЗАТЬ НУЖНЫЙ УЗЕЛ", "SHOW TARGET VIEW")
+            return _t("СКАНИРОВАТЬ УЗЕЛ", "SCAN TARGET")
+        3:
+            return _t("ЗАКРЫТЬ ЛЮК", "CLOSE HATCH")
+        4:
+            return _t("ВОЗОБНОВИТЬ ПРИВОД" if float(state_cache.get("lid_progress", 1)) <= 0.05 else "ОЖИДАНИЕ ЗАКРЫТИЯ…",
+                "RESTART DRIVE" if float(state_cache.get("lid_progress", 1)) <= 0.05 else "WAIT UNTIL SEALED…")
+    return _t("СЛЕДУЮЩЕЕ ДЕЙСТВИЕ", "NEXT ACTION")
+
+func _is_waiting() -> bool:
+    if not begun or finished:
+        return false
+    if step == 2:
+        return (int(state_cache.get("mission_step", -1)) == 2 and float(state_cache.get("lid_progress", 0)) < 0.95) or (
+            int(state_cache.get("mission_step", -1)) == 3 and float(state_cache.get("lid_progress", 1)) > 0.05)
+    if step == 3 or step == 4:
+        return (int(state_cache.get("challenge_step", -1)) == 2 and float(state_cache.get("lid_progress", 0)) < 0.95) or (
+            int(state_cache.get("challenge_step", -1)) == 4 and float(state_cache.get("lid_progress", 1)) > 0.05)
+    return false
+
+func _present() -> void:
+    if title_label == null:
+        return
+    var i := clampi(step, 0, 5)
+    var current_titles: Array = TITLES_RU if locale == "ru" else TITLES_EN
+    var current_details: Array = DETAILS_RU if locale == "ru" else DETAILS_EN
+    var current_hints: Array = HELP_RU if locale == "ru" else HELP_EN
+    var completed_cases := int(state_cache.get("cleared_case_count", 0))
+    _assign(eyebrow, _t("ДОБРО ПОЖАЛОВАТЬ  •  ГЛАВА", "WELCOME  •  CHAPTER") + "  %d / 6" % (i + 1))
+    _assign(title_label, str(current_titles[i]))
+    _assign(description_label, str(current_details[i]))
+    _assign(hint_label, str(current_hints[i]))
+    _assign(safety_label, _t(
+        "ТОЛЬКО СИМУЛЯЦИЯ. Реальное обслуживание требует допуска, блокировки питания и проверки отсутствия энергии.",
+        "SIMULATION ONLY. Real machinery requires authorization, lockout and verified zero energy."))
+    var motion_text := _t("ПРИВОД РАБОТАЕТ", "DRIVE RUNNING") if bool(state_cache.get("motion_enabled", true)) else _t("ПРИВОД ОСТАНОВЛЕН", "DRIVE PAUSED")
+    var score_text := _t("КЕЙСЫ %d/3  •  %s", "CASES %d/3  •  %s") % [completed_cases, motion_text]
+    if finished:
+        score_text = _t("ОБУЧЕНИЕ ЗАВЕРШЕНО  •  %d/3 КЕЙСА", "TRAINING FINISHED  •  %d/3 CASES") % completed_cases
+    _assign(metrics_label, score_text)
+    if primary_button.text != _primary_caption():
+        primary_button.text = _primary_caption()
+    primary_button.disabled = _is_waiting()
+    _assign(rail_header, _t("ЭТАПЫ ОБУЧЕНИЯ", "TRAINING PROGRESS") + "   %d/6" % (i + 1))
+    for j in range(6):
+        var mark := "✓" if (j < step or (finished and j == 5)) else ("●" if j == step else "○")
+        var row_text := "%s  %02d   %s" % [mark, j + 1, str(current_titles[j])]
+        _assign(rail_rows[j], row_text)
+        rail_rows[j].add_theme_color_override("font_color",
+            Color(0.98, 0.68, 0.40) if j == step else (Color(0.44, 0.84, 0.80) if j < step else Color(0.72, 0.78, 0.82)))
+    guide_button.text = _t("УПРАВЛЕНИЕ И ИНСТРУКЦИЯ", "CONTROLS & HELP")
