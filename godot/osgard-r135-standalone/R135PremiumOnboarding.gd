@@ -214,8 +214,6 @@ func _set_expand_state() -> void:
     card.visible = expanded
     rail.visible = expanded and get_viewport().get_visible_rect().size.x / maxf(1.0, float(host.get("touch_pixel_ratio"))) >= 950
     collapse_button.text = "−" if expanded else "+"
-    if host != null:
-        host.call_deferred("_settle_hud_after_layout")
 
 func _layout() -> void:
     if brand == null or host == null:
@@ -285,6 +283,8 @@ func _switch_language() -> void:
 func _toggle_expanded() -> void:
     expanded = not expanded
     _set_expand_state()
+    if host != null:
+        host.call_deferred("_settle_hud_after_layout")
     call_deferred("_layout")
 
 func on_gameplay_command() -> void:
@@ -293,6 +293,8 @@ func on_gameplay_command() -> void:
     if not begun and expanded:
         expanded = false
         _set_expand_state()
+        if host != null:
+            host.call_deferred("_settle_hud_after_layout")
         call_deferred("_layout")
 
 func _load_progress() -> void:
