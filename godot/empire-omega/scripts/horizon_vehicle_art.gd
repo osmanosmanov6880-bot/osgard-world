@@ -2,12 +2,14 @@ extends Node3D
 const SPRING = preload("res://scripts/horizon_chassis_spring.gd")
 const SCULPT = preload("res://scripts/horizon_coupe_sculpt.gd")
 const WHEEL_SURFACE = preload("res://scripts/horizon_four_wheel_surface.gd")
+const R39_DETAIL = preload("res://scripts/horizon_r39_wheel_detail.gd")
 ## OSGARD HORIZON DRIVE: original PBR sports coupe assembled in Godot.
 ## These are editable original meshes, not meshes or assets from Forza.
 ## Built for Godot 4.4.1 GL Compatibility / HTML5.
 
 var painted_parts: Array[MeshInstance3D] = []
 var wheel_rigs: Array[Node3D] = []
+var wheel_detail_nodes: Array[Node3D] = []
 var brake_strip: MeshInstance3D
 var body_paint: Color = Color("d45835")
 var first_build := true
@@ -24,6 +26,7 @@ func _ready() -> void:
 	name = "HorizonCoupe"
 	_create_body()
 	_create_wheels()
+	_attach_wheel_detail_packs()
 	_create_lighting()
 	set_paint(body_paint)
 
@@ -170,6 +173,21 @@ func _create_wheels() -> void:
 				ray.position = Vector3(signf(side)*0.216,sin(theta)*0.17,cos(theta)*0.17)
 				ray.rotation.x = theta
 				rolling.add_child(ray)
+
+func _attach_wheel_detail_packs() -> void:
+	for rig in wheel_rigs:
+		var spin: Node3D = rig.get_node_or_null("RollingWheel")
+		if spin == null:
+			continue
+		var detail: Node3D = R39_DETAIL.new()
+		detail.call("configure",rig.position.x)
+		spin.add_child(detail)
+		wheel_detail_nodes.append(detail)
+
+func set_detail_quality(tier: String) -> void:
+	for item in wheel_detail_nodes:
+		if is_instance_valid(item):
+			item.call("set_quality",tier)
 
 func _create_lighting() -> void:
 	# Emissive surfaces, not expensive realtime omni lights per vehicle.
