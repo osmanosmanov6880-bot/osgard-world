@@ -6,6 +6,7 @@ on:
       - "public/games/remix/arena-v2/nebula-3d/performance-report.html"
       - "scripts/test-nebula-r37-performance-reports.mjs"
       - "scripts/nebula-r40-field-release-gate.mjs"
+      - "scripts/nebula-r40-device-progress.mjs"
       - "docs/nebula/R40-DEVICE-FIELD-MANIFEST.example.json"
       - ".github/workflows/nebula-r37-performance-reports.yml"
   push:
@@ -14,6 +15,7 @@ on:
       - "public/games/remix/arena-v2/nebula-3d/performance-report.html"
       - "scripts/test-nebula-r37-performance-reports.mjs"
       - "scripts/nebula-r40-field-release-gate.mjs"
+      - "scripts/nebula-r40-device-progress.mjs"
       - "docs/nebula/R40-DEVICE-FIELD-MANIFEST.example.json"
       - ".github/workflows/nebula-r37-performance-reports.yml"
 
@@ -46,6 +48,12 @@ jobs:
             echo "Empty hardware matrix must never be approved" >&2
             exit 1
           fi
+      - name: Inventory the empty device QA template without false release approval
+        run: |
+          set -euo pipefail
+          node --check scripts/nebula-r40-device-progress.mjs
+          node scripts/nebula-r40-device-progress.mjs > /tmp/nebula-r40-progress.json
+          node -e "const q=require('/tmp/nebula-r40-progress.json');if(q.expected_json!==108||q.found_json!==0||q.expected_screenshots!==12||q.found_screenshots!==0||q.field_work_declared!==false||q.status!=='TRACKING_ONLY_NOT_A_RELEASE_APPROVAL')process.exit(1);console.log('NEBULA_R40_INCOMPLETE_FIELD_MATRIX_EXPECTED_108_JSON_12_IMAGES')"
       - name: Ensure deployed viewer does not need external assets
         run: |
           set -euo pipefail
