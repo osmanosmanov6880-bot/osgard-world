@@ -41,7 +41,7 @@ func _refresh_schedule() -> void:
 	route = ROUTER.find_route(global_position,target,simulation.data)
 	next_waypoint = 1 if route.size() > 1 else 0
 
-func _yield_to_vehicle(walking_velocity: Vector3) -> bool:
+func _yield_to_vehicle(walking_velocity: Vector3 = Vector3.ZERO) -> bool:
 	# A real relative-trajectory test, not a simple distance freeze. Cars
 	# passing in the adjacent lane or heading away never stall the sidewalk.
 	for nearby in traffic_vehicles:

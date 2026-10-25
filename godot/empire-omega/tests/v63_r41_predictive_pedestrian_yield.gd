@@ -35,6 +35,9 @@ func _run() -> void:
 		"relative position and measured velocity yield real impact horizon")
 	check(RULE.closest_approach_seconds(on_road,Vector3.ZERO,Vector3(12,0,0),Vector3(6,0,0))==0.0,
 		"retreating vehicle has zero future closest approach")
+	var legacy: Variant = load("res://tests/v14_traffic_physics.gd")
+	check(legacy is Script and legacy.can_instantiate(),
+		"legacy traffic physics acceptance parses with R41 default call")
 	var citizen: Node3D = WALKER.new()
 	root.add_child(citizen)
 	var car: CharacterBody3D = TRAFFIC.new()

@@ -24,7 +24,8 @@ func _run() -> void:
 			"res://scripts/horizon_r39_wheel_detail.gd","res://scripts/pedestrian_agent.gd",
 			"res://scripts/horizon_pedestrian_yield.gd",
 			"res://scripts/horizon_device_frame_benchmark.gd",
-			"res://labs/r24_four_wheel_rigidbody.gd"]:
+			"res://labs/r24_four_wheel_rigidbody.gd",
+			"res://tests/v14_traffic_physics.gd"]:
 		var script: Variant = load(path)
 		check(script is Script and script.can_instantiate(),"real Godot parses "+path)
 	var main_src: String = FileAccess.get_file_as_string("res://scripts/main.gd")

@@ -28,7 +28,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for suite in v21_vehicle_dynamics v34_real_touch_drive v47_rigidbody_force_lab v49_physics_ab_comparison v59_r40_force_motor_calibration v60_r36_real_frame_benchmark v61_r38_street_infrastructure v62_r39_actual_wheel_art v63_r41_predictive_pedestrian_yield v64_r42_full_stack_integration; do
+          for suite in v14_traffic_physics v21_vehicle_dynamics v34_real_touch_drive v47_rigidbody_force_lab v49_physics_ab_comparison v59_r40_force_motor_calibration v60_r36_real_frame_benchmark v61_r38_street_infrastructure v62_r39_actual_wheel_art v63_r41_predictive_pedestrian_yield v64_r42_full_stack_integration; do
             echo "R42 actual Godot test: $suite"
             timeout --signal=TERM --kill-after=5s 150s godot --headless --path godot/empire-omega --script "res://tests/$suite.gd"
           done
