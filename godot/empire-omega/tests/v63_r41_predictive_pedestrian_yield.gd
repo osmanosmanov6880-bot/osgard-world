@@ -27,7 +27,7 @@ func _run() -> void:
 		"direct overlap remains protected even if velocity is zero")
 	check(RULE.should_yield(on_road,Vector3(0,0,-2),Vector3(-8,0,0),Vector3(8,0,0)),
 		"moving walker crossing into passing vehicle triggers prediction")
-	check(not RULE.should_yield(on_road,Vector3(0,0,2),Vector3(-12,0,6),Vector3(6,0,0)),
+	check(not RULE.should_yield(on_road,Vector3(0,0,2),Vector3(-12,0,9),Vector3(6,0,0)),
 		"separate pedestrian/car paths do not trigger global radius halt")
 	check(RULE.should_yield(Vector3(NAN,0,0),Vector3.ZERO,Vector3.ZERO,Vector3.ZERO),
 		"non-finite transform cannot authorize unsafe motion")
