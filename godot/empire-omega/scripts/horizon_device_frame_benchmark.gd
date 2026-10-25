@@ -15,6 +15,7 @@ var captured_seconds := 0.0
 var frame_ms := PackedFloat32Array()
 var draw_calls := PackedInt32Array()
 var dropped := 0
+var capacity_overflow := false
 var preset: String = "standard"
 var view: Vector2 = Vector2.ZERO
 var platform: String = ""
@@ -28,6 +29,7 @@ func begin(preset_mode: String,viewport: Vector2,platform_name: String) -> void:
 	frame_ms.clear()
 	draw_calls.clear()
 	dropped = 0
+	capacity_overflow = false
 	preset = preset_mode if ["low","standard","cinematic"].has(preset_mode) else "standard"
 	view = viewport
 	platform = platform_name
@@ -51,12 +53,13 @@ func record_frame(delta: float,draw_call_count: int,foreground: bool = true) -> 
 		frame_ms.append(delta*1000.0)
 		draw_calls.append(maxi(0,draw_call_count))
 	else:
+		capacity_overflow = true
 		dropped += 1
 	if captured_seconds>=CAPTURE_SECONDS:
 		active=false
-		completed=frame_ms.size()>=100
+		completed=frame_ms.size()>=100 and not capacity_overflow
 		if not completed:
-			aborted="insufficient-real-frames"
+			aborted="sample-capacity-exceeded" if capacity_overflow else "insufficient-real-frames"
 
 func _percentile(values: PackedFloat32Array,p: float) -> float:
 	if values.is_empty():
