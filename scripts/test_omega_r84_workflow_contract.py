@@ -79,6 +79,35 @@ class RealG0WorkflowContracts(unittest.TestCase):
             "  push:\n    branches: [master]",
             "  push:\n    branches: ['**']")
 
+    def test_r89_ssh_trigger_must_be_exact_original_deploy_workflow(self):
+        self.check_replacement_fails(
+            'workflows: ["OSGARD Omega verified Godot direct SSH deploy"]',
+            'workflows: ["OSGARD frontend deploy"]')
+
+    def test_r89_only_completed_ssh_run_can_trigger_recheck(self):
+        self.check_replacement_fails(
+            "    types: [completed]", "    types: [requested]")
+
+    def test_r89_only_successful_ssh_run_may_be_attested(self):
+        self.check_replacement_fails(
+            "github.event.workflow_run.conclusion == 'success'",
+            "github.event.workflow_run.conclusion != 'cancelled'")
+
+    def test_r89_only_master_ssh_run_may_be_attested(self):
+        self.check_replacement_fails(
+            "github.event.workflow_run.head_branch == 'master'",
+            "github.event.workflow_run.head_branch != 'feature'")
+
+    def test_r89_only_same_repository_ssh_run_may_be_attested(self):
+        self.check_replacement_fails(
+            "github.event.workflow_run.head_repository.full_name == github.repository",
+            "github.event.workflow_run.head_repository.full_name != github.repository")
+
+    def test_r89_disabled_auto_recheck_must_fail(self):
+        self.check_replacement_fails(
+            "github.event_name == 'workflow_run'",
+            "github.event_name == 'pull_request'")
+
     def test_full_field_release_without_evidence_stays_hold(self):
         self.check_replacement_fails(
             "v['status']=='HOLD'",

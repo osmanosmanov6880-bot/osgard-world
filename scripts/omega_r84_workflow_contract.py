@@ -23,6 +23,8 @@ def validate(source: str) -> None:
            "changes to R83 original reporter parser must recheck real public G0")
     insist("      - '.github/workflows/omega-r84-real-g0-evidence.yml'" in source,
            "automatic checks must not run on every unrelated portal commit")
+    insist('  workflow_run:\n    workflows: ["OSGARD Omega verified Godot direct SSH deploy"]\n    types: [completed]\n    branches: [master]' in source,
+           "R89 original public G0 must rerun after genuine master SSH release")
     insist("  workflow_dispatch:" in source, "missing manual master recheck")
     insist("  contents: read" in source, "GitHub workflow requires read-only token")
     insist("  real-public-g0-verified-full-release-HOLD:" in source,
@@ -34,6 +36,11 @@ def validate(source: str) -> None:
            "github.event_name == 'workflow_dispatch'" in condition and
            "github.ref == 'refs/heads/master'" in condition,
            "unreviewed PR/feature branch must never attest public production")
+    insist("github.event_name == 'workflow_run'" in condition and
+           "github.event.workflow_run.conclusion == 'success'" in condition and
+           "github.event.workflow_run.head_branch == 'master'" in condition and
+           "github.event.workflow_run.head_repository.full_name == github.repository" in condition,
+           "only successful same-repo master SSH may trigger automatic published G0")
     insist("github.event_name == 'pull_request'" not in condition,
            "pull request may run tests but not live release attestation")
     insist("git fetch --no-tags origin \"$source_sha\"" in live and
@@ -84,7 +91,7 @@ def validate(source: str) -> None:
 
 def main() -> int:
     validate(WORKFLOW.read_text(encoding="utf-8"))
-    print("PASS R84: master-only real public Godot WebGL, source+seven hashes, R83 G0, strict AAA HOLD")
+    print("PASS R89: automatic source-bound G0 after verified SSH, manual/master checks, strict AAA HOLD")
     return 0
 
 
