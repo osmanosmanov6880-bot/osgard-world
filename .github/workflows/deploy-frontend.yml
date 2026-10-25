@@ -30,6 +30,7 @@ on:
       - "public/brand/**"
       - "public/privacy/**"
       - "public/osa-library/**"
+      - "public/osa-cinema/reference/**"
       - "docs/OSA_MEDIA_RECOVERY_RUNBOOK.md"
       - "public/terms/**"
       - "public/tedes/**"
@@ -56,6 +57,9 @@ on:
       - "scripts/r135-artifact-fallback.py"
       - "scripts/r135-production-smoke.mjs"
       - "scripts/production-route-matrix.mjs"
+      - "scripts/osa-cinema-v13-production-smoke.mjs"
+      - "scripts/osa-cinema-v13-production.spec.mjs"
+      - "playwright.osa-cinema-live.config.mjs"
       - "scripts/ecosystem-production-smoke.mjs"
       - "scripts/production-health-watch.mjs"
       - "scripts/activate-frontend-remote.sh"
@@ -96,6 +100,7 @@ on:
       - "docs/04_NULL_SHIFT_GAME_DESIGN.md"
       - "docs/02_IMPERIUM_OF_TIME_GAME_DESIGN.md"
       - ".github/workflows/deploy-frontend.yml"
+      - ".github/workflows/osa-cinema-v13-live-acceptance.yml"
   workflow_dispatch:
 
 jobs:
@@ -554,6 +559,10 @@ jobs:
           OSGARD_BASE_URL: https://osgard.world
           SKILLCRED_EXPECT_CURRENT_DESIGN: "1"
         run: npm run qa:production-routes
+      - name: Verify live OSA CINEMA V13 bilingual routes and original image checksums
+        env:
+          OSGARD_BASE_URL: https://osgard.world
+        run: node scripts/osa-cinema-v13-production-smoke.mjs
       - name: Verify public AAA development dashboard and all 22 visual game identities
         env:
           OSGARD_BASE_URL: https://osgard.world

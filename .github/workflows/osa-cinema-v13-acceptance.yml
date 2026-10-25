@@ -1,0 +1,74 @@
+name: OSA CINEMA V13 focused browser acceptance
+
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - 'src/OSACinema.tsx'
+      - 'src/osaCinemaV13.css'
+      - 'src/osaCinema.css'
+      - 'src/OSAMediaPlayer.tsx'
+      - 'src/osaMediaPlayer.css'
+      - 'src/osaMediaCatalog.ts'
+      - 'src/osaProgress.ts'
+      - 'scripts/osa-cinema-v13-smoke.mjs'
+      - 'scripts/osa-cinema-v13-browser.spec.mjs'
+      - 'scripts/osa-cinema-v13-production-smoke.mjs'
+      - 'scripts/osa-cinema-v13-production.spec.mjs'
+      - 'playwright.osa-cinema-live.config.mjs'
+      - '.github/workflows/osa-cinema-v13-live-acceptance.yml'
+      - 'playwright.ecosystem.config.mjs'
+      - '.github/workflows/osa-cinema-v13-acceptance.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: osa-cinema-v13-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  cinematic-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 16
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install pinned dependencies
+        run: npm ci
+      - name: Assert V13 visual architecture and compatible learning state
+        run: node scripts/osa-cinema-v13-smoke.mjs
+      - name: Check new production acceptance scripts and configuration syntax
+        run: |
+          node --check scripts/osa-cinema-v13-production-smoke.mjs
+          node --check scripts/osa-cinema-v13-production.spec.mjs
+          node --check playwright.osa-cinema-live.config.mjs
+      - name: Verify TypeScript and produce deployable application
+        run: |
+          npm run check
+          npm run build
+      - name: Install real browser
+        run: |
+          npm install --no-save --package-lock=false @playwright/test@1.58.2
+          if command -v google-chrome >/dev/null 2>&1; then
+            google-chrome --version
+            echo "OSGARD_BROWSER_CHANNEL=chrome" >> "$GITHUB_ENV"
+          else
+            npx playwright install --with-deps --no-shell chromium
+          fi
+      - name: Exercise OSA V13 desktop and 390px touch viewport
+        run: npx playwright test scripts/osa-cinema-v13-browser.spec.mjs --config playwright.ecosystem.config.mjs --workers=1
+      - name: Publish reproducible browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: osa-cinema-v13-browser-evidence
+          path: |
+            test-results/
+            browser-report/
+          retention-days: 14
+          if-no-files-found: warn
