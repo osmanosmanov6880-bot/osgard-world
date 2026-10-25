@@ -36,7 +36,7 @@ export function isDurablePublicationUrl(value) {
   }
   try {
     const url = new URL(path)
-    return url.protocol === 'https:' && !url.username && !url.password && !BAD_URL.test(url.search) && !/cloudfront\.net$|runwayml\.com$/i.test(url.hostname) && url.hash === ''
+    return url.protocol === 'https:' && !url.username && !url.password && !url.search && !BAD_URL.test(url.search) && !/cloudfront\.net$|runwayml\.com$/i.test(url.hostname) && url.hash === ''
   } catch { return false }
 }
 
@@ -65,7 +65,7 @@ export function releaseBlockers(asset, probe, review={}, captionResult=null, evi
   if(!probe?.exists)blockers.push('master_file_missing')
   else {
     if(probe.sha256!==asset.sha256 || probe.sizeBytes!==asset.sizeBytes)blockers.push('master_integrity_mismatch')
-    if(probe.probeError || Math.abs(Number(probe.durationSeconds)-asset.durationSeconds)>.1 || probe.width!==asset.width || probe.height!==asset.height || probe.videoCodec!==asset.videoCodec || probe.audioCodec!==asset.audioCodec)blockers.push('media_probe_mismatch')
+    if(probe.probeError || !Number.isFinite(Number(probe.durationSeconds)) || Math.abs(Number(probe.durationSeconds)-asset.durationSeconds)>.1 || probe.width!==asset.width || probe.height!==asset.height || probe.videoCodec!==asset.videoCodec || probe.audioCodec!==asset.audioCodec)blockers.push('media_probe_mismatch')
   }
   if(review.rightsStatus!=='cleared' || !evidence.rights)blockers.push('rights_evidence_not_verified')
   if(review.editorialStatus!=='approved' || !evidence.editorial)blockers.push('final_cut_not_approved')
