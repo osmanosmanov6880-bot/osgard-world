@@ -1,6 +1,6 @@
 {
-  "channel": "w14",
-  "pin_file": "scripts/r135-w14-release-pin.json",
-  "promotion_gate_run_id": null,
-  "note": "W14 remains the active immutable production release. Change channel to w18 only in a reviewed promotion PR after exact W18 artifact acceptance."
+  "channel": "w18",
+  "pin_file": "scripts/r135-w18-release-pin.json",
+  "promotion_gate_run_id": 40196880515,
+  "note": "W18 candidate activated only after exact reviewed artifact gate 40196880515; physical phone GPU/thermal W16 remains uncertified. Rollback remains permanent W14."
 }
