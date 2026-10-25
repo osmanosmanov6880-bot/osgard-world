@@ -423,6 +423,29 @@ func _process(delta: float) -> void:
         state["inspection_fill_energy"] = inspection_fill.light_energy
         state["inspection_fill_shadow_enabled"] = inspection_fill.shadow_enabled
         state["inspection_fill_range"] = inspection_fill.omni_range
+        # W12: visibility is not just the Label3D.visible flag. Project the
+        # actual world-space tag into the active camera and ensure the player
+        # could see it inside the useful part of the viewport. Read-only QA.
+        state["active_fault_caption_on_screen"] = false
+        state["active_fault_caption_screen_x"] = -1.0
+        state["active_fault_caption_screen_y"] = -1.0
+        var fault_scene: Node3D = controller.get("visual_faults") as Node3D
+        if fault_scene != null:
+            var fault_labels: Array = fault_scene.get("marker_labels")
+            var active_marker: int = int(state.get("fault_marker_active_index", -1))
+            if active_marker >= 0 and active_marker < fault_labels.size():
+                var active_label: Label3D = fault_labels[active_marker] as Label3D
+                if active_label != null and active_label.visible and not camera.is_position_behind(active_label.global_position):
+                    var label_pixel: Vector2 = camera.unproject_position(active_label.global_position)
+                    var label_frame: Vector2 = get_viewport().get_visible_rect().size
+                    var label_x: float = label_pixel.x / maxf(label_frame.x, 1.0)
+                    var label_y: float = label_pixel.y / maxf(label_frame.y, 1.0)
+                    state["active_fault_caption_screen_x"] = label_x
+                    state["active_fault_caption_screen_y"] = label_y
+                    state["active_fault_caption_on_screen"] = (
+                        label_x >= 0.10 and label_x <= 0.90
+                        and label_y >= 0.10 and label_y <= 0.85
+                    )
         var status_rect: Rect2 = hud_panel.get_global_rect()
         var control_rect: Rect2 = action_panel.get_global_rect()
         state["hud_layout_mode"] = "portrait" if _viewport_is_portrait() else "landscape"
