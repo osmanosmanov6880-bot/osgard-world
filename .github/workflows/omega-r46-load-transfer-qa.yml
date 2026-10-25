@@ -6,7 +6,7 @@ on:
       - 'godot/empire-omega/scripts/horizon_r46_load_transfer.gd'
       - 'godot/empire-omega/scripts/vehicle_controller.gd'
       - 'godot/empire-omega/tests/v67_r46_load_transfer_brake_grip.gd'
-      - '.github/workflows/omega-r46-stone-rooflines-qa.yml'
+      - '.github/workflows/omega-r46-load-transfer-qa.yml'
   workflow_dispatch:
 permissions:
   contents: read
