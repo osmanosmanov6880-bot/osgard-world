@@ -82,7 +82,8 @@ jobs:
           python3 - <<'PY'
           import json
           d=json.load(open('omega-r84-evidence/live-integrity.json'))
-          assert d['status']=='PASS' and len(d['files'])==7
+          assert d['status']=='PASS' and d['verified_files']==7
+          assert len(d['results'])==7 and all(x['sha256']=='matched' for x in d['results'])
           print('PASS 7 original published file hashes')
           PY
       - name: Install pinned real Chromium and Mesa OpenGL renderer
