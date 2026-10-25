@@ -2,7 +2,7 @@ name: OSGARD R135 optimized web candidate
 
 on:
   push:
-    branches: [feat/r135-mission-control-20261024, feat/r135-wasm-streaming-20261024, feat/r135-diagnostics-w4-20261024, feat/r135-w5-visual-diagnostics-20261024, feat/r135-w6-portrait-target-framing-20261024, feat/r135-w7-studio-lighting-batched-stage-20261024, feat/r135-w8-responsive-hud-matrix-20261024, feat/r135-w9-guided-diagnostics-progress-20261024, feat/r135-w10-release-evidence-qa-20261024, feat/r135-w7-w10-integrated-20261024, feat/r135-w11-legible-studio-lighting-20261024, feat/r135-w12-three-fault-webgl-and-device-evidence-20261025, feat/r135-w13-safety-first-service-mission-20261025, feat/r135-w14-per-case-progress-and-save-migration-20261025, feat/r135-w12-w14-verified-integration-20261025, feat/r135-w15-w17-premium-localization-20261025, feat/r135-w18-mobile-readable-studio-20261025, feat/r135-approved-aaa-luxury-russian-onboarding-20261025, master]
+    branches: [feat/r135-mission-control-20261024, feat/r135-wasm-streaming-20261024, feat/r135-diagnostics-w4-20261024, feat/r135-w5-visual-diagnostics-20261024, feat/r135-w6-portrait-target-framing-20261024, feat/r135-w7-studio-lighting-batched-stage-20261024, feat/r135-w8-responsive-hud-matrix-20261024, feat/r135-w9-guided-diagnostics-progress-20261024, feat/r135-w10-release-evidence-qa-20261024, feat/r135-w7-w10-integrated-20261024, feat/r135-w11-legible-studio-lighting-20261024, feat/r135-w12-three-fault-webgl-and-device-evidence-20261025, feat/r135-w13-safety-first-service-mission-20261025, feat/r135-w14-per-case-progress-and-save-migration-20261025, feat/r135-w12-w14-verified-integration-20261025, feat/r135-w15-w17-premium-localization-20261025, feat/r135-w18-mobile-readable-studio-20261025, feat/r135-approved-aaa-luxury-russian-onboarding-20261025, feat/r135-w20-player-settings-20261025, master]
     paths:
       - ".github/workflows/r135-web-optimized.yml"
       - "godot/osgard-r135-standalone/**"
@@ -27,7 +27,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     env:
-      R135_CANDIDATE_VERSION: ${{ (github.ref_name == 'feat/r135-approved-aaa-luxury-russian-onboarding-20261025' || github.ref_name == 'master') && 'r135-luxury-academy-w19-candidate-20261025' || ((github.ref_name == 'feat/r135-w15-w17-premium-localization-20261025' || github.ref_name == 'feat/r135-w18-mobile-readable-studio-20261025' || github.ref_name == 'master') && 'r135-premium-learning-w18-candidate-20261025' || 'r135-case-progress-w14-20261025') }}
+      R135_CANDIDATE_VERSION: ${{ github.ref_name == 'feat/r135-w20-player-settings-20261025' && 'r135-player-settings-w20-candidate-20261025' || ((github.ref_name == 'feat/r135-approved-aaa-luxury-russian-onboarding-20261025' || github.ref_name == 'master') && 'r135-luxury-academy-w19-candidate-20261025' || ((github.ref_name == 'feat/r135-w15-w17-premium-localization-20261025' || github.ref_name == 'feat/r135-w18-mobile-readable-studio-20261025' || github.ref_name == 'master') && 'r135-premium-learning-w18-candidate-20261025' || 'r135-case-progress-w14-20261025')) }}
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
@@ -220,12 +220,14 @@ jobs:
           files=sorted(p for p in root.iterdir() if p.is_file())
           version=os.environ['R135_CANDIDATE_VERSION']
           ref=os.environ.get('GITHUB_REF_NAME')
-          expected=('r135-luxury-academy-w19-candidate-20261025'
-                    if ref in ('feat/r135-approved-aaa-luxury-russian-onboarding-20261025', 'master')
-                    else ('r135-premium-learning-w18-candidate-20261025'
-                          if ref in ('feat/r135-w15-w17-premium-localization-20261025',
-                                     'feat/r135-w18-mobile-readable-studio-20261025')
-                          else 'r135-case-progress-w14-20261025'))
+          expected=('r135-player-settings-w20-candidate-20261025'
+                    if ref == 'feat/r135-w20-player-settings-20261025'
+                    else ('r135-luxury-academy-w19-candidate-20261025'
+                          if ref in ('feat/r135-approved-aaa-luxury-russian-onboarding-20261025', 'master')
+                          else ('r135-premium-learning-w18-candidate-20261025'
+                                if ref in ('feat/r135-w15-w17-premium-localization-20261025',
+                                           'feat/r135-w18-mobile-readable-studio-20261025')
+                                else 'r135-case-progress-w14-20261025')))
           assert version == expected, 'wrong candidate version for source branch'
           manifest={'version':version,'engine':'Godot 4.4.1',
                     'source_commit':os.environ['GITHUB_SHA'],
