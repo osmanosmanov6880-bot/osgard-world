@@ -5,6 +5,8 @@ on:
     paths:
       - 'godot/empire-omega/scripts/horizon_facade_material_pack.gd'
       - 'godot/empire-omega/scripts/world_builder.gd'
+      - 'scripts/omega-four-viewport-real-ci.sh'
+      - 'scripts/omega-portrait-preview.spec.mjs'
       - 'godot/empire-omega/tests/v58_r37_real_facade_material_pack.gd'
       - '.github/workflows/omega-r37-facade-material-qa.yml'
   workflow_dispatch:
@@ -63,6 +65,12 @@ jobs:
           npm ci
           npm install --no-save --package-lock=false @playwright/test@1.58.2 pngjs@7.0.0
           npx playwright install --with-deps chromium
+      - name: Install real Mesa / Xvfb desktop GPU
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y xvfb libgl1-mesa-dri libegl1 libgl1
       - name: Host only unpublished candidate, never modify VPS
         run: |
           python3 -m http.server 4173 --bind 127.0.0.1 --directory godot/empire-omega/.build-web > /tmp/omega-r37-http.log 2>&1 &
@@ -72,8 +80,12 @@ jobs:
           done
           cat /tmp/omega-r37-http.log
           exit 1
-      - name: Assert genuine 4-viewport Godot scene pixel coverage
-        run: npx playwright test --config playwright.omega-portrait-preview.config.mjs
+      - name: Assert four original Godot WebGL scenes in separate zero-retry browsers
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/test_omega_r87_webgl_boot_guard.py
+          bash scripts/omega-four-viewport-real-ci.sh
       - name: Retain real browser screenshots as QA evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -82,5 +94,6 @@ jobs:
           path: |
             omega-portrait-preview-results/
             omega-portrait-preview-report/
+            omega-original-four-viewport-evidence/
           if-no-files-found: warn
           retention-days: 12

@@ -48,6 +48,8 @@ jobs:
             timeout --signal=TERM --kill-after=5s 25s godot --headless \
               --path godot/empire-omega --script "res://tests/$name"
           done
+      - name: Verify WebGL boot and original four-view zero-retry contract
+        run: python3 scripts/test_omega_r87_webgl_boot_guard.py
       - name: Verify no release or SSH is performed by PR native QA
         shell: bash
         run: |
