@@ -1,0 +1,52 @@
+name: EMPIRE Omega R46 real A/B car physics parity and no-migration gate
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - 'godot/empire-omega/tests/v67_r46_physics_ab_trials.gd'
+      - 'scripts/omega-r46-native-report-check.py'
+      - '.github/workflows/omega-r46-physics-parity-qa.yml'
+      - 'godot/empire-omega/labs/r24_four_wheel_rigidbody.gd'
+      - 'godot/empire-omega/scripts/vehicle_controller.gd'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  authentic-physics-ab:
+    runs-on: ubuntu-latest
+    timeout-minutes: 24
+    steps:
+      - uses: actions/checkout@v4
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: false
+      - name: Original audio and strict game import
+        run: |
+          python3 godot/empire-omega/tools/generate_audio.py
+          python3 godot/empire-omega/tools/generate_patrol_audio.py
+          bash scripts/omega-strict-godot-import.sh godot/empire-omega
+      - name: Native existing arcade and real suspension regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          for suite in v21_vehicle_dynamics v47_rigidbody_force_lab v49_physics_ab_comparison; do
+            timeout --signal=TERM --kill-after=7s 130s godot --headless --path godot/empire-omega --script "res://tests/$suite.gd"
+          done
+      - name: Actual physics 3-run A/B and reproducibility trial
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=7s 180s godot --headless --path godot/empire-omega --script res://tests/v67_r46_physics_ab_trials.gd
+          python3 scripts/omega-r46-native-report-check.py godot/empire-omega/tests/r46-physics-ab-metrics.json
+      - name: Keep original numeric Godot trial data even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: omega-r46-real-physics-ab-evidence
+          path: |
+            godot/empire-omega/tests/r46-physics-ab-metrics.json
+            godot/empire-omega/tests/r24-comparison.json
+          if-no-files-found: warn
+          retention-days: 14
