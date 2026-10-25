@@ -79,9 +79,7 @@ func build(state: Dictionary, forecast: Dictionary, mission: String,
 	var hour: int = floori(clock)
 	var minute: int = floori((clock-float(hour))*60.0)
 	var time_value: String = "%02d:%02d" % [hour,minute]
-	var clock_text: String = local("ТАКТ","TURN","回合",lang)+" "+str(state.get("turn",1))+
-		" · "+time_value+" · "+local("РЕПУТАЦИЯ","REPUTATION","声望",lang)+
-		" %d/100" % int(state.get("reputation",0))
+	var clock_text: String = "%s %d · %s · %s %d/100" % [local("ТАКТ","TURN","回合",lang),int(state.get("turn",1)),time_value,local("РЕПУТАЦИЯ","REPUTATION","声望",lang),int(state.get("reputation",0))]
 	var micro := _label(branding,clock_text,12)
 	micro.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	micro.visible = not compact
