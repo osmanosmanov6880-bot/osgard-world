@@ -119,19 +119,31 @@ test('authentic released Godot runs WebGL2, paints scene, handles real keyboard/
   // Godot splash (#242424, bright logo) before the 3D city painted.
   // Central luminance alone accepted that splash. Require real variation
   // in both top and bottom 3D/HUD screen bands, not an invented mock frame.
+  // R82: a successful engine.startGame() / removed HTML #status does not
+  // mean the ORIGINAL 3D scene has finished its first GPU paint. Real desktop
+  // traces showed Godot's splash still advancing at the third R72 capture,
+  // while touch could already show the full city. Wait for actual original
+  // scene pixels with a hard 45s budget; do NOT accept the splash, cached
+  // static frames, generated images or test retry as success.
+  const scenePaintStartedAt=Date.now()
+  const maxSceneWaitMs=45_000
+  const maxSceneCaptures=18
   let frame,worldProof,paintAttempts=0,captureMethod=''
-  for(let attempt=1;attempt<=3;attempt++){
+  for(let attempt=1;attempt<=maxSceneCaptures;attempt++){
     paintAttempts=attempt
     const capture=await captureAnimatedWebGLViewport(page)
     frame=capture.png
     captureMethod=capture.method
     worldProof=realGameFrameEvidence(frame)
     if(worldProof.realWorldEdges)break
-    if(attempt<3)await page.waitForTimeout(1200)
+    const remainingMs=maxSceneWaitMs-(Date.now()-scenePaintStartedAt)
+    if(remainingMs<=0 || attempt===maxSceneCaptures)break
+    await page.waitForTimeout(Math.min(1800,remainingMs))
   }
   await testInfo.attach('godot-real-world-frame-proof.json',{
     body:Buffer.from(JSON.stringify({source_commit:RELEASE.source_commit,
       project:testInfo.project.name,paintAttempts,captureMethod,
+      scenePaintElapsedMs:Date.now()-scenePaintStartedAt,maxSceneWaitMs,
       realViewport:page.viewportSize(),worldProof},null,2)),
     contentType:'application/json'
   })
