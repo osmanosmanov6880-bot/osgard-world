@@ -12,6 +12,9 @@ on:
       - 'scripts/test_r135_w19_promotion_gate.py'
       - 'scripts/r135-w19-release-pin.json'
       - 'scripts/r135-release-stage.py'
+      - 'scripts/r135-release-selector.sh'
+      - 'scripts/r135-w18-deploy-contract.mjs'
+      - '.github/workflows/deploy-frontend.yml'
   workflow_dispatch:
 
 permissions:
