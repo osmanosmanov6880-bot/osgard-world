@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test'
 import { mkdtemp, mkdir, stat, rm, readFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { spawnSync } from 'node:child_process'
+import { spawn } from 'node:child_process'
 import { hashFile } from './osa-cinema-v20-private-hls.mjs'
 import { startPrivateReviewServer } from './osa-cinema-v21-private-review-server.mjs'
 
@@ -12,9 +12,23 @@ test.beforeAll(async()=>{
   dir=await mkdtemp(join(tmpdir(),'osa-v21-chrome-'))
   const src=join(dir,'media');await mkdir(src)
   const file=join(src,'private-browser-test.mp4')
-  const p=spawnSync('ffmpeg',['-nostdin','-hide_banner','-loglevel','error','-f','lavfi','-i','testsrc2=s=1280x720:r=12:d=3','-f','lavfi','-i','sine=frequency=440:sample_rate=48000:duration=3','-map','0:v:0','-map','1:a:0','-c:v','libx264','-preset','ultrafast','-pix_fmt','yuv420p','-c:a','aac','-shortest','-y',file],{encoding:'utf8',timeout:60000})
-  if(p.status!==0)throw Error('Synthetic cinema fixture was not encoded: '+p.stderr)
-  const asset={id:'osa-test-trailer-ru',file:'private-browser-test.mp4',locale:'ru',edition:'trailer-workprint',sha256:await hashFile(file),sizeBytes:(await stat(file)).size,durationSeconds:3,width:1280,height:720,videoCodec:'h264',audioCodec:'aac'}
+  // GitHub's Chromium runner has constrained process/thread limits:
+  // keep fixture encoding asynchronous and explicitly bound libx264 threads.
+  const args=['-nostdin','-hide_banner','-loglevel','error','-filter_threads','1',
+    '-f','lavfi','-i','testsrc2=s=640x360:r=12:d=3',
+    '-f','lavfi','-i','sine=frequency=440:sample_rate=48000:duration=3',
+    '-map','0:v:0','-map','1:a:0','-c:v','libx264','-threads','1',
+    '-preset','ultrafast','-pix_fmt','yuv420p','-c:a','aac',
+    '-movflags','+faststart','-shortest','-y',file]
+  await new Promise((resolve,reject)=>{
+    const proc=spawn('ffmpeg',args,{stdio:['ignore','ignore','pipe']})
+    let stderr=''
+    const timer=setTimeout(()=>proc.kill('SIGKILL'),60000)
+    proc.stderr.on('data',chunk=>{stderr+=chunk.toString().slice(0,4096)})
+    proc.once('error',error=>{clearTimeout(timer);reject(Error('FFmpeg synthetic fixture could not start: '+error.message))})
+    proc.once('close',(code,signal)=>{clearTimeout(timer);if(code===0)resolve();else reject(Error('FFmpeg fixture failed, exit='+code+' signal='+signal+': '+stderr.slice(-1000)))})
+  })
+  const asset={id:'osa-test-trailer-ru',file:'private-browser-test.mp4',locale:'ru',edition:'trailer-workprint',sha256:await hashFile(file),sizeBytes:(await stat(file)).size,durationSeconds:3,width:640,height:360,videoCodec:'h264',audioCodec:'aac'}
   service=await startPrivateReviewServer({sourceDir:src,asset,password,cutTimes:[.5,1.0,2.0],port:0})
 })
 test.afterAll(async()=>{if(service)await service.close();if(dir)await rm(dir,{recursive:true,force:true})})
