@@ -1,0 +1,94 @@
+name: OSGARD R135 W14 permanent byte-identical rollback archive
+on:
+  push:
+    branches: [release/r135-w14-permanent-rollback-20261025]
+    paths:
+      - '.github/workflows/r135-w14-permanent-rollback.yml'
+      - 'docs/R135_W14_PERMANENT_BACKUP.md'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: r135-w14-immutable-permanent-backup
+  cancel-in-progress: false
+
+jobs:
+  immutable-backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download immutable W14 independently reviewed source, never latest
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          PIN=scripts/r135-w14-release-pin.json
+          test "$(jq -er '.source_commit' "$PIN")" = "4d1aec6c5f59f07d4f6bf1c4b97a46379d9d7d9e"
+          test "$(jq -er '.artifact_run_id' "$PIN")" = 40175524463
+          test "$(jq -er '.artifact_id' "$PIN")" = 12592898463
+          test "$(jq -er '.artifact_name' "$PIN")" = osgard-r135-optimized-web-qa
+          mkdir -p "$RUNNER_TEMP/w14-reviewed"
+          gh run download 40175524463 \
+            --repo osmanosmanov6880-bot/osgard-world \
+            --name osgard-r135-optimized-web-qa --dir "$RUNNER_TEMP/w14-reviewed"
+
+      - name: Independently verify original W14 game, manifest and visual evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          PIN=scripts/r135-w14-release-pin.json
+          HOME_ART="$RUNNER_TEMP/w14-reviewed"
+          ROOT="$HOME_ART/r135-optimized-release"
+          ZIP="$ROOT/OSGARD_R135_OPTIMIZED_WEB.zip"
+          MANIFEST="$ROOT/R135_OPTIMIZED_MANIFEST.json"
+          test -s "$ZIP" && test -s "$MANIFEST"
+          printf '%s  %s\n' "$(jq -er '.archive_sha256' "$PIN")" "$ZIP" | sha256sum -c -
+          printf '%s  %s\n' "$(jq -er '.manifest_sha256' "$PIN")" "$MANIFEST" | sha256sum -c -
+          python3 scripts/r135-w14-promotion-qa.py --pin "$PIN" --artifact "$HOME_ART"
+          python3 scripts/r135-release-stage.py \
+            "$ZIP" "$MANIFEST" "$RUNNER_TEMP/w14-checkstaged" "$PIN"
+          test -s "$RUNNER_TEMP/w14-checkstaged/index.wasm.gz"
+
+      - name: Persist exact W14 ZIP and manifest under immutable GitHub Release tag
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          TAG=r135-case-progress-w14-verified-rollback-20261025
+          REPO=osmanosmanov6880-bot/osgard-world
+          ROOT="$RUNNER_TEMP/w14-reviewed/r135-optimized-release"
+          ARCHIVE="$ROOT/OSGARD_R135_OPTIMIZED_WEB.zip"
+          MANIFEST="$ROOT/R135_OPTIMIZED_MANIFEST.json"
+          PIN=scripts/r135-w14-release-pin.json
+          if ! gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
+            gh release create "$TAG" --repo "$REPO" \
+              --target 4d1aec6c5f59f07d4f6bf1c4b97a46379d9d7d9e \
+              --title "OSGARD R135 W14 - verified immutable WebGL rollback" \
+              --notes-file docs/R135_W14_PERMANENT_BACKUP.md --draft
+            gh release upload "$TAG" "$ARCHIVE" "$MANIFEST" --repo "$REPO"
+          fi
+          mkdir -p "$RUNNER_TEMP/w14-release-recheck"
+          gh release download "$TAG" --repo "$REPO" \
+            --pattern "OSGARD_R135_OPTIMIZED_WEB.zip" \
+            --dir "$RUNNER_TEMP/w14-release-recheck"
+          gh release download "$TAG" --repo "$REPO" \
+            --pattern "R135_OPTIMIZED_MANIFEST.json" \
+            --dir "$RUNNER_TEMP/w14-release-recheck"
+          RECHECK="$RUNNER_TEMP/w14-release-recheck"
+          printf '%s  %s\n' "$(jq -er '.archive_sha256' "$PIN")" "$RECHECK/OSGARD_R135_OPTIMIZED_WEB.zip" | sha256sum -c -
+          printf '%s  %s\n' "$(jq -er '.manifest_sha256' "$PIN")" "$RECHECK/R135_OPTIMIZED_MANIFEST.json" | sha256sum -c -
+          python3 scripts/r135-release-stage.py \
+            "$RECHECK/OSGARD_R135_OPTIMIZED_WEB.zip" \
+            "$RECHECK/R135_OPTIMIZED_MANIFEST.json" \
+            "$RUNNER_TEMP/w14-restorable" "$PIN"
+          if [[ "$(gh release view "$TAG" --repo "$REPO" --json isDraft --jq '.isDraft')" == "true" ]]; then
+            gh release edit "$TAG" --repo "$REPO" --draft=false
+          fi
+          test "$(gh release view "$TAG" --repo "$REPO" --json isDraft --jq '.isDraft')" = false
+          echo 'R135 W14 PERMANENT BACKUP PASS: signed-off original ZIP/manifest restored'
