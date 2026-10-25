@@ -74,6 +74,8 @@ const fakePilot={independent_volunteers:25,correct_safety_explanations:24,
   interlock_bypasses:0,lost_saves:0,blocking_device_crashes:0,
   original_session_records_reviewed:true,reviewer_confirms_real_humans:true}
 const stillNo=assessLaunch({...review,pilot:fakePilot,phoneSessions:[]})
+assert.ok(stillNo.blockers.includes('PILOT_INDIVIDUAL_SOURCE_BOUND_SESSION_RECORDS_MISSING'),
+  'A claimed aggregate of 25 fake humans cannot replace real source-linked sessions')
 assert.equal(stillNo.status,'NO_GO_HOLD')
 assert.ok(stillNo.blockers.includes('INDEPENDENT_PHYSICAL_PHONE_HARDWARE_REVIEW_NOT_SIGNED'))
 assert.equal(stillNo.automatic_deploy_authorized,false)
