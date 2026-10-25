@@ -18,6 +18,9 @@ var industrial_lights: Array[Light3D] = []
 var alarm_lamps: Array[MeshInstance3D] = []
 var status_lamps: Array[MeshInstance3D] = []
 var key_light: DirectionalLight3D
+var emergency_glow: OmniLight3D
+var _reduced_motion: bool = false
+var _emergency_seconds: float = 0.0
 var _quality: String = "hero"
 var _alarm: bool = false
 var _running: bool = true
@@ -243,6 +246,30 @@ func _construct_lighting() -> void:
     cool.shadow_enabled = false
     add_child(cool)
     industrial_lights.append(cool)
+    emergency_glow = OmniLight3D.new()
+    emergency_glow.name = "TrueSimulatedEmergencySculpture"
+    emergency_glow.position = Vector3(0.0, 4.5, 2.3)
+    emergency_glow.light_color = Color("dd6759")
+    emergency_glow.omni_range = 8.0
+    emergency_glow.light_energy = 0.0
+    emergency_glow.shadow_enabled = false
+    add_child(emergency_glow)
+
+func set_reduced_motion(reduced: bool) -> void:
+    _reduced_motion = reduced
+
+func _process(delta: float) -> void:
+    if emergency_glow == null:
+        return
+    if not _alarm:
+        emergency_glow.light_energy = 0.0
+        return
+    if _reduced_motion:
+        emergency_glow.light_energy = 0.42 if _quality == "eco" else 0.72
+        return
+    _emergency_seconds += maxf(delta, 0.0)
+    var modulation: float = 0.74 + 0.26 * sin(_emergency_seconds * 5.5)
+    emergency_glow.light_energy = modulation * (0.62 if _quality == "eco" else 0.96)
 
 func set_quality(mode: String) -> void:
     if mode == _quality:
@@ -259,8 +286,11 @@ func set_alarm(danger: bool) -> void:
     if _alarm == danger:
         return
     _alarm = danger
+    _emergency_seconds = 0.0
     for lamp in alarm_lamps:
         lamp.visible = danger
+    if emergency_glow != null:
+        emergency_glow.light_energy = (0.66 if _quality == "hero" else 0.42) if danger else 0.0
 
 func set_running(running: bool) -> void:
     if _running == running:
@@ -280,6 +310,10 @@ func qa_readout() -> Dictionary:
         "visible_hero_details": visible_details,
         "alarm": _alarm,
         "running": _running,
+        "reduced_motion": _reduced_motion,
+        "emergency_lighting": emergency_glow != null and emergency_glow.light_energy > 0.0,
+        "emergency_light_energy": emergency_glow.light_energy if emergency_glow != null else 0.0,
+        "emergency_pulse_seconds": _emergency_seconds,
         "key_shadow_enabled": key_light.shadow_enabled if key_light != null else false,
         "cinematic_complex": true,
         "structures": _structure_count,

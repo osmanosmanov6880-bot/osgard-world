@@ -1,4 +1,4 @@
-name: OSGARD W33 native 6-case QA, action debrief, WebGL build and original-byte inspection
+name: OSGARD W33-W38 native missions, OBSIDIAN cinema, 6-case WebGL and Win64 QA
 on:
   push:
     branches: [master]
@@ -18,7 +18,7 @@ concurrency:
 jobs:
   actual-godot-source-parity:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 55
     steps:
       - uses: actions/checkout@v4
         with:
@@ -81,6 +81,24 @@ jobs:
             echo '::error::W35 native art-direction acceptance emitted Godot errors'
             exit 1
           fi
+      - name: Actual W36 machined calibration controls, keyboard and safety-interlock regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 150s godot --headless --path w33-godot-native --script res://tests/test_w36_dials.gd 2>&1 | tee "$RUNNER_TEMP/w36-dials.log"
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/w36-dials.log"; then
+            echo '::error::W36 native dial integration produced engine errors'
+            exit 1
+          fi
+      - name: W37 actual cinematic alarm and reduced-motion camera native regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 150s godot --headless --path w33-godot-native --script res://tests/test_w37_visual_responses.gd 2>&1 | tee "$RUNNER_TEMP/w37-light-camera.log"
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/w37-light-camera.log"; then
+            echo '::error::Cinematic 3D response emitted Godot errors'
+            exit 1
+          fi
       - name: Create real Godot 4.4.1 WebGL export from the same native-tested commit
         shell: bash
         run: |
@@ -124,6 +142,22 @@ jobs:
             --export w33-godot-native/build/web \
             --evidence w33-godot-native/build/gameplay-evidence \
             --sha "${{ github.event.pull_request.head.sha || github.sha }}"
+      - name: Original W39 true Godot HERO ECO 3-camera and mobile visual review
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$RUNNER_TEMP/w33-qa-venv/bin/python" w33-godot-native/ci/visual_art_acceptance.py \
+            --export w33-godot-native/build/web \
+            --out w33-godot-native/build/w39-original-art \
+            --sha "${{ github.event.pull_request.head.sha || github.sha }}"
+      - name: Preserve original OBSIDIAN cinematic contact sheet and screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: osgard-w39-original-cinematic-visual-evidence-${{ github.event.pull_request.head.sha || github.sha }}
+          path: w33-godot-native/build/w39-original-art/
+          if-no-files-found: warn
+          retention-days: 30
       - name: Preserve real game-control evidence even on failure
         if: always()
         uses: actions/upload-artifact@v4
