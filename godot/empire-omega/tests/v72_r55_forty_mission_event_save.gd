@@ -92,9 +92,14 @@ func _run() -> void:
 		"entire campaign ledger reconciles with the initial wallet")
 	verify(bool(missions.call("chapter_progress")["campaign_finished"]),
 		"the 40th completed mission opens permanent free-play")
+	var completed_titles: Dictionary = {
+		"ru":"КАМПАНИЯ ПРОЙДЕНА",
+		"en":"CAMPAIGN COMPLETE",
+		"zh":"战役完成"
+	}
 	for language in ["ru","en","zh"]:
-		verify(str(missions.call("chapter_title",language,false)).length()>5,
-			"completed campaign remains localized in "+language)
+		verify(str(missions.call("chapter_title",language,false))==str(completed_titles[language]),
+			"completed campaign uses the exact authentic localized headline in "+language)
 	verify(not bool(missions.call("register_action","neighborhood_deliver")),
 		"completed campaign rejects further payouts without changing mission index")
 	verify(int(state["wallet"])==initial_wallet+expected_reward,
