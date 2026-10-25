@@ -372,9 +372,18 @@ func _run() -> void:
                 var x: float = (float(fixture_index)-7.5)*16.0
                 var expected: Vector3 = bridge_span.position + Vector3(
                     x,3.2,side*4.6)
-                if not check(fixture.origin.distance_to(expected) < 0.001 and
-                    fixture.basis.get_scale().is_equal_approx(Vector3(1.6,0.10,0.85)),
-                    "R40 3D luminaire moved or stretched relative to R38"):return
+                var actual_scale: Vector3 = fixture.basis.get_scale()
+                var correct_position: bool = fixture.origin.distance_to(expected) < 0.001
+                var correct_scale: bool = actual_scale.is_equal_approx(
+                    Vector3(1.6,0.10,0.85))
+                if not correct_position or not correct_scale:
+                    print("NEBULA_R40_GEOMETRY_DIAGNOSTIC bridge=",bridge_index,
+                        " side=",side_index," fixture=",fixture_index,
+                        " actual=",fixture.origin," expected=",expected,
+                        " measured_scale=",actual_scale,
+                        " position_error=",fixture.origin.distance_to(expected))
+                    if not check(false,
+                        "R40 real MultiMesh instance transform differs from R38"):return
     var ambient_0: Vector3 = scenic.traffic_nodes[0].position
     scenic._process(0.1)
     if not check(scenic.traffic_nodes[0].position != ambient_0 and
