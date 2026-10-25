@@ -45,6 +45,22 @@ ffmpeg -y -nostdin -hide_banner -loglevel error \
   -disposition:a:0 default -disposition:a:1 0 -disposition:a:2 0 -disposition:a:3 0 \
   -movflags +faststart "$DEST"
 [[ "$(ffprobe -v error -select_streams a -show_entries stream=index -of csv=p=0 "$DEST" | wc -l)" -eq 4 ]] || exit 5
+# Verify the original picture and both original soundtrack packet streams are
+# bit-for-bit unchanged, not merely declared as stream-copy in command flags.
+hash_stream() {
+  ffmpeg -nostdin -hide_banner -loglevel error -i "$1" -map "$2" -c copy -f hash -hash sha256 - | awk -F= '/^SHA256=/{print $2}'
+}
+RV=$(hash_stream "$ROOT/OSA_CINEMA_V15_DIRECTORS_WORKPRINT_RU_1080P.mp4" 0:v:0)
+EV=$(hash_stream "$ROOT/OSA_CINEMA_V15_DIRECTORS_WORKPRINT_EN_1080P.mp4" 0:v:0)
+OV=$(hash_stream "$DEST" 0:v:0)
+RA=$(hash_stream "$ROOT/OSA_CINEMA_V15_DIRECTORS_WORKPRINT_RU_1080P.mp4" 0:a:0)
+EA=$(hash_stream "$ROOT/OSA_CINEMA_V15_DIRECTORS_WORKPRINT_EN_1080P.mp4" 0:a:0)
+ORA=$(hash_stream "$DEST" 0:a:0)
+OEA=$(hash_stream "$DEST" 0:a:1)
+[[ -n "$RV" && "$RV" == "$EV" && "$RV" == "$OV" ]] || { echo 'Picture streams are not identical' >&2; exit 7; }
+[[ -n "$RA" && -n "$EA" && "$RA" == "$ORA" && "$EA" == "$OEA" ]] || { echo 'Original soundtrack packets changed' >&2; exit 8; }
+echo 'SOURCE_PICTURE_AND_TWO_AUDIO_BITSTREAMS_PRESERVED'
+
 for TRACK in 2 3; do
   PEAK=$(ffmpeg -nostdin -hide_banner -loglevel info -i "$DEST" -map "0:a:$TRACK" -af ebur128=peak=true -f null - 2>&1 | awk '/Summary:/{s=1} s && /Peak:/{v=$2} END{print v}')
   awk -v p="$PEAK" 'BEGIN{exit (p=="" || (p+0)>-1)?1:0}' || { echo "Draft true peak unsafe: $PEAK dBTP" >&2; exit 6; }
