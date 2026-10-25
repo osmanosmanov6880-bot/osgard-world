@@ -23,4 +23,5 @@ trial=a["physical_trial"]
 assert trial["real_physics_frames"]==240 and trial["collision_shape"] is True
 assert trial["collision_layer"]==8 and trial["nonfinite_frames"]==0
 assert trial["travelled_m"]>3 and trial["final_z_m"]>-27 and trial["stopped_seconds"]>0.5
+assert 0<=trial["final_speed_mps"]<1.5
 print("R47 PASS: 200 seeded analytic trajectory checks plus 240 genuine Godot traffic physics frames")
