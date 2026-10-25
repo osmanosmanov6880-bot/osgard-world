@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test'
 import { PNG } from 'pngjs'
 import { captureAnimatedWebGLViewport } from './omega-browser-evidence.mjs'
+import { realGameFrameEvidence } from './omega-world-frame-evidence.mjs'
 
 // Verify genuine independently exported WebGL, not a CSS mock. The original
 // R11 Chromium trace had black rows 0..311 and 540..843 on a 390x844 phone.
@@ -65,14 +66,27 @@ test('REAL Godot 4.4.1 fills the phone, tablet and desktop canvas without black 
   await page.waitForTimeout(700)
   // Viewport screenshot, not locator().screenshot(): a continuously painted
   // native Godot canvas never becomes "stable" for Playwright's locator.
-  const capture=await captureAnimatedWebGLViewport(page)
-  const png=capture.png
-  const proof=measureRealScenePng(png)
+  // A running WebGL canvas can still show the #242424 Godot loader while
+  // the compiled game initializes. Old >28 pixel coverage accepted that
+  // splash as a full world. Require independently diverse TOP and BOTTOM
+  // edge pixels from actual, post-load Godot gameplay instead.
+  let capture, png, proof, worldEvidence, attempts=0
+  for(let attempt=1;attempt<=4;attempt++) {
+    attempts=attempt
+    capture=await captureAnimatedWebGLViewport(page)
+    png=capture.png
+    proof=measureRealScenePng(png)
+    worldEvidence=realGameFrameEvidence(png)
+    if(worldEvidence.realWorldEdges)break
+    if(attempt<4)await page.waitForTimeout(1500)
+  }
   await info.attach('actual-godot-world.png',{body:png,contentType:'image/png'})
   await info.attach('actual-godot-screen-coverage.json',{
-    body:Buffer.from(JSON.stringify({project:info.project.name,view,proof,captureMethod:capture.method,fallback_reason:capture.fallback_reason??null},null,2)),
+    body:Buffer.from(JSON.stringify({project:info.project.name,view,proof,worldEvidence,attempts,captureMethod:capture.method,fallback_reason:capture.fallback_reason??null},null,2)),
     contentType:'application/json'
   })
+  expect(worldEvidence.upperEdgeLumaStd,'Godot splash/top-flat loading area is not a live city scene').toBeGreaterThan(10)
+  expect(worldEvidence.lowerEdgeLumaStd,'Godot splash/bottom-flat loading area is not a live city scene').toBeGreaterThan(10)
   expect(proof.activeFraction,'scene needs to occupy >=70% of actual height').toBeGreaterThan(0.70)
   expect(proof.continuousFraction,'road and sky need one connected full-height view').toBeGreaterThan(0.65)
   if(info.project.name.includes('portrait')||info.project.name.includes('phone-320')){
