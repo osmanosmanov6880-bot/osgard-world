@@ -87,7 +87,8 @@ async function verifyRealLuxuryIntroduction(page, isMobile, name) {
 async function verifyW20PlayerSettings(page, isMobile, name) {
   if (!['r135-player-settings-w20-candidate-20261025',
        'r135-explainable-training-w21-candidate-20261025',
-       'r135-case-mastery-w22-candidate-20261025'].includes(process.env.R135_CANDIDATE_VERSION)) return
+       'r135-case-mastery-w22-candidate-20261025',
+       'r135-accessible-audio-w24-candidate-20261025'].includes(process.env.R135_CANDIDATE_VERSION)) return
   const start = await expectState(page, x => x?.player_preferences_schema === 1
     && x?.player_preferences_save_ok === true && x?.player_settings_control_css_px >= 43.5,
     'W20 real player settings not readable, saved, or accessible')
@@ -136,7 +137,8 @@ async function verifyW21CausalLesson(page, isMobile, name) {
   // Inherit 2 real original W21 screenshots into the SAME W22 WebGL artifact.
   // The W22 independent 19-frame SHA gate must not accept copied older frames.
   if (!['r135-explainable-training-w21-candidate-20261025',
-         'r135-case-mastery-w22-candidate-20261025'].includes(process.env.R135_CANDIDATE_VERSION)) return
+         'r135-case-mastery-w22-candidate-20261025',
+         'r135-accessible-audio-w24-candidate-20261025'].includes(process.env.R135_CANDIDATE_VERSION)) return
   await hitLuxuryControl(page, 'tutorial_collapse_center', isMobile)
   const initial = await expectState(page, x => x?.tutorial_expanded === true
     && x?.coach_status === 'intro'
@@ -161,7 +163,8 @@ async function verifyW21CausalLesson(page, isMobile, name) {
 // W22: scan actual persisted mastery, then select a chosen completed case from
 // a real scrollable Godot panel with genuine pointer/touch events.
 async function verifyW22SelectableCases(page, isMobile, name) {
-  if (process.env.R135_CANDIDATE_VERSION !== 'r135-case-mastery-w22-candidate-20261025') return
+  if (!['r135-case-mastery-w22-candidate-20261025',
+         'r135-accessible-audio-w24-candidate-20261025'].includes(process.env.R135_CANDIDATE_VERSION)) return
   const before = await expectState(page, s => s?.case_replay_hitboxes?.length === 3
     && s?.cleared_case_count === 3 && s?.case_mastery_threshold === 100
     && s?.case_proficient_flags?.length === 3 && !s?.challenge_active,
@@ -201,6 +204,60 @@ async function verifyW22SelectableCases(page, isMobile, name) {
   console.log('W22 actual replay PASS:', name, 'cooling #2', before.case_proficient_flags)
 }
 
+// W24 original real-Godot local audio/caption controls.
+async function verifyW24AccessibleAudio(page, mobile, name) {
+  if (process.env.R135_CANDIDATE_VERSION !== 'r135-accessible-audio-w24-candidate-20261025') return
+  await expectState(page, s => s?.audio_schema === 'OSGARD_R135_AUDIO_W24_V1'
+    && s?.audio_autoplay === false && s?.audio_local_only === true
+    && !s?.audio_sound_enabled && s?.audio_captions_enabled
+    && s?.audio_action_count === 0 && s?.audio_play_attempts === 0,
+    'W24 must boot silent and provide captions instead of autoplay')
+  await hitLuxuryControl(page, 'player_settings_center', mobile)
+  const canvas = await page.locator('canvas').first().boundingBox()
+  if (!canvas) throw new Error('W24 actual WebGL canvas absent')
+  async function scrollToVisible(key) {
+    for (let k = 0; k < 12; k++) {
+      const st = await readState(page)
+      const p = st.player_settings_rect, pt = st[key]
+      if (pt && p && pt.y > p.y + 24 && pt.y < p.y + p.h - 26) return
+      if (!p) throw new Error('W24 original player settings panel absent')
+      await page.mouse.move(canvas.x + (p.x + p.w / 2) * canvas.width / st.viewport_w,
+        canvas.y + (p.y + p.h / 2) * canvas.height / st.viewport_h)
+      await page.mouse.wheel(0, 135)
+      await sleep(page, 250)
+    }
+    throw new Error('W24 player setting not reachable by real scroll: ' + key)
+  }
+  await expectState(page, s => s?.player_settings_open
+    && s?.player_settings_accessibility_css_height >= 43.5,
+    'W24 sound/captions/volume need real 44 CSS px buttons')
+  await scrollToVisible('player_settings_audio_center')
+  await hitLuxuryControl(page, 'player_settings_audio_center', mobile)
+  await expectState(page, s => s?.audio_sound_enabled && !s?.audio_play_attempts
+    && s?.audio_preferences_save_ok, 'W24 opt-in failed')
+  await scrollToVisible('player_settings_volume_center')
+  await hitLuxuryControl(page, 'player_settings_volume_center', mobile)
+  await expectState(page, s => s?.audio_volume >= 0 && s?.audio_volume <= .65
+    && s?.audio_preferences_save_ok, 'W24 bounded volume failed')
+  await scrollToVisible('player_settings_caption_center')
+  await hitLuxuryControl(page, 'player_settings_caption_center', mobile)
+  await expectState(page, s => !s?.audio_captions_enabled,
+    'W24 caption toggle failed')
+  await hitLuxuryControl(page, 'player_settings_caption_center', mobile)
+  await expectState(page, s => s?.audio_captions_enabled,
+    'W24 caption restore failed')
+  await captureRealViewport(page, 'w24-' + name + '-audio-accessibility.png')
+  await scrollToVisible('player_settings_audio_center')
+  await hitLuxuryControl(page, 'player_settings_audio_center', mobile)
+  await expectState(page, s => !s?.audio_sound_enabled && s?.audio_captions_enabled,
+    'W24 mute should not hide real warnings')
+  await hitLuxuryControl(page, 'player_settings_center', mobile)
+  await expectState(page, s => !s.player_settings_open && s.tutorial_expanded,
+    'W24 sound settings should return to existing course')
+  await hitLuxuryControl(page, 'tutorial_collapse_center', mobile)
+  await expectState(page, s => !s?.tutorial_expanded,
+    'W24 sound settings blocked operator HUD')
+}
 async function keyboardMission(page) {
   await page.locator('canvas').first().click({ position: { x: 400, y: 350 } })
   await page.keyboard.press('m')
@@ -210,6 +267,11 @@ async function keyboardMission(page) {
   await expectState(page, x => x?.mission_step === 0 && x?.lid_target === 0
     && x?.motion_enabled && String(x?.mission_feedback || '').includes('SAFETY INTERLOCK'),
     'W13 training incorrectly allowed opening hatch while running')
+  if (process.env.R135_CANDIDATE_VERSION === 'r135-accessible-audio-w24-candidate-20261025')
+    await expectState(page, s => s?.audio_event === 'interlock'
+      && s?.audio_caption_text?.includes('ЗАЩИТА')
+      && s?.audio_action_count > 0 && s?.audio_play_attempts === 0,
+      'W24 true unsafe hatch command must show localized mute-safe caption')
   await page.keyboard.press('Space')
   await expectState(page, x => x?.mission_step === 1 && !x?.motion_enabled,
     'W13 stop-drive-first lesson failed')
@@ -694,6 +756,7 @@ try {
       }
       await verifyRealLuxuryIntroduction(page, isMobile, name)
       await verifyW20PlayerSettings(page, isMobile, name)
+      await verifyW24AccessibleAudio(page, isMobile, name)
       await verifyW21CausalLesson(page, isMobile, name)
       if (!boot.hud_rect || !boot.action_rect || boot.hud_rect.h > boot.viewport_h * .28 ||
           boot.hud_rect.y + boot.hud_rect.h >= boot.action_rect.y - 20) {
