@@ -322,3 +322,92 @@ jobs:
             windows-candidate/w34-windows-stderr.txt
           if-no-files-found: warn
           retention-days: 30
+
+  reproduce-verified-candidate:
+    name: W42 source-bound reproducible verified OBSIDIAN candidate
+    needs: [actual-godot-source-parity, actual-windows-runner-boot]
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Verify checkout matches source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha || github.sha }}"
+      - uses: actions/download-artifact@v4
+        with:
+          name: osgard-w33-godot-webgl-${{ github.event.pull_request.head.sha || github.sha }}
+          path: candidate-input/web
+      - uses: actions/download-artifact@v4
+        with:
+          name: osgard-w33-godot-windows-x64-${{ github.event.pull_request.head.sha || github.sha }}
+          path: candidate-input/windows
+      - uses: actions/download-artifact@v4
+        with:
+          name: osgard-w33-playable-browser-evidence-${{ github.event.pull_request.head.sha || github.sha }}
+          path: candidate-input/gameplay
+      - uses: actions/download-artifact@v4
+        with:
+          name: osgard-w39-original-cinematic-visual-evidence-${{ github.event.pull_request.head.sha || github.sha }}
+          path: candidate-input/art
+      - uses: actions/download-artifact@v4
+        with:
+          name: osgard-w34-actual-windows-exe-boot-${{ github.event.pull_request.head.sha || github.sha }}
+          path: candidate-input/windows-boot
+      - name: Rebuild original same-run evidence archives without network
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile,ZipInfo,ZIP_DEFLATED
+          for name in ('web','windows','gameplay','art','windows-boot'):
+              root=Path('candidate-input')/name
+              assert root.is_dir(),name
+              entries=sorted(f for f in root.rglob('*') if f.is_file())
+              assert entries,name
+              with ZipFile(Path('candidate-input')/(name+'.zip'),'w') as z:
+                  for member in entries:
+                      rel=member.relative_to(root).as_posix()
+                      assert '..' not in rel.split('/') and not rel.startswith('/')
+                      info=ZipInfo(rel,(2026,10,26,0,0,0))
+                      info.compress_type=ZIP_DEFLATED
+                      z.writestr(info,member.read_bytes(),compress_type=ZIP_DEFLATED,compresslevel=7)
+          PY
+      - name: Build twice and verify all real source-bound evidence and exact bytes
+        shell: bash
+        run: |
+          set -euo pipefail
+          source="${{ github.event.pull_request.head.sha || github.sha }}"
+          mkdir -p candidate-output
+          package() {
+            python3 w33-godot-native/ci/osgard_candidate_packager.py \
+              --web candidate-input/web.zip \
+              --windows candidate-input/windows.zip \
+              --gameplay candidate-input/gameplay.zip \
+              --art candidate-input/art.zip \
+              --windows-boot candidate-input/windows-boot.zip \
+              --sha "$source" --out "$1"
+          }
+          package "candidate-output/OSGARD_OBSIDIAN_${{ github.event.pull_request.head.sha || github.sha }}.zip" | tee candidate-output/build-report.json
+          package "candidate-output/.repro.zip" > /dev/null
+          cmp "candidate-output/OSGARD_OBSIDIAN_${{ github.event.pull_request.head.sha || github.sha }}.zip" "candidate-output/.repro.zip"
+          rm candidate-output/.repro.zip
+          sha256sum "candidate-output/OSGARD_OBSIDIAN_${{ github.event.pull_request.head.sha || github.sha }}.zip" > candidate-output/SHA256SUMS.txt
+          echo "W42 PASS: source-bound real missions, Godot frames, Windows boot, reproducible bytes"
+      - name: Preserve approved candidate as GitHub artifact only (no production deploy)
+        uses: actions/upload-artifact@v4
+        with:
+          name: osgard-w42-reproducible-candidate-${{ github.event.pull_request.head.sha || github.sha }}
+          path: |
+            candidate-output/OSGARD_OBSIDIAN_*.zip
+            candidate-output/SHA256SUMS.txt
+            candidate-output/build-report.json
+          if-no-files-found: error
+          retention-days: 30
