@@ -42,6 +42,14 @@ case "$channel" in
     [[ "$gate_run" =~ ^[1-9][0-9]+$ ]]
     test "$(jq -er '.version' "$pin")" = r135-explainable-training-w21-candidate-20261025
     ;;
+  w27)
+    # W27 may be explicitly activated ONLY after independent exact-source
+    # 29 original PNGs, actual native and browser tests and a fixed gate run.
+    test "$pin" = scripts/r135-w27-release-pin.json
+    gate_run="$(jq -er '.promotion_gate_run_id' "$SELECTOR")"
+    [[ "$gate_run" =~ ^[1-9][0-9]+$ ]]
+    test "$(jq -er '.version' "$pin")" = r135-integrated-w27-candidate-20261025
+    ;;
   *)
     echo "Unexpected R135 release channel" >&2
     exit 1

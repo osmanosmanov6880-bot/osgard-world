@@ -64,6 +64,9 @@ on:
       - "scripts/r135-w19-release-pin.json"
       - "scripts/r135-w20-release-pin.json"
       - "scripts/r135-w21-release-pin.json"
+      - "scripts/r135-w27-release-pin.json"
+      - "scripts/r135-w27-promotion-qa.py"
+      - "scripts/test_r135_w27_promotion_gate.py"
       - "scripts/r135-w21-promotion-qa.py"
       - "scripts/test_r135_w21_promotion_gate.py"
       - "scripts/r135-w20-promotion-qa.py"
@@ -528,6 +531,59 @@ jobs:
             # No floating artifacts, unsafe server fallback, false PNGs or
             # bypass of independent exact GitHub source/pin acceptance.
             python3 scripts/r135-w21-promotion-qa.py --pin "$PIN" --artifact "$ROOT"
+          elif [[ "$PIN" == scripts/r135-w27-release-pin.json ]]; then
+            # W27 is never selected implicitly. Source-controlled channel plus
+            # separate EXACT independent full acceptance run are mandatory.
+            GATE_RUN="$(jq -er '.promotion_gate_run_id' scripts/r135-active-release.json)"
+            GATE="$(gh api "repos/osmanosmanov6880-bot/osgard-world/actions/runs/$GATE_RUN")"
+            test "$(jq -er '.conclusion' <<< "$GATE")" = success
+            jq -er '.path' <<< "$GATE" | grep -Fq r135-w27-promotion-gate.yml
+            GATE_JOBS="$(gh api "repos/osmanosmanov6880-bot/osgard-world/actions/runs/$GATE_RUN/jobs?per_page=100")"
+            jq -e '.jobs[] | select(.name == "independently-review-exact-W27" and .conclusion == "success")' <<< "$GATE_JOBS" >/dev/null
+            GATE_SHA="$(jq -er '.head_sha' <<< "$GATE")"
+            PIN_AT_GATE="$(gh api "repos/osmanosmanov6880-bot/osgard-world/contents/scripts/r135-w27-release-pin.json?ref=$GATE_SHA" --jq '.content' | base64 -d | sha256sum | awk '{print $1}')"
+            test "$PIN_AT_GATE" = "$(sha256sum "$PIN" | awk '{print $1}')"
+            SOURCE="$(jq -er '.source_commit' "$PIN")"
+            RUN="$(gh api "repos/osmanosmanov6880-bot/osgard-world/actions/runs/$RUN_ID")"
+            test "$(jq -er '.head_sha' <<< "$RUN")" = "$SOURCE"
+            test "$(jq -er '.conclusion' <<< "$RUN")" = success
+            jq -er '.path' <<< "$RUN" | grep -Fq r135-web-optimized.yml
+            ART_ID="$(jq -er '.artifact_id' "$PIN")"
+            ARTIFACTS="$(gh api "repos/osmanosmanov6880-bot/osgard-world/actions/runs/$RUN_ID/artifacts")"
+            if jq -e --argjson id "$ART_ID" --arg name "$ART_NAME" \
+              '.artifacts[] | select(.id == $id and .name == $name and .expired == false)' \
+              <<< "$ARTIFACTS" >/dev/null; then
+              # Prefer immutable exact run + artifact while GitHub retains it.
+              gh run download "$RUN_ID" \
+                --repo osmanosmanov6880-bot/osgard-world \
+                --name "$ART_NAME" --dir "$ROOT"
+            else
+              # Actions artifacts expire. The only legal fallback is the
+              # permanent GitHub Release emitted AFTER full independent W27
+              # approval. Download its unmodified PNGs and original W10 proof
+              # and run the SAME complete W27 binary/frame/gameplay checker.
+              TAG=r135-integrated-w27-reviewed-webgl-20261025
+              RELEASE="$(gh api "repos/osmanosmanov6880-bot/osgard-world/releases/tags/$TAG")"
+              test "$(jq -er '.tag_name' <<< "$RELEASE")" = "$TAG"
+              test "$(jq -er '.target_commitish' <<< "$RELEASE")" = "$SOURCE"
+              test "$(jq -er '.draft' <<< "$RELEASE")" = false
+              test "$(jq -er '.prerelease' <<< "$RELEASE")" = false
+              jq -e '[.assets[].name] | sort == ([
+                  "OSGARD_R135_OPTIMIZED_WEB.zip", "R135_OPTIMIZED_MANIFEST.json",
+                  "W27_ORIGINAL_SCREENSHOTS_AND_GAMEPLAY_EVIDENCE.zip"] | sort)' \
+                <<< "$RELEASE" >/dev/null
+              gh release download "$TAG" --repo osmanosmanov6880-bot/osgard-world \
+                --pattern "OSGARD_R135_OPTIMIZED_WEB.zip" --dir "$STAGED"
+              gh release download "$TAG" --repo osmanosmanov6880-bot/osgard-world \
+                --pattern "R135_OPTIMIZED_MANIFEST.json" --dir "$STAGED"
+              gh release download "$TAG" --repo osmanosmanov6880-bot/osgard-world \
+                --pattern "W27_ORIGINAL_SCREENSHOTS_AND_GAMEPLAY_EVIDENCE.zip" --dir "$ROOT"
+              python3 scripts/r135-w19-extract-durable-evidence.py \
+                "$ROOT/W27_ORIGINAL_SCREENSHOTS_AND_GAMEPLAY_EVIDENCE.zip" "$ROOT"
+            fi
+            # No floating artifacts, unsafe server fallback, false PNGs or
+            # bypass of independent exact GitHub source/pin acceptance.
+            python3 scripts/r135-w27-promotion-qa.py --pin "$PIN" --artifact "$ROOT"
           else
             echo 'Unreviewed R135 channel refused' >&2
             exit 1
@@ -822,9 +878,11 @@ jobs:
             test "$R135_VERSION" = "r135-luxury-academy-w19-candidate-20261025"
           elif [[ "$PIN" == scripts/r135-w20-release-pin.json ]]; then
             test "$R135_VERSION" = "r135-player-settings-w20-candidate-20261025"
-          else
-            test "$PIN" = scripts/r135-w21-release-pin.json
+          elif [[ "$PIN" == scripts/r135-w21-release-pin.json ]]; then
             test "$R135_VERSION" = "r135-explainable-training-w21-candidate-20261025"
+          else
+            test "$PIN" = scripts/r135-w27-release-pin.json
+            test "$R135_VERSION" = "r135-integrated-w27-candidate-20261025"
           fi
           scp -i ~/.ssh/osgard_deploy scripts/activate-frontend-remote.sh "$USER@$HOST:$REMOTE_SCRIPT"
           ssh -i ~/.ssh/osgard_deploy "$USER@$HOST" "docker cp '$REMOTE_RELEASE_DIR/osgard-world-release.tgz' osgard-world:'$REMOTE_ARCHIVE' && chmod 700 '$REMOTE_SCRIPT' && OSGARD_EXPECTED_R135_MANIFEST_SHA256='$R135_SHA' OSGARD_EXPECTED_R135_SOURCE='$R135_SOURCE' OSGARD_EXPECTED_R135_VERSION='$R135_VERSION' OSGARD_ARCHIVE='$REMOTE_ARCHIVE' OSGARD_CORE_IMAGE='osgard-core-api:${GITHUB_SHA}' OSGARD_REMIX_GUARD_IMAGE='osgard-remix-guard:${GITHUB_SHA}' OSGARD_CONTAINER=osgard-world '$REMOTE_SCRIPT'"
