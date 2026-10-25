@@ -134,7 +134,9 @@ func _publish_web_accessibility(snap: Dictionary) -> void:
         # Original native engine values read only by local browser QA.
         # Not a benchmark on the user's physical hardware.
         "godot_render_fps": Engine.get_frames_per_second(),
-        "godot_frames_drawn": Engine.get_frames_drawn()
+        "godot_frames_drawn": Engine.get_frames_drawn(),
+        "godot_3d_draw_calls": RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_DRAW_CALLS_IN_FRAME),
+        "godot_3d_rendered_objects": RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_OBJECTS_IN_FRAME)
     }
     var geometry: Dictionary = {
         "viewport": [roundi(size.x), roundi(size.y)],

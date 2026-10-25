@@ -36,12 +36,20 @@ def await_quality(page,marker,quality):
 def measure(page,marker,mode,period=12):
     samples=[]
     frame_reads=[]
+    draw_samples=[]
+    object_samples=[]
     start=time.monotonic()
     while time.monotonic()-start < period:
         s=state(marker)
         assert s.get("quality")==mode,("Measured the wrong real mode",s)
         value=s.get("godot_render_fps")
         count=s.get("godot_frames_drawn")
+        draws=s.get("godot_3d_draw_calls")
+        objects=s.get("godot_3d_rendered_objects")
+        if isinstance(draws,(int,float)) and 0<draws<20000:
+            draw_samples.append(int(draws))
+        if isinstance(objects,(int,float)) and 0<objects<20000:
+            object_samples.append(int(objects))
         if isinstance(value,(int,float)) and value>0 and value<1000:
             samples.append(float(value))
         if isinstance(count,int) and count>=0:
@@ -58,6 +66,10 @@ def measure(page,marker,mode,period=12):
         "godot_engine_fps_p10":round(ordered[max(0,int(len(ordered)*0.1)-1)],2),
         "godot_engine_fps_min":round(min(samples),2),
         "godot_rendered_frames_progressed":True,
+        "render_draw_call_samples":len(draw_samples),
+        "render_draw_calls_median":statistics.median(draw_samples) if draw_samples else None,
+        "render_objects_median":statistics.median(object_samples) if object_samples else None,
+        "render_object_sample_count":len(object_samples),
         "software_emulation_only":True,
         "commercial_device_60fps_certified":False
     }

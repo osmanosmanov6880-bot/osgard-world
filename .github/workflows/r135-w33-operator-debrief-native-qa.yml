@@ -153,6 +153,15 @@ jobs:
             echo '::error::W47 native cinematic framing regression failed'
             exit 1
           fi
+      - name: W48 actual Godot ring draw submission reduction, no detail loss and ECO interlocks
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 150s godot --headless --path w33-godot-native --script res://tests/test_w48_ring_instancing.gd 2>&1 | tee "$RUNNER_TEMP/w48-ring-budget.log"
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/w48-ring-budget.log"; then
+            echo '::error::W48 native ring instancing emitted Godot errors'
+            exit 1
+          fi
       - name: Create real Godot 4.4.1 WebGL export from the same native-tested commit
         shell: bash
         run: |
