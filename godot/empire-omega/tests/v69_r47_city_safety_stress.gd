@@ -99,6 +99,7 @@ func _real_blocked_lane() -> Dictionary:
 	check(traffic.global_position.z>-27.0,"actual barricade stops traffic tunneling")
 	check(traffic.speed<1.5 and traffic.stopped_seconds>0.5,"traffic brakes and settles before hazard")
 	check(nonfinite_frames==0,"real 240 physics frames remain finite")
+	var stopped_speed_measured: float = traffic.speed
 	var citizen: Node3D = WALKER.new()
 	citizen.citizen_id=4
 	scene.add_child(citizen)
@@ -116,7 +117,7 @@ func _real_blocked_lane() -> Dictionary:
 		"collision_shape":volume.shape is BoxShape3D,
 		"travelled_m":traffic.travelled_metres,
 		"final_z_m":traffic.global_position.z,
-		"final_speed_mps":traffic.speed,
+		"final_speed_mps":stopped_speed_measured,
 		"stopped_seconds":traffic.stopped_seconds,
 		"nonfinite_frames":nonfinite_frames,
 		"slide_frames":slide_frames,
