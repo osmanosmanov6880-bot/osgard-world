@@ -24,6 +24,9 @@ var overpass_count: int = 0
 ## R40: avoid one draw submission per tiny bridge lamp (3 x 32 -> 3 batches).
 var r40_bridge_luminaires: int = 0
 var r40_bridge_luminaire_draws: int = 0
+## Native headless renderer cannot read GPU MultiMesh instance transforms.
+## Retain the exact CPU transforms submitted to RenderingServer for parity QA.
+var r40_bridge_cpu_transforms: Array = []
 var moving_traffic: int = 0
 var cloud_banks: int = 0
 var quality_mode: int = 0
@@ -222,6 +225,7 @@ func _bridges(root: Node3D) -> void:
                 luminaire_transforms.append(Transform3D(
                     Basis.IDENTITY.scaled(Vector3(1.6,0.10,0.85)),
                     span.position + local))
+        r40_bridge_cpu_transforms.append(luminaire_transforms.duplicate())
         _batch("R40_BridgeLuminaireBatch_%02d" % i,
             luminaire_transforms, led)
         r40_bridge_luminaires += luminaire_transforms.size()
