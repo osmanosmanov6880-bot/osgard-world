@@ -4,10 +4,10 @@ extends Node
 ## Audio is an enhancement: the real mission and safety messages stay textual.
 
 const SAMPLE_RATE: int = 22050
-const SUPPORTED: Array[String] = ["drive_start", "drive_stop", "hatch", "scan", "success", "interlock"]
+const SUPPORTED: Array[String] = ["drive_start", "drive_stop", "hatch", "scan", "success", "invalid", "interlock"]
 const DURATION: Dictionary = {
     "drive_start": 0.16, "drive_stop": 0.18, "hatch": 0.21,
-    "scan": 0.23, "success": 0.28, "interlock": 0.20
+    "scan": 0.23, "success": 0.28, "invalid": 0.16, "interlock": 0.20
 }
 const RU: Dictionary = {
     "drive_start": "УЧЕБНЫЙ ПРИВОД ЗАПУЩЕН",
@@ -15,6 +15,7 @@ const RU: Dictionary = {
     "hatch": "ИЗМЕНИЛОСЬ ПОЛОЖЕНИЕ СЕРВИСНОГО ЛЮКА",
     "scan": "УЧЕБНОЕ СКАНИРОВАНИЕ ВЫПОЛНЕНО",
     "success": "ДИАГНОСТИКА ЗАВЕРШЕНА",
+    "invalid": "УЧЕБНЫЙ ШАГ ВЫПОЛНЕН НЕВЕРНО",
     "interlock": "ЗАЩИТА: КОМАНДА ОТКЛОНЕНА"
 }
 const EN: Dictionary = {
@@ -23,6 +24,7 @@ const EN: Dictionary = {
     "hatch": "VIRTUAL SERVICE HATCH MOVED",
     "scan": "SIMULATED DIAGNOSTIC SCAN COMPLETED",
     "success": "DIAGNOSTIC CASE COMPLETED",
+    "invalid": "SIMULATED STEP WAS INCORRECT",
     "interlock": "SAFETY INTERLOCK: ACTION REJECTED"
 }
 
@@ -95,6 +97,9 @@ func _wave(event: String) -> AudioStreamWAV:
             "success":
                 freq = 587.3 if progress < 0.49 else 784.0
                 value = sin(TAU * freq * sec) * 0.21
+            "invalid":
+                freq = 370.0 - 130.0 * progress
+                value = sin(TAU * freq * sec) * 0.16
             "interlock":
                 freq = 195.0 if int(progress * 6.0) % 2 == 0 else 144.0
                 value = sin(TAU * freq * sec) * 0.24
