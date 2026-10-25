@@ -1,0 +1,13 @@
+{
+  "version": "r135-web-legibility-w11-20261024",
+  "source_commit": "6f4b98a5c7785669cb10ff68def621a2d8eed7fa",
+  "artifact_run_id": 40153715072,
+  "artifact_id": 12584201271,
+  "manifest_sha256": "289a14960b06f684498f04f04c6892bd6b91f102c961f66ff27343a3e054a3dd",
+  "archive_sha256": "3f4c47b968db87ad9b3e2a6179daa827aa0899d18d0c27cb7e2bc8b409b6eb70",
+  "release_tag": "r135-web-legibility-w11-20261025",
+  "reviewed_portrait": true,
+  "reviewed_desktop": true,
+  "software_only": true,
+  "reviewer_notes": "Actual 1082x2202 Pixel-emulated Chromium software-renderer screenshot and 1366x768 desktop original inspected. Visible optical fault text and unobstructed eight controls; not AAA nor real phone."
+}
