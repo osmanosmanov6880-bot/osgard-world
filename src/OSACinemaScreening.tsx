@@ -43,6 +43,7 @@ export default function OSACinemaScreening({
   const [voiceError, setVoiceError] = useState(false)
   const closeButton = useRef<HTMLButtonElement>(null)
   const dialog = useRef<HTMLElement>(null)
+  const contentRef = useRef<HTMLDivElement>(null)
   const previousFocus = useRef<HTMLElement | null>(null)
   const utterance = useRef<SpeechSynthesisUtterance | null>(null)
   const closeAction = useRef<() => void>(() => undefined)
@@ -87,6 +88,10 @@ export default function OSACinemaScreening({
       utterance.current = null
     }
   }, [])
+
+  useEffect(() => {
+    if (contentRef.current) contentRef.current.scrollTop = 0
+  }, [currentIndex, locale])
 
   useEffect(() => {
     if (!utterance.current) return
@@ -193,7 +198,7 @@ export default function OSACinemaScreening({
               <X size={20} aria-hidden='true'/><span>{copy.close}</span>
             </button>
           </header>
-          <div className='osa-cinema-screening__content'>
+          <div ref={contentRef} className='osa-cinema-screening__content'>
             <p className='osa-cinema-screening__eyebrow'>{copy.act} 0{scene.act} <span>•</span> {copy.scene} {String(currentIndex + 1).padStart(2,'0')} {copy.of} 08</p>
             <h2 key={locale + '-' + currentIndex}>{scene.title}</h2>
             <p className='osa-cinema-screening__body'>{scene.body}</p>
