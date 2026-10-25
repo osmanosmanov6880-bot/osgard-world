@@ -16,6 +16,13 @@ on:
       - "scripts/test-nebula-r40-ci-pin.mjs"
       - ".github/nebula-r40-qa-ci-artifact-pin.json"
   workflow_dispatch:
+  # Run the read-only file-integrity audit after EVERY completed real
+  # frontend release, not only when this verifier itself changes.
+  workflow_run:
+    workflows:
+      - "OSGARD frontend deploy"
+    types: [completed]
+    branches: [master]
 permissions:
   contents: read
   actions: read
@@ -29,6 +36,28 @@ jobs:
     timeout-minutes: 3
     steps:
       - uses: actions/checkout@v4
+      - name: Fail closed when the preceding frontend deployment did not succeed
+        if: github.event_name == 'workflow_run'
+        env:
+          UPSTREAM_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          UPSTREAM_BRANCH: ${{ github.event.workflow_run.head_branch }}
+          UPSTREAM_REPOSITORY: ${{ github.event.workflow_run.head_repository.full_name }}
+          UPSTREAM_EVENT: ${{ github.event.workflow_run.event }}
+        run: |
+          set -euo pipefail
+          test "$UPSTREAM_REPOSITORY" = "$GITHUB_REPOSITORY" || {
+            echo "::error::Ignoring foreign frontend run; source repository is not the reviewed OSGARD repository" >&2
+            exit 1
+          }
+          test "$UPSTREAM_BRANCH" = master && test "$UPSTREAM_EVENT" = push || {
+            echo "::error::Only production master branch push deployments are eligible for post-release integrity" >&2
+            exit 1
+          }
+          test "$UPSTREAM_CONCLUSION" = success || {
+            echo "::error::OSGARD frontend deployment did not succeed; refusing to certify NEBULA QA survival" >&2
+            exit 1
+          }
+          echo "NEBULA_POST_DEPLOY_SOURCE=successful_master_frontend_deploy"
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
