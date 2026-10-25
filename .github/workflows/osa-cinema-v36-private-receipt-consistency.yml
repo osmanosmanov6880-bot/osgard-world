@@ -1,0 +1,76 @@
+name: OSA CINEMA V36 offline private receipt consistency and NO-GO
+on:
+  pull_request:
+    paths:
+      - 'scripts/osa-cinema-v36-verify-private-receipts.mjs'
+      - 'scripts/osa-cinema-v36-verify-private-receipts.test.mjs'
+      - 'scripts/osa-cinema-v36-v29-integration.test.mjs'
+      - 'scripts/osa-cinema-v27-release-board.mjs'
+      - 'scripts/osa-cinema-v28-final-intake.mjs'
+      - 'scripts/osa-cinema-v29-owner-preflight.mjs'
+      - '.github/workflows/osa-cinema-v36-private-receipt-consistency.yml'
+  push:
+    branches: [master]
+    paths:
+      - 'scripts/osa-cinema-v36-verify-private-receipts.mjs'
+      - 'scripts/osa-cinema-v36-verify-private-receipts.test.mjs'
+      - 'scripts/osa-cinema-v36-v29-integration.test.mjs'
+      - 'scripts/osa-cinema-v27-release-board.mjs'
+      - 'scripts/osa-cinema-v28-final-intake.mjs'
+      - 'scripts/osa-cinema-v29-owner-preflight.mjs'
+      - '.github/workflows/osa-cinema-v36-private-receipt-consistency.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  offline-private-receipts:
+    name: V36 report verification (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify source syntax and reject malicious reports
+        shell: bash
+        run: |
+          node --check scripts/osa-cinema-v36-verify-private-receipts.mjs
+          node --check scripts/osa-cinema-v36-verify-private-receipts.test.mjs
+          node --test scripts/osa-cinema-v36-verify-private-receipts.test.mjs
+      - name: Published film and checkout must stay prohibited
+        shell: bash
+        run: |
+          set +e
+          node scripts/osa-cinema-v20-release-audit.mjs --strict-publication > "$RUNNER_TEMP/osa-v36-no-go.txt" 2>&1
+          rc=$?
+          set -e
+          test "$rc" -eq 1
+          grep -q OSA_CINEMA_V20_NO_PUBLICATION "$RUNNER_TEMP/osa-v36-no-go.txt"
+  real-pipeline-synthetic-only:
+    name: V36 real V29 pipeline with synthetic MP4/VTT (Ubuntu)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Ensure real FFmpeg and FFprobe are installed
+        shell: bash
+        run: |
+          if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -y ffmpeg
+          fi
+          ffmpeg -version | head -n 1
+          ffprobe -version | head -n 1
+      - name: Integrate V28/V29/V36 using synthetic, never owner media
+        shell: bash
+        run: |
+          node --check scripts/osa-cinema-v36-v29-integration.test.mjs
+          node --test scripts/osa-cinema-v36-v29-integration.test.mjs
