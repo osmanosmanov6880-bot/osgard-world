@@ -38,6 +38,21 @@ jobs:
           for suite in v67_r46_load_transfer_brake_grip v68_r47_predictive_crosswalk_traffic v69_r48_p95_frame_budget v70_r49_campaign_chapters v71_r52_real_joined_gameplay; do
             timeout --signal=TERM --kill-after=5s 120s godot --headless --path godot/empire-omega --script "res://tests/$suite.gd"
           done
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('godot/empire-omega/tests/r52-joined-gameplay-evidence.json')
+          assert p.is_file() and p.stat().st_size > 300, 'native game integration evidence absent'
+          d=json.loads(p.read_text())
+          assert d['engine']=='Godot 4.4.1' and d['actual_world']
+          assert d['traffic']==12 and d['citizens']==34
+          assert d['checks_failed']==0 and d['checks_passed']>=18
+          assert d['chapter_completed']==['arrival']
+          assert d['car_accelerated_speed_mps']>2
+          assert d['physical_iphone_attested'] is False and d['physical_android_attested'] is False
+          assert d['release_authorized'] is False
+          print('PASS R52 original runtime: R46+R47+R48+R49 gameplay joined, no invented device certification')
+          PY
       - name: Preserve integrated native game state and controls evidence
         if: always()
         uses: actions/upload-artifact@v4
