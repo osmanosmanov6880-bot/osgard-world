@@ -126,6 +126,15 @@ jobs:
             echo '::error::W45 native Godot input integration failed'
             exit 1
           fi
+      - name: W45 native camera editorial labels and genuine pressed-state UI regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 150s godot --headless --path w33-godot-native --script res://tests/test_w45_camera_typography.gd 2>&1 | tee "$RUNNER_TEMP/w45-camera-typography.log"
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/w45-camera-typography.log"; then
+            echo '::error::Native W45 camera button acceptance failed'
+            exit 1
+          fi
       - name: Create real Godot 4.4.1 WebGL export from the same native-tested commit
         shell: bash
         run: |
