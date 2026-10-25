@@ -66,6 +66,79 @@ test('invalid/unbounded publication wait configuration rejected',async()=>{
 const pixel=Buffer.alloc(10000)
 Buffer.from('89504e470d0a1a0a','hex').copy(pixel)
 
+test('desktop accepts only real asynchronous Chromium screencast event pixels',async()=>{
+  let onFrame,started=0,ack=0,stopped=0,detached=0
+  const session={
+    on:(name,fn)=>{
+      assert.equal(name,'Page.screencastFrame')
+      onFrame=fn
+    },
+    send:async(name)=>{
+      if(name==='Page.startScreencast'){
+        started++
+        queueMicrotask(()=>onFrame({sessionId:17,data:pixel.toString('base64')}))
+      } else if(name==='Page.screencastFrameAck') ack++
+      else if(name==='Page.stopScreencast') stopped++
+      else throw Error('unexpected CDP request '+name)
+    },
+    detach:async()=>{detached++}
+  }
+  const page={viewportSize:()=>({width:1366,height:768}),
+    context:()=>({newCDPSession:async()=>session})}
+  const result=await captureAnimatedWebGLViewport(page)
+  assert.equal(result.method,'chromium-async-real-screencast')
+  assert.deepEqual(result.png,pixel)
+  assert.equal(started,1)
+  assert.equal(ack,1)
+  assert.equal(stopped,1)
+  assert.equal(detached,1)
+})
+
+test('desktop screencast failure preserves authentic CDP fallback, never fabricates pixels',async()=>{
+  let created=0,detached=0
+  const page={
+    viewportSize:()=>({width:1366,height:768}),
+    context:()=>({newCDPSession:async()=>{
+      created++
+      if(created===1)return {
+        on:()=>{},
+        send:async name=>{
+          if(name==='Page.startScreencast')throw Error('software GPU cannot start async compositor')
+        },
+        detach:async()=>{detached++}
+      }
+      return {
+        send:async name=>{
+          assert.equal(name,'Page.captureScreenshot')
+          return {data:pixel.toString('base64')}
+        },
+        detach:async()=>{detached++}
+      }
+    }})
+  }
+  const result=await captureAnimatedWebGLViewport(page)
+  assert.equal(result.method,'chromium-cdp')
+  assert.deepEqual(result.png,pixel)
+  assert.equal(created,2)
+  assert.equal(detached,2)
+})
+
+test('desktop all real capture methods unavailable still fails release acceptance',async()=>{
+  const page={
+    viewportSize:()=>({width:1366,height:768}),
+    context:()=>({newCDPSession:async()=>({
+      on:()=>{},
+      send:async name=>{throw Error('renderer unavailable: '+name)},
+      detach:async()=>{}
+    })}),
+    screenshot:async()=>Buffer.from('fake static HTML')
+  }
+  await assert.rejects(
+    captureAnimatedWebGLViewport(page),
+    /No authentic WebGL pixels could be captured: Async=/
+  )
+})
+
 test('CDP capture is preferred for actual animated Chromium viewport',async()=>{
   let detached=0,sent=''
   const page={context:()=>({newCDPSession:async()=>({
