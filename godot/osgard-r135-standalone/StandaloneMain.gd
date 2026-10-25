@@ -614,6 +614,18 @@ func _process(delta: float) -> void:
             state["tutorial_started"] = bool(premium_intro.get("begun"))
             state["tutorial_finished"] = bool(premium_intro.get("finished"))
             state["tutorial_expanded"] = bool(premium_intro.get("expanded"))
+            # W21 read-only evidence from actual Control labels and game state;
+            # browsers have no write path into the machine simulation.
+            state["coach_explanation_open"] = bool(premium_intro.get("coach_expanded"))
+            state["coach_status"] = str(premium_intro.get("coach_last_status"))
+            var coach_summary: Label = premium_intro.get("coach_summary") as Label
+            var coach_detail: Label = premium_intro.get("coach_detail") as Label
+            var coach_toggle: Button = premium_intro.get("coach_more_button") as Button
+            state["coach_summary_text"] = coach_summary.text
+            state["coach_details_text"] = coach_detail.text if coach_detail.visible else ""
+            var coach_click: Vector2 = coach_toggle.get_global_rect().get_center()
+            state["coach_toggle_center"] = {"x": coach_click.x, "y": coach_click.y}
+            state["coach_button_css_height"] = coach_toggle.get_global_rect().size.y / maxf(1.0, touch_pixel_ratio)
             state["player_settings_open"] = bool(premium_intro.get("settings_open"))
             var settings_button: Button = premium_intro.get("settings_button") as Button
             state["player_settings_control_css_px"] = minf(
