@@ -4,16 +4,22 @@ import {readFileSync} from 'node:fs'
 
 const source=readFileSync(new URL('./omega-live-webgl.spec.mjs',import.meta.url),'utf8')
 const helper=readFileSync(new URL('./omega-browser-evidence.mjs',import.meta.url),'utf8')
+const evidence=readFileSync(new URL('./omega-world-frame-evidence.mjs',import.meta.url),'utf8')
 const workflow=readFileSync(new URL('../.github/workflows/omega-r11-actual-browser-qa.yml',import.meta.url),'utf8')
 
 test('release E2E uses genuine WebGL pixels for all four moments',()=>{
   assert.match(source,/captureAnimatedWebGLViewport/)
-  // R72 captures the first REAL frame inside a bounded loader-rejection
-  // loop and three further frames after player input. Older contracts counted
-  // only inline .png syntax, reporting a false CI failure when capture improved.
+  // R82 authentic startup proof must wait in the SAME Chromium session.
+  // 3 later captures prove real touch/keyboard motion; no synthetic PNGs,
+  // re-run of Playwright test, or loader accepting shortcut is permitted.
   assert.equal((source.match(/\(await captureAnimatedWebGLViewport\(page\)\)\.png/g)||[]).length,3)
-  assert.equal((source.match(/const capture=await captureAnimatedWebGLViewport\(page\)/g)||[]).length,1)
-  assert.match(source,/worldProof=realGameFrameEvidence\(frame\)/)
+  assert.match(source,/waitForRealGodotWorldFrame\(/)
+  assert.match(source,/\(\)=>captureAnimatedWebGLViewport\(page\)/)
+  assert.match(source,/expect\(readiness\.ready,[\s\S]*?\)\.toBe\(true\)/)
+  assert.match(source,/expect\(worldProof\.realWorldEdges,[\s\S]*?\)\.toBe\(true\)/)
+  assert.match(evidence,/realGameFrameEvidence\(capture\.png\)/)
+  assert.match(evidence,/maxAttempts=24/)
+  assert.match(evidence,/maxWaitMs=80000/)
   assert.doesNotMatch(source,/await page\.screenshot\(/)
   assert.match(source,/expect\(entryMotion,[\s\S]*?\)\.toBeGreaterThan\(0\.08\)/)
   assert.match(source,/expect\(driveMotion,[\s\S]*?\)\.toBeGreaterThan\(0\.08\)/)
