@@ -217,7 +217,7 @@ func _precision_ring_multimesh(index: int, radius: float, depth: float, segments
     for i in range(first_index, segments):
         var angle: float = TAU * float(i) / float(segments)
         var centre := Vector3(cos(angle) * radius, 2.32 + sin(angle) * radius, depth)
-        var basis := Basis(Vector3.FORWARD, -angle)
+        var basis := Basis(Vector3.BACK, -angle)
         batch.set_instance_transform(i - first_index, Transform3D(basis, centre))
     var housing := MultiMeshInstance3D.new()
     housing.name = "A7PrecisionRingBatch_%d" % index

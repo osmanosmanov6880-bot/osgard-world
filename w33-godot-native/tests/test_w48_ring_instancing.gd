@@ -57,6 +57,8 @@ func _run() -> void:
             var theta: float = TAU * float(start) / 28.0
             var position: Vector3 = Vector3(cos(theta) * expected_radius, 2.32 + sin(theta) * expected_radius, expected_depth)
             _check(first.origin.distance_to(position) < 0.0001, "Original ring transform position preserved for %d" % index)
+            var expected_basis: Basis = Basis(Vector3.BACK, -theta)
+            _check(first.basis.x.distance_to(expected_basis.x) < 0.0001, "Original segment angle and handedness preserved for ring %d" % index)
             count += part.multimesh.instance_count
         _check(count == 83, "One legacy segment + 83 instanced segments exactly matches original 84")
     var readout: Dictionary = rig.cinematic_qa_readout()
