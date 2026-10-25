@@ -17,7 +17,7 @@ export function pinnedRelease(selector, pin) {
   if (!selector || !pin || typeof selector !== 'object' || typeof pin !== 'object')
     fail('missing reviewed release selector/pin')
   if (!['w19','w20','w21','w22','w23','w24'].includes(selector.channel) ||
-      selector.pin_file !== 'scripts/r135-' + selector.channel + '-release-pin.json')
+      selector.pin_file !== ('scripts/r135-' + selector.channel + '-release-pin.json'))
     fail('selector is not canonical reviewed channel')
   if (!Number.isSafeInteger(selector.promotion_gate_run_id) || selector.promotion_gate_run_id <= 0)
     fail('missing independent reviewed promotion gate')
