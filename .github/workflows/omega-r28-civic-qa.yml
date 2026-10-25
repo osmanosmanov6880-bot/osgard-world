@@ -9,7 +9,7 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: omega-r28-candidate-${{ github.event.pull_request.number || github.ref }}
+  group: omega-r28-civic-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 jobs:
   native-civic:
@@ -17,6 +17,8 @@ jobs:
     timeout-minutes: 18
     steps:
       - uses: actions/checkout@v4
+      - name: Enforce independent R28 civic and road QA concurrency
+        run: python3 scripts/omega-r28-concurrency.contract.test.py
       - uses: chickensoft-games/setup-godot@v2
         with:
           version: 4.4.1

@@ -95,10 +95,14 @@ func _make_headlight_beams() -> void:
 		beam.name = "R33BeamLeft" if x < 0.0 else "R33BeamRight"
 		beam.position = Vector3(x,-0.12,-2.70)
 		beam.rotation_degrees = Vector3(-7.0,0.0,0.0)
-		beam.spot_range = 19.0
-		beam.spot_angle = 34.0
+		# R56: illuminate the real road while preserving the original R33
+		# strictly bounded spot radius (<=20m) and its mobile light budget.
+		# The camera road-alignment experiment checks physical lit pixels.
+		beam.spot_range = 19.5
+		beam.spot_angle = 35.0
+		beam.spot_attenuation = 1.12
 		beam.light_color = Color("fff1d5")
-		beam.light_energy = 0.92
+		beam.light_energy = 1.52
 		beam.shadow_enabled = false
 		beam.visible = false
 		add_child(beam)
@@ -111,7 +115,8 @@ func update_headlights(hour: float,quality: String) -> void:
 	var active: bool = (safe_hour < 6.75 or safe_hour >= 18.75) and quality != "low"
 	for light in headlight_cones:
 		light.visible = active
-		light.light_energy = 0.56 if quality == "standard" else 0.92
+		light.light_energy = 0.56 if quality == "standard" else 1.52
+		light.spot_range = 17.0 if quality == "standard" else 19.5
 
 func _add_part(id: String, size: Vector3, at: Vector3, color: Color, emissive: bool = false) -> void:
 	var mesh := MeshInstance3D.new()
