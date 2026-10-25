@@ -2,7 +2,7 @@ name: OSGARD R135 optimized web candidate
 
 on:
   push:
-    branches: [feat/r135-mission-control-20261024, feat/r135-wasm-streaming-20261024, feat/r135-diagnostics-w4-20261024, feat/r135-w5-visual-diagnostics-20261024, feat/r135-w6-portrait-target-framing-20261024, feat/r135-w7-studio-lighting-batched-stage-20261024, feat/r135-w8-responsive-hud-matrix-20261024, feat/r135-w9-guided-diagnostics-progress-20261024, feat/r135-w10-release-evidence-qa-20261024, feat/r135-w7-w10-integrated-20261024, feat/r135-w11-legible-studio-lighting-20261024, feat/r135-w12-three-fault-webgl-and-device-evidence-20261025, master]
+    branches: [feat/r135-mission-control-20261024, feat/r135-wasm-streaming-20261024, feat/r135-diagnostics-w4-20261024, feat/r135-w5-visual-diagnostics-20261024, feat/r135-w6-portrait-target-framing-20261024, feat/r135-w7-studio-lighting-batched-stage-20261024, feat/r135-w8-responsive-hud-matrix-20261024, feat/r135-w9-guided-diagnostics-progress-20261024, feat/r135-w10-release-evidence-qa-20261024, feat/r135-w7-w10-integrated-20261024, feat/r135-w11-legible-studio-lighting-20261024, feat/r135-w12-three-fault-webgl-and-device-evidence-20261025, feat/r135-w13-safety-first-service-mission-20261025, master]
     paths:
       - ".github/workflows/r135-web-optimized.yml"
       - "godot/osgard-r135-standalone/**"
@@ -44,6 +44,28 @@ jobs:
           for value in ("manifestSha256", "callbackPacing", "expectedQuality", "localhost only", "raw_godot_fps_samples"):
               assert value in device, f"Missing W12 physical-device integrity check: {value}"
           print("R135 W12 three-case browser and physical frame capture contracts PASS")
+          PY
+
+      - name: W13 enforce stop-drive-first training and safe simulator interlocks
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          director = Path("godot/osgard-r135-standalone/R135ServiceDirector.gd").read_text()
+          native = Path("godot/osgard-r135-standalone/tests/smoke.gd").read_text()
+          browser = Path("scripts/r135-web-smoke.mjs").read_text()
+          assert 'MISSION_GOALS = ["PAUSE THE DRIVE", "OPEN SERVICE HATCH", "CLOSE SERVICE HATCH", "RESUME THE DRIVE"]' in director
+          assert '["pause", "open", "close", "resume"][mission_step]' in director
+          assert 'if lid_target < 0.5 and motion_enabled:' in director
+          assert 'if active and (lid_target > 0.05 or lid_progress > 0.05):' in director
+          assert 'if active and mission_active and mission_step != 3:' in director
+          assert '_reset_simulated_hatch()' in director
+          assert 'W13 tutorial incorrectly permitted opening moving machinery' in native
+          assert 'W13 drive restarted while hatch was still closing' in native
+          assert 'W13 mobile training incorrectly opened running machine' in browser
+          assert 'W13 training bypassed open-hatch interlock' in browser
+          print("R135 W13 simulator lesson order and actual safety guard checks PASS")
           PY
 
       - name: Verify WebGL portrait provenance validation rejects forgeries
