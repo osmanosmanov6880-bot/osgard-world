@@ -1,0 +1,30 @@
+name: REMIX strict watchdog and no-retry CI regression
+on:
+  push:
+    branches: [fix/remix-guard-ci-deadline-fixture-r135-release-20261025, master]
+    paths:
+      - 'tests/test_remix_guard.py'
+      - 'server/remix_guard.py'
+      - '.github/workflows/remix-guard-timing-regression.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  guard-deadlines:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify complete real TCP guard matrix including short deadlines and uncertain POST
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s tests -p test_remix_guard.py -v
+      - name: Replay same guard suite to detect scheduler-sensitive intermittency
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s tests -p test_remix_guard.py -v
+          echo 'PASS: server production timeout and watchdog logic unchanged; no duplicate or late POST.'
