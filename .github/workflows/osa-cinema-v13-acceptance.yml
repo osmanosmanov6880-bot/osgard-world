@@ -5,6 +5,11 @@ on:
     branches: [master]
     paths:
       - 'src/OSACinema.tsx'
+      - 'src/OSACinemaCompanion.tsx'
+      - 'src/osaCinemaCompanionText.ts'
+      - 'src/osaCinemaCompanion.css'
+      - 'scripts/osa-cinema-v14-companion-smoke.mjs'
+      - 'scripts/osa-cinema-v14-companion.spec.mjs'
       - 'src/osaCinemaV13.css'
       - 'src/osaCinema.css'
       - 'src/OSAMediaPlayer.tsx'
@@ -42,6 +47,8 @@ jobs:
         run: npm ci
       - name: Assert V13 visual architecture and compatible learning state
         run: node scripts/osa-cinema-v13-smoke.mjs
+      - name: Verify V14 full transcript, scene sharing and accessibility contracts
+        run: node --experimental-strip-types scripts/osa-cinema-v14-companion-smoke.mjs
       - name: Check new production acceptance scripts and configuration syntax
         run: |
           node --check scripts/osa-cinema-v13-production-smoke.mjs
@@ -61,7 +68,7 @@ jobs:
             npx playwright install --with-deps --no-shell chromium
           fi
       - name: Exercise OSA V13 desktop and 390px touch viewport
-        run: npx playwright test scripts/osa-cinema-v13-browser.spec.mjs --config playwright.ecosystem.config.mjs --workers=1
+        run: npx playwright test scripts/osa-cinema-v13-browser.spec.mjs scripts/osa-cinema-v14-companion.spec.mjs --config playwright.ecosystem.config.mjs --workers=1
       - name: Publish reproducible browser evidence
         if: always()
         uses: actions/upload-artifact@v4
