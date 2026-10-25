@@ -26,7 +26,11 @@ static func compute(viewport: Vector2) -> Dictionary:
 	var journal := Rect2(12.0,185.0,w-24.0,journal_height)
 	# Performance overlay sits below the touch menu toggle. The minimap is
 	# temporarily hidden while diagnostics are open to avoid occlusion.
-	var diagnostics := Rect2(12.0,244.0,minf(w-24.0,330.0),minf(182.0,maxf(80.0,h-254.0)))
+	# Keep the real FPS benchmark touch-safe even on short landscape.
+	# 860×540 must leave >=120px for acceleration/brake; 320×410 must fit.
+	var diagnostic_height: float = minf(182.0,maxf(80.0,
+		(h-365.0) if h>=500.0 else (h-254.0)))
+	var diagnostics := Rect2(12.0,244.0,minf(w-24.0,330.0),diagnostic_height)
 	var toast := Rect2(12.0,182.0,w-24.0,68.0)
 	var panel_height: float = minf(670.0,h-24.0)
 	var modal := Rect2(12.0,(h-panel_height)*0.5,w-24.0,panel_height)
