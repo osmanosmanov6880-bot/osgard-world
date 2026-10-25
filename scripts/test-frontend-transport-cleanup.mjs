@@ -75,7 +75,9 @@ test('YAML covers failed stage, stale preactivation, skipped activation and post
 test('master W19 protected frontend path survives cleanup integration',()=>{
   const y=fs.readFileSync('.github/workflows/deploy-frontend.yml','utf8');
   assert.ok(y.includes('W19_ORIGINAL_SCREENSHOTS_AND_GAMEPLAY_EVIDENCE.zip'));
-  assert.ok(y.includes('test "$PIN" = scripts/r135-w19-release-pin.json'));
+  assert.ok(y.includes('r135-w19-release-pin.json'));
+  assert.ok(y.includes('r135-luxury-academy-w19-candidate-20261025'));
+  assert.ok(y.includes('W19_ORIGINAL_SCREENSHOTS_AND_GAMEPLAY_EVIDENCE.zip'));
   assert.ok(y.includes('test "$PIN" = scripts/r135-w18-release-pin.json') || y.includes('if [[ "$PIN" == scripts/r135-w18-release-pin.json ]]'));
   assert.ok(y.includes('r135-w19-release-pin.json'));
   assert.ok(y.includes('bash scripts/check-frontend-release-freshness.sh || lease_rc=$?'));
