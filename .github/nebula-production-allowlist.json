@@ -1,0 +1,13 @@
+{
+  "schema": "NEBULA_PRODUCTION_ASSET_ALLOWLIST_V1",
+  "approved_variant": "R38",
+  "release_status": "R38_PINNED_PRODUCTION_BASELINE",
+  "artifacts": {
+    "index.html": "e5e11f51ef1c5547d9c0606060efe21c9ded555b",
+    "index.js": "c84b7de50f26f0dd21bd4b2885de851a3ea6ff39",
+    "index.wasm": "8f900d00d644a698bbce67439bf6daf73bdfa4b7",
+    "index.pck": "04a9fd1a7348d84193296d2e4d24f1f718c6697b"
+  },
+  "approval": null,
+  "notes": "Exact Git blob identities of already-published R38, from master d14052ee. Any R40 change requires a new reviewed promotion PR after original physical-phone QA. Do not copy personal phone reports into this public file."
+}
