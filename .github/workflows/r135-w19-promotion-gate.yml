@@ -28,7 +28,10 @@ jobs:
         run: |
           set -euo pipefail
           python3 -m unittest discover -s scripts -p test_r135_w19_promotion_gate.py -v
+          python3 -m unittest discover -s scripts -p test_r135_w18_promotion_gate.py -v
           python3 -m py_compile scripts/r135-w19-promotion-qa.py scripts/r135-release-stage.py
+          bash -n scripts/r135-release-selector.sh
+          node scripts/r135-w18-deploy-contract.mjs
           echo 'W19 CONTRACT PASS; actual WebGL and original image review are NOT implied'
 
   independently-accept-real-w19:
