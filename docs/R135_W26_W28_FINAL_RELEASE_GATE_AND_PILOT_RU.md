@@ -9,7 +9,7 @@
 | Этап | Доказательства | Статус |
 |---|---|---|
 | W20 — игровой профиль | Native #40212028861, WebGL #40212028856, independent 15 PNG #40213913376, SSH deploy #40215069394 | VERIFIED LIVE WORKFLOW SUCCESS |
-| W21 — объяснимое обучение | Native #40212913069, WebGL #40212913000, independent 17 PNG #40215573327, immutable GH release | CANDIDATE; protected W21 deployment separately gated |
+| W21 — объяснимое обучение | Native #40212913069, WebGL #40212913000, independent 17 PNG #40215573327, SSH #40219491086 с live HTTPS PCK 206 и WASM gzip | VERIFIED LIVE WORKFLOW SUCCESS |
 | W22 — выбор неисправности | Native #40214644905, 3 разных сценария, сохранения W14 v2, WebGL pending | CANDIDATE HOLD |
 | W23 — архитектура и PBR | Native Art #40216241171, original PBR #40216257863 | CANDIDATE; visual browser/manual review pending |
 | W24 — звук и субтитры | Original 16-bit WAV, RU/EN events, isolated local preferences, native/WebGL CI pending | CANDIDATE HOLD |
@@ -78,8 +78,9 @@
 
 ## Последовательность без потери реального релиза
 
-**1.** Завершить уже начатую W21 protected QA; только потом W21 source
-+ reviewed release channel и live smoke.
+**1.** W21 protected SSH **действительно выполнен**, см. #40219491086,
+выпуск подтверждён точным публичным HTTP SHA и Godot WebGL. Сохранять его
+как откат для W27. Повторное переключение W21 не требуется.
 
 **2.** Довести W22 Chromium, исходные 19 PNG, независимую приёмку;
 затем отдельно внедрить новые кейсы.
@@ -94,3 +95,27 @@ W26 localization/privacy, W27 бета, затем W28 защищённый GO/N
 **Жёсткая граница правды:** пройденный CI ≠ физический тест. PR ≠
 публичная игра. Проверенный GitHub Release ≠ опубликованный VPS.
 Без человеческой приёмки и устройств W28 не объявляется завершённым.
+
+## Фактический этап W27/W28 — программный выпуск не равен человеческой бете
+
+- Нативная интеграция **W27** с W19–W26, PBR и приватностью:
+  [Actions #40221692223](https://github.com/osmanosmanov6880-bot/osgard-world/actions/runs/40221692223)
+  SUCCESS на точной версии источников. Полный desktop+Pixel WebGL должен
+  пройти независимо; никакой green native не заменяет эту проверку.
+- WebGL W27 генерирует **12 оригинальных source-derived Web-only PBR PNG**,
+  сохраняя в Godot native оригинальные 1024px карты и облегчённый ECO.
+  Качество графики подтверждается только source PNG, реальным WebGL
+  и сравнением производительности, не словами «AAA».
+- W25 безопасный локальный запуск аппаратной записи:
+  `node scripts/r135-w25-physical-capture.mjs`, только авторизованный Android
+  Chrome через локальный CDP; iPhone Safari требует отдельного реального
+  подключения Web Inspector. Программный Chromium не выдаёт физические FPS.
+- Машиночитаемый **NO-GO W28**:
+  `node scripts/r135-w28-launch-decision.mjs --pin EXACT_W27.json
+  --selector scripts/r135-active-release.json --software INDEPENDENT.json
+  --phone-matrix 16_REAL_SESSIONS.json --pilot 20_REAL_VOLUNTEERS.json
+  --licenses REVIEWED_LICENSES.json --operations SIGNED_LIVE_REVIEW.json`.
+  Результат включает проверяемые блокеры и
+  `automatic_deploy_authorized=false` даже если структурные условия
+  выдержаны: подпись ответственного за выпуск и реальные устройства
+  не могут быть заменены скриптом.
