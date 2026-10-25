@@ -18,6 +18,13 @@ func _snapshot(world: Node3D, hour: float, target: String, size: Vector2i) -> fl
 	state_node.set("data",state)
 	world.call("apply_visual_budget","cinematic")
 	world.call("update_daynight",hour)
+	# R56: the public game switches vehicle lamps with the clock too.
+	# Earlier screenshot tests changed only world lighting, leaving real
+	# car beams OFF at 22:00 and wrongly certifying a black driving road.
+	var gameplay: Node = current_scene
+	var active_car: CharacterBody3D = gameplay.get("car") as CharacterBody3D
+	if active_car != null:
+		active_car.call("update_headlights",hour,"cinematic")
 	for i in range(24):
 		await process_frame
 	await RenderingServer.frame_post_draw
@@ -57,7 +64,7 @@ func _run() -> void:
 		quit(2)
 		return
 	# A lantern-rich boulevard; no fabricated overlay or external screenshot.
-	car.global_position=Vector3(0.0,1.2,8.0)
+	car.global_position=Vector3(-18.0,1.2,0.0)
 	car.rotation.y=-PI*0.5
 	player.global_position=car.global_position+Vector3(3,0,0)
 	game.set("cam_yaw",car.rotation.y)
@@ -72,7 +79,7 @@ func _run() -> void:
 	root.content_scale_size=size
 	root.size=size
 	DisplayServer.window_set_size(size)
-	world.call("update_chunks",Vector3(0,0,8),"cinematic")
+	world.call("update_chunks",Vector3(-18,0,0),"cinematic")
 	var destination: String = OS.get_environment("GITHUB_WORKSPACE")
 	if destination=="":
 		destination=ProjectSettings.globalize_path("user://")
@@ -81,6 +88,78 @@ func _run() -> void:
 	DirAccess.make_dir_recursive_absolute(destination)
 	var day: float = await _snapshot(world,12.0,destination.path_join("omega_r44_real_day_1366x768.png"),size)
 	var night: float = await _snapshot(world,22.0,destination.path_join("omega_r44_real_night_1366x768.png"),size)
+	# Compare two authentic GL framebuffers under an IDENTICAL night sky.
+	# Only switch the real car SpotLight3D pair: headlight luminance must
+	# change original road pixels, not merely toggle decorative geometry.
+	var beams: Array = car.get("headlight_cones")
+	if beams.size()!=2 or not beams[0].visible or not beams[1].visible:
+		push_error("R56 night QA: real nighttime headlight pair missing")
+		failed=true
+	# Hold other game diagnostics steady while isolating the same real
+	# night-world pixels with only the two car SpotLight3D beams toggled.
+	# This is a lighting A/B test, not altered production light behavior.
+	game.set("diagnostic_timer",-90.0)
+	var night_with_beams: Image = root.get_viewport().get_texture().get_image()
+	if night_with_beams.save_png(destination.path_join("omega_r56_headlights_on_1366x768.png"))!=OK:
+		push_error("R56 GL frame with beams cannot be written")
+		failed=true
+	car.call("update_headlights",12.0,"cinematic")
+	for i in range(12):
+		await process_frame
+	await RenderingServer.frame_post_draw
+	var night_without_beams: Image = root.get_viewport().get_texture().get_image()
+	if night_without_beams.save_png(destination.path_join("omega_r56_headlights_off_1366x768.png"))!=OK:
+		push_error("R56 GL frame without beams cannot be written")
+		failed=true
+	# The former test sampled arbitrary centre-screen pixels while placing
+	# the car at z=8, OFF the real 10m-wide EastWestRoad (z=-5..5). That
+	# falsely failed even if beams illuminated their physically aimed patch.
+	# Sample REAL asphalt points projected through the ACTUAL chase camera.
+	var view: Camera3D = game.get("camera") as Camera3D
+	if view==null:
+		push_error("R56 GL test: original game camera unavailable")
+		failed=true
+	else:
+		var facing: Vector3 = -car.global_transform.basis.z
+		var across: Vector3 = car.global_transform.basis.x
+		var visible_patches: int=0
+		var illuminated_patches: int=0
+		var road_delta_sum: float=0.0
+		var max_road_delta: float=-1.0
+		for metres in [4.0,6.0,8.0,10.0,12.0]:
+			for sideways in [-1.75,0.0,1.75]:
+				var asphalt_point: Vector3 = car.global_position+facing*float(metres)+across*float(sideways)
+				# Original visible EastWestRoad BoxMesh top is y≈0.175m.
+				asphalt_point.y=0.19
+				if view.is_position_behind(asphalt_point):
+					continue
+				var point_px: Vector2 = view.unproject_position(asphalt_point)
+				var px: int=roundi(point_px.x)
+				var py: int=roundi(point_px.y)
+				if px<10 or py<10 or px>=size.x-10 or py>=size.y-10:
+					continue
+				var local_delta: float=0.0
+				var area_count: int=0
+				for dy in range(-5,6,2):
+					for dx in range(-5,6,2):
+						var on: Color=night_with_beams.get_pixel(px+dx,py+dy)
+						var off: Color=night_without_beams.get_pixel(px+dx,py+dy)
+						local_delta+=0.2126*(on.r-off.r)+0.7152*(on.g-off.g)+0.0722*(on.b-off.b)
+						area_count+=1
+				local_delta/=float(maxi(1,area_count))
+				visible_patches+=1
+				road_delta_sum+=local_delta
+				max_road_delta=maxf(max_road_delta,local_delta)
+				if local_delta>0.006:
+					illuminated_patches+=1
+		var average_road_delta: float=road_delta_sum/float(maxi(1,visible_patches))
+		print("R56 REAL CAR HEADLIGHT PIXELS: projected_asphalt_patches=",visible_patches,
+			" illuminated=",illuminated_patches," brightest_delta=",max_road_delta,
+			" mean_delta=",average_road_delta)
+		if visible_patches<5 or illuminated_patches<2 or max_road_delta<=0.006 or average_road_delta<=0.001:
+			push_error("R56 night QA: true forward road surface receives no measurable two-beam illumination")
+			failed=true
+	car.call("update_headlights",22.0,"cinematic")
 	var scenic: Node3D = world.get("horizon_scenic") as Node3D
 	var active: int = int(scenic.get("active_night_lights")) if scenic!=null else 0
 	if active==0:
