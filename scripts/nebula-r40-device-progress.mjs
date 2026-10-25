@@ -20,10 +20,13 @@ function comparatorFromActualViewer(){
   // Inventory must agree with the same native-report parser used by the
   // local performance viewer and the strict release field gate.
   const html=fs.readFileSync(path.join(ROOT,'public/games/remix/arena-v2/nebula-3d/performance-report.html'),'utf8');
-  const match=html.match(/<script id="nebula-r37-comparator">([\\s\\S]*?)<\\/script>/);
-  if(!match)throw new Error('Actual NEBULA native benchmark parser unavailable');
+  const startTag='<script id="nebula-r37-comparator">';
+  const first=html.indexOf(startTag);
+  const last=first<0?-1:html.indexOf('</script>',first+startTag.length);
+  if(first<0||last<0)throw new Error('Actual NEBULA native benchmark parser unavailable');
+  const code=html.slice(first+startTag.length,last);
   const scope={window:{},document:{getElementById:()=>null},console};
-  vm.runInNewContext(match[1],scope,{timeout:5000});
+  vm.runInNewContext(code,scope,{timeout:5000});
   const api=scope.window.NebulaR37;
   if(!api||api.r40CandidateBuildId!==R40_BUILD)throw new Error('Unexpected R40 build identity');
   return api;
