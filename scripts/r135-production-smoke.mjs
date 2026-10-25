@@ -42,6 +42,12 @@ for (const name of ['index.js', 'index.wasm', 'index.pck']) {
   const type = (response.headers.get('content-type') || '').toLowerCase()
   if (name === 'index.wasm' && !type.includes('application/wasm')) fail('bad wasm MIME ' + type)
   if (name === 'index.js' && !type.includes('javascript')) fail('bad loader MIME ' + type)
+  if (process.env.OSGARD_REQUIRE_R135_REVALIDATION === '1') {
+    const cache = (response.headers.get('cache-control') || '').toLowerCase()
+    if (!cache.includes('no-cache') || !cache.includes('must-revalidate')) {
+      fail('R135 W11 mutable game bytes can be served stale: ' + name + ' cache=' + cache)
+    }
+  }
 }
 const wasmCompressed = files['index.wasm.gz']
 if (!wasmCompressed?.sha256) fail('Release manifest has no verified compressed WASM')
