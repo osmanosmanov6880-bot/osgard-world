@@ -101,7 +101,16 @@ async function captureLiveGodotCanvas(page) {
 // BEFORE trying expensive synchronous screenshot commands that can freeze
 // SwiftShader on a 1366x768 running WebGL2 scene. Unlike an HTML image
 // mock this only accepts an original Page.screencastFrame PNG payload.
-export async function captureRealChromiumScreencast(session, timeoutMs=11500) {
+export async function captureRealChromiumScreencast(session, timeoutMs=11500, limits={}) {
+  // Software SwiftShader can paint the real 1366x768 Godot scene while PNG
+  // compression of the full compositor frame stalls. CDP itself supports
+  // bounded downsampling of its ORIGINAL compositor pixels. This never
+  // generates a replacement scene or changes the live game viewport.
+  if(limits===null || typeof limits!=='object' || Array.isArray(limits) ||
+     Object.keys(limits).some(k=>!['maxWidth','maxHeight'].includes(k)) ||
+     (limits.maxWidth!==undefined && (!Number.isSafeInteger(limits.maxWidth) || limits.maxWidth<320 || limits.maxWidth>2048)) ||
+     (limits.maxHeight!==undefined && (!Number.isSafeInteger(limits.maxHeight) || limits.maxHeight<240 || limits.maxHeight>2048)))
+    throw new Error('Invalid bounded real compositor capture size')
   if(typeof session?.on!=='function' || typeof session?.send!=='function')
     throw new Error('Real Chromium CDP screencast session unavailable')
   if(!Number.isSafeInteger(timeoutMs)||timeoutMs<100||timeoutMs>18000)
@@ -124,7 +133,7 @@ export async function captureRealChromiumScreencast(session, timeoutMs=11500) {
     // The server may emit Page.screencastFrame before this command resolves.
     // Bound both command and frame by the same timer.
     const startPromise=session.send('Page.startScreencast',{
-      format:'png',everyNthFrame:1
+      format:'png',everyNthFrame:1,...limits
     })
     // A successful start only arms the listener; it must NOT be mistaken
     // for a rendered frame. An explicit start error still propagates.
@@ -147,6 +156,15 @@ export async function captureRealChromiumScreencast(session, timeoutMs=11500) {
 }
 
 export async function captureAnimatedWebGLViewport(page) {
+  // R74: keep the real desktop Chromium CSS viewport at 1366x768, but ask
+  // Chrome to encode a smaller honest copy of its rendered compositor frame.
+  // Mobile portrait remains completely unscaled. Original pixels and source
+  // are still attested by the caller; a loading splash still fails R72.
+  const viewport=typeof page.viewportSize==='function' ? page.viewportSize() : null
+  const compact=viewport?.width>=1100 && viewport?.height>=700
+  const limits=compact ? {maxWidth:960,maxHeight:540} : {}
+  const clip=compact ? {x:0,y:0,width:viewport.width,height:viewport.height,
+    scale:Math.min(960/viewport.width,540/viewport.height)} : null
   // Unlike locator screenshots, CDP does not wait for a continuously painted
   // WebGL canvas to reach the impossible "stable element" state.
   let session=null
@@ -155,7 +173,7 @@ export async function captureAnimatedWebGLViewport(page) {
     let screencastError=null
     try {
       // Prefer compositor's streamed real frames on slow software GPU.
-      return await captureRealChromiumScreencast(session)
+      return await captureRealChromiumScreencast(session,11500,limits)
     } catch(error) {
       screencastError=error
     }
@@ -166,7 +184,8 @@ export async function captureAnimatedWebGLViewport(page) {
         session.send('Page.captureScreenshot',{
           format:'png',
           captureBeyondViewport:false,
-          fromSurface:true
+          fromSurface:true,
+          ...(clip ? {clip} : {})
         }),
         new Promise((_,reject)=>{
           timeoutId=setTimeout(()=>reject(new Error('CDP screenshot timed out')),20000)
@@ -193,7 +212,8 @@ export async function captureAnimatedWebGLViewport(page) {
       try {
         image=await Promise.race([
           session.send('Page.captureScreenshot',{
-            format:'png',captureBeyondViewport:false,fromSurface:false
+            format:'png',captureBeyondViewport:false,fromSurface:false,
+            ...(clip ? {clip} : {})
           }),
           new Promise((_,reject)=>{
             alternateTimer=setTimeout(()=>reject(new Error('CDP view screenshot timed out')),11000)
