@@ -150,6 +150,7 @@ func _ready() -> void:
 	GameState.alert_created.connect(_on_alert)
 	GameSettings.preferences_changed.connect(_apply_preferences)
 	MissionManager.mission_completed.connect(_on_mission_done)
+	MissionManager.chapter_completed.connect(_on_chapter_done)
 	ContractManager.contract_changed.connect(_on_contract_changed)
 	_apply_preferences()
 	_sync_trial_marker()
@@ -925,3 +926,10 @@ func _on_contract_changed(_message_id: String) -> void:
 func _on_mission_done(_stage: int, reward: int) -> void:
 	if soundscape != null: soundscape.play_success()
 	hud.announce("ЗАДАНИЕ ВЫПОЛНЕНО · +%d ₽" % reward if GameState.locale == "ru" else "MISSION COMPLETE · +%d ₽" % reward)
+
+func _on_chapter_done(_chapter_id: String, reward: int) -> void:
+	# New localized one-time chapter finale is driven by a completed LIVE
+	# mission event, not an animated UI mock or repeatable click reward.
+	if soundscape != null: soundscape.play_success()
+	var amount: String = " · +%d кр." % reward if reward>0 else ""
+	hud.announce(_three("ГЛАВА ЗАВЕРШЕНА","CHAPTER COMPLETE","章节完成")+amount)

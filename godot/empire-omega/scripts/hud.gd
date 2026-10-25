@@ -253,6 +253,7 @@ var map_override := false
 var header_value: Label
 var meters_label: Label
 var law_label: Label
+var mission_chapter_label: Label
 var mission_label: Label
 var contract_label: Label
 var service_label: Label
@@ -461,7 +462,7 @@ func _make_hud() -> void:
 	var objective_stack := VBoxContainer.new()
 	objective_stack.add_theme_constant_override("separation",7)
 	objective.add_child(objective_stack)
-	_label(objective_stack,_v08("ВАША ЦЕЛЬ","YOUR OBJECTIVE","当前目标"),15,true)
+	mission_chapter_label = _label(objective_stack,_v08("ВАША ЦЕЛЬ","YOUR OBJECTIVE","当前目标"),15,true)
 	mission_label = _label(objective_stack,"",22)
 	mission_distance_label = _label(objective_stack,"",16,true)
 	journal_panel = _panel(Rect2(-476,186,452,440),1.0)
@@ -739,6 +740,8 @@ func _refresh() -> void:
 			law_label.text = _v08("ШТРАФ ","FINE ","罚款 ") + str(fine) + " кр.  ·  P"
 		else:
 			law_label.text = _v08("Патрули: спокойно","Patrols: clear","巡逻：正常")
+	if mission_chapter_label != null:
+		mission_chapter_label.text = MissionManager.chapter_title(GameState.locale,compact_hud)
 	mission_label.text = TOUCH_MISSION.title(MissionManager.title(GameState.locale),int(GameState.data.get("mission",0)),compact_hud,DisplayServer.is_touchscreen_available(),GameState.locale)
 	if trial_label != null:
 		var session: Dictionary = d.get("driving_trial",{})
