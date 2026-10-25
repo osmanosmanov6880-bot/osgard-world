@@ -126,11 +126,9 @@ export async function captureRealChromiumScreencast(session, timeoutMs=11500) {
     const startPromise=session.send('Page.startScreencast',{
       format:'png',everyNthFrame:1
     })
-    const result=await Promise.race([
-      framePromise,
-      startPromise.then(()=>framePromise),
-      startPromise.then(()=>null,err=>{throw err})
-    ])
+    // A successful start only arms the listener; it must NOT be mistaken
+    // for a rendered frame. An explicit start error still propagates.
+    const result=await Promise.race([framePromise,startPromise.then(()=>framePromise)])
     started=true
     if(!result || result.method!=='chromium-cdp-screencast')
       throw new Error('No authentic live Chromium screenshot pixels')
