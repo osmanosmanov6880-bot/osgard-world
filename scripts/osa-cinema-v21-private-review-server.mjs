@@ -46,7 +46,16 @@ async function readBody(req,cap=2048){
   return Buffer.concat(arr).toString('utf8')
 }
 function sendHtml(res,code,html,nonce){res.statusCode=code;res.setHeader('Content-Type','text/html; charset=utf-8');res.setHeader('Content-Security-Policy',csp(nonce));res.end(html)}
-function sameOrigin(req,port){const expected='http://127.0.0.1:'+port;const origin=req.headers.origin;const site=req.headers['sec-fetch-site'];return (!origin||origin===expected)&&(!site||site==='same-origin')&&(origin===expected||site==='same-origin')}
+function sameOrigin(req,port){
+  const expected='http://127.0.0.1:'+port
+  const origin=req.headers.origin
+  const site=req.headers['sec-fetch-site']
+  // A browser form navigation can report same-site or none (user initiated).
+  // Reject a contradicting Origin or any cross-site Fetch Metadata before auth.
+  if(origin && origin!==expected)return false
+  if(site && !['same-origin','same-site','none'].includes(site))return false
+  return origin===expected || ['same-origin','same-site','none'].includes(site)
+}
 
 export async function startPrivateReviewServer({sourceDir,asset,password,cutTimes=[],port=0}){
   validateAsset(asset)
