@@ -44,6 +44,10 @@ jobs:
         run: node --experimental-strip-types scripts/osa-cinema-v14-companion-smoke.mjs
       - name: OSA Cinema V15 eight-scene edit decision list and source provenance
         run: node scripts/osa-cinema-v15-edit-decision-smoke.mjs
+      - name: Validate V19 WebVTT parser, timecode safety and private caption editor provenance
+        run: |
+          node --test scripts/osa-cinema-v19-caption-core.test.mjs
+          node scripts/osa-cinema-v19-caption-studio-smoke.mjs
       - name: Validate V18 real 64/10 shot alignment and four-track private mastering evidence
         run: |
           bash -n scripts/osa-cinema-v18-private-four-track.sh
