@@ -126,6 +126,14 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 2
+      - name: Abort obsolete queued releases before installing dependencies
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          # A queued master build must not spend minutes on stale payloads.
+          # This read-only GitHub SHA check cannot change the live server.
+          bash scripts/check-frontend-release-freshness.sh
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -224,6 +232,13 @@ jobs:
           npm run qa:core-program-commerce
           npm run qa:stripe-sdk
 
+      - name: Recheck release SHA after validations before heavy Godot and Web build
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          # Detect other projects merging mid-CI before large binary builds.
+          bash scripts/check-frontend-release-freshness.sh
       - name: Validate the Godot game project contract
         run: npm run qa:null-shift-godot
       - name: Detect whether the Godot web export needs rebuilding
