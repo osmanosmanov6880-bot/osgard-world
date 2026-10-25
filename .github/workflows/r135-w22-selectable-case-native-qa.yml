@@ -1,0 +1,65 @@
+name: OSGARD R135 W22 actual selectable three-fault mastery and safe replay Godot acceptance
+
+on:
+  push:
+    branches: [feat/r135-w22-selectable-case-mastery-20261025]
+    paths:
+      - 'godot/osgard-r135-standalone/**'
+      - '.github/workflows/r135-w22-selectable-case-native-qa.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  actual-selectable-fault-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Preserve W13 interlock + W14 save format and three actual case selectors
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          base=Path("godot/osgard-r135-standalone")
+          director=(base/"R135ServiceDirector.gd").read_text()
+          premium=(base/"R135PremiumOnboarding.gd").read_text()
+          test=(base/"tests/case_mastery_smoke.gd").read_text()
+          assert "func start_selected_challenge(index: int) -> bool:" in director
+          assert "if mission_active or challenge_active:" in director
+          assert 'BEST_SCORE_PATH = "user://r135_challenge_record.cfg"' in director
+          assert "RECORD_SCHEMA_VERSION: int = 2" in director
+          assert "case_best_scores" in director and "mastery_report" in director
+          assert "replay.pressed.connect(_start_selected_case.bind(i))" in premium
+          assert "case_selection_buttons.size() != 3" in premium
+          assert "pressed.emit()" in test
+          for source in ("HTTPRequest", "HTTPClient", "OS.execute", "physical_telemetry_connected=true"):
+            assert source not in director, "Game must not control equipment: "+source
+          print("W22 safe targeted replay, original save and three actual case buttons PASS")
+          PY
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: true
+      - name: Import original 3D HERO/ECO GLBs and licensed PBR maps
+        run: |
+          set -euo pipefail
+          godot --headless --editor --path godot/osgard-r135-standalone --import --quit
+      - name: Original W19 full service, real interlocks, three-fault scores
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 150s godot --headless --path godot/osgard-r135-standalone --script res://tests/smoke.gd
+      - name: W20 user preferences, isolated saves and genuine control signals
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 150s godot --headless --path godot/osgard-r135-standalone --script res://tests/preferences_smoke.gd
+      - name: W21 why/deep cause from actual wrong-order and wrong-view safety states
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 150s godot --headless --path godot/osgard-r135-standalone --script res://tests/learning_coach_smoke.gd
+      - name: W22 real selectable 3-fault UI, mastery, safe replay and durable save
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 150s godot --headless --path godot/osgard-r135-standalone --script res://tests/case_mastery_smoke.gd
