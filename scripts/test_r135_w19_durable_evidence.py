@@ -56,7 +56,7 @@ class DurableW19(unittest.TestCase):
             root = Path(tmp)
             with zipfile.ZipFile(root/"archive.zip", "w") as writer:
                 writer.writestr("r135-w10-release-evidence.json", "{}")
-                writer.writestr("r135-screens/one.png", b"1")
+                writer.writestr("r135-screens/one.png", b"fixture" * 300, compress_type=zipfile.ZIP_STORED)
             with self.assertRaisesRegex(ValueError, "13 original"):
                 lib.unpack(root/"archive.zip", root/"out")
 
