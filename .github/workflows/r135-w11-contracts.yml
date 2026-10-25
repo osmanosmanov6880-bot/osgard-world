@@ -1,0 +1,45 @@
+name: OSGARD R135 W11 promotion pin safety contracts
+on:
+  push:
+    branches: [release/r135-w11-verified-promotion-20261025]
+    paths:
+      - "scripts/r135-release-stage.py"
+      - "scripts/test_r135_w11_stage.py"
+      - "scripts/r135-w11-caption-gate.py"
+      - ".github/workflows/r135-w11-artifact-gate.yml"
+      - ".github/workflows/r135-w11-contracts.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Fail-closed W6/W11 signed staging contracts
+        run: python3 -m unittest discover -s scripts -p test_r135_w11_stage.py -v
+      - name: Validate Python and release workflow safety invariants
+        run: |
+          python3 -m py_compile scripts/r135-release-stage.py scripts/r135-w11-caption-gate.py
+          python3 - <<'PY'
+          from pathlib import Path
+          s=Path(".github/workflows/r135-w11-artifact-gate.yml").read_text()
+          for value in (
+            '.head_sha==$sha',
+            '.conclusion=="success"',
+            'sha256sum -c -',
+            'scripts/r135-w11-caption-gate.py',
+            '--portrait-evidence',
+            'scripts/r135-nginx-wasm-smoke.sh',
+            '--draft',
+            'gh release download',
+            '--draft=false',
+          ):
+              assert value in s, f"Missing fail-closed W11 acceptance invariant: {value}"
+          assert "deploy-frontend" not in s, "Gate may not deploy unaccepted game"
+          print("R135 W11 promotion invariants PASS; independent PR checks only")
+          PY
