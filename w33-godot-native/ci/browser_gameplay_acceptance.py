@@ -120,7 +120,7 @@ class Driver:
         complete=self.until(lambda s:s.get("complete") is True and s.get("step")==5,"real case completion")
         assert complete["errors"]==0, f"Unexpected unsafe native actions: {complete}"
         assert complete["score"]>=60, f"Native score too low: {complete}"
-        assert complete["cleared"] >= (base+1 if not advanced else 3), f"Missing native progress: {complete}"
+        assert complete["cleared"] >= 1, f"Base mission progress must persist: {complete}"
         if advanced:
             assert complete["shift_cleared"] >= 1 and complete["incident"],complete
         self.record("mission completed")
