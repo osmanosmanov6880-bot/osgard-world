@@ -1,5 +1,14 @@
 name: OSGARD HORIZON R11 actual mobile WebGL and physical touch-drive QA
 on:
+  # A QA-only fix must be tested against the actual PUBLIC Godot game when
+  # merged, even without rebuilding/redeploying native WASM/PCK.
+  push:
+    branches: [master]
+    paths:
+      - 'scripts/omega-live-webgl.spec.mjs'
+      - 'scripts/omega-browser-evidence.mjs'
+      - 'scripts/omega-live-webgl-capture.contract.test.mjs'
+      - '.github/workflows/omega-r11-actual-browser-qa.yml'
   pull_request:
     branches: [master]
     paths:
@@ -34,7 +43,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   cdn-cache-correctness:
-    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' || github.event_name == 'push'
     runs-on: ubuntu-latest
     timeout-minutes: 6
     steps:
@@ -54,7 +63,7 @@ jobs:
         run: |
           docker run --rm --mount "type=bind,src=$PWD/nginx.conf,dst=/etc/nginx/conf.d/default.conf,readonly" nginx:1.27-alpine nginx -t
   native-two-finger-driving:
-    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' || github.event_name == 'push'
     runs-on: ubuntu-latest
     timeout-minutes: 16
     steps:
@@ -82,7 +91,7 @@ jobs:
             timeout --signal=TERM --kill-after=5s 40s godot --headless --path godot/empire-omega --script "res://tests/$test.gd"
           done
   browser-spec-preflight:
-    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' || github.event_name == 'push'
     runs-on: ubuntu-latest
     timeout-minutes: 4
     steps:
@@ -101,7 +110,7 @@ jobs:
   actual-desktop-phone-webgl:
     # Never run against stale public WASM immediately after a gameplay push.
     # The protected direct SSH deployment triggers acceptance on the exact version.
-    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'master')
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'push' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'master')
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
