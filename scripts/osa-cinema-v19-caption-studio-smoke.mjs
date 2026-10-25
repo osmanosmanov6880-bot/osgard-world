@@ -11,6 +11,8 @@ assert.ok(!/<script\s+src=|<link\s+href=/i.test(html),'Offline interface cannot 
 assert.ok(!/\bfetch\s*\(|\bXMLHttpRequest\b|\bnavigator\.sendBeacon\b|\bWebSocket\b/.test(html),'No network transfer channels')
 assert.ok(html.includes("crypto.subtle.digest('SHA-256'"),'Must check actual original file SHA')
 assert.ok(html.includes('releaseAuthorized:false')&&html.includes('rightsCleared:false'),'Exports are private drafts')
+assert.ok(html.includes('No caption cues in WebVTT'),'Empty imports must not claim subtitle success')
+assert.ok(html.includes('WebVTT cue editor')&&html.includes('Export WebVTT before closing'),'English UI and session-only warning are required')
 for(const id of ['source','mp4','vtt','video','openMedia','hash','switchLanguage','start','end','cueText','addCue','updateCue','deleteCue','loadVtt','exportVtt','exportJson','cueList','actMarkers','cutMarkers','status'])assert.ok(html.includes('id="'+id+'"'),'Missing control '+id)
 const script=[...html.matchAll(/<script>([\s\S]*?)<\/script>/g)]
 assert.equal(script.length,1)
