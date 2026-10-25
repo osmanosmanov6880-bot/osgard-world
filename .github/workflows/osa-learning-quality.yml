@@ -42,6 +42,8 @@ jobs:
         run: node scripts/osa-cinema-v13-smoke.mjs
       - name: OSA Cinema V14 companion — eight chapters, export, bilingual URL state
         run: node --experimental-strip-types scripts/osa-cinema-v14-companion-smoke.mjs
+      - name: OSA Cinema V15 eight-scene edit decision list and source provenance
+        run: node scripts/osa-cinema-v15-edit-decision-smoke.mjs
       - name: TypeScript validation
         run: npm run check
       - name: Bilingual media publication contract
