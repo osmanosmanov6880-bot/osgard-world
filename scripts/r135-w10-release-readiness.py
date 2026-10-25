@@ -12,6 +12,7 @@ import argparse
 import gzip
 import hashlib
 import json
+import math
 import struct
 import zipfile
 from pathlib import Path
@@ -31,8 +32,73 @@ def hash_stream(stream) -> tuple[str, int]:
     return digest.hexdigest(), size
 
 
+def portrait_capture_proof(path: Path, screenshot: Path,
+                           width: int, height: int) -> dict:
+    """Cross-check authentic PNG bytes, CSS viewport and actual Godot render target.
+
+    CDP screenshots may encode CSS pixels on high-DPR handsets (412x839),
+    even while Godot renders 1081x2202 actual pixels. Do not upsample or
+    silently drop the former 600x1000 viewport requirement: accept the smaller
+    capture ONLY with verified high-resolution live canvas geometry.
+    """
+    check(path.is_file(), "live Chromium canvas provenance JSON missing")
+    proof = json.loads(path.read_text(encoding="utf-8"))
+    check(isinstance(proof, dict), "invalid screenshot provenance JSON")
+    check(proof.get("screenshot_sha256") == hashlib.sha256(screenshot.read_bytes()).hexdigest(),
+          "screenshot/provenance sha256 mismatch")
+    check(proof.get("capture_method") in
+          ("chromium-cdp", "chromium-canvas-readback", "playwright-viewport"),
+          "not a trusted WebGL screenshot capture path")
+    check(proof.get("scene_ready") is True and proof.get("view") == 2
+          and proof.get("camera_target_visible") is True
+          and proof.get("active_caption_depth_override") is True
+          and proof.get("fault_label_visible_count") == 1
+          and proof.get("loading_failures") == 0,
+          "portrait capture was not the active readable Godot optical fault")
+
+    def pair(field: str) -> tuple[float, float]:
+        items = proof.get(field)
+        check(isinstance(items, list) and len(items) == 2
+              and all(type(v) in (int, float) and math.isfinite(v) and v > 0
+                      for v in items), "invalid capture geometry: " + field)
+        return float(items[0]), float(items[1])
+
+    capture_w, capture_h = pair("screenshot_pixels")
+    css_w, css_h = pair("css_viewport")
+    canvas_w, canvas_h = pair("canvas_pixels")
+    element_w, element_h = pair("canvas_css")
+    dpr = proof.get("device_pixel_ratio")
+    check(type(dpr) in (int, float) and math.isfinite(dpr) and 1.4 <= dpr <= 4.5,
+          "high-DPR capture lacks valid device pixel ratio")
+    check((capture_w, capture_h) == (width, height),
+          "PNG header does not match reported screenshot geometry")
+    check(width >= 360 and height >= 700 and height / width >= 1.4,
+          "portrait screenshot dimensions not credible")
+    check(canvas_w >= 600 and canvas_h >= 1000 and canvas_h / canvas_w >= 1.4,
+          "real Godot WebGL render target too small")
+    check(abs(element_w / css_w - 1.0) <= .06 and abs(element_h / css_h - 1.0) <= .06,
+          "Godot canvas not filling CSS viewport")
+    check(abs(canvas_w / (element_w * dpr) - 1.0) <= .08
+          and abs(canvas_h / (element_h * dpr) - 1.0) <= .08,
+          "claimed canvas resolution does not match devicePixelRatio")
+    css_capture = abs(width / css_w - 1.0) <= .06 and abs(height / css_h - 1.0) <= .06
+    pixel_capture = (abs(width / canvas_w - 1.0) <= .06
+                     and abs(height / canvas_h - 1.0) <= .06)
+    check(css_capture or pixel_capture,
+          "screenshot does not match live CSS viewport OR native canvas pixels")
+    return {
+        "capture_method": proof["capture_method"],
+        "capture_coordinates": "css" if css_capture else "render_target",
+        "css_viewport": [css_w, css_h],
+        "canvas_pixels": [canvas_w, canvas_h],
+        "device_pixel_ratio": dpr,
+        "sha256": proof["screenshot_sha256"],
+    }
+
+
 def validate(archive: Path, manifest_path: Path, portrait: Path,
-             expected_version: str, expected_source: str) -> dict:
+             expected_version: str, expected_source: str,
+             portrait_evidence: Path | None = None) -> dict:
     check(archive.is_file() and archive.stat().st_size > 10_000_000,
           "missing genuine archive")
     check(manifest_path.is_file(), "manifest missing")
@@ -94,8 +160,13 @@ def validate(archive: Path, manifest_path: Path, portrait: Path,
     check(len(header) == 24 and header[:8] == b"\x89PNG\r\n\x1a\n"
           and header[12:16] == b"IHDR", "not a genuine PNG screenshot")
     width, height = struct.unpack(">II", header[16:24])
-    check(width >= 600 and height >= 1000 and height / width >= 1.4,
-          "portrait screenshot dimensions not credible")
+    if portrait_evidence is None:
+        # W10 backward-compatible strict mode. No unverified DPR exception.
+        check(width >= 600 and height >= 1000 and height / width >= 1.4,
+              "portrait screenshot dimensions not credible")
+        capture_provenance = None
+    else:
+        capture_provenance = portrait_capture_proof(portrait_evidence, portrait, width, height)
     check(archive.stat().st_size < 135_000_000,
           "candidate exceeds reviewed transfer budget")
 
@@ -113,6 +184,7 @@ def validate(archive: Path, manifest_path: Path, portrait: Path,
         "pck_bytes": files["index.pck"]["size_bytes"],
         "wasm_gzip_bytes": gz_size,
         "portrait_pixels": [width, height],
+        "portrait_capture_provenance": capture_provenance,
         "hardware_gpu_fps_certified": False,
         "real_phone_thermals_certified": False,
         "simulated_equipment_only": True,
@@ -124,12 +196,15 @@ def main() -> None:
     p.add_argument("--archive", type=Path, required=True)
     p.add_argument("--manifest", type=Path, required=True)
     p.add_argument("--portrait", type=Path, required=True)
+    p.add_argument("--portrait-evidence", type=Path,
+                   help="live browser geometry proof for CDP CSS-pixel screenshots")
     p.add_argument("--expected-version", required=True)
     p.add_argument("--expected-source", required=True)
     p.add_argument("--output", type=Path, required=True)
     args = p.parse_args()
     summary = validate(args.archive, args.manifest, args.portrait,
-                       args.expected_version, args.expected_source)
+                       args.expected_version, args.expected_source,
+                       args.portrait_evidence)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(summary, indent=2))

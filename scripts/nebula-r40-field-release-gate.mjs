@@ -41,6 +41,28 @@ function localFile(root,relative,kind) {
 function readJson(root,relative) {
   return JSON.parse(fs.readFileSync(localFile(root,relative,'JSON'),'utf8'));
 }
+// Reject a faster average FPS when stutter/1% low is materially worse.
+function median(nums) {
+  check(Array.isArray(nums) && nums.length>0, 'No frame-pacing samples');
+  const sorted=[...nums].sort((a,b)=>a-b);
+  const mid=Math.floor(sorted.length/2);
+  return sorted.length%2?sorted[mid]:(sorted[mid-1]+sorted[mid])/2;
+}
+function framePacing(rows) {
+  const a=rows.filter(r=>r.variant==='R38'),b=rows.filter(r=>r.variant==='R40');
+  check(a.length>=3 && b.length>=3,'Missing before/after frame pacing samples');
+  const low38=median(a.map(x=>x.low)),low40=median(b.map(x=>x.low));
+  const p9938=median(a.map(x=>x.p99)),p9940=median(b.map(x=>x.p99));
+  check(low38>0 && p9938>0 && p9940>0,
+    'Frame-pacing baseline must be positive and complete');
+  return {
+    baseline_1percent_low:low38,candidate_1percent_low:low40,
+    baseline_p99_ms:p9938,candidate_p99_ms:p9940,
+    low_improvement_percent:Number(((low40-low38)/low38*100).toFixed(1)),
+    p99_improvement_percent:Number(((p9938-p9940)/p9938*100).toFixed(1)),
+    stable:low40 >= low38*0.95 && p9940 <= p9938*1.05
+  };
+}
 function inspect(filename) {
   const absolute=path.resolve(filename),root=fs.realpathSync(path.dirname(absolute));
   const input=readJson(root,path.basename(absolute));
@@ -91,7 +113,11 @@ function inspect(filename) {
           compared[0].status!=='ХУЖЕ' &&
           compared[0].status!=='ПОВТОРНЫЕ JSON',
           'Incomplete, noisy, mislabeled or regressing hardware data: '+id+'/'+orientation+'/'+profile);
-        rows.push({device:id,orientation,profile,
+        const pacing=framePacing(sample);
+        check(pacing.stable,
+          'R40 1% low or P99 frame pacing regressed by more than 5%: '+
+          id+'/'+orientation+'/'+profile);
+        rows.push({device:id,orientation,profile,...pacing,
           baseline_fps:compared[0].baselineFps,
           candidate_fps:compared[0].candidateFps,
           fps_delta_percent:Number(compared[0].deltaFps.toFixed(1)),
@@ -120,7 +146,21 @@ try {
       one_percent_low_fps:35,p95_frame_ms:23,p99_frame_ms:29};
     check(api.parseReport(fixture,'fixture.json','CI','R40').reportedBuild===
       api.r40CandidateBuildId,'R40 provenance regression');
-    console.log('NEBULA_R40_FIELD_GATE_SELFTEST_SUCCESS synthetic_only=true hardware=0');
+    const stable=framePacing([
+      {variant:'R38',low:30,p99:33},{variant:'R38',low:31,p99:34},
+      {variant:'R38',low:29,p99:35},{variant:'R40',low:31,p99:32},
+      {variant:'R40',low:32,p99:33},{variant:'R40',low:30,p99:34}
+    ]);
+    check(stable.stable && stable.low_improvement_percent > 0,
+      'Frame pacing stable synthetic regression');
+    const stutter=framePacing([
+      {variant:'R38',low:30,p99:33},{variant:'R38',low:31,p99:34},
+      {variant:'R38',low:29,p99:35},{variant:'R40',low:20,p99:49},
+      {variant:'R40',low:19,p99:48},{variant:'R40',low:21,p99:47}
+    ]);
+    check(!stutter.stable && stutter.p99_improvement_percent < -5,
+      'Severe stutter regression must always be rejected');
+    console.log('NEBULA_R40_FIELD_GATE_SELFTEST_SUCCESS synthetic_only=true hardware=0 pacing_cases=2');
   } else {
     check(process.argv.length===3,
       'Usage: node scripts/nebula-r40-field-release-gate.mjs /path/to/manifest.json');
