@@ -14,6 +14,26 @@ function sampleLuma(png,xa,xb,ya,yb){
   return sum/Math.max(1,count)
 }
 
+// R60: brightness alone cannot prove a real government panel. Authentic
+// 1366x768 GL/WebGL shows a dark scene in several valid camera positions.
+// A warm gold textual heading on a large dark left-side backdrop is the
+// actual UI's stronger visual signal. Read rendered Chromium PNG pixels;
+// no DOM mock, synthetic image or bypass of real game motion is accepted.
+function samplePanelPixels(png,xa,xb,ya,yb){
+  let gold=0,dark=0,total=0
+  for(let y=Math.floor(png.height*ya);y<Math.floor(png.height*yb);y+=3){
+    for(let x=Math.floor(png.width*xa);x<Math.floor(png.width*xb);x+=3){
+      const at=(y*png.width+x)*4
+      const r=png.data[at],g=png.data[at+1],b=png.data[at+2]
+      const luma=0.2126*r+0.7152*g+0.0722*b
+      if(r>140 && g>100 && r>g*1.05 && g>b*1.25) gold++
+      if(luma<35) dark++
+      total++
+    }
+  }
+  return {goldPixels:gold,darkRatio:dark/Math.max(1,total)}
+}
+
 test('R33 REAL desktop Tab opens left Godot government dock while the world stays rendered',async({page},info)=>{
   test.setTimeout(200000)
   const faults=[]
@@ -23,7 +43,9 @@ test('R33 REAL desktop Tab opens left Godot government dock while the world stay
   await expect(page.locator('#canvas')).toBeVisible()
   await page.waitForFunction(()=>document.querySelector('#status')===null,null,{timeout:115000})
   await page.waitForTimeout(600)
-  const before=PNG.sync.read((await captureAnimatedWebGLViewport(page)).png)
+  const beforePixels=(await captureAnimatedWebGLViewport(page)).png
+  const before=PNG.sync.read(beforePixels)
+  await info.attach('R33-original-Godot-before-tab.png',{body:beforePixels,contentType:'image/png'})
   // Real keyboard event to the actual focused WebGL runtime, not a simulated UI.
   // Continuously painted WebGL is never DOM-stable for locator.click().
   // Use a trusted real mouse event without waiting for animation stability.
@@ -36,14 +58,23 @@ test('R33 REAL desktop Tab opens left Godot government dock while the world stay
   const leftAfter=sampleLuma(after,0.06,0.38,0.23,0.78)
   const rightBefore=sampleLuma(before,0.60,0.91,0.23,0.78)
   const rightAfter=sampleLuma(after,0.60,0.91,0.23,0.78)
+  const panelBefore=samplePanelPixels(before,0.06,0.38,0.23,0.78)
+  const panelAfter=samplePanelPixels(after,0.06,0.38,0.23,0.78)
   await info.attach('R33-actual-Godot-open-governor.png',{body:screenshot,contentType:'image/png'})
   await info.attach('R33-real-cabinet-metrics.json',{body:Buffer.from(JSON.stringify({
-    viewport:[after.width,after.height],leftBefore,leftAfter,rightBefore,rightAfter,crashReports:faults
+    viewport:[after.width,after.height],leftBefore,leftAfter,rightBefore,rightAfter,
+    panelBefore,panelAfter,crashReports:faults
   },null,2)),contentType:'application/json'})
+  expect(before.width).toBe(1366)
+  expect(before.height).toBe(768)
   expect(after.width).toBe(1366)
   expect(after.height).toBe(768)
-  expect(leftBefore).toBeGreaterThan(40)
-  expect(leftAfter,'left dock must visibly cover most of previous road/building pixels').toBeLessThan(leftBefore*0.75)
-  expect(rightAfter,'right side must remain visible instead of becoming a black wall').toBeGreaterThan(Math.max(35,rightBefore*0.34))
+  // Original page is real and nonblank even when city lighting is dimmer
+  // than the obsolete 40/255 absolute 2D pixel threshold.
+  expect(Math.max(leftBefore,rightBefore),'original live game must not be black').toBeGreaterThan(28)
+  expect(panelAfter.goldPixels,'actual golden Government HUD headings must be painted by WebGL').toBeGreaterThan(50)
+  expect(panelAfter.goldPixels,'opening Tab must CREATE original government panel text').toBeGreaterThan(panelBefore.goldPixels*2+35)
+  expect(panelAfter.darkRatio,'large authentic dark UI panel must cover left viewport').toBeGreaterThan(0.35)
+  expect(rightAfter,'right world must stay visible when the panel opens').toBeGreaterThan(Math.max(35,rightBefore*0.34))
   expect(faults).toEqual([])
 })
