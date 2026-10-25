@@ -59,6 +59,9 @@ on:
       - "scripts/r135-w11-release-pin.json"
       - "scripts/r135-w14-release-pin.json"
       - "scripts/r135-w18-release-pin.json"
+      - "scripts/r135-w19-release-pin.json"
+      - "scripts/r135-w19-promotion-qa.py"
+      - "scripts/test_r135_w19_promotion_gate.py"
       - "scripts/r135-active-release.json"
       - "scripts/r135-release-selector.sh"
       - "scripts/r135-w18-deploy-contract.mjs"
@@ -357,6 +360,33 @@ jobs:
               --repo osmanosmanov6880-bot/osgard-world \
               --name "$ART_NAME" --dir "$ROOT"
             python3 scripts/r135-w18-promotion-qa.py --pin "$PIN" --artifact "$ROOT"
+          elif [[ "$PIN" == scripts/r135-w19-release-pin.json ]]; then
+            # W19 is never selected implicitly. Source-controlled channel plus
+            # separate EXACT independent full acceptance run are mandatory.
+            GATE_RUN="$(jq -er '.promotion_gate_run_id' scripts/r135-active-release.json)"
+            GATE="$(gh api "repos/osmanosmanov6880-bot/osgard-world/actions/runs/$GATE_RUN")"
+            test "$(jq -er '.conclusion' <<< "$GATE")" = success
+            jq -er '.path' <<< "$GATE" | grep -Fq r135-w19-promotion-gate.yml
+            GATE_JOBS="$(gh api "repos/osmanosmanov6880-bot/osgard-world/actions/runs/$GATE_RUN/jobs?per_page=100")"
+            jq -e '.jobs[] | select(.name == "independently-accept-real-w19" and .conclusion == "success")' <<< "$GATE_JOBS" >/dev/null
+            GATE_SHA="$(jq -er '.head_sha' <<< "$GATE")"
+            PIN_AT_GATE="$(gh api "repos/osmanosmanov6880-bot/osgard-world/contents/scripts/r135-w19-release-pin.json?ref=$GATE_SHA" --jq '.content' | base64 -d | sha256sum | awk '{print $1}')"
+            test "$PIN_AT_GATE" = "$(sha256sum "$PIN" | awk '{print $1}')"
+            SOURCE="$(jq -er '.source_commit' "$PIN")"
+            RUN="$(gh api "repos/osmanosmanov6880-bot/osgard-world/actions/runs/$RUN_ID")"
+            test "$(jq -er '.head_sha' <<< "$RUN")" = "$SOURCE"
+            test "$(jq -er '.conclusion' <<< "$RUN")" = success
+            jq -er '.path' <<< "$RUN" | grep -Fq r135-web-optimized.yml
+            ART_ID="$(jq -er '.artifact_id' "$PIN")"
+            ARTIFACTS="$(gh api "repos/osmanosmanov6880-bot/osgard-world/actions/runs/$RUN_ID/artifacts")"
+            jq -e --argjson id "$ART_ID" --arg name "$ART_NAME" \
+              '.artifacts[] | select(.id == $id and .name == $name and .expired == false)' \
+              <<< "$ARTIFACTS" >/dev/null
+            # No W18 fallback, synthetic screenshot or floating/latest artifacts.
+            gh run download "$RUN_ID" \
+              --repo osmanosmanov6880-bot/osgard-world \
+              --name "$ART_NAME" --dir "$ROOT"
+            python3 scripts/r135-w19-promotion-qa.py --pin "$PIN" --artifact "$ROOT"
           else
             echo 'Unreviewed R135 channel refused' >&2
             exit 1
@@ -634,9 +664,11 @@ jobs:
           [[ "$R135_SHA" =~ ^[0-9a-f]{64}$ && "$R135_SOURCE" =~ ^[0-9a-f]{40}$ ]]
           if [[ "$PIN" == scripts/r135-w14-release-pin.json ]]; then
             test "$R135_VERSION" = "r135-case-progress-w14-20261025"
-          else
-            test "$PIN" = scripts/r135-w18-release-pin.json
+          elif [[ "$PIN" == scripts/r135-w18-release-pin.json ]]; then
             test "$R135_VERSION" = "r135-premium-learning-w18-candidate-20261025"
+          else
+            test "$PIN" = scripts/r135-w19-release-pin.json
+            test "$R135_VERSION" = "r135-luxury-academy-w19-candidate-20261025"
           fi
           scp -i ~/.ssh/osgard_deploy scripts/activate-frontend-remote.sh "$USER@$HOST:$REMOTE_SCRIPT"
           ssh -i ~/.ssh/osgard_deploy "$USER@$HOST" "docker cp '$REMOTE_RELEASE_DIR/osgard-world-release.tgz' osgard-world:'$REMOTE_ARCHIVE' && chmod 700 '$REMOTE_SCRIPT' && OSGARD_EXPECTED_R135_MANIFEST_SHA256='$R135_SHA' OSGARD_EXPECTED_R135_SOURCE='$R135_SOURCE' OSGARD_EXPECTED_R135_VERSION='$R135_VERSION' OSGARD_ARCHIVE='$REMOTE_ARCHIVE' OSGARD_CORE_IMAGE='osgard-core-api:${GITHUB_SHA}' OSGARD_REMIX_GUARD_IMAGE='osgard-remix-guard:${GITHUB_SHA}' OSGARD_CONTAINER=osgard-world '$REMOTE_SCRIPT'"
