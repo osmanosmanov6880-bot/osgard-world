@@ -136,7 +136,7 @@
  .osa-cinema[data-cinema-art="obsidian"] .cinema-scene::before{background:linear-gradient(0deg,rgba(3,4,5,.97) 4%,rgba(3,4,5,.86) 36%,rgba(3,4,5,.27) 84%,rgba(3,4,5,.08) 100%)}
  .osa-cinema[data-cinema-art="obsidian"] .scene-art{background-position:54% 15%;background-size:auto 70%;background-repeat:no-repeat;background-color:#090909}
  .osa-cinema[data-cinema-art="obsidian"] .scene-content{padding:235px 0 4px}
- .osa-cinema[data-cinema-art="obsidian"] .osa42-film-title{font-size:clamp(54px,13.9vw,76px);line-height:.88;white-space:normal;white-space:normal}
+ .osa-cinema[data-cinema-art="obsidian"] .osa42-film-title{font-size:clamp(54px,13.9vw,76px);line-height:.88;white-space:normal}
  .osa-cinema[data-cinema-art="obsidian"] .osa42-tagline{font-size:14px;line-height:1.45}
  .osa-cinema[data-cinema-art="obsidian"] .osa42-scene-note{margin:15px 0;padding-left:12px}
  .osa-cinema[data-cinema-art="obsidian"] .osa42-scene-note h2{font-size:20px}
@@ -156,3 +156,7 @@
  .osa-cinema[data-cinema-art="obsidian"] .osa42-lower>div,.osa-cinema[data-cinema-art="obsidian"] .osa42-lower>blockquote{min-height:0;padding:25px}
 }
 @media(prefers-reduced-motion: reduce){.osa-cinema[data-cinema-art="obsidian"] *{transition-duration:.01ms!important;animation-duration:.01ms!important}}
+/* Functional three-act navigation retained for Academy deep-link guarantees. */
+.osa-cinema[data-cinema-art="obsidian"] .osa42-act-switch{display:flex;gap:5px;margin:0 0 18px}
+.osa-cinema[data-cinema-art="obsidian"] .osa42-act-switch button{flex:1;min-height:35px;border:1px solid rgba(199,157,102,.28);background:#0e0d0b;color:#c1a786;font:10px/1.2 Arial,sans-serif;letter-spacing:.11em}
+.osa-cinema[data-cinema-art="obsidian"] .osa42-act-switch button[aria-pressed="true"]{border-color:#d9b987;background:#322519;color:#f9dfb1}
