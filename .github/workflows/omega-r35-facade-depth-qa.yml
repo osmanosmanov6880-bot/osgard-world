@@ -1,0 +1,36 @@
+name: EMPIRE Omega R35 real facade depth and native architecture QA
+on:
+  pull_request:
+    branches: [master, 'feat/omega-r34-street-level-cabinet-cinema']
+    paths:
+      - 'godot/empire-omega/scripts/horizon_facade_balconies.gd'
+      - 'godot/empire-omega/scripts/world_builder.gd'
+      - 'godot/empire-omega/tests/v57_r35_street_facade_depth.gd'
+      - '.github/workflows/omega-r35-facade-depth-qa.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  authentic-batched-street-geometry:
+    runs-on: ubuntu-latest
+    timeout-minutes: 24
+    steps:
+      - uses: actions/checkout@v4
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: false
+      - name: Generate original audio and import real game
+        run: |
+          python3 godot/empire-omega/tools/generate_audio.py
+          python3 godot/empire-omega/tools/generate_patrol_audio.py
+          godot --headless --editor --path godot/empire-omega --import --quit
+      - name: Native material, road, camera, physics and R35 geometry regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          for suite in v48_city_polish v50_organic_foliage_mobile_focus v51_batched_streetfronts v53_rain_puddles_city_cleanup v55_r33_four_wheel_wet_night_beams v56_r34_cinematic_cabinet_camera v57_r35_street_facade_depth; do
+            echo "RUN real Godot $suite"
+            timeout --signal=TERM --kill-after=5s 120s godot --headless --path godot/empire-omega --script "res://tests/$suite.gd"
+          done

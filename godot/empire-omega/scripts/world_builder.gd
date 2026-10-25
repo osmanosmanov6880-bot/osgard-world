@@ -40,6 +40,7 @@ var facade_windows: MultiMeshInstance3D
 var facade_frames: MultiMeshInstance3D
 var architecture_trim: MultiMeshInstance3D
 var streetfront: Node3D
+var facade_balconies: Node3D
 var road_paint: Node3D
 var road_puddles: MultiMeshInstance3D
 var cityhall_gateway: Node3D
@@ -51,6 +52,7 @@ const LIGHT_GRADE = preload("res://scripts/horizon_light_grade.gd")
 const FACADE_MATERIALS = preload("res://scripts/horizon_facade_materials.gd")
 const ARCHITECTURE_TRIM = preload("res://scripts/horizon_architecture_trim.gd")
 const STREETFRONT_SCENE = preload("res://scripts/horizon_streetfront_details.gd")
+const BALCONIES_SCENE = preload("res://scripts/horizon_facade_balconies.gd")
 const CIVIC_GATEWAY = preload("res://scripts/horizon_civic_gateway.gd")
 const ROAD_PAINT_SCENE = preload("res://scripts/horizon_road_paint_batches.gd")
 const ROAD_PUDDLES = preload("res://scripts/horizon_rain_puddles.gd")
@@ -75,11 +77,14 @@ func _ready() -> void:
 	city_root.add_child(road_puddles)
 	architecture_trim = ARCHITECTURE_TRIM.new()
 	streetfront = STREETFRONT_SCENE.new()
+	facade_balconies = BALCONIES_SCENE.new()
 	_create_city()
 	architecture_trim.call("finalize")
 	city_root.add_child(architecture_trim)
 	streetfront.call("finalize")
 	city_root.add_child(streetfront)
+	facade_balconies.call("finalize")
+	city_root.add_child(facade_balconies)
 	_create_window_batch()
 	_create_landmarks()
 	_create_waypoint_marker()
@@ -225,6 +230,7 @@ func _create_city() -> void:
 				var entrance_face: int = STREETFRONT_SCENE.road_facing_variant(
 					pos,ROAD_INTERVAL,(ix+iz+n)%2==0)
 				streetfront.call("record",pos,width,height,building_count,entrance_face)
+				facade_balconies.call("record",pos,width,height,building_count,entrance_face)
 				_record_windows(pos,width,height,entrance_face)
 				building_count += 1
 				# Emissive parapet gives an evening skyline without external textures.
@@ -481,6 +487,8 @@ func apply_visual_budget(mode: String) -> void:
 		architecture_trim.visible = visual_budget != "low"
 	if streetfront != null:
 		streetfront.visible = visual_budget != "low"
+	if facade_balconies != null:
+		facade_balconies.call("set_quality",visual_budget)
 	if road_puddles != null:
 		road_puddles.set_conditions(weather_mode,visual_budget)
 	if cityhall_gateway != null:
