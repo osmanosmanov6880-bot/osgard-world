@@ -21,3 +21,10 @@ world and validates all GPU batches and quality transitions.
 No claim that these simplified procedural roadside meshes are AAA-quality
 assets. Dedicated expert modeling, surface scans, visual LOD profiling and
 physical iPhone/Android FPS are separate release requirements.
+
+R38 detailing upgrade: storm-drain grates use five sculpted rails in one
+shared procedural ArrayMesh. Slots are real openings between bars, not a
+single painted rectangle; 648 placements stay inside the same one GPU batch.
+Native acceptance validates the mesh vertex budget, placement count, road
+height and LOW/CINEMATIC visibility. Real WebGL four-viewport pixel QA is
+also required; neither a screenshot nor Godot headless alone proves FPS.
