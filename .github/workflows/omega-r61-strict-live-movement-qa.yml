@@ -1,0 +1,75 @@
+name: EMPIRE Omega R61 strict public desktop keyboard motion and two-touch source proof
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - 'scripts/omega-live-webgl.spec.mjs'
+      - 'scripts/omega-browser-evidence.mjs'
+      - '.github/workflows/omega-r61-strict-live-movement-qa.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  live-original-pixels-and-controls:
+    runs-on: ubuntu-latest
+    timeout-minutes: 29
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Keep original browser and integrity contracts fail-closed
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check scripts/omega-live-webgl.spec.mjs
+          node --check scripts/omega-browser-evidence.mjs
+          node --test scripts/omega-browser-evidence.contract.test.mjs
+          python3 scripts/omega-live-integrity.py --self-test
+          python3 scripts/omega-r50-release-gate.py --self-test
+      - name: Independently download seven genuine public Godot assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/omega-live-integrity.py \
+            --expected public/games/omega-3d-preview/release.json \
+            --base https://osgard.world/games/omega-3d-preview \
+            --nonce "${{ github.run_id }}" | tee omega-r61-public-sha256.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          j=json.loads(Path('omega-r61-public-sha256.json').read_text())
+          release=json.loads(Path('public/games/omega-3d-preview/release.json').read_text())
+          assert j['status']=='PASS' and j['verified_files']==7
+          assert j['source_commit']==release['source_commit']
+          assert len(j['results'])==7
+          assert all(r['computed_sha256']==release['files'][r['file']] for r in j['results'])
+          print('PASS seven independently measured real public Godot SHA-256 values')
+          PY
+      - name: Install exact browser with real PNG decoder
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm ci
+          npm install --no-save --package-lock=false @playwright/test@1.58.2 pngjs@7.0.0
+          npx playwright install --with-deps chromium
+      - name: Drive authentic public Godot desktop and touch with zero flaky retries
+        shell: bash
+        env:
+          OSGARD_GAME_ORIGIN: https://osgard.world
+        run: |
+          set -euo pipefail
+          npx playwright test --config playwright.omega-live-webgl.config.mjs \
+            --project=desktop-chromium --project=touch-phone-chromium --retries=0
+      - name: Keep real screenshots, pixel-difference metrics and exact public bytes
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: omega-r61-real-original-pixels-${{ github.run_id }}
+          path: |
+            omega-r61-public-sha256.json
+            omega-live-webgl-results/
+            omega-live-webgl-report/
+          if-no-files-found: warn
+          retention-days: 14
