@@ -58,6 +58,10 @@ var language_button: Button
 var collapse_button: Button
 var card: PanelContainer
 var rail: PanelContainer
+var compact_status: PanelContainer
+var compact_status_title: Label
+var compact_status_detail: Label
+var compact_status_safety: Label
 var eyebrow: Label
 var title_label: Label
 var description_label: Label
@@ -154,6 +158,20 @@ func _build() -> void:
     collapse_button.pressed.connect(_toggle_expanded)
     header.add_child(collapse_button)
 
+    # The old W18 free-floating status container has a stale offscreen height
+    # when hidden/revealed after WebGL viewport changes. Replace it visually
+    # with a bounded luxury live readout rather than showing a 6,000px pane.
+    compact_status = PanelContainer.new()
+    compact_status.name = "LuxuryCompactLiveStatus"
+    compact_status.add_theme_stylebox_override("panel", _glass())
+    add_child(compact_status)
+    var status_stack := VBoxContainer.new()
+    status_stack.add_theme_constant_override("separation", 7)
+    compact_status.add_child(status_stack)
+    compact_status_title = _label(status_stack, Color(0.97, 0.67, 0.41), 15)
+    compact_status_detail = _label(status_stack, Color(0.89, 0.94, 0.96), 14)
+    compact_status_safety = _label(status_stack, Color(0.55, 0.84, 0.90), 11)
+
     card = PanelContainer.new()
     card.name = "LuxuryTrainingCard"
     card.add_theme_stylebox_override("panel", _glass(true))
@@ -212,6 +230,7 @@ func _assign(label: Label, value: String) -> void:
 
 func _set_expand_state() -> void:
     card.visible = expanded
+    compact_status.visible = not expanded
     rail.visible = expanded and get_viewport().get_visible_rect().size.x / maxf(1.0, float(host.get("touch_pixel_ratio"))) >= 950
     collapse_button.text = "−" if expanded else "+"
 
@@ -244,6 +263,12 @@ func _layout() -> void:
     if host_actions != null and host_actions.position.y > 0.0:
         action_y = host_actions.position.y
     var top: float = margin + header_height + 12.0 * ratio
+    compact_status.position = Vector2(margin, top)
+    compact_status.custom_minimum_size = Vector2(0, 0)
+    compact_status.size = Vector2(brand.size.x, 158.0 * ratio)
+    compact_status_title.add_theme_font_size_override("font_size", int((13 if compact else 15) * ratio))
+    compact_status_detail.add_theme_font_size_override("font_size", int((12 if compact else 14) * ratio))
+    compact_status_safety.add_theme_font_size_override("font_size", int(11 * ratio))
     var max_height: float = maxf(172.0 * ratio, action_y - top - 12.0 * ratio)
     card.position = Vector2(margin, top)
     card.custom_minimum_size = Vector2(0, 0)
@@ -500,6 +525,24 @@ func _present() -> void:
     if finished:
         score_text = _t("ОБУЧЕНИЕ ЗАВЕРШЕНО  •  %d/3 КЕЙСА", "TRAINING FINISHED  •  %d/3 CASES") % completed_cases
     _assign(metrics_label, score_text)
+    var drive_label: String = _t("ПРИВОД РАБОТАЕТ", "DRIVE RUNNING") if bool(state_cache.get("motion_enabled", true)) else _t("ПРИВОД ОСТАНОВЛЕН", "DRIVE STOPPED")
+    var mode: String = "HERO" if int(state_cache.get("quality", 0)) == 2 else "ECO"
+    _assign(compact_status_title, "OSGARD  /  %s  •  %s" % [mode, drive_label])
+    var feedback: String = str(state_cache.get("challenge_feedback", "")) if (
+        bool(state_cache.get("challenge_active", false)) or bool(state_cache.get("challenge_completed", false))
+    ) else str(state_cache.get("mission_feedback", ""))
+    var goal: String = str(state_cache.get("challenge_goal", "")) if (
+        bool(state_cache.get("challenge_active", false)) or bool(state_cache.get("challenge_completed", false))
+    ) else str(state_cache.get("mission_goal", ""))
+    var live_text: String = goal + "\n" + feedback
+    if host != null:
+        live_text = str(host.call("_translated", live_text))
+    if live_text.length() > 155:
+        live_text = live_text.substr(0, 152) + "…"
+    _assign(compact_status_detail, live_text)
+    _assign(compact_status_safety, _t(
+        "ТОЛЬКО УЧЕБНАЯ СИМУЛЯЦИЯ  •  ОТКРОЙТЕ «+» ДЛЯ ОБУЧЕНИЯ",
+        "SIMULATION ONLY  •  OPEN «+» TO RESUME THE COURSE"))
     if primary_button.text != _primary_caption():
         primary_button.text = _primary_caption()
     primary_button.disabled = _is_waiting()
