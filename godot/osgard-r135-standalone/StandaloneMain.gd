@@ -4,6 +4,7 @@ extends Node3D
 var controller: Node3D
 var camera: Camera3D
 var studio: Node3D
+var inspection_fill: OmniLight3D
 var reduced_motion: bool = false
 var last_layout_size: Vector2 = Vector2.ZERO
 var orbit_yaw: float = 0.44
@@ -39,19 +40,30 @@ func _ready() -> void:
     environment.background_color = Color(0.014, 0.019, 0.025)
     environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
     environment.ambient_light_color = Color(0.68, 0.72, 0.77)
-    environment.ambient_light_energy = 0.70
+    environment.ambient_light_energy = 1.10
     world.environment = environment
     add_child(world)
     var sun := DirectionalLight3D.new()
     sun.rotation_degrees = Vector3(-48, -34, 0)
     sun.light_color = Color(1.0, 0.94, 0.87)
-    sun.light_energy = 1.15
+    sun.light_energy = 1.55
     add_child(sun)
     var rim := DirectionalLight3D.new()
     rim.rotation_degrees = Vector3(-32, 140, 0)
     rim.light_color = Color(0.62, 0.73, 0.81)
-    rim.light_energy = 0.47
+    rim.light_energy = 0.70
     add_child(rim)
+    # W11 visual QA: metal-rich source GLBs were nearly black in ECO on
+    # portrait SwiftShader. One camera-targeted, shadow-free fill makes
+    # inspection legible without multiplying expensive shadow casters.
+    inspection_fill = OmniLight3D.new()
+    inspection_fill.name = "R135_ReadableInspectionFill_NoShadows"
+    inspection_fill.light_color = Color(0.96, 0.95, 0.89)
+    inspection_fill.light_energy = 3.8
+    inspection_fill.omni_range = 12.5
+    inspection_fill.omni_attenuation = 0.65
+    inspection_fill.shadow_enabled = false
+    add_child(inspection_fill)
     studio = preload("res://R135StudioEnvironment.gd").new()
     studio.name = "R135StudioEnvironment"
     add_child(studio)
@@ -73,7 +85,7 @@ func _ready() -> void:
 
 func _panel_style() -> StyleBoxFlat:
     var style := StyleBoxFlat.new()
-    style.bg_color = Color(0.027, 0.034, 0.042, 0.93)
+    style.bg_color = Color(0.038, 0.046, 0.056, 0.56)
     style.border_color = Color(0.38, 0.44, 0.47, 0.78)
     style.set_border_width_all(1)
     style.set_corner_radius_all(12)
@@ -115,6 +127,7 @@ func _build_hud() -> void:
     overlay.add_child(hud_panel)
     var text_stack := VBoxContainer.new()
     text_stack.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+    text_stack.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
     text_stack.add_theme_constant_override("separation", 6)
     hud_panel.add_child(text_stack)
     heading = Label.new()
@@ -160,6 +173,9 @@ func _update_layout() -> void:
     if hud_panel == null:
         return
     var size := get_viewport().get_visible_rect().size
+    var previous_layout_size: Vector2 = last_layout_size
+    var first_layout: bool = previous_layout_size == Vector2.ZERO
+    var did_resize: bool = not first_layout and size.distance_squared_to(previous_layout_size) > 1.0
     last_layout_size = size
     var portrait := _viewport_is_portrait()
     var margin := 24.0 if portrait else 18.0
@@ -195,6 +211,13 @@ func _update_layout() -> void:
     # panel visible inside a 360-pixel logical viewport.
     hud_panel.custom_minimum_size = Vector2(hud_width, 0.0)
     action_panel.custom_minimum_size = Vector2(control_width, 0.0)
+    # First paint: preserve native PanelContainer sizing until Control layout settles.
+    # Recalculate explicit width/height only on a real viewport transition.
+    if first_layout or not did_resize:
+        hud_panel.position = Vector2(margin, (32.0 if compact else 42.0) if portrait else margin)
+        action_panel.position = Vector2(margin, maxf(0.0, size.y - (355.0 if compact else 455.0) if portrait else size.y - 150.0))
+        _update_view()
+        return
     hud_panel.reset_size()
     action_panel.reset_size()
     hud_panel.size = Vector2(hud_width, hud_panel.get_combined_minimum_size().y)
@@ -256,6 +279,7 @@ func _toggle_quality() -> void:
     quality = 0 if quality == 2 else 2
     controller.set_quality(quality)
     studio.call("set_quality", quality)
+    inspection_fill.light_energy = 3.8 if quality == 0 else 4.2
     _refresh_status()
 
 func _toggle_motion() -> void:
@@ -337,6 +361,8 @@ func _update_view() -> void:
     )
     camera.position = target_focus + direction * effective_distance
     camera.look_at(target_focus, Vector3.UP)
+    if inspection_fill != null:
+        inspection_fill.global_position = target_focus + Vector3(0.0, 1.8, 3.8)
 
 func _camera_target_readout() -> Dictionary:
     var size: Vector2 = get_viewport().get_visible_rect().size
@@ -394,6 +420,9 @@ func _process(delta: float) -> void:
         state["studio_quality"] = int(stage_budget["stage_quality"])
         state["prefers_reduced_motion"] = reduced_motion
         state["render_fps_sample"] = Engine.get_frames_per_second()
+        state["inspection_fill_energy"] = inspection_fill.light_energy
+        state["inspection_fill_shadow_enabled"] = inspection_fill.shadow_enabled
+        state["inspection_fill_range"] = inspection_fill.omni_range
         var status_rect: Rect2 = hud_panel.get_global_rect()
         var control_rect: Rect2 = action_panel.get_global_rect()
         state["hud_layout_mode"] = "portrait" if _viewport_is_portrait() else "landscape"

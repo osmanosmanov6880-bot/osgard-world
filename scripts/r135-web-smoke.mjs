@@ -2,7 +2,9 @@
 // Checks Godot scene boot + ordered maintenance mission with desktop keys
 // and real mobile touchscreen presses, not only existence of a blank canvas.
 import { chromium, devices } from 'playwright'
-import { mkdir } from 'node:fs/promises'
+import { mkdir, writeFile } from 'node:fs/promises'
+import { createHash } from 'node:crypto'
+import { captureAnimatedWebGLViewport } from './omega-browser-evidence.mjs'
 import { resolve } from 'node:path'
 import process from 'node:process'
 
@@ -84,12 +86,59 @@ async function touchMission(page) {
 }
 // Each scenario must be solved through actual controls, including the
 // closing/opening hatch physics and a visible camera-based diagnostic target.
+async function captureRealViewport(page, filename) {
+  const { png, method } = await captureAnimatedWebGLViewport(page)
+  if (png.length < 9500 || png.subarray(0, 8).toString('hex') !== '89504e470d0a1a0a') {
+    throw new Error('Real R135 screenshot is not a valid PNG: ' + filename)
+  }
+  const width = png.readUInt32BE(16)
+  const height = png.readUInt32BE(20)
+  if (width < 300 || height < 300) throw new Error('Real R135 screenshot too small: ' + filename)
+  await writeFile(resolve(output, filename), png)
+  if (filename === 'w6-portrait-optical-active.png') {
+    // Chromium CDP captures CSS viewport pixels, while the Godot WebGL
+    // render target is denser (devicePixelRatio). Record both unmodified
+    // dimensions; never upscale or manufacture screenshot evidence.
+    const geometry = await page.evaluate(() => {
+      const canvas = document.querySelector('canvas')
+      const qa = window.__OSGARD_R135_QA
+      if (!(canvas instanceof HTMLCanvasElement) || !qa?.scene_ready) {
+        throw new Error('Genuine Godot scene state/canvas unavailable for release evidence')
+      }
+      const rect = canvas.getBoundingClientRect()
+      return {
+        css_viewport: [window.innerWidth, window.innerHeight],
+        device_pixel_ratio: window.devicePixelRatio,
+        canvas_pixels: [canvas.width, canvas.height],
+        canvas_css: [rect.width, rect.height],
+        scene_ready: qa.scene_ready,
+        view: qa.view,
+        camera_target_visible: qa.camera_target_visible,
+        fault_label_visible_count: qa.fault_label_visible_count,
+        active_caption_depth_override: qa.active_caption_depth_override,
+        loading_failures: qa.loading_failures,
+      }
+    })
+    const evidence = {
+      source: 'live Playwright Chromium WebGL Godot canvas and real unscaled PNG',
+      capture_method: method,
+      screenshot_pixels: [width, height],
+      screenshot_sha256: createHash('sha256').update(png).digest('hex'),
+      ...geometry,
+    }
+    await writeFile(resolve(output, 'r135-portrait-capture-proof.json'), JSON.stringify(evidence, null, 2) + '\n')
+  }
+  console.log('R135 screenshot evidence:', filename, method, width + 'x' + height)
+}
+
 async function keyboardDiagnostics(page) {
   await page.keyboard.press('c')
   await expectState(page, x => x?.challenge_active && x?.challenge_step === 0
     && x?.fault_marker_count === 3 && x?.fault_marker_active_index === 0
     && x?.fault_marker_visible_count === 3 && x?.fault_label_visible_count === 1
-    && x?.fault_visual_state === 'active',
+    && x?.fault_visual_state === 'active'
+    && x?.active_caption_depth_override,
+    
     'W5 optical fault must appear in the 3D scene')
   await page.keyboard.press('f') // Safety violation, should be refused.
   await expectState(page, x => x?.challenge_step === 0 && x?.challenge_errors === 1 && x?.lid_target === 0,
@@ -110,7 +159,7 @@ async function keyboardDiagnostics(page) {
     && x?.camera_target_screen_x > .25 && x?.camera_target_screen_x < .75
     && x?.camera_target_screen_y > .22 && x?.camera_target_screen_y < .78,
     'W6 desktop optical head must remain inside central 50% of viewport')
-  await page.screenshot({ path: resolve(output, 'w6-desktop-optical-active.png'), fullPage: true })
+  await captureRealViewport(page, 'w6-desktop-optical-active.png')
   await page.keyboard.press('e')
   await expectState(page, x => x?.challenge_step === 3 && x?.fault_visual_state === 'inspected',
     'W5 optical scan must turn the in-world indicator green')
@@ -156,7 +205,7 @@ async function touchDiagnostics(page) {
     && x?.camera_target_screen_y > .24 && x?.camera_target_screen_y < .73
     && x?.machine_top_screen_y > .12 && x?.machine_top_screen_y < .37,
     'W6.1 portrait optics and physical upper rail must fit useful scene area')
-  await page.screenshot({ path: resolve(output, 'w6-portrait-optical-active.png'), fullPage: true })
+  await captureRealViewport(page, 'w6-portrait-optical-active.png')
   await tapSceneButton(page, 3) // SCAN TARGET
   await expectState(page, x => x?.challenge_step === 3 && x?.fault_visual_state === 'inspected',
     'W5 touch scan did not clear fault light')
@@ -200,7 +249,7 @@ async function verifyAdaptiveHud(page) {
         throw new Error('W8 button center outside control panel: ' + width + 'x' + height)
       }
     }
-    await page.screenshot({ path: resolve(output, 'w8-hud-' + width + 'x' + height + '.png'), fullPage: true })
+    await captureRealViewport(page, 'w8-hud-' + width + 'x' + height + '.png')
   }
   if (original) {
     await page.setViewportSize(original)
@@ -236,9 +285,18 @@ try {
           && x?.button_centers?.length === 8 && x?.fault_marker_count === 3
           && x?.fault_marker_visible_count === 0 && x?.fault_label_visible_count === 0
           && x?.studio_grid_draw_batches === 2 && x?.studio_grid_instances === 18
-          && x?.studio_mesh_nodes <= 8 && x?.prefers_reduced_motion === isMobile,
+          && x?.studio_mesh_nodes <= 8 && x?.prefers_reduced_motion === isMobile
+          && x?.inspection_fill_energy >= 3.5
+          && x?.inspection_fill_shadow_enabled === false
+          && x?.inspection_fill_range >= 12.0,
         'Real W5 Godot ECO rig, 3D markers and controls did not load', 90_000)
       if (boot.quality !== 0 || boot.studio_quality !== 0) throw new Error('Low-memory ECO mode not used on boot')
+      if (!boot.hud_rect || !boot.action_rect || boot.hud_rect.h > boot.viewport_h * .28 ||
+          boot.hud_rect.y + boot.hud_rect.h >= boot.action_rect.y - 20) {
+        throw new Error('W11 initial HUD obscures scene: ' + JSON.stringify({
+          viewport: [boot.viewport_w, boot.viewport_h], hud: boot.hud_rect, actions: boot.action_rect
+        }))
+      }
       const geometry = await page.locator('canvas').first().evaluate(canvas => ({
         width: canvas.width, height: canvas.height,
         visible: canvas.getBoundingClientRect().width > 0,
@@ -267,7 +325,7 @@ try {
       if (runtimeErrors.length || assetErrors.length) {
         throw new Error('Browser runtime errors: ' + JSON.stringify({ runtimeErrors, assetErrors }))
       }
-      await page.screenshot({ path: resolve(output, name + '.png'), fullPage: true })
+      await captureRealViewport(page, name + '.png')
       const final = await readState(page)
       result.push({ device: name, status: 'PASS', verified: 'real mechanics and interaction',
         mission: final.mission_completed, challenge: final.challenge_completed,
@@ -281,7 +339,7 @@ try {
     } catch (error) {
       failed = true
       console.error('R135 gameplay FAIL:', name, String(error))
-      try { await page.screenshot({ path: resolve(output, name + '-failure.png'), fullPage: true }) } catch {}
+      try { await captureRealViewport(page, name + '-failure.png') } catch {}
     } finally {
       await context.close()
     }
