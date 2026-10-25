@@ -43,6 +43,15 @@ func _run() -> void:
         if not (detail_node is MultiMeshInstance3D):
             _fail("W15 premium service-stage detail not instanced: " + path)
             return
+    if int(stage_budget.get("luxury_draw_batches", -1)) != 5 or int(stage_budget.get("luxury_instances", -1)) != 41:
+        _fail("Approved luxury architectural scene must use five instanced batches (41 pieces), not 41 drawcalls")
+        return
+    if not (studio.get_node_or_null("LuxuryRearWallOSGARDIdentity") is Label3D):
+        _fail("Approved AAA-direction environment identity absent from real world")
+        return
+    if float(stage_budget.get("luxury_emission", -1.0)) > 0.16:
+        _fail("Luxury ECO cyan stage illumination exceeds mobile-friendly budget")
+        return
     if float(stage_budget.get("fastener_roughness", -1.0)) < 0.65:
         _fail("W15 ECO finish must remain matte and mobile-friendly")
         return
@@ -52,6 +61,37 @@ func _run() -> void:
     if int(stage_budget.get("single_mesh_nodes", 99)) > 8 or not bool(stage_budget.get("visual_only", false)):
         _fail("W7 premium environment exceeds simple geometry budget")
         return
+    # Real first-run Russian onboarding is a Godot Control scene, never a
+    # standalone moodboard image. The vector logo and all six chapters exist.
+    if str(instance.get("ui_locale")) != "ru":
+        _fail("Approved product must open in Russian on clean desktop")
+        return
+    var luxury: Control = instance.get("premium_intro") as Control
+    if luxury == null or luxury.get_node_or_null("LuxuryBrandHeader") == null:
+        _fail("Approved luxury onboarding and original vector logo did not instantiate")
+        return
+    var guide: Control = luxury.get_node_or_null("LuxuryTrainingCard") as Control
+    var rail: Control = luxury.get_node_or_null("LuxuryTutorialRail") as Control
+    if guide == null or rail == null:
+        _fail("Six-stage premium tutorial layout is missing")
+        return
+    var rail_rows: Array = luxury.get("rail_rows")
+    if rail_rows.size() != 6:
+        _fail("Approved full Russian course requires six genuine chapters")
+        return
+    luxury.call("reset_tutorial")
+    if int(luxury.get("step")) != 0 or not str((luxury.get("description_label") as Label).text).contains("учебной лаборатории"):
+        _fail("First launch must begin with a real Russian greeting")
+        return
+    luxury.call("start_tutorial")
+    if int(luxury.get("step")) != 1 or not bool(luxury.get("begun")):
+        _fail("Visible START TRAINING CTA is not connected to lesson state")
+        return
+    instance.call("_next_view")
+    if int(luxury.get("step")) != 2:
+        _fail("Camera exploration did not complete chapter two using real controls")
+        return
+    instance.call("_reset_view")
     var language_control: Button = instance.get("language_button") as Button
     if language_control == null or language_control.name != "SwitchLanguage":
         _fail("W17 language control missing")
@@ -95,6 +135,9 @@ func _run() -> void:
     var hero_stage: Dictionary = studio.call("render_budget")
     if int(hero_stage.get("stage_quality", -1)) != 2 or float(hero_stage.get("fastener_roughness", 1.0)) > 0.48:
         _fail("W15 HERO material finish was not applied to the actual stage")
+        return
+    if float(hero_stage.get("luxury_emission", -1.0)) <= float(stage_budget.get("luxury_emission", 99.0)):
+        _fail("Luxury ECO/HERO lighting styles are decorative-only, not actual material changes")
         return
     if float(hero_stage.get("accent_emission", -1.0)) <= float(stage_budget.get("accent_emission", 99.0)):
         _fail("W15 ECO/HERO accent budget did not change")
@@ -323,6 +366,21 @@ func _run() -> void:
         if expected_fault == 1:
             instance.call("_start_challenge")
     var completed_learning: Dictionary = rig.call("summary")
+    luxury.call("sync_game", completed_learning, int(instance.get("view_index")))
+    if int(luxury.get("step")) != 5:
+        _fail("All genuine diagnostic cases must advance the luxury course to the final chapter")
+        return
+    luxury.call("_primary_pressed")
+    if not bool(luxury.get("finished")):
+        _fail("Six-chapter premium training cannot be finished after three real diagnoses")
+        return
+    var learning_record := ConfigFile.new()
+    if learning_record.load("user://r135_luxury_tutorial_v1.cfg") != OK:
+        _fail("Tutorial completion did not persist independently from W14 challenge saves")
+        return
+    if int(learning_record.get_value("tutorial", "step", -1)) != 5 or not bool(learning_record.get_value("tutorial", "finished", false)):
+        _fail("Tutorial local completion is not restartable")
+        return
     if int(completed_learning.get("cleared_case_count", -1)) != 3:
         _fail("W9 lesson progress must record three distinct simulated cases")
         return
