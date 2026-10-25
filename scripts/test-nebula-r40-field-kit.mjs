@@ -77,7 +77,14 @@ test('duplicate contents in renamed JSON cannot be double-counted',()=>{
     const manifest=JSON.parse(fs.readFileSync(TEMPLATE,'utf8'));
     const pair=manifest.devices[0].runs[0].baseline;
     fs.mkdirSync(path.join(root,'reports'));
-    const payload=JSON.stringify({schema:'fixture-only',source:'NOT_HARDWARE'});
+    const payload=JSON.stringify({
+      schema:'NEBULA_R12_HARDWARE_BENCHMARK',quality:0,quality_changed:false,
+      quality_gate:'MEETS_TARGET',sample_seconds:20,valid_frames:800,
+      excluded_long_frames:0,adapter_reported:'SYNTHETIC_FIXTURE_ADRENO',
+      runtime:'Web',resolution_width:390,resolution_height:844,
+      avg_fps:52,one_percent_low_fps:35,p95_frame_ms:21,p99_frame_ms:28,
+      date_unix:1790000001
+    });
     for(const rel of pair.slice(0,2))fs.writeFileSync(path.join(root,rel),payload);
     const filename=path.join(root,'manifest.json');
     fs.writeFileSync(filename,JSON.stringify(manifest));
@@ -110,4 +117,62 @@ test('rejects symlinked external folder that resolves inside Git checkout',()=>{
     assert.match(result.stderr,/outside the repository/i);
     assert.equal(fs.existsSync(path.join(ROOT,'private-evidence')),false);
   }finally{fs.rmSync(tmp,{recursive:true,force:true});}
+});
+
+test('inventory rejects arbitrary JSON, wrong R40 build, software GPU and wrong orientation',()=>{
+  const root=fs.mkdtempSync(path.join(os.tmpdir(),'nebula-r40-failclosed-test-'));
+  try{
+    const m=JSON.parse(fs.readFileSync(TEMPLATE,'utf8'));
+    fs.mkdirSync(path.join(root,'reports'));
+    const one=m.devices[0].runs[0];
+    const basic={
+      schema:'NEBULA_R12_HARDWARE_BENCHMARK',quality:0,quality_changed:false,
+      quality_gate:'MEETS_TARGET',sample_seconds:20,valid_frames:800,
+      excluded_long_frames:0,adapter_reported:'ADRENO 740',runtime:'Web',
+      resolution_width:390,resolution_height:844,avg_fps:52,
+      one_percent_low_fps:34,p95_frame_ms:21,p99_frame_ms:30,date_unix:1790000091
+    };
+    const samples=[
+      [one.baseline[0],{schema:'not-actual-benchmark'}],
+      [one.candidate[0],{...basic,date_unix:1790000092}],
+      [one.baseline[1],{...basic,adapter_reported:'SwiftShader',date_unix:1790000093}],
+      [one.baseline[2],{...basic,resolution_width:844,resolution_height:390,date_unix:1790000094}],
+      [one.candidate[1],{...basic,build_variant:'NEBULA_R40_BRIDGE_BATCH_3X32',date_unix:1790000095}]
+    ];
+    for(const [rel,json] of samples)fs.writeFileSync(path.join(root,rel),JSON.stringify(json));
+    fs.writeFileSync(path.join(root,'manifest.json'),JSON.stringify(m));
+    const output=exec(PROGRESS,path.join(root,'manifest.json'));
+    assert.equal(output.status,0,output.stderr);
+    const report=JSON.parse(output.stdout);
+    assert.equal(report.found_json,1,'Only authentic-shaped candidate is eligible for inventory');
+    assert.equal(report.remaining_json,107);
+    assert.equal(report.production_approval,false);
+    assert.match(report.counted_json_policy,/NATIVE_SCHEMA/);
+  }finally{fs.rmSync(root,{recursive:true,force:true});}
+});
+
+test('independent report bytes with repeated per-phone build timestamp cannot fill two slots',()=>{
+  const root=fs.mkdtempSync(path.join(os.tmpdir(),'nebula-r40-reused-time-test-'));
+  try{
+    const m=JSON.parse(fs.readFileSync(TEMPLATE,'utf8'));
+    fs.mkdirSync(path.join(root,'reports'));
+    const reports=m.devices[0].runs[0].baseline;
+    const basic={
+      schema:'NEBULA_R12_HARDWARE_BENCHMARK',quality:0,quality_changed:false,
+      quality_gate:'MEETS_TARGET',sample_seconds:20,valid_frames:800,
+      excluded_long_frames:0,adapter_reported:'ADRENO 740',runtime:'Web',
+      resolution_width:390,resolution_height:844,one_percent_low_fps:34,
+      p95_frame_ms:21,p99_frame_ms:30,date_unix:1790000099
+    };
+    fs.writeFileSync(path.join(root,reports[0]),JSON.stringify({...basic,avg_fps:50}));
+    fs.writeFileSync(path.join(root,reports[1]),JSON.stringify({...basic,avg_fps:51}));
+    fs.writeFileSync(path.join(root,'manifest.json'),JSON.stringify(m));
+    const output=exec(PROGRESS,path.join(root,'manifest.json'));
+    assert.equal(output.status,0,output.stderr);
+    const report=JSON.parse(output.stdout);
+    assert.equal(report.found_json,1);
+    assert.equal(report.duplicate_files,1);
+    assert.equal(report.remaining_json,107);
+    assert.equal(report.production_approval,false);
+  }finally{fs.rmSync(root,{recursive:true,force:true});}
 });

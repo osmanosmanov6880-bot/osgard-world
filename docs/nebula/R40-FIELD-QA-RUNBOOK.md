@@ -71,4 +71,25 @@ The kit creates `manifest.json`, an explicit 42-item collection checklist, priva
 
     node scripts/nebula-r40-device-progress.mjs /private/NEBULA_R40_DEVICE_QA/manifest.json
 
-The conservative inventory always expects at least **108 source JSONs and 12 source images**, even if a manifest row was accidentally removed. It detects duplicate file contents and never grants a production release. The strict field gate, independent physical-device reviewer and separately approved R40 promotion PR remain mandatory.
+The conservative inventory always expects at least **108 source JSONs and 12 source images**, even if a manifest row was accidentally removed. It counts benchmark JSONs only after checking the same native schema as the local viewer, R38/R40 build identity, MAX/HIGH/ECO, screen orientation, frame reliability, software-GPU exclusion and unique timestamp per phone/build. Invalid files remain missing (and are never silently counted as completed testing). It also detects duplicate file contents and never grants a production release. The strict field gate, independent physical-device reviewer and separately approved R40 promotion PR remain mandatory.
+
+
+## Блок 6 — удобная локальная загрузка оригинальных отчётов (без переименования файлов на телефоне)
+
+Для оператора добавлен `scripts/nebula-r40-evidence-import.mjs`. Это **импорт уже снятых оригинальных данных**, а не генератор FPS или телефона. Исходные файлы не редактируются, скопированные байты сверяются через SHA-256. Ошибочная партия из трёх JSON автоматически откатывается; имеющиеся данные нельзя перезаписать.
+
+Запуск после создания частного комплекта (пример для Windows PowerShell, из корня репозитория):
+
+    node scripts/nebula-r40-field-kit.mjs init "$env:USERPROFILE\Documents\NEBULA_R40_QA"
+
+Три **реально измеренных** файла, вручную скачанных с одного устройства для R38 / portrait / MAX, можно скопировать одной командой. Укажите настоящие имена файлов (в кавычках, если есть пробелы):
+
+    node scripts/nebula-r40-evidence-import.mjs "$env:USERPROFILE\Documents\NEBULA_R40_QA\manifest.json" json android_low portrait MAX R38 "C:\Users\USER\Downloads\run1.json" "C:\Users\USER\Downloads\run2.json" "C:\Users\USER\Downloads\run3.json"
+
+Для исходного скриншота с того же устройства:
+
+    node scripts/nebula-r40-evidence-import.mjs "$env:USERPROFILE\Documents\NEBULA_R40_QA\manifest.json" image android_low portrait R38 "C:\Users\USER\Downloads\screenshot.png"
+
+Заменяйте только значения устройства, ориентации, профиля, R38/R40 и пути к **оригинальным** файлам. Скрипт сам выбирает точные 108+12 ячеек из `manifest.json`, запрещает повторное использование измерения и не запускает сетевые соединения. Он сохраняет байты PNG/JPEG без преобразования, даже если типичная ячейка шаблона имеет расширение `.jpg`; качество и происхождение изображения отдельно проверяет инженер.
+
+Если результат содержит `BYTE_IDENTICAL_LOCAL_IMPORT_NOT_DEVICE_AUTHENTICATION`, это означает лишь безопасное локальное копирование файла. Это **не физическая аттестация** и **не разрешение на production**. После сбора матрицы обязательно выполнить строгий field gate, preflight и независимый осмотр.
