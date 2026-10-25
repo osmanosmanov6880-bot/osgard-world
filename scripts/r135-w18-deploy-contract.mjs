@@ -88,5 +88,32 @@ assert.ok(deploy.includes('elif [[ "$PIN" == scripts/r135-w18-release-pin.json ]
   'W18 must never use floating W14 fallback')
 assert.ok(!deploy.includes('PIN=scripts/r135-w18-release-pin.json'),
   'W18 must never become implicit default release')
+// W18 long-term archive is an alternative source of IDENTICAL reviewed bytes,
+// not another dynamic channel, stale web fallback, or unreviewed producer.
+for (const literal of [
+  'ARCHIVE_FROM_ACTIONS=0',
+  'if [[ "$ARCHIVE_FROM_ACTIONS" != 1 ]]; then',
+  'r135-premium-learning-w18-reviewed-archive-20261025',
+  'R135_W18_ORIGINAL_EVIDENCE.zip',
+  '.digest==$hash',
+  '--member-pin scripts/r135-w18-evidence-member-pin.json',
+  '--evidence "$ROOT/R135_W18_ORIGINAL_EVIDENCE.zip"',
+  'python3 scripts/r135-w18-release-recover.py',
+  'python3 scripts/r135-w18-promotion-qa.py --pin "$PIN" --artifact "$ROOT"',
+]) {
+  assert.ok(deploy.includes(literal), 'missing W18 durable SHA/recovery safeguard: '+literal)
+}
+const w18Section = deploy.slice(
+  deploy.indexOf('elif [[ "$PIN" == scripts/r135-w18-release-pin.json ]]; then'),
+  deploy.indexOf('          else\n            echo \'Unreviewed R135 channel refused\'', 
+    deploy.indexOf('elif [[ "$PIN" == scripts/r135-w18-release-pin.json ]]; then'))
+)
+assert.ok(w18Section.includes('GATE_JOBS') &&
+  w18Section.includes('PIN_AT_GATE') &&
+  w18Section.indexOf('GATE_JOBS') < w18Section.indexOf('ARCHIVE_FROM_ACTIONS'),
+  'W18 archive fallback must not bypass independent original-artifact review')
+assert.ok(!w18Section.includes('r135-verified-live-recover.py'),
+  'W18 fallback must never reuse a stale production server copy')
+
 console.log('R135 W18 production fail-closed static/selector tests PASS:',tested,
   'runtime selector cases; no SSH, deploy or hardware was executed.')
