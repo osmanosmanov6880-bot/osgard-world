@@ -59,6 +59,7 @@ var collapse_button: Button
 var card: PanelContainer
 var rail: PanelContainer
 var compact_status: PanelContainer
+var compact_status_clip: Control
 var compact_status_title: Label
 var compact_status_detail: Label
 var compact_status_safety: Label
@@ -165,12 +166,31 @@ func _build() -> void:
     compact_status.name = "LuxuryCompactLiveStatus"
     compact_status.add_theme_stylebox_override("panel", _glass())
     add_child(compact_status)
+    # PanelContainer inherits its child's minimum height. Three auto-wrapping
+    # labels previously inflated a visually hidden status to 2806 / 6306
+    # pixels on actual desktop/landscape WebGL, obscuring the usable scene.
+    # A plain Control breaks that minimum-size propagation while clipping
+    # overflowing text; the outer PanelContainer remains a true hit-tested UI.
+    compact_status_clip = Control.new()
+    compact_status_clip.name = "LuxuryStatusViewport"
+    compact_status_clip.clip_contents = true
+    compact_status_clip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    compact_status.add_child(compact_status_clip)
     var status_stack := VBoxContainer.new()
+    status_stack.name = "LuxuryBoundedLiveLines"
     status_stack.add_theme_constant_override("separation", 7)
-    compact_status.add_child(status_stack)
+    compact_status_clip.add_child(status_stack)
     compact_status_title = _label(status_stack, Color(0.97, 0.67, 0.41), 15)
     compact_status_detail = _label(status_stack, Color(0.89, 0.94, 0.96), 14)
     compact_status_safety = _label(status_stack, Color(0.55, 0.84, 0.90), 11)
+    # Status is deliberately short, not a second expanding training article.
+    # Full safety instructions and diagnostic logs remain available in guide.
+    for line in [compact_status_title, compact_status_safety]:
+        line.autowrap_mode = TextServer.AUTOWRAP_OFF
+        line.max_lines_visible = 1
+        line.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+    compact_status_detail.max_lines_visible = 2
+    compact_status_detail.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 
     card = PanelContainer.new()
     card.name = "LuxuryTrainingCard"
@@ -266,6 +286,13 @@ func _layout() -> void:
     compact_status.position = Vector2(margin, top)
     compact_status.custom_minimum_size = Vector2(0, 0)
     compact_status.size = Vector2(brand.size.x, 158.0 * ratio)
+    # Preserve bounded layout when Chromium DPR/orientation changes. The
+    # custom child does not contribute minimum size to PanelContainer.
+    var status_stack: VBoxContainer = compact_status_clip.get_child(0) as VBoxContainer
+    status_stack.position = Vector2.ZERO
+    status_stack.custom_minimum_size = Vector2.ZERO
+    status_stack.size = Vector2(maxf(90.0, brand.size.x - 42.0 * ratio),
+        maxf(48.0, 158.0 * ratio - 32.0 * ratio))
     compact_status_title.add_theme_font_size_override("font_size", int((13 if compact else 15) * ratio))
     compact_status_detail.add_theme_font_size_override("font_size", int((12 if compact else 14) * ratio))
     compact_status_safety.add_theme_font_size_override("font_size", int(11 * ratio))
