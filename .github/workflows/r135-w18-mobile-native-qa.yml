@@ -1,0 +1,36 @@
+name: OSGARD R135 W18 mobile UI and studio native Godot QA
+
+on:
+  push:
+    branches:
+      - feat/r135-w18-mobile-readable-studio-20261025
+      - feat/r135-w15-w17-premium-localization-20261025
+      - master
+    paths:
+      - 'godot/osgard-r135-standalone/**'
+      - '.github/workflows/r135-w18-mobile-native-qa.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  native-reality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: false
+      - name: Import actual R135 original industrial GLBs in native Godot
+        run: |
+          set -euo pipefail
+          godot --headless --editor --path godot/osgard-r135-standalone --import --quit
+      - name: Run ALL original mechanical, safety, save and W18 studio native tests
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 150s godot --headless             --path godot/osgard-r135-standalone             --script res://tests/smoke.gd
+          echo 'NATIVE PASS does not certify WebGL, phone FPS, original visual quality or production.'

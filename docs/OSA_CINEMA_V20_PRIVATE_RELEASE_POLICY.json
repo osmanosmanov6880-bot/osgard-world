@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "status": "PRIVATE_ONLY_RELEASE_NOT_AUTHORIZED",
+  "source": "V16/V18 inspected technical provenance",
+  "publicationAuthorized": false,
+  "rightsCleared": false,
+  "paidCheckoutEnabled": false,
+  "assets": [
+    {
+      "sourceId": "osa-v15-trailer-ru",
+      "originalSha256": "64076804caab85f53f860818557eca0debf977d197b7e45ba4830538dbfe6c74",
+      "voiceApproved": false,
+      "captionsApproved": false,
+      "rightsApproved": false,
+      "deliveryVerified": false
+    },
+    {
+      "sourceId": "osa-v15-trailer-en",
+      "originalSha256": "0cea3fe492b0cc13bd2e4c9152217ae2d85d8406b291b8b93484b5d8a9bb530e",
+      "voiceApproved": false,
+      "captionsApproved": false,
+      "rightsApproved": false,
+      "deliveryVerified": false
+    },
+    {
+      "sourceId": "osa-v15-directors-ru",
+      "originalSha256": "74a040f9c67155eca946d6c6bed462e7edfb9c4f866605a0c2ecdd9568202b01",
+      "voiceApproved": false,
+      "captionsApproved": false,
+      "rightsApproved": false,
+      "deliveryVerified": false
+    },
+    {
+      "sourceId": "osa-v15-directors-en",
+      "originalSha256": "2936222a5be4b36ab3177f1577219831ab686e085be9b0744887bbcae05a7e36",
+      "voiceApproved": false,
+      "captionsApproved": false,
+      "rightsApproved": false,
+      "deliveryVerified": false
+    }
+  ],
+  "mandatoryHumanDecisions": [
+    "spoken_language",
+    "commercial_rights",
+    "final_cut_sound",
+    "synced_webvtt",
+    "durable_delivery",
+    "live_browser_acceptance",
+    "publisher_authorization"
+  ],
+  "note": "These gates can only be cleared by independent reviewed evidence; this file does not grant legal distribution."
+}

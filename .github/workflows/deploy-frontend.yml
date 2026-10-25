@@ -73,6 +73,8 @@ on:
       - "scripts/activate-frontend-remote.sh"
       - "scripts/preserve-omega-native.sh"
       - "scripts/omega-frontend-preservation.test.mjs"
+      - "scripts/preserve-nebula-r40-qa.sh"
+      - "scripts/nebula-r40-qa-preservation.test.mjs"
       - "scripts/deploy-workflow-smoke.mjs"
       # Accept new production Omega acceptance contracts and replay SSH deployment
       # even when application assets have not otherwise changed.
@@ -424,7 +426,7 @@ jobs:
       - name: Verify Imperium of Time visuals and real diagnostics
         run: npm run qa:time-ui && node scripts/omega-city-3d-smoke.mjs
       - name: Check deployment shell syntax
-        run: bash -n scripts/activate-frontend-remote.sh && sh -n scripts/preserve-omega-native.sh && node --test scripts/omega-frontend-preservation.test.mjs
+        run: bash -n scripts/activate-frontend-remote.sh && sh -n scripts/preserve-omega-native.sh && sh -n scripts/preserve-nebula-r40-qa.sh && node --test scripts/omega-frontend-preservation.test.mjs scripts/nebula-r40-qa-preservation.test.mjs
       - name: Package HTML assets and matching Nginx config
         run: |
           set -euo pipefail
@@ -454,6 +456,16 @@ jobs:
           gzip -t osgard-release/html/skillcred/styles.css.gz osgard-release/html/skillcred/app.js.gz
           cp scripts/preserve-omega-native.sh osgard-release/preserve-omega-native.sh
           test -s osgard-release/preserve-omega-native.sh
+          # Keep only SHA-attested isolated QA binaries across full-site deploys.
+          # The pin comes from reviewed master config; no synthetic QA files.
+          jq -e '.schema=="NEBULA_R40_ONESHOT_QA_V1" and .candidate_pr==375 and .staging_only==true and .approved_for_production==false and .qa_path=="/games/remix/nebula-r40-qa/"' .github/nebula-r40-qa-one-shot-source.json
+          jq -er '.candidate_head_sha' .github/nebula-r40-qa-one-shot-source.json > osgard-release/nebula-r40-qa-head.sha
+          test -s osgard-release/nebula-r40-qa-head.sha
+          expected_head="$(cat osgard-release/nebula-r40-qa-head.sha)"
+          case "$expected_head" in ""|*[!0-9a-f]*) echo "Invalid R40 QA head pin" >&2; exit 1 ;; esac
+          test "$(printf '%s' "$expected_head" | wc -c)" -eq 40
+          cp scripts/preserve-nebula-r40-qa.sh osgard-release/preserve-nebula-r40-qa.sh
+          test -s osgard-release/preserve-nebula-r40-qa.sh
           cp nginx.conf osgard-release/nginx.conf
           docker build --pull -f server/Dockerfile -t osgard-core-api:${GITHUB_SHA} .
           docker save osgard-core-api:${GITHUB_SHA} | gzip -1 > osgard-release/core-api-image.tar.gz
@@ -704,4 +716,3 @@ jobs:
         run: |
           set -euo pipefail
           ssh -i ~/.ssh/osgard_deploy "$USER@$HOST" "rm -rf -- '/tmp/osgard-gh-release-${GITHUB_RUN_ID}'"
-

@@ -511,11 +511,19 @@ trap 'stop_activation_worker 129' HUP
     # was built from an older GitHub commit.
     test -s /tmp/osgard-gh-next/preserve-omega-native.sh
     sh /tmp/osgard-gh-next/preserve-omega-native.sh /usr/share/nginx/html/games/omega-3d-preview /tmp/osgard-gh-next/html/games/omega-3d-preview
+    # Full frontend root swaps must not erase the independently staged R40
+    # hardware QA. Copy only after verifying the four original CI SHA-256s.
+    test -s /tmp/osgard-gh-next/preserve-nebula-r40-qa.sh
+    test -s /tmp/osgard-gh-next/nebula-r40-qa-head.sha
+    sh /tmp/osgard-gh-next/preserve-nebula-r40-qa.sh /usr/share/nginx/html/games/remix/nebula-r40-qa /tmp/osgard-gh-next/html/games/remix/nebula-r40-qa /tmp/osgard-gh-next/nebula-r40-qa-head.sha
     cp /etc/nginx/conf.d/default.conf /tmp/osgard-nginx-previous.conf
     mv /usr/share/nginx/html /tmp/osgard-gh-previous
     mv /tmp/osgard-gh-next/html /usr/share/nginx/html
     if [ -s /usr/share/nginx/html/games/omega-3d-preview/SHA256SUMS.txt ]; then
       (cd /usr/share/nginx/html/games/omega-3d-preview && sha256sum -c SHA256SUMS.txt >/dev/null)
+    fi
+    if [ -s /usr/share/nginx/html/games/remix/nebula-r40-qa/R40_DEVICE_ARTIFACT_SHA256.txt ]; then
+      (cd /usr/share/nginx/html/games/remix/nebula-r40-qa && sha256sum -c R40_DEVICE_ARTIFACT_SHA256.txt >/dev/null)
     fi
     cp /tmp/osgard-gh-next/nginx.conf /etc/nginx/conf.d/default.conf
     echo 'Nginx compression module diagnostics:'

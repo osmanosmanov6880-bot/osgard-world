@@ -13,6 +13,12 @@ on:
       - 'scripts/osa-cinema-v16-private-room-smoke.mjs'
       - 'tools/osa-cinema-private-review.html'
       - 'tools/osa-cinema-v17-quality-desk.html'
+      - 'tools/osa-cinema-v19-private-timeline.html'
+      - 'scripts/osa-cinema-v19-private-timeline.spec.mjs'
+      - 'scripts/osa-cinema-v19-caption-qc.mjs'
+      - 'scripts/osa-cinema-v19-caption.test.mjs'
+      - 'scripts/osa-cinema-v19-private-timeline-smoke.mjs'
+      - 'scripts/osa-cinema-v19-release-registry.test.mjs'
       - 'scripts/osa-cinema-v17-quality-desk-smoke.mjs'
       - 'scripts/osa-cinema-v17-quality-desk.spec.mjs'
       - 'src/osaCinemaCompanionText.ts'
@@ -67,6 +73,9 @@ jobs:
         run: node scripts/osa-cinema-v16-private-room-smoke.mjs
       - name: Validate V17 local-only media quality desk and ten source fingerprints
         run: node scripts/osa-cinema-v17-quality-desk-smoke.mjs
+      - name: V19 private subtitle and editorial desk contract checks
+        run: |
+          node --test scripts/osa-cinema-v19-caption.test.mjs scripts/osa-cinema-v19-private-timeline-smoke.mjs scripts/osa-cinema-v19-release-registry.test.mjs
       - name: Verify TypeScript and produce deployable application
         run: |
           npm run check
@@ -81,7 +90,7 @@ jobs:
             npx playwright install --with-deps --no-shell chromium
           fi
       - name: Exercise OSA V13 desktop and 390px touch viewport
-        run: npx playwright test scripts/osa-cinema-v13-browser.spec.mjs scripts/osa-cinema-v14-companion.spec.mjs scripts/osa-cinema-v15-screening.spec.mjs scripts/osa-cinema-v16-private-room.spec.mjs scripts/osa-cinema-v17-quality-desk.spec.mjs --config playwright.ecosystem.config.mjs --workers=1
+        run: npx playwright test scripts/osa-cinema-v13-browser.spec.mjs scripts/osa-cinema-v14-companion.spec.mjs scripts/osa-cinema-v15-screening.spec.mjs scripts/osa-cinema-v16-private-room.spec.mjs scripts/osa-cinema-v17-quality-desk.spec.mjs scripts/osa-cinema-v19-private-timeline.spec.mjs --config playwright.ecosystem.config.mjs --workers=1
       - name: Publish reproducible browser evidence
         if: always()
         uses: actions/upload-artifact@v4
