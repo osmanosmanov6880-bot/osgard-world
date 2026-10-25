@@ -4,6 +4,9 @@ on:
     branches: [master]
     paths:
       - 'scripts/omega-r50-release-gate.py'
+      - 'scripts/omega_r80_hardware_evidence.py'
+      - 'scripts/omega_r80_prepare_phone_session.py'
+      - 'scripts/test_omega_r80_hardware_evidence.py'
       - 'scripts/omega-live-integrity.py'
       - 'scripts/omega-live-webgl.spec.mjs'
       - 'scripts/omega-world-frame-evidence.mjs'
@@ -40,6 +43,7 @@ jobs:
           set -euo pipefail
           python3 scripts/omega-live-integrity.py --self-test
           python3 scripts/omega-r50-release-gate.py --self-test
+          python3 scripts/test_omega_r80_hardware_evidence.py
           python3 scripts/omega-r77-dispatch-contract.py
           python3 scripts/omega-r50-release-gate.py > /tmp/r50-hold.json
           python3 - <<'PY'
