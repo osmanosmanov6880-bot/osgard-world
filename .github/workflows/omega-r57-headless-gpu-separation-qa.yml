@@ -1,0 +1,91 @@
+name: EMPIRE Omega R57 correct Godot headless vs original OpenGL capture release gate
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - '.github/workflows/omega-godot-web.yml'
+      - '.github/workflows/omega-r57-headless-gpu-separation-qa.yml'
+      - 'scripts/omega-native-suite-contract.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  genuine-headless-natives:
+    runs-on: ubuntu-latest
+    timeout-minutes: 9
+    steps:
+      - uses: actions/checkout@v4
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: false
+      - name: Prove no GPU framebuffer expected from fake headless and all native suites preserved
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/omega-native-suite-contract.py
+          python3 godot/empire-omega/tools/generate_audio.py
+          python3 godot/empire-omega/tools/generate_patrol_audio.py
+          bash scripts/omega-strict-godot-import.sh godot/empire-omega
+      - name: Run original integrated gameplay and forty genuine mission-save checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          for suite in v71_r52_real_joined_gameplay v72_r55_forty_mission_event_save; do
+            timeout --signal=TERM --kill-after=5s 20s godot --headless --path godot/empire-omega --script "res://tests/$suite.gd"
+          done
+          python3 - <<'PY'
+          from pathlib import Path
+          for fn in ('r52-joined-gameplay-evidence.json','r55-campaign-event-save-evidence.json'):
+              file=Path('godot/empire-omega/tests')/fn
+              assert file.is_file() and file.stat().st_size>300, f"missing actual Godot regression evidence: {fn}"
+          print('PASS genuine R52/R55 Godot logic; never screenshot with headless fake renderer')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: omega-r57-real-godot-integrated-native-json
+          path: |
+            godot/empire-omega/tests/r52-joined-gameplay-evidence.json
+            godot/empire-omega/tests/r55-campaign-event-save-evidence.json
+          if-no-files-found: warn
+          retention-days: 14
+  authentic-independent-opengl:
+    runs-on: ubuntu-latest
+    timeout-minutes: 9
+    steps:
+      - uses: actions/checkout@v4
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: false
+      - name: Install real GL/XVFB for actual GPU screenshots
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y xvfb libgl1-mesa-dri
+          python3 godot/empire-omega/tools/generate_audio.py
+          python3 godot/empire-omega/tools/generate_patrol_audio.py
+          bash scripts/omega-strict-godot-import.sh godot/empire-omega
+      - name: Capture real R44 12h/22h original Godot world pixels
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p screenshots
+          timeout --signal=TERM --kill-after=8s 130s xvfb-run -a -s '-screen 0 1920x1080x24' \
+            godot --path godot/empire-omega --rendering-method gl_compatibility \
+              --script res://tests/r44_actual_night_capture.gd
+          test -s screenshots/omega_r44_real_day_1366x768.png
+          test -s screenshots/omega_r44_real_night_1366x768.png
+          file screenshots/omega_r44_real_*.png
+      - name: Preserve actual OPENGL native renderer pixels, never placeholders
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: omega-r57-original-real-gl-day-night-not-headless
+          path: screenshots/omega_r44_real_*.png
+          if-no-files-found: warn
+          retention-days: 14
