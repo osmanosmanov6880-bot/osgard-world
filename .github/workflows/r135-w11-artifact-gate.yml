@@ -116,6 +116,7 @@ jobs:
           export OSGARD_EXPECTED_R135_SOURCE="$(jq -r '.source_commit' scripts/r135-w11-release-pin.json)"
           export OSGARD_EXPECTED_R135_VERSION="$(jq -r '.version' scripts/r135-w11-release-pin.json)"
           export OSGARD_EXPECTED_R135_MANIFEST_SHA256="$(jq -r '.manifest_sha256' scripts/r135-w11-release-pin.json)"
+          export OSGARD_REQUIRE_R135_REVALIDATION=1
           bash scripts/r135-nginx-wasm-smoke.sh "$RUNNER_TEMP/r135-w11-staged"
 
       - name: Retain independent signed-artifact and pixel QA evidence
