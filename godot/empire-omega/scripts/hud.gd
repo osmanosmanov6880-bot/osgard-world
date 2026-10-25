@@ -561,6 +561,12 @@ func _make_strategy() -> void:
 	stack.add_child(title_row)
 	strategy_title = _label(title_row,"",29,true)
 	strategy_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	# The genuine close button must remain at the upper right with the duplicate
+	# widescreen title hidden. This flex spacer preserves keyboard focus order.
+	var title_flex := Control.new()
+	title_flex.name = "R99CommandHeaderSpacer"
+	title_flex.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	title_row.add_child(title_flex)
 	strategy_close_button = _button(title_row,"×",Callable(self,"toggle_strategy"))
 	strategy_close_button.custom_minimum_size = Vector2(98,42)
 	strategy_close_button.add_theme_font_size_override("font_size",14)
