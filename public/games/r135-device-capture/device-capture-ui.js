@@ -1,4 +1,4 @@
-import { REQUIRED_RELEASE, detectSupportedDevice, createEvidenceRecord, digestBytes } from './device-capture.js'
+import { REQUIRED_RELEASE, detectSupportedDevice, createEvidenceRecord, digestBytes, verifyOriginalPng } from './device-capture.js'
 const $ = id => document.getElementById(id)
 const start = $('start')
 const mode = $('mode')
@@ -25,12 +25,10 @@ function checkView(view) {
   return [view.viewport_w,view.viewport_h]
 }
 const imageFile = async file => {
-  if (!file || !file.name.toLowerCase().endsWith('.png') || file.size < 20000 || file.size > 8000000)
+  if (!file || !file.name.toLowerCase().endsWith('.png'))
     throw new Error('Выбери оригинальный PNG-скриншот (20 КБ – 8 МБ).')
   const bytes = new Uint8Array(await file.arrayBuffer())
-  const magic = [137,80,78,71,13,10,26,10]
-  if (!magic.every((b,i)=>bytes[i]===b))
-    throw new Error('Файл не является настоящим PNG.')
+  verifyOriginalPng(bytes)
   return digestBytes(bytes)
 }
 function downloadJson(record) {
