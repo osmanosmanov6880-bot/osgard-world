@@ -42,6 +42,7 @@ TESTS = [
     "v85_r99_command_visual_geometry",
     "v86_r102_real_asphalt_quality",
     "v87_r108_native_mountain_ridges",
+    "v88_r106_embedded_cc0_road_activation",
 ]
 
 
