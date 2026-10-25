@@ -97,7 +97,68 @@ async function captureLiveGodotCanvas(page) {
   }
 }
 
+// Software-rendered 1366x768 WebGL can deadlock all synchronous compositor
+// screenshots while Godot continues drawing. Prefer a real asynchronous CDP
+// screencast frame for DESKTOP; no DOM image, fake PNG or pass-on-timeout.
+// Every frame is still checked by the game tests for visible world pixels
+// and actual input-driven scene motion.
+async function bounded(promise, limit, label) {
+  let timeout
+  try {
+    return await Promise.race([
+      promise,
+      new Promise((_, reject) => {
+        timeout=setTimeout(()=>reject(new Error(label+' timed out')),limit)
+      })
+    ])
+  } finally {
+    if(timeout!==undefined)clearTimeout(timeout)
+  }
+}
+
+export async function captureAuthenticDesktopScreencast(page) {
+  const session=await bounded(page.context().newCDPSession(page),6000,
+    'CDP desktop screencast session')
+  let closed=false
+  try {
+    const pending=new Promise(resolve=>{
+      session.on('Page.screencastFrame',frame=>{
+        session.send('Page.screencastFrameAck',{sessionId:frame.sessionId})
+          .catch(()=>{})
+        if(closed)return
+        const png=Buffer.from(frame.data||'','base64')
+        if(png.length<=9500 || png.subarray(0,8).toString('hex')!=='89504e470d0a1a0a')return
+        closed=true
+        resolve({png,method:'chromium-async-real-screencast'})
+      })
+    })
+    await bounded(session.send('Page.startScreencast',{
+      format:'png',everyNthFrame:1
+    }),6000,'CDP start real screencast')
+    return await bounded(pending,14000,'CDP real desktop WebGL frame')
+  } finally {
+    closed=true
+    // A wedged compositor must not hang CI or subsequent Playwright projects.
+    await bounded(session.send('Page.stopScreencast').catch(()=>{}),900,
+      'CDP stop screencast').catch(()=>{})
+    await bounded(session.detach().catch(()=>{}),900,
+      'CDP detach screencast').catch(()=>{})
+  }
+}
+
 export async function captureAnimatedWebGLViewport(page) {
+  // Desktop-only asynchronous compositor path avoids the GPU screenshot
+  // hang observed in two independent post-SSH runs; mobile retains the
+  // previously verified capture method. If absent, keep all strict fallbacks.
+  let asyncError=null
+  const viewport=typeof page.viewportSize==='function' ? page.viewportSize() : null
+  if(viewport?.width>=1000) {
+    try {
+      return await captureAuthenticDesktopScreencast(page)
+    } catch(e) {
+      asyncError=e
+    }
+  }
   // Unlike locator screenshots, CDP does not wait for a continuously painted
   // WebGL canvas to reach the impossible "stable element" state.
   let session=null
@@ -172,7 +233,8 @@ export async function captureAnimatedWebGLViewport(page) {
           '; Canvas='+String(canvasError?.message??canvasError)).slice(0,250)}
     } catch(secondError) {
       throw new Error(
-        'No authentic WebGL pixels could be captured: CDP='+
+        'No authentic WebGL pixels could be captured: Async='+
+        String(asyncError?.message??asyncError)+'; CDP='+
         String(firstError?.message??firstError)+'; CDP View='+
         String(alternativeError?.message??alternativeError)+'; Canvas='+
         String(canvasError?.message??canvasError)+'; Playwright='+
