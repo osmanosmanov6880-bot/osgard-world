@@ -23,3 +23,9 @@ benchmarks. Full acceptance still requires a human on a real Android
 Chrome and iPhone Safari, the matching public build SHA, three 20s runs,
 recorded p50/p95, thermals, graphics preset and unedited video before a
 30-FPS-mobile claim is justified. No FPS improvement can be assumed.
+
+If an actual high-refresh renderer records more than the bounded 6000
+samples during 20 seconds, the capture now explicitly reports
+`sample-capacity-exceeded` and refuses to export a misleading undercounted
+mean FPS. A 360 Hz simulation is a unit test of this safety rule, not
+an actual 360 FPS hardware claim.
