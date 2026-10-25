@@ -75,8 +75,14 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          # R67 CI isolation: Chromium SwiftShader may hang when it tears
+          # down a huge WebGL frame and reuses the same process/worker for the
+          # second viewport. Require BOTH independent native game runs; never
+          # treat a screenshot timeout as a passing visual result.
           npx playwright test --config playwright.omega-portrait-preview.config.mjs \
-            --project="desktop-1366x768" --project="portrait-390x844"
+            --project="portrait-390x844" --workers=1
+          npx playwright test --config playwright.omega-portrait-preview.config.mjs \
+            --project="desktop-1366x768" --workers=1
       - name: Retain authentic screenshots and pixel-diversity diagnostics
         if: always()
         uses: actions/upload-artifact@v4
