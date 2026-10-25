@@ -33,3 +33,11 @@ The test suite uses synthetic fixtures; only field data can approve hardware.
 внедрения метки, не подходит: используйте актуальный CI-артефакт PR #342.
 Эта проверка защищает от случайного смешения результатов, но метка не
 криптографически подписана и не доказывает, какой телефон использовался.
+
+## Frame-pacing release check (2026-10-25)
+The offline field-gate also compares **median 1% Low FPS** and **median P99
+frame-time** across actual same-device runs. It rejects the R40 candidate if
+1% Low drops by more than 5% or P99 frame time increases by more than 5%,
+even when average FPS improves. These are pragmatic regression thresholds,
+not a statistical confidence interval; unstable/thermal-affected samples still
+require human review and retesting.
