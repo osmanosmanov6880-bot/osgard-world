@@ -24,6 +24,9 @@ test('WebVTT English valid cues with numbered identifiers and NOTE blocks',()=>{
  const source='WEBVTT\n\nNOTE private editorial draft\nNo approval\n\n23\n00:00:07.000 --> 00:00:09.200\nA test line\n'
  assert.deepEqual(parseWebVtt(source,45),[{start:7,end:9.2,text:'A test line'}])
 })
+test('Empty WebVTT must not be misreported as imported subtitles',()=>{
+ assert.throws(()=>parseWebVtt('WEBVTT\n\n',239),/No caption cues/)
+})
 test('WebVTT import rejects overlap, out-of-range, markup and forged settings',()=>{
  const bad=[
  'Not VTT\n\n00:00:01.000 --> 00:00:02.000\nHi\n',
