@@ -50,38 +50,75 @@ async function tapSceneButton(page, index) {
 async function keyboardMission(page) {
   await page.locator('canvas').first().click({ position: { x: 400, y: 350 } })
   await page.keyboard.press('m')
-  await expectState(page, x => x?.mission_active && x?.mission_step === 0, 'M must start mission')
-  await page.keyboard.press('Space') // Deliberately incorrect action.
-  await expectState(page, x => x?.mission_step === 0 && x?.motion_enabled === false, 'Wrong order must not advance')
+  await expectState(page, x => x?.mission_active && x?.mission_step === 0
+    && x?.motion_enabled && x?.lid_target === 0, 'W13 training must start with drive running, hatch shut')
+  await page.keyboard.press('f') // Unsafe: opening a running mechanism is prohibited.
+  await expectState(page, x => x?.mission_step === 0 && x?.lid_target === 0
+    && x?.motion_enabled && String(x?.mission_feedback || '').includes('SAFETY INTERLOCK'),
+    'W13 training incorrectly allowed opening hatch while running')
   await page.keyboard.press('Space')
+  await expectState(page, x => x?.mission_step === 1 && !x?.motion_enabled,
+    'W13 stop-drive-first lesson failed')
   await page.keyboard.press('f')
-  await expectState(page, x => x?.mission_step === 1, 'Hatch should advance to task 2')
-  await page.keyboard.press('Space')
-  await expectState(page, x => x?.mission_step === 2, 'Pause should advance to task 3')
+  await expectState(page, x => x?.mission_step === 2 && x?.lid_target === 1,
+    'W13 safe hatch opening failed')
+  await expectState(page, x => x?.lid_progress >= .95,
+    'W13 training hatch did not open completely', 35_000)
+  await page.keyboard.press('Space') // Never restart while the simulated hatch is open.
+  await expectState(page, x => x?.mission_step === 2 && !x?.motion_enabled
+    && String(x?.mission_feedback || '').includes('SAFETY INTERLOCK'),
+    'W13 training bypassed open-hatch interlock')
   await page.keyboard.press('f')
-  await expectState(page, x => x?.mission_step === 3, 'Hatch close should advance to task 4')
+  await expectState(page, x => x?.mission_step === 3 && x?.lid_target === 0,
+    'W13 closing hatch did not clear checkpoint')
+  await page.keyboard.press('Space') // Must wait for physical lid animation to finish.
+  await expectState(page, x => x?.mission_step === 3 && !x?.motion_enabled,
+    'W13 drive restarted while hatch was still closing')
+  await expectState(page, x => x?.lid_progress <= .05,
+    'W13 training hatch did not seal', 35_000)
   await page.keyboard.press('Space')
   await expectState(page, x => x?.mission_completed && x?.mission_step === 4
-    && x?.motion_enabled && !x?.mission_active, 'Resume must complete playable mission')
+    && x?.motion_enabled && !x?.mission_active,
+    'W13 safe simulated service mission did not complete')
   await page.keyboard.press('v')
   await expectState(page, x => x?.view === 1, 'V must select close-up inspection camera')
   await page.keyboard.press('r')
   await expectState(page, x => x?.view === 0, 'R must reset the camera')
 }
 async function touchMission(page) {
-  await tapSceneButton(page, 0)  // START MISSION
-  await expectState(page, x => x?.mission_active && x?.mission_step === 0, 'Mobile START tap failed')
-  await tapSceneButton(page, 6)  // OPEN HATCH
-  await expectState(page, x => x?.mission_step === 1, 'Mobile OPEN HATCH tap failed')
-  await tapSceneButton(page, 5)  // PLAY/PAUSE
-  await expectState(page, x => x?.mission_step === 2, 'Mobile PAUSE tap failed')
-  await tapSceneButton(page, 6)  // CLOSE HATCH
-  await expectState(page, x => x?.mission_step === 3, 'Mobile CLOSE HATCH tap failed')
-  await tapSceneButton(page, 5)  // RESUME
-  await expectState(page, x => x?.mission_completed && x?.mission_step === 4, 'Mobile MISSION completion failed')
-  await tapSceneButton(page, 2)  // NEXT VIEW
+  await tapSceneButton(page, 0)
+  await expectState(page, x => x?.mission_active && x?.mission_step === 0
+    && x?.motion_enabled && x?.lid_target === 0, 'W13 mobile training start failed')
+  await tapSceneButton(page, 6) // Unsafe hatch on running drive.
+  await expectState(page, x => x?.mission_step === 0 && x?.lid_target === 0
+    && String(x?.mission_feedback || '').includes('SAFETY INTERLOCK'),
+    'W13 mobile training incorrectly opened running machine')
+  await tapSceneButton(page, 5) // Stop drive.
+  await expectState(page, x => x?.mission_step === 1 && !x?.motion_enabled,
+    'W13 mobile pause-first lesson failed')
+  await tapSceneButton(page, 6) // Safely open hatch.
+  await expectState(page, x => x?.mission_step === 2 && x?.lid_target === 1,
+    'W13 mobile hatch-opening step failed')
+  await expectState(page, x => x?.lid_progress >= .95,
+    'W13 mobile hatch did not open', 35_000)
+  await tapSceneButton(page, 5) // Unsafe restart while hatch open.
+  await expectState(page, x => x?.mission_step === 2 && !x?.motion_enabled,
+    'W13 mobile safety interlock bypassed by restart')
+  await tapSceneButton(page, 6) // Close hatch.
+  await expectState(page, x => x?.mission_step === 3 && x?.lid_target === 0,
+    'W13 mobile hatch closing step failed')
+  await tapSceneButton(page, 5) // Premature restart while hatch still moving.
+  await expectState(page, x => x?.mission_step === 3 && !x?.motion_enabled,
+    'W13 mobile restart bypassed moving-hatch interlock')
+  await expectState(page, x => x?.lid_progress <= .05,
+    'W13 mobile hatch did not seal', 35_000)
+  await tapSceneButton(page, 5)
+  await expectState(page, x => x?.mission_completed && x?.mission_step === 4
+    && x?.motion_enabled && !x?.mission_active,
+    'W13 mobile safety-first training mission did not complete')
+  await tapSceneButton(page, 2)
   await expectState(page, x => x?.view === 1, 'Mobile camera preset tap failed')
-  await tapSceneButton(page, 7)  // RESET VIEW
+  await tapSceneButton(page, 7)
   await expectState(page, x => x?.view === 0, 'Mobile camera reset tap failed')
 }
 // Each scenario must be solved through actual controls, including the
