@@ -120,6 +120,14 @@ jobs:
           set -euo pipefail
           xvfb-run -a -s '-screen 0 1920x1080x24' \
             npx playwright test --config playwright.omega-r90.config.mjs --workers=1 --retries=0
+      - name: Archive unpublished PLAYABLE Godot WebGL candidate from same tested checkout
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: omega-r109-actual-playable-webgl-candidate
+          path: godot/empire-omega/.build-web/
+          if-no-files-found: error
+          retention-days: 14
       - name: Preserve original renderer screenshots and executable SHA evidence
         if: always()
         uses: actions/upload-artifact@v4
