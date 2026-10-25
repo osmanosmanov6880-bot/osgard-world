@@ -19,9 +19,11 @@ function status(){
   assert(q.staging_only===true && q.approved_for_production===false,
     'QA staging must not claim production approval');
   assert(q.qa_path==='/games/remix/nebula-r40-qa/','Unexpected QA route');
-  assert(q.candidate_pr===375 && /^[a-f0-9]{40}$/.test(q.candidate_head_sha),
-    'Unpinned candidate SHA or PR');
-  assert(/^[0-9]+$/.test(String(q.source_run_id)),'Invalid Actions source run ID');
+  assert(q.candidate_pr===375 &&
+    q.candidate_head_sha==='9efb03c246a28a168886e2aa494872e907ea78cd',
+    'Candidate PR #375 head changed: independent reapproval required');
+  assert(String(q.source_run_id)==='40173218842',
+    'Source CI changed: independent reapproval required');
   return {schema:'NEBULA_R40_FINAL_PRODUCTION_PREFLIGHT_V1',
     production_variant:p.approved_variant,
     production_stable_r38:p.approved_variant==='R38' &&
