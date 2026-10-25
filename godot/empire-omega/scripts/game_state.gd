@@ -229,6 +229,10 @@ func set_tax(tax: int) -> bool:
 func set_course(course: String) -> bool:
 	if not ["balance", "industry", "energy", "welfare"].has(course):
 		return false
+	# R68: a real campaign "change policy" requires a state transition.
+	# Re-selecting the current policy must not mint mission credit.
+	if str(data.get("course","balance")) == course:
+		return false
 	data["course"] = course
 	state_changed.emit("policy")
 	return true
