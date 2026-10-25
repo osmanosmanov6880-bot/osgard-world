@@ -221,6 +221,109 @@ async function touchDiagnostics(page) {
     'Touch W9 simulated case did not record the learning result')
 }
 
+// W12: prove that every distinct fault is playable through the real Godot
+// controls on BOTH Chromium desktop and emulated touch. Native Godot alone
+// cannot catch an unreachable camera button or an incorrectly wired UI.
+async function browserRemainingFaults(page, isMobile, deviceName) {
+  const cases = []
+  const press = async (key, button) => {
+    if (isMobile) await tapSceneButton(page, button)
+    else await page.keyboard.press(key)
+  }
+  for (const [index, targetView, faultName] of [
+    [1, 3, 'COOLING AIRFLOW'],
+    [2, 1, 'SERVICE INTERLOCK'],
+  ]) {
+    await press('c', 1)
+    await expectState(page, state =>
+      state?.challenge_active && state?.challenge_step === 0
+      && state?.challenge_fault_index === index
+      && state?.challenge_fault === faultName
+      && state?.challenge_target_view === targetView
+      && state?.fault_marker_active_index === index
+      && state?.fault_marker_visible_count === 3
+      && state?.fault_label_visible_count === 1
+      && state?.active_caption_depth_override === true
+      && state?.fault_visual_state === 'active'
+      && String(state?.challenge_evidence || '').includes('(SIM)'),
+      'W12 ' + deviceName + ' scenario not visibly active: ' + faultName)
+    // A running machine may not open the hatch. The unsafe action must
+    // increment the penalty without skipping a checkpoint.
+    await press('f', 6)
+    await expectState(page, state => state?.challenge_step === 0
+      && state?.challenge_errors === 1 && state?.lid_target === 0
+      && state?.motion_enabled === true,
+      'W12 unsafe hatch was not rejected for ' + faultName)
+    await press('Space', 5)
+    await expectState(page, state => state?.challenge_step === 1
+      && state?.motion_enabled === false,
+      'W12 drive could not stop for ' + faultName)
+    await press('f', 6)
+    await expectState(page, state => state?.challenge_step === 2
+      && state?.lid_target === 1,
+      'W12 hatch could not open for ' + faultName)
+    await expectState(page, state => state?.lid_progress >= .95,
+      'W12 real hatch interpolation never fully opened for ' + faultName, 35_000)
+    await press('r', 7)
+    await expectState(page, state => state?.view === 0,
+      'W12 RESET VIEW did not use the real overview camera')
+    await press('e', 3)
+    await expectState(page, state => state?.challenge_step === 2
+      && state?.challenge_errors === 2 && state?.fault_visual_state === 'active',
+      'W12 wrong-view scan was incorrectly accepted for ' + faultName)
+    for (let view = 1; view <= targetView; view++) {
+      await press('v', 2)
+      await expectState(page, state => state?.view === view,
+        'W12 actual camera button failed at view ' + view)
+    }
+    await expectState(page, state => state?.challenge_target_view === targetView
+      && state?.fault_label_visible_count === 1
+      && state?.fault_marker_active_index === index,
+      'W12 target marker disappeared after camera change: ' + faultName)
+    await captureRealViewport(page, 'w12-' + deviceName + '-fault-' + (index + 1) + '-active.png')
+    await press('e', 3)
+    await expectState(page, state => state?.challenge_step === 3
+      && state?.fault_visual_state === 'inspected',
+      'W12 correct simulated scan did not inspect ' + faultName)
+    await press('f', 6)
+    await expectState(page, state => state?.challenge_step === 4
+      && state?.lid_target === 0,
+      'W12 hatch did not start closing for ' + faultName)
+    await press('Space', 5)
+    await expectState(page, state => state?.challenge_step === 4
+      && state?.motion_enabled === false && state?.challenge_errors === 3,
+      'W12 drive bypassed closing-hatch interlock for ' + faultName)
+    await expectState(page, state => state?.lid_progress <= .05,
+      'W12 hatch did not seal for ' + faultName, 35_000)
+    await press('Space', 5)
+    const done = await expectState(page, state => state?.challenge_completed
+      && state?.challenge_step === 5 && state?.motion_enabled === true
+      && state?.fault_visual_state === 'cleared'
+      && state?.fault_marker_active_index === index
+      && state?.cleared_case_count === index + 1
+      && typeof state?.challenge_score === 'number'
+      && state?.challenge_score >= 0 && state?.challenge_score <= 150,
+      'W12 successful diagnostic did not persist ' + faultName)
+    cases.push({
+      index, fault: faultName, targetView,
+      errors: done.challenge_errors, score: done.challenge_score,
+      elapsed: done.challenge_elapsed, cleared: done.cleared_case_count,
+      result: 'PASS', simulated_only: true,
+    })
+  }
+  if (cases.length !== 2) throw new Error('W12 must clear both additional cases')
+  const report = {
+    device: deviceName,
+    software_browser_renderer: 'SwiftShader WebGL2; not physical phone GPU',
+    first_case: 'OPTICAL ALIGNMENT: already passed original smoke',
+    new_cases: cases,
+    result: 'three distinct cases cleared in same Godot browser session',
+  }
+  await writeFile(resolve(output, 'w12-' + deviceName + '-three-case-evidence.json'),
+    JSON.stringify(report, null, 2) + '\n')
+  return cases
+}
+
 async function verifyAdaptiveHud(page) {
   const original = page.viewportSize()
   for (const [width, height, mode] of [
@@ -307,10 +410,14 @@ try {
       if (isMobile) {
         await touchMission(page)
         await touchDiagnostics(page)
+        const extraCases = await browserRemainingFaults(page, true, name)
+        if (extraCases.length !== 2) throw new Error('Missing two mobile diagnostic cases')
         await verifyAdaptiveHud(page)
       } else {
         await keyboardMission(page)
         await keyboardDiagnostics(page)
+        const extraCases = await browserRemainingFaults(page, false, name)
+        if (extraCases.length !== 2) throw new Error('Missing two desktop diagnostic cases')
         await page.keyboard.press('q')
         await expectState(page, x => x?.quality === 2
           && x?.loaded?.endsWith('service_spine_hero.glb') && x?.studio_quality === 2
@@ -327,9 +434,11 @@ try {
       }
       await captureRealViewport(page, name + '.png')
       const final = await readState(page)
+      if (final.cleared_case_count !== 3) throw new Error('W12 only ' + final.cleared_case_count + ' diagnostic cases cleared')
       result.push({ device: name, status: 'PASS', verified: 'real mechanics and interaction',
         mission: final.mission_completed, challenge: final.challenge_completed,
-        challengeScore: final.challenge_score, view: final.view, quality: final.quality,
+        challengeScore: final.challenge_score, caseCount: final.cleared_case_count,
+        diagnosticMatrix: 'optical, airflow, interlock', view: final.view, quality: final.quality,
         canvas: geometry,
         stageGridDrawBatches: final.studio_grid_draw_batches,
         stageGridInstances: final.studio_grid_instances,
