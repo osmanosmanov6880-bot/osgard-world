@@ -79,8 +79,18 @@ jobs:
           done
           cat /tmp/r28-game-http.log
           exit 1
-      - name: Check actual world WebGL 2 scene and 4 mobile/desktop pixel frames
-        run: npx playwright test --config playwright.omega-portrait-preview.config.mjs
+      - name: Check all four actual WebGL viewports in isolated Chromium processes
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Software WebGL readback can hang when four heavy Godot viewports
+          # share one long-lived Chromium process. Isolate process lifetime,
+          # keep ALL four real viewport assertions mandatory, no dummy pixels.
+          for viewport in portrait-390x844 small-phone-320x568 landscape-phone-844x390 desktop-1366x768; do
+            echo "Authentic Godot WebGL pixel QA: $viewport"
+            npx playwright test --config playwright.omega-portrait-preview.config.mjs \
+              --project="$viewport" --workers=1
+          done
       - name: Upload real R28 road paint candidate frames and diagnostics
         if: always()
         uses: actions/upload-artifact@v4
