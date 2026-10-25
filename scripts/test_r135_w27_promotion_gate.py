@@ -50,7 +50,7 @@ def sample() -> dict:
 
 
 class W27FailClosed(unittest.TestCase):
-    def test_19_real_original_frame_contract(self):
+    def test_29_real_original_frame_contract(self):
         self.assertEqual(len(gate.FRAMES), 29)
         self.assertIsNone(gate.verify_pin(sample()))
 
@@ -66,7 +66,7 @@ class W27FailClosed(unittest.TestCase):
 
     def test_missing_mobile_mastery_or_duplicate_frame_rejected(self):
         pin = sample()
-        pin["screenshots_sha256"].pop("w27-mobile-390-case-mastery.png")
+        pin["screenshots_sha256"].pop("w27-mobile-390-hero-12-source-pbr-maps.png")
         with self.assertRaisesRegex(ValueError, "29"):
             gate.verify_pin(pin)
         pin = sample()
