@@ -72,6 +72,15 @@ jobs:
             echo '::error::Actual Godot native test emitted engine errors'
             exit 1
           fi
+      - name: Real OBSIDIAN PROTOCOL architecture, A7 3D details and filmic responsive HUD
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 150s godot --headless --path w33-godot-native --script res://tests/test_w35_obsidian.gd 2>&1 | tee "$RUNNER_TEMP/w35-obsidian.log"
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/w35-obsidian.log"; then
+            echo '::error::W35 native art-direction acceptance emitted Godot errors'
+            exit 1
+          fi
       - name: Create real Godot 4.4.1 WebGL export from the same native-tested commit
         shell: bash
         run: |

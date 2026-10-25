@@ -271,8 +271,16 @@ func set_running(running: bool) -> void:
         lamp.material_override = mat
 
 func qa_readout() -> Dictionary:
+    var visible_details: int = 0
+    for detail in hero_only:
+        if detail.visible:
+            visible_details += 1
     return {
         "art_direction": "OSGARD_OBSIDIAN_PROTOCOL_W35",
+        "visible_hero_details": visible_details,
+        "alarm": _alarm,
+        "running": _running,
+        "key_shadow_enabled": key_light.shadow_enabled if key_light != null else false,
         "cinematic_complex": true,
         "structures": _structure_count,
         "hero_details": _detail_count,

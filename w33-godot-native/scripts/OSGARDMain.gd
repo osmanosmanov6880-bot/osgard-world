@@ -129,6 +129,7 @@ func _publish_web_accessibility(snap: Dictionary) -> void:
     var geometry: Dictionary = {
         "viewport": [roundi(size.x), roundi(size.y)],
         "scroll": int(scroll.scroll_vertical),
+        "hero_stage": _web_control_rect(stage_shell),
         "engine": _web_control_rect(engine_btn),
         "hatch": _web_control_rect(hatch_btn),
         "scan": _web_control_rect(scan_btn),
