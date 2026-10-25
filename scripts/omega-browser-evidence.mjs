@@ -97,7 +97,70 @@ async function captureLiveGodotCanvas(page) {
   }
 }
 
+// Chromium's compositor screenshot and canvas readback can BOTH stall under
+// heavy software WebGL on CI desktop. An actual CDP screencast supplies
+// asynchronously painted compositor PNG frames, without DOM mocks, black
+// placeholder images or a pass-on-timeout. The caller still validates pixels,
+// viewport coverage and real keyboard/touch-driven scene motion.
+async function boundedCapture(promise, milliseconds, label) {
+  let timer=null
+  try {
+    return await Promise.race([
+      promise,
+      new Promise((_,reject)=>{
+        timer=setTimeout(()=>reject(new Error(label+' timed out')),milliseconds)
+      })
+    ])
+  } finally {
+    if(timer!==null)clearTimeout(timer)
+  }
+}
+
+export async function captureAuthenticCDPScreencast(page) {
+  const session=await boundedCapture(
+    page.context().newCDPSession(page),8000,'CDP screencast connection'
+  )
+  let done=false
+  try {
+    const result=new Promise(resolve=>{
+      session.on('Page.screencastFrame',frame=>{
+        // Explicit acknowledgement keeps the live compositor sending frames;
+        // these bytes are from the running browser renderer, never generated.
+        session.send('Page.screencastFrameAck',{sessionId:frame.sessionId}).catch(()=>{})
+        if(done)return
+        const png=Buffer.from(frame.data||'','base64')
+        if(png.length<9500||png.subarray(0,8).toString('hex')!=='89504e470d0a1a0a')
+          return
+        done=true
+        resolve({png,method:'chromium-cdp-screencast'})
+      })
+    })
+    await boundedCapture(
+      session.send('Page.startScreencast',{format:'png',everyNthFrame:1}),
+      8000,'CDP startScreencast'
+    )
+    return await boundedCapture(result,12000,'real Godot compositor frame')
+  } finally {
+    done=true
+    // A wedged GPU process must not stall job cleanup indefinitely.
+    await boundedCapture(session.send('Page.stopScreencast').catch(()=>{}),1500,
+      'CDP stopScreencast').catch(()=>{})
+    await boundedCapture(session.detach().catch(()=>{}),1500,
+      'CDP screencast detach').catch(()=>{})
+  }
+}
+
 export async function captureAnimatedWebGLViewport(page) {
+  // Prefer a real asynchronous compositor frame. Unlike a synchronous
+  // screenshot, this does not block on a continuously repainting Godot canvas.
+  // If no authentic PNG arrives, do NOT pass: retain all original strict
+  // screenshot/readback fallbacks and fail closed.
+  let screencastError
+  try {
+    return await captureAuthenticCDPScreencast(page)
+  } catch(e) {
+    screencastError=e
+  }
   // Unlike locator screenshots, CDP does not wait for a continuously painted
   // WebGL canvas to reach the impossible "stable element" state.
   let session=null
@@ -142,7 +205,8 @@ export async function captureAnimatedWebGLViewport(page) {
           '; Canvas='+String(canvasError?.message??canvasError)).slice(0,250)}
     } catch(secondError) {
       throw new Error(
-        'No authentic WebGL pixels could be captured: CDP='+
+        'No authentic WebGL pixels could be captured: Screencast='+
+        String(screencastError?.message??screencastError)+'; CDP='+
         String(firstError?.message??firstError)+'; Canvas='+
         String(canvasError?.message??canvasError)+'; Playwright='+
         String(secondError?.message??secondError)
