@@ -15,17 +15,34 @@ def reject(reason: str):
     raise SystemExit("R135 release rejected: " + reason)
 
 
-def stage(archive: Path, manifest_path: Path, destination: Path):
-    # Pin the independently downloaded and verified W6 manifest bytes.
-    # The manifest alone is not a signature; this exact digest is trusted.
-    expected_sha256 = "0638f1ad5c0ab26d2d112e63bd1759923e5401a85ad4f2cedd450bbb7def2f61"
+def stage(archive: Path, manifest_path: Path, destination: Path,
+          release_pin: Path | None = None):
+    # W6 stays the known-good default until separately reviewed W11 promotion.
+    # A W11 production call must supply an explicit immutable pin file.
+    pin = {
+        "manifest_sha256": "0638f1ad5c0ab26d2d112e63bd1759923e5401a85ad4f2cedd450bbb7def2f61",
+        "version": "r135-web-framing-w6-20261024",
+        "source_commit": "947b4627080636543ae5e873b88b50e61f13beb4",
+    }
+    if release_pin is not None:
+        if not release_pin.is_file():
+            reject("W11 release pin file not found")
+        pin = json.loads(release_pin.read_text(encoding="utf-8"))
+        for key in ("manifest_sha256", "version", "source_commit"):
+            if not isinstance(pin.get(key), str) or not pin[key]:
+                reject("missing reviewed pin value: " + key)
+        if len(pin["manifest_sha256"]) != 64 or len(pin["source_commit"]) != 40:
+            reject("invalid reviewed W11 pin SHA lengths")
+        if pin.get("version") != "r135-web-legibility-w11-20261024":
+            reject("pin file not a validated R135 W11 release")
+    expected_sha256 = pin["manifest_sha256"]
     if hashlib.sha256(manifest_path.read_bytes()).hexdigest() != expected_sha256:
-        reject("W6 manifest digest differs from independently verified build")
+        reject("release manifest digest differs from independently reviewed build")
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    if manifest.get("version") != "r135-web-framing-w6-20261024":
-        reject("wrong release tag")
-    if manifest.get("source_commit") != "947b4627080636543ae5e873b88b50e61f13beb4":
-        reject("W6 archive source commit is not the validated candidate")
+    if manifest.get("version") != pin["version"]:
+        reject("wrong pinned release version")
+    if manifest.get("source_commit") != pin["source_commit"]:
+        reject("release source commit is not the reviewed candidate")
     if manifest.get("engine") != "Godot 4.4.1":
         reject("wrong Godot engine")
     files = manifest.get("files")
@@ -95,6 +112,7 @@ def stage(archive: Path, manifest_path: Path, destination: Path):
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 4:
-        reject("usage: r135-release-stage.py release.zip manifest.json target_dir")
-    stage(Path(sys.argv[1]), Path(sys.argv[2]), Path(sys.argv[3]))
+    if len(sys.argv) not in (4, 5):
+        reject("usage: r135-release-stage.py release.zip manifest.json target_dir [reviewed_pin.json]")
+    stage(Path(sys.argv[1]), Path(sys.argv[2]), Path(sys.argv[3]),
+          Path(sys.argv[4]) if len(sys.argv) == 5 else None)
