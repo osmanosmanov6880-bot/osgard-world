@@ -86,7 +86,8 @@ async function verifyRealLuxuryIntroduction(page, isMobile, name) {
 // and native touch. This is not physical Android/iOS hardware evidence.
 async function verifyW20PlayerSettings(page, isMobile, name) {
   if (!['r135-player-settings-w20-candidate-20261025',
-       'r135-explainable-training-w21-candidate-20261025'].includes(process.env.R135_CANDIDATE_VERSION)) return
+       'r135-explainable-training-w21-candidate-20261025',
+       'r135-case-mastery-w22-candidate-20261025'].includes(process.env.R135_CANDIDATE_VERSION)) return
   const start = await expectState(page, x => x?.player_preferences_schema === 1
     && x?.player_preferences_save_ok === true && x?.player_settings_control_css_px >= 43.5,
     'W20 real player settings not readable, saved, or accessible')
@@ -132,7 +133,10 @@ async function verifyW20PlayerSettings(page, isMobile, name) {
 // W21: the WHAT/WHY drill is an actual Godot Control in the same game canvas.
 // The GUI stays safety-locked; no tests inject fictitious scores or faults.
 async function verifyW21CausalLesson(page, isMobile, name) {
-  if (process.env.R135_CANDIDATE_VERSION !== 'r135-explainable-training-w21-candidate-20261025') return
+  // Inherit 2 real original W21 screenshots into the SAME W22 WebGL artifact.
+  // The W22 independent 19-frame SHA gate must not accept copied older frames.
+  if (!['r135-explainable-training-w21-candidate-20261025',
+         'r135-case-mastery-w22-candidate-20261025'].includes(process.env.R135_CANDIDATE_VERSION)) return
   await hitLuxuryControl(page, 'tutorial_collapse_center', isMobile)
   const initial = await expectState(page, x => x?.tutorial_expanded === true
     && x?.coach_status === 'intro'
@@ -152,6 +156,57 @@ async function verifyW21CausalLesson(page, isMobile, name) {
   await hitLuxuryControl(page, 'tutorial_collapse_center', isMobile)
   await expectState(page, x => x?.tutorial_expanded === false,
     'W21 hiding course must preserve real simulator operator controls')
+}
+
+// W22: scan actual persisted mastery, then select a chosen completed case from
+// a real scrollable Godot panel with genuine pointer/touch events.
+async function verifyW22SelectableCases(page, isMobile, name) {
+  if (process.env.R135_CANDIDATE_VERSION !== 'r135-case-mastery-w22-candidate-20261025') return
+  const before = await expectState(page, s => s?.case_replay_hitboxes?.length === 3
+    && s?.cleared_case_count === 3 && s?.case_mastery_threshold === 100
+    && s?.case_proficient_flags?.length === 3 && !s?.challenge_active,
+    'W22 genuine course progress and 3 selectable cases are required', 30_000)
+  // The previous real tutorial may already be open after chapter completion.
+  // Toggle only when collapsed: an unconditional toggle incorrectly *closes*
+  // the already-visible course on desktop, while mobile initially has it shut.
+  // This test must prove either genuine state preserves an already-open panel
+  // or a true pointer/touch click reopens it from the compact HUD.
+  if (!before.tutorial_expanded) {
+    await hitLuxuryControl(page, 'tutorial_collapse_center', isMobile)
+  }
+  await expectState(page, s => s?.tutorial_expanded === true
+    && s?.case_replay_hitboxes?.length === 3,
+    'W22 real case selector should be visible after course completion')
+  const rect = await page.locator('canvas').first().boundingBox()
+  if (!rect) throw new Error('Godot canvas absent for W22 selected scenario')
+  let active
+  for (let scroll = 0; scroll < 12; scroll++) {
+    const st = await readState(page)
+    const pt = st.case_replay_hitboxes[1]
+    const guide = st.tutorial_rect
+    if (pt && pt.h_css >= 43.5 && !pt.disabled &&
+        pt.y > guide.y + 20 && pt.y < guide.y + guide.h - 85) {
+      active = st
+      break
+    }
+    const x = rect.x + (guide.x + guide.w * .5) * rect.width / st.viewport_w
+    const y = rect.y + (guide.y + guide.h * .46) * rect.height / st.viewport_h
+    await page.mouse.move(x, y)
+    await page.mouse.wheel(0, 155)
+    await sleep(page, 270)
+  }
+  if (!active) throw new Error('W22 selectable cooling fault cannot be reached by real scroll')
+  await captureRealViewport(page, 'w22-' + name + '-case-mastery.png')
+  const point = active.case_replay_hitboxes[1]
+  const x = rect.x + point.x * rect.width / active.viewport_w
+  const y = rect.y + point.y * rect.height / active.viewport_h
+  if (isMobile) await page.touchscreen.tap(x, y)
+  else await page.mouse.click(x, y)
+  await expectState(page, st => st?.challenge_active && st?.challenge_fault_index === 1
+    && st?.challenge_step === 0 && st?.challenge_errors === 0
+    && st?.case_replay_hitboxes?.every(b => b.disabled === true),
+    'W22 selected cooling fault must start actual safe five-step case and lock other selectors')
+  console.log('W22 actual replay PASS:', name, 'cooling #2', before.case_proficient_flags)
 }
 
 async function keyboardMission(page) {
@@ -697,6 +752,7 @@ try {
         stageGridInstances: final.studio_grid_instances,
         prefersReducedMotion: final.prefers_reduced_motion,
         softwareRendererFpsSample: final.render_fps_sample })
+      await verifyW22SelectableCases(page, isMobile, name)
       console.log('R135 gameplay PASS:', name, JSON.stringify(result.at(-1)))
     } catch (error) {
       failed = true
