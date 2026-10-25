@@ -563,6 +563,9 @@ func _process(delta: float) -> void:
         state["language_control_center"] = {"x": switch_center.x, "y": switch_center.y}
         state["studio_detail_draw_batches"] = int(stage_budget["detail_draw_batches"])
         state["studio_detail_instances"] = int(stage_budget["detail_instances"])
+        state["studio_luxury_batches"] = int(stage_budget.get("luxury_draw_batches", -1))
+        state["studio_luxury_instances"] = int(stage_budget.get("luxury_instances", -1))
+        state["studio_luxury_emission"] = float(stage_budget.get("luxury_emission", -1.0))
         if premium_intro != null:
             state["tutorial_step"] = int(premium_intro.get("step"))
             state["tutorial_started"] = bool(premium_intro.get("begun"))
@@ -573,6 +576,11 @@ func _process(delta: float) -> void:
             state["tutorial_rect"] = {"x": intro_rect.position.x, "y": intro_rect.position.y,
                 "w": intro_rect.size.x, "h": intro_rect.size.y}
             state["tutorial_welcome_text"] = str((premium_intro.get("description_label") as Label).text)
+            var action_center: Vector2 = (premium_intro.get("primary_button") as Button).get_global_rect().get_center()
+            var collapse_center: Vector2 = (premium_intro.get("collapse_button") as Button).get_global_rect().get_center()
+            state["tutorial_primary_center"] = {"x": action_center.x, "y": action_center.y}
+            state["tutorial_collapse_center"] = {"x": collapse_center.x, "y": collapse_center.y}
+            state["tutorial_primary_label"] = str((premium_intro.get("primary_button") as Button).text)
         state["render_fps_sample"] = Engine.get_frames_per_second()
         state["inspection_fill_energy"] = inspection_fill.light_energy
         state["inspection_fill_shadow_enabled"] = inspection_fill.shadow_enabled
