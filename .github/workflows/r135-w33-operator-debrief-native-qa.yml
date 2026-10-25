@@ -154,7 +154,7 @@ jobs:
           assert len(binary)>3_000_000, "Real Godot engine executable expected"
           assert binary[:2]==b"MZ", "Native Win64 executable needs DOS header"
           pe_pointer=struct.unpack_from("<I",binary,60)[0]
-          assert 60<pe_pointer<len(binary)-25 and binary[pe_pointer:pe_pointer+4]==b"PE\\0\\0".replace(b"\\",b""), "PE signature missing"
+          assert 60<pe_pointer<len(binary)-25 and binary[pe_pointer:pe_pointer+4]==bytes((80,69,0,0)), "PE signature missing"
           assert pck.read_bytes()[:4]==b"GDPC", "Native PCK header missing"
           source=os.environ["GITHUB_SHA"]
           if os.environ.get("PR_SOURCE_SHA"):
@@ -166,7 +166,7 @@ jobs:
                     "physical_mobile_hardware_certified":False,
                     "files":[{"name":p.name,"bytes":p.stat().st_size,
                               "sha256":hashlib.sha256(p.read_bytes()).hexdigest()} for p in (exe,pck)]}
-          (folder/"windows-build.json").write_text(json.dumps(manifest,indent=2)+"\\n")
+          (folder/"windows-build.json").write_text(json.dumps(manifest,indent=2))
           print("WINDOWS CROSS-EXPORT ORIGINAL EXE/PCK PASS",source)
           PY
         env:
