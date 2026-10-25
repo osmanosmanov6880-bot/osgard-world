@@ -11,6 +11,7 @@ const TIRE_MODEL = preload("res://scripts/horizon_tire_model.gd")
 const DRIVER_ASSISTS = preload("res://scripts/horizon_driver_assists.gd")
 const YAW_INERTIA = preload("res://scripts/horizon_yaw_inertia.gd")
 const WHEEL_SURFACE = preload("res://scripts/horizon_four_wheel_surface.gd")
+const R46_LOAD_TRANSFER = preload("res://scripts/horizon_r46_load_transfer.gd")
 const MAX_FORWARD = 29.0
 const MAX_REVERSE = 9.0
 const ACCELERATION = 9.5
@@ -20,6 +21,10 @@ const DRAG = 2.4
 var driving := false
 var horizon_visual: Node3D
 var last_wheel_support: Dictionary = {}
+## R46 — real four-wheel probe load estimate; false if called a certified tyre test.
+var r46_brake_diagnostics: Dictionary = {}
+var r46_front_load_ratio: float = 0.52
+var r46_brake_grip: float = 1.0
 var rear_traction_factor := 1.0
 var axle_grip_active := false
 var headlight_cones: Array[SpotLight3D] = []
@@ -208,7 +213,20 @@ func _physics_process(delta: float) -> void:
 	if applied_throttle > 0.0:
 		applied_throttle *= YAW_INERTIA.corner_power_factor(speed,current_yaw_rate,traction_factor,handbrake_on)
 	power_assist_reduction = maxf(0.0,throttle-applied_throttle)
-	speed = DYNAMICS.speed_step(speed,applied_throttle,traction_factor,condition,forward_limit,reverse_limit,forward_accel,BRAKING,DRAG,handbrake_on,delta)
+	# R46: baseline driving remains identical with four planted wheels. Only
+	# true braking while contacts are missing loses available normal-force grip.
+	var braking_now: bool = handbrake_on or (speed>0.25 and applied_throttle< -0.05) or (speed< -0.25 and applied_throttle>0.05)
+	var prior_support: Array[bool] = [true,true,true,true]
+	# Dictionary defaults are plain Array, not Array[bool] in Godot 4.4.
+	# Explicitly copy and type-check the real four-raycast contact mask.
+	if last_wheel_support.has("grounded"):
+		var saved_support: Array = last_wheel_support["grounded"]
+		if saved_support.size()==4:
+			for wheel_index in range(4):
+				prior_support[wheel_index] = bool(saved_support[wheel_index])
+	r46_brake_grip = R46_LOAD_TRANSFER.braking_grip(traction_factor,prior_support,r46_front_load_ratio)
+	var drive_grip: float = r46_brake_grip if braking_now else traction_factor
+	speed = DYNAMICS.speed_step(speed,applied_throttle,drive_grip,condition,forward_limit,reverse_limit,forward_accel,BRAKING,DRAG,handbrake_on,delta)
 	if not driving and absf(speed) < 0.35:
 		speed = 0.0
 	var applied_steering: float = DRIVER_ASSISTS.stabilize_steering(steering_filter,speed,lateral_speed,traction_factor,handbrake_on) if driving and assists_enabled else steering_filter
@@ -245,11 +263,13 @@ func _physics_process(delta: float) -> void:
 		covered = 0.0
 	mileage += covered
 	var spin: float = covered / 0.44 * signf(speed)
+	var longitudinal_acceleration: float = (speed-prior_speed)/maxf(delta,0.001)
+	var wheel_support: Dictionary = _sample_wheel_contacts()
+	last_wheel_support = wheel_support
+	r46_brake_diagnostics = R46_LOAD_TRANSFER.diagnostics(speed,longitudinal_acceleration,traction_factor,wheel_support["grounded"])
+	r46_front_load_ratio = float(r46_brake_diagnostics["front_axle_load_ratio"])
 	if horizon_visual != null:
 		horizon_visual.call("roll_wheels",covered * signf(speed),applied_steering)
-		var longitudinal_acceleration: float = (speed-prior_speed)/maxf(delta,0.001)
-		var wheel_support: Dictionary = _sample_wheel_contacts()
-		last_wheel_support = wheel_support
 		horizon_visual.call("simulate_chassis",speed,current_yaw_rate,longitudinal_acceleration,traction_factor,handbrake_on,wheel_support["travel"],delta,wheel_support["grounded"])
 	_update_drift_score(delta)
 	for wheel in wheel_nodes:
