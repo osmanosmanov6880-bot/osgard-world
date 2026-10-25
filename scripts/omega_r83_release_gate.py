@@ -160,8 +160,13 @@ def human_sessions(report_path: Path, source: str) -> None:
         insist(isinstance(name, str) and name.lower().endswith((".mp4", ".webm")),
                "original MP4/WebM gameplay recording required")
         kind = ".mp4" if name.lower().endswith(".mp4") else ".webm"
-        r80.original_file(report_path.parent, name, digest, kind, 1025,
-                          r80.MAX_RECORDING_BYTES)
+        movie = r80.original_file(report_path.parent, name, digest, kind, 1025,
+                                  r80.MAX_RECORDING_BYTES)
+        with movie.open("rb") as file:
+            signature = file.read(16)
+        insist((kind == ".webm" and signature[:4] == bytes.fromhex("1a45dfa3")) or
+               (kind == ".mp4" and signature[4:8] == b"ftyp"),
+               "session video is not an original WebM/MP4 container")
         insist(digest not in recordings, "reused recording for distinct players")
         recordings.add(digest)
 
@@ -201,8 +206,23 @@ def art_and_licences(report_path: Path, source: str) -> None:
         sizes.add(label)
         file = item.get("file")
         digest = item.get("sha256")
-        r80.original_file(report_path.parent, file, digest, ".png", 100, 64 * 1024 * 1024)
-        r73.validate_decodable_png(report_path.parent / file)
+        frame = r80.original_file(report_path.parent, file, digest, ".png", 100,
+                                  64 * 1024 * 1024)
+        r73.validate_decodable_png(frame)
+        with frame.open("rb") as stream:
+            header = stream.read(24)
+        width = int.from_bytes(header[16:20], "big")
+        height = int.from_bytes(header[20:24], "big")
+        target_w, target_h = (int(x) for x in label.split("x"))
+        if label == "1366x768":
+            # Real CDP evidence may downsample original 1366 CSS pixels to
+            # 960x540, but the picture must retain real scene proportions.
+            insist(850 <= width <= target_w and 475 <= height <= target_h and
+                   abs(width / height - target_w / target_h) < 0.025,
+                   "desktop authentic CDP evidence dimensions do not match")
+        else:
+            insist(width == target_w and height == target_h,
+                   "mobile original Godot viewport screenshot dimensions mismatch")
         insist(digest not in digests, "same visual frame falsely assigned multiple viewports")
         digests.add(digest)
     insist(sizes == {"1366x768", "390x844", "320x568", "844x390"},
