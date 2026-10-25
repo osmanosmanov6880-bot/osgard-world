@@ -13,6 +13,10 @@ on:
       - 'src/osaProgress.ts'
       - 'scripts/osa-cinema-v13-smoke.mjs'
       - 'scripts/osa-cinema-v13-browser.spec.mjs'
+      - 'scripts/osa-cinema-v13-production-smoke.mjs'
+      - 'scripts/osa-cinema-v13-production.spec.mjs'
+      - 'playwright.osa-cinema-live.config.mjs'
+      - '.github/workflows/osa-cinema-v13-live-acceptance.yml'
       - 'playwright.ecosystem.config.mjs'
       - '.github/workflows/osa-cinema-v13-acceptance.yml'
   workflow_dispatch:
@@ -38,6 +42,11 @@ jobs:
         run: npm ci
       - name: Assert V13 visual architecture and compatible learning state
         run: node scripts/osa-cinema-v13-smoke.mjs
+      - name: Check new production acceptance scripts and configuration syntax
+        run: |
+          node --check scripts/osa-cinema-v13-production-smoke.mjs
+          node --check scripts/osa-cinema-v13-production.spec.mjs
+          node --check playwright.osa-cinema-live.config.mjs
       - name: Verify TypeScript and produce deployable application
         run: |
           npm run check
