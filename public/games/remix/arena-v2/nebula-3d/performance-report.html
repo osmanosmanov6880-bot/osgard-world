@@ -400,7 +400,15 @@ function render() {
 }
 uploader.addEventListener('change',async()=>{
   rejectList.replaceChildren();
-  const incoming=Array.from(uploader.files||[]);
+  const selected=uploader.files||[];
+  const freeSlots=Math.max(0,MAX_REPORT_FILES-rows.length);
+  const incoming=Array.from(selected).slice(0,freeSlots);
+  if (selected.length>freeSlots) {
+    const li=document.createElement('li');
+    li.textContent='Лимит '+MAX_REPORT_FILES+' JSON: не обработано файлов '+(selected.length-freeSlots)+
+      '. Сохраните CSV или очистите таблицу перед следующим набором.';
+    rejectList.appendChild(li);
+  }
   const typed=document.getElementById('device-label').value.trim();
   const device=typed ? typed.slice(0,48) : 'Партия '+(++batchNumber);
   const variant=document.getElementById('build-role').value;
