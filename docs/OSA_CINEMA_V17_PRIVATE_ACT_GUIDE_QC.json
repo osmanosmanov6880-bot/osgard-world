@@ -1,0 +1,63 @@
+{
+  "schemaVersion": 1,
+  "status": "PRIVATE_VOICE_GUIDE_OBJECTIVE_QC_NOT_APPROVED_FOR_RELEASE",
+  "releaseAuthorized": false,
+  "measurementMethod": "FFmpeg ebur128=peak=true,silencedetect=-45dB,d=0.25",
+  "source": "Already rendered private RU/EN AAC audio guides, 239.000s each; original film picture and audio unchanged",
+  "assets": [
+    {
+      "locale": "ru",
+      "name": "OSA_CINEMA_V17_RU_ACT_GUIDE_PRIVATE_239S.m4a",
+      "sha256": "2763cb455cb926fafd3eafa0d11c6882d157a16ca9c086f03a6cbc258b9b4f50",
+      "durationSeconds": 239,
+      "integratedLufs": -16.2,
+      "truePeakDbtp": -2.7,
+      "longSilenceReview": [
+        {
+          "start": 0,
+          "duration": 5.126
+        },
+        {
+          "start": 154.44,
+          "duration": 2.724
+        },
+        {
+          "start": 230.76,
+          "duration": 8.259
+        }
+      ],
+      "status": "PRIVATE_ONLY"
+    },
+    {
+      "locale": "en",
+      "name": "OSA_CINEMA_V17_EN_ACT_GUIDE_PRIVATE_239S.m4a",
+      "sha256": "15f68c069476203c1208f7f69a0586b2e4b8443a1ec6750f266f6e1816c6df80",
+      "durationSeconds": 239,
+      "integratedLufs": -15.8,
+      "truePeakDbtp": -2.6,
+      "longSilenceReview": [
+        {
+          "start": 0,
+          "duration": 5.135
+        },
+        {
+          "start": 73.88,
+          "duration": 5.179
+        },
+        {
+          "start": 149.8,
+          "duration": 7.362
+        },
+        {
+          "start": 225.853,
+          "duration": 13.166
+        }
+      ],
+      "status": "PRIVATE_ONLY"
+    }
+  ],
+  "rightsStatus": "unverified",
+  "voiceLanguageStatus": "not_listening_reviewed",
+  "syncToPicture": "not_approved",
+  "captionsStatus": "missing"
+}
