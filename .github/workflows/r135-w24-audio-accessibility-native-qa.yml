@@ -1,0 +1,76 @@
+name: OSGARD R135 W24 real no-autoplay local sound and RU/EN captions native QA
+
+on:
+  push:
+    branches: [feat/r135-w24-captions-procedural-sfx-20261025]
+    paths:
+      - 'godot/osgard-r135-standalone/**'
+      - '.github/workflows/r135-w24-audio-accessibility-native-qa.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  original-local-audio-safety:
+    runs-on: ubuntu-latest
+    timeout-minutes: 24
+    steps:
+      - uses: actions/checkout@v4
+      - name: Safety audit no remote audio, no autoplay, compatible original tutorial and records
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          b=Path('godot/osgard-r135-standalone')
+          src=(b/'R135AudioCues.gd').read_text()
+          prefs=(b/'R135AudioPreferences.gd').read_text()
+          main=(b/'StandaloneMain.gd').read_text()
+          ui=(b/'R135PremiumOnboarding.gd').read_text()
+          assert 'AudioStreamWAV.new()' in src
+          assert 'FORMAT_16_BITS' in src
+          assert 'player.autoplay = false' in src
+          assert 'sounds_enabled: bool = true' in src
+          assert 'sound_enabled": false' in prefs
+          assert 'captions_enabled": true' in prefs
+          assert 'user://r135_audio_accessibility_v1.cfg' in prefs
+          assert 'r135_challenge_record.cfg' not in prefs
+          assert 'r135_player_preferences_v1.cfg' not in prefs
+          assert 'audio_cues.call("announce", event, ui_locale)' in main
+          assert '_settings_audio_pressed' in ui and '_settings_caption_pressed' in ui
+          for forbid in ('HTTPRequest', 'HTTPClient', 'JavaScriptBridge.eval',
+                         'OS.execute', 'WebSocketPeer', 'AudioStreamMicrophone',
+                         'AudioEffectRecord'):
+            assert forbid not in src, forbid + ' may not be in local game SFX'
+          print('W24 original local audio/no auto-play/no unauthorized telemetry contract PASS')
+          PY
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: true
+      - name: Import true 3D GLBs and original PBR textures
+        run: |
+          set -euo pipefail
+          godot --headless --editor --path godot/osgard-r135-standalone --import --quit
+      - name: W19 real safety and all original three simulated faults
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 150s godot --headless --path godot/osgard-r135-standalone --script res://tests/smoke.gd
+      - name: W20 actual player preferences and unchanged local files
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 150s godot --headless --path godot/osgard-r135-standalone --script res://tests/preferences_smoke.gd
+      - name: W21 actual explanatory mistakes/interlocks and RU/EN
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 150s godot --headless --path godot/osgard-r135-standalone --script res://tests/learning_coach_smoke.gd
+      - name: W22 actual selective repeat, scores, safe cap and persistence
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 150s godot --headless --path godot/osgard-r135-standalone --script res://tests/case_mastery_smoke.gd
+      - name: W24 real native wave samples, non-autoplay captions, controls and safety
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 150s godot --headless --path godot/osgard-r135-standalone --script res://tests/audio_accessibility_smoke.gd

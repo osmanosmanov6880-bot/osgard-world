@@ -69,6 +69,7 @@ var title_label: Label
 var description_label: Label
 var hint_label: Label
 var metrics_label: Label
+var audio_caption_label: Label
 var case_mastery_label: Label
 var case_selection_caption: Label
 var case_selection_buttons: Array[Button] = []
@@ -94,6 +95,9 @@ var settings_title: Label
 var settings_note: Label
 var settings_quality_button: Button
 var settings_motion_button: Button
+var settings_audio_button: Button
+var settings_volume_button: Button
+var settings_caption_button: Button
 var settings_close_button: Button
 
 func _ready() -> void:
@@ -258,6 +262,9 @@ func _build() -> void:
     coach_detail.name = "CauseAndNextAction"
     coach_detail.visible = false
     metrics_label = _label(body, Color(0.93, 0.72, 0.49), 13)
+    audio_caption_label = _label(body, Color(0.61, 0.90, 0.82), 13)
+    audio_caption_label.name = "AlwaysTextualGameCueW24"
+    audio_caption_label.visible = false
     # W22: accessible real targeted replay; progress is derived exclusively
     # from existing W14 per-fault scores and does NOT invent new save formats.
     case_selection_caption = _label(body, Color(0.98, 0.68, 0.40), 13)
@@ -339,6 +346,18 @@ func _build() -> void:
     settings_motion_button.name = "PlayerReducedMotionToggle"
     settings_motion_button.pressed.connect(_settings_motion_pressed)
     settings_stack.add_child(settings_motion_button)
+    settings_audio_button = _styled_button("ЗВУК: ВЫКЛ.", false)
+    settings_audio_button.name = "AccessibleLocalAudioToggle"
+    settings_audio_button.pressed.connect(_settings_audio_pressed)
+    settings_stack.add_child(settings_audio_button)
+    settings_volume_button = _styled_button("ГРОМКОСТЬ: ТИХО", false)
+    settings_volume_button.name = "AccessibleVolumeToggle"
+    settings_volume_button.pressed.connect(_settings_volume_pressed)
+    settings_stack.add_child(settings_volume_button)
+    settings_caption_button = _styled_button("СУБТИТРЫ: ВКЛ.", false)
+    settings_caption_button.name = "AccessibleCaptionsToggle"
+    settings_caption_button.pressed.connect(_settings_caption_pressed)
+    settings_stack.add_child(settings_caption_button)
     settings_close_button = _styled_button("НАЗАД К ОБУЧЕНИЮ", false)
     settings_close_button.name = "ReturnToCourse"
     settings_close_button.pressed.connect(_toggle_settings)
@@ -429,6 +448,7 @@ func _layout() -> void:
     coach_more_button.custom_minimum_size = Vector2(0, 44.0 * ratio)
     coach_more_button.add_theme_font_size_override("font_size", int((12 if compact else 13) * ratio))
     metrics_label.add_theme_font_size_override("font_size", int(13 * ratio))
+    audio_caption_label.add_theme_font_size_override("font_size", int((12 if compact else 13) * ratio))
     case_mastery_label.add_theme_font_size_override("font_size", int((11 if compact else 12) * ratio))
     case_selection_caption.add_theme_font_size_override("font_size", int((12 if compact else 13) * ratio))
     for replay in case_selection_buttons:
@@ -448,7 +468,8 @@ func _layout() -> void:
         maxf(80.0, card.size.y - 28.0 * ratio))
     settings_title.add_theme_font_size_override("font_size", int((18 if compact else 22) * ratio))
     settings_note.add_theme_font_size_override("font_size", int((12 if compact else 14) * ratio))
-    for settings_action in [settings_quality_button, settings_motion_button, settings_close_button]:
+    for settings_action in [settings_quality_button, settings_motion_button, settings_audio_button,
+                            settings_volume_button, settings_caption_button, settings_close_button]:
         settings_action.custom_minimum_size = Vector2(0, 46.0 * ratio)
         settings_action.add_theme_font_size_override("font_size", int((12 if compact else 14) * ratio))
     _refresh_settings()
@@ -579,6 +600,28 @@ func _settings_motion_pressed() -> void:
     _refresh_settings()
 
 
+func _settings_audio_pressed() -> void:
+    if host != null:
+        var cues: Node = host.get("audio_cues") as Node
+        if cues != null:
+            host.call("_set_audio_enabled", not bool(cues.get("sounds_enabled")))
+    _refresh_settings()
+
+
+func _settings_volume_pressed() -> void:
+    if host != null:
+        host.call("_cycle_audio_volume")
+    _refresh_settings()
+
+
+func _settings_caption_pressed() -> void:
+    if host != null:
+        var cues: Node = host.get("audio_cues") as Node
+        if cues != null:
+            host.call("_set_audio_captions", not bool(cues.get("captions_enabled")))
+    _refresh_settings()
+
+
 func _refresh_settings() -> void:
     if host == null or settings_button == null or settings_title == null:
         return
@@ -593,6 +636,17 @@ func _refresh_settings() -> void:
     settings_motion_button.text = _t(
         "АНИМАЦИИ: МЕНЬШЕ" if bool(host.get("reduced_motion")) else "АНИМАЦИИ: ПОЛНЫЕ",
         "MOTION: REDUCED" if bool(host.get("reduced_motion")) else "MOTION: FULL")
+    var audio: Node = host.get("audio_cues") as Node
+    if audio != null:
+        settings_audio_button.text = _t(
+            "ЗВУК: ВКЛ." if bool(audio.get("sounds_enabled")) else "ЗВУК: ВЫКЛ.",
+            "SOUND: ON" if bool(audio.get("sounds_enabled")) else "SOUND: OFF")
+        settings_volume_button.text = _t(
+            "ГРОМКОСТЬ: ТИХО" if float(audio.get("volume")) <= 0.4 else "ГРОМКОСТЬ: ОБЫЧНО",
+            "VOLUME: QUIET" if float(audio.get("volume")) <= 0.4 else "VOLUME: NORMAL")
+        settings_caption_button.text = _t(
+            "СУБТИТРЫ: ВКЛ." if bool(audio.get("captions_enabled")) else "СУБТИТРЫ: ВЫКЛ.",
+            "CAPTIONS: ON" if bool(audio.get("captions_enabled")) else "CAPTIONS: OFF")
     settings_close_button.text = _t("НАЗАД К ОБУЧЕНИЮ", "BACK TO TRAINING")
 
 
@@ -810,6 +864,15 @@ func _present() -> void:
     if finished:
         score_text = _t("ОБУЧЕНИЕ ЗАВЕРШЕНО  •  %d/3 КЕЙСА", "TRAINING FINISHED  •  %d/3 CASES") % completed_cases
     _assign(metrics_label, score_text)
+    # Text cues remain useful even on silent devices. Existing mission/interlock
+    # warnings always stay visible, irrespective of this caption preference.
+    if host != null:
+        var cues: Node = host.get("audio_cues") as Node
+        if cues != null and bool(cues.get("captions_enabled")) and not str(cues.get("last_caption")).is_empty():
+            _assign(audio_caption_label, str(cues.get("last_caption")))
+            audio_caption_label.visible = true
+        else:
+            audio_caption_label.visible = false
     _refresh_case_selection()
     var drive_label: String = _t("ПРИВОД РАБОТАЕТ", "DRIVE RUNNING") if bool(state_cache.get("motion_enabled", true)) else _t("ПРИВОД ОСТАНОВЛЕН", "DRIVE STOPPED")
     var mode: String = "HERO" if int(state_cache.get("quality", 0)) == 2 else "ECO"
