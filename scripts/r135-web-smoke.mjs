@@ -87,7 +87,8 @@ async function verifyRealLuxuryIntroduction(page, isMobile, name) {
 async function verifyW20PlayerSettings(page, isMobile, name) {
   if (!['r135-player-settings-w20-candidate-20261025',
        'r135-explainable-training-w21-candidate-20261025',
-       'r135-case-mastery-w22-candidate-20261025'].includes(process.env.R135_CANDIDATE_VERSION)) return
+       'r135-case-mastery-w22-candidate-20261025',
+       'r135-luxury-lighting-w23-candidate-20261025'].includes(process.env.R135_CANDIDATE_VERSION)) return
   const start = await expectState(page, x => x?.player_preferences_schema === 1
     && x?.player_preferences_save_ok === true && x?.player_settings_control_css_px >= 43.5,
     'W20 real player settings not readable, saved, or accessible')
@@ -133,7 +134,10 @@ async function verifyW20PlayerSettings(page, isMobile, name) {
 // W21: the WHAT/WHY drill is an actual Godot Control in the same game canvas.
 // The GUI stays safety-locked; no tests inject fictitious scores or faults.
 async function verifyW21CausalLesson(page, isMobile, name) {
-  if (process.env.R135_CANDIDATE_VERSION !== 'r135-explainable-training-w21-candidate-20261025') return
+  // Every later candidate must capture its OWN original W21 causal screenshots.
+  if (!['r135-explainable-training-w21-candidate-20261025',
+         'r135-case-mastery-w22-candidate-20261025',
+         'r135-luxury-lighting-w23-candidate-20261025'].includes(process.env.R135_CANDIDATE_VERSION)) return
   await hitLuxuryControl(page, 'tutorial_collapse_center', isMobile)
   const initial = await expectState(page, x => x?.tutorial_expanded === true
     && x?.coach_status === 'intro'
@@ -158,7 +162,8 @@ async function verifyW21CausalLesson(page, isMobile, name) {
 // W22: scan actual persisted mastery, then select a chosen completed case from
 // a real scrollable Godot panel with genuine pointer/touch events.
 async function verifyW22SelectableCases(page, isMobile, name) {
-  if (process.env.R135_CANDIDATE_VERSION !== 'r135-case-mastery-w22-candidate-20261025') return
+  if (!['r135-case-mastery-w22-candidate-20261025',
+         'r135-luxury-lighting-w23-candidate-20261025'].includes(process.env.R135_CANDIDATE_VERSION)) return
   const before = await expectState(page, s => s?.case_replay_hitboxes?.length === 3
     && s?.cleared_case_count === 3 && s?.case_mastery_threshold === 100
     && s?.case_proficient_flags?.length === 3 && !s?.challenge_active,
@@ -196,6 +201,46 @@ async function verifyW22SelectableCases(page, isMobile, name) {
     && st?.case_replay_hitboxes?.every(b => b.disabled === true),
     'W22 selected cooling fault must start actual safe five-step case and lock other selectors')
   console.log('W22 actual replay PASS:', name, 'cooling #2', before.case_proficient_flags)
+}
+
+// W23: real key/rim/fill are changed through the player's EXISTING SET panel.
+// We record honest SwiftShader pixels; no physical-device FPS or AAA claim.
+async function verifyW23ActualLighting(page, isMobile, name) {
+  if (process.env.R135_CANDIDATE_VERSION !== 'r135-luxury-lighting-w23-candidate-20261025') return
+  const eco = await expectState(page, s => s?.quality === 0
+    && s?.art_profile === 'ECO' && s?.art_shadow_count_added === 0
+    && s?.art_webgl_expensive_postfx === false
+    && Math.abs(s?.art_key_energy - 1.55) < .02
+    && Math.abs(s?.art_rim_energy - .70) < .02
+    && Math.abs(s?.art_fill_energy - 3.80) < .02,
+    'W23 original ECO inspection lighting budget was changed or unmetered')
+  await hitLuxuryControl(page, 'player_settings_center', isMobile)
+  await expectState(page, s => s?.player_settings_open === true, 'W23 existing quality settings inaccessible')
+  await hitLuxuryControl(page, 'player_settings_quality_center', isMobile)
+  await expectState(page, s => s?.quality === 2 && s?.art_profile === 'HERO'
+    && s?.loaded?.endsWith('service_spine_hero.glb')
+    && Math.abs(s?.art_key_energy - 1.90) < .02
+    && Math.abs(s?.art_rim_energy - .98) < .02
+    && Math.abs(s?.art_fill_energy - 4.20) < .02
+    && s?.art_webgl_expensive_postfx === false
+    && s?.art_shadow_count_added === 0
+    && s?.studio_grid_draw_batches === eco.studio_grid_draw_batches,
+    'W23 actual HERO luxury light grading, original source GLB or GPU batch contract failed', 45_000)
+  await hitLuxuryControl(page, 'player_settings_center', isMobile)
+  await expectState(page, s => s?.player_settings_open === false, 'W23 settings did not dismiss')
+  // Original HERO pixel evidence must come from this very game source and run.
+  await captureRealViewport(page, 'w23-' + name + '-luxury-light.png')
+  await hitLuxuryControl(page, 'player_settings_center', isMobile)
+  await hitLuxuryControl(page, 'player_settings_quality_center', isMobile)
+  await expectState(page, s => s?.quality === 0 && s?.art_profile === 'ECO'
+    && Math.abs(s?.art_key_energy - 1.55) < .02
+    && Math.abs(s?.art_rim_energy - .70) < .02
+    && s?.player_preferences_save_ok === true
+    && s?.case_attempts?.length === 3,
+    'W23 must restore real ECO lighting and preserve saved case outcomes', 45_000)
+  await hitLuxuryControl(page, 'player_settings_center', isMobile)
+  console.log('W23 actual HERO/ECO Godot lighting PASS:', name,
+    { ecoKey: eco.art_key_energy, heroKey: 1.90, echo: 'no extra shadows or drawing' })
 }
 
 async function keyboardMission(page) {
@@ -742,6 +787,7 @@ try {
         prefersReducedMotion: final.prefers_reduced_motion,
         softwareRendererFpsSample: final.render_fps_sample })
       await verifyW22SelectableCases(page, isMobile, name)
+      await verifyW23ActualLighting(page, isMobile, name)
       console.log('R135 gameplay PASS:', name, JSON.stringify(result.at(-1)))
     } catch (error) {
       failed = true
