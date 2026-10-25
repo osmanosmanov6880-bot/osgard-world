@@ -38,7 +38,9 @@ test('private screening serves original real synthetic MP4 with cookie auth and 
     let html=await r.text();assert.match(html,/Пароль локальной приёмки/)
     assert.match(r.headers.get('content-security-policy'),/connect-src 'none'/)
     r=await fetch(base+'/login',{method:'POST',body:'password=wrong',headers:{Origin:base,'Content-Type':'application/x-www-form-urlencoded'},redirect:'manual'});assert.equal(r.status,401)
-    r=await fetch(base+'/login',{method:'POST',body:'password='+encodeURIComponent(password),headers:{Origin:base,'Content-Type':'application/x-www-form-urlencoded'},redirect:'manual'})
+    r=await fetch(base+'/login',{method:'POST',body:'password='+encodeURIComponent(password),headers:{Origin:'https://malicious.example','Sec-Fetch-Site':'cross-site','Content-Type':'application/x-www-form-urlencoded'},redirect:'manual'})
+    assert.equal(r.status,403,'Cross-origin login must remain blocked even with correct secret')
+    r=await fetch(base+'/login',{method:'POST',body:'password='+encodeURIComponent(password),headers:{Origin:base,'Sec-Fetch-Site':'same-site','Content-Type':'application/x-www-form-urlencoded'},redirect:'manual'})
     assert.equal(r.status,303)
     const cookie=r.headers.get('set-cookie')?.split(';')[0]
     assert.ok(cookie.startsWith('osa_private_session='))
