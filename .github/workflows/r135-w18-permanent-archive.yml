@@ -1,0 +1,141 @@
+name: OSGARD R135 W18 durable original WebGL and screenshot archive
+on:
+  push:
+    branches: [release/r135-w18-permanent-archive-20261025]
+    paths:
+      - '.github/workflows/r135-w18-permanent-archive.yml'
+      - 'docs/R135_W18_PERMANENT_ARCHIVE.md'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: r135-w18-sha-reviewed-longterm-archive
+  cancel-in-progress: false
+
+jobs:
+  reviewed-archive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Require exact successful independent W18 image and gameplay acceptance
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          PIN=scripts/r135-w18-release-pin.json
+          test "$(jq -er '.version' "$PIN")" = r135-premium-learning-w18-candidate-20261025
+          test "$(jq -er '.source_commit' "$PIN")" = 5971112ef861afc257aeb0e054550c158c260b6a
+          RUN_ID="$(jq -er '.artifact_run_id' "$PIN")"
+          ART_ID="$(jq -er '.artifact_id' "$PIN")"
+          ART_NAME="$(jq -er '.artifact_name' "$PIN")"
+          test "$RUN_ID" = 40195425893
+          test "$ART_ID" = 12599976887
+          test "$ART_NAME" = osgard-r135-optimized-web-qa
+          GATE="$(gh api repos/osmanosmanov6880-bot/osgard-world/actions/runs/40196880515)"
+          test "$(jq -er '.conclusion' <<< "$GATE")" = success
+          jq -er '.path' <<< "$GATE" | grep -Fq r135-w18-promotion-gate.yml
+          GATE_JOBS="$(gh api repos/osmanosmanov6880-bot/osgard-world/actions/runs/40196880515/jobs?per_page=100)"
+          jq -e '.jobs[] | select(.name=="independently-accept-real-candidate" and .conclusion=="success")' <<< "$GATE_JOBS" >/dev/null
+          GATE_SHA="$(jq -er '.head_sha' <<< "$GATE")"
+          PIN_AT_GATE="$(gh api "repos/osmanosmanov6880-bot/osgard-world/contents/scripts/r135-w18-release-pin.json?ref=$GATE_SHA" --jq '.content' | base64 -d | sha256sum | awk '{print $1}')"
+          test "$PIN_AT_GATE" = "$(sha256sum "$PIN" | awk '{print $1}')"
+          SOURCE_RUN="$(gh api "repos/osmanosmanov6880-bot/osgard-world/actions/runs/$RUN_ID")"
+          test "$(jq -er '.conclusion' <<< "$SOURCE_RUN")" = success
+          test "$(jq -er '.head_sha' <<< "$SOURCE_RUN")" = "$(jq -er '.source_commit' "$PIN")"
+          ARTIFACTS="$(gh api "repos/osmanosmanov6880-bot/osgard-world/actions/runs/$RUN_ID/artifacts")"
+          jq -e --argjson id "$ART_ID" --arg name "$ART_NAME" '.artifacts[] | select(.id==$id and .name==$name and .expired==false)' <<< "$ARTIFACTS" >/dev/null
+          mkdir -p "$RUNNER_TEMP/w18-reviewed"
+          gh run download "$RUN_ID" --repo osmanosmanov6880-bot/osgard-world \
+            --name "$ART_NAME" --dir "$RUNNER_TEMP/w18-reviewed"
+
+      - name: Reverify byte-for-byte W18 ZIP, all actual 11 PNGs and 3 simulated faults
+        shell: bash
+        run: |
+          set -euo pipefail
+          PIN=scripts/r135-w18-release-pin.json
+          SRC="$RUNNER_TEMP/w18-reviewed"
+          ROOT="$SRC/r135-optimized-release"
+          printf '%s  %s\n' "$(jq -er '.archive_sha256' "$PIN")" "$ROOT/OSGARD_R135_OPTIMIZED_WEB.zip" | sha256sum -c -
+          printf '%s  %s\n' "$(jq -er '.manifest_sha256' "$PIN")" "$ROOT/R135_OPTIMIZED_MANIFEST.json" | sha256sum -c -
+          python3 scripts/r135-w18-promotion-qa.py --pin "$PIN" --artifact "$SRC"
+          python3 scripts/r135-release-stage.py "$ROOT/OSGARD_R135_OPTIMIZED_WEB.zip" \
+            "$ROOT/R135_OPTIMIZED_MANIFEST.json" "$RUNNER_TEMP/w18-stage" "$PIN"
+          python3 - <<'PY'
+          import os,zipfile
+          from pathlib import Path
+          root=Path(os.environ['RUNNER_TEMP'])/'w18-reviewed'
+          files=sorted((root/'r135-screens').glob('*'))
+          files += [root/'r135-w10-release-evidence.json',root/'r135-w11-readability-evidence.json']
+          assert len(files)>=17 and all(x.is_file() for x in files)
+          evidence=root/'R135_W18_ORIGINAL_EVIDENCE.zip'
+          with zipfile.ZipFile(evidence,'w',zipfile.ZIP_DEFLATED,compresslevel=6) as z:
+              for p in files:
+                  name=p.relative_to(root).as_posix()
+                  assert name.startswith('r135-screens/') or name in ('r135-w10-release-evidence.json','r135-w11-readability-evidence.json')
+                  z.write(p,name)
+          assert evidence.stat().st_size>100_000
+          print('W18 reviewed original screenshot archive created',evidence.stat().st_size)
+          PY
+
+      - name: Persist original software ZIP and evidence without overwriting prior release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG=r135-premium-learning-w18-reviewed-archive-20261025
+          REPO=osmanosmanov6880-bot/osgard-world
+          PIN=scripts/r135-w18-release-pin.json
+          SRC="$RUNNER_TEMP/w18-reviewed"
+          ROOT="$SRC/r135-optimized-release"
+          EVIDENCE="$SRC/R135_W18_ORIGINAL_EVIDENCE.zip"
+          if ! gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
+            gh release create "$TAG" --repo "$REPO" \
+              --target 5971112ef861afc257aeb0e054550c158c260b6a \
+              --title 'OSGARD R135 W18 - SHA-verified original playable WebGL archive' \
+              --notes-file docs/R135_W18_PERMANENT_ARCHIVE.md --draft
+            gh release upload "$TAG" \
+              "$ROOT/OSGARD_R135_OPTIMIZED_WEB.zip" \
+              "$ROOT/R135_OPTIMIZED_MANIFEST.json" "$EVIDENCE" --repo "$REPO"
+          fi
+          DEST="$RUNNER_TEMP/w18-recovered"
+          mkdir -p "$DEST/r135-optimized-release"
+          gh release download "$TAG" --repo "$REPO" \
+            --pattern OSGARD_R135_OPTIMIZED_WEB.zip --dir "$DEST/r135-optimized-release"
+          gh release download "$TAG" --repo "$REPO" \
+            --pattern R135_OPTIMIZED_MANIFEST.json --dir "$DEST/r135-optimized-release"
+          gh release download "$TAG" --repo "$REPO" \
+            --pattern R135_W18_ORIGINAL_EVIDENCE.zip --dir "$DEST"
+          printf '%s  %s\n' "$(jq -er '.archive_sha256' "$PIN")" "$DEST/r135-optimized-release/OSGARD_R135_OPTIMIZED_WEB.zip" | sha256sum -c -
+          printf '%s  %s\n' "$(jq -er '.manifest_sha256' "$PIN")" "$DEST/r135-optimized-release/R135_OPTIMIZED_MANIFEST.json" | sha256sum -c -
+          test "$(sha256sum "$EVIDENCE" | awk '{print $1}')" = "$(sha256sum "$DEST/R135_W18_ORIGINAL_EVIDENCE.zip" | awk '{print $1}')"
+          python3 - <<'PY'
+          import os,zipfile
+          from pathlib import Path
+          root=Path(os.environ['RUNNER_TEMP'])/'w18-recovered'
+          with zipfile.ZipFile(root/'R135_W18_ORIGINAL_EVIDENCE.zip') as z:
+              for member in z.infolist():
+                  p=Path(member.filename)
+                  assert not member.is_dir() and not member.flag_bits&1
+                  assert '..' not in p.parts and not p.is_absolute() and member.file_size<5_000_000
+                  assert member.filename.startswith('r135-screens/') or member.filename in ('r135-w10-release-evidence.json','r135-w11-readability-evidence.json')
+                  target=root/p
+                  target.parent.mkdir(parents=True,exist_ok=True)
+                  target.write_bytes(z.read(member))
+          PY
+          python3 scripts/r135-w18-promotion-qa.py --pin "$PIN" --artifact "$DEST"
+          python3 scripts/r135-release-stage.py \
+            "$DEST/r135-optimized-release/OSGARD_R135_OPTIMIZED_WEB.zip" \
+            "$DEST/r135-optimized-release/R135_OPTIMIZED_MANIFEST.json" \
+            "$RUNNER_TEMP/w18-restorable" "$PIN"
+          if [[ "$(gh release view "$TAG" --repo "$REPO" --json isDraft --jq '.isDraft')" == true ]]; then
+            gh release edit "$TAG" --repo "$REPO" --draft=false
+          fi
+          test "$(gh release view "$TAG" --repo "$REPO" --json isDraft --jq '.isDraft')" = false
+          echo 'W18 durable release PASS: archived and independently restored exact game and 11 original screenshot hashes. NO SSH production deployment.'
