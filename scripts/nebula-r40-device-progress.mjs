@@ -45,10 +45,11 @@ function fingerprintFile(root,relative,kind,expected,comparator){
     if(kind==='json'){
       const raw=JSON.parse(bytes.toString('utf8'));
       const r=comparator.parseReport(raw,path.basename(relative),'INVENTORY',expected.variant);
-      const dims=/^(\\d+)×(\\d+)$/.exec(r.resolution);
-      if(!r.validTest||r.software||r.stamp===null||!dims||
+      const dimensions=r.resolution.split('×').map(Number);
+      if(!r.validTest||r.software||r.stamp===null||
+         dimensions.length!==2||!dimensions.every(Number.isInteger)||
          r.profile!==expected.profile||r.low<=0||r.p99<=0)return null;
-      const width=Number(dims[1]),height=Number(dims[2]);
+      const [width,height]=dimensions;
       if(expected.orientation==='portrait'?height<=width:width<=height)return null;
       stamp=r.stamp;
     }else{
