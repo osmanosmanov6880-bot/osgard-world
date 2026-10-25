@@ -25,7 +25,10 @@ var camera_effective_distance: float = 0.0
 const VIEW_NAMES = ["OVERVIEW", "SERVICE DECK", "OPTICAL HEAD", "SIDE INSPECTION"]
 const R135Locale = preload("res://R135Locale.gd")
 const R135PlayerPreferences = preload("res://R135PlayerPreferences.gd")
+const R135AudioPreferences = preload("res://R135AudioPreferences.gd")
 var ui_locale: String = "ru"
+var audio_cues: Node
+var audio_preferences_save_ok: bool = true
 var preferences_save_ok: bool = true
 var premium_intro: Control
 var language_button: Button
@@ -107,6 +110,14 @@ func _ready() -> void:
         studio.call("set_quality", quality)
         inspection_fill.light_energy = 4.2
     controller.call("set_reduced_motion", reduced_motion)
+    # No autoplay. A fresh player sees text captions by default and chooses
+    # whether local procedural sound is useful for training.
+    audio_cues = preload("res://R135AudioCues.gd").new()
+    audio_cues.name = "OriginalLocalTrainingAudioNoAutoplay"
+    add_child(audio_cues)
+    var audio_settings: Dictionary = R135AudioPreferences.load_local()
+    audio_cues.call("set_options", bool(audio_settings["sound_enabled"]),
+        bool(audio_settings["captions_enabled"]), float(audio_settings["volume"]))
     _build_hud()
     # Actual native Godot overlay: responsive, mouse/touch interactive and
     # safely separate from the eight real W13/W18 gameplay controls.
@@ -355,6 +366,48 @@ func _persist_preferences() -> void:
     # Local-only settings: no HTTP requests, identifiers or physical equipment.
     preferences_save_ok = R135PlayerPreferences.save_local(ui_locale, quality, reduced_motion)
 
+func _persist_audio_preferences() -> void:
+    if audio_cues == null:
+        return
+    audio_preferences_save_ok = R135AudioPreferences.save_local(
+        bool(audio_cues.get("sounds_enabled")),
+        bool(audio_cues.get("captions_enabled")),
+        float(audio_cues.get("volume")))
+
+
+func _set_audio_enabled(enabled: bool) -> void:
+    if audio_cues == null:
+        return
+    audio_cues.call("set_options", enabled,
+        bool(audio_cues.get("captions_enabled")), float(audio_cues.get("volume")))
+    _persist_audio_preferences()
+    _refresh_status()
+
+
+func _cycle_audio_volume() -> void:
+    if audio_cues == null:
+        return
+    var next: float = 0.25 if float(audio_cues.get("volume")) > 0.4 else 0.55
+    audio_cues.call("set_options", bool(audio_cues.get("sounds_enabled")),
+        bool(audio_cues.get("captions_enabled")), next)
+    _persist_audio_preferences()
+    _refresh_status()
+
+
+func _set_audio_captions(enabled: bool) -> void:
+    if audio_cues == null:
+        return
+    audio_cues.call("set_options", bool(audio_cues.get("sounds_enabled")),
+        enabled, float(audio_cues.get("volume")))
+    _persist_audio_preferences()
+    _refresh_status()
+
+
+func _emit_training_cue(event: String) -> void:
+    if audio_cues != null:
+        audio_cues.call("announce", event, ui_locale)
+
+
 func _set_reduced_motion(enabled: bool) -> void:
     reduced_motion = enabled
     controller.call("set_reduced_motion", enabled)
@@ -398,7 +451,17 @@ func _start_selected_case(index: int) -> bool:
 
 
 func _scan_component() -> void:
+    var before: Dictionary = controller.summary()
     controller.scan_diagnostic(view_index)
+    var after: Dictionary = controller.summary()
+    if bool(before.get("challenge_active", false)):
+        if bool(after.get("challenge_completed", false)) and not bool(before.get("challenge_completed", false)):
+            _emit_training_cue("success")
+        elif int(after.get("challenge_errors", 0)) > int(before.get("challenge_errors", 0)):
+            var feedback: String = str(after.get("challenge_feedback", ""))
+            _emit_training_cue("interlock" if feedback.begins_with("WAIT FOR THE STOPPED") else "invalid")
+        elif int(after.get("challenge_step", 0)) > int(before.get("challenge_step", 0)):
+            _emit_training_cue("scan")
     _refresh_status()
 
 func _next_view() -> void:
@@ -443,13 +506,18 @@ func _toggle_quality() -> void:
     _refresh_status()
 
 func _toggle_motion() -> void:
-    controller.set_motion(not bool(controller.summary()["motion_enabled"]))
-    # The advanced diagnostic interlock may reject an unsafe restart.
+    var before: bool = bool(controller.summary()["motion_enabled"])
+    controller.set_motion(not before)
+    # The real simulated interlock may reject restart with the hatch open.
     motion = bool(controller.summary()["motion_enabled"])
+    _emit_training_cue(("drive_start" if motion else "drive_stop") if motion != before else "interlock")
     _refresh_status()
 
 func _toggle_hatch() -> void:
+    var before: float = float(controller.summary().get("lid_target", 0.0))
     controller.toggle_access_lid()
+    var after: float = float(controller.summary().get("lid_target", 0.0))
+    _emit_training_cue("hatch" if not is_equal_approx(after, before) else "interlock")
     _refresh_status()
 
 func _reset_view() -> void:
@@ -593,6 +661,19 @@ func _process(delta: float) -> void:
         state["studio_mesh_nodes"] = int(stage_budget["single_mesh_nodes"])
         state["studio_quality"] = int(stage_budget["stage_quality"])
         state["prefers_reduced_motion"] = reduced_motion
+        if audio_cues != null:
+            var audio: Dictionary = audio_cues.call("snapshot")
+            state["audio_schema"] = str(audio["schema"])
+            state["audio_local_only"] = bool(audio["local_only"])
+            state["audio_autoplay"] = bool(audio["autoplay"])
+            state["audio_sound_enabled"] = bool(audio["sounds_enabled"])
+            state["audio_captions_enabled"] = bool(audio["captions_enabled"])
+            state["audio_volume"] = float(audio["volume"])
+            state["audio_caption_text"] = str(audio["caption"])
+            state["audio_event"] = str(audio["last_event"])
+            state["audio_action_count"] = int(audio["events_from_user_actions"])
+            state["audio_play_attempts"] = int(audio["play_attempts"])
+            state["audio_preferences_save_ok"] = audio_preferences_save_ok
         state["player_preferences_schema"] = R135PlayerPreferences.SCHEMA_VERSION
         state["player_preferences_save_ok"] = preferences_save_ok
         state["player_quality_persisted"] = quality
