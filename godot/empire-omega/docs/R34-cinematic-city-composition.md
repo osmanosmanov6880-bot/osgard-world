@@ -23,3 +23,18 @@ topographic/roof map instead of an approachable street-level world.
   requires licensed assets, material work, vegetation and pixel-level review.
 - Do not call it ray tracing or AAA physical fidelity. Production publication
   only after all release gates and public SHA-256 checks.
+
+## Intermittent real Chromium screenshot timeouts
+On the exact R34 head, the desktop SwiftShader compositor intermittently
+stalled during screenshot capture (CDP, canvas copy and Playwright all reached
+their bounded timeouts). R34's dedicated 1366x768 actual Tab-open scene and
+R12 four-viewport acceptance passed separately; R33/R27 browser probes failed
+in other runners on screenshot extraction after valid asset imports.
+
+Both browser test configurations now permit **one bounded fresh-worker retry**.
+The same original Godot WebGL scene must be fully reloaded and all actual
+PNG pixel, world brightness, four viewport and Tab-open dock assertions must
+pass on a retry. No stale screenshots, dummy pixels or test skips are allowed.
+Failed attempts are still documented in the GitHub Actions test reports; a
+second failure blocks merge. This addresses known screenshot nondeterminism,
+not GPU FPS or the need for physical mobile-device profiling.
