@@ -9,7 +9,7 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: omega-r28-candidate-${{ github.event.pull_request.number || github.ref }}
+  group: omega-r28-road-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 jobs:
   road-native:
@@ -17,6 +17,8 @@ jobs:
     timeout-minutes: 22
     steps:
       - uses: actions/checkout@v4
+      - name: Enforce independent R28 civic and road QA concurrency
+        run: python3 scripts/omega-r28-concurrency.contract.test.py
       - uses: chickensoft-games/setup-godot@v2
         with:
           version: 4.4.1
@@ -75,7 +77,7 @@ jobs:
             curl -fsS http://127.0.0.1:4173/index.html >/dev/null && exit 0
             sleep 1
           done
-          cat /tmp/r27-game-http.log
+          cat /tmp/r28-game-http.log
           exit 1
       - name: Check actual world WebGL 2 scene and 4 mobile/desktop pixel frames
         run: npx playwright test --config playwright.omega-portrait-preview.config.mjs
