@@ -1,0 +1,45 @@
+name: EMPIRE Omega R86 private field intake regressions
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - 'scripts/omega_r86_private_field_kit.py'
+      - 'scripts/test_omega_r86_private_field_kit.py'
+      - '.github/workflows/omega-r86-private-field-qa.yml'
+      - 'scripts/omega_r83_release_gate.py'
+      - 'scripts/omega_r80_hardware_evidence.py'
+  push:
+    branches: [master]
+    paths:
+      - 'scripts/omega_r86_private_field_kit.py'
+      - 'scripts/test_omega_r86_private_field_kit.py'
+      - '.github/workflows/omega-r86-private-field-qa.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  privacy-and-fail-closed-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run ten private intake / evidence non-forgery regressions
+        run: |
+          set -euo pipefail
+          python3 scripts/test_omega_r86_private_field_kit.py
+          python3 scripts/test_omega_r83_release_gate.py
+          python3 scripts/omega_r86_private_field_kit.py --help
+      - name: Assert workflow cannot upload users, deploy or mint GO
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          w=Path('.github/workflows/omega-r86-private-field-qa.yml').read_text()
+          p=Path('scripts/omega_r86_private_field_kit.py').read_text()
+          assert 'contents: read' in w
+          assert not re.search(r'actions/upload-artifact|scp|curl|wget|push:.*production',w.split('      - name: Assert workflow')[0],re.I)
+          assert not re.search(r'urlopen|requests\.post|urllib|subprocess\.run|socket\.connect',p)
+          assert 'production_go": False' in p
+          print('PASS: no upload, deployment or automatic production GO')
+          PY
