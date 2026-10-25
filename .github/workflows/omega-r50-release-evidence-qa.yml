@@ -5,6 +5,7 @@ on:
     paths:
       - 'scripts/omega-r50-release-gate.py'
       - 'scripts/omega_r80_hardware_evidence.py'
+      - 'scripts/omega_r80_prepare_phone_session.py'
       - 'scripts/test_omega_r80_hardware_evidence.py'
       - 'scripts/omega-live-integrity.py'
       - 'scripts/omega-live-webgl.spec.mjs'
