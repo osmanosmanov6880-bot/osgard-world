@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "policy": "Private editorial sign-offs. Do not commit completed approvals containing personal contact data or confidential license documents to public source control.",
+  "assets": {
+    "osa-v15-trailer-ru": {},
+    "osa-v15-trailer-en": {},
+    "osa-v15-directors-ru": {},
+    "osa-v15-directors-en": {}
+  },
+  "exampleApprovalFields": {
+    "rightsStatus": "unverified",
+    "rightsEvidencePath": null,
+    "editorialStatus": "pending",
+    "editorialEvidencePath": null,
+    "audioLanguageStatus": "unverified",
+    "verifiedAudioLocale": null,
+    "audioEvidencePath": null,
+    "captionsStatus": "missing",
+    "captionsPath": null,
+    "captionReviewEvidencePath": null,
+    "deliveryUrl": null,
+    "deliveryVerified": false
+  }
+}
