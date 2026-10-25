@@ -90,7 +90,7 @@ class W19Guard(unittest.TestCase):
             gate.verify_pin(pin)
         pin = example_pin()
         pin["archive_sha256"] = "changed"
-        with self.assertRaisesRegex(ValueError, "SHA"):
+        with self.assertRaisesRegex(ValueError, "archive_sha256"):
             gate.verify_pin(pin)
 
     def test_no_actual_godot_artifact_is_hold(self):
