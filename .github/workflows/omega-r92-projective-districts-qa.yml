@@ -1,0 +1,39 @@
+name: EMPIRE Omega R92 projected 3D district pin acceptance
+on:
+  pull_request:
+    branches:
+      - master
+      - feat/omega-r90-aaa-reference-first-slice-20261026
+    paths:
+      - 'godot/empire-omega/scripts/horizon_r92_projective_districts.gd'
+      - 'godot/empire-omega/scripts/horizon_r90_premium_dashboard.gd'
+      - 'godot/empire-omega/tests/v80_r92_real_district_projection.gd'
+      - '.github/workflows/omega-r92-projective-districts-qa.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  original-godot-camera-projections:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: false
+      - name: Import real game content with strict parser
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 godot/empire-omega/tools/generate_audio.py
+          python3 godot/empire-omega/tools/generate_patrol_audio.py
+          bash scripts/omega-strict-godot-import.sh godot/empire-omega
+      - name: Native camera projection and authoritative viewport regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          for suite in v80_r92_real_district_projection v29_responsive_layout v76_r87_honest_mission_navigation; do
+            timeout --signal=TERM --kill-after=5s 115s godot --headless --path godot/empire-omega --script "res://tests/$suite.gd"
+          done
