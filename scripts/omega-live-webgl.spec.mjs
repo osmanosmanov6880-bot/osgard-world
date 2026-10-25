@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 import { PNG } from 'pngjs'
 import { browserTouchPoint } from './omega-mobile-touch-geometry.mjs'
 import { waitForExactPublishedRelease, captureAnimatedWebGLViewport } from './omega-browser-evidence.mjs'
-import { realGameFrameEvidence } from './omega-world-frame-evidence.mjs'
+import { waitForRealGodotWorldFrame } from './omega-world-frame-evidence.mjs'
 
 // This exercises the REAL public Godot 4.4.1 WebAssembly and WebGL renderer,
 // not just the marketing page or HTML canvas shell. Native v34 separately
@@ -119,22 +119,32 @@ test('authentic released Godot runs WebGL2, paints scene, handles real keyboard/
   // Godot splash (#242424, bright logo) before the 3D city painted.
   // Central luminance alone accepted that splash. Require real variation
   // in both top and bottom 3D/HUD screen bands, not an invented mock frame.
-  let frame,worldProof,paintAttempts=0,captureMethod=''
-  for(let attempt=1;attempt<=3;attempt++){
-    paintAttempts=attempt
-    const capture=await captureAnimatedWebGLViewport(page)
-    frame=capture.png
-    captureMethod=capture.method
-    worldProof=realGameFrameEvidence(frame)
-    if(worldProof.realWorldEdges)break
-    if(attempt<3)await page.waitForTimeout(1200)
+  // R82: #status can disappear before the real 3D city finishes startup.
+  // Sample ORIGINAL compositor pixels from the SAME page for a finite
+  // startup window. Do not accept loader/logo/flat frames or rerun a flaky
+  // browser test. Once authentic pixels arrive, all driving gates stay.
+  const readiness=await waitForRealGodotWorldFrame(
+    ()=>captureAnimatedWebGLViewport(page),
+    {maxAttempts:24,maxWaitMs:80000,pauseMs:1800}
+  )
+  const frame=readiness.png
+  const worldProof=readiness.worldProof
+  if(!readiness.ready) {
+    // This is explicitly a rejected loading frame for failure triage,
+    // NEVER evidence of a live city or a substitute fake frame.
+    await testInfo.attach('godot-rejected-loader-frame.png',{
+      body:frame,contentType:'image/png'
+    })
   }
   await testInfo.attach('godot-real-world-frame-proof.json',{
     body:Buffer.from(JSON.stringify({source_commit:RELEASE.source_commit,
-      project:testInfo.project.name,paintAttempts,captureMethod,
+      project:testInfo.project.name,paintAttempts:readiness.attempts,
+      startupElapsedMs:readiness.elapsedMs,captureMethod:readiness.captureMethod,
       realViewport:page.viewportSize(),worldProof},null,2)),
     contentType:'application/json'
   })
+  expect(readiness.ready,
+    'public Godot must actually paint a city/HUD within bounded startup time; a splash is NOT gameplay').toBe(true)
   expect(worldProof.realWorldEdges,
     'public WebGL frame must show an actual world/HUD, not the splash screen').toBe(true)
   expect(frame.subarray(0,8).toString('hex')).toBe('89504e470d0a1a0a')
