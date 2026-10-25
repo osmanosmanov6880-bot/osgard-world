@@ -5,6 +5,10 @@ on:
     paths:
       - 'scripts/omega-r50-release-gate.py'
       - 'scripts/omega-live-integrity.py'
+      - 'scripts/omega-live-webgl.spec.mjs'
+      - 'scripts/omega-world-frame-evidence.mjs'
+      - 'scripts/omega-world-frame-evidence.test.mjs'
+      - 'scripts/omega-browser-evidence.mjs'
       - '.github/workflows/omega-r50-release-evidence-qa.yml'
   workflow_dispatch:
   workflow_run:
@@ -39,6 +43,16 @@ jobs:
           assert 'missing-independent-live-desktop-touch' in data['gaps']
           print('R50 CONTRACT PASS: candidate tests cannot counterfeit production or hardware release')
           PY
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: R72 reject fake Godot splash as a real city screenshot
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm ci
+          node --test scripts/omega-world-frame-evidence.test.mjs
   real-post-ssh-game-acceptance:
     if: github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'master'
     runs-on: ubuntu-latest
