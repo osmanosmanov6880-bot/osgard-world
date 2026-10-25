@@ -1,0 +1,30 @@
+name: OSGARD R135 W18 immutable channel safety contract
+
+on:
+  push:
+    branches: [release/r135-w18-protected-ssh-promotion-20261025]
+    paths:
+      - '.github/workflows/r135-w18-production-channel-qa.yml'
+      - '.github/workflows/deploy-frontend.yml'
+      - 'scripts/r135-active-release.json'
+      - 'scripts/r135-release-selector.sh'
+      - 'scripts/r135-w18-deploy-contract.mjs'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  selector-security:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify production branch retains W14 and rejects unapproved selectors
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash -n scripts/r135-release-selector.sh
+          node --check scripts/r135-w18-deploy-contract.mjs
+          node scripts/r135-w18-deploy-contract.mjs
+          echo 'PASS: this is static and negative selector testing, no SSH or W18 deployment'
