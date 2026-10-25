@@ -1,0 +1,53 @@
+name: EMPIRE Omega R88 authentic public art intake QA (no automatic AAA GO)
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - 'scripts/omega_r88_original_pixel_intake.py'
+      - 'scripts/test_omega_r88_original_pixel_intake.py'
+      - '.github/workflows/omega-r88-original-pixel-qa.yml'
+      - 'scripts/omega_r83_release_gate.py'
+      - 'scripts/omega_r86_private_field_kit.py'
+  push:
+    branches: [master]
+    paths:
+      - 'scripts/omega_r88_original_pixel_intake.py'
+      - 'scripts/test_omega_r88_original_pixel_intake.py'
+      - '.github/workflows/omega-r88-original-pixel-qa.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-pinned-original-pixel-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test fake frame/duplicate/size/retry and source gate rejection
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/test_omega_r88_original_pixel_intake.py
+          python3 scripts/test_omega_r86_private_field_kit.py
+          python3 scripts/test_omega_r83_release_gate.py
+          python3 scripts/omega_r88_original_pixel_intake.py --help
+      - name: Verify R88 cannot bypass original R50/R83 provenance or publish user media
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          script = Path("scripts/omega_r88_original_pixel_intake.py").read_text()
+          workflow = Path(".github/workflows/omega-r88-original-pixel-qa.yml").read_text()
+          assert "r83.source_bound_public_webgl(" in script
+          assert "r83.load_original_browser_report(" in script
+          assert "r73.validate_decodable_png(" in script
+          assert "kit.pin_source(" in script
+          assert '"production_go": False' in script
+          executable = workflow.split('      - name: Verify R88 cannot bypass')[0]
+          assert "contents: read" in executable
+          assert "actions/upload-artifact" not in executable
+          assert "git push" not in executable
+          assert "ssh" not in executable and "scp" not in executable
+          print("PASS: mandatory authentic source-bound proof; no upload, deployment or AAA promotion")
+          PY
