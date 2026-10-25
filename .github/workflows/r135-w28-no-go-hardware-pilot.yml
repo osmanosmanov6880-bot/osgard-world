@@ -43,6 +43,9 @@ jobs:
           set -euo pipefail
           node --check scripts/r135-w28-launch-decision.mjs
           node --check scripts/test-r135-w28-launch-decision.mjs
+          node --check scripts/r135-w28-pilot-evidence.mjs
+          node --check scripts/test-r135-w28-pilot-evidence.mjs
+          node scripts/test-r135-w28-pilot-evidence.mjs
           node scripts/test-r135-w28-launch-decision.mjs
       - name: No automatic release, no fake hardware test or user-identifier upload
         shell: bash
