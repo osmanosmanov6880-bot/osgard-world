@@ -1,0 +1,33 @@
+name: EMPIRE Omega R102 original road material high-resolution tier native QA
+on:
+  pull_request:
+    branches:
+      - feat/omega-r90-aaa-reference-first-slice-20261026
+      - master
+    paths:
+      - 'godot/empire-omega/scripts/world_builder.gd'
+      - 'godot/empire-omega/tests/v86_r102_real_asphalt_quality.gd'
+      - '.github/workflows/omega-r102-material-tier-qa.yml'
+permissions:
+  contents: read
+jobs:
+  original-road-and-gameplay-no-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 21
+    steps:
+      - uses: actions/checkout@v4
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: false
+      - name: Build original Godot and test real graphics budget + missions
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 godot/empire-omega/tools/generate_audio.py
+          python3 godot/empire-omega/tools/generate_patrol_audio.py
+          bash scripts/omega-strict-godot-import.sh godot/empire-omega
+          for suite in v76_r87_honest_mission_navigation v82_r95_city_massing v83_r97_cinematic_command_hierarchy v84_r98_facade_geometry v86_r102_real_asphalt_quality; do
+            timeout --signal=TERM --kill-after=5s 115s godot --headless --path godot/empire-omega --script "res://tests/$suite.gd"
+          done
