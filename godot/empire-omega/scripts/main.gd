@@ -84,6 +84,19 @@ func _refresh_portrait_fit() -> void:
 		# not the 16:9 desktop horizontal-FOV framing.
 		camera.keep_aspect = Camera3D.KEEP_WIDTH if PORTRAIT_SCREEN.is_phone_portrait(PORTRAIT_SCREEN.web_css_size()) else Camera3D.KEEP_HEIGHT
 
+# Opt-in browser boot milestones: never count a Godot splash screen as
+# a running physics world. No telemetry code executes for ordinary players.
+func _report_r70_boot(stage: String) -> void:
+	if not real_vehicle_browser_qa or not OS.has_feature("web"):
+		return
+	var proof: Dictionary = {
+		"schema":"empire-omega-r70-original-boot-v1",
+		"stage":stage,
+		"game_ticks_ms":Time.get_ticks_msec(),
+		"engine":"Godot"
+	}
+	JavaScriptBridge.eval("window.__omegaRealVehicleQABoot = " + JSON.stringify(proof) + ";",true)
+
 func _ready() -> void:
 	_refresh_portrait_fit()
 	if OS.has_feature("web"):
@@ -92,10 +105,12 @@ func _ready() -> void:
 		real_vehicle_browser_qa = JavaScriptBridge.eval(
 			"new URLSearchParams(window.location.search).get('omega_real_vehicle_qa') === 'r70'"
 		) == true
+		_report_r70_boot("startup")
 		get_window().size_changed.connect(_refresh_portrait_fit)
 	world = WORLD_SCENE.new()
 	add_child(world)
 	world.update_development()
+	_report_r70_boot("world-ready")
 	city_case_marker = CASE_MARKER_SCENE.new()
 	add_child(city_case_marker)
 	city_case_marker.sync_state(GameState.data)
@@ -120,6 +135,7 @@ func _ready() -> void:
 	car.add_child(cargo_visual)
 	cargo_visual.sync_state(GameState.data,GameState.locale)
 	_sync_positions_from_state()
+	_report_r70_boot("vehicle-ready")
 	camera = Camera3D.new()
 	camera.name = "ThirdPersonCamera"
 	camera.fov = 76
@@ -167,6 +183,7 @@ func _ready() -> void:
 	if GameState.last_load_source == "backup" or GameState.last_load_source == "staged":
 		hud.announce(hud.t("save_recovered"))
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE if DisplayServer.is_touchscreen_available() else Input.MOUSE_MODE_CAPTURED)
+	_report_r70_boot("ready")
 
 func _on_drift_reward_earned(credits: int, score: int) -> void:
 	# Authority uses GameState's existing reward ledger, with a per-chain cap.

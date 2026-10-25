@@ -23,7 +23,7 @@ async function latestPhysics(page) {
   })
 }
 test('unpublished original Godot R70: drive 2m, rotate car and grow odometer, never accept fake pixels',async({page},info)=>{
-  test.setTimeout(210_000)
+  test.setTimeout(300_000)
   const errors=[]
   page.on('pageerror',e=>errors.push(e.message))
   page.on('crash',()=>errors.push('real Chromium renderer crashed'))
@@ -43,9 +43,38 @@ test('unpublished original Godot R70: drive 2m, rotate car and grow odometer, ne
   expect(viewport.webgl,'original live Godot WebGL2 runtime').toBe(true)
   expect(viewport.contextLost).toBe(false)
 
+  // The old CI reached an empty #status and gray #242424 WebGL canvas
+  // while original WorldBuilder was still constructing the city. Require
+  // an independent opt-in marker emitted AFTER main.gd finishes _ready().
+  // On failure retain the last real Godot startup phase, never manufacture
+  // car motion or silently waive the production gate.
+  try {
+    await page.waitForFunction(()=>
+      window.__omegaRealVehicleQABoot?.schema==='empire-omega-r70-original-boot-v1' &&
+      window.__omegaRealVehicleQABoot?.stage==='ready',
+      null,{timeout:60000}
+    )
+  } catch(error) {
+    const diagnostic=await page.evaluate(()=>{
+      const canvas=document.querySelector('#canvas')
+      return {
+        boot:window.__omegaRealVehicleQABoot??null,
+        vehicle:window.__omegaRealVehicleQAv1??null,
+        status:document.querySelector('#status')?.textContent??null,
+        canvas:canvas?{width:canvas.width,height:canvas.height}:null,
+        url:window.location.pathname,
+      }
+    }).catch(e=>({diagnostic_error:String(e)}))
+    await info.attach('r70-authentic-godot-startup-blocker.json',{
+      body:Buffer.from(JSON.stringify({project:info.project.name,
+        head:process.env.GITHUB_SHA??'local',diagnostic},null,2)),
+      contentType:'application/json'
+    })
+    throw new Error('Real Godot scene did not complete startup; '+JSON.stringify(diagnostic).slice(0,700)+'; '+String(error))
+  }
   await page.waitForFunction(schema=>
     window.__omegaRealVehicleQAv1?.schema===schema,
-    PHYSICS_SCHEMA,{timeout:15000}
+    PHYSICS_SCHEMA,{timeout:20000}
   )
 
   const box=await page.locator('canvas#canvas').boundingBox()
