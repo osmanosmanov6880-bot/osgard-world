@@ -420,3 +420,46 @@ jobs:
             candidate-output/build-report.json
           if-no-files-found: error
           retention-days: 30
+
+  real-sw-webgl-performance:
+    name: W44 real Godot FPS in SwiftShader (NOT consumer device certification)
+    needs: actual-godot-source-parity
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Download only the actual source-matched WebGL build
+        uses: actions/download-artifact@v4
+        with:
+          name: osgard-w33-godot-webgl-${{ github.event.pull_request.head.sha || github.sha }}
+          path: performance-input
+      - name: Verify engine evidence, install pinned software Chromium
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha || github.sha }}"
+          python3 -m py_compile w33-godot-native/ci/godot_software_performance.py
+          python3 -m venv "$RUNNER_TEMP/w44-perf-venv"
+          "$RUNNER_TEMP/w44-perf-venv/bin/pip" install --disable-pip-version-check --no-cache-dir playwright==1.56.0
+          "$RUNNER_TEMP/w44-perf-venv/bin/python" -m playwright install --with-deps chromium
+      - name: Measure real Godot Engine FPS in HERO/ECO and touch emulation
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$RUNNER_TEMP/w44-perf-venv/bin/python" w33-godot-native/ci/godot_software_performance.py \
+            --export performance-input \
+            --output performance-report \
+            --sha "${{ github.event.pull_request.head.sha || github.sha }}"
+      - name: Retain original software FPS measurement, including failures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: osgard-w44-real-godot-software-fps-${{ github.event.pull_request.head.sha || github.sha }}
+          path: performance-report/
+          if-no-files-found: warn
+          retention-days: 30
