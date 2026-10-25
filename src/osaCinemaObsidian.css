@@ -138,7 +138,7 @@
  .osa-cinema[data-cinema-art="obsidian"] .osa42-film-title{font-size:clamp(54px,13.9vw,76px);line-height:.88;white-space:normal}
  .osa-cinema[data-cinema-art="obsidian"] .osa42-tagline{font-size:14px;line-height:1.45}
  .osa-cinema[data-cinema-art="obsidian"] .osa42-scene-note{margin:15px 0;padding-left:12px}
- .osa-cinema[data-cinema-art="obsidian"] .osa42-scene-note h1{font-size:20px}
+ .osa-cinema[data-cinema-art="obsidian"] .osa42-scene-note h1{font-size:22px;line-height:1.25}
  .osa-cinema[data-cinema-art="obsidian"] .osa42-scene-note .scene-body{font-size:12px;line-height:1.5}
  .osa-cinema[data-cinema-art="obsidian"] .osa42-actions{gap:8px;margin-top:16px}
  .osa-cinema[data-cinema-art="obsidian"] .osa-cinema-screening-launch{width:100%;min-height:47px}

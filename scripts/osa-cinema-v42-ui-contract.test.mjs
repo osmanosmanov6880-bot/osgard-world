@@ -62,3 +62,9 @@ test('V42.1 keeps real scene H1 and screening mounted across chapter changes',()
  assert.match(css,/\.osa42-scene-note h1\{/)
  assert.equal(front.split('<OSACinemaScreening ').length-1,1)
 })
+
+// Explicit regression for the mobile V13 visibility contract.
+test('V42.2 mobile scene heading stays legible and above 48px at two lines',()=>{
+ assert.match(css,/\.osa42-scene-note h1\{font-size:22px;line-height:1\.25\}/)
+ assert.match(front,/className='osa42-scene-heading'>\{scene\.title\}<\/h1>/)
+})
