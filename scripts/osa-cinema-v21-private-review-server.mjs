@@ -46,7 +46,7 @@ async function readBody(req,cap=2048){
   return Buffer.concat(arr).toString('utf8')
 }
 function sendHtml(res,code,html,nonce){res.statusCode=code;res.setHeader('Content-Type','text/html; charset=utf-8');res.setHeader('Content-Security-Policy',csp(nonce));res.end(html)}
-function sameOrigin(req,port){return req.headers.origin==='http://127.0.0.1:'+port}
+function sameOrigin(req,port){const expected='http://127.0.0.1:'+port;const origin=req.headers.origin;const site=req.headers['sec-fetch-site'];return (!origin||origin===expected)&&(!site||site==='same-origin')&&(origin===expected||site==='same-origin')}
 
 export async function startPrivateReviewServer({sourceDir,asset,password,cutTimes=[],port=0}){
   validateAsset(asset)
