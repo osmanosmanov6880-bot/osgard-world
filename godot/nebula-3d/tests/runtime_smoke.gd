@@ -352,12 +352,18 @@ func _run() -> void:
             "R40 real bridge span missing from Godot scene tree"):return
         var collision_body := bridge_span.get_node_or_null(
             "R22_PhysicalFlightway") as StaticBody3D
-        var collision_shape := collision_body.get_node_or_null(
-            "CollisionShape3D") as CollisionShape3D if collision_body != null else null
+        # Godot assigns generated names to runtime-created unnamed nodes;
+        # search by actual physical node type, never assume a path/name.
+        var collision_shape: CollisionShape3D = null
+        if collision_body != null:
+            for child in collision_body.get_children():
+                if child is CollisionShape3D:
+                    collision_shape = child as CollisionShape3D
+                    break
         var collision_box := collision_shape.shape as BoxShape3D if collision_shape != null else null
         if not check(collision_box != null and
             collision_box.size.is_equal_approx(Vector3(269.0,5.4,9.2)),
-            "R40 bridge collision differs from real R38 flightway"):return
+            "R40 real bridge collision shape must remain 269x5.4x9.2"):return
         for side_index in 2:
             var side: float = -1.0 if side_index == 0 else 1.0
             for fixture_index in 16:
