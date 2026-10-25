@@ -28,8 +28,9 @@ permissions:
   actions: read
   pull-requests: read
 concurrency:
-  group: nebula-r40-readonly-live-byte-parity-${{ github.ref }}
-  cancel-in-progress: true
+  # Distinct frontend deployments are never allowed to cancel each other.
+  group: nebula-r40-readonly-live-byte-parity-${{ github.event.workflow_run.id || github.run_id }}
+  cancel-in-progress: false
 jobs:
   contract:
     runs-on: ubuntu-latest
