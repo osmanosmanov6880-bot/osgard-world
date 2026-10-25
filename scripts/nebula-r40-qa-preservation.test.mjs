@@ -108,7 +108,7 @@ test('activation retains attested QA before swapping frontend root, never promot
   assert.ok(index>=0&&swap>index,'QA must be preserved before root swap');
   assert.match(shell,/sha256sum -c R40_DEVICE_ARTIFACT_SHA256\.txt/);
   assert.match(deploy,/cp scripts\/preserve-nebula-r40-qa\.sh osgard-release\/preserve-nebula-r40-qa\.sh/);
-  assert.match(deploy,/node --test scripts\/nebula-r40-qa-preservation\.test\.mjs/);
+  assert.match(deploy,/node --test scripts\/omega-frontend-preservation\.test\.mjs scripts\/nebula-r40-qa-preservation\.test\.mjs/);
   assert.match(deploy,/nebula-r40-qa-head\.sha/);
   assert.doesNotMatch(helper,/\/games\/remix\/arena-v2\/nebula-3d\/index/);
 });
