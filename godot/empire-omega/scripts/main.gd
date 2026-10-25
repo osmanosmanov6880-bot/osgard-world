@@ -19,6 +19,7 @@ const INTERIOR_SCENE = preload("res://scripts/interior_manager.gd")
 const LANDMARKS_SCENE = preload("res://scripts/project_landmarks.gd")
 const SIGNALS_SCENE = preload("res://scripts/traffic_signal_controller.gd")
 const ROADWORKS_SCENE = preload("res://scripts/roadworks_visual.gd")
+const MISSION_NAV = preload("res://scripts/horizon_mission_navigation.gd")
 const MOBILITY = preload("res://scripts/city_mobility.gd")
 const SOUND_SCENE = preload("res://scripts/city_soundscape.gd")
 const SKID_SCENE = preload("res://scripts/horizon_skid_trails.gd")
@@ -438,7 +439,13 @@ func _physics_process(delta: float) -> void:
 		if property_id != "":
 			near_name = str(GameState.REAL_ESTATE.PROPERTIES[property_id]["name"].get(GameState.locale,"Property"))
 	var goal: Vector3 = world.objective_position()
-	world.update_waypoint(goal)
+	var mission_action: String = str(MissionManager.get_mission().get("id","complete"))
+	var goal_visible: bool = MISSION_NAV.has_world_goal(mission_action,
+		not GameState.data.get("driving_trial",{}).is_empty(),
+		not ContractManager.active_contract().is_empty(),
+		not GameState.data.get("neighborhood_active",{}).is_empty(),
+		not GameState.data.get("service_active",{}).is_empty())
+	world.update_waypoint(goal,goal_visible)
 	lod_timer += delta
 	diagnostic_timer += delta
 	if diagnostic_timer >= 1.0:
@@ -455,7 +462,9 @@ func _physics_process(delta: float) -> void:
 		lod_timer = 0.0
 		_update_agent_lod(protagonist)
 	route_refresh += delta
-	if not interiors.is_inside() and (route_refresh >= 1.25 or last_route_goal.distance_to(goal) > 2.0):
+	if not goal_visible and hud.map != null:
+		hud.map.route.clear()
+	if goal_visible and not interiors.is_inside() and (route_refresh >= 1.25 or last_route_goal.distance_to(goal) > 2.0):
 		route_refresh = 0.0
 		last_route_goal = goal
 		if hud.map != null:
@@ -466,7 +475,7 @@ func _physics_process(delta: float) -> void:
 		hud.map.case_active = case_site != "" and world.locations.has(case_site)
 		if hud.map.case_active: hud.map.case_world = world.locations[case_site]["position"]
 	if Engine.get_physics_frames() % 3 == 0:
-		hud.update_world_context(protagonist,car.global_position,goal,driving,car.speed,car.fuel,near_name,car.health,car.handbrake_on,car.gear_label(),roundi(car.drift_chain_score),car.power_assist_reduction,car.steering_assist_correction,car.rotation.y)
+		hud.update_world_context(protagonist,car.global_position,goal,driving,car.speed,car.fuel,near_name,car.health,car.handbrake_on,car.gear_label(),roundi(car.drift_chain_score),car.power_assist_reduction,car.steering_assist_correction,car.rotation.y,goal_visible)
 	# Patrols use shared physical roads and do not warp while pursuing the player.
 	if patrols != null:
 		var heat: int = int(GameState.data.get("law",{}).get("heat",0))
