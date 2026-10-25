@@ -1,0 +1,73 @@
+name: EMPIRE Omega R46 native physics 60Hz test budget and numeric evidence
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - '.github/workflows/omega-godot-web.yml'
+      - '.github/workflows/omega-r46-ab-time-budget-qa.yml'
+      - 'godot/empire-omega/tests/v67_r46_physics_ab_trials.gd'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  real-native-60hz-trials:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: false
+      - name: Import exactly the real playable Godot source
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 godot/empire-omega/tools/generate_audio.py
+          python3 godot/empire-omega/tools/generate_patrol_audio.py
+          bash scripts/omega-strict-godot-import.sh godot/empire-omega
+      - name: Prove the production native gate grants bounded time to actual physics
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          workflow=Path('.github/workflows/omega-godot-web.yml').read_text()
+          scenario=Path('godot/empire-omega/tests/v67_r46_physics_ab_trials.gd').read_text()
+          assert 'test_seconds=15' in workflow
+          assert 'v59_r40_force_motor_calibration.gd) test_seconds=110' in workflow
+          assert 'v67_r46_physics_ab_trials.gd) test_seconds=60' in workflow
+          assert 'TICKS_SETTLE: int = 140' in scenario
+          assert 'TICKS_DRIVE: int = 108' in scenario
+          assert 'TICKS_STEER: int = 72' in scenario
+          assert 'TICKS_BRAKE: int = 48' in scenario
+          assert 3*(140+108+72+48) / 60 > 15
+          print('PASS real 60Hz A/B requires >18.4s; case-specific 60s deadline, default 15s')
+          PY
+      - name: Exercise real arcade and RigidBody3D experiments under 60s timeout
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=6s 60s godot --headless --path godot/empire-omega --script res://tests/v67_r46_physics_ab_trials.gd
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('godot/empire-omega/tests/r46-physics-ab-metrics.json')
+          assert p.is_file(), 'no authentic Godot numeric trials'
+          j=json.loads(p.read_text())
+          assert j['engine']=='Godot 4.4.1'
+          assert j['trial_count']==3
+          assert j['passed']>=20 and j['failed']==0
+          assert j['physics_simulation'] and not j['migration_authorized']
+          assert j['physical_device_tested'] is False
+          print('PASS Godot native 3 phase-matched dry/wet/dry trials with exact numeric A/B JSON')
+          PY
+      - name: Retain real force-vs-arcade physics metrics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: omega-r46-physics-60hz-real-comparison
+          path: godot/empire-omega/tests/r46-physics-ab-metrics.json
+          if-no-files-found: warn
+          retention-days: 14
