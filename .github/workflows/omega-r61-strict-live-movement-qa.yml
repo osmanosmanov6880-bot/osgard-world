@@ -54,14 +54,23 @@ jobs:
           npm ci
           npm install --no-save --package-lock=false @playwright/test@1.58.2 pngjs@7.0.0
           npx playwright install --with-deps chromium
+      - name: Install original Linux OpenGL driver for honest browser pixels
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y xvfb libgl1-mesa-dri libegl1 libgl1
       - name: Drive authentic public Godot desktop and touch with zero flaky retries
         shell: bash
         env:
           OSGARD_GAME_ORIGIN: https://osgard.world
+          OMEGA_CI_GL_BACKEND: mesa
+          LIBGL_ALWAYS_SOFTWARE: "1"
         run: |
           set -euo pipefail
-          npx playwright test --config playwright.omega-live-webgl.config.mjs \
-            --project=desktop-chromium --project=touch-phone-chromium --retries=0
+          xvfb-run -a -s '-screen 0 1920x1080x24' \
+            npx playwright test --config playwright.omega-live-webgl.config.mjs \
+              --project=desktop-chromium --project=touch-phone-chromium --retries=0
       - name: Keep real screenshots, pixel-difference metrics and exact public bytes
         if: always()
         uses: actions/upload-artifact@v4

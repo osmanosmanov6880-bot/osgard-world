@@ -82,6 +82,52 @@ async function verifyRealLuxuryIntroduction(page, isMobile, name) {
   else await page.keyboard.press('r')
   await expectState(page, x => x?.view === 0, 'W19 camera reset after tutorial failed')
 }
+// W20: exercise real Godot-native preferences using Chromium compositor clicks
+// and native touch. This is not physical Android/iOS hardware evidence.
+async function verifyW20PlayerSettings(page, isMobile, name) {
+  if (process.env.R135_CANDIDATE_VERSION !== 'r135-player-settings-w20-candidate-20261025') return
+  const start = await expectState(page, x => x?.player_preferences_schema === 1
+    && x?.player_preferences_save_ok === true && x?.player_settings_control_css_px >= 43.5,
+    'W20 real player settings not readable, saved, or accessible')
+  if (start.player_settings_open) throw new Error('W20 settings should not cover first-run tutorial')
+  const tutorialStep = start.tutorial_step
+  await hitLuxuryControl(page, 'player_settings_center', isMobile)
+  const open = await expectState(page, x => x?.player_settings_open && x?.tutorial_expanded
+    && x?.player_settings_rect?.h > 140 && x?.player_settings_rect?.w > 250,
+    'W20 header SET control did not open an actual player settings view')
+  const panel = open.player_settings_rect
+  if (panel.y < 0 || panel.x < 0 || panel.x + panel.w > open.viewport_w + 4
+      || panel.y + panel.h > open.action_rect.y - 5) {
+    throw new Error('W20 settings overlaps control deck or escapes viewport: '
+      + JSON.stringify({ settings: panel, controls: open.action_rect }))
+  }
+  await captureRealViewport(page, 'w20-' + name + '-player-settings.png')
+  await hitLuxuryControl(page, 'player_settings_quality_center', isMobile)
+  await expectState(page, x => x?.quality === 2 && x?.player_quality_persisted === 2
+    && x?.loaded?.endsWith('service_spine_hero.glb') && x?.player_preferences_save_ok,
+    'W20 actual settings button did not load and persist HERO model', 45_000)
+  await hitLuxuryControl(page, 'player_settings_quality_center', isMobile)
+  await expectState(page, x => x?.quality === 0 && x?.player_quality_persisted === 0
+    && x?.loaded?.endsWith('service_spine_eco.glb') && x?.player_preferences_save_ok,
+    'W20 real settings button failed to restore ECO model', 45_000)
+  const originalMotion = Boolean(open.prefers_reduced_motion)
+  await hitLuxuryControl(page, 'player_settings_motion_center', isMobile)
+  await expectState(page, x => x?.prefers_reduced_motion === !originalMotion
+    && x?.player_preferences_save_ok,
+    'W20 real reduce-motion control failed')
+  await hitLuxuryControl(page, 'player_settings_motion_center', isMobile)
+  await expectState(page, x => x?.prefers_reduced_motion === originalMotion
+    && x?.player_preferences_save_ok, 'W20 accessible motion mode not reversible')
+  await hitLuxuryControl(page, 'player_settings_center', isMobile)
+  await expectState(page, x => !x?.player_settings_open && x?.tutorial_expanded
+    && x?.tutorial_step === tutorialStep,
+    'W20 settings close unexpectedly changed learning progress')
+  await hitLuxuryControl(page, 'tutorial_collapse_center', isMobile)
+  await expectState(page, x => !x?.tutorial_expanded && x?.hud_visible === true,
+    'W20 after settings close must restore real interactive operator HUD')
+  console.log('W20 real Godot settings PASS:', name, { quality: 0, motion: originalMotion })
+}
+
 async function keyboardMission(page) {
   await page.locator('canvas').first().click({ position: { x: 400, y: 350 } })
   await page.keyboard.press('m')
@@ -574,6 +620,7 @@ try {
         await captureRealViewport(page, 'w17-desktop-ru-operator.png')
       }
       await verifyRealLuxuryIntroduction(page, isMobile, name)
+      await verifyW20PlayerSettings(page, isMobile, name)
       if (!boot.hud_rect || !boot.action_rect || boot.hud_rect.h > boot.viewport_h * .28 ||
           boot.hud_rect.y + boot.hud_rect.h >= boot.action_rect.y - 20) {
         throw new Error('W11 initial HUD obscures scene: ' + JSON.stringify({

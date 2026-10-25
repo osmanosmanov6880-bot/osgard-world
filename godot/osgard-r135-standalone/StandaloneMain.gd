@@ -24,7 +24,9 @@ var optical_tracking: bool = true
 var camera_effective_distance: float = 0.0
 const VIEW_NAMES = ["OVERVIEW", "SERVICE DECK", "OPTICAL HEAD", "SIDE INSPECTION"]
 const R135Locale = preload("res://R135Locale.gd")
+const R135PlayerPreferences = preload("res://R135PlayerPreferences.gd")
 var ui_locale: String = "ru"
+var preferences_save_ok: bool = true
 var premium_intro: Control
 var language_button: Button
 var safety_notice: Label
@@ -88,6 +90,22 @@ func _ready() -> void:
         # Never apply retina scaling to non-touch desktop controls.
         touch_pixel_ratio = clampf(float(JavaScriptBridge.eval(
             "Number((navigator.maxTouchPoints > 0 || (window.matchMedia && matchMedia('(pointer: coarse)').matches)) ? (window.devicePixelRatio || 1) : 1)", true)), 1.0, 3.5)
+    # W20 user preferences are isolated from saved W14 cases and W19 tutorial.
+    # First launch is still Russian/ECO; an explicit ?lang=ru/en URL wins only
+    # for the current page, without silently overwriting the saved locale.
+    var saved_prefs: Dictionary = R135PlayerPreferences.load_local(reduced_motion)
+    ui_locale = str(saved_prefs["locale"])
+    reduced_motion = bool(saved_prefs["reduced_motion"])
+    quality = int(saved_prefs["quality"])
+    if OS.has_feature("web"):
+        var query_language: String = str(JavaScriptBridge.eval(
+            "new URLSearchParams(location.search).get('lang') || ''", true))
+        if query_language in ["ru", "en"]:
+            ui_locale = query_language
+    if quality == 2:
+        controller.set_quality(quality)
+        studio.call("set_quality", quality)
+        inspection_fill.light_energy = 4.2
     controller.call("set_reduced_motion", reduced_motion)
     _build_hud()
     # Actual native Godot overlay: responsive, mouse/touch interactive and
@@ -310,7 +328,7 @@ func _settle_hud_after_layout() -> void:
     if premium_intro != null:
         premium_intro.call_deferred("_layout")
 
-func _set_locale(value: String) -> void:
+func _set_locale(value: String, save_change: bool = false) -> void:
     ui_locale = "ru" if value.to_lower() == "ru" else "en"
     if language_button == null:
         return
@@ -326,10 +344,24 @@ func _set_locale(value: String) -> void:
         if faults != null:
             faults.call("set_locale", ui_locale)
     _refresh_status()
+    if save_change:
+        _persist_preferences()
     call_deferred("_settle_hud_after_layout")
 
 func _toggle_locale() -> void:
-    _set_locale("en" if ui_locale == "ru" else "ru")
+    _set_locale("en" if ui_locale == "ru" else "ru", true)
+
+func _persist_preferences() -> void:
+    # Local-only settings: no HTTP requests, identifiers or physical equipment.
+    preferences_save_ok = R135PlayerPreferences.save_local(ui_locale, quality, reduced_motion)
+
+func _set_reduced_motion(enabled: bool) -> void:
+    reduced_motion = enabled
+    controller.call("set_reduced_motion", enabled)
+    _persist_preferences()
+    if premium_intro != null:
+        premium_intro.call("_refresh_settings")
+    _refresh_status()
 
 func _translated(message: String) -> String:
     return R135Locale.translate(message, ui_locale)
@@ -391,6 +423,9 @@ func _toggle_quality() -> void:
     controller.set_quality(quality)
     studio.call("set_quality", quality)
     inspection_fill.light_energy = 3.8 if quality == 0 else 4.2
+    _persist_preferences()
+    if premium_intro != null:
+        premium_intro.call("_refresh_settings")
     _refresh_status()
 
 func _toggle_motion() -> void:
@@ -544,6 +579,9 @@ func _process(delta: float) -> void:
         state["studio_mesh_nodes"] = int(stage_budget["single_mesh_nodes"])
         state["studio_quality"] = int(stage_budget["stage_quality"])
         state["prefers_reduced_motion"] = reduced_motion
+        state["player_preferences_schema"] = R135PlayerPreferences.SCHEMA_VERSION
+        state["player_preferences_save_ok"] = preferences_save_ok
+        state["player_quality_persisted"] = quality
         state["ui_locale"] = ui_locale
         state["ui_mission_text"] = mission_label.text
         state["ui_safety_text"] = safety_notice.text
@@ -576,6 +614,23 @@ func _process(delta: float) -> void:
             state["tutorial_started"] = bool(premium_intro.get("begun"))
             state["tutorial_finished"] = bool(premium_intro.get("finished"))
             state["tutorial_expanded"] = bool(premium_intro.get("expanded"))
+            state["player_settings_open"] = bool(premium_intro.get("settings_open"))
+            var settings_button: Button = premium_intro.get("settings_button") as Button
+            state["player_settings_control_css_px"] = minf(
+                settings_button.get_global_rect().size.x,
+                settings_button.get_global_rect().size.y) / maxf(touch_pixel_ratio, 1.0)
+            var settings_center: Vector2 = settings_button.get_global_rect().get_center()
+            state["player_settings_center"] = {"x": settings_center.x, "y": settings_center.y}
+            var player_panel: PanelContainer = premium_intro.get("settings_panel") as PanelContainer
+            var settings_rect: Rect2 = player_panel.get_global_rect()
+            state["player_settings_rect"] = {"x": settings_rect.position.x, "y": settings_rect.position.y,
+                "w": settings_rect.size.x, "h": settings_rect.size.y}
+            var quality_control: Button = premium_intro.get("settings_quality_button") as Button
+            var motion_control: Button = premium_intro.get("settings_motion_button") as Button
+            var quality_center: Vector2 = quality_control.get_global_rect().get_center()
+            var motion_center: Vector2 = motion_control.get_global_rect().get_center()
+            state["player_settings_quality_center"] = {"x": quality_center.x, "y": quality_center.y}
+            state["player_settings_motion_center"] = {"x": motion_center.x, "y": motion_center.y}
             var intro_panel: PanelContainer = premium_intro.get("card") as PanelContainer
             var intro_rect: Rect2 = intro_panel.get_global_rect()
             state["tutorial_rect"] = {"x": intro_rect.position.x, "y": intro_rect.position.y,

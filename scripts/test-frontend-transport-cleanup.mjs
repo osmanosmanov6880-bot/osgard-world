@@ -80,3 +80,13 @@ test('master W19 protected frontend path survives cleanup integration',()=>{
   assert.ok(y.includes('r135-w19-release-pin.json'));
   assert.ok(y.includes('bash scripts/check-frontend-release-freshness.sh || lease_rc=$?'));
 });
+
+test('master W20 protected frontend path survives cleanup integration',()=>{
+  const y=fs.readFileSync('.github/workflows/deploy-frontend.yml','utf8');
+  assert.ok(y.includes('W20_ORIGINAL_SCREENSHOTS_AND_GAMEPLAY_EVIDENCE.zip'));
+  assert.ok(y.includes('test "$PIN" = scripts/r135-w20-release-pin.json'));
+  assert.ok(y.includes('independently-review-exact-W20'));
+  assert.ok(y.includes('python3 scripts/r135-w20-promotion-qa.py --pin "$PIN" --artifact "$ROOT"'));
+  assert.ok(y.includes('W19_ORIGINAL_SCREENSHOTS_AND_GAMEPLAY_EVIDENCE.zip'));
+  assert.ok(y.includes('bash scripts/check-frontend-release-freshness.sh || lease_rc=$?'));
+});
