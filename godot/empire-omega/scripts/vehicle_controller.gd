@@ -216,7 +216,14 @@ func _physics_process(delta: float) -> void:
 	# R46: baseline driving remains identical with four planted wheels. Only
 	# true braking while contacts are missing loses available normal-force grip.
 	var braking_now: bool = handbrake_on or (speed>0.25 and applied_throttle< -0.05) or (speed< -0.25 and applied_throttle>0.05)
-	var prior_support: Array[bool] = last_wheel_support.get("grounded",[true,true,true,true])
+	var prior_support: Array[bool] = [true,true,true,true]
+	# Dictionary defaults are plain Array, not Array[bool] in Godot 4.4.
+	# Explicitly copy and type-check the real four-raycast contact mask.
+	if last_wheel_support.has("grounded"):
+		var saved_support: Array = last_wheel_support["grounded"]
+		if saved_support.size()==4:
+			for wheel_index in range(4):
+				prior_support[wheel_index] = bool(saved_support[wheel_index])
 	r46_brake_grip = R46_LOAD_TRANSFER.braking_grip(traction_factor,prior_support,r46_front_load_ratio)
 	var drive_grip: float = r46_brake_grip if braking_now else traction_factor
 	speed = DYNAMICS.speed_step(speed,applied_throttle,drive_grip,condition,forward_limit,reverse_limit,forward_accel,BRAKING,DRAG,handbrake_on,delta)
