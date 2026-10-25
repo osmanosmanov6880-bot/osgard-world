@@ -55,6 +55,8 @@ on:
       - "scripts/r135-nginx-wasm-smoke.sh"
       - "scripts/r135-release-stage.py"
       - "scripts/r135-w11-release-pin.json"
+      - "scripts/r135-w14-release-pin.json"
+      - "scripts/r135-verified-live-recover.py"
       - "scripts/r135-artifact-fallback.py"
       - "scripts/r135-production-smoke.mjs"
       - "scripts/production-route-matrix.mjs"
@@ -267,25 +269,37 @@ jobs:
           /tmp/osgard-godot/Godot_v4.7.2-stable_linux.x86_64 --headless --path godot/null-shift --export-release Web "$GITHUB_WORKSPACE/public/games/null-shift-godot/index.html"
           node scripts/null-shift-godot-smoke.mjs --export-check public/games/null-shift-godot
       - run: npm run build
-      - name: Stage exact immutable W11 Godot Web release (no floating Actions artifact)
+      - name: Stage exact reviewed W14 Godot Web archive, fail-closed on any mismatch
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          PIN=scripts/r135-w11-release-pin.json
+          PIN=scripts/r135-w14-release-pin.json
           test -s "$PIN"
-          TAG="$(jq -r '.release_tag' "$PIN")"
-          test "$TAG" = "r135-web-legibility-w11-20261025"
-          mkdir -p "$RUNNER_TEMP/r135-web-release/r135-optimized-release"
-          gh release download "$TAG" \
+          RUN_ID="$(jq -er '.artifact_run_id' "$PIN")"
+          ART_NAME="$(jq -er '.artifact_name' "$PIN")"
+          test "$RUN_ID" = 40175524463
+          test "$ART_NAME" = osgard-r135-optimized-web-qa
+          STAGED="$RUNNER_TEMP/r135-web-release/r135-optimized-release"
+          mkdir -p "$STAGED"
+          if gh run download "$RUN_ID" \
             --repo osmanosmanov6880-bot/osgard-world \
-            --dir "$RUNNER_TEMP/r135-web-release/r135-optimized-release"
-          # No fallback to W6 while pretending to deploy W11.
-          # If permanent release is unavailable, SSH production stays untouched.
+            --name "$ART_NAME" \
+            --dir "$RUNNER_TEMP/r135-web-release"; then
+            # ZIP-level hash is independently pinned for the original Actions artifact.
+            ARCHIVE_SHA="$(jq -er '.archive_sha256' "$PIN")"
+            printf '%s  %s\n' "$ARCHIVE_SHA" "$STAGED/OSGARD_R135_OPTIMIZED_WEB.zip" | sha256sum -c -
+          else
+            # Used only after W14 is ALREADY live. A W11 server has a different
+            # digest and is rejected. Never use a floating "latest" artifact.
+            python3 scripts/r135-verified-live-recover.py --pin "$PIN" --target "$STAGED"
+          fi
+          MANIFEST_SHA="$(jq -er '.manifest_sha256' "$PIN")"
+          printf '%s  %s\n' "$MANIFEST_SHA" "$STAGED/R135_OPTIMIZED_MANIFEST.json" | sha256sum -c -
           python3 scripts/r135-release-stage.py \
-            "$RUNNER_TEMP/r135-web-release/r135-optimized-release/OSGARD_R135_OPTIMIZED_WEB.zip" \
-            "$RUNNER_TEMP/r135-web-release/r135-optimized-release/R135_OPTIMIZED_MANIFEST.json" \
+            "$STAGED/OSGARD_R135_OPTIMIZED_WEB.zip" \
+            "$STAGED/R135_OPTIMIZED_MANIFEST.json" \
             dist/games/r135-service "$PIN"
           test -s dist/games/r135-service/index.pck
           test -s dist/games/r135-service/index.wasm
@@ -293,12 +307,12 @@ jobs:
           test -s dist/games/r135-service/release.json
           test "$(stat -c '%a' dist/games/r135-service)" = 755
           test "$(stat -c '%a' dist/games/r135-service/index.html)" = 644
-      - name: Verify exact R135 W11 gzip WASM and PCK byte ranges through candidate Nginx
+      - name: Verify exact R135 W14 gzip WASM and PCK byte ranges through candidate Nginx
         run: |
           set -euo pipefail
-          export OSGARD_EXPECTED_R135_SOURCE="$(jq -r '.source_commit' scripts/r135-w11-release-pin.json)"
-          export OSGARD_EXPECTED_R135_VERSION="$(jq -r '.version' scripts/r135-w11-release-pin.json)"
-          export OSGARD_EXPECTED_R135_MANIFEST_SHA256="$(jq -r '.manifest_sha256' scripts/r135-w11-release-pin.json)"
+          export OSGARD_EXPECTED_R135_SOURCE="$(jq -r '.source_commit' scripts/r135-w14-release-pin.json)"
+          export OSGARD_EXPECTED_R135_VERSION="$(jq -r '.version' scripts/r135-w14-release-pin.json)"
+          export OSGARD_EXPECTED_R135_MANIFEST_SHA256="$(jq -r '.manifest_sha256' scripts/r135-w14-release-pin.json)"
           export OSGARD_REQUIRE_R135_REVALIDATION=1
           bash scripts/r135-nginx-wasm-smoke.sh dist/games/r135-service
       - name: Verify Unity runtime delivery through candidate Nginx
@@ -528,12 +542,12 @@ jobs:
           REMOTE_RELEASE_DIR="/tmp/osgard-gh-release-${GITHUB_RUN_ID}"
           REMOTE_ARCHIVE="/tmp/osgard-gh-release-${GITHUB_RUN_ID}.tgz"
           REMOTE_SCRIPT="/tmp/activate-frontend-remote-${GITHUB_RUN_ID}.sh"
-          PIN=scripts/r135-w11-release-pin.json
+          PIN=scripts/r135-w14-release-pin.json
           R135_SHA="$(jq -r '.manifest_sha256' "$PIN")"
           R135_SOURCE="$(jq -r '.source_commit' "$PIN")"
           R135_VERSION="$(jq -r '.version' "$PIN")"
           [[ "$R135_SHA" =~ ^[0-9a-f]{64}$ && "$R135_SOURCE" =~ ^[0-9a-f]{40}$ ]]
-          test "$R135_VERSION" = "r135-web-legibility-w11-20261024"
+          test "$R135_VERSION" = "r135-case-progress-w14-20261025"
           scp -i ~/.ssh/osgard_deploy scripts/activate-frontend-remote.sh "$USER@$HOST:$REMOTE_SCRIPT"
           ssh -i ~/.ssh/osgard_deploy "$USER@$HOST" "docker cp '$REMOTE_RELEASE_DIR/osgard-world-release.tgz' osgard-world:'$REMOTE_ARCHIVE' && chmod 700 '$REMOTE_SCRIPT' && OSGARD_EXPECTED_R135_MANIFEST_SHA256='$R135_SHA' OSGARD_EXPECTED_R135_SOURCE='$R135_SOURCE' OSGARD_EXPECTED_R135_VERSION='$R135_VERSION' OSGARD_ARCHIVE='$REMOTE_ARCHIVE' OSGARD_CORE_IMAGE='osgard-core-api:${GITHUB_SHA}' OSGARD_REMIX_GUARD_IMAGE='osgard-remix-guard:${GITHUB_SHA}' OSGARD_CONTAINER=osgard-world '$REMOTE_SCRIPT'"
       - name: Verify exact INHERIT R15 public files after SSH activation
@@ -564,14 +578,14 @@ jobs:
           path: remix-live-contract.json
           if-no-files-found: warn
           retention-days: 14
-      - name: Verify actual public W11 source, manifest, WASM and PCK after SSH activation
+      - name: Verify actual public W14 source, manifest, WASM and PCK after SSH activation
         env:
           OSGARD_BASE_URL: https://osgard.world
         run: |
           set -euo pipefail
-          export OSGARD_EXPECTED_R135_SOURCE="$(jq -r '.source_commit' scripts/r135-w11-release-pin.json)"
-          export OSGARD_EXPECTED_R135_VERSION="$(jq -r '.version' scripts/r135-w11-release-pin.json)"
-          export OSGARD_EXPECTED_R135_MANIFEST_SHA256="$(jq -r '.manifest_sha256' scripts/r135-w11-release-pin.json)"
+          export OSGARD_EXPECTED_R135_SOURCE="$(jq -r '.source_commit' scripts/r135-w14-release-pin.json)"
+          export OSGARD_EXPECTED_R135_VERSION="$(jq -r '.version' scripts/r135-w14-release-pin.json)"
+          export OSGARD_EXPECTED_R135_MANIFEST_SHA256="$(jq -r '.manifest_sha256' scripts/r135-w14-release-pin.json)"
           export OSGARD_REQUIRE_R135_REVALIDATION=1
           node scripts/r135-production-smoke.mjs
       - name: Verify published routes and same-origin API proxy
