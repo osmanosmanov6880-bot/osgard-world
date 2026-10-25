@@ -235,7 +235,8 @@ class ReleaseClosureTests(unittest.TestCase):
 
     def test_original_browser_requires_real_report_shape(self):
         path = self.root / "original-playwright.json"
-        path.write_text(json.dumps({"stats": {}, "not_suites": []}),
+        path.write_text(json.dumps({"stats": {}, "not_suites": [],
+                                    "padding": "x" * 150}),
                         encoding="utf-8")
         with self.assertRaisesRegex(g.FieldError, "requires stats and test suites"):
             g.load_original_browser_report(path)
