@@ -1,0 +1,114 @@
+name: EMPIRE Omega R56 authentic night asphalt car headlight and two-WebGL QA
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - 'godot/empire-omega/scripts/vehicle_controller.gd'
+      - 'godot/empire-omega/tests/r44_actual_night_capture.gd'
+      - 'godot/empire-omega/tests/v73_r56_real_night_headlights.gd'
+      - '.github/workflows/omega-r56-real-car-headlight-qa.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  original-native-headlamp-physics:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: false
+      - name: Strict Godot import, original car and all light nodes
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 godot/empire-omega/tools/generate_audio.py
+          python3 godot/empire-omega/tools/generate_patrol_audio.py
+          bash scripts/omega-strict-godot-import.sh godot/empire-omega
+          for suite in v21_vehicle_dynamics v67_r46_load_transfer_brake_grip v73_r56_real_night_headlights; do
+            timeout --signal=TERM --kill-after=5s 65s godot --headless --path godot/empire-omega --script "res://tests/$suite.gd"
+          done
+      - name: Install actual OpenGL offscreen engine rather than dummy headless pixels
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y xvfb libgl1-mesa-dri
+      - name: Capture real daytime and spotlit nighttime playable city, reject fake beams
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p screenshots
+          timeout --signal=TERM --kill-after=8s 145s xvfb-run -a -s '-screen 0 1920x1080x24' \
+            godot --path godot/empire-omega --rendering-method gl_compatibility \
+              --script res://tests/r44_actual_night_capture.gd
+          test -s screenshots/omega_r44_real_day_1366x768.png
+          test -s screenshots/omega_r44_real_night_1366x768.png
+          file screenshots/omega_r44_real_*.png
+      - name: Retain actual new car-illuminated 3D road PNG for human approval
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: omega-r56-headlight-on-car-real-opengl-day-night-pixels
+          path: screenshots/omega_r44_real_*.png
+          if-no-files-found: warn
+          retention-days: 15
+  candidate-genuine-webgl:
+    runs-on: ubuntu-latest
+    timeout-minutes: 28
+    strategy:
+      fail-fast: false
+      matrix:
+        viewport: [desktop-1366x768, portrait-390x844]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Export original playable Godot WebGL binary with real updated car
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 godot/empire-omega/tools/generate_audio.py
+          python3 godot/empire-omega/tools/generate_patrol_audio.py
+          bash scripts/omega-strict-godot-import.sh godot/empire-omega
+          mkdir -p godot/empire-omega/.build-web
+          godot --headless --path godot/empire-omega --export-release Web "$GITHUB_WORKSPACE/godot/empire-omega/.build-web/index.html"
+          node scripts/localize-godot-web-export.mjs godot/empire-omega/.build-web
+          test -s godot/empire-omega/.build-web/index.wasm
+          test -s godot/empire-omega/.build-web/index.pck
+      - name: Install pinned native Chromium rendering tools
+        run: |
+          npm ci
+          npm install --no-save --package-lock=false @playwright/test@1.58.2 pngjs@7.0.0
+          npx playwright install --with-deps chromium
+      - name: Serve ONLY candidate local game without touching live production
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 4173 --bind 127.0.0.1 --directory godot/empire-omega/.build-web >/tmp/r56-omega-http.log 2>&1 &
+          for attempt in 1 2 3 4 5 6 7 8 9 10; do
+            curl -fsS http://127.0.0.1:4173/index.html >/dev/null && exit 0
+            sleep 1
+          done
+          cat /tmp/r56-omega-http.log
+          exit 1
+      - name: Actually render and test the playable candidate with original Chromium controls
+        run: npx playwright test --config playwright.omega-portrait-preview.config.mjs --project="${{ matrix.viewport }}"
+      - name: Keep screenshot evidence at each resolution
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: omega-r56-${{ matrix.viewport }}-original-candidate-webgl
+          path: |
+            omega-portrait-preview-results/
+            omega-portrait-preview-report/
+          retention-days: 12
+          if-no-files-found: warn

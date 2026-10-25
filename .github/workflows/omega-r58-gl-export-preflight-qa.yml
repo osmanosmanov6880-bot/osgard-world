@@ -1,0 +1,78 @@
+name: EMPIRE Omega R58 original OpenGL screenshot before exported Web release
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - '.github/workflows/omega-godot-web.yml'
+      - '.github/workflows/omega-r58-gl-export-preflight-qa.yml'
+      - 'godot/empire-omega/tests/r44_actual_night_capture.gd'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  actual-1366x768-night-gpu-evidence:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: false
+      - name: Assert export cannot run live GL screenshot in a headless native loop
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          s=Path('.github/workflows/omega-godot-web.yml').read_text()
+          assert '"$test_file" == *"/r44_actual_night_capture.gd"' in s
+          assert 'Run genuine 1366x768 day and night Godot framebuffer acceptance' in s
+          assert '--rendering-method gl_compatibility' in s
+          assert '--script res://tests/r44_actual_night_capture.gd' in s
+          assert "timeout --signal=TERM --kill-after=8s 145s" in s
+          assert 'if-no-files-found: warn' in s
+          print('PASS: original GL capture is mandatory BEFORE Web export, excluded only from headless loop')
+          PY
+      - name: Strictly import the actual Godot game including real resources
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 godot/empire-omega/tools/generate_audio.py
+          python3 godot/empire-omega/tools/generate_patrol_audio.py
+          bash scripts/omega-strict-godot-import.sh godot/empire-omega
+      - name: Install Mesa OpenGL and actual X server
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y xvfb libgl1-mesa-dri
+      - name: Compare 12:00 to 22:00 using real Godot 1366x768 framebuffer pixels
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p screenshots
+          timeout --signal=TERM --kill-after=8s 145s \
+            xvfb-run -a -s '-screen 0 1920x1080x24' \
+            godot --path godot/empire-omega --rendering-method gl_compatibility \
+              --script res://tests/r44_actual_night_capture.gd
+          python3 - <<'PY'
+          from pathlib import Path
+          import struct
+          for label in ("day","night"):
+              p=Path('screenshots')/f'omega_r44_real_{label}_1366x768.png'
+              assert p.exists() and p.stat().st_size>10000,str(p)
+              with p.open('rb') as file: head=file.read(24)
+              assert head[:8]==bytes.fromhex('89504e470d0a1a0a')
+              assert struct.unpack('>II',head[16:24])==(1366,768)
+              print('PASS native Godot GL original real PNG:',str(p))
+          PY
+      - name: Preserve full native evidence; never synthesize fake pixels
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: omega-r58-authentic-city-GL-evidence-${{ github.run_id }}
+          path: screenshots/
+          retention-days: 14
+          if-no-files-found: warn
