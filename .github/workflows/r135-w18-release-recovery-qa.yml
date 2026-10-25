@@ -8,6 +8,8 @@ on:
       - 'scripts/r135-w18-release-recover.py'
       - 'scripts/r135-w18-evidence-member-pin.json'
       - 'scripts/test_r135_w18_release_recover.py'
+      - 'scripts/r135-w18-deploy-contract.mjs'
+      - 'scripts/r135-w18-release-pin.json'
   workflow_dispatch:
 
 permissions:
