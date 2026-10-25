@@ -6,6 +6,7 @@ on:
       - 'public/games/r135-device-capture/**'
       - 'scripts/test-r135-w16-mobile-capture.mjs'
       - 'scripts/r135-device-matrix-assemble.mjs'
+      - 'nginx.conf'
       - '.github/workflows/r135-w16-physical-capture-ui-qa.yml'
       - 'docs/R135_W16_REAL_DEVICE_CAPTURE_RUNBOOK.md'
   workflow_dispatch:
@@ -32,6 +33,8 @@ jobs:
           node --check scripts/test-r135-w16-mobile-capture.mjs
           node scripts/test-r135-w16-mobile-capture.mjs
           grep -Fq 'src="./device-capture-ui.js"' public/games/r135-device-capture/index.html
+          grep -Fq 'href="./styles.css"' public/games/r135-device-capture/index.html
+          grep -Fq "frame-src 'self'" nginx.conf
           ! grep -Eq '<script[^>]*>[[:space:]]*import ' public/games/r135-device-capture/index.html
           echo 'PASS: these are synthetic UI schema tests, not hardware, GPS, GPU, thermal or iOS certification.'
 
@@ -44,5 +47,6 @@ jobs:
           test -s dist/games/r135-device-capture/index.html
           test -s dist/games/r135-device-capture/device-capture.js
           test -s dist/games/r135-device-capture/device-capture-ui.js
+          test -s dist/games/r135-device-capture/styles.css
           grep -Fq '/games/r135-service/' dist/games/r135-device-capture/index.html
           echo 'PASS: static capture UI is included in deployed file tree, no public deployment from this job.'
