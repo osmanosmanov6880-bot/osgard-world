@@ -8,7 +8,7 @@ const HEX=/^[0-9a-f]{64}$/
 export function verifyLoopbackURL(raw){
   if(typeof raw!=='string')throw Error('URL not provided')
   let u;try{u=new URL(raw)}catch{throw Error('Malformed URL')}
-  if(u.protocol!=='http:'||!['127.0.0.1','localhost'].includes(u.hostname)||!u.port||!/^\/media$/.test(u.pathname)||u.search||u.hash||u.username||u.password)throw Error('Private QA only accepts exact loopback http://127.0.0.1:PORT/media')
+  if(u.protocol!=='http:'||u.hostname!=='127.0.0.1'||!u.port||!/^\/media$/.test(u.pathname)||u.search||u.hash||u.username||u.password)throw Error('Private QA only accepts exact loopback http://127.0.0.1:PORT/media')
   return u.href
 }
 async function safeSource(path,expectedSha){
@@ -55,12 +55,39 @@ export async function checkLoopbackDelivery({url,source,sha256,cookie=''}){
   }
   const start=await range(0,sourceData.head.length-1,sourceData.head)
   const last=await range(sourceData.size-sourceData.tail.length,sourceData.size-1,sourceData.tail)
+  // First/last ranges alone do NOT prove the film's middle bytes were delivered.
+  // Hash the entire authorized body incrementally, with bounded bytes and time.
+  async function fullGet(){
+    const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),30000)
+    let response,received=0,digest=null
+    try{
+      response=await fetch(safe,{method:'GET',headers,redirect:'manual',cache:'no-store',signal:controller.signal})
+      if(response.status!==200){errors.push('full_get_not_200');await response.body?.cancel();return {status:response.status,byteCount:0,sha256:null}}
+      if(!/^video\/mp4(?:\s*;|$)/i.test(response.headers.get('content-type')||''))errors.push('full_get_invalid_mp4_mime')
+      if(Number(response.headers.get('content-length'))!==sourceData.size)errors.push('full_get_wrong_content_length')
+      const h=createHash('sha256')
+      if(!response.body){errors.push('full_get_body_missing')}
+      else{
+        for await (const chunk of response.body){
+          received+=chunk.byteLength
+          if(received>sourceData.size){errors.push('full_get_oversized');break}
+          h.update(chunk)
+        }
+        digest=h.digest('hex')
+      }
+      if(received!==sourceData.size)errors.push('full_get_size_mismatch')
+      if(digest!==sha256)errors.push('full_get_sha256_mismatch')
+      return {status:response.status,byteCount:received,sha256:digest}
+    }catch(e){errors.push('full_get_failed_or_timeout');return {status:response?.status||0,byteCount:received,sha256:digest}}
+    finally{clearTimeout(timer)}
+  }
+  const full=await fullGet()
   const beyond=await request(safe,'GET',{...headers,Range:`bytes=${sourceData.size}-`})
   if(beyond.status!==416)errors.push('invalid_range_not_416')
   if(beyond.headers.get('content-range')!==`bytes */${sourceData.size}`)errors.push('invalid_range_missing_size')
   await beyond.body?.cancel()
   return {schemaVersion:1,project:'OSA CINEMA',status:errors.length?'STAGING_DELIVERY_HOLD':'LOOPBACK_RANGE_QA_PASS_NOT_PUBLIC',
-    safeLoopbackVerified:true,sourceSha256:sha256,bytes:sourceData.size,tests:{unauthorizedDenied:!errors.includes('unauthenticated_video_exposure'),head:head.status,firstRange:start,lastRange:last,invalidRange:beyond.status},errors,
+    safeLoopbackVerified:true,fullContentVerified:full.status===200&&full.byteCount===sourceData.size&&full.sha256===sha256,sourceSha256:sha256,bytes:sourceData.size,tests:{unauthorizedDenied:!errors.includes('unauthenticated_video_exposure'),head:head.status,firstRange:start,lastRange:last,fullGet:full,invalidRange:beyond.status},errors,
     productionDeploymentVerified:false,actualPhysicalDevicesVerified:false,publicationAuthorized:false,paidCheckoutEnabled:false}
 }
 async function main(args){

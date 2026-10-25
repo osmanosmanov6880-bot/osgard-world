@@ -34,6 +34,8 @@ export function buildGoNoGoBoard(v24,v25,delivery=[]){
     if(coverage.length===0||coverage.some(s=>!s.evidenceBytesVerified))technicalBlockers.push('v25_rights_document_bytes_missing:'+a.id)
     if(matched.length!==1||matched[0]?.safeLoopbackVerified!==true||matched[0]?.status!=='LOOPBACK_RANGE_QA_PASS_NOT_PUBLIC'||matched[0]?.errors?.length!==0||
       matched[0]?.tests?.head!==200||matched[0]?.tests?.firstRange?.status!==206||matched[0]?.tests?.invalidRange!==416||
+      matched[0]?.fullContentVerified!==true||matched[0]?.tests?.fullGet?.status!==200||
+      matched[0]?.tests?.fullGet?.sha256!==a.finalSha256||matched[0]?.tests?.fullGet?.byteCount!==matched[0]?.bytes||
       matched[0]?.productionDeploymentVerified!==false||matched[0]?.publicationAuthorized!==false)technicalBlockers.push('v26_local_delivery_not_verified:'+a.id)
     rows.push({id:a.id,locale:a.locale,edition:a.edition,finalSha256:a.finalSha256,captionSha256:a.captionSha256,technicalMasterPass:ready,
       rightsDocumentBytesReported:coverage.length>0&&coverage.every(s=>s.evidenceBytesVerified),localRangeEvidence:matched.length===1&&matched[0]?.status==='LOOPBACK_RANGE_QA_PASS_NOT_PUBLIC',

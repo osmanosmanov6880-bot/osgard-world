@@ -7,7 +7,7 @@ const rows=ids.map((id,i)=>({id,locale:i%2?'en':'ru',edition:i<2?'trailer-workpr
 const v24={schemaVersion:1,project:'OSA CINEMA',recordedFilmReleaseAuthorized:false,publicCatalogueWriteAllowed:false,paidCheckoutAllowed:false,assets:rows,technical:{passed:4,failed:0}}
 const sources=rows.map(a=>({sourceId:'source-'+a.id,usedIn:[a.id],evidenceBytesVerified:true}))
 const v25={schemaVersion:1,project:'OSA CINEMA',rightsCleared:false,publishAllowed:false,sources,coverage:{registeredSources:4,documentBytesVerified:4,missing:0,coveredEditions:4}}
-const v26=rows.map(a=>({schemaVersion:1,sourceSha256:a.finalSha256,safeLoopbackVerified:true,status:'LOOPBACK_RANGE_QA_PASS_NOT_PUBLIC',tests:{head:200,firstRange:{status:206},invalidRange:416},errors:[],productionDeploymentVerified:false,publicationAuthorized:false}))
+const v26=rows.map(a=>({schemaVersion:1,sourceSha256:a.finalSha256,safeLoopbackVerified:true,status:'LOOPBACK_RANGE_QA_PASS_NOT_PUBLIC',tests:{head:200,firstRange:{status:206},fullGet:{status:200,sha256:a.finalSha256,byteCount:1000},invalidRange:416},bytes:1000,fullContentVerified:true,errors:[],productionDeploymentVerified:false,publicationAuthorized:false}))
 test('perfect synthetic technical evidence still yields NO_GO, no checkout and eight external gates',()=>{
  const board=buildGoNoGoBoard(v24,v25,v26)
  assert.equal(board.technicalCandidateEvidenceComplete,true)
@@ -39,4 +39,10 @@ test('duplicate V26 receipt cannot stand in for different film',()=>{
  const r=buildGoNoGoBoard(v24,v25,x)
  assert.equal(r.technicalCandidateEvidenceComplete,false)
  assert.ok(r.technicalBlockers.some(t=>t.includes('v26')))
+})
+
+test('V27 refuses a receipt with correct first/last Range but wrong full movie digest',()=>{
+ const wrong=structuredClone(v26)
+ wrong[0].tests.fullGet.sha256='f'.repeat(64)
+ assert.equal(buildGoNoGoBoard(v24,v25,wrong).technicalCandidateEvidenceComplete,false)
 })
