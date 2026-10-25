@@ -3,6 +3,18 @@ extends Node
 
 signal mission_updated(index: int, title: String)
 signal mission_completed(index: int, reward: int)
+signal chapter_completed(chapter_id: String, reward: int)
+
+# R49 authored chapters use already-live validated mission actions and save
+# only the existing mission index. No migration and no fake parallel quests.
+const CHAPTERS = [
+	{"id":"arrival","start":0,"end":6,"bonus":300,
+	 "ru":"ПЕРВЫЕ ШАГИ","en":"FIRST STEPS","zh":"第一步"},
+	{"id":"builder","start":6,"end":20,"bonus":650,
+	 "ru":"СОЗДАТЕЛЬ ГОРОДА","en":"CITY BUILDER","zh":"城市建设者"},
+	{"id":"world","start":20,"end":40,"bonus":1200,
+	 "ru":"ЖИВОЙ МЕГАПОЛИС","en":"LIVING METROPOLIS","zh":"活力都会"}
+]
 
 const MISSIONS = [
 	{"id":"enter_vehicle","ru":"Найдите автомобиль и нажмите E","en":"Find a car and press E","zh":"找到汽车并按 E","reward":100},
@@ -47,6 +59,33 @@ const MISSIONS = [
 	{"id":"neighborhood_deliver","ru":"Купите материалы и доставьте их жителю по маршруту (F)","en":"Purchase supplies and complete the local delivery (F)","zh":"购买物资并完成本地配送 (F)","reward":640}
 ]
 
+func chapter_progress(stage: int = -1) -> Dictionary:
+	var current: int = int(GameState.data.get("mission",0)) if stage<0 else stage
+	current=clampi(current,0,MISSIONS.size())
+	for i in range(CHAPTERS.size()):
+		var chapter: Dictionary = CHAPTERS[i]
+		var last: bool = i==CHAPTERS.size()-1
+		if current<int(chapter["end"]) or last:
+			var done: int = clampi(current-int(chapter["start"]),0,int(chapter["end"])-int(chapter["start"]))
+			var total: int = int(chapter["end"])-int(chapter["start"])
+			return {"id":str(chapter["id"]),"index":i,"number":i+1,
+				"count":CHAPTERS.size(),"completed":done,"total":total,
+				"percent":roundi(100.0*float(done)/float(maxi(1,total))),
+				"campaign_finished":current>=MISSIONS.size(),"chapter":chapter}
+	return {}
+
+func chapter_title(lang: String, compact: bool = false) -> String:
+	var chapter: Dictionary = chapter_progress()
+	if chapter.is_empty(): return ""
+	var texts: Dictionary = chapter["chapter"]
+	if bool(chapter["campaign_finished"]):
+		return "КАМПАНИЯ ПРОЙДЕНА" if lang=="ru" else ("CAMPAIGN COMPLETE" if lang=="en" else "战役完成")
+	var name: String = str(texts.get(lang,texts["ru"]))
+	if compact:
+		return "%d/%d · %s · %d%%" % [int(chapter["number"]),int(chapter["count"]),name,int(chapter["percent"])]
+	var prefix: String = "ГЛАВА" if lang=="ru" else ("CHAPTER" if lang=="en" else "章节")
+	return "%s %d/%d · %s · %d%%" % [prefix,int(chapter["number"]),int(chapter["count"]),name,int(chapter["percent"])]
+
 func get_mission() -> Dictionary:
 	var stage: int = int(GameState.data.get("mission",0))
 	if stage >= MISSIONS.size():
@@ -67,5 +106,15 @@ func register_action(action: String) -> bool:
 		GameState.data["science"] += 30
 	GameState.add_reward(int(mission["reward"]),"mission_" + action)
 	mission_completed.emit(stage,int(mission["reward"]))
+	# One-shot milestone: a chapter can be crossed only by a real action
+	# advancing the authoritative mission index, not by opening a UI panel.
+	for chapter in CHAPTERS:
+		if int(chapter["end"])==stage+1:
+			var bonus: int = int(chapter["bonus"])
+			if int(GameState.data.get("wallet",0))+bonus<=30000000:
+				GameState.add_reward(bonus,"r49_chapter_"+str(chapter["id"]))
+			else:
+				bonus=0
+			chapter_completed.emit(str(chapter["id"]),bonus)
 	mission_updated.emit(stage+1,title(GameState.locale))
 	return true

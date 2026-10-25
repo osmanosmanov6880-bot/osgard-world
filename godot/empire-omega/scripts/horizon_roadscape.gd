@@ -9,6 +9,18 @@ var tree_count := 0
 var marking_count := 0
 var scenic_batches := 0
 var intersection_details: Node3D
+# R44: 162 emissive lantern meshes remain instanced; never create 162 lights.
+# Four real OmniLight3D nodes are pooled near the player only at night.
+const STREETLIGHT_POOL_LIMIT: int = 4
+const STREETLIGHT_NEAR_METERS: float = 68.0
+var lamp_positions: Array[Vector3] = []
+var pooled_streetlights: Array[OmniLight3D] = []
+var active_night_lights: int = 0
+# R44.2: original GPU-instanced trees and their exact source transforms.
+# Only the few tree instances blocking the real 3D camera ray are scaled
+# down smoothly; no collision, population, or draw-call changes.
+var camera_tree_sources: Array[Dictionary] = []
+var camera_clearance_hidden: int = 0
 
 func _ready() -> void:
 	name = "HorizonRoadscape"
@@ -116,16 +128,31 @@ func _build_trees() -> void:
 				# All crowns are shared GPU meshes. Individual trees differ in
 				# size, orientation, species and muted seasonal green tones.
 				var yaw: float = rng.randf_range(-PI,PI)
+				var crown_type := ""
+				var crown_index := -1
+				var crown_transform := Transform3D.IDENTITY
 				if (ix+iz+i)%3==0:
 					var pine_base := Basis(Vector3.UP,yaw).scaled(
 						Vector3(crown_scale*0.81,2.3,crown_scale*0.81))
 					conifers.append(Transform3D(pine_base,point+Vector3(0,height+1.8,0)))
 					conifer_colors.append(Color("315644") if (ix+iz)%2==0 else Color("47604c"))
+					crown_type = "pine"
+					crown_index = conifers.size()-1
+					crown_transform = conifers[crown_index]
 				else:
 					var leaf_base := Basis(Vector3.UP,yaw).scaled(
 						Vector3(crown_scale*0.76,1.75,crown_scale*0.76))
 					leaves.append(Transform3D(leaf_base,point+Vector3(0,height+0.86,0)))
 					leaf_colors.append(Color("587859") if (ix+iz)%3==0 else Color("698263"))
+					crown_type = "leaf"
+					crown_index = leaves.size()-1
+					crown_transform = leaves[crown_index]
+				camera_tree_sources.append({
+					"position":point,"trunk_index":trunks.size()-1,
+					"trunk_transform":trunks[trunks.size()-1],
+					"crown_type":crown_type,"crown_index":crown_index,
+					"crown_transform":crown_transform,"factor":1.0
+				})
 
 	var trunk_mesh := CylinderMesh.new()
 	trunk_mesh.top_radius = 0.4
@@ -152,6 +179,7 @@ func _build_lamps() -> void:
 				post_color.append(Color("334753"))
 				lanterns.append(Transform3D(Basis().scaled(Vector3(.56,.23,.56)),Vector3(x,5.23,z)))
 				lantern_color.append(Color("ffe2a5"))
+				lamp_positions.append(Vector3(x,5.05,z))
 	var pole_mesh := CylinderMesh.new()
 	pole_mesh.top_radius = 0.45
 	pole_mesh.bottom_radius = 0.6
@@ -164,6 +192,53 @@ func _build_lamps() -> void:
 	lantern_mesh.radial_segments = 8
 	lantern_mesh.rings = 4
 	_batch("LanternBatch",lantern_mesh,lanterns,lantern_color,true)
+	_create_streetlight_pool()
+
+# R44.2: the camera collides with buildings but decorative instanced canopies
+# have no colliders. Without this, a nearby pine becomes a giant opaque
+# triangle that hides the vehicle, HUD context and night road completely.
+# Move only obstructing instances' existing transforms, never spawn/remove
+# meshes or expensive transparent material surfaces.
+static func camera_occludes_tree(camera_at: Vector3, focus: Vector3,
+		crown_at: Vector3, corridor_metres: float = 4.4) -> bool:
+	if not camera_at.is_finite() or not focus.is_finite() or not crown_at.is_finite():
+		return false
+	var ray: Vector3 = focus-camera_at
+	var length_sq: float = ray.length_squared()
+	if length_sq < 0.10: return false
+	var fraction: float = (crown_at-camera_at).dot(ray)/length_sq
+	if fraction < -0.12 or fraction > 0.97: return false
+	var nearest: Vector3 = camera_at+ray*clampf(fraction,0.0,1.0)
+	return nearest.distance_squared_to(crown_at) < corridor_metres*corridor_metres
+
+func update_camera_clearance(camera_at: Vector3, focus: Vector3, dt: float) -> void:
+	if not visible or not camera_at.is_finite() or not focus.is_finite() or not is_finite(dt):
+		return
+	var trunks: MultiMeshInstance3D = get_node_or_null("TrunkBatch") as MultiMeshInstance3D
+	var leaves: MultiMeshInstance3D = get_node_or_null("LeafCanopyBatch") as MultiMeshInstance3D
+	var pines: MultiMeshInstance3D = get_node_or_null("LeafConeBatch") as MultiMeshInstance3D
+	if trunks == null or leaves == null or pines == null: return
+	camera_clearance_hidden = 0
+	var delta: float = clampf(dt,0.0,0.1)
+	for item in camera_tree_sources:
+		var crown_at: Vector3 = item["crown_transform"].origin
+		var obstructing: bool = camera_occludes_tree(camera_at,focus,crown_at)
+		var goal: float = 0.06 if obstructing else 1.0
+		var prior: float = float(item["factor"])
+		var amount: float = move_toward(prior,goal,delta*5.0)
+		if obstructing: camera_clearance_hidden += 1
+		if absf(amount-prior) < 0.0001: continue
+		item["factor"] = amount
+		var ratio: Vector3 = Vector3.ONE*amount
+		var original_trunk: Transform3D = item["trunk_transform"]
+		var trunk_transform: Transform3D = original_trunk
+		trunk_transform.basis = original_trunk.basis.scaled(ratio)
+		trunks.multimesh.set_instance_transform(int(item["trunk_index"]),trunk_transform)
+		var original_crown: Transform3D = item["crown_transform"]
+		var crown_transform: Transform3D = original_crown
+		crown_transform.basis = original_crown.basis.scaled(ratio)
+		var visual: MultiMeshInstance3D = pines if str(item["crown_type"])=="pine" else leaves
+		visual.multimesh.set_instance_transform(int(item["crown_index"]),crown_transform)
 
 func _build_mountains() -> void:
 	var mesh_builder := SurfaceTool.new()
@@ -212,3 +287,49 @@ func _build_festival_gate() -> void:
 	_sculpture_piece("FestivalRightPillar",Vector3(.60,9,.70),Vector3(-105.0,4.5,-90.0),c)
 	_sculpture_piece("FestivalRoof",Vector3(15,.68,.94),Vector3(-112.0,9.0,-90.0),c)
 	_sculpture_piece("FestivalNeonBar",Vector3(14.6,.12,1.03),Vector3(-112.0,8.7,-90.0),light,true)
+
+# R44: physically located street illumination without unbounded GPU lights.
+# The streetlamp meshes still use the original two MultiMesh draw calls.
+func _create_streetlight_pool() -> void:
+	for i in range(STREETLIGHT_POOL_LIMIT):
+		var light := OmniLight3D.new()
+		light.name = "R44StreetLight%02d" % i
+		light.light_color = Color("ffe2ae")
+		light.light_energy = 0.78
+		light.light_specular = 0.68
+		light.omni_range = 16.0
+		light.omni_attenuation = 1.48
+		light.shadow_enabled = false
+		light.visible = false
+		add_child(light)
+		pooled_streetlights.append(light)
+
+func update_streetlights(hour: float, tier: String, focus: Vector3) -> void:
+	active_night_lights = 0
+	var safe_hour: float = fposmod(hour,24.0) if is_finite(hour) else 12.0
+	var night: bool = safe_hour < 6.5 or safe_hour >= 18.5
+	var target: int = 0 if tier == "low" or not night or not focus.is_finite() else (2 if tier == "standard" else STREETLIGHT_POOL_LIMIT)
+	var taken: Array[int] = []
+	for light in pooled_streetlights:
+		light.visible = false
+	for n in range(mini(target,pooled_streetlights.size())):
+		var nearest: int = -1
+		var distance_squared: float = STREETLIGHT_NEAR_METERS * STREETLIGHT_NEAR_METERS
+		for i in range(lamp_positions.size()):
+			if taken.has(i):
+				continue
+			var candidate: Vector3 = lamp_positions[i]
+			var dx: float = candidate.x-focus.x
+			var dz: float = candidate.z-focus.z
+			var current: float = dx*dx+dz*dz
+			if current < distance_squared:
+				distance_squared = current
+				nearest = i
+		if nearest < 0:
+			break
+		taken.append(nearest)
+		var light: OmniLight3D = pooled_streetlights[n]
+		light.position = lamp_positions[nearest] + Vector3(0,-0.23,0)
+		light.light_energy = 0.61 if tier == "standard" else 0.88
+		light.visible = true
+		active_night_lights += 1

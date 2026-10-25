@@ -125,12 +125,42 @@ export async function captureAnimatedWebGLViewport(page) {
     }
     return {png:bytes,method:'chromium-cdp'}
   } catch(firstError) {
+    // R51: On Linux SwiftShader, Chrome's GPU compositor sometimes never
+    // finishes 'fromSurface:true'. Request the ACTUAL renderer's view via
+    // CDP's distinct fromSurface:false path before expensive canvas readback.
+    // This still photographs the active Chromium page, never HTML or a fake
+    // asset; the calling game test verifies brightness and real car movement.
+    let alternativeError=null
+    try {
+      let alternateTimer
+      let image
+      try {
+        image=await Promise.race([
+          session.send('Page.captureScreenshot',{
+            format:'png',captureBeyondViewport:false,fromSurface:false
+          }),
+          new Promise((_,reject)=>{
+            alternateTimer=setTimeout(()=>reject(new Error('CDP view screenshot timed out')),11000)
+          })
+        ])
+      } finally {
+        if(alternateTimer!==undefined)clearTimeout(alternateTimer)
+      }
+      const pixels=Buffer.from(image.data,'base64')
+      if(pixels.length<9500 || pixels.subarray(0,8).toString('hex')!=='89504e470d0a1a0a')
+        throw new Error('CDP view screenshot has no authentic PNG pixels')
+      return {png:pixels,method:'chromium-cdp-view',
+        fallback_reason:String(firstError?.message??firstError).slice(0,200)}
+    } catch(error) {
+      alternativeError=error
+    }
     // Try real Godot canvas readback before Playwright screenshot. If the
     // framebuffer is blank/unreadable this fails, never inventing evidence.
     let canvasError
     try {
       const result=await captureLiveGodotCanvas(page)
-      return {...result,fallback_reason:String(firstError?.message??firstError).slice(0,200)}
+      return {...result,fallback_reason:('CDP='+String(firstError?.message??firstError)+
+        '; View='+String(alternativeError?.message??alternativeError)).slice(0,240)}
     } catch(e) {canvasError=e}
     try {
       const png=await page.screenshot({timeout:35000,animations:'disabled'})
@@ -143,7 +173,8 @@ export async function captureAnimatedWebGLViewport(page) {
     } catch(secondError) {
       throw new Error(
         'No authentic WebGL pixels could be captured: CDP='+
-        String(firstError?.message??firstError)+'; Canvas='+
+        String(firstError?.message??firstError)+'; CDP View='+
+        String(alternativeError?.message??alternativeError)+'; Canvas='+
         String(canvasError?.message??canvasError)+'; Playwright='+
         String(secondError?.message??secondError)
       )

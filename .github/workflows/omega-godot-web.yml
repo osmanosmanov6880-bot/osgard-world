@@ -44,12 +44,16 @@ jobs:
               continue
             fi
             echo "=== NATIVE ${test_file##*/} ==="
-            # The calibrated six-candidate R40 RigidBody3D sweep takes ~40s
-            # on actual CI; preserve the 15s gate for all other native suites.
+            # Normal native suites remain bounded to 15s.
+            # Real 60 Hz R46 A/B has 3*(140+108+72+48) physics frames:
+            # 1104/60=18.4s minimum BEFORE Godot startup and CI overhead.
+            # The previous 15s timeout killed a valid physics experiment.
+            # R40 is the six-candidate spring calibration sweep (~40s).
             test_seconds=15
-            if [[ "${test_file##*/}" == "v59_r40_force_motor_calibration.gd" ]]; then
-              test_seconds=110
-            fi
+            case "${test_file##*/}" in
+              v59_r40_force_motor_calibration.gd) test_seconds=110 ;;
+              v67_r46_physics_ab_trials.gd) test_seconds=60 ;;
+            esac
             echo "Native test budget: ${test_seconds}s for ${test_file##*/}"
             if timeout --signal=TERM --kill-after=5s "${test_seconds}s" godot --headless --path godot/empire-omega --script "res://tests/${test_file##*/}"; then
               echo "PASS: ${test_file##*/}"

@@ -44,6 +44,12 @@ jobs:
         run: node --experimental-strip-types scripts/osa-cinema-v14-companion-smoke.mjs
       - name: OSA Cinema V15 eight-scene edit decision list and source provenance
         run: node scripts/osa-cinema-v15-edit-decision-smoke.mjs
+      - name: Verify V16 original workprint provenance and fail-closed film release gates
+        run: node --test scripts/osa-cinema-v16-workprint.test.mjs
+      - name: Verify six V16 RU/EN narration originals stay blocked without real review
+        run: node --test scripts/osa-cinema-v16-narration.test.mjs
+      - name: Verify private V16 screening has real local controls and no upload actions
+        run: node scripts/osa-cinema-v16-private-room-smoke.mjs
       - name: Verify V15 full-screen screening syntax
         run: node --check scripts/osa-cinema-v15-screening.spec.mjs
       - name: TypeScript validation

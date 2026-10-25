@@ -150,6 +150,7 @@ func _ready() -> void:
 	GameState.alert_created.connect(_on_alert)
 	GameSettings.preferences_changed.connect(_apply_preferences)
 	MissionManager.mission_completed.connect(_on_mission_done)
+	MissionManager.chapter_completed.connect(_on_chapter_done)
 	ContractManager.contract_changed.connect(_on_contract_changed)
 	_apply_preferences()
 	_sync_trial_marker()
@@ -402,6 +403,10 @@ func _physics_process(delta: float) -> void:
 		get_world_3d().direct_space_state,excluding,delta,GameSettings.reduced_motion)
 	camera.global_position = camera_solution["position"]
 	camera.look_at(focus,Vector3.UP)
+	# R44.2: three instanced foliage GPU batches keep the road and vehicle
+	# visible when the cinematic chase camera passes through a tall canopy.
+	if world.horizon_scenic != null:
+		world.horizon_scenic.call("update_camera_clearance",camera.global_position,focus,delta)
 	# Speed-responsive perspective, disabled for players who request less motion.
 	var desired_fov: float = SAFE_CAMERA.target_fov(car.speed,driving,phone_view,GameSettings.reduced_motion)
 	camera.fov = desired_fov if GameSettings.reduced_motion else lerpf(camera.fov,desired_fov,SAFE_CAMERA.time_alpha(2.2,delta))
@@ -439,7 +444,7 @@ func _physics_process(delta: float) -> void:
 	if diagnostic_timer >= 1.0:
 		diagnostic_timer = 0.0
 		car.update_headlights(float(GameState.data.get("day_clock",12.0)),adaptive_graphics.effective_quality())
-		if adaptive_graphics.observe(float(Engine.get_frames_per_second()),1.0,DisplayServer.window_is_focused()):
+		if adaptive_graphics.observe_frame_pacing(float(Engine.get_frames_per_second()),frame_metrics.p95_ms(),frame_metrics.samples(),1.0,DisplayServer.window_is_focused()):
 			_apply_visual_budget()
 			_update_agent_lod(protagonist)
 		if cargo_visual != null: cargo_visual.sync_state(GameState.data,GameState.locale)
@@ -925,3 +930,10 @@ func _on_contract_changed(_message_id: String) -> void:
 func _on_mission_done(_stage: int, reward: int) -> void:
 	if soundscape != null: soundscape.play_success()
 	hud.announce("ЗАДАНИЕ ВЫПОЛНЕНО · +%d ₽" % reward if GameState.locale == "ru" else "MISSION COMPLETE · +%d ₽" % reward)
+
+func _on_chapter_done(_chapter_id: String, reward: int) -> void:
+	# New localized one-time chapter finale is driven by a completed LIVE
+	# mission event, not an animated UI mock or repeatable click reward.
+	if soundscape != null: soundscape.play_success()
+	var amount: String = " · +%d кр." % reward if reward>0 else ""
+	hud.announce(_three("ГЛАВА ЗАВЕРШЕНА","CHAPTER COMPLETE","章节完成")+amount)
