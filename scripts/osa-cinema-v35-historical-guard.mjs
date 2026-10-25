@@ -52,7 +52,7 @@ async function pinnedRead(root,relative){
   }finally{await handle.close()}
 }
 /** Pure policy audit, separated from file reading for negative fixtures. */
-export function auditEvidenceSnapshot(documents,pins=PINNED_ORIGINAL_BLOBS){
+export function auditEvidenceSnapshot(documents,pins=PINNED_ORIGINAL_BLOBS,{allowCheckoutCrlf=false}={}){
   requireSafe(documents&&typeof documents==='object'&&!Array.isArray(documents),
     'historical source set missing')
   requireSafe(exactNames(Object.keys(documents),Object.keys(PINNED_ORIGINAL_BLOBS)),
@@ -63,13 +63,19 @@ export function auditEvidenceSnapshot(documents,pins=PINNED_ORIGINAL_BLOBS){
     const bytes=documents[path]
     requireSafe(Buffer.isBuffer(bytes) && bytes.length>0 && bytes.length<=512*1024,
       'historical source missing or oversized: '+path)
-    const blob=gitBlobSha(bytes)
+    const rawBlob=gitBlobSha(bytes)
+    // Git for Windows may checkout text files with CRLF while the committed
+    // Git blob remains LF. This is the ONLY allowed byte transformation.
+    const canonicalBytes=rawBlob===pins[path] ? bytes :
+      allowCheckoutCrlf ? Buffer.from(bytes.toString('utf8').replace(/\r\n/g,'\n'),'utf8') : bytes
+    const blob=gitBlobSha(canonicalBytes)
     requireSafe(pins[path]===blob,'historical source changed: '+path+' (Git blob SHA mismatch)')
     let data
     try{data=JSON.parse(bytes.toString('utf8'))}catch{throw Error('OSA_V35_HISTORICAL_HOLD: invalid historical JSON: '+path)}
     requireSafe(data&&typeof data==='object'&&!Array.isArray(data), 'historical JSON must be object: '+path)
     decoded[path]=data
-    results.push({path,gitBlobSha:blob,sha256:sha256(bytes),bytes:bytes.length})
+    results.push({path,gitBlobSha:blob,sha256:sha256(canonicalBytes),bytes:canonicalBytes.length,
+      checkoutLineEndingsNormalized:rawBlob!==blob})
   }
   const v16=decoded['docs/OSA_CINEMA_V16_WORKPRINT_MANIFEST.json']
   const v18=decoded['docs/OSA_CINEMA_V18_PRIVATE_FOUR_TRACK_QA.json']
@@ -107,7 +113,8 @@ export async function verifyHistoricalEvidence({root}={}){
   requireSafe(typeof root==='string' && root.length>0,'explicit repository root required')
   const files={}
   for(const path of Object.keys(PINNED_ORIGINAL_BLOBS))files[path]=await pinnedRead(root,path)
-  return auditEvidenceSnapshot(files)
+  return auditEvidenceSnapshot(files,PINNED_ORIGINAL_BLOBS,
+    {allowCheckoutCrlf:process.platform==='win32'})
 }
 if(process.argv[1] && resolve(process.argv[1])===fileURLToPath(import.meta.url)){
   const args=process.argv.slice(2)
