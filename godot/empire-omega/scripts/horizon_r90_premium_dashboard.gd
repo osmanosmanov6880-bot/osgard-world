@@ -7,6 +7,7 @@ signal select_vehicle(id: String)
 signal select_district(id: String)
 
 const REFERENCE = preload("res://scripts/horizon_r90_reference_style.gd")
+const CIVIC_KPIS = preload("res://scripts/horizon_r93_real_civic_kpis.gd")
 const PROJECTIVE_PINS = preload("res://scripts/horizon_r92_projective_districts.gd")
 const GOLD = Color("eac482")
 const WHITE = Color("f6f3ed")
@@ -212,6 +213,14 @@ func build(state: Dictionary, forecast: Dictionary, mission: String,
 		section_button.pressed.connect(Callable(self,"_request_district").bind(id))
 		atlas.add_child(section_button)
 
+	# All five progress bars are computed from the same forecast/state as
+	# the city simulation. No arbitrary economy or public-safety percentages.
+	var metrics := _card(right,0,false)
+	metrics.name = "R93CityIndicatorsCard"
+	_label(metrics,local("ГОРОДСКИЕ ПОКАЗАТЕЛИ","CITY INDICATORS","城市指标",lang),15,true)
+	var indicators: VBoxContainer = CIVIC_KPIS.new()
+	metrics.add_child(indicators)
+	indicators.call("configure",state,forecast,lang)
 	var actions := _card(right,0,true)
 	_label(actions,local("СТРАТЕГИЧЕСКИЕ ДЕЙСТВИЯ","STRATEGIC ACTIONS","战略行动",lang),15,true)
 	_action(actions,local("◆ ГОРОДСКОЙ СОВЕТ","◆ CITY COUNCIL","◆ 市政议会",lang),"council")
@@ -223,9 +232,19 @@ func build(state: Dictionary, forecast: Dictionary, mission: String,
 
 	var selected_card := _card(self,0,true)
 	_label(selected_card,local("ВЫБРАННЫЙ РАЙОН","SELECTED DISTRICT","选定城区",lang),13,true)
-	_label(selected_card,local("Действующий баланс и показатели берутся из сохранённой партии.",
-		"Values are read from the authoritative live game state.",
-		"所有数值来自当前游戏存档。",lang),13)
+	var district_scores: Dictionary = forecast.get("district_scores",{})
+	var chosen: int = clampi(int(district_scores.get(selected,0)),0,100)
+	var district_names: Dictionary = {
+		"forum":["Сенатский форум","Senate Forum","元老院广场"],
+		"housing":["Жилой квартал","Housing District","住宅区"],
+		"lower":["Нижний город","Lower City","下城区"],
+		"aqueduct":["Акведуки","Aqueducts","高架水道"]}
+	var localized_name: Array = district_names.get(selected,[selected,selected,selected])
+	_label(selected_card,"%s · %d/100" % [
+		local(str(localized_name[0]),str(localized_name[1]),str(localized_name[2]),lang),chosen],16)
+	_label(selected_card,local("Показатель рассчитан из текущего прогноза города.",
+		"District score comes from the actual current city forecast.",
+		"区域评分来自实时城市预测。",lang),12)
 	var nav: Container = GridContainer.new() if compact else HBoxContainer.new()
 	if compact:
 		(nav as GridContainer).columns = 2
