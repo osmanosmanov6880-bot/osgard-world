@@ -3,6 +3,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
+import { createHash } from 'node:crypto';
 const deny = reason => { throw new Error(reason); };
 const check = (condition, message) => { if (!condition) deny(message); };
 const ORIENTATIONS = ['portrait','landscape'];
@@ -41,6 +42,23 @@ function localFile(root,relative,kind) {
 function readJson(root,relative) {
   return JSON.parse(fs.readFileSync(localFile(root,relative,'JSON'),'utf8'));
 }
+// Reject the same underlying evidence even when an operator renames the file
+// or associates it with a different phone, orientation or graphics profile.
+// SHA-256 is a local duplicate detector, not proof of who captured a file.
+function uniqueDigest(bytes, seen, kind) {
+  const fingerprint=createHash('sha256').update(bytes).digest('hex');
+  check(!seen.has(fingerprint),
+    'Reused original '+kind+' detected across field matrix');
+  seen.add(fingerprint);
+}
+function uniqueTimestamp(stamp, deviceId, build, seen) {
+  check(typeof stamp==='number' && Number.isFinite(stamp) && stamp>0,
+    'Original game measurement timestamp missing');
+  const key=JSON.stringify([deviceId,build,stamp]);
+  check(!seen.has(key),
+    'Reused benchmark timestamp on same phone and build');
+  seen.add(key);
+}
 // Reject a faster average FPS when stutter/1% low is materially worse.
 function median(nums) {
   check(Array.isArray(nums) && nums.length>0, 'No frame-pacing samples');
@@ -72,6 +90,8 @@ function inspect(filename) {
   check(Array.isArray(input.devices)&&input.devices.length>=3,'Need at least 3 physical phones');
   const api=viewer(),seen=new Set(),rows=[],summary=[],platforms={Android:0,iOS:0};
   let images=0;
+  const sourceJsonDigests=new Set(), screenshotDigests=new Set();
+  const sampleTimestamps=new Set();
   for(const device of input.devices) {
     const id=device.id;
     check(typeof id==='string'&&/^[A-Za-z0-9_-]{3,48}$/.test(id)&&!seen.has(id),
@@ -85,8 +105,10 @@ function inspect(filename) {
       const v=device.visual?.[orientation];
       check(v?.approved===true && typeof v.notes==='string'&&v.notes.trim().length>=20,
         'Human visual sign-off missing: '+id+'/'+orientation);
-      localFile(root,v.baseline_image,'image');
-      localFile(root,v.candidate_image,'image');
+      const baselineImage=localFile(root,v.baseline_image,'image');
+      const candidateImage=localFile(root,v.candidate_image,'image');
+      uniqueDigest(fs.readFileSync(baselineImage),screenshotDigests,'screenshot');
+      uniqueDigest(fs.readFileSync(candidateImage),screenshotDigests,'screenshot');
       images+=2;
       for(const profile of PROFILES) {
         const entry=(device.runs||[]).filter(x=>
@@ -98,7 +120,11 @@ function inspect(filename) {
           check(Array.isArray(filenames)&&filenames.length>=3,
             'Need >=3 original independent JSONs from each game: '+id+'/'+profile);
           for(const name of filenames) {
-            const record=api.parseReport(readJson(root,name),path.basename(name),id,variant);
+            const original=fs.readFileSync(localFile(root,name,'JSON'));
+            uniqueDigest(original,sourceJsonDigests,'benchmark JSON');
+            const payload=JSON.parse(original.toString('utf8'));
+            const record=api.parseReport(payload,path.basename(name),id,variant);
+            uniqueTimestamp(record.stamp,id,variant,sampleTimestamps);
             const xy=record.resolution.split('×').map(Number);
             check(record.profile===profile && xy.length===2 &&
               (orientation==='portrait'?xy[1]>xy[0]:xy[0]>xy[1]),
@@ -132,7 +158,8 @@ function inspect(filename) {
   return {schema:'NEBULA_R40_OFFLINE_EVIDENCE_V1',
     local_evidence_structure:'PASS',
     phones_declared:input.devices.length,physical_jsons_read:summary.length,
-    checked_images:images,results:rows,
+    checked_images:images,unique_original_jsons:sourceJsonDigests.size,
+    unique_source_images:screenshotDigests.size,results:rows,
     caveat:'A script cannot independently authenticate physical devices or screenshot provenance. Actual human visual inspection and thermal/handling sign-off remain mandatory.'};
 }
 try {
@@ -160,7 +187,25 @@ try {
     ]);
     check(!stutter.stable && stutter.p99_improvement_percent < -5,
       'Severe stutter regression must always be rejected');
-    console.log('NEBULA_R40_FIELD_GATE_SELFTEST_SUCCESS synthetic_only=true hardware=0 pacing_cases=2');
+    const sampleContent=Buffer.from('synthetic-example-only', 'utf8');
+    const seenContent=new Set();
+    uniqueDigest(sampleContent,seenContent,'benchmark JSON');
+    uniqueDigest(Buffer.from('different-fixture'),seenContent,'benchmark JSON');
+    let duplicateRejected=false;
+    try { uniqueDigest(sampleContent,seenContent,'benchmark JSON'); }
+    catch(e) { duplicateRejected=/Reused original/.test(String(e.message)); }
+    check(duplicateRejected && seenContent.size===2,
+      'Duplicate original report bytes must never count as new evidence');
+    const seenTimes=new Set();
+    uniqueTimestamp(1790000000,'test-phone','R38',seenTimes);
+    uniqueTimestamp(1790000000,'other-phone','R38',seenTimes);
+    uniqueTimestamp(1790000000,'test-phone','R40',seenTimes);
+    let repeatedTimeRejected=false;
+    try { uniqueTimestamp(1790000000,'test-phone','R38',seenTimes); }
+    catch(e) { repeatedTimeRejected=/Reused benchmark timestamp/.test(String(e.message)); }
+    check(repeatedTimeRejected && seenTimes.size===3,
+      'Repeated same-device/build timestamps must be rejected');
+    console.log('NEBULA_R40_FIELD_GATE_SELFTEST_SUCCESS synthetic_only=true hardware=0 pacing_cases=2 global_duplicate_negative_cases=2');
   } else {
     check(process.argv.length===3,
       'Usage: node scripts/nebula-r40-field-release-gate.mjs /path/to/manifest.json');
