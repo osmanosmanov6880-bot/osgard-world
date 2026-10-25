@@ -1,7 +1,6 @@
 extends SceneTree
 ## R102 native asset-tier test on the original live world and material.
 ## Never assumes uncommitted photos exist: missing verified assets fail safely.
-const WORLD = preload("res://scripts/world_builder.gd")
 var passed := 0
 var failed := 0
 
@@ -22,7 +21,16 @@ func _run() -> void:
 		quit(1)
 		return
 	var before: Dictionary = (game.get("data") as Dictionary).duplicate(true)
-	var scene: Node3D = WORLD.new()
+	# WorldBuilder transitively references the GameState autoload. Loading it
+	# at script-parse time is incorrect in --headless --script smoke tests.
+	# Follow R90 acceptance: resolve dependencies AFTER real autoloads mount.
+	var world_script: Variant = load("res://scripts/world_builder.gd")
+	check(world_script is Script and world_script.can_instantiate(),
+		"WorldBuilder compiles after authoritative autoload initialization")
+	if not (world_script is Script and world_script.can_instantiate()):
+		quit(1)
+		return
+	var scene: Node3D = world_script.new()
 	root.add_child(scene)
 	var asphalt: StandardMaterial3D = scene.get("asphalt_pbr")
 	var original_albedo: Texture2D = scene.get("r90_original_asphalt_albedo")
