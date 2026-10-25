@@ -49,3 +49,39 @@ static func apply_to(env: Environment, sun: DirectionalLight3D, sky: ProceduralS
 	env.fog_light_color = Color("758b98") if valid_kind == "storm" else Color("a5b5bd")
 	sun.light_color = Color("e2e8ea") if valid_kind == "storm" else (Color("edf0ec") if valid_kind == "rain" or valid_kind == "cloudy" else Color("ffe1bb"))
 	sun.light_energy = clampf(safe_brightness*1.02*sun_multiplier(valid_kind),0.30,1.10)
+
+
+# R44.1: actual clock-driven night sky, ambient and sun, never a CSS/filter
+# overlay. Lower energy lets the existing four warm OmniLight3D nodes provide
+# local visible illumination; daylight remains unchanged.
+static func night_fraction(hour: float) -> float:
+	if not is_finite(hour):
+		return 0.0
+	var local_hour: float = fposmod(hour,24.0)
+	if local_hour>=20.0 or local_hour<5.5:
+		return 1.0
+	if local_hour>=18.0:
+		return clampf((local_hour-18.0)/2.0,0.0,1.0)
+	if local_hour<7.5:
+		return clampf((7.5-local_hour)/2.0,0.0,1.0)
+	return 0.0
+
+static func apply_night_overlay(env: Environment, sun: DirectionalLight3D,
+		sky: ProceduralSkyMaterial, hour: float) -> void:
+	if env==null or sun==null or sky==null:
+		return
+	var amount: float = night_fraction(hour)
+	if amount<=0.0:
+		return
+	# No full-screen postprocess, HDR glow, fake static background or shadows.
+	# Physically dim ambient bounce (0.275, not daylight) keeps the car and
+	# asphalt legible at 22:00 without falsely restoring daytime sunlight.
+	sun.light_energy = lerpf(sun.light_energy,0.023,amount)
+	env.ambient_light_energy = lerpf(env.ambient_light_energy,0.275,amount)
+	env.adjustment_brightness = lerpf(env.adjustment_brightness,0.92,amount)
+	env.adjustment_saturation = lerpf(env.adjustment_saturation,0.91,amount)
+	sky.sky_top_color = sky.sky_top_color.lerp(Color("0b182a"),amount)
+	sky.sky_horizon_color = sky.sky_horizon_color.lerp(Color("2c4058"),amount)
+	sky.ground_bottom_color = sky.ground_bottom_color.lerp(Color("101923"),amount)
+	sky.ground_horizon_color = sky.ground_horizon_color.lerp(Color("314357"),amount)
+	env.fog_light_color = env.fog_light_color.lerp(Color("273749"),amount)

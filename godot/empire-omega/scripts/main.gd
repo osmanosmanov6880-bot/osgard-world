@@ -403,6 +403,10 @@ func _physics_process(delta: float) -> void:
 		get_world_3d().direct_space_state,excluding,delta,GameSettings.reduced_motion)
 	camera.global_position = camera_solution["position"]
 	camera.look_at(focus,Vector3.UP)
+	# R44.2: three instanced foliage GPU batches keep the road and vehicle
+	# visible when the cinematic chase camera passes through a tall canopy.
+	if world.horizon_scenic != null:
+		world.horizon_scenic.call("update_camera_clearance",camera.global_position,focus,delta)
 	# Speed-responsive perspective, disabled for players who request less motion.
 	var desired_fov: float = SAFE_CAMERA.target_fov(car.speed,driving,phone_view,GameSettings.reduced_motion)
 	camera.fov = desired_fov if GameSettings.reduced_motion else lerpf(camera.fov,desired_fov,SAFE_CAMERA.time_alpha(2.2,delta))
