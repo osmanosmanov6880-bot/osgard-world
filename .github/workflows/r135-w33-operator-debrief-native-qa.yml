@@ -18,7 +18,7 @@ concurrency:
 jobs:
   actual-godot-source-parity:
     runs-on: ubuntu-latest
-    timeout-minutes: 24
+    timeout-minutes: 42
     steps:
       - uses: actions/checkout@v4
         with:
@@ -107,6 +107,22 @@ jobs:
             --export w33-godot-native/build/web \
             --evidence w33-godot-native/build/browser-evidence \
             --sha "${{ github.event.pull_request.head.sha || github.sha }}"
+      - name: Play actual exported Godot WebGL through real desktop game controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$RUNNER_TEMP/w33-qa-venv/bin/python" w33-godot-native/ci/browser_gameplay_acceptance.py \
+            --export w33-godot-native/build/web \
+            --evidence w33-godot-native/build/gameplay-evidence \
+            --sha "${{ github.event.pull_request.head.sha || github.sha }}"
+      - name: Preserve real game-control evidence even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: osgard-w33-playable-browser-evidence-${{ github.event.pull_request.head.sha || github.sha }}
+          path: w33-godot-native/build/gameplay-evidence/
+          if-no-files-found: warn
+          retention-days: 30
       - name: Retain original browser screenshots for diagnostics even on failure
         if: always()
         uses: actions/upload-artifact@v4

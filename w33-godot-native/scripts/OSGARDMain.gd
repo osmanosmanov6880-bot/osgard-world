@@ -62,16 +62,85 @@ var _tone_remaining := 0.0
 var _tone_phase := 0.0
 var _tone_hz := 440.0
 var _audio_player: AudioStreamPlayer
+# Read-only browser status for assistive technology and genuine WebGL input QA.
+# Never receives commands, never stores metrics and never sends network data.
+var _web_state_element: Variant = null
+var _web_last_event_id: int = -1
 
 func _ready() -> void:
     name = "OSGARDFieldLab"
     set_anchors_preset(Control.PRESET_FULL_RECT)
     _create_interface()
+    _create_web_accessibility()
     _setup_sound()
     core.feedback_sent.connect(_on_feedback)
     resized.connect(_layout_stage_for_screen)
     call_deferred("_layout_stage_for_screen")
     _refresh()
+
+func _create_web_accessibility() -> void:
+    if not OS.has_feature("web"):
+        return
+    var document: Variant = JavaScriptBridge.get_interface("document")
+    if document == null:
+        return
+    var node: Variant = document.getElementById("osgard-native-state")
+    if node == null:
+        node = document.createElement("div")
+        node.setAttribute("id", "osgard-native-state")
+        node.setAttribute("role", "status")
+        node.setAttribute("aria-live", "polite")
+        node.setAttribute("aria-atomic", "true")
+        node.setAttribute("style", "position:fixed;left:0;top:0;width:1px;height:1px;overflow:hidden;opacity:0;pointer-events:none")
+        document.body.appendChild(node)
+    _web_state_element = node
+
+func _web_control_rect(item: Control) -> Array:
+    var rect: Rect2 = item.get_global_rect()
+    return [roundi(rect.position.x), roundi(rect.position.y), roundi(rect.size.x), roundi(rect.size.y)]
+
+func _publish_web_accessibility(snap: Dictionary) -> void:
+    if _web_state_element == null:
+        return
+    # Only visible, non-sensitive simulation data are mirrored. This is
+    # intentionally read-only: Playwright still has to press actual controls.
+    var state: Dictionary = {
+        "mission": int(snap["mission"]), "step": int(snap["step"]),
+        "active": bool(snap["active"]), "complete": bool(snap["complete"]),
+        "rpm": roundi(float(snap["rpm"])), "hatch": float(snap["hatch"]),
+        "drive_on": bool(snap["drive_on"]), "view": int(snap["view"]),
+        "a": int(snap["puzzle"]["a"]), "b": int(snap["puzzle"]["b"]),
+        "ready": bool(snap["calibration"].get("ready", false)),
+        "incident": bool(snap["incident_triggered"]),
+        "feedback": str(snap["feedback"]), "errors": int(snap["errors"]),
+        "score": int(snap["score"]), "cleared": int(snap["cleared_count"]),
+        "shift_cleared": int(snap["shift_cleared_count"]),
+        "inspection_allowed": bool(snap["inspection_allowed"]),
+        "hold_percent": int(snap["calibration"].get("hold_percent", 0)),
+        "last_error": bool(snap["last_error"])
+    }
+    var geometry: Dictionary = {
+        "viewport": [roundi(size.x), roundi(size.y)],
+        "scroll": int(scroll.scroll_vertical),
+        "engine": _web_control_rect(engine_btn),
+        "hatch": _web_control_rect(hatch_btn),
+        "scan": _web_control_rect(scan_btn),
+        "slider_a": _web_control_rect(slider_a),
+        "slider_b": _web_control_rect(slider_b),
+        "retry": _web_control_rect(retry_button),
+        "language": _web_control_rect(lang_btn),
+        "quality": _web_control_rect(quality_btn)
+    }
+    for index in range(6):
+        geometry["mission%d" % index] = _web_control_rect(mission_btns[index])
+    for index in range(3):
+        geometry["camera%d" % index] = _web_control_rect(view_btns[index])
+    _web_state_element.setAttribute("data-state", JSON.stringify(state))
+    _web_state_element.setAttribute("data-geometry", JSON.stringify(geometry))
+    var event_id: int = int(snap["event_id"])
+    if event_id != _web_last_event_id:
+        _web_last_event_id = event_id
+        _web_state_element.textContent = "OSGARD simulated lab, " + str(state["feedback"]) + ", mission " + str(state["mission"] + 1) + ", step " + str(state["step"])
 
 func _panel_style(base: Color = PANEL, outline: Color = Color("365660"), radius: int = 10) -> StyleBoxFlat:
     var skin := StyleBoxFlat.new()
@@ -512,6 +581,7 @@ func _refresh() -> void:
         mission_btns[i].text = _t("adv%d" % idx) if is_advanced else _t("base%d" % idx)
         mission_btns[i].text += "\n" + (_t("locked") if not unlocked else _t("cleared") if cleared else "NEW")
         mission_btns[i].text += "   ·   %s  %03d/150" % [_t("best"), best]
+    _publish_web_accessibility(snap)
 
 
 
