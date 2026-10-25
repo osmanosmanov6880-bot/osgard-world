@@ -47,7 +47,7 @@ def verify_manifest(expected, observed):
     return files
 
 
-def verify_bytes(expected_sha, blocks):
+def verify_bytes(expected_sha, blocks, *, with_digest=False):
     digest = hashlib.sha256()
     count = 0
     for block in blocks:
@@ -57,9 +57,10 @@ def verify_bytes(expected_sha, blocks):
         digest.update(block)
     if count == 0:
         raise ValueError("Empty game asset")
-    if digest.hexdigest() != expected_sha:
+    actual_sha = digest.hexdigest()
+    if actual_sha != expected_sha:
         raise ValueError("Live SHA-256 mismatch")
-    return count
+    return (count, actual_sha) if with_digest else count
 
 
 def stream_remote(url):
@@ -91,8 +92,9 @@ def verify_live(base, expected, nonce):
     findings = []
     for name, digest in sorted(files.items()):
         url = base.rstrip("/") + "/" + urllib.parse.quote(name) + "?" + urllib.parse.urlencode({"omega_verify": nonce})
-        length = verify_bytes(digest, stream_remote(url))
-        findings.append({"file": name, "bytes": length, "sha256": "matched"})
+        length, actual_sha = verify_bytes(digest, stream_remote(url), with_digest=True)
+        findings.append({"file": name, "bytes": length, "sha256": "matched",
+                         "computed_sha256": actual_sha})
     return {
         "status": "PASS",
         "base": base,
@@ -114,6 +116,8 @@ def self_test():
     assert verify_manifest(manifest, dict(manifest)) == manifest["files"]
     for name, data in files.items():
         assert verify_bytes(manifest["files"][name], [data[:2], data[2:]]) == len(data)
+        size, actual_sha = verify_bytes(manifest["files"][name], [data[:2], data[2:]], with_digest=True)
+        assert size == len(data) and actual_sha == manifest["files"][name]
     def must_reject(fn):
         try:
             fn()

@@ -4,6 +4,7 @@ on:
     branches: [master]
     paths:
       - 'scripts/omega-r50-release-gate.py'
+      - 'scripts/omega-live-integrity.py'
       - '.github/workflows/omega-r50-release-evidence-qa.yml'
   workflow_dispatch:
   workflow_run:
@@ -26,6 +27,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          python3 scripts/omega-live-integrity.py --self-test
           python3 scripts/omega-r50-release-gate.py --self-test
           python3 scripts/omega-r50-release-gate.py > /tmp/r50-hold.json
           python3 - <<'PY'

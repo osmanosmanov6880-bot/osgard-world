@@ -63,8 +63,14 @@ def validate_live(report, manifest):
     require(report.get("verified_files") == 7, "public SHA-256 must match 7/7")
     items = report.get("results", [])
     require(isinstance(items, list) and len(items) == 7, "need seven independent downloaded files")
+    require(all(isinstance(x, dict) for x in items), "malformed public byte evidence")
     require({x.get("file") for x in items} == names, "published file names differ")
     require(all(x.get("sha256") == "matched" and int(x.get("bytes", 0)) > 0 for x in items), "public byte mismatch")
+    # The independent downloader emits the actual SHA-256 it calculated
+    # from the HTTP response stream, not just an uninspectable 'matched' label.
+    # Cross-check all seven concrete digests against the source manifest.
+    require(all(x.get("computed_sha256") == manifest["files"][x["file"]] for x in items),
+            "public measured SHA-256 evidence does not match source release.json")
     require(int(report.get("bytes", 0)) == sum(int(x["bytes"]) for x in items), "public byte aggregate inconsistent")
     return True
 
@@ -174,7 +180,8 @@ def self_test():
         }
         assert build_verdict(manifest, base, strict_bytes=False)["status"] == "HOLD"
         live = {"status": "PASS", "source_commit": "a"*40, "verified_files": 7,
-                "results": [{"file": name, "sha256": "matched", "bytes": len(body)}
+                "results": [{"file": name, "sha256": "matched", "bytes": len(body),
+                             "computed_sha256": manifest["files"][name]}
                             for name, body in files.items()],
                 "bytes": sum(len(x) for x in files.values())}
         def test_entry(name):
@@ -191,6 +198,12 @@ def self_test():
             raise AssertionError("R50 gate accepted invalid release evidence")
         mismatch = dict(live, source_commit="b"*40)
         reject(lambda: validate_live(mismatch, manifest))
+        forged_digest = json.loads(json.dumps(live))
+        forged_digest["results"][0]["computed_sha256"] = "0"*64
+        reject(lambda: validate_live(forged_digest, manifest))
+        no_digest = json.loads(json.dumps(live))
+        no_digest["results"][0].pop("computed_sha256")
+        reject(lambda: validate_live(no_digest, manifest))
         broken = json.loads(json.dumps(manifest))
         broken["files"]["index.js"] = "0"*64
         reject(lambda: validate_manifest(broken, base, False))
