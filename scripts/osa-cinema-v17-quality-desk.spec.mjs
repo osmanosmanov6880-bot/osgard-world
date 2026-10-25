@@ -15,8 +15,6 @@ test('Private V17 quality desk cross-references ten masters and seeks measured v
   await expect(page.locator('.marker')).toHaveCount(5)
   const black=page.locator('.marker').filter({hasText:'Чёрный интервал'})
   await expect(black).toHaveCount(1)
-  await black.click()
-  await expect(page.locator('#note')).toHaveValue(/00:23\.83/)
   await page.locator('#local').setInputFiles({
     name:'OSA_CINEMA_V15_DIRECTORS_WORKPRINT_RU_1080P.mp4',
     mimeType:'video/mp4',
@@ -25,6 +23,8 @@ test('Private V17 quality desk cross-references ten masters and seeks measured v
   await expect(page.locator('#status')).toContainText('Размер или SHA-256')
   await page.locator('#verify').click()
   await expect(page.locator('#status')).toContainText('Размер или SHA-256')
+  await black.click()
+  await expect(page.locator('#note')).toHaveValue(/00:23\.83/)
   await page.locator('#add-note').click()
   await expect(page.locator('.note')).toHaveCount(1)
   const downloadPromise=page.waitForEvent('download')
