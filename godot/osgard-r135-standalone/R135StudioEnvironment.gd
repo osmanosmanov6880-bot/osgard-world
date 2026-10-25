@@ -107,10 +107,12 @@ func configure() -> void:
     var wall_brand := Label3D.new()
     wall_brand.name = "LuxuryRearWallOSGARDIdentity"
     wall_brand.text = "O S G A R D  /  SERVICE LAB"
-    wall_brand.font_size = 56
+    wall_brand.font_size = 46
     wall_brand.pixel_size = 0.008
     wall_brand.modulate = Color(0.83, 0.88, 0.91, 0.88)
-    wall_brand.position = Vector3(4.9, 9.45, -2.59)
+    # Original Chromium frame had the overhead lettering clipped at y=0;
+    # lower the brand to a real wall-sign sightline, behind the machine.
+    wall_brand.position = Vector3(6.9, 6.80, -2.59)
     wall_brand.no_depth_test = false
     wall_brand.billboard = BaseMaterial3D.BILLBOARD_DISABLED
     add_child(wall_brand)
