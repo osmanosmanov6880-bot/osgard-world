@@ -114,29 +114,12 @@ def validate_browser(raw):
 
 
 def validate_device_report(path, source):
-    data = read_json(path)
-    require(data.get("schema") == "empire-omega-r50-physical-v1", "unknown device schema")
-    require(data.get("source_commit") == source, "device tested different game source SHA")
-    kind = data.get("os_family")
-    require(kind in ("android", "ios"), "physical device must identify Android or iOS")
-    require(data.get("physical_device") is True, "emulator/browser runner is not a phone")
-    for key in ("model", "os_version", "browser", "operator", "capture_utc"):
-        require(isinstance(data.get(key), str) and len(data[key].strip()) >= 3, f"missing device metadata {key}")
-    for key in ("warmup_s", "capture_s", "p95_frame_ms", "p99_frame_ms", "frame_count"):
-        value = data.get(key)
-        require(isinstance(value, (int, float)) and not isinstance(value, bool), f"missing {key}")
-        require(float(value) > 0 and float(value) < 100000, f"invalid {key}")
-    require(float(data["warmup_s"]) >= 2.0 and float(data["capture_s"]) >= 20.0, "insufficient real warmup/capture")
-    require(int(data["frame_count"]) >= 100, "insufficient physical frames")
-    require(float(data["p99_frame_ms"]) >= float(data["p95_frame_ms"]), "p99 better than p95")
-    raw_capture = data.get("recording_file", "")
-    require(isinstance(raw_capture, str) and bool(SAFE_NAME.fullmatch(raw_capture)), "unsafe or missing device recording")
-    video = Path(path).parent / raw_capture
-    require(video.is_file() and video.stat().st_size > 1024, "real device recording missing")
-    digest = hashlib.sha256(video.read_bytes()).hexdigest()
-    require(digest == data.get("recording_sha256"), "device recording SHA-256 mismatch")
-    return kind
-
+    # R80: user-entered percentiles alone are not hardware evidence.
+    # Require the original SHA-pinned in-game Godot R36 benchmark JSON plus
+    # a separately recorded video, and cross-validate every release metric.
+    # This still NEVER independently witnesses the physical device.
+    from omega_r80_hardware_evidence import validate_physical_run
+    return validate_physical_run(path, source)
 
 def build_verdict(manifest, asset_dir, live=None, browser=None, devices=None, strict_bytes=True):
     source = validate_manifest(manifest, asset_dir, strict_bytes)
