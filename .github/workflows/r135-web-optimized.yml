@@ -2,7 +2,7 @@ name: OSGARD R135 optimized web candidate
 
 on:
   push:
-    branches: [feat/r135-mission-control-20261024, feat/r135-wasm-streaming-20261024, feat/r135-diagnostics-w4-20261024, feat/r135-w5-visual-diagnostics-20261024, feat/r135-w6-portrait-target-framing-20261024, feat/r135-w7-studio-lighting-batched-stage-20261024, feat/r135-w8-responsive-hud-matrix-20261024, feat/r135-w9-guided-diagnostics-progress-20261024, feat/r135-w10-release-evidence-qa-20261024, feat/r135-w7-w10-integrated-20261024, feat/r135-w11-legible-studio-lighting-20261024, feat/r135-w12-three-fault-webgl-and-device-evidence-20261025, feat/r135-w13-safety-first-service-mission-20261025, feat/r135-w14-per-case-progress-and-save-migration-20261025, feat/r135-w12-w14-verified-integration-20261025, master]
+    branches: [feat/r135-mission-control-20261024, feat/r135-wasm-streaming-20261024, feat/r135-diagnostics-w4-20261024, feat/r135-w5-visual-diagnostics-20261024, feat/r135-w6-portrait-target-framing-20261024, feat/r135-w7-studio-lighting-batched-stage-20261024, feat/r135-w8-responsive-hud-matrix-20261024, feat/r135-w9-guided-diagnostics-progress-20261024, feat/r135-w10-release-evidence-qa-20261024, feat/r135-w7-w10-integrated-20261024, feat/r135-w11-legible-studio-lighting-20261024, feat/r135-w12-three-fault-webgl-and-device-evidence-20261025, feat/r135-w13-safety-first-service-mission-20261025, feat/r135-w14-per-case-progress-and-save-migration-20261025, feat/r135-w12-w14-verified-integration-20261025, feat/r135-w15-w17-premium-localization-20261025, feat/r135-w18-mobile-readable-studio-20261025, master]
     paths:
       - ".github/workflows/r135-web-optimized.yml"
       - "godot/osgard-r135-standalone/**"
@@ -10,6 +10,8 @@ on:
       - "scripts/r135-device-evidence.mjs"
       - "scripts/r135-frame-metrics.mjs"
       - "scripts/test-r135-frame-metrics.mjs"
+      - "scripts/r135-hardware-matrix.mjs"
+      - "scripts/test-r135-hardware-matrix.mjs"
       - "scripts/r135-w10-release-readiness.py"
       - "scripts/r135-w11-readability-qa.py"
   workflow_dispatch:
@@ -24,6 +26,8 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      R135_CANDIDATE_VERSION: ${{ (github.ref_name == 'feat/r135-w15-w17-premium-localization-20261025' || github.ref_name == 'feat/r135-w18-mobile-readable-studio-20261025' || github.ref_name == 'master') && 'r135-premium-learning-w18-candidate-20261025' || 'r135-case-progress-w14-20261025' }}
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
@@ -35,6 +39,7 @@ jobs:
           node --check scripts/r135-web-smoke.mjs
           node --check scripts/r135-device-evidence.mjs
           node scripts/test-r135-frame-metrics.mjs
+          node scripts/test-r135-hardware-matrix.mjs
           python3 - <<'PY'
           from pathlib import Path
           smoke=Path("scripts/r135-web-smoke.mjs").read_text()
@@ -202,7 +207,7 @@ jobs:
             --desktop "$RUNNER_TEMP/r135-screens/desktop-1366.png" \
             --output "$RUNNER_TEMP/r135-w11-readability-evidence.json"
 
-      - name: Package W14 per-fault progress candidate with full archive SHA-256
+      - name: Package exact branch-selected R135 W14 or W18 candidate with full archive SHA-256
         shell: bash
         run: |
           set -euo pipefail
@@ -213,7 +218,12 @@ jobs:
           output=Path(os.environ['RUNNER_TEMP'])/'r135-optimized-release'
           output.mkdir(exist_ok=True)
           files=sorted(p for p in root.iterdir() if p.is_file())
-          manifest={'version':'r135-case-progress-w14-20261025','engine':'Godot 4.4.1',
+          version=os.environ['R135_CANDIDATE_VERSION']
+          expected=('r135-premium-learning-w18-candidate-20261025'
+                    if os.environ.get('GITHUB_REF_NAME') in ('feat/r135-w15-w17-premium-localization-20261025', 'feat/r135-w18-mobile-readable-studio-20261025', 'master')
+                    else 'r135-case-progress-w14-20261025')
+          assert version == expected, 'wrong candidate version for source branch'
+          manifest={'version':version,'engine':'Godot 4.4.1',
                     'source_commit':os.environ['GITHUB_SHA'],
                     'game':'OSGARD R135 Service Spine','native_tests':'passed',
                     'webgl_browser_software_smoke':'passed',
@@ -242,7 +252,7 @@ jobs:
             --manifest "$RUNNER_TEMP/r135-optimized-release/R135_OPTIMIZED_MANIFEST.json" \
             --portrait "$RUNNER_TEMP/r135-screens/w6-portrait-optical-active.png" \
             --portrait-evidence "$RUNNER_TEMP/r135-screens/r135-portrait-capture-proof.json" \
-            --expected-version r135-case-progress-w14-20261025 \
+            --expected-version "$R135_CANDIDATE_VERSION" \
             --expected-source "$GITHUB_SHA" \
             --output "$RUNNER_TEMP/r135-w10-release-evidence.json"
 
@@ -250,7 +260,7 @@ jobs:
         shell: bash
         env:
           OSGARD_EXPECTED_R135_SOURCE: ${{ github.sha }}
-          OSGARD_EXPECTED_R135_VERSION: r135-case-progress-w14-20261025
+          OSGARD_EXPECTED_R135_VERSION: ${{ env.R135_CANDIDATE_VERSION }}
         run: |
           set -euo pipefail
           export OSGARD_EXPECTED_R135_MANIFEST_SHA256="$(sha256sum "$RUNNER_TEMP/r135-optimized/release.json" | awk '{print $1}')"
