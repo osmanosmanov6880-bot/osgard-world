@@ -750,6 +750,20 @@ func _process(delta: float) -> void:
             var motion_center: Vector2 = motion_control.get_global_rect().get_center()
             state["player_settings_quality_center"] = {"x": quality_center.x, "y": quality_center.y}
             state["player_settings_motion_center"] = {"x": motion_center.x, "y": motion_center.y}
+            # W24 read-only spatial evidence of three REAL Godot sound settings.
+            var audio_button: Button = premium_intro.get("settings_audio_button") as Button
+            var volume_button: Button = premium_intro.get("settings_volume_button") as Button
+            var caption_button: Button = premium_intro.get("settings_caption_button") as Button
+            var audio_center: Vector2 = audio_button.get_global_rect().get_center()
+            var volume_center: Vector2 = volume_button.get_global_rect().get_center()
+            var caption_center: Vector2 = caption_button.get_global_rect().get_center()
+            state["player_settings_audio_center"] = {"x": audio_center.x, "y": audio_center.y}
+            state["player_settings_volume_center"] = {"x": volume_center.x, "y": volume_center.y}
+            state["player_settings_caption_center"] = {"x": caption_center.x, "y": caption_center.y}
+            state["player_settings_accessibility_css_height"] = minf(
+                audio_button.get_global_rect().size.y,
+                volume_button.get_global_rect().size.y,
+                caption_button.get_global_rect().size.y) / maxf(touch_pixel_ratio, 1.0)
             var intro_panel: PanelContainer = premium_intro.get("card") as PanelContainer
             var intro_rect: Rect2 = intro_panel.get_global_rect()
             state["tutorial_rect"] = {"x": intro_rect.position.x, "y": intro_rect.position.y,
