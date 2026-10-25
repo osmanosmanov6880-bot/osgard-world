@@ -17,6 +17,8 @@ on:
       - "tests/test_remix_*.py"
       - "tests/test_frontend_activation.py"
       - "scripts/check-frontend-release-freshness.sh"
+      - "scripts/cleanup-frontend-transport.sh"
+      - "scripts/test-frontend-transport-cleanup.mjs"
       - "scripts/test-frontend-release-freshness.mjs"
       - "docker-compose.production.yml"
       - "public/development/index.html"
@@ -443,7 +445,7 @@ jobs:
       - name: Verify Imperium of Time visuals and real diagnostics
         run: npm run qa:time-ui && node scripts/omega-city-3d-smoke.mjs
       - name: Check deployment shell syntax
-        run: bash -n scripts/activate-frontend-remote.sh && bash -n scripts/check-frontend-release-freshness.sh && sh -n scripts/preserve-omega-native.sh && sh -n scripts/preserve-nebula-r40-qa.sh && node --test scripts/omega-frontend-preservation.test.mjs scripts/nebula-r40-qa-preservation.test.mjs scripts/test-frontend-release-freshness.mjs
+        run: bash -n scripts/activate-frontend-remote.sh && bash -n scripts/check-frontend-release-freshness.sh && bash -n scripts/cleanup-frontend-transport.sh && sh -n scripts/preserve-omega-native.sh && sh -n scripts/preserve-nebula-r40-qa.sh && node --test scripts/omega-frontend-preservation.test.mjs scripts/nebula-r40-qa-preservation.test.mjs scripts/test-frontend-release-freshness.mjs scripts/test-frontend-transport-cleanup.mjs
       - name: Package HTML assets and matching Nginx config
         run: |
           set -euo pipefail
@@ -587,6 +589,7 @@ jobs:
           tar -czf osgard-world-release.tgz -C "$TEMP_DIR/unpacked" .
           rm -rf "$TEMP_DIR"
       - name: Stage archive and verify checksum
+        id: frontend_stage
         env:
           HOST: ${{ secrets.OSGARD_DEPLOY_HOST }}
           USER: ${{ secrets.OSGARD_DEPLOY_USER }}
@@ -616,14 +619,22 @@ jobs:
           scp -i ~/.ssh/osgard_deploy local.sha256 "$USER@$HOST:$REMOTE_RELEASE_DIR/"
           ssh -i ~/.ssh/osgard_deploy "$USER@$HOST" "cd '$REMOTE_RELEASE_DIR' && sha256sum -c local.sha256"
       - name: Activate verified archive with config rollback
+        id: frontend_activate
         env:
           HOST: ${{ secrets.OSGARD_DEPLOY_HOST }}
           USER: ${{ secrets.OSGARD_DEPLOY_USER }}
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          # Recheck AFTER upload and immediately BEFORE activating a release.
-          bash scripts/check-frontend-release-freshness.sh
+          # Recheck AFTER upload, BEFORE ANY remote activation. If the
+          # source went stale, release only THIS run's staged /tmp directory.
+          lease_rc=0
+          bash scripts/check-frontend-release-freshness.sh || lease_rc=$?
+          if (( lease_rc != 0 )); then
+            echo "::warning::Abandoning staged upload after freshness gate exit $lease_rc"
+            timeout 30s bash scripts/cleanup-frontend-transport.sh ||               echo "::warning::Could not clean this run's temporary upload; maintenance may be required"
+            exit "$lease_rc"
+          fi
           REMOTE_RELEASE_DIR="/tmp/osgard-gh-release-${GITHUB_RUN_ID}"
           REMOTE_ARCHIVE="/tmp/osgard-gh-release-${GITHUB_RUN_ID}.tgz"
           REMOTE_SCRIPT="/tmp/activate-frontend-remote-${GITHUB_RUN_ID}.sh"
@@ -730,12 +741,35 @@ jobs:
         env:
           OSGARD_BASE_URL: https://osgard.world
         run: node scripts/skillcred-proxy-smoke.mjs
-      - name: Retire only this successful SSH transport archive
-        if: success()
+      - name: Retire temporary transport after a completed activation
+        # The site may fail a subsequent public smoke test even when the
+        # release transport itself is no longer needed. Never leave 1.8GB+
+        # temporary uploads on the VPS merely because later tests failed.
+        if: ${{ always() && steps.frontend_activate.outcome == 'success' }}
         env:
           HOST: ${{ secrets.OSGARD_DEPLOY_HOST }}
           USER: ${{ secrets.OSGARD_DEPLOY_USER }}
         shell: bash
         run: |
           set -euo pipefail
-          ssh -i ~/.ssh/osgard_deploy "$USER@$HOST" "rm -rf -- '/tmp/osgard-gh-release-${GITHUB_RUN_ID}'"
+          timeout 30s bash scripts/cleanup-frontend-transport.sh
+      - name: Attempt cleanup of partial upload when staging failed
+        if: ${{ failure() && steps.frontend_stage.outcome == 'failure' }}
+        continue-on-error: true
+        env:
+          HOST: ${{ secrets.OSGARD_DEPLOY_HOST }}
+          USER: ${{ secrets.OSGARD_DEPLOY_USER }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 30s bash scripts/cleanup-frontend-transport.sh
+      - name: Attempt cleanup when stage succeeded but activation was skipped
+        if: ${{ always() && steps.frontend_stage.outcome == 'success' && steps.frontend_activate.outcome == 'skipped' }}
+        continue-on-error: true
+        env:
+          HOST: ${{ secrets.OSGARD_DEPLOY_HOST }}
+          USER: ${{ secrets.OSGARD_DEPLOY_USER }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 30s bash scripts/cleanup-frontend-transport.sh
