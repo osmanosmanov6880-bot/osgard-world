@@ -93,7 +93,12 @@ func _run() -> void:
 	hud.call("_refresh")
 	check(str(hud.get("mission_chapter_label").text).contains("СОЗДАТЕЛЬ ГОРОДА"),
 		"actual HUD advances into the second chapter after player completion")
-	check(int(game.get("frame_metrics").samples())>=30,"real 3D scene produced at least 30 qualified frame records")
+	# Headless CI advances real scene ticks, but it does NOT attest GPU
+	# frames: never count unfocused headless ticks as measured video FPS.
+	check(Engine.get_process_frames()>=30,"real native gameplay scene advanced at least 30 engine frames")
+	if DisplayServer.get_name() != "headless":
+		check(int(game.get("frame_metrics").samples())>=30,
+			"visible native 3D window produces qualified frame records")
 	var output: Dictionary = {
 		"schema":"omega-r52-native-joined-v1",
 		"engine":"Godot 4.4.1",
@@ -110,6 +115,8 @@ func _run() -> void:
 		"physical_iphone_attested":false,
 		"physical_android_attested":false,
 		"published_source_sha_checked":false,
+		"native_headless_frame_capture":DisplayServer.get_name()=="headless",
+		"gpu_frame_pacing_attested":DisplayServer.get_name()!="headless",
 		"release_authorized":false
 	}
 	var file_path: String = ProjectSettings.globalize_path("res://tests/r52-joined-gameplay-evidence.json")
