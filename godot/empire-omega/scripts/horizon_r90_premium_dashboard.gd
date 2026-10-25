@@ -166,9 +166,13 @@ func build(state: Dictionary, forecast: Dictionary, mission: String,
 	_label(atlas,local("ОТКРЫТО","DISCOVERED","已发现",lang)+"  %d / 12" % discovered.size(),14)
 	var scores: Dictionary = forecast.get("district_scores",{})
 	for id in GameState.DISTRICTS:
-		var region: String = local(str(GameState.DISCOVERY.DISTRICT_NAMES.get(id,id)),
-			str(GameState.DISCOVERY.DISTRICT_NAMES.get(id,id)),
-			str(GameState.DISCOVERY.DISTRICT_NAMES.get(id,id)),lang) if GameState.DISCOVERY.DISTRICT_NAMES.has(id) else id
+		var regions: Dictionary = {
+			"forum":["Сенатский форум","Senate Forum","元老院广场"],
+			"housing":["Жилой квартал","Housing District","住宅区"],
+			"lower":["Нижний город","Lower City","下城区"],
+			"aqueduct":["Акведуки","Aqueducts","高架水道"]}
+		var variants: Array = regions.get(id,[id,id,id])
+		var region: String = local(str(variants[0]),str(variants[1]),str(variants[2]),lang)
 		var section_button := Button.new()
 		section_button.text = "%s · %d / 100%s" % [region,int(scores.get(id,0)),"  ◆" if id==selected else ""]
 		section_button.alignment = HORIZONTAL_ALIGNMENT_LEFT
