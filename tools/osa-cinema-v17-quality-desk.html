@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:; media-src blob:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"/>
+<meta name="color-scheme" content="dark"/>
+<title>OSA CINEMA / Private Quality Desk V17</title>
+<style>
+:root{--bg:#090908;--panel:#181611;--edge:#604e38;--gold:#dfbf8e;--fg:#fff1d9;--sub:#c6b9a5;--red:#efad96;--green:#c9dab5;font:14px/1.6 Inter,Arial,sans-serif;color:var(--fg);color-scheme:dark}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 70% -20%,#43311e44,transparent 65%),var(--bg)}
+.wrap{width:min(1480px,100%);margin:auto;padding:clamp(15px,3vw,45px)}
+header{display:flex;gap:20px;align-items:center;justify-content:space-between;border-bottom:1px solid var(--edge);padding-bottom:23px}
+.brand{font-size:12px;letter-spacing:.24em;font-weight:700}.brand b{font-size:19px;letter-spacing:.12em;color:var(--gold)}
+.flag{padding:9px 13px;border:1px solid #d494765e;color:var(--red);font-size:10px;letter-spacing:.1em}
+h1,h2,h3{font-family:Georgia,serif;font-weight:400;line-height:1.12}
+h1{font-size:clamp(37px,4.7vw,68px);margin:9px 0 16px;letter-spacing:-.035em}
+h2{font-size:clamp(25px,2.6vw,35px);margin:0 0 16px}
+h3{font-size:23px;margin:23px 0 13px}
+p{margin:9px 0}button,input,select,textarea{font:inherit}
+button,select{min-height:46px}button{padding:11px 14px;background:#282015;border:1px solid #b3956788;color:var(--fg);cursor:pointer}
+button:hover,button:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+button.primary{background:var(--gold);border-color:var(--gold);color:#1d160c;font-weight:700}
+button:disabled{opacity:.45;cursor:not-allowed}
+.eyebrow{margin:33px 0 8px;color:var(--gold);letter-spacing:.22em;font-size:10px}
+.sub{color:var(--sub);max-width:860px;line-height:1.8;font-size:13px}
+.layout{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(280px,1fr);gap:16px;margin-top:32px;align-items:start}
+.panel{border:1px solid var(--edge);padding:clamp(16px,2.4vw,28px);background:#181511e8;min-width:0}
+label{display:block;color:var(--gold);font-size:11px;font-weight:600;margin:11px 0 7px;letter-spacing:.07em}
+select,textarea{width:100%;border:1px solid #8c6b47;background:#0b0a09;color:var(--fg);padding:11px 12px;min-width:0}
+textarea{min-height:91px;resize:vertical}
+.controls{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.controls button{flex:1 1 145px}
+.screen{position:relative;aspect-ratio:16/9;background:#0c0b09;border:1px solid #5e462f;display:grid;place-items:center;overflow:hidden}
+.screen video,.screen audio{width:100%;max-height:100%;background:#050505}
+.screen audio{padding:20px}
+.screen:not(.loaded) video,.screen:not(.loaded) audio,.screen.loaded .placeholder{display:none}
+.placeholder{font:400 clamp(22px,3vw,44px)/1.15 Georgia,serif;text-align:center;color:#bba581;padding:30px}
+.signal{margin:17px 0 0;background:#251c15;border-left:3px solid #b99361;padding:12px 14px;color:var(--gold);overflow-wrap:anywhere;font-size:12px}
+.signal.error{border-color:var(--red);color:var(--red)}
+.metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;background:var(--edge);margin-top:20px;border:1px solid var(--edge)}
+.metric{padding:13px 12px;background:#191611;min-width:0}
+.metric span{display:block;color:var(--sub);font-size:10px;margin-bottom:5px}
+.metric b{font-size:15px;overflow-wrap:anywhere}
+.marker-list{display:grid;gap:8px;max-height:420px;overflow-y:auto;overscroll-behavior:contain;padding-right:3px}
+.marker{display:flex;align-items:flex-start;justify-content:space-between;gap:11px;min-height:52px;border:1px solid #755635;background:#261e14;color:var(--fg);width:100%;text-align:left}
+.marker b{font:14px/1.4 ui-monospace,Consolas,monospace;color:var(--gold);white-space:nowrap}
+.marker span{flex:1;color:#ddcab0;font-size:12px;line-height:1.5}
+.note-list{display:grid;gap:7px;margin-top:13px}
+.note{border-left:2px solid var(--gold);background:#272014;padding:10px 12px;color:#e8d5b9;overflow-wrap:anywhere;font-size:12px}
+small{font-size:11px;color:var(--sub)}
+.notice{color:#edba9b;font-size:12px;line-height:1.7;margin:16px 0 0}
+footer{border-top:1px solid var(--edge);margin-top:30px;padding-top:20px;color:#ac9578;font-size:11px}
+.accessibility{position:absolute;left:-10000px;top:0}
+@media(max-width:960px){.layout{grid-template-columns:1fr}}
+@media(max-width:520px){header{flex-wrap:wrap}.metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.wrap{padding:16px}.controls button{min-height:48px;flex:1 1 125px}.marker{flex-wrap:wrap}.flag{font-size:9px}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><div class="brand"><b>OSA</b> CINEMA <span>/ QUALITY DESK V17</span></div><span class="flag" id="release-badge">PRIVATE / NOT CLEARED TO RELEASE</span></header>
+<main>
+<p class="eyebrow">FILM MASTERING / OBJECTIVE QC</p>
+<h1 id="title">Визуальная и звуковая приёмка</h1>
+<p id="intro" class="sub">Выбирайте материал, изучайте реальные замеры громкости и таймкоды переходов, затем открывайте исходный MP4 или MP3 с компьютера. Всё работает локально, без сетевой отправки и без автоматического разрешения на выпуск.</p>
+<div class="layout">
+<section class="panel" aria-labelledby="left-title">
+<h2 id="left-title">Контроль материала</h2>
+<label for="asset">Материал для приёмки / 4 видео + 6 озвучек</label>
+<select id="asset"></select>
+<div class="screen" id="screen">
+<div class="placeholder" id="placeholder">OSA ORIGINALS<br/>Медиафайл остаётся на вашем устройстве</div>
+<video id="video" controls playsinline preload="metadata" aria-label="Private workprint video"></video>
+<audio id="audio" controls preload="metadata" aria-label="Private narration audio"></audio>
+</div>
+<input id="local" class="accessibility" type="file" accept=".mp4,.mp3,video/mp4,audio/mpeg"/>
+<div class="controls">
+<button id="open" type="button" class="primary">Открыть исходник</button>
+<button id="verify" type="button" disabled>Проверить SHA-256</button>
+<button id="switchlang" type="button" aria-label="Switch interface language">English</button>
+</div>
+<p class="signal" role="status" id="status">Выберите локальный файл, чтобы начать техническую проверку.</p>
+<div class="metrics" id="metrics" aria-label="Measured source metrics"></div>
+<h3 id="notes-title">Журнал замечаний</h3>
+<label for="note" id="note-label">Замечание редактору / звукорежиссёру</label>
+<textarea id="note" placeholder="Что требует прослушивания, замены или проверки..."></textarea>
+<div class="controls"><button type="button" id="add-note">Добавить заметку</button><button type="button" class="primary" id="export">Скачать протокол JSON</button></div>
+<div class="note-list" id="notes" aria-live="polite"></div>
+</section>
+<aside class="panel" aria-labelledby="right-title">
+<h2 id="right-title">Таймкоды и сигналы QC</h2>
+<p class="sub" id="marker-help">Нажмите на таймкод, чтобы перейти к кадру или паузе в локально открытом MP4/MP3. Сигнал может быть осознанным монтажным приёмом, а не ошибкой.</p>
+<div class="marker-list" id="markers" role="list" aria-label="QC timecode markers"></div>
+<p class="notice" id="disclosure">Уровни LUFS и dBTP измерены FFmpeg. Флаги требуют редакторского решения. Права на музыку, озвучку и изображения, язык речи, финальный монтаж и субтитры независимо не подтверждены.</p>
+<p class="sub" id="source">Встроенный отчёт привязан к SHA-256 десяти исходных файлов, полученных 25.10.2026. Измерения не являются лицензией или доказательством готовности фильма.</p>
+</aside>
+</div>
+</main>
+<footer>OSA CINEMA / PRIVATE OFFLINE REVIEW · NO UPLOAD · NO AUTOMATIC PUBLICATION</footer>
+</div>
+<script>
+(()=>{'use strict';
+const REPORT = {"schemaVersion":1,"createdAt":"2026-10-25T10:11:05.275654+00:00","scope":"Local technical quality checks on real OSA workprint bytes only","limitations":["No speech-to-text, spoken-language identification, rights clearance or factual review","Black frames and static holds might be deliberate transitions","No media has been publicly released by this audit","Audio platform LUFS/peak targets must be chosen by delivery partner"],"summary":{"videos":4,"narrations":6,"audioScanPass":10,"videoScanPass":4,"publicationApproved":0},"assets":[{"file":"OSA Cinema — Act I — English narrator final.mp3","category":"narration","bytes":1103038,"audio":{"scanExit":0,"integratedLufs":-16.8,"loudnessRangeLu":2.3,"truePeakDbtp":-0.6,"silences":[],"manualReviewFlags":["true_peak_above_minus_1_dbtp_review_platform_target"]},"video":null,"publicationApproved":false,"originalSha256":"b7b53ab75fdfec4390eda8b6dee39e0f9b095da0c8e4c73e087fe057f8b6c40c","expectedBytes":1103038,"integrityEvidence":"V16 original MP4/MP3 audit, separate from objective FFmpeg scan","id":"osa-voice-en-act-1","locale":"en","edition":"act-1"},{"file":"OSA Cinema — Act I — Russian narrator final(1).mp3","category":"narration","bytes":1179942,"audio":{"scanExit":0,"integratedLufs":-17.1,"loudnessRangeLu":1.9,"truePeakDbtp":-0.9,"silences":[],"manualReviewFlags":["true_peak_above_minus_1_dbtp_review_platform_target"]},"video":null,"publicationApproved":false,"originalSha256":"cf724b3f58c78008cdc5e46e543eea1923a625ce32e52bfcd69e76be2ac83ee3","expectedBytes":1179942,"integrityEvidence":"V16 original MP4/MP3 audit, separate from objective FFmpeg scan","id":"osa-voice-ru-act-1","locale":"ru","edition":"act-1"},{"file":"OSA Cinema — Act II — English narrator final.mp3","category":"narration","bytes":1133967,"audio":{"scanExit":0,"integratedLufs":-16.9,"loudnessRangeLu":2,"truePeakDbtp":-1.1,"silences":[{"start":22.762109,"duration":1.006871}],"manualReviewFlags":["audible_silence_intervals_review_intent"]},"video":null,"publicationApproved":false,"originalSha256":"82c8bc41db105251cf2333164ade3996ae688375903afcd524f4282aa6c6504a","expectedBytes":1133967,"integrityEvidence":"V16 original MP4/MP3 audit, separate from objective FFmpeg scan","id":"osa-voice-en-act-2","locale":"en","edition":"act-2"},{"file":"OSA Cinema — Act II — Russian narrator final.mp3","category":"narration","bytes":1207946,"audio":{"scanExit":0,"integratedLufs":-16.9,"loudnessRangeLu":2.2,"truePeakDbtp":-0.7,"silences":[{"start":21.836417,"duration":1.210023}],"manualReviewFlags":["true_peak_above_minus_1_dbtp_review_platform_target","audible_silence_intervals_review_intent"]},"video":null,"publicationApproved":false,"originalSha256":"19375baccd0ce01963d9e07d656067788def3343657040073a32c0b649cf82b9","expectedBytes":1207946,"integrityEvidence":"V16 original MP4/MP3 audit, separate from objective FFmpeg scan","id":"osa-voice-ru-act-2","locale":"ru","edition":"act-2"},{"file":"OSA Cinema — Act III — English narrator final.mp3","category":"narration","bytes":1112233,"audio":{"scanExit":0,"integratedLufs":-16.5,"loudnessRangeLu":2,"truePeakDbtp":-0.7,"silences":[{"start":50.069637,"duration":1.015351}],"manualReviewFlags":["true_peak_above_minus_1_dbtp_review_platform_target","audible_silence_intervals_review_intent"]},"video":null,"publicationApproved":false,"originalSha256":"6c7d7fe61c949c8bf636da992674ce4df1ae4b9e1d4ea810a679ac76c5b12b8d","expectedBytes":1112233,"integrityEvidence":"V16 original MP4/MP3 audit, separate from objective FFmpeg scan","id":"osa-voice-en-act-3","locale":"en","edition":"act-3"},{"file":"OSA Cinema — Act III — Russian narrator final(1).mp3","category":"narration","bytes":1181196,"audio":{"scanExit":0,"integratedLufs":-17.4,"loudnessRangeLu":2.5,"truePeakDbtp":-1,"silences":[{"start":32.8678,"duration":1.049002}],"manualReviewFlags":["audible_silence_intervals_review_intent"]},"video":null,"publicationApproved":false,"originalSha256":"4ddb22df482b77be4355fc2cae8da83d2d26262d98511ae777da6b647b63f95e","expectedBytes":1181196,"integrityEvidence":"V16 original MP4/MP3 audit, separate from objective FFmpeg scan","id":"osa-voice-ru-act-3","locale":"ru","edition":"act-3"},{"file":"OSA_CINEMA_V15_45SEC_PREVIEW_EN_720P.mp4","category":"video","bytes":4332303,"audio":{"scanExit":0,"integratedLufs":-13.6,"loudnessRangeLu":2.4,"truePeakDbtp":-0.5,"silences":[],"manualReviewFlags":["true_peak_above_minus_1_dbtp_review_platform_target"]},"video":{"scanExit":0,"blackIntervals":[{"start":23.833333,"duration":0.5}],"freezeIntervals":[{"start":0,"duration":3},{"start":3,"duration":2}],"manualReviewFlags":["black_frames_around_transitions_review_intent","static_holds_review_intent"]},"publicationApproved":false,"originalSha256":"0cea3fe492b0cc13bd2e4c9152217ae2d85d8406b291b8b93484b5d8a9bb530e","expectedBytes":4332303,"integrityEvidence":"V16 original MP4/MP3 audit, separate from objective FFmpeg scan","id":"osa-v15-trailer-en","locale":"en","edition":"trailer-workprint"},{"file":"OSA_CINEMA_V15_45SEC_PREVIEW_RU_720P.mp4","category":"video","bytes":4362309,"audio":{"scanExit":0,"integratedLufs":-13.9,"loudnessRangeLu":2.2,"truePeakDbtp":-0.5,"silences":[],"manualReviewFlags":["true_peak_above_minus_1_dbtp_review_platform_target"]},"video":{"scanExit":0,"blackIntervals":[{"start":23.833333,"duration":0.458333}],"freezeIntervals":[{"start":0,"duration":3},{"start":3,"duration":2}],"manualReviewFlags":["black_frames_around_transitions_review_intent","static_holds_review_intent"]},"publicationApproved":false,"originalSha256":"64076804caab85f53f860818557eca0debf977d197b7e45ba4830538dbfe6c74","expectedBytes":4362309,"integrityEvidence":"V16 original MP4/MP3 audit, separate from objective FFmpeg scan","id":"osa-v15-trailer-ru","locale":"ru","edition":"trailer-workprint"},{"file":"OSA_CINEMA_V15_DIRECTORS_WORKPRINT_EN_1080P.mp4","category":"video","bytes":120340268,"audio":{"scanExit":0,"integratedLufs":-13.7,"loudnessRangeLu":3.3,"truePeakDbtp":-0.5,"silences":[],"manualReviewFlags":["true_peak_above_minus_1_dbtp_review_platform_target"]},"video":{"scanExit":0,"blackIntervals":[{"start":23.833333,"duration":0.458333}],"freezeIntervals":[{"start":0,"duration":3},{"start":3,"duration":2},{"start":79,"duration":2},{"start":157,"duration":2}],"manualReviewFlags":["black_frames_around_transitions_review_intent","static_holds_review_intent"]},"publicationApproved":false,"originalSha256":"2936222a5be4b36ab3177f1577219831ab686e085be9b0744887bbcae05a7e36","expectedBytes":120340268,"integrityEvidence":"V16 original MP4/MP3 audit, separate from objective FFmpeg scan","id":"osa-v15-directors-en","locale":"en","edition":"directors-workprint"},{"file":"OSA_CINEMA_V15_DIRECTORS_WORKPRINT_RU_1080P.mp4","category":"video","bytes":120402387,"audio":{"scanExit":0,"integratedLufs":-13.8,"loudnessRangeLu":2.7,"truePeakDbtp":-0.4,"silences":[],"manualReviewFlags":["true_peak_above_minus_1_dbtp_review_platform_target"]},"video":{"scanExit":0,"blackIntervals":[{"start":23.833333,"duration":0.458333}],"freezeIntervals":[{"start":0,"duration":3},{"start":3,"duration":2},{"start":79,"duration":2},{"start":157,"duration":2}],"manualReviewFlags":["black_frames_around_transitions_review_intent","static_holds_review_intent"]},"publicationApproved":false,"originalSha256":"74a040f9c67155eca946d6c6bed462e7edfb9c4f866605a0c2ecdd9568202b01","expectedBytes":120402387,"integrityEvidence":"V16 original MP4/MP3 audit, separate from objective FFmpeg scan","id":"osa-v15-directors-ru","locale":"ru","edition":"directors-workprint"}],"status":"PRIVATE_OBJECTIVE_QC_NOT_APPROVED_FOR_PUBLIC_RELEASE","releaseAuthorization":false};
+const $=id=>document.getElementById(id);
+const assets=REPORT.assets;
+if(REPORT.releaseAuthorization!==false||assets.length!==10)throw new Error('Missing or unsafe objective QC report');
+let chosen=0, lang='ru',file=null,fileUrl=null,verifiedHash=null,pendingMarkerTime=null;
+const notesById=new Map();
+const texts={
+ru:{title:'Визуальная и звуковая приёмка',intro:'Исходные MP4/MP3 загружаются только с вашего устройства. Измерения из реального FFmpeg-отчёта не заменяют правовую и редакторскую проверку.',open:'Открыть исходник',verify:'Проверить SHA-256',notes:'Журнал замечаний',note:'Замечание редактору / звукорежиссёру',add:'Добавить заметку',export:'Скачать протокол JSON',help:'Нажмите на таймкод, чтобы перейти к позиции в локальном файле. Чёрный экран, статичный кадр или пауза могут быть задуманы автором.',noMarkers:'Зафиксированных интервалов нет. Прослушайте и проверьте материал вручную.',empty:'Выберите локальный файл для воспроизведения.',integrity:'Размер совпал. Проверьте SHA-256 для подтверждения.',mismatch:'Размер или SHA-256 не совпадает с оригиналом. Не выпускайте.',verified:'Оригинал SHA-256 подтверждён; права и язык остаются неутверждёнными.',done:'Частный протокол сохранён. Публикация не разрешена.',peak:'Пиковый уровень требует проверки платформы',black:'Чёрный интервал',freeze:'Статичный кадр',silence:'Тишина',label:'Материал для приёмки / 4 видео + 6 озвучек'},
+en:{title:'Picture and sound quality review',intro:'Open original MP4/MP3 files only from your device. These actual FFmpeg measurements do not replace rights or editorial sign-off.',open:'Open original file',verify:'Verify SHA-256',notes:'Editorial notes',note:'Note for the editor / sound mixer',add:'Add note',export:'Export private JSON report',help:'Click a timecode to seek in the local file. Black frames, static holds and pauses may be intentional.',noMarkers:'No timecoded intervals found. Review the recording manually.',empty:'Choose a local source file to play.',integrity:'File size matches. Verify SHA-256 to confirm identity.',mismatch:'Source size or SHA-256 differs; do not publish.',verified:'Original SHA-256 verified; language and rights are still unapproved.',done:'Private report saved; not a release authorization.',peak:'Review platform true-peak target',black:'Black interval',freeze:'Static hold',silence:'Silence',label:'Asset / 4 videos + 6 narrations'}
+};
+const formatTime=t=>{const sec=Math.max(0,Number(t)||0);const m=Math.floor(sec/60);return String(m).padStart(2,'0')+':'+(sec%60).toFixed(2).padStart(5,'0')};
+const metric=(name,value)=>{const e=document.createElement('div');e.className='metric';const n=document.createElement('span');n.textContent=name;const b=document.createElement('b');b.textContent=String(value??'—');e.append(n,b);return e};
+const releaseMedia=()=>{if(fileUrl)URL.revokeObjectURL(fileUrl);fileUrl=null;file=null;verifiedHash=null;pendingMarkerTime=null;for(const id of ['video','audio']){$(id).pause();$(id).removeAttribute('src');$(id).load()}$('screen').classList.remove('loaded');$('verify').disabled=true};
+const status=(s,bad=false)=>{$('status').textContent=s;$('status').classList.toggle('error',bad)};
+const current=()=>assets[chosen];
+const seenMarkers=asset=>{
+const list=[];
+const vid=asset.video;
+if(vid){for(const x of vid.blackIntervals||[])list.push({time:x.start,type:'black',length:x.duration});for(const x of vid.freezeIntervals||[])list.push({time:x.start,type:'freeze',length:x.duration})}
+for(const x of asset.audio?.silences||[])list.push({time:x.start,type:'silence',length:x.duration});
+return list.sort((a,b)=>a.time-b.time)
+};
+const makeNote=(time,label)=>{const id=current().id;const entry={time:Number(time.toFixed(3)),text:label};if(!notesById.has(id))notesById.set(id,[]);notesById.get(id).push(entry);renderNotes()};
+const renderNotes=()=>{$('notes').replaceChildren();for(const n of notesById.get(current().id)||[]){const el=document.createElement('div');el.className='note';el.textContent=formatTime(n.time)+' — '+n.text;$('notes').append(el)}};
+const renderMarkers=()=>{const copy=texts[lang],list=seenMarkers(current());$('markers').replaceChildren();if(!list.length){const p=document.createElement('p');p.className='sub';p.textContent=copy.noMarkers;$('markers').append(p)}for(const marker of list){const btn=document.createElement('button');btn.type='button';btn.className='marker';btn.dataset.time=String(marker.time);const label=marker.type==='black'?copy.black:marker.type==='freeze'?copy.freeze:copy.silence;const left=document.createElement('b');left.textContent=formatTime(marker.time);const content=document.createElement('span');content.textContent=label+' · '+marker.length.toFixed(2)+' s';btn.append(left,content);btn.addEventListener('click',()=>{pendingMarkerTime=marker.time;const player=current().category==='video'?$('video'):$('audio');if(file && Number.isFinite(marker.time)){try{player.currentTime=Math.min(marker.time,Number.isFinite(player.duration)?player.duration:marker.time)}catch(_e){}}$('note').value=formatTime(marker.time)+' — '+label+' ('+marker.length.toFixed(2)+' s): ';$('note').focus()});$('markers').append(btn)}};
+const render=()=>{const asset=current(),copy=texts[lang];document.documentElement.lang=lang;$('title').textContent=copy.title;$('intro').textContent=copy.intro;$('open').textContent=copy.open;$('verify').textContent=copy.verify;$('notes-title').textContent=copy.notes;$('note-label').textContent=copy.note;$('add-note').textContent=copy.add;$('export').textContent=copy.export;$('marker-help').textContent=copy.help;$('switchlang').textContent=lang==='ru'?'English':'Русский';document.querySelector('label[for=asset]').textContent=copy.label;const m=$('metrics');m.replaceChildren();m.append(metric('EDITION',asset.locale.toUpperCase()+' / '+(asset.category==='video'?'MP4':'MP3')),metric('SHA-256',asset.originalSha256.slice(0,12)+'…'),metric('Integrated',asset.audio?.integratedLufs+' LUFS'),metric('True peak',asset.audio?.truePeakDbtp+' dBTP'),metric('Loudness range',asset.audio?.loudnessRangeLu+' LU'),metric('QC markers',seenMarkers(asset).length));const player=asset.category==='video'?$('video'):$('audio');$('video').style.display=asset.category==='video'&&file?'block':'none';$('audio').style.display=asset.category==='narration'&&file?'block':'none';renderMarkers();renderNotes();status(file?copy.integrity:copy.empty)};
+function selectAsset(index){releaseMedia();chosen=index;render()}
+function download(name,body){const url=URL.createObjectURL(new Blob([body],{type:'application/json;charset=utf-8'}));const a=document.createElement('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),3000)}
+$('asset').addEventListener('change',()=>selectAsset(Math.max(0,assets.findIndex(a=>a.id===$('asset').value))));
+$('open').addEventListener('click',()=>$('local').click());
+$('local').addEventListener('change',e=>{const selected=e.target.files?.[0];if(!selected)return;releaseMedia();const asset=current();if(selected.name!==asset.file){status('Expected: '+asset.file,true);return}file=selected;fileUrl=URL.createObjectURL(selected);const player=asset.category==='video'?$('video'):$('audio');player.src=fileUrl;$('screen').classList.add('loaded');player.style.display='block';$('verify').disabled=false;status(file.size===asset.expectedBytes?texts[lang].integrity:texts[lang].mismatch,file.size!==asset.expectedBytes)});
+$('verify').addEventListener('click',async()=>{if(!file)return;const asset=current();if(!crypto.subtle){status('WebCrypto SHA-256 not available.',true);return}status('SHA-256 …');try{const data=await file.arrayBuffer();const digest=await crypto.subtle.digest('SHA-256',data);verifiedHash=Array.from(new Uint8Array(digest),b=>b.toString(16).padStart(2,'0')).join('');const ok=verifiedHash===asset.originalSha256&&file.size===asset.expectedBytes;status(ok?texts[lang].verified:texts[lang].mismatch,!ok)}catch(error){verifiedHash=null;status('SHA-256 failed: '+String(error.message||error),true)}});
+$('add-note').addEventListener('click',()=>{const val=$('note').value.trim();if(!val)return;const player=current().category==='video'?$('video'):$('audio');makeNote(Number.isFinite(pendingMarkerTime)?pendingMarkerTime:(Number.isFinite(player.currentTime)?player.currentTime:0),val);pendingMarkerTime=null;$('note').value=''});
+$('export').addEventListener('click',()=>{const asset=current();const report={schemaVersion:1,type:'OSA_CINEMA_PRIVATE_QC_REVIEW',createdAt:new Date().toISOString(),sourceId:asset.id,sourceFile:asset.file,expectedSha256:asset.originalSha256,observedSha256:verifiedHash,sourceVerified:Boolean(verifiedHash===asset.originalSha256&&file&&file.size===asset.expectedBytes),measuredLoudnessLufs:asset.audio?.integratedLufs,measuredPeakDbtp:asset.audio?.truePeakDbtp,markers:seenMarkers(asset),notes:notesById.get(asset.id)||[],releaseAuthorized:false,rightsVerified:false,spokenLanguageVerified:false,finalCaptionsApproved:false};download('OSA_PRIVATE_QC_'+asset.id+'.json',JSON.stringify(report,null,2)+'\n');status(texts[lang].done)});
+$('switchlang').addEventListener('click',()=>{lang=lang==='ru'?'en':'ru';render()});
+for(const asset of assets){const o=document.createElement('option');o.value=asset.id;o.textContent=asset.locale.toUpperCase()+' / '+asset.category+' / '+asset.file;$('asset').append(o)}
+$('asset').value=assets[0].id;render();
+window.addEventListener('pagehide',releaseMedia);
+})();
+</script>
+</body>
+</html>

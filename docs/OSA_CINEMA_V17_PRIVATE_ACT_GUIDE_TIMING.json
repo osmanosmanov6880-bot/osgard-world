@@ -1,0 +1,78 @@
+{
+  "schemaVersion": 1,
+  "project": "OSA CINEMA V17",
+  "masterPictureDurationSeconds": 239,
+  "timingBasis": "Draft act starting points 00:05, 01:19 and 02:37 chosen near static picture holds; editor must approve them",
+  "audioGuideAttenuationDb": -2,
+  "audioGuideRole": "separate VO-only track, not merged into workprint audio",
+  "languages": [
+    {
+      "locale": "ru",
+      "output": "OSA_CINEMA_V17_RU_ACT_GUIDE_PRIVATE_239S.m4a",
+      "sha256": "2763cb455cb926fafd3eafa0d11c6882d157a16ca9c086f03a6cbc258b9b4f50",
+      "bytes": 4526138,
+      "durationSeconds": 239,
+      "sourceTracks": [
+        {
+          "file": "OSA Cinema — Act I — Russian narrator final(1).mp3",
+          "startSeconds": 5,
+          "sourceDurationSeconds": 73.717551,
+          "endsAtSeconds": 78.718
+        },
+        {
+          "file": "OSA Cinema — Act II — Russian narrator final.mp3",
+          "startSeconds": 79,
+          "sourceDurationSeconds": 75.467755,
+          "endsAtSeconds": 154.468
+        },
+        {
+          "file": "OSA Cinema — Act III — Russian narrator final(1).mp3",
+          "startSeconds": 157,
+          "sourceDurationSeconds": 73.795918,
+          "endsAtSeconds": 230.796
+        }
+      ],
+      "status": "PRIVATE_EDITORIAL_VOICE_GUIDE_NOT_RELEASED",
+      "rights": "unverified",
+      "spokenLanguage": "not_reviewed",
+      "synchronizedToPicture": "proposal_only",
+      "finalMix": false
+    },
+    {
+      "locale": "en",
+      "output": "OSA_CINEMA_V17_EN_ACT_GUIDE_PRIVATE_239S.m4a",
+      "sha256": "15f68c069476203c1208f7f69a0586b2e4b8443a1ec6750f266f6e1816c6df80",
+      "bytes": 4250914,
+      "durationSeconds": 239,
+      "sourceTracks": [
+        {
+          "file": "OSA Cinema — Act I — English narrator final.mp3",
+          "startSeconds": 5,
+          "sourceDurationSeconds": 68.91102,
+          "endsAtSeconds": 73.911
+        },
+        {
+          "file": "OSA Cinema — Act II — English narrator final.mp3",
+          "startSeconds": 79,
+          "sourceDurationSeconds": 70.844082,
+          "endsAtSeconds": 149.844
+        },
+        {
+          "file": "OSA Cinema — Act III — English narrator final.mp3",
+          "startSeconds": 157,
+          "sourceDurationSeconds": 69.485714,
+          "endsAtSeconds": 226.486
+        }
+      ],
+      "status": "PRIVATE_EDITORIAL_VOICE_GUIDE_NOT_RELEASED",
+      "rights": "unverified",
+      "spokenLanguage": "not_reviewed",
+      "synchronizedToPicture": "proposal_only",
+      "finalMix": false
+    }
+  ],
+  "publicationAuthorized": false,
+  "status": "PRIVATE_EDITORIAL_AUDIO_ALIGNMENT_DRAFT_NOT_FOR_DISTRIBUTION",
+  "masterOriginalsAltered": false,
+  "usage": "Review in sync with a 239s original workprint; do not substitute into public catalogue until rights, spoken language and synchronization are approved."
+}
