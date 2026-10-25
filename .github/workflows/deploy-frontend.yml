@@ -54,6 +54,7 @@ on:
       - "scripts/frontend-archive-preflight.mjs"
       - "scripts/r135-nginx-wasm-smoke.sh"
       - "scripts/r135-release-stage.py"
+      - "scripts/r135-w11-release-pin.json"
       - "scripts/r135-artifact-fallback.py"
       - "scripts/r135-production-smoke.mjs"
       - "scripts/production-route-matrix.mjs"
@@ -266,32 +267,39 @@ jobs:
           /tmp/osgard-godot/Godot_v4.7.2-stable_linux.x86_64 --headless --path godot/null-shift --export-release Web "$GITHUB_WORKSPACE/public/games/null-shift-godot/index.html"
           node scripts/null-shift-godot-smoke.mjs --export-check public/games/null-shift-godot
       - run: npm run build
-      - name: Stage verified native R135 Godot Web export from pinned GitHub Actions artifact
+      - name: Stage exact immutable W11 Godot Web release (no floating Actions artifact)
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          mkdir -p "$RUNNER_TEMP/r135-web-release"
-          if ! gh run download 40109700192 \
+          PIN=scripts/r135-w11-release-pin.json
+          test -s "$PIN"
+          TAG="$(jq -r '.release_tag' "$PIN")"
+          test "$TAG" = "r135-web-legibility-w11-20261025"
+          mkdir -p "$RUNNER_TEMP/r135-web-release/r135-optimized-release"
+          gh release download "$TAG" \
             --repo osmanosmanov6880-bot/osgard-world \
-            --name osgard-r135-optimized-web-qa \
-            --dir "$RUNNER_TEMP/r135-web-release"; then
-            echo "Pinned Actions artifact unavailable; restoring only from SHA-verified live W6" >&2
-            python3 scripts/r135-artifact-fallback.py "$RUNNER_TEMP/r135-web-release/r135-optimized-release"
-          fi
+            --dir "$RUNNER_TEMP/r135-web-release/r135-optimized-release"
+          # No fallback to W6 while pretending to deploy W11.
+          # If permanent release is unavailable, SSH production stays untouched.
           python3 scripts/r135-release-stage.py \
             "$RUNNER_TEMP/r135-web-release/r135-optimized-release/OSGARD_R135_OPTIMIZED_WEB.zip" \
             "$RUNNER_TEMP/r135-web-release/r135-optimized-release/R135_OPTIMIZED_MANIFEST.json" \
-            dist/games/r135-service
+            dist/games/r135-service "$PIN"
           test -s dist/games/r135-service/index.pck
           test -s dist/games/r135-service/index.wasm
           test -s dist/games/r135-service/index.wasm.gz
           test -s dist/games/r135-service/release.json
           test "$(stat -c '%a' dist/games/r135-service)" = 755
           test "$(stat -c '%a' dist/games/r135-service/index.html)" = 644
-      - name: Verify exact R135 Godot gzip WASM and PCK byte ranges through candidate Nginx
-        run: bash scripts/r135-nginx-wasm-smoke.sh dist/games/r135-service
+      - name: Verify exact R135 W11 gzip WASM and PCK byte ranges through candidate Nginx
+        run: |
+          set -euo pipefail
+          export OSGARD_EXPECTED_R135_SOURCE="$(jq -r '.source_commit' scripts/r135-w11-release-pin.json)"
+          export OSGARD_EXPECTED_R135_VERSION="$(jq -r '.version' scripts/r135-w11-release-pin.json)"
+          export OSGARD_EXPECTED_R135_MANIFEST_SHA256="$(jq -r '.manifest_sha256' scripts/r135-w11-release-pin.json)"
+          bash scripts/r135-nginx-wasm-smoke.sh dist/games/r135-service
       - name: Verify Unity runtime delivery through candidate Nginx
         run: npm run qa:nginx-game-delivery
       - name: Verify REMIX result durability through candidate Nginx
@@ -548,12 +556,15 @@ jobs:
           path: remix-live-contract.json
           if-no-files-found: warn
           retention-days: 14
-      - name: Verify actual published R135 WebGL pack and byte-range support
+      - name: Verify actual public W11 source, manifest, WASM and PCK after SSH activation
         env:
           OSGARD_BASE_URL: https://osgard.world
-          OSGARD_EXPECTED_R135_SOURCE: 947b4627080636543ae5e873b88b50e61f13beb4
-          OSGARD_EXPECTED_R135_VERSION: r135-web-framing-w6-20261024
-        run: node scripts/r135-production-smoke.mjs
+        run: |
+          set -euo pipefail
+          export OSGARD_EXPECTED_R135_SOURCE="$(jq -r '.source_commit' scripts/r135-w11-release-pin.json)"
+          export OSGARD_EXPECTED_R135_VERSION="$(jq -r '.version' scripts/r135-w11-release-pin.json)"
+          export OSGARD_EXPECTED_R135_MANIFEST_SHA256="$(jq -r '.manifest_sha256' scripts/r135-w11-release-pin.json)"
+          node scripts/r135-production-smoke.mjs
       - name: Verify published routes and same-origin API proxy
         env:
           OSGARD_BASE_URL: https://osgard.world
