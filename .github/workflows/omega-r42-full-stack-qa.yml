@@ -69,6 +69,12 @@ jobs:
           npm ci
           npm install --no-save --package-lock=false @playwright/test@1.58.2 pngjs@7.0.0
           npx playwright install --with-deps chromium
+      - name: Install native Mesa Xvfb for authentic non-stalling WebGL frames
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y xvfb libgl1-mesa-dri libegl1 libgl1
       - name: Serve unpublished actual 3D game only on localhost
         shell: bash
         run: |
@@ -83,9 +89,15 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          npx playwright test --config playwright.omega-portrait-preview.config.mjs --project="${{ matrix.viewport }}"
+          # Same actual software Mesa WebGL path that passed R53/R61 live.
+          # Isolate each genuine native export viewport in its own Xvfb process.
+          OMEGA_CI_GL_BACKEND=mesa LIBGL_ALWAYS_SOFTWARE=1 \
+            xvfb-run -a -s '-screen 0 1920x1080x24' \
+            npx playwright test --config playwright.omega-portrait-preview.config.mjs --project="${{ matrix.viewport }}" --retries=0
           if [ "${{ matrix.viewport }}" = "desktop-1366x768" ]; then
-            npx playwright test --config playwright.omega-r33-cabinet.config.mjs
+            OMEGA_CI_GL_BACKEND=mesa LIBGL_ALWAYS_SOFTWARE=1 \
+              xvfb-run -a -s '-screen 0 1920x1080x24' \
+              npx playwright test --config playwright.omega-r33-cabinet.config.mjs --retries=0
           fi
       - name: Preserve authentic visual evidence for this exact resolution
         if: always()
