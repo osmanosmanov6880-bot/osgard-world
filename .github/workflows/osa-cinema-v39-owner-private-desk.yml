@@ -1,0 +1,97 @@
+name: OSA CINEMA V39 offline private owner desk and release NO-GO
+on:
+  pull_request:
+    paths:
+      - 'scripts/osa-cinema-v39-owner-desk.mjs'
+      - 'scripts/osa-cinema-v39-owner-desk.test.mjs'
+      - 'scripts/osa-cinema-v39-v29-integration.test.mjs'
+      - 'scripts/osa-cinema-v39-owner-launch.ps1'
+      - 'START_OSA_CINEMA_V39.cmd'
+      - 'START_OSA_CINEMA_V39.sh'
+      - 'scripts/osa-cinema-v38-owner-release-dossier.mjs'
+      - 'scripts/osa-cinema-v35-historical-guard.mjs'
+      - 'scripts/osa-cinema-v36-verify-private-receipts.mjs'
+      - 'scripts/osa-cinema-v37-verify-private-media.mjs'
+      - 'docs/OSA_CINEMA_V16_WORKPRINT_MANIFEST.json'
+      - 'docs/OSA_CINEMA_V18_PRIVATE_FOUR_TRACK_QA.json'
+      - 'docs/OSA_CINEMA_V20_PRIVATE_RELEASE_POLICY.json'
+      - '.github/workflows/osa-cinema-v39-owner-private-desk.yml'
+  push:
+    branches: [master]
+    paths:
+      - 'scripts/osa-cinema-v39-owner-desk.mjs'
+      - 'scripts/osa-cinema-v39-owner-desk.test.mjs'
+      - 'scripts/osa-cinema-v39-v29-integration.test.mjs'
+      - 'scripts/osa-cinema-v39-owner-launch.ps1'
+      - 'START_OSA_CINEMA_V39.cmd'
+      - 'START_OSA_CINEMA_V39.sh'
+      - 'scripts/osa-cinema-v38-owner-release-dossier.mjs'
+      - 'scripts/osa-cinema-v35-historical-guard.mjs'
+      - 'scripts/osa-cinema-v36-verify-private-receipts.mjs'
+      - 'scripts/osa-cinema-v37-verify-private-media.mjs'
+      - 'docs/OSA_CINEMA_V16_WORKPRINT_MANIFEST.json'
+      - 'docs/OSA_CINEMA_V18_PRIVATE_FOUR_TRACK_QA.json'
+      - 'docs/OSA_CINEMA_V20_PRIVATE_RELEASE_POLICY.json'
+      - '.github/workflows/osa-cinema-v39-owner-private-desk.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  secure-desk:
+    name: V39 auth, SSRF, CSRF and NO-GO (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax and secure owner desk test
+        shell: bash
+        run: |
+          node --check scripts/osa-cinema-v39-owner-desk.mjs
+          node --check scripts/osa-cinema-v39-owner-desk.test.mjs
+          node --check scripts/osa-cinema-v39-v29-integration.test.mjs
+          node --test scripts/osa-cinema-v39-owner-desk.test.mjs
+      - name: Confirm actual V16 V18 V20 records are immutable
+        shell: bash
+        run: node scripts/osa-cinema-v35-historical-guard.mjs --root .
+      - name: Public release remains forbidden
+        shell: bash
+        run: |
+          set +e
+          node scripts/osa-cinema-v20-release-audit.mjs --strict-publication > "$RUNNER_TEMP/osa-v39-hold.txt" 2>&1
+          rc=$?
+          set -e
+          test "$rc" -eq 1
+          grep -q OSA_CINEMA_V20_NO_PUBLICATION "$RUNNER_TEMP/osa-v39-hold.txt"
+      - name: Check Windows PowerShell launcher syntax
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $tokens = $null; $errors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path 'scripts/osa-cinema-v39-owner-launch.ps1'), [ref]$tokens, [ref]$errors) | Out-Null
+          if ($errors.Count -ne 0) { $errors | Out-String | Write-Error; exit 1 }
+  true-v29-pipeline:
+    name: V39 actual authenticated browser API -> V38/V29 synthetic FFmpeg on Ubuntu
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Ensure FFmpeg and FFprobe are available
+        shell: bash
+        run: |
+          if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -y ffmpeg
+          fi
+      - name: Run genuine V39 -> V38 -> V29 synthetic-only end-to-end integration
+        shell: bash
+        run: node --test scripts/osa-cinema-v39-v29-integration.test.mjs
