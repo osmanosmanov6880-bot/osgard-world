@@ -100,6 +100,20 @@ def check(directory,out,sha):
                             assert stage[3]>=490,('Desktop cinematic stage insufficiently prominent',stage)
                             assert stage[2]>=900,('Desktop stage not full-width',stage)
                         assert 'dial_a' in frame_geometry and 'dial_b' in frame_geometry,('Native W36 knob rectangles missing',frame_geometry)
+                        # W41 catches the actual screenshot defect where the
+                        # desktop SIMULATION badge was wrapped letter by letter.
+                        edition=frame_geometry.get('stage_edition')
+                        kicker=frame_geometry.get('stage_kicker')
+                        brand=frame_geometry.get('brand')
+                        assert edition and kicker and brand,('Native editorial text geometry missing',frame_geometry)
+                        if touch:
+                            assert brand[3]<=55,('Mobile brand wordmark is oversized',brand)
+                            assert frame_geometry['heading'][3]<=65,('Mobile A7 heading is oversized',frame_geometry['heading'])
+                        else:
+                            assert edition[2]>=185 and 10<=edition[3]<=32,(
+                                'Desktop simulation label wrapped or collapsed',edition)
+                            assert kicker[3]<=34,('Stage kicker is vertically wrapped',kicker)
+                        stats['editorial_labels']={'edition':edition,'kicker':kicker,'brand':brand}
                         stats['hero_stage_rectangle']=stage
                         stats['native_dial_count']=2
                         assert not errors,('Uncaught JS errors',errors)
