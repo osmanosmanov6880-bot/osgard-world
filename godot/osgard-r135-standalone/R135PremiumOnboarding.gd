@@ -513,7 +513,8 @@ func _refresh_case_selection() -> void:
         var mastered: bool = i < proficient.size() and bool(proficient[i])
         var best: int = maxi(0, int(scores[i])) if i < scores.size() else 0
         var title: String = str(titles_ru[i]) if locale == "ru" else str(titles_en[i])
-        var status: String = "★" if mastered else ("OK" if done else "-")
+        # Godot compatibility WebGL fallback can omit decorative Unicode stars.
+        var status: String = "M" if mastered else ("OK" if done else "-")
         case_selection_buttons[i].text = "%d %s %s" % [i + 1, title, status]
         case_selection_buttons[i].disabled = locked
         case_selection_buttons[i].tooltip_text = _t(
