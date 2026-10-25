@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "project": "OSA CINEMA",
+  "stage": "V19_PRIVATE_EDITORIAL_INTAKE",
+  "recordedFilmPublicReleaseAuthorized": false,
+  "existingPublicProduct": "V15 interactive eight-scene educational experience only",
+  "technicalBaseline": {
+    "v16OriginalMediaRegistry": "docs/OSA_CINEMA_V16_WORKPRINT_MANIFEST.json",
+    "v18CutMap": "docs/OSA_CINEMA_V18_PRIVATE_SCENE_CUT_QC.json",
+    "v18PrivateFourTrackMasterQA": "docs/OSA_CINEMA_V18_PRIVATE_FOUR_TRACK_QA.json",
+    "fourTrackPrivateMasterSha256": "f3ce06afd5b64de9be77d5422bc888b79376c8d87d57d4b0a6c234230446deac",
+    "privateMasterIsLicensed": false
+  },
+  "recordedEditions": [
+    { "sourceId": "osa-v15-trailer-ru", "locale": "ru", "edition": "trailer-workprint", "expectedOriginalSha256": "64076804caab85f53f860818557eca0debf977d197b7e45ba4830538dbfe6c74", "measuredCutCount": 10, "captionIntake": "PENDING_REAL_WEBVTT", "spokenLanguageReview": "PENDING_HUMAN", "editorialApproval": "PENDING_HUMAN", "publicationAuthorized": false },
+    { "sourceId": "osa-v15-trailer-en", "locale": "en", "edition": "trailer-workprint", "expectedOriginalSha256": "0cea3fe492b0cc13bd2e4c9152217ae2d85d8406b291b8b93484b5d8a9bb530e", "measuredCutCount": 10, "captionIntake": "PENDING_REAL_WEBVTT", "spokenLanguageReview": "PENDING_HUMAN", "editorialApproval": "PENDING_HUMAN", "publicationAuthorized": false },
+    { "sourceId": "osa-v15-directors-ru", "locale": "ru", "edition": "directors-workprint", "expectedOriginalSha256": "74a040f9c67155eca946d6c6bed462e7edfb9c4f866605a0c2ecdd9568202b01", "measuredCutCount": 64, "captionIntake": "PENDING_REAL_WEBVTT", "spokenLanguageReview": "PENDING_HUMAN", "editorialApproval": "PENDING_HUMAN", "publicationAuthorized": false },
+    { "sourceId": "osa-v15-directors-en", "locale": "en", "edition": "directors-workprint", "expectedOriginalSha256": "2936222a5be4b36ab3177f1577219831ab686e085be9b0744887bbcae05a7e36", "measuredCutCount": 64, "captionIntake": "PENDING_REAL_WEBVTT", "spokenLanguageReview": "PENDING_HUMAN", "editorialApproval": "PENDING_HUMAN", "publicationAuthorized": false }
+  ],
+  "mandatoryGates": [
+    { "id": "original_integrity", "owner": "media_engineer", "technicalEvidence": "V16/V18 measured private sources", "status": "MEASURED_FOR_PRIVATE_SOURCES", "sufficientForRelease": false },
+    { "id": "audible_language", "owner": "bilingual_editor", "technicalEvidence": null, "status": "PENDING", "sufficientForRelease": false },
+    { "id": "rights_chain", "owner": "rights_counsel", "technicalEvidence": null, "status": "PENDING", "sufficientForRelease": false },
+    { "id": "final_cut_and_mix", "owner": "director_and_sound_mixer", "technicalEvidence": null, "status": "PENDING", "sufficientForRelease": false },
+    { "id": "verified_accessible_captions", "owner": "caption_editor", "technicalEvidence": null, "status": "PENDING", "sufficientForRelease": false },
+    { "id": "durable_media_delivery", "owner": "platform_engineer", "technicalEvidence": null, "status": "PENDING", "sufficientForRelease": false },
+    { "id": "live_browser_and_mobile_acceptance", "owner": "qa_engineer", "technicalEvidence": null, "status": "PENDING", "sufficientForRelease": false }
+  ],
+  "privacyBoundary": "This registry contains only public-safe IDs/hashes/statuses, not licensed media, transcripts, approvals, expiring URLs, personal data, or private legal files.",
+  "publicationAuthorized": false,
+  "paidAvailability": false
+}
