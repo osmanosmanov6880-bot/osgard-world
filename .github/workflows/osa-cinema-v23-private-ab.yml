@@ -1,0 +1,51 @@
+name: OSA CINEMA V23 private A/B sound and caption desk
+on:
+  pull_request:
+    paths:
+      - 'tools/osa-cinema-v23-*'
+      - 'scripts/osa-cinema-v23-*'
+      - 'docs/OSA_CINEMA_V23_*'
+      - '.github/workflows/osa-cinema-v23-private-ab.yml'
+  push:
+    branches: [master]
+    paths:
+      - 'tools/osa-cinema-v23-*'
+      - 'scripts/osa-cinema-v23-*'
+      - '.github/workflows/osa-cinema-v23-private-ab.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  private-ab:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Verify private HTML is syntax-valid, no remote transport and non-releasable
+        run: node scripts/osa-cinema-v23-ab-desk-smoke.mjs
+      - name: Ensure FFmpeg and pinned Chromium browser runner
+        run: |
+          if ! command -v ffmpeg >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y --no-install-recommends ffmpeg
+          fi
+          ffmpeg -version | head -n 1
+          npm ci
+          npm install --no-save --package-lock=false @playwright/test@1.58.2
+          npx playwright install --with-deps chromium
+      - name: Real Chromium desktop and 390px touch film A/B playback, SHA, VTT and notes
+        run: npx playwright test scripts/osa-cinema-v23-ab-desk.spec.mjs --config playwright.osa-cinema-v23.config.mjs --workers=1
+      - name: Publish only private test screenshots, never the source MP4 fixture
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: osa-v23-private-editor-chrome-qa
+          path: |
+            test-results/
+            osa-v23-browser-report/
+          retention-days: 14
+          if-no-files-found: warn
