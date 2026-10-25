@@ -2,6 +2,7 @@ extends CharacterBody3D
 ## v0.14: physically colliding traffic proxies with safe distance, real red-light
 ## braking, deterministic routes and visible brake lights. Arcade, not AAA AI.
 const SAFETY = preload("res://scripts/traffic_safety.gd")
+const R47_CROSSING = preload("res://scripts/horizon_r47_crosswalk_prediction.gd")
 const CAR_LENGTH := 4.1
 const DETECTION_RANGE := 27.0
 const ROAD_HEIGHT := 0.8
@@ -117,14 +118,12 @@ func _obstacle_distance(direction: Vector3) -> float:
 	for person in citizens:
 		if not is_instance_valid(person) or not person.visible:
 			continue
-		var delta_position: Vector3 = person.global_position-global_position
-		delta_position.y = 0.0
-		var forward_distance: float = delta_position.dot(direction)
-		if forward_distance <= 0.0 or forward_distance >= minf(nearest,look):
-			continue
-		var lateral_distance: float = (delta_position-direction*forward_distance).length()
-		if lateral_distance < 2.2:
-			nearest = maxf(0.0,forward_distance-1.5)
+		# R47: the visible citizen's route velocity predicts where they will
+		# cross this lane before the vehicle arrives, not only where they are.
+		var walker_velocity: Vector3 = person.get("planned_velocity") if person.get("planned_velocity") is Vector3 else Vector3.ZERO
+		var predicted: float = R47_CROSSING.clearance(global_position,direction,speed,
+			person.global_position,walker_velocity,minf(nearest,look))
+		nearest = minf(nearest,predicted)
 	return nearest
 
 func _physics_process(delta: float) -> void:
