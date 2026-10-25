@@ -37,16 +37,30 @@ test('private screening serves original real synthetic MP4 with cookie auth and 
     r=await fetch(base+'/',{redirect:'manual'});assert.equal(r.status,200)
     let html=await r.text();assert.match(html,/Пароль локальной приёмки/)
     assert.match(r.headers.get('content-security-policy'),/connect-src 'none'/)
-    r=await fetch(base+'/login',{method:'POST',body:'password=wrong',headers:{Origin:base,'Content-Type':'application/x-www-form-urlencoded'},redirect:'manual'});assert.equal(r.status,401)
-    r=await fetch(base+'/login',{method:'POST',body:'password='+encodeURIComponent(password),headers:{Origin:'https://malicious.example','Sec-Fetch-Site':'cross-site','Content-Type':'application/x-www-form-urlencoded'},redirect:'manual'})
-    assert.equal(r.status,403,'Cross-origin login must remain blocked even with correct secret')
-    r=await fetch(base+'/login',{method:'POST',body:'password='+encodeURIComponent(password),headers:{Origin:base,'Sec-Fetch-Site':'same-site','Content-Type':'application/x-www-form-urlencoded'},redirect:'manual'})
-    assert.equal(r.status,303)
+    const issue=async()=>{
+      const page=await fetch(base+'/');assert.equal(page.status,200)
+      const html=await page.text(), token=/name="csrf" value="([a-f0-9]{64})"/.exec(html)?.[1]
+      assert.ok(token,'One-time CSRF challenge is rendered')
+      return token
+    }
+    const form=token=>'csrf='+encodeURIComponent(token)+'&password='+encodeURIComponent(password)
+    r=await fetch(base+'/login',{method:'POST',body:'password='+encodeURIComponent(password),headers:{Origin:base,'Content-Type':'application/x-www-form-urlencoded'},redirect:'manual'})
+    assert.equal(r.status,403,'Missing challenge is rejected even with correct password')
+    const first=/name="csrf" value="([a-f0-9]{64})"/.exec(html)?.[1]
+    assert.ok(first)
+    r=await fetch(base+'/login',{method:'POST',body:'csrf='+first+'&password=wrong',headers:{Origin:base,'Content-Type':'application/x-www-form-urlencoded'},redirect:'manual'});assert.equal(r.status,401)
+    const second=await issue()
+    r=await fetch(base+'/login',{method:'POST',body:form(second),headers:{Origin:'https://malicious.example','Sec-Fetch-Site':'cross-site','Content-Type':'application/x-www-form-urlencoded'},redirect:'manual'})
+    assert.equal(r.status,403,'Cross-origin login blocked even with valid challenge')
+    r=await fetch(base+'/login',{method:'POST',body:form(second),headers:{Origin:'null','Content-Type':'application/x-www-form-urlencoded'},redirect:'manual'})
+    assert.equal(r.status,303,'Browser origin null with server challenge is safe')
     const cookie=r.headers.get('set-cookie')?.split(';')[0]
     assert.ok(cookie.startsWith('osa_private_session='))
     assert.match(r.headers.get('set-cookie'),/HttpOnly; SameSite=Strict/)
     r=await fetch(base+'/review',{headers:{Cookie:cookie}});assert.equal(r.status,200)
     html=await r.text();assert.match(html,/Точная проверка киноматериала/)
+    const logoutCsrf=/name="csrf" value="([a-f0-9]{64})"/.exec(html)?.[1]
+    assert.ok(logoutCsrf,'Logout challenge belongs to authenticated review page')
     assert.match(html,/sourceId:'osa-test-trailer-ru'/)
     assert.ok(!html.includes(password))
     r=await fetch(base+'/status',{headers:{Cookie:cookie}})
@@ -63,6 +77,10 @@ test('private screening serves original real synthetic MP4 with cookie auth and 
     r=await fetch(base+'/media',{headers:{Cookie:cookie,Range:'bytes=0-4,10-14'}})
     assert.equal(r.status,416)
     r=await fetch(base+'/logout',{method:'POST',headers:{Cookie:cookie,Origin:base},redirect:'manual'})
+    assert.equal(r.status,403,'Logout without one-time token blocked')
+    r=await fetch(base+'/logout',{method:'POST',headers:{Cookie:cookie,Origin:'https://malicious.example','Content-Type':'application/x-www-form-urlencoded'},body:'csrf='+logoutCsrf,redirect:'manual'})
+    assert.equal(r.status,403,'Foreign Origin denied despite valid logout token')
+    r=await fetch(base+'/logout',{method:'POST',headers:{Cookie:cookie,Origin:'null','Content-Type':'application/x-www-form-urlencoded'},body:'csrf='+logoutCsrf,redirect:'manual'})
     assert.equal(r.status,303)
     r=await fetch(base+'/media',{headers:{Cookie:cookie}})
     assert.equal(r.status,401)
