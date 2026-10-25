@@ -51,6 +51,13 @@ const FAULT_VIEWS = [2, 3, 1]
 const CHALLENGE_GOALS = ["STOP THE DRIVE", "OPEN THE SERVICE HATCH", "INSPECT THE CORRECT FAULT", "CLOSE THE SERVICE HATCH", "RESTART THE DRIVE"]
 const CHALLENGE_ACTIONS = ["pause", "open", "scan", "close", "resume"]
 const BEST_SCORE_PATH = "user://r135_challenge_record.cfg"
+const RECORD_SCHEMA_VERSION: int = 2
+# Arrays track optical, airflow and interlock independently across reloads.
+var case_attempts: Array[int] = [0, 0, 0]
+var case_best_scores: Array[int] = [0, 0, 0]
+var case_best_seconds: Array[float] = [-1.0, -1.0, -1.0]
+var case_total_mistakes: Array[int] = [0, 0, 0]
+var last_record_save_ok: bool = true
 var challenge_active: bool = false
 var challenge_completed: bool = false
 var challenge_step: int = 0
@@ -288,19 +295,49 @@ func _mission_event(action: String) -> void:
 
 func _load_challenge_record() -> void:
     var settings := ConfigFile.new()
-    if settings.load(BEST_SCORE_PATH) == OK:
-        challenge_best_score = clampi(int(settings.get_value("progress", "best_score", 0)), 0, 150)
-        var saved_cases: Array = settings.get_value("progress", "cleared_cases", [false, false, false])
+    if settings.load(BEST_SCORE_PATH) != OK:
+        # No file or corrupt legacy record: preserve safe fresh defaults.
+        return
+    challenge_best_score = clampi(int(settings.get_value("progress", "best_score", 0)), 0, 150)
+    var saved_cases: Variant = settings.get_value("progress", "cleared_cases", [false, false, false])
+    if saved_cases is Array:
         for i in range(cleared_cases.size()):
-            if i < saved_cases.size():
-                cleared_cases[i] = bool(saved_cases[i])
+            if i < saved_cases.size() and typeof(saved_cases[i]) == TYPE_BOOL:
+                cleared_cases[i] = saved_cases[i]
+    # Old records had only best_score + cleared_cases. Do NOT fabricate
+    # missing per-fault history or attribute the old global record to one fault.
+    var stored_attempts: Variant = settings.get_value("progress", "case_attempts", [])
+    var stored_scores: Variant = settings.get_value("progress", "case_best_scores", [])
+    var stored_seconds: Variant = settings.get_value("progress", "case_best_seconds", [])
+    var stored_mistakes: Variant = settings.get_value("progress", "case_total_mistakes", [])
+    for i in range(FAULT_TYPES.size()):
+        if stored_attempts is Array and i < stored_attempts.size():
+            if typeof(stored_attempts[i]) in [TYPE_INT, TYPE_FLOAT]:
+                case_attempts[i] = clampi(int(stored_attempts[i]), 0, 1000000)
+        if stored_scores is Array and i < stored_scores.size():
+            if typeof(stored_scores[i]) in [TYPE_INT, TYPE_FLOAT]:
+                case_best_scores[i] = clampi(int(stored_scores[i]), 0, 150)
+        if stored_seconds is Array and i < stored_seconds.size():
+            if typeof(stored_seconds[i]) in [TYPE_INT, TYPE_FLOAT]:
+                var time_value: float = float(stored_seconds[i])
+                if not is_nan(time_value) and not is_inf(time_value) and time_value >= 0.0:
+                    case_best_seconds[i] = minf(time_value, 360000.0)
+        if stored_mistakes is Array and i < stored_mistakes.size():
+            if typeof(stored_mistakes[i]) in [TYPE_INT, TYPE_FLOAT]:
+                case_total_mistakes[i] = clampi(int(stored_mistakes[i]), 0, 1000000)
 
 func _save_challenge_record() -> void:
     var settings := ConfigFile.new()
+    settings.set_value("progress", "schema_version", RECORD_SCHEMA_VERSION)
     settings.set_value("progress", "best_score", challenge_best_score)
     settings.set_value("progress", "cleared_cases", cleared_cases)
+    settings.set_value("progress", "case_attempts", case_attempts)
+    settings.set_value("progress", "case_best_scores", case_best_scores)
+    settings.set_value("progress", "case_best_seconds", case_best_seconds)
+    settings.set_value("progress", "case_total_mistakes", case_total_mistakes)
     var result: Error = settings.save(BEST_SCORE_PATH)
-    if result != OK:
+    last_record_save_ok = result == OK
+    if not last_record_save_ok:
         push_warning("R135 challenge record could not be saved on this device")
 
 func start_challenge() -> void:
@@ -308,6 +345,8 @@ func start_challenge() -> void:
     mission_completed = false
     challenge_attempts += 1
     challenge_fault_index = (challenge_attempts - 1) % FAULT_TYPES.size()
+    case_attempts[challenge_fault_index] = mini(case_attempts[challenge_fault_index] + 1, 1000000)
+    _save_challenge_record()
     challenge_active = true
     challenge_completed = false
     challenge_step = 0
@@ -331,6 +370,10 @@ func _challenge_penalty(message: String) -> void:
     if not challenge_active:
         return
     challenge_errors += 1
+    case_total_mistakes[challenge_fault_index] = mini(
+        case_total_mistakes[challenge_fault_index] + 1, 1000000
+    )
+    _save_challenge_record()
     challenge_feedback = message + "  /  PENALTY %d" % challenge_errors
 
 func _challenge_event(action: String, selected_view: int = -1) -> void:
@@ -356,6 +399,11 @@ func _challenge_event(action: String, selected_view: int = -1) -> void:
         if challenge_score > challenge_best_score:
             challenge_best_score = challenge_score
         cleared_cases[challenge_fault_index] = true
+        case_best_scores[challenge_fault_index] = maxi(
+            case_best_scores[challenge_fault_index], challenge_score
+        )
+        if case_best_seconds[challenge_fault_index] < 0.0 or challenge_elapsed < case_best_seconds[challenge_fault_index]:
+            case_best_seconds[challenge_fault_index] = challenge_elapsed
         _save_challenge_record()
         challenge_feedback = "FAULT CLEARED — BEST SCORE %d" % challenge_best_score
 
@@ -481,6 +529,12 @@ func summary() -> Dictionary:
         "challenge_error_penalty":12 * challenge_errors,
         "cleared_case_count":cleared_count,
         "cleared_case_flags":cleared_cases.duplicate(),
+        "record_schema_version":RECORD_SCHEMA_VERSION,
+        "case_attempts":case_attempts.duplicate(),
+        "case_best_scores":case_best_scores.duplicate(),
+        "case_best_seconds":case_best_seconds.duplicate(),
+        "case_total_mistakes":case_total_mistakes.duplicate(),
+        "local_record_save_ok":last_record_save_ok,
         "training_status":"ALL 3 SIMULATION CASES CLEARED" if cleared_count == 3 else "SIMULATION CASES %d/3" % cleared_count,
         "challenge_feedback":challenge_feedback,
         "fault_marker_count":int(visuals.get("fault_marker_count", 0)),
