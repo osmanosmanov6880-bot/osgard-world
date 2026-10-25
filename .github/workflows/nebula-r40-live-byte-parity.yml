@@ -115,6 +115,7 @@ jobs:
             failures=$((failures+1))
           }
           for name in index.html index.js index.wasm index.pck; do
+            before_failures="$failures"
             curl --fail --silent --show-error --location --retry 2 \
               --connect-timeout 12 --max-time 120 -H 'Accept-Encoding: identity' \
               -w "NEBULA_HTTP_FETCH variant=approved file=$name code=%{http_code} content_type=%{content_type} final_url=%{url_effective}\n" \
@@ -144,10 +145,14 @@ jobs:
               "$RUNNER_TEMP/nebula-r40-live/$name" || {
                 diff_asset qa_r40_live "$RUNNER_TEMP/nebula-r40-ci/$name" "$RUNNER_TEMP/nebula-r40-live/$name"
               }
-            echo "NEBULA_LIVE_ASSET_PARITY_OK=$name approved=$NEBULA_ACTIVE_VARIANT QA_CI_MATCH=true"
+            if [ "$failures" -eq "$before_failures" ]; then
+              echo "NEBULA_LIVE_ASSET_PARITY_OK=$name approved=$NEBULA_ACTIVE_VARIANT QA_CI_MATCH=true"
+            else
+              echo "NEBULA_LIVE_ASSET_PARITY_NOT_APPROVED=$name" >&2
+            fi
           done
           if [ "$failures" -gt 0 ]; then
-            echo "::error::NEBULA_LIVE_PARITY_FAILED count=$failures; R38 remains pinned; do not promote R40" >&2
+            echo "::error::NEBULA_LIVE_PARITY_FAILED count=$failures; do not promote or mislabel R40" >&2
             exit 1
           fi
           {
