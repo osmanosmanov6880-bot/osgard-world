@@ -74,7 +74,11 @@ def check(directory,out,sha):
                         frame=None
                         stats=None
                         for _ in range(6):
-                            frame=canvas.screenshot(timeout=25000)
+                            # A live Godot canvas never settles: Locator.screenshot
+                            # waits for the element to be 'stable' and can hang.
+                            # Capture the actual composited Chromium viewport
+                            # without scrolling, pausing or faking WebGL input.
+                            frame=page.screenshot(timeout=45000,animations='disabled')
                             stats=quality(frame)
                             if stats['color_bins']>=18 and stats['deviation']>11:
                                 break
