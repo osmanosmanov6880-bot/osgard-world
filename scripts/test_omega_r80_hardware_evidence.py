@@ -121,7 +121,8 @@ class HardwareEvidenceTests(unittest.TestCase):
         self.reject("missing, linked or external")
 
     def test_benchmark_checksum_tampering_rejected(self):
-        (self.root / self.report["benchmark_file"]).write_bytes(b"tampered benchmark file")
+        original = (self.root / self.report["benchmark_file"]).read_bytes()
+        (self.root / self.report["benchmark_file"]).write_bytes(original[:-1] + bytes([original[-1] ^ 1]))
         self.reject("SHA-256 mismatch")
 
     def test_benchmark_symlink_rejected(self):
