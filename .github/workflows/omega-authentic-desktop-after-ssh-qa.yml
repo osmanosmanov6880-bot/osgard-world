@@ -38,7 +38,7 @@ jobs:
           python3 scripts/omega-live-integrity.py \
             --expected public/games/omega-3d-preview/release.json \
             --base https://osgard.world/games/omega-3d-preview \
-            --nonce "${{ github.run_id }}" | tee /tmp/omega-desktop-public-hashes.json
+            --nonce "${{ github.run_id }}" | tee omega-desktop-public-hashes.json
       - name: Install real headless Chromium and PNG decoding
         shell: bash
         run: |
@@ -61,7 +61,7 @@ jobs:
         with:
           name: omega-independent-real-desktop-${{ github.run_id }}
           path: |
-            /tmp/omega-desktop-public-hashes.json
+            omega-desktop-public-hashes.json
             omega-live-webgl-results/
             omega-live-webgl-report/
           if-no-files-found: warn
