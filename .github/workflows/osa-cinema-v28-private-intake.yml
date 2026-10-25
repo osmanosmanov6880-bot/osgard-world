@@ -1,0 +1,47 @@
+name: OSA CINEMA V28 offline final MP4 and subtitle intake
+on:
+  pull_request:
+    paths:
+      - 'scripts/osa-cinema-v28-*'
+      - 'docs/OSA_CINEMA_V28_*'
+      - '.github/workflows/osa-cinema-v28-private-intake.yml'
+      - 'scripts/osa-cinema-v19-caption-qc.mjs'
+      - 'scripts/osa-cinema-v24-final-master-qc.mjs'
+  push:
+    branches: [master]
+    paths:
+      - 'scripts/osa-cinema-v28-*'
+      - '.github/workflows/osa-cinema-v28-private-intake.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  private-intake:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install FFmpeg if missing
+        run: |
+          if ! command -v ffmpeg >/dev/null 2>&1 || ! command -v ffprobe >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y --no-install-recommends ffmpeg
+          fi
+          ffmpeg -version | head -n 1
+      - name: Probe four actual synthetic MP4s and VTTs; pass manifest to V24 decoder and test negative cases
+        run: node --test scripts/osa-cinema-v28-final-intake.test.mjs
+      - name: Ensure real publication remains blocked
+        shell: bash
+        run: |
+          set +e
+          node scripts/osa-cinema-v20-release-audit.mjs --strict-publication > "$RUNNER_TEMP/osa-v28-publication-denied.log" 2>&1
+          code=$?
+          set -e
+          if [ "$code" -ne 1 ] || ! grep -q 'OSA_CINEMA_V20_NO_PUBLICATION' "$RUNNER_TEMP/osa-v28-publication-denied.log"; then
+            echo 'ERROR: recorded film release gate did not fail closed' >&2
+            exit 1
+          fi
+          echo 'V28 can generate a private manifest, not permission to publish.'
