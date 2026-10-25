@@ -1,0 +1,55 @@
+name: OSA CINEMA V15 live read-only production certification
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/osa-cinema-v15-live-certify.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: osa-cinema-v15-live-certify-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  public-v15-chrome:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Check out read-only V15 acceptance scripts
+        uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install pinned repository packages
+        run: npm ci
+      - name: Verify public routes, same-origin reference images and their exact SHA-256
+        env:
+          OSGARD_BASE_URL: https://osgard.world
+        run: node scripts/osa-cinema-v13-production-smoke.mjs
+      - name: Install Chrome browser test runner
+        run: |
+          npm install --no-save --package-lock=false @playwright/test@1.58.2
+          if command -v google-chrome >/dev/null 2>&1; then
+            google-chrome --version
+            echo "OSGARD_BROWSER_CHANNEL=chrome" >> "$GITHUB_ENV"
+          else
+            npx playwright install --with-deps --no-shell chromium
+          fi
+      - name: Prove real V15 screening at public HTTPS origin, desktop and 390px touch
+        env:
+          OSGARD_BASE_URL: https://osgard.world
+        run: npx playwright test scripts/osa-cinema-v15-screening.spec.mjs --config playwright.osa-cinema-live.config.mjs --workers=1
+      - name: Retain screenshots and trace of published experience
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: osa-cinema-v15-public-production-proof
+          path: |
+            test-results/
+            osa-cinema-live-report/
+          if-no-files-found: warn
+          retention-days: 21
