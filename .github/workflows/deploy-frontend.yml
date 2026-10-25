@@ -299,8 +299,20 @@ jobs:
               ARCHIVE_SHA="$(jq -er '.archive_sha256' "$PIN")"
               printf '%s  %s\n' "$ARCHIVE_SHA" "$STAGED/OSGARD_R135_OPTIMIZED_WEB.zip" | sha256sum -c -
             else
-              # Restore W14 ONLY from an exact already-live source, never latest.
-              python3 scripts/r135-verified-live-recover.py --pin "$PIN" --target "$STAGED"
+              # After W18 is live, GitHub Actions W14 may have expired.
+              # Use only the independently archived original GitHub Release,
+              # checked byte-for-byte against the reviewed W14 pin below.
+              TAG=r135-case-progress-w14-verified-rollback-20261025
+              if gh release view "$TAG" --repo osmanosmanov6880-bot/osgard-world >/dev/null 2>&1; then
+                gh release download "$TAG" --repo osmanosmanov6880-bot/osgard-world \
+                  --pattern "OSGARD_R135_OPTIMIZED_WEB.zip" --dir "$STAGED"
+                gh release download "$TAG" --repo osmanosmanov6880-bot/osgard-world \
+                  --pattern "R135_OPTIMIZED_MANIFEST.json" --dir "$STAGED"
+              else
+                # Last resort: only the exact CURRENTLY LIVE W14 bytes are valid.
+                # An active W18 server must fail closed rather than forge a W14 backup.
+                python3 scripts/r135-verified-live-recover.py --pin "$PIN" --target "$STAGED"
+              fi
             fi
           elif [[ "$PIN" == scripts/r135-w18-release-pin.json ]]; then
             GATE_RUN="$(jq -er '.promotion_gate_run_id' scripts/r135-active-release.json)"
