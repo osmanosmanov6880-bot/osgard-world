@@ -118,8 +118,11 @@ func _run() -> void:
 	verify(bool(game.call("load_game")),"corrupt primary falls back to intact authoritative backup")
 	loaded=game.get("data")
 	verify(str(game.get("last_load_source"))=="backup","backup recovery is recorded")
-	var recovered_backup: bool = str(game.get("last_load_source"))=="backup" and
-		int(loaded["mission"])==40 and int(loaded["wallet"])==initial_wallet+expected_reward
+	var recovered_backup: bool = (
+		str(game.get("last_load_source"))=="backup"
+		and int(loaded["mission"])==40
+		and int(loaded["wallet"])==initial_wallet+expected_reward
+	)
 	verify(recovered_backup,"backup recovery does not reset or duplicate credits")
 	var evidence: Dictionary = {
 		"schema":"omega-r55-mission-event-save-v1",
