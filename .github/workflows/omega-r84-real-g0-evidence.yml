@@ -1,0 +1,155 @@
+name: EMPIRE Omega R84 real published G0 evidence and full AAA release HOLD
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - '.github/workflows/omega-r84-real-g0-evidence.yml'
+      - 'scripts/omega_r84_workflow_contract.py'
+      - 'scripts/test_omega_r84_workflow_contract.py'
+  push:
+    branches: [master]
+    paths:
+      - '.github/workflows/omega-r84-real-g0-evidence.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: omega-r84-g0-${{ github.run_id }}
+  cancel-in-progress: false
+jobs:
+  evidence-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fail closed on synthetic evidence, false AAA GO or unsafe workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/test_omega_r84_workflow_contract.py
+          python3 scripts/test_omega_r83_release_gate.py
+          python3 scripts/omega_r83_release_gate.py --output /tmp/r84-hold.json
+          python3 - <<'PY'
+          import json
+          j=json.load(open('/tmp/r84-hold.json'))
+          assert j['status']=='HOLD' and not j['production_go']
+          assert not j['technical_web_ready'] and len(j['missing_evidence'])==6
+          print('PASS real evidence absent, six field gates HOLD')
+          PY
+  real-public-g0-verified-full-release-HOLD:
+    if: >-
+      (github.event_name == 'push' ||
+       github.event_name == 'workflow_dispatch') &&
+      github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Verify source freshness and ORIGINAL local seven Godot WASM/PCK asset hashes
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p omega-r84-evidence
+          source_sha="$(python3 -c 'import json;print(json.load(open("public/games/omega-3d-preview/release.json"))["source_commit"])')"
+          git fetch --no-tags origin "$source_sha"
+          python3 scripts/omega-build-freshness.py "$source_sha" HEAD
+          python3 scripts/omega-r50-release-gate.py --self-test
+          python3 - <<'PY'
+          import json,sys
+          from pathlib import Path
+          sys.path.insert(0,'scripts')
+          import omega_r83_release_gate as r83
+          m=json.loads(Path('public/games/omega-3d-preview/release.json').read_text())
+          source=r83.release_source(m)
+          r83.read_r50_module().validate_manifest(m,Path('public/games/omega-3d-preview'),strict_bytes=True)
+          Path('omega-r84-evidence/confirmed-source.txt').write_text(source+'\n')
+          print('PASS genuine source and original local binary bytes 7/7:',source)
+          PY
+      - name: Independently SHA-256 check all seven live public Godot files
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/omega-live-integrity.py \
+            --expected public/games/omega-3d-preview/release.json \
+            --base https://osgard.world/games/omega-3d-preview \
+            --nonce "${{ github.run_id }}" > omega-r84-evidence/live-integrity.json
+          python3 - <<'PY'
+          import json
+          d=json.load(open('omega-r84-evidence/live-integrity.json'))
+          assert d['status']=='PASS' and d['verified_files']==7
+          assert len(d['results'])==7 and all(x['sha256']=='matched' for x in d['results'])
+          print('PASS 7 original published file hashes')
+          PY
+      - name: Install pinned real Chromium and Mesa OpenGL renderer
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm ci
+          npm install --no-save --package-lock=false @playwright/test@1.58.2 pngjs@7.0.0
+          npx playwright install --with-deps chromium
+          sudo apt-get update -qq
+          sudo apt-get install -y xvfb libgl1-mesa-dri libegl1 libgl1
+      - name: Actually play published desktop and touch Godot WebGL; reject splash; zero retries
+        shell: bash
+        env:
+          OSGARD_GAME_ORIGIN: https://osgard.world
+          OMEGA_CI_GL_BACKEND: mesa
+          LIBGL_ALWAYS_SOFTWARE: "1"
+        run: |
+          set -euo pipefail
+          xvfb-run -a -s '-screen 0 1920x1080x24' \
+            npx playwright test --config playwright.omega-live-webgl.config.mjs \
+              --retries=0 --reporter=json > omega-r84-evidence/playwright.json
+      - name: Bind REAL G0 proof into R83 and retain strict five-gate HOLD
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/omega_r83_release_gate.py \
+            --r50-live omega-r84-evidence/live-integrity.json \
+            --r50-browser omega-r84-evidence/playwright.json \
+            --output omega-r84-evidence/r83-real-public-verdict.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          m=json.loads(Path('public/games/omega-3d-preview/release.json').read_text())
+          v=json.loads(Path('omega-r84-evidence/r83-real-public-verdict.json').read_text())
+          missing={'forty_human_mission_evidence',
+                   'physical_android_original_telemetry',
+                   'physical_ios_original_telemetry',
+                   'twenty_consented_player_sessions',
+                   'original_art_frames_and_licences'}
+          assert v['source_commit']==m['source_commit']
+          assert v['status']=='HOLD' and v['technical_web_ready'] is True
+          assert v['machine_verified_components']==['source_bound_public_webgl']
+          assert {x['check'] for x in v['missing_evidence']}==missing
+          assert not v['rejected_evidence']
+          assert v['independent_human_verification_complete'] is False
+          assert v['aaa_quality_certified'] is False and v['production_go'] is False
+          summary=Path('omega-r84-evidence/TECH-PREVIEW-REVIEW.md')
+          summary.write_text(
+              '# EMPIRE Omega R84: independently verified public Web Tech Preview\n\n'
+              + 'Source commit: '+v['source_commit']+'\n\n'
+              + 'Seven actual published game files: 7/7 SHA PASS\n\n'
+              + 'Original desktop/touch Chromium: PASS with zero flaky retries\n\n'
+              + 'G0 TECH PREVIEW: VERIFIED; full AAA PRODUCTION GO: HOLD\n\n'
+              + 'Five physical / user / art evidence gates not supplied.\n')
+          print('PASS independent G0, strictly HOLD for human/device/art checks')
+          PY
+          cat omega-r84-evidence/TECH-PREVIEW-REVIEW.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Preserve genuine public hashes, WebGL traces and R83 HOLD verdict
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: omega-r84-real-g0-evidence-${{ github.run_id }}
+          path: |
+            omega-r84-evidence/
+            omega-live-webgl-results/
+            omega-live-webgl-report/
+          if-no-files-found: warn
+          retention-days: 14
