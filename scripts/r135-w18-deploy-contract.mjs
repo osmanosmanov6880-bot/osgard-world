@@ -11,6 +11,11 @@ const deploy = readFileSync('.github/workflows/deploy-frontend.yml', 'utf8')
 const current = JSON.parse(readFileSync('scripts/r135-active-release.json','utf8'))
 const selectorScript = readFileSync('scripts/r135-release-selector.sh','utf8')
 const w14Pin = readFileSync('scripts/r135-w14-release-pin.json', 'utf8')
+const syntacticW19Pin = JSON.stringify({
+  version:'r135-luxury-academy-w19-candidate-20261025',
+  source_commit:'a'.repeat(40),
+  manifest_sha256:'b'.repeat(64)
+})
 function result(root) {
   return spawnSync('bash', ['scripts/r135-release-selector.sh'], {
     cwd: root, encoding: 'utf8'
@@ -52,6 +57,38 @@ function fixture(modify = x => x, modifiedPin = w14Pin) {
     rmSync(root,{recursive:true,force:true})
   }
 }
+function fixtureW19(mutate = x => x, content = syntacticW19Pin) {
+  const root = mkdtempSync(join(tmpdir(),'r135-w19-selector-'))
+  try {
+    mkdirSync(join(root,'scripts'))
+    writeFileSync(join(root,'scripts/r135-release-selector.sh'),selectorScript)
+    writeFileSync(join(root,'scripts/r135-active-release.json'),
+      JSON.stringify(mutate({
+        channel:'w19', pin_file:'scripts/r135-w19-release-pin.json',
+        promotion_gate_run_id:123456789
+      })))
+    writeFileSync(join(root,'scripts/r135-w19-release-pin.json'),content)
+    return result(root)
+  } finally {
+    rmSync(root,{recursive:true,force:true})
+  }
+}
+assert.equal(fixtureW19().status,0,
+  'Only a syntactically pinned W19 channel may be selected; this is NOT gate attestation'); tested++
+for (const mutator of [
+  x => ({...x,promotion_gate_run_id:null}),
+  x => ({...x,promotion_gate_run_id:0}),
+  x => ({...x,promotion_gate_run_id:'latest'}),
+  x => ({...x,pin_file:'scripts/r135-w18-release-pin.json'}),
+]) {
+  assert.notEqual(fixtureW19(mutator).status,0,'Invalid W19 selector accepted')
+  tested++
+}
+assert.notEqual(fixtureW19(x=>x,JSON.stringify({
+  version:'r135-luxury-academy-w19-candidate-20261025',
+  source_commit:'not-a-commit',manifest_sha256:'b'.repeat(64)
+})).status,0,'W19 non-SHA source accepted'); tested++
+
 assert.equal(fixture().status,0,'valid fixed W14 selector must retain the public release'); tested++
 for(const mutation of [
   x => ({...x,channel:'w18',pin_file:'scripts/r135-w18-release-pin.json'}),
