@@ -1,0 +1,63 @@
+name: OSGARD R135 W28 release NO-GO preflight, real phone source pin and human beta safety
+
+on:
+  push:
+    branches: [feat/r135-w28-hardware-beta-gate-20261025]
+    paths:
+      - 'scripts/r135-w25-physical-capture.mjs'
+      - 'scripts/test-r135-w25-physical-capture.mjs'
+      - 'scripts/r135-w28-launch-decision.mjs'
+      - 'scripts/test-r135-w28-launch-decision.mjs'
+      - 'scripts/r135-w28-pilot-evidence.mjs'
+      - 'scripts/test-r135-w28-pilot-evidence.mjs'
+      - '.github/workflows/r135-w28-no-go-hardware-pilot.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  never-fake-hardware-or-beta:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Real W25 localhost-only active-source physical CDP guard
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check scripts/r135-w25-physical-capture.mjs
+          node scripts/test-r135-w25-physical-capture.mjs
+          bash scripts/r135-release-selector.sh
+      - name: Original W16 hardware matrix evidence arithmetic and anti-forgery
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/test-r135-hardware-matrix.mjs
+      - name: W28 mandatory source hashes, 29 PNG, 16 phone sessions and 20 people beta gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check scripts/r135-w28-launch-decision.mjs
+          node --check scripts/test-r135-w28-launch-decision.mjs
+          node --check scripts/r135-w28-pilot-evidence.mjs
+          node --check scripts/test-r135-w28-pilot-evidence.mjs
+          node scripts/test-r135-w28-pilot-evidence.mjs
+          node scripts/test-r135-w28-launch-decision.mjs
+      - name: No automatic release, no fake hardware test or user-identifier upload
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('scripts/r135-w28-launch-decision.mjs').read_text()
+          for forbidden in ('fetch(', 'https.request(', 'http.request(', 'execSync(', 'child_process'):
+              assert forbidden not in p, 'W28 decision must not make network or perform SSH: '+forbidden
+          assert 'automatic_deploy_authorized: false' in p
+          assert 'physical_phone_hardware_certified_by_this_script: false' in p
+          assert "status: uniqueBlockers.length ? 'NO_GO_HOLD'" in p
+          print('W28 SAFE HOLD: no physical test or human beta fabricated by GitHub')
+          PY
