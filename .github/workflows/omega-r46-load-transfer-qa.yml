@@ -1,0 +1,95 @@
+name: EMPIRE Omega R46 live four-wheel brake load and actual WebGL driving QA
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - 'godot/empire-omega/scripts/horizon_r46_load_transfer.gd'
+      - 'godot/empire-omega/scripts/vehicle_controller.gd'
+      - 'godot/empire-omega/tests/v67_r46_load_transfer_brake_grip.gd'
+      - '.github/workflows/omega-r46-stone-rooflines-qa.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native-four-contact-braking:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: false
+      - name: Build authentic Godot imports and reject GDScript parse errors
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 godot/empire-omega/tools/generate_audio.py
+          python3 godot/empire-omega/tools/generate_patrol_audio.py
+          bash scripts/omega-strict-godot-import.sh godot/empire-omega
+      - name: Real dry/wet braking, wheel contact, A-B and R46 native QA
+        shell: bash
+        run: |
+          set -euo pipefail
+          for suite in v21_vehicle_dynamics v44_four_wheel_surface v49_physics_ab_comparison v67_r46_load_transfer_brake_grip; do
+            timeout --signal=TERM --kill-after=5s 100s godot --headless --path godot/empire-omega --script "res://tests/$suite.gd"
+          done
+  actual-game-pixels:
+    runs-on: ubuntu-latest
+    timeout-minutes: 28
+    strategy:
+      fail-fast: false
+      matrix:
+        viewport: [desktop-1366x768, landscape-phone-844x390, portrait-390x844, small-phone-320x568]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Strictly build authentic local R46 candidate WASM and PCK
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 godot/empire-omega/tools/generate_audio.py
+          python3 godot/empire-omega/tools/generate_patrol_audio.py
+          bash scripts/omega-strict-godot-import.sh godot/empire-omega
+          mkdir -p godot/empire-omega/.build-web
+          godot --headless --path godot/empire-omega --export-release Web "$GITHUB_WORKSPACE/godot/empire-omega/.build-web/index.html"
+          node scripts/localize-godot-web-export.mjs godot/empire-omega/.build-web
+          test -s godot/empire-omega/.build-web/index.wasm
+          test -s godot/empire-omega/.build-web/index.pck
+      - name: Install native Chromium and screenshot pixel tools
+        run: |
+          npm ci
+          npm install --no-save --package-lock=false @playwright/test@1.58.2 pngjs@7.0.0
+          npx playwright install --with-deps chromium
+      - name: Start only local candidate server (never production)
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 4173 --bind 127.0.0.1 --directory godot/empire-omega/.build-web > /tmp/r46-city-http.log 2>&1 &
+          for attempt in 1 2 3 4 5 6 7 8 9 10; do
+            curl -fsS http://127.0.0.1:4173/index.html >/dev/null && exit 0
+            sleep 1
+          done
+          cat /tmp/r46-city-http.log
+          exit 1
+      - name: Capture genuine Chromium frame of the 3D game at each viewport
+        run: npx playwright test --config playwright.omega-portrait-preview.config.mjs --project="${{ matrix.viewport }}"
+      - name: Retain evidence per actual browser size
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: omega-r46-${{ matrix.viewport }}-real-game-pixels
+          path: |
+            omega-portrait-preview-results/
+            omega-portrait-preview-report/
+          if-no-files-found: ignore
+          retention-days: 12
