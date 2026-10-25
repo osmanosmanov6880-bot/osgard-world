@@ -30,7 +30,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for suite in v21_vehicle_dynamics v34_real_touch_drive v43_camera_composition v53_rain_puddles_city_cleanup v63_r41_predictive_pedestrian_yield; do
+          for suite in v14_traffic_physics v21_vehicle_dynamics v34_real_touch_drive v43_camera_composition v53_rain_puddles_city_cleanup v63_r41_predictive_pedestrian_yield; do
             timeout --signal=TERM --kill-after=5s 110s godot --headless --path godot/empire-omega --script "res://tests/$suite.gd"
           done
   authentic-webgl-city:
