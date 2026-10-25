@@ -38,11 +38,19 @@ jobs:
         run: |
           set -uo pipefail
           failures=0
+          # R57: Reject GPU-only screenshot files in --headless, which has
+          # no real OpenGL framebuffer. R44 spent the previous native 15s
+          # timeout waiting for pixels in a dummy renderer and blocked export
+          # even though the 3D engine and 90+ other suites were healthy.
+          # The required real screenshot is STILL tested under xvfb-run/OpenGL
+          # by .github/workflows/omega-r44-real-streetlighting-qa.yml.
+          python3 scripts/omega-native-suite-contract.py
           for test_file in godot/empire-omega/tests/*.gd; do
-            if [[ "$test_file" == *"/horizon_capture.gd" || "$test_file" == *"/horizon_driving_capture.gd" || "$test_file" == *"/horizon_r4_showroom_capture.gd" ]]; then
-              echo "Skip GPU screenshot in headless logic tests (covered by xvfb visual QA)"
-              continue
-            fi
+            case "${test_file##*/}" in
+              horizon_capture.gd|horizon_driving_capture.gd|horizon_r4_showroom_capture.gd|r44_actual_night_capture.gd)
+                echo "OpenGL-only original screenshot: ${test_file##*/} (real xvfb QA, NOT headless)"
+                continue ;;
+            esac
             echo "=== NATIVE ${test_file##*/} ==="
             # Normal native suites remain bounded to 15s.
             # Real 60 Hz R46 A/B has 3*(140+108+72+48) physics frames:
