@@ -43,6 +43,7 @@ const HELP_EN = [
     "TRAINING COMPLETE. Review your results and repeat challenges to improve your score."
 ]
 const SAVE_PATH = "user://r135_luxury_tutorial_v1.cfg"
+const R135LearningCoach = preload("res://R135LearningCoach.gd")
 var host: Node3D
 var locale: String = "ru"
 var begun: bool = false
@@ -74,6 +75,12 @@ var guide_button: Button
 var rail_header: Label
 var rail_rows: Array[Label] = []
 var controls_open: bool = false
+var coach_expanded: bool = false
+var coach_last_status: String = "intro"
+var coach_heading: Label
+var coach_summary: Label
+var coach_more_button: Button
+var coach_detail: Label
 var settings_open: bool = false
 var brand_header: HBoxContainer
 var settings_button: Button
@@ -233,6 +240,19 @@ func _build() -> void:
     scroll.add_child(body)
     description_label = _label(body, Color(0.85, 0.90, 0.93), 16)
     hint_label = _label(body, Color(0.45, 0.86, 0.94), 14)
+    # W21 progressive disclosure: the cause always appears in simple words;
+    # detailed evidence and recovery stay available by keyboard/touch on demand.
+    coach_heading = _label(body, Color(0.98, 0.68, 0.40), 14)
+    coach_heading.name = "ExplainableCoachHeading"
+    coach_summary = _label(body, Color(0.87, 0.91, 0.92), 14)
+    coach_summary.name = "ExplainableCoachSummary"
+    coach_more_button = _styled_button("ПОЧЕМУ? ПОДРОБНЕЕ", false)
+    coach_more_button.name = "ExpandCauseExplanation"
+    coach_more_button.pressed.connect(_toggle_coach_details)
+    body.add_child(coach_more_button)
+    coach_detail = _label(body, Color(0.68, 0.82, 0.86), 13)
+    coach_detail.name = "CauseAndNextAction"
+    coach_detail.visible = false
     metrics_label = _label(body, Color(0.93, 0.72, 0.49), 13)
     safety_label = _label(body, Color(0.69, 0.73, 0.76), 12)
     safety_label.text = "СИМУЛЯЦИЯ • Реальное оборудование требует допуска и проверки отсутствия энергии."
@@ -375,6 +395,11 @@ func _layout() -> void:
     title_label.add_theme_font_size_override("font_size", int((18 if compact else 24) * ratio))
     description_label.add_theme_font_size_override("font_size", int((14 if compact else 16) * ratio))
     hint_label.add_theme_font_size_override("font_size", int((13 if compact else 14) * ratio))
+    coach_heading.add_theme_font_size_override("font_size", int((12 if compact else 14) * ratio))
+    coach_summary.add_theme_font_size_override("font_size", int((12 if compact else 14) * ratio))
+    coach_detail.add_theme_font_size_override("font_size", int((12 if compact else 13) * ratio))
+    coach_more_button.custom_minimum_size = Vector2(0, 44.0 * ratio)
+    coach_more_button.add_theme_font_size_override("font_size", int((12 if compact else 13) * ratio))
     metrics_label.add_theme_font_size_override("font_size", int(13 * ratio))
     safety_label.add_theme_font_size_override("font_size", int(11 * ratio))
     primary_button.add_theme_font_size_override("font_size", int((13 if compact else 15) * ratio))
@@ -425,6 +450,32 @@ func _toggle_expanded() -> void:
     if host != null:
         host.call_deferred("_settle_hud_after_layout")
     call_deferred("_layout")
+
+func _toggle_coach_details() -> void:
+    coach_expanded = not coach_expanded
+    _present()
+    # Existing bounded ScrollContainer safely handles a longer deep explanation.
+    call_deferred("_layout")
+
+
+func _present_coach() -> void:
+    if coach_heading == null:
+        return
+    var result: Dictionary = R135LearningCoach.explain(state_cache, step, locale)
+    coach_last_status = str(result["status"])
+    _assign(coach_heading, str(result["title"]))
+    _assign(coach_summary, str(result["cause"]))
+    coach_more_button.text = _t("СКРЫТЬ РАЗБОР", "HIDE EXPLANATION") if coach_expanded else _t(
+        "ПОЧЕМУ? ПОДРОБНЕЕ", "WHY? SHOW DETAILS")
+    coach_detail.visible = coach_expanded
+    var detail_text: String = str(result["deeper"]) + "\n\n" + _t("СЛЕДУЮЩЕЕ ДЕЙСТВИЕ: ", "NEXT ACTION: ") + str(result["next"])
+    var evidence_text: String = str(result.get("evidence", ""))
+    if evidence_text.length() > 0 and str(result["status"]) not in ["maintenance", "intro"]:
+        detail_text += "\n" + _t("УЧЕБНЫЙ СИГНАЛ: ", "SIMULATED EVIDENCE: ") + evidence_text
+    detail_text += "\n" + _t("ТОЛЬКО СИМУЛЯЦИЯ. Никаких команд реальному оборудованию.",
+        "SIMULATION ONLY. No commands are sent to real machinery.")
+    _assign(coach_detail, detail_text)
+
 
 func _toggle_settings() -> void:
     settings_open = not settings_open
@@ -671,6 +722,7 @@ func _present() -> void:
     _assign(description_label, str(current_details[i]))
     if not controls_open:
         _assign(hint_label, str(current_hints[i]))
+    _present_coach()
     _assign(safety_label, _t(
         "ТОЛЬКО СИМУЛЯЦИЯ. Реальное обслуживание требует допуска, блокировки питания и проверки отсутствия энергии.",
         "SIMULATION ONLY. Real machinery requires authorization, lockout and verified zero energy."))
