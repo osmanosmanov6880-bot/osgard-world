@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "project": "OSA CINEMA",
+  "status": "PRIVATE_EDITORIAL_WORKPRINTS_NOT_APPROVED_FOR_PUBLICATION",
+  "origin": "Existing user-owned Library files; no public MP4 URLs or embedded media bytes",
+  "explanation": "The declared locale describes intended edition only. Audio stream language tags are und, speech is not verified, and commercial distribution approval is absent.",
+  "assets": [
+    {
+      "id": "osa-v15-trailer-ru",
+      "locale": "ru",
+      "edition": "trailer-workprint",
+      "file": "OSA_CINEMA_V15_45SEC_PREVIEW_RU_720P.mp4",
+      "sizeBytes": 4362309,
+      "sha256": "64076804caab85f53f860818557eca0debf977d197b7e45ba4830538dbfe6c74",
+      "durationSeconds": 45,
+      "width": 1280,
+      "height": 720,
+      "videoCodec": "h264",
+      "audioCodec": "aac"
+    },
+    {
+      "id": "osa-v15-trailer-en",
+      "locale": "en",
+      "edition": "trailer-workprint",
+      "file": "OSA_CINEMA_V15_45SEC_PREVIEW_EN_720P.mp4",
+      "sizeBytes": 4332303,
+      "sha256": "0cea3fe492b0cc13bd2e4c9152217ae2d85d8406b291b8b93484b5d8a9bb530e",
+      "durationSeconds": 45,
+      "width": 1280,
+      "height": 720,
+      "videoCodec": "h264",
+      "audioCodec": "aac"
+    },
+    {
+      "id": "osa-v15-directors-ru",
+      "locale": "ru",
+      "edition": "directors-workprint",
+      "file": "OSA_CINEMA_V15_DIRECTORS_WORKPRINT_RU_1080P.mp4",
+      "sizeBytes": 120402387,
+      "sha256": "74a040f9c67155eca946d6c6bed462e7edfb9c4f866605a0c2ecdd9568202b01",
+      "durationSeconds": 239,
+      "width": 1920,
+      "height": 1080,
+      "videoCodec": "h264",
+      "audioCodec": "aac"
+    },
+    {
+      "id": "osa-v15-directors-en",
+      "locale": "en",
+      "edition": "directors-workprint",
+      "file": "OSA_CINEMA_V15_DIRECTORS_WORKPRINT_EN_1080P.mp4",
+      "sizeBytes": 120340268,
+      "sha256": "2936222a5be4b36ab3177f1577219831ab686e085be9b0744887bbcae05a7e36",
+      "durationSeconds": 239,
+      "width": 1920,
+      "height": 1080,
+      "videoCodec": "h264",
+      "audioCodec": "aac"
+    }
+  ]
+}
