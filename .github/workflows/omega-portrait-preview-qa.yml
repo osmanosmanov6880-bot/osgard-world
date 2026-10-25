@@ -5,6 +5,8 @@ on:
     paths:
       - 'godot/empire-omega/**'
       - 'scripts/omega-portrait-preview.spec.mjs'
+      - 'scripts/omega-four-viewport-real-ci.sh'
+      - 'scripts/test_omega_r87_webgl_boot_guard.py'
       - 'playwright.omega-portrait-preview.config.mjs'
       - '.github/workflows/omega-portrait-preview-qa.yml'
   workflow_dispatch:
@@ -67,40 +69,12 @@ jobs:
           done
           cat /tmp/omega-portrait-server.log
           exit 1
-      - name: Verify four REAL Godot World viewports using separate Chromium processes
+      - name: Verify four original Godot WebGL viewports in isolated Chromium
         shell: bash
         run: |
           set -euo pipefail
-          # Desktop SwiftShader occasionally deadlocks after three canvases
-          # in the same Playwright process. Isolate each while keeping all
-          # four genuine pixel checks mandatory: no skip and no synthetic PNG.
-          mkdir -p omega-r67-original-viewport-evidence
-          for viewport in portrait-390x844 small-phone-320x568 landscape-phone-844x390 desktop-1366x768; do
-            echo "CHECK actual WebGL2 scene and edge pixel diversity: $viewport"
-            status=0
-            if [ "$viewport" = "desktop-1366x768" ]; then
-              OMEGA_CI_GL_BACKEND=mesa LIBGL_ALWAYS_SOFTWARE=1 \
-                xvfb-run -a -s '-screen 0 1920x1080x24' \
-                npx playwright test --config playwright.omega-portrait-preview.config.mjs \
-                  --project="$viewport" --workers=1 || status=$?
-            else
-              npx playwright test --config playwright.omega-portrait-preview.config.mjs \
-                --project="$viewport" --workers=1 || status=$?
-            fi
-            mkdir -p "omega-r67-original-viewport-evidence/$viewport"
-            if [ -d omega-portrait-preview-results ]; then
-              cp -a omega-portrait-preview-results \
-                "omega-r67-original-viewport-evidence/$viewport/results"
-            fi
-            if [ -d omega-portrait-preview-report ]; then
-              cp -a omega-portrait-preview-report \
-                "omega-r67-original-viewport-evidence/$viewport/report"
-            fi
-            if [ "$status" -ne 0 ]; then
-              echo "::error::Real Godot WebGL WORLD evidence missing for $viewport"
-              exit "$status"
-            fi
-          done
+          python3 scripts/test_omega_r87_webgl_boot_guard.py
+          bash scripts/omega-four-viewport-real-ci.sh
       - name: Retain real screenshots and diagnostics even on failure
         if: always()
         uses: actions/upload-artifact@v4
@@ -109,6 +83,6 @@ jobs:
           path: |
             omega-portrait-preview-results/
             omega-portrait-preview-report/
-            omega-r67-original-viewport-evidence/
+            omega-original-four-viewport-evidence/
           if-no-files-found: ignore
           retention-days: 12

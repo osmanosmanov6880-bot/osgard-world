@@ -5,6 +5,7 @@ const DISCOVERY = preload("res://scripts/city_discovery.gd")
 
 var player_world := Vector3(-112,0,-104)
 var goal_world := Vector3(130,0,-130)
+var goal_active := true
 var vehicle_world := Vector3(-120,0,-104)
 var driving := false
 var case_active := false
@@ -56,8 +57,9 @@ func _draw() -> void:
 		var marker_point: Vector2 = _point(case_world)
 		draw_arc(marker_point,8.5,0.0,TAU,20,Color("66f2d2"),2.5,true)
 		draw_circle(marker_point,3.0,Color("b6fff3"))
-	draw_circle(_point(goal_world),7.5,Color("ddba70",0.4))
-	draw_circle(_point(goal_world),4.0,Color("e7d09a"))
+	if goal_active:
+		draw_circle(_point(goal_world),7.5,Color("ddba70",0.4))
+		draw_circle(_point(goal_world),4.0,Color("e7d09a"))
 	for unit in police_world:
 		draw_circle(_point(unit),4.3,Color("3975ff"))
 		draw_arc(_point(unit),6.3,0.0,TAU,16,Color("e34b61"),1.6)

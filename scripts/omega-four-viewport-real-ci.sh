@@ -9,7 +9,9 @@ output_dir="omega-original-four-viewport-evidence"
 mkdir -p "$output_dir"
 tested=0
 
-for viewport in portrait-390x844 small-phone-320x568 landscape-phone-844x390 desktop-1366x768; do
+# Desktop Mesa runs first on a fresh runner; all four original browser scenes
+# remain mandatory, no retries and no splash or fake pixel acceptance.
+for viewport in desktop-1366x768 portrait-390x844 small-phone-320x568 landscape-phone-844x390; do
   echo "::group::Original Godot WebGL pixels: $viewport"
   failure=0
   if [ "$viewport" = "desktop-1366x768" ]; then

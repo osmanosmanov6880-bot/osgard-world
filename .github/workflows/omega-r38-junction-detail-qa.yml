@@ -69,6 +69,13 @@ jobs:
           npm ci
           npm install --no-save --package-lock=false @playwright/test@1.58.2 pngjs@7.0.0
           npx playwright install --with-deps chromium
+      - name: Provision original Mesa/Xvfb software GPU on real desktop only
+        if: ${{ matrix.viewport == 'desktop-1366x768' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y xvfb libgl1-mesa-dri libegl1 libgl1
       - name: Serve unpublished R38 game candidate only
         run: |
           python3 -m http.server 4173 --bind 127.0.0.1 --directory godot/empire-omega/.build-web > /tmp/r38-web.log 2>&1 &
@@ -78,8 +85,21 @@ jobs:
           done
           cat /tmp/r38-web.log
           exit 1
-      - name: Require authentic Godot pixels on all four viewports
-        run: npx playwright test --config playwright.omega-portrait-preview.config.mjs --project="${{ matrix.viewport }}"
+      - name: Require actual Godot pixels for the strict original four-view matrix
+        shell: bash
+        env:
+          VIEWPORT: ${{ matrix.viewport }}
+        run: |
+          set -euo pipefail
+          if [ "$VIEWPORT" = "desktop-1366x768" ]; then
+            OMEGA_CI_GL_BACKEND=mesa LIBGL_ALWAYS_SOFTWARE=1 \
+              xvfb-run -a -s '-screen 0 1920x1080x24' \
+              npx playwright test --config playwright.omega-portrait-preview.config.mjs \
+                --project="$VIEWPORT" --workers=1 --retries=0
+          else
+            npx playwright test --config playwright.omega-portrait-preview.config.mjs \
+              --project="$VIEWPORT" --workers=1 --retries=0
+          fi
       - name: Preserve four original browser screenshots and failure trace
         if: always()
         uses: actions/upload-artifact@v4

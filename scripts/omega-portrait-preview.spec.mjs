@@ -63,7 +63,9 @@ test('REAL Godot 4.4.1 fills the phone, tablet and desktop canvas without black 
   expect(view.contextLost).toBe(false)
   expect(view.css[2]).toBeGreaterThan(view.viewport[0]*0.95)
   expect(view.css[3]).toBeGreaterThan(view.viewport[1]*0.95)
-  await page.waitForTimeout(700)
+  // Actual Godot WebGL desktop splash may outlive the removed HTML status;
+  // wait for the authentic 1366x768 Mesa scene to paint, then verify pixels.
+  await page.waitForTimeout(info.project.name==='desktop-1366x768'?14000:700)
   // Viewport screenshot, not locator().screenshot(): a continuously painted
   // native Godot canvas never becomes "stable" for Playwright's locator.
   // A running WebGL canvas can still show the #242424 Godot loader while
@@ -71,14 +73,14 @@ test('REAL Godot 4.4.1 fills the phone, tablet and desktop canvas without black 
   // splash as a full world. Require independently diverse TOP and BOTTOM
   // edge pixels from actual, post-load Godot gameplay instead.
   let capture, png, proof, worldEvidence, attempts=0
-  for(let attempt=1;attempt<=4;attempt++) {
+  for(let attempt=1;attempt<=5;attempt++) {
     attempts=attempt
     capture=await captureAnimatedWebGLViewport(page)
     png=capture.png
     proof=measureRealScenePng(png)
     worldEvidence=realGameFrameEvidence(png)
     if(worldEvidence.realWorldEdges)break
-    if(attempt<4)await page.waitForTimeout(1500)
+    if(attempt<5)await page.waitForTimeout(2000)
   }
   await info.attach('actual-godot-world.png',{body:png,contentType:'image/png'})
   await info.attach('actual-godot-screen-coverage.json',{

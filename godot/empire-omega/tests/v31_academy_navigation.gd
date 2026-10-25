@@ -49,6 +49,6 @@ func _run() -> void:
     var main: String = FileAccess.get_file_as_string("res://scripts/main.gd")
     check(hud.contains("RACE_NAVIGATOR.view(route,session,vehicle_at,vehicle_yaw,GameState.locale,compact_hud)"),"live HUD receives actual academy state")
     check(hud.contains("mission_distance_label.text = str(guide[\"details\"])"),"live HUD shows direction and clock")
-    check(main.contains("car.steering_assist_correction,car.rotation.y)"),"live main passes actual car heading")
+    check(main.contains("car.steering_assist_correction,car.rotation.y,goal_visible)") and main.contains("MISSION_NAV.has_world_goal("),"live main passes actual car heading plus authentic mission target visibility")
     print("HORIZON R9 ACADEMY NATIVE: %d passed, %d failed" % [passed,failed])
     quit(0 if failed==0 else 1)
