@@ -62,7 +62,7 @@ jobs:
           assert 'if active and mission_active and mission_step != 3:' in director
           assert '_reset_simulated_hatch()' in director
           assert 'W13 tutorial incorrectly permitted opening moving machinery' in native
-          assert 'W13 drive restarted while hatch was still closing' in native
+          assert 'W13 tutorial drive restarted before hatch fully sealed' in native
           assert 'W13 mobile training incorrectly opened running machine' in browser
           assert 'W13 training bypassed open-hatch interlock' in browser
           print("R135 W13 simulator lesson order and actual safety guard checks PASS")
