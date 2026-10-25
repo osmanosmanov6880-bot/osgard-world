@@ -48,3 +48,11 @@ test('screening, media player and progress safeguards survive integration',()=>{
  assert.match(viewer,/saveOSACinemaProgress\(\{index,answers,locale,completed,selfChecks\}\)/)
  assert.doesNotMatch(component,/stripe|payment|invoice|publishNow/i)
 })
+
+test('V43 dedicated Playwright configuration includes the new React spec',()=>{
+ const config=readFileSync(join(root,'playwright.osa-cinema-v43.config.mjs'),'utf8')
+ const workflow=readFileSync(join(root,'.github/workflows/osa-cinema-v43-mobile-navigation.yml'),'utf8')
+ assert.match(config,/testMatch: \['osa-cinema-v43-mobile-navigation\.spec\.mjs'\]/)
+ assert.match(workflow,/--config playwright\.osa-cinema-v43\.config\.mjs/)
+ assert.doesNotMatch(workflow,/--config playwright\.ecosystem\.config\.mjs/)
+})

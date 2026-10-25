@@ -8,6 +8,7 @@ on:
       - 'scripts/osa-cinema-v43-mobile-navigation.test.mjs'
       - 'scripts/osa-cinema-v43-mobile-navigation.spec.mjs'
       - '.github/workflows/osa-cinema-v43-mobile-navigation.yml'
+      - 'playwright.osa-cinema-v43.config.mjs'
   workflow_dispatch:
 permissions:
   contents: read
@@ -47,7 +48,7 @@ jobs:
             npx playwright install --with-deps --no-shell chromium
           fi
       - name: Test real React mobile, desktop, deep links and reduced clutter
-        run: npx playwright test scripts/osa-cinema-v43-mobile-navigation.spec.mjs --config playwright.ecosystem.config.mjs --workers=1
+        run: npx playwright test --config playwright.osa-cinema-v43.config.mjs --workers=1
       - uses: actions/upload-artifact@v4
         if: always()
         with:
