@@ -71,7 +71,14 @@ func _run() -> void:
 		verify(chapter_title_node!=null and chapter_title_node.text.contains("КАМПАНИЯ"),"actual HUD shows completed campaign in live objective panel")
 		test_state["mission"]=0
 		hud.call("_refresh")
-		verify(chapter_title_node.text.contains("ГЛАВА"),"HUD switches back to first chapter on new campaign")
+		# Compact mobile UI deliberately shortens "ГЛАВА" to "1/3".
+		# Assert the exact player-visible title for the current layout, rather
+		# than wrongly rejecting a real working compact chapter label.
+		var expected_title: String = str(mission.call("chapter_title",game_state.get("locale"),hud.get("compact_hud")))
+		verify(chapter_title_node.text == expected_title and chapter_title_node.text.contains("ПЕРВЫЕ ШАГИ"),
+			"HUD switches to the correct first chapter on both compact and desktop layouts")
+		verify(int(mission.call("chapter_progress")["percent"])==0,
+			"restarted playable campaign chapter resets to zero progress")
 		hud.queue_free()
 	game_state.set("data",original)
 	await process_frame
