@@ -68,37 +68,62 @@ func _run() -> void:
     if int(final.get("loading_failures", 0)) != 0 or int(final.get("load_count", 0)) < 3:
         _fail("HERO-ECO-HERO switching failed: " + str(final))
         return
-    # A player must be able to complete a deterministic, four-action mission.
-    # Out-of-order input changes the rig but MUST NOT unlock fake mission progress.
+    # W13: the tutorial MUST NOT teach opening a running machine.
+    # Verify the actual service hatch travel and universal interlocks, not
+    # just a mission-step counter or a descriptive UI label.
     instance.call("_start_mission")
-    var opened: Dictionary = rig.call("summary")
-    if not bool(opened.get("mission_active", false)) or int(opened.get("mission_step", -1)) != 0:
-        _fail("Mission did not reset correctly")
+    var started: Dictionary = rig.call("summary")
+    if not bool(started.get("mission_active", false)) or int(started.get("mission_step", -1)) != 0:
+        _fail("W13 mission did not reset to safety-first stop-drive step")
         return
-    instance.call("_toggle_motion") # Wrong order: pause before opening hatch.
-    if int(rig.call("summary").get("mission_step", -1)) != 0:
-        _fail("Out-of-order pause advanced the mission")
+    if float(started.get("lid_progress", 9.0)) > 0.05 or not bool(started.get("motion_enabled", false)):
+        _fail("W13 scenario reset must close the simulated hatch before motor runs")
         return
-    instance.call("_toggle_motion") # Resume before beginning the correct sequence.
-    instance.call("_toggle_hatch")
-    if int(rig.call("summary").get("mission_step", -1)) != 1:
-        _fail("Opening the hatch did not clear the first checkpoint")
+    instance.call("_toggle_hatch") # Unsafe order: hatch before stopping motor.
+    var blocked_hatch: Dictionary = rig.call("summary")
+    if int(blocked_hatch.get("mission_step", -1)) != 0 or float(blocked_hatch.get("lid_target", 9)) > 0.05:
+        _fail("W13 tutorial incorrectly permitted opening moving machinery")
         return
-    instance.call("_toggle_motion")
+    if not str(blocked_hatch.get("mission_feedback", "")).contains("SAFETY INTERLOCK"):
+        _fail("W13 unsafe input must explain why it was rejected")
+        return
+    instance.call("_toggle_motion") # Stop drive FIRST.
+    if int(rig.call("summary").get("mission_step", -1)) != 1 or bool(rig.call("summary").get("motion_enabled", true)):
+        _fail("W13 pause-before-hatch checkpoint failed")
+        return
+    instance.call("_toggle_hatch") # Safe open.
     if int(rig.call("summary").get("mission_step", -1)) != 2:
-        _fail("Pausing the drive did not clear the second checkpoint")
+        _fail("W13 hatch-opening checkpoint failed")
         return
-    instance.call("_toggle_hatch")
+    for tick in range(125):
+        rig.call("_physics_process", 1.0 / 60.0)
+    if float(rig.call("summary").get("lid_progress", 0)) < 0.95:
+        _fail("W13 service hatch did not physically open")
+        return
+    instance.call("_toggle_motion") # Unsafe restart must fail.
+    if bool(rig.call("summary").get("motion_enabled", true)) or int(rig.call("summary").get("mission_step", -1)) != 2:
+        _fail("W13 tutorial restarted while hatch was open")
+        return
+    instance.call("_toggle_hatch") # Close safely.
     if int(rig.call("summary").get("mission_step", -1)) != 3:
-        _fail("Closing the hatch did not clear the third checkpoint")
+        _fail("W13 hatch-closing checkpoint failed")
+        return
+    instance.call("_toggle_motion") # Unsafe restart while lid is still closing.
+    if bool(rig.call("summary").get("motion_enabled", true)):
+        _fail("W13 tutorial drive restarted before hatch fully sealed")
+        return
+    for tick in range(125):
+        rig.call("_physics_process", 1.0 / 60.0)
+    if float(rig.call("summary").get("lid_progress", 9)) > 0.05:
+        _fail("W13 simulated hatch did not reach fully sealed state")
         return
     instance.call("_toggle_motion")
     var complete: Dictionary = rig.call("summary")
     if not bool(complete.get("mission_completed", false)) or int(complete.get("mission_step", 0)) != 4:
-        _fail("Full four-step mission did not complete: " + str(complete))
+        _fail("W13 safety-first service training failed: " + str(complete))
         return
-    if not bool(complete.get("motion_enabled", false)) or float(rig.get("lid_target")) > 0.5:
-        _fail("Mission completed with unsafe simulated state")
+    if not bool(complete.get("motion_enabled", false)) or float(rig.get("lid_target")) > 0.05:
+        _fail("W13 lesson completed with unsafe simulated state")
         return
     instance.call("_next_view")
     if int(instance.get("view_index")) != 1:
