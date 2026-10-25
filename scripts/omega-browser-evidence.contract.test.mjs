@@ -230,3 +230,58 @@ test('black/invalid canvas readback never counts as verified image',async()=>{
   }
   await assert.rejects(captureAnimatedWebGLViewport(page),/No authentic WebGL pixels could be captured.*readback stayed dark/)
 })
+
+test('R74 large desktop uses bounded ORIGINAL CDP compositor pixels, never scales the live Godot page',async()=>{
+  const events=new Map(),methods=[]
+  const session={
+    on(name,callback){events.set(name,callback)},
+    off(name){events.delete(name)},
+    async send(name,args){
+      methods.push({name,args})
+      if(name==='Page.startScreencast'){
+        assert.deepEqual(args,{format:'png',everyNthFrame:1,maxWidth:960,maxHeight:540})
+        queueMicrotask(()=>events.get('Page.screencastFrame')?.({
+          sessionId:5,data:pixel.toString('base64')
+        }))
+      }
+      return {}
+    },
+    async detach(){}
+  }
+  const page={viewportSize:()=>({width:1366,height:768}),
+    context:()=>({newCDPSession:async()=>session})}
+  const proof=await captureAnimatedWebGLViewport(page)
+  assert.equal(proof.method,'chromium-cdp-screencast')
+  assert.deepEqual(proof.png,pixel)
+  assert.equal(methods.some(x=>x.name==='Page.captureScreenshot'),false)
+  assert.equal(events.size,0)
+  assert.deepEqual(page.viewportSize(),{width:1366,height:768})
+})
+
+test('R74 mobile portrait screenshot remains full resolution without hidden resampling',async()=>{
+  const events=new Map()
+  const session={
+    on(name,fn){events.set(name,fn)},
+    off(name){events.delete(name)},
+    async send(name,args){
+      if(name==='Page.startScreencast'){
+        assert.deepEqual(args,{format:'png',everyNthFrame:1})
+        queueMicrotask(()=>events.get('Page.screencastFrame')?.({
+          sessionId:8,data:pixel.toString('base64')
+        }))
+      }
+      return {}
+    },
+    async detach(){}
+  }
+  const page={viewportSize:()=>({width:390,height:844}),
+    context:()=>({newCDPSession:async()=>session})}
+  assert.equal((await captureAnimatedWebGLViewport(page)).method,'chromium-cdp-screencast')
+})
+
+test('R74 rejects unsafe compositor dimension arguments',async()=>{
+  const bogus={on(){},send:async()=>({})}
+  await assert.rejects(captureRealChromiumScreencast(bogus,150,{maxWidth:99999}),/Invalid bounded/)
+  await assert.rejects(captureRealChromiumScreencast(bogus,150,{maxHeight:0}),/Invalid bounded/)
+  await assert.rejects(captureRealChromiumScreencast(bogus,150,{badKey:5}),/Invalid bounded/)
+})
