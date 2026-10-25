@@ -184,3 +184,41 @@ def validate_physical_run(report_path: str | Path, expected_source: str) -> str:
     # NEVER return actual hardware verification or a Production GO certificate:
     # field claims can be fabricated even with hashes and coherent metrics.
     return os_family
+
+
+def main() -> int:
+    import argparse
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--report", type=Path, required=True,
+                        help="Original filled physical-phone session JSON")
+    parser.add_argument("--source-commit", required=True,
+                        help="40-hex SHA copied from independent published release.json")
+    parser.add_argument("--output", type=Path)
+    args = parser.parse_args()
+    try:
+        kind = validate_physical_run(args.report, args.source_commit)
+        result = {
+            "schema": "empire-omega-r80-hardware-evidence-verdict-v1",
+            "status": "EVIDENCE_READY_FOR_INDEPENDENT_HARDWARE_REVIEW",
+            "reported_phone_os": kind, "source_commit": args.source_commit,
+            "device_physically_witnessed": False,
+            "gameplay_and_recording_semantically_verified": False,
+            "production_go": False,
+            "required_next_gate": "An independent person must inspect the original device, app and video and sign off. No automatic AAA certification."
+        }
+    except (OSError, ValueError, TypeError, KeyError, OverflowError) as exc:
+        result = {
+            "schema": "empire-omega-r80-hardware-evidence-verdict-v1",
+            "status": "HOLD", "production_go": False, "reason": str(exc)
+        }
+    rendered = json.dumps(result, ensure_ascii=False, indent=2) + "\n"
+    if args.output:
+        args.output.parent.mkdir(parents=True, exist_ok=True)
+        args.output.write_text(rendered, encoding="utf-8")
+    else:
+        print(rendered, end="")
+    return 0 if result["status"] == "EVIDENCE_READY_FOR_INDEPENDENT_HARDWARE_REVIEW" else 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
