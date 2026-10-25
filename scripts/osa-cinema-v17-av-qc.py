@@ -149,9 +149,9 @@ def inspect_one(spec, video_root, narration_root):
             row["reviewFlags"].append("black_transitions_review_intent")
         if row["video"]["freezeIntervals"]:
             row["reviewFlags"].append("static_holds_review_intent")
-        row["scanSucceeded"] = code == 0 and code_v == 0
+        row["scanSucceeded"] = code == 0 and row["audio"]["integratedLufs"] is not None and code_v == 0
     else:
-        row["scanSucceeded"] = code == 0
+        row["scanSucceeded"] = code == 0 and row["audio"]["integratedLufs"] is not None
     return row
 
 
