@@ -1,0 +1,45 @@
+name: OSGARD R135 W25 exact active-release physical hardware capture safety (NO DEVICE CI)
+
+on:
+  push:
+    branches: [feat/r135-w25-physical-device-source-pinned-capture-20261025]
+    paths:
+      - 'scripts/r135-w25-physical-capture.mjs'
+      - 'scripts/test-r135-w25-physical-capture.mjs'
+      - '.github/workflows/r135-w25-physical-capture-contract.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fail-closed-local-phone-capture-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: JS syntax, strict localhost only and source-pinned release rules
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check scripts/r135-w25-physical-capture.mjs
+          node --check scripts/test-r135-w25-physical-capture.mjs
+          node scripts/test-r135-w25-physical-capture.mjs
+          SELECTED_PIN="$(bash scripts/r135-release-selector.sh)"
+          test -s "$SELECTED_PIN"
+          test "$(jq -er '.pin_file' scripts/r135-active-release.json)" = "$SELECTED_PIN"
+      - name: CI must refuse to claim simulated hardware as a real phone
+        shell: bash
+        run: |
+          set -euo pipefail
+          if node scripts/r135-w25-physical-capture.mjs \
+            --platform android-chrome --orientation portrait --mode ECO \
+            --cdp http://127.0.0.1:9222 --seconds 60 --out /tmp/FAKE_ANDROID.json \
+            --dry-run; then
+            echo "Missing physical attestation was wrongly accepted" >&2
+            exit 1
+          fi
+          echo "W25 PASS: CI did not connect to any device; physical GPU/heat/FPS is NOT certified."
