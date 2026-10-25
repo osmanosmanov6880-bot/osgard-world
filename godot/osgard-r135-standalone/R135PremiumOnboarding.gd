@@ -29,16 +29,16 @@ const DETAILS_EN = [
 const HELP_RU = [
     "НАЧНИТЕ С КНОПКИ НИЖЕ. 6 учебных глав, без пропуска правил безопасности.",
     "ПОДСКАЗКА: V — ракурс, мышь или палец — камера, колесо или жест — масштаб.",
-    "ПОРЯДОК: остановка → открытие → закрытие → полная фиксация → пуск.",
-    "ПОРЯДОК: остановка → люк → ракурс → сканирование → закрытие → пуск.",
+    "ПОРЯДОК: остановка; открытие; закрытие; полная фиксация; пуск.",
+    "ПОРЯДОК: остановка; люк; ракурс; сканирование; закрытие; пуск.",
     "ПОДСКАЗКА: правильный ракурс указан в задании. Подсвеченный индикатор показывает учебную неисправность.",
     "ВЫ ПРОШЛИ УЧЕБНУЮ ЛАБОРАТОРИЮ. Изучите результаты и повторите испытания для улучшения счёта."
 ]
 const HELP_EN = [
     "START BELOW. Six chapters; safety rules cannot be bypassed.",
     "TIP: V for viewpoints, mouse or touch to orbit; wheel/pinch to zoom.",
-    "ORDER: stop → open → close → fully seal → restart.",
-    "ORDER: stop → hatch → correct viewpoint → scan → close → restart.",
+    "ORDER: stop; open; close; fully seal; restart.",
+    "ORDER: stop; hatch; correct viewpoint; scan; close; restart.",
     "TIP: the objective shows the required camera. The lit marker shows the simulated fault.",
     "TRAINING COMPLETE. Review your results and repeat challenges to improve your score."
 ]
