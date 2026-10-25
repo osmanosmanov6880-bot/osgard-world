@@ -99,7 +99,7 @@ func new_game() -> Dictionary:
 		"buildings":buildings,"technologies":technologies,"businesses":businesses,
 		"actions_left":2,"incident":"","mission":0,"deliveries":0,
 		"player_position":DEFAULT_POSITION.duplicate(),"vehicle_position":[-120.0,1.3,-104.0],
-		"vehicle_heading":0.0,"day_clock":8.0,"log":[],"history":[],"money_earned":0,
+		"vehicle_heading":PI * 0.5,"day_clock":8.0,"log":[],"history":[],"money_earned":0,
 		"wallet":600,"active_contract":{},"contracts_completed":0,"cargo_quality_sum":0,"business_revenue":0,"vehicle_fuel":100.0,"vehicle_health":100.0,
 		"inventories":CITY_ECONOMY.default_inventories(),"unemployment":45,"district_scores":{"forum":66,"housing":66,"lower":64,"aqueduct":67},"economy_ledger":[],"deliveries_value":0,
 		"properties":REAL_ESTATE.default_properties(),"real_estate_revenue":0,"reputation":35,"personal_debt":0,"citizen_contacts":{},
