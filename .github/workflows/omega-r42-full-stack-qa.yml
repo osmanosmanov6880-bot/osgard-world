@@ -19,11 +19,13 @@ jobs:
           version: 4.4.1
           use-dotnet: false
           include-templates: false
+      - name: Assert missing Godot scripts cannot falsely pass CI
+        run: bash scripts/test-omega-strict-import.sh
       - name: Original procedural assets and real Godot scene import
         run: |
           python3 godot/empire-omega/tools/generate_audio.py
           python3 godot/empire-omega/tools/generate_patrol_audio.py
-          godot --headless --editor --path godot/empire-omega --import --quit
+          bash scripts/omega-strict-godot-import.sh godot/empire-omega
       - name: Five native gameplay features and physics laboratory regression
         shell: bash
         run: |
@@ -56,7 +58,7 @@ jobs:
           set -euo pipefail
           python3 godot/empire-omega/tools/generate_audio.py
           python3 godot/empire-omega/tools/generate_patrol_audio.py
-          godot --headless --editor --path godot/empire-omega --import --quit
+          bash scripts/omega-strict-godot-import.sh godot/empire-omega
           mkdir -p godot/empire-omega/.build-web
           godot --headless --path godot/empire-omega --export-release Web "$GITHUB_WORKSPACE/godot/empire-omega/.build-web/index.html"
           node scripts/localize-godot-web-export.mjs godot/empire-omega/.build-web
