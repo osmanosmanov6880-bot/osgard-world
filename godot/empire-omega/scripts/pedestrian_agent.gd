@@ -14,6 +14,8 @@ var schedule_timer := 0.0
 var traffic_vehicles: Array = []
 var player_car: Node3D
 var walking_phase := 0.0
+# Actual next-route velocity. Traffic AI uses it to anticipate crossings.
+var planned_velocity: Vector3 = Vector3.ZERO
 var body_mesh: MeshInstance3D
 
 func _ready() -> void:
@@ -63,14 +65,17 @@ func _process(delta: float) -> void:
 		schedule_timer = 0.0
 		_refresh_schedule()
 	if route.is_empty() or next_waypoint >= route.size():
+		planned_velocity = Vector3.ZERO
 		return
 	var at: Vector3 = route[next_waypoint]
 	var travel: Vector3 = at-global_position
 	travel.y = 0.0
 	if travel.length_squared() <= 2.25:
+		planned_velocity = Vector3.ZERO
 		next_waypoint += 1
 		return
 	var velocity: Vector3 = travel.normalized() * speed
+	planned_velocity = velocity
 	if _yield_to_vehicle(velocity):
 		return
 	global_position += velocity * minf(delta,0.06)
