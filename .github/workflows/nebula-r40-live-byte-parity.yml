@@ -41,8 +41,15 @@ jobs:
           node scripts/nebula-production-artifact-guard.mjs
           policy=.github/nebula-production-allowlist.json
           qa=.github/nebula-r40-qa-one-shot-source.json
-          test "$(jq -er '.approved_variant' "$policy")" = R38
-          test "$(jq -er '.approval' "$policy")" = null
+          variant="$(jq -er '.approved_variant' "$policy")"
+          case "$variant" in R38|R40) ;; *) echo "Unsupported NEBULA production variant" >&2; exit 1;; esac
+          if [ "$variant" = R38 ]; then
+            test "$(jq -er '.approval' "$policy")" = null
+          else
+            test "$(jq -er '.release_status' "$policy")" = R40_HARDWARE_QA_APPROVED
+            test "$(jq -er '.approval.real_device_reviewed' "$policy")" = true
+          fi
+          printf '%s\n' "NEBULA_ACTIVE_VARIANT=$variant" >> "$GITHUB_ENV"
           test "$(jq -er '.schema' "$qa")" = NEBULA_R40_ONESHOT_QA_V1
           test "$(jq -er '.staging_only' "$qa")" = true
           test "$(jq -er '.approved_for_production' "$qa")" = false
@@ -78,7 +85,7 @@ jobs:
             sha256sum --check R40_DEVICE_ARTIFACT_SHA256.txt
             for name in index.html index.js index.wasm index.pck; do test -s "$name"; done
           )
-      - name: Compare published R38 and isolated QA R40 exact file bytes
+      - name: Compare published approved game and isolated QA R40 exact file bytes
         run: |
           set -euo pipefail
           mkdir -p "$RUNNER_TEMP/nebula-r38-live" "$RUNNER_TEMP/nebula-r40-live"
@@ -92,22 +99,35 @@ jobs:
               "$root/nebula-r40-qa/$name" -o "$RUNNER_TEMP/nebula-r40-live/$name"
             test -s "$RUNNER_TEMP/nebula-r38-live/$name"
             test -s "$RUNNER_TEMP/nebula-r40-live/$name"
-            cmp "public/games/remix/arena-v2/nebula-3d/$name" \
-              "$RUNNER_TEMP/nebula-r38-live/$name" || {
-                echo "::error::Public R38 $name differs from pinned master baseline" >&2
-                exit 1
-              }
+            if [ "$NEBULA_ACTIVE_VARIANT" = R38 ]; then
+              cmp "public/games/remix/arena-v2/nebula-3d/$name" \
+                "$RUNNER_TEMP/nebula-r38-live/$name" || {
+                  echo "::error::Public R38 $name differs from pinned master baseline" >&2
+                  exit 1
+                }
+            else
+              cmp "$RUNNER_TEMP/nebula-r40-ci/$name" \
+                "public/games/remix/arena-v2/nebula-3d/$name" || {
+                  echo "::error::Promoted R40 master $name differs from original CI $QA_RUN_ID" >&2
+                  exit 1
+                }
+              cmp "$RUNNER_TEMP/nebula-r40-ci/$name" \
+                "$RUNNER_TEMP/nebula-r38-live/$name" || {
+                  echo "::error::Promoted R40 live $name differs from original CI $QA_RUN_ID" >&2
+                  exit 1
+                }
+            fi
             cmp "$RUNNER_TEMP/nebula-r40-ci/$name" \
               "$RUNNER_TEMP/nebula-r40-live/$name" || {
                 echo "::error::Isolated QA R40 $name differs from pinned CI $QA_RUN_ID" >&2
                 exit 1
               }
-            echo "NEBULA_LIVE_ASSET_PARITY_OK=$name R38_vs_master=true R40_vs_verified_CI=true"
+            echo "NEBULA_LIVE_ASSET_PARITY_OK=$name approved=$NEBULA_ACTIVE_VARIANT QA_CI_MATCH=true"
           done
           {
             echo '## NEBULA live exact-byte integrity'
             echo ''
-            echo '- Public R38 four files: byte-identical to pinned master baseline.'
+            echo "- Public approved NEBULA ($NEBULA_ACTIVE_VARIANT): four files match the corresponding pinned source."
             echo '- Isolated QA R40 four files: byte-identical to original PR #375 CI artifact.'
             echo '- No changes to server, game, deployment policy or private phone evidence.'
             echo '- **Hardware FPS and independent human QA remain NOT VERIFIED.**'
