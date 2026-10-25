@@ -537,7 +537,7 @@ func _process(_delta: float) -> void:
 
 func _make_strategy() -> void:
 	overlay = ColorRect.new()
-	overlay.color = Color(0.005,0.008,0.014,0.60)
+	overlay.color = Color(0.005,0.008,0.014,0.36)
 	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
 	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
 	overlay.visible = false
