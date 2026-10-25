@@ -166,9 +166,17 @@ async function verifyW22SelectableCases(page, isMobile, name) {
     && s?.cleared_case_count === 3 && s?.case_mastery_threshold === 100
     && s?.case_proficient_flags?.length === 3 && !s?.challenge_active,
     'W22 genuine course progress and 3 selectable cases are required', 30_000)
-  await hitLuxuryControl(page, 'tutorial_collapse_center', isMobile)
-  await expectState(page, s => s?.tutorial_expanded && s?.case_replay_hitboxes?.length === 3,
-    'W22 real tutorial must be reopenable after completing diagnostics')
+  // The previous real tutorial may already be open after chapter completion.
+  // Toggle only when collapsed: an unconditional toggle incorrectly *closes*
+  // the already-visible course on desktop, while mobile initially has it shut.
+  // This test must prove either genuine state preserves an already-open panel
+  // or a true pointer/touch click reopens it from the compact HUD.
+  if (!before.tutorial_expanded) {
+    await hitLuxuryControl(page, 'tutorial_collapse_center', isMobile)
+  }
+  await expectState(page, s => s?.tutorial_expanded === true
+    && s?.case_replay_hitboxes?.length === 3,
+    'W22 real case selector should be visible after course completion')
   const rect = await page.locator('canvas').first().boundingBox()
   if (!rect) throw new Error('Godot canvas absent for W22 selected scenario')
   let active
