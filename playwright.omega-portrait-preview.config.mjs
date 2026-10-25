@@ -1,5 +1,13 @@
 import { defineConfig } from '@playwright/test'
 
+// R67: keep real SwiftShader WebGL2 by default. On Linux CI an explicitly
+// provisioned Mesa/Xvfb alternate backend avoids occasional compositor
+// readback deadlocks at full desktop resolution; never substitutes a mock.
+const mesaDesktop = process.env.OMEGA_CI_GL_BACKEND === 'mesa'
+const realWebGLArgs = mesaDesktop
+  ? ['--enable-webgl', '--ignore-gpu-blocklist', '--use-gl=angle', '--use-angle=gl']
+  : ['--enable-webgl', '--ignore-gpu-blocklist', '--use-angle=swiftshader', '--enable-unsafe-swiftshader']
+
 export default defineConfig({
   testDir: './scripts',
   testMatch: 'omega-portrait-preview.spec.mjs',
@@ -15,7 +23,7 @@ export default defineConfig({
     actionTimeout: 22_000,
     navigationTimeout: 30_000,
     launchOptions: {
-      args: ['--enable-webgl', '--ignore-gpu-blocklist', '--use-angle=swiftshader', '--enable-unsafe-swiftshader']
+      args: realWebGLArgs
     },
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure'
