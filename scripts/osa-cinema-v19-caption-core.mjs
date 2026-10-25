@@ -56,6 +56,7 @@ export function parseWebVtt(source, durationSeconds) {
   }
   const errors=validateCues(cues,durationSeconds)
   if(errors.length)throw new Error('Invalid WebVTT cues: '+errors.join(', '))
+  if(!cues.length)throw new Error('No caption cues in WebVTT')
   return cues
 }
 export function exportWebVtt(cues,durationSeconds) {
