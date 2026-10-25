@@ -54,14 +54,14 @@ jobs:
           npm ci
           npm install --no-save --package-lock=false @playwright/test@1.58.2 pngjs@7.0.0
           npx playwright install --with-deps chromium
-      - name: Drive actual public Godot desktop and touch using authentic compositor pixels
+      - name: Drive authentic public Godot desktop and touch with zero flaky retries
         shell: bash
         env:
           OSGARD_GAME_ORIGIN: https://osgard.world
         run: |
           set -euo pipefail
           npx playwright test --config playwright.omega-live-webgl.config.mjs \
-            --project=desktop-chromium --project=touch-phone-chromium
+            --project=desktop-chromium --project=touch-phone-chromium --retries=0
       - name: Keep real screenshots, pixel-difference metrics and exact public bytes
         if: always()
         uses: actions/upload-artifact@v4
