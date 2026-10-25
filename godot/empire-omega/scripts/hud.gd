@@ -932,8 +932,9 @@ func _redraw_strategy() -> void:
 	operations.navigate.connect(Callable(self,"_jump_to_strategy_section"))
 	operations.select_district.connect(Callable(self,"_select_district"))
 	operations.select_vehicle.connect(Callable(self,"_do_vehicle"))
+	var premium_compact: bool = compact_hud or get_viewport().get_visible_rect().size.x < 1200.0
 	operations.build(d,forecast,MissionManager.title(GameState.locale),
-		get_viewport().world_3d,compact_hud,GameState.locale)
+		get_viewport().world_3d,premium_compact,GameState.locale)
 	_mark_strategy_section("overview")
 	_label(strategy_contents,"%s %d  ·  %s %d  ·  %s %d" % [t("turn"),d["turn"],t("science"),d["science"],t("actions"),d["actions_left"]],16,true)
 	var overview := HBoxContainer.new()
