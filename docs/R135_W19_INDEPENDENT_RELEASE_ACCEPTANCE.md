@@ -20,6 +20,34 @@ change** `scripts/r135-active-release.json` by merging the artwork/onboarding PR
    revalidate Godot binaries, fresh Nginx HTTP behavior, correct WebAssembly MIME,
    range requests, gzip, and original-image luminance.
 
+## Create a checksum-only pin draft (never self-approved)
+
+After the entire W19 Godot WebGL run succeeds, download its exact named
+artifact and run:
+
+```bash
+python3 scripts/r135-w19-candidate-pin-draft.py \
+  --artifact /path/to/extracted-actions-artifact \
+  --source EXACT_40_CHAR_COMMIT_SHA \
+  --run-id ACTUAL_SUCCESSFUL_RUN_ID \
+  --artifact-id ACTUAL_ARTIFACT_ID \
+  --output /tmp/r135-w19-pin-UNREVIEWED.json
+```
+
+The script requires the completed W10 evidence and computes hashes of
+the exact WebGL ZIP, manifest and 13 genuine PNG files. It deliberately
+sets all approval flags to **false**. Inspect the original images and
+browser playthrough, then explicitly attest only supported results in
+`scripts/r135-w19-release-pin.json` on
+`release/r135-w19-reviewed-artifact-20261025`. The independent
+acceptance workflow runs automatically on this review branch; an immutable
+non-production GitHub Release is created only after its full acceptance
+job succeeds.
+
+The public W18 channel stays selected even when a W19 candidate Release
+exists. Production requires a separate protected selector update and live
+SSH verification.
+
 ## Strict visual acceptance
 
 Original frame hashes, never redrawn/generated PNGs:
