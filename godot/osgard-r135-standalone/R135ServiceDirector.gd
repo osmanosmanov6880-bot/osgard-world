@@ -293,12 +293,23 @@ func _mission_event(action: String) -> void:
     else:
         mission_feedback = "CHECKPOINT %d/4 CLEARED" % mission_step
 
+func _bounded_record_int(value: Variant, limit: int) -> int:
+    # Only finite numbers may enter a save record. Malformed user:// data is
+    # untrusted input and must not crash a lesson or fabricate progress.
+    if typeof(value) == TYPE_INT:
+        return clampi(int(value), 0, limit)
+    if typeof(value) == TYPE_FLOAT:
+        var number: float = float(value)
+        if not is_nan(number) and not is_inf(number):
+            return clampi(int(number), 0, limit)
+    return 0
+
 func _load_challenge_record() -> void:
     var settings := ConfigFile.new()
     if settings.load(BEST_SCORE_PATH) != OK:
         # No file or corrupt legacy record: preserve safe fresh defaults.
         return
-    challenge_best_score = clampi(int(settings.get_value("progress", "best_score", 0)), 0, 150)
+    challenge_best_score = _bounded_record_int(settings.get_value("progress", "best_score", 0), 150)
     var saved_cases: Variant = settings.get_value("progress", "cleared_cases", [false, false, false])
     if saved_cases is Array:
         for i in range(cleared_cases.size()):
@@ -312,19 +323,16 @@ func _load_challenge_record() -> void:
     var stored_mistakes: Variant = settings.get_value("progress", "case_total_mistakes", [])
     for i in range(FAULT_TYPES.size()):
         if stored_attempts is Array and i < stored_attempts.size():
-            if typeof(stored_attempts[i]) in [TYPE_INT, TYPE_FLOAT]:
-                case_attempts[i] = clampi(int(stored_attempts[i]), 0, 1000000)
+            case_attempts[i] = _bounded_record_int(stored_attempts[i], 1000000)
         if stored_scores is Array and i < stored_scores.size():
-            if typeof(stored_scores[i]) in [TYPE_INT, TYPE_FLOAT]:
-                case_best_scores[i] = clampi(int(stored_scores[i]), 0, 150)
+            case_best_scores[i] = _bounded_record_int(stored_scores[i], 150)
         if stored_seconds is Array and i < stored_seconds.size():
             if typeof(stored_seconds[i]) in [TYPE_INT, TYPE_FLOAT]:
                 var time_value: float = float(stored_seconds[i])
                 if not is_nan(time_value) and not is_inf(time_value) and time_value >= 0.0:
                     case_best_seconds[i] = minf(time_value, 360000.0)
         if stored_mistakes is Array and i < stored_mistakes.size():
-            if typeof(stored_mistakes[i]) in [TYPE_INT, TYPE_FLOAT]:
-                case_total_mistakes[i] = clampi(int(stored_mistakes[i]), 0, 1000000)
+            case_total_mistakes[i] = _bounded_record_int(stored_mistakes[i], 1000000)
 
 func _save_challenge_record() -> void:
     var settings := ConfigFile.new()
