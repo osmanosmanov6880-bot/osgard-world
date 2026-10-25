@@ -1,0 +1,83 @@
+import { test, expect } from '@playwright/test'
+
+test('V15 full-screen screening opens, navigates, saves choices, and restores focus', async ({ page }, info) => {
+  const errors=[]
+  page.on('pageerror', error => errors.push(error.message))
+  await page.goto('/osa-cinema?lang=ru&scene=0')
+  const launch=page.getByTestId('cinema-screening-launch')
+  await expect(launch).toBeVisible()
+  await launch.focus()
+  await launch.click()
+  const screen=page.getByTestId('cinema-screening')
+  await expect(screen.getByRole('dialog', { name: 'Интерактивный показ OSA Cinema' })).toBeVisible()
+  await expect(screen.locator('.osa-cinema-screening__art img')).toHaveAttribute('src','/osa-cinema/reference/library.webp')
+  await expect(screen.locator('.osa-cinema-screening__content h2')).toBeVisible()
+  await expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow','1')
+  const art=await screen.locator('.osa-cinema-screening__art img').evaluate(async element => {
+    await element.decode()
+    return {loaded:element.naturalWidth>300,sameOrigin:new URL(element.src).origin===location.origin}
+  })
+  expect(art).toEqual({loaded:true,sameOrigin:true})
+  // The opening scene offers three decisions; scene 2 intentionally has no choice.
+  const choices=screen.locator('.osa-cinema-screening__choices button')
+  await expect(choices).toHaveCount(3)
+  await choices.nth(1).scrollIntoViewIfNeeded()
+  const choiceHitTest = await choices.nth(1).evaluate(node => {
+    const box = node.getBoundingClientRect()
+    const top = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2)
+    return Boolean(top && (node === top || node.contains(top)))
+  })
+  expect(choiceHitTest, 'Question must receive real pointer events, not be covered by the footer').toBe(true)
+  await choices.nth(1).click()
+  await expect(choices.nth(1)).toHaveAttribute('aria-pressed','true')
+  await expect(screen.locator('.osa-cinema-screening__result')).toBeVisible()
+  await screen.getByRole('button',{name:'Следующая сцена'}).click()
+  await expect(page).toHaveURL(/scene=1/)
+  await expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow','2')
+  await expect(screen.locator('.osa-cinema-screening__content')).toHaveJSProperty('scrollTop', 0)
+  await expect(choices).toHaveCount(0)
+  const geometry = await screen.locator('.osa-cinema-screening__stage').evaluate(stage => {
+    const content = stage.querySelector('.osa-cinema-screening__content')
+    const body = stage.querySelector('.osa-cinema-screening__body')
+    const bound = node => node.getBoundingClientRect()
+    return {
+      stageOverflow: stage.scrollWidth - stage.clientWidth,
+      contentRight: bound(content).right,
+      bodyRight: bound(body).right,
+      screenRight: document.documentElement.clientWidth,
+    }
+  })
+  expect(geometry.stageOverflow, 'Full-screen stage should not overflow horizontally').toBeLessThanOrEqual(2)
+  expect(geometry.contentRight, 'Film text must fit the viewport').toBeLessThanOrEqual(geometry.screenRight + 1)
+  expect(geometry.bodyRight, 'Film paragraph must be fully visible').toBeLessThanOrEqual(geometry.screenRight + 1)
+  await page.screenshot({path:info.outputPath('osa-v15-ru-screening.png'),fullPage:true,animations:'disabled'})
+  await page.keyboard.press('Escape')
+  await expect(screen).toHaveCount(0)
+  await expect(launch).toBeFocused()
+  await page.reload()
+  await expect(page).toHaveURL(/scene=1/)
+  await page.locator('.cinema-controls button').first().click()
+  await expect(page).toHaveURL(/scene=0/)
+  await expect(page.locator('.cinema-choice-grid button').nth(1)).toHaveAttribute('aria-pressed','true')
+  expect(errors).toEqual([])
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2)).toBe(true)
+})
+
+test('V15 English screening completes journey with choice semantics on mobile', async ({ page }, info) => {
+  const errors=[]
+  page.on('pageerror', error => errors.push(error.message))
+  await page.goto('/osa-cinema?lang=en&scene=7')
+  await page.getByTestId('cinema-screening-launch').click()
+  const screen=page.getByTestId('cinema-screening')
+  await expect(screen.getByRole('dialog',{name:'OSA Cinema interactive screening'})).toBeVisible()
+  await expect(screen.locator('.osa-cinema-screening__art img')).toHaveAttribute('src','/osa-cinema/reference/decide.webp')
+  await expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow','8')
+  await expect(screen.getByText('not recorded video',{exact:false})).toBeVisible()
+  expect(await screen.locator('.osa-cinema-screening__stage').evaluate(node => node.scrollWidth - node.clientWidth)).toBeLessThanOrEqual(2)
+  await screen.getByRole('button',{name:'Complete the journey'}).click()
+  await expect(screen).toHaveCount(0)
+  await expect(page.locator('.cinema-completion')).toBeVisible()
+  await page.screenshot({path:info.outputPath('osa-v15-en-complete.png'),fullPage:true,animations:'disabled'})
+  expect(errors).toEqual([])
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2)).toBe(true)
+})
