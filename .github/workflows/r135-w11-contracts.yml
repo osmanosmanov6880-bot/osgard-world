@@ -4,6 +4,9 @@ on:
     branches: [release/r135-w11-verified-promotion-20261025]
     paths:
       - "scripts/r135-release-stage.py"
+      - "nginx.conf"
+      - "scripts/r135-production-smoke.mjs"
+      - ".github/workflows/deploy-frontend.yml"
       - "scripts/test_r135_w11_stage.py"
       - "scripts/r135-w11-caption-gate.py"
       - ".github/workflows/r135-w11-artifact-gate.yml"
@@ -41,5 +44,13 @@ jobs:
           ):
               assert value in s, f"Missing fail-closed W11 acceptance invariant: {value}"
           assert "deploy-frontend" not in s, "Gate may not deploy unaccepted game"
+          nginx=Path("nginx.conf").read_text()
+          r135=nginx.split("location ^~ /games/r135-service/",1)[1].split("location /skillcred/",1)[0]
+          assert "no-cache, max-age=0, must-revalidate" in r135, "mutable R135 WASM/PCK may mix with older game"
+          smoke=Path("scripts/r135-production-smoke.mjs").read_text()
+          assert "OSGARD_REQUIRE_R135_REVALIDATION" in smoke
+          deploy=Path(".github/workflows/deploy-frontend.yml").read_text()
+          assert deploy.count("export OSGARD_REQUIRE_R135_REVALIDATION=1") == 2
+          assert "gh release download" in deploy and "scripts/r135-w11-release-pin.json" in deploy
           print("R135 W11 promotion invariants PASS; independent PR checks only")
           PY
