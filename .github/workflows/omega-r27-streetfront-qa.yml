@@ -4,6 +4,8 @@ on:
     branches: [master, feat/horizon-r26-mobile-focus-organic-trees]
     paths:
       - 'godot/empire-omega/**'
+      - 'scripts/omega-four-viewport-real-ci.sh'
+      - 'scripts/omega-four-viewport-real-ci.contract.test.py'
       - '.github/workflows/omega-r27-streetfront-qa.yml'
   workflow_dispatch:
 permissions:
@@ -22,6 +24,12 @@ jobs:
           version: 4.4.1
           use-dotnet: false
           include-templates: false
+      - name: Protect authentic five-workflow original-Godot pixel proof
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash -n scripts/omega-four-viewport-real-ci.sh
+          python3 scripts/omega-four-viewport-real-ci.contract.test.py
       - name: Generate genuine original game assets and import Godot
         run: |
           python3 godot/empire-omega/tools/generate_audio.py
@@ -67,6 +75,12 @@ jobs:
           npm ci
           npm install --no-save --package-lock=false @playwright/test@1.58.2 pngjs@7.0.0
           npx playwright install --with-deps chromium
+      - name: Provision real Mesa Xvfb software GPU for 1366x768 compositor
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y xvfb libgl1-mesa-dri libegl1 libgl1
       - name: Serve unpublished candidate locally without touching production
         shell: bash
         run: |
@@ -77,8 +91,11 @@ jobs:
           done
           cat /tmp/r27-game-http.log
           exit 1
-      - name: Check actual world WebGL 2 scene and 4 mobile/desktop pixel frames
-        run: npx playwright test --config playwright.omega-portrait-preview.config.mjs
+      - name: Assert four original Godot WebGL viewports without flaky retries
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash scripts/omega-four-viewport-real-ci.sh
       - name: Upload real R27 candidate frames and diagnostics
         if: always()
         uses: actions/upload-artifact@v4
@@ -87,5 +104,6 @@ jobs:
           path: |
             omega-portrait-preview-results/
             omega-portrait-preview-report/
+            omega-original-four-viewport-evidence/
           if-no-files-found: warn
           retention-days: 12

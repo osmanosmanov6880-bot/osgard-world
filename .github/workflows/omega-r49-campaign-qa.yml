@@ -8,6 +8,7 @@ on:
       - 'godot/empire-omega/scripts/main.gd'
       - 'godot/empire-omega/tests/v70_r49_campaign_chapters.gd'
       - '.github/workflows/omega-r49-campaign-qa.yml'
+      - 'scripts/omega-r49-mesa-contract.test.py'
   workflow_dispatch:
 permissions:
   contents: read
@@ -29,6 +30,11 @@ jobs:
           python3 godot/empire-omega/tools/generate_audio.py
           python3 godot/empire-omega/tools/generate_patrol_audio.py
           bash scripts/omega-strict-godot-import.sh godot/empire-omega
+      - name: Refuse stale fake pixel capture and unguarded desktop SwiftShader
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/omega-r49-mesa-contract.test.py
       - name: Real gameplay, career, save compatibility and R49 full campaign chapter tests
         shell: bash
         run: |
@@ -71,6 +77,12 @@ jobs:
           npm ci
           npm install --no-save --package-lock=false @playwright/test@1.58.2 pngjs@7.0.0
           npx playwright install --with-deps chromium
+      - name: Prepare genuine Mesa/Xvfb desktop OpenGL capture
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y xvfb libgl1-mesa-dri libegl1 libgl1
       - name: Start only local candidate server (never production)
         shell: bash
         run: |
@@ -82,8 +94,19 @@ jobs:
           done
           cat /tmp/r49-city-http.log
           exit 1
-      - name: Capture genuine Chromium frame of the 3D game at each viewport
-        run: npx playwright test --config playwright.omega-portrait-preview.config.mjs --project="${{ matrix.viewport }}"
+      - name: Capture actual Godot WebGL scene, Mesa on desktop and no flaky retries
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${{ matrix.viewport }}" = "desktop-1366x768" ]; then
+            OMEGA_CI_GL_BACKEND=mesa LIBGL_ALWAYS_SOFTWARE=1 \
+              xvfb-run -a -s '-screen 0 1920x1080x24' \
+              npx playwright test --config playwright.omega-portrait-preview.config.mjs \
+                --project="${{ matrix.viewport }}" --workers=1 --retries=0
+          else
+            npx playwright test --config playwright.omega-portrait-preview.config.mjs \
+              --project="${{ matrix.viewport }}" --workers=1 --retries=0
+          fi
       - name: Retain evidence per actual browser size
         if: always()
         uses: actions/upload-artifact@v4

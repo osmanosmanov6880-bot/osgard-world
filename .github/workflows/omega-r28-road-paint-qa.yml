@@ -4,6 +4,7 @@ on:
     branches: [master, feat/horizon-r27-batched-city-streetfronts]
     paths:
       - 'godot/empire-omega/**'
+      - 'scripts/omega-four-viewport-real-ci.sh'
       - '.github/workflows/omega-r28-road-paint-qa.yml'
   workflow_dispatch:
 permissions:
@@ -69,6 +70,12 @@ jobs:
           npm ci
           npm install --no-save --package-lock=false @playwright/test@1.58.2 pngjs@7.0.0
           npx playwright install --with-deps chromium
+      - name: Provision real Mesa Xvfb software GPU for 1366x768 compositor
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y xvfb libgl1-mesa-dri libegl1 libgl1
       - name: Serve unpublished candidate locally without touching production
         shell: bash
         run: |
@@ -79,18 +86,11 @@ jobs:
           done
           cat /tmp/r28-game-http.log
           exit 1
-      - name: Check all four actual WebGL viewports in isolated Chromium processes
+      - name: Assert four original Godot WebGL viewports without flaky retries
         shell: bash
         run: |
           set -euo pipefail
-          # Software WebGL readback can hang when four heavy Godot viewports
-          # share one long-lived Chromium process. Isolate process lifetime,
-          # keep ALL four real viewport assertions mandatory, no dummy pixels.
-          for viewport in portrait-390x844 small-phone-320x568 landscape-phone-844x390 desktop-1366x768; do
-            echo "Authentic Godot WebGL pixel QA: $viewport"
-            npx playwright test --config playwright.omega-portrait-preview.config.mjs \
-              --project="$viewport" --workers=1
-          done
+          bash scripts/omega-four-viewport-real-ci.sh
       - name: Upload real R28 road paint candidate frames and diagnostics
         if: always()
         uses: actions/upload-artifact@v4
@@ -99,5 +99,6 @@ jobs:
           path: |
             omega-portrait-preview-results/
             omega-portrait-preview-report/
+            omega-original-four-viewport-evidence/
           if-no-files-found: warn
           retention-days: 12
