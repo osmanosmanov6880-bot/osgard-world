@@ -20,6 +20,36 @@ const browser = await chromium.launch({
 // when the Godot canvas exists. Fall back to direct canvas readback, but only
 // count a substantial JPEG as a visual capture. Never mark a blank as a pass.
 async function captureWithFallback(page, destination, errors) {
+  // First read actual game pixels directly from the preserved WebGL canvas.
+  // This succeeded on hosted SwiftShader in PR #350; avoid a costly,
+  // non-working 15-second Godot viewport readback BEFORE that known-good
+  // pixel path. Keep all fallback methods and errors if the first read fails.
+  // On heavy software WebGL, requesting a screenshot from the browser
+  // compositor can wedge the renderer before canvas readback gets a chance.
+  // Try actual game pixels FIRST, not after multiple compositor timeouts.
+  try {
+    const image = await Promise.race([
+      page.evaluate(() => {
+        const canvas = document.querySelector('canvas');
+        return canvas ? canvas.toDataURL('image/jpeg', 0.72) : '';
+      }),
+      new Promise(resolve => setTimeout(() => resolve(''), 18000))
+    ]);
+    if (image.startsWith('data:image/jpeg;base64,')) {
+      const raw = Buffer.from(image.slice('data:image/jpeg;base64,'.length), 'base64');
+      if (raw.length >= 12000) {
+        fs.writeFileSync(destination, raw);
+        return 'canvas-readback-early';
+      }
+      errors.push('Canvas readback was black/empty or too small (' + raw.length + ' bytes)');
+    } else {
+      errors.push('Canvas readback did not return usable JPEG data');
+    }
+  } catch (e) {
+    errors.push('Canvas readback unavailable: ' + String(e.message).slice(0, 180));
+  }
+  // If canvas readback is unavailable, ask the running Godot viewport.
+  // A timeout here is still recorded as an error, never hidden or fabricated.
   // R40: request a captured pixel frame directly from the live Godot viewport
   // FIRST. The old order attempted stalled SwiftShader canvas readbacks first,
   // which could then starve the engine and time out the real viewport hook.
@@ -49,30 +79,6 @@ async function captureWithFallback(page, destination, errors) {
     }
   } catch (e) {
     errors.push('Godot viewport capture unavailable: ' + String(e.message).slice(0, 180));
-  }
-  // On heavy software WebGL, requesting a screenshot from the browser
-  // compositor can wedge the renderer before canvas readback gets a chance.
-  // Try actual game pixels FIRST, not after multiple compositor timeouts.
-  try {
-    const image = await Promise.race([
-      page.evaluate(() => {
-        const canvas = document.querySelector('canvas');
-        return canvas ? canvas.toDataURL('image/jpeg', 0.72) : '';
-      }),
-      new Promise(resolve => setTimeout(() => resolve(''), 18000))
-    ]);
-    if (image.startsWith('data:image/jpeg;base64,')) {
-      const raw = Buffer.from(image.slice('data:image/jpeg;base64,'.length), 'base64');
-      if (raw.length >= 12000) {
-        fs.writeFileSync(destination, raw);
-        return 'canvas-readback-early';
-      }
-      errors.push('Canvas readback was black/empty or too small (' + raw.length + ' bytes)');
-    } else {
-      errors.push('Canvas readback did not return usable JPEG data');
-    }
-  } catch (e) {
-    errors.push('Canvas readback unavailable: ' + String(e.message).slice(0, 180));
   }
   // Read the WebGL drawing buffer directly before asking a software
   // compositor to synchronize. ReadPixels is a REAL framebuffer capture,
