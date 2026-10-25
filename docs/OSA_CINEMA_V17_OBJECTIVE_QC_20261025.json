@@ -34,7 +34,10 @@
       "publicationApproved": false,
       "originalSha256": "b7b53ab75fdfec4390eda8b6dee39e0f9b095da0c8e4c73e087fe057f8b6c40c",
       "expectedBytes": 1103038,
-      "integrityEvidence": "V16 original MP4/MP3 audit, separate from objective FFmpeg scan"
+      "integrityEvidence": "V16 original MP4/MP3 audit, separate from objective FFmpeg scan",
+      "id": "osa-voice-en-act-1",
+      "locale": "en",
+      "edition": "act-1"
     },
     {
       "file": "OSA Cinema — Act I — Russian narrator final(1).mp3",
@@ -54,7 +57,10 @@
       "publicationApproved": false,
       "originalSha256": "cf724b3f58c78008cdc5e46e543eea1923a625ce32e52bfcd69e76be2ac83ee3",
       "expectedBytes": 1179942,
-      "integrityEvidence": "V16 original MP4/MP3 audit, separate from objective FFmpeg scan"
+      "integrityEvidence": "V16 original MP4/MP3 audit, separate from objective FFmpeg scan",
+      "id": "osa-voice-ru-act-1",
+      "locale": "ru",
+      "edition": "act-1"
     },
     {
       "file": "OSA Cinema — Act II — English narrator final.mp3",
@@ -79,7 +85,10 @@
       "publicationApproved": false,
       "originalSha256": "82c8bc41db105251cf2333164ade3996ae688375903afcd524f4282aa6c6504a",
       "expectedBytes": 1133967,
-      "integrityEvidence": "V16 original MP4/MP3 audit, separate from objective FFmpeg scan"
+      "integrityEvidence": "V16 original MP4/MP3 audit, separate from objective FFmpeg scan",
+      "id": "osa-voice-en-act-2",
+      "locale": "en",
+      "edition": "act-2"
     },
     {
       "file": "OSA Cinema — Act II — Russian narrator final.mp3",
@@ -105,7 +114,10 @@
       "publicationApproved": false,
       "originalSha256": "19375baccd0ce01963d9e07d656067788def3343657040073a32c0b649cf82b9",
       "expectedBytes": 1207946,
-      "integrityEvidence": "V16 original MP4/MP3 audit, separate from objective FFmpeg scan"
+      "integrityEvidence": "V16 original MP4/MP3 audit, separate from objective FFmpeg scan",
+      "id": "osa-voice-ru-act-2",
+      "locale": "ru",
+      "edition": "act-2"
     },
     {
       "file": "OSA Cinema — Act III — English narrator final.mp3",
@@ -131,7 +143,10 @@
       "publicationApproved": false,
       "originalSha256": "6c7d7fe61c949c8bf636da992674ce4df1ae4b9e1d4ea810a679ac76c5b12b8d",
       "expectedBytes": 1112233,
-      "integrityEvidence": "V16 original MP4/MP3 audit, separate from objective FFmpeg scan"
+      "integrityEvidence": "V16 original MP4/MP3 audit, separate from objective FFmpeg scan",
+      "id": "osa-voice-en-act-3",
+      "locale": "en",
+      "edition": "act-3"
     },
     {
       "file": "OSA Cinema — Act III — Russian narrator final(1).mp3",
@@ -156,7 +171,10 @@
       "publicationApproved": false,
       "originalSha256": "4ddb22df482b77be4355fc2cae8da83d2d26262d98511ae777da6b647b63f95e",
       "expectedBytes": 1181196,
-      "integrityEvidence": "V16 original MP4/MP3 audit, separate from objective FFmpeg scan"
+      "integrityEvidence": "V16 original MP4/MP3 audit, separate from objective FFmpeg scan",
+      "id": "osa-voice-ru-act-3",
+      "locale": "ru",
+      "edition": "act-3"
     },
     {
       "file": "OSA_CINEMA_V15_45SEC_PREVIEW_EN_720P.mp4",
@@ -198,7 +216,10 @@
       "publicationApproved": false,
       "originalSha256": "0cea3fe492b0cc13bd2e4c9152217ae2d85d8406b291b8b93484b5d8a9bb530e",
       "expectedBytes": 4332303,
-      "integrityEvidence": "V16 original MP4/MP3 audit, separate from objective FFmpeg scan"
+      "integrityEvidence": "V16 original MP4/MP3 audit, separate from objective FFmpeg scan",
+      "id": "osa-v15-trailer-en",
+      "locale": "en",
+      "edition": "trailer-workprint"
     },
     {
       "file": "OSA_CINEMA_V15_45SEC_PREVIEW_RU_720P.mp4",
@@ -240,7 +261,10 @@
       "publicationApproved": false,
       "originalSha256": "64076804caab85f53f860818557eca0debf977d197b7e45ba4830538dbfe6c74",
       "expectedBytes": 4362309,
-      "integrityEvidence": "V16 original MP4/MP3 audit, separate from objective FFmpeg scan"
+      "integrityEvidence": "V16 original MP4/MP3 audit, separate from objective FFmpeg scan",
+      "id": "osa-v15-trailer-ru",
+      "locale": "ru",
+      "edition": "trailer-workprint"
     },
     {
       "file": "OSA_CINEMA_V15_DIRECTORS_WORKPRINT_EN_1080P.mp4",
@@ -290,7 +314,10 @@
       "publicationApproved": false,
       "originalSha256": "2936222a5be4b36ab3177f1577219831ab686e085be9b0744887bbcae05a7e36",
       "expectedBytes": 120340268,
-      "integrityEvidence": "V16 original MP4/MP3 audit, separate from objective FFmpeg scan"
+      "integrityEvidence": "V16 original MP4/MP3 audit, separate from objective FFmpeg scan",
+      "id": "osa-v15-directors-en",
+      "locale": "en",
+      "edition": "directors-workprint"
     },
     {
       "file": "OSA_CINEMA_V15_DIRECTORS_WORKPRINT_RU_1080P.mp4",
@@ -340,7 +367,10 @@
       "publicationApproved": false,
       "originalSha256": "74a040f9c67155eca946d6c6bed462e7edfb9c4f866605a0c2ecdd9568202b01",
       "expectedBytes": 120402387,
-      "integrityEvidence": "V16 original MP4/MP3 audit, separate from objective FFmpeg scan"
+      "integrityEvidence": "V16 original MP4/MP3 audit, separate from objective FFmpeg scan",
+      "id": "osa-v15-directors-ru",
+      "locale": "ru",
+      "edition": "directors-workprint"
     }
   ],
   "status": "PRIVATE_OBJECTIVE_QC_NOT_APPROVED_FOR_PUBLIC_RELEASE",
