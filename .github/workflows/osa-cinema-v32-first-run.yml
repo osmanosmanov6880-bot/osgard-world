@@ -1,0 +1,58 @@
+name: OSA CINEMA V32 private owner first-run and package guards
+on:
+  pull_request:
+    paths:
+      - 'scripts/osa-cinema-v32-*'
+      - 'scripts/osa-cinema-v20-release-audit*'
+      - 'docs/OSA_CINEMA_V18_PRIVATE_FOUR_TRACK_QA.json'
+      - 'docs/OSA_CINEMA_OWNER_CRITICAL_EVIDENCE_RU.md'
+      - 'START_OSA_CINEMA.cmd'
+      - 'START_OSA_CINEMA.sh'
+      - '.github/workflows/osa-cinema-v32-first-run.yml'
+      - 'docs/OSA_CINEMA_V32_*'
+  push:
+    branches: [master]
+    paths:
+      - 'scripts/osa-cinema-v32-*'
+      - 'scripts/osa-cinema-v20-release-audit*'
+      - 'docs/OSA_CINEMA_V18_PRIVATE_FOUR_TRACK_QA.json'
+      - 'docs/OSA_CINEMA_OWNER_CRITICAL_EVIDENCE_RU.md'
+      - 'START_OSA_CINEMA.cmd'
+      - 'START_OSA_CINEMA.sh'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  owner-onboarding:
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Verify real FFmpeg/FFprobe
+        run: |
+          if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -y --no-install-recommends ffmpeg
+          fi
+      - name: Real first-run readiness, four synthetic MP4s, no fake rights, tamper checks
+        run: |
+          node --check scripts/osa-cinema-v32-first-run.mjs
+          node --check scripts/osa-cinema-v32-package-integrity.mjs
+          node --test --test-concurrency=1 scripts/osa-cinema-v32-first-run.test.mjs scripts/osa-cinema-v32-package-integrity.test.mjs
+      - name: Verify old V18 QA fixture cannot masquerade as a real-film source audit
+        run: node --test scripts/osa-cinema-v20-release-audit.test.mjs
+      - name: Existing V31 owner auth is not weakened
+        run: node --test scripts/osa-cinema-v31-owner-console.test.mjs
+      - name: Recorded-film strict publication gate stays shut
+        shell: bash
+        run: |
+          set +e
+          node scripts/osa-cinema-v20-release-audit.mjs --strict-publication > "$RUNNER_TEMP/v32-no-go.txt" 2>&1
+          rc=$?
+          set -e
+          test "$rc" -eq 1
+          grep -q 'OSA_CINEMA_V20_NO_PUBLICATION' "$RUNNER_TEMP/v32-no-go.txt"
