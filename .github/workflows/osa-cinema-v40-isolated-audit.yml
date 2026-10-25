@@ -1,0 +1,83 @@
+name: OSA CINEMA V40 - cancellable isolated owner audit and permanent NO-GO
+on:
+  pull_request:
+    paths:
+      - 'scripts/osa-cinema-v39-owner-desk.mjs'
+      - 'scripts/osa-cinema-v40-audit-worker.mjs'
+      - 'scripts/osa-cinema-v40-isolated-audit.mjs'
+      - 'scripts/osa-cinema-v40-isolated-audit.test.mjs'
+      - 'scripts/osa-cinema-v39-v29-integration.test.mjs'
+      - 'START_OSA_CINEMA_V40.cmd'
+      - 'START_OSA_CINEMA_V40.sh'
+      - 'docs/OSA_CINEMA_V40_ISOLATED_OWNER_AUDIT_RU.md'
+      - '.github/workflows/osa-cinema-v40-isolated-audit.yml'
+  push:
+    branches: [master]
+    paths:
+      - 'scripts/osa-cinema-v39-owner-desk.mjs'
+      - 'scripts/osa-cinema-v40-audit-worker.mjs'
+      - 'scripts/osa-cinema-v40-isolated-audit.mjs'
+      - 'scripts/osa-cinema-v40-isolated-audit.test.mjs'
+      - 'scripts/osa-cinema-v39-v29-integration.test.mjs'
+      - 'START_OSA_CINEMA_V40.cmd'
+      - 'START_OSA_CINEMA_V40.sh'
+      - '.github/workflows/osa-cinema-v40-isolated-audit.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  isolation-and-no-go:
+    name: Isolated audit, abort and immutable film hold (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Source syntax, cross-OS cancellation tests and V39 auth regression
+        shell: bash
+        run: |
+          node --check scripts/osa-cinema-v40-audit-worker.mjs
+          node --check scripts/osa-cinema-v40-isolated-audit.mjs
+          node --check scripts/osa-cinema-v40-isolated-audit.test.mjs
+          node --check scripts/osa-cinema-v39-owner-desk.mjs
+          node --test scripts/osa-cinema-v40-isolated-audit.test.mjs scripts/osa-cinema-v39-owner-desk.test.mjs
+      - name: Preserve genuine historical evidence and NO-GO release contract
+        shell: bash
+        run: |
+          node scripts/osa-cinema-v35-historical-guard.mjs --root .
+          set +e
+          node scripts/osa-cinema-v20-release-audit.mjs --strict-publication > "$RUNNER_TEMP/v40-public-hold.log" 2>&1
+          rc=$?
+          set -e
+          test "$rc" -eq 1
+          grep -q OSA_CINEMA_V20_NO_PUBLICATION "$RUNNER_TEMP/v40-public-hold.log"
+      - name: Verify launch scripts are present
+        shell: bash
+        run: |
+          test -s START_OSA_CINEMA_V40.cmd
+          test -s START_OSA_CINEMA_V40.sh
+  actual-v29-chain:
+    name: Real V40 worker -> V38/V29 synthetic FFmpeg (Ubuntu)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Ensure native FFmpeg and FFprobe
+        shell: bash
+        run: |
+          if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -y ffmpeg
+          fi
+      - name: Real V39 HTTP owner desk running V40 isolated child and V38 V29 pipeline
+        shell: bash
+        run: node --test scripts/osa-cinema-v39-v29-integration.test.mjs

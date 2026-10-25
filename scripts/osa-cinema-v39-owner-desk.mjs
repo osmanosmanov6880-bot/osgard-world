@@ -8,8 +8,9 @@ import { createServer } from 'node:http'
 import { createHash, randomBytes, scryptSync, timingSafeEqual } from 'node:crypto'
 import { fileURLToPath } from 'node:url'
 import { resolve } from 'node:path'
-import { auditPrivateOwnerDossier, parseArgs as parseAuditArgs } from './osa-cinema-v38-owner-release-dossier.mjs'
+import { parseArgs as parseAuditArgs } from './osa-cinema-v38-owner-release-dossier.mjs'
 import { EXTERNAL_GATES } from './osa-cinema-v27-release-board.mjs'
+import { runIsolatedPrivateAudit } from './osa-cinema-v40-isolated-audit.mjs'
 
 const releaseLocked = Object.freeze({
   releaseDecision: 'NO_GO', publicationAuthorized: false, rightsCleared: false,
@@ -113,7 +114,7 @@ function loginHtml(nonce,token) {return `<!doctype html><html lang="ru"><meta ch
 function dashboardHtml(nonce,token) {return `<!doctype html><html lang="ru"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>OSA CINEMA · private release desk</title><style nonce="${nonce}">${display}</style><main><header class="top"><span class="brand">OSA CINEMA</span><span class="tag">OFFLINE · NO-GO</span></header><p class="eyebrow hero">ENGINEERING ASSURANCE / V39</p><h1>Премьера начинается<br>с доказательств.</h1><p class="lead">Проверка оригинальных источников, отчётов, восьми локальных медиафайлов и независимых подписей. Никакие материалы не передаются за пределы компьютера.</p><section class="warning" role="status"><strong>ПУБЛИЧНЫЙ ПОКАЗ И ОПЛАТА ЗАПРЕЩЕНЫ</strong><div>Даже безошибочная проверка файлов не заменяет права, прослушивание RU/EN и решение издателя.</div></section><div class="grid"><article class="metric"><div class="num" id="historic">—</div><p class="desc">Исторические источники</p></article><article class="metric"><div class="num" id="receipts">—</div><p class="desc">Отчёты приёмки</p></article><article class="metric"><div class="num" id="media">—</div><p class="desc">MP4 и WebVTT</p></article><article class="metric"><div class="num" id="signatures">—</div><p class="desc">Проверенные подписи</p></article></div><section class="sheet"><div class="split"><div><p class="eyebrow">01 / LOCAL AUDIT</p><h2>Единая проверка V35–V38</h2></div><span class="tag" id="result-tag">НЕ ЗАПУЩЕНО</span></div><p class="lead" id="status-text" aria-live="polite">Владелец может провести техническую проверку на этом устройстве.</p><div class="actions"><button id="run" type="button" class="primary">Проверить файлы и отчёты</button><a id="report" href="/api/report" class="textlink" hidden download="OSA_CINEMA_V39_PRIVATE_NO_GO.json">Скачать закрытый отчёт (NO-GO)</a><button id="logout" type="button">Выйти</button></div><p class="small">Кнопка только читает файлы. Нет загрузки в облако, стриминга и публикации.</p></section><section class="sheet"><p class="eyebrow">02 / НЕЗАКРЫТЫЕ ВНЕШНИЕ СОГЛАСОВАНИЯ</p><h2>Что не может решить программа</h2><ol class="notes"><li>Права на музыку, изображение, голос и исходные сцены</li><li>Реальное прослушивание русской и английской дорожек</li><li>Приёмка режиссёра, звука и синхронизированных субтитров</li><li>Настоящие HTTPS и испытания на пользовательских устройствах</li><li>Правомочное письменное разрешение издателя на точные SHA-256</li></ol></section><p class="small">OSA CINEMA · Only loopback/private owner mode. No commercial release pathway exists.</p></main><script nonce="${nonce}">(()=>{'use strict';const csrf='${token}',get=id=>document.getElementById(id);async function query(path,method='GET'){const r=await fetch(path,{method,credentials:'same-origin',cache:'no-store',headers:method==='POST'?{'X-OSA-CSRF':csrf}:{}});if(!r.ok)throw Error('HTTP '+r.status);return r.json()}function view(s){const running=s.state==='running',ok=s.state==='completed',failed=s.state==='failed';get('run').disabled=running;get('result-tag').textContent=running?'ПРОВЕРКА':ok?'ПРОВЕРЕНО · NO-GO':failed?'HOLD · ПРИОСТАНОВЛЕНО':'НЕ ЗАПУЩЕНО';get('result-tag').classList.toggle('good',ok);get('status-text').textContent=running?'Проверяем закрытые материалы локально…':ok?'Байты совпали. Премьера, права и оплата всё равно не разрешены.':failed?'Обнаружено несоответствие или отсутствуют материалы. Проверьте локальные исходники.':'Владелец может провести техническую проверку на этом устройстве.';get('report').hidden=!ok;const d=s.summary;get('historic').textContent=ok?String(d.codeHistory)+'/3':'—';get('receipts').textContent=ok?String(d.privateReceipts):'—';get('media').textContent=ok?String(d.mp4Files+d.captions)+'/8':'—';get('signatures').textContent=ok?String(d.cryptographicClaims)+'/8':'—'}async function refresh(){try{view(await query('/api/status'))}catch{get('status-text').textContent='Доступ к кабинету потерян. Требуется повторный вход.'}}get('run').addEventListener('click',async()=>{try{await query('/api/run','POST');await refresh()}catch{get('status-text').textContent='Запуск отклонён. Повторите после проверки доступа.'}});get('logout').addEventListener('click',async()=>{try{await query('/api/logout','POST')}finally{location.href='/'}});refresh();setInterval(refresh,1600)})();</script></html>`}
 
 /** Starts only on 127.0.0.1. The injected audit function is intended exclusively for hermetic tests. */
-export async function startPrivateOwnerDesk({password, auditOptions = {}, audit = auditPrivateOwnerDossier,
+export async function startPrivateOwnerDesk({password, auditOptions = {}, audit = runIsolatedPrivateAudit,
   port=0, auditTimeoutMs=20*60*1000} = {}) {
   insist(safeString(password), 'owner password must be 16-256 characters')
   insist(Number.isInteger(port) && port >= 0 && port <= 65535, 'invalid private port')
@@ -122,6 +123,7 @@ export async function startPrivateOwnerDesk({password, auditOptions = {}, audit 
   const salt=randomBytes(32),passHash=scryptSync(password,salt,32)
   const sessionMap=new Map(),challengeMap=new Map()
   let deskState={state:'idle',summary:null,runId:null}
+  let activeController=null,activeTimeout=null
   let failures=0,blockUntil=0,closed=false
   let server, address=''
   const getSession = req => {
@@ -185,6 +187,11 @@ export async function startPrivateOwnerDesk({password, auditOptions = {}, audit 
       if(method==='POST' && ['/api/run','/api/logout'].includes(path)){
         if(!postIsSameOrigin(req,address) || req.headers['x-osa-csrf']!==session.csrf)return deny(res)
         if(path==='/api/logout'){
+          activeController?.abort()
+          activeController=null
+          if(activeTimeout)clearTimeout(activeTimeout)
+          activeTimeout=null
+          deskState={state:'idle',summary:null,runId:null}
           sessionMap.delete(cookieValue(req,cookieName))
           res.setHeader('Set-Cookie',`${cookieName}=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0`)
           return response(res,200,{status:'session_closed'})
@@ -192,12 +199,22 @@ export async function startPrivateOwnerDesk({password, auditOptions = {}, audit 
         if(deskState.state==='running')return deny(res,409)
         const runId=randomHex()
         deskState={state:'running',summary:null,runId}
-        // Never expose raw audit errors, system paths or names in browser responses.
-        Promise.resolve().then(()=>audit({...auditOptions})).then(raw=>verifyV38Summary(raw))
+        // V40: each real V38 verification runs in a killable child with no password.
+        // Existing injected audits remain available ONLY for hermetic unit tests.
+        const controller=new AbortController()
+        activeController=controller
+        activeTimeout=setTimeout(()=>{
+          if(!closed&&deskState.runId===runId&&deskState.state==='running') {
+            deskState={state:'failed',summary:null,runId}
+            controller.abort() // Stops real V40 worker, not just the UI state.
+          }
+        },auditTimeoutMs)
+        activeTimeout.unref()
+        Promise.resolve().then(()=>audit({...auditOptions},{signal:controller.signal}))
+          .then(raw=>verifyV38Summary(raw))
           .then(summary=>{if(!closed&&deskState.runId===runId&&deskState.state==='running')deskState={state:'completed',summary,runId}})
           .catch(()=>{if(!closed&&deskState.runId===runId&&deskState.state==='running')deskState={state:'failed',summary:null,runId}})
-        const timeout=setTimeout(()=>{if(!closed&&deskState.runId===runId&&deskState.state==='running')deskState={state:'failed',summary:null,runId}},auditTimeoutMs)
-        timeout.unref()
+          .finally(()=>{if(activeController===controller){activeController=null;clearTimeout(activeTimeout);activeTimeout=null}})
         return response(res,202,{status:'running',...releaseLocked})
       }
       return deny(res,405)
@@ -208,7 +225,10 @@ export async function startPrivateOwnerDesk({password, auditOptions = {}, audit 
   await new Promise((yes,no)=>{server.once('error',no);server.listen(port,'127.0.0.1',yes)})
   address='http://127.0.0.1:'+server.address().port
   return {url:address,binding:server.address().address,close:async()=>{
-    closed=true;sessionMap.clear();challengeMap.clear()
+    closed=true;activeController?.abort();activeController=null
+    if(activeTimeout)clearTimeout(activeTimeout)
+    activeTimeout=null;deskState={state:'idle',summary:null,runId:null}
+    sessionMap.clear();challengeMap.clear()
     await new Promise((done,reject)=>server.close(err=>err?reject(err):done()))
   }}
 }
