@@ -55,7 +55,7 @@ func _run() -> void:
 		"live command camera is attached to original Godot World3D")
 	verify(preview.get_node_or_null("R90NavigationTabs")!=null,
 		"signed-off seven top tabs exist in actual gameplay")
-	verify(preview.get_node_or_null("R90DistrictPin_forum")!=null,
+	verify(preview.find_child("R90DistrictPin_forum",true,false)!=null,
 		"real city overview shows interactive district markers")
 	verify(preview.get_node_or_null("R90FakeBackground")==null,
 		"no fake reference artwork replaces real world")
