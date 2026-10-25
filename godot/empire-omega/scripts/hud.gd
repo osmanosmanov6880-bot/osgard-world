@@ -801,7 +801,7 @@ func update_world_context(player_at: Vector3, vehicle_at: Vector3, goal_at: Vect
 	if speed_panel != null:
 		speed_panel.visible = is_driving
 	if r90_speed_dial != null:
-		r90_speed_dial.set_vehicle(speed,fuel,condition)
+		r90_speed_dial.call("set_vehicle",speed,fuel,condition)
 	if is_driving:
 		if compact_hud:
 			speed_label.text = COMPACT_TELEMETRY.speed_lines(speed,gear,fuel,condition,handbrake,drift_score,assist_power,assist_steering,GameState.locale)
@@ -929,11 +929,11 @@ func _redraw_strategy() -> void:
 	# and a second camera of the live Godot world, not the reference JPG/PNG.
 	var operations: Control = R90_DASHBOARD.new()
 	strategy_contents.add_child(operations)
-	operations.navigate.connect(Callable(self,"_jump_to_strategy_section"))
-	operations.select_district.connect(Callable(self,"_select_district"))
-	operations.select_vehicle.connect(Callable(self,"_do_vehicle"))
+	operations.connect("navigate",Callable(self,"_jump_to_strategy_section"))
+	operations.connect("select_district",Callable(self,"_select_district"))
+	operations.connect("select_vehicle",Callable(self,"_do_vehicle"))
 	var premium_compact: bool = compact_hud or get_viewport().get_visible_rect().size.x < 1200.0
-	operations.build(d,forecast,MissionManager.title(GameState.locale),
+	operations.call("build",d,forecast,MissionManager.title(GameState.locale),
 		get_viewport().world_3d,premium_compact,GameState.locale)
 	_mark_strategy_section("overview")
 	_label(strategy_contents,"%s %d  ·  %s %d  ·  %s %d" % [t("turn"),d["turn"],t("science"),d["science"],t("actions"),d["actions_left"]],16,true)

@@ -25,19 +25,19 @@ func _run() -> void:
 	var forecast: Dictionary = GameState.forecast()
 	var dial: Control = DIAL.new()
 	root.add_child(dial)
-	dial.set_vehicle(22.0,60.0,80.0)
-	verify(is_equal_approx(dial.speed_kmh,79.2),"dial reads actual metres/second")
-	verify(is_equal_approx(dial.fuel_percent,60.0),"real fuel fraction")
-	dial.set_vehicle(NAN,NAN,NAN)
-	verify(dial.speed_kmh==0.0 and dial.fuel_percent==0.0,"invalid telemetry fails closed")
+	dial.call("set_vehicle",22.0,60.0,80.0)
+	verify(is_equal_approx(float(dial.get("speed_kmh")),79.2),"dial reads actual metres/second")
+	verify(is_equal_approx(float(dial.get("fuel_percent")),60.0),"real fuel fraction")
+	dial.call("set_vehicle",NAN,NAN,NAN)
+	verify(float(dial.get("speed_kmh"))==0.0 and float(dial.get("fuel_percent"))==0.0,"invalid telemetry fails closed")
 	dial.queue_free()
 	var urban: Node3D = URBAN.new()
 	root.add_child(urban)
-	verify(urban.graphics_are_bounded(),"cosmetic batch sizes are finite")
-	urban.set_quality("low")
-	verify(not urban.skyline.visible and not urban.bollards.visible,"mobile low tier hides premium meshes")
-	urban.set_quality("cinematic")
-	verify(urban.skyline.visible and urban.bollards.visible,"cinematic tier shows true meshes")
+	verify(bool(urban.call("graphics_are_bounded")),"cosmetic batch sizes are finite")
+	urban.call("set_quality","low")
+	verify(not (urban.get("skyline") as MultiMeshInstance3D).visible and not (urban.get("bollards") as MultiMeshInstance3D).visible,"mobile low tier hides premium meshes")
+	urban.call("set_quality","cinematic")
+	verify((urban.get("skyline") as MultiMeshInstance3D).visible and (urban.get("bollards") as MultiMeshInstance3D).visible,"cinematic tier shows true meshes")
 	verify(urban.get_child_count()==2,"no extra per-prop scene nodes")
 	urban.queue_free()
 	for dimensions in [Vector2(1366,768),Vector2(1920,1080)]:
@@ -48,16 +48,16 @@ func _run() -> void:
 			"dashboard stays inside desktop")
 	var preview: VBoxContainer = DASH.new()
 	root.add_child(preview)
-	preview.build(live,forecast,MissionManager.title("ru"),root.world_3d,false,"ru")
-	verify(preview.preview!=null and preview.preview.world_3d==root.world_3d,
+	preview.call("build",live,forecast,MissionManager.title("ru"),root.world_3d,false,"ru")
+	verify(preview.get("preview")!=null and (preview.get("preview") as SubViewport).world_3d==root.world_3d,
 		"command room renders the real authoritative game 3D world")
-	verify(preview.preview.get_camera_3d()!=null,
+	verify((preview.get("preview") as SubViewport).get_camera_3d()!=null,
 		"live command camera is attached to original Godot World3D")
 	verify(preview.get_node_or_null("R90FakeBackground")==null,
 		"no fake reference artwork replaces real world")
 	var calls: Array[String] = []
-	preview.navigate.connect(func(id: String): calls.append(id))
-	preview._request_navigation("council")
+	preview.connect("navigate",func(id: String): calls.append(id))
+	preview.call("_request_navigation","council")
 	verify(calls==["council"],"cabinet navigation emits the original actionable section")
 	preview.queue_free()
 	var original_hud: Variant = load("res://scripts/hud.gd")
@@ -66,14 +66,14 @@ func _run() -> void:
 		var hud: CanvasLayer = original_hud.new()
 		root.add_child(hud)
 		verify(hud.get("r90_speed_dial")!=null,"real gameplay HUD contains animated speed dial")
-		hud.toggle_strategy()
-		verify(hud.is_strategy_open(),"native original Tab cabinet opens")
-		verify(hud.strategy_contents.get_node_or_null("R90LiveOperationsCabinet")!=null,
+		hud.call("toggle_strategy")
+		verify(bool(hud.call("is_strategy_open")),"native original Tab cabinet opens")
+		verify((hud.get("strategy_contents") as VBoxContainer).get_node_or_null("R90LiveOperationsCabinet")!=null,
 			"premium command room really integrated in authority HUD")
-		verify(hud.strategy_anchors.has("council") and hud.strategy_anchors.has("economy")
-			and hud.strategy_anchors.has("district"),"existing live actions all reachable")
-		hud.toggle_strategy()
-		verify(not hud.is_strategy_open(),"closed cabinet returns to normal gameplay")
+		verify((hud.get("strategy_anchors") as Dictionary).has("council") and (hud.get("strategy_anchors") as Dictionary).has("economy")
+			and (hud.get("strategy_anchors") as Dictionary).has("district"),"existing live actions all reachable")
+		hud.call("toggle_strategy")
+		verify(not bool(hud.call("is_strategy_open")),"closed cabinet returns to normal gameplay")
 		hud.queue_free()
 	GameState.data = original_state
 	GameState.locale = original_locale
