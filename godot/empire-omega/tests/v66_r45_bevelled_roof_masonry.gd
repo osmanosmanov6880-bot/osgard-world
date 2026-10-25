@@ -55,7 +55,7 @@ func _run() -> void:
 		check(all_finite,"sculpted mesh remains inside bounded local geometry")
 	check(trim.get_child_count()==0 and trim.cast_shadow==GeometryInstance3D.SHADOW_CASTING_SETTING_OFF,
 		"architecture remains one batch with no decorative collision or new shadow map")
-	var finish: StandardMaterial3D = trim.material_override
+	var finish: StandardMaterial3D = trim.material_override as StandardMaterial3D
 	check(finish!=null and finish.vertex_color_use_as_albedo and finish.roughness>=0.70,
 		"premium stone remains physically shaded matte masonry rather than neon")
 	trim.queue_free()
