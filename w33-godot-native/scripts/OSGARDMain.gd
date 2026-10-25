@@ -127,7 +127,8 @@ func _publish_web_accessibility(snap: Dictionary) -> void:
         "shift_cleared": int(snap["shift_cleared_count"]),
         "inspection_allowed": bool(snap["inspection_allowed"]),
         "hold_percent": int(snap["calibration"].get("hold_percent", 0)),
-        "last_error": bool(snap["last_error"])
+        "last_error": bool(snap["last_error"]),
+        "quality": str(core.settings["quality"])
     }
     var geometry: Dictionary = {
         "viewport": [roundi(size.x), roundi(size.y)],

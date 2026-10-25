@@ -18,7 +18,7 @@ concurrency:
 jobs:
   actual-godot-source-parity:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 55
     steps:
       - uses: actions/checkout@v4
         with:
@@ -142,6 +142,22 @@ jobs:
             --export w33-godot-native/build/web \
             --evidence w33-godot-native/build/gameplay-evidence \
             --sha "${{ github.event.pull_request.head.sha || github.sha }}"
+      - name: Original W39 true Godot HERO ECO 3-camera and mobile visual review
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$RUNNER_TEMP/w33-qa-venv/bin/python" w33-godot-native/ci/visual_art_acceptance.py \
+            --export w33-godot-native/build/web \
+            --out w33-godot-native/build/w39-original-art \
+            --sha "${{ github.event.pull_request.head.sha || github.sha }}"
+      - name: Preserve original OBSIDIAN cinematic contact sheet and screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: osgard-w39-original-cinematic-visual-evidence-${{ github.event.pull_request.head.sha || github.sha }}
+          path: w33-godot-native/build/w39-original-art/
+          if-no-files-found: warn
+          retention-days: 30
       - name: Preserve real game-control evidence even on failure
         if: always()
         uses: actions/upload-artifact@v4
