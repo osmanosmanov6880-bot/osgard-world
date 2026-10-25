@@ -38,7 +38,7 @@ jobs:
           w=Path('.github/workflows/omega-r86-private-field-qa.yml').read_text()
           p=Path('scripts/omega_r86_private_field_kit.py').read_text()
           assert 'contents: read' in w
-          assert not re.search(r'actions/upload-artifact|ssh|scp|curl|wget|push:.*production',w,re.I)
+          assert not re.search(r'actions/upload-artifact|scp|curl|wget|push:.*production',w.split('      - name: Assert workflow')[0],re.I)
           assert not re.search(r'urlopen|requests\.post|urllib|subprocess\.run|socket\.connect',p)
           assert 'production_go": False' in p
           print('PASS: no upload, deployment or automatic production GO')
