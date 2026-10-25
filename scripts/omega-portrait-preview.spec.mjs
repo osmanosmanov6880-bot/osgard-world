@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { PNG } from 'pngjs'
+import { captureAnimatedWebGLViewport } from './omega-browser-evidence.mjs'
 
 // Verify genuine independently exported WebGL, not a CSS mock. The original
 // R11 Chromium trace had black rows 0..311 and 540..843 on a 390x844 phone.
@@ -39,7 +40,7 @@ function measureRealScenePng(raw) {
 }
 
 test('REAL Godot 4.4.1 fills the phone, tablet and desktop canvas without black 16:9 bars',async({page},info)=>{
-  test.setTimeout(150_000)
+  test.setTimeout(210_000)
   const failures=[]
   page.on('pageerror',err=>failures.push(err.message))
   page.on('crash',()=>failures.push('Browser tab crashed'))
@@ -64,11 +65,12 @@ test('REAL Godot 4.4.1 fills the phone, tablet and desktop canvas without black 
   await page.waitForTimeout(700)
   // Viewport screenshot, not locator().screenshot(): a continuously painted
   // native Godot canvas never becomes "stable" for Playwright's locator.
-  const png=await page.screenshot({timeout:45000,animations:'disabled'})
+  const capture=await captureAnimatedWebGLViewport(page)
+  const png=capture.png
   const proof=measureRealScenePng(png)
   await info.attach('actual-godot-world.png',{body:png,contentType:'image/png'})
   await info.attach('actual-godot-screen-coverage.json',{
-    body:Buffer.from(JSON.stringify({project:info.project.name,view,proof},null,2)),
+    body:Buffer.from(JSON.stringify({project:info.project.name,view,proof,captureMethod:capture.method,fallback_reason:capture.fallback_reason??null},null,2)),
     contentType:'application/json'
   })
   expect(proof.activeFraction,'scene needs to occupy >=70% of actual height').toBeGreaterThan(0.70)

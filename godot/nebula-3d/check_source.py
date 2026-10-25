@@ -672,7 +672,7 @@ r31_mobile = require(
     "NEBULA_R31_MOBILE_TOUCH_SUCCESS",
 )
 # R32: prevent reintroducing portrait overlap on compact landscape phones.
-assert "w >= 380.0 and w > h" in r21_mobile
+assert "w > h and usable_w >= 335.0" in r21_mobile
 assert "R32 compact landscape must distinguish GAS from CRUISE" in smoke
 assert "R32 compact landscape action hit targets overlap" in smoke
 assert "R32 small-landscape GAS accidentally triggers autopilot" in smoke
@@ -688,6 +688,98 @@ assert "r33_swiftshader_qa_visuals_trimmed = true" in world
 assert "if node == ship or node is CanvasLayer:" in world
 assert 'state["qa_visuals_trimmed"] = r33_swiftshader_qa_visuals_trimmed' in world
 assert "state.qa_visuals_trimmed === true" in r31_mobile
+# R34: actual canvas-finger source, not fake engine input or synthetic motion.
+r34_js = require(
+    "../../scripts/nebula-r21-mobile-export.mjs",
+    "nebula-r34-touch-bridge",
+    "__nebulaDomTouchState",
+    "touchcancel",
+    "touchstart",
+    "touchmove",
+    "touchend",
+    "window.addEventListener('blur'",
+)
+r34_dom_tests = require(
+    "../../scripts/test-nebula-r34-dom-touch.mjs",
+    "NEBULA_R34_DOM_TOUCH_SOURCE_SUCCESS",
+    "both independent fingers remain held",
+    "OS touchcancel clears held controls",
+)
+assert "r34_dom_bridge_active" in r21_mobile
+assert "func _r34_poll_browser_contacts()" in r21_mobile
+assert "r34_ignore_until_all_released" in r21_mobile
+assert "func _r34_gate_stale_contacts(points: Array)" in r21_mobile
+assert "R34 finger-free hangar close must allow the next independent tap" in smoke
+assert "R34 browser touch bridge remains blocked after hangar release" in smoke
+# R35: real CSS env() safe areas + 9 reachable controls across compact phones.
+r35_probe = require(
+    "../../scripts/nebula-r21-mobile-export.mjs",
+    "nebula-r35-safe-area", "__nebulaSafeArea",
+    "env(safe-area-inset-left, 0px)",
+    "env(safe-area-inset-top, 0px)",
+    "env(safe-area-inset-right, 0px)",
+    "env(safe-area-inset-bottom, 0px)",
+)
+r35_js_test = require(
+    "../../scripts/test-nebula-r35-safe-area.mjs",
+    "NEBULA_R35_SAFE_AREA_JS_SUCCESS",
+    "safe-area probe must register before Godot",
+    "landscape cutout must be read from CSS env()",
+    "portrait notch and home gesture bar detected",
+)
+assert "func set_safe_insets(insets: Vector4) -> bool:" in r21_mobile
+assert "func _r35_refresh_safe_insets() -> bool:" in r21_mobile
+assert "r35_compact_portrait" in r21_mobile
+assert 'r21_touch._r35_refresh_safe_insets()' in world
+assert 'state["touch_safe_left"] = r21_touch.r35_safe_insets.x' in world
+assert "short_landscape: bool" in world
+assert "hud_panel.offset_top = safe_top + 8.0" in world
+assert "NEBULA_R35_SAFE_AREA_SUCCESS" in smoke
+assert "R35 action button is hidden by screen notch/gesture bar" in smoke
+assert "R35 two action hit targets overlap" in smoke
+assert "R35 short-landscape HUD blocks the hangar touch target" in smoke
+assert "compact portrait phone has reachable 3x3 flight controls" in r31_mobile
+assert "compact portrait GAS drives real Godot ship" in r31_mobile
+assert "compact portrait GAS release prevents ghost thrust" in r31_mobile
+assert "actual DOM CSS safe-area probe and reachable GAS" in r31_mobile
+# R36: actual smartphone-accessible benchmark + local-only real-device reports.
+assert "last_event_ms" in r34_js
+assert "performance.now()" in r34_js
+assert "R36 real DOM touch timestamp must use monotonic performance.now" in r34_dom_tests
+assert "r36_input_poll_latency_total_ms" in r21_mobile
+assert "r36_input_poll_samples" in r21_mobile
+assert "get_viewport().set_input_as_handled()" not in r21_mobile.split(
+    "if r34_dom_bridge_active:", 1)[1].split("return", 1)[0]
+assert "func configure_mobile(active: bool, touch_source: Node," in performance_r11
+assert "func download_report() -> void:" in performance_r11
+assert "R36_MobileFPSLauncher" in performance_r11
+assert "R36_StartReal20SecondBenchmark" in performance_r11
+assert "r36_browser_dom_to_engine_avg_ms" in performance_r11
+assert "r36_touch_delay_scope" in performance_r11
+assert "r36_data_policy" in performance_r11
+assert "no network, identity or background upload" in performance_r11.lower()
+assert "NEBULA_R36_REAL_DEVICE_UI_SUCCESS" in smoke
+# R38: all graphic quality profiles must be selectable without keyboard.
+assert "signal r38_quality_cycle_requested" in performance_r11
+assert "R38_MobileGraphicsProfile" in performance_r11
+assert "r38_mode_button.disabled = true" in performance_r11
+assert "func _r38_cycle_quality() -> void:" in world
+assert 'r38_quality_cycle_requested.connect(_r38_cycle_quality)' in world
+assert 'state["r38_quality_mode"] = graphics_quality' in world
+assert "NEBULA_R38_MOBILE_QUALITY_SUCCESS" in smoke
+assert "R38 graphics preset changed during benchmark" in smoke
+assert "R38 mobile quality touch enables real AUTO profile" in r31_mobile
+assert "R38 mobile quality touch selects real MAX graphics" in r31_mobile
+assert "R36 local performance JSON export was corrupted" in smoke
+assert "R36 real mobile FPS button opens performance overlay" in r31_mobile
+assert "R36 real mobile 20-second FPS benchmark starts" in r31_mobile
+assert 'state["r36_perf_active"] = performance_lab_r11.benchmarking' in world
+assert "performance_lab_r11.configure_mobile(" in world
+require("docs/R36-REAL-MOBILE-PERFORMANCE-ACCEPTANCE.md",
+    "20", "DOM", "Godot", "JSON", "Android", "iOS", "SwiftShader")
+assert "if r34_dom_bridge_active:" in r21_mobile
+assert 'state["touch_dom_bridge"] = r21_touch.r34_dom_bridge_active' in world
+assert "s.touch_dom_bridge === true" in r31_mobile
 assert "window.__nebulaDomTouchQA" in r31_mobile
 assert "real mobile viewport and physics loop stabilized" in r31_mobile
 assert "native browser touch dispatch" in r31_mobile

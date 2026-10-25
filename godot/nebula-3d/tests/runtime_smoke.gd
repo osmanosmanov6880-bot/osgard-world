@@ -96,6 +96,17 @@ func _run() -> void:
         world.ship.touch_throttle == 0.0,
         "R30 hangar must clear mobile touch counters and throttle"):return
     touch_r21.set_shop_open(false)
+    # R34: opening a hangar cancels held controls. The next real touch
+    # must not be swallowed when it was already finger-free at close.
+    touch_r21.r34_ignore_until_all_released = true
+    if not check(touch_r21._r34_gate_stale_contacts([[1, 12.0, 14.0]]) and
+        touch_r21.r34_ignore_until_all_released,
+        "R34 hangar must reject contacts that were held before closing"):return
+    if not check(touch_r21._r34_gate_stale_contacts([]) and
+        not touch_r21.r34_ignore_until_all_released,
+        "R34 finger-free hangar close must allow the next independent tap"):return
+    if not check(not touch_r21._r34_gate_stale_contacts([]),
+        "R34 browser touch bridge remains blocked after hangar release"):return
     touch_r21.force_mobile_for_tests(false)
     if not check(world.r21_towers_moved >= 0,
         "R21 original tower count and spawn corridor audit missing"):return
@@ -204,7 +215,89 @@ func _run() -> void:
     touch_r21._set_touch(8, touch_r21.button_centres["THRUST"], false)
     if not check(world.ship.touch_throttle == 0.0,
         "R32 compact-landscape GAS release remains stuck"):return
+    # R35: physical notch/system gesture cutouts must not swallow buttons.
+    # Exercise the real Godot hit-testing map; no screenshot geometry guesses.
+    var r35_cases: Array[Dictionary] = [
+        {"size": Vector2(390, 844), "safe": Vector4(0, 62, 0, 34),
+            "landscape": false, "compact": false},
+        {"size": Vector2(568, 320), "safe": Vector4(59, 0, 59, 21),
+            "landscape": true, "compact": false},
+        {"size": Vector2(568, 320), "safe": Vector4(59, 60, 59, 34),
+            "landscape": true, "compact": false},
+        {"size": Vector2(320, 480), "safe": Vector4(0, 62, 0, 34),
+            "landscape": false, "compact": true},
+        {"size": Vector2(280, 420), "safe": Vector4(0, 55, 0, 34),
+            "landscape": false, "compact": true},
+        {"size": Vector2(844, 390), "safe": Vector4.ZERO,
+            "landscape": true, "compact": false}
+    ]
+    var verified_r35: int = 0
+    for setup in r35_cases:
+        var dims: Vector2 = setup["size"]
+        var safe: Vector4 = setup["safe"]
+        touch_r21.set_safe_insets(safe)
+        touch_r21._layout_for_size(dims)
+        if not check(touch_r21.button_centres.size() == 9 and
+            touch_r21.r23_landscape_layout == bool(setup["landscape"]) and
+            touch_r21.r35_compact_portrait == bool(setup["compact"]),
+            "R35 mobile orientation or compact portrait grid wrong"):return
+        var radius: float = touch_r21.base_radius
+        var margin: float = radius * 0.80
+        var stick: Vector2 = touch_r21.stick_center
+        if not check(stick.x - radius * 1.45 >= safe.x and
+            stick.y - radius * 1.45 >= safe.y and
+            stick.x + radius * 1.45 <= dims.x - safe.z and
+            stick.y + radius * 1.45 <= dims.y - safe.w,
+            "R35 joystick intersects physical safe-area cutout"):return
+        for action in touch_r21.button_centres:
+            var point: Vector2 = touch_r21.button_centres[action]
+            if not check(point.x - margin >= safe.x and
+                point.y - margin >= safe.y and
+                point.x + margin <= dims.x - safe.z and
+                point.y + margin <= dims.y - safe.w and
+                touch_r21._role_at(point) == action,
+                "R35 action button is hidden by screen notch/gesture bar"):return
+            if not check(point.distance_to(stick) >
+                radius * 1.45 + margin + 3.0,
+                "R35 left steering stick overlaps action buttons"):return
+            for other in touch_r21.button_centres:
+                if str(action) < str(other):
+                    if not check(point.distance_to(
+                        touch_r21.button_centres[other]) > margin * 2.0,
+                        "R35 two action hit targets overlap"):return
+        touch_r21._set_touch(99, touch_r21.button_centres["THRUST"], true)
+        if not check(world.ship.touch_throttle >= 0.9 and
+            not world.ship.cruise_assist,
+            "R35 GAS hits a different button on notched phone"):return
+        touch_r21._set_touch(99, touch_r21.button_centres["THRUST"], false)
+        if not check(world.ship.touch_throttle == 0.0,
+            "R35 GAS sticks after finger release"):return
+        verified_r35 += 1
+    # Production mission HUD must not cover landscape GAS/ANGAR controls.
+    touch_r21.set_safe_insets(Vector4(59, 0, 59, 21))
+    world.r21_mobile_enabled = true
+    world.r31_touch_web = true
+    world.r31_mobile_css_size = Vector2i(568, 320)
+    world._fit_hud()
+    touch_r21._layout_for_size(Vector2(568, 320))
+    if not check(world.hud_panel.offset_left >= 59.0 and
+        world.hud_panel.offset_right + 2.0 <
+        touch_r21.button_centres["HANGAR"].x - touch_r21.base_radius * 0.8,
+        "R35 short-landscape HUD blocks the hangar touch target"):return
+    touch_r21.set_safe_insets(Vector4(0, 62, 0, 34))
+    world.r31_mobile_css_size = Vector2i(320, 480)
+    world._fit_hud()
+    if not check(world.hud_panel.offset_top >= 62.0 and
+        world.hud_panel.offset_right <= 320.0 and
+        world.hud_panel.offset_bottom < 230.0,
+        "R35 portrait mission HUD is under camera notch"):return
+    world.r21_mobile_enabled = false
+    world.r31_touch_web = false
+    world.r31_mobile_css_size = Vector2i.ZERO
+    touch_r21.set_safe_insets(Vector4.ZERO)
+    world._fit_hud()
     touch_r21.force_mobile_for_tests(false)
+    print("NEBULA_R35_SAFE_AREA_SUCCESS viewports=%d buttons=9 HUD=verified" % verified_r35)
     print("NEBULA_R23_REAL_INPUT_SUCCESS physical_W_metres=%.1f clicked_cruise_metres=%.1f portrait_landscape=verified" % [
         keyboard_meters,cruise_meters])
 
@@ -650,6 +743,113 @@ func _run() -> void:
         "R12 dynamic film-streak control missing"):return
     if not check(monitor_r11.last_report.is_empty(),
         "R12 actual physical hardware results must never be invented in CI"):return
+    # R36: touch-accessible 20-second on-device profiler, no keyboard needed.
+    # Native unit checks the actual controls and local JSON export. It does
+    # NOT fabricate a physical-phone FPS score.
+    touch_r21.force_mobile_for_tests(true)
+    touch_r21.set_safe_insets(Vector4(59, 60, 59, 34))
+    touch_r21._layout_for_size(Vector2(568, 320))
+    monitor_r11.configure_mobile(true, touch_r21,
+        Vector4(59, 60, 59, 34), Vector2(568, 320))
+    if not check(monitor_r11.r36_mobile and
+        monitor_r11.r36_launcher.visible and
+        not monitor_r11.overlay.visible and
+        monitor_r11.r36_launcher.offset_left >= 59.0 and
+        monitor_r11.r36_launcher.offset_right <= 509.0 and
+        monitor_r11.r36_launcher.offset_top >= 60.0,
+        "R36 mobile FPS launcher is hidden under landscape camera notch"):return
+    if not check((monitor_r11.overlay.offset_right <
+        touch_r21.button_centres["CAMERA"].x - touch_r21.base_radius * 0.80 or
+        not touch_r21.enabled) and
+        monitor_r11.r38_mode_button.get_parent() == monitor_r11.r38_column,
+        "R38 landscape quality control overlays live CAMERA hit target"):return
+    monitor_r11.r36_launcher.pressed.emit()
+    if not check(monitor_r11.overlay.visible and
+        not monitor_r11.r36_launcher.visible and
+        monitor_r11.r36_command_row.visible,
+        "R36 mobile FPS launcher does not open live GPU/CPU metrics"):return
+    # R38: genuine on-screen mode cycles affect all real 3D quality layers,
+    # without F3/F11. The four-cycle returns to real AUTO hysteresis.
+    world._set_graphics_quality(1)
+    adaptive_r12.set_auto(true)
+    monitor_r11.set_r38_auto_enabled(true)
+    if not check(monitor_r11.r38_mode_button.text == "АВТО",
+        "R38 touch panel must expose the real AUTO profile"):return
+    var r38_states: Array[Dictionary] = [
+        {"mode": 0, "auto": false, "label": "MAX"},
+        {"mode": 1, "auto": false, "label": "HIGH"},
+        {"mode": 2, "auto": false, "label": "ECO"},
+        {"mode": 1, "auto": true, "label": "АВТО"}
+    ]
+    for wanted in r38_states:
+        monitor_r11.r38_mode_button.pressed.emit()
+        if not check(world.graphics_quality == wanted["mode"] and
+            adaptive_r12.auto_enabled == wanted["auto"] and
+            monitor_r11.r38_mode_button.text == wanted["label"] and
+            monitor_r11.quality_mode == wanted["mode"],
+            "R38 mobile quality toggle did not change real 3D scene"):return
+    monitor_r11.r38_mode_button.pressed.emit() # AUTO -> MAX
+    if not check(world.graphics_quality == 0 and
+        not adaptive_r12.auto_enabled,
+        "R38 manual MAX profile did not disable automatic switching"):return
+    monitor_r11.r36_start_button.pressed.emit()
+    if not check(monitor_r11.benchmarking and
+        monitor_r11.r36_start_button.disabled and
+        monitor_r11.r38_mode_button.disabled and
+        monitor_r11.last_report.is_empty(),
+        "R38 on-phone 20-second FPS benchmark did not lock graphics preset"):return
+    monitor_r11.r38_mode_button.pressed.emit() # programmatic request while locked
+    if not check(world.graphics_quality == 0 and
+        not adaptive_r12.auto_enabled and
+        not monitor_r11.profile_switched_during_test,
+        "R38 graphics preset changed during benchmark"):return
+    # End only the native UI regression (not an actual performance sample).
+    monitor_r11.benchmarking = false
+    monitor_r11.r36_start_button.disabled = false
+    monitor_r11.r38_mode_button.disabled = false
+    monitor_r11.last_timestamp_us = 0
+    monitor_r11.last_report = {
+        "schema": "R36_CI_EXPORT_FIXTURE_NOT_HARDWARE_MEASUREMENT",
+        "avg_fps": 0
+    }
+    monitor_r11.download_report()
+    var r36_export := FileAccess.open(
+        "user://nebula-r36-real-device-performance.json", FileAccess.READ)
+    if not check(r36_export != null,
+        "R36 local-only JSON export did not create a device file"):return
+    var r36_fixture: Variant = JSON.parse_string(r36_export.get_as_text())
+    r36_export.close()
+    if not check(r36_fixture is Dictionary and
+        r36_fixture.get("schema", "") ==
+        "R36_CI_EXPORT_FIXTURE_NOT_HARDWARE_MEASUREMENT",
+        "R36 local performance JSON export was corrupted"):return
+    monitor_r11.last_report.clear()
+    monitor_r11.r36_close_button.pressed.emit()
+    if not check(not monitor_r11.overlay.visible and
+        monitor_r11.r36_launcher.visible,
+        "R36 mobile performance overlay cannot be closed"):return
+    touch_r21.set_safe_insets(Vector4(0, 55, 0, 34))
+    touch_r21._layout_for_size(Vector2(280, 420))
+    monitor_r11.configure_mobile(true, touch_r21,
+        Vector4(0, 55, 0, 34), Vector2(280, 420))
+    if not check(monitor_r11.r36_launcher.offset_left >= 0.0 and
+        monitor_r11.r36_launcher.offset_right <
+        touch_r21.button_centres["CRUISE"].x - touch_r21.base_radius * 0.8 and
+        monitor_r11.overlay.offset_bottom <
+        touch_r21.button_centres["CRUISE"].y - touch_r21.base_radius * 0.8 and
+        monitor_r11.r38_mode_button.get_parent() == monitor_r11.r36_command_row,
+        "R38 compact portrait quality button overlaps start-flight control"):return
+    monitor_r11.configure_mobile(false, touch_r21,
+        Vector4.ZERO, Vector2(1280, 720))
+    adaptive_r12.set_auto(false)
+    world._set_graphics_quality(0)
+    monitor_r11.set_r38_auto_enabled(false)
+    touch_r21.set_safe_insets(Vector4.ZERO)
+    touch_r21.force_mobile_for_tests(false)
+    if not check(not monitor_r11.r36_launcher.visible,
+        "R36 phone FPS button leaked into desktop HUD"):return
+    print("NEBULA_R36_REAL_DEVICE_UI_SUCCESS phone_launcher=1 local_json=1 benchmark_synthetic=0")
+    print("NEBULA_R38_MOBILE_QUALITY_SUCCESS modes=4 benchmark_lock=true real_scene=true")
     var r14 = world.get_node_or_null("R14_SculptedCinematicPorts")
     if not check(r14 != null, "R14 cinematic ports not loaded into real game scene"):return
     if not check(r14.site_count == 6 and r14.sculpted_decks == 6,

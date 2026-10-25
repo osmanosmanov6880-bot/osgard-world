@@ -1,0 +1,27 @@
+{
+  "source": "https://osa-cinema-beyond-the-model.osman-absolu-5357.chatgpt.site/media/reference/",
+  "owner_site": "OSA CINEMA V12",
+  "note": "Immutable local copy of approved V12 visual references for reliable V13 same-origin delivery.",
+  "files": [
+    {
+      "name": "library.webp",
+      "size": 70316,
+      "sha256": "a296edbc88a069727f7db312b8b288685247f1aa1f0a501b26b647c7c739a437"
+    },
+    {
+      "name": "understand.webp",
+      "size": 25666,
+      "sha256": "a98b0b3874007a826e06ed4f2388ef02b6cef889b533eada98299f93f84c4d24"
+    },
+    {
+      "name": "verify.webp",
+      "size": 26322,
+      "sha256": "e8a49eb964e67b808470267b17dd25c459151f62fdef854148cfe3169d1114e2"
+    },
+    {
+      "name": "decide.webp",
+      "size": 17078,
+      "sha256": "7d3813aee89666ab78cf962025e3dfdde06fe288c190a7ca88b3b72e7258d0c0"
+    }
+  ]
+}

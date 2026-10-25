@@ -30,6 +30,7 @@ on:
       - "public/brand/**"
       - "public/privacy/**"
       - "public/osa-library/**"
+      - "public/osa-cinema/reference/**"
       - "docs/OSA_MEDIA_RECOVERY_RUNBOOK.md"
       - "public/terms/**"
       - "public/tedes/**"
@@ -56,6 +57,9 @@ on:
       - "scripts/r135-artifact-fallback.py"
       - "scripts/r135-production-smoke.mjs"
       - "scripts/production-route-matrix.mjs"
+      - "scripts/osa-cinema-v13-production-smoke.mjs"
+      - "scripts/osa-cinema-v13-production.spec.mjs"
+      - "playwright.osa-cinema-live.config.mjs"
       - "scripts/ecosystem-production-smoke.mjs"
       - "scripts/production-health-watch.mjs"
       - "scripts/activate-frontend-remote.sh"
@@ -96,6 +100,7 @@ on:
       - "docs/04_NULL_SHIFT_GAME_DESIGN.md"
       - "docs/02_IMPERIUM_OF_TIME_GAME_DESIGN.md"
       - ".github/workflows/deploy-frontend.yml"
+      - ".github/workflows/osa-cinema-v13-live-acceptance.yml"
   workflow_dispatch:
 
 jobs:
@@ -268,11 +273,11 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p "$RUNNER_TEMP/r135-web-release"
-          if ! gh run download 40082233653 \
+          if ! gh run download 40109700192 \
             --repo osmanosmanov6880-bot/osgard-world \
             --name osgard-r135-optimized-web-qa \
             --dir "$RUNNER_TEMP/r135-web-release"; then
-            echo "Pinned Actions artifact unavailable; restoring only from SHA-verified live W5" >&2
+            echo "Pinned Actions artifact unavailable; restoring only from SHA-verified live W6" >&2
             python3 scripts/r135-artifact-fallback.py "$RUNNER_TEMP/r135-web-release/r135-optimized-release"
           fi
           python3 scripts/r135-release-stage.py \
@@ -484,7 +489,22 @@ jobs:
           HOST: ${{ secrets.OSGARD_DEPLOY_HOST }}
           USER: ${{ secrets.OSGARD_DEPLOY_USER }}
         run: |
+          set -euo pipefail
           REMOTE_RELEASE_DIR="/tmp/osgard-gh-release-${GITHUB_RUN_ID}"
+          local_bytes="$(stat -c %s osgard-world-release.tgz)"
+          local_mib="$(( (local_bytes + 1048575) / 1048576 ))"
+          # Leave room for extraction and atomic rollback, not just SCP upload.
+          required_free_mib="$(( 1024 + local_mib * 3 ))"
+          remote_free_mib="$(ssh -i ~/.ssh/osgard_deploy "$USER@$HOST" 'df -Pm /tmp | awk "NR==2 {print \$4}"')"
+          if ! [[ "$remote_free_mib" =~ ^[0-9]+$ ]]; then
+            echo "::error::Cannot measure remote /tmp capacity; refusing upload."
+            exit 1
+          fi
+          echo "Remote staging free: ${remote_free_mib} MiB. Required: ${required_free_mib} MiB."
+          if (( remote_free_mib < required_free_mib )); then
+            echo "::error::Insufficient VPS /tmp capacity. Run approved stale-release maintenance workflow, never prune live Docker automatically."
+            exit 1
+          fi
           sha256sum osgard-world-release.tgz | tee local.sha256
           ssh -i ~/.ssh/osgard_deploy "$USER@$HOST" "rm -rf '$REMOTE_RELEASE_DIR' && mkdir -p '$REMOTE_RELEASE_DIR'"
           scp -i ~/.ssh/osgard_deploy osgard-world-release.tgz "$USER@$HOST:$REMOTE_RELEASE_DIR/"
@@ -531,13 +551,18 @@ jobs:
       - name: Verify actual published R135 WebGL pack and byte-range support
         env:
           OSGARD_BASE_URL: https://osgard.world
-          OSGARD_EXPECTED_R135_SOURCE: cd6132fa5d34cbb701957b124a6aa2aac9210434
+          OSGARD_EXPECTED_R135_SOURCE: 947b4627080636543ae5e873b88b50e61f13beb4
+          OSGARD_EXPECTED_R135_VERSION: r135-web-framing-w6-20261024
         run: node scripts/r135-production-smoke.mjs
       - name: Verify published routes and same-origin API proxy
         env:
           OSGARD_BASE_URL: https://osgard.world
           SKILLCRED_EXPECT_CURRENT_DESIGN: "1"
         run: npm run qa:production-routes
+      - name: Verify live OSA CINEMA V13 bilingual routes and original image checksums
+        env:
+          OSGARD_BASE_URL: https://osgard.world
+        run: node scripts/osa-cinema-v13-production-smoke.mjs
       - name: Verify public AAA development dashboard and all 22 visual game identities
         env:
           OSGARD_BASE_URL: https://osgard.world
@@ -580,3 +605,13 @@ jobs:
         env:
           OSGARD_BASE_URL: https://osgard.world
         run: node scripts/skillcred-proxy-smoke.mjs
+      - name: Retire only this successful SSH transport archive
+        if: success()
+        env:
+          HOST: ${{ secrets.OSGARD_DEPLOY_HOST }}
+          USER: ${{ secrets.OSGARD_DEPLOY_USER }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          ssh -i ~/.ssh/osgard_deploy "$USER@$HOST" "rm -rf -- '/tmp/osgard-gh-release-${GITHUB_RUN_ID}'"
+

@@ -1,0 +1,131 @@
+extends MultiMeshInstance3D
+## HORIZON R29: a single bounded Godot GPU instancing batch of rainy puddles.
+## This is transparent polygonal geometry, not physical water simulation.
+## No extra physics colliders, no input changes, and no expensive reflections.
+const COUNT: int = 72
+const MASK_SIZE: int = 48
+var weather := "clear"
+var detail := "standard"
+var planned_transforms: Array[Transform3D] = []
+
+static func _hash(x: int,y: int,seed: int) -> float:
+	var n: int = (x*15731+y*789221+seed*137) & 0x7fffffff
+	n = ((n<<13)^n) & 0x7fffffff
+	return float((n*(n*n*15731+789221)+1376312589)&0x7fffffff)/2147483647.0
+
+static func make_mask() -> ImageTexture:
+	var img:=Image.create_empty(MASK_SIZE,MASK_SIZE,false,Image.FORMAT_RGBA8)
+	for y in range(MASK_SIZE):
+		for x in range(MASK_SIZE):
+			var nx: float = (float(x)+0.5)/float(MASK_SIZE)*2.0-1.0
+			var ny: float = (float(y)+0.5)/float(MASK_SIZE)*2.0-1.0
+			var distance: float = sqrt(nx*nx/0.92+ny*ny/0.77)
+			var edge: float = clampf((1.0-distance+(_hash(x,y,68)-0.5)*0.17)*5.5,0.0,1.0)
+			var grain: float = 0.85+0.15*_hash(x,y,12)
+			img.set_pixel(x,y,Color(0.26*grain,0.38*grain,0.44*grain,0.47*edge))
+	img.generate_mipmaps()
+	return ImageTexture.create_from_image(img)
+
+func _ready() -> void:
+	name="RoadsideRainPuddleBatch"
+	var polygon:=PlaneMesh.new()
+	polygon.size=Vector2.ONE
+	var surface:=StandardMaterial3D.new()
+	surface.albedo_color=Color.WHITE
+	surface.albedo_texture=make_mask()
+	surface.transparency=BaseMaterial3D.TRANSPARENCY_ALPHA
+	surface.roughness=0.19
+	surface.metallic=0.07
+	surface.cull_mode=BaseMaterial3D.CULL_DISABLED
+	polygon.material=surface
+	var instances:=MultiMesh.new()
+	instances.transform_format=MultiMesh.TRANSFORM_3D
+	instances.mesh=polygon
+	instances.instance_count=COUNT
+	for i in range(COUNT):
+		var road_line: int = i/8-4
+		var stage: int = i%8
+		var along: float = -181.0+float(stage)*49.5+float((i*13)%7)*0.31
+		var road: float = float(road_line)*52.0
+		var side: float = 3.3 if i%2==0 else -3.3
+		var cross: bool = (i/8)%2==1
+		var size_x: float = 1.15+float(i%5)*0.17
+		var size_z: float = 2.20+float((i*7)%6)*0.14
+		var center:=Vector3(road+side,0.183,along) if cross else Vector3(along,0.183,road+side)
+		var angle: float = 0.08*float(i%7)
+		var b:=Basis(Vector3.UP,angle).scaled(Vector3(size_x,1.0,size_z))
+		var placement := Transform3D(b,center)
+		planned_transforms.append(placement)
+		instances.set_instance_transform(i,placement)
+	multimesh=instances
+	cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	custom_aabb=AABB(Vector3(-230.0,0.12,-230.0),Vector3(460.0,0.30,460.0))
+	set_conditions("clear","standard")
+
+func set_conditions(current_weather: String,quality: String) -> void:
+	weather=current_weather if ["clear","rain","storm","cloudy","wind","drought"].has(current_weather) else "clear"
+	detail=quality if ["low","standard","cinematic"].has(quality) else "standard"
+	visible=(weather=="rain" or weather=="storm") and detail!="low"
+
+func material_is_bounded() -> bool:
+	return multimesh != null and multimesh.instance_count<=COUNT
+
+# R32: the physical wet patch matches the real 72 visible instanced patches.
+# This inexpensive contact query is independent of detail visibility: LOW
+# does not change gameplay grip or make a rainy course easier.
+static func effective_grip(base_grip: float,wetness: float) -> float:
+	var safe_base: float = clampf(base_grip if is_finite(base_grip) else 1.0,0.35,1.15)
+	var safe_wet: float = clampf(wetness if is_finite(wetness) else 0.0,0.0,1.0)
+	return clampf(safe_base*(1.0-0.16*safe_wet),0.35,1.15)
+
+func contact_at(world_position: Vector3) -> float:
+	if weather != "rain" and weather != "storm":
+		return 0.0
+	if not world_position.is_finite():
+		return 0.0
+	var best: float = 0.0
+	var horizontal := Vector2(world_position.x,world_position.z)
+	for placement in planned_transforms:
+		var offset: Vector2 = horizontal-Vector2(placement.origin.x,placement.origin.z)
+		if offset.length_squared()>4.0:
+			continue
+		var x_axis := Vector2(placement.basis.x.x,placement.basis.x.z)
+		var z_axis := Vector2(placement.basis.z.x,placement.basis.z.z)
+		var local_x: float = offset.dot(x_axis)/maxf(x_axis.length_squared(),0.01)
+		var local_z: float = offset.dot(z_axis)/maxf(z_axis.length_squared(),0.01)
+		if absf(local_x)>0.5 or absf(local_z)>0.5:
+			continue
+		var coverage: float = maxf(0.0,1.0-4.0*(local_x*local_x+local_z*local_z))
+		best = maxf(best,coverage)
+	return best
+
+
+# R33: exactly four ACTUAL physics-ray wheel contacts (LF/LR/RF/RR),
+# not a centre-of-body proxy. Missing/airborne wheels do not fabricate grip.
+func wheel_contact_state(sample: Dictionary, fallback_centre: Vector3) -> Dictionary:
+	var points: Array = sample.get("points",[])
+	var grounded: Array = sample.get("grounded",[])
+	if points.size()!=4 or grounded.size()!=4:
+		return {"wetness":contact_at(fallback_centre),"front":0.0,"rear":0.0,
+			"supported":0,"used_fallback":true}
+	var total: float = 0.0
+	var front: float = 0.0
+	var rear: float = 0.0
+	var supported: int = 0
+	for i in range(4):
+		if not bool(grounded[i]) or not (points[i] is Vector3):
+			continue
+		var point: Vector3 = points[i]
+		if not point.is_finite():
+			continue
+		var amount: float = contact_at(point)
+		total += amount
+		if i==0 or i==2:
+			front += amount
+		else:
+			rear += amount
+		supported += 1
+	# Four tyre slots remain the normalising denominator. One touching
+	# wheel never pretends all four are swimming through the puddle.
+	return {"wetness":total*0.25,"front":front*0.5,"rear":rear*0.5,
+		"supported":supported,"used_fallback":false}

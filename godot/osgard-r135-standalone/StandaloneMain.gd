@@ -3,6 +3,9 @@ extends Node3D
 ## No real telemetry. Both HERO and ECO originals remain available in Web.
 var controller: Node3D
 var camera: Camera3D
+var studio: Node3D
+var reduced_motion: bool = false
+var last_layout_size: Vector2 = Vector2.ZERO
 var orbit_yaw: float = 0.44
 var orbit_pitch: float = 0.21
 var distance: float = 12.8
@@ -33,81 +36,55 @@ func _ready() -> void:
     var world := WorldEnvironment.new()
     var environment := Environment.new()
     environment.background_mode = Environment.BG_COLOR
-    environment.background_color = Color(0.006, 0.012, 0.022)
+    environment.background_color = Color(0.014, 0.019, 0.025)
     environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-    environment.ambient_light_color = Color(0.42, 0.58, 0.72)
-    environment.ambient_light_energy = 0.85
+    environment.ambient_light_color = Color(0.68, 0.72, 0.77)
+    environment.ambient_light_energy = 0.70
     world.environment = environment
     add_child(world)
     var sun := DirectionalLight3D.new()
     sun.rotation_degrees = Vector3(-48, -34, 0)
-    sun.light_energy = 1.45
+    sun.light_color = Color(1.0, 0.94, 0.87)
+    sun.light_energy = 1.15
     add_child(sun)
     var rim := DirectionalLight3D.new()
     rim.rotation_degrees = Vector3(-32, 140, 0)
-    rim.light_color = Color(0.28, 0.69, 0.96)
-    rim.light_energy = 0.55
+    rim.light_color = Color(0.62, 0.73, 0.81)
+    rim.light_energy = 0.47
     add_child(rim)
-    _build_floor()
+    studio = preload("res://R135StudioEnvironment.gd").new()
+    studio.name = "R135StudioEnvironment"
+    add_child(studio)
+    studio.call("configure")
     controller = preload("res://R135ServiceDirector.gd").new()
     controller.name = "R135ServiceSpine"
     add_child(controller)
     controller.configure(camera, environment)
     controller.set_quality(quality)
+    studio.call("set_quality", quality)
+    if OS.has_feature("web"):
+        reduced_motion = bool(JavaScriptBridge.eval("Boolean(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)", true))
+    controller.call("set_reduced_motion", reduced_motion)
     _build_hud()
     get_viewport().size_changed.connect(_update_layout)
     _update_layout()
     _update_view()
     _refresh_status()
 
-func _floor_material(color: Color, emission: bool = false) -> StandardMaterial3D:
-    var mat := StandardMaterial3D.new()
-    mat.albedo_color = color
-    mat.metallic = 0.58
-    mat.roughness = 0.43
-    if emission:
-        mat.emission_enabled = true
-        mat.emission = color
-        mat.emission_energy_multiplier = 1.3
-    return mat
-
-func _floor_box(name: String, pos: Vector3, size: Vector3, mat: Material) -> void:
-    var node := MeshInstance3D.new()
-    node.name = name
-    var mesh := BoxMesh.new()
-    mesh.size = size
-    node.mesh = mesh
-    node.position = pos
-    node.material_override = mat
-    add_child(node)
-
-func _build_floor() -> void:
-    # A bounded service platform gives depth cues without additional GLBs.
-    var surface := _floor_material(Color(0.023, 0.040, 0.061))
-    var inlay := _floor_material(Color(0.035, 0.14, 0.18), true)
-    _floor_box("LowReflectionIndustrialStage", Vector3(0, -0.20, 4.90), Vector3(22, 0.29, 14), surface)
-    for x in range(-10, 11, 2):
-        _floor_box("StageGridX_%02d" % (x + 10), Vector3(float(x), -0.044, 4.9), Vector3(0.018, 0.009, 13), inlay)
-    for z in range(-1, 13, 2):
-        _floor_box("StageGridZ_%02d" % (z + 1), Vector3(0, -0.044, float(z)), Vector3(20.5, 0.009, 0.018), inlay)
-    var orange := _floor_material(Color(0.62, 0.23, 0.10), true)
-    _floor_box("ServiceBoundaryFront", Vector3(0, -0.029, 11.6), Vector3(21, 0.013, 0.055), orange)
-    _floor_box("ServiceBoundaryRear", Vector3(0, -0.029, -1.75), Vector3(21, 0.013, 0.055), orange)
-
 func _panel_style() -> StyleBoxFlat:
     var style := StyleBoxFlat.new()
-    style.bg_color = Color(0.019, 0.038, 0.058, 0.93)
-    style.border_color = Color(0.28, 0.58, 0.68, 0.75)
-    style.set_border_width_all(2)
-    style.set_corner_radius_all(13)
+    style.bg_color = Color(0.027, 0.034, 0.042, 0.93)
+    style.border_color = Color(0.38, 0.44, 0.47, 0.78)
+    style.set_border_width_all(1)
+    style.set_corner_radius_all(12)
     style.set_content_margin_all(16)
     return style
 
 func _button_style(active: bool = false) -> StyleBoxFlat:
     var style := StyleBoxFlat.new()
-    style.bg_color = Color(0.20, 0.080, 0.046, 0.96) if active else Color(0.045, 0.089, 0.13, 0.95)
-    style.border_color = Color(1.0, 0.59, 0.32) if active else Color(0.31, 0.70, 0.77)
-    style.set_border_width_all(2)
+    style.bg_color = Color(0.24, 0.14, 0.09, 0.95) if active else Color(0.09, 0.11, 0.13, 0.93)
+    style.border_color = Color(0.78, 0.49, 0.32) if active else Color(0.34, 0.41, 0.44)
+    style.set_border_width_all(1)
     style.set_corner_radius_all(8)
     style.set_content_margin_all(10)
     return style
@@ -115,6 +92,8 @@ func _button_style(active: bool = false) -> StyleBoxFlat:
 func _button(parent: GridContainer, text: String, action: Callable, prominent: bool) -> void:
     var b := Button.new()
     b.text = text
+    # Avoid text forcing a >360px grid on narrow logical viewports.
+    b.clip_text = true
     b.focus_mode = Control.FOCUS_ALL
     b.add_theme_color_override("font_color", Color(0.90, 0.96, 0.98))
     b.add_theme_color_override("font_hover_color", Color(1.0, 0.96, 0.86))
@@ -135,22 +114,27 @@ func _build_hud() -> void:
     hud_panel.add_theme_stylebox_override("panel", _panel_style())
     overlay.add_child(hud_panel)
     var text_stack := VBoxContainer.new()
+    text_stack.size_flags_horizontal = Control.SIZE_EXPAND_FILL
     text_stack.add_theme_constant_override("separation", 6)
     hud_panel.add_child(text_stack)
     heading = Label.new()
-    heading.text = "OSGARD   /   R135"
-    heading.add_theme_color_override("font_color", Color(1.0, 0.68, 0.43))
+    heading.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+    heading.text = "OSGARD  /  SERVICE LAB"
+    heading.add_theme_color_override("font_color", Color(0.93, 0.78, 0.62))
     text_stack.add_child(heading)
     hud = Label.new()
+    hud.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
     hud.add_theme_color_override("font_color", Color(0.86, 0.95, 0.97))
     text_stack.add_child(hud)
     mission_label = Label.new()
+    mission_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
     mission_label.name = "MissionStatus"
     mission_label.add_theme_color_override("font_color", Color(1.0, 0.71, 0.47))
     text_stack.add_child(mission_label)
     helper = Label.new()
+    helper.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
     helper.text = "M: TRAIN  C: DIAGNOSE  E: SCAN  V: CAMERA  ·  SIMULATION"
-    helper.add_theme_color_override("font_color", Color(0.53, 0.79, 0.84))
+    helper.add_theme_color_override("font_color", Color(0.70, 0.76, 0.78))
     text_stack.add_child(helper)
 
     action_panel = PanelContainer.new()
@@ -176,9 +160,10 @@ func _update_layout() -> void:
     if hud_panel == null:
         return
     var size := get_viewport().get_visible_rect().size
+    last_layout_size = size
     var portrait := _viewport_is_portrait()
     var margin := 24.0 if portrait else 18.0
-    var compact := portrait and size.y < 1150.0
+    var compact := portrait and (size.y < 1150.0 or size.x < 500.0)
     var ui_scale := 0.73 if compact else 1.0
     var font_title := int(40 * ui_scale) if portrait else 25
     var font_state := int(27 * ui_scale) if portrait else 18
@@ -192,20 +177,33 @@ func _update_layout() -> void:
     grid.add_theme_constant_override("h_separation", 12 if portrait else 9)
     grid.add_theme_constant_override("v_separation", 12 if portrait else 9)
     for b in action_buttons:
-        b.add_theme_font_size_override("font_size", int(32 * ui_scale) if portrait else 17)
+        b.add_theme_font_size_override("font_size", int(28 * ui_scale) if portrait else 17)
         b.custom_minimum_size = Vector2(0, (62 if compact else 82) if portrait else 43)
         b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 
+    var hud_width: float
+    var control_width: float
     if portrait:
-        hud_panel.position = Vector2(margin, 42)
-        hud_panel.custom_minimum_size = Vector2(size.x - margin * 2, 0)
-        action_panel.custom_minimum_size = Vector2(size.x - margin * 2, 0)
-        action_panel.position = Vector2(margin, maxf(0, size.y - (355 if compact else 455)))
+        hud_width = maxf(240.0, size.x - margin * 2.0)
+        control_width = hud_width
     else:
-        hud_panel.position = Vector2(margin, margin)
-        hud_panel.custom_minimum_size = Vector2(minf(size.x * 0.48, 510), 0)
-        action_panel.custom_minimum_size = Vector2(minf(size.x * 0.85, 990), 0)
-        action_panel.position = Vector2(margin, maxf(0, size.y - 150))
+        hud_width = minf(size.x * 0.48, 510.0)
+        control_width = minf(size.x * 0.85, 990.0)
+    # A CanvasLayer is not a full-rect Container. Its free-standing PanelContainer
+    # keeps its previous computed size when the browser resizes unless explicitly
+    # reset. Merely changing custom_minimum_size left W8's original 1033-pixel
+    # panel visible inside a 360-pixel logical viewport.
+    hud_panel.custom_minimum_size = Vector2(hud_width, 0.0)
+    action_panel.custom_minimum_size = Vector2(control_width, 0.0)
+    hud_panel.reset_size()
+    action_panel.reset_size()
+    hud_panel.size = Vector2(hud_width, hud_panel.get_combined_minimum_size().y)
+    action_panel.size = Vector2(control_width, action_panel.get_combined_minimum_size().y)
+    hud_panel.position = Vector2(margin, (32.0 if compact else 42.0) if portrait else margin)
+    action_panel.position = Vector2(
+        margin,
+        maxf(0.0, size.y - action_panel.size.y - margin)
+    )
     _update_view()
 
 func _start_mission() -> void:
@@ -257,6 +255,7 @@ func _apply_view(index: int) -> void:
 func _toggle_quality() -> void:
     quality = 0 if quality == 2 else 2
     controller.set_quality(quality)
+    studio.call("set_quality", quality)
     _refresh_status()
 
 func _toggle_motion() -> void:
@@ -280,9 +279,11 @@ func _refresh_status() -> void:
     if bool(state["challenge_active"]) or bool(state["challenge_completed"]):
         mission_label.text = str(state["challenge_goal"]) + "\n" + str(state["challenge_feedback"])
         mission_label.text += "  |  %0.1f S" % float(state["challenge_elapsed"])
-        helper.text = "FAULT: %s  |  ERRORS: %d  |  BEST: %d/150  |  SIM" % [
-            str(state["challenge_fault"]), int(state["challenge_errors"]), int(state["challenge_best_score"])
+        helper.text = "SIM CLUE: %s  |  ERRORS %d  |  CASES %d/3" % [
+            str(state["challenge_evidence"]), int(state["challenge_errors"]), int(state["cleared_case_count"])
         ]
+        if bool(state["challenge_completed"]):
+            mission_label.text += "\nLESSON: " + str(state["challenge_learning"])
     else:
         mission_label.text = str(state["mission_goal"]) + "\n" + str(state["mission_feedback"])
         if bool(state["mission_active"]) or bool(state["mission_completed"]):
@@ -295,24 +296,41 @@ func _update_view() -> void:
     if camera == null:
         return
     orbit_pitch = clampf(orbit_pitch, -1.2, 1.2)
-    distance = clampf(distance, 5.5, 38.0)
-    var size := get_viewport().get_visible_rect().size
-    var ratio: float = size.x / maxf(size.y, 1.0)
-    # Godot FOV is vertical. Widen the orbit distance on portrait screens
-    # instead of cutting the original full-width service-spine geometry.
-    var width_goal: float = 1.11 if view_index == 0 else (1.35 if view_index == 2 else 1.06)
-    var aspect_compensation: float = maxf(1.0, width_goal / maxf(ratio, 0.42))
-    var effective_distance: float = distance * aspect_compensation
+    distance = clampf(distance, 4.5, 38.0)
+    var size: Vector2 = get_viewport().get_visible_rect().size
+    var portrait: bool = size.y > size.x * 1.03
+    # W6: KEEP_WIDTH in portrait preserves horizontal composition while opening
+    # the vertical field of view. W5's 2.75x portrait distance produced a tiny,
+    # bottom-aligned inspection target with large unused empty sky.
+    camera.keep_aspect = Camera3D.KEEP_WIDTH if portrait else Camera3D.KEEP_HEIGHT
+    camera.fov = 57.0 if portrait else (53.0 if view_index == 2 else 55.0)
+    var effective_distance: float = distance
+    if portrait:
+        match view_index:
+            0:
+                effective_distance = maxf(distance, 15.0)
+            1:
+                effective_distance = maxf(distance, 6.8)
+            2:
+                effective_distance = maxf(distance, 7.8)
+            _:
+                effective_distance = maxf(distance, 8.5)
     camera_effective_distance = effective_distance
     var target_focus: Vector3 = focus
-    # Track the actual moving optical carriage only in the optical inspection view.
-    # In portrait, reserve extra vertical room for the fixed status and touch panels.
     if view_index == 2 and optical_tracking and controller != null:
-        var carriage: Node3D = controller.get("boom") as Node3D
-        if carriage != null:
-            target_focus.x = lerpf(focus.x, carriage.position.x, 0.42)
-    if ratio < 0.8:
-        target_focus.y -= 0.55 if view_index == 2 else 0.23
+        # Aim at the actual animated optical head, not a guessed point or
+        # 42%-interpolated carriage X. The head moves as the 16s cycle progresses.
+        var optical_head: Node3D = controller.get("head") as Node3D
+        if optical_head != null:
+            # W6.2 screenshot QA: W6.1 head projected at 0.767 horizontal and
+            # cut off its 3D label. Aim 1.15 units farther to the right and
+            # 0.35 lower to recover label padding and usable machine area.
+            var inspection_offset: Vector3 = Vector3(-1.0, -2.40, 0.12) if portrait else Vector3(-1.45, -0.18, 0.12)
+            target_focus = optical_head.global_position + inspection_offset
+    elif view_index == 1:
+        target_focus = Vector3(-4.72, 0.38, 5.97)
+    elif view_index == 3:
+        target_focus = Vector3(1.54, 3.03, 4.78)
     var direction := Vector3(
         sin(orbit_yaw) * cos(orbit_pitch), sin(orbit_pitch),
         cos(orbit_yaw) * cos(orbit_pitch)
@@ -320,11 +338,37 @@ func _update_view() -> void:
     camera.position = target_focus + direction * effective_distance
     camera.look_at(target_focus, Vector3.UP)
 
+func _camera_target_readout() -> Dictionary:
+    var size: Vector2 = get_viewport().get_visible_rect().size
+    var frame: Dictionary = {
+        "camera_keep_width": camera.keep_aspect == Camera3D.KEEP_WIDTH,
+        "camera_fov": camera.fov,
+        "camera_effective_distance": camera_effective_distance,
+        "camera_target_visible": false,
+        "camera_target_screen_x": -1.0,
+        "camera_target_screen_y": -1.0,
+        "machine_top_screen_y": -1.0
+    }
+    if view_index == 2 and controller != null:
+        var rail_screen: Vector2 = camera.unproject_position(Vector3(0.0, 3.78, 5.37))
+        frame["machine_top_screen_y"] = rail_screen.y / maxf(size.y, 1.0)
+        var optical_head: Node3D = controller.get("head") as Node3D
+        if optical_head != null and not camera.is_position_behind(optical_head.global_position):
+            var point: Vector2 = camera.unproject_position(optical_head.global_position)
+            frame["camera_target_screen_x"] = point.x / maxf(size.x, 1.0)
+            frame["camera_target_screen_y"] = point.y / maxf(size.y, 1.0)
+            frame["camera_target_visible"] = true
+    return frame
+
 func _process(delta: float) -> void:
     readout_clock += delta
     if readout_clock < 0.18:
         return
     readout_clock = 0.0
+    # Browser viewport changes (especially Playwright Pixel DPR) can change the
+    # engine's visible rect without emitting a reliable root size_changed signal.
+    if get_viewport().get_visible_rect().size.distance_squared_to(last_layout_size) > 1.0:
+        _update_layout()
     _refresh_status()
     if view_index == 2 and optical_tracking:
         _update_view()
@@ -339,9 +383,28 @@ func _process(delta: float) -> void:
         state["distance"] = distance
         state["camera_effective_distance"] = camera_effective_distance
         state["optical_tracking"] = optical_tracking
+        state.merge(_camera_target_readout(), true)
         var area: Vector2 = get_viewport().get_visible_rect().size
         state["viewport_w"] = area.x
         state["viewport_h"] = area.y
+        var stage_budget: Dictionary = studio.call("render_budget")
+        state["studio_grid_draw_batches"] = int(stage_budget["grid_draw_batches"])
+        state["studio_grid_instances"] = int(stage_budget["grid_instances"])
+        state["studio_mesh_nodes"] = int(stage_budget["single_mesh_nodes"])
+        state["studio_quality"] = int(stage_budget["stage_quality"])
+        state["prefers_reduced_motion"] = reduced_motion
+        state["render_fps_sample"] = Engine.get_frames_per_second()
+        var status_rect: Rect2 = hud_panel.get_global_rect()
+        var control_rect: Rect2 = action_panel.get_global_rect()
+        state["hud_layout_mode"] = "portrait" if _viewport_is_portrait() else "landscape"
+        state["hud_rect"] = {
+            "x": status_rect.position.x, "y": status_rect.position.y,
+            "w": status_rect.size.x, "h": status_rect.size.y
+        }
+        state["action_rect"] = {
+            "x": control_rect.position.x, "y": control_rect.position.y,
+            "w": control_rect.size.x, "h": control_rect.size.y
+        }
         var button_centers: Array[Dictionary] = []
         for button in action_buttons:
             var box: Rect2 = button.get_global_rect()

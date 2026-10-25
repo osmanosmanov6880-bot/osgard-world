@@ -1,4 +1,5 @@
-// Verify that R135 serves the real optimized Godot Web binary from osgard.world.
+// Verify that R135 serves the exact reviewed native Godot Web runtime.
+import { createHash } from 'node:crypto'
 // Unlike a route-only 200, a range request proves Nginx serves the PCK bytes.
 const root = (process.env.OSGARD_BASE_URL || 'https://osgard.world').replace(/\/$/, '')
 const url = root + '/games/r135-service/'
@@ -13,11 +14,17 @@ if (!page.includes('index.js') || !page.includes('<canvas')) fail('React fallbac
 
 const manifestResponse = await fetch(probe('release.json?verify=' + Date.now()), options)
 if (!manifestResponse.ok) fail('missing release manifest: ' + manifestResponse.status)
-const manifest = await manifestResponse.json()
-if (manifest.version !== 'r135-web-visual-diagnostics-w5-20261024') fail('wrong R135 release version')
-if (!/^[0-9a-f]{40}$/.test(manifest.source_commit || '')) fail('missing valid W5 source commit')
+const manifestBytes = new Uint8Array(await manifestResponse.arrayBuffer())
+const manifestDigest = createHash('sha256').update(manifestBytes).digest('hex')
+const expectedDigest = process.env.OSGARD_EXPECTED_R135_MANIFEST_SHA256 || '0638f1ad5c0ab26d2d112e63bd1759923e5401a85ad4f2cedd450bbb7def2f61'
+if (!/^[0-9a-f]{64}$/.test(expectedDigest)) fail('invalid expected release SHA-256')
+if (manifestDigest !== expectedDigest) fail('R135 manifest SHA-256 mismatch')
+const manifest = JSON.parse(new TextDecoder().decode(manifestBytes))
+const expectedVersion = process.env.OSGARD_EXPECTED_R135_VERSION || 'r135-web-framing-w6-20261024'
+if (manifest.version !== expectedVersion) fail('wrong R135 release version')
+if (!/^[0-9a-f]{40}$/.test(manifest.source_commit || '')) fail('missing valid W6 source commit')
 const expectedSource = process.env.OSGARD_EXPECTED_R135_SOURCE
-if (expectedSource && manifest.source_commit !== expectedSource) fail('wrong W5 source commit')
+if (expectedSource && manifest.source_commit !== expectedSource) fail('wrong W6 source commit')
 const files = manifest.files
 const pckBytes = Number(manifest.optimized_pck_bytes)
 if (pckBytes < 10_000_000 || pckBytes >= 100_000_000) fail('PCK size outside approved budget')

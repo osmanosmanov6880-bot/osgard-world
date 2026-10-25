@@ -3,7 +3,7 @@ import { defineConfig } from '@playwright/test'
 export default defineConfig({
   testDir: './scripts',
   testMatch: 'omega-portrait-preview.spec.mjs',
-  timeout: 150_000,
+  timeout: 210_000,
   expect: { timeout: 18_000 },
   retries: 0,
   workers: 1,

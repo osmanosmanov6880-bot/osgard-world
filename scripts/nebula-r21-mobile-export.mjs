@@ -99,6 +99,133 @@ const pilotScript = `
   });
 })();
 </script>`;
+// R34: fail-safe real DOM multitouch capture. Godot Web sometimes stalls or
+// loses native InputEventScreenTouch on software WebGL. This bridge reads
+// actual browser finger positions; the Godot game still handles gameplay
+// and runs its own physics. No synthetic touches or external endpoints.
+const touchScript = `
+<script id="nebula-r34-touch-bridge">
+(() => {
+  const points = new Map();
+  const state = window.__nebulaDomTouchState = {
+    seq: 0, points: [], downs: 0, ups: 0, moves: 0,
+    cancels: 0, blurClears: 0, last_event_ms: -1
+  };
+  const canvas = () => document.getElementById('canvas');
+  const fromCanvas = (target) => {
+    const c = canvas();
+    return Boolean(c && (target === c || c.contains(target)));
+  };
+  const coords = (touch) => {
+    const rect = canvas()?.getBoundingClientRect();
+    if (!rect) return null;
+    return [Number(touch.identifier), touch.clientX - rect.left,
+      touch.clientY - rect.top];
+  };
+  const publish = () => {
+    // Same monotonic clock as the Godot-side poll. This measures dispatch
+    // -> engine observation, NOT physical finger-to-photon latency.
+    state.last_event_ms = typeof performance !== 'undefined' &&
+      typeof performance.now === 'function' ? performance.now() : -1;
+    state.seq++;
+    state.points = [...points.values()].sort((a,b) => a[0] - b[0]);
+  };
+  const clear = (reason) => {
+    if (!points.size) return;
+    points.clear();
+    if (reason === 'blur') state.blurClears++;
+    else state.cancels++;
+    publish();
+  };
+  const onTouch = (type, event) => {
+    if (type === 'touchstart' && !fromCanvas(event.target)) return;
+    let changed = false;
+    for (const touch of Array.from(event.changedTouches || [])) {
+      const id = Number(touch.identifier);
+      if (type === 'touchstart') {
+        if (points.size >= 12 || points.has(id)) continue;
+        const p = coords(touch);
+        if (!p) continue;
+        points.set(id, p);
+        state.downs++; changed = true;
+      } else if (type === 'touchmove' && points.has(id)) {
+        const p = coords(touch);
+        if (!p) continue;
+        points.set(id, p);
+        state.moves++; changed = true;
+      } else if (points.has(id) &&
+          (type === 'touchend' || type === 'touchcancel')) {
+        points.delete(id);
+        if (type === 'touchcancel') state.cancels++;
+        else state.ups++;
+        changed = true;
+      }
+    }
+    if (!changed) return;
+    publish();
+    if (event.cancelable) event.preventDefault();
+  };
+  for (const eventName of ['touchstart','touchmove','touchend','touchcancel']) {
+    window.addEventListener(eventName, event => onTouch(eventName, event),
+      { capture: true, passive: false });
+  }
+  window.addEventListener('blur', () => clear('blur'));
+  window.addEventListener('pagehide', () => clear('blur'));
+  window.addEventListener('resize', () => clear('resize'));
+  window.addEventListener('orientationchange', () => clear('resize'));
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) clear('blur');
+  });
+})();
+</script>`;
+// R35: measure real CSS safe-area env() values in CSS pixels. No guessing
+// by device name, UA, orientation or fixed iPhone models.
+const safeAreaScript = `
+<script id="nebula-r35-safe-area">
+(() => {
+  const safe = window.__nebulaSafeArea = {
+    left: 0, top: 0, right: 0, bottom: 0, seq: 0
+  };
+  const measure = () => {
+    if (!document.documentElement ||
+        typeof window.getComputedStyle !== 'function') return;
+    const probe = document.createElement('div');
+    probe.style.cssText = [
+      'position:fixed', 'visibility:hidden', 'pointer-events:none',
+      'padding-left:env(safe-area-inset-left, 0px)',
+      'padding-top:env(safe-area-inset-top, 0px)',
+      'padding-right:env(safe-area-inset-right, 0px)',
+      'padding-bottom:env(safe-area-inset-bottom, 0px)'
+    ].join(';');
+    // The script runs in <head>, before <body> may exist. Attach the
+    // temporary probe to <head> to avoid modifying the parser's HTML tree.
+    const host = document.body || document.head || document.documentElement;
+    host.appendChild(probe);
+    const computed = window.getComputedStyle(probe);
+    const read = name => {
+      const n = Number.parseFloat(computed[name]);
+      return Number.isFinite(n) ? Math.max(0, Math.min(96, n)) : 0;
+    };
+    const next = {
+      left:read('paddingLeft'), top:read('paddingTop'),
+      right:read('paddingRight'), bottom:read('paddingBottom')
+    };
+    probe.remove();
+    if (['left','top','right','bottom'].some(k => safe[k] !== next[k])) {
+      Object.assign(safe,next);
+      safe.seq++;
+    }
+  };
+  measure();
+  window.addEventListener('resize',measure);
+  window.addEventListener('orientationchange',measure);
+  window.visualViewport?.addEventListener('resize',measure);
+  document.addEventListener('DOMContentLoaded',measure,{once:true});
+  document.addEventListener('visibilitychange',() => {
+    if (!document.hidden) measure();
+  });
+})();
+</script>`;
 if (!html.includes('nebula-r23-physical-keyboard')) {
   // The previous bridge was added at </body>, *after* index.js registered
   // Godot/engine keyboard listeners. If those capture/stop the event first,
@@ -107,6 +234,16 @@ if (!html.includes('nebula-r23-physical-keyboard')) {
   const openHead = html.match(/<head[^>]*>/i);
   if (!openHead) throw new Error('Godot HTML head missing');
   html = html.replace(openHead[0],openHead[0] + '\n' + pilotScript);
+}
+if (!html.includes('nebula-r35-safe-area')) {
+  const openHead = html.match(/<head[^>]*>/i);
+  if (!openHead) throw new Error('Godot HTML head missing for safe-area probe');
+  html = html.replace(openHead[0], openHead[0] + '\n' + safeAreaScript);
+}
+if (!html.includes('nebula-r34-touch-bridge')) {
+  const openHead = html.match(/<head[^>]*>/i);
+  if (!openHead) throw new Error('Godot HTML head missing for touch bridge');
+  html = html.replace(openHead[0],openHead[0] + '\n' + touchScript);
 }
 if (!html.includes('nebula-r22-keyboard-focus')) {
   if (!html.includes('</body>')) throw new Error('Godot export body missing');
@@ -117,8 +254,14 @@ if (!html.includes('touch-action:none') ||
     !html.includes('nebula-r22-keyboard-focus') ||
     !html.includes('nebula-r23-physical-keyboard') ||
     !html.includes('nebulaKeyDebug') ||
+    !html.includes('nebula-r34-touch-bridge') ||
+    !html.includes('nebula-r35-safe-area') ||
+    !html.includes('__nebulaSafeArea') ||
+    html.indexOf('nebula-r35-safe-area') > html.indexOf('</head>') ||
+    !html.includes('__nebulaDomTouchState') ||
+    html.indexOf('nebula-r34-touch-bridge') > html.indexOf('</head>') ||
     html.indexOf('nebula-r23-physical-keyboard') > html.indexOf('</head>')) {
   throw new Error('R21 mobile CSS or responsive viewport not installed');
 }
 fs.writeFileSync(file,html);
-console.log('NEBULA_R23_WEB_INPUT_SUCCESS physical keycode capture, WASD Cyrillic-independent + mobile fullscreen shell');
+console.log('NEBULA_R35_WEB_INPUT_SUCCESS physical keyboard, touch bridge, CSS safe-area, full-screen shell');

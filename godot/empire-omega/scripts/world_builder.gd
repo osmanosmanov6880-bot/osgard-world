@@ -37,11 +37,23 @@ var building_chunks := {}
 var active_chunk_count := 0
 var window_points: Array[Transform3D] = []
 var facade_windows: MultiMeshInstance3D
+var facade_frames: MultiMeshInstance3D
+var architecture_trim: MultiMeshInstance3D
+var streetfront: Node3D
+var road_paint: Node3D
+var road_puddles: MultiMeshInstance3D
+var cityhall_gateway: Node3D
 var last_window_mode := -1
 var waypoint_marker: Node3D
 var horizon_scenic: Node3D
 const ROAD_MATERIALS = preload("res://scripts/horizon_road_materials.gd")
 const LIGHT_GRADE = preload("res://scripts/horizon_light_grade.gd")
+const FACADE_MATERIALS = preload("res://scripts/horizon_facade_materials.gd")
+const ARCHITECTURE_TRIM = preload("res://scripts/horizon_architecture_trim.gd")
+const STREETFRONT_SCENE = preload("res://scripts/horizon_streetfront_details.gd")
+const CIVIC_GATEWAY = preload("res://scripts/horizon_civic_gateway.gd")
+const ROAD_PAINT_SCENE = preload("res://scripts/horizon_road_paint_batches.gd")
+const ROAD_PUDDLES = preload("res://scripts/horizon_rain_puddles.gd")
 var asphalt_pbr: StandardMaterial3D
 var concrete_pbr: StandardMaterial3D
 
@@ -54,15 +66,28 @@ func _ready() -> void:
 	add_child(city_root)
 	_create_environment()
 	_create_terrain()
+	road_paint = ROAD_PAINT_SCENE.new()
 	_create_roads()
+	road_paint.call("record_road_edges")
+	road_paint.call("finish")
+	city_root.add_child(road_paint)
+	road_puddles = ROAD_PUDDLES.new()
+	city_root.add_child(road_puddles)
+	architecture_trim = ARCHITECTURE_TRIM.new()
+	streetfront = STREETFRONT_SCENE.new()
 	_create_city()
+	architecture_trim.call("finalize")
+	city_root.add_child(architecture_trim)
+	streetfront.call("finalize")
+	city_root.add_child(streetfront)
 	_create_window_batch()
 	_create_landmarks()
 	_create_waypoint_marker()
 	_create_project_visuals()
 	_create_property_markers()
 	_create_weather_particles()
-	_create_trees()
+	# Original individual 85 cuboid TreeCrown/TreeTrunk decorations removed.
+	# The 192 GPU-instanced R26 trees already provide real leaf and pine meshes.
 	# GPU-instanced scenic art has no colliders and preserves all traffic/missions.
 	horizon_scenic = preload("res://scripts/horizon_roadscape.gd").new()
 	add_child(horizon_scenic)
@@ -104,6 +129,8 @@ func _box(parent: Node3D, label: String, size: Vector3, position: Vector3, color
 		geometry.material_override = asphalt_pbr
 	elif label == "Sidewalk":
 		geometry.material_override = concrete_pbr
+	elif label.begins_with("Building_"):
+		geometry.material_override = FACADE_MATERIALS.facade(color)
 	else:
 		geometry.material_override = _material(color, 0.12, 0.62, glow)
 	holder.add_child(geometry)
@@ -155,8 +182,8 @@ func _create_roads() -> void:
 		for step in range(-10,11):
 			var q := float(step) * 21.0
 			if absf(q) < 219:
-				_box(city_root,"RoadDash",Vector3(7,0.03,0.19),Vector3(q,0.19,p),Color("dec99b"))
-				_box(city_root,"RoadDash",Vector3(0.19,0.03,7),Vector3(p,0.195,q),Color("dec99b"))
+				road_paint.call("record_dash",true,q,p)
+				road_paint.call("record_dash",false,q,p)
 	# Sidewalk lips provide visual read without blocking the character controller.
 	for index in range(-4,5):
 		var p := float(index) * ROAD_INTERVAL
@@ -192,10 +219,16 @@ func _create_city() -> void:
 				var color := base_color.lightened(rng.randf_range(0.05,0.32)) if (ix + iz + n) % 3 == 0 else base_color.darkened(rng.randf_range(0.08,0.28))
 				var pos := Vector3(x+offset,height*0.5,z+(offset if (ix + iz) % 2 == 0 else -offset))
 				_box(chunk,"Building_%03d" % building_count,Vector3(width,height,width),pos,color,true)
-				_record_windows(pos,width,height)
+				architecture_trim.call("record",pos,width,height)
+				# Entrances and the ground-floor window gap must share the same
+				# street-facing facade; never face an interior wall at random.
+				var entrance_face: int = STREETFRONT_SCENE.road_facing_variant(
+					pos,ROAD_INTERVAL,(ix+iz+n)%2==0)
+				streetfront.call("record",pos,width,height,building_count,entrance_face)
+				_record_windows(pos,width,height,entrance_face)
 				building_count += 1
 				# Emissive parapet gives an evening skyline without external textures.
-				_box(chunk,"RoofLight",Vector3(width+0.35,0.27,width+0.35),Vector3(pos.x,height+0.15,pos.z),Color("95b7b7"),false,true)
+				_box(chunk,"RoofLight",Vector3(width+0.35,0.27,width+0.35),Vector3(pos.x,height+0.15,pos.z),Color("69747d"),false,false)
 
 func update_chunks(focus: Vector3, quality: String = "standard") -> void:
 	# Grid-quarter visibility and physics activation. Unlike disk streaming,
@@ -220,19 +253,26 @@ func update_chunks(focus: Vector3, quality: String = "standard") -> void:
 					collision.set_deferred("disabled",not visible_now)
 		building_chunks[key] = entry
 
-func _record_windows(center: Vector3, width: float, height: float) -> void:
-	# Facade windows are a SINGLE GPU-instanced mesh (instead of thousands of nodes).
+func _record_windows(center: Vector3, width: float, height: float, entrance_variant: int = 0) -> void:
+	# R27: each building has a real ground-floor storefront. Do not draw
+	# the old ground-floor window THROUGH its chosen street-facing door.
+	# Keep all three other facades and every upper-floor window intact.
 	var floors: int = maxi(1,int(height / 4.5))
 	for floor_index in range(floors):
 		var y: float = 2.9 + float(floor_index) * 4.4
-		if y > height - 1.1: continue
+		if y > height - 1.1:
+			continue
 		for column in range(3):
 			var offset: float = float(column-1) * width * 0.27
-			window_points.append(Transform3D(Basis(),Vector3(center.x+offset,y,center.z-width*0.5-0.08)))
-			window_points.append(Transform3D(Basis(),Vector3(center.x+offset,y,center.z+width*0.5+0.08)))
 			var side_basis := Basis(Vector3.UP,PI*0.5)
-			window_points.append(Transform3D(side_basis,Vector3(center.x-width*0.5-0.08,y,center.z+offset)))
-			window_points.append(Transform3D(side_basis,Vector3(center.x+width*0.5+0.08,y,center.z+offset)))
+			if STREETFRONT_SCENE.window_allowed(floor_index,0,entrance_variant):
+				window_points.append(Transform3D(Basis(),Vector3(center.x+offset,y,center.z-width*0.5-0.08)))
+			if STREETFRONT_SCENE.window_allowed(floor_index,1,entrance_variant):
+				window_points.append(Transform3D(Basis(),Vector3(center.x+offset,y,center.z+width*0.5+0.08)))
+			if STREETFRONT_SCENE.window_allowed(floor_index,2,entrance_variant):
+				window_points.append(Transform3D(side_basis,Vector3(center.x-width*0.5-0.08,y,center.z+offset)))
+			if STREETFRONT_SCENE.window_allowed(floor_index,3,entrance_variant):
+				window_points.append(Transform3D(side_basis,Vector3(center.x+width*0.5+0.08,y,center.z+offset)))
 
 func _create_window_batch() -> void:
 	var mesh := BoxMesh.new()
@@ -252,6 +292,26 @@ func _create_window_batch() -> void:
 	facade_windows.multimesh = multimesh
 	facade_windows.material_override = mat
 	city_root.add_child(facade_windows)
+	# Instanced satin-metal perimeter behind each dark glass window.
+	# One draw batch, rather than a new draw call per window.
+	var frame_mesh := BoxMesh.new()
+	frame_mesh.size = Vector3(1.27,1.60,0.055)
+	var frame_grid := MultiMesh.new()
+	frame_grid.transform_format = MultiMesh.TRANSFORM_3D
+	frame_grid.mesh = frame_mesh
+	frame_grid.instance_count = window_points.size()
+	for i in range(window_points.size()):
+		frame_grid.set_instance_transform(i,window_points[i])
+	facade_frames = MultiMeshInstance3D.new()
+	facade_frames.name = "InstancedMetalWindowFrames"
+	facade_frames.multimesh = frame_grid
+	var finish := StandardMaterial3D.new()
+	finish.albedo_color = Color("9ba5ad")
+	finish.metallic = 0.20
+	finish.roughness = 0.64
+	facade_frames.material_override = finish
+	facade_frames.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	city_root.add_child(facade_frames)
 	_update_windows(8.0,100)
 
 func _update_windows(hour: float, electricity: int) -> void:
@@ -301,24 +361,19 @@ func _create_landmarks() -> void:
 		var color: Color = Color("354d5d") if id == "cityhall" else DISTRICT_COLORS[district].lightened(0.16)
 		var h := 24.0 if id == "cityhall" else (24.0 if id == "power" else 16.0)
 		_box(city_root,id + "_ground_plaza",Vector3(40,0.14,40),Vector3(pos.x,0.03,pos.z),Color("455158"))
-		_box(city_root,id + "_landmark",Vector3(25,h,25),Vector3(pos.x,h/2.0,pos.z),color,true)
-		_box(city_root,id + "_spire",Vector3(6,8,6),Vector3(pos.x,h+4,pos.z),Color("9dcfca"),false,true)
+		var landmark_body: Node3D = _box(city_root,id + "_landmark",Vector3(25,h,25),Vector3(pos.x,h/2.0,pos.z),color,true)
 		if id == "cityhall":
-			# The palace is no longer one giant featureless wall beside the spawn.
-			# A recessed colonnade, metal ribs and windows establish realistic scale.
-			for floor_index in range(4):
-				var stripe_y: float = 4.0+float(floor_index)*4.8
-				_box(city_root,"CivicStoneBand",Vector3(25.7,.21,25.7),Vector3(pos.x,stripe_y,pos.z),Color("1f3847"))
-				for col in range(5):
-					var window_x: float = pos.x-8.6+float(col)*4.3
-					_box(city_root,"CivicGlazing",Vector3(1.76,2.72,.09),Vector3(window_x,stripe_y+1.75,pos.z+12.64),Color("263f4c"))
-			for column in range(6):
-				var col_x: float = pos.x-10.0+float(column)*4.0
-				_box(city_root,"CivicColumn",Vector3(1.06,10.8,1.03),Vector3(col_x,5.4,pos.z+14.0),Color("a3a99b"))
-				_box(city_root,"CivicCapital",Vector3(1.65,.32,1.60),Vector3(col_x,10.9,pos.z+14.0),Color("aeb6aa"))
-			_box(city_root,"CivicPortico",Vector3(27.0,.85,5.7),Vector3(pos.x,11.6,pos.z+14.0),Color("355364"))
-			_box(city_root,"CivicPortal",Vector3(5.0,8.0,.16),Vector3(pos.x,4.1,pos.z+12.72),Color("203342"))
-			_box(city_root,"CivicLightRibbon",Vector3(22.0,.13,.12),Vector3(pos.x,12.14,pos.z+16.9),Color("d8b978"),false,true)
+			var wall: MeshInstance3D = landmark_body.get_node("VisualMesh") as MeshInstance3D
+			wall.material_override = FACADE_MATERIALS.facade(Color("536a7a"))
+		_box(city_root,id + "_spire",Vector3(6,8,6),Vector3(pos.x,h+4,pos.z),
+			Color("7b8991") if id=="cityhall" else Color("9dcfca"),false,id!="cityhall")
+		if id == "cityhall":
+			# All first-screen PBR details are now just seven batched meshes.
+			# The existing 25x24x25 collider is preserved, unchanged.
+			cityhall_gateway = CIVIC_GATEWAY.new()
+			cityhall_gateway.position = pos
+			city_root.add_child(cityhall_gateway)
+
 		var marker := Node3D.new()
 		marker.name = "Marker_" + id
 		marker.position = pos + Vector3(0,h+9,0)
@@ -422,6 +477,16 @@ func apply_visual_budget(mode: String) -> void:
 		weather_particles.amount_ratio = 0.25 if visual_budget == "low" else (0.65 if visual_budget == "standard" else 1.0)
 	if horizon_scenic != null:
 		horizon_scenic.visible = visual_budget != "low"
+	if architecture_trim != null:
+		architecture_trim.visible = visual_budget != "low"
+	if streetfront != null:
+		streetfront.visible = visual_budget != "low"
+	if road_puddles != null:
+		road_puddles.set_conditions(weather_mode,visual_budget)
+	if cityhall_gateway != null:
+		cityhall_gateway.visible = visual_budget != "low"
+	if facade_frames != null:
+		facade_frames.visible = visual_budget != "low"
 	_apply_lighting()
 
 func update_weather(kind: String) -> void:
@@ -432,6 +497,10 @@ func update_weather(kind: String) -> void:
 		ROAD_MATERIALS.apply_weather(asphalt_pbr,kind)
 	if concrete_pbr != null:
 		ROAD_MATERIALS.apply_weather(concrete_pbr,kind)
+	if road_paint != null:
+		road_paint.call("apply_weather",kind)
+	if road_puddles != null:
+		road_puddles.set_conditions(kind,visual_budget)
 	if weather_particles != null:
 		weather_particles.emitting = kind == "rain" or kind == "storm"
 	_apply_lighting()
@@ -446,15 +515,6 @@ func _apply_lighting() -> void:
 	if atmosphere == null:
 		return
 	LIGHT_GRADE.apply_to(sky_environment.environment,sun,atmosphere,weather_mode,visual_budget,daylight_brightness)
-
-func _create_trees() -> void:
-	for i in range(85):
-		var pos := Vector3(rng.randf_range(-220,220),0,rng.randf_range(-220,220))
-		if absf(fposmod(pos.x+26.0,52.0)-26.0) < 9.0 or absf(fposmod(pos.z+26.0,52.0)-26.0) < 9.0:
-			continue
-		if pos.distance_to(Vector3(-130,0,-130)) < 30.0: continue
-		_box(city_root,"TreeTrunk",Vector3(0.75,4.0,0.75),Vector3(pos.x,2,pos.z),Color("56483a"))
-		_box(city_root,"TreeCrown",Vector3(6.0,6.0,6.0),Vector3(pos.x,6,pos.z),Color("246257"))
 
 func update_development() -> void:
 	if not is_node_ready(): return

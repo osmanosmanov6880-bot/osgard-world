@@ -194,7 +194,44 @@ func _r25_emit_browser_flight_state() -> void:
         state["touch_boost"] = ship.touch_boost
         state["touch_view_w"] = r21_touch.viewport_pixels.x
         state["touch_view_h"] = r21_touch.viewport_pixels.y
+        state["touch_safe_left"] = r21_touch.r35_safe_insets.x
+        state["touch_safe_top"] = r21_touch.r35_safe_insets.y
+        state["touch_safe_right"] = r21_touch.r35_safe_insets.z
+        state["touch_safe_bottom"] = r21_touch.r35_safe_insets.w
+        state["touch_compact_portrait"] = r21_touch.r35_compact_portrait
+        state["touch_stick_x"] = r21_touch.stick_center.x
+        state["touch_stick_y"] = r21_touch.stick_center.y
         state["touch_events"] = r21_touch.r31_raw_touch_events
+        state["touch_dom_bridge"] = r21_touch.r34_dom_bridge_active
+        state["touch_dom_events"] = r21_touch.r34_dom_event_count
+        state["touch_dom_sequence"] = r21_touch.r34_dom_sequence
+        state["r36_browser_touch_poll_ms"] = snappedf(
+            r21_touch.r36_input_poll_latency_ms, 0.1)
+        state["r36_browser_touch_poll_samples"] = r21_touch.r36_input_poll_samples
+        if is_instance_valid(performance_lab_r11):
+            state["r36_mobile_perf"] = performance_lab_r11.r36_mobile
+            state["r36_perf_visible"] = performance_lab_r11.overlay.visible
+            state["r36_perf_active"] = performance_lab_r11.benchmarking
+            state["r36_perf_report_ready"] = not performance_lab_r11.last_report.is_empty()
+            state["r38_quality_mode"] = graphics_quality
+            state["r38_auto_enabled"] = adaptive_r12.auto_enabled
+            state["r38_mode_label"] = performance_lab_r11.r38_mode_button.text
+            state["r38_mode_button_x"] = (
+                performance_lab_r11.r38_mode_button.global_position.x +
+                performance_lab_r11.r38_mode_button.size.x * 0.5)
+            state["r38_mode_button_y"] = (
+                performance_lab_r11.r38_mode_button.global_position.y +
+                performance_lab_r11.r38_mode_button.size.y * 0.5)
+            var fps_button: Button = performance_lab_r11.r36_launcher
+            var benchmark_button: Button = performance_lab_r11.r36_start_button
+            state["r36_fps_button_x"] = (
+                fps_button.global_position.x + fps_button.size.x * 0.5)
+            state["r36_fps_button_y"] = (
+                fps_button.global_position.y + fps_button.size.y * 0.5)
+            state["r36_benchmark_button_x"] = (
+                benchmark_button.global_position.x + benchmark_button.size.x * 0.5)
+            state["r36_benchmark_button_y"] = (
+                benchmark_button.global_position.y + benchmark_button.size.y * 0.5)
         state["qa_visuals_trimmed"] = r33_swiftshader_qa_visuals_trimmed
         state["touch_last_x"] = r21_touch.r31_last_touch_position.x
         state["touch_last_y"] = r21_touch.r31_last_touch_position.y
@@ -228,7 +265,13 @@ func _r31_sync_touch_viewport() -> void:
     if css_w < 300 or css_h < 280:
         return
     var css_size := Vector2i(css_w, css_h)
+    # System bars/notches can change without resizing window.innerWidth.
+    var safe_changed: bool = false
+    if is_instance_valid(r21_touch):
+        safe_changed = r21_touch._r35_refresh_safe_insets()
     if css_size == r31_mobile_css_size:
+        if safe_changed and is_instance_valid(hud_panel):
+            _fit_hud()
         return
     r31_mobile_css_size = css_size
     # Godot's 1280x720 desktop content scale must not turn a portrait phone's
@@ -239,7 +282,7 @@ func _r31_sync_touch_viewport() -> void:
     root_window.content_scale_aspect = Window.CONTENT_SCALE_ASPECT_IGNORE
     root_window.content_scale_size = css_size
     if is_instance_valid(r21_touch):
-        r21_touch._layout_for_size(Vector2(css_size))
+        r21_touch._resize()
     if is_instance_valid(hud_panel):
         _fit_hud()
 
@@ -319,6 +362,13 @@ func _ready() -> void:
     performance_lab_r11 = PerformanceLabR11Script.new()
     performance_lab_r11.name = "R11_PerformanceLab"
     add_child(performance_lab_r11)
+    performance_lab_r11.r38_quality_cycle_requested.connect(_r38_cycle_quality)
+    # Touch controls already exist, so the R36 FPS launcher knows the real
+    # browser viewport and safe-area offsets from the R35 mobile system.
+    performance_lab_r11.configure_mobile(r21_mobile_enabled, r21_touch,
+        r21_touch.r35_safe_insets,
+        Vector2(r31_mobile_css_size) if r31_touch_web else
+            get_viewport().get_visible_rect().size)
     lighting_r12 = CinematicLightingR12Script.new()
     lighting_r12.name = "R12_CinematicLighting"
     add_child(lighting_r12)
@@ -344,6 +394,7 @@ func _ready() -> void:
         Engine.max_fps = 20
         _r33_trim_nonessential_qa_meshes(self)
         r33_swiftshader_qa_visuals_trimmed = true
+    performance_lab_r11.set_r38_auto_enabled(adaptive_r12.auto_enabled)
     # Startup quality selection posts a toast; clear it so the opening skyline stays visible.
     hud_notice.text = ""
     notice_timer = 0.0
@@ -1168,16 +1219,27 @@ func _fit_hud() -> void:
         rect = Vector2(r31_mobile_css_size)
     var width: float = rect.x
     var height: float = rect.y
+    var safe: Vector4 = r21_touch.r35_safe_insets if (
+        is_instance_valid(r21_touch) and r21_mobile_enabled) else Vector4.ZERO
+    var safe_left: float = safe.x
+    var safe_top: float = safe.y
+    var safe_right: float = safe.z
+    var safe_width: float = maxf(200.0, width - safe_left - safe_right)
     var compact: bool = width < 940.0 or height < 590.0 or r21_mobile_enabled
+    var short_landscape: bool = r21_mobile_enabled and height < 530.0 and width > height
     if is_instance_valid(r23_cruise_button):
         r23_cruise_button.visible = not r21_mobile_enabled and width >= 800.0
     if compact:
-        hud_panel.offset_left = 8.0
-        hud_panel.offset_top = 8.0
-        hud_panel.offset_right = minf(465.0, width - 8.0)
-        hud_panel.offset_bottom = 124.0
-        hud_mission.add_theme_font_size_override("font_size",19)
-        hud_status.add_theme_font_size_override("font_size",12)
+        hud_panel.offset_left = safe_left + 8.0
+        hud_panel.offset_top = safe_top + 8.0
+        # Keep top-left briefing away from the R32 landscape action grid.
+        hud_panel.offset_right = minf(width - safe_right - 8.0,
+            safe_left + safe_width * (0.37 if short_landscape else 1.0))
+        hud_panel.offset_bottom = safe_top + (110.0 if short_landscape else 124.0)
+        hud_mission.add_theme_font_size_override("font_size",
+            16 if short_landscape else 19)
+        hud_status.add_theme_font_size_override("font_size",
+            10 if short_landscape else 12)
         hud_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
         hud_controls.visible = false
         radar.visible = not r21_mobile_enabled and height > 510.0
@@ -1186,7 +1248,10 @@ func _fit_hud() -> void:
             radar.offset_top = -209.0
         hud_flight.visible = false
         r21_objective_panel.visible = false
-        hud_notice.offset_top = 129.0
+        hud_notice.offset_top = safe_top + (
+            118.0 if short_landscape else 129.0)
+        hud_notice.offset_left = -minf(240.0, safe_width * 0.45)
+        hud_notice.offset_right = minf(240.0, safe_width * 0.45)
     else:
         hud_panel.offset_left = 22.0
         hud_panel.offset_top = 25.0
@@ -1205,6 +1270,9 @@ func _fit_hud() -> void:
         r21_dashboard._fit_viewport()
     if is_instance_valid(r21_touch):
         r21_touch._resize()
+    if is_instance_valid(performance_lab_r11) and is_instance_valid(r21_touch):
+        performance_lab_r11.configure_mobile(r21_mobile_enabled, r21_touch,
+            r21_touch.r35_safe_insets, rect)
 
 func _unhandled_key_input(event: InputEvent) -> void:
     if event is InputEventKey and event.pressed and not event.echo:
@@ -1230,8 +1298,12 @@ func _unhandled_key_input(event: InputEvent) -> void:
             camera_distance=[14.5,23.0,33.0][lens_mode]
             _show_notice("КАМЕРА · " + str(lens_mode+1) + "/3")
         elif event.keycode==KEY_F3:
-            adaptive_r12.set_auto(false)
-            _set_graphics_quality((graphics_quality+1)%3)
+            if performance_lab_r11.benchmarking:
+                _show_notice("ЗАМЕР FPS · ПРОФИЛЬ ЗАБЛОКИРОВАН")
+            else:
+                adaptive_r12.set_auto(false)
+                _set_graphics_quality((graphics_quality+1)%3)
+                performance_lab_r11.set_r38_auto_enabled(false)
         elif event.keycode==KEY_F4:
             hud_canvas.visible = not hud_canvas.visible
         elif event.keycode==KEY_F6:
@@ -1248,8 +1320,12 @@ func _unhandled_key_input(event: InputEvent) -> void:
             performance_lab_r11.capture_frame()
             _show_notice("СКРИНШОТ R12 · ЗАХВАТ КАДРА")
         elif event.keycode==KEY_F11:
-            adaptive_r12.set_auto(not adaptive_r12.auto_enabled)
-            _show_notice("АВТО-ГРАФИКА · " + ("ВКЛ" if adaptive_r12.auto_enabled else "ВЫКЛ"))
+            if performance_lab_r11.benchmarking:
+                _show_notice("ЗАМЕР FPS · АВТО БЛОКИРОВАНО")
+            else:
+                adaptive_r12.set_auto(not adaptive_r12.auto_enabled)
+                performance_lab_r11.set_r38_auto_enabled(adaptive_r12.auto_enabled)
+                _show_notice("АВТО-ГРАФИКА · " + ("ВКЛ" if adaptive_r12.auto_enabled else "ВЫКЛ"))
         elif event.keycode==KEY_F12:
             _show_notice("ОСВЕЩЕНИЕ · " + lighting_r12.toggle_look())
         elif event.keycode==KEY_1 or event.keycode==KEY_2 or event.keycode==KEY_3:
@@ -1314,6 +1390,21 @@ func _set_graphics_quality(mode: int) -> void:
 func _r12_on_auto_quality(mode: int, reason: String) -> void:
     _set_graphics_quality(mode)
     _show_notice("АВТО-ПРОФИЛЬ · " + reason)
+
+
+func _r38_cycle_quality() -> void:
+    # The on-phone benchmark is comparable only if the quality stays fixed.
+    if performance_lab_r11.benchmarking:
+        return
+    if adaptive_r12.auto_enabled:
+        adaptive_r12.set_auto(false)
+        _set_graphics_quality(0)
+    elif graphics_quality < 2:
+        _set_graphics_quality(graphics_quality + 1)
+    else:
+        _set_graphics_quality(1)
+        adaptive_r12.set_auto(true)
+    performance_lab_r11.set_r38_auto_enabled(adaptive_r12.auto_enabled)
 
 func _upgrade_docked(slot: int) -> void:
     if ship.global_position.distance_to(SECTOR_POSITIONS[0])>115.0:

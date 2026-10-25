@@ -1,0 +1,61 @@
+name: OSA CINEMA V13 live production acceptance
+
+on:
+  workflow_run:
+    workflows: ["OSGARD frontend deploy"]
+    types: [completed]
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: osa-cinema-v13-live-${{ github.event.workflow_run.head_sha || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  live-browser:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    steps:
+      - name: Check out the exact published commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install locked repository dependencies
+        run: npm ci
+      - name: Verify repository's four archived cinematic images
+        run: node scripts/osa-cinema-v13-smoke.mjs
+      - name: Audit real HTTPS routes and byte-identical public WebP files
+        env:
+          OSGARD_BASE_URL: https://osgard.world
+        run: node scripts/osa-cinema-v13-production-smoke.mjs
+      - name: Install pinned Playwright runner
+        run: |
+          npm install --no-save --package-lock=false @playwright/test@1.58.2
+          if command -v google-chrome >/dev/null 2>&1; then
+            google-chrome --version
+            echo "OSGARD_BROWSER_CHANNEL=chrome" >> "$GITHUB_ENV"
+          else
+            npx playwright install --with-deps --no-shell chromium
+          fi
+      - name: Exercise the actual deployed RU/EN cinema in desktop and mobile Chrome
+        env:
+          OSGARD_BASE_URL: https://osgard.world
+        run: npx playwright test scripts/osa-cinema-v13-production.spec.mjs --config playwright.osa-cinema-live.config.mjs --workers=1
+      - name: Preserve production screenshots and diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: osa-cinema-v13-live-production-evidence
+          path: |
+            test-results/
+            osa-cinema-live-report/
+          retention-days: 14
+          if-no-files-found: warn

@@ -84,6 +84,7 @@ try {
   const ready = await expectTelemetry(
     'mobile Godot game, QA diagnostics and real touch controls initialized',
     s => s?.ready && s?.touch_enabled === true &&
+      s.touch_dom_bridge === true &&
       s.touch_view_w > 200 && s.touch_view_h > 200 &&
       s.touch_thrust_x > 0 && s.touch_boost_x > 0,
     100000
@@ -101,6 +102,22 @@ try {
   report.checks.push({label:'QA-only visual trim reported by real engine',
     mode:'real Godot physics, reduced city render only',
     samples:stabilized.samples});
+  const insets = await page.evaluate(() => window.__nebulaSafeArea || null);
+  if (!insets || !['left','top','right','bottom'].every(k =>
+    Number.isFinite(insets[k]) && insets[k] >= 0 && insets[k] <= 96)) {
+    throw new Error('Live CSS safe-area browser probe invalid: ' +
+      JSON.stringify(insets));
+  }
+  if (stabilized.touch_thrust_x <= stabilized.touch_safe_left ||
+      stabilized.touch_thrust_x >=
+        stabilized.touch_view_w - stabilized.touch_safe_right ||
+      stabilized.touch_thrust_y <= stabilized.touch_safe_top ||
+      stabilized.touch_thrust_y >=
+        stabilized.touch_view_h - stabilized.touch_safe_bottom) {
+    throw new Error('GAS target inside cutout: ' + JSON.stringify(stabilized));
+  }
+  report.checks.push({label:'actual DOM CSS safe-area probe and reachable GAS',
+    safe_area: insets, telemetry: stabilized});
   if (ready.locked || ready.cruise) {
     throw new Error('Mobile test began with controls locked or cruise auto-enabled');
   }
@@ -139,7 +156,8 @@ try {
         JSON.stringify(dom));
     }
     await expectTelemetry('real browser touch activates throttle',
-      s => s?.touch_count >= 1 && s.touch_throttle >= 0.9, 25000);
+      s => s?.touch_count >= 1 && s.touch_throttle >= 0.9 &&
+        s.touch_dom_events >= 1 && s.touch_dom_sequence >= 1, 40000);
     const moved = await expectTelemetry('mobile throttle moves actual ship',
       s => s?.flight_distance > ready.flight_distance + 3.0 &&
         s.speed_mps > 1.0, 45000);
@@ -150,7 +168,7 @@ try {
     await send('touchStart', [thrust, boost]);
     await expectTelemetry('real two-finger throttle and boost',
       s => s?.touch_count >= 2 && s.touch_boost === true &&
-        s.touch_throttle >= 0.9, 25000);
+        s.touch_throttle >= 0.9 && s.touch_dom_events >= 2, 35000);
     await expectTelemetry('two-finger flight advances world physics',
       s => s?.flight_distance > moved.flight_distance + 2.0, 40000);
     await send('touchEnd', []);
@@ -186,6 +204,177 @@ try {
     await send('touchEnd', []);
     await expectTelemetry('landscape touch release clears propulsion',
       s => s?.touch_count === 0 && s.touch_throttle <= 0.01, 20000);
+    // R35: a genuine short portrait phone must receive a distinct 3x3
+    // layout and preserve actual physics control after two rotations.
+    await page.setViewportSize({width:320,height:480});
+    const tiny = await expectTelemetry(
+      'compact portrait phone has reachable 3x3 flight controls',
+      s => s?.touch_view_w <= 322 && s.touch_view_h >= 478 &&
+        s.touch_compact_portrait === true && s.touch_count === 0 &&
+        s.touch_thrust_x > 0 && s.touch_thrust_y > 0,
+      35000);
+    const tinyRect = await page.evaluate(() => {
+      const rect = document.querySelector('#canvas')?.getBoundingClientRect();
+      return rect ? {x:rect.x,y:rect.y,width:rect.width,height:rect.height} : null;
+    });
+    if (!tinyRect || tinyRect.width < 300) {
+      throw new Error('Compact portrait WebGL canvas missing');
+    }
+    const tinyThrust = {
+      x: tinyRect.x + tiny.touch_thrust_x * tinyRect.width / tiny.touch_view_w,
+      y: tinyRect.y + tiny.touch_thrust_y * tinyRect.height / tiny.touch_view_h,
+      id:4,force:1
+    };
+    await send('touchStart',[tinyThrust]);
+    await expectTelemetry('compact portrait GAS drives real Godot ship',
+      s => s?.touch_count >= 1 && s.touch_throttle >= 0.9, 30000);
+    await send('touchEnd',[]);
+    await expectTelemetry('compact portrait GAS release prevents ghost thrust',
+      s => s?.touch_count === 0 && s.touch_throttle <= 0.01, 25000);
+    // R36: genuine CDP finger taps on the *real* Godot Button, not an engine
+    // method invocation or DOM-only decorative control.
+    const lab = await expectTelemetry(
+      'R36 mobile performance launcher has real touch coordinates',
+      s => s?.r36_mobile_perf === true && s.r36_perf_visible === false &&
+        s.r36_fps_button_x > 0 && s.r36_fps_button_y > 0 &&
+        s.r36_browser_touch_poll_samples >= 2,
+      30000);
+    // The canvas CSS rectangle can move after rotate, safe-area relayout
+    // and opening the performance panel. Never reuse the old tinyRect:
+    // on Chromium its top was 34 px while the live canvas top became 0,
+    // making a nominal y=92.5 mode-button tap land at y=126.5 instead.
+    const uiPoint = async (x,y,id) => {
+      // Godot can publish safe-area telemetry before Chromium has finished
+      // its CSS viewport reflow (observed +34 CSS-pixel miss after rotation).
+      // Require the *live* canvas and viewport to agree before any QA tap.
+      await page.waitForFunction(() => {
+        const c = document.querySelector('#canvas');
+        const r = c?.getBoundingClientRect();
+        return !!r && Math.abs(r.left) <= 1.5 && Math.abs(r.top) <= 1.5 &&
+          Math.abs(r.width - window.innerWidth) <= 2 &&
+          Math.abs(r.height - window.innerHeight) <= 2;
+      }, null, {timeout:30000, polling:250});
+      const css = await page.evaluate(() => {
+        const r = document.querySelector('#canvas')?.getBoundingClientRect();
+        return r ? { x:r.x,y:r.y,width:r.width,height:r.height } : null;
+      });
+      const view = await snapshot();
+      if (!css || !view || view.touch_view_w < 200 ||
+          view.touch_view_h < 200) {
+        throw new Error('R38 live canvas geometry unavailable');
+      }
+      const p = {
+        x:css.x + x * css.width / view.touch_view_w,
+        y:css.y + y * css.height / view.touch_view_h,
+        id,force:1
+      };
+      if (p.x < css.x || p.y < css.y ||
+          p.x > css.x + css.width || p.y > css.y + css.height) {
+        throw new Error('R38 touch target outside actual canvas: '+JSON.stringify(p));
+      }
+      return p;
+    };
+    const fps = await uiPoint(lab.r36_fps_button_x, lab.r36_fps_button_y, 7);
+    await send('touchStart',[fps]);
+    await send('touchEnd',[]);
+    const open = await expectTelemetry(
+      'R36 real mobile FPS button opens performance overlay',
+      s => s?.r36_perf_visible === true && s.r36_perf_active === false &&
+        s.r36_benchmark_button_x > 0 && s.r36_benchmark_button_y > 0,
+      30000);
+    // Godot Containers lay out on subsequent engine frames. The first
+    // telemetry snapshot after FPS becomes visible can report a provisional
+    // button center (observed y=126.5), then the actual center moves to
+    // y=92.5. Wait for consecutive REAL engine sample updates with stable
+    // control geometry; never tap provisional coordinates.
+    let lastLayoutSample = -1;
+    let lastLayoutKey = '';
+    let stableLayoutFrames = 0;
+    const settled = await expectTelemetry(
+      'R36 performance panel Godot button positions fully settle',
+      s => {
+        if (!s?.r36_perf_visible || s.r36_perf_active ||
+            s.r36_benchmark_button_x <= 0 || s.r36_benchmark_button_y <= 0) {
+          return false;
+        }
+        if (s.samples !== lastLayoutSample) {
+          const key = [
+            s.r36_benchmark_button_x, s.r36_benchmark_button_y,
+            s.r38_mode_button_x || 0, s.r38_mode_button_y || 0
+          ].map(v => Number(v).toFixed(1)).join(',');
+          stableLayoutFrames = key === lastLayoutKey ? stableLayoutFrames + 1 : 0;
+          lastLayoutKey = key;
+          lastLayoutSample = s.samples;
+        }
+        return s.samples >= open.samples + 3 && stableLayoutFrames >= 2;
+      }, 30000);
+    // CDP touch injection can be offset from the DOM event in Chromium's
+    // mobile emulation after repeated viewport rotations (observed +34px).
+    // Calibrate from the REAL browser event that successfully opened FPS.
+    // This is a test-harness coordinate correction, not an engine shortcut.
+    const observedTouch = await page.evaluate(
+      () => window.__nebulaDomTouchQA?.last || null);
+    if (!observedTouch || !Number.isFinite(observedTouch.x) ||
+        !Number.isFinite(observedTouch.y)) {
+      throw new Error('Mobile CDP calibration has no actual DOM touch');
+    }
+    const dispatchOffset = {
+      x: observedTouch.x - fps.x,
+      y: observedTouch.y - fps.y
+    };
+    if (Math.abs(dispatchOffset.x) > 60 ||
+        Math.abs(dispatchOffset.y) > 60) {
+      throw new Error('Unsafe mobile touch translation: ' +
+        JSON.stringify(dispatchOffset));
+    }
+    report.checks.push({
+      label: 'browser CDP→DOM touch offset measured from real FPS button press',
+      dispatchOffset
+    });
+    const calibratedUI = async (target) => {
+      const p = {
+        ...target, x: target.x - dispatchOffset.x,
+        y: target.y - dispatchOffset.y
+      };
+      await send('touchStart', [p]);
+      // Let SwiftShader deliver the touch to the actual Godot Button.
+      await page.waitForTimeout(650);
+      const observed = await page.evaluate(
+        () => window.__nebulaDomTouchQA?.last || null);
+      if (!observed || Math.abs(observed.x - target.x) > 3 ||
+          Math.abs(observed.y - target.y) > 3) {
+        await send('touchEnd', []);
+        throw new Error('CDP touch missed true browser DOM target: ' +
+          JSON.stringify({target, dispatched:p, observed}));
+      }
+      await send('touchEnd', []);
+    };
+
+    // R38: the software-GL QA starts in deterministic ECO. Check that
+    // actual screen taps cycle ECO -> AUTO/HIGH -> MAX in the real scene.
+    if (open.r38_mode_label !== 'ECO' ||
+        open.r38_quality_mode !== 2 || open.r38_auto_enabled !== false) {
+      throw new Error('R38 QA profile initialization is not ECO: ' +
+        JSON.stringify(open));
+    }
+    const modeButton = await uiPoint(settled.r38_mode_button_x,
+      settled.r38_mode_button_y, 9);
+    await calibratedUI(modeButton);
+    await expectTelemetry('R38 mobile quality touch enables real AUTO profile',
+      s => s?.r38_auto_enabled === true &&
+        s.r38_quality_mode === 1 && s.r38_mode_label === 'АВТО', 30000);
+    await calibratedUI(modeButton);
+    await expectTelemetry('R38 mobile quality touch selects real MAX graphics',
+      s => s?.r38_auto_enabled === false &&
+        s.r38_quality_mode === 0 && s.r38_mode_label === 'MAX', 30000);
+    const runBenchmark = await uiPoint(settled.r36_benchmark_button_x,
+      settled.r36_benchmark_button_y, 8);
+    await calibratedUI(runBenchmark);
+    await expectTelemetry('R36 real mobile 20-second FPS benchmark starts',
+      s => s?.r36_perf_active === true && s.touch_count === 0 &&
+        s.r38_quality_mode === 0 && s.r38_auto_enabled === false, 30000);
+    // Do not invent a 20-second physical-hardware FPS outcome in SwiftShader.
+    // The actual device owner can finish a benchmark and download JSON.
   } finally {
     await send('touchEnd', []).catch(() => {});
   }

@@ -272,6 +272,9 @@ var map_visible_before_diagnostics := false
 var overlay: ColorRect
 var strategy_contents: VBoxContainer
 var strategy_title: Label
+var strategy_close_button: Button
+var strategy_nav_buttons: Dictionary = {}
+var strategy_anchors: Dictionary = {}
 var strategy_scroll: ScrollContainer
 var importer: FileDialog
 var confirm_reset: ConfirmationDialog
@@ -349,6 +352,48 @@ func _style(background: Color, edge: Color, corner: int = 12) -> StyleBoxFlat:
 	style.content_margin_bottom = 12
 	return style
 
+func _strategy_style() -> StyleBoxFlat:
+	# Quiet luxury: legible charcoal glass and a narrow brass stroke.
+	var style := _style(Color("0c1925",0.97),Color("b9a178",0.91),18)
+	style.shadow_color = Color(0.0,0.0,0.0,0.46)
+	style.shadow_size = 20
+	style.shadow_offset = Vector2(5,7)
+	style.content_margin_left = 20
+	style.content_margin_right = 20
+	style.content_margin_top = 18
+	style.content_margin_bottom = 18
+	return style
+
+func _strategy_stat(parent: Node, heading: String, value: String) -> void:
+	var tile := PanelContainer.new()
+	tile.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var bg := _style(Color("162a37",0.96),Color("6c7b76",0.74),10)
+	bg.content_margin_left = 9
+	bg.content_margin_right = 9
+	bg.content_margin_top = 8
+	bg.content_margin_bottom = 8
+	tile.add_theme_stylebox_override("panel",bg)
+	parent.add_child(tile)
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation",4)
+	tile.add_child(column)
+	var caption := _label(column,heading.to_upper(),12,true)
+	caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var amount := _label(column,value,17 if compact_hud else 21)
+	amount.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+
+func _mark_strategy_section(id: String) -> void:
+	var anchor := Control.new()
+	anchor.custom_minimum_size = Vector2(1,1)
+	strategy_contents.add_child(anchor)
+	strategy_anchors[id] = anchor
+
+func _jump_to_strategy_section(id: String) -> void:
+	var anchor: Control = strategy_anchors.get(id,null)
+	if anchor == null or strategy_scroll == null:
+		return
+	strategy_scroll.scroll_vertical = maxi(0,roundi(anchor.position.y))
+
 func _panel(bounds: Rect2, anchor_right: float = 0.0, anchor_bottom: float = 0.0) -> PanelContainer:
 	var panel := PanelContainer.new()
 	panel.anchor_left = anchor_right
@@ -359,7 +404,7 @@ func _panel(bounds: Rect2, anchor_right: float = 0.0, anchor_bottom: float = 0.0
 	panel.offset_top = bounds.position.y
 	panel.offset_right = bounds.position.x + bounds.size.x
 	panel.offset_bottom = bounds.position.y + bounds.size.y
-	panel.add_theme_stylebox_override("panel",_style(Color("0a1929",0.86),Color("426476")))
+	panel.add_theme_stylebox_override("panel",_style(Color("141c25",0.90),Color("73828c")))
 	root.add_child(panel)
 	return panel
 
@@ -375,10 +420,19 @@ func _label(parent: Node, text: String, font_size: int = 18, highlight: bool = f
 func _button(parent: Node, title: String, callable: Callable, disabled: bool = false) -> Button:
 	var button := Button.new()
 	button.text = title
+	button.tooltip_text = title
 	button.disabled = disabled
-	button.custom_minimum_size.y = 40
-	button.add_theme_color_override("font_color",Color("e6dcc7"))
-	button.add_theme_color_override("font_hover_color",Color("ffffff"))
+	button.custom_minimum_size.y = 46
+	button.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	button.add_theme_font_size_override("font_size",16)
+	button.add_theme_color_override("font_color",Color("e9e6dc"))
+	button.add_theme_color_override("font_hover_color",Color("fff4d8"))
+	button.add_theme_color_override("font_disabled_color",Color("8a969b"))
+	button.add_theme_stylebox_override("normal",_style(Color("19303c",0.92),Color("4e6269",0.8),9))
+	button.add_theme_stylebox_override("hover",_style(Color("2b4754",0.99),Color("c1a16f",0.96),9))
+	button.add_theme_stylebox_override("pressed",_style(Color("284451"),Color("d2b680"),9))
+	button.add_theme_stylebox_override("disabled",_style(Color("101c25",0.72),Color("283641",0.42),9))
+	button.add_theme_stylebox_override("focus",StyleBoxEmpty.new())
 	button.pressed.connect(callable)
 	parent.add_child(button)
 	return button
@@ -463,7 +517,7 @@ func _process(_delta: float) -> void:
 
 func _make_strategy() -> void:
 	overlay = ColorRect.new()
-	overlay.color = Color(0.005,0.012,0.025,0.88)
+	overlay.color = Color(0.005,0.012,0.025,0.32)
 	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
 	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
 	overlay.visible = false
@@ -478,17 +532,29 @@ func _make_strategy() -> void:
 	window.offset_right = 450
 	window.offset_top = -365
 	window.offset_bottom = 365
-	window.add_theme_stylebox_override("panel",_style(Color("081522"),Color("a78b56"),14))
+	window.add_theme_stylebox_override("panel",_strategy_style())
 	overlay.add_child(window)
 	var stack := VBoxContainer.new()
 	stack.add_theme_constant_override("separation",9)
 	window.add_child(stack)
 	var title_row := HBoxContainer.new()
 	stack.add_child(title_row)
-	strategy_title = _label(title_row,"",25,true)
+	strategy_title = _label(title_row,"",29,true)
 	strategy_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_button(title_row,"✕",Callable(self,"toggle_strategy"))
+	strategy_close_button = _button(title_row,"×",Callable(self,"toggle_strategy"))
+	strategy_close_button.custom_minimum_size = Vector2(98,42)
+	strategy_close_button.add_theme_font_size_override("font_size",14)
+	var navigation := HBoxContainer.new()
+	navigation.add_theme_constant_override("separation",6)
+	stack.add_child(navigation)
+	for section in ["overview","council","economy","district"]:
+		var tab := _button(navigation,section,Callable(self,"_jump_to_strategy_section").bind(section))
+		tab.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		tab.custom_minimum_size.y = 38
+		tab.add_theme_font_size_override("font_size",12)
+		strategy_nav_buttons[section] = tab
 	strategy_scroll = ScrollContainer.new()
+	strategy_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	strategy_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	stack.add_child(strategy_scroll)
 	strategy_contents = VBoxContainer.new()
@@ -760,6 +826,7 @@ func toggle_strategy() -> void:
 	if journal_panel != null: journal_panel.visible = false
 	if open:
 		_redraw_strategy()
+		strategy_scroll.scroll_vertical = 0
 	strategy_changed.emit(open)
 
 func is_strategy_open() -> bool:
@@ -795,19 +862,34 @@ func _do_vehicle(id: String) -> void:
 
 func _redraw_strategy() -> void:
 	strategy_title.text = t("strategy")
+	strategy_close_button.text = _v08("ЗАКРЫТЬ ×","CLOSE ×","关闭 ×")
+	strategy_anchors.clear()
+	var labels := {
+		"overview":["ПУЛЬС","PULSE","概况"],
+		"council":["СОВЕТ","COUNCIL","议会"],
+		"economy":["ЭКОНОМИКА","ECONOMY","经济"],
+		"district":["РАЙОНЫ","DISTRICTS","城区"]
+	}
+	for section in labels:
+		(strategy_nav_buttons[section] as Button).text = translated(labels[section])
 	for child in strategy_contents.get_children():
 		strategy_contents.remove_child(child)
 		child.queue_free()
 	var d: Dictionary = GameState.data
 	var forecast: Dictionary = GameState.forecast()
+	_mark_strategy_section("overview")
 	_label(strategy_contents,"%s %d  ·  %s %d  ·  %s %d" % [t("turn"),d["turn"],t("science"),d["science"],t("actions"),d["actions_left"]],16,true)
-	_label(strategy_contents,"%s: %d кр.   |   %s: %d кр.   |   %s: %d кр. / %s" % [t("wallet"),d["wallet"],t("cash"),d["treasury"],t("business_income"),GameState.private_turn_income(),t("turn")],16)
-	_label(strategy_contents,"%s: %d кр.   ·   %s: %d/100   ·   %s: %s" % [estate_text("income_personal"),forecast["personal_income"],estate_text("reputation"),d.get("reputation",35),estate_text("weather"),GameState.CITY_WEATHER.LABELS[GameState.current_weather()["kind"]].get(GameState.locale,"Clear")],16)
+	var overview := HBoxContainer.new()
+	overview.add_theme_constant_override("separation",7)
+	strategy_contents.add_child(overview)
+	_strategy_stat(overview,t("wallet"),"%d" % int(d["wallet"]))
+	_strategy_stat(overview,t("cash"),"%d" % int(d["treasury"]))
+	_strategy_stat(overview,t("net"),"%+d" % int(forecast["net"]))
+	_label(strategy_contents,"%s: %d кр.   ·   %s: %d/100   ·   %s: %s" % [estate_text("income_personal"),forecast["personal_income"],estate_text("reputation"),d.get("reputation",35),estate_text("weather"),GameState.CITY_WEATHER.LABELS[GameState.current_weather()["kind"]].get(GameState.locale,"Clear")],15)
 	_button(strategy_contents,t("invest"),Callable(self,"_invest"),int(d["wallet"]) < 250)
 	if int(d.get("personal_debt",0)) > 0:
 		_label(strategy_contents,"%s: %d кр." % [estate_text("private_debt"),d["personal_debt"]],17)
 		_button(strategy_contents,estate_text("repay"),Callable(self,"_pay_private_debt"),int(d["wallet"]) < 1)
-	_separator(strategy_contents)
 	_separator(strategy_contents)
 	_label(strategy_contents,_v08("АТЛАС ГОРОДА · ОТКРЫТИЯ", "CITY ATLAS · DISCOVERIES", "城市图鉴 · 探索"),20,true)
 	var found: Array = d.get("discovered_sites",[])
@@ -836,6 +918,7 @@ func _redraw_strategy() -> void:
 		strategy_contents.add_child(chart)
 		chart.set_history(d["history"])
 	_separator(strategy_contents)
+	_mark_strategy_section("council")
 	_label(strategy_contents,_v08("ГОРОДСКОЙ СОВЕТ И ВЫБОРЫ","CITY COUNCIL & ELECTIONS","市政议会与选举"),20,true)
 	var politics: Dictionary = d.get("politics",GameState.POLITICS.initial())
 	var election_poll: int = GameState.POLITICS.current_poll(d)
@@ -868,6 +951,7 @@ func _redraw_strategy() -> void:
 		var career_label: String = str(GameState.CAREER.LABELS[track].get(GameState.locale,track))
 		_label(strategy_contents,"%s  ·  Lv.%d  ·  %d XP%s" % [career_label,rank,xp,(" / %d" % next) if next >= 0 else "  ✓"],15)
 	_separator(strategy_contents)
+	_mark_strategy_section("economy")
 	_label(strategy_contents,t("economy"),20,true)
 	var freight: float = float(forecast.get("freight_efficiency",1.0))
 	_label(strategy_contents,_v08("ЛОГИСТИКА И ДОРОГИ", "TRANSPORT & ROAD REPAIRS", "物流与道路维护") + "  ·  %d%%" % roundi(freight*100.0),19,true)
@@ -941,6 +1025,7 @@ func _redraw_strategy() -> void:
 			vehicle_label += "  ·  %d кр.  /  ★ %d" % [int(profile["price"]),int(profile["reputation"])]
 		_button(strategy_contents,vehicle_label,Callable(self,"_do_vehicle").bind(vehicle_id),selected or (not owned and (int(d["wallet"]) < int(profile["price"]) or int(d["reputation"]) < int(profile["reputation"]))))
 	_separator(strategy_contents)
+	_mark_strategy_section("district")
 	_label(strategy_contents,t("district"),20,true)
 	var district_row := HBoxContainer.new()
 	strategy_contents.add_child(district_row)
@@ -1371,32 +1456,39 @@ func _apply_responsive_layout() -> void:
 		_set_panel_frame(speed_panel,frames["speed"],0,0,0,0)
 		_set_panel_frame(map_panel,frames["map"],0,0,0,0)
 		_set_panel_frame(controls_panel,frames["help"],0,0,0,0)
+		# The eight native labelled phone buttons already explain the controls.
+		# Remove the duplicate lower instruction bar to expose more road.
+		controls_panel.visible = not bool(frames["portrait_focus"])
 		_set_panel_frame(journal_panel,frames["journal"],0,0,0,0)
 		_set_panel_frame(diagnostic_panel,frames["diagnostics"],0,0,0,0)
 		_set_panel_frame(toast_panel,frames["toast"],0,0,0,0)
 		var modal: Rect2 = frames["modal"]
 		var panel_frame := Rect2(modal.position-screen*0.5,modal.size)
 		_set_panel_frame(strategy_window,panel_frame,0.5,0.5,0.5,0.5)
+		strategy_title.add_theme_font_size_override("font_size",22)
 		_set_panel_frame(pause_panel,panel_frame,0.5,0.5,0.5,0.5)
 		map.custom_minimum_size = Vector2(106,106)
 		if not map_override: map_panel.visible = bool(frames["map_default"])
 		if diagnostic_visible and map_panel != null: map_panel.visible = false
-		header_value.add_theme_font_size_override("font_size",15)
-		meters_label.add_theme_font_size_override("font_size",12)
+		header_value.add_theme_font_size_override("font_size",16)
+		meters_label.add_theme_font_size_override("font_size",13)
 		mission_label.add_theme_font_size_override("font_size",16)
-		mission_distance_label.add_theme_font_size_override("font_size",12)
-		speed_label.add_theme_font_size_override("font_size",13)
-		hint_label.add_theme_font_size_override("font_size",12)
+		mission_distance_label.add_theme_font_size_override("font_size",13)
+		speed_label.add_theme_font_size_override("font_size",15)
+		hint_label.add_theme_font_size_override("font_size",13)
 	else:
 		_set_panel_frame(header_panel,Rect2(24,20,420,86),0,0,0,0)
 		_set_panel_frame(objective_panel,Rect2(-476,20,452,150),1,1,0,0)
 		_set_panel_frame(speed_panel,Rect2(-360,-145,336,122),1,1,1,1)
 		_set_panel_frame(map_panel,Rect2(24,-276,248,252),0,0,1,1)
 		_set_panel_frame(controls_panel,Rect2(290,-92,-672,68),0,1,1,1)
+		controls_panel.visible = true
 		_set_panel_frame(journal_panel,Rect2(-476,186,452,440),1,1,0,0)
 		_set_panel_frame(diagnostic_panel,Rect2(24,116,360,105),0,0,0,0)
 		_set_panel_frame(toast_panel,Rect2(-252,24,504,64),0.5,0.5,0,0)
-		_set_panel_frame(strategy_window,Rect2(-450,-365,900,730),0.5,0.5,0.5,0.5)
+		# The cabinet docks left, leaving the car and the city visible in play.
+		_set_panel_frame(strategy_window,HORIZON_LAYOUT.strategy_dock(screen),0,0,0,0)
+		strategy_title.add_theme_font_size_override("font_size",29)
 		_set_panel_frame(pause_panel,Rect2(-390,-340,780,680),0.5,0.5,0.5,0.5)
 		map.custom_minimum_size = Vector2(208,208)
 		if not map_override: map_panel.visible = true

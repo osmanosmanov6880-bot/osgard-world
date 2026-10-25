@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Restore a byte-for-byte verified R135 W5 runtime from its existing public host.
+"""Restore a byte-for-byte verified R135 W6 runtime from its existing public host.
 Used only when the pinned GitHub Actions artifact has expired. Never trust
 unverified server files: the manifest digest was recorded independently at build.
 """
@@ -16,9 +16,9 @@ import urllib.request
 import zipfile
 
 BASE = "https://osgard.world/games/r135-service/"
-MANIFEST_SHA256 = "b3e6b721cce1f4e764117cea59e190aaf74b669a26399284b9625bc30cde3219"
-SOURCE_SHA = "cd6132fa5d34cbb701957b124a6aa2aac9210434"
-VERSION = "r135-web-visual-diagnostics-w5-20261024"
+MANIFEST_SHA256 = "0638f1ad5c0ab26d2d112e63bd1759923e5401a85ad4f2cedd450bbb7def2f61"
+SOURCE_SHA = "947b4627080636543ae5e873b88b50e61f13beb4"
+VERSION = "r135-web-framing-w6-20261024"
 
 
 def source_stream(filename: str):
@@ -34,10 +34,10 @@ def restore(target: Path) -> None:
     with source_stream("release.json") as response:
         manifest_bytes = response.read()
     if hashlib.sha256(manifest_bytes).hexdigest() != MANIFEST_SHA256:
-        raise ValueError("Public server manifest differs from verified W5 build")
+        raise ValueError("Public server manifest differs from verified W6 build")
     manifest = json.loads(manifest_bytes)
     if manifest.get("version") != VERSION or manifest.get("source_commit") != SOURCE_SHA:
-        raise ValueError("Public server is not the pinned W5 build")
+        raise ValueError("Public server is not the pinned W6 build")
     files = manifest.get("files")
     if not isinstance(files, dict) or not {"index.html", "index.js", "index.wasm", "index.pck"}.issubset(files):
         raise ValueError("W5 asset manifest is incomplete")

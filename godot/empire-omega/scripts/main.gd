@@ -22,6 +22,7 @@ const MOBILITY = preload("res://scripts/city_mobility.gd")
 const SOUND_SCENE = preload("res://scripts/city_soundscape.gd")
 const SKID_SCENE = preload("res://scripts/horizon_skid_trails.gd")
 const GROUND_SPRAY_SCENE = preload("res://scripts/horizon_ground_spray.gd")
+const ROAD_WETNESS = preload("res://scripts/horizon_rain_puddles.gd")
 const CASE_MARKER_SCENE = preload("res://scripts/city_case_marker.gd")
 const CARGO_VISUAL_SCENE = preload("res://scripts/cargo_visual.gd")
 const POLICE_SCENE = preload("res://scripts/police_dispatch.gd")
@@ -39,6 +40,7 @@ var ground_spray: Node3D
 var city_case_marker
 var cargo_visual
 var current_weather_kind := "clear"
+var base_road_grip := 1.0
 var player
 var car
 var camera: Camera3D
@@ -328,6 +330,14 @@ func _process(delta: float) -> void:
 
 func _physics_process(delta: float) -> void:
 	if player == null or car == null or camera == null: return
+	# R33: actual 4 wheel-ground ray contacts instead of the car centre.
+	# LOW disables transparent pixels, not physical grip. The fallback
+	# samples the centre only before the first authentic wheel probe.
+	var contact: Dictionary = world.road_puddles.wheel_contact_state(car.last_wheel_support,car.global_position) if world.road_puddles != null else {"wetness":0.0,"rear":0.0,"used_fallback":false}
+	var wetness: float = float(contact["wetness"])
+	car.traction_factor = ROAD_WETNESS.effective_grip(base_road_grip,wetness)
+	car.axle_grip_active = not bool(contact["used_fallback"])
+	car.rear_traction_factor = ROAD_WETNESS.effective_grip(base_road_grip,float(contact["rear"]))
 	if touch_controls != null and hud != null:
 		var blocked: bool = hud.is_pause_open() or hud.is_strategy_open() or hud.is_citizen_open() or hud.is_city_case_open() or interiors.is_inside()
 		touch_controls.set_mode(driving,blocked)
@@ -387,6 +397,7 @@ func _physics_process(delta: float) -> void:
 	diagnostic_timer += delta
 	if diagnostic_timer >= 1.0:
 		diagnostic_timer = 0.0
+		car.update_headlights(float(GameState.data.get("day_clock",12.0)),adaptive_graphics.effective_quality())
 		if adaptive_graphics.observe(float(Engine.get_frames_per_second()),1.0,DisplayServer.window_is_focused()):
 			_apply_visual_budget()
 			_update_agent_lod(protagonist)
@@ -531,7 +542,8 @@ func _apply_weather() -> void:
 	var conditions: Dictionary = GameState.current_weather()
 	current_weather_kind = str(conditions["kind"])
 	world.update_weather(current_weather_kind)
-	car.traction_factor = float(conditions["road_grip"])
+	base_road_grip = float(conditions["road_grip"])
+	car.traction_factor = base_road_grip
 	for traffic in ambient_cars:
 		traffic.wetness = float(conditions["road_grip"])
 
@@ -543,6 +555,8 @@ func _apply_preferences() -> void:
 func _apply_visual_budget() -> void:
 	if world == null: return
 	var effective: String = adaptive_graphics.effective_quality()
+	if car != null:
+		car.update_headlights(float(GameState.data.get("day_clock",12.0)),effective)
 	world.sun.shadow_enabled = effective != "low"
 	world.apply_visual_budget(effective)
 	if camera != null:
