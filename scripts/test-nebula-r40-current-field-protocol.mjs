@@ -41,7 +41,7 @@ test('physical collection cannot be replaced with CI emulation or arbitrary JSON
   assert.match(protocol,/SwiftShader/);
   assert.match(protocol,/iPhone Safari/);
   assert.match(protocol,/20-second sample/);
-  assert.match(protocol,/no automatic/i);
+  assert.match(protocol,/без автоматической отправки/i);
   assert.match(protocol,/R38/);
   assert.match(protocol,/R40/);
 });
