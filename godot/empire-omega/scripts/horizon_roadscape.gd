@@ -295,10 +295,10 @@ func _create_streetlight_pool() -> void:
 		var light := OmniLight3D.new()
 		light.name = "R44StreetLight%02d" % i
 		light.light_color = Color("ffe2ae")
-		light.light_energy = 0.66
+		light.light_energy = 0.78
 		light.light_specular = 0.68
-		light.omni_range = 13.0
-		light.omni_attenuation = 1.75
+		light.omni_range = 16.0
+		light.omni_attenuation = 1.48
 		light.shadow_enabled = false
 		light.visible = false
 		add_child(light)
@@ -330,6 +330,6 @@ func update_streetlights(hour: float, tier: String, focus: Vector3) -> void:
 		taken.append(nearest)
 		var light: OmniLight3D = pooled_streetlights[n]
 		light.position = lamp_positions[nearest] + Vector3(0,-0.23,0)
-		light.light_energy = 0.48 if tier == "standard" else 0.74
+		light.light_energy = 0.61 if tier == "standard" else 0.88
 		light.visible = true
 		active_night_lights += 1
