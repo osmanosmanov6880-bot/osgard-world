@@ -8,7 +8,12 @@ const workflow=readFileSync(new URL('../.github/workflows/omega-r11-actual-brows
 
 test('release E2E uses genuine WebGL pixels for all four moments',()=>{
   assert.match(source,/captureAnimatedWebGLViewport/)
-  assert.equal((source.match(/\(await captureAnimatedWebGLViewport\(page\)\)\.png/g)||[]).length,4)
+  // R72 captures the first REAL frame inside a bounded loader-rejection
+  // loop and three further frames after player input. Older contracts counted
+  // only inline .png syntax, reporting a false CI failure when capture improved.
+  assert.equal((source.match(/\(await captureAnimatedWebGLViewport\(page\)\)\.png/g)||[]).length,3)
+  assert.equal((source.match(/const capture=await captureAnimatedWebGLViewport\(page\)/g)||[]).length,1)
+  assert.match(source,/worldProof=realGameFrameEvidence\(frame\)/)
   assert.doesNotMatch(source,/await page\.screenshot\(/)
   assert.match(source,/expect\(entryMotion,[\s\S]*?\)\.toBeGreaterThan\(0\.08\)/)
   assert.match(source,/expect\(driveMotion,[\s\S]*?\)\.toBeGreaterThan\(0\.08\)/)
