@@ -96,6 +96,9 @@ var settings_quality_button: Button
 var settings_motion_button: Button
 var settings_audio_button: Button
 var audio_caption_label: Label
+var settings_privacy_button: Button
+var settings_clear_metrics_button: Button
+var settings_privacy_summary: Label
 var settings_close_button: Button
 
 func _ready() -> void:
@@ -348,6 +351,16 @@ func _build() -> void:
     settings_audio_button.name = "PlayerOptInAudioToggle"
     settings_audio_button.pressed.connect(_settings_audio_pressed)
     settings_stack.add_child(settings_audio_button)
+    settings_privacy_button = _styled_button("АНАЛИТИКА: ВЫКЛ", false)
+    settings_privacy_button.name = "ExplicitConsentPrivateLearningMetrics"
+    settings_privacy_button.pressed.connect(_settings_privacy_pressed)
+    settings_stack.add_child(settings_privacy_button)
+    settings_privacy_summary = _label(settings_stack, Color(0.70, 0.83, 0.85), 12)
+    settings_privacy_summary.name = "PrivacySummaryNoNetwork"
+    settings_clear_metrics_button = _styled_button("УДАЛИТЬ СТАТИСТИКУ", false)
+    settings_clear_metrics_button.name = "ErasePrivateLearningMetrics"
+    settings_clear_metrics_button.pressed.connect(_settings_clear_metrics_pressed)
+    settings_stack.add_child(settings_clear_metrics_button)
     settings_close_button = _styled_button("НАЗАД К ОБУЧЕНИЮ", false)
     settings_close_button.name = "ReturnToCourse"
     settings_close_button.pressed.connect(_toggle_settings)
@@ -458,7 +471,9 @@ func _layout() -> void:
         maxf(80.0, card.size.y - 28.0 * ratio))
     settings_title.add_theme_font_size_override("font_size", int((18 if compact else 22) * ratio))
     settings_note.add_theme_font_size_override("font_size", int((12 if compact else 14) * ratio))
-    for settings_action in [settings_quality_button, settings_motion_button, settings_audio_button, settings_close_button]:
+    settings_privacy_summary.add_theme_font_size_override("font_size", int((11 if compact else 12) * ratio))
+    for settings_action in [settings_quality_button, settings_motion_button, settings_audio_button,
+            settings_privacy_button, settings_clear_metrics_button, settings_close_button]:
         settings_action.custom_minimum_size = Vector2(0, 46.0 * ratio)
         settings_action.add_theme_font_size_override("font_size", int((12 if compact else 14) * ratio))
     _refresh_settings()
@@ -595,6 +610,18 @@ func _settings_audio_pressed() -> void:
     _refresh_settings()
 
 
+func _settings_privacy_pressed() -> void:
+    if host != null:
+        host.call("_toggle_metrics_consent")
+    _refresh_settings()
+
+
+func _settings_clear_metrics_pressed() -> void:
+    if host != null:
+        host.call("_erase_private_metrics")
+    _refresh_settings()
+
+
 func _refresh_settings() -> void:
     if host == null or settings_button == null or settings_title == null:
         return
@@ -614,6 +641,17 @@ func _refresh_settings() -> void:
     settings_audio_button.text = _t(
         "ЗВУК: ВЫКЛ (субтитры доступны)" if muted else "ЗВУК: ВКЛ (тихие сигналы)",
         "SOUND: OFF (captions available)" if muted else "SOUND: ON (quiet cues)")
+    var metrics: Node = host.get("privacy_metrics") as Node
+    var enabled: bool = false if metrics == null else bool(metrics.get("consent"))
+    var records: int = 0 if metrics == null else int(metrics.call("total"))
+    settings_privacy_button.text = _t(
+        "АНАЛИТИКА: ВКЛ (только здесь)" if enabled else "АНАЛИТИКА: ВЫКЛ",
+        "LEARNING COUNTS: ON (local only)" if enabled else "LEARNING COUNTS: OFF")
+    _assign(settings_privacy_summary, _t(
+        "Только общие счётчики уроков, без имени, сети и времени. Событий: %d." % records,
+        "Aggregate lesson counters only; no names, network or timestamps. Events: %d." % records))
+    settings_clear_metrics_button.text = _t("УДАЛИТЬ ЛОКАЛЬНУЮ СТАТИСТИКУ", "ERASE LOCAL COUNTERS")
+    settings_clear_metrics_button.disabled = records == 0
     settings_close_button.text = _t("НАЗАД К ОБУЧЕНИЮ", "BACK TO TRAINING")
 
 

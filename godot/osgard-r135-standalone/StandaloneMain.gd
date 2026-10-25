@@ -6,6 +6,9 @@ var camera: Camera3D
 var studio: Node3D
 var inspection_fill: OmniLight3D
 var audio_cues: Node
+var privacy_metrics: Node
+var previous_mission_completed: bool = false
+var previous_diagnosis_completed: bool = false
 var art_environment: Environment
 var art_key_light: DirectionalLight3D
 var art_rim_light: DirectionalLight3D
@@ -32,6 +35,7 @@ const R135Locale = preload("res://R135Locale.gd")
 const R135PlayerPreferences = preload("res://R135PlayerPreferences.gd")
 const R135ArtDirection = preload("res://R135ArtDirection.gd")
 const R135AccessibleAudio = preload("res://R135AccessibleAudio.gd")
+const R135PrivacyMetrics = preload("res://R135PrivacyMetrics.gd")
 var ui_locale: String = "ru"
 var preferences_save_ok: bool = true
 var premium_intro: Control
@@ -124,6 +128,9 @@ func _ready() -> void:
     audio_cues.name = "R135OptInAccessibleCues"
     add_child(audio_cues)
     audio_cues.call("switch_locale", ui_locale)
+    privacy_metrics = R135PrivacyMetrics.new()
+    privacy_metrics.name = "R135OptInLocalLearningCounts"
+    add_child(privacy_metrics)
     _build_hud()
     # Actual native Godot overlay: responsive, mouse/touch interactive and
     # safely separate from the eight real W13/W18 gameplay controls.
@@ -374,6 +381,22 @@ func _persist_preferences() -> void:
     # Local-only settings: no HTTP requests, identifiers or physical equipment.
     preferences_save_ok = R135PlayerPreferences.save_local(ui_locale, quality, reduced_motion)
 
+func _toggle_metrics_consent() -> void:
+    if privacy_metrics != null:
+        privacy_metrics.call("set_consent", not bool(privacy_metrics.get("consent")))
+    if premium_intro != null:
+        premium_intro.call("_refresh_settings")
+    _refresh_status()
+
+
+func _erase_private_metrics() -> void:
+    if privacy_metrics != null:
+        privacy_metrics.call("erase")
+    if premium_intro != null:
+        premium_intro.call("_refresh_settings")
+    _refresh_status()
+
+
 func _toggle_audio() -> void:
     # W24 sound is a genuine opt-in. The click itself makes no sound.
     # Caption changes remain fully visible when muted.
@@ -402,6 +425,8 @@ func _start_mission() -> void:
     # Starting a new mission always starts its drive, even after a prior pause.
     motion = true
     controller.start_mission()
+    if privacy_metrics != null:
+        privacy_metrics.call("record", "training_started")
     if audio_cues != null:
         audio_cues.call("cue", "mission")
     _refresh_status()
@@ -411,6 +436,8 @@ func _start_challenge() -> void:
         premium_intro.call("on_gameplay_command")
     motion = true
     controller.start_challenge()
+    if privacy_metrics != null:
+        privacy_metrics.call("record", "diagnosis_started")
     if audio_cues != null:
         audio_cues.call("cue", "diagnosis")
     _apply_view(0)
@@ -423,6 +450,8 @@ func _start_selected_case(index: int) -> bool:
     if not accepted:
         _refresh_status()
         return false
+    if privacy_metrics != null:
+        privacy_metrics.call("record", "diagnosis_started")
     if audio_cues != null:
         audio_cues.call("cue", "diagnosis")
     # Same physically simulated safe initial state as ordinary diagnostics.
@@ -438,6 +467,8 @@ func _scan_component() -> void:
     var after: Dictionary = controller.summary()
     if audio_cues != null:
         audio_cues.call("cue", "scan" if int(after.get("challenge_step", -1)) > int(before.get("challenge_step", -1)) else "blocked")
+    if privacy_metrics != null and int(after.get("challenge_step", -1)) > int(before.get("challenge_step", -1)):
+        privacy_metrics.call("record", "scan_accepted")
     _refresh_status()
 
 func _next_view() -> void:
@@ -489,6 +520,8 @@ func _toggle_motion() -> void:
     motion = bool(controller.summary()["motion_enabled"])
     if audio_cues != null:
         audio_cues.call("cue", ("drive_start" if motion else "drive_stop") if motion != before else "blocked")
+    if privacy_metrics != null and motion == before:
+        privacy_metrics.call("record", "safety_blocked")
     _refresh_status()
 
 func _toggle_hatch() -> void:
@@ -497,6 +530,8 @@ func _toggle_hatch() -> void:
     var after: float = float(controller.summary()["lid_target"])
     if audio_cues != null:
         audio_cues.call("cue", "hatch" if absf(after - before) > 0.5 else "blocked")
+    if privacy_metrics != null and absf(after - before) < 0.5:
+        privacy_metrics.call("record", "safety_blocked")
     _refresh_status()
 
 func _reset_view() -> void:
@@ -504,6 +539,16 @@ func _reset_view() -> void:
 
 func _refresh_status() -> void:
     var state: Dictionary = controller.summary()
+    var mission_done: bool = bool(state.get("mission_completed", false))
+    var diagnosis_done: bool = bool(state.get("challenge_completed", false))
+    if privacy_metrics != null:
+        if mission_done and not previous_mission_completed:
+            privacy_metrics.call("record", "training_completed")
+        if diagnosis_done and not previous_diagnosis_completed:
+            privacy_metrics.call("record", "diagnosis_completed")
+        state["private_metrics"] = privacy_metrics.call("snapshot")
+    previous_mission_completed = mission_done
+    previous_diagnosis_completed = diagnosis_done
     if audio_cues != null:
         var sound: Dictionary = audio_cues.call("snapshot")
         state["sound_caption"] = sound["caption"]
@@ -659,6 +704,14 @@ func _process(delta: float) -> void:
             state["sound_audible_count"] = sound["audible_count"]
             state["sound_player_autoplay"] = sound["autoplay"]
             state["sound_save_ok"] = sound["saved"]
+        if privacy_metrics != null:
+            var learning_count: Dictionary = privacy_metrics.call("snapshot")
+            state["private_metrics_schema"] = learning_count["schema"]
+            state["private_metrics_consent"] = learning_count["consent"]
+            state["private_metrics_total"] = learning_count["total"]
+            state["private_metrics_network_uploads"] = learning_count["network_uploads"]
+            state["private_metrics_user_identifiers"] = learning_count["user_identifiers_stored"]
+            state["private_metrics_save_ok"] = learning_count["saved"]
         state["art_profile"] = str(art_profile.get("profile", "UNKNOWN"))
         state["art_key_energy"] = float(art_profile.get("key_energy", -1.0))
         state["art_rim_energy"] = float(art_profile.get("rim_energy", -1.0))
@@ -743,6 +796,13 @@ func _process(delta: float) -> void:
             var sound_center: Vector2 = sound_control.get_global_rect().get_center()
             state["player_settings_audio_center"] = {"x": sound_center.x, "y": sound_center.y}
             state["player_settings_audio_css_height"] = sound_control.get_global_rect().size.y / maxf(1.0, touch_pixel_ratio)
+            var privacy_button: Button = premium_intro.get("settings_privacy_button") as Button
+            var privacy_center: Vector2 = privacy_button.get_global_rect().get_center()
+            state["player_settings_privacy_center"] = {"x": privacy_center.x, "y": privacy_center.y}
+            state["player_settings_privacy_css_height"] = privacy_button.get_global_rect().size.y / maxf(1.0, touch_pixel_ratio)
+            var delete_button: Button = premium_intro.get("settings_clear_metrics_button") as Button
+            var delete_center: Vector2 = delete_button.get_global_rect().get_center()
+            state["player_settings_erase_center"] = {"x": delete_center.x, "y": delete_center.y}
             var quality_center: Vector2 = quality_control.get_global_rect().get_center()
             var motion_center: Vector2 = motion_control.get_global_rect().get_center()
             state["player_settings_quality_center"] = {"x": quality_center.x, "y": quality_center.y}
