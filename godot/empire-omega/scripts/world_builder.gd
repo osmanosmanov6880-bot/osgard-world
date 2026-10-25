@@ -512,13 +512,19 @@ func _apply_r90_offline_pbr() -> void:
 	var normals: String = root_path+"aerial_asphalt_01_nor_gl_1k.jpg"
 	var rough: String = root_path+"aerial_asphalt_01_rough_1k.jpg"
 	var available: bool = ResourceLoader.exists(diffuse) and ResourceLoader.exists(normals) and ResourceLoader.exists(rough)
-	if visual_budget == "cinematic" and available:
+	var standard_photo: bool = visual_budget == "standard" and available
+	var cinematic_photo: bool = visual_budget == "cinematic" and available
+	# R102: all desktop players can see the real reviewed CC0 1K albedo.
+	# Medium uses the original cheap normals; cinematic unlocks the complete
+	# locked normal + roughness PBR pack. Low/mobile keeps prior GPU cost.
+	if standard_photo or cinematic_photo:
 		asphalt_pbr.albedo_texture = load(diffuse) as Texture2D
-		asphalt_pbr.normal_texture = load(normals) as Texture2D
-		asphalt_pbr.roughness_texture = load(rough) as Texture2D
+		asphalt_pbr.normal_texture = load(normals) as Texture2D if cinematic_photo else r90_original_asphalt_normal
+		asphalt_pbr.roughness_texture = load(rough) as Texture2D if cinematic_photo else null
 		asphalt_pbr.roughness_texture_channel = BaseMaterial3D.TEXTURE_CHANNEL_RED
 		asphalt_pbr.uv1_scale = Vector3(0.12,0.12,0.12)
 	else:
+		# Safe fallback when original pinned binaries have not been staged yet.
 		asphalt_pbr.albedo_texture = r90_original_asphalt_albedo
 		asphalt_pbr.normal_texture = r90_original_asphalt_normal
 		asphalt_pbr.roughness_texture = null
