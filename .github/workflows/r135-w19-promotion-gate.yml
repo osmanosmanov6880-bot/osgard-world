@@ -112,3 +112,50 @@ jobs:
             ${{ runner.temp }}/r135-w19-luminance.json
           if-no-files-found: warn
           retention-days: 30
+
+  publish-reviewed-w19-immutable-candidate:
+    if: github.event_name == 'workflow_dispatch'
+    needs: independently-accept-real-w19
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Only after full reviewed acceptance, durably archive exact WebGL and original frames
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          PIN=scripts/r135-w19-release-pin.json
+          VERSION="$(jq -er '.version' "$PIN")"
+          test "$VERSION" = r135-luxury-academy-w19-candidate-20261025
+          SOURCE="$(jq -er '.source_commit' "$PIN")"
+          RUN_ID="$(jq -er '.artifact_run_id' "$PIN")"
+          ART_NAME="$(jq -er '.artifact_name' "$PIN")"
+          TAG=r135-luxury-academy-w19-reviewed-webgl-20261025
+          if gh release view "$TAG" --repo osmanosmanov6880-bot/osgard-world >/dev/null 2>&1; then
+            echo 'Immutable W19 candidate already exists: refusing overwrite' >&2
+            exit 1
+          fi
+          mkdir -p "$RUNNER_TEMP/w19-archive"
+          gh run download "$RUN_ID" --repo osmanosmanov6880-bot/osgard-world \
+            --name "$ART_NAME" --dir "$RUNNER_TEMP/w19-archive"
+          ROOT="$RUNNER_TEMP/w19-archive"
+          printf '%s  %s\n' "$(jq -er '.archive_sha256' "$PIN")" \
+            "$ROOT/r135-optimized-release/OSGARD_R135_OPTIMIZED_WEB.zip" | sha256sum -c -
+          printf '%s  %s\n' "$(jq -er '.manifest_sha256' "$PIN")" \
+            "$ROOT/r135-optimized-release/R135_OPTIMIZED_MANIFEST.json" | sha256sum -c -
+          python3 scripts/r135-w19-promotion-qa.py --pin "$PIN" --artifact "$ROOT"
+          cd "$ROOT"
+          zip -qr9 W19_ORIGINAL_SCREENSHOTS_AND_GAMEPLAY_EVIDENCE.zip r135-screens r135-w10-release-evidence.json
+          gh release create "$TAG" \
+            "$ROOT/r135-optimized-release/OSGARD_R135_OPTIMIZED_WEB.zip" \
+            "$ROOT/r135-optimized-release/R135_OPTIMIZED_MANIFEST.json" \
+            "$ROOT/W19_ORIGINAL_SCREENSHOTS_AND_GAMEPLAY_EVIDENCE.zip" \
+            --repo osmanosmanov6880-bot/osgard-world \
+            --target "$SOURCE" --latest=false \
+            --title 'OSGARD W19 — original SHA-reviewed luxury WebGL candidate' \
+            --notes 'Genuine Godot 4.4.1 exact-source desktop/mobile SwiftShader WebGL candidate, 13 unchanged original screenshots, six-course chapter tests, three simulated faults. NOT promoted to production. No physical-phone GPU or AAA photorealism certification.'
