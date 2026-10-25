@@ -19,6 +19,13 @@ on:
       - 'scripts/omega-mobile-touch-geometry.test.mjs'
       - 'playwright.omega-live-webgl.config.mjs'
       - 'scripts/omega-live-browser-queue.contract.test.mjs'
+      - 'scripts/omega-r82-scene-ready.contract.test.mjs'
+      - '.github/workflows/omega-r11-actual-browser-qa.yml'
+  # R82: one exact production retest on merge of THIS reviewed QA workflow.
+  # Unrelated pushes never attest or redeploy a Godot package.
+  push:
+    branches: [master]
+    paths:
       - '.github/workflows/omega-r11-actual-browser-qa.yml'
   workflow_run:
     workflows: ['OSGARD Omega verified Godot direct SSH deploy']
@@ -34,7 +41,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   cdn-cache-correctness:
-    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' || github.event_name == 'push' || github.event_name == 'push'
     runs-on: ubuntu-latest
     timeout-minutes: 6
     steps:
@@ -54,7 +61,7 @@ jobs:
         run: |
           docker run --rm --mount "type=bind,src=$PWD/nginx.conf,dst=/etc/nginx/conf.d/default.conf,readonly" nginx:1.27-alpine nginx -t
   native-two-finger-driving:
-    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' || github.event_name == 'push'
     runs-on: ubuntu-latest
     timeout-minutes: 16
     steps:
@@ -82,7 +89,7 @@ jobs:
             timeout --signal=TERM --kill-after=5s 40s godot --headless --path godot/empire-omega --script "res://tests/$test.gd"
           done
   browser-spec-preflight:
-    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' || github.event_name == 'push'
     runs-on: ubuntu-latest
     timeout-minutes: 4
     steps:
@@ -95,13 +102,20 @@ jobs:
       - name: Check actual WebGL smoke script is executable before release
         run: node --check scripts/omega-live-webgl.spec.mjs && node --check scripts/omega-mobile-touch-geometry.mjs && node --check playwright.omega-live-webgl.config.mjs
       - name: Reject fake or brittle public WebGL screenshot paths
-        run: node --test scripts/omega-live-webgl-capture.contract.test.mjs scripts/omega-browser-evidence.contract.test.mjs
+        run: node --test scripts/omega-live-webgl-capture.contract.test.mjs scripts/omega-browser-evidence.contract.test.mjs scripts/omega-r82-scene-ready.contract.test.mjs
   # Public WebGL testing is release acceptance, not a PR preflight:
   # a PR cannot honestly test its own unpublished WASM on the live site.
   actual-desktop-phone-webgl:
     # Never run against stale public WASM immediately after a gameplay push.
     # The protected direct SSH deployment triggers acceptance on the exact version.
-    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'master')
+    if: >-
+      (github.event_name == 'workflow_dispatch' &&
+       github.ref == 'refs/heads/master') ||
+      (github.event_name == 'push' &&
+       github.ref == 'refs/heads/master') ||
+      (github.event_name == 'workflow_run' &&
+       github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_branch == 'master')
     runs-on: ubuntu-latest
     timeout-minutes: 24
     steps:
@@ -115,10 +129,22 @@ jobs:
           npm ci
           npm install --no-save --package-lock=false @playwright/test@1.58.2 pngjs@7.0.0
           npx playwright install --with-deps chromium
+      - name: Install original Mesa/Xvfb software OpenGL for real Godot compositor
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y xvfb libgl1-mesa-dri libegl1 libgl1
       - name: Load real public R10/R11 Godot runtime on desktop and emulated touchscreen
+        shell: bash
         env:
           OSGARD_GAME_ORIGIN: https://osgard.world
-        run: npx playwright test --config playwright.omega-live-webgl.config.mjs
+          OMEGA_CI_GL_BACKEND: mesa
+          LIBGL_ALWAYS_SOFTWARE: "1"
+        run: |
+          set -euo pipefail
+          xvfb-run -a -s '-screen 0 1920x1080x24' \
+            npx playwright test --config playwright.omega-live-webgl.config.mjs --retries=0
       - name: Save actual frame screenshots, console and trace on failure
         if: always()
         uses: actions/upload-artifact@v4
