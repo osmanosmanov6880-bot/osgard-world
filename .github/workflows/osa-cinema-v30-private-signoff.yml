@@ -1,0 +1,44 @@
+name: OSA CINEMA V30 exact-hash external signoff security tests
+on:
+  pull_request:
+    paths:
+      - 'scripts/osa-cinema-v30-*'
+      - 'docs/OSA_CINEMA_V30_*'
+      - '.github/workflows/osa-cinema-v30-private-signoff.yml'
+      - 'scripts/osa-cinema-v27-release-board.mjs'
+  push:
+    branches: [master]
+    paths:
+      - 'scripts/osa-cinema-v30-*'
+      - '.github/workflows/osa-cinema-v30-private-signoff.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  offline-signatures:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate exact-hash signer tooling syntax
+        run: |
+          node --check scripts/osa-cinema-v30-external-attestations.mjs
+          node --check scripts/osa-cinema-v30-sign-approval.mjs
+          node --check scripts/osa-cinema-v30-external-attestations.test.mjs
+      - name: Verify 8 independent signers and reject fraud, replay, symlinks and altered approvals
+        run: node --test scripts/osa-cinema-v30-external-attestations.test.mjs
+      - name: Recorded film publication remains explicitly blocked
+        shell: bash
+        run: |
+          set +e
+          node scripts/osa-cinema-v20-release-audit.mjs --strict-publication > "$RUNNER_TEMP/osa-v30-release-denial.txt" 2>&1
+          code=$?
+          set -e
+          if [ "$code" -ne 1 ] || ! grep -q 'OSA_CINEMA_V20_NO_PUBLICATION' "$RUNNER_TEMP/osa-v30-release-denial.txt"; then
+            echo 'ERROR: original recorded movie publication guard changed' >&2
+            exit 1
+          fi
+          echo 'No release, no checkout, no upload was performed.'
