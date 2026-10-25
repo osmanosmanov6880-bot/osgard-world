@@ -60,7 +60,7 @@ test('live byte integrity runs after every real full frontend deployment',()=>{
   assert.match(y,/UPSTREAM_EVENT:/);
   assert.match(y,/test "\$UPSTREAM_REPOSITORY" = "\$GITHUB_REPOSITORY"/);
   assert.match(y,/test "\$UPSTREAM_BRANCH" = master/);
-  assert.match(y,/push\|workflow_dispatch\) ;; /);
+  assert.match(y,/push\|workflow_dispatch\) ;;/);
   assert.match(y,/test "\$UPSTREAM_CONCLUSION" = success/);
   assert.match(y,/refusing to certify NEBULA QA survival/);
 });
