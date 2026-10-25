@@ -63,4 +63,6 @@ test('live byte integrity runs after every real full frontend deployment',()=>{
   assert.match(y,/push\|workflow_dispatch\) ;;/);
   assert.match(y,/test "\$UPSTREAM_CONCLUSION" = success/);
   assert.match(y,/refusing to certify NEBULA QA survival/);
+  assert.match(y,/github\.event\.workflow_run\.id \|\| github\.run_id/);
+  assert.match(y,/cancel-in-progress: false/);
 });
