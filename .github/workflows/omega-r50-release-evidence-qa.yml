@@ -9,6 +9,7 @@ on:
       - 'scripts/test_omega_r80_hardware_evidence.py'
       - 'scripts/omega-live-integrity.py'
       - 'scripts/omega-live-webgl.spec.mjs'
+      - 'scripts/omega-live-webgl-capture.contract.test.mjs'
       - 'scripts/omega-world-frame-evidence.mjs'
       - 'scripts/omega-world-frame-evidence.test.mjs'
       - 'scripts/omega-browser-evidence.mjs'
@@ -20,6 +21,10 @@ on:
     branches: [master]
     paths:
       - '.github/workflows/omega-r50-release-evidence-qa.yml'
+      - 'scripts/omega-live-webgl.spec.mjs'
+      - 'scripts/omega-live-webgl-capture.contract.test.mjs'
+      - 'scripts/omega-world-frame-evidence.mjs'
+      - 'scripts/omega-world-frame-evidence.test.mjs'
   workflow_dispatch:
   workflow_run:
     workflows: ['OSGARD Omega verified Godot direct SSH deploy']
@@ -67,7 +72,7 @@ jobs:
           # pngjs is a browser-test-only dependency, intentionally installed
           # without altering the product lockfile or runtime bundle.
           npm install --no-save --package-lock=false pngjs@7.0.0
-          node --test scripts/omega-world-frame-evidence.test.mjs
+          node --test scripts/omega-world-frame-evidence.test.mjs scripts/omega-live-webgl-capture.contract.test.mjs
   real-post-ssh-game-acceptance:
     # Manual runs are allowed ONLY from actual master. No pull_request job can
     # attest production, and rechecking unchanged published bytes never
