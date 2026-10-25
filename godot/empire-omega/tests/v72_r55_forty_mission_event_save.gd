@@ -118,8 +118,9 @@ func _run() -> void:
 	verify(bool(game.call("load_game")),"corrupt primary falls back to intact authoritative backup")
 	loaded=game.get("data")
 	verify(str(game.get("last_load_source"))=="backup","backup recovery is recorded")
-	verify(int(loaded["mission"])==40 and int(loaded["wallet"])==initial_wallet+expected_reward,
-		"backup recovery does not reset or duplicate credits")
+	var recovered_backup: bool = str(game.get("last_load_source"))=="backup" and
+		int(loaded["mission"])==40 and int(loaded["wallet"])==initial_wallet+expected_reward
+	verify(recovered_backup,"backup recovery does not reset or duplicate credits")
 	var evidence: Dictionary = {
 		"schema":"omega-r55-mission-event-save-v1",
 		"engine":"Godot 4.4.1",
@@ -127,7 +128,7 @@ func _run() -> void:
 		"total_missions":40,
 		"chapter_endings":chapter_events.duplicate(),
 		"earned_in_game_credits":expected_reward,
-		"primary_and_backup_save_recovery":true,
+		"primary_and_backup_save_recovery":recovered_backup,
 		"checks_passed":passed,
 		"checks_failed":failed,
 		"human_mission_playthrough_attested":false,
