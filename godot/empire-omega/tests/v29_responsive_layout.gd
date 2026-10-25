@@ -32,6 +32,25 @@ func _run() -> void:
 		verify(not header.intersects(speed),"header and speedometer never overlap")
 		verify(not objective.intersects(header) and not objective.intersects(speed),"objective below header row")
 		verify(help.end.y<=size.y-100.0,"touch driving row stays clear of help text")
+		# R76: original 390x844 Chromium frame revealed oversized stacked HUD
+		# and a toast blocking the world. Test actual authoritative rectangles.
+		if bool(frame["portrait_focus"]) and size.y>=620.0:
+			verify(header.size.y <= 56.0 and speed.size.y <= 56.0,
+				"portrait telemetry condensed without hiding either panel")
+			verify(objective.position.y >= header.end.y+4.0,
+				"portrait mission always below status/speed")
+			verify(objective.end.y <= frame["toast"].position.y-5.0,
+				"portrait toast never covers active mission")
+			verify(frame["toast"].end.y <= 220.0,
+				"portrait city view starts above row 220, not row 250")
+			verify(frame["quick_toggle"].position.y >= frame["toast"].end.y+5.0,
+				"portrait quick-menu button never hides behind feedback")
+			verify(frame["quick_panel"].end.y <= size.y-12.0,
+				"expanded native quick actions remain on-screen")
+			verify(not frame["diagnostics"].intersects(frame["quick_toggle"]),
+				"native FPS panel never covers the relocated quick toggle")
+			verify(frame["diagnostics"].end.y <= float(frame["touch_safe_top"])+0.1,
+				"FPS controls stop before original lower touch-driving row")
 		verify(frame["quick_toggle"].end.y < help.position.y or size.y<=410.0,"quick menu does not cover hint on common phones")
 		if size.x<360.0 or size.y<690.0:
 			verify(not bool(frame["map_default"]),"optional map hidden in narrow/short modes")
@@ -44,6 +63,10 @@ func _run() -> void:
 	verify(hud.contains("HORIZON_LAYOUT.compute(screen)"),"live HUD uses tested geometry")
 	verify(hud.contains("get_viewport().size_changed.connect(_apply_responsive_layout)"),"orientation changes update actual HUD")
 	verify(hud.contains("func toggle_map()"),"phone route can toggle minimap panel")
+	verify(hud.contains("portrait_slim") and hud.contains("toast_label.add_theme_font_size_override"),
+		"actual portrait feedback and mission labels use readable compact typography")
+	verify(hud.contains("desktop_mission_stack") and hud.contains("mission_chapter_label.add_theme_font_size_override"),
+		"real HUD restores desktop chapter typography after device rotation")
 	verify(main.contains("hud.toggle_map()"),"map shortcut calls real minimap API")
 	verify(touch.contains("HORIZON_LAYOUT.compute(viewport_size)"),"quick actions obey same geometry")
 	verify(touch.contains("Input.parse_input_event(down)"),"quick actions send actual native InputMap events")

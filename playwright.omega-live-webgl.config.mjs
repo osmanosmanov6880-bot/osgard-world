@@ -1,5 +1,10 @@
 import { defineConfig } from '@playwright/test'
 
+// R74 acceptance: try the authentic software OpenGL/Mesa compositor under
+// Xvfb when Chromium SwiftShader stalls on Godot's original 1366x768 world.
+// Both paths are real WebGL renderers; neither is physical Android/iPhone QA.
+const mesaWebGL = process.env.OMEGA_CI_GL_BACKEND === 'mesa'
+
 export default defineConfig({
   testDir: './scripts',
   testMatch: 'omega-live-webgl.spec.mjs',
@@ -21,7 +26,9 @@ export default defineConfig({
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
     launchOptions: {
-      args: ['--enable-webgl', '--ignore-gpu-blocklist', '--use-angle=swiftshader', '--enable-unsafe-swiftshader']
+      args: mesaWebGL ?
+        ['--enable-webgl', '--ignore-gpu-blocklist', '--use-gl=angle', '--use-angle=gl'] :
+        ['--enable-webgl', '--ignore-gpu-blocklist', '--use-angle=swiftshader', '--enable-unsafe-swiftshader']
     }
   },
   projects: [

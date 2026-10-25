@@ -1520,10 +1520,27 @@ func _apply_responsive_layout() -> void:
 		map.custom_minimum_size = Vector2(106,106)
 		if not map_override: map_panel.visible = bool(frames["map_default"])
 		if diagnostic_visible and map_panel != null: map_panel.visible = false
+		var portrait_slim: bool = bool(frames.get("portrait_focus",false)) and screen.y >= 620.0
+		# Original container has 12+12px vertical padding. A 54px portrait
+		# status/speed box needs 6+6px instead, otherwise native Labels clip.
+		for compact_card in [header_panel,speed_panel]:
+			var card_style: StyleBoxFlat = _style(Color("141c25",0.90),Color("73828c"))
+			if portrait_slim:
+				card_style.content_margin_top = 5
+				card_style.content_margin_bottom = 5
+			compact_card.add_theme_stylebox_override("panel",card_style)
+		# True native phone UI: keep mission, distance and alerts legible, but
+		# eliminate unnecessary spacing seen in the original 390x844 screenshots.
+		# Explicitly restore fonts on rotation and screen resize.
+		var mission_stack: Node = mission_label.get_parent()
+		if mission_stack is VBoxContainer:
+			(mission_stack as VBoxContainer).add_theme_constant_override("separation",4 if portrait_slim else 7)
+		mission_chapter_label.add_theme_font_size_override("font_size",13 if portrait_slim else 15)
 		header_value.add_theme_font_size_override("font_size",16)
 		meters_label.add_theme_font_size_override("font_size",13)
-		mission_label.add_theme_font_size_override("font_size",16)
-		mission_distance_label.add_theme_font_size_override("font_size",13)
+		mission_label.add_theme_font_size_override("font_size",14 if portrait_slim else 16)
+		mission_distance_label.add_theme_font_size_override("font_size",12 if portrait_slim else 13)
+		toast_label.add_theme_font_size_override("font_size",14 if portrait_slim else 18)
 		speed_label.add_theme_font_size_override("font_size",15)
 		hint_label.add_theme_font_size_override("font_size",13)
 	else:
@@ -1542,10 +1559,18 @@ func _apply_responsive_layout() -> void:
 		_set_panel_frame(pause_panel,Rect2(-390,-340,780,680),0.5,0.5,0.5,0.5)
 		map.custom_minimum_size = Vector2(208,208)
 		if not map_override: map_panel.visible = true
+		for desktop_card in [header_panel,speed_panel]:
+			desktop_card.add_theme_stylebox_override("panel",
+				_style(Color("141c25",0.90),Color("73828c")))
+		var desktop_mission_stack: Node = mission_label.get_parent()
+		if desktop_mission_stack is VBoxContainer:
+			(desktop_mission_stack as VBoxContainer).add_theme_constant_override("separation",7)
+		mission_chapter_label.add_theme_font_size_override("font_size",15)
 		header_value.add_theme_font_size_override("font_size",23)
 		meters_label.add_theme_font_size_override("font_size",16)
 		mission_label.add_theme_font_size_override("font_size",22)
 		mission_distance_label.add_theme_font_size_override("font_size",16)
+		toast_label.add_theme_font_size_override("font_size",18)
 		speed_label.add_theme_font_size_override("font_size",20)
 		hint_label.add_theme_font_size_override("font_size",17)
 	_refresh()

@@ -1,0 +1,39 @@
+name: OSGARD R135 W20 protected SSH promotion and rollback contract (no deploy)
+
+on:
+  push:
+    branches: [release/r135-w20-protected-activation-20261025]
+    paths:
+      - '.github/workflows/deploy-frontend.yml'
+      - '.github/workflows/r135-w20-protected-activation-qa.yml'
+      - 'scripts/r135-release-selector.sh'
+      - 'scripts/r135-w18-deploy-contract.mjs'
+      - 'scripts/r135-w20-release-pin.json'
+      - 'scripts/r135-active-release.json'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  prevent-fake-release-and-stale-binaries:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Node release selector and all W14/W18/W19/W20 negative scenarios
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash -n scripts/r135-release-selector.sh
+          node --check scripts/r135-w18-deploy-contract.mjs
+          node scripts/r135-w18-deploy-contract.mjs
+      - name: Independent W20 15-frame original PNG and binary QA rejection tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s scripts -p test_r135_w20_promotion_gate.py -v
+          python3 -m unittest discover -s scripts -p test_r135_w19_promotion_gate.py -v
+          python3 -m py_compile scripts/r135-release-stage.py scripts/r135-w20-promotion-qa.py
+      - name: Do not claim SSH, hardware QA or live game without actual independent gate
+        run: echo 'W20 deploy contract PASS ONLY — this workflow does not touch VPS.'

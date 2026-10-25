@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs'
 import { PNG } from 'pngjs'
 import { browserTouchPoint } from './omega-mobile-touch-geometry.mjs'
 import { waitForExactPublishedRelease, captureAnimatedWebGLViewport } from './omega-browser-evidence.mjs'
+import { realGameFrameEvidence } from './omega-world-frame-evidence.mjs'
 
 // This exercises the REAL public Godot 4.4.1 WebAssembly and WebGL renderer,
 // not just the marketing page or HTML canvas shell. Native v34 separately
@@ -114,7 +115,28 @@ test('authentic released Godot runs WebGL2, paints scene, handles real keyboard/
   // Capture authentic pixels from the running WebGL viewport via bounded
   // Chromium DevTools, actual-canvas readback or a real Playwright PNG.
   // No HTML snapshot, generated image, missing evidence or pass-on-timeout.
-  const frame=(await captureAnimatedWebGLViewport(page)).png
+  // R72: the original live-R50 evidence sometimes captured only the
+  // Godot splash (#242424, bright logo) before the 3D city painted.
+  // Central luminance alone accepted that splash. Require real variation
+  // in both top and bottom 3D/HUD screen bands, not an invented mock frame.
+  let frame,worldProof,paintAttempts=0,captureMethod=''
+  for(let attempt=1;attempt<=3;attempt++){
+    paintAttempts=attempt
+    const capture=await captureAnimatedWebGLViewport(page)
+    frame=capture.png
+    captureMethod=capture.method
+    worldProof=realGameFrameEvidence(frame)
+    if(worldProof.realWorldEdges)break
+    if(attempt<3)await page.waitForTimeout(1200)
+  }
+  await testInfo.attach('godot-real-world-frame-proof.json',{
+    body:Buffer.from(JSON.stringify({source_commit:RELEASE.source_commit,
+      project:testInfo.project.name,paintAttempts,captureMethod,
+      realViewport:page.viewportSize(),worldProof},null,2)),
+    contentType:'application/json'
+  })
+  expect(worldProof.realWorldEdges,
+    'public WebGL frame must show an actual world/HUD, not the splash screen').toBe(true)
   expect(frame.subarray(0,8).toString('hex')).toBe('89504e470d0a1a0a')
   expect(frame.length,'rendered world has meaningful nonblank pixels').toBeGreaterThan(9500)
   await testInfo.attach('godot-real-world-initial.png',{body:frame,contentType:'image/png'})
@@ -137,8 +159,15 @@ test('authentic released Godot runs WebGL2, paints scene, handles real keyboard/
   })
   expect(visibleFraction,'real Godot must paint central city pixels').toBeGreaterThan(0.12)
   if(testInfo.project.name==='desktop-chromium') {
-    expect(firstImage.width).toBe(1366)
-    expect(firstImage.height).toBe(768)
+    // The ACTUAL CSS/Godot viewport stays 1366x768. SwiftShader may use
+    // CDP's original-frame downsampling to avoid full-size PNG stalls.
+    // Never claim that a 960px compositor proof measures 1366px fidelity.
+    expect(page.viewportSize()).toEqual({width:1366,height:768})
+    expect(firstImage.width).toBeGreaterThanOrEqual(850)
+    expect(firstImage.width).toBeLessThanOrEqual(1366)
+    expect(firstImage.height).toBeGreaterThanOrEqual(475)
+    expect(firstImage.height).toBeLessThanOrEqual(768)
+    expect(Math.abs(firstImage.width/firstImage.height - 1366/768)).toBeLessThan(0.025)
   }
 
   // R12 screenshot regression: an authentic pre-fix mobile frame from R11

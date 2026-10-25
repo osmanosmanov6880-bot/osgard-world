@@ -4,6 +4,7 @@ on:
     branches: [master]
     paths:
       - 'godot/empire-omega/scripts/horizon_device_frame_benchmark.gd'
+      - 'scripts/omega-four-viewport-real-ci.sh'
       - 'godot/empire-omega/scripts/main.gd'
       - 'godot/empire-omega/scripts/hud.gd'
       - 'godot/empire-omega/scripts/horizon_responsive_layout.gd'
@@ -64,6 +65,12 @@ jobs:
           npm ci
           npm install --no-save --package-lock=false @playwright/test@1.58.2 pngjs@7.0.0
           npx playwright install --with-deps chromium
+      - name: Provision real Mesa Xvfb software GPU for 1366x768 compositor
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y xvfb libgl1-mesa-dri libegl1 libgl1
       - name: Serve only unpublished candidate
         run: |
           python3 -m http.server 4173 --bind 127.0.0.1 --directory godot/empire-omega/.build-web > /tmp/omega-r36-http.log 2>&1 &
@@ -73,8 +80,11 @@ jobs:
           done
           cat /tmp/omega-r36-http.log
           exit 1
-      - name: Inspect authentic real Godot world pixels at four resolutions
-        run: npx playwright test --config playwright.omega-portrait-preview.config.mjs
+      - name: Assert four original Godot WebGL viewports without flaky retries
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash scripts/omega-four-viewport-real-ci.sh
       - name: Keep independent pixel evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -83,5 +93,6 @@ jobs:
           path: |
             omega-portrait-preview-results/
             omega-portrait-preview-report/
+            omega-original-four-viewport-evidence/
           if-no-files-found: warn
           retention-days: 12

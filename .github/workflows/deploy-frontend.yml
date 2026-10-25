@@ -17,6 +17,8 @@ on:
       - "tests/test_remix_*.py"
       - "tests/test_frontend_activation.py"
       - "scripts/check-frontend-release-freshness.sh"
+      - "scripts/cleanup-frontend-transport.sh"
+      - "scripts/test-frontend-transport-cleanup.mjs"
       - "scripts/test-frontend-release-freshness.mjs"
       - "docker-compose.production.yml"
       - "public/development/index.html"
@@ -60,6 +62,12 @@ on:
       - "scripts/r135-w14-release-pin.json"
       - "scripts/r135-w18-release-pin.json"
       - "scripts/r135-w19-release-pin.json"
+      - "scripts/r135-w20-release-pin.json"
+      - "scripts/r135-w21-release-pin.json"
+      - "scripts/r135-w21-promotion-qa.py"
+      - "scripts/test_r135_w21_promotion_gate.py"
+      - "scripts/r135-w20-promotion-qa.py"
+      - "scripts/test_r135_w20_promotion_gate.py"
       - "scripts/r135-w19-promotion-qa.py"
       - "scripts/r135-w19-extract-durable-evidence.py"
       - "scripts/test_r135_w19_promotion_gate.py"
@@ -414,6 +422,112 @@ jobs:
             # No floating artifacts, unsafe server fallback, false PNGs or
             # bypass of independent exact GitHub source/pin acceptance.
             python3 scripts/r135-w19-promotion-qa.py --pin "$PIN" --artifact "$ROOT"
+          elif [[ "$PIN" == scripts/r135-w20-release-pin.json ]]; then
+            # W20 is never selected implicitly. Source-controlled channel plus
+            # separate EXACT independent full acceptance run are mandatory.
+            GATE_RUN="$(jq -er '.promotion_gate_run_id' scripts/r135-active-release.json)"
+            GATE="$(gh api "repos/osmanosmanov6880-bot/osgard-world/actions/runs/$GATE_RUN")"
+            test "$(jq -er '.conclusion' <<< "$GATE")" = success
+            jq -er '.path' <<< "$GATE" | grep -Fq r135-w20-promotion-gate.yml
+            GATE_JOBS="$(gh api "repos/osmanosmanov6880-bot/osgard-world/actions/runs/$GATE_RUN/jobs?per_page=100")"
+            jq -e '.jobs[] | select(.name == "independently-review-exact-W20" and .conclusion == "success")' <<< "$GATE_JOBS" >/dev/null
+            GATE_SHA="$(jq -er '.head_sha' <<< "$GATE")"
+            PIN_AT_GATE="$(gh api "repos/osmanosmanov6880-bot/osgard-world/contents/scripts/r135-w20-release-pin.json?ref=$GATE_SHA" --jq '.content' | base64 -d | sha256sum | awk '{print $1}')"
+            test "$PIN_AT_GATE" = "$(sha256sum "$PIN" | awk '{print $1}')"
+            SOURCE="$(jq -er '.source_commit' "$PIN")"
+            RUN="$(gh api "repos/osmanosmanov6880-bot/osgard-world/actions/runs/$RUN_ID")"
+            test "$(jq -er '.head_sha' <<< "$RUN")" = "$SOURCE"
+            test "$(jq -er '.conclusion' <<< "$RUN")" = success
+            jq -er '.path' <<< "$RUN" | grep -Fq r135-web-optimized.yml
+            ART_ID="$(jq -er '.artifact_id' "$PIN")"
+            ARTIFACTS="$(gh api "repos/osmanosmanov6880-bot/osgard-world/actions/runs/$RUN_ID/artifacts")"
+            if jq -e --argjson id "$ART_ID" --arg name "$ART_NAME" \
+              '.artifacts[] | select(.id == $id and .name == $name and .expired == false)' \
+              <<< "$ARTIFACTS" >/dev/null; then
+              # Prefer immutable exact run + artifact while GitHub retains it.
+              gh run download "$RUN_ID" \
+                --repo osmanosmanov6880-bot/osgard-world \
+                --name "$ART_NAME" --dir "$ROOT"
+            else
+              # Actions artifacts expire. The only legal fallback is the
+              # permanent GitHub Release emitted AFTER full independent W20
+              # approval. Download its unmodified PNGs and original W10 proof
+              # and run the SAME complete W20 binary/frame/gameplay checker.
+              TAG=r135-player-settings-w20-reviewed-webgl-20261025
+              RELEASE="$(gh api "repos/osmanosmanov6880-bot/osgard-world/releases/tags/$TAG")"
+              test "$(jq -er '.tag_name' <<< "$RELEASE")" = "$TAG"
+              test "$(jq -er '.target_commitish' <<< "$RELEASE")" = "$SOURCE"
+              test "$(jq -er '.draft' <<< "$RELEASE")" = false
+              test "$(jq -er '.prerelease' <<< "$RELEASE")" = false
+              jq -e '[.assets[].name] | sort == ([
+                  "OSGARD_R135_OPTIMIZED_WEB.zip", "R135_OPTIMIZED_MANIFEST.json",
+                  "W20_ORIGINAL_SCREENSHOTS_AND_GAMEPLAY_EVIDENCE.zip"] | sort)' \
+                <<< "$RELEASE" >/dev/null
+              gh release download "$TAG" --repo osmanosmanov6880-bot/osgard-world \
+                --pattern "OSGARD_R135_OPTIMIZED_WEB.zip" --dir "$STAGED"
+              gh release download "$TAG" --repo osmanosmanov6880-bot/osgard-world \
+                --pattern "R135_OPTIMIZED_MANIFEST.json" --dir "$STAGED"
+              gh release download "$TAG" --repo osmanosmanov6880-bot/osgard-world \
+                --pattern "W20_ORIGINAL_SCREENSHOTS_AND_GAMEPLAY_EVIDENCE.zip" --dir "$ROOT"
+              python3 scripts/r135-w19-extract-durable-evidence.py \
+                "$ROOT/W20_ORIGINAL_SCREENSHOTS_AND_GAMEPLAY_EVIDENCE.zip" "$ROOT"
+            fi
+            # No floating artifacts, unsafe server fallback, false PNGs or
+            # bypass of independent exact GitHub source/pin acceptance.
+            python3 scripts/r135-w20-promotion-qa.py --pin "$PIN" --artifact "$ROOT"
+          elif [[ "$PIN" == scripts/r135-w21-release-pin.json ]]; then
+            # W21 is never selected implicitly. Source-controlled channel plus
+            # separate EXACT independent full acceptance run are mandatory.
+            GATE_RUN="$(jq -er '.promotion_gate_run_id' scripts/r135-active-release.json)"
+            GATE="$(gh api "repos/osmanosmanov6880-bot/osgard-world/actions/runs/$GATE_RUN")"
+            test "$(jq -er '.conclusion' <<< "$GATE")" = success
+            jq -er '.path' <<< "$GATE" | grep -Fq r135-w21-promotion-gate.yml
+            GATE_JOBS="$(gh api "repos/osmanosmanov6880-bot/osgard-world/actions/runs/$GATE_RUN/jobs?per_page=100")"
+            jq -e '.jobs[] | select(.name == "independently-review-exact-W21" and .conclusion == "success")' <<< "$GATE_JOBS" >/dev/null
+            GATE_SHA="$(jq -er '.head_sha' <<< "$GATE")"
+            PIN_AT_GATE="$(gh api "repos/osmanosmanov6880-bot/osgard-world/contents/scripts/r135-w21-release-pin.json?ref=$GATE_SHA" --jq '.content' | base64 -d | sha256sum | awk '{print $1}')"
+            test "$PIN_AT_GATE" = "$(sha256sum "$PIN" | awk '{print $1}')"
+            SOURCE="$(jq -er '.source_commit' "$PIN")"
+            RUN="$(gh api "repos/osmanosmanov6880-bot/osgard-world/actions/runs/$RUN_ID")"
+            test "$(jq -er '.head_sha' <<< "$RUN")" = "$SOURCE"
+            test "$(jq -er '.conclusion' <<< "$RUN")" = success
+            jq -er '.path' <<< "$RUN" | grep -Fq r135-web-optimized.yml
+            ART_ID="$(jq -er '.artifact_id' "$PIN")"
+            ARTIFACTS="$(gh api "repos/osmanosmanov6880-bot/osgard-world/actions/runs/$RUN_ID/artifacts")"
+            if jq -e --argjson id "$ART_ID" --arg name "$ART_NAME" \
+              '.artifacts[] | select(.id == $id and .name == $name and .expired == false)' \
+              <<< "$ARTIFACTS" >/dev/null; then
+              # Prefer immutable exact run + artifact while GitHub retains it.
+              gh run download "$RUN_ID" \
+                --repo osmanosmanov6880-bot/osgard-world \
+                --name "$ART_NAME" --dir "$ROOT"
+            else
+              # Actions artifacts expire. The only legal fallback is the
+              # permanent GitHub Release emitted AFTER full independent W21
+              # approval. Download its unmodified PNGs and original W10 proof
+              # and run the SAME complete W21 binary/frame/gameplay checker.
+              TAG=r135-explainable-training-w21-reviewed-webgl-20261025
+              RELEASE="$(gh api "repos/osmanosmanov6880-bot/osgard-world/releases/tags/$TAG")"
+              test "$(jq -er '.tag_name' <<< "$RELEASE")" = "$TAG"
+              test "$(jq -er '.target_commitish' <<< "$RELEASE")" = "$SOURCE"
+              test "$(jq -er '.draft' <<< "$RELEASE")" = false
+              test "$(jq -er '.prerelease' <<< "$RELEASE")" = false
+              jq -e '[.assets[].name] | sort == ([
+                  "OSGARD_R135_OPTIMIZED_WEB.zip", "R135_OPTIMIZED_MANIFEST.json",
+                  "W21_ORIGINAL_SCREENSHOTS_AND_GAMEPLAY_EVIDENCE.zip"] | sort)' \
+                <<< "$RELEASE" >/dev/null
+              gh release download "$TAG" --repo osmanosmanov6880-bot/osgard-world \
+                --pattern "OSGARD_R135_OPTIMIZED_WEB.zip" --dir "$STAGED"
+              gh release download "$TAG" --repo osmanosmanov6880-bot/osgard-world \
+                --pattern "R135_OPTIMIZED_MANIFEST.json" --dir "$STAGED"
+              gh release download "$TAG" --repo osmanosmanov6880-bot/osgard-world \
+                --pattern "W21_ORIGINAL_SCREENSHOTS_AND_GAMEPLAY_EVIDENCE.zip" --dir "$ROOT"
+              python3 scripts/r135-w19-extract-durable-evidence.py \
+                "$ROOT/W21_ORIGINAL_SCREENSHOTS_AND_GAMEPLAY_EVIDENCE.zip" "$ROOT"
+            fi
+            # No floating artifacts, unsafe server fallback, false PNGs or
+            # bypass of independent exact GitHub source/pin acceptance.
+            python3 scripts/r135-w21-promotion-qa.py --pin "$PIN" --artifact "$ROOT"
           else
             echo 'Unreviewed R135 channel refused' >&2
             exit 1
@@ -500,7 +614,7 @@ jobs:
       - name: Verify Imperium of Time visuals and real diagnostics
         run: npm run qa:time-ui && node scripts/omega-city-3d-smoke.mjs
       - name: Check deployment shell syntax
-        run: bash -n scripts/activate-frontend-remote.sh && bash -n scripts/check-frontend-release-freshness.sh && sh -n scripts/preserve-omega-native.sh && sh -n scripts/preserve-nebula-r40-qa.sh && node --test scripts/omega-frontend-preservation.test.mjs scripts/nebula-r40-qa-preservation.test.mjs scripts/test-frontend-release-freshness.mjs
+        run: bash -n scripts/activate-frontend-remote.sh && bash -n scripts/check-frontend-release-freshness.sh && bash -n scripts/cleanup-frontend-transport.sh && sh -n scripts/preserve-omega-native.sh && sh -n scripts/preserve-nebula-r40-qa.sh && node --test scripts/omega-frontend-preservation.test.mjs scripts/nebula-r40-qa-preservation.test.mjs scripts/test-frontend-release-freshness.mjs scripts/test-frontend-transport-cleanup.mjs
       - name: Package HTML assets and matching Nginx config
         run: |
           set -euo pipefail
@@ -644,6 +758,7 @@ jobs:
           tar -czf osgard-world-release.tgz -C "$TEMP_DIR/unpacked" .
           rm -rf "$TEMP_DIR"
       - name: Stage archive and verify checksum
+        id: frontend_stage
         env:
           HOST: ${{ secrets.OSGARD_DEPLOY_HOST }}
           USER: ${{ secrets.OSGARD_DEPLOY_USER }}
@@ -673,14 +788,24 @@ jobs:
           scp -i ~/.ssh/osgard_deploy local.sha256 "$USER@$HOST:$REMOTE_RELEASE_DIR/"
           ssh -i ~/.ssh/osgard_deploy "$USER@$HOST" "cd '$REMOTE_RELEASE_DIR' && sha256sum -c local.sha256"
       - name: Activate verified archive with config rollback
+        id: frontend_activate
         env:
           HOST: ${{ secrets.OSGARD_DEPLOY_HOST }}
           USER: ${{ secrets.OSGARD_DEPLOY_USER }}
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          # Recheck AFTER upload and immediately BEFORE activating a release.
-          bash scripts/check-frontend-release-freshness.sh
+          # Recheck AFTER upload, BEFORE ANY remote activation. If the
+          # source went stale, release only THIS run's staged /tmp directory.
+          lease_rc=0
+          bash scripts/check-frontend-release-freshness.sh || lease_rc=$?
+          if (( lease_rc != 0 )); then
+            echo "::warning::Abandoning staged upload after freshness gate exit $lease_rc"
+            if ! timeout 30s bash scripts/cleanup-frontend-transport.sh; then
+              echo "::warning::Could not clean this run's temporary upload; maintenance may be required"
+            fi
+            exit "$lease_rc"
+          fi
           REMOTE_RELEASE_DIR="/tmp/osgard-gh-release-${GITHUB_RUN_ID}"
           REMOTE_ARCHIVE="/tmp/osgard-gh-release-${GITHUB_RUN_ID}.tgz"
           REMOTE_SCRIPT="/tmp/activate-frontend-remote-${GITHUB_RUN_ID}.sh"
@@ -693,9 +818,13 @@ jobs:
             test "$R135_VERSION" = "r135-case-progress-w14-20261025"
           elif [[ "$PIN" == scripts/r135-w18-release-pin.json ]]; then
             test "$R135_VERSION" = "r135-premium-learning-w18-candidate-20261025"
-          else
-            test "$PIN" = scripts/r135-w19-release-pin.json
+          elif [[ "$PIN" == scripts/r135-w19-release-pin.json ]]; then
             test "$R135_VERSION" = "r135-luxury-academy-w19-candidate-20261025"
+          elif [[ "$PIN" == scripts/r135-w20-release-pin.json ]]; then
+            test "$R135_VERSION" = "r135-player-settings-w20-candidate-20261025"
+          else
+            test "$PIN" = scripts/r135-w21-release-pin.json
+            test "$R135_VERSION" = "r135-explainable-training-w21-candidate-20261025"
           fi
           scp -i ~/.ssh/osgard_deploy scripts/activate-frontend-remote.sh "$USER@$HOST:$REMOTE_SCRIPT"
           ssh -i ~/.ssh/osgard_deploy "$USER@$HOST" "docker cp '$REMOTE_RELEASE_DIR/osgard-world-release.tgz' osgard-world:'$REMOTE_ARCHIVE' && chmod 700 '$REMOTE_SCRIPT' && OSGARD_EXPECTED_R135_MANIFEST_SHA256='$R135_SHA' OSGARD_EXPECTED_R135_SOURCE='$R135_SOURCE' OSGARD_EXPECTED_R135_VERSION='$R135_VERSION' OSGARD_ARCHIVE='$REMOTE_ARCHIVE' OSGARD_CORE_IMAGE='osgard-core-api:${GITHUB_SHA}' OSGARD_REMIX_GUARD_IMAGE='osgard-remix-guard:${GITHUB_SHA}' OSGARD_CONTAINER=osgard-world '$REMOTE_SCRIPT'"
@@ -789,12 +918,35 @@ jobs:
         env:
           OSGARD_BASE_URL: https://osgard.world
         run: node scripts/skillcred-proxy-smoke.mjs
-      - name: Retire only this successful SSH transport archive
-        if: success()
+      - name: Retire temporary transport after a completed activation
+        # The site may fail a subsequent public smoke test even when the
+        # release transport itself is no longer needed. Never leave 1.8GB+
+        # temporary uploads on the VPS merely because later tests failed.
+        if: ${{ always() && steps.frontend_activate.outcome == 'success' }}
         env:
           HOST: ${{ secrets.OSGARD_DEPLOY_HOST }}
           USER: ${{ secrets.OSGARD_DEPLOY_USER }}
         shell: bash
         run: |
           set -euo pipefail
-          ssh -i ~/.ssh/osgard_deploy "$USER@$HOST" "rm -rf -- '/tmp/osgard-gh-release-${GITHUB_RUN_ID}'"
+          timeout 30s bash scripts/cleanup-frontend-transport.sh
+      - name: Attempt cleanup of partial upload when staging failed
+        if: ${{ failure() && steps.frontend_stage.outcome == 'failure' }}
+        continue-on-error: true
+        env:
+          HOST: ${{ secrets.OSGARD_DEPLOY_HOST }}
+          USER: ${{ secrets.OSGARD_DEPLOY_USER }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 30s bash scripts/cleanup-frontend-transport.sh
+      - name: Attempt cleanup when stage succeeded but activation was skipped
+        if: ${{ always() && steps.frontend_stage.outcome == 'success' && steps.frontend_activate.outcome == 'skipped' }}
+        continue-on-error: true
+        env:
+          HOST: ${{ secrets.OSGARD_DEPLOY_HOST }}
+          USER: ${{ secrets.OSGARD_DEPLOY_USER }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 30s bash scripts/cleanup-frontend-transport.sh

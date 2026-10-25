@@ -7,6 +7,8 @@ on:
       - "scripts/nebula-r40-field-kit.mjs"
       - "scripts/test-nebula-r40-field-kit.mjs"
       - "docs/nebula/R40-FIELD-QA-RUNBOOK.md"
+      - "docs/nebula/R40-ON-DEVICE-AB-PROTOCOL.md"
+      - "scripts/test-nebula-r40-current-field-protocol.mjs"
       - "docs/nebula/R40-FINAL-CLOSEOUT-BLOCKS.md"
       - ".github/workflows/nebula-r40-production-preflight.yml"
   push:
@@ -17,6 +19,8 @@ on:
       - "scripts/nebula-r40-field-kit.mjs"
       - "scripts/test-nebula-r40-field-kit.mjs"
       - "docs/nebula/R40-FIELD-QA-RUNBOOK.md"
+      - "docs/nebula/R40-ON-DEVICE-AB-PROTOCOL.md"
+      - "scripts/test-nebula-r40-current-field-protocol.mjs"
       - "docs/nebula/R40-FINAL-CLOSEOUT-BLOCKS.md"
       - ".github/workflows/nebula-r40-production-preflight.yml"
 permissions:
@@ -37,6 +41,7 @@ jobs:
           node --check scripts/nebula-r40-field-kit.mjs
           node --check scripts/nebula-r40-device-progress.mjs
           node --test scripts/test-nebula-r40-field-kit.mjs
+          node --test scripts/test-nebula-r40-current-field-protocol.mjs
           node scripts/nebula-r40-production-preflight.mjs --selftest
           if node scripts/nebula-r40-production-preflight.mjs docs/nebula/R40-DEVICE-FIELD-MANIFEST.example.json; then
             echo "Empty original phone evidence must never be approved" >&2

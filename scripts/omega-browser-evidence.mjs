@@ -47,18 +47,23 @@ export async function waitForExactPublishedRelease(request, url, expected, nonce
 
 // Last-resort, renderer-independent collection of pixels from the ACTUAL live
 // Godot WebGL canvas. Never use DOM screenshots, snapshots or synthetic media.
-async function captureLiveGodotCanvas(page) {
+async function captureLiveGodotCanvas(page, limits={}) {
   if (typeof page.evaluate !== 'function') throw new Error('Canvas readback unavailable')
   let timeoutId
   try {
     const dataUrl=await Promise.race([
-      page.evaluate(async()=>{
+      page.evaluate(async(captureLimits)=>{
         const source=document.querySelector('#canvas')
         if (!(source instanceof HTMLCanvasElement) || source.width<160 || source.height<160)
           throw new Error('Real Godot canvas unavailable')
+        // This is a readback of the ORIGINAL live Godot WebGL canvas.
+        // Only the output copy is resampled, never the game viewport/source.
+        const ratio=Math.min(1,
+          (captureLimits.maxWidth??source.width)/source.width,
+          (captureLimits.maxHeight??source.height)/source.height)
         const copy=document.createElement('canvas')
-        copy.width=source.width
-        copy.height=source.height
+        copy.width=Math.max(160,Math.round(source.width*ratio))
+        copy.height=Math.max(160,Math.round(source.height*ratio))
         const ctx=copy.getContext('2d',{willReadFrequently:true})
         if (!ctx) throw new Error('Canvas 2D readback unsupported')
         // Chromium SwiftShader may not have finished the current compositor
@@ -81,7 +86,7 @@ async function captureLiveGodotCanvas(page) {
           if(bright>=Math.max(12,Math.ceil(samples*0.10))) return copy.toDataURL('image/png')
         }
         throw new Error('Actual WebGL readback stayed dark; no valid pixels')
-      }),
+      },limits),
       new Promise((_,reject)=>{
         timeoutId=setTimeout(()=>reject(new Error('Canvas readback timed out')),12000)
       })
@@ -101,7 +106,16 @@ async function captureLiveGodotCanvas(page) {
 // BEFORE trying expensive synchronous screenshot commands that can freeze
 // SwiftShader on a 1366x768 running WebGL2 scene. Unlike an HTML image
 // mock this only accepts an original Page.screencastFrame PNG payload.
-export async function captureRealChromiumScreencast(session, timeoutMs=11500) {
+export async function captureRealChromiumScreencast(session, timeoutMs=11500, limits={}) {
+  // Software SwiftShader can paint the real 1366x768 Godot scene while PNG
+  // compression of the full compositor frame stalls. CDP itself supports
+  // bounded downsampling of its ORIGINAL compositor pixels. This never
+  // generates a replacement scene or changes the live game viewport.
+  if(limits===null || typeof limits!=='object' || Array.isArray(limits) ||
+     Object.keys(limits).some(k=>!['maxWidth','maxHeight'].includes(k)) ||
+     (limits.maxWidth!==undefined && (!Number.isSafeInteger(limits.maxWidth) || limits.maxWidth<320 || limits.maxWidth>2048)) ||
+     (limits.maxHeight!==undefined && (!Number.isSafeInteger(limits.maxHeight) || limits.maxHeight<240 || limits.maxHeight>2048)))
+    throw new Error('Invalid bounded real compositor capture size')
   if(typeof session?.on!=='function' || typeof session?.send!=='function')
     throw new Error('Real Chromium CDP screencast session unavailable')
   if(!Number.isSafeInteger(timeoutMs)||timeoutMs<100||timeoutMs>18000)
@@ -124,7 +138,7 @@ export async function captureRealChromiumScreencast(session, timeoutMs=11500) {
     // The server may emit Page.screencastFrame before this command resolves.
     // Bound both command and frame by the same timer.
     const startPromise=session.send('Page.startScreencast',{
-      format:'png',everyNthFrame:1
+      format:'png',everyNthFrame:1,...limits
     })
     // A successful start only arms the listener; it must NOT be mistaken
     // for a rendered frame. An explicit start error still propagates.
@@ -147,17 +161,38 @@ export async function captureRealChromiumScreencast(session, timeoutMs=11500) {
 }
 
 export async function captureAnimatedWebGLViewport(page) {
+  // R74: keep the real desktop Chromium CSS viewport at 1366x768, but ask
+  // Chrome to encode a smaller honest copy of its rendered compositor frame.
+  // Mobile portrait remains completely unscaled. Original pixels and source
+  // are still attested by the caller; a loading splash still fails R72.
+  const viewport=typeof page.viewportSize==='function' ? page.viewportSize() : null
+  const compact=viewport?.width>=1100 && viewport?.height>=700
+  const limits=compact ? {maxWidth:960,maxHeight:540} : {}
+  const clip=compact ? {x:0,y:0,width:viewport.width,height:viewport.height,
+    scale:Math.min(960/viewport.width,540/viewport.height)} : null
   // Unlike locator screenshots, CDP does not wait for a continuously painted
   // WebGL canvas to reach the impossible "stable element" state.
   let session=null
+  let earlyCanvasError=null
   try {
     session=await page.context().newCDPSession(page)
     let screencastError=null
     try {
       // Prefer compositor's streamed real frames on slow software GPU.
-      return await captureRealChromiumScreencast(session)
+      return await captureRealChromiumScreencast(session,11500,limits)
     } catch(error) {
       screencastError=error
+    }
+    // At 1366 CSS px, synchronous Chrome screenshots can queue behind a
+    // frozen SwiftShader compositor. Try original canvas readback in a
+    // bounded, smaller offscreen bitmap BEFORE those more costly paths.
+    if(compact) {
+      try {
+        const result=await captureLiveGodotCanvas(page,limits)
+        return {...result,fallback_reason:'CDP screencast='+String(screencastError?.message??screencastError).slice(0,150)}
+      } catch(error) {
+        earlyCanvasError=error
+      }
     }
     let timeoutId=null
     let encoded
@@ -166,7 +201,8 @@ export async function captureAnimatedWebGLViewport(page) {
         session.send('Page.captureScreenshot',{
           format:'png',
           captureBeyondViewport:false,
-          fromSurface:true
+          fromSurface:true,
+          ...(clip ? {clip} : {})
         }),
         new Promise((_,reject)=>{
           timeoutId=setTimeout(()=>reject(new Error('CDP screenshot timed out')),20000)
@@ -193,7 +229,8 @@ export async function captureAnimatedWebGLViewport(page) {
       try {
         image=await Promise.race([
           session.send('Page.captureScreenshot',{
-            format:'png',captureBeyondViewport:false,fromSurface:false
+            format:'png',captureBeyondViewport:false,fromSurface:false,
+            ...(clip ? {clip} : {})
           }),
           new Promise((_,reject)=>{
             alternateTimer=setTimeout(()=>reject(new Error('CDP view screenshot timed out')),11000)
@@ -212,12 +249,14 @@ export async function captureAnimatedWebGLViewport(page) {
     }
     // Try real Godot canvas readback before Playwright screenshot. If the
     // framebuffer is blank/unreadable this fails, never inventing evidence.
-    let canvasError
-    try {
-      const result=await captureLiveGodotCanvas(page)
-      return {...result,fallback_reason:('CDP='+String(firstError?.message??firstError)+
-        '; View='+String(alternativeError?.message??alternativeError)).slice(0,240)}
-    } catch(e) {canvasError=e}
+    let canvasError=earlyCanvasError
+    if(!compact) {
+      try {
+        const result=await captureLiveGodotCanvas(page,limits)
+        return {...result,fallback_reason:('CDP='+String(firstError?.message??firstError)+
+          '; View='+String(alternativeError?.message??alternativeError)).slice(0,240)}
+      } catch(e) {canvasError=e}
+    }
     try {
       const png=await page.screenshot({timeout:35000,animations:'disabled'})
       if(!Buffer.isBuffer(png) || png.length<9500 ||

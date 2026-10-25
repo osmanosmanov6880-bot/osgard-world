@@ -1,0 +1,39 @@
+name: OSGARD R135 W21 protected explainable-learning promotion and rollback contract (no deploy)
+
+on:
+  push:
+    branches: [release/r135-w21-protected-activation-20261025]
+    paths:
+      - '.github/workflows/deploy-frontend.yml'
+      - '.github/workflows/r135-w21-protected-activation-qa.yml'
+      - 'scripts/r135-release-selector.sh'
+      - 'scripts/r135-w18-deploy-contract.mjs'
+      - 'scripts/r135-w21-release-pin.json'
+      - 'scripts/r135-active-release.json'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  reject-unreviewed-W21-and-preserve-prior-production:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test all W14/W18/W19/W20/W21 explicit non-floating release selector cases
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash -n scripts/r135-release-selector.sh
+          node --check scripts/r135-w18-deploy-contract.mjs
+          node scripts/r135-w18-deploy-contract.mjs
+      - name: Reject forged W21 screenshot/checksum/AAA/hardware claims
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s scripts -p test_r135_w21_promotion_gate.py -v
+          python3 -m unittest discover -s scripts -p test_r135_w20_promotion_gate.py -v
+          python3 -m py_compile scripts/r135-release-stage.py scripts/r135-w21-promotion-qa.py
+      - name: Explicit HOLD — this contract does not touch the VPS
+        run: echo "W21 protected release contract passed locally. Actual SSH/live-byte acceptance is separate."

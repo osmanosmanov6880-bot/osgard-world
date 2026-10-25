@@ -62,13 +62,25 @@ test('R33 REAL desktop Tab opens left Godot government dock while the world stay
   const panelAfter=samplePanelPixels(after,0.06,0.38,0.23,0.78)
   await info.attach('R33-actual-Godot-open-governor.png',{body:screenshot,contentType:'image/png'})
   await info.attach('R33-real-cabinet-metrics.json',{body:Buffer.from(JSON.stringify({
-    viewport:[after.width,after.height],leftBefore,leftAfter,rightBefore,rightAfter,
+    actualCssViewport:page.viewportSize(),renderedEvidenceBefore:[before.width,before.height],
+    renderedEvidenceAfter:[after.width,after.height],
+    leftBefore,leftAfter,rightBefore,rightAfter,
     panelBefore,panelAfter,crashReports:faults
   },null,2)),contentType:'application/json'})
-  expect(before.width).toBe(1366)
-  expect(before.height).toBe(768)
-  expect(after.width).toBe(1366)
-  expect(after.height).toBe(768)
+  // R79: CDP encodes actual composited Godot pixels at bounded 960x540 on
+  // software GPU. Screenshot evidence dimensions are NOT the CSS viewport.
+  // Keep the real gameplay DOM viewport 1366x768, require consistent actual
+  // compositor PNGs, exact aspect ratio and real imagery after pressing Tab.
+  expect(page.viewportSize()).toEqual({width:1366,height:768})
+  for(const image of [before,after]) {
+    expect(image.width).toBeGreaterThanOrEqual(850)
+    expect(image.width).toBeLessThanOrEqual(1366)
+    expect(image.height).toBeGreaterThanOrEqual(475)
+    expect(image.height).toBeLessThanOrEqual(768)
+    expect(Math.abs(image.width/image.height-1366/768)).toBeLessThan(0.025)
+  }
+  expect(before.width).toBe(after.width)
+  expect(before.height).toBe(after.height)
   // Original page is real and nonblank even when city lighting is dimmer
   // than the obsolete 40/255 absolute 2D pixel threshold.
   expect(Math.max(leftBefore,rightBefore),'original live game must not be black').toBeGreaterThan(28)

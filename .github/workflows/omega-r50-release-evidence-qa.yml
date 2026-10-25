@@ -4,7 +4,21 @@ on:
     branches: [master]
     paths:
       - 'scripts/omega-r50-release-gate.py'
+      - 'scripts/omega_r80_hardware_evidence.py'
+      - 'scripts/omega_r80_prepare_phone_session.py'
+      - 'scripts/test_omega_r80_hardware_evidence.py'
       - 'scripts/omega-live-integrity.py'
+      - 'scripts/omega-live-webgl.spec.mjs'
+      - 'scripts/omega-world-frame-evidence.mjs'
+      - 'scripts/omega-world-frame-evidence.test.mjs'
+      - 'scripts/omega-browser-evidence.mjs'
+      - 'scripts/omega-r77-dispatch-contract.py'
+      - '.github/workflows/omega-r50-release-evidence-qa.yml'
+  # A reviewed change to THIS acceptance workflow on master immediately
+  # rechecks existing public bytes; it cannot deploy or mutate WASM/PCK.
+  push:
+    branches: [master]
+    paths:
       - '.github/workflows/omega-r50-release-evidence-qa.yml'
   workflow_dispatch:
   workflow_run:
@@ -18,7 +32,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   evidence-contract:
-    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' || github.event_name == 'push'
     runs-on: ubuntu-latest
     timeout-minutes: 7
     steps:
@@ -29,6 +43,8 @@ jobs:
           set -euo pipefail
           python3 scripts/omega-live-integrity.py --self-test
           python3 scripts/omega-r50-release-gate.py --self-test
+          python3 scripts/test_omega_r80_hardware_evidence.py
+          python3 scripts/omega-r77-dispatch-contract.py
           python3 scripts/omega-r50-release-gate.py > /tmp/r50-hold.json
           python3 - <<'PY'
           import json
@@ -39,8 +55,31 @@ jobs:
           assert 'missing-independent-live-desktop-touch' in data['gaps']
           print('R50 CONTRACT PASS: candidate tests cannot counterfeit production or hardware release')
           PY
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: R72 reject fake Godot splash as a real city screenshot
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm ci
+          # pngjs is a browser-test-only dependency, intentionally installed
+          # without altering the product lockfile or runtime bundle.
+          npm install --no-save --package-lock=false pngjs@7.0.0
+          node --test scripts/omega-world-frame-evidence.test.mjs
   real-post-ssh-game-acceptance:
-    if: github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'master'
+    # Manual runs are allowed ONLY from actual master. No pull_request job can
+    # attest production, and rechecking unchanged published bytes never
+    # deploys, touches SSH or overwrites the public Godot package.
+    if: >-
+      (github.event_name == 'workflow_run' &&
+       github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_branch == 'master') ||
+      (github.event_name == 'workflow_dispatch' &&
+       github.ref == 'refs/heads/master') ||
+      (github.event_name == 'push' &&
+       github.ref == 'refs/heads/master')
     runs-on: ubuntu-latest
     timeout-minutes: 28
     steps:
@@ -76,13 +115,23 @@ jobs:
           npm ci
           npm install --no-save --package-lock=false @playwright/test@1.58.2 pngjs@7.0.0
           npx playwright install --with-deps chromium
+      - name: Install original Linux OpenGL driver for honest browser pixels
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y xvfb libgl1-mesa-dri libegl1 libgl1
       - name: Actually drive published Godot game on desktop and mobile touch
         shell: bash
         env:
           OSGARD_GAME_ORIGIN: https://osgard.world
+          OMEGA_CI_GL_BACKEND: mesa
+          LIBGL_ALWAYS_SOFTWARE: "1"
         run: |
           set -euo pipefail
-          npx playwright test --config playwright.omega-live-webgl.config.mjs --reporter=json > omega-r50-evidence/playwright.json
+          xvfb-run -a -s '-screen 0 1920x1080x24' \
+            npx playwright test --config playwright.omega-live-webgl.config.mjs \
+              --retries=0 --reporter=json > omega-r50-evidence/playwright.json
       - name: Bind source SHA, seven byte hashes and browser result without claiming hardware
         shell: bash
         run: |
