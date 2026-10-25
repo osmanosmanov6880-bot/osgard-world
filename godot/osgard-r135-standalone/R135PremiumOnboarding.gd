@@ -332,7 +332,7 @@ func _layout() -> void:
     # including Settings remain at least 44 CSS px, never clipped by logo.
     brand_title.text = "OSGARD" if compact else "O S G A R D"
     brand_header.add_theme_constant_override("separation", 4 if compact else 9)
-    brand_title.add_theme_font_size_override("font_size", int((17 if compact else 23) * ratio))
+    brand_title.add_theme_font_size_override("font_size", int((18 if compact else 23) * ratio))
     brand_subtitle.add_theme_font_size_override("font_size", int(12 * ratio))
     var mark: Control = brand.get_child(0).get_child(0) as Control
     mark.custom_minimum_size = Vector2((40.0 if compact else 48.0) * ratio,
