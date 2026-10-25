@@ -47,6 +47,19 @@ class PortraitProofContract(unittest.TestCase):
         self.assertEqual(result["capture_coordinates"], "css")
         self.assertEqual(result["capture_method"], "chromium-cdp")
 
+    def test_real_cdp_screencast_capture_path_preserves_all_constraints(self):
+        for method in ("chromium-cdp-screencast", "chromium-cdp-view"):
+            with self.subTest(method=method):
+                result = self.validate({**self.data, "capture_method": method})
+                self.assertEqual(result["capture_method"], method)
+                self.assertEqual(result["capture_coordinates"], "css")
+                with self.assertRaisesRegex(ValueError, "sha256 mismatch"):
+                    self.validate({**self.data, "capture_method": method,
+                                   "screenshot_sha256": "0" * 64})
+                with self.assertRaisesRegex(ValueError, "render target"):
+                    self.validate({**self.data, "capture_method": method,
+                                   "canvas_pixels": [100, 100]})
+
     def test_sha_mismatch_rejected(self):
         data = {**self.data, "screenshot_sha256": "0" * 64}
         with self.assertRaisesRegex(ValueError, "sha256 mismatch"):

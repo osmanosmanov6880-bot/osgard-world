@@ -46,8 +46,13 @@ def portrait_capture_proof(path: Path, screenshot: Path,
     check(isinstance(proof, dict), "invalid screenshot provenance JSON")
     check(proof.get("screenshot_sha256") == hashlib.sha256(screenshot.read_bytes()).hexdigest(),
           "screenshot/provenance sha256 mismatch")
+    # Source helper uses actual Page.screencastFrame compositor PNG (R53),
+    # or authenticated CDP viewport, Godot canvas readback and Playwright.
+    # All paths MUST still satisfy exact PNG checksum + physical CSS/DPR/canvas
+    # geometry and visible simulated optical target; never allow generated art.
     check(proof.get("capture_method") in
-          ("chromium-cdp", "chromium-canvas-readback", "playwright-viewport"),
+          ("chromium-cdp", "chromium-cdp-screencast", "chromium-cdp-view",
+           "chromium-canvas-readback", "playwright-viewport"),
           "not a trusted WebGL screenshot capture path")
     check(proof.get("scene_ready") is True and proof.get("view") == 2
           and proof.get("camera_target_visible") is True

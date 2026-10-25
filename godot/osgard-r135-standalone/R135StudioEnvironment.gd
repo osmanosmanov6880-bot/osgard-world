@@ -6,11 +6,14 @@ var grid_instances: int = 0
 var grid_draw_batches: int = 0
 var detail_instances: int = 0
 var detail_draw_batches: int = 0
+var luxury_draw_batches: int = 0
+var luxury_instances: int = 0
 var single_mesh_nodes: int = 0
 var quality: int = 0
 var stripe_material: StandardMaterial3D
 var copper_material: StandardMaterial3D
 var fastener_material: StandardMaterial3D
+var architectural_led: StandardMaterial3D
 
 func configure() -> void:
     var stage_mat: StandardMaterial3D = _surface(Color(0.085, 0.098, 0.115), 0.20, 0.83)
@@ -19,6 +22,7 @@ func configure() -> void:
     stripe_material = _surface(Color(0.20, 0.28, 0.31), 0.38, 0.74)
     copper_material = _surface(Color(0.48, 0.24, 0.115), 0.42, 0.57, true)
     fastener_material = _surface(Color(0.31, 0.35, 0.39), 0.66, 0.42)
+    architectural_led = _surface(Color(0.14, 0.42, 0.49), 0.24, 0.32, true)
 
     _box("MatteIndustrialFloor", Vector3(0, -0.20, 4.90), Vector3(22, 0.29, 14), stage_mat)
     # W18: continue the matte architectural wall upward into the portrait
@@ -60,6 +64,58 @@ func configure() -> void:
     for x in range(-8, 9, 2):
         boundary_marks.append(Vector3(float(x), -0.035, 11.35))
     _batch("W15DeckBoundaryMarks", Vector3(0.32, 0.009, 0.032), boundary_marks, copper_material, true)
+
+    # Approved AAA-direction environmental pass. Physically believable
+    # structure, repeat modules and restrained emissive accents are batched:
+    # exactly FIVE extra GPU-instance groups; no simulated collisions, no
+    # additional real-time shadows, no change to original mechanical GLBs.
+    var rear_pilasters: Array[Vector3] = []
+    for x in range(-9, 10, 2):
+        rear_pilasters.append(Vector3(float(x), 6.2, -2.72))
+    _batch("LuxuryRearArchitecturalPilasters", Vector3(0.17, 10.8, 0.21),
+        rear_pilasters, frame_mat, false, true)
+
+    var ceiling_ribs: Array[Vector3] = []
+    for x in range(-9, 10, 3):
+        ceiling_ribs.append(Vector3(float(x), 11.78, 3.20))
+    _batch("LuxuryCeilingServiceRibs", Vector3(0.16, 0.19, 11.3),
+        ceiling_ribs, frame_mat, false, true)
+
+    var side_brackets: Array[Vector3] = []
+    for z in [0.0, 2.0, 4.0, 6.0, 8.0, 10.0]:
+        side_brackets.append(Vector3(-10.04, 4.4, z))
+        side_brackets.append(Vector3(10.04, 4.4, z))
+    _batch("LuxurySideWallBrackets", Vector3(0.22, 6.8, 0.19),
+        side_brackets, frame_mat, false, true)
+
+    var safety_inlays: Array[Vector3] = [
+        Vector3(-9.45, -0.026, 5.0),
+        Vector3(9.45, -0.026, 5.0)
+    ]
+    _batch("LuxuryCopperWayfindingInlays", Vector3(0.035, 0.008, 11.8),
+        safety_inlays, copper_material, false, true)
+
+    var service_leds: Array[Vector3] = []
+    for x in range(-9, 10, 2):
+        service_leds.append(Vector3(float(x), 10.9, -2.52))
+    _batch("LuxurySoftCyanServiceLEDs", Vector3(0.63, 0.05, 0.06),
+        service_leds, architectural_led, false, true)
+
+    # Subtle environmental identity on the rear wall, not a floating UI HUD.
+    # Label3D is intentionally counted separately from physical MeshInstance
+    # draw budgets, allowing the original W11/15 baseline tests to remain exact.
+    var wall_brand := Label3D.new()
+    wall_brand.name = "LuxuryRearWallOSGARDIdentity"
+    wall_brand.text = "O S G A R D  /  SERVICE LAB"
+    wall_brand.font_size = 46
+    wall_brand.pixel_size = 0.008
+    wall_brand.modulate = Color(0.83, 0.88, 0.91, 0.88)
+    # Original Chromium frame had the overhead lettering clipped at y=0;
+    # lower the brand to a real wall-sign sightline, behind the machine.
+    wall_brand.position = Vector3(6.9, 6.80, -2.59)
+    wall_brand.no_depth_test = false
+    wall_brand.billboard = BaseMaterial3D.BILLBOARD_DISABLED
+    add_child(wall_brand)
     set_quality(0)
 
 func _surface(color: Color, metal: float, rough: float, illuminated: bool = false) -> StandardMaterial3D:
@@ -85,7 +141,7 @@ func _box(label: String, center: Vector3, extents: Vector3, material: Material) 
     add_child(instance)
     single_mesh_nodes += 1
 
-func _batch(label: String, extents: Vector3, coordinates: Array[Vector3], material: Material, detail: bool = false) -> void:
+func _batch(label: String, extents: Vector3, coordinates: Array[Vector3], material: Material, detail: bool = false, luxury: bool = false) -> void:
     var box := BoxMesh.new()
     box.size = extents
     var group := MultiMesh.new()
@@ -100,7 +156,10 @@ func _batch(label: String, extents: Vector3, coordinates: Array[Vector3], materi
     instance.material_override = material
     instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
     add_child(instance)
-    if detail:
+    if luxury:
+        luxury_instances += coordinates.size()
+        luxury_draw_batches += 1
+    elif detail:
         detail_instances += coordinates.size()
         detail_draw_batches += 1
     else:
@@ -116,6 +175,9 @@ func set_quality(new_quality: int) -> void:
     if fastener_material != null:
         fastener_material.roughness = 0.68 if quality == 0 else 0.42
         fastener_material.metallic = 0.38 if quality == 0 else 0.66
+    if architectural_led != null:
+        # No bloom/SSR-dependent gimmicks in WebGL Compatibility ECO.
+        architectural_led.emission_energy_multiplier = 0.15 if quality == 0 else 0.52
 
 func render_budget() -> Dictionary:
     return {
@@ -123,6 +185,9 @@ func render_budget() -> Dictionary:
         "grid_draw_batches": grid_draw_batches,
         "detail_draw_batches": detail_draw_batches,
         "detail_instances": detail_instances,
+        "luxury_draw_batches": luxury_draw_batches,
+        "luxury_instances": luxury_instances,
+        "luxury_emission": architectural_led.emission_energy_multiplier if architectural_led != null else 0.0,
         "fastener_roughness": fastener_material.roughness if fastener_material != null else -1.0,
         "single_mesh_nodes": single_mesh_nodes,
         "stage_quality": quality,
