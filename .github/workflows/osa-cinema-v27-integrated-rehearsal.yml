@@ -1,0 +1,44 @@
+name: OSA CINEMA V27 end-to-end synthetic technical rehearsal
+on:
+  pull_request:
+    paths:
+      - 'scripts/osa-cinema-v27-integrated-chain.test.mjs'
+      - '.github/workflows/osa-cinema-v27-integrated-rehearsal.yml'
+      - 'scripts/osa-cinema-v24-*'
+      - 'scripts/osa-cinema-v25-*'
+      - 'scripts/osa-cinema-v26-*'
+      - 'scripts/osa-cinema-v27-release-board.mjs'
+  push:
+    branches: [master]
+    paths:
+      - 'scripts/osa-cinema-v27-integrated-chain.test.mjs'
+      - '.github/workflows/osa-cinema-v27-integrated-rehearsal.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  full-technical-rehearsal:
+    runs-on: ubuntu-latest
+    timeout-minutes: 16
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install actual FFmpeg and ffprobe for four synthetic movies
+        run: |
+          if ! command -v ffmpeg >/dev/null 2>&1 || ! command -v ffprobe >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y --no-install-recommends ffmpeg
+          fi
+          ffmpeg -version | head -n 1
+      - name: Verify integrated V24/V25/V26/V27 real-byte synthetic technical pipeline and fail-closed release
+        run: node --test scripts/osa-cinema-v27-integrated-chain.test.mjs
+      - name: Prohibit public recorded-film publication from synthetic acceptance
+        run: |
+          set +e
+          node scripts/osa-cinema-v20-release-audit.mjs --strict-publication > "$RUNNER_TEMP/v27-no-go.log" 2>&1
+          code=$?
+          set -e
+          test "$code" -eq 1
+          grep -q 'OSA_CINEMA_V20_NO_PUBLICATION' "$RUNNER_TEMP/v27-no-go.log"
