@@ -1,6 +1,7 @@
 import {test,expect} from '@playwright/test'
 import {PNG} from 'pngjs'
 import {captureAnimatedWebGLViewport} from './omega-browser-evidence.mjs'
+import {samplePanelPixels} from './omega-r33-panel-pixels.mjs'
 
 function sampleLuma(png,xa,xb,ya,yb){
   let sum=0,count=0
@@ -19,21 +20,6 @@ function sampleLuma(png,xa,xb,ya,yb){
 // A warm gold textual heading on a large dark left-side backdrop is the
 // actual UI's stronger visual signal. Read rendered Chromium PNG pixels;
 // no DOM mock, synthetic image or bypass of real game motion is accepted.
-function samplePanelPixels(png,xa,xb,ya,yb){
-  let gold=0,dark=0,total=0
-  for(let y=Math.floor(png.height*ya);y<Math.floor(png.height*yb);y+=3){
-    for(let x=Math.floor(png.width*xa);x<Math.floor(png.width*xb);x+=3){
-      const at=(y*png.width+x)*4
-      const r=png.data[at],g=png.data[at+1],b=png.data[at+2]
-      const luma=0.2126*r+0.7152*g+0.0722*b
-      if(r>140 && g>100 && r>g*1.05 && g>b*1.25) gold++
-      if(luma<35) dark++
-      total++
-    }
-  }
-  return {goldPixels:gold,darkRatio:dark/Math.max(1,total)}
-}
-
 test('R33 REAL desktop Tab opens left Godot government dock while the world stays rendered',async({page},info)=>{
   test.setTimeout(200000)
   const faults=[]
@@ -69,8 +55,8 @@ test('R33 REAL desktop Tab opens left Godot government dock while the world stay
   },null,2)),contentType:'application/json'})
   // R79: CDP encodes actual composited Godot pixels at bounded 960x540 on
   // software GPU. Screenshot evidence dimensions are NOT the CSS viewport.
-  // Keep the real gameplay DOM viewport 1366x768, require consistent actual
-  // compositor PNGs, exact aspect ratio and real imagery after pressing Tab.
+  // Keep the original CSS gameplay viewport 1366x768, validate EACH original
+  // PNG independently, even if CDP vs Playwright paths have different sizes.
   expect(page.viewportSize()).toEqual({width:1366,height:768})
   for(const image of [before,after]) {
     expect(image.width).toBeGreaterThanOrEqual(850)
@@ -79,8 +65,12 @@ test('R33 REAL desktop Tab opens left Godot government dock while the world stay
     expect(image.height).toBeLessThanOrEqual(768)
     expect(Math.abs(image.width/image.height-1366/768)).toBeLessThan(0.025)
   }
-  expect(before.width).toBe(after.width)
-  expect(before.height).toBe(after.height)
+  // R87.1: BOTH PNGs must depict the genuine 1366x768 CSS game, but CDP
+  // can legitimately emit 960x540 on one capture and full 1366x768 on the
+  // next. Our fixed normalized 110x100 GRID prevents raw image dimensions
+  // from manufacturing golden text or dark panel evidence.
+  expect(panelBefore.sampledPixels).toBe(11000)
+  expect(panelAfter.sampledPixels).toBe(11000)
   // Original page is real and nonblank even when city lighting is dimmer
   // than the obsolete 40/255 absolute 2D pixel threshold.
   expect(Math.max(leftBefore,rightBefore),'original live game must not be black').toBeGreaterThan(28)
