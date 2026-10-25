@@ -93,6 +93,18 @@ class W19Guard(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "archive_sha256"):
             gate.verify_pin(pin)
 
+    def test_pin_generator_never_accepts_missing_or_fabricated_artifacts(self):
+        helper_source = Path(__file__).with_name("r135-w19-candidate-pin-draft.py")
+        helper_spec = importlib.util.spec_from_file_location("r135_w19_pin_draft", helper_source)
+        assert helper_spec and helper_spec.loader
+        helper = importlib.util.module_from_spec(helper_spec)
+        helper_spec.loader.exec_module(helper)
+        with tempfile.TemporaryDirectory() as temp:
+            with self.assertRaisesRegex(ValueError, "optimized Godot artifact"):
+                helper.make_unreviewed_draft(Path(temp), "a" * 40, 123, 456)
+            with self.assertRaisesRegex(ValueError, "run ID"):
+                helper.make_unreviewed_draft(Path(temp), "a" * 40, 0, 456)
+
     def test_no_actual_godot_artifact_is_hold(self):
         with tempfile.TemporaryDirectory() as temp:
             with self.assertRaisesRegex(ValueError, "archive missing"):
