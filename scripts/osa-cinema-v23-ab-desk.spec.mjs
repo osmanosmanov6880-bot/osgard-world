@@ -66,7 +66,7 @@ test('RU/EN: real private MP4s, A/B switching, SHA, timecoded JSON export and no
   await expect.poll(()=>page.locator('#picture').evaluate(x=>x.currentTime)).toBeGreaterThan(.05)
   await page.locator('#b').click()
   await expect(page.locator('#b')).toHaveAttribute('aria-pressed','true')
-  await page.locator('#seek').fill('1')
+  await page.locator('#seek').evaluate(el=>{el.value='1';el.dispatchEvent(new Event('input',{bubbles:true}))})
   await page.locator('#subtitle').setInputFiles({name:'private-test.vtt',mimeType:'text/vtt',buffer:Buffer.from('WEBVTT\n\n00:00:00.000 --> 00:00:01.000\nПроверка речи\n')})
   await expect(page.locator('#loader')).toContainText('Черновой WebVTT подключён')
   await page.locator('#note').fill('Проверить дикторскую дорожку и корректность произношения')
