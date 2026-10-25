@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test'
 import { readFileSync } from 'node:fs'
 import { PNG } from 'pngjs'
 import { browserTouchPoint } from './omega-mobile-touch-geometry.mjs'
-import { waitForExactPublishedRelease } from './omega-browser-evidence.mjs'
+import { waitForExactPublishedRelease, captureAnimatedWebGLViewport } from './omega-browser-evidence.mjs'
 
 // This exercises the REAL public Godot 4.4.1 WebAssembly and WebGL renderer,
 // not just the marketing page or HTML canvas shell. Native v34 separately
@@ -111,8 +111,10 @@ test('authentic released Godot runs WebGL2, paints scene, handles real keyboard/
 
   // A running Godot canvas continuously resizes/paints frames. Element
   // screenshots wait for "stable" bounds forever even when WebGL renders.
-  // Capture the actual viewport instead; never wait for the animated canvas.
-  const frame=await page.screenshot({animations:'disabled',timeout:45000})
+  // Capture authentic pixels from the running WebGL viewport via bounded
+  // Chromium DevTools, actual-canvas readback or a real Playwright PNG.
+  // No HTML snapshot, generated image, missing evidence or pass-on-timeout.
+  const frame=(await captureAnimatedWebGLViewport(page)).png
   expect(frame.subarray(0,8).toString('hex')).toBe('89504e470d0a1a0a')
   expect(frame.length,'rendered world has meaningful nonblank pixels').toBeGreaterThan(9500)
   await testInfo.attach('godot-real-world-initial.png',{body:frame,contentType:'image/png'})
@@ -157,7 +159,7 @@ test('authentic released Godot runs WebGL2, paints scene, handles real keyboard/
     const enter=browserTouchPoint(bounds,'enter_vehicle')
     await page.touchscreen.tap(enter.x,enter.y)
     await page.waitForTimeout(900)
-    const entered=await page.screenshot({animations:'disabled',timeout:45000})
+    const entered=(await captureAnimatedWebGLViewport(page)).png
     const entryMotion=centralSceneMotion(frame,entered)
     await testInfo.attach('godot-mobile-after-enter-car.png',{body:entered,contentType:'image/png'})
     expect(entryMotion,'tapping the visible CAR button must actually change the world camera').toBeGreaterThan(0.08)
@@ -167,7 +169,7 @@ test('authentic released Godot runs WebGL2, paints scene, handles real keyboard/
     await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[accelerator,steering]})
     await page.waitForTimeout(1900)
     await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]})
-    const driven=await page.screenshot({animations:'disabled',timeout:45000})
+    const driven=(await captureAnimatedWebGLViewport(page)).png
     const driveMotion=centralSceneMotion(entered,driven)
     await testInfo.attach('godot-mobile-after-real-two-finger-drive.png',{body:driven,contentType:'image/png'})
     await testInfo.attach('godot-mobile-actual-control-evidence.json',{
@@ -184,7 +186,7 @@ test('authentic released Godot runs WebGL2, paints scene, handles real keyboard/
     await page.keyboard.up('a')
     await page.keyboard.up('w')
   }
-  const after=await page.screenshot({animations:'disabled',timeout:45000})
+  const after=(await captureAnimatedWebGLViewport(page)).png
   expect(after.length).toBeGreaterThan(9500)
   await testInfo.attach('godot-real-world-after-input.png',{body:after,contentType:'image/png'})
   await testInfo.attach('godot-browser-console.txt',{body:Buffer.from(logs.join('\n'))||Buffer.from(''),contentType:'text/plain'})
