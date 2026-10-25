@@ -61,8 +61,8 @@ func _run() -> void:
 	verify(hud.contains("func toggle_map()"),"phone route can toggle minimap panel")
 	verify(hud.contains("portrait_slim") and hud.contains("toast_label.add_theme_font_size_override"),
 		"actual portrait feedback and mission labels use readable compact typography")
-	verify(hud.contains("desktop_mission_stack") and hud.contains("separation",7) == false,
-		"source retains desktop mission font restoration without new fake UI")
+	verify(hud.contains("desktop_mission_stack") and hud.contains("mission_chapter_label.add_theme_font_size_override"),
+		"real HUD restores desktop chapter typography after device rotation")
 	verify(main.contains("hud.toggle_map()"),"map shortcut calls real minimap API")
 	verify(touch.contains("HORIZON_LAYOUT.compute(viewport_size)"),"quick actions obey same geometry")
 	verify(touch.contains("Input.parse_input_event(down)"),"quick actions send actual native InputMap events")
