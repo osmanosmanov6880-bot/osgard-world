@@ -130,6 +130,14 @@ jobs:
                                              'exclude_filter="textures/r135/*.png"'))
           PY
 
+      - name: W27 generate 12 original-source 512px Web-only PBR maps before native import
+        if: github.ref_name == 'feat/r135-w27-integrated-real-game-20261025'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m pip install --disable-pip-version-check --quiet Pillow==11.3.0
+          python3 scripts/r135-w27-web-pbr.py --project godot/osgard-r135-standalone
+
       - uses: chickensoft-games/setup-godot@v2
         with:
           version: 4.4.1

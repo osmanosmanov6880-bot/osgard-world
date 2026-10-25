@@ -183,7 +183,11 @@ func _ensure_real_pbr() -> void:
     for family in pbr_file_sets:
         var loaded: Array[Texture2D] = []
         for suffix in ["albedo", "normal", "orm"]:
-            var path: String = "res://textures/r135/%s_%s.png" % [family, suffix]
+            # Native keeps the original 1024px maps. The optimized Web
+            # archive intentionally excludes those large authoring originals;
+            # the CI generates 512px genuine downsampled derivatives instead.
+            var root: String = "res://textures/r135_web" if OS.has_feature("web") else "res://textures/r135"
+            var path: String = "%s/%s_%s.png" % [root, family, suffix]
             var texture: Texture2D = load(path) as Texture2D
             if texture == null:
                 pbr_load_failures += 1
