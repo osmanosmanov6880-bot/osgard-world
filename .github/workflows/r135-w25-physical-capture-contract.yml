@@ -2,7 +2,7 @@ name: OSGARD R135 W25 exact active-release physical hardware capture safety (NO 
 
 on:
   push:
-    branches: [feat/r135-w25-physical-device-source-pinned-capture-20261025]
+    branches: [feat/r135-w25-physical-device-source-pinned-capture-20261025, feat/r135-w28-hardware-beta-gate-20261025]
     paths:
       - 'scripts/r135-w25-physical-capture.mjs'
       - 'scripts/test-r135-w25-physical-capture.mjs'
