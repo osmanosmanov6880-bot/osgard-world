@@ -1,0 +1,66 @@
+name: OSGARD R135 W21 real cause-and-effect coaching and safety QA
+
+on:
+  push:
+    branches:
+      - feat/r135-w21-explainable-training-20261025
+    paths:
+      - 'godot/osgard-r135-standalone/**'
+      - '.github/workflows/r135-w21-explainable-native-qa.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  actual-godot-explainable-course:
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    steps:
+      - uses: actions/checkout@v4
+      - name: Assert explanation source is state-derived and never changes safety simulation
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          base=Path("godot/osgard-r135-standalone")
+          coach=(base/"R135LearningCoach.gd").read_text()
+          intro=(base/"R135PremiumOnboarding.gd").read_text()
+          tests=(base/"tests/learning_coach_smoke.gd").read_text()
+          assert "static func explain(state: Dictionary" in coach
+          for forbidden in ("HTTPRequest", "HTTPClient", "JavaScriptBridge.eval", "FileAccess.open",
+                            "set_motion(", "toggle_access_lid(", "scan_diagnostic("):
+              assert forbidden not in coach, f"Coach cannot operate actual rig or send telemetry: {forbidden}"
+          for required in ("wrong_order", "wrong_view", "wait_for_hatch", "interlock",
+                           "simulation_only", "CAUSES_RU", "CAUSES_EN"):
+              assert required in coach
+          assert "coach_more_button.pressed.connect(_toggle_coach_details)" in intro
+          assert "coach_detail.visible = coach_expanded" in intro
+          assert "Real wrong-view feedback" in tests
+          assert 'r135_challenge_record.cfg' not in coach
+          assert 'r135_luxury_tutorial_v1.cfg' not in coach
+          print("W21 pure factual coaching and preserved safety interlocks contract PASS")
+          PY
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: true
+      - name: Import full original HERO/ECO and all PBR textures
+        shell: bash
+        run: |
+          set -euo pipefail
+          godot --headless --editor --path godot/osgard-r135-standalone --import --quit
+      - name: Full previous W19 six-chapter and 3-case native regression
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 150s godot --headless --path godot/osgard-r135-standalone --script res://tests/smoke.gd
+      - name: W20 real profile persistence and UI regression
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 150s godot --headless --path godot/osgard-r135-standalone --script res://tests/preferences_smoke.gd
+      - name: W21 actual wrong-order, wrong-view and completed causal lessons
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 150s godot --headless --path godot/osgard-r135-standalone --script res://tests/learning_coach_smoke.gd

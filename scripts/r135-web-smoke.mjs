@@ -85,7 +85,8 @@ async function verifyRealLuxuryIntroduction(page, isMobile, name) {
 // W20: exercise real Godot-native preferences using Chromium compositor clicks
 // and native touch. This is not physical Android/iOS hardware evidence.
 async function verifyW20PlayerSettings(page, isMobile, name) {
-  if (process.env.R135_CANDIDATE_VERSION !== 'r135-player-settings-w20-candidate-20261025') return
+  if (!['r135-player-settings-w20-candidate-20261025',
+       'r135-explainable-training-w21-candidate-20261025'].includes(process.env.R135_CANDIDATE_VERSION)) return
   const start = await expectState(page, x => x?.player_preferences_schema === 1
     && x?.player_preferences_save_ok === true && x?.player_settings_control_css_px >= 43.5,
     'W20 real player settings not readable, saved, or accessible')
@@ -126,6 +127,31 @@ async function verifyW20PlayerSettings(page, isMobile, name) {
   await expectState(page, x => !x?.tutorial_expanded && x?.hud_visible === true,
     'W20 after settings close must restore real interactive operator HUD')
   console.log('W20 real Godot settings PASS:', name, { quality: 0, motion: originalMotion })
+}
+
+// W21: the WHAT/WHY drill is an actual Godot Control in the same game canvas.
+// The GUI stays safety-locked; no tests inject fictitious scores or faults.
+async function verifyW21CausalLesson(page, isMobile, name) {
+  if (process.env.R135_CANDIDATE_VERSION !== 'r135-explainable-training-w21-candidate-20261025') return
+  await hitLuxuryControl(page, 'tutorial_collapse_center', isMobile)
+  const initial = await expectState(page, x => x?.tutorial_expanded === true
+    && x?.coach_status === 'intro'
+    && x?.coach_summary_text?.length > 35
+    && x?.coach_button_css_height >= 43.5 && x?.coach_toggle_center?.x > 0,
+    'W21 genuine short cause-and-effect lesson is missing')
+  await hitLuxuryControl(page, 'coach_toggle_center', isMobile)
+  await expectState(page, x => x?.coach_explanation_open === true
+    && x?.coach_details_text?.includes('ТОЛЬКО СИМУЛЯЦИЯ')
+    && x?.tutorial_expanded === true,
+    'W21 genuine WHY keyboard/touch control did not reveal the detailed explanation')
+  await captureRealViewport(page, 'w21-' + name + '-explainable-course.png')
+  await hitLuxuryControl(page, 'coach_toggle_center', isMobile)
+  await expectState(page, x => x?.coach_explanation_open === false
+    && x?.coach_details_text === '' && x?.tutorial_step === initial.tutorial_step,
+    'W21 hide explanation must not mutate lesson progression')
+  await hitLuxuryControl(page, 'tutorial_collapse_center', isMobile)
+  await expectState(page, x => x?.tutorial_expanded === false,
+    'W21 hiding course must preserve real simulator operator controls')
 }
 
 async function keyboardMission(page) {
@@ -621,6 +647,7 @@ try {
       }
       await verifyRealLuxuryIntroduction(page, isMobile, name)
       await verifyW20PlayerSettings(page, isMobile, name)
+      await verifyW21CausalLesson(page, isMobile, name)
       if (!boot.hud_rect || !boot.action_rect || boot.hud_rect.h > boot.viewport_h * .28 ||
           boot.hud_rect.y + boot.hud_rect.h >= boot.action_rect.y - 20) {
         throw new Error('W11 initial HUD obscures scene: ' + JSON.stringify({
