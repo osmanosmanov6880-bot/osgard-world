@@ -39,6 +39,7 @@ var window_points: Array[Transform3D] = []
 var facade_windows: MultiMeshInstance3D
 var facade_frames: MultiMeshInstance3D
 var architecture_trim: MultiMeshInstance3D
+var r98_facade_ribs: MultiMeshInstance3D
 var streetfront: Node3D
 var facade_balconies: Node3D
 var road_paint: Node3D
@@ -61,6 +62,7 @@ const ROAD_PAINT_SCENE = preload("res://scripts/horizon_road_paint_batches.gd")
 const ROAD_PUDDLES = preload("res://scripts/horizon_rain_puddles.gd")
 const R90_URBAN = preload("res://scripts/horizon_r90_street_dressing.gd")
 const R95_MASSING = preload("res://scripts/horizon_r95_city_massing.gd")
+const R98_FINS = preload("res://scripts/horizon_r98_architectural_fins.gd")
 var asphalt_pbr: StandardMaterial3D
 var concrete_pbr: StandardMaterial3D
 var r90_original_asphalt_albedo: Texture2D
@@ -89,11 +91,14 @@ func _ready() -> void:
 	road_puddles = ROAD_PUDDLES.new()
 	city_root.add_child(road_puddles)
 	architecture_trim = ARCHITECTURE_TRIM.new()
+	r98_facade_ribs = R98_FINS.new()
 	streetfront = STREETFRONT_SCENE.new()
 	facade_balconies = BALCONIES_SCENE.new()
 	_create_city()
 	architecture_trim.call("finalize")
 	city_root.add_child(architecture_trim)
+	r98_facade_ribs.call("finalize")
+	city_root.add_child(r98_facade_ribs)
 	streetfront.call("finalize")
 	city_root.add_child(streetfront)
 	facade_balconies.call("finalize")
@@ -240,6 +245,7 @@ func _create_city() -> void:
 				var pos := Vector3(x+offset,height*0.5,z+(offset if (ix + iz) % 2 == 0 else -offset))
 				_box(chunk,"Building_%03d" % building_count,Vector3(width,height,width),pos,color,true)
 				architecture_trim.call("record",pos,width,height)
+				r98_facade_ribs.call("record",pos,width,height,id)
 				# Entrances and the ground-floor window gap must share the same
 				# street-facing facade; never face an interior wall at random.
 				var entrance_face: int = STREETFRONT_SCENE.road_facing_variant(
@@ -531,6 +537,8 @@ func apply_visual_budget(mode: String) -> void:
 		horizon_scenic.call("update_streetlights",ambience_time,visual_budget,streetlight_focus)
 	if architecture_trim != null:
 		architecture_trim.visible = visual_budget != "low"
+	if r98_facade_ribs != null:
+		r98_facade_ribs.call("set_quality",visual_budget)
 	if streetfront != null:
 		streetfront.visible = visual_budget != "low"
 	if facade_balconies != null:
