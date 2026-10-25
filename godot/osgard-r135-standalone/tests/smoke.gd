@@ -330,6 +330,30 @@ func _run() -> void:
         _fail("W14 invented per-fault attempts in legacy save")
         return
     migrated.free()
+    # Corrupted local numeric arrays must clamp/recover, never inject fake
+    # attempts/scores or throw while opening the simulation.
+    var corrupt := ConfigFile.new()
+    corrupt.set_value("progress", "best_score", "INVALID")
+    corrupt.set_value("progress", "cleared_cases", "NOT_AN_ARRAY")
+    corrupt.set_value("progress", "case_attempts", ["bad", -8, 9999999])
+    corrupt.set_value("progress", "case_best_scores", [10000, -5, 32])
+    corrupt.set_value("progress", "case_best_seconds", [-40.0, 3.5, "invalid"])
+    corrupt.set_value("progress", "case_total_mistakes", [0, 9999999999, "bad"])
+    if corrupt.save("user://r135_challenge_record.cfg") != OK:
+        _fail("W14 could not create a malformed local record fixture")
+        return
+    var cleaned: Node = preload("res://R135ServiceDirector.gd").new()
+    cleaned.call("_load_challenge_record")
+    if int(cleaned.get("challenge_best_score")) != 0 or cleaned.get("case_attempts") != [0, 0, 1000000]:
+        _fail("W14 malformed attempt scores were not sanitized")
+        return
+    if cleaned.get("case_best_scores") != [150, 0, 32] or cleaned.get("case_total_mistakes") != [0, 1000000, 0]:
+        _fail("W14 out-of-range scores or mistakes were not clamped")
+        return
+    if cleaned.get("case_best_seconds") != [-1.0, 3.5, -1.0]:
+        _fail("W14 bad finish times did not preserve unknown sentinel")
+        return
+    cleaned.free()
     if full_record.save("user://r135_challenge_record.cfg") != OK:
         _fail("W14 could not restore real progress after migration fixture")
         return
