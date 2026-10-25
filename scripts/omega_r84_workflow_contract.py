@@ -42,8 +42,9 @@ def validate(source: str) -> None:
            "--expected public/games/omega-3d-preview/release.json" in live and
            "--base https://osgard.world/games/omega-3d-preview" in live,
            "seven independently downloaded public binary hashes required")
-    insist("assert d['status']=='PASS' and len(d['files'])==7" in live,
-           "original 7/7 integrity is a mandatory hard failure")
+    insist("assert d['status']=='PASS' and d['verified_files']==7" in live and
+           "assert len(d['results'])==7 and all(x['sha256']=='matched' for x in d['results'])" in live,
+           "original R50 verified_files/results schema must attest all seven assets")
     insist("npm ci" in live and "npx playwright install --with-deps chromium" in live,
            "need real pinned browser, not fake pixels")
     insist("OMEGA_CI_GL_BACKEND: mesa" in live and
