@@ -43,6 +43,8 @@ func _run() -> void:
     if audio_button.custom_minimum_size.y < 43.0:
         _fail("Audio accessibility control must have touch-friendly size")
         return
+    # W20 preferences are saved across native smoke steps; test RU explicitly.
+    scene.call("_set_locale", "ru")
     sound.call("cue", "drive_stop")
     var state: Dictionary = sound.call("snapshot")
     if int(state.get("cue_count", 0)) != 1 or int(state.get("audible_count", 0)) != 0:
