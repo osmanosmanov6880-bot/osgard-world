@@ -16,6 +16,7 @@ import math
 import re
 import struct
 import sys
+import zlib
 from pathlib import Path
 
 SCHEMA = "empire-omega-r73-field-campaign-v1"
@@ -90,6 +91,79 @@ def make_template(manifest: dict, missions: list[dict]) -> dict:
     }
 
 
+def validate_decodable_png(path: Path) -> None:
+    """Validate real, complete, bounded non-interlaced PNG RGB/RGBA bytes.
+
+    This checks PNG chunk CRCs, zlib stream, expected decoded scanline byte
+    count and valid per-line PNG filter methods; it does NOT determine what
+    the rendered game screenshot depicts. That requires a human reviewer.
+    """
+    size = path.stat().st_size
+    require(100 <= size <= 64 * 1024 * 1024, f"PNG evidence too large or empty: {path.name}")
+    with path.open("rb") as f:
+        require(f.read(8) == PNG_SIGNATURE, f"invalid PNG signature: {path.name}")
+        saw_header = False
+        saw_pixels = False
+        saw_end = False
+        decoder = zlib.decompressobj()
+        width = height = stride = expected = produced_count = 0
+        scanline = bytearray()
+        while True:
+            header = f.read(8)
+            if not header:
+                break
+            require(len(header) == 8, f"truncated PNG chunk header: {path.name}")
+            length, kind = struct.unpack(">I4s", header)
+            require(length <= 64 * 1024 * 1024 and kind.isalpha(),
+                    f"unsafe PNG chunk: {path.name}")
+            payload = f.read(length)
+            crc_raw = f.read(4)
+            require(len(payload) == length and len(crc_raw) == 4,
+                    f"truncated PNG chunk: {path.name}")
+            actual_crc = zlib.crc32(kind + payload) & 0xFFFFFFFF
+            require(actual_crc == struct.unpack(">I", crc_raw)[0],
+                    f"PNG CRC mismatch: {path.name}")
+            if not saw_header:
+                require(kind == b"IHDR" and length == 13,
+                        f"PNG first chunk is not IHDR: {path.name}")
+                width, height, bit_depth, color_type, compression, filtering, interlace = \
+                    struct.unpack(">IIBBBBB", payload)
+                require(160 <= width <= 8192 and 160 <= height <= 8192,
+                        f"implausible screenshot resolution: {path.name}")
+                require(bit_depth == 8 and color_type in (2, 6) and
+                        compression == 0 and filtering == 0 and interlace == 0,
+                        f"unsupported screenshot PNG format: {path.name}")
+                stride = width * (3 if color_type == 2 else 4)
+                expected = (stride + 1) * height
+                require(expected <= 128 * 1024 * 1024,
+                        f"PNG decoded pixels exceed QA limit: {path.name}")
+                saw_header = True
+            elif kind == b"IDAT":
+                require(not saw_end, f"PNG data after end: {path.name}")
+                saw_pixels = True
+                chunk = decoder.decompress(payload, expected + 1 - produced_count)
+                produced_count += len(chunk)
+                scanline.extend(chunk)
+                require(produced_count <= expected and not decoder.unconsumed_tail,
+                        f"PNG inflated pixels exceed expected dimensions: {path.name}")
+            elif kind == b"IEND":
+                require(length == 0 and saw_pixels and not saw_end,
+                        f"bad PNG image end: {path.name}")
+                saw_end = True
+                require(decoder.eof and not decoder.unused_data,
+                        f"PNG deflate stream incomplete: {path.name}")
+                require(produced_count == expected and len(scanline) == expected,
+                        f"PNG pixels do not match dimensions: {path.name}")
+                for row in range(height):
+                    require(scanline[row * (stride + 1)] in (0, 1, 2, 3, 4),
+                            f"PNG invalid scanline filter: {path.name}")
+                require(f.read(1) == b"", f"PNG trailing bytes: {path.name}")
+                break
+            else:
+                require(not saw_pixels, f"PNG unexpected chunk after image data: {path.name}")
+        require(saw_header and saw_pixels and saw_end, f"PNG missing image chunks: {path.name}")
+
+
 def checked_media(root: Path, filename: object, digest: object, kind: str) -> None:
     require(isinstance(filename, str) and SAFE_FILE.fullmatch(filename) is not None
             and filename not in (".", ".."), f"unsafe {kind} filename")
@@ -103,11 +177,8 @@ def checked_media(root: Path, filename: object, digest: object, kind: str) -> No
     with p.open("rb") as stream:
         head = stream.read(32)
         if kind == "image":
-            require(filename.lower().endswith(".png") and head.startswith(PNG_SIGNATURE)
-                    and head[12:16] == b"IHDR", f"not a PNG: {filename}")
-            width, height = struct.unpack(">II", head[16:24])
-            require(width >= 160 and height >= 160 and width <= 8192 and height <= 8192,
-                    f"implausible screenshot resolution: {filename}")
+            require(filename.lower().endswith(".png"), f"not a PNG: {filename}")
+            validate_decodable_png(p)
         else:
             require((filename.lower().endswith(".mp4") and head[4:8] == b"ftyp") or
                     (filename.lower().endswith(".webm") and head[:4] == b"\x1a\x45\xdf\xa3"),
@@ -149,6 +220,7 @@ def verify_campaign(submission: dict, manifest: dict, missions: list[dict],
     entries = submission.get("missions")
     require(isinstance(entries, list) and len(entries) == 40, "exactly forty ordered mission records required")
     used_images: set[str] = set()
+    used_image_digests: set[str] = set()
     last_finish = 0.0
     for index, (entry, authored) in enumerate(zip(entries, missions)):
         require(isinstance(entry, dict), f"bad record at mission {index + 1}")
@@ -167,7 +239,10 @@ def verify_campaign(submission: dict, manifest: dict, missions: list[dict],
         image = entry.get("screen_file")
         require(image not in used_images, f"reused screenshot filename at {label}")
         used_images.add(image)
-        checked_media(evidence_dir, image, entry.get("screen_sha256"), "image")
+        digest = entry.get("screen_sha256")
+        require(digest not in used_image_digests, f"reused screenshot pixel file at {label}")
+        checked_media(evidence_dir, image, digest, "image")
+        used_image_digests.add(digest)
     checkpoints = submission.get("save_reload_checkpoints")
     require(isinstance(checkpoints, list) and len(checkpoints) == len(CHECKPOINTS),
             "three mandatory save/reload checkpoints required")
@@ -180,11 +255,17 @@ def verify_campaign(submission: dict, manifest: dict, missions: list[dict],
         image = entry.get("screen_file")
         require(image not in used_images, f"duplicate checkpoint screenshot at stage {stage}")
         used_images.add(image)
-        checked_media(evidence_dir, image, entry.get("screen_sha256"), "image")
+        digest = entry.get("screen_sha256")
+        require(digest not in used_image_digests,
+                f"reused screenshot image at checkpoint {stage}")
+        checked_media(evidence_dir, image, digest, "image")
+        used_image_digests.add(digest)
     return {
         "schema": VERDICT_SCHEMA, "source_commit": sha,
         "status": "EVIDENCE_READY_FOR_INDEPENDENT_REVIEW",
         "mission_records_checked": 40, "distinct_screenshot_files_checked": 43,
+        "decodable_png_images_checked": 43,
+        "duplicate_image_bytes_rejected": True,
         "save_reload_checkpoints_checked": list(CHECKPOINTS),
         "recording_digest_checked": True,
         "browser_or_hardware_run_independently_witnessed": False,
