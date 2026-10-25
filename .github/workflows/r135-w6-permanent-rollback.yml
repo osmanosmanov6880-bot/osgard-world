@@ -1,0 +1,95 @@
+name: R135 W6.4 SHA-verified permanent rollback archive
+on:
+  push:
+    branches: [release/r135-w11-verified-promotion-20261025]
+    paths:
+      - "scripts/r135-w6-rollback-pin.json"
+  workflow_dispatch:
+permissions:
+  contents: write
+  actions: read
+concurrency:
+  group: r135-w6-immutable-rollback
+  cancel-in-progress: false
+jobs:
+  preserve:
+    if: github.ref == 'refs/heads/release/r135-w11-verified-promotion-20261025'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Require original successful W6.4 Godot/WebGL build
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          PIN=scripts/r135-w6-rollback-pin.json
+          test "$(jq -r '.artifact_run_id' "$PIN")" = 40109700192
+          test "$(jq -r '.source_commit' "$PIN")" = 947b4627080636543ae5e873b88b50e61f13beb4
+          test "$(jq -r '.version' "$PIN")" = r135-web-framing-w6-20261024
+          test "$(jq -r '.manifest_sha256' "$PIN")" = 0638f1ad5c0ab26d2d112e63bd1759923e5401a85ad4f2cedd450bbb7def2f61
+          test "$(jq -r '.archive_sha256' "$PIN")" = 5f53b6bf964cf494794cd0a22f24f235090fe94e4c3d3b5fd06f264cf5594507
+          test "$(jq -r '.release_tag' "$PIN")" = r135-w6-4-known-good-20261025
+          gh api "repos/osmanosmanov6880-bot/osgard-world/actions/runs/40109700192" \
+            | jq -e '.conclusion=="success" and .status=="completed" and .head_sha=="947b4627080636543ae5e873b88b50e61f13beb4"'
+          mkdir -p "$RUNNER_TEMP/r135-w6-known-good"
+          gh run download 40109700192 --repo osmanosmanov6880-bot/osgard-world \
+            --name osgard-r135-optimized-web-qa --dir "$RUNNER_TEMP/r135-w6-known-good"
+
+      - name: Revalidate SHA-256 ZIP, embedded manifest, all 8 W6 game files
+        shell: bash
+        run: |
+          set -euo pipefail
+          DIR="$RUNNER_TEMP/r135-w6-known-good/r135-optimized-release"
+          test -s "$DIR/OSGARD_R135_OPTIMIZED_WEB.zip"
+          test -s "$DIR/R135_OPTIMIZED_MANIFEST.json"
+          echo "0638f1ad5c0ab26d2d112e63bd1759923e5401a85ad4f2cedd450bbb7def2f61  $DIR/R135_OPTIMIZED_MANIFEST.json" | sha256sum -c -
+          echo "5f53b6bf964cf494794cd0a22f24f235090fe94e4c3d3b5fd06f264cf5594507  $DIR/OSGARD_R135_OPTIMIZED_WEB.zip" | sha256sum -c -
+          python3 scripts/r135-release-stage.py \
+            "$DIR/OSGARD_R135_OPTIMIZED_WEB.zip" "$DIR/R135_OPTIMIZED_MANIFEST.json" \
+            "$RUNNER_TEMP/r135-w6-permanent-stage"
+          python3 - <<'PY'
+          import json,os
+          from pathlib import Path
+          m=json.loads((Path(os.environ["RUNNER_TEMP"])/"r135-w6-permanent-stage/release.json").read_text())
+          assert m["version"]=="r135-web-framing-w6-20261024"
+          assert m["source_commit"]=="947b4627080636543ae5e873b88b50e61f13beb4"
+          assert m["original_glbs_preserved"] is True
+          assert len(m["files"]) == 8
+          print("W6.4 exact known-good rollback source, 8 file hashes and original HERO/ECO flags verified")
+          PY
+
+      - name: Verify restored W6.4 through production-style Nginx WASM/PCK
+        shell: bash
+        env:
+          OSGARD_EXPECTED_R135_SOURCE: 947b4627080636543ae5e873b88b50e61f13beb4
+          OSGARD_EXPECTED_R135_VERSION: r135-web-framing-w6-20261024
+          OSGARD_EXPECTED_R135_MANIFEST_SHA256: 0638f1ad5c0ab26d2d112e63bd1759923e5401a85ad4f2cedd450bbb7def2f61
+        run: bash scripts/r135-nginx-wasm-smoke.sh "$RUNNER_TEMP/r135-w6-permanent-stage"
+
+      - name: Publish W6.4 backup once, verify its actual re-downloaded bytes
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          TAG=r135-w6-4-known-good-20261025
+          DIR="$RUNNER_TEMP/r135-w6-known-good/r135-optimized-release"
+          if gh release view "$TAG" --repo osmanosmanov6880-bot/osgard-world >/dev/null 2>&1; then
+            echo "Existing W6.4 tag requires independent audit; refusing overwrite" >&2
+            exit 1
+          fi
+          gh release create "$TAG" --repo osmanosmanov6880-bot/osgard-world \
+            --target 947b4627080636543ae5e873b88b50e61f13beb4 --latest=false --draft \
+            --title "OSGARD R135 W6.4 — immutable known-good recovery" \
+            --notes "Original validated Godot 4.4.1 WebGL backup. Source 947b462708..., manifest SHA-256 0638f1ad..., ZIP SHA-256 5f53b6bf.... Exact original 8 files and Nginx WASM/PCK verified. Software-based browser verification only; no physical-device FPS guarantee."
+          gh release upload "$TAG" \
+            "$DIR/OSGARD_R135_OPTIMIZED_WEB.zip" "$DIR/R135_OPTIMIZED_MANIFEST.json" \
+            --repo osmanosmanov6880-bot/osgard-world
+          mkdir -p "$RUNNER_TEMP/w6-backup-redownload"
+          gh release download "$TAG" --repo osmanosmanov6880-bot/osgard-world --dir "$RUNNER_TEMP/w6-backup-redownload"
+          echo "0638f1ad5c0ab26d2d112e63bd1759923e5401a85ad4f2cedd450bbb7def2f61  $RUNNER_TEMP/w6-backup-redownload/R135_OPTIMIZED_MANIFEST.json" | sha256sum -c -
+          echo "5f53b6bf964cf494794cd0a22f24f235090fe94e4c3d3b5fd06f264cf5594507  $RUNNER_TEMP/w6-backup-redownload/OSGARD_R135_OPTIMIZED_WEB.zip" | sha256sum -c -
+          gh release edit "$TAG" --repo osmanosmanov6880-bot/osgard-world --draft=false --latest=false
+          echo "W6 recovery release persisted; neither master nor VPS was changed"

@@ -106,3 +106,27 @@ static func time_alpha(response: float, dt: float) -> float:
 	if not is_finite(response) or not is_finite(dt) or dt <= 0.0:
 		return 0.0
 	return 1.0-exp(-clampf(dt,0.0,0.10)*clampf(response,0.0,25.0))
+
+
+# R34 quiet-cinema cabinet shot, entirely in camera-space. The game camera
+# keeps its normal collision-safe raycast and the player's original yaw/pitch
+# remain untouched after Tab. No effect on mobile or reduced-motion setting.
+static func cabinet_cinema_enabled(open: bool, viewport: Vector2, reduced_motion: bool) -> bool:
+	return open and not reduced_motion and viewport.x>=1000.0 and viewport.y>=640.0
+
+static func cabinet_pitch(current_pitch: float, open: bool, viewport: Vector2, reduced_motion: bool) -> float:
+	var safe_pitch: float = clampf(current_pitch if is_finite(current_pitch) else 0.38,0.08,1.18)
+	if not cabinet_cinema_enabled(open,viewport,reduced_motion):
+		return safe_pitch
+	# An angle around 12 degrees avoids the top-down roof-map appearance.
+	return minf(safe_pitch,0.22)
+
+static func cabinet_focus(current_focus: Vector3, yaw: float, open: bool, viewport: Vector2,
+		reduced_motion: bool) -> Vector3:
+	if not current_focus.is_finite():
+		return Vector3.ZERO
+	if not cabinet_cinema_enabled(open,viewport,reduced_motion) or not is_finite(yaw):
+		return current_focus
+	var street_forward := Vector3(-sin(yaw),0,-cos(yaw))
+	# Push visible scenery ahead without disconnecting input/collision authority.
+	return current_focus+street_forward*1.20

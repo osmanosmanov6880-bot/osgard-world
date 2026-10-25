@@ -3,6 +3,28 @@ import { readFileSync,existsSync } from 'node:fs'
 import { parsePlayCollection,emptyPlayCollection,toggleFavorite,visitGame } from '../src/playCollection.ts'
 import { playGames,cases } from '../src/redesignCatalog.ts'
 import { PLAY_GAME_IDS, PLAY_GENRES, FEATURED_PLAY_WORLDS } from '../src/playCatalogIndex.ts'
+// Do not hardcode the historical W6 step title as the only secure release path.
+// W11 must download the immutable reviewed GitHub release, never a floating run.
+function r135VerifiedDeployment() {
+  const deploy = readFileSync('.github/workflows/deploy-frontend.yml', 'utf8')
+  if (deploy.includes('Stage verified native R135 Godot Web export') &&
+      deploy.includes('scripts/r135-release-stage.py')) return true
+  if (!deploy.includes('Stage exact immutable W11 Godot Web release') ||
+      !deploy.includes('gh release download "$TAG"') ||
+      !deploy.includes('scripts/r135-w11-release-pin.json') ||
+      !deploy.includes('scripts/r135-release-stage.py')) return false
+  const pinPath = 'scripts/r135-w11-release-pin.json'
+  if (!existsSync(pinPath)) return false
+  const pin = JSON.parse(readFileSync(pinPath, 'utf8'))
+  return pin.version === 'r135-web-legibility-w11-20261024' &&
+    pin.release_tag === 'r135-web-legibility-w11-20261025' &&
+    /^[0-9a-f]{40}$/.test(pin.source_commit) &&
+    /^[0-9a-f]{64}$/.test(pin.manifest_sha256) &&
+    /^[0-9a-f]{64}$/.test(pin.archive_sha256) &&
+    Number.isSafeInteger(pin.artifact_run_id) &&
+    pin.reviewed_portrait === true && pin.reviewed_desktop === true &&
+    pin.software_only === true
+}
 const ids=playGames.map(g=>g.id)
 assert.deepEqual(PLAY_GAME_IDS,ids,'Compact home index must stay aligned with the full game catalog')
 assert.deepEqual(PLAY_GENRES,[...new Set(playGames.map(g=>g.genre))],'Compact home filters must match game genres')
@@ -11,7 +33,7 @@ let p=toggleFavorite(emptyPlayCollection(),'time');assert.deepEqual(p.favorites,
 p=visitGame(visitGame(visitGame(p,'time'),'swarm'),'time');assert.deepEqual(p.recent,['time','swarm'])
 assert.deepEqual(parsePlayCollection('{"favorites":["time","time","unknown",12],"recent":["swarm"]}',ids),{favorites:['time'],recent:['swarm']})
 assert.throws(()=>parsePlayCollection('{',ids));assert.throws(()=>parsePlayCollection(' '.repeat(10001),ids));assert.throws(()=>parsePlayCollection('{"favorites":42}',ids))
-for(const game of playGames){assert.ok(existsSync('public'+game.asset));if(game.launchable&&!['time','null-shift'].includes(game.id)){let path='public'+game.href; if(path.endsWith('/'))path+='index.html';if(game.id==='r136-precision'&&!existsSync(path)){assert.ok(existsSync('.github/workflows/r136-godot-web.yml'),'R136 release workflow missing')}else if(game.id==='r135-service'&&!existsSync(path)){assert.ok(existsSync('scripts/r135-release-stage.py')&&readFileSync('.github/workflows/deploy-frontend.yml','utf8').includes('Stage verified native R135 Godot Web export'),'R135 runtime must be SHA-verified and staged by deploy')}else assert.ok(existsSync(path),'Launch target missing: '+game.id)}assert.ok(game.warning&&game.save&&game.online&&game.controls)}
+for(const game of playGames){assert.ok(existsSync('public'+game.asset));if(game.launchable&&!['time','null-shift'].includes(game.id)){let path='public'+game.href; if(path.endsWith('/'))path+='index.html';if(game.id==='r136-precision'&&!existsSync(path)){assert.ok(existsSync('.github/workflows/r136-godot-web.yml'),'R136 release workflow missing')}else if(game.id==='r135-service'&&!existsSync(path)){assert.ok(existsSync('scripts/r135-release-stage.py') && r135VerifiedDeployment(),'R135 runtime must be SHA-verified and staged by deploy')}else assert.ok(existsSync(path),'Launch target missing: '+game.id)}assert.ok(game.warning&&game.save&&game.online&&game.controls)}
 assert.equal(playGames.length,23)
 assert.equal(new Set(ids).size,23)
 const godot=playGames.find(g=>g.id==='null-shift')

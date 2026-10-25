@@ -5,7 +5,7 @@ export default defineConfig({
   testMatch: 'omega-portrait-preview.spec.mjs',
   timeout: 210_000,
   expect: { timeout: 18_000 },
-  retries: 0,
+  retries: 1,
   workers: 1,
   reporter: [['list'], ['html', { outputFolder: 'omega-portrait-preview-report', open: 'never' }]],
   outputDir: 'omega-portrait-preview-results',

@@ -577,6 +577,30 @@ trap 'stop_activation_worker 129' HUP
     printf 'failed\n' > "$state_file"
     exit 1
   fi
+  # R135: verify the exact published candidate BYTES inside the active Nginx
+  # container BEFORE activation_committed=1. The caller supplies only reviewed
+  # source/version/SHA pins from scripts/r135-w11-release-pin.json.
+  if [[ -n "${OSGARD_EXPECTED_R135_MANIFEST_SHA256:-}" ]]; then
+    if ! [[ "$OSGARD_EXPECTED_R135_MANIFEST_SHA256" =~ ^[0-9a-f]{64}$ && "${OSGARD_EXPECTED_R135_SOURCE:-}" =~ ^[0-9a-f]{40}$ ]]; then
+      echo 'R135 candidate source/manifest acceptance pins are missing or invalid' >&2
+      rollback
+      printf 'failed\n' > "$state_file"
+      exit 1
+    fi
+    r135_path=/usr/share/nginx/html/games/r135-service/release.json
+    r135_live_sha="$(docker exec "$container_name" cat "$r135_path" | sha256sum | awk '{print $1}')"
+    if [[ "$r135_live_sha" != "$OSGARD_EXPECTED_R135_MANIFEST_SHA256" ]] || \
+       ! docker exec "$container_name" cat "$r135_path" | \
+            OSGARD_EXPECTED_R135_SOURCE="$OSGARD_EXPECTED_R135_SOURCE" \
+            OSGARD_EXPECTED_R135_VERSION="$OSGARD_EXPECTED_R135_VERSION" python3 -c 'import json,os,sys; m=json.load(sys.stdin); assert m["source_commit"]==os.environ["OSGARD_EXPECTED_R135_SOURCE"] and m["version"]==os.environ["OSGARD_EXPECTED_R135_VERSION"] and m["engine"]=="Godot 4.4.1"'; then
+      echo 'R135 release bytes/source/version did not match reviewed candidate BEFORE activation commit' >&2
+      rollback
+      printf 'failed\n' > "$state_file"
+      exit 1
+    fi
+    echo 'R135 W11 source, version and SHA-256 match the active local Nginx container'
+  fi
+
   # After this commit point the public routes have all passed. A cancellation
   # during optional backup cleanup must retain the verified running release.
   activation_committed=1
