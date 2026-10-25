@@ -4,6 +4,11 @@ on:
     branches: [master]
     paths:
       - 'godot/empire-omega/tests/v72_r55_forty_mission_event_save.gd'
+      - 'godot/empire-omega/scripts/mission_manager.gd'
+      - 'godot/empire-omega/scripts/main.gd'
+      - 'godot/empire-omega/scripts/hud.gd'
+      - 'godot/empire-omega/scripts/game_state.gd'
+      - 'scripts/omega-campaign-action-wiring.contract.test.py'
       - '.github/workflows/omega-r55-full-campaign-save-qa.yml'
   workflow_dispatch:
 permissions:
@@ -14,6 +19,12 @@ jobs:
     timeout-minutes: 18
     steps:
       - uses: actions/checkout@v4
+      - name: R63 static 40-mission player-action wiring before any expensive Godot work
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/omega-campaign-action-wiring.contract.test.py --self-test
+          python3 scripts/omega-campaign-action-wiring.contract.test.py --output omega-r63-action-wiring-evidence.json
       - uses: chickensoft-games/setup-godot@v2
         with:
           version: 4.4.1
@@ -57,6 +68,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: omega-r55-native-40-missions-save-recovery
-          path: godot/empire-omega/tests/r55-campaign-event-save-evidence.json
+          path: |
+            godot/empire-omega/tests/r55-campaign-event-save-evidence.json
+            omega-r63-action-wiring-evidence.json
           if-no-files-found: warn
           retention-days: 15
