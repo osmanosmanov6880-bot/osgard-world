@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="dark">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; media-src blob:; img-src data: blob:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<title>OSA CINEMA / Private Caption Studio V19</title>
+<style>
+:root{font:14px/1.55 system-ui,Segoe UI,Arial,sans-serif;background:#0d0c0a;color:#f1e7d9;color-scheme:dark;--muted:#c0af98;--gold:#dabe91;--panel:#191611;--border:#5b4a35;--warning:#ffbda5}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(ellipse at 75% 0%,#4b382238,transparent 65%),#0d0c0a}
+.layout{width:min(1500px,100%);margin:auto;padding:clamp(16px,3vw,42px)}
+header{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;border-bottom:1px solid var(--border);padding-bottom:16px}
+.brand{letter-spacing:.22em;font-size:11px;color:#ead5b3;font-weight:700}.brand b{font-size:23px;color:var(--gold)}
+.status-label{border:1px solid #b78365;padding:8px 13px;font-size:10px;color:var(--warning);letter-spacing:.07em}
+.eyebrow{text-transform:uppercase;color:var(--gold);font-size:10px;letter-spacing:.2em;margin:30px 0 8px}
+h1,h2,h3{font-family:Georgia,Times New Roman,serif;font-weight:400;line-height:1.13}
+h1{font-size:clamp(34px,4.8vw,65px);margin:4px 0 13px;letter-spacing:-.025em}
+h2{font-size:clamp(24px,2.6vw,35px);margin:0 0 18px}h3{font-size:23px;margin:25px 0 12px}
+p{color:var(--muted);margin:10px 0;max-width:1000px}
+.columns{display:grid;grid-template-columns:minmax(0,1.16fr) minmax(0,1fr);gap:17px;align-items:start;margin-top:28px}
+.card{padding:clamp(16px,2.2vw,26px);background:var(--panel);border:1px solid var(--border);min-width:0}
+label{display:block;margin:12px 0 6px;font-size:11px;font-weight:600;color:var(--gold)}
+input,select,textarea{font:inherit;padding:11px 12px;width:100%;min-width:0;background:#0e0d0b;border:1px solid #766145;color:#f7eee2;border-radius:0}
+textarea{min-height:85px;resize:vertical}
+input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+button{font:inherit;border:1px solid #a18357;background:#302618;color:#f5e7cf;padding:10px 13px;min-height:45px;cursor:pointer}
+button:hover{background:#41311f}button:disabled{opacity:.45;cursor:not-allowed}
+button.primary{background:var(--gold);color:#1f1a12;font-weight:750;border-color:var(--gold)}
+.stack{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.stack button{flex:1 1 135px}
+.video{aspect-ratio:16/9;width:100%;background:#060605;border:1px solid #665035}
+video{display:block;width:100%;height:100%;object-fit:contain;background:#080807}
+.status{font-size:12px;padding:11px 13px;color:#ead1a8;background:#352718;border-left:3px solid var(--gold);margin:13px 0;overflow-wrap:anywhere}
+.status.error{color:var(--warning);border-color:#ea866d}
+.meta{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border:1px solid #53412f;margin:14px 0}
+.meta div{padding:10px;background:#221c14;border-right:1px solid #53412f;min-width:0}
+.meta small{display:block;font-size:10px;color:var(--muted)}.meta b{font-size:12px;overflow-wrap:anywhere}
+.edit-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+#cueList{display:grid;gap:7px;max-height:375px;overflow-y:auto;overscroll-behavior:contain;padding-right:3px}
+.cue-row{display:flex;align-items:start;justify-content:space-between;gap:12px;text-align:left;width:100%;min-width:0;border-color:#59452e}
+.cue-row[aria-pressed=true]{background:#4b351d;border-color:var(--gold)}
+.cue-row span{overflow-wrap:anywhere;font-size:12px;white-space:pre-wrap;flex:1}
+.cue-row b{font:12px ui-monospace,Consolas,monospace;color:#efca92;white-space:nowrap}
+.markers{display:flex;flex-wrap:wrap;gap:7px;max-height:190px;overflow:auto}
+.markers button{font:11px ui-monospace,Consolas,monospace;min-height:36px;padding:7px 9px}
+.muted{color:var(--muted);font-size:12px}
+.warn{color:var(--warning);font-size:12px;border-top:1px solid var(--border);padding-top:15px;line-height:1.7}
+footer{margin-top:28px;padding-top:18px;border-top:1px solid var(--border);font-size:10px;letter-spacing:.06em;color:#ad9b83}
+.hidden-input{position:absolute;left:-10000px;width:1px;height:1px;opacity:0}
+@media(max-width:950px){.columns{grid-template-columns:1fr}}
+@media(max-width:520px){.layout{padding:16px}.meta{grid-template-columns:repeat(2,minmax(0,1fr))}.edit-grid{grid-template-columns:1fr}.status-label{font-size:9px}.stack button{flex:1 1 130px}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;animation-duration:0s!important}}
+</style>
+</head>
+<body>
+<div class="layout">
+<header><div class="brand"><b>OSA</b> CINEMA / CAPTION STUDIO V19</div><span class="status-label">PRIVATE DRAFT · RIGHTS NOT CLEARED</span></header>
+<main>
+<div class="eyebrow">EDITORIAL / LOCAL MEDIA / RU &amp; EN</div>
+<h1 id="title">Студия ручной синхронизации субтитров</h1>
+<p id="intro">Откройте оригинальный MP4 со своего устройства, прослушайте речь, выставьте границы каждой реплики и сохраните WebVTT. Это редакторский черновик, не автоматически расшифрованный или разрешённый к выпуску фильм.</p>
+<div class="columns">
+<section class="card" aria-labelledby="movieTitle">
+<h2 id="movieTitle">Изображение и звук</h2>
+<label for="source">Исходный видеофайл</label>
+<select id="source"></select>
+<div class="video"><video id="video" playsinline controls preload="metadata" aria-label="Private original workprint video"></video></div>
+<input id="mp4" class="hidden-input" type="file" accept="video/mp4,.mp4">
+<input id="vtt" class="hidden-input" type="file" accept="text/vtt,.vtt">
+<div class="stack">
+<button id="openMedia" class="primary" type="button">Открыть MP4</button>
+<button id="hash" type="button" disabled>Проверить SHA-256</button>
+<button id="switchLanguage" type="button">English</button>
+</div>
+<p class="status" role="status" id="status">Откройте исходное видео. Файл никуда не загружается.</p>
+<div class="meta" id="meta"></div>
+<h3 id="markersTitle">Монтажные ориентиры</h3>
+<p class="muted" id="markersHelp">Метки склеек измерены по оригиналу; начало акта — только редакторское предположение. Это не реплики субтитров.</p>
+<div class="markers" id="actMarkers" aria-label="Candidate act boundaries"></div>
+<details><summary id="cutTitle">Все измеренные смены кадров</summary><div class="markers" id="cutMarkers"></div></details>
+</section>
+<section class="card" aria-labelledby="editorTitle">
+<h2 id="editorTitle">Редактор реплик WebVTT</h2>
+<p class="muted" id="editorHelp">Введите только текст, который действительно слышен в записи. Ни одна реплика не создаётся автоматически.</p>
+<div class="edit-grid">
+<div><label for="start">Начало · HH:MM:SS.mmm</label><input id="start" value="00:00:05.000" inputmode="text"><button id="stampStart" type="button">Взять начало с видео</button></div>
+<div><label for="end">Конец · HH:MM:SS.mmm</label><input id="end" value="00:00:07.000" inputmode="text"><button id="stampEnd" type="button">Взять конец с видео</button></div>
+</div>
+<label for="cueText">Дословная реплика из прослушанного аудио</label>
+<textarea id="cueText" placeholder="Реальный текст речи, не приблизительный пересказ"></textarea>
+<div class="stack">
+<button id="addCue" class="primary" type="button">Добавить реплику</button>
+<button id="updateCue" type="button">Обновить выбранную</button>
+<button id="deleteCue" type="button">Удалить выбранную</button>
+</div>
+<div class="stack"><button id="loadVtt" type="button">Импорт WebVTT</button><button id="exportVtt" type="button">Скачать черновик VTT</button><button id="exportJson" type="button">Протокол JSON</button></div>
+<h3 id="cuesTitle">Реплики этого файла</h3>
+<div id="cueList" role="list" aria-label="Draft caption cues"></div>
+<p class="warn" id="disclaimer">Пустой или автоматически созданный VTT не является субтитрами фильма. Язык речи, точность текста, синхронизация, финальный монтаж и коммерческие права должны подтверждаться отдельно человеком.</p>
+</section>
+</div>
+</main>
+<footer>OSA CINEMA · PRIVATE SUBTITLE WORKBENCH · NO NETWORK UPLOAD · NO AUTOMATIC RIGHTS APPROVAL</footer>
+</div>
+<script>
+(function(){'use strict';
+
+const CLOCK = /^(?:(\d{2}):)?(\d{2}):(\d{2})\.(\d{3})$/
+const TEXT_RESTRICTION = /[<>]|\u0000|-->/
+function parseTimestamp(input) {
+  if (typeof input !== 'string') return null
+  const found = input.trim().match(CLOCK)
+  if (!found) return null
+  const hour = Number(found[1] || 0), min = Number(found[2]), sec = Number(found[3])
+  if (min >= 60 || sec >= 60) return null
+  return hour * 3600 + min * 60 + sec + Number(found[4]) / 1000
+}
+function formatTimestamp(seconds) {
+  if (!Number.isFinite(seconds) || seconds < 0 || seconds > 359999) throw new Error('Invalid time')
+  const total = Math.round(seconds * 1000)
+  const hour = Math.floor(total / 3600000)
+  const min = Math.floor((total % 3600000) / 60000)
+  const sec = Math.floor((total % 60000) / 1000)
+  const ms = total % 1000
+  return [hour,min,sec].map(v=>String(v).padStart(2,'0')).join(':')+'.'+String(ms).padStart(3,'0')
+}
+function validateCues(cues, durationSeconds) {
+  if (!Array.isArray(cues) || !Number.isFinite(durationSeconds) || durationSeconds <= 0) return ['invalid_file_or_duration']
+  const errors=[]
+  if(cues.length>2000) errors.push('too_many_cues')
+  let previousEnd = 0
+  cues.forEach((cue,index) => {
+    const start=cue?.start,end=cue?.end,text=cue?.text
+    if(!Number.isFinite(start)||!Number.isFinite(end)||start<0||end<=start||end>durationSeconds+.02)errors.push('invalid_range_'+index)
+    if(index>0 && Number.isFinite(start) && start<previousEnd-.001)errors.push('overlap_or_unsorted_'+index)
+    if(typeof text!=='string'||!text.trim()||text.length>500||TEXT_RESTRICTION.test(text))errors.push('invalid_text_'+index)
+    if(typeof text==='string'&&text.split('\n').length>3)errors.push('too_many_lines_'+index)
+    if(Number.isFinite(end)) previousEnd=end
+  })
+  return errors
+}
+function parseWebVtt(source, durationSeconds) {
+  if(typeof source!=='string'||source.length>800000)throw new Error('Invalid WebVTT source length')
+  const text=source.replace(/^\uFEFF/,'').replace(/\r\n?/g,'\n')
+  const blocks=text.trim().split(/\n\s*\n/).filter(Boolean)
+  if(!blocks.length||!/^WEBVTT(?:[ \t].*)?$/.test(blocks[0].split('\n')[0]))throw new Error('WEBVTT header required')
+  const cues=[]
+  for(const block of blocks.slice(1)){
+    const lines=block.trim().split('\n')
+    if(/^NOTE(?:\s|$)/.test(lines[0]))continue
+    if(/^(STYLE|REGION)(?:\s|$)/.test(lines[0]))throw new Error('Styles or regions need separate editorial review')
+    const pos=lines.findIndex(l=>l.includes('-->'))
+    if(pos<0||pos>1)throw new Error('Cue timing is missing')
+    const timing=lines[pos].match(/^(\d{2}:\d{2}:\d{2}\.\d{3}|\d{2}:\d{2}\.\d{3})[ \t]+-->[ \t]+(\d{2}:\d{2}:\d{2}\.\d{3}|\d{2}:\d{2}\.\d{3})$/)
+    if(!timing)throw new Error('Invalid cue timing or unsupported cue settings')
+    const start=parseTimestamp(timing[1]),end=parseTimestamp(timing[2])
+    const value=lines.slice(pos+1).join('\n').trim()
+    cues.push({start,end,text:value})
+  }
+  const errors=validateCues(cues,durationSeconds)
+  if(errors.length)throw new Error('Invalid WebVTT cues: '+errors.join(', '))
+  return cues
+}
+function exportWebVtt(cues,durationSeconds) {
+  const errors=validateCues(cues,durationSeconds)
+  if(errors.length)throw new Error('Invalid captions: '+errors.join(', '))
+  if(!cues.length)throw new Error('Cannot export empty caption draft')
+  return 'WEBVTT\n\n'+cues.map(cue=>formatTimestamp(cue.start)+' --> '+formatTimestamp(cue.end)+'\n'+cue.text.trim()).join('\n\n')+'\n'
+}
+function createPrivateCaptionReport({sourceId,sourceSha256,locale,cues,sourceBytesVerified=false,notes=''}) {
+  if(typeof sourceId!=='string'||typeof sourceSha256!=='string'||!(/^[0-9a-f]{64}$/).test(sourceSha256)||!['ru','en'].includes(locale)) throw new Error('Unknown caption source')
+  return {
+    schemaVersion:1,sourceId,originalSha256:sourceSha256,locale,
+    status:'DRAFT_REQUIRES_HUMAN_LISTENING_AND_RIGHTS_REVIEW',
+    sourceBytesVerified:sourceBytesVerified===true,
+    cues:cues.map(cue=>({start:cue.start,end:cue.end,text:cue.text})),
+    notes: String(notes).slice(0,3000),
+    transcriptMatchesAudibleSpeech:false,
+    captionsEditoriallyApproved:false,
+    rightsCleared:false,
+    publicPlaybackApproved:false,
+    releaseAuthorized:false
+  }
+}
+
+const SOURCES=[{"id":"osa-v15-trailer-ru","locale":"ru","edition":"trailer-workprint","file":"OSA_CINEMA_V15_45SEC_PREVIEW_RU_720P.mp4","sizeBytes":4362309,"sha256":"64076804caab85f53f860818557eca0debf977d197b7e45ba4830538dbfe6c74","durationSeconds":45,"cutTimes":[5,8.875,11.875,18.833,19.833,23.833,26.792,29.708,39.625,43.5],"actStarts":[5]},{"id":"osa-v15-trailer-en","locale":"en","edition":"trailer-workprint","file":"OSA_CINEMA_V15_45SEC_PREVIEW_EN_720P.mp4","sizeBytes":4332303,"sha256":"0cea3fe492b0cc13bd2e4c9152217ae2d85d8406b291b8b93484b5d8a9bb530e","durationSeconds":45,"cutTimes":[5,8.875,11.875,18.833,19.833,23.833,26.792,29.708,39.625,43.5],"actStarts":[5]},{"id":"osa-v15-directors-ru","locale":"ru","edition":"directors-workprint","file":"OSA_CINEMA_V15_DIRECTORS_WORKPRINT_RU_1080P.mp4","sizeBytes":120402387,"sha256":"74a040f9c67155eca946d6c6bed462e7edfb9c4f866605a0c2ecdd9568202b01","durationSeconds":239,"cutTimes":[5,8.875,11.875,18.833,19.833,23.833,26.792,29.708,39.625,43.5,46.583,49.5,50.792,53.208,54.458,58.25,61.25,64.333,74.792,79,85.958,91.5,94.417,97.417,100.417,103.792,106.75,112.5,117.458,117.792,121.25,125.875,131.458,134.208,134.667,138.625,141.5,143.625,146.583,149.5,153.042,156.583,157,159,162,164.958,171.958,173.792,178.792,184,188.583,192.458,195.542,198.458,205.417,208.333,211.958,215.042,218.208,221.208,224.208,227.542,230.5,233],"actStarts":[5,79,157]},{"id":"osa-v15-directors-en","locale":"en","edition":"directors-workprint","file":"OSA_CINEMA_V15_DIRECTORS_WORKPRINT_EN_1080P.mp4","sizeBytes":120340268,"sha256":"2936222a5be4b36ab3177f1577219831ab686e085be9b0744887bbcae05a7e36","durationSeconds":239,"cutTimes":[5,8.875,11.875,18.833,19.833,23.833,26.792,29.708,39.625,43.5,46.583,49.5,50.792,53.208,54.458,58.25,61.25,64.333,74.792,79,85.958,91.5,94.417,97.417,100.417,103.792,106.75,112.5,117.458,117.792,121.25,125.875,131.458,134.208,134.667,138.625,141.5,143.625,146.583,149.5,153.042,156.583,157,159,162,164.958,171.958,173.792,178.792,184,188.583,192.458,195.542,198.458,205.417,208.333,211.958,215.042,218.208,221.208,224.208,227.542,230.5,233],"actStarts":[5,79,157]}];
+const $=id=>document.getElementById(id);
+const languages={
+ru:{title:'Студия ручной синхронизации субтитров',intro:'Откройте оригинальный MP4 со своего устройства, прослушайте речь, выставьте границы каждой реплики и сохраните WebVTT. Это черновик, не разрешённый к выпуску фильм.',open:'Открыть MP4',hash:'Проверить SHA-256',add:'Добавить реплику',update:'Обновить выбранную',remove:'Удалить выбранную',import:'Импорт WebVTT',vtt:'Скачать черновик VTT',json:'Протокол JSON',empty:'Реплик пока нет. Добавьте услышанную речь вручную.',ready:'Исходник открыт локально. Проверка хеша ещё не выполнена.',mismatch:'Имя, размер или SHA-256 исходника не совпадают — не считайте его оригиналом.',verified:'SHA-256 проверен. Язык речи и права остаются неутверждёнными.',added:'Черновая реплика сохранена.',imported:'WebVTT импортирован для ручной проверки.',exported:'Черновик сохранён. Публикация не разрешена.',choose:'Выберите MP4 с вашего устройства.',bad:'Ошибка разметки: ',act:'Акт · кандидат',cut:'Склейка'},
+en:{title:'Manual film caption studio',intro:'Open your original MP4 locally, listen to the actual voice, time each spoken caption and export WebVTT. This is a draft, not a cleared film release.',open:'Open MP4',hash:'Verify SHA-256',add:'Add spoken cue',update:'Update selected cue',remove:'Delete selected cue',import:'Import WebVTT',vtt:'Export draft WebVTT',json:'Export private JSON',empty:'No cues yet. Transcribe audible speech manually.',ready:'Original opened locally; SHA-256 not yet checked.',mismatch:'Source name, size or SHA-256 mismatch. Not an authenticated master.',verified:'SHA-256 verified. Language and rights remain unapproved.',added:'Draft caption saved.',imported:'WebVTT loaded for manual review.',exported:'Draft saved; no rights granted.',choose:'Choose original MP4 on your device.',bad:'Cue error: ',act:'Act candidate',cut:'Edit cut'}
+};
+let ui='ru',selected=0,file=null,objectUrl=null,hashVerified=false,activeCue=-1;
+const perSource=new Map(SOURCES.map(x=>[x.id,[]]));
+const source=()=>SOURCES[selected],copy=()=>languages[ui];
+function status(message,invalid=false){$('status').textContent=message;$('status').classList.toggle('error',invalid);}
+function download(name,content,type){const blob=new Blob([content],{type:type||'application/json;charset=utf-8'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),4000)}
+function removeVideo(){if(objectUrl)URL.revokeObjectURL(objectUrl);objectUrl=null;file=null;hashVerified=false;$('video').pause();$('video').removeAttribute('src');$('video').load();$('hash').disabled=true;}
+function draft(){return perSource.get(source().id)}
+function setSource(index){removeVideo();selected=index;activeCue=-1;render();}
+function metric(label,value){const box=document.createElement('div'),name=document.createElement('small'),data=document.createElement('b');name.textContent=label;data.textContent=String(value);box.append(name,data);return box;}
+function safeSeek(sec){const v=$('video');if(file&&Number.isFinite(sec)){try{v.currentTime=sec}catch(_error){}}}
+function renderMarkers(){for(const [id,times,prefix] of [['actMarkers',source().actStarts,copy().act],['cutMarkers',source().cutTimes,copy().cut]]){const host=$(id);host.replaceChildren();times.forEach(t=>{const b=document.createElement('button');b.type='button';b.textContent=prefix+' '+formatTimestamp(t);b.dataset.time=String(t);b.addEventListener('click',()=>{safeSeek(t);$('start').value=formatTimestamp(t);$('start').focus()});host.append(b)})}}
+function renderCues(){const host=$('cueList'),rows=draft();host.replaceChildren();if(!rows.length){const p=document.createElement('p');p.className='muted';p.textContent=copy().empty;host.append(p);return;}rows.forEach((c,i)=>{const btn=document.createElement('button');btn.type='button';btn.className='cue-row';btn.setAttribute('aria-pressed',String(i===activeCue));const times=document.createElement('b'),text=document.createElement('span');times.textContent=formatTimestamp(c.start)+' — '+formatTimestamp(c.end);text.textContent=c.text;btn.append(times,text);btn.addEventListener('click',()=>{activeCue=i;$('start').value=formatTimestamp(c.start);$('end').value=formatTimestamp(c.end);$('cueText').value=c.text;safeSeek(c.start);renderCues()});host.append(btn)})}
+function render(){document.documentElement.lang=ui;$('title').textContent=copy().title;$('intro').textContent=copy().intro;$('openMedia').textContent=copy().open;$('hash').textContent=copy().hash;$('addCue').textContent=copy().add;$('updateCue').textContent=copy().update;$('deleteCue').textContent=copy().remove;$('loadVtt').textContent=copy().import;$('exportVtt').textContent=copy().vtt;$('exportJson').textContent=copy().json;$('switchLanguage').textContent=ui==='ru'?'English':'Русский';$('meta').replaceChildren();$('meta').append(metric('EDITION',source().locale.toUpperCase()),metric('RUNTIME',formatTimestamp(source().durationSeconds)),metric('SHA-256',source().sha256.slice(0,12)+'…'),metric('CUTS',source().cutTimes.length));renderMarkers();renderCues();status(file?(hashVerified?copy().verified:copy().ready):copy().choose);}
+function readEditor(){return {start:parseTimestamp($('start').value),end:parseTimestamp($('end').value),text:$('cueText').value.trim()}}
+function storeCue(update){const value=readEditor();const current=draft().slice();if(update){if(activeCue<0||activeCue>=current.length){status(copy().bad+'select an existing cue',true);return}current[activeCue]=value}else current.push(value);current.sort((a,b)=>a.start-b.start);const errors=validateCues(current,source().durationSeconds);if(errors.length){status(copy().bad+errors.join(', '),true);return}perSource.set(source().id,current);activeCue=current.indexOf(value);renderCues();status(copy().added);}
+$('source').addEventListener('change',()=>{const index=SOURCES.findIndex(a=>a.id===$('source').value);if(index>=0)setSource(index)});
+$('openMedia').addEventListener('click',()=>$('mp4').click());
+$('mp4').addEventListener('change',e=>{const next=e.target.files?.[0];if(!next)return;removeVideo();file=next;objectUrl=URL.createObjectURL(file);$('video').src=objectUrl;$('hash').disabled=false;status(file.name===source().file&&file.size===source().sizeBytes?copy().ready:copy().mismatch,file.name!==source().file||file.size!==source().sizeBytes)});
+$('hash').addEventListener('click',async()=>{if(!file)return;try{if(!crypto.subtle)throw new Error('WebCrypto not available');const value=await crypto.subtle.digest('SHA-256',await file.arrayBuffer());const digest=Array.from(new Uint8Array(value),x=>x.toString(16).padStart(2,'0')).join('');hashVerified=file.size===source().sizeBytes&&file.name===source().file&&digest===source().sha256;status(hashVerified?copy().verified:copy().mismatch,!hashVerified)}catch(e){hashVerified=false;status(copy().bad+e.message,true)}});
+$('stampStart').addEventListener('click',()=>$('start').value=formatTimestamp($('video').currentTime||0));
+$('stampEnd').addEventListener('click',()=>$('end').value=formatTimestamp($('video').currentTime||0));
+$('addCue').addEventListener('click',()=>storeCue(false));
+$('updateCue').addEventListener('click',()=>storeCue(true));
+$('deleteCue').addEventListener('click',()=>{const rows=draft().slice();if(activeCue<0||activeCue>=rows.length)return;rows.splice(activeCue,1);perSource.set(source().id,rows);activeCue=-1;renderCues();status(copy().added)});
+$('loadVtt').addEventListener('click',()=>$('vtt').click());
+$('vtt').addEventListener('change',async e=>{const input=e.target.files?.[0];if(!input)return;try{const cues=parseWebVtt(await input.text(),source().durationSeconds);perSource.set(source().id,cues);activeCue=-1;renderCues();status(copy().imported)}catch(error){status(copy().bad+error.message,true)}e.target.value=''});
+$('exportVtt').addEventListener('click',()=>{try{const value=exportWebVtt(draft(),source().durationSeconds);download('OSA_PRIVATE_'+source().locale+'_'+source().id+'.vtt',value,'text/vtt;charset=utf-8');status(copy().exported)}catch(error){status(copy().bad+error.message,true)}});
+$('exportJson').addEventListener('click',()=>{const review=createPrivateCaptionReport({sourceId:source().id,sourceSha256:source().sha256,locale:source().locale,cues:draft(),sourceBytesVerified:hashVerified,notes:'Offline transcript draft; not checked against recorded spoken language'});review.durationSeconds=source().durationSeconds;review.sourceFile=source().file;review.shotCutCount=source().cutTimes.length;download('OSA_PRIVATE_CAPTION_REVIEW_'+source().id+'.json',JSON.stringify(review,null,2)+'\n');status(copy().exported)});
+$('switchLanguage').addEventListener('click',()=>{ui=ui==='ru'?'en':'ru';render()});
+for(const asset of SOURCES){const el=document.createElement('option');el.value=asset.id;el.textContent=asset.locale.toUpperCase()+' / '+asset.edition+' / '+asset.file;$('source').append(el)}
+$('source').value=SOURCES[0].id;render();window.addEventListener('pagehide',removeVideo);
+})();
+</script>
+</body>
+</html>
