@@ -4,6 +4,8 @@ on:
     paths:
       - "scripts/check-frontend-release-freshness.sh"
       - "scripts/test-frontend-release-freshness.mjs"
+      - "scripts/cleanup-frontend-transport.sh"
+      - "scripts/test-frontend-transport-cleanup.mjs"
       - ".github/workflows/deploy-frontend.yml"
       - ".github/workflows/frontend-release-freshness-ci.yml"
   push:
@@ -11,6 +13,8 @@ on:
     paths:
       - "scripts/check-frontend-release-freshness.sh"
       - "scripts/test-frontend-release-freshness.mjs"
+      - "scripts/cleanup-frontend-transport.sh"
+      - "scripts/test-frontend-transport-cleanup.mjs"
       - ".github/workflows/deploy-frontend.yml"
       - ".github/workflows/frontend-release-freshness-ci.yml"
 permissions:
@@ -28,6 +32,7 @@ jobs:
         run: |
           set -euo pipefail
           bash -n scripts/check-frontend-release-freshness.sh
+          bash -n scripts/cleanup-frontend-transport.sh
           ruby -e 'require "yaml"; YAML.parse_file(ARGV.fetch(0)); puts "FRONTEND_WORKFLOW_YAML_VALID"' .github/workflows/deploy-frontend.yml
       - name: Verify stale SHA, API errors, identity and no-server-write negative cases
-        run: node --test scripts/test-frontend-release-freshness.mjs
+        run: node --test scripts/test-frontend-release-freshness.mjs scripts/test-frontend-transport-cleanup.mjs
