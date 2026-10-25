@@ -439,7 +439,7 @@ func _physics_process(delta: float) -> void:
 	if diagnostic_timer >= 1.0:
 		diagnostic_timer = 0.0
 		car.update_headlights(float(GameState.data.get("day_clock",12.0)),adaptive_graphics.effective_quality())
-		if adaptive_graphics.observe(float(Engine.get_frames_per_second()),1.0,DisplayServer.window_is_focused()):
+		if adaptive_graphics.observe_frame_pacing(float(Engine.get_frames_per_second()),frame_metrics.p95_ms(),frame_metrics.samples(),1.0,DisplayServer.window_is_focused()):
 			_apply_visual_budget()
 			_update_agent_lod(protagonist)
 		if cargo_visual != null: cargo_visual.sync_state(GameState.data,GameState.locale)

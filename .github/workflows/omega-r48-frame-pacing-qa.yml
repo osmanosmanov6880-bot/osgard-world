@@ -1,0 +1,96 @@
+name: EMPIRE Omega R48 real p95 frame pacing, mobile tiers and WebGL QA
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - 'godot/empire-omega/scripts/horizon_adaptive_graphics.gd'
+      - 'godot/empire-omega/scripts/horizon_device_frame_benchmark.gd'
+      - 'godot/empire-omega/scripts/main.gd'
+      - 'godot/empire-omega/tests/v69_r48_p95_frame_budget.gd'
+      - '.github/workflows/omega-r48-frame-pacing-qa.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native-real-frame-pacing:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: false
+      - name: Build authentic Godot imports and reject GDScript parse errors
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 godot/empire-omega/tools/generate_audio.py
+          python3 godot/empire-omega/tools/generate_patrol_audio.py
+          bash scripts/omega-strict-godot-import.sh godot/empire-omega
+      - name: Legacy mobile visual governor, frame metrics and real R48 p95 diagnostics
+        shell: bash
+        run: |
+          set -euo pipefail
+          for suite in v38_adaptive_graphics v39_frame_metrics v60_r36_real_frame_benchmark v69_r48_p95_frame_budget; do
+            timeout --signal=TERM --kill-after=5s 100s godot --headless --path godot/empire-omega --script "res://tests/$suite.gd"
+          done
+  actual-game-pixels:
+    runs-on: ubuntu-latest
+    timeout-minutes: 28
+    strategy:
+      fail-fast: false
+      matrix:
+        viewport: [desktop-1366x768, landscape-phone-844x390, portrait-390x844, small-phone-320x568]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Strictly build authentic local R48 candidate WASM and PCK
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 godot/empire-omega/tools/generate_audio.py
+          python3 godot/empire-omega/tools/generate_patrol_audio.py
+          bash scripts/omega-strict-godot-import.sh godot/empire-omega
+          mkdir -p godot/empire-omega/.build-web
+          godot --headless --path godot/empire-omega --export-release Web "$GITHUB_WORKSPACE/godot/empire-omega/.build-web/index.html"
+          node scripts/localize-godot-web-export.mjs godot/empire-omega/.build-web
+          test -s godot/empire-omega/.build-web/index.wasm
+          test -s godot/empire-omega/.build-web/index.pck
+      - name: Install native Chromium and screenshot pixel tools
+        run: |
+          npm ci
+          npm install --no-save --package-lock=false @playwright/test@1.58.2 pngjs@7.0.0
+          npx playwright install --with-deps chromium
+      - name: Start only local candidate server (never production)
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 4173 --bind 127.0.0.1 --directory godot/empire-omega/.build-web > /tmp/r48-city-http.log 2>&1 &
+          for attempt in 1 2 3 4 5 6 7 8 9 10; do
+            curl -fsS http://127.0.0.1:4173/index.html >/dev/null && exit 0
+            sleep 1
+          done
+          cat /tmp/r48-city-http.log
+          exit 1
+      - name: Capture genuine Chromium frame of the 3D game at each viewport
+        run: npx playwright test --config playwright.omega-portrait-preview.config.mjs --project="${{ matrix.viewport }}"
+      - name: Retain evidence per actual browser size
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: omega-r48-${{ matrix.viewport }}-real-game-pixels
+          path: |
+            omega-portrait-preview-results/
+            omega-portrait-preview-report/
+          if-no-files-found: ignore
+          retention-days: 12
