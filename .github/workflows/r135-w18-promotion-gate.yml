@@ -1,0 +1,112 @@
+name: OSGARD R135 W18 independent binary and original-frame gate
+
+on:
+  push:
+    branches: [release/r135-w18-independent-evidence-gate-20261025]
+    paths:
+      - '.github/workflows/r135-w18-promotion-gate.yml'
+      - 'scripts/r135-w18-promotion-qa.py'
+      - 'scripts/test_r135_w18_promotion_gate.py'
+      - 'scripts/r135-release-stage.py'
+      - 'docs/R135_W18_PRODUCTION_ACCEPTANCE.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  contract-negative-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reject unpinned source, forged screenshots and fake hardware claims
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s scripts -p test_r135_w18_promotion_gate.py -v
+          python3 -m py_compile scripts/r135-w18-promotion-qa.py scripts/r135-release-stage.py
+          echo 'W18 promotion CONTRACT ONLY: no claim of browser/physical acceptance'
+
+  independently-accept-real-candidate:
+    if: github.event_name == 'workflow_dispatch'
+    needs: contract-negative-tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Require human-reviewed fixed pin and successful exact-source Actions run
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          PIN=scripts/r135-w18-release-pin.json
+          test -s "$PIN" || { echo 'HOLD: no independently reviewed W18 release pin'; exit 1; }
+          RUN_ID="$(jq -er '.artifact_run_id' "$PIN")"
+          ART_ID="$(jq -er '.artifact_id' "$PIN")"
+          ART_NAME="$(jq -er '.artifact_name' "$PIN")"
+          SOURCE="$(jq -er '.source_commit' "$PIN")"
+          test "$ART_NAME" = osgard-r135-optimized-web-qa
+          RUN="$(gh api "repos/osmanosmanov6880-bot/osgard-world/actions/runs/$RUN_ID")"
+          test "$(jq -er '.head_sha' <<< "$RUN")" = "$SOURCE"
+          test "$(jq -er '.conclusion' <<< "$RUN")" = success
+          ART="$(gh api "repos/osmanosmanov6880-bot/osgard-world/actions/runs/$RUN_ID/artifacts")"
+          jq -e --argjson id "$ART_ID" --arg name "$ART_NAME" \
+            '.artifacts[] | select(.id == $id and .name == $name and .expired == false)' \
+            <<< "$ART" > /dev/null
+          mkdir -p "$RUNNER_TEMP/r135-w18-artifact"
+          gh run download "$RUN_ID" --repo osmanosmanov6880-bot/osgard-world \
+            --name "$ART_NAME" --dir "$RUNNER_TEMP/r135-w18-artifact"
+
+      - name: Verify all genuine W18 WebGL files and 11 SHA-pinned unmodified screenshots
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/r135-w18-promotion-qa.py \
+            --pin scripts/r135-w18-release-pin.json \
+            --artifact "$RUNNER_TEMP/r135-w18-artifact" \
+            | tee "$RUNNER_TEMP/r135-w18-evidence.json"
+
+      - name: Stage every exact binary with original SHA and reject zip tricks
+        shell: bash
+        run: |
+          set -euo pipefail
+          ROOT="$RUNNER_TEMP/r135-w18-artifact/r135-optimized-release"
+          python3 scripts/r135-release-stage.py \
+            "$ROOT/OSGARD_R135_OPTIMIZED_WEB.zip" \
+            "$ROOT/R135_OPTIMIZED_MANIFEST.json" \
+            "$RUNNER_TEMP/r135-w18-staged" scripts/r135-w18-release-pin.json
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Actual-image luminance gate, never fabricated benchmark pixels
+        run: |
+          set -euo pipefail
+          python3 -m pip install --disable-pip-version-check "Pillow==11.3.0"
+          python3 scripts/r135-w11-readability-qa.py \
+            --portrait "$RUNNER_TEMP/r135-w18-artifact/r135-screens/w6-portrait-optical-active.png" \
+            --desktop "$RUNNER_TEMP/r135-w18-artifact/r135-screens/desktop-1366.png" \
+            --output "$RUNNER_TEMP/r135-w18-luminance.json"
+
+      - name: Confirm real Nginx WASM gzip and PCK HTTP206 for exact W18 source
+        shell: bash
+        run: |
+          set -euo pipefail
+          export OSGARD_EXPECTED_R135_SOURCE="$(jq -er '.source_commit' scripts/r135-w18-release-pin.json)"
+          export OSGARD_EXPECTED_R135_VERSION="$(jq -er '.version' scripts/r135-w18-release-pin.json)"
+          export OSGARD_EXPECTED_R135_MANIFEST_SHA256="$(jq -er '.manifest_sha256' scripts/r135-w18-release-pin.json)"
+          export OSGARD_REQUIRE_R135_REVALIDATION=1
+          bash scripts/r135-nginx-wasm-smoke.sh "$RUNNER_TEMP/r135-w18-staged"
+
+      - name: Keep original promotion reports for independent review
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: r135-w18-independent-software-evidence
+          path: |
+            ${{ runner.temp }}/r135-w18-evidence.json
+            ${{ runner.temp }}/r135-w18-luminance.json
+          if-no-files-found: warn
+          retention-days: 30
