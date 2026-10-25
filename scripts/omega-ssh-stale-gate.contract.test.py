@@ -61,7 +61,7 @@ class DeployFreshnessContracts(unittest.TestCase):
         stage = 'scp -i ~/.ssh/osgard_omega_deploy scripts/deploy-omega-native-remote.sh'
         last_scp = upload.index(stage)
         third = upload.index('if ! python3 scripts/omega-build-freshness.py', last_scp)
-        activate = upload.index('"bash \\'$remote/deploy.sh\\' \\'$RUN_ID\\'"', last_scp)
+        activate = upload.index("bash '$remote/deploy.sh' '$RUN_ID'", last_scp)
         self.assertLess(last_scp, third)
         self.assertLess(third, activate)
         reject = upload[third:activate]
