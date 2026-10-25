@@ -194,6 +194,13 @@ export default function OSACinemaCompanion({ locale, currentIndex, scenes, onSel
             <p>{item.body}</p>
             <p className='cinema-companion__insight'><strong>{copy.insight}</strong>{item.takeaway}</p>
             {item.prompt && <p className='cinema-companion__question'><strong>{copy.question}</strong>{item.prompt}</p>}
+            {item.choices && <ol className='cinema-companion__choices'>
+              {item.choices.map((choice, choiceIndex) => <li key={choiceIndex}>
+                <strong>{choice.label}</strong>
+                <p>{choice.result}</p>
+                <p>{choice.insight}</p>
+              </li>)}
+            </ol>}
             <button type='button' className='cinema-companion__jump' onClick={() => select(index)}>
               {copy.jump}<ChevronRight size={15} aria-hidden='true'/>
             </button>
