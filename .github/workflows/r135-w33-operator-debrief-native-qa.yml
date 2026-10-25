@@ -1,7 +1,7 @@
 name: OSGARD W33 native 6-case QA, action debrief, WebGL build and original-byte inspection
 on:
   push:
-    branches: [feat/r135-w33-six-mission-godot-port-*]
+    branches: [master]
     paths:
       - 'w33-godot-native/**'
       - '.github/workflows/r135-w33-operator-debrief-native-qa.yml'
@@ -12,6 +12,9 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+concurrency:
+  group: w33-native-${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
 jobs:
   actual-godot-source-parity:
     runs-on: ubuntu-latest
@@ -46,24 +49,40 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          timeout --signal=TERM --kill-after=5s 150s godot --headless --path w33-godot-native --script res://tests/test_six_missions.gd
+          timeout --signal=TERM --kill-after=5s 150s godot --headless --path w33-godot-native --script res://tests/test_six_missions.gd 2>&1 | tee "$RUNNER_TEMP/w33-missions.log"
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/w33-missions.log"; then
+            echo '::error::Actual Godot native test emitted engine errors'
+            exit 1
+          fi
       - name: Real Godot 3D rotor, hatch, camera, bilingual controls and ECO (blocking)
         shell: bash
         run: |
           set -euo pipefail
-          timeout --signal=TERM --kill-after=5s 150s godot --headless --path w33-godot-native --script res://tests/test_scene_integration.gd
+          timeout --signal=TERM --kill-after=5s 150s godot --headless --path w33-godot-native --script res://tests/test_scene_integration.gd 2>&1 | tee "$RUNNER_TEMP/w33-scene.log"
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/w33-scene.log"; then
+            echo '::error::Actual Godot native test emitted engine errors'
+            exit 1
+          fi
       - name: Real Godot session debrief, retry, bounded log, signal MultiMesh and erase confirmation (blocking)
         shell: bash
         run: |
           set -euo pipefail
-          timeout --signal=TERM --kill-after=5s 150s godot --headless --path w33-godot-native --script res://tests/test_w33_debrief.gd
+          timeout --signal=TERM --kill-after=5s 150s godot --headless --path w33-godot-native --script res://tests/test_w33_debrief.gd 2>&1 | tee "$RUNNER_TEMP/w33-debrief.log"
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/w33-debrief.log"; then
+            echo '::error::Actual Godot native test emitted engine errors'
+            exit 1
+          fi
       - name: Create real Godot 4.4.1 WebGL export from the same native-tested commit
         shell: bash
         run: |
           set -euo pipefail
           cd w33-godot-native
           mkdir -p build/web
-          godot --headless --path . --export-release Web build/web/index.html
+          godot --headless --path . --export-release Web build/web/index.html 2>&1 | tee "$RUNNER_TEMP/w33-export.log"
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/w33-export.log"; then
+            echo '::error::Native Godot Web export emitted engine errors'
+            exit 1
+          fi
       - name: Verify actual Godot generated HTML, JS, WASM and PCK bytes
         shell: bash
         run: |

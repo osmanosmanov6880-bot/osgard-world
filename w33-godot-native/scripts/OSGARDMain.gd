@@ -284,15 +284,14 @@ func _create_interface() -> void:
 func _layout_stage_for_screen() -> void:
     if visual_container == null or sub_viewport == null:
         return
-    # Preserve the actual 3D viewport's aspect rather than stretching a
-    # fixed 960x500 camera on 360px phones and landscape tablets.
+    # SubViewportContainer.stretch controls resolution in native Godot.
+    # Writing sub_viewport.size when stretch=true is ignored and logs warnings.
+    # ECO halves framebuffer dimensions and reduces pixel work by ~75%.
     var available: float = maxf(240.0, size.x - 64.0)
     var desired_h: float = clampf(available * 0.56, 200.0, 420.0)
     visual_container.custom_minimum_size = Vector2(0.0, desired_h)
     var eco: bool = str(core.settings.get("quality", "hero")) == "eco"
-    var render_width: int = (576 if eco else 720) if available < 520.0 else (800 if eco else 960)
-    var render_height: int = clampi(roundi(float(render_width) * desired_h / available), 300, 960)
-    sub_viewport.size = Vector2i(render_width, render_height)
+    visual_container.stretch_shrink = 2 if eco else 1
 
 func _setup_sound() -> void:
     var stream := AudioStreamGenerator.new()

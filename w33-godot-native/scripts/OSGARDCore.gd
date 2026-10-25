@@ -113,12 +113,16 @@ func _valid_metrics(candidate: Variant) -> bool:
 
 func load_local() -> void:
     var config := ConfigFile.new()
-    if config.load(save_path) != OK or config.get_value("meta", "schema", -1) != SAVE_SCHEMA:
+    if config.load(save_path) != OK:
         return
-    var saved_settings: Variant = config.get_value("player", "settings", null)
-    var saved_records: Variant = config.get_value("player", "records", null)
-    var saved_shifts: Variant = config.get_value("player", "shifts", null)
-    var saved_metrics: Variant = config.get_value("player", "metrics", null)
+    if not config.has_section_key("meta", "schema") or config.get_value("meta", "schema") != SAVE_SCHEMA:
+        return
+    # Metrics are intentionally absent without consent. Avoid reading missing
+    # config keys because Godot 4.4.1 logs an error even with a null default.
+    var saved_settings: Variant = config.get_value("player", "settings") if config.has_section_key("player", "settings") else null
+    var saved_records: Variant = config.get_value("player", "records") if config.has_section_key("player", "records") else null
+    var saved_shifts: Variant = config.get_value("player", "shifts") if config.has_section_key("player", "shifts") else null
+    var saved_metrics: Variant = config.get_value("player", "metrics") if config.has_section_key("player", "metrics") else null
     if _valid_settings(saved_settings):
         settings = (saved_settings as Dictionary).duplicate(true)
     if _valid_records(saved_records):
