@@ -40,7 +40,13 @@ test('real desktop/mobile Chrome private screening, seek, captions, notes and no
   await page.goto(service.url)
   await expect(page.locator('h1')).toContainText('Просмотр только для редактора')
   await page.locator('#password').fill(password)
-  await page.getByRole('button',{name:'Открыть приватный просмотр'}).click()
+  const [loginResponse]=await Promise.all([
+    page.waitForResponse(response=>response.url()===service.url+'/login' && response.request().method()==='POST'),
+    page.getByRole('button',{name:'Открыть приватный просмотр'}).click()
+  ])
+  expect(loginResponse.status(),'Form login HTTP status').toBe(303)
+  const cookies=await page.context().cookies(service.url)
+  expect(cookies.some(cookie=>cookie.name==='osa_private_session'),'Browser must retain HttpOnly editor session').toBe(true)
   await expect(page).toHaveURL(service.url+'/review')
   await expect(page.locator('#cuts button')).toHaveCount(3)
   await expect(page.locator('.warning')).toContainText('не подтверждены')
