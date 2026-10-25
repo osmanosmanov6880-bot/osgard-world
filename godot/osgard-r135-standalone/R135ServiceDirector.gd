@@ -28,7 +28,7 @@ var status_beacons: Array[OmniLight3D] = []
 var surface_reflections: ReflectionProbe
 var manual_inspections: int = 0
 # A small playable maintenance sequence, entirely inside this simulated scene.
-const MISSION_GOALS = ["OPEN SERVICE HATCH", "PAUSE THE DRIVE", "CLOSE SERVICE HATCH", "RESUME THE DRIVE"]
+const MISSION_GOALS = ["PAUSE THE DRIVE", "OPEN SERVICE HATCH", "CLOSE SERVICE HATCH", "RESUME THE DRIVE"]
 var mission_active: bool = false
 var mission_completed: bool = false
 var mission_step: int = 0
@@ -249,10 +249,18 @@ func start_mission() -> void:
     mission_step = 0
     mission_elapsed = 0.0
     mission_attempts += 1
-    mission_feedback = "TASK 1 / 4  -  OPEN THE HATCH"
-    # A repeatable start state makes the objective deterministic.
-    lid_target = 0.0
+    mission_feedback = "TASK 1 / 4 - STOP DRIVE BEFORE OPENING HATCH"
+    # A new simulated training run resets to a known closed mechanism,
+    # never carrying an unfinished open-hatch pose into a running motor.
+    _reset_simulated_hatch()
     motion_enabled = true
+
+func _reset_simulated_hatch() -> void:
+    # Explicit level reset; affects only in-game simulated geometry.
+    lid_target = 0.0
+    lid_progress = 0.0
+    if access_lid != null:
+        access_lid.rotation.z = 0.0
 
 func mission_goal() -> String:
     if mission_completed:
@@ -264,7 +272,7 @@ func mission_goal() -> String:
 func _mission_event(action: String) -> void:
     if not mission_active or mission_completed:
         return
-    var expected: String = ["open", "pause", "close", "resume"][mission_step]
+    var expected: String = ["pause", "open", "close", "resume"][mission_step]
     if action != expected:
         mission_feedback = "FOLLOW THE CURRENT OBJECTIVE"
         return
@@ -307,7 +315,7 @@ func start_challenge() -> void:
     challenge_errors = 0
     challenge_score = 0
     challenge_feedback = "SIMULATED FAULT FOUND: " + FAULT_TYPES[challenge_fault_index]
-    lid_target = 0.0
+    _reset_simulated_hatch()
     motion_enabled = true
 
 func challenge_goal() -> String:
@@ -360,17 +368,29 @@ func scan_diagnostic(view_index: int) -> void:
 func set_motion(active: bool) -> void:
     if motion_enabled == active:
         return
-    # Enforce a genuinely closed hatch before restarting an advanced challenge.
-    if challenge_active and active and (challenge_step != 4 or lid_target > 0.05 or lid_progress > 0.05):
-        _challenge_penalty("SAFETY INTERLOCK: CLOSE THE HATCH FIRST")
+    # The drive never restarts with an unlocked or physically moving hatch,
+    # regardless of training mode. Mission and diagnostic scenarios must
+    # finish their ordered checkpoints before simulated power is restored.
+    if active and (lid_target > 0.05 or lid_progress > 0.05):
+        _challenge_penalty("SAFETY INTERLOCK: SEAL THE HATCH BEFORE STARTING")
+        if mission_active:
+            mission_feedback = "SAFETY INTERLOCK: WAIT UNTIL HATCH SEALED"
+        return
+    if active and challenge_active and challenge_step != 4:
+        _challenge_penalty("SAFETY INTERLOCK: COMPLETE DIAGNOSTIC FIRST")
+        return
+    if active and mission_active and mission_step != 3:
+        mission_feedback = "SAFETY INTERLOCK: COMPLETE MAINTENANCE FIRST"
         return
     motion_enabled = active
     _challenge_event("resume" if active else "pause")
     _mission_event("resume" if active else "pause")
 
 func toggle_access_lid() -> void:
-    if challenge_active and lid_target < 0.5 and motion_enabled:
+    if lid_target < 0.5 and motion_enabled:
         _challenge_penalty("SAFETY INTERLOCK: STOP DRIVE BEFORE OPENING")
+        if mission_active:
+            mission_feedback = "SAFETY INTERLOCK: STOP DRIVE BEFORE OPENING"
         return
     lid_target = 1.0-lid_target
     manual_inspections += 1
