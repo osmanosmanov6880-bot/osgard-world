@@ -47,6 +47,7 @@ var cityhall_gateway: Node3D
 var last_window_mode := -1
 var waypoint_marker: Node3D
 var horizon_scenic: Node3D
+var streetlight_focus: Vector3 = Vector3.ZERO
 const ROAD_MATERIALS = preload("res://scripts/horizon_road_materials.gd")
 const LIGHT_GRADE = preload("res://scripts/horizon_light_grade.gd")
 const FACADE_MATERIALS = preload("res://scripts/horizon_facade_materials.gd")
@@ -259,6 +260,11 @@ func update_chunks(focus: Vector3, quality: String = "standard") -> void:
 				if collision != null:
 					collision.set_deferred("disabled",not visible_now)
 		building_chunks[key] = entry
+	# Update only when original world chunk culling runs, not every frame.
+	if focus.is_finite():
+		streetlight_focus = focus
+	if horizon_scenic != null:
+		horizon_scenic.call("update_streetlights",ambience_time,visual_budget,streetlight_focus)
 
 func _record_windows(center: Vector3, width: float, height: float, entrance_variant: int = 0) -> void:
 	# R27: each building has a real ground-floor storefront. Do not draw
@@ -485,6 +491,7 @@ func apply_visual_budget(mode: String) -> void:
 	if horizon_scenic != null:
 		horizon_scenic.visible = visual_budget != "low"
 		horizon_scenic.call("set_intersection_quality",visual_budget)
+		horizon_scenic.call("update_streetlights",ambience_time,visual_budget,streetlight_focus)
 	if architecture_trim != null:
 		architecture_trim.visible = visual_budget != "low"
 	if streetfront != null:
@@ -631,8 +638,11 @@ func objective_position() -> Vector3:
 	return ContractManager.destination()
 
 func update_daynight(day_clock: float) -> void:
-	var phase := (day_clock - 7.0) / 24.0 * TAU
+	ambience_time = fposmod(day_clock,24.0) if is_finite(day_clock) else 12.0
+	var phase := (ambience_time - 7.0) / 24.0 * TAU
 	sun.rotation_degrees.x = -55.0 + 70.0 * sin(phase)
 	daylight_brightness = clampf(0.70 + 0.55 * maxf(0.0,cos(phase)),0.70,1.25)
 	_apply_lighting()
-	_update_windows(day_clock,int(GameState.data["energy"]))
+	_update_windows(ambience_time,int(GameState.data["energy"]))
+	if horizon_scenic != null:
+		horizon_scenic.call("update_streetlights",ambience_time,visual_budget,streetlight_focus)

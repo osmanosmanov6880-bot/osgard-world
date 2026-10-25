@@ -9,6 +9,13 @@ var tree_count := 0
 var marking_count := 0
 var scenic_batches := 0
 var intersection_details: Node3D
+# R44: 162 emissive lantern meshes remain instanced; never create 162 lights.
+# Four real OmniLight3D nodes are pooled near the player only at night.
+const STREETLIGHT_POOL_LIMIT: int = 4
+const STREETLIGHT_NEAR_METERS: float = 68.0
+var lamp_positions: Array[Vector3] = []
+var pooled_streetlights: Array[OmniLight3D] = []
+var active_night_lights: int = 0
 
 func _ready() -> void:
 	name = "HorizonRoadscape"
@@ -152,6 +159,7 @@ func _build_lamps() -> void:
 				post_color.append(Color("334753"))
 				lanterns.append(Transform3D(Basis().scaled(Vector3(.56,.23,.56)),Vector3(x,5.23,z)))
 				lantern_color.append(Color("ffe2a5"))
+				lamp_positions.append(Vector3(x,5.05,z))
 	var pole_mesh := CylinderMesh.new()
 	pole_mesh.top_radius = 0.45
 	pole_mesh.bottom_radius = 0.6
@@ -164,6 +172,7 @@ func _build_lamps() -> void:
 	lantern_mesh.radial_segments = 8
 	lantern_mesh.rings = 4
 	_batch("LanternBatch",lantern_mesh,lanterns,lantern_color,true)
+	_create_streetlight_pool()
 
 func _build_mountains() -> void:
 	var mesh_builder := SurfaceTool.new()
@@ -212,3 +221,49 @@ func _build_festival_gate() -> void:
 	_sculpture_piece("FestivalRightPillar",Vector3(.60,9,.70),Vector3(-105.0,4.5,-90.0),c)
 	_sculpture_piece("FestivalRoof",Vector3(15,.68,.94),Vector3(-112.0,9.0,-90.0),c)
 	_sculpture_piece("FestivalNeonBar",Vector3(14.6,.12,1.03),Vector3(-112.0,8.7,-90.0),light,true)
+
+# R44: physically located street illumination without unbounded GPU lights.
+# The streetlamp meshes still use the original two MultiMesh draw calls.
+func _create_streetlight_pool() -> void:
+	for i in range(STREETLIGHT_POOL_LIMIT):
+		var light := OmniLight3D.new()
+		light.name = "R44StreetLight%02d" % i
+		light.light_color = Color("ffe2ae")
+		light.light_energy = 0.66
+		light.light_specular = 0.68
+		light.omni_range = 13.0
+		light.omni_attenuation = 1.75
+		light.shadow_enabled = false
+		light.visible = false
+		add_child(light)
+		pooled_streetlights.append(light)
+
+func update_streetlights(hour: float, tier: String, focus: Vector3) -> void:
+	active_night_lights = 0
+	var safe_hour: float = fposmod(hour,24.0) if is_finite(hour) else 12.0
+	var night: bool = safe_hour < 6.5 or safe_hour >= 18.5
+	var target: int = 0 if tier == "low" or not night or not focus.is_finite() else (2 if tier == "standard" else STREETLIGHT_POOL_LIMIT)
+	var taken: Array[int] = []
+	for light in pooled_streetlights:
+		light.visible = false
+	for n in range(mini(target,pooled_streetlights.size())):
+		var nearest: int = -1
+		var distance_squared: float = STREETLIGHT_NEAR_METERS * STREETLIGHT_NEAR_METERS
+		for i in range(lamp_positions.size()):
+			if taken.has(i):
+				continue
+			var candidate: Vector3 = lamp_positions[i]
+			var dx: float = candidate.x-focus.x
+			var dz: float = candidate.z-focus.z
+			var current: float = dx*dx+dz*dz
+			if current < distance_squared:
+				distance_squared = current
+				nearest = i
+		if nearest < 0:
+			break
+		taken.append(nearest)
+		var light: OmniLight3D = pooled_streetlights[n]
+		light.position = lamp_positions[nearest] + Vector3(0,-0.23,0)
+		light.light_energy = 0.48 if tier == "standard" else 0.74
+		light.visible = true
+		active_night_lights += 1
