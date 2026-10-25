@@ -52,3 +52,13 @@ test('V42 cannot inadvertently add published-film or payment claims',()=>{
  assert.doesNotMatch(front,/\.stripe\.com|\/paid-film\/|\/checkout\(/i)
  assert.doesNotMatch(archive,/paid access|subscription price|\/subscribe/i)
 })
+// V42.1 regression: preserve semantic scene titles for RU/EN deep links and
+// keep full-screen screening mounted while a viewer advances through scenes.
+test('V42.1 keeps real scene H1 and screening mounted across chapter changes',()=>{
+ assert.match(front,/className='osa42-scene-heading'>\{scene\.title\}<\/h1>/)
+ assert.match(front,/key='osa42-stable-story'/)
+ assert.doesNotMatch(front,/key=\{locale\+'-'\+index\}/)
+ assert.match(front,/className='osa42-film-title' aria-hidden='true'/)
+ assert.match(css,/\.osa42-scene-note h1\{/)
+ assert.equal(front.split('<OSACinemaScreening ').length-1,1)
+})

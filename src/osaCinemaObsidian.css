@@ -51,7 +51,7 @@
 .osa-cinema[data-cinema-art="obsidian"] .osa42-tagline{color:#d3c5b3;font:400 clamp(14px,1.06vw,17px)/1.55 Georgia,serif;max-width:485px;letter-spacing:.025em}
 .osa-cinema[data-cinema-art="obsidian"] .osa42-scene-note{max-width:510px;margin:24px 0 24px;padding:0 0 0 18px;border-left:1px solid rgba(216,180,126,.5)}
 .osa-cinema[data-cinema-art="obsidian"] .osa42-scene-note>span{font:11px/1.6 monospace;letter-spacing:.16em;color:#d0ab7b}
-.osa-cinema[data-cinema-art="obsidian"] .osa42-scene-note h2{font:400 clamp(21px,2vw,30px)/1.15 Georgia,serif;margin:7px 0;color:#fff2df}
+.osa-cinema[data-cinema-art="obsidian"] .osa42-scene-note h1{font:400 clamp(21px,2vw,30px)/1.15 Georgia,serif;margin:7px 0;color:#fff2df}
 .osa-cinema[data-cinema-art="obsidian"] .osa42-scene-note .scene-body{font-size:13px;color:#c9bcae;line-height:1.7;margin:0;max-width:490px}
 .osa-cinema[data-cinema-art="obsidian"] .scene-takeaway{display:none}
 .osa-cinema[data-cinema-art="obsidian"] .osa42-actions{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:25px}
@@ -138,7 +138,7 @@
  .osa-cinema[data-cinema-art="obsidian"] .osa42-film-title{font-size:clamp(54px,13.9vw,76px);line-height:.88;white-space:normal}
  .osa-cinema[data-cinema-art="obsidian"] .osa42-tagline{font-size:14px;line-height:1.45}
  .osa-cinema[data-cinema-art="obsidian"] .osa42-scene-note{margin:15px 0;padding-left:12px}
- .osa-cinema[data-cinema-art="obsidian"] .osa42-scene-note h2{font-size:20px}
+ .osa-cinema[data-cinema-art="obsidian"] .osa42-scene-note h1{font-size:20px}
  .osa-cinema[data-cinema-art="obsidian"] .osa42-scene-note .scene-body{font-size:12px;line-height:1.5}
  .osa-cinema[data-cinema-art="obsidian"] .osa42-actions{gap:8px;margin-top:16px}
  .osa-cinema[data-cinema-art="obsidian"] .osa-cinema-screening-launch{width:100%;min-height:47px}
