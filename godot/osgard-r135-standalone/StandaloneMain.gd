@@ -383,6 +383,20 @@ func _start_challenge() -> void:
     _apply_view(0)
     _refresh_status()
 
+func _start_selected_case(index: int) -> bool:
+    if index < 0 or index >= 3:
+        return false
+    var accepted: bool = bool(controller.call("start_selected_challenge", index))
+    if not accepted:
+        _refresh_status()
+        return false
+    # Same physically simulated safe initial state as ordinary diagnostics.
+    motion = true
+    _apply_view(0)
+    _refresh_status()
+    return true
+
+
 func _scan_component() -> void:
     controller.scan_diagnostic(view_index)
     _refresh_status()
@@ -626,6 +640,18 @@ func _process(delta: float) -> void:
             var coach_click: Vector2 = coach_toggle.get_global_rect().get_center()
             state["coach_toggle_center"] = {"x": coach_click.x, "y": coach_click.y}
             state["coach_button_css_height"] = coach_toggle.get_global_rect().size.y / maxf(1.0, touch_pixel_ratio)
+            # W22 genuine replay hitboxes remain read-only browser evidence.
+            var case_buttons: Array = premium_intro.get("case_selection_buttons")
+            var replay_hitboxes: Array[Dictionary] = []
+            for replay in case_buttons:
+                var rect: Rect2 = (replay as Button).get_global_rect()
+                replay_hitboxes.append({
+                    "x": rect.get_center().x, "y": rect.get_center().y,
+                    "disabled": (replay as Button).disabled,
+                    "w_css": rect.size.x / maxf(1.0, touch_pixel_ratio),
+                    "h_css": rect.size.y / maxf(1.0, touch_pixel_ratio)
+                })
+            state["case_replay_hitboxes"] = replay_hitboxes
             state["player_settings_open"] = bool(premium_intro.get("settings_open"))
             var settings_button: Button = premium_intro.get("settings_button") as Button
             state["player_settings_control_css_px"] = minf(
