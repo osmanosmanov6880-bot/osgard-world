@@ -5,6 +5,7 @@ import { readdir, readFile, lstat, writeFile } from 'node:fs/promises'
 import { resolve, basename, dirname, join } from 'node:path'
 import { createHash } from 'node:crypto'
 import { reviewEvidenceMatrix } from './r135-hardware-matrix.mjs'
+import { verifyOriginalPng } from '../public/games/r135-device-capture/device-capture.js'
 
 export async function collectSessions(folder) {
   const directory = resolve(folder)
@@ -33,9 +34,10 @@ export async function collectSessions(folder) {
     if ((await lstat(image)).isSymbolicLink())
       throw new Error('Symbolic-link screenshots cannot certify original pixels: '+filename)
     const data=await readFile(image)
-    if (data.length<20000 || data.length>8000000 ||
-        !data.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10])))
-      throw new Error('Not a genuine-sized PNG file: '+filename)
+    try { verifyOriginalPng(data) }
+    catch (cause) {
+      throw new Error('Invalid or truncated original PNG: '+filename+': '+cause.message)
+    }
     const hash=createHash('sha256').update(data).digest('hex')
     if (hash!==record.capture.screenshot_sha256)
       throw new Error('Screenshot was changed after original capture: '+filename)
