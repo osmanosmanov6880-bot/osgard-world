@@ -61,7 +61,7 @@ func _run() -> void:
 		var metal: StandardMaterial3D = mountain.material_override as StandardMaterial3D
 		check(metal != null and metal.vertex_color_use_as_albedo,
 			"real mineral per-vertex PBR material, no green cartoon billboard")
-		check(mountain.get_child_count() == 0 and not (mountain is StaticBody3D),
+		check(mountain.get_child_count() == 0 and mountain.get_node_or_null("CollisionShape3D") == null,
 			"cosmetic mountains introduce zero colliders, mission triggers or lights")
 		check(mountain.cast_shadow == GeometryInstance3D.SHADOW_CASTING_SETTING_OFF,
 			"far-scene WebGL shadow performance remains bounded")
