@@ -56,6 +56,11 @@ on:
       - "scripts/r135-release-stage.py"
       - "scripts/r135-w11-release-pin.json"
       - "scripts/r135-w14-release-pin.json"
+      - "scripts/r135-w18-release-pin.json"
+      - "scripts/r135-active-release.json"
+      - "scripts/r135-release-selector.sh"
+      - "scripts/r135-w18-deploy-contract.mjs"
+      - "scripts/r135-w18-promotion-qa.py"
       - "scripts/r135-verified-live-recover.py"
       - "scripts/r135-artifact-fallback.py"
       - "scripts/r135-production-smoke.mjs"
@@ -122,7 +127,9 @@ jobs:
           node-version: 22
       - run: npm ci
       - name: Validate deployment workflow safety checks
-        run: npm run qa:deploy-workflow
+        run: |
+          npm run qa:deploy-workflow
+          node scripts/r135-w18-deploy-contract.mjs
       - run: npm run check
       - name: Verify three product surfaces and all game entry points
         run: npm run qa:redesign
@@ -275,26 +282,56 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          PIN=scripts/r135-w14-release-pin.json
-          test -s "$PIN"
+          # Selector persists the reviewed active channel across later deployments.
+          # A skipped negative-test job cannot count as W18 game promotion.
+          PIN="$(bash scripts/r135-release-selector.sh)"
           RUN_ID="$(jq -er '.artifact_run_id' "$PIN")"
           ART_NAME="$(jq -er '.artifact_name' "$PIN")"
-          test "$RUN_ID" = 40175524463
           test "$ART_NAME" = osgard-r135-optimized-web-qa
-          STAGED="$RUNNER_TEMP/r135-web-release/r135-optimized-release"
+          ROOT="$RUNNER_TEMP/r135-web-release"
+          STAGED="$ROOT/r135-optimized-release"
           mkdir -p "$STAGED"
-          if gh run download "$RUN_ID" \
-            --repo osmanosmanov6880-bot/osgard-world \
-            --name "$ART_NAME" \
-            --dir "$RUNNER_TEMP/r135-web-release"; then
-            # ZIP-level hash is independently pinned for the original Actions artifact.
-            ARCHIVE_SHA="$(jq -er '.archive_sha256' "$PIN")"
-            printf '%s  %s\n' "$ARCHIVE_SHA" "$STAGED/OSGARD_R135_OPTIMIZED_WEB.zip" | sha256sum -c -
+          if [[ "$PIN" == scripts/r135-w14-release-pin.json ]]; then
+            test "$RUN_ID" = 40175524463
+            if gh run download "$RUN_ID" \
+              --repo osmanosmanov6880-bot/osgard-world \
+              --name "$ART_NAME" --dir "$ROOT"; then
+              ARCHIVE_SHA="$(jq -er '.archive_sha256' "$PIN")"
+              printf '%s  %s\n' "$ARCHIVE_SHA" "$STAGED/OSGARD_R135_OPTIMIZED_WEB.zip" | sha256sum -c -
+            else
+              # Restore W14 ONLY from an exact already-live source, never latest.
+              python3 scripts/r135-verified-live-recover.py --pin "$PIN" --target "$STAGED"
+            fi
+          elif [[ "$PIN" == scripts/r135-w18-release-pin.json ]]; then
+            GATE_RUN="$(jq -er '.promotion_gate_run_id' scripts/r135-active-release.json)"
+            GATE="$(gh api "repos/osmanosmanov6880-bot/osgard-world/actions/runs/$GATE_RUN")"
+            test "$(jq -er '.conclusion' <<< "$GATE")" = success
+            jq -er '.path' <<< "$GATE" | grep -Fq r135-w18-promotion-gate.yml
+            GATE_JOBS="$(gh api "repos/osmanosmanov6880-bot/osgard-world/actions/runs/$GATE_RUN/jobs?per_page=100")"
+            jq -e '.jobs[] | select(.name == "independently-accept-real-candidate" and .conclusion == "success")' <<< "$GATE_JOBS" >/dev/null
+            GATE_SHA="$(jq -er '.head_sha' <<< "$GATE")"
+            PIN_AT_GATE="$(gh api "repos/osmanosmanov6880-bot/osgard-world/contents/scripts/r135-w18-release-pin.json?ref=$GATE_SHA" --jq '.content' | base64 -d | sha256sum | awk '{print $1}')"
+            test "$PIN_AT_GATE" = "$(sha256sum "$PIN" | awk '{print $1}')"
+            SOURCE="$(jq -er '.source_commit' "$PIN")"
+            RUN="$(gh api "repos/osmanosmanov6880-bot/osgard-world/actions/runs/$RUN_ID")"
+            test "$(jq -er '.head_sha' <<< "$RUN")" = "$SOURCE"
+            test "$(jq -er '.conclusion' <<< "$RUN")" = success
+            ART_ID="$(jq -er '.artifact_id' "$PIN")"
+            ARTIFACTS="$(gh api "repos/osmanosmanov6880-bot/osgard-world/actions/runs/$RUN_ID/artifacts")"
+            jq -e --argjson id "$ART_ID" --arg name "$ART_NAME" \
+              '.artifacts[] | select(.id == $id and .name == $name and .expired == false)' \
+              <<< "$ARTIFACTS" >/dev/null
+            # No server fallback for a new W18; use exact reviewed Actions bytes.
+            gh run download "$RUN_ID" \
+              --repo osmanosmanov6880-bot/osgard-world \
+              --name "$ART_NAME" --dir "$ROOT"
+            python3 scripts/r135-w18-promotion-qa.py --pin "$PIN" --artifact "$ROOT"
           else
-            # Used only after W14 is ALREADY live. A W11 server has a different
-            # digest and is rejected. Never use a floating "latest" artifact.
-            python3 scripts/r135-verified-live-recover.py --pin "$PIN" --target "$STAGED"
+            echo 'Unreviewed R135 channel refused' >&2
+            exit 1
           fi
+          ARCHIVE_SHA="$(jq -er '.archive_sha256' "$PIN")"
+          printf '%s  %s\n' "$ARCHIVE_SHA" "$STAGED/OSGARD_R135_OPTIMIZED_WEB.zip" | sha256sum -c -
           MANIFEST_SHA="$(jq -er '.manifest_sha256' "$PIN")"
           printf '%s  %s\n' "$MANIFEST_SHA" "$STAGED/R135_OPTIMIZED_MANIFEST.json" | sha256sum -c -
           python3 scripts/r135-release-stage.py \
