@@ -119,17 +119,20 @@ test('authentic released Godot runs WebGL2, paints scene, handles real keyboard/
   // Godot splash (#242424, bright logo) before the 3D city painted.
   // Central luminance alone accepted that splash. Require real variation
   // in both top and bottom 3D/HUD screen bands, not an invented mock frame.
-  let frame,worldProof,paintAttempts=0
+  let frame,worldProof,paintAttempts=0,captureMethod=''
   for(let attempt=1;attempt<=3;attempt++){
     paintAttempts=attempt
-    frame=(await captureAnimatedWebGLViewport(page)).png
+    const capture=await captureAnimatedWebGLViewport(page)
+    frame=capture.png
+    captureMethod=capture.method
     worldProof=realGameFrameEvidence(frame)
     if(worldProof.realWorldEdges)break
     if(attempt<3)await page.waitForTimeout(1200)
   }
   await testInfo.attach('godot-real-world-frame-proof.json',{
     body:Buffer.from(JSON.stringify({source_commit:RELEASE.source_commit,
-      project:testInfo.project.name,paintAttempts,worldProof},null,2)),
+      project:testInfo.project.name,paintAttempts,captureMethod,
+      realViewport:page.viewportSize(),worldProof},null,2)),
     contentType:'application/json'
   })
   expect(worldProof.realWorldEdges,
@@ -156,8 +159,15 @@ test('authentic released Godot runs WebGL2, paints scene, handles real keyboard/
   })
   expect(visibleFraction,'real Godot must paint central city pixels').toBeGreaterThan(0.12)
   if(testInfo.project.name==='desktop-chromium') {
-    expect(firstImage.width).toBe(1366)
-    expect(firstImage.height).toBe(768)
+    // The ACTUAL CSS/Godot viewport stays 1366x768. SwiftShader may use
+    // CDP's original-frame downsampling to avoid full-size PNG stalls.
+    // Never claim that a 960px compositor proof measures 1366px fidelity.
+    expect(page.viewportSize()).toEqual({width:1366,height:768})
+    expect(firstImage.width).toBeGreaterThanOrEqual(850)
+    expect(firstImage.width).toBeLessThanOrEqual(1366)
+    expect(firstImage.height).toBeGreaterThanOrEqual(475)
+    expect(firstImage.height).toBeLessThanOrEqual(768)
+    expect(Math.abs(firstImage.width/firstImage.height - 1366/768)).toBeLessThan(0.025)
   }
 
   // R12 screenshot regression: an authentic pre-fix mobile frame from R11
