@@ -74,8 +74,10 @@ async function verifyRealLuxuryIntroduction(page, isMobile, name) {
   await expectState(page, x => x?.tutorial_step === 2 && x?.view === 1,
     'W19 guided real camera chapter did not advance')
   await hitLuxuryControl(page, 'tutorial_collapse_center', isMobile)
-  await expectState(page, x => x?.tutorial_expanded === false,
-    'W19 collapse action did not return view to existing controls')
+  await expectState(page, x => x?.tutorial_expanded === false && x?.hud_visible === true
+    && x?.hud_rect?.h <= x?.viewport_h * .28
+    && x?.hud_rect?.y + x?.hud_rect?.h < x?.action_rect?.y - 6,
+    'W19 collapsed learning must show real bounded status, not 6851px legacy HUD')
   if (isMobile) await tapSceneButton(page, 7)
   else await page.keyboard.press('r')
   await expectState(page, x => x?.view === 0, 'W19 camera reset after tutorial failed')
@@ -451,8 +453,13 @@ async function verifyAdaptiveHud(page) {
         }))
     }
     if (!visible(state.hud_rect) || !visible(state.action_rect)) {
-      throw new Error('W8 HUD escaped safe viewport ' + width + 'x' + height +
+      throw new Error('W19 compact HUD or operator controls escaped safe viewport ' + width + 'x' + height +
         ' : ' + JSON.stringify({ viewport: [state.viewport_w, state.viewport_h], hud: state.hud_rect, actions: state.action_rect }))
+    }
+    if (state.tutorial_expanded && (!visible(state.tutorial_rect)
+        || state.tutorial_rect.y + state.tutorial_rect.h > state.action_rect.y - 6)) {
+      throw new Error('W19 visible luxury training overlaps working controls at ' + width + 'x' + height +
+        ': ' + JSON.stringify({tutorial:state.tutorial_rect,actions:state.action_rect}))
     }
     if (state.hud_rect.y + state.hud_rect.h >= state.action_rect.y - 6) {
       throw new Error('W8 status panel overlaps touch controls at ' + width + 'x' + height)
