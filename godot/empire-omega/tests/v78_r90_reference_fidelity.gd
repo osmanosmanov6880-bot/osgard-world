@@ -45,7 +45,11 @@ func _run() -> void:
 	verify(not (urban.get("skyline") as MultiMeshInstance3D).visible and not (urban.get("bollards") as MultiMeshInstance3D).visible,"mobile low tier hides premium meshes")
 	urban.call("set_quality","cinematic")
 	verify((urban.get("skyline") as MultiMeshInstance3D).visible and (urban.get("bollards") as MultiMeshInstance3D).visible,"cinematic tier shows true meshes")
-	verify(urban.get_child_count()==2,"no extra per-prop scene nodes")
+	verify(urban.get_child_count()==3,"real tower, bollard and detail instancing scene nodes")
+	verify(bool(urban.call("graphics_are_bounded")),"original new geometry stays bounded")
+	var additional: Node3D = urban.get("r91_architecture")
+	verify(additional!=null and additional.get_child_count()==2,
+		"each real 3D city uses precisely two additional GPU batches")
 	urban.queue_free()
 	for dimensions in [Vector2(1366,768),Vector2(1920,1080)]:
 		var frame: Rect2 = STYLE.command_center_frame(dimensions)

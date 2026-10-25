@@ -4,14 +4,20 @@ extends Node3D
 ## This deliberately does NOT claim imported photogrammetry/AAA assets.
 const SKYLINE_COUNT := 72
 const STREET_BOLLARD_COUNT := 144
+const R91_ARCHITECTURE = preload("res://scripts/horizon_r91_skyline_detail.gd")
 var skyline: MultiMeshInstance3D
+var skyline_plan: Array[Transform3D] = []
 var bollards: MultiMeshInstance3D
+var r91_architecture: Node3D
 var quality := "standard"
 
 func _ready() -> void:
 	name = "R90UrbanAtmosphere"
 	_build_outer_skyline()
 	_build_sidewalk_bollards()
+	r91_architecture = R91_ARCHITECTURE.new()
+	r91_architecture.call("set_source_skyline",skyline,skyline_plan)
+	add_child(r91_architecture)
 	set_quality("standard")
 
 func _material(tint: Color,metal: float,rough: float) -> StandardMaterial3D:
@@ -31,6 +37,7 @@ func _build_outer_skyline() -> void:
 	mesh.instance_count = SKYLINE_COUNT
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 9042026
+	skyline_plan.clear()
 	for i in range(SKYLINE_COUNT):
 		var angle: float = TAU*(float(i)+0.15*float(i%3))/float(SKYLINE_COUNT)
 		var radius: float = 248.0 + float(i%6)*16.5
@@ -38,7 +45,9 @@ func _build_outer_skyline() -> void:
 		var w: float = rng.randf_range(10.0,24.0)
 		var d: float = rng.randf_range(10.0,22.0)
 		var center := Vector3(cos(angle)*radius,height*0.5,sin(angle)*radius)
-		mesh.set_instance_transform(i,Transform3D(Basis().scaled(Vector3(w,height,d)),center))
+		var original_tower := Transform3D(Basis().scaled(Vector3(w,height,d)),center)
+		skyline_plan.append(original_tower)
+		mesh.set_instance_transform(i,original_tower)
 		var shade: float = 0.70+0.09*float(i%5)
 		mesh.set_instance_color(i,Color(0.32*shade,0.39*shade,0.48*shade))
 	skyline = MultiMeshInstance3D.new()
@@ -85,8 +94,11 @@ func set_quality(tier: String) -> void:
 		skyline.visible = quality != "low"
 	if bollards != null:
 		bollards.visible = quality == "cinematic"
+	if r91_architecture != null:
+		r91_architecture.call("set_quality",quality)
 
 func graphics_are_bounded() -> bool:
-	return skyline != null and bollards != null and (
+	return skyline != null and bollards != null and r91_architecture != null and (
 		skyline.multimesh.instance_count == SKYLINE_COUNT and
-		bollards.multimesh.instance_count == STREET_BOLLARD_COUNT)
+		bollards.multimesh.instance_count == STREET_BOLLARD_COUNT and
+		bool(r91_architecture.call("graphics_are_bounded")))
