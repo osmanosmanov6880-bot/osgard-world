@@ -16,6 +16,7 @@ test('exact four workprints, trusted hashes and no public URLs',()=>{
 test('no permanent URL loopholes',()=>{
   for(const val of ['https://example.com/trailer.mp4?token=secret','https://cdn.cloudfront.net/movie.mp4','http://x.test/movie.mp4','//evil.test/a','/osa-library/media/../secret.mp4','/osa-library/media/a.mp4?expires=6','https://runwayml.com/m.mp4','https://cdn.com/f.mp4#private'])assert.equal(isDurablePublicationUrl(val),false,val)
   assert.equal(isDurablePublicationUrl('/osa-library/media/approved/scene-01.mp4'),true)
+  assert.equal(isDurablePublicationUrl('https://cinema.example.org/scene-01.mp4?cache=v2'),false,'Signed or cache query URLs are not permanent evidence')
   assert.equal(isDurablePublicationUrl('https://cinema.example.org/scene-01.mp4'),true)
 })
 
@@ -36,6 +37,8 @@ test('correct original bytes do not imply legal or language approval',()=>{
   assert.ok(overlyOptimistic.includes('rights_evidence_not_verified'))
   assert.ok(overlyOptimistic.includes('final_cut_not_approved'))
   assert.ok(overlyOptimistic.includes('approved_synced_captions_missing'))
+  const nonFinite=releaseBlockers(a,{...probe,durationSeconds:NaN},{},{},{});
+  assert.ok(nonFinite.includes('media_probe_mismatch'),'NaN ffprobe duration must never pass')
 })
 
 test('missing masters remain blocked but ordinary audit exits honestly',async()=>{
