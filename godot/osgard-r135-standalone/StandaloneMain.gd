@@ -694,6 +694,14 @@ func _process(delta: float) -> void:
         state["studio_grid_instances"] = int(stage_budget["grid_instances"])
         state["studio_mesh_nodes"] = int(stage_budget["single_mesh_nodes"])
         state["studio_quality"] = int(stage_budget["stage_quality"])
+        # W27: source-authentic WebGL renderer telemetry, read only.
+        # Never confuse Chromium SwiftShader frame timing with phone hardware.
+        state["studio_real_pbr_maps"] = int(stage_budget.get("real_pbr_maps", 0))
+        state["studio_real_pbr_failures"] = int(stage_budget.get("real_pbr_load_failures", -1))
+        state["studio_hero_pbr_active"] = bool(stage_budget.get("hero_pbr_active", false))
+        state["studio_hero_gpu_batches"] = int(stage_budget.get("hero_extra_instanced_batches", 0))
+        state["studio_hero_instances"] = int(stage_budget.get("hero_extra_instances", 0))
+        state["studio_hero_extra_casters"] = int(stage_budget.get("hero_extra_casters", -1))
         if audio_cues != null:
             var sound: Dictionary = audio_cues.call("snapshot")
             state["sound_caption"] = sound["caption"]
