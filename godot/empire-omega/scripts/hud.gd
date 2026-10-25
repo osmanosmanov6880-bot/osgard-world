@@ -4,6 +4,7 @@ const COMPACT_TELEMETRY = preload("res://scripts/horizon_compact_telemetry.gd")
 const RACE_NAVIGATOR = preload("res://scripts/horizon_race_navigator.gd")
 const TOUCH_MISSION = preload("res://scripts/horizon_mobile_onboarding.gd")
 const ROAD_GUIDE = preload("res://scripts/horizon_road_guidance.gd")
+const MISSION_NAV = preload("res://scripts/horizon_mission_navigation.gd")
 ## Russian-first accessible HUD. All controls use the same GameState as the 3D world.
 
 signal strategy_changed(is_open: bool)
@@ -764,11 +765,12 @@ func _refresh() -> void:
 	if open:
 		_redraw_strategy()
 
-func update_world_context(player_at: Vector3, vehicle_at: Vector3, goal_at: Vector3, is_driving: bool, speed: float, fuel: float, nearest: String, condition: float = 100.0, handbrake: bool = false, gear: String = "N", drift_score: int = 0, assist_power: float = 0.0, assist_steering: float = 0.0, vehicle_yaw: float = 0.0) -> void:
+func update_world_context(player_at: Vector3, vehicle_at: Vector3, goal_at: Vector3, is_driving: bool, speed: float, fuel: float, nearest: String, condition: float = 100.0, handbrake: bool = false, gear: String = "N", drift_score: int = 0, assist_power: float = 0.0, assist_steering: float = 0.0, vehicle_yaw: float = 0.0, goal_available: bool = true) -> void:
 	if map != null:
 		map.player_world = player_at
 		map.vehicle_world = vehicle_at
 		map.goal_world = goal_at
+		map.goal_active = goal_available
 		map.driving = is_driving
 		if map_panel != null and map_panel.visible: map.queue_redraw()
 	if contract_label != null and not ContractManager.active_contract().is_empty():
@@ -794,8 +796,11 @@ func update_world_context(player_at: Vector3, vehicle_at: Vector3, goal_at: Vect
 			mission_distance_label.text = str(guide["details"])
 		else:
 			mission_label.text = TOUCH_MISSION.title(MissionManager.title(GameState.locale),int(GameState.data.get("mission",0)),compact_hud,DisplayServer.is_touchscreen_available(),GameState.locale)
-			var travel_distance: float = Vector2(player_at.x-goal_at.x,player_at.z-goal_at.z).length()
-			mission_distance_label.text = _v08("ДО ЦЕЛИ","DISTANCE TO GOAL","目标距离") + ": %d м" % roundi(travel_distance)
+			if goal_available:
+				var travel_distance: float = Vector2(player_at.x-goal_at.x,player_at.z-goal_at.z).length()
+				mission_distance_label.text = _v08("ДО ЦЕЛИ","DISTANCE TO GOAL","目标距离") + ": %d м" % roundi(travel_distance)
+			else:
+				mission_distance_label.text = MISSION_NAV.hud_hint(str(MissionManager.get_mission().get("id","complete")),GameState.locale,DisplayServer.is_touchscreen_available())
 	if speed_panel != null:
 		speed_panel.visible = is_driving
 	if is_driving:
