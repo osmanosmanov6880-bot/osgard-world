@@ -406,6 +406,17 @@ async function verifyAdaptiveHud(page) {
     const visible = rect => rect.x >= 0 && rect.y >= 0 && rect.w > 0 && rect.h > 0
       && rect.x + rect.w <= state.viewport_w + 4
       && rect.y + rect.h <= state.viewport_h + 4
+    if (state.ui_touch_pixel_ratio > 1.1 &&
+      (state.ui_action_target_min_css_px < 43.5 ||
+       state.ui_language_target_min_css_px < 43.5 ||
+       state.ui_heading_css_px < 17.0)) {
+      throw new Error('W18 mobile touch targets/heading below CSS DIP accessibility budget: '
+        + width + 'x' + height + ' ' + JSON.stringify({
+          action: state.ui_action_target_min_css_px,
+          language: state.ui_language_target_min_css_px,
+          heading: state.ui_heading_css_px,
+        }))
+    }
     if (!visible(state.hud_rect) || !visible(state.action_rect)) {
       throw new Error('W8 HUD escaped safe viewport ' + width + 'x' + height +
         ' : ' + JSON.stringify({ viewport: [state.viewport_w, state.viewport_h], hud: state.hud_rect, actions: state.action_rect }))
@@ -485,7 +496,10 @@ try {
           && x?.studio_grid_draw_batches === 2 && x?.studio_grid_instances === 18
           && x?.studio_detail_draw_batches === 3 && x?.studio_detail_instances === 47
           && x?.language_control_visible === true
-          && x?.studio_mesh_nodes <= 8 && x?.prefers_reduced_motion === isMobile
+          && x?.studio_mesh_nodes === 8 && x?.prefers_reduced_motion === isMobile
+          && (!isMobile || (x?.ui_action_target_min_css_px >= 43.5
+            && x?.ui_language_target_min_css_px >= 43.5
+            && x?.ui_heading_css_px >= 17.0))
           && x?.inspection_fill_energy >= 3.5
           && x?.inspection_fill_shadow_enabled === false
           && x?.inspection_fill_range >= 12.0,

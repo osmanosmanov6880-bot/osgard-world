@@ -6,6 +6,7 @@ var camera: Camera3D
 var studio: Node3D
 var inspection_fill: OmniLight3D
 var reduced_motion: bool = false
+var touch_pixel_ratio: float = 1.0
 var last_layout_size: Vector2 = Vector2.ZERO
 var orbit_yaw: float = 0.44
 var orbit_pitch: float = 0.21
@@ -81,6 +82,10 @@ func _ready() -> void:
     if OS.has_feature("web"):
         reduced_motion = bool(JavaScriptBridge.eval("Boolean(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)", true))
         ui_locale = "ru" if bool(JavaScriptBridge.eval("Boolean((navigator.language || '').toLowerCase().startsWith('ru'))", true)) else "en"
+        # CSS touch targets are measured in DIP, while Godot runs at WebGL DPR.
+        # Never apply retina scaling to non-touch desktop controls.
+        touch_pixel_ratio = clampf(float(JavaScriptBridge.eval(
+            "Number((navigator.maxTouchPoints > 0 || (window.matchMedia && matchMedia('(pointer: coarse)').matches)) ? (window.devicePixelRatio || 1) : 1)", true)), 1.0, 3.5)
     controller.call("set_reduced_motion", reduced_motion)
     _build_hud()
     _set_locale(ui_locale)
@@ -205,14 +210,19 @@ func _update_layout() -> void:
     var margin := 24.0 if portrait else 18.0
     var compact := portrait and (size.y < 1150.0 or size.x < 500.0)
     var ui_scale := 0.73 if compact else 1.0
-    var font_title := int(40 * ui_scale) if portrait else 25
-    var font_state := int(27 * ui_scale) if portrait else 18
-    var font_help := int(18 * ui_scale) if portrait else 12
-    var font_mission := int(29 * ui_scale) if portrait else 17
+    var font_title := maxi(int(40 * ui_scale) if portrait else 25, int(18.0 * touch_pixel_ratio))
+    var font_state := maxi(int(27 * ui_scale) if portrait else 18, int(13.0 * touch_pixel_ratio))
+    var font_help := maxi(int(18 * ui_scale) if portrait else 12, int(11.0 * touch_pixel_ratio))
+    var font_mission := maxi(int(29 * ui_scale) if portrait else 17, int(13.0 * touch_pixel_ratio))
     heading.add_theme_font_size_override("font_size", font_title)
     heading.text = "OSGARD / R135" if portrait else "OSGARD  /  SERVICE LAB"
-    language_button.custom_minimum_size = Vector2(46, 35) if compact else Vector2(56, 40)
-    safety_notice.add_theme_font_size_override("font_size", int(18 * ui_scale) if portrait else 13)
+    var min_touch: float = 44.0 * touch_pixel_ratio if touch_pixel_ratio > 1.0 else 0.0
+    language_button.custom_minimum_size = Vector2(
+        maxf(46.0 if compact else 56.0, min_touch),
+        maxf(35.0 if compact else 40.0, min_touch)
+    )
+    safety_notice.add_theme_font_size_override("font_size",
+        maxi(int(18 * ui_scale) if portrait else 13, int(11.0 * touch_pixel_ratio)))
     hud.add_theme_font_size_override("font_size", font_state)
     helper.add_theme_font_size_override("font_size", font_help)
     mission_label.add_theme_font_size_override("font_size", font_mission)
@@ -220,8 +230,10 @@ func _update_layout() -> void:
     grid.add_theme_constant_override("h_separation", 12 if portrait else 9)
     grid.add_theme_constant_override("v_separation", 12 if portrait else 9)
     for b in action_buttons:
-        b.add_theme_font_size_override("font_size", int(28 * ui_scale) if portrait else 17)
-        b.custom_minimum_size = Vector2(0, (62 if compact else 82) if portrait else 43)
+        b.add_theme_font_size_override("font_size",
+            maxi(int(28 * ui_scale) if portrait else 17, int(12.0 * touch_pixel_ratio)))
+        var base_height: float = (62.0 if compact else 82.0) if portrait else 43.0
+        b.custom_minimum_size = Vector2(0.0, maxf(base_height, min_touch))
         b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 
     var hud_width: float
@@ -243,6 +255,7 @@ func _update_layout() -> void:
     if first_layout or not did_resize:
         hud_panel.position = Vector2(margin, (32.0 if compact else 42.0) if portrait else margin)
         action_panel.position = Vector2(margin, maxf(0.0, size.y - (355.0 if compact else 455.0) if portrait else size.y - 150.0))
+        call_deferred("_settle_hud_after_layout")
         _update_view()
         return
     hud_panel.reset_size()
@@ -254,7 +267,27 @@ func _update_layout() -> void:
         margin,
         maxf(0.0, size.y - action_panel.size.y - margin)
     )
+    call_deferred("_settle_hud_after_layout")
     _update_view()
+
+func _settle_hud_after_layout() -> void:
+    # Container wrapping changes after language/DPR/viewport updates. Position
+    # the control panel using its measured height, not a fixed bottom offset.
+    if hud_panel == null or action_panel == null:
+        return
+    var size: Vector2 = get_viewport().get_visible_rect().size
+    var portrait: bool = _viewport_is_portrait()
+    var margin: float = 24.0 if portrait else 18.0
+    var hud_width: float = maxf(240.0, size.x - margin * 2.0) if portrait else minf(size.x * 0.48, 510.0)
+    var action_width: float = hud_width if portrait else minf(size.x * 0.85, 990.0)
+    hud_panel.custom_minimum_size = Vector2(hud_width, 0.0)
+    action_panel.custom_minimum_size = Vector2(action_width, 0.0)
+    hud_panel.reset_size()
+    action_panel.reset_size()
+    hud_panel.size = Vector2(hud_width, hud_panel.get_combined_minimum_size().y)
+    action_panel.size = Vector2(action_width, action_panel.get_combined_minimum_size().y)
+    hud_panel.position = Vector2(margin, (32.0 if size.x < 500.0 else 42.0) if portrait else margin)
+    action_panel.position = Vector2(margin, maxf(0.0, size.y - action_panel.size.y - margin))
 
 func _set_locale(value: String) -> void:
     ui_locale = "ru" if value.to_lower() == "ru" else "en"
@@ -270,6 +303,7 @@ func _set_locale(value: String) -> void:
         if faults != null:
             faults.call("set_locale", ui_locale)
     _refresh_status()
+    call_deferred("_settle_hud_after_layout")
 
 func _toggle_locale() -> void:
     _set_locale("en" if ui_locale == "ru" else "ru")
@@ -482,6 +516,16 @@ func _process(delta: float) -> void:
         state["ui_mission_text"] = mission_label.text
         state["ui_safety_text"] = safety_notice.text
         state["language_control_visible"] = language_button.visible
+        state["ui_touch_pixel_ratio"] = touch_pixel_ratio
+        state["ui_heading_css_px"] = float(heading.get_theme_font_size("font_size")) / touch_pixel_ratio
+        var min_action_y: float = 100000.0
+        for control_button in action_buttons:
+            min_action_y = minf(min_action_y, control_button.get_global_rect().size.y)
+        state["ui_action_target_min_css_px"] = min_action_y / touch_pixel_ratio
+        state["ui_language_target_min_css_px"] = minf(
+            language_button.get_global_rect().size.x,
+            language_button.get_global_rect().size.y
+        ) / touch_pixel_ratio
         var switch_center: Vector2 = language_button.get_global_rect().get_center()
         state["language_control_center"] = {"x": switch_center.x, "y": switch_center.y}
         state["studio_detail_draw_batches"] = int(stage_budget["detail_draw_batches"])

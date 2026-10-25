@@ -46,6 +46,9 @@ func _run() -> void:
     if float(stage_budget.get("fastener_roughness", -1.0)) < 0.65:
         _fail("W15 ECO finish must remain matte and mobile-friendly")
         return
+    if studio.get_node_or_null("W18OverheadServiceRail") == null or int(stage_budget.get("single_mesh_nodes", -1)) != 8:
+        _fail("W18 portrait industrial wall/overhead architecture should be visible with only 8 single meshes")
+        return
     if int(stage_budget.get("single_mesh_nodes", 99)) > 8 or not bool(stage_budget.get("visual_only", false)):
         _fail("W7 premium environment exceeds simple geometry budget")
         return

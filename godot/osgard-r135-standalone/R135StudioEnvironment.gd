@@ -21,10 +21,13 @@ func configure() -> void:
     fastener_material = _surface(Color(0.31, 0.35, 0.39), 0.66, 0.42)
 
     _box("MatteIndustrialFloor", Vector3(0, -0.20, 4.90), Vector3(22, 0.29, 14), stage_mat)
-    _box("RearStudioCyclorama", Vector3(0, 2.4, -3.1), Vector3(22, 5.0, 0.22), wall_mat)
-    _box("StructuralPillarLeft", Vector3(-10.25, 2.0, -2.9), Vector3(0.36, 4.0, 0.44), frame_mat)
-    _box("StructuralPillarRight", Vector3(10.25, 2.0, -2.9), Vector3(0.36, 4.0, 0.44), frame_mat)
+    # W18: continue the matte architectural wall upward into the portrait
+    # composition instead of leaving a large black void over the actual rig.
+    _box("RearStudioCyclorama", Vector3(0, 7.4, -3.1), Vector3(22, 15.0, 0.22), wall_mat)
+    _box("StructuralPillarLeft", Vector3(-10.25, 7.4, -2.9), Vector3(0.36, 14.8, 0.44), frame_mat)
+    _box("StructuralPillarRight", Vector3(10.25, 7.4, -2.9), Vector3(0.36, 14.8, 0.44), frame_mat)
     _box("UpperStudioTruss", Vector3(0, 4.28, -2.9), Vector3(20.7, 0.18, 0.38), frame_mat)
+    _box("W18OverheadServiceRail", Vector3(0, 10.5, -2.86), Vector3(20.7, 0.28, 0.46), frame_mat)
     _box("LowVisibilitySafetyBandFront", Vector3(0, -0.029, 11.60), Vector3(21.0, 0.013, 0.045), copper_material)
     _box("LowVisibilitySafetyBandRear", Vector3(0, -0.029, -1.75), Vector3(21.0, 0.013, 0.045), copper_material)
 
@@ -77,6 +80,7 @@ func _box(label: String, center: Vector3, extents: Vector3, material: Material) 
     mesh.size = extents
     instance.mesh = mesh
     instance.material_override = material
+    instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
     instance.position = center
     add_child(instance)
     single_mesh_nodes += 1
@@ -94,6 +98,7 @@ func _batch(label: String, extents: Vector3, coordinates: Array[Vector3], materi
     instance.name = label
     instance.multimesh = group
     instance.material_override = material
+    instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
     add_child(instance)
     if detail:
         detail_instances += coordinates.size()
