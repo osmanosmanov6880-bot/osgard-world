@@ -31,6 +31,10 @@ test('capture tool retains strict non-fake evidence and all three live routes',(
 test('public browser PR gate exercises the new capture contract',()=>{
   assert.match(workflow,/node --test scripts\/omega-live-webgl-capture\.contract\.test\.mjs/)
   assert.match(workflow,/scripts\/omega-live-webgl-capture\.contract\.test\.mjs/)
-  assert.doesNotMatch(workflow,/^  push:/m)
-  assert.doesNotMatch(workflow.slice(workflow.indexOf('  actual-desktop-phone-webgl:')),/github\.event_name == 'push'/)
+  // R82 permits exactly one master-only live recheck when this reviewed
+  // workflow is promoted. An arbitrary game push must never be treated as
+  // evidence from the SSH-published WebAssembly.
+  assert.match(workflow,/^  push:\n    branches: \[master\]\n    paths:\n      - '\.github\/workflows\/omega-r11-actual-browser-qa\.yml'/m)
+  assert.doesNotMatch(workflow.slice(workflow.indexOf('  actual-desktop-phone-webgl:')),/github\.event_name == 'pull_request'/)
+  assert.match(workflow.slice(workflow.indexOf('  actual-desktop-phone-webgl:')),/github\.ref == 'refs\/heads\/master'/)
 })
