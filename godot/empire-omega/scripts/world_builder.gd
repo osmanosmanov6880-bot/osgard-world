@@ -62,6 +62,8 @@ const ROAD_PUDDLES = preload("res://scripts/horizon_rain_puddles.gd")
 const R90_URBAN = preload("res://scripts/horizon_r90_street_dressing.gd")
 var asphalt_pbr: StandardMaterial3D
 var concrete_pbr: StandardMaterial3D
+var r90_original_asphalt_albedo: Texture2D
+var r90_original_asphalt_normal: Texture2D
 
 func _ready() -> void:
 	rng.seed = 428753
@@ -71,6 +73,8 @@ func _ready() -> void:
 	# screen-space color overlay. All road wheel collision remains unchanged.
 	asphalt_pbr.albedo_color = Color("a2a8ad")
 	concrete_pbr.albedo_color = Color("bcb8b0")
+	r90_original_asphalt_albedo = asphalt_pbr.albedo_texture
+	r90_original_asphalt_normal = asphalt_pbr.normal_texture
 	city_root = Node3D.new()
 	city_root.name = "ProceduralDistricts"
 	add_child(city_root)
@@ -494,8 +498,28 @@ func _create_weather_particles() -> void:
 	weather_particles.emitting = false
 	add_child(weather_particles)
 
+func _apply_r90_offline_pbr() -> void:
+	if asphalt_pbr == null: return
+	var root_path: String = "res://assets/r90/"
+	var diffuse: String = root_path+"aerial_asphalt_01_diff_1k.jpg"
+	var normals: String = root_path+"aerial_asphalt_01_nor_gl_1k.jpg"
+	var rough: String = root_path+"aerial_asphalt_01_rough_1k.jpg"
+	var available: bool = ResourceLoader.exists(diffuse) and ResourceLoader.exists(normals) and ResourceLoader.exists(rough)
+	if visual_budget == "cinematic" and available:
+		asphalt_pbr.albedo_texture = load(diffuse) as Texture2D
+		asphalt_pbr.normal_texture = load(normals) as Texture2D
+		asphalt_pbr.roughness_texture = load(rough) as Texture2D
+		asphalt_pbr.roughness_texture_channel = BaseMaterial3D.TEXTURE_CHANNEL_RED
+		asphalt_pbr.uv1_scale = Vector3(0.12,0.12,0.12)
+	else:
+		asphalt_pbr.albedo_texture = r90_original_asphalt_albedo
+		asphalt_pbr.normal_texture = r90_original_asphalt_normal
+		asphalt_pbr.roughness_texture = null
+		asphalt_pbr.uv1_scale = Vector3(0.38,0.38,0.38)
+
 func apply_visual_budget(mode: String) -> void:
 	visual_budget = mode if ["low","standard","cinematic"].has(mode) else "standard"
+	_apply_r90_offline_pbr()
 	if weather_particles != null:
 		weather_particles.amount_ratio = 0.25 if visual_budget == "low" else (0.65 if visual_budget == "standard" else 1.0)
 	if r90_urban != null:

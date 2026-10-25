@@ -7,6 +7,8 @@ on:
       - 'godot/empire-omega/scripts/world_builder.gd'
       - 'godot/empire-omega/scripts/vehicle_catalog.gd'
       - 'godot/empire-omega/scripts/horizon_r90_*.gd'
+      - 'godot/empire-omega/assets/r90/**'
+      - 'scripts/r90_cc0_texture_pack.py'
       - 'godot/empire-omega/tests/v78_r90_reference_fidelity.gd'
       - 'scripts/omega-r90-live-cabinet.spec.mjs'
       - 'playwright.omega-r90.config.mjs'

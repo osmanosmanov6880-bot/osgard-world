@@ -1,0 +1,46 @@
+name: EMPIRE Omega R90 approved CC0 asphalt asset ingest
+on:
+  push:
+    branches: ['feat/omega-r90-aaa-reference-first-slice-20261026']
+    paths:
+      - 'scripts/r90_cc0_texture_pack.py'
+      - '.github/workflows/omega-r90-cc0-materials.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: omega-r90-cc0-asphalt
+  cancel-in-progress: false
+jobs:
+  audited-cc0-offline-assets:
+    if: github.ref == 'refs/heads/feat/omega-r90-aaa-reference-first-slice-20261026'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Download original reviewed CC0 1K maps, validate SHA and JPEG
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/r90_cc0_texture_pack.py fetch
+          python3 scripts/r90_cc0_texture_pack.py verify
+      - name: Store original binary assets on feature branch only; never force-push
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add godot/empire-omega/assets/r90
+          if git diff --cached --quiet; then
+            echo 'Existing CC0 lock and material assets are verified'
+            exit 0
+          fi
+          git fetch --no-tags origin "$GITHUB_REF_NAME"
+          if [ "$(git rev-parse "origin/$GITHUB_REF_NAME")" != "$GITHUB_SHA" ]; then
+            echo 'Branch moved; no binary commit and no overwrite'
+            exit 1
+          fi
+          git commit -m 'assets(r90): pin reviewed Poly Haven CC0 photographic PBR asphalt'
+          git push origin "HEAD:refs/heads/$GITHUB_REF_NAME"
