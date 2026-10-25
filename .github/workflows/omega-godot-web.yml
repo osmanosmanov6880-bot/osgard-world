@@ -150,8 +150,10 @@ jobs:
             # Website-only changes do not invalidate this build, but any
             # source change inside godot/empire-omega does.
             if ! python3 scripts/omega-build-freshness.py "${{ github.sha }}" origin/master; then
-              echo "::notice::A newer Omega game source revision exists; this older export will not be published."
-              exit 0
+              # An obsolete build is correctly blocked, but it is NOT a
+              # successful export and must never trigger deployment listeners.
+              echo "::error::SUPERSEDED native export: a newer Omega source exists; zero binaries published."
+              exit 3
             fi
             git reset --mixed origin/master
             git add -f public/games/omega-3d-preview
