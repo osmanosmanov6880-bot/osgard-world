@@ -91,6 +91,30 @@ jobs:
             w33-godot-native/build/web \
             --sha "${{ github.event.pull_request.head.sha || github.sha }}" \
             --output w33-godot-native/build/web/evidence.json
+      - name: Install pinned Chromium for actual exported Godot WebGL
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m py_compile w33-godot-native/ci/browser_webgl_smoke.py
+          python3 -m venv "$RUNNER_TEMP/w33-qa-venv"
+          "$RUNNER_TEMP/w33-qa-venv/bin/pip" install --disable-pip-version-check --no-cache-dir playwright==1.56.0 Pillow==11.3.0
+          "$RUNNER_TEMP/w33-qa-venv/bin/python" -m playwright install --with-deps chromium
+      - name: Actually render same Godot WebGL export in desktop and mobile-emulated Chromium
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$RUNNER_TEMP/w33-qa-venv/bin/python" w33-godot-native/ci/browser_webgl_smoke.py \
+            --export w33-godot-native/build/web \
+            --evidence w33-godot-native/build/browser-evidence \
+            --sha "${{ github.event.pull_request.head.sha || github.sha }}"
+      - name: Retain original browser screenshots for diagnostics even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: osgard-w33-original-browser-evidence-${{ github.event.pull_request.head.sha || github.sha }}
+          path: w33-godot-native/build/browser-evidence/
+          if-no-files-found: warn
+          retention-days: 30
       - name: Archive exactly generated candidate (not deployed or certified)
         uses: actions/upload-artifact@v4
         with:
