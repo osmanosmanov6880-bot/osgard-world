@@ -33,6 +33,12 @@ def make_draft(benchmark_path: Path, video_path: Path, source_commit: str,
             "original Godot benchmark, video and draft must be in the same session directory")
     require(output_path.name not in (benchmark_path.name, video_path.name),
             "never overwrite original video or Godot benchmark")
+    require(benchmark_path.is_file() and not benchmark_path.is_symlink()
+            and 350 <= benchmark_path.stat().st_size <= MAX_BENCHMARK_BYTES,
+            "missing, linked, empty or oversized original Godot JSON")
+    require(video_path.is_file() and not video_path.is_symlink()
+            and 1025 <= video_path.stat().st_size <= MAX_RECORDING_BYTES,
+            "missing, linked, empty or oversized original mobile video")
     b_sha = digest(benchmark_path)
     original_file(base, benchmark_path.name, b_sha, ".json", 350, MAX_BENCHMARK_BYTES)
     benchmark = json.loads(benchmark_path.read_text(encoding="utf-8"))
