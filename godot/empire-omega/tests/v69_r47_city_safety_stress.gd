@@ -73,7 +73,8 @@ func _real_blocked_lane() -> Dictionary:
 	root.add_child(scene)
 	var traffic: CharacterBody3D = TRAFFIC.new()
 	scene.add_child(traffic)
-	traffic.set_route([Vector3(0,0.8,0),Vector3(0,0.8,-95)],12.0)
+	var waypoints: Array[Vector3] = [Vector3(0,0.8,0), Vector3(0,0.8,-95)]
+	traffic.set_route(waypoints,12.0)
 	traffic.wetness = 0.65
 	var wall := StaticBody3D.new()
 	wall.collision_layer = 4
