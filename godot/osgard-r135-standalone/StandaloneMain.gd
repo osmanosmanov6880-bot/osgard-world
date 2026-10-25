@@ -24,7 +24,8 @@ var optical_tracking: bool = true
 var camera_effective_distance: float = 0.0
 const VIEW_NAMES = ["OVERVIEW", "SERVICE DECK", "OPTICAL HEAD", "SIDE INSPECTION"]
 const R135Locale = preload("res://R135Locale.gd")
-var ui_locale: String = "en"
+var ui_locale: String = "ru"
+var premium_intro: Control
 var language_button: Button
 var safety_notice: Label
 
@@ -81,13 +82,24 @@ func _ready() -> void:
     studio.call("set_quality", quality)
     if OS.has_feature("web"):
         reduced_motion = bool(JavaScriptBridge.eval("Boolean(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)", true))
-        ui_locale = "ru" if bool(JavaScriptBridge.eval("Boolean((navigator.language || '').toLowerCase().startsWith('ru'))", true)) else "en"
+        # Russian is the approved first-run product language. EN is opt-in.
+        ui_locale = "en" if bool(JavaScriptBridge.eval("new URLSearchParams(location.search).get('lang') === 'en'", true)) else "ru"
         # CSS touch targets are measured in DIP, while Godot runs at WebGL DPR.
         # Never apply retina scaling to non-touch desktop controls.
         touch_pixel_ratio = clampf(float(JavaScriptBridge.eval(
             "Number((navigator.maxTouchPoints > 0 || (window.matchMedia && matchMedia('(pointer: coarse)').matches)) ? (window.devicePixelRatio || 1) : 1)", true)), 1.0, 3.5)
     controller.call("set_reduced_motion", reduced_motion)
     _build_hud()
+    # Actual native Godot overlay: responsive, mouse/touch interactive and
+    # safely separate from the eight real W13/W18 gameplay controls.
+    var premium_layer := CanvasLayer.new()
+    premium_layer.name = "R135LuxuryUILayer"
+    premium_layer.layer = 4
+    add_child(premium_layer)
+    premium_intro = preload("res://R135PremiumOnboarding.gd").new()
+    premium_intro.host = self
+    premium_intro.locale = ui_locale
+    premium_layer.add_child(premium_intro)
     _set_locale(ui_locale)
     get_viewport().size_changed.connect(_update_layout)
     _update_layout()
@@ -96,19 +108,21 @@ func _ready() -> void:
 
 func _panel_style() -> StyleBoxFlat:
     var style := StyleBoxFlat.new()
-    style.bg_color = Color(0.028, 0.039, 0.054, 0.88)
-    style.border_color = Color(0.42, 0.49, 0.54, 0.82)
+    style.bg_color = Color(0.013, 0.022, 0.033, 0.94)
+    style.border_color = Color(0.27, 0.40, 0.47, 0.88)
     style.set_border_width_all(1)
     style.set_corner_radius_all(12)
     style.set_content_margin_all(12)
+    style.shadow_color = Color(0.0, 0.0, 0.0, 0.36)
+    style.shadow_size = 8
     return style
 
 func _button_style(active: bool = false) -> StyleBoxFlat:
     var style := StyleBoxFlat.new()
-    style.bg_color = Color(0.24, 0.14, 0.09, 0.95) if active else Color(0.09, 0.11, 0.13, 0.93)
-    style.border_color = Color(0.78, 0.49, 0.32) if active else Color(0.34, 0.41, 0.44)
+    style.bg_color = Color(0.45, 0.22, 0.10, 0.98) if active else Color(0.036, 0.073, 0.095, 0.98)
+    style.border_color = Color(0.96, 0.58, 0.30) if active else Color(0.24, 0.46, 0.54)
     style.set_border_width_all(1)
-    style.set_corner_radius_all(8)
+    style.set_corner_radius_all(7)
     style.set_content_margin_all(10)
     return style
 
@@ -242,8 +256,10 @@ func _update_layout() -> void:
         hud_width = maxf(240.0, size.x - margin * 2.0)
         control_width = hud_width
     else:
-        hud_width = minf(size.x * 0.48, 510.0)
-        control_width = minf(size.x * 0.85, 990.0)
+        hud_width = minf(size.x * 0.42, 510.0)
+        # Approved full-width operator console: real eight actions in a
+        # restrained two-row layout, not decorative unconnected buttons.
+        control_width = minf(size.x - margin * 2.0, 1640.0)
     # A CanvasLayer is not a full-rect Container. Its free-standing PanelContainer
     # keeps its previous computed size when the browser resizes unless explicitly
     # reset. Merely changing custom_minimum_size left W8's original 1033-pixel
@@ -278,16 +294,21 @@ func _settle_hud_after_layout() -> void:
     var size: Vector2 = get_viewport().get_visible_rect().size
     var portrait: bool = _viewport_is_portrait()
     var margin: float = 24.0 if portrait else 18.0
-    var hud_width: float = maxf(240.0, size.x - margin * 2.0) if portrait else minf(size.x * 0.48, 510.0)
-    var action_width: float = hud_width if portrait else minf(size.x * 0.85, 990.0)
+    var hud_width: float = maxf(240.0, size.x - margin * 2.0) if portrait else minf(size.x * 0.42, 510.0)
+    var action_width: float = hud_width if portrait else minf(size.x - margin * 2.0, 1640.0)
     hud_panel.custom_minimum_size = Vector2(hud_width, 0.0)
     action_panel.custom_minimum_size = Vector2(action_width, 0.0)
     hud_panel.reset_size()
     action_panel.reset_size()
     hud_panel.size = Vector2(hud_width, hud_panel.get_combined_minimum_size().y)
     action_panel.size = Vector2(action_width, action_panel.get_combined_minimum_size().y)
-    hud_panel.position = Vector2(margin, (32.0 if size.x < 500.0 else 42.0) if portrait else margin)
+    var brand_clearance: float = 98.0 * touch_pixel_ratio
+    hud_panel.position = Vector2(margin,
+        brand_clearance if premium_intro != null and not bool(premium_intro.call("is_expanded"))
+        else ((32.0 if size.x < 500.0 else 42.0) if portrait else margin))
     action_panel.position = Vector2(margin, maxf(0.0, size.y - action_panel.size.y - margin))
+    if premium_intro != null:
+        premium_intro.call_deferred("_layout")
 
 func _set_locale(value: String) -> void:
     ui_locale = "ru" if value.to_lower() == "ru" else "en"
@@ -298,6 +319,8 @@ func _set_locale(value: String) -> void:
     for i in range(action_buttons.size()):
         action_buttons[i].text = R135Locale.button_text(i, ui_locale)
     safety_notice.text = R135Locale.notice(ui_locale)
+    if premium_intro != null:
+        premium_intro.call("set_language", ui_locale)
     if controller != null:
         var faults: Node3D = controller.get("visual_faults") as Node3D
         if faults != null:
@@ -312,6 +335,8 @@ func _translated(message: String) -> String:
     return R135Locale.translate(message, ui_locale)
 
 func _start_mission() -> void:
+    if premium_intro != null:
+        premium_intro.call("on_gameplay_command")
     # Keep the visible PLAY/PAUSE command synchronized with controller state.
     # Starting a new mission always starts its drive, even after a prior pause.
     motion = true
@@ -319,6 +344,8 @@ func _start_mission() -> void:
     _refresh_status()
 
 func _start_challenge() -> void:
+    if premium_intro != null:
+        premium_intro.call("on_gameplay_command")
     motion = true
     controller.start_challenge()
     _apply_view(0)
@@ -408,6 +435,9 @@ func _refresh_status() -> void:
     hud.text = _translated(hud.text)
     mission_label.text = _translated(mission_label.text)
     helper.text = _translated(helper.text)
+    if premium_intro != null:
+        premium_intro.call("sync_game", state, view_index)
+        hud_panel.visible = not bool(premium_intro.call("is_expanded"))
 
 func _update_view() -> void:
     if camera == null:
@@ -515,7 +545,10 @@ func _process(delta: float) -> void:
         state["ui_locale"] = ui_locale
         state["ui_mission_text"] = mission_label.text
         state["ui_safety_text"] = safety_notice.text
-        state["language_control_visible"] = language_button.visible
+        var actual_language: Button = language_button
+        if premium_intro != null and bool(premium_intro.call("is_expanded")):
+            actual_language = premium_intro.get("language_button") as Button
+        state["language_control_visible"] = actual_language.visible
         state["ui_touch_pixel_ratio"] = touch_pixel_ratio
         state["ui_heading_css_px"] = float(heading.get_theme_font_size("font_size")) / touch_pixel_ratio
         var min_action_y: float = 100000.0
@@ -523,13 +556,23 @@ func _process(delta: float) -> void:
             min_action_y = minf(min_action_y, control_button.get_global_rect().size.y)
         state["ui_action_target_min_css_px"] = min_action_y / touch_pixel_ratio
         state["ui_language_target_min_css_px"] = minf(
-            language_button.get_global_rect().size.x,
-            language_button.get_global_rect().size.y
+            actual_language.get_global_rect().size.x,
+            actual_language.get_global_rect().size.y
         ) / touch_pixel_ratio
-        var switch_center: Vector2 = language_button.get_global_rect().get_center()
+        var switch_center: Vector2 = actual_language.get_global_rect().get_center()
         state["language_control_center"] = {"x": switch_center.x, "y": switch_center.y}
         state["studio_detail_draw_batches"] = int(stage_budget["detail_draw_batches"])
         state["studio_detail_instances"] = int(stage_budget["detail_instances"])
+        if premium_intro != null:
+            state["tutorial_step"] = int(premium_intro.get("step"))
+            state["tutorial_started"] = bool(premium_intro.get("begun"))
+            state["tutorial_finished"] = bool(premium_intro.get("finished"))
+            state["tutorial_expanded"] = bool(premium_intro.get("expanded"))
+            var intro_panel: PanelContainer = premium_intro.get("card") as PanelContainer
+            var intro_rect: Rect2 = intro_panel.get_global_rect()
+            state["tutorial_rect"] = {"x": intro_rect.position.x, "y": intro_rect.position.y,
+                "w": intro_rect.size.x, "h": intro_rect.size.y}
+            state["tutorial_welcome_text"] = str((premium_intro.get("description_label") as Label).text)
         state["render_fps_sample"] = Engine.get_frames_per_second()
         state["inspection_fill_energy"] = inspection_fill.light_energy
         state["inspection_fill_shadow_enabled"] = inspection_fill.shadow_enabled
