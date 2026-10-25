@@ -18,17 +18,20 @@ function result(root) {
 }
 const w14Selector = {channel:'w14', pin_file:'scripts/r135-w14-release-pin.json',
   promotion_gate_run_id:null}
-assert.ok(['w14','w18'].includes(current.channel),'only reviewed release channels allowed')
+assert.ok(['w14','w18','w19'].includes(current.channel),'only reviewed release channels allowed')
 if (current.channel === 'w14') {
   assert.deepEqual(
     {channel:current.channel, pin:current.pin_file, gate:current.promotion_gate_run_id},
     {channel:'w14', pin:w14Selector.pin_file, gate:null},
     'Retained W14 channel must not carry W18 promotion metadata')
 } else {
-  assert.equal(current.pin_file,'scripts/r135-w18-release-pin.json')
+  assert.equal(current.pin_file,
+    current.channel === 'w18'
+      ? 'scripts/r135-w18-release-pin.json'
+      : 'scripts/r135-w19-release-pin.json')
   assert.ok(Number.isSafeInteger(current.promotion_gate_run_id) &&
     current.promotion_gate_run_id > 0,
-    'W18 production requires a specific reviewed independent acceptance run')
+    'W18/W19 production requires a specific reviewed independent acceptance run')
 }
 const liveSelection = result(process.cwd())
 assert.equal(liveSelection.status,0,
@@ -52,6 +55,7 @@ function fixture(modify = x => x, modifiedPin = w14Pin) {
 assert.equal(fixture().status,0,'valid fixed W14 selector must retain the public release'); tested++
 for(const mutation of [
   x => ({...x,channel:'w18',pin_file:'scripts/r135-w18-release-pin.json'}),
+  x => ({...x,channel:'w19',pin_file:'scripts/r135-w19-release-pin.json'}),
   x => ({...x,channel:'latest'}),
   x => ({...x,channel:'w14',promotion_gate_run_id:12345}),
   x => ({...x,channel:'w14',pin_file:'scripts/r135-w18-release-pin.json'}),
@@ -68,6 +72,10 @@ const usages = (deploy.match(/PIN="\$\(bash scripts\/r135-release-selector\.sh\)
 assert.equal(usages,4,'all four staging, Nginx, SSH and live smoke gates must use SAME active release')
 for(const proof of [
   'scripts/r135-w18-promotion-qa.py',
+  'scripts/r135-w19-promotion-qa.py',
+  'independently-accept-real-w19',
+  'r135-w19-promotion-gate.yml',
+  'scripts/r135-w19-release-pin.json',
   'scripts/r135-verified-live-recover.py',
   'scripts/r135-release-stage.py',
   'independently-accept-real-candidate',
@@ -88,5 +96,9 @@ assert.ok(deploy.includes('elif [[ "$PIN" == scripts/r135-w18-release-pin.json ]
   'W18 must never use floating W14 fallback')
 assert.ok(!deploy.includes('PIN=scripts/r135-w18-release-pin.json'),
   'W18 must never become implicit default release')
+assert.ok(deploy.includes('elif [[ "$PIN" == scripts/r135-w19-release-pin.json ]]; then'),
+  'W19 must require a distinct immutable promotion branch')
+assert.ok(!deploy.includes('PIN=scripts/r135-w19-release-pin.json'),
+  'W19 must never become implicit default release')
 console.log('R135 W18 production fail-closed static/selector tests PASS:',tested,
   'runtime selector cases; no SSH, deploy or hardware was executed.')
