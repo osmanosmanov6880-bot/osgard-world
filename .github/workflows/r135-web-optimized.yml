@@ -26,6 +26,8 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      R135_CANDIDATE_VERSION: ${{ github.ref_name == 'feat/r135-w15-w17-premium-localization-20261025' && 'r135-premium-learning-w18-candidate-20261025' || 'r135-case-progress-w14-20261025' }}
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
@@ -216,7 +218,12 @@ jobs:
           output=Path(os.environ['RUNNER_TEMP'])/'r135-optimized-release'
           output.mkdir(exist_ok=True)
           files=sorted(p for p in root.iterdir() if p.is_file())
-          manifest={'version':'r135-case-progress-w14-20261025','engine':'Godot 4.4.1',
+          version=os.environ['R135_CANDIDATE_VERSION']
+          expected=('r135-premium-learning-w18-candidate-20261025'
+                    if os.environ.get('GITHUB_REF_NAME') == 'feat/r135-w15-w17-premium-localization-20261025'
+                    else 'r135-case-progress-w14-20261025')
+          assert version == expected, 'wrong candidate version for source branch'
+          manifest={'version':version,'engine':'Godot 4.4.1',
                     'source_commit':os.environ['GITHUB_SHA'],
                     'game':'OSGARD R135 Service Spine','native_tests':'passed',
                     'webgl_browser_software_smoke':'passed',
@@ -245,7 +252,7 @@ jobs:
             --manifest "$RUNNER_TEMP/r135-optimized-release/R135_OPTIMIZED_MANIFEST.json" \
             --portrait "$RUNNER_TEMP/r135-screens/w6-portrait-optical-active.png" \
             --portrait-evidence "$RUNNER_TEMP/r135-screens/r135-portrait-capture-proof.json" \
-            --expected-version r135-case-progress-w14-20261025 \
+            --expected-version "$R135_CANDIDATE_VERSION" \
             --expected-source "$GITHUB_SHA" \
             --output "$RUNNER_TEMP/r135-w10-release-evidence.json"
 
@@ -253,7 +260,7 @@ jobs:
         shell: bash
         env:
           OSGARD_EXPECTED_R135_SOURCE: ${{ github.sha }}
-          OSGARD_EXPECTED_R135_VERSION: r135-case-progress-w14-20261025
+          OSGARD_EXPECTED_R135_VERSION: ${{ env.R135_CANDIDATE_VERSION }}
         run: |
           set -euo pipefail
           export OSGARD_EXPECTED_R135_MANIFEST_SHA256="$(sha256sum "$RUNNER_TEMP/r135-optimized/release.json" | awk '{print $1}')"
