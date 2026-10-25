@@ -17,6 +17,8 @@ jobs:
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 30
       - name: Original HERO/ECO GLBs unchanged; source legibility and lighting contracts
         shell: bash
         run: |
