@@ -1,4 +1,4 @@
-name: OSGARD R135 W27 original 19 real case-selection PNGs and targeted replay safety
+name: OSGARD R135 W27 real 29-frame integrated gameplay, graphics, audio and privacy acceptance
 
 on:
   push:
@@ -24,12 +24,13 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - name: Verify W18/W19/W20 compatibility and reject falsified new W27 UI evidence
+      - name: Verify W18/W19/W20/W21 contracts and reject fake W27 29-frame evidence
         shell: bash
         run: |
           set -euo pipefail
           python3 -m unittest discover -s scripts -p test_r135_w27_promotion_gate.py -v
           python3 -m unittest discover -s scripts -p test_r135_w20_promotion_gate.py -v
+          python3 -m unittest discover -s scripts -p test_r135_w21_promotion_gate.py -v
           python3 -m unittest discover -s scripts -p test_r135_w19_promotion_gate.py -v
           python3 -m py_compile scripts/r135-w27-promotion-qa.py scripts/r135-w27-candidate-pin-draft.py scripts/r135-release-stage.py
           echo 'W27 negative-only contract PASS; no candidate publication implied'
@@ -152,4 +153,4 @@ jobs:
             --repo osmanosmanov6880-bot/osgard-world \
             --target "$SOURCE" --latest=false \
             --title "OSGARD R135 W27 — exact-source W27 integrated gameplay PBR+audio+privacy Godot WebGL" \
-            --notes "Independent pinned 19-original-frame Godot native and desktop/mobile software WebGL release. NOT automatically promoted. Physical-phone GPU and AAA photorealism remain unverified."
+            --notes "Independent pinned 29-original-frame Godot native and desktop/mobile software WebGL release. NOT automatically promoted. Physical-phone GPU and AAA photorealism remain unverified."
