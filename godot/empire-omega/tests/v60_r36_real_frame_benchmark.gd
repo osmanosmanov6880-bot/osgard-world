@@ -43,6 +43,18 @@ func _run() -> void:
 	bench.record_frame(0.016,20,false)
 	verify(bench.aborted=="browser-backgrounded" and not bench.completed,"background tab aborts measurement")
 	verify(bench.report()["status"]=="not-ready","cannot export silently truncated background capture")
+	# A 360-Hz renderer exceeds 6000 samples in 20s. Failing explicitly
+	# prevents false output that would otherwise claim only 300 mean FPS.
+	bench.begin("cinematic",Vector2(1920,1080),"UnitTest360Hz")
+	for i in range(9000):
+		bench.record_frame(1.0/360.0,40)
+	verify(not bench.active and not bench.completed and bench.capacity_overflow,
+		"full frame buffer never silently reports a successful hardware capture")
+	verify(bench.aborted=="sample-capacity-exceeded" and bench.report()["status"]=="not-ready",
+		"360Hz overflow reports a precise error instead of a misleading FPS")
+	bench.begin("low",Vector2(390,844),"Web")
+	verify(not bench.capacity_overflow and bench.dropped==0 and bench.active,
+		"new explicit measurement resets all overflow and dropped-frame state")
 	for size in [Vector2(320,568),Vector2(390,844),Vector2(860,540)]:
 		var panel: Rect2 = LAYOUT.compute(size)["diagnostics"]
 		verify(panel.end.y<size.y-120.0,"expanded panel does not cover phone driving buttons")
