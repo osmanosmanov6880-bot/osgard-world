@@ -68,6 +68,12 @@ jobs:
           npm ci
           npm install --no-save --package-lock=false @playwright/test@1.58.2 pngjs@7.0.0
           npx playwright install --with-deps chromium
+      - name: Provision real Mesa Xvfb compositor for original Godot WebGL
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y xvfb libgl1-mesa-dri libegl1 libgl1
       - name: Host actual exported WebGL game locally
         run: |
           python3 -m http.server 4173 --bind 127.0.0.1 --directory godot/empire-omega/.build-web > /tmp/omega-r33-server.log 2>&1 &
@@ -78,7 +84,12 @@ jobs:
           cat /tmp/omega-r33-server.log
           exit 1
       - name: Capture real open government panel and verify world remains visible
-        run: npx playwright test --config playwright.omega-r33-cabinet.config.mjs
+        shell: bash
+        run: |
+          set -euo pipefail
+          OMEGA_CI_GL_BACKEND=mesa LIBGL_ALWAYS_SOFTWARE=1 \
+            xvfb-run -a -s '-screen 0 1920x1080x24' \
+            npx playwright test --config playwright.omega-r33-cabinet.config.mjs --retries=0
       - name: Retain authentic before-after pixel evidence
         if: always()
         uses: actions/upload-artifact@v4
