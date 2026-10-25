@@ -21,12 +21,20 @@ test('V15 full-screen screening opens, navigates, saves choices, and restores fo
   // The opening scene offers three decisions; scene 2 intentionally has no choice.
   const choices=screen.locator('.osa-cinema-screening__choices button')
   await expect(choices).toHaveCount(3)
+  await choices.nth(1).scrollIntoViewIfNeeded()
+  const choiceHitTest = await choices.nth(1).evaluate(node => {
+    const box = node.getBoundingClientRect()
+    const top = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2)
+    return Boolean(top && (node === top || node.contains(top)))
+  })
+  expect(choiceHitTest, 'Question must receive real pointer events, not be covered by the footer').toBe(true)
   await choices.nth(1).click()
   await expect(choices.nth(1)).toHaveAttribute('aria-pressed','true')
   await expect(screen.locator('.osa-cinema-screening__result')).toBeVisible()
   await screen.getByRole('button',{name:'Следующая сцена'}).click()
   await expect(page).toHaveURL(/scene=1/)
   await expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow','2')
+  await expect(screen.locator('.osa-cinema-screening__content')).toHaveJSProperty('scrollTop', 0)
   await expect(choices).toHaveCount(0)
   const geometry = await screen.locator('.osa-cinema-screening__stage').evaluate(stage => {
     const content = stage.querySelector('.osa-cinema-screening__content')
