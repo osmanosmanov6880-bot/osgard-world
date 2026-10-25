@@ -6,5 +6,5 @@ import original from './playwright.omega-r90.config.mjs'
 // 390x844 portrait gameplay, never substitute a static screenshot.
 export default defineConfig({
   ...original,
-  testMatch:['omega-r90-live-cabinet.spec.mjs','omega-r109-phone-webgl.spec.mjs']
+  testMatch:['omega-r90-live-cabinet.spec.mjs','omega-r109-phone-webgl.spec.mjs','omega-r109-frame-telemetry.spec.mjs']
 })
