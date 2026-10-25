@@ -138,6 +138,7 @@ func build(state: Dictionary, forecast: Dictionary, mission: String,
 	left.add_theme_constant_override("separation",13)
 	left.custom_minimum_size.x = 248 if not compact else 0
 	left.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	left.size_flags_stretch_ratio = 0.78
 	columns.add_child(left)
 
 	var missions := _card(left,0,true)
@@ -172,6 +173,7 @@ func build(state: Dictionary, forecast: Dictionary, mission: String,
 	if not compact and world != null:
 		var middle := VBoxContainer.new()
 		middle.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		middle.size_flags_stretch_ratio = 1.72
 		middle.add_theme_constant_override("separation",8)
 		columns.add_child(middle)
 		_city_view(middle,world,forecast,lang)
@@ -185,6 +187,7 @@ func build(state: Dictionary, forecast: Dictionary, mission: String,
 	var right := VBoxContainer.new()
 	right.custom_minimum_size.x = 284 if not compact else 0
 	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	right.size_flags_stretch_ratio = 0.93
 	right.add_theme_constant_override("separation",13)
 	columns.add_child(right)
 	var atlas := _card(right)
@@ -269,7 +272,7 @@ func _city_view(parent: Node, world: World3D, forecast: Dictionary, lang: String
 	host.name = "ActualGodotWorldViewport"
 	host.set_anchors_preset(Control.PRESET_FULL_RECT)
 	host.stretch = true
-	host.stretch_shrink = 2
+	host.stretch_shrink = 1
 	host.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	stage.add_child(host)
 	preview = SubViewport.new()
