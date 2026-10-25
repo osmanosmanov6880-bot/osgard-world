@@ -285,3 +285,31 @@ test('R74 rejects unsafe compositor dimension arguments',async()=>{
   await assert.rejects(captureRealChromiumScreencast(bogus,150,{maxHeight:0}),/Invalid bounded/)
   await assert.rejects(captureRealChromiumScreencast(bogus,150,{badKey:5}),/Invalid bounded/)
 })
+
+test('R74 desktop tries genuine downsampled Godot canvas before costly stalled screenshots',async()=>{
+  const seen=[]
+  const session={
+    on(){},off(){},
+    async send(method){
+      seen.push(method)
+      if(method==='Page.startScreencast')throw new Error('Streaming unavailable')
+      return {}
+    },
+    async detach(){}
+  }
+  const page={
+    viewportSize:()=>({width:1366,height:768}),
+    context:()=>({newCDPSession:async()=>session}),
+    evaluate:async(callback,limits)=>{
+      assert.equal(typeof callback,'function')
+      assert.deepEqual(limits,{maxWidth:960,maxHeight:540})
+      return 'data:image/png;base64,'+pixel.toString('base64')
+    },
+    screenshot:async()=>{throw new Error('Unexpected synchronous screenshot')}
+  }
+  const result=await captureAnimatedWebGLViewport(page)
+  assert.equal(result.method,'chromium-canvas-readback')
+  assert.deepEqual(result.png,pixel)
+  assert.equal(seen.includes('Page.captureScreenshot'),false)
+  assert.match(result.fallback_reason,/Streaming unavailable/)
+})
