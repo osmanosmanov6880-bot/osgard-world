@@ -435,6 +435,34 @@ try {
     ['mobile-390', { ...devices['Pixel 7'], reducedMotion: 'reduce', locale: 'en-US' }, true],
   ]) {
     const context = await browser.newContext(opts)
+    // W18: photograph responsive WebGL using an independent short-lived Godot
+    // instance. Resizing the same canvas across DPR/orientation boundaries can
+    // leave stale hit-test transforms for later touch gameplay on SwiftShader.
+    // The actual 3-fault player mission runs on a separate FRESH page with the
+    // original device viewport. Never reuse a resized scene as a touch oracle.
+    if (isMobile) {
+      const layoutPage = await context.newPage()
+      const layoutErrors = []
+      layoutPage.on('pageerror', err => layoutErrors.push(String(err)))
+      try {
+        console.log('R135 W18 isolated real WebGL viewport matrix')
+        const layoutResponse = await layoutPage.goto(target, {
+          waitUntil: 'domcontentloaded', timeout: 120_000,
+        })
+        if (layoutResponse?.status() !== 200) {
+          throw new Error('Responsive matrix WebGL HTML HTTP ' + layoutResponse?.status())
+        }
+        await expectState(layoutPage, x => x?.scene_ready
+          && x?.loading_failures === 0 && x?.button_centers?.length === 8
+          && x?.fault_marker_count === 3,
+        'W18 viewport matrix must originate from a real running Godot scene', 90_000)
+        await verifyAdaptiveHud(layoutPage)
+        if (layoutErrors.length) throw new Error(
+          'Isolated viewport matrix browser errors: ' + JSON.stringify(layoutErrors))
+      } finally {
+        await layoutPage.close()
+      }
+    }
     const page = await context.newPage()
     const runtimeErrors = []
     const assetErrors = []
@@ -489,13 +517,6 @@ try {
         await captureRealViewport(page, 'w17-desktop-ru-operator.png')
         await page.keyboard.press('l')
         await expectState(page, x => x?.ui_locale === 'en' && x?.ui_mission_text?.includes('PRESS START MISSION'), 'W17 keyboard EN must restore lesson feedback')
-      }
-      // Run the real resize + original screenshot matrix BEFORE the prolonged
-      // 3-case SwiftShader run. A software GPU can become readback-starved after
-      // sustained WebGL2 rendering; never accept a missing 932x430 image.
-      if (isMobile) {
-        console.log('R135 W15/W17 viewport matrix: fresh active WebGL before stress')
-        await verifyAdaptiveHud(page)
       }
       if (!boot.hud_rect || !boot.action_rect || boot.hud_rect.h > boot.viewport_h * .28 ||
           boot.hud_rect.y + boot.hud_rect.h >= boot.action_rect.y - 20) {
