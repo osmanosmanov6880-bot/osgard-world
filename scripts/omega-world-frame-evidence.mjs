@@ -50,3 +50,46 @@ export function realGameFrameEvidence(rawPng) {
     method: 'original-rgba-upper-and-lower-viewport-spatial-deviation'
   }
 }
+
+/**
+ * R82: sample original SAME-SESSION WebGL frames while the real Godot
+ * boot animation completes. A removed HTML #status does not imply that the
+ * 3D world has painted. Never accept a logo, flat color, fake frame or a
+ * second Playwright test attempt as gameplay.
+ *
+ * captureFrame MUST return the original Chromium compositor/canvas PNG
+ * bytes, with the producing capture method. The caller applies its own
+ * strict source-commit, viewport, controls and movement gates afterwards.
+ */
+export async function waitForRealGodotWorldFrame(captureFrame, {
+  maxAttempts=24,
+  maxWaitMs=80000,
+  pauseMs=1800,
+  now=()=>Date.now(),
+  pause=ms=>new Promise(resolve=>setTimeout(resolve,ms))
+}={}) {
+  if(typeof captureFrame!=='function' || typeof now!=='function' || typeof pause!=='function' ||
+     !Number.isSafeInteger(maxAttempts) || maxAttempts<1 || maxAttempts>30 ||
+     !Number.isSafeInteger(maxWaitMs) || maxWaitMs<1000 || maxWaitMs>120000 ||
+     !Number.isSafeInteger(pauseMs) || pauseMs<0 || pauseMs>10000)
+    throw new Error('R82 requires finite original Godot startup capture bounds')
+  const started=now()
+  let last=null
+  for(let attempt=1; attempt<=maxAttempts;attempt++) {
+    const capture=await captureFrame()
+    if(!Buffer.isBuffer(capture?.png) || typeof capture?.method!=='string' ||
+       capture.method.length<3)
+      throw new Error('Only original browser WebGL PNG bytes may count as game evidence')
+    const worldProof=realGameFrameEvidence(capture.png)
+    const elapsedMs=Math.max(0,now()-started)
+    last={ready:worldProof.realWorldEdges, png:capture.png, worldProof,
+      captureMethod:capture.method, attempts:attempt, elapsedMs}
+    if(last.ready)return last
+    if(attempt===maxAttempts || elapsedMs>=maxWaitMs)break
+    const remainingMs=maxWaitMs-elapsedMs
+    if(remainingMs>0)await pause(Math.min(pauseMs,remainingMs))
+  }
+  // The browser is still on loader/blank compositor after the finite budget.
+  // Preserve the exact rejected bytes for QA diagnostics; fail at caller.
+  return last
+}
