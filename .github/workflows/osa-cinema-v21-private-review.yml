@@ -1,0 +1,53 @@
+name: OSA CINEMA V21 protected local browser screening
+on:
+  pull_request:
+    paths:
+      - 'scripts/osa-cinema-v21-*'
+      - '.github/workflows/osa-cinema-v21-private-review.yml'
+      - 'playwright.osa-cinema-v21-private.config.mjs'
+  push:
+    branches: [master]
+    paths:
+      - 'scripts/osa-cinema-v21-*'
+      - '.github/workflows/osa-cinema-v21-private-review.yml'
+      - 'playwright.osa-cinema-v21-private.config.mjs'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  protected-screening:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install pinned platform dependencies
+        run: npm ci
+      - name: Ensure FFmpeg exists for real Chromium synthetic MP4 fixtures
+        run: |
+          if ! command -v ffmpeg >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y --no-install-recommends ffmpeg
+          fi
+          ffmpeg -version | head -n 1
+      - name: Verify real loopback MP4 Range/206, cookie controls, illegal request denial
+        run: node --test scripts/osa-cinema-v21-private-review-server.test.mjs
+      - name: Install browser and browser test runner
+        run: |
+          npm install --no-save --package-lock=false @playwright/test@1.58.2
+          npx playwright install --with-deps chromium
+      - name: Real Chromium desktop and mobile 390px private film reviewer
+        run: npx playwright test --config playwright.osa-cinema-v21-private.config.mjs --workers=1
+      - name: Keep browser evidence while never archiving real media
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: osa-cinema-v21-private-browser-qa
+          path: |
+            test-results/
+            osa-v21-private-browser-report/
+          retention-days: 14
+          if-no-files-found: warn
