@@ -25,6 +25,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Verify WebGL portrait provenance validation rejects forgeries
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s scripts -p test_r135_portrait_proof.py -v
+
       - name: Verify full original GLBs and PBR before optimizing transfer
         shell: bash
         run: |
@@ -132,6 +138,7 @@ jobs:
           python3 -m pip install --disable-pip-version-check "Pillow==11.3.0"
           python3 scripts/r135-w11-readability-qa.py \
             --portrait "$RUNNER_TEMP/r135-screens/w6-portrait-optical-active.png" \
+            --portrait-evidence "$RUNNER_TEMP/r135-screens/r135-portrait-capture-proof.json" \
             --desktop "$RUNNER_TEMP/r135-screens/desktop-1366.png" \
             --output "$RUNNER_TEMP/r135-w11-readability-evidence.json"
 
