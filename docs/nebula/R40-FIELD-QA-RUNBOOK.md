@@ -59,3 +59,16 @@ GitHub подтвердил проверку контрольных сумм о�
 5. При регрессии немедленно откатиться к последней подтверждённой R38. Зафиксировать версию, журнал CI, серверный запуск, итог и ответственного.
 
 На 25 октября 2026 года нет доступных подтверждений выполнения матрицы на реальных Android/iPhone. Значит, нельзя обещать аппаратные 60 FPS, финальный AAA-фотореализм или считать R40 production опубликованной.
+
+
+## Private on-device QA starter kit (2026-10-25)
+
+Generate a fresh private work directory OUTSIDE the Git repository:
+
+    node scripts/nebula-r40-field-kit.mjs init /private/NEBULA_R40_DEVICE_QA
+
+The kit creates `manifest.json`, an explicit 42-item collection checklist, private field notes, and empty `reports/` and `images/` directories. It does **not** generate measurements or photographs and refuses to overwrite an existing populated directory. Keep the directory private and do not upload it to the public repository.
+
+    node scripts/nebula-r40-device-progress.mjs /private/NEBULA_R40_DEVICE_QA/manifest.json
+
+The conservative inventory always expects at least **108 source JSONs and 12 source images**, even if a manifest row was accidentally removed. It detects duplicate file contents and never grants a production release. The strict field gate, independent physical-device reviewer and separately approved R40 promotion PR remain mandatory.
