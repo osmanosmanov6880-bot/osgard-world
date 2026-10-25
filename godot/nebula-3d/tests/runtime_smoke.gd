@@ -343,6 +343,32 @@ func _run() -> void:
             bridge_batch.multimesh.instance_count == 32 and
             bridge_batch.material_override == scenic.led,
             "R40 emissive real bridge luminaire instances missing"):return
+        # Each old standalone BoxMesh is 1.6 x 0.10 x 0.85, originally
+        # parented to the bridge span. Confirm every transformed fixture
+        # still has the exact expected *position and scale* in scenic space.
+        var bridge_span: Node3D = scenic.get_node_or_null(
+            "R22_AuroraPhysicalStructures/R22_SuspendedFlightway_%02d" % bridge_index)
+        if not check(bridge_span != null,
+            "R40 real bridge span missing from Godot scene tree"):return
+        var collision_body: StaticBody3D = bridge_span.get_node_or_null(
+            "R22_PhysicalFlightway")
+        var collision_shape: CollisionShape3D = collision_body.get_node_or_null(
+            "CollisionShape3D") if collision_body != null else null
+        if not check(collision_shape != null and
+            collision_shape.shape is BoxShape3D and
+            collision_shape.shape.size.is_equal_approx(Vector3(269.0,5.4,9.2)),
+            "R40 bridge collision differs from real R38 flightway"):return
+        for side_index in 2:
+            var side: float = -1.0 if side_index == 0 else 1.0
+            for fixture_index in 16:
+                var fixture: Transform3D = bridge_batch.multimesh.get_instance_transform(
+                    side_index * 16 + fixture_index)
+                var x: float = (float(fixture_index)-7.5)*16.0
+                var expected: Vector3 = bridge_span.position + Vector3(
+                    x,3.2,side*4.6)
+                if not check(fixture.origin.distance_to(expected) < 0.001 and
+                    fixture.basis.get_scale().is_equal_approx(Vector3(1.6,0.10,0.85)),
+                    "R40 3D luminaire moved or stretched relative to R38"):return
     var ambient_0: Vector3 = scenic.traffic_nodes[0].position
     scenic._process(0.1)
     if not check(scenic.traffic_nodes[0].position != ambient_0 and
@@ -755,6 +781,12 @@ func _run() -> void:
         "R12 dynamic film-streak control missing"):return
     if not check(monitor_r11.last_report.is_empty(),
         "R12 actual physical hardware results must never be invented in CI"):return
+    # R40: every real on-device hardware JSON must identify its build;
+    # software smoke must not fabricate any performance results.
+    if not check(monitor_r11.R40_BUILD_VARIANT ==
+        "NEBULA_R40_BRIDGE_BATCH_3X32" and
+        monitor_r11.last_report.is_empty(),
+        "R40 native profiler build identity missing or fabricated FPS"):return
     # R36: touch-accessible 20-second on-device profiler, no keyboard needed.
     # Native unit checks the actual controls and local JSON export. It does
     # NOT fabricate a physical-phone FPS score.
