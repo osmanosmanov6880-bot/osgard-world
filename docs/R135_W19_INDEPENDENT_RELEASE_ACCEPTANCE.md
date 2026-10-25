@@ -48,6 +48,30 @@ The public W18 channel stays selected even when a W19 candidate Release
 exists. Production requires a separate protected selector update and live
 SSH verification.
 
+### Durable fallback when GitHub Actions artifacts expire
+
+After independent gate approval, the workflow archives exactly the reviewed
+W19 WebGL ZIP, manifest and an original-image + original W10/browser-report ZIP
+in a non-production GitHub Release with immutable tag
+`r135-luxury-academy-w19-reviewed-webgl-20261025`. It refuses to overwrite
+an existing tag.
+
+If the pinned Actions artifact later expires, the protected production workflow
+may retrieve **only this specific tag** after checking:
+- the prior independent gate was successful and its exact committed review
+  pin still matches the active source-controlled pin;
+- the Release target is exactly the reviewed source SHA, not a floating tag;
+- all three expected original Release assets are present without extras;
+- the original evidence ZIP contains only bounded, non-symlink,
+  non-traversing file paths and includes the browser case reports;
+- the same independent W19 checker again verifies all 13 original PNG
+  CRCs/SHA-256, W10 browser proof, both diagnostic reports, Godot binary
+  hashes and manifest/archive source pin.
+
+This fallback is **not** live-server scraping and cannot replace lost
+evidence with screenshots made by another build. Synthetic test ZIPs are
+negative security fixtures, never accepted as release evidence.
+
 ## Strict visual acceptance
 
 Original frame hashes, never redrawn/generated PNGs:
