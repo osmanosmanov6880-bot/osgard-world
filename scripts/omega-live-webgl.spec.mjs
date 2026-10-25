@@ -118,6 +118,27 @@ test('authentic released Godot runs WebGL2, paints scene, handles real keyboard/
   expect(frame.subarray(0,8).toString('hex')).toBe('89504e470d0a1a0a')
   expect(frame.length,'rendered world has meaningful nonblank pixels').toBeGreaterThan(9500)
   await testInfo.attach('godot-real-world-initial.png',{body:frame,contentType:'image/png'})
+  // Decode actual PNG pixels, not merely a plausible PNG signature. The
+  // renderer must visibly fill the central city viewport on both devices.
+  const firstImage=PNG.sync.read(frame)
+  let lit=0,sampled=0
+  for(let y=Math.floor(firstImage.height*0.22);y<Math.floor(firstImage.height*0.78);y+=7){
+    for(let x=Math.floor(firstImage.width*0.22);x<Math.floor(firstImage.width*0.78);x+=7){
+      const k=(y*firstImage.width+x)*4
+      sampled++
+      if(Math.max(firstImage.data[k],firstImage.data[k+1],firstImage.data[k+2])>28)lit++
+    }
+  }
+  const visibleFraction=sampled?lit/sampled:0
+  await testInfo.attach('godot-real-frame-visibility.json',{
+    body:Buffer.from(JSON.stringify({resolution:[firstImage.width,firstImage.height],visibleFraction},null,2)),
+    contentType:'application/json'
+  })
+  expect(visibleFraction,'authentic game should paint central world pixels').toBeGreaterThan(0.12)
+  if(testInfo.project.name==='desktop-chromium'){
+    expect(firstImage.width).toBe(1366)
+    expect(firstImage.height).toBe(768)
+  }
   // R12 screenshot regression: an authentic pre-fix mobile frame from R11
   // rendered ONLY rows 312..530 of 844: 74% of the phone stayed black.
   // Engine.startGame success and a nonempty screenshot were insufficient.
@@ -178,7 +199,12 @@ test('authentic released Godot runs WebGL2, paints scene, handles real keyboard/
     })
     expect(driveMotion,'accelerating and steering with two real browser touchpoints must visibly move the city camera').toBeGreaterThan(0.08)
   } else {
-    // Same actions as touch screen: enter car, accelerate, steer and release.
+    // Focus the actual visible WebGL game via a trusted pointer event before
+    // keyboard input. A synthetic press outside the focused canvas is not
+    // sufficient evidence that the actual car moved.
+    const bounds=await page.locator('canvas#canvas').boundingBox()
+    expect(bounds).toBeTruthy()
+    await page.mouse.click(bounds.x+bounds.width*0.5,bounds.y+bounds.height*0.55)
     await page.keyboard.press('e')
     await page.keyboard.down('w')
     await page.keyboard.down('a')
@@ -189,6 +215,14 @@ test('authentic released Godot runs WebGL2, paints scene, handles real keyboard/
   const after=(await captureAnimatedWebGLViewport(page)).png
   expect(after.length).toBeGreaterThan(9500)
   await testInfo.attach('godot-real-world-after-input.png',{body:after,contentType:'image/png'})
+  if(testInfo.project.name==='desktop-chromium'){
+    const desktopMotion=centralSceneMotion(frame,after)
+    await testInfo.attach('godot-desktop-actual-driving.json',{
+      body:Buffer.from(JSON.stringify({desktopMotion,source_commit:RELEASE.source_commit},null,2)),
+      contentType:'application/json'
+    })
+    expect(desktopMotion,'desktop E/W/A must visibly move the authentic Godot world').toBeGreaterThan(0.08)
+  }
   await testInfo.attach('godot-browser-console.txt',{body:Buffer.from(logs.join('\n'))||Buffer.from(''),contentType:'text/plain'})
   expect(errors,'no uncaught Javascript errors or crashed game tab').toEqual([])
 })
