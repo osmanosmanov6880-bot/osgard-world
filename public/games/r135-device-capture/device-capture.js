@@ -122,6 +122,54 @@ export function createEvidenceRecord({
   }
 }
 
+// Validate complete unmodified PNG structure, not just a renamed file with
+// PNG magic. CRC32 validates each original chunk before independent review.
+const PNG_MAGIC = [137,80,78,71,13,10,26,10]
+let crcTable
+function pngCrc(bytes,begin,end) {
+  if (!crcTable) crcTable = Array.from({length:256},(_,i)=>{
+    let c=i
+    for(let j=0;j<8;j++) c=(c&1)?(0xedb88320^(c>>>1)):(c>>>1)
+    return c>>>0
+  })
+  let crc=0xffffffff
+  for(let i=begin;i<end;i++) crc=crcTable[(crc^bytes[i])&255]^(crc>>>8)
+  return (crc^0xffffffff)>>>0
+}
+export function verifyOriginalPng(input) {
+  const data=input instanceof Uint8Array ? input : new Uint8Array(input)
+  assert(data.length>=20000 && data.length<=8000000 &&
+    PNG_MAGIC.every((value,i)=>data[i]===value),
+  'Оригинальный файл должен быть настоящим PNG размером 20 КБ – 8 МБ')
+  const view=new DataView(data.buffer,data.byteOffset,data.byteLength)
+  let position=8,seenPixels=false,seenEnd=false,first=true,width=0,height=0
+  while(position+12<=data.length) {
+    const size=view.getUint32(position,false)
+    const start=position+8,finish=start+size
+    assert(size<=8000000 && finish+4<=data.length,'Повреждён или обрезан PNG')
+    const type=String.fromCharCode(...data.subarray(position+4,position+8))
+    const checksum=view.getUint32(finish,false)
+    assert(checksum===pngCrc(data,position+4,finish),'CRC PNG не совпадает: '+type)
+    if(first) {
+      assert(type==='IHDR' && size===13,'Отсутствует настоящий PNG IHDR')
+      width=view.getUint32(start,false)
+      height=view.getUint32(start+4,false)
+      assert(width>=300 && height>=300 && width<=8000 && height<=8000,
+        'Неверное разрешение исходного PNG')
+      first=false
+    } else if(type==='IDAT') seenPixels=true
+    if(type==='IEND') {
+      assert(size===0 && finish+4===data.length && seenPixels,
+        'Неполный PNG, посторонние данные после IEND')
+      seenEnd=true
+      break
+    }
+    position=finish+4
+  }
+  assert(seenEnd,'В исходном PNG отсутствует корректный IEND')
+  return {width,height,bytes:data.length}
+}
+
 export async function digestBytes(bytes) {
   assert(globalThis.crypto?.subtle, 'Безопасный контекст HTTPS и Web Crypto обязательны')
   return hex(await crypto.subtle.digest('SHA-256', bytes))
