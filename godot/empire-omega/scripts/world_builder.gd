@@ -484,6 +484,7 @@ func apply_visual_budget(mode: String) -> void:
 		weather_particles.amount_ratio = 0.25 if visual_budget == "low" else (0.65 if visual_budget == "standard" else 1.0)
 	if horizon_scenic != null:
 		horizon_scenic.visible = visual_budget != "low"
+		horizon_scenic.call("set_intersection_quality",visual_budget)
 	if architecture_trim != null:
 		architecture_trim.visible = visual_budget != "low"
 	if streetfront != null:

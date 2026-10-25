@@ -4,6 +4,7 @@ extends Node3D
 
 const ROUTER = preload("res://scripts/street_router.gd")
 const ROUTINE = preload("res://scripts/citizen_routine.gd")
+const TRAJECTORY = preload("res://scripts/horizon_pedestrian_yield.gd")
 var citizen_id := 0
 var speed := 2.15
 var activity := ""
@@ -40,15 +41,20 @@ func _refresh_schedule() -> void:
 	route = ROUTER.find_route(global_position,target,simulation.data)
 	next_waypoint = 1 if route.size() > 1 else 0
 
-func _yield_to_vehicle() -> bool:
-	# NPC proxies have no physics collision; avoid a visible car passing through them.
+func _yield_to_vehicle(walking_velocity: Vector3 = Vector3.ZERO) -> bool:
+	# A real relative-trajectory test, not a simple distance freeze. Cars
+	# passing in the adjacent lane or heading away never stall the sidewalk.
 	for nearby in traffic_vehicles:
 		if not is_instance_valid(nearby) or not nearby.visible or absf(float(nearby.get("speed"))) < 1.5:
 			continue
-		if nearby.global_position.distance_squared_to(global_position) < 42.0:
+		var vehicle_velocity: Vector3 = nearby.velocity
+		if TRAJECTORY.should_yield(global_position,walking_velocity,nearby.global_position,vehicle_velocity):
 			return true
 	if is_instance_valid(player_car) and absf(float(player_car.get("speed"))) >= 1.5:
-		return player_car.global_position.distance_squared_to(global_position) < 64.0
+		var signed_speed: float = float(player_car.get("speed"))
+		var heading: float = player_car.global_rotation.y
+		var player_velocity := Vector3(-sin(heading),0.0,-cos(heading))*signed_speed
+		return TRAJECTORY.should_yield(global_position,walking_velocity,player_car.global_position,player_velocity)
 	return false
 
 func _process(delta: float) -> void:
@@ -58,8 +64,6 @@ func _process(delta: float) -> void:
 		_refresh_schedule()
 	if route.is_empty() or next_waypoint >= route.size():
 		return
-	if _yield_to_vehicle():
-		return
 	var at: Vector3 = route[next_waypoint]
 	var travel: Vector3 = at-global_position
 	travel.y = 0.0
@@ -67,6 +71,8 @@ func _process(delta: float) -> void:
 		next_waypoint += 1
 		return
 	var velocity: Vector3 = travel.normalized() * speed
+	if _yield_to_vehicle(velocity):
+		return
 	global_position += velocity * minf(delta,0.06)
 	walking_phase += delta * 9.0
 	if body_mesh != null:

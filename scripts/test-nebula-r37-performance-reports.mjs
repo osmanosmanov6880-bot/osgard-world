@@ -15,7 +15,8 @@ assert.ok(!/\bfetch\s*\(|XMLHttpRequest|sendBeacon\s*\(|new\s+WebSocket\b/.test(
 assert.ok(!/\.innerHTML\s*=/.test(match[1]),'never inject user filenames as HTML');
 const sandbox={window:{},document:{getElementById(){return null;}},console};
 vm.runInNewContext(match[1],sandbox,{timeout:3500});
-const {parseReport,makeCSV,thresholds,summarizeRuns,compareBuilds,r40CandidateBuildId}=sandbox.window.NebulaR37;
+const {parseReport,makeCSV,thresholds,summarizeRuns,compareBuilds,fieldMatrix,maxReportFiles,r40CandidateBuildId}=sandbox.window.NebulaR37;
+assert.ok(maxReportFiles>=108 && maxReportFiles<=300, 'UI must admit the full 108 JSON physical matrix with a bounded cap');
 assert.equal(r40CandidateBuildId,'NEBULA_R40_BRIDGE_BATCH_3X32');
 assert.equal(thresholds.length,3);
 const report=values=>({
@@ -131,6 +132,46 @@ assert.throws(()=>parseReport(report({build_variant:r40CandidateBuildId}),'x','A
 assert.throws(()=>parseReport(report({build_variant:'OTHER_BUILD'}),'x','AB Device','R40'),/идентификац/);
 assert.equal(parseReport(report({build_variant:r40CandidateBuildId}),'r40.json','AB Device','R40').reportedBuild,r40CandidateBuildId);
 assert.equal(parseReport(report({}),'r38.json','AB Device','R38').reportedBuild,'R38_LEGACY');
+// Prove the real UI can represent the minimum 108-source matrix,
+// without implying the data came from actual hardware.
+const matrixRecords=[];
+for (const device of ['android-low','android-mid','iphone-safari']) {
+  for (const orientation of ['portrait','landscape']) {
+    for (const profile of ['MAX','HIGH','ECO']) {
+      const quality={MAX:0,HIGH:1,ECO:2}[profile];
+      const resolution=orientation==='portrait'?
+        {resolution_width:390,resolution_height:844}:
+        {resolution_width:844,resolution_height:390};
+      for (const variant of ['R38','R40']) {
+        for(let i=0;i<3;i++) {
+          const fps={MAX:62,HIGH:50,ECO:35}[profile]+i+
+            (variant==='R40'?1:0);
+          const p95={MAX:18,HIGH:23,ECO:31}[profile]-
+            (variant==='R40'?1:0);
+          matrixRecords.push(parseReport(report({
+            quality,...resolution,date_unix:++syntheticTimestamp,
+            avg_fps:fps,p95_frame_ms:p95,
+            ...(variant==='R40'?{build_variant:r40CandidateBuildId}:{})
+          }),device+'-'+orientation+'-'+profile+'-'+variant+'-'+i+'.json',
+          device,variant));
+        }
+      }
+    }
+  }
+}
+assert.equal(matrixRecords.length,108);
+const matrix=fieldMatrix(matrixRecords);
+assert.equal(matrix.requiredReports,108);
+assert.equal(matrix.requiredPairs,18);
+assert.equal(matrix.received,108);
+assert.equal(matrix.usable,108);
+assert.equal(matrix.completePairs,18);
+assert.equal(matrix.devices,3);
+assert.equal(fieldMatrix(matrixRecords.slice(0,107)).completePairs,17);
+const mismatched=matrixRecords.map(x=>({...x}));
+mismatched[3]={...mismatched[3],resolution:'430×930'};
+assert.equal(fieldMatrix(mismatched).completePairs,17);
+console.log('NEBULA_R40_FIELD_MATRIX_UI_SUCCESS synthetic_reports=108 target_groups=18 real_hardware=0');
 console.log('NEBULA_R40_AB_LOCAL_QA_SUCCESS measured_physical_devices=0 paired_synthetic=4');
 console.log('NEBULA_R39_REPEATABILITY_QA_SUCCESS synthetic_groups=6 real_hardware_claims=0');
 console.log('NEBULA_R37_OFFLINE_COMPARISON_SUCCESS actual_html_script=executed synthetic_fixtures=17 local_only=true');

@@ -2,7 +2,7 @@ import { defineConfig } from '@playwright/test'
 
 export default defineConfig({
   testDir: './scripts',
-  testMatch: ['osa-cinema-v13-production.spec.mjs'],
+  testMatch: ['osa-cinema-v13-production.spec.mjs', 'osa-cinema-v15-screening.spec.mjs'],
   fullyParallel: false,
   workers: 1,
   retries: 1,

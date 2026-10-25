@@ -100,6 +100,8 @@ func _make_headlight_beams() -> void:
 		headlight_cones.append(beam)
 
 func update_headlights(hour: float,quality: String) -> void:
+	if horizon_visual != null:
+		horizon_visual.call("set_detail_quality",quality)
 	var safe_hour: float = fposmod(hour if is_finite(hour) else 12.0,24.0)
 	var active: bool = (safe_hour < 6.75 or safe_hour >= 18.75) and quality != "low"
 	for light in headlight_cones:

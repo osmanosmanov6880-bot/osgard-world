@@ -1,0 +1,42 @@
+name: NEBULA production asset identity gate
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/deploy-remix-arena-static.yml"
+      - ".github/workflows/nebula-production-artifact-guard.yml"
+      - ".github/nebula-production-allowlist.json"
+      - "scripts/nebula-production-artifact-guard.mjs"
+      - "scripts/test-nebula-production-artifact-guard.mjs"
+      - "public/games/remix/arena-v2/nebula-3d/index.html"
+      - "public/games/remix/arena-v2/nebula-3d/index.js"
+      - "public/games/remix/arena-v2/nebula-3d/index.wasm"
+      - "public/games/remix/arena-v2/nebula-3d/index.pck"
+  push:
+    branches: [master]
+    paths:
+      - ".github/workflows/deploy-remix-arena-static.yml"
+      - ".github/workflows/nebula-production-artifact-guard.yml"
+      - ".github/nebula-production-allowlist.json"
+      - "scripts/nebula-production-artifact-guard.mjs"
+      - "scripts/test-nebula-production-artifact-guard.mjs"
+      - "public/games/remix/arena-v2/nebula-3d/index.html"
+      - "public/games/remix/arena-v2/nebula-3d/index.js"
+      - "public/games/remix/arena-v2/nebula-3d/index.wasm"
+      - "public/games/remix/arena-v2/nebula-3d/index.pck"
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Test fail-closed R38/R40 production candidate check
+        run: |
+          set -euo pipefail
+          node --check scripts/nebula-production-artifact-guard.mjs
+          node scripts/test-nebula-production-artifact-guard.mjs
+          node scripts/nebula-production-artifact-guard.mjs

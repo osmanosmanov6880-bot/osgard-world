@@ -36,6 +36,9 @@ jobs:
             grep -Fq 'REMIX ARENA' public/games/remix/arena-v2/nebula-3d/index.html
           fi
           grep -Fq 'NEBULA CITY - Open World' public/games/remix/arena-v2/open-world/index.html
+          # Block publishing any different R40 binaries until a separately
+          # reviewed real-device QA promotion updates the exact allowlist.
+          node scripts/nebula-production-artifact-guard.mjs
           mkdir -p release
           cp -a public/games/remix/arena-v2/. release/
           tar -czf remix-arena-release.tgz -C release .

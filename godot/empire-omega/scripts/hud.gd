@@ -11,6 +11,8 @@ signal wants_save
 signal wants_load
 signal wants_reset
 signal dialogue_changed(is_open: bool)
+signal benchmark_start_requested
+signal benchmark_export_requested
 
 const BUILDS = {
 	"council":["Городской совет","Council","市政议会"],
@@ -267,6 +269,9 @@ var toast_until_ms: int = 0
 var map
 var diagnostic_panel: PanelContainer
 var diagnostic_label: Label
+var benchmark_status_label: Label
+var benchmark_start_button: Button
+var benchmark_export_button: Button
 var diagnostic_visible := false
 var map_visible_before_diagnostics := false
 var overlay: ColorRect
@@ -503,9 +508,24 @@ func _make_hud() -> void:
 	toast_panel.visible = false
 	toast_label = _label(toast_panel,"",18,true)
 	toast_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	diagnostic_panel = _panel(Rect2(24,116,360,105))
+	diagnostic_panel = _panel(Rect2(24,116,360,182))
 	diagnostic_panel.visible = false
-	diagnostic_label = _label(diagnostic_panel,"PERFORMANCE",15,true)
+	var benchmark_stack := VBoxContainer.new()
+	benchmark_stack.add_theme_constant_override("separation",4)
+	diagnostic_panel.add_child(benchmark_stack)
+	diagnostic_label = _label(benchmark_stack,"PERFORMANCE",14,true)
+	benchmark_status_label = _label(benchmark_stack,"REAL FRAME TEST: READY",12)
+	var benchmark_controls := HBoxContainer.new()
+	benchmark_controls.add_theme_constant_override("separation",6)
+	benchmark_stack.add_child(benchmark_controls)
+	benchmark_start_button = _button(benchmark_controls,_v08("ЗАМЕР 20 С","TEST 20S","测试20秒"),Callable(self,"_request_benchmark_start"))
+	benchmark_export_button = _button(benchmark_controls,_v08("СКАЧАТЬ JSON","EXPORT JSON","导出JSON"),Callable(self,"_request_benchmark_export"))
+	benchmark_start_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	benchmark_export_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	benchmark_start_button.custom_minimum_size.y = 38
+	benchmark_export_button.custom_minimum_size.y = 38
+	benchmark_start_button.add_theme_font_size_override("font_size",12)
+	benchmark_export_button.add_theme_font_size_override("font_size",12)
 
 func toggle_field_journal() -> void:
 	if journal_panel != null and not open and not pause_open:
@@ -790,6 +810,27 @@ func update_world_context(player_at: Vector3, vehicle_at: Vector3, goal_at: Vect
 	else:
 		speed_label.text = ""
 		hint_label.text = ((_v08("РЯДОМ: ","NEAR: ","附近: ")+nearest.left(24)) if nearest != "" else _v08("АВТО · ИДТИ · ДЕЙСТВИЯ","CAR · WALK · ACTIONS","车辆 · 行走 · 操作")) if compact_hud else (("F: "+nearest) if nearest != "" else _v08("WASD — идти · E — авто · F — действие · Tab — город · H — журнал","WASD — move · E — car · F — interact · Tab — city · H — journal","WASD 移动 · E 上车 · F 互动 · Tab 城市 · H 日志"))
+
+func _request_benchmark_start() -> void:
+	benchmark_start_requested.emit()
+
+func _request_benchmark_export() -> void:
+	benchmark_export_requested.emit()
+
+func update_benchmark_status(progress: float,finished: bool,reason: String) -> void:
+	if benchmark_status_label == null:
+		return
+	if finished:
+		benchmark_status_label.text = _v08("20 С РЕАЛЬНЫХ КАДРОВ · ЭКСПОРТ JSON",
+			"20S ACTUAL FRAMES · EXPORT JSON","20秒真实帧 · 导出JSON")
+	elif reason != "":
+		benchmark_status_label.text = _v08("ТЕСТ ПРЕРВАН — ПОВТОРИТЕ",
+			"TEST ABORTED · RETRY","测试中断 · 重试")
+	elif progress > 0.0:
+		benchmark_status_label.text = _v08("ИДЁТ ЗАМЕР","CAPTURING","测量中") + " · %d%%" % roundi(progress*100)
+	else:
+		benchmark_status_label.text = _v08("ЗАМЕР РЕАЛЬНОГО FPS И КАДРОВ",
+			"REAL RENDER FRAME BENCHMARK","真实渲染帧测试")
 
 func toggle_diagnostics() -> void:
 	diagnostic_visible = not diagnostic_visible
@@ -1460,7 +1501,7 @@ func _apply_responsive_layout() -> void:
 		# Remove the duplicate lower instruction bar to expose more road.
 		controls_panel.visible = not bool(frames["portrait_focus"])
 		_set_panel_frame(journal_panel,frames["journal"],0,0,0,0)
-		_set_panel_frame(diagnostic_panel,frames["diagnostics"],0,0,0,0)
+		_set_panel_frame(diagnostic_panel,HORIZON_LAYOUT.diagnostics_frame(screen),0,0,0,0)
 		_set_panel_frame(toast_panel,frames["toast"],0,0,0,0)
 		var modal: Rect2 = frames["modal"]
 		var panel_frame := Rect2(modal.position-screen*0.5,modal.size)
@@ -1484,7 +1525,7 @@ func _apply_responsive_layout() -> void:
 		_set_panel_frame(controls_panel,Rect2(290,-92,-672,68),0,1,1,1)
 		controls_panel.visible = true
 		_set_panel_frame(journal_panel,Rect2(-476,186,452,440),1,1,0,0)
-		_set_panel_frame(diagnostic_panel,Rect2(24,116,360,105),0,0,0,0)
+		_set_panel_frame(diagnostic_panel,HORIZON_LAYOUT.diagnostics_frame(screen),0,0,0,0)
 		_set_panel_frame(toast_panel,Rect2(-252,24,504,64),0.5,0.5,0,0)
 		# The cabinet docks left, leaving the car and the city visible in play.
 		_set_panel_frame(strategy_window,HORIZON_LAYOUT.strategy_dock(screen),0,0,0,0)

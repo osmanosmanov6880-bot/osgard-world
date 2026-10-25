@@ -3,6 +3,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
+import { createHash } from 'node:crypto';
 const deny = reason => { throw new Error(reason); };
 const check = (condition, message) => { if (!condition) deny(message); };
 const ORIENTATIONS = ['portrait','landscape'];
@@ -41,6 +42,23 @@ function localFile(root,relative,kind) {
 function readJson(root,relative) {
   return JSON.parse(fs.readFileSync(localFile(root,relative,'JSON'),'utf8'));
 }
+// Reject the same underlying evidence even when an operator renames the file
+// or associates it with a different phone, orientation or graphics profile.
+// SHA-256 is a local duplicate detector, not proof of who captured a file.
+function uniqueDigest(bytes, seen, kind) {
+  const fingerprint=createHash('sha256').update(bytes).digest('hex');
+  check(!seen.has(fingerprint),
+    'Reused original '+kind+' detected across field matrix');
+  seen.add(fingerprint);
+}
+function uniqueTimestamp(stamp, deviceId, build, seen) {
+  check(typeof stamp==='number' && Number.isFinite(stamp) && stamp>0,
+    'Original game measurement timestamp missing');
+  const key=JSON.stringify([deviceId,build,stamp]);
+  check(!seen.has(key),
+    'Reused benchmark timestamp on same phone and build');
+  seen.add(key);
+}
 // Reject a faster average FPS when stutter/1% low is materially worse.
 function median(nums) {
   check(Array.isArray(nums) && nums.length>0, 'No frame-pacing samples');
@@ -48,8 +66,17 @@ function median(nums) {
   const mid=Math.floor(sorted.length/2);
   return sorted.length%2?sorted[mid]:(sorted[mid-1]+sorted[mid])/2;
 }
+function usableFrameReport(r) {
+  // Match exactly the eligibility rules of the published R39/R40 viewer.
+  // Never let an excluded software-GPU, interrupted or unreliable JSON
+  // influence the separate 1%-low/P99 acceptance gate.
+  return r.validTest === true && r.software === false &&
+    r.resolution !== 'НЕ УКАЗАНО' && r.stamp !== null &&
+    (r.status === 'ЦЕЛЬ' || r.status === 'НИЖЕ ЦЕЛИ');
+}
 function framePacing(rows) {
-  const a=rows.filter(r=>r.variant==='R38'),b=rows.filter(r=>r.variant==='R40');
+  const a=rows.filter(r=>r.variant==='R38' && usableFrameReport(r));
+  const b=rows.filter(r=>r.variant==='R40' && usableFrameReport(r));
   check(a.length>=3 && b.length>=3,'Missing before/after frame pacing samples');
   const low38=median(a.map(x=>x.low)),low40=median(b.map(x=>x.low));
   const p9938=median(a.map(x=>x.p99)),p9940=median(b.map(x=>x.p99));
@@ -72,6 +99,8 @@ function inspect(filename) {
   check(Array.isArray(input.devices)&&input.devices.length>=3,'Need at least 3 physical phones');
   const api=viewer(),seen=new Set(),rows=[],summary=[],platforms={Android:0,iOS:0};
   let images=0;
+  const sourceJsonDigests=new Set(), screenshotDigests=new Set();
+  const sampleTimestamps=new Set();
   for(const device of input.devices) {
     const id=device.id;
     check(typeof id==='string'&&/^[A-Za-z0-9_-]{3,48}$/.test(id)&&!seen.has(id),
@@ -85,8 +114,10 @@ function inspect(filename) {
       const v=device.visual?.[orientation];
       check(v?.approved===true && typeof v.notes==='string'&&v.notes.trim().length>=20,
         'Human visual sign-off missing: '+id+'/'+orientation);
-      localFile(root,v.baseline_image,'image');
-      localFile(root,v.candidate_image,'image');
+      const baselineImage=localFile(root,v.baseline_image,'image');
+      const candidateImage=localFile(root,v.candidate_image,'image');
+      uniqueDigest(fs.readFileSync(baselineImage),screenshotDigests,'screenshot');
+      uniqueDigest(fs.readFileSync(candidateImage),screenshotDigests,'screenshot');
       images+=2;
       for(const profile of PROFILES) {
         const entry=(device.runs||[]).filter(x=>
@@ -98,7 +129,11 @@ function inspect(filename) {
           check(Array.isArray(filenames)&&filenames.length>=3,
             'Need >=3 original independent JSONs from each game: '+id+'/'+profile);
           for(const name of filenames) {
-            const record=api.parseReport(readJson(root,name),path.basename(name),id,variant);
+            const original=fs.readFileSync(localFile(root,name,'JSON'));
+            uniqueDigest(original,sourceJsonDigests,'benchmark JSON');
+            const payload=JSON.parse(original.toString('utf8'));
+            const record=api.parseReport(payload,path.basename(name),id,variant);
+            uniqueTimestamp(record.stamp,id,variant,sampleTimestamps);
             const xy=record.resolution.split('×').map(Number);
             check(record.profile===profile && xy.length===2 &&
               (orientation==='portrait'?xy[1]>xy[0]:xy[0]>xy[1]),
@@ -132,7 +167,8 @@ function inspect(filename) {
   return {schema:'NEBULA_R40_OFFLINE_EVIDENCE_V1',
     local_evidence_structure:'PASS',
     phones_declared:input.devices.length,physical_jsons_read:summary.length,
-    checked_images:images,results:rows,
+    checked_images:images,unique_original_jsons:sourceJsonDigests.size,
+    unique_source_images:screenshotDigests.size,results:rows,
     caveat:'A script cannot independently authenticate physical devices or screenshot provenance. Actual human visual inspection and thermal/handling sign-off remain mandatory.'};
 }
 try {
@@ -146,21 +182,57 @@ try {
       one_percent_low_fps:35,p95_frame_ms:23,p99_frame_ms:29};
     check(api.parseReport(fixture,'fixture.json','CI','R40').reportedBuild===
       api.r40CandidateBuildId,'R40 provenance regression');
-    const stable=framePacing([
-      {variant:'R38',low:30,p99:33},{variant:'R38',low:31,p99:34},
-      {variant:'R38',low:29,p99:35},{variant:'R40',low:31,p99:32},
-      {variant:'R40',low:32,p99:33},{variant:'R40',low:30,p99:34}
-    ]);
+    const validFixture=(variant,low,p99,stamp)=>({
+      variant,low,p99,stamp,validTest:true,software:false,
+      status:'ЦЕЛЬ',resolution:'390×844'
+    });
+    const stableFixtures=[
+      validFixture('R38',30,33,1790000001),
+      validFixture('R38',31,34,1790000002),
+      validFixture('R38',29,35,1790000003),
+      validFixture('R40',31,32,1790000004),
+      validFixture('R40',32,33,1790000005),
+      validFixture('R40',30,34,1790000006)
+    ];
+    const stable=framePacing(stableFixtures);
     check(stable.stable && stable.low_improvement_percent > 0,
       'Frame pacing stable synthetic regression');
     const stutter=framePacing([
-      {variant:'R38',low:30,p99:33},{variant:'R38',low:31,p99:34},
-      {variant:'R38',low:29,p99:35},{variant:'R40',low:20,p99:49},
-      {variant:'R40',low:19,p99:48},{variant:'R40',low:21,p99:47}
+      ...stableFixtures.slice(0,3),
+      validFixture('R40',20,49,1790000007),
+      validFixture('R40',19,48,1790000008),
+      validFixture('R40',21,47,1790000009)
     ]);
+    const contaminated=framePacing([
+      ...stableFixtures,
+      {...validFixture('R40',0,50000,1790000010),
+        software:true,validTest:false,status:'SOFTWARE GPU'}
+    ]);
+    check(contaminated.stable &&
+      contaminated.baseline_p99_ms===stable.baseline_p99_ms &&
+      contaminated.candidate_p99_ms===stable.candidate_p99_ms,
+      'Unreliable software-GPU rows must not contaminate frame-pacing medians');
     check(!stutter.stable && stutter.p99_improvement_percent < -5,
       'Severe stutter regression must always be rejected');
-    console.log('NEBULA_R40_FIELD_GATE_SELFTEST_SUCCESS synthetic_only=true hardware=0 pacing_cases=2');
+    const sampleContent=Buffer.from('synthetic-example-only', 'utf8');
+    const seenContent=new Set();
+    uniqueDigest(sampleContent,seenContent,'benchmark JSON');
+    uniqueDigest(Buffer.from('different-fixture'),seenContent,'benchmark JSON');
+    let duplicateRejected=false;
+    try { uniqueDigest(sampleContent,seenContent,'benchmark JSON'); }
+    catch(e) { duplicateRejected=/Reused original/.test(String(e.message)); }
+    check(duplicateRejected && seenContent.size===2,
+      'Duplicate original report bytes must never count as new evidence');
+    const seenTimes=new Set();
+    uniqueTimestamp(1790000000,'test-phone','R38',seenTimes);
+    uniqueTimestamp(1790000000,'other-phone','R38',seenTimes);
+    uniqueTimestamp(1790000000,'test-phone','R40',seenTimes);
+    let repeatedTimeRejected=false;
+    try { uniqueTimestamp(1790000000,'test-phone','R38',seenTimes); }
+    catch(e) { repeatedTimeRejected=/Reused benchmark timestamp/.test(String(e.message)); }
+    check(repeatedTimeRejected && seenTimes.size===3,
+      'Repeated same-device/build timestamps must be rejected');
+    console.log('NEBULA_R40_FIELD_GATE_SELFTEST_SUCCESS synthetic_only=true hardware=0 pacing_cases=3 global_duplicate_negative_cases=2');
   } else {
     check(process.argv.length===3,
       'Usage: node scripts/nebula-r40-field-release-gate.mjs /path/to/manifest.json');

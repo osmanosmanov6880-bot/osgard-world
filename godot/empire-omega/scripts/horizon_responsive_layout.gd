@@ -26,7 +26,16 @@ static func compute(viewport: Vector2) -> Dictionary:
 	var journal := Rect2(12.0,185.0,w-24.0,journal_height)
 	# Performance overlay sits below the touch menu toggle. The minimap is
 	# temporarily hidden while diagnostics are open to avoid occlusion.
-	var diagnostics := Rect2(12.0,244.0,minf(w-24.0,330.0),100.0)
+	# Keep the real FPS benchmark touch-safe even on short landscape.
+	# 860×540 must leave >=120px for acceleration/brake; 320×410 must fit.
+	var diagnostic_height: float = minf(182.0,maxf(80.0,
+		(h-365.0) if h>=500.0 else (h-254.0)))
+	var diagnostics := Rect2(12.0,244.0,minf(w-24.0,330.0),diagnostic_height)
+	# R42 genuine 844x390 phone: the old 244px start plus 156px height
+	# ran outside the 390px viewport and covered bottom driving controls.
+	# Use the unused top-right landscape quadrant, clear of the left toggle.
+	if viewport.y < 500.0 and w >= 600.0:
+		diagnostics = Rect2(w-342.0,92.0,330.0,minf(146.0,maxf(98.0,viewport.y-238.0)))
 	var toast := Rect2(12.0,182.0,w-24.0,68.0)
 	var panel_height: float = minf(670.0,h-24.0)
 	var modal := Rect2(12.0,(h-panel_height)*0.5,w-24.0,panel_height)
@@ -54,3 +63,11 @@ static func strategy_dock(viewport: Vector2) -> Rect2:
 	var margin_y: float = clampf(h*0.040,24.0,46.0)
 	var width: float = minf(clampf(w*0.365,470.0,600.0),w-margin_x-28.0)
 	return Rect2(margin_x,margin_y,width,h-2.0*margin_y)
+
+# Shared R42 panel geometry: desktop deliberately uses a non-compact HUD,
+# whose compute() dictionary has no per-widget keys. Keep one source of truth
+# for both the live HUD and native regression tests.
+static func diagnostics_frame(viewport: Vector2) -> Rect2:
+	if is_compact(viewport):
+		return compute(viewport)["diagnostics"]
+	return Rect2(24.0,116.0,360.0,182.0)

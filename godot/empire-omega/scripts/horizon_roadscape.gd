@@ -3,10 +3,12 @@ extends Node3D
 ## Original procedural road decoration, low-poly foliage and skyline.
 ## It deliberately has no colliders: traffic and missions retain their geometry.
 const ORGANIC_TREES = preload("res://scripts/horizon_organic_foliage.gd")
+const R38_STREETS = preload("res://scripts/horizon_intersection_details.gd")
 
 var tree_count := 0
 var marking_count := 0
 var scenic_batches := 0
+var intersection_details: Node3D
 
 func _ready() -> void:
 	name = "HorizonRoadscape"
@@ -17,6 +19,13 @@ func _ready() -> void:
 	_build_festival_gate()
 	var richer_scenery: Node3D = preload("res://scripts/horizon_scenery_r4.gd").new()
 	add_child(richer_scenery)
+	intersection_details = R38_STREETS.new()
+	add_child(intersection_details)
+	intersection_details.call("set_quality","standard")
+
+func set_intersection_quality(tier: String) -> void:
+	if intersection_details != null:
+		intersection_details.call("set_quality",tier)
 
 func _mat(color: Color, metal: float = 0.0, rough: float = 0.8, glow: bool = false) -> StandardMaterial3D:
 	var material := StandardMaterial3D.new()

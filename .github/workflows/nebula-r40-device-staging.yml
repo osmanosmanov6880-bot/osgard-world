@@ -1,0 +1,143 @@
+name: NEBULA R40 isolated device QA staging
+on:
+  workflow_dispatch:
+    inputs:
+      source_run_id:
+        description: "Successful PR #375 NEBULA native Web CI run ID"
+        required: true
+        type: string
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: osgard-nebula-r40-qa-staging
+  cancel-in-progress: false
+jobs:
+  stage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate official current R40 PR source and successful CI
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RUN_ID: ${{ inputs.source_run_id }}
+        run: |
+          set -euo pipefail
+          case "$RUN_ID" in ''|*[!0-9]*) echo "::error::Numeric run ID required"; exit 1;; esac
+          pr="$(gh api "repos/$GH_REPO/pulls/375")"
+          head="$(printf '%s' "$pr" | jq -er '.head.sha')"
+          branch="$(printf '%s' "$pr" | jq -er '.head.ref')"
+          test "$branch" = "release/nebula-r40-final-hardware-qa-20261025"
+          test "$(printf '%s' "$pr" | jq -er '.state')" = "open"
+          run="$(gh api "repos/$GH_REPO/actions/runs/$RUN_ID")"
+          test "$(printf '%s' "$run" | jq -er '.status')" = completed
+          test "$(printf '%s' "$run" | jq -er '.conclusion')" = success
+          test "$(printf '%s' "$run" | jq -er '.event')" = pull_request
+          test "$(printf '%s' "$run" | jq -er '.head_branch')" = "$branch"
+          test "$(printf '%s' "$run" | jq -er '.path')" = ".github/workflows/remix-nebula-3d.yml"
+          printf 'QA_PR_HEAD=%s\n' "$head" >> "$GITHUB_ENV"
+      - name: Verify original WebAssembly artifact and checksums
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ inputs.source_run_id }}
+        run: |
+          set -euo pipefail
+          mkdir -p candidate
+          gh run download "$RUN_ID" --repo "$GITHUB_REPOSITORY" \
+            --name nebula-r40-on-device-candidate --dir candidate
+          cd candidate
+          for f in index.html index.js index.wasm index.pck \
+            R40_DEVICE_ARTIFACT_SHA256.txt R40_DEVICE_ARTIFACT_PROVENANCE.txt; do
+            test -s "$f" || { echo "::error::Missing $f"; exit 1; }
+          done
+          sha256sum -c R40_DEVICE_ARTIFACT_SHA256.txt
+          grep -Fxq "pull_request_head_sha=$QA_PR_HEAD" R40_DEVICE_ARTIFACT_PROVENANCE.txt
+          grep -Fxq "release_status=HARDWARE_QA_ONLY_NOT_PRODUCTION" R40_DEVICE_ARTIFACT_PROVENANCE.txt
+          grep -Fq "REMIX ARENA" index.html
+          test "$(od -An -tx1 -N4 index.wasm | tr -d ' \n')" = "0061736d"
+          test "$(wc -c < index.pck)" -gt 1000000
+          echo "NEBULA_R40_STAGING_SOURCE=VERIFIED"
+          cd ..
+          tar -czf nebula-r40-qa.tgz -C candidate .
+          sha256sum nebula-r40-qa.tgz > nebula-r40-qa.sha256
+      - name: Verify existing SSH environment
+        env:
+          HOST: ${{ secrets.OSGARD_DEPLOY_HOST }}
+          USER: ${{ secrets.OSGARD_DEPLOY_USER }}
+          KEY: ${{ secrets.OSGARD_DEPLOY_KEY }}
+        run: |
+          set -euo pipefail
+          test -n "$HOST" && test -n "$USER" && test -n "$KEY"
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$KEY" > ~/.ssh/osgard_nebula_r40_key
+          chmod 600 ~/.ssh/osgard_nebula_r40_key
+          ssh-keyscan -T 10 -H "$HOST" > ~/.ssh/known_hosts
+          test -s ~/.ssh/known_hosts
+      - name: Activate isolated QA path only; preserve public R38 game
+        env:
+          HOST: ${{ secrets.OSGARD_DEPLOY_HOST }}
+          USER: ${{ secrets.OSGARD_DEPLOY_USER }}
+        run: |
+          set -euo pipefail
+          release_id="$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+          remote_dir="/tmp/nebula-r40-qa-upload-$release_id"
+          ssh -i ~/.ssh/osgard_nebula_r40_key -o BatchMode=yes "$USER@$HOST" \
+            "mkdir -p '$remote_dir'"
+          scp -i ~/.ssh/osgard_nebula_r40_key nebula-r40-qa.tgz nebula-r40-qa.sha256 \
+            "$USER@$HOST:$remote_dir/"
+          ssh -i ~/.ssh/osgard_nebula_r40_key -o BatchMode=yes "$USER@$HOST" \
+            "STAGING_UPLOAD='$remote_dir' RELEASE_ID='$release_id' bash -s" <<'REMOTE'
+          set -euo pipefail
+          trap 'rm -rf "$STAGING_UPLOAD"' EXIT
+          lock=/run/lock/osgard-frontend-activation.lock
+          test ! -L "$lock"
+          exec 9>> "$lock"
+          flock -w 420 9
+          cd "$STAGING_UPLOAD"
+          sha256sum -c nebula-r40-qa.sha256
+          mkdir extracted
+          tar -xzf nebula-r40-qa.tgz -C extracted
+          (cd extracted && sha256sum -c R40_DEVICE_ARTIFACT_SHA256.txt)
+          test -s extracted/index.wasm && test -s extracted/index.pck
+          container=osgard-world
+          docker inspect "$container" --format '{{.State.Running}}' | grep -qx true
+          docker exec "$container" sh -ec '
+            dest=/usr/share/nginx/html/games/remix/nebula-r40-qa
+            test ! -L "$dest"
+            available="$(df -k /tmp | awk "END{print \$4}")"
+            case "$available" in ""|*[!0-9]*) exit 2;; esac
+            test "$available" -ge 200000
+          '
+          candidate="/tmp/nebula-r40-qa-stage-$RELEASE_ID"
+          docker cp extracted "$container:$candidate"
+          docker exec -e RELEASE_ID="$RELEASE_ID" "$container" sh -ec '
+            dest=/usr/share/nginx/html/games/remix/nebula-r40-qa
+            candidate="/tmp/nebula-r40-qa-stage-$RELEASE_ID"
+            backup="/tmp/nebula-r40-qa-backup-$RELEASE_ID"
+            test -s "$candidate/index.wasm" && test -s "$candidate/index.pck"
+            test ! -L "$dest"
+            if [ -d "$dest" ]; then mv "$dest" "$backup"; fi
+            if ! mv "$candidate" "$dest"; then
+              if [ -d "$backup" ]; then mv "$backup" "$dest"; fi
+              exit 1
+            fi
+            if ! wget -q -O /tmp/nebula-r40-qa-health.html -T 15 \
+               http://127.0.0.1/games/remix/nebula-r40-qa/ ||
+               ! grep -Fq "REMIX ARENA" /tmp/nebula-r40-qa-health.html; then
+              rm -rf "$dest"
+              if [ -d "$backup" ]; then mv "$backup" "$dest"; fi
+              echo "R40 staging failed; restored previous QA stage" >&2
+              exit 1
+            fi
+            rm -rf "$backup"
+            rm -f /tmp/nebula-r40-qa-health.html
+            echo "NEBULA_R40_STAGING_ONLY_SUCCESS"
+          '
+          REMOTE
+      - name: Document staging-only release boundary
+        run: |
+          echo "QA: https://osgard.world/games/remix/nebula-r40-qa/"
+          echo "Public R38: https://osgard.world/games/remix/arena-v2/nebula-3d/"
+          echo "This route is a publicly accessible QA build, NOT production R40."
