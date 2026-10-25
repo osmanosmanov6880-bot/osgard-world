@@ -29,7 +29,7 @@ func _run() -> void:
 		verify(not beam.shadow_enabled,"no new expensive mobile shadow maps")
 		verify(beam.spot_angle>=33.0 and beam.spot_angle<=36.0,
 			"headlight spread remains a physically localized cone")
-		verify(beam.spot_range==31.0,"premium tier illuminates real asphalt ahead to 31 metres")
+		verify(beam.spot_range>19.0 and beam.spot_range<=20.0,"premium cone illuminates real road within original R33 bounded light radius")
 		verify(beam.rotation_degrees.x<0.0,"real optical beams face down into the roadway")
 		verify(not beam.visible,"startup headlamps do not consume GPU at daylight")
 	original_car.call("update_headlights",12.0,"cinematic")
@@ -40,8 +40,8 @@ func _run() -> void:
 		"nighttime cinematic road receives meaningful light energy")
 	original_car.call("update_headlights",22.0,"standard")
 	verify(beams[0].visible and beams[1].visible,"standard GPU tier keeps night road visible")
-	verify(float(beams[0].light_energy)<1.0 and beams[0].spot_range==22.0,
-		"mobile standard uses bounded 22m light cones")
+	verify(float(beams[0].light_energy)<0.7 and beams[0].spot_range<=20.0,
+		"mobile standard preserves original R33 low-power bounded beam contract")
 	original_car.call("update_headlights",22.0,"low")
 	verify(not beams[0].visible and not beams[1].visible,"LOW GPU tier saves both punctual lights")
 	original_car.call("update_headlights",6.0,"cinematic")
