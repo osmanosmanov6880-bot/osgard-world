@@ -186,6 +186,39 @@ test('V39 password-protected loopback desk: request protection, audit, report, l
   }finally{await desk.close()}
 })
 
+
+test('V39 timeout is irrevocable: late success cannot resurrect a failed NO-GO audit', {timeout:10000},async()=>{
+  let resolveSlow
+  const slow=new Promise(r=>{resolveSlow=r})
+  const desk=await startPrivateOwnerDesk({password,audit:()=>slow,auditTimeoutMs:30})
+  try {
+    const owner=await auth(desk.url)
+    assert.equal((await http(desk.url,owner,'/api/run','POST')).status,202)
+    const hold=await waitState(desk.url,owner,'failed',60)
+    assert.equal(hold.summary,null)
+    resolveSlow(validAudit())
+    await sleep(80)
+    const later=await state(desk.url,owner)
+    assert.equal(later.state,'failed')
+    assert.equal(later.summary,null)
+    assert.equal((await http(desk.url,owner,'/api/report')).status,409)
+  }finally{await desk.close()}
+})
+
+
+test('V39 repeated incorrect owner passwords are temporarily throttled', {timeout:10000},async()=>{
+  const desk=await startPrivateOwnerDesk({password,audit:async()=>validAudit()})
+  try {
+    for(let i=0;i<5;i++){
+      const attempt=await login(desk.url,{passwordValue:'incorrect-guess-'+i})
+      assert.equal(attempt.response.status,401)
+    }
+    const blocked=await login(desk.url)
+    assert.equal(blocked.response.status,429)
+    assert.equal((await fetch(desk.url+'/api/status')).status,401)
+  }finally{await desk.close()}
+})
+
 test('V39 CLI argument parser never accepts passwords or unknown flags',()=>{
   const paths=['--repo-root','/source','--receipts-dir','/reports','--masters-dir','/masters','--captions-dir','/captions']
   assert.equal(parseDeskArgs(paths).port,0)
