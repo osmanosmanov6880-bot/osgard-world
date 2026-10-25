@@ -1,0 +1,99 @@
+name: EMPIRE Omega R42 integrated real Godot QA five blocks
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - 'godot/empire-omega/**'
+      - '.github/workflows/omega-r42-full-stack-qa.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  real-native-five-block-engine:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: false
+      - name: Original procedural assets and real Godot scene import
+        run: |
+          python3 godot/empire-omega/tools/generate_audio.py
+          python3 godot/empire-omega/tools/generate_patrol_audio.py
+          godot --headless --editor --path godot/empire-omega --import --quit
+      - name: Five native gameplay features and physics laboratory regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          for suite in v21_vehicle_dynamics v34_real_touch_drive v47_rigidbody_force_lab v49_physics_ab_comparison v59_r40_force_motor_calibration v60_r36_real_frame_benchmark v61_r38_street_infrastructure v62_r39_actual_wheel_art v63_r41_predictive_pedestrian_yield v64_r42_full_stack_integration; do
+            echo "R42 actual Godot test: $suite"
+            timeout --signal=TERM --kill-after=5s 150s godot --headless --path godot/empire-omega --script "res://tests/$suite.gd"
+          done
+  authentic-rendered-pixels-four-independent-viewports:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        viewport: [desktop-1366x768, portrait-390x844, small-phone-320x568, landscape-phone-844x390]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Export real Godot 4.4.1 WebAssembly and PCK
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 godot/empire-omega/tools/generate_audio.py
+          python3 godot/empire-omega/tools/generate_patrol_audio.py
+          godot --headless --editor --path godot/empire-omega --import --quit
+          mkdir -p godot/empire-omega/.build-web
+          godot --headless --path godot/empire-omega --export-release Web "$GITHUB_WORKSPACE/godot/empire-omega/.build-web/index.html"
+          node scripts/localize-godot-web-export.mjs godot/empire-omega/.build-web
+          test -s godot/empire-omega/.build-web/index.wasm
+          test -s godot/empire-omega/.build-web/index.pck
+      - name: Install exact real Chromium pixel tooling
+        run: |
+          npm ci
+          npm install --no-save --package-lock=false @playwright/test@1.58.2 pngjs@7.0.0
+          npx playwright install --with-deps chromium
+      - name: Serve unpublished actual 3D game only on localhost
+        shell: bash
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 --directory godot/empire-omega/.build-web > /tmp/omega-r42-qa.log 2>&1 &
+          for attempt in 1 2 3 4 5 6 7 8 9 10; do
+            curl -fsS http://127.0.0.1:4173/index.html >/dev/null && exit 0
+            sleep 1
+          done
+          cat /tmp/omega-r42-qa.log
+          exit 1
+      - name: Verify real WebGL pixel coverage, no fake screenshots
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx playwright test --config playwright.omega-portrait-preview.config.mjs --project="${{ matrix.viewport }}"
+          if [ "${{ matrix.viewport }}" = "desktop-1366x768" ]; then
+            npx playwright test --config playwright.omega-r33-cabinet.config.mjs
+          fi
+      - name: Preserve authentic visual evidence for this exact resolution
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: omega-r42-${{ matrix.viewport }}-authentic-pixels
+          path: |
+            omega-portrait-preview-results/
+            omega-portrait-preview-report/
+            omega-r33-cabinet-results/
+            omega-r33-cabinet-report/
+          if-no-files-found: ignore
+          retention-days: 14
