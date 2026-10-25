@@ -1,28 +1,34 @@
-# OSA CINEMA V35 - strict historical source provenance
+# OSA CINEMA V35 — защита подлинных исторических документов
 
-This engineering module protects the three original GitHub editorial/rights-policy files:
+Новый модуль проверяет, что в GitHub остались без изменений три исходных документа проекта:
 
-- `docs/OSA_CINEMA_V16_WORKPRINT_MANIFEST.json` (four source workprints)
-- `docs/OSA_CINEMA_V18_PRIVATE_FOUR_TRACK_QA.json` (genuine four-track private audio QA metadata)
-- `docs/OSA_CINEMA_V20_PRIVATE_RELEASE_POLICY.json` (unchanged NO-GO policy)
+- V16 — перечень четырёх редакционных видео;
+- V18 — настоящие метаданные приватной записи с четырьмя аудиодорожками;
+- V20 — правило, запрещающее публичный показ и оплату без разрешений.
 
-The protected baseline Git blob SHA-1 values were read from the owner's authenticated GitHub repository `osmanosmanov6880-bot/osgard-world` on 2026-10-25. The CI step calculates the Git blob digest from the actual checked-out bytes; independently it validates the required workprint IDs, four original audio tracks, matching V16/V20 source hashes, seven human decisions and all release/payment flags set to false.
+## Что умеет
 
-Git blob SHA-1 pins detect unexpected byte differences but **do not prove the identity of a film rights holder** or replace a signed commercial license. A deliberate future change to the historical evidence needs a separate recorded legal/provenance review and independent confirmation, not a casual update of the three pins. Code review must not treat a test fixture as genuine media evidence.
+Проверяющий модуль вычисляет Git-хеш для каждого файла и сравнивает его с оригиналом из репозитория osmanosmanov6880-bot/osgard-world, полученным 25 октября 2026 года. Затем отдельно проверяет: четыре правильных идентификатора фильма, четыре аудиодорожки V18, соответствие исходных SHA-256 в V16 и V20, семь обязательных человеческих решений и все флаги запрета публикации.
 
-V35 includes a separate pure unit-test entrypoint accepting synthetic test pins. In that mode the returned `verifiedHistoricalSnapshot` is deliberately `false` and `testOrCustomPinMode` is `true`. Only the production command with the source-embedded, pinned historical Git blobs can return `verifiedHistoricalSnapshot=true`. Neither mode can grant a premiere.
+Изменённый документ, тестовая заглушка, поддельное разрешение на права, лишняя запись, несовпадающий исходный SHA-256 или ссылка вместо файла вызовут ошибку. Тестовая функция может использовать специально созданные проверочные документы, но в таком режиме она обязательно возвращает verifiedHistoricalSnapshot=false и testOrCustomPinMode=true.
 
-## Commands
+Важно: совпадение Git-хеша доказывает лишь неизменность файла относительно выбранной исходной версии. Оно не доказывает личность правообладателя и не заменяет подписанный договор, реальную запись фильма или заключение юриста. Git SHA-1 здесь используется как идентификатор оригинального Git-объекта, а не как юридическая цифровая подпись.
 
-```
-node --test scripts/osa-cinema-v35-historical-guard.test.mjs
-node scripts/osa-cinema-v35-historical-guard.mjs --root .
-```
+## Проверка разработчиком
 
-## Explicit limits
+На компьютере с Node.js 22 или новее, в корне настоящего репозитория OSGARD:
 
-- No MP4, VTT, private signing keys, secrets, or legal agreements are added.
-- No GitHub branch protection, human approval, identity verification, or rights review is replaced.
-- The private V34.2 standalone archive contains an engineering V18 fixture. It MUST NOT be expected to pass this genuine-GitHub historical gate; this check must run in the real repository checkout, not on local synthetic archives.
-- Existing V34.2 is not rewritten. The code-only V35 update is a separate reviewable addition.
-- Public film release, streaming, subscriptions, and payment remain `NO-GO`.
+1. Запустите: node --test scripts/osa-cinema-v35-historical-guard.test.mjs
+2. Затем: node scripts/osa-cinema-v35-historical-guard.mjs --root .
+
+Первое действие проверяет сам механизм. Второе проверяет настоящие три документа. GitHub Actions запускает обе проверки на Windows, macOS и Linux, а также отдельно проверяет запрет публичной премьеры.
+
+## Принцип неизменности и ограничения
+
+- Никаких MP4, WebVTT, договоров, паролей или приватных ключей в PR нет.
+- Никакие исходные документы V16, V18, V20 не заменяются.
+- Будущее легитимное изменение этих документов должно проходить отдельное документированное юридическое и редакционное рассмотрение, а затем обновление закреплённых хешей с проверкой кода. Нельзя просто менять хеши ради зелёного CI.
+- В автономной поставке V34.2 лежит инженерная тестовая заглушка V18. Она не должна проходить проверку V35 как настоящий документ: проверять следует исходники из GitHub.
+- Проверка V35 не заменяет независимое ревью, доказательства прав или производственные испытания.
+
+**Состояние фильма: NO-GO.** Публичный показ, подписки и оплата не разрешены ни V34.2, ни V35.
