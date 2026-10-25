@@ -1,0 +1,30 @@
+import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
+import { Script } from 'node:vm'
+const html=readFileSync('tools/osa-cinema-v23-private-ab-sound-desk.html','utf8')
+assert.ok(html.startsWith('<!doctype html>'))
+assert.ok(html.includes("connect-src 'none'"),'The private browser desk must not contact any server')
+assert.ok(html.includes("media-src blob:"),'Local-only media URLs expected')
+assert.ok(html.includes('prefers-reduced-motion'))
+assert.ok(html.includes('max-width:540px'))
+assert.ok(!/<script\s+src=/i.test(html),'External scripts forbidden')
+const parts=[...html.matchAll(/<script>([\s\S]*?)<\/script>/gi)]
+assert.equal(parts.length,1)
+const source=parts[0][1]
+new Script(source,{filename:'osa-cinema-v23-private-ab-sound-desk.html'})
+assert.ok(!/\bfetch\s*\(|\bXMLHttpRequest\b|\bWebSocket\b|\bsendBeacon\s*\(/.test(source),'Private UI cannot transmit files')
+const cutMatch=source.match(/const CUTS=\[([^\]]+)\];/)
+assert.ok(cutMatch)
+assert.equal(cutMatch[1].split(',').length,64)
+assert.ok(source.includes('crypto.subtle.digest'))
+assert.ok(source.includes('selectedV18AudioIndex'))
+assert.ok(source.includes('publicationAuthorized:false'))
+assert.ok(source.includes('rightsCleared:false'))
+assert.ok(source.includes('finalMixApproved:false'))
+assert.ok(source.includes('URL.createObjectURL'))
+assert.ok(source.includes('URL.revokeObjectURL'))
+assert.ok(source.includes('currentTime=picture.currentTime'))
+assert.ok(html.includes('id="original-file"')&&html.includes('id="draft-file"'))
+assert.ok(html.includes('id="original-qa"')&&html.includes('id="draft-qa"'))
+assert.ok(html.includes('aria-label="Перемотка фильма"'))
+console.log('OSA_V23_PRIVATE_AB_DESK_SMOKE_PASS: 64 genuine edit cuts, local original/draft audio, mobile and fail-closed rights')
