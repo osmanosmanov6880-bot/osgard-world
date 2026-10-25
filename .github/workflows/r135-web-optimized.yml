@@ -138,7 +138,6 @@ jobs:
           python3 -m pip install --disable-pip-version-check "Pillow==11.3.0"
           python3 scripts/r135-w11-readability-qa.py \
             --portrait "$RUNNER_TEMP/r135-screens/w6-portrait-optical-active.png" \
-            --portrait-evidence "$RUNNER_TEMP/r135-screens/r135-portrait-capture-proof.json" \
             --desktop "$RUNNER_TEMP/r135-screens/desktop-1366.png" \
             --output "$RUNNER_TEMP/r135-w11-readability-evidence.json"
 
@@ -181,6 +180,7 @@ jobs:
             --archive "$RUNNER_TEMP/r135-optimized-release/OSGARD_R135_OPTIMIZED_WEB.zip" \
             --manifest "$RUNNER_TEMP/r135-optimized-release/R135_OPTIMIZED_MANIFEST.json" \
             --portrait "$RUNNER_TEMP/r135-screens/w6-portrait-optical-active.png" \
+            --portrait-evidence "$RUNNER_TEMP/r135-screens/r135-portrait-capture-proof.json" \
             --expected-version r135-web-legibility-w11-20261024 \
             --expected-source "$GITHUB_SHA" \
             --output "$RUNNER_TEMP/r135-w10-release-evidence.json"
