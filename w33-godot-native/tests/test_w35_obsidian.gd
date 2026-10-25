@@ -32,6 +32,7 @@ func _inspect() -> void:
     await process_frame
     await process_frame
     _assert_true(ui.stage_shell != null, "Actual cinematic hero shell exists")
+    _assert_true(ui.control_grid != null, "Native responsive operator workbench exists")
     _assert_true(ui.stage_title != null and ui.stage_readout != null, "Accessible in-scene simulated telemetry exists")
     _assert_true(ui.stage_title.text.find("OBSIDIAN") >= 0, "Obsidian branding belongs to the rendered interface")
     _assert_true(ui.scene_3d != null and ui.scene_3d.obsidian_stage != null, "Original procedural filmic complex exists")
@@ -57,9 +58,11 @@ func _inspect() -> void:
     ui.size = Vector2(1280, 800)
     ui._layout_stage_for_screen()
     _assert_true(ui.stage_shell.custom_minimum_size.y >= 500, "Desktop filmic stage owns most of the fold")
+    _assert_true(ui.control_grid.columns == 2, "Desktop uses spacious two-column workbench")
     ui.size = Vector2(390, 844)
     ui._layout_stage_for_screen()
     _assert_true(ui.stage_shell.custom_minimum_size.y <= 300, "Phone retains usable reachable controls")
+    _assert_true(ui.control_grid.columns == 1, "Phone workbench is truly one column")
     ui.core.set_setting("quality", "eco")
     ui._layout_stage_for_screen()
     ui.scene_3d.set_quality("eco")

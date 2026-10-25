@@ -64,6 +64,7 @@ var _tone_hz := 440.0
 var _audio_player: AudioStreamPlayer
 # W35: Actual responsive cinematic viewport and in-scene editorial HUD.
 var stage_shell: Control
+var control_grid: GridContainer
 var stage_title: Label
 var stage_kicker: Label
 var stage_live: Label
@@ -343,7 +344,16 @@ func _create_interface() -> void:
     for i in range(3):
         view_btns.append(_button(cameras, "0%d   /   CAMERA" % (i + 1), _view_selected.bind(i), false, 175))
 
-    var stats := _panel(body)
+    # Below the cinematic hero: a professional twin-column service desk on PC.
+    # One column on phones; this is native Godot adaptive layout.
+    control_grid = GridContainer.new()
+    control_grid.name = "ObsidianOperatorWorkbench"
+    control_grid.columns = 2
+    control_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+    control_grid.add_theme_constant_override("h_separation", 16)
+    control_grid.add_theme_constant_override("v_separation", 16)
+    body.add_child(control_grid)
+    var stats := _panel(control_grid)
     _label(stats, "LIVE READINGS  /  SIMULATED SENSOR FEEDBACK", 12, COPPER)
     telemetry = _label(stats, "", 17, WHITE)
     status = _label(stats, "", 12, MUTED)
@@ -353,7 +363,7 @@ func _create_interface() -> void:
     hatch_btn = _button(commands, "OPEN", _hatch_clicked, false, 180)
     scan_btn = _button(commands, "SCAN", _scan_clicked, true, 180)
 
-    var calibration := _panel(body)
+    var calibration := _panel(control_grid)
     calibration.name = "DualChannelCalibrationStation"
     cal_title = _label(calibration, "", 15, COPPER)
     a_title = _label(calibration, "A", 12, MUTED)
@@ -387,14 +397,14 @@ func _create_interface() -> void:
     signal_progress.show_percentage = true
     calibration.add_child(signal_progress)
 
-    var guidance := _panel(body)
+    var guidance := _panel(control_grid)
     _label(guidance, "CAUSE → ACTION  /  ERROR EXPLAINABILITY", 12, COPPER)
     feedback = _label(guidance, "", 14, MINT)
     hint = _label(guidance, "", 13, WHITE)
 
     # W33: verified action-based assessment, not invented progress. The
     # bounded event history disappears on reload even if training is saved.
-    debrief_panel = _panel(body)
+    debrief_panel = _panel(control_grid)
     debrief_panel.get_parent().name = "ActionBasedOperatorAssessment"
     debrief_caption = _label(debrief_panel, "", 12, COPPER)
     debrief_label = _label(debrief_panel, "", 13, WHITE)
@@ -404,7 +414,7 @@ func _create_interface() -> void:
     debrief_timeline = _label(debrief_panel, "", 12, MUTED)
     debrief_timeline.visible = false
 
-    var mission_box := _panel(body)
+    var mission_box := _panel(control_grid)
     mission_title = _label(mission_box, "", 18, COPPER)
     var mission_flow := _flow(mission_box)
     for i in range(6):
@@ -413,7 +423,7 @@ func _create_interface() -> void:
         btn.name = "Mission%02d" % (i + 1)
         mission_btns.append(btn)
 
-    var options := _panel(body)
+    var options := _panel(control_grid)
     _label(options, "LOCAL ONLY  /  ACCESSIBILITY & PRIVACY", 12, COPPER)
     var option_flow := _flow(options)
     motion_btn = _button(option_flow, "REDUCED MOTION", _toggle_motion, false, 175)
@@ -444,6 +454,7 @@ func _layout_stage_for_screen() -> void:
         desired_h = clampf(size.y * 0.60, 350.0, 500.0)
     stage_shell.custom_minimum_size = Vector2(0.0, desired_h)
     visual_container.custom_minimum_size = Vector2(0.0, desired_h)
+    control_grid.columns = 1 if size.x < 900.0 else 2
     var narrow: bool = size.x < 640.0
     stage_edition.visible = not narrow
     stage_kicker.text = "A7 / SECURE FACILITY" if narrow else "A7 / RESTRICTED RESEARCH FACILITY"
