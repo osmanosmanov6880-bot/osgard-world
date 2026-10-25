@@ -74,9 +74,15 @@ func build(state: Dictionary, forecast: Dictionary, mission: String,
 	branding.add_theme_constant_override("separation",12)
 	add_child(branding)
 	_label(branding,local("◆  OSGARD · ИМПЕРИЯ Ω","◆  OSGARD · EMPIRE Ω","◆  奥斯加德 · 帝国 Ω",lang),23,true)
-	var selected: String = str(state.get("district","forum"))
-	var title: String = local("КОМАНДНЫЙ ЦЕНТР · РЕАЛЬНЫЙ ГОРОД","OPERATIONS · LIVE CITY","指挥中心 · 真实城市",lang)
-	var micro := _label(branding,title,12)
+	var selected: String = str(state.get("selected","forum"))
+	var clock: float = fposmod(float(state.get("day_clock",8.0)),24.0)
+	var hour: int = floori(clock)
+	var minute: int = floori((clock-float(hour))*60.0)
+	var time_value: String = "%02d:%02d" % [hour,minute]
+	var clock_text: String = local("ТАКТ","TURN","回合",lang)+" "+str(state.get("turn",1))+
+		" · "+time_value+" · "+local("РЕПУТАЦИЯ","REPUTATION","声望",lang)+
+		" %d/100" % int(state.get("reputation",0))
+	var micro := _label(branding,clock_text,12)
 	micro.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	micro.visible = not compact
 

@@ -7,10 +7,10 @@ const CITY_HALF = 224.0
 const ROAD_INTERVAL = 52.0
 const DISTRICT_NAMES = {"forum":"Сенатский форум", "housing":"Жилой квартал", "lower":"Нижний город", "aqueduct":"Акведуки"}
 const DISTRICT_COLORS = {
-	"forum":Color(0.37,0.48,0.63),
-	"housing":Color(0.36,0.57,0.49),
-	"lower":Color(0.49,0.44,0.38),
-	"aqueduct":Color(0.33,0.54,0.59)
+	"forum":Color(0.38,0.40,0.43),
+	"housing":Color(0.38,0.45,0.44),
+	"lower":Color(0.45,0.42,0.39),
+	"aqueduct":Color(0.39,0.45,0.49)
 }
 const LOCATION_DATA = {
 	"cityhall":{"name":"Дворец правителя","position":Vector3(-130,0,-130),"district":"forum"},
@@ -67,6 +67,10 @@ func _ready() -> void:
 	rng.seed = 428753
 	asphalt_pbr = ROAD_MATERIALS.asphalt()
 	concrete_pbr = ROAD_MATERIALS.concrete()
+	# R90 approved urban palette: real PBR tint, not a photograph or
+	# screen-space color overlay. All road wheel collision remains unchanged.
+	asphalt_pbr.albedo_color = Color("a2a8ad")
+	concrete_pbr.albedo_color = Color("bcb8b0")
 	city_root = Node3D.new()
 	city_root.name = "ProceduralDistricts"
 	add_child(city_root)
