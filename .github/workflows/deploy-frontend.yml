@@ -410,7 +410,12 @@ jobs:
           # The pin comes from reviewed master config; no synthetic QA files.
           jq -e '.schema=="NEBULA_R40_ONESHOT_QA_V1" and .candidate_pr==375 and .staging_only==true and .approved_for_production==false and .qa_path=="/games/remix/nebula-r40-qa/"' .github/nebula-r40-qa-one-shot-source.json
           jq -er '.candidate_head_sha' .github/nebula-r40-qa-one-shot-source.json > osgard-release/nebula-r40-qa-head.sha
-          grep -Eq '^[0-9a-f]{40}
+          test -s osgard-release/nebula-r40-qa-head.sha
+          expected_head="$(cat osgard-release/nebula-r40-qa-head.sha)"
+          case "$expected_head" in ""|*[!0-9a-f]*) echo "Invalid R40 QA head pin" >&2; exit 1 ;; esac
+          test "$(printf '%s' "$expected_head" | wc -c)" -eq 40
+          cp scripts/preserve-nebula-r40-qa.sh osgard-release/preserve-nebula-r40-qa.sh
+          test -s osgard-release/preserve-nebula-r40-qa.sh
           cp nginx.conf osgard-release/nginx.conf
           docker build --pull -f server/Dockerfile -t osgard-core-api:${GITHUB_SHA} .
           docker save osgard-core-api:${GITHUB_SHA} | gzip -1 > osgard-release/core-api-image.tar.gz
