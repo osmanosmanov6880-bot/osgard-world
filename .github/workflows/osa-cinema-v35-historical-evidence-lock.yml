@@ -1,0 +1,63 @@
+name: OSA CINEMA V35 immutable historical evidence and strict NO-GO
+on:
+  pull_request:
+    paths:
+      - 'docs/OSA_CINEMA_V16_WORKPRINT_MANIFEST.json'
+      - 'docs/OSA_CINEMA_V18_PRIVATE_FOUR_TRACK_QA.json'
+      - 'docs/OSA_CINEMA_V20_PRIVATE_RELEASE_POLICY.json'
+      - 'scripts/osa-cinema-v35-historical-guard.mjs'
+      - 'scripts/osa-cinema-v35-historical-guard.test.mjs'
+      - '.github/workflows/osa-cinema-v35-historical-evidence-lock.yml'
+  push:
+    branches: [master]
+    paths:
+      - 'docs/OSA_CINEMA_V16_WORKPRINT_MANIFEST.json'
+      - 'docs/OSA_CINEMA_V18_PRIVATE_FOUR_TRACK_QA.json'
+      - 'docs/OSA_CINEMA_V20_PRIVATE_RELEASE_POLICY.json'
+      - 'scripts/osa-cinema-v35-historical-guard.mjs'
+      - 'scripts/osa-cinema-v35-historical-guard.test.mjs'
+      - '.github/workflows/osa-cinema-v35-historical-evidence-lock.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  original-historical-evidence:
+    name: V35 immutable originals (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 8
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Compile and test the V35 fail-closed guard
+        shell: bash
+        run: |
+          node --check scripts/osa-cinema-v35-historical-guard.mjs
+          node --check scripts/osa-cinema-v35-historical-guard.test.mjs
+          node --test scripts/osa-cinema-v35-historical-guard.test.mjs
+      - name: Compare real repository bytes with original Git blob pins
+        shell: bash
+        run: node scripts/osa-cinema-v35-historical-guard.mjs --root .
+  private-film-release-remains-forbidden:
+    name: V35 original V20 publication is still NO-GO
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Reject public film and checkout without independent rights
+        shell: bash
+        run: |
+          set +e
+          node scripts/osa-cinema-v20-release-audit.mjs --strict-publication > "$RUNNER_TEMP/osa-v35-no-go.txt" 2>&1
+          rc=$?
+          set -e
+          test "$rc" -eq 1
+          grep -q OSA_CINEMA_V20_NO_PUBLICATION "$RUNNER_TEMP/osa-v35-no-go.txt"
