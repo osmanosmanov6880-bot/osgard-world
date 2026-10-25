@@ -13,6 +13,10 @@ const GOLD = Color("d9bb83")
 const WHITE = Color("eeeae3")
 const MUTED = Color("c3c2bd")
 var preview: SubViewport
+var atlas_camera: Camera3D
+var atlas_mode: String = "overview"
+var atlas_pins: Dictionary = {}
+var atlas_view_buttons: Dictionary = {}
 
 static func local(ru: String,en: String,zh: String,lang: String) -> String:
 	if lang == "en": return en
@@ -257,6 +261,39 @@ func build(state: Dictionary, forecast: Dictionary, mission: String,
 	# immersive command stage; no static KPI placeholders or lost controls.
 	add_child(stats)
 
+func _switch_atlas_mode(mode: String) -> void:
+	# No extra World3D, no preview image or second GPU pass: change the
+	# one existing native Camera3D in the already-active SubViewport.
+	if not ["overview","architecture"].has(mode):
+		return
+	if atlas_camera == null or preview == null:
+		return
+	atlas_mode = mode
+	if mode == "architecture":
+		atlas_camera.fov = 52.0
+		atlas_camera.position = Vector3(118.0,104.0,158.0)
+		atlas_camera.look_at(Vector3(0.0,31.0,0.0),Vector3.UP)
+	else:
+		atlas_camera.fov = 62.0
+		atlas_camera.position = Vector3(205.0,170.0,215.0)
+		atlas_camera.look_at(Vector3(0.0,6.0,0.0),Vector3.UP)
+	for id in atlas_pins:
+		var badge: Button = atlas_pins[id] as Button
+		if badge == null:
+			continue
+		var projected: Dictionary = PROJECTIVE_PINS.project_district(
+			atlas_camera,str(id),Vector2(preview.size))
+		badge.visible = bool(projected.get("visible",false))
+		var anchor: Vector2 = projected.get("anchor",Vector2(0.5,0.5))
+		badge.anchor_left = anchor.x
+		badge.anchor_right = anchor.x
+		badge.anchor_top = anchor.y
+		badge.anchor_bottom = anchor.y
+	for id in atlas_view_buttons:
+		var button: Button = atlas_view_buttons[id] as Button
+		if button != null:
+			button.disabled = str(id) == atlas_mode
+
 func _city_view(parent: Node, world: World3D, forecast: Dictionary, lang: String) -> void:
 	var panel := PanelContainer.new()
 	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -282,6 +319,10 @@ func _city_view(parent: Node, world: World3D, forecast: Dictionary, lang: String
 	preview.render_target_update_mode = SubViewport.UPDATE_WHEN_VISIBLE
 	host.add_child(preview)
 	var camera := Camera3D.new()
+	atlas_camera = camera
+	atlas_mode = "overview"
+	atlas_pins.clear()
+	atlas_view_buttons.clear()
 	camera.name = "AerialCommandCamera"
 	camera.fov = 62.0
 	camera.far = 1000.0
@@ -351,3 +392,28 @@ func _city_view(parent: Node, world: World3D, forecast: Dictionary, lang: String
 		REFERENCE.style_button(badge)
 		badge.pressed.connect(Callable(self,"_request_district").bind(id))
 		stage.add_child(badge)
+		atlas_pins[id] = badge
+	# Functional two-mode cinematic inspection. Both choices keep the SAME
+	# live Godot World3D and reproject the real district markers after move.
+	var controls := HBoxContainer.new()
+	controls.name = "R112AtlasCameraControls"
+	controls.anchor_left = 0.53
+	controls.anchor_right = 0.98
+	controls.anchor_top = 0.03
+	controls.anchor_bottom = 0.03
+	controls.offset_bottom = 43.0
+	controls.add_theme_constant_override("separation",5)
+	stage.add_child(controls)
+	for mode in ["overview","architecture"]:
+		var button := Button.new()
+		button.name = "R112AtlasView_" + mode
+		button.text = local("ОБЗОР","OVERVIEW","总览",lang) if mode == "overview" else local("ДЕТАЛИ","DETAIL","细节",lang)
+		button.tooltip_text = local("Реальная камера города","Live city camera","实时城市镜头",lang)
+		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		button.custom_minimum_size.y = 38
+		button.add_theme_font_size_override("font_size",14)
+		REFERENCE.style_button(button)
+		button.pressed.connect(Callable(self,"_switch_atlas_mode").bind(mode))
+		controls.add_child(button)
+		atlas_view_buttons[mode] = button
+	_switch_atlas_mode("overview")
