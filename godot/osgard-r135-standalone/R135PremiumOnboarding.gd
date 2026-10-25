@@ -74,6 +74,17 @@ var guide_button: Button
 var rail_header: Label
 var rail_rows: Array[Label] = []
 var controls_open: bool = false
+var settings_open: bool = false
+var brand_header: HBoxContainer
+var settings_button: Button
+var settings_panel: PanelContainer
+var settings_clip: Control
+var settings_scroll: ScrollContainer
+var settings_title: Label
+var settings_note: Label
+var settings_quality_button: Button
+var settings_motion_button: Button
+var settings_close_button: Button
 
 func _ready() -> void:
     name = "R135LuxuryTraining"
@@ -135,6 +146,7 @@ func _build() -> void:
     brand.add_theme_stylebox_override("panel", _glass())
     add_child(brand)
     var header := HBoxContainer.new()
+    brand_header = header
     header.add_theme_constant_override("separation", 9)
     brand.add_child(header)
     var icon: Control = preload("res://R135PremiumEmblem.gd").new()
@@ -153,6 +165,11 @@ func _build() -> void:
     language_button.custom_minimum_size = Vector2(52, 46)
     language_button.pressed.connect(_switch_language)
     header.add_child(language_button)
+    settings_button = _styled_button("SET", false)
+    settings_button.name = "LuxuryOpenPlayerSettings"
+    settings_button.custom_minimum_size = Vector2(46, 46)
+    settings_button.pressed.connect(_toggle_settings)
+    header.add_child(settings_button)
     collapse_button = _styled_button("−", false)
     collapse_button.name = "LuxuryToggleGuide"
     collapse_button.custom_minimum_size = Vector2(46, 46)
@@ -241,6 +258,44 @@ func _build() -> void:
         label.name = "Chapter_%d" % i
         rail_rows.append(label)
 
+    # A real local settings surface: no new machinery controls, always closes
+    # back to the existing six-chapter course. A clipped scroll area avoids
+    # multiplying layout minimum heights on 360px and 932x430 WebGL screens.
+    settings_panel = PanelContainer.new()
+    settings_panel.name = "LuxuryPlayerSettings"
+    settings_panel.add_theme_stylebox_override("panel", _glass(true))
+    add_child(settings_panel)
+    settings_clip = Control.new()
+    settings_clip.name = "SettingsViewport"
+    settings_clip.clip_contents = true
+    settings_clip.custom_minimum_size = Vector2.ZERO
+    settings_panel.add_child(settings_clip)
+    settings_scroll = ScrollContainer.new()
+    settings_scroll.name = "SettingsScrollableActions"
+    settings_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+    settings_scroll.follow_focus = true
+    settings_scroll.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+    settings_clip.add_child(settings_scroll)
+    var settings_stack := VBoxContainer.new()
+    settings_stack.name = "ActualPlayerSettingsControls"
+    settings_stack.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+    settings_stack.add_theme_constant_override("separation", 10)
+    settings_scroll.add_child(settings_stack)
+    settings_title = _label(settings_stack, Color(0.97, 0.70, 0.42), 22)
+    settings_note = _label(settings_stack, Color(0.83, 0.90, 0.92), 14)
+    settings_quality_button = _styled_button("ГРАФИКА: ЭКО", true)
+    settings_quality_button.name = "PlayerQualityToggle"
+    settings_quality_button.pressed.connect(_settings_quality_pressed)
+    settings_stack.add_child(settings_quality_button)
+    settings_motion_button = _styled_button("АНИМАЦИИ: ПОЛНЫЕ", false)
+    settings_motion_button.name = "PlayerReducedMotionToggle"
+    settings_motion_button.pressed.connect(_settings_motion_pressed)
+    settings_stack.add_child(settings_motion_button)
+    settings_close_button = _styled_button("НАЗАД К ОБУЧЕНИЮ", false)
+    settings_close_button.name = "ReturnToCourse"
+    settings_close_button.pressed.connect(_toggle_settings)
+    settings_stack.add_child(settings_close_button)
+
 func _t(ru: String, en: String) -> String:
     return ru if locale == "ru" else en
 
@@ -249,9 +304,10 @@ func _assign(label: Label, value: String) -> void:
         label.text = value
 
 func _set_expand_state() -> void:
-    card.visible = expanded
+    card.visible = expanded and not settings_open
+    settings_panel.visible = expanded and settings_open
     compact_status.visible = not expanded
-    rail.visible = expanded and get_viewport().get_visible_rect().size.x / maxf(1.0, float(host.get("touch_pixel_ratio"))) >= 950
+    rail.visible = expanded and not settings_open and get_viewport().get_visible_rect().size.x / maxf(1.0, float(host.get("touch_pixel_ratio"))) >= 950
     collapse_button.text = "−" if expanded else "+"
 
 func _layout() -> void:
@@ -272,13 +328,20 @@ func _layout() -> void:
     brand.position = Vector2(margin, margin)
     brand.size = Vector2(minf(area.x - 2.0 * margin, 510.0 * ratio), header_height)
     brand_subtitle.visible = not compact
-    brand_title.add_theme_font_size_override("font_size", int((19 if compact else 23) * ratio))
+    # Explicit short brand on narrow devices: three real header buttons
+    # including Settings remain at least 44 CSS px, never clipped by logo.
+    brand_title.text = "OSGARD" if compact else "O S G A R D"
+    brand_header.add_theme_constant_override("separation", 4 if compact else 9)
+    brand_title.add_theme_font_size_override("font_size", int((17 if compact else 23) * ratio))
     brand_subtitle.add_theme_font_size_override("font_size", int(12 * ratio))
     var mark: Control = brand.get_child(0).get_child(0) as Control
-    mark.custom_minimum_size = Vector2(48.0 * ratio, 48.0 * ratio)
-    language_button.add_theme_font_size_override("font_size", int(15 * ratio))
+    mark.custom_minimum_size = Vector2((40.0 if compact else 48.0) * ratio,
+        (40.0 if compact else 48.0) * ratio)
+    language_button.add_theme_font_size_override("font_size", int(14 * ratio))
+    settings_button.add_theme_font_size_override("font_size", int(12 * ratio))
     collapse_button.add_theme_font_size_override("font_size", int(18 * ratio))
-    language_button.custom_minimum_size = Vector2(48.0 * ratio, 46.0 * ratio)
+    language_button.custom_minimum_size = Vector2(44.0 * ratio, 46.0 * ratio)
+    settings_button.custom_minimum_size = Vector2(44.0 * ratio, 46.0 * ratio)
     collapse_button.custom_minimum_size = Vector2(44.0 * ratio, 46.0 * ratio)
 
     var action_y: float = area.y - (290.0 if portrait else 133.0) * ratio
@@ -318,13 +381,26 @@ func _layout() -> void:
     guide_button.add_theme_font_size_override("font_size", int((12 if compact else 14) * ratio))
     primary_button.custom_minimum_size = Vector2(0, 48.0 * ratio)
     guide_button.custom_minimum_size = Vector2(0, 40.0 * ratio)
+    settings_panel.position = card.position
+    settings_panel.custom_minimum_size = Vector2.ZERO
+    settings_panel.size = card.size
+    settings_clip.custom_minimum_size = Vector2.ZERO
+    settings_scroll.position = Vector2.ZERO
+    settings_scroll.size = Vector2(maxf(90.0, card.size.x - 28.0 * ratio),
+        maxf(80.0, card.size.y - 28.0 * ratio))
+    settings_title.add_theme_font_size_override("font_size", int((18 if compact else 22) * ratio))
+    settings_note.add_theme_font_size_override("font_size", int((12 if compact else 14) * ratio))
+    for settings_action in [settings_quality_button, settings_motion_button, settings_close_button]:
+        settings_action.custom_minimum_size = Vector2(0, 46.0 * ratio)
+        settings_action.add_theme_font_size_override("font_size", int((12 if compact else 14) * ratio))
+    _refresh_settings()
 
     rail.position = Vector2(area.x - margin - 286.0 * ratio, top)
     rail.size = Vector2(286.0 * ratio, minf(385.0 * ratio, max_height))
     rail_header.add_theme_font_size_override("font_size", int(15 * ratio))
     for label in rail_rows:
         label.add_theme_font_size_override("font_size", int(14 * ratio))
-    rail.visible = expanded and css_width >= 950.0
+    rail.visible = expanded and not settings_open and css_width >= 950.0
     _set_expand_state()
 func is_expanded() -> bool:
     return expanded
@@ -333,6 +409,7 @@ func set_language(value: String) -> void:
     locale = "en" if value == "en" else "ru"
     language_button.text = "RU" if locale == "en" else "EN"
     language_button.tooltip_text = "Переключить на русский" if locale == "en" else "Switch to English"
+    _refresh_settings()
     _present()
     call_deferred("_layout")
 
@@ -342,10 +419,52 @@ func _switch_language() -> void:
 
 func _toggle_expanded() -> void:
     expanded = not expanded
+    if not expanded:
+        settings_open = false
     _set_expand_state()
     if host != null:
         host.call_deferred("_settle_hud_after_layout")
     call_deferred("_layout")
+
+func _toggle_settings() -> void:
+    settings_open = not settings_open
+    if settings_open:
+        expanded = true
+    _set_expand_state()
+    _refresh_settings()
+    if host != null:
+        host.call_deferred("_settle_hud_after_layout")
+    call_deferred("_layout")
+
+
+func _settings_quality_pressed() -> void:
+    if host != null:
+        host.call("_toggle_quality")
+    _refresh_settings()
+
+
+func _settings_motion_pressed() -> void:
+    if host != null:
+        host.call("_set_reduced_motion", not bool(host.get("reduced_motion")))
+    _refresh_settings()
+
+
+func _refresh_settings() -> void:
+    if host == null or settings_button == null or settings_title == null:
+        return
+    settings_button.tooltip_text = _t("Настройки игрока", "Player settings")
+    _assign(settings_title, _t("ПАРАМЕТРЫ ИГРЫ", "PLAYER SETTINGS"))
+    _assign(settings_note, _t(
+        "Язык меняется кнопкой RU / EN сверху. Настройки сохраняются только на этом устройстве. Реальное оборудование здесь не управляется.",
+        "Switch RU / EN above. Settings stay only on this device. This game does not control real equipment."))
+    settings_quality_button.text = _t(
+        "ГРАФИКА: HERO (детально)" if int(host.get("quality")) == 2 else "ГРАФИКА: ECO (быстрее)",
+        "GRAPHICS: HERO (detail)" if int(host.get("quality")) == 2 else "GRAPHICS: ECO (faster)")
+    settings_motion_button.text = _t(
+        "АНИМАЦИИ: МЕНЬШЕ" if bool(host.get("reduced_motion")) else "АНИМАЦИИ: ПОЛНЫЕ",
+        "MOTION: REDUCED" if bool(host.get("reduced_motion")) else "MOTION: FULL")
+    settings_close_button.text = _t("НАЗАД К ОБУЧЕНИЮ", "BACK TO TRAINING")
+
 
 func on_gameplay_command() -> void:
     # Legacy direct controls remain fully operable; don't force a modal tutorial
@@ -591,3 +710,5 @@ func _present() -> void:
         rail_rows[j].add_theme_color_override("font_color",
             Color(0.98, 0.68, 0.40) if j == step else (Color(0.44, 0.84, 0.80) if j < step else Color(0.72, 0.78, 0.82)))
     guide_button.text = _t("УПРАВЛЕНИЕ И ИНСТРУКЦИЯ", "CONTROLS & HELP")
+    if settings_open:
+        _refresh_settings()
