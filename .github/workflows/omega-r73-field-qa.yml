@@ -1,0 +1,33 @@
+name: EMPIRE Omega R73 forty-mission field evidence contract
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - 'scripts/omega_r73_field_qa.py'
+      - 'scripts/test_omega_r73_field_qa.py'
+      - '.github/workflows/omega-r73-field-qa.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  field-evidence-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reject fabricated source, mission, video and save evidence
+        run: |
+          set -euo pipefail
+          python3 scripts/test_omega_r73_field_qa.py
+      - name: Create unfilled, accurate 40-mission template
+        run: |
+          set -euo pipefail
+          python3 scripts/omega_r73_field_qa.py --template --output /tmp/omega-r73-template.json
+          python3 - <<'PY'
+          import json
+          r=json.load(open('/tmp/omega-r73-template.json'))
+          assert len(r['missions'])==40 and not r['human_operated']
+          assert [p['stage'] for p in r['save_reload_checkpoints']]==[6,20,40]
+          assert all(m['result']=='pending' for m in r['missions'])
+          print('PASS unfilled template, NOT a physical QA or production certificate')
+          PY
