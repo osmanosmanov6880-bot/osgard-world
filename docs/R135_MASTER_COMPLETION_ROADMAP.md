@@ -29,11 +29,12 @@
 
 **Critical safety note:** Pausing the *simulated* drive is not physical energy isolation. This game is not a real equipment service procedure. Real work requires authorized equipment-specific lockout/tagout and verification of zero energy.
 
-## W14 — deeper training and persistence (not started)
-- [ ] Onboarding explaining the three simulated signals, five-step workflow and why unsafe choices fail, with reset/retry.
-- [ ] Explicit accessible 3-case selection on keyboard + narrow touch devices, without reducing 8 existing operator buttons below useful target size.
-- [ ] Per-case attempts, best scores, clear/fail history and backwards-compatible local saves; corruption recovery and privacy-conscious reset.
-- [ ] True scene+UI Godot native and browser tests for all cases, resume after reload and local-only save migration.
+## W14 — fault-by-fault learner history (PR #386, implemented code; CI pending)
+- [x] Actual Godot local-only schema V2 for each of 3 simulated faults: attempt counts, best scores, fastest successful time, cumulative mistakes and persisted completion flags.
+- [x] Migrates V1 global best/clear flags without inventing missing per-fault results; malformed numeric arrays are sanitized with deterministic clamps/defaults.
+- [x] Completed-case UI now displays its own best score and attempts. Native headless Godot test checks actual save, reload, legacy migration and corrupt entries.
+- [ ] Entire W14 native/WebGL/Chromium/Nginx pipeline succeeds on exact latest SHA, original screenshots reviewed, merge only after W12/W13.
+- [ ] Interactive onboarding explaining faults, accessible case picker, player-confirmed data reset and retry remain unimplemented. Physical browser reload persistence needs independent user-session evidence.
 
 ## W15 — premium visual and accessibility acceptance (not started)
 - [ ] Original source material improvements to service rig/stage; maintain original HERO/ECO, dynamic camera and W11 lighting without hiding actions.
