@@ -133,7 +133,10 @@ async function verifyW20PlayerSettings(page, isMobile, name) {
 // W21: the WHAT/WHY drill is an actual Godot Control in the same game canvas.
 // The GUI stays safety-locked; no tests inject fictitious scores or faults.
 async function verifyW21CausalLesson(page, isMobile, name) {
-  if (process.env.R135_CANDIDATE_VERSION !== 'r135-explainable-training-w21-candidate-20261025') return
+  // Inherit 2 real original W21 screenshots into the SAME W22 WebGL artifact.
+  // The W22 independent 19-frame SHA gate must not accept copied older frames.
+  if (!['r135-explainable-training-w21-candidate-20261025',
+         'r135-case-mastery-w22-candidate-20261025'].includes(process.env.R135_CANDIDATE_VERSION)) return
   await hitLuxuryControl(page, 'tutorial_collapse_center', isMobile)
   const initial = await expectState(page, x => x?.tutorial_expanded === true
     && x?.coach_status === 'intro'
