@@ -216,6 +216,24 @@
   font-weight: 600;
   margin-right: 9px;
 }
+.osa-cinema[data-cinema-design="v13"] .cinema-companion__choices {
+  padding-left: 26px;
+  margin: 18px 0 10px;
+  color: #cfb389;
+}
+.osa-cinema[data-cinema-design="v13"] .cinema-companion__choices li {
+  padding: 0 0 14px 8px;
+  font-size: 12px;
+  line-height: 1.65;
+}
+.osa-cinema[data-cinema-design="v13"] .cinema-companion__choices li strong {
+  color: #fae5c4;
+  font-weight: 600;
+}
+.osa-cinema[data-cinema-design="v13"] .cinema-companion__choices li p {
+  margin: 4px 0;
+  color: #cab9a1;
+}
 .osa-cinema[data-cinema-design="v13"] .cinema-companion__jump {
   display: inline-flex;
   align-items: center;
