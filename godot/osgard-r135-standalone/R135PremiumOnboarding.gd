@@ -68,6 +68,7 @@ var primary_button: Button
 var guide_button: Button
 var rail_header: Label
 var rail_rows: Array[Label] = []
+var controls_open: bool = false
 
 func _ready() -> void:
     name = "R135LuxuryTraining"
@@ -211,7 +212,7 @@ func _assign(label: Label, value: String) -> void:
 
 func _set_expand_state() -> void:
     card.visible = expanded
-    rail.visible = expanded and get_viewport().get_visible_rect().size.x >= 950
+    rail.visible = expanded and get_viewport().get_visible_rect().size.x / maxf(1.0, float(host.get("touch_pixel_ratio"))) >= 950
     collapse_button.text = "−" if expanded else "+"
     if host != null:
         host.call_deferred("_settle_hud_after_layout")
@@ -219,38 +220,54 @@ func _set_expand_state() -> void:
 func _layout() -> void:
     if brand == null or host == null:
         return
+    # Godot renders at WebGL DPR on touch devices. Measure in physical engine
+    # pixels, but size every visual and hit target in device-independent units.
     var area := get_viewport().get_visible_rect().size
+    var ratio: float = maxf(1.0, float(host.get("touch_pixel_ratio")))
+    var css_width: float = area.x / ratio
     var portrait: bool = area.y > area.x * 1.03
-    var compact: bool = area.x < 620.0
-    var margin: float = 14.0 if compact else 22.0
-    var header_height: float = 68.0 if compact else 78.0
+    var compact: bool = css_width < 620.0
+    var margin: float = (14.0 if compact else 22.0) * ratio
+    var header_height: float = (70.0 if compact else 78.0) * ratio
     brand.position = Vector2(margin, margin)
-    brand.size = Vector2(minf(area.x - 2.0 * margin, 498.0), header_height)
+    brand.size = Vector2(minf(area.x - 2.0 * margin, 510.0 * ratio), header_height)
     brand_subtitle.visible = not compact
-    brand_title.add_theme_font_size_override("font_size", 19 if compact else 23)
-    language_button.custom_minimum_size = Vector2(48, 44)
-    collapse_button.custom_minimum_size = Vector2(44, 44)
+    brand_title.add_theme_font_size_override("font_size", int((19 if compact else 23) * ratio))
+    brand_subtitle.add_theme_font_size_override("font_size", int(12 * ratio))
+    var mark: Control = brand.get_child(0).get_child(0) as Control
+    mark.custom_minimum_size = Vector2(48.0 * ratio, 48.0 * ratio)
+    language_button.add_theme_font_size_override("font_size", int(15 * ratio))
+    collapse_button.add_theme_font_size_override("font_size", int(18 * ratio))
+    language_button.custom_minimum_size = Vector2(48.0 * ratio, 46.0 * ratio)
+    collapse_button.custom_minimum_size = Vector2(44.0 * ratio, 46.0 * ratio)
 
-    var action_y: float = area.y - (290.0 if portrait else 133.0)
+    var action_y: float = area.y - (290.0 if portrait else 133.0) * ratio
     var host_actions: Control = host.get("action_panel") as Control
     if host_actions != null and host_actions.position.y > 0.0:
         action_y = host_actions.position.y
-    var top: float = margin + header_height + 12.0
-    var max_height: float = maxf(178.0, action_y - top - 15.0)
+    var top: float = margin + header_height + 12.0 * ratio
+    var max_height: float = maxf(172.0 * ratio, action_y - top - 12.0 * ratio)
     card.position = Vector2(margin, top)
-    card.size = Vector2(minf(460.0, area.x - margin * 2.0), minf(max_height, 480.0))
     card.custom_minimum_size = Vector2(0, 0)
-    title_label.add_theme_font_size_override("font_size", 19 if compact else 25)
-    description_label.add_theme_font_size_override("font_size", 14 if compact else 16)
-    hint_label.add_theme_font_size_override("font_size", 13 if compact else 14)
-    primary_button.custom_minimum_size = Vector2(0, 48 if compact else 50)
-    guide_button.custom_minimum_size = Vector2(0, 40 if compact else 45)
+    card.size = Vector2(minf(460.0 * ratio, area.x - margin * 2.0), minf(max_height, 480.0 * ratio))
+    eyebrow.add_theme_font_size_override("font_size", int(12 * ratio))
+    title_label.add_theme_font_size_override("font_size", int((18 if compact else 24) * ratio))
+    description_label.add_theme_font_size_override("font_size", int((14 if compact else 16) * ratio))
+    hint_label.add_theme_font_size_override("font_size", int((13 if compact else 14) * ratio))
+    metrics_label.add_theme_font_size_override("font_size", int(13 * ratio))
+    safety_label.add_theme_font_size_override("font_size", int(11 * ratio))
+    primary_button.add_theme_font_size_override("font_size", int((13 if compact else 15) * ratio))
+    guide_button.add_theme_font_size_override("font_size", int((12 if compact else 14) * ratio))
+    primary_button.custom_minimum_size = Vector2(0, 48.0 * ratio)
+    guide_button.custom_minimum_size = Vector2(0, 40.0 * ratio)
 
-    rail.position = Vector2(area.x - margin - 286.0, top)
-    rail.size = Vector2(286, minf(385.0, max_height))
-    rail.visible = expanded and not compact and area.x >= 950.0
+    rail.position = Vector2(area.x - margin - 286.0 * ratio, top)
+    rail.size = Vector2(286.0 * ratio, minf(385.0 * ratio, max_height))
+    rail_header.add_theme_font_size_override("font_size", int(15 * ratio))
+    for label in rail_rows:
+        label.add_theme_font_size_override("font_size", int(14 * ratio))
+    rail.visible = expanded and css_width >= 950.0
     _set_expand_state()
-
 func is_expanded() -> bool:
     return expanded
 
@@ -304,6 +321,7 @@ func start_tutorial() -> void:
     step = 1
     expanded = true
     _save_progress()
+    controls_open = false
     _set_expand_state()
     _present()
     call_deferred("_layout")
@@ -314,6 +332,7 @@ func reset_tutorial() -> void:
     step = 0
     expanded = true
     _save_progress()
+    controls_open = false
     _set_expand_state()
     _present()
     call_deferred("_layout")
@@ -402,7 +421,8 @@ func _show_controls() -> void:
     # Actual, implemented input mapping; not a fictional first-person WASD rig.
     var controls_ru := "МЫШЬ / ПАЛЕЦ — вращение камеры\nКОЛЕСО / ЖЕСТ — приближение\nV — сменить ракурс\nM — начать сервисную миссию\nC — начать диагностику\nE — сканировать учебный узел\nF — люк (только после остановки)\nПРОБЕЛ — остановка / пуск\nQ — ECO / HERO\nR — сброс камеры\nL — русский / English"
     var controls_en := "MOUSE / TOUCH — orbit camera\nWHEEL / PINCH — zoom\nV — next view\nM — start service mission\nC — begin diagnostics\nE — scan simulated target\nF — hatch (after stopping)\nSPACE — stop / run\nQ — ECO / HERO\nR — reset camera\nL — Russian / English"
-    hint_label.text = _t(controls_ru, controls_en)
+    controls_open = not controls_open
+    _assign(hint_label, _t(controls_ru, controls_en) if controls_open else str((HELP_RU if locale == "ru" else HELP_EN)[clampi(step, 0, 5)]))
 
 func _primary_caption() -> String:
     if finished:
@@ -468,7 +488,8 @@ func _present() -> void:
     _assign(eyebrow, _t("ДОБРО ПОЖАЛОВАТЬ  •  ГЛАВА", "WELCOME  •  CHAPTER") + "  %d / 6" % (i + 1))
     _assign(title_label, str(current_titles[i]))
     _assign(description_label, str(current_details[i]))
-    _assign(hint_label, str(current_hints[i]))
+    if not controls_open:
+        _assign(hint_label, str(current_hints[i]))
     _assign(safety_label, _t(
         "ТОЛЬКО СИМУЛЯЦИЯ. Реальное обслуживание требует допуска, блокировки питания и проверки отсутствия энергии.",
         "SIMULATION ONLY. Real machinery requires authorization, lockout and verified zero energy."))
