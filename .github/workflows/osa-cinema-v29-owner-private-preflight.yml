@@ -1,0 +1,63 @@
+name: OSA CINEMA V29 owner private four-film preflight and NO-GO
+on:
+  pull_request:
+    paths:
+      - 'scripts/osa-cinema-v29-*'
+      - 'docs/OSA_CINEMA_V29_*'
+      - '.github/workflows/osa-cinema-v29-owner-private-preflight.yml'
+      - 'scripts/osa-cinema-v21-private-review-server.mjs'
+      - 'scripts/osa-cinema-v28-final-intake.mjs'
+      - 'scripts/osa-cinema-v24-final-master-qc.mjs'
+      - 'scripts/osa-cinema-v25-rights-evidence.mjs'
+      - 'scripts/osa-cinema-v26-loopback-delivery-qc.mjs'
+      - 'scripts/osa-cinema-v27-release-board.mjs'
+  push:
+    branches: [master]
+    paths:
+      - 'scripts/osa-cinema-v29-*'
+      - 'docs/OSA_CINEMA_V29_*'
+      - '.github/workflows/osa-cinema-v29-owner-private-preflight.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  private-four-film-preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install FFmpeg and ffprobe for genuine H264/AAC media tests
+        run: |
+          if ! command -v ffmpeg >/dev/null 2>&1 || ! command -v ffprobe >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y --no-install-recommends ffmpeg
+          fi
+          ffmpeg -version | head -n 1
+          ffprobe -version | head -n 1
+      - name: Validate syntax and run full integrated private QA with actual MP4 and PDF bytes
+        run: |
+          node --check scripts/osa-cinema-v29-owner-preflight.mjs
+          node --test --test-concurrency=1 \
+            scripts/osa-cinema-v21-private-review-server.test.mjs \
+            scripts/osa-cinema-v24-final-master-qc.test.mjs \
+            scripts/osa-cinema-v25-rights-evidence.test.mjs \
+            scripts/osa-cinema-v26-loopback-delivery-qc.test.mjs \
+            scripts/osa-cinema-v27-release-board.test.mjs \
+            scripts/osa-cinema-v27-integrated-chain.test.mjs \
+            scripts/osa-cinema-v28-final-intake.test.mjs \
+            scripts/osa-cinema-v29-owner-preflight.test.mjs
+      - name: Verify canonical strict publication hold still exits with NO-GO
+        shell: bash
+        run: |
+          set +e
+          node scripts/osa-cinema-v20-release-audit.mjs --strict-publication > "$RUNNER_TEMP/osa-v29-no-publication.txt" 2>&1
+          result=$?
+          set -e
+          if [ "$result" -ne 1 ] || ! grep -q 'OSA_CINEMA_V20_NO_PUBLICATION' "$RUNNER_TEMP/osa-v29-no-publication.txt"; then
+            echo 'Unexpected release authorization: fail closed.' >&2
+            exit 1
+          fi
+          echo 'Real media, rights and publisher approval are still required. No film uploaded.'

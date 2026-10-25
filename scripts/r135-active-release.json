@@ -1,6 +1,6 @@
 {
-  "channel": "w18",
-  "pin_file": "scripts/r135-w18-release-pin.json",
-  "promotion_gate_run_id": 40196880515,
-  "note": "W18 candidate activated only after exact reviewed artifact gate 40196880515; physical phone GPU/thermal W16 remains uncertified. Rollback remains permanent W14."
+  "channel": "w19",
+  "pin_file": "scripts/r135-w19-release-pin.json",
+  "promotion_gate_run_id": 40209046517,
+  "note": "W19 activated only after exact SHA-pinned software native/WebGL desktop + Pixel browser tests, 13 original PNG manual review, and independent full W19 approval #40209046517. Immutable W19 GH Release retained. W18 archive and permanent W14 rollback preserved. Physical Android/iPhone FPS, HDR, 8K and AAA photorealism NOT certified."
 }

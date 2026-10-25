@@ -1,0 +1,32 @@
+{
+  "version": "r135-luxury-academy-w19-candidate-20261025",
+  "source_commit": "8950a8ff0fe7b3d08d9991d01851cfa4e53f2c40",
+  "artifact_run_id": 40207018794,
+  "artifact_id": 12604583151,
+  "artifact_name": "osgard-r135-optimized-web-qa",
+  "manifest_sha256": "eec866f829ca0ccf160b894664be81152ad93bfc2b2a38dc448402c2fab82a6b",
+  "archive_sha256": "29891c4abeb67783b8f6f6186f016d509862ae034786fcd6e6a6df688aefa858",
+  "reviewed_luxury_desktop": true,
+  "reviewed_luxury_mobile": true,
+  "reviewed_no_overlap": true,
+  "reviewed_ru_en": true,
+  "browser_three_fault_cases": true,
+  "physical_phone_fps_verified": false,
+  "photorealistic_aaa_certified": false,
+  "screenshots_sha256": {
+    "desktop-1366.png": "267bbd87fa07d194647eb39fb836883779a1556d0d0a2adfb908cea939e791d6",
+    "w6-portrait-optical-active.png": "008efb85adbad2e2df1b3b989be327c0ec65f181f1e6edf0d7c1f7dbb42827df",
+    "w17-desktop-ru-operator.png": "38ca1f56e3f4b5ca38d0560a0a19332d7c7360d699b0a24dfdaaf2d1dc46db99",
+    "w17-mobile-ru-operator.png": "8889386cdce1e7142ee2bbb14e3d2b88f002434d1d3a5e1aa5b38ed3cc7ab901",
+    "w8-hud-360x780.png": "7a9cb8337f2f3c992029bb6827676fbead4e010a71cc44d0041e7435d57a532d",
+    "w8-hud-430x932.png": "024a71601962bd16510c7ee40bbfbeafbbec8932c36f2e42edecdd4d0c8807ed",
+    "w8-hud-932x430.png": "c0234d3aaf09faec410718485ec5ac489629a391eae6233a1d1061797b337623",
+    "w12-desktop-1366-fault-2-active.png": "63eb8fe5f939b6c5d89f438390a82955d844b350c2176358e9b5d1319f102395",
+    "w12-desktop-1366-fault-3-active.png": "2103a5ee2de570f1e7900e483d189db1fccc1b7416b4657e90f422a492f6d414",
+    "w12-mobile-390-fault-2-active.png": "e6884a1671a07fc161e254756d122f9ee97cbb7a6b1f243503d123f8fd520211",
+    "w12-mobile-390-fault-3-active.png": "8d79d7dcef73c3469093d00d242eb1832272a2f62ad8395768696866ffcdaa5b",
+    "w19-desktop-1366-russian-luxury-welcome.png": "edffd2e9cc1b365c03c6eaa7fc85c0bcff85100b62ef18c2b3631a8ee5fdfb1d",
+    "w19-mobile-390-russian-luxury-welcome.png": "668de629852d9a23dbf8c40cf7f24bed8d11f6608d8b0e3feb0edfd78824967c"
+  },
+  "review_provenance": "2026-10-25 inspected 13 unmodified real Godot/Chromium screenshots at original dimensions incl. desktop 1366x768, Pixel 412x839 and responsive landscape 932x430. Verified actual 3-case browser reports on desktop/mobile, RU/EN interactions, no overlapping controls, source-matched W10 full release/PNG provenance/Nginx. Short landscape article is scrollable. No actual Android/iPhone GPU, HDR, 8K or AAA photorealism certification."
+}

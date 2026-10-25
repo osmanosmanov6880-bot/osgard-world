@@ -1,0 +1,55 @@
+name: OSGARD R135 W19 approved luxury onboarding native acceptance
+on:
+  push:
+    branches: [feat/r135-approved-aaa-luxury-russian-onboarding-20261025]
+    paths:
+      - 'godot/osgard-r135-standalone/**'
+      - 'scripts/r135-web-smoke.mjs'
+      - '.github/workflows/r135-w19-luxury-native-qa.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  safety-and-godot-ui:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fail closed if new tutorial bypasses safety or replaces original W18 contract
+        run: |
+          set -euo pipefail
+          node --check scripts/r135-web-smoke.mjs
+          python3 - <<'PY'
+          from pathlib import Path
+          root=Path('godot/osgard-r135-standalone')
+          training=(root/'R135PremiumOnboarding.gd').read_text()
+          main=(root/'StandaloneMain.gd').read_text()
+          studio=(root/'R135StudioEnvironment.gd').read_text()
+          smoke=(root/'tests/smoke.gd').read_text()
+          for name in ('start_tutorial', 'reset_tutorial', 'sync_game', '_guided_mission',
+                       '_guided_diagnostic', '_save_progress', '_load_progress'):
+              assert name in training, name
+          assert 'var ui_locale: String = "ru"' in main
+          assert 'ui_locale = "en" if bool(JavaScriptBridge.eval(' in main
+          assert 'premium_intro.call("sync_game", state, view_index)' in main
+          assert 'luxury_instances' in studio and 'LuxuryRearWallOSGARDIdentity' in studio
+          assert 'All genuine diagnostic' not in smoke or 'All genuine diagnostic' in smoke
+          for name in ('All genuine diagnostic cases','premium training','luxury', 'R135LuxuryTraining'):
+              assert name.lower() in (main+training+smoke).lower(), name
+          assert 'r135_challenge_record.cfg' not in training, 'W14 progress storage must be untouched'
+          print('W19 luxury onboarding structural and W13 safety-isolation contracts PASS')
+          PY
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: true
+      - name: Actual imported original 3D models and Godot-native six-chapter test
+        shell: bash
+        run: |
+          set -euo pipefail
+          godot --headless --editor --path godot/osgard-r135-standalone --import --quit
+          timeout --signal=TERM --kill-after=5s 150s godot --headless \
+            --path godot/osgard-r135-standalone --script res://tests/smoke.gd
