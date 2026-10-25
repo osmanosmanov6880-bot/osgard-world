@@ -27,7 +27,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     env:
-      R135_CANDIDATE_VERSION: ${{ github.ref_name == 'feat/r135-w15-w17-premium-localization-20261025' && 'r135-premium-learning-w18-candidate-20261025' || 'r135-case-progress-w14-20261025' }}
+      R135_CANDIDATE_VERSION: ${{ (github.ref_name == 'feat/r135-w15-w17-premium-localization-20261025' || github.ref_name == 'master') && 'r135-premium-learning-w18-candidate-20261025' || 'r135-case-progress-w14-20261025' }}
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
@@ -207,7 +207,7 @@ jobs:
             --desktop "$RUNNER_TEMP/r135-screens/desktop-1366.png" \
             --output "$RUNNER_TEMP/r135-w11-readability-evidence.json"
 
-      - name: Package W14 per-fault progress candidate with full archive SHA-256
+      - name: Package exact branch-selected R135 W14 or W18 candidate with full archive SHA-256
         shell: bash
         run: |
           set -euo pipefail
@@ -220,7 +220,7 @@ jobs:
           files=sorted(p for p in root.iterdir() if p.is_file())
           version=os.environ['R135_CANDIDATE_VERSION']
           expected=('r135-premium-learning-w18-candidate-20261025'
-                    if os.environ.get('GITHUB_REF_NAME') == 'feat/r135-w15-w17-premium-localization-20261025'
+                    if os.environ.get('GITHUB_REF_NAME') in ('feat/r135-w15-w17-premium-localization-20261025', 'master')
                     else 'r135-case-progress-w14-20261025')
           assert version == expected, 'wrong candidate version for source branch'
           manifest={'version':version,'engine':'Godot 4.4.1',
