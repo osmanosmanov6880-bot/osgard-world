@@ -110,5 +110,7 @@ test('activation retains attested QA before swapping frontend root, never promot
   assert.match(deploy,/cp scripts\/preserve-nebula-r40-qa\.sh osgard-release\/preserve-nebula-r40-qa\.sh/);
   assert.match(deploy,/node --test scripts\/omega-frontend-preservation\.test\.mjs scripts\/nebula-r40-qa-preservation\.test\.mjs/);
   assert.match(deploy,/nebula-r40-qa-head\.sha/);
+  assert.match(deploy,/test -s osgard-release\/preserve-nebula-r40-qa\.sh/);
+  assert.match(deploy,/expected_head=.*nebula-r40-qa-head\.sha/);
   assert.doesNotMatch(helper,/\/games\/remix\/arena-v2\/nebula-3d\/index/);
 });

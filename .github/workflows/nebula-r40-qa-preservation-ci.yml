@@ -26,6 +26,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
+      - name: Reject malformed shared frontend deployment workflow YAML
+        run: |
+          ruby -e 'require "yaml"; YAML.parse_file(ARGV.fetch(0)); puts "FRONTEND_WORKFLOW_YAML=VALID"' .github/workflows/deploy-frontend.yml
       - name: Reject shell syntax regressions before reading remote code
         run: |
           set -euo pipefail
