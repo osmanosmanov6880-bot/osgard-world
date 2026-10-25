@@ -35,8 +35,53 @@ func _run() -> void:
     if int(stage_budget.get("grid_draw_batches", -1)) != 2 or int(stage_budget.get("grid_instances", -1)) != 18:
         _fail("W7 floor must use two draw batches for all 18 grid strips")
         return
+    if int(stage_budget.get("detail_draw_batches", -1)) != 3 or int(stage_budget.get("detail_instances", -1)) != 47:
+        _fail("W15 industrial rivets and safety marks must be batched and bounded")
+        return
+    for path in ["W15RearWallFasteners", "W15DeckFasteners", "W15DeckBoundaryMarks"]:
+        var detail_node: Node = studio.get_node_or_null(path)
+        if not (detail_node is MultiMeshInstance3D):
+            _fail("W15 premium service-stage detail not instanced: " + path)
+            return
+    if float(stage_budget.get("fastener_roughness", -1.0)) < 0.65:
+        _fail("W15 ECO finish must remain matte and mobile-friendly")
+        return
+    if studio.get_node_or_null("W18OverheadServiceRail") == null or int(stage_budget.get("single_mesh_nodes", -1)) != 8:
+        _fail("W18 portrait industrial wall/overhead architecture should be visible with only 8 single meshes")
+        return
     if int(stage_budget.get("single_mesh_nodes", 99)) > 8 or not bool(stage_budget.get("visual_only", false)):
         _fail("W7 premium environment exceeds simple geometry budget")
+        return
+    var language_control: Button = instance.get("language_button") as Button
+    if language_control == null or language_control.name != "SwitchLanguage":
+        _fail("W17 language control missing")
+        return
+    var operator_buttons: Array = instance.get("action_buttons")
+    if operator_buttons.size() != 8:
+        _fail("W17 localization must preserve eight operator controls")
+        return
+    instance.call("_set_locale", "ru")
+    if str(instance.get("ui_locale")) != "ru" or operator_buttons[0].text != "НАЧАТЬ":
+        _fail("W17 Russian control switch failed")
+        return
+    if str(instance.call("_translated", "VIEW OVERVIEW")) != "РАКУРС ОБЗОР":
+        _fail("W17 locale dictionary damaged composite camera labels")
+        return
+    var translated_line: String = str(instance.call("_translated",
+        "PRESS START MISSION | OPTICAL ALIGNMENT | EDGE OFFSET +0.7 (SIM)"))
+    if translated_line.contains("PRESS START") or translated_line.contains("OPTICAL ALIGNMENT") or translated_line.contains("EDGE OFFSET"):
+        _fail("W17 visible initial feedback or fault names leaked English")
+        return
+    if not translated_line.contains("НАЧНИ ОБУЧЕНИЕ") or not translated_line.contains("СМЕЩЕНИЕ КРАЯ"):
+        _fail("W17 Russian learning instructions must carry the actual meaning")
+        return
+    var safety: Label = instance.get("safety_notice") as Label
+    if safety == null or not safety.text.contains("проверки отсутствия энергии"):
+        _fail("W17 Russian energy isolation warning missing")
+        return
+    instance.call("_set_locale", "en")
+    if operator_buttons[0].text != "START MISSION" or not safety.text.contains("SIMULATION ONLY"):
+        _fail("W17 restored English controls/notice failed")
         return
     var first: Dictionary = rig.call("summary")
     if int(first.get("loading_failures", 0)) != 0 or int(first.get("load_count", 0)) < 1:
@@ -47,6 +92,13 @@ func _run() -> void:
         return
     instance.call("_toggle_quality")
     await process_frame
+    var hero_stage: Dictionary = studio.call("render_budget")
+    if int(hero_stage.get("stage_quality", -1)) != 2 or float(hero_stage.get("fastener_roughness", 1.0)) > 0.48:
+        _fail("W15 HERO material finish was not applied to the actual stage")
+        return
+    if float(hero_stage.get("accent_emission", -1.0)) <= float(stage_budget.get("accent_emission", 99.0)):
+        _fail("W15 ECO/HERO accent budget did not change")
+        return
     var second: Dictionary = rig.call("summary")
     if int(second.get("loading_failures", 0)) != 0:
         _fail("HERO mesh failed: " + str(second))

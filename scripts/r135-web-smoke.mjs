@@ -394,9 +394,9 @@ async function browserRemainingFaults(page, isMobile, deviceName) {
 async function verifyAdaptiveHud(page) {
   const original = page.viewportSize()
   for (const [width, height, mode] of [
+    [932, 430, 'landscape'],
     [360, 780, 'portrait'],
     [430, 932, 'portrait'],
-    [932, 430, 'landscape'],
   ]) {
     await page.setViewportSize({ width, height })
     const state = await expectState(page, x => x?.scene_ready && x?.hud_layout_mode === mode
@@ -406,6 +406,17 @@ async function verifyAdaptiveHud(page) {
     const visible = rect => rect.x >= 0 && rect.y >= 0 && rect.w > 0 && rect.h > 0
       && rect.x + rect.w <= state.viewport_w + 4
       && rect.y + rect.h <= state.viewport_h + 4
+    if (state.ui_touch_pixel_ratio > 1.1 &&
+      (state.ui_action_target_min_css_px < 43.5 ||
+       state.ui_language_target_min_css_px < 43.5 ||
+       state.ui_heading_css_px < 17.0)) {
+      throw new Error('W18 mobile touch targets/heading below CSS DIP accessibility budget: '
+        + width + 'x' + height + ' ' + JSON.stringify({
+          action: state.ui_action_target_min_css_px,
+          language: state.ui_language_target_min_css_px,
+          heading: state.ui_heading_css_px,
+        }))
+    }
     if (!visible(state.hud_rect) || !visible(state.action_rect)) {
       throw new Error('W8 HUD escaped safe viewport ' + width + 'x' + height +
         ' : ' + JSON.stringify({ viewport: [state.viewport_w, state.viewport_h], hud: state.hud_rect, actions: state.action_rect }))
@@ -431,10 +442,38 @@ async function verifyAdaptiveHud(page) {
 let failed = false
 try {
   for (const [name, opts, isMobile] of [
-    ['desktop-1366', { viewport: { width: 1366, height: 768 }, deviceScaleFactor: 1, reducedMotion: 'no-preference' }, false],
-    ['mobile-390', { ...devices['Pixel 7'], reducedMotion: 'reduce' }, true],
+    ['desktop-1366', { viewport: { width: 1366, height: 768 }, deviceScaleFactor: 1, reducedMotion: 'no-preference', locale: 'en-US' }, false],
+    ['mobile-390', { ...devices['Pixel 7'], reducedMotion: 'reduce', locale: 'en-US' }, true],
   ]) {
     const context = await browser.newContext(opts)
+    // W18: photograph responsive WebGL using an independent short-lived Godot
+    // instance. Resizing the same canvas across DPR/orientation boundaries can
+    // leave stale hit-test transforms for later touch gameplay on SwiftShader.
+    // The actual 3-fault player mission runs on a separate FRESH page with the
+    // original device viewport. Never reuse a resized scene as a touch oracle.
+    if (isMobile) {
+      const layoutPage = await context.newPage()
+      const layoutErrors = []
+      layoutPage.on('pageerror', err => layoutErrors.push(String(err)))
+      try {
+        console.log('R135 W18 isolated real WebGL viewport matrix')
+        const layoutResponse = await layoutPage.goto(target, {
+          waitUntil: 'domcontentloaded', timeout: 120_000,
+        })
+        if (layoutResponse?.status() !== 200) {
+          throw new Error('Responsive matrix WebGL HTML HTTP ' + layoutResponse?.status())
+        }
+        await expectState(layoutPage, x => x?.scene_ready
+          && x?.loading_failures === 0 && x?.button_centers?.length === 8
+          && x?.fault_marker_count === 3,
+        'W18 viewport matrix must originate from a real running Godot scene', 90_000)
+        await verifyAdaptiveHud(layoutPage)
+        if (layoutErrors.length) throw new Error(
+          'Isolated viewport matrix browser errors: ' + JSON.stringify(layoutErrors))
+      } finally {
+        await layoutPage.close()
+      }
+    }
     const page = await context.newPage()
     const runtimeErrors = []
     const assetErrors = []
@@ -455,12 +494,44 @@ try {
           && x?.button_centers?.length === 8 && x?.fault_marker_count === 3
           && x?.fault_marker_visible_count === 0 && x?.fault_label_visible_count === 0
           && x?.studio_grid_draw_batches === 2 && x?.studio_grid_instances === 18
-          && x?.studio_mesh_nodes <= 8 && x?.prefers_reduced_motion === isMobile
+          && x?.studio_detail_draw_batches === 3 && x?.studio_detail_instances === 47
+          && x?.language_control_visible === true
+          && x?.studio_mesh_nodes === 8 && x?.prefers_reduced_motion === isMobile
+          && (!isMobile || (x?.ui_action_target_min_css_px >= 43.5
+            && x?.ui_language_target_min_css_px >= 43.5
+            && x?.ui_heading_css_px >= 17.0))
           && x?.inspection_fill_energy >= 3.5
           && x?.inspection_fill_shadow_enabled === false
           && x?.inspection_fill_range >= 12.0,
         'Real W5 Godot ECO rig, 3D markers and controls did not load', 90_000)
       if (boot.quality !== 0 || boot.studio_quality !== 0) throw new Error('Low-memory ECO mode not used on boot')
+      if (boot.ui_locale !== 'en') throw new Error('W17 deterministic QA locale did not load')
+      // Actual Godot controls in Chromium, not physical-device evidence.
+      if (isMobile) {
+        for (const wanted of ['ru', 'en']) {
+          const before = await readState(page)
+          const point = before.language_control_center
+          const rect = await page.locator('canvas').first().boundingBox()
+          if (!point || !rect) throw new Error('W17 mobile language switch lacks a hitbox')
+          await page.touchscreen.tap(
+            rect.x + point.x * rect.width / before.viewport_w,
+            rect.y + point.y * rect.height / before.viewport_h,
+          )
+          await expectState(page, x => x?.ui_locale === wanted
+            && (wanted === 'ru'
+              ? x?.ui_mission_text?.includes('НАЧНИ ОБУЧЕНИЕ')
+              : x?.ui_mission_text?.includes('PRESS START MISSION')),
+            'W17 touch RU/EN switch failed to localize actual lesson feedback')
+          if (wanted === 'ru') await captureRealViewport(page, 'w17-mobile-ru-operator.png')
+        }
+      } else {
+        await page.locator('canvas').first().click({ position: { x: 400, y: 350 } })
+        await page.keyboard.press('l')
+        await expectState(page, x => x?.ui_locale === 'ru' && x?.ui_mission_text?.includes('НАЧНИ ОБУЧЕНИЕ'), 'W17 keyboard RU must translate lesson feedback')
+        await captureRealViewport(page, 'w17-desktop-ru-operator.png')
+        await page.keyboard.press('l')
+        await expectState(page, x => x?.ui_locale === 'en' && x?.ui_mission_text?.includes('PRESS START MISSION'), 'W17 keyboard EN must restore lesson feedback')
+      }
       if (!boot.hud_rect || !boot.action_rect || boot.hud_rect.h > boot.viewport_h * .28 ||
           boot.hud_rect.y + boot.hud_rect.h >= boot.action_rect.y - 20) {
         throw new Error('W11 initial HUD obscures scene: ' + JSON.stringify({
@@ -479,7 +550,6 @@ try {
         await touchDiagnostics(page)
         const extraCases = await browserRemainingFaults(page, true, name)
         if (extraCases.length !== 2) throw new Error('Missing two mobile diagnostic cases')
-        await verifyAdaptiveHud(page)
       } else {
         await keyboardMission(page)
         await keyboardDiagnostics(page)

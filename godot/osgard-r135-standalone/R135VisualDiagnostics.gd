@@ -7,6 +7,10 @@ var marker_labels: Array[Label3D] = []
 var current_state: String = "idle"
 var active_index: int = -1
 var reduced_motion: bool = false
+var ui_locale: String = "en"
+
+func set_locale(value: String) -> void:
+    ui_locale = "ru" if value == "ru" else "en"
 
 func configure(optical_head: Node3D) -> void:
     var optics_parent: Node3D = optical_head if optical_head != null else self
@@ -97,6 +101,9 @@ func update_visuals(fault_index: int, is_active: bool, is_completed: bool, step:
         if highlighted:
             status = "CLEARED" if cleared else "INSPECT"
         var text_value: String = ["OPTIC 01", "AIR 02", "LOCK 03"][i] + " / " + status
+        if ui_locale == "ru":
+            var translated_state: String = "ИСПРАВЛЕНО" if cleared else ("ОСМОТР" if highlighted else "ГОТОВО")
+            text_value = ["ОПТИКА 01", "ВОЗДУХ 02", "БЛОК 03"][i] + " / " + translated_state
         if marker_labels[i].text != text_value:
             marker_labels[i].text = text_value
 

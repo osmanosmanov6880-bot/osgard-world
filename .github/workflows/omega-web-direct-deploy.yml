@@ -50,8 +50,12 @@ jobs:
             echo "ready=true" >> "$GITHUB_OUTPUT"
             echo "source_sha=$manifest_source" >> "$GITHUB_OUTPUT"
           else
-            echo "::notice::Old native game manifest is superseded by a newer Godot source tree; no SSH upload."
+            # SUPERSEDED is a safe NON-DEPLOYMENT, never a successful release.
+            # A green no-op previously triggered downstream R50 live acceptance
+            # even though no new WASM/PCK bytes had reached production.
+            echo "::error::SUPERSEDED Omega source: no SSH upload and no successful deployment signal."
             echo "ready=false" >> "$GITHUB_OUTPUT"
+            exit 3
           fi
       - name: Verify release-integrity failure conditions
         if: steps.source_gate.outputs.ready == 'true'
@@ -112,9 +116,9 @@ jobs:
           # may have merged since checkout or initial source gate.
           git fetch --no-tags --depth=1 origin "+refs/heads/master:refs/remotes/origin/master"
           if ! python3 scripts/omega-build-freshness.py "${{ steps.source_gate.outputs.source_sha }}" origin/master; then
-            echo "::notice::Newer game source appeared before SSH; older release skipped."
+            echo "::error::SUPERSEDED immediately before SSH; older release not published."
             echo "deployed=false" >> "$GITHUB_OUTPUT"
-            exit 0
+            exit 3
           fi
           # A prior VPS outage was caused by 96 GiB/96 GiB disk usage.
           # Fail closed before creating staging or transferring any bytes.
