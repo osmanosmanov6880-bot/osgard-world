@@ -18,7 +18,6 @@ assert "omega-r49-${{ matrix.viewport }}-real-game-pixels" in workflow
 assert 'captureAnimatedWebGLViewport(page)' in original_pixels
 assert 'realGameFrameEvidence(png)' in original_pixels
 assert 'worldEvidence.realWorldEdges' in original_pixels
-assert "Math" not in workflow or True  # Do not derive any mock replacement image
 assert "OMEGA_CI_GL_BACKEND" in config
 assert "'--use-angle=gl'" in config
 assert "scripts/omega-r49-mesa-contract.test.py" in workflow
