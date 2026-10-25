@@ -336,6 +336,8 @@ func _run() -> void:
     if not check(scenic.r40_bridge_luminaires == 96 and
         scenic.r40_bridge_luminaire_draws == 3,
         "R40 bridge luminaire batch counts changed unexpectedly"):return
+    if not check(scenic.r40_bridge_cpu_transforms.size() == 3,
+        "R40 exact CPU geometry evidence for all bridges missing"):return
     for bridge_index in 3:
         var bridge_batch = scenic.get_node_or_null(
             "R40_BridgeLuminaireBatch_%02d" % bridge_index)
@@ -364,11 +366,17 @@ func _run() -> void:
         if not check(collision_box != null and
             collision_box.size.is_equal_approx(Vector3(269.0,5.4,9.2)),
             "R40 real bridge collision shape must remain 269x5.4x9.2"):return
+        var cpu_transforms: Array = scenic.r40_bridge_cpu_transforms[bridge_index]
+        if not check(cpu_transforms.size() == 32,
+            "R40 CPU submitted light instance count mismatch"):return
+        # In --headless, Godot's dummy RenderingServer can return
+        # Transform3D.IDENTITY for GPU instance reads. Validate the exact
+        # CPU transformations passed to MultiMesh.set_instance_transform.
         for side_index in 2:
             var side: float = -1.0 if side_index == 0 else 1.0
             for fixture_index in 16:
-                var fixture: Transform3D = bridge_batch.multimesh.get_instance_transform(
-                    side_index * 16 + fixture_index)
+                var fixture: Transform3D = cpu_transforms[
+                    side_index * 16 + fixture_index]
                 var x: float = (float(fixture_index)-7.5)*16.0
                 var expected: Vector3 = bridge_span.position + Vector3(
                     x,3.2,side*4.6)
@@ -384,6 +392,7 @@ func _run() -> void:
                         " position_error=",fixture.origin.distance_to(expected))
                     if not check(false,
                         "R40 real MultiMesh instance transform differs from R38"):return
+    print("NEBULA_R40_GEOMETRY_CPU_PARITY_SUCCESS fixtures=96 bridges=3 renderer_headless=",DisplayServer.get_name() == "headless")
     var ambient_0: Vector3 = scenic.traffic_nodes[0].position
     scenic._process(0.1)
     if not check(scenic.traffic_nodes[0].position != ambient_0 and
