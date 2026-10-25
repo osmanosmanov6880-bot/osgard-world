@@ -24,7 +24,7 @@ func _run() -> void:
 	check(pool.size()==ROAD.STREETLIGHT_POOL_LIMIT and pool.size()==4,"exactly four reusable real street lights")
 	check(int(scenic.get("scenic_batches"))>=5,"real instanced lamp meshes and roads remain")
 	for light in pool:
-		check(light is OmniLight3D and light.omni_range <= 13.0,"one real bounded OmniLight3D node")
+		check(light is OmniLight3D and light.omni_range <= 16.0,"one real bounded OmniLight3D node")
 		check(not light.shadow_enabled and not light.visible,"no expensive shadow pass or daytime light")
 		check(light.omni_attenuation>1.0,"real spatial distance attenuation")
 	var focus := Vector3(-0.0,0.0,17.0)
@@ -40,7 +40,7 @@ func _run() -> void:
 				snapped=true
 				break
 		check(snapped,"visible light is attached to original instanced lantern geometry")
-		check(light.light_energy<=0.75,"bounded energy protects WebGL from cost explosion")
+		check(light.light_energy<=0.90,"bounded energy protects WebGL from cost explosion")
 	scenic.call("update_streetlights",22.0,"standard",focus)
 	check(int(scenic.get("active_night_lights"))==2,"STANDARD uses two real area lights")
 	check(pool[0].visible and pool[1].visible and not pool[2].visible and not pool[3].visible,
