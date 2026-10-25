@@ -1,4 +1,5 @@
 import { test } from 'node:test'
+import { fileURLToPath } from 'node:url'
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
 import { mkdtemp, mkdir, writeFile, readFile, chmod, rm, symlink, link, realpath, readdir } from 'node:fs/promises'
@@ -159,7 +160,7 @@ test('V37: local private film bytes, release must ALWAYS remain NO_GO',async t=>
   await t.test('CLI without required arguments fails closed',async()=>{
     const {spawnSync}=await import('node:child_process')
     const cli=new URL('./osa-cinema-v37-verify-private-media.mjs',import.meta.url)
-    const p=spawnSync(process.execPath,[cli.pathname],{encoding:'utf8'})
+    const p=spawnSync(process.execPath,[fileURLToPath(cli)],{encoding:'utf8'})
     assert.equal(p.status,1)
     assert.match(p.stderr,/OSA_V37_PRIVATE_MEDIA_HOLD/)
   })
