@@ -60,6 +60,7 @@ const CIVIC_GATEWAY = preload("res://scripts/horizon_civic_gateway.gd")
 const ROAD_PAINT_SCENE = preload("res://scripts/horizon_road_paint_batches.gd")
 const ROAD_PUDDLES = preload("res://scripts/horizon_rain_puddles.gd")
 const R90_URBAN = preload("res://scripts/horizon_r90_street_dressing.gd")
+const R95_MASSING = preload("res://scripts/horizon_r95_city_massing.gd")
 var asphalt_pbr: StandardMaterial3D
 var concrete_pbr: StandardMaterial3D
 var r90_original_asphalt_albedo: Texture2D
@@ -233,7 +234,7 @@ func _create_city() -> void:
 			building_chunks[Vector2i(ix,iz)] = {"node":chunk,"center":Vector3(x,0,z),"active":true}
 			for n in range(2):
 				var offset := -9.0 if n == 0 else 9.0
-				var height := rng.randf_range(8,35) * (1.1 if id == "forum" else 1.0)
+				var height: float = R95_MASSING.height_for(id,rng.randf(),ix,iz,n)
 				var width := rng.randf_range(11,15)
 				var color := base_color.lightened(rng.randf_range(0.05,0.32)) if (ix + iz + n) % 3 == 0 else base_color.darkened(rng.randf_range(0.08,0.28))
 				var pos := Vector3(x+offset,height*0.5,z+(offset if (ix + iz) % 2 == 0 else -offset))

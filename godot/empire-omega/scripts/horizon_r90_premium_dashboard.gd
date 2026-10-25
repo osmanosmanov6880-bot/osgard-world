@@ -7,6 +7,7 @@ signal select_vehicle(id: String)
 signal select_district(id: String)
 
 const REFERENCE = preload("res://scripts/horizon_r90_reference_style.gd")
+const PROJECTIVE_PINS = preload("res://scripts/horizon_r92_projective_districts.gd")
 const GOLD = Color("eac482")
 const WHITE = Color("f6f3ed")
 const MUTED = Color("a8b1bd")
@@ -303,11 +304,7 @@ func _city_view(parent: Node, world: World3D, forecast: Dictionary, lang: String
 	# Actual district scores are projected as informational touch targets
 	# over the live render, not fabricated economic statistics.
 	var scores: Dictionary = forecast.get("district_scores",{})
-	var pins: Dictionary = {
-		"forum":Vector2(0.21,0.34),
-		"housing":Vector2(0.71,0.34),
-		"lower":Vector2(0.23,0.72),
-		"aqueduct":Vector2(0.71,0.72)}
+	# Project true district points with the real active 3D command camera.
 	var titles: Dictionary = {
 		"forum":local("СЕНАТСКИЙ ФОРУМ","SENATE FORUM","元老院广场",lang),
 		"housing":local("ЖИЛОЙ КВАРТАЛ","HOUSING","住宅区",lang),
@@ -319,10 +316,13 @@ func _city_view(parent: Node, world: World3D, forecast: Dictionary, lang: String
 		badge.text = "◆ %s · %d/100" % [str(titles[id]),int(scores.get(id,0))]
 		badge.tooltip_text = local("Выбрать район","Select district","选择城区",lang)
 		badge.custom_minimum_size = Vector2(100,32)
-		badge.anchor_left = pins[id].x
-		badge.anchor_right = pins[id].x
-		badge.anchor_top = pins[id].y
-		badge.anchor_bottom = pins[id].y
+		var projected: Dictionary = PROJECTIVE_PINS.project_district(camera,id,Vector2(preview.size))
+		badge.visible = bool(projected.get("visible",false))
+		var point: Vector2 = projected.get("anchor",Vector2(0.5,0.5))
+		badge.anchor_left = point.x
+		badge.anchor_right = point.x
+		badge.anchor_top = point.y
+		badge.anchor_bottom = point.y
 		badge.offset_left = -65.0
 		badge.offset_right = 85.0
 		badge.offset_top = -16.0
