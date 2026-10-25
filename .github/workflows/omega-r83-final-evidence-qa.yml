@@ -1,0 +1,54 @@
+name: EMPIRE Omega R83 real-release evidence aggregation contract
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - 'scripts/omega_r83_release_gate.py'
+      - 'scripts/test_omega_r83_release_gate.py'
+      - '.github/workflows/omega-r83-final-evidence-qa.yml'
+      - 'docs/EMPIRE_OMEGA_R83_FINAL_ACCEPTANCE_RU.md'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  final-evidence-is-not-auto-go:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify source-bound release review gate rejects synthetic and incomplete evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/test_omega_r83_release_gate.py
+      - name: Existing technical Web release is not an automatic AAA GO
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/omega_r83_release_gate.py --output /tmp/omega-r83-hold.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          report=json.loads(Path('/tmp/omega-r83-hold.json').read_text())
+          manifest=json.loads(Path('public/games/omega-3d-preview/release.json').read_text())
+          assert report['source_commit']==manifest['source_commit']
+          assert report['status']=='HOLD'
+          assert report['production_go'] is False
+          assert report['aaa_quality_certified'] is False
+          assert report['independent_human_verification_complete'] is False
+          assert len(report['missing_evidence']) == 6
+          print('PASS source-pinned six-gate human evidence HOLD, no false AAA release')
+          PY
+      - name: Even synthetic all-true field flags cannot issue Production GO
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH=scripts python3 - <<'PY'
+          import omega_r83_release_gate as gate
+          source='a'*40
+          report=gate.summarise(source,{name:True for name in gate.REQUIRED_CHECKS},[])
+          assert report['status']=='READY_FOR_INDEPENDENT_HUMAN_SIGNOFF'
+          assert report['production_go'] is False
+          assert report['aaa_quality_certified'] is False
+          print('PASS even full machine evidence never grants automatic production GO')
+          PY
