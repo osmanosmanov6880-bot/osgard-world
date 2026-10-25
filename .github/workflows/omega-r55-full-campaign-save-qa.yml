@@ -1,0 +1,62 @@
+name: EMPIRE Omega R55 all forty real mission events and backup-save QA
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - 'godot/empire-omega/tests/v72_r55_forty_mission_event_save.gd'
+      - '.github/workflows/omega-r55-full-campaign-save-qa.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  real-native-campaign-and-rollback:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: false
+      - name: Strict import of ORIGINAL Godot runtime and authored campaign
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 godot/empire-omega/tools/generate_audio.py
+          python3 godot/empire-omega/tools/generate_patrol_audio.py
+          bash scripts/omega-strict-godot-import.sh godot/empire-omega
+      - name: Actual engine mission rewards, save recovery and all forty transitions
+        shell: bash
+        run: |
+          set -euo pipefail
+          for suite in v18_save_recovery v70_r49_campaign_chapters v72_r55_forty_mission_event_save; do
+            timeout --signal=TERM --kill-after=5s 90s godot --headless --path godot/empire-omega --script "res://tests/$suite.gd"
+          done
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          report=Path('godot/empire-omega/tests/r55-campaign-event-save-evidence.json')
+          assert report.is_file() and report.stat().st_size > 1000, 'no real native campaign evidence'
+          r=json.loads(report.read_text(encoding='utf-8'))
+          assert r['schema']=='omega-r55-mission-event-save-v1'
+          assert r['engine']=='Godot 4.4.1' and r['total_missions']==40
+          assert len(r['mission_transitions'])==40
+          assert [t['index'] for t in r['mission_transitions']]==list(range(40))
+          assert r['chapter_endings']==['arrival','builder','world']
+          assert r['checks_failed']==0 and r['checks_passed']>=200
+          assert r['earned_in_game_credits']>10000
+          assert r['primary_and_backup_save_recovery'] is True
+          assert r['human_mission_playthrough_attested'] is False
+          assert r['physical_device_attested'] is False
+          assert r['full_aaa_release_authorized'] is False
+          print('PASS genuine Godot 40-event campaign, earned rewards, primary and backup recovery; human playthrough still HOLD')
+          PY
+      - name: Preserve exact source mission transition ledger as CI artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: omega-r55-native-40-missions-save-recovery
+          path: godot/empire-omega/tests/r55-campaign-event-save-evidence.json
+          if-no-files-found: warn
+          retention-days: 15
