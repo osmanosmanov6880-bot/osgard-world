@@ -619,6 +619,18 @@ func _process(delta: float) -> void:
             state["player_settings_control_css_px"] = minf(
                 settings_button.get_global_rect().size.x,
                 settings_button.get_global_rect().size.y) / maxf(touch_pixel_ratio, 1.0)
+            var settings_center: Vector2 = settings_button.get_global_rect().get_center()
+            state["player_settings_center"] = {"x": settings_center.x, "y": settings_center.y}
+            var player_panel: PanelContainer = premium_intro.get("settings_panel") as PanelContainer
+            var settings_rect: Rect2 = player_panel.get_global_rect()
+            state["player_settings_rect"] = {"x": settings_rect.position.x, "y": settings_rect.position.y,
+                "w": settings_rect.size.x, "h": settings_rect.size.y}
+            var quality_control: Button = premium_intro.get("settings_quality_button") as Button
+            var motion_control: Button = premium_intro.get("settings_motion_button") as Button
+            var quality_center: Vector2 = quality_control.get_global_rect().get_center()
+            var motion_center: Vector2 = motion_control.get_global_rect().get_center()
+            state["player_settings_quality_center"] = {"x": quality_center.x, "y": quality_center.y}
+            state["player_settings_motion_center"] = {"x": motion_center.x, "y": motion_center.y}
             var intro_panel: PanelContainer = premium_intro.get("card") as PanelContainer
             var intro_rect: Rect2 = intro_panel.get_global_rect()
             state["tutorial_rect"] = {"x": intro_rect.position.x, "y": intro_rect.position.y,
