@@ -120,7 +120,6 @@ export async function captureAuthenticCDPScreencast(page) {
   const session=await boundedCapture(
     page.context().newCDPSession(page),8000,'CDP screencast connection'
   )
-  let settle=null
   let done=false
   try {
     const result=new Promise(resolve=>{
