@@ -22,6 +22,10 @@ var readout_clock: float = 0.0
 var optical_tracking: bool = true
 var camera_effective_distance: float = 0.0
 const VIEW_NAMES = ["OVERVIEW", "SERVICE DECK", "OPTICAL HEAD", "SIDE INSPECTION"]
+const R135Locale = preload("res://R135Locale.gd")
+var ui_locale: String = "en"
+var language_button: Button
+var safety_notice: Label
 
 var hud_panel: PanelContainer
 var action_panel: PanelContainer
@@ -76,8 +80,10 @@ func _ready() -> void:
     studio.call("set_quality", quality)
     if OS.has_feature("web"):
         reduced_motion = bool(JavaScriptBridge.eval("Boolean(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)", true))
+        ui_locale = "ru" if bool(JavaScriptBridge.eval("Boolean((navigator.language || '').toLowerCase().startsWith('ru'))", true)) else "en"
     controller.call("set_reduced_motion", reduced_motion)
     _build_hud()
+    _set_locale(ui_locale)
     get_viewport().size_changed.connect(_update_layout)
     _update_layout()
     _update_view()
@@ -130,11 +136,24 @@ func _build_hud() -> void:
     text_stack.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
     text_stack.add_theme_constant_override("separation", 6)
     hud_panel.add_child(text_stack)
+    var header_bar := HBoxContainer.new()
+    header_bar.add_theme_constant_override("separation", 8)
+    text_stack.add_child(header_bar)
     heading = Label.new()
+    heading.size_flags_horizontal = Control.SIZE_EXPAND_FILL
     heading.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
     heading.text = "OSGARD  /  SERVICE LAB"
     heading.add_theme_color_override("font_color", Color(0.93, 0.78, 0.62))
-    text_stack.add_child(heading)
+    header_bar.add_child(heading)
+    language_button = Button.new()
+    language_button.name = "SwitchLanguage"
+    language_button.focus_mode = Control.FOCUS_ALL
+    language_button.custom_minimum_size = Vector2(56, 40)
+    language_button.add_theme_color_override("font_color", Color(0.95, 0.84, 0.69))
+    language_button.add_theme_stylebox_override("normal", _button_style())
+    language_button.add_theme_stylebox_override("hover", _button_style(true))
+    language_button.pressed.connect(_toggle_locale)
+    header_bar.add_child(language_button)
     hud = Label.new()
     hud.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
     hud.add_theme_color_override("font_color", Color(0.86, 0.95, 0.97))
@@ -149,6 +168,11 @@ func _build_hud() -> void:
     helper.text = "M: TRAIN  C: DIAGNOSE  E: SCAN  V: CAMERA  ·  SIMULATION"
     helper.add_theme_color_override("font_color", Color(0.70, 0.76, 0.78))
     text_stack.add_child(helper)
+    safety_notice = Label.new()
+    safety_notice.name = "SimulationSafetyNotice"
+    safety_notice.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+    safety_notice.add_theme_color_override("font_color", Color(0.91, 0.75, 0.56))
+    text_stack.add_child(safety_notice)
 
     action_panel = PanelContainer.new()
     action_panel.name = "OperatorControls"
@@ -186,6 +210,9 @@ func _update_layout() -> void:
     var font_help := int(18 * ui_scale) if portrait else 12
     var font_mission := int(29 * ui_scale) if portrait else 17
     heading.add_theme_font_size_override("font_size", font_title)
+    heading.text = "OSGARD / R135" if portrait else "OSGARD  /  SERVICE LAB"
+    language_button.custom_minimum_size = Vector2(46, 35) if compact else Vector2(56, 40)
+    safety_notice.add_theme_font_size_override("font_size", int(18 * ui_scale) if portrait else 13)
     hud.add_theme_font_size_override("font_size", font_state)
     helper.add_theme_font_size_override("font_size", font_help)
     mission_label.add_theme_font_size_override("font_size", font_mission)
@@ -228,6 +255,27 @@ func _update_layout() -> void:
         maxf(0.0, size.y - action_panel.size.y - margin)
     )
     _update_view()
+
+func _set_locale(value: String) -> void:
+    ui_locale = "ru" if value.to_lower() == "ru" else "en"
+    if language_button == null:
+        return
+    language_button.text = "EN" if ui_locale == "ru" else "RU"
+    language_button.tooltip_text = "Switch to English" if ui_locale == "ru" else "Переключить на русский"
+    for i in range(action_buttons.size()):
+        action_buttons[i].text = R135Locale.button_text(i, ui_locale)
+    safety_notice.text = R135Locale.notice(ui_locale)
+    if controller != null:
+        var faults: Node3D = controller.get("visual_faults") as Node3D
+        if faults != null:
+            faults.call("set_locale", ui_locale)
+    _refresh_status()
+
+func _toggle_locale() -> void:
+    _set_locale("en" if ui_locale == "ru" else "ru")
+
+func _translated(message: String) -> String:
+    return R135Locale.translate(message, ui_locale)
 
 func _start_mission() -> void:
     # Keep the visible PLAY/PAUSE command synchronized with controller state.
@@ -323,6 +371,9 @@ func _refresh_status() -> void:
         helper.text = "M: TRAIN  C: DIAGNOSE  E: SCAN  V: CAMERA  |  SIM ONLY"
     if int(state["loading_failures"]) > 0:
         hud.text += "\nMODEL LOAD FAILED - CHECK GLB IMPORT"
+    hud.text = _translated(hud.text)
+    mission_label.text = _translated(mission_label.text)
+    helper.text = _translated(helper.text)
 
 func _update_view() -> void:
     if camera == null:
@@ -427,6 +478,12 @@ func _process(delta: float) -> void:
         state["studio_mesh_nodes"] = int(stage_budget["single_mesh_nodes"])
         state["studio_quality"] = int(stage_budget["stage_quality"])
         state["prefers_reduced_motion"] = reduced_motion
+        state["ui_locale"] = ui_locale
+        state["language_control_visible"] = language_button.visible
+        var switch_center: Vector2 = language_button.get_global_rect().get_center()
+        state["language_control_center"] = {"x": switch_center.x, "y": switch_center.y}
+        state["studio_detail_draw_batches"] = int(stage_budget["detail_draw_batches"])
+        state["studio_detail_instances"] = int(stage_budget["detail_instances"])
         state["render_fps_sample"] = Engine.get_frames_per_second()
         state["inspection_fill_energy"] = inspection_fill.light_energy
         state["inspection_fill_shadow_enabled"] = inspection_fill.shadow_enabled
@@ -532,4 +589,6 @@ func _unhandled_input(event: InputEvent) -> void:
             _start_challenge()
         elif event.keycode == KEY_E:
             _scan_component()
+        elif event.keycode == KEY_L:
+            _toggle_locale()
     _update_view()

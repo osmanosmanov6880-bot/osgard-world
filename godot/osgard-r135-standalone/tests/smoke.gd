@@ -49,6 +49,26 @@ func _run() -> void:
     if int(stage_budget.get("single_mesh_nodes", 99)) > 8 or not bool(stage_budget.get("visual_only", false)):
         _fail("W7 premium environment exceeds simple geometry budget")
         return
+    var language_control: Button = instance.get("language_button") as Button
+    if language_control == null or language_control.name != "SwitchLanguage":
+        _fail("W17 language control missing")
+        return
+    var operator_buttons: Array = instance.get("action_buttons")
+    if operator_buttons.size() != 8:
+        _fail("W17 localization must preserve eight operator controls")
+        return
+    instance.call("_set_locale", "ru")
+    if str(instance.get("ui_locale")) != "ru" or operator_buttons[0].text != "НАЧАТЬ":
+        _fail("W17 Russian control switch failed")
+        return
+    var safety: Label = instance.get("safety_notice") as Label
+    if safety == null or not safety.text.contains("проверки отсутствия энергии"):
+        _fail("W17 Russian energy isolation warning missing")
+        return
+    instance.call("_set_locale", "en")
+    if operator_buttons[0].text != "START MISSION" or not safety.text.contains("SIMULATION ONLY"):
+        _fail("W17 restored English controls/notice failed")
+        return
     var first: Dictionary = rig.call("summary")
     if int(first.get("loading_failures", 0)) != 0 or int(first.get("load_count", 0)) < 1:
         _fail("ECO mesh did not load: " + str(first))
