@@ -43,6 +43,7 @@ func _run() -> void:
 			check(mesh_position.origin.is_finite(),
 				"each beam has finite world coordinates: %d" % i)
 			span = maxf(span,mesh_position.basis.y.length())
+	print("R98 measured instance-space vertical span: %.5f" % span)
 	check(span >= 26.0,"real multi-floor 3D mullion height, not screen-space texture")
 	fins.call("set_quality","low")
 	check(not fins.visible,"mobile low tier hides optional city detail")
