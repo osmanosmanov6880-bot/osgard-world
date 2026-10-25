@@ -7,7 +7,15 @@ func _initialize() -> void:
 	call_deferred("_run")
 
 func _snapshot(world: Node3D, hour: float, target: String, size: Vector2i) -> float:
-	GameState.data["day_clock"] = hour
+	# Global autoload names can fail to parse with standalone godot --script.
+	var state_node: Node = root.get_node_or_null("GameState")
+	if state_node == null:
+		push_error("R44 night QA: real GameState autoload missing")
+		failed = true
+		return -1.0
+	var state: Dictionary = state_node.get("data")
+	state["day_clock"] = hour
+	state_node.set("data",state)
 	world.call("apply_visual_budget","cinematic")
 	world.call("update_daynight",hour)
 	for i in range(24):
