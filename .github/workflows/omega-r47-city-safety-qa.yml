@@ -1,0 +1,50 @@
+name: EMPIRE Omega R47 seeded city traffic and pedestrian safety QA
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - 'godot/empire-omega/tests/v69_r47_city_safety_stress.gd'
+      - 'scripts/omega-r47-safety-report-check.py'
+      - '.github/workflows/omega-r47-city-safety-qa.yml'
+      - 'godot/empire-omega/scripts/horizon_pedestrian_yield.gd'
+      - 'godot/empire-omega/scripts/traffic_safety.gd'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  real-native-city-safety:
+    runs-on: ubuntu-latest
+    timeout-minutes: 24
+    steps:
+      - uses: actions/checkout@v4
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: false
+      - name: Genuine sound resources and strict Godot import
+        run: |
+          python3 godot/empire-omega/tools/generate_audio.py
+          python3 godot/empire-omega/tools/generate_patrol_audio.py
+          bash scripts/omega-strict-godot-import.sh godot/empire-omega
+      - name: Actual physics and predictive city regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          for suite in v14_traffic_physics v63_r41_predictive_pedestrian_yield v64_r42_full_stack_integration; do
+            timeout --signal=TERM --kill-after=6s 140s godot --headless --path godot/empire-omega --script "res://tests/$suite.gd"
+          done
+      - name: Run 200 crossing cases and real 240-frame stopped-car trial
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=6s 140s godot --headless --path godot/empire-omega --script res://tests/v69_r47_city_safety_stress.gd
+          python3 scripts/omega-r47-safety-report-check.py godot/empire-omega/tests/r47-city-safety.json
+      - name: Keep original Godot numeric evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: omega-r47-native-pedestrian-safety
+          path: godot/empire-omega/tests/r47-city-safety.json
+          if-no-files-found: warn
+          retention-days: 14
