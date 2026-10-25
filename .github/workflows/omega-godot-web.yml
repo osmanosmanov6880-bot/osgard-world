@@ -44,12 +44,14 @@ jobs:
               continue
             fi
             echo "=== NATIVE ${test_file##*/} ==="
-            # The calibrated six-candidate R40 RigidBody3D sweep takes ~40s
-            # on actual CI; preserve the 15s gate for all other native suites.
+            # Calibrated R40 and real R46/R47 physics suites require genuine
+            # simulation ticks. Keep explicit finite budgets; never skip failures.
             test_seconds=15
-            if [[ "${test_file##*/}" == "v59_r40_force_motor_calibration.gd" ]]; then
-              test_seconds=110
-            fi
+            case "${test_file##*/}" in
+              v59_r40_force_motor_calibration.gd) test_seconds=110 ;;
+              v67_r46_physics_ab_trials.gd) test_seconds=150 ;;
+              v69_r47_city_safety_stress.gd) test_seconds=150 ;;
+            esac
             echo "Native test budget: ${test_seconds}s for ${test_file##*/}"
             if timeout --signal=TERM --kill-after=5s "${test_seconds}s" godot --headless --path godot/empire-omega --script "res://tests/${test_file##*/}"; then
               echo "PASS: ${test_file##*/}"
