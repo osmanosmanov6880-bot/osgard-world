@@ -1,0 +1,34 @@
+name: EMPIRE Omega R95 original playable city vertical skyline QA
+on:
+  pull_request:
+    branches:
+      - master
+      - feat/omega-r90-aaa-reference-first-slice-20261026
+    paths:
+      - 'godot/empire-omega/scripts/horizon_r95_city_massing.gd'
+      - 'godot/empire-omega/scripts/world_builder.gd'
+      - 'godot/empire-omega/tests/v82_r95_city_massing.gd'
+      - '.github/workflows/omega-r95-city-massing-qa.yml'
+permissions:
+  contents: read
+jobs:
+  real-godot-skyline-height:
+    runs-on: ubuntu-latest
+    timeout-minutes: 19
+    steps:
+      - uses: actions/checkout@v4
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: false
+      - name: Original Godot strict import and actual massing
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 godot/empire-omega/tools/generate_audio.py
+          python3 godot/empire-omega/tools/generate_patrol_audio.py
+          bash scripts/omega-strict-godot-import.sh godot/empire-omega
+          for suite in v82_r95_city_massing v29_responsive_layout v76_r87_honest_mission_navigation; do
+            timeout --signal=TERM --kill-after=5s 115s godot --headless --path godot/empire-omega --script "res://tests/$suite.gd"
+          done
