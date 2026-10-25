@@ -56,9 +56,16 @@ func _run() -> void:
 	verify(not bench.capacity_overflow and bench.dropped==0 and bench.active,
 		"new explicit measurement resets all overflow and dropped-frame state")
 	for size in [Vector2(320,568),Vector2(390,844),Vector2(860,540)]:
-		var panel: Rect2 = LAYOUT.compute(size)["diagnostics"]
+		var panel: Rect2 = LAYOUT.diagnostics_frame(size)
 		verify(panel.end.y<size.y-120.0,"expanded panel does not cover phone driving buttons")
 		verify(not panel.intersects(LAYOUT.compute(size)["quick_toggle"]),"benchmark never blocks FPS toggle")
+	for size in [Vector2(844,390),Vector2(1366,768)]:
+		var frame: Rect2 = LAYOUT.diagnostics_frame(size)
+		verify(frame.position.x>=0.0 and frame.end.x<=size.x and frame.end.y<=size.y,
+			"live desktop and short landscape performance frames remain on-screen")
+		if size.y<500.0:
+			verify(frame.end.y <= size.y-120.0 and not frame.intersects(LAYOUT.compute(size)["quick_toggle"]),
+				"short landscape frame cannot hide player controls or FPS switch")
 	var hud_script: Variant = load("res://scripts/hud.gd")
 	verify(hud_script is Script and hud_script.can_instantiate(),"actual game HUD loads after runtime autoload registration")
 	if not (hud_script is Script) or not hud_script.can_instantiate():

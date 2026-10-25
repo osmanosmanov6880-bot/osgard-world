@@ -45,9 +45,21 @@ func _run() -> void:
 	bench.begin("cinematic",Vector2(390,844),"UnverifiedHardware")
 	check(not bench.completed and not bench.report().get("physical_hardware_attested",false),"no fake hardware proof")
 	for screen in [Vector2(320,568),Vector2(390,844),Vector2(844,390),Vector2(1366,768)]:
-		var panel: Rect2 = LAYOUT.compute(screen)["diagnostics"]
-		check(panel.size.x>0 and panel.size.y>0 and panel.end.y<=screen.y,
+		var panel: Rect2 = LAYOUT.diagnostics_frame(screen)
+		check(panel.size.x>0 and panel.size.y>0 and panel.end.x<=screen.x and panel.end.y<=screen.y,
 			"real performance controls fit "+str(screen))
+		if LAYOUT.is_compact(screen):
+			var frames: Dictionary = LAYOUT.compute(screen)
+			check(frames.has("diagnostics") and panel == frames.get("diagnostics",Rect2()),
+				"native benchmark and actual HUD use identical compact panel "+str(screen))
+			check(not panel.intersects(frames["quick_toggle"]),
+				"real performance controls never cover the diagnostics toggle "+str(screen))
+			if screen.y < 500.0:
+				check(panel.end.y <= screen.y-120.0,
+					"landscape benchmarking keeps real driving controls accessible "+str(screen))
+		else:
+			check(panel == Rect2(24.0,116.0,360.0,182.0),
+				"desktop benchmark uses the actual anchored HUD frame")
 	await process_frame
 	print("EMPIRE OMEGA R42 INTEGRATION: %d passed, %d failed" % [passed,failed])
 	quit(0 if failed==0 else 1)
