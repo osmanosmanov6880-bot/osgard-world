@@ -1,0 +1,79 @@
+{
+  "schema": "OSGARD_R135_W18_ORIGINAL_EVIDENCE_MEMBERS_V1",
+  "source_commit": "5971112ef861afc257aeb0e054550c158c260b6a",
+  "version": "r135-premium-learning-w18-candidate-20261025",
+  "members": {
+    "r135-screens/desktop-1366.png": {
+      "sha256": "ac999076d029c43697136d9ec9d0e7f3576989c8f17b8fa9bbd74517cdd8c389",
+      "bytes": 531306
+    },
+    "r135-screens/mobile-390.png": {
+      "sha256": "293d97872c551a48b7490a4bb2d4abd0077ea70ef65302d7777a5b34ea61b7fd",
+      "bytes": 166165
+    },
+    "r135-screens/r135-portrait-capture-proof.json": {
+      "sha256": "a129a3df4e1cf994fefe7ec1ec9363d2edd4ad13bb25b54eedbb08af42959464",
+      "bytes": 585
+    },
+    "r135-screens/w12-desktop-1366-fault-2-active.png": {
+      "sha256": "37b6e581c649364bfcad910a6a81bbfcaeac0030b755c177f6a0842b02697395",
+      "bytes": 213526
+    },
+    "r135-screens/w12-desktop-1366-fault-3-active.png": {
+      "sha256": "d3d20680e0485532c59da6bf95bfc56c4539b552ddd7397d79db7817efe56e52",
+      "bytes": 531426
+    },
+    "r135-screens/w12-desktop-1366-three-case-evidence.json": {
+      "sha256": "fbf3618e9a0401d3247de62c6b84c8076ecfd2267abf0eb04c37ad61bdccc35f",
+      "bytes": 741
+    },
+    "r135-screens/w12-mobile-390-fault-2-active.png": {
+      "sha256": "a35abbc3f21ae0844b961e758bb5ae138e37a556d872dfee9ebd7152d7bcab10",
+      "bytes": 162133
+    },
+    "r135-screens/w12-mobile-390-fault-3-active.png": {
+      "sha256": "4bd19111142776d6eac52c6aa02612af1ffce3794689a001ca84a7a03c3e0054",
+      "bytes": 166791
+    },
+    "r135-screens/w12-mobile-390-three-case-evidence.json": {
+      "sha256": "814bc7fcf1901426c1d1d1c429badf29976377f3a1d040e3d87db40fff9e77a7",
+      "bytes": 738
+    },
+    "r135-screens/w17-desktop-ru-operator.png": {
+      "sha256": "1a0db324233ae2eae2ff3df2bd4e573543810c2f6176710b50f6816ef87eefb9",
+      "bytes": 286089
+    },
+    "r135-screens/w17-mobile-ru-operator.png": {
+      "sha256": "d236f0a954ea7522cad62535bfd30836ad04d7f21c0e10e6bc46e66b1b5c1598",
+      "bytes": 119845
+    },
+    "r135-screens/w6-desktop-optical-active.png": {
+      "sha256": "9f7cbb7b02d8c48c91402c6df3fface0a52a4cf4d29e51c66fbdd9e96931b43e",
+      "bytes": 427257
+    },
+    "r135-screens/w6-portrait-optical-active.png": {
+      "sha256": "6b9cee549f9259d69989ada4b880d5afe3485110f700737cbeb8d11bfff10a70",
+      "bytes": 145139
+    },
+    "r135-screens/w8-hud-360x780.png": {
+      "sha256": "b750133fa34fa5e59889cf70c2e5a791ea4352c8b8353ec8af0bf4204076def2",
+      "bytes": 100018
+    },
+    "r135-screens/w8-hud-430x932.png": {
+      "sha256": "527552ae70b08595db5e95876ceb36807191bcf2e8a8a15ef7665f476326f779",
+      "bytes": 122139
+    },
+    "r135-screens/w8-hud-932x430.png": {
+      "sha256": "fda391edcdef85a9b28371c1db2fcd8428b3b7270eb90372514183de5f487402",
+      "bytes": 162115
+    },
+    "r135-w10-release-evidence.json": {
+      "sha256": "a4f833c978dee2c3f6e9c3fb97773e9823864e1e88c989260196dc73d3e4f495",
+      "bytes": 1004
+    },
+    "r135-w11-readability-evidence.json": {
+      "sha256": "c1d0dba0c4ef482cc09222c510667265f40ce7fcfbe4ac7c71f588b6a4cadae7",
+      "bytes": 1017
+    }
+  }
+}
