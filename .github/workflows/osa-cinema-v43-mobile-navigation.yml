@@ -1,0 +1,67 @@
+name: OSA CINEMA V43 - real mobile chapter navigation, permanent NO-GO
+on:
+  pull_request:
+    paths:
+      - 'src/OSACinema.tsx'
+      - 'src/OSAObsidianSceneNavigator.tsx'
+      - 'src/osaCinemaV43.css'
+      - 'scripts/osa-cinema-v43-mobile-navigation.test.mjs'
+      - 'scripts/osa-cinema-v43-mobile-navigation.spec.mjs'
+      - '.github/workflows/osa-cinema-v43-mobile-navigation.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  component-contract:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: node --test scripts/osa-cinema-v43-mobile-navigation.test.mjs
+      - run: npm ci --ignore-scripts
+      - run: npm run check
+  real-react-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Install Chromium
+        run: |
+          npm install --no-save --package-lock=false @playwright/test@1.58.2
+          if command -v google-chrome >/dev/null 2>&1; then
+            echo 'OSGARD_BROWSER_CHANNEL=chrome' >> "$GITHUB_ENV"
+          else
+            npx playwright install --with-deps --no-shell chromium
+          fi
+      - name: Test real React mobile, desktop, deep links and reduced clutter
+        run: npx playwright test scripts/osa-cinema-v43-mobile-navigation.spec.mjs --config playwright.ecosystem.config.mjs --workers=1
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: osa-cinema-v43-browser-evidence
+          path: |
+            test-results/
+            browser-report/
+          retention-days: 14
+          if-no-files-found: warn
+  publication-stays-no-go:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test scripts/osa-cinema-v35-historical-guard.test.mjs
