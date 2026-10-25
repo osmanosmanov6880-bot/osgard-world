@@ -8,6 +8,7 @@ on:
       - 'godot/empire-omega/**'
       - 'scripts/omega-r109-release-sentinel.py'
       - 'scripts/omega-r109-phone-webgl.spec.mjs'
+      - 'scripts/omega-r109-frame-telemetry.spec.mjs'
       - 'playwright.omega-r109.config.mjs'
       - 'scripts/r90_cc0_texture_pack.py'
       - '.github/workflows/omega-r109-final-candidate-evidence.yml'
