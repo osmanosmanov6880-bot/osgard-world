@@ -89,7 +89,8 @@ async function verifyW20PlayerSettings(page, isMobile, name) {
        'r135-explainable-training-w21-candidate-20261025',
        'r135-case-mastery-w22-candidate-20261025',
        'r135-luxury-lighting-w23-candidate-20261025',
-         'r135-accessible-audio-w24-candidate-20261025'].includes(process.env.R135_CANDIDATE_VERSION)) return
+         'r135-accessible-audio-w24-candidate-20261025',
+         'r135-private-learning-w26-candidate-20261025'].includes(process.env.R135_CANDIDATE_VERSION)) return
   const start = await expectState(page, x => x?.player_preferences_schema === 1
     && x?.player_preferences_save_ok === true && x?.player_settings_control_css_px >= 43.5,
     'W20 real player settings not readable, saved, or accessible')
@@ -139,7 +140,8 @@ async function verifyW21CausalLesson(page, isMobile, name) {
   if (!['r135-explainable-training-w21-candidate-20261025',
          'r135-case-mastery-w22-candidate-20261025',
          'r135-luxury-lighting-w23-candidate-20261025',
-         'r135-accessible-audio-w24-candidate-20261025'].includes(process.env.R135_CANDIDATE_VERSION)) return
+         'r135-accessible-audio-w24-candidate-20261025',
+         'r135-private-learning-w26-candidate-20261025'].includes(process.env.R135_CANDIDATE_VERSION)) return
   await hitLuxuryControl(page, 'tutorial_collapse_center', isMobile)
   const initial = await expectState(page, x => x?.tutorial_expanded === true
     && x?.coach_status === 'intro'
@@ -166,7 +168,8 @@ async function verifyW21CausalLesson(page, isMobile, name) {
 async function verifyW22SelectableCases(page, isMobile, name) {
   if (!['r135-case-mastery-w22-candidate-20261025',
          'r135-luxury-lighting-w23-candidate-20261025',
-         'r135-accessible-audio-w24-candidate-20261025'].includes(process.env.R135_CANDIDATE_VERSION)) return
+         'r135-accessible-audio-w24-candidate-20261025',
+         'r135-private-learning-w26-candidate-20261025'].includes(process.env.R135_CANDIDATE_VERSION)) return
   const before = await expectState(page, s => s?.case_replay_hitboxes?.length === 3
     && s?.cleared_case_count === 3 && s?.case_mastery_threshold === 100
     && s?.case_proficient_flags?.length === 3 && !s?.challenge_active,
@@ -210,7 +213,8 @@ async function verifyW22SelectableCases(page, isMobile, name) {
 // We record honest SwiftShader pixels; no physical-device FPS or AAA claim.
 async function verifyW23ActualLighting(page, isMobile, name) {
   if (!['r135-luxury-lighting-w23-candidate-20261025',
-         'r135-accessible-audio-w24-candidate-20261025'].includes(process.env.R135_CANDIDATE_VERSION)) return
+         'r135-accessible-audio-w24-candidate-20261025',
+         'r135-private-learning-w26-candidate-20261025'].includes(process.env.R135_CANDIDATE_VERSION)) return
   const eco = await expectState(page, s => s?.quality === 0
     && s?.art_profile === 'ECO' && s?.art_shadow_count_added === 0
     && s?.art_webgl_expensive_postfx === false
@@ -249,7 +253,8 @@ async function verifyW23ActualLighting(page, isMobile, name) {
 
 // W24 real user consent, not an automatic audio playback test.
 async function verifyW24AudioConsentAndCaptions(page, isMobile, name) {
-  if (process.env.R135_CANDIDATE_VERSION !== 'r135-accessible-audio-w24-candidate-20261025') return
+  if (!['r135-accessible-audio-w24-candidate-20261025',
+         'r135-private-learning-w26-candidate-20261025'].includes(process.env.R135_CANDIDATE_VERSION)) return
   const first = await expectState(page, s => s?.sound_schema === 1
     && s?.sound_muted === true && s?.sound_audible_count === 0
     && s?.sound_player_autoplay === false && s?.sound_save_ok === true,
@@ -295,6 +300,60 @@ async function verifyW24AudioConsentAndCaptions(page, isMobile, name) {
   await hitLuxuryControl(page, 'player_settings_center', isMobile)
   console.log('W24 real opt-in/mute/caption PASS:', name,
     { previouslyAudible: first.sound_audible_count, previousCues: before.sound_cue_count })
+}
+
+// W26: actual consent is a real Godot button, not a silent metric collector.
+// Never upload event or device identity. Verify reversible opt-in and erase.
+async function verifyW26PrivateLearning(page, isMobile, name) {
+  if (process.env.R135_CANDIDATE_VERSION !== 'r135-private-learning-w26-candidate-20261025') return
+  const initial = await expectState(page, s => s?.private_metrics_schema === 1
+    && s?.private_metrics_consent === false
+    && s?.private_metrics_total === 0
+    && s?.private_metrics_network_uploads === 0
+    && s?.private_metrics_user_identifiers === false,
+    'W26 first-run silent tracking or non-private game state')
+  async function openPanelAndScroll() {
+    await hitLuxuryControl(page, 'player_settings_center', isMobile)
+    await expectState(page, s => s?.player_settings_open === true)
+    const canvas = await page.locator('canvas').first().boundingBox()
+    if (!canvas) throw new Error('W26 actual Godot canvas missing')
+    for (let attempt = 0; attempt < 15; attempt++) {
+      const s = await readState(page)
+      const panel = s.player_settings_rect
+      const point = s.player_settings_privacy_center
+      if (point && s.player_settings_privacy_css_height >= 43.5
+          && point.y > panel.y + 32 && point.y < panel.y + panel.h - 62) return
+      const x = canvas.x + (panel.x + panel.w * .44) * canvas.width / s.viewport_w
+      const y = canvas.y + (panel.y + panel.h * .41) * canvas.height / s.viewport_h
+      await page.mouse.move(x, y)
+      await page.mouse.wheel(0, 143)
+      await sleep(page, 220)
+    }
+    throw new Error('W26 explicit privacy setting cannot be reached by real touch/scroll')
+  }
+  await openPanelAndScroll()
+  await hitLuxuryControl(page, 'player_settings_privacy_center', isMobile)
+  await expectState(page, s => s?.private_metrics_consent === true
+    && s?.private_metrics_total === 0 && s?.private_metrics_save_ok === true,
+    'W26 actual player consent must not fabricate existing lesson events')
+  await hitLuxuryControl(page, 'player_settings_center', isMobile)
+  await tapSceneButton(page, 0) // A real simulated service mission started by the player.
+  await expectState(page, s => s?.mission_active === true
+    && s?.private_metrics_total > 0 && s?.private_metrics_network_uploads === 0,
+    'W26 opted-in event does not correspond to real game action')
+  await tapSceneButton(page, 6) // Real unsafe hatch press rejected by interlock.
+  await expectState(page, s => String(s?.mission_feedback || '').includes('SAFETY INTERLOCK')
+    && s?.private_metrics_total >= 2,
+    'W26 private counters must reflect actual rejected game input')
+  await openPanelAndScroll()
+  await captureRealViewport(page, 'w26-' + name + '-private-metrics.png')
+  await hitLuxuryControl(page, 'player_settings_privacy_center', isMobile)
+  await expectState(page, s => s?.private_metrics_consent === false
+    && s?.private_metrics_total === 0 && s?.private_metrics_save_ok === true,
+    'W26 consent withdrawal must erase all locally collected counters')
+  await hitLuxuryControl(page, 'player_settings_center', isMobile)
+  console.log('W26 real private-learning opt-in / interlock / permanent opt-out PASS:', name,
+    { defaultEnabled: initial.private_metrics_consent })
 }
 
 async function keyboardMission(page) {
@@ -843,6 +902,7 @@ try {
       await verifyW22SelectableCases(page, isMobile, name)
       await verifyW23ActualLighting(page, isMobile, name)
       await verifyW24AudioConsentAndCaptions(page, isMobile, name)
+      await verifyW26PrivateLearning(page, isMobile, name)
       console.log('R135 gameplay PASS:', name, JSON.stringify(result.at(-1)))
     } catch (error) {
       failed = true
