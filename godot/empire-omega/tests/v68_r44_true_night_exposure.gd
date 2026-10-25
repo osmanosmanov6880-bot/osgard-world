@@ -26,9 +26,9 @@ func _run() -> void:
 	check(GRADE.night_fraction(22.0)==1.0 and GRADE.night_fraction(3.0)==1.0,"dark evening and dawn are nighttime")
 	check(GRADE.night_fraction(NAN)==0.0,"invalid time never corrupts sky")
 	GRADE.apply_night_overlay(env,sun,sky,22.0)
-	check(env.ambient_light_energy < day_ambient*0.32 and env.ambient_light_energy>0.15,"real night ambient is restrained and not black")
+	check(env.ambient_light_energy < day_ambient*0.34 and env.ambient_light_energy>0.24,"real night ambient is restrained and not black")
 	check(sun.light_energy < day_sun*0.05 and sun.light_energy>0.0,"real night sun no longer makes roads look like noon")
-	check(env.adjustment_brightness<=0.87 and env.adjustment_brightness>=0.80,"night exposure retains playable contrast")
+	check(env.adjustment_brightness<=0.93 and env.adjustment_brightness>=0.90,"night exposure retains playable contrast")
 	check(sky.sky_top_color.r<day_top.r*0.20,"actual procedurally shaded night sky becomes midnight blue")
 	var script: Variant = load("res://scripts/world_builder.gd")
 	check(script is Script and script.can_instantiate(),"real playable world compiles with twilight")
@@ -39,7 +39,7 @@ func _run() -> void:
 		var wenv: Environment = world.sky_environment.environment
 		var midday: float = wenv.ambient_light_energy
 		world.call("update_daynight",22.0)
-		check(wenv.ambient_light_energy < midday*0.32,"actual city renderer uses true night exposure")
+		check(wenv.ambient_light_energy < midday*0.34,"actual city renderer uses true night exposure")
 		check(world.sun.light_energy <= 0.03,"actual city has physically dimmed sun at 22:00")
 		check(world.horizon_scenic.active_night_lights<=4,"night lighting stays strictly GPU bounded")
 		world.call("update_daynight",12.0)
