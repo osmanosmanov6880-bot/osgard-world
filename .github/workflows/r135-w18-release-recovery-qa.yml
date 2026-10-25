@@ -1,0 +1,107 @@
+name: OSGARD R135 W18 original-source durable recovery contract
+on:
+  push:
+    branches: [release/r135-w18-durable-archive-safe-fallback-20261025]
+    paths:
+      - '.github/workflows/r135-w18-release-recovery-qa.yml'
+      - '.github/workflows/deploy-frontend.yml'
+      - 'scripts/r135-w18-release-recover.py'
+      - 'scripts/r135-w18-evidence-member-pin.json'
+      - 'scripts/test_r135_w18_release_recover.py'
+      - 'scripts/r135-w18-deploy-contract.mjs'
+      - 'scripts/r135-w18-release-pin.json'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  negative-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reject synthetic replacement of W18 source reports and unsafe ZIP paths
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m py_compile scripts/r135-w18-release-recover.py
+          python3 -m unittest discover -s scripts -p test_r135_w18_release_recover.py -v
+          node scripts/r135-w18-deploy-contract.mjs
+          echo 'W18 evidence recovery CONTRACT TESTS only — no SSH/actual hardware.'
+
+  real-binary-roundtrip:
+    needs: negative-contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download exactly reviewed successful W18 software artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          PIN=scripts/r135-w18-release-pin.json
+          test "$(jq -er '.source_commit' "$PIN")" = 5971112ef861afc257aeb0e054550c158c260b6a
+          test "$(jq -er '.artifact_run_id' "$PIN")" = 40195425893
+          test "$(jq -er '.artifact_id' "$PIN")" = 12599976887
+          RUN="$(gh api repos/osmanosmanov6880-bot/osgard-world/actions/runs/40195425893)"
+          test "$(jq -er '.head_sha' <<< "$RUN")" = 5971112ef861afc257aeb0e054550c158c260b6a
+          test "$(jq -er '.conclusion' <<< "$RUN")" = success
+          ART="$(gh api repos/osmanosmanov6880-bot/osgard-world/actions/runs/40195425893/artifacts)"
+          jq -e '.artifacts[] | select(.id==12599976887 and .name=="osgard-r135-optimized-web-qa" and .expired==false)' <<< "$ART" > /dev/null
+          mkdir -p "$RUNNER_TEMP/w18-original"
+          gh run download 40195425893 --repo osmanosmanov6880-bot/osgard-world \
+            --name osgard-r135-optimized-web-qa --dir "$RUNNER_TEMP/w18-original"
+
+      - name: Create same exact original evidence ZIP in isolated runner storage
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os,hashlib,json,zipfile
+          from pathlib import Path
+          root=Path(os.environ['RUNNER_TEMP'])/'w18-original'
+          p=json.loads(Path('scripts/r135-w18-evidence-member-pin.json').read_bytes())
+          members=p['members']
+          assert len(members)==18
+          zipped=root/'R135_W18_ORIGINAL_EVIDENCE.zip'
+          with zipfile.ZipFile(zipped,'w',zipfile.ZIP_DEFLATED,compresslevel=6) as dst:
+              for name,proof in sorted(members.items()):
+                  data=(root/name).read_bytes()
+                  assert len(data)==proof['bytes']
+                  assert hashlib.sha256(data).hexdigest()==proof['sha256']
+                  dst.writestr(name,data)
+          assert zipped.stat().st_size > 100_000
+          print('Original evidence member bytes and ZIP CRC verified:',len(members))
+          PY
+
+      - name: Restore 18 original members and check full original W18 source on separate installation
+        shell: bash
+        run: |
+          set -euo pipefail
+          SOURCE="$RUNNER_TEMP/w18-original"
+          RECOVER="$RUNNER_TEMP/w18-recovered-independent"
+          mkdir -p "$RECOVER/r135-optimized-release"
+          cp "$SOURCE/r135-optimized-release/OSGARD_R135_OPTIMIZED_WEB.zip" "$RECOVER/r135-optimized-release/"
+          cp "$SOURCE/r135-optimized-release/R135_OPTIMIZED_MANIFEST.json" "$RECOVER/r135-optimized-release/"
+          python3 scripts/r135-w18-release-recover.py \
+            --pin scripts/r135-w18-release-pin.json \
+            --member-pin scripts/r135-w18-evidence-member-pin.json \
+            --evidence "$SOURCE/R135_W18_ORIGINAL_EVIDENCE.zip" \
+            --target "$RECOVER"
+          python3 scripts/r135-w18-promotion-qa.py \
+            --pin scripts/r135-w18-release-pin.json --artifact "$RECOVER"
+          python3 scripts/r135-release-stage.py \
+            "$RECOVER/r135-optimized-release/OSGARD_R135_OPTIMIZED_WEB.zip" \
+            "$RECOVER/r135-optimized-release/R135_OPTIMIZED_MANIFEST.json" \
+            "$RUNNER_TEMP/w18-rebuilt" scripts/r135-w18-release-pin.json
+          echo 'PASS: byte-identical W18 WebGL, 11 genuine original PNG SHA+CRC, 4 reports and separate install. No SSH/live site/device FPS.'
+
+      - name: Record software-only proof without falsely marking production published
+        if: always()
+        shell: bash
+        run: |
+          echo "W18 durable recovery was tested without production activation or hardware certification."
