@@ -1,0 +1,30 @@
+{
+  "schema": "NEBULA_R40_QA_CI_ARTIFACT_PIN_V1",
+  "purpose": "Immutable audit fingerprints of original CI artifact; never production approval",
+  "production_approved": false,
+  "staging_only": true,
+  "candidate_pr": 375,
+  "candidate_head_sha": "9efb03c246a28a168886e2aa494872e907ea78cd",
+  "ci_run_id": "40173218842",
+  "ci_checkout_sha": "0f4cc3e6b7978c9a45714a7287cb8a36b9094426",
+  "ci_archive_artifact_id": "12591062747",
+  "ci_archive_sha256": "7bc3fb85b7f01917193cde544ee976bf835757fbdfdff9d03cd98dadc3c2d02d",
+  "files": {
+    "index.html": {
+      "sha256": "02863b21af993daaa4e27ef8f1f588640e712de62912217d92a8225bcfeada66",
+      "bytes": 13995
+    },
+    "index.js": {
+      "sha256": "33c94cb3175f3333b82e2a3be5e8e86f77986f0aa2042b1631f6367a4e5bb6ba",
+      "bytes": 279815
+    },
+    "index.wasm": {
+      "sha256": "fc74679e3b97f76878947fcd4fbe1268cbfa6188182a2e33bbc3f5dc9bfa57d0",
+      "bytes": 39514754
+    },
+    "index.pck": {
+      "sha256": "14b77651ea241ba6d8f19f05a4991a5361234c2e82e99f3624d8994112c0eebd",
+      "bytes": 5688260
+    }
+  }
+}

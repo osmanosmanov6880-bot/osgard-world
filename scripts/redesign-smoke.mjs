@@ -4,11 +4,38 @@ import { parsePlayCollection,emptyPlayCollection,toggleFavorite,visitGame } from
 import { playGames,cases } from '../src/redesignCatalog.ts'
 import { PLAY_GAME_IDS, PLAY_GENRES, FEATURED_PLAY_WORLDS } from '../src/playCatalogIndex.ts'
 // Do not hardcode the historical W6 step title as the only secure release path.
-// W11 must download the immutable reviewed GitHub release, never a floating run.
+// W11 uses a verified GitHub Release; W14 uses a SHA-verified Actions artifact.
 function r135VerifiedDeployment() {
   const deploy = readFileSync('.github/workflows/deploy-frontend.yml', 'utf8')
   if (deploy.includes('Stage verified native R135 Godot Web export') &&
       deploy.includes('scripts/r135-release-stage.py')) return true
+  // W14 uses a reviewed immutable Actions artifact, while W11 uses a reviewed Release.
+  // Both require independent hash verification; never accept floating "latest".
+  const w14PinPath = 'scripts/r135-w14-release-pin.json'
+  const w14GatePath = '.github/workflows/r135-w14-promotion-gate.yml'
+  if (deploy.includes('Stage exact reviewed W14 Godot Web archive, fail-closed on any mismatch')) {
+    if (![w14PinPath, w14GatePath, 'scripts/r135-w14-promotion-qa.py',
+          'scripts/r135-release-stage.py', 'scripts/r135-verified-live-recover.py'].every(existsSync)) return false
+    const pin = JSON.parse(readFileSync(w14PinPath, 'utf8'))
+    const gate = readFileSync(w14GatePath, 'utf8')
+    return deploy.includes('gh run download "$RUN_ID"') &&
+      deploy.includes('scripts/r135-release-stage.py') &&
+      deploy.includes('scripts/r135-verified-live-recover.py') &&
+      deploy.includes('sha256sum -c -') &&
+      gate.includes('scripts/r135-w14-promotion-qa.py') &&
+      gate.includes('scripts/r135-nginx-wasm-smoke.sh') &&
+      pin.version === 'r135-case-progress-w14-20261025' &&
+      /^[0-9a-f]{40}$/.test(pin.source_commit) &&
+      /^[0-9a-f]{64}$/.test(pin.manifest_sha256) &&
+      /^[0-9a-f]{64}$/.test(pin.archive_sha256) &&
+      pin.artifact_run_id === 40175524463 &&
+      pin.artifact_id === 12592898463 &&
+      pin.artifact_name === 'osgard-r135-optimized-web-qa' &&
+      pin.reviewed_portrait === true && pin.reviewed_desktop === true &&
+      pin.browser_three_fault_cases === true &&
+      pin.physical_phone_fps_verified === false &&
+      pin.rollback_release_tag === 'r135-web-legibility-w11-20261025'
+  }
   if (!deploy.includes('Stage exact immutable W11 Godot Web release') ||
       !deploy.includes('gh release download "$TAG"') ||
       !deploy.includes('scripts/r135-w11-release-pin.json') ||

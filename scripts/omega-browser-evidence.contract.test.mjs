@@ -3,7 +3,8 @@ import assert from 'node:assert/strict'
 import {
   releaseMatches,
   waitForExactPublishedRelease,
-  captureAnimatedWebGLViewport
+  captureAnimatedWebGLViewport,
+  captureRealChromiumScreencast
 } from './omega-browser-evidence.mjs'
 
 const expected={
@@ -65,6 +66,64 @@ test('invalid/unbounded publication wait configuration rejected',async()=>{
 
 const pixel=Buffer.alloc(10000)
 Buffer.from('89504e470d0a1a0a','hex').copy(pixel)
+
+test('R53 authentic CDP screencast resolves only on real PNG frame event and ACKs it',async()=>{
+  const events=new Map()
+  const seen=[]
+  let detached=0
+  const session={
+    on(name,callback){events.set(name,callback)},
+    off(name,callback){assert.equal(events.get(name),callback);events.delete(name)},
+    async send(method,args){
+      seen.push(method)
+      if(method==='Page.startScreencast'){
+        assert.deepEqual(args,{format:'png',everyNthFrame:1})
+        queueMicrotask(()=>events.get('Page.screencastFrame')?.({
+          data:pixel.toString('base64'),sessionId:42
+        }))
+      }
+      if(method==='Page.screencastFrameAck')assert.equal(args.sessionId,42)
+      return {}
+    },
+    async detach(){detached++}
+  }
+  const actual=await captureRealChromiumScreencast(session,450)
+  assert.equal(actual.method,'chromium-cdp-screencast')
+  assert.deepEqual(actual.png,pixel)
+  assert.ok(seen.includes('Page.screencastFrameAck'))
+  assert.ok(seen.includes('Page.stopScreencast'))
+  assert.equal(events.size,0)
+  const page={context:()=>({newCDPSession:async()=>session})}
+  const main=await captureAnimatedWebGLViewport(page)
+  assert.equal(main.method,'chromium-cdp-screencast')
+  assert.equal(detached,1)
+  assert.equal(seen.filter(x=>x==='Page.captureScreenshot').length,0)
+})
+
+test('R53 rejects bogus CDP screencast, cannot mark a missing scene PASS',async()=>{
+  const events=new Map()
+  const send=[]
+  const session={
+    on(name,callback){events.set(name,callback)},
+    off(name,callback){events.delete(name)},
+    async send(method){
+      send.push(method)
+      if(method==='Page.startScreencast')
+        queueMicrotask(()=>events.get('Page.screencastFrame')?.({
+          sessionId:7,data:Buffer.from('not a real render').toString('base64')
+        }))
+      return {}
+    }
+  }
+  await assert.rejects(captureRealChromiumScreencast(session,150),/timed out/)
+  assert.ok(send.includes('Page.stopScreencast'))
+  assert.equal(events.size,0)
+})
+
+test('R53 refuses CDP sessions without a real streaming event API',async()=>{
+  await assert.rejects(captureRealChromiumScreencast({send:async()=>({})},150),/unavailable/)
+  await assert.rejects(captureRealChromiumScreencast({on:()=>{},send:async()=>({})},20000),/Unbounded/)
+})
 
 test('CDP capture is preferred for actual animated Chromium viewport',async()=>{
   let detached=0,sent=''

@@ -1,0 +1,93 @@
+{
+  "schemaVersion": 1,
+  "project": "OSA CINEMA",
+  "status": "PRIVATE_FOUR_AUDIO_TRACK_EDITORIAL_MASTER_NOT_LICENSED_FOR_RELEASE",
+  "renderedFromVerifiedOwnerSources": true,
+  "file": "OSA_CINEMA_V18_PRIVATE_FOUR_TRACK_EDITORIAL_239S.mp4",
+  "sizeBytes": 138546656,
+  "sha256": "f3ce06afd5b64de9be77d5422bc888b79376c8d87d57d4b0a6c234230446deac",
+  "durationSeconds": 239.018,
+  "picture": {
+    "codec": "h264",
+    "width": 1920,
+    "height": 1080,
+    "streamCopy": true,
+    "packetSha256": "d02209e65766da4002a8e575783383d8e2b724ec898f538c29e105e8bbc2f0e2",
+    "byteForByteOriginalVideoBitstreamVerified": true
+  },
+  "originalVideoSources": [
+    {
+      "locale": "ru",
+      "sourceSha256": "74a040f9c67155eca946d6c6bed462e7edfb9c4f866605a0c2ecdd9568202b01"
+    },
+    {
+      "locale": "en",
+      "sourceSha256": "2936222a5be4b36ab3177f1577219831ab686e085be9b0744887bbcae05a7e36"
+    }
+  ],
+  "audioTracks": [
+    {
+      "index": 0,
+      "role": "original_ru_candidate",
+      "codec": "aac",
+      "isDefault": true,
+      "bitstreamPreserved": true,
+      "packetSha256": "8d50efc563d89a67606ab8a95e23c758a739274e7719880b0e5afc7f73e752b2",
+      "spokenLanguageVerified": false
+    },
+    {
+      "index": 1,
+      "role": "original_en_candidate",
+      "codec": "aac",
+      "isDefault": false,
+      "bitstreamPreserved": true,
+      "packetSha256": "d1851a0dcda32a96ebf72eaa6d67ffc736c26556be0aa3200017cf55f809a863",
+      "spokenLanguageVerified": false
+    },
+    {
+      "index": 2,
+      "role": "draft_ru_narration_plus_bed",
+      "codec": "aac",
+      "isDefault": false,
+      "integratedLufs": -16.3,
+      "truePeakDbtp": -2.9,
+      "spokenLanguageVerified": false
+    },
+    {
+      "index": 3,
+      "role": "draft_en_narration_plus_bed",
+      "codec": "aac",
+      "isDefault": false,
+      "integratedLufs": -16,
+      "truePeakDbtp": -2.8,
+      "spokenLanguageVerified": false
+    }
+  ],
+  "mix": {
+    "originalBedGainDb": -12,
+    "guideAlreadyAttenuatedDb": -2,
+    "safetyLimiterLimit": 0.8,
+    "postLimiterGainDb": -3,
+    "outputAudioBitrateKbps": 192
+  },
+  "verifiedOutputDecodedAllFiveStreamsWithoutErrors": true,
+  "originalPictureAndBothOriginalSoundtracksBitstreamSha256Match": true,
+  "allDraftTruePeaksBelowMinusOneDbtp": true,
+  "sourceGuides": [
+    {
+      "locale": "ru",
+      "sha256": "2763cb455cb926fafd3eafa0d11c6882d157a16ca9c086f03a6cbc258b9b4f50"
+    },
+    {
+      "locale": "en",
+      "sha256": "15f68c069476203c1208f7f69a0586b2e4b8443a1ec6750f266f6e1816c6df80"
+    }
+  ],
+  "rightsCleared": false,
+  "finalMixApproved": false,
+  "actualVoiceLanguagesApproved": false,
+  "syncedCaptionsApproved": false,
+  "durablePublicUrlsPresent": false,
+  "publicationAuthorized": false,
+  "disclaimer": "Owner-supplied private workprints, temporary composition for editor A/B only. No permitted recorded-film publication or monetization without independent legal, language, creative and caption approval."
+}

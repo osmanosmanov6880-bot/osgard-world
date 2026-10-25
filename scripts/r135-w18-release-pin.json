@@ -1,0 +1,29 @@
+{
+  "version": "r135-premium-learning-w18-candidate-20261025",
+  "source_commit": "5971112ef861afc257aeb0e054550c158c260b6a",
+  "artifact_run_id": 40195425893,
+  "artifact_id": 12599976887,
+  "artifact_name": "osgard-r135-optimized-web-qa",
+  "manifest_sha256": "9ba804724a840439871fe4de5e287058673d6f0ec974151ffdaee071500b3af1",
+  "archive_sha256": "518e9aba3e73368eda44bc06d6e80211bd2ae062a21a6a5fecb16cf1e32cca4b",
+  "reviewed_portrait": true,
+  "reviewed_desktop": true,
+  "reviewed_ru_en": true,
+  "browser_three_fault_cases": true,
+  "physical_phone_fps_verified": false,
+  "screenshots_sha256": {
+    "desktop-1366.png": "ac999076d029c43697136d9ec9d0e7f3576989c8f17b8fa9bbd74517cdd8c389",
+    "w6-portrait-optical-active.png": "6b9cee549f9259d69989ada4b880d5afe3485110f700737cbeb8d11bfff10a70",
+    "w17-desktop-ru-operator.png": "1a0db324233ae2eae2ff3df2bd4e573543810c2f6176710b50f6816ef87eefb9",
+    "w17-mobile-ru-operator.png": "d236f0a954ea7522cad62535bfd30836ad04d7f21c0e10e6bc46e66b1b5c1598",
+    "w8-hud-360x780.png": "b750133fa34fa5e59889cf70c2e5a791ea4352c8b8353ec8af0bf4204076def2",
+    "w8-hud-430x932.png": "527552ae70b08595db5e95876ceb36807191bcf2e8a8a15ef7665f476326f779",
+    "w8-hud-932x430.png": "fda391edcdef85a9b28371c1db2fcd8428b3b7270eb90372514183de5f487402",
+    "w12-desktop-1366-fault-2-active.png": "37b6e581c649364bfcad910a6a81bbfcaeac0030b755c177f6a0842b02697395",
+    "w12-desktop-1366-fault-3-active.png": "d3d20680e0485532c59da6bf95bfc56c4539b552ddd7397d79db7817efe56e52",
+    "w12-mobile-390-fault-2-active.png": "a35abbc3f21ae0844b961e758bb5ae138e37a556d872dfee9ebd7152d7bcab10",
+    "w12-mobile-390-fault-3-active.png": "4bd19111142776d6eac52c6aa02612af1ffce3794689a001ca84a7a03c3e0054"
+  },
+  "reviewed_provenance": "Unmodified Godot/Chromium renders reviewed directly on 2026-10-25. Dedicated 360x780, 412x839 RU, 932x430, desktop and three-fault diagnostics; never physical Android/iPhone.",
+  "hardware_note": "W16 physical Android Chrome and iPhone Safari FPS/thermal testing is not performed; benchmark data is software-rendered Chromium only."
+}

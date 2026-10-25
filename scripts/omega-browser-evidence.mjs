@@ -97,12 +97,68 @@ async function captureLiveGodotCanvas(page) {
   }
 }
 
+// R53: ask Chromium for an actual asynchronously painted compositor frame
+// BEFORE trying expensive synchronous screenshot commands that can freeze
+// SwiftShader on a 1366x768 running WebGL2 scene. Unlike an HTML image
+// mock this only accepts an original Page.screencastFrame PNG payload.
+export async function captureRealChromiumScreencast(session, timeoutMs=11500) {
+  if(typeof session?.on!=='function' || typeof session?.send!=='function')
+    throw new Error('Real Chromium CDP screencast session unavailable')
+  if(!Number.isSafeInteger(timeoutMs)||timeoutMs<100||timeoutMs>18000)
+    throw new Error('Unbounded CDP screencast request')
+  let handler=null,timer=null,started=false
+  let resolveFrame,rejectFrame
+  const framePromise=new Promise((resolve,reject)=>{resolveFrame=resolve;rejectFrame=reject})
+  try {
+    handler=async packet=>{
+      // ACK real CDP frames to prevent the GPU queue from blocking.
+      if(Number.isInteger(packet?.sessionId))
+        session.send('Page.screencastFrameAck',{sessionId:packet.sessionId}).catch(()=>{})
+      if(typeof packet?.data!=='string')return
+      const pixels=Buffer.from(packet.data,'base64')
+      if(pixels.length>9500 && pixels.subarray(0,8).toString('hex')==='89504e470d0a1a0a')
+        resolveFrame({png:pixels,method:'chromium-cdp-screencast'})
+    }
+    session.on('Page.screencastFrame',handler)
+    timer=setTimeout(()=>rejectFrame(new Error('Authentic CDP screencast frame timed out')),timeoutMs)
+    // The server may emit Page.screencastFrame before this command resolves.
+    // Bound both command and frame by the same timer.
+    const startPromise=session.send('Page.startScreencast',{
+      format:'png',everyNthFrame:1
+    })
+    // A successful start only arms the listener; it must NOT be mistaken
+    // for a rendered frame. An explicit start error still propagates.
+    const result=await Promise.race([framePromise,startPromise.then(()=>framePromise)])
+    started=true
+    if(!result || result.method!=='chromium-cdp-screencast')
+      throw new Error('No authentic live Chromium screenshot pixels')
+    return result
+  } finally {
+    if(timer!==null)clearTimeout(timer)
+    if(handler){
+      if(typeof session.off==='function')session.off('Page.screencastFrame',handler)
+      else if(typeof session.removeListener==='function')session.removeListener('Page.screencastFrame',handler)
+    }
+    // A failed start may still have turned the CDP stream on. This cleanup
+    // never waits for a broken renderer and does not manufacture a frame.
+    if(typeof session.send==='function' && typeof session.on==='function')
+      session.send('Page.stopScreencast').catch(()=>{})
+  }
+}
+
 export async function captureAnimatedWebGLViewport(page) {
   // Unlike locator screenshots, CDP does not wait for a continuously painted
   // WebGL canvas to reach the impossible "stable element" state.
   let session=null
   try {
     session=await page.context().newCDPSession(page)
+    let screencastError=null
+    try {
+      // Prefer compositor's streamed real frames on slow software GPU.
+      return await captureRealChromiumScreencast(session)
+    } catch(error) {
+      screencastError=error
+    }
     let timeoutId=null
     let encoded
     try {

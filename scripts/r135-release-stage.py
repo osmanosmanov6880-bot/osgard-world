@@ -17,8 +17,8 @@ def reject(reason: str):
 
 def stage(archive: Path, manifest_path: Path, destination: Path,
           release_pin: Path | None = None):
-    # W6 stays the known-good default until separately reviewed W11 promotion.
-    # A W11 production call must supply an explicit immutable pin file.
+    # Preserve the historical W6 no-pin fallback, but every promoted W11/W14
+    # public deployment must supply a reviewed immutable release pin file.
     pin = {
         "manifest_sha256": "0638f1ad5c0ab26d2d112e63bd1759923e5401a85ad4f2cedd450bbb7def2f61",
         "version": "r135-web-framing-w6-20261024",
@@ -26,15 +26,29 @@ def stage(archive: Path, manifest_path: Path, destination: Path,
     }
     if release_pin is not None:
         if not release_pin.is_file():
-            reject("W11 release pin file not found")
+            reject("reviewed release pin file not found")
         pin = json.loads(release_pin.read_text(encoding="utf-8"))
         for key in ("manifest_sha256", "version", "source_commit"):
             if not isinstance(pin.get(key), str) or not pin[key]:
                 reject("missing reviewed pin value: " + key)
         if len(pin["manifest_sha256"]) != 64 or len(pin["source_commit"]) != 40:
-            reject("invalid reviewed W11 pin SHA lengths")
-        if pin.get("version") != "r135-web-legibility-w11-20261024":
-            reject("pin file not a validated R135 W11 release")
+            reject("invalid reviewed release pin SHA lengths")
+        permitted = {"r135-web-legibility-w11-20261024", "r135-case-progress-w14-20261025",
+                     "r135-premium-learning-w18-candidate-20261025"}
+        if pin.get("version") not in permitted:
+            reject("release pin version not in independently tested allowlist")
+        if not all(c in "0123456789abcdef" for c in pin["manifest_sha256"] + pin["source_commit"]):
+            reject("release pin must contain lowercase hexadecimal SHA digests")
+        if pin["version"] == "r135-premium-learning-w18-candidate-20261025":
+            for proof in ("reviewed_portrait", "reviewed_desktop", "reviewed_ru_en",
+                          "browser_three_fault_cases"):
+                if pin.get(proof) is not True:
+                    reject("unreviewed W18 safety/gameplay evidence: " + proof)
+            if pin.get("physical_phone_fps_verified") is not False:
+                reject("W18 Software candidate must not claim physical phone GPU certification")
+            original_frames = pin.get("screenshots_sha256")
+            if not isinstance(original_frames, dict) or len(original_frames) != 11:
+                reject("W18 promotion requires original independently pinned screenshot hashes")
     expected_sha256 = pin["manifest_sha256"]
     if hashlib.sha256(manifest_path.read_bytes()).hexdigest() != expected_sha256:
         reject("release manifest digest differs from independently reviewed build")

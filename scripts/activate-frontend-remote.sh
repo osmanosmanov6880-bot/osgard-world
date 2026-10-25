@@ -511,11 +511,19 @@ trap 'stop_activation_worker 129' HUP
     # was built from an older GitHub commit.
     test -s /tmp/osgard-gh-next/preserve-omega-native.sh
     sh /tmp/osgard-gh-next/preserve-omega-native.sh /usr/share/nginx/html/games/omega-3d-preview /tmp/osgard-gh-next/html/games/omega-3d-preview
+    # Full frontend root swaps must not erase the independently staged R40
+    # hardware QA. Copy only after verifying the four original CI SHA-256s.
+    test -s /tmp/osgard-gh-next/preserve-nebula-r40-qa.sh
+    test -s /tmp/osgard-gh-next/nebula-r40-qa-head.sha
+    sh /tmp/osgard-gh-next/preserve-nebula-r40-qa.sh /usr/share/nginx/html/games/remix/nebula-r40-qa /tmp/osgard-gh-next/html/games/remix/nebula-r40-qa /tmp/osgard-gh-next/nebula-r40-qa-head.sha
     cp /etc/nginx/conf.d/default.conf /tmp/osgard-nginx-previous.conf
     mv /usr/share/nginx/html /tmp/osgard-gh-previous
     mv /tmp/osgard-gh-next/html /usr/share/nginx/html
     if [ -s /usr/share/nginx/html/games/omega-3d-preview/SHA256SUMS.txt ]; then
       (cd /usr/share/nginx/html/games/omega-3d-preview && sha256sum -c SHA256SUMS.txt >/dev/null)
+    fi
+    if [ -s /usr/share/nginx/html/games/remix/nebula-r40-qa/R40_DEVICE_ARTIFACT_SHA256.txt ]; then
+      (cd /usr/share/nginx/html/games/remix/nebula-r40-qa && sha256sum -c R40_DEVICE_ARTIFACT_SHA256.txt >/dev/null)
     fi
     cp /tmp/osgard-gh-next/nginx.conf /etc/nginx/conf.d/default.conf
     echo 'Nginx compression module diagnostics:'
@@ -579,7 +587,7 @@ trap 'stop_activation_worker 129' HUP
   fi
   # R135: verify the exact published candidate BYTES inside the active Nginx
   # container BEFORE activation_committed=1. The caller supplies only reviewed
-  # source/version/SHA pins from scripts/r135-w11-release-pin.json.
+  # Exact release source/version/SHA pins from the selected immutable release-pin JSON.
   if [[ -n "${OSGARD_EXPECTED_R135_MANIFEST_SHA256:-}" ]]; then
     if ! [[ "$OSGARD_EXPECTED_R135_MANIFEST_SHA256" =~ ^[0-9a-f]{64}$ && "${OSGARD_EXPECTED_R135_SOURCE:-}" =~ ^[0-9a-f]{40}$ ]]; then
       echo 'R135 candidate source/manifest acceptance pins are missing or invalid' >&2
@@ -598,7 +606,7 @@ trap 'stop_activation_worker 129' HUP
       printf 'failed\n' > "$state_file"
       exit 1
     fi
-    echo 'R135 W11 source, version and SHA-256 match the active local Nginx container'
+    echo 'R135 reviewed release source, version and SHA-256 match the active Nginx container'
   fi
 
   # After this commit point the public routes have all passed. A cancellation
