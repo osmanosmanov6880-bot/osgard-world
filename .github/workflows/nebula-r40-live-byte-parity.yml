@@ -49,10 +49,14 @@ jobs:
             echo "::error::Ignoring foreign frontend run; source repository is not the reviewed OSGARD repository" >&2
             exit 1
           }
-          test "$UPSTREAM_BRANCH" = master && test "$UPSTREAM_EVENT" = push || {
-            echo "::error::Only production master branch push deployments are eligible for post-release integrity" >&2
+          test "$UPSTREAM_BRANCH" = master || {
+            echo "::error::Post-release audit only accepts master branch deployments" >&2
             exit 1
           }
+          case "$UPSTREAM_EVENT" in
+            push|workflow_dispatch) ;;
+            *) echo "::error::Unknown frontend deployment event cannot certify NEBULA" >&2; exit 1 ;;
+          esac
           test "$UPSTREAM_CONCLUSION" = success || {
             echo "::error::OSGARD frontend deployment did not succeed; refusing to certify NEBULA QA survival" >&2
             exit 1
