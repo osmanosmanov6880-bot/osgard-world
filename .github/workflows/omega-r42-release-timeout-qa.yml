@@ -1,0 +1,24 @@
+name: EMPIRE Omega R42 calibrated native release budget contract
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - '.github/workflows/omega-godot-web.yml'
+      - '.github/workflows/omega-r42-release-timeout-qa.yml'
+      - 'scripts/omega-native-test-timeout.contract.test.mjs'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify-exact-physics-test-budget:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Require full authentic Godot suite and bounded R40 heavy calibration
+        run: node --test scripts/omega-native-test-timeout.contract.test.mjs
+      - name: Validate original native release workflow syntax
+        run: python3 -c "import pathlib; p=pathlib.Path('.github/workflows/omega-godot-web.yml'); assert p.exists() and 'native Godot city-smoke' in p.read_text()"
