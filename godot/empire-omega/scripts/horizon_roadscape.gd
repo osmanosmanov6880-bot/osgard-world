@@ -241,27 +241,51 @@ func update_camera_clearance(camera_at: Vector3, focus: Vector3, dt: float) -> v
 		visual.multimesh.set_instance_transform(int(item["crown_index"]),crown_transform)
 
 func _build_mountains() -> void:
+	# R108: actually model a broad, smooth mountain massif around the playable
+	# 460m city instead of 42 giant triangular cones. No collision or RNG.
+	# Single native ArrayMesh material batch, 96 segments x 4 radial bands.
+	var segments: int = 96
+	var rings: int = 5
 	var mesh_builder := SurfaceTool.new()
 	mesh_builder.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var segments: int = 42
-	for i in range(segments):
-		var t0: float = float(i) / float(segments) * TAU
-		var t1: float = float(i+1) / float(segments) * TAU
-		var tm: float = (t0+t1)*0.5
-		var radius: float = 430.0
-		var lower_a := Vector3(cos(t0)*radius,-14.0,sin(t0)*radius)
-		var lower_b := Vector3(cos(t1)*radius,-14.0,sin(t1)*radius)
-		var height: float = 28.0 + float((i*13)%9)*7.0
-		var ridge := Vector3(cos(tm)*(radius+50.0),height,sin(tm)*(radius+50.0))
-		mesh_builder.set_color(Color("597c79") if i%2==0 else Color("728d85"))
-		mesh_builder.add_vertex(lower_a)
-		mesh_builder.add_vertex(ridge)
-		mesh_builder.add_vertex(lower_b)
+	for ring in range(rings):
+		var width_factor: float = float(ring) / float(rings - 1)
+		var radius: float = lerpf(340.0,535.0,width_factor)
+		for i in range(segments + 1):
+			var angle: float = TAU * float(i) / float(segments)
+			var elevation: float = (40.0 +
+				11.0*sin(angle*5.0+0.35) +
+				7.0*sin(angle*11.0+1.7) +
+				4.0*sin(angle*23.0+0.68))
+			var height: float = -24.0
+			match ring:
+				0: height = -24.0
+				1: height = elevation*0.24-13.0
+				2: height = elevation
+				3: height = elevation*0.42-5.0
+				_: height = -25.0
+			var mineral: Color = Color("626d70").lerp(
+				Color("a1a19a"),clampf((height+24.0)/90.0,0.0,1.0))
+			mesh_builder.set_color(mineral)
+			mesh_builder.add_vertex(Vector3(
+				cos(angle)*radius,height,sin(angle)*radius))
+	for ring in range(rings - 1):
+		for i in range(segments):
+			var a: int = ring*(segments+1)+i
+			var b: int = a+1
+			var c: int = (ring+1)*(segments+1)+i
+			var d: int = c+1
+			mesh_builder.add_index(a)
+			mesh_builder.add_index(c)
+			mesh_builder.add_index(b)
+			mesh_builder.add_index(b)
+			mesh_builder.add_index(c)
+			mesh_builder.add_index(d)
 	mesh_builder.generate_normals()
 	var mountain := MeshInstance3D.new()
 	mountain.name = "SurroundingMountainRange"
 	mountain.mesh = mesh_builder.commit()
-	var rock_mat := _mat(Color.WHITE,0.0,1.0)
+	var rock_mat := _mat(Color.WHITE,0.025,0.91)
 	rock_mat.vertex_color_use_as_albedo = true
 	rock_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
 	mountain.material_override = rock_mat
