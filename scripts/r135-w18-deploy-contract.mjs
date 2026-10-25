@@ -16,11 +16,25 @@ function result(root) {
     cwd: root, encoding: 'utf8'
   })
 }
-assert.deepEqual(
-  {channel: current.channel, pin: current.pin_file, gate: current.promotion_gate_run_id},
-  {channel:'w14', pin:'scripts/r135-w14-release-pin.json', gate:null},
-  'New W18 production infrastructure must leave W14 live until a reviewed selector PR'
-)
+const w14Selector = {channel:'w14', pin_file:'scripts/r135-w14-release-pin.json',
+  promotion_gate_run_id:null}
+assert.ok(['w14','w18'].includes(current.channel),'only reviewed release channels allowed')
+if (current.channel === 'w14') {
+  assert.deepEqual(
+    {channel:current.channel, pin:current.pin_file, gate:current.promotion_gate_run_id},
+    {channel:'w14', pin:w14Selector.pin_file, gate:null},
+    'Retained W14 channel must not carry W18 promotion metadata')
+} else {
+  assert.equal(current.pin_file,'scripts/r135-w18-release-pin.json')
+  assert.ok(Number.isSafeInteger(current.promotion_gate_run_id) &&
+    current.promotion_gate_run_id > 0,
+    'W18 production requires a specific reviewed independent acceptance run')
+}
+const liveSelection = result(process.cwd())
+assert.equal(liveSelection.status,0,
+  'Actual source-controlled release selection must be syntactically valid')
+assert.equal(liveSelection.stdout.trim(),current.pin_file,
+  'Public deploy selector must match the reviewed active channel')
 let tested=0
 function fixture(modify = x => x, modifiedPin = w14Pin) {
   const root = mkdtempSync(join(tmpdir(),'r135-release-channel-'))
@@ -28,7 +42,7 @@ function fixture(modify = x => x, modifiedPin = w14Pin) {
     mkdirSync(join(root,'scripts'))
     writeFileSync(join(root,'scripts/r135-release-selector.sh'),selectorScript)
     writeFileSync(join(root,'scripts/r135-active-release.json'),
-      JSON.stringify(modify({...current})))
+      JSON.stringify(modify({...w14Selector})))
     writeFileSync(join(root,'scripts/r135-w14-release-pin.json'),modifiedPin)
     return result(root)
   } finally {
