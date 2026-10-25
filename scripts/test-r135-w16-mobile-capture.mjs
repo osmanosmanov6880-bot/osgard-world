@@ -6,11 +6,12 @@ import { mkdtemp, writeFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { createHash } from 'node:crypto'
+import { deflateSync } from 'node:zlib'
 import { collectSessions } from './r135-device-matrix-assemble.mjs'
 import { summarizeRafIntervalsMs } from './r135-frame-metrics.mjs'
 import {
   REQUIRED_RELEASE, detectSupportedDevice, summarizeIntervals,
-  verifySoftwareSamples, createEvidenceRecord
+  verifySoftwareSamples, createEvidenceRecord, verifyOriginalPng
 } from '../public/games/r135-device-capture/device-capture.js'
 const chrome = 'Mozilla/5.0 (Linux; Android 15; Pixel 8) AppleWebKit/537.36 Chrome/145.0.0.0 Mobile Safari/537.36'
 const safari = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 Version/18.0 Mobile Safari/604.1'
@@ -74,8 +75,38 @@ const directory=await mkdtemp(join(tmpdir(),'r135-w16-synthetic-'))
 try {
   for (let i=0;i<2;i++) {
     const name='synthetic-'+i+'.png'
-    const png=Buffer.alloc(21000, i+1)
-    Buffer.from([137,80,78,71,13,10,26,10]).copy(png)
+    const width=320,height=320
+    const bytes=Buffer.alloc(height*(1+width*3))
+    let prng=i+1
+    for(let y=0;y<height;y++) {
+      const begin=y*(1+width*3)
+      bytes[begin]=0 // no scanline filter
+      for(let x=1;x<=width*3;x++) {
+        prng=(Math.imul(prng,1664525)+1013904223)>>>0
+        bytes[begin+x]=prng>>>16
+      }
+    }
+    const crc=payload=>{
+      let state=0xffffffff
+      for(const byte of payload) {
+        state^=byte
+        for(let bit=0;bit<8;bit++)state=(state&1)?(0xedb88320^(state>>>1)):(state>>>1)
+      }
+      return (state^0xffffffff)>>>0
+    }
+    const chunk=(tag,data)=>{
+      const kind=Buffer.from(tag,'ascii')
+      const len=Buffer.alloc(4);len.writeUInt32BE(data.length)
+      const sum=Buffer.alloc(4);sum.writeUInt32BE(crc(Buffer.concat([kind,data])))
+      return Buffer.concat([len,kind,data,sum])
+    }
+    const ihdr=Buffer.alloc(13)
+    ihdr.writeUInt32BE(width,0);ihdr.writeUInt32BE(height,4)
+    ihdr[8]=8;ihdr[9]=2
+    const png=Buffer.concat([Buffer.from([137,80,78,71,13,10,26,10]),
+      chunk('IHDR',ihdr),chunk('IDAT',deflateSync(bytes)),chunk('IEND',Buffer.alloc(0))])
+    assert.ok(png.length>20000)
+    assert.deepEqual([verifyOriginalPng(png).width,verifyOriginalPng(png).height],[320,320])
     await writeFile(join(directory,name),png)
     const record=createEvidenceRecord({...base,
       screenshotSha256:createHash('sha256').update(png).digest('hex'),
@@ -87,10 +118,18 @@ try {
   assert.equal(paired.length,2)
   assert.equal(paired.every(r=>r.user_reviewed_touch===false &&
     r.original_frame_reviewed===false),true)
-  const tampered=await readFileSync(join(directory,'synthetic-1.png'))
-  tampered[100]^=1
-  await writeFile(join(directory,'synthetic-1.png'),tampered)
+  const jsonPath=join(directory,'r135-w16-synthetic-1.json')
+  const existing=JSON.parse(readFileSync(jsonPath,'utf8'))
+  existing.sessions[0].capture.screenshot_sha256='f'.repeat(64)
+  await writeFile(jsonPath,JSON.stringify(existing))
   await assert.rejects(()=>collectSessions(directory),/Screenshot was changed/)
+  existing.sessions[0].capture.screenshot_sha256=createHash('sha256')
+    .update(readFileSync(join(directory,'synthetic-1.png'))).digest('hex')
+  await writeFile(jsonPath,JSON.stringify(existing))
+  const broken=readFileSync(join(directory,'synthetic-1.png'))
+  broken[100]^=1
+  await writeFile(join(directory,'synthetic-1.png'),broken)
+  await assert.rejects(()=>collectSessions(directory),/Invalid or truncated original PNG/)
 } finally {
   await rm(directory,{recursive:true,force:true})
 }
