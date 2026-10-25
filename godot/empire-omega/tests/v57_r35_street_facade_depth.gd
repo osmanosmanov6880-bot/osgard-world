@@ -1,7 +1,7 @@
 extends SceneTree
 ## R35: genuine geometric street-facing balconies in <=4 shared GPU batches.
 const BALCONIES = preload("res://scripts/horizon_facade_balconies.gd")
-const WORLD = preload("res://scripts/world_builder.gd")
+## Load full world lazily after the SceneTree initializes GameState autoloads.
 var passed := 0
 var failed := 0
 func check(ok: bool,why: String) -> void:
@@ -41,7 +41,14 @@ func _run() -> void:
 	check(balconies.get_node("R35MetalCornerPosts").visible,
 		"CINEMATIC restores genuine 3D metallic trim geometry")
 	balconies.queue_free()
-	var world := WORLD.new()
+	var world_script: Variant = load("res://scripts/world_builder.gd")
+	check(world_script!=null and world_script is Script and world_script.can_instantiate(),
+		"the actual world compiles and is constructible with live autoloads")
+	if world_script==null or not (world_script is Script) or not world_script.can_instantiate():
+		print("EMPIRE OMEGA R35 NATIVE: %d passed, %d failed" % [passed,failed])
+		quit(1)
+		return
+	var world: Node3D = world_script.new()
 	root.add_child(world)
 	var original: Node3D = world.get("facade_balconies")
 	check(original!=null and original.is_inside_tree(),"real world owns the new batched architecture")
