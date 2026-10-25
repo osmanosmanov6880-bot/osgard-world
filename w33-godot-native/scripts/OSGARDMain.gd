@@ -373,7 +373,9 @@ func _create_interface() -> void:
     _make_cinematic_overlay(stage_shell)
     var cameras := _flow(stage_section)
     for i in range(3):
-        view_btns.append(_button(cameras, "0%d   /   CAMERA" % (i + 1), _view_selected.bind(i), false, 175))
+        var view_button: Button = _button(cameras, _t("view%d" % i), _view_selected.bind(i), false, 175)
+        view_button.toggle_mode = true
+        view_btns.append(view_button)
 
     # Below the cinematic hero: a professional twin-column service desk on PC.
     # One column on phones; this is native Godot adaptive layout.
@@ -671,7 +673,8 @@ func _refresh() -> void:
     _assign(heading, "REACTOR A7" if size.x < 640.0 else "REACTOR A7   /   OBSIDIAN PROTOCOL")
     _assign(lead, _t("lead"))
     _assign(footer, _t("sim") + "   ·   OBSIDIAN PROTOCOL / GODOT 4.4.1 / LOCAL ONLY")
-    lang_btn.text = "RU ●" if locale == "ru" else "EN ●"
+    # Keep the actual language code readable on minimal web fonts.
+    lang_btn.text = "RU" if locale == "ru" else "EN"
     quality_btn.text = _t("quality") + ": " + str(core.settings["quality"]).to_upper()
     motion_btn.text = _t("motion") + (" ✓" if bool(core.settings["reduced_motion"]) else " –")
     sound_btn.text = _t("sound") + (" ✓" if bool(core.settings["sound"]) else " –")
@@ -693,7 +696,11 @@ func _refresh() -> void:
     hatch_btn.text = _t("hatch_close") if float(snap["hatch_target"]) == 1.0 else _t("hatch_open")
     scan_btn.text = _t("scan")
     for i in range(3):
-        view_btns[i].text = "0%d   /   " % (i + 1) + _t("view%d" % i) + ("  ●" if int(snap["view"]) == i else "")
+        # OSGARDText already includes "01 /", "02 /", "03 /".
+        # Do not repeat the index, and rely on true pressed styling instead
+        # of a Unicode bullet that rendered as a missing glyph in W42.
+        view_btns[i].text = _t("view%d" % i)
+        view_btns[i].set_pressed_no_signal(int(snap["view"]) == i)
     var active_fault := int(snap["fault"])
     cal_title.text = "%s  ·  %s" % [_t("signal"), _t("select") if active_fault < 0 else _t("base%d" % active_fault)]
     slider_a.editable = bool(snap["inspection_allowed"])
