@@ -1,0 +1,80 @@
+name: OSA CINEMA V41 — premium local owner UI, strict film NO-GO
+on:
+  pull_request:
+    paths:
+      - 'scripts/osa-cinema-v41-owner-ui.mjs'
+      - 'scripts/osa-cinema-v41-owner-ui.test.mjs'
+      - 'scripts/osa-cinema-v39-owner-desk.mjs'
+      - 'START_OSA_CINEMA_V41.cmd'
+      - 'START_OSA_CINEMA_V41.sh'
+      - 'docs/OSA_CINEMA_V41_OWNER_DESIGN_RU.md'
+      - '.github/workflows/osa-cinema-v41-owner-ui.yml'
+  push:
+    branches: [master]
+    paths:
+      - 'scripts/osa-cinema-v41-owner-ui.mjs'
+      - 'scripts/osa-cinema-v41-owner-ui.test.mjs'
+      - 'scripts/osa-cinema-v39-owner-desk.mjs'
+      - 'START_OSA_CINEMA_V41.cmd'
+      - 'START_OSA_CINEMA_V41.sh'
+      - '.github/workflows/osa-cinema-v41-owner-ui.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  owner-ui-contract:
+    name: Owner UI V41, V39 auth, V40 isolation (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify syntax and authenticated browser contract
+        shell: bash
+        run: |
+          node --check scripts/osa-cinema-v41-owner-ui.mjs
+          node --check scripts/osa-cinema-v39-owner-desk.mjs
+          node --test scripts/osa-cinema-v41-owner-ui.test.mjs scripts/osa-cinema-v39-owner-desk.test.mjs scripts/osa-cinema-v40-isolated-audit.test.mjs
+      - name: Immutable genuine history and real film publication HOLD
+        shell: bash
+        run: |
+          node scripts/osa-cinema-v35-historical-guard.mjs --root .
+          set +e
+          node scripts/osa-cinema-v20-release-audit.mjs --strict-publication > "$RUNNER_TEMP/v41-no-publication.log" 2>&1
+          rc=$?
+          set -e
+          test "$rc" -eq 1
+          grep -q OSA_CINEMA_V20_NO_PUBLICATION "$RUNNER_TEMP/v41-no-publication.log"
+      - name: Ensure V40/V41 launchers and worker remain present
+        shell: bash
+        run: |
+          test -s START_OSA_CINEMA_V41.cmd
+          test -s START_OSA_CINEMA_V41.sh
+          test -s START_OSA_CINEMA_V40.cmd
+          test -s START_OSA_CINEMA_V40.sh
+          test -s scripts/osa-cinema-v40-audit-worker.mjs
+  synthetic-offline-pipeline:
+    name: Real V41 owner desk -> V40 worker -> V38/V29 FFmpeg fixture
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install FFmpeg if absent
+        shell: bash
+        run: |
+          if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -y ffmpeg
+          fi
+      - name: Execute real authenticated one-click offline audit on synthetic media
+        shell: bash
+        run: node --test scripts/osa-cinema-v39-v29-integration.test.mjs
