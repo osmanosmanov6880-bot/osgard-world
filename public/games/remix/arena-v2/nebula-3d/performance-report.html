@@ -77,8 +77,8 @@ small{font-size:.77rem;color:#aeb5bd}
 <div class="panel" id="r39-panel"><h2>R39 / повторяемость на устройствах</h2><p class="muted">Группировка: метка устройства + разрешение + профиль. Требуется не менее 3 надёжных независимых измерений (с различным временем исходного замера) на одну группу. Медиана снижает влияние единичного удачного запуска; разброс FPS свыше 20% блокирует вывод о стабильности. Это проверка отчётов, а не доказательство модели телефона или аппаратная сертификация.</p><div class="table-scroll"><table><thead><tr><th scope="col">Устройство</th><th scope="col">Сборка</th><th scope="col">Размер</th><th scope="col">Режим</th><th scope="col">Надёжных / всего</th><th scope="col">Медиана FPS</th><th scope="col">Медиана P95 мс</th><th scope="col">Разброс FPS</th><th scope="col">Вывод</th></tr></thead><tbody id="r39-rows"></tbody></table></div><p class="summary-note" id="r39-status" aria-live="polite"></p></div>
 <div class="panel" id="r40-panel">
 <h2>R40 / сравнение до и после оптимизации</h2>
-<p class="muted">Для одного физического телефона используйте одну метку устройства, одинаковый размер экрана и один ручной профиль. Загружайте три или более независимых отчёта для R38 и для кандидата R40, меняя «Версия измерения» перед каждой загрузкой. Таблица сравнивает медианы. Кандидат R40 обязан содержать метку <code>NEBULA_R40_BRIDGE_BATCH_3X32</code>, которую записывает сама игра; R38 такой метки не содержит. Старые R40-архивы без метки потребуется пересобрать. Проверка метки предотвращает случайную путаницу сборок, но не является цифровой подписью или аппаратной сертификацией.</p>
-<div class="table-scroll"><table><thead><tr><th scope="col">Устройство</th><th scope="col">Размер</th><th scope="col">Режим</th><th scope="col">R38 FPS</th><th scope="col">R40 FPS</th><th scope="col">Изменение FPS</th><th scope="col">Изменение P95</th><th scope="col">Вывод</th></tr></thead><tbody id="r40-rows"></tbody></table></div>
+<p class="muted">Для одного физического телефона используйте одну метку устройства, одинаковый размер экрана и один ручной профиль. Загружайте три или более независимых отчёта для R38 и для кандидата R40, меняя «Версия измерения» перед каждой загрузкой. Таблица сравнивает медианы. Кандидат R40 обязан содержать метку <code>NEBULA_R40_BRIDGE_BATCH_3X32</code>, которую записывает сама игра; R38 такой метки не содержит. Старые R40-архивы без метки потребуется пересобрать. Проверка метки предотвращает случайную путаницу сборок, но не является цифровой подписью или аппаратной сертификацией. *Снижение draw calls — расчёт по счётчику игрового движка, а не фактическим GPU-командам драйвера; отсутствие показателя отмечается прочерком.</p>
+<div class="table-scroll"><table><thead><tr><th scope="col">Устройство</th><th scope="col">Размер</th><th scope="col">Режим</th><th scope="col">R38 FPS</th><th scope="col">R40 FPS</th><th scope="col">Изменение FPS</th><th scope="col">Изменение P95</th><th scope="col">Снижение draw calls*</th><th scope="col">Вывод</th></tr></thead><tbody id="r40-rows"></tbody></table></div>
 <p class="summary-note" id="r40-status" aria-live="polite"></p></div>
 </section>
 <p class="note">Конфиденциальность: страница не использует fetch, XHR, аналитику, cookies или внешние скрипты. Имена выбранных файлов отображаются локально и попадут в CSV только после вашего нажатия. Оригинальные JSON на сервер не загружаются.</p>
@@ -122,6 +122,11 @@ function parseReport(data, filename, deviceLabel = 'Партия 1', variant = '
   const low = finite('one_percent_low_fps');
   const p95 = finite('p95_frame_ms');
   const p99 = finite('p99_frame_ms');
+  // Godot reports the peak drawn objects during the sample. It is a
+  // diagnostic counter, NOT a guaranteed GPU driver draw-call reading.
+  const rawDrawCalls=data.max_draw_calls;
+  const drawCalls=typeof rawDrawCalls==='number' && Number.isFinite(rawDrawCalls) &&
+    rawDrawCalls>=0 && rawDrawCalls<=10000000 ? rawDrawCalls : null;
   const valid = finite('valid_frames');
   const duration = finite('sample_seconds');
   const invalid = finite('excluded_long_frames');
@@ -143,7 +148,7 @@ function parseReport(data, filename, deviceLabel = 'Партия 1', variant = '
   const stamp=typeof data.date_unix==='number'&&Number.isFinite(data.date_unix)&&
     data.date_unix>0 ? data.date_unix : null;
   return {name:safeName(filename),device,variant,reportedBuild:reportedBuild||'R38_LEGACY',resolution,stamp,profile:target.name,avg,low,p95,p99,
-    touch,status,validTest,software,targetFps:target.fps,targetP95:target.p95};
+    touch,drawCalls,status,validTest,software,targetFps:target.fps,targetP95:target.p95};
 }
 function median(numbers) {
   if (!numbers.length) return null;
@@ -172,6 +177,7 @@ function summarizeRuns(records) {
     const accepted=group.usable;
     const medianFps=median(accepted.map(x=>x.avg));
     const medianP95=median(accepted.map(x=>x.p95));
+    const medianDrawCalls=median(accepted.map(x=>x.drawCalls).filter(x=>x!==null));
     const spread=medianFps && accepted.length>=2 ?
       (Math.max(...accepted.map(x=>x.avg))-Math.min(...accepted.map(x=>x.avg)))/medianFps*100 : null;
     const target=thresholds.find(x=>x.name===group.profile);
@@ -182,7 +188,7 @@ function summarizeRuns(records) {
     }
     return {device:group.device,variant:group.variant,resolution:group.resolution,profile:group.profile,
       total:group.total,duplicates:group.duplicates,valid:accepted.length,
-      timestamps:accepted.map(x=>x.stamp),medianFps,medianP95,spread,status};
+      timestamps:accepted.map(x=>x.stamp),medianFps,medianP95,medianDrawCalls,spread,status};
   });
 }
 function compareBuilds(summary) {
@@ -198,7 +204,7 @@ function compareBuilds(summary) {
   }
   return [...groups.values()].map(g=>{
     const a=g.baseline,b=g.candidate;
-    let deltaFps=null,deltaP95=null,status='НЕ ХВАТАЕТ ДАННЫХ';
+    let deltaFps=null,deltaP95=null,deltaDrawCalls=null,status='НЕ ХВАТАЕТ ДАННЫХ';
     if (a && b && a.timestamps.some(stamp=>b.timestamps.includes(stamp))) {
       // One original JSON may not certify both baseline and candidate.
       status='ПОВТОРНЫЕ JSON';
@@ -211,10 +217,13 @@ function compareBuilds(summary) {
       deltaFps=(b.medianFps-a.medianFps)/a.medianFps*100;
       // Positive P95 change denotes fewer milliseconds in the slow-frame tail.
       deltaP95=(a.medianP95-b.medianP95)/a.medianP95*100;
+      if (a.medianDrawCalls!==null && a.medianDrawCalls>0 && b.medianDrawCalls!==null) {
+        deltaDrawCalls=(a.medianDrawCalls-b.medianDrawCalls)/a.medianDrawCalls*100;
+      }
       status=deltaFps < -5 || deltaP95 < -5 ? 'ХУЖЕ' :
         deltaFps > 5 || deltaP95 > 5 ? 'ЛУЧШЕ' : 'БЕЗ ЯВНОГО СДВИГА';
     }
-    return {...g,deltaFps,deltaP95,status,
+    return {...g,deltaFps,deltaP95,deltaDrawCalls,status,
       baselineFps:a?.medianFps??null,candidateFps:b?.medianFps??null};
   });
 }
@@ -224,9 +233,9 @@ function csvCell(s) {
   return '"' + escaped.replace(/"/g,'""') + '"';
 }
 function makeCSV(rows) {
-  const cols=['Устройство','Сборка','Метка JSON','Размер','Файл','Профиль','FPS','1% Low','P95 мс','P99 мс',
+  const cols=['Устройство','Сборка','Метка JSON','Размер','Файл','Профиль','FPS','1% Low','P95 мс','P99 мс','Пиковые draw calls',
     'DOM→Godot мс','Оценка'];
-  return [cols,...rows.map(x=>[x.device,x.variant||'R38',x.reportedBuild||'R38_LEGACY',x.resolution,x.name,x.profile,x.avg,x.low,x.p95,x.p99,
+  return [cols,...rows.map(x=>[x.device,x.variant||'R38',x.reportedBuild||'R38_LEGACY',x.resolution,x.name,x.profile,x.avg,x.low,x.p95,x.p99,x.drawCalls,
     x.touch,x.status])].map(row=>row.map(csvCell).join(',')).join('\r\n');
 }
 window.NebulaR37 = Object.freeze({parseReport,makeCSV,thresholds,summarizeRuns,compareBuilds,r40CandidateBuildId});
@@ -291,7 +300,7 @@ function render() {
     const cells=[p.device,p.resolution,p.profile,
       p.baselineFps===null?'—':p.baselineFps.toFixed(1),
       p.candidateFps===null?'—':p.candidateFps.toFixed(1),
-      pct(p.deltaFps),pct(p.deltaP95),p.status];
+      pct(p.deltaFps),pct(p.deltaP95),pct(p.deltaDrawCalls),p.status];
     for (const [i,v] of cells.entries()) {
       const td=document.createElement('td');
       if (i===cells.length-1) {
