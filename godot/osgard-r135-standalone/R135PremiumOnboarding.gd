@@ -264,7 +264,10 @@ func _layout() -> void:
     var css_width: float = area.x / ratio
     var portrait: bool = area.y > area.x * 1.03
     var compact: bool = css_width < 620.0
-    var margin: float = (14.0 if compact else 22.0) * ratio
+    # W19 original real 932x430 screenshot: preserve a readable scrollable
+    # tutorial even in short landscape, without covering operator controls.
+    var short_landscape: bool = not portrait and area.y / ratio < 510.0
+    var margin: float = (14.0 if compact or short_landscape else 22.0) * ratio
     var header_height: float = (70.0 if compact else 78.0) * ratio
     brand.position = Vector2(margin, margin)
     brand.size = Vector2(minf(area.x - 2.0 * margin, 510.0 * ratio), header_height)
@@ -282,7 +285,7 @@ func _layout() -> void:
     var host_actions: Control = host.get("action_panel") as Control
     if host_actions != null and host_actions.position.y > 0.0:
         action_y = host_actions.position.y
-    var top: float = margin + header_height + 12.0 * ratio
+    var top: float = margin + header_height + (7.0 if short_landscape else 12.0) * ratio
     compact_status.position = Vector2(margin, top)
     compact_status.custom_minimum_size = Vector2(0, 0)
     compact_status.size = Vector2(brand.size.x, 158.0 * ratio)
@@ -296,7 +299,12 @@ func _layout() -> void:
     compact_status_title.add_theme_font_size_override("font_size", int((13 if compact else 15) * ratio))
     compact_status_detail.add_theme_font_size_override("font_size", int((12 if compact else 14) * ratio))
     compact_status_safety.add_theme_font_size_override("font_size", int(11 * ratio))
-    var max_height: float = maxf(172.0 * ratio, action_y - top - 12.0 * ratio)
+    var max_height: float = maxf(172.0 * ratio,
+        action_y - top - (7.0 if short_landscape else 12.0) * ratio)
+    # The primary/secondary actions remain touch-sized. Reduce only empty
+    # separators so the genuine scroll container keeps meaningful height.
+    var card_stack: VBoxContainer = card.get_child(0) as VBoxContainer
+    card_stack.add_theme_constant_override("separation", 3 if short_landscape else 8)
     card.position = Vector2(margin, top)
     card.custom_minimum_size = Vector2(0, 0)
     card.size = Vector2(minf(460.0 * ratio, area.x - margin * 2.0), minf(max_height, 480.0 * ratio))
@@ -575,7 +583,9 @@ func _present() -> void:
     primary_button.disabled = _is_waiting()
     _assign(rail_header, _t("ЭТАПЫ ОБУЧЕНИЯ", "TRAINING PROGRESS") + "   %d/6" % (i + 1))
     for j in range(6):
-        var mark := "✓" if (j < step or (finished and j == 5)) else ("●" if j == step else "○")
+        # Avoid tofu squares from missing decorative glyphs in Godot Web
+        # fallback fonts; plain ASCII stays crisp in Chromium + native.
+        var mark := "OK" if (j < step or (finished and j == 5)) else (">" if j == step else "-")
         var row_text := "%s  %02d   %s" % [mark, j + 1, str(current_titles[j])]
         _assign(rail_rows[j], row_text)
         rail_rows[j].add_theme_color_override("font_color",
