@@ -1,0 +1,37 @@
+name: EMPIRE Omega R68 authentic policy-switch mission and localized UX
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - 'godot/empire-omega/scripts/game_state.gd'
+      - 'godot/empire-omega/scripts/hud.gd'
+      - 'godot/empire-omega/tests/v75_r68_policy_mission_real_change.gd'
+      - '.github/workflows/omega-r68-policy-mission-qa.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  genuine-hud-policy-mission:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: false
+      - name: Strictly import actual Godot game state and original HUD
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 godot/empire-omega/tools/generate_audio.py
+          python3 godot/empire-omega/tools/generate_patrol_audio.py
+          bash scripts/omega-strict-godot-import.sh godot/empire-omega
+      - name: Verify real HUD no-op policy is not mistaken for a completed mission
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 100s godot --headless \
+            --path godot/empire-omega \
+            --script res://tests/v75_r68_policy_mission_real_change.gd
