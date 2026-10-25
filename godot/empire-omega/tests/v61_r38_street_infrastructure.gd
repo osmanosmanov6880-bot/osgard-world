@@ -30,6 +30,7 @@ func _run() -> void:
 	var curb: Transform3D=details.get_node("R38RealCurbStones").multimesh.get_instance_transform(0)
 	check(absf(curb.origin.x)<=224.0 and absf(curb.origin.z)<=224.0,"actual curb stays inside playable map")
 	var drain: Transform3D=details.get_node("R38StormDrainGrates").multimesh.get_instance_transform(0)
+	print("R38 REAL DRAIN ORIGIN: ",drain.origin," | world: ",details.global_position)
 	check(absf(drain.origin.y-0.20)<0.01,"storm grate sits flush with existing road")
 	details.call("set_quality","low")
 	check(not details.visible,"LOW hides all four decorative mesh batches")
