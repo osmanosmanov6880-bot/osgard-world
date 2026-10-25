@@ -90,7 +90,10 @@ class Driver:
         raise AssertionError(f"Cannot calibrate native {axis} to {target}")
     def screenshot(self,label):
         path=self.folder/f"{self.device}-{label}.png"
-        data=self.canvas.screenshot(timeout=30000)
+        # The canvas is continuously animated. Element screenshots wait for
+        # geometry stability and can deadlock; an unpaused page screenshot
+        # captures the real browser framebuffer and live gameplay HUD.
+        data=self.page.screenshot(timeout=45000,animations="disabled")
         path.write_bytes(data)
         return {"file":path.name,"sha256":hashlib.sha256(data).hexdigest()}
     def mission(self,index):
