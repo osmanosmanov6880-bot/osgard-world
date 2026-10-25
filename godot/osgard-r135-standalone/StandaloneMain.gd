@@ -91,11 +91,11 @@ func _ready() -> void:
 
 func _panel_style() -> StyleBoxFlat:
     var style := StyleBoxFlat.new()
-    style.bg_color = Color(0.038, 0.046, 0.056, 0.56)
-    style.border_color = Color(0.38, 0.44, 0.47, 0.78)
+    style.bg_color = Color(0.028, 0.039, 0.054, 0.88)
+    style.border_color = Color(0.42, 0.49, 0.54, 0.82)
     style.set_border_width_all(1)
     style.set_corner_radius_all(12)
-    style.set_content_margin_all(16)
+    style.set_content_margin_all(12)
     return style
 
 func _button_style(active: bool = false) -> StyleBoxFlat:
@@ -134,7 +134,7 @@ func _build_hud() -> void:
     var text_stack := VBoxContainer.new()
     text_stack.size_flags_horizontal = Control.SIZE_EXPAND_FILL
     text_stack.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
-    text_stack.add_theme_constant_override("separation", 6)
+    text_stack.add_theme_constant_override("separation", 3)
     hud_panel.add_child(text_stack)
     var header_bar := HBoxContainer.new()
     header_bar.add_theme_constant_override("separation", 8)

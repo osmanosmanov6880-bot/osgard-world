@@ -394,9 +394,9 @@ async function browserRemainingFaults(page, isMobile, deviceName) {
 async function verifyAdaptiveHud(page) {
   const original = page.viewportSize()
   for (const [width, height, mode] of [
+    [932, 430, 'landscape'],
     [360, 780, 'portrait'],
     [430, 932, 'portrait'],
-    [932, 430, 'landscape'],
   ]) {
     await page.setViewportSize({ width, height })
     const state = await expectState(page, x => x?.scene_ready && x?.hud_layout_mode === mode
@@ -486,6 +486,13 @@ try {
         await page.keyboard.press('l')
         await expectState(page, x => x?.ui_locale === 'en', 'W17 keyboard EN restore failed')
       }
+      // Run the real resize + original screenshot matrix BEFORE the prolonged
+      // 3-case SwiftShader run. A software GPU can become readback-starved after
+      // sustained WebGL2 rendering; never accept a missing 932x430 image.
+      if (isMobile) {
+        console.log('R135 W15/W17 viewport matrix: fresh active WebGL before stress')
+        await verifyAdaptiveHud(page)
+      }
       if (!boot.hud_rect || !boot.action_rect || boot.hud_rect.h > boot.viewport_h * .28 ||
           boot.hud_rect.y + boot.hud_rect.h >= boot.action_rect.y - 20) {
         throw new Error('W11 initial HUD obscures scene: ' + JSON.stringify({
@@ -504,7 +511,6 @@ try {
         await touchDiagnostics(page)
         const extraCases = await browserRemainingFaults(page, true, name)
         if (extraCases.length !== 2) throw new Error('Missing two mobile diagnostic cases')
-        await verifyAdaptiveHud(page)
       } else {
         await keyboardMission(page)
         await keyboardDiagnostics(page)
