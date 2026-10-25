@@ -18,6 +18,9 @@ def insist(value: bool, reason: str) -> None:
 def validate(source: str) -> None:
     insist("  pull_request:" in source, "missing isolated pull request contract")
     insist("  push:\n    branches: [master]" in source, "master-only reviewed auto recheck missing")
+    push_paths = source.split("  push:\n", 1)[-1].split("  workflow_dispatch:", 1)[0]
+    insist("      - 'scripts/omega_r83_release_gate.py'" in push_paths,
+           "changes to R83 original reporter parser must recheck real public G0")
     insist("      - '.github/workflows/omega-r84-real-g0-evidence.yml'" in source,
            "automatic checks must not run on every unrelated portal commit")
     insist("  workflow_dispatch:" in source, "missing manual master recheck")
