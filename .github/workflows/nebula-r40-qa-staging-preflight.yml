@@ -1,0 +1,16 @@
+name: NEBULA R40 one-shot staging preflight
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/nebula-r40-device-staging.yml"
+      - ".github/nebula-r40-qa-one-shot-source.json"
+      - ".github/workflows/nebula-r40-qa-staging-preflight.yml"
+      - "scripts/test-nebula-r40-qa-staging-once.mjs"
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify pinned one-time R40 stage cannot replace R38
+        run: node scripts/test-nebula-r40-qa-staging-once.mjs
