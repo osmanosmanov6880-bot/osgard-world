@@ -62,6 +62,12 @@ small{font-size:.77rem;color:#aeb5bd}
 <p id="status" aria-live="polite">Отчёты ещё не загружены.</p>
 <ul id="rejected" aria-live="polite"></ul>
 </section>
+<section class="panel" id="r40-field-matrix" aria-labelledby="r40-field-title">
+<h2 id="r40-field-title">R40 / полная матрица испытаний</h2>
+<p class="muted">Прямо в браузере отслеживается сбор отчётов для минимум трёх устройств: обе ориентации × MAX/HIGH/ECO × R38/R40 × 3 отдельных замера. 108 оригинальных JSON — только числовая часть приёмки. Дополнительно обязательны 12 реальных изображений и очная проверка на двух Android и одном iPhone. Страница не проверяет подлинность устройства и никогда не выдает разрешение на production.</p>
+<p id="r40-field-status" class="summary-note" aria-live="polite">0 из 108 исходных отчётов загружено.</p>
+<div class="table-scroll"><table><thead><tr><th scope="col">Устройство</th><th scope="col">Ориентация</th><th scope="col">Профиль</th><th scope="col">Надёжных R38</th><th scope="col">Надёжных R40</th><th scope="col">Сопоставимость</th></tr></thead><tbody id="r40-field-rows"></tbody></table></div>
+</section>
 <section id="results" hidden aria-labelledby="results-title">
 <div class="stats" aria-label="Сводные показатели">
 <div class="stat"><small>Принятые отчёты</small><strong id="count" class="value">0</strong></div>
@@ -88,6 +94,7 @@ small{font-size:.77rem;color:#aeb5bd}
 'use strict';
 const thresholds = [{name:'MAX',fps:60,p95:20},{name:'HIGH',fps:40,p95:30},{name:'ECO',fps:30,p95:35}];
 const r40CandidateBuildId = 'NEBULA_R40_BRIDGE_BATCH_3X32';
+const MAX_REPORT_FILES = 240; // >=108 required field reports; bounded local resource use.
 const safeName = name => String(name || 'report.json').replace(/[\r\n\t]/g,' ').slice(0,80);
 function parseReport(data, filename, deviceLabel = 'Партия 1', variant = 'R38') {
   if (!data || typeof data !== 'object' || Array.isArray(data) ||
@@ -227,6 +234,50 @@ function compareBuilds(summary) {
       baselineFps:a?.medianFps??null,candidateFps:b?.medianFps??null};
   });
 }
+function reportOrientation(resolution) {
+  const dimensions=/^(\d+)×(\d+)$/.exec(String(resolution));
+  if (!dimensions) return null;
+  const width=Number(dimensions[1]),height=Number(dimensions[2]);
+  return height>width?'portrait':width>height?'landscape':null;
+}
+function fieldMatrix(records) {
+  const summary=summarizeRuns(records);
+  const paired=compareBuilds(summary);
+  const devices=[...new Set(records.map(x=>x.device))].sort();
+  const cases=[];
+  for (const device of devices) {
+    for(const orientation of ['portrait','landscape']) {
+      for(const profile of ['MAX','HIGH','ECO']) {
+        const same=summary.filter(g=>g.device===device && g.profile===profile &&
+          reportOrientation(g.resolution)===orientation);
+        const baseline=same.filter(g=>g.variant==='R38');
+        const candidate=same.filter(g=>g.variant==='R40');
+        const accepted=g=>g.reduce((n,x)=>n+x.valid,0);
+        const pairs=paired.filter(p=>p.device===device && p.profile===profile &&
+          reportOrientation(p.resolution)===orientation);
+        const comparable=baseline.length===1 && candidate.length===1 &&
+          baseline[0].resolution===candidate[0].resolution &&
+          pairs.length===1 && pairs[0].deltaFps!==null &&
+          !['ХУЖЕ','ПОВТОРНЫЕ JSON','НЕСТАБИЛЬНО'].includes(pairs[0].status) &&
+          baseline[0].valid>=3 && candidate[0].valid>=3;
+        cases.push({device,orientation,profile,r38:accepted(baseline),r40:accepted(candidate),
+          comparable,detail:comparable?'СОПОСТАВИМО':
+            baseline.length>0 && candidate.length>0 &&
+            baseline[0].resolution!==candidate[0].resolution?
+              'РАЗНОЕ РАЗРЕШЕНИЕ':'НЕТ ПОЛНОЙ ПАРЫ'});
+      }
+    }
+  }
+  return {
+    devices:devices.length,
+    received:records.length,
+    usable:summary.reduce((n,g)=>n+g.valid,0),
+    requiredReports:Math.max(3,devices.length)*36,
+    requiredPairs:Math.max(3,devices.length)*6,
+    completePairs:cases.filter(x=>x.comparable).length,
+    cases
+  };
+}
 function csvCell(s) {
   const v=String(s == null ? '' : s);
   const escaped=/^[=+\-@\t\r]/.test(v) ? "'" + v : v;
@@ -238,7 +289,7 @@ function makeCSV(rows) {
   return [cols,...rows.map(x=>[x.device,x.variant||'R38',x.reportedBuild||'R38_LEGACY',x.resolution,x.name,x.profile,x.avg,x.low,x.p95,x.p99,x.drawCalls,
     x.touch,x.status])].map(row=>row.map(csvCell).join(',')).join('\r\n');
 }
-window.NebulaR37 = Object.freeze({parseReport,makeCSV,thresholds,summarizeRuns,compareBuilds,r40CandidateBuildId});
+window.NebulaR37 = Object.freeze({parseReport,makeCSV,thresholds,summarizeRuns,compareBuilds,fieldMatrix,maxReportFiles:MAX_REPORT_FILES,r40CandidateBuildId});
 const uploader=document.getElementById('reports');
 if (!uploader) return;
 const tbody=document.getElementById('rows'),rejectList=document.getElementById('rejected');
@@ -317,6 +368,28 @@ function render() {
   document.getElementById('r40-status').textContent=comparisons.length ?
     `Пар устройств/профилей: ${comparisons.length}. С обеими надёжными сериями: ${comparisons.filter(x=>x.deltaFps!==null).length}. Без аппаратных A/B-данных эффект оптимизации не подтверждён.` :
     'Загрузите R38 и R40 для одного устройства, ориентации и профиля.';
+  const field=fieldMatrix(rows);
+  const fieldBody=document.getElementById('r40-field-rows');
+  fieldBody.replaceChildren();
+  for (const item of field.cases) {
+    const tr=document.createElement('tr');
+    const names=[item.device,item.orientation==='portrait'?'Вертикально':'Горизонтально',
+      item.profile,`${Math.min(3,item.r38)} / 3`,`${Math.min(3,item.r40)} / 3`,
+      item.detail];
+    for(const [i,name] of names.entries()) {
+      const td=document.createElement('td');
+      td.textContent=name;
+      if(i===5 && item.comparable) td.className='good';
+      tr.appendChild(td);
+    }
+    fieldBody.appendChild(tr);
+  }
+  document.getElementById('r40-field-status').textContent=
+    `Загружено: ${field.received} из минимум ${field.requiredReports} JSON. `+
+    `Надёжных: ${field.usable}. Полных сопоставимых групп: `+
+    `${field.completePairs} из минимум ${field.requiredPairs}. `+
+    `Устройств с отчётами: ${field.devices} (необходимо >=3, включая 2 Android и iPhone). `+
+    'Ещё нужны настоящие снимки и проверка человеком; загрузки в интернет нет.';
   results.hidden=rows.length===0;
   exportBtn.disabled=rows.length===0; clearBtn.disabled=rows.length===0;
   document.getElementById('count').textContent=String(rows.length);
@@ -327,13 +400,13 @@ function render() {
 }
 uploader.addEventListener('change',async()=>{
   rejectList.replaceChildren();
-  const incoming=Array.from(uploader.files||[]).slice(0,100);
+  const incoming=Array.from(uploader.files||[]);
   const typed=document.getElementById('device-label').value.trim();
   const device=typed ? typed.slice(0,48) : 'Партия '+(++batchNumber);
   const variant=document.getElementById('build-role').value;
   for(const file of incoming) {
     try {
-      if (rows.length>=100) throw new Error('Лимит 100 отчётов');
+      if (rows.length>=MAX_REPORT_FILES) throw new Error('Лимит '+MAX_REPORT_FILES+' отчётов');
       if (file.size > 256000) throw new Error('Файл больше 256 КБ');
       rows.push(parseReport(JSON.parse(await file.text()),file.name,device,variant));
     } catch(e) {
