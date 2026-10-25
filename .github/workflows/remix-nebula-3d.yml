@@ -224,6 +224,14 @@ jobs:
           path: r11-browser-qa/
           if-no-files-found: warn
           retention-days: 14
+      - name: Verify R40 candidate remains non-production without hardware sign-off
+        if: github.event_name == 'pull_request'
+        run: |
+          set -euo pipefail
+          grep -Fq 'NEBULA_R40_PRODUCTION_HELD' .github/workflows/remix-nebula-3d.yml
+          grep -Fq "steps.r40_release_gate.outputs.approved == 'true'" .github/workflows/remix-nebula-3d.yml
+          grep -Fq 'NEBULA_R40_BRIDGE_BATCH_3X32' godot/nebula-3d/scripts/performance_lab_r11.gd
+          echo "NEBULA_R40_PRE_RELEASE_PRODUCTION_HOLD_CHECK=PASS"
       - name: Save browser flight telemetry for review
         if: always() && github.event_name == 'pull_request'
         uses: actions/upload-artifact@v4
@@ -242,8 +250,25 @@ jobs:
           path: public/games/remix/arena-v2/nebula-3d/
           if-no-files-found: error
           retention-days: 14
-      - name: Commit native sources and verified Web export
+      # Real mobile FPS / screenshot sign-off is mandatory before producing a
+      # public R40 WASM/PCK. This keeps current production R38 alive even if
+      # an engineer accidentally merges R40 sources before field evidence.
+      # Enabling R40 later requires a separate, reviewed release-promotion PR
+      # after real Android/iPhone JSONs, visual/thermal approval and rollback QA.
+      - name: Decide whether this native game is eligible for automatic production
+        id: r40_release_gate
         if: github.event_name != 'pull_request'
+        run: |
+          set -euo pipefail
+          if grep -Fq 'const R40_BUILD_VARIANT: String = "NEBULA_R40_BRIDGE_BATCH_3X32"' godot/nebula-3d/scripts/performance_lab_r11.gd; then
+            echo "approved=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::NEBULA_R40_PRODUCTION_HELD: build QA is green, but real Android/iPhone A/B and visual sign-off are not supplied. No Web export commit or SSH activation will occur."
+          else
+            echo "approved=true" >> "$GITHUB_OUTPUT"
+            echo "NEBULA_STABLE_RELEASE_AUTO_EXPORT_ALLOWED"
+          fi
+      - name: Commit native sources and verified Web export
+        if: github.event_name != 'pull_request' && steps.r40_release_gate.outputs.approved == 'true'
         run: |
           set -euo pipefail
           git config user.name osgard-godot-ci
@@ -272,7 +297,7 @@ jobs:
             fi
           fi
       - name: Dispatch existing isolated production SSH release
-        if: github.event_name != 'pull_request'
+        if: github.event_name != 'pull_request' && steps.r40_release_gate.outputs.approved == 'true'
         uses: actions/github-script@v7
         with:
           github-token: ${{ github.token }}
