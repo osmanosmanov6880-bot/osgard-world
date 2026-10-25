@@ -69,6 +69,10 @@ func _run() -> void:
     if rig == null or course == null:
         _fail("W21 cannot find actual service rig or tutorial")
         return
+    # Earlier W20 persistence regression may intentionally leave EN active.
+    # Assert both languages deterministically, rather than assuming state
+    # persisted by an unrelated test runner in user://.
+    scene.call("_set_locale", "ru")
     var button: Button = course.get("coach_more_button") as Button
     var details: Label = course.get("coach_detail") as Label
     var cause_label: Label = course.get("coach_summary") as Label
