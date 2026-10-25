@@ -16,6 +16,8 @@ on:
       - "scripts/check-nginx-remix-owned.sh"
       - "tests/test_remix_*.py"
       - "tests/test_frontend_activation.py"
+      - "scripts/check-frontend-release-freshness.sh"
+      - "scripts/test-frontend-release-freshness.mjs"
       - "docker-compose.production.yml"
       - "public/development/index.html"
       - "public/development/osa-intelligence/**"
@@ -426,7 +428,7 @@ jobs:
       - name: Verify Imperium of Time visuals and real diagnostics
         run: npm run qa:time-ui && node scripts/omega-city-3d-smoke.mjs
       - name: Check deployment shell syntax
-        run: bash -n scripts/activate-frontend-remote.sh && sh -n scripts/preserve-omega-native.sh && sh -n scripts/preserve-nebula-r40-qa.sh && node --test scripts/omega-frontend-preservation.test.mjs scripts/nebula-r40-qa-preservation.test.mjs
+        run: bash -n scripts/activate-frontend-remote.sh && bash -n scripts/check-frontend-release-freshness.sh && sh -n scripts/preserve-omega-native.sh && sh -n scripts/preserve-nebula-r40-qa.sh && node --test scripts/omega-frontend-preservation.test.mjs scripts/nebula-r40-qa-preservation.test.mjs scripts/test-frontend-release-freshness.mjs
       - name: Package HTML assets and matching Nginx config
         run: |
           set -euo pipefail
@@ -573,8 +575,11 @@ jobs:
         env:
           HOST: ${{ secrets.OSGARD_DEPLOY_HOST }}
           USER: ${{ secrets.OSGARD_DEPLOY_USER }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
+          # Block older queued builds BEFORE any SSH transport.
+          bash scripts/check-frontend-release-freshness.sh
           REMOTE_RELEASE_DIR="/tmp/osgard-gh-release-${GITHUB_RUN_ID}"
           local_bytes="$(stat -c %s osgard-world-release.tgz)"
           local_mib="$(( (local_bytes + 1048575) / 1048576 ))"
@@ -599,8 +604,11 @@ jobs:
         env:
           HOST: ${{ secrets.OSGARD_DEPLOY_HOST }}
           USER: ${{ secrets.OSGARD_DEPLOY_USER }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
+          # Recheck AFTER upload and immediately BEFORE activating a release.
+          bash scripts/check-frontend-release-freshness.sh
           REMOTE_RELEASE_DIR="/tmp/osgard-gh-release-${GITHUB_RUN_ID}"
           REMOTE_ARCHIVE="/tmp/osgard-gh-release-${GITHUB_RUN_ID}.tgz"
           REMOTE_SCRIPT="/tmp/activate-frontend-remote-${GITHUB_RUN_ID}.sh"
