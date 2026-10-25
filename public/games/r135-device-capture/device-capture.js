@@ -85,7 +85,7 @@ export function createEvidenceRecord({
     'Отсутствует уникальный ID сеанса')
   assert(/^[a-f0-9]{64}$/.test(screenshotSha256) &&
     typeof screenshotName === 'string' &&
-    screenshotName.endsWith('.png') &&
+    screenshotName.toLowerCase().endsWith('.png') &&
     !screenshotName.includes('/') && !screenshotName.includes('\\'),
   'Нужен оригинальный PNG-скриншот и его SHA-256')
   return {
