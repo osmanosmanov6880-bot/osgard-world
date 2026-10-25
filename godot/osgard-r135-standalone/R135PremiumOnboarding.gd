@@ -94,6 +94,8 @@ var settings_title: Label
 var settings_note: Label
 var settings_quality_button: Button
 var settings_motion_button: Button
+var settings_audio_button: Button
+var audio_caption_label: Label
 var settings_close_button: Button
 
 func _ready() -> void:
@@ -258,6 +260,9 @@ func _build() -> void:
     coach_detail.name = "CauseAndNextAction"
     coach_detail.visible = false
     metrics_label = _label(body, Color(0.93, 0.72, 0.49), 13)
+    audio_caption_label = _label(body, Color(0.62, 0.88, 0.82), 13)
+    audio_caption_label.name = "AccessibleSoundCueCaption"
+    audio_caption_label.visible = false
     # W22: accessible real targeted replay; progress is derived exclusively
     # from existing W14 per-fault scores and does NOT invent new save formats.
     case_selection_caption = _label(body, Color(0.98, 0.68, 0.40), 13)
@@ -339,6 +344,10 @@ func _build() -> void:
     settings_motion_button.name = "PlayerReducedMotionToggle"
     settings_motion_button.pressed.connect(_settings_motion_pressed)
     settings_stack.add_child(settings_motion_button)
+    settings_audio_button = _styled_button("ЗВУК: ВЫКЛЮЧЕН", false)
+    settings_audio_button.name = "PlayerOptInAudioToggle"
+    settings_audio_button.pressed.connect(_settings_audio_pressed)
+    settings_stack.add_child(settings_audio_button)
     settings_close_button = _styled_button("НАЗАД К ОБУЧЕНИЮ", false)
     settings_close_button.name = "ReturnToCourse"
     settings_close_button.pressed.connect(_toggle_settings)
@@ -429,6 +438,7 @@ func _layout() -> void:
     coach_more_button.custom_minimum_size = Vector2(0, 44.0 * ratio)
     coach_more_button.add_theme_font_size_override("font_size", int((12 if compact else 13) * ratio))
     metrics_label.add_theme_font_size_override("font_size", int(13 * ratio))
+    audio_caption_label.add_theme_font_size_override("font_size", int((12 if compact else 13) * ratio))
     case_mastery_label.add_theme_font_size_override("font_size", int((11 if compact else 12) * ratio))
     case_selection_caption.add_theme_font_size_override("font_size", int((12 if compact else 13) * ratio))
     for replay in case_selection_buttons:
@@ -448,7 +458,7 @@ func _layout() -> void:
         maxf(80.0, card.size.y - 28.0 * ratio))
     settings_title.add_theme_font_size_override("font_size", int((18 if compact else 22) * ratio))
     settings_note.add_theme_font_size_override("font_size", int((12 if compact else 14) * ratio))
-    for settings_action in [settings_quality_button, settings_motion_button, settings_close_button]:
+    for settings_action in [settings_quality_button, settings_motion_button, settings_audio_button, settings_close_button]:
         settings_action.custom_minimum_size = Vector2(0, 46.0 * ratio)
         settings_action.add_theme_font_size_override("font_size", int((12 if compact else 14) * ratio))
     _refresh_settings()
@@ -579,6 +589,12 @@ func _settings_motion_pressed() -> void:
     _refresh_settings()
 
 
+func _settings_audio_pressed() -> void:
+    if host != null:
+        host.call("_toggle_audio")
+    _refresh_settings()
+
+
 func _refresh_settings() -> void:
     if host == null or settings_button == null or settings_title == null:
         return
@@ -593,6 +609,11 @@ func _refresh_settings() -> void:
     settings_motion_button.text = _t(
         "АНИМАЦИИ: МЕНЬШЕ" if bool(host.get("reduced_motion")) else "АНИМАЦИИ: ПОЛНЫЕ",
         "MOTION: REDUCED" if bool(host.get("reduced_motion")) else "MOTION: FULL")
+    var sound: Node = host.get("audio_cues") as Node
+    var muted: bool = true if sound == null else bool(sound.get("muted"))
+    settings_audio_button.text = _t(
+        "ЗВУК: ВЫКЛ (субтитры доступны)" if muted else "ЗВУК: ВКЛ (тихие сигналы)",
+        "SOUND: OFF (captions available)" if muted else "SOUND: ON (quiet cues)")
     settings_close_button.text = _t("НАЗАД К ОБУЧЕНИЮ", "BACK TO TRAINING")
 
 
@@ -810,6 +831,10 @@ func _present() -> void:
     if finished:
         score_text = _t("ОБУЧЕНИЕ ЗАВЕРШЕНО  •  %d/3 КЕЙСА", "TRAINING FINISHED  •  %d/3 CASES") % completed_cases
     _assign(metrics_label, score_text)
+    var sound_caption: String = str(state_cache.get("sound_caption", ""))
+    audio_caption_label.visible = not sound_caption.is_empty()
+    if not sound_caption.is_empty():
+        _assign(audio_caption_label, _t("СИГНАЛ: ", "CUE: ") + sound_caption)
     _refresh_case_selection()
     var drive_label: String = _t("ПРИВОД РАБОТАЕТ", "DRIVE RUNNING") if bool(state_cache.get("motion_enabled", true)) else _t("ПРИВОД ОСТАНОВЛЕН", "DRIVE STOPPED")
     var mode: String = "HERO" if int(state_cache.get("quality", 0)) == 2 else "ECO"

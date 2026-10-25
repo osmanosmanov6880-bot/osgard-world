@@ -1,0 +1,80 @@
+name: OSGARD R135 W24 opt-in original sound and bilingual visible caption native Godot QA
+
+on:
+  push:
+    branches: [feat/r135-w24-procedural-accessible-audio-20261025]
+    paths:
+      - 'godot/osgard-r135-standalone/**'
+      - '.github/workflows/r135-w24-accessible-audio-native-qa.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  real-godot-opt-in-audio-safety:
+    runs-on: ubuntu-latest
+    timeout-minutes: 28
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 30
+      - name: Strict local muted audio schema and original sound-no-autoplay contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import subprocess
+          project=Path("godot/osgard-r135-standalone")
+          audio=(project/"R135AccessibleAudio.gd").read_text()
+          main=(project/"StandaloneMain.gd").read_text()
+          panel=(project/"R135PremiumOnboarding.gd").read_text()
+          assert 'user://r135_audio_preferences_v1.cfg' in audio
+          assert 'var muted: bool = true' in audio and 'player.autoplay = false' in audio
+          assert 'player.play()' in audio and 'if muted or player == null:' in audio
+          assert 'extends Node' in audio
+          assert 'PlayerOptInAudioToggle' in panel and '_settings_audio_pressed' in panel
+          assert 'AccessibleSoundCueCaption' in panel
+          assert 'audio_cues.call("cue", "blocked")' not in main, "warn only for real rejected inputs"
+          assert not any(term in audio for term in ['HTTPRequest','HTTPClient','JavaScriptBridge','OS.execute'])
+          diff=subprocess.run(['git','diff','--name-only',
+            '3b24366be50620948bb982187a912ca42261eeec','HEAD'],
+            capture_output=True,text=True,check=True)
+          assert not any(p.endswith(('.glb','.gltf','.png','.jpeg','.jpg','.mp3','.wav'))
+                         for p in diff.stdout.splitlines()), 'Unreviewed third-party media introduced'
+          print('W24 original short procedural PCM, independent mute, source-unchanged assets PASS')
+          PY
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: true
+      - name: Import true HERO/ECO PBR GLBs
+        run: |
+          set -euo pipefail
+          godot --headless --editor --path godot/osgard-r135-standalone --import --quit
+      - name: W19 game safety regressions
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 150s godot --headless --path godot/osgard-r135-standalone --script res://tests/smoke.gd
+      - name: W20 preferences and isolated W14/W19 saves
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 150s godot --headless --path godot/osgard-r135-standalone --script res://tests/preferences_smoke.gd
+      - name: W21 real explainable cause and effect lessons
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 150s godot --headless --path godot/osgard-r135-standalone --script res://tests/learning_coach_smoke.gd
+      - name: W22 selectable faults and local mastery
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 150s godot --headless --path godot/osgard-r135-standalone --script res://tests/case_mastery_smoke.gd
+      - name: W23 real ECO/HERO lighting and exact 3-light GPU budget
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 150s godot --headless --path godot/osgard-r135-standalone --script res://tests/art_direction_smoke.gd
+      - name: W24 actual Godot audio opt-in, safe game captions and persisted mute
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 150s godot --headless --path godot/osgard-r135-standalone --script res://tests/access_audio_smoke.gd

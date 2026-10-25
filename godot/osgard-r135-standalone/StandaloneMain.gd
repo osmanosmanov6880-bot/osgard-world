@@ -5,6 +5,7 @@ var controller: Node3D
 var camera: Camera3D
 var studio: Node3D
 var inspection_fill: OmniLight3D
+var audio_cues: Node
 var art_environment: Environment
 var art_key_light: DirectionalLight3D
 var art_rim_light: DirectionalLight3D
@@ -30,6 +31,7 @@ const VIEW_NAMES = ["OVERVIEW", "SERVICE DECK", "OPTICAL HEAD", "SIDE INSPECTION
 const R135Locale = preload("res://R135Locale.gd")
 const R135PlayerPreferences = preload("res://R135PlayerPreferences.gd")
 const R135ArtDirection = preload("res://R135ArtDirection.gd")
+const R135AccessibleAudio = preload("res://R135AccessibleAudio.gd")
 var ui_locale: String = "ru"
 var preferences_save_ok: bool = true
 var premium_intro: Control
@@ -118,6 +120,10 @@ func _ready() -> void:
     art_profile = R135ArtDirection.apply(quality, art_environment,
         art_key_light, art_rim_light, inspection_fill)
     controller.call("set_reduced_motion", reduced_motion)
+    audio_cues = R135AccessibleAudio.new()
+    audio_cues.name = "R135OptInAccessibleCues"
+    add_child(audio_cues)
+    audio_cues.call("switch_locale", ui_locale)
     _build_hud()
     # Actual native Godot overlay: responsive, mouse/touch interactive and
     # safely separate from the eight real W13/W18 gameplay controls.
@@ -350,6 +356,8 @@ func _set_locale(value: String, save_change: bool = false) -> void:
     safety_notice.text = R135Locale.notice(ui_locale)
     if premium_intro != null:
         premium_intro.call("set_language", ui_locale)
+    if audio_cues != null:
+        audio_cues.call("switch_locale", ui_locale)
     if controller != null:
         var faults: Node3D = controller.get("visual_faults") as Node3D
         if faults != null:
@@ -365,6 +373,16 @@ func _toggle_locale() -> void:
 func _persist_preferences() -> void:
     # Local-only settings: no HTTP requests, identifiers or physical equipment.
     preferences_save_ok = R135PlayerPreferences.save_local(ui_locale, quality, reduced_motion)
+
+func _toggle_audio() -> void:
+    # W24 sound is a genuine opt-in. The click itself makes no sound.
+    # Caption changes remain fully visible when muted.
+    if audio_cues != null:
+        audio_cues.call("set_muted", not bool(audio_cues.get("muted")))
+    if premium_intro != null:
+        premium_intro.call("_refresh_settings")
+    _refresh_status()
+
 
 func _set_reduced_motion(enabled: bool) -> void:
     reduced_motion = enabled
@@ -384,6 +402,8 @@ func _start_mission() -> void:
     # Starting a new mission always starts its drive, even after a prior pause.
     motion = true
     controller.start_mission()
+    if audio_cues != null:
+        audio_cues.call("cue", "mission")
     _refresh_status()
 
 func _start_challenge() -> void:
@@ -391,6 +411,8 @@ func _start_challenge() -> void:
         premium_intro.call("on_gameplay_command")
     motion = true
     controller.start_challenge()
+    if audio_cues != null:
+        audio_cues.call("cue", "diagnosis")
     _apply_view(0)
     _refresh_status()
 
@@ -401,6 +423,8 @@ func _start_selected_case(index: int) -> bool:
     if not accepted:
         _refresh_status()
         return false
+    if audio_cues != null:
+        audio_cues.call("cue", "diagnosis")
     # Same physically simulated safe initial state as ordinary diagnostics.
     motion = true
     _apply_view(0)
@@ -409,7 +433,11 @@ func _start_selected_case(index: int) -> bool:
 
 
 func _scan_component() -> void:
+    var before: Dictionary = controller.summary()
     controller.scan_diagnostic(view_index)
+    var after: Dictionary = controller.summary()
+    if audio_cues != null:
+        audio_cues.call("cue", "scan" if int(after.get("challenge_step", -1)) > int(before.get("challenge_step", -1)) else "blocked")
     _refresh_status()
 
 func _next_view() -> void:
@@ -455,13 +483,20 @@ func _toggle_quality() -> void:
     _refresh_status()
 
 func _toggle_motion() -> void:
-    controller.set_motion(not bool(controller.summary()["motion_enabled"]))
+    var before: bool = bool(controller.summary()["motion_enabled"])
+    controller.set_motion(not before)
     # The advanced diagnostic interlock may reject an unsafe restart.
     motion = bool(controller.summary()["motion_enabled"])
+    if audio_cues != null:
+        audio_cues.call("cue", ("drive_start" if motion else "drive_stop") if motion != before else "blocked")
     _refresh_status()
 
 func _toggle_hatch() -> void:
+    var before: float = float(controller.summary()["lid_target"])
     controller.toggle_access_lid()
+    var after: float = float(controller.summary()["lid_target"])
+    if audio_cues != null:
+        audio_cues.call("cue", "hatch" if absf(after - before) > 0.5 else "blocked")
     _refresh_status()
 
 func _reset_view() -> void:
@@ -469,6 +504,16 @@ func _reset_view() -> void:
 
 func _refresh_status() -> void:
     var state: Dictionary = controller.summary()
+    if audio_cues != null:
+        var sound: Dictionary = audio_cues.call("snapshot")
+        state["sound_caption"] = sound["caption"]
+        state["sound_last_cue"] = sound["last_cue"]
+        state["sound_muted"] = sound["muted"]
+        state["sound_schema"] = sound["schema"]
+        state["sound_cue_count"] = sound["cue_count"]
+        state["sound_audible_count"] = sound["audible_count"]
+        state["sound_player_autoplay"] = sound["autoplay"]
+        state["sound_save_ok"] = sound["saved"]
     var mode := "HERO" if quality == 2 else "ECO"
     var state_text := "RUNNING" if motion else "PAUSED"
     hud.text = "QUALITY  %s  |  DRIVE  %s  |  VIEW  %s" % [mode, state_text, VIEW_NAMES[view_index]]
@@ -604,6 +649,16 @@ func _process(delta: float) -> void:
         state["studio_grid_instances"] = int(stage_budget["grid_instances"])
         state["studio_mesh_nodes"] = int(stage_budget["single_mesh_nodes"])
         state["studio_quality"] = int(stage_budget["stage_quality"])
+        if audio_cues != null:
+            var sound: Dictionary = audio_cues.call("snapshot")
+            state["sound_caption"] = sound["caption"]
+            state["sound_last_cue"] = sound["last_cue"]
+            state["sound_muted"] = sound["muted"]
+            state["sound_schema"] = sound["schema"]
+            state["sound_cue_count"] = sound["cue_count"]
+            state["sound_audible_count"] = sound["audible_count"]
+            state["sound_player_autoplay"] = sound["autoplay"]
+            state["sound_save_ok"] = sound["saved"]
         state["art_profile"] = str(art_profile.get("profile", "UNKNOWN"))
         state["art_key_energy"] = float(art_profile.get("key_energy", -1.0))
         state["art_rim_energy"] = float(art_profile.get("rim_energy", -1.0))
@@ -684,6 +739,10 @@ func _process(delta: float) -> void:
                 "w": settings_rect.size.x, "h": settings_rect.size.y}
             var quality_control: Button = premium_intro.get("settings_quality_button") as Button
             var motion_control: Button = premium_intro.get("settings_motion_button") as Button
+            var sound_control: Button = premium_intro.get("settings_audio_button") as Button
+            var sound_center: Vector2 = sound_control.get_global_rect().get_center()
+            state["player_settings_audio_center"] = {"x": sound_center.x, "y": sound_center.y}
+            state["player_settings_audio_css_height"] = sound_control.get_global_rect().size.y / maxf(1.0, touch_pixel_ratio)
             var quality_center: Vector2 = quality_control.get_global_rect().get_center()
             var motion_center: Vector2 = motion_control.get_global_rect().get_center()
             state["player_settings_quality_center"] = {"x": quality_center.x, "y": quality_center.y}
