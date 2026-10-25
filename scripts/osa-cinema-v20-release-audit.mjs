@@ -1,8 +1,7 @@
 /** V20 fail-closed release audit. No checkbox or JSON file can grant copyright clearance. */
-import { readFile, lstat, readdir, writeFile } from 'node:fs/promises'
+import { readFile, lstat, writeFile } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { createHash } from 'node:crypto'
 
 const EVIDENCE_KINDS=['rights','spoken_language','final_edit_audio','captions','durable_delivery','live_browser','publisher']
 const CHECKED = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/
@@ -42,7 +41,10 @@ export async function auditPrivateEvidence(root, assets) {
   for(const asset of assets){
     if(!/^osa-[a-z0-9-]+$/.test(asset.id) || !HASH.test(asset.sha256||''))throw Error('Unsafe evidence identity')
     const per={sourceId:asset.id,evidenceCandidates:{},humanVerificationRequired:true}
+    let safeFolder=false
+    try {const dir=await lstat(join(root,asset.id));safeFolder=dir.isDirectory()&&!dir.isSymbolicLink()} catch {}
     for(const kind of EVIDENCE_KINDS){
+      if(!safeFolder){per.evidenceCandidates[kind]='missing_or_unsafe_source_directory';continue}
       const path=join(root,asset.id,kind+'.json')
       let status='missing'
       try{

@@ -132,9 +132,17 @@ export async function verifyPackage(folder, expectedAsset) {
   await regular(qaFile)
   const qa=JSON.parse(await readFile(qaFile,'utf8'))
   if (qa.schemaVersion!==1 || qa.sourceId!==expectedAsset.id || qa.originalSha256!==expectedAsset.sha256 || qa.originalSizeBytes!==expectedAsset.sizeBytes || qa.publicationAuthorized!==false || qa.rightsCleared!==false || qa.checkoutEnabled!==false) throw Error('Unsafe or mismatched private package record')
+  await regular(join(folder,'master.m3u8'))
   if (qa.masterSha256!==await hashFile(join(folder,'master.m3u8'))) throw Error('HLS master playlist tampered')
   const names=new Set(qa.variants?.map(v=>v.name))
   if (!names.has('p720') || names.size!==qa.variants.length || [...names].some(x=>!['p720','p1080'].includes(x))) throw Error('Invalid rendition set')
+  const master=await readFile(join(folder,'master.m3u8'),'utf8')
+  const expectedMaster=['#EXTM3U','#EXT-X-VERSION:3']
+  for(const v of qa.variants) {
+    if(!names.has(v.name) || v.width!==VARIANTS[v.name]?.width || v.height!==VARIANTS[v.name]?.height || v.bandwidth!==VARIANTS[v.name]?.bandwidth) throw Error('Incorrect HLS rendition metadata')
+    expectedMaster.push('#EXT-X-STREAM-INF:BANDWIDTH='+v.bandwidth+',RESOLUTION='+v.width+'x'+v.height,v.name+'/index.m3u8')
+  }
+  if(master!==expectedMaster.join('\n')+'\n') throw Error('Unexpected or remote HLS master playlist entry')
   const expectedTop = new Set(['private-qa.json','master.m3u8',...names])
   const actualTop = await readdir(folder)
   if (actualTop.length!==expectedTop.size || actualTop.some(x=>!expectedTop.has(x))) throw Error('Unexpected top-level package bytes')
