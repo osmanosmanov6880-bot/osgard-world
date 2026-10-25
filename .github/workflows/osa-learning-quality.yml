@@ -40,6 +40,8 @@ jobs:
       - run: npm ci
       - name: OSA Cinema V13 visual, bilingual and persistence contracts
         run: node scripts/osa-cinema-v13-smoke.mjs
+      - name: OSA Cinema V14 companion — eight chapters, export, bilingual URL state
+        run: node --experimental-strip-types scripts/osa-cinema-v14-companion-smoke.mjs
       - name: TypeScript validation
         run: npm run check
       - name: Bilingual media publication contract
