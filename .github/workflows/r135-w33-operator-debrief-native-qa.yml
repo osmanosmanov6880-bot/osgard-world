@@ -1,0 +1,74 @@
+name: OSGARD W33 native 6-case QA, action debrief, WebGL build and original-byte inspection
+on:
+  push:
+    branches: [feat/r135-w33-six-mission-godot-port]
+    paths:
+      - 'w33-godot-native/**'
+      - '.github/workflows/r135-w33-operator-debrief-native-qa.yml'
+  pull_request:
+    paths:
+      - 'w33-godot-native/**'
+      - '.github/workflows/r135-w33-operator-debrief-native-qa.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  actual-godot-source-parity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 24
+    steps:
+      - uses: actions/checkout@v4
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: true
+      - name: Real native 3D source import and parse (blocking)
+        shell: bash
+        run: |
+          set -euo pipefail
+          godot --headless --editor --path w33-godot-native --import --quit
+      - name: Six W31-reference cases in actual Godot GDScript (blocking)
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 150s godot --headless --path w33-godot-native --script res://tests/test_six_missions.gd
+      - name: Real Godot 3D rotor, hatch, camera, bilingual controls and ECO (blocking)
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 150s godot --headless --path w33-godot-native --script res://tests/test_scene_integration.gd
+      - name: Real Godot session debrief, retry, bounded log, signal MultiMesh and erase confirmation (blocking)
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 150s godot --headless --path w33-godot-native --script res://tests/test_w33_debrief.gd
+      - name: Create real Godot 4.4.1 WebGL export from the same native-tested commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd w33-godot-native
+          mkdir -p build/web
+          godot --headless --path . --export-release Web build/web/index.html
+      - name: Verify actual Godot generated HTML, JS, WASM and PCK bytes
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 w33-godot-native/ci/verify_web_export.py \
+            w33-godot-native/build/web \
+            --sha "${{ github.sha }}" \
+            --output w33-godot-native/build/web/evidence.json
+      - name: Archive exactly generated candidate (not deployed or certified)
+        uses: actions/upload-artifact@v4
+        with:
+          name: osgard-w33-godot-webgl-${{ github.sha }}
+          path: w33-godot-native/build/web/
+          if-no-files-found: error
+          retention-days: 30
+      - name: Verify no device/GPU/web deployment certification is inferred
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s w33-godot-native/scripts/OSGARDCore.gd
+          test -s w33-godot-native/Main.tscn
+          echo 'Native software verification only. Physical iPhone/Android GPU, HDR and AAA are NOT certified.'
