@@ -115,7 +115,14 @@ export async function startPrivateOwnerConsole({root,reportsRoot,originals=ORIGI
   const state={preflight:{status:'idle',startedAt:null,finishedAt:null,mastersPassed:0,privateHttpPassed:0,files:[],runDir:null,pins:null},signatures:{status:'idle',verified:0,report:null,pin:null}}
   let currentChild=null,closed=false
   const publicState=()=>({signatureConfigured:Boolean(signoff),publicationAuthorized:false,paidCheckoutEnabled:false,releaseDecision:'NO_GO',preflight:{status:state.preflight.status,startedAt:state.preflight.startedAt,finishedAt:state.preflight.finishedAt,mastersPassed:state.preflight.mastersPassed,privateHttpPassed:state.preflight.privateHttpPassed,files:state.preflight.files},signatures:{status:state.signatures.status,verified:state.signatures.verified}})
-  const sameOrigin=(req,server)=>!req.headers.origin||req.headers.origin===`http://127.0.0.1:${server.address().port}`
+  // Chromium may send Origin: null for a legitimate same-origin HTML form POST.
+  // Only accept that browser quirk when Fetch Metadata also says same-origin;
+  // login still requires a one-time, server-issued CSRF challenge and password.
+  const sameOrigin=(req,server)=>{
+    const origin=req.headers.origin
+    return !origin || origin===`http://127.0.0.1:${server.address().port}` ||
+      (origin==='null' && req.headers['sec-fetch-site']==='same-origin')
+  }
   const server=createServer(async(req,res)=>{
     const n=nonce();headers(res,n)
     try{
