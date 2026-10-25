@@ -18,7 +18,7 @@ concurrency:
 jobs:
   actual-godot-source-parity:
     runs-on: ubuntu-latest
-    timeout-minutes: 42
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
         with:
@@ -202,3 +202,71 @@ jobs:
           test -s w33-godot-native/scripts/OSGARDCore.gd
           test -s w33-godot-native/Main.tscn
           echo 'Native software verification only. Physical iPhone/Android GPU, HDR and AAA are NOT certified.'
+
+  actual-windows-runner-boot:
+    name: Windows 2022 real EXE execution (not physical device certification)
+    needs: actual-godot-source-parity
+    runs-on: windows-2022
+    timeout-minutes: 12
+    permissions:
+      contents: read
+    steps:
+      - name: Download only exact source-matched Windows Godot artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: osgard-w33-godot-windows-x64-${{ github.event.pull_request.head.sha || github.sha }}
+          path: windows-candidate
+      - name: Verify Windows original bytes and actually boot exported EXE
+        shell: pwsh
+        env:
+          EXPECTED_GODOT_COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          $ErrorActionPreference="Stop"
+          $root = (Resolve-Path "windows-candidate").Path
+          $manifestPath = Join-Path $root "windows-build.json"
+          if (-not (Test-Path -LiteralPath $manifestPath)) { throw "Missing source-bound Windows build manifest" }
+          $manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
+          if ($manifest.source_commit -ne $env:EXPECTED_GODOT_COMMIT) { throw "Windows source SHA mismatch" }
+          if ($manifest.architecture -ne "x86_64") { throw "Incorrect Windows machine architecture" }
+          if ($manifest.files.Count -ne 2) { throw "Expected executable and PCK only" }
+          foreach ($entry in $manifest.files) {
+            $target = Join-Path $root $entry.name
+            if (-not (Test-Path -LiteralPath $target)) { throw "Missing Windows asset $($entry.name)" }
+            $actual = (Get-FileHash -LiteralPath $target -Algorithm SHA256).Hash.ToLowerInvariant()
+            if ($actual -ne $entry.sha256) { throw "Windows artifact changed bytes: $($entry.name)" }
+          }
+          $exe = Join-Path $root "OSGARD_FIELD_LAB_W33.exe"
+          $stdout = Join-Path $root "w34-windows-stdout.txt"
+          $stderr = Join-Path $root "w34-windows-stderr.txt"
+          $proc = Start-Process -FilePath $exe -ArgumentList @("--headless","--quit-after","180") -WorkingDirectory $root -PassThru -RedirectStandardOutput $stdout -RedirectStandardError $stderr
+          if (-not $proc.WaitForExit(90000)) {
+            $proc.Kill()
+            throw "Real Windows Godot process timed out"
+          }
+          $console = (Get-Content -LiteralPath $stdout -Raw -ErrorAction SilentlyContinue) + [System.Environment]::NewLine + (Get-Content -LiteralPath $stderr -Raw -ErrorAction SilentlyContinue)
+          Write-Output $console
+          if ($proc.ExitCode -ne 0) { throw "Godot Windows runtime process returned exit code $($proc.ExitCode)" }
+          if ($console -match "(?m)^(SCRIPT ERROR:|ERROR:|FATAL:)") { throw "Windows Godot runtime emitted engine errors" }
+          $result = @{
+            schema="OSGARD_W34_WINDOWS_ACTUAL_RUNNER_BOOT_V1"
+            source_commit=$env:EXPECTED_GODOT_COMMIT
+            actual_windows_runner_exe_started=$true
+            command_line="--headless --quit-after 180"
+            exit_code=$proc.ExitCode
+            desktop_render_verified=$false
+            player_controls_verified=$false
+            physical_user_device_verified=$false
+          }
+          $result | ConvertTo-Json -Depth 5 | Out-File -FilePath (Join-Path $root "windows-boot-verdict.json") -Encoding utf8
+          Write-Host "PASS: Real Windows 2022 exported Godot EXE boot and exited cleanly"
+      - name: Preserve original Windows runner log and verdict
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: osgard-w34-actual-windows-exe-boot-${{ github.event.pull_request.head.sha || github.sha }}
+          path: |
+            windows-candidate/windows-boot-verdict.json
+            windows-candidate/w34-windows-stdout.txt
+            windows-candidate/w34-windows-stderr.txt
+          if-no-files-found: warn
+          retention-days: 30

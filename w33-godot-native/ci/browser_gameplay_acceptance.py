@@ -120,9 +120,9 @@ class Driver:
         complete=self.until(lambda s:s.get("complete") is True and s.get("step")==5,"real case completion")
         assert complete["errors"]==0, f"Unexpected unsafe native actions: {complete}"
         assert complete["score"]>=60, f"Native score too low: {complete}"
-        assert complete["cleared"] >= 1, f"Base mission progress must persist: {complete}"
+        assert complete["cleared"] == (index+1 if not advanced else 3), f"Base progress count wrong: {complete}"
         if advanced:
-            assert complete["shift_cleared"] >= 1 and complete["incident"],complete
+            assert complete["shift_cleared"] == index-2 and complete["incident"],complete
         self.record("mission completed")
         self.screenshot(f"mission-{index}-completed")
         return complete
@@ -161,10 +161,10 @@ def check(folder,out,sha):
                     # Actual unsafe hatch hotkey must remain interlocked before a mission.
                     driver.key("h")
                     driver.until(lambda s:s.get("feedback")=="safetyInterlock" and s.get("drive_on"),"unsafe hatch blocked")
-                    driver.mission(0)
-                    driver.mission(3)
+                    for mission_index in range(6):
+                        driver.mission(mission_index)
                     assert not errors, "Browser runtime exceptions: "+str(errors)
-                    report["devices"].append({"name":device,"missions":[0,3],
+                    report["devices"].append({"name":device,"missions":list(range(6)),
                         "actions":driver.events,"result":"PASS"})
                 except Exception as error:
                     driver=locals().get("driver")
