@@ -532,6 +532,7 @@ func _apply_lighting() -> void:
 	if atmosphere == null:
 		return
 	LIGHT_GRADE.apply_to(sky_environment.environment,sun,atmosphere,weather_mode,visual_budget,daylight_brightness)
+	LIGHT_GRADE.apply_night_overlay(sky_environment.environment,sun,atmosphere,ambience_time)
 
 func update_development() -> void:
 	if not is_node_ready(): return

@@ -31,7 +31,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for suite in v21_vehicle_dynamics v53_rain_puddles_city_cleanup v61_r38_street_infrastructure v65_r44_real_streetlight_pool; do
+          for suite in v21_vehicle_dynamics v53_rain_puddles_city_cleanup v61_r38_street_infrastructure v65_r44_real_streetlight_pool v68_r44_true_night_exposure; do
             timeout --signal=TERM --kill-after=5s 130s godot --headless --path godot/empire-omega --script "res://tests/$suite.gd"
           done
   authentic-webgl-pixel-regression:

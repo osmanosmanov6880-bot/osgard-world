@@ -57,7 +57,7 @@ func _run() -> void:
 		quit(2)
 		return
 	# A lantern-rich boulevard; no fabricated overlay or external screenshot.
-	car.global_position=Vector3(0.0,1.2,17.0)
+	car.global_position=Vector3(0.0,1.2,8.0)
 	car.rotation.y=-PI*0.5
 	player.global_position=car.global_position+Vector3(3,0,0)
 	game.set("cam_yaw",car.rotation.y)
@@ -72,7 +72,7 @@ func _run() -> void:
 	root.content_scale_size=size
 	root.size=size
 	DisplayServer.window_set_size(size)
-	world.call("update_chunks",Vector3(0,0,17),"cinematic")
+	world.call("update_chunks",Vector3(0,0,8),"cinematic")
 	var destination: String = OS.get_environment("GITHUB_WORKSPACE")
 	if destination=="":
 		destination=ProjectSettings.globalize_path("user://")
@@ -86,8 +86,8 @@ func _run() -> void:
 	if active==0:
 		push_error("R44 night QA: no real streetlight illuminated in the active live game")
 		failed=true
-	if day<0.0 or night<0.0 or absf(day-night)<0.005:
-		push_error("R44 night QA: day/night render is identical or invalid; night proof rejected")
+	if day<0.0 or night<0.0 or absf(day-night)<0.005 or night>=day*0.86:
+		push_error("R44 night QA: actual nighttime must be visibly darker than real daylight, not identical/overexposed")
 		failed=true
 	print("R44 AUTHENTIC DAY/NIGHT EVIDENCE: day %.4f night %.4f active_lights %d" % [day,night,active])
 	quit(1 if failed else 0)
