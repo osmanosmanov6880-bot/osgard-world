@@ -37,6 +37,11 @@ async function localMediaServer(file,{corruptRange=false,corruptMime=false}={}){
     const type=corruptMime?'application/octet-stream':'video/mp4'
     const base={'Content-Type':type,'Accept-Ranges':'bytes','Cache-Control':'no-store'}
     if(req.method==='HEAD'){res.writeHead(200,{...base,'Content-Length':bytes.length});res.end();return}
+    if(req.method==='GET'&&!req.headers.range){
+      const full=Buffer.from(bytes)
+      if(corruptRange&&full.length)full[Math.floor(full.length/2)]^=1
+      res.writeHead(200,{...base,'Content-Length':full.length});res.end(full);return
+    }
     const match=/^bytes=(\d+)-(\d*)$/.exec(req.headers.range||'')
     if(!match){res.writeHead(400);res.end();return}
     const start=Number(match[1]),end=match[2]?Number(match[2]):bytes.length-1
@@ -102,6 +107,7 @@ test('V27 FULL SYNTHETIC CHAIN: four real MP4s + four VTTs + PDF receipts + HTTP
     await t.test('four local servers deny anonymous bytes and confirm exact HTTP 200/206/416',()=>{
       assert.ok(delivery.every(x=>x.status==='LOOPBACK_RANGE_QA_PASS_NOT_PUBLIC'&&x.errors.length===0))
       assert.ok(delivery.every(x=>x.tests.unauthorizedDenied&&x.tests.head===200&&x.tests.invalidRange===416))
+      assert.ok(delivery.every(x=>x.fullContentVerified&&x.tests.fullGet.status===200&&x.tests.fullGet.sha256===x.sourceSha256))
       assert.throws(()=>verifyLoopbackURL('https://public.example/media'),/Private QA/)
     })
     await t.test('complete synthetic technical evidence is never a movie license or GO decision',()=>{
