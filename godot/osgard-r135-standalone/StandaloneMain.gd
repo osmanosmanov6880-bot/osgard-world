@@ -437,7 +437,9 @@ func _refresh_status() -> void:
     helper.text = _translated(helper.text)
     if premium_intro != null:
         premium_intro.call("sync_game", state, view_index)
-        hud_panel.visible = not bool(premium_intro.call("is_expanded"))
+        # Legacy W18 status measured 6851px while hidden during real WebGL
+        # viewport changes. A bounded premium live status now owns this role.
+        hud_panel.visible = false
 
 func _update_view() -> void:
     if camera == null:
@@ -546,11 +548,14 @@ func _process(delta: float) -> void:
         state["ui_mission_text"] = mission_label.text
         state["ui_safety_text"] = safety_notice.text
         var actual_language: Button = language_button
-        if premium_intro != null and bool(premium_intro.call("is_expanded")):
+        if premium_intro != null:
             actual_language = premium_intro.get("language_button") as Button
         state["language_control_visible"] = actual_language.visible
         state["ui_touch_pixel_ratio"] = touch_pixel_ratio
-        state["ui_heading_css_px"] = float(heading.get_theme_font_size("font_size")) / touch_pixel_ratio
+        var displayed_heading: Label = heading
+        if premium_intro != null:
+            displayed_heading = premium_intro.get("brand_title") as Label
+        state["ui_heading_css_px"] = float(displayed_heading.get_theme_font_size("font_size")) / touch_pixel_ratio
         var min_action_y: float = 100000.0
         for control_button in action_buttons:
             min_action_y = minf(min_action_y, control_button.get_global_rect().size.y)
@@ -617,8 +622,12 @@ func _process(delta: float) -> void:
                         and label_y >= 0.10 and label_y <= 0.85
                     )
         var status_rect: Rect2 = hud_panel.get_global_rect()
+        if premium_intro != null:
+            var live_status: PanelContainer = premium_intro.get("compact_status") as PanelContainer
+            status_rect = live_status.get_global_rect()
         var control_rect: Rect2 = action_panel.get_global_rect()
         state["hud_layout_mode"] = "portrait" if _viewport_is_portrait() else "landscape"
+        state["hud_visible"] = premium_intro != null and not bool(premium_intro.call("is_expanded"))
         state["hud_rect"] = {
             "x": status_rect.position.x, "y": status_rect.position.y,
             "w": status_rect.size.x, "h": status_rect.size.y
