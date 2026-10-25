@@ -8,7 +8,7 @@ import { createHash, randomBytes, timingSafeEqual } from 'node:crypto'
 import { constants } from 'node:fs'
 import { resolve, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { verifyOriginal, validateAsset, hashFile } from './osa-cinema-v20-private-hls.mjs'
+import { verifyOriginal, validateAsset } from './osa-cinema-v20-private-hls.mjs'
 
 const TWO_HOURS=2*60*60*1000
 const secureText=s=>String(s).replace(/[&<>"']/g,x=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[x]))
@@ -55,11 +55,14 @@ export async function startPrivateReviewServer({sourceDir,asset,password,cutTime
   await verifyOriginal(root,asset)
   const sourceFile=await open(join(root,asset.file),constants.O_RDONLY | (constants.O_NOFOLLOW||0))
   const meta=await sourceFile.stat()
-  if(!meta.isFile()||meta.size!==asset.sizeBytes || await hashFile(join(root,asset.file))!==asset.sha256){await sourceFile.close();throw Error('Opened video does not match pinned source')}
+  const exact=createHash('sha256')
+  for await (const chunk of sourceFile.createReadStream({autoClose:false})) exact.update(chunk)
+  if(!meta.isFile()||meta.size!==asset.sizeBytes||exact.digest('hex')!==asset.sha256){await sourceFile.close();throw Error('Opened video does not match pinned source')}
   const sessions=new Map(), failures=new Map()
   const server=createServer(async(req,res)=>{
     common(res)
     try{
+      if(req.headers.host!=='127.0.0.1:'+server.address().port){res.writeHead(403);res.end('Loopback Host required');return}
       const url=new URL(req.url||'/', 'http://127.0.0.1')
       if(url.search || url.hash || url.pathname.includes('%') || !['/','/login','/logout','/review','/media','/status'].includes(url.pathname)) {res.writeHead(404);res.end('Not found');return}
       const cookie=(req.headers.cookie||'').match(/(?:^|;\s*)osa_private_session=([a-f0-9]{64})(?:;|$)/)?.[1]
