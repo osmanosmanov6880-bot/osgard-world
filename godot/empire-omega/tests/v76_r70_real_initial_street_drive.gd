@@ -1,8 +1,12 @@
 extends SceneTree
 ## R70: test the actual new-game vehicle on the real generated street, not
 ## an empty physics room. Guards against the original City Hall portico crash.
-const WORLD = preload("res://scripts/world_builder.gd")
-const CAR = preload("res://scripts/vehicle_controller.gd")
+# --script is parsed before the project autoload is fully registered. The
+# eager WORLD preload previously failed to resolve GameState in world_builder.gd.
+# Resolve both original game scripts after _initialize, when the real autoloads
+# are alive; this does not mock or replace any scene/physics code.
+const WORLD_PATH = "res://scripts/world_builder.gd"
+const CAR_PATH = "res://scripts/vehicle_controller.gd"
 var passed := 0
 var failed := 0
 
@@ -36,10 +40,29 @@ func _run() -> void:
 	check(is_equal_approx(heading,PI*0.5),"new cars face west along road, away from palace portico")
 	check(bool(gs.call("_valid_state",data)),"new game with road-facing heading remains save valid")
 
-	var world: Node3D = WORLD.new()
+	var world_script: Script = load(WORLD_PATH) as Script
+	var car_script: Script = load(CAR_PATH) as Script
+	check(world_script != null and world_script.can_instantiate(),
+		"original world compiles after GameState autoload is registered")
+	check(car_script != null and car_script.can_instantiate(),
+		"original CharacterBody3D car script compiles")
+	if world_script == null or car_script == null:
+		gs.set("data",old_state)
+		quit(1)
+		return
+	if not world_script.can_instantiate() or not car_script.can_instantiate():
+		gs.set("data",old_state)
+		quit(1)
+		return
+	var world: Node3D = world_script.new() as Node3D
 	root.add_child(world)
-	var car: CharacterBody3D = CAR.new()
+	var car: CharacterBody3D = car_script.new() as CharacterBody3D
 	root.add_child(car)
+	check(world != null and car != null,"real original Godot world and car instantiated")
+	if world == null or car == null:
+		gs.set("data",old_state)
+		quit(1)
+		return
 	car.global_position = spawn
 	car.rotation.y = heading
 	car.driving = true
