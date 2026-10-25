@@ -43,6 +43,7 @@ TESTS = [
     "v86_r102_real_asphalt_quality",
     "v87_r108_native_mountain_ridges",
     "v88_r106_embedded_cc0_road_activation",
+    "v89_r111_stable_weather_pbr",
 ]
 
 
