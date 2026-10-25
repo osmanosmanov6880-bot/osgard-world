@@ -1,7 +1,8 @@
 extends SceneTree
 ## EMPIRE Ω R52: exercise one genuine Node3D game, not disconnected unit samples.
 ## R46 braking + R47 pedestrian routes + R48 p95 + R49 chapter reward together.
-const MAIN = preload("res://scripts/main.gd")
+# Load the existing original .tscn only after the SceneTree autoloads exist.
+# Eager preload of main.gd in --script mode breaks singleton resolution.
 var passed := 0
 var failed := 0
 var chapter_ids: Array[String] = []
@@ -31,9 +32,25 @@ func _run() -> void:
 	state.set("data",state.call("new_game"))
 	state.set("locale","ru")
 	missions.connect("chapter_completed",Callable(self,"_chapter_completed"))
-	var game: Node3D = MAIN.new()
-	root.add_child(game)
+	# The real shipped scene is instantiated by Godot, not a synthetic MAIN.new()
+	# mock. This avoids standalone --script eager-preload compilation before
+	# engine autoload singletons are registered (GameState/MissionManager).
+	var scene_error: Error = change_scene_to_file("res://scenes/main.tscn")
+	check(scene_error==OK,"original shipped 3D scene loads after autoload initialization")
+	if scene_error!=OK:
+		state.set("data",original_data)
+		state.set("locale",original_locale)
+		quit(1)
+		return
+	await process_frame
 	await physics_frame
+	var game: Node3D = current_scene as Node3D
+	check(game!=null,"Godot instantiated the real playable scene, not a test stub")
+	if game==null:
+		state.set("data",original_data)
+		state.set("locale",original_locale)
+		quit(1)
+		return
 	var car: CharacterBody3D = game.get("car")
 	var city: Node3D = game.get("world")
 	var player: CharacterBody3D = game.get("player")
