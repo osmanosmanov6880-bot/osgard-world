@@ -5,6 +5,10 @@ var controller: Node3D
 var camera: Camera3D
 var studio: Node3D
 var inspection_fill: OmniLight3D
+var art_environment: Environment
+var art_key_light: DirectionalLight3D
+var art_rim_light: DirectionalLight3D
+var art_profile: Dictionary = {}
 var reduced_motion: bool = false
 var touch_pixel_ratio: float = 1.0
 var last_layout_size: Vector2 = Vector2.ZERO
@@ -25,6 +29,7 @@ var camera_effective_distance: float = 0.0
 const VIEW_NAMES = ["OVERVIEW", "SERVICE DECK", "OPTICAL HEAD", "SIDE INSPECTION"]
 const R135Locale = preload("res://R135Locale.gd")
 const R135PlayerPreferences = preload("res://R135PlayerPreferences.gd")
+const R135ArtDirection = preload("res://R135ArtDirection.gd")
 var ui_locale: String = "ru"
 var preferences_save_ok: bool = true
 var premium_intro: Control
@@ -50,16 +55,19 @@ func _ready() -> void:
     environment.ambient_light_color = Color(0.68, 0.72, 0.77)
     environment.ambient_light_energy = 1.10
     world.environment = environment
+    art_environment = environment
     add_child(world)
     var sun := DirectionalLight3D.new()
     sun.rotation_degrees = Vector3(-48, -34, 0)
     sun.light_color = Color(1.0, 0.94, 0.87)
     sun.light_energy = 1.55
+    art_key_light = sun
     add_child(sun)
     var rim := DirectionalLight3D.new()
     rim.rotation_degrees = Vector3(-32, 140, 0)
     rim.light_color = Color(0.62, 0.73, 0.81)
     rim.light_energy = 0.70
+    art_rim_light = rim
     add_child(rim)
     # W11 visual QA: metal-rich source GLBs were nearly black in ECO on
     # portrait SwiftShader. One camera-targeted, shadow-free fill makes
@@ -82,6 +90,8 @@ func _ready() -> void:
     controller.configure(camera, environment)
     controller.set_quality(quality)
     studio.call("set_quality", quality)
+    art_profile = R135ArtDirection.apply(quality, art_environment,
+        art_key_light, art_rim_light, inspection_fill)
     if OS.has_feature("web"):
         reduced_motion = bool(JavaScriptBridge.eval("Boolean(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)", true))
         # Russian is the approved first-run product language. EN is opt-in.
@@ -105,7 +115,8 @@ func _ready() -> void:
     if quality == 2:
         controller.set_quality(quality)
         studio.call("set_quality", quality)
-        inspection_fill.light_energy = 4.2
+    art_profile = R135ArtDirection.apply(quality, art_environment,
+        art_key_light, art_rim_light, inspection_fill)
     controller.call("set_reduced_motion", reduced_motion)
     _build_hud()
     # Actual native Godot overlay: responsive, mouse/touch interactive and
@@ -436,7 +447,8 @@ func _toggle_quality() -> void:
     quality = 0 if quality == 2 else 2
     controller.set_quality(quality)
     studio.call("set_quality", quality)
-    inspection_fill.light_energy = 3.8 if quality == 0 else 4.2
+    art_profile = R135ArtDirection.apply(quality, art_environment,
+        art_key_light, art_rim_light, inspection_fill)
     _persist_preferences()
     if premium_intro != null:
         premium_intro.call("_refresh_settings")
@@ -592,6 +604,13 @@ func _process(delta: float) -> void:
         state["studio_grid_instances"] = int(stage_budget["grid_instances"])
         state["studio_mesh_nodes"] = int(stage_budget["single_mesh_nodes"])
         state["studio_quality"] = int(stage_budget["stage_quality"])
+        state["art_profile"] = str(art_profile.get("profile", "UNKNOWN"))
+        state["art_key_energy"] = float(art_profile.get("key_energy", -1.0))
+        state["art_rim_energy"] = float(art_profile.get("rim_energy", -1.0))
+        state["art_fill_energy"] = float(art_profile.get("fill_energy", -1.0))
+        state["art_ambient_energy"] = float(art_profile.get("ambient_energy", -1.0))
+        state["art_shadow_count_added"] = 0
+        state["art_webgl_expensive_postfx"] = false
         state["prefers_reduced_motion"] = reduced_motion
         state["player_preferences_schema"] = R135PlayerPreferences.SCHEMA_VERSION
         state["player_preferences_save_ok"] = preferences_save_ok
