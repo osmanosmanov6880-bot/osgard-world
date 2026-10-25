@@ -52,6 +52,9 @@ jobs:
         run: |
           set -euo pipefail
           npm ci
+          # pngjs is a browser-test-only dependency, intentionally installed
+          # without altering the product lockfile or runtime bundle.
+          npm install --no-save --package-lock=false pngjs@7.0.0
           node --test scripts/omega-world-frame-evidence.test.mjs
   real-post-ssh-game-acceptance:
     if: github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'master'
