@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { generateKeyPairSync, createHash, sign } from 'node:crypto'
-import { mkdtemp, mkdir, readFile, writeFile, symlink, rm } from 'node:fs/promises'
+import { mkdtemp, mkdir, readFile, writeFile, symlink, rm, realpath } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { archiveSigningMessage, verifyDetachedArchive } from './osa-cinema-v34-detached-signature.mjs'
@@ -12,7 +12,7 @@ const makeData = (name,bytes,key) => ({schemaVersion:1,algorithm:'Ed25519',purpo
   publicationAuthorized:false,rightsCleared:false,paidCheckoutEnabled:false,releaseDecision:'NO_GO'})
 
 test('V34 detached publisher signature: authentic code-only package and independent trust pin',async t=>{
- const folder=await mkdtemp(join(tmpdir(),'osa-v34-signature-'))
+ const folder=await mkdtemp(join(await realpath(tmpdir()),'osa-v34-signature-'))
  const archivePath=join(folder,'OSA_CINEMA_CODE.zip'),signaturePath=join(folder,'OSA_CINEMA_CODE.sig.json'),publicKeyPath=join(folder,'publisher-public.pem')
  const original=Buffer.from('UEsDBBQAAAAIAMycWV2Oxh89OAAAADgAAAAKAAAAUkVBRE1FLnR4dAvJyCxWAKL8vJxKheT8lFTd4tKCgpxK3eSMxMw8hZLU4hKF3MSS1KLMxBw9Bb98hdz8ssxUPS4AUEsBAhQDFAAAAAgAzJxZXY7GHz04AAAAOAAAAAoAAAAAAAAAAAAAAIABAAAAAFJFQURNRS50eHRQSwUGAAAAAAEAAQA4AAAAYAAAAAAA','base64')
  const {publicKey,privateKey}=generateKeyPairSync('ed25519')
