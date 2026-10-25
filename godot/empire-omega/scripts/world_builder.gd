@@ -360,8 +360,10 @@ func _create_waypoint_marker() -> void:
 	halo.material_override = _material(Color("f2dba0"),0.0,0.2,true)
 	waypoint_marker.add_child(halo)
 
-func update_waypoint(target: Vector3) -> void:
+func update_waypoint(target: Vector3, show_world_marker: bool = true) -> void:
 	if waypoint_marker == null: return
+	waypoint_marker.visible = show_world_marker
+	if not show_world_marker: return
 	var place_height := 50.0 if target.x > 0.0 or target.z > 0.0 else 48.0
 	waypoint_marker.position = target + Vector3(0,place_height,0)
 	waypoint_marker.rotate_y(0.005)
