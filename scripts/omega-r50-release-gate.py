@@ -103,7 +103,13 @@ def validate_browser(raw):
         if name in PROJECTS:
             projects.add(name)
     require(projects == PROJECTS, f"need exact desktop and touch projects: {projects}")
-    require(int(stats.get("expected", 0)) >= 2, "not enough real live browser scenarios")
+    # Playwright counts successful retries under 'flaky', not 'expected'.
+    # Preserve final source-bound evidence but flag that instability for
+    # separate manual release review; no flaky execution equals 100% stable.
+    expected_count = int(stats.get("expected", 0))
+    flaky_count = int(stats.get("flaky", 0))
+    require(expected_count >= 0 and flaky_count >= 0, "invalid browser counts")
+    require(expected_count + flaky_count >= 2, "not enough passed browser scenarios")
     return sorted(projects)
 
 
@@ -140,10 +146,14 @@ def build_verdict(manifest, asset_dir, live=None, browser=None, devices=None, st
     else:
         validate_live(live, manifest)
     projects = []
+    browser_flaky_tests = 0
     if browser is None:
         issues.append("missing-independent-live-desktop-touch")
     else:
         projects = validate_browser(browser)
+        browser_flaky_tests = int(browser.get("stats", {}).get("flaky", 0))
+        if browser_flaky_tests:
+            issues.append("flaky-browser-retries-need-stability-rerun")
     hardware = []
     if devices:
         for file in sorted(devices):
@@ -156,6 +166,7 @@ def build_verdict(manifest, asset_dir, live=None, browser=None, devices=None, st
         "repository_assets": 7,
         "public_verified_sha256": 7 if live is not None else 0,
         "live_chromium_projects": projects,
+        "browser_flaky_tests": browser_flaky_tests,
         "reported_physical_os": sorted(set(hardware)),
         "status": "MANUAL_RELEASE_REVIEW_REQUIRED" if not issues else "HOLD",
         "gaps": issues,
@@ -190,6 +201,21 @@ def self_test():
                    "suites": [{"tests": [test_entry(name) for name in PROJECTS]}]}
         assert build_verdict(manifest, base, live, browser, strict_bytes=False)["status"] == "HOLD"
         assert build_verdict(manifest, base, live, browser, strict_bytes=False)["public_verified_sha256"] == 7
+        # R68 authentic report: desktop first capture timed out but passed
+        # on retry, and mobile passed on the first attempt. The projects
+        # still contain two real final PASS records and one flaky warning.
+        recovered = json.loads(json.dumps(browser))
+        recovered["stats"] = {"unexpected": 0, "expected": 1, "flaky": 1}
+        recovered["suites"][0]["tests"][0]["results"] = [
+            {"status": "failed"}, {"status": "passed"}
+        ]
+        assert validate_browser(recovered) == sorted(PROJECTS)
+        reliability = build_verdict(manifest, base, live, recovered, strict_bytes=False)
+        assert reliability["status"] == "HOLD"
+        assert reliability["public_verified_sha256"] == 7
+        assert reliability["browser_flaky_tests"] == 1
+        assert "flaky-browser-retries-need-stability-rerun" in reliability["gaps"]
+        assert "missing-independent-live-desktop-touch" not in reliability["gaps"]
         def reject(fn):
             try:
                 fn()
@@ -210,12 +236,18 @@ def self_test():
         browser_bad = json.loads(json.dumps(browser))
         browser_bad["suites"][0]["tests"][0]["results"][0]["status"] = "failed"
         reject(lambda: validate_browser(browser_bad))
+        misleading_flaky = json.loads(json.dumps(recovered))
+        misleading_flaky["stats"]["flaky"] = 0
+        reject(lambda: validate_browser(misleading_flaky))
+        retry_ended_failed = json.loads(json.dumps(recovered))
+        retry_ended_failed["suites"][0]["tests"][0]["results"].append({"status": "failed"})
+        reject(lambda: validate_browser(retry_ended_failed))
         fake_device = base / "phone.json"
         fake_device.write_text(json.dumps({"schema": "empire-omega-r50-physical-v1",
                                            "source_commit": "a"*40, "os_family": "android",
                                            "physical_device": False}))
         reject(lambda: validate_device_report(fake_device, "a"*40))
-    print("PASS R50 evidence: exact 7 bytes, source SHA, two browser projects, missing or fake hardware HOLD")
+    print("PASS R50 evidence: exact hashes, real desktop+touch, flaky retry HOLD, fake hardware rejected")
 
 
 def main():
