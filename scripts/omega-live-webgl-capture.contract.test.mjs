@@ -26,6 +26,6 @@ test('capture tool retains strict non-fake evidence and all three live routes',(
 test('public browser PR gate exercises the new capture contract',()=>{
   assert.match(workflow,/node --test scripts\/omega-live-webgl-capture\.contract\.test\.mjs/)
   assert.match(workflow,/scripts\/omega-live-webgl-capture\.contract\.test\.mjs/)
-  assert.match(workflow,/push:[\s\S]*?branches: \[master\]/)
-  assert.match(workflow,/github\.event_name == 'push'/)
+  assert.doesNotMatch(workflow,/^  push:/m)
+  assert.doesNotMatch(workflow.slice(workflow.indexOf('  actual-desktop-phone-webgl:')),/github\.event_name == 'push'/)
 })
