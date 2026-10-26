@@ -5,6 +5,7 @@ extends Node3D
 const ROUTER = preload("res://scripts/street_router.gd")
 const ROUTINE = preload("res://scripts/citizen_routine.gd")
 const TRAJECTORY = preload("res://scripts/horizon_pedestrian_yield.gd")
+const STREET_ART = preload("res://scripts/horizon_street_citizen_mesh.gd")
 var citizen_id := 0
 var speed := 2.15
 var activity := ""
@@ -19,16 +20,16 @@ var planned_velocity: Vector3 = Vector3.ZERO
 var body_mesh: MeshInstance3D
 
 func _ready() -> void:
+	# Same single physical MeshInstance3D as the original citizen proxy.
+	# Shared source meshes have real faces, jacket, articulated walk poses;
+	# this has no collider, terrain change or additional per-person nodes.
 	var body := MeshInstance3D.new()
+	body.name = "R123RealStreetCitizen"
 	body_mesh = body
-	var shape := CapsuleMesh.new()
-	shape.radius = 0.35
-	shape.height = 1.65
-	body.mesh = shape
+	body.mesh = STREET_ART.mesh_for(citizen_id,0)
 	body.position.y = 0.9
-	var material := StandardMaterial3D.new()
-	material.albedo_color = Color("658aa2") if citizen_id % 2 == 0 else Color("9a8b71")
-	body.material_override = material
+	body.material_override = STREET_ART.shared_material()
+	body.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(body)
 	_refresh_schedule()
 
@@ -66,6 +67,8 @@ func _process(delta: float) -> void:
 		_refresh_schedule()
 	if route.is_empty() or next_waypoint >= route.size():
 		planned_velocity = Vector3.ZERO
+		if body_mesh != null:
+			body_mesh.mesh = STREET_ART.mesh_for(citizen_id,0)
 		return
 	var at: Vector3 = route[next_waypoint]
 	var travel: Vector3 = at-global_position
@@ -77,9 +80,16 @@ func _process(delta: float) -> void:
 	var velocity: Vector3 = travel.normalized() * speed
 	planned_velocity = velocity
 	if _yield_to_vehicle(velocity):
+		if body_mesh != null:
+			body_mesh.mesh = STREET_ART.mesh_for(citizen_id,0)
 		return
 	global_position += velocity * minf(delta,0.06)
 	walking_phase += delta * 9.0
 	if body_mesh != null:
-		body_mesh.position.y = 0.9 + sin(walking_phase)*0.065
+		# Four native shared limb poses: actual arm/leg displacement instead of
+		# wobbling the old rigid capsule. No per-frame ArrayMesh allocations.
+		var pose_index: int = posmod(int(floor(walking_phase*2.0/PI)),STREET_ART.GAIT_FRAMES)
+		body_mesh.mesh = STREET_ART.mesh_for(citizen_id,pose_index)
+		body_mesh.position.y = 0.9 + sin(walking_phase*2.0)*0.024
+		body_mesh.rotation.z = sin(walking_phase)*0.018
 	rotation.y = lerp_angle(rotation.y,atan2(-velocity.x,-velocity.z),minf(delta*5.0,1.0))
