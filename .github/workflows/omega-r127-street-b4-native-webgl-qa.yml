@@ -37,6 +37,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 scripts/omega-r109-release-sentinel.py
+          python3 scripts/omega-r127-physical-device-gate.py --self-test
           python3 godot/empire-omega/tools/generate_audio.py
           python3 godot/empire-omega/tools/generate_patrol_audio.py
           bash scripts/omega-strict-godot-import.sh godot/empire-omega
