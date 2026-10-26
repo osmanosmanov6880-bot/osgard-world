@@ -65,6 +65,7 @@ TESTS = [
     "v68_r47_predictive_crosswalk_traffic",
     "v97_r123_real_pedestrian_body_gait",
     "v98_r124_foreground_window_day_night",
+    "v99_r125_command_city_aperture",
 ]
 
 
