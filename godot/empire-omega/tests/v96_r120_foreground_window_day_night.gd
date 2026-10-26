@@ -1,7 +1,7 @@
 extends SceneTree
 ## R120 source native QA: original playable street windows physically reflect
 ## ambient daytime light without losing legible night lights/phone GPU budget.
-const WORLD = preload("res://scripts/world_builder.gd")
+# Actual WorldBuilder must load after Godot GameState is initialized.
 var passed := 0
 var failed := 0
 
@@ -22,7 +22,13 @@ func _run() -> void:
 		quit(1)
 		return
 	var before: Dictionary = (game.get("data") as Dictionary).duplicate(true)
-	var world: Node3D = WORLD.new()
+	var world_source: Variant = load("res://scripts/world_builder.gd")
+	check(world_source is Script and world_source.can_instantiate(),
+		"original WorldBuilder compiles after real GameState autoload")
+	if not (world_source is Script and world_source.can_instantiate()):
+		quit(1)
+		return
+	var world: Node3D = world_source.new()
 	root.add_child(world)
 	var glass: MultiMeshInstance3D = world.get("facade_windows") as MultiMeshInstance3D
 	var metal: MultiMeshInstance3D = world.get("facade_frames") as MultiMeshInstance3D
