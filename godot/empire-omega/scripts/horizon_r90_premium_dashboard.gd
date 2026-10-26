@@ -21,6 +21,8 @@ var focus_mode: bool = false
 var focus_language: String = "ru"
 var focus_left: Control
 var focus_center: Control
+var focus_columns: BoxContainer
+var focus_stage: Control
 var focus_right: Control
 var focus_summary: Control
 var focus_button: Button
@@ -147,6 +149,7 @@ func build(state: Dictionary, forecast: Dictionary, mission: String,
 	columns.add_theme_constant_override("separation",14)
 	columns.custom_minimum_size.y = 450 if not compact else 0
 	add_child(columns)
+	focus_columns = columns
 	var left := VBoxContainer.new()
 	left.add_theme_constant_override("separation",13)
 	left.custom_minimum_size.x = 248 if not compact else 0
@@ -287,6 +290,10 @@ func _toggle_city_focus() -> void:
 	if focus_summary != null:
 		focus_summary.visible = not focus_mode
 	focus_center.size_flags_stretch_ratio = 1.0 if focus_mode else 1.72
+	if focus_columns != null:
+		focus_columns.custom_minimum_size.y = 565 if focus_mode else 450
+	if focus_stage != null:
+		focus_stage.custom_minimum_size.y = 548.0 if focus_mode else 436.0
 	focus_button.text = local("ВЕРНУТЬ ПАНЕЛИ","SHOW PANELS","显示面板",focus_language) if focus_mode else local("ФОКУС НА ГОРОДЕ","FOCUS ON CITY","聚焦城市",focus_language)
 	focus_button.tooltip_text = local("Показать данные и действия" if focus_mode else "Развернуть реальный 3D-атлас",
 		"Restore original controls" if focus_mode else "Expand live 3D atlas",
@@ -335,6 +342,7 @@ func _city_view(parent: Node, world: World3D, forecast: Dictionary, lang: String
 	var stage := Control.new()
 	stage.custom_minimum_size = Vector2(450,436)
 	stage.clip_contents = true
+	focus_stage = stage
 	panel.add_child(stage)
 	var host := SubViewportContainer.new()
 	host.name = "ActualGodotWorldViewport"
