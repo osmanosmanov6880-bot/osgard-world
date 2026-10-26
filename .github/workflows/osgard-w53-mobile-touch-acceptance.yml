@@ -48,6 +48,16 @@ jobs:
             echo "::error::W53 actual Godot import/parser errors"
             exit 1
           fi
+      - name: W53 native Godot ScreenTouch/ScreenDrag controls and scrolling regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 120s godot --headless --path w33-godot-native \
+            --script res://tests/test_w53_mobile_edge_swipe.gd 2>&1 | tee "$RUNNER_TEMP/w53-native-scroll.log"
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/w53-native-scroll.log"; then
+            echo "::error::W53 genuine Godot ScreenDrag/ScrollContainer regression"
+            exit 1
+          fi
       - name: Export genuine unmodified W53 Godot WebGL with real native input
         shell: bash
         run: |
