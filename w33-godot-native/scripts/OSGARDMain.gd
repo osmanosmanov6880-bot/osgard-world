@@ -777,8 +777,16 @@ func _refresh() -> void:
     captions_btn.text = _t("captions") + _flag_copy(bool(core.settings["captions"]))
     metrics_btn.text = _t("privacy") + _flag_copy(bool(core.settings["metrics_consent"]))
     erase_btn.text = _t("erase")
-    _assign(telemetry, "%s  %04d RPM     |     %s  %3d%%     |     %s  %d/150" % [
-        _t("rpm"), roundi(float(snap["rpm"])), _t("hatch"), roundi(float(snap["hatch"]) * 100.0), _t("score"), int(snap["score"])])
+    # W58: grouped telemetry uses explicit native Label lines on phones,
+    # never a free-floating separator at the start of a wrapped 390px line.
+    # Original live readings and desktop delimiters remain identical.
+    var telemetry_groups: PackedStringArray = PackedStringArray([
+        "%s  %04d RPM" % [_t("rpm"), roundi(float(snap["rpm"]))],
+        "%s  %3d%%" % [_t("hatch"), roundi(float(snap["hatch"]) * 100.0)],
+        "%s  %d/150" % [_t("score"), int(snap["score"])],
+    ])
+    var telemetry_separator: String = "\n" if size.x < 640.0 else "     |     "
+    _assign(telemetry, telemetry_separator.join(telemetry_groups))
     _assign(status, "%s: %02d / 06      •      %s: %d      •      %s: %.1f s" % [
         _t("select"), maxi(0, int(snap["mission"]) + 1), _t("progress"), int(snap["step"]), _t("elapsed"), float(snap["seconds"])])
     # True in-scene state, never a fake video or static rendered mockup.

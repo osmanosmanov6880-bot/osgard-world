@@ -18,6 +18,7 @@ ALLOWED = {
     ".github/workflows/osgard-w55-real-mobile-glyph-acceptance.yml",
     ".github/workflows/osgard-w56-local-physical-review.yml",
     ".github/workflows/osgard-w57-exact-head-physical-hold.yml",
+    ".github/workflows/osgard-w58-telemetry-groups.yml",
     "tooling/osgard-w56/hardware_review_gate.py",
     "tooling/osgard-w56/test_hardware_review_gate.py",
     "tooling/osgard-w56/README.md",
@@ -61,6 +62,14 @@ REVIEWED_W56_CRITICAL_BLOBS = {
     "tooling/osgard-w56/test_hardware_review_gate.py": "22d9fb347757db4c028329c574e6e6945d0c103b",
     ".github/workflows/osgard-w56-local-physical-review.yml": "8065ee1d6c773c87f273df65b23a921e56a46d85",
 }
+# W58: exact reviewed responsive telemetry source, native RU/EN regression and
+# dedicated fail-closed workflow. Never silently weaken browser/native checks.
+REVIEWED_W58_CRITICAL_BLOBS = {
+    "w33-godot-native/scripts/OSGARDMain.gd": "7567957d63cfe3e0bbe76094978f1b18c35337f8",
+    "w33-godot-native/tests/test_w55_readable_protocol_copy.gd": "bacad80452e0f4ef6d7a7057c945a63e6da3ff5a",
+    ".github/workflows/osgard-w58-telemetry-groups.yml": "bbadb093bdd504969d959b9d3827c8665e1cbafb",
+}
+
 W56_PATHS = {
     "tooling/osgard-w56/hardware_review_gate.py",
     "tooling/osgard-w56/test_hardware_review_gate.py",
@@ -105,6 +114,12 @@ def verify(base, head):
             candidate_blob = git("rev-parse", head + ":" + path)
             if candidate_blob != approved_sha:
                 raise ValueError("Unreviewed W56 fail-closed evidence gate change: " + path)
+    reviewed_w58 = {}
+    for path, approved_sha in REVIEWED_W58_CRITICAL_BLOBS.items():
+        candidate_blob = git("rev-parse", head + ":" + path)
+        if candidate_blob != approved_sha:
+            raise ValueError("Unreviewed W58 UI/runtime QA evidence blob: " + path)
+        reviewed_w58[path] = candidate_blob
     gameplay_blob = git("rev-parse", head + ":" + REVIEWED_GAMEPLAY_PATH)
     if gameplay_blob != REVIEWED_GAMEPLAY_BLOB:
         raise ValueError("Unreviewed six-mission browser QA driver change: exact vetted Git blob mismatch")
@@ -125,6 +140,7 @@ def verify(base, head):
         "preserved_original_git_blob_shas": preserved,
         "reviewed_browser_gameplay_ci_blob_sha": gameplay_blob,
         "reviewed_w56_gate_blob_shas": REVIEWED_W56_CRITICAL_BLOBS if set(changed) & W56_PATHS else {},
+        "reviewed_w58_telemetry_git_blobs": reviewed_w58,
         "production_source_unchanged": True,
         "native_geometry_qa_status": "NOT_RUN_BY_THIS_SCRIPT",
         "browser_gameplay_qa_status": "NOT_RUN_BY_THIS_SCRIPT",
