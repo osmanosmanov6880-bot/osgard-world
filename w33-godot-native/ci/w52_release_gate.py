@@ -110,8 +110,10 @@ def candidate_zip(path, head):
         require(evidence["windows_boot"].get("source_commit") == head and
                 evidence["windows_boot"].get("actual_windows_runner_exe_started") is True and
                 evidence["windows_boot"].get("exit_code") == 0, "nested genuine Windows executable boot")
-        require(archive.read("web/index.wasm").startswith(b"\x00asm") and
-                archive.read("web/index.pck").startswith(b"GDPC"), "Web export is not genuine Godot binary")
+        with archive.open("web/index.wasm") as wasm:
+            require(wasm.read(4) == b"\x00asm", "Web export is not genuine WebAssembly")
+        with archive.open("web/index.pck") as pack:
+            require(pack.read(4) == b"GDPC", "Web export is not genuine Godot PCK")
         with archive.open("windows/OSGARD_FIELD_LAB_W33.exe") as executable:
             require(executable.read(2) == b"MZ", "packaged Windows executable header corrupt")
         with archive.open("windows/OSGARD_FIELD_LAB_W33.pck") as pack:
@@ -225,7 +227,7 @@ def main():
     opts.out.mkdir(parents=True, exist_ok=True)
     try:
         report = validate(opts)
-    except (ValueError, KeyError, OSError, zipfile.BadZipFile) as ex:
+    except (ValueError, KeyError, TypeError, OSError, zipfile.BadZipFile) as ex:
         fail = {"schema": "OSGARD_W52_SOURCE_MATCHED_SOFTWARE_RELEASE_GATE_V1",
                 "status": "FAIL", "decision": "HOLD", "source_sha": opts.head_sha,
                 "reason": str(ex), "published_to_production": False}
