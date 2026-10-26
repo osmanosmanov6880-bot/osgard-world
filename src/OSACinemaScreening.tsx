@@ -43,6 +43,7 @@ export default function OSACinemaScreening({
   const [voiceError, setVoiceError] = useState(false)
   const closeButton = useRef<HTMLButtonElement>(null)
   const dialog = useRef<HTMLElement>(null)
+  const portalRoot = useRef<HTMLDivElement>(null)
   const contentRef = useRef<HTMLDivElement>(null)
   const previousFocus = useRef<HTMLElement | null>(null)
   const utterance = useRef<SpeechSynthesisUtterance | null>(null)
@@ -103,7 +104,13 @@ export default function OSACinemaScreening({
   useEffect(() => {
     if (!open) return
     previousFocus.current = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    const activePortal = portalRoot.current
+    if (!activePortal) return
+    const background = Array.from(document.body.children)
+      .filter((child): child is HTMLElement => child instanceof HTMLElement && child !== activePortal)
+      .map(element => ({ element, wasInert: element.inert }))
     const previousOverflow = document.body.style.overflow
+    for (const { element } of background) element.inert = true
     document.body.style.overflow = 'hidden'
     closeButton.current?.focus()
     const onKeyDown = (event: KeyboardEvent) => {
@@ -119,6 +126,11 @@ export default function OSACinemaScreening({
       if (!buttons.length) return
       const first = buttons[0]
       const last = buttons[buttons.length - 1]
+      if (!dialog.current.contains(document.activeElement)) {
+        event.preventDefault()
+        ;(event.shiftKey ? last : first).focus()
+        return
+      }
       if (event.shiftKey && document.activeElement === first) {
         event.preventDefault()
         last.focus()
@@ -130,6 +142,7 @@ export default function OSACinemaScreening({
     window.addEventListener('keydown', onKeyDown, true)
     return () => {
       window.removeEventListener('keydown', onKeyDown, true)
+      for (const { element, wasInert } of background) element.inert = wasInert
       document.body.style.overflow = previousOverflow
       previousFocus.current?.focus()
     }
@@ -180,7 +193,7 @@ export default function OSACinemaScreening({
       <ArrowRight size={18} aria-hidden='true'/>
     </button>
     {open && typeof document !== 'undefined' && createPortal(
-      <div className='osa-cinema-screening' data-testid='cinema-screening'>
+      <div ref={portalRoot} className='osa-cinema-screening' data-testid='cinema-screening'>
         <section ref={dialog} className='osa-cinema-screening__stage' role='dialog' aria-modal='true'
           aria-label={copy.label} aria-describedby='osa-screening-disclosure'>
           <div className='osa-cinema-screening__art' key={currentIndex + '-' + locale}>
