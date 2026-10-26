@@ -40,9 +40,9 @@ jobs:
         with:
           node-version: '22'
           cache: npm
+      - run: npm ci --ignore-scripts
       - name: Check real viewer, architectural art and permanent NO-GO
         run: node --test scripts/osa-cinema-v44-production-contract.test.mjs scripts/osa-cinema-v45-accessibility-contract.test.mjs scripts/osa-cinema-v46-route-contract.test.mjs
-      - run: npm ci --ignore-scripts
       - run: npm run check
   live-spectator-browser:
     if: ${{ (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'master') || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/master') }}

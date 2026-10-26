@@ -38,7 +38,7 @@ test('V46 React history, popstate recovery and accessible headings are connected
   assert.match(app,/addEventListener\('popstate',onHistory\)/)
   assert.match(app,/readCinemaRoute\(window\.location\.search,scenes\.ru\.length\)/)
   assert.match(app,/data-cinema-release='v44' data-cinema-navigation='v46'/)
-  assert.match(app,/osa42-scene-heading' aria-live='polite' aria-atomic='true'/)
+  assert.match(app,/className='osa43-visually-hidden' aria-live='polite' aria-atomic='true'/)
   assert.match(spec,/page\.goBack\(\)/)
   assert.match(spec,/page\.goForward\(\)/)
   assert.match(spec,/page\.reload/)
