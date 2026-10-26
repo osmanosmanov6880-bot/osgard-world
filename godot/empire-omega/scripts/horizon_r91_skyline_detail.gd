@@ -21,11 +21,52 @@ func _ready() -> void:
 	_build_geometry()
 	set_quality("standard")
 
+# R114: four true 3D architectural masses per rooftop, combined into ONE
+# indexed visual mesh; original 72 source transforms and one MultiMesh draw
+# instance per building remain intact. Never sample random numbers or spawn
+# collisions. Dedicated equipment sits above (not inside) the original roof.
+static func _roof_box(st: SurfaceTool, minimum: Vector3, maximum: Vector3) -> void:
+	var v: Array[Vector3] = [
+		Vector3(minimum.x,minimum.y,minimum.z),
+		Vector3(maximum.x,minimum.y,minimum.z),
+		Vector3(maximum.x,minimum.y,maximum.z),
+		Vector3(minimum.x,minimum.y,maximum.z),
+		Vector3(minimum.x,maximum.y,minimum.z),
+		Vector3(maximum.x,maximum.y,minimum.z),
+		Vector3(maximum.x,maximum.y,maximum.z),
+		Vector3(minimum.x,maximum.y,maximum.z)
+	]
+	var quads: Array = [
+		[0,1,2,3], [4,7,6,5], [0,4,5,1],
+		[1,5,6,2], [2,6,7,3], [3,7,4,0]
+	]
+	for quad in quads:
+		var a: Vector3 = v[int(quad[0])]
+		var b: Vector3 = v[int(quad[1])]
+		var c: Vector3 = v[int(quad[2])]
+		var d: Vector3 = v[int(quad[3])]
+		var normal: Vector3 = (b-a).cross(c-a).normalized()
+		for vertex in [a,b,c,a,c,d]:
+			st.set_normal(normal)
+			st.add_vertex(vertex)
+
+static func _architectural_roof_mesh() -> ArrayMesh:
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	# One broad original structural cornice, then 3 modelled roof objects.
+	# Width/depth are relative to the original transformed building footprint.
+	_roof_box(st,Vector3(-0.50,-0.50,-0.50),Vector3(0.50,0.50,0.50))
+	_roof_box(st,Vector3(-0.18,0.50,-0.28),Vector3(0.17,2.60,0.14))
+	_roof_box(st,Vector3(-0.25,2.60,-0.32),Vector3(0.24,2.85,0.18))
+	_roof_box(st,Vector3(0.22,0.50,-0.20),Vector3(0.32,3.10,-0.09))
+	return st.commit()
+
 func _build_geometry() -> void:
 	var windows: Array[Transform3D] = []
 	var shades: Array[Color] = []
-	var roof_mesh := BoxMesh.new()
-	roof_mesh.size = Vector3.ONE
+	# R114: an actual stepped rooftop pavilion/vents in the SAME one GPU batch.
+	# Draw-instance count and collision behavior are strictly unchanged.
+	var roof_mesh := _architectural_roof_mesh()
 	var roofs := MultiMesh.new()
 	roofs.transform_format = MultiMesh.TRANSFORM_3D
 	roofs.mesh = roof_mesh
@@ -93,7 +134,7 @@ func _build_geometry() -> void:
 	rooftop_crowns.name = "Original3DRooftopMeshes"
 	rooftop_crowns.multimesh = roofs
 	var crown_material := StandardMaterial3D.new()
-	crown_material.albedo_color = Color("627082")
+	crown_material.albedo_color = Color("63717b")
 	crown_material.metallic = 0.51
 	crown_material.roughness = 0.35
 	rooftop_crowns.material_override = crown_material
