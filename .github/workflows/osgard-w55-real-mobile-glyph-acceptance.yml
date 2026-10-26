@@ -79,7 +79,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p w33-godot-native/build/web
-          godot --headless --path w33-godot-native --export-release Web w33-godot-native/build/web/index.html 2>&1 | tee "$RUNNER_TEMP/w55-export.log"
+          godot --headless --path w33-godot-native --export-release Web build/web/index.html 2>&1 | tee "$RUNNER_TEMP/w55-export.log"
           if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/w55-export.log"; then
             exit 1
           fi
