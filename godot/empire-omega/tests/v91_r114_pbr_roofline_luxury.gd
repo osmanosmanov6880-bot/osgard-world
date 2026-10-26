@@ -41,7 +41,9 @@ func _run() -> void:
 			var grid: MultiMesh = tops.multimesh
 			check(grid != null and grid.instance_count==72,
 				"exact same 72 original rooftops as R91, no extra draw batches")
-			var mesh: ArrayMesh = grid.mesh as ArrayMesh if grid != null else null
+			var mesh: ArrayMesh = null
+			if grid != null:
+				mesh = grid.mesh as ArrayMesh
 			check(mesh != null and mesh.get_surface_count()==1,
 				"one actual indexed source 3D mesh, not an image or billboard")
 			if mesh != null:
