@@ -15,7 +15,7 @@ Status: **source changes prepared, production HOLD until exact-head checks and d
 | --- | --- | --- | --- |
 | W49 | `w49_source_contract.py` | Git merge-base, pinned W47, exact PR head | W48 changed only allowed scene/profiling/test/CI/doc paths; core, mission tests, scenes, export profile and production stay byte-identical to W47 |
 | W48 expanded | `test_w48_ring_instancing.gd` | Real Godot 4.4.1 PR-head native import | 84 original W47 positions and complete 3-axis basis, PBR size/material/shadow, HERO/ECO, six mission controls, three cameras |
-| W50 | `w51_paired_comparison.py` | Two **pristine**, unmodified, independently exported W47 and W48 Godot WebGL builds | Six real Chromium frames (HERO/ECO desktop + touch-emulated HERO) plus an original visual comparison sheet, with PNG SHA-256 |
+| W50 | `w51_paired_comparison.py` | Two **pristine**, unmodified, independently exported W47 and W48 Godot WebGL builds | Ten real Chromium frames (HERO overview, inspection, service; desktop ECO; and touch-emulated HERO, each on both SHAs) plus an original visual comparison sheet, with PNG SHA-256 |
 | W51 | Same paired runner | Both Godot 4.4.1 WebGL sources on *one* runner/SwiftShader renderer | Real Godot FPS for both SHAs and W48 actual draw-call/object samples; pristine W47 has no draw-call probe |
 | W51 strict | Existing `godot_software_performance.py` | W48 exact-head WebGL evidence | Three W48 measured scenarios, nonzero Godot draw-call samples and advancing native engine frame counter |
 | W52 | `w52_release_gate.py` | All upstream exact-head artifacts | Independent ZIP CRC, SHA-256 digest of every packaged member, six real Chromium missions, real Windows 2022 EXE boot, touch emulation and original screenshots |
@@ -25,7 +25,7 @@ Status: **source changes prepared, production HOLD until exact-head checks and d
 Look under the **same** PR-head commit in `.github/workflows/r135-w33-operator-debrief-native-qa.yml`:
 
 - `osgard-w49-original-source-contract-<SHA>` — source integrity manifest.
-- `osgard-w50-w51-original-paired-<SHA>` — six real screenshots, contact sheet, real software frame/draw diagnostics, paired JSON.
+- `osgard-w50-w51-original-paired-<SHA>` — ten real screenshots, contact sheet, real software frame/draw diagnostics, paired JSON.
 - `osgard-w44-real-godot-software-fps-<SHA>` — strict W48 diagnostic report.
 - `osgard-w39-original-cinematic-visual-evidence-<SHA>` — five source-bound rendered screenshots and original Godot contact sheet.
 - `osgard-w33-playable-browser-evidence-<SHA>` — real six-mission Chromium controls.
