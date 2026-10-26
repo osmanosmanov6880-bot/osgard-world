@@ -569,7 +569,11 @@ jobs:
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha }}"
-          python3 -m py_compile w33-godot-native/ci/w49_source_contract.py
+          python3 -m py_compile \
+            w33-godot-native/ci/w49_source_contract.py \
+            w33-godot-native/ci/w51_paired_comparison.py \
+            w33-godot-native/ci/w52_release_gate.py \
+            w33-godot-native/ci/godot_software_performance.py
           python3 w33-godot-native/ci/w49_source_contract.py \
             --base "${{ github.event.pull_request.base.sha }}" \
             --head "${{ github.event.pull_request.head.sha }}" \
