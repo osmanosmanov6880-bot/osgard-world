@@ -616,6 +616,30 @@ jobs:
             --base "${{ github.event.pull_request.base.sha }}" \
             --head "${{ github.event.pull_request.head.sha }}" \
             --out w49-evidence/w49-source-contract.json
+      - name: W57 exact-head W56 evidence checker and mandatory physical-device HOLD
+        shell: bash
+        env:
+          EXACT_CANDIDATE_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXACT_CANDIDATE_HEAD"
+          python3 -m unittest discover -s tooling/osgard-w56 -p 'test_hardware_review_gate.py' -v
+          python3 tooling/osgard-w56/hardware_review_gate.py \
+            --expected-sha "$EXACT_CANDIDATE_HEAD" \
+            --output w49-evidence/w56-physical-review-HOLD.json
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          r=json.loads(Path("w49-evidence/w56-physical-review-HOLD.json").read_text())
+          assert r["schema"]=="OSGARD_W56_FAIL_CLOSED_PHYSICAL_REVIEW_V1"
+          assert r["source_sha"]==os.environ["EXACT_CANDIDATE_HEAD"]
+          assert r["status"]=="HOLD" and r["decision"]=="MISSING_DEVICE_REPORTS"
+          assert r["reports"]=={} and r["missing"]==["windows","webgl","android","ios"]
+          for k in ("independent_physical_device_certified","cinematic_signoff",
+                    "production_approved","allow_master_merge","published_to_production"):
+              assert r[k] is False, k
+          print("OSGARD W57 EXACT HEAD W56 PHYSICAL PRODUCTION HOLD: PASS")
+          PY
       - name: Preserve W49 scope contract even if blocked
         if: always()
         uses: actions/upload-artifact@v4
@@ -760,6 +784,7 @@ jobs:
             --candidate "${packages[0]}" \
             --sha256sums w52-input/candidate/SHA256SUMS.txt \
             --build-report w52-input/candidate/build-report.json \
+            --w56-physical-review w52-input/source/w56-physical-review-HOLD.json \
             --base-sha "${{ github.event.pull_request.base.sha }}" \
             --head-sha "${{ github.event.pull_request.head.sha }}" \
             --out w52-release-evidence
