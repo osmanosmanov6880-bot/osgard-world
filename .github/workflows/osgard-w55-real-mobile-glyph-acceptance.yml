@@ -1,0 +1,129 @@
+name: OSGARD W55 native RU-EN typography and actual WebGL phone images
+
+on:
+  pull_request:
+    branches:
+      - feat/osgard-w48-ring-instancing-render-budget-20261026
+    paths:
+      - 'w33-godot-native/**'
+      - '.github/workflows/osgard-w55-real-mobile-glyph-acceptance.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: osgard-w55-phone-copy-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  exact-native-and-webgl-typography:
+    name: W55 Godot 4.4.1 RU EN glyph and real Chromium phone render
+    if: github.event_name == 'pull_request' && github.head_ref == 'feat/osgard-w55-readable-mobile-copy-ru-en-20261026'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - name: Exact source and independent tests are present
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha }}"
+          test -s w33-godot-native/tests/test_w55_readable_protocol_copy.gd
+          test -s w33-godot-native/ci/w55_visual_typography_acceptance.py
+          python3 -m py_compile w33-godot-native/ci/w55_visual_typography_acceptance.py
+          python3 -m py_compile w33-godot-native/ci/mobile_touch_acceptance.py
+          # Full baseline-to-head diff --check is already mandatory in W49.
+          # This dedicated screenshot runner intentionally uses checkout depth=1.
+      - name: W49 synthetic source tamper regressions still reject unsafe changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s w33-godot-native/ci \
+            -p test_w49_w52_gate_regressions.py -v
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: true
+      - name: Import real Godot scene and reject parser/compile errors
+        shell: bash
+        run: |
+          set -euo pipefail
+          godot --headless --editor --path w33-godot-native --import --quit 2>&1 | tee "$RUNNER_TEMP/w55-import.log"
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:|Failed to load script' "$RUNNER_TEMP/w55-import.log"; then
+            exit 1
+          fi
+      - name: W55 actual native RU/EN glyph and status tests, both screen widths
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 150s godot --headless --path w33-godot-native --script res://tests/test_w55_readable_protocol_copy.gd 2>&1 | tee "$RUNNER_TEMP/w55-native-glyph.log"
+          grep -q 'OSGARD W55 REAL GODOT RU/EN GLYPH AND MOBILE PROTOCOL COPY PASS' "$RUNNER_TEMP/w55-native-glyph.log"
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/w55-native-glyph.log"; then
+            exit 1
+          fi
+      - name: Original W53 native touch remains working
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 150s godot --headless --path w33-godot-native --script res://tests/test_w53_mobile_edge_swipe.gd 2>&1 | tee "$RUNNER_TEMP/w53-native-regression.log"
+          grep -q 'OSGARD W53 REAL GODOT NATIVE EDGE TOUCH SCROLL PASS' "$RUNNER_TEMP/w53-native-regression.log"
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/w53-native-regression.log"; then
+            exit 1
+          fi
+      - name: Export the exact actual Godot WebGL game including native UI
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p w33-godot-native/build/web
+          godot --headless --path w33-godot-native --export-release Web build/web/index.html 2>&1 | tee "$RUNNER_TEMP/w55-export.log"
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/w55-export.log"; then
+            exit 1
+          fi
+          python3 w33-godot-native/ci/verify_web_export.py w33-godot-native/build/web \
+            --sha "${{ github.event.pull_request.head.sha }}" \
+            --output w33-godot-native/build/web/evidence.json
+      - name: Chromium pinned browser packages
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m venv "$RUNNER_TEMP/w55-qa-venv"
+          "$RUNNER_TEMP/w55-qa-venv/bin/pip" install --disable-pip-version-check --no-cache-dir \
+            playwright==1.56.0 pillow==11.3.0
+          "$RUNNER_TEMP/w55-qa-venv/bin/python" -m playwright install --with-deps chromium
+      - name: Capture actual Godot RU and EN readable protocol with genuine CDP ScreenDrag
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$RUNNER_TEMP/w55-qa-venv/bin/python" w33-godot-native/ci/w55_visual_typography_acceptance.py \
+            --export w33-godot-native/build/web --evidence w55-real-glyph-evidence \
+            --sha "${{ github.event.pull_request.head.sha }}"
+      - name: Repeat original Chromium 390px touch mission zero with safety interlocks
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$RUNNER_TEMP/w55-qa-venv/bin/python" w33-godot-native/ci/mobile_touch_acceptance.py \
+            --export w33-godot-native/build/web --evidence w55-mobile-mission-evidence \
+            --sha "${{ github.event.pull_request.head.sha }}"
+          "$RUNNER_TEMP/w55-qa-venv/bin/python" - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('w55-mobile-mission-evidence/mobile-touch-evidence.json').read_text())
+          assert d['status']=='PASS' and d['completed_case']==0
+          assert d['synthetic_dom_gameplay'] is False and d['physical_phone_tested'] is False
+          assert d['source_sha']=='${{ github.event.pull_request.head.sha }}'
+          print('W55 original W53 mobile mission regression PASS')
+          PY
+      - name: Save original Godot screenshots and source SHA even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: osgard-w55-original-real-godot-ru-en-${{ github.event.pull_request.head.sha }}
+          path: |
+            w55-real-glyph-evidence/
+            w55-mobile-mission-evidence/
+          if-no-files-found: warn
+          retention-days: 30

@@ -142,6 +142,7 @@ func _publish_web_accessibility(snap: Dictionary) -> void:
         "hold_percent": int(snap["calibration"].get("hold_percent", 0)),
         "last_error": bool(snap["last_error"]),
         "quality": str(core.settings["quality"]),
+        "locale": str(core.settings["locale"]), # read-only WebGL locale QA / accessibility
         # Original native engine values read only by local browser QA.
         # Not a benchmark on the user's physical hardware.
         "godot_render_fps": Engine.get_frames_per_second(),
@@ -209,7 +210,7 @@ func _panel(parent: Container) -> VBoxContainer:
 
 func _label(parent: Container, value: String = "", font_size: int = 15, color: Color = WHITE) -> Label:
     var node := Label.new()
-    node.text = value
+    node.text = _legible_copy(value)
     node.add_theme_color_override("font_color", color)
     node.add_theme_font_size_override("font_size", font_size)
     node.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -219,7 +220,7 @@ func _label(parent: Container, value: String = "", font_size: int = 15, color: C
 
 func _button(parent: Container, value: String, callback: Callable, accent: bool = false, min_width: float = 142.0) -> Button:
     var node := Button.new()
-    node.text = value
+    node.text = _legible_copy(value)
     node.focus_mode = Control.FOCUS_ALL
     node.custom_minimum_size = Vector2(min_width, 52)
     node.add_theme_font_size_override("font_size", 14)
@@ -251,7 +252,7 @@ func _flow(parent: Container) -> HFlowContainer:
 func _overlay_label(parent: Control, name_tag: String, title_text: String, font_size: int, tone: Color) -> Label:
     var tag := Label.new()
     tag.name = name_tag
-    tag.text = title_text
+    tag.text = _legible_copy(title_text)
     tag.add_theme_color_override("font_color", tone)
     tag.add_theme_font_size_override("font_size", font_size)
     tag.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -736,12 +737,27 @@ func _confirm_erase() -> void:
 func _on_feedback(_code: String, error: bool) -> void:
     _sound_event(error)
 
+# W55: The original REAL 390px WebGL screenshot displayed the U+2192
+# protocol arrows as unsupported boxed glyphs. Use a directional ASCII
+# marker on all native Godot text paths; do NOT rely on an OS-specific
+# fallback font unavailable inside the exported WebGL player.
+# Original instructional copy, order and offline-only content are unchanged.
+func _legible_copy(value: String) -> String:
+    return value.replace("→", " > ")
+
+func _flag_copy(enabled: bool) -> String:
+    var russian: bool = str(core.settings["locale"]) == "ru"
+    if russian:
+        return " / ВКЛ" if enabled else " / ВЫКЛ"
+    return " / ON" if enabled else " / OFF"
+
 func _t(key: String) -> String:
-    return OSGARDText.text(str(core.settings["locale"]), key)
+    return _legible_copy(OSGARDText.text(str(core.settings["locale"]), key))
 
 func _assign(node: Label, value: String) -> void:
-    if node != null and node.text != value:
-        node.text = value
+    var safe: String = _legible_copy(value)
+    if node != null and node.text != safe:
+        node.text = safe
 
 func _refresh() -> void:
     if body == null:
@@ -754,10 +770,12 @@ func _refresh() -> void:
     # Keep the actual language code readable on minimal web fonts.
     lang_btn.text = "RU" if locale == "ru" else "EN"
     quality_btn.text = _t("quality") + ": " + str(core.settings["quality"]).to_upper()
-    motion_btn.text = _t("motion") + (" ✓" if bool(core.settings["reduced_motion"]) else " –")
-    sound_btn.text = _t("sound") + (" ✓" if bool(core.settings["sound"]) else " –")
-    captions_btn.text = _t("captions") + (" ✓" if bool(core.settings["captions"]) else " –")
-    metrics_btn.text = _t("privacy") + (" ✓" if bool(core.settings["metrics_consent"]) else " –")
+    # Explicit localized state text is readable without the unsupported
+    # checkmark glyph and is understandable to non-colorblind users.
+    motion_btn.text = _t("motion") + _flag_copy(bool(core.settings["reduced_motion"]))
+    sound_btn.text = _t("sound") + _flag_copy(bool(core.settings["sound"]))
+    captions_btn.text = _t("captions") + _flag_copy(bool(core.settings["captions"]))
+    metrics_btn.text = _t("privacy") + _flag_copy(bool(core.settings["metrics_consent"]))
     erase_btn.text = _t("erase")
     _assign(telemetry, "%s  %04d RPM     |     %s  %3d%%     |     %s  %d/150" % [
         _t("rpm"), roundi(float(snap["rpm"])), _t("hatch"), roundi(float(snap["hatch"]) * 100.0), _t("score"), int(snap["score"])])
@@ -769,7 +787,7 @@ func _refresh() -> void:
     _assign(stage_readout, "ROTOR   %04d RPM     /     HATCH   %03d%%     /     SCORE   %03d" % [
         roundi(float(snap["rpm"])), roundi(float(snap["hatch"]) * 100.0), int(snap["score"])])
     var step_names := [_t("step0"), _t("step1"), _t("step2"), _t("step3"), _t("step4")]
-    _assign(progress_text, " → ".join(step_names) + "    |    %d/3 + %d/3" % [int(snap["cleared_count"]), int(snap["shift_cleared_count"])])
+    _assign(progress_text, " > ".join(step_names) + "    |    %d/3 + %d/3" % [int(snap["cleared_count"]), int(snap["shift_cleared_count"])])
     engine_btn.text = _t("drive_stop") if bool(snap["drive_on"]) else _t("drive_start")
     hatch_btn.text = _t("hatch_close") if float(snap["hatch_target"]) == 1.0 else _t("hatch_open")
     scan_btn.text = _t("scan")
