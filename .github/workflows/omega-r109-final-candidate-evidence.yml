@@ -60,7 +60,8 @@ jobs:
             v87_r108_native_mountain_ridges \
             v88_r106_embedded_cc0_road_activation \
             v89_r111_stable_weather_pbr \
-            v90_r112_true_camera_inspection; do
+            v90_r112_true_camera_inspection \
+            v91_r114_pbr_roofline_luxury; do
             timeout --signal=TERM --kill-after=6s 120s godot --headless \
               --path godot/empire-omega --script "res://tests/$suite.gd"
           done
@@ -132,6 +133,10 @@ jobs:
         with:
           name: omega-r109-actual-playable-webgl-candidate
           path: godot/empire-omega/.build-web/
+          # GitHub upload-artifact skips hidden directories by default.
+          # The scoped .build-web is the original engine's output directory;
+          # enable it explicitly, not arbitrary hidden workspace files.
+          include-hidden-files: true
           if-no-files-found: error
           retention-days: 14
       - name: Preserve original renderer screenshots and executable SHA evidence
