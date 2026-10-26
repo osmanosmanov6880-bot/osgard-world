@@ -19,7 +19,7 @@ Status: **source changes prepared, production HOLD until exact-head checks and d
 | W51 | Same paired runner | Both Godot 4.4.1 WebGL sources on *one* runner/SwiftShader renderer | Real Godot FPS for both SHAs and W48 actual draw-call/object samples; pristine W47 has no draw-call probe |
 | W51 strict | Existing `godot_software_performance.py` | W48 exact-head WebGL evidence | Three W48 measured scenarios, nonzero Godot draw-call samples and advancing native engine frame counter |
 | W52 | `w52_release_gate.py` | All upstream exact-head artifacts | Independent ZIP CRC, every member hash, nested WebGL/Windows/PNG manifests, W42 SHA256SUMS and build-report cross-checks, six Chromium missions, Windows 2022 boot, touch and screenshots |
-| W49/W52 negatives | `test_w49_w52_gate_regressions.py` | Python standard library, synthetic **negative** fixtures | 24 unit checks cover changed W47 core, deploy paths, moved SHA, unsafe ZIPs and image bytes, plus W42 ZIP/build-report/SHA256SUMS cross-checks; **does not** certify rendering |
+| W49/W52 negatives | `test_w49_w52_gate_regressions.py` | Python standard library, synthetic **negative** fixtures | 25 unit checks cover changed W47 core, deploy paths, moved SHA, unsafe ZIPs and image bytes, plus W42 ZIP/build-report/SHA256SUMS cross-checks; **does not** certify rendering |
 | W52 final | `w52-independent-final-verdict` | Every actual upstream job's `needs.result` | Always uploads `PASS` software-only or `BLOCKED_PRODUCTION_HOLD` JSON and the exact SHA; never promotes |
 
 
@@ -62,3 +62,13 @@ No files in this series deploy artifacts, merge a PR, overwrite live build folde
 ## If Actions is still queued
 
 Do not infer PASS from source-only tests. The new run will be scheduled by GitHub when a runner becomes available; monitor the PR check list. The source and manifest files are useful before the runner completes, but the gate's outcome is **pending**.
+
+
+## W53 — critical mobile-gesture accessibility repair and W49 exception
+
+- The original W47 and initial W48 CI both failed the real W45 390px mobile path at `mission0 rect=[36,2160,245,67], scroll=0` after genuine touchscreen swipes. The web export was real; scroll failed. This is a product blocker, not ring-instancing geometry.
+- The W53 app fix in `scripts/OSGARDMain.gd` uses Godot `InputEventScreenTouch` and `InputEventScreenDrag` to scroll the native `ScrollContainer` in a narrow right-edge lane on phones under 640px. It leaves center-dial taps, camera buttons, six missions and desktop untouched.
+- `tests/test_w53_mobile_edge_swipe.gd` verifies genuine Godot phone layout, noninterference, scroll advancement, and release of capture. The separate `osgard-w53-mobile-touch-acceptance.yml` verifies the real WebGL-exported Godot scene with Chromium CDP ScreenDrag gestures and mission 0.
+- **Original completed standalone CI:** [W53 run 40252217738](https://github.com/osmanosmanov6880-bot/osgard-world/actions/runs/40252217738), source `21b7f35bad182841f3c95890d2aa9446894bf958`: native 14/14 PASS; real 390px browser scene, seven touch swipes, 12 touch controls and full mission 0 PASS, evidence artifact #12620569414. This validates that exact app source, not a future release merge SHA.
+- **W49 narrow exception:** The modified mobile CDP driver `ci/mobile_touch_acceptance.py` is intentionally allowed (touch drag duration increased to span multiple measured low-FPS SwiftShader frames); *all* original mission, scene, physics and desktop game/visual QA blobs remain SHA-pinned to W47. The W53 workflow and native touch test are individually allowlisted. The W49 negative suite now has 25 scenarios.
+- A successful W53 standalone source is **not** automatic release authorisation: run W44/W45/W48/W49/W50/W51/W52 on the **eventual merged exact SHA** and verify the non-hardware production HOLD release gate before any merge/deployment to production. Do not reuse artifact #12620569414 as proof for a different commit.
