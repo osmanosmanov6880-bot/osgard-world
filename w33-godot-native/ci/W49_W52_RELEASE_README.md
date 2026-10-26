@@ -19,6 +19,9 @@ Status: **source changes prepared, production HOLD until exact-head checks and d
 | W51 | Same paired runner | Both Godot 4.4.1 WebGL sources on *one* runner/SwiftShader renderer | Real Godot FPS for both SHAs and W48 actual draw-call/object samples; pristine W47 has no draw-call probe |
 | W51 strict | Existing `godot_software_performance.py` | W48 exact-head WebGL evidence | Three W48 measured scenarios, nonzero Godot draw-call samples and advancing native engine frame counter |
 | W52 | `w52_release_gate.py` | All upstream exact-head artifacts | Independent ZIP CRC, SHA-256 digest of every packaged member, six real Chromium missions, real Windows 2022 EXE boot, touch emulation and original screenshots |
+| W49/W52 negatives | `test_w49_w52_gate_regressions.py` | Python standard library, synthetic **negative** fixtures | Blocks mutated W47 core, unexpected deploy paths, moved commit SHAs, corrupt/unsafe ZIPs and tampered/or spoofed native PNGs; **does not** certify rendering |
+| W52 final | `w52-independent-final-verdict` | Every actual upstream job's `needs.result` | Always uploads `PASS` software-only or `BLOCKED_PRODUCTION_HOLD` JSON and the exact SHA; never promotes |
+
 
 ### Actions artifact names
 
@@ -33,6 +36,7 @@ Look under the **same** PR-head commit in `.github/workflows/r135-w33-operator-d
 - `osgard-w34-actual-windows-exe-boot-<SHA>` — Windows runner stdout/stderr and native EXE verdict.
 - `osgard-w42-reproducible-candidate-<SHA>` — deterministic ZIP, manifest and SHA256SUMS.
 - `osgard-w52-source-bound-release-gate-<SHA>` — final software review report, explicitly **HOLD production**.
+- `osgard-w52-ci-final-verdict-<SHA>` — consolidated result for **all** required checks, preserved even if native, packaging or benchmark steps fail; production remains HOLD.
 
 A queued, cancelled, stale, failing or different-SHA Actions run is **not** acceptable proof. Each CI update cancels previous head's run by workflow concurrency. Only one *completed, successful, source-matched* attempt of the latest head is acceptable.
 
@@ -48,6 +52,8 @@ A queued, cancelled, stale, failing or different-SHA Actions run is **not** acce
 ## Release gate / human actions
 
 The GitHub gate may emit `status=PASS` with `decision=STAGING_CANDIDATE_VERIFIED_PRODUCTION_HOLD`; **this is not a production GO**.
+
+The W49 job additionally runs the negative-test standard-library suite before it reads Git blobs. The tests construct **synthetic invalid inputs** and deliberately reject them; passing unit tests must not be misrepresented as successful Godot exports or customer-ready packages. The final W52 job records mandatory job failures and emits a source-bound JSON `BLOCKED_PRODUCTION_HOLD` instead of silently lacking an acceptance report.
 
 Before approval, the reviewer must examine the W47/W48 visual sheet and original W48 native screenshots at desktop HERO, desktop ECO and 390px emulation; confirm no flickering, ring disappearance, shadow/regression, cropped HUD, unreadable type, changed six-mission routes, or safety violations. Reproduce on a real Windows GPU, a physical Android device and a physical iPhone (mobile support where applicable). Record GPU/OS/browser, device-native resolution, 1% low FPS, median frame time, WebGL warnings, thermal throttling and HERO/ECO differences. Set objective performance budgets **before** promoting.
 
