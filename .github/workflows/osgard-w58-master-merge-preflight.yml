@@ -1,0 +1,257 @@
+name: OSGARD W58 master-merge preflight (NO DEPLOY)
+
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - 'w33-godot-native/**'
+      - '.github/workflows/osgard-w58-master-merge-preflight.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: osgard-w58-master-integration-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  merge-tree-safety:
+    name: Virtual master merge exact parents and no existing-file changes
+    if: github.event_name == 'pull_request' && github.head_ref == 'integration/osgard-w58-master-review-only-20261026'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verify actual GitHub PR merge commit parents and additive-only files
+        shell: bash
+        env:
+          EXPECTED_MASTER: ${{ github.event.pull_request.base.sha }}
+          EXPECTED_GAME: ${{ github.event.pull_request.head.sha }}
+          EXPECTED_MERGE: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          mkdir -p w58-proof
+          test "$(git rev-parse HEAD)" = "$EXPECTED_MERGE"
+          test "$(git rev-parse HEAD^1)" = "$EXPECTED_MASTER"
+          test "$(git rev-parse HEAD^2)" = "$EXPECTED_GAME"
+          git diff --check "$EXPECTED_MASTER" HEAD
+          git diff --name-status -z "$EXPECTED_MASTER" HEAD > w58-proof/additive-changes.bin
+          python3 - <<'PY'
+          import hashlib,json,os,subprocess
+          from pathlib import Path
+          run=lambda *args:subprocess.check_output(["git",*args],text=True).strip()
+          raw=Path("w58-proof/additive-changes.bin").read_bytes().split(b"\0")
+          if raw and raw[-1]==b"": raw.pop()
+          assert raw and len(raw)%2==0, "Empty or corrupted master integration diff"
+          paths=[]
+          allowed_prefix=("w33-godot-native/","tooling/osgard-w56/")
+          allowed_workflows={
+              ".github/workflows/osgard-w53-mobile-touch-acceptance.yml",
+              ".github/workflows/osgard-w55-real-mobile-glyph-acceptance.yml",
+              ".github/workflows/osgard-w56-local-physical-review.yml",
+              ".github/workflows/osgard-w57-exact-head-physical-hold.yml",
+              ".github/workflows/osgard-w58-master-merge-preflight.yml",
+              ".github/workflows/r135-w33-operator-debrief-native-qa.yml",
+          }
+          for code,path in zip(raw[::2],raw[1::2]):
+              p=path.decode("utf-8")
+              assert code==b"A", ("Original master file modified/deleted",code,p)
+              assert p.startswith(allowed_prefix) or p in allowed_workflows, ("Unexpected master integration path",p)
+              assert run("rev-parse","HEAD:"+p)==run("rev-parse","HEAD^2:"+p), ("Merge changed original W57 bytes",p)
+              paths.append(p)
+          for p in ("w33-godot-native/scripts/OSGARDCore.gd",
+                    "w33-godot-native/scripts/OSGARDMain.gd",
+                    "w33-godot-native/Main.tscn",
+                    "w33-godot-native/project.godot",
+                    "w33-godot-native/ci/w52_release_gate.py",
+                    "tooling/osgard-w56/hardware_review_gate.py"):
+              assert p in paths, ("Proposed game component absent",p)
+          result={
+              "schema":"OSGARD_W58_VIRTUAL_MASTER_MERGE_V1",
+              "status":"PASS", "virtual_merge_sha":os.environ["EXPECTED_MERGE"],
+              "actual_master_parent":os.environ["EXPECTED_MASTER"],
+              "accepted_W57_game_parent":os.environ["EXPECTED_GAME"],
+              "files_added":len(paths),"modified_existing_master_files":0,
+              "deleted_existing_master_files":0,
+              "all_game_blobs_identical_to_W57_head":True,
+              "paths":paths,"master_modified":False,"deploy_performed":False,
+              "production_approved":False}
+          Path("w58-proof/merge-tree-evidence.json").write_text(json.dumps(result,indent=2)+"\n")
+          print("W58 true merged tree: PASS; additive-only paths",len(paths))
+          PY
+      - name: Preserve exact synthetic merge provenance
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: osgard-w58-real-merge-tree-${{ github.sha }}
+          path: w58-proof/merge-tree-evidence.json
+          if-no-files-found: warn
+          retention-days: 45
+
+  native-godot-merged:
+    name: Actual master merge Godot native + all six WebGL missions (NO PUBLISH)
+    needs: merge-tree-safety
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verify this is real two-parent GitHub integration tree
+        shell: bash
+        env:
+          EXPECTED_MASTER: ${{ github.event.pull_request.base.sha }}
+          EXPECTED_GAME: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse HEAD^1)" = "$EXPECTED_MASTER"
+          test "$(git rev-parse HEAD^2)" = "$EXPECTED_GAME"
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: true
+      - name: Import true merged Godot scene and reject script errors
+        shell: bash
+        run: |
+          set -euo pipefail
+          godot --headless --editor --path w33-godot-native --import --quit 2>&1 | tee "$RUNNER_TEMP/w58-godot-import.log"
+          if grep -E 'SCRIPT ERROR:|Parse Error:|Compile Error:|Failed to load script' "$RUNNER_TEMP/w58-godot-import.log"; then exit 1; fi
+      - name: Verify original six missions, 3D scene, 84 rings, touch, RU-EN on merged tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          for test in test_six_missions.gd test_scene_integration.gd test_w48_ring_instancing.gd test_w53_mobile_edge_swipe.gd test_w55_readable_protocol_copy.gd; do
+            timeout --signal=TERM --kill-after=5s 150s godot --headless --path w33-godot-native --script "res://tests/$test" 2>&1 | tee "$RUNNER_TEMP/w58-$test.log"
+            if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/w58-$test.log"; then exit 1; fi
+          done
+      - name: Export genuine merged-source Godot WebGL and sha-bound manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd w33-godot-native
+          mkdir -p build/web
+          godot --headless --path . --export-release Web build/web/index.html 2>&1 | tee "$RUNNER_TEMP/w58-export.log"
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/w58-export.log"; then exit 1; fi
+          cd ..
+          python3 w33-godot-native/ci/verify_web_export.py w33-godot-native/build/web --sha "$GITHUB_SHA" --output w33-godot-native/build/web/evidence.json
+      - name: Install pinned real Chromium browser
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m venv "$RUNNER_TEMP/w58-chromium"
+          "$RUNNER_TEMP/w58-chromium/bin/pip" install --disable-pip-version-check --no-cache-dir playwright==1.56.0 Pillow==11.3.0
+          "$RUNNER_TEMP/w58-chromium/bin/python" -m playwright install --with-deps chromium
+      - name: Play ALL SIX actual merged Godot WebGL missions in Chromium
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$RUNNER_TEMP/w58-chromium/bin/python" w33-godot-native/ci/browser_gameplay_acceptance.py --export w33-godot-native/build/web --evidence w58-merged-gameplay --sha "$GITHUB_SHA"
+          python3 - <<'PY'
+          import json,os
+          from pathlib import Path
+          p=Path("w58-merged-gameplay/gameplay-evidence.json")
+          x=json.loads(p.read_text())
+          assert x["status"]=="PASS" and x["source_sha"]==os.environ["GITHUB_SHA"]
+          assert x["gameplay_verified_by_real_canvas_events"] is True
+          assert x["physical_device_certified"] is False
+          assert x["devices"][0]["missions"]==list(range(6))
+          print("W58 true master merge 6/6 native game missions PASS; no physical certification")
+          PY
+      - name: Preserve original real Godot gameplay evidence for exact merge commit
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: osgard-w58-merged-godot-six-missions-${{ github.sha }}
+          path: |
+            w58-merged-gameplay/
+            w33-godot-native/build/web/evidence.json
+          if-no-files-found: warn
+          retention-days: 45
+
+  master-frontend-merged:
+    name: Existing master frontend build and game route QA on real merge (NO DEPLOY)
+    needs: merge-tree-safety
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Verify exact proposed master merge commit
+        shell: bash
+        run: test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install pinned existing master dependencies
+        run: npm ci
+      - name: Typecheck, build existing frontend and check game portal
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run check
+          npm run build
+          npm run qa:games-portal
+          npm run qa:game-interface
+          npm run qa:static-preview
+
+  no-production-verdict:
+    name: Independent true merge integration verdict - ALWAYS production HOLD
+    if: always() && github.event_name == 'pull_request'
+    needs:
+      - merge-tree-safety
+      - native-godot-merged
+      - master-frontend-merged
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Produce exact-merge nonproduction decision
+        shell: bash
+        env:
+          V58_MERGE_RESULT: ${{ needs.merge-tree-safety.result }}
+          V58_NATIVE_RESULT: ${{ needs.native-godot-merged.result }}
+          V58_FRONTEND_RESULT: ${{ needs.master-frontend-merged.result }}
+          V58_MASTER_SHA: ${{ github.event.pull_request.base.sha }}
+          V58_W57_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          mkdir -p w58-final
+          python3 - <<'PY'
+          import json,os
+          from pathlib import Path
+          verdict={k:os.environ[k] for k in ("V58_MERGE_RESULT","V58_NATIVE_RESULT","V58_FRONTEND_RESULT")}
+          ok=all(x=="success" for x in verdict.values())
+          result={"schema":"OSGARD_W58_REAL_MASTER_INTEGRATION_HOLD_V1",
+                  "virtual_merge_sha":os.environ["GITHUB_SHA"],
+                  "master_base_sha":os.environ["V58_MASTER_SHA"],
+                  "original_W57_staging_sha":os.environ["V58_W57_SHA"],
+                  "status":"PASS" if ok else "BLOCKED",
+                  "decision":"VIRTUAL_MERGE_TESTED_PRODUCTION_HOLD" if ok else "INTEGRATION_NOT_VERIFIED_HOLD",
+                  "checks":verdict,
+                  "physical_devices_tested":False,
+                  "hardware_60fps_certified":False,
+                  "manual_original_art_signoff":False,
+                  "upstream_stacked_prs_approved":False,
+                  "merge_authorized":False,
+                  "master_changed":False,
+                  "production_approved":False,
+                  "published_to_production":False}
+          Path("w58-final/independent-merge-decision.json").write_text(json.dumps(result,indent=2)+"\n")
+          print(json.dumps(result,indent=2))
+          if not ok: raise SystemExit("W58 integration proof incomplete, HOLD")
+          PY
+      - name: Preserve exact virtual merge evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: osgard-w58-final-nonproduction-verdict-${{ github.sha }}
+          path: w58-final/
+          if-no-files-found: warn
+          retention-days: 45
