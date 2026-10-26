@@ -1521,6 +1521,11 @@ func _apply_responsive_layout() -> void:
 	if header_panel == null or pause_panel == null or strategy_window == null: return
 	var screen: Vector2 = get_viewport().get_visible_rect().size
 	if screen.x < 1.0 or screen.y < 1.0: return
+	# R125 command-city aperture scrim: the uncovered 3D city is the
+	# actual gameplay frame, never a reference image or a second fake world.
+	# Retain original full-screen input interception on the overlay.
+	if overlay != null:
+		overlay.color = Color(0.005,0.008,0.014,R90_STYLE.command_backdrop_alpha(screen))
 	var frames: Dictionary = HORIZON_LAYOUT.compute(screen)
 	compact_hud = bool(frames.get("compact",false))
 	if compact_hud:
