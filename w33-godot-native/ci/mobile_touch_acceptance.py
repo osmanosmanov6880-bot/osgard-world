@@ -72,12 +72,18 @@ class TouchDriver:
         def point(y):
             return [{"x": x, "y": round(y), "id": 1, "radiusX": 6, "radiusY": 6}]
         self.cdp.send("Input.dispatchTouchEvent", {"type": "touchStart", "touchPoints": point(start_y)})
+        # The original 14*18 ms gesture lasted ~252 ms, shorter than
+        # a single 333 ms frame at the W47 measured ~3 SwiftShader FPS.
+        # Keep REAL CDP touchscreen events, but send a physically plausible
+        # ~1.3 second finger drag spanning multiple genuine Godot frames.
+        # The app must still move its native ScrollContainer: failure remains
+        # blocking, and no gameplay-state or DOM-scroll writes are introduced.
         for step in range(1, 15):
             y = start_y + (end_y - start_y) * step / 14
             self.cdp.send("Input.dispatchTouchEvent", {"type": "touchMove", "touchPoints": point(y)})
-            self.page.wait_for_timeout(18)
+            self.page.wait_for_timeout(95)
         self.cdp.send("Input.dispatchTouchEvent", {"type": "touchEnd", "touchPoints": []})
-        self.page.wait_for_timeout(450)
+        self.page.wait_for_timeout(700)
         self.swipes += 1
 
     def visible_control(self, name):

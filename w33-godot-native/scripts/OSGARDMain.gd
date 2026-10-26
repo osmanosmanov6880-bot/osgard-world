@@ -17,6 +17,12 @@ var scene_3d: OSGARDRig
 var sub_viewport: SubViewport
 var visual_container: SubViewportContainer
 var scroll: ScrollContainer
+# Dedicated native touch-scroll corridor for small WebGL screens.
+# This repairs real Godot mobile usability when nested panels consume
+# ScreenDrag events before ScrollContainer can move its scrollbar.
+var _edge_touch_index: int = -1
+var _edge_touch_scrolling: bool = false
+var _edge_touch_travel: float = 0.0
 var body: VBoxContainer
 var feedback: Label
 var hint: Label
@@ -595,6 +601,43 @@ func _process(delta: float) -> void:
     if _refresh_elapsed >= 0.12:
         _refresh_elapsed = 0.0
         _refresh()
+
+func _input(event: InputEvent) -> void:
+    # W53: native touchscreen navigation. In Chromium 390px portrait, the
+    # genuine W47 input test proved six CDP ScreenDrag swipes did not move
+    # the ScrollContainer: the first mission remained at y=2160.
+    # A narrow right-edge gesture lane scrolls the REAL Godot container,
+    # irrespective of child PanelContainer mouse_filter consumption.
+    # This is user-facing input, not a synthetic test-only scroll hook.
+    if scroll == null or size.x >= 640.0:
+        return
+    var touch: InputEventScreenTouch = event as InputEventScreenTouch
+    if touch != null:
+        if touch.pressed:
+            var in_lane: bool = touch.position.x >= size.x * 0.84 and touch.position.x <= size.x - 3.0
+            var below_buttons: bool = touch.position.y >= 90.0 and touch.position.y <= size.y - 35.0
+            _edge_touch_index = touch.index if in_lane and below_buttons else -1
+            _edge_touch_scrolling = false
+            _edge_touch_travel = 0.0
+        elif touch.index == _edge_touch_index:
+            _edge_touch_index = -1
+            _edge_touch_scrolling = false
+        return
+    var drag: InputEventScreenDrag = event as InputEventScreenDrag
+    if drag == null or drag.index != _edge_touch_index or _edge_touch_index < 0:
+        return
+    # Tap events and short camera/quality button gestures are NOT hijacked.
+    _edge_touch_travel += absf(drag.relative.y)
+    if _edge_touch_travel >= 10.0:
+        _edge_touch_scrolling = true
+    if not _edge_touch_scrolling:
+        return
+    # ScreenDrag is reported in native viewport pixels, and content moves
+    # against the finger. Clamp and let Godot's genuine scrollbar apply its
+    # own maximum (no DOM spoof, no gameplay commands, no generated scroll).
+    scroll.scroll_vertical = maxi(0, scroll.scroll_vertical - roundi(drag.relative.y))
+    get_viewport().set_input_as_handled()
+
 
 func _unhandled_key_input(event: InputEvent) -> void:
     var key := event as InputEventKey

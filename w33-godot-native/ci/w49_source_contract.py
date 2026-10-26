@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """W49: fail-closed exact W47 -> W48 source scope, no deployment.
 
+Original mission/core/scene and desktop browser tests stay unmodified; the
+W53 mobile CDP touch test is explicitly excepted for real slow-frame gestures.
 This is a Git/source integrity check. Real geometry and gameplay require
 the separate Godot/Chromium suites; a PASS here never certifies runtime.
 """
@@ -12,11 +14,14 @@ from pathlib import Path
 W47_PINNED_SHA = "14be69cdaa1fdffa4e209645eed0b1964581858a"
 ALLOWED = {
     ".github/workflows/r135-w33-operator-debrief-native-qa.yml",
+    ".github/workflows/osgard-w53-mobile-touch-acceptance.yml",
     "w33-godot-native/scripts/OSGARDObsidianStage.gd",
     "w33-godot-native/scripts/OSGARDMain.gd",
     "w33-godot-native/tests/test_w48_ring_instancing.gd",
+    "w33-godot-native/tests/test_w53_mobile_edge_swipe.gd",
     "w33-godot-native/ci/godot_software_performance.py",
     "w33-godot-native/ci/browser_webgl_smoke.py",
+    "w33-godot-native/ci/mobile_touch_acceptance.py",
     "w33-godot-native/ci/w49_source_contract.py",
     "w33-godot-native/ci/w51_paired_comparison.py",
     "w33-godot-native/ci/w52_release_gate.py",
@@ -33,7 +38,6 @@ PRESERVE = (
     "w33-godot-native/tests/test_scene_integration.gd",
     "w33-godot-native/ci/browser_gameplay_acceptance.py",
     "w33-godot-native/ci/visual_art_acceptance.py",
-    "w33-godot-native/ci/mobile_touch_acceptance.py",
 )
 SHA_CHARS = frozenset("0123456789abcdef")
 
