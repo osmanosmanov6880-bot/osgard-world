@@ -37,6 +37,12 @@ jobs:
           python3 -m py_compile w33-godot-native/ci/mobile_touch_acceptance.py
           # Full baseline-to-head diff --check is already mandatory in W49.
           # This dedicated screenshot runner intentionally uses checkout depth=1.
+      - name: W49 synthetic source tamper regressions still reject unsafe changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s w33-godot-native/ci \
+            -p test_w49_w52_gate_regressions.py -v
       - uses: chickensoft-games/setup-godot@v2
         with:
           version: 4.4.1
