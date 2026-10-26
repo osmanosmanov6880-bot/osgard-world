@@ -166,6 +166,68 @@ class GitSourceGateTests(unittest.TestCase):
                 source_gate.verify(BASE, HEAD)
 
 
+class W57ExactHeadPhysicalGateTests(unittest.TestCase):
+    """Never launder a W56 physical HOLD report from a different source SHA."""
+
+    def good_hold(self):
+        return {
+            "schema": "OSGARD_W56_FAIL_CLOSED_PHYSICAL_REVIEW_V1",
+            "source_sha": HEAD, "status": "HOLD",
+            "decision": "MISSING_DEVICE_REPORTS", "reports": {},
+            "missing": ["windows", "webgl", "android", "ios"],
+            "independent_physical_device_certified": False,
+            "cinematic_signoff": False, "production_approved": False,
+            "allow_master_merge": False, "published_to_production": False,
+        }
+
+    def test_valid_w56_exact_source_hold_must_remain_hold(self):
+        result = release_gate.validate_w56_hold(self.good_hold(), HEAD)
+        self.assertEqual(result["status"], "HOLD")
+        self.assertFalse(result["production_approved"])
+        self.assertTrue(result["manual_hardware_review_required"])
+
+    def test_rejects_missing_w56_review_file(self):
+        with tempfile.TemporaryDirectory() as folder:
+            with self.assertRaisesRegex(ValueError, "Missing exact CI evidence"):
+                release_gate.read_json(Path(folder) / "missing-w56.json")
+
+    def test_rejects_stale_w56_source_sha(self):
+        report = self.good_hold()
+        report["source_sha"] = "b" * 40
+        with self.assertRaisesRegex(ValueError, "different source SHA"):
+            release_gate.validate_w56_hold(report, HEAD)
+
+    def test_rejects_fake_w56_release_go(self):
+        report = self.good_hold()
+        report["status"] = "PASS"
+        report["decision"] = "PRODUCTION_GO"
+        with self.assertRaisesRegex(ValueError, "cannot authorise"):
+            release_gate.validate_w56_hold(report, HEAD)
+
+    def test_rejects_forged_physical_device_observations(self):
+        report = self.good_hold()
+        report["reports"] = {"windows": {"GPU": "fake"}}
+        report["missing"] = ["android", "ios"]
+        with self.assertRaisesRegex(ValueError, "must not invent"):
+            release_gate.validate_w56_hold(report, HEAD)
+
+    def test_rejects_any_forged_device_or_release_flag(self):
+        for flag in ("independent_physical_device_certified",
+                     "cinematic_signoff", "production_approved",
+                     "allow_master_merge", "published_to_production"):
+            with self.subTest(flag=flag):
+                report = self.good_hold()
+                report[flag] = True
+                with self.assertRaisesRegex(ValueError, "fail closed"):
+                    release_gate.validate_w56_hold(report, HEAD)
+
+    def test_rejects_partial_or_missing_w56_schema(self):
+        report = self.good_hold()
+        report["schema"] = "bogus"
+        with self.assertRaisesRegex(ValueError, "schema"):
+            release_gate.validate_w56_hold(report, HEAD)
+
+
 class ReleaseGateEvidenceTests(unittest.TestCase):
     """Never accept missing/tampered artifacts as real native evidence."""
 
