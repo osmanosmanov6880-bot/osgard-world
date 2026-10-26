@@ -277,6 +277,17 @@ func build(state: Dictionary, forecast: Dictionary, mission: String,
 	add_child(stats)
 	focus_summary = stats
 
+func _unhandled_key_input(event: InputEvent) -> void:
+	# F9 is scoped to the actual visible governance cabinet. It never alters
+	# driving controls, state, camera allocations or mobile layout.
+	var key: InputEventKey = event as InputEventKey
+	if key == null or not key.pressed or key.echo or key.keycode != KEY_F9:
+		return
+	if focus_button == null or not is_visible_in_tree():
+		return
+	_toggle_city_focus()
+	get_viewport().set_input_as_handled()
+
 func _toggle_city_focus() -> void:
 	# Original data cards and action handlers are never freed/replaced.
 	# Full-width stage uses the same ONE live preview World3D as before.
@@ -472,8 +483,8 @@ func _city_view(parent: Node, world: World3D, forecast: Dictionary, lang: String
 	focus_button = Button.new()
 	focus_button.name = "R115CinematicFocusToggle"
 	focus_button.text = local("ФОКУС НА ГОРОДЕ","FOCUS ON CITY","聚焦城市",lang)
-	focus_button.tooltip_text = local("Развернуть реальный 3D-атлас",
-		"Expand live 3D atlas","展开三维地图",lang)
+	focus_button.tooltip_text = local("Развернуть 3D-атлас · F9",
+		"Expand live city · F9","展开三维地图 · F9",lang)
 	# Place below R112 mode buttons inside VISIBLE 3D header, never below
 	# the screen fold of 960x540 browser or smaller laptop viewports.
 	focus_button.anchor_left = 0.60
