@@ -72,8 +72,9 @@ func _run() -> void:
 		root.add_child(car)
 		fleet.append(car)
 		var collision:=car.get_node_or_null("CollisionShape3D") as CollisionShape3D
-		check(collision!=null and collision.shape is BoxShape3D and
-			collision.shape.size.is_equal_approx(Vector3(2.25,1.15,4.1)),
+		var bounds: BoxShape3D=collision.shape as BoxShape3D if collision!=null else null
+		check(bounds!=null and
+			bounds.size.is_equal_approx(Vector3(2.25,1.15,4.1)),
 			"original collision/crosswalk road safety shape and physics authority unchanged")
 		check(car.collision_layer==8 and
 			(car.collision_mask & (1|2|4|8))==(1|2|4|8),
@@ -109,7 +110,8 @@ func _run() -> void:
 			"physically glowing original twin brake lights remain in actual car controller")
 		car.call("_update_brake_lights",true)
 		var brakes: Array=car.get("brake_meshes")
-		check((brakes[0] as MeshInstance3D).material_override.emission_energy_multiplier>=2.0,
+		var brake_finish: StandardMaterial3D=(brakes[0] as MeshInstance3D).material_override as StandardMaterial3D
+		check(brake_finish!=null and brake_finish.emission_energy_multiplier>=2.0,
 			"original actual car braking still visibly raises real Godot light emission")
 		check(car.get_child_count()==(15 if index==11 else 13),
 			"no NEW car parts or draw nodes: same original named CharacterBody3D art pieces")
