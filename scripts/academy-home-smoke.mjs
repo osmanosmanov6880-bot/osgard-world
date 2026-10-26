@@ -115,7 +115,7 @@ assert.ok(home.includes('Assessment rubric (weights total 100%)') && home.includ
 assert.ok(home.includes('labFeedback') && home.includes('Score each criterion from 0–4'), 'Generated brief must request criterion-based scores and actionable feedback')
 assert.ok(styles.includes('.academy-lab-difficulty') && styles.includes('.academy-lab-rubric'), 'Difficulty and rubric controls must be styled')
 assert.ok(styles.includes('.academy-lab-panel') && styles.includes('@media(max-width:760px)'), 'Practical lab must have responsive layout styling')
-assert.ok(home.includes('/osa-cinema?scene=') && cinema.includes("new URLSearchParams(window.location.search).get('scene')"), 'Lesson cards must deep-link to their corresponding course scene')
+assert.ok(home.includes('/osa-cinema?scene=') && cinema.includes('readCinemaRoute(window.location.search,scenes.ru.length)') && cinema.includes('getCinemaScenePath(pathname,search,hash,locale,target,data.length)'), 'Lesson cards must deep-link safely to their course scene using the canonical V46 route parser')
 assert.ok(home.includes('lessonPractice') && home.includes('/academy?project=${project}#project-studio'), 'Each lesson must offer a direct link to a mapped practical project')
 assert.ok(home.includes("sceneIndex === 5 ? 'privacy' : sceneIndex === 3 || sceneIndex === 4 ? 'evidence' : 'decision'"), 'Lessons must map to the matching privacy, evidence or decision project')
 assert.ok(studio.includes("new URLSearchParams(window.location.search).get('project')") && studio.includes("['evidence','privacy','decision'].includes(requested)"), 'Project studio must open a requested project safely from a lesson link')
