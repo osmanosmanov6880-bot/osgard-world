@@ -56,16 +56,95 @@ func _part(id: String, size: Vector3, at: Vector3, tint: Color, metal: float = 0
 		painted_parts.append(visual)
 	return visual
 
+# R129: real layered ceramic windscreen perimeter and glass, not a
+# second transparent layer, PNG, or per-window extra draw call.
+# Every original FOUR windows remains one physical ArrayMesh/MeshInstance.
+static func _face(st: SurfaceTool, a: Vector3, b: Vector3,
+		c: Vector3, d: Vector3, tint: Color) -> void:
+	st.set_color(tint)
+	for v in [a,b,c,a,c,d]:
+		st.add_vertex(v)
+
+static func _aero_box(st: SurfaceTool, centre: Vector3,
+		half: Vector3, tint: Color) -> void:
+	var low: Vector3 = centre-half
+	var high: Vector3 = centre+half
+	_face(st,Vector3(low.x,low.y,low.z),Vector3(high.x,low.y,low.z),
+		Vector3(high.x,high.y,low.z),Vector3(low.x,high.y,low.z),tint)
+	_face(st,Vector3(high.x,low.y,high.z),Vector3(low.x,low.y,high.z),
+		Vector3(low.x,high.y,high.z),Vector3(high.x,high.y,high.z),tint)
+	_face(st,Vector3(low.x,low.y,high.z),Vector3(low.x,low.y,low.z),
+		Vector3(low.x,high.y,low.z),Vector3(low.x,high.y,high.z),tint)
+	_face(st,Vector3(high.x,low.y,low.z),Vector3(high.x,low.y,high.z),
+		Vector3(high.x,high.y,high.z),Vector3(high.x,high.y,low.z),tint)
+	_face(st,Vector3(low.x,high.y,low.z),Vector3(high.x,high.y,low.z),
+		Vector3(high.x,high.y,high.z),Vector3(low.x,high.y,high.z),tint)
+	_face(st,Vector3(low.x,low.y,high.z),Vector3(high.x,low.y,high.z),
+		Vector3(high.x,low.y,low.z),Vector3(low.x,low.y,low.z),tint)
+
+static func _machined_aero_lip() -> ArrayMesh:
+	var surface := SurfaceTool.new()
+	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+	# The single original "FrontSplitter" node replaces its box with one
+	# bounded 8-mass brushed metal/carbon sculpt. No extra draw batches.
+	_aero_box(surface,Vector3(0.0,-0.034,0.040),
+		Vector3(1.37,0.054,0.227),Color("1e272c"))
+	_aero_box(surface,Vector3(0.0,-0.071,-0.216),
+		Vector3(1.37,0.022,0.073),Color("11191e"))
+	for side in [-1.0,1.0]:
+		var x: float = float(side)*1.012
+		_aero_box(surface,Vector3(x,-0.002,-0.174),
+			Vector3(0.315,0.042,0.063),Color("0b151b"))
+		_aero_box(surface,Vector3(x,-0.015,-0.246),
+			Vector3(0.270,0.008,0.011),Color("84939a"))
+	_aero_box(surface,Vector3(0.0,0.018,-0.177),
+		Vector3(0.450,0.025,0.036),Color("303e46"))
+	_aero_box(surface,Vector3(0.0,0.056,-0.126),
+		Vector3(0.545,0.008,0.028),Color("8a9aa3"))
+	surface.generate_normals()
+	return surface.commit()
+
 func _glass_quad(id: String, a: Vector3, b: Vector3, c: Vector3, d: Vector3) -> void:
 	var surface := SurfaceTool.new()
 	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
-	for v in [a,b,c,a,c,d]:
-		surface.add_vertex(v)
+	var centre: Vector3 = (a+b+c+d)*0.25
+	# Physical glazing/ceramic frit frame share the exact old quad bounds;
+	# the central glass is recessed INSIDE the perimeter, never coplanar
+	# overlapping transparent geometry.
+	var inner_a: Vector3 = a.lerp(centre,0.105)
+	var inner_b: Vector3 = b.lerp(centre,0.105)
+	var inner_c: Vector3 = c.lerp(centre,0.105)
+	var inner_d: Vector3 = d.lerp(centre,0.105)
+	var ceramic: Color = Color("1b252c")
+	_face(surface,inner_a,inner_b,inner_c,inner_d,Color("446979"))
+	_face(surface,a,b,inner_b,inner_a,ceramic)
+	_face(surface,b,c,inner_c,inner_b,ceramic)
+	_face(surface,c,d,inner_d,inner_c,ceramic)
+	_face(surface,d,a,inner_a,inner_d,ceramic)
+	# R129: two truly physical wiper blades, resting on bottom 1/4 of
+	# windshield, combined in the SAME window draw surface (not new nodes).
+	if id=="SlopedWindshield":
+		var normal: Vector3 = (b-a).cross(c-a).normalized()
+		for side in [0,1]:
+			var t0: float = 0.11 if side==0 else 0.56
+			var t1: float = 0.43 if side==0 else 0.87
+			var start: Vector3 = d.lerp(c,t0).lerp(a.lerp(b,t0),0.13)+normal*0.009
+			var stop: Vector3 = d.lerp(c,t1).lerp(a.lerp(b,t1),0.21)+normal*0.009
+			var lateral: Vector3 = normal.cross((stop-start).normalized())*0.010
+			_face(surface,start-lateral,start+lateral,
+				stop+lateral,stop-lateral,Color("151d22"))
 	surface.generate_normals()
 	var visual := MeshInstance3D.new()
 	visual.name = id
 	visual.mesh = surface.commit()
-	var glass := _mat(Color("39687a"),0.42,0.19)
+	# Auto glass should not generate four additional opaque WebGL shadow maps.
+	# The original painted chassis remains the authoritative shadow caster.
+	visual.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	var glass := _mat(Color.WHITE,0.36,0.24)
+	glass.vertex_color_use_as_albedo = true
+	glass.clearcoat_enabled = true
+	glass.clearcoat = 0.48
+	glass.clearcoat_roughness = 0.14
 	glass.cull_mode = BaseMaterial3D.CULL_DISABLED
 	visual.material_override = glass
 	add_child(visual)
@@ -79,7 +158,15 @@ func _create_body() -> void:
 	_part("Cabin",Vector3(2.06,0.56,2.30),Vector3(0,0.37,0.05),body_paint.darkened(0.1),0.50,0.26,true)
 	_part("Roof",Vector3(1.92,0.18,1.45),Vector3(0,0.78,0.08),body_paint,0.6,0.22,true)
 	_part("HoodHighlight",Vector3(1.48,0.035,1.18),Vector3(0,-0.145,-1.42),body_paint.lightened(0.06),0.55,0.22,true)
-	_part("FrontSplitter",Vector3(2.75,0.13,0.64),Vector3(0,-0.65,-2.34),Color("101a24"),0.22,0.31)
+	var front_aero: MeshInstance3D = _part("FrontSplitter",
+		Vector3(2.75,0.13,0.64),Vector3(0,-0.65,-2.34),
+		Color("101a24"),0.22,0.31)
+	front_aero.mesh = _machined_aero_lip()
+	var aero_finish: StandardMaterial3D = front_aero.material_override as StandardMaterial3D
+	aero_finish.albedo_color = Color.WHITE
+	aero_finish.vertex_color_use_as_albedo = true
+	aero_finish.metallic = 0.32
+	aero_finish.roughness = 0.38
 	_part("RearDiffuser",Vector3(2.78,0.14,0.56),Vector3(0,-0.64,2.30),Color("101a24"),0.22,0.34)
 	_part("RearSpoiler",Vector3(2.60,0.10,0.45),Vector3(0,0.36,2.26),Color("101b23"),0.25,0.30)
 	for sign in [-1.0,1.0]:
