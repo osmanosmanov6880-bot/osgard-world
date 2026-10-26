@@ -36,7 +36,7 @@ func _label(parent: Node, value: String, size: int = 16, accent: bool = false) -
 	var item := Label.new()
 	item.text = value
 	item.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	item.add_theme_font_size_override("font_size",maxi(14,size))
+	item.add_theme_font_size_override("font_size",maxi(15,size))
 	item.add_theme_color_override("font_color",GOLD if accent else WHITE)
 	item.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	parent.add_child(item)
@@ -121,7 +121,7 @@ func build(state: Dictionary, forecast: Dictionary, mission: String,
 			tab.name = "R90Tab%d" % index
 			tab.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 			tab.custom_minimum_size.y = 45
-			tab.add_theme_font_size_override("font_size",14)
+			tab.add_theme_font_size_override("font_size",15)
 
 	var stats: Container = GridContainer.new() if compact else HBoxContainer.new()
 	stats.name = "R97ExecutiveSummary"
@@ -437,7 +437,7 @@ func _city_view(parent: Node, world: World3D, forecast: Dictionary, lang: String
 		badge.name = "R90DistrictPin_"+str(id)
 		badge.text = "%s · %d/100" % [str(titles[id]),int(scores.get(id,0))]
 		badge.tooltip_text = local("Выбрать район","Select district","选择城区",lang)
-		badge.custom_minimum_size = Vector2(100,32)
+		badge.custom_minimum_size = Vector2(192,44)
 		var projected: Dictionary = PROJECTIVE_PINS.project_district(camera,id,Vector2(preview.size))
 		badge.visible = bool(projected.get("visible",false))
 		var point: Vector2 = projected.get("anchor",Vector2(0.5,0.5))
@@ -445,11 +445,11 @@ func _city_view(parent: Node, world: World3D, forecast: Dictionary, lang: String
 		badge.anchor_right = point.x
 		badge.anchor_top = point.y
 		badge.anchor_bottom = point.y
-		badge.offset_left = -82.0
-		badge.offset_right = 98.0
-		badge.offset_top = -16.0
-		badge.offset_bottom = 16.0
-		badge.add_theme_font_size_override("font_size",12)
+		badge.offset_left = -96.0
+		badge.offset_right = 96.0
+		badge.offset_top = -22.0
+		badge.offset_bottom = 22.0
+		badge.add_theme_font_size_override("font_size",15)
 		REFERENCE.style_button(badge)
 		badge.pressed.connect(Callable(self,"_request_district").bind(id))
 		stage.add_child(badge)
@@ -472,7 +472,7 @@ func _city_view(parent: Node, world: World3D, forecast: Dictionary, lang: String
 		button.tooltip_text = local("Реальная камера города","Live city camera","实时城市镜头",lang)
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		button.custom_minimum_size.y = 38
-		button.add_theme_font_size_override("font_size",14)
+		button.add_theme_font_size_override("font_size",15)
 		REFERENCE.style_button(button)
 		button.pressed.connect(Callable(self,"_switch_atlas_mode").bind(mode))
 		controls.add_child(button)
@@ -494,7 +494,7 @@ func _city_view(parent: Node, world: World3D, forecast: Dictionary, lang: String
 	focus_button.offset_top = 0.0
 	focus_button.offset_bottom = 42.0
 	focus_button.custom_minimum_size.y = 44
-	focus_button.add_theme_font_size_override("font_size",14)
+	focus_button.add_theme_font_size_override("font_size",15)
 	REFERENCE.style_button(focus_button)
 	focus_button.pressed.connect(Callable(self,"_toggle_city_focus"))
 	stage.add_child(focus_button)
