@@ -45,7 +45,7 @@ func _run() -> void:
 	var stats: Container = panel.get_node_or_null("R97ExecutiveSummary") as Container
 	var atlas: Control = panel.find_child("R112AtlasCameraControls",true,false)
 	var viewport: SubViewport = panel.get("preview") as SubViewport
-	check(controls is Button and (controls as Button).city_focus_active == Control.FOCUS_ALL,
+	check(controls is Button and (controls as Button).focus_mode == Control.FOCUS_ALL,
 		"live focus toggle is a real Godot keyboard and pointer-accessible button")
 	check(cols != null and cols.get_child_count()==3,
 		"original mission / city / economy cards kept in original 3 columns")
