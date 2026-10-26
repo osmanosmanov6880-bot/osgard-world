@@ -5,6 +5,7 @@ extends Node3D
 const SKYLINE_COUNT := 72
 const STREET_BOLLARD_COUNT := 144
 const R91_ARCHITECTURE = preload("res://scripts/horizon_r91_skyline_detail.gd")
+const FACADE_PACK = preload("res://scripts/horizon_facade_material_pack.gd")
 var skyline: MultiMeshInstance3D
 var skyline_plan: Array[Transform3D] = []
 var bollards: MultiMeshInstance3D
@@ -27,9 +28,52 @@ func _material(tint: Color,metal: float,rough: float) -> StandardMaterial3D:
 	mat.roughness = rough
 	return mat
 
+# R116: one shared physical building body surface for every original R90 tower.
+# All eight architectural masses belong to ONE ArrayMesh draw batch, instanced
+# by the original 72 MultiMesh transforms. Roof R114 + window R91 coordinates
+# remain anchored to the original unmodified normalized building footprint.
+static func _body_box(st: SurfaceTool, minimum: Vector3, maximum: Vector3) -> void:
+	var v: Array[Vector3] = [
+		Vector3(minimum.x,minimum.y,minimum.z),
+		Vector3(maximum.x,minimum.y,minimum.z),
+		Vector3(maximum.x,minimum.y,maximum.z),
+		Vector3(minimum.x,minimum.y,maximum.z),
+		Vector3(minimum.x,maximum.y,minimum.z),
+		Vector3(maximum.x,maximum.y,minimum.z),
+		Vector3(maximum.x,maximum.y,maximum.z),
+		Vector3(minimum.x,maximum.y,maximum.z)]
+	var quads: Array = [
+		[0,1,2,3],[4,7,6,5],[0,4,5,1],
+		[1,5,6,2],[2,6,7,3],[3,7,4,0]]
+	for quad in quads:
+		var a: Vector3 = v[int(quad[0])]
+		var b: Vector3 = v[int(quad[1])]
+		var c: Vector3 = v[int(quad[2])]
+		var d: Vector3 = v[int(quad[3])]
+		var normal: Vector3 = (b-a).cross(c-a).normalized()
+		for vertex in [a,b,c,a,c,d]:
+			st.set_normal(normal)
+			st.add_vertex(vertex)
+
+static func _structural_tower_body() -> ArrayMesh:
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	# The original wall extent stays exactly +-0.5, preserving R91 windows.
+	_body_box(st,Vector3(-0.50,-0.50,-0.50),Vector3(0.50,0.50,0.50))
+	# Four physically protruding corner piers. No separate scene nodes.
+	for sx in [-1.0,1.0]:
+		for sz in [-1.0,1.0]:
+			var cx: float = float(sx)*0.485
+			var cz: float = float(sz)*0.485
+			_body_box(st,Vector3(cx-0.036,-0.48,cz-0.036),
+				Vector3(cx+0.036,0.45,cz+0.036))
+	# Architectural podium and parapet: distinct real depth and silhouette.
+	_body_box(st,Vector3(-0.528,-0.50,-0.528),Vector3(0.528,-0.45,0.528))
+	_body_box(st,Vector3(-0.526,0.46,-0.526),Vector3(0.526,0.50,0.526))
+	return st.commit()
+
 func _build_outer_skyline() -> void:
-	var block := BoxMesh.new()
-	block.size = Vector3.ONE
+	var block := _structural_tower_body()
 	var mesh := MultiMesh.new()
 	mesh.transform_format = MultiMesh.TRANSFORM_3D
 	mesh.use_colors = true
@@ -48,18 +92,21 @@ func _build_outer_skyline() -> void:
 		var original_tower := Transform3D(Basis().scaled(Vector3(w,height,d)),center)
 		skyline_plan.append(original_tower)
 		mesh.set_instance_transform(i,original_tower)
-		var shade: float = 0.70+0.09*float(i%5)
-		mesh.set_instance_color(i,Color(0.32*shade,0.39*shade,0.48*shade))
+		# Deterministic architectural palette; same original R90 building index.
+		var shades: Array[Color] = [
+			Color("627385"),Color("879098"),Color("6f756f"),
+			Color("9b998e"),Color("526676"),Color("78818b")]
+		mesh.set_instance_color(i,shades[i%shades.size()])
 	skyline = MultiMeshInstance3D.new()
 	skyline.name = "ActualDistantBuildingGeometry"
 	skyline.multimesh = mesh
-	var building_finish := _material(Color("bac6d2"),0.14,0.57)
-	# R90 actual screenshot exposed previous white skyscrapers:
-	# per-instance RGB is ignored until enabled on Godot material.
+	# R116 real shared mineral PBR: cached 128px limestone colour, OpenGL
+	# normal and red-channel roughness. ZERO per-building texture allocation.
+	var building_finish: StandardMaterial3D = FACADE_PACK.facade(Color("c5c4bf"),1)
 	building_finish.vertex_color_use_as_albedo = true
 	skyline.material_override = building_finish
 	skyline.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	skyline.custom_aabb = AABB(Vector3(-340,0,-340),Vector3(680,116,680))
+	skyline.custom_aabb = AABB(Vector3(-356,0,-356),Vector3(712,116,712))
 	add_child(skyline)
 
 func _build_sidewalk_bollards() -> void:
