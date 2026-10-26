@@ -619,10 +619,12 @@ jobs:
             echo '::error::W47 pristine baseline import failed'
             exit 1
           fi
-          mkdir -p w47-original-source/w33-godot-native/build/web
-          godot --headless --path w47-original-source/w33-godot-native \
-            --export-release Web w47-original-source/w33-godot-native/build/web/index.html \
-            2>&1 | tee "$RUNNER_TEMP/w47-pristine-export.log"
+          (
+            cd w47-original-source/w33-godot-native
+            mkdir -p build/web
+            godot --headless --path . --export-release Web build/web/index.html \
+              2>&1 | tee "$RUNNER_TEMP/w47-pristine-export.log"
+          )
           if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/w47-pristine-export.log"; then
             echo '::error::W47 original Godot export failed'
             exit 1
