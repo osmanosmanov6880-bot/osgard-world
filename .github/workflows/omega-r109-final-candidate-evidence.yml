@@ -1,5 +1,20 @@
 name: EMPIRE Omega R109 exact-source original Godot release evidence, NO DEPLOY
 on:
+  # Re-verify the ACTUAL integrated R90 SHA after a feature PR was merged;
+  # PR merge-preview SHA alone is never evidence for changed staging HEAD.
+  # Explicitly never publish, upload via SSH or touch master here.
+  push:
+    branches:
+      - feat/omega-r90-aaa-reference-first-slice-20261026
+    paths:
+      - 'godot/empire-omega/**'
+      - 'scripts/omega-r109-release-sentinel.py'
+      - 'scripts/omega-r109-phone-webgl.spec.mjs'
+      - 'scripts/omega-r117-city-focus-webgl.spec.mjs'
+      - 'scripts/omega-r109-frame-telemetry.spec.mjs'
+      - 'playwright.omega-r109.config.mjs'
+      - 'scripts/r90_cc0_texture_pack.py'
+      - '.github/workflows/omega-r109-final-candidate-evidence.yml'
   pull_request:
     branches:
       - feat/omega-r90-aaa-reference-first-slice-20261026
