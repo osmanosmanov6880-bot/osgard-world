@@ -40,6 +40,19 @@ jobs:
     timeout-minutes: 24
     steps:
       - uses: actions/checkout@v4
+        with:
+          # PR events normally checkout a synthetic merge SHA, NOT the
+          # branch SHA. Check out exact immutable original source instead.
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      - name: Fail if this job is not running the EXACT intended source SHA
+        shell: bash
+        env:
+          EXPECTED_SOURCE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          ACTUAL_SOURCE_SHA="$(git rev-parse HEAD)"
+          test "$ACTUAL_SOURCE_SHA" = "$EXPECTED_SOURCE_SHA"
+          echo "EMPIRE EXACT VERIFIED SOURCE SHA=$ACTUAL_SOURCE_SHA"
       - uses: chickensoft-games/setup-godot@v2
         with:
           version: 4.4.1
@@ -88,6 +101,19 @@ jobs:
     timeout-minutes: 33
     steps:
       - uses: actions/checkout@v4
+        with:
+          # PR events normally checkout a synthetic merge SHA, NOT the
+          # branch SHA. Check out exact immutable original source instead.
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      - name: Fail if this job is not running the EXACT intended source SHA
+        shell: bash
+        env:
+          EXPECTED_SOURCE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          ACTUAL_SOURCE_SHA="$(git rev-parse HEAD)"
+          test "$ACTUAL_SOURCE_SHA" = "$EXPECTED_SOURCE_SHA"
+          echo "EMPIRE EXACT VERIFIED SOURCE SHA=$ACTUAL_SOURCE_SHA"
       - uses: chickensoft-games/setup-godot@v2
         with:
           version: 4.4.1
@@ -173,6 +199,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # PR events normally checkout a synthetic merge SHA, NOT the
+          # branch SHA. Check out exact immutable original source instead.
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      - name: Fail if this job is not running the EXACT intended source SHA
+        shell: bash
+        env:
+          EXPECTED_SOURCE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          ACTUAL_SOURCE_SHA="$(git rev-parse HEAD)"
+          test "$ACTUAL_SOURCE_SHA" = "$EXPECTED_SOURCE_SHA"
+          echo "EMPIRE EXACT VERIFIED SOURCE SHA=$ACTUAL_SOURCE_SHA"
       - name: Produce original game source manifest ONLY after both jobs succeed
         shell: bash
         run: |
