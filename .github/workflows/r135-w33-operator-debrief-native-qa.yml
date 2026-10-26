@@ -723,6 +723,8 @@ jobs:
             --touch w52-input/touch/mobile-touch-evidence.json \
             --visual w52-input/visual/visual-evidence.json \
             --candidate "${packages[0]}" \
+            --sha256sums w52-input/candidate/SHA256SUMS.txt \
+            --build-report w52-input/candidate/build-report.json \
             --base-sha "${{ github.event.pull_request.base.sha }}" \
             --head-sha "${{ github.event.pull_request.head.sha }}" \
             --out w52-release-evidence
