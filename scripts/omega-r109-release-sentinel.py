@@ -21,6 +21,8 @@ SCRIPT_PATHS = [
     "scripts/world_builder.gd",
     "scripts/horizon_roadscape.gd",
     "scripts/horizon_organic_foliage.gd",
+    "scripts/pedestrian_agent.gd",
+    "scripts/horizon_street_citizen_mesh.gd",
     "scripts/horizon_r90_premium_dashboard.gd",
     "scripts/horizon_r90_street_dressing.gd",
     "scripts/horizon_facade_material_pack.gd",
@@ -58,6 +60,10 @@ TESTS = [
     "v93_r116_architectural_tower_body",
     "v95_r119_real_glazing_readable_atlas",
     "v96_r120_sculpted_arbor_physical_wood",
+    "v24_horizon_character_and_hall",
+    "v63_r41_predictive_pedestrian_yield",
+    "v68_r47_predictive_crosswalk_traffic",
+    "v97_r123_real_pedestrian_body_gait",
 ]
 
 
