@@ -166,6 +166,54 @@ def candidate_zip(path, head):
                 "actual_windows_runner_boot": True}
 
 
+
+def validate_w42_checksum_attestations(candidate: Path, sums_path: Path,
+                                       report_path: Path, head: str) -> dict:
+    """Cross-check external W42 output records with the exact ZIP bytes.
+
+    W42 already proves its twice-built reproducibility upstream. These two
+    independent files are downloaded with the original candidate and checked
+    here as additional source-bound tamper evidence, not as a new build.
+    """
+    require(candidate.is_file(), "W42 original candidate ZIP missing")
+    require(sums_path.is_file(), "W42 SHA256SUMS.txt missing")
+    require(report_path.is_file(), "W42 build-report.json missing")
+    expected_name = "OSGARD_OBSIDIAN_" + head + ".zip"
+    require(candidate.name == expected_name, "wrong W42 candidate archive name")
+    sha = sha_file(candidate)
+    actual_size = candidate.stat().st_size
+    report = read_json(report_path)
+    require(report.get("result") == "PASS" and report.get("source_sha") == head,
+            "W42 packager report belongs to wrong commit or reports failure")
+    require(report.get("zip_sha256") == sha and report.get("size_bytes") == actual_size,
+            "W42 original packager digest or byte size mismatch")
+    require(report.get("windows_os_boot_verified") is True and
+            report.get("has_art") is True,
+            "W42 build-report omitted Windows boot or original art evidence")
+    lines = sums_path.read_text(encoding="utf-8").splitlines()
+    require(len(lines) == 1, "W42 SHA256SUMS must contain exactly one candidate entry")
+    # GNU sha256sum writes '<64 hex><two spaces><file>' by default.
+    # A leading star is allowed only for the binary-mode sha256sum syntax.
+    line = lines[0]
+    require(len(line) >= 67 and line[64] == " " and line[65] in (" ", "*"),
+            "W42 SHA256SUMS line format invalid")
+    digest = line[:64]
+    require(len(digest) == 64 and all(c in "0123456789abcdef" for c in digest),
+            "W42 SHA256SUMS has invalid digest")
+    filename = line[66:]
+    require(filename == "candidate-output/" + expected_name,
+            "W42 SHA256SUMS references a different archive or path")
+    require(digest == sha, "W42 SHA256SUMS digest mismatch")
+    return {
+        "schema": "OSGARD_W52_INDEPENDENT_W42_CHECKSUM_RECONCILIATION_V1",
+        "candidate_sha256": sha,
+        "candidate_size_bytes": actual_size,
+        "w42_packager_report_status": "PASS",
+        "w42_checksum_file_verified": True,
+        "candidate_head_sha": head,
+    }
+
+
 def validate(opts):
     source = read_json(opts.source)
     performance = read_json(opts.performance)
@@ -222,6 +270,8 @@ def validate(opts):
             art.get("not_concept_art") is True, "W39 native artwork evidence")
     require(len(art.get("frames", [])) >= 5, "original five camera/HERO/ECO/mobile frames missing")
     pngs(opts.visual.parent, art["frames"])
+    attestations = validate_w42_checksum_attestations(
+        opts.candidate, opts.sha256sums, opts.build_report, head)
     packed = candidate_zip(opts.candidate, head)
     return {
         "schema": "OSGARD_W52_SOURCE_MATCHED_SOFTWARE_RELEASE_GATE_V1",
@@ -237,6 +287,7 @@ def validate(opts):
         "w33_all_six_actual_chromium_missions": "GATED_BY_SIGNED_W42_CANDIDATE",
         "w34_real_windows_2022_exe_started": "PASS",
         "reproducible_candidate": packed,
+        "w42_external_checksum_attestations": attestations,
         "observed_software_fps_negative_scenarios": [
             p["scenario"] for p in paired["comparisons"]
             if p.get("single_pair_observed_fps_change_percent") is not None
@@ -262,6 +313,8 @@ def main():
     parser = argparse.ArgumentParser()
     for name in ("source", "performance", "paired", "touch", "visual", "candidate"):
         parser.add_argument("--" + name, type=Path, required=True)
+    parser.add_argument("--sha256sums", type=Path, required=True)
+    parser.add_argument("--build-report", type=Path, required=True)
     parser.add_argument("--base-sha", required=True)
     parser.add_argument("--head-sha", required=True)
     parser.add_argument("--out", type=Path, required=True)
