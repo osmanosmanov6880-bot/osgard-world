@@ -1,0 +1,98 @@
+name: OSGARD W53 real 390px touch navigation and mission 0
+
+on:
+  pull_request:
+    branches:
+      - feat/osgard-w48-ring-instancing-render-budget-20261026
+    paths:
+      - 'w33-godot-native/**'
+      - '.github/workflows/osgard-w53-mobile-touch-acceptance.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: osgard-w53-native-mobile-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  real-touch-edge-scroll:
+    name: W53 real Godot WebGL CDP touch swipes, 390px mission completion
+    if: github.event_name == 'pull_request' && github.head_ref == 'feat/osgard-w53-native-mobile-edge-swipe-20261026'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - name: Verify exact W53 source commit and independent original QA script
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha }}"
+          test -s w33-godot-native/ci/mobile_touch_acceptance.py
+          python3 -m py_compile w33-godot-native/ci/mobile_touch_acceptance.py
+          test -s w33-godot-native/scripts/OSGARDMain.gd
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: true
+      - name: Real Godot 4.4.1 source import rejects parse/runtime errors
+        shell: bash
+        run: |
+          set -euo pipefail
+          godot --headless --editor --path w33-godot-native --import --quit 2>&1 | tee "$RUNNER_TEMP/w53-import.log"
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:|Failed to load script' "$RUNNER_TEMP/w53-import.log"; then
+            echo "::error::W53 actual Godot import/parser errors"
+            exit 1
+          fi
+      - name: Export genuine unmodified W53 Godot WebGL with real native input
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd w33-godot-native
+          mkdir -p build/web
+          godot --headless --path . --export-release Web build/web/index.html 2>&1 | tee "$RUNNER_TEMP/w53-web-export.log"
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/w53-web-export.log"; then
+            echo "::error::W53 actual Godot WebGL export errors"
+            exit 1
+          fi
+          cd ..
+          python3 w33-godot-native/ci/verify_web_export.py w33-godot-native/build/web \
+            --sha "${{ github.event.pull_request.head.sha }}" \
+            --output w33-godot-native/build/web/evidence.json
+      - name: Install pinned original Chromium browser driver
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m venv "$RUNNER_TEMP/w53-venv"
+          "$RUNNER_TEMP/w53-venv/bin/pip" install --disable-pip-version-check --no-cache-dir playwright==1.56.0
+          "$RUNNER_TEMP/w53-venv/bin/python" -m playwright install --with-deps chromium
+      - name: Prove six real ScreenDrag swipes reach native mission panel and complete mission 0
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$RUNNER_TEMP/w53-venv/bin/python" w33-godot-native/ci/mobile_touch_acceptance.py \
+            --export w33-godot-native/build/web \
+            --evidence w53-native-touch-evidence \
+            --sha "${{ github.event.pull_request.head.sha }}"
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          proof=json.loads(Path("w53-native-touch-evidence/mobile-touch-evidence.json").read_text())
+          assert proof["status"]=="PASS" and proof["source_sha"]=="${{ github.event.pull_request.head.sha }}"
+          assert proof["touch_swipes"]>0, "Original failed W47 touch path not exercised"
+          assert proof["completed_case"]==0 and proof["native_events_confirmed"]>=8
+          assert proof["synthetic_dom_gameplay"] is False and proof["physical_phone_tested"] is False
+          print("W53 genuine browser screen touch navigation, mission completion: PASS")
+          PY
+      - name: Preserve W53 exact-head Godot WebGL original touch evidence even if failed
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: osgard-w53-native-mobile-touch-${{ github.event.pull_request.head.sha }}
+          path: w53-native-touch-evidence/
+          if-no-files-found: warn
+          retention-days: 30
