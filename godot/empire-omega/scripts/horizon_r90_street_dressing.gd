@@ -6,12 +6,10 @@ const SKYLINE_COUNT := 72
 const STREET_BOLLARD_COUNT := 144
 const R91_ARCHITECTURE = preload("res://scripts/horizon_r91_skyline_detail.gd")
 const FACADE_PACK = preload("res://scripts/horizon_facade_material_pack.gd")
-const R127_SHELTERS = preload("res://scripts/horizon_r127_street_shelters.gd")
 var skyline: MultiMeshInstance3D
 var skyline_plan: Array[Transform3D] = []
 var bollards: MultiMeshInstance3D
 var r91_architecture: Node3D
-var r127_shelters: MultiMeshInstance3D
 var quality := "standard"
 
 func _ready() -> void:
@@ -21,12 +19,6 @@ func _ready() -> void:
 	r91_architecture = R91_ARCHITECTURE.new()
 	r91_architecture.call("set_source_skyline",skyline,skyline_plan)
 	add_child(r91_architecture)
-	# R127: nest one additional actual PBR street-detail GPU batch under the
-	# existing visible facade-detail grouping. Preserve all original R91 root
-	# node counts, 72 tower transforms, road traffic and 3D mission colliders.
-	var facade: MultiMeshInstance3D = r91_architecture.get("facade_glass") as MultiMeshInstance3D
-	r127_shelters = R127_SHELTERS.new()
-	facade.add_child(r127_shelters)
 	set_quality("standard")
 
 func _material(tint: Color,metal: float,rough: float) -> StandardMaterial3D:
@@ -151,12 +143,9 @@ func set_quality(tier: String) -> void:
 		bollards.visible = quality == "cinematic"
 	if r91_architecture != null:
 		r91_architecture.call("set_quality",quality)
-	if r127_shelters != null:
-		r127_shelters.call("set_budget",quality)
 
 func graphics_are_bounded() -> bool:
-	return skyline != null and bollards != null and r91_architecture != null and r127_shelters != null and (
+	return skyline != null and bollards != null and r91_architecture != null and (
 		skyline.multimesh.instance_count == SKYLINE_COUNT and
 		bollards.multimesh.instance_count == STREET_BOLLARD_COUNT and
-		bool(r91_architecture.call("graphics_are_bounded")) and
-		bool(r127_shelters.call("bounded")))
+		bool(r91_architecture.call("graphics_are_bounded")))
