@@ -23,6 +23,74 @@ static func _leaf_triangle(surface: SurfaceTool, a: Vector3, b: Vector3, c: Vect
 	surface.set_color(Color(shade,shade,shade*0.96))
 	surface.add_vertex(c)
 
+# R120 genuine woody street-tree silhouette. The 192 ORIGINAL tree poses
+# share ONE physically shaded trunk mesh (no new scene node or GPU draw batch).
+# Normalized coordinates are mapped by the existing original trunk transforms;
+# all boughs stay under the original ~6.5m crown diameter.
+const WOOD_SEGMENTS: int = 8
+const WOOD_TRIANGLES: int = 96
+
+static func _wood_quad(st: SurfaceTool, a: Vector3, b: Vector3,
+		c: Vector3, d: Vector3, bark: Color) -> void:
+	st.set_color(bark)
+	for vertex in [a,b,c,a,c,d]:
+		st.add_vertex(vertex)
+
+static func _wood_segment(st: SurfaceTool, a: Vector3, b: Vector3,
+		base_radius: float, tip_radius: float, variant: int) -> void:
+	var direction: Vector3 = (b-a).normalized()
+	var horizontal: Vector3 = Vector3.FORWARD
+	if absf(direction.dot(horizontal)) > 0.93:
+		horizontal = Vector3.RIGHT
+	var u: Vector3 = direction.cross(horizontal).normalized()
+	var v: Vector3 = direction.cross(u).normalized()
+	for i in range(WOOD_SEGMENTS):
+		var angle_a: float = TAU*float(i)/float(WOOD_SEGMENTS)
+		var angle_b: float = TAU*float(i+1)/float(WOOD_SEGMENTS)
+		# Slight fluting, not per-tree noise: original deterministic placement
+		# RNG calls and the authoritative 192 tree transforms are untouched.
+		var irregular_a: float = 0.96+0.04*cos(float(i)*3.1+float(variant)*1.9)
+		var irregular_b: float = 0.96+0.04*cos(float(i+1)*3.1+float(variant)*1.9)
+		var radial_a: Vector3 = u*cos(angle_a)+v*sin(angle_a)
+		var radial_b: Vector3 = u*cos(angle_b)+v*sin(angle_b)
+		var low_a: Vector3 = a+radial_a*base_radius*irregular_a
+		var low_b: Vector3 = a+radial_b*base_radius*irregular_b
+		var high_a: Vector3 = b+radial_a*tip_radius*irregular_a
+		var high_b: Vector3 = b+radial_b*tip_radius*irregular_b
+		var tint: float = 0.80+0.14*float(i%3)/2.0
+		_wood_quad(st,low_a,low_b,high_b,high_a,
+			Color(tint*0.94,tint*0.97,tint,1.0))
+
+static func sculpted_trunk() -> ArrayMesh:
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	# A real tapered, gently bent bole plus 4 asymmetric branches emerging
+	# under the two ORIGINAL leaf species. Six sections x 16 triangles.
+	_wood_segment(st,Vector3(0.0,-0.50,0.0),Vector3(0.045,-0.06,-0.015),
+		0.58,0.42,0)
+	_wood_segment(st,Vector3(0.045,-0.06,-0.015),Vector3(0.07,0.50,0.03),
+		0.42,0.28,1)
+	var origins: Array[Vector3] = [
+		Vector3(0.025,0.10,0.0),
+		Vector3(0.035,0.23,-0.02),
+		Vector3(0.040,0.31,0.02),
+		Vector3(0.045,0.37,0.01)
+	]
+	var ends: Array[Vector3] = [
+		Vector3(2.30,0.62,0.75),
+		Vector3(-2.15,0.69,0.90),
+		Vector3(-0.95,0.73,-2.30),
+		Vector3(1.10,0.79,-1.83)
+	]
+	for i in range(origins.size()):
+		_wood_segment(st,origins[i],ends[i],0.30-float(i)*0.030,
+			0.065,i+2)
+	st.generate_normals()
+	return st.commit()
+
+static func wood_triangle_budget() -> int:
+	return WOOD_TRIANGLES
+
 static func leaf_canopy() -> ArrayMesh:
 	var surface := SurfaceTool.new()
 	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
