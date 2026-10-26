@@ -162,5 +162,85 @@ class ReleaseGateEvidenceTests(unittest.TestCase):
                 release_gate.candidate_zip(archive, HEAD)
 
 
+    def _create_w42_attestation_fixture(self, root, source=HEAD):
+        """Small synthetic negative-test fixture, NEVER a real Godot build."""
+        zip_path = root / ("OSGARD_OBSIDIAN_" + source + ".zip")
+        zip_path.write_bytes(b"synthetic-test-bytes-only")
+        digest = hashlib.sha256(zip_path.read_bytes()).hexdigest()
+        sums = root / "SHA256SUMS.txt"
+        sums.write_text(digest + "  candidate-output/" + zip_path.name + "\n", encoding="utf-8")
+        report = root / "build-report.json"
+        report.write_text(json.dumps({
+            "result": "PASS", "source_sha": source,
+            "size_bytes": zip_path.stat().st_size,
+            "zip_sha256": digest, "windows_os_boot_verified": True,
+            "has_art": True,
+        }), encoding="utf-8")
+        return zip_path, sums, report
+
+    def test_accepts_consistent_independent_w42_checksum_triplet(self):
+        with tempfile.TemporaryDirectory() as folder:
+            archive, sums, report = self._create_w42_attestation_fixture(Path(folder))
+            proof = release_gate.validate_w42_checksum_attestations(archive, sums, report, HEAD)
+            self.assertTrue(proof["w42_checksum_file_verified"])
+            self.assertEqual(proof["candidate_head_sha"], HEAD)
+
+    def test_rejects_tampered_w42_zip_even_if_filename_unchanged(self):
+        with tempfile.TemporaryDirectory() as folder:
+            archive, sums, report = self._create_w42_attestation_fixture(Path(folder))
+            archive.write_bytes(b"changed-after-W42-attestation")
+            with self.assertRaisesRegex(ValueError, "digest or byte size"):
+                release_gate.validate_w42_checksum_attestations(archive, sums, report, HEAD)
+
+    def test_rejects_replaced_w42_build_report_digest(self):
+        with tempfile.TemporaryDirectory() as folder:
+            archive, sums, report = self._create_w42_attestation_fixture(Path(folder))
+            data = json.loads(report.read_text(encoding="utf-8"))
+            data["zip_sha256"] = "f" * 64
+            report.write_text(json.dumps(data), encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "digest or byte size"):
+                release_gate.validate_w42_checksum_attestations(archive, sums, report, HEAD)
+
+    def test_rejects_replaced_w42_sha256sums_digest(self):
+        with tempfile.TemporaryDirectory() as folder:
+            archive, sums, report = self._create_w42_attestation_fixture(Path(folder))
+            sums.write_text("f" * 64 + "  candidate-output/" + archive.name + "\n", encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "SHA256SUMS digest mismatch"):
+                release_gate.validate_w42_checksum_attestations(archive, sums, report, HEAD)
+
+    def test_rejects_w42_sha256sums_wrong_archive_filename(self):
+        with tempfile.TemporaryDirectory() as folder:
+            archive, sums, report = self._create_w42_attestation_fixture(Path(folder))
+            digest = hashlib.sha256(archive.read_bytes()).hexdigest()
+            sums.write_text(digest + "  candidate-output/another.zip\n", encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "different archive or path"):
+                release_gate.validate_w42_checksum_attestations(archive, sums, report, HEAD)
+
+    def test_rejects_w42_sha256sums_multiple_entries(self):
+        with tempfile.TemporaryDirectory() as folder:
+            archive, sums, report = self._create_w42_attestation_fixture(Path(folder))
+            sums.write_text(sums.read_text(encoding="utf-8") * 2, encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "exactly one"):
+                release_gate.validate_w42_checksum_attestations(archive, sums, report, HEAD)
+
+    def test_rejects_w42_build_report_wrong_head(self):
+        with tempfile.TemporaryDirectory() as folder:
+            archive, sums, report = self._create_w42_attestation_fixture(Path(folder))
+            data = json.loads(report.read_text(encoding="utf-8"))
+            data["source_sha"] = "b" * 40
+            report.write_text(json.dumps(data), encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "wrong commit"):
+                release_gate.validate_w42_checksum_attestations(archive, sums, report, HEAD)
+
+    def test_rejects_w42_report_without_real_windows_boot(self):
+        with tempfile.TemporaryDirectory() as folder:
+            archive, sums, report = self._create_w42_attestation_fixture(Path(folder))
+            data = json.loads(report.read_text(encoding="utf-8"))
+            data["windows_os_boot_verified"] = False
+            report.write_text(json.dumps(data), encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "omitted Windows boot"):
+                release_gate.validate_w42_checksum_attestations(archive, sums, report, HEAD)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
