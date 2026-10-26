@@ -14,7 +14,6 @@ on:
       - 'scripts/osa-cinema-v44-production.spec.mjs'
       - 'scripts/osa-cinema-v44-production-contract.test.mjs'
       - 'playwright.osa-cinema-v44-live.config.mjs'
-      - 'playwright.osa-cinema-v44-live.config.mjs'
       - '.github/workflows/osa-cinema-v44-live-acceptance.yml'
   workflow_run:
     workflows: ['OSGARD frontend deploy']
