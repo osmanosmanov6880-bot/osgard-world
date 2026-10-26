@@ -109,7 +109,9 @@ jobs:
             v100_r127_original_street_art \
             v101_r127_live_drive_save_reload \
             v102_r128_accessible_cabinet_refresh \
-            v103_r129_coupe_3d_glass_aero; do
+            v103_r129_coupe_3d_glass_aero \
+            v52_civic_pbr_gateway \
+            v104_r130_fluted_civic_stone; do
             timeout --signal=TERM --kill-after=6s 120s godot --headless \
               --path godot/empire-omega --script "res://tests/$suite.gd"
           done
