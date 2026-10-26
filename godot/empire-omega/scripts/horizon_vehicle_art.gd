@@ -137,6 +137,9 @@ func _glass_quad(id: String, a: Vector3, b: Vector3, c: Vector3, d: Vector3) -> 
 	var visual := MeshInstance3D.new()
 	visual.name = id
 	visual.mesh = surface.commit()
+	# Auto glass should not generate four additional opaque WebGL shadow maps.
+	# The original painted chassis remains the authoritative shadow caster.
+	visual.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	var glass := _mat(Color.WHITE,0.36,0.24)
 	glass.vertex_color_use_as_albedo = true
 	glass.clearcoat_enabled = true
