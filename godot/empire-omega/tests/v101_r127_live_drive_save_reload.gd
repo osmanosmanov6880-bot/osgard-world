@@ -106,7 +106,8 @@ func _run() -> void:
 			check(int(save_state.get("mission",-1))==progressed and
 				int(save_state.get("wallet",-1))==int(snapshot["wallet"]),
 				"checkpoint actually contains both campaign stage and real economy")
-		(state.get("data") as Dictionary)["wallet"] = int(snapshot["wallet"])+33
+		var live_data: Dictionary = state.get("data") as Dictionary
+		live_data["wallet"] = int(snapshot["wallet"])+33
 		car.global_position += Vector3(0,0,10)
 		game.call("_load")
 		check(str(state.get("last_load_source"))=="primary",
