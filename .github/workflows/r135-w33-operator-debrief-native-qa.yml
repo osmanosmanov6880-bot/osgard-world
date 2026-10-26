@@ -548,3 +548,180 @@ jobs:
           path: mobile-touch-evidence/
           if-no-files-found: warn
           retention-days: 30
+
+  # W49 to W52 are deliberately scoped to the W47-based W48 PR. No legacy
+  # branch is forced to pass a future feature or sign off customer hardware.
+  w49-source-contract:
+    name: W49 pinned W47 source and untouched six-mission/production parity
+    if: github.event_name == 'pull_request' && github.head_ref == 'feat/osgard-w48-ring-instancing-render-budget-20261026'
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Run independent exact base/head Git blob contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha }}"
+          python3 -m py_compile w33-godot-native/ci/w49_source_contract.py
+          python3 w33-godot-native/ci/w49_source_contract.py \
+            --base "${{ github.event.pull_request.base.sha }}" \
+            --head "${{ github.event.pull_request.head.sha }}" \
+            --out w49-evidence/w49-source-contract.json
+      - name: Preserve W49 scope contract even if blocked
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: osgard-w49-original-source-contract-${{ github.event.pull_request.head.sha }}
+          path: w49-evidence/
+          if-no-files-found: warn
+          retention-days: 30
+
+  w50-w51-paired-acceptance:
+    name: W50-W51 original W47 and W48 optical frames plus paired real Godot software FPS
+    if: github.event_name == 'pull_request' && github.head_ref == 'feat/osgard-w48-ring-instancing-render-budget-20261026'
+    needs: [actual-godot-source-parity, w49-source-contract]
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - name: Checkout pristine exact W47 Godot baseline, no diagnostic source patch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: w47-original-source
+          persist-credentials: false
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: true
+      - name: Import and export actual untouched W47 baseline using same Godot 4.4.1
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha }}"
+          test "$(git -C w47-original-source rev-parse HEAD)" = "${{ github.event.pull_request.base.sha }}"
+          test "${{ github.event.pull_request.base.sha }}" = "14be69cdaa1fdffa4e209645eed0b1964581858a"
+          godot --headless --editor --path w47-original-source/w33-godot-native --import --quit 2>&1 | tee "$RUNNER_TEMP/w47-pristine-import.log"
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:|Failed to load script' "$RUNNER_TEMP/w47-pristine-import.log"; then
+            echo '::error::W47 pristine baseline import failed'
+            exit 1
+          fi
+          mkdir -p w47-original-source/w33-godot-native/build/web
+          godot --headless --path w47-original-source/w33-godot-native \
+            --export-release Web w47-original-source/w33-godot-native/build/web/index.html \
+            2>&1 | tee "$RUNNER_TEMP/w47-pristine-export.log"
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/w47-pristine-export.log"; then
+            echo '::error::W47 original Godot export failed'
+            exit 1
+          fi
+          python3 w33-godot-native/ci/verify_web_export.py \
+            w47-original-source/w33-godot-native/build/web \
+            --sha "${{ github.event.pull_request.base.sha }}" \
+            --output w47-original-source/w33-godot-native/build/web/evidence.json
+      - name: Download original same-head W48 WebGL export
+        uses: actions/download-artifact@v4
+        with:
+          name: osgard-w33-godot-webgl-${{ github.event.pull_request.head.sha }}
+          path: w48-original-export
+      - name: Compare W47/W48 real native render frames + engine frame counters on one runner
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m py_compile \
+            w33-godot-native/ci/w51_paired_comparison.py \
+            w33-godot-native/ci/godot_software_performance.py
+          python3 -m venv "$RUNNER_TEMP/w51-venv"
+          "$RUNNER_TEMP/w51-venv/bin/pip" install --disable-pip-version-check --no-cache-dir playwright==1.56.0 Pillow==11.3.0
+          "$RUNNER_TEMP/w51-venv/bin/python" -m playwright install --with-deps chromium
+          "$RUNNER_TEMP/w51-venv/bin/python" w33-godot-native/ci/w51_paired_comparison.py \
+            --baseline-export w47-original-source/w33-godot-native/build/web \
+            --candidate-export w48-original-export \
+            --baseline-sha "${{ github.event.pull_request.base.sha }}" \
+            --candidate-sha "${{ github.event.pull_request.head.sha }}" \
+            --out w50-w51-evidence
+      - name: Preserve original paired screenshots, observed FPS and render draw counts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: osgard-w50-w51-original-paired-${{ github.event.pull_request.head.sha }}
+          path: w50-w51-evidence/
+          if-no-files-found: warn
+          retention-days: 30
+
+  w52-no-go-release-gate:
+    name: W52 release proof - software candidate only, NEVER publish production
+    if: github.event_name == 'pull_request' && github.head_ref == 'feat/osgard-w48-ring-instancing-render-budget-20261026'
+    needs: [w49-source-contract, w50-w51-paired-acceptance, actual-godot-source-parity, actual-windows-runner-boot, reproduce-verified-candidate, real-sw-webgl-performance, real-mobile-touch-first-mission]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: osgard-w49-original-source-contract-${{ github.event.pull_request.head.sha }}
+          path: w52-input/source
+      - uses: actions/download-artifact@v4
+        with:
+          name: osgard-w50-w51-original-paired-${{ github.event.pull_request.head.sha }}
+          path: w52-input/paired
+      - uses: actions/download-artifact@v4
+        with:
+          name: osgard-w44-real-godot-software-fps-${{ github.event.pull_request.head.sha }}
+          path: w52-input/performance
+      - uses: actions/download-artifact@v4
+        with:
+          name: osgard-w45-mobile-touch-real-canvas-evidence-${{ github.event.pull_request.head.sha }}
+          path: w52-input/touch
+      - uses: actions/download-artifact@v4
+        with:
+          name: osgard-w39-original-cinematic-visual-evidence-${{ github.event.pull_request.head.sha }}
+          path: w52-input/visual
+      - uses: actions/download-artifact@v4
+        with:
+          name: osgard-w42-reproducible-candidate-${{ github.event.pull_request.head.sha }}
+          path: w52-input/candidate
+      - name: Verify original source SHA, renderer telemetry, images, missions, boot and ZIP bytes
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha }}"
+          python3 -m py_compile w33-godot-native/ci/w52_release_gate.py
+          shopt -s nullglob
+          packages=(w52-input/candidate/OSGARD_OBSIDIAN_*.zip)
+          test "${#packages[@]}" -eq 1
+          python3 w33-godot-native/ci/w52_release_gate.py \
+            --source w52-input/source/w49-source-contract.json \
+            --paired w52-input/paired/w50-w51-paired-evidence.json \
+            --performance w52-input/performance/godot-software-performance-evidence.json \
+            --touch w52-input/touch/mobile-touch-evidence.json \
+            --visual w52-input/visual/visual-evidence.json \
+            --candidate "${packages[0]}" \
+            --base-sha "${{ github.event.pull_request.base.sha }}" \
+            --head-sha "${{ github.event.pull_request.head.sha }}" \
+            --out w52-release-evidence
+      - name: Retain machine-readable exact-head HOLD decision (no site mutation)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: osgard-w52-source-bound-release-gate-${{ github.event.pull_request.head.sha }}
+          path: w52-release-evidence/
+          if-no-files-found: warn
+          retention-days: 45
