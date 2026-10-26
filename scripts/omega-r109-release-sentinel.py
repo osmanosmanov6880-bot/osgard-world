@@ -48,6 +48,7 @@ TESTS = [
     "v88_r106_embedded_cc0_road_activation",
     "v89_r111_stable_weather_pbr",
     "v90_r112_true_camera_inspection",
+    "v91_r114_pbr_roofline_luxury",
 ]
 
 
