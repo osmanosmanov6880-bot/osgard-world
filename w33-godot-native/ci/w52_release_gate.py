@@ -110,7 +110,7 @@ def candidate_zip(path, head):
         require(evidence["windows_boot"].get("source_commit") == head and
                 evidence["windows_boot"].get("actual_windows_runner_exe_started") is True and
                 evidence["windows_boot"].get("exit_code") == 0, "nested genuine Windows executable boot")
-        require(archive.read("web/index.wasm").startswith(b"\\x00asm") and
+        require(archive.read("web/index.wasm").startswith(b"\x00asm") and
                 archive.read("web/index.pck").startswith(b"GDPC"), "Web export is not genuine Godot binary")
         with archive.open("windows/OSGARD_FIELD_LAB_W33.exe") as executable:
             require(executable.read(2) == b"MZ", "packaged Windows executable header corrupt")
