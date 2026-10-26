@@ -17,7 +17,7 @@ var atlas_camera: Camera3D
 var atlas_mode: String = "overview"
 var atlas_pins: Dictionary = {}
 var atlas_view_buttons: Dictionary = {}
-var focus_mode: bool = false
+var city_focus_active: bool = false
 var focus_language: String = "ru"
 var focus_left: Control
 var focus_center: Control
@@ -83,7 +83,7 @@ func _metric(parent: Node, caption: String, amount: String, small: String, accen
 func build(state: Dictionary, forecast: Dictionary, mission: String,
 		world: World3D, compact: bool, lang: String) -> void:
 	name = "R90LiveOperationsCabinet"
-	focus_mode = false
+	city_focus_active = false
 	focus_language = lang
 	add_theme_constant_override("separation",16)
 	size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -284,20 +284,20 @@ func _toggle_city_focus() -> void:
 		return
 	if focus_button == null or preview == null:
 		return
-	focus_mode = not focus_mode
-	focus_left.visible = not focus_mode
-	focus_right.visible = not focus_mode
+	city_focus_active = not city_focus_active
+	focus_left.visible = not city_focus_active
+	focus_right.visible = not city_focus_active
 	if focus_summary != null:
-		focus_summary.visible = not focus_mode
-	focus_center.size_flags_stretch_ratio = 1.0 if focus_mode else 1.72
+		focus_summary.visible = not city_focus_active
+	focus_center.size_flags_stretch_ratio = 1.0 if city_focus_active else 1.72
 	if focus_columns != null:
-		focus_columns.custom_minimum_size.y = 565 if focus_mode else 450
+		focus_columns.custom_minimum_size.y = 565 if city_focus_active else 450
 	if focus_stage != null:
-		focus_stage.custom_minimum_size.y = 548.0 if focus_mode else 436.0
-	focus_button.text = local("ВЕРНУТЬ ПАНЕЛИ","SHOW PANELS","显示面板",focus_language) if focus_mode else local("ФОКУС НА ГОРОДЕ","FOCUS ON CITY","聚焦城市",focus_language)
-	focus_button.tooltip_text = local("Показать данные и действия" if focus_mode else "Развернуть реальный 3D-атлас",
-		"Restore original controls" if focus_mode else "Expand live 3D atlas",
-		"恢复面板" if focus_mode else "展开三维地图",focus_language)
+		focus_stage.custom_minimum_size.y = 548.0 if city_focus_active else 436.0
+	focus_button.text = local("ВЕРНУТЬ ПАНЕЛИ","SHOW PANELS","显示面板",focus_language) if city_focus_active else local("ФОКУС НА ГОРОДЕ","FOCUS ON CITY","聚焦城市",focus_language)
+	focus_button.tooltip_text = local("Показать данные и действия" if city_focus_active else "Развернуть реальный 3D-атлас",
+		"Restore original controls" if city_focus_active else "Expand live 3D atlas",
+		"恢复面板" if city_focus_active else "展开三维地图",focus_language)
 
 func _switch_atlas_mode(mode: String) -> void:
 	# No extra World3D, no preview image or second GPU pass: change the
