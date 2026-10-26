@@ -40,7 +40,7 @@ func _run() -> void:
 	root.add_child(panel)
 	panel.call("build",current,forecast,str(missions.call("title","ru")),
 		root.world_3d,false,"ru")
-	var controls: Control = panel.find_child("R115CinematicFocusToggle",true,false)
+	var controls: Button = panel.find_child("R115CinematicFocusToggle",true,false) as Button
 	var cols: BoxContainer = panel.get_node_or_null("R97CommandColumns") as BoxContainer
 	var stats: Container = panel.get_node_or_null("R97ExecutiveSummary") as Container
 	var atlas: Control = panel.find_child("R112AtlasCameraControls",true,false)
