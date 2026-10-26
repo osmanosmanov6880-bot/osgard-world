@@ -33,4 +33,6 @@ Add --windows report.json, --webgl report.json, --android report.json and --ios 
 4. Have a human review original screenshot pairs, device evidence and an actual rollback rehearsal.
 5. Resolve upstream W46/W47 staging PR chain and rerun integration checks on the proposed master merge commit. Make a separate, documented human GO decision. Until then **production HOLD**.
 
-**Scope of this PR:** source-only QA tools under tooling/osgard-w56 plus a standalone CI workflow. Native Godot scenes, core, physics, geometry, missions and existing W49–W55 workflows remain untouched. It is intentionally a draft PR targeting staging, not master.
+**Integration with W49:** this PR explicitly adds four allowed W56 paths to the W49 source contract and pins the exact Git blobs of the review CLI, its 12 adversarial tests, and the independent workflow. W49 now tests 32 negative cases (29 original + 3 W56), including rejection of incomplete or altered W56 evidence tooling. This cannot change W47 physical-simulation, mission, scene, WebGL game-driver or protected original assets.
+
+**Scope of this PR:** source-only QA tools under tooling/osgard-w56, the dedicated CI workflow, and W49's narrow allowlist/regression tests. Native Godot scene, core, physics, geometry, missions and visual-quality modules remain untouched. It targets staging, not master; physical release remains HOLD.
