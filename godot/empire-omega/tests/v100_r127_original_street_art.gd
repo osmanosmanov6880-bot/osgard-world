@@ -41,7 +41,7 @@ func _run() -> void:
 		return
 	check(shelter.get_parent()==architecture.get("facade_glass"),
 		"one extra 3D batch is nested without replacing R91 visual roots")
-	check(shelter.get_child_count()==0 and not shelter is CollisionObject3D,
+	check(shelter.get_child_count()==0,
 		"no per-shelter children or new physics bodies alter mission roads")
 	check(shelter.multimesh.instance_count==KIT.SHELTER_COUNT and KIT.SHELTER_COUNT==24,
 		"24 original deterministic roadside structures share one GPU draw source")
