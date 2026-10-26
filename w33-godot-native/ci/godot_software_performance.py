@@ -33,7 +33,10 @@ def await_quality(page,marker,quality):
         page.wait_for_timeout(200)
     raise AssertionError(f"Real Godot quality control never became {quality}: {state(marker)}")
 
-def measure(page,marker,mode,period=12):
+def measure(page,marker,mode,period=12,require_draw_calls=True):
+    # W47 pristine baseline predates the read-only draw-call probe. Its real
+    # FPS can still be measured independently; draw-call fields stay null.
+    # W48 itself ALWAYS uses the strict default and cannot PASS without data.
     samples=[]
     frame_reads=[]
     draw_samples=[]
@@ -57,8 +60,9 @@ def measure(page,marker,mode,period=12):
         page.wait_for_timeout(550)
     # W48 cannot claim usable profiling evidence when the Godot renderer
     # reports no draw calls or object counts (missing/zero telemetry).
-    assert len(draw_samples)>=3,("Godot actual draw call samples unavailable",draw_samples)
-    assert len(object_samples)>=3,("Godot rendered object samples unavailable",object_samples)
+    if require_draw_calls:
+        assert len(draw_samples)>=3,("Godot actual draw call samples unavailable",draw_samples)
+        assert len(object_samples)>=3,("Godot rendered object samples unavailable",object_samples)
     assert len(samples)>=3,("Native engine FPS counter was not available",samples)
     assert len(frame_reads)>=3 and max(frame_reads)>min(frame_reads),(
         "Native Godot render loop stopped or did not advance",frame_reads)
@@ -71,6 +75,7 @@ def measure(page,marker,mode,period=12):
         "godot_engine_fps_min":round(min(samples),2),
         "godot_rendered_frames_progressed":True,
         "render_draw_call_samples":len(draw_samples),
+        "draw_call_probe_required":require_draw_calls,
         "render_draw_calls_median":statistics.median(draw_samples) if draw_samples else None,
         "render_objects_median":statistics.median(object_samples) if object_samples else None,
         "render_object_sample_count":len(object_samples),
