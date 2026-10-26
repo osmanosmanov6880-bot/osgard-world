@@ -167,4 +167,4 @@ static func mesh_for(citizen_id: int, gait_frame: int = 0) -> ArrayMesh:
 
 static func triangle_budget() -> int:
 	# Return exactly the actual shared, native material surface geometry.
-	return mesh_for(0,0).surface_get_array_len(0)/3
+	return int(mesh_for(0,0).surface_get_array_len(0)/3)
