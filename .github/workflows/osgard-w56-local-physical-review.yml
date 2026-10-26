@@ -1,0 +1,68 @@
+name: OSGARD W56 local physical report schema and fail-closed gate
+
+on:
+  pull_request:
+    branches:
+      - feat/osgard-w48-ring-instancing-render-budget-20261026
+    paths:
+      - 'tooling/osgard-w56/**'
+      - '.github/workflows/osgard-w56-local-physical-review.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: osgard-w56-review-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  source-bound-no-production-go:
+    name: W56 12 synthetic integrity tests and mandatory production HOLD
+    if: github.event_name == 'pull_request' && github.head_ref == 'feat/osgard-w56-physical-qa-review-gate-20261026'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - name: Exact Git source SHA and real review scripts
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha }}"
+          python3 -m py_compile tooling/osgard-w56/hardware_review_gate.py
+          python3 -m py_compile tooling/osgard-w56/test_hardware_review_gate.py
+      - name: W56 fail-closed adversarial source and report tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s tooling/osgard-w56 -p test_hardware_review_gate.py -v
+      - name: Actual command-line release MUST remain HOLD with no physical devices
+        shell: bash
+        env:
+          REVIEWED_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          mkdir -p w56-proof
+          python3 tooling/osgard-w56/hardware_review_gate.py --expected-sha "$REVIEWED_HEAD" --output w56-proof/source-bound-hardware-HOLD.json
+          python3 - <<'PY'
+          import json,os
+          from pathlib import Path
+          payload=json.loads(Path('w56-proof/source-bound-hardware-HOLD.json').read_text())
+          assert payload['source_sha'] == os.environ['REVIEWED_HEAD']
+          assert payload['status'] == 'HOLD' and payload['decision'] == 'MISSING_DEVICE_REPORTS'
+          assert set(payload['missing']) == {'windows','webgl','android','ios'}
+          assert payload['production_approved'] is False
+          assert payload['allow_master_merge'] is False
+          assert payload['published_to_production'] is False
+          print('OSGARD W56 source-bound strict physical review: HOLD AS REQUIRED')
+          PY
+      - name: Preserve source-bound independent QA decision
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: osgard-w56-local-physical-review-${{ github.event.pull_request.head.sha }}
+          path: w56-proof/
+          if-no-files-found: warn
+          retention-days: 30
