@@ -71,6 +71,9 @@ func _run() -> void:
 			"executive metrics remain mounted but are visually collapsed in focus")
 		check(is_equal_approx(center.size_flags_stretch_ratio,1.0),
 			"true remaining central Godot city fills the HBox layout")
+		check(cols.custom_minimum_size.y >= 565.0 and
+			(panel.get("focus_stage") as Control).custom_minimum_size.y >= 548.0,
+			"original city rendering region physically grows taller, not only wider")
 		check(viewport == before_scene and viewport.get_child_count()==1,
 			"no additional rendering pass, substitution or World3D reallocation")
 		check(controls.text.contains("ВЕРНУТЬ"),
@@ -96,6 +99,9 @@ func _run() -> void:
 			"returning to governance restores six real stats and original camera")
 		check(is_equal_approx(center.size_flags_stretch_ratio,1.72),
 			"reference-approved original desktop proportions restore exactly")
+		check(is_equal_approx(cols.custom_minimum_size.y,450.0) and
+			is_equal_approx((panel.get("focus_stage") as Control).custom_minimum_size.y,436.0),
+			"original reference viewport dimensions restore after exiting focus")
 	check(current==source and game.get("data")==source,
 		"showing real city does not change money, missions or game saves")
 	panel.queue_free()
