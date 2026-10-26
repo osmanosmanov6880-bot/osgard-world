@@ -18,8 +18,8 @@ Status: **source changes prepared, production HOLD until exact-head checks and d
 | W50 | `w51_paired_comparison.py` | Two **pristine**, unmodified, independently exported W47 and W48 Godot WebGL builds | Ten real Chromium frames (HERO overview, inspection, service; desktop ECO; and touch-emulated HERO, each on both SHAs) plus an original visual comparison sheet, with PNG SHA-256 |
 | W51 | Same paired runner | Both Godot 4.4.1 WebGL sources on *one* runner/SwiftShader renderer | Real Godot FPS for both SHAs and W48 actual draw-call/object samples; pristine W47 has no draw-call probe |
 | W51 strict | Existing `godot_software_performance.py` | W48 exact-head WebGL evidence | Three W48 measured scenarios, nonzero Godot draw-call samples and advancing native engine frame counter |
-| W52 | `w52_release_gate.py` | All upstream exact-head artifacts | Independent ZIP CRC, SHA-256 digest of every packaged member, six real Chromium missions, real Windows 2022 EXE boot, touch emulation and original screenshots |
-| W49/W52 negatives | `test_w49_w52_gate_regressions.py` | Python standard library, synthetic **negative** fixtures | Blocks mutated W47 core, unexpected deploy paths, moved commit SHAs, corrupt/unsafe ZIPs and tampered/or spoofed native PNGs; **does not** certify rendering |
+| W52 | `w52_release_gate.py` | All upstream exact-head artifacts | Independent ZIP CRC, every member hash, nested WebGL/Windows/PNG manifests, W42 SHA256SUMS and build-report cross-checks, six Chromium missions, Windows 2022 boot, touch and screenshots |
+| W49/W52 negatives | `test_w49_w52_gate_regressions.py` | Python standard library, synthetic **negative** fixtures | 24 unit checks cover changed W47 core, deploy paths, moved SHA, unsafe ZIPs and image bytes, plus W42 ZIP/build-report/SHA256SUMS cross-checks; **does not** certify rendering |
 | W52 final | `w52-independent-final-verdict` | Every actual upstream job's `needs.result` | Always uploads `PASS` software-only or `BLOCKED_PRODUCTION_HOLD` JSON and the exact SHA; never promotes |
 
 
@@ -34,7 +34,7 @@ Look under the **same** PR-head commit in `.github/workflows/r135-w33-operator-d
 - `osgard-w33-playable-browser-evidence-<SHA>` — real six-mission Chromium controls.
 - `osgard-w45-mobile-touch-real-canvas-evidence-<SHA>` — 390px touchscreen-emulated mission 0.
 - `osgard-w34-actual-windows-exe-boot-<SHA>` — Windows runner stdout/stderr and native EXE verdict.
-- `osgard-w42-reproducible-candidate-<SHA>` — deterministic ZIP, manifest and SHA256SUMS.
+- `osgard-w42-reproducible-candidate-<SHA>` — original deterministic ZIP, `SHA256SUMS.txt`, `build-report.json` and byte manifest. W52 requires **all three** independent outer references to agree.
 - `osgard-w52-source-bound-release-gate-<SHA>` — final software review report, explicitly **HOLD production**.
 - `osgard-w52-ci-final-verdict-<SHA>` — consolidated result for **all** required checks, preserved even if native, packaging or benchmark steps fail; production remains HOLD.
 
