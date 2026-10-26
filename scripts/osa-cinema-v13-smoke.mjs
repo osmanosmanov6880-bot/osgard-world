@@ -35,7 +35,7 @@ assert.ok(component.includes('getOSALearningProgress()'), 'Learning progress loa
 assert.ok(component.includes('saveOSACinemaProgress('), 'Progress saving removed')
 assert.ok(component.includes('getOSACinemaMedia(index,locale,'), 'Cinema media wiring removed')
 assert.ok(component.includes('changeLocale'), 'Localized navigation was removed')
-assert.ok(component.includes("url.searchParams.set('lang',next)"), 'Language URL state is not synchronized')
+assert.ok(component.includes('getCinemaScenePath(pathname,search,hash,next,index,data.length)') && component.includes("window.history.pushState(window.history.state,'',path)") && component.includes('setLocale(next)'), 'Language URL state must use durable browser history and update locale')
 assert.ok(component.includes('target.closest('), 'Media/interactive keyboard focus guard is missing')
 assert.ok(media.includes('isPermanentMediaUrl'), 'Media permanence guard removed')
 assert.ok(progress.includes('OSA_PROGRESS_STORAGE_KEY'), 'Existing progress storage contract missing')

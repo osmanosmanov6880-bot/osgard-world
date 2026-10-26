@@ -29,6 +29,7 @@ test('real browser acceptance covers phone, desktop, story and language', () => 
 test('dedicated live HTTPS Playwright config cannot omit V44', () => {
   assert.match(config, /osa-cinema-v44-production\.spec\.mjs/)
   assert.match(config, /osa-cinema-v45-production\.spec\.mjs/)
+  assert.match(config, /osa-cinema-v46-history\.spec\.mjs/)
   assert.match(config, /playwright\.osa-cinema-live\.config\.mjs/)
   assert.match(spec, /https:\/\/osgard\.world/)
   assert.match(spec, /response\.status\(\)/)
