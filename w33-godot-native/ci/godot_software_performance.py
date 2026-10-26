@@ -55,6 +55,10 @@ def measure(page,marker,mode,period=12):
         if isinstance(count,int) and count>=0:
             frame_reads.append(count)
         page.wait_for_timeout(550)
+    # W48 cannot claim usable profiling evidence when the Godot renderer
+    # reports no draw calls or object counts (missing/zero telemetry).
+    assert len(draw_samples)>=3,("Godot actual draw call samples unavailable",draw_samples)
+    assert len(object_samples)>=3,("Godot rendered object samples unavailable",object_samples)
     assert len(samples)>=3,("Native engine FPS counter was not available",samples)
     assert len(frame_reads)>=3 and max(frame_reads)>min(frame_reads),(
         "Native Godot render loop stopped or did not advance",frame_reads)
@@ -140,6 +144,7 @@ def run(export,out,sha):
             finally:
                 browser.close()
         assert len(report["runs"])==3
+        assert all(run["render_draw_call_samples"] >= 3 and run["render_object_sample_count"] >= 3 for run in report["runs"]), "Missing real draw submission telemetry"
         report["status"]="PASS"
     finally:
         srv.shutdown()
