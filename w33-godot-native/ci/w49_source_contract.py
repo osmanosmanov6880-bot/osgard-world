@@ -58,7 +58,7 @@ REVIEWED_GAMEPLAY_BLOB = "50e492dadc8a63d99e05677ed3cc07b4dbe16cad"
 REVIEWED_W56_CRITICAL_BLOBS = {
     "tooling/osgard-w56/hardware_review_gate.py": "31e0f525bbde6b78aa9efbf0794bc63e5b339a21",
     "tooling/osgard-w56/test_hardware_review_gate.py": "22d9fb347757db4c028329c574e6e6945d0c103b",
-    ".github/workflows/osgard-w56-local-physical-review.yml": "61902afe83018f25b2788e667daa1ae2cb971654",
+    ".github/workflows/osgard-w56-local-physical-review.yml": "8065ee1d6c773c87f273df65b23a921e56a46d85",
 }
 W56_PATHS = {
     "tooling/osgard-w56/hardware_review_gate.py",
