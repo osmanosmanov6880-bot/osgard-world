@@ -4,6 +4,7 @@ on:
     branches: [master]
     paths:
       - 'src/OSACinema.tsx'
+      - 'src/osaCinemaCompanionText.ts'
       - 'src/OSACinemaScreening.tsx'
       - 'src/OSAObsidianSceneNavigator.tsx'
       - 'src/osaCinemaScreening.css'
@@ -11,10 +12,13 @@ on:
       - 'docs/OSA_CINEMA_V20_PRIVATE_RELEASE_POLICY.json'
       - 'scripts/osa-cinema-v15-screening.spec.mjs'
       - 'scripts/osa-cinema-v45-production.spec.mjs'
+      - 'scripts/osa-cinema-v46-history.spec.mjs'
+      - 'scripts/osa-cinema-v46-route-contract.test.mjs'
       - 'scripts/osa-cinema-v45-accessibility-contract.test.mjs'
       - 'scripts/osa-cinema-v44-production.spec.mjs'
       - 'scripts/osa-cinema-v44-production-contract.test.mjs'
       - 'playwright.osa-cinema-v44-live.config.mjs'
+      - 'playwright.ecosystem.config.mjs'
       - '.github/workflows/osa-cinema-v44-live-acceptance.yml'
   workflow_run:
     workflows: ['OSGARD frontend deploy']
@@ -37,7 +41,7 @@ jobs:
           node-version: '22'
           cache: npm
       - name: Check real viewer, architectural art and permanent NO-GO
-        run: node --test scripts/osa-cinema-v44-production-contract.test.mjs scripts/osa-cinema-v45-accessibility-contract.test.mjs
+        run: node --test scripts/osa-cinema-v44-production-contract.test.mjs scripts/osa-cinema-v45-accessibility-contract.test.mjs scripts/osa-cinema-v46-route-contract.test.mjs
       - run: npm ci --ignore-scripts
       - run: npm run check
   live-spectator-browser:
@@ -55,7 +59,7 @@ jobs:
           cache: npm
       - run: npm ci
       - name: Verify source, portal asset and original V20 rights NO-GO
-        run: node --test scripts/osa-cinema-v44-production-contract.test.mjs scripts/osa-cinema-v45-accessibility-contract.test.mjs
+        run: node --test scripts/osa-cinema-v44-production-contract.test.mjs scripts/osa-cinema-v45-accessibility-contract.test.mjs scripts/osa-cinema-v46-route-contract.test.mjs
       - name: Install pinned Playwright and Chrome or Chromium
         run: |
           npm install --no-save --package-lock=false @playwright/test@1.58.2

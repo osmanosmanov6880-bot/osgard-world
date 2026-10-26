@@ -29,6 +29,22 @@ export function getCinemaScenePath(
   return url.pathname + url.search + url.hash
 }
 
+/** Reject ambiguous or noncanonical chapter and locale links. */
+export function readCinemaRoute(search: string, sceneCount: number): {
+ sceneIndex: number | null
+ locale: CinemaCompanionLocale | null
+} {
+ const params = new URLSearchParams(search)
+ const sceneValues = params.getAll('scene')
+ const langValues = params.getAll('lang')
+ const raw = sceneValues.length === 1 ? sceneValues[0] : null
+ const numeric = raw !== null && /^(?:0|[1-9][0-9]*)$/.test(raw) ? Number(raw) : NaN
+ const sceneIndex = Number.isSafeInteger(numeric) && numeric >= 0 && numeric < sceneCount ? numeric : null
+ const language = langValues.length === 1 ? langValues[0] : null
+ const locale = language === 'ru' || language === 'en' ? language : null
+ return { sceneIndex, locale }
+}
+
 export function searchCinemaScenes(
   scenes: readonly CinemaCompanionScene[],
   locale: CinemaCompanionLocale,
