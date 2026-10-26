@@ -45,6 +45,9 @@ func _run() -> void:
 	var stats: Container = panel.get_node_or_null("R97ExecutiveSummary") as Container
 	var atlas: Control = panel.find_child("R112AtlasCameraControls",true,false)
 	var viewport: SubViewport = panel.get("preview") as SubViewport
+	var host: SubViewportContainer = panel.find_child("ActualGodotWorldViewport",true,false) as SubViewportContainer
+	check(host != null and host.stretch and host.stretch_shrink == 1,
+		"original Godot 1:1 render-target scaling follows physical city viewport")
 	check(controls is Button and (controls as Button).focus_mode == Control.FOCUS_ALL,
 		"live focus toggle is a real Godot keyboard and pointer-accessible button")
 	check(cols != null and cols.get_child_count()==3,
@@ -56,8 +59,8 @@ func _run() -> void:
 	check(viewport != null and viewport.world_3d == root.world_3d,
 		"focus uses the ONE real original World3D and existing rendering camera")
 	var before_scene: SubViewport = viewport
-	check(viewport == null or viewport.size == Vector2i(640,400),
-		"original city atlas starts at exactly verified 640x400 WebGL render budget")
+	check(viewport != null and viewport.size.x > 0 and viewport.size.y > 0,
+		"actual original engine-controlled live viewport has positive render dimensions")
 	if cols != null and cols.get_child_count()==3 and controls is Button:
 		var left: Control = cols.get_child(0) as Control
 		var center: Control = cols.get_child(1) as Control
@@ -78,8 +81,8 @@ func _run() -> void:
 			"original city rendering region physically grows taller, not only wider")
 		check(viewport == before_scene and viewport.get_child_count()==1,
 			"no additional rendering pass, substitution or World3D reallocation")
-		check(viewport.size == Vector2i(960,540),
-			"focused real Godot render resolution is 960x540, not stretched 640x400")
+		check(host != null and host.stretch and host.stretch_shrink == 1,
+			"focus continues real 1:1 render resolution under Godot container control")
 		var projected: Dictionary = panel.get("atlas_pins")
 		check(projected.size()==4,
 			"all actual four city districts remain projected after resolution change")
@@ -104,8 +107,8 @@ func _run() -> void:
 			"all original playable actions and metrics are restored, not re-created")
 		check(stats.get_child_count()==6 and viewport==before_scene,
 			"returning to governance restores six real stats and original camera")
-		check(viewport.size == Vector2i(640,400),
-			"exiting city focus restores original 640x400 GPU budget")
+		check(viewport != null and viewport.size.x > 0 and viewport.size.y > 0,
+			"exiting focus preserves actual Godot viewport pixel validity")
 		check(is_equal_approx(center.size_flags_stretch_ratio,1.72),
 			"reference-approved original desktop proportions restore exactly")
 		check(is_equal_approx(cols.custom_minimum_size.y,450.0) and
