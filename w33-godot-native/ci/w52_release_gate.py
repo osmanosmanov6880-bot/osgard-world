@@ -117,10 +117,10 @@ def validate(opts):
             paired.get("pristine_git_exports_no_probe_injected") is True and
             paired.get("pixel_parity_certified") is False, "W50/W51 original side-by-side evidence")
     observations = paired.get("observations", [])
-    require(len(observations) == 6 and len(paired.get("comparisons", [])) == 3,
-            "paired six real Godot WebGL observations missing")
+    require(len(observations) == 10 and len(paired.get("comparisons", [])) == 5,
+            "paired 10 original Godot WebGL camera/quality observations missing")
     require({(o["scenario"], o["build"]) for o in observations} ==
-            {(name, build) for name in ("desktop_hero", "desktop_eco", "touch_hero")
+            {(name, build) for name in ("desktop_hero", "desktop_inspection", "desktop_service", "desktop_eco", "touch_hero")
              for build in ("w47", "w48")}, "paired scenarios incomplete")
     for o in observations:
         require(o.get("source_instrumented") is False and
@@ -151,7 +151,7 @@ def validate(opts):
         "baseline_w47_sha": base,
         "w49_original_missions_and_production_blob_parity": "PASS",
         "w48_geometry_native_ci": "GATED_BY_UPSTREAM_ACTUAL_GODOT_JOB",
-        "w50_paired_native_render_screenshots": "PASS",
+        "w50_paired_native_render_screenshots_3_cameras_hero_eco_mobile": "PASS",
         "w51_software_godot_fps_and_actual_candidate_drawcalls": "PASS_DIAGNOSTIC_ONLY",
         "w45_touch_emulated_first_mission": "PASS",
         "w33_all_six_actual_chromium_missions": "GATED_BY_SIGNED_W42_CANDIDATE",
