@@ -9,3 +9,6 @@ Problem: PR browser tests and Cloudflare builds cannot prove that the latest aud
 - If production is stale or unavailable, the live verification fails and no claim of publication is made.
 
 A successful test certifies the interface observed at that moment, not commercial film rights. Rights, media, payment and premiere remain NO-GO.
+- V44.1 hardens this check: the production SSH archive stamps the exact `GITHUB_SHA` in both the root and cinema HTML shells; the browser must read the same SHA supplied by the completed master deployment run. A stale page or different deployment cannot pass solely because it shows the generic V44 marker.
+- The live test now selects each of the eight chapters, checks last-scene bounds, opens the genuine full-screen interactive dialog, closes it with Escape, and confirms keyboard focus returns to its launch button.
+- This SHA stamp is an ordinary build/deployment receipt, **not** cryptographic proof of licensing, rights or CDN integrity. No video, payments or release authorizations were changed.

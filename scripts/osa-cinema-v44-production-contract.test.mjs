@@ -39,6 +39,18 @@ test('production E2E triggers only after master deploy success', () => {
   assert.match(workflow, /github\.event\.workflow_run\.head_sha/)
   assert.match(workflow, /--config playwright\.osa-cinema-v44-live\.config\.mjs/)
 })
+test('published cinema receipt pins the exact SSH deployment and modal behavior', () => {
+  const deploy = readFileSync(join(root, '.github/workflows/deploy-frontend.yml'), 'utf8')
+  assert.match(deploy, /osgard-release\/html\/osa-cinema\/index\.html/)
+  assert.match(deploy, /osa-cinema-deploy-sha/)
+  assert.match(deploy, /GITHUB_SHA/)
+  assert.match(workflow, /OSGARD_DEPLOY_SHA:/)
+  assert.match(workflow, /github\.event\.workflow_run\.head_sha/)
+  assert.match(spec, /meta\[name="osa-cinema-deploy-sha"\]/)
+  assert.match(spec, /toHaveAttribute\('content', deploySha\)/)
+  assert.match(spec, /getByTestId\('cinema-screening'\)/)
+  assert.match(spec, /keyboard\.press\('Escape'\)/)
+})
 test('V20 film publication, commercial rights and checkout remain forbidden', () => {
   assert.equal(rights.publicationAuthorized, false)
   assert.equal(rights.rightsCleared, false)

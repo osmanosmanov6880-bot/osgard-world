@@ -14,6 +14,9 @@ async function assertLiveCinema(page, path) {
   expect(new URL(page.url()).origin, 'Viewer must remain on the approved origin').toBe(allowedOrigin)
   const app = page.locator('main.osa-cinema[data-cinema-art="obsidian"][data-cinema-release="v44"]')
   await expect(app, 'Live deployment must contain V44, not a stale V42/V43 build').toBeVisible()
+  const deploySha = process.env.OSGARD_DEPLOY_SHA
+  expect(deploySha, 'The exact successful master deployment SHA must be provided').toMatch(/^[0-9a-f]{40}$/)
+  await expect(page.locator('meta[name="osa-cinema-deploy-sha"]')).toHaveAttribute('content', deploySha)
   return app
 }
 test('V44 live mobile: eight scenes, reload, language and accessible navigation', async ({ page }, info) => {
@@ -26,6 +29,12 @@ test('V44 live mobile: eight scenes, reload, language and accessible navigation'
   await expect(select.locator('option')).toHaveCount(8)
   await expect(select).toHaveValue('0')
   await expect(nav.getByRole('button', { name: 'Предыдущая глава' })).toBeDisabled()
+  for (let sceneIndex = 1; sceneIndex < 8; sceneIndex++) {
+    await select.selectOption(String(sceneIndex))
+    await expect(select).toHaveValue(String(sceneIndex))
+    await expect(page).toHaveURL(new RegExp(`(?:\\?|&)scene=${sceneIndex}(?:&|$)`))
+  }
+  await expect(nav.getByRole('button', { name: 'Следующая глава' })).toBeDisabled()
   await select.selectOption('4')
   await expect(select).toHaveValue('4')
   await expect(page).toHaveURL(/(?:\?|&)scene=4(?:&|$)/)
@@ -50,7 +59,15 @@ test('V44 live desktop: approved archive, scene deep links, full-screen viewer',
   await expect(app.locator('.osa42-chapter')).toHaveCount(8)
   await expect(app.locator('.osa42-chapter[aria-current="step"]')).toHaveCount(1)
   await expect(app.locator('.osa42-scene-heading')).toBeVisible()
-  await expect(app.getByTestId('cinema-screening-launch')).toBeVisible()
+  const launch = app.getByTestId('cinema-screening-launch')
+  await expect(launch).toBeVisible()
+  await launch.click()
+  const modal = page.getByTestId('cinema-screening')
+  await expect(modal.getByRole('dialog', { name: 'OSA Cinema interactive screening' })).toBeVisible()
+  await expect(modal.getByRole('dialog')).toHaveAttribute('aria-modal', 'true')
+  await page.keyboard.press('Escape')
+  await expect(modal).toBeHidden()
+  await expect(launch).toBeFocused()
   await app.locator('.osa42-chapter').nth(6).click()
   await expect(page).toHaveURL(/(?:\?|&)scene=6(?:&|$)/)
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 2)).toBe(true)

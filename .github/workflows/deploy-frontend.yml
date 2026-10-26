@@ -620,6 +620,18 @@ jobs:
           set -euo pipefail
           mkdir -p osgard-release/html
           cp -a dist/. osgard-release/html/
+          # Stamp both the exact cinema route and SPA fallback HTML before SSH activation.
+          # Only this immutable source SHA can satisfy the production audience check.
+          for cinema_shell in osgard-release/html/index.html osgard-release/html/osa-cinema/index.html; do
+            test -s "$cinema_shell"
+            grep -Fq '</head>' "$cinema_shell"
+            if grep -Fq 'name="osa-cinema-deploy-sha"' "$cinema_shell"; then
+              echo "::error::Refusing duplicate cinema deployment receipt" >&2
+              exit 1
+            fi
+            sed -i "s|</head>|<meta name=\"osa-cinema-deploy-sha\" content=\"$GITHUB_SHA\" /></head>|" "$cinema_shell"
+            grep -Fq "name=\"osa-cinema-deploy-sha\" content=\"$GITHUB_SHA\"" "$cinema_shell"
+          done
           test "$(stat -c '%a' osgard-release/html/games/r135-service)" = 755
           test -s osgard-release/html/games/r135-service/index.pck
           ASSET_VERSION="${GITHUB_SHA:0:12}"

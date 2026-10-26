@@ -59,6 +59,7 @@ jobs:
       - name: Verify actual HTTPS spectator experience on desktop and mobile
         env:
           OSGARD_BASE_URL: https://osgard.world
+          OSGARD_DEPLOY_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
         run: npx playwright test --config playwright.osa-cinema-v44-live.config.mjs --workers=1
       - uses: actions/upload-artifact@v4
         if: always()
