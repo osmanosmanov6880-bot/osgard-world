@@ -35,7 +35,8 @@ jobs:
           test -s w33-godot-native/ci/w55_visual_typography_acceptance.py
           python3 -m py_compile w33-godot-native/ci/w55_visual_typography_acceptance.py
           python3 -m py_compile w33-godot-native/ci/mobile_touch_acceptance.py
-          git diff --check HEAD^ HEAD
+          # Full baseline-to-head diff --check is already mandatory in W49.
+          # This dedicated screenshot runner intentionally uses checkout depth=1.
       - uses: chickensoft-games/setup-godot@v2
         with:
           version: 4.4.1
