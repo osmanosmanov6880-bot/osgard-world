@@ -34,6 +34,35 @@ def require(value, name):
         raise ValueError("W52 gate rejected: " + name)
 
 
+
+def validate_w56_hold(evidence, exact_sha):
+    """W57: require independently emitted W56 evidence from THIS exact CI HEAD.
+
+    Any absent, stale, forged GO or self-certified physical-device report blocks
+    software acceptance. Source-local automated evidence CANNOT grant production.
+    """
+    require(isinstance(evidence, dict), "W56 missing physical review evidence object")
+    require(evidence.get("schema") == "OSGARD_W56_FAIL_CLOSED_PHYSICAL_REVIEW_V1",
+            "W56 physical-review schema")
+    require(evidence.get("source_sha") == exact_sha,
+            "W56 physical-review evidence belongs to different source SHA")
+    require(evidence.get("status") == "HOLD" and
+            evidence.get("decision") == "MISSING_DEVICE_REPORTS",
+            "W56 CI cannot authorise physical-device production GO")
+    require(evidence.get("reports") == {} and
+            evidence.get("missing") == ["windows", "webgl", "android", "ios"],
+            "W56 CI must not invent physical GPU/phone observations")
+    for field in ("independent_physical_device_certified", "cinematic_signoff",
+                  "production_approved", "allow_master_merge", "published_to_production"):
+        require(evidence.get(field) is False,
+                "W56 must fail closed for physical acceptance and public release: " + field)
+    return {"status": "HOLD",
+            "source_sha": exact_sha,
+            "decision": "MISSING_DEVICE_REPORTS",
+            "production_approved": False,
+            "manual_hardware_review_required": True}
+
+
 def pngs(root, frames):
     for entry in frames:
         rel = entry["image"]
@@ -222,6 +251,7 @@ def validate(opts):
     art = read_json(opts.visual)
     head = opts.head_sha
     base = opts.base_sha
+    physical_review = validate_w56_hold(read_json(opts.w56_physical_review), head)
     require(base == W47_PINNED_SHA, "unexpected W47 baseline")
     require(len(head) == 40 and all(x in "0123456789abcdef" for x in head), "invalid exact HEAD")
     require(source.get("status") == "PASS" and
@@ -293,6 +323,7 @@ def validate(opts):
             if p.get("single_pair_observed_fps_change_percent") is not None
             and p["single_pair_observed_fps_change_percent"] < 0
         ],
+        "w56_exact_head_physical_review": physical_review,
         "software_release_gate_completed": True,
         "statistically_significant_fps_improvement_certified": False,
         "manual_cinematic_acceptance_complete": False,
@@ -315,6 +346,7 @@ def main():
         parser.add_argument("--" + name, type=Path, required=True)
     parser.add_argument("--sha256sums", type=Path, required=True)
     parser.add_argument("--build-report", type=Path, required=True)
+    parser.add_argument("--w56-physical-review", type=Path, required=True)
     parser.add_argument("--base-sha", required=True)
     parser.add_argument("--head-sha", required=True)
     parser.add_argument("--out", type=Path, required=True)
@@ -339,6 +371,7 @@ def main():
         readme.write("W50 genuine original screenshot pairs; W51 measured software Godot FPS and ")
         readme.write("candidate draw calls; six real Chromium missions; W45 emulated touch; ")
         readme.write("Windows runner executable boot; twice-built deterministic ZIP digest.\n\n")
+        readme.write("W56 exact-SHA independent local review: HOLD; no physical reports.\n\n")
         readme.write("**Not certified:** device FPS, photorealism, physical Android/iOS/Windows GPU, ")
         readme.write("manual visual sign-off, production publication.\n")
     print(json.dumps({"status": report["status"], "decision": report["decision"],

@@ -17,6 +17,7 @@ ALLOWED = {
     ".github/workflows/osgard-w53-mobile-touch-acceptance.yml",
     ".github/workflows/osgard-w55-real-mobile-glyph-acceptance.yml",
     ".github/workflows/osgard-w56-local-physical-review.yml",
+    ".github/workflows/osgard-w57-exact-head-physical-hold.yml",
     "tooling/osgard-w56/hardware_review_gate.py",
     "tooling/osgard-w56/test_hardware_review_gate.py",
     "tooling/osgard-w56/README.md",
