@@ -49,6 +49,7 @@ var last_window_mode := -1
 var waypoint_marker: Node3D
 var horizon_scenic: Node3D
 var r90_urban: Node3D
+var r127_shelters: MultiMeshInstance3D
 var streetlight_focus: Vector3 = Vector3.ZERO
 const ROAD_MATERIALS = preload("res://scripts/horizon_road_materials.gd")
 const LIGHT_GRADE = preload("res://scripts/horizon_light_grade.gd")
@@ -61,6 +62,7 @@ const CIVIC_GATEWAY = preload("res://scripts/horizon_civic_gateway.gd")
 const ROAD_PAINT_SCENE = preload("res://scripts/horizon_road_paint_batches.gd")
 const ROAD_PUDDLES = preload("res://scripts/horizon_rain_puddles.gd")
 const R90_URBAN = preload("res://scripts/horizon_r90_street_dressing.gd")
+const R127_SHELTERS = preload("res://scripts/horizon_r127_street_shelters.gd")
 const R95_MASSING = preload("res://scripts/horizon_r95_city_massing.gd")
 const R98_FINS = preload("res://scripts/horizon_r98_architectural_fins.gd")
 var asphalt_pbr: StandardMaterial3D
@@ -116,6 +118,11 @@ func _ready() -> void:
 	add_child(horizon_scenic)
 	r90_urban = R90_URBAN.new()
 	city_root.add_child(r90_urban)
+	# Real independent 3D street furniture lives in the original authoritative
+	# WorldBuilder, not under the R119 GPU window pass or original R90 roots.
+	# Therefore all three inherited skyline/facade hierarchies remain immutable.
+	r127_shelters = R127_SHELTERS.new()
+	city_root.add_child(r127_shelters)
 	update_development()
 
 func _material(color: Color, metallic: float = 0.0, roughness: float = 0.8, glow: bool = false) -> StandardMaterial3D:
@@ -555,6 +562,8 @@ func apply_visual_budget(mode: String) -> void:
 		weather_particles.amount_ratio = 0.25 if visual_budget == "low" else (0.65 if visual_budget == "standard" else 1.0)
 	if r90_urban != null:
 		r90_urban.call("set_quality",visual_budget)
+	if r127_shelters != null:
+		r127_shelters.call("set_budget",visual_budget)
 	if horizon_scenic != null:
 		horizon_scenic.visible = visual_budget != "low"
 		horizon_scenic.call("set_intersection_quality",visual_budget)
