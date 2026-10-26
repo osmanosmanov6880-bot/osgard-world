@@ -72,6 +72,18 @@ func _run() -> void:
 		verify(operations != null,
 			"actual GameState-backed Godot command room survives responsive redraw")
 		if operations != null:
+			# Inspect actual authored action controls rather than relying on
+			# screenshot text size or a mock CSS touch overlay.
+			var touch_count: int = 0
+			for entry in operations.find_children("*","Button",true,false):
+				var action: Button = entry as Button
+				if action != null and action.custom_minimum_size.y > 0.0:
+					verify(action.custom_minimum_size.y >= 44.0 and
+						action.focus_mode == Control.FOCUS_ALL,
+						"native premium button is >=44px and keyboard focusable: " + action.name)
+					touch_count += 1
+			verify(touch_count >= 5,
+				"actual premium cabinet has actionable touch and keyboard buttons")
 			if dimensions.x >= 1200 and dimensions.y >= 680:
 				verify(operations.get("preview") is SubViewport and
 					(operations.get("preview") as SubViewport).world_3d == root.world_3d,
