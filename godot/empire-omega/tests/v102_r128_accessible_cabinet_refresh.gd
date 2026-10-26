@@ -72,9 +72,15 @@ func _run() -> void:
 		verify(operations != null,
 			"actual GameState-backed Godot command room survives responsive redraw")
 		if operations != null:
-			verify(operations.get("preview") is SubViewport and
-				(operations.get("preview") as SubViewport).world_3d == root.world_3d,
-				"actual live 3D city, not a static screenshot, remains visible")
+			if dimensions.x >= 1200 and dimensions.y >= 680:
+				verify(operations.get("preview") is SubViewport and
+					(operations.get("preview") as SubViewport).world_3d == root.world_3d,
+					"desktop atlas uses the original real authoritative Godot World3D")
+			else:
+				# On an actual phone the original R90 intentionally switches off
+				# the SECOND expensive 3D rendering pass, not the playable street.
+				verify(operations.get("preview") == null,
+					"mobile quality budget preserves live game without an extra GPU viewport")
 		# Four original navigation actions must be accessible at 320px even if
 		# the parent scroll container is long.
 		for section in ["overview","council","economy","district"]:
