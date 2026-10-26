@@ -20,6 +20,7 @@ SCRIPT_PATHS = [
     "scripts/mission_manager.gd",
     "scripts/world_builder.gd",
     "scripts/horizon_roadscape.gd",
+    "scripts/horizon_organic_foliage.gd",
     "scripts/horizon_r90_premium_dashboard.gd",
     "scripts/horizon_r90_street_dressing.gd",
     "scripts/horizon_facade_material_pack.gd",
@@ -33,6 +34,8 @@ SCRIPT_PATHS = [
 TESTS = [
     "v29_responsive_layout",
     "v54_r32_cinematic_cabinet_wet_grip",
+    "v50_organic_foliage_mobile_focus",
+    "v69_r44_foliage_view_clearance",
     "v72_r55_forty_mission_event_save",
     "v74_r64_authoritative_mission_transactions",
     "v75_r68_policy_mission_real_change",
@@ -54,6 +57,7 @@ TESTS = [
     "v92_r115_true_world_focus",
     "v93_r116_architectural_tower_body",
     "v95_r119_real_glazing_readable_atlas",
+    "v96_r120_sculpted_arbor_physical_wood",
 ]
 
 

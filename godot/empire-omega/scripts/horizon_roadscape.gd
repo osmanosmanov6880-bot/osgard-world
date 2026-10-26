@@ -154,11 +154,10 @@ func _build_trees() -> void:
 					"crown_transform":crown_transform,"factor":1.0
 				})
 
-	var trunk_mesh := CylinderMesh.new()
-	trunk_mesh.top_radius = 0.4
-	trunk_mesh.bottom_radius = 0.55
-	trunk_mesh.height = 1.0
-	trunk_mesh.radial_segments = 6
+	# R120: one genuine tapered wood/branch surface for all 192 original
+	# GPU-instanced trees. Keep their authored transforms and occlusion indices.
+	# No individual branch scene nodes, lights, shadows, physics or RNG calls.
+	var trunk_mesh: ArrayMesh = ORGANIC_TREES.sculpted_trunk()
 	_batch("TrunkBatch",trunk_mesh,trunks,trunk_colors)
 	# New organic crown meshes remain one GPU-instanced call per species.
 	_batch("LeafCanopyBatch",ORGANIC_TREES.leaf_canopy(),leaves,leaf_colors)
