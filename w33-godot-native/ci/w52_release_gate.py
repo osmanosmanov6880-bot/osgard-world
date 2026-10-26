@@ -371,7 +371,7 @@ def main():
         readme.write("W50 genuine original screenshot pairs; W51 measured software Godot FPS and ")
         readme.write("candidate draw calls; six real Chromium missions; W45 emulated touch; ")
         readme.write("Windows runner executable boot; twice-built deterministic ZIP digest.\n\n")
-        readme.write("W56 exact-SHA independent local review: HOLD; no physical reports.\\n\\n")
+        readme.write("W56 exact-SHA independent local review: HOLD; no physical reports.\n\n")
         readme.write("**Not certified:** device FPS, photorealism, physical Android/iOS/Windows GPU, ")
         readme.write("manual visual sign-off, production publication.\n")
     print(json.dumps({"status": report["status"], "decision": report["decision"],
