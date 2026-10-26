@@ -17,6 +17,15 @@ var atlas_camera: Camera3D
 var atlas_mode: String = "overview"
 var atlas_pins: Dictionary = {}
 var atlas_view_buttons: Dictionary = {}
+var city_focus_active: bool = false
+var focus_language: String = "ru"
+var focus_left: Control
+var focus_center: Control
+var focus_columns: BoxContainer
+var focus_stage: Control
+var focus_right: Control
+var focus_summary: Control
+var focus_button: Button
 
 static func local(ru: String,en: String,zh: String,lang: String) -> String:
 	if lang == "en": return en
@@ -74,6 +83,8 @@ func _metric(parent: Node, caption: String, amount: String, small: String, accen
 func build(state: Dictionary, forecast: Dictionary, mission: String,
 		world: World3D, compact: bool, lang: String) -> void:
 	name = "R90LiveOperationsCabinet"
+	city_focus_active = false
+	focus_language = lang
 	add_theme_constant_override("separation",16)
 	size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var branding := HBoxContainer.new()
@@ -138,12 +149,14 @@ func build(state: Dictionary, forecast: Dictionary, mission: String,
 	columns.add_theme_constant_override("separation",14)
 	columns.custom_minimum_size.y = 450 if not compact else 0
 	add_child(columns)
+	focus_columns = columns
 	var left := VBoxContainer.new()
 	left.add_theme_constant_override("separation",13)
 	left.custom_minimum_size.x = 248 if not compact else 0
 	left.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	left.size_flags_stretch_ratio = 0.78
 	columns.add_child(left)
+	focus_left = left
 
 	var missions := _card(left,0,true)
 	_label(missions,local("ТЕКУЩАЯ МИССИЯ","CURRENT MISSION","当前任务",lang),16,true)
@@ -180,6 +193,7 @@ func build(state: Dictionary, forecast: Dictionary, mission: String,
 		middle.size_flags_stretch_ratio = 1.72
 		middle.add_theme_constant_override("separation",8)
 		columns.add_child(middle)
+		focus_center = middle
 		_city_view(middle,world,forecast,lang)
 	else:
 		var brief := _card(left,0)
@@ -194,6 +208,7 @@ func build(state: Dictionary, forecast: Dictionary, mission: String,
 	right.size_flags_stretch_ratio = 0.93
 	right.add_theme_constant_override("separation",13)
 	columns.add_child(right)
+	focus_right = right
 	var atlas := _card(right)
 	_label(atlas,local("АТЛАС ГОРОДА","CITY ATLAS","城市地图集",lang),17,true)
 	var discovered: Array = state.get("discovered_sites",[])
@@ -260,6 +275,51 @@ func build(state: Dictionary, forecast: Dictionary, mission: String,
 	# The six real authoritative figures remain available directly after the
 	# immersive command stage; no static KPI placeholders or lost controls.
 	add_child(stats)
+	focus_summary = stats
+
+func _unhandled_key_input(event: InputEvent) -> void:
+	# F9 is scoped to the actual visible governance cabinet. It never alters
+	# driving controls, state, camera allocations or mobile layout.
+	var key: InputEventKey = event as InputEventKey
+	if key == null or not key.pressed or key.echo or key.keycode != KEY_F9:
+		return
+	if focus_button == null or not is_visible_in_tree():
+		return
+	_toggle_city_focus()
+	get_viewport().set_input_as_handled()
+
+func _toggle_city_focus() -> void:
+	# Original data cards and action handlers are never freed/replaced.
+	# Full-width stage uses the same ONE live preview World3D as before.
+	if focus_left == null or focus_right == null or focus_center == null:
+		return
+	if focus_button == null or preview == null:
+		return
+	city_focus_active = not city_focus_active
+	focus_left.visible = not city_focus_active
+	focus_right.visible = not city_focus_active
+	if focus_summary != null:
+		focus_summary.visible = not city_focus_active
+	focus_center.size_flags_stretch_ratio = 1.0 if city_focus_active else 1.72
+	if focus_columns != null:
+		focus_columns.custom_minimum_size.y = 565 if city_focus_active else 450
+	if focus_stage != null:
+		focus_stage.custom_minimum_size.y = 548.0 if city_focus_active else 436.0
+	# The SubViewportContainer already owns the live pixel size (stretch=true,
+	# stretch_shrink=1). Do NOT force preview.size: Godot immediately replaces it
+	# with the actual screen-space stage size when the control tree lays out.
+	# Preserve the real viewport/camera and simply reproject source-world pins.
+	_switch_atlas_mode(atlas_mode)
+	focus_button.text = local("ВЕРНУТЬ ПАНЕЛИ","SHOW PANELS","显示面板",focus_language) if city_focus_active else local("ФОКУС НА ГОРОДЕ","FOCUS ON CITY","聚焦城市",focus_language)
+	focus_button.tooltip_text = local("Показать данные и действия" if city_focus_active else "Развернуть реальный 3D-атлас",
+		"Restore original controls" if city_focus_active else "Expand live 3D atlas",
+		"恢复面板" if city_focus_active else "展开三维地图",focus_language)
+
+func _on_city_atlas_render_size_changed() -> void:
+	# True host-driven viewport resize: camera projection changes even without
+	# a camera move. Keep four real source district anchors in sync.
+	if preview != null and atlas_camera != null:
+		_switch_atlas_mode(atlas_mode)
 
 func _switch_atlas_mode(mode: String) -> void:
 	# No extra World3D, no preview image or second GPU pass: change the
@@ -304,6 +364,7 @@ func _city_view(parent: Node, world: World3D, forecast: Dictionary, lang: String
 	var stage := Control.new()
 	stage.custom_minimum_size = Vector2(450,436)
 	stage.clip_contents = true
+	focus_stage = stage
 	panel.add_child(stage)
 	var host := SubViewportContainer.new()
 	host.name = "ActualGodotWorldViewport"
@@ -417,3 +478,25 @@ func _city_view(parent: Node, world: World3D, forecast: Dictionary, lang: String
 		controls.add_child(button)
 		atlas_view_buttons[mode] = button
 	_switch_atlas_mode("overview")
+	# R115: one accessible full-width real camera view. Keep the separate
+	# R112 overview/details control at EXACTLY two original buttons.
+	focus_button = Button.new()
+	focus_button.name = "R115CinematicFocusToggle"
+	focus_button.text = local("ФОКУС НА ГОРОДЕ","FOCUS ON CITY","聚焦城市",lang)
+	focus_button.tooltip_text = local("Развернуть 3D-атлас · F9",
+		"Expand live city · F9","展开三维地图 · F9",lang)
+	# Place below R112 mode buttons inside VISIBLE 3D header, never below
+	# the screen fold of 960x540 browser or smaller laptop viewports.
+	focus_button.anchor_left = 0.60
+	focus_button.anchor_right = 0.98
+	focus_button.anchor_top = 0.17
+	focus_button.anchor_bottom = 0.17
+	focus_button.offset_top = 0.0
+	focus_button.offset_bottom = 42.0
+	focus_button.custom_minimum_size.y = 44
+	focus_button.add_theme_font_size_override("font_size",14)
+	REFERENCE.style_button(focus_button)
+	focus_button.pressed.connect(Callable(self,"_toggle_city_focus"))
+	stage.add_child(focus_button)
+	# Driven by the actual Godot viewport size, NOT a hard-coded 2D overlay.
+	preview.size_changed.connect(Callable(self,"_on_city_atlas_render_size_changed"))
