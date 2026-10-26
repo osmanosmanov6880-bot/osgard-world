@@ -26,7 +26,8 @@ CHANGED = ("w33-godot-native/scripts/OSGARDObsidianStage.gd\n"
 class GitSourceGateTests(unittest.TestCase):
     """Never change six original missions just to make visual tests green."""
 
-    def fake_git(self, change=CHANGED, core_changed=False, wrong_head=False):
+    def fake_git(self, change=CHANGED, core_changed=False, wrong_head=False,
+                 tampered_gameplay=False):
         def call(*args):
             if args == ("rev-parse", "HEAD"):
                 return "b" * 40 if wrong_head else HEAD
@@ -40,6 +41,9 @@ class GitSourceGateTests(unittest.TestCase):
                 ref, path = args[1].split(":", 1)
                 if core_changed and path == "w33-godot-native/scripts/OSGARDCore.gd":
                     return "1" * 40 if ref == HEAD else UNCHANGED_BLOB
+                if ref == HEAD and path == source_gate.REVIEWED_GAMEPLAY_PATH:
+                    return ("1" * 40 if tampered_gameplay else
+                            source_gate.REVIEWED_GAMEPLAY_BLOB)
                 return UNCHANGED_BLOB
             raise AssertionError("Unrecognized synthetic Git call: " + repr(args))
         return call
@@ -62,6 +66,22 @@ class GitSourceGateTests(unittest.TestCase):
         self.assertEqual(proof["status"], "PASS")
         self.assertTrue(proof["production_source_unchanged"])
         self.assertEqual(len(proof["scope_changed_paths"]), 5)
+
+    def test_accepts_reviewed_browser_gameplay_timeout_only_blob(self):
+        changed = CHANGED + "\n" + source_gate.REVIEWED_GAMEPLAY_PATH
+        with patch.object(source_gate, "git", side_effect=self.fake_git(change=changed)), patch.object(source_gate.subprocess, "run"):
+            proof = source_gate.verify(BASE, HEAD)
+        self.assertEqual(proof["status"], "PASS")
+        self.assertEqual(proof["reviewed_browser_gameplay_ci_blob_sha"],
+                         source_gate.REVIEWED_GAMEPLAY_BLOB)
+        self.assertIn(source_gate.REVIEWED_GAMEPLAY_PATH,
+                      proof["scope_changed_paths"])
+
+    def test_rejects_unreviewed_browser_gameplay_qa_changes(self):
+        changed = CHANGED + "\n" + source_gate.REVIEWED_GAMEPLAY_PATH
+        with patch.object(source_gate, "git", side_effect=self.fake_git(change=changed, tampered_gameplay=True)), patch.object(source_gate.subprocess, "run"):
+            with self.assertRaisesRegex(ValueError, "Unreviewed six-mission browser QA driver change"):
+                source_gate.verify(BASE, HEAD)
 
     def test_rejects_changed_native_mission_core(self):
         with patch.object(source_gate, "git", side_effect=self.fake_git(core_changed=True)), patch.object(source_gate.subprocess, "run"):
