@@ -73,7 +73,8 @@ static func _flute_point(y: float, angle: float) -> Vector3:
 static func _civic_face(st: SurfaceTool,a: Vector3,b: Vector3,
 		c: Vector3,d: Vector3, tint: Color) -> void:
 	st.set_color(tint)
-	for v in [a,b,c,a,c,d]:
+	# Godot 4.x clockwise front winding: keep outward-facing physical normals.
+	for v in [a,c,b,a,d,c]:
 		st.add_vertex(v)
 
 static func _sculpted_fluted_column() -> ArrayMesh:
@@ -99,8 +100,8 @@ static func _sculpted_fluted_column() -> ArrayMesh:
 		var bottom: Vector3 = Vector3(0.0,-0.5,0.0)
 		var top: Vector3 = Vector3(0.0,0.5,0.0)
 		st.set_color(Color.WHITE)
-		for v in [bottom,_flute_point(-0.5,a),_flute_point(-0.5,b),
-				top,_flute_point(0.5,b),_flute_point(0.5,a)]:
+		for v in [bottom,_flute_point(-0.5,b),_flute_point(-0.5,a),
+				top,_flute_point(0.5,a),_flute_point(0.5,b)]:
 			st.add_vertex(v)
 	st.generate_normals()
 	return st.commit()
