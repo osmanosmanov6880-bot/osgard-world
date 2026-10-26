@@ -23,6 +23,8 @@ SCRIPT_PATHS = [
     "scripts/horizon_organic_foliage.gd",
     "scripts/pedestrian_agent.gd",
     "scripts/horizon_street_citizen_mesh.gd",
+    "scripts/horizon_vehicle_art.gd",
+    "scripts/horizon_coupe_sculpt.gd",
     "scripts/traffic_agent.gd",
     "scripts/horizon_traffic_sedan_surface.gd",
     "scripts/horizon_r90_premium_dashboard.gd",
@@ -75,6 +77,7 @@ TESTS = [
     "v100_r127_original_street_art",
     "v101_r127_live_drive_save_reload",
     "v102_r128_accessible_cabinet_refresh",
+    "v103_r129_coupe_3d_glass_aero",
 ]
 
 
