@@ -210,7 +210,7 @@ func _panel(parent: Container) -> VBoxContainer:
 
 func _label(parent: Container, value: String = "", font_size: int = 15, color: Color = WHITE) -> Label:
     var node := Label.new()
-    node.text = value
+    node.text = _legible_copy(value)
     node.add_theme_color_override("font_color", color)
     node.add_theme_font_size_override("font_size", font_size)
     node.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -220,7 +220,7 @@ func _label(parent: Container, value: String = "", font_size: int = 15, color: C
 
 func _button(parent: Container, value: String, callback: Callable, accent: bool = false, min_width: float = 142.0) -> Button:
     var node := Button.new()
-    node.text = value
+    node.text = _legible_copy(value)
     node.focus_mode = Control.FOCUS_ALL
     node.custom_minimum_size = Vector2(min_width, 52)
     node.add_theme_font_size_override("font_size", 14)
@@ -252,7 +252,7 @@ func _flow(parent: Container) -> HFlowContainer:
 func _overlay_label(parent: Control, name_tag: String, title_text: String, font_size: int, tone: Color) -> Label:
     var tag := Label.new()
     tag.name = name_tag
-    tag.text = title_text
+    tag.text = _legible_copy(title_text)
     tag.add_theme_color_override("font_color", tone)
     tag.add_theme_font_size_override("font_size", font_size)
     tag.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
