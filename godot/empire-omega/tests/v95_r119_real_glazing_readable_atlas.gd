@@ -2,7 +2,7 @@ extends SceneTree
 ## R119: source-grounded original Godot physically shaded dual-sided windows,
 ## one shared GPU draw surface, keyboard/touch-readable real district badges.
 const URBAN = preload("res://scripts/horizon_r90_street_dressing.gd")
-const DASHBOARD = preload("res://scripts/horizon_r90_premium_dashboard.gd")
+# R119: dashboard must load AFTER original GameState/MissionManager autoloads.
 var passed := 0
 var failed := 0
 
@@ -94,7 +94,15 @@ func _run() -> void:
 	game.set("locale", "ru")
 	var source: Dictionary = data.duplicate(true)
 	var forecast: Dictionary = game.call("forecast")
-	var dashboard: VBoxContainer = DASHBOARD.new()
+	var dashboard_source: Variant = load("res://scripts/horizon_r90_premium_dashboard.gd")
+	check(dashboard_source is Script and dashboard_source.can_instantiate(),
+		"real premium dashboard compiles after the authoritative GameState autoload")
+	if not (dashboard_source is Script and dashboard_source.can_instantiate()):
+		game.set("data", previous)
+		game.set("locale", previous_lang)
+		quit(1)
+		return
+	var dashboard: VBoxContainer = dashboard_source.new()
 	root.add_child(dashboard)
 	dashboard.call("build", data, forecast, str(missions.call("title", "ru")),
 		root.world_3d, false, "ru")
