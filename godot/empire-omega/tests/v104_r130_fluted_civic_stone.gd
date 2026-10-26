@@ -3,7 +3,7 @@ extends SceneTree
 ## 6 genuinely FLUTED cylindrical shafts + 6 stepped stone capitals,
 ## existing 7 GPU batches, zero added per-column nodes/physics/saves.
 const CIVIC = preload("res://scripts/horizon_civic_gateway.gd")
-const WORLD = preload("res://scripts/world_builder.gd")
+## Load original WorldBuilder AFTER GameState singleton initialization (Godot strict headless import).
 var passed: int = 0
 var failed: int = 0
 
@@ -103,10 +103,23 @@ func _run() -> void:
 		for i in range(6):
 			var origin: Vector3 = pillars.multimesh.get_instance_transform(i).origin
 			var capital_origin: Vector3 = capitals.multimesh.get_instance_transform(i).origin
+			if i == 0:
+				print("R130 SOURCE POSES first pillar=",origin,
+					" capital=",capital_origin," expected pillars=(-10,5.40,14) capitals=(-10,10.93,14)")
 			check(origin.is_equal_approx(Vector3(-10.0+float(i)*4.0,5.40,14.0)) and
 				capital_origin.is_equal_approx(Vector3(-10.0+float(i)*4.0,10.93,14.0)),
 				"original landmark pillars/capitals keep exact authored physical locations")
-	var world: Node3D = WORLD.new()
+	# WorldBuilder references genuine GameState autoload during compilation:
+	# a preloaded static constant races that binding in Godot headless --script.
+	var world_source: Variant = load("res://scripts/world_builder.gd")
+	check(world_source is Script and world_source.can_instantiate(),
+		"original actual city world script must load after live GameState autoload")
+	if not (world_source is Script and world_source.can_instantiate()):
+		civic.queue_free()
+		await process_frame
+		quit(1)
+		return
+	var world: Node3D = world_source.new()
 	root.add_child(world)
 	var live: Node3D = world.get("cityhall_gateway") as Node3D
 	check(live != null and live.is_inside_tree() and
