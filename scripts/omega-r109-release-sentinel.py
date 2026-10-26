@@ -21,6 +21,7 @@ SCRIPT_PATHS = [
     "scripts/world_builder.gd",
     "scripts/horizon_roadscape.gd",
     "scripts/horizon_r90_premium_dashboard.gd",
+    "scripts/horizon_r91_skyline_detail.gd",
     "scripts/horizon_r90_street_dressing.gd",
     "scripts/horizon_facade_material_pack.gd",
     "scripts/horizon_r90_reference_style.gd",
@@ -53,6 +54,8 @@ TESTS = [
     "v91_r114_pbr_roofline_luxury",
     "v92_r115_true_world_focus",
     "v93_r116_architectural_tower_body",
+    "v95_r119_real_glazing_readable_atlas",
+    "v96_r120_foreground_window_day_night",
 ]
 
 
