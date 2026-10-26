@@ -52,7 +52,9 @@ func _run() -> void:
                 continue
             _check(not stage.has_node("A7PrecisionRing_%d_%02d" % [ring_index, segment]), "Legacy drawable removed for %d/%d" % [ring_index, segment])
     var batches: Array = stage.get("_precision_ring_batches")
+    var authored_batches: Array = stage.get("_precision_ring_authored")
     _check(batches.size() == 3, "Exactly three grouped ring surfaces")
+    _check(authored_batches.size() == 3, "All authored GPU write transforms preserved independently of the headless renderer")
     if batches.size() == 3:
         var count: int = 0
         for index in range(3):
@@ -87,6 +89,10 @@ func _run() -> void:
             var start_segment: int = 1 if index == 0 else 0
             _check(part.multimesh.instance_count == (27 if index == 0 else 28), "All original instances preserved for ring %d" % index)
             count += part.multimesh.instance_count
+            var authored: Array = authored_batches[index] if authored_batches.size() == 3 else []
+            _check(authored.size() == 28 - start_segment, "Every original W47 ring transform was passed to MultiMesh.set_instance_transform")
+            if authored.size() != 28 - start_segment:
+                continue
             # Independently reconstruct EVERY original W47 MeshInstance3D
             # location and rotation.z, including the last segment and Z axis.
             for i in range(start_segment, 28):
@@ -97,7 +103,16 @@ func _run() -> void:
                 var c: float = cos(-angle)
                 var s: float = sin(-angle)
                 var original_rotation: Basis = Basis(Vector3(c, s, 0.0), Vector3(-s, c, 0.0), Vector3.BACK)
-                var placed: Transform3D = part.multimesh.get_instance_transform(i - start_segment)
+                # --headless uses Godot's dummy RenderingServer; its
+                # get_instance_transform() returns identity even though the
+                # authored values were submitted. Validate those actual write
+                # arguments here; W48 browser tests separately require true
+                # WebGL RenderingServer readback for all 83 instances.
+                var slot: int = i - start_segment
+                var placed: Transform3D = authored[slot]
+                if DisplayServer.get_name() != "headless":
+                    var gpu: Transform3D = part.multimesh.get_instance_transform(slot)
+                    _check(gpu.origin.distance_to(placed.origin) < 0.0001 and gpu.basis.x.distance_to(placed.basis.x) < 0.0001 and gpu.basis.y.distance_to(placed.basis.y) < 0.0001 and gpu.basis.z.distance_to(placed.basis.z) < 0.0001, "Actual native renderer retains GPU transform %d/%d" % [index, i])
                 _check(placed.origin.distance_to(original_position) < 0.0001, "W47 absolute centre preserved %d/%d" % [index, i])
                 _check(placed.basis.x.distance_to(original_rotation.x) < 0.0001, "W47 local X basis preserved %d/%d" % [index, i])
                 _check(placed.basis.y.distance_to(original_rotation.y) < 0.0001, "W47 local Y basis preserved %d/%d" % [index, i])
@@ -131,7 +146,7 @@ func _run() -> void:
 
 func _done() -> void:
     if errors.is_empty():
-        print("W48 BATCHED REACTOR ORIGINAL GODOT PASS: %d native checks / 84 visual segments in 4 drawables" % assertions)
+        print("W48 BATCHED REACTOR NATIVE SOURCE PASS: %d structural, PBR and 84 authored-transform checks; Godot headless GPU readback is NOT certified and must be confirmed by W48 Chromium" % assertions)
         quit(0)
     else:
         for problem in errors:
