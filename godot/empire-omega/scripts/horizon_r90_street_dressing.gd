@@ -29,7 +29,7 @@ func _material(tint: Color,metal: float,rough: float) -> StandardMaterial3D:
 	return mat
 
 # R116: one shared physical building body surface for every original R90 tower.
-# All eight architectural masses belong to ONE ArrayMesh draw batch, instanced
+# All seven architectural masses belong to ONE ArrayMesh draw batch, instanced
 # by the original 72 MultiMesh transforms. Roof R114 + window R91 coordinates
 # remain anchored to the original unmodified normalized building footprint.
 static func _body_box(st: SurfaceTool, minimum: Vector3, maximum: Vector3) -> void:
