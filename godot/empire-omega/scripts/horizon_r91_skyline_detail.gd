@@ -61,6 +61,46 @@ static func _architectural_roof_mesh() -> ArrayMesh:
 	_roof_box(st,Vector3(0.22,0.50,-0.20),Vector3(0.32,3.10,-0.09))
 	return st.commit()
 
+# R119: real front + rear glazing with physical recessed glass and
+# four thin corner metal mullions on EACH face. In contrast to a white
+# floating BoxMesh, both sides have genuine geometry and physically shaded
+# surfaces. ONE shared 20-triangle ArrayMesh; same original MultiMesh batch,
+# original deterministic 4-sided window coordinates, no per-pane scene nodes.
+static func _window_quad(st: SurfaceTool, x0: float, x1: float,
+		y0: float, y1: float, z: float, tint: Color) -> void:
+	var a := Vector3(x0,y0,z)
+	var b := Vector3(x1,y0,z)
+	var c := Vector3(x1,y1,z)
+	var d := Vector3(x0,y1,z)
+	var outward: float = 1.0 if z > 0.0 else -1.0
+	st.set_normal(Vector3(0.0,0.0,outward))
+	st.set_color(tint)
+	if z > 0.0:
+		for vertex in [a,b,c,a,c,d]:
+			st.add_vertex(vertex)
+	else:
+		for vertex in [a,c,b,a,d,c]:
+			st.add_vertex(vertex)
+
+static func _architectural_window_mesh() -> ArrayMesh:
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	# Original R91 pane extents: 1.35m wide, 1.90m high.
+	# Two-sided physical front glass at +/-0.025, metal at +/-0.050.
+	# Frame colors multiply original per-instance warm/cool window states.
+	var glazing := Color(0.94,0.97,1.0,1.0)
+	var anodized := Color(0.25,0.30,0.37,1.0)
+	for face in [1.0,-1.0]:
+		var sign_z: float = float(face)
+		var glass_z: float = 0.025*sign_z
+		var frame_z: float = 0.050*sign_z
+		_window_quad(st,-0.585,0.585,-0.860,0.860,glass_z,glazing)
+		_window_quad(st,-0.675,-0.585,-0.950,0.950,frame_z,anodized)
+		_window_quad(st,0.585,0.675,-0.950,0.950,frame_z,anodized)
+		_window_quad(st,-0.585,0.585,0.860,0.950,frame_z,anodized)
+		_window_quad(st,-0.585,0.585,-0.950,-0.860,frame_z,anodized)
+	return st.commit()
+
 func _build_geometry() -> void:
 	var windows: Array[Transform3D] = []
 	var shades: Array[Color] = []
@@ -108,8 +148,7 @@ func _build_geometry() -> void:
 					windows.append(Transform3D(basis,at))
 					var lit: bool = posmod(i*3+floor_index*11+facing*5+column*7,9)<4
 					shades.append(Color("cbaa75") if lit else Color("31495b"))
-	var pane := BoxMesh.new()
-	pane.size = Vector3(1.35,1.90,0.065)
+	var pane := _architectural_window_mesh()
 	var glass_batch := MultiMesh.new()
 	glass_batch.transform_format = MultiMesh.TRANSFORM_3D
 	glass_batch.use_colors = true
@@ -124,7 +163,10 @@ func _build_geometry() -> void:
 	var finish := StandardMaterial3D.new()
 	finish.albedo_color = Color.WHITE
 	finish.vertex_color_use_as_albedo = true
-	finish.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	# Real metal/glass response uses the same original environment lighting,
+	# with no new reflection probes, lights, shaders, colliders or draw passes.
+	finish.metallic = 0.24
+	finish.roughness = 0.27
 	finish.cull_mode = BaseMaterial3D.CULL_DISABLED
 	facade_glass.material_override = finish
 	facade_glass.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
