@@ -71,11 +71,17 @@ func _run() -> void:
 		car.set("patrol_vehicle",index==11)
 		root.add_child(car)
 		fleet.append(car)
-		var collision:=car.get_node_or_null("CollisionShape3D") as CollisionShape3D
-		var bounds: BoxShape3D=collision.shape as BoxShape3D if collision!=null else null
-		check(bounds!=null and
+		var collision_count: int=0
+		var bounds: BoxShape3D=null
+		# Do not depend on auto-assigned Godot child names: inspect the
+		# actual physical CollisionShape3D and its original collision size.
+		for original_child in car.get_children():
+			if original_child is CollisionShape3D:
+				collision_count+=1
+				bounds=(original_child as CollisionShape3D).shape as BoxShape3D
+		check(collision_count==1 and bounds!=null and
 			bounds.size.is_equal_approx(Vector3(2.25,1.15,4.1)),
-			"original collision/crosswalk road safety shape and physics authority unchanged")
+			"exactly one original true BoxShape3D 2.25x1.15x4.1 physically collides with traffic")
 		check(car.collision_layer==8 and
 			(car.collision_mask & (1|2|4|8))==(1|2|4|8),
 			"real R41/R47 vehicle collision layers and walker's safety unchanged")
@@ -113,8 +119,8 @@ func _run() -> void:
 		var brake_finish: StandardMaterial3D=(brakes[0] as MeshInstance3D).material_override as StandardMaterial3D
 		check(brake_finish!=null and brake_finish.emission_energy_multiplier>=2.0,
 			"original actual car braking still visibly raises real Godot light emission")
-		check(car.get_child_count()==(15 if index==11 else 13),
-			"no NEW car parts or draw nodes: same original named CharacterBody3D art pieces")
+		check(car.get_child_count()==(13 if index==11 else 11),
+			"no NEW car parts or draw nodes: exact legacy collider + 2 shells + 4 wheels + 2 headlamps + 2 brakes and optional patrol sirens")
 		check(not car.is_queued_for_deletion(),"same authoritative original AI road agent stays alive")
 	var lead: CharacterBody3D=fleet[0]
 	var route: Array[Vector3]=[Vector3(0,0.8,0),Vector3(0,0.8,-95)]
