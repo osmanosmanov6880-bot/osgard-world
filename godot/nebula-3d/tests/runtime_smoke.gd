@@ -331,6 +331,68 @@ func _run() -> void:
         "R22_AuroraPhysicalStructures/R22_SuspendedFlightway_00/R22_PhysicalFlightway")
         is StaticBody3D,
         "R22 real suspended flightways must have physical collision"):return
+    # R40: bridge lamps remain real mesh geometry with the same 96 transforms,
+    # but are batched into 3 draw submissions (1 per bridge sector).
+    if not check(scenic.r40_bridge_luminaires == 96 and
+        scenic.r40_bridge_luminaire_draws == 3,
+        "R40 bridge luminaire batch counts changed unexpectedly"):return
+    if not check(scenic.r40_bridge_cpu_transforms.size() == 3,
+        "R40 exact CPU geometry evidence for all bridges missing"):return
+    for bridge_index in 3:
+        var bridge_batch = scenic.get_node_or_null(
+            "R40_BridgeLuminaireBatch_%02d" % bridge_index)
+        if not check(bridge_batch is MultiMeshInstance3D and
+            bridge_batch.multimesh.instance_count == 32 and
+            bridge_batch.material_override == scenic.led,
+            "R40 emissive real bridge luminaire instances missing"):return
+        # Each old standalone BoxMesh is 1.6 x 0.10 x 0.85, originally
+        # parented to the bridge span. Confirm every transformed fixture
+        # still has the exact expected *position and scale* in scenic space.
+        var bridge_span: Node3D = scenic.get_node_or_null(
+            "R22_AuroraPhysicalStructures/R22_SuspendedFlightway_%02d" % bridge_index)
+        if not check(bridge_span != null,
+            "R40 real bridge span missing from Godot scene tree"):return
+        var collision_body := bridge_span.get_node_or_null(
+            "R22_PhysicalFlightway") as StaticBody3D
+        # Godot assigns generated names to runtime-created unnamed nodes;
+        # search by actual physical node type, never assume a path/name.
+        var collision_shape: CollisionShape3D = null
+        if collision_body != null:
+            for child in collision_body.get_children():
+                if child is CollisionShape3D:
+                    collision_shape = child as CollisionShape3D
+                    break
+        var collision_box := collision_shape.shape as BoxShape3D if collision_shape != null else null
+        if not check(collision_box != null and
+            collision_box.size.is_equal_approx(Vector3(269.0,5.4,9.2)),
+            "R40 real bridge collision shape must remain 269x5.4x9.2"):return
+        var cpu_transforms: Array = scenic.r40_bridge_cpu_transforms[bridge_index]
+        if not check(cpu_transforms.size() == 32,
+            "R40 CPU submitted light instance count mismatch"):return
+        # In --headless, Godot's dummy RenderingServer can return
+        # Transform3D.IDENTITY for GPU instance reads. Validate the exact
+        # CPU transformations passed to MultiMesh.set_instance_transform.
+        for side_index in 2:
+            var side: float = -1.0 if side_index == 0 else 1.0
+            for fixture_index in 16:
+                var fixture: Transform3D = cpu_transforms[
+                    side_index * 16 + fixture_index]
+                var x: float = (float(fixture_index)-7.5)*16.0
+                var expected: Vector3 = bridge_span.position + Vector3(
+                    x,3.2,side*4.6)
+                var actual_scale: Vector3 = fixture.basis.get_scale()
+                var correct_position: bool = fixture.origin.distance_to(expected) < 0.001
+                var correct_scale: bool = actual_scale.is_equal_approx(
+                    Vector3(1.6,0.10,0.85))
+                if not correct_position or not correct_scale:
+                    print("NEBULA_R40_GEOMETRY_DIAGNOSTIC bridge=",bridge_index,
+                        " side=",side_index," fixture=",fixture_index,
+                        " actual=",fixture.origin," expected=",expected,
+                        " measured_scale=",actual_scale,
+                        " position_error=",fixture.origin.distance_to(expected))
+                    if not check(false,
+                        "R40 real MultiMesh instance transform differs from R38"):return
+    print("NEBULA_R40_GEOMETRY_CPU_PARITY_SUCCESS fixtures=96 bridges=3 renderer_headless=",DisplayServer.get_name() == "headless")
     var ambient_0: Vector3 = scenic.traffic_nodes[0].position
     scenic._process(0.1)
     if not check(scenic.traffic_nodes[0].position != ambient_0 and
@@ -743,6 +805,12 @@ func _run() -> void:
         "R12 dynamic film-streak control missing"):return
     if not check(monitor_r11.last_report.is_empty(),
         "R12 actual physical hardware results must never be invented in CI"):return
+    # R40: every real on-device hardware JSON must identify its build;
+    # software smoke must not fabricate any performance results.
+    if not check(monitor_r11.R40_BUILD_VARIANT ==
+        "NEBULA_R40_BRIDGE_BATCH_3X32" and
+        monitor_r11.last_report.is_empty(),
+        "R40 native profiler build identity missing or fabricated FPS"):return
     # R36: touch-accessible 20-second on-device profiler, no keyboard needed.
     # Native unit checks the actual controls and local JSON export. It does
     # NOT fabricate a physical-phone FPS score.
