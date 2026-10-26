@@ -294,15 +294,21 @@ func _toggle_city_focus() -> void:
 		focus_columns.custom_minimum_size.y = 565 if city_focus_active else 450
 	if focus_stage != null:
 		focus_stage.custom_minimum_size.y = 548.0 if city_focus_active else 436.0
-	# Never stretch 640x400 pixels over a cinematic full-width desktop stage:
-	# resize the original ONE live SubViewport. Keep a modest bounded budget.
-	preview.size = Vector2i(960,540) if city_focus_active else Vector2i(640,400)
-	# Source pin projection is measured in the CURRENT native render size.
+	# The SubViewportContainer already owns the live pixel size (stretch=true,
+	# stretch_shrink=1). Do NOT force preview.size: Godot immediately replaces it
+	# with the actual screen-space stage size when the control tree lays out.
+	# Preserve the real viewport/camera and simply reproject source-world pins.
 	_switch_atlas_mode(atlas_mode)
 	focus_button.text = local("ВЕРНУТЬ ПАНЕЛИ","SHOW PANELS","显示面板",focus_language) if city_focus_active else local("ФОКУС НА ГОРОДЕ","FOCUS ON CITY","聚焦城市",focus_language)
 	focus_button.tooltip_text = local("Показать данные и действия" if city_focus_active else "Развернуть реальный 3D-атлас",
 		"Restore original controls" if city_focus_active else "Expand live 3D atlas",
 		"恢复面板" if city_focus_active else "展开三维地图",focus_language)
+
+func _on_city_atlas_render_size_changed() -> void:
+	# True host-driven viewport resize: camera projection changes even without
+	# a camera move. Keep four real source district anchors in sync.
+	if preview != null and atlas_camera != null:
+		_switch_atlas_mode(atlas_mode)
 
 func _switch_atlas_mode(mode: String) -> void:
 	# No extra World3D, no preview image or second GPU pass: change the
@@ -479,3 +485,5 @@ func _city_view(parent: Node, world: World3D, forecast: Dictionary, lang: String
 	REFERENCE.style_button(focus_button)
 	focus_button.pressed.connect(Callable(self,"_toggle_city_focus"))
 	stage.add_child(focus_button)
+	# Driven by the actual Godot viewport size, NOT a hard-coded 2D overlay.
+	preview.size_changed.connect(Callable(self,"_on_city_atlas_render_size_changed"))
