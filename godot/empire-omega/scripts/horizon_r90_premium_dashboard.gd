@@ -177,7 +177,9 @@ func build(state: Dictionary, forecast: Dictionary, mission: String,
 		item.text = str(spec.get(lang,spec.get("ru",id)))
 		item.tooltip_text = local("Выбрать этот транспорт","Select this vehicle","选择车辆",lang)
 		item.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		item.custom_minimum_size.y = 40
+		# R128 B3 real touch access: vehicle purchase/selection must not
+		# require a sub-44px target on 320px or 390px phones.
+		item.custom_minimum_size.y = 46
 		REFERENCE.style_button(item)
 		item.pressed.connect(Callable(self,"_request_vehicle").bind(id))
 		fleet.add_child(item)
@@ -225,7 +227,7 @@ func build(state: Dictionary, forecast: Dictionary, mission: String,
 		var section_button := Button.new()
 		section_button.text = "%s · %d / 100%s" % [region,int(scores.get(id,0)),"  ◆" if id==selected else ""]
 		section_button.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		section_button.custom_minimum_size.y = 40
+		section_button.custom_minimum_size.y = 46
 		section_button.add_theme_font_size_override("font_size",14)
 		REFERENCE.style_button(section_button)
 		section_button.pressed.connect(Callable(self,"_request_district").bind(id))
@@ -471,7 +473,8 @@ func _city_view(parent: Node, world: World3D, forecast: Dictionary, lang: String
 		button.text = local("ОБЗОР","OVERVIEW","总览",lang) if mode == "overview" else local("ДЕТАЛИ","DETAIL","细节",lang)
 		button.tooltip_text = local("Реальная камера города","Live city camera","实时城市镜头",lang)
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		button.custom_minimum_size.y = 38
+		# Desktop atlas camera selector is a real keyboard-focusable Button.
+		button.custom_minimum_size.y = 46
 		button.add_theme_font_size_override("font_size",15)
 		REFERENCE.style_button(button)
 		button.pressed.connect(Callable(self,"_switch_atlas_mode").bind(mode))

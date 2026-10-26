@@ -15,7 +15,7 @@ import sys
 from pathlib import Path
 
 SCENARIOS = ("drive_city", "live_cabinet", "night_rain", "save_reload")
-DEVICE_CLASSES = ("desktop", "android")
+DEVICE_CLASSES = ("desktop", "android", "iphone")
 REPETITIONS = (1, 2, 3)
 REPORT_SCHEMA = "empire-omega-real-frames-r36-v1"
 MODEL_SHA = re.compile(r"^[a-f0-9]{40}$")
@@ -98,13 +98,17 @@ def inspect_packet(folder: Path, packet: dict, source_sha: str) -> list[str]:
         errors.append("too few actual Godot render frames or insufficient captured seconds")
     if not all(finite_positive(v) for v in (p50, p95, p99)) or not p50 <= p95 <= p99:
         errors.append("invalid real-frame percentile order or nonfinite samples")
-    target = 16.7 if packet.get("device_class") == "desktop" else 33.3
-    if finite_positive(p95) and p95 > target:
-        errors.append("p95 %.2f ms exceeds device target %.1f ms" % (p95, target))
-    if packet.get("device_class") == "android" and captured.get("graphics_quality") != "low":
-        errors.append("Android benchmark must test an explicit LOW graphics preset")
-    if packet.get("device_class") == "android" and packet.get("two_finger_controls_observed") is not True:
-        errors.append("physical two-finger touch interaction lacks operator verification")
+    device = packet.get("device_class")
+    p95_limit = 16.7 if device == "desktop" else 33.3
+    p99_limit = 33.3 if device == "desktop" else 50.0
+    if finite_positive(p95) and p95 > p95_limit:
+        errors.append("p95 %.2f ms exceeds device target %.1f ms" % (p95, p95_limit))
+    if finite_positive(p99) and p99 > p99_limit:
+        errors.append("p99 %.2f ms exceeds device hard limit %.1f ms" % (p99, p99_limit))
+    if device in ("android", "iphone") and captured.get("graphics_quality") != "low":
+        errors.append("physical mobile trial must explicitly use LOW graphics preset")
+    if device in ("android", "iphone") and packet.get("two_finger_controls_observed") is not True:
+        errors.append("real Android/iPhone two-finger controls need operator verification")
     return errors
 
 
@@ -122,6 +126,7 @@ def evaluate(path: Path, expected_sha: str) -> dict:
     if not isinstance(records, list):
         raise ValueError("Expected a list of original source device measurements")
     examined = {}
+    video_hashes = set()
     for packet in records:
         if not isinstance(packet, dict):
             raise ValueError("Malformed hardware record")
@@ -129,6 +134,11 @@ def evaluate(path: Path, expected_sha: str) -> dict:
         if key in examined:
             raise ValueError("Duplicate device/scenario/iteration cannot count as 3 trials")
         examined[key] = inspect_packet(path.parent, packet, expected_sha)
+        video_sha = packet.get("video_sha256", "")
+        if isinstance(video_sha, str) and FILE_SHA.fullmatch(video_sha):
+            if video_sha in video_hashes:
+                examined[key].append("duplicated recording reused across distinct physical trials")
+            video_hashes.add(video_sha)
     blockers = []
     for device in DEVICE_CLASSES:
         for scenario in SCENARIOS:
@@ -168,6 +178,7 @@ def main() -> int:
         assert finite_positive(16.7) and not finite_positive(float("nan"))
         assert not finite_positive(True)
         assert not MODEL_SHA.fullmatch("bad-hash")
+        assert DEVICE_CLASSES == ("desktop", "android", "iphone")
         print("R127 physical-device evidence syntax/safety self-test PASS; NO hardware tested")
         return 0
     if args.packet is None or args.expected_sha is None:

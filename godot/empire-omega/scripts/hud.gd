@@ -568,7 +568,7 @@ func _make_strategy() -> void:
 	title_flex.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	title_row.add_child(title_flex)
 	strategy_close_button = _button(title_row,"×",Callable(self,"toggle_strategy"))
-	strategy_close_button.custom_minimum_size = Vector2(98,42)
+	strategy_close_button.custom_minimum_size = Vector2(98,46)
 	strategy_close_button.add_theme_font_size_override("font_size",14)
 	var navigation := HBoxContainer.new()
 	r90_legacy_navigation = navigation
@@ -577,7 +577,9 @@ func _make_strategy() -> void:
 	for section in ["overview","council","economy","district"]:
 		var tab := _button(navigation,section,Callable(self,"_jump_to_strategy_section").bind(section))
 		tab.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		tab.custom_minimum_size.y = 38
+		# B3: actual keyboard/two-finger mobile command buttons must offer a
+		# real >=44px hit area, including 320px devices (not CSS screenshots).
+		tab.custom_minimum_size.y = 46
 		tab.add_theme_font_size_override("font_size",14)
 		strategy_nav_buttons[section] = tab
 	strategy_scroll = ScrollContainer.new()
@@ -768,7 +770,17 @@ func _refresh() -> void:
 			city_case_label.text = str(case["title"].get(GameState.locale,case["title"]["ru"])) + "\n" + _v08("Решить до такта ","Resolve before turn ","处理截止回合 ") + str(d["city_case"]["due_turn"]) + "  ·  C / Tab"
 	hint_label.text = _v08("АВТО · ИДТИ · ДЕЙСТВИЯ","CAR · WALK · ACTIONS","车辆 · 行走 · 操作") if compact_hud else _v08("WASD — идти · E — авто · F — действие · Tab — город · H — журнал","WASD — move · E — car · F — interact · Tab — city · H — journal","WASD 移动 · E 上车 · F 互动 · Tab 城市 · H 日志")
 	if open:
+		# UI state is not campaign state: retain the real player's position in
+		# the scrolling cabinet while updating wallet/missions/taxes. The legacy
+		# redraw detached all Controls and reset scroll after every transaction.
+		var prior_scroll: int = strategy_scroll.scroll_vertical if strategy_scroll != null else 0
 		_redraw_strategy()
+		if prior_scroll > 0:
+			call_deferred("_restore_strategy_scroll",prior_scroll)
+
+func _restore_strategy_scroll(offset: int) -> void:
+	if open and strategy_scroll != null and is_instance_valid(strategy_scroll):
+		strategy_scroll.scroll_vertical = maxi(0,offset)
 
 func update_world_context(player_at: Vector3, vehicle_at: Vector3, goal_at: Vector3, is_driving: bool, speed: float, fuel: float, nearest: String, condition: float = 100.0, handbrake: bool = false, gear: String = "N", drift_score: int = 0, assist_power: float = 0.0, assist_steering: float = 0.0, vehicle_yaw: float = 0.0, goal_available: bool = true) -> void:
 	if map != null:
