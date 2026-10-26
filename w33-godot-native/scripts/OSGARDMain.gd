@@ -17,6 +17,12 @@ var scene_3d: OSGARDRig
 var sub_viewport: SubViewport
 var visual_container: SubViewportContainer
 var scroll: ScrollContainer
+# Dedicated native touch-scroll corridor for small WebGL screens.
+# This repairs real Godot mobile usability when nested panels consume
+# ScreenDrag events before ScrollContainer can move its scrollbar.
+var _edge_touch_index: int = -1
+var _edge_touch_scrolling: bool = false
+var _edge_touch_travel: float = 0.0
 var body: VBoxContainer
 var feedback: Label
 var hint: Label
@@ -116,6 +122,11 @@ func _publish_web_accessibility(snap: Dictionary) -> void:
         return
     # Only visible, non-sensitive simulation data are mirrored. This is
     # intentionally read-only: Playwright still has to press actual controls.
+    # Headless RenderingServer returns dummy transforms; the real exported
+    # browser must independently prove all 83 actual MultiMesh GPU writes.
+    var ring_renderer: Dictionary = {}
+    if scene_3d != null and scene_3d.obsidian_stage != null:
+        ring_renderer = scene_3d.obsidian_stage.w48_real_renderer_ring_qa()
     var state: Dictionary = {
         "mission": int(snap["mission"]), "step": int(snap["step"]),
         "active": bool(snap["active"]), "complete": bool(snap["complete"]),
@@ -131,10 +142,18 @@ func _publish_web_accessibility(snap: Dictionary) -> void:
         "hold_percent": int(snap["calibration"].get("hold_percent", 0)),
         "last_error": bool(snap["last_error"]),
         "quality": str(core.settings["quality"]),
+        "locale": str(core.settings["locale"]), # read-only WebGL locale QA / accessibility
         # Original native engine values read only by local browser QA.
         # Not a benchmark on the user's physical hardware.
         "godot_render_fps": Engine.get_frames_per_second(),
-        "godot_frames_drawn": Engine.get_frames_drawn()
+        "godot_frames_drawn": Engine.get_frames_drawn(),
+        "godot_3d_draw_calls": RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_DRAW_CALLS_IN_FRAME),
+        "godot_3d_rendered_objects": RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_OBJECTS_IN_FRAME),
+        "w48_real_renderer_readback": bool(ring_renderer.get("actual_renderer", false)),
+        "w48_gpu_ring_transforms_ok": bool(ring_renderer.get("ok", false)),
+        "w48_gpu_ring_transforms_checked": int(ring_renderer.get("checked", 0)),
+        "w48_gpu_ring_mismatch_count": int(ring_renderer.get("mismatches", -1)),
+        "w48_gpu_ring_max_error": float(ring_renderer.get("max_error", -1.0))
     }
     var geometry: Dictionary = {
         "viewport": [roundi(size.x), roundi(size.y)],
@@ -191,7 +210,7 @@ func _panel(parent: Container) -> VBoxContainer:
 
 func _label(parent: Container, value: String = "", font_size: int = 15, color: Color = WHITE) -> Label:
     var node := Label.new()
-    node.text = value
+    node.text = _legible_copy(value)
     node.add_theme_color_override("font_color", color)
     node.add_theme_font_size_override("font_size", font_size)
     node.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -201,7 +220,7 @@ func _label(parent: Container, value: String = "", font_size: int = 15, color: C
 
 func _button(parent: Container, value: String, callback: Callable, accent: bool = false, min_width: float = 142.0) -> Button:
     var node := Button.new()
-    node.text = value
+    node.text = _legible_copy(value)
     node.focus_mode = Control.FOCUS_ALL
     node.custom_minimum_size = Vector2(min_width, 52)
     node.add_theme_font_size_override("font_size", 14)
@@ -233,7 +252,7 @@ func _flow(parent: Container) -> HFlowContainer:
 func _overlay_label(parent: Control, name_tag: String, title_text: String, font_size: int, tone: Color) -> Label:
     var tag := Label.new()
     tag.name = name_tag
-    tag.text = title_text
+    tag.text = _legible_copy(title_text)
     tag.add_theme_color_override("font_color", tone)
     tag.add_theme_font_size_override("font_size", font_size)
     tag.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -584,6 +603,43 @@ func _process(delta: float) -> void:
         _refresh_elapsed = 0.0
         _refresh()
 
+func _input(event: InputEvent) -> void:
+    # W53: native touchscreen navigation. In Chromium 390px portrait, the
+    # genuine W47 input test proved six CDP ScreenDrag swipes did not move
+    # the ScrollContainer: the first mission remained at y=2160.
+    # A narrow right-edge gesture lane scrolls the REAL Godot container,
+    # irrespective of child PanelContainer mouse_filter consumption.
+    # This is user-facing input, not a synthetic test-only scroll hook.
+    if scroll == null or size.x >= 640.0:
+        return
+    var touch: InputEventScreenTouch = event as InputEventScreenTouch
+    if touch != null:
+        if touch.pressed:
+            var in_lane: bool = touch.position.x >= size.x * 0.84 and touch.position.x <= size.x - 3.0
+            var below_buttons: bool = touch.position.y >= 90.0 and touch.position.y <= size.y - 35.0
+            _edge_touch_index = touch.index if in_lane and below_buttons else -1
+            _edge_touch_scrolling = false
+            _edge_touch_travel = 0.0
+        elif touch.index == _edge_touch_index:
+            _edge_touch_index = -1
+            _edge_touch_scrolling = false
+        return
+    var drag: InputEventScreenDrag = event as InputEventScreenDrag
+    if drag == null or drag.index != _edge_touch_index or _edge_touch_index < 0:
+        return
+    # Tap events and short camera/quality button gestures are NOT hijacked.
+    _edge_touch_travel += absf(drag.relative.y)
+    if _edge_touch_travel >= 10.0:
+        _edge_touch_scrolling = true
+    if not _edge_touch_scrolling:
+        return
+    # ScreenDrag is reported in native viewport pixels, and content moves
+    # against the finger. Clamp and let Godot's genuine scrollbar apply its
+    # own maximum (no DOM spoof, no gameplay commands, no generated scroll).
+    scroll.scroll_vertical = maxi(0, scroll.scroll_vertical - roundi(drag.relative.y))
+    get_viewport().set_input_as_handled()
+
+
 func _unhandled_key_input(event: InputEvent) -> void:
     var key := event as InputEventKey
     if key == null or not key.pressed or key.echo or key.ctrl_pressed or key.alt_pressed or key.meta_pressed:
@@ -681,12 +737,27 @@ func _confirm_erase() -> void:
 func _on_feedback(_code: String, error: bool) -> void:
     _sound_event(error)
 
+# W55: The original REAL 390px WebGL screenshot displayed the U+2192
+# protocol arrows as unsupported boxed glyphs. Use a directional ASCII
+# marker on all native Godot text paths; do NOT rely on an OS-specific
+# fallback font unavailable inside the exported WebGL player.
+# Original instructional copy, order and offline-only content are unchanged.
+func _legible_copy(value: String) -> String:
+    return value.replace("→", " > ")
+
+func _flag_copy(enabled: bool) -> String:
+    var russian: bool = str(core.settings["locale"]) == "ru"
+    if russian:
+        return " / ВКЛ" if enabled else " / ВЫКЛ"
+    return " / ON" if enabled else " / OFF"
+
 func _t(key: String) -> String:
-    return OSGARDText.text(str(core.settings["locale"]), key)
+    return _legible_copy(OSGARDText.text(str(core.settings["locale"]), key))
 
 func _assign(node: Label, value: String) -> void:
-    if node != null and node.text != value:
-        node.text = value
+    var safe: String = _legible_copy(value)
+    if node != null and node.text != safe:
+        node.text = safe
 
 func _refresh() -> void:
     if body == null:
@@ -699,10 +770,12 @@ func _refresh() -> void:
     # Keep the actual language code readable on minimal web fonts.
     lang_btn.text = "RU" if locale == "ru" else "EN"
     quality_btn.text = _t("quality") + ": " + str(core.settings["quality"]).to_upper()
-    motion_btn.text = _t("motion") + (" ✓" if bool(core.settings["reduced_motion"]) else " –")
-    sound_btn.text = _t("sound") + (" ✓" if bool(core.settings["sound"]) else " –")
-    captions_btn.text = _t("captions") + (" ✓" if bool(core.settings["captions"]) else " –")
-    metrics_btn.text = _t("privacy") + (" ✓" if bool(core.settings["metrics_consent"]) else " –")
+    # Explicit localized state text is readable without the unsupported
+    # checkmark glyph and is understandable to non-colorblind users.
+    motion_btn.text = _t("motion") + _flag_copy(bool(core.settings["reduced_motion"]))
+    sound_btn.text = _t("sound") + _flag_copy(bool(core.settings["sound"]))
+    captions_btn.text = _t("captions") + _flag_copy(bool(core.settings["captions"]))
+    metrics_btn.text = _t("privacy") + _flag_copy(bool(core.settings["metrics_consent"]))
     erase_btn.text = _t("erase")
     _assign(telemetry, "%s  %04d RPM     |     %s  %3d%%     |     %s  %d/150" % [
         _t("rpm"), roundi(float(snap["rpm"])), _t("hatch"), roundi(float(snap["hatch"]) * 100.0), _t("score"), int(snap["score"])])
@@ -714,7 +787,7 @@ func _refresh() -> void:
     _assign(stage_readout, "ROTOR   %04d RPM     /     HATCH   %03d%%     /     SCORE   %03d" % [
         roundi(float(snap["rpm"])), roundi(float(snap["hatch"]) * 100.0), int(snap["score"])])
     var step_names := [_t("step0"), _t("step1"), _t("step2"), _t("step3"), _t("step4")]
-    _assign(progress_text, " → ".join(step_names) + "    |    %d/3 + %d/3" % [int(snap["cleared_count"]), int(snap["shift_cleared_count"])])
+    _assign(progress_text, " > ".join(step_names) + "    |    %d/3 + %d/3" % [int(snap["cleared_count"]), int(snap["shift_cleared_count"])])
     engine_btn.text = _t("drive_stop") if bool(snap["drive_on"]) else _t("drive_start")
     hatch_btn.text = _t("hatch_close") if float(snap["hatch_target"]) == 1.0 else _t("hatch_open")
     scan_btn.text = _t("scan")

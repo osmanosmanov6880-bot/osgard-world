@@ -33,20 +33,49 @@ def await_quality(page,marker,quality):
         page.wait_for_timeout(200)
     raise AssertionError(f"Real Godot quality control never became {quality}: {state(marker)}")
 
-def measure(page,marker,mode,period=12):
+def measure(page,marker,mode,period=12,require_draw_calls=True):
+    # W47 pristine baseline predates the read-only draw-call probe. Its real
+    # FPS can still be measured independently; draw-call fields stay null.
+    # W48 itself ALWAYS uses the strict default and cannot PASS without data.
     samples=[]
     frame_reads=[]
+    draw_samples=[]
+    object_samples=[]
     start=time.monotonic()
     while time.monotonic()-start < period:
         s=state(marker)
         assert s.get("quality")==mode,("Measured the wrong real mode",s)
+        if require_draw_calls:
+            # Unlike native --headless, this is a real Chromium WebGL
+            # RenderingServer readback of ALL 83 W48 GPU instanced slots.
+            assert s.get("w48_real_renderer_readback") is True, (
+                "W48 actual browser renderer not available", s)
+            assert s.get("w48_gpu_ring_transforms_ok") is True, (
+                "W48 actual WebGL multimesh writes do not equal authored transforms", s)
+            assert s.get("w48_gpu_ring_transforms_checked") == 83, (
+                "Real WebGL did not check all 83 instanced ring pieces", s)
+            assert s.get("w48_gpu_ring_mismatch_count") == 0, (
+                "True GPU ring transform readback differs", s)
+            assert 0 <= s.get("w48_gpu_ring_max_error", -1) < 0.0001, (
+                "Real renderer ring transform maximum error beyond W47 tolerance", s)
         value=s.get("godot_render_fps")
         count=s.get("godot_frames_drawn")
+        draws=s.get("godot_3d_draw_calls")
+        objects=s.get("godot_3d_rendered_objects")
+        if isinstance(draws,(int,float)) and 0<draws<20000:
+            draw_samples.append(int(draws))
+        if isinstance(objects,(int,float)) and 0<objects<20000:
+            object_samples.append(int(objects))
         if isinstance(value,(int,float)) and value>0 and value<1000:
             samples.append(float(value))
         if isinstance(count,int) and count>=0:
             frame_reads.append(count)
         page.wait_for_timeout(550)
+    # W48 cannot claim usable profiling evidence when the Godot renderer
+    # reports no draw calls or object counts (missing/zero telemetry).
+    if require_draw_calls:
+        assert len(draw_samples)>=3,("Godot actual draw call samples unavailable",draw_samples)
+        assert len(object_samples)>=3,("Godot rendered object samples unavailable",object_samples)
     assert len(samples)>=3,("Native engine FPS counter was not available",samples)
     assert len(frame_reads)>=3 and max(frame_reads)>min(frame_reads),(
         "Native Godot render loop stopped or did not advance",frame_reads)
@@ -58,6 +87,12 @@ def measure(page,marker,mode,period=12):
         "godot_engine_fps_p10":round(ordered[max(0,int(len(ordered)*0.1)-1)],2),
         "godot_engine_fps_min":round(min(samples),2),
         "godot_rendered_frames_progressed":True,
+        "w48_actual_webgl_ring_transforms_checked": 83 if require_draw_calls else None,
+        "render_draw_call_samples":len(draw_samples),
+        "draw_call_probe_required":require_draw_calls,
+        "render_draw_calls_median":statistics.median(draw_samples) if draw_samples else None,
+        "render_objects_median":statistics.median(object_samples) if object_samples else None,
+        "render_object_sample_count":len(object_samples),
         "software_emulation_only":True,
         "commercial_device_60fps_certified":False
     }
@@ -128,6 +163,7 @@ def run(export,out,sha):
             finally:
                 browser.close()
         assert len(report["runs"])==3
+        assert all(run["render_draw_call_samples"] >= 3 and run["render_object_sample_count"] >= 3 for run in report["runs"]), "Missing real draw submission telemetry"
         report["status"]="PASS"
     finally:
         srv.shutdown()

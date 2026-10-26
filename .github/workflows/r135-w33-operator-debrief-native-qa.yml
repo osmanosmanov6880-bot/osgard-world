@@ -153,6 +153,34 @@ jobs:
             echo '::error::W47 native cinematic framing regression failed'
             exit 1
           fi
+      - name: W48 actual Godot ring draw submission reduction, no detail loss and ECO interlocks
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 150s godot --headless --path w33-godot-native --script res://tests/test_w48_ring_instancing.gd 2>&1 | tee "$RUNNER_TEMP/w48-ring-budget.log"
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/w48-ring-budget.log"; then
+            echo '::error::W48 native ring instancing emitted Godot errors'
+            exit 1
+          fi
+      - name: W53 real Godot native 390px ScreenTouch ScreenDrag and ScrollContainer regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 150s godot --headless --path w33-godot-native --script res://tests/test_w53_mobile_edge_swipe.gd 2>&1 | tee "$RUNNER_TEMP/w53-native-mobile-scroll.log"
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/w53-native-mobile-scroll.log"; then
+            echo '::error::W53 native mobile scrolling or noninterference regression failed'
+            exit 1
+          fi
+      - name: W55 real native RU EN readable typography and 390px layout
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 150s godot --headless --path w33-godot-native --script res://tests/test_w55_readable_protocol_copy.gd 2>&1 | tee "$RUNNER_TEMP/w55-native-fonts.log"
+          grep -q 'OSGARD W55 REAL GODOT RU/EN GLYPH AND MOBILE PROTOCOL COPY PASS' "$RUNNER_TEMP/w55-native-fonts.log"
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/w55-native-fonts.log"; then
+            echo '::error::W55 actual native typography regression failed'
+            exit 1
+          fi
       - name: Create real Godot 4.4.1 WebGL export from the same native-tested commit
         shell: bash
         run: |
@@ -204,6 +232,22 @@ jobs:
             --export w33-godot-native/build/web \
             --out w33-godot-native/build/w39-original-art \
             --sha "${{ github.event.pull_request.head.sha || github.sha }}"
+      - name: W55 real Chromium 390px RU EN protocol screenshots and physical touch inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$RUNNER_TEMP/w33-qa-venv/bin/python" w33-godot-native/ci/w55_visual_typography_acceptance.py \
+            --export w33-godot-native/build/web \
+            --evidence w33-godot-native/build/w55-original-font-art \
+            --sha "${{ github.event.pull_request.head.sha || github.sha }}"
+      - name: Preserve original W55 RU EN Godot screenshots for independent manual approval
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: osgard-w55-real-original-ru-en-${{ github.event.pull_request.head.sha || github.sha }}
+          path: w33-godot-native/build/w55-original-font-art/
+          if-no-files-found: warn
+          retention-days: 45
       - name: Preserve original OBSIDIAN cinematic contact sheet and screenshots
         if: always()
         uses: actions/upload-artifact@v4
@@ -539,3 +583,318 @@ jobs:
           path: mobile-touch-evidence/
           if-no-files-found: warn
           retention-days: 30
+
+  # W49 to W52 are deliberately scoped to the W47-based W48 PR. No legacy
+  # branch is forced to pass a future feature or sign off customer hardware.
+  w49-source-contract:
+    name: W49 pinned W47 source and untouched six-mission/production parity
+    if: github.event_name == 'pull_request' && github.head_ref == 'feat/osgard-w48-ring-instancing-render-budget-20261026'
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Run independent exact base/head Git blob contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha }}"
+          python3 -m py_compile \
+            w33-godot-native/ci/w49_source_contract.py \
+            w33-godot-native/ci/w51_paired_comparison.py \
+            w33-godot-native/ci/w52_release_gate.py \
+            w33-godot-native/ci/godot_software_performance.py \
+            w33-godot-native/ci/test_w49_w52_gate_regressions.py
+          python3 -m unittest discover -s w33-godot-native/ci \
+            -p 'test_w49_w52_gate_regressions.py' -v
+          python3 w33-godot-native/ci/w49_source_contract.py \
+            --base "${{ github.event.pull_request.base.sha }}" \
+            --head "${{ github.event.pull_request.head.sha }}" \
+            --out w49-evidence/w49-source-contract.json
+      - name: W57 exact-head W56 evidence checker and mandatory physical-device HOLD
+        shell: bash
+        env:
+          EXACT_CANDIDATE_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXACT_CANDIDATE_HEAD"
+          python3 -m unittest discover -s tooling/osgard-w56 -p 'test_hardware_review_gate.py' -v
+          python3 tooling/osgard-w56/hardware_review_gate.py \
+            --expected-sha "$EXACT_CANDIDATE_HEAD" \
+            --output w49-evidence/w56-physical-review-HOLD.json
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          r=json.loads(Path("w49-evidence/w56-physical-review-HOLD.json").read_text())
+          assert r["schema"]=="OSGARD_W56_FAIL_CLOSED_PHYSICAL_REVIEW_V1"
+          assert r["source_sha"]==os.environ["EXACT_CANDIDATE_HEAD"]
+          assert r["status"]=="HOLD" and r["decision"]=="MISSING_DEVICE_REPORTS"
+          assert r["reports"]=={} and r["missing"]==["windows","webgl","android","ios"]
+          for k in ("independent_physical_device_certified","cinematic_signoff",
+                    "production_approved","allow_master_merge","published_to_production"):
+              assert r[k] is False, k
+          print("OSGARD W57 EXACT HEAD W56 PHYSICAL PRODUCTION HOLD: PASS")
+          PY
+      - name: Preserve W49 scope contract even if blocked
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: osgard-w49-original-source-contract-${{ github.event.pull_request.head.sha }}
+          path: w49-evidence/
+          if-no-files-found: warn
+          retention-days: 30
+
+  w50-w51-paired-acceptance:
+    name: W50-W51 original W47 and W48 optical frames plus paired real Godot software FPS
+    if: github.event_name == 'pull_request' && github.head_ref == 'feat/osgard-w48-ring-instancing-render-budget-20261026'
+    needs: [actual-godot-source-parity, w49-source-contract]
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - name: Checkout pristine exact W47 Godot baseline, no diagnostic source patch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: w47-original-source
+          persist-credentials: false
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: true
+      - name: Import and export actual untouched W47 baseline using same Godot 4.4.1
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha }}"
+          test "$(git -C w47-original-source rev-parse HEAD)" = "${{ github.event.pull_request.base.sha }}"
+          test "${{ github.event.pull_request.base.sha }}" = "14be69cdaa1fdffa4e209645eed0b1964581858a"
+          godot --headless --editor --path w47-original-source/w33-godot-native --import --quit 2>&1 | tee "$RUNNER_TEMP/w47-pristine-import.log"
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:|Failed to load script' "$RUNNER_TEMP/w47-pristine-import.log"; then
+            echo '::error::W47 pristine baseline import failed'
+            exit 1
+          fi
+          (
+            cd w47-original-source/w33-godot-native
+            mkdir -p build/web
+            godot --headless --path . --export-release Web build/web/index.html \
+              2>&1 | tee "$RUNNER_TEMP/w47-pristine-export.log"
+          )
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/w47-pristine-export.log"; then
+            echo '::error::W47 original Godot export failed'
+            exit 1
+          fi
+          python3 w33-godot-native/ci/verify_web_export.py \
+            w47-original-source/w33-godot-native/build/web \
+            --sha "${{ github.event.pull_request.base.sha }}" \
+            --output w47-original-source/w33-godot-native/build/web/evidence.json
+      - name: Download original same-head W48 WebGL export
+        uses: actions/download-artifact@v4
+        with:
+          name: osgard-w33-godot-webgl-${{ github.event.pull_request.head.sha }}
+          path: w48-original-export
+      - name: Compare W47/W48 real native render frames + engine frame counters on one runner
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m py_compile \
+            w33-godot-native/ci/w51_paired_comparison.py \
+            w33-godot-native/ci/godot_software_performance.py
+          python3 -m venv "$RUNNER_TEMP/w51-venv"
+          "$RUNNER_TEMP/w51-venv/bin/pip" install --disable-pip-version-check --no-cache-dir playwright==1.56.0 Pillow==11.3.0
+          "$RUNNER_TEMP/w51-venv/bin/python" -m playwright install --with-deps chromium
+          "$RUNNER_TEMP/w51-venv/bin/python" w33-godot-native/ci/w51_paired_comparison.py \
+            --baseline-export w47-original-source/w33-godot-native/build/web \
+            --candidate-export w48-original-export \
+            --baseline-sha "${{ github.event.pull_request.base.sha }}" \
+            --candidate-sha "${{ github.event.pull_request.head.sha }}" \
+            --out w50-w51-evidence
+      - name: Preserve original paired screenshots, observed FPS and render draw counts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: osgard-w50-w51-original-paired-${{ github.event.pull_request.head.sha }}
+          path: w50-w51-evidence/
+          if-no-files-found: warn
+          retention-days: 30
+
+  w52-no-go-release-gate:
+    name: W52 release proof - software candidate only, NEVER publish production
+    if: github.event_name == 'pull_request' && github.head_ref == 'feat/osgard-w48-ring-instancing-render-budget-20261026'
+    needs: [w49-source-contract, w50-w51-paired-acceptance, actual-godot-source-parity, actual-windows-runner-boot, reproduce-verified-candidate, real-sw-webgl-performance, real-mobile-touch-first-mission]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: osgard-w49-original-source-contract-${{ github.event.pull_request.head.sha }}
+          path: w52-input/source
+      - uses: actions/download-artifact@v4
+        with:
+          name: osgard-w50-w51-original-paired-${{ github.event.pull_request.head.sha }}
+          path: w52-input/paired
+      - uses: actions/download-artifact@v4
+        with:
+          name: osgard-w44-real-godot-software-fps-${{ github.event.pull_request.head.sha }}
+          path: w52-input/performance
+      - uses: actions/download-artifact@v4
+        with:
+          name: osgard-w45-mobile-touch-real-canvas-evidence-${{ github.event.pull_request.head.sha }}
+          path: w52-input/touch
+      - uses: actions/download-artifact@v4
+        with:
+          name: osgard-w39-original-cinematic-visual-evidence-${{ github.event.pull_request.head.sha }}
+          path: w52-input/visual
+      - uses: actions/download-artifact@v4
+        with:
+          name: osgard-w42-reproducible-candidate-${{ github.event.pull_request.head.sha }}
+          path: w52-input/candidate
+      - name: Verify original source SHA, renderer telemetry, images, missions, boot and ZIP bytes
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha }}"
+          python3 -m py_compile w33-godot-native/ci/w52_release_gate.py
+          shopt -s nullglob
+          packages=(w52-input/candidate/OSGARD_OBSIDIAN_*.zip)
+          test "${#packages[@]}" -eq 1
+          python3 w33-godot-native/ci/w52_release_gate.py \
+            --source w52-input/source/w49-source-contract.json \
+            --paired w52-input/paired/w50-w51-paired-evidence.json \
+            --performance w52-input/performance/godot-software-performance-evidence.json \
+            --touch w52-input/touch/mobile-touch-evidence.json \
+            --visual w52-input/visual/visual-evidence.json \
+            --candidate "${packages[0]}" \
+            --sha256sums w52-input/candidate/SHA256SUMS.txt \
+            --build-report w52-input/candidate/build-report.json \
+            --w56-physical-review w52-input/source/w56-physical-review-HOLD.json \
+            --base-sha "${{ github.event.pull_request.base.sha }}" \
+            --head-sha "${{ github.event.pull_request.head.sha }}" \
+            --out w52-release-evidence
+      - name: Retain machine-readable exact-head HOLD decision (no site mutation)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: osgard-w52-source-bound-release-gate-${{ github.event.pull_request.head.sha }}
+          path: w52-release-evidence/
+          if-no-files-found: warn
+          retention-days: 45
+
+  # Always publish the exact-head decision when upstream regression checks
+  # fail, get cancelled or are skipped. Green means SOFTWARE ONLY, never GO
+  # for production or real GPU/phone performance.
+  w52-independent-final-verdict:
+    name: W52 consolidated release HOLD - all mandatory exact-head CI proofs
+    if: always() && github.event_name == 'pull_request' && github.head_ref == 'feat/osgard-w48-ring-instancing-render-budget-20261026'
+    needs:
+      - actual-godot-source-parity
+      - actual-windows-runner-boot
+      - reproduce-verified-candidate
+      - real-sw-webgl-performance
+      - real-mobile-touch-first-mission
+      - w49-source-contract
+      - w50-w51-paired-acceptance
+      - w52-no-go-release-gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Generate transparent failure-or-success software evidence verdict
+        shell: bash
+        env:
+          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha }}
+          GITHUB_RUN_SHA: ${{ github.sha }}
+          JOB_RESULTS_JSON: ${{ toJSON(needs) }}
+        run: |
+          set -euo pipefail
+          mkdir -p w52-final-verdict
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          sha = os.environ["EXPECTED_HEAD"]
+          jobs = json.loads(os.environ["JOB_RESULTS_JSON"])
+          expected = {
+              "actual-godot-source-parity",
+              "actual-windows-runner-boot",
+              "reproduce-verified-candidate",
+              "real-sw-webgl-performance",
+              "real-mobile-touch-first-mission",
+              "w49-source-contract",
+              "w50-w51-paired-acceptance",
+              "w52-no-go-release-gate",
+          }
+          results = {name: jobs.get(name, {}).get("result", "missing")
+                     for name in sorted(expected)}
+          blocked = {name: result for name, result in results.items()
+                     if result != "success"}
+          status = "PASS" if not blocked and len(sha) == 40 and all(
+              x in "0123456789abcdef" for x in sha) else "FAIL"
+          manifest = {
+              "schema": "OSGARD_W52_EXACT_HEAD_CI_DECISION_V1",
+              "source_sha": sha,
+              "status": status,
+              "decision": ("SOFTWARE_CANDIDATE_VERIFIED_PRODUCTION_HOLD" if status == "PASS"
+                           else "BLOCKED_PRODUCTION_HOLD"),
+              "upstream_jobs": results,
+              "blocking_jobs": blocked,
+              "native_godot_import_and_missions_passed": (
+                  results["actual-godot-source-parity"] == "success"),
+              "all_six_webgl_missions_and_windows_boot_passed": (
+                  results["reproduce-verified-candidate"] == "success"
+                  and results["actual-windows-runner-boot"] == "success"),
+              "original_three_camera_w47_w48_comparison_passed": (
+                  results["w50-w51-paired-acceptance"] == "success"),
+              "actual_w48_software_draw_calls_sampled": (
+                  results["real-sw-webgl-performance"] == "success"),
+              "w52_exact_SHA_artifact_verified": (
+                  results["w52-no-go-release-gate"] == "success"),
+              "physical_gpu_or_phone_certified": False,
+              "commercial_aaa_or_60fps_certified": False,
+              "manual_visual_signoff": False,
+              "production_deployed": False,
+              "merge_authorized": False,
+          }
+          out = Path("w52-final-verdict")
+          (out / "w52-ci-final-verdict.json").write_text(
+              json.dumps(manifest, sort_keys=True, indent=2) + "\n", encoding="utf-8")
+          rows = ["# OSGARD W52 exact-head CI conclusion", "",
+                  "SHA: `" + sha + "`", "",
+                  "Verdict: **" + manifest["decision"] + "**", "",
+                  "## Mandatory check matrix", ""]
+          rows += ["- " + name + ": " + result for name, result in sorted(results.items())]
+          rows += ["", "Production remains **HOLD** regardless of software success.",
+                   "Physical GPU/phone, subjective AAA graphics and site deploy not certified.", ""]
+          (out / "W52_CI_VERDICT.md").write_text("\n".join(rows), encoding="utf-8")
+          print(json.dumps({"status": status, "blocking_jobs": blocked,
+                            "source_sha": sha}, indent=2))
+          if status != "PASS":
+              raise SystemExit("W52 mandatory exact-head software gate FAILED/HOLD")
+          PY
+      - name: Preserve unambiguous original CI result even on FAIL or skip
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: osgard-w52-ci-final-verdict-${{ github.event.pull_request.head.sha }}
+          path: w52-final-verdict/
+          if-no-files-found: warn
+          retention-days: 45

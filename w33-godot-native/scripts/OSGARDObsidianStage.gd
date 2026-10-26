@@ -15,6 +15,12 @@ const CRITICAL := Color("dc6257")
 
 var hero_only: Array[Node3D] = []
 var smooth_rings: Array[MeshInstance3D] = []
+var _precision_ring_batches: Array[MultiMeshInstance3D] = []
+# Godot --headless disables RenderingServer storage/readback. Preserve the
+# exact 83 Transform3D values handed to the GPU for independent W47 math QA.
+# Real WebGL separately verifies RenderingServer's actual stored transforms.
+var _precision_ring_authored: Array = []
+var _precision_ring_webgl_qa_cache: Dictionary = {}
 var precision_fasteners: MultiMeshInstance3D
 var industrial_lights: Array[Light3D] = []
 var alarm_lamps: Array[MeshInstance3D] = []
@@ -198,6 +204,88 @@ func _construct_architecture() -> void:
         _box(self, "FloorCableTrunk_%d" % int(side), Vector3(0.38, 0.20, 7.7), Vector3(side * 6.07, -0.01, 1.3), gunmetal)
         _box(self, "CableStrake_%d" % int(side), Vector3(0.044, 0.03, 7.7), Vector3(side * 6.07, 0.10, 1.30), bronze)
 
+func _precision_ring_multimesh(index: int, radius: float, depth: float, segments: int, mat: Material) -> void:
+    # Previous release W47 rendered 84 tiny box meshes as 84 individual
+    # MeshInstance3D drawables despite a shared transform/material pattern.
+    # One GPU-instanced draw submission per radius retains exactly the same
+    # width, positions, rotations and PBR material without separate nodes.
+    # Keep segment 0 of outer ring as a real physical MeshInstance3D for
+    # compatibility with W35 visual acceptance and original scene inspectors.
+    var first_index: int = 1 if index == 0 else 0
+    var count: int = segments - first_index
+    var unit := BoxMesh.new()
+    unit.size = Vector3(0.095 if index < 2 else 0.042, 0.43 if index == 0 else 0.34, 0.14)
+    var batch := MultiMesh.new()
+    batch.transform_format = MultiMesh.TRANSFORM_3D
+    batch.mesh = unit
+    batch.instance_count = count
+    var authored: Array[Transform3D] = []
+    for i in range(first_index, segments):
+        var angle: float = TAU * float(i) / float(segments)
+        var centre := Vector3(cos(angle) * radius, 2.32 + sin(angle) * radius, depth)
+        var basis := Basis(Vector3.BACK, -angle)
+        var actual_write := Transform3D(basis, centre)
+        # One immutable authored value is used for BOTH the native GPU write
+        # and the independent CPU-side transform parity audit under --headless.
+        batch.set_instance_transform(i - first_index, actual_write)
+        authored.append(actual_write)
+    _precision_ring_authored.append(authored)
+    var housing := MultiMeshInstance3D.new()
+    housing.name = "A7PrecisionRingBatch_%d" % index
+    housing.multimesh = batch
+    housing.material_override = mat
+    housing.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF if index == 2 else GeometryInstance3D.SHADOW_CASTING_SETTING_ON
+    add_child(housing)
+    _precision_ring_batches.append(housing)
+    if index == 2:
+        hero_only.append(housing)
+        _detail_count += count
+    else:
+        _structure_count += count
+
+func w48_real_renderer_ring_qa() -> Dictionary:
+    # This is a read-only REAL RenderingServer verification, not a model
+    # prediction. Never infer GPU correctness from Godot's dummy --headless
+    # server: it returns identities for every get_instance_transform() call.
+    if DisplayServer.get_name() == "headless":
+        return {"actual_renderer": false, "ok": false, "checked": 0, "max_error": -1.0}
+    if not _precision_ring_webgl_qa_cache.is_empty():
+        return _precision_ring_webgl_qa_cache
+    var checked: int = 0
+    var mismatch_count: int = 0
+    var worst: float = 0.0
+    if _precision_ring_batches.size() != 3 or _precision_ring_authored.size() != 3:
+        return {"actual_renderer": true, "ok": false, "checked": 0, "max_error": -1.0}
+    for ring_index in range(3):
+        var multimesh: MultiMesh = _precision_ring_batches[ring_index].multimesh
+        var authored: Array = _precision_ring_authored[ring_index]
+        if multimesh == null or multimesh.instance_count != authored.size():
+            return {"actual_renderer": true, "ok": false, "checked": checked, "max_error": -1.0}
+        for slot in range(authored.size()):
+            var expected: Transform3D = authored[slot]
+            var stored: Transform3D = multimesh.get_instance_transform(slot)
+            var error: float = maxf(
+                stored.origin.distance_to(expected.origin),
+                maxf(stored.basis.x.distance_to(expected.basis.x),
+                    maxf(stored.basis.y.distance_to(expected.basis.y),
+                        stored.basis.z.distance_to(expected.basis.z)))
+            )
+            worst = maxf(worst, error)
+            if error > 0.0001:
+                mismatch_count += 1
+            checked += 1
+    var evidence: Dictionary = {
+        "actual_renderer": true,
+        "ok": checked == 83 and mismatch_count == 0,
+        "checked": checked,
+        "mismatches": mismatch_count,
+        "max_error": worst
+    }
+    if evidence["ok"]:
+        _precision_ring_webgl_qa_cache = evidence
+    return evidence
+
+
 func _construct_reactor_skin() -> void:
     var oxide := _material("11171d", 0.72, 0.40)
     var machined := _material("414c53", 0.90, 0.24)
@@ -228,16 +316,14 @@ func _construct_reactor_skin() -> void:
     _add_instanced_precision_fasteners()
     # Concentric high-contrast machined rings in front of the read-only rotor.
     # The actual safety hatch still pivots over this assembly.
+    # Identical 84 mechanical segment positions, now only four drawable
+    # nodes (one original outer segment plus three genuinely instanced rings).
+    _box(self, "A7PrecisionRing_0_00", Vector3(0.095, 0.43, 0.14), Vector3(1.46, 2.32, 1.25), machined)
     for radius_index in range(3):
-        var radius := 1.46 - float(radius_index) * 0.19
-        var depth := 1.25 + float(radius_index) * 0.10
-        var segment_count := 28
+        var radius: float = 1.46 - float(radius_index) * 0.19
+        var depth: float = 1.25 + float(radius_index) * 0.10
         var rim_material: Material = machined if radius_index == 0 else champagne if radius_index == 1 else teal
-        for i in range(segment_count):
-            var angle := TAU * float(i) / float(segment_count)
-            var location := Vector3(cos(angle) * radius, 2.32 + sin(angle) * radius, depth)
-            var arc := _box(self, "A7PrecisionRing_%d_%02d" % [radius_index, i], Vector3(0.095 if radius_index < 2 else 0.042, 0.43 if radius_index == 0 else 0.34, 0.14), location, rim_material, radius_index == 2)
-            arc.rotation.z = -angle
+        _precision_ring_multimesh(radius_index, radius, depth, 28, rim_material)
     _cylinder(self, "CoreBlackOpticalHousing", 0.71, 0.28, Vector3(0, 2.32, 1.34), black_glass)
     _cylinder(self, "CorePolishedBearing", 0.44, 0.30, Vector3(0, 2.32, 1.51), silvery)
     _cylinder(self, "CoreObsidianEmitter", 0.28, 0.32, Vector3(0, 2.32, 1.73), oxide)
@@ -376,7 +462,11 @@ func qa_readout() -> Dictionary:
     var visible_details: int = 0
     for detail in hero_only:
         if detail.visible:
-            visible_details += 1
+            var instanced: MultiMeshInstance3D = detail as MultiMeshInstance3D
+            visible_details += instanced.multimesh.instance_count if instanced != null else 1
+    var ring_segments: int = 1
+    for group in _precision_ring_batches:
+        ring_segments += group.multimesh.instance_count
     return {
         "art_direction": "OSGARD_OBSIDIAN_PROTOCOL_W35",
         "visible_hero_details": visible_details,
@@ -391,6 +481,10 @@ func qa_readout() -> Dictionary:
         "structures": _structure_count,
         "hero_details": _detail_count,
         "reactor_rings": 3,
+        "precision_ring_gpu_batches": _precision_ring_batches.size(),
+        "precision_ring_segments_total": ring_segments,
+        "precision_ring_drawable_nodes": _precision_ring_batches.size() + 1,
+        "precision_ring_legacy_segment_node": has_node("A7PrecisionRing_0_00"),
         "continuous_torus_surfaces": smooth_rings.size(),
         "lathed_torus_meshes": smooth_rings.all(func(ring: MeshInstance3D) -> bool: return ring.mesh is TorusMesh),
         "instanced_precision_fasteners": precision_fasteners.multimesh.instance_count if precision_fasteners != null else 0,

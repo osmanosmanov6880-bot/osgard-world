@@ -16,6 +16,18 @@ from playwright.sync_api import sync_playwright
 BASE = ((68, 44), (80, 75), (48, 55))
 RECOVERY = ((56, 62), (90, 86), (62, 40))
 
+# W54: These are wall-clock test limits, NOT simulation shortcuts.
+# The original W48+W53 Chromium SwiftShader browser achieved roughly 1 FPS
+# on a shared CI runner. OSGARDCore.tick() correctly limits delta to 0.1
+# seconds, so eleven *real engine frames* are necessary for a hatch to move
+# from 0 to >=0.995. The old 20 s timeout intermittently expired at 0.95.
+# Preserve physics, actual keyboard/pointer events and every interlock.
+ROTOR_COAST_TIMEOUT_MS = 45000
+HATCH_OPEN_TIMEOUT_MS = 75000
+HATCH_CLOSE_TIMEOUT_MS = 75000
+CALIBRATION_TIMEOUT_MS = 65000
+CAMERA_TIMEOUT_MS = 30000
+
 class Server(http.server.SimpleHTTPRequestHandler):
     def log_message(self, *_args):
         pass
@@ -37,12 +49,24 @@ class Driver:
     def until(self,predicate,label,timeout=20000):
         deadline=time.monotonic()+timeout/1000
         last={}
+        first_frames=None
+        latest_frames=None
+        start=time.monotonic()
         while time.monotonic()<deadline:
             last=self.state()
             if predicate(last):
                 return last
+            frames=last.get("godot_frames_drawn")
+            if isinstance(frames,int):
+                if first_frames is None:
+                    first_frames=frames
+                latest_frames=frames
             self.page.wait_for_timeout(180)
-        raise AssertionError(f"{self.device}: {label} timeout; last={last}")
+        progress=(latest_frames-first_frames) if first_frames is not None and latest_frames is not None else None
+        raise AssertionError(
+            f"{self.device}: {label} timeout after {time.monotonic()-start:.1f}s; "
+            f"actual_Godot_rendered_frames_advanced={progress}; last={last}")
+
     def record(self,action):
         state=self.state()
         self.events.append({"action":action,**state})
@@ -103,22 +127,29 @@ class Driver:
         self.until(lambda s:s.get("active") and s.get("mission")==index, f"mission {index} selected")
         self.key("s")
         self.until(lambda s:s.get("step")==1 and not s.get("drive_on"),"stopped")
-        self.until(lambda s:s.get("rpm",2000)<=80,"rotor stopped",timeout=18000)
+        self.until(lambda s:s.get("rpm",2000)<=80,"rotor stopped",timeout=ROTOR_COAST_TIMEOUT_MS)
         self.key("h")
-        self.until(lambda s:s.get("step")==2 and s.get("inspection_allowed")==False,"hatch open; inspect camera",timeout=20000)
+        # Step 2 is set by the REAL core only after physical hatch>=99.5%.
+        # Never set game state or pass a safety lock based on elapsed wall time.
+        self.until(
+            lambda s:s.get("step")==2 and s.get("hatch",0)>=0.995
+                     and s.get("inspection_allowed") is False,
+            "real hatch >=99.5%, inspection still locked until camera",
+            timeout=HATCH_OPEN_TIMEOUT_MS
+        )
         self.key("3" if base==0 else "2")
-        self.until(lambda s:s.get("inspection_allowed") is True,"correct camera")
+        self.until(lambda s:s.get("inspection_allowed") is True,"correct camera",timeout=CAMERA_TIMEOUT_MS)
         self.tune("a",BASE[base][0])
         self.tune("b",BASE[base][1])
         if advanced:
-            self.until(lambda s:s.get("incident") is True,"real scripted incident")
+            self.until(lambda s:s.get("incident") is True,"real scripted incident",timeout=CALIBRATION_TIMEOUT_MS)
             self.tune("a",RECOVERY[base][0])
             self.tune("b",RECOVERY[base][1])
-        self.until(lambda s:s.get("ready") is True,"genuine stable readings",timeout=25000)
+        self.until(lambda s:s.get("ready") is True,"genuine stable readings",timeout=CALIBRATION_TIMEOUT_MS)
         self.key("x")
         self.until(lambda s:s.get("step")==3,"scan accepted")
         self.key("h")
-        self.until(lambda s:s.get("step")==4 and s.get("hatch",1)<0.01,"hatch safely closed",timeout=18000)
+        self.until(lambda s:s.get("step")==4 and s.get("hatch",1)<0.01,"hatch safely closed",timeout=HATCH_CLOSE_TIMEOUT_MS)
         self.key("s")
         complete=self.until(lambda s:s.get("complete") is True and s.get("step")==5,"real case completion")
         assert complete["errors"]==0, f"Unexpected unsafe native actions: {complete}"

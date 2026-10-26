@@ -1,0 +1,100 @@
+# OSGARD OBSIDIAN / W49-W52 — independent release acceptance
+
+Status: **source changes prepared, production HOLD until exact-head checks and device review finish**.
+
+## Exact release ancestry
+
+- W47 original Godot 4.4.1 baseline SHA: `14be69cdaa1fdffa4e209645eed0b1964581858a`.
+- W48 review: [PR #530](https://github.com/osmanosmanov6880-bot/osgard-world/pull/530) (draft, parent W47).
+- Never change `osgard.world`, `master`, production host, or live release without independent approval.
+- W48 changes 84 small BoxMesh reactor segments into **one legacy MeshInstance3D plus three MultiMeshInstance3D groups with 27 + 28 + 28 instances**. This means **four drawable nodes for that group** (95.24% fewer *nodes in that group*), not a proven 95.24% reduction in whole-scene draw calls and never an FPS benchmark.
+
+## New automatic verification chain
+
+| Wave | Evidence or test | Mandatory source binding | What passing actually means |
+| --- | --- | --- | --- |
+| W49 | `w49_source_contract.py` | Git merge-base, pinned W47, exact PR head | W48 changed only allowed scene/profiling/test/CI/doc paths; core, mission tests, scenes, export profile and production stay byte-identical to W47 |
+| W48 expanded | `test_w48_ring_instancing.gd` | Real Godot 4.4.1 PR-head native import | 84 original W47 positions and complete 3-axis basis, PBR size/material/shadow, HERO/ECO, six mission controls, three cameras |
+| W50 | `w51_paired_comparison.py` | Two **pristine**, unmodified, independently exported W47 and W48 Godot WebGL builds | Ten real Chromium frames (HERO overview, inspection, service; desktop ECO; and touch-emulated HERO, each on both SHAs) plus an original visual comparison sheet, with PNG SHA-256 |
+| W51 | Same paired runner | Both Godot 4.4.1 WebGL sources on *one* runner/SwiftShader renderer | Real Godot FPS for both SHAs and W48 actual draw-call/object samples; pristine W47 has no draw-call probe |
+| W51 strict | Existing `godot_software_performance.py` | W48 exact-head WebGL evidence | Three W48 measured scenarios, nonzero Godot draw-call samples and advancing native engine frame counter |
+| W52 | `w52_release_gate.py` | All upstream exact-head artifacts | Independent ZIP CRC, every member hash, nested WebGL/Windows/PNG manifests, W42 SHA256SUMS and build-report cross-checks, six Chromium missions, Windows 2022 boot, touch and screenshots |
+| W49/W52 negatives | `test_w49_w52_gate_regressions.py` | Python standard library, synthetic **negative** fixtures | 29 unit checks cover changed W47 core, deploy paths, moved SHA, unsafe ZIPs and image bytes, plus W42 ZIP/build-report/SHA256SUMS cross-checks; **does not** certify rendering |
+| W52 final | `w52-independent-final-verdict` | Every actual upstream job's `needs.result` | Always uploads `PASS` software-only or `BLOCKED_PRODUCTION_HOLD` JSON and the exact SHA; never promotes |
+
+
+### Actions artifact names
+
+Look under the **same** PR-head commit in `.github/workflows/r135-w33-operator-debrief-native-qa.yml`:
+
+- `osgard-w49-original-source-contract-<SHA>` — source integrity manifest.
+- `osgard-w50-w51-original-paired-<SHA>` — ten real screenshots, contact sheet, real software frame/draw diagnostics, paired JSON.
+- `osgard-w44-real-godot-software-fps-<SHA>` — strict W48 diagnostic report.
+- `osgard-w39-original-cinematic-visual-evidence-<SHA>` — five source-bound rendered screenshots and original Godot contact sheet.
+- `osgard-w33-playable-browser-evidence-<SHA>` — real six-mission Chromium controls.
+- `osgard-w45-mobile-touch-real-canvas-evidence-<SHA>` — 390px touchscreen-emulated mission 0.
+- `osgard-w34-actual-windows-exe-boot-<SHA>` — Windows runner stdout/stderr and native EXE verdict.
+- `osgard-w42-reproducible-candidate-<SHA>` — original deterministic ZIP, `SHA256SUMS.txt`, `build-report.json` and byte manifest. W52 requires **all three** independent outer references to agree.
+- `osgard-w52-source-bound-release-gate-<SHA>` — final software review report, explicitly **HOLD production**.
+- `osgard-w52-ci-final-verdict-<SHA>` — consolidated result for **all** required checks, preserved even if native, packaging or benchmark steps fail; production remains HOLD.
+
+A queued, cancelled, stale, failing or different-SHA Actions run is **not** acceptable proof. Each CI update cancels previous head's run by workflow concurrency. Only one *completed, successful, source-matched* attempt of the latest head is acceptable.
+
+## Important interpretation constraints
+
+1. MultiMesh merges ring drawables; it does **not** guarantee exactly three renderer draw calls. Shadow and rendering passes may submit extra draws. Only Godot's `RenderingServer` counters on real frames are draw-call measurements.
+2. W47 is exported **without any added instrumenting code**. Its actual engine FPS is comparable on the same CI runner; W47 renderer draw-call count is *unknown*. Do not report a numeric W47→W48 total draw-call reduction from the 84→4 node count.
+3. The two scenes animate. Screenshot pixel differences are diagnostic only. Pixel-perfect equality is neither asserted nor used to certify the geometry. Real-native 84-transform comparison is mandatory for geometry parity; a human must compare screenshots.
+4. Chromium SwiftShader measurements are **software/emulated**, not actual dedicated-GPU frame rates and not physical Android/iPhone results. Single-pair FPS changes lack statistical significance and have no guaranteed positive sign.
+5. The operator is an *offline reactor training simulation*, not control software for any physical reactor. No real-world control authority is added by this release.
+6. HERO, ECO, mission logic, safety interlocks and saved session state must not be modified to make an art/performance test pass.
+
+## Release gate / human actions
+
+The GitHub gate may emit `status=PASS` with `decision=STAGING_CANDIDATE_VERIFIED_PRODUCTION_HOLD`; **this is not a production GO**.
+
+The W49 job additionally runs the negative-test standard-library suite before it reads Git blobs. The tests construct **synthetic invalid inputs** and deliberately reject them; passing unit tests must not be misrepresented as successful Godot exports or customer-ready packages. The final W52 job records mandatory job failures and emits a source-bound JSON `BLOCKED_PRODUCTION_HOLD` instead of silently lacking an acceptance report.
+
+Before approval, the reviewer must examine the W47/W48 visual sheet and original W48 native screenshots at desktop HERO, desktop ECO and 390px emulation; confirm no flickering, ring disappearance, shadow/regression, cropped HUD, unreadable type, changed six-mission routes, or safety violations. Reproduce on a real Windows GPU, a physical Android device and a physical iPhone (mobile support where applicable). Record GPU/OS/browser, device-native resolution, 1% low FPS, median frame time, WebGL warnings, thermal throttling and HERO/ECO differences. Set objective performance budgets **before** promoting.
+
+No files in this series deploy artifacts, merge a PR, overwrite live build folders, issue real-world plant commands or give hardware/FPS/AAA certification. Promotion and rollback require a separate auditable decision with exact SHA, URL, verified hashes and recovery plan.
+
+## If Actions is still queued
+
+Do not infer PASS from source-only tests. The new run will be scheduled by GitHub when a runner becomes available; monitor the PR check list. The source and manifest files are useful before the runner completes, but the gate's outcome is **pending**.
+
+
+## W53 — critical mobile-gesture accessibility repair and W49 exception
+
+- The original W47 and initial W48 CI both failed the real W45 390px mobile path at `mission0 rect=[36,2160,245,67], scroll=0` after genuine touchscreen swipes. The web export was real; scroll failed. This is a product blocker, not ring-instancing geometry.
+- The W53 app fix in `scripts/OSGARDMain.gd` uses Godot `InputEventScreenTouch` and `InputEventScreenDrag` to scroll the native `ScrollContainer` in a narrow right-edge lane on phones under 640px. It leaves center-dial taps, camera buttons, six missions and desktop untouched.
+- `tests/test_w53_mobile_edge_swipe.gd` verifies genuine Godot phone layout, noninterference, scroll advancement, and release of capture. The separate `osgard-w53-mobile-touch-acceptance.yml` verifies the real WebGL-exported Godot scene with Chromium CDP ScreenDrag gestures and mission 0.
+- **Original completed standalone CI:** [W53 run 40252217738](https://github.com/osmanosmanov6880-bot/osgard-world/actions/runs/40252217738), source `21b7f35bad182841f3c95890d2aa9446894bf958`: native 14/14 PASS; real 390px browser scene, seven touch swipes, 12 touch controls and full mission 0 PASS, evidence artifact #12620569414. This validates that exact app source, not a future release merge SHA.
+- **W49 narrow exception:** The modified mobile CDP driver `ci/mobile_touch_acceptance.py` is intentionally allowed (touch drag duration increased to span multiple measured low-FPS SwiftShader frames); *all* original mission, scene, physics and visual-art QA blobs remain SHA-pinned to W47. The desktop six-mission browser test is intentionally pinned to one **reviewed W54 Git blob**, not falsely described as byte-identical to W47. The W53 workflow and native touch test are individually allowlisted. The W49 negative suite now has 29 scenarios, including reviewed W54 browser QA allowlisting and tamper rejection.
+- A successful W53 standalone source is **not** automatic release authorisation: run W44/W45/W48/W49/W50/W51/W52 on the **eventual merged exact SHA** and verify the non-hardware production HOLD release gate before any merge/deployment to production. Do not reuse artifact #12620569414 as proof for a different commit.
+
+## W54 — actual slow-renderer Chromium hatch transition (timing only)
+
+- **Real exact-head failure:** [GitHub run 40254129023](https://github.com/osmanosmanov6880-bot/osgard-world/actions/runs/40254129023), source `d06020a2fa31872b43d37b73500976d85dd55046`: W49 25/25 PASS, native W48+W53 Godot PASS, real Chromium 3D smoke PASS, then real desktop gameplay stopped at mission index 4 (fifth mission). The actual Godot snapshot was `step=1, hatch=0.95, rpm=1, errors=0, feedback=hatchOpening`. The original 20,000ms browser condition `step==2` timed out *before* the engine reached the real 99.5% hatch interlock.
+- **Root cause:** `OSGARDCore.tick` is protected original W47 simulation logic: `dt=min(delta,0.1)` and hatch advances at `0.95 * dt`. At ≈1 actual SwiftShader FPS, >10 real engine frames are required for the hatch to reach its 99.5% threshold. Browser elapsed time is not equal to simulated elapsed time. The failure was at 95% and **must not be bypassed by setting state to open**.
+- **Source-bound fix:** the *real* `ci/browser_gameplay_acceptance.py` driver now gives the original hatch 75s wall clock to reach `step==2` and `hatch>=0.995`, rotor coast 45s, stable calibration 65s, camera 30s, and hatch closure 75s. It reads native Godot's actual rendered-frame progression at timeout for audit; it still uses real pointer and keyboard input, requires all six real mission successes, verifies zero safety errors and score, and never writes native state, changes game physics, or manipulates DOM to pretend to win.
+- **W49 source guard:** the changed desktop driver was deliberately removed from byte-identical W47 `PRESERVE`, allowlisted *only* as the exact audited Git blob `50e492dadc8a63d99e05677ed3cc07b4dbe16cad`; W49 refuses any later unseen content changes to this QA driver. Two new synthetic unit tests exercise reviewed-blob acceptance and mutated-blob rejection. Protected `OSGARDCore.gd`, simulation scene, original six-mission native test, rig, editor/project/export presets and art-acceptance script remain identical to W47.
+- **CI acceptance remains mandatory:** a new GitHub run on the latest PR HEAD must report the 27/27 W49 negative checks and successfully complete **all six browser missions**, plus W44/W45/W50/W51, Windows and W52 exact-head artifacts. A source commit alone is not evidence that the browser test now passes.
+
+## W55 — original WebGL screenshot-proven RU/EN glyph legibility
+
+- The real 390x844 Godot W48 screenshot `w48_touch_hero.png` shows missing glyph boxes at the protocol's U+2192 arrow separators. W55 replaces only the **rendered** arrow with readable ASCII ` > ` through the Godot native UI; original `OSGARDText` source/localized safety sequence remains intact, including the simulation-only warning. It also replaces checkmark/en-dash setting flags with explicit native RU `ВКЛ/ВЫКЛ` and EN `ON/OFF` labels instead of ambiguous inaccessible icons.
+- **No typography mockup or binary font changes**: edits are to the actual `OSGARDMain.gd` exported with the simulation, not HTML or a generated marketing screenshot. Original W47 six mission, rig, scene, PBR geometry, W48 83-instance GPU QA, safety interlocks and W53 real mobile scrolling must remain unchanged.
+- `tests/test_w55_readable_protocol_copy.gd`: loads the actual Godot `Main.tscn` with an isolated profile, checks RU and EN protocol labels and settings on genuine 390x844 and 1366x768 UI, asserts no U+2192/U+2713 in visible labels/buttons, all 6 original mission buttons and no simulated score/mission mutations.
+- `ci/w55_visual_typography_acceptance.py`: launches actual exported Godot 4.4.1 WebGL under Chromium 390x844 emulation, uses **actual ScreenDrag** to reach protocol, taps the Godot language button, confirms its read-only native locale changed to EN, and captures **one RU and one EN original PNG frame** with SHA256. This is not OCR or DOM text substitution. Both full native script and real browser test are mandatory in the main W48+W55 CI before W52 can PASS.
+- Dedicated PR-targeted `.github/workflows/osgard-w55-real-mobile-glyph-acceptance.yml` additionally reruns W53 touch and real first mission. The W49 source scope permits **only** the named W55 tests/workflow plus the already-allowed `OSGARDMain.gd`; 2 new negative/synthetic tests verify no unauthorized font binary can sneak into the release.
+- **Evidence limits:** CI screenshot comparison is not human cinematic signoff or iPhone/Android font certification. Inspect original W55 artifact and physically test RU/EN button readability on target browsers/devices. Keep `STAGING_CANDIDATE_VERIFIED_PRODUCTION_HOLD` until exact new head CI and real-device approval.
+
+## W57 — exact-head W56 physical HOLD evidence becomes mandatory for W52
+
+- Prior W48–W55 software candidate `5a39cdf45458068b56202a051112eaa82b6964b8` passed all nine GitHub CI jobs, but W56 review tooling was not yet part of the same-run W52 evidence chain. W56 PR #548 was merged **only into the W48 staging branch** (merge source `64daf1cdcdf775d7d4adf5aad4a33a5dfef01e2f`); that new source needs independent fresh evidence, not inherited green checks.
+- New main W49 workflow, on **the exact current PR head**, runs both the full W49/W52 negative suite and W56's 12 adversarial report tests. It runs the actual offline W56 reviewer **with no physical reports**, saves `w49-evidence/w56-physical-review-HOLD.json` alongside W49's original SHA/source contract and asserts the true source SHA, `HOLD`, `MISSING_DEVICE_REPORTS`, no invented devices or true acceptance flags.
+- Final W52 source-bound release gate receives that exact-SHA W56 JSON as a **required independent input**, checks its schema, `source_sha`, empty device reports, ordered four missing device categories, and all five false publication / hardware / human acceptance flags. Missing, stale or forged `PASS / PRODUCTION_GO` is a **blocking failure**, not a successful CI skip. The final W52 report includes `w56_exact_head_physical_review`.
+- **Seven new negative/synthetic W52 regressions** reject missing W56 evidence, wrong SHA/schema, forged production GO, invented device telemetry and false physical, visual or merge flags. They **do not** purport to test real devices. The source/evidence negative suite is now 39 scenarios (32 previously + 7 new).
+- `.github/workflows/osgard-w57-exact-head-physical-hold.yml` is a dedicated pre-merge GitHub Action. It verifies full Git history from exact W47, protected game source and reviewed W56 Git blobs; reruns 39 W49/W52 and 12 W56 negative tests; generates a real same-head W56 HOLD JSON and proves the new W52 guard rejects fake release approval. This workflow is allowed by the W49 path whitelist but cannot publish.
+- A successful W57 standalone test does **not** authorize W48 staging merge without review; and a merged staging commit must pass the **entire 9/9** W48–W57 native Godot, six Chromium missions, Windows, W44/W45, W50/W51, W42 and W52 again on its new exact SHA. Until independent physical GPU/phone QA, long-duration thermal checks and human original screenshots/cinematic signoff, the only valid release verdict remains `SOFTWARE_CANDIDATE_VERIFIED_PRODUCTION_HOLD`. No master deployment or public domain changes.
