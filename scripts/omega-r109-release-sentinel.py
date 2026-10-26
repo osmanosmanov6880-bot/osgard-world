@@ -31,6 +31,9 @@ SCRIPT_PATHS = [
 TESTS = [
     "v29_responsive_layout",
     "v54_r32_cinematic_cabinet_wet_grip",
+    "v72_r55_forty_mission_event_save",
+    "v74_r64_authoritative_mission_transactions",
+    "v75_r68_policy_mission_real_change",
     "v76_r87_honest_mission_navigation",
     "v78_r90_reference_fidelity",
     "v79_r91_original_architecture",
