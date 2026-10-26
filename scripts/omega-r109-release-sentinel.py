@@ -23,6 +23,8 @@ SCRIPT_PATHS = [
     "scripts/horizon_organic_foliage.gd",
     "scripts/pedestrian_agent.gd",
     "scripts/horizon_street_citizen_mesh.gd",
+    "scripts/traffic_agent.gd",
+    "scripts/horizon_traffic_sedan_surface.gd",
     "scripts/horizon_r90_premium_dashboard.gd",
     "scripts/horizon_r90_street_dressing.gd",
     "scripts/horizon_facade_material_pack.gd",
@@ -65,6 +67,9 @@ TESTS = [
     "v68_r47_predictive_crosswalk_traffic",
     "v97_r123_real_pedestrian_body_gait",
     "v98_r124_foreground_window_day_night",
+    "v14_traffic_physics",
+    "v62_r39_actual_wheel_art",
+    "v99_r126_real_physical_traffic_fleet",
 ]
 
 
