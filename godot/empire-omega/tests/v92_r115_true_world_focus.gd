@@ -45,7 +45,7 @@ func _run() -> void:
 	var stats: Container = panel.get_node_or_null("R97ExecutiveSummary") as Container
 	var atlas: Control = panel.find_child("R112AtlasCameraControls",true,false)
 	var viewport: SubViewport = panel.get("preview") as SubViewport
-	check(controls is Button and (controls as Button).focus_mode == Control.FOCUS_ALL,
+	check(controls is Button and (controls as Button).city_focus_active == Control.FOCUS_ALL,
 		"live focus toggle is a real Godot keyboard and pointer-accessible button")
 	check(cols != null and cols.get_child_count()==3,
 		"original mission / city / economy cards kept in original 3 columns")
@@ -63,7 +63,7 @@ func _run() -> void:
 		check(left.visible and right.visible and center.visible,
 			"original actionable sidebars visible before focus")
 		(controls as Button).pressed.emit()
-		check(bool(panel.get("focus_mode")),
+		check(bool(panel.get("city_focus_active")),
 			"real button activates full-width cinematic city mode")
 		check(not left.visible and not right.visible and center.visible,
 			"only real original sidebars hide, existing city stage remains visible")
@@ -91,7 +91,7 @@ func _run() -> void:
 		check(changed == ["forum"],
 			"real 3D-projected marker still selects authentic city district")
 		(controls as Button).pressed.emit()
-		check(not bool(panel.get("focus_mode")),
+		check(not bool(panel.get("city_focus_active")),
 			"same focus button restores full original governance interface")
 		check(left.visible and right.visible and center.visible and stats.visible,
 			"all original playable actions and metrics are restored, not re-created")
