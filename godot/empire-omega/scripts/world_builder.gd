@@ -317,7 +317,12 @@ func _create_window_batch() -> void:
 	for i in range(window_points.size()):
 		multimesh.set_instance_transform(i,window_points[i])
 	var mat := StandardMaterial3D.new()
-	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	# R120: PBR daylight glazing reflects the actual Godot sky and sun.
+	# Night/phone modes retain the original emissive-looking unshaded panes.
+	# One original existing MultiMesh material, 0 extra texture probes or nodes.
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_PER_PIXEL
+	mat.metallic = 0.23
+	mat.roughness = 0.29
 	mat.vertex_color_use_as_albedo = true
 	facade_windows = MultiMeshInstance3D.new()
 	facade_windows.name = "InstancedFacadeWindows"
@@ -338,16 +343,30 @@ func _create_window_batch() -> void:
 	facade_frames.name = "InstancedMetalWindowFrames"
 	facade_frames.multimesh = frame_grid
 	var finish := StandardMaterial3D.new()
-	finish.albedo_color = Color("9ba5ad")
-	finish.metallic = 0.20
-	finish.roughness = 0.64
+	# R120: gunmetal satin real PBR perimeter instead of white silhouette.
+	finish.albedo_color = Color("77838c")
+	finish.metallic = 0.56
+	finish.roughness = 0.38
 	facade_frames.material_override = finish
 	facade_frames.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	city_root.add_child(facade_frames)
 	_update_windows(8.0,100)
 
+func _apply_window_shading(hour: float) -> void:
+	if facade_windows == null:
+		return
+	var glass: StandardMaterial3D = facade_windows.material_override as StandardMaterial3D
+	if glass == null:
+		return
+	# No duplicated GPU batch. LOW phones keep original cheap unshaded glass,
+	# and nights keep authentic power-dependent warm/cool window visibility.
+	var physical_daylight: bool = visual_budget != "low" and hour >= 6.5 and hour < 18.0
+	glass.shading_mode = (BaseMaterial3D.SHADING_MODE_PER_PIXEL
+		if physical_daylight else BaseMaterial3D.SHADING_MODE_UNSHADED)
+
 func _update_windows(hour: float, electricity: int) -> void:
 	if facade_windows == null: return
+	_apply_window_shading(hour)
 	var nighttime := hour < 6.5 or hour >= 18.0
 	var mode: int = (1 if nighttime else 0) + (2 if electricity < 25 else 0)
 	if mode == last_window_mode: return
@@ -555,6 +574,9 @@ func apply_visual_budget(mode: String) -> void:
 		cityhall_gateway.visible = visual_budget != "low"
 	if facade_frames != null:
 		facade_frames.visible = visual_budget != "low"
+	# Visual tier changes must take effect immediately even when game clock,
+	# electricity and cached per-instance window colors are unchanged.
+	_apply_window_shading(ambience_time)
 	_apply_lighting()
 
 func update_weather(kind: String) -> void:
