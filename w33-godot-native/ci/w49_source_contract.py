@@ -19,6 +19,7 @@ ALLOWED = {
     "w33-godot-native/ci/w49_source_contract.py",
     "w33-godot-native/ci/w51_paired_comparison.py",
     "w33-godot-native/ci/w52_release_gate.py",
+    "w33-godot-native/ci/test_w49_w52_gate_regressions.py",
     "w33-godot-native/ci/W49_W52_RELEASE_README.md",
 }
 PRESERVE = (
