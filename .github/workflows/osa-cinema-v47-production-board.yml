@@ -23,7 +23,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: osa-cinema-v47-${{ github.event.pull_request.head.sha || github.sha }}
+  group: osa-cinema-v47-${{ github.event_name }}-${{ github.event.pull_request.head.sha || github.sha }}
   cancel-in-progress: true
 
 jobs:
@@ -34,7 +34,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-15-intel]
+        os: [ubuntu-latest, windows-latest]
+        # GitHub-hosted macOS has repeatedly been cancelled before any step.
+        # This is an explicit coverage limitation, NOT a macOS PASS.
+        # Trigger the standalone manual-macos job with workflow_dispatch on capacity.
     steps:
       - uses: actions/checkout@v4
       - name: Use Node.js 22
@@ -50,6 +53,23 @@ jobs:
       - name: Print truthful read-only packet receipt
         shell: bash
         run: node scripts/osa-cinema-v47-production-board.mjs
+
+  manual-macos:
+    name: Manual macOS check - not executed on PR
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: macos-15-intel
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Full fail-closed contract test on actual macOS
+        run: |
+          node --check scripts/osa-cinema-v47-production-board.mjs
+          node --check scripts/osa-cinema-v47-production-board.test.mjs
+          node --test scripts/osa-cinema-v47-production-board.test.mjs
+          node scripts/osa-cinema-v47-production-board.mjs
 
   historical-film-policy:
     name: Historical SHA locks and permanent V20 publication denial
