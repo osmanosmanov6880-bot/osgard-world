@@ -16,6 +16,11 @@ const CRITICAL := Color("dc6257")
 var hero_only: Array[Node3D] = []
 var smooth_rings: Array[MeshInstance3D] = []
 var _precision_ring_batches: Array[MultiMeshInstance3D] = []
+# Godot --headless disables RenderingServer storage/readback. Preserve the
+# exact 83 Transform3D values handed to the GPU for independent W47 math QA.
+# Real WebGL separately verifies RenderingServer's actual stored transforms.
+var _precision_ring_authored: Array = []
+var _precision_ring_webgl_qa_cache: Dictionary = {}
 var precision_fasteners: MultiMeshInstance3D
 var industrial_lights: Array[Light3D] = []
 var alarm_lamps: Array[MeshInstance3D] = []
@@ -214,11 +219,17 @@ func _precision_ring_multimesh(index: int, radius: float, depth: float, segments
     batch.transform_format = MultiMesh.TRANSFORM_3D
     batch.mesh = unit
     batch.instance_count = count
+    var authored: Array[Transform3D] = []
     for i in range(first_index, segments):
         var angle: float = TAU * float(i) / float(segments)
         var centre := Vector3(cos(angle) * radius, 2.32 + sin(angle) * radius, depth)
         var basis := Basis(Vector3.BACK, -angle)
-        batch.set_instance_transform(i - first_index, Transform3D(basis, centre))
+        var actual_write := Transform3D(basis, centre)
+        # One immutable authored value is used for BOTH the native GPU write
+        # and the independent CPU-side transform parity audit under --headless.
+        batch.set_instance_transform(i - first_index, actual_write)
+        authored.append(actual_write)
+    _precision_ring_authored.append(authored)
     var housing := MultiMeshInstance3D.new()
     housing.name = "A7PrecisionRingBatch_%d" % index
     housing.multimesh = batch
@@ -231,6 +242,49 @@ func _precision_ring_multimesh(index: int, radius: float, depth: float, segments
         _detail_count += count
     else:
         _structure_count += count
+
+func w48_real_renderer_ring_qa() -> Dictionary:
+    # This is a read-only REAL RenderingServer verification, not a model
+    # prediction. Never infer GPU correctness from Godot's dummy --headless
+    # server: it returns identities for every get_instance_transform() call.
+    if DisplayServer.get_name() == "headless":
+        return {"actual_renderer": false, "ok": false, "checked": 0, "max_error": -1.0}
+    if not _precision_ring_webgl_qa_cache.is_empty():
+        return _precision_ring_webgl_qa_cache
+    var checked: int = 0
+    var mismatch_count: int = 0
+    var worst: float = 0.0
+    if _precision_ring_batches.size() != 3 or _precision_ring_authored.size() != 3:
+        return {"actual_renderer": true, "ok": false, "checked": 0, "max_error": -1.0}
+    for ring_index in range(3):
+        var multimesh: MultiMesh = _precision_ring_batches[ring_index].multimesh
+        var authored: Array = _precision_ring_authored[ring_index]
+        if multimesh == null or multimesh.instance_count != authored.size():
+            return {"actual_renderer": true, "ok": false, "checked": checked, "max_error": -1.0}
+        for slot in range(authored.size()):
+            var expected: Transform3D = authored[slot]
+            var stored: Transform3D = multimesh.get_instance_transform(slot)
+            var error: float = maxf(
+                stored.origin.distance_to(expected.origin),
+                maxf(stored.basis.x.distance_to(expected.basis.x),
+                    maxf(stored.basis.y.distance_to(expected.basis.y),
+                        stored.basis.z.distance_to(expected.basis.z)))
+            )
+            worst = maxf(worst, error)
+            if error > 0.0001:
+                mismatch_count += 1
+            checked += 1
+    var evidence: Dictionary = {
+        "actual_renderer": true,
+        "ok": checked == 83 and mismatch_count == 0,
+        "checked": checked,
+        "mismatches": mismatch_count,
+        "max_error": worst
+    }
+    if evidence["ok"]:
+        _precision_ring_webgl_qa_cache = evidence
+    return evidence
+
 
 func _construct_reactor_skin() -> void:
     var oxide := _material("11171d", 0.72, 0.40)
