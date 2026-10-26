@@ -171,6 +171,16 @@ jobs:
             echo '::error::W53 native mobile scrolling or noninterference regression failed'
             exit 1
           fi
+      - name: W55 real native RU EN readable typography and 390px layout
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 150s godot --headless --path w33-godot-native --script res://tests/test_w55_readable_protocol_copy.gd 2>&1 | tee "$RUNNER_TEMP/w55-native-fonts.log"
+          grep -q 'OSGARD W55 REAL GODOT RU/EN GLYPH AND MOBILE PROTOCOL COPY PASS' "$RUNNER_TEMP/w55-native-fonts.log"
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/w55-native-fonts.log"; then
+            echo '::error::W55 actual native typography regression failed'
+            exit 1
+          fi
       - name: Create real Godot 4.4.1 WebGL export from the same native-tested commit
         shell: bash
         run: |
@@ -222,6 +232,22 @@ jobs:
             --export w33-godot-native/build/web \
             --out w33-godot-native/build/w39-original-art \
             --sha "${{ github.event.pull_request.head.sha || github.sha }}"
+      - name: W55 real Chromium 390px RU EN protocol screenshots and physical touch inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$RUNNER_TEMP/w33-qa-venv/bin/python" w33-godot-native/ci/w55_visual_typography_acceptance.py \
+            --export w33-godot-native/build/web \
+            --evidence w33-godot-native/build/w55-original-font-art \
+            --sha "${{ github.event.pull_request.head.sha || github.sha }}"
+      - name: Preserve original W55 RU EN Godot screenshots for independent manual approval
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: osgard-w55-real-original-ru-en-${{ github.event.pull_request.head.sha || github.sha }}
+          path: w33-godot-native/build/w55-original-font-art/
+          if-no-files-found: warn
+          retention-days: 45
       - name: Preserve original OBSIDIAN cinematic contact sheet and screenshots
         if: always()
         uses: actions/upload-artifact@v4
