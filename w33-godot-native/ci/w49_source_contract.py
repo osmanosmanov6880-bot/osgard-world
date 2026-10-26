@@ -16,6 +16,7 @@ ALLOWED = {
     "w33-godot-native/scripts/OSGARDMain.gd",
     "w33-godot-native/tests/test_w48_ring_instancing.gd",
     "w33-godot-native/ci/godot_software_performance.py",
+    "w33-godot-native/ci/browser_webgl_smoke.py",
     "w33-godot-native/ci/w49_source_contract.py",
     "w33-godot-native/ci/w51_paired_comparison.py",
     "w33-godot-native/ci/w52_release_gate.py",
