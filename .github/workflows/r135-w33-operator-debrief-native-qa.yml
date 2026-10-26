@@ -162,6 +162,15 @@ jobs:
             echo '::error::W48 native ring instancing emitted Godot errors'
             exit 1
           fi
+      - name: W53 real Godot native 390px ScreenTouch ScreenDrag and ScrollContainer regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 150s godot --headless --path w33-godot-native --script res://tests/test_w53_mobile_edge_swipe.gd 2>&1 | tee "$RUNNER_TEMP/w53-native-mobile-scroll.log"
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/w53-native-mobile-scroll.log"; then
+            echo '::error::W53 native mobile scrolling or noninterference regression failed'
+            exit 1
+          fi
       - name: Create real Godot 4.4.1 WebGL export from the same native-tested commit
         shell: bash
         run: |
