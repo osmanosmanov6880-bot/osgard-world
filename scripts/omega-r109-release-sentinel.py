@@ -27,6 +27,7 @@ SCRIPT_PATHS = [
     "scripts/horizon_traffic_sedan_surface.gd",
     "scripts/horizon_r90_premium_dashboard.gd",
     "scripts/horizon_r90_street_dressing.gd",
+    "scripts/horizon_r127_street_shelters.gd",
     "scripts/horizon_facade_material_pack.gd",
     "scripts/horizon_r90_reference_style.gd",
     "scripts/horizon_r91_skyline_detail.gd",
@@ -71,6 +72,8 @@ TESTS = [
     "v14_traffic_physics",
     "v62_r39_actual_wheel_art",
     "v99_r126_real_physical_traffic_fleet",
+    "v100_r127_original_street_art",
+    "v101_r127_live_drive_save_reload",
 ]
 
 
