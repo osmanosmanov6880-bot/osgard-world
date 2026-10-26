@@ -1,7 +1,6 @@
 extends SceneTree
 ## R127: actual original Godot volumetric street shelters in live R90 city.
 ## B2 ART source/physics regression only, NOT AAA reference sign-off.
-const URBAN = preload("res://scripts/horizon_r90_street_dressing.gd")
 const KIT = preload("res://scripts/horizon_r127_street_shelters.gd")
 var passed: int = 0
 var failed: int = 0
@@ -23,9 +22,24 @@ func _run() -> void:
 		quit(1)
 		return
 	var original: Dictionary = (state.get("data") as Dictionary).duplicate(true)
-	var city: Node3D = URBAN.new()
-	root.add_child(city)
-	var shelter: MultiMeshInstance3D = city.get("r127_shelters") as MultiMeshInstance3D
+	# R124 pattern: load full WorldBuilder only after the authoritative
+	# GameState singleton is mounted. This proves a real rendered city origin.
+	var world_source: Variant = load("res://scripts/world_builder.gd")
+	check(world_source is Script and world_source.can_instantiate(),
+		"actual authoritative WorldBuilder compiles after genuine autoload")
+	if not (world_source is Script and world_source.can_instantiate()):
+		quit(1)
+		return
+	var world: Node3D = world_source.new()
+	root.add_child(world)
+	var city: Node3D = world.get("r90_urban") as Node3D
+	var shelter: MultiMeshInstance3D = world.get("r127_shelters") as MultiMeshInstance3D
+	check(city!=null,"the real original WorldBuilder still owns R90 skyline")
+	if city==null:
+		world.queue_free()
+		await process_frame
+		quit(1)
+		return
 	var skyline: MultiMeshInstance3D = city.get("skyline") as MultiMeshInstance3D
 	var bollards: MultiMeshInstance3D = city.get("bollards") as MultiMeshInstance3D
 	var architecture: Node3D = city.get("r91_architecture") as Node3D
@@ -35,12 +49,13 @@ func _run() -> void:
 	check(architecture!=null and architecture.get_child_count()==2,"R91 original window and roof GPU batches remain")
 	check(shelter!=null,"real R127 street furniture is mounted in the actual urban scene")
 	if shelter == null:
-		city.queue_free()
+		world.queue_free()
 		await process_frame
 		quit(1)
 		return
-	check(shelter.get_parent()==architecture.get("facade_glass"),
-		"one extra 3D batch is nested without replacing R91 visual roots")
+	check(shelter.get_parent()==world.get("city_root") and
+		(architecture.get("facade_glass") as MultiMeshInstance3D).get_child_count()==0,
+		"extra independent 3D batch lives in original WorldBuilder WITHOUT touching R119 windows")
 	check(shelter.get_child_count()==0,
 		"no per-shelter children or new physics bodies alter mission roads")
 	check(shelter.multimesh.instance_count==KIT.SHELTER_COUNT and KIT.SHELTER_COUNT==24,
@@ -87,18 +102,18 @@ func _run() -> void:
 		positions[str(position)]=true
 	check(positions.size()==KIT.SHELTER_COUNT,
 		"all 24 deterministic shelter transforms occupy distinct real world positions")
-	city.call("set_quality","low")
+	world.call("apply_visual_budget","low")
 	check(not shelter.visible and not (architecture.get("facade_glass") as MultiMeshInstance3D).visible,
 		"mobile LOW hides ornamental glass and shelter batch without source rewrites")
-	city.call("set_quality","standard")
+	world.call("apply_visual_budget","standard")
 	check(shelter.visible and (architecture.get("facade_glass") as MultiMeshInstance3D).visible
 		and not bollards.visible,"STANDARD adds live street texture while keeping bollard draw off")
-	city.call("set_quality","cinematic")
+	world.call("apply_visual_budget","cinematic")
 	check(shelter.visible and skyline.visible and bollards.visible,
 		"CINEMATIC retains original 3D city and all authored street detail")
 	check(state.get("data")==original,
 		"visual B2 never writes wallet, campaign, traffic law, physics or save state")
-	city.queue_free()
+	world.queue_free()
 	await process_frame
 	print("EMPIRE OMEGA R127 ORIGINAL 3D STREET FURNITURE: %d PASS %d FAIL" % [passed,failed])
 	quit(0 if failed==0 else 1)
