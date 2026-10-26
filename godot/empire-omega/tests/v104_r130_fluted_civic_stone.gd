@@ -123,8 +123,8 @@ func _run() -> void:
 				"true original 10.8m shafts and original small stone capital scale preserved")
 			var submitted_gpu: Vector3 = pillars.multimesh.get_instance_transform(i).origin
 			var capital_gpu: Vector3 = capitals.multimesh.get_instance_transform(i).origin
-			if DisplayServer.get_name() == "headless" and
-					submitted_gpu.is_zero_approx() and capital_gpu.is_zero_approx():
+			if (DisplayServer.get_name()=="headless" and submitted_gpu.is_zero_approx()
+					and capital_gpu.is_zero_approx()):
 				# Explicitly classify unavailable GPU readback, do not claim it PASS.
 				if i == 0:
 					print("R130 GPU readback unavailable on headless renderer; original CPU set_instance_transform source independently verified")
