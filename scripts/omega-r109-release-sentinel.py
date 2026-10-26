@@ -74,6 +74,7 @@ TESTS = [
     "v99_r126_real_physical_traffic_fleet",
     "v100_r127_original_street_art",
     "v101_r127_live_drive_save_reload",
+    "v102_r128_accessible_cabinet_refresh",
 ]
 
 
