@@ -734,3 +734,105 @@ jobs:
           path: w52-release-evidence/
           if-no-files-found: warn
           retention-days: 45
+
+  # Always publish the exact-head decision when upstream regression checks
+  # fail, get cancelled or are skipped. Green means SOFTWARE ONLY, never GO
+  # for production or real GPU/phone performance.
+  w52-independent-final-verdict:
+    name: W52 consolidated release HOLD - all mandatory exact-head CI proofs
+    if: always() && github.event_name == 'pull_request' && github.head_ref == 'feat/osgard-w48-ring-instancing-render-budget-20261026'
+    needs:
+      - actual-godot-source-parity
+      - actual-windows-runner-boot
+      - reproduce-verified-candidate
+      - real-sw-webgl-performance
+      - real-mobile-touch-first-mission
+      - w49-source-contract
+      - w50-w51-paired-acceptance
+      - w52-no-go-release-gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Generate transparent failure-or-success software evidence verdict
+        shell: bash
+        env:
+          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha }}
+          GITHUB_RUN_SHA: ${{ github.sha }}
+          JOB_RESULTS_JSON: ${{ toJSON(needs) }}
+        run: |
+          set -euo pipefail
+          mkdir -p w52-final-verdict
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          sha = os.environ["EXPECTED_HEAD"]
+          jobs = json.loads(os.environ["JOB_RESULTS_JSON"])
+          expected = {
+              "actual-godot-source-parity",
+              "actual-windows-runner-boot",
+              "reproduce-verified-candidate",
+              "real-sw-webgl-performance",
+              "real-mobile-touch-first-mission",
+              "w49-source-contract",
+              "w50-w51-paired-acceptance",
+              "w52-no-go-release-gate",
+          }
+          results = {name: jobs.get(name, {}).get("result", "missing")
+                     for name in sorted(expected)}
+          blocked = {name: result for name, result in results.items()
+                     if result != "success"}
+          status = "PASS" if not blocked and len(sha) == 40 and all(
+              x in "0123456789abcdef" for x in sha) else "FAIL"
+          manifest = {
+              "schema": "OSGARD_W52_EXACT_HEAD_CI_DECISION_V1",
+              "source_sha": sha,
+              "status": status,
+              "decision": ("SOFTWARE_CANDIDATE_VERIFIED_PRODUCTION_HOLD" if status == "PASS"
+                           else "BLOCKED_PRODUCTION_HOLD"),
+              "upstream_jobs": results,
+              "blocking_jobs": blocked,
+              "native_godot_import_and_missions_passed": (
+                  results["actual-godot-source-parity"] == "success"),
+              "all_six_webgl_missions_and_windows_boot_passed": (
+                  results["reproduce-verified-candidate"] == "success"
+                  and results["actual-windows-runner-boot"] == "success"),
+              "original_three_camera_w47_w48_comparison_passed": (
+                  results["w50-w51-paired-acceptance"] == "success"),
+              "actual_w48_software_draw_calls_sampled": (
+                  results["real-sw-webgl-performance"] == "success"),
+              "w52_exact_SHA_artifact_verified": (
+                  results["w52-no-go-release-gate"] == "success"),
+              "physical_gpu_or_phone_certified": False,
+              "commercial_aaa_or_60fps_certified": False,
+              "manual_visual_signoff": False,
+              "production_deployed": False,
+              "merge_authorized": False,
+          }
+          out = Path("w52-final-verdict")
+          (out / "w52-ci-final-verdict.json").write_text(
+              json.dumps(manifest, sort_keys=True, indent=2) + "\n", encoding="utf-8")
+          rows = ["# OSGARD W52 exact-head CI conclusion", "",
+                  "SHA: `" + sha + "`", "",
+                  "Verdict: **" + manifest["decision"] + "**", "",
+                  "## Mandatory check matrix", ""]
+          rows += ["- " + name + ": " + result for name, result in sorted(results.items())]
+          rows += ["", "Production remains **HOLD** regardless of software success.",
+                   "Physical GPU/phone, subjective AAA graphics and site deploy not certified.", ""]
+          (out / "W52_CI_VERDICT.md").write_text("\n".join(rows), encoding="utf-8")
+          print(json.dumps({"status": status, "blocking_jobs": blocked,
+                            "source_sha": sha}, indent=2))
+          if status != "PASS":
+              raise SystemExit("W52 mandatory exact-head software gate FAILED/HOLD")
+          PY
+      - name: Preserve unambiguous original CI result even on FAIL or skip
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: osgard-w52-ci-final-verdict-${{ github.event.pull_request.head.sha }}
+          path: w52-final-verdict/
+          if-no-files-found: warn
+          retention-days: 45
