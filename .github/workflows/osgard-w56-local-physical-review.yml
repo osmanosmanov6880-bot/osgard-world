@@ -38,6 +38,11 @@ jobs:
         run: |
           set -euo pipefail
           python3 -m unittest discover -s tooling/osgard-w56 -p test_hardware_review_gate.py -v
+      - name: Existing W49 W52 adversarial source and release checks remain intact
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s w33-godot-native/ci -p test_w49_w52_gate_regressions.py -v
       - name: Actual command-line release MUST remain HOLD with no physical devices
         shell: bash
         env:
