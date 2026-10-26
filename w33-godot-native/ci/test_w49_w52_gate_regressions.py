@@ -53,9 +53,9 @@ class GitSourceGateTests(unittest.TestCase):
         run.assert_called_once()
 
     def test_allows_only_explicit_w53_mobile_touch_qa_changes(self):
-        changed = (CHANGED + "\\n"
-                   "w33-godot-native/ci/mobile_touch_acceptance.py\\n"
-                   "w33-godot-native/tests/test_w53_mobile_edge_swipe.gd\\n"
+        changed = (CHANGED + "\n"
+                   "w33-godot-native/ci/mobile_touch_acceptance.py\n"
+                   "w33-godot-native/tests/test_w53_mobile_edge_swipe.gd\n"
                    ".github/workflows/osgard-w53-mobile-touch-acceptance.yml")
         with patch.object(source_gate, "git", side_effect=self.fake_git(change=changed)), patch.object(source_gate.subprocess, "run"):
             proof = source_gate.verify(BASE, HEAD)
