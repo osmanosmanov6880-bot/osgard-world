@@ -119,6 +119,18 @@ func _run() -> void:
 		check(is_equal_approx(cols.custom_minimum_size.y,450.0) and
 			is_equal_approx((panel.get("focus_stage") as Control).custom_minimum_size.y,436.0),
 			"original reference viewport dimensions restore after exiting focus")
+	# F9 is also a real keyboard shortcut while the command window is open.
+	var key := InputEventKey.new()
+	key.keycode = KEY_F9
+	key.pressed = true
+	panel.call("_unhandled_key_input",key)
+	check(bool(panel.get("city_focus_active")) and
+		panel.get("preview")==before_scene,
+		"actual F9 keyboard opens focused city without making a second World3D")
+	panel.call("_unhandled_key_input",key)
+	check(not bool(panel.get("city_focus_active")) and
+		panel.get("preview")==before_scene,
+		"actual F9 keyboard restores the original governance controls")
 	check(current==source and game.get("data")==source,
 		"showing real city does not change money, missions or game saves")
 	panel.queue_free()
