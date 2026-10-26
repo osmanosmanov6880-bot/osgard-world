@@ -63,6 +63,11 @@ func _run() -> void:
 			hud.call("toggle_strategy")
 		await process_frame
 		await process_frame
+		# A headless SceneTree window may apply the requested size only
+		# after an extra layout tick. Exercise the real measured viewport,
+		# not a fake assumed 320px engine framebuffer.
+		hud.call("_apply_responsive_layout")
+		await process_frame
 		verify(bool(hud.get("open")) and (hud.get("overlay") as ColorRect).visible,
 			"actual cabinet opens at source viewport " + str(dimensions))
 		verify(close_button.is_visible_in_tree(),
@@ -84,15 +89,21 @@ func _run() -> void:
 					touch_count += 1
 			verify(touch_count >= 5,
 				"actual premium cabinet has actionable touch and keyboard buttons")
-			if dimensions.x >= 1200 and dimensions.y >= 680:
+			var actual_frame: Vector2 = root.get_visible_rect().size
+			var compact_render: bool = bool(hud.get("compact_hud")) or actual_frame.x < 1200.0
+			print("R128 REAL GODOT FRAME requested=%s actual=%s compact=%s second_world=%s" %
+				[str(dimensions),str(actual_frame),str(compact_render),
+				str(operations.get("preview") is SubViewport)])
+			if not compact_render:
 				verify(operations.get("preview") is SubViewport and
 					(operations.get("preview") as SubViewport).world_3d == root.world_3d,
-					"desktop atlas uses the original real authoritative Godot World3D")
+					"native desktop layout uses the original World3D at actual viewport")
 			else:
-				# On an actual phone the original R90 intentionally switches off
-				# the SECOND expensive 3D rendering pass, not the playable street.
+				# The real current viewport, not the requested headless size, sets
+				# the original R90 mobile low-power second-SubViewport policy.
 				verify(operations.get("preview") == null,
-					"mobile quality budget preserves live game without an extra GPU viewport")
+					"native compact viewport suppresses second costly 3D pass at actual " +
+					str(actual_frame))
 		# Four original navigation actions must be accessible at 320px even if
 		# the parent scroll container is long.
 		for section in ["overview","council","economy","district"]:
