@@ -58,7 +58,16 @@ static func style_button(button: Button) -> void:
 	button.focus_mode = Control.FOCUS_ALL
 
 static func command_center_frame(size: Vector2) -> Rect2:
+	# R125: the desktop executive room must not blot out the actual open city.
+	# Keep the original interactive live 3D atlas inside the command cabinet,
+	# while reserving a real, unobstructed world aperture on its right side.
+	# Every pixel in that aperture comes from the original gameplay Camera3D.
 	var side: float = clampf(size.x*0.012,12.0,22.0)
 	var top: float = clampf(size.y*0.016,10.0,18.0)
-	return Rect2(side,top,maxf(300.0,size.x-side*2.0),
-		maxf(340.0,size.y-top*2.0))
+	var width: float = minf(size.x-side*2.0,maxf(1020.0,size.x*0.79))
+	return Rect2(side,top,width,maxf(340.0,size.y-top*2.0))
+
+static func command_backdrop_alpha(size: Vector2) -> float:
+	# The dark scrim still receives pointer input and preserves premium contrast.
+	# It may not obscure the city slice left uncovered by the wide cabinet.
+	return 0.18 if size.x >= 1200.0 and size.y >= 680.0 else 0.36
