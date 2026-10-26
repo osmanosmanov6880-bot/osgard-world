@@ -6,6 +6,11 @@ const MAX_BATCHES: int = 7
 var batches: int = 0
 var pieces: int = 0
 var groups: Dictionary = {}
+# Preserve the CPU transforms actually submitted to MultiMesh for a true
+# strict headless source check; Godot's rendering-server readback may return
+# zero transforms without a GPU rendering device.
+var authored_pillar_poses: Array[Transform3D] = []
+var authored_capital_poses: Array[Transform3D] = []
 
 static func _positions(points: Array, size: Vector3) -> Array[Transform3D]:
 	var out: Array[Transform3D] = []
@@ -168,9 +173,13 @@ func _ready() -> void:
 	var window_colors: Array[Color] = []
 	for i in range(glazing.size()):
 		window_colors.append(Color("203642") if i%3==0 else Color("2b4653"))
-	_group("CivicStonePillars",limestone,_positions(pillars,Vector3(1.0,10.8,1.0)),
+	# These are the ACTUAL authored CPU poses fed unmodified to _group,
+	# which calls MultiMesh.set_instance_transform for every one of six items.
+	authored_pillar_poses = _positions(pillars,Vector3(1.0,10.8,1.0))
+	authored_capital_poses = _positions(capitals,Vector3(1.48,0.29,1.48))
+	_group("CivicStonePillars",limestone,authored_pillar_poses,
 		column_colors,0.79,0.015,true)
-	_group("CivicCapitals",carved_capital,_positions(capitals,Vector3(1.48,0.29,1.48)),
+	_group("CivicCapitals",carved_capital,authored_capital_poses,
 		_colors(6,Color("c0c4b9")),0.77,0.02,true)
 	_group("CivicWindowFrames",box,_positions(frames,Vector3(1.99,2.91,0.16)),
 		_colors(20,Color("82919c")),0.50,0.21)
