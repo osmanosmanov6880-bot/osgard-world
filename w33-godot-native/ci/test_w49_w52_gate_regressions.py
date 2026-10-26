@@ -67,6 +67,26 @@ class GitSourceGateTests(unittest.TestCase):
         self.assertTrue(proof["production_source_unchanged"])
         self.assertEqual(len(proof["scope_changed_paths"]), 5)
 
+    def test_accepts_w55_text_only_native_and_browser_visual_qa_paths(self):
+        changed = (CHANGED + "\n"
+                   "w33-godot-native/scripts/OSGARDMain.gd\n"
+                   "w33-godot-native/tests/test_w55_readable_protocol_copy.gd\n"
+                   "w33-godot-native/ci/w55_visual_typography_acceptance.py\n"
+                   ".github/workflows/osgard-w55-real-mobile-glyph-acceptance.yml")
+        with patch.object(source_gate, "git", side_effect=self.fake_git(change=changed)), patch.object(source_gate.subprocess, "run"):
+            proof = source_gate.verify(BASE, HEAD)
+        self.assertEqual(proof["status"], "PASS")
+        self.assertTrue(proof["production_source_unchanged"])
+        self.assertEqual(len(proof["scope_changed_paths"]), 6)
+
+    def test_rejects_unreviewed_font_or_production_payload_from_w55(self):
+        changed = (CHANGED + "\n"
+                   "w33-godot-native/scripts/OSGARDMain.gd\n"
+                   "w33-godot-native/assets/unreviewed-font.ttf")
+        with patch.object(source_gate, "git", side_effect=self.fake_git(change=changed)), patch.object(source_gate.subprocess, "run"):
+            with self.assertRaisesRegex(ValueError, "Unauthorized"):
+                source_gate.verify(BASE, HEAD)
+
     def test_accepts_reviewed_browser_gameplay_timeout_only_blob(self):
         changed = CHANGED + "\n" + source_gate.REVIEWED_GAMEPLAY_PATH
         with patch.object(source_gate, "git", side_effect=self.fake_git(change=changed)), patch.object(source_gate.subprocess, "run"):
