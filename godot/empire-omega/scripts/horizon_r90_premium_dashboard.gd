@@ -294,6 +294,11 @@ func _toggle_city_focus() -> void:
 		focus_columns.custom_minimum_size.y = 565 if city_focus_active else 450
 	if focus_stage != null:
 		focus_stage.custom_minimum_size.y = 548.0 if city_focus_active else 436.0
+	# Never stretch 640x400 pixels over a cinematic full-width desktop stage:
+	# resize the original ONE live SubViewport. Keep a modest bounded budget.
+	preview.size = Vector2i(960,540) if city_focus_active else Vector2i(640,400)
+	# Source pin projection is measured in the CURRENT native render size.
+	_switch_atlas_mode(atlas_mode)
 	focus_button.text = local("ВЕРНУТЬ ПАНЕЛИ","SHOW PANELS","显示面板",focus_language) if city_focus_active else local("ФОКУС НА ГОРОДЕ","FOCUS ON CITY","聚焦城市",focus_language)
 	focus_button.tooltip_text = local("Показать данные и действия" if city_focus_active else "Развернуть реальный 3D-атлас",
 		"Restore original controls" if city_focus_active else "Expand live 3D atlas",
