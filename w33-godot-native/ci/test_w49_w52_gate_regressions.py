@@ -65,7 +65,7 @@ class GitSourceGateTests(unittest.TestCase):
 
     def test_rejects_mismatched_checkout(self):
         with patch.object(source_gate, "git", side_effect=self.fake_git(wrong_head=True)), patch.object(source_gate.subprocess, "run"):
-            with self.assertRaisesRegex(ValueError, "HEAD SHA"):
+            with self.assertRaisesRegex(ValueError, "head SHA"):
                 source_gate.verify(BASE, HEAD)
 
     def test_rejects_moving_w47_baseline(self):
@@ -140,7 +140,7 @@ class ReleaseGateEvidenceTests(unittest.TestCase):
                        "godot": "4.4.1", "candidate_only": True, "production_modified": False}
             with zipfile.ZipFile(archive, "w") as output:
                 output.writestr("CANDIDATE_MANIFEST.json", json.dumps(payload))
-            with self.assertRaisesRegex(ValueError, "source"):
+            with self.assertRaisesRegex(ValueError, "not exact PR HEAD"):
                 release_gate.candidate_zip(archive, HEAD)
 
     def test_rejects_candidate_archive_escape_path(self):
