@@ -91,6 +91,18 @@ def check(directory,out,sha):
                         marker=page.locator('#osgard-native-state')
                         marker.wait_for(state='attached',timeout=15000)
                         frame_geometry=json.loads(marker.get_attribute('data-geometry',timeout=12000))
+                        native=json.loads(marker.get_attribute('data-state',timeout=12000))
+                        # This is actual Godot WebGL output, not the dummy
+                        # RenderingServer used by --headless structural tests.
+                        assert native.get('w48_real_renderer_readback') is True, (
+                            'True Chromium renderer ring readback unavailable',native)
+                        assert native.get('w48_gpu_ring_transforms_ok') is True, (
+                            'Real rendered W48 MultiMesh transform data differs',native)
+                        assert native.get('w48_gpu_ring_transforms_checked') == 83, (
+                            'Not all 83 instanced reactor pieces verified by actual renderer',native)
+                        assert native.get('w48_gpu_ring_mismatch_count') == 0, (
+                            'Original GPU ring geometry was changed',native)
+                        stats['actual_webgl_83_ring_transforms_readback'] = True
                         stage=frame_geometry.get('hero_stage')
                         assert stage and len(stage)==4,('Actual OBSIDIAN 3D stage missing',frame_geometry)
                         if touch:
