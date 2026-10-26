@@ -16,6 +16,10 @@ ALLOWED = {
     ".github/workflows/r135-w33-operator-debrief-native-qa.yml",
     ".github/workflows/osgard-w53-mobile-touch-acceptance.yml",
     ".github/workflows/osgard-w55-real-mobile-glyph-acceptance.yml",
+    ".github/workflows/osgard-w56-local-physical-review.yml",
+    "tooling/osgard-w56/hardware_review_gate.py",
+    "tooling/osgard-w56/test_hardware_review_gate.py",
+    "tooling/osgard-w56/README.md",
     "w33-godot-native/scripts/OSGARDObsidianStage.gd",
     "w33-godot-native/scripts/OSGARDMain.gd",
     "w33-godot-native/tests/test_w48_ring_instancing.gd",
@@ -48,6 +52,20 @@ PRESERVE = (
 # cannot pass the source gate just because this QA path is allowlisted.
 REVIEWED_GAMEPLAY_PATH = "w33-godot-native/ci/browser_gameplay_acceptance.py"
 REVIEWED_GAMEPLAY_BLOB = "50e492dadc8a63d99e05677ed3cc07b4dbe16cad"
+# W56 operates on untrusted self-reported real-device observations. Its fail-
+# closed verifier, negative tests and CI workflow are reviewed at exact Git
+# blob SHAs; changing any of these requires independent explicit acceptance.
+REVIEWED_W56_CRITICAL_BLOBS = {
+    "tooling/osgard-w56/hardware_review_gate.py": "31e0f525bbde6b78aa9efbf0794bc63e5b339a21",
+    "tooling/osgard-w56/test_hardware_review_gate.py": "22d9fb347757db4c028329c574e6e6945d0c103b",
+    ".github/workflows/osgard-w56-local-physical-review.yml": "61902afe83018f25b2788e667daa1ae2cb971654",
+}
+W56_PATHS = {
+    "tooling/osgard-w56/hardware_review_gate.py",
+    "tooling/osgard-w56/test_hardware_review_gate.py",
+    ".github/workflows/osgard-w56-local-physical-review.yml",
+    "tooling/osgard-w56/README.md",
+}
 SHA_CHARS = frozenset("0123456789abcdef")
 
 
@@ -79,6 +97,13 @@ def verify(base, head):
     if not {"w33-godot-native/scripts/OSGARDObsidianStage.gd",
             "w33-godot-native/tests/test_w48_ring_instancing.gd"}.issubset(changed):
         raise ValueError("Missing actual W48 implementation or native acceptance test")
+    if set(changed) & W56_PATHS:
+        if not set(REVIEWED_W56_CRITICAL_BLOBS).issubset(changed):
+            raise ValueError("Partial W56 evidence checker: reviewer, negative tests and fail-closed CI all mandatory")
+        for path, approved_sha in REVIEWED_W56_CRITICAL_BLOBS.items():
+            candidate_blob = git("rev-parse", head + ":" + path)
+            if candidate_blob != approved_sha:
+                raise ValueError("Unreviewed W56 fail-closed evidence gate change: " + path)
     gameplay_blob = git("rev-parse", head + ":" + REVIEWED_GAMEPLAY_PATH)
     if gameplay_blob != REVIEWED_GAMEPLAY_BLOB:
         raise ValueError("Unreviewed six-mission browser QA driver change: exact vetted Git blob mismatch")
@@ -98,6 +123,7 @@ def verify(base, head):
         "scope_changed_paths": changed,
         "preserved_original_git_blob_shas": preserved,
         "reviewed_browser_gameplay_ci_blob_sha": gameplay_blob,
+        "reviewed_w56_gate_blob_shas": REVIEWED_W56_CRITICAL_BLOBS if set(changed) & W56_PATHS else {},
         "production_source_unchanged": True,
         "native_geometry_qa_status": "NOT_RUN_BY_THIS_SCRIPT",
         "browser_gameplay_qa_status": "NOT_RUN_BY_THIS_SCRIPT",
