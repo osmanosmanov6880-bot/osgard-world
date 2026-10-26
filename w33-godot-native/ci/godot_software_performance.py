@@ -45,6 +45,19 @@ def measure(page,marker,mode,period=12,require_draw_calls=True):
     while time.monotonic()-start < period:
         s=state(marker)
         assert s.get("quality")==mode,("Measured the wrong real mode",s)
+        if require_draw_calls:
+            # Unlike native --headless, this is a real Chromium WebGL
+            # RenderingServer readback of ALL 83 W48 GPU instanced slots.
+            assert s.get("w48_real_renderer_readback") is True, (
+                "W48 actual browser renderer not available", s)
+            assert s.get("w48_gpu_ring_transforms_ok") is True, (
+                "W48 actual WebGL multimesh writes do not equal authored transforms", s)
+            assert s.get("w48_gpu_ring_transforms_checked") == 83, (
+                "Real WebGL did not check all 83 instanced ring pieces", s)
+            assert s.get("w48_gpu_ring_mismatch_count") == 0, (
+                "True GPU ring transform readback differs", s)
+            assert 0 <= s.get("w48_gpu_ring_max_error", -1) < 0.0001, (
+                "Real renderer ring transform maximum error beyond W47 tolerance", s)
         value=s.get("godot_render_fps")
         count=s.get("godot_frames_drawn")
         draws=s.get("godot_3d_draw_calls")
@@ -74,6 +87,7 @@ def measure(page,marker,mode,period=12,require_draw_calls=True):
         "godot_engine_fps_p10":round(ordered[max(0,int(len(ordered)*0.1)-1)],2),
         "godot_engine_fps_min":round(min(samples),2),
         "godot_rendered_frames_progressed":True,
+        "w48_actual_webgl_ring_transforms_checked": 83 if require_draw_calls else None,
         "render_draw_call_samples":len(draw_samples),
         "draw_call_probe_required":require_draw_calls,
         "render_draw_calls_median":statistics.median(draw_samples) if draw_samples else None,
