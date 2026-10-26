@@ -110,6 +110,48 @@ def candidate_zip(path, head):
         require(evidence["windows_boot"].get("source_commit") == head and
                 evidence["windows_boot"].get("actual_windows_runner_exe_started") is True and
                 evidence["windows_boot"].get("exit_code") == 0, "nested genuine Windows executable boot")
+        # Verify each upstream byte manifest independently from the outer
+        # candidate manifest. This catches a rebuilt outer ZIP whose nested
+        # WebGL/Windows attestations were not updated consistently.
+        for label, prefix in (("web", "web"), ("windows", "windows")):
+            entries = evidence[label].get("files", [])
+            require(isinstance(entries, list) and len(entries) >= 2,
+                    "missing nested original " + label + " byte manifest")
+            seen = set()
+            for item in entries:
+                rel = item["name"]
+                require(isinstance(rel, str) and rel not in seen and
+                        len(PurePosixPath(rel).parts) >= 1 and not rel.startswith("/") and
+                        "\\" not in rel and ".." not in PurePosixPath(rel).parts,
+                        "unsafe/duplicate inner manifest path")
+                seen.add(rel)
+                full = prefix + "/" + rel
+                require(full in names, "signed " + label + " entry absent: " + full)
+                require(archive.getinfo(full).file_size == item["bytes"],
+                        "nested " + label + " byte length changed: " + full)
+                checksum = hashlib.sha256()
+                with archive.open(full) as original:
+                    for chunk in iter(lambda: original.read(2**20), b""):
+                        checksum.update(chunk)
+                require(checksum.hexdigest() == item["sha256"],
+                        "nested " + label + " SHA256 mismatch: " + full)
+        require(len(evidence["art"]["frames"]) >= 5, "missing original optical camera frames")
+        for frame in evidence["art"]["frames"]:
+            image = frame["image"]
+            require(isinstance(image, str) and PurePosixPath(image).name == image,
+                    "unsafe original PNG path")
+            full = "qa/real_art/" + image
+            require(full in names, "original in-release Godot framebuffer absent: " + full)
+            checksum = hashlib.sha256()
+            with archive.open(full) as original:
+                signature = original.read(8)
+                require(signature == b"\x89PNG\r\n\x1a\n",
+                        "original rendered PNG magic absent: " + full)
+                checksum.update(signature)
+                for chunk in iter(lambda: original.read(2**20), b""):
+                    checksum.update(chunk)
+            require(checksum.hexdigest() == frame["sha256"],
+                    "original native Godot screenshot digest mismatch: " + full)
         with archive.open("web/index.wasm") as wasm:
             require(wasm.read(4) == b"\x00asm", "Web export is not genuine WebAssembly")
         with archive.open("web/index.pck") as pack:
