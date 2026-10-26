@@ -9,7 +9,6 @@ separately from the genuine live URL). It does not sign off art/hardware.
 import argparse
 import hashlib
 import json
-import re
 import sys
 from pathlib import Path
 
@@ -67,9 +66,9 @@ def verify_downloaded_bytes(directory: Path) -> list[str]:
         if path.stat().st_size == 0 or _sha256(path) != expected:
             errors.append("original downloaded byte SHA-256 mismatch: " + name)
             continue
-        if name == "index.wasm" and path.open("rb").read(4) != b"\\x00asm":
+        if name == "index.wasm" and path.read_bytes()[:4] != bytes((0, 97, 115, 109)):
             errors.append("Godot/WebAssembly binary magic invalid")
-        if name == "index.pck" and path.open("rb").read(4) != b"GDPC":
+        if name == "index.pck" and path.read_bytes()[:4] != b"GDPC":
             errors.append("original Godot PCK magic invalid")
     return errors
 
