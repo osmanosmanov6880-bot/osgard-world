@@ -17,6 +17,13 @@ var atlas_camera: Camera3D
 var atlas_mode: String = "overview"
 var atlas_pins: Dictionary = {}
 var atlas_view_buttons: Dictionary = {}
+var focus_mode: bool = false
+var focus_language: String = "ru"
+var focus_left: Control
+var focus_center: Control
+var focus_right: Control
+var focus_summary: Control
+var focus_button: Button
 
 static func local(ru: String,en: String,zh: String,lang: String) -> String:
 	if lang == "en": return en
@@ -74,6 +81,8 @@ func _metric(parent: Node, caption: String, amount: String, small: String, accen
 func build(state: Dictionary, forecast: Dictionary, mission: String,
 		world: World3D, compact: bool, lang: String) -> void:
 	name = "R90LiveOperationsCabinet"
+	focus_mode = false
+	focus_language = lang
 	add_theme_constant_override("separation",16)
 	size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var branding := HBoxContainer.new()
@@ -144,6 +153,7 @@ func build(state: Dictionary, forecast: Dictionary, mission: String,
 	left.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	left.size_flags_stretch_ratio = 0.78
 	columns.add_child(left)
+	focus_left = left
 
 	var missions := _card(left,0,true)
 	_label(missions,local("ТЕКУЩАЯ МИССИЯ","CURRENT MISSION","当前任务",lang),16,true)
@@ -180,6 +190,7 @@ func build(state: Dictionary, forecast: Dictionary, mission: String,
 		middle.size_flags_stretch_ratio = 1.72
 		middle.add_theme_constant_override("separation",8)
 		columns.add_child(middle)
+		focus_center = middle
 		_city_view(middle,world,forecast,lang)
 	else:
 		var brief := _card(left,0)
@@ -194,6 +205,7 @@ func build(state: Dictionary, forecast: Dictionary, mission: String,
 	right.size_flags_stretch_ratio = 0.93
 	right.add_theme_constant_override("separation",13)
 	columns.add_child(right)
+	focus_right = right
 	var atlas := _card(right)
 	_label(atlas,local("АТЛАС ГОРОДА","CITY ATLAS","城市地图集",lang),17,true)
 	var discovered: Array = state.get("discovered_sites",[])
@@ -260,6 +272,25 @@ func build(state: Dictionary, forecast: Dictionary, mission: String,
 	# The six real authoritative figures remain available directly after the
 	# immersive command stage; no static KPI placeholders or lost controls.
 	add_child(stats)
+	focus_summary = stats
+
+func _toggle_city_focus() -> void:
+	# Original data cards and action handlers are never freed/replaced.
+	# Full-width stage uses the same ONE live preview World3D as before.
+	if focus_left == null or focus_right == null or focus_center == null:
+		return
+	if focus_button == null or preview == null:
+		return
+	focus_mode = not focus_mode
+	focus_left.visible = not focus_mode
+	focus_right.visible = not focus_mode
+	if focus_summary != null:
+		focus_summary.visible = not focus_mode
+	focus_center.size_flags_stretch_ratio = 1.0 if focus_mode else 1.72
+	focus_button.text = local("ВЕРНУТЬ ПАНЕЛИ","SHOW PANELS","显示面板",focus_language) if focus_mode else local("ФОКУС НА ГОРОДЕ","FOCUS ON CITY","聚焦城市",focus_language)
+	focus_button.tooltip_text = local("Показать данные и действия" if focus_mode else "Развернуть реальный 3D-атлас",
+		"Restore original controls" if focus_mode else "Expand live 3D atlas",
+		"恢复面板" if focus_mode else "展开三维地图",focus_language)
 
 func _switch_atlas_mode(mode: String) -> void:
 	# No extra World3D, no preview image or second GPU pass: change the
@@ -417,3 +448,21 @@ func _city_view(parent: Node, world: World3D, forecast: Dictionary, lang: String
 		controls.add_child(button)
 		atlas_view_buttons[mode] = button
 	_switch_atlas_mode("overview")
+	# R115: one accessible full-width real camera view. Keep the separate
+	# R112 overview/details control at EXACTLY two original buttons.
+	focus_button = Button.new()
+	focus_button.name = "R115CinematicFocusToggle"
+	focus_button.text = local("ФОКУС НА ГОРОДЕ","FOCUS ON CITY","聚焦城市",lang)
+	focus_button.tooltip_text = local("Развернуть реальный 3D-атлас",
+		"Expand live 3D atlas","展开三维地图",lang)
+	focus_button.anchor_left = 0.64
+	focus_button.anchor_right = 0.98
+	focus_button.anchor_top = 0.87
+	focus_button.anchor_bottom = 0.87
+	focus_button.offset_top = -4.0
+	focus_button.offset_bottom = 43.0
+	focus_button.custom_minimum_size.y = 44
+	focus_button.add_theme_font_size_override("font_size",14)
+	REFERENCE.style_button(focus_button)
+	focus_button.pressed.connect(Callable(self,"_toggle_city_focus"))
+	stage.add_child(focus_button)
