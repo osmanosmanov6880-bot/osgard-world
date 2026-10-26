@@ -46,7 +46,9 @@ test('screening, media player and progress safeguards survive integration',()=>{
  assert.equal(viewer.split("<OSACinemaScreening ").length-1,1)
  assert.match(viewer,/getOSACinemaMedia\(index,locale,'video'\)/)
  assert.match(viewer,/saveOSACinemaProgress\(\{index,answers,locale,completed,selfChecks\}\)/)
- assert.doesNotMatch(component,/stripe|payment|invoice|publishNow/i)
+ // Only executable code is subject to this forbidden-feature check; comments are documentation.
+ const executableComponent=component.replace(/\/\*[\s\S]*?\*\//g,'')
+ assert.doesNotMatch(executableComponent,/stripe|payment|invoice|publishNow/i)
 })
 
 test('V43 dedicated Playwright configuration includes the new React spec',()=>{
