@@ -81,8 +81,44 @@ def candidate_zip(path, head):
                 for block in iter(lambda: original.read(2**20), b""):
                     checksum.update(block)
             require(checksum.hexdigest() == item["sha256"], "ZIP evidence digest mismatch: " + name)
+        # Independently inspect ORIGINAL nested manifests rather than trusting
+        # only the outer release packager's convenience PASS flags.
+        nested = {
+            "web": "web/evidence.json",
+            "windows": "windows/windows-build.json",
+            "gameplay": "qa/gameplay/gameplay-evidence.json",
+            "art": "qa/real_art/visual-evidence.json",
+            "windows_boot": "qa/windows_boot/windows-boot-verdict.json",
+        }
+        for label, item in nested.items():
+            require(item in names, "signed candidate missing original " + label + " proof")
+        evidence = {label: json.loads(archive.read(name)) for label, name in nested.items()}
+        require(evidence["web"].get("source_commit") == head and
+                evidence["web"].get("godot_release") == "4.4.1", "nested original Godot WebGL SHA")
+        require(evidence["windows"].get("source_commit") == head and
+                evidence["windows"].get("software_export") == "PASS", "nested Windows export SHA")
+        require(evidence["gameplay"].get("source_sha") == head and
+                evidence["gameplay"].get("status") == "PASS" and
+                evidence["gameplay"].get("gameplay_verified_by_real_canvas_events") is True, "nested real Chromium missions")
+        devices = evidence["gameplay"].get("devices", [])
+        require(any(x.get("result") == "PASS" and x.get("missions") == list(range(6))
+                    for x in devices), "nested browser six real successful missions absent")
+        require(evidence["art"].get("source_sha") == head and
+                evidence["art"].get("status") == "PASS" and
+                evidence["art"].get("real_godot_export") is True and
+                len(evidence["art"].get("frames", [])) >= 5, "nested original Godot visual evidence")
+        require(evidence["windows_boot"].get("source_commit") == head and
+                evidence["windows_boot"].get("actual_windows_runner_exe_started") is True and
+                evidence["windows_boot"].get("exit_code") == 0, "nested genuine Windows executable boot")
+        require(archive.read("web/index.wasm").startswith(b"\\x00asm") and
+                archive.read("web/index.pck").startswith(b"GDPC"), "Web export is not genuine Godot binary")
+        with archive.open("windows/OSGARD_FIELD_LAB_W33.exe") as executable:
+            require(executable.read(2) == b"MZ", "packaged Windows executable header corrupt")
+        with archive.open("windows/OSGARD_FIELD_LAB_W33.pck") as pack:
+            require(pack.read(4) == b"GDPC", "packaged Windows resource PCK invalid")
         return {"sha256": sha_file(path), "bytes": path.stat().st_size,
                 "manifest_files_verified": len(manifest_files),
+                "nested_original_manifests_verified": sorted(nested),
                 "actual_windows_runner_boot": True}
 
 
@@ -157,6 +193,11 @@ def validate(opts):
         "w33_all_six_actual_chromium_missions": "GATED_BY_SIGNED_W42_CANDIDATE",
         "w34_real_windows_2022_exe_started": "PASS",
         "reproducible_candidate": packed,
+        "observed_software_fps_negative_scenarios": [
+            p["scenario"] for p in paired["comparisons"]
+            if p.get("single_pair_observed_fps_change_percent") is not None
+            and p["single_pair_observed_fps_change_percent"] < 0
+        ],
         "software_release_gate_completed": True,
         "statistically_significant_fps_improvement_certified": False,
         "manual_cinematic_acceptance_complete": False,
