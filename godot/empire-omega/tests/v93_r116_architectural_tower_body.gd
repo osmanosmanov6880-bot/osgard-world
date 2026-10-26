@@ -44,8 +44,9 @@ func _run() -> void:
 			"R91/R114 source transforms retained exactly")
 		if original.size()==72 and caps.size()==72:
 			for index in [0,17,35,71]:
-				check((skyline[index] as Transform3D).is_equal_approx(
-					original[index] as Transform3D),
+				var source_tower: Transform3D = skyline[index]
+				var original_tower: Transform3D = original[index]
+				check(source_tower.is_equal_approx(original_tower),
 					"one physical R90 tower retains original R91/R114 position")
 	if tower != null:
 		var material: StandardMaterial3D = tower.material_override as StandardMaterial3D
