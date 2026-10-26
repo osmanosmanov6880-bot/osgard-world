@@ -116,6 +116,11 @@ func _publish_web_accessibility(snap: Dictionary) -> void:
         return
     # Only visible, non-sensitive simulation data are mirrored. This is
     # intentionally read-only: Playwright still has to press actual controls.
+    # Headless RenderingServer returns dummy transforms; the real exported
+    # browser must independently prove all 83 actual MultiMesh GPU writes.
+    var ring_renderer: Dictionary = {}
+    if scene_3d != null and scene_3d.obsidian_stage != null:
+        ring_renderer = scene_3d.obsidian_stage.w48_real_renderer_ring_qa()
     var state: Dictionary = {
         "mission": int(snap["mission"]), "step": int(snap["step"]),
         "active": bool(snap["active"]), "complete": bool(snap["complete"]),
@@ -136,7 +141,12 @@ func _publish_web_accessibility(snap: Dictionary) -> void:
         "godot_render_fps": Engine.get_frames_per_second(),
         "godot_frames_drawn": Engine.get_frames_drawn(),
         "godot_3d_draw_calls": RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_DRAW_CALLS_IN_FRAME),
-        "godot_3d_rendered_objects": RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_OBJECTS_IN_FRAME)
+        "godot_3d_rendered_objects": RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_OBJECTS_IN_FRAME),
+        "w48_real_renderer_readback": bool(ring_renderer.get("actual_renderer", false)),
+        "w48_gpu_ring_transforms_ok": bool(ring_renderer.get("ok", false)),
+        "w48_gpu_ring_transforms_checked": int(ring_renderer.get("checked", 0)),
+        "w48_gpu_ring_mismatch_count": int(ring_renderer.get("mismatches", -1)),
+        "w48_gpu_ring_max_error": float(ring_renderer.get("max_error", -1.0))
     }
     var geometry: Dictionary = {
         "viewport": [roundi(size.x), roundi(size.y)],
