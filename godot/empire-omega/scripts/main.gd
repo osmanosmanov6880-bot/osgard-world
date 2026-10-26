@@ -70,6 +70,11 @@ var near_miss_sample := 0.0
 var police_capture_cooldown := 0.0
 var trial_marker
 var discovery_markers
+# R70: QA-only readback of ACTUAL Godot physics to the original browser tab.
+# Enabled exclusively when the explicit query token is present in a web run.
+# Never writes physics input, economy state or persistent save data.
+var real_vehicle_browser_qa := false
+var real_vehicle_browser_qa_clock := 0.0
 
 func _refresh_portrait_fit() -> void:
 	# Expanding the canvas without a matching 2D scale makes touch buttons
@@ -80,13 +85,38 @@ func _refresh_portrait_fit() -> void:
 		# not the 16:9 desktop horizontal-FOV framing.
 		camera.keep_aspect = Camera3D.KEEP_WIDTH if PORTRAIT_SCREEN.is_phone_portrait(PORTRAIT_SCREEN.web_css_size()) else Camera3D.KEEP_HEIGHT
 
+# Opt-in browser boot milestones: never count a Godot splash screen as
+# a running physics world. No telemetry code executes for ordinary players.
+func _report_r70_boot(stage: String) -> void:
+	if not real_vehicle_browser_qa or not OS.has_feature("web"):
+		return
+	var proof: Dictionary = {
+		"schema":"empire-omega-r70-original-boot-v1",
+		"stage":stage,
+		"game_ticks_ms":Time.get_ticks_msec(),
+		"engine":"Godot"
+	}
+	JavaScriptBridge.eval("window.__omegaRealVehicleQABoot = " + JSON.stringify(proof) + ";",true)
+
 func _ready() -> void:
+	# A real Godot-origin console heartbeat distinguishes a missing scene
+	# from a broken JS bridge. Never generated from the HTML launcher.
+	if OS.has_feature("web"):
+		print("EMPIRE_R70_WEB_SCENE_READY_ENTERED")
 	_refresh_portrait_fit()
 	if OS.has_feature("web"):
+		# This flag can only be enabled by an actual browser URL. Normal
+		# players are not measured and pay zero periodic JS bridge overhead.
+		real_vehicle_browser_qa = JavaScriptBridge.eval(
+			"new URLSearchParams(window.location.search).get('omega_real_vehicle_qa') === 'r70'"
+		) == true
+		print("EMPIRE_R70_WEB_TELEMETRY_OPT_IN:",real_vehicle_browser_qa)
+		_report_r70_boot("startup")
 		get_window().size_changed.connect(_refresh_portrait_fit)
 	world = WORLD_SCENE.new()
 	add_child(world)
 	world.update_development()
+	_report_r70_boot("world-ready")
 	city_case_marker = CASE_MARKER_SCENE.new()
 	add_child(city_case_marker)
 	city_case_marker.sync_state(GameState.data)
@@ -111,6 +141,7 @@ func _ready() -> void:
 	car.add_child(cargo_visual)
 	cargo_visual.sync_state(GameState.data,GameState.locale)
 	_sync_positions_from_state()
+	_report_r70_boot("vehicle-ready")
 	camera = Camera3D.new()
 	camera.name = "ThirdPersonCamera"
 	camera.fov = 76
@@ -158,6 +189,9 @@ func _ready() -> void:
 	if GameState.last_load_source == "backup" or GameState.last_load_source == "staged":
 		hud.announce(hud.t("save_recovered"))
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE if DisplayServer.is_touchscreen_available() else Input.MOUSE_MODE_CAPTURED)
+	_report_r70_boot("ready")
+	if OS.has_feature("web"):
+		print("EMPIRE_R70_WEB_SCENE_FULLY_READY")
 
 func _on_drift_reward_earned(credits: int, score: int) -> void:
 	# Authority uses GameState's existing reward ledger, with a per-chain cap.
@@ -333,6 +367,28 @@ func _stopped_traffic_count() -> int:
 
 func _process(delta: float) -> void:
 	frame_metrics.record_frame(delta,DisplayServer.window_is_focused())
+	if real_vehicle_browser_qa and car != null:
+		# Read authoritative CharacterBody3D physics only, not camera pixels
+		# or the HUD text. Values remain falsifiable and change ONLY when the
+		# Godot simulation actually moves the vehicle.
+		real_vehicle_browser_qa_clock += delta
+		if real_vehicle_browser_qa_clock >= 0.16:
+			real_vehicle_browser_qa_clock = 0.0
+			var observed_position: Vector3 = car.global_position
+			if observed_position.is_finite() and is_finite(car.speed) and is_finite(car.mileage):
+				var measured: Dictionary = {
+					"schema":"empire-omega-r70-actual-vehicle-physics-v1",
+					"driving":driving,
+					"car_driving":car.driving,
+					"position":[observed_position.x,observed_position.y,observed_position.z],
+					"speed_mps":float(car.speed),
+					"mileage_m":float(car.mileage),
+					"fuel":float(car.fuel),
+					"yaw_rad":float(car.rotation.y),
+					"physics_frame":Engine.get_physics_frames(),
+					"mission_index":int(GameState.data.get("mission",0))
+				}
+				JavaScriptBridge.eval("window.__omegaRealVehicleQAv1 = " + JSON.stringify(measured) + ";",true)
 	if device_benchmark.active:
 		var draw_calls: int = maxi(0,int(Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME)))
 		device_benchmark.record_frame(delta,draw_calls,DisplayServer.window_is_focused())

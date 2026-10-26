@@ -1,0 +1,128 @@
+name: EMPIRE Omega R70 original physics telemetry and playable first road
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - 'godot/empire-omega/scripts/game_state.gd'
+      - 'godot/empire-omega/scripts/main.gd'
+      - 'godot/empire-omega/tests/v76_r70_real_initial_street_drive.gd'
+      - 'scripts/omega-r70-binary-driving.spec.mjs'
+      - 'scripts/omega-vehicle-physics-proof.mjs'
+      - 'scripts/omega-vehicle-physics-proof.test.mjs'
+      - 'playwright.omega-r70.config.mjs'
+      - '.github/workflows/omega-r70-real-physics-live-input-qa.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  real-native-spawn-and-physics:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Prepare original project and import native assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 godot/empire-omega/tools/generate_audio.py
+          python3 godot/empire-omega/tools/generate_patrol_audio.py
+          bash scripts/omega-strict-godot-import.sh godot/empire-omega
+      - name: Force real car to drive from original city spawn, turn and accrue odometer
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 120s godot --headless \
+            --path godot/empire-omega \
+            --script res://tests/v76_r70_real_initial_street_drive.gd
+      - name: Refuse prior R50 false green caused by splash pixels and 0 km/h car
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm ci
+          npm install --no-save --package-lock=false @playwright/test@1.58.2 pngjs@7.0.0
+          node --test scripts/omega-vehicle-physics-proof.test.mjs
+  actual-unpublished-webgl-vehicle-physics:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [desktop-chromium, touch-phone-chromium]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Generate and strictly import real Godot project
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 godot/empire-omega/tools/generate_audio.py
+          python3 godot/empire-omega/tools/generate_patrol_audio.py
+          bash scripts/omega-strict-godot-import.sh godot/empire-omega
+      - name: Export original 4.4.1 runtime WASM/PCK, never UI simulation
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p godot/empire-omega/.build-web
+          godot --headless --path godot/empire-omega \
+            --export-release Web "$GITHUB_WORKSPACE/godot/empire-omega/.build-web/index.html"
+          node scripts/localize-godot-web-export.mjs godot/empire-omega/.build-web
+          test -s godot/empire-omega/.build-web/index.wasm
+          test -s godot/empire-omega/.build-web/index.pck
+      - name: Install browser, exact pngjs and optional authentic Mesa GL driver
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm ci
+          npm install --no-save --package-lock=false @playwright/test@1.58.2 pngjs@7.0.0
+          npx playwright install --with-deps chromium
+          sudo apt-get update -qq
+          sudo apt-get install -y xvfb libgl1-mesa-dri libegl1 libgl1
+      - name: Serve real unpublished candidate locally, NEVER production
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 4173 --bind 127.0.0.1 \
+            --directory godot/empire-omega/.build-web > /tmp/omega-r70-server.log 2>&1 &
+          for i in 1 2 3 4 5 6 7 8 9 10; do
+            curl -fsS http://127.0.0.1:4173/index.html >/dev/null && exit 0
+            sleep 1
+          done
+          cat /tmp/omega-r70-server.log
+          exit 1
+      - name: Prove physics displacement and yaw from TRUE car for candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Real Mesa OpenGL for both desktop and touch Chromium viewports.
+          # No mock canvas or background retries may count as game evidence.
+          OMEGA_CI_GL_BACKEND=mesa LIBGL_ALWAYS_SOFTWARE=1 \
+            xvfb-run -a -s '-screen 0 1920x1080x24' \
+            npx playwright test --config playwright.omega-r70.config.mjs \
+              --project="${{ matrix.browser }}" --workers=1 --retries=0
+      - name: Preserve original gameplay physics reports and rendered frames
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: omega-r70-original-physics-${{ matrix.browser }}
+          path: |
+            omega-r70-browser-results/
+            omega-r70-browser-report/
+          if-no-files-found: warn
+          retention-days: 14
