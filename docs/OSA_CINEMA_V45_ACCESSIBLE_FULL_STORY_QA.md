@@ -7,6 +7,7 @@ V44.1 production was proven by source merge `433b4bf`, SSH deploy #40253076807 a
 - The existing dialog's Tab, Shift+Tab and Escape handling remains; if programmatic focus escapes, the next Tab returns it to the dialog.
 - Production Playwright verifies all eight displayed scenes, decodes their four bundled reference WebPs, requires same-origin assets and nonempty alt text, checks scene progress and horizontal clipping, and tests keyboard isolation and restoration.
 - V44's strict master-deploy SHA receipt, RU/EN, desktop/mobile and public film/checkout NO-GO checks are retained. V45 adds one browser scenario to each of the two existing Playwright projects: 8 executions total.
+- The pre-deploy ecosystem V15 real-browser test now also checks the interactive modal's inert background, Shift+Tab focus trap and precise restoration on dismissal. This catches behavioral regressions **before merging**, not only after SSH production.
 - New source contract validates all eight original scene-image mappings against the actual bundled WebP bytes and confirms every release guard remains present.
 
 ## Acceptance criteria

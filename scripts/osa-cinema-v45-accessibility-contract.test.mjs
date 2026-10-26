@@ -5,6 +5,7 @@ import { join, resolve } from 'node:path'
 
 const root = resolve(import.meta.dirname, '..')
 const src = readFileSync(join(root, 'src/OSACinemaScreening.tsx'), 'utf8')
+const localSpec = readFileSync(join(root, 'scripts/osa-cinema-v15-screening.spec.mjs'), 'utf8')
 const spec = readFileSync(join(root, 'scripts/osa-cinema-v45-production.spec.mjs'), 'utf8')
 const config = readFileSync(join(root, 'playwright.osa-cinema-v44-live.config.mjs'), 'utf8')
 const workflow = readFileSync(join(root, '.github/workflows/osa-cinema-v44-live-acceptance.yml'), 'utf8')
@@ -23,6 +24,9 @@ test('V45 fullscreen modal isolates its background and restores prior inert stat
   assert.match(spec, /Shift\+Tab/)
   assert.match(spec, /toBeFocused\(\)/)
   assert.match(spec, /Background inert state must be restored/)
+  assert.match(localSpec, /Background must be inert while dialog is open/)
+  assert.match(localSpec, /Closing the screening must restore background inertness/)
+  assert.match(localSpec, /Shift\+Tab/)
 })
 
 test('V45 all eight scenes retain four original same-origin WebP images', () => {
