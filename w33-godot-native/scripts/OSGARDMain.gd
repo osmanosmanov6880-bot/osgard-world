@@ -142,6 +142,7 @@ func _publish_web_accessibility(snap: Dictionary) -> void:
         "hold_percent": int(snap["calibration"].get("hold_percent", 0)),
         "last_error": bool(snap["last_error"]),
         "quality": str(core.settings["quality"]),
+        "locale": str(core.settings["locale"]), # read-only WebGL locale QA / accessibility
         # Original native engine values read only by local browser QA.
         # Not a benchmark on the user's physical hardware.
         "godot_render_fps": Engine.get_frames_per_second(),
