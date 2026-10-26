@@ -1,0 +1,72 @@
+name: OSA CINEMA V44 - real published spectator acceptance and permanent NO-GO
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - 'src/OSACinema.tsx'
+      - 'scripts/osa-cinema-v44-production.spec.mjs'
+      - 'scripts/osa-cinema-v44-production-contract.test.mjs'
+      - 'playwright.osa-cinema-v44-live.config.mjs'
+      - '.github/workflows/osa-cinema-v44-live-acceptance.yml'
+  workflow_run:
+    workflows: ['OSGARD frontend deploy']
+    types: [completed]
+    branches: [master]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: osa-cinema-v44-${{ github.event.workflow_run.head_sha || github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+jobs:
+  source-contract:
+    if: ${{ github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Check real viewer, architectural art and permanent NO-GO
+        run: node --test scripts/osa-cinema-v44-production-contract.test.mjs
+      - run: npm ci --ignore-scripts
+      - run: npm run check
+  live-spectator-browser:
+    if: ${{ (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'master') || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/master') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - name: Check out the source actually deployed by master
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Verify source, portal asset and original V20 rights NO-GO
+        run: node --test scripts/osa-cinema-v44-production-contract.test.mjs
+      - name: Install pinned Playwright and Chrome or Chromium
+        run: |
+          npm install --no-save --package-lock=false @playwright/test@1.58.2
+          if command -v google-chrome >/dev/null 2>&1; then
+            echo 'OSGARD_BROWSER_CHANNEL=chrome' >> "$GITHUB_ENV"
+          else
+            npx playwright install --with-deps --no-shell chromium
+          fi
+      - name: Verify actual HTTPS spectator experience on desktop and mobile
+        env:
+          OSGARD_BASE_URL: https://osgard.world
+          OSGARD_DEPLOY_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+        run: npx playwright test --config playwright.osa-cinema-v44-live.config.mjs --workers=1
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: osa-cinema-v44-real-https-spectator-evidence
+          path: |
+            test-results/
+            osa-cinema-live-report/
+          retention-days: 14
+          if-no-files-found: warn
