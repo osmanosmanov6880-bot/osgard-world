@@ -92,7 +92,8 @@ jobs:
             v90_r112_true_camera_inspection \
             v91_r114_pbr_roofline_luxury \
             v92_r115_true_world_focus \
-            v93_r116_architectural_tower_body; do
+            v93_r116_architectural_tower_body \
+            v95_r119_real_glazing_readable_atlas; do
             timeout --signal=TERM --kill-after=6s 120s godot --headless \
               --path godot/empire-omega --script "res://tests/$suite.gd"
           done

@@ -53,6 +53,7 @@ TESTS = [
     "v91_r114_pbr_roofline_luxury",
     "v92_r115_true_world_focus",
     "v93_r116_architectural_tower_body",
+    "v95_r119_real_glazing_readable_atlas",
 ]
 
 
