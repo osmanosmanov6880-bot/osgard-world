@@ -22,6 +22,7 @@ ALLOWED = {
     "w33-godot-native/ci/godot_software_performance.py",
     "w33-godot-native/ci/browser_webgl_smoke.py",
     "w33-godot-native/ci/mobile_touch_acceptance.py",
+    "w33-godot-native/ci/browser_gameplay_acceptance.py",
     "w33-godot-native/ci/w49_source_contract.py",
     "w33-godot-native/ci/w51_paired_comparison.py",
     "w33-godot-native/ci/w52_release_gate.py",
@@ -36,9 +37,14 @@ PRESERVE = (
     "w33-godot-native/scripts/OSGARDRig.gd",
     "w33-godot-native/tests/test_six_missions.gd",
     "w33-godot-native/tests/test_scene_integration.gd",
-    "w33-godot-native/ci/browser_gameplay_acceptance.py",
     "w33-godot-native/ci/visual_art_acceptance.py",
 )
+# The original W47 desktop gameplay driver is read-only except for one
+# independently reviewed W54 wall-clock/actual-frame diagnostic adjustment.
+# Its exact Git blob is pinned: an unreviewed weakening of the mission test
+# cannot pass the source gate just because this QA path is allowlisted.
+REVIEWED_GAMEPLAY_PATH = "w33-godot-native/ci/browser_gameplay_acceptance.py"
+REVIEWED_GAMEPLAY_BLOB = "50e492dadc8a63d99e05677ed3cc07b4dbe16cad"
 SHA_CHARS = frozenset("0123456789abcdef")
 
 
@@ -70,6 +76,9 @@ def verify(base, head):
     if not {"w33-godot-native/scripts/OSGARDObsidianStage.gd",
             "w33-godot-native/tests/test_w48_ring_instancing.gd"}.issubset(changed):
         raise ValueError("Missing actual W48 implementation or native acceptance test")
+    gameplay_blob = git("rev-parse", head + ":" + REVIEWED_GAMEPLAY_PATH)
+    if gameplay_blob != REVIEWED_GAMEPLAY_BLOB:
+        raise ValueError("Unreviewed six-mission browser QA driver change: exact vetted Git blob mismatch")
     subprocess.run(["git", "diff", "--check", base, head], check=True)
     preserved = {}
     for name in PRESERVE:
@@ -85,6 +94,7 @@ def verify(base, head):
         "candidate_w48_sha": head,
         "scope_changed_paths": changed,
         "preserved_original_git_blob_shas": preserved,
+        "reviewed_browser_gameplay_ci_blob_sha": gameplay_blob,
         "production_source_unchanged": True,
         "native_geometry_qa_status": "NOT_RUN_BY_THIS_SCRIPT",
         "browser_gameplay_qa_status": "NOT_RUN_BY_THIS_SCRIPT",
