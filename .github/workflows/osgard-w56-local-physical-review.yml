@@ -25,6 +25,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
           persist-credentials: false
       - name: Exact Git source SHA and real review scripts
         shell: bash
@@ -33,6 +34,29 @@ jobs:
           test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha }}"
           python3 -m py_compile tooling/osgard-w56/hardware_review_gate.py
           python3 -m py_compile tooling/osgard-w56/test_hardware_review_gate.py
+      - name: Real Git W49 original W47 to W56 exact-head source-integrity attestation
+        shell: bash
+        env:
+          W56_ACTUAL_PR_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$W56_ACTUAL_PR_SHA"
+          mkdir -p w56-proof
+          python3 w33-godot-native/ci/w49_source_contract.py \
+            --base 14be69cdaa1fdffa4e209645eed0b1964581858a \
+            --head "$W56_ACTUAL_PR_SHA" \
+            --out w56-proof/original-w47-w56-source-parity.json
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          report=json.loads(Path('w56-proof/original-w47-w56-source-parity.json').read_text())
+          assert report['status']=='PASS'
+          assert report['candidate_w48_sha']==os.environ['W56_ACTUAL_PR_SHA']
+          assert report['production_source_unchanged'] is True
+          assert len(report['reviewed_w56_gate_blob_shas'])==3
+          assert len(report['preserved_original_git_blob_shas'])==8
+          print('W56 exact-head native source/file whitelist and reviewed evidence gate PIN: PASS')
+          PY
       - name: W56 fail-closed adversarial source and report tests
         shell: bash
         run: |
