@@ -1,0 +1,90 @@
+name: OSGARD W58 source-bound RU EN responsive telemetry review
+
+on:
+  pull_request:
+    branches:
+      - feat/osgard-w48-ring-instancing-render-budget-20261026
+    paths:
+      - '.github/workflows/osgard-w58-telemetry-groups.yml'
+      - 'w33-godot-native/scripts/OSGARDMain.gd'
+      - 'w33-godot-native/tests/test_w55_readable_protocol_copy.gd'
+      - 'w33-godot-native/ci/w49_source_contract.py'
+      - 'w33-godot-native/ci/test_w49_w52_gate_regressions.py'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: osgard-w58-telemetry-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  exact-head-godot-telemetry:
+    name: W58 pinned Git sources + 40 source regressions + actual native RU/EN 320/390/desktop
+    if: github.event_name == 'pull_request' && github.head_ref == 'feat/osgard-w58-telemetry-groups-20261026'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verify exact source, immutable W47 ancestry and reviewed W58 file blobs
+        shell: bash
+        env:
+          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+          mkdir -p w58-proof
+          python3 w33-godot-native/ci/w49_source_contract.py \
+            --base 14be69cdaa1fdffa4e209645eed0b1964581858a \
+            --head "$EXPECTED_HEAD" \
+            --out w58-proof/w49-source-contract.json
+      - name: Fail-closed source, W42/W52/W56 and new W58 negative unit regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m py_compile w33-godot-native/ci/w49_source_contract.py
+          python3 -m unittest discover -s w33-godot-native/ci -p test_w49_w52_gate_regressions.py -v
+          python3 -m unittest discover -s tooling/osgard-w56 -p test_hardware_review_gate.py -v
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: true
+      - name: Import original Godot game, reject actual GDScript parser errors
+        shell: bash
+        run: |
+          set -euo pipefail
+          godot --headless --editor --path w33-godot-native --import --quit 2>&1 | tee w58-proof/import.log
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:|Failed to load script' w58-proof/import.log; then
+            exit 1
+          fi
+      - name: Run real native RU and EN 320px, 390px and desktop typography assertions
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 150s godot --headless --path w33-godot-native --script res://tests/test_w55_readable_protocol_copy.gd 2>&1 | tee w58-proof/native-telemetry.log
+          grep -q 'OSGARD W55 REAL GODOT RU/EN GLYPH AND MOBILE PROTOCOL COPY PASS' w58-proof/native-telemetry.log
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' w58-proof/native-telemetry.log; then
+            exit 1
+          fi
+      - name: Preserve six original mission and native touch interlocks
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 150s godot --headless --path w33-godot-native --script res://tests/test_six_missions.gd 2>&1 | tee w58-proof/six-missions.log
+          timeout --signal=TERM --kill-after=5s 150s godot --headless --path w33-godot-native --script res://tests/test_w53_mobile_edge_swipe.gd 2>&1 | tee w58-proof/mobile-touch.log
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' w58-proof/six-missions.log w58-proof/mobile-touch.log; then
+            exit 1
+          fi
+      - name: Preserve source-bound original native evidence, never deploy
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: osgard-w58-reviewed-native-telemetry-${{ github.event.pull_request.head.sha }}
+          path: w58-proof/
+          if-no-files-found: warn
+          retention-days: 45

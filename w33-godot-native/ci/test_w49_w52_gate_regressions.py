@@ -27,7 +27,7 @@ class GitSourceGateTests(unittest.TestCase):
     """Never change six original missions just to make visual tests green."""
 
     def fake_git(self, change=CHANGED, core_changed=False, wrong_head=False,
-                 tampered_gameplay=False, tampered_w56=False):
+                 tampered_gameplay=False, tampered_w56=False, tampered_w58_path=None):
         def call(*args):
             if args == ("rev-parse", "HEAD"):
                 return "b" * 40 if wrong_head else HEAD
@@ -44,6 +44,9 @@ class GitSourceGateTests(unittest.TestCase):
                 if ref == HEAD and path in source_gate.REVIEWED_W56_CRITICAL_BLOBS:
                     return ("1" * 40 if tampered_w56 else
                             source_gate.REVIEWED_W56_CRITICAL_BLOBS[path])
+                if ref == HEAD and path in source_gate.REVIEWED_W58_CRITICAL_BLOBS:
+                    return ("1" * 40 if path == tampered_w58_path else
+                            source_gate.REVIEWED_W58_CRITICAL_BLOBS[path])
                 if ref == HEAD and path == source_gate.REVIEWED_GAMEPLAY_PATH:
                     return ("1" * 40 if tampered_gameplay else
                             source_gate.REVIEWED_GAMEPLAY_BLOB)
@@ -127,6 +130,20 @@ class GitSourceGateTests(unittest.TestCase):
         with patch.object(source_gate, "git", side_effect=self.fake_git(change=changed)), patch.object(source_gate.subprocess, "run"):
             with self.assertRaisesRegex(ValueError, "Partial W56 evidence checker"):
                 source_gate.verify(BASE, HEAD)
+
+    def test_w58_reviewed_native_telemetry_and_ci_blobs_must_match(self):
+        # Synthetic attack fixtures: every native/workflow pin is mandatory.
+        changed = CHANGED + "\n" + "\n".join(sorted(source_gate.REVIEWED_W58_CRITICAL_BLOBS))
+        with patch.object(source_gate, "git", side_effect=self.fake_git(change=changed)), patch.object(source_gate.subprocess, "run"):
+            proof = source_gate.verify(BASE, HEAD)
+        self.assertEqual(proof["reviewed_w58_telemetry_git_blobs"],
+                         source_gate.REVIEWED_W58_CRITICAL_BLOBS)
+        for path in source_gate.REVIEWED_W58_CRITICAL_BLOBS:
+            with self.subTest(path=path):
+                with patch.object(source_gate, "git", side_effect=self.fake_git(
+                        change=changed, tampered_w58_path=path)), patch.object(source_gate.subprocess, "run"):
+                    with self.assertRaisesRegex(ValueError, "Unreviewed W58"):
+                        source_gate.verify(BASE, HEAD)
 
     def test_rejects_changed_native_mission_core(self):
         with patch.object(source_gate, "git", side_effect=self.fake_git(core_changed=True)), patch.object(source_gate.subprocess, "run"):
