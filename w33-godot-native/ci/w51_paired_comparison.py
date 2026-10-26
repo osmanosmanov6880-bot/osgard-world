@@ -9,7 +9,6 @@ a software renderer as customer hardware, or 1 paired run as statistical proof.
 import argparse
 import hashlib
 import json
-import statistics
 import threading
 from functools import partial
 from pathlib import Path
@@ -19,13 +18,16 @@ from playwright.sync_api import sync_playwright
 from godot_software_performance import (
     StaticServer, await_quality, measure, real_quality_click, state, visit
 )
-from visual_art_acceptance import render, compare, montage
+from visual_art_acceptance import render, compare
+from PIL import Image, ImageDraw
 
 W47_PINNED_SHA = "14be69cdaa1fdffa4e209645eed0b1964581858a"
 MODES = (
-    ("desktop_hero", 1366, 768, False, "hero", ("w47", "w48")),
-    ("desktop_eco", 1366, 768, False, "eco", ("w48", "w47")),
-    ("touch_hero", 390, 844, True, "hero", ("w47", "w48")),
+    ("desktop_hero", 1366, 768, False, "hero", 0, ("w47", "w48")),
+    ("desktop_inspection", 1366, 768, False, "hero", 1, ("w48", "w47")),
+    ("desktop_service", 1366, 768, False, "hero", 2, ("w47", "w48")),
+    ("desktop_eco", 1366, 768, False, "eco", 0, ("w48", "w47")),
+    ("touch_hero", 390, 844, True, "hero", 0, ("w47", "w48")),
 )
 
 
@@ -51,14 +53,25 @@ def serve(folder):
     return server, "http://127.0.0.1:%s/index.html" % server.server_port
 
 
-def record(browser, url, out, label, scenario, width, height, touch, quality):
+def record(browser, url, out, label, scenario, width, height, touch, quality, view):
     ctx, page, marker, errors = visit(browser, url, width, height, touch)
     try:
+        if view in (1, 2):
+            # Real operator hotkeys, NOT calls into the game state API.
+            page.mouse.click(500, 320)
+            page.keyboard.press(str(view + 1))
+            for _ in range(110):
+                if state(marker).get("view") == view:
+                    break
+                page.wait_for_timeout(220)
+            else:
+                raise AssertionError("Original camera view failed: " + scenario)
+            page.wait_for_timeout(950)
         if quality == "eco":
             real_quality_click(page, marker)
             await_quality(page, marker, "eco")
         actual = state(marker)
-        if actual.get("mission") != -1 or actual.get("view") != 0 or actual.get("quality") != quality:
+        if actual.get("mission") != -1 or actual.get("view") != view or actual.get("quality") != quality:
             raise AssertionError("Mismatched native 3D scenario: " + str(actual))
         # W47 has genuine Godot FPS telemetry, but predates drawcall fields.
         # Strict W48 counter requirements are never waived for the candidate.
@@ -83,11 +96,27 @@ def record(browser, url, out, label, scenario, width, height, touch, quality):
         ctx.close()
 
 
+def contact_sheet(shots, destination):
+    # Every W47/W48 camera and quality pair remains visible in a 2-column
+    # 5-row evidence sheet. The original PNGs stay individually SHA-pinned.
+    width, height = 600, 370
+    board = Image.new("RGB", (width * 2, height * ((len(shots) + 1) // 2)), (8, 12, 16))
+    paint = ImageDraw.Draw(board)
+    for i, (label, path) in enumerate(shots):
+        original = Image.open(path).convert("RGB")
+        scale = min((width - 30) / original.width, (height - 65) / original.height)
+        image = original.resize((round(original.width * scale), round(original.height * scale)))
+        col, row = i % 2, i // 2
+        board.paste(image, (col * width + (width - image.width) // 2, row * height + 46))
+        paint.text((col * width + 17, row * height + 14), label, fill=(220, 195, 164))
+    board.save(destination, optimize=True)
+
+
 def analyze(records, out):
     indexed = {(rec["scenario"], rec["build"]): rec for rec in records}
     comparisons = []
     shots = []
-    for scenario, _, _, _, mode, _ in MODES:
+    for scenario, _, _, _, mode, _, _ in MODES:
         old = indexed[(scenario, "w47")]
         new = indexed[(scenario, "w48")]
         old_fps = float(old["engine"]["godot_engine_fps_median"])
@@ -110,7 +139,7 @@ def analyze(records, out):
             "pixel_identical_asserted": False,
             "performance_improvement_certified": False,
         })
-    montage(shots, out / "W50_W47_W48_ORIGINAL_RENDER_SIDE_BY_SIDE.png")
+    contact_sheet(shots, out / "W50_W47_W48_ORIGINAL_RENDER_SIDE_BY_SIDE.png")
     return comparisons
 
 
@@ -151,16 +180,16 @@ def run(base, candidate, base_sha, candidate_sha, out):
                 "--disable-dev-shm-usage",
             ])
             try:
-                for scenario, width, height, touch, quality, order in MODES:
+                for scenario, width, height, touch, quality, view, order in MODES:
                     for label in order:
                         url = w47_url if label == "w47" else w48_url
                         report["observations"].append(
-                            record(browser, url, out, label, scenario, width, height, touch, quality)
+                            record(browser, url, out, label, scenario, width, height, touch, quality, view)
                         )
             finally:
                 browser.close()
-        if len(report["observations"]) != 6:
-            raise AssertionError("Missing original W47/W48 scenario pairs")
+        if len(report["observations"]) != 2 * len(MODES):
+            raise AssertionError("Missing one or more original W47/W48 five-camera/quality pairs")
         report["comparisons"] = analyze(report["observations"], out)
         if any(obs["build"] == "w48" and obs["engine"]["render_draw_call_samples"] < 3
                for obs in report["observations"]):
