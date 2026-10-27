@@ -1,0 +1,192 @@
+name: OSGARD W58 public SOFTWARE PREVIEW archives (NO PRODUCTION)
+
+on:
+  push:
+    branches: [release/osgard-w58-software-preview-20261027]
+    paths:
+      - '.github/workflows/osgard-w58-public-preview-release.yml'
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: osgard-w58-public-software-preview
+  cancel-in-progress: false
+
+jobs:
+  publish-reviewed-beta:
+    # A public GitHub prerelease is not osgard.world, staging, a production GO,
+    # device QA, or a replacement for W52/HUMAN_HARDWARE_REVIEW_REQUIRED.
+    if: github.ref == 'refs/heads/release/osgard-w58-software-preview-20261027' && github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Pin exact original review commit and successful executed QA jobs
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PREVIEW_SOURCE: 0d1976d73b846fabf2dbe100c43f9ada578ef296
+          REVIEW_RUN: '40541106112'
+        run: |
+          set -euo pipefail
+          test "$(git merge-base "$PREVIEW_SOURCE" HEAD)" = "$PREVIEW_SOURCE"
+          test "$GITHUB_REF" = refs/heads/release/osgard-w58-software-preview-20261027
+          mkdir -p preview-proof
+          gh api repos/osmanosmanov6880-bot/osgard-world/actions/runs/"$REVIEW_RUN" > preview-proof/run.json
+          gh api "repos/osmanosmanov6880-bot/osgard-world/actions/runs/$REVIEW_RUN/jobs?per_page=100" > preview-proof/jobs.json
+          python3 - <<'PY'
+          import json,os
+          from pathlib import Path
+          sha=os.environ['PREVIEW_SOURCE']
+          a=json.loads(Path('preview-proof/run.json').read_text())
+          assert a['id']==int(os.environ['REVIEW_RUN']) and a['head_sha']==sha
+          assert a['event']=='pull_request' and a['status']=='completed'
+          jobs=json.loads(Path('preview-proof/jobs.json').read_text())['jobs']
+          required=[
+           'actual-godot-source-parity',
+           'W49 pinned W47 source and untouched six-mission/production parity',
+           'Windows 2022 real EXE execution (not physical device certification)',
+           'W45 actual 390px touchscreen gameplay in Chromium (emulated, not hardware)',
+           'W50-W51 original W47 and W48 optical frames plus paired real Godot software FPS',
+           'W42 source-bound reproducible verified OBSIDIAN candidate',
+          ]
+          # Never call 6/9 "full 9/9". This prerelease is explicitly software-only.
+          for name in required:
+              matching=[j for j in jobs if j['name']==name]
+              assert len(matching)==1 and matching[0]['conclusion']=='success',name
+          assert len(jobs)==9
+          assert any(j['conclusion']!='success' for j in jobs),'Unexpected full release gate; re-review before publication'
+          print('EXACT SOURCE AND SIX EXECUTED SOFTWARE JOBS VERIFIED. NOT FULL 9/9; NOT PRODUCTION.')
+          PY
+
+      - name: Download original source-bound W42 candidate only
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p preview-input preview-dist
+          gh run download 40541106112 --repo osmanosmanov6880-bot/osgard-world \
+            --name osgard-w42-reproducible-candidate-0d1976d73b846fabf2dbe100c43f9ada578ef296 \
+            --dir preview-input
+
+      - name: Verify all original SHA-256 evidence; split WebGL and Windows downloads
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib, io, json, zipfile
+          base=Path('preview-input')
+          out=Path('preview-dist')
+          sha='0d1976d73b846fabf2dbe100c43f9ada578ef296'
+          src=base/('OSGARD_OBSIDIAN_'+sha+'.zip')
+          assert src.is_file()
+          blob=src.read_bytes()
+          digest=hashlib.sha256(blob).hexdigest()
+          assert digest=='749e08349bb048fff8a0edc40c0eb48bc4c3016adb88a88c56b9eebd6b14b29e'
+          report=json.loads((base/'build-report.json').read_text())
+          assert report['result']=='PASS' and report['source_sha']==sha
+          assert report['size_bytes']==len(blob) and report['zip_sha256']==digest
+          assert (digest+'  candidate-output/'+src.name) in (base/'SHA256SUMS.txt').read_text()
+          with zipfile.ZipFile(io.BytesIO(blob)) as z:
+              assert z.testzip() is None
+              manifest=json.loads(z.read('CANDIDATE_MANIFEST.json'))
+              assert manifest['source_commit']==sha and manifest['candidate_only'] is True
+              assert manifest['physical_device_certified'] is False
+              assert manifest['production_modified'] is False
+              entries=manifest['files']
+              assert len(entries)==31
+              for entry in entries:
+                  name=entry['name']
+                  assert not name.startswith('/') and '..' not in Path(name).parts
+                  content=z.read(name)
+                  assert len(content)==entry['bytes']
+                  assert hashlib.sha256(content).hexdigest()==entry['sha256'],name
+              (out/src.name).write_bytes(blob)
+              for prefix,target in [('web/','OSGARD_W58_WEBGL_SOFTWARE_PREVIEW.zip'),
+                                    ('windows/','OSGARD_W58_WINDOWS_SOFTWARE_PREVIEW.zip')]:
+                  with zipfile.ZipFile(out/target,'w',zipfile.ZIP_DEFLATED,compresslevel=6) as bundle:
+                      bundle.writestr('README_PREVIEW.txt',
+                          'OSGARD OBSIDIAN W58 - SOFTWARE-ONLY PUBLIC TEST PREVIEW\\n'
+                          'Source: '+sha+'\\n'
+                          'NOT 9/9 VERIFIED. W44 TIMED OUT/CANCELLED. W52 BLOCKED.\\n'
+                          'Real phone, actual GPU, 30-minute thermals, 1%-low FPS, independent visual approval NOT VERIFIED.\\n'
+                          'Web: serve these files from a local HTTP server, not file://.\\n'
+                          'Windows: launch the EXE without Administrator privileges, PCK file beside it.\\n'
+                          'Do not treat this test preview as production-ready or physical-reactor control.\\n')
+                      for entry in entries:
+                          name=entry['name']
+                          if name.startswith(prefix):
+                              bundle.writestr(name[len(prefix):],z.read(name),
+                                  compress_type=zipfile.ZIP_DEFLATED,compresslevel=6)
+          files=sorted(out.glob('*.zip'))
+          assert len(files)==3
+          (out/'SHA256SUMS.txt').write_text(''.join(
+              hashlib.sha256(p.read_bytes()).hexdigest()+'  '+p.name+'\\n' for p in files))
+          print('Three original-source software preview archives verified; NO PRODUCTION ACTION.')
+          PY
+
+      - name: Publish immutable public GitHub PRERELEASE with transparent HOLD
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          TAG=osgard-w58-preview-0d1976d-20261027
+          REPO=osmanosmanov6880-bot/osgard-world
+          if gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
+            echo "::error::Immutable tag already exists; refusing to change or replace release."
+            exit 1
+          fi
+          cat > preview-dist/RELEASE_NOTES.md <<'EOF'
+          # OSGARD OBSIDIAN W58 — public software-only test preview
+          This is a downloadable, playable **experimental prerelease**, not a production deployment.
+          Exact original game source: `0d1976d73b846fabf2dbe100c43f9ada578ef296`.
+          Original GitHub CI: https://github.com/osmanosmanov6880-bot/osgard-world/actions/runs/40541106112
+          **Six exact-source software QA jobs passed. W44 was cancelled on its 15-minute limit, W52 remained BLOCKED: full 9/9 was NOT achieved.**
+          Original Godot WebGL + Windows EXE/PCK files and 6 mission QA frames are in the full candidate archive; separate WebGL and Windows downloads are provided.
+          Simulated offline service training only, no real machine control.
+          No proof of real iPhone/Android/Windows dedicated-GPU performance, 1%-low FPS, long-session thermals, full accessibility/visual human review, or real-world rollout safety.
+          **PRODUCTION HOLD remains active. No merge, DNS/CDN/VPS/SSH, osgard.world or customer-session changes.**
+          For WebGL, extract the archive, serve it with a local HTTP server, then open the local URL. For Windows, keep the .exe and .pck in the same directory.
+          EOF
+          gh release create "$TAG" --repo "$REPO" \
+            --target 0d1976d73b846fabf2dbe100c43f9ada578ef296 \
+            --title 'OSGARD W58 - software-only playable test preview (HOLD)' \
+            --notes-file preview-dist/RELEASE_NOTES.md \
+            --prerelease --latest=false \
+            preview-dist/OSGARD_OBSIDIAN_0d1976d73b846fabf2dbe100c43f9ada578ef296.zip \
+            preview-dist/OSGARD_W58_WEBGL_SOFTWARE_PREVIEW.zip \
+            preview-dist/OSGARD_W58_WINDOWS_SOFTWARE_PREVIEW.zip \
+            preview-dist/SHA256SUMS.txt
+
+      - name: Verify public release remains a prerelease; never deploy site
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release view osgard-w58-preview-0d1976d-20261027 \
+            --repo osmanosmanov6880-bot/osgard-world \
+            --json isDraft,isPrerelease,tagName,assets,url > preview-proof/release.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('preview-proof/release.json').read_text())
+          assert r['isDraft'] is False and r['isPrerelease'] is True
+          assert r['tagName']=='osgard-w58-preview-0d1976d-20261027'
+          names={x['name'] for x in r['assets']}
+          assert {'OSGARD_W58_WEBGL_SOFTWARE_PREVIEW.zip',
+                  'OSGARD_W58_WINDOWS_SOFTWARE_PREVIEW.zip',
+                  'OSGARD_OBSIDIAN_0d1976d73b846fabf2dbe100c43f9ada578ef296.zip',
+                  'SHA256SUMS.txt'}==names
+          print('PUBLIC SOFTWARE PRERELEASE VERIFIED:',r['url'])
+          print('PRODUCTION HOLD. osgard.world UNCHANGED.')
+          PY
