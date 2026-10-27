@@ -491,6 +491,9 @@ func _publish_web_accessibility() -> void:
     var geometry: Dictionary = {
         "viewport": [roundi(size.x), roundi(size.y)],
         "stage": _web_rect(stage_shell),
+        # Native minimum size is the actual responsive layout policy;
+        # the first-frame inherited global rect can be stale in Godot Web.
+        "stage_requested_height": roundi(stage_shell.custom_minimum_size.y),
         "cinema_caption": _web_rect(cinema_caption),
         "cinema_inner": _web_rect(stage_shell.get_parent() as Control),
         "cinema_panel": _web_rect(stage_shell.get_parent().get_parent() as Control),
