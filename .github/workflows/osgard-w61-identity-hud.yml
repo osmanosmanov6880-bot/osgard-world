@@ -106,7 +106,10 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p w33-godot-native/build/web
-          godot --headless --path w33-godot-native --export-release Web w33-godot-native/build/web/index.html 2>&1 | tee w61-evidence/web-export.log
+          (
+            cd w33-godot-native
+            godot --headless --path . --export-release Web build/web/index.html
+          ) 2>&1 | tee w61-evidence/web-export.log
           if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' w61-evidence/web-export.log; then exit 1; fi
           python3 w33-godot-native/ci/verify_web_export.py w33-godot-native/build/web --sha "${{ github.event.pull_request.head.sha || github.sha }}" --output w33-godot-native/build/web/evidence.json
       - name: Chromium and native Godot original screenshot prerequisites
