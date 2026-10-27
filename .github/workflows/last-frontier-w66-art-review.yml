@@ -1,0 +1,217 @@
+name: LAST FRONTIER W66 genuine premium 3D environment visual review (HOLD)
+
+on:
+  pull_request:
+    branches:
+      - experiment/last-frontier-w65-sound-story-20261028
+    paths:
+      - 'w63-a7-cascade/scripts/A7ArtKit.gd'
+      - 'w63-a7-cascade/scripts/A7CinematicStage.gd'
+      - 'w63-a7-cascade/tests/test_w66_art_facility.gd'
+      - 'w63-a7-cascade/ci/w66_visual_report.py'
+      - 'docs/LAST_FRONTIER_W66_ART_PASS.md'
+      - '.github/workflows/last-frontier-w66-art-review.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: last-frontier-w66-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  independent-source-guard:
+    name: W66 W65 exact ancestry, 14 unchanged protected blobs, art-only changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Pure art changes; original W63/W64/W65 gameplay and scripts untouched
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          mkdir -p w66-evidence
+          python3 -m py_compile w63-a7-cascade/ci/w66_visual_report.py
+          python3 - <<'PY'
+          import json,os,re,subprocess
+          from pathlib import Path
+          base=os.environ['BASE_SHA']
+          head=os.environ['HEAD_SHA']
+          def git(*argv):
+              return subprocess.check_output(['git',*argv],text=True).strip()
+          assert re.fullmatch('[0-9a-f]{40}',base) and re.fullmatch('[0-9a-f]{40}',head)
+          assert git('rev-parse','HEAD')==head
+          git('cat-file','-e',base+'^{commit}')
+          assert git('merge-base',base,head)==base,'W65 verified lineage not present'
+          subprocess.run(['git','diff','--check',base,head],check=True)
+          changed=set(git('diff','--name-only','--no-renames',base,head).splitlines())
+          expected={
+            'w63-a7-cascade/scripts/A7ArtKit.gd',
+            'w63-a7-cascade/scripts/A7CinematicStage.gd',
+            'w63-a7-cascade/tests/test_w66_art_facility.gd',
+            'w63-a7-cascade/ci/w66_visual_report.py',
+            'docs/LAST_FRONTIER_W66_ART_PASS.md',
+            '.github/workflows/last-frontier-w66-art-review.yml',
+          }
+          assert changed==expected, {'unexpected':sorted(changed-expected),'missing':sorted(expected-changed)}
+          original=[
+            'w63-a7-cascade/scripts/A7CascadeCore.gd',
+            'w63-a7-cascade/tests/test_a7_cascade.gd',
+            'w63-a7-cascade/Main.tscn',
+            'w63-a7-cascade/project.godot',
+            'w63-a7-cascade/scripts/A7CascadeScreen.gd',
+            'w63-a7-cascade/scripts/A7IncidentDirector.gd',
+            'w63-a7-cascade/scripts/A7ProceduralAudio.gd',
+            'w63-a7-cascade/tests/test_w65_story_audio.gd',
+            'w63-a7-cascade/tests/test_w64_real_3d_stage.gd',
+            'w63-a7-cascade/ci/w64_browser_acceptance.py',
+            'w63-a7-cascade/ci/w65_browser_story_audio.py',
+            '.github/workflows/last-frontier-w65-causal-story.yml',
+            'w33-godot-native/scripts/OSGARDCore.gd',
+            'tooling/last-frontier/w62_source_guard.py',
+          ]
+          shas={}
+          for name in original:
+              old,new=git('rev-parse',base+':'+name),git('rev-parse',head+':'+name)
+              assert old==new,'Protected real gameplay/CI modified: '+name
+              shas[name]=new
+          art=Path('w63-a7-cascade/scripts/A7ArtKit.gd').read_text()
+          stage=Path('w63-a7-cascade/scripts/A7CinematicStage.gd').read_text()
+          assert 'MeshInstance3D.new()' in art and 'StandardMaterial3D.new()' in art
+          assert 'premium_art.apply_metrics' in stage and 'A7ArtKit.new()' in stage
+          for source in (art,stage):
+              assert 'OS.execute(' not in source and 'HTTPClient' not in source
+          assert 'model.choose(' not in art and 'model.choose(' not in stage
+          result={
+            'schema':'LAST_FRONTIER_W66_PROTECTED_ORIGINAL_ART_ONLY_V1',
+            'status':'PASS','base_sha':base,'head_sha':head,
+            'changed':sorted(changed),'protected_original_blobs':shas,
+            'gameplay_changed':False,'publication_allowed':False,
+            'human_art_approved':False,'physical_gpu_certified':False,
+            'commercial_title_cleared':False,'allow_master_merge':False,
+          }
+          Path('w66-evidence/W66_SOURCE_GUARD.json').write_text(json.dumps(result,indent=2)+'\n')
+          print('W66 14 PROTECTED ORIGINAL BLOB SHAS PASS / ART-ONLY')
+          PY
+      - name: Retain exact source contract
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: last-frontier-w66-original-source-${{ github.event.pull_request.head.sha }}
+          path: w66-evidence/W66_SOURCE_GUARD.json
+          if-no-files-found: warn
+          retention-days: 45
+
+  real-godot-and-browser:
+    name: W66 true 3D materials, four native suites and two real Chromium WebGL sessions
+    needs: independent-source-guard
+    runs-on: ubuntu-latest
+    timeout-minutes: 65
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          include-templates: true
+          use-dotnet: false
+      - name: Import original Godot 4.4.1 fully linked premium 3D environment
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p w66-evidence
+          timeout --signal=TERM --kill-after=5s 180s godot --headless --editor --path w63-a7-cascade --import --quit 2>&1 | tee w66-evidence/import.log
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:|Failed to load script' w66-evidence/import.log; then exit 1; fi
+      - name: Old original W63, cinematic W64, narrative W65 and new art W66 all native
+        shell: bash
+        run: |
+          set -euo pipefail
+          for script in test_a7_cascade test_w64_real_3d_stage test_w65_story_audio test_w66_art_facility; do
+            timeout --signal=TERM --kill-after=5s 220s godot --headless --path w63-a7-cascade --script "res://tests/$script.gd" 2>&1 | tee "w66-evidence/$script.log"
+            if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "w66-evidence/$script.log"; then exit 1; fi
+          done
+          grep -q 'LAST FRONTIER W63 A7 CASCADE REAL GODOT PLAYABLE VERTICAL SLICE PASS: 105 checks' w66-evidence/test_a7_cascade.log
+          grep -q 'LAST FRONTIER W64 REAL NATIVE 3D CINEMATIC GAME PASS: 79 assertions' w66-evidence/test_w64_real_3d_stage.log
+          grep -q 'LAST FRONTIER W65 ORIGINAL GAME CAUSAL STORY + SYNTH AUDIO PASS: 168 assertions' w66-evidence/test_w65_story_audio.log
+          grep -q 'LAST FRONTIER W66 ART FACILITY TRUE GODOT 3D AND COMPLETE GAME PASS:' w66-evidence/test_w66_art_facility.log
+      - name: Export genuinely rendered Godot 4.4.1 WebGL preview from exact commit
+        shell: bash
+        env:
+          EXACT_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          (
+            cd w63-a7-cascade
+            mkdir -p build/web
+            godot --headless --path . --export-release Web build/web/index.html
+          ) 2>&1 | tee w66-evidence/export.log
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' w66-evidence/export.log; then exit 1; fi
+          python3 w33-godot-native/ci/verify_web_export.py w63-a7-cascade/build/web --sha "$EXACT_SHA" --output w63-a7-cascade/build/web/evidence.json
+      - name: Install real Chromium and original PNG visual metrics stack
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m venv /tmp/a7-w66
+          /tmp/a7-w66/bin/pip install --disable-pip-version-check playwright==1.56.0 Pillow==11.3.0
+          /tmp/a7-w66/bin/python -m playwright install --with-deps chromium
+      - name: Actual in-browser native 3D/keyboard, visual metrics, original W65 story and victory
+        shell: bash
+        env:
+          EXACT_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 1100s /tmp/a7-w66/bin/python w63-a7-cascade/ci/w64_browser_acceptance.py --export w63-a7-cascade/build/web --evidence w66-evidence/3d-browser --sha "$EXACT_SHA" 2>&1 | tee w66-evidence/3d-browser.log
+          grep -q 'LAST FRONTIER W64 REAL GODOT 3D CHROMIUM GAMEPLAY PASS:' w66-evidence/3d-browser.log
+          /tmp/a7-w66/bin/python w63-a7-cascade/ci/w66_visual_report.py --screens w66-evidence/3d-browser --sha "$EXACT_SHA" --out w66-evidence/W66_REAL_VISUAL_METRICS.json
+          timeout --signal=TERM --kill-after=5s 1100s /tmp/a7-w66/bin/python w63-a7-cascade/ci/w65_browser_story_audio.py --export w63-a7-cascade/build/web --evidence w66-evidence/story-browser --sha "$EXACT_SHA" 2>&1 | tee w66-evidence/story-browser.log
+          grep -q 'LAST FRONTIER W65 GENUINE CHROMIUM NARRATIVE / SOUND + WIN PASS:' w66-evidence/story-browser.log
+          python3 - <<'PY'
+          import json,os
+          from pathlib import Path
+          sha=os.environ['EXACT_SHA']
+          a=json.loads(Path('w66-evidence/W66_REAL_VISUAL_METRICS.json').read_text())
+          b=json.loads(Path('w66-evidence/story-browser/W65_BROWSER_EVIDENCE.json').read_text())
+          assert a['status']=='PASS' and a['source_sha']==sha
+          assert b['status']=='PASS' and b['source_sha']==sha
+          assert a['human_art_approval'] is False and a['AAA_claim'] is False
+          assert b['actual_w63_twelve_decision_winning_route'] and not b['production_approved']
+          assert len(a['original_browser_frames'])==3 and len(b['screenshots'])==3
+          print('W66 REAL WEBGL GAME + ORIGINAL 3D PIXEL REPORT + STORY WIN PASS, HUMAN HOLD')
+          PY
+      - name: Preserve actual original WebGL, art evidence, all native and Chromium screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: last-frontier-w66-real-art-webgl-${{ github.event.pull_request.head.sha }}
+          path: |
+            w63-a7-cascade/build/web/
+            w66-evidence/
+          retention-days: 45
+          if-no-files-found: warn
+
+  explicit-human-hold:
+    name: W66 software rendering is not AAA/real phone/GPU or human art acceptance
+    needs: [independent-source-guard, real-godot-and-browser]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Require all real software jobs SUCCESS but never approve publication
+        env:
+          SOURCE: ${{ needs.independent-source-guard.result }}
+          GAME: ${{ needs.real-godot-and-browser.result }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$SOURCE" = success
+          test "$GAME" = success
+          echo 'W66 REAL GODOT PREMIUM ART SOFTWARE CANDIDATE VERIFIED'
+          echo 'PRODUCTION HOLD: name, legal assets, first-time players, true physical hardware and human art signoff absent'

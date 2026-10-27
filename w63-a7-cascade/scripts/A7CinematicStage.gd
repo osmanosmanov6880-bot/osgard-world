@@ -34,6 +34,7 @@ var warning_light: OmniLight3D
 var fill_light: OmniLight3D
 var hero_details: Node3D
 var camera: Camera3D
+var premium_art: A7ArtKit
 var camera_index: int = 0
 var mode: String = "hero"
 var reduced_motion: bool = false
@@ -129,7 +130,7 @@ func _construct_facility() -> void:
     settings.background_color = DARK
     settings.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
     settings.ambient_light_color = Color("344455")
-    settings.ambient_light_energy = 0.42
+    settings.ambient_light_energy = 0.94
     environment.environment = settings
     add_child(environment)
 
@@ -163,8 +164,15 @@ func _construct_facility() -> void:
 
     _cylinder(self, "ReactorPlinth", 2.2, 0.68, Vector3(0, 0.24, -0.25), metal)
     _cylinder(self, "ReactorLowerRing", 1.74, 0.19, Vector3(0, 0.68, -0.25), precious)
-    _cylinder(self, "ReactorPressureHousing", 1.38, 3.15, Vector3(0, 2.25, -0.25), structure)
-    _cylinder(self, "CoreGlassInnerTube", 0.88, 2.7, Vector3(0, 2.31, -0.25), heat_material)
+    # The original solid housing obscured the entire luminous reactor in
+    # WebGL. Real translucent PBR hull keeps the playable object legible.
+    var transparent_hull := _material(Color("315b70"), 0.54, 0.23)
+    transparent_hull.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+    transparent_hull.albedo_color = Color(0.19, 0.38, 0.47, 0.17)
+    _cylinder(self, "ReactorPressureHousing", 1.38, 3.15,
+        Vector3(0, 2.25, -0.25), transparent_hull)
+    _cylinder(self, "CoreGlassInnerTube", 0.88, 2.7,
+        Vector3(0, 2.31, -0.25), heat_material)
     _cylinder(self, "ReactorUpperRing", 1.73, 0.24, Vector3(0, 3.94, -0.25), precious)
     _cylinder(self, "ReactorCrown", 1.27, 0.45, Vector3(0, 4.22, -0.25), metal)
     _sphere(self, "A7EnergyLighthouse", 0.40, Vector3(0, 4.60, -0.25), energy_material)
@@ -240,13 +248,20 @@ func _construct_facility() -> void:
             Vector3(x, 4.72, z), warning_material)
         warning_beacons.append(beacon)
 
-    key_light = _light("A7CopperKeyLight", Vector3(0, 5, 4.4), Color("f9dfaf"), 1.35, 11.5)
-    fill_light = _light("A7TealFillLight", Vector3(-5.8, 3.5, -1.0), COOL, 0.88, 8.5)
-    warning_light = _light("A7SafetyVisualLight", Vector3(5.1, 4.0, 1.1), AMBER, 0.35, 8.0)
+    key_light = _light("A7CopperKeyLight", Vector3(0, 5.0, 4.4),
+        Color("ffe9c3"), 2.85, 13.0)
+    fill_light = _light("A7TealFillLight", Vector3(-5.8, 4.3, 0.6),
+        Color("6acedd"), 2.10, 10.0)
+    warning_light = _light("A7SafetyVisualLight", Vector3(5.1, 4.0, 2.2),
+        AMBER, 0.72, 11.0)
+
+    premium_art = A7ArtKit.new()
+    add_child(premium_art)
+    premium_art.assemble()
 
     camera = Camera3D.new()
     camera.name = "RealGodotHeroCamera"
-    camera.fov = 55
+    camera.fov = 52
     camera.near = 0.1
     camera.far = 70.0
     add_child(camera)
@@ -255,11 +270,11 @@ func set_camera(index: int) -> void:
     camera_index = clampi(index, 0, 2)
     if camera == null:
         return
-    var spots := [Vector3(8.0, 5.6, 11.5),
-        Vector3(0, 5.0, 13.0),
-        Vector3(-8.1, 4.1, 9.3)]
+    var spots := [Vector3(6.9, 4.8, 9.5),
+        Vector3(0.0, 4.3, 10.4),
+        Vector3(-7.2, 4.0, 8.9)]
     camera.position = spots[camera_index]
-    camera.look_at(Vector3(0.0, 2.0, -0.6), Vector3.UP)
+    camera.look_at(Vector3(0.0, 2.18, -0.6), Vector3.UP)
     camera.current = true
 
 func set_quality(new_mode: String) -> void:
@@ -267,8 +282,10 @@ func set_quality(new_mode: String) -> void:
     if hero_details == null:
         return
     hero_details.visible = mode == "hero"
+    if premium_art != null:
+        premium_art.set_quality(mode)
     if key_light != null:
-        key_light.light_energy = 1.35 if mode == "hero" else 0.90
+        key_light.light_energy = 2.85 if mode == "hero" else 1.95
         fill_light.visible = mode == "hero"
 
 func set_reduced_motion(enabled: bool) -> void:
@@ -306,7 +323,7 @@ func apply_snapshot(state: Dictionary) -> void:
     warning_material.emission = AMBER.lerp(ALERT, severity)
     warning_material.albedo_color = AMBER.lerp(ALERT, severity)
     warning_light.light_color = AMBER.lerp(ALERT, severity)
-    warning_light.light_energy = 0.25 + severity * 2.1
+    warning_light.light_energy = 0.56 + severity * 2.65
 
     # Visual gauge heights and bulkhead positioning correspond to actual
     # deterministic game metrics, not hardcoded decorative loop states.
@@ -315,6 +332,8 @@ func apply_snapshot(state: Dictionary) -> void:
         signal_gauge.scale.y = maxf(0.06, signal_strength)
         seal_gauge.scale.y = maxf(0.06, seal)
         containment_door.position.x = (1.0 - seal) * 1.40
+    if premium_art != null:
+        premium_art.apply_metrics(stats, severity)
     snapshot_count += 1
 
 func _process(delta: float) -> void:
@@ -329,7 +348,7 @@ func _process(delta: float) -> void:
     var alarm: float = 1.0 + severity * (0.35 + 0.32 * sin(phase * 7.0))
     heat_material.emission_energy_multiplier = 1.4 * flare
     warning_material.emission_energy_multiplier = 1.0 * alarm
-    warning_light.light_energy = (0.25 + severity * 2.1) * (1.0 + pulse * 0.5)
+    warning_light.light_energy = (0.56 + severity * 2.65) * (1.0 + pulse * 0.5)
 
 func qa_readout() -> Dictionary:
     return {
@@ -337,6 +356,8 @@ func qa_readout() -> Dictionary:
         "actual_native_3d": rotor != null and camera != null and
             heat_material != null and warning_light != null,
         "real_meshes": mesh_count, "real_lights": light_count,
+        "art_kit": premium_art.qa_readout() if premium_art != null else {},
+        "real_meshes_with_art": mesh_count + premium_art.meshes_created if premium_art != null else mesh_count,
         "camera": camera_index, "quality": mode,
         "reduced_motion": reduced_motion, "snapshots": snapshot_count,
         "heat": heat, "pressure": pressure, "energy": energy,
