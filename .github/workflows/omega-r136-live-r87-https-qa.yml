@@ -1,0 +1,85 @@
+name: EMPIRE Omega R136 genuine public R87 HTTPS byte readback, zero deploy
+on:
+  pull_request:
+    branches: [feat/omega-r90-aaa-reference-first-slice-20261026]
+    paths:
+      - 'scripts/omega-r136-live-r87-https.py'
+      - '.github/workflows/omega-r136-live-r87-https-qa.yml'
+      - 'godot/empire-omega/docs/EMPIRE-R136-REAL-HTTPS-RELEASE-HOLD-RU.md'
+  push:
+    branches: [feat/omega-r90-aaa-reference-first-slice-20261026]
+    paths:
+      - 'scripts/omega-r136-live-r87-https.py'
+      - '.github/workflows/omega-r136-live-r87-https-qa.yml'
+      - 'godot/empire-omega/docs/EMPIRE-R136-REAL-HTTPS-RELEASE-HOLD-RU.md'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  genuine-source-and-no-false-pass:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Verify immutable original HEAD and source-only readback tests
+        env:
+          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+          python3 -m py_compile scripts/omega-r136-live-r87-https.py
+          python3 scripts/omega-r136-live-r87-https.py --self-test
+          python3 scripts/omega-r128-r87-immutability.py --self-test
+          test ! -e r136-production-approved.json
+          echo 'R136 only tests source guards; no physical GPU/AAA/production acceptance'
+  live-public-https-readback-with-maximum-visibility:
+    needs: genuine-source-and-no-false-pass
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Real public HTTPS readback (only GET), fail closed on any mismatch
+        id: live
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/omega-r136-live-r87-https.py --output "$RUNNER_TEMP/R136_REAL_PUBLIC_HTTPS.json"
+      - name: Record actual PASS or HOLD, never claim false success
+        if: always()
+        env:
+          OUTCOME: ${{ steps.live.outcome }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s "$RUNNER_TEMP/R136_REAL_PUBLIC_HTTPS.json"
+          python3 - "$RUNNER_TEMP/R136_REAL_PUBLIC_HTTPS.json" "$OUTCOME" <<'PY'
+          import json,sys
+          j=json.load(open(sys.argv[1],encoding='utf8'))
+          assert j['production_authorized'] is False
+          assert j['not_a_real_staging_rollback'] is True
+          assert j['no_production_mutation'] is True
+          if sys.argv[2]=='success':
+              assert j['live_public_r87_7_of_7_verified']
+              assert len(j['files'])==7 and not j['errors']
+              print('R136 actual public HTTPS seven original R87 bytes MATCH: source check only, RELEASE HOLD')
+          else:
+              assert not j['live_public_r87_7_of_7_verified']
+              print('R136 actual public HTTPS unverified: HARD HOLD',j['errors'])
+              raise SystemExit(1)
+          PY
+      - name: Save genuine network trace / explicit HOLD
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: empire-omega-r136-actual-public-HTTPS-readback-or-HOLD
+          path: ${{ runner.temp }}/R136_REAL_PUBLIC_HTTPS.json
+          if-no-files-found: warn
+          retention-days: 20
