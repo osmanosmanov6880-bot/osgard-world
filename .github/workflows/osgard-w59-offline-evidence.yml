@@ -1,0 +1,54 @@
+name: OSGARD W59 offline evidence audit - NEVER RELEASE
+
+on:
+  pull_request:
+    branches:
+      - review/osgard-w58-w49-w52-exact-software-20261027
+    paths:
+      - 'tooling/osgard-w59/**'
+      - '.github/workflows/osgard-w59-offline-evidence.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  synthetic-hold:
+    name: W59 original W58 ancestor + fail-closed synthetic tests (no hardware)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Exact W58 ancestry, QA-only files
+        shell: bash
+        run: |
+          set -euo pipefail
+          base=ef570cf6c406cc14ec180585ee2c5d64c667c658
+          git cat-file -e "$base^{commit}"
+          test "$(git merge-base "$base" HEAD)" = "$base"
+          git diff --check "$base" HEAD
+          python3 - <<'PY'
+          import subprocess
+          base='ef570cf6c406cc14ec180585ee2c5d64c667c658'
+          files=subprocess.check_output(['git','diff','--name-only',base,'HEAD'],text=True).splitlines()
+          assert files and all(p.startswith('tooling/osgard-w59/') or p=='.github/workflows/osgard-w59-offline-evidence.yml' for p in files),files
+          print('W58 game files byte-identical')
+          PY
+      - name: Synthetic negative tests and always HOLD
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m py_compile tooling/osgard-w59/audit.py tooling/osgard-w59/scaffold.py tooling/osgard-w59/test_audit.py
+          python3 -m unittest discover -s tooling/osgard-w59 -p 'test_*.py' -v
+          python3 tooling/osgard-w59/audit.py --evidence-dir /tmp/osgard-w59-no-device-results --output /tmp/w59-hold.json
+          python3 - <<'PY'
+          import json
+          x=json.load(open('/tmp/w59-hold.json'))
+          assert x['status']=='HOLD'
+          assert not x['production_approved'] and not x['allow_master_merge'] and not x['published_to_production']
+          print('HOLD expected: no real physical evidence')
+          PY
