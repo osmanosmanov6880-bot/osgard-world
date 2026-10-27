@@ -1,0 +1,40 @@
+name: OSGARD M182 read-only governance gate
+
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - "governance/m182/**"
+      - ".github/workflows/osgard-m182-governance-gate.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  m182-structural-preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Compile and test M182 evidence validator
+        run: |
+          python -m py_compile governance/m182/gate.py governance/m182/test_gate.py
+          python -m unittest discover -s governance/m182 -p "test_gate.py" -v
+      - name: Verify unapproved M181 remains blocked
+        shell: bash
+        run: |
+          set +e
+          python governance/m182/gate.py --evidence governance/m182/M182_EVIDENCE_TEMPLATE.json > m182-report.json
+          code=$?
+          set -e
+          test "$code" -eq 2
+          python -c 'import json; x=json.load(open("m182-report.json")); assert x["production_release"]=="NO_GO"; assert x["local_readiness"]=="BLOCKED"'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: m182-governance-readonly-report
+          path: m182-report.json
