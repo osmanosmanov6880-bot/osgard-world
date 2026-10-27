@@ -54,7 +54,7 @@ func _run() -> void:
     await process_frame
     _assert(not game.stage_edition.visible, "Phone hides secondary simulation badge")
     _assert(game.brand_mark.text == game._t("brand_mobile"), "Phone shows compact LAST FRONTIER identity")
-    _assert(game.heading.text == "REACTOR A7", "Phone headline avoids multiple wasted lines")
+    _assert(game.heading.text == game._t("reactor_title_short"), "Localized phone headline avoids wasted lines")
     _assert(game.stage_section_heading.text == game._t("stage_narrow"), "Phone stage classification remains localized")
     _assert(game.stage_shell.custom_minimum_size.y <= 310.0, "Phone reserves room for working controls")
     _assert(game.control_grid.columns == 1, "Phone operator console remains single column")
