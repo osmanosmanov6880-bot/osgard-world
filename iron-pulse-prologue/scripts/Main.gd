@@ -983,18 +983,23 @@ func _nearest_terminal() -> Dictionary:
             closest = terminal
     return closest
 
-func _interact() -> void:
+func _interact(fast: bool = false) -> void:
     if not started or paused or session.finished():
         return
     var target: Dictionary = _nearest_terminal()
     if target.is_empty():
         return
     var terminal_id: String = str(target["id"])
+    if fast and terminal_id != "repair":
+        return
     match terminal_id:
         "scan":
             session.scan_core()
         "repair":
-            session.repair_coolant()
+            if fast:
+                session.emergency_repair()
+            else:
+                session.repair_coolant()
         "bus_a":
             session.cycle_bus(0)
         "bus_b":
@@ -1015,13 +1020,13 @@ func _announce(key: String) -> void:
     if audio_director == null or not started:
         return
     match key:
-        "surge", "reactor_overheat", "life_support_lost", "time_expired":
+        "surge", "thermal_pulse", "reactor_overheat", "life_support_lost", "time_expired":
             audio_director.cue("surge")
         "crew_evacuated":
             audio_director.cue("victory")
         "action_denied":
             audio_director.cue("denied")
-        "core_scanned", "coolant_repaired", "bus_switched", "override_authorized":
+        "core_scanned", "coolant_repaired", "thermal_stabilized", "thermal_purged", "breach_sealed", "breach_patched", "bus_switched", "override_authorized":
             audio_director.cue("confirm")
 
 func _show_end() -> void:
@@ -1031,6 +1036,10 @@ func _show_end() -> void:
     end_title.text = _copy("victory") if session.won else _copy("failure")
     var template: String = _copy("stats")
     end_stats.text = template.format({"time":"%.0f" % session.elapsed,"switches":session.switches,"faults":session.faults,"grade":session.grade()})
+    var method_key: String = "method_" + session.repair_method
+    var method_name: String = _copy(method_key) if session.repair_method != "" else "-"
+    end_stats.text += "\n" + _copy("result_path").format({
+        "method":method_name,"scenario":_copy("scenario_" + session.scenario_id)})
     if DisplayServer.get_name() != "headless":
         Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 
@@ -1042,7 +1051,11 @@ func _refresh_hud() -> void:
         objective_key = "victory_objective"
     elif objective_key == "failure":
         objective_key = "failure_objective"
-    objective_label.text = _copy(objective_key)
+    var display_key: String = objective_key
+    if objective_key == "repair" and session.scenario_id != "blackout":
+        display_key = "repair_" + session.scenario_id
+    objective_label.text = _copy(display_key)
+    subtitle_label.text = _copy("scenario_title_" + selected_scenario)
     _update_guidance(objective_key)
     _update_terminal_highlights(objective_key)
     telemetry_label.text = "%s  %d°C    |    %s  %d%%\n%s  %d%%    |    %s  %d%%    |    %s  %02d:%02d" % [
@@ -1059,7 +1072,8 @@ func _refresh_hud() -> void:
     if not nearby.is_empty() and started and not session.finished():
         var at: Vector3 = nearby["position"]
         var dist: float = Vector2(at.x,at.z).distance_to(Vector2(player.global_position.x,player.global_position.z))
-        interaction_label.text = _copy("hint").format({"name":_copy(str(nearby["key"])),"distance":"%.1f" % dist})
+        var hint_key: String = "choice_hint" if str(nearby["id"]) == "repair" and session.scenario_id != "blackout" and not session.coolant_repaired else "hint"
+        interaction_label.text = _copy(hint_key).format({"name":_copy(str(nearby["key"])),"distance":"%.1f" % dist})
     else:
         interaction_label.text = _copy("action") if started and not session.finished() else ""
     feedback_label.text = _copy(notice_key) if notice_time > 0.0 else ""
