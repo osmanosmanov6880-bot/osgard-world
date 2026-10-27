@@ -38,7 +38,7 @@ const RU := {
     "failed": "ПОТЕРЯ КОНТРОЛЯ. Пересмотрите последовательность.",
     "unstable": "ШЕСТЬ ЦИКЛОВ ПРОЙДЕНО, НО УЗЕЛ НЕ СТАБИЛИЗИРОВАН.",
     "won": "A7 СТАБИЛИЗИРОВАН. Вы удержали систему.",
-    "keys": "1-5: ДЕЙСТВИЯ  |  C: КАМЕРА  |  Q: КАЧЕСТВО  |  M: АНИМАЦИЯ  |  L: ЯЗЫК  |  S: ЗВУК  |  R: ПЕРЕЗАПУСК",
+    "keys": "1-5: ДЕЙСТВИЯ  |  F: ХОДЬБА  |  E: ПУЛЬТ  |  C: КАМЕРА  |  Q: КАЧЕСТВО  |  M: АНИМАЦИЯ  |  L: ЯЗЫК  |  S: ЗВУК/ШАГ НАЗАД  |  R: ЗАНОВО",
     "objective": "ЦЕЛЬ: ТЕПЛО И ДАВЛЕНИЕ <= 75; ГЕРМЕТИЧНОСТЬ И СИГНАЛ >= 50; ЭНЕРГИЯ >= 30; ЦЕЛОСТНОСТЬ >= 55.",
     "stage": "A7 / ЖИВАЯ 3D-КАМЕРА  •  ВЫМЫШЛЕННЫЙ ОБЪЕКТ",
     "camera0": "01 / ОБЩИЙ", "camera1": "02 / ФРОНТ", "camera2": "03 / БОКОВОЙ",
@@ -47,6 +47,14 @@ const RU := {
     "visual": "ТЕПЛО %d   •   ДАВЛЕНИЕ %d   •   ЭНЕРГИЯ %d",
     "sound_on": "ЗВУК / ВКЛ", "sound_off": "ЗВУК / ВЫКЛ",
     "preview_default": "ВЫБЕРИТЕ ДЕЙСТВИЕ: ПОСЛЕДСТВИЯ ПОКАЗАНЫ В ИГРОВЫХ ЕДИНИЦАХ.",
+    "walk_enter": "F / ПРОЙТИ В КОМПЛЕКС", "walk_exit": "F / ОБЩАЯ КАМЕРА",
+    "walk_forward": "↑ ВПЕРЁД", "walk_back": "↓ НАЗАД",
+    "walk_left": "← ВЛЕВО", "walk_right": "→ ВПРАВО",
+    "walk_use": "E / ИСПОЛЬЗОВАТЬ ПУЛЬТ",
+    "walk_coolant": "ОТСЕК ОХЛАЖДЕНИЯ", "walk_pressure": "ОТСЕК ДАВЛЕНИЯ",
+    "walk_central": "ЦЕНТРАЛЬНЫЙ УЗЕЛ",
+    "walk_status": "ОПЕРАТОР: %s  •  ДЕЙСТВИЕ E: %s",
+    "walk_hint": "WASD / ХОДЬБА  •  E / РАБОТА С ПУЛЬТОМ  •  F / КАМЕРА",
 }
 const EN := {
     "brand": "LAST FRONTIER  /  A7",
@@ -71,7 +79,7 @@ const EN := {
     "failed": "CONTAINMENT LOST. Reconsider your sequence.",
     "unstable": "SIX CYCLES SURVIVED, BUT THE SYSTEM IS UNSTABLE.",
     "won": "A7 STABILIZED. You held the frontier.",
-    "keys": "1-5: ACTIONS  |  C: CAMERA  |  Q: QUALITY  |  M: MOTION  |  L: LANGUAGE  |  S: SOUND  |  R: RESTART",
+    "keys": "1-5: ACTIONS  |  F: WALK  |  E: CONSOLE  |  C: CAMERA  |  Q: QUALITY  |  M: MOTION  |  L: LANGUAGE  |  S: SOUND/BACK  |  R: RESTART",
     "objective": "TARGET: HEAT AND PRESSURE <= 75; SEAL AND SIGNAL >= 50; ENERGY >= 30; CONTAINMENT >= 55.",
     "stage": "A7 / TRUE NATIVE 3D VIEW  •  FICTIONAL FACILITY",
     "camera0": "01 / WIDE", "camera1": "02 / FRONT", "camera2": "03 / SIDE",
@@ -80,6 +88,14 @@ const EN := {
     "visual": "HEAT %d   •   PRESSURE %d   •   ENERGY %d",
     "sound_on": "SOUND / ON", "sound_off": "SOUND / OFF",
     "preview_default": "CHOOSE AN ACTION: FORECASTS ARE FICTIONAL GAME UNITS.",
+    "walk_enter": "F / ENTER FACILITY", "walk_exit": "F / CINEMATIC VIEW",
+    "walk_forward": "↑ FORWARD", "walk_back": "↓ BACK",
+    "walk_left": "← LEFT", "walk_right": "→ RIGHT",
+    "walk_use": "E / USE CONSOLE",
+    "walk_coolant": "COOLANT BAY", "walk_pressure": "PRESSURE BAY",
+    "walk_central": "CENTRAL CORE",
+    "walk_status": "OPERATOR: %s  •  E ACTION: %s",
+    "walk_hint": "WASD / WALK  •  E / USE CONSOLE  •  F / CAMERA",
 }
 
 var model: A7CascadeCore = A7CascadeCore.new()
@@ -119,6 +135,15 @@ var narrative_title: Label
 var narrative_body: Label
 var forecast_label: Label
 var _previewed_action: String = ""
+# W67 optional real first-person 3D operator. Original W63 rules untouched.
+var walk_button: Button
+var walk_action_button: Button
+var walk_status: Label
+var walk_direction_buttons: Dictionary = {}
+var _walk_direction_state: Dictionary = {
+    "forward": false, "back": false, "left": false, "right": false
+}
+var _walk_report_elapsed: float = 0.0
 
 func _ready() -> void:
     set_anchors_preset(Control.PRESET_FULL_RECT)
