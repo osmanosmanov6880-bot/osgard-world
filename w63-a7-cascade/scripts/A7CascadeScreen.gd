@@ -575,6 +575,12 @@ func _publish_web_accessibility() -> void:
     var geometry: Dictionary = {
         "viewport": [roundi(size.x), roundi(size.y)],
         "stage": _web_rect(stage_shell),
+        "stage_requested_height": roundi(stage_shell.custom_minimum_size.y),
+        "cinema_caption": _web_rect(cinema_caption),
+        "cinema_inner": _web_rect(stage_shell.get_parent() as Control),
+        "cinema_panel": _web_rect(stage_shell.get_parent().get_parent() as Control),
+        "subtitle": _web_rect(subtitle),
+        "intro": _web_rect(intro),
         "brand": _web_rect(brand_label),
         "reset": _web_rect(restart_button),
         "language": _web_rect(language_button),
