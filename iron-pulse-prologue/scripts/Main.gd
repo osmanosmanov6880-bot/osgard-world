@@ -2,9 +2,9 @@ extends Node3D
 ## IRON PULSE: BLACKOUT — real, player-controlled 3D vertical slice in Godot 4.4.1.
 ## Procedural artwork and generated UI; offline and self-contained.
 
-const NIGHT := Color(0.013, 0.025, 0.048)
-const STEEL := Color(0.105, 0.16, 0.21)
-const METAL := Color(0.18, 0.24, 0.29)
+const NIGHT := Color(0.020, 0.034, 0.060)
+const STEEL := Color(0.162, 0.217, 0.287)
+const METAL := Color(0.235, 0.300, 0.368)
 const CYAN := Color(0.13, 0.83, 0.91)
 const AMBER := Color(1.0, 0.53, 0.22)
 const RED := Color(0.95, 0.20, 0.25)
@@ -105,7 +105,9 @@ var hud_root: Control
 var brand_label: Label
 var subtitle_label: Label
 var guidance_label: Label
+var header_panel: PanelContainer
 var side_panel: PanelContainer
+var prompt_panel: PanelContainer
 var vitals_panel: PanelContainer
 var vitals_meters: Dictionary = {}
 var warning_veil: ColorRect
@@ -222,6 +224,12 @@ func _publish_web_state() -> void:
     state["soundscape_ready"] = audio_director != null and audio_director.ambient != null
     state["cinematic_details"] = art_stage.readout() if art_stage != null else {}
     state["vitals_visible"] = vitals_panel.visible if vitals_panel != null else false
+    state["hud_rects"] = {
+        "header": _hud_rect(header_panel),
+        "telemetry": _hud_rect(side_panel),
+        "vitals": _hud_rect(vitals_panel),
+        "prompt": _hud_rect(prompt_panel)
+    }
     # Independent real-canvas tests must press E, not call session methods.
     # We publish physical UI rectangles only as read-only diagnostics.
     var buttons: Dictionary = {}
@@ -234,18 +242,22 @@ func _publish_web_state() -> void:
     _web_state_element.setAttribute("data-state", JSON.stringify(state))
     _web_state_element.textContent = "IRON PULSE BLACKOUT, " + str(state["objective"])
 
+func _hud_rect(node: Control) -> Array:
+    var rect: Rect2 = node.get_global_rect()
+    return [rect.position.x,rect.position.y,rect.size.x,rect.size.y]
+
 func _copy(key: String) -> String:
     return str(COPY[locale].get(key, key))
 
-func _metal(c: Color, metalness: float = 0.8, emissive: bool = false) -> StandardMaterial3D:
+func _metal(c: Color, metalness: float = 0.48, emissive: bool = false) -> StandardMaterial3D:
     var mat := StandardMaterial3D.new()
     mat.albedo_color = c
     mat.metallic = metalness
-    mat.roughness = 0.31
+    mat.roughness = 0.43
     if emissive:
         mat.emission_enabled = true
         mat.emission = c
-        mat.emission_energy_multiplier = 2.6
+        mat.emission_energy_multiplier = 1.4
     return mat
 
 func _make_environment() -> void:
@@ -254,15 +266,15 @@ func _make_environment() -> void:
     env.background_mode = Environment.BG_COLOR
     env.background_color = NIGHT
     env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-    env.ambient_light_color = Color(0.17, 0.26, 0.39)
-    env.ambient_light_energy = 0.37
+    env.ambient_light_color = Color(0.34, 0.47, 0.60)
+    env.ambient_light_energy = 0.75
     env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
     world.environment = env
     add_child(world)
     var key := DirectionalLight3D.new()
     key.rotation_degrees = Vector3(-50.0, 24.0, -10.0)
-    key.light_color = Color(0.22, 0.42, 0.63)
-    key.light_energy = 0.5
+    key.light_color = Color(0.58, 0.70, 0.85)
+    key.light_energy = 0.9
     add_child(key)
 
 func _box(parent: Node3D, center: Vector3, dimensions: Vector3, mat: Material, solid: bool = false) -> MeshInstance3D:
@@ -288,7 +300,7 @@ func _box(parent: Node3D, center: Vector3, dimensions: Vector3, mat: Material, s
     return mesh_node
 
 func _make_complex() -> void:
-    var concrete := _metal(Color(0.045,0.075,0.11),0.36)
+    var concrete := _metal(Color(0.105,0.133,0.17),0.27)
     var steel := _metal(STEEL)
     var polished := _metal(METAL)
     var amber := _metal(AMBER,0.18,true)
@@ -310,11 +322,23 @@ func _make_complex() -> void:
         var lamp := OmniLight3D.new()
         lamp.position = Vector3(0,5.4,depth)
         lamp.light_color = Color(0.19,0.63,0.83) if index % 3 != 0 else AMBER
-        lamp.light_energy = 1.35
+        lamp.light_energy = 1.45
         lamp.omni_range = 12.0
         lamp.shadow_enabled = false
         add_child(lamp)
         legacy_lamps.append(lamp)
+    # Neutral fill spots reveal metal silhouettes beyond neon emissive strips.
+    # No shadows or new external textures; ECO still limits active light count.
+    for depth in [-7.0,-29.0,-51.0]:
+        var fill_light := OmniLight3D.new()
+        fill_light.name = "VisualReadabilityFill"
+        fill_light.position = Vector3(0,3.6,depth)
+        fill_light.light_color = Color(0.63,0.77,0.92)
+        fill_light.light_energy = 0.80
+        fill_light.omni_range = 13.5
+        fill_light.shadow_enabled = false
+        add_child(fill_light)
+        legacy_lamps.append(fill_light)
     for index in 9:
         var z := -3.5 - float(index)*7.0
         _box(self,Vector3(-6.2,2.7,z),Vector3(0.20,4.8,0.34),polished)
@@ -443,9 +467,9 @@ func _panel(parent: Control, location: Rect2, anchors: Rect2, bg: Color) -> Pane
     panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
     var style := StyleBoxFlat.new()
     style.bg_color = bg
-    style.border_color = Color(0.25,0.53,0.61,0.75)
+    style.border_color = Color(0.20,0.47,0.57,0.80)
     style.set_border_width_all(1)
-    style.set_corner_radius_all(7)
+    style.set_corner_radius_all(9)
     style.content_margin_left = 14
     style.content_margin_right = 14
     style.content_margin_top = 9
@@ -479,21 +503,21 @@ func _make_hud() -> void:
     warning_veil.set_anchors_preset(Control.PRESET_FULL_RECT)
     warning_veil.mouse_filter = Control.MOUSE_FILTER_IGNORE
     hud_root.add_child(warning_veil)
-    var head := _panel(hud_root,Rect2(17,14,-17,91),Rect2(0,0,1,0),Color(0.018,0.036,0.066,0.88))
+    header_panel = _panel(hud_root,Rect2(17,14,544,139),Rect2(0,0,0,0),Color(0.015,0.029,0.050,0.91))
     var col := VBoxContainer.new()
     col.add_theme_constant_override("separation",1)
-    head.add_child(col)
+    header_panel.add_child(col)
     brand_label = _label(col,"IRON PULSE",29,CYAN)
     subtitle_label = _label(col,_copy("subtitle"),12,AMBER)
     objective_label = _label(col,"",17,WHITE)
     guidance_label = _label(col,"",12,AMBER)
-    var side := _panel(hud_root,Rect2(17,113,370,255),Rect2(0,0,0,0),Color(0.014,0.026,0.05,0.88))
+    var side := _panel(hud_root,Rect2(17,154,366,295),Rect2(0,0,0,0),Color(0.014,0.028,0.048,0.89))
     side_panel = side
     var metrics := VBoxContainer.new()
     side.add_child(metrics)
     telemetry_label = _label(metrics,"",15,WHITE)
     allocation_label = _label(metrics,"",16,CYAN)
-    vitals_panel = _panel(hud_root,Rect2(-357,113,-17,315),Rect2(1,0,1,0),Color(0.014,0.026,0.05,0.88))
+    vitals_panel = _panel(hud_root,Rect2(-365,17,-17,276),Rect2(1,0,1,0),Color(0.014,0.029,0.048,0.92))
     var vitals := VBoxContainer.new()
     vitals.add_theme_constant_override("separation",4)
     vitals_panel.add_child(vitals)
@@ -502,9 +526,9 @@ func _make_hud() -> void:
     _make_vital_meter(vitals,"oxygen","02  /  LIFE SUPPORT",CYAN)
     _make_vital_meter(vitals,"crew","03  /  CREW CONDITION",Color(0.26,0.87,0.62))
     _make_vital_meter(vitals,"door","04  /  BULKHEAD CAPACITOR",Color(0.97,0.67,0.27))
-    var lower := _panel(hud_root,Rect2(17,-133,-17,-71),Rect2(0,1,1,1),Color(0.015,0.035,0.061,0.82))
+    prompt_panel = _panel(hud_root,Rect2(17,-128,545,-62),Rect2(0,1,0,1),Color(0.015,0.029,0.048,0.90))
     var lower_col := VBoxContainer.new()
-    lower.add_child(lower_col)
+    prompt_panel.add_child(lower_col)
     interaction_label = _label(lower_col,"",17,CYAN)
     feedback_label = _label(lower_col,"",15,AMBER)
     footer_label = _label(hud_root,_copy("footer"),11,DIM)
@@ -603,7 +627,17 @@ func _touch_button(parent: Control, text_value: String, x: float, y: float, widt
     btn.offset_top = y
     btn.offset_right = x + width
     btn.offset_bottom = y + 51.0
-    btn.add_theme_font_size_override("font_size",20)
+    btn.add_theme_font_size_override("font_size",19)
+    var normal := StyleBoxFlat.new()
+    normal.bg_color = Color(0.020,0.046,0.072,0.93)
+    normal.border_color = Color(0.26,0.67,0.75,0.85)
+    normal.set_border_width_all(1)
+    normal.set_corner_radius_all(10)
+    btn.add_theme_stylebox_override("normal",normal)
+    var pressed := normal.duplicate() as StyleBoxFlat
+    pressed.bg_color = Color(0.10,0.34,0.41,0.97)
+    btn.add_theme_stylebox_override("pressed",pressed)
+    btn.add_theme_color_override("font_color",WHITE)
     parent.add_child(btn)
     if move_key != "":
         btn.button_down.connect(func() -> void: touch_moves[move_key] = true)
@@ -616,10 +650,10 @@ func _make_touch_controls() -> void:
     touch_ui.set_anchors_preset(Control.PRESET_FULL_RECT)
     touch_ui.mouse_filter = Control.MOUSE_FILTER_IGNORE
     hud_root.add_child(touch_ui)
-    _touch_button(touch_ui,"↑",66,-242,55,"forward")
-    _touch_button(touch_ui,"←",6,-186,55,"left")
-    _touch_button(touch_ui,"↓",66,-186,55,"back")
-    _touch_button(touch_ui,"→",126,-186,55,"right")
+    _touch_button(touch_ui,"W",66,-242,55,"forward")
+    _touch_button(touch_ui,"A",6,-186,55,"left")
+    _touch_button(touch_ui,"S",66,-186,55,"back")
+    _touch_button(touch_ui,"D",126,-186,55,"right")
     var use := _touch_button(touch_ui,"USE / E",216,-186,94)
     use.pressed.connect(_interact)
     var look := _touch_button(touch_ui,"L / RU-EN",216,-242,94)
@@ -629,30 +663,39 @@ func _layout_hud() -> void:
     if hud_root == null:
         return
     var width: float = get_viewport().get_visible_rect().size.x
-    # CSS viewport determines actual available touch area, not the default
-    # project virtual size when the browser is still establishing its canvas.
+    # Browser CSS pixels are the authority for touch targets and typography.
     if _browser_css_size.x > 0:
         width = float(_browser_css_size.x)
     var narrow: bool = width < 650.0
     touch_ui.visible = width < 850.0 or DisplayServer.is_touchscreen_available()
-    vitals_panel.visible = not narrow
+    vitals_panel.visible = width >= 1000.0
     subtitle_label.visible = not narrow
-    # Default small screens to an intentionally lighter renderer profile.
     if narrow and quality_mode == "hero" and art_stage != null:
         quality_mode = "eco"
         art_stage.set_quality("eco")
         for i in range(legacy_lamps.size()):
             legacy_lamps[i].visible = i % 3 == 0
-    side_panel.offset_right = minf(370.0,width-22.0)
-    side_panel.offset_bottom = 247.0 if narrow else 255.0
+    # Compact non-overlapping card hierarchy; the center is reserved for 3D.
+    header_panel.offset_left = 17.0 if not narrow else 12.0
+    header_panel.offset_right = minf(544.0,width-16.0)
+    header_panel.offset_top = 14.0
+    header_panel.offset_bottom = 139.0 if not narrow else 115.0
+    side_panel.offset_left = 17.0 if not narrow else 12.0
+    side_panel.offset_right = minf(366.0,width-16.0)
+    side_panel.offset_top = 154.0 if not narrow else 130.0
+    side_panel.offset_bottom = 295.0 if not narrow else 274.0
+    prompt_panel.offset_left = 17.0 if not narrow else 12.0
+    prompt_panel.offset_right = minf(545.0,width-16.0)
+    prompt_panel.offset_top = -128.0
+    prompt_panel.offset_bottom = -62.0
     intro_body.custom_minimum_size.x = minf(500.0,width-66.0)
     intro_title.add_theme_font_size_override("font_size",20 if narrow else 29)
     intro_body.add_theme_font_size_override("font_size",13 if narrow else 15)
-    brand_label.add_theme_font_size_override("font_size",20 if narrow else 29)
+    brand_label.add_theme_font_size_override("font_size",20 if narrow else 27)
     objective_label.add_theme_font_size_override("font_size",15 if narrow else 17)
     guidance_label.add_theme_font_size_override("font_size",11 if narrow else 12)
-    telemetry_label.add_theme_font_size_override("font_size",13 if narrow else 15)
-    allocation_label.add_theme_font_size_override("font_size",12 if narrow else 16)
+    telemetry_label.add_theme_font_size_override("font_size",12 if narrow else 14)
+    allocation_label.add_theme_font_size_override("font_size",12 if narrow else 14)
     interaction_label.add_theme_font_size_override("font_size",12 if narrow else 17)
     feedback_label.add_theme_font_size_override("font_size",12 if narrow else 15)
     footer_label.add_theme_font_size_override("font_size",9 if narrow else 11)
@@ -660,9 +703,7 @@ func _layout_hud() -> void:
     intro_panel.offset_right = minf(310.0,width*0.45)
     end_panel.offset_left = -minf(300.0,width*0.45)
     end_panel.offset_right = minf(300.0,width*0.45)
-    if narrow:
-        # The mobile HUD deliberately leaves the center unobstructed.
-        objective_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+    objective_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 
 func start_run() -> void:
     started = true
@@ -964,7 +1005,7 @@ func _update_guidance(objective_key: String) -> void:
     var forward: Vector3 = -player.global_transform.basis.z
     var dot_value: float = forward.dot(direction)
     var turn: float = forward.cross(direction).y
-    var arrow: String = "↑" if dot_value > 0.6 else "↓" if dot_value < -0.6 else "←" if turn > 0.0 else "→"
+    var arrow: String = "FWD" if dot_value > 0.6 else "BACK" if dot_value < -0.6 else "LEFT" if turn > 0.0 else "RIGHT"
     guidance_label.text = _copy("navigate").format({"arrow":arrow,"distance":"%.0f" % distance,"node":target_name})
 
 func _update_terminal_highlights(objective_key: String) -> void:
