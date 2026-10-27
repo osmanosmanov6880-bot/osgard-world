@@ -1,0 +1,223 @@
+name: OSA CINEMA V50 Verified Media SSH Publication
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/osa-cinema-v50-media-release.yml
+      - scripts/osa-cinema-v50-vps.sh
+  push:
+    branches: [master]
+    paths:
+      - .github/workflows/osa-cinema-v50-media-release.yml
+      - scripts/osa-cinema-v50-vps.sh
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      retry_verified_release:
+        description: Retry media publish after a previously uploaded, SHA-verified GitHub Release asset
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: osa-cinema-v50-media
+  cancel-in-progress: false
+
+jobs:
+  source-contract:
+    if: github.event_name == 'pull_request' || github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate VPS uploader syntax and exact archive pin
+        run: |
+          set -euo pipefail
+          bash -n scripts/osa-cinema-v50-vps.sh
+          grep -q 'f501e1dec7e8ad83ac135e67ba99d16629246f0a4ca519e5ab2073b904724166' scripts/osa-cinema-v50-vps.sh
+          test -f docs/OSA_CINEMA_V48_LOCAL_MEDIA_CANDIDATE_20261027.json
+          python3 -m unittest discover -s scripts -p 'test_osa_cinema_v49_*.py' -v
+          node --test scripts/osa-cinema-v48-local-candidate.test.mjs
+
+  create-draft-asset-slot:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    needs: source-contract
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Prepare a draft asset slot without publishing film
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          tag=osa-cinema-v50-media-20261027
+          if gh release view "$tag" --repo "$REPO" >/dev/null 2>&1; then
+            echo 'Existing owner media release slot retained; no overwrite.'
+          else
+            gh release create "$tag" --repo "$REPO" --target master --draft \
+              --title 'OSA CINEMA V50 | Owner-verified film media' \
+              --notes 'Owner-created film masters, trailer and editable captions. Publish only with the one exact SHA-pinned media ZIP; automated HTTPS + real-browser QA is required before the OSGARD premiere is considered live.'
+            echo 'Draft media release created. No MP4 was published.'
+          fi
+
+  publish-real-media:
+    if: (github.event_name == 'release' && github.event.action == 'published' && github.event.release.tag_name == 'osa-cinema-v50-media-20261027') || (github.event_name == 'workflow_dispatch' && inputs.retry_verified_release == true && github.ref == 'refs/heads/master')
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    env:
+      RELEASE_TAG: osa-cinema-v50-media-20261027
+      MEDIA_ASSET: OSA_CINEMA_V50_MEDIA_ONLY_20261027.zip
+      MEDIA_SHA256: f501e1dec7e8ad83ac135e67ba99d16629246f0a4ca519e5ab2073b904724166
+    steps:
+      - uses: actions/checkout@v4
+      - name: Retrieve the one immutable owner media asset and verify 12 files
+        id: intake
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/osa-v50-qa" "$RUNNER_TEMP/osa-v50-media" "$RUNNER_TEMP/osa-v50-unpacked"
+          gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" \
+            --pattern "$MEDIA_ASSET" --dir "$RUNNER_TEMP/osa-v50-media"
+          test -f "$RUNNER_TEMP/osa-v50-media/$MEDIA_ASSET"
+          echo "$MEDIA_SHA256  $RUNNER_TEMP/osa-v50-media/$MEDIA_ASSET" | sha256sum -c -
+          python3 -m zipfile -e "$RUNNER_TEMP/osa-v50-media/$MEDIA_ASSET" "$RUNNER_TEMP/osa-v50-unpacked"
+          python3 scripts/osa-cinema-v49-publisher.py verify \
+            --source "$RUNNER_TEMP/osa-v50-unpacked/film" \
+            --pin docs/OSA_CINEMA_V48_LOCAL_MEDIA_CANDIDATE_20261027.json
+          python3 - <<'PY'
+          from pathlib import Path
+          import zipfile, os
+          archive=Path(os.environ['RUNNER_TEMP'])/'osa-v50-media'/os.environ['MEDIA_ASSET']
+          with zipfile.ZipFile(archive) as z:
+            expected={f'film/{name}' for name in [
+              'index.html','manifest.json','SHA256SUMS.txt','assets/osa-premiere-poster.jpg',
+              'masters/osa-v48-directors-ru.mp4','masters/osa-v48-directors-en.mp4',
+              'masters/osa-v48-trailer-ru.mp4','masters/osa-v48-trailer-en.mp4',
+              'captions/osa-v48-directors-ru.vtt','captions/osa-v48-directors-en.vtt',
+              'captions/osa-v48-trailer-ru.vtt','captions/osa-v48-trailer-en.vtt']}
+            actual=set(z.namelist())
+            assert actual==expected, 'Unexpected/missing media ZIP entries'
+            assert z.testzip() is None, 'ZIP CRC failure'
+          print('PASS 12 exact files, zero untrusted extras')
+          PY
+      - name: Prepare existing OSGARD SSH channel
+        id: sshconf
+        env:
+          DEPLOY_HOST: ${{ secrets.OSGARD_DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.OSGARD_DEPLOY_USER }}
+          DEPLOY_KEY: ${{ secrets.OSGARD_DEPLOY_KEY }}
+        run: |
+          set -euo pipefail
+          test -n "$DEPLOY_HOST" && test -n "$DEPLOY_USER" && test -n "$DEPLOY_KEY"
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$DEPLOY_KEY" > ~/.ssh/osgard_deploy
+          chmod 600 ~/.ssh/osgard_deploy
+          ssh-keyscan -T 10 -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+          test -s ~/.ssh/known_hosts
+      - name: Send exact archive and trusted publisher to private VPS staging
+        id: upload
+        env:
+          DEPLOY_HOST: ${{ secrets.OSGARD_DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.OSGARD_DEPLOY_USER }}
+        run: |
+          set -euo pipefail
+          remote_dir="osa-cinema-transfer-$GITHUB_RUN_ID"
+          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -i ~/.ssh/osgard_deploy \
+            "$DEPLOY_USER@$DEPLOY_HOST" "mkdir -m 700 -p '$remote_dir'"
+          scp -o BatchMode=yes -i ~/.ssh/osgard_deploy \
+            "$RUNNER_TEMP/osa-v50-media/$MEDIA_ASSET" \
+            scripts/osa-cinema-v50-vps.sh \
+            scripts/osa-cinema-v49-publisher.py \
+            scripts/osa-cinema-v49-finalize.py \
+            docs/OSA_CINEMA_V48_LOCAL_MEDIA_CANDIDATE_20261027.json \
+            "$DEPLOY_USER@$DEPLOY_HOST:$remote_dir/"
+          ssh -o BatchMode=yes -i ~/.ssh/osgard_deploy "$DEPLOY_USER@$DEPLOY_HOST" \
+            "cd '$remote_dir' && echo '$MEDIA_SHA256  $MEDIA_ASSET' | sha256sum -c -"
+      - name: Stage safely and route video without frontend container recreation
+        id: stage
+        env:
+          DEPLOY_HOST: ${{ secrets.OSGARD_DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.OSGARD_DEPLOY_USER }}
+        run: |
+          set -euo pipefail
+          ssh -o BatchMode=yes -i ~/.ssh/osgard_deploy "$DEPLOY_USER@$DEPLOY_HOST" \
+            "bash 'osa-cinema-transfer-$GITHUB_RUN_ID/osa-cinema-v50-vps.sh' stage '$GITHUB_RUN_ID'"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install real playback test dependencies
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+      - name: Independently read all 186 MB via actual OSGARD HTTPS
+        run: |
+          python3 scripts/osa-cinema-v49-public-verify.py \
+            --report "$RUNNER_TEMP/osa-v50-qa/production-http.json"
+      - name: Real RU/EN film, captions, seek and trailer on desktop/mobile
+        run: |
+          set -euo pipefail
+          npx playwright test --config playwright.osa-cinema-v49-live.config.mjs \
+            --workers=1 --reporter=json > "$RUNNER_TEMP/osa-v50-qa/playwright.json"
+      - name: Generate a browser receipt only from exact real-browser PASS
+        env:
+          OSA_V49_SOURCE_SHA: ${{ github.sha }}
+        run: |
+          node scripts/osa-cinema-v49-browser-receipt.mjs \
+            "$RUNNER_TEMP/osa-v50-qa/playwright.json" \
+            "$RUNNER_TEMP/osa-v50-qa/production-browser.json"
+      - name: Publish final receipt into actual active Nginx only after both proofs
+        id: finalize
+        env:
+          DEPLOY_HOST: ${{ secrets.OSGARD_DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.OSGARD_DEPLOY_USER }}
+        run: |
+          set -euo pipefail
+          remote_dir="osa-cinema-transfer-$GITHUB_RUN_ID"
+          scp -o BatchMode=yes -i ~/.ssh/osgard_deploy \
+            "$RUNNER_TEMP/osa-v50-qa/production-http.json" \
+            "$RUNNER_TEMP/osa-v50-qa/production-browser.json" \
+            "$DEPLOY_USER@$DEPLOY_HOST:$remote_dir/"
+          ssh -o BatchMode=yes -i ~/.ssh/osgard_deploy "$DEPLOY_USER@$DEPLOY_HOST" \
+            "bash '$remote_dir/osa-cinema-v50-vps.sh' finalize '$GITHUB_RUN_ID'"
+          python3 - <<'PY'
+          import json, urllib.request
+          url='https://osgard.world/osa-cinema/premiere/release.json'
+          req=urllib.request.Request(url, headers={'Cache-Control':'no-cache'})
+          with urllib.request.urlopen(req, timeout=25) as response:
+            data=json.load(response)
+          assert data['status']=='PUBLIC_BROWSER_QA_PASS'
+          assert data['publicationAuthorized'] is True
+          assert data['assetCount']==8
+          assert data['paidCheckoutEnabled'] is False
+          print('PUBLIC_PREMIERE_VERIFIED: film page, exact bytes, real browser and final receipt PASS')
+          PY
+      - name: Roll back this exact release if any public acceptance step fails
+        if: failure() && steps.upload.outcome == 'success'
+        env:
+          DEPLOY_HOST: ${{ secrets.OSGARD_DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.OSGARD_DEPLOY_USER }}
+        run: |
+          set -euo pipefail
+          ssh -o BatchMode=yes -i ~/.ssh/osgard_deploy "$DEPLOY_USER@$DEPLOY_HOST" \
+            "bash 'osa-cinema-transfer-$GITHUB_RUN_ID/osa-cinema-v50-vps.sh' rollback '$GITHUB_RUN_ID'"
+      - name: Retain exact QA evidence without credentials or media bytes
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: osa-cinema-v50-owner-premiere-evidence
+          path: |
+            ${{ runner.temp }}/osa-v50-qa/
+            test-results/
+          retention-days: 30
+          if-no-files-found: warn
