@@ -35,7 +35,8 @@ test('V48 software-only packet never claims public premiere or human caption rev
  assert.equal(v48.checks.localHttpRange,61)
  assert.equal(v48.checks.chromium.status,'BLOCKED_BY_ADMINISTRATOR_NOT_PASS')
  assert.equal(v48.checks.fourCaptionReadingSpeedWarnings,4)
- assert.match(v48.sourceBaselineSha,HEX)
+ assert.match(v48.sourceBaselineSha,/^[0-9a-f]{40}$/)
+ assert.equal(v48.sourceBaselineSha,'a633907b06a5c7c0b0e88a81165946b1cf66ca83')
 })
 test('historical V20 production guard remains a hard NO_GO',()=>{
  assert.equal(v20.publicationAuthorized,false)
