@@ -80,6 +80,8 @@ var stage_kicker: Label
 var stage_live: Label
 var stage_readout: Label
 var stage_edition: Label
+# W61: source-only cinematic mission phase indicators; no gameplay mutation.
+var mission_segments: Array[ColorRect] = []
 # Read-only browser status for assistive technology and genuine WebGL input QA.
 # Never receives commands, never stores metrics and never sends network data.
 var _web_state_element: Variant = null
@@ -184,7 +186,7 @@ func _publish_web_accessibility(snap: Dictionary) -> void:
     var event_id: int = int(snap["event_id"])
     if event_id != _web_last_event_id:
         _web_last_event_id = event_id
-        _web_state_element.textContent = "OSGARD simulated lab, " + str(state["feedback"]) + ", mission " + str(state["mission"] + 1) + ", step " + str(state["step"])
+        _web_state_element.textContent = "Last Frontier simulated lab, " + str(state["feedback"]) + ", mission " + str(state["mission"] + 1) + ", step " + str(state["step"])
 
 func _panel_style(base: Color = PANEL, outline: Color = Color("2e3b43"), radius: int = 8) -> StyleBoxFlat:
     var skin := StyleBoxFlat.new()
@@ -324,6 +326,22 @@ func _make_cinematic_overlay(parent: Control) -> void:
     stage_live = _overlay_label(bottom, "LiveChamberState", "CHAMBER / STANDBY", 13, MINT)
     stage_title = _overlay_label(bottom, "ReactorIdentity", "OBSIDIAN CORE  /  A7", 26, WHITE)
     stage_readout = _overlay_label(bottom, "ReactorRealTelemetry", "ROTOR   1480 RPM     ·     HATCH   SEALED", 13, COPPER)
+    # Five native, read-only mission-phase segments. They follow the existing
+    # simulation snapshot, preserving its win/loss rules and safe interlocks.
+    var phase_strip := HBoxContainer.new()
+    phase_strip.name = "LastFrontierMissionPhaseStrip"
+    phase_strip.add_theme_constant_override("separation", 6)
+    phase_strip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    bottom.add_child(phase_strip)
+    for i in range(5):
+        var segment := ColorRect.new()
+        segment.name = "Phase%02d" % (i + 1)
+        segment.color = Color("30414a")
+        segment.custom_minimum_size = Vector2(24, 4)
+        segment.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+        segment.mouse_filter = Control.MOUSE_FILTER_IGNORE
+        phase_strip.add_child(segment)
+        mission_segments.append(segment)
 
 func _create_interface() -> void:
     var backdrop := ColorRect.new()
@@ -353,7 +371,7 @@ func _create_interface() -> void:
     pad.add_child(body)
 
     var top := _flow(body)
-    brand_mark = _label(top, "OSGARD   /   OBSIDIAN PROTOCOL", 23, COPPER)
+    brand_mark = _label(top, _t("brand_desktop"), 23, COPPER)
     brand_mark.name = "ObsidianBrandWordmark"
     brand_mark.autowrap_mode = TextServer.AUTOWRAP_OFF
     brand_mark.clip_text = true
@@ -365,7 +383,7 @@ func _create_interface() -> void:
     var stage_section := _panel(body)
     var stage_frame := stage_section.get_parent() as PanelContainer
     stage_frame.add_theme_stylebox_override("panel", _panel_style(Color("080d13"), Color("49545a"), 12))
-    stage_section_heading = _label(stage_section, "OBSIDIAN FACILITY  //  REACTOR A7    •    SECURE OBSERVATION", 12, COPPER)
+    stage_section_heading = _label(stage_section, _t("stage_facility"), 12, COPPER)
     stage_section_heading.name = "A7CinemaSectionHeading"
     stage_section_heading.autowrap_mode = TextServer.AUTOWRAP_OFF
     stage_section_heading.clip_text = true
@@ -547,8 +565,8 @@ func _layout_stage_for_screen() -> void:
     var narrow: bool = size.x < 640.0
     stage_edition.visible = size.x >= 1050.0
     _sync_camera_rail()
-    stage_section_heading.text = "A7  /  SECURE OBSERVATION" if narrow else "OBSIDIAN FACILITY  //  REACTOR A7    •    SECURE OBSERVATION"
-    brand_mark.text = "OSGARD  /  OBSIDIAN" if narrow else "OSGARD   /   OBSIDIAN PROTOCOL"
+    stage_section_heading.text = _t("stage_narrow") if narrow else _t("stage_facility")
+    brand_mark.text = _t("brand_mobile") if narrow else _t("brand_desktop")
     brand_mark.add_theme_font_size_override("font_size", 18 if narrow else 23)
     heading.add_theme_font_size_override("font_size", 21 if narrow else 26)
     stage_title.add_theme_font_size_override("font_size", 20 if narrow else 26)
@@ -764,9 +782,12 @@ func _refresh() -> void:
         return
     var snap: Dictionary = core.snapshot()
     var locale := str(core.settings["locale"])
+    var narrow_brand: bool = size.x < 640.0
+    _assign(brand_mark, _t("brand_mobile") if narrow_brand else _t("brand_desktop"))
+    _assign(stage_section_heading, _t("stage_narrow") if narrow_brand else _t("stage_facility"))
     _assign(heading, "REACTOR A7" if size.x < 640.0 else "REACTOR A7   /   OBSIDIAN PROTOCOL")
     _assign(lead, _t("lead"))
-    _assign(footer, _t("sim") + "   ·   OBSIDIAN PROTOCOL / GODOT 4.4.1 / LOCAL ONLY")
+    _assign(footer, _t("sim") + "   ·   LAST FRONTIER / GODOT 4.4.1 / LOCAL ONLY")
     # Keep the actual language code readable on minimal web fonts.
     lang_btn.text = "RU" if locale == "ru" else "EN"
     quality_btn.text = _t("quality") + ": " + str(core.settings["quality"]).to_upper()
@@ -799,6 +820,13 @@ func _refresh() -> void:
     # True in-scene state, never a fake video or static rendered mockup.
     _assign(stage_live, "PROTOCOL / COMPLETE" if bool(snap["complete"]) else "ALERT / CHECK SAFETY" if bool(snap["last_error"]) else "A7 / LIVE DIAGNOSTICS" if bool(snap["active"]) else "A7 / SECURE STANDBY")
     stage_live.add_theme_color_override("font_color", CORAL if bool(snap["last_error"]) else MINT)
+    # The indicators display accepted simulation state only: they never
+    # send commands, affect scores or pretend physical-machine telemetry.
+    var phase_index: int = clampi(int(snap["step"]), 0, 4)
+    for i in range(mission_segments.size()):
+        var completed: bool = bool(snap["complete"])
+        var active_phase: bool = bool(snap["active"]) and i <= phase_index
+        mission_segments[i].color = CORAL if bool(snap["last_error"]) and i == phase_index else MINT if completed or active_phase else Color("30414a")
     # W58 review: prevent a stranded slash on the 320/390px true 3D HUD.
     # Preserve desktop text, numeric precision, RPM, hatch and score.
     var stage_groups: PackedStringArray = PackedStringArray([
