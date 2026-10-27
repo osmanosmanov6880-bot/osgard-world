@@ -45,7 +45,7 @@ func _run() -> void:
     _assert(game.stage_edition.visible, "Full desktop width shows genuine simulation status")
     _assert(game.stage_edition.size.y <= 32.0, "Desktop simulator badge has one-line height")
     _assert(game.stage_kicker.size.y <= 34.0, "Desktop classification is not vertically stacked")
-    _assert(game.brand_mark.text.find("PROTOCOL") >= 0, "Full desktop preserves original identity")
+    _assert(game.brand_mark.text == game._t("brand_desktop"), "Full desktop shows approved localized game identity")
     _assert(game.mission_btns.size() == 6 and game.view_btns.size() == 3, "Original game controls retained")
     game.size = Vector2(390, 844)
     game._layout_stage_for_screen()
@@ -53,9 +53,9 @@ func _run() -> void:
     await process_frame
     await process_frame
     _assert(not game.stage_edition.visible, "Phone hides secondary simulation badge")
-    _assert(game.brand_mark.text == "OSGARD  /  OBSIDIAN", "Phone shows compact intentional brand")
+    _assert(game.brand_mark.text == game._t("brand_mobile"), "Phone shows compact LAST FRONTIER identity")
     _assert(game.heading.text == "REACTOR A7", "Phone headline avoids multiple wasted lines")
-    _assert(game.stage_section_heading.text == "A7  /  SECURE OBSERVATION", "Phone stage classification shortened")
+    _assert(game.stage_section_heading.text == game._t("stage_narrow"), "Phone stage classification remains localized")
     _assert(game.stage_shell.custom_minimum_size.y <= 310.0, "Phone reserves room for working controls")
     _assert(game.control_grid.columns == 1, "Phone operator console remains single column")
     game.core.clear_data()
