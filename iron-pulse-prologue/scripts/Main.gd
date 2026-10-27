@@ -16,6 +16,23 @@ const COPY := {
         "subtitle": "BLACKOUT  /  ГЛАВА 00",
         "intro": "СИГНАЛ БЕДСТВИЯ: СЕКТОР A7\n\nВ реакторном комплексе пропало питание. Люди заблокированы внутри. У вас две независимые линии питания, но три системы: охлаждение, жизнеобеспечение и аварийные двери.\n\nВыберите, чем пожертвовать на время, чтобы открыть путь к эвакуации.\n\nWASD — движение    SHIFT — бег\nМЫШЬ — обзор    E — действие\nL — язык    F — фонарь    ESC — пауза\nM — звук    V — плавная камера    G — графика\n\nЭто вымышленная игра, не инструкция по эксплуатации оборудования.",
         "start": "НАЧАТЬ ОПЕРАЦИЮ", "resume": "ПРОДОЛЖИТЬ", "restart": "ПОВТОРИТЬ",
+        "scenario_blackout": "01 / GRID", "scenario_thermal": "02 / HEAT", "scenario_breach": "03 / AIR",
+        "brief_blackout": "ОТКЛЮЧЕНИЕ ПИТАНИЯ: два контура, три системы. Изучите маршрут эвакуации.",
+        "brief_thermal": "ТЕПЛОВОЙ КАСКАД: опасный перегрев и повторные импульсы. E — долгий ремонт, Q — быстрый сброс ценой кислорода и здоровья.",
+        "brief_breach": "РАЗГЕРМЕТИЗАЦИЯ: кислород утекает даже с LIFE. E — полная герметизация, Q — быстрая заплатка с остаточной утечкой.",
+        "repair_thermal": "02 / Стабилизировать теплообменник: E — 15 с / Q — аварийный сброс",
+        "repair_breach": "02 / Герметизировать утечку: E — 10 с / Q — экстренная заплатка",
+        "thermal_stabilized": "Контур стабилизирован: долгий ремонт сохранил ресурсы экипажа.",
+        "thermal_purged": "Срочный сброс тепла. Потерян кислород, экипаж пострадал.",
+        "breach_sealed": "Утечка устранена полностью.",
+        "breach_patched": "Быстрая заплатка: экипаж пострадал, осталась микроутечка.",
+        "thermal_pulse": "ТЕПЛОВОЙ ИМПУЛЬС! Повторный перегрев требует контроля.",
+        "choice_hint": "{name}  {distance} м  /  [E] ТЩАТЕЛЬНО   [Q] СРОЧНО",
+        "result_path": "Решение: {method}  /  Сценарий: {scenario}",
+        "method_deep_stabilize": "ТОЧНАЯ СТАБИЛИЗАЦИЯ", "method_rapid_purge": "АВАРИЙНЫЙ СБРОС",
+        "method_full_seal": "ПОЛНАЯ ГЕРМЕТИЗАЦИЯ", "method_rapid_patch": "БЫСТРАЯ ЗАПЛАТКА",
+        "method_standard": "СТАНДАРТНЫЙ РЕМОНТ",
+        "scenario_title_blackout": "IRON PULSE / BLACKOUT", "scenario_title_thermal": "IRON PULSE / HEAT", "scenario_title_breach": "IRON PULSE / AIR",
         "pause": "ПАУЗА", "victory": "ЭВАКУАЦИЯ УСПЕШНА", "failure": "МИССИЯ ПРОВАЛЕНА",
         "scan": "01  /  Просканировать реактор A7", "repair": "02  /  Восстановить охлаждение",
         "charge": "03  /  Зарядить аварийную дверь — перенаправьте одну линию на DOOR",
@@ -51,6 +68,23 @@ const COPY := {
         "subtitle": "BLACKOUT  /  CHAPTER 00",
         "intro": "DISTRESS SIGNAL: SECTOR A7\n\nPower has failed across the reactor complex. Your crew is trapped. You have two independent power buses but three systems: cooling, life support and emergency doors.\n\nChoose what to deprioritize briefly to unlock the evacuation path.\n\nWASD — move    SHIFT — sprint\nMOUSE — look    E — interact\nL — language    F — flashlight    ESC — pause\nM — audio    V — reduced motion    G — graphics\n\nFictional game only. Not real equipment instructions.",
         "start": "BEGIN OPERATION", "resume": "RESUME", "restart": "RESTART",
+        "scenario_blackout": "01 / GRID", "scenario_thermal": "02 / HEAT", "scenario_breach": "03 / AIR",
+        "brief_blackout": "POWER GRID FAILURE: two buses, three systems. Learn the safe route.",
+        "brief_thermal": "THERMAL CASCADE: dangerous heat and recurring pulses. E — careful 15s repair; Q — rapid purge with resource loss.",
+        "brief_breach": "OXYGEN BREACH: air leaks even with LIFE powered. E — permanent 10s seal; Q — quick patch with a residual leak.",
+        "repair_thermal": "02 / Stabilize heat exchanger: E — 15s / Q — rapid purge",
+        "repair_breach": "02 / Seal oxygen breach: E — 10s / Q — rapid patch",
+        "thermal_stabilized": "Core stabilized. Careful repair preserved crew resources.",
+        "thermal_purged": "Emergency heat purge. Oxygen and crew condition sacrificed.",
+        "breach_sealed": "Permanent seal complete: oxygen leak eliminated.",
+        "breach_patched": "Rapid patch: crew injured; micro-leak remains.",
+        "thermal_pulse": "THERMAL PULSE! Watch recurring temperature spikes.",
+        "choice_hint": "{name}  {distance} m  /  [E] CAREFUL   [Q] FAST",
+        "result_path": "Solution: {method}  /  Scenario: {scenario}",
+        "method_deep_stabilize": "PRECISION STABILIZATION", "method_rapid_purge": "EMERGENCY PURGE",
+        "method_full_seal": "PERMANENT SEAL", "method_rapid_patch": "RAPID PATCH",
+        "method_standard": "STANDARD REPAIR",
+        "scenario_title_blackout": "IRON PULSE / BLACKOUT", "scenario_title_thermal": "IRON PULSE / HEAT", "scenario_title_breach": "IRON PULSE / AIR",
         "pause": "PAUSED", "victory": "EVACUATION COMPLETE", "failure": "MISSION FAILED",
         "scan": "01  /  Scan the A7 reactor core", "repair": "02  /  Restore reactor cooling",
         "charge": "03  /  Charge the bulkhead — redirect one bus to DOOR",
@@ -122,6 +156,9 @@ var intro_panel: PanelContainer
 var intro_title: Label
 var intro_body: Label
 var intro_button: Button
+var scenario_buttons: Dictionary = {}
+var scenario_brief: Label
+var selected_scenario: String = "blackout"
 var pause_panel: PanelContainer
 var pause_title: Label
 var resume_button: Button
@@ -217,6 +254,10 @@ func _publish_web_state() -> void:
     state["content_scale_size"] = [get_window().content_scale_size.x, get_window().content_scale_size.y]
     state["touch_controls_visible"] = touch_ui.visible
     state["intro_visible"] = intro_panel.visible
+    var scenario_rects: Dictionary = {}
+    for scenario_key in scenario_buttons:
+        scenario_rects[str(scenario_key)] = _hud_rect(scenario_buttons[scenario_key] as Control)
+    state["scenario_button_rects"] = scenario_rects
     state["end_visible"] = end_panel.visible
     state["quality_mode"] = quality_mode
     state["reduced_motion"] = reduced_motion
