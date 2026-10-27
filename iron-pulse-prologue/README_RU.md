@@ -47,14 +47,14 @@ godot --headless --path iron-pulse-prologue --script res://tests/test_scene.gd
 
 ```bash
 mkdir -p iron-pulse-prologue/build/web
-godot --headless --path iron-pulse-prologue --export-release Web iron-pulse-prologue/build/web/index.html
+(cd iron-pulse-prologue && godot --headless --path . --export-release Web build/web/index.html)
 ```
 
 Для Windows:
 
 ```bash
 mkdir -p iron-pulse-prologue/build/windows
-godot --headless --path iron-pulse-prologue --export-release "Windows Desktop" iron-pulse-prologue/build/windows/IRON_PULSE_BLACKOUT.exe
+(cd iron-pulse-prologue && godot --headless --path . --export-release "Windows Desktop" build/windows/IRON_PULSE_BLACKOUT.exe)
 ```
 
 Публикация: test-only CI artifacts, **не продуктивный выпуск**. W58 девять проверок и исторические SHA неприменимы автоматически к новой игре. Включение этой сцены в основное меню и выпуск на Steam — отдельный review gate.
