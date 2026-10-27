@@ -1,0 +1,120 @@
+name: CITY REIGN C1-C5 exact native gameplay acceptance - NO DEPLOY
+on:
+  push:
+    branches:
+      - feat/city-reign-brand-transition-20261027
+    paths:
+      - 'godot/empire-omega/**'
+      - '.github/workflows/city-reign-native-acceptance.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: city-reign-native-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  exact-c1-c5-real-godot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 24
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - name: Pin exact original CITY REIGN SHA, never master or synthetic PR merge
+        shell: bash
+        env:
+          EXPECTED_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+          test "${#EXPECTED_SHA}" -eq 40
+          test "$(git branch --show-current)" != "master"
+          mkdir -p city-reign-native-evidence
+          printf '%s\n' "$EXPECTED_SHA" > city-reign-native-evidence/exact-candidate-sha.txt
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: false
+      - name: Strict actual Godot 4.4.1 import and original audio
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 godot/empire-omega/tools/generate_audio.py
+          python3 godot/empire-omega/tools/generate_patrol_audio.py
+          bash scripts/omega-strict-godot-import.sh godot/empire-omega \
+            | tee city-reign-native-evidence/authentic-import.log
+      - name: Execute four NEW native game regressions on exact checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          for fixture in \
+            v106_city_reign_world_consequences \
+            v107_city_reign_impact_story \
+            v108_city_reign_unique_landmarks \
+            v109_city_reign_policies_crises; do
+            log="city-reign-native-evidence/${fixture}.log"
+            echo "Testing original game source: $fixture"
+            timeout --signal=TERM --kill-after=6s 130s godot --headless \
+              --path godot/empire-omega --script "res://tests/${fixture}.gd" | tee "$log"
+            case "$fixture" in
+              v106*) marker="CITY REIGN C1 real Godot world consequences:" ;;
+              v107*) marker="CITY REIGN C2 impact and story:" ;;
+              v108*) marker="CITY REIGN C3 distinct civic 3D:" ;;
+              v109*) marker="CITY REIGN C5 real policy and emergencies:" ;;
+            esac
+            grep -Fq "$marker" "$log"
+            if grep -nE 'SCRIPT ERROR:|Parse Error:|FAIL:| [1-9][0-9]* FAIL' "$log"; then
+              echo "::error::Native CITY REIGN suite failed: $fixture"
+              exit 1
+            fi
+          done
+      - name: Provenance SHA-256 and explicit marketing/physical HOLD
+        shell: bash
+        env:
+          EXPECTED_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib, json, os
+          from pathlib import Path
+          base = Path('godot/empire-omega')
+          paths = [
+            'project.godot',
+            'scripts/hud.gd',
+            'scripts/main.gd',
+            'scripts/project_landmarks.gd',
+            'scripts/city_reign_story.gd',
+            'scripts/city_reign_impact.gd',
+            'scripts/city_reign_crisis_scene.gd',
+            'tests/v106_city_reign_world_consequences.gd',
+            'tests/v107_city_reign_impact_story.gd',
+            'tests/v108_city_reign_unique_landmarks.gd',
+            'tests/v109_city_reign_policies_crises.gd',
+          ]
+          proof = {
+            'source_commit': os.environ['EXPECTED_SHA'],
+            'engine': 'Godot 4.4.1',
+            'native_test_suites': 4,
+            'native_artifact_kind': 'real-Godot-candidate',
+            'source_sha256': {
+              name: hashlib.sha256((base/name).read_bytes()).hexdigest()
+              for name in paths
+            },
+            'physical_device_results': False,
+            'independent_human_playtests': False,
+            'production_authorized': False,
+            'photorealistic_aaa_claim': False,
+          }
+          target = Path('city-reign-native-evidence/source-manifest.json')
+          target.write_text(json.dumps(proof, indent=2, ensure_ascii=False)+'\n')
+          print('SOURCE-LOCKED NATIVE C1-C5', proof['source_commit'])
+          PY
+      - name: Preserve original native results including failures, never deploy
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: city-reign-source-locked-native-c1-c5-${{ github.run_id }}
+          path: city-reign-native-evidence/
+          if-no-files-found: warn
+          retention-days: 14
