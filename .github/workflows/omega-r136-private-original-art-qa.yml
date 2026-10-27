@@ -1,0 +1,51 @@
+name: "EMPIRE Omega R136 PRIVATE exact-source original ART parity (NO ART GO / NO DEPLOY)"
+on:
+  pull_request:
+    paths:
+      - 'scripts/omega-r136-original-reference-parity.py'
+      - 'scripts/test_omega_r136_original_reference_parity.py'
+      - 'godot/empire-omega/docs/R136-PRIVATE-ORIGINAL-REFERENCE-ART-QA-RU.md'
+      - '.github/workflows/omega-r136-private-original-art-qa.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: omega-r136-private-art-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+jobs:
+  fail-closed-original-art-intake-contract:
+    name: "13 synthetic protocol tests only; empty originals => HOLD"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Require source-bound private paths and reject fake art approval
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m py_compile scripts/omega-r136-original-reference-parity.py scripts/test_omega_r136_original_reference_parity.py
+          python3 scripts/test_omega_r136_original_reference_parity.py
+          ! grep -E '(production_authorized.*True|aaa_art_approved.*True)' scripts/omega-r136-original-reference-parity.py
+          echo "R136 PRIVATE ART protocol PASS. Original user files not present; ART / PRODUCTION HOLD."
+      - name: Fail closed on ORIGINAL absent user references, never create synthetic approvals
+        shell: bash
+        run: |
+          set -euo pipefail
+          rc=0
+          python3 scripts/omega-r136-original-reference-parity.py audit --root /tmp/omega-r136-no-user-references >/tmp/r136-output 2>/tmp/r136-errors || rc=$?
+          test "$rc" -eq 1
+          grep -q '"status": "HOLD"' /tmp/r136-errors
+          test ! -d /tmp/omega-r136-no-user-references
+          echo "R136 missing ORIGINAL reference evidence correctly REFUSED."
+      - name: Confirm zero production transport/upload and no artifact leakage
+        shell: bash
+        run: |
+          set -euo pipefail
+          ! grep -E '^[[:space:]]*-[[:space:]]*uses:.*(upload-artifact|ssh|deploy)' .github/workflows/omega-r136-private-original-art-qa.yml
+          ! grep -E '^[[:space:]]*-[[:space:]]*run:.*(scp|rsync|deploy-frontend)' .github/workflows/omega-r136-private-original-art-qa.yml
+          echo "R136 PASS: no original artwork or private review uploaded to CI."
