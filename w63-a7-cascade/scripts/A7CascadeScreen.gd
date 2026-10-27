@@ -38,7 +38,7 @@ const RU := {
     "failed": "ПОТЕРЯ КОНТРОЛЯ. Пересмотрите последовательность.",
     "unstable": "ШЕСТЬ ЦИКЛОВ ПРОЙДЕНО, НО УЗЕЛ НЕ СТАБИЛИЗИРОВАН.",
     "won": "A7 СТАБИЛИЗИРОВАН. Вы удержали систему.",
-    "keys": "1-5: ДЕЙСТВИЯ  |  C: КАМЕРА  |  Q: КАЧЕСТВО  |  M: АНИМАЦИЯ  |  L: ЯЗЫК  |  S: ЗВУК  |  R: ПЕРЕЗАПУСК",
+    "keys": "1-5: ДЕЙСТВИЯ  |  F: ХОДЬБА  |  E: ПУЛЬТ  |  C: КАМЕРА  |  Q: КАЧЕСТВО  |  M: АНИМАЦИЯ  |  L: ЯЗЫК  |  S: ЗВУК/ШАГ НАЗАД  |  R: ЗАНОВО",
     "objective": "ЦЕЛЬ: ТЕПЛО И ДАВЛЕНИЕ <= 75; ГЕРМЕТИЧНОСТЬ И СИГНАЛ >= 50; ЭНЕРГИЯ >= 30; ЦЕЛОСТНОСТЬ >= 55.",
     "stage": "A7 / ЖИВАЯ 3D-КАМЕРА  •  ВЫМЫШЛЕННЫЙ ОБЪЕКТ",
     "camera0": "01 / ОБЩИЙ", "camera1": "02 / ФРОНТ", "camera2": "03 / БОКОВОЙ",
@@ -47,6 +47,14 @@ const RU := {
     "visual": "ТЕПЛО %d   •   ДАВЛЕНИЕ %d   •   ЭНЕРГИЯ %d",
     "sound_on": "ЗВУК / ВКЛ", "sound_off": "ЗВУК / ВЫКЛ",
     "preview_default": "ВЫБЕРИТЕ ДЕЙСТВИЕ: ПОСЛЕДСТВИЯ ПОКАЗАНЫ В ИГРОВЫХ ЕДИНИЦАХ.",
+    "walk_enter": "F / ПРОЙТИ В КОМПЛЕКС", "walk_exit": "F / ОБЩАЯ КАМЕРА",
+    "walk_forward": "↑ ВПЕРЁД", "walk_back": "↓ НАЗАД",
+    "walk_left": "← ВЛЕВО", "walk_right": "→ ВПРАВО",
+    "walk_use": "E / ИСПОЛЬЗОВАТЬ ПУЛЬТ",
+    "walk_coolant": "ОТСЕК ОХЛАЖДЕНИЯ", "walk_pressure": "ОТСЕК ДАВЛЕНИЯ",
+    "walk_central": "ЦЕНТРАЛЬНЫЙ УЗЕЛ",
+    "walk_status": "ОПЕРАТОР: %s  •  ДЕЙСТВИЕ E: %s",
+    "walk_hint": "WASD / ХОДЬБА  •  E / РАБОТА С ПУЛЬТОМ  •  F / КАМЕРА",
 }
 const EN := {
     "brand": "LAST FRONTIER  /  A7",
@@ -71,7 +79,7 @@ const EN := {
     "failed": "CONTAINMENT LOST. Reconsider your sequence.",
     "unstable": "SIX CYCLES SURVIVED, BUT THE SYSTEM IS UNSTABLE.",
     "won": "A7 STABILIZED. You held the frontier.",
-    "keys": "1-5: ACTIONS  |  C: CAMERA  |  Q: QUALITY  |  M: MOTION  |  L: LANGUAGE  |  S: SOUND  |  R: RESTART",
+    "keys": "1-5: ACTIONS  |  F: WALK  |  E: CONSOLE  |  C: CAMERA  |  Q: QUALITY  |  M: MOTION  |  L: LANGUAGE  |  S: SOUND/BACK  |  R: RESTART",
     "objective": "TARGET: HEAT AND PRESSURE <= 75; SEAL AND SIGNAL >= 50; ENERGY >= 30; CONTAINMENT >= 55.",
     "stage": "A7 / TRUE NATIVE 3D VIEW  •  FICTIONAL FACILITY",
     "camera0": "01 / WIDE", "camera1": "02 / FRONT", "camera2": "03 / SIDE",
@@ -80,6 +88,14 @@ const EN := {
     "visual": "HEAT %d   •   PRESSURE %d   •   ENERGY %d",
     "sound_on": "SOUND / ON", "sound_off": "SOUND / OFF",
     "preview_default": "CHOOSE AN ACTION: FORECASTS ARE FICTIONAL GAME UNITS.",
+    "walk_enter": "F / ENTER FACILITY", "walk_exit": "F / CINEMATIC VIEW",
+    "walk_forward": "↑ FORWARD", "walk_back": "↓ BACK",
+    "walk_left": "← LEFT", "walk_right": "→ RIGHT",
+    "walk_use": "E / USE CONSOLE",
+    "walk_coolant": "COOLANT BAY", "walk_pressure": "PRESSURE BAY",
+    "walk_central": "CENTRAL CORE",
+    "walk_status": "OPERATOR: %s  •  E ACTION: %s",
+    "walk_hint": "WASD / WALK  •  E / USE CONSOLE  •  F / CAMERA",
 }
 
 var model: A7CascadeCore = A7CascadeCore.new()
@@ -119,6 +135,15 @@ var narrative_title: Label
 var narrative_body: Label
 var forecast_label: Label
 var _previewed_action: String = ""
+# W67 optional real first-person 3D operator. Original W63 rules untouched.
+var walk_button: Button
+var walk_action_button: Button
+var walk_status: Label
+var walk_direction_buttons: Dictionary = {}
+var _walk_direction_state: Dictionary = {
+    "forward": false, "back": false, "left": false, "right": false
+}
+var _walk_report_elapsed: float = 0.0
 
 func _ready() -> void:
     set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -249,6 +274,27 @@ func _build() -> void:
     motion_button.custom_minimum_size = Vector2(158, 42)
     sound_button = _button(cinema_controls, "", _toggle_sound)
     sound_button.custom_minimum_size = Vector2(138, 42)
+    walk_button = _button(cinema_controls, "", _toggle_walk)
+    walk_button.name = "A7TrueFirstPersonModeToggle"
+    walk_button.custom_minimum_size = Vector2(174, 42)
+    walk_action_button = _button(cinema_controls, "", _walk_interact)
+    walk_action_button.name = "A7PhysicalContextConsoleAction"
+    walk_action_button.custom_minimum_size = Vector2(176, 42)
+    var walk_controls := HFlowContainer.new()
+    walk_controls.name = "A7ActualHoldToMoveMobileRail"
+    walk_controls.add_theme_constant_override("h_separation", 8)
+    walk_controls.add_theme_constant_override("v_separation", 8)
+    cinema.add_child(walk_controls)
+    for direction in ["forward", "back", "left", "right"]:
+        var movement := Button.new()
+        movement.name = "A7Move_" + direction
+        movement.focus_mode = Control.FOCUS_ALL
+        movement.custom_minimum_size = Vector2(111, 43)
+        movement.button_down.connect(_set_walk_direction.bind(direction, true))
+        movement.button_up.connect(_set_walk_direction.bind(direction, false))
+        walk_controls.add_child(movement)
+        walk_direction_buttons[direction] = movement
+    walk_status = _label(cinema, "", 12, MINT)
     subtitle = _label(body, "", 15, MINT)
     intro = _label(body, "", 15, MUTED)
 
@@ -358,6 +404,69 @@ func _restart() -> void:
     if stage_3d != null:
         stage_3d.recent_action = ""
         stage_3d.pulse = 0.0
+        if stage_3d.operator_rig != null:
+            stage_3d.operator_rig.reset_operator()
+        _clear_walk_directions()
+
+func _clear_walk_directions() -> void:
+    for key in ["forward", "back", "left", "right"]:
+        _walk_direction_state[key] = false
+    if stage_3d != null and stage_3d.operator_rig != null:
+        stage_3d.operator_rig.set_move_intent(Vector2.ZERO)
+
+func _set_walk_direction(direction: String, pressed: bool) -> void:
+    if not _walk_direction_state.has(direction):
+        return
+    _walk_direction_state[direction] = pressed
+    if stage_3d == null or not stage_3d.walk_mode:
+        return
+    var dx: float = float(int(_walk_direction_state["right"]) -
+        int(_walk_direction_state["left"]))
+    var dz: float = float(int(_walk_direction_state["forward"]) -
+        int(_walk_direction_state["back"]))
+    stage_3d.operator_rig.set_move_intent(Vector2(dx, dz))
+
+func _toggle_walk() -> void:
+    if stage_3d == null:
+        return
+    stage_3d.set_walk_mode(not stage_3d.walk_mode)
+    _clear_walk_directions()
+    _render(model.snapshot())
+
+func _walk_interact() -> void:
+    if stage_3d == null or not stage_3d.walk_mode:
+        return
+    var nearby_action: String = stage_3d.operator_rig.context_action()
+    if nearby_action != "":
+        _on_action(nearby_action)
+    _render(model.snapshot())
+
+func _refresh_walk_status() -> void:
+    if walk_status == null or stage_3d == null:
+        return
+    var exploring: bool = stage_3d.walk_mode
+    walk_button.text = _t("walk_exit" if exploring else "walk_enter")
+    walk_action_button.text = _t("walk_use")
+    walk_action_button.disabled = not exploring or str(model.snapshot()["status"]) != "playing"
+    for direction in walk_direction_buttons.keys():
+        var button: Button = walk_direction_buttons[direction] as Button
+        button.text = _t("walk_" + str(direction))
+        button.disabled = not exploring
+    if exploring:
+        var readout: Dictionary = stage_3d.operator_rig.qa_readout()
+        walk_status.text = _t("walk_status") % [
+            _t("walk_" + str(readout["sector"])), str(readout["context_action"])]
+    else:
+        walk_status.text = _t("walk_hint")
+
+func _process(delta: float) -> void:
+    if stage_3d == null or not stage_3d.walk_mode:
+        return
+    _walk_report_elapsed += delta
+    if _walk_report_elapsed >= 0.16:
+        _walk_report_elapsed = 0.0
+        _refresh_walk_status()
+        _publish_web_accessibility()
 
 func _toggle_sound() -> void:
     if sound_bus != null:
@@ -390,6 +499,7 @@ func _update_forecast(state: Dictionary) -> void:
 func _select_camera(index: int) -> void:
     if stage_3d != null:
         stage_3d.set_camera(index)
+        _clear_walk_directions()
     _render(model.snapshot())
 
 func _toggle_quality() -> void:
@@ -422,6 +532,10 @@ func _layout_stage() -> void:
     if compact:
         quality_button.custom_minimum_size.x = 136.0
         motion_button.custom_minimum_size.x = 136.0
+        walk_button.custom_minimum_size.x = 152.0
+        walk_action_button.custom_minimum_size.x = 152.0
+    for direction in walk_direction_buttons.keys():
+        (walk_direction_buttons[direction] as Button).custom_minimum_size.x = 80.0 if compact else 111.0
     call_deferred("_publish_web_accessibility")
 
 func _toggle_locale() -> void:
@@ -432,7 +546,40 @@ func _unhandled_key_input(event: InputEvent) -> void:
     if not (event is InputEventKey):
         return
     var key: InputEventKey = event as InputEventKey
+    if stage_3d != null and stage_3d.walk_mode:
+        var direction: String = ""
+        match key.keycode:
+            KEY_W:
+                direction = "forward"
+            KEY_S:
+                direction = "back"
+            KEY_A:
+                direction = "left"
+            KEY_D:
+                direction = "right"
+        if direction != "":
+            if not key.echo:
+                _set_walk_direction(direction, key.pressed)
+            get_viewport().set_input_as_handled()
+            return
+        if key.pressed and not key.echo:
+            if key.keycode == KEY_LEFT:
+                stage_3d.operator_rig.look_by(-11.0, 0.0)
+                get_viewport().set_input_as_handled()
+                return
+            if key.keycode == KEY_RIGHT:
+                stage_3d.operator_rig.look_by(11.0, 0.0)
+                get_viewport().set_input_as_handled()
+                return
     if not key.pressed or key.echo:
+        return
+    if key.keycode == KEY_F:
+        _toggle_walk()
+        get_viewport().set_input_as_handled()
+        return
+    if key.keycode == KEY_E:
+        _walk_interact()
+        get_viewport().set_input_as_handled()
         return
     if key.keycode == KEY_R:
         _restart()
@@ -477,6 +624,7 @@ func _render(state: Dictionary) -> void:
     narrative_body.text = str(story.get("body", ""))
     _update_forecast(state)
     sound_button.text = _t("sound_off" if sound_bus != null and sound_bus.muted else "sound_on")
+    _refresh_walk_status()
     cycle_label.text = "%s %02d / 06" % [_t("round"), mini(6, int(state["shift"]) + 1)]
     actions_label.text = "%s: %d / 2" % [_t("actions"), int(state["actions_left"])]
     var result: String = str(state["status"])
@@ -571,6 +719,12 @@ func _publish_web_accessibility() -> void:
         "narrative_id": str(A7IncidentDirector.describe(locale, snapshot).get("id", "")),
         "sound_muted": bool(sound_bus.muted) if sound_bus != null else true,
         "sound_cues": int(sound_bus.accepted_cues) if sound_bus != null else 0,
+        "walk_mode": bool(stage_state.get("walk_mode", false)),
+        "operator_sector": str(stage_state.get("operator", {}).get("sector", "central")),
+        "operator_position": stage_state.get("operator", {}).get("position", [0,0,0]),
+        "operator_context_action": str(stage_state.get("operator", {}).get("context_action", "")),
+        "operator_travel_metres": float(stage_state.get("operator", {}).get("travel_metres", 0.0)),
+        "walk_physics_colliders": int(stage_state.get("walk_physical_colliders", 0)),
     }
     var geometry: Dictionary = {
         "viewport": [roundi(size.x), roundi(size.y)],
@@ -587,6 +741,9 @@ func _publish_web_accessibility() -> void:
         "quality": _web_rect(quality_button),
         "motion": _web_rect(motion_button),
         "sound": _web_rect(sound_button),
+        "walk": _web_rect(walk_button),
+        "interact": _web_rect(walk_action_button),
+        "operator_hint": _web_rect(walk_status),
         "story": _web_rect(narrative_title),
         "forecast": _web_rect(forecast_label),
         "scroll": int(scroll.scroll_vertical),
