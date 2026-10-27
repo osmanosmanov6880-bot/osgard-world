@@ -1,0 +1,245 @@
+name: LAST FRONTIER W62 reproducible original Windows + WebGL REVIEW HOLD
+
+on:
+  pull_request:
+    branches:
+      - review/last-frontier-w61-identity-hud-20261027
+    paths:
+      - 'tooling/last-frontier/release_package.py'
+      - 'tooling/last-frontier/test_release_package.py'
+      - 'tooling/last-frontier/w62_source_guard.py'
+      - 'tooling/last-frontier/test_w62_source_guard.py'
+      - '.github/workflows/last-frontier-w62-review.yml'
+      - 'docs/LAST_FRONTIER_W62_REVIEW.md'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: last-frontier-w62-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  exact-game-binary-scope:
+    name: W62 exact W61 ancestry + unchanged 14 protected game and QA blobs
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: SHA-locked scope and synthetic package attack tests
+        shell: bash
+        env:
+          EXACT_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXACT_SHA"
+          mkdir -p w62-review
+          python3 -m py_compile tooling/last-frontier/w62_source_guard.py tooling/last-frontier/release_package.py
+          python3 -m unittest discover -s tooling/last-frontier -p 'test_w62_source_guard.py' -v
+          python3 -m unittest discover -s tooling/last-frontier -p 'test_release_package.py' -v
+          python3 tooling/last-frontier/w62_source_guard.py --head "$EXACT_SHA" --out w62-review/w62-source-proof.json
+          python3 - <<'PY'
+          import json
+          r=json.load(open('w62-review/w62-source-proof.json'))
+          assert r['status']=='PASS' and len(r['unchanged_git_blobs'])==14
+          assert not r['gameplay_modified'] and not r['production_approved'] and not r['allow_master_merge']
+          print('PASS: exact-source W61 game unchanged; W62 packaging-only modifications')
+          PY
+      - name: Save independent W62 source proof
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: last-frontier-w62-protected-source-${{ github.event.pull_request.head.sha }}
+          path: w62-review/w62-source-proof.json
+          if-no-files-found: warn
+          retention-days: 45
+
+  real-export-and-package:
+    name: W62 actual Godot exports, six Chromium missions and deterministic preview ZIP
+    runs-on: ubuntu-latest
+    needs: exact-game-binary-scope
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: true
+      - name: Compile Godot + run original six missions and new RU EN native HUD test
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p w62-review
+          godot --headless --editor --path w33-godot-native --import --quit 2>&1 | tee w62-review/import.log
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' w62-review/import.log; then exit 1; fi
+          for item in test_six_missions test_w41_typography test_w61_brand_and_phase_hud; do
+            timeout --signal=TERM --kill-after=5s 180s godot --headless --path w33-godot-native --script "res://tests/$item.gd" 2>&1 | tee "w62-review/$item.log"
+            if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "w62-review/$item.log"; then exit 1; fi
+          done
+          grep -q 'LAST FRONTIER W61 NATIVE BRAND AND PHASE HUD PASS:' w62-review/test_w61_brand_and_phase_hud.log
+      - name: Export original Godot W62 WebGL plus actual LAST_FRONTIER.exe and PCK
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd w33-godot-native
+          mkdir -p build/w62/web build/w62/windows
+          godot --headless --path . --export-release Web build/w62/web/index.html 2>&1 | tee ../../w62-review/web-export.log
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' ../../w62-review/web-export.log; then exit 1; fi
+          godot --headless --path . --export-release "Windows Desktop" build/w62/windows/LAST_FRONTIER.exe 2>&1 | tee ../../w62-review/windows-export.log
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' ../../w62-review/windows-export.log; then exit 1; fi
+      - name: Verify WebGL binary bytes and source-bound Windows EXE and PCK
+        shell: bash
+        env:
+          EXACT_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          python3 w33-godot-native/ci/verify_web_export.py w33-godot-native/build/w62/web --sha "$EXACT_SHA" --output w33-godot-native/build/w62/web/evidence.json
+          python3 - <<'PY'
+          import hashlib,json,os,struct
+          from pathlib import Path
+          root=Path('w33-godot-native/build/w62/windows')
+          files={}
+          for name in ('LAST_FRONTIER.exe','LAST_FRONTIER.pck'):
+              p=root/name
+              assert p.is_file() and p.stat().st_size>20000,p
+              data=p.read_bytes()
+              files[name]={'sha256':hashlib.sha256(data).hexdigest(),'bytes':len(data)}
+          exe=(root/'LAST_FRONTIER.exe').read_bytes()
+          assert len(exe)>3_000_000 and exe[:2]==b'MZ'
+          offset=struct.unpack_from('<I',exe,60)[0]
+          assert exe[offset:offset+4]==b'PE\0\0'
+          assert struct.unpack_from('<H',exe,offset+4)[0]==0x8664
+          assert (root/'LAST_FRONTIER.pck').read_bytes()[:4]==b'GDPC'
+          report={'schema':'LAST_FRONTIER_W62_WINDOWS_SOURCE_V1',
+                  'source_commit':os.environ['EXACT_SHA'],
+                  'godot':'4.4.1','physical_gpu_certified':False,
+                  'real_windows_boot_verified':False,'files':files}
+          (root/'windows-build.json').write_text(json.dumps(report,indent=2)+'\n')
+          print('Verified actual Godot Win64 machine and matching named PCK')
+          PY
+      - name: Real exported Chromium WebGL six-mission acceptance
+        shell: bash
+        env:
+          EXACT_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          python3 -m venv /tmp/last-frontier-w62-venv
+          /tmp/last-frontier-w62-venv/bin/pip install --disable-pip-version-check playwright==1.56.0 Pillow==11.3.0
+          /tmp/last-frontier-w62-venv/bin/python -m playwright install --with-deps chromium
+          /tmp/last-frontier-w62-venv/bin/python w33-godot-native/ci/browser_gameplay_acceptance.py --export w33-godot-native/build/w62/web --evidence w62-review/original-six-case-browser --sha "$EXACT_SHA"
+      - name: Deterministic review ZIP, second byte-identical build and independent integrity proof
+        shell: bash
+        env:
+          EXACT_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          python3 tooling/last-frontier/release_package.py --source-sha "$EXACT_SHA" --web-dir w33-godot-native/build/w62/web --windows-dir w33-godot-native/build/w62/windows --output-dir w62-review/release
+          python3 tooling/last-frontier/release_package.py --source-sha "$EXACT_SHA" --web-dir w33-godot-native/build/w62/web --windows-dir w33-godot-native/build/w62/windows --output-dir /tmp/w62-double-build
+          cmp w62-review/release/SHA256SUMS.txt /tmp/w62-double-build/SHA256SUMS.txt
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib,json,os,zipfile
+          folder=Path('w62-review/release')
+          report=json.loads((folder/'build-report.json').read_text())
+          sha=os.environ['EXACT_SHA']
+          assert report['status']=='PASS' and report['source_sha']==sha
+          file=folder/report['file']
+          assert hashlib.sha256(file.read_bytes()).hexdigest()==report['sha256']
+          assert (folder/'SHA256SUMS.txt').read_text().split()[0]==report['sha256']
+          with zipfile.ZipFile(file) as z:
+              data=json.loads(z.read('CANDIDATE_MANIFEST.json'))
+              assert data['source_commit']==sha
+              assert data['commercial_title_cleared'] is False
+              assert data['physical_device_certified'] is False
+              assert data['production_approved'] is False
+              assert data['allow_master_merge'] is False
+              assert data['production_deployed'] is False
+              assert len(data['files'])==report['verified_members']
+              for f in data['files']:
+                  assert hashlib.sha256(z.read(f['name'])).hexdigest()==f['sha256']
+          print('Independent release audit PASS - only source-bound preview; PRODUCTION HOLD')
+          PY
+      - name: Upload actual Windows EXE and matching PCK for Windows CI test
+        uses: actions/upload-artifact@v4
+        with:
+          name: last-frontier-w62-win64-exact-${{ github.event.pull_request.head.sha }}
+          path: w33-godot-native/build/w62/windows/
+          retention-days: 45
+          if-no-files-found: error
+      - name: Preserve exact source review ZIP, SHA256, manifest and original six Chromium missions
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: last-frontier-w62-review-only-full-${{ github.event.pull_request.head.sha }}
+          path: w62-review/
+          retention-days: 45
+          if-no-files-found: warn
+
+  true-windows-exe-boot:
+    name: W62 Windows Server 2022 actual LAST_FRONTIER.exe boot, no physical GPU certification
+    runs-on: windows-2022
+    needs: real-export-and-package
+    timeout-minutes: 15
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: last-frontier-w62-win64-exact-${{ github.event.pull_request.head.sha }}
+          path: candidate
+      - name: Verify original SHA and boot actual renamed EXE
+        shell: pwsh
+        env:
+          EXACT_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          $ErrorActionPreference="Stop"
+          $root=(Resolve-Path "candidate").Path
+          $meta=Get-Content (Join-Path $root "windows-build.json") -Raw | ConvertFrom-Json
+          if ($meta.source_commit -ne $env:EXACT_SHA) { throw "Source SHA mismatch" }
+          foreach ($name in @("LAST_FRONTIER.exe","LAST_FRONTIER.pck")) {
+            $path=Join-Path $root $name
+            $actual=(Get-FileHash -Algorithm SHA256 $path).Hash.ToLowerInvariant()
+            if ($actual -ne $meta.files.$name.sha256) { throw "Artifact byte mismatch: $name" }
+          }
+          $exe=Join-Path $root "LAST_FRONTIER.exe"
+          $stdout=Join-Path $root "boot-stdout.txt"
+          $stderr=Join-Path $root "boot-stderr.txt"
+          $proc=Start-Process -FilePath $exe -ArgumentList @("--headless","--quit-after","180") -WorkingDirectory $root -PassThru -RedirectStandardOutput $stdout -RedirectStandardError $stderr
+          if (-not $proc.WaitForExit(90000)) { $proc.Kill(); throw "Windows executable did not exit" }
+          if ($proc.ExitCode -ne 0) { throw "Windows exe failed: $($proc.ExitCode)" }
+          Write-Host "Actual LAST_FRONTIER.exe Windows runner boot PASS; physical Windows GPU NOT tested."
+      - name: Preserve Windows original EXE log only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: last-frontier-w62-true-windows-boot-${{ github.event.pull_request.head.sha }}
+          path: |
+            candidate/boot-stdout.txt
+            candidate/boot-stderr.txt
+          if-no-files-found: warn
+          retention-days: 45
+
+  final-review-hold:
+    name: W62 exact-source software review - public production HOLD
+    runs-on: ubuntu-latest
+    needs: [exact-game-binary-scope, real-export-and-package, true-windows-exe-boot]
+    if: always()
+    steps:
+      - name: Require all genuine source, native browser and Windows CI passes
+        shell: bash
+        env:
+          SOURCE: ${{ needs.exact-game-binary-scope.result }}
+          EXPORT: ${{ needs.real-export-and-package.result }}
+          WINDOWS: ${{ needs.true-windows-exe-boot.result }}
+        run: |
+          set -euo pipefail
+          test "$SOURCE" = "success"
+          test "$EXPORT" = "success"
+          test "$WINDOWS" = "success"
+          echo 'GODOT SOFTWARE CANDIDATE REVIEW PASS / HUMAN, DEVICE, NAME AND PRODUCTION HOLD'
