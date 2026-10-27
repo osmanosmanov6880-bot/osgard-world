@@ -288,7 +288,7 @@ func apply_snapshot(state: Dictionary) -> void:
     pressure = clampf(float(stats.get("pressure", 48)) / 100.0, 0.0, 1.0)
     energy = clampf(float(stats.get("energy", 85)) / 100.0, 0.0, 1.0)
     var seal: float = clampf(float(stats.get("seal", 68)) / 100.0, 0.0, 1.0)
-    var signal: float = clampf(float(stats.get("signal", 44)) / 100.0, 0.0, 1.0)
+    var signal_strength: float = clampf(float(stats.get("signal", 44)) / 100.0, 0.0, 1.0)
     var integrity: float = clampf(float(stats.get("integrity", 100)) / 100.0, 0.0, 1.0)
     current_status = str(state.get("status", "playing"))
     severity = clampf(maxf(heat - 0.70, pressure - 0.70) * 3.0 + (1.0 - integrity) * 0.7, 0.0, 1.0)
@@ -301,7 +301,7 @@ func apply_snapshot(state: Dictionary) -> void:
     heat_material.emission = COOL.lerp(HOT, heat)
     coolant_material.emission = COOL.lerp(GOOD, 1.0 - heat)
     seal_material.emission = ALERT.lerp(GOOD, seal)
-    signal_material.emission = ALERT.lerp(GOOD, signal)
+    signal_material.emission = ALERT.lerp(GOOD, signal_strength)
     energy_material.emission = HOT.lerp(AMBER, energy)
     warning_material.emission = AMBER.lerp(ALERT, severity)
     warning_material.albedo_color = AMBER.lerp(ALERT, severity)
@@ -312,7 +312,7 @@ func apply_snapshot(state: Dictionary) -> void:
     # deterministic game metrics, not hardcoded decorative loop states.
     if energy_gauge != null:
         energy_gauge.scale.y = maxf(0.06, energy)
-        signal_gauge.scale.y = maxf(0.06, signal)
+        signal_gauge.scale.y = maxf(0.06, signal_strength)
         seal_gauge.scale.y = maxf(0.06, seal)
         containment_door.position.x = (1.0 - seal) * 1.40
     snapshot_count += 1
