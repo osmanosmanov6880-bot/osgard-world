@@ -1,0 +1,206 @@
+name: LAST FRONTIER W64 actual 3D playable Godot/WebGL cinematic review (HOLD)
+
+on:
+  pull_request:
+    branches:
+      - experiment/last-frontier-w63-a7-cascade-20261027
+    paths:
+      - 'w63-a7-cascade/**'
+      - 'docs/LAST_FRONTIER_MASTER_PLAN_W64_TO_RELEASE.md'
+      - '.github/workflows/last-frontier-w64-real-3d.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: last-frontier-w64-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  exact-source-and-original-gameplay:
+    name: W64 unchanged core, scene, W63 base and no public deployment
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Scope, ancestry, protected SHA, no illegal source writes
+        shell: bash
+        env:
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          mkdir -p w64-evidence
+          python3 - <<'PY'
+          import hashlib,json,os,re,subprocess
+          from pathlib import Path
+          BASE="b4546df888b5da1e57f60e1f22028690f0a92d45"
+          head=os.environ["HEAD_SHA"]
+          def git(*args):
+              return subprocess.check_output(["git",*args],text=True).strip()
+          assert re.fullmatch("[0-9a-f]{40}",head) and git("rev-parse","HEAD")==head
+          git("cat-file","-e",BASE+"^{commit}")
+          assert git("merge-base",BASE,head)==BASE, "Wrong W63 reviewed ancestor"
+          changed=set(git("diff","--name-only","--no-renames",BASE,head).splitlines())
+          allowed={
+              "w63-a7-cascade/scripts/A7CinematicStage.gd",
+              "w63-a7-cascade/scripts/A7CascadeScreen.gd",
+              "w63-a7-cascade/tests/test_w64_real_3d_stage.gd",
+              "w63-a7-cascade/ci/w64_browser_acceptance.py",
+              "docs/LAST_FRONTIER_MASTER_PLAN_W64_TO_RELEASE.md",
+              ".github/workflows/last-frontier-w64-real-3d.yml",
+          }
+          assert changed==allowed, {"unreviewed":sorted(changed-allowed),"missing":sorted(allowed-changed)}
+          protected=[
+              "w63-a7-cascade/scripts/A7CascadeCore.gd",
+              "w63-a7-cascade/tests/test_a7_cascade.gd",
+              "w63-a7-cascade/Main.tscn",
+              "w63-a7-cascade/project.godot",
+              "w63-a7-cascade/export_presets.cfg",
+              "w33-godot-native/scripts/OSGARDCore.gd",
+              "w33-godot-native/scripts/OSGARDMain.gd",
+              "w33-godot-native/scripts/OSGARDRig.gd",
+              "w33-godot-native/Main.tscn",
+              "w33-godot-native/project.godot",
+              "tooling/last-frontier/release_package.py",
+              "tooling/last-frontier/w62_source_guard.py",
+              ".github/workflows/last-frontier-w62-review.yml",
+              ".github/workflows/last-frontier-w63-a7-cascade.yml",
+          ]
+          pinned={}
+          for name in protected:
+              old,new=git("rev-parse",BASE+":"+name),git("rev-parse",head+":"+name)
+              assert old==new, "Original protected game/CI source changed: "+name
+              pinned[name]=new
+          subprocess.run(["git","diff","--check",BASE,head],check=True)
+          stage=Path("w63-a7-cascade/scripts/A7CinematicStage.gd").read_text()
+          assert "extends Node3D" in stage and "Camera3D.new()" in stage
+          assert "MeshInstance3D.new()" in stage and "OmniLight3D.new()" in stage
+          assert "model.choose(" not in stage and "HTTPClient" not in stage
+          assert "OS.execute" not in stage and "JavaScriptBridge" not in stage
+          screen=Path("w63-a7-cascade/scripts/A7CascadeScreen.gd").read_text()
+          assert "SubViewport.new()" in screen and "A7CinematicStage.new()" in screen
+          assert "model.choose(action)" in screen
+          manifest={
+              "schema":"LAST_FRONTIER_W64_EXACT_SOURCE_NATIVE_3D_V1",
+              "status":"PASS","head":head,"w63_baseline":BASE,
+              "changed_paths":sorted(changed),"protected_git_blob_shas":pinned,
+              "mission_logic_modified":False,"source_verified":True,
+              "hardware_certified":False,"production_approved":False,
+              "commercial_title_cleared":False,"master_merge_allowed":False,
+          }
+          Path("w64-evidence/W64_EXACT_SOURCE.json").write_text(json.dumps(manifest,indent=2)+"\n")
+          print("W64 PROTECTED W63 CORE AND REAL SOURCE SCOPE PASS: 14 exact Git blobs")
+          PY
+      - name: Preserve source attestation even on a later error
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: last-frontier-w64-source-${{ github.event.pull_request.head.sha }}
+          path: w64-evidence/W64_EXACT_SOURCE.json
+          retention-days: 45
+          if-no-files-found: warn
+
+  native-3d-and-real-browser:
+    name: W64 real Godot 3D scene, 105 W63 regression, WebGL Chromium gameplay
+    needs: exact-source-and-original-gameplay
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          include-templates: true
+          use-dotnet: false
+      - name: Import real Godot 4.4.1 cinematic sources
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p w64-evidence
+          timeout --signal=TERM --kill-after=5s 150s godot --headless --editor --path w63-a7-cascade --import --quit 2>&1 | tee w64-evidence/import.log
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:|Failed to load script' w64-evidence/import.log; then exit 1; fi
+      - name: Original W63 105 game assertions + W64 genuine 3D, camera, motion, quality, 6-cycle win
+        shell: bash
+        run: |
+          set -euo pipefail
+          for test in test_a7_cascade test_w64_real_3d_stage; do
+            timeout --signal=TERM --kill-after=5s 200s godot --headless --path w63-a7-cascade --script "res://tests/$test.gd" 2>&1 | tee "w64-evidence/$test.log"
+            if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "w64-evidence/$test.log"; then exit 1; fi
+          done
+          grep -q 'LAST FRONTIER W63 A7 CASCADE REAL GODOT PLAYABLE VERTICAL SLICE PASS: 105 checks' w64-evidence/test_a7_cascade.log
+          grep -q 'LAST FRONTIER W64 REAL NATIVE 3D CINEMATIC GAME PASS:' w64-evidence/test_w64_real_3d_stage.log
+      - name: Actual Godot WebGL WebAssembly binary export
+        shell: bash
+        env:
+          SOURCE_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          (
+            cd w63-a7-cascade
+            mkdir -p build/web
+            godot --headless --path . --export-release Web build/web/index.html
+          ) 2>&1 | tee w64-evidence/export.log
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' w64-evidence/export.log; then exit 1; fi
+          python3 w33-godot-native/ci/verify_web_export.py w63-a7-cascade/build/web --sha "$SOURCE_HEAD" --output w63-a7-cascade/build/web/evidence.json
+      - name: Real Chromium software renderer and original PNG dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m venv /tmp/a7-w64-venv
+          /tmp/a7-w64-venv/bin/pip install --disable-pip-version-check playwright==1.56.0 Pillow==11.3.0
+          /tmp/a7-w64-venv/bin/python -m playwright install --with-deps chromium
+      - name: Press actual game controls in Chromium and verify 3D gauge pixels on desktop and 390px
+        shell: bash
+        env:
+          SOURCE_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=10s 900s /tmp/a7-w64-venv/bin/python w63-a7-cascade/ci/w64_browser_acceptance.py --export w63-a7-cascade/build/web --evidence w64-evidence/chromium --sha "$SOURCE_HEAD" 2>&1 | tee w64-evidence/chromium.log
+          grep -q 'LAST FRONTIER W64 REAL GODOT 3D CHROMIUM GAMEPLAY PASS:' w64-evidence/chromium.log
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('w64-evidence/chromium/W64_REAL_BROWSER_GAMEPLAY.json')
+          d=json.loads(p.read_text())
+          assert d['status']=='PASS' and d['actual_godot_wasm']
+          assert d['browser_played_original_model'] and d['browser_verified_native_3d']
+          assert len(d['screenshots'])==3 and d['source_sha']
+          assert not d['consumer_mobile_hardware_certified']
+          assert not d['production_approved'] and not d['public_deployed']
+          print('Original W64 actual game and PNG browser artifacts PASS / RELEASE HOLD')
+          PY
+      - name: Preserve exact source Godot WebGL executable and independently original screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: last-frontier-w64-real-3d-webgl-candidate-${{ github.event.pull_request.head.sha }}
+          path: |
+            w63-a7-cascade/build/web/
+            w64-evidence/
+          retention-days: 45
+          if-no-files-found: warn
+
+  formal-software-review-hold:
+    name: W64 3D code may be visually strong but is not AAA or physical-device certified
+    needs: [exact-source-and-original-gameplay, native-3d-and-real-browser]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Require original/3D real-world software test PASS, leave publishing blocked
+        shell: bash
+        env:
+          SOURCE: ${{ needs.exact-source-and-original-gameplay.result }}
+          ENGINE: ${{ needs.native-3d-and-real-browser.result }}
+        run: |
+          set -euo pipefail
+          test "$SOURCE" = success
+          test "$ENGINE" = success
+          echo "W64 SOFTWARE-ONLY INTERACTIVE CINEMATIC GODOT CANDIDATE PASS"
+          echo "PRODUCTION HOLD: no AAA signoff, legal name clearance, hardware benchmark, web publication or master merge"
