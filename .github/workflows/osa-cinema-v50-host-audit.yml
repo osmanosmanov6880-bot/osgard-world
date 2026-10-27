@@ -94,7 +94,7 @@ jobs:
           else
             echo 'HOST_FILM_CURRENT_PRESENT=no'
           fi
-          if docker exec osgard-world command -v sha256sum >/dev/null 2>&1; then
+          if docker exec osgard-world sh -lc 'command -v sha256sum' >/dev/null 2>&1; then
             echo 'CONTAINER_SHA256_TOOL=yes'
           else
             echo 'CONTAINER_SHA256_TOOL=no'
