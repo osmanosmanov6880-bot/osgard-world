@@ -91,7 +91,7 @@ jobs:
             --stage "$RUNNER_TEMP/omega-r137-ephemeral-live" \
             --output "$RUNNER_TEMP/omega-r137-real-evidence"
           python3 - <<'PY'
-          import json,os
+          import json,os,subprocess
           from pathlib import Path
           root=Path(os.environ['RUNNER_TEMP'])/'omega-r137-real-evidence'
           p=json.loads((root/'R137_REAL_PUBLIC_HTTPS_ISOLATED_RECOVERY.json').read_text())
@@ -99,7 +99,7 @@ jobs:
           assert p['all_seven_original_https_bytes_restored']
           assert p['actual_public_https_source_not_git_checkout']
           assert len(p['public_download']['downloaded'])==8
-          assert p['candidate_exact_head_sha']==os.environ['GITHUB_SHA'] or len(p['candidate_exact_head_sha'])==40
+          assert p['candidate_exact_head_sha']==subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
           assert not p['production_authorized'] and not p['real_VPS_or_public_production_rollback_executed']
           print('R137 HTTPS ORIGIN: actual 7 public R87 bytes restored after a genuine Godot candidate, no production')
           PY
