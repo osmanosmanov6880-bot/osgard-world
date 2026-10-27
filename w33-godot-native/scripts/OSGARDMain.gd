@@ -547,8 +547,8 @@ func _layout_stage_for_screen() -> void:
     var narrow: bool = size.x < 640.0
     stage_edition.visible = size.x >= 1050.0
     _sync_camera_rail()
-    stage_section_heading.text = "A7  /  SECURE OBSERVATION" if narrow else "OBSIDIAN FACILITY  //  REACTOR A7    •    SECURE OBSERVATION"
-    brand_mark.text = "IRON PULSE  /  A7" if narrow else "OSGARD   /   OBSIDIAN PROTOCOL"
+    stage_section_heading.text = "A7  /  SECURE OBSERVATION" if narrow else "IRON PULSE  //  REACTOR A7    •    SECURE OBSERVATION"
+    brand_mark.text = "IRON PULSE  /  A7" if narrow else "IRON PULSE   /   REACTOR SIMULATOR"
     brand_mark.add_theme_font_size_override("font_size", 18 if narrow else 23)
     heading.add_theme_font_size_override("font_size", 21 if narrow else 26)
     stage_title.add_theme_font_size_override("font_size", 20 if narrow else 26)
