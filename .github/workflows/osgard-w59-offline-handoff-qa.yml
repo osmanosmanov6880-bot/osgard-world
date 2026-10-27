@@ -1,0 +1,66 @@
+name: OSGARD W59 offline W58 release-handoff integrity (never deploy)
+
+on:
+  pull_request:
+    branches:
+      - review/osgard-w58-w49-w52-exact-software-20261027
+    paths:
+      - 'tooling/osgard-w59/**'
+      - '.github/workflows/osgard-w59-offline-handoff-qa.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: osgard-w59-handoff-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  offline-handoff-no-production:
+    name: W59 synthetic ZIP attacks and immutable W58 HOLD report
+    if: github.event_name == 'pull_request' && github.head_ref == 'review/osgard-w59-offline-release-handoff-20261027'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - name: Assert exact PR source and no runtime/deployment edits
+        env:
+          PR_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$PR_SHA"
+          python3 -m py_compile tooling/osgard-w59/release_handoff.py tooling/osgard-w59/test_release_handoff.py
+      - name: 13 malicious-archive and origin-binding offline regressions
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s tooling/osgard-w59 -p test_release_handoff.py -v
+      - name: Verify missing real release bytes NEVER become a PASS or production GO
+        run: |
+          set -euo pipefail
+          mkdir -p w59-proof
+          if python3 tooling/osgard-w59/release_handoff.py --asset-dir ./w59-nonexistent-device-assets --output w59-proof/expected-FAIL-HOLD.json; then
+            echo 'FAIL: no real assets incorrectly passed'
+            exit 1
+          fi
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('w59-proof/expected-FAIL-HOLD.json').read_text())
+          assert r['offline_integrity']=='FAIL'
+          assert r['production_decision']=='HOLD'
+          assert r['physical_hardware_certified'] is False
+          assert r['master_merge_authorized'] is False
+          assert r['production_published'] is False
+          print('Source-only W59 tool fail-closed WITHOUT physical devices: PASS')
+          PY
+      - name: Upload synthetic gate output (NEVER a hardware report)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: osgard-w59-synthetic-no-hardware-${{ github.event.pull_request.head.sha }}
+          path: w59-proof/
+          if-no-files-found: warn
+          retention-days: 30
