@@ -206,28 +206,60 @@ def finalize(output: Path) -> dict:
     return obj
 
 
+
 def self_test() -> None:
-    assert len(FILES)==7 and not _url("release.json").startswith("http://")
-    for invalid in ("../secrets","", "https://evil.example/"):
+    """Fail with actionable diagnostic instead of an empty AssertionError.
+
+    Every positive proof is paired with a negative tamper/escape attempt.
+    No real production URL, public download or production path is accessed.
+    """
+    def require(condition: bool, label: str) -> None:
+        if not condition:
+            raise Hold("R137 self-test failed: " + label)
+
+    require(len(FILES) == 7, "expected exactly seven original hash locks")
+    require(set(FILES) == set(CAPS) - {"release.json"},
+            "caps filenames must match all seven original R87 assets")
+    require(_url("release.json") == ORIGIN + "release.json",
+            "origin HTTPS manifest URL must be exact")
+    require(not _url("index.wasm").startswith("http://"),
+            "real source must be HTTPS and TLS validated")
+    for invalid in ("../secrets", "", "https://evil.example/", "release.json?token=1"):
+        rejected = False
         try:
             _url(invalid)
-            raise AssertionError("accepted non-original name")
-        except Hold: pass
-    assert not SHA40.fullmatch("fake")
-    assert GUARD["inspect_manifest"]({"source_commit":R87,
-        "files":dict(FILES)})==[]
-    # The R128 guard MUST return nonempty errors for tamper; never invert.
-    # The old inverted assertion made every valid R137 run fail at startup.
-    assert GUARD["inspect_manifest"]({"source_commit":R87,
-        "files":{"index.pck":"0"*64}})
-    assert GUARD["inspect_manifest"]({"source_commit":"0"*40,
-        "files":dict(FILES)})
-    assert GUARD["inspect_manifest"]({"source_commit":R87,
-        "files":{**FILES,"unexpected.js":"0"*64}})
-    assert not GUARD["inspect_manifest"]({"source_commit":R87,
-        "files":dict(FILES)})
-    print("R137 self-test PASS: 7 SHA locks, no foreign hosts, no fake records, PRODUCTION HOLD")
+        except Hold:
+            rejected = True
+        require(rejected, "foreign pathname not rejected: " + repr(invalid))
 
+    require(not bool(SHA40.fullmatch("fake")), "fake source SHA accepted")
+    require(bool(SHA40.fullmatch(R87)), "pinned original source SHA malformed")
+
+    good = {"source_commit": R87, "files": dict(FILES)}
+    guard = GUARD["inspect_manifest"]
+    actual_valid_errors = guard(good)
+    require(actual_valid_errors == [],
+            "pinned original R87 manifest rejected: " + repr(actual_valid_errors))
+
+    bad_files = dict(FILES)
+    bad_files["index.pck"] = "0" * 64
+    require(bool(guard({"source_commit": R87, "files": bad_files})),
+            "modified original PCK SHA not rejected")
+    require(bool(guard({"source_commit": "0" * 40, "files": dict(FILES)})),
+            "modified original R87 commit not rejected")
+    extra = dict(FILES)
+    extra["unexpected.js"] = "0" * 64
+    require(bool(guard({"source_commit": R87, "files": extra})),
+            "unapproved eighth published file not rejected")
+    require(bool(guard({"source_commit": R87, "files": {"index.pck": "0" * 64}})),
+            "missing six public files not rejected")
+
+    # Keep exercise entirely offline and read-only. The real R87 HTTPS fetch
+    # and true candidate/rollback/browser run in separate mandatory CI steps.
+    require(not os.environ.get("EMPIRE_R137_ALLOW_PRODUCTION"),
+            "production authorization environment flag must be absent")
+    print("R137 self-test PASS: source and 7 SHA locks, strict TLS allowlist, "
+          "tamper/extra names rejected, REAL PRODUCTION HOLD")
 
 def main() -> int:
     parser=argparse.ArgumentParser()
