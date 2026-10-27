@@ -542,7 +542,40 @@ func _unhandled_key_input(event: InputEvent) -> void:
     if not (event is InputEventKey):
         return
     var key: InputEventKey = event as InputEventKey
+    if stage_3d != null and stage_3d.walk_mode:
+        var direction: String = ""
+        match key.keycode:
+            KEY_W:
+                direction = "forward"
+            KEY_S:
+                direction = "back"
+            KEY_A:
+                direction = "left"
+            KEY_D:
+                direction = "right"
+        if direction != "":
+            if not key.echo:
+                _set_walk_direction(direction, key.pressed)
+            get_viewport().set_input_as_handled()
+            return
+        if key.pressed and not key.echo:
+            if key.keycode == KEY_LEFT:
+                stage_3d.operator_rig.look_by(-11.0, 0.0)
+                get_viewport().set_input_as_handled()
+                return
+            if key.keycode == KEY_RIGHT:
+                stage_3d.operator_rig.look_by(11.0, 0.0)
+                get_viewport().set_input_as_handled()
+                return
     if not key.pressed or key.echo:
+        return
+    if key.keycode == KEY_F:
+        _toggle_walk()
+        get_viewport().set_input_as_handled()
+        return
+    if key.keycode == KEY_E:
+        _walk_interact()
+        get_viewport().set_input_as_handled()
         return
     if key.keycode == KEY_R:
         _restart()
