@@ -1,13 +1,20 @@
 name: EMPIRE Omega R47 live predictive crossing AI and true WebGL driving QA
 on:
   pull_request:
-    branches: [master]
+    branches: [master, feat/omega-r90-aaa-reference-first-slice-20261026]
     paths:
       - 'godot/empire-omega/scripts/horizon_r47_crosswalk_prediction.gd'
       - 'godot/empire-omega/scripts/traffic_agent.gd'
       - 'godot/empire-omega/scripts/pedestrian_agent.gd'
       - 'godot/empire-omega/tests/v68_r47_predictive_crosswalk_traffic.gd'
       - '.github/workflows/omega-r47-crosswalk-qa.yml'
+  push:
+    branches: [feat/omega-r90-aaa-reference-first-slice-20261026]
+    paths:
+      - '.github/workflows/omega-r47-crosswalk-qa.yml'
+      - 'scripts/omega-four-viewport-real-ci.sh'
+      - 'scripts/omega-portrait-preview.spec.mjs'
+      - 'playwright.omega-portrait-preview.config.mjs'
   workflow_dispatch:
 permissions:
   contents: read
@@ -71,6 +78,13 @@ jobs:
           npm ci
           npm install --no-save --package-lock=false @playwright/test@1.58.2 pngjs@7.0.0
           npx playwright install --with-deps chromium
+      - name: Install real Mesa/Xvfb for original desktop-only Godot compositor
+        if: matrix.viewport == 'desktop-1366x768'
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y xvfb libgl1-mesa-dri libegl1 libgl1
       - name: Start only local candidate server (never production)
         shell: bash
         run: |
@@ -83,7 +97,22 @@ jobs:
           cat /tmp/r47-city-http.log
           exit 1
       - name: Capture genuine Chromium frame of the 3D game at each viewport
-        run: npx playwright test --config playwright.omega-portrait-preview.config.mjs --project="${{ matrix.viewport }}"
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/test_omega_r133_runner_contract.py
+          # Preserve independent 320px, 390px, landscape and desktop jobs.
+          # The only backend correction is desktop Mesa/Xvfb, which is already
+          # proven by omega-portrait-preview-qa; NEVER accept synthetic pixels.
+          if [ "${{ matrix.viewport }}" = "desktop-1366x768" ]; then
+            OMEGA_CI_GL_BACKEND=mesa LIBGL_ALWAYS_SOFTWARE=1 \
+              xvfb-run -a -s '-screen 0 1920x1080x24' \
+              npx playwright test --config playwright.omega-portrait-preview.config.mjs \
+                --project="${{ matrix.viewport }}" --workers=1 --retries=0
+          else
+            npx playwright test --config playwright.omega-portrait-preview.config.mjs \
+              --project="${{ matrix.viewport }}" --workers=1 --retries=0
+          fi
       - name: Retain evidence per actual browser size
         if: always()
         uses: actions/upload-artifact@v4

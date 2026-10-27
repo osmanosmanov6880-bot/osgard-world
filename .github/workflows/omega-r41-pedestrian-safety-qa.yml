@@ -1,12 +1,19 @@
 name: EMPIRE Omega R41 real predictive crosswalk safety QA
 on:
   pull_request:
-    branches: [master]
+    branches: [master, feat/omega-r90-aaa-reference-first-slice-20261026]
     paths:
       - 'godot/empire-omega/scripts/horizon_pedestrian_yield.gd'
       - 'godot/empire-omega/scripts/pedestrian_agent.gd'
       - 'godot/empire-omega/tests/v63_r41_predictive_pedestrian_yield.gd'
       - '.github/workflows/omega-r41-pedestrian-safety-qa.yml'
+  push:
+    branches: [feat/omega-r90-aaa-reference-first-slice-20261026]
+    paths:
+      - '.github/workflows/omega-r41-pedestrian-safety-qa.yml'
+      - 'scripts/omega-four-viewport-real-ci.sh'
+      - 'scripts/omega-portrait-preview.spec.mjs'
+      - 'playwright.omega-portrait-preview.config.mjs'
   workflow_dispatch:
 permissions:
   contents: read
@@ -71,8 +78,20 @@ jobs:
           done
           cat /tmp/r41-godot.log
           exit 1
-      - name: Authentic four viewport live Godot pixels
-        run: npx playwright test --config playwright.omega-portrait-preview.config.mjs
+      - name: Provision real Mesa OpenGL and isolated 1920x1080 Xvfb for authentic desktop
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y xvfb libgl1-mesa-dri libegl1 libgl1
+      - name: Authentic four original Godot WebGL viewports via audited GL backend
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Desktop uses actual Mesa/Xvfb, not overloaded SwiftShader.
+          # All FOUR scenes, all anti-splash/diversity assertions remain mandatory.
+          python3 scripts/test_omega_r133_runner_contract.py
+          bash scripts/omega-four-viewport-real-ci.sh
       - name: Preserve unmodified browser evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -81,5 +100,6 @@ jobs:
           path: |
             omega-portrait-preview-results/
             omega-portrait-preview-report/
+            omega-original-four-viewport-evidence/
           if-no-files-found: warn
           retention-days: 12
