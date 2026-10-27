@@ -42,7 +42,7 @@ PROTECTED = (
 )
 MAIN_ALLOWED_METHODS = frozenset({
     "_make_cinematic_overlay", "_create_interface", "_layout_stage_for_screen",
-    "_refresh", "_publish_web_accessibility",
+    "_refresh", "_publish_web_accessibility", "_sync_camera_rail",
 })
 
 
