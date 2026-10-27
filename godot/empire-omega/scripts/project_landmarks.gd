@@ -42,23 +42,9 @@ func sync_projects(finished: Array, active: Dictionary = {}) -> void:
 		base.position.y = 0.3
 		base.material_override = _material(Color("244052"),0.55,false)
 		node.add_child(base)
-		var central := MeshInstance3D.new()
-		var tower := CylinderMesh.new()
-		tower.top_radius = 1.1
-		tower.bottom_radius = 2.6
-		tower.height = 7.0
-		central.mesh = tower
-		central.position.y = 4.0
-		central.material_override = _material(Color("bf9b58"),0.15,false)
-		node.add_child(central)
-		var crystal := MeshInstance3D.new()
-		var crown := SphereMesh.new()
-		crown.radius = 1.6
-		crown.height = 3.2
-		crystal.mesh = crown
-		crystal.position.y = 8.5
-		crystal.material_override = _material(Color("63d5d2"),0.05,true)
-		node.add_child(crystal)
+		# Eight distinct ORIGINAL structures signal which real service was built.
+		# The old universal obelisk/crystal incorrectly made all projects equal.
+		_add_signature(node,project_id)
 		var sign := Label3D.new()
 		sign.text = str(INITIATIVES.PROJECTS[project_id]["ru"])
 		sign.position = Vector3(0,11.4,0)
@@ -104,6 +90,109 @@ func _worksite_box(parent: Node3D, part_name: String, size: Vector3,
 	part.position = place
 	part.material_override = _material(color,0.74,false)
 	parent.add_child(part)
+
+func _add_tank(parent: Node3D, part_name: String, radius: float,
+		height: float, place: Vector3, color: Color) -> void:
+	var part := MeshInstance3D.new()
+	part.name = part_name
+	var mesh := CylinderMesh.new()
+	mesh.top_radius = radius
+	mesh.bottom_radius = radius
+	mesh.height = height
+	part.mesh = mesh
+	part.position = place
+	part.material_override = _material(color,0.38,false)
+	parent.add_child(part)
+
+func _add_canopy(parent: Node3D, part_name: String,
+		radius: float, place: Vector3, color: Color) -> void:
+	var part := MeshInstance3D.new()
+	part.name = part_name
+	var mesh := SphereMesh.new()
+	mesh.radius = radius
+	mesh.height = radius * 2.0
+	part.mesh = mesh
+	part.position = place
+	part.material_override = _material(color,0.78,false)
+	parent.add_child(part)
+
+func _add_signature(holder: Node3D, project_id: String) -> void:
+	# Real saved projects already drive creation/removal. All extra mesh pieces
+	# are collision-free, deterministic and never modify money, travel or AI.
+	var node := Node3D.new()
+	node.name = "Signature_" + project_id
+	holder.add_child(node)
+	var midnight := Color("233842")
+	var stone := Color("a6b3b1")
+	var gold := Color("c5a068")
+	var cyan := Color("60b9bc")
+	var leaf := Color("487a65")
+	match project_id:
+		"open_records":
+			# Public budget archive: four columns, transparent data panels,
+			# a wide civic canopy that replaces the obsolete glowing trophy.
+			for x in [-3.2,3.2]:
+				for z in [-2.2,2.2]:
+					_worksite_box(node,"ArchiveColumn",Vector3(0.55,5.6,0.55),
+						Vector3(x,3.2,z),stone)
+			_worksite_box(node,"ArchiveRoof",Vector3(8.5,0.5,6.0),Vector3(0,6.25,0),gold)
+			for x in [-1.9,1.9]:
+				_worksite_box(node,"BudgetScreen",Vector3(2.8,3.1,0.13),
+					Vector3(x,3.4,-2.32),cyan)
+		"civic_hospital":
+			_worksite_box(node,"HospitalWard",Vector3(8.4,5.0,6.3),Vector3(0,3.1,0),stone)
+			_worksite_box(node,"HospitalEntry",Vector3(3.6,2.5,1.3),Vector3(0,1.8,-3.6),midnight)
+			_worksite_box(node,"HospitalCrossVertical",Vector3(0.65,2.8,0.15),Vector3(0,5.3,-3.25),cyan)
+			_worksite_box(node,"HospitalCrossHorizontal",Vector3(2.5,0.7,0.15),Vector3(0,5.3,-3.35),cyan)
+			for x in [-2.8,2.8]:
+				_worksite_box(node,"ClinicWindow",Vector3(1.6,1.1,0.15),Vector3(x,3.1,-3.25),midnight)
+		"safe_crossings":
+			_worksite_box(node,"CrossingRoad",Vector3(10.0,0.18,6.5),Vector3(0,0.52,0),midnight)
+			for i in range(6):
+				_worksite_box(node,"CrosswalkStripe",Vector3(0.9,0.08,5.0),
+					Vector3(-3.8+float(i)*1.5,0.65,0),stone)
+			for x in [-4.5,4.5]:
+				_worksite_box(node,"CrossingSignalPole",Vector3(0.22,5.0,0.22),
+					Vector3(x,3.0,-2.8),gold)
+				_worksite_box(node,"CrossingSignalHead",Vector3(0.72,0.9,0.5),
+					Vector3(x,5.0,-2.8),cyan)
+		"community_park":
+			_add_tank(node,"ParkGreen",5.1,0.2,Vector3(0,0.6,0),leaf)
+			for x in [-3.1,3.1]:
+				for z in [-3.1,3.1]:
+					_add_tank(node,"ParkTreeTrunk",0.3,2.6,Vector3(x,1.9,z),gold)
+					_add_canopy(node,"ParkTreeCanopy",1.35,Vector3(x,4.0,z),leaf)
+			_add_tank(node,"ParkFountainBasin",1.7,0.45,Vector3(0,0.86,0),stone)
+			_add_tank(node,"ParkFountainWater",1.0,0.18,Vector3(0,1.18,0),cyan)
+		"factory_safety":
+			_worksite_box(node,"SafeFactoryHall",Vector3(8.5,3.4,7.0),Vector3(0,2.3,0),midnight)
+			for x in [-3.0,0.0,3.0]:
+				_add_tank(node,"SafetyFilter",0.75,3.6,Vector3(x,5.6,1.3),stone)
+			_worksite_box(node,"SafetyVentilation",Vector3(8.3,0.5,1.3),Vector3(0,4.25,-2.7),cyan)
+			_worksite_box(node,"FactoryWarningBand",Vector3(8.6,0.3,0.2),Vector3(0,1.1,-3.6),gold)
+		"freight_terminal":
+			_worksite_box(node,"FreightWarehouse",Vector3(7.0,3.4,7.0),Vector3(0,2.3,1.2),midnight)
+			_worksite_box(node,"FreightDock",Vector3(8.5,0.6,3.0),Vector3(0,0.75,-3.2),stone)
+			for x in [-3.8,3.8]:
+				_worksite_box(node,"CraneSupport",Vector3(0.35,6.8,0.35),
+					Vector3(x,3.9,-3.5),gold)
+			_worksite_box(node,"CraneBeam",Vector3(8.1,0.4,0.6),Vector3(0,7.2,-3.5),gold)
+			_worksite_box(node,"FreightPallet",Vector3(2.2,1.4,2.0),Vector3(0,1.6,-3.1),stone)
+		"clean_network":
+			for x in [-2.8,0.0,2.8]:
+				_add_tank(node,"CleanWaterTank",1.2,4.0,Vector3(x,2.7,0.3),stone)
+				_add_tank(node,"CleanTankCap",1.3,0.25,Vector3(x,4.8,0.3),cyan)
+			_worksite_box(node,"WaterSupplyPipe",Vector3(8.0,0.65,0.65),Vector3(0,1.1,-2.4),cyan)
+			_worksite_box(node,"WaterControlRoom",Vector3(2.8,2.4,2.0),Vector3(0,1.6,3.1),midnight)
+		"smart_substation":
+			for x in [-2.7,2.7]:
+				_worksite_box(node,"TransformerTower",Vector3(1.7,4.2,2.2),
+					Vector3(x,2.7,0),midnight)
+				for y in [2.0,3.2,4.4]:
+					_worksite_box(node,"TransformerCopper",Vector3(2.0,0.2,2.4),
+						Vector3(x,y,0),gold)
+				_add_tank(node,"HighVoltageInsulator",0.45,1.5,Vector3(x,5.5,0),cyan)
+			_worksite_box(node,"PowerBus",Vector3(7.5,0.2,0.35),Vector3(0,6.35,0),gold)
 
 func _create_construction(project_id: String) -> Dictionary:
 	# Original low-poly site model; no collision shapes, physics, save keys,
