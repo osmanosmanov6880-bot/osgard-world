@@ -38,7 +38,7 @@ const RU := {
     "failed": "ПОТЕРЯ КОНТРОЛЯ. Пересмотрите последовательность.",
     "unstable": "ШЕСТЬ ЦИКЛОВ ПРОЙДЕНО, НО УЗЕЛ НЕ СТАБИЛИЗИРОВАН.",
     "won": "A7 СТАБИЛИЗИРОВАН. Вы удержали систему.",
-    "keys": "КЛАВИШИ 1-5: ДЕЙСТВИЯ  |  R: ПЕРЕЗАПУСК",
+    "keys": "1-5: ДЕЙСТВИЯ  |  C: КАМЕРА  |  Q: КАЧЕСТВО  |  M: АНИМАЦИЯ  |  L: ЯЗЫК  |  R: ПЕРЕЗАПУСК",
     "objective": "ЦЕЛЬ: ТЕПЛО И ДАВЛЕНИЕ <= 75; ГЕРМЕТИЧНОСТЬ И СИГНАЛ >= 50; ЭНЕРГИЯ >= 30; ЦЕЛОСТНОСТЬ >= 55.",
     "stage": "A7 / ЖИВАЯ 3D-КАМЕРА  •  ВЫМЫШЛЕННЫЙ ОБЪЕКТ",
     "camera0": "01 / ОБЩИЙ", "camera1": "02 / ФРОНТ", "camera2": "03 / БОКОВОЙ",
@@ -69,7 +69,7 @@ const EN := {
     "failed": "CONTAINMENT LOST. Reconsider your sequence.",
     "unstable": "SIX CYCLES SURVIVED, BUT THE SYSTEM IS UNSTABLE.",
     "won": "A7 STABILIZED. You held the frontier.",
-    "keys": "KEYS 1-5: ACTIONS  |  R: RESTART",
+    "keys": "1-5: ACTIONS  |  C: CAMERA  |  Q: QUALITY  |  M: MOTION  |  L: LANGUAGE  |  R: RESTART",
     "objective": "TARGET: HEAT AND PRESSURE <= 75; SEAL AND SIGNAL >= 50; ENERGY >= 30; CONTAINMENT >= 55.",
     "stage": "A7 / TRUE NATIVE 3D VIEW  •  FICTIONAL FACILITY",
     "camera0": "01 / WIDE", "camera1": "02 / FRONT", "camera2": "03 / SIDE",
@@ -363,6 +363,22 @@ func _unhandled_key_input(event: InputEvent) -> void:
         return
     if key.keycode == KEY_R:
         _restart()
+        get_viewport().set_input_as_handled()
+        return
+    if key.keycode == KEY_C:
+        _select_camera((stage_3d.camera_index + 1) % 3)
+        get_viewport().set_input_as_handled()
+        return
+    if key.keycode == KEY_Q:
+        _toggle_quality()
+        get_viewport().set_input_as_handled()
+        return
+    if key.keycode == KEY_M:
+        _toggle_motion()
+        get_viewport().set_input_as_handled()
+        return
+    if key.keycode == KEY_L:
+        _toggle_locale()
         get_viewport().set_input_as_handled()
         return
     var keys := [KEY_1, KEY_2, KEY_3, KEY_4, KEY_5]
