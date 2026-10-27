@@ -9,6 +9,7 @@ on:
       - '.github/workflows/omega-r139-master-release-lock-qa.yml'
       - 'scripts/omega-r138-manual-release-guard.py'
       - 'scripts/test_omega_r138_release_lock.py'
+      - 'scripts/omega-direct-publish.contract.test.mjs'
       - 'godot/empire-omega/docs/R139-MASTER-SAFETY-ONLY.md'
   push:
     branches: [master]
@@ -19,6 +20,7 @@ on:
       - '.github/workflows/omega-r139-master-release-lock-qa.yml'
       - 'scripts/omega-r138-manual-release-guard.py'
       - 'scripts/test_omega_r138_release_lock.py'
+      - 'scripts/omega-direct-publish.contract.test.mjs'
       - 'godot/empire-omega/docs/R139-MASTER-SAFETY-ONLY.md'
   workflow_dispatch:
 permissions:
@@ -53,6 +55,7 @@ jobs:
             '.github/workflows/omega-r139-master-release-lock-qa.yml',
             'scripts/omega-r138-manual-release-guard.py',
             'scripts/test_omega_r138_release_lock.py',
+            'scripts/omega-direct-publish.contract.test.mjs',
             'godot/empire-omega/docs/R139-MASTER-SAFETY-ONLY.md',
           }
           changed=set(subprocess.check_output(
@@ -69,6 +72,7 @@ jobs:
           python3 -m py_compile scripts/omega-r138-manual-release-guard.py scripts/test_omega_r138_release_lock.py
           python3 scripts/omega-r138-manual-release-guard.py --self-test
           python3 scripts/test_omega_r138_release_lock.py
+          node --test scripts/omega-direct-publish.contract.test.mjs
       - name: Exact immutable public R87 still pinned — no game assets touched
         run: |
           set -euo pipefail
