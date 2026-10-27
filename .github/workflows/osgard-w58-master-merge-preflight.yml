@@ -212,7 +212,7 @@ jobs:
           expected=release['files']['index.wasm']
           actual=hashlib.sha256(source).hexdigest()
           assert actual==expected, 'Original Godot preview WASM SHA-256 differs before reversible packaging'
-          assert source[:4]==b'\\x00asm', 'Original Godot WASM magic missing'
+          assert source[:4].hex()=='0061736d', 'Original Godot WASM magic missing'
           print('W58 original preview Godot WebAssembly SHA-256 PASS:',actual)
           PY
           node scripts/compress-pages-wasm.mjs dist
