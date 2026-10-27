@@ -8,6 +8,8 @@ const MISSION_NAV = preload("res://scripts/horizon_mission_navigation.gd")
 const R90_STYLE = preload("res://scripts/horizon_r90_reference_style.gd")
 const R90_DASHBOARD = preload("res://scripts/horizon_r90_premium_dashboard.gd")
 const R90_SPEED = preload("res://scripts/horizon_r90_speed_dial.gd")
+const CITY_REIGN_IMPACT = preload("res://scripts/city_reign_impact.gd")
+const CITY_REIGN_STORY = preload("res://scripts/city_reign_story.gd")
 ## Russian-first accessible HUD. All controls use the same GameState as the 3D world.
 
 signal strategy_changed(is_open: bool)
@@ -250,6 +252,9 @@ var header_panel: PanelContainer
 var objective_panel: PanelContainer
 var objective_details_button: Button
 var mission_briefing_label: Label
+var city_reign_act_label: Label
+var city_reign_story_label: Label
+var city_reign_pulse_label: Label
 var controls_panel: PanelContainer
 var map_panel: PanelContainer
 var strategy_window: PanelContainer
@@ -485,6 +490,10 @@ func _make_hud() -> void:
 	# Actual complete mission chapter + title, never the compact truncated hint.
 	_label(details,_v08("ТЕКУЩЕЕ ЗАДАНИЕ","CURRENT MISSION","当前任务"),16,true)
 	mission_briefing_label = _label(details,"",18)
+	_separator(details)
+	city_reign_act_label = _label(details,"",18,true)
+	city_reign_story_label = _label(details,"",16)
+	city_reign_pulse_label = _label(details,"",15,true)
 	_separator(details)
 	_label(details,_v08("ЭКОНОМИКА И БЕЗОПАСНОСТЬ","ECONOMY AND SAFETY","经济和安全"),14,true)
 	context_label = _label(details,"",16)
@@ -769,6 +778,13 @@ func _refresh() -> void:
 	mission_label.text = TOUCH_MISSION.title(MissionManager.title(GameState.locale),int(GameState.data.get("mission",0)),compact_hud,DisplayServer.is_touchscreen_available(),GameState.locale)
 	if mission_briefing_label != null:
 		mission_briefing_label.text = MissionManager.chapter_title(GameState.locale,false) + "\n" + MissionManager.title(GameState.locale)
+	var story: Dictionary = CITY_REIGN_STORY.briefing(d,GameState.locale)
+	if city_reign_act_label != null:
+		city_reign_act_label.text = str(story["heading"])
+	if city_reign_story_label != null:
+		city_reign_story_label.text = str(story["copy"])
+	if city_reign_pulse_label != null:
+		city_reign_pulse_label.text = str(story["pulse"])
 	if objective_details_button != null:
 		objective_details_button.tooltip_text = _v08("ПОДРОБНОСТИ ЗАДАНИЯ · ОТКРЫТЬ / ЗАКРЫТЬ","MISSION DETAILS · OPEN / CLOSE","任务详情 · 打开 / 关闭")
 	if trial_label != null:
@@ -978,6 +994,10 @@ func _redraw_strategy() -> void:
 	var premium_compact: bool = compact_hud or get_viewport().get_visible_rect().size.x < 1200.0
 	operations.call("build",d,forecast,MissionManager.title(GameState.locale),
 		get_viewport().world_3d,premium_compact,GameState.locale)
+	var narrative: Dictionary = CITY_REIGN_STORY.briefing(d,GameState.locale)
+	_label(strategy_contents,str(narrative["heading"]),19,true)
+	_label(strategy_contents,str(narrative["copy"]),15)
+	_label(strategy_contents,str(narrative["pulse"]),15,true)
 	_label(strategy_contents,"%s %d  ·  %s %d  ·  %s %d" % [t("turn"),d["turn"],t("science"),d["science"],t("actions"),d["actions_left"]],16,true)
 	var overview := HBoxContainer.new()
 	overview.add_theme_constant_override("separation",7)
@@ -1154,6 +1174,10 @@ func _redraw_strategy() -> void:
 		else:
 			var detail: String = "%s  ·  %d кр.  ·  %d M / %d G  ·  %d t" % [title_text,int(project["cost"]),int(project["materials"]),int(project["goods"]),int(project["turns"])]
 			_button(strategy_contents,detail,Callable(self,"_do_initiative").bind(project_id),not GameState.INITIATIVES.can_start(d,project_id))
+		if not d.get("projects_done",[]).has(project_id):
+			var impact: Dictionary = CITY_REIGN_IMPACT.preview(d,GameState.BUILDINGS,project_id)
+			if not impact.is_empty():
+				_label(strategy_contents,CITY_REIGN_IMPACT.explain(impact,GameState.locale),14)
 	_separator(strategy_contents)
 	_label(strategy_contents,t("research"),20,true)
 	var research_grid := GridContainer.new()
