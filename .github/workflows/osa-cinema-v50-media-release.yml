@@ -6,12 +6,16 @@ on:
       - .github/workflows/osa-cinema-v50-media-release.yml
       - scripts/osa-cinema-v50-vps.sh
       - scripts/osa-cinema-v50-recover.sh
+      - scripts/osa-cinema-v50-release-contract.test.mjs
+      - .github/workflows/osa-cinema-v50-recovery.yml
   push:
     branches: [master]
     paths:
       - .github/workflows/osa-cinema-v50-media-release.yml
       - scripts/osa-cinema-v50-vps.sh
       - scripts/osa-cinema-v50-recover.sh
+      - scripts/osa-cinema-v50-release-contract.test.mjs
+      - .github/workflows/osa-cinema-v50-recovery.yml
   release:
     types: [published]
   workflow_dispatch:
@@ -43,6 +47,7 @@ jobs:
           grep -q 'f501e1dec7e8ad83ac135e67ba99d16629246f0a4ca519e5ab2073b904724166' scripts/osa-cinema-v50-vps.sh
           python3 -m unittest discover -s scripts -p 'test_osa_cinema_v49_*.py' -v
           node --test scripts/osa-cinema-v48-local-candidate.test.mjs
+          node --test scripts/osa-cinema-v50-release-contract.test.mjs
 
   actual-owner-media-premiere:
     if: >-
