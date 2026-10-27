@@ -23,7 +23,7 @@ func _material(color: Color, metallic: float = 0.75, emissive: bool = false) -> 
     if emissive:
         material.emission_enabled = true
         material.emission = color
-        material.emission_energy_multiplier = 1.7
+        material.emission_energy_multiplier = 1.26
     return material
 
 func _box(parent: Node3D, name_string: String, center: Vector3, size: Vector3, material: Material) -> MeshInstance3D:
