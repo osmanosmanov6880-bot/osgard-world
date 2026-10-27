@@ -46,7 +46,7 @@ func _run() -> void:
 			signatures[project_id] = signature.get_child(0).name
 		for lang in ["ru","en","zh"]:
 			scene.update_language(lang)
-			var sign: Label3D = node.get_node_or_null("Label3D") as Label3D
+			var sign: Label3D = node.get_node_or_null("ProjectNameLabel") as Label3D
 			check(sign != null and sign.text == str(catalog.PROJECTS[project_id][lang]),
 				"real native street sign matches catalog in " + lang + " for " + project_id)
 	check(signatures.size() == 8,"eight distinct functional projects are represented")

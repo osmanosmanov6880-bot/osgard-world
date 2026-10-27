@@ -46,6 +46,9 @@ func sync_projects(finished: Array, active: Dictionary = {}) -> void:
 		# The old universal obelisk/crystal incorrectly made all projects equal.
 		_add_signature(node,project_id)
 		var sign := Label3D.new()
+		# Explicit stable scene-node name: default Godot auto-names are NOT a
+		# reliable target for localized sign updates after a save or language swap.
+		sign.name = "ProjectNameLabel"
 		sign.text = str(INITIATIVES.PROJECTS[project_id]["ru"])
 		sign.position = Vector3(0,11.4,0)
 		sign.font_size = 44
@@ -247,7 +250,7 @@ func update_language(lang: String) -> void:
 	current_language = lang if ["ru","en","zh"].has(lang) else "ru"
 	for project_id in created:
 		var node: Node3D = created[project_id]
-		var sign: Label3D = node.get_node_or_null("Label3D") as Label3D
+		var sign: Label3D = node.get_node_or_null("ProjectNameLabel") as Label3D
 		if sign != null:
 			sign.text = str(INITIATIVES.PROJECTS[project_id].get(current_language,INITIATIVES.PROJECTS[project_id]["ru"]))
 	for project_id in construction:
