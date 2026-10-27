@@ -61,7 +61,7 @@ static func preview(locale: String, action: String, stats: Dictionary) -> Dictio
     var delta: Dictionary = A7CascadeCore.ACTIONS[action]
     var keys: Array[String] = ["heat", "pressure", "seal", "signal", "energy"]
     var titles: Dictionary = RU_TERMS if locale == "ru" else EN_TERMS
-    var fragments: Array[String] = []
+    var fragments: PackedStringArray = PackedStringArray()
     var risk: bool = false
     var projected: Dictionary = stats.duplicate(true)
     for key in keys:
