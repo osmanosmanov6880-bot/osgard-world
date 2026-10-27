@@ -14,8 +14,12 @@ const POSITIONS = {
 	"smart_substation":Vector3(162.0,0.0,88.0)
 }
 var created := {}
+## Active worksites are derived from the authoritative save; they never own money,
+## turn counters, jobs or completion state. Maximum two by civic_initiatives.valid.
+var construction := {}
+var current_language := "ru"
 
-func sync_projects(finished: Array) -> void:
+func sync_projects(finished: Array, active: Dictionary = {}) -> void:
 	# Reset/loading a save must remove landmarks no longer constructed.
 	for previous in created.keys():
 		if not finished.has(previous):
@@ -65,12 +69,107 @@ func sync_projects(finished: Array) -> void:
 		node.add_child(sign)
 		created[project_id] = node
 
+	# The player sees municipal decisions in the actual street BEFORE a
+	# project is completed. Loading/resetting never leaves phantom scaffolds.
+	for previous in construction.keys():
+		if not active.has(previous) or finished.has(previous):
+			var obsolete: Node3D = construction[previous]["root"]
+			construction.erase(previous)
+			obsolete.queue_free()
+	for project_id in INITIATIVES.ORDER:
+		if finished.has(project_id) or not active.has(project_id):
+			continue
+		var record: Variant = active[project_id]
+		if not (record is Dictionary):
+			continue
+		if not construction.has(project_id):
+			construction[project_id] = _create_construction(project_id)
+		var total: int = int(INITIATIVES.PROJECTS[project_id]["turns"])
+		var remaining: int = clampi(int(record.get("remaining",total)),1,total)
+		var entry: Dictionary = construction[project_id]
+		entry["remaining"] = remaining
+		var progress: float = 0.20 + 0.80 * float(total - remaining) / float(total)
+		var core: MeshInstance3D = entry["core"]
+		core.scale.y = progress
+		core.position.y = 0.3 + 3.3 * progress
+	update_language(current_language)
+
+func _worksite_box(parent: Node3D, part_name: String, size: Vector3,
+		place: Vector3, color: Color) -> void:
+	var part := MeshInstance3D.new()
+	part.name = part_name
+	var shape := BoxMesh.new()
+	shape.size = size
+	part.mesh = shape
+	part.position = place
+	part.material_override = _material(color,0.74,false)
+	parent.add_child(part)
+
+func _create_construction(project_id: String) -> Dictionary:
+	# Original low-poly site model; no collision shapes, physics, save keys,
+	# external assets or unbounded animation costs.
+	var node := Node3D.new()
+	node.name = "Construction_" + project_id
+	node.position = POSITIONS[project_id]
+	add_child(node)
+	var base := MeshInstance3D.new()
+	base.name = "SiteFoundation"
+	var slab := CylinderMesh.new()
+	slab.top_radius = 6.2
+	slab.bottom_radius = 6.2
+	slab.height = 0.35
+	base.mesh = slab
+	base.position.y = 0.23
+	base.material_override = _material(Color("334550"),0.86,false)
+	node.add_child(base)
+	var brass := Color("cba66a")
+	var steel := Color("506677")
+	for x in [-3.5,3.5]:
+		for z in [-3.5,3.5]:
+			_worksite_box(node,"ScaffoldPost",Vector3(0.24,7.1,0.24),
+				Vector3(x,3.7,z),steel)
+	for y in [2.1,5.7]:
+		for z in [-3.5,3.5]:
+			_worksite_box(node,"ScaffoldRailX",Vector3(7.2,0.22,0.22),
+				Vector3(0,y,z),brass)
+		for x in [-3.5,3.5]:
+			_worksite_box(node,"ScaffoldRailZ",Vector3(0.22,0.22,7.2),
+				Vector3(x,y,0),brass)
+	var core := MeshInstance3D.new()
+	core.name = "WorkInProgress"
+	var body := CylinderMesh.new()
+	body.top_radius = 1.6
+	body.bottom_radius = 2.35
+	body.height = 6.6
+	core.mesh = body
+	core.material_override = _material(Color("688b91"),0.42,false)
+	node.add_child(core)
+	var sign := Label3D.new()
+	sign.name = "ConstructionSign"
+	sign.position = Vector3(0,9.1,0)
+	sign.font_size = 42
+	sign.pixel_size = 0.008
+	sign.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	sign.modulate = Color("f1d9ab")
+	node.add_child(sign)
+	return {"root":node,"core":core,"sign":sign,"remaining":int(INITIATIVES.PROJECTS[project_id]["turns"])}
+
 func update_language(lang: String) -> void:
+	current_language = lang if ["ru","en","zh"].has(lang) else "ru"
 	for project_id in created:
 		var node: Node3D = created[project_id]
 		var sign: Label3D = node.get_node_or_null("Label3D") as Label3D
 		if sign != null:
-			sign.text = str(INITIATIVES.PROJECTS[project_id].get(lang,INITIATIVES.PROJECTS[project_id]["ru"]))
+			sign.text = str(INITIATIVES.PROJECTS[project_id].get(current_language,INITIATIVES.PROJECTS[project_id]["ru"]))
+	for project_id in construction:
+		var entry: Dictionary = construction[project_id]
+		var sign: Label3D = entry["sign"]
+		if sign == null:
+			continue
+		var total: int = int(INITIATIVES.PROJECTS[project_id]["turns"])
+		var complete: int = total - int(entry["remaining"])
+		var phase: String = "СТРОИТЕЛЬСТВО" if current_language == "ru" else ("CONSTRUCTION" if current_language == "en" else "施工中")
+		sign.text = str(INITIATIVES.PROJECTS[project_id].get(current_language,INITIATIVES.PROJECTS[project_id]["ru"])) + "\n" + phase + "  %d/%d" % [complete,total]
 
 func _material(color: Color, roughness: float, emissive: bool) -> StandardMaterial3D:
 	var material := StandardMaterial3D.new()

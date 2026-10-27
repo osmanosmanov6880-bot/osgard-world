@@ -96,7 +96,7 @@ func _ready() -> void:
 	add_child(discovery_markers)
 	landmarks = LANDMARKS_SCENE.new()
 	add_child(landmarks)
-	landmarks.sync_projects(GameState.data.get("projects_done",[]))
+	landmarks.sync_projects(GameState.data.get("projects_done",[]), GameState.data.get("projects_active",{}))
 	traffic_signals = SIGNALS_SCENE.new()
 	add_child(traffic_signals)
 	roadworks = ROADWORKS_SCENE.new()
@@ -138,6 +138,7 @@ func _ready() -> void:
 	touch_controls = TOUCH_CONTROLS_SCENE.new()
 	add_child(touch_controls)
 	world.update_language(GameState.locale)
+	landmarks.update_language(GameState.locale)
 	_apply_weather()
 	hud.strategy_changed.connect(_on_strategy_changed)
 	hud.dialogue_changed.connect(_on_dialogue_changed)
@@ -921,7 +922,7 @@ func _on_game_changed(reason: String) -> void:
 	if reason == "road_repair" or reason == "road_maintenance" or reason == "turn" or reason == "load" or reason == "reset":
 		_replan_traffic()
 		route_refresh = 100.0
-	landmarks.sync_projects(GameState.data.get("projects_done",[]))
+	landmarks.sync_projects(GameState.data.get("projects_done",[]), GameState.data.get("projects_active",{}))
 	landmarks.update_language(GameState.locale)
 	world.update_language(GameState.locale)
 	_apply_weather()
