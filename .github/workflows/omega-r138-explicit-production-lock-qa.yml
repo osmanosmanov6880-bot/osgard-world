@@ -1,0 +1,44 @@
+name: EMPIRE Omega R138 NO AUTOMATIC PRODUCTION, exact reviewed manual GO (NO DEPLOY)
+on:
+  pull_request:
+    branches: [feat/omega-r90-aaa-reference-first-slice-20261026]
+    paths:
+      - 'scripts/omega-r138-manual-release-guard.py'
+      - 'scripts/test_omega_r138_release_lock.py'
+      - '.github/workflows/omega-godot-web.yml'
+      - '.github/workflows/omega-web-direct-deploy.yml'
+      - '.github/workflows/omega-r138-explicit-production-lock-qa.yml'
+      - 'godot/empire-omega/docs/EMPIRE-R138-MANUAL-PRODUCTION-GO-RU.md'
+  push:
+    branches: [feat/omega-r90-aaa-reference-first-slice-20261026]
+    paths:
+      - 'scripts/omega-r138-manual-release-guard.py'
+      - 'scripts/test_omega_r138_release_lock.py'
+      - '.github/workflows/omega-godot-web.yml'
+      - '.github/workflows/omega-web-direct-deploy.yml'
+      - '.github/workflows/omega-r138-explicit-production-lock-qa.yml'
+      - 'godot/empire-omega/docs/EMPIRE-R138-MANUAL-PRODUCTION-GO-RU.md'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  original-exact-source-readonly-no-ssh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Prove reviewed original immutable PR HEAD
+        env:
+          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+          python3 -m py_compile scripts/omega-r138-manual-release-guard.py scripts/test_omega_r138_release_lock.py
+          python3 scripts/omega-r138-manual-release-guard.py --self-test
+          python3 scripts/test_omega_r138_release_lock.py
+          test "$(git status --porcelain --untracked-files=no | wc -l)" -eq 0
+          echo 'R138 ONLY source-level checks, 0 private art data, 0 real GPU, 0 source deployment'
