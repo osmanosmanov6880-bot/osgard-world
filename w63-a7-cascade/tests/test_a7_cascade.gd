@@ -25,8 +25,8 @@ func _run() -> void:
     # This shows the new mechanic is solvable, not that players enjoy it.
     var solution: Array[Array] = [
         ["PUMP", "SCAN"], ["PUMP", "SEAL"],
-        ["SCAN", "POWER"], ["PUMP", "POWER"],
-        ["VENT", "VENT"], ["PUMP", "SCAN"],
+        ["VENT", "SCAN"], ["VENT", "SEAL"],
+        ["PUMP", "POWER"], ["VENT", "SCAN"],
     ]
     for shift_index in range(solution.size()):
         _check(c.snapshot()["shift"] == shift_index, "Expected current cycle %d" % shift_index)
