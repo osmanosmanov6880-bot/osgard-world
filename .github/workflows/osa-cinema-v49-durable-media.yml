@@ -1,0 +1,66 @@
+name: OSA CINEMA V49 Durable Media Gate
+
+on:
+  pull_request:
+    paths:
+      - 'src/OSACinema.tsx'
+      - 'src/OSACinemaPremiereLink.tsx'
+      - 'src/osaCinemaPremiereGate.ts'
+      - 'nginx.conf'
+      - 'docker-compose.production.yml'
+      - 'scripts/osa-cinema-v49-*'
+      - 'scripts/test_osa_cinema_v49_*'
+      - 'docs/OSA_CINEMA_V49*'
+      - '.github/workflows/osa-cinema-v49-durable-media.yml'
+  push:
+    branches: [master]
+    paths:
+      - 'src/OSACinema.tsx'
+      - 'src/OSACinemaPremiereLink.tsx'
+      - 'src/osaCinemaPremiereGate.ts'
+      - 'nginx.conf'
+      - 'docker-compose.production.yml'
+      - 'scripts/osa-cinema-v49-*'
+      - 'scripts/test_osa_cinema_v49_*'
+      - 'docs/OSA_CINEMA_V49*'
+      - '.github/workflows/osa-cinema-v49-durable-media.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: osa-cinema-v49-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  publisher-and-gates:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Require secure immutable staging, zero public claims and rollback
+        run: python3 -m unittest discover -s scripts -p 'test_osa_cinema_v49_*.py' -v
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Enforce runtime proof, real-MP4 HEAD and V20 privacy
+        run: node --test scripts/osa-cinema-v49-contract.test.mjs
+      - name: Validate TypeScript without unverified live publication
+        run: npm run check
+      - name: Verify actual Nginx syntax including media alias
+        run: |
+          set -euo pipefail
+          if ! command -v nginx >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq nginx-core
+          fi
+          printf '%s\n' 'worker_processes 1;' 'events { worker_connections 64; }' \
+            'http {' 'include /etc/nginx/mime.types;' \
+            "include $GITHUB_WORKSPACE/nginx.conf;" '}' > /tmp/osa-v49-main.conf
+          nginx -t -c /tmp/osa-v49-main.conf
