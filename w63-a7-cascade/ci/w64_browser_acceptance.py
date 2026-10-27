@@ -181,12 +181,25 @@ def play(export, evidence, exact_sha):
 
             page.set_viewport_size({"width": 390, "height": 844})
             page.wait_for_timeout(850)
+            page.wait_for_function("""() => {
+                const node=document.getElementById('a7-cascade-native-state');
+                if (!node || !node.getAttribute('data-geometry')) return false;
+                try {
+                    const geometry=JSON.parse(node.getAttribute('data-geometry'));
+                    return geometry.viewport[0]<=420 &&
+                        geometry.stage_requested_height<=310;
+                } catch(e){return false;}
+            }""", timeout=60_000)
             responsive = geometry(page)
             ensure(responsive["viewport"][0] <= 420,
                    "Mobile browser viewport did not propagate into Godot")
-            ensure(responsive["stage"][3] <= 310,
-                   "Actual native mobile stage blocks the game controls")
+            ensure(responsive["stage_requested_height"] <= 310,
+                   "Native mobile stage policy must shrink 3D without blocking controls")
             mobile = page.screenshot(path=str(evidence / "390x844-mobile.png"))
+            mobile_image = Image.open(io.BytesIO(mobile)).convert("RGB")
+            ensure(mobile_image.size == (390, 844), "Native viewport mobile PNG dimensions mismatch")
+            ensure(max(ImageStat.Stat(mobile_image).stddev) > 6.0,
+                   "Actual mobile browser rendered a blank screenshot")
             ensure(len(mobile) > 12_000, "Real mobile screenshot invalid")
             page.keyboard.press("r")
             result = wait_state(page, {"shift": 0, "actions_left": 2,
