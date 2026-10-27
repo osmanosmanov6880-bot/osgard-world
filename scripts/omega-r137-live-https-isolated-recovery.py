@@ -216,8 +216,16 @@ def self_test() -> None:
     assert not SHA40.fullmatch("fake")
     assert GUARD["inspect_manifest"]({"source_commit":R87,
         "files":dict(FILES)})==[]
-    assert not GUARD["inspect_manifest"]({"source_commit":R87,
+    # The R128 guard MUST return nonempty errors for tamper; never invert.
+    # The old inverted assertion made every valid R137 run fail at startup.
+    assert GUARD["inspect_manifest"]({"source_commit":R87,
         "files":{"index.pck":"0"*64}})
+    assert GUARD["inspect_manifest"]({"source_commit":"0"*40,
+        "files":dict(FILES)})
+    assert GUARD["inspect_manifest"]({"source_commit":R87,
+        "files":{**FILES,"unexpected.js":"0"*64}})
+    assert not GUARD["inspect_manifest"]({"source_commit":R87,
+        "files":dict(FILES)})
     print("R137 self-test PASS: 7 SHA locks, no foreign hosts, no fake records, PRODUCTION HOLD")
 
 
