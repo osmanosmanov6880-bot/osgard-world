@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#050b12">
+  <meta name="description" content="SABLEFAULT — an original, playable sci-fi reactor crisis vertical slice.">
+  <title>SABLEFAULT — INCIDENT 01</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main id="app">
+    <canvas id="world" aria-label="Three-dimensional reactor complex" tabindex="0"></canvas>
+    <div class="screen-vignette" aria-hidden="true"></div>
+    <div class="grain" aria-hidden="true"></div>
+    <div id="crosshair" aria-hidden="true"><span></span><span></span></div>
+
+    <header class="masthead">
+      <div class="brand"><div class="brandmark" aria-hidden="true"><i></i><i></i><i></i></div><div class="brandtext"><strong>SABLEFAULT</strong><small>AEGIS FACILITY · SECTOR 09</small></div></div>
+      <div class="center-status"><span class="pulse"></span><span data-i18n="incident">INCIDENT 01</span><span class="slash">/</span><strong data-i18n="protocol">CONTAINMENT PROTOCOL</strong></div>
+      <div class="top-actions"><span class="build">VERTICAL SLICE / ALPHA 0.1</span><button id="lang" type="button" aria-label="Switch language">RU</button><button id="sound" type="button" aria-label="Toggle sound">SOUND OFF</button><button id="help" type="button" aria-label="Show controls">?</button></div>
+    </header>
+
+    <aside class="mission panel" aria-label="Mission objectives"><div class="kicker" data-i18n="mission">ACTIVE DIRECTIVE</div><div class="mission-index">01 <span>/</span> 04</div><h2 id="objective">INITIATE EMERGENCY PROTOCOL</h2><p id="objectiveHint">Find the command terminal and acknowledge the incident.</p><div class="chapter-dots" id="chapterDots"><b class="active"></b><b></b><b></b><b></b></div><div class="mission-foot"><span id="missionCode">AEGIS // 09-A</span><span id="timer">04:00</span></div></aside>
+
+    <aside class="telemetry panel" aria-label="Live reactor telemetry"><div class="tele-head"><div><div class="kicker" data-i18n="telemetry">LIVE TELEMETRY</div><strong>FACILITY CORE / Ω-7</strong></div><span class="live-dot">LIVE</span></div><div id="gauges"></div><div class="metrics-foot"><span id="stateLabel">AWAITING INPUT</span><span id="grade">OFFLINE</span></div></aside>
+
+    <div id="world-tags" aria-hidden="true"></div>
+    <div class="compass"><span>NW</span><span>N</span><span>NE</span><div class="compass-pointer" id="compassNeedle"></div></div>
+    <div id="interaction" class="interact hidden"><div class="interact-key">E</div><div><small data-i18n="interact">INTERACT WITH</small><strong id="interactName">TERMINAL</strong></div><button id="useButton" type="button">USE</button></div>
+
+    <section class="bottom-left panel" aria-label="Incident log"><div class="kicker"><span data-i18n="events">INCIDENT FEED</span><span id="timeNow">00:00</span></div><div id="feed" aria-live="polite"></div></section>
+    <div class="footer"><span>OSGARD LABS / INTERNAL PLAYTEST</span><span class="keyboard" data-i18n="controls">WASD MOVE · MOUSE LOOK · E INTERACT · SHIFT RUN · ESC CURSOR</span><span>BUILD 01 / ORIGINAL PROTOTYPE</span></div>
+
+    <div id="touch" class="touch hidden"><div class="dpad"><button data-move="forward" aria-label="Forward">▲</button><div><button data-move="left" aria-label="Left">◀</button><button data-move="back" aria-label="Back">▼</button><button data-move="right" aria-label="Right">▶</button></div></div><div id="lookArea" aria-label="Drag to look around"></div><button id="touchUse" class="touch-use" type="button">E / USE</button></div>
+
+    <div id="overlay" class="overlay">
+      <div class="overlay-art" aria-hidden="true"><div class="orb orb-a"></div><div class="orb orb-b"></div><div class="technical-lines"></div></div>
+      <div class="cover-copy"><div class="eyebrow"><span class="red-square"></span> TOP SECRET · FIELD INCIDENT 01 / 2086</div><div class="overline">A CINEMATIC SYSTEMS THRILLER</div><h1>SABLE<span>FAULT</span></h1><div class="line-red"></div><h2 id="coverTagline">EVERY SYSTEM HAS A BREAKING POINT.</h2><p id="coverText">One station. Five critical systems. A choice the machine cannot make for you. Enter a collapsing reactor and keep it alive long enough to decide what survives.</p><div class="cover-actions"><button class="primary" id="start" type="button">BEGIN INCIDENT <span>↗</span></button><button class="secondary" id="coverLang" type="button">RU / EN</button></div><div class="cover-details"><div><strong>01</strong><small>PLAYABLE INCIDENT</small></div><div><strong>02</strong><small>DIFFERENT ENDINGS</small></div><div><strong>04:00</strong><small>REACTOR MELTDOWN CLOCK</small></div></div><p class="disclaimer" id="disclaimer">FICTIONAL INTERACTIVE SIMULATION · NOT REAL INDUSTRIAL CONTROL SOFTWARE</p></div>
+      <div class="cover-side"><span>RESTRICTED ACCESS</span><span>PERSONNEL 07 / FIELD ENGINEER</span><div class="cover-barcode">┃┃ ┃┃┃ ┃ ┃┃┃┃ ┃┃ ┃┃┃</div></div>
+    </div>
+
+    <div class="modal-backdrop hidden" id="terminalBackdrop"><section class="terminal" role="dialog" aria-modal="true" aria-labelledby="terminalTitle"><div class="term-header"><div><span class="kicker" id="terminalCode">SYSTEM CONSOLE</span><h2 id="terminalTitle">COMMAND TERMINAL</h2></div><button id="closeTerminal" aria-label="Close terminal" type="button">✕</button></div><div class="terminal-content"><div id="terminalMessage"></div><div id="terminalActions"></div></div><div class="term-footer">AEGIS 09 // MANUAL AUTHORITY REQUIRED <span>SECURE BUS</span></div></section></div>
+
+    <div class="modal-backdrop hidden" id="finishBackdrop"><section class="finish terminal" role="dialog" aria-modal="true" aria-labelledby="finishTitle"><div class="kicker">MISSION REPORT / INCIDENT 01</div><div class="finish-symbol" id="finishSymbol">◈</div><h2 id="finishTitle">CONTAINMENT RESTORED</h2><p id="finishText"></p><div id="finishStats"></div><div class="finish-actions"><button class="primary" id="restart" type="button">REPLAY INCIDENT ↗</button><button class="secondary" id="backCover" type="button">MAIN MENU</button></div></section></div>
+    <noscript><div class="nojs">JavaScript must be enabled to play this original interactive prototype.</div></noscript>
+  </main>
+  <script src="game.js" defer></script>
+</body>
+</html>
