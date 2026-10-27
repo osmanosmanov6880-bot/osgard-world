@@ -1,0 +1,247 @@
+{
+  "schemaVersion": 1,
+  "project": "OSA CINEMA",
+  "revision": "V47_PRODUCTION_TO_PREMIERE_PROGRAM",
+  "date": "2026-10-26",
+  "status": "PROGRAM_PACKET_ONLY_NOT_A_FILM_RELEASE",
+  "baseline": {
+    "repository": "osmanosmanov6880-bot/osgard-world",
+    "branch": "master",
+    "verifiedV46Sha": "f538502be933a178827fb91a9a296ed88127c461",
+    "mergedPr": 545,
+    "publicPath": "/osa-cinema",
+    "publicProduct": "EIGHT_SCENE_EDUCATIONAL_STILL_IMAGE_EXPERIENCE",
+    "publicProductStatus": "V46_LIVE_ACCEPTED"
+  },
+  "film": {
+    "type": "FOUR_MINUTE_PRIVATE_WORKPRINT_NOT_LICENSED_FINAL_FILM",
+    "plannedFinalEditions": [
+      "osa-v15-directors-ru",
+      "osa-v15-directors-en",
+      "osa-v15-trailer-ru",
+      "osa-v15-trailer-en"
+    ],
+    "plannedFinalCaptionFiles": 4,
+    "privateNarrationGuideTracks": 6,
+    "publicationAuthorized": false,
+    "rightsCleared": false,
+    "paidCheckoutEnabled": false,
+    "releaseDecision": "NO_GO",
+    "sourceWorkprintsVerified": true,
+    "finalHumanApprovedMastersVerified": false,
+    "externalApprovalsVerified": false
+  },
+  "scenes": [
+    {
+      "number": 1,
+      "act": 1,
+      "ruTitle": "Вы уверены, что отличите интеллект от его имитации?",
+      "enTitle": "Can you tell intelligence from its imitation?",
+      "proposedVisualTreatment": "Визуальная дилемма: быстрый ответ машины против независимой проверки",
+      "treatmentStatus": "PROPOSED_NOT_VERIFIED_AGAINST_FILM"
+    },
+    {
+      "number": 2,
+      "act": 1,
+      "ruTitle": "Модель не думает как человек. Но может менять то, что человек способен сделать.",
+      "enTitle": "A model does not think like a person. Yet it can change what people can do.",
+      "proposedVisualTreatment": "Системная графика обучения и явная граница между ответом и доказательством",
+      "treatmentStatus": "PROPOSED_NOT_VERIFIED_AGAINST_FILM"
+    },
+    {
+      "number": 3,
+      "act": 2,
+      "ruTitle": "Библиотека мира помещается в карман. Но кто-то всё ещё держит ключ.",
+      "enTitle": "The world’s library fits in your pocket. Someone still holds the key.",
+      "proposedVisualTreatment": "Библиотека/вычисления/доступ: объяснить ограничения инфраструктуры",
+      "treatmentStatus": "PROPOSED_NOT_VERIFIED_AGAINST_FILM"
+    },
+    {
+      "number": 4,
+      "act": 2,
+      "ruTitle": "Три публикации — не всегда три независимых подтверждения.",
+      "enTitle": "Three articles do not always mean three independent confirmations.",
+      "proposedVisualTreatment": "Монтаж источников с общей исходной цитатой, без фиктивных публикаций",
+      "treatmentStatus": "PROPOSED_NOT_VERIFIED_AGAINST_FILM"
+    },
+    {
+      "number": 5,
+      "act": 2,
+      "ruTitle": "Убедительный ответ — только начало проверки.",
+      "enTitle": "A convincing answer is only the beginning of verification.",
+      "proposedVisualTreatment": "Подлинный тезис → первоисточник → контекст и неопределённость",
+      "treatmentStatus": "PROPOSED_NOT_VERIFIED_AGAINST_FILM"
+    },
+    {
+      "number": 6,
+      "act": 2,
+      "ruTitle": "Не всякий контекст нужно отдавать модели.",
+      "enTitle": "Not every piece of context belongs in a model prompt.",
+      "proposedVisualTreatment": "Защита приватности без демонстрации реальных персональных данных",
+      "treatmentStatus": "PROPOSED_NOT_VERIFIED_AGAINST_FILM"
+    },
+    {
+      "number": 7,
+      "act": 3,
+      "ruTitle": "Будущее требует не знать всё, а уметь учиться и проверять.",
+      "enTitle": "The future requires learning and verification, not knowing everything.",
+      "proposedVisualTreatment": "Выбор методики: критерии, эксперимент, исправления",
+      "treatmentStatus": "PROPOSED_NOT_VERIFIED_AGAINST_FILM"
+    },
+    {
+      "number": 8,
+      "act": 3,
+      "ruTitle": "Не следуйте за будущим вслепую. Научитесь его исследовать.",
+      "enTitle": "Do not follow the future blindly. Learn to investigate it.",
+      "proposedVisualTreatment": "Финальное действие зрителя; измеримый эксперимент вместо обещаний",
+      "treatmentStatus": "PROPOSED_NOT_VERIFIED_AGAINST_FILM"
+    }
+  ],
+  "workstreams": [
+    {
+      "id": "A",
+      "name": "Монтаж и окончательные RU/EN мастера",
+      "status": "BLOCKED_HUMAN_EDITORIAL",
+      "output": "2 финальных версии ~239 с и 2 превью ~45 с, одобренные на конкретных SHA",
+      "references": [
+        "docs/OSA_CINEMA_V17_FINAL_PRODUCTION_PLAN.md",
+        "docs/OSA_CINEMA_V18_FINAL_RELEASE_GATES_RU.md",
+        "docs/OSA_CINEMA_V23_HUMAN_AB_ACCEPTANCE_RU.md"
+      ]
+    },
+    {
+      "id": "B",
+      "name": "Субтитры и доступность",
+      "status": "BLOCKED_ACTUAL_SPEECH_REVIEW",
+      "output": "4 реальных WebVTT и редакторское подтверждение каждой реплики",
+      "references": [
+        "docs/OSA_CINEMA_V19_SUBTITLE_PRODUCTION_AND_RELEASE_GATES_RU.md"
+      ]
+    },
+    {
+      "id": "C",
+      "name": "Коммерческие права, авторы, согласия",
+      "status": "BLOCKED_EXTERNAL_LEGAL_EVIDENCE",
+      "output": "Правовая матрица, подписанные лицензии/согласия, заключение независимого юриста",
+      "references": [
+        "docs/OSA_CINEMA_V30_EXACT_HASH_HUMAN_APPROVALS_RU.md"
+      ]
+    },
+    {
+      "id": "D",
+      "name": "Проверка подлинных файлов и владельца",
+      "status": "BLOCKED_PRIVATE_FINAL_INPUT",
+      "output": "V29 pinned preflight → V38 integrity → V30 внешние подписанные утверждения",
+      "references": [
+        "docs/OSA_CINEMA_V29_PRIVATE_OWNER_PREFLIGHT_RU.md",
+        "docs/OSA_CINEMA_V38_PRIVATE_OWNER_DOSSIER_RU.md",
+        "docs/OSA_CINEMA_V41_OWNER_DESIGN_RU.md"
+      ]
+    },
+    {
+      "id": "E",
+      "name": "Закрытый медиадеплой, тесты, откат",
+      "status": "BLOCKED_APPROVED_FINAL_MASTERS",
+      "output": "Законный staging, реальный браузерный playback QA на устройствах, наблюдение и rollback",
+      "references": [
+        "docs/OSA_CINEMA_V24_V27_FINAL_RELEASE_EXECUTION_PLAN_RU.md"
+      ]
+    },
+    {
+      "id": "F",
+      "name": "Издательское решение и премьерный запуск",
+      "status": "BLOCKED_ALL_EIGHT_EXTERNAL_GATES",
+      "output": "Разрешение правомочного издателя на точные SHA и независимая production-приёмка",
+      "references": [
+        "docs/OSA_CINEMA_V27_INTEGRATED_REHEARSAL_RU.md"
+      ]
+    },
+    {
+      "id": "G",
+      "name": "Монетизация (отдельное решение)",
+      "status": "NOT_AUTHORIZED",
+      "output": "Платежи/подписки только через отдельный коммерческий PR после законного релиза",
+      "references": [
+        "docs/OSA_CINEMA_V20_PRIVATE_RELEASE_POLICY.json"
+      ]
+    }
+  ],
+  "externalGates": [
+    {
+      "id": "independent_documented_commercial_rights_legal_opinion",
+      "owner": "Юрист по IP",
+      "needed": "Заключение по каждому использованному источнику, территории, сроку, производным работам, голосу/музыке и полномочиям",
+      "status": "HOLD_EXTERNAL_EVIDENCE_NOT_SUPPLIED",
+      "evidenceInPublicRepo": false
+    },
+    {
+      "id": "independently_verified_ru_en_spoken_content",
+      "owner": "RU/EN редакторы",
+      "needed": "Прослушанные и подписанные транскрипты настоящей речи на конкретных SHA мастеров",
+      "status": "HOLD_EXTERNAL_EVIDENCE_NOT_SUPPLIED",
+      "evidenceInPublicRepo": false
+    },
+    {
+      "id": "signed_final_director_and_sound_approval",
+      "owner": "Режиссёр и звукорежиссёр",
+      "needed": "Утверждённый финальный монтаж, credits, LUFS/dBTP и звук на точных SHA",
+      "status": "HOLD_EXTERNAL_EVIDENCE_NOT_SUPPLIED",
+      "evidenceInPublicRepo": false
+    },
+    {
+      "id": "human_approved_final_ru_en_subtitles",
+      "owner": "Редактор доступности",
+      "needed": "Четыре синхронных VTT RU/EN по реально произнесённым словам и QA на телефоне",
+      "status": "HOLD_EXTERNAL_EVIDENCE_NOT_SUPPLIED",
+      "evidenceInPublicRepo": false
+    },
+    {
+      "id": "real_production_https_access_and_integrity",
+      "owner": "DevOps",
+      "needed": "Легальный staging/prod origin, MIME, Range 200/206/416, защита приватного контента и SHA-256",
+      "status": "HOLD_EXTERNAL_EVIDENCE_NOT_SUPPLIED",
+      "evidenceInPublicRepo": false
+    },
+    {
+      "id": "independent_real_mobile_and_desktop_browser_acceptance",
+      "owner": "Независимый QA",
+      "needed": "Протоколы реальных устройств/браузеров, плейбек, переключение RU/EN, субтитры, slow network, доступность",
+      "status": "HOLD_EXTERNAL_EVIDENCE_NOT_SUPPLIED",
+      "evidenceInPublicRepo": false
+    },
+    {
+      "id": "publisher_signed_authorization_for_exact_release_hash",
+      "owner": "Уполномоченный издатель",
+      "needed": "Отдельное разрешение с точными финальными MP4/VTT SHA и письменным scope",
+      "status": "HOLD_EXTERNAL_EVIDENCE_NOT_SUPPLIED",
+      "evidenceInPublicRepo": false
+    },
+    {
+      "id": "proven_production_rollback_and_post_release_observability",
+      "owner": "Release engineer",
+      "needed": "Проверенный откат, мониторинг качества, инцидент-рубрика, возврат к безопасному публичному V46",
+      "status": "HOLD_EXTERNAL_EVIDENCE_NOT_SUPPLIED",
+      "evidenceInPublicRepo": false
+    }
+  ],
+  "constraints": {
+    "doNotUpload": [
+      "private-mp4",
+      "private-webvtt",
+      "voice-recordings",
+      "license-pdf",
+      "identity-documents",
+      "signing-private-keys",
+      "private-evidence-reports"
+    ],
+    "noPublicVideo": true,
+    "noCheckout": true,
+    "noAutomaticGo": true
+  },
+  "sourceOfTruth": [
+    "docs/OSA_CINEMA_V20_PRIVATE_RELEASE_POLICY.json",
+    "docs/OSA_CINEMA_V16_WORKPRINT_MANIFEST.json",
+    "docs/OSA_CINEMA_V16_NARRATION_MANIFEST.json",
+    "scripts/osa-cinema-v27-release-board.mjs"
+  ]
+}
