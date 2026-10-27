@@ -119,7 +119,7 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                             assert idle["touch_controls_visible"] is True, idle
                             rectangles = idle.get("touch_button_rects", {})
                             assert len(rectangles) >= 6, idle
-                            for label in ("↑", "←", "↓", "→", "USE / E", "L / RU-EN"):
+                            for label in ("W", "A", "S", "D", "USE / E", "L / RU-EN"):
                                 rect = rectangles[label]
                                 # Read actual native Control rectangles, then compare
                                 # against the real CSS pixel scaling on this device.

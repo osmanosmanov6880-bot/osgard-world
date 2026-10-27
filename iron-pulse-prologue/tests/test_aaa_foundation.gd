@@ -65,6 +65,9 @@ func _run() -> void:
     _check(game.guidance_label.text.find("РЕМОНТ") >= 0, "Waypoint actually changes after scan")
     game._toggle_language()
     _check(game.guidance_label.text.find("ROUTE") >= 0, "English route instructions are truly localized")
+    _check(game.subtitle_label.text.find("CHAPTER 00") >= 0, "Language toggle changes the visible chapter identity")
+    _check(game.guidance_label.text.find("↑") == -1 and game.guidance_label.text.find("↓") == -1, "Direction uses WebGL-safe glyphs")
+    _check(game.touch_ui.get_children()[0].text == "W", "Mobile movement control has an available glyph")
     game.exit_gate.position.y = 6.2
     game._restart()
     _check(absf(game.exit_gate.position.y - 2.6) < 0.01, "Retry closes previously opened evacuation bulkhead")
