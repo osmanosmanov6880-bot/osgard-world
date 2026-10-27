@@ -78,12 +78,26 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                         marker = page.locator("#iron-pulse-native-state")
                         marker.wait_for(state="attached", timeout=120000)
                         idle = {}
-                        deadline = time.monotonic() + 40
+                        # Godot starts at its configured 1280x720 logical size,
+                        # then asynchronously adopts the actual browser viewport.
+                        # The additional native art can make that transition take
+                        # multiple real rendered frames on SwiftShader; DO NOT
+                        # accept an initial 1280x720 as final, or silently scale
+                        # the game to fake a mobile pass.
+                        observed_viewports = []
+                        deadline = time.monotonic() + 100
                         while time.monotonic() < deadline:
                             idle = json.loads(marker.get_attribute("data-state", timeout=10000))
-                            if int(idle.get("godot_frames_drawn", 0)) >= 1:
+                            native = idle.get("viewport", [])
+                            if native and (not observed_viewports or observed_viewports[-1] != native):
+                                observed_viewports.append(native)
+                            resized = (len(native) == 2 and
+                                       abs(native[0]-size["width"]) <= 2.0 and
+                                       abs(native[1]-size["height"]) <= 2.0)
+                            if int(idle.get("godot_frames_drawn", 0)) >= 2 and resized:
                                 break
                             page.wait_for_timeout(250)
+                        report.setdefault("viewport_transitions", {})[name] = observed_viewports
                         assert idle["scene"] == "IRON_PULSE_BLACKOUT", idle
                         assert idle["started"] is False and idle["intro_visible"] is True, idle
                         assert idle["objective"] == "scan", idle
