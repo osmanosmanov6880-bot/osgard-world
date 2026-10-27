@@ -532,6 +532,10 @@ func _layout_stage() -> void:
     if compact:
         quality_button.custom_minimum_size.x = 136.0
         motion_button.custom_minimum_size.x = 136.0
+        walk_button.custom_minimum_size.x = 152.0
+        walk_action_button.custom_minimum_size.x = 152.0
+    for direction in walk_direction_buttons.keys():
+        (walk_direction_buttons[direction] as Button).custom_minimum_size.x = 80.0 if compact else 111.0
     call_deferred("_publish_web_accessibility")
 
 func _toggle_locale() -> void:
@@ -620,6 +624,7 @@ func _render(state: Dictionary) -> void:
     narrative_body.text = str(story.get("body", ""))
     _update_forecast(state)
     sound_button.text = _t("sound_off" if sound_bus != null and sound_bus.muted else "sound_on")
+    _refresh_walk_status()
     cycle_label.text = "%s %02d / 06" % [_t("round"), mini(6, int(state["shift"]) + 1)]
     actions_label.text = "%s: %d / 2" % [_t("actions"), int(state["actions_left"])]
     var result: String = str(state["status"])
@@ -714,6 +719,12 @@ func _publish_web_accessibility() -> void:
         "narrative_id": str(A7IncidentDirector.describe(locale, snapshot).get("id", "")),
         "sound_muted": bool(sound_bus.muted) if sound_bus != null else true,
         "sound_cues": int(sound_bus.accepted_cues) if sound_bus != null else 0,
+        "walk_mode": bool(stage_state.get("walk_mode", false)),
+        "operator_sector": str(stage_state.get("operator", {}).get("sector", "central")),
+        "operator_position": stage_state.get("operator", {}).get("position", [0,0,0]),
+        "operator_context_action": str(stage_state.get("operator", {}).get("context_action", "")),
+        "operator_travel_metres": float(stage_state.get("operator", {}).get("travel_metres", 0.0)),
+        "walk_physics_colliders": int(stage_state.get("walk_physical_colliders", 0)),
     }
     var geometry: Dictionary = {
         "viewport": [roundi(size.x), roundi(size.y)],
@@ -730,6 +741,9 @@ func _publish_web_accessibility() -> void:
         "quality": _web_rect(quality_button),
         "motion": _web_rect(motion_button),
         "sound": _web_rect(sound_button),
+        "walk": _web_rect(walk_button),
+        "interact": _web_rect(walk_action_button),
+        "operator_hint": _web_rect(walk_status),
         "story": _web_rect(narrative_title),
         "forecast": _web_rect(forecast_label),
         "scroll": int(scroll.scroll_vertical),
