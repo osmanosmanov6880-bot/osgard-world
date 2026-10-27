@@ -78,20 +78,56 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                         marker = page.locator("#iron-pulse-native-state")
                         marker.wait_for(state="attached", timeout=120000)
                         idle = {}
-                        deadline = time.monotonic() + 40
+                        # Godot starts at its configured 1280x720 logical size,
+                        # then asynchronously adopts the actual browser viewport.
+                        # The additional native art can make that transition take
+                        # multiple real rendered frames on SwiftShader; DO NOT
+                        # accept an initial 1280x720 as final, or silently scale
+                        # the game to fake a mobile pass.
+                        observed_viewports = []
+                        deadline = time.monotonic() + 100
                         while time.monotonic() < deadline:
                             idle = json.loads(marker.get_attribute("data-state", timeout=10000))
-                            if int(idle.get("godot_frames_drawn", 0)) >= 1:
+                            native = idle.get("viewport", [])
+                            if native and (not observed_viewports or observed_viewports[-1] != native):
+                                observed_viewports.append(native)
+                            resized = (len(native) == 2 and
+                                       abs(native[0]-size["width"]) <= 2.0 and
+                                       abs(native[1]-size["height"]) <= 2.0)
+                            if int(idle.get("godot_frames_drawn", 0)) >= 2 and resized:
                                 break
                             page.wait_for_timeout(250)
+                        report.setdefault("viewport_transitions", {})[name] = observed_viewports
                         assert idle["scene"] == "IRON_PULSE_BLACKOUT", idle
                         assert idle["started"] is False and idle["intro_visible"] is True, idle
                         assert idle["objective"] == "scan", idle
                         assert idle["godot_frames_drawn"] >= 1, idle
                         assert idle["locale"] == "ru", idle
+                        assert idle.get("soundscape_ready") is True, idle
+                        assert idle.get("cinematic_details",{}).get("instanced_detail_count",0) >= 270, idle
+                        assert idle.get("cinematic_details",{}).get("safety_signs",0) >= 3, idle
+                        assert idle.get("vitals_visible") is (not mobile), idle
+                        # A visible canvas is not enough: Godot must lay out HUD in
+                        # real CSS pixel coordinates, not shrink a 1280px desktop
+                        # scene to 390px and pretend the touch buttons are usable.
+                        native_view = idle["viewport"]
+                        assert abs(native_view[0] - size["width"]) <= 2.0, (
+                            "Godot viewport shrunk horizontally: unreadable text", native_view, size)
+                        assert abs(native_view[1] - size["height"]) <= 2.0, (
+                            "Godot viewport stretched vertically: inaccessible touch UI", native_view, size)
                         if mobile:
                             assert idle["touch_controls_visible"] is True, idle
-                            assert len(idle.get("touch_button_rects", {})) >= 6, idle
+                            rectangles = idle.get("touch_button_rects", {})
+                            assert len(rectangles) >= 6, idle
+                            for label in ("W", "A", "S", "D", "USE / E", "L / RU-EN"):
+                                rect = rectangles[label]
+                                # Read actual native Control rectangles, then compare
+                                # against the real CSS pixel scaling on this device.
+                                real_width = rect[2] * size["width"] / native_view[0]
+                                real_height = rect[3] * size["height"] / native_view[1]
+                                assert real_width >= 44 and real_height >= 44, (
+                                    "Touch target too small in browser pixels", label, rect,
+                                    real_width, real_height)
                         page.keyboard.press("Enter")
                         deadline = time.monotonic() + 45
                         state = {}
@@ -101,6 +137,23 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                                 break
                             page.wait_for_timeout(200)
                         assert state.get("started") is True, f"Enter did not start game on real canvas: {state}"
+                        if mobile:
+                            # Genuine mobile tap through Chromium's touchscreen,
+                            # on the actual Godot Button; never call the locale
+                            # setter or write a synthetic result to the game.
+                            rect = state["touch_button_rects"]["L / RU-EN"]
+                            canvas_box = canvas.bounding_box()
+                            assert canvas_box is not None
+                            tap_x = canvas_box["x"] + (rect[0]+rect[2]/2)*canvas_box["width"]/state["viewport"][0]
+                            tap_y = canvas_box["y"] + (rect[1]+rect[3]/2)*canvas_box["height"]/state["viewport"][1]
+                            page.touchscreen.tap(tap_x,tap_y)
+                            deadline = time.monotonic() + 25
+                            while time.monotonic() < deadline:
+                                state = json.loads(marker.get_attribute("data-state", timeout=10000))
+                                if state.get("locale") == "en":
+                                    break
+                                page.wait_for_timeout(200)
+                            assert state.get("locale") == "en", ("Mobile language button does not work", state)
                         if not mobile:
                             origin = state["player_position"][2]
                             page.keyboard.down("w")
@@ -114,6 +167,24 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                             finally:
                                 page.keyboard.up("w")
                             assert state["player_position"][2] < origin - 0.35, (origin, state)
+                            # Verify real 3D detail and motion/audio accessibility via
+                            # real Chromium keys; only read Godot state, never modify it.
+                            for key, property_name, expected in (
+                                ("g","quality_mode","eco"),
+                                ("v","reduced_motion",True),
+                                ("m","audio_muted",True),
+                            ):
+                                page.keyboard.press(key)
+                                deadline = time.monotonic() + 25
+                                while time.monotonic() < deadline:
+                                    state = json.loads(marker.get_attribute("data-state",timeout=10000))
+                                    if state.get(property_name) == expected:
+                                        break
+                                    page.wait_for_timeout(200)
+                                assert state.get(property_name) == expected,(key,property_name,state)
+                            page.keyboard.press("g")
+                            page.keyboard.press("m")
+                            page.keyboard.press("v")
                             page.keyboard.press("l")
                             deadline = time.monotonic() + 20
                             while time.monotonic() < deadline:
@@ -131,6 +202,12 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                                 page.wait_for_timeout(200)
                             assert state.get("paused") is True, state
                             page.keyboard.press("Escape")
+                        # Also enforce resize AFTER gameplay/touch and toggling
+                        # graphics: older builds briefly reported a correct
+                        # viewport at boot, then regressed to 1280px on mobile.
+                        final_view = state.get("viewport", [])
+                        assert len(final_view) == 2 and abs(final_view[0]-size["width"]) <= 2.0 and abs(final_view[1]-size["height"]) <= 2.0, (
+                            "Viewport regressed after real gameplay",name,final_view,size,state.get("godot_frames_drawn"))
                         page.wait_for_timeout(1800)
                         png = page.screenshot(timeout=60000, animations="disabled")
                         stats = frame_metrics(png)
