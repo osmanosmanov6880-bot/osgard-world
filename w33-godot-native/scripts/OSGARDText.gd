@@ -3,6 +3,10 @@ class_name OSGARDText
 ## Offline RU/EN labels and explanations with an immutable simulation warning.
 
 const RU = {
+    "brand_desktop":"ПОСЛЕДНИЙ РУБЕЖ   /   ПРОТОКОЛ А7",
+    "brand_mobile":"ПОСЛЕДНИЙ РУБЕЖ",
+    "stage_facility":"ОБЪЕКТ A7  //  ДИАГНОСТИКА",
+    "stage_narrow":"A7  /  НАБЛЮДЕНИЕ",
     "subtitle":"ИНТЕРАКТИВНАЯ ПРОМЫШЛЕННАЯ ЛАБОРАТОРИЯ",
     "lead":"Шесть учебных миссий · три неисправности · три аварийные смены",
     "sim":"ТОЛЬКО СИМУЛЯЦИЯ. НЕ ИНСТРУКЦИЯ ДЛЯ РЕАЛЬНОГО ОБОРУДОВАНИЯ.",
@@ -70,6 +74,10 @@ const RU = {
 }
 
 const EN = {
+    "brand_desktop":"LAST FRONTIER   /   A7 PROTOCOL",
+    "brand_mobile":"LAST FRONTIER",
+    "stage_facility":"A7 FACILITY  //  LIVE DIAGNOSTICS",
+    "stage_narrow":"A7  /  OBSERVATION",
     "subtitle":"INTERACTIVE INDUSTRIAL SIMULATION LAB",
     "lead":"Six training missions · three faults · three incident shifts",
     "sim":"SIMULATION ONLY. NOT INSTRUCTIONS FOR REAL INDUSTRIAL EQUIPMENT.",
