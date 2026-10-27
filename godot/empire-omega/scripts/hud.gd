@@ -10,6 +10,7 @@ const R90_DASHBOARD = preload("res://scripts/horizon_r90_premium_dashboard.gd")
 const R90_SPEED = preload("res://scripts/horizon_r90_speed_dial.gd")
 const CITY_REIGN_IMPACT = preload("res://scripts/city_reign_impact.gd")
 const CITY_REIGN_STORY = preload("res://scripts/city_reign_story.gd")
+const CITY_REIGN_PROMISE = preload("res://scripts/city_reign_first_promise.gd")
 ## Russian-first accessible HUD. All controls use the same GameState as the 3D world.
 
 signal strategy_changed(is_open: bool)
@@ -255,6 +256,9 @@ var mission_briefing_label: Label
 var city_reign_act_label: Label
 var city_reign_story_label: Label
 var city_reign_pulse_label: Label
+var city_reign_promise_title: Label
+var city_reign_promise_body: Label
+var city_reign_promise_hint: Label
 var controls_panel: PanelContainer
 var map_panel: PanelContainer
 var strategy_window: PanelContainer
@@ -494,6 +498,10 @@ func _make_hud() -> void:
 	city_reign_act_label = _label(details,"",18,true)
 	city_reign_story_label = _label(details,"",16)
 	city_reign_pulse_label = _label(details,"",15,true)
+	_separator(details)
+	city_reign_promise_title = _label(details,"",18,true)
+	city_reign_promise_body = _label(details,"",16)
+	city_reign_promise_hint = _label(details,"",15,true)
 	_separator(details)
 	_label(details,_v08("ЭКОНОМИКА И БЕЗОПАСНОСТЬ","ECONOMY AND SAFETY","经济和安全"),14,true)
 	context_label = _label(details,"",16)
@@ -785,6 +793,13 @@ func _refresh() -> void:
 		city_reign_story_label.text = str(story["copy"])
 	if city_reign_pulse_label != null:
 		city_reign_pulse_label.text = str(story["pulse"])
+	var first_promise: Dictionary = CITY_REIGN_PROMISE.briefing(d,GameState.BUILDINGS,GameState.locale)
+	if city_reign_promise_title != null:
+		city_reign_promise_title.text = str(first_promise["heading"])
+	if city_reign_promise_body != null:
+		city_reign_promise_body.text = str(first_promise["body"])
+	if city_reign_promise_hint != null:
+		city_reign_promise_hint.text = str(first_promise["hint"])
 	if objective_details_button != null:
 		objective_details_button.tooltip_text = _v08("ПОДРОБНОСТИ ЗАДАНИЯ · ОТКРЫТЬ / ЗАКРЫТЬ","MISSION DETAILS · OPEN / CLOSE","任务详情 · 打开 / 关闭")
 	if trial_label != null:
@@ -998,6 +1013,25 @@ func _redraw_strategy() -> void:
 	_label(strategy_contents,str(narrative["heading"]),19,true)
 	_label(strategy_contents,str(narrative["copy"]),15)
 	_label(strategy_contents,str(narrative["pulse"]),15,true)
+	_separator(strategy_contents)
+	var mandate: Dictionary = CITY_REIGN_PROMISE.briefing(d,GameState.BUILDINGS,GameState.locale)
+	_label(strategy_contents,str(mandate["heading"]),20,true)
+	_label(strategy_contents,str(mandate["body"]),16)
+	_label(strategy_contents,str(mandate["hint"]),15,true)
+	for mandate_id in CITY_REIGN_PROMISE.CHOICES:
+		var offer: Dictionary = CITY_REIGN_PROMISE.choice(d,GameState.BUILDINGS,mandate_id,GameState.locale)
+		if bool(offer["completed"]):
+			_label(strategy_contents,str(offer["title"]) + "  ✓  " + _v08("ЗАВЕРШЁН","COMPLETED","已完成"),17,true)
+		elif bool(offer["active"]):
+			_label(strategy_contents,str(offer["title"]) + " · " + str(offer["remaining"]) + " " + _v08("тактов до сдачи","turns remaining","回合剩余"),16,true)
+		else:
+			var decide: Button = _button(strategy_contents,CITY_REIGN_PROMISE.button_text(offer,GameState.locale),
+				Callable(self,"_do_initiative").bind(mandate_id),not bool(offer["allowed"]))
+			decide.name = "CityReignPromise_" + mandate_id
+			var projected: Dictionary = offer["forecast"]
+			if not projected.is_empty():
+				_label(strategy_contents,CITY_REIGN_IMPACT.explain(projected,GameState.locale),14)
+	_separator(strategy_contents)
 	_label(strategy_contents,"%s %d  ·  %s %d  ·  %s %d" % [t("turn"),d["turn"],t("science"),d["science"],t("actions"),d["actions_left"]],16,true)
 	var overview := HBoxContainer.new()
 	overview.add_theme_constant_override("separation",7)

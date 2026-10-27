@@ -27,6 +27,7 @@ const GROUND_SPRAY_SCENE = preload("res://scripts/horizon_ground_spray.gd")
 const ROAD_WETNESS = preload("res://scripts/horizon_rain_puddles.gd")
 const CASE_MARKER_SCENE = preload("res://scripts/city_case_marker.gd")
 const CITY_REIGN_CRISIS = preload("res://scripts/city_reign_crisis_scene.gd")
+const CITY_REIGN_PROPOSALS = preload("res://scripts/city_reign_promise_markers.gd")
 const CARGO_VISUAL_SCENE = preload("res://scripts/cargo_visual.gd")
 const POLICE_SCENE = preload("res://scripts/police_dispatch.gd")
 const TRIAL_MARKER_SCENE = preload("res://scripts/trial_marker.gd")
@@ -42,6 +43,7 @@ var skid_trails: Node3D
 var ground_spray: Node3D
 var city_case_marker
 var city_reign_crisis: Node3D
+var city_reign_proposals: Node3D
 var cargo_visual
 var current_weather_kind := "clear"
 var base_road_grip := 1.0
@@ -102,6 +104,9 @@ func _ready() -> void:
 	city_reign_crisis = CITY_REIGN_CRISIS.new()
 	add_child(city_reign_crisis)
 	city_reign_crisis.sync_state(GameState.data,GameState.locale)
+	city_reign_proposals = CITY_REIGN_PROPOSALS.new()
+	add_child(city_reign_proposals)
+	city_reign_proposals.sync_state(GameState.data,GameState.locale)
 	traffic_signals = SIGNALS_SCENE.new()
 	add_child(traffic_signals)
 	roadworks = ROADWORKS_SCENE.new()
@@ -561,6 +566,8 @@ func _input(event: InputEvent) -> void:
 		world.update_language(GameState.locale)
 		if city_reign_crisis != null:
 			city_reign_crisis.sync_state(GameState.data,GameState.locale)
+		if city_reign_proposals != null:
+			city_reign_proposals.sync_state(GameState.data,GameState.locale)
 	elif event.is_action_pressed("save_game"):
 		_save()
 	elif event.is_action_pressed("load_game"):
@@ -933,6 +940,8 @@ func _on_game_changed(reason: String) -> void:
 	landmarks.update_language(GameState.locale)
 	if city_reign_crisis != null:
 		city_reign_crisis.sync_state(GameState.data,GameState.locale)
+	if city_reign_proposals != null:
+		city_reign_proposals.sync_state(GameState.data,GameState.locale)
 	world.update_language(GameState.locale)
 	_apply_weather()
 

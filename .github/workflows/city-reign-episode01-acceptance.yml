@@ -1,0 +1,123 @@
+name: CITY REIGN E01 true first promise - native acceptance, NO DEPLOY
+on:
+  pull_request:
+    branches:
+      - feat/omega-r90-aaa-reference-first-slice-20261026
+    paths:
+      - 'godot/empire-omega/**'
+      - 'scripts/omega-direct-publish.contract.test.mjs'
+      - '.github/workflows/city-reign-episode01-acceptance.yml'
+  push:
+    branches:
+      - feat/city-reign-first-mandate-20261028
+    paths:
+      - 'godot/empire-omega/**'
+      - 'scripts/omega-direct-publish.contract.test.mjs'
+      - '.github/workflows/city-reign-episode01-acceptance.yml'
+permissions:
+  contents: read
+concurrency:
+  group: city-reign-e01-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  original-episode-one-godot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 23
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      - name: Pin exact authored candidate without master release
+        shell: bash
+        env:
+          EXPECTED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+          test "${#EXPECTED_SHA}" -eq 40
+          mkdir -p city-reign-episode-evidence
+          printf '%s\n' "$EXPECTED_SHA" > city-reign-episode-evidence/source-sha.txt
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: false
+      - name: Strict original Godot import and original deterministic sounds
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 godot/empire-omega/tools/generate_audio.py
+          python3 godot/empire-omega/tools/generate_patrol_audio.py
+          bash scripts/omega-strict-godot-import.sh godot/empire-omega \
+            | tee city-reign-episode-evidence/godot-import.log
+      - name: Run authentic first-promise and all 4 preceding CITY REIGN suites
+        shell: bash
+        run: |
+          set -euo pipefail
+          for testname in \
+            v106_city_reign_world_consequences \
+            v107_city_reign_impact_story \
+            v108_city_reign_unique_landmarks \
+            v109_city_reign_policies_crises \
+            v110_city_reign_first_mandate; do
+            log="city-reign-episode-evidence/${testname}.log"
+            timeout --signal=TERM --kill-after=6s 120s godot --headless \
+              --path godot/empire-omega --script "res://tests/${testname}.gd" | tee "$log"
+            case "$testname" in
+              v106*) marker="CITY REIGN C1 real Godot world consequences:" ;;
+              v107*) marker="CITY REIGN C2 impact and story:" ;;
+              v108*) marker="CITY REIGN C3 distinct civic 3D:" ;;
+              v109*) marker="CITY REIGN C5 real policy and emergencies:" ;;
+              v110*) marker="CITY REIGN E01 real playable promise:" ;;
+            esac
+            grep -Fq "$marker" "$log"
+            if grep -nE 'SCRIPT ERROR:|Parse Error:|FAIL:| [1-9][0-9]* FAIL' "$log"; then
+              echo "::error::Real native suite failed: $testname"
+              exit 1
+            fi
+          done
+      - name: Regress exact independent manual-only release contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --test scripts/omega-direct-publish.contract.test.mjs \
+            | tee city-reign-episode-evidence/manual-only-release-contract.log
+      - name: Independent SHA-256 evidence and no-premature-AAA gate
+        shell: bash
+        env:
+          EXPECTED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib, json, os
+          files=[
+            'godot/empire-omega/scripts/city_reign_first_promise.gd',
+            'godot/empire-omega/scripts/city_reign_promise_markers.gd',
+            'godot/empire-omega/scripts/hud.gd',
+            'godot/empire-omega/scripts/main.gd',
+            'godot/empire-omega/tests/v110_city_reign_first_mandate.gd',
+            'scripts/omega-direct-publish.contract.test.mjs',
+          ]
+          out={
+             'original_source_sha':os.environ['EXPECTED_SHA'],
+             'Godot': '4.4.1',
+             'source_hashes':{p:hashlib.sha256(Path(p).read_bytes()).hexdigest() for p in files},
+             'new_scripted_missions':False,
+             'existing_40_mission_id_changes':False,
+             'human_30min_playtest_verified':False,
+             'physical_device_approval':False,
+             'photorealistic_aaa_approval':False,
+             'production_release_approved':False
+          }
+          Path('city-reign-episode-evidence/sha256-manifest.json').write_text(json.dumps(out,indent=2)+'\n')
+          print('E01 exact source-lock',out['original_source_sha'])
+          PY
+      - name: Archive authentic native test logs and explicit production HOLD
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: city-reign-episode01-${{ github.run_id }}
+          path: city-reign-episode-evidence/
+          if-no-files-found: warn
+          retention-days: 14
