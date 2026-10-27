@@ -137,6 +137,7 @@ func _finish() -> void:
     if failures.is_empty():
         print("LAST FRONTIER W66 ART FACILITY TRUE GODOT 3D AND COMPLETE GAME PASS: %d assertions" % assertions)
         quit(0)
+        return
     for issue in failures:
         push_error("W66 VISUAL GAME CONTRACT FAILED: " + issue)
     quit(1)
