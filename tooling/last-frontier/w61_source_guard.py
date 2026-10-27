@@ -86,6 +86,20 @@ def validate_main_methods(before, after):
     return changed
 
 
+def validate_main_preamble(before, after):
+    """Only a read-only phase-strip declaration may be added outside methods."""
+    old = before.split("\nfunc ", 1)[0]
+    new = after.split("\nfunc ", 1)[0]
+    exact_insert = ("var stage_edition: Label\n"
+                    "# W61: source-only cinematic mission phase indicators; no gameplay mutation.\n"
+                    "var mission_segments: Array[ColorRect] = []")
+    if old.count("var stage_edition: Label") != 1:
+        raise ValueError("Original game declarations missing in baseline")
+    if new != old.replace("var stage_edition: Label", exact_insert):
+        raise ValueError("Unreviewed global state or engine dependency added")
+    return True
+
+
 def validate_localization(before, after):
     new = after
     # Remove only the precise W61 additions: existing strings, decisions and
@@ -95,10 +109,24 @@ def validate_localization(before, after):
         '    "brand_mobile":"ПОСЛЕДНИЙ РУБЕЖ",\n',
         '    "stage_facility":"ОБЪЕКТ A7  //  ДИАГНОСТИКА",\n',
         '    "stage_narrow":"A7  /  НАБЛЮДЕНИЕ",\n',
+        '    "stage_classification":"A7 / ЗАКРЫТЫЙ ИССЛЕДОВАТЕЛЬСКИЙ ОБЪЕКТ",\n',
+        '    "reactor_title_short":"РЕАКТОР A7",\n',
+        '    "reactor_title_long":"РЕАКТОР A7   /   ПРОТОКОЛ",\n',
+        '    "stage_idle":"A7 / ОЖИДАНИЕ",\n',
+        '    "stage_active":"A7 / ДИАГНОСТИКА",\n',
+        '    "stage_alert":"ТРЕВОГА / ПРОВЕРЬТЕ ПРОТОКОЛ",\n',
+        '    "stage_complete":"ПРОТОКОЛ / ЗАВЕРШЁН",\n',
         '    "brand_desktop":"LAST FRONTIER   /   A7 PROTOCOL",\n',
         '    "brand_mobile":"LAST FRONTIER",\n',
         '    "stage_facility":"A7 FACILITY  //  LIVE DIAGNOSTICS",\n',
         '    "stage_narrow":"A7  /  OBSERVATION",\n',
+        '    "stage_classification":"A7 / RESTRICTED RESEARCH FACILITY",\n',
+        '    "reactor_title_short":"REACTOR A7",\n',
+        '    "reactor_title_long":"REACTOR A7   /   A7 PROTOCOL",\n',
+        '    "stage_idle":"A7 / SECURE STANDBY",\n',
+        '    "stage_active":"A7 / LIVE DIAGNOSTICS",\n',
+        '    "stage_alert":"ALERT / CHECK SAFETY",\n',
+        '    "stage_complete":"PROTOCOL / COMPLETE",\n',
     )
     for entry in allowed:
         if new.count(entry) != 1:
@@ -127,6 +155,7 @@ def verify(head):
         blobs[path] = current
     before_main = git("show", BASE + ":w33-godot-native/scripts/OSGARDMain.gd")
     after_main = git("show", head + ":w33-godot-native/scripts/OSGARDMain.gd")
+    validate_main_preamble(before_main, after_main)
     methods_changed = validate_main_methods(before_main, after_main)
     before_l10n = git("show", BASE + ":w33-godot-native/scripts/OSGARDText.gd")
     after_l10n = git("show", head + ":w33-godot-native/scripts/OSGARDText.gd")
