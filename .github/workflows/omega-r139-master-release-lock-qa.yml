@@ -5,6 +5,7 @@ on:
     paths:
       - '.github/workflows/omega-godot-web.yml'
       - '.github/workflows/omega-web-direct-deploy.yml'
+      - '.github/workflows/omega-source-freshness-qa.yml'
       - '.github/workflows/omega-r139-master-release-lock-qa.yml'
       - 'scripts/omega-r138-manual-release-guard.py'
       - 'scripts/test_omega_r138_release_lock.py'
@@ -14,6 +15,7 @@ on:
     paths:
       - '.github/workflows/omega-godot-web.yml'
       - '.github/workflows/omega-web-direct-deploy.yml'
+      - '.github/workflows/omega-source-freshness-qa.yml'
       - '.github/workflows/omega-r139-master-release-lock-qa.yml'
       - 'scripts/omega-r138-manual-release-guard.py'
       - 'scripts/test_omega_r138_release_lock.py'
@@ -47,6 +49,7 @@ jobs:
           allowed={
             '.github/workflows/omega-godot-web.yml',
             '.github/workflows/omega-web-direct-deploy.yml',
+            '.github/workflows/omega-source-freshness-qa.yml',
             '.github/workflows/omega-r139-master-release-lock-qa.yml',
             'scripts/omega-r138-manual-release-guard.py',
             'scripts/test_omega_r138_release_lock.py',
