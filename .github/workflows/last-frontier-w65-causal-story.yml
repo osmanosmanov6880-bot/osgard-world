@@ -1,0 +1,163 @@
+name: LAST FRONTIER W65 real causal story + original audio + browser game (HOLD)
+
+on:
+  pull_request:
+    branches:
+      - experiment/last-frontier-w64-cinematic-3d-20261028
+    paths:
+      - 'w63-a7-cascade/**'
+      - '.github/workflows/last-frontier-w65-causal-story.yml'
+      - 'docs/LAST_FRONTIER_W65_CAUSAL_STORY_AUDIO.md'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: last-frontier-w65-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  source-chain:
+    name: W65 exact current W64 ancestry and 14 original game/3D/CI blobs unchanged
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Original game and 3D source contracts
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          mkdir -p w65-evidence
+          test "$(git rev-parse HEAD)" = "$HEAD_SHA"
+          python3 -m py_compile w63-a7-cascade/ci/w65_source_guard.py w63-a7-cascade/ci/w65_browser_story_audio.py
+          python3 w63-a7-cascade/ci/w65_source_guard.py --base "$BASE_SHA" --head "$HEAD_SHA" --out w65-evidence/W65_EXACT_SOURCE.json
+          python3 - <<'PY'
+          import json
+          record=json.load(open('w65-evidence/W65_EXACT_SOURCE.json'))
+          assert record['status']=='PASS'
+          assert len(record['protected_original_blobs'])==14
+          assert not record['original_game_rules_changed']
+          assert not record['original_3d_geometry_changed']
+          assert not record['production_approved'] and not record['allow_master_merge']
+          print('W65 exact W64 source and no-original-rules mutation PASS')
+          PY
+      - name: Retain exact-source proof
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: last-frontier-w65-source-${{ github.event.pull_request.head.sha }}
+          path: w65-evidence/W65_EXACT_SOURCE.json
+          retention-days: 45
+          if-no-files-found: warn
+
+  playable-native-and-browser:
+    name: W65 real Godot story/audio + W63 105 original / W64 3D and Chromium win
+    needs: source-chain
+    runs-on: ubuntu-latest
+    timeout-minutes: 65
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          include-templates: true
+          use-dotnet: false
+      - name: Import entire real Godot project and reject script errors
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p w65-evidence
+          timeout --signal=TERM --kill-after=5s 180s godot --headless --editor --path w63-a7-cascade --import --quit 2>&1 | tee w65-evidence/import.log
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:|Failed to load script' w65-evidence/import.log; then exit 1; fi
+      - name: Run actual old six-cycle W63, 3D W64, and new six-chapter W65 tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          for script in test_a7_cascade test_w64_real_3d_stage test_w65_story_audio; do
+            timeout --signal=TERM --kill-after=5s 220s godot --headless --path w63-a7-cascade --script "res://tests/$script.gd" 2>&1 | tee "w65-evidence/$script.log"
+            if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "w65-evidence/$script.log"; then exit 1; fi
+          done
+          grep -q 'LAST FRONTIER W63 A7 CASCADE REAL GODOT PLAYABLE VERTICAL SLICE PASS: 105 checks' w65-evidence/test_a7_cascade.log
+          grep -q 'LAST FRONTIER W64 REAL NATIVE 3D CINEMATIC GAME PASS:' w65-evidence/test_w64_real_3d_stage.log
+          grep -q 'LAST FRONTIER W65 ORIGINAL GAME CAUSAL STORY + SYNTH AUDIO PASS:' w65-evidence/test_w65_story_audio.log
+      - name: Export real Godot WebAssembly build
+        shell: bash
+        env:
+          SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          (
+            cd w63-a7-cascade
+            mkdir -p build/web
+            godot --headless --path . --export-release Web build/web/index.html
+          ) 2>&1 | tee w65-evidence/web-export.log
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' w65-evidence/web-export.log; then exit 1; fi
+          python3 w33-godot-native/ci/verify_web_export.py w63-a7-cascade/build/web --sha "$SHA" --output w63-a7-cascade/build/web/evidence.json
+      - name: Prepare actual software Chromium and original screenshots
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m venv /tmp/a7-w65
+          /tmp/a7-w65/bin/pip install --disable-pip-version-check playwright==1.56.0 Pillow==11.3.0
+          /tmp/a7-w65/bin/python -m playwright install --with-deps chromium
+      - name: Chromium original native 3D reactive pixels, controls, language, then six-story/audio real win
+        shell: bash
+        env:
+          SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 1050s /tmp/a7-w65/bin/python w63-a7-cascade/ci/w64_browser_acceptance.py --export w63-a7-cascade/build/web --evidence w65-evidence/3d-browser --sha "$SHA" 2>&1 | tee w65-evidence/3d-browser.log
+          grep -q 'LAST FRONTIER W64 REAL GODOT 3D CHROMIUM GAMEPLAY PASS:' w65-evidence/3d-browser.log
+          timeout --signal=TERM --kill-after=5s 1050s /tmp/a7-w65/bin/python w63-a7-cascade/ci/w65_browser_story_audio.py --export w63-a7-cascade/build/web --evidence w65-evidence/story-browser --sha "$SHA" 2>&1 | tee w65-evidence/story-browser.log
+          grep -q 'LAST FRONTIER W65 GENUINE CHROMIUM NARRATIVE / SOUND + WIN PASS:' w65-evidence/story-browser.log
+          python3 - <<'PY'
+          import json,os
+          from pathlib import Path
+          sha=os.environ['SHA']
+          a=json.loads(Path('w65-evidence/3d-browser/W64_REAL_BROWSER_GAMEPLAY.json').read_text())
+          b=json.loads(Path('w65-evidence/story-browser/W65_BROWSER_EVIDENCE.json').read_text())
+          assert a['status']=='PASS' and a['source_sha']==sha
+          assert b['status']=='PASS' and b['source_sha']==sha
+          assert a['browser_played_original_model'] and b['actual_w63_twelve_decision_winning_route']
+          assert len(a['screenshots'])==3 and len(b['screenshots'])==3
+          assert not a['production_approved'] and not b['production_approved']
+          print('BOTH REAL CHROMIUM CI DRIVERS PASS ON EXACT W65 SHA - PRODUCTION HOLD')
+          PY
+      - name: Preserve actual WebGL game, gameplay proof and original PNG screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: last-frontier-w65-real-playable-web-${{ github.event.pull_request.head.sha }}
+          path: |
+            w63-a7-cascade/build/web/
+            w65-evidence/
+          retention-days: 45
+          if-no-files-found: warn
+
+  release-hold:
+    name: W65 software evidence cannot approve AAA product, physical speaker or name rights
+    runs-on: ubuntu-latest
+    needs: [source-chain, playable-native-and-browser]
+    if: always()
+    steps:
+      - name: Enforce strict real software success and no auto release
+        shell: bash
+        env:
+          SOURCE: ${{ needs.source-chain.result }}
+          PLAYABLE: ${{ needs.playable-native-and-browser.result }}
+        run: |
+          set -euo pipefail
+          test "$SOURCE" = success
+          test "$PLAYABLE" = success
+          echo 'W65 GENUINE GODOT AND CHROMIUM SOFTWARE CANDIDATE PASS'
+          echo 'PRODUCTION HOLD: no physical hardware, AAA certification, music rights, master merge, trademark or commercial launch'

@@ -38,13 +38,15 @@ const RU := {
     "failed": "ПОТЕРЯ КОНТРОЛЯ. Пересмотрите последовательность.",
     "unstable": "ШЕСТЬ ЦИКЛОВ ПРОЙДЕНО, НО УЗЕЛ НЕ СТАБИЛИЗИРОВАН.",
     "won": "A7 СТАБИЛИЗИРОВАН. Вы удержали систему.",
-    "keys": "1-5: ДЕЙСТВИЯ  |  C: КАМЕРА  |  Q: КАЧЕСТВО  |  M: АНИМАЦИЯ  |  L: ЯЗЫК  |  R: ПЕРЕЗАПУСК",
+    "keys": "1-5: ДЕЙСТВИЯ  |  C: КАМЕРА  |  Q: КАЧЕСТВО  |  M: АНИМАЦИЯ  |  L: ЯЗЫК  |  S: ЗВУК  |  R: ПЕРЕЗАПУСК",
     "objective": "ЦЕЛЬ: ТЕПЛО И ДАВЛЕНИЕ <= 75; ГЕРМЕТИЧНОСТЬ И СИГНАЛ >= 50; ЭНЕРГИЯ >= 30; ЦЕЛОСТНОСТЬ >= 55.",
     "stage": "A7 / ЖИВАЯ 3D-КАМЕРА  •  ВЫМЫШЛЕННЫЙ ОБЪЕКТ",
     "camera0": "01 / ОБЩИЙ", "camera1": "02 / ФРОНТ", "camera2": "03 / БОКОВОЙ",
     "quality_hero": "ГРАФИКА / HERO", "quality_eco": "ГРАФИКА / ECO",
     "motion_on": "АНИМАЦИЯ / ВКЛ", "motion_off": "АНИМАЦИЯ / ВЫКЛ",
     "visual": "ТЕПЛО %d   •   ДАВЛЕНИЕ %d   •   ЭНЕРГИЯ %d",
+    "sound_on": "ЗВУК / ВКЛ", "sound_off": "ЗВУК / ВЫКЛ",
+    "preview_default": "ВЫБЕРИТЕ ДЕЙСТВИЕ: ПОСЛЕДСТВИЯ ПОКАЗАНЫ В ИГРОВЫХ ЕДИНИЦАХ.",
 }
 const EN := {
     "brand": "LAST FRONTIER  /  A7",
@@ -69,13 +71,15 @@ const EN := {
     "failed": "CONTAINMENT LOST. Reconsider your sequence.",
     "unstable": "SIX CYCLES SURVIVED, BUT THE SYSTEM IS UNSTABLE.",
     "won": "A7 STABILIZED. You held the frontier.",
-    "keys": "1-5: ACTIONS  |  C: CAMERA  |  Q: QUALITY  |  M: MOTION  |  L: LANGUAGE  |  R: RESTART",
+    "keys": "1-5: ACTIONS  |  C: CAMERA  |  Q: QUALITY  |  M: MOTION  |  L: LANGUAGE  |  S: SOUND  |  R: RESTART",
     "objective": "TARGET: HEAT AND PRESSURE <= 75; SEAL AND SIGNAL >= 50; ENERGY >= 30; CONTAINMENT >= 55.",
     "stage": "A7 / TRUE NATIVE 3D VIEW  •  FICTIONAL FACILITY",
     "camera0": "01 / WIDE", "camera1": "02 / FRONT", "camera2": "03 / SIDE",
     "quality_hero": "QUALITY / HERO", "quality_eco": "QUALITY / ECO",
     "motion_on": "MOTION / ON", "motion_off": "MOTION / OFF",
     "visual": "HEAT %d   •   PRESSURE %d   •   ENERGY %d",
+    "sound_on": "SOUND / ON", "sound_off": "SOUND / OFF",
+    "preview_default": "CHOOSE AN ACTION: FORECASTS ARE FICTIONAL GAME UNITS.",
 }
 
 var model: A7CascadeCore = A7CascadeCore.new()
@@ -108,10 +112,19 @@ var quality: String = "hero"
 var reduced_motion: bool = false
 var scroll: ScrollContainer
 var _web_state_element: Variant = null
+# W65 new standalone narrative and original procedural sound (no external files).
+var sound_bus: A7ProceduralAudio
+var sound_button: Button
+var narrative_title: Label
+var narrative_body: Label
+var forecast_label: Label
+var _previewed_action: String = ""
 
 func _ready() -> void:
     set_anchors_preset(Control.PRESET_FULL_RECT)
     _build()
+    sound_bus = A7ProceduralAudio.new()
+    add_child(sound_bus)
     _create_web_accessibility()
     model.changed.connect(_render)
     resized.connect(_layout_stage)
@@ -192,8 +205,8 @@ func _build() -> void:
     brand_label = _label(top, "", 27, GOLD)
     language_button = _button(top, "EN", _toggle_locale)
     language_button.custom_minimum_size = Vector2(90, 45)
-    # W64 visual hierarchy: place the real reactor above explanatory copy.
-    # First-time visitors must see gameplay at the top of the viewport.
+    # W65 inherits the tested W64 cinema-first composition:
+    # place native 3D reactor before verbose story and instructions.
     # Cinema-first native 3D stage is mounted inside the *actual* Godot UI.
     # Not an HTML video, screenshot, Three.js overlay or mockup.
     var cinema := _panel(body)
@@ -234,8 +247,18 @@ func _build() -> void:
     quality_button.custom_minimum_size = Vector2(145, 42)
     motion_button = _button(cinema_controls, "", _toggle_motion)
     motion_button.custom_minimum_size = Vector2(158, 42)
+    sound_button = _button(cinema_controls, "", _toggle_sound)
+    sound_button.custom_minimum_size = Vector2(138, 42)
     subtitle = _label(body, "", 15, MINT)
     intro = _label(body, "", 15, MUTED)
+
+    # Original story beats are generated from actual game shift/status;
+    # never play fake cutscenes that are independent of the player's choices.
+    var narrative_panel := _panel(body)
+    narrative_panel.name = "A7TrueStateIncidentBriefing"
+    narrative_title = _label(narrative_panel, "", 17, GOLD)
+    narrative_body = _label(narrative_panel, "", 14, WHITE)
+    forecast_label = _label(narrative_panel, "", 12, MINT)
 
     var status_box := _panel(body)
     var strip := HBoxContainer.new()
@@ -291,6 +314,10 @@ func _build() -> void:
         action_flow.add_child(section)
         var b := _button(section, "", _on_action.bind(action))
         action_buttons[action] = b
+        b.mouse_entered.connect(_preview_action.bind(action))
+        b.focus_entered.connect(_preview_action.bind(action))
+        b.mouse_exited.connect(_clear_action_preview)
+        b.focus_exited.connect(_clear_action_preview)
         var effect := _label(section, "", 12, MUTED)
         effect.name = "Effect_" + action
     objective_label = _label(command_box, "", 13, WHITE)
@@ -303,17 +330,62 @@ func _build() -> void:
     _label(body, "A7 CASCADE / EXPERIMENTAL VERTICAL-SLICE MECHANIC / SOFTWARE-ONLY", 11, GOLD)
 
 func _on_action(action: String) -> void:
-    # Real UI action drives the original deterministic game FIRST;
-    # the 3D stage reacts only to an accepted command.
-    if model.choose(action) and stage_3d != null:
+    # No sound or cinematic confirmation is issued for an invalid/blocked
+    # move; an accepted command first alters the original W63 rules engine.
+    _previewed_action = ""
+    var before: Dictionary = model.snapshot()
+    if not model.choose(action):
+        return
+    var after: Dictionary = model.snapshot()
+    if stage_3d != null:
         stage_3d.trigger_action(action)
-        call_deferred("_publish_web_accessibility")
+    if sound_bus != null:
+        var cue: String = "action"
+        if str(after["status"]) == "won":
+            cue = "win"
+        elif str(after["status"]) == "failed" or str(after["status"]) == "unstable":
+            cue = "loss"
+        elif int(after["shift"]) > int(before["shift"]):
+            cue = "danger" if str(after["last_event"]).begins_with("damage_") else "incident"
+        sound_bus.cue(cue)
+    call_deferred("_publish_web_accessibility")
 
 func _restart() -> void:
+    _previewed_action = ""
     model.reset()
+    if sound_bus != null:
+        sound_bus.cue("restart")
     if stage_3d != null:
         stage_3d.recent_action = ""
         stage_3d.pulse = 0.0
+
+func _toggle_sound() -> void:
+    if sound_bus != null:
+        sound_bus.set_muted(not sound_bus.muted)
+    _render(model.snapshot())
+
+func _preview_action(action: String) -> void:
+    if str(model.snapshot()["status"]) != "playing":
+        return
+    _previewed_action = action
+    _update_forecast(model.snapshot())
+
+func _clear_action_preview() -> void:
+    _previewed_action = ""
+    _update_forecast(model.snapshot())
+
+func _update_forecast(state: Dictionary) -> void:
+    if forecast_label == null:
+        return
+    if _previewed_action == "":
+        forecast_label.text = _t("preview_default")
+        forecast_label.add_theme_color_override("font_color", MINT)
+        return
+    var preview: Dictionary = A7IncidentDirector.preview(locale,
+        _previewed_action, state["metrics"])
+    forecast_label.text = str(preview.get("headline", "")) + "  /  " + str(preview.get("body", ""))
+    forecast_label.add_theme_color_override(
+        "font_color", RED if bool(preview.get("risk", false)) else MINT)
 
 func _select_camera(index: int) -> void:
     if stage_3d != null:
@@ -382,6 +454,10 @@ func _unhandled_key_input(event: InputEvent) -> void:
         _toggle_locale()
         get_viewport().set_input_as_handled()
         return
+    if key.keycode == KEY_S:
+        _toggle_sound()
+        get_viewport().set_input_as_handled()
+        return
     var keys := [KEY_1, KEY_2, KEY_3, KEY_4, KEY_5]
     var idx: int = keys.find(key.keycode)
     if idx >= 0 and idx < ACTION_ORDER.size():
@@ -396,6 +472,11 @@ func _render(state: Dictionary) -> void:
     intro.text = _t("intro")
     language_button.text = _t("language")
     restart_button.text = _t("reset")
+    var story: Dictionary = A7IncidentDirector.describe(locale, state)
+    narrative_title.text = str(story.get("title", ""))
+    narrative_body.text = str(story.get("body", ""))
+    _update_forecast(state)
+    sound_button.text = _t("sound_off" if sound_bus != null and sound_bus.muted else "sound_on")
     cycle_label.text = "%s %02d / 06" % [_t("round"), mini(6, int(state["shift"]) + 1)]
     actions_label.text = "%s: %d / 2" % [_t("actions"), int(state["actions_left"])]
     var result: String = str(state["status"])
@@ -487,12 +568,13 @@ func _publish_web_accessibility() -> void:
         "energy_gauge": float(stage_3d.energy_gauge.scale.y),
         "renderer_frames": Engine.get_frames_drawn(),
         "hardware_certified": false,
+        "narrative_id": str(A7IncidentDirector.describe(locale, snapshot).get("id", "")),
+        "sound_muted": bool(sound_bus.muted) if sound_bus != null else true,
+        "sound_cues": int(sound_bus.accepted_cues) if sound_bus != null else 0,
     }
     var geometry: Dictionary = {
         "viewport": [roundi(size.x), roundi(size.y)],
         "stage": _web_rect(stage_shell),
-        # Native minimum size is the actual responsive layout policy;
-        # the first-frame inherited global rect can be stale in Godot Web.
         "stage_requested_height": roundi(stage_shell.custom_minimum_size.y),
         "cinema_caption": _web_rect(cinema_caption),
         "cinema_inner": _web_rect(stage_shell.get_parent() as Control),
@@ -504,6 +586,9 @@ func _publish_web_accessibility() -> void:
         "language": _web_rect(language_button),
         "quality": _web_rect(quality_button),
         "motion": _web_rect(motion_button),
+        "sound": _web_rect(sound_button),
+        "story": _web_rect(narrative_title),
+        "forecast": _web_rect(forecast_label),
         "scroll": int(scroll.scroll_vertical),
     }
     for i in range(camera_buttons.size()):
