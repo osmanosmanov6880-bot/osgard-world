@@ -274,6 +274,27 @@ func _build() -> void:
     motion_button.custom_minimum_size = Vector2(158, 42)
     sound_button = _button(cinema_controls, "", _toggle_sound)
     sound_button.custom_minimum_size = Vector2(138, 42)
+    walk_button = _button(cinema_controls, "", _toggle_walk)
+    walk_button.name = "A7TrueFirstPersonModeToggle"
+    walk_button.custom_minimum_size = Vector2(174, 42)
+    walk_action_button = _button(cinema_controls, "", _walk_interact)
+    walk_action_button.name = "A7PhysicalContextConsoleAction"
+    walk_action_button.custom_minimum_size = Vector2(176, 42)
+    var walk_controls := HFlowContainer.new()
+    walk_controls.name = "A7ActualHoldToMoveMobileRail"
+    walk_controls.add_theme_constant_override("h_separation", 8)
+    walk_controls.add_theme_constant_override("v_separation", 8)
+    cinema.add_child(walk_controls)
+    for direction in ["forward", "back", "left", "right"]:
+        var movement := Button.new()
+        movement.name = "A7Move_" + direction
+        movement.focus_mode = Control.FOCUS_ALL
+        movement.custom_minimum_size = Vector2(111, 43)
+        movement.button_down.connect(_set_walk_direction.bind(direction, true))
+        movement.button_up.connect(_set_walk_direction.bind(direction, false))
+        walk_controls.add_child(movement)
+        walk_direction_buttons[direction] = movement
+    walk_status = _label(cinema, "", 12, MINT)
     subtitle = _label(body, "", 15, MINT)
     intro = _label(body, "", 15, MUTED)
 
