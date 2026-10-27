@@ -1,0 +1,208 @@
+name: OSGARD W58 exact-source + master isolated integration rehearsal (NO DEPLOY)
+
+on:
+  push:
+    branches: [review/osgard-w58-master-snapshot-integration-20261027]
+    paths:
+      - '.github/workflows/osgard-w58-master-snapshot-integration.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: osgard-w58-master-rehearsal-20261027
+  cancel-in-progress: false
+
+jobs:
+  immutable-merge-native-portal:
+    name: Snapshot merge, original gameplay, portal build, strict HOLD
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    env:
+      OSGARD_W58_EXACT_SOURCE_SHA: ef570cf6c406cc14ec180585ee2c5d64c667c658
+      OSGARD_MASTER_SNAPSHOT_SHA: 48cb8573efc4d1340c2b180cd0ff36961a9b3964
+      OSGARD_SHARED_ANCESTOR_SHA: 1fbf16ff6ef97f382ab66afc358ed513c15305cf
+    steps:
+      - name: Checkout isolated review-only CI source with full history and no push credential
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Simulate immutable master + source merge entirely inside disposable runner
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p merge-evidence
+          test "$GITHUB_REF" = "refs/heads/review/osgard-w58-master-snapshot-integration-20261027"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          git fetch --no-tags origin master
+          git cat-file -e "$OSGARD_W58_EXACT_SOURCE_SHA^{commit}"
+          git cat-file -e "$OSGARD_MASTER_SNAPSHOT_SHA^{commit}"
+          test "$(git merge-base "$OSGARD_W58_EXACT_SOURCE_SHA" "$GITHUB_SHA")" = "$OSGARD_W58_EXACT_SOURCE_SHA"
+          test "$(git merge-base "$OSGARD_MASTER_SNAPSHOT_SHA" "$OSGARD_W58_EXACT_SOURCE_SHA")" = "$OSGARD_SHARED_ANCESTOR_SHA"
+          git diff --name-only "$OSGARD_W58_EXACT_SOURCE_SHA" "$GITHUB_SHA" > merge-evidence/rehearsal-workflow-only-change.txt
+          test "$(cat merge-evidence/rehearsal-workflow-only-change.txt)" = '.github/workflows/osgard-w58-master-snapshot-integration.yml'
+          git checkout --detach "$OSGARD_MASTER_SNAPSHOT_SHA"
+          # This is an ephemeral LOCAL merge only; no push/PR/commit on server.
+          if ! git -c user.name="OSGARD CI dry-run" \
+                   -c user.email="qa-no-push@invalid.example" \
+                   merge --no-ff --no-edit "$OSGARD_W58_EXACT_SOURCE_SHA" \
+                     > merge-evidence/merge.log 2>&1; then
+            git ls-files -u > merge-evidence/unmerged-files.txt || true
+            printf '%s\n' 'BLOCKED: immutable source merge conflict; NO PRODUCTION GO' > merge-evidence/VERDICT.txt
+            cat merge-evidence/merge.log
+            exit 1
+          fi
+          echo "OSGARD_LOCAL_MERGE_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+          echo "OSGARD_LOCAL_MERGE_TREE=$(git rev-parse HEAD^{tree})" >> "$GITHUB_ENV"
+          git diff --name-only "$OSGARD_MASTER_SNAPSHOT_SHA" HEAD > merge-evidence/added-to-snapshot.txt
+          # Original W58 Godot project & W56 fail-closed checker survive byte-for-byte.
+          git diff --quiet "$OSGARD_W58_EXACT_SOURCE_SHA" HEAD -- \
+            w33-godot-native tooling/osgard-w56 \
+            .github/workflows/r135-w33-operator-debrief-native-qa.yml \
+            .github/workflows/osgard-w56-local-physical-review.yml \
+            .github/workflows/osgard-w57-exact-head-physical-hold.yml
+          # The current production portal/services/deploy pipeline stay exactly
+          # as they were on pinned master snapshot -- no cross-project edits.
+          git diff --quiet "$OSGARD_MASTER_SNAPSHOT_SHA" HEAD -- \
+            src public server ops cloudflare \
+            package.json package-lock.json \
+            docker-compose.production.yml nginx.conf osgard.world.nginx.conf \
+            .github/workflows/deploy-frontend.yml \
+            .github/workflows/cloudflare-pages.yml
+          python3 - <<'PY'
+          import json,os,subprocess
+          from pathlib import Path
+          def git(*args):
+              return subprocess.check_output(['git',*args],text=True).strip()
+          sha=os.environ['OSGARD_W58_EXACT_SOURCE_SHA']
+          master=os.environ['OSGARD_MASTER_SNAPSHOT_SHA']
+          merged=git('rev-parse','HEAD')
+          tree=git('rev-parse','HEAD^{tree}')
+          parent=git('rev-list','--parents','-n','1','HEAD').split()
+          assert len(parent)==3 and parent[1:]==[master,sha],parent
+          added=Path('merge-evidence/added-to-snapshot.txt').read_text().splitlines()
+          assert added and all(
+              x.startswith(('w33-godot-native/','tooling/osgard-w56/','.github/workflows/'))
+              for x in added),added
+          manifest={'schema':'OSGARD_W58_ISOLATED_MASTER_SNAPSHOT_REHEARSAL_V1',
+              'status':'MERGE_TREE_SOURCE_PRESERVED',
+              'game_sha':sha,'master_snapshot_sha':master,
+              'merge_base_sha':os.environ['OSGARD_SHARED_ANCESTOR_SHA'],
+              'local_ephemeral_merge_sha':merged,'local_ephemeral_tree_sha':tree,
+              'candidate_files_added_to_master_snapshot':added,
+              'original_w58_game_and_w56_checker_unchanged':True,
+              'master_production_portal_and_server_unchanged':True,
+              'actual_master_modified':False,
+              'master_merge_approved':False,'production_deployed':False,
+              'external_hardware_review_complete':False,'decision':'PRODUCTION_HOLD'}
+          Path('merge-evidence/merge-manifest.json').write_text(
+              json.dumps(manifest,indent=2,ensure_ascii=False)+'\n')
+          print(json.dumps({k:v for k,v in manifest.items() if k not in
+              ('candidate_files_added_to_master_snapshot',)},indent=2))
+          PY
+
+      - name: Run original independent Python source and W56 fail-closed regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s w33-godot-native/ci -p 'test_w49_w52_gate_regressions.py' -v
+          python3 -m unittest discover -s tooling/osgard-w56 -p 'test_hardware_review_gate.py' -v
+          python3 tooling/osgard-w56/hardware_review_gate.py \
+            --expected-sha "$OSGARD_W58_EXACT_SOURCE_SHA" \
+            --output merge-evidence/w56-exact-game-source-HOLD.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          a=json.loads(Path('merge-evidence/w56-exact-game-source-HOLD.json').read_text())
+          assert a['decision']=='MISSING_DEVICE_REPORTS'
+          assert a['status']=='HOLD'
+          assert a['production_approved'] is False and a['allow_master_merge'] is False
+          print('W56 PHYSICAL DEVICES STILL MISSING; HOLD')
+          PY
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Build independently merged current production portal locally only
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm ci --no-audit --no-fund
+          npm run check
+          npm run build
+          npm run preflight:frontend
+          npm run qa:games-portal
+          npm run qa:academy
+          npm run qa:deploy-workflow
+          printf '%s\n' 'Typecheck, production portal build, archive preflight, game portal, academy, deploy safety checks: PASS' \
+            > merge-evidence/production-portal-local-only.txt
+
+      - name: Install original Godot 4.4.1 with matching export templates
+        uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: true
+
+      - name: Import merged Godot scene and execute exact gameplay and bilingual native tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          godot --headless --editor --path w33-godot-native --import --quit 2>&1 | tee merge-evidence/godot-import.log
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' merge-evidence/godot-import.log; then
+            echo '::error::Merged Godot source failed to parse'
+            exit 1
+          fi
+          for test in test_scene_integration.gd test_six_missions.gd test_w55_readable_protocol_copy.gd; do
+            echo "Running original $test after local snapshot merge"
+            timeout --signal=TERM --kill-after=5s 150s \
+              godot --headless --path w33-godot-native --script "res://tests/$test" \
+              2>&1 | tee "merge-evidence/$test.log"
+            if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "merge-evidence/$test.log"; then
+              echo "::error::Merged Godot original test $test emitted errors"
+              exit 1
+            fi
+          done
+          mkdir -p w33-godot-native/build/web
+          godot --headless --path w33-godot-native --export-release Web \
+            w33-godot-native/build/web/index.html 2>&1 | tee merge-evidence/godot-export.log
+          python3 w33-godot-native/ci/verify_web_export.py \
+            w33-godot-native/build/web --sha "$OSGARD_LOCAL_MERGE_SHA" \
+            --output merge-evidence/merged-godot-web-evidence.json
+          printf '%s\n' 'Godot 4.4.1 import, original six missions, RU/EN typography and merged WebGL export: PASS' \
+            > merge-evidence/godot-native-result.txt
+
+      - name: Assert no release permission and finalize exact snapshot rehearsal
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,os
+          from pathlib import Path
+          p=Path('merge-evidence/merge-manifest.json')
+          manifest=json.loads(p.read_text())
+          assert manifest['local_ephemeral_merge_sha']==os.environ['OSGARD_LOCAL_MERGE_SHA']
+          assert manifest['local_ephemeral_tree_sha']==os.environ['OSGARD_LOCAL_MERGE_TREE']
+          assert (Path('merge-evidence')/'godot-native-result.txt').is_file()
+          assert (Path('merge-evidence')/'production-portal-local-only.txt').is_file()
+          manifest['status']='LOCAL_SNAPSHOT_INTEGRATION_SOFTWARE_PASS'
+          manifest['portal_frontend_qa']='PASS'
+          manifest['merged_godot_native_and_web_export']='PASS'
+          manifest['production_deployed']=False
+          manifest['decision']='MASTER_HOLD_PENDING_PHYSICAL_DEVICES_HUMAN_REVIEW_ROLLBACK_AND_EXACT_LIVE_HEAD'
+          p.write_text(json.dumps(manifest,indent=2,ensure_ascii=False)+'\n')
+          print(manifest['status']+': '+manifest['decision'])
+          PY
+
+      - name: Retain original snapshot/merge proof and fail-closed verdict on any outcome
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: osgard-w58-master-snapshot-rehearsal-${{ github.sha }}
+          path: merge-evidence/
+          if-no-files-found: warn
+          retention-days: 45
