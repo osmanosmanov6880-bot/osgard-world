@@ -119,7 +119,7 @@ class PublisherTest(unittest.TestCase):
         index.write_bytes(evil)
         sums=(self.src/'SHA256SUMS.txt').read_text().splitlines()
         sums=[(digest(evil)+'  index.html') if line.endswith('  index.html') else line for line in sums]
-        (self.src/'SHA256SUMS.txt').write_text('\\n'.join(sums)+'\\n')
+        (self.src/'SHA256SUMS.txt').write_text('\n'.join(sums)+'\n')
         with self.assertRaisesRegex(pub.GateError,'immutable GitHub shell pin mismatch'):
             pub.verify_source(self.src,self.pinfile)
 
