@@ -74,6 +74,17 @@ func _run() -> void:
                 lang + ": hatch label and actual percent preserved")
             _check(telemetry_rows[2].contains(ui._t("score")) and telemetry_rows[2].contains("/150"),
                 lang + ": score label and actual score preserved")
+        # Original W58 live telemetry is not the whole mobile UI: also test
+        # the real in-scene camera overlay and secondary operator status.
+        _check(ui.stage_readout.text.split("\n").size() == 3 and
+            not ui.stage_readout.text.contains("/"),
+            lang + ": 390px 3D stage readings contain complete lines, no slash")
+        _check(ui.stage_readout.text.contains("ROTOR") and
+            ui.stage_readout.text.contains("HATCH") and ui.stage_readout.text.contains("SCORE"),
+            lang + ": 390px 3D stage retains real rotor, hatch and score")
+        _check(ui.status.text.split("\n").size() == 3 and
+            not ui.status.text.contains("•"),
+            lang + ": 390px operator status contains complete lines, no orphan bullet")
         for key in ["reduced_motion", "sound", "captions", "metrics_consent"]:
             ui.core.settings[key] = true
         ui._refresh()
@@ -98,12 +109,24 @@ func _run() -> void:
         _no_unsupported_glyphs(ui, lang + " desktop")
         _check(ui.telemetry.text.count("     |     ") == 2 and not ui.telemetry.text.contains("\n"),
             lang + ": desktop keeps its original two readable separators")
+        _check(ui.stage_readout.text.count("     /     ") == 2 and
+            not ui.stage_readout.text.contains("\n"),
+            lang + ": desktop 3D stage preserves original readout and separators")
+        _check(ui.status.text.count("      •      ") == 2 and
+            not ui.status.text.contains("\n"),
+            lang + ": desktop status preserves original values and separators")
         ui.size = Vector2(320, 760)
         ui._layout_stage_for_screen()
         ui._refresh()
         await process_frame
         _check(ui.telemetry.text.split("\n").size() == 3 and not ui.telemetry.text.contains("|"),
             lang + ": 320px compact telemetry has no orphan separator")
+        _check(ui.stage_readout.text.split("\n").size() == 3 and
+            not ui.stage_readout.text.contains("/"),
+            lang + ": 320px 3D overlay has no orphan slash")
+        _check(ui.status.text.split("\n").size() == 3 and
+            not ui.status.text.contains("•"),
+            lang + ": 320px operator status has no orphan bullet")
     ui.core.clear_data()
     ui.queue_free()
     await process_frame
