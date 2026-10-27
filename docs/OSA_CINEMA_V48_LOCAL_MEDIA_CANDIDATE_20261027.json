@@ -15,12 +15,12 @@
   "rightsCleared": false,
   "paidCheckoutEnabled": false,
   "checks": {
-    "localOriginalAVCaption": 363,
+    "localOriginalAVCaption": 357,
     "localHttpRange": 61,
     "chromium": {
       "status": "BLOCKED_BY_ADMINISTRATOR_NOT_PASS"
     },
-    "fourCaptionReadingSpeedWarnings": 4
+    "fourCaptionReadingSpeedWarnings": 0
   },
   "film": {
     "fullDurationSeconds": 239,
@@ -70,33 +70,33 @@
     {
       "id": "osa-v48-directors-ru-captions",
       "kind": "webvtt",
-      "bytes": 7799,
-      "sha256": "ab13a8ce52ea479e4a12b6f50adc889ebd1acd76312665a627018e2022805040",
-      "cueCount": 62,
+      "bytes": 7790,
+      "sha256": "7e48f8f5da88a876a6ee1d25a1f2c00afa7a4c7806c79a24a130b884c0e0b7b6",
+      "cueCount": 61,
       "path": "captions/osa-v48-directors-ru.vtt"
     },
     {
       "id": "osa-v48-directors-en-captions",
       "kind": "webvtt",
-      "bytes": 5192,
-      "sha256": "3d896fb165ada2769e8d495dc40eb7b7e4c830fca9a3a8d9192a8e22ed6228ec",
-      "cueCount": 60,
+      "bytes": 5183,
+      "sha256": "4cb34688bbe5f22ba3b83e24fa89587fdc92379cd57711840f7a961ba77ad199",
+      "cueCount": 59,
       "path": "captions/osa-v48-directors-en.vtt"
     },
     {
       "id": "osa-v48-trailer-ru-captions",
       "kind": "webvtt",
-      "bytes": 1718,
-      "sha256": "6f430ff78ee7f78be8748c004060403e54c5d7fceda472f6fd98d17b9570b7f2",
-      "cueCount": 12,
+      "bytes": 1494,
+      "sha256": "e59107272a62af89b27589fb9eef15ffd68bddbe1b872cda677bc2a8f49e577a",
+      "cueCount": 10,
       "path": "captions/osa-v48-trailer-ru.vtt"
     },
     {
       "id": "osa-v48-trailer-en-captions",
       "kind": "webvtt",
-      "bytes": 1097,
-      "sha256": "929baf4cb268ff57dc67d54a2fed6ce625f762cd05bb388c132b8168ba6231ab",
-      "cueCount": 10,
+      "bytes": 981,
+      "sha256": "80137757c657b82c50d36c653de906c2216071c7deed9f246da143cd3a4e7722",
+      "cueCount": 9,
       "path": "captions/osa-v48-trailer-en.vtt"
     }
   ],
@@ -105,5 +105,7 @@
     "No claim of successful public premiere",
     "No change to V20 policy",
     "No checkout or payments"
-  ]
+  ],
+  "localCaptionRevision": "V48.1_ACCESSIBILITY_FIX_NO_VIDEO_OR_AUDIO_CHANGE",
+  "captionQA": "Every cue <=20 characters/s; incomplete final snippets are omitted from trailers; no independent verbatim listening approval"
 }
