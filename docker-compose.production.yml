@@ -30,6 +30,11 @@ services:
         condition: service_healthy
     ports:
       - "127.0.0.1:4189:80"
+    # V49: read-only media data lives outside the replaceable frontend root.
+    # One-time container recreation is required for this mount to take effect.
+    # Existing media is never copied into Git or the frontend release tarball.
+    volumes:
+      - ${OSA_CINEMA_MEDIA_ROOT:-/srv/osgard-cinema-media}:/var/lib/osgard-cinema-media:ro
     healthcheck:
       test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1/ || exit 1"]
       interval: 30s
