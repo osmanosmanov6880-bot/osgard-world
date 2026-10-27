@@ -192,9 +192,8 @@ func _build() -> void:
     brand_label = _label(top, "", 27, GOLD)
     language_button = _button(top, "EN", _toggle_locale)
     language_button.custom_minimum_size = Vector2(90, 45)
-    subtitle = _label(body, "", 15, MINT)
-    intro = _label(body, "", 15, MUTED)
-
+    # W64 visual hierarchy: place the real reactor above explanatory copy.
+    # First-time visitors must see gameplay at the top of the viewport.
     # Cinema-first native 3D stage is mounted inside the *actual* Godot UI.
     # Not an HTML video, screenshot, Three.js overlay or mockup.
     var cinema := _panel(body)
@@ -235,6 +234,8 @@ func _build() -> void:
     quality_button.custom_minimum_size = Vector2(145, 42)
     motion_button = _button(cinema_controls, "", _toggle_motion)
     motion_button.custom_minimum_size = Vector2(158, 42)
+    subtitle = _label(body, "", 15, MINT)
+    intro = _label(body, "", 15, MUTED)
 
     var status_box := _panel(body)
     var strip := HBoxContainer.new()
