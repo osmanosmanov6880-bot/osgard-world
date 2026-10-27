@@ -72,7 +72,7 @@ func _run() -> void:
 
     _check(ui.core.begin_case(0), "Original diagnostic mission 01 remains startable")
     ui._refresh()
-    _check(ui.mission_segments[0].color == ui.MINT,
+    _check(ui.mission_segments[0].color == Color("84cbbc"),
         "Accepted first mission step lights up in native HUD")
     for i in range(1, 5):
         _check(ui.mission_segments[i].color == Color("30414a"),
