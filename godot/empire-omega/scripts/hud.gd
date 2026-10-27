@@ -1203,6 +1203,12 @@ func _redraw_strategy() -> void:
 	for course in ["balance","industry","energy","welfare"]:
 		var localization: String = "energy_policy" if course == "energy" else str(course)
 		_button(policies,("◈ " if d["course"] == course else "")+t(localization),Callable(self,"_choose_policy").bind(course))
+		# The governance choice stays the original real policy transaction.
+		# These counterfactual numbers never cause a mutation or grant XP.
+		if str(d["course"]) != course:
+			var policy_impact: Dictionary = CITY_REIGN_IMPACT.policy_preview(d,GameState.BUILDINGS,course)
+			if not policy_impact.is_empty():
+				_label(strategy_contents,t(localization) + " → " + CITY_REIGN_IMPACT.explain_policy(policy_impact,GameState.locale),14)
 	_separator(strategy_contents)
 	_label(strategy_contents,t("business"),20,true)
 	for id in GameState.BUSINESSES:

@@ -56,3 +56,34 @@ static func explain(result: Dictionary, lang: String) -> String:
 	return "%s\n%s %+d   ·   %s %+d   ·   %s %+d   ·   %s %+d" % [
 		t,jobs,int(result["jobs_delta"]),net,int(result["net_delta"]),
 		trust,int(result["trust_delta"]),district,int(result["district_delta"])]
+
+static func policy_preview(state: Dictionary, buildings: Dictionary, course: String) -> Dictionary:
+	if not ["balance","industry","energy","welfare"].has(course) or str(state.get("course","balance")) == course:
+		return {}
+	var baseline: Dictionary = ECONOMY.project(state,buildings)
+	var alternate: Dictionary = state.duplicate(true)
+	alternate["course"] = course
+	var candidate: Dictionary = ECONOMY.project(alternate,buildings)
+	return {
+		"course":course,
+		"net_delta":int(candidate["net"])-int(baseline["net"]),
+		"energy_delta":int(candidate["energy"])-int(baseline["energy"]),
+		"water_delta":int(candidate["water"])-int(baseline["water"]),
+		"food_delta":int(candidate["food"])-int(baseline["food"]),
+		"trust_per_turn_delta":int(candidate["trust_delta"])-int(baseline["trust_delta"]),
+		"stability_per_turn_delta":int(candidate["stability_delta"])-int(baseline["stability_delta"]),
+		"population_per_turn_delta":int(candidate["population_delta"])-int(baseline["population_delta"]),
+		"turn":int(state["turn"])
+	}
+
+static func explain_policy(result: Dictionary, lang: String) -> String:
+	if result.is_empty():
+		return ""
+	var forecast: String = "Следующий такт · при текущих условиях" if lang=="ru" else ("Next turn · current conditions" if lang=="en" else "下回合 · 按当前条件")
+	var money: String = "баланс" if lang=="ru" else ("budget" if lang=="en" else "预算")
+	var energy: String = "энергия" if lang=="ru" else ("energy" if lang=="en" else "能源")
+	var trust: String = "доверие" if lang=="ru" else ("trust" if lang=="en" else "信任")
+	var stability: String = "стабильность" if lang=="ru" else ("stability" if lang=="en" else "稳定")
+	return "%s · %s %+d · %s %+d · %s %+d · %s %+d" % [
+		forecast,money,int(result["net_delta"]),energy,int(result["energy_delta"]),
+		trust,int(result["trust_per_turn_delta"]),stability,int(result["stability_per_turn_delta"])]

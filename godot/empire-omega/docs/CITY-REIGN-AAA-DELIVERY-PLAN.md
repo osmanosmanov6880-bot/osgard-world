@@ -23,6 +23,8 @@ A player gains influence through street-level action, and their money/policies v
 - [x] Original 8 paid, resource-limited, multi-turn projects with saved progress and economic modifiers.
 - [x] C1 construction sites grow from actual remaining turns, completed landmarks replace worksites, reset clears them.
 - [x] C2 **read-only** same-turn counterfactual impact forecasts; cost/benefit based on production state, not fake stats.
+- [x] C5 side-effect-free comparative previews for the four existing governance policies.
+- [x] C5 city emergencies visible in the actual street from live saved crisis ID; cleared after resolution.
 - [ ] Add two irreversible-but-fair district trade-offs with citizen feedback, public services and policy opposition, preserving predictable counterfactual forecasts.
 - [ ] Test long saves, softlock recovery and crisis fairness across 30 simulated turns.
 - **EXIT:** players can predict and observe at least three distinct short/long-term city effects without reading a spreadsheet.
