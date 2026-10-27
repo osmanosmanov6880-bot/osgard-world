@@ -1,0 +1,129 @@
+name: SABLEFAULT original playable vertical slice — no deployment
+
+on:
+  push:
+    branches: [feat/sablefault-reactor-crisis-v1-20261027]
+    paths:
+      - 'public/games/sablefault-preview/**'
+      - '.github/workflows/sablefault-vertical-slice-qa.yml'
+  pull_request:
+    branches: [review/osgard-w58-w49-w52-exact-software-20261027]
+    paths:
+      - 'public/games/sablefault-preview/**'
+      - '.github/workflows/sablefault-vertical-slice-qa.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sablefault-safe-preview-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  source-integrity:
+    name: Source scope, executable JavaScript, self-contained game
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: No changed original W58 Godot/production, exact source ancestry
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE=ef570cf6c406cc14ec180585ee2c5d64c667c658
+          git cat-file -e "$BASE^{commit}"
+          test "$(git merge-base "$BASE" HEAD)" = "$BASE"
+          git diff --quiet "$BASE" HEAD -- \
+            w33-godot-native tooling/osgard-w56 src server \
+            package.json package-lock.json public/_redirects public/_headers \
+            docker-compose.production.yml .github/workflows/deploy-frontend.yml
+          git diff --name-only "$BASE" HEAD | tee /tmp/sablefault-changed-paths.txt
+          python3 - <<'PY'
+          from pathlib import Path
+          paths=Path('/tmp/sablefault-changed-paths.txt').read_text().splitlines()
+          assert 5 <= len(paths) <= 15, paths
+          assert all(p.startswith('public/games/sablefault-preview/') or
+                     p=='.github/workflows/sablefault-vertical-slice-qa.yml'
+                     for p in paths), paths
+          print('OSGARD W58 original source and production portal protected; isolated new game only')
+          PY
+      - name: Original dependency-free source and syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check public/games/sablefault-preview/game.js
+          python3 -m py_compile public/games/sablefault-preview/tests/playwright_smoke.py
+          python3 - <<'PY'
+          from pathlib import Path
+          base=Path('public/games/sablefault-preview')
+          js=(base/'game.js').read_text()
+          html=(base/'index.html').read_text()
+          css=(base/'styles.css').read_text()
+          readme=(base/'README.md').read_text()
+          for marker in ('function sceneStatic()', 'function sceneDynamic(time)',
+                         'function chooseAction(key)', 'function update(dt)',
+                         'function createRenderer()', 'function drawFallback(ts)',
+                         'Object.defineProperty(window,', 'real_physical_gpu_certified:false'):
+              assert marker in js, marker
+          for marker in ('id="world"', 'id="terminalActions"', 'id="start"',
+                         'id="finishBackdrop"', '<script src="game.js" defer></script>'):
+              assert marker in html, marker
+          assert '@media(max-width:650px)' in css
+          assert 'EXPERIMENTAL PREVIEW, NO PRODUCTION GO' in readme
+          assert all(x not in js for x in ('fetch(', 'XMLHttpRequest(', 'localStorage.', 'https://'))
+          print('JS SYNTAX PASS / LOCAL-ONLY GAME / FOUR STAGES & TWO ENDINGS SOURCE CHECK')
+          PY
+
+  genuine-webgl2-chromium:
+    name: Actual WebGL2 shader, mission input, original mobile screenshots
+    needs: source-integrity
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install pinned original Playwright and browser
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m pip install playwright==1.56.0
+          python3 -m playwright install --with-deps chromium
+      - name: Start ephemeral LOCAL HTTP server; never deploy site
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 8769 --bind 127.0.0.1 \
+            --directory public/games/sablefault-preview > /tmp/sablefault-http.log 2>&1 &
+          echo $! > /tmp/sablefault-http.pid
+          for _ in $(seq 1 35); do
+            if curl -fsS http://127.0.0.1:8769/index.html >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/sablefault-http.log
+          exit 1
+      - name: Test real original WebGL2 scene and user control, no state injection
+        env:
+          SABLEFAULT_EVIDENCE_DIR: sablefault-evidence
+          SABLEFAULT_URL: http://127.0.0.1:8769
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 public/games/sablefault-preview/tests/playwright_smoke.py
+      - name: Retain original PNGs and exact-SHA machine verdict including failures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sablefault-real-chromium-original-${{ github.event.pull_request.head.sha || github.sha }}
+          path: sablefault-evidence/
+          if-no-files-found: warn
+          retention-days: 45
