@@ -11,6 +11,7 @@ const R90_SPEED = preload("res://scripts/horizon_r90_speed_dial.gd")
 const CITY_REIGN_IMPACT = preload("res://scripts/city_reign_impact.gd")
 const CITY_REIGN_STORY = preload("res://scripts/city_reign_story.gd")
 const CITY_REIGN_PROMISE = preload("res://scripts/city_reign_first_promise.gd")
+const CITY_REIGN_VOICES = preload("res://scripts/city_reign_resident_reactions.gd")
 ## Russian-first accessible HUD. All controls use the same GameState as the 3D world.
 
 signal strategy_changed(is_open: bool)
@@ -718,6 +719,11 @@ func show_citizen(citizen_id: int, district: String) -> void:
 	var messages: Dictionary = GameState.CITIZEN_REQUESTS.LABELS.get(GameState.locale,GameState.CITIZEN_REQUESTS.LABELS["ru"])
 	citizen_popup.title = str(messages["title"])
 	citizen_popup.dialog_text = GameState.CITIZEN_REQUESTS.text(GameState.data,citizen_id,GameState.locale)
+	# Real resident conversation reflects the specific saved civic construction
+	# and fulfilled public promise of THIS district. Speaking remains read-only.
+	var citizen_view: Dictionary = CITY_REIGN_VOICES.feedback(GameState.data,district,GameState.locale)
+	if not citizen_view.is_empty():
+		citizen_popup.dialog_text += "\n\n" + str(citizen_view["title"]) + "\n" + str(citizen_view["comment"])
 	var local_job: Dictionary = GameState.NEIGHBORHOOD.offer(GameState.data,citizen_id,district)
 	if not local_job.is_empty():
 		citizen_popup.dialog_text += "\n\n" + str(local_job["title"].get(GameState.locale,local_job["title"]["ru"]))

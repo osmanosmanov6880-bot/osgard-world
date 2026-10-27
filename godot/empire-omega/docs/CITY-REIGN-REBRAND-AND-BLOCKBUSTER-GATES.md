@@ -53,3 +53,5 @@
 - No claim of actual 30-minute player retention or photoreal AAA; mandatory real native `v110`, WebGL smoke, new exact merged SHA plus independent physical playtesting remain gates.
 
 - [E01 addendum] Original in-world proposal boards are now genuine walk-up F interactions: they open the live governance UI, select the physical district, and perform NO silent cost/XP transaction. Only explicit investment buttons can spend. Full-world SceneTree regression `v111_city_reign_street_interaction.gd` tests real scene/player/3D signs/street accessibility, two sites, unchanged original 34 pedestrians and 12 traffic cars.
+
+- [E01 citizens] Real residents' native `J` dialogue now varies with actual saved construction/completion of Open Budget or Safe Crossings; other districts mention actual low district quality or general concerns, and live crises add concern. `city_reign_resident_reactions.gd` is pure narrative commentary (no automated trust/stat change); `v112_city_reign_resident_reactions.gd` verifies displayed real popups, 4 districts, 3 languages, states and save immutability.

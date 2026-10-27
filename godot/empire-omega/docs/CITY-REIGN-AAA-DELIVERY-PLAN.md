@@ -75,3 +75,5 @@ ENGINEERING STAGING. Previous C1 exact-head GitHub native+Chromium/provenance ch
 - [ ] Story cinematics, dialogue choice that changes how residents respond, unique licensed assets and original voice acting are still not implemented.
 
 - [x] E01 on-foot street interaction: near either board, the real F action opens the existing paid decision interface and preselects the correct district without spending money. The separate click on an investment button performs the sole resource transaction. `v111` verifies it in the full real city scene with 34 citizens and 12 traffic cars.
+
+- [x] E01 resident reaction dialogue: when the player approaches and speaks to any actual resident, the native dialogue now references the district's real current investment state (not started / building / completed). Completed Open Budget and Safe Crossings change residents' lines in three languages without changing rewards, council scores or the existing 40 mission stages. Tests `v112` cover all 4 districts, 3 languages, both projects and actual dialogue popups.
