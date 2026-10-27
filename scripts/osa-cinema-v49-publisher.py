@@ -31,6 +31,13 @@ MEDIA = {
     "osa-v48-trailer-en-captions": "captions/osa-v48-trailer-en.vtt",
 }
 EXTRA = ("index.html", "assets/osa-premiere-poster.jpg", "manifest.json")
+# These files execute/render on the trusted OSGARD origin: their self-authored
+# SHA256SUMS.txt is insufficient. Pin exact owner-reviewed V48.1 bytes in code.
+EXTRA_PIN = {
+    "index.html": "e3ac23a5b5f0fc0643b019bb4cc4f89bc175876ef32f844bd306e3fbef486f29",
+    "assets/osa-premiere-poster.jpg": "ba1a19a4bbda35a1b6bcee45326775ea4bf990607ff8aec3bdcf618bf1baf77d",
+    "manifest.json": "aa81eae3d71fb5e8d76df983a09fae3bbce7499867404022eabaff3e06ca67a5",
+}
 ALL_FILES = set(MEDIA.values()) | set(EXTRA)
 
 
@@ -136,8 +143,11 @@ def verify_source(source, pin_file):
     for rel in sorted(ALL_FILES):
         file = regular_file(source, rel)
         expected = sums[rel]
-        if sha256_file(file) != expected:
+        actual = sha256_file(file)
+        if actual != expected:
             deny("SHA256SUMS mismatch: " + rel)
+        if rel in EXTRA_PIN and actual != EXTRA_PIN[rel]:
+            deny("immutable GitHub shell pin mismatch: " + rel)
         total_bytes += file.stat().st_size
     for asset in pin["assets"]:
         rel = asset["path"]
