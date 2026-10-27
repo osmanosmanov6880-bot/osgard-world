@@ -106,6 +106,23 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                         assert idle.get("soundscape_ready") is True, idle
                         assert idle.get("cinematic_details",{}).get("instanced_detail_count",0) >= 270, idle
                         assert idle.get("cinematic_details",{}).get("safety_signs",0) >= 3, idle
+                        # V5 world is actual imported GPU-backed Godot geometry.
+                        # Inspect read-only scene data; never construct fake visuals in browser QA.
+                        world = idle.get("world_sectors",{})
+                        assert world.get("zone_count") == 3, ("Three physically separate zones missing",world)
+                        assert world.get("sign_count") == 3 and world.get("geometry_count",0) >= 40, (
+                            "Physical wayfinding or architectural silhouettes missing",world)
+                        assert world.get("instanced_detail_count") == 108 and world.get("single_draw_deck") is True, (
+                            "Optimized repeated world geometry was lost",world)
+                        assert idle.get("world_sector") == "reactor",(
+                            "Player starts in wrong world area",idle.get("world_sector"))
+                        assert world.get("quality") in ("hero","eco"),world
+                        report.setdefault("v5_world_geometry",{})[name] = {
+                            "sectors":world.get("landmark_ids"),
+                            "independent_structures":world.get("geometry_count"),
+                            "instanced_parts":world.get("instanced_detail_count"),
+                            "quality":world.get("quality")
+                        }
                         assert idle.get("vitals_visible") is (not mobile), idle
                         # Actual real-canvas UI rectangles, not a fabricated CSS layout.
                         cards = idle.get("hud_rects", {})
