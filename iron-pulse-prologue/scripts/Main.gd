@@ -141,6 +141,13 @@ var previous_event: String = ""
 var runtime_seconds: float = 0.0
 # Read-only browser QA/accessibility mirror; never accepts game commands.
 var _web_state_element: Variant = null
+# The Godot project has a 1280x720 design canvas, but responsive Web builds
+# must use the browser's true CSS viewport as their CONTENT size, otherwise
+# on mobile a 1280px canvas is merely scaled down and 51px buttons turn tiny.
+# JavaScriptBridge is read-only here: actual controls still handle all input.
+var _browser_window: Variant = null
+var _browser_css_size: Vector2i = Vector2i.ZERO
+var _last_web_resize_check: float = -99.0
 
 func _ready() -> void:
     session.reset()
@@ -151,6 +158,7 @@ func _ready() -> void:
     _make_player()
     _make_hud()
     _attach_web_state()
+    _sync_web_canvas_layout()
     _refresh_hud()
     if DisplayServer.get_name() != "headless":
         Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
@@ -170,6 +178,26 @@ func _attach_web_state() -> void:
         element.setAttribute("style", "position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;overflow:hidden;pointer-events:none")
         document.body.appendChild(element)
     _web_state_element = element
+    _browser_window = JavaScriptBridge.get_interface("window")
+
+func _sync_web_canvas_layout() -> void:
+    if _web_state_element == null or _browser_window == null:
+        return
+    # Official Godot Window.content_scale_size is the virtual-pixel base. It
+    # must follow the *real* browser size for this pixel-sized native UI.
+    # Window.size (physical pixels) and content_scale_size are distinct.
+    var css_w: int = int(_browser_window.innerWidth)
+    var css_h: int = int(_browser_window.innerHeight)
+    if css_w < 280 or css_h < 300 or css_w > 12000 or css_h > 12000:
+        return
+    var target := Vector2i(css_w, css_h)
+    if target == _browser_css_size:
+        return
+    _browser_css_size = target
+    var window: Window = get_window()
+    if window.content_scale_size != target:
+        window.content_scale_size = target
+    _layout_hud()
 
 func _publish_web_state() -> void:
     if _web_state_element == null:
@@ -182,6 +210,9 @@ func _publish_web_state() -> void:
     state["player_position"] = [player.global_position.x, player.global_position.y, player.global_position.z]
     state["godot_frames_drawn"] = Engine.get_frames_drawn()
     state["viewport"] = [get_viewport().get_visible_rect().size.x, get_viewport().get_visible_rect().size.y]
+    state["css_viewport"] = [_browser_css_size.x, _browser_css_size.y]
+    state["window_size"] = [get_window().size.x, get_window().size.y]
+    state["content_scale_size"] = [get_window().content_scale_size.x, get_window().content_scale_size.y]
     state["touch_controls_visible"] = touch_ui.visible
     state["intro_visible"] = intro_panel.visible
     state["end_visible"] = end_panel.visible
@@ -598,6 +629,10 @@ func _layout_hud() -> void:
     if hud_root == null:
         return
     var width: float = get_viewport().get_visible_rect().size.x
+    # CSS viewport determines actual available touch area, not the default
+    # project virtual size when the browser is still establishing its canvas.
+    if _browser_css_size.x > 0:
+        width = float(_browser_css_size.x)
     var narrow: bool = width < 650.0
     touch_ui.visible = width < 850.0 or DisplayServer.is_touchscreen_available()
     vitals_panel.visible = not narrow
@@ -769,6 +804,9 @@ func _physics_process(delta: float) -> void:
 
 func _process(delta: float) -> void:
     runtime_seconds += delta
+    if OS.has_feature("web") and runtime_seconds - _last_web_resize_check >= 0.4:
+        _last_web_resize_check = runtime_seconds
+        _sync_web_canvas_layout()
     if started and not paused and not session.finished():
         var moving: bool = Vector2(player.velocity.x,player.velocity.z).length() > 0.65
         if moving and not reduced_motion:
