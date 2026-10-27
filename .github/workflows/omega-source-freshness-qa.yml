@@ -37,20 +37,29 @@ jobs:
           git fetch --no-tags --depth=1 origin "$source_sha"
           python3 scripts/omega-build-freshness.py "$source_sha" origin/master
           echo 'PASS: actual latest Godot runtime equals exported binary source, ignoring only docs Markdown'
-      - name: Verify a source-guard fix triggers fresh protected SSH deployment
+      - name: Verify source-freshness fixes CANNOT auto-run SSH or Omega export
         shell: bash
         run: |
           set -euo pipefail
           python3 - <<'PY'
           from pathlib import Path
           deploy=Path('.github/workflows/omega-web-direct-deploy.yml').read_text()
+          native=Path('.github/workflows/omega-godot-web.yml').read_text()
+          guard=Path('scripts/omega-r138-manual-release-guard.py').read_text()
           src=Path('scripts/omega-build-freshness.py').read_text()
-          assert '- "scripts/omega-build-freshness.py"' in deploy, 'no auto-trigger after guard correction'
+          for name,workflow in [('direct SSH',deploy),('native exporter',native)]:
+              triggers=workflow.split('\non:\n',1)[1].split('\npermissions:',1)[0]
+              assert 'workflow_dispatch:' in triggers, name+' must require explicit manual dispatch'
+              assert 'push:' not in triggers and 'workflow_run:' not in triggers, name+' auto-deploy trigger still active'
+              assert 'approved_source_sha:' in triggers and 'production_confirmation:' in triggers
+              assert 'R138 HARD' in workflow and 'scripts/omega-r138-manual-release-guard.py' in workflow
+              assert workflow.index('R138 HARD') < workflow.index('Configure SSH' if name=='direct SSH' else 'setup-godot'), name+' guard too late'
           assert 'runtime_fingerprint' in src
           assert 'relative_path.startswith(b"docs/")' in src
           assert 'relative_path.lower().endswith(b".md")' in src
-          assert 'exit 3' in deploy, 'stale source must fail closed'
-          print('PASS: guard-only change reactivates honest fail-closed release gate')
+          assert 'exit 3' in deploy, 'stale native release must fail closed'
+          assert 'I_AUTHORIZE_OMEGA_PRODUCTION' in guard and 'APPROVED' in guard
+          print('PASS: source-freshness fixes preserve exact runtime pin but NEVER trigger automatic SSH or game export')
           PY
       - name: Verify the release job calls the source-tree gate before restaging
         run: |
