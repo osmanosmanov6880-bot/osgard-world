@@ -1,0 +1,102 @@
+name: EMPIRE Omega R135 source-locked PRIVATE 36-device capture kit, no fake FPS or production
+on:
+  pull_request:
+    branches: [feat/omega-r90-aaa-reference-first-slice-20261026]
+    paths:
+      - 'scripts/omega-r135-physical-fieldkit.py'
+      - 'godot/empire-omega/docs/R135-PRIVATE-36-HARDWARE-EVIDENCE-FIELDKIT-RU.md'
+      - '.github/workflows/omega-r135-physical-fieldkit-qa.yml'
+  push:
+    branches: [feat/omega-r90-aaa-reference-first-slice-20261026]
+    paths:
+      - 'scripts/omega-r135-physical-fieldkit.py'
+      - 'godot/empire-omega/docs/R135-PRIVATE-36-HARDWARE-EVIDENCE-FIELDKIT-RU.md'
+      - '.github/workflows/omega-r135-physical-fieldkit-qa.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  exact-source-private-real-36-device-evidence-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Verify exact source HEAD, compile original private kit and R127 hardware validator
+        shell: bash
+        env:
+          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+          python3 -m py_compile scripts/omega-r135-physical-fieldkit.py
+          python3 -m py_compile scripts/omega-r127-physical-device-gate.py
+          python3 scripts/omega-r127-physical-device-gate.py --self-test
+          python3 scripts/omega-r135-physical-fieldkit.py self-test
+      - name: Generate only EMPTY 36-run private operator template in temporary workspace
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/omega-r135-physical-fieldkit.py init \
+            --root "$RUNNER_TEMP/omega-r135-EMPTY-field-kit" \
+            --sha "$(git rev-parse HEAD)"
+          python3 - <<'PY'
+          import json,os,stat
+          from pathlib import Path
+          root=Path(os.environ['RUNNER_TEMP'])/'omega-r135-EMPTY-field-kit'
+          packet=json.loads((root/'capture_packet.json').read_text())
+          grid=json.loads((root/'REQUIRED_36_DEVICE_RUNS.json').read_text())
+          assert packet['records']==[] and packet['operator']==''
+          assert len(grid['recordings'])==36
+          assert len({(x['device_class'],x['scenario'],x['iteration']) for x in grid['recordings']})==36
+          assert all(not x['actual_video_collected'] for x in grid['recordings'])
+          assert packet['original_source_sha']==os.environ['GITHUB_SHA']
+          assert not (stat.S_IMODE(root.stat().st_mode)&0o077)
+          print('R135 PASS: 36 unique empty trial slots, no invented GPU/recording/player evidence')
+          PY
+      - name: Reject missing 36 physical GPU recordings and false software renderer by construction
+        shell: bash
+        run: |
+          set -euo pipefail
+          set +e
+          python3 scripts/omega-r135-physical-fieldkit.py audit \
+            --root "$RUNNER_TEMP/omega-r135-EMPTY-field-kit"
+          audit_status=$?
+          python3 scripts/omega-r135-physical-fieldkit.py add \
+            --root "$RUNNER_TEMP/omega-r135-EMPTY-field-kit" \
+            --device iphone --scenario drive_city --iteration 1 \
+            --model "Example device" --gpu "Google SwiftShader" \
+            --browser "Example browser" --operator "Example witness" \
+            --witnessed-live --two-finger-observed \
+            --video "/not-a-real-physical-video.mp4" \
+            --frame-report "/not-an-original-godot-r36.json"
+          false_gpu_status=$?
+          set -e
+          test "$audit_status" -eq 1
+          test "$false_gpu_status" -eq 2
+          python3 - <<'PY'
+          import json,os
+          from pathlib import Path
+          root=Path(os.environ['RUNNER_TEMP'])/'omega-r135-EMPTY-field-kit'
+          result=json.loads((root/'AUDIT_36_REAL_DEVICE_RUNS.json').read_text())
+          assert result['original_evidence_packets']==0
+          assert result['expected_packets']==36
+          assert len(result['blockers'])==36
+          assert result['structural_and_frame_thresholds_passed'] is False
+          assert result['production_authorized'] is False
+          assert json.loads((root/'capture_packet.json').read_text())['records']==[]
+          print('R135 PASS: absent physical 36/36 -> explicit HOLD; fake SwiftShader -> REFUSED')
+          PY
+      - name: Preserve EMPTY source-pinned operator kit only; no private recordings or prod keys
+        uses: actions/upload-artifact@v4
+        with:
+          name: EMPIRE-R135-EMPTY-PRIVATE-36-REAL-DEVICE-FIELD-KIT-NO-RECORDED-DATA
+          path: |
+            ${{ runner.temp }}/omega-r135-EMPTY-field-kit/capture_packet.json
+            ${{ runner.temp }}/omega-r135-EMPTY-field-kit/REQUIRED_36_DEVICE_RUNS.json
+            ${{ runner.temp }}/omega-r135-EMPTY-field-kit/PRIVATE_INSTRUCTIONS_RU.md
+            ${{ runner.temp }}/omega-r135-EMPTY-field-kit/AUDIT_36_REAL_DEVICE_RUNS.json
+          if-no-files-found: error
+          retention-days: 21
