@@ -200,7 +200,24 @@ jobs:
           npm run build
           npm run qa:games-portal
           npm run qa:game-interface
+          # The W58 static preview must use the ACTUAL unmodified Godot WASM
+          # source, never omit the game or raise the 25 MiB Pages asset limit.
+          # The original Pages pipeline ships identical WASM bytes gzip-encoded
+          # and _headers advertises Content-Encoding: gzip.
+          python3 - <<'PY'
+          import hashlib,json
+          from pathlib import Path
+          source=Path('dist/games/omega-3d-preview/index.wasm').read_bytes()
+          release=json.loads(Path('public/games/omega-3d-preview/release.json').read_text())
+          expected=release['files']['index.wasm']
+          actual=hashlib.sha256(source).hexdigest()
+          assert actual==expected, 'Original Godot preview WASM SHA-256 differs before reversible packaging'
+          assert source[:4]==b'\\x00asm', 'Original Godot WASM magic missing'
+          print('W58 original preview Godot WebAssembly SHA-256 PASS:',actual)
+          PY
+          node scripts/compress-pages-wasm.mjs dist
           npm run qa:static-preview
+          npm run qa:cloudflare-pages
 
   no-production-verdict:
     name: Independent true merge integration verdict - ALWAYS production HOLD
