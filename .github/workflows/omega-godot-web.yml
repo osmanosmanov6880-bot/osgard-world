@@ -1,11 +1,22 @@
 name: OSGARD Empire Omega native Godot Web
+# R138: formerly a bare master push automatically wrote original Godot
+# index.wasm/index.pck to master and dispatched frontend/SSH publication.
+# Only a deliberate, independently approved manual dispatch may do so now.
 on:
-  push:
-    branches: [master]
-    paths:
-      - 'godot/empire-omega/**'
-      - '.github/workflows/omega-godot-web.yml'
   workflow_dispatch:
+    inputs:
+      approved_source_sha:
+        description: 'Exact already-reviewed master source SHA (40 lowercase hex)'
+        type: string
+        required: true
+      release_ticket:
+        description: 'Independent release review ticket, also pinned in repository vars'
+        type: string
+        required: true
+      production_confirmation:
+        description: 'Type I_AUTHORIZE_OMEGA_PRODUCTION only after 4 independent reviews'
+        type: string
+        required: true
 permissions:
   contents: write
   actions: write
@@ -20,6 +31,32 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - name: R138 HARD MANUAL GO before running any export or master write
+        shell: bash
+        env:
+          CURRENT_HEAD: ${{ github.sha }}
+          EVENT_NAME: ${{ github.event_name }}
+          BRANCH_REF: ${{ github.ref }}
+          REQUESTED_SHA: ${{ inputs.approved_source_sha }}
+          PRODUCTION_CONFIRM: ${{ inputs.production_confirmation }}
+          REQUESTED_TICKET: ${{ inputs.release_ticket }}
+          ADMIN_SHA: ${{ vars.OMEGA_RELEASE_APPROVED_SHA }}
+          ADMIN_TICKET: ${{ vars.OMEGA_RELEASE_APPROVED_TICKET }}
+          RELEASE_ENABLED: ${{ vars.OMEGA_RELEASE_ENABLED }}
+          ART_APPROVAL: ${{ vars.OMEGA_RELEASE_ART_GO }}
+          GAMEPLAY_APPROVAL: ${{ vars.OMEGA_RELEASE_GAMEPLAY_GO }}
+          PHYSICAL_APPROVAL: ${{ vars.OMEGA_RELEASE_PHYSICAL_GO }}
+          ROLLBACK_APPROVAL: ${{ vars.OMEGA_RELEASE_ROLLBACK_GO }}
+        run: |
+          set -euo pipefail
+          python3 scripts/omega-r138-manual-release-guard.py \
+            --role build --event "$EVENT_NAME" --ref "$BRANCH_REF" \
+            --observed-sha "$CURRENT_HEAD" --requested-sha "$REQUESTED_SHA" \
+            --approved-sha "$ADMIN_SHA" --enabled "$RELEASE_ENABLED" \
+            --confirm "$PRODUCTION_CONFIRM" --ticket "$REQUESTED_TICKET" \
+            --admin-ticket "$ADMIN_TICKET" --art "$ART_APPROVAL" \
+            --gameplay "$GAMEPLAY_APPROVAL" --physical "$PHYSICAL_APPROVAL" \
+            --rollback "$ROLLBACK_APPROVAL"
       - uses: chickensoft-games/setup-godot@v2
         with:
           version: 4.4.1
