@@ -56,6 +56,7 @@ static func describe(locale: String, snapshot: Dictionary) -> Dictionary:
     return data
 
 static func preview(locale: String, action: String, stats: Dictionary) -> Dictionary:
+    var russian: bool = locale == "ru"
     if not A7CascadeCore.ACTIONS.has(action):
         return {"valid": false, "headline": "", "body": "", "risk": false}
     var delta: Dictionary = A7CascadeCore.ACTIONS[action]
