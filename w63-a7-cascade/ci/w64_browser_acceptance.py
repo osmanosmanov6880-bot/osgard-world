@@ -16,7 +16,7 @@ import time
 from pathlib import Path
 from http.server import SimpleHTTPRequestHandler
 from playwright.sync_api import sync_playwright
-from PIL import Image, ImageChops
+from PIL import Image, ImageChops, ImageStat
 
 
 class HTTPHandler(SimpleHTTPRequestHandler):
@@ -110,10 +110,35 @@ def play(export, evidence, exact_sha):
             canvas = page.locator("canvas").first
             ensure(canvas.count() == 1, "Actual Godot WebGL canvas missing")
             canvas.click(position={"x": 25, "y": 25}, timeout=30_000)
-            page.wait_for_timeout(250)
-            ensure(snapshot(page)["renderer_frames"] > 0,
-                   "Actual Godot renderer did not submit a frame")
+            page.wait_for_timeout(450)
+            # Engine.get_frames_drawn() can remain zero on some SwiftShader
+            # configurations, even after a successful Godot 3D render.
+            # Validate the genuine pixels inside the *native 3D hero*, not
+            # that driver-dependent counter and not an arbitrary HTML label.
             baseline = page.screenshot(path=str(evidence / "1366x900-before.png"))
+            # The native Control.get_global_rect() may report its
+            # pre-layout content position during the first frame of an
+            # exported ScrollContainer even when the real viewport is already
+            # drawn at the top of the Chromium screenshot. Visual evidence
+            # must be based on ACTUAL PIXELS, not that transient y offset.
+            scene_area = geometry(page)["stage"]
+            ensure(scene_area[2] >= 450 and scene_area[3] >= 200,
+                   "Godot native reactor has no allocated render dimensions")
+            desktop_image = Image.open(io.BytesIO(baseline)).convert("RGB")
+            rect = (
+                int(desktop_image.width * 0.14),
+                int(desktop_image.height * 0.25),
+                int(desktop_image.width * 0.86),
+                int(desktop_image.height * 0.79),
+            )
+            stage_pixels = desktop_image.crop(rect)
+            channel_deviation = max(ImageStat.Stat(stage_pixels).stddev)
+            print("W64 ACTUAL VISIBLE PIXEL PROOF",
+                  json.dumps({"screenshot_crop": rect,
+                              "pixel_deviation": round(channel_deviation, 3),
+                              "godot_allocated_stage": scene_area}), flush=True)
+            ensure(channel_deviation > 6.0,
+                   "Real Godot viewport pixels appear blank or lack true detail")
 
             # Actual player keyboard path into the native Godot game, not a DOM
             # state spoof or direct call to a JavaScript helper.
@@ -130,6 +155,11 @@ def play(export, evidence, exact_sha):
                    result["metrics"]["seal"] == 64,
                    "Real model incident state mismatches original deterministic W63")
             changed_image = page.screenshot(path=str(evidence / "1366x900-reactive.png"))
+            original_3d_crop = Image.open(io.BytesIO(baseline)).convert("RGB").crop(rect)
+            reactive_3d_crop = Image.open(io.BytesIO(changed_image)).convert("RGB").crop(rect)
+            stage_delta = ImageChops.difference(original_3d_crop, reactive_3d_crop).convert("L")
+            ensure(sum(stage_delta.histogram()[12:]) > 150,
+                   "Real 3D viewport pixels did not change after a genuine accepted action")
             ensure(image_difference(baseline, changed_image) > 250,
                    "Actual rendered game did not visibly react")
 
@@ -151,12 +181,25 @@ def play(export, evidence, exact_sha):
 
             page.set_viewport_size({"width": 390, "height": 844})
             page.wait_for_timeout(850)
+            page.wait_for_function("""() => {
+                const node=document.getElementById('a7-cascade-native-state');
+                if (!node || !node.getAttribute('data-geometry')) return false;
+                try {
+                    const geometry=JSON.parse(node.getAttribute('data-geometry'));
+                    return geometry.viewport[0]<=420 &&
+                        geometry.stage_requested_height<=310;
+                } catch(e){return false;}
+            }""", timeout=60_000)
             responsive = geometry(page)
             ensure(responsive["viewport"][0] <= 420,
                    "Mobile browser viewport did not propagate into Godot")
-            ensure(responsive["stage"][3] <= 310,
-                   "Actual native mobile stage blocks the game controls")
+            ensure(responsive["stage_requested_height"] <= 310,
+                   "Native mobile stage policy must shrink 3D without blocking controls")
             mobile = page.screenshot(path=str(evidence / "390x844-mobile.png"))
+            mobile_image = Image.open(io.BytesIO(mobile)).convert("RGB")
+            ensure(mobile_image.size == (390, 844), "Native viewport mobile PNG dimensions mismatch")
+            ensure(max(ImageStat.Stat(mobile_image).stddev) > 6.0,
+                   "Actual mobile browser rendered a blank screenshot")
             ensure(len(mobile) > 12_000, "Real mobile screenshot invalid")
             page.keyboard.press("r")
             result = wait_state(page, {"shift": 0, "actions_left": 2,
