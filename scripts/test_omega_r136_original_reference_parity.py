@@ -72,6 +72,8 @@ class OriginalSourceArtContract(unittest.TestCase):
             "cabinet-frame": NAMES[1],
             "world-reference":str(self.reference1),
             "cabinet-reference":str(self.reference2),
+            "world-approved-sha256":hashlib.sha256(self.refs[0]).hexdigest(),
+            "cabinet-approved-sha256":hashlib.sha256(self.refs[1]).hexdigest(),
             "run-id":"40534942845",
             "artifact-id":"12749957022",
         }
@@ -104,7 +106,9 @@ class OriginalSourceArtContract(unittest.TestCase):
 
     def test_duplicate_original_reference_refused(self):
         self.reference2.write_bytes(self.refs[0])
-        proc=exec_gate(*self.args())
+        proc=exec_gate(*self.args(**{
+            "cabinet-approved-sha256":hashlib.sha256(self.refs[0]).hexdigest()
+        }))
         self.assertEqual(proc.returncode,1)
         self.assertIn("different ORIGINAL",proc.stderr)
         self.assertFalse(self.root.exists())
@@ -117,9 +121,17 @@ class OriginalSourceArtContract(unittest.TestCase):
 
     def test_reuse_godot_frame_as_user_original_refused(self):
         self.reference1.write_bytes(self.frames[0])
-        proc=exec_gate(*self.args())
+        proc=exec_gate(*self.args(**{
+            "world-approved-sha256":hashlib.sha256(self.frames[0]).hexdigest()
+        }))
         self.assertEqual(proc.returncode,1)
         self.assertIn("reference cannot be actual",proc.stderr)
+
+    def test_wrong_approved_original_sha_blocks_art_source_spoof(self):
+        proc=exec_gate(*self.args(**{"world-approved-sha256":"f"*64}))
+        self.assertEqual(proc.returncode,1)
+        self.assertIn("DOES NOT MATCH approved reference SHA",proc.stderr)
+        self.assertFalse(self.root.exists())
 
     def test_source_missing_zip_refused(self):
         with zipfile.ZipFile(self.zip,"w") as z:
