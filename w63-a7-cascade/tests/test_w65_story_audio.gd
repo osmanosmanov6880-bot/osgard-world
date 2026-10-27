@@ -137,6 +137,23 @@ func _run() -> void:
     _check(ui.sound_bus.last_cue == "win", "Winning original game gets distinct synth cue")
     _check(ui.model.snapshot()["history"].size() == 12, "Exactly 12 meaningful player decisions")
 
+    # Independent alternate solution: the puzzle has more than the one
+    # reference winning sequence; claims of real player creativity still
+    # require human testing.
+    var alternative := A7CascadeCore.new()
+    var alternate_path: Array[String] = [
+        "VENT", "SEAL", "VENT", "POWER", "PUMP", "SCAN",
+        "PUMP", "PUMP", "SEAL", "SCAN", "VENT", "SCAN",
+    ]
+    for choice in alternate_path:
+        _check(alternative.choose(choice), "Distinct second strategy is a legal action")
+    _check(alternative.snapshot()["status"] == "won",
+        "Alternative independent 12-move strategy is truly winnable")
+    _check(alternative.snapshot()["metrics"] != ui.model.snapshot()["metrics"],
+        "Strategies yield distinct final resource distributions")
+    _check(alternative.snapshot()["history"] != ui.model.snapshot()["history"],
+        "Second solution uses a different causal decision sequence")
+
     ui.queue_free()
     await process_frame
     _finish()
