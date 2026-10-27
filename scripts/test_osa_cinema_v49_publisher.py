@@ -54,6 +54,9 @@ class PublisherTest(unittest.TestCase):
         pin={'localCaptionRevision':'V48.1_ACCESSIBILITY_FIX_NO_VIDEO_OR_AUDIO_CHANGE',
              'releaseDecision':'NO_GO','publicationAuthorized':False,'assets':media}
         self.pinfile.write_text(json.dumps(pin))
+        original_pins=pub.EXTRA_PIN
+        pub.EXTRA_PIN={rel:totals[rel] for rel in pub.EXTRA}
+        self.addCleanup(setattr,pub,'EXTRA_PIN',original_pins)
 
     def test_verify_stage_activate_rollback(self):
         evidence=pub.verify_source(self.src,self.pinfile)
@@ -109,6 +112,16 @@ class PublisherTest(unittest.TestCase):
         pub.activate(self.pinfile,self.root,'osa-v49-example-1')
         with self.assertRaisesRegex(pub.GateError,'already active'):
             pub.activate(self.pinfile,self.root,'osa-v49-example-1')
+
+    def test_same_origin_html_tamper_even_with_forged_sha256sums_denied(self):
+        index=self.src/'index.html'
+        evil=index.read_bytes()+b'<script>console.log("injection")</script>'
+        index.write_bytes(evil)
+        sums=(self.src/'SHA256SUMS.txt').read_text().splitlines()
+        sums=[(digest(evil)+'  index.html') if line.endswith('  index.html') else line for line in sums]
+        (self.src/'SHA256SUMS.txt').write_text('\\n'.join(sums)+'\\n')
+        with self.assertRaisesRegex(pub.GateError,'immutable GitHub shell pin mismatch'):
+            pub.verify_source(self.src,self.pinfile)
 
     def test_bad_rollback_pointer_denied(self):
         (self.root/'current').symlink_to('../../etc')
