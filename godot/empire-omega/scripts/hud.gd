@@ -248,6 +248,8 @@ var open := false
 var root: Control
 var header_panel: PanelContainer
 var objective_panel: PanelContainer
+var objective_details_button: Button
+var mission_briefing_label: Label
 var controls_panel: PanelContainer
 var map_panel: PanelContainer
 var strategy_window: PanelContainer
@@ -459,6 +461,16 @@ func _make_hud() -> void:
 	mission_chapter_label = _label(objective_stack,_v08("ВАША ЦЕЛЬ","YOUR OBJECTIVE","当前目标"),15,true)
 	mission_label = _label(objective_stack,"",22)
 	mission_distance_label = _label(objective_stack,"",16,true)
+	# R132: one REAL 46px touch/keyboard target opens the source journal.
+	# A second full text row cannot fit the genuine compact 320px mission card.
+	objective_details_button = Button.new()
+	objective_details_button.name = "R132MissionBriefingButton"
+	objective_details_button.text = "?"
+	objective_details_button.custom_minimum_size = Vector2(46,46)
+	objective_details_button.add_theme_font_size_override("font_size",20)
+	R90_STYLE.style_button(objective_details_button)
+	objective_details_button.pressed.connect(Callable(self,"toggle_field_journal"))
+	root.add_child(objective_details_button)
 	journal_panel = _panel(Rect2(-476,186,452,440),1.0)
 	journal_panel.visible = false
 	var journal_scroll := ScrollContainer.new()
@@ -470,6 +482,10 @@ func _make_hud() -> void:
 	details.add_theme_constant_override("separation",9)
 	journal_scroll.add_child(details)
 	_label(details,_v08("ПУЛЬС ГОРОДА · H — СКРЫТЬ","CITY JOURNAL · H — CLOSE","城市日志 · H 关闭"),18,true)
+	# Actual complete mission chapter + title, never the compact truncated hint.
+	_label(details,_v08("ТЕКУЩЕЕ ЗАДАНИЕ","CURRENT MISSION","当前任务"),16,true)
+	mission_briefing_label = _label(details,"",18)
+	_separator(details)
 	_label(details,_v08("ЭКОНОМИКА И БЕЗОПАСНОСТЬ","ECONOMY AND SAFETY","经济和安全"),14,true)
 	context_label = _label(details,"",16)
 	law_label = _label(details,"",16,true)
@@ -751,6 +767,10 @@ func _refresh() -> void:
 	if mission_chapter_label != null:
 		mission_chapter_label.text = MissionManager.chapter_title(GameState.locale,compact_hud)
 	mission_label.text = TOUCH_MISSION.title(MissionManager.title(GameState.locale),int(GameState.data.get("mission",0)),compact_hud,DisplayServer.is_touchscreen_available(),GameState.locale)
+	if mission_briefing_label != null:
+		mission_briefing_label.text = MissionManager.chapter_title(GameState.locale,false) + "\n" + MissionManager.title(GameState.locale)
+	if objective_details_button != null:
+		objective_details_button.tooltip_text = _v08("ПОДРОБНОСТИ ЗАДАНИЯ · ОТКРЫТЬ / ЗАКРЫТЬ","MISSION DETAILS · OPEN / CLOSE","任务详情 · 打开 / 关闭")
 	if trial_label != null:
 		var session: Dictionary = d.get("driving_trial",{})
 		var route: Dictionary = GameState.TRIALS.find_route(str(session.get("id",""))) if not session.is_empty() else GameState.TRIALS.offer(d)
@@ -891,6 +911,7 @@ func toggle_strategy() -> void:
 	if pause_open: return
 	open = not open
 	overlay.visible = open
+	if objective_details_button != null: objective_details_button.visible = not open
 	if journal_panel != null: journal_panel.visible = false
 	if open:
 		_redraw_strategy()
@@ -1354,6 +1375,7 @@ func toggle_pause() -> void:
 	if pause_open:
 		pause_open = false
 		pause_overlay.visible = false
+		if objective_details_button != null: objective_details_button.visible = not open
 		settings_page = false
 		awaiting_binding = ""
 		get_tree().paused = false
@@ -1362,6 +1384,7 @@ func toggle_pause() -> void:
 	if open:
 		toggle_strategy()
 	pause_open = true
+	if objective_details_button != null: objective_details_button.visible = false
 	settings_page = false
 	pause_overlay.visible = true
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
@@ -1624,6 +1647,15 @@ func _apply_responsive_layout() -> void:
 	# Keep the native title on compact screens for orientation, but remove
 	# the redundant duplicate from widescreen command view.
 	strategy_title.visible = compact_hud or screen.x < 1200.0 or screen.y < 680.0
+	# Actual mission-card geometry, on 320/390px portrait/landscape and
+	# wide desktop; no CSS mock or duplicate rendering pass.
+	var mission_rect: Rect2 = frames["objective"] if compact_hud else Rect2(
+		screen.x-476.0,20.0,452.0,150.0)
+	if objective_details_button != null:
+		objective_details_button.position = Vector2(
+			mission_rect.end.x-52.0,mission_rect.position.y+6.0)
+		objective_details_button.size = Vector2(46.0,46.0)
+		objective_details_button.visible = not open and not pause_open
 	_refresh()
 
 func toggle_map() -> void:
