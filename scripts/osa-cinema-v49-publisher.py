@@ -192,6 +192,7 @@ def stage(source, pin, root, release_id):
         for rel in sorted(ALL_FILES):
             output = temporary / rel
             output.parent.mkdir(parents=True, exist_ok=True)
+            output.parent.chmod(0o755)
             shutil.copyfile(regular_file(source, rel), output)
             output.chmod(0o644)
         shutil.copyfile(regular_file(source, "SHA256SUMS.txt"), temporary / "SHA256SUMS.txt")
