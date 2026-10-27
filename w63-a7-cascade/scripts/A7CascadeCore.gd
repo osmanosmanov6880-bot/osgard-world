@@ -34,7 +34,7 @@ func _init() -> void:
     reset()
 
 func reset() -> void:
-    metrics = {"heat": 62, "pressure": 48, "seal": 68, "signal": 44, "energy": 70, "integrity": 100}
+    metrics = {"heat": 62, "pressure": 48, "seal": 68, "signal": 44, "energy": 85, "integrity": 100}
     shift = 0
     actions_left = 2
     status = "playing"
