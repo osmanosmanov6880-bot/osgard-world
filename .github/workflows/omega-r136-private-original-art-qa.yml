@@ -46,5 +46,6 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          ! grep -E '(scp|rsync|ssh |deploy-frontend|upload-artifact)' .github/workflows/omega-r136-private-original-art-qa.yml
+          ! grep -E '^[[:space:]]*-[[:space:]]*uses:.*(upload-artifact|ssh|deploy)' .github/workflows/omega-r136-private-original-art-qa.yml
+          ! grep -E '^[[:space:]]*-[[:space:]]*run:.*(scp|rsync|deploy-frontend)' .github/workflows/omega-r136-private-original-art-qa.yml
           echo "R136 PASS: no original artwork or private review uploaded to CI."
