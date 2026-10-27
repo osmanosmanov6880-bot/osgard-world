@@ -3,9 +3,9 @@
 config_version=5
 
 [application]
-config/name="OSGARD FIELD LAB W33 | Operator Debrief"
+config/name="IRON PULSE | Reactor Simulator"
 run/main_scene="res://Main.tscn"
-config/description="Independent six-mission interactive simulated diagnosis in native Godot"
+config/description="IRON PULSE: six-mission fictional reactor simulation in Godot"
 
 [display]
 window/size/viewport_width=1280
