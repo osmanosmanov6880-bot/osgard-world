@@ -72,3 +72,22 @@ func _build(id: String) -> Dictionary:
 	sign.modulate = Color("f6e8cb")
 	post.add_child(sign)
 	return {"root":post,"label":sign}
+
+func closest_proposal(point: Vector3, distance: float = 9.0) -> String:
+	# Real on-foot interaction uses a ground-plane radius; board height
+	# must never make the interaction target unreachable on the pavement.
+	var best: float = distance * distance
+	var selected: String = ""
+	for project_id in PROMISE.CHOICES:
+		if not boards.has(project_id):
+			continue
+		var target: Node3D = boards[project_id]["root"]
+		if target == null or not is_instance_valid(target):
+			continue
+		var offset: Vector2 = Vector2(target.global_position.x-point.x,
+			target.global_position.z-point.z)
+		var squared: float = offset.length_squared()
+		if squared < best:
+			best = squared
+			selected = project_id
+	return selected

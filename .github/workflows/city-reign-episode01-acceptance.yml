@@ -59,7 +59,8 @@ jobs:
             v107_city_reign_impact_story \
             v108_city_reign_unique_landmarks \
             v109_city_reign_policies_crises \
-            v110_city_reign_first_mandate; do
+            v110_city_reign_first_mandate \
+            v111_city_reign_street_interaction; do
             log="city-reign-episode-evidence/${testname}.log"
             timeout --signal=TERM --kill-after=6s 120s godot --headless \
               --path godot/empire-omega --script "res://tests/${testname}.gd" | tee "$log"
@@ -69,6 +70,7 @@ jobs:
               v108*) marker="CITY REIGN C3 distinct civic 3D:" ;;
               v109*) marker="CITY REIGN C5 real policy and emergencies:" ;;
               v110*) marker="CITY REIGN E01 real playable promise:" ;;
+              v111*) marker="CITY REIGN E01 real on-foot street choice:" ;;
             esac
             grep -Fq "$marker" "$log"
             if grep -nE 'SCRIPT ERROR:|Parse Error:|FAIL:| [1-9][0-9]* FAIL' "$log"; then
@@ -97,6 +99,7 @@ jobs:
             'godot/empire-omega/scripts/hud.gd',
             'godot/empire-omega/scripts/main.gd',
             'godot/empire-omega/tests/v110_city_reign_first_mandate.gd',
+            'godot/empire-omega/tests/v111_city_reign_street_interaction.gd',
             'scripts/omega-direct-publish.contract.test.mjs',
           ]
           out={

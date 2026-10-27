@@ -445,6 +445,11 @@ func _physics_process(delta: float) -> void:
 		if site_id != "":
 			var site: Dictionary = GameState.DISCOVERY.find_site(site_id)
 			near_name = "◈ " + GameState.DISCOVERY.title(site,GameState.locale)
+	if near_name == "" and not driving and not interiors.is_inside() and city_reign_proposals != null:
+		var proposal_id: String = city_reign_proposals.closest_proposal(protagonist,10.0)
+		if proposal_id != "":
+			var option: Dictionary = GameState.INITIATIVES.PROJECTS[proposal_id]
+			near_name = _three("ПРЕДЛОЖЕНИЕ · F: ","CITY PROPOSAL · F: ","城市规划 · F: ") + str(option.get(GameState.locale,option["ru"]))
 	if near_name == "":
 		var property_id: String = world.closest_property(protagonist,20.0)
 		if property_id != "":
@@ -785,6 +790,20 @@ func _interact() -> void:
 		if local_outcome == "completed": MissionManager.register_action("neighborhood_deliver")
 		hud.announce(GameState.NEIGHBORHOOD.status_text(local_outcome,GameState.locale))
 		return
+	# Episode 01 street decision: physically walk to one of the two real
+	# budget proposal boards and open the existing actionable CITY REIGN cabinet.
+	# The interaction itself is strictly read-only. Only a subsequent actual
+	# invest button may call the original resource-debit transaction.
+	if not driving and city_reign_proposals != null:
+		var proposal_id: String = city_reign_proposals.closest_proposal(position_at,9.0)
+		if proposal_id != "":
+			var proposal: Dictionary = GameState.INITIATIVES.PROJECTS[proposal_id]
+			GameState.set_district(str(proposal["district"]))
+			if not hud.is_strategy_open():
+				hud.toggle_strategy()
+			hud.announce(_three("ГОРОДСКОЕ ПРЕДЛОЖЕНИЕ: ","CITY PROPOSAL: ","城市规划：") +
+				str(proposal.get(GameState.locale,proposal["ru"])) + " · %d кр." % int(proposal["cost"]))
+			return
 	# Distinct street discoveries create an on-foot exploration loop. Every
 	# reward is awarded once by GameState, never by a visual marker.
 	if not driving and not interiors.is_inside():

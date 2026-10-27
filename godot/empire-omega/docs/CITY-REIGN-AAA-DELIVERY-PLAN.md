@@ -73,3 +73,5 @@ ENGINEERING STAGING. Previous C1 exact-head GitHub native+Chromium/provenance ch
 - [x] Source-authoritative automated test `v110_city_reign_first_mandate.gd` with real clickable buttons, 3D geometry, finances, saved restore and alternate district; must actually PASS Godot 4.4.1 on exact candidate SHA.
 - [ ] Independent human **30-minute game session**. This code creates a coherent path but no claim of player enjoyment or 30-minute playtime until measured.
 - [ ] Story cinematics, dialogue choice that changes how residents respond, unique licensed assets and original voice acting are still not implemented.
+
+- [x] E01 on-foot street interaction: near either board, the real F action opens the existing paid decision interface and preselects the correct district without spending money. The separate click on an investment button performs the sole resource transaction. `v111` verifies it in the full real city scene with 34 citizens and 12 traffic cars.
