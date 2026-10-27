@@ -787,13 +787,27 @@ func _refresh() -> void:
     ])
     var telemetry_separator: String = "\n" if size.x < 640.0 else "     |     "
     _assign(telemetry, telemetry_separator.join(telemetry_groups))
-    _assign(status, "%s: %02d / 06      •      %s: %d      •      %s: %.1f s" % [
-        _t("select"), maxi(0, int(snap["mission"]) + 1), _t("progress"), int(snap["step"]), _t("elapsed"), float(snap["seconds"])])
+    # W58 review: each mobile status is a complete line rather than an
+    # orphaned bullet; desktop copy and original values remain unchanged.
+    var status_groups: PackedStringArray = PackedStringArray([
+        "%s: %02d / 06" % [_t("select"), maxi(0, int(snap["mission"]) + 1)],
+        "%s: %d" % [_t("progress"), int(snap["step"])],
+        "%s: %.1f s" % [_t("elapsed"), float(snap["seconds"])],
+    ])
+    var status_separator: String = "\n" if size.x < 640.0 else "      •      "
+    _assign(status, status_separator.join(status_groups))
     # True in-scene state, never a fake video or static rendered mockup.
     _assign(stage_live, "PROTOCOL / COMPLETE" if bool(snap["complete"]) else "ALERT / CHECK SAFETY" if bool(snap["last_error"]) else "A7 / LIVE DIAGNOSTICS" if bool(snap["active"]) else "A7 / SECURE STANDBY")
     stage_live.add_theme_color_override("font_color", CORAL if bool(snap["last_error"]) else MINT)
-    _assign(stage_readout, "ROTOR   %04d RPM     /     HATCH   %03d%%     /     SCORE   %03d" % [
-        roundi(float(snap["rpm"])), roundi(float(snap["hatch"]) * 100.0), int(snap["score"])])
+    # W58 review: prevent a stranded slash on the 320/390px true 3D HUD.
+    # Preserve desktop text, numeric precision, RPM, hatch and score.
+    var stage_groups: PackedStringArray = PackedStringArray([
+        "ROTOR   %04d RPM" % roundi(float(snap["rpm"])),
+        "HATCH   %03d%%" % roundi(float(snap["hatch"]) * 100.0),
+        "SCORE   %03d" % int(snap["score"]),
+    ])
+    var stage_separator: String = "\n" if size.x < 640.0 else "     /     "
+    _assign(stage_readout, stage_separator.join(stage_groups))
     var step_names := [_t("step0"), _t("step1"), _t("step2"), _t("step3"), _t("step4")]
     _assign(progress_text, " > ".join(step_names) + "    |    %d/3 + %d/3" % [int(snap["cleared_count"]), int(snap["shift_cleared_count"])])
     engine_btn.text = _t("drive_stop") if bool(snap["drive_on"]) else _t("drive_start")
