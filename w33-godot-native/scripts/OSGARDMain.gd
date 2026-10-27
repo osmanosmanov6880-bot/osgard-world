@@ -547,7 +547,7 @@ func _sync_camera_rail() -> void:
     if compact:
         stage_kicker.text = "A7 / " + _t("view%d" % selected)
     else:
-        stage_kicker.text = "A7 / RESTRICTED RESEARCH FACILITY"
+        stage_kicker.text = _t("stage_classification")
 
 func _layout_stage_for_screen() -> void:
     if visual_container == null or sub_viewport == null:
@@ -785,7 +785,7 @@ func _refresh() -> void:
     var narrow_brand: bool = size.x < 640.0
     _assign(brand_mark, _t("brand_mobile") if narrow_brand else _t("brand_desktop"))
     _assign(stage_section_heading, _t("stage_narrow") if narrow_brand else _t("stage_facility"))
-    _assign(heading, "REACTOR A7" if size.x < 640.0 else "REACTOR A7   /   OBSIDIAN PROTOCOL")
+    _assign(heading, _t("reactor_title_short") if size.x < 640.0 else _t("reactor_title_long"))
     _assign(lead, _t("lead"))
     _assign(footer, _t("sim") + "   ·   LAST FRONTIER / GODOT 4.4.1 / LOCAL ONLY")
     # Keep the actual language code readable on minimal web fonts.
@@ -818,7 +818,8 @@ func _refresh() -> void:
     var status_separator: String = "\n" if size.x < 640.0 else "      •      "
     _assign(status, status_separator.join(status_groups))
     # True in-scene state, never a fake video or static rendered mockup.
-    _assign(stage_live, "PROTOCOL / COMPLETE" if bool(snap["complete"]) else "ALERT / CHECK SAFETY" if bool(snap["last_error"]) else "A7 / LIVE DIAGNOSTICS" if bool(snap["active"]) else "A7 / SECURE STANDBY")
+    var stage_message_key: String = "stage_complete" if bool(snap["complete"]) else "stage_alert" if bool(snap["last_error"]) else "stage_active" if bool(snap["active"]) else "stage_idle"
+    _assign(stage_live, _t(stage_message_key))
     stage_live.add_theme_color_override("font_color", CORAL if bool(snap["last_error"]) else MINT)
     # The indicators display accepted simulation state only: they never
     # send commands, affect scores or pretend physical-machine telemetry.
