@@ -26,6 +26,7 @@ const SKID_SCENE = preload("res://scripts/horizon_skid_trails.gd")
 const GROUND_SPRAY_SCENE = preload("res://scripts/horizon_ground_spray.gd")
 const ROAD_WETNESS = preload("res://scripts/horizon_rain_puddles.gd")
 const CASE_MARKER_SCENE = preload("res://scripts/city_case_marker.gd")
+const CITY_REIGN_CRISIS = preload("res://scripts/city_reign_crisis_scene.gd")
 const CARGO_VISUAL_SCENE = preload("res://scripts/cargo_visual.gd")
 const POLICE_SCENE = preload("res://scripts/police_dispatch.gd")
 const TRIAL_MARKER_SCENE = preload("res://scripts/trial_marker.gd")
@@ -40,6 +41,7 @@ var soundscape
 var skid_trails: Node3D
 var ground_spray: Node3D
 var city_case_marker
+var city_reign_crisis: Node3D
 var cargo_visual
 var current_weather_kind := "clear"
 var base_road_grip := 1.0
@@ -96,7 +98,10 @@ func _ready() -> void:
 	add_child(discovery_markers)
 	landmarks = LANDMARKS_SCENE.new()
 	add_child(landmarks)
-	landmarks.sync_projects(GameState.data.get("projects_done",[]))
+	landmarks.sync_projects(GameState.data.get("projects_done",[]), GameState.data.get("projects_active",{}))
+	city_reign_crisis = CITY_REIGN_CRISIS.new()
+	add_child(city_reign_crisis)
+	city_reign_crisis.sync_state(GameState.data,GameState.locale)
 	traffic_signals = SIGNALS_SCENE.new()
 	add_child(traffic_signals)
 	roadworks = ROADWORKS_SCENE.new()
@@ -138,6 +143,7 @@ func _ready() -> void:
 	touch_controls = TOUCH_CONTROLS_SCENE.new()
 	add_child(touch_controls)
 	world.update_language(GameState.locale)
+	landmarks.update_language(GameState.locale)
 	_apply_weather()
 	hud.strategy_changed.connect(_on_strategy_changed)
 	hud.dialogue_changed.connect(_on_dialogue_changed)
@@ -553,6 +559,8 @@ func _input(event: InputEvent) -> void:
 	elif event.is_action_pressed("language"):
 		hud.switch_language()
 		world.update_language(GameState.locale)
+		if city_reign_crisis != null:
+			city_reign_crisis.sync_state(GameState.data,GameState.locale)
 	elif event.is_action_pressed("save_game"):
 		_save()
 	elif event.is_action_pressed("load_game"):
@@ -921,8 +929,10 @@ func _on_game_changed(reason: String) -> void:
 	if reason == "road_repair" or reason == "road_maintenance" or reason == "turn" or reason == "load" or reason == "reset":
 		_replan_traffic()
 		route_refresh = 100.0
-	landmarks.sync_projects(GameState.data.get("projects_done",[]))
+	landmarks.sync_projects(GameState.data.get("projects_done",[]), GameState.data.get("projects_active",{}))
 	landmarks.update_language(GameState.locale)
+	if city_reign_crisis != null:
+		city_reign_crisis.sync_state(GameState.data,GameState.locale)
 	world.update_language(GameState.locale)
 	_apply_weather()
 

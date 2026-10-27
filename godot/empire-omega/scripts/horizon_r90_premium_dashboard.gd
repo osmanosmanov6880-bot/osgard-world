@@ -90,7 +90,7 @@ func build(state: Dictionary, forecast: Dictionary, mission: String,
 	var branding := HBoxContainer.new()
 	branding.add_theme_constant_override("separation",16)
 	add_child(branding)
-	_label(branding,local("OSGARD  ·  ИМПЕРИЯ Ω","OSGARD  ·  EMPIRE Ω","OSGARD  ·  帝国 Ω",lang),26,true)
+	_label(branding,local("CITY REIGN  ·  ВЛАСТЬ НАД ГОРОДОМ","CITY REIGN  ·  RULE THE CITY","CITY REIGN  ·  掌控城市",lang),26,true)
 	var selected: String = str(state.get("selected","forum"))
 	var clock: float = fposmod(float(state.get("day_clock",8.0)),24.0)
 	var hour: int = floori(clock)

@@ -1,0 +1,66 @@
+# CITY REIGN - AAA/Blockbuster delivery map (source-truth roadmap)
+
+**Candidate branch** `feat/city-reign-brand-transition-20261027` -> **staging** R90 PR #500 only. Not production. **Last authored checkpoint** 27 Oct 2026. A finished game cannot be inferred from the count of commits, authored GDScript, automation PASS, or screenshots.
+
+## Product north star
+A player gains influence through street-level action, and their money/policies visibly improve or harm district life. The differentiator is **one shared authoritative simulation** serving travel, missions, economy, infrastructure and city feedback. Priority: a compelling, independently playtested **30-minute vertical slice** before scale.
+
+## Gate A - operational safety and source of truth
+- [x] Native Godot is authoritative, existing 40 sequential mission identities and version-4 saves are preserved.
+- [x] UI/C2 code reads one state; citizen/project actions are not fabricated as rendered effects.
+- [ ] Independent source SHA and private reference images must be pinned and externally reviewed.
+- [ ] Production auto-release lock from R139 PR #573 must be separately merged/verified on master; R90 and this PR remain isolated.
+- **EXIT:** exact-SHA native+WebGL provenance success, no production mutation, explicit human approvals.
+
+## Gate B - playable narrative and first 30 minutes
+- [x] Three introductory narrative acts + epilogue reflect current campaign index, risk and weakest district. *Text framing, not full scripted cutscenes.*
+- [x] 40 original career tasks and chapter rewards remain tied to real action transactions.
+- [ ] Re-author an exciting **continuous, optional 30-minute opening**: arrive, meet resident with voice, accept clear delivery, face district trade-off, see persistent street consequence, close a dramatic beat.
+- [ ] Record >= 3 uninstructed 15-30 min human sessions; measure failed actions, time to task success, voluntary continuation and perceived agency.
+- **EXIT:** three people play without developer directions, can accurately explain why outcomes changed.
+
+## Gate C - systemic city decisions
+- [x] Original 8 paid, resource-limited, multi-turn projects with saved progress and economic modifiers.
+- [x] C1 construction sites grow from actual remaining turns, completed landmarks replace worksites, reset clears them.
+- [x] C2 **read-only** same-turn counterfactual impact forecasts; cost/benefit based on production state, not fake stats.
+- [x] C5 side-effect-free comparative previews for the four existing governance policies.
+- [x] C5 city emergencies visible in the actual street from live saved crisis ID; cleared after resolution.
+- [ ] Add two irreversible-but-fair district trade-offs with citizen feedback, public services and policy opposition, preserving predictable counterfactual forecasts.
+- [ ] Test long saves, softlock recovery and crisis fairness across 30 simulated turns.
+- **EXIT:** players can predict and observe at least three distinct short/long-term city effects without reading a spreadsheet.
+
+## Gate D - recognizable visual urban world
+- [x] C3 eight source-authored landmark identities that differ by functional facility; low-poly prototypes only.
+- [ ] Commission/license high-quality original PBR hero architecture, vehicles, people, texture LODs, signage and terrain; track asset licenses and build provenance.
+- [ ] Native art pass for all four districts: streetfronts, materials, reflections, atmosphere, filmed comparison against the **actual** two user-approved original references.
+- [ ] Performance LOD/occlusion/streaming profiles; mobile must retain gameplay legibility, not fake AAA rendered imagery.
+- **EXIT:** real reference-to-runtime sign-off; clean rights chain; four districts recognizable blind.
+
+## Gate E - traffic, people and interaction
+- [x] Existing driving/traffic/resident systems are executable with testable signals.
+- [ ] Distinct NPC schedules and reactions, dialogue choices, cinematic encounters, better animations, robust car/camera physics and audio.
+- [ ] Automated scenario suite for traffic/pedestrian non-blocking, service completion, regressions in all mission gates.
+- **EXIT:** 20 minutes driving/walking with zero critical camera, physics or interaction deadlocks.
+
+## Gate F - sound, cinematic direction and accessibility
+- [x] Deterministic existing game audio and browser/mobile control support.
+- [ ] Original licensed score, directional ambience, voice, dialogue and reaction SFX; real opening cinematic with player skip.
+- [ ] Controller remaps, readable mobile touch targets, captions/contrast, reduced-motion options, accessible tutorials.
+- **EXIT:** audio/visual/caption approval and verified keyboard + controller + portrait touch onboarding.
+
+## Gate G - independent quality and device proof
+- [x] Source-bound GitHub CI can run real Godot and Chromium/WebGL plus source provenance.
+- [ ] 36 original physical trials: desktop / Android / iPhone x four common play scenarios x three independent runs.
+- [ ] Collect actual GPU p50/p95/p99 frame time, heat, input latency, asset-load time, crash logs and memory. **Never invent FPS.**
+- [ ] Check corrupted-save recovery, mobile WebGL browsers, background-tab behavior, 30-turn simulation parity.
+- **EXIT:** individually reviewable authentic physical recordings, stable frame budgets defined per target device.
+
+## Gate H - audience, business and shipping
+- [ ] Verify **CITY REIGN** trademark/market collision, worldwide localization, commercial licenses, age rating and storefront rules.
+- [ ] Build 60-90 second authentic captured trailer from genuine engine footage, Steam page and wishlist funnel.
+- [ ] Closed demo with measurable real retention/interest, human qualitative feedback; paid release only when product and market gates justify it.
+- [ ] Independent LIVE verified production rollback rehearsal, signed artifact hashes, explicit four-part GO and release owner.
+- **EXIT:** audited go/no-go; source-locked release, rollback path, valid marketing claims, customers able to purchase/support.
+
+## Current no-bluff status
+ENGINEERING STAGING. Previous C1 exact-head GitHub native+Chromium/provenance checks passed. Subsequent C2/C3 must pass their own new exact-SHA runs; no manual source review, real GPU target-device proof or independent player validation yet. AAA art, commercial release and blockbuster performance remain **HOLD**. Only real evidence changes the status.

@@ -3,9 +3,9 @@
 config_version=5
 
 [application]
-config/name="OSGARD EMPIRE Ω — Open World Prototype"
+config/name="CITY REIGN — Open World Prototype"
 run/main_scene="res://scenes/main.tscn"
-config/description="Russian-first 3D open-world city and governance simulation"
+config/description="CITY REIGN: open-world city driving, missions and strategic city governance"
 
 [autoload]
 GameState="*res://scripts/game_state.gd"

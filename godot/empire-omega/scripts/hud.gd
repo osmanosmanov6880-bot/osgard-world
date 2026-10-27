@@ -8,6 +8,8 @@ const MISSION_NAV = preload("res://scripts/horizon_mission_navigation.gd")
 const R90_STYLE = preload("res://scripts/horizon_r90_reference_style.gd")
 const R90_DASHBOARD = preload("res://scripts/horizon_r90_premium_dashboard.gd")
 const R90_SPEED = preload("res://scripts/horizon_r90_speed_dial.gd")
+const CITY_REIGN_IMPACT = preload("res://scripts/city_reign_impact.gd")
+const CITY_REIGN_STORY = preload("res://scripts/city_reign_story.gd")
 ## Russian-first accessible HUD. All controls use the same GameState as the 3D world.
 
 signal strategy_changed(is_open: bool)
@@ -68,7 +70,7 @@ const TRANSLATIONS = {
 	"ru":{
 		"repair_hint":"Для ремонта автомобиля нужно %d игровых кр.",
 		"condition":"Состояние","repaired":"Машина отремонтирована",
-		"paused":"ПАУЗА · OSGARD Ω",
+		"paused":"ПАУЗА · CITY REIGN",
 		"pause_description":"Время в городе остановлено. Продолжайте, сохраняйте игру или настройте управление.",
 		"resume":"ПРОДОЛЖИТЬ ИГРУ",
 		"preferences":"НАСТРОЙКИ",
@@ -116,7 +118,7 @@ const TRANSLATIONS = {
 		"action_save_game":"Сохранить",
 		"action_load_game":"Загрузить",
 		"action_language":"Сменить язык",
-		"action_pay_traffic_fines":"Оплатить штраф у мэрии","brand":"OSGARD  ·  ИМПЕРИЯ Ω","market_hint":"B — купить торговый бизнес","budget_graph":"ИСТОРИЯ КАЗНЫ / ЛИЧНЫХ ДЕНЕГ","sub":"ОТКРЫТЫЙ МИР / ПРАВЛЕНИЕ",
+		"action_pay_traffic_fines":"Оплатить штраф у мэрии","brand":"CITY REIGN  ·  ВЛАСТЬ НАД ГОРОДОМ","market_hint":"B — купить торговый бизнес","budget_graph":"ИСТОРИЯ КАЗНЫ / ЛИЧНЫХ ДЕНЕГ","sub":"ОТКРЫТЫЙ МИР / ПРАВЛЕНИЕ",
 		"cash":"Казна","wallet":"Личные деньги","business_income":"Доход бизнеса","invest":"ВЛОЖИТЬ 250 кр. В ГОРОД","contracts":"КОММЕРЧЕСКИЕ РЕЙСЫ","fuel":"Топливо","refueled":"Машина заправлена: −85 кр.","refuel_hint":"Для заправки нужно 85 кр. и неполный бак","accepted":"Груз принят: следуйте к пункту доставки","completed":"Доставка выполнена","unavailable":"Задания временно недоступны","population":"Население","stability":"Стабильность","energy":"Энергия","water":"Вода","food":"Продовольствие",
 		"turn":"Такт","mission":"МИССИЯ","hint":"WASD — идти · E — авто · F — действие · J — житель · T — автошкола · C — события · R — помощь · I — здание · Tab — правление · F3 — FPS",
 		"strategy":"КАБИНЕТ ПРАВИТЕЛЯ","close":"ЗАКРЫТЬ (Tab)","district":"РАЙОН","development":"СТРОИТЕЛЬСТВО","research":"ИССЛЕДОВАНИЯ",
@@ -127,7 +129,7 @@ const TRANSLATIONS = {
 	"en":{
 		"repair_hint":"Vehicle repair costs %d game кр.",
 		"condition":"Condition","repaired":"Vehicle repaired",
-		"paused":"PAUSED · OSGARD Ω",
+		"paused":"PAUSED · CITY REIGN",
 		"pause_description":"The city is paused. Resume, save your progress, or customize your controls.",
 		"resume":"RESUME GAME",
 		"preferences":"SETTINGS",
@@ -175,7 +177,7 @@ const TRANSLATIONS = {
 		"action_save_game":"Save",
 		"action_load_game":"Load",
 		"action_language":"Change language",
-		"action_pay_traffic_fines":"Pay city fine","brand":"OSGARD  ·  EMPIRE Ω","market_hint":"B — purchase market business","budget_graph":"TREASURY / WALLET HISTORY","sub":"OPEN WORLD / GOVERNANCE",
+		"action_pay_traffic_fines":"Pay city fine","brand":"CITY REIGN  ·  RULE THE CITY","market_hint":"B — purchase market business","budget_graph":"TREASURY / WALLET HISTORY","sub":"OPEN WORLD / GOVERNANCE",
 		"cash":"Treasury","wallet":"Your wallet","business_income":"Business income","invest":"INVEST 250 кр. INTO CITY","contracts":"COURIER CONTRACTS","fuel":"Fuel","refueled":"Refueled: −85 кр.","refuel_hint":"Refueling needs 85 кр. and a non-full tank","accepted":"Cargo collected: go to destination","completed":"Delivery completed","unavailable":"Contracts are unavailable","population":"Population","stability":"Stability","energy":"Energy","water":"Water","food":"Food",
 		"turn":"Turn","mission":"MISSION","hint":"WASD — move · E — car · F — act · J — residents · T — academy · C — incidents · R — service · I — interior · Tab — govern · F3 — FPS",
 		"strategy":"GOVERNOR'S CABINET","close":"CLOSE (Tab)","district":"DISTRICT","development":"CONSTRUCTION","research":"RESEARCH",
@@ -186,7 +188,7 @@ const TRANSLATIONS = {
 	"zh":{
 		"repair_hint":"修车需要 %d 游戏卢布",
 		"condition":"车况","repaired":"车辆已修好",
-		"paused":"游戏暂停 · OSGARD Ω",
+		"paused":"游戏暂停 · CITY REIGN",
 		"pause_description":"城市时间已暂停。可以继续游戏、保存进度或调整控制。",
 		"resume":"继续游戏",
 		"preferences":"设置",
@@ -234,7 +236,7 @@ const TRANSLATIONS = {
 		"action_save_game":"保存",
 		"action_load_game":"读取",
 		"action_language":"切换语言",
-		"action_pay_traffic_fines":"在市政厅缴纳罚款","brand":"OSGARD · 帝国 Ω","market_hint":"按 B 购买市场商铺","budget_graph":"国库 / 钱包历史","sub":"开放世界 / 城市治理",
+		"action_pay_traffic_fines":"在市政厅缴纳罚款","brand":"CITY REIGN · 掌控城市","market_hint":"按 B 购买市场商铺","budget_graph":"国库 / 钱包历史","sub":"开放世界 / 城市治理",
 		"cash":"国库","wallet":"个人资金","business_income":"企业收入","invest":"向城市投资 250 кр.","contracts":"配送合同","fuel":"燃油","refueled":"加油成功：−85 кр.","refuel_hint":"加油需要 85 кр. 且油箱未满","accepted":"已接货：前往目的地","completed":"配送完成","unavailable":"暂无配送合同","population":"人口","stability":"稳定度","energy":"能源","water":"水资源","food":"粮食",
 		"turn":"回合","mission":"任务","hint":"WASD 移动/驾驶 · E 汽车 · F 互动/维修 · J 居民 · T 驾考 · R 公共服务 · I 室内 · Tab 治理 · F3 性能 · L 语言",
 		"strategy":"执政官办公室","close":"关闭 (Tab)","district":"城区","development":"建设","research":"研究",
@@ -250,6 +252,9 @@ var header_panel: PanelContainer
 var objective_panel: PanelContainer
 var objective_details_button: Button
 var mission_briefing_label: Label
+var city_reign_act_label: Label
+var city_reign_story_label: Label
+var city_reign_pulse_label: Label
 var controls_panel: PanelContainer
 var map_panel: PanelContainer
 var strategy_window: PanelContainer
@@ -451,7 +456,7 @@ func _make_hud() -> void:
 	var brand_stack := VBoxContainer.new()
 	brand_stack.add_theme_constant_override("separation",3)
 	header.add_child(brand_stack)
-	header_value = _label(brand_stack,"OSGARD EMPIRE",23,true)
+	header_value = _label(brand_stack,"CITY REIGN",23,true)
 	meters_label = _label(brand_stack,"",16)
 	objective_panel = _panel(Rect2(-476,20,452,150),1.0)
 	var objective := objective_panel
@@ -485,6 +490,10 @@ func _make_hud() -> void:
 	# Actual complete mission chapter + title, never the compact truncated hint.
 	_label(details,_v08("ТЕКУЩЕЕ ЗАДАНИЕ","CURRENT MISSION","当前任务"),16,true)
 	mission_briefing_label = _label(details,"",18)
+	_separator(details)
+	city_reign_act_label = _label(details,"",18,true)
+	city_reign_story_label = _label(details,"",16)
+	city_reign_pulse_label = _label(details,"",15,true)
 	_separator(details)
 	_label(details,_v08("ЭКОНОМИКА И БЕЗОПАСНОСТЬ","ECONOMY AND SAFETY","经济和安全"),14,true)
 	context_label = _label(details,"",16)
@@ -609,7 +618,7 @@ func _make_strategy() -> void:
 
 func _make_dialogs() -> void:
 	importer = FileDialog.new()
-	importer.title = "OSGARD — v3 → v4"
+	importer.title = "CITY REIGN — legacy OSGARD save v3 → v4"
 	importer.access = FileDialog.ACCESS_FILESYSTEM
 	importer.file_mode = FileDialog.FILE_MODE_OPEN_FILE
 	importer.filters = PackedStringArray(["*.json ; OSGARD v3 JSON"])
@@ -619,7 +628,7 @@ func _make_dialogs() -> void:
 	confirm_reset.confirmed.connect(_confirm_new_game)
 	add_child(confirm_reset)
 	citizen_popup = ConfirmationDialog.new()
-	citizen_popup.title = "OSGARD — CITIZEN"
+	citizen_popup.title = "CITY REIGN — CITIZEN"
 	citizen_popup.confirmed.connect(_support_citizen)
 	citizen_popup.custom_action.connect(_citizen_custom_action)
 	citizen_popup.visibility_changed.connect(_citizen_visibility_changed)
@@ -627,7 +636,7 @@ func _make_dialogs() -> void:
 	listen_button = citizen_popup.add_button("Listen",true,"listen")
 	neighborhood_button = citizen_popup.add_button("Neighborhood job",true,"neighborhood_job")
 	city_case_popup = ConfirmationDialog.new()
-	city_case_popup.title = "OSGARD · CITY INCIDENT"
+	city_case_popup.title = "CITY REIGN · CITY INCIDENT"
 	city_case_popup.confirmed.connect(_city_case_second)
 	city_case_popup.custom_action.connect(_city_case_custom_action)
 	city_case_popup.visibility_changed.connect(_city_case_visibility_changed)
@@ -750,7 +759,7 @@ func _on_mission_changed(_index: int, _title: String) -> void:
 
 func _refresh() -> void:
 	if header_value == null: return
-	header_value.text = _v08("EMPIRE Ω","EMPIRE Ω","帝国 Ω") if compact_hud else _v08("◆ OSGARD · ИМПЕРИЯ Ω","◆ OSGARD · EMPIRE Ω","◆ 奥斯加德 · 帝国 Ω")
+	header_value.text = _v08("CITY REIGN","CITY REIGN","CITY REIGN") if compact_hud else _v08("◆ CITY REIGN · ВЛАСТЬ НАД ГОРОДОМ","◆ CITY REIGN · RULE THE CITY","◆ CITY REIGN · 掌控城市")
 	var d: Dictionary = GameState.data
 	meters_label.text = ("№%d  ·  %d кр." % [d["turn"],d["wallet"]]) if compact_hud else ("%s %d   ·   %s %d кр.   ·   %s %d кр." % [t("turn"),d["turn"],t("wallet"),d["wallet"],t("cash"),d["treasury"]])
 	context_label.text = "%s: %s\n%s: %d\n%s: %d%%  |  %s: %d%%\n%s: %d%%  |  %s: %d%%" % [t("cash"),str(d["treasury"])+" кр.",t("population"),d["population"],t("stability"),d["stability"],t("energy"),d["energy"],t("water"),d["water"],t("food"),d["food"]]
@@ -769,6 +778,13 @@ func _refresh() -> void:
 	mission_label.text = TOUCH_MISSION.title(MissionManager.title(GameState.locale),int(GameState.data.get("mission",0)),compact_hud,DisplayServer.is_touchscreen_available(),GameState.locale)
 	if mission_briefing_label != null:
 		mission_briefing_label.text = MissionManager.chapter_title(GameState.locale,false) + "\n" + MissionManager.title(GameState.locale)
+	var story: Dictionary = CITY_REIGN_STORY.briefing(d,GameState.locale)
+	if city_reign_act_label != null:
+		city_reign_act_label.text = str(story["heading"])
+	if city_reign_story_label != null:
+		city_reign_story_label.text = str(story["copy"])
+	if city_reign_pulse_label != null:
+		city_reign_pulse_label.text = str(story["pulse"])
 	if objective_details_button != null:
 		objective_details_button.tooltip_text = _v08("ПОДРОБНОСТИ ЗАДАНИЯ · ОТКРЫТЬ / ЗАКРЫТЬ","MISSION DETAILS · OPEN / CLOSE","任务详情 · 打开 / 关闭")
 	if trial_label != null:
@@ -950,7 +966,7 @@ func _do_vehicle(id: String) -> void:
 		announce(t("need"))
 
 func _redraw_strategy() -> void:
-	strategy_title.text = _v08("OSGARD · КОМАНДНЫЙ ЦЕНТР","OSGARD · OPERATIONS","奥斯加德 · 指挥中心")
+	strategy_title.text = _v08("CITY REIGN · КОМАНДНЫЙ ЦЕНТР","CITY REIGN · OPERATIONS","CITY REIGN · 指挥中心")
 	strategy_close_button.text = _v08("ЗАКРЫТЬ ×","CLOSE ×","关闭 ×")
 	strategy_anchors.clear()
 	var labels := {
@@ -978,6 +994,10 @@ func _redraw_strategy() -> void:
 	var premium_compact: bool = compact_hud or get_viewport().get_visible_rect().size.x < 1200.0
 	operations.call("build",d,forecast,MissionManager.title(GameState.locale),
 		get_viewport().world_3d,premium_compact,GameState.locale)
+	var narrative: Dictionary = CITY_REIGN_STORY.briefing(d,GameState.locale)
+	_label(strategy_contents,str(narrative["heading"]),19,true)
+	_label(strategy_contents,str(narrative["copy"]),15)
+	_label(strategy_contents,str(narrative["pulse"]),15,true)
 	_label(strategy_contents,"%s %d  ·  %s %d  ·  %s %d" % [t("turn"),d["turn"],t("science"),d["science"],t("actions"),d["actions_left"]],16,true)
 	var overview := HBoxContainer.new()
 	overview.add_theme_constant_override("separation",7)
@@ -1154,6 +1174,10 @@ func _redraw_strategy() -> void:
 		else:
 			var detail: String = "%s  ·  %d кр.  ·  %d M / %d G  ·  %d t" % [title_text,int(project["cost"]),int(project["materials"]),int(project["goods"]),int(project["turns"])]
 			_button(strategy_contents,detail,Callable(self,"_do_initiative").bind(project_id),not GameState.INITIATIVES.can_start(d,project_id))
+		if not d.get("projects_done",[]).has(project_id):
+			var impact: Dictionary = CITY_REIGN_IMPACT.preview(d,GameState.BUILDINGS,project_id)
+			if not impact.is_empty():
+				_label(strategy_contents,CITY_REIGN_IMPACT.explain(impact,GameState.locale),14)
 	_separator(strategy_contents)
 	_label(strategy_contents,t("research"),20,true)
 	var research_grid := GridContainer.new()
@@ -1179,6 +1203,12 @@ func _redraw_strategy() -> void:
 	for course in ["balance","industry","energy","welfare"]:
 		var localization: String = "energy_policy" if course == "energy" else str(course)
 		_button(policies,("◈ " if d["course"] == course else "")+t(localization),Callable(self,"_choose_policy").bind(course))
+		# The governance choice stays the original real policy transaction.
+		# These counterfactual numbers never cause a mutation or grant XP.
+		if str(d["course"]) != course:
+			var policy_impact: Dictionary = CITY_REIGN_IMPACT.policy_preview(d,GameState.BUILDINGS,course)
+			if not policy_impact.is_empty():
+				_label(strategy_contents,t(localization) + " → " + CITY_REIGN_IMPACT.explain_policy(policy_impact,GameState.locale),14)
 	_separator(strategy_contents)
 	_label(strategy_contents,t("business"),20,true)
 	for id in GameState.BUSINESSES:
@@ -1359,7 +1389,7 @@ func _make_pause_menu() -> void:
 	var column := VBoxContainer.new()
 	column.add_theme_constant_override("separation",14)
 	panel.add_child(column)
-	pause_heading = _label(column,"OSGARD Ω",29,true)
+	pause_heading = _label(column,"CITY REIGN",29,true)
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	column.add_child(scroll)
