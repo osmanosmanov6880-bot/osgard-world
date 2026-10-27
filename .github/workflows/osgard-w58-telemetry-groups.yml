@@ -4,6 +4,7 @@ on:
   pull_request:
     branches:
       - feat/osgard-w48-ring-instancing-render-budget-20261026
+      - feat/osgard-w58-telemetry-groups-20261026
     paths:
       - '.github/workflows/osgard-w58-telemetry-groups.yml'
       - 'w33-godot-native/scripts/OSGARDMain.gd'
@@ -21,7 +22,7 @@ concurrency:
 jobs:
   exact-head-godot-telemetry:
     name: W58 pinned Git sources + 40 source regressions + actual native RU/EN 320/390/desktop
-    if: github.event_name == 'pull_request' && github.head_ref == 'feat/osgard-w58-telemetry-groups-20261026'
+    if: github.event_name == 'pull_request' && (github.head_ref == 'feat/osgard-w58-telemetry-groups-20261026' || github.head_ref == 'review/osgard-w58-mobile-readout-status-20261027')
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
