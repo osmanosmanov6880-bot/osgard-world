@@ -1,0 +1,125 @@
+name: LAST FRONTIER W63 real Godot Cascade gameplay experiment (PRODUCTION HOLD)
+
+on:
+  pull_request:
+    branches:
+      - review/last-frontier-w62-staging-package-20261027
+    paths:
+      - 'w63-a7-cascade/**'
+      - '.github/workflows/last-frontier-w63-a7-cascade.yml'
+      - 'docs/LAST_FRONTIER_W63_GAMEPLAY_EXPERIMENT.md'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: last-frontier-w63-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  original-source-scope:
+    name: W63 isolated source and 14 original protected files unchanged
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Exact parent ancestry, no main game or production changes
+        shell: bash
+        env:
+          EXPECTED: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          parent=e4732240a1ad6294d1a290e9b0f1e4e213687e1e
+          test "$(git rev-parse HEAD)" = "$EXPECTED"
+          git cat-file -e "$parent^{commit}"
+          test "$(git merge-base "$parent" HEAD)" = "$parent"
+          git diff --check "$parent" HEAD
+          python3 - <<'PY'
+          import subprocess
+          parent='e4732240a1ad6294d1a290e9b0f1e4e213687e1e'
+          changed=subprocess.check_output(['git','diff','--name-only','--no-renames',parent,'HEAD'],text=True).splitlines()
+          allowed=lambda x: x.startswith('w63-a7-cascade/') or x=='.github/workflows/last-frontier-w63-a7-cascade.yml' or x=='docs/LAST_FRONTIER_W63_GAMEPLAY_EXPERIMENT.md'
+          assert changed and all(allowed(x) for x in changed), changed
+          needed={'w63-a7-cascade/scripts/A7CascadeCore.gd',
+                  'w63-a7-cascade/scripts/A7CascadeScreen.gd',
+                  'w63-a7-cascade/tests/test_a7_cascade.gd',
+                  'w63-a7-cascade/Main.tscn',
+                  'w63-a7-cascade/project.godot'}
+          assert needed.issubset(changed), sorted(needed-set(changed))
+          text=subprocess.check_output(['git','show','HEAD:w63-a7-cascade/scripts/A7CascadeCore.gd'],text=True)
+          assert 'offline_only' in text and 'connected_to_real_equipment' in text
+          assert 'HTTPClient' not in text and 'OS.execute' not in text
+          print('PASS: W63 experimental game added as a separate Godot project; original six missions unchanged')
+          PY
+
+  actual-godot-gameplay:
+    name: W63 actual Godot six incidents, valid winning route, wrong choices, bilingual mobile UI
+    needs: original-source-scope
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          include-templates: true
+          use-dotnet: false
+      - name: Import real standalone original source and reject parse errors
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p w63-evidence
+          godot --headless --editor --path w63-a7-cascade --import --quit 2>&1 | tee w63-evidence/import.log
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:|Failed to load script' w63-evidence/import.log; then exit 1; fi
+      - name: Six rounds original gameplay, actual Button events, real RU/EN
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 150s godot --headless --path w63-a7-cascade --script res://tests/test_a7_cascade.gd 2>&1 | tee w63-evidence/real-native-test.log
+          grep -q 'LAST FRONTIER W63 A7 CASCADE REAL GODOT PLAYABLE VERTICAL SLICE PASS:' w63-evidence/real-native-test.log
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' w63-evidence/real-native-test.log; then exit 1; fi
+      - name: Export real A7 Cascade WebGL and Windows experimental builds
+        shell: bash
+        run: |
+          set -euo pipefail
+          (
+            cd w63-a7-cascade
+            mkdir -p build/web
+            godot --headless --path . --export-release Web build/web/index.html
+          ) 2>&1 | tee w63-evidence/web-export.log
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' w63-evidence/web-export.log; then exit 1; fi
+          python3 w33-godot-native/ci/verify_web_export.py w63-a7-cascade/build/web --sha "${{ github.event.pull_request.head.sha }}" --output w63-a7-cascade/build/web/evidence.json
+      - name: Preserve original playable Godot WebGL and test proof - not device certification
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: last-frontier-w63-experimental-playable-web-${{ github.event.pull_request.head.sha }}
+          path: |
+            w63-a7-cascade/build/web/
+            w63-evidence/
+          retention-days: 45
+          if-no-files-found: warn
+
+  explicit-production-hold:
+    name: W63 successful prototype is NOT evidence of consumer playtests or commercial readiness
+    runs-on: ubuntu-latest
+    needs: [original-source-scope, actual-godot-gameplay]
+    if: always()
+    steps:
+      - name: Reject failed, cancelled or skipped validation
+        env:
+          SCOPE: ${{ needs.original-source-scope.result }}
+          ENGINE: ${{ needs.actual-godot-gameplay.result }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$SCOPE" = success
+          test "$ENGINE" = success
+          echo 'W63 optional gameplay experiment source and actual Godot QA PASS / PR DRAFT, production HOLD'
