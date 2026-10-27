@@ -1,0 +1,111 @@
+{
+  "schemaVersion": 1,
+  "project": "OSA CINEMA",
+  "revision": "V48_OWNER_LOCAL_REMASTER_EVIDENCE",
+  "date": "2026-10-27",
+  "sourceBaselineSha": "a633907b06a5c7c0b0e88a81165946b1cf66ca83",
+  "status": "LOCAL_MEDIA_CANDIDATE_TECH_PASS_NOT_PUBLISHED",
+  "publisherOwnershipClaim": "The user stated that all visual, music, and voice materials were self-created and requested publication; this is a self-assertion, not a cryptographic or independent legal certificate.",
+  "localMediaAvailableInPublicGitHub": false,
+  "publicVideoUrl": null,
+  "productionPlaybackVerified": false,
+  "independentVerbatimCaptionReviewVerified": false,
+  "releaseDecision": "NO_GO",
+  "publicationAuthorized": false,
+  "rightsCleared": false,
+  "paidCheckoutEnabled": false,
+  "checks": {
+    "localOriginalAVCaption": 357,
+    "localHttpRange": 61,
+    "chromium": {
+      "status": "BLOCKED_BY_ADMINISTRATOR_NOT_PASS"
+    },
+    "fourCaptionReadingSpeedWarnings": 0
+  },
+  "film": {
+    "fullDurationSeconds": 239,
+    "trailerDurationSeconds": 45,
+    "locales": [
+      "ru",
+      "en"
+    ],
+    "videos": 4,
+    "webvtt": 4,
+    "originalAacPacketsPreserved": true,
+    "localizedCardsReplaced": true
+  },
+  "assets": [
+    {
+      "id": "osa-v48-directors-ru",
+      "kind": "video",
+      "bytes": 87058919,
+      "sha256": "c6e71377c2f4ecdcf8327c9ae213cd972a78ea6f97f9090945a7d18fad0fe751",
+      "durationSeconds": 239,
+      "path": "masters/osa-v48-directors-ru.mp4"
+    },
+    {
+      "id": "osa-v48-directors-en",
+      "kind": "video",
+      "bytes": 86991842,
+      "sha256": "39afc1a738a4c0e1c100454ca23097559bc67d5910f3e5a1008e3e7f8db713aa",
+      "durationSeconds": 239,
+      "path": "masters/osa-v48-directors-en.mp4"
+    },
+    {
+      "id": "osa-v48-trailer-ru",
+      "kind": "video",
+      "bytes": 5948869,
+      "sha256": "868e53aaf08b1364a24e32d31f86a31d1d097eadcc2c7f9a546212f2fa754f1b",
+      "durationSeconds": 45,
+      "path": "masters/osa-v48-trailer-ru.mp4"
+    },
+    {
+      "id": "osa-v48-trailer-en",
+      "kind": "video",
+      "bytes": 5884327,
+      "sha256": "331ebdd3565b97c4ecadf309a78939db31ea43c385cd9942df789fc9260e94cd",
+      "durationSeconds": 45,
+      "path": "masters/osa-v48-trailer-en.mp4"
+    },
+    {
+      "id": "osa-v48-directors-ru-captions",
+      "kind": "webvtt",
+      "bytes": 7790,
+      "sha256": "7e48f8f5da88a876a6ee1d25a1f2c00afa7a4c7806c79a24a130b884c0e0b7b6",
+      "cueCount": 61,
+      "path": "captions/osa-v48-directors-ru.vtt"
+    },
+    {
+      "id": "osa-v48-directors-en-captions",
+      "kind": "webvtt",
+      "bytes": 5183,
+      "sha256": "4cb34688bbe5f22ba3b83e24fa89587fdc92379cd57711840f7a961ba77ad199",
+      "cueCount": 59,
+      "path": "captions/osa-v48-directors-en.vtt"
+    },
+    {
+      "id": "osa-v48-trailer-ru-captions",
+      "kind": "webvtt",
+      "bytes": 1494,
+      "sha256": "e59107272a62af89b27589fb9eef15ffd68bddbe1b872cda677bc2a8f49e577a",
+      "cueCount": 10,
+      "path": "captions/osa-v48-trailer-ru.vtt"
+    },
+    {
+      "id": "osa-v48-trailer-en-captions",
+      "kind": "webvtt",
+      "bytes": 981,
+      "sha256": "80137757c657b82c50d36c653de906c2216071c7deed9f246da143cd3a4e7722",
+      "cueCount": 9,
+      "path": "captions/osa-v48-trailer-en.vtt"
+    }
+  ],
+  "nonGoals": [
+    "No video or owner private files in Git",
+    "No claim of successful public premiere",
+    "No change to V20 policy",
+    "No checkout or payments"
+  ],
+  "localCaptionRevision": "V48.1_ACCESSIBILITY_FIX_NO_VIDEO_OR_AUDIO_CHANGE",
+  "captionQA": "Every cue <=20 characters/s; incomplete final snippets are omitted from trailers; no independent verbatim listening approval"
+}

@@ -1,0 +1,33 @@
+name: OSA CINEMA V48 Local Candidate Guard
+on:
+  pull_request:
+    paths:
+      - docs/OSA_CINEMA_V48_LOCAL_MEDIA_CANDIDATE_20261027.json
+      - docs/OSA_CINEMA_V20_PRIVATE_RELEASE_POLICY.json
+      - scripts/osa-cinema-v48-local-candidate.test.mjs
+      - .github/workflows/osa-cinema-v48-local-candidate.yml
+  push:
+    branches:
+      - master
+    paths:
+      - docs/OSA_CINEMA_V48_LOCAL_MEDIA_CANDIDATE_20261027.json
+      - docs/OSA_CINEMA_V20_PRIVATE_RELEASE_POLICY.json
+      - scripts/osa-cinema-v48-local-candidate.test.mjs
+      - .github/workflows/osa-cinema-v48-local-candidate.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: osa-cinema-v48-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  local-candidate-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify V48 local evidence is not a production film release
+        run: node --test scripts/osa-cinema-v48-local-candidate.test.mjs
