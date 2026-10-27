@@ -29,8 +29,23 @@ func _ready() -> void:
         "victory": load("res://audio/evacuation_success.wav")
     }
 
+func _exit_tree() -> void:
+    # Explicitly release streaming WAV playback before SceneTree teardown.
+    # Godot headless QA is fail-closed on leaked audio resources.
+    if ambient != null:
+        ambient.stop()
+        ambient.stream = null
+    if cue_player != null:
+        cue_player.stop()
+        cue_player.stream = null
+    _cues.clear()
+
 func set_active(should_play: bool) -> void:
     active = should_play
+    if DisplayServer.get_name() == "headless":
+        # Run the native simulation and verify audio resources, but never open
+        # an audio device in headless test processes.
+        return
     if active and not muted and ambient.stream != null and not ambient.playing:
         ambient.play()
     elif (not active or muted) and ambient.playing:
@@ -42,7 +57,7 @@ func set_muted(value: bool) -> void:
     set_active(active)
 
 func cue(kind: String) -> void:
-    if muted or not active:
+    if muted or not active or DisplayServer.get_name() == "headless":
         return
     var requested: String = "confirm"
     if kind == "surge" or kind == "failure" or kind == "denied":
