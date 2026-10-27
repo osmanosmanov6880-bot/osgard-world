@@ -99,6 +99,12 @@ jobs:
           else
             echo 'CONTAINER_SHA256_TOOL=no'
           fi
+          free_mib="$(df -Pm "$HOME" | awk 'NR==2 {print $4}')"
+          if [[ "$free_mib" =~ ^[0-9]+$ ]]; then
+            echo "HOME_FS_AVAILABLE_MIB=$free_mib"
+          else
+            echo 'HOME_FS_AVAILABLE_MIB=unknown'
+          fi
           if command -v python3 >/dev/null 2>&1; then
             echo 'HOST_PYTHON3_AVAILABLE=yes'
           else
