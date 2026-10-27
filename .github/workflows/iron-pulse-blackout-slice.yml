@@ -1,0 +1,115 @@
+name: IRON PULSE BLACKOUT - exact-head Godot 4.4.1 slice QA and preview binaries
+
+on:
+  pull_request:
+    paths:
+      - 'iron-pulse-prologue/**'
+      - '.github/workflows/iron-pulse-blackout-slice.yml'
+  push:
+    branches: [master]
+    paths:
+      - 'iron-pulse-prologue/**'
+      - '.github/workflows/iron-pulse-blackout-slice.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: iron-pulse-blackout-${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  source-and-preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout exact audited HEAD
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Verify exact head and baseline isolation
+        shell: bash
+        run: |
+          set -euo pipefail
+          expected="${{ github.event.pull_request.head.sha || github.sha }}"
+          test "$(git rev-parse HEAD)" = "$expected"
+          test -f iron-pulse-prologue/Main.tscn
+          test -f iron-pulse-prologue/scripts/CrisisEngine.gd
+          test -f iron-pulse-prologue/scripts/Main.gd
+          test -f w33-godot-native/project.godot
+          # Refuse unlicensed external assets, arbitrary device APIs or remote dependencies.
+          if grep -R -nE 'HTTPClient|HTTPRequest|OS\.execute|FileAccess\.open\("res://\.\./' iron-pulse-prologue/scripts; then
+            echo '::error::Unexpected external access in offline gameplay slice'
+            exit 1
+          fi
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: true
+      - name: Import actual native Godot project
+        shell: bash
+        run: |
+          set -euo pipefail
+          godot --headless --editor --path iron-pulse-prologue --import --quit 2>&1 | tee "$RUNNER_TEMP/iron-pulse-import.log"
+          if grep -E 'SCRIPT ERROR:|Parse Error:|Compile Error:|Failed to load script' "$RUNNER_TEMP/iron-pulse-import.log"; then
+            echo '::error::Godot import/compile failed'
+            exit 1
+          fi
+      - name: Deterministic reactor and power-grid game mechanics
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 120s godot --headless --path iron-pulse-prologue --script res://tests/test_crisis_engine.gd 2>&1 | tee "$RUNNER_TEMP/iron-pulse-gameplay.log"
+          grep -q '^IRON PULSE BLACKOUT GAMEPLAY PASS:' "$RUNNER_TEMP/iron-pulse-gameplay.log"
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/iron-pulse-gameplay.log"; then exit 1; fi
+      - name: Real native 3D scene and RU/EN interface tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 120s godot --headless --path iron-pulse-prologue --script res://tests/test_scene.gd 2>&1 | tee "$RUNNER_TEMP/iron-pulse-scene.log"
+          grep -q '^IRON PULSE BLACKOUT 3D SCENE PASS:' "$RUNNER_TEMP/iron-pulse-scene.log"
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/iron-pulse-scene.log"; then exit 1; fi
+      - name: Export exact-source Godot 4.4.1 WebGL playable build
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p iron-pulse-prologue/build/web
+          godot --headless --path iron-pulse-prologue --export-release Web iron-pulse-prologue/build/web/index.html 2>&1 | tee "$RUNNER_TEMP/iron-pulse-web.log"
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/iron-pulse-web.log"; then exit 1; fi
+          test -s iron-pulse-prologue/build/web/index.html
+          test -s iron-pulse-prologue/build/web/index.js
+          test -s iron-pulse-prologue/build/web/index.wasm
+          test -s iron-pulse-prologue/build/web/index.pck
+      - name: Export Windows x64 executable (not physical Windows QA)
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p iron-pulse-prologue/build/windows
+          godot --headless --path iron-pulse-prologue --export-release 'Windows Desktop' iron-pulse-prologue/build/windows/IRON_PULSE_BLACKOUT.exe 2>&1 | tee "$RUNNER_TEMP/iron-pulse-win.log"
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/iron-pulse-win.log"; then exit 1; fi
+          test -s iron-pulse-prologue/build/windows/IRON_PULSE_BLACKOUT.exe
+          test -s iron-pulse-prologue/build/windows/IRON_PULSE_BLACKOUT.pck
+      - name: Bind preview to source SHA and independently hash each artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p iron-pulse-prologue/build/proof
+          printf '%s\n' "${{ github.event.pull_request.head.sha || github.sha }}" > iron-pulse-prologue/build/proof/SOURCE_SHA.txt
+          printf '%s\n' 'SOFTWARE-ONLY PREVIEW; NOT PRODUCTION; PHYSICAL DEVICE QA PENDING' > iron-pulse-prologue/build/proof/RELEASE_HOLD.txt
+          cd iron-pulse-prologue/build
+          sha256sum web/index.html web/index.js web/index.wasm web/index.pck windows/IRON_PULSE_BLACKOUT.exe windows/IRON_PULSE_BLACKOUT.pck > proof/SHA256SUMS.txt
+          sha256sum -c proof/SHA256SUMS.txt
+      - name: Retain build proof even if packaging fails
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: iron-pulse-blackout-source-bound-${{ github.event.pull_request.head.sha || github.sha }}
+          path: |
+            iron-pulse-prologue/build/web
+            iron-pulse-prologue/build/windows
+            iron-pulse-prologue/build/proof
+          if-no-files-found: warn
+          retention-days: 14
