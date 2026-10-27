@@ -10,6 +10,9 @@ on:
   push:
     branches:
       - feat/city-reign-first-mandate-20261028
+      # The independent merged SHA must also run E01 native acceptance in R90.
+      # A green feature PR SHA is not automatically evidence for merge HEAD.
+      - feat/omega-r90-aaa-reference-first-slice-20261026
     paths:
       - 'godot/empire-omega/**'
       - 'scripts/omega-direct-publish.contract.test.mjs'
