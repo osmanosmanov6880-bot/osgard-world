@@ -89,9 +89,31 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                         assert idle["objective"] == "scan", idle
                         assert idle["godot_frames_drawn"] >= 1, idle
                         assert idle["locale"] == "ru", idle
+                        assert idle.get("soundscape_ready") is True, idle
+                        assert idle.get("cinematic_details",{}).get("instanced_detail_count",0) >= 270, idle
+                        assert idle.get("cinematic_details",{}).get("safety_signs",0) >= 3, idle
+                        assert idle.get("vitals_visible") is (not mobile), idle
+                        # A visible canvas is not enough: Godot must lay out HUD in
+                        # real CSS pixel coordinates, not shrink a 1280px desktop
+                        # scene to 390px and pretend the touch buttons are usable.
+                        native_view = idle["viewport"]
+                        assert abs(native_view[0] - size["width"]) <= 2.0, (
+                            "Godot viewport shrunk horizontally: unreadable text", native_view, size)
+                        assert abs(native_view[1] - size["height"]) <= 2.0, (
+                            "Godot viewport stretched vertically: inaccessible touch UI", native_view, size)
                         if mobile:
                             assert idle["touch_controls_visible"] is True, idle
-                            assert len(idle.get("touch_button_rects", {})) >= 6, idle
+                            rectangles = idle.get("touch_button_rects", {})
+                            assert len(rectangles) >= 6, idle
+                            for label in ("↑", "←", "↓", "→", "USE / E", "L / RU-EN"):
+                                rect = rectangles[label]
+                                # Read actual native Control rectangles, then compare
+                                # against the real CSS pixel scaling on this device.
+                                real_width = rect[2] * size["width"] / native_view[0]
+                                real_height = rect[3] * size["height"] / native_view[1]
+                                assert real_width >= 44 and real_height >= 44, (
+                                    "Touch target too small in browser pixels", label, rect,
+                                    real_width, real_height)
                         page.keyboard.press("Enter")
                         deadline = time.monotonic() + 45
                         state = {}
@@ -101,6 +123,23 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                                 break
                             page.wait_for_timeout(200)
                         assert state.get("started") is True, f"Enter did not start game on real canvas: {state}"
+                        if mobile:
+                            # Genuine mobile tap through Chromium's touchscreen,
+                            # on the actual Godot Button; never call the locale
+                            # setter or write a synthetic result to the game.
+                            rect = state["touch_button_rects"]["L / RU-EN"]
+                            canvas_box = canvas.bounding_box()
+                            assert canvas_box is not None
+                            tap_x = canvas_box["x"] + (rect[0]+rect[2]/2)*canvas_box["width"]/state["viewport"][0]
+                            tap_y = canvas_box["y"] + (rect[1]+rect[3]/2)*canvas_box["height"]/state["viewport"][1]
+                            page.touchscreen.tap(tap_x,tap_y)
+                            deadline = time.monotonic() + 25
+                            while time.monotonic() < deadline:
+                                state = json.loads(marker.get_attribute("data-state", timeout=10000))
+                                if state.get("locale") == "en":
+                                    break
+                                page.wait_for_timeout(200)
+                            assert state.get("locale") == "en", ("Mobile language button does not work", state)
                         if not mobile:
                             origin = state["player_position"][2]
                             page.keyboard.down("w")
@@ -114,6 +153,24 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                             finally:
                                 page.keyboard.up("w")
                             assert state["player_position"][2] < origin - 0.35, (origin, state)
+                            # Verify real 3D detail and motion/audio accessibility via
+                            # real Chromium keys; only read Godot state, never modify it.
+                            for key, property_name, expected in (
+                                ("g","quality_mode","eco"),
+                                ("v","reduced_motion",True),
+                                ("m","audio_muted",True),
+                            ):
+                                page.keyboard.press(key)
+                                deadline = time.monotonic() + 25
+                                while time.monotonic() < deadline:
+                                    state = json.loads(marker.get_attribute("data-state",timeout=10000))
+                                    if state.get(property_name) == expected:
+                                        break
+                                    page.wait_for_timeout(200)
+                                assert state.get(property_name) == expected,(key,property_name,state)
+                            page.keyboard.press("g")
+                            page.keyboard.press("m")
+                            page.keyboard.press("v")
                             page.keyboard.press("l")
                             deadline = time.monotonic() + 20
                             while time.monotonic() < deadline:

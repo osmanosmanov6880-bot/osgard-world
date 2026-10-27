@@ -72,6 +72,13 @@ jobs:
           timeout --signal=TERM --kill-after=5s 120s godot --headless --path iron-pulse-prologue --script res://tests/test_scene.gd 2>&1 | tee "$RUNNER_TEMP/iron-pulse-scene.log"
           grep -q '^IRON PULSE BLACKOUT 3D SCENE PASS:' "$RUNNER_TEMP/iron-pulse-scene.log"
           if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/iron-pulse-scene.log"; then exit 1; fi
+      - name: Actual cinematic architecture, original audio, live hazard HUD and reduced-motion regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 120s godot --headless --path iron-pulse-prologue --script res://tests/test_aaa_foundation.gd 2>&1 | tee "$RUNNER_TEMP/iron-pulse-aaa-native.log"
+          grep -q '^IRON PULSE AAA FOUNDATION NATIVE PASS:' "$RUNNER_TEMP/iron-pulse-aaa-native.log"
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/iron-pulse-aaa-native.log"; then exit 1; fi
       - name: Export exact-source Godot 4.4.1 WebGL playable build
         shell: bash
         run: |
