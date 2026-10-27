@@ -200,6 +200,13 @@ def prepare(args: argparse.Namespace) -> dict:
         file = Path(getattr(args, role + "_reference"))
         originals[role] = real_file(file)
         image_info(originals[role], file.name)
+        # Reference SHA is supplied INDEPENDENTLY by the reviewer, rather
+        # than invented from whichever image somebody happened to select.
+        expected = getattr(args, role + "_approved_sha256")
+        require(re.fullmatch(r"[0-9a-f]{64}", expected) is not None,
+                "a real prior approved 64-digit reference checksum is required")
+        require(sha256(originals[role]) == expected,
+                "selected original image DOES NOT MATCH approved reference SHA: " + role)
         require(originals[role] != actual[role], "reference cannot be actual game screenshot")
     require(originals["world"] != originals["cabinet"], "two different ORIGINAL references required")
     data = []
@@ -217,6 +224,8 @@ def prepare(args: argparse.Namespace) -> dict:
         "schema": SCHEMA, "source_sha": source,
         "github_run_id_claim": args.run_id, "github_artifact_id_claim": args.artifact_id,
         "github_identity_independently_verified": False,
+        "reference_sha_user_asserted_matches_selected_bytes": True,
+        "independent_reference_identity_approval_verified": False,
         "pairs": data, "original_references_provided": True,
         "reviewer_signed": False, "aaa_art_approved": False,
         "physical_hardware_approved": False, "human_playthroughs_approved": False,
@@ -289,7 +298,8 @@ def main() -> int:
     view.add_argument("--browser-zip",required=True)
     prep=sub.add_parser("prepare",help="Create private 2-reference/2-Godot comparison")
     for flag in ("root","sha","browser-zip","world-frame","cabinet-frame",
-                 "world-reference","cabinet-reference"):
+                 "world-reference","cabinet-reference",
+                 "world-approved-sha256","cabinet-approved-sha256"):
         prep.add_argument("--"+flag,required=True)
     prep.add_argument("--run-id",type=int,required=True)
     prep.add_argument("--artifact-id",type=int,required=True)
