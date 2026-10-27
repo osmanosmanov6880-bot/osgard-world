@@ -1,0 +1,3 @@
+# Godot 4 cache and generated binary artifacts are not source files.
+iron-pulse-prologue/.godot/
+iron-pulse-prologue/build/
