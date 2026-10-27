@@ -34,7 +34,7 @@ func _inspect() -> void:
     _assert_true(ui.stage_shell != null, "Actual cinematic hero shell exists")
     _assert_true(ui.control_grid != null, "Native responsive operator workbench exists")
     _assert_true(ui.stage_title != null and ui.stage_readout != null, "Accessible in-scene simulated telemetry exists")
-    _assert_true(ui.stage_title.text.find("OBSIDIAN") >= 0, "Obsidian branding belongs to the rendered interface")
+    _assert_true(ui.stage_title.text.find("IRON PULSE") >= 0, "Approved IRON PULSE branding belongs to the rendered interface")
     _assert_true(ui.scene_3d != null and ui.scene_3d.obsidian_stage != null, "Original procedural filmic complex exists")
     if ui.scene_3d == null or ui.scene_3d.obsidian_stage == null:
         ui.core.clear_data()
