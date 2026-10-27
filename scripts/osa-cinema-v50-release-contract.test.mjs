@@ -1,0 +1,60 @@
+import test from 'node:test'
+import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
+const read=(p)=>readFileSync(new URL('../'+p,import.meta.url),'utf8')
+const publisher=read('scripts/osa-cinema-v50-vps.sh')
+const recovery=read('scripts/osa-cinema-v50-recover.sh')
+const release=read('.github/workflows/osa-cinema-v50-media-release.yml')
+const restore=read('.github/workflows/osa-cinema-v50-recovery.yml')
+const pin=JSON.parse(read('docs/OSA_CINEMA_V48_LOCAL_MEDIA_CANDIDATE_20261027.json'))
+
+test('first-publication gate ties one immutable owner zip to exact 8 GitHub media SHA pins',()=>{
+ assert.match(publisher,/f501e1dec7e8ad83ac135e67ba99d16629246f0a4ca519e5ab2073b904724166/)
+ assert.match(release,/f501e1dec7e8ad83ac135e67ba99d16629246f0a4ca519e5ab2073b904724166/)
+ assert.match(publisher,/OWNER_MEDIA|Owner media|Owner-media|Owner_media|media ZIP/i)
+ assert.match(publisher,/SHA256SUMS\.txt/)
+ assert.match(publisher,/python3 "\$PUBLISHER" verify/)
+ assert.match(publisher,/python3 "\$PUBLISHER" stage/)
+ assert.match(publisher,/python3 "\$PUBLISHER" activate/)
+ assert.equal(pin.assets.length,8)
+ assert.equal(pin.releaseDecision,'NO_GO')
+ assert.equal(pin.publicationAuthorized,false)
+})
+
+test('first publication is not promoted without actual public HTTP bytes and real browser QA',()=>{
+ assert.match(release,/osa-cinema-v49-public-verify\.py/)
+ assert.match(release,/osa-cinema-v49-live\.config\.mjs/)
+ assert.match(release,/osa-cinema-v49-browser-receipt\.mjs/)
+ assert.match(release,/osa-cinema-v50-vps\.sh' finalize/)
+ assert.match(release,/if: failure\(\)/)
+ assert.match(publisher,/production-http\.json/)
+ assert.match(publisher,/production-browser\.json/)
+ assert.match(publisher,/I_APPROVE_THE_PUBLIC_OSA_FILM/)
+ assert.doesNotMatch(release,/paidCheckoutEnabled: true/)
+})
+
+test('production shell must neither recreate frontend container nor override historical no-commerce policy',()=>{
+ assert.doesNotMatch(publisher,/\bdocker\s+(run|rm|stop|create)\b|docker compose (up|down)/)
+ assert.doesNotMatch(recovery,/\bdocker\s+(run|rm|stop|create)\b|docker compose (up|down)/)
+ assert.match(publisher,/MODE=mirror/)
+ assert.match(publisher,/MODE=bind/)
+ assert.match(publisher,/flock -n/)
+ assert.match(publisher,/nginx -t/)
+ assert.match(publisher,/nginx -s reload/)
+ assert.match(publisher,/rollback/)
+ const historical=JSON.parse(read('docs/OSA_CINEMA_V20_PRIVATE_RELEASE_POLICY.json'))
+ assert.equal(historical.publicationAuthorized,false)
+ assert.equal(historical.rightsCleared,false)
+ assert.equal(historical.paidCheckoutEnabled,false)
+})
+
+test('recovery requires already existing approved receipt and pinned source; cannot authorize a new film',()=>{
+ assert.match(recovery,/PUBLIC_BROWSER_QA_PASS/)
+ assert.match(recovery,/publicationAuthorized/)
+ assert.match(recovery,/release\.json/)
+ assert.match(recovery,/python3 "\$PUBLISHER" verify/)
+ assert.match(recovery,/FILM_RESTORE_SKIPPED/)
+ assert.match(restore,/workflow_run:/)
+ assert.match(restore,/github.event.workflow_run.conclusion == 'success'/)
+ assert.doesNotMatch(recovery,/osa-cinema-v49-finalize\.py/)
+})
