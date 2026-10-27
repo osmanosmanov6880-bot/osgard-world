@@ -82,6 +82,7 @@ TESTS = [
     "v103_r129_coupe_3d_glass_aero",
     "v52_civic_pbr_gateway",
     "v104_r130_fluted_civic_stone",
+    "v105_r132_mission_briefing_accessibility",
 ]
 
 
