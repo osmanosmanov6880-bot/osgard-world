@@ -117,6 +117,7 @@ def play(export, evidence, exact_sha):
             # that driver-dependent counter and not an arbitrary HTML label.
             baseline = page.screenshot(path=str(evidence / "1366x900-before.png"))
             scene_area = geometry(page)["stage"]
+            print("W64 VISIBLE STAGE GEOMETRY", json.dumps({"native_stage": scene_area, "all_rects": geometry(page), "canvas_box": canvas.bounding_box(), "page": page.viewport_size}), flush=True)
             desktop_image = Image.open(io.BytesIO(baseline)).convert("RGB")
             rect = (
                 max(0, scene_area[0]),
