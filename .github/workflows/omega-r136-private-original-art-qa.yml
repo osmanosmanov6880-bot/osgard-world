@@ -14,7 +14,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   fail-closed-original-art-intake-contract:
-    name: "12 synthetic protocol tests only; empty originals => HOLD"
+    name: "13 synthetic protocol tests only; empty originals => HOLD"
     runs-on: ubuntu-24.04
     timeout-minutes: 8
     steps:
