@@ -202,6 +202,12 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                                 page.wait_for_timeout(200)
                             assert state.get("paused") is True, state
                             page.keyboard.press("Escape")
+                        # Also enforce resize AFTER gameplay/touch and toggling
+                        # graphics: older builds briefly reported a correct
+                        # viewport at boot, then regressed to 1280px on mobile.
+                        final_view = state.get("viewport", [])
+                        assert len(final_view) == 2 and abs(final_view[0]-size["width"]) <= 2.0 and abs(final_view[1]-size["height"]) <= 2.0, (
+                            "Viewport regressed after real gameplay",name,final_view,size,state.get("godot_frames_drawn"))
                         page.wait_for_timeout(1800)
                         png = page.screenshot(timeout=60000, animations="disabled")
                         stats = frame_metrics(png)
