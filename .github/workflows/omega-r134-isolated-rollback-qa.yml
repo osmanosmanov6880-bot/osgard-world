@@ -1,0 +1,176 @@
+name: EMPIRE Omega R134 true isolated R87 seven-byte rollback, restored Chromium (NO DEPLOY)
+on:
+  pull_request:
+    branches: [feat/omega-r90-aaa-reference-first-slice-20261026]
+    paths:
+      - 'scripts/omega-r134-isolated-rollback.py'
+      - 'scripts/omega-r134-rollback-server.py'
+      - 'scripts/omega-r134-rollback-browser.spec.mjs'
+      - 'playwright.omega-r134-rollback.config.mjs'
+      - '.github/workflows/omega-r134-isolated-rollback-qa.yml'
+  push:
+    branches: [feat/omega-r90-aaa-reference-first-slice-20261026]
+    paths:
+      - 'scripts/omega-r134-isolated-rollback.py'
+      - 'scripts/omega-r134-rollback-server.py'
+      - 'scripts/omega-r134-rollback-browser.spec.mjs'
+      - 'playwright.omega-r134-rollback.config.mjs'
+      - '.github/workflows/omega-r134-isolated-rollback-qa.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  actual-seven-file-source-rollback-and-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 44
+    steps:
+      - name: Checkout EXACT unpublished R90 source HEAD (read-only)
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Checkout original public master as separate READ-ONLY R87 baseline
+        uses: actions/checkout@v4
+        with:
+          ref: master
+          path: r134-master-ro
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Verify actual candidate SHA and pinned original R87 baseline Git SHA
+        shell: bash
+        env:
+          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+          test -n "$(git -C r134-master-ro rev-parse HEAD)"
+          python3 scripts/omega-r128-r87-immutability.py --self-test
+          python3 scripts/omega-r134-isolated-rollback.py --self-test
+          test -s r134-master-ro/public/games/omega-3d-preview/release.json
+          test -s r134-master-ro/public/games/omega-3d-preview/index.wasm
+          test -s r134-master-ro/public/games/omega-3d-preview/index.pck
+          echo "Candidate exact SHA $(git rev-parse HEAD)"
+          echo "R87 checked-out git SHA $(git -C r134-master-ro rev-parse HEAD)"
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Export authentic unpublished original Godot R90 candidate WASM/PCK
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 godot/empire-omega/tools/generate_audio.py
+          python3 godot/empire-omega/tools/generate_patrol_audio.py
+          bash scripts/omega-strict-godot-import.sh godot/empire-omega
+          mkdir -p godot/empire-omega/.build-web
+          godot --headless --path godot/empire-omega --export-release Web "$GITHUB_WORKSPACE/godot/empire-omega/.build-web/index.html"
+          node scripts/localize-godot-web-export.mjs godot/empire-omega/.build-web
+          test -s godot/empire-omega/.build-web/index.wasm
+          test -s godot/empire-omega/.build-web/index.pck
+      - name: ACTUALLY install candidate into runner-only stage, rollback 7 original R87 real bytes
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/omega-r134-isolated-rollback.py \
+            --baseline "$GITHUB_WORKSPACE/r134-master-ro/public/games/omega-3d-preview" \
+            --manifest "$GITHUB_WORKSPACE/r134-master-ro/public/games/omega-3d-preview/release.json" \
+            --candidate "$GITHUB_WORKSPACE/godot/empire-omega/.build-web" \
+            --candidate-sha "$(git rev-parse HEAD)" \
+            --baseline-git-sha "$(git -C r134-master-ro rev-parse HEAD)" \
+            --temp-root "$RUNNER_TEMP/omega-r134-ephemeral-live" \
+            --evidence-dir "$RUNNER_TEMP/omega-r134-original-evidence"
+          python3 - <<'PY'
+          import json,os
+          from pathlib import Path
+          o=json.loads((Path(os.environ['RUNNER_TEMP'])/'omega-r134-original-evidence/R134_ISOLATED_ROLLBACK.json').read_text())
+          assert o['all_seven_restored_bytes_identical_to_checked_out_master']
+          assert o['candidate_really_installed_then_rolled_back_in_ephemeral_runner']
+          assert o['original_published_r87_source_commit']=='43ae041e8df52418ca74c02405de9c196b59bd37'
+          assert not o['real_production_vps_touched'] and not o['production_authorized']
+          print('R134: all seven original master R87 bytes restored in EPHEMERAL CI only')
+          PY
+      - name: Install Chromium and real Mesa/Xvfb for restored native Godot WebGL
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm ci
+          npm install --no-save --package-lock=false @playwright/test@1.58.2 pngjs@7.0.0
+          npx playwright install --with-deps chromium
+          sudo apt-get update -qq
+          sudo apt-get install -y xvfb libgl1-mesa-dri libegl1 libgl1
+      - name: Host ONLY verified restored original R87 on localhost:4887
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/omega-r134-rollback-server.py \
+            --root "$RUNNER_TEMP/omega-r134-ephemeral-live/localhost-live" \
+            --port 4887 > "$RUNNER_TEMP/omega-r134-server.log" 2>&1 &
+          for attempt in 1 2 3 4 5 6 7 8 9 10 11 12; do
+            if curl -fsS http://127.0.0.1:4887/release.json >/dev/null; then break; fi
+            sleep 1
+          done
+          test "$(curl -fsS http://127.0.0.1:4887/release.json | python3 -c 'import json,sys;print(json.load(sys.stdin)["source_commit"])')" = "43ae041e8df52418ca74c02405de9c196b59bd37"
+          curl -fsSI http://127.0.0.1:4887/index.wasm | grep -i 'application/wasm'
+      - name: Actual original 390x844 portrait Godot WebGL after 7-file R87 restore
+        shell: bash
+        env:
+          R134_EVIDENCE_DIR: ${{ runner.temp }}/omega-r134-original-evidence
+        run: |
+          set -euo pipefail
+          npx playwright test --config playwright.omega-r134-rollback.config.mjs \
+            --project=r87-portrait-390x844 --workers=1 --retries=0
+      - name: Actual original 1366x768 Godot WebGL after restore with Mesa/Xvfb
+        shell: bash
+        env:
+          R134_EVIDENCE_DIR: ${{ runner.temp }}/omega-r134-original-evidence
+        run: |
+          set -euo pipefail
+          OMEGA_CI_GL_BACKEND=mesa LIBGL_ALWAYS_SOFTWARE=1 \
+            xvfb-run -a -s '-screen 0 1920x1080x24' \
+            npx playwright test --config playwright.omega-r134-rollback.config.mjs \
+              --project=r87-desktop-1366x768 --workers=1 --retries=0
+      - name: Assert both REAL browser proofs and issue only ISOLATED recovery PASS
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,os
+          from pathlib import Path
+          folder=Path(os.environ['RUNNER_TEMP'])/'omega-r134-original-evidence'
+          record=json.loads((folder/'R134_ISOLATED_ROLLBACK.json').read_text())
+          assert record['all_seven_restored_bytes_identical_to_checked_out_master']
+          viewports=[]
+          for filename in ['r87-portrait-390x844.json','r87-desktop-1366x768.json']:
+              p=json.loads((folder/filename).read_text(encoding='utf8'))
+              assert p['real_original_godot_webgl2'] and p['world']['realWorldEdges']
+              assert p['world']['upperEdgeLumaStd']>10
+              assert p['world']['lowerEdgeLumaStd']>10 and not p['page_errors']
+              assert p['git_manifest_source_commit']==record['original_published_r87_source_commit']
+              viewports.append(p['project'])
+          record['browser_original_r87_verified']=True
+          record['isolated_chromium_viewports']=viewports
+          record['production_restore_rehearsed']=False
+          record['independent_live_https_r87_download_verified']=False
+          record['production_authorized']=False
+          (folder/'R134_ISOLATED_ROLLBACK_AND_CHROMIUM_FINAL.json').write_text(
+              json.dumps(record,indent=2,sort_keys=True)+'\n',encoding='utf8')
+          print('R134 SUCCESS: 7 original SHA bytes restored, real 2 viewport WebGL; no prod touched')
+          PY
+      - name: Preserve real rollback report, original Godot pixels and failure trace
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: empire-omega-r134-original-R87-isolated-rollback-proof
+          path: |
+            ${{ runner.temp }}/omega-r134-original-evidence/
+            ${{ runner.temp }}/omega-r134-server.log
+            omega-r134-browser-results/
+            omega-r134-browser-report/
+          if-no-files-found: warn
+          retention-days: 20
