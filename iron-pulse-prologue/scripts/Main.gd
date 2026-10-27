@@ -33,6 +33,8 @@ const COPY := {
         "method_full_seal": "ПОЛНАЯ ГЕРМЕТИЗАЦИЯ", "method_rapid_patch": "БЫСТРАЯ ЗАПЛАТКА",
         "method_standard": "СТАНДАРТНЫЙ РЕМОНТ",
         "scenario_title_blackout": "IRON PULSE / BLACKOUT", "scenario_title_thermal": "IRON PULSE / HEAT", "scenario_title_breach": "IRON PULSE / AIR",
+        "sector_reactor": "РЕАКТОРНАЯ ГАЛЕРЕЯ", "sector_service": "ТЕХНИЧЕСКИЙ СЕКТОР", "sector_evacuation": "ЭВАКУАЦИОННЫЙ ШЛЮЗ",
+        "visited_sectors": "ИССЛЕДОВАНО СЕКТОРОВ: {count}/3",
         "pause": "ПАУЗА", "victory": "ЭВАКУАЦИЯ УСПЕШНА", "failure": "МИССИЯ ПРОВАЛЕНА",
         "scan": "01  /  Просканировать реактор A7", "repair": "02  /  Восстановить охлаждение",
         "charge": "03  /  Зарядить аварийную дверь — перенаправьте одну линию на DOOR",
@@ -85,6 +87,8 @@ const COPY := {
         "method_full_seal": "PERMANENT SEAL", "method_rapid_patch": "RAPID PATCH",
         "method_standard": "STANDARD REPAIR",
         "scenario_title_blackout": "IRON PULSE / BLACKOUT", "scenario_title_thermal": "IRON PULSE / HEAT", "scenario_title_breach": "IRON PULSE / AIR",
+        "sector_reactor": "REACTOR GALLERY", "sector_service": "SERVICE SPINE", "sector_evacuation": "EVACUATION LOCK",
+        "visited_sectors": "SECTORS EXPLORED: {count}/3",
         "pause": "PAUSED", "victory": "EVACUATION COMPLETE", "failure": "MISSION FAILED",
         "scan": "01  /  Scan the A7 reactor core", "repair": "02  /  Restore reactor cooling",
         "charge": "03  /  Charge the bulkhead — redirect one bus to DOOR",
@@ -120,6 +124,7 @@ const COPY := {
 
 var session: IPCrisisEngine = IPCrisisEngine.new()
 var art_stage: IPCinematicStage
+var world_sectors: IPWorldSectors
 var audio_director: IPSoundscape
 var legacy_lamps: Array[OmniLight3D] = []
 var reduced_motion: bool = false
@@ -159,6 +164,8 @@ var intro_button: Button
 var scenario_buttons: Dictionary = {}
 var scenario_brief: Label
 var selected_scenario: String = "blackout"
+var active_sector: String = "reactor"
+var visited_sectors: Array[String] = []
 var pause_panel: PanelContainer
 var pause_title: Label
 var resume_button: Button
@@ -192,6 +199,8 @@ func _ready() -> void:
     session.reset()
     _make_environment()
     _make_complex()
+    world_sectors = IPWorldSectors.new()
+    add_child(world_sectors)
     audio_director = IPSoundscape.new()
     add_child(audio_director)
     _make_player()
@@ -264,6 +273,9 @@ func _publish_web_state() -> void:
     state["audio_muted"] = muted_audio
     state["soundscape_ready"] = audio_director != null and audio_director.ambient != null
     state["cinematic_details"] = art_stage.readout() if art_stage != null else {}
+    state["world_sector"] = active_sector
+    state["visited_sectors"] = visited_sectors.duplicate()
+    state["world_sectors"] = world_sectors.readout() if world_sectors != null else {}
     state["vitals_visible"] = vitals_panel.visible if vitals_panel != null else false
     state["hud_rects"] = {
         "header": _hud_rect(header_panel),
@@ -736,6 +748,8 @@ func _layout_hud() -> void:
         art_stage.set_quality("eco")
         for i in range(legacy_lamps.size()):
             legacy_lamps[i].visible = i % 3 == 0
+        if world_sectors != null:
+            world_sectors.set_quality("eco")
     # Compact non-overlapping card hierarchy; the center is reserved for 3D.
     header_panel.offset_left = 17.0 if not narrow else 12.0
     header_panel.offset_right = minf(544.0,width-16.0)
@@ -801,6 +815,8 @@ func start_run() -> void:
 
 func _restart() -> void:
     session.reset(selected_scenario)
+    visited_sectors.clear()
+    active_sector = "reactor"
     player.position = Vector3(0,1.1,2.0)
     player.velocity = Vector3.ZERO
     exit_gate.position = Vector3(0,2.6,-58.9)
@@ -864,6 +880,7 @@ func _input(event: InputEvent) -> void:
         if event.keycode == KEY_G:
             quality_mode = "eco" if quality_mode == "hero" else "hero"
             art_stage.set_quality(quality_mode)
+            world_sectors.set_quality(quality_mode)
             for i in range(legacy_lamps.size()):
                 legacy_lamps[i].visible = quality_mode == "hero" or i % 3 == 0
             _announce("quality_eco" if quality_mode == "eco" else "quality_hero")
@@ -949,6 +966,13 @@ func _process(delta: float) -> void:
             fov_target = 81.5
         camera.fov = lerpf(camera.fov,fov_target,minf(delta*4.0,1.0))
     art_stage.update_danger(session.heat,session.oxygen,runtime_seconds,reduced_motion)
+    world_sectors.update_hazard(session.scenario_id,session.heat,session.oxygen,reduced_motion)
+    if started and not paused and not session.finished():
+        var sector: String = world_sectors.current_sector(player.global_position.z)
+        if sector != active_sector:
+            active_sector = sector
+        if not visited_sectors.has(sector):
+            visited_sectors.append(sector)
     audio_director.set_tension(session.heat,session.oxygen)
     var heat_risk: float = clampf((session.heat-70.0)/30.0,0.0,1.0)
     var air_risk: float = clampf((45.0-session.oxygen)/45.0,0.0,1.0)
@@ -1040,6 +1064,7 @@ func _show_end() -> void:
     var method_name: String = _copy(method_key) if session.repair_method != "" else "-"
     end_stats.text += "\n" + _copy("result_path").format({
         "method":method_name,"scenario":_copy("scenario_" + session.scenario_id)})
+    end_stats.text += "\n" + _copy("visited_sectors").format({"count":visited_sectors.size()})
     if DisplayServer.get_name() != "headless":
         Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 
@@ -1056,6 +1081,8 @@ func _refresh_hud() -> void:
         display_key = "repair_" + session.scenario_id
     objective_label.text = _copy(display_key)
     subtitle_label.text = _copy("scenario_title_" + selected_scenario)
+    if started:
+        subtitle_label.text += " / " + _copy("sector_" + active_sector)
     _update_guidance(objective_key)
     _update_terminal_highlights(objective_key)
     telemetry_label.text = "%s  %d°C    |    %s  %d%%\n%s  %d%%    |    %s  %d%%    |    %s  %02d:%02d" % [
