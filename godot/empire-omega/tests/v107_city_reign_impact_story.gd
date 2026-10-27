@@ -94,8 +94,7 @@ func _run() -> void:
 		hud.call("_redraw_strategy")
 		var found: bool = false
 		for label in (hud.get("strategy_contents") as Node).find_children("*","Label",true,false):
-			if (label as Label).text.contains("AFTER DELIVERY") and
-				(label as Label).text.contains("jobs"):
+			if (label as Label).text.contains("AFTER DELIVERY") and (label as Label).text.contains("jobs"):
 				found = true
 		check(found,"native cabinet renders real project completion forecast")
 		hud.queue_free()
