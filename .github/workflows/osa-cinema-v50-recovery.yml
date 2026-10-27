@@ -1,0 +1,60 @@
+name: OSA CINEMA V50 Previously Approved Film Recovery
+on:
+  workflow_run:
+    workflows:
+      - OSGARD frontend deploy
+    types: [completed]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: osa-cinema-v50-host-media-recovery
+  cancel-in-progress: false
+jobs:
+  restore-only-existing-release:
+    if: >-
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/master') ||
+      (github.event_name == 'workflow_run' &&
+       github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_branch == 'master' &&
+       github.event.workflow_run.head_repository.full_name == github.repository)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: master
+      - name: Validate recovery script and V49 publisher
+        run: |
+          bash -n scripts/osa-cinema-v50-recover.sh
+          python3 -m unittest discover -s scripts -p 'test_osa_cinema_v49_*.py' -q
+      - name: Configure existing OSGARD SSH credentials
+        env:
+          HOST: ${{ secrets.OSGARD_DEPLOY_HOST }}
+          USER: ${{ secrets.OSGARD_DEPLOY_USER }}
+          KEY: ${{ secrets.OSGARD_DEPLOY_KEY }}
+        run: |
+          set -euo pipefail
+          test -n "$HOST" && test -n "$USER" && test -n "$KEY"
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$KEY" > ~/.ssh/osgard_deploy
+          chmod 600 ~/.ssh/osgard_deploy
+          ssh-keyscan -T 10 -H "$HOST" >> ~/.ssh/known_hosts 2>/dev/null
+          test -s ~/.ssh/known_hosts
+      - name: Restore the SAME already published film only when missing
+        env:
+          HOST: ${{ secrets.OSGARD_DEPLOY_HOST }}
+          USER: ${{ secrets.OSGARD_DEPLOY_USER }}
+        run: |
+          set -euo pipefail
+          remote="osa-cinema-recover-$GITHUB_RUN_ID"
+          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -i ~/.ssh/osgard_deploy "$USER@$HOST" \
+            "mkdir -m 700 -p '$remote/scripts' '$remote/docs'"
+          scp -o BatchMode=yes -i ~/.ssh/osgard_deploy \
+            scripts/osa-cinema-v50-recover.sh scripts/osa-cinema-v49-publisher.py \
+            "$USER@$HOST:$remote/scripts/"
+          scp -o BatchMode=yes -i ~/.ssh/osgard_deploy \
+            docs/OSA_CINEMA_V48_LOCAL_MEDIA_CANDIDATE_20261027.json \
+            "$USER@$HOST:$remote/docs/"
+          ssh -o BatchMode=yes -i ~/.ssh/osgard_deploy "$USER@$HOST" \
+            "bash '$remote/scripts/osa-cinema-v50-recover.sh'"
