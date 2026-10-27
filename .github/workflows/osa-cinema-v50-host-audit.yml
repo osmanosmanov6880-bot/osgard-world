@@ -1,0 +1,123 @@
+name: OSA CINEMA V50 Read-only Host Audit
+on:
+  push:
+    branches: [master]
+    paths:
+      - .github/workflows/osa-cinema-v50-host-audit.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: osa-cinema-v50-host-audit
+  cancel-in-progress: false
+jobs:
+  inspect-existing-vps:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Configure existing OSGARD deployment SSH credentials
+        env:
+          DEPLOY_HOST: ${{ secrets.OSGARD_DEPLOY_HOST }}
+          DEPLOY_KEY: ${{ secrets.OSGARD_DEPLOY_KEY }}
+          DEPLOY_USER: ${{ secrets.OSGARD_DEPLOY_USER }}
+        run: |
+          set -euo pipefail
+          test -n "$DEPLOY_HOST" && test -n "$DEPLOY_KEY" && test -n "$DEPLOY_USER"
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$DEPLOY_KEY" > ~/.ssh/osgard_deploy
+          chmod 600 ~/.ssh/osgard_deploy
+          ssh-keyscan -T 10 -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+          test -s ~/.ssh/known_hosts
+      - name: Diagnose media mount and permissions without changing VPS
+        env:
+          DEPLOY_HOST: ${{ secrets.OSGARD_DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.OSGARD_DEPLOY_USER }}
+        run: |
+          set -euo pipefail
+          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -i ~/.ssh/osgard_deploy \
+            "$DEPLOY_USER@$DEPLOY_HOST" 'bash -s' > "$RUNNER_TEMP/osa-v50-host-audit.txt" <<'REMOTE'
+          set -euo pipefail
+          if docker inspect osgard-world >/dev/null 2>&1; then
+            echo 'CONTAINER_EXISTS=yes'
+          else
+            echo 'CONTAINER_EXISTS=no'
+            exit 1
+          fi
+          running="$(docker inspect --format '{{.State.Running}}' osgard-world)"
+          echo "CONTAINER_RUNNING=$running"
+          [ "$running" = true ] || exit 1
+          if docker exec osgard-world nginx -t >/dev/null 2>&1; then
+            echo 'NGINX_CONFIG_VALID=yes'
+          else
+            echo 'NGINX_CONFIG_VALID=no'
+            exit 1
+          fi
+          mount="$(docker inspect --format '{{range .Mounts}}{{if eq .Destination "/var/lib/osgard-cinema-media"}}{{.Type}};{{.Source}};{{.RW}}{{end}}{{end}}' osgard-world)"
+          if [ -n "$mount" ]; then
+            echo 'FILM_BIND_MOUNT_ACTIVE=yes'
+            case "$mount" in
+              *';false') echo 'FILM_BIND_READ_ONLY=yes' ;;
+              *) echo 'FILM_BIND_READ_ONLY=no' ;;
+            esac
+          else
+            echo 'FILM_BIND_MOUNT_ACTIVE=no'
+            echo 'FILM_BIND_READ_ONLY=not_applicable'
+          fi
+          if [ -d /srv/osgard-cinema-media ]; then
+            echo 'HOST_MEDIA_ROOT_EXISTS=yes'
+            if [ -w /srv/osgard-cinema-media ]; then
+              echo 'HOST_MEDIA_ROOT_WRITABLE=yes'
+            else
+              echo 'HOST_MEDIA_ROOT_WRITABLE=no'
+            fi
+          else
+            echo 'HOST_MEDIA_ROOT_EXISTS=no'
+            echo 'HOST_MEDIA_ROOT_WRITABLE=no'
+          fi
+          if sudo -n true >/dev/null 2>&1; then
+            echo 'NONINTERACTIVE_SUDO_AVAILABLE=yes'
+          else
+            echo 'NONINTERACTIVE_SUDO_AVAILABLE=no'
+          fi
+          if docker exec osgard-world test -d /var/lib/osgard-cinema-media/current; then
+            echo 'CONTAINER_FILM_CURRENT_PRESENT=yes'
+          else
+            echo 'CONTAINER_FILM_CURRENT_PRESENT=no'
+          fi
+          if docker exec osgard-world test -r /var/lib/osgard-cinema-media/current/masters/osa-v48-directors-ru.mp4; then
+            echo 'CONTAINER_RU_MP4_PRESENT=yes'
+          else
+            echo 'CONTAINER_RU_MP4_PRESENT=no'
+          fi
+          if [ -e /srv/osgard-cinema-media/current ]; then
+            echo 'HOST_FILM_CURRENT_PRESENT=yes'
+          else
+            echo 'HOST_FILM_CURRENT_PRESENT=no'
+          fi
+          if docker exec osgard-world sh -lc 'command -v sha256sum' >/dev/null 2>&1; then
+            echo 'CONTAINER_SHA256_TOOL=yes'
+          else
+            echo 'CONTAINER_SHA256_TOOL=no'
+          fi
+          free_mib="$(df -Pm "$HOME" | awk 'NR==2 {print $4}')"
+          if [[ "$free_mib" =~ ^[0-9]+$ ]]; then
+            echo "HOME_FS_AVAILABLE_MIB=$free_mib"
+          else
+            echo 'HOME_FS_AVAILABLE_MIB=unknown'
+          fi
+          if command -v python3 >/dev/null 2>&1; then
+            echo 'HOST_PYTHON3_AVAILABLE=yes'
+          else
+            echo 'HOST_PYTHON3_AVAILABLE=no'
+          fi
+          REMOTE
+          cat "$RUNNER_TEMP/osa-v50-host-audit.txt"
+          {
+            echo '## OSA CINEMA V50 — read-only production host facts'
+            echo
+            echo 'No media was copied, no container was restarted, and no premiere was authorized.'
+            echo
+            echo '~~~text'
+            cat "$RUNNER_TEMP/osa-v50-host-audit.txt"
+            echo '~~~'
+          } >> "$GITHUB_STEP_SUMMARY"
