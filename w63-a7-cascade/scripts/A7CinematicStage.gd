@@ -35,6 +35,9 @@ var fill_light: OmniLight3D
 var hero_details: Node3D
 var camera: Camera3D
 var premium_art: A7ArtKit
+var operator_rig: A7OperatorRig
+var walk_mode: bool = false
+var walk_colliders: Array[StaticBody3D] = []
 var camera_index: int = 0
 var mode: String = "hero"
 var reduced_motion: bool = false
@@ -53,6 +56,7 @@ var snapshot_count: int = 0
 func _ready() -> void:
     name = "A7TrueNativeProceduralCinema"
     _construct_facility()
+    _create_walkable_world()
     set_camera(0)
     set_quality(mode)
     set_process(true)
@@ -267,6 +271,8 @@ func _construct_facility() -> void:
     add_child(camera)
 
 func set_camera(index: int) -> void:
+    if walk_mode:
+        set_walk_mode(false)
     camera_index = clampi(index, 0, 2)
     if camera == null:
         return
@@ -276,6 +282,41 @@ func set_camera(index: int) -> void:
     camera.position = spots[camera_index]
     camera.look_at(Vector3(0.0, 2.18, -0.6), Vector3.UP)
     camera.current = true
+
+func _collision_box(label: String, at: Vector3, extents: Vector3) -> void:
+    var solid := StaticBody3D.new()
+    solid.name = label
+    solid.position = at
+    var shape := BoxShape3D.new()
+    shape.size = extents
+    var collision := CollisionShape3D.new()
+    collision.shape = shape
+    solid.add_child(collision)
+    add_child(solid)
+    walk_colliders.append(solid)
+
+func _create_walkable_world() -> void:
+    # Actual Godot physics boundaries; no real industrial controller.
+    _collision_box("A7PhysicalWalkableFloor", Vector3(0,-0.24,0),
+        Vector3(13.8,0.22,9.6))
+    _collision_box("A7PhysicalLeftBulkhead", Vector3(-6.85,2.7,0),
+        Vector3(0.3,5.6,9.6))
+    _collision_box("A7PhysicalRightBulkhead", Vector3(6.85,2.7,0),
+        Vector3(0.3,5.6,9.6))
+    _collision_box("A7PhysicalBackBulkhead", Vector3(0,2.7,-4.68),
+        Vector3(13.8,5.6,0.28))
+    _collision_box("A7PhysicalFrontLimit", Vector3(0,2.7,4.64),
+        Vector3(13.8,5.6,0.28))
+    operator_rig = A7OperatorRig.new()
+    add_child(operator_rig)
+    operator_rig.set_active(false)
+
+func set_walk_mode(enabled: bool) -> void:
+    walk_mode = enabled and operator_rig != null
+    if operator_rig != null:
+        operator_rig.set_active(walk_mode)
+    if not walk_mode and camera != null:
+        camera.current = true
 
 func set_quality(new_mode: String) -> void:
     mode = "eco" if new_mode == "eco" else "hero"
@@ -359,6 +400,9 @@ func qa_readout() -> Dictionary:
         "art_kit": premium_art.qa_readout() if premium_art != null else {},
         "real_meshes_with_art": mesh_count + premium_art.meshes_created if premium_art != null else mesh_count,
         "camera": camera_index, "quality": mode,
+        "walk_mode": walk_mode,
+        "walk_physical_colliders": walk_colliders.size(),
+        "operator": operator_rig.qa_readout() if operator_rig != null else {},
         "reduced_motion": reduced_motion, "snapshots": snapshot_count,
         "heat": heat, "pressure": pressure, "energy": energy,
         "severity": severity, "status": current_status,
