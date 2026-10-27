@@ -1,12 +1,16 @@
 extends RefCounted
 class_name IPCrisisEngine
-## IRON PULSE: BLACKOUT. Pure, deterministic gameplay rules; no real hardware interfaces.
-## All values, procedures and hazards are deliberately fictional.
+## IRON PULSE BLACKOUT V4 — THREE distinct, deterministic fictional emergencies.
+## No real-world machine procedures. Original BLACKOUT gameplay remains compatible.
 
 const SYSTEMS: Array[String] = ["coolant", "life", "door"]
+const SCENARIOS: Array[String] = ["blackout", "thermal", "breach"]
 const MAX_TIME: float = 330.0
 const CHARGE_REQUIRED: float = 95.0
+const LOG_LIMIT: int = 32
 
+var scenario_id: String = "blackout"
+var repair_method: String = ""
 var time_left: float = MAX_TIME
 var heat: float = 48.0
 var oxygen: float = 93.0
@@ -18,6 +22,8 @@ var core_scanned: bool = false
 var coolant_repaired: bool = false
 var override_set: bool = false
 var surge_triggered: bool = false
+var thermal_pulses: int = 0
+var next_pulse_at: float = 45.0
 var won: bool = false
 var lost: bool = false
 var elapsed: float = 0.0
@@ -26,11 +32,21 @@ var faults: int = 0
 var event_log: Array[String] = []
 var last_event: String = "shift_started"
 
-func reset() -> void:
+func reset(next_scenario: String = "blackout") -> void:
+    scenario_id = next_scenario if SCENARIOS.has(next_scenario) else "blackout"
     time_left = MAX_TIME
     heat = 48.0
     oxygen = 93.0
     crew_health = 100.0
+    if scenario_id == "thermal":
+        time_left = 265.0
+        heat = 72.0
+        oxygen = 88.0
+    elif scenario_id == "breach":
+        time_left = 245.0
+        heat = 52.0
+        oxygen = 68.0
+        crew_health = 92.0
     door_charge = 0.0
     bus_a = "coolant"
     bus_b = "life"
@@ -38,6 +54,9 @@ func reset() -> void:
     coolant_repaired = false
     override_set = false
     surge_triggered = false
+    thermal_pulses = 0
+    next_pulse_at = 45.0
+    repair_method = ""
     won = false
     lost = false
     elapsed = 0.0
@@ -49,7 +68,7 @@ func reset() -> void:
 func _record(event_name: String) -> void:
     last_event = event_name
     event_log.append(event_name)
-    if event_log.size() > 32:
+    if event_log.size() > LOG_LIMIT:
         event_log.pop_front()
 
 func powered(system_name: String) -> bool:
@@ -61,7 +80,7 @@ func finished() -> bool:
 func tick(delta: float) -> void:
     if finished() or delta <= 0.0:
         return
-    # A bounded integration step makes the same timeline predictable at 30/60/144 FPS.
+    # Bounded steps preserve outcomes on 30/60/144 Hz and prevent large-dt bypass.
     var remaining: float = minf(delta, 360.0)
     while remaining > 0.0 and not finished():
         var step: float = minf(remaining, 0.1)
@@ -72,7 +91,10 @@ func _integrate_step(dt: float) -> void:
     time_left -= dt
     elapsed += dt
     if powered("coolant"):
-        heat += (-0.52 if coolant_repaired else 0.25) * dt
+        var cool_rate: float = -0.52 if coolant_repaired else 0.25
+        if coolant_repaired and scenario_id == "thermal" and repair_method == "deep_stabilize":
+            cool_rate = -0.82
+        heat += cool_rate * dt
     else:
         heat += 1.55 * dt
     if powered("life"):
@@ -81,6 +103,16 @@ func _integrate_step(dt: float) -> void:
     else:
         oxygen -= 0.76 * dt
         crew_health -= 1.05 * dt
+
+    # Sector-specific systemic pressure: leak affects powered and unpowered LIFE.
+    # A rapid patch leaves an ongoing micro-leak: a consequential second strategy.
+    if scenario_id == "breach":
+        if not coolant_repaired:
+            oxygen -= 0.70 * dt
+            crew_health -= 0.16 * dt
+        elif repair_method == "rapid_patch":
+            oxygen -= 0.18 * dt
+
     heat = clampf(heat, 0.0, 110.0)
     oxygen = clampf(oxygen, 0.0, 100.0)
     crew_health = clampf(crew_health, 0.0, 100.0)
@@ -88,10 +120,16 @@ func _integrate_step(dt: float) -> void:
         door_charge = minf(100.0, door_charge + 4.2 * dt)
     else:
         door_charge = maxf(0.0, door_charge - 0.10 * dt)
+
     if not surge_triggered and door_charge >= 50.0:
         surge_triggered = true
         heat += 8.0
         _record("surge")
+    if scenario_id == "thermal" and elapsed >= next_pulse_at:
+        thermal_pulses += 1
+        next_pulse_at += 55.0
+        heat += 12.0 if thermal_pulses == 1 else 7.0
+        _record("thermal_pulse")
     if heat >= 100.0:
         lost = true
         _record("reactor_overheat")
@@ -112,9 +150,48 @@ func scan_core() -> bool:
 func repair_coolant() -> bool:
     if finished() or not core_scanned or coolant_repaired:
         return _reject()
+    if scenario_id == "thermal":
+        # Precision repair spends simulated time but retains crew resources.
+        tick(15.0)
+        if finished():
+            return false
+        repair_method = "deep_stabilize"
+        heat = maxf(heat - 7.0, 0.0)
+        _record("thermal_stabilized")
+    elif scenario_id == "breach":
+        # Full seal takes time; permanent oxygen restoration is the reward.
+        tick(10.0)
+        if finished():
+            return false
+        repair_method = "full_seal"
+        oxygen = maxf(oxygen - 3.0, 0.0)
+        heat = maxf(heat - 4.0, 0.0)
+        _record("breach_sealed")
+    else:
+        repair_method = "standard"
+        heat = maxf(heat - 4.0, 0.0)
+        _record("coolant_repaired")
     coolant_repaired = true
-    heat = maxf(heat - 4.0, 0.0)
-    _record("coolant_repaired")
+    return true
+
+func emergency_repair() -> bool:
+    # Player presses Q (or the dedicated touch action) at the SAME repair unit.
+    # Fast intervention truly changes the simulation; not a cosmetic menu choice.
+    if finished() or not core_scanned or coolant_repaired or scenario_id == "blackout":
+        return _reject()
+    if scenario_id == "thermal":
+        heat = maxf(heat - 22.0, 0.0)
+        oxygen = maxf(oxygen - 18.0, 0.0)
+        crew_health = maxf(crew_health - 10.0, 0.0)
+        repair_method = "rapid_purge"
+        _record("thermal_purged")
+    else:
+        heat += 8.0
+        oxygen = maxf(oxygen - 12.0, 0.0)
+        crew_health = maxf(crew_health - 15.0, 0.0)
+        repair_method = "rapid_patch"
+        _record("breach_patched")
+    coolant_repaired = true
     return true
 
 func cycle_bus(bus_index: int) -> bool:
@@ -133,8 +210,6 @@ func cycle_bus(bus_index: int) -> bool:
 func activate_override() -> bool:
     if finished() or not coolant_repaired or door_charge < CHARGE_REQUIRED:
         return _reject()
-    # This is the central power-routing trade-off: the door capacitor must be
-    # charged, then BOTH reactor cooling and life support must be restored.
     if not powered("coolant") or not powered("life") or heat >= 85.0 or oxygen < 20.0:
         return _reject()
     if override_set:
@@ -181,6 +256,9 @@ func grade() -> String:
 
 func diagnostic_snapshot() -> Dictionary:
     return {
+        "scenario": scenario_id, "repair_method": repair_method,
+        "thermal_pulses": thermal_pulses, "next_pulse": next_pulse_at,
+        "leak_active": scenario_id == "breach" and (not coolant_repaired or repair_method == "rapid_patch"),
         "objective": objective_id(), "time_left": time_left, "heat": heat,
         "oxygen": oxygen, "crew_health": crew_health, "door_charge": door_charge,
         "bus_a": bus_a, "bus_b": bus_b, "scanned": core_scanned,

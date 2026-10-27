@@ -140,7 +140,7 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                             assert idle["touch_controls_visible"] is True, idle
                             rectangles = idle.get("touch_button_rects", {})
                             assert len(rectangles) >= 6, idle
-                            for label in ("W", "A", "S", "D", "USE / E", "L / RU-EN"):
+                            for label in ("W", "A", "S", "D", "USE / E", "L / RU-EN", "FAST / Q"):
                                 rect = rectangles[label]
                                 # Read actual native Control rectangles, then compare
                                 # against the real CSS pixel scaling on this device.
@@ -151,6 +151,43 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                                     real_width, real_height)
                                 assert rect[1] + rect[3] < cards["prompt"][1] - 1, (
                                     "Mobile touch target obstructed by prompt card",label,rect,cards["prompt"])
+                        # Real Godot input: three different emergencies selected
+                        # with genuine native Button clicks/taps, not state injection.
+                        selector_rects = idle.get("scenario_button_rects", {})
+                        assert set(selector_rects) == {"blackout","thermal","breach"}, (
+                            "Three actual mission-selection buttons missing",selector_rects)
+                        assert idle.get("scenario") == "blackout",idle
+                        for scenario_id,expected_key,expected_value in (
+                            ("thermal","heat",72.0),
+                            ("breach","oxygen",68.0),
+                            ("blackout","heat",48.0),
+                        ):
+                            fresh = json.loads(marker.get_attribute("data-state",timeout=10000))
+                            rect = fresh["scenario_button_rects"][scenario_id]
+                            canvas_box = canvas.bounding_box()
+                            assert canvas_box is not None,("No physical Godot canvas",name)
+                            tap_x = canvas_box["x"] + (rect[0]+rect[2]/2)*canvas_box["width"]/fresh["viewport"][0]
+                            tap_y = canvas_box["y"] + (rect[1]+rect[3]/2)*canvas_box["height"]/fresh["viewport"][1]
+                            assert 0 <= tap_x <= size["width"] and 0 <= tap_y <= size["height"],(
+                                "Scenario button is clipped",scenario_id,name,rect,(tap_x,tap_y))
+                            if mobile:
+                                page.touchscreen.tap(tap_x,tap_y)
+                            else:
+                                page.mouse.click(tap_x,tap_y)
+                            deadline = time.monotonic()+24
+                            changed={}
+                            while time.monotonic()<deadline:
+                                changed=json.loads(marker.get_attribute("data-state",timeout=10000))
+                                if changed.get("scenario")==scenario_id:
+                                    break
+                                page.wait_for_timeout(200)
+                            assert changed.get("scenario")==scenario_id,(
+                                "Real mission picker click/tap failed",name,scenario_id,changed)
+                            assert abs(float(changed[expected_key])-expected_value)<0.1,(
+                                "Mission selection did not change simulation conditions",scenario_id,changed)
+                            assert changed.get("started") is False,(
+                                "Scenario button accidentally started the game",scenario_id,changed)
+                        report.setdefault("real_scenario_picker",{})[name] = "3/3 native clicks PASS"
                         page.keyboard.press("Enter")
                         deadline = time.monotonic() + 45
                         state = {}

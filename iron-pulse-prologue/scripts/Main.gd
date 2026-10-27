@@ -16,6 +16,23 @@ const COPY := {
         "subtitle": "BLACKOUT  /  ГЛАВА 00",
         "intro": "СИГНАЛ БЕДСТВИЯ: СЕКТОР A7\n\nВ реакторном комплексе пропало питание. Люди заблокированы внутри. У вас две независимые линии питания, но три системы: охлаждение, жизнеобеспечение и аварийные двери.\n\nВыберите, чем пожертвовать на время, чтобы открыть путь к эвакуации.\n\nWASD — движение    SHIFT — бег\nМЫШЬ — обзор    E — действие\nL — язык    F — фонарь    ESC — пауза\nM — звук    V — плавная камера    G — графика\n\nЭто вымышленная игра, не инструкция по эксплуатации оборудования.",
         "start": "НАЧАТЬ ОПЕРАЦИЮ", "resume": "ПРОДОЛЖИТЬ", "restart": "ПОВТОРИТЬ",
+        "scenario_blackout": "01 / GRID", "scenario_thermal": "02 / HEAT", "scenario_breach": "03 / AIR",
+        "brief_blackout": "ОТКЛЮЧЕНИЕ ПИТАНИЯ: два контура, три системы. Изучите маршрут эвакуации.",
+        "brief_thermal": "ТЕПЛОВОЙ КАСКАД: опасный перегрев и повторные импульсы. E — долгий ремонт, Q — быстрый сброс ценой кислорода и здоровья.",
+        "brief_breach": "РАЗГЕРМЕТИЗАЦИЯ: кислород утекает даже с LIFE. E — полная герметизация, Q — быстрая заплатка с остаточной утечкой.",
+        "repair_thermal": "02 / Стабилизировать теплообменник: E — 15 с / Q — аварийный сброс",
+        "repair_breach": "02 / Герметизировать утечку: E — 10 с / Q — экстренная заплатка",
+        "thermal_stabilized": "Контур стабилизирован: долгий ремонт сохранил ресурсы экипажа.",
+        "thermal_purged": "Срочный сброс тепла. Потерян кислород, экипаж пострадал.",
+        "breach_sealed": "Утечка устранена полностью.",
+        "breach_patched": "Быстрая заплатка: экипаж пострадал, осталась микроутечка.",
+        "thermal_pulse": "ТЕПЛОВОЙ ИМПУЛЬС! Повторный перегрев требует контроля.",
+        "choice_hint": "{name}  {distance} м  /  [E] ТЩАТЕЛЬНО   [Q] СРОЧНО",
+        "result_path": "Решение: {method}  /  Сценарий: {scenario}",
+        "method_deep_stabilize": "ТОЧНАЯ СТАБИЛИЗАЦИЯ", "method_rapid_purge": "АВАРИЙНЫЙ СБРОС",
+        "method_full_seal": "ПОЛНАЯ ГЕРМЕТИЗАЦИЯ", "method_rapid_patch": "БЫСТРАЯ ЗАПЛАТКА",
+        "method_standard": "СТАНДАРТНЫЙ РЕМОНТ",
+        "scenario_title_blackout": "IRON PULSE / BLACKOUT", "scenario_title_thermal": "IRON PULSE / HEAT", "scenario_title_breach": "IRON PULSE / AIR",
         "pause": "ПАУЗА", "victory": "ЭВАКУАЦИЯ УСПЕШНА", "failure": "МИССИЯ ПРОВАЛЕНА",
         "scan": "01  /  Просканировать реактор A7", "repair": "02  /  Восстановить охлаждение",
         "charge": "03  /  Зарядить аварийную дверь — перенаправьте одну линию на DOOR",
@@ -51,6 +68,23 @@ const COPY := {
         "subtitle": "BLACKOUT  /  CHAPTER 00",
         "intro": "DISTRESS SIGNAL: SECTOR A7\n\nPower has failed across the reactor complex. Your crew is trapped. You have two independent power buses but three systems: cooling, life support and emergency doors.\n\nChoose what to deprioritize briefly to unlock the evacuation path.\n\nWASD — move    SHIFT — sprint\nMOUSE — look    E — interact\nL — language    F — flashlight    ESC — pause\nM — audio    V — reduced motion    G — graphics\n\nFictional game only. Not real equipment instructions.",
         "start": "BEGIN OPERATION", "resume": "RESUME", "restart": "RESTART",
+        "scenario_blackout": "01 / GRID", "scenario_thermal": "02 / HEAT", "scenario_breach": "03 / AIR",
+        "brief_blackout": "POWER GRID FAILURE: two buses, three systems. Learn the safe route.",
+        "brief_thermal": "THERMAL CASCADE: dangerous heat and recurring pulses. E — careful 15s repair; Q — rapid purge with resource loss.",
+        "brief_breach": "OXYGEN BREACH: air leaks even with LIFE powered. E — permanent 10s seal; Q — quick patch with a residual leak.",
+        "repair_thermal": "02 / Stabilize heat exchanger: E — 15s / Q — rapid purge",
+        "repair_breach": "02 / Seal oxygen breach: E — 10s / Q — rapid patch",
+        "thermal_stabilized": "Core stabilized. Careful repair preserved crew resources.",
+        "thermal_purged": "Emergency heat purge. Oxygen and crew condition sacrificed.",
+        "breach_sealed": "Permanent seal complete: oxygen leak eliminated.",
+        "breach_patched": "Rapid patch: crew injured; micro-leak remains.",
+        "thermal_pulse": "THERMAL PULSE! Watch recurring temperature spikes.",
+        "choice_hint": "{name}  {distance} m  /  [E] CAREFUL   [Q] FAST",
+        "result_path": "Solution: {method}  /  Scenario: {scenario}",
+        "method_deep_stabilize": "PRECISION STABILIZATION", "method_rapid_purge": "EMERGENCY PURGE",
+        "method_full_seal": "PERMANENT SEAL", "method_rapid_patch": "RAPID PATCH",
+        "method_standard": "STANDARD REPAIR",
+        "scenario_title_blackout": "IRON PULSE / BLACKOUT", "scenario_title_thermal": "IRON PULSE / HEAT", "scenario_title_breach": "IRON PULSE / AIR",
         "pause": "PAUSED", "victory": "EVACUATION COMPLETE", "failure": "MISSION FAILED",
         "scan": "01  /  Scan the A7 reactor core", "repair": "02  /  Restore reactor cooling",
         "charge": "03  /  Charge the bulkhead — redirect one bus to DOOR",
@@ -122,6 +156,9 @@ var intro_panel: PanelContainer
 var intro_title: Label
 var intro_body: Label
 var intro_button: Button
+var scenario_buttons: Dictionary = {}
+var scenario_brief: Label
+var selected_scenario: String = "blackout"
 var pause_panel: PanelContainer
 var pause_title: Label
 var resume_button: Button
@@ -217,6 +254,10 @@ func _publish_web_state() -> void:
     state["content_scale_size"] = [get_window().content_scale_size.x, get_window().content_scale_size.y]
     state["touch_controls_visible"] = touch_ui.visible
     state["intro_visible"] = intro_panel.visible
+    var scenario_rects: Dictionary = {}
+    for scenario_key in scenario_buttons:
+        scenario_rects[str(scenario_key)] = _hud_rect(scenario_buttons[scenario_key] as Control)
+    state["scenario_button_rects"] = scenario_rects
     state["end_visible"] = end_panel.visible
     state["quality_mode"] = quality_mode
     state["reduced_motion"] = reduced_motion
@@ -572,15 +613,32 @@ func _make_vital_meter(parent: VBoxContainer, key: String, caption: String, tint
     vitals_meters[key] = meter
 
 func _make_overlays() -> void:
-    intro_panel = _panel(hud_root,Rect2(-310,-220,310,220),Rect2(0.5,0.5,0.5,0.5),Color(0.012,0.029,0.055,0.98))
+    intro_panel = _panel(hud_root,Rect2(-310,-275,310,275),Rect2(0.5,0.5,0.5,0.5),Color(0.012,0.029,0.055,0.98))
     intro_panel.mouse_filter = Control.MOUSE_FILTER_STOP
     var start_box := VBoxContainer.new()
-    start_box.add_theme_constant_override("separation",16)
+    start_box.add_theme_constant_override("separation",8)
     intro_panel.add_child(start_box)
     intro_title = _label(start_box,"IRON PULSE / BLACKOUT",29,CYAN)
+    var scenario_row := HBoxContainer.new()
+    scenario_row.name = "ScenarioPicker"
+    scenario_row.add_theme_constant_override("separation",6)
+    start_box.add_child(scenario_row)
+    for scenario_key in IPCrisisEngine.SCENARIOS:
+        var choice := Button.new()
+        choice.name = "Scenario_" + scenario_key
+        choice.text = _copy("scenario_" + scenario_key)
+        choice.custom_minimum_size = Vector2(100,42)
+        choice.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+        choice.add_theme_font_size_override("font_size",13)
+        choice.toggle_mode = true
+        choice.pressed.connect(_select_scenario.bind(scenario_key))
+        scenario_row.add_child(choice)
+        scenario_buttons[scenario_key] = choice
+    scenario_brief = _label(start_box,"",12,AMBER)
+    scenario_brief.custom_minimum_size = Vector2(0,44)
     var intro_scroll := ScrollContainer.new()
     intro_scroll.name = "BriefingScroll"
-    intro_scroll.custom_minimum_size = Vector2(0,244)
+    intro_scroll.custom_minimum_size = Vector2(0,192)
     intro_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
     start_box.add_child(intro_scroll)
     intro_body = _label(intro_scroll,_copy("intro"),15,WHITE)
@@ -590,6 +648,7 @@ func _make_overlays() -> void:
     intro_button.custom_minimum_size = Vector2(0,50)
     intro_button.pressed.connect(start_run)
     start_box.add_child(intro_button)
+    _update_scenario_picker()
     pause_panel = _panel(hud_root,Rect2(-240,-120,240,120),Rect2(0.5,0.5,0.5,0.5),Color(0.012,0.029,0.055,0.98))
     pause_panel.mouse_filter = Control.MOUSE_FILTER_STOP
     var pause_box := VBoxContainer.new()
@@ -658,6 +717,8 @@ func _make_touch_controls() -> void:
     use.pressed.connect(_interact)
     var look := _touch_button(touch_ui,"L / RU-EN",216,-242,94)
     look.pressed.connect(_toggle_language)
+    var fast := _touch_button(touch_ui,"FAST / Q",216,-299,94)
+    fast.pressed.connect(_fast_interact)
 
 func _layout_hud() -> void:
     if hud_root == null:
@@ -705,6 +766,28 @@ func _layout_hud() -> void:
     end_panel.offset_right = minf(300.0,width*0.45)
     objective_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 
+func _update_scenario_picker() -> void:
+    if scenario_brief == null:
+        return
+    intro_title.text = _copy("scenario_title_" + selected_scenario)
+    scenario_brief.text = _copy("brief_" + selected_scenario)
+    for mode_id in IPCrisisEngine.SCENARIOS:
+        var button: Button = scenario_buttons[mode_id]
+        button.text = _copy("scenario_" + mode_id)
+        button.button_pressed = mode_id == selected_scenario
+
+func _select_scenario(next_scenario: String) -> void:
+    if started or not IPCrisisEngine.SCENARIOS.has(next_scenario):
+        return
+    selected_scenario = next_scenario
+    session.reset(next_scenario)
+    notice_time = 0.0
+    _update_scenario_picker()
+    _refresh_hud()
+
+func _fast_interact() -> void:
+    _interact(true)
+
 func start_run() -> void:
     started = true
     paused = false
@@ -717,7 +800,7 @@ func start_run() -> void:
         Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 
 func _restart() -> void:
-    session.reset()
+    session.reset(selected_scenario)
     player.position = Vector3(0,1.1,2.0)
     player.velocity = Vector3.ZERO
     exit_gate.position = Vector3(0,2.6,-58.9)
@@ -755,6 +838,7 @@ func _toggle_language() -> void:
     locale = "en" if locale == "ru" else "ru"
     intro_body.text = _copy("intro")
     intro_button.text = _copy("start")
+    _update_scenario_picker()
     pause_title.text = _copy("pause")
     resume_button.text = _copy("resume")
     end_button.text = _copy("restart")
@@ -787,6 +871,10 @@ func _input(event: InputEvent) -> void:
         if event.keycode == KEY_ESCAPE:
             _pause_toggle()
             return
+        if not started and event.keycode in [KEY_1, KEY_2, KEY_3]:
+            var choice_index: int = [KEY_1, KEY_2, KEY_3].find(event.keycode)
+            _select_scenario(IPCrisisEngine.SCENARIOS[choice_index])
+            return
         if event.keycode == KEY_ENTER and not started:
             start_run()
             return
@@ -798,6 +886,8 @@ func _input(event: InputEvent) -> void:
             return
         if event.keycode == KEY_E:
             _interact()
+        elif event.keycode == KEY_Q:
+            _interact(true)
         elif event.keycode == KEY_F:
             flashlight.visible = not flashlight.visible
             _announce("flashlight")
@@ -893,18 +983,23 @@ func _nearest_terminal() -> Dictionary:
             closest = terminal
     return closest
 
-func _interact() -> void:
+func _interact(fast: bool = false) -> void:
     if not started or paused or session.finished():
         return
     var target: Dictionary = _nearest_terminal()
     if target.is_empty():
         return
     var terminal_id: String = str(target["id"])
+    if fast and terminal_id != "repair":
+        return
     match terminal_id:
         "scan":
             session.scan_core()
         "repair":
-            session.repair_coolant()
+            if fast:
+                session.emergency_repair()
+            else:
+                session.repair_coolant()
         "bus_a":
             session.cycle_bus(0)
         "bus_b":
@@ -925,13 +1020,13 @@ func _announce(key: String) -> void:
     if audio_director == null or not started:
         return
     match key:
-        "surge", "reactor_overheat", "life_support_lost", "time_expired":
+        "surge", "thermal_pulse", "reactor_overheat", "life_support_lost", "time_expired":
             audio_director.cue("surge")
         "crew_evacuated":
             audio_director.cue("victory")
         "action_denied":
             audio_director.cue("denied")
-        "core_scanned", "coolant_repaired", "bus_switched", "override_authorized":
+        "core_scanned", "coolant_repaired", "thermal_stabilized", "thermal_purged", "breach_sealed", "breach_patched", "bus_switched", "override_authorized":
             audio_director.cue("confirm")
 
 func _show_end() -> void:
@@ -941,6 +1036,10 @@ func _show_end() -> void:
     end_title.text = _copy("victory") if session.won else _copy("failure")
     var template: String = _copy("stats")
     end_stats.text = template.format({"time":"%.0f" % session.elapsed,"switches":session.switches,"faults":session.faults,"grade":session.grade()})
+    var method_key: String = "method_" + session.repair_method
+    var method_name: String = _copy(method_key) if session.repair_method != "" else "-"
+    end_stats.text += "\n" + _copy("result_path").format({
+        "method":method_name,"scenario":_copy("scenario_" + session.scenario_id)})
     if DisplayServer.get_name() != "headless":
         Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 
@@ -952,7 +1051,11 @@ func _refresh_hud() -> void:
         objective_key = "victory_objective"
     elif objective_key == "failure":
         objective_key = "failure_objective"
-    objective_label.text = _copy(objective_key)
+    var display_key: String = objective_key
+    if objective_key == "repair" and session.scenario_id != "blackout":
+        display_key = "repair_" + session.scenario_id
+    objective_label.text = _copy(display_key)
+    subtitle_label.text = _copy("scenario_title_" + selected_scenario)
     _update_guidance(objective_key)
     _update_terminal_highlights(objective_key)
     telemetry_label.text = "%s  %d°C    |    %s  %d%%\n%s  %d%%    |    %s  %d%%    |    %s  %02d:%02d" % [
@@ -969,7 +1072,8 @@ func _refresh_hud() -> void:
     if not nearby.is_empty() and started and not session.finished():
         var at: Vector3 = nearby["position"]
         var dist: float = Vector2(at.x,at.z).distance_to(Vector2(player.global_position.x,player.global_position.z))
-        interaction_label.text = _copy("hint").format({"name":_copy(str(nearby["key"])),"distance":"%.1f" % dist})
+        var hint_key: String = "choice_hint" if str(nearby["id"]) == "repair" and session.scenario_id != "blackout" and not session.coolant_repaired else "hint"
+        interaction_label.text = _copy(hint_key).format({"name":_copy(str(nearby["key"])),"distance":"%.1f" % dist})
     else:
         interaction_label.text = _copy("action") if started and not session.finished() else ""
     feedback_label.text = _copy(notice_key) if notice_time > 0.0 else ""

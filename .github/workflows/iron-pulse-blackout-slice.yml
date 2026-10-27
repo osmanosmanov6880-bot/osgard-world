@@ -86,6 +86,20 @@ jobs:
           timeout --signal=TERM --kill-after=5s 120s godot --headless --path iron-pulse-prologue --script res://tests/test_v3_readable_cinema.gd 2>&1 | tee "$RUNNER_TEMP/iron-pulse-v3-ui.log"
           grep -q '^IRON PULSE V3 READABLE CINEMA PASS:' "$RUNNER_TEMP/iron-pulse-v3-ui.log"
           if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/iron-pulse-v3-ui.log"; then exit 1; fi
+      - name: V4 three deterministic emergencies, distinct strategies and winnable outcomes
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 120s godot --headless --path iron-pulse-prologue --script res://tests/test_v4_three_scenarios.gd 2>&1 | tee "$RUNNER_TEMP/iron-pulse-v4-engine.log"
+          grep -q '^IRON PULSE V4 THREE SCENARIOS PASS:' "$RUNNER_TEMP/iron-pulse-v4-engine.log"
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/iron-pulse-v4-engine.log"; then exit 1; fi
+      - name: V4 actual localized 3D mission selector and physical E/Q interaction
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 120s godot --headless --path iron-pulse-prologue --script res://tests/test_v4_scene.gd 2>&1 | tee "$RUNNER_TEMP/iron-pulse-v4-scene.log"
+          grep -q '^IRON PULSE V4 REAL SCENE PASS:' "$RUNNER_TEMP/iron-pulse-v4-scene.log"
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/iron-pulse-v4-scene.log"; then exit 1; fi
       - name: Export exact-source Godot 4.4.1 WebGL playable build
         shell: bash
         run: |
