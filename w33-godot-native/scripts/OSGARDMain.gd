@@ -86,7 +86,7 @@ var _web_state_element: Variant = null
 var _web_last_event_id: int = -1
 
 func _ready() -> void:
-    name = "OSGARDFieldLab"
+    name = "IronPulseFieldLab"
     set_anchors_preset(Control.PRESET_FULL_RECT)
     _create_interface()
     _create_web_accessibility()
@@ -184,7 +184,7 @@ func _publish_web_accessibility(snap: Dictionary) -> void:
     var event_id: int = int(snap["event_id"])
     if event_id != _web_last_event_id:
         _web_last_event_id = event_id
-        _web_state_element.textContent = "OSGARD simulated lab, " + str(state["feedback"]) + ", mission " + str(state["mission"] + 1) + ", step " + str(state["step"])
+        _web_state_element.textContent = "IRON PULSE simulated lab, " + str(state["feedback"]) + ", mission " + str(state["mission"] + 1) + ", step " + str(state["step"])
 
 func _panel_style(base: Color = PANEL, outline: Color = Color("2e3b43"), radius: int = 8) -> StyleBoxFlat:
     var skin := StyleBoxFlat.new()
@@ -322,7 +322,7 @@ func _make_cinematic_overlay(parent: Control) -> void:
     bottom.mouse_filter = Control.MOUSE_FILTER_IGNORE
     column.add_child(bottom)
     stage_live = _overlay_label(bottom, "LiveChamberState", "CHAMBER / STANDBY", 13, MINT)
-    stage_title = _overlay_label(bottom, "ReactorIdentity", "OBSIDIAN CORE  /  A7", 26, WHITE)
+    stage_title = _overlay_label(bottom, "ReactorIdentity", "IRON PULSE  /  A7", 26, WHITE)
     stage_readout = _overlay_label(bottom, "ReactorRealTelemetry", "ROTOR   1480 RPM     ·     HATCH   SEALED", 13, COPPER)
 
 func _create_interface() -> void:
@@ -353,7 +353,7 @@ func _create_interface() -> void:
     pad.add_child(body)
 
     var top := _flow(body)
-    brand_mark = _label(top, "OSGARD   /   OBSIDIAN PROTOCOL", 23, COPPER)
+    brand_mark = _label(top, "IRON PULSE   /   REACTOR SIMULATOR", 23, COPPER)
     brand_mark.name = "ObsidianBrandWordmark"
     brand_mark.autowrap_mode = TextServer.AUTOWRAP_OFF
     brand_mark.clip_text = true
@@ -365,7 +365,7 @@ func _create_interface() -> void:
     var stage_section := _panel(body)
     var stage_frame := stage_section.get_parent() as PanelContainer
     stage_frame.add_theme_stylebox_override("panel", _panel_style(Color("080d13"), Color("49545a"), 12))
-    stage_section_heading = _label(stage_section, "OBSIDIAN FACILITY  //  REACTOR A7    •    SECURE OBSERVATION", 12, COPPER)
+    stage_section_heading = _label(stage_section, "IRON PULSE  //  REACTOR A7    •    SECURE OBSERVATION", 12, COPPER)
     stage_section_heading.name = "A7CinemaSectionHeading"
     stage_section_heading.autowrap_mode = TextServer.AUTOWRAP_OFF
     stage_section_heading.clip_text = true
@@ -547,8 +547,8 @@ func _layout_stage_for_screen() -> void:
     var narrow: bool = size.x < 640.0
     stage_edition.visible = size.x >= 1050.0
     _sync_camera_rail()
-    stage_section_heading.text = "A7  /  SECURE OBSERVATION" if narrow else "OBSIDIAN FACILITY  //  REACTOR A7    •    SECURE OBSERVATION"
-    brand_mark.text = "OSGARD  /  OBSIDIAN" if narrow else "OSGARD   /   OBSIDIAN PROTOCOL"
+    stage_section_heading.text = "A7  /  SECURE OBSERVATION" if narrow else "IRON PULSE  //  REACTOR A7    •    SECURE OBSERVATION"
+    brand_mark.text = "IRON PULSE  /  A7" if narrow else "IRON PULSE   /   REACTOR SIMULATOR"
     brand_mark.add_theme_font_size_override("font_size", 18 if narrow else 23)
     heading.add_theme_font_size_override("font_size", 21 if narrow else 26)
     stage_title.add_theme_font_size_override("font_size", 20 if narrow else 26)
@@ -764,9 +764,9 @@ func _refresh() -> void:
         return
     var snap: Dictionary = core.snapshot()
     var locale := str(core.settings["locale"])
-    _assign(heading, "REACTOR A7" if size.x < 640.0 else "REACTOR A7   /   OBSIDIAN PROTOCOL")
+    _assign(heading, "REACTOR A7" if size.x < 640.0 else "REACTOR A7   /   IRON PULSE")
     _assign(lead, _t("lead"))
-    _assign(footer, _t("sim") + "   ·   OBSIDIAN PROTOCOL / GODOT 4.4.1 / LOCAL ONLY")
+    _assign(footer, _t("sim") + "   ·   IRON PULSE / GODOT 4.4.1 / LOCAL ONLY")
     # Keep the actual language code readable on minimal web fonts.
     lang_btn.text = "RU" if locale == "ru" else "EN"
     quality_btn.text = _t("quality") + ": " + str(core.settings["quality"]).to_upper()
