@@ -107,6 +107,27 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                         assert idle.get("cinematic_details",{}).get("instanced_detail_count",0) >= 270, idle
                         assert idle.get("cinematic_details",{}).get("safety_signs",0) >= 3, idle
                         assert idle.get("vitals_visible") is (not mobile), idle
+                        # Actual real-canvas UI rectangles, not a fabricated CSS layout.
+                        cards = idle.get("hud_rects", {})
+                        assert all(name in cards for name in ("header","telemetry","vitals","prompt")), (
+                            "Missing source-bound native HUD geometry",cards)
+                        header, telemetry = cards["header"], cards["telemetry"]
+                        prompt = cards["prompt"]
+                        assert header[1] + header[3] <= telemetry[1] - 4, (
+                            "Header overlaps mission telemetry",name,header,telemetry)
+                        assert telemetry[1] + telemetry[3] < prompt[1] - 22, (
+                            "Mission telemetry obstructs gameplay/prompt",name,telemetry,prompt)
+                        for title, rect in (("header",header),("telemetry",telemetry),("prompt",prompt)):
+                            assert rect[0] >= 0 and rect[0] + rect[2] <= size["width"] + 3, (
+                                "HUD card falls outside real viewport",name,title,rect,size)
+                        if mobile:
+                            assert header[2] >= 280 and telemetry[2] >= 280, (
+                                "Phone HUD too narrow for readable localized type",header,telemetry)
+                        else:
+                            vitals = cards["vitals"]
+                            assert header[0]+header[2] <= vitals[0]-20, (
+                                "Desktop objective and vital bars collide",header,vitals)
+                        report.setdefault("hud_layout",{})[name] = cards
                         # A visible canvas is not enough: Godot must lay out HUD in
                         # real CSS pixel coordinates, not shrink a 1280px desktop
                         # scene to 390px and pretend the touch buttons are usable.
@@ -119,7 +140,7 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                             assert idle["touch_controls_visible"] is True, idle
                             rectangles = idle.get("touch_button_rects", {})
                             assert len(rectangles) >= 6, idle
-                            for label in ("↑", "←", "↓", "→", "USE / E", "L / RU-EN"):
+                            for label in ("W", "A", "S", "D", "USE / E", "L / RU-EN"):
                                 rect = rectangles[label]
                                 # Read actual native Control rectangles, then compare
                                 # against the real CSS pixel scaling on this device.
@@ -128,6 +149,8 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                                 assert real_width >= 44 and real_height >= 44, (
                                     "Touch target too small in browser pixels", label, rect,
                                     real_width, real_height)
+                                assert rect[1] + rect[3] < cards["prompt"][1] - 1, (
+                                    "Mobile touch target obstructed by prompt card",label,rect,cards["prompt"])
                         page.keyboard.press("Enter")
                         deadline = time.monotonic() + 45
                         state = {}
