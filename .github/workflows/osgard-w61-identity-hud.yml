@@ -1,0 +1,157 @@
+name: LAST FRONTIER W61 exact-source native branding and six-mission software review
+
+on:
+  pull_request:
+    branches:
+      - brand/last-frontier-w60-20261027
+    paths:
+      - 'w33-godot-native/scripts/OSGARDMain.gd'
+      - 'w33-godot-native/scripts/OSGARDText.gd'
+      - 'w33-godot-native/tests/test_w41_typography.gd'
+      - 'w33-godot-native/tests/test_w61_brand_and_phase_hud.gd'
+      - 'tooling/last-frontier/**'
+      - '.github/workflows/osgard-w61-identity-hud.yml'
+      - 'docs/LAST_FRONTIER_W61_VERTICAL_SLICE.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: last-frontier-w61-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  exact-source-brand-guard:
+    name: W61 original W60 ancestry and no mission/production mutation
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Pin exact repository head and reject unreviewed game code
+        env:
+          EXACT_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXACT_HEAD"
+          mkdir -p w61-evidence
+          python3 -m unittest discover -s tooling/last-frontier -p 'test_w61_source_guard.py' -v
+          python3 tooling/last-frontier/w61_source_guard.py --head "$EXACT_HEAD" --out w61-evidence/w61-source-contract.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          obj=json.loads(Path('w61-evidence/w61-source-contract.json').read_text())
+          assert obj['status']=='PASS'
+          assert len(obj['protected_original_git_blobs'])==11
+          assert obj['six_mission_logic_modified'] is False
+          assert obj['original_release_checks_modified'] is False
+          assert obj['production_approved'] is False and obj['allow_master_merge'] is False
+          print('W61 source review PASS; master and publication remain HOLD')
+          PY
+      - name: Preserve exact source review proof
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: last-frontier-w61-source-guard-${{ github.event.pull_request.head.sha || github.sha }}
+          path: w61-evidence/
+          retention-days: 45
+          if-no-files-found: warn
+
+  real-godot-native-and-web:
+    name: W61 genuine Godot 4.4.1 RU/EN HUD, six cases and Chromium screenshots
+    needs: exact-source-brand-guard
+    runs-on: ubuntu-latest
+    timeout-minutes: 65
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Verify exact changed source
+        shell: bash
+        env:
+          EXACT_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXACT_HEAD"
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: true
+      - name: Import actual Godot source and reject script errors
+        shell: bash
+        run: |
+          set -euo pipefail
+          godot --headless --editor --path w33-godot-native --import --quit 2>&1 | tee /tmp/w61-import.log
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:|Failed to load script' /tmp/w61-import.log; then exit 1; fi
+      - name: Original six missions, responsive RU EN and new native phase contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p w61-evidence
+          for script in test_six_missions test_scene_integration test_w41_typography test_w48_ring_instancing test_w53_mobile_edge_swipe test_w55_readable_protocol_copy test_w61_brand_and_phase_hud; do
+            echo "Godot native: $script"
+            timeout --signal=TERM --kill-after=5s 180s godot --headless --path w33-godot-native --script "res://tests/$script.gd" 2>&1 | tee "w61-evidence/$script.log"
+            if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "w61-evidence/$script.log"; then exit 1; fi
+          done
+          grep -q 'LAST FRONTIER W61 NATIVE BRAND AND PHASE HUD PASS:' w61-evidence/test_w61_brand_and_phase_hud.log
+      - name: Actual new source WebGL export, not static mockup
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p w33-godot-native/build/web
+          (
+            cd w33-godot-native
+            godot --headless --path . --export-release Web build/web/index.html
+          ) 2>&1 | tee w61-evidence/web-export.log
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' w61-evidence/web-export.log; then exit 1; fi
+          python3 w33-godot-native/ci/verify_web_export.py w33-godot-native/build/web --sha "${{ github.event.pull_request.head.sha || github.sha }}" --output w33-godot-native/build/web/evidence.json
+      - name: Chromium and native Godot original screenshot prerequisites
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m venv /tmp/last-frontier-w61-venv
+          /tmp/last-frontier-w61-venv/bin/pip install --disable-pip-version-check playwright==1.56.0 Pillow==11.3.0
+          /tmp/last-frontier-w61-venv/bin/python -m playwright install --with-deps chromium
+      - name: Play six actual exported WebGL missions and capture new RU EN images
+        shell: bash
+        env:
+          SOURCE_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          /tmp/last-frontier-w61-venv/bin/python w33-godot-native/ci/browser_gameplay_acceptance.py --export w33-godot-native/build/web --evidence w61-evidence/six-mission-browser --sha "$SOURCE_HEAD"
+          /tmp/last-frontier-w61-venv/bin/python w33-godot-native/ci/w55_visual_typography_acceptance.py --export w33-godot-native/build/web --evidence w61-evidence/ru-en-native --sha "$SOURCE_HEAD"
+      - name: Preserve source-linked Godot original evidence - not production GO
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: last-frontier-w61-real-native-and-original-webgl-${{ github.event.pull_request.head.sha || github.sha }}
+          path: |
+            w61-evidence/
+            w33-godot-native/build/web/evidence.json
+          retention-days: 45
+          if-no-files-found: warn
+
+  software-review-verdict:
+    name: W61 explicit software-only HOLD - independent review still required
+    runs-on: ubuntu-latest
+    needs: [exact-source-brand-guard, real-godot-native-and-web]
+    if: always()
+    steps:
+      - name: Enforce status-bound human GO and physical hardware HOLD
+        shell: bash
+        env:
+          SOURCE_GUARD: ${{ needs.exact-source-brand-guard.result }}
+          REAL_ENGINE: ${{ needs.real-godot-native-and-web.result }}
+        run: |
+          set -euo pipefail
+          echo "Source guard: $SOURCE_GUARD; actual engine and browser: $REAL_ENGINE"
+          test "$SOURCE_GUARD" = "success"
+          test "$REAL_ENGINE" = "success"
+          echo 'W61 SOFTWARE TESTS PASS, BUT PUBLICATION/MASTER/REAL-DEVICE CERTIFICATION HOLD'
