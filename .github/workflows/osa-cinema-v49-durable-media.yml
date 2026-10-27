@@ -63,4 +63,4 @@ jobs:
           printf '%s\n' 'worker_processes 1;' 'events { worker_connections 64; }' \
             'http {' 'include /etc/nginx/mime.types;' \
             "include $GITHUB_WORKSPACE/nginx.conf;" '}' > /tmp/osa-v49-main.conf
-          nginx -t -c /tmp/osa-v49-main.conf
+          sudo nginx -t -c /tmp/osa-v49-main.conf
