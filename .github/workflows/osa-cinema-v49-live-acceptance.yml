@@ -1,0 +1,54 @@
+name: OSA CINEMA V49 Actual Public Premiere Acceptance
+
+# Deliberately manual. Media are not stored in GitHub and V20 stays NO_GO
+# until a separate exact-host, owner-authorized release is actually verified.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: osa-cinema-v49-live
+  cancel-in-progress: false
+
+jobs:
+  actual-public-media:
+    if: github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify 8 actual HTTPS media bytes, MIME, Range and SHA-256
+        run: |
+          mkdir -p osa-v49-qa
+          python3 scripts/osa-cinema-v49-public-verify.py \
+            --report osa-v49-qa/production-http.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Install real Chrome/Chromium for 239-second H264 playback
+        run: npx playwright install --with-deps chromium
+      - name: Test real desktop and mobile playback on osgard.world
+        run: |
+          npx playwright test --config playwright.osa-cinema-v49-live.config.mjs \
+            --workers=1 --reporter=json > osa-v49-qa/playwright.json
+      - name: Issue exact-source browser receipt only after BOTH tests PASS
+        env:
+          OSA_V49_SOURCE_SHA: ${{ github.sha }}
+        run: node scripts/osa-cinema-v49-browser-receipt.mjs \
+          osa-v49-qa/playwright.json osa-v49-qa/production-browser.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: osa-v49-real-production-byte-and-browser-evidence
+          path: |
+            osa-v49-qa/
+            test-results/
+          retention-days: 30
+          if-no-files-found: warn
