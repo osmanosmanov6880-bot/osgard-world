@@ -5,20 +5,25 @@
 # Release activation: verified OSGARD AURORA CITY native UI and daylight build.
 name: OSGARD Omega verified Godot direct SSH deploy
 
+
+# R138: disabling historic automatic frontend/native workflow_run -> SSH.
+# Human-reviewed Omega release requires a separate *explicit* dispatch,
+# 4 operator review approvals and repository-admin SHA/ticket pin.
 on:
-  push:
-    branches: [master]
-    paths:
-      - ".github/workflows/omega-web-direct-deploy.yml"
-      - "scripts/omega-build-freshness.py"
   workflow_dispatch:
-  # The exporter commits its checksum-verified Godot files using GITHUB_TOKEN.
-  # Such commits do NOT trigger push workflows; use workflow_run to activate
-  # the actual game without waiting for unrelated frontend product deployments.
-  workflow_run:
-    workflows: ["OSGARD frontend deploy", "OSGARD Empire Omega native Godot Web"]
-    types: [completed]
-    branches: [master]
+    inputs:
+      approved_source_sha:
+        description: 'Exact source SHA of tested Godot WebGL manifest'
+        type: string
+        required: true
+      release_ticket:
+        description: 'Release review ticket also configured independently by admin'
+        type: string
+        required: true
+      production_confirmation:
+        description: 'Type I_AUTHORIZE_OMEGA_PRODUCTION after all four approvals'
+        type: string
+        required: true
 
 permissions:
   contents: read
@@ -29,13 +34,38 @@ concurrency:
 
 jobs:
   deploy:
-    if: ${{ github.event_name != 'workflow_run' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'master') }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 1
+      - name: R138 HARD manual source+ART+GAME+GPU+ROLLBACK GO before ANY SSH
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BRANCH_REF: ${{ github.ref }}
+          REQUESTED_SHA: ${{ inputs.approved_source_sha }}
+          PRODUCTION_CONFIRM: ${{ inputs.production_confirmation }}
+          REQUESTED_TICKET: ${{ inputs.release_ticket }}
+          ADMIN_SHA: ${{ vars.OMEGA_RELEASE_APPROVED_SHA }}
+          ADMIN_TICKET: ${{ vars.OMEGA_RELEASE_APPROVED_TICKET }}
+          RELEASE_ENABLED: ${{ vars.OMEGA_RELEASE_ENABLED }}
+          ART_APPROVAL: ${{ vars.OMEGA_RELEASE_ART_GO }}
+          GAMEPLAY_APPROVAL: ${{ vars.OMEGA_RELEASE_GAMEPLAY_GO }}
+          PHYSICAL_APPROVAL: ${{ vars.OMEGA_RELEASE_PHYSICAL_GO }}
+          ROLLBACK_APPROVAL: ${{ vars.OMEGA_RELEASE_ROLLBACK_GO }}
+        run: |
+          set -euo pipefail
+          MANIFEST_SHA="$(python3 -c 'import json;print(json.load(open("public/games/omega-3d-preview/release.json"))["source_commit"])')"
+          python3 scripts/omega-r138-manual-release-guard.py \
+            --role deploy --event "$EVENT_NAME" --ref "$BRANCH_REF" \
+            --observed-sha "$MANIFEST_SHA" --requested-sha "$REQUESTED_SHA" \
+            --approved-sha "$ADMIN_SHA" --enabled "$RELEASE_ENABLED" \
+            --confirm "$PRODUCTION_CONFIRM" --ticket "$REQUESTED_TICKET" \
+            --admin-ticket "$ADMIN_TICKET" --art "$ART_APPROVAL" \
+            --gameplay "$GAMEPLAY_APPROVAL" --physical "$PHYSICAL_APPROVAL" \
+            --rollback "$ROLLBACK_APPROVAL"
       - name: Reject superseded Godot source BEFORE any SSH or file upload
         id: source_gate
         shell: bash
