@@ -186,6 +186,9 @@ def finalize(output: Path) -> dict:
         v=json.loads(path.read_text("utf8"))
         if not v["real_original_godot_webgl2"] or not v["world"]["realWorldEdges"]:
             raise Hold("restored Godot failed to draw actual city for "+name)
+        if not v.get("isolated_nginx_https_restored_r87_verified") or not v.get(
+                "original_files_from_public_https_verified_by_r137_source"):
+            raise Hold("restored real Godot was not played from isolated HTTPS Nginx")
         if v["page_errors"] or v["git_manifest_source_commit"]!=R87:
             raise Hold("restored original R87 page error or wrong original source")
         if v["rollback_wasm_sha256"] != FILES["index.wasm"]:
