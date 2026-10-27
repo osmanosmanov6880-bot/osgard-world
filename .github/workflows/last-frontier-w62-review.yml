@@ -91,10 +91,10 @@ jobs:
           set -euo pipefail
           cd w33-godot-native
           mkdir -p build/w62/web build/w62/windows
-          godot --headless --path . --export-release Web build/w62/web/index.html 2>&1 | tee ../../w62-review/web-export.log
-          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' ../../w62-review/web-export.log; then exit 1; fi
-          godot --headless --path . --export-release "Windows Desktop" build/w62/windows/LAST_FRONTIER.exe 2>&1 | tee ../../w62-review/windows-export.log
-          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' ../../w62-review/windows-export.log; then exit 1; fi
+          godot --headless --path . --export-release Web build/w62/web/index.html 2>&1 | tee ../w62-review/web-export.log
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' ../w62-review/web-export.log; then exit 1; fi
+          godot --headless --path . --export-release "Windows Desktop" build/w62/windows/LAST_FRONTIER.exe 2>&1 | tee ../w62-review/windows-export.log
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' ../w62-review/windows-export.log; then exit 1; fi
       - name: Verify WebGL binary bytes and source-bound Windows EXE and PCK
         shell: bash
         env:
