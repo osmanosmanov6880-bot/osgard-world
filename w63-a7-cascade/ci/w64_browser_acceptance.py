@@ -16,7 +16,7 @@ import time
 from pathlib import Path
 from http.server import SimpleHTTPRequestHandler
 from playwright.sync_api import sync_playwright
-from PIL import Image, ImageChops
+from PIL import Image, ImageChops, ImageStat
 
 
 class HTTPHandler(SimpleHTTPRequestHandler):
@@ -110,10 +110,26 @@ def play(export, evidence, exact_sha):
             canvas = page.locator("canvas").first
             ensure(canvas.count() == 1, "Actual Godot WebGL canvas missing")
             canvas.click(position={"x": 25, "y": 25}, timeout=30_000)
-            page.wait_for_timeout(250)
-            ensure(snapshot(page)["renderer_frames"] > 0,
-                   "Actual Godot renderer did not submit a frame")
+            page.wait_for_timeout(450)
+            # Engine.get_frames_drawn() can remain zero on some SwiftShader
+            # configurations, even after a successful Godot 3D render.
+            # Validate the genuine pixels inside the *native 3D hero*, not
+            # that driver-dependent counter and not an arbitrary HTML label.
             baseline = page.screenshot(path=str(evidence / "1366x900-before.png"))
+            scene_area = geometry(page)["stage"]
+            desktop_image = Image.open(io.BytesIO(baseline)).convert("RGB")
+            rect = (
+                max(0, scene_area[0]),
+                max(0, scene_area[1]),
+                min(desktop_image.width, scene_area[0] + scene_area[2]),
+                min(desktop_image.height, scene_area[1] + scene_area[3]),
+            )
+            ensure(rect[2] - rect[0] > 450 and rect[3] - rect[1] > 200,
+                   "Real native 3D scene was not visibly mounted on screen")
+            stage_pixels = desktop_image.crop(rect)
+            channel_deviation = max(ImageStat.Stat(stage_pixels).stddev)
+            ensure(channel_deviation > 3.0,
+                   "Actual native 3D viewport appears unrendered or completely blank")
 
             # Actual player keyboard path into the native Godot game, not a DOM
             # state spoof or direct call to a JavaScript helper.
