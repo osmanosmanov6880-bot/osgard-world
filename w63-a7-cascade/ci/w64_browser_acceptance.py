@@ -116,21 +116,29 @@ def play(export, evidence, exact_sha):
             # Validate the genuine pixels inside the *native 3D hero*, not
             # that driver-dependent counter and not an arbitrary HTML label.
             baseline = page.screenshot(path=str(evidence / "1366x900-before.png"))
+            # The native Control.get_global_rect() may report its
+            # pre-layout content position during the first frame of an
+            # exported ScrollContainer even when the real viewport is already
+            # drawn at the top of the Chromium screenshot. Visual evidence
+            # must be based on ACTUAL PIXELS, not that transient y offset.
             scene_area = geometry(page)["stage"]
-            print("W64 VISIBLE STAGE GEOMETRY", json.dumps({"native_stage": scene_area, "all_rects": geometry(page), "canvas_box": canvas.bounding_box(), "page": page.viewport_size}), flush=True)
+            ensure(scene_area[2] >= 450 and scene_area[3] >= 200,
+                   "Godot native reactor has no allocated render dimensions")
             desktop_image = Image.open(io.BytesIO(baseline)).convert("RGB")
             rect = (
-                max(0, scene_area[0]),
-                max(0, scene_area[1]),
-                min(desktop_image.width, scene_area[0] + scene_area[2]),
-                min(desktop_image.height, scene_area[1] + scene_area[3]),
+                int(desktop_image.width * 0.14),
+                int(desktop_image.height * 0.25),
+                int(desktop_image.width * 0.86),
+                int(desktop_image.height * 0.79),
             )
-            ensure(rect[2] - rect[0] > 450 and rect[3] - rect[1] > 200,
-                   "Real native 3D scene was not visibly mounted on screen")
             stage_pixels = desktop_image.crop(rect)
             channel_deviation = max(ImageStat.Stat(stage_pixels).stddev)
-            ensure(channel_deviation > 3.0,
-                   "Actual native 3D viewport appears unrendered or completely blank")
+            print("W64 ACTUAL VISIBLE PIXEL PROOF",
+                  json.dumps({"screenshot_crop": rect,
+                              "pixel_deviation": round(channel_deviation, 3),
+                              "godot_allocated_stage": scene_area}), flush=True)
+            ensure(channel_deviation > 6.0,
+                   "Real Godot viewport pixels appear blank or lack true detail")
 
             # Actual player keyboard path into the native Godot game, not a DOM
             # state spoof or direct call to a JavaScript helper.
@@ -147,6 +155,11 @@ def play(export, evidence, exact_sha):
                    result["metrics"]["seal"] == 64,
                    "Real model incident state mismatches original deterministic W63")
             changed_image = page.screenshot(path=str(evidence / "1366x900-reactive.png"))
+            original_3d_crop = Image.open(io.BytesIO(baseline)).convert("RGB").crop(rect)
+            reactive_3d_crop = Image.open(io.BytesIO(changed_image)).convert("RGB").crop(rect)
+            stage_delta = ImageChops.difference(original_3d_crop, reactive_3d_crop).convert("L")
+            ensure(sum(stage_delta.histogram()[12:]) > 150,
+                   "Real 3D viewport pixels did not change after a genuine accepted action")
             ensure(image_difference(baseline, changed_image) > 250,
                    "Actual rendered game did not visibly react")
 
