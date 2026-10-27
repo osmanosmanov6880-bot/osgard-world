@@ -40,6 +40,11 @@ const RU := {
     "won": "A7 СТАБИЛИЗИРОВАН. Вы удержали систему.",
     "keys": "КЛАВИШИ 1-5: ДЕЙСТВИЯ  |  R: ПЕРЕЗАПУСК",
     "objective": "ЦЕЛЬ: ТЕПЛО И ДАВЛЕНИЕ <= 75; ГЕРМЕТИЧНОСТЬ И СИГНАЛ >= 50; ЭНЕРГИЯ >= 30; ЦЕЛОСТНОСТЬ >= 55.",
+    "stage": "A7 / ЖИВАЯ 3D-КАМЕРА  •  ВЫМЫШЛЕННЫЙ ОБЪЕКТ",
+    "camera0": "01 / ОБЩИЙ", "camera1": "02 / ФРОНТ", "camera2": "03 / БОКОВОЙ",
+    "quality_hero": "ГРАФИКА / HERO", "quality_eco": "ГРАФИКА / ECO",
+    "motion_on": "АНИМАЦИЯ / ВКЛ", "motion_off": "АНИМАЦИЯ / ВЫКЛ",
+    "visual": "ТЕПЛО %d   •   ДАВЛЕНИЕ %d   •   ЭНЕРГИЯ %d",
 }
 const EN := {
     "brand": "LAST FRONTIER  /  A7",
@@ -66,6 +71,11 @@ const EN := {
     "won": "A7 STABILIZED. You held the frontier.",
     "keys": "KEYS 1-5: ACTIONS  |  R: RESTART",
     "objective": "TARGET: HEAT AND PRESSURE <= 75; SEAL AND SIGNAL >= 50; ENERGY >= 30; CONTAINMENT >= 55.",
+    "stage": "A7 / TRUE NATIVE 3D VIEW  •  FICTIONAL FACILITY",
+    "camera0": "01 / WIDE", "camera1": "02 / FRONT", "camera2": "03 / SIDE",
+    "quality_hero": "QUALITY / HERO", "quality_eco": "QUALITY / ECO",
+    "motion_on": "MOTION / ON", "motion_off": "MOTION / OFF",
+    "visual": "HEAT %d   •   PRESSURE %d   •   ENERGY %d",
 }
 
 var model: A7CascadeCore = A7CascadeCore.new()
@@ -84,11 +94,28 @@ var metric_bars: Dictionary = {}
 var action_buttons: Dictionary = {}
 var restart_button: Button
 var language_button: Button
+# W64: actual Godot 3D visual stage; never replaces original W63 decision model.
+var stage_shell: Control
+var visual_container: SubViewportContainer
+var sub_viewport: SubViewport
+var stage_3d: A7CinematicStage
+var cinema_caption: Label
+var cinema_readout: Label
+var camera_buttons: Array[Button] = []
+var quality_button: Button
+var motion_button: Button
+var quality: String = "hero"
+var reduced_motion: bool = false
+var scroll: ScrollContainer
+var _web_state_element: Variant = null
 
 func _ready() -> void:
     set_anchors_preset(Control.PRESET_FULL_RECT)
     _build()
+    _create_web_accessibility()
     model.changed.connect(_render)
+    resized.connect(_layout_stage)
+    call_deferred("_layout_stage")
     _render(model.snapshot())
 
 func _t(key: String) -> String:
@@ -140,7 +167,7 @@ func _build() -> void:
     backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
     backdrop.mouse_filter = Control.MOUSE_FILTER_IGNORE
     add_child(backdrop)
-    var scroll := ScrollContainer.new()
+    scroll = ScrollContainer.new()
     scroll.name = "AdaptiveScrollableCascade"
     scroll.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
     scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -167,6 +194,47 @@ func _build() -> void:
     language_button.custom_minimum_size = Vector2(90, 45)
     subtitle = _label(body, "", 15, MINT)
     intro = _label(body, "", 15, MUTED)
+
+    # Cinema-first native 3D stage is mounted inside the *actual* Godot UI.
+    # Not an HTML video, screenshot, Three.js overlay or mockup.
+    var cinema := _panel(body)
+    cinema.name = "A7CinematicViewportPanel"
+    cinema_caption = _label(cinema, "", 12, GOLD)
+    stage_shell = Control.new()
+    stage_shell.name = "A7ActualCinemaFrame"
+    stage_shell.custom_minimum_size = Vector2(0, 470)
+    stage_shell.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+    cinema.add_child(stage_shell)
+    visual_container = SubViewportContainer.new()
+    visual_container.name = "A7RealGodot3DViewport"
+    visual_container.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+    visual_container.stretch = true
+    visual_container.stretch_shrink = 1
+    visual_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    stage_shell.add_child(visual_container)
+    sub_viewport = SubViewport.new()
+    sub_viewport.name = "A7WorldRender"
+    sub_viewport.own_world_3d = true
+    sub_viewport.size = Vector2i(1280, 720)
+    sub_viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+    visual_container.add_child(sub_viewport)
+    stage_3d = A7CinematicStage.new()
+    sub_viewport.add_child(stage_3d)
+    cinema_readout = _label(cinema, "", 12, MINT)
+    var cinema_controls := HFlowContainer.new()
+    cinema_controls.name = "A7ViewAndAccessibilityRail"
+    cinema_controls.add_theme_constant_override("h_separation", 10)
+    cinema_controls.add_theme_constant_override("v_separation", 8)
+    cinema.add_child(cinema_controls)
+    for camera_index in range(3):
+        var view := _button(cinema_controls, "", _select_camera.bind(camera_index))
+        view.name = "A7Camera%02d" % camera_index
+        view.custom_minimum_size = Vector2(98, 42)
+        camera_buttons.append(view)
+    quality_button = _button(cinema_controls, "", _toggle_quality)
+    quality_button.custom_minimum_size = Vector2(145, 42)
+    motion_button = _button(cinema_controls, "", _toggle_motion)
+    motion_button.custom_minimum_size = Vector2(158, 42)
 
     var status_box := _panel(body)
     var strip := HBoxContainer.new()
@@ -234,10 +302,54 @@ func _build() -> void:
     _label(body, "A7 CASCADE / EXPERIMENTAL VERTICAL-SLICE MECHANIC / SOFTWARE-ONLY", 11, GOLD)
 
 func _on_action(action: String) -> void:
-    model.choose(action)
+    # Real UI action drives the original deterministic game FIRST;
+    # the 3D stage reacts only to an accepted command.
+    if model.choose(action) and stage_3d != null:
+        stage_3d.trigger_action(action)
+        call_deferred("_publish_web_accessibility")
 
 func _restart() -> void:
     model.reset()
+    if stage_3d != null:
+        stage_3d.recent_action = ""
+        stage_3d.pulse = 0.0
+
+func _select_camera(index: int) -> void:
+    if stage_3d != null:
+        stage_3d.set_camera(index)
+    _render(model.snapshot())
+
+func _toggle_quality() -> void:
+    quality = "eco" if quality == "hero" else "hero"
+    if stage_3d != null:
+        stage_3d.set_quality(quality)
+    _layout_stage()
+    _render(model.snapshot())
+
+func _toggle_motion() -> void:
+    reduced_motion = not reduced_motion
+    if stage_3d != null:
+        stage_3d.set_reduced_motion(reduced_motion)
+    _render(model.snapshot())
+
+func _layout_stage() -> void:
+    if stage_shell == null:
+        return
+    var height: float = clampf(size.y * 0.56, 390.0, 580.0)
+    if size.x < 640.0:
+        height = clampf(size.x * 0.76, 242.0, 305.0)
+    elif size.x < 900.0:
+        height = clampf(size.y * 0.50, 350.0, 470.0)
+    stage_shell.custom_minimum_size = Vector2(0, height)
+    visual_container.custom_minimum_size = Vector2(0, height)
+    visual_container.stretch_shrink = 2 if quality == "eco" else 1
+    var compact: bool = size.x < 640.0
+    for view in camera_buttons:
+        view.custom_minimum_size.x = 84.0 if compact else 118.0
+    if compact:
+        quality_button.custom_minimum_size.x = 136.0
+        motion_button.custom_minimum_size.x = 136.0
+    call_deferred("_publish_web_accessibility")
 
 func _toggle_locale() -> void:
     locale = "en" if locale == "ru" else "ru"
@@ -295,3 +407,87 @@ func _render(state: Dictionary) -> void:
         effect.text = _t(action + "_d")
     objective_label.text = _t("objective")
     footnote.text = _t("disclaimer") + "\n" + _t("keys")
+    if stage_3d != null:
+        stage_3d.apply_snapshot(state)
+        cinema_caption.text = _t("stage")
+        var stats_display: Dictionary = state["metrics"]
+        cinema_readout.text = _t("visual") % [
+            int(stats_display["heat"]), int(stats_display["pressure"]),
+            int(stats_display["energy"])]
+        for i in range(camera_buttons.size()):
+            camera_buttons[i].text = _t("camera%d" % i)
+            camera_buttons[i].button_pressed = stage_3d.camera_index == i
+        quality_button.text = _t("quality_" + quality)
+        motion_button.text = _t("motion_off" if reduced_motion else "motion_on")
+    call_deferred("_publish_web_accessibility")
+
+func _create_web_accessibility() -> void:
+    if not OS.has_feature("web"):
+        return
+    var document: Variant = JavaScriptBridge.get_interface("document")
+    if document == null:
+        return
+    var node: Variant = document.getElementById("a7-cascade-native-state")
+    if node == null:
+        node = document.createElement("div")
+        node.setAttribute("id", "a7-cascade-native-state")
+        node.setAttribute("role", "status")
+        node.setAttribute("aria-live", "polite")
+        node.setAttribute("aria-atomic", "true")
+        node.setAttribute("style",
+            "position:fixed;left:0;top:0;width:1px;height:1px;opacity:0;overflow:hidden;pointer-events:none")
+        document.body.appendChild(node)
+    _web_state_element = node
+
+func _web_rect(node: Control) -> Array:
+    if node == null:
+        return [0, 0, 0, 0]
+    var rect: Rect2 = node.get_global_rect()
+    return [roundi(rect.position.x), roundi(rect.position.y),
+        roundi(rect.size.x), roundi(rect.size.y)]
+
+func _publish_web_accessibility() -> void:
+    if _web_state_element == null or stage_3d == null:
+        return
+    # Passive read-only gameplay state; browser tests must use actual
+    # keyboard/canvas events to change the real game.
+    var snapshot: Dictionary = model.snapshot()
+    var stage_state: Dictionary = stage_3d.qa_readout()
+    var state: Dictionary = {
+        "schema": "LAST_FRONTIER_W64_REAL_GODOT_WEB_STATE",
+        "locale": locale, "quality": quality,
+        "reduced_motion": reduced_motion,
+        "status": str(snapshot["status"]),
+        "shift": int(snapshot["shift"]),
+        "actions_left": int(snapshot["actions_left"]),
+        "last_event": str(snapshot["last_event"]),
+        "history_count": (snapshot["history"] as Array).size(),
+        "metrics": snapshot["metrics"],
+        "real_native_3d": bool(stage_state["actual_native_3d"]),
+        "scene_meshes": int(stage_state["real_meshes"]),
+        "scene_lights": int(stage_state["real_lights"]),
+        "renderer_camera": int(stage_state["camera"]),
+        "energy_gauge": float(stage_3d.energy_gauge.scale.y),
+        "renderer_frames": Engine.get_frames_drawn(),
+        "hardware_certified": false,
+    }
+    var geometry: Dictionary = {
+        "viewport": [roundi(size.x), roundi(size.y)],
+        "stage": _web_rect(stage_shell),
+        "brand": _web_rect(brand_label),
+        "reset": _web_rect(restart_button),
+        "language": _web_rect(language_button),
+        "quality": _web_rect(quality_button),
+        "motion": _web_rect(motion_button),
+        "scroll": int(scroll.scroll_vertical),
+    }
+    for i in range(camera_buttons.size()):
+        geometry["camera%d" % i] = _web_rect(camera_buttons[i])
+    for key in ACTION_ORDER:
+        geometry["action_" + key.to_lower()] = _web_rect(action_buttons[key] as Control)
+    _web_state_element.setAttribute("data-state", JSON.stringify(state))
+    _web_state_element.setAttribute("data-geometry", JSON.stringify(geometry))
+    _web_state_element.textContent = (
+        "A7 simulation. " + str(snapshot["status"]) +
+        ". Cycle " + str(int(snapshot["shift"]) + 1) +
+        ". Actions left " + str(snapshot["actions_left"]))
