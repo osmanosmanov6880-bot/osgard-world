@@ -7,7 +7,7 @@ on:
       - 'scripts/omega-r134-isolated-rollback.py'
       - 'scripts/omega-r134-rollback-server.py'
       - 'scripts/omega-r134-rollback-browser.spec.mjs'
-      - 'playwright.omega-r134-rollback.config.mjs'
+      - 'playwright.omega-r137-real-https-recovery.config.mjs'
       - '.github/workflows/omega-r137-real-public-https-recovery-qa.yml'
   push:
     branches: [feat/omega-r90-aaa-reference-first-slice-20261026]
@@ -16,7 +16,7 @@ on:
       - 'scripts/omega-r134-isolated-rollback.py'
       - 'scripts/omega-r134-rollback-server.py'
       - 'scripts/omega-r134-rollback-browser.spec.mjs'
-      - 'playwright.omega-r134-rollback.config.mjs'
+      - 'playwright.omega-r137-real-https-recovery.config.mjs'
       - '.github/workflows/omega-r137-real-public-https-recovery-qa.yml'
   workflow_dispatch:
 permissions:
@@ -111,27 +111,77 @@ jobs:
           npm install --no-save --package-lock=false @playwright/test@1.58.2 pngjs@7.0.0
           npx playwright install --with-deps chromium
           sudo apt-get update -qq
-          sudo apt-get install -y xvfb libgl1-mesa-dri libegl1 libgl1
-      - name: Host ONLY verified restored original R87 on localhost:4887
+          sudo apt-get install -y xvfb libgl1-mesa-dri libegl1 libgl1 nginx openssl
+      - name: Start EPHEMERAL real Nginx TLS for original restored R87 only, enforce COOP/COEP
         shell: bash
         run: |
           set -euo pipefail
-          python3 scripts/omega-r134-rollback-server.py \
-            --root "$RUNNER_TEMP/omega-r137-ephemeral-live/localhost-live" \
-            --port 4887 > "$RUNNER_TEMP/omega-r137-server.log" 2>&1 &
+          mkdir -p "$RUNNER_TEMP/omega-r137-nginx-runtime"
+          openssl req -x509 -newkey rsa:2048 -sha256 -nodes \
+            -keyout "$RUNNER_TEMP/omega-r137-localhost-key.pem" \
+            -out "$RUNNER_TEMP/omega-r137-localhost-cert.pem" \
+            -days 1 -subj "/CN=localhost" \
+            -addext "subjectAltName=DNS:localhost,IP:127.0.0.1" >/dev/null 2>&1
+          chmod 600 "$RUNNER_TEMP/omega-r137-localhost-key.pem"
+          cat > "$RUNNER_TEMP/omega-r137-nginx.conf" <<EOF
+          worker_processes 1;
+          pid $RUNNER_TEMP/omega-r137-nginx-runtime/nginx.pid;
+          error_log $RUNNER_TEMP/omega-r137-nginx-error.log info;
+          events { worker_connections 256; }
+          http {
+            access_log $RUNNER_TEMP/omega-r137-nginx-access.log;
+            sendfile off;
+            server {
+              listen 127.0.0.1:4887 ssl;
+              server_name localhost 127.0.0.1;
+              ssl_certificate $RUNNER_TEMP/omega-r137-localhost-cert.pem;
+              ssl_certificate_key $RUNNER_TEMP/omega-r137-localhost-key.pem;
+              root $RUNNER_TEMP/omega-r137-ephemeral-live/localhost-live;
+              index index.html;
+              autoindex off;
+              default_type application/octet-stream;
+              types {
+                text/html html;
+                application/javascript js;
+                application/wasm wasm;
+                application/octet-stream pck;
+                application/json json;
+                image/png png;
+              }
+              add_header Cross-Origin-Opener-Policy same-origin always;
+              add_header Cross-Origin-Embedder-Policy require-corp always;
+              add_header Cross-Origin-Resource-Policy same-origin always;
+              add_header Cache-Control no-store always;
+              location / { try_files \$uri =404; }
+            }
+          }
+          EOF
+          nginx -t -c "$RUNNER_TEMP/omega-r137-nginx.conf" \
+            -p "$RUNNER_TEMP/omega-r137-nginx-runtime"
+          nginx -c "$RUNNER_TEMP/omega-r137-nginx.conf" \
+            -p "$RUNNER_TEMP/omega-r137-nginx-runtime"
           for attempt in 1 2 3 4 5 6 7 8 9 10 11 12; do
-            if curl -fsS http://127.0.0.1:4887/release.json >/dev/null; then break; fi
+            if curl --cacert "$RUNNER_TEMP/omega-r137-localhost-cert.pem" -fsS \
+              https://127.0.0.1:4887/release.json >/dev/null; then break; fi
             sleep 1
           done
-          test "$(curl -fsS http://127.0.0.1:4887/release.json | python3 -c 'import json,sys;print(json.load(sys.stdin)["source_commit"])')" = "43ae041e8df52418ca74c02405de9c196b59bd37"
-          curl -fsSI http://127.0.0.1:4887/index.wasm | grep -i 'application/wasm'
+          test "$(curl --cacert "$RUNNER_TEMP/omega-r137-localhost-cert.pem" \
+            -fsS https://127.0.0.1:4887/release.json | \
+            python3 -c 'import json,sys;print(json.load(sys.stdin)["source_commit"])')" = \
+            "43ae041e8df52418ca74c02405de9c196b59bd37"
+          curl --cacert "$RUNNER_TEMP/omega-r137-localhost-cert.pem" -fsSI \
+            https://127.0.0.1:4887/index.wasm | tee "$RUNNER_TEMP/omega-r137-https-headers.txt"
+          grep -qi 'content-type: application/wasm' "$RUNNER_TEMP/omega-r137-https-headers.txt"
+          grep -qi 'cross-origin-embedder-policy: require-corp' "$RUNNER_TEMP/omega-r137-https-headers.txt"
+          grep -qi 'cross-origin-opener-policy: same-origin' "$RUNNER_TEMP/omega-r137-https-headers.txt"
+          echo 'R137 TRUE isolated NGINX HTTPS: original public SHA-pinned R87 loaded, no VPS touched'
       - name: Actual original 390x844 portrait Godot WebGL after 7-file R87 restore
         shell: bash
         env:
           R134_EVIDENCE_DIR: ${{ runner.temp }}/omega-r137-real-evidence
         run: |
           set -euo pipefail
-          npx playwright test --config playwright.omega-r134-rollback.config.mjs \
+          npx playwright test --config playwright.omega-r137-real-https-recovery.config.mjs \
             --project=r87-portrait-390x844 --workers=1 --retries=0
       - name: Actual original 1366x768 Godot WebGL after restore with Mesa/Xvfb
         shell: bash
@@ -141,7 +191,7 @@ jobs:
           set -euo pipefail
           OMEGA_CI_GL_BACKEND=mesa LIBGL_ALWAYS_SOFTWARE=1 \
             xvfb-run -a -s '-screen 0 1920x1080x24' \
-            npx playwright test --config playwright.omega-r134-rollback.config.mjs \
+            npx playwright test --config playwright.omega-r137-real-https-recovery.config.mjs \
               --project=r87-desktop-1366x768 --workers=1 --retries=0
       - name: Assert two REAL original Chromium views and exact LIVE HTTPS-origin recovered bytes
         shell: bash
@@ -169,8 +219,10 @@ jobs:
           name: empire-omega-r137-real-public-https-R87-isolated-rollback-proof
           path: |
             ${{ runner.temp }}/omega-r137-real-evidence/
-            ${{ runner.temp }}/omega-r137-server.log
-            omega-r134-browser-results/
-            omega-r134-browser-report/
+            ${{ runner.temp }}/omega-r137-nginx-access.log
+            ${{ runner.temp }}/omega-r137-nginx-error.log
+            ${{ runner.temp }}/omega-r137-https-headers.txt
+            omega-r137-browser-results/
+            omega-r137-browser-report/
           if-no-files-found: warn
           retention-days: 20
