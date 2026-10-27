@@ -123,6 +123,21 @@ class PublisherTest(unittest.TestCase):
         with self.assertRaisesRegex(pub.GateError,'immutable GitHub shell pin mismatch'):
             pub.verify_source(self.src,self.pinfile)
 
+    def test_restrictive_umask_keeps_media_readable_by_web_server(self):
+        import stat
+        before=os.umask(0o077)
+        try:
+            pub.stage(self.src,self.pinfile,self.root,'osa-v49-permission-test')
+        finally:
+            os.umask(before)
+        release=self.root/'releases/osa-v49-permission-test'
+        for name in ('', 'masters', 'captions', 'assets'):
+            directory=release/name
+            self.assertTrue(stat.S_IMODE(directory.stat().st_mode) & stat.S_IXOTH,
+                            'Unprivileged Nginx must traverse ' + str(directory))
+        for name in pub.MEDIA.values():
+            self.assertTrue(stat.S_IMODE((release/name).stat().st_mode) & stat.S_IROTH)
+
     def test_bad_rollback_pointer_denied(self):
         (self.root/'current').symlink_to('../../etc')
         with self.assertRaisesRegex(pub.GateError,'outside'):
