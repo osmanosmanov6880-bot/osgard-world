@@ -12,7 +12,7 @@ const flags = mesa
 
 export default defineConfig({
   testDir:'./scripts',
-  testMatch:'omega-r134-rollback-browser.spec.mjs',
+  testMatch:'omega-r137-real-https-rollback-browser.spec.mjs',
   timeout:190000,
   expect:{timeout:20000},
   workers:1,
