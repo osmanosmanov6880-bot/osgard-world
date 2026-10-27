@@ -54,6 +54,10 @@ func _run() -> void:
                 "No old OSGARD visible wordmark %s/%d" % [locale, width])
             _check(ui.stage_section_heading.text == (ui._t("stage_narrow") if narrow else ui._t("stage_facility")),
                 "Localized reactor facility caption %s/%d" % [locale, width])
+            _check(ui.heading.text == (ui._t("reactor_title_short") if narrow else ui._t("reactor_title_long")),
+                "Native localized reactor headline %s/%d" % [locale, width])
+            _check(ui.stage_live.text == ui._t("stage_idle"),
+                "Localized idle state is derived from real snapshot %s/%d" % [locale, width])
             _check(ui.footer.text.contains("LAST FRONTIER"),
                 "Simulation safety footer names current project %s/%d" % [locale, width])
             _check(ui.mission_segments.size() == 5,
@@ -72,6 +76,7 @@ func _run() -> void:
 
     _check(ui.core.begin_case(0), "Original diagnostic mission 01 remains startable")
     ui._refresh()
+    _check(ui.stage_live.text == ui._t("stage_active"), "RU real mission active state is localized")
     _check(ui.mission_segments[0].color == Color("84cbbc"),
         "Accepted first mission step lights up in native HUD")
     for i in range(1, 5):
