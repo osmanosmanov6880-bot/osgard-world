@@ -31,6 +31,14 @@ class BrandScopeNegativeTests(unittest.TestCase):
         b=a+"\nfunc new_backdoor() -> void:\n    pass\n"
         with self.assertRaisesRegex(ValueError, "added/removed"):
             g.validate_main_methods(a,b)
+    def test_rejects_global_gdscript_mutation(self):
+        a="extends Control\nvar stage_edition: Label\nfunc _ready():\n    pass\n"
+        b=a.replace("var stage_edition: Label",
+          "var stage_edition: Label\n# W61: source-only cinematic mission phase indicators; no gameplay mutation.\nvar mission_segments: Array[ColorRect] = []")
+        self.assertTrue(g.validate_main_preamble(a,b))
+        with self.assertRaisesRegex(ValueError,"global state"):
+            g.validate_main_preamble(a,b.replace("extends Control","extends Node3D"))
+
     def test_rejects_missing_localization_entries(self):
         with self.assertRaisesRegex(ValueError, "localized brand"):
             g.validate_localization('const RU = {}','const RU = {}')
@@ -41,12 +49,26 @@ class BrandScopeNegativeTests(unittest.TestCase):
           '    "brand_mobile":"ПОСЛЕДНИЙ РУБЕЖ",\n',
           '    "stage_facility":"ОБЪЕКТ A7  //  ДИАГНОСТИКА",\n',
           '    "stage_narrow":"A7  /  НАБЛЮДЕНИЕ",\n',
+          '    "stage_classification":"A7 / ЗАКРЫТЫЙ ИССЛЕДОВАТЕЛЬСКИЙ ОБЪЕКТ",\n',
+          '    "reactor_title_short":"РЕАКТОР A7",\n',
+          '    "reactor_title_long":"РЕАКТОР A7   /   ПРОТОКОЛ",\n',
+          '    "stage_idle":"A7 / ОЖИДАНИЕ",\n',
+          '    "stage_active":"A7 / ДИАГНОСТИКА",\n',
+          '    "stage_alert":"ТРЕВОГА / ПРОВЕРЬТЕ ПРОТОКОЛ",\n',
+          '    "stage_complete":"ПРОТОКОЛ / ЗАВЕРШЁН",\n',
           '    "brand_desktop":"LAST FRONTIER   /   A7 PROTOCOL",\n',
           '    "brand_mobile":"LAST FRONTIER",\n',
           '    "stage_facility":"A7 FACILITY  //  LIVE DIAGNOSTICS",\n',
-          '    "stage_narrow":"A7  /  OBSERVATION",\n'
+          '    "stage_narrow":"A7  /  OBSERVATION",\n',
+          '    "stage_classification":"A7 / RESTRICTED RESEARCH FACILITY",\n',
+          '    "reactor_title_short":"REACTOR A7",\n',
+          '    "reactor_title_long":"REACTOR A7   /   A7 PROTOCOL",\n',
+          '    "stage_idle":"A7 / SECURE STANDBY",\n',
+          '    "stage_active":"A7 / LIVE DIAGNOSTICS",\n',
+          '    "stage_alert":"ALERT / CHECK SAFETY",\n',
+          '    "stage_complete":"PROTOCOL / COMPLETE",\n',
         ]
-        self.assertEqual(g.validate_localization(original,original+''.join(entries)),8)
+        self.assertEqual(g.validate_localization(original,original+''.join(entries)),22)
         with self.assertRaisesRegex(ValueError, "original gameplay instruction"):
             g.validate_localization(original,original+'MODIFIED\n'+''.join(entries))
 
