@@ -4,7 +4,7 @@ on:
   push:
     branches: [release/osgard-w58-9of9-software-preview-20261027]
     paths:
-      - '.github/workflows/osgard-w58-public-preview-release.yml'
+      - '.github/workflows/osgard-w58-9of9-public-software-preview.yml'
 
 permissions:
   contents: write
@@ -152,13 +152,13 @@ jobs:
                                     ('windows/','OSGARD_W58_WINDOWS_SOFTWARE_PREVIEW.zip')]:
                   with zipfile.ZipFile(out/target,'w',zipfile.ZIP_DEFLATED,compresslevel=6) as bundle:
                       bundle.writestr('README_PREVIEW.txt',
-                          'OSGARD OBSIDIAN W58 - SOFTWARE-ONLY PUBLIC TEST PREVIEW\\n'
-                          'Source: '+sha+'\\n'
-                          '9/9 SOFTWARE CI PASS, W52 PASS. PHYSICAL QA & PRODUCTION HOLD.\\n'
-                          'Real phone, actual GPU, 30-minute thermals, 1%-low FPS, independent visual approval NOT VERIFIED.\\n'
-                          'Web: serve these files from a local HTTP server, not file://.\\n'
-                          'Windows: launch the EXE without Administrator privileges, PCK file beside it.\\n'
-                          'Do not treat this test preview as production-ready or physical-reactor control.\\n')
+                          'OSGARD OBSIDIAN W58 - SOFTWARE-ONLY PUBLIC TEST PREVIEW\n'
+                          'Source: '+sha+'\n'
+                          '9/9 SOFTWARE CI PASS, W52 PASS. PHYSICAL QA & PRODUCTION HOLD.\n'
+                          'Real phone, actual GPU, 30-minute thermals, 1%-low FPS, independent visual approval NOT VERIFIED.\n'
+                          'Web: serve these files from a local HTTP server, not file://.\n'
+                          'Windows: launch the EXE without Administrator privileges, PCK file beside it.\n'
+                          'Do not treat this test preview as production-ready or physical-reactor control.\n')
                       for entry in entries:
                           name=entry['name']
                           if name.startswith(prefix):
@@ -174,7 +174,7 @@ jobs:
           files=sorted(out.glob('*.zip'))
           assert len(files)==4
           (out/'SHA256SUMS.txt').write_text(''.join(
-              hashlib.sha256(p.read_bytes()).hexdigest()+'  '+p.name+'\\n' for p in files))
+              hashlib.sha256(p.read_bytes()).hexdigest()+'  '+p.name+'\n' for p in files))
           print('Original-source software candidate + 9/9 evidence bundle verified; NO PRODUCTION ACTION.')
           PY
 
