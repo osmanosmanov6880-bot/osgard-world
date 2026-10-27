@@ -6,7 +6,7 @@ import re
 import subprocess
 from pathlib import Path
 
-BASE = "8da37a1f264c1b4387e5b93b67968a523dabe13d"
+BASE = "44763563db4f1b005bf9a01fe8f5fee4383c0332"
 ALLOWED = {
     "tooling/last-frontier/release_package.py",
     "tooling/last-frontier/test_release_package.py",
