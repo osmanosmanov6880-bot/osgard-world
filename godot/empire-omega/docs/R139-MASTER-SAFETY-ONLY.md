@@ -10,7 +10,11 @@
 
 - Дословно переносит уже прошедшие CI код и два workflow из R138 на отдельную ветку, основанную на текущем `master`. Новые `omega-godot-web.yml` и `omega-web-direct-deploy.yml` имеют **только `workflow_dispatch`**; никакого `push` или `workflow_run` для игры и SSH.
 - Оба workflow вызывают один `scripts/omega-r138-manual-release-guard.py` **до** экспорта, установки ключа, сетевого соединения и записи в `master`. Для будущего ручного GO нужны одновременно `I_AUTHORIZE_OMEGA_PRODUCTION`, source SHA проверяемого `master`, отдельный ticket и независимо заданные администратором переменные `OMEGA_RELEASE_ENABLED=true`, `OMEGA_RELEASE_APPROVED_SHA`, `OMEGA_RELEASE_APPROVED_TICKET`, `OMEGA_RELEASE_ART_GO=APPROVED`, `OMEGA_RELEASE_GAMEPLAY_GO=APPROVED`, `OMEGA_RELEASE_PHYSICAL_GO=APPROVED`, `OMEGA_RELEASE_ROLLBACK_GO=APPROVED`. **Сейчас никакие переменные GO намеренно не создаются и не изменяются.**
-- `scripts/test_omega_r138_release_lock.py` проверяет отказ в 21 отрицательном случае и отсутствие автоматических triggers; `.github/workflows/omega-r139-master-release-lock-qa.yml` дополнительно проверяет, что изменения затрагивают только 6 перечисленных путей и что `release.json` всё ещё содержит 7 точных SHA-256 оригинальной R87.
+- `scripts/test_omega_r138_release_lock.py` проверяет отказ в 21 отрицательном случае и отсутствие автоматических triggers; `.github/workflows/omega-r139-master-release-lock-qa.yml` дополнительно проверяет, что изменения затрагивают только 7 перечисленных путей и что `release.json` всё ещё содержит 7 точных SHA-256 оригинальной R87.
+
+## R139: исправление устаревшего CI без ослабления безопасности
+
+Исходная проверка `.github/workflows/omega-source-freshness-qa.yml` требовала автоматический SSH после изменения `omega-build-freshness.py`; на настоящем PR она завершилась ошибкой `no auto-trigger after guard correction`. Это не неисправность новой защиты: сам тест требовал устаревшего небезопасного поведения. Теперь он проверяет противоположное — **отсутствие** `push` и `workflow_run` в обоих выпускных workflows, выполнение R138 ручного guard до установки Godot/SSH, исходный runtime fingerprint, запрет при устаревшей сборке и отсутствие права случайного релиза. Код игры и `omega-build-freshness.py` не меняются. Новый защитный diff состоит ровно из **7** разрешённых файлов.
 
 ## Запреты и границы
 
