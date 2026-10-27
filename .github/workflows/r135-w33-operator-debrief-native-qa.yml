@@ -505,7 +505,9 @@ jobs:
     name: W44 real Godot FPS in SwiftShader (NOT consumer device certification)
     needs: actual-godot-source-parity
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # Real slow software WebGL sampling reached the former 15-minute limit.
+    # Preserve all measured modes and the mandatory W52 gate; increase time only.
+    timeout-minutes: 35
     permissions:
       contents: read
     steps:
