@@ -613,15 +613,32 @@ func _make_vital_meter(parent: VBoxContainer, key: String, caption: String, tint
     vitals_meters[key] = meter
 
 func _make_overlays() -> void:
-    intro_panel = _panel(hud_root,Rect2(-310,-220,310,220),Rect2(0.5,0.5,0.5,0.5),Color(0.012,0.029,0.055,0.98))
+    intro_panel = _panel(hud_root,Rect2(-310,-275,310,275),Rect2(0.5,0.5,0.5,0.5),Color(0.012,0.029,0.055,0.98))
     intro_panel.mouse_filter = Control.MOUSE_FILTER_STOP
     var start_box := VBoxContainer.new()
-    start_box.add_theme_constant_override("separation",16)
+    start_box.add_theme_constant_override("separation",8)
     intro_panel.add_child(start_box)
     intro_title = _label(start_box,"IRON PULSE / BLACKOUT",29,CYAN)
+    var scenario_row := HBoxContainer.new()
+    scenario_row.name = "ScenarioPicker"
+    scenario_row.add_theme_constant_override("separation",6)
+    start_box.add_child(scenario_row)
+    for scenario_key in IPCrisisEngine.SCENARIOS:
+        var choice := Button.new()
+        choice.name = "Scenario_" + scenario_key
+        choice.text = _copy("scenario_" + scenario_key)
+        choice.custom_minimum_size = Vector2(100,42)
+        choice.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+        choice.add_theme_font_size_override("font_size",13)
+        choice.toggle_mode = true
+        choice.pressed.connect(_select_scenario.bind(scenario_key))
+        scenario_row.add_child(choice)
+        scenario_buttons[scenario_key] = choice
+    scenario_brief = _label(start_box,"",12,AMBER)
+    scenario_brief.custom_minimum_size = Vector2(0,44)
     var intro_scroll := ScrollContainer.new()
     intro_scroll.name = "BriefingScroll"
-    intro_scroll.custom_minimum_size = Vector2(0,244)
+    intro_scroll.custom_minimum_size = Vector2(0,192)
     intro_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
     start_box.add_child(intro_scroll)
     intro_body = _label(intro_scroll,_copy("intro"),15,WHITE)
@@ -631,6 +648,7 @@ func _make_overlays() -> void:
     intro_button.custom_minimum_size = Vector2(0,50)
     intro_button.pressed.connect(start_run)
     start_box.add_child(intro_button)
+    _update_scenario_picker()
     pause_panel = _panel(hud_root,Rect2(-240,-120,240,120),Rect2(0.5,0.5,0.5,0.5),Color(0.012,0.029,0.055,0.98))
     pause_panel.mouse_filter = Control.MOUSE_FILTER_STOP
     var pause_box := VBoxContainer.new()
@@ -699,6 +717,8 @@ func _make_touch_controls() -> void:
     use.pressed.connect(_interact)
     var look := _touch_button(touch_ui,"L / RU-EN",216,-242,94)
     look.pressed.connect(_toggle_language)
+    var fast := _touch_button(touch_ui,"FAST / Q",216,-299,94)
+    fast.pressed.connect(_fast_interact)
 
 func _layout_hud() -> void:
     if hud_root == null:
@@ -746,6 +766,28 @@ func _layout_hud() -> void:
     end_panel.offset_right = minf(300.0,width*0.45)
     objective_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 
+func _update_scenario_picker() -> void:
+    if scenario_brief == null:
+        return
+    intro_title.text = _copy("scenario_title_" + selected_scenario)
+    scenario_brief.text = _copy("brief_" + selected_scenario)
+    for mode_id in IPCrisisEngine.SCENARIOS:
+        var button: Button = scenario_buttons[mode_id]
+        button.text = _copy("scenario_" + mode_id)
+        button.button_pressed = mode_id == selected_scenario
+
+func _select_scenario(next_scenario: String) -> void:
+    if started or not IPCrisisEngine.SCENARIOS.has(next_scenario):
+        return
+    selected_scenario = next_scenario
+    session.reset(next_scenario)
+    notice_time = 0.0
+    _update_scenario_picker()
+    _refresh_hud()
+
+func _fast_interact() -> void:
+    _interact(true)
+
 func start_run() -> void:
     started = true
     paused = false
@@ -758,7 +800,7 @@ func start_run() -> void:
         Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 
 func _restart() -> void:
-    session.reset()
+    session.reset(selected_scenario)
     player.position = Vector3(0,1.1,2.0)
     player.velocity = Vector3.ZERO
     exit_gate.position = Vector3(0,2.6,-58.9)
@@ -796,6 +838,7 @@ func _toggle_language() -> void:
     locale = "en" if locale == "ru" else "ru"
     intro_body.text = _copy("intro")
     intro_button.text = _copy("start")
+    _update_scenario_picker()
     pause_title.text = _copy("pause")
     resume_button.text = _copy("resume")
     end_button.text = _copy("restart")
@@ -828,6 +871,10 @@ func _input(event: InputEvent) -> void:
         if event.keycode == KEY_ESCAPE:
             _pause_toggle()
             return
+        if not started and event.keycode in [KEY_1, KEY_2, KEY_3]:
+            var choice_index: int = [KEY_1, KEY_2, KEY_3].find(event.keycode)
+            _select_scenario(IPCrisisEngine.SCENARIOS[choice_index])
+            return
         if event.keycode == KEY_ENTER and not started:
             start_run()
             return
@@ -839,6 +886,8 @@ func _input(event: InputEvent) -> void:
             return
         if event.keycode == KEY_E:
             _interact()
+        elif event.keycode == KEY_Q:
+            _interact(true)
         elif event.keycode == KEY_F:
             flashlight.visible = not flashlight.visible
             _announce("flashlight")
