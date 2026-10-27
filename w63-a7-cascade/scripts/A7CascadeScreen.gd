@@ -205,9 +205,8 @@ func _build() -> void:
     brand_label = _label(top, "", 27, GOLD)
     language_button = _button(top, "EN", _toggle_locale)
     language_button.custom_minimum_size = Vector2(90, 45)
-    subtitle = _label(body, "", 15, MINT)
-    intro = _label(body, "", 15, MUTED)
-
+    # W65 inherits the tested W64 cinema-first composition:
+    # place native 3D reactor before verbose story and instructions.
     # Cinema-first native 3D stage is mounted inside the *actual* Godot UI.
     # Not an HTML video, screenshot, Three.js overlay or mockup.
     var cinema := _panel(body)
@@ -250,6 +249,8 @@ func _build() -> void:
     motion_button.custom_minimum_size = Vector2(158, 42)
     sound_button = _button(cinema_controls, "", _toggle_sound)
     sound_button.custom_minimum_size = Vector2(138, 42)
+    subtitle = _label(body, "", 15, MINT)
+    intro = _label(body, "", 15, MUTED)
 
     # Original story beats are generated from actual game shift/status;
     # never play fake cutscenes that are independent of the player's choices.
