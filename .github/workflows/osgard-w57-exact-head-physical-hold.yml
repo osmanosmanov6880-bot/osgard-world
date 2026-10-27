@@ -1,0 +1,95 @@
+name: OSGARD W57 exact-head fail-closed W56 evidence into W52
+
+on:
+  pull_request:
+    branches:
+      - feat/osgard-w48-ring-instancing-render-budget-20261026
+    paths:
+      - '.github/workflows/osgard-w57-exact-head-physical-hold.yml'
+      - '.github/workflows/r135-w33-operator-debrief-native-qa.yml'
+      - 'w33-godot-native/ci/w49_source_contract.py'
+      - 'w33-godot-native/ci/w52_release_gate.py'
+      - 'w33-godot-native/ci/test_w49_w52_gate_regressions.py'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: osgard-w57-source-bound-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  exact-source-w56-w52-hold:
+    name: W57 exact W47-W57 source SHA + 39 negative checks + W56 HOLD evidence
+    if: github.event_name == 'pull_request' && github.head_ref == 'feat/osgard-w57-exact-sha-physical-hold-evidence-20261026'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verify exact PR checkout and complete history
+        shell: bash
+        env:
+          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+          git cat-file -e 14be69cdaa1fdffa4e209645eed0b1964581858a^{commit}
+          mkdir -p w57-proof
+          git diff --check 14be69cdaa1fdffa4e209645eed0b1964581858a HEAD
+      - name: Reject synthetic tampering of exact source and physical GO
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m py_compile w33-godot-native/ci/w49_source_contract.py w33-godot-native/ci/w52_release_gate.py w33-godot-native/ci/test_w49_w52_gate_regressions.py tooling/osgard-w56/hardware_review_gate.py
+          python3 -m unittest discover -s w33-godot-native/ci -p test_w49_w52_gate_regressions.py -v
+          python3 -m unittest discover -s tooling/osgard-w56 -p test_hardware_review_gate.py -v
+      - name: Prove real Git diff and critical reviewed W56 blob SHA match
+        shell: bash
+        env:
+          EXACT_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          python3 w33-godot-native/ci/w49_source_contract.py \
+            --base 14be69cdaa1fdffa4e209645eed0b1964581858a \
+            --head "$EXACT_HEAD" \
+            --out w57-proof/w49-source-contract.json
+      - name: Generate actual source-bound W56 proof and require W52 refuse production
+        shell: bash
+        env:
+          EXACT_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          python3 tooling/osgard-w56/hardware_review_gate.py \
+            --expected-sha "$EXACT_HEAD" \
+            --output w57-proof/w56-physical-review-HOLD.json
+          python3 - <<'PY'
+          import json,os,sys
+          from pathlib import Path
+          sys.path.insert(0,"w33-godot-native/ci")
+          import w52_release_gate as gate
+          head=os.environ["EXACT_HEAD"]
+          report=json.loads(Path("w57-proof/w56-physical-review-HOLD.json").read_text())
+          result=gate.validate_w56_hold(report,head)
+          assert result["status"]=="HOLD"
+          assert result["decision"]=="MISSING_DEVICE_REPORTS"
+          assert result["source_sha"]==head
+          assert result["production_approved"] is False
+          out={"schema":"OSGARD_W57_EXACT_HEAD_W56_W52_ACCEPTANCE_V1",
+               "source_sha":head,"status":"PASS","w56":result,
+               "physical_certified":False,"production_approved":False,
+               "published":False}
+          Path("w57-proof/w57-software-hold-gate.json").write_text(json.dumps(out,indent=2)+"\n")
+          print("W57 exact-source W56-to-W52 software evidence PASS; production HOLD required")
+          PY
+      - name: Preserve original source-bound W57 HOLD evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: osgard-w57-exact-head-physical-hold-${{ github.event.pull_request.head.sha }}
+          path: w57-proof/
+          if-no-files-found: warn
+          retention-days: 45
