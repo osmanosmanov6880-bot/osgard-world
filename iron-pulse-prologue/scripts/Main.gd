@@ -116,6 +116,8 @@ var notice_time: float = 0.0
 var notice_key: String = "shift_started"
 var previous_event: String = ""
 var runtime_seconds: float = 0.0
+# Read-only browser QA/accessibility mirror; never accepts game commands.
+var _web_state_element: Variant = null
 
 func _ready() -> void:
     session.reset()
@@ -123,9 +125,52 @@ func _ready() -> void:
     _make_complex()
     _make_player()
     _make_hud()
+    _attach_web_state()
     _refresh_hud()
     if DisplayServer.get_name() != "headless":
         Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+
+func _attach_web_state() -> void:
+    if not OS.has_feature("web"):
+        return
+    var document: Variant = JavaScriptBridge.get_interface("document")
+    if document == null:
+        return
+    var element: Variant = document.getElementById("iron-pulse-native-state")
+    if element == null:
+        element = document.createElement("div")
+        element.setAttribute("id", "iron-pulse-native-state")
+        element.setAttribute("role", "status")
+        element.setAttribute("aria-live", "polite")
+        element.setAttribute("style", "position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;overflow:hidden;pointer-events:none")
+        document.body.appendChild(element)
+    _web_state_element = element
+
+func _publish_web_state() -> void:
+    if _web_state_element == null:
+        return
+    var state: Dictionary = session.diagnostic_snapshot()
+    state["scene"] = "IRON_PULSE_BLACKOUT"
+    state["started"] = started
+    state["paused"] = paused
+    state["locale"] = locale
+    state["player_position"] = [player.global_position.x, player.global_position.y, player.global_position.z]
+    state["godot_frames_drawn"] = Engine.get_frames_drawn()
+    state["viewport"] = [get_viewport().get_visible_rect().size.x, get_viewport().get_visible_rect().size.y]
+    state["touch_controls_visible"] = touch_ui.visible
+    state["intro_visible"] = intro_panel.visible
+    state["end_visible"] = end_panel.visible
+    # Independent real-canvas tests must press E, not call session methods.
+    # We publish physical UI rectangles only as read-only diagnostics.
+    var buttons: Dictionary = {}
+    if touch_ui != null:
+        for control in touch_ui.get_children():
+            if control is Button:
+                var rect: Rect2 = control.get_global_rect()
+                buttons[str(control.text)] = [rect.position.x,rect.position.y,rect.size.x,rect.size.y]
+    state["touch_button_rects"] = buttons
+    _web_state_element.setAttribute("data-state", JSON.stringify(state))
+    _web_state_element.textContent = "IRON PULSE BLACKOUT, " + str(state["objective"])
 
 func _copy(key: String) -> String:
     return str(COPY[locale].get(key, key))
@@ -708,3 +753,4 @@ func _refresh_hud() -> void:
         telemetry_label.add_theme_color_override("font_color",WHITE)
     # Keep operator telemetry visible in both RU and EN without font dependence.
     brand_label.text = "IRON PULSE" if is_ru else "IRON PULSE"
+    _publish_web_state()
