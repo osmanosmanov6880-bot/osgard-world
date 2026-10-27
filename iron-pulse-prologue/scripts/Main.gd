@@ -33,6 +33,10 @@ const COPY := {
         "method_full_seal": "ПОЛНАЯ ГЕРМЕТИЗАЦИЯ", "method_rapid_patch": "БЫСТРАЯ ЗАПЛАТКА",
         "method_standard": "СТАНДАРТНЫЙ РЕМОНТ",
         "scenario_title_blackout": "IRON PULSE / BLACKOUT", "scenario_title_thermal": "IRON PULSE / HEAT", "scenario_title_breach": "IRON PULSE / AIR",
+        "sector_reactor": "REACTOR GALLERY", "sector_service": "SERVICE SPINE", "sector_evacuation": "EVACUATION LOCK",
+        "visited_sectors": "SECTORS EXPLORED: {count}/3",
+        "sector_reactor": "РЕАКТОРНАЯ ГАЛЕРЕЯ", "sector_service": "ТЕХНИЧЕСКИЙ СЕКТОР", "sector_evacuation": "ЭВАКУАЦИОННЫЙ ШЛЮЗ",
+        "visited_sectors": "ИССЛЕДОВАНО СЕКТОРОВ: {count}/3",
         "pause": "ПАУЗА", "victory": "ЭВАКУАЦИЯ УСПЕШНА", "failure": "МИССИЯ ПРОВАЛЕНА",
         "scan": "01  /  Просканировать реактор A7", "repair": "02  /  Восстановить охлаждение",
         "charge": "03  /  Зарядить аварийную дверь — перенаправьте одну линию на DOOR",
@@ -120,6 +124,7 @@ const COPY := {
 
 var session: IPCrisisEngine = IPCrisisEngine.new()
 var art_stage: IPCinematicStage
+var world_sectors: IPWorldSectors
 var audio_director: IPSoundscape
 var legacy_lamps: Array[OmniLight3D] = []
 var reduced_motion: bool = false
@@ -159,6 +164,8 @@ var intro_button: Button
 var scenario_buttons: Dictionary = {}
 var scenario_brief: Label
 var selected_scenario: String = "blackout"
+var active_sector: String = "reactor"
+var visited_sectors: Array[String] = []
 var pause_panel: PanelContainer
 var pause_title: Label
 var resume_button: Button
@@ -192,6 +199,8 @@ func _ready() -> void:
     session.reset()
     _make_environment()
     _make_complex()
+    world_sectors = IPWorldSectors.new()
+    add_child(world_sectors)
     audio_director = IPSoundscape.new()
     add_child(audio_director)
     _make_player()
@@ -264,6 +273,9 @@ func _publish_web_state() -> void:
     state["audio_muted"] = muted_audio
     state["soundscape_ready"] = audio_director != null and audio_director.ambient != null
     state["cinematic_details"] = art_stage.readout() if art_stage != null else {}
+    state["world_sector"] = active_sector
+    state["visited_sectors"] = visited_sectors.duplicate()
+    state["world_sectors"] = world_sectors.readout() if world_sectors != null else {}
     state["vitals_visible"] = vitals_panel.visible if vitals_panel != null else false
     state["hud_rects"] = {
         "header": _hud_rect(header_panel),
