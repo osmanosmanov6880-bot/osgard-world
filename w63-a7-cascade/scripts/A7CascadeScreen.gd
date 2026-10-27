@@ -404,6 +404,69 @@ func _restart() -> void:
     if stage_3d != null:
         stage_3d.recent_action = ""
         stage_3d.pulse = 0.0
+        if stage_3d.operator_rig != null:
+            stage_3d.operator_rig.reset_operator()
+        _clear_walk_directions()
+
+func _clear_walk_directions() -> void:
+    for key in ["forward", "back", "left", "right"]:
+        _walk_direction_state[key] = false
+    if stage_3d != null and stage_3d.operator_rig != null:
+        stage_3d.operator_rig.set_move_intent(Vector2.ZERO)
+
+func _set_walk_direction(direction: String, pressed: bool) -> void:
+    if not _walk_direction_state.has(direction):
+        return
+    _walk_direction_state[direction] = pressed
+    if stage_3d == null or not stage_3d.walk_mode:
+        return
+    var dx: float = float(int(_walk_direction_state["right"]) -
+        int(_walk_direction_state["left"]))
+    var dz: float = float(int(_walk_direction_state["forward"]) -
+        int(_walk_direction_state["back"]))
+    stage_3d.operator_rig.set_move_intent(Vector2(dx, dz))
+
+func _toggle_walk() -> void:
+    if stage_3d == null:
+        return
+    stage_3d.set_walk_mode(not stage_3d.walk_mode)
+    _clear_walk_directions()
+    _render(model.snapshot())
+
+func _walk_interact() -> void:
+    if stage_3d == null or not stage_3d.walk_mode:
+        return
+    var nearby_action: String = stage_3d.operator_rig.context_action()
+    if nearby_action != "":
+        _on_action(nearby_action)
+    _render(model.snapshot())
+
+func _refresh_walk_status() -> void:
+    if walk_status == null or stage_3d == null:
+        return
+    var exploring: bool = stage_3d.walk_mode
+    walk_button.text = _t("walk_exit" if exploring else "walk_enter")
+    walk_action_button.text = _t("walk_use")
+    walk_action_button.disabled = not exploring or str(model.snapshot()["status"]) != "playing"
+    for direction in walk_direction_buttons.keys():
+        var button: Button = walk_direction_buttons[direction] as Button
+        button.text = _t("walk_" + str(direction))
+        button.disabled = not exploring
+    if exploring:
+        var readout: Dictionary = stage_3d.operator_rig.qa_readout()
+        walk_status.text = _t("walk_status") % [
+            _t("walk_" + str(readout["sector"])), str(readout["context_action"])]
+    else:
+        walk_status.text = _t("walk_hint")
+
+func _process(delta: float) -> void:
+    if stage_3d == null or not stage_3d.walk_mode:
+        return
+    _walk_report_elapsed += delta
+    if _walk_report_elapsed >= 0.16:
+        _walk_report_elapsed = 0.0
+        _refresh_walk_status()
+        _publish_web_accessibility()
 
 func _toggle_sound() -> void:
     if sound_bus != null:
@@ -436,6 +499,7 @@ func _update_forecast(state: Dictionary) -> void:
 func _select_camera(index: int) -> void:
     if stage_3d != null:
         stage_3d.set_camera(index)
+        _clear_walk_directions()
     _render(model.snapshot())
 
 func _toggle_quality() -> void:
