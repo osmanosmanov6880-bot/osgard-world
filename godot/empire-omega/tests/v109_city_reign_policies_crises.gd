@@ -70,7 +70,8 @@ func _run() -> void:
 				"native warning text is correctly translated")
 		crisis.sync_state(starting,"zh")
 		check(str(crisis.get("current_id")) == "","resolving a crisis removes the actual alarm")
-	check(snapshot["incident"] != state.data["incident"],"read-only 3D reflects, never mutates crisis state")
+		check(snapshot["incident"] == incident and str(state.data["incident"]) == "",
+			"3D crisis feedback cannot write to the saved city simulation")
 	check(state.data == starting,"all crisis displays preserve original authoritative save")
 	crisis.queue_free()
 	await process_frame
