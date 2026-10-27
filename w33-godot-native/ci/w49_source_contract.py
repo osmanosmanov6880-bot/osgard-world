@@ -65,9 +65,9 @@ REVIEWED_W56_CRITICAL_BLOBS = {
 # W58: exact reviewed responsive telemetry source, native RU/EN regression and
 # dedicated fail-closed workflow. Never silently weaken browser/native checks.
 REVIEWED_W58_CRITICAL_BLOBS = {
-    "w33-godot-native/scripts/OSGARDMain.gd": "7567957d63cfe3e0bbe76094978f1b18c35337f8",
-    "w33-godot-native/tests/test_w55_readable_protocol_copy.gd": "bacad80452e0f4ef6d7a7057c945a63e6da3ff5a",
-    ".github/workflows/osgard-w58-telemetry-groups.yml": "bbadb093bdd504969d959b9d3827c8665e1cbafb",
+    "w33-godot-native/scripts/OSGARDMain.gd": "a5537386acab0df1cc4f4d55af047199d15c9bf4",
+    "w33-godot-native/tests/test_w55_readable_protocol_copy.gd": "28ba896de926990826d3a7161e3f394a60cc8c90",
+    ".github/workflows/osgard-w58-telemetry-groups.yml": "e70a6ba328320fed66c2e22d578da62b06ee52b3",
 }
 
 W56_PATHS = {
