@@ -247,7 +247,30 @@ def audit(root: Path) -> dict:
     private_root(root, False)
     p = root / "capture_packet.json"
     packet = load_packet(root)
-    report = GATE["evaluate"](p, packet["original_source_sha"])
+    if not packet.get("operator") and not packet["records"]:
+        # The original R127 gate rejects absent operator at parse stage.
+        # Do not invent a fake named witness merely to fabricate a report.
+        # Explicitly list all 36 *missing* original hardware recordings.
+        missing = [
+            "%s / %s / run %d: MISSING ORIGINAL DEVICE VIDEO AND GODOT R36 REPORT"
+            % (d, s, i)
+            for d in DEVICES for s in SCENARIOS for i in ITERATIONS
+        ]
+        report = {
+            "schema": "omega-r127-physical-evidence-check-v1",
+            "source_sha": packet["original_source_sha"],
+            "original_evidence_packets": 0,
+            "expected_packets": 36,
+            "structural_and_frame_thresholds_passed": False,
+            "blockers": missing,
+            "mesa_chromium_is_hardware_evidence": False,
+            "independent_real_device_review_required": True,
+            "art_reference_human_approval_recorded": False,
+            "full_15_20_min_human_playthrough_recorded": False,
+            "production_authorized": False,
+        }
+    else:
+        report = GATE["evaluate"](p, packet["original_source_sha"])
     # This is a structural *source and frame threshold* check ONLY.
     report["independent_physical_witness_completed_by_tool"] = False
     report["production_authorized"] = False
