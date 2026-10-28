@@ -325,6 +325,23 @@ func _publish_web_state() -> void:
     state["soundscape_ready"] = audio_director != null and audio_director.ambient != null
     state["cinematic_details"] = art_stage.readout() if art_stage != null else {}
     state["reactor_atrium"] = reactor_atrium.readout() if reactor_atrium != null else {}
+    # Read-only native material/geometry facts; Chromium QA never invents art.
+    var actual_core: SphereMesh = reactor_core.mesh as SphereMesh
+    var support_count: int = 0
+    for child in reactor_core.get_parent().get_children():
+        if child is MeshInstance3D and child.name.begins_with("OpenEnergySupport_"):
+            support_count += 1
+    var ring_profiles: Array[float] = []
+    for pivot in reactor_rings:
+        var filament: MeshInstance3D = pivot.get_child(0) as MeshInstance3D
+        var mesh: TorusMesh = filament.mesh as TorusMesh
+        ring_profiles.append(snappedf(mesh.outer_radius-mesh.inner_radius,0.001))
+    state["reactor_hero"] = {
+        "core_sphere_radius":actual_core.radius,
+        "support_piers":support_count,
+        "ring_profiles":ring_profiles,
+        "front_light_power":reactor_atrium._lights[1].light_energy
+    }
     state["cinematic_view"] = cinematic_view
     state["cinematic_hud_hidden"] = cinematic_view and not header_panel.visible and not side_panel.visible and not prompt_panel.visible and not crosshair.visible
     var active_camera: Camera3D = get_viewport().get_camera_3d()
