@@ -74,6 +74,18 @@ func _run() -> void:
 	check(head_mesh!=null and head_mesh.surface_get_array_len(0)==540 and
 		head_mesh==z_mesh,
 		"three sculpted lens hoods per two facing directions, no duplicate geometry")
+	if head_mesh!=null:
+		var head_verts: PackedVector3Array = head_mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
+		var hood_min: float = INF
+		var hood_max: float = -INF
+		var protrusions: int = 0
+		for vertex in head_verts:
+			if vertex.z < -0.595:
+				hood_min = minf(hood_min,vertex.y)
+				hood_max = maxf(hood_max,vertex.y)
+				protrusions += 1
+		check(protrusions==72 and hood_min > -0.525 and hood_max > 0.80,
+			"all 3 actual 3D sun hoods sit ABOVE their LED lens, never inverted below")
 	check(lamp_mesh!=null and lamp_mesh.surface_get_array_len(0)==60,
 		"real radial 20-facet convex 3D LED lens, not an emissive rectangle")
 	for id in all_batches:

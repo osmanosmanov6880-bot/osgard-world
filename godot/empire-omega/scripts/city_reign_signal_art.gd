@@ -80,8 +80,9 @@ static func housing_mesh() -> ArrayMesh:
 			var p2 := Vector3(cos(b)*outer,y+sin(b)*outer,-0.392)
 			var p3 := Vector3(cos(a)*outer,y+sin(a)*outer,-0.392)
 			_face(st,p0,p1,p2,p3,Color("8d9ca4"))
-			if segment>=8:
-				# One physical sunshade tube along the top-facing semicircle.
+			if segment<8:
+				# Only TOP facing half (sin angle >= 0) is a true sunshade.
+				# Lower hoods obstruct coloured LED visibility while driving.
 				var q0 := Vector3(cos(a)*outer,y+sin(a)*outer,-0.392)
 				var q1 := Vector3(cos(b)*outer,y+sin(b)*outer,-0.392)
 				var q2 := Vector3(cos(b)*outer,y+sin(b)*outer,-0.605)
