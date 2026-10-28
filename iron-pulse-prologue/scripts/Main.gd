@@ -268,6 +268,10 @@ func _ready() -> void:
     # Never write into the shared real profile during isolated headless QA.
     if DisplayServer.get_name() != "headless":
         career.load(career_path)
+    locale = str(career.preferences["language"])
+    quality_mode = str(career.preferences["graphics"])
+    reduced_motion = bool(career.preferences["reduced_motion"])
+    muted_audio = bool(career.preferences["muted"])
     session.reset()
     story.reset(session.scenario_id)
     _make_environment()
@@ -276,6 +280,14 @@ func _ready() -> void:
     add_child(world_sectors)
     audio_director = IPSoundscape.new()
     add_child(audio_director)
+    audio_director.set_muted(muted_audio)
+    if quality_mode=="eco":
+        art_stage.set_quality("eco")
+        world_sectors.set_quality("eco")
+        reactor_atrium.set_quality("eco")
+        containment_fx.set_quality("eco")
+        for i in range(legacy_lamps.size()):
+            legacy_lamps[i].visible = i % 3 == 0
     _make_player()
     _make_hud()
     _attach_web_state()
@@ -1119,11 +1131,36 @@ func _layout_hud() -> void:
     _refresh_radio_ui()
     _apply_cinematic_view()
 
+func _current_preferences() -> Dictionary:
+    return {
+        "language":locale,"graphics":quality_mode,
+        "reduced_motion":reduced_motion,"muted":muted_audio
+    }
+
+func _save_preferences() -> void:
+    var latest: Dictionary = _current_preferences()
+    for option in latest:
+        career.set_preference(str(option),latest[option])
+    if DisplayServer.get_name()!="headless" or career_path!=IPCareerProfile.DEFAULT_PATH:
+        career.save(career_path)
+
+func _change_operations_setting(option: String) -> void:
+    if operations_panel==null or not operations_panel.visible:
+        return
+    match option:
+        "language": _toggle_language()
+        "graphics": _toggle_quality()
+        "reduced_motion": _toggle_motion()
+        "muted": _toggle_audio()
+        _: return
+    operations_panel.set_view(career,locale,not started,_current_preferences())
+
 func _make_operations_ui() -> void:
     operations_panel = IPOperationsPanel.new()
     hud_root.add_child(operations_panel)
     operations_panel.close_requested.connect(_close_operations)
     operations_panel.launch_requested.connect(_launch_from_operations)
+    operations_panel.setting_requested.connect(_change_operations_setting)
 
 func _open_operations() -> void:
     if operations_panel == null or operations_panel.visible:
@@ -1140,7 +1177,7 @@ func _open_operations() -> void:
     pause_panel.visible = false
     intro_panel.visible = false
     end_panel.visible = false
-    operations_panel.set_view(career,locale,not started)
+    operations_panel.set_view(career,locale,not started,_current_preferences())
     var screen_width: float = float(_browser_css_size.x) if _browser_css_size.x>0 else get_viewport().get_visible_rect().size.x
     var screen_height: float = float(_browser_css_size.y) if _browser_css_size.y>0 else get_viewport().get_visible_rect().size.y
     operations_panel.apply_layout(screen_width,screen_height)
@@ -1426,6 +1463,29 @@ func _pause_toggle() -> void:
     if DisplayServer.get_name() != "headless":
         Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE if paused else Input.MOUSE_MODE_CAPTURED)
 
+func _toggle_audio() -> void:
+    muted_audio = not muted_audio
+    audio_director.set_muted(muted_audio)
+    _announce("audio_off" if muted_audio else "audio_on")
+    _save_preferences()
+
+func _toggle_motion() -> void:
+    reduced_motion = not reduced_motion
+    walking_phase = 0.0
+    _announce("motion_reduced" if reduced_motion else "motion_normal")
+    _save_preferences()
+
+func _toggle_quality() -> void:
+    quality_mode = "eco" if quality_mode=="hero" else "hero"
+    art_stage.set_quality(quality_mode)
+    world_sectors.set_quality(quality_mode)
+    reactor_atrium.set_quality(quality_mode)
+    containment_fx.set_quality(quality_mode)
+    for i in range(legacy_lamps.size()):
+        legacy_lamps[i].visible = quality_mode=="hero" or i%3==0
+    _announce("quality_eco" if quality_mode=="eco" else "quality_hero")
+    _save_preferences()
+
 func _toggle_language() -> void:
     locale = "en" if locale == "ru" else "ru"
     intro_body.text = _copy("intro")
@@ -1438,11 +1498,12 @@ func _toggle_language() -> void:
     operations_pause_button.text = _copy("operations_pause")
     operations_end_button.text = _copy("operations_end")
     if operations_panel != null and operations_panel.visible:
-        operations_panel.set_view(career,locale,not started)
+        operations_panel.set_view(career,locale,not started,_current_preferences())
     footer_label.text = _copy("footer")
     _announce("language")
     _refresh_hud()
     _refresh_radio_ui()
+    _save_preferences()
 
 func _gamepad_axis(axis_id: int) -> float:
     var joypads: Array[int] = Input.get_connected_joypads()
@@ -1506,24 +1567,13 @@ func _input(event: InputEvent) -> void:
             _toggle_language()
             return
         if event.keycode == KEY_M:
-            muted_audio = not muted_audio
-            audio_director.set_muted(muted_audio)
-            _announce("audio_off" if muted_audio else "audio_on")
+            _toggle_audio()
             return
         if event.keycode == KEY_V:
-            reduced_motion = not reduced_motion
-            walking_phase = 0.0
-            _announce("motion_reduced" if reduced_motion else "motion_normal")
+            _toggle_motion()
             return
         if event.keycode == KEY_G:
-            quality_mode = "eco" if quality_mode == "hero" else "hero"
-            art_stage.set_quality(quality_mode)
-            world_sectors.set_quality(quality_mode)
-            reactor_atrium.set_quality(quality_mode)
-            containment_fx.set_quality(quality_mode)
-            for i in range(legacy_lamps.size()):
-                legacy_lamps[i].visible = quality_mode == "hero" or i % 3 == 0
-            _announce("quality_eco" if quality_mode == "eco" else "quality_hero")
+            _toggle_quality()
             return
         if event.keycode == KEY_C and started and not paused and not session.finished():
             cinematic_view = not cinematic_view
