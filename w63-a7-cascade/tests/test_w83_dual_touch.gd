@@ -128,6 +128,34 @@ func _run() -> void:
         ui.stage_3d.spatial_mission.phase==0,
         "Two-finger aiming/walking NEVER creates a core choice or puzzle victory")
 
+    # Godot WebGL may reindex the LOOK finger upon its release while first
+    # walking finger remains down. Reject release over the real UI, but accept
+    # physical release near the last camera finger position.
+    _check(look.handle_screen_event(_touch(23,point,true)),
+        "Second actual look gesture starts after prior release")
+    _check(look.handle_screen_event(_drag(23,point+Vector2(33,0),
+        Vector2(33,0))),"Physical camera gets another indexed real drag")
+    _check(not look.handle_screen_event(
+        _touch(90,walk.rail.get_global_rect().get_center(),false))
+        and look.look_finger==23,
+        "Unmatched release from the physical WALK UI does not release LOOK")
+    _check(look.handle_screen_event(
+        _touch(99,point+Vector2(33,0),false))
+        and look.look_finger==-1 and look.recovered_end_by_position==1,
+        "Reindexed true END near camera finger recovers correct independent release")
+
+    # Lost browser touch-end requires a bounded genuine source recovery.
+    _check(look.handle_screen_event(_touch(26,point,true)),
+        "Camera can be captured again after a reindexed END")
+    look.last_touch_ticks_ms = Time.get_ticks_msec()-2000
+    look._process(0.016)
+    _check(look.look_finger==-1 and
+        look.recovered_missing_end_timeout>=1 and
+        look.qa_readout()["native_watchdog_timeout_ms"]==1700,
+        "Actual original Godot orphaned look pointer expires without stuck camera")
+    _check(ui.model.snapshot()==original_game,
+        "Release recovery and loss watchdog NEVER mutate original A7 gameplay")
+
     # Real focus-loss guard on original Godot notification, not timer magic.
     (walk.controls["back"] as Button).emit_signal("button_down")
     _check(actor.held_keys.get(KEY_S,false),"W78 original held movement primed")

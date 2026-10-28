@@ -10,6 +10,7 @@ signal real_camera_drag_started
 const COPPER := Color("e5b982")
 const MAX_DRAG_PIXELS := 90.0
 const LOOK_SENSITIVITY := 0.85
+const LOST_TOUCH_TIMEOUT_MS := 1700
 var stage: Control
 var actor: A7FirstPersonOperator
 var touch_controls: A7TouchFieldControls
@@ -26,6 +27,10 @@ var rejected_extra_fingers: int = 0
 var clamped_motion_frames: int = 0
 var released_fingers: int = 0
 var cancelled_captures: int = 0
+var recovered_end_by_position: int = 0
+var recovered_missing_end_timeout: int = 0
+var last_look_point: Vector2 = Vector2.ZERO
+var last_touch_ticks_ms: int = 0
 var captured_pixels: float = 0.0
 var actual_screen_size: Vector2 = Vector2.ZERO
 var original_w70_actor_id: int = 0
@@ -62,6 +67,7 @@ func build(original_live_stage: Control, original_actor: A7FirstPersonOperator,
     hint_label.clip_text = true
     add_child(hint_label)
     visible = false
+    set_process(true)
 
 func set_context(immersive_mobile: bool, language: String,
         screen_size: Vector2) -> void:
@@ -134,11 +140,23 @@ func handle_screen_event(event: InputEvent) -> bool:
                     rejected_ui_starts += 1
                 return false
             look_finger = touch.index
+            last_look_point = touch.position
+            last_touch_ticks_ms = Time.get_ticks_msec()
             touch_begins += 1
             return true
         if touch.index == look_finger and look_finger>=0:
             look_finger = -1
             released_fingers += 1
+            return true
+        # Some WebGL touch-end paths renumber the still-active first
+        # finger after a two-touch gesture. A release near the LOOK finger's
+        # last physical point is still a valid end, but a release over W78
+        # movement rail or original W79 mission deck must NEVER cancel look.
+        if (look_finger>=0 and not _on_ui(touch.position)
+                and touch.position.distance_to(last_look_point)<95.0):
+            look_finger = -1
+            released_fingers += 1
+            recovered_end_by_position += 1
             return true
         return false
     if event is InputEventScreenDrag:
@@ -147,6 +165,8 @@ func handle_screen_event(event: InputEvent) -> bool:
                 or actor == null or not actor.piloting):
             return false
         physical_look_drags += 1
+        last_look_point = motion.position
+        last_touch_ticks_ms = Time.get_ticks_msec()
         # Godot 4.4 screen_relative is NOT affected by root stretch/scaling.
         # This keeps the true physical finger sensitivity consistent at 320,
         # 390 and 844 CSS px; never use scaled relative for camera aiming.
@@ -163,6 +183,16 @@ func handle_screen_event(event: InputEvent) -> bool:
         return true
     return false
 
+func _process(_delta: float) -> void:
+    # The browser or mobile OS may omit a ScreenTouch END when a second
+    # pointer lifts while the first remains on a native Button. The genuine
+    # source camera must NEVER remain indefinitely captured. A stationary
+    # swipe longer than 1.7 s is safely released; re-touch to resume look.
+    if (look_finger>=0 and visible and
+            Time.get_ticks_msec()-last_touch_ticks_ms>LOST_TOUCH_TIMEOUT_MS):
+        recovered_missing_end_timeout += 1
+        cancel_capture()
+
 func qa_readout() -> Dictionary:
     return {
         "schema":"LAST_FRONTIER_W83_TRUE_GODOT_INDEXED_MULTITOUCH_V1",
@@ -177,6 +207,9 @@ func qa_readout() -> Dictionary:
         "extra_fingers_rejected":rejected_extra_fingers,
         "UI_controls_never_captured":rejected_ui_starts,
         "touch_release_events":released_fingers,
+        "touch_end_index_recoveries":recovered_end_by_position,
+        "touch_end_loss_watchdog_recoveries":recovered_missing_end_timeout,
+        "native_watchdog_timeout_ms":LOST_TOUCH_TIMEOUT_MS,
         "cancelled_fingers_on_mode_or_resize":cancelled_captures,
         "bounded_drag_events":clamped_motion_frames,
         "source_pixels_turned":snappedf(captured_pixels,0.01),

@@ -116,8 +116,18 @@ def true_dual_finger(page,cdp,g):
             with_fingers["w72_valve_index"]==0,
             "True indexed two-finger gestures cannot fake any source gameplay progress")
     send(cdp,"touchEnd",[a])
-    page.wait_for_timeout(150)
-    released=wait_state(page,{"w83_active_look_finger":-1})
+    page.wait_for_function("""() => {
+        const el=document.getElementById('a7-cascade-native-state');
+        if(!el)return false;
+        try {
+            const s=JSON.parse(el.getAttribute('data-state'));
+            return s.w83_active_look_finger===-1 &&
+                (s.w83_touch_release_events>0 ||
+                 s.w83_touch_release_position_recovers>0 ||
+                 s.w83_touch_release_timeout_recovers>0);
+        }catch(e){return false}
+    }""",timeout=12000)
+    released=snapshot(page)
     distance_at_release=released["w70_real_physical_distance"]
     page.wait_for_timeout(240)
     still_walking=snapshot(page)

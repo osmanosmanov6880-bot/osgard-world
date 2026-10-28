@@ -181,12 +181,14 @@ jobs:
           SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           set -euo pipefail
+          # Run new concurrent real two-finger risk FIRST. Then previous
+          # accepted original W81 and W82 source regressions unchanged.
+          timeout 1190s /tmp/a7-w83/bin/python w63-a7-cascade/ci/w83_browser_real_multitouch.py --export w63-a7-cascade/build/web --evidence w83-evidence/w83-real-native-twofinger --sha "$SHA" 2>&1 | tee w83-evidence/w83-browser.log
+          grep -q 'LAST FRONTIER W83 ACTUAL TWO-FINGER GODOT WEBGL CHROMIUM PASS:' w83-evidence/w83-browser.log
           timeout 1190s /tmp/a7-w83/bin/python w63-a7-cascade/ci/w81_browser_fused_mobile.py --export w63-a7-cascade/build/web --evidence w83-evidence/w81-regression --sha "$SHA" 2>&1 | tee w83-evidence/w81-browser.log
           grep -q 'LAST FRONTIER W81 TRUE AAA-READABILITY GODOT MOBILE CHROMIUM PASS:' w83-evidence/w81-browser.log
           timeout 1190s /tmp/a7-w83/bin/python w63-a7-cascade/ci/w82_browser_real_navigation.py --export w63-a7-cascade/build/web --evidence w83-evidence/w82-regression --sha "$SHA" 2>&1 | tee w83-evidence/w82-browser.log
           grep -q 'LAST FRONTIER W82 REAL ORIGINAL GODOT PHYSICAL NAV CHROMIUM PASS:' w83-evidence/w82-browser.log
-          timeout 1190s /tmp/a7-w83/bin/python w63-a7-cascade/ci/w83_browser_real_multitouch.py --export w63-a7-cascade/build/web --evidence w83-evidence/w83-real-native-twofinger --sha "$SHA" 2>&1 | tee w83-evidence/w83-browser.log
-          grep -q 'LAST FRONTIER W83 ACTUAL TWO-FINGER GODOT WEBGL CHROMIUM PASS:' w83-evidence/w83-browser.log
           python3 - <<'PY'
           import hashlib,json,os
           from pathlib import Path
