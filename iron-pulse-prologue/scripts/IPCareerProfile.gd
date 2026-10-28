@@ -44,6 +44,10 @@ var recent: Array[Dictionary] = []
 var achievements: Array[String] = []
 var last_awards: Array[String] = []
 var last_result: Dictionary = {}
+var preferences: Dictionary = {
+    "language":"ru","graphics":"hero",
+    "reduced_motion":false,"muted":false
+}
 var _storage: IPCheckpointStore = IPCheckpointStore.new()
 
 func _mission_empty() -> Dictionary:
@@ -59,6 +63,10 @@ func reset() -> void:
     achievements.clear()
     last_awards.clear()
     last_result.clear()
+    preferences = {
+        "language":"ru","graphics":"hero",
+        "reduced_motion":false,"muted":false
+    }
 
 func _init() -> void:
     reset()
@@ -126,6 +134,22 @@ func _award_if(qualifies: bool,achievement_id: String) -> void:
         achievements.append(achievement_id)
         last_awards.append(achievement_id)
 
+func set_preference(option: String,value: Variant) -> bool:
+    # Explicit allowlist; never persist scripts, URLs, identities or unknown
+    # control keys from a hostile/corrupted local profile.
+    var valid: bool = false
+    match option:
+        "language":
+            valid = typeof(value)==TYPE_STRING and value in ["ru","en"]
+        "graphics":
+            valid = typeof(value)==TYPE_STRING and value in ["hero","eco"]
+        "reduced_motion", "muted":
+            valid = typeof(value)==TYPE_BOOL
+    if not valid:
+        return false
+    preferences[option] = value
+    return true
+
 func achievement_title(achievement_id: String,language: String="ru") -> String:
     var use_locale: String = "en" if language=="en" else "ru"
     return str(ACHIEVEMENT_TITLES[use_locale].get(achievement_id,"?"))
@@ -151,7 +175,9 @@ func snapshot() -> Dictionary:
     return {
         "schema":SCHEMA,"operations":operations,"victories":victories,
         "mission_records":best,"recent":recent.duplicate(true),
-        "achievements":achievements.duplicate(),"recommended":recommended_scenario(),
+        "achievements":achievements.duplicate(),
+        "preferences":preferences.duplicate(true),
+        "recommended":recommended_scenario(),
         "achievement_count":achievements.size()
     }
 
@@ -228,7 +254,8 @@ func restore(payload: Dictionary) -> bool:
     var restored_records: Variant = payload.get("mission_records")
     var restored_history: Variant = payload.get("recent")
     var restored_awards: Variant = payload.get("achievements")
-    if not restored_records is Dictionary or not restored_history is Array or not restored_awards is Array:
+    var restored_preferences: Variant = payload.get("preferences")
+    if not restored_records is Dictionary or not restored_history is Array or not restored_awards is Array or not restored_preferences is Dictionary:
         return false
     if restored_records.size()!=IPCrisisEngine.SCENARIOS.size() or restored_history.size()>MAX_HISTORY:
         return false
@@ -261,6 +288,18 @@ func restore(payload: Dictionary) -> bool:
         counted_wins += int(wins)
     if counted_attempts!=int(total) or counted_wins!=int(won):
         return false
+    if restored_preferences.size()!=4:
+        return false
+    if restored_preferences.get("language") not in ["ru","en"] or restored_preferences.get("graphics") not in ["hero","eco"]:
+        return false
+    if typeof(restored_preferences.get("reduced_motion",null))!=TYPE_BOOL or typeof(restored_preferences.get("muted",null))!=TYPE_BOOL:
+        return false
+    var checked_preferences: Dictionary = {
+        "language":restored_preferences["language"],
+        "graphics":restored_preferences["graphics"],
+        "reduced_motion":restored_preferences["reduced_motion"],
+        "muted":restored_preferences["muted"]
+    }
     var checked_awards: Array[String] = []
     for award in restored_awards:
         if not award is String or not ACHIEVEMENT_IDS.has(award) or checked_awards.has(award):
@@ -286,6 +325,7 @@ func restore(payload: Dictionary) -> bool:
     mission_records = checked_records
     recent = checked_history
     achievements = checked_awards
+    preferences = checked_preferences
     last_result = recent[0].duplicate(true) if not recent.is_empty() else {}
     last_awards.clear()
     return true
