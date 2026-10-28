@@ -18,7 +18,7 @@ const DIM := Color(0.58, 0.7, 0.78)
 const COPY := {
     "ru": {
         "subtitle": "BLACKOUT  /  ГЛАВА 00",
-        "intro": "СИГНАЛ БЕДСТВИЯ: СЕКТОР A7\n\nВ реакторном комплексе пропало питание. Люди заблокированы внутри. У вас две независимые линии питания, но три системы: охлаждение, жизнеобеспечение и аварийные двери.\n\nВыберите, чем пожертвовать на время, чтобы открыть путь к эвакуации.\n\nWASD — движение    SHIFT — бег\nМЫШЬ — обзор    E — действие\nL — язык    F — фонарь    ESC — пауза\nM — звук    V — плавная камера    G — графика    C — камера реактора\nГЕЙМПАД: A — действие, X — срочно, B — радио, START — пауза\n\nЭто вымышленная игра, не инструкция по эксплуатации оборудования.",
+        "intro": "СИГНАЛ БЕДСТВИЯ: СЕКТОР A7\n\nВ реакторном комплексе пропало питание. Люди заблокированы внутри. У вас две независимые линии питания, но три системы: охлаждение, жизнеобеспечение и аварийные двери.\n\nВыберите, чем пожертвовать на время, чтобы открыть путь к эвакуации.\n\nWASD — движение    SHIFT — бег\nМЫШЬ — обзор    E — действие\nL — язык    F — фонарь    ESC — пауза\nM — звук    V — плавная камера    G — графика    C — камера реактора\nH — показать / скрыть 3D-цель\nГЕЙМПАД: A — действие, X — срочно, B — радио, START — пауза\n\nЭто вымышленная игра, не инструкция по эксплуатации оборудования.",
         "start": "НАЧАТЬ ОПЕРАЦИЮ", "resume": "ПРОДОЛЖИТЬ", "restart": "ПОВТОРИТЬ",
         "scenario_blackout": "01 / GRID", "scenario_thermal": "02 / HEAT", "scenario_breach": "03 / AIR",
         "brief_blackout": "ОТКЛЮЧЕНИЕ ПИТАНИЯ: два контура, три системы. Изучите маршрут эвакуации.",
@@ -53,6 +53,8 @@ const COPY := {
         "campaign_replay": "ПЕРЕИГРАТЬ КАМПАНИЮ",
         "campaign_progress": "ОПЕРАЦИЯ {index}/3",
         "campaign_carry": "НАСЛЕДИЕ РЕШЕНИЙ: ресурсы следующей операции изменены",
+        "wayfinder_on": "3D-НАВИГАЦИЯ: ВКЛ.",
+        "wayfinder_off": "3D-НАВИГАЦИЯ: ВЫКЛ.",
         "relay_medbay": "МЕДБЛОК: воздух и здоровье восстановлены.",
         "relay_quench": "ГАСИТЕЛЬ: тепло снижено, импульсы ослаблены.",
         "relay_uplink": "СВЯЗЬ: получено дополнительное время.",
@@ -90,7 +92,7 @@ const COPY := {
     },
     "en": {
         "subtitle": "BLACKOUT  /  CHAPTER 00",
-        "intro": "DISTRESS SIGNAL: SECTOR A7\n\nPower has failed across the reactor complex. Your crew is trapped. You have two independent power buses but three systems: cooling, life support and emergency doors.\n\nChoose what to deprioritize briefly to unlock the evacuation path.\n\nWASD — move    SHIFT — sprint\nMOUSE — look    E — interact\nL — language    F — flashlight    ESC — pause\nM — audio    V — reduced motion    G — graphics    C — reactor camera\nGAMEPAD: A — use, X — fast, B — radio, START — pause\n\nFictional game only. Not real equipment instructions.",
+        "intro": "DISTRESS SIGNAL: SECTOR A7\n\nPower has failed across the reactor complex. Your crew is trapped. You have two independent power buses but three systems: cooling, life support and emergency doors.\n\nChoose what to deprioritize briefly to unlock the evacuation path.\n\nWASD — move    SHIFT — sprint\nMOUSE — look    E — interact\nL — language    F — flashlight    ESC — pause\nM — audio    V — reduced motion    G — graphics    C — reactor camera\nH — show / hide 3D objective\nGAMEPAD: A — use, X — fast, B — radio, START — pause\n\nFictional game only. Not real equipment instructions.",
         "start": "BEGIN OPERATION", "resume": "RESUME", "restart": "RESTART",
         "scenario_blackout": "01 / GRID", "scenario_thermal": "02 / HEAT", "scenario_breach": "03 / AIR",
         "brief_blackout": "POWER GRID FAILURE: two buses, three systems. Learn the safe route.",
@@ -125,6 +127,8 @@ const COPY := {
         "campaign_replay": "REPLAY CAMPAIGN",
         "campaign_progress": "OPERATION {index}/3",
         "campaign_carry": "PREVIOUS CHOICES: next operation resources have changed",
+        "wayfinder_on": "3D WAYFINDING: ON",
+        "wayfinder_off": "3D WAYFINDING: OFF",
         "relay_medbay": "MEDBAY: air and crew condition restored.",
         "relay_quench": "HEAT SUPPRESSOR: cooler core, weaker pulses.",
         "relay_uplink": "UPLINK: additional evacuation time secured.",
@@ -171,6 +175,7 @@ const CAMPAIGN_RECORD_PATH: String = "user://iron_pulse_campaign_progress_v9.jso
 var art_stage: IPCinematicStage
 var reactor_atrium: IPReactorAtrium
 var containment_fx: IPContainmentFX
+var wayfinder: IPWayfinding
 var world_sectors: IPWorldSectors
 var audio_director: IPSoundscape
 var legacy_lamps: Array[OmniLight3D] = []
@@ -266,6 +271,9 @@ func _ready() -> void:
     _make_complex()
     world_sectors = IPWorldSectors.new()
     add_child(world_sectors)
+    wayfinder = IPWayfinding.new()
+    add_child(wayfinder)
+    wayfinder.configure(terminals)
     audio_director = IPSoundscape.new()
     add_child(audio_director)
     _make_player()
@@ -374,6 +382,7 @@ func _publish_web_state() -> void:
     state["world_sectors"] = world_sectors.readout() if world_sectors != null else {}
     state["story"] = story.diagnostic()
     state["campaign"] = campaign.diagnostic()
+    state["wayfinder"] = wayfinder.readout() if wayfinder != null else {}
     state["relay_3d_terminals"] = relay_terminals.size()
     var real_relays: Array = []
     for relay_info in relay_terminals:
@@ -1152,7 +1161,8 @@ func _checkpoint_payload() -> Dictionary:
         "reduced_motion":reduced_motion,
         "player_position":[player.position.x,player.position.y,player.position.z],
         "visited_sectors":visited_sectors.duplicate(),
-        "campaign":campaign.checkpoint()
+        "campaign":campaign.checkpoint(),
+        "wayfinding_enabled":wayfinder.enabled
     }
 
 func _save_checkpoint() -> bool:
@@ -1202,6 +1212,9 @@ func _continue_checkpoint() -> bool:
         return false
     # Validate the optional V9+ campaign atomically before any game mutation.
     # Historical V6-V8.6 saves have no campaign field and must still load.
+    var saved_wayfinding: Variant = payload.get("wayfinding_enabled",true)
+    if typeof(saved_wayfinding) != TYPE_BOOL:
+        return false
     var saved_campaign := IPCampaignFlow.new()
     if payload.has("campaign"):
         if not payload["campaign"] is Dictionary or not saved_campaign.restore(payload["campaign"]):
@@ -1217,6 +1230,7 @@ func _continue_checkpoint() -> bool:
     session = restored_engine
     story = restored_story
     campaign = saved_campaign
+    wayfinder.enabled = bool(saved_wayfinding)
     selected_scenario = session.scenario_id
     locale = saved_locale
     quality_mode = saved_quality
@@ -1434,6 +1448,11 @@ func _input(event: InputEvent) -> void:
             walking_phase = 0.0
             _announce("motion_reduced" if reduced_motion else "motion_normal")
             return
+        if event.keycode == KEY_H and started and not paused and not session.finished():
+            _announce("wayfinder_on" if wayfinder.toggle() else "wayfinder_off")
+            _save_checkpoint()
+            _refresh_hud()
+            return
         if event.keycode == KEY_G:
             quality_mode = "eco" if quality_mode == "hero" else "hero"
             art_stage.set_quality(quality_mode)
@@ -1563,6 +1582,10 @@ func _process(delta: float) -> void:
         if not visited_sectors.has(sector):
             visited_sectors.append(sector)
             _save_checkpoint()
+    wayfinder.update_goal(
+        session.objective_id(),player.global_position,runtime_seconds,
+        reduced_motion,quality_mode,locale,
+        started and not paused and not session.finished(),cinematic_view)
     audio_director.set_tension(session.heat,session.oxygen)
     var heat_risk: float = clampf((session.heat-70.0)/30.0,0.0,1.0)
     var air_risk: float = clampf((45.0-session.oxygen)/45.0,0.0,1.0)
