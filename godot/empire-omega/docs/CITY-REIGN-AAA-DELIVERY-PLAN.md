@@ -143,3 +143,11 @@ ENGINEERING STAGING. Previous C1 exact-head GitHub native+Chromium/provenance ch
 - [ ] New exact original Godot v120 actual paid city mutation/re-render and Chromium real source pixel QA **MUST PASS** before R90 merge. This checklist is implementation work, NOT verified finish.
 - **PBR and human AAA quality remain HOLD** until licensed hero models, independent playtests, physical device FPS and human art-direction signoff.
 - Complete source truth: `docs/CITY-REIGN-AAA-FOUR-HERO-BUILDINGS.md` and `docs/CITY-REIGN-AAA-BLOCKBUSTER-MASTER-ROADMAP.md`.
+
+## B27–B31 — Twelve visibly distinct PAID city construction buildings
+- [x] Replace repetitive facade-only cuboid appearance on exactly 12 original project lots with individually sculpted physical Glass/Steel/Masonry ArrayMesh identities, each four truly different paid heights and silhouettes and original equipment (clinics, homes, schools, factory, purifier, reservoir, etc.).
+- [x] Hook ONLY into real `WorldBuilder._project_position` and `GameState.build` existing saved 0..4 levels. 12 additional GPU draw nodes worst-case; max 48 original cached tier meshes; 4 district PBR materials; zero physics, added lots, free economy rewards or save changes.
+- [x] Ensure LOW maintains original real collision boxes/purchased buildings while new detail hides; standard/cinematic restore same source mesh. Repeated redraw must not duplicate vertices/materials.
+- [ ] Exact-Godot native v121 and real Chromium paid-game pixel evidence and inherited full-city tests PASS **required before staging PR merge**.
+- [ ] Production-quality licensed PBR material/normal maps, hero models, physical mobile FPS and uncoached 30-minute chapter remain HOLD.
+- Source: `docs/CITY-REIGN-REAL-PAID-SKYLINE.md`.
