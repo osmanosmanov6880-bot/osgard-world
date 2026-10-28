@@ -16,13 +16,13 @@ const cityReignPreviewChecks=[
  "city-reign-preview':{title:'CITY REIGN Preview'",
  'href="/games/city-reign-preview/"',
  'CITY REIGN',
- 'ПУБЛИЧНАЯ PREVIEW'
+ 'PUBLIC PREVIEW'
 ]
 for(const contract of cityReignPreviewChecks)assert.ok(html.includes(contract),'Newly published true Godot city preview missing: '+contract)
 const osgardCardCount=(html.match(/<article class="card(?:\s|")/g)||[]).length
 assert.equal(osgardCardCount,23,'Exactly 23 actual separate cards must be live without replacing the existing R87 game')
 assert.ok(html.includes('href="/games/omega-3d-preview/"'),'The original public R87 remains separately discoverable')
-const itemListMatch=html.match(/<script type="application\/ld\\+json">([\s\S]*?)<\/script>/)
+const itemListMatch=html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)
 assert.ok(itemListMatch,'Real game ItemList must be machine-readable')
 const structured=JSON.parse(itemListMatch[1])
 assert.equal(structured.numberOfItems,23)
