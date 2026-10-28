@@ -1197,6 +1197,11 @@ func _layout_stage() -> void:
         height = maxf(height + 125.0, cinema_target)
         if size.x < 640.0:
             height = minf(height, 460.0)
+    # Fullscreen has no offscreen scroll area. The W76 minimum 420px was
+    # designed for a dashboard: on an 844x390 phone it pushes actual
+    # physical G/E and mission controls *below* the visible framebuffer.
+    if w80_full_bleed != null and w80_full_bleed.active:
+        height = size.y
     stage_shell.custom_minimum_size = Vector2(0, height)
     if cinematic_hud != null:
         cinematic_hud._relayout()

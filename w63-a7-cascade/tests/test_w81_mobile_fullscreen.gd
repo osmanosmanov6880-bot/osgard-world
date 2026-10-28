@@ -34,6 +34,9 @@ func _bounds(ui: A7CascadeScreen, width: int, height: int) -> void:
     if compact and width>=640:
         _check(rail_bounds.size.x<=432 and mission_bounds.size.x<=532,
             "Real centered landscape thumb and mission widths remain reachable")
+    if width == 844 and height == 390:
+        _check(stage.size.y <= height+2,
+            "Landscape original 3D stage stays inside actual 390px screen")
     _check(rail.columns==4,
         "W81 source-native actual two-row thumb grid, exactly four columns")
     _check(ui.w78_touch_overlay.controls.size()==8,

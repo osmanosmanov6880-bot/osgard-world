@@ -16,3 +16,6 @@
 
 ## Release HOLD
 Do not claim human-playtested 10–15 minute completion, iPhone/Android hardware certification, consumer mobile GPU 60fps, safe-area/notch compatibility, original AAA art signoff, legal title clearance or production release. No original gameplay core changes, no generated image substitution, no master merge. Merge only after exact W81 CI is green.
+
+## W81 exact-head landscape regression patch
+A responsive fullscreen stage must use exactly `height=size.y` after historical W76 dashboard minimum-height rules; otherwise an 844×390 true mobile view produces a 420px interactive stage and cuts off the bottom physical touch controls. Browser and native geometry now reject this. Original W81 new screenshot driver also compares only **same-size** 844×390 before/after MENU frames, never mixes 320×700 with 844×390. These are actual acceptance fixes, not fabricated screenshot success.

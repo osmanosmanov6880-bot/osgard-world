@@ -72,6 +72,8 @@ def verify_mobile_3d_geometry(g, width, height):
     require(contained(mission,stage),
             "Original five-phase touch decision deck must FIT INSIDE live 3D stage")
     if width >= 640:
+        require(stage[1]>=-3 and stage[3]<=height+3,
+                "No offscreen full-bleed 3D stage may bury landscape mission buttons")
         require(touch[2]<=432 and mission[2]<=532,
                 "Original physical buttons must stay centered on a landscape phone")
     require(mission[1]+mission[3]+2<=touch[1],
@@ -243,9 +245,9 @@ def run(export, evidence, sha):
                 "history_count":0,
             })
             f=screenshot(page,evidence,
-                "w81-07-real-Tab-hides-two-native-touch-decks-and-restores-panels.png")
-            require(difference(e,f)>50,
-                    "Original 3D screen returns real accessible controls after Tab")
+                "w81-07-real-native-MENU-restores-original-Godot-panels.png")
+            require(difference(landscape,f)>50,
+                    "Actual MENU returns original source screen at the SAME 844x390 framebuffer")
             require(not browser_errors,
                     "Real original Godot WebGL page error: "+" | ".join(browser_errors[:5]))
             context.close()
