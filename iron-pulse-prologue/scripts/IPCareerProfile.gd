@@ -165,7 +165,12 @@ func load(path: String=DEFAULT_PATH) -> bool:
     return restore(payload)
 
 func _valid_integer(value: Variant, min_value: int, max_value: int) -> bool:
-    return typeof(value)==TYPE_INT and value>=min_value and value<=max_value
+    # Godot JSON parser may represent 1 as 1.0; those are the *same* integer
+    # only when finite and exactly integral. Reject 1.5, bool, INF and NAN.
+    if typeof(value)!=TYPE_INT and typeof(value)!=TYPE_FLOAT:
+        return false
+    var numeric: float = float(value)
+    return is_finite(numeric) and numeric>=float(min_value) and numeric<=float(max_value) and floorf(numeric)==numeric
 
 func _valid_float(value: Variant, low: float, high: float) -> bool:
     return (typeof(value)==TYPE_FLOAT or typeof(value)==TYPE_INT) and is_finite(float(value)) and float(value)>=low and float(value)<=high
