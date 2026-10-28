@@ -739,6 +739,10 @@ func _w76_update_goal() -> void:
     if w76_objective_label == null or stage_3d == null:
         return
     var mission: A7SpatialMission = stage_3d.spatial_mission
+    # First click must show the true objective immediately without waiting
+    # a rendered frame, as verified by the native game accept test.
+    if stage_3d.mission_wayfinder != null:
+        stage_3d.mission_wayfinder._reconcile()
     var label: String = mission.title(locale) if mission != null else ""
     var helper: String = stage_3d.mission_wayfinder.localized_hint(locale) if stage_3d.mission_wayfinder != null else ""
     w76_objective_label.text = (label + "   /   " + helper) if mission != null and mission.active else ""
