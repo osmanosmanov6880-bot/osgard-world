@@ -151,11 +151,12 @@ func _t(key: String) -> String:
 
 func _style_panel() -> StyleBoxFlat:
     var skin := StyleBoxFlat.new()
-    skin.bg_color = PANEL
-    skin.border_color = BORDER
+    # W68: machined inset consoles, not generic rounded web cards.
+    skin.bg_color = Color("101b27")
+    skin.border_color = Color("344553")
     skin.set_border_width_all(1)
-    skin.set_corner_radius_all(10)
-    skin.set_content_margin_all(16)
+    skin.set_corner_radius_all(5)
+    skin.set_content_margin_all(18)
     return skin
 
 func _label(parent: Container, value: String, size: int, tone: Color) -> Label:
@@ -183,7 +184,36 @@ func _button(parent: Container, caption: String, handler: Callable) -> Button:
     b.text = caption
     b.custom_minimum_size = Vector2(180, 50)
     b.focus_mode = Control.FOCUS_ALL
-    b.add_theme_font_size_override("font_size", 14)
+    b.add_theme_font_size_override("font_size", 13)
+    var normal := StyleBoxFlat.new()
+    normal.bg_color = Color("182533")
+    normal.border_color = Color("394b5a")
+    normal.set_border_width_all(1)
+    normal.set_corner_radius_all(4)
+    normal.set_content_margin_all(11)
+    var hover := normal.duplicate() as StyleBoxFlat
+    hover.bg_color = Color("2b3e4c")
+    hover.border_color = GOLD
+    var pressed := normal.duplicate() as StyleBoxFlat
+    pressed.bg_color = Color("36505b")
+    pressed.border_color = MINT
+    var disabled := normal.duplicate() as StyleBoxFlat
+    disabled.bg_color = Color("121b25")
+    disabled.border_color = Color("25333d")
+    var focus := StyleBoxFlat.new()
+    focus.bg_color = Color.TRANSPARENT
+    focus.border_color = MINT
+    focus.set_border_width_all(2)
+    focus.set_corner_radius_all(4)
+    b.add_theme_stylebox_override("normal", normal)
+    b.add_theme_stylebox_override("hover", hover)
+    b.add_theme_stylebox_override("pressed", pressed)
+    b.add_theme_stylebox_override("disabled", disabled)
+    b.add_theme_stylebox_override("focus", focus)
+    b.add_theme_color_override("font_color", WHITE)
+    b.add_theme_color_override("font_hover_color", GOLD)
+    b.add_theme_color_override("font_pressed_color", MINT)
+    b.add_theme_color_override("font_disabled_color", MUTED)
     b.pressed.connect(handler)
     parent.add_child(b)
     return b
@@ -336,6 +366,14 @@ func _build() -> void:
         bar.custom_minimum_size = Vector2(182, 13)
         bar.max_value = 100
         bar.show_percentage = false
+        var groove := StyleBoxFlat.new()
+        groove.bg_color = Color("1e2b38")
+        groove.set_corner_radius_all(2)
+        var fill := StyleBoxFlat.new()
+        fill.bg_color = MINT
+        fill.set_corner_radius_all(2)
+        bar.add_theme_stylebox_override("background", groove)
+        bar.add_theme_stylebox_override("fill", fill)
         bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
         inside.add_child(bar)
         metric_bars[key] = bar
@@ -558,7 +596,15 @@ func _render(state: Dictionary) -> void:
     for key in ORDER:
         var value: int = int(stats[key])
         (metric_labels[key] as Label).text = "%s   %03d / 100" % [_t(key), value]
-        (metric_bars[key] as ProgressBar).value = value
+        var meter: ProgressBar = metric_bars[key] as ProgressBar
+        meter.value = value
+        var danger: bool = (key in ["heat", "pressure"] and value > 85) or (
+            key in ["seal", "signal", "energy"] and value < 30) or (
+            key == "integrity" and value < 45)
+        var meter_fill := StyleBoxFlat.new()
+        meter_fill.bg_color = RED if danger else GOLD if key == "energy" else MINT
+        meter_fill.set_corner_radius_all(2)
+        meter.add_theme_stylebox_override("fill", meter_fill)
     for i in range(round_pips.size()):
         round_pips[i].color = MINT if i < int(state["shift"]) else ORANGE if i == int(state["shift"]) and result == "playing" else BORDER
     for action in ACTION_ORDER:
@@ -640,6 +686,12 @@ func _publish_web_accessibility() -> void:
         "w66_hud": cinematic_hud != null,
         "w66_art_meshes": int(stage_state.get("art_geometry", 0)),
         "w67_cathedral_meshes": int(stage_state.get("cathedral_geometry", 0)),
+        "w68_machined_hero_meshes": int(stage_state.get("w68_hero_geometry", 0)),
+        "w68_smooth_parts": int(stage_state.get("w68_machined_torus", 0)),
+        "w68_pbr_profiles": int(stage_state.get("w68_original_texture_profiles", 0)),
+        "w68_genuine_texture_pixels": int(stage_state.get("w68_original_texture_pixels", 0)),
+        "w68_restrained_hud": cinematic_hud != null and
+            bool(cinematic_hud.qa_readout()["read_only"]),
         "w67_two_3d_sectors": bool(stage_state.get("cathedral_two_real_sectors", false)),
         "w67_inspection_sector": int(stage_state.get("inspection_sector", 0)),
         "w67_walk_progress": float(stage_state.get("inspection_progress", 0.0)),
