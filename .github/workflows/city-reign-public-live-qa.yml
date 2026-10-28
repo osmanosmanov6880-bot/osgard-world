@@ -41,7 +41,7 @@ jobs:
           with urllib.request.urlopen(req,timeout=30) as response:
             assert response.status==200
             d=json.load(response)
-          assert d['source_commit']=='d79682d20c324f2b6f9fc99fb92b2fd33718a6ff'
+          assert d['source_commit']=='14f78e346574b10d7bceed70d61bd731b37529ef'
           assert d['channel']=='city-reign-preview'
           assert d['engine']=='Godot 4.4.1'
           assert d['main_scene']=='res://scenes/main.tscn'
@@ -70,9 +70,12 @@ jobs:
           p=pathlib.Path('city-reign-public-live-evidence')
           m=json.loads((p/'PUBLIC-REAL-GODOT-ACCEPTANCE.json').read_text())
           assert m['status']=='PASS'
-          assert m['source_sha']=='d79682d20c324f2b6f9fc99fb92b2fd33718a6ff'
+          assert m['source_sha']=='14f78e346574b10d7bceed70d61bd731b37529ef'
           assert len(m['screens'])==2
           assert m['screens'][0]['actualInputChecked'] is True
+          assert m['screens'][0]['actualCameraSwitchChecked'] is True
+          assert m['screens'][0]['originalCameraPixelDifference']>6
+          assert (p/'desktop-1366x768-real-3d-camera-after-V.png').stat().st_size>12000
           for row in m['screens']:
             assert row['engine']['actualWebGL2']
             assert not row['engine']['lost']

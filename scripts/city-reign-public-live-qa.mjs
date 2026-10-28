@@ -8,7 +8,7 @@ import { captureAnimatedWebGLViewport } from './omega-browser-evidence.mjs'
 import { realGameFrameEvidence } from './omega-world-frame-evidence.mjs'
 
 const BASE = 'https://osgard.world/games/city-reign/'
-const SHA = 'd79682d20c324f2b6f9fc99fb92b2fd33718a6ff'
+const SHA = '14f78e346574b10d7bceed70d61bd731b37529ef'
 const OUT = resolve(process.env.CITY_REIGN_PUBLIC_EVIDENCE_DIR ||
   'city-reign-live-public-evidence')
 mkdirSync(OUT, { recursive: true })
@@ -103,6 +103,20 @@ async function verifyViewport(browser, name, dimensions, mobile) {
         throw new Error('Original published game TAB command center did not open')
       record.actualInputChecked = true
       record.tabScreenDifference = difference
+      // CITY REIGN R160: check the NEW camera on the true PUBLIC engine,
+      // after the original TAB cabinet closes. Not a CI fixture or website.
+      await page.keyboard.press('Tab')
+      await page.waitForTimeout(1700)
+      const priorView = (await captureAnimatedWebGLViewport(page)).png
+      await page.keyboard.press('v')
+      await page.waitForTimeout(2400)
+      const nextView = (await captureAnimatedWebGLViewport(page)).png
+      const cameraDifference = sampleDifference(priorView, nextView)
+      writeFileSync(resolve(OUT,name+'-real-3d-camera-after-V.png'),nextView)
+      if(cameraDifference <= 6)
+        throw new Error('PUBLIC R160 camera V did not physically change original city 3D perspective')
+      record.actualCameraSwitchChecked = true
+      record.originalCameraPixelDifference = cameraDifference
     }
     if (failures.length)
       throw new Error('Real public Godot browser runtime errors: ' + failures.join('; '))
