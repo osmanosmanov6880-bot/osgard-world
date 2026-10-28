@@ -34,10 +34,10 @@ func _valid_count(value: Variant, limit: int = MAX_ATTEMPTS) -> bool:
     if typeof(value) not in [TYPE_INT,TYPE_FLOAT]:
         return false
     var n: float = float(value)
-    return is_finite(n) and n >= 0.0 and n <= float(limit) and floorf(n) == n
+    return not is_nan(n) and not is_inf(n) and n >= 0.0 and n <= float(limit) and floorf(n) == n
 
 func _valid_metric(value: Variant, lo: float, hi: float) -> bool:
-    return typeof(value) in [TYPE_INT,TYPE_FLOAT] and is_finite(float(value)) and float(value) >= lo and float(value) <= hi
+    return typeof(value) in [TYPE_INT,TYPE_FLOAT] and not is_nan(float(value)) and not is_inf(float(value)) and float(value) >= lo and float(value) <= hi
 
 func clear_count() -> int:
     return records.size()
@@ -107,7 +107,7 @@ func route_text(locale: String = "ru") -> String:
     for i in range(ORDER.size()):
         segments.append("%02d %s  %s" % [i+1,labels[i],best_grade(ORDER[i])])
     var prefix: String = "КАМПАНИЯ / ОПЕРАЦИИ" if locale == "ru" else "CAMPAIGN / OPERATIONS"
-    return "%s  %d/3\n%s" % [prefix,clear_count(),"   ·   ".join(segments)]
+    return "%s  %d/3\n%s" % [prefix,clear_count(),"   ·   ".join(PackedStringArray(segments))]
 
 func last_result_text(locale: String = "ru") -> String:
     var title: String = "АРХИВ ОПЕРАТОРА" if locale == "ru" else "OPERATOR ARCHIVE"
