@@ -159,6 +159,7 @@ var checkpoint_path: String = IPCheckpointStore.DEFAULT_PATH
 var art_stage: IPCinematicStage
 var reactor_atrium: IPReactorAtrium
 var containment_fx: IPContainmentFX
+var cascade_world: IPCascadeStations
 var world_sectors: IPWorldSectors
 var audio_director: IPSoundscape
 var legacy_lamps: Array[OmniLight3D] = []
@@ -327,6 +328,7 @@ func _publish_web_state() -> void:
     state["cinematic_details"] = art_stage.readout() if art_stage != null else {}
     state["reactor_atrium"] = reactor_atrium.readout() if reactor_atrium != null else {}
     state["containment_fx"] = containment_fx.readout() if containment_fx != null else {}
+    state["cascade_world"] = cascade_world.readout() if cascade_world != null else {}
     # Read-only native material/geometry facts; Chromium QA never invents art.
     var actual_core: SphereMesh = reactor_core.mesh as SphereMesh
     var support_count: int = 0
@@ -516,6 +518,8 @@ func _make_complex() -> void:
     add_child(reactor_atrium)
     containment_fx = IPContainmentFX.new()
     add_child(containment_fx)
+    cascade_world = IPCascadeStations.new()
+    add_child(cascade_world)
     if reactor_core != null and reactor_atrium.core_plasma_material != null:
         reactor_core.material_override = reactor_atrium.core_plasma_material
     _terminal_active_material = _metal(Color(0.20,0.95,0.72),0.12,true)
@@ -1492,6 +1496,8 @@ func _process(delta: float) -> void:
         session.scenario_id,session.heat,session.oxygen,runtime_seconds,
         reduced_motion,session.thermal_pulses,session.thermal_shield,
         started and not paused and not session.finished())
+    cascade_world.update_status(session.cascade_state,session.cascade_phase,
+        session.cascade_remaining,session.elapsed,reduced_motion)
     if started and not paused and not session.finished():
         var sector: String = world_sectors.current_sector(player.global_position.z)
         if sector != active_sector:
