@@ -184,8 +184,8 @@ func _run() -> void:
     _check(ui.locale == "ru", "Native mission can return to Russian")
     ui.quality_button.emit_signal("pressed")
     _check(mission.quality == "eco" and
-        mission.warning_practical.light_energy <= 0.4,
-        "Real optional mission beacon light respects ECO quality")
+        is_equal_approx(mission.warning_practical.light_energy, 0.4),
+        "Real optional mission beacon light respects ECO quality at float precision")
     ui.quality_button.emit_signal("pressed")
     ui.motion_button.emit_signal("pressed")
     _check(mission.reduced_motion,
