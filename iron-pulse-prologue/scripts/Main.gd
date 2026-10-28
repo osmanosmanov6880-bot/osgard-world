@@ -18,7 +18,7 @@ const DIM := Color(0.58, 0.7, 0.78)
 const COPY := {
     "ru": {
         "subtitle": "BLACKOUT  /  ГЛАВА 00",
-        "intro": "СИГНАЛ БЕДСТВИЯ: СЕКТОР A7\n\nВ реакторном комплексе пропало питание. Люди заблокированы внутри. У вас две независимые линии питания, но три системы: охлаждение, жизнеобеспечение и аварийные двери.\n\nВыберите, чем пожертвовать на время, чтобы открыть путь к эвакуации.\n\nWASD — движение    SHIFT — бег\nМЫШЬ — обзор    E — действие\nL — язык    F — фонарь    ESC — пауза\nM — звук    V — плавная камера    G — графика    C — камера реактора    P — следующий план    F3 — диагностика\nH — показать / скрыть 3D-цель\nГЕЙМПАД: A — действие, X — срочно, B — радио, START — пауза\n\nЭто вымышленная игра, не инструкция по эксплуатации оборудования.",
+        "intro": "СИГНАЛ БЕДСТВИЯ: СЕКТОР A7\n\nВ реакторном комплексе пропало питание. Люди заблокированы внутри. У вас две независимые линии питания, но три системы: охлаждение, жизнеобеспечение и аварийные двери.\n\nВыберите, чем пожертвовать на время, чтобы открыть путь к эвакуации.\n\nWASD — движение    SHIFT — бег\nМЫШЬ — обзор    E — действие\nL — язык    F — фонарь    ESC — пауза\nM — звук    V — плавная камера    G — графика    C — камера реактора    P — следующий план    F3 — диагностика\nH — показать / скрыть 3D-цель    T — прогноз энергосистемы\nГЕЙМПАД: A — действие, X — срочно, B — радио, START — пауза\n\nЭто вымышленная игра, не инструкция по эксплуатации оборудования.",
         "start": "НАЧАТЬ ОПЕРАЦИЮ", "resume": "ПРОДОЛЖИТЬ", "restart": "ПОВТОРИТЬ",
         "scenario_blackout": "01 / GRID", "scenario_thermal": "02 / HEAT", "scenario_breach": "03 / AIR",
         "brief_blackout": "ОТКЛЮЧЕНИЕ ПИТАНИЯ: два контура, три системы. Изучите маршрут эвакуации.",
@@ -92,7 +92,7 @@ const COPY := {
     },
     "en": {
         "subtitle": "BLACKOUT  /  CHAPTER 00",
-        "intro": "DISTRESS SIGNAL: SECTOR A7\n\nPower has failed across the reactor complex. Your crew is trapped. You have two independent power buses but three systems: cooling, life support and emergency doors.\n\nChoose what to deprioritize briefly to unlock the evacuation path.\n\nWASD — move    SHIFT — sprint\nMOUSE — look    E — interact\nL — language    F — flashlight    ESC — pause\nM — audio    V — reduced motion    G — graphics    C — reactor camera    P — next shot    F3 — diagnostics\nH — show / hide 3D objective\nGAMEPAD: A — use, X — fast, B — radio, START — pause\n\nFictional game only. Not real equipment instructions.",
+        "intro": "DISTRESS SIGNAL: SECTOR A7\n\nPower has failed across the reactor complex. Your crew is trapped. You have two independent power buses but three systems: cooling, life support and emergency doors.\n\nChoose what to deprioritize briefly to unlock the evacuation path.\n\nWASD — move    SHIFT — sprint\nMOUSE — look    E — interact\nL — language    F — flashlight    ESC — pause\nM — audio    V — reduced motion    G — graphics    C — reactor camera    P — next shot    F3 — diagnostics\nH — show / hide 3D objective    T — power-route forecast\nGAMEPAD: A — use, X — fast, B — radio, START — pause\n\nFictional game only. Not real equipment instructions.",
         "start": "BEGIN OPERATION", "resume": "RESUME", "restart": "RESTART",
         "scenario_blackout": "01 / GRID", "scenario_thermal": "02 / HEAT", "scenario_breach": "03 / AIR",
         "brief_blackout": "POWER GRID FAILURE: two buses, three systems. Learn the safe route.",
@@ -173,6 +173,9 @@ var checkpoint_path: String = IPCheckpointStore.DEFAULT_PATH
 var campaign: IPCampaignFlow = IPCampaignFlow.new()
 var world_launch: Dictionary = IPWorldLaunch.parse("")
 var performance_audit: IPPerformanceAudit = IPPerformanceAudit.new()
+var decision_forecaster: IPDecisionForecast = IPDecisionForecast.new()
+var forecast_report: Dictionary = {}
+var forecast_update_clock: float = 0.0
 const CAMPAIGN_RECORD_PATH: String = "user://iron_pulse_campaign_progress_v9.json"
 var art_stage: IPCinematicStage
 var reactor_atrium: IPReactorAtrium
@@ -249,6 +252,9 @@ var touch_ui: Control
 var touch_shot_button: Button
 var diagnostic_panel: PanelContainer
 var diagnostic_label: Label
+var forecast_panel: PanelContainer
+var forecast_label: Label
+var touch_forecast_button: Button
 var touch_moves: Dictionary = {"forward":false, "back":false, "left":false, "right":false}
 var started: bool = false
 var paused: bool = false
@@ -426,6 +432,10 @@ func _publish_web_state() -> void:
         "requested_campaign":bool(world_launch.get("campaign",false))
     }
     state["wayfinder"] = wayfinder.readout() if wayfinder != null else {}
+    state["decision_forecast"] = {
+        "visible":forecast_panel != null and forecast_panel.visible,
+        "report":forecast_report.duplicate(true) if forecast_panel != null and forecast_panel.visible else {}
+    }
     state["campaign_echoes"] = campaign_echoes.readout() if campaign_echoes != null else {}
     state["relay_3d_terminals"] = relay_terminals.size()
     var real_relays: Array = []
@@ -853,6 +863,11 @@ func _make_hud() -> void:
     diagnostic_label = _label(diagnostic_panel,"",12,WHITE)
     diagnostic_label.name = "ExactLocalFrameTelemetry"
     diagnostic_panel.visible = false
+    forecast_panel = _panel(hud_root,Rect2(-455,296,-17,601),Rect2(1,0,1,0),Color(0.022,0.031,0.040,0.97))
+    forecast_panel.name = "V15_RealCrisisDecisionWindow"
+    forecast_label = _label(forecast_panel,"",13,WHITE)
+    forecast_label.name = "ClonedEngine30SecondForecast"
+    forecast_panel.visible = false
     get_viewport().size_changed.connect(_layout_hud)
     _layout_hud()
 
@@ -1000,6 +1015,8 @@ func _make_touch_controls() -> void:
     touch_shot_button = _touch_button(touch_ui,"SHOT / P",216,-471,94)
     touch_shot_button.pressed.connect(_cycle_director_shot)
     touch_shot_button.visible = false
+    touch_forecast_button = _touch_button(touch_ui,"PLAN / T",216,-471,94)
+    touch_forecast_button.pressed.connect(_toggle_decision_forecast)
 
 func _make_radio_ui() -> void:
     radio_panel = _panel(hud_root,Rect2(-420,-207,-18,-78),Rect2(1,1,1,1),Color(0.014,0.027,0.047,0.94))
@@ -1099,6 +1116,14 @@ func _layout_hud() -> void:
     interaction_label.add_theme_font_size_override("font_size",12 if narrow else 17)
     feedback_label.add_theme_font_size_override("font_size",12 if narrow else 15)
     footer_label.add_theme_font_size_override("font_size",9 if narrow else 11)
+    if forecast_panel != null:
+        forecast_panel.anchor_left = 0.0 if narrow else 1.0
+        forecast_panel.anchor_right = 0.0 if narrow else 1.0
+        forecast_panel.offset_left = 12.0 if narrow else -455.0
+        forecast_panel.offset_right = width-12.0 if narrow else -17.0
+        forecast_panel.offset_top = 290.0 if narrow else 296.0
+        forecast_panel.offset_bottom = 594.0 if narrow else 601.0
+        forecast_label.add_theme_font_size_override("font_size",11 if narrow else 13)
     intro_panel.offset_left = -minf(310.0,width*0.45)
     intro_panel.offset_right = minf(310.0,width*0.45)
     end_panel.offset_left = -minf(300.0,width*0.45)
@@ -1162,6 +1187,10 @@ func _apply_cinematic_view() -> void:
         camera.make_current()
     if touch_shot_button != null:
         touch_shot_button.visible = cinematic_view and touch_ui.visible
+    if touch_forecast_button != null:
+        touch_forecast_button.visible = not cinematic_view and touch_ui.visible
+    if cinematic_view and forecast_panel != null:
+        forecast_panel.visible = false
 
 func _toggle_cinematic_view() -> void:
     if not started or paused or session.finished():
@@ -1170,6 +1199,21 @@ func _toggle_cinematic_view() -> void:
     _apply_cinematic_view()
     if not cinematic_view:
         _refresh_radio_ui()
+
+func _toggle_decision_forecast() -> void:
+    if not started or paused or session.finished() or cinematic_view or forecast_panel == null:
+        return
+    forecast_panel.visible = not forecast_panel.visible
+    if forecast_panel.visible:
+        diagnostic_panel.visible = false
+        forecast_update_clock = 0.0
+        _refresh_decision_forecast()
+
+func _refresh_decision_forecast() -> void:
+    if forecast_panel == null or not forecast_panel.visible:
+        return
+    forecast_report = decision_forecaster.evaluate(session)
+    forecast_label.text = decision_forecaster.text_report(forecast_report,locale)
 
 func _cycle_director_shot() -> void:
     if started and not paused and not session.finished() and cinematic_view:
@@ -1295,6 +1339,8 @@ func _continue_checkpoint() -> bool:
     # Now, after atomic validation, restore all gameplay and authored story state.
     cinematic_view = false
     _apply_cinematic_view()
+    forecast_panel.visible = false
+    forecast_report.clear()
     session = restored_engine
     story = restored_story
     campaign = saved_campaign
@@ -1386,6 +1432,8 @@ func _fast_interact() -> void:
     _interact(true)
 
 func start_run() -> void:
+    forecast_panel.visible = false
+    forecast_report.clear()
     cinematic_view = false
     _apply_cinematic_view()
     story.reset(selected_scenario)
@@ -1404,6 +1452,8 @@ func start_run() -> void:
         Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 
 func _restart() -> void:
+    forecast_panel.visible = false
+    forecast_report.clear()
     cinematic_view = false
     _apply_cinematic_view()
     session.reset(selected_scenario)
@@ -1452,6 +1502,8 @@ func _pause_toggle() -> void:
     if not started or session.finished():
         return
     paused = not paused
+    if paused and forecast_panel != null:
+        forecast_panel.visible = false
     pause_panel.visible = paused
     audio_director.set_active(not paused)
     if DisplayServer.get_name() != "headless":
@@ -1533,9 +1585,14 @@ func _input(event: InputEvent) -> void:
             _announce("motion_reduced" if reduced_motion else "motion_normal")
             return
         if event.keycode == KEY_F3:
+            if forecast_panel != null:
+                forecast_panel.visible = false
             diagnostic_panel.visible = not diagnostic_panel.visible
             if diagnostic_panel.visible:
                 diagnostic_label.text = performance_audit.diagnostic_text(locale,session.scenario_id,campaign)
+            return
+        if event.keycode == KEY_T:
+            _toggle_decision_forecast()
             return
         if event.keycode == KEY_H and started and not paused and not session.finished():
             _announce("wayfinder_on" if wayfinder.toggle() else "wayfinder_off")
@@ -1697,6 +1754,11 @@ func _process(delta: float) -> void:
         if checkpoint_clock >= 18.0:
             checkpoint_clock = 0.0
             _save_checkpoint()
+    if forecast_panel != null and forecast_panel.visible and started and not paused and not session.finished():
+        forecast_update_clock += maxf(delta,0.0)
+        if forecast_update_clock >= 2.0:
+            forecast_update_clock = 0.0
+            _refresh_decision_forecast()
     hud_elapsed += delta
     if hud_elapsed > 0.12:
         hud_elapsed = 0.0
@@ -1799,6 +1861,8 @@ func _announce(key: String) -> void:
             audio_director.cue("confirm")
 
 func _show_end() -> void:
+    forecast_panel.visible = false
+    forecast_report.clear()
     cinematic_view = false
     _apply_cinematic_view()
     if end_panel.visible:
