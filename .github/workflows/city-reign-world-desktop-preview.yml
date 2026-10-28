@@ -1,0 +1,169 @@
+name: CITY REIGN WORLD EDITION - source-locked Windows and Linux playable candidates
+
+on:
+  pull_request:
+    branches:
+      - feat/omega-r90-aaa-reference-first-slice-20261026
+      - master
+    paths:
+      - 'godot/empire-omega/scripts/city_reign_street_architecture.gd'
+      - 'godot/empire-omega/scripts/world_builder.gd'
+      - 'godot/empire-omega/scripts/horizon_r91_skyline_detail.gd'
+      - 'godot/empire-omega/tests/v123_city_reign_street_world_integrity.gd'
+      - '.github/workflows/city-reign-world-desktop-preview.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  private-source-original-desktop-candidates:
+    runs-on: ubuntu-latest
+    timeout-minutes: 38
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Prove original game source HEAD, no promotion or deployment
+        shell: bash
+        env:
+          SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+          grep -Fq 'run/main_scene="res://scenes/main.tscn"' godot/empire-omega/project.godot
+          mkdir -p city-reign-private-desktop-bundles
+          printf '%s\n' "$SOURCE_SHA" > city-reign-private-desktop-bundles/SOURCE-SHA.txt
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: true
+      - name: Build original source, audio and first-gameplay-native checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 godot/empire-omega/tools/generate_audio.py
+          python3 godot/empire-omega/tools/generate_patrol_audio.py
+          bash scripts/omega-strict-godot-import.sh godot/empire-omega
+          for fixture in v123_city_reign_street_world_integrity v121_city_reign_first_promise_street_director; do
+            timeout --signal=TERM --kill-after=6s 130s godot --headless \
+              --path godot/empire-omega --script "res://tests/${fixture}.gd"
+          done
+      - name: Export authentic original Compatibility renderer Windows x64 and Linux
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p city-reign-private-desktop-bundles/win64-compat
+          mkdir -p city-reign-private-desktop-bundles/linux64-compat
+          godot --headless --path godot/empire-omega --export-release "Windows Desktop" \
+            "$GITHUB_WORKSPACE/city-reign-private-desktop-bundles/win64-compat/CITY_REIGN_WINDOWS.exe"
+          test -s city-reign-private-desktop-bundles/win64-compat/CITY_REIGN_WINDOWS.exe
+          test -s city-reign-private-desktop-bundles/win64-compat/CITY_REIGN_WINDOWS.pck
+          file city-reign-private-desktop-bundles/win64-compat/CITY_REIGN_WINDOWS.exe
+          godot --headless --path godot/empire-omega --export-release "Linux" \
+            "$GITHUB_WORKSPACE/city-reign-private-desktop-bundles/linux64-compat/CITY_REIGN_LINUX.x86_64"
+          test -s city-reign-private-desktop-bundles/linux64-compat/CITY_REIGN_LINUX.x86_64
+          test -s city-reign-private-desktop-bundles/linux64-compat/CITY_REIGN_LINUX.pck
+          file city-reign-private-desktop-bundles/linux64-compat/CITY_REIGN_LINUX.x86_64
+      - name: Prepare Forward+ desktop renderer only in an isolated source copy
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/city-reign-forward"
+          cp -a godot/empire-omega/. "$RUNNER_TEMP/city-reign-forward/"
+          rm -rf "$RUNNER_TEMP/city-reign-forward/.godot" "$RUNNER_TEMP/city-reign-forward/.build-web"
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          p=Path(os.environ['RUNNER_TEMP'])/'city-reign-forward/project.godot'
+          source=p.read_text(encoding='utf-8')
+          old='renderer/rendering_method="gl_compatibility"'
+          assert source.count(old)==1, 'Original Godot renderer location changed'
+          source=source.replace(old,'renderer/rendering_method="forward_plus"')
+          section='[rendering]\n'
+          assert source.count(section)==1,'Never create duplicated rendering config'
+          source=source.replace(section,
+            section+'anti_aliasing/quality/use_taa=true\n'
+              +'anti_aliasing/quality/use_debanding=true\n',1)
+          assert 'run/main_scene="res://scenes/main.tscn"' in source
+          p.write_text(source,encoding='utf-8')
+          print('Dedicated desktop-only Forward+ game with original main scene')
+          PY
+          godot --headless --editor --path "$RUNNER_TEMP/city-reign-forward" \
+            --import --quit
+      - name: Build Windows x64 high-end Forward+ playable package
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p city-reign-private-desktop-bundles/win64-ultra
+          godot --headless --path "$RUNNER_TEMP/city-reign-forward" \
+            --export-release "Windows Desktop" \
+            "$GITHUB_WORKSPACE/city-reign-private-desktop-bundles/win64-ultra/CITY_REIGN_ULTRA.exe"
+          test -s city-reign-private-desktop-bundles/win64-ultra/CITY_REIGN_ULTRA.exe
+          test -s city-reign-private-desktop-bundles/win64-ultra/CITY_REIGN_ULTRA.pck
+          file city-reign-private-desktop-bundles/win64-ultra/CITY_REIGN_ULTRA.exe
+      - name: SHA256 source-locked manifests, honest release hold and per-platform zips
+        shell: bash
+        env:
+          SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib,os,json,zipfile
+          base=Path('city-reign-private-desktop-bundles')
+          receipt={
+            'source_sha':os.environ['SOURCE_SHA'],
+            'engine':'Godot 4.4.1',
+            'main_scene':'res://scenes/main.tscn',
+            'desktop_compatibility':'GL Compatibility',
+            'desktop_ultra':'Forward+ / Vulkan capable GPU required',
+            'notarized_or_codesigned':False,
+            'physically_tested_on_windows_or_linux':False,
+            'commercial_aaa_claim':False,
+            'public_deployment':False
+          }
+          for kind in ['win64-compat','linux64-compat','win64-ultra']:
+            folder=base/kind
+            binaries=[p for p in folder.iterdir() if p.is_file()]
+            assert len(binaries)>=2
+            (folder/'BUILD-MANIFEST.json').write_text(json.dumps({
+              **receipt,'flavor':kind,
+              'sha256':{p.name:hashlib.sha256(p.read_bytes()).hexdigest()
+                        for p in binaries}
+              },indent=2)+'\n')
+            (folder/'START-HERE-RU.txt').write_text(
+              'CITY REIGN - WORLD EDITION: original playable Godot preview\n'
+              'Commit: '+receipt['source_sha']+'\n'
+              'Extract ALL files from this package into one folder.\n'
+              'Windows: start EXE beside the PCK. Linux: chmod +x .x86_64 and run it.\n'
+              'Movement WASD. E enter/exit car. F interact. Tab city.\n'
+              'ULTRA: dedicated Forward+ desktop path, Vulkan GPU required.\n'
+              'Standard: original Compatibility renderer for wider hardware.\n'
+              'UNSIGNED, PRIVATE TEST BUILD; not approved as AAA or commercial release.\n'
+              'Do NOT ignore OS security warnings; verify source and SHA256.\n',
+              encoding='utf-8')
+            out=base/('CITY_REIGN_'+kind.upper().replace('-','_')+'.zip')
+            with zipfile.ZipFile(out,'w',zipfile.ZIP_DEFLATED,compresslevel=6) as archive:
+              for p in folder.iterdir():
+                if p.is_file():
+                  archive.write(p,p.name)
+            with zipfile.ZipFile(out) as archive:
+              assert archive.testzip() is None
+              names=archive.namelist()
+              assert any(n.endswith('.pck') for n in names)
+              assert len(names)>=4
+            print('PRIVATE DESKTOP CANDIDATE',out,out.stat().st_size,'bytes')
+          PY
+      - name: Archive all three independent original game packages - no deploy
+        uses: actions/upload-artifact@v4
+        with:
+          name: city-reign-world-original-desktop-3-platform-candidates-${{ github.run_id }}
+          path: |
+            city-reign-private-desktop-bundles/CITY_REIGN_WIN64_COMPAT.zip
+            city-reign-private-desktop-bundles/CITY_REIGN_LINUX64_COMPAT.zip
+            city-reign-private-desktop-bundles/CITY_REIGN_WIN64_ULTRA.zip
+            city-reign-private-desktop-bundles/SOURCE-SHA.txt
+          retention-days: 14
+          if-no-files-found: error
