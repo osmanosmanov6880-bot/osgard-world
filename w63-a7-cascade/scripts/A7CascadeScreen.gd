@@ -65,6 +65,18 @@ const RU := {
     "mission_active": "МИССИЯ A7 / АКТИВНА",
     "mission_wait": "МИССИЯ ДОСТУПНА ТОЛЬКО В НАЧАЛЕ НОВОЙ СМЕНЫ",
     "mission_proximity": "ФИЗИЧЕСКИЙ ОСМОТР: ТОЛЬКО В РЕЖИМЕ ОПЕРАТОРА",
+    "field_start": "ПОЛЕВАЯ МИССИЯ / Y",
+    "field_mode": "РЕЖИМ: ПОЛЕВЫЕ ОПЕРАЦИИ",
+    "field_valve_minus": "J  /  ← КЛАПАН",
+    "field_valve_plus": "K  /  КЛАПАН →",
+    "field_relay_a": "7  /  КОНТУР А",
+    "field_relay_b": "8  /  КОНТУР Б",
+    "field_relay_c": "9  /  КОНТУР В",
+    "field_sync_a": "U  /  ИМПУЛЬС 1",
+    "field_sync_b": "I  /  ИМПУЛЬС 2",
+    "field_sync_c": "O  /  ИМПУЛЬС 3",
+    "field_far": "ПОДОЙДИТЕ К АКТИВНОМУ ПУЛЬТУ И ВКЛЮЧИТЕ РЕЖИМ ОПЕРАТОРА (P).",
+    "field_gate": "ЗАВЕРШИТЕ НАСТРОЙКУ ПУЛЬТА ПЕРЕД ОСМОТРОМ (E).",
     "preview_default": "ВЫБЕРИТЕ ДЕЙСТВИЕ: ПОСЛЕДСТВИЯ ПОКАЗАНЫ В ИГРОВЫХ ЕДИНИЦАХ.",
 }
 const EN := {
@@ -117,6 +129,18 @@ const EN := {
     "mission_active": "MISSION A7 / ACTIVE",
     "mission_wait": "MISSION AVAILABLE ONLY BEFORE THE FIRST SHIFT DECISION",
     "mission_proximity": "PHYSICAL INSPECTION: ENTER FIRST PERSON MODE",
+    "field_start": "FIELD OPERATIONS / Y",
+    "field_mode": "MODE: THREE PHYSICAL STATION PUZZLES",
+    "field_valve_minus": "J  /  ← VALVE",
+    "field_valve_plus": "K  /  VALVE →",
+    "field_relay_a": "7  /  BUS A",
+    "field_relay_b": "8  /  BUS B",
+    "field_relay_c": "9  /  BUS C",
+    "field_sync_a": "U  /  PULSE 1",
+    "field_sync_b": "I  /  PULSE 2",
+    "field_sync_c": "O  /  PULSE 3",
+    "field_far": "MOVE NEAR THE ACTIVE CONSOLE AND ENTER OPERATOR MODE (P).",
+    "field_gate": "COMPLETE THE STATION MECHANIC BEFORE INSPECTION (E).",
     "preview_default": "CHOOSE AN ACTION: FORECASTS ARE FICTIONAL GAME UNITS.",
 }
 
@@ -162,6 +186,13 @@ var cinema_button: Button
 var cinema_mode: bool = false
 var pilot_button: Button
 var mission_button: Button
+var field_start_button: Button
+var field_label: Label
+var field_help: Label
+var field_valve_controls: HFlowContainer
+var field_relay_controls: HFlowContainer
+var field_sync_controls: HFlowContainer
+var field_buttons: Dictionary = {}
 var mission_title: Label
 var mission_briefing: Label
 var mission_meta: Label
@@ -395,6 +426,8 @@ func _build() -> void:
     mission_panel.add_child(mission_row)
     mission_button = _button(mission_row, "", _start_spatial_mission)
     mission_button.custom_minimum_size = Vector2(245, 42)
+    field_start_button = _button(mission_row, "", _start_extended_mission)
+    field_start_button.custom_minimum_size = Vector2(225, 42)
     mission_title = _label(mission_row, "", 17, GOLD)
     var mission_strip := HBoxContainer.new()
     mission_strip.name = "RealSpatialObjectivePips"
@@ -411,6 +444,40 @@ func _build() -> void:
         mission_pips.append(progress_pip)
     mission_briefing = _label(mission_panel, "", 13, WHITE)
     mission_meta = _label(mission_panel, "", 11, MUTED)
+    field_label = _label(mission_panel, "", 13, GOLD)
+    field_help = _label(mission_panel, "", 12, MINT)
+    field_valve_controls = HFlowContainer.new()
+    field_valve_controls.name = "ActualPhysicalThermalDialControls"
+    mission_panel.add_child(field_valve_controls)
+    field_relay_controls = HFlowContainer.new()
+    field_relay_controls.name = "ActualPhysicalRelayRoutingControls"
+    mission_panel.add_child(field_relay_controls)
+    field_sync_controls = HFlowContainer.new()
+    field_sync_controls.name = "ActualPhysicalContainmentSyncControls"
+    mission_panel.add_child(field_sync_controls)
+    for control in field_valve_controls.get_children():
+        control.queue_free()
+    for index in range(2):
+        var id: String = "valve_minus" if index == 0 else "valve_plus"
+        var direction: int = -1 if index == 0 else 1
+        field_buttons[id] = _button(field_valve_controls, "",
+            _field_valve.bind(direction))
+        (field_buttons[id] as Button).custom_minimum_size = Vector2(162, 42)
+    for i in range(3):
+        var key: String = "relay_%d" % i
+        field_buttons[key] = _button(field_relay_controls, "",
+            _field_relay.bind(i))
+        (field_buttons[key] as Button).custom_minimum_size = Vector2(128, 42)
+    for i in range(3):
+        var key: String = "sync_%d" % i
+        field_buttons[key] = _button(field_sync_controls, "",
+            _field_sync.bind(i))
+        (field_buttons[key] as Button).custom_minimum_size = Vector2(128, 42)
+    field_label.visible = false
+    field_help.visible = false
+    field_valve_controls.visible = false
+    field_relay_controls.visible = false
+    field_sync_controls.visible = false
 
     # Original story beats are generated from actual game shift/status;
     # never play fake cutscenes that are independent of the player's choices.
@@ -509,6 +576,9 @@ func _on_action(action: String) -> void:
         stage_3d.trigger_action(action)
         if stage_3d.spatial_mission != null:
             stage_3d.spatial_mission.accepted_game_action(action, before, after)
+            if stage_3d.field_operations != null:
+                stage_3d.field_operations.observe_phase(
+                    stage_3d.spatial_mission.phase, after)
             _refresh_mission_ui(after)
     if sound_bus != null:
         var cue: String = "action"
@@ -584,6 +654,44 @@ func _start_spatial_mission() -> void:
     _refresh_mission_ui(model.snapshot())
     call_deferred("_publish_web_accessibility")
 
+func _start_extended_mission() -> void:
+    if stage_3d == null or stage_3d.spatial_mission == null or
+            stage_3d.field_operations == null:
+        return
+    var ok: bool = stage_3d.spatial_mission.start_extended(
+        model.snapshot(), stage_3d.field_operations)
+    if not ok:
+        mission_meta.text = _t("mission_wait")
+    _refresh_mission_ui(model.snapshot())
+    call_deferred("_publish_web_accessibility")
+
+func _field_valve(direction: int) -> void:
+    if stage_3d == null or stage_3d.field_operations == null:
+        return
+    var ok: bool = stage_3d.field_operations.rotate_valve(
+        direction, stage_3d.first_person)
+    field_help.text = stage_3d.field_operations.instructions(locale) if ok else _t("field_far")
+    _refresh_mission_ui(model.snapshot())
+    call_deferred("_publish_web_accessibility")
+
+func _field_relay(index: int) -> void:
+    if stage_3d == null or stage_3d.field_operations == null:
+        return
+    var ok: bool = stage_3d.field_operations.toggle_relay(
+        index, stage_3d.first_person)
+    field_help.text = stage_3d.field_operations.instructions(locale) if ok else _t("field_far")
+    _refresh_mission_ui(model.snapshot())
+    call_deferred("_publish_web_accessibility")
+
+func _field_sync(index: int) -> void:
+    if stage_3d == null or stage_3d.field_operations == null:
+        return
+    var ok: bool = stage_3d.field_operations.sync_connector(
+        index, stage_3d.first_person, model.snapshot())
+    field_help.text = stage_3d.field_operations.instructions(locale) if ok else _t("field_far")
+    _refresh_mission_ui(model.snapshot())
+    call_deferred("_publish_web_accessibility")
+
 func _refresh_mission_ui(state: Dictionary) -> void:
     if stage_3d == null or stage_3d.spatial_mission == null or mission_button == null:
         return
@@ -593,6 +701,27 @@ func _refresh_mission_ui(state: Dictionary) -> void:
     mission_button.text = _t("mission_active" if mission.active else "mission_start")
     mission_button.disabled = mission.active or str(state.get("status", "")) != "playing" or (
         (state.get("history", []) as Array).size() > 0)
+    field_start_button.text = _t("field_mode" if mission.extended_mode else "field_start")
+    field_start_button.disabled = mission.active or mission_button.disabled
+    var ops: A7FieldOperations = stage_3d.field_operations
+    var show_field: bool = mission.extended_mode and ops != null and ops.enabled
+    field_label.visible = show_field
+    field_help.visible = show_field
+    field_label.text = _t("field_mode")
+    if show_field:
+        var contextual: String = ops.instructions(locale)
+        field_help.text = contextual
+    field_valve_controls.visible = show_field and mission.phase == 0
+    field_relay_controls.visible = show_field and mission.phase == 2
+    field_sync_controls.visible = show_field and mission.phase == 4
+    var field_labels: Dictionary = {
+        "valve_minus": "field_valve_minus", "valve_plus": "field_valve_plus",
+        "relay_0": "field_relay_a", "relay_1": "field_relay_b",
+        "relay_2": "field_relay_c", "sync_0": "field_sync_a",
+        "sync_1": "field_sync_b", "sync_2": "field_sync_c",
+    }
+    for key in field_buttons.keys():
+        (field_buttons[key] as Button).text = _t(str(field_labels[key]))
     mission_meta.text = ("0 / 5" if not mission.active else "%d / 5" % mini(5, mission.phase))
     if mission.active and mission.phase == 6:
         mission_meta.text = "FAILED / 5"
@@ -619,8 +748,14 @@ func _pilot_inspect() -> void:
     pilot_status_label.text = _t("pilot_core") if target == "CORE" else (
         _t("pilot_relay") if target == "RELAY" else _t("pilot_far"))
     if stage_3d.spatial_mission != null and stage_3d.first_person != null:
-        stage_3d.spatial_mission.inspect_physical(
+        var did_advance: bool = stage_3d.spatial_mission.inspect_physical(
             target, model.snapshot(), stage_3d.first_person)
+        if not did_advance and target != "" and
+                stage_3d.spatial_mission.extended_mode:
+            pilot_status_label.text = _t("field_gate")
+        if stage_3d.field_operations != null:
+            stage_3d.field_operations.observe_phase(
+                stage_3d.spatial_mission.phase, model.snapshot())
         _refresh_mission_ui(model.snapshot())
     call_deferred("_publish_web_accessibility")
 
@@ -723,6 +858,26 @@ func _unhandled_key_input(event: InputEvent) -> void:
         return
     var key: InputEventKey = event as InputEventKey
     if not key.pressed or key.echo:
+        return
+    if key.keycode == KEY_Y:
+        _start_extended_mission()
+        get_viewport().set_input_as_handled()
+        return
+    if key.keycode == KEY_J:
+        _field_valve(-1)
+        get_viewport().set_input_as_handled()
+        return
+    if key.keycode == KEY_K:
+        _field_valve(1)
+        get_viewport().set_input_as_handled()
+        return
+    if key.keycode in [KEY_7, KEY_8, KEY_9]:
+        _field_relay([KEY_7, KEY_8, KEY_9].find(key.keycode))
+        get_viewport().set_input_as_handled()
+        return
+    if key.keycode in [KEY_U, KEY_I, KEY_O]:
+        _field_sync([KEY_U, KEY_I, KEY_O].find(key.keycode))
+        get_viewport().set_input_as_handled()
         return
     if key.keycode == KEY_T:
         _start_spatial_mission()
@@ -971,6 +1126,20 @@ func _publish_web_accessibility() -> void:
         "w71_mission_events": stage_3d.spatial_mission.progress_events if stage_3d.spatial_mission != null else 0,
         "w71_mission_physical_inspections": stage_3d.spatial_mission.real_inspections if stage_3d.spatial_mission != null else 0,
         "w71_mission_actions": stage_3d.spatial_mission.accepted_game_decisions if stage_3d.spatial_mission != null else 0,
+        "w72_extended_mode": stage_3d.spatial_mission.extended_mode if stage_3d.spatial_mission != null else false,
+        "w72_ops_active": stage_3d.field_operations.enabled if stage_3d.field_operations != null else false,
+        "w72_active_mechanic": stage_3d.field_operations.active_mechanic() if stage_3d.field_operations != null else "inactive",
+        "w72_valve_index": stage_3d.field_operations.valve_index if stage_3d.field_operations != null else 0,
+        "w72_valve_target": stage_3d.field_operations.valve_target if stage_3d.field_operations != null else 0,
+        "w72_valve_solved": stage_3d.field_operations.valve_solved if stage_3d.field_operations != null else false,
+        "w72_relay_mask": stage_3d.field_operations.relay_mask if stage_3d.field_operations != null else 0,
+        "w72_relay_target": stage_3d.field_operations.relay_target if stage_3d.field_operations != null else -1,
+        "w72_relay_solved": stage_3d.field_operations.relay_solved if stage_3d.field_operations != null else false,
+        "w72_sync_order": stage_3d.field_operations.sync_order.duplicate() if stage_3d.field_operations != null else [],
+        "w72_sync_step": stage_3d.field_operations.sync_step if stage_3d.field_operations != null else 0,
+        "w72_sync_solved": stage_3d.field_operations.sync_solved if stage_3d.field_operations != null else false,
+        "w72_actual_mechanic_meshes": int(stage_state.get("w72_true_mechanic_meshes", 0)),
+        "w72_physically_rejected_actions": stage_3d.field_operations.rejected_far_uses if stage_3d.field_operations != null else 0,
         "w67_two_3d_sectors": bool(stage_state.get("cathedral_two_real_sectors", false)),
         "w67_inspection_sector": int(stage_state.get("inspection_sector", 0)),
         "w67_walk_progress": float(stage_state.get("inspection_progress", 0.0)),
@@ -1005,6 +1174,8 @@ func _publish_web_accessibility() -> void:
         "pilot": _web_rect(pilot_button),
         "pilot_inspect": _web_rect(pilot_inspect_button),
         "mission_start": _web_rect(mission_button),
+        "extended_start": _web_rect(field_start_button),
+        "field_help": _web_rect(field_help),
         "mission_title": _web_rect(mission_title),
         "mission_briefing": _web_rect(mission_briefing),
         "walk_back": _web_rect(route_buttons[0]),
