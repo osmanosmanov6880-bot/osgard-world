@@ -336,11 +336,14 @@ func _publish_web_state() -> void:
         var filament: MeshInstance3D = pivot.get_child(0) as MeshInstance3D
         var mesh: TorusMesh = filament.mesh as TorusMesh
         ring_profiles.append(snappedf(mesh.outer_radius-mesh.inner_radius,0.001))
+    var normal_front: Vector3 = (reactor_rings[0].get_child(0).global_transform.basis * Vector3.UP).normalized()
+    var director_eye: Vector3 = (reactor_atrium.director_camera.global_position-reactor_core.global_position).normalized()
     state["reactor_hero"] = {
         "core_sphere_radius":actual_core.radius,
         "support_piers":support_count,
         "ring_profiles":ring_profiles,
-        "front_light_power":reactor_atrium._lights[1].light_energy
+        "front_light_power":reactor_atrium._lights[1].light_energy,
+        "halo_camera_alignment":absf(normal_front.dot(director_eye))
     }
     state["cinematic_view"] = cinematic_view
     state["cinematic_hud_hidden"] = cinematic_view and not header_panel.visible and not side_panel.visible and not prompt_panel.visible and not crosshair.visible
