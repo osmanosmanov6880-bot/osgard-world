@@ -1,0 +1,284 @@
+name: CITY REIGN - source-pinned public PREVIEW by direct SSH to OSgard World
+
+# A new /games/city-reign-preview/ route; never overwrite R87 Omega or the portal.
+on:
+  push:
+    branches: [master]
+    paths:
+      - '.github/workflows/city-reign-preview-ssh-release.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  checks: read
+  pull-requests: read
+  actions: read
+
+concurrency:
+  group: osgard-city-reign-preview-ssh-only
+  cancel-in-progress: false
+
+jobs:
+  source-locked-native-export-and-ssh-preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    env:
+      SOURCE_SHA: a49d2b6b5e26c1c0125b4a5ea45900573bc382d4
+      PUBLIC_URL: https://osgard.world/games/city-reign-preview/
+    steps:
+      - name: Checkout immutable master for trusted deployment scripts
+        uses: actions/checkout@v4
+        with:
+          path: trusted
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Checkout exact previously-reviewed real CITY REIGN source
+        uses: actions/checkout@v4
+        with:
+          path: candidate
+          ref: a49d2b6b5e26c1c0125b4a5ea45900573bc382d4
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Enforce source-pinned 47 native and WebGL checks before SSH
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p preview-evidence
+          test "$(git -C candidate rev-parse HEAD)" = "$SOURCE_SHA"
+          python3 trusted/scripts/city-reign-preview-release-gate.py --self-test
+          python3 trusted/scripts/city-reign-preview-release-gate.py \
+            --source-sha "$SOURCE_SHA" \
+            --report preview-evidence/SOURCE-CI-PROVENANCE.json
+          grep -Fqx 'run/main_scene="res://scenes/main.tscn"' \
+            candidate/godot/empire-omega/project.godot
+          test -s trusted/scripts/city-reign-preview-remote-publish.sh
+          test -s trusted/scripts/city-reign-preview-remote-rollback.sh
+          test -s trusted/scripts/city-reign-preview-live-check.mjs
+          printf '%s\n' "$SOURCE_SHA" > preview-evidence/SOURCE-SHA.txt
+      - name: Install official Godot 4.4.1 WebAssembly export templates
+        uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: true
+      - name: Regenerate genuine game audio, strict import all source scripts
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 candidate/godot/empire-omega/tools/generate_audio.py
+          python3 candidate/godot/empire-omega/tools/generate_patrol_audio.py
+          bash trusted/scripts/omega-strict-godot-import.sh \
+            candidate/godot/empire-omega 2>&1 | tee preview-evidence/source-Godot-import.log
+          grep -Fq 'R42 PASS: real Godot imported with no script errors' \
+            preview-evidence/source-Godot-import.log
+      - name: Run authentic paid construction, NPCs, 40 events and save regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          for suite in \
+            v128_city_reign_paid_public_works \
+            v129_city_reign_paid_crossing_traffic \
+            v130_city_reign_community_park_live \
+            v131_city_reign_real_site_inspection \
+            v132_city_reign_pedestrian_waypoint_continuity \
+            v110_city_reign_first_mandate \
+            v121_city_reign_first_promise_street_director \
+            v123_city_reign_street_world_integrity \
+            v124_city_reign_tower_silhouette_lod \
+            v127_city_reign_tower_distance_lod \
+            v72_r55_forty_mission_event_save; do
+            test -f "candidate/godot/empire-omega/tests/${suite}.gd"
+            echo "SOURCE NATIVE RUNNING: ${suite}"
+            log="preview-evidence/${suite}.log"
+            timeout --signal=TERM --kill-after=6s 120s godot --headless \
+              --path candidate/godot/empire-omega \
+              --script "res://tests/${suite}.gd" 2>&1 | tee "$log"
+            if grep -E 'SCRIPT ERROR:|Parse Error:|[1-9][0-9]* FAIL|ERROR:.*FAIL' "$log"; then
+              echo "::error::Actual native game failed ${suite}"
+              exit 1
+            fi
+            grep -Eqi '[0-9]+ (PASS|passed|pass).*0 (FAIL|failed|fail)' "$log" || {
+              echo "::error::Missing zero-failure native marker: ${suite}"
+              exit 1
+            }
+          done
+      - name: Confirm existing R87 Omega public HTTPS is untouched BEFORE publication
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 trusted/scripts/omega-live-integrity.py \
+            --expected trusted/public/games/omega-3d-preview/release.json \
+            --base https://osgard.world/games/omega-3d-preview \
+            --nonce "before-new-preview-$GITHUB_RUN_ID" \
+            > preview-evidence/OLD-OMEGA-PUBLIC-BEFORE.json
+          grep -Fq '"status": "PASS"' preview-evidence/OLD-OMEGA-PUBLIC-BEFORE.json
+      - name: Export real shipped main.tscn to actual Godot 4.4.1 WebGL2 runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p candidate/godot/empire-omega/.build-web
+          godot --headless --path candidate/godot/empire-omega \
+            --export-release Web "$GITHUB_WORKSPACE/candidate/godot/empire-omega/.build-web/index.html"
+          node trusted/scripts/localize-godot-web-export.mjs \
+            candidate/godot/empire-omega/.build-web
+          mkdir -p preview-package
+          cp -a candidate/godot/empire-omega/.build-web/. preview-package/
+          python3 - <<'PY'
+          import hashlib,json,os,pathlib,re
+          base=pathlib.Path('preview-package')
+          html=base/'index.html'
+          original=html.read_text(encoding='utf-8')
+          changed,number=re.subn(r'<title>[^<]*</title>',
+              '<title>CITY REIGN - Playable Preview | OSgard World</title>',
+              original,count=1)
+          assert number==1,'Godot Web must have an actual browser title'
+          html.write_text(changed,encoding='utf-8')
+          sources=sorted(p for p in base.iterdir() if p.is_file())
+          files={p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in sources}
+          assert {'index.html','index.js','index.wasm','index.pck'} <= files.keys()
+          assert (base/'index.wasm').stat().st_size>1_000_000
+          assert (base/'index.pck').stat().st_size>100_000
+          assert len(files)<=24
+          assert all(re.fullmatch(r'[A-Za-z0-9_.-]{1,128}',n) for n in files)
+          assert all(p.is_file() and not p.is_symlink() and p.stat().st_size>0 for p in sources)
+          manifest={'engine':'Godot 4.4.1','source_path':'godot/empire-omega',
+              'source_commit':os.environ['SOURCE_SHA'],'native_tests':'passed',
+              'artifact_kind':'native-Godot-HTML5-export',
+              'release_channel':'CITY_REIGN_PUBLIC_PREVIEW',
+              'published_path':'/games/city-reign-preview/',
+              'production_omega_unchanged':True,'files':files}
+          (base/'release.json').write_text(json.dumps(manifest,indent=2)+'\n',encoding='utf-8')
+          (base/'SHA256SUMS.txt').write_text(''.join(
+              f'{digest}  {name}\n' for name,digest in sorted(files.items())))
+          print('Original Godot Web export:',len(files),'source-locked binary assets')
+          PY
+          (cd preview-package && sha256sum -c SHA256SUMS.txt)
+          python3 trusted/scripts/omega-live-integrity.py --self-test
+          mkdir -p "$RUNNER_TEMP/city-reign-preview-native"
+          tar -czf "$RUNNER_TEMP/city-reign-preview-native/game.tgz" \
+            -C preview-package .
+      - name: Install Node 22 and pinned browser dependencies for public acceptance
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: trusted/package-lock.json
+      - name: Install actual Chromium WebGL browser BEFORE any SSH mutations
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd trusted
+          npm ci
+          npm install --no-save --package-lock=false @playwright/test@1.58.2 pngjs@7.0.0
+          npx playwright install --with-deps chromium
+          sudo apt-get install -y xvfb libgl1-mesa-dri libegl1 libgl1
+      - name: Configure existing VPS SSH secrets, never print key
+        shell: bash
+        env:
+          DEPLOY_HOST: ${{ secrets.OSGARD_DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.OSGARD_DEPLOY_USER }}
+          DEPLOY_KEY: ${{ secrets.OSGARD_DEPLOY_KEY }}
+        run: |
+          set -euo pipefail
+          test -n "$DEPLOY_HOST" && test -n "$DEPLOY_USER" && test -n "$DEPLOY_KEY"
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$DEPLOY_KEY" > ~/.ssh/osgard_city_reign_preview
+          chmod 600 ~/.ssh/osgard_city_reign_preview
+          ssh-keyscan -T 10 -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+          test -s ~/.ssh/known_hosts
+      - name: Directly SSH-install the newly exported game ONLY at separate preview path
+        id: activate
+        shell: bash
+        env:
+          DEPLOY_HOST: ${{ secrets.OSGARD_DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.OSGARD_DEPLOY_USER }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          python3 trusted/scripts/city-reign-preview-release-gate.py --source-sha "$SOURCE_SHA"
+          required_bytes="$(python3 trusted/scripts/omega-native-space-budget.py \
+            --archive "$RUNNER_TEMP/city-reign-preview-native/game.tgz" \
+            --game-dir preview-package)"
+          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes \
+            -i ~/.ssh/osgard_city_reign_preview "$DEPLOY_USER@$DEPLOY_HOST" \
+            "bash -s -- '$required_bytes'" < trusted/scripts/omega-native-remote-free-space.sh
+          remote="/tmp/osgard-city-reign-preview-$GITHUB_RUN_ID"
+          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes \
+            -i ~/.ssh/osgard_city_reign_preview "$DEPLOY_USER@$DEPLOY_HOST" \
+            "mkdir -p '$remote'"
+          scp -o BatchMode=yes -o StrictHostKeyChecking=yes \
+            -i ~/.ssh/osgard_city_reign_preview \
+            "$RUNNER_TEMP/city-reign-preview-native/game.tgz" \
+            "$DEPLOY_USER@$DEPLOY_HOST:$remote/game.tgz"
+          scp -o BatchMode=yes -o StrictHostKeyChecking=yes \
+            -i ~/.ssh/osgard_city_reign_preview \
+            trusted/scripts/city-reign-preview-remote-publish.sh \
+            "$DEPLOY_USER@$DEPLOY_HOST:$remote/deploy.sh"
+          python3 trusted/scripts/city-reign-preview-release-gate.py --source-sha "$SOURCE_SHA"
+          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes \
+            -i ~/.ssh/osgard_city_reign_preview "$DEPLOY_USER@$DEPLOY_HOST" \
+            "bash '$remote/deploy.sh' '$GITHUB_RUN_ID' '$SOURCE_SHA'"
+          echo 'deployed=true' >> "$GITHUB_OUTPUT"
+      - name: Verify every published Godot byte and unchanged production Omega
+        id: live_integrity
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 trusted/scripts/omega-live-integrity.py \
+            --expected preview-package/release.json \
+            --base https://osgard.world/games/city-reign-preview \
+            --nonce "city-reign-preview-$GITHUB_RUN_ID" \
+            | tee preview-evidence/PUBLIC-GODOT-BYTE-INTEGRITY.json
+          python3 trusted/scripts/omega-live-integrity.py \
+            --expected trusted/public/games/omega-3d-preview/release.json \
+            --base https://osgard.world/games/omega-3d-preview \
+            --nonce "unchanged-omega-$GITHUB_RUN_ID" \
+            > preview-evidence/OLD-OMEGA-PUBLIC-AFTER.json
+      - name: Play the actual published Godot WebGL2 in desktop and mobile Chromium
+        id: live_chromium
+        shell: bash
+        env:
+          CITY_REIGN_SOURCE_SHA: ${{ env.SOURCE_SHA }}
+          LIBGL_ALWAYS_SOFTWARE: '1'
+        run: |
+          set -euo pipefail
+          cd trusted
+          CITY_REIGN_EVIDENCE_DIR="$GITHUB_WORKSPACE/preview-evidence" \
+            xvfb-run -a -s '-screen 0 1920x1080x24' \
+            node scripts/city-reign-preview-live-check.mjs
+      - name: Roll back ONLY the new preview if public acceptance fails
+        if: ${{ failure() && steps.activate.outputs.deployed == 'true' }}
+        shell: bash
+        env:
+          DEPLOY_HOST: ${{ secrets.OSGARD_DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.OSGARD_DEPLOY_USER }}
+        run: |
+          set -euo pipefail
+          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes \
+            -i ~/.ssh/osgard_city_reign_preview "$DEPLOY_USER@$DEPLOY_HOST" \
+            "bash -s -- '$GITHUB_RUN_ID' '$SOURCE_SHA'" \
+            < trusted/scripts/city-reign-preview-remote-rollback.sh
+      - name: Remove only this run's transport after verified public success
+        if: ${{ success() && steps.live_integrity.outcome == 'success' && steps.live_chromium.outcome == 'success' }}
+        shell: bash
+        env:
+          DEPLOY_HOST: ${{ secrets.OSGARD_DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.OSGARD_DEPLOY_USER }}
+        run: |
+          set -euo pipefail
+          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes \
+            -i ~/.ssh/osgard_city_reign_preview "$DEPLOY_USER@$DEPLOY_HOST" \
+            "bash -s -- '$GITHUB_RUN_ID'" \
+            < trusted/scripts/city-reign-preview-remote-cleanup.sh
+          printf '%s\n' "$PUBLIC_URL" > preview-evidence/PUBLIC-LINK.txt
+      - name: Preserve source, hashes, genuine public screenshots and failure evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: city-reign-public-ssh-preview-${{ github.run_id }}
+          path: preview-evidence/
+          if-no-files-found: warn
+          retention-days: 30
