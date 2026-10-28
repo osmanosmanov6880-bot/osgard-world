@@ -252,6 +252,25 @@ jobs:
             --sha "${{ github.event.pull_request.head.sha || github.sha }}" \
             2>&1 | tee "$RUNNER_TEMP/iron-pulse-browser-playback.log"
           grep -q '"status": "PASS"' iron-pulse-prologue/build/browser-evidence/webgl-evidence.json
+      - name: Assemble exact-source international portal, real WebGL and self-contained Windows ZIP
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check iron-pulse-prologue/portal/app.js
+          python3 -m py_compile iron-pulse-prologue/portal/serve_preview.py iron-pulse-prologue/ci/package_portal.py iron-pulse-prologue/ci/portal_acceptance.py
+          python3 iron-pulse-prologue/ci/package_portal.py --project iron-pulse-prologue --source-sha "${{ github.event.pull_request.head.sha || github.sha }}" 2>&1 | tee "$RUNNER_TEMP/iron-pulse-v9-package.log"
+          test -s iron-pulse-prologue/build/portal/SHA256SUMS.txt
+          test -s iron-pulse-prologue/build/portal/downloads/IRON_PULSE_WINDOWS.zip
+      - name: Live Chromium acceptance for RU/EN portal, 390px UI, verified builds and offline safety
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$RUNNER_TEMP/iron-pulse-playwright/bin/python" iron-pulse-prologue/ci/portal_acceptance.py \
+            --portal iron-pulse-prologue/build/portal \
+            --source-sha "${{ github.event.pull_request.head.sha || github.sha }}" 2>&1 | tee "$RUNNER_TEMP/iron-pulse-v9-portal.log"
+          grep -q "^IRON PULSE V9 GLOBAL PORTAL PASS:" "$RUNNER_TEMP/iron-pulse-v9-portal.log"
+          test -s iron-pulse-prologue/build/portal/evidence/portal-desktop.png
+          test -s iron-pulse-prologue/build/portal/evidence/portal-touch.png
       - name: Retain build proof even if packaging fails
         if: always()
         uses: actions/upload-artifact@v4
@@ -262,5 +281,6 @@ jobs:
             iron-pulse-prologue/build/windows
             iron-pulse-prologue/build/proof
             iron-pulse-prologue/build/browser-evidence
+            iron-pulse-prologue/build/portal
           if-no-files-found: warn
           retention-days: 14
