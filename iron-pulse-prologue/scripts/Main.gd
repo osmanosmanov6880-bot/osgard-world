@@ -1737,6 +1737,9 @@ func _show_end() -> void:
 func _refresh_hud() -> void:
     if objective_label == null:
         return
+    # Signal console LEDs are materialized from the SAME authenticated
+    # simulation state as actual game objectives, including first scan.
+    signal_sites.update_campaign(signal_campaign,session.core_scanned)
     var objective_key: String = session.objective_id()
     if objective_key == "victory":
         objective_key = "victory_objective"
