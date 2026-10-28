@@ -11,6 +11,7 @@ const COPPER := Color("e5b982")
 const MAX_DRAG_PIXELS := 90.0
 const LOOK_SENSITIVITY := 0.85
 const LOST_TOUCH_TIMEOUT_MS := 1700
+const MAX_CONTINUOUS_WALK_HOLD_MS := 12000
 var stage: Control
 var actor: A7FirstPersonOperator
 var touch_controls: A7TouchFieldControls
@@ -31,6 +32,18 @@ var recovered_end_by_position: int = 0
 var recovered_missing_end_timeout: int = 0
 var last_look_point: Vector2 = Vector2.ZERO
 var last_touch_ticks_ms: int = 0
+# Per-physical-finger independent movement ownership. On Chromium WebGL
+# adding/releasing a second touch can cause a BUTTON mouse-up even when the
+# ORIGINAL first finger is still held. Never trust that mouse-up to release
+# the ORIGINAL W70 physics key until the originating touch truly ends.
+var source_walk_fingers: Dictionary = {}
+var source_walk_origins: Dictionary = {}
+var source_walk_started_ms: Dictionary = {}
+var actual_walk_touch_starts: int = 0
+var actual_walk_touch_ends: int = 0
+var original_walk_reassert_frames: int = 0
+var mismatched_walk_releases_ignored: int = 0
+var expired_long_walk_holds: int = 0
 var captured_pixels: float = 0.0
 var actual_screen_size: Vector2 = Vector2.ZERO
 var original_w70_actor_id: int = 0
@@ -88,10 +101,54 @@ func set_context(immersive_mobile: bool, language: String,
         # at ~160px; keep the readable world free of floating text clutter.
         hint_label.visible = should_show and screen_size.y>=640.0
 
+func _release_walk_id(index: int) -> void:
+    if not source_walk_fingers.has(index):
+        return
+    var key: String = str(source_walk_fingers[index])
+    source_walk_fingers.erase(index)
+    source_walk_origins.erase(index)
+    source_walk_started_ms.erase(index)
+    actual_walk_touch_ends += 1
+    if actor != null and A7TouchFieldControls.WALK_KEYS.has(key):
+        actor.set_key(int(A7TouchFieldControls.WALK_KEYS[key]),false)
+
+func _release_all_source_walk() -> void:
+    for index in source_walk_fingers.keys().duplicate():
+        _release_walk_id(int(index))
+
 func cancel_capture() -> void:
     if look_finger >= 0:
         cancelled_captures += 1
         look_finger = -1
+    _release_all_source_walk()
+
+func _walk_button_at(point: Vector2) -> String:
+    if touch_controls == null or not touch_controls.visible:
+        return ""
+    for key in ["left","forward","back","right"]:
+        var button: Button = touch_controls.controls.get(key) as Button
+        if button != null and button.get_global_rect().has_point(point):
+            return key
+    return ""
+
+func _walk_release_near(key: String, position: Vector2) -> bool:
+    var button: Button = touch_controls.controls.get(key) as Button
+    return button != null and button.get_global_rect().grow(24.0).has_point(position)
+
+func _release_matching_walk(index: int, position: Vector2) -> bool:
+    if source_walk_fingers.has(index):
+        var key: String = str(source_walk_fingers[index])
+        if _walk_release_near(key,position):
+            _release_walk_id(index)
+            return true
+        # A reindexed LOOK release must not clear the first WALK finger.
+        mismatched_walk_releases_ignored += 1
+    for other in source_walk_fingers.keys():
+        var key: String = str(source_walk_fingers[other])
+        if _walk_release_near(key,position):
+            _release_walk_id(int(other))
+            return true
+    return false
 
 func _on_ui(point: Vector2) -> bool:
     if (touch_controls != null and touch_controls.visible and
@@ -132,6 +189,16 @@ func handle_screen_event(event: InputEvent) -> bool:
     if event is InputEventScreenTouch:
         var touch: InputEventScreenTouch = event as InputEventScreenTouch
         if touch.pressed:
+            var walking_key: String = _walk_button_at(touch.position)
+            if walking_key != "" and actor != null and actor.piloting:
+                source_walk_fingers[touch.index] = walking_key
+                source_walk_origins[touch.index] = touch.position
+                source_walk_started_ms[touch.index] = Time.get_ticks_msec()
+                actor.set_key(int(A7TouchFieldControls.WALK_KEYS[walking_key]),true)
+                actual_walk_touch_starts += 1
+                # Deliberately DO NOT consume W78's original Button event;
+                # its visual/input feedback remains fully native.
+                return false
             if look_finger>=0:
                 rejected_extra_fingers += 1
                 return false
@@ -145,9 +212,12 @@ func handle_screen_event(event: InputEvent) -> bool:
             touch_begins += 1
             return true
         if touch.index == look_finger and look_finger>=0:
-            look_finger = -1
-            released_fingers += 1
-            return true
+            # Only trust exact identity when the END physically belongs in
+            # the original look region, never W78 native walk buttons.
+            if not _on_ui(touch.position):
+                look_finger = -1
+                released_fingers += 1
+                return true
         # Some WebGL touch-end paths renumber the still-active first
         # finger after a two-touch gesture. A release near the LOOK finger's
         # last physical point is still a valid end, but a release over W78
@@ -158,9 +228,26 @@ func handle_screen_event(event: InputEvent) -> bool:
             released_fingers += 1
             recovered_end_by_position += 1
             return true
+        # Independent source-identified WALK finger release. A reindexed
+        # event in the upper camera region must NEVER stop physical walking.
+        if _release_matching_walk(touch.index,touch.position):
+            return false
         return false
     if event is InputEventScreenDrag:
         var motion: InputEventScreenDrag = event as InputEventScreenDrag
+        if source_walk_fingers.has(motion.index):
+            var walk_key: String = str(source_walk_fingers[motion.index])
+            var origin: Vector2 = source_walk_origins[motion.index] as Vector2
+            if not _walk_release_near(walk_key,motion.position):
+                # Nearby sliding off the source button should stop walking;
+                # a far-away camera-finger event carrying a recycled index
+                # must not falsely release that first source WALK press.
+                if motion.position.distance_to(origin)<115.0:
+                    _release_walk_id(motion.index)
+                else:
+                    mismatched_walk_releases_ignored += 1
+                return false
+            return false
         if (not visible or look_finger<0 or motion.index != look_finger
                 or actor == null or not actor.piloting):
             return false
@@ -184,6 +271,22 @@ func handle_screen_event(event: InputEvent) -> bool:
     return false
 
 func _process(_delta: float) -> void:
+    # Reassert the first REAL W70 physical movement key when the browser's
+    # GUI compatibility mouse-up belongs to a DIFFERENT second finger.
+    # Only a source finger END in its actual W78 button, mode/focus exit,
+    # or bounded 12s safety cap can release the source-held key.
+    if visible and actor != null and actor.piloting:
+        var now: int = Time.get_ticks_msec()
+        for index in source_walk_fingers.keys().duplicate():
+            if (source_walk_started_ms.has(index) and
+                    now-int(source_walk_started_ms[index])>=MAX_CONTINUOUS_WALK_HOLD_MS):
+                expired_long_walk_holds += 1
+                _release_walk_id(int(index))
+                continue
+            var key: String = str(source_walk_fingers[index])
+            if A7TouchFieldControls.WALK_KEYS.has(key):
+                actor.set_key(int(A7TouchFieldControls.WALK_KEYS[key]),true)
+                original_walk_reassert_frames += 1
     # The browser or mobile OS may omit a ScreenTouch END when a second
     # pointer lifts while the first remains on a native Button. The genuine
     # source camera must NEVER remain indefinitely captured. A stationary
@@ -209,6 +312,13 @@ func qa_readout() -> Dictionary:
         "touch_release_events":released_fingers,
         "touch_end_index_recoveries":recovered_end_by_position,
         "touch_end_loss_watchdog_recoveries":recovered_missing_end_timeout,
+        "source_active_walk_fingers":source_walk_fingers.size(),
+        "source_walk_touch_starts":actual_walk_touch_starts,
+        "source_walk_touch_ends":actual_walk_touch_ends,
+        "original_W70_walk_reassert_frames":original_walk_reassert_frames,
+        "reindexed_movement_touch_end_ignored":mismatched_walk_releases_ignored,
+        "bounded_12s_safety_walk_timeouts":expired_long_walk_holds,
+        "max_continuous_source_walk_ms":MAX_CONTINUOUS_WALK_HOLD_MS,
         "native_watchdog_timeout_ms":LOST_TOUCH_TIMEOUT_MS,
         "cancelled_fingers_on_mode_or_resize":cancelled_captures,
         "bounded_drag_events":clamped_motion_frames,

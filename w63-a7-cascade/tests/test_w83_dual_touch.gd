@@ -156,6 +156,37 @@ func _run() -> void:
     _check(ui.model.snapshot()==original_game,
         "Release recovery and loss watchdog NEVER mutate original A7 gameplay")
 
+    # W83.2: two physical independently indexed fingers must keep the W70
+    # FIRST WALK pressed even if Godot's compatibility Button gets a spurious
+    # mouse-up when the SECOND LOOK finger lifts.
+    var forward_rect: Rect2=(walk.controls["forward"] as Button).get_global_rect()
+    var walk_pos: Vector2=forward_rect.get_center()
+    _check(not look.handle_screen_event(_touch(61,walk_pos,true)) and
+        look.source_walk_fingers.size()==1 and
+        actor.held_keys.get(KEY_W,false),
+        "Original W78 native button source touch indexed as independently held walk")
+    _check(look.handle_screen_event(_touch(62,point,true)),
+        "Second real look finger works concurrently with indexed original W")
+    _check(look.handle_screen_event(_drag(62,point+Vector2(26,-9),
+        Vector2(26,-9))),"Second finger changes same original camera while walk held")
+    actor.set_key(KEY_W,false)
+    look._process(0.016)
+    _check(actor.held_keys.get(KEY_W,false) and
+        look.original_walk_reassert_frames>=1,
+        "Spurious W78 compatibility mouse-up cannot stop actual first held finger")
+    _check(look.handle_screen_event(_touch(62,point,false)),
+        "Camera finger can release independently by native source identity")
+    look._process(0.016)
+    _check(actor.held_keys.get(KEY_W,false) and
+        look.source_walk_fingers.size()==1,
+        "Real W70 forward continues despite the second camera finger release")
+    _check(not look.handle_screen_event(_touch(61,walk_pos,false)) and
+        look.source_walk_fingers.is_empty() and
+        not actor.held_keys.get(KEY_W,false),
+        "Only native physical FIRST finger release stops original source W")
+    _check(ui.model.snapshot()==original_game,
+        "Independent true indexed W70 walking never modifies W63 gameplay")
+
     # Real focus-loss guard on original Godot notification, not timer magic.
     (walk.controls["back"] as Button).emit_signal("button_down")
     _check(actor.held_keys.get(KEY_S,false),"W78 original held movement primed")

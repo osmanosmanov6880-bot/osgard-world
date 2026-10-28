@@ -107,6 +107,11 @@ def true_dual_finger(page,cdp,g):
     }""",arg=start["w83_real_camera_rotations"],timeout=30000)
     with_fingers=snapshot(page)
     require(with_fingers["w70_real_physical_distance"] >
+            start["w70_real_physical_distance"]+0.30 and
+            with_fingers["w83_source_walk_touch_starts"]>=1 and
+            with_fingers["w83_source_active_walk_fingers"]>=1,
+            "Actual first source-indexed physical W78 touch is independently tracked")
+    require(with_fingers["w70_real_physical_distance"] >
             start["w70_real_physical_distance"]+0.30,
             "FIRST physical finger still walks CharacterBody3D while SECOND finger drags original Camera3D")
     require(abs(with_fingers["w83_source_yaw"]-start["w83_source_yaw"])>0.07 and
@@ -132,12 +137,17 @@ def true_dual_finger(page,cdp,g):
     page.wait_for_timeout(240)
     still_walking=snapshot(page)
     require(still_walking["w70_real_physical_distance"] >
-            distance_at_release+0.12,
-            "Original first held physical walk continues after independent look finger release")
+            distance_at_release+0.12 and
+            still_walking["w83_source_active_walk_fingers"]>=1 and
+            still_walking["w83_real_walk_reassert_frames"] >
+                released["w83_real_walk_reassert_frames"],
+            "Original first indexed physical W continues after look finger release, even if GUI compatibility MouseUp fires")
     send(cdp,"touchEnd",[])
     page.wait_for_timeout(220)
     all_released=snapshot(page)
     require(all_released["w83_active_look_finger"]==-1 and
+            all_released["w83_source_active_walk_fingers"]==0 and
+            all_released["w83_source_walk_touch_ends"]>=1 and
             all_released["history_count"]==0,
             "Both real CDP fingers released without inventing original game decisions")
     return start,with_fingers,all_released
