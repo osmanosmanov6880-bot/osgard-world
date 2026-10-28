@@ -39,3 +39,13 @@ The ONLY authorized money/upgrade source is `GameState.data["buildings"][id]`, f
 
 ## Genuine acceptance requirements
 Source exact-SHA native v108/v113/v119/v120/v121 all PASS; original full-city Chromium and first-party source-paid pixel test must PASS. Independent art-direction review, professional licensed PBR UV/normal maps, high-quality player character, gameplay first 30 minutes, real measured smartphone/desktop FPS and localization still remain HOLD. Release only after full staging and human review, never directly master/R87/SSH.
+
+## B32: real Chromium art critique and correction
+The REAL original 960×540 Chromium screenshot showed that the newly modelled City Hall/council building had one opaque blue pane approximately 6m wide and 8m high that concealed the street entrance. This is not accepted as high-quality architecture even though the original pixel test was green.
+
+The authored `council` branch now creates **three physically separate glass window bays**, real stone mullions, a dark recessed central entrance with two bronze pull handles, smaller glazing headers and a genuinely protruding limestone lintel. Exactly one original 3D ArrayMesh for this paid structure; no independent render nodes, collisions or false text, no postprocessing filter. Same 48 cached source geometry-level budget and identical four real levels. **Acceptance requires inspecting the revised actual source screenshot, not merely code compilation.**
+
+## B33: real original physics and draw refresh optimization
+Before B33, `WorldBuilder.update_development()` created a new `BoxMesh` and `BoxShape3D` for every built project at EVERY unrelated city/HQ/mission refresh. B33 stores `project_visual_levels` and a small **four-level shared original collision resource cache**; at an unchanged level no source mesh or physics shape is reallocated. An actual level transition still modifies original building height and exact collider to the same 15×(6+8×level)×15 dimensions, and an unbuilt site disables the original collision. This changes no original purchase price, physics body count, collision position, GameState save, quests or traffic.
+
+New v121 test verifies **the exact original Godot BoxMesh/BoxShape3D object identities persist** after three repeated development redraws with one real paid council tower and that exactly one original physical resource tier is allocated at first purchase. The new 12-facade visual cache is still separate, bounded at 48.

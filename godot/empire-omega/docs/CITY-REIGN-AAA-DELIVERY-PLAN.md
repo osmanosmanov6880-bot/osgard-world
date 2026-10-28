@@ -151,3 +151,8 @@ ENGINEERING STAGING. Previous C1 exact-head GitHub native+Chromium/provenance ch
 - [ ] Exact-Godot native v121 and real Chromium paid-game pixel evidence and inherited full-city tests PASS **required before staging PR merge**.
 - [ ] Production-quality licensed PBR material/normal maps, hero models, physical mobile FPS and uncoached 30-minute chapter remain HOLD.
 - Source: `docs/CITY-REIGN-REAL-PAID-SKYLINE.md`.
+
+## B32–B33 — genuine visual critique and performance, not only version counts
+- [x] Actual Chromium before/after frame review exposed a too-large opaque blue City Hall entrance panel. Replaced with 3 individually separated glass bays, physical stone reveals, a real central doorway, bronze handles and projecting carved lintel, without new draw calls/colliders.
+- [x] Refactor old `WorldBuilder.update_development` original `BoxMesh` and `BoxShape3D` allocation on every redraw. Exact four genuine level-size GPU/physics pairs are shared and reused, with a stored per-lot last paid level; no stale road collider on reset.
+- [ ] Exact NEW source SHA v121, real whole-city Chromium and actual corrected screenshots must PASS again before merging unpublished R90.
