@@ -1,0 +1,235 @@
+name: LAST FRONTIER W69 true incident cinematography and focus (RELEASE HOLD)
+
+on:
+  pull_request:
+    branches:
+      - design/last-frontier-w68-industrial-cinema-20261028
+    paths:
+      - 'w63-a7-cascade/**'
+      - 'docs/LAST_FRONTIER_W69_CINEMATIC.md'
+      - '.github/workflows/last-frontier-w69-incident-cinema.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: last-frontier-w69-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  exact-art-and-game-guard:
+    name: Exact PASS W68 ancestry, 21 protected original game/art/export blobs
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Guard original source and authorized visual-only W69 changes
+        shell: bash
+        env:
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          mkdir -p w69-evidence
+          python3 - <<'PY'
+          import json,os,re,subprocess
+          from pathlib import Path
+          base='728dcb8ed4f8cdeecbdf257ec9043345a39596e3'
+          head=os.environ['HEAD']
+          def git(*xs): return subprocess.check_output(['git',*xs],text=True).strip()
+          assert re.fullmatch('[0-9a-f]{40}',head)
+          assert git('rev-parse','HEAD')==head
+          assert git('merge-base',base,head)==base
+          changed=set(git('diff','--name-only','--no-renames',base,head).splitlines())
+          allowed={
+              'w63-a7-cascade/scripts/A7IncidentDirection.gd',
+              'w63-a7-cascade/scripts/A7CinematicStage.gd',
+              'w63-a7-cascade/scripts/A7CascadeScreen.gd',
+              'w63-a7-cascade/tests/test_w69_incident_direction.gd',
+              'w63-a7-cascade/ci/w69_browser_incident.py',
+              '.github/workflows/last-frontier-w69-incident-cinema.yml',
+              'docs/LAST_FRONTIER_W69_CINEMATIC.md',
+          }
+          assert changed==allowed,{'extra':sorted(changed-allowed),
+                                   'missing':sorted(allowed-changed)}
+          protected=[
+              'w63-a7-cascade/scripts/A7CascadeCore.gd',
+              'w63-a7-cascade/scripts/A7IncidentDirector.gd',
+              'w63-a7-cascade/scripts/A7ProceduralAudio.gd',
+              'w63-a7-cascade/scripts/A7CinematicHud.gd',
+              'w63-a7-cascade/scripts/A7CinematicHeroSet.gd',
+              'w63-a7-cascade/scripts/A7CinematicMaterialLab.gd',
+              'w63-a7-cascade/scripts/A7ArchitecturalDetail.gd',
+              'w63-a7-cascade/scripts/A7IndustrialCathedral.gd',
+              'w63-a7-cascade/tests/test_a7_cascade.gd',
+              'w63-a7-cascade/tests/test_w64_real_3d_stage.gd',
+              'w63-a7-cascade/tests/test_w65_story_audio.gd',
+              'w63-a7-cascade/tests/test_w67_cinematic_sectors.gd',
+              'w63-a7-cascade/tests/test_w68_industrial_cinema.gd',
+              'w63-a7-cascade/ci/w64_browser_acceptance.py',
+              'w63-a7-cascade/ci/w65_browser_story_audio.py',
+              'w63-a7-cascade/ci/w67_browser_sectors.py',
+              'w63-a7-cascade/ci/w68_browser_art.py',
+              'w63-a7-cascade/Main.tscn',
+              'w63-a7-cascade/project.godot',
+              'w63-a7-cascade/export_presets.cfg',
+              '.github/workflows/last-frontier-w68-cinema.yml',
+          ]
+          blobs={}
+          for path in protected:
+              a=git('rev-parse',base+':'+path)
+              b=git('rev-parse',head+':'+path)
+              assert a==b,'Original game/render/test blob mutated: '+path
+              blobs[path]=b
+          subprocess.run(['git','diff','--check',base,head],check=True)
+          actor=Path('w63-a7-cascade/scripts/A7IncidentDirection.gd').read_text()
+          stage=Path('w63-a7-cascade/scripts/A7CinematicStage.gd').read_text()
+          assert 'class_name A7IncidentDirection' in actor
+          assert 'ImageTexture.create_from_image' in actor
+          assert 'Label3D.new()' in actor and 'MeshInstance3D.new()' in actor
+          assert 'toggle_inspection_focus' in stage
+          assert 'A7CascadeCore.new()' not in actor
+          for banned in ['OS.execute','HTTPClient','JavaScriptBridge','model.choose(']:
+              assert banned not in actor,'Offline visual actor prohibited '+banned
+          record={
+              'schema':'LAST_FRONTIER_W69_EXACT_W68_INCIDENT_CINEMA_V1',
+              'status':'PASS','base_sha':base,'exact_head':head,
+              'changed_paths':sorted(changed),
+              'immutable_original_blobs':blobs,
+              'gameplay_model_changed':False,
+              'physical_equipment_connected':False,
+              'licensed_images_or_samples_used':False,
+              'real_device_certified':False,
+              'allow_master_merge':False,
+              'public_release_approved':False,
+          }
+          Path('w69-evidence/W69_SOURCE_GUARD.json').write_text(
+              json.dumps(record,indent=2,ensure_ascii=False)+'\n')
+          print('W69 EXACT-SOURCE: 21 protected W68 original engine/art/tests blobs unchanged')
+          PY
+      - name: Preserve exact Git source guard evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: last-frontier-w69-source-${{ github.event.pull_request.head.sha }}
+          path: w69-evidence/W69_SOURCE_GUARD.json
+          retention-days: 45
+          if-no-files-found: warn
+
+  authentic-godot-cinema-and-chromium:
+    name: True 3D incident machinery, five original suites, F/X real Godot WebGL and 10 source-bound frames
+    runs-on: ubuntu-latest
+    needs: exact-art-and-game-guard
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          include-templates: true
+          use-dotnet: false
+      - name: Import true native scene and reject Godot script/scene errors
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p w69-evidence
+          timeout --signal=TERM --kill-after=5s 230s godot --headless --editor --path w63-a7-cascade --import --quit 2>&1 | tee w69-evidence/import.log
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:|Failed to load script' w69-evidence/import.log; then exit 1; fi
+      - name: All six actual original Godot tests including full W69 player victory
+        shell: bash
+        run: |
+          set -euo pipefail
+          for test in test_a7_cascade test_w64_real_3d_stage test_w65_story_audio test_w67_cinematic_sectors test_w68_industrial_cinema test_w69_incident_direction; do
+            echo "REAL GODOT W69 testing: $test"
+            timeout --signal=TERM --kill-after=5s 260s godot --headless --path w63-a7-cascade --script "res://tests/$test.gd" 2>&1 | tee "w69-evidence/$test.log"
+            if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "w69-evidence/$test.log"; then exit 1; fi
+          done
+          grep -q 'LAST FRONTIER W63 A7 CASCADE REAL GODOT PLAYABLE VERTICAL SLICE PASS: 105 checks' w69-evidence/test_a7_cascade.log
+          grep -q 'LAST FRONTIER W64 REAL NATIVE 3D CINEMATIC GAME PASS:' w69-evidence/test_w64_real_3d_stage.log
+          grep -q 'LAST FRONTIER W65 ORIGINAL GAME CAUSAL STORY + SYNTH AUDIO PASS:' w69-evidence/test_w65_story_audio.log
+          grep -q 'LAST FRONTIER W67 REAL TWO-ZONE INDUSTRIAL CINEMA PASS:' w69-evidence/test_w67_cinematic_sectors.log
+          grep -q 'LAST FRONTIER W68 REAL ORIGINAL PBR HERO AND COMPLETE GODOT GAME PASS:' w69-evidence/test_w68_industrial_cinema.log
+          grep -q 'LAST FRONTIER W69 TRUE CINEMATIC INCIDENT/OPTICS/WIN PASS:' w69-evidence/test_w69_incident_direction.log
+      - name: Export actual native Godot game to HTML/JS/WASM/PCK
+        shell: bash
+        env:
+          SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          (
+            cd w63-a7-cascade
+            mkdir -p build/web
+            godot --headless --path . --export-release Web build/web/index.html
+          ) 2>&1 | tee w69-evidence/web-export.log
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' w69-evidence/web-export.log; then exit 1; fi
+          python3 w33-godot-native/ci/verify_web_export.py w63-a7-cascade/build/web --sha "$SHA" --output w63-a7-cascade/build/web/evidence.json
+      - name: Prepare genuine software Chromium with real input and PNG screenshots
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m venv /tmp/a7-w69
+          /tmp/a7-w69/bin/pip install --disable-pip-version-check playwright==1.56.0 Pillow==11.3.0
+          /tmp/a7-w69/bin/python -m playwright install --with-deps chromium
+      - name: W68 legacy realistic browser game and new W69 F/X lens incident closeup
+        shell: bash
+        env:
+          SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=10s 1180s /tmp/a7-w69/bin/python w63-a7-cascade/ci/w68_browser_art.py --export w63-a7-cascade/build/web --evidence w69-evidence/w68-browser-regression --sha "$SHA" 2>&1 | tee w69-evidence/w68-browser.log
+          grep -q 'LAST FRONTIER W68 REAL PBR THREE-DIMENSIONAL WEBGL GAME PASS:' w69-evidence/w68-browser.log
+          timeout --signal=TERM --kill-after=10s 1180s /tmp/a7-w69/bin/python w63-a7-cascade/ci/w69_browser_incident.py --export w63-a7-cascade/build/web --evidence w69-evidence/w69-real-chromium --sha "$SHA" 2>&1 | tee w69-evidence/w69-browser.log
+          grep -q 'LAST FRONTIER W69 ACTUAL GODOT CINEMA/FOCUS/INCIDENT WEBGL PASS:' w69-evidence/w69-browser.log
+          python3 - <<'PY'
+          import json,os,hashlib
+          from pathlib import Path
+          sha=os.environ['SHA']
+          root=Path('w69-evidence/w69-real-chromium')
+          proof=json.loads((root/'W69_REAL_CHROMIUM_PROOF.json').read_text())
+          assert proof['status']=='PASS' and proof['source_sha']==sha
+          assert proof['true_exported_godot_webgl']
+          assert proof['real_camera_fov_changed'] and proof['real_native_subviewport_enlarged']
+          assert len(proof['screenshots'])==6
+          for photo in proof['screenshots']:
+              b=(root/photo['filename']).read_bytes()
+              assert len(b)>12000
+              assert hashlib.sha256(b).hexdigest()==photo['sha256']
+          assert not proof['real_phone_gpu_certified']
+          assert not proof['human_aaa_art_approval']
+          assert not proof['commercial_release_approved']
+          print('W69 six independently verified actual Godot browser PNGs PASS')
+          PY
+      - name: Keep genuinely playable W69 Godot WebGL, source SHA, 10 native PNGs, QA
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: last-frontier-w69-actual-incident-cinema-webgl-${{ github.event.pull_request.head.sha }}
+          path: |
+            w63-a7-cascade/build/web/
+            w69-evidence/
+          retention-days: 45
+          if-no-files-found: warn
+
+  final-production-hold:
+    name: W69 exact software pass still cannot approve AAA, consumer GPU or release
+    needs: [exact-art-and-game-guard, authentic-godot-cinema-and-chromium]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Require real complete Godot browser success and preserve HOLD
+        shell: bash
+        env:
+          SOURCE: ${{ needs.exact-art-and-game-guard.result }}
+          GAME: ${{ needs.authentic-godot-cinema-and-chromium.result }}
+        run: |
+          set -euo pipefail
+          test "$SOURCE" = success
+          test "$GAME" = success
+          echo 'W69 ACTUAL INDUSTRIAL INCIDENT CINEMA IN NATIVE GODOT AND REAL WEBGL PASS'
+          echo 'PRODUCTION HOLD: user Windows/mobile GPUs, human art director, 12 playtesters, trademark clearance and release authorization absent'
