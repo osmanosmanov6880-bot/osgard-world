@@ -8,6 +8,7 @@ on:
     paths:
       - 'godot/empire-omega/scripts/city_reign_tower_body_lod.gd'
       - 'godot/empire-omega/scripts/city_reign_window_reveal_geometry.gd'
+      - 'godot/empire-omega/scripts/city_reign_tower_distance_lod.gd'
       - 'godot/empire-omega/scripts/city_reign_street_architecture.gd'
       - 'godot/empire-omega/scripts/world_builder.gd'
       - 'godot/empire-omega/tests/v125_city_reign_original_game_render_profile.gd'
@@ -82,6 +83,7 @@ jobs:
             assert q['frames']==90 and q['software_ci_only']
             assert q['original_city_tower_instances']>70
             assert q['actual_source_street_batches']==4
+            assert sum(q['camera_tower_lods'].values())==q['original_city_tower_instances']
             assert 0.02 < q['frame_brightness'] < 0.98
             for metric in ('mean_frame_ms','median_frame_ms','p95_frame_ms','worst_frame_ms'):
               assert math.isfinite(q[metric]) and q[metric]>0
