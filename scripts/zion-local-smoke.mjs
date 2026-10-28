@@ -26,7 +26,7 @@ assert.ok(hub.includes('root.querySelector(s)'), 'Catalog selectors must respect
 assert.ok(hub.includes('osgard:play-collection:v1'), 'Both catalogs must share the collection')
 assert.ok(hub.includes('Array.isArray(v)'), 'Malformed optional storage must not block catalog initialization')
 for (const id of ['empire-omega','nebula-3d','r136-precision']) assert.ok(games.some(g => g.id === id), 'Missing OSGARD game: ' + id)
-assert.ok(hub.includes('"numberOfItems":22'), 'Games sitemap ItemList must match all 22 cards')
+assert.ok(hub.includes('"numberOfItems":23') && hub.includes('data-game="city-reign-preview"'), 'Games sitemap ItemList must match all 23 cards, including the real published CITY REIGN')
 assert.equal(games.find(g => g.id === 'null-shift').launchable, true)
 assert.equal(games.find(g => g.id === 'null-shift').alternate.href, '/games/null-shift/')
 assert.equal(games.find(g => g.id === 'inherit').mode, 'solo')
@@ -229,7 +229,7 @@ if (process.env.ZION_BASE_URL) {
     assert.ok(body.includes('z9-entry') && body.includes('world-play'), item.route + ': served the imported world, not SPA fallback')
   }
 }
-console.log('PASS local ZION release: 22 unique catalog entries; 11 complete local worlds; RU default/EN choice; dependency closure; exact format and persistence disclosures; reset-race fixes; INHERIT history returns to the present without changing saved world data; actual keyboard, win/loss/reset behavior in the lightweight renderer. GPU rendering and visual layout require browser QA.')
+console.log('PASS local ZION release: 23 catalog entries; 11 complete local worlds; RU default/EN choice; dependency closure; exact format and persistence disclosures; reset-race fixes; INHERIT history returns to the present without changing saved world data; actual keyboard, win/loss/reset behavior in the lightweight renderer. GPU rendering and visual layout require browser QA.')
 
 
 // ZION-030 OPEN CITY v28: inspect actual source and gameplay contracts.
