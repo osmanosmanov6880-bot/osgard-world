@@ -96,9 +96,12 @@ func _run() -> void:
 			check(n>previous_length and n<KIT.MAX_VERTICES_PER_TOWER,
 				"every real purchased level adds MORE actual 3D floors/windows: "+id+"/"+str(level))
 			previous_length=n
-			if level==1:
-				unique_shapes[str(n)] = true
 			var verts: PackedVector3Array = surface.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
+			if level==1:
+				# REAL whole-mesh geometry signature, not merely vertex count.
+				# Multiple structurally different buildings may rightfully
+				# consume the same count of source triangles.
+				unique_shapes[str(n)+":"+str(hash(verts))] = true
 			var min_y: float = INF
 			var max_y: float = -INF
 			for vertex in verts:
@@ -119,7 +122,7 @@ func _run() -> void:
 		art.call("sync_state",clean)
 		check(int(levels[id])==0 and not visual.visible,
 			"reset removes every speculative municipal level "+id)
-	check(unique_shapes.size()>=8,
+	check(unique_shapes.size()==12,
 		"at least eight distinct original physical building geometry signatures")
 	check(cache.size()==12*KIT.MAX_LEVEL,
 		"all actual 48 source paid-level mesh variants cached within explicit bound")
