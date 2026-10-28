@@ -229,6 +229,7 @@ func _finish() -> void:
     if failures.is_empty():
         print("LAST FRONTIER W69 TRUE CINEMATIC INCIDENT/OPTICS/WIN PASS: %d checks" % checks)
         quit(0)
+        return  # SceneTree.quit schedules exit; never fall through to quit(1).
     for message in failures:
         push_error("W69 REAL NATIVE 3D CINEMA: " + message)
     quit(1)
