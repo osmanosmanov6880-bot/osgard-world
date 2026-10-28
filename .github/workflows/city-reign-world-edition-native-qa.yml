@@ -24,6 +24,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 1
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - name: Lock the candidate to the actual tested source
         env:
           SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
