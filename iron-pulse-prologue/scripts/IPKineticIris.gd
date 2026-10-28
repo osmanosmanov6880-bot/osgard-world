@@ -34,6 +34,7 @@ var _opening_motion_m: float = 0.0
 var _reduced_motion: bool = false
 var _hero_details: Node3D
 var _has_uvs: bool = false
+var _pbr_maps_bound: int = 0
 
 func _ready() -> void:
     name = "A7_PrecisionKineticIris"
@@ -47,6 +48,22 @@ func _ready() -> void:
     _build_static_guidework()
     _make_fasteners()
     set_quality("hero")
+
+func bind_reactor_pbr(reference: StandardMaterial3D) -> void:
+    # Use the very same original Godot-authored albedo/roughness/normal
+    # textures as the giant reactor housing. One shared resource family,
+    # no new downloaded materials or licensing ambiguity.
+    if reference == null:
+        return
+    if reference.albedo_texture == null or reference.roughness_texture == null or reference.normal_texture == null:
+        return
+    _shell.albedo_texture = reference.albedo_texture
+    _shell.roughness_texture = reference.roughness_texture
+    _shell.normal_enabled = true
+    _shell.normal_texture = reference.normal_texture
+    _shell.normal_scale = reference.normal_scale
+    _shell.uv1_scale = Vector3(1.6,1.6,1.0)
+    _pbr_maps_bound = 3
 
 func _metal(tint: Color,metal: float,rough: float) -> StandardMaterial3D:
     var m := StandardMaterial3D.new()
@@ -219,6 +236,7 @@ func readout() -> Dictionary:
     return {
         "physical_curved_petals":petals.size(),
         "original_uv_mesh":_has_uvs,
+        "actual_pbr_maps_bound":_pbr_maps_bound,
         "physical_hinges":hinges.size(),
         "gpu_bolt_groups":1 if bolt_group != null else 0,
         "instanced_guide_bolts":BOLTS,
