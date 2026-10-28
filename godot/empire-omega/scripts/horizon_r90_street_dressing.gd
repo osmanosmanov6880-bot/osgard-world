@@ -6,21 +6,16 @@ const SKYLINE_COUNT := 72
 const STREET_BOLLARD_COUNT := 144
 const R91_ARCHITECTURE = preload("res://scripts/horizon_r91_skyline_detail.gd")
 const FACADE_PACK = preload("res://scripts/horizon_facade_material_pack.gd")
-const ROOFTOP_GEOMETRY = preload("res://scripts/city_reign_rooftop_geometry.gd")
 var skyline: MultiMeshInstance3D
 var skyline_plan: Array[Transform3D] = []
 var bollards: MultiMeshInstance3D
 var r91_architecture: Node3D
-var rooftop_geometry: Node3D
 var quality := "standard"
 
 func _ready() -> void:
 	name = "R90UrbanAtmosphere"
 	_build_outer_skyline()
 	_build_sidewalk_bollards()
-	rooftop_geometry = ROOFTOP_GEOMETRY.new()
-	add_child(rooftop_geometry)
-	rooftop_geometry.call("build_from_skyline", skyline_plan)
 	r91_architecture = R91_ARCHITECTURE.new()
 	r91_architecture.call("set_source_skyline",skyline,skyline_plan)
 	add_child(r91_architecture)
@@ -148,12 +143,9 @@ func set_quality(tier: String) -> void:
 		bollards.visible = quality == "cinematic"
 	if r91_architecture != null:
 		r91_architecture.call("set_quality",quality)
-	if rooftop_geometry != null:
-		rooftop_geometry.call("set_quality",quality)
 
 func graphics_are_bounded() -> bool:
 	return skyline != null and bollards != null and r91_architecture != null and (
 		skyline.multimesh.instance_count == SKYLINE_COUNT and
 		bollards.multimesh.instance_count == STREET_BOLLARD_COUNT and
-		bool(r91_architecture.call("graphics_are_bounded")) and
-		rooftop_geometry != null and bool(rooftop_geometry.call("graphics_are_bounded")))
+		bool(r91_architecture.call("graphics_are_bounded")))
