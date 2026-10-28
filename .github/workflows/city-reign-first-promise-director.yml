@@ -63,9 +63,9 @@ jobs:
             timeout --signal=TERM --kill-after=6s 180s godot --headless \
               --path godot/empire-omega --script "res://tests/${suite}.gd" | tee "$log"
             case "$suite" in
-              v110*) marker="CITY REIGN E01:" ;;
-              v111*) marker="CITY REIGN E01 street:" ;;
-              v112*) marker="CITY REIGN E01 citizens:" ;;
+              v110*) marker="CITY REIGN E01 real playable promise:" ;;
+              v111*) marker="CITY REIGN E01 real on-foot street choice:" ;;
+              v112*) marker="CITY REIGN E01 real resident reactions:" ;;
               v119*) marker="CITY REIGN AAA real street signals:" ;;
               v120*) marker="CITY REIGN AAA real 4 landmark upgrade architecture:" ;;
               v121*) marker="CITY REIGN AAA actual first-chapter street direction:" ;;
