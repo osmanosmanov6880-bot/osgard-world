@@ -218,6 +218,13 @@ jobs:
           timeout --signal=TERM --kill-after=5s 180s godot --headless --path iron-pulse-prologue --script res://tests/test_v16_black_box_hazard.gd 2>&1 | tee "$RUNNER_TEMP/iron-pulse-v16-hazard-black-box.log"
           grep -q '^IRON PULSE V16 BLACK BOX HAZARD PASS:' "$RUNNER_TEMP/iron-pulse-v16-hazard-black-box.log"
           if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/iron-pulse-v16-hazard-black-box.log"; then exit 1; fi
+      - name: V17 real operator records, atomic private retention, local deletion and native HUD regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 190s godot --headless --path iron-pulse-prologue --script res://tests/test_v17_operator_records.gd 2>&1 | tee "$RUNNER_TEMP/iron-pulse-v17-operator-records.log"
+          grep -q '^IRON PULSE V17 OPERATOR RECORDS PASS:' "$RUNNER_TEMP/iron-pulse-v17-operator-records.log"
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/iron-pulse-v17-operator-records.log"; then exit 1; fi
       - name: V13 safe world-link contract to actual story campaign and original mission
         shell: bash
         run: |
