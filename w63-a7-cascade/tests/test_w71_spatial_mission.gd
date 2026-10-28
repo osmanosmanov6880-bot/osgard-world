@@ -84,6 +84,21 @@ func _run() -> void:
         "Original real first-person player is active for mission")
     _check(not mission.inspect_physical("CORE", start_state, operator),
         "Core cannot be reached with E from distant start point")
+    # Protect the real backwards key physics, not just forward W. This is the
+    # physical route required by mission objective 01 in the browser build.
+    for i in range(30):
+        await physics_frame
+    var spawn_z: float = operator.body.position.z
+    operator.set_key(KEY_S, true)
+    for i in range(65):
+        await physics_frame
+    operator.set_key(KEY_S, false)
+    var actual_backwards_distance: float = spawn_z - operator.body.position.z
+    print("W71 ACTUAL NATIVE BACKWARD S METERS: %.3f" % actual_backwards_distance)
+    _check(actual_backwards_distance > 1.6,
+        "Held S moves genuine CharacterBody3D from player spawn toward core")
+    _check(mission.phase == 0,
+        "Backwards physical movement alone cannot claim reactor inspection")
     operator.body.position = Vector3(4.10, 1.33, 2.14)
     _check(operator.body.position.distance_to(
         operator.inspection_console_core) < 3.2,
