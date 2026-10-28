@@ -138,6 +138,24 @@ def verify(root: Path, output: Path, sha: str) -> dict:
                              animations="disabled",timeout=60000)
                 result["mobile_responsive"] = True
                 result["portal_mobile"] = "world-mobile-en.png"
+                # Real 320px compact touch check: no horizontal scrolling,
+                # no cut-off operation controls and usable independent targets.
+                m.set_viewport_size({"width":320,"height":720})
+                m.wait_for_timeout(250)
+                narrow_width = m.evaluate("document.documentElement.scrollWidth")
+                assert narrow_width <= 322, (
+                    f"Narrow 320px portal overflows horizontally: {narrow_width}"
+                )
+                assert m.locator("#campaign-play").is_visible(), (
+                    "Three-act campaign becomes inaccessible on 320px phones"
+                )
+                narrow_cta = m.locator("#campaign-play").bounding_box()
+                assert narrow_cta is not None and narrow_cta["height"] >= 44, (
+                    "320px campaign button violates WCAG-sized touch target"
+                )
+                m.screenshot(path=str(output/"world-mobile-320-en.png"),full_page=True,
+                             animations="disabled",timeout=60000)
+                result["portal_narrow_mobile"] = "world-mobile-320-en.png"
                 mobile.close()
 
                 # Real integration proof: follow a user-visible native portal
