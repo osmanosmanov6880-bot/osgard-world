@@ -347,6 +347,7 @@ func _publish_web_state() -> void:
         "support_piers":support_count,
         "ring_profiles":ring_profiles,
         "front_light_power":reactor_atrium._lights[1].light_energy,
+        "legacy_neon_over_open_bay":_count_obstructing_corridor_neon(),
         "halo_camera_alignment":absf(normal_front.dot(director_eye))
     }
     state["cinematic_view"] = cinematic_view
@@ -454,6 +455,21 @@ func _box(parent: Node3D, center: Vector3, dimensions: Vector3, mat: Material, s
     holder.add_child(mesh_node)
     return mesh_node
 
+func _count_obstructing_corridor_neon() -> int:
+    # Inspect actual 3D meshes, not a hardcoded claim. A ray toward the
+    # reactor must never intersect a forgotten 12m longitudinal light bar.
+    var blocked: int = 0
+    for node in get_children():
+        if node is MeshInstance3D:
+            var beam: MeshInstance3D = node as MeshInstance3D
+            if beam.mesh is BoxMesh:
+                var dims: Vector3 = (beam.mesh as BoxMesh).size
+                if dims.x >= 11.5 and absf(beam.position.y-5.86)<0.02 and
+                        beam.position.z > IPReactorAtrium.OPENING_Z_MIN and
+                        beam.position.z < IPReactorAtrium.OPENING_Z_MAX:
+                    blocked += 1
+    return blocked
+
 func _make_complex() -> void:
     var concrete := _metal(Color(0.105,0.133,0.17),0.27)
     var steel := _metal(STEEL)
@@ -478,7 +494,13 @@ func _make_complex() -> void:
         _box(self,Vector3(5.8,0.045,depth),Vector3(0.18,0.09,1.6),polished)
         _box(self,Vector3(-6.3,4.6,depth),Vector3(0.18,0.18,4.0),polished)
         _box(self,Vector3(6.3,4.6,depth),Vector3(0.18,0.18,4.0),polished)
-        _box(self,Vector3(0,5.86,depth),Vector3(12,0.14,0.15),cyan)
+        # The abandoned roof's long neon tube used to extend directly
+        # toward the physical A7 camera through the 22m roof opening,
+        # appearing as a giant cyan bar across the real plasma sphere.
+        # Preserve the original roof lighting ONLY in closed corridors.
+        if depth < IPReactorAtrium.OPENING_Z_MIN or depth > IPReactorAtrium.OPENING_Z_MAX:
+            var ceiling_pulse := _box(self,Vector3(0,5.86,depth),Vector3(12,0.14,0.15),cyan)
+            ceiling_pulse.name = "ClosedRoofPulse_%02d" % index
         _box(self,Vector3(0,0.055,depth),Vector3(5.8,0.04,0.07),_metal(AMBER,0.2,true))
         var lamp := OmniLight3D.new()
         lamp.position = Vector3(0,5.4,depth)
