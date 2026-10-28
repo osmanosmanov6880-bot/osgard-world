@@ -162,6 +162,8 @@ function observeGame(){
     updateResearchControls();
   }
   const identity=[state.shift,state.history_count,state.w71_mission_phase,
+    state.w71_mission_active,state.w72_extended_mode,state.w71_mission_complete,
+    state.w71_mission_failure,state.w71_mission_events,
     state.w72_valve_index,state.w72_relay_mask,state.w72_sync_step,state.status,
     state.last_event,state.w73_real_raycast_uses].join(":");
   if(identity!==latestStateIdentity){
