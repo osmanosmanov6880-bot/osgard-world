@@ -88,8 +88,13 @@ test('V61 real Core: create film space, task, replay-safe server export, member 
   kind:'task.create',expectedVersion:data.workspace.version+3,sceneId:'S01',category:'camera',title:'Unauthorized edit'
  })
  expect(viewerDenied.status).toBe(403)
- await root.getByRole('button',{name:'Remove'}).first().click()
- await root.getByRole('button',{name:'Confirm removal'}).click()
+ const editorRow=root.locator('.osa-collab-people > div').filter({hasText:editor.username})
+ await editorRow.getByRole('button',{name:'Remove'}).click()
+ await editorRow.getByRole('button',{name:'Confirm removal'}).click()
+ // Wait for the asynchronous Core mutation and a fresh server read. Clicking
+ // the button is not proof of commit, especially with mobile CPU scheduling.
+ await expect(root.locator('.osa-collab-people')).not.toContainText(editor.username)
+ await expect(root.getByRole('status')).toContainText('Saved on Core')
  const editorRevoked=await call(request,'GET','cinema/spaces/'+spaceId,editor.token)
  expect(editorRevoked.status).toBe(404)
  await expect(root.locator('.osa-collab-kpis')).toContainText('NO-GO')
