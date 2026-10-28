@@ -327,6 +327,8 @@ func _publish_web_state() -> void:
     state["reactor_atrium"] = reactor_atrium.readout() if reactor_atrium != null else {}
     state["cinematic_view"] = cinematic_view
     state["cinematic_hud_hidden"] = cinematic_view and not header_panel.visible and not side_panel.visible and not prompt_panel.visible and not crosshair.visible
+    var to_core: Vector3 = reactor_core.global_position-camera.global_position
+    state["reactor_framing_alignment"] = (-camera.global_transform.basis.z).dot(to_core.normalized()) if to_core.length() > 0.001 else -1.0
     state["world_sector"] = active_sector
     state["visited_sectors"] = visited_sectors.duplicate()
     state["world_sectors"] = world_sectors.readout() if world_sectors != null else {}
