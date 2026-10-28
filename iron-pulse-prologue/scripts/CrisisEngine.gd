@@ -369,6 +369,19 @@ func restore_checkpoint(data: Dictionary) -> bool:
     var saved_priority: String = str(data.get("priority",""))
     if saved_priority not in ["","crew","core"]:
         return false
+    # Previously verified V6 saves lack relay fields: restore them as empty,
+    # and validate any V7 relay entries without mutating active state.
+    var saved_relays: Variant = data.get("relays_activated",[])
+    if not saved_relays is Array or saved_relays.size() > MAX_RELAYS:
+        return false
+    var checked_relays: Array[String] = []
+    for relay in saved_relays:
+        if not relay is String or not RELAYS.has(str(relay)) or checked_relays.has(str(relay)):
+            return false
+        checked_relays.append(str(relay))
+    var stored_shield: Variant = data.get("thermal_shield",false)
+    if typeof(stored_shield) != TYPE_BOOL or (bool(stored_shield) and not checked_relays.has("quench")):
+        return false
     for key in ["time_left","heat","oxygen","crew_health","door_charge","elapsed","next_pulse_at"]:
         var max_value: float = 1000.0
         if key == "heat":
@@ -412,6 +425,8 @@ func restore_checkpoint(data: Dictionary) -> bool:
     scenario_id = saved_scenario
     repair_method = saved_repair
     priority_id = saved_priority
+    relays_activated = checked_relays
+    thermal_shield = bool(stored_shield)
     time_left = float(data["time_left"])
     heat = float(data["heat"])
     oxygen = float(data["oxygen"])
