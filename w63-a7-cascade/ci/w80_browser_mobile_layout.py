@@ -122,7 +122,8 @@ def run(export, evidence, sha):
             wait_state(page,{
                 "w76_actual_immersive_first_person":True,
                 "w72_extended_mode":True,
-                "w79_source_based_mode":"valve",
+                "w79_source_based_mode":"hidden",
+                "w79_mobile_complete_mission_visible":False,
                 "history_count":0,
             })
             page.set_viewport_size({"width":390,"height":844})
@@ -136,6 +137,7 @@ def run(export, evidence, sha):
                   s.w80_true_native_touch_grid_columns===4 &&
                   s.w80_real_immersive_play_button_hidden===true &&
                   s.w80_redundant_long_objective_hidden===true &&
+                  s.w79_source_based_mode==='valve' &&
                   s.w79_mobile_complete_mission_visible===true &&
                   s.w78_original_touch_movement_visible===true;
               }catch(_){return false}
