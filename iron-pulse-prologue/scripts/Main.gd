@@ -1689,7 +1689,7 @@ func _show_end() -> void:
         return
     end_panel.visible = true
     if session.won and campaign.active:
-        if campaign.record_victory(session):
+        if campaign.record_victory(session) and DisplayServer.get_name() != "headless":
             checkpoint_store.save(campaign.checkpoint(),CAMPAIGN_RECORD_PATH)
     end_button.text = _copy("campaign_next") if campaign.awaiting_advance() else _copy("campaign_replay") if campaign.completed() else _copy("restart")
     if DisplayServer.get_name() != "headless":
