@@ -140,6 +140,8 @@ func _run() -> void:
         _check(stage.camera.current, "Actual Camera3D persists at %dpx" % width)
         _check(ui.route_buttons.size() == 2,
             "Both real environment directions remain available at %dpx" % width)
+        _check(bool(ui.cinematic_hud.qa_readout()["w68_compact_minimal"]) == (width < 640),
+            "Actual native HUD shows root-responsive minimal state at %dpx" % width)
         _check(ui.model.snapshot()["history"].size() == 2,
             "Resizing screen cannot change decisions at %dpx" % width)
         _check(ui.stage_shell.custom_minimum_size.y <= 305.0 if width < 640 else
