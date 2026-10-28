@@ -81,6 +81,7 @@ jobs:
             k=q['graphics_tier']
             seen.add(k)
             assert q['frames']==90 and q['software_ci_only']
+            assert q['graphics_tier']==q['runtime_effective_graphics'], 'Native runtime silently overrode the requested tier'
             assert q['original_city_tower_instances']>70
             assert q['actual_source_street_batches']==4
             assert sum(q['camera_tower_lods'].values())==q['original_city_tower_instances']
