@@ -79,6 +79,17 @@ static func _pavilion_mesh(premium: bool) -> ArrayMesh:
 	var bronze := Color("ad9469")
 	var titanium := Color("687f87")
 	var dark := Color("253b44")
+	if premium:
+		# Only incremental canopy geometry. Re-drawing the ENTIRE base
+		# would create destructive same-depth z-fighting in cinematic mode.
+		for x in [-1.30,-0.65,0.0,0.65,1.30]:
+			_box(st,Vector3(float(x),3.79,-0.25),
+				Vector3(0.060,0.050,1.17),titanium)
+		for z in [-0.97,-0.36,0.25,0.86]:
+			_box(st,Vector3(0,3.89,float(z)),
+				Vector3(2.05,0.050,0.06),bronze)
+		_box(st,Vector3(0,0.36,-1.92),Vector3(2.36,0.12,0.15),limestone)
+		return st.commit()
 	# Source project site -164,-85 already has its own real project landmark.
 	# This small completed-only structure stands 9m south, outside that plot.
 	_box(st,Vector3(0,0.16,0),Vector3(2.36,0.15,1.78),limestone)
@@ -98,16 +109,6 @@ static func _pavilion_mesh(premium: bool) -> ArrayMesh:
 	_box(st,Vector3(1.89,2.00,-1.57),Vector3(0.10,1.09,0.11),bronze)
 	_box(st,Vector3(0,3.03,-1.57),Vector3(1.96,0.08,0.11),bronze)
 	_box(st,Vector3(0,0.99,-1.57),Vector3(1.96,0.08,0.11),bronze)
-	if premium:
-		# Genuine double-depth sunshade blades (not a screenshot) are
-		# visible only on Standard/Cinematic-capable desktop hardware.
-		for x in [-1.30,-0.65,0.0,0.65,1.30]:
-			_box(st,Vector3(float(x),3.79,-0.25),
-				Vector3(0.060,0.050,1.17),titanium)
-		for z in [-0.97,-0.36,0.25,0.86]:
-			_box(st,Vector3(0,3.89,float(z)),
-				Vector3(2.05,0.050,0.06),bronze)
-		_box(st,Vector3(0,0.36,-1.92),Vector3(2.36,0.12,0.15),limestone)
 	return st.commit()
 
 static func _surface(roughness: float,metallic: float) -> StandardMaterial3D:
