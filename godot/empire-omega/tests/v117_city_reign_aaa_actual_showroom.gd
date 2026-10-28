@@ -53,6 +53,17 @@ func _run() -> void:
 		"player may preview LOCKED real car WITHOUT purchasing it")
 	await process_frame
 	var viewport: SubViewport = phone.get("renderer") as SubViewport
+	if viewport!=null:
+		print("CITY REIGN GPU OBSERVATION: ",JSON.stringify({
+			"size":[viewport.size.x,viewport.size.y],
+			"mode":int(viewport.render_target_update_mode),
+			"world":viewport.get_world_3d()!=null,
+			"scene_children":viewport.get_child_count(),
+			"parent_ok":viewport.get_parent()==phone.get("viewport_host"),
+			"art":phone.get("original_car")!=null,
+			"spin":phone.get("spin")!=null,
+			"bounded":phone.graphics_are_bounded()
+		}))
 	check(viewport!=null and phone.graphics_are_bounded(),
 		"one exact original 3D scene allocates only after phone interaction")
 	if viewport!=null:
