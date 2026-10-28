@@ -50,24 +50,8 @@ jobs:
             if grep -nEi 'SCRIPT ERROR:|Parse Error:|[1-9][0-9]* (FAIL|failed)|ERROR:.*FAIL' "$log"; then
               exit 1
             fi
-            # Existing Godot suites use either UPPERCASE or lowercase pass summaries.
-            # Require one actual positive pass and ZERO failures, not one spelling.
-            grep -Eq '([1-9][0-9]* PASS 0 FAIL|[1-9][0-9]* passed, 0 failed)
-          done
-      - name: Upload native evidence for review
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: city-reign-r161-original-native-evidence
-          path: |
-            r161-import.log
-            v134*.log
-            v135*.log
-            v133*.log
-            v129*.log
-            v68*.log
-          if-no-files-found: warn
- "$log"
+            # Accept BOTH normal Godot summary dialects, require positive test count.
+            grep -Eq '([1-9][0-9]* PASS 0 FAIL|[1-9][0-9]* passed, 0 failed)$' "$log"
           done
       - name: Upload native evidence for review
         if: always()
