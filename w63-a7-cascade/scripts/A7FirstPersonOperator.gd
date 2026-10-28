@@ -29,6 +29,11 @@ var piloting: bool = false
 var reduced_motion: bool = false
 var quality: String = "hero"
 var held_keys: Dictionary = {}
+var controller_motion: Vector2 = Vector2.ZERO
+var controller_camera_motion: Vector2 = Vector2.ZERO
+var controller_axis_inputs: int = 0
+var actual_controller_motion_frames: int = 0
+const CONTROLLER_DEADZONE: float = 0.17
 var tap_key: int = -1
 var tap_remaining: float = 0.0
 var move_distance: float = 0.0
@@ -249,6 +254,8 @@ func build(material_source: A7CinematicMaterialLab) -> void:
 func set_active(enabled: bool) -> void:
     piloting = enabled
     held_keys.clear()
+    controller_motion = Vector2.ZERO
+    controller_camera_motion = Vector2.ZERO
     tap_key = -1
     tap_remaining = 0.0
     if body != null:
@@ -276,6 +283,27 @@ func set_reduced_motion(enabled: bool) -> void:
     reduced_motion = enabled
     if enabled and head_camera != null:
         head_camera.position.y = HEAD_HEIGHT
+
+func set_controller_axis(axis_index: int, raw_value: float) -> bool:
+    if not piloting:
+        return false
+    if axis_index not in [
+            JOY_AXIS_LEFT_X,JOY_AXIS_LEFT_Y,JOY_AXIS_RIGHT_X,JOY_AXIS_RIGHT_Y]:
+        return false
+    var amount: float = clampf(raw_value,-1.0,1.0)
+    if absf(amount) < CONTROLLER_DEADZONE:
+        amount = 0.0
+    match axis_index:
+        JOY_AXIS_LEFT_X:
+            controller_motion.x = amount
+        JOY_AXIS_LEFT_Y:
+            controller_motion.y = amount
+        JOY_AXIS_RIGHT_X:
+            controller_camera_motion.x = amount
+        JOY_AXIS_RIGHT_Y:
+            controller_camera_motion.y = amount
+    controller_axis_inputs += 1
+    return true
 
 func set_key(key: int, down: bool) -> void:
     if not piloting:
@@ -327,13 +355,25 @@ func _axis() -> Vector2:
         tap_key == KEY_W and tap_remaining > 0.0)
     var back: bool = bool(held_keys.get(KEY_S, false)) or (
         tap_key == KEY_S and tap_remaining > 0.0)
-    return Vector2(float(int(right)-int(left)), float(int(back)-int(forward))).normalized()
+    var keys: Vector2 = Vector2(
+        float(int(right)-int(left)),float(int(back)-int(forward))).normalized()
+    # Preserve analog stick intensity and normalize only if keyboard+stick
+    # exceeds the standard physical running speed.
+    return (keys+controller_motion).limit_length(1.0)
 
 func _physics_process(delta: float) -> void:
     if not piloting or body == null:
         return
     frame_updates += 1
+    if controller_camera_motion.length_squared() > 0.0:
+        # Existing real mouse look has 0.0021 rad per pixel. Stick speed
+        # is 2.25 rad/s, frame rate independent. Motion accessibility
+        # never disables user-directed look or gamepad navigation.
+        rotate_view(controller_camera_motion*delta*1070.0)
+        actual_controller_motion_frames += 1
     var axis: Vector2 = _axis()
+    if controller_motion.length_squared() > 0.0:
+        actual_controller_motion_frames += 1
     var local: Vector3 = Vector3(axis.x, 0, axis.y)
     var direction: Vector3 = body.transform.basis * local
     body.velocity.x = direction.x * WALK_SPEED
@@ -388,6 +428,12 @@ func qa_readout() -> Dictionary:
         "inspection_interactions": inspect_count,
         "last_inspection": last_inspection,
         "mouse_look_events": mouse_look_events,
+        "w74_controller_left_motion":[controller_motion.x,controller_motion.y],
+        "w74_controller_right_look":[controller_camera_motion.x,controller_camera_motion.y],
+        "w74_controller_axis_inputs":controller_axis_inputs,
+        "w74_controller_real_physics_frames":actual_controller_motion_frames,
+        "w74_analog_deadzone":CONTROLLER_DEADZONE,
+        "w74_actual_physical_gamepad_hardware_verified":false,
         "headlamp_energy": headlamp.light_energy if headlamp != null else 0.0,
         "quality": quality,
         "reduced_motion": reduced_motion,
