@@ -6,6 +6,8 @@ export const PRODUCTION_SCHEMA = 'OSA_CINEMA_PRODUCTION_DRAFT_V1'
 export const PRODUCTION_STORAGE_KEY = 'osa-cinema-production-plan-v1'
 export const PRODUCTION_EVENT = 'osa-cinema-production-plan-changed'
 export const MAX_PRODUCTION_IMPORT_BYTES = 64 * 1024
+export const MAX_PRODUCTION_STORE_BYTES = MAX_PRODUCTION_IMPORT_BYTES - 1024
+const byteLength = (text:string) => new TextEncoder().encode(text).byteLength
 export const MAX_PRODUCTION_TASKS = 100
 export const VERIFIED_ACTOR_SCENES_FILMED = 0
 export const PROPOSED_SHOTS = 78
@@ -41,7 +43,7 @@ export type ProductionStatistics = {
 const categories = new Set<string>(PRODUCTION_CATEGORIES)
 const statuses = new Set<string>(PRODUCTION_STATES)
 const asString = (v:unknown,max:number) => typeof v==='string' && v.length<=max && !/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/.test(v)
-const validTimestamp = (v:unknown) => typeof v==='string' && v.length<=40 && /^\d{4}-\d{2}-\d{2}T/.test(v) && Number.isFinite(Date.parse(v))
+const validTimestamp = (v:unknown) => typeof v==='string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(v) && Number.isFinite(Date.parse(v))
 const validDate = (v:unknown) => v==='' || (typeof v==='string' && /^\d{4}-\d{2}-\d{2}$/.test(v) && !Number.isNaN(Date.parse(v)) && new Date(v).toISOString().slice(0,10)===v)
 function cleanTask(input:unknown):ProductionTask|null {
   if (!input || typeof input!=='object' || Array.isArray(input)) return null
@@ -76,7 +78,7 @@ function storage():Storage|null {
 export function readProductionPlan():ProductionTask[]{
   try{
     const raw=storage()?.getItem(PRODUCTION_STORAGE_KEY)
-    if(!raw||raw.length>MAX_PRODUCTION_IMPORT_BYTES) return []
+    if(!raw||byteLength(raw)>MAX_PRODUCTION_STORE_BYTES) return []
     return validateProductionPlan(JSON.parse(raw) as unknown)??[]
   }catch{return []}
 }
@@ -85,7 +87,7 @@ export function saveProductionPlan(input:unknown):boolean{
   const store=storage()
   if(!tasks||!store)return false
   const serialized=JSON.stringify(tasks)
-  if(serialized.length>MAX_PRODUCTION_IMPORT_BYTES)return false
+  if(byteLength(serialized)>MAX_PRODUCTION_STORE_BYTES)return false
   try{
     store.setItem(PRODUCTION_STORAGE_KEY,serialized)
     window.dispatchEvent(new Event(PRODUCTION_EVENT))
@@ -119,14 +121,16 @@ export function productionStatistics(input:unknown):ProductionStatistics{
 export function exportProductionBackup(input:unknown,generatedAt:string=new Date().toISOString()):string{
   const tasks=validateProductionPlan(input)
   if(!tasks||!validTimestamp(generatedAt))throw Error('Invalid production draft')
-  return JSON.stringify({
+  const backup=JSON.stringify({
     schema:PRODUCTION_SCHEMA,version:1,project:PRODUCTION_PROJECT_ID,storage:'local_device_only',
     dataIsNotFilmingEvidence:true,publicReleaseAuthorized:false,
     generatedAt,tasks
   },null,2)+'\n'
+  if(byteLength(backup)>MAX_PRODUCTION_IMPORT_BYTES)throw Error('Backup exceeds the safe import size')
+  return backup
 }
 export function parseProductionBackup(source:string):ProductionTask[]|null{
-  if(typeof source!=='string'||source.length<1||source.length>MAX_PRODUCTION_IMPORT_BYTES)return null
+  if(typeof source!=='string'||source.length<1||byteLength(source)>MAX_PRODUCTION_IMPORT_BYTES)return null
   try{
     const v:unknown=JSON.parse(source)
     if(!v||typeof v!=='object'||Array.isArray(v))return null
