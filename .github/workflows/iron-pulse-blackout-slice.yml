@@ -191,6 +191,20 @@ jobs:
           timeout --signal=TERM --kill-after=5s 180s godot --headless --path iron-pulse-prologue --script res://tests/test_v8_6_reactive_containment.gd 2>&1 | tee "$RUNNER_TEMP/iron-pulse-v8-6-hazard-fx.log"
           grep -q '^IRON PULSE V8.6 REACTIVE CONTAINMENT PASS:' "$RUNNER_TEMP/iron-pulse-v8-6-hazard-fx.log"
           if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/iron-pulse-v8-6-hazard-fx.log"; then exit 1; fi
+      - name: V9 three-shift systemic campaign, real three-case victories, lineage scores and tamper-safe saves
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 180s godot --headless --path iron-pulse-prologue --script res://tests/test_v9_three_shifts_rules.gd 2>&1 | tee "$RUNNER_TEMP/iron-pulse-v9-rules.log"
+          grep -q '^IRON PULSE V9 THREE SHIFTS PASS:' "$RUNNER_TEMP/iron-pulse-v9-rules.log"
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/iron-pulse-v9-rules.log"; then exit 1; fi
+      - name: V9 actual playable Godot campaign CTA, three episodes, intermission resume and authored ending
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 180s godot --headless --path iron-pulse-prologue --script res://tests/test_v9_three_shifts_scene.gd 2>&1 | tee "$RUNNER_TEMP/iron-pulse-v9-scene.log"
+          grep -q '^IRON PULSE V9 REAL CAMPAIGN UI PASS:' "$RUNNER_TEMP/iron-pulse-v9-scene.log"
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/iron-pulse-v9-scene.log"; then exit 1; fi
       - name: Export exact-source Godot 4.4.1 WebGL playable build
         shell: bash
         run: |
