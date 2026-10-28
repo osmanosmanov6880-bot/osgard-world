@@ -142,6 +142,13 @@ jobs:
           timeout --signal=TERM --kill-after=5s 160s godot --headless --path iron-pulse-prologue --script res://tests/test_v8_reactor_atrium.gd 2>&1 | tee "$RUNNER_TEMP/iron-pulse-v8-atrium.log"
           grep -q '^IRON PULSE V8 CINEMATIC REACTOR PASS:' "$RUNNER_TEMP/iron-pulse-v8-atrium.log"
           if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/iron-pulse-v8-atrium.log"; then exit 1; fi
+      - name: V8.1 authored reactor director camera, GPU plasma shader, accessible motion and player-state safety
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 160s godot --headless --path iron-pulse-prologue --script res://tests/test_v8_1_director_camera.gd 2>&1 | tee "$RUNNER_TEMP/iron-pulse-v8-1-director.log"
+          grep -q '^IRON PULSE V8.1 DIRECTOR CAMERA PASS:' "$RUNNER_TEMP/iron-pulse-v8-1-director.log"
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/iron-pulse-v8-1-director.log"; then exit 1; fi
       - name: Export exact-source Godot 4.4.1 WebGL playable build
         shell: bash
         run: |
