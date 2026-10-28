@@ -21,6 +21,7 @@ var hero_art: A7CinematicHeroSet
 var incident_cinema: A7IncidentDirection
 var first_person: A7FirstPersonOperator
 var spatial_mission: A7SpatialMission
+var field_operations: A7FieldOperations
 var inspection_focus: bool = false
 var focus_switches: int = 0
 var guide_progress: float = 0.0
@@ -81,6 +82,9 @@ func _ready() -> void:
     spatial_mission = A7SpatialMission.new()
     add_child(spatial_mission)
     spatial_mission.build()
+    field_operations = A7FieldOperations.new()
+    add_child(field_operations)
+    field_operations.build(hero_art.surface_lab)
     set_camera(0)
     set_quality(mode)
     set_process(true)
@@ -392,6 +396,8 @@ func set_compact_view(enabled: bool) -> void:
         first_person.set_compact_view(enabled)
     if spatial_mission != null:
         spatial_mission.set_compact_view(enabled)
+    if field_operations != null:
+        field_operations.set_compact_view(enabled)
     if art_kit != null and art_kit.engraved_sign != null:
         art_kit.engraved_sign.visible = not enabled
 
@@ -412,6 +418,8 @@ func set_quality(new_mode: String) -> void:
         first_person.set_quality(mode)
     if spatial_mission != null:
         spatial_mission.set_quality(mode)
+    if field_operations != null:
+        field_operations.set_quality(mode)
     if key_light != null:
         key_light.light_energy = 2.30 if mode == "hero" else 1.25
         fill_light.visible = mode == "hero"
@@ -424,6 +432,8 @@ func set_reduced_motion(enabled: bool) -> void:
         first_person.set_reduced_motion(enabled)
     if spatial_mission != null:
         spatial_mission.set_reduced_motion(enabled)
+    if field_operations != null:
+        field_operations.set_reduced_motion(enabled)
 
 func trigger_action(action: String) -> void:
     if not ["PUMP", "VENT", "SEAL", "SCAN", "POWER"].has(action):
@@ -529,6 +539,10 @@ func qa_readout() -> Dictionary:
         "w70_real_walkable_deck_collider": first_person.bridge_collision is StaticBody3D if first_person != null else false,
         "w71_mission_attached": spatial_mission != null,
         "w71_real_objective_meshes": spatial_mission.core_beacon is MeshInstance3D and spatial_mission.relay_beacon is MeshInstance3D if spatial_mission != null else false,
+        "w72_original_field_ops": field_operations != null,
+        "w72_true_mechanic_meshes": field_operations.real_prop_meshes if field_operations != null else 0,
+        "w72_native_relay_switches": field_operations.relay_switches.size() if field_operations != null else 0,
+        "w72_actual_valve": field_operations.rotating_dial != null if field_operations != null else false,
         "cathedral_two_real_sectors": cathedral != null and cathedral.relay_terminals == 3,
         "inspection_sector": sector_index,
         "inspection_progress": guide_progress,
