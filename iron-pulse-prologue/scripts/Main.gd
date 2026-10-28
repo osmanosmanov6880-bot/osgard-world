@@ -1168,6 +1168,7 @@ func _start_campaign() -> void:
     _update_scenario_picker()
     start_run()
     _story_event("campaign_chapter_1")
+    _refresh_hud()
     _save_checkpoint()
 
 func _checkpoint_payload() -> Dictionary:
@@ -1331,6 +1332,7 @@ func start_run() -> void:
     end_panel.visible = false
     _announce("shift_started")
     _refresh_radio_ui()
+    _refresh_hud()
     _save_checkpoint()
     audio_director.set_active(true)
     if DisplayServer.get_name() != "headless":
@@ -1371,6 +1373,7 @@ func _restart() -> void:
     end_panel.visible = false
     _announce("shift_started")
     _refresh_radio_ui()
+    _refresh_hud()
     _save_checkpoint()
     audio_director.set_active(true)
     if DisplayServer.get_name() != "headless":
