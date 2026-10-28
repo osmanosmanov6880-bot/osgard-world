@@ -47,6 +47,23 @@ func _run() -> void:
         "Real Godot lamp physically attached to the eye camera")
     _check(actor.headlamp.get_parent() == actor.head_camera,
         "Headlamp follows eye and not a fixed fake screenshot")
+    _check(actor.bridge_collision is StaticBody3D,
+        "Physical collision matches the actual visible elevated bridge")
+    _check(actor.walkway_visual_meshes >= 130,
+        "Industrial route contains 130+ real PBR/grate/gantry 3D mesh details")
+    _check(actor.safety_lights.size() == 4,
+        "True illuminated route uses four physical Godot OmniLight3D sources")
+    _check(actor.walkway_visuals.find_child("ArchedIndustrialOverheadTruss00", true, false)
+        is MeshInstance3D,
+        "Actual new overhead gantry creates spatial depth")
+    _check(actor.walkway_visuals.find_child("PhysicallyWalkedPBRGrate00", true, false)
+        is MeshInstance3D,
+        "Actual world PBR floor hardware is not a 2D effect")
+    _check(actor.world_sign is Label3D,
+        "In-world sector gateway information is genuine Label3D")
+    _check(actor.walkway_visuals.find_child("PhysicallyWalkedPBRGrate00", true, false).material_override
+        == stage.hero_art.surface_lab.surface("floor_grate"),
+        "Actual original W68 PBR material cache reused by first-person corridor")
     _check(actor.collision_world.get_child_count() >= 11,
         "Real physics world has many separate collider bodies")
     _check(actor.floor_body.get_node("TRUE_A7_GROUND_Physics") is CollisionShape3D,
@@ -76,6 +93,8 @@ func _run() -> void:
 
     await _frames(45)
     _check(actor.body.is_on_floor(), "Actual CharacterBody3D falls onto real physics floor")
+    _check(actor.body.position.y > 1.08,
+        "Player feet rest on actual visible elevated industrial bridge, not hidden floor below")
     var before: Vector3 = actor.body.position
     actor.set_key(KEY_W, true)
     await _frames(30)
@@ -180,6 +199,8 @@ func _run() -> void:
             "Actual physical first-person camera remains current at %dpx" % width)
         _check(ui.model.snapshot()["history"].size() == 0,
             "No gameplay actions invented by screen resize at %dpx" % width)
+        _check(actor.world_sign.visible == (width >= 640),
+            "3D corridor signage must avoid obscuring 320/390px HUD at %dpx" % width)
 
     ui.pilot_button.emit_signal("pressed")
     _check(not actor.piloting and stage.camera.current,
