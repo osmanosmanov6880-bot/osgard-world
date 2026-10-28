@@ -1052,6 +1052,8 @@ func _select_scenario(next_scenario: String) -> void:
         return
     selected_scenario = next_scenario
     session.reset(next_scenario)
+    story.reset(next_scenario)
+    radio_ttl = 0.0
     notice_time = 0.0
     _update_scenario_picker()
     _refresh_hud()
@@ -1060,18 +1062,28 @@ func _fast_interact() -> void:
     _interact(true)
 
 func start_run() -> void:
+    story.reset(selected_scenario)
+    radio_ttl = 12.0
+    checkpoint_clock = 0.0
     started = true
     paused = false
     intro_panel.visible = false
     pause_panel.visible = false
     end_panel.visible = false
     _announce("shift_started")
+    _refresh_radio_ui()
+    _save_checkpoint()
     audio_director.set_active(true)
     if DisplayServer.get_name() != "headless":
         Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 
 func _restart() -> void:
     session.reset(selected_scenario)
+    story.reset(selected_scenario)
+    radio_ttl = 12.0
+    checkpoint_clock = 0.0
+    if DisplayServer.get_name() != "headless":
+        checkpoint_store.clear()
     visited_sectors.clear()
     active_sector = "reactor"
     player.position = Vector3(0,1.1,2.0)
@@ -1087,6 +1099,8 @@ func _restart() -> void:
     paused = false
     end_panel.visible = false
     _announce("shift_started")
+    _refresh_radio_ui()
+    _save_checkpoint()
     audio_director.set_active(true)
     if DisplayServer.get_name() != "headless":
         Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
@@ -1118,6 +1132,7 @@ func _toggle_language() -> void:
     footer_label.text = _copy("footer")
     _announce("language")
     _refresh_hud()
+    _refresh_radio_ui()
 
 func _input(event: InputEvent) -> void:
     if event is InputEventKey and event.pressed and not event.echo:
