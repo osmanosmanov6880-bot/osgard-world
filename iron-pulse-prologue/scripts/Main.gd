@@ -1550,6 +1550,7 @@ func _process(delta: float) -> void:
         session.scenario_id,session.heat,session.oxygen,runtime_seconds,
         reduced_motion,session.thermal_pulses,session.thermal_shield,
         started and not paused and not session.finished())
+    signal_sites.animate_live(runtime_seconds,reduced_motion,started and not paused and not session.finished())
     if started and not paused and not session.finished():
         var sector: String = world_sectors.current_sector(player.global_position.z)
         if sector != active_sector:
