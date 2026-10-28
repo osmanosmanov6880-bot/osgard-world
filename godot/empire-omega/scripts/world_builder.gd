@@ -43,6 +43,7 @@ var r98_facade_ribs: MultiMeshInstance3D
 var city_reign_facades: Node3D
 var city_reign_squares: Node3D
 var city_reign_hero_architecture: Node3D
+var city_reign_purchased_skyline: Node3D
 var city_reign_building_finishes: Array[StandardMaterial3D] = []
 var streetfront: Node3D
 var facade_balconies: Node3D
@@ -72,6 +73,7 @@ const R98_FINS = preload("res://scripts/horizon_r98_architectural_fins.gd")
 const CITY_REIGN_FACADE = preload("res://scripts/city_reign_cinematic_facades.gd")
 const CITY_REIGN_SQUARES = preload("res://scripts/city_reign_signature_squares.gd")
 const CITY_REIGN_HERO = preload("res://scripts/city_reign_landmark_architecture.gd")
+const CITY_REIGN_PAID_SKYLINE = preload("res://scripts/city_reign_investment_skyline.gd")
 var asphalt_pbr: StandardMaterial3D
 var concrete_pbr: StandardMaterial3D
 var r90_original_asphalt_albedo: Texture2D
@@ -126,6 +128,18 @@ func _ready() -> void:
 	city_root.add_child(city_reign_squares)
 	_create_waypoint_marker()
 	_create_project_visuals()
+	# B27: 12 original paid municipal 3D facades. The exact real 12
+	# existing StaticBody3D project colliders remain fully authoritative.
+	# Data locations come from _project_position, never invented plots.
+	var original_purchased_plots: Dictionary = {}
+	for id in GameState.BUILDING_ORDER:
+		original_purchased_plots[id] = {
+			"position":_project_position(id),
+			"district":str(GameState.BUILDINGS[id]["district"])
+		}
+	city_reign_purchased_skyline = CITY_REIGN_PAID_SKYLINE.new()
+	city_reign_purchased_skyline.call("configure",original_purchased_plots)
+	city_root.add_child(city_reign_purchased_skyline)
 	_create_property_markers()
 	_create_weather_particles()
 	# Original individual 85 cuboid TreeCrown/TreeTrunk decorations removed.
@@ -609,6 +623,8 @@ func apply_visual_budget(mode: String) -> void:
 		city_reign_squares.call("set_quality",visual_budget)
 	if city_reign_hero_architecture != null:
 		city_reign_hero_architecture.call("set_quality",visual_budget)
+	if city_reign_purchased_skyline != null:
+		city_reign_purchased_skyline.call("set_quality",visual_budget)
 	if streetfront != null:
 		streetfront.visible = visual_budget != "low"
 	if facade_balconies != null:
@@ -701,6 +717,8 @@ func update_development() -> void:
 	# earned, not simulated by opening a menu or switching graphics.
 	if city_reign_hero_architecture != null:
 		city_reign_hero_architecture.call("sync_state",state)
+	if city_reign_purchased_skyline != null:
+		city_reign_purchased_skyline.call("sync_state",state)
 
 func _update_property_visuals() -> void:
 	var owned: Dictionary = GameState.data.get("properties",{})
