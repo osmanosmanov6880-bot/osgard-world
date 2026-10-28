@@ -552,7 +552,7 @@ func _make_complex() -> void:
     add_child(containment_fx)
     signal_sites = IPSignalSites.new()
     add_child(signal_sites)
-    signal_sites.update_campaign(signal_campaign)
+    signal_sites.update_campaign(signal_campaign,session.core_scanned)
     if reactor_core != null and reactor_atrium.core_plasma_material != null:
         reactor_core.material_override = reactor_atrium.core_plasma_material
     _terminal_active_material = _metal(Color(0.20,0.95,0.72),0.12,true)
@@ -1233,7 +1233,7 @@ func _continue_checkpoint() -> bool:
     session = restored_engine
     story = restored_story
     signal_campaign = restored_signals
-    signal_sites.update_campaign(signal_campaign)
+    signal_sites.update_campaign(signal_campaign,session.core_scanned)
     selected_scenario = session.scenario_id
     locale = saved_locale
     quality_mode = saved_quality
@@ -1284,7 +1284,7 @@ func _select_scenario(next_scenario: String) -> void:
     session.reset(next_scenario)
     story.reset(next_scenario)
     signal_campaign.reset()
-    signal_sites.update_campaign(signal_campaign)
+    signal_sites.update_campaign(signal_campaign,session.core_scanned)
     radio_ttl = 0.0
     notice_time = 0.0
     _update_scenario_picker()
@@ -1298,7 +1298,7 @@ func start_run() -> void:
     _apply_cinematic_view()
     story.reset(selected_scenario)
     signal_campaign.reset()
-    signal_sites.update_campaign(signal_campaign)
+    signal_sites.update_campaign(signal_campaign,session.core_scanned)
     radio_ttl = 12.0
     checkpoint_clock = 0.0
     started = true
@@ -1319,7 +1319,7 @@ func _restart() -> void:
     session.reset(selected_scenario)
     story.reset(selected_scenario)
     signal_campaign.reset()
-    signal_sites.update_campaign(signal_campaign)
+    signal_sites.update_campaign(signal_campaign,session.core_scanned)
     radio_ttl = 12.0
     checkpoint_clock = 0.0
     if DisplayServer.get_name() != "headless":
@@ -1644,7 +1644,7 @@ func _interact(fast: bool = false) -> void:
             previous_event = session.last_event
             if applied:
                 _story_event(session.last_event)
-                signal_sites.update_campaign(signal_campaign)
+                signal_sites.update_campaign(signal_campaign,session.core_scanned)
             _announce(session.last_event)
             _save_checkpoint()
             if session.finished():
