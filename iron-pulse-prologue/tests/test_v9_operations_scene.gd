@@ -62,6 +62,28 @@ func _run() -> void:
     _key(game,KEY_L)
     _check(game.locale=="en" and game.operations_panel._heading.text.contains("OPERATOR"),
         "Localized command center immediately switches to real English copy")
+    _check(game.career.preferences["language"]=="en",
+        "Actual gameplay language persists to separately versioned user profile")
+    _check(game.operations_panel._settings_buttons.size()==4,
+        "Four real on-screen device and accessibility controls built in Godot")
+    (game.operations_panel._settings_buttons["graphics"] as Button).emit_signal("pressed")
+    _check(game.quality_mode=="eco" and game.reactor_atrium.readout()["quality"]=="eco",
+        "Real settings button switches actual expensive reactor geometry to ECO")
+    (game.operations_panel._settings_buttons["reduced_motion"] as Button).emit_signal("pressed")
+    _check(game.reduced_motion and game.career.preferences["reduced_motion"],
+        "Reduced-motion on-screen setting reaches actual player camera and persistent preference")
+    (game.operations_panel._settings_buttons["muted"] as Button).emit_signal("pressed")
+    _check(game.muted_audio and game.audio_director.muted,
+        "Real button mutes actual audio stream and is saved")
+    var settings_file := IPCareerProfile.new()
+    _check(settings_file.load(slot) and settings_file.preferences["graphics"]=="eco" and
+        settings_file.preferences["reduced_motion"] and settings_file.preferences["muted"],
+        "Audio/graphics/accessibility preferences survive an actual file restart")
+    (game.operations_panel._settings_buttons["graphics"] as Button).emit_signal("pressed")
+    (game.operations_panel._settings_buttons["reduced_motion"] as Button).emit_signal("pressed")
+    (game.operations_panel._settings_buttons["muted"] as Button).emit_signal("pressed")
+    _check(game.quality_mode=="hero" and not game.reduced_motion and not game.muted_audio,
+        "All 3 options are genuinely reversible via touch-friendly settings buttons")
     _joy(game,JOY_BUTTON_B)
     _check(not game.operations_panel.visible and game.intro_panel.visible,
         "Mapped gamepad B closes operations menu without starting game")
