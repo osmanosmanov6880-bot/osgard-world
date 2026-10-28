@@ -29,7 +29,6 @@ const films:Record<FilmId,[string,string]>={
 }
 type TaskDraft={title:string;sceneId:string;category:ProductionCategory;owner:string;dueDate:string;notes:string}
 const emptyTask:TaskDraft={title:'',sceneId:'S01',category:'script',owner:'',dueDate:'',notes:''}
-const validFilm=(value:string):value is FilmId=>value==='zero-window'||value==='threshold'
 
 export default function OSACinemaCollaboration(){
  const [locale,setLocale]=useState<StudioLocale>(()=>new URLSearchParams(window.location.search).get('lang')==='en'?'en':'ru')
@@ -110,7 +109,7 @@ export default function OSACinemaCollaboration(){
  }
  const addTask=async(e:FormEvent)=>{
   e.preventDefault()
-  const ok=await write('task.create',task)
+  const ok=await write('task.create',{...task,sceneId:detail?.space.filmId==='threshold'?'PREVIZ':task.sceneId})
   if(ok)setTask({...emptyTask,sceneId:detail?.space.filmId==='threshold'?'PREVIZ':'S01'})
  }
  const updateTask=async(t:Task,status:ProductionState)=>write('task.update',{taskId:t.id,status})

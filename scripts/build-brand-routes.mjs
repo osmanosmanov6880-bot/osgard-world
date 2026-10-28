@@ -37,6 +37,7 @@ const routes=[
  ['osa-cinema/studio/production','Производственный кабинет — OSA CINEMA','Локальное планирование 13 сцен: задачи по направлениям, CSV и JSON черновики без подтверждения съёмок.','intelligence'],
  ['osa-cinema/studio/press','OSA CINEMA — Международный пресс-центр','Двуязычный пресс-пакет по оригинальным кинопроектам, документированные статусы, ссылки на первичные производственные акты.','intelligence'],
  ['osa-cinema/studio/distribution','OSA CINEMA — Локальный контроль дистрибуции','Локальный черновик сбора подтверждений для независимой проверки прав, производства, безопасности и доставки видео.','intelligence'],
+ ['osa-cinema/studio/collaboration','OSA CINEMA — Командный кинопроект Core','Серверные задачи и роли с авторизацией OSGARD Core. Это self-hosted pilot, без подтверждения съёмок и публичных видеопремьер.','intelligence'],
  ...studioWorks.map(work=>['osa-cinema/studio/films/'+work.id,work.title+' — OSA CINEMA',work.description,'intelligence']),
  ['portal','OSGARD — портал экосистемы','Сохранённый портал направлений OSGARD.','world'],
  ['learning','OSA — ваша карта знаний','Учебные маршруты, прогресс и история самопроверки.','intelligence'],
@@ -51,7 +52,7 @@ for(const [path,title,description,theme] of routes){
  const studioWork=studioRoutes.get(path)
  const studioPreview=studioWork?'https://osgard.world/osa-cinema/reference/'+studioWork.artwork:null
  let html=template.replace(/<title>.*?<\/title>/,`<title>${esc(title)}</title>`)
- const privateRoute=['account','workspace','workspace/overview','teams','deliveries','purchases','data','learning/campus','learning/organizer','learning/enrollment','osa-cinema/studio/library','osa-cinema/studio/production','osa-cinema/studio/distribution'].includes(path)
+ const privateRoute=['account','workspace','workspace/overview','teams','deliveries','purchases','data','learning/campus','learning/organizer','learning/enrollment','osa-cinema/studio/library','osa-cinema/studio/production','osa-cinema/studio/distribution','osa-cinema/studio/collaboration'].includes(path)
  for(const [selector,value] of [['name="robots"',privateRoute?'noindex,follow':'index,follow'],['name="description"',description],['name="twitter:card"','summary_large_image'],['property="og:image:alt"',title],['property="og:title"',title],['property="og:description"',description],['property="og:url"','https://osgard.world/'+path],['property="og:image"',studioPreview||'https://osgard.world/brand/preview-'+theme+'.png'],['name="twitter:title"',title],['name="twitter:description"',description],['name="twitter:image"',studioPreview||'https://osgard.world/brand/preview-'+theme+'.png']]){
   const regex=new RegExp(`(<meta ${selector} content=")[^"]*("[^>]*>)`);html=regex.test(html)?html.replace(regex,(_,a,b)=>a+esc(value)+b):html.replace('</head>',`<meta ${selector} content="${esc(value)}"/>\n</head>`)
  }

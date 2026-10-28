@@ -135,6 +135,7 @@ export default function OSACinemaProductionDesk() {
         <a href={'/osa-cinema/studio?lang='+locale}><ArrowLeft size={16}/>{tr('Каталог','Catalogue')}</a>
         <a href={'/osa-cinema/studio/films/zero-window?lang='+locale}>{tr('Фильм','Film dossier')}</a>
         <a href="#osa-production-evidence">{tr('Контроль','Release gates')}</a>
+        <a href={'/osa-cinema/studio/collaboration?lang='+locale}>{tr('Командный Core','Core team')}</a>
       </nav>
       <button type="button" className="osa-studio-language" onClick={setLanguage} aria-label={tr('Switch to English','Переключить на русский')}><Globe2 size={15}/>{locale.toUpperCase()}</button>
     </header>

@@ -8,6 +8,7 @@ const cleanSeo: Record<string, { title: string; description: string }> = {
   '/osa-cinema/studio/production': { title: 'Производственный кабинет — OSA CINEMA', description: 'Локальный кабинет планирования 13 сцен короткометражного фильма Нулевое окно. Задачи, этапы и безопасный экспорт черновиков.' },
   '/osa-cinema/studio/press': { title: 'OSA CINEMA — Международный пресс-центр', description: 'Оригинальные интерактивные истории и кинопроекты: фактические производственные статусы, двуязычный пресс-пакет и источники.' },
   '/osa-cinema/studio/distribution': { title: 'OSA CINEMA — Локальный контроль дистрибуции', description: 'Локальный подготовительный кабинет независимой проверки прав, производства и видеодоставки. Не разрешает публичную премьеру.' },
+  '/osa-cinema/studio/collaboration': { title: 'OSA CINEMA — Командный кинопроект Core', description: 'Серверный пилот командной координации кинопроизводства. Авторизация, участники, версии задач и журнал действий. Фильмы не опубликованы.' },
   '/': { title: 'OSA Intelligence — понимать, проверять, решать', description: 'Интерактивная среда OSA: изучайте возможности ИИ, проверяйте доказательства и принимайте ответственные решения.' },
   '/academy': { title: 'OSGARD AI Academy — понимать, проверять, применять ИИ', description: 'Учебные маршруты, интерактивный курс и практическая студия по применению искусственного интеллекта.' },
   '/learning/assessment': { title: 'OSA Learning — проверка знаний', description: 'Восемь проверочных вопросов по интерактивным урокам OSA.' },
@@ -80,7 +81,7 @@ export function updateRouteSeo(path: string): void {
       element.setAttribute(attribute, value)
     }
     setMeta('meta[name="description"]', 'content', data.description)
-    const privateRoute = ['/account','/workspace','/workspace/overview','/teams','/deliveries','/purchases','/data','/learning/campus','/learning/organizer','/learning/enrollment','/osa-cinema/studio/library','/osa-cinema/studio/production','/osa-cinema/studio/distribution'].includes(path)
+    const privateRoute = ['/account','/workspace','/workspace/overview','/teams','/deliveries','/purchases','/data','/learning/campus','/learning/organizer','/learning/enrollment','/osa-cinema/studio/library','/osa-cinema/studio/production','/osa-cinema/studio/distribution','/osa-cinema/studio/collaboration'].includes(path)
     setMeta('meta[name="robots"]', 'content', privateRoute || gameId && !game || studioId && !studioWork ? 'noindex,follow' : 'index,follow')
     setMeta('meta[name="twitter:card"]', 'content', 'summary_large_image')
     setMeta('meta[property="og:title"]', 'content', data.title)

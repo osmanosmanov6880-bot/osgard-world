@@ -8,6 +8,7 @@ const OSACinemaLibrary = React.lazy(() => import('./OSACinemaLibrary'))
 const OSACinemaProductionDesk = React.lazy(() => import('./OSACinemaProductionDesk'))
 const OSACinemaPressRoom = React.lazy(() => import('./OSACinemaPressRoom'))
 const OSACinemaDistributionDesk = React.lazy(() => import('./OSACinemaDistributionDesk'))
+const OSACinemaCollaboration = React.lazy(() => import('./OSACinemaCollaboration'))
 const LectureLibrary = React.lazy(() => import('./LectureLibrary'))
 const OSAExperimentPage = React.lazy(() => import('./OSAExperimentPage'))
 const OSAProgramPage = React.lazy(() => import('./OSAProgramPage'))
@@ -117,6 +118,7 @@ function RoutedContent({ path, href }: { path: string; href: string }) {
   if (path.startsWith('/lectures/')) return <><Seo path={path} /><OSALessonPage slug={path.slice('/lectures/'.length)} /></>
   if (path === '/portal') return <><Seo path="/" /><WorldHome /></>
   if (path === '/osa-cinema/studio/press') return <><Seo path={path} /><OSACinemaPressRoom /></>
+  if (path === '/osa-cinema/studio/collaboration') return <><Seo path={path} /><OSACinemaCollaboration /></>
   if (path === '/osa-cinema/studio/distribution') return <><Seo path={path} /><OSACinemaDistributionDesk /></>
   if (path === '/osa-cinema/studio/production') return <><Seo path={path} /><OSACinemaProductionDesk /></>
   if (path === '/osa-cinema/studio/library') return <><Seo path={path} /><OSACinemaLibrary /></>
