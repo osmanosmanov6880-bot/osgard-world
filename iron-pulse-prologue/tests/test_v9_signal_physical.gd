@@ -34,12 +34,33 @@ func _run() -> void:
             "Real three-dimensional engineering signage marks each station")
         _check(site["status"] is MeshInstance3D and site["number"] is Label3D,
             "Station has actual dynamic in-world state light and number")
+        var receiver: Node3D = site["receiver"]
+        _check(receiver != null and receiver.get_node_or_null("ActualCurveSignalRing") is MeshInstance3D,
+            "Every physical station has an original curved 3D gyroscope rotor")
+        _check((receiver.get_node("ActualCurveSignalRing") as MeshInstance3D).mesh is TorusMesh,
+            "Gyroscope uses real curved Godot TorusMesh rather than flat CSS illusion")
+        _check(receiver.get_node_or_null("MachinedHarmonicAxle") is MeshInstance3D and receiver.get_child_count()>=5,
+            "Rotor has genuine mechanical axle and independently modeled spokes")
     _check(game.terminals.size()==6 and game.relay_terminals.size()==3,
         "Original six story consoles and optional three rescue relays remain unchanged")
     _check(game.signal_sites.diagnostic()["hero_precision_fins"]==20,
         "Fine-machined HERO detail exists in actual 3D environment")
     _check(game.signal_campaign.collected.is_empty() and not game.signal_campaign.route_unlocked(),
         "No unearned campaign progression appears on new game menu")
+    _check(game.signal_sites.sites[0]["status"].material_override==game.signal_sites._locked_mat,
+        "Mission beacon stays physically amber/locked before original core scan")
+    game.signal_sites.animate_live(8.0,false,true)
+    var receiver_before: float = (game.signal_sites.sites[0]["receiver"] as Node3D).rotation.z
+    _check(absf(receiver_before)>0.01,"In-world gyroscope actually responds to gameplay clock")
+    game.signal_sites.animate_live(20.0,true,true)
+    _check(is_equal_approx((game.signal_sites.sites[0]["receiver"] as Node3D).rotation.z,receiver_before),
+        "Reduced Motion freezes optional gyroscope instead of creating camera sickness")
+    game.signal_sites.set_quality("eco")
+    _check(not (game.signal_sites.sites[0]["receiver"] as Node3D).visible,
+        "ECO stops rendering costly curved ring machinery on constrained devices")
+    game.signal_sites.set_quality("hero")
+    _check((game.signal_sites.sites[0]["receiver"] as Node3D).visible,
+        "HERO re-enables real 3D signal machines without changing mission progress")
 
     game._select_scenario("blackout")
     game.start_run()
@@ -51,6 +72,8 @@ func _run() -> void:
     game._interact()
     _check(game.session.core_scanned and game.story.latest_key=="scan",
         "Original scanner unlocks source-bound V9 signal chain")
+    _check(game.signal_sites.sites[0]["status"].material_override==game.signal_sites._ready_mat,
+        "Original scanner visibly activates previously locked 3D signal receivers")
     var elapsed_before: float = game.session.elapsed
     game.player.position = Vector3(4.8,1.1,-18.0)
     game._interact()
