@@ -19,12 +19,16 @@ func _ready() -> void:
 	# facing the -X road, x=-191,z=-191. This is the actual playable world.
 	shot_camera = Camera3D.new()
 	shot_camera.name = "ActualOriginalRoadFacingStreetCamera"
-	shot_camera.position = Vector3(-209.0,5.60,-184.0)
+	# B44 camera stays in the EXISTING roadway, away from the building
+	# collider. Earlier 11m shot put an entire near wall across the frame,
+	# falsely failed the legitimate live-world screenshot quality gate.
+	# This ~46m diagonal shot includes road surface, skyline and storefront.
+	shot_camera.position = Vector3(-208.0,13.2,-149.0)
 	shot_camera.fov = 58.0
 	shot_camera.near = 0.08
 	shot_camera.far = 450.0
 	add_child(shot_camera)
-	shot_camera.look_at(Vector3(-191.0,3.65,-191.0),Vector3.UP)
+	shot_camera.look_at(Vector3(-191.0,6.0,-191.0),Vector3.UP)
 	shot_camera.current = true
 
 func _unhandled_key_input(event: InputEvent) -> void:
