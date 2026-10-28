@@ -670,11 +670,12 @@ func _start_extended_mission() -> void:
 # toward the REAL physical device, never a teleport or a fabricated rendering.
 # 3D details remain manipulable even when the player disables camera motion.
 func _focus_physical_field_device(key: String, target: Vector3) -> void:
-    if field_focused_devices.has(key) or stage_3d == null or
-            stage_3d.first_person == null or not stage_3d.first_person.piloting:
+    if (field_focused_devices.has(key) or stage_3d == null
+            or stage_3d.first_person == null
+            or not stage_3d.first_person.piloting):
         return
     var actor: A7FirstPersonOperator = stage_3d.first_person
-    var eye: Vector3 = actor.body.global_position + Vector3(0, actor.HEAD_HEIGHT, 0)
+    var eye: Vector3 = actor.body.global_position + Vector3(0, A7FirstPersonOperator.HEAD_HEIGHT, 0)
     var delta_aim: Vector3 = target - eye
     var flat: float = Vector2(delta_aim.x, delta_aim.z).length()
     if flat < 0.10:
