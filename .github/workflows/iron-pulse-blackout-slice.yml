@@ -163,6 +163,13 @@ jobs:
           timeout --signal=TERM --kill-after=5s 160s godot --headless --path iron-pulse-prologue --script res://tests/test_v8_3_open_core.gd 2>&1 | tee "$RUNNER_TEMP/iron-pulse-v8-3-core.log"
           grep -q '^IRON PULSE V8.3 OPEN CORE PASS:' "$RUNNER_TEMP/iron-pulse-v8-3-core.log"
           if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/iron-pulse-v8-3-core.log"; then exit 1; fi
+      - name: V8.3 real open plasma reactor, industrial shell and all original gameplay
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 160s godot --headless --path iron-pulse-prologue --script res://tests/test_v8_3_open_core.gd 2>&1 | tee "$RUNNER_TEMP/iron-pulse-v8-3-core.log"
+          grep -q '^IRON PULSE V8.3 OPEN CORE PASS:' "$RUNNER_TEMP/iron-pulse-v8-3-core.log"
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/iron-pulse-v8-3-core.log"; then exit 1; fi
       - name: Export exact-source Godot 4.4.1 WebGL playable build
         shell: bash
         run: |
