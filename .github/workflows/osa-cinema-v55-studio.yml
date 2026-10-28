@@ -10,6 +10,9 @@ on:
       - 'src/osaCinemaFilm.css'
       - 'src/main.tsx'
       - 'src/routeSeo.ts'
+      - 'src/osgardRouting.ts'
+      - 'scripts/build-brand-routes.mjs'
+      - 'scripts/osa-cinema-v55-route-shell-preflight.mjs'
       - 'public/sitemap.xml'
       - 'src/OSAObsidianArchive.tsx'
       - 'scripts/osa-cinema-v55-studio-contract.test.mjs'
@@ -26,6 +29,9 @@ on:
       - 'src/osaCinemaFilm.css'
       - 'src/main.tsx'
       - 'src/routeSeo.ts'
+      - 'src/osgardRouting.ts'
+      - 'scripts/build-brand-routes.mjs'
+      - 'scripts/osa-cinema-v55-route-shell-preflight.mjs'
       - 'public/sitemap.xml'
       - 'src/OSAObsidianArchive.tsx'
       - 'scripts/osa-cinema-v55-studio-contract.test.mjs'
@@ -55,6 +61,8 @@ jobs:
         run: npm run check
       - name: Compile actual production site
         run: npm run build
+      - name: Verify direct-loadable worldwide film pages and metadata
+        run: node scripts/osa-cinema-v55-route-shell-preflight.mjs
       - name: Verify no new OSA Cinema publication without media proof
         run: npm run qa:osa-media-release
   real-browser:

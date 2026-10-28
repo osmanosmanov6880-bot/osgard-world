@@ -2,6 +2,9 @@ import { readFile,writeFile,mkdir } from 'node:fs/promises'
 import { build } from 'esbuild'
 const catalogBundle=await build({entryPoints:['src/redesignCatalog.ts'],bundle:true,write:false,format:'esm',platform:'node'})
 const {playGames}=await import('data:text/javascript;base64,'+Buffer.from(catalogBundle.outputFiles[0].text).toString('base64'))
+const studioBundle=await build({entryPoints:['src/osaCinemaStudioRegistry.ts'],bundle:true,write:false,format:'esm',platform:'node'})
+const {studioWorks}=await import('data:text/javascript;base64,'+Buffer.from(studioBundle.outputFiles[0].text).toString('base64'))
+const studioRoutes=new Map(studioWorks.map(work=>['osa-cinema/studio/films/'+work.id,work]))
 const template=await readFile('dist/index.html','utf8')
 const routes=[
  ['teams','OSGARD Core — команды','Командные пространства, роли и подключение проектов.','world'],
@@ -25,6 +28,8 @@ const routes=[
  ...playGames.map(game=>['play/world/'+game.id,game.title+' — OSGARD PLAY',game.description+' '+game.platform+'. Инструкция, сохранение и запуск.','play']),
  ['academy','OSA — Академия','Практика, учебные маршруты и проекты OSA.','intelligence'],
  ['osa-cinema','OSA Original — интерактивный курс','Восемь сцен, выборы и самопроверка. Прогресс сохраняется в браузере.','intelligence'],
+ ['osa-cinema/studio','OSA CINEMA STUDIO — оригинальные истории и производство','Двуязычная коллекция оригинальных интерактивных историй и проверяемая история производства OSA CINEMA.','intelligence'],
+ ...studioWorks.map(work=>['osa-cinema/studio/films/'+work.id,work.title+' — OSA CINEMA',work.description,'intelligence']),
  ['portal','OSGARD — портал экосистемы','Сохранённый портал направлений OSGARD.','world'],
  ['learning','OSA — ваша карта знаний','Учебные маршруты, прогресс и история самопроверки.','intelligence'],
  ...['project','workspace','portfolio','program','experiments','assessment','pricing'].map(id=>['learning/'+id,'OSA — '+({project:'практический проект',workspace:'мастерская',portfolio:'локальное портфолио',program:'практическая программа',experiments:'журнал экспериментов',assessment:'самопроверка',pricing:'форматы обучения'})[id],'OSA Learning: обучение и практика. Возможности и ограничения указаны на странице.','intelligence']),
@@ -35,9 +40,11 @@ const legacyRoutes=[['worlds','Миры'],['catalog','Каталог'],['chronic
 for(const [path,label]of legacyRoutes)if(!routes.some(r=>r[0]===path))routes.push([path,'OSGARD — '+label,'Сохранённый раздел OSGARD: '+label+'. Возможности и ограничения указаны на странице.',path.startsWith('play/')||path.startsWith('games/')?'play':'world'])
 const esc=v=>v.replaceAll('&','&amp;').replaceAll('"','&quot;').replaceAll('<','&lt;')
 for(const [path,title,description,theme] of routes){
+ const studioWork=studioRoutes.get(path)
+ const studioPreview=studioWork?'https://osgard.world/osa-cinema/reference/'+studioWork.artwork:null
  let html=template.replace(/<title>.*?<\/title>/,`<title>${esc(title)}</title>`)
  const privateRoute=['account','workspace','workspace/overview','teams','deliveries','purchases','data','learning/campus','learning/organizer','learning/enrollment'].includes(path)
- for(const [selector,value] of [['name="robots"',privateRoute?'noindex,follow':'index,follow'],['name="description"',description],['name="twitter:card"','summary_large_image'],['property="og:image:alt"',title],['property="og:title"',title],['property="og:description"',description],['property="og:url"','https://osgard.world/'+path],['property="og:image"','https://osgard.world/brand/preview-'+theme+'.png'],['name="twitter:title"',title],['name="twitter:description"',description],['name="twitter:image"','https://osgard.world/brand/preview-'+theme+'.png']]){
+ for(const [selector,value] of [['name="robots"',privateRoute?'noindex,follow':'index,follow'],['name="description"',description],['name="twitter:card"','summary_large_image'],['property="og:image:alt"',title],['property="og:title"',title],['property="og:description"',description],['property="og:url"','https://osgard.world/'+path],['property="og:image"',studioPreview||'https://osgard.world/brand/preview-'+theme+'.png'],['name="twitter:title"',title],['name="twitter:description"',description],['name="twitter:image"',studioPreview||'https://osgard.world/brand/preview-'+theme+'.png']]){
   const regex=new RegExp(`(<meta ${selector} content=")[^"]*("[^>]*>)`);html=regex.test(html)?html.replace(regex,(_,a,b)=>a+esc(value)+b):html.replace('</head>',`<meta ${selector} content="${esc(value)}"/>\n</head>`)
  }
  const canonical='https://osgard.world/'+(path==='games'||path==='entertainment'?'play':path)
@@ -45,7 +52,7 @@ for(const [path,title,description,theme] of routes){
  html=html.replace('<html lang="ru">',`<html lang="ru" data-product="${theme}">`)
  // Initial canonical-matching pages skip the runtime metadata import. Supply
  // their own WebPage now while preserving the separate Organization/WebSite graph.
- const pageSchema={'@context':'https://schema.org','@type':'WebPage',name:title,description,url:canonical,isPartOf:{'@type':'WebSite',name:'OSGARD WORLD',url:'https://osgard.world/'}}
+ const pageSchema=studioWork?{'@context':'https://schema.org','@type':'CreativeWork',name:studioWork.title,description,url:canonical,inLanguage:['ru','en'],dateCreated:studioWork.year,isPartOf:{'@type':'WebSite',name:'OSA CINEMA',url:'https://osgard.world/osa-cinema/studio'}}:{'@context':'https://schema.org','@type':'WebPage',name:title,description,url:canonical,isPartOf:{'@type':'WebSite',name:'OSGARD WORLD',url:'https://osgard.world/'}}
  const schemaScript='<script type="application/ld+json" data-route-seo>'+JSON.stringify(pageSchema).replaceAll('<','\\u003c')+'</script>'
  const routeSchema=/<script\b(?=[^>]*\sdata-route-seo(?:\s|=|>))[^>]*>[\s\S]*?<\/script>/i
  html=routeSchema.test(html)?html.replace(routeSchema,()=>schemaScript):html.replace('</head>',schemaScript+'\n</head>')

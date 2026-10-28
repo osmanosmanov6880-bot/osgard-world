@@ -102,3 +102,15 @@ test('Existing cinematic progress drives a truthful local-only resume CTA',()=>{
  assert.doesNotMatch(resume,/\/checkout|video src|fetch\(/i)
  assert.match(studio,/window\.addEventListener\('storage',onStorage\)/)
 })
+
+test('Studio route shells are real generated pages and recognized React destinations',()=>{
+ const builder=read('scripts/build-brand-routes.mjs')
+ const router=read('src/osgardRouting.ts')
+ const app=read('src/main.tsx')
+ assert.match(builder,/studioRoutes=new Map\(studioWorks\.map/)
+ assert.match(builder,/studioWork\?\{'@context':'https:\/\/schema.org','@type':'CreativeWork'/)
+ assert.match(builder,/studioPreview/)
+ assert.match(router,/osa-cinema\\\/studio\\\/films/)
+ assert.match(router,/\/osa-cinema\/studio/)
+ assert.match(app,/!path\.startsWith\('\/osa-cinema\/studio\/films\/'\)/)
+})

@@ -68,7 +68,7 @@ function Seo({ path }: { path: string }) {
   React.useEffect(() => {
     const canonicalPath = path === '/entertainment' || path === '/games' ? '/play' : path
     const canonical = 'https://osgard.world' + canonicalPath
-    if (document.head.querySelector<HTMLLinkElement>('link[rel="canonical"]')?.href === canonical) return
+    if (document.head.querySelector<HTMLLinkElement>('link[rel="canonical"]')?.href === canonical && !path.startsWith('/osa-cinema/studio/films/')) return
     let cancelled = false
     import('./routeSeo').then(module => { if (!cancelled) module.updateRouteSeo(path) }).catch(() => {
       // Metadata failure must never prevent the actual route from opening.
