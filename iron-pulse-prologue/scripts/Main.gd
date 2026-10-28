@@ -307,6 +307,8 @@ func _publish_web_state() -> void:
     state["radio_text"] = radio_dialogue.text if radio_dialogue != null else ""
     state["priority"] = session.priority_id
     state["journal_visible"] = journal_panel.visible if journal_panel != null else false
+    if journal_close_button != null:
+        state["journal_close_rect"] = _hud_rect(journal_close_button)
     if continue_button != null:
         state["continue_button_visible"] = continue_button.visible
     state["vitals_visible"] = vitals_panel.visible if vitals_panel != null else false
@@ -772,6 +774,8 @@ func _make_touch_controls() -> void:
     look.pressed.connect(_toggle_language)
     var fast := _touch_button(touch_ui,"FAST / Q",216,-299,94)
     fast.pressed.connect(_fast_interact)
+    var archive := _touch_button(touch_ui,"J / LOG",216,-357,94)
+    archive.pressed.connect(_toggle_journal)
 
 func _make_radio_ui() -> void:
     radio_panel = _panel(hud_root,Rect2(-420,-207,-18,-78),Rect2(1,1,1,1),Color(0.014,0.027,0.047,0.94))
