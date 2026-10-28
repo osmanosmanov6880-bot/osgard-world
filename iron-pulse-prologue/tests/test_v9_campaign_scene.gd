@@ -81,6 +81,8 @@ func _run() -> void:
     game._restart()
     _check(game.selected_scenario=="thermal" and game.session.scenario_id=="thermal",
         "Next chapter starts genuine HEAT crisis in actual Godot game")
+    _check(game.story.latest_key=="handoff_thermal_crew" and game.story.journal.size()==2,
+        "Actual MARA radio remembers crew-first GRID order at start of HEAT")
     _check(game.session.crew_health < 100.0 and game.campaign.wins()==1,
         "GRID crew casualties physically carry into the next episode")
 
@@ -103,6 +105,8 @@ func _run() -> void:
     game._restart()
     _check(game.selected_scenario=="breach" and game.session.scenario_id=="breach",
         "Third chapter begins real oxygen-leak simulation")
+    _check(game.story.latest_key=="handoff_breach_crew" and game.story.latest("en")["text"].contains("crew"),
+        "Actual AIR opening is a new bilingual radio beat based on prior HEAT choice")
     _check(game.session.oxygen < 100.0 and game.campaign.wins()==2,
         "AIR receives bounded oxygen carryover, not a decorative score number")
     _check(_play_physical_mission(game),
