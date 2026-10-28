@@ -1,0 +1,216 @@
+name: LAST FRONTIER W78 true original Godot touchscreen physics (DRAFT)
+on:
+  pull_request:
+    branches:
+      - game/last-frontier-w77-physical-sector-gate-20261028
+    paths:
+      - 'w63-a7-cascade/**'
+      - 'docs/LAST_FRONTIER_W78_MOBILE_NATIVE_PLAY.md'
+      - '.github/workflows/last-frontier-w78-mobile-native-play.yml'
+permissions:
+  contents: read
+concurrency:
+  group: last-frontier-w78-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  source-safety:
+    name: W77 3/3 exact source pin and no original Godot gameplay/physics edits
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Limit exactly six paths and immutably protect original engine, collider, checkpoint, field mechanics, W76 visuals
+        env:
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p w78-evidence
+          python3 - <<'PY'
+          import json,os,re,subprocess
+          from pathlib import Path
+          base='c177b554be9b10846c53d4996855b0a2d6f57103'
+          head=os.environ['HEAD']
+          def git(*args):return subprocess.check_output(['git',*args],text=True).strip()
+          assert re.fullmatch('[0-9a-f]{40}',head)
+          assert git('rev-parse','HEAD')==head and git('merge-base',base,head)==base
+          changed=set(git('diff','--name-only','--no-renames',base,head).splitlines())
+          allowed={
+              'w63-a7-cascade/scripts/A7TouchFieldControls.gd',
+              'w63-a7-cascade/scripts/A7CascadeScreen.gd',
+              'w63-a7-cascade/tests/test_w78_touch_gameplay.gd',
+              'w63-a7-cascade/ci/w78_browser_touch.py',
+              'docs/LAST_FRONTIER_W78_MOBILE_NATIVE_PLAY.md',
+              '.github/workflows/last-frontier-w78-mobile-native-play.yml',
+          }
+          assert changed==allowed,{'missing':sorted(allowed-changed),
+                                   'unapproved':sorted(changed-allowed)}
+          protected=[
+              'w63-a7-cascade/scripts/A7CascadeCore.gd',
+              'w63-a7-cascade/scripts/A7FirstPersonOperator.gd',
+              'w63-a7-cascade/scripts/A7CinematicStage.gd',
+              'w63-a7-cascade/scripts/A7SpatialMission.gd',
+              'w63-a7-cascade/scripts/A7FieldOperations.gd',
+              'w63-a7-cascade/scripts/A7WorldInteraction.gd',
+              'w63-a7-cascade/scripts/A7SessionCheckpoint.gd',
+              'w63-a7-cascade/scripts/A7DiegeticFeedback.gd',
+              'w63-a7-cascade/scripts/A7MissionWayfinder.gd',
+              'w63-a7-cascade/scripts/A7SectorBulkhead.gd',
+              'w63-a7-cascade/scripts/A7GamepadDirector.gd',
+              'w63-a7-cascade/scripts/A7FrameTelemetry.gd',
+              'w63-a7-cascade/tests/test_a7_cascade.gd',
+              'w63-a7-cascade/tests/test_w73_world_and_checkpoint.gd',
+              'w63-a7-cascade/tests/test_w74_gamepad_feedback.gd',
+              'w63-a7-cascade/tests/test_w76_immersive_level.gd',
+              'w63-a7-cascade/tests/test_w77_sector_bulkhead.gd',
+              'w63-a7-cascade/ci/w77_browser_sector_gate.py',
+              'w63-a7-cascade/Main.tscn',
+              'w63-a7-cascade/project.godot',
+              'w63-a7-cascade/export_presets.cfg',
+          ]
+          protected_blobs={}
+          for p in protected:
+              old=git('rev-parse',base+':'+p)
+              actual=git('rev-parse',head+':'+p)
+              assert old==actual,'Cannot change accepted original physics source: '+p
+              protected_blobs[p]=actual
+          subprocess.run(['git','diff','--check',base,head],check=True)
+          touch=Path('w63-a7-cascade/scripts/A7TouchFieldControls.gd').read_text()
+          for term in ['actor.set_key','actor.rotate_view','button.button_down.connect',
+                       'button.button_up.connect','release_all','world_tool_requested.emit',
+                       'physical_inspection_requested.emit','actual_screen_width']:
+              assert term in touch,term
+          assert 'A7CascadeCore.choose' not in touch
+          assert 'HTTPClient' not in touch
+          json_data={
+              'schema':'LAST_FRONTIER_W78_ORIGINAL_W77_SOURCE_PROTECTION_V1',
+              'head_sha':head,'accepted_w77_source_sha':base,
+              'status':'PASS','protected_source_blobs':protected_blobs,
+              'changed_paths':sorted(changed),'actual_native_touch_source_added':True,
+              'original_A7_gameplay_rules_modified':False,
+              'real_physical_phone_certified':False,
+              'commercial_release_authorized':False,
+          }
+          Path('w78-evidence/W78_IMMUTABLE_SOURCE.json').write_text(
+              json.dumps(json_data,indent=2)+'\n')
+          print('W78 original accepted W77 physics, game and browser source unmodified PASS')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: last-frontier-w78-protected-original-source-${{ github.event.pull_request.head.sha }}
+          path: w78-evidence/W78_IMMUTABLE_SOURCE.json
+          if-no-files-found: warn
+          retention-days: 45
+
+  native-physics-webgl:
+    name: Original Godot W73-W78 physics+touch tests, actual WASM and 12 genuine browser frames
+    runs-on: ubuntu-latest
+    timeout-minutes: 115
+    needs: source-safety
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          include-templates: true
+          use-dotnet: false
+      - name: Import exact original Godot project, reject GDScript compile/parse errors
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p w78-evidence
+          timeout 290s godot --headless --editor --path w63-a7-cascade --import --quit 2>&1 | tee w78-evidence/import.log
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' w78-evidence/import.log; then exit 1; fi
+      - name: Actual W63/W73/W74/W76/W77 native gameplay and W78 real live touch route
+        shell: bash
+        run: |
+          set -euo pipefail
+          for test in test_a7_cascade test_w73_world_and_checkpoint test_w74_gamepad_feedback test_w76_immersive_level test_w77_sector_bulkhead test_w78_touch_gameplay; do
+            timeout 490s godot --headless --path w63-a7-cascade --script "res://tests/$test.gd" 2>&1 | tee "w78-evidence/$test.log"
+            if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "w78-evidence/$test.log"; then exit 1; fi
+          done
+          grep -q 'LAST FRONTIER W63 A7 CASCADE REAL GODOT PLAYABLE VERTICAL SLICE PASS: 105 checks' w78-evidence/test_a7_cascade.log
+          grep -q 'LAST FRONTIER W73 TRUE WORLD RAYCAST AND TRANSACTIONAL CHECKPOINT PASS:' w78-evidence/test_w73_world_and_checkpoint.log
+          grep -q 'LAST FRONTIER W74 TRUE DIEGETIC PHYSICS GAMEPAD AND FRAME TELEMETRY PASS:' w78-evidence/test_w74_gamepad_feedback.log
+          grep -q 'LAST FRONTIER W76 REAL IMMERSIVE PHYSICAL LEVEL AND WORLD NAVIGATION PASS:' w78-evidence/test_w76_immersive_level.log
+          grep -q 'LAST FRONTIER W77 TRUE ORIGINAL PHYSICAL SECTOR DOOR GAME PASS:' w78-evidence/test_w77_sector_bulkhead.log
+          grep -q 'LAST FRONTIER W78 TRUE ORIGINAL GODOT MOBILE TOUCH PHYSICS PASS:' w78-evidence/test_w78_touch_gameplay.log
+      - name: Export actual original Godot 4.4.1 WebAssembly with immutable SHA
+        env:
+          SHA: ${{ github.event.pull_request.head.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd w63-a7-cascade
+          mkdir -p build/web
+          godot --headless --path . --export-release Web build/web/index.html
+          cd ..
+          python3 w33-godot-native/ci/verify_web_export.py w63-a7-cascade/build/web --sha "$SHA" --output w63-a7-cascade/build/web/evidence.json
+      - name: Install real Chromium browser test runtime
+        run: |
+          set -euo pipefail
+          python3 -m venv /tmp/a7-w78
+          /tmp/a7-w78/bin/pip install --disable-pip-version-check playwright==1.56.0 Pillow==11.3.0
+          /tmp/a7-w78/bin/python -m playwright install --with-deps chromium
+      - name: Real original W77 physical bulkhead and W78 actual native-button browser gameplay
+        env:
+          SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          timeout 1170s /tmp/a7-w78/bin/python w63-a7-cascade/ci/w77_browser_sector_gate.py --export w63-a7-cascade/build/web --evidence w78-evidence/w77-original-regression --sha "$SHA" 2>&1 | tee w78-evidence/w77-browser.log
+          grep -q 'LAST FRONTIER W77 TRUE NATIVE SECTOR GATE GODOT CHROMIUM PASS:' w78-evidence/w77-browser.log
+          timeout 1170s /tmp/a7-w78/bin/python w63-a7-cascade/ci/w78_browser_touch.py --export w63-a7-cascade/build/web --evidence w78-evidence/w78-live-touch --sha "$SHA" 2>&1 | tee w78-evidence/w78-browser.log
+          grep -q 'LAST FRONTIER W78 TRUE GODOT MOBILE TOUCH CHROMIUM PASS:' w78-evidence/w78-browser.log
+          python3 - <<'PY'
+          import json,hashlib,os
+          from pathlib import Path
+          total=0
+          for folder,proof in [
+                  ('w77-original-regression','W77_REAL_GODOT_GATE_BROWSER.json'),
+                  ('w78-live-touch','W78_ORIGINAL_GODOT_TOUCH_BROWSER_PROOF.json')]:
+              directory=Path('w78-evidence')/folder
+              report=json.loads((directory/proof).read_text())
+              assert report['source_sha']==os.environ['SHA'] and report['result']=='PASS'
+              assert len(report['screenshots'])==6
+              for entry in report['screenshots']:
+                  raw=(directory/entry['name']).read_bytes()
+                  assert len(raw)>12000 and len(raw)==entry['bytes']
+                  assert hashlib.sha256(raw).hexdigest()==entry['sha256']
+                  total+=1
+          assert total==12
+          print('W78 actually played original 3D WebGL, 12 SHA-verified authentic PNG frames PASS')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: last-frontier-w78-authentic-mobile-touch-webgl-${{ github.event.pull_request.head.sha }}
+          path: |
+            w78-evidence/
+            w63-a7-cascade/build/web/
+          if-no-files-found: warn
+          retention-days: 45
+
+  software-only-acceptance:
+    name: Never conflate Godot software source PASS with physical iOS/Android or professional AAA certification
+    runs-on: ubuntu-latest
+    needs: [source-safety,native-physics-webgl]
+    if: always()
+    steps:
+      - name: All original game engine and actual browser gates required
+        env:
+          ORIGINAL: ${{ needs.source-safety.result }}
+          GAME: ${{ needs.native-physics-webgl.result }}
+        run: |
+          set -euo pipefail
+          test "$ORIGINAL" = success
+          test "$GAME" = success
+          echo 'W78 original Godot native 3D touchscreen SOFTWARE ACCEPTED; human/phone hardware and commercial AAA approval remain production HOLD.'
