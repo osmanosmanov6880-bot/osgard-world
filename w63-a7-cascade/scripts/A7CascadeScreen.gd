@@ -764,7 +764,10 @@ func _focus_physical_field_device(key: String, target: Vector3) -> void:
     field_focused_devices[key] = true
     field_focus_events += 1
     var yaw: float = atan2(-delta_aim.x, -delta_aim.z)
-    var pitch: float = clampf(-atan2(delta_aim.y, flat),
+    # Godot Camera3D looks along LOCAL -Z; positive X pitch aims UP.
+    # Earlier W72 used -atan2 and wrongly pitched the real operator below
+    # machines higher than eye-level. W73 raycast regression reproduces it.
+    var pitch: float = clampf(atan2(delta_aim.y, flat),
         deg_to_rad(-60.0), deg_to_rad(60.0))
     if reduced_motion:
         actor.body.rotation.y = yaw
