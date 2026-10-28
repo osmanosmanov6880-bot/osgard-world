@@ -1,0 +1,110 @@
+name: CITY REIGN AAA REAL STREET SIGNALS — exact Godot + NO DEPLOY
+on:
+  push:
+    branches:
+      - feat/city-reign-aaa-street-signals-20261028
+      - feat/omega-r90-aaa-reference-first-slice-20261026
+    paths:
+      - 'godot/empire-omega/**'
+      - '.github/workflows/city-reign-aaa-real-signals.yml'
+  pull_request:
+    branches:
+      - feat/omega-r90-aaa-reference-first-slice-20261026
+    paths:
+      - 'godot/empire-omega/**'
+      - '.github/workflows/city-reign-aaa-real-signals.yml'
+permissions:
+  contents: read
+concurrency:
+  group: city-reign-aaa-real-signals-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  original-godot-urban-traffic-law:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      - name: Pin actual source SHA and permit no production mutation
+        shell: bash
+        env:
+          CANDIDATE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
+          mkdir -p city-reign-actual-signals-evidence
+          printf '%s\n' "$CANDIDATE_SHA" > city-reign-actual-signals-evidence/sha.txt
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: false
+      - name: Strict original Godot import, no mocked engine or exported screenshot
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 godot/empire-omega/tools/generate_audio.py
+          python3 godot/empire-omega/tools/generate_patrol_audio.py
+          bash scripts/omega-strict-godot-import.sh godot/empire-omega \
+            | tee city-reign-actual-signals-evidence/strict-native-import.log
+      - name: Original physical traffic safety, four actual car classes and real traffic light GPU + law
+        shell: bash
+        run: |
+          set -euo pipefail
+          for name in \
+            v14_traffic_physics \
+            v113_city_reign_cinematic_architecture \
+            v114_city_reign_aaa_vehicle_fleet \
+            v119_city_reign_aaa_street_signals; do
+            log="city-reign-actual-signals-evidence/${name}.log"
+            timeout --signal=TERM --kill-after=6s 180s godot --headless \
+              --path godot/empire-omega --script "res://tests/${name}.gd" | tee "$log"
+            case "$name" in
+              v14*) marker="Native traffic acceptance:" ;;
+              v113*) marker="CITY REIGN AAA source-native art pass:" ;;
+              v114*) marker="CITY REIGN AAA sculpted original fleet:" ;;
+              v119*) marker="CITY REIGN AAA real street signals:" ;;
+            esac
+            grep -Fq "$marker" "$log"
+            if grep -nE 'SCRIPT ERROR:|Parse Error:|FAIL:| [1-9][0-9]* FAIL' "$log"; then
+              echo "::error::Actual Godot city street traffic signal failure: $name"; exit 1
+            fi
+          done
+      - name: Prevent bypass of manual public release approval
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --test scripts/omega-direct-publish.contract.test.mjs \
+            | tee city-reign-actual-signals-evidence/security-contract.log
+      - name: Cryptographic evidence and honest pre-release hold
+        shell: bash
+        env:
+          CANDIDATE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import json,hashlib,os
+          paths=[
+            'godot/empire-omega/scripts/city_reign_signal_art.gd',
+            'godot/empire-omega/scripts/traffic_signal_controller.gd',
+            'godot/empire-omega/scripts/main.gd',
+            'godot/empire-omega/tests/v119_city_reign_aaa_street_signals.gd']
+          d={'source_sha':os.environ['CANDIDATE_SHA'],
+            'files_sha256':{p:hashlib.sha256(Path(p).read_bytes()).hexdigest() for p in paths},
+            'authoritative_traffic_law_unmodified':True,
+            'licensed_hero_signal_art':False,
+            'physical_mobile_fps_tested':False,
+            'production_publish_approved':False}
+          Path('city-reign-actual-signals-evidence/manifest.json').write_text(
+            json.dumps(d,indent=2)+'\n')
+          PY
+      - name: Archive real Godot test evidence, no SSH or public deployment
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: city-reign-original-street-signals-${{ github.run_id }}
+          path: city-reign-actual-signals-evidence/
+          if-no-files-found: warn
+          retention-days: 14

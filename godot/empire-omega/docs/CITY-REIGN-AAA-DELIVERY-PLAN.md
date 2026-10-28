@@ -127,3 +127,11 @@ ENGINEERING STAGING. Previous C1 exact-head GitHub native+Chromium/provenance ch
 - [x] PBR metal reflects original procedural studio sky within Godot Compatibility, while a new accessible original day/night toggle changes two actual lights and stage illumination.
 - [ ] Source-locked Godot `v118` and actual rendered night/day *RGB pixel delta* CI to pass on exact head; original proprietary/licensed hero car art and independent physical-performance/art director approval missing.
 - Detailed visual art contract: `docs/CITY-REIGN-AAA-REAL-3D-SHOWROOM.md`.
+
+## A17–A19 — Real direction-specific city street signal source art
+- [x] Genuine 16 original physical roadside posts, 32 directional three-light metal heads and 96 convex physically illuminated LED lenses, authored from original source geometry with **9 bounded shared GPU MultiMesh batches**, no new colliders.
+- [x] Fixed original visual X/Z contradiction: when original traffic permits X cars, the X-facing green is on and Z-facing red is on; phase reversal obeys exact original 24 s/12 s route law. Real pre-change 1.5s amber is warning only; traffic permission unchanged.
+- [x] Live graphics LOW fallback keeps original basic poles and lamps; STANDARD/CINEMATIC uses 3D metal/glass and no duplicate 16 x 4 old draws.
+- [ ] Original native `v119` and SHA-specific full original WebGL Chromium acceptance, actual road screenshot and real-color-blind/sign readability signoff. Only then staging merge.
+- [ ] Final hero street assets, PBR reference textures, original city performance benchmarks and physical-user test; blockbuster/production approval HOLD.
+- Art-direction contract: `docs/CITY-REIGN-REAL-TRAFFIC-SIGNALS.md`.
