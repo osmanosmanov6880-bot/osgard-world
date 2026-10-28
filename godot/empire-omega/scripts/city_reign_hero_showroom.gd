@@ -131,7 +131,10 @@ func _create_original_3d_scene() -> void:
 	renderer = SubViewport.new()
 	renderer.name = "CityReignActualCarViewport"
 	renderer.size = MOBILE_SIZE if mobile else DESKTOP_SIZE
-	renderer.own_world_3d = true
+	# Headless + actual WebGL do not automatically allocate World3D for a
+	# dynamically created SubViewport. Bind one real dedicated physics-free
+	# scene world, rather than relying on the inherited Viewport property.
+	renderer.world_3d = World3D.new()
 	renderer.render_target_update_mode = SubViewport.UPDATE_DISABLED
 	viewport_host.add_child(renderer)
 	var scene := Node3D.new()
