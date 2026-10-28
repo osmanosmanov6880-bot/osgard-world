@@ -93,6 +93,9 @@ func _spot(tag: String, pos: Vector3, point: Vector3,
         tint: Color, lumens: float, range: float) -> SpotLight3D:
     var light := SpotLight3D.new()
     light.name = tag
+    # Godot Node3D.look_at requires an attached SceneTree object.
+    # Position must be established and node parented BEFORE orientation.
+    add_child(light)
     light.position = pos
     light.look_at(point, Vector3.UP)
     light.spot_range = range
@@ -100,7 +103,6 @@ func _spot(tag: String, pos: Vector3, point: Vector3,
     light.light_color = tint
     light.light_energy = lumens
     light.shadow_enabled = false
-    add_child(light)
     return light
 
 func build() -> void:
