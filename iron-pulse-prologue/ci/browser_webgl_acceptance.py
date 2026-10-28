@@ -157,7 +157,7 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                             assert idle["touch_controls_visible"] is True, idle
                             rectangles = idle.get("touch_button_rects", {})
                             assert len(rectangles) >= 6, idle
-                            for label in ("W", "A", "S", "D", "USE / E", "L / RU-EN", "FAST / Q"):
+                            for label in ("W", "A", "S", "D", "USE / E", "L / RU-EN", "FAST / Q", "J / LOG"):
                                 rect = rectangles[label]
                                 # Read actual native Control rectangles, then compare
                                 # against the real CSS pixel scaling on this device.
@@ -214,6 +214,53 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                                 break
                             page.wait_for_timeout(200)
                         assert state.get("started") is True, f"Enter did not start game on real canvas: {state}"
+                        # V6: the actual renderer must display original MARA dialogue.
+                        # This introspection is read-only; keyboard/touch below are real inputs.
+                        narrative = state.get("story",{})
+                        assert narrative.get("latest_key") == "arrival_blackout", (
+                            "Wrong chapter opening after real scenario selection",narrative)
+                        assert narrative.get("journal_entries",0) >= 1 and state.get("radio_visible") is True, (
+                            "Story radio not truly visible after starting game",narrative,state)
+                        assert state.get("priority_visible") is False, (
+                            "Crew/core priority offered before real scanner",state)
+                        assert "МАРА" in state.get("radio_text","") or "MARA" in state.get("radio_text",""), (
+                            "No authored radio subtitles shown in Godot",state.get("radio_text"))
+                        # Verify both opening and closing the actual journal.
+                        if mobile:
+                            journal_rect = state["touch_button_rects"]["J / LOG"]
+                            canvas_bounds = canvas.bounding_box()
+                            assert canvas_bounds is not None
+                            jx = canvas_bounds["x"] + (journal_rect[0]+journal_rect[2]/2)*canvas_bounds["width"]/state["viewport"][0]
+                            jy = canvas_bounds["y"] + (journal_rect[1]+journal_rect[3]/2)*canvas_bounds["height"]/state["viewport"][1]
+                            page.touchscreen.tap(jx,jy)
+                        else:
+                            page.keyboard.press("j")
+                        deadline = time.monotonic()+20
+                        while time.monotonic()<deadline:
+                            state=json.loads(marker.get_attribute("data-state",timeout=10000))
+                            if state.get("journal_visible") is True:
+                                break
+                            page.wait_for_timeout(200)
+                        assert state.get("journal_visible") is True and state.get("paused") is True, (
+                            "Actual radio journal failed to pause game",name,state)
+                        if mobile:
+                            close_rect=state["journal_close_rect"]
+                            bounds=canvas.bounding_box()
+                            assert bounds is not None
+                            page.touchscreen.tap(
+                                bounds["x"]+(close_rect[0]+close_rect[2]/2)*bounds["width"]/state["viewport"][0],
+                                bounds["y"]+(close_rect[1]+close_rect[3]/2)*bounds["height"]/state["viewport"][1])
+                        else:
+                            page.keyboard.press("Escape")
+                        deadline = time.monotonic()+20
+                        while time.monotonic()<deadline:
+                            state=json.loads(marker.get_attribute("data-state",timeout=10000))
+                            if state.get("journal_visible") is False and state.get("paused") is False:
+                                break
+                            page.wait_for_timeout(200)
+                        assert state.get("journal_visible") is False and state.get("paused") is False, (
+                            "Actual radio journal could not be closed",name,state)
+                        report.setdefault("v6_real_radio",{})[name] = "original localized subtitles and native journal PASS"
                         if mobile:
                             # Genuine mobile tap through Chromium's touchscreen,
                             # on the actual Godot Button; never call the locale
