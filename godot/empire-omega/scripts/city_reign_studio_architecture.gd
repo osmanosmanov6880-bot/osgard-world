@@ -138,6 +138,6 @@ func geometry_is_bounded() -> bool:
 		return false
 	if not find_children("*","CollisionShape3D",true,false).is_empty():
 		return false
-	return ring.cast_shadow==GeometryInstance3D.SHADOW_CASTING_SETTING_OFF and
+	return (ring.cast_shadow==GeometryInstance3D.SHADOW_CASTING_SETTING_OFF and
 		fins.cast_shadow==GeometryInstance3D.SHADOW_CASTING_SETTING_OFF and
-		backwall.cast_shadow==GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		backwall.cast_shadow==GeometryInstance3D.SHADOW_CASTING_SETTING_OFF)
