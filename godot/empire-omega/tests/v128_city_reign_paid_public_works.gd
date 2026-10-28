@@ -153,10 +153,33 @@ func _run() -> void:
 		int(restored["turn"])==int(paid_snapshot["turn"]) and
 		int(restored["mission"])==int(paid_snapshot["mission"]),
 		"saved treasury, construction time and original campaign position persist")
-	check(restored["inventories"]==paid_snapshot["inventories"] and
-		restored["trust"]==paid_snapshot["trust"] and
-		restored["buildings"]==paid_snapshot["buildings"],
-		"restored city inventory, trust and existing 12 building levels are exact")
+	# Native Godot JSON.parse_string may deserialize valid integer fields
+	# as floating point. Compare their authoritative numeric meaning,
+	# not a strict Variant type identity across the save encoding boundary.
+	var stock_match: bool = true
+	var old_stock: Dictionary = paid_snapshot["inventories"]
+	var loaded_stock: Dictionary = restored["inventories"]
+	for key in old_stock:
+		if not loaded_stock.has(key) or int(loaded_stock[key])!=int(old_stock[key]):
+			stock_match = false
+	check(stock_match and loaded_stock.size()==old_stock.size(),
+		"all real purchased and consumed inventory quantities survive JSON save")
+	var old_trust: Array = paid_snapshot["trust"]
+	var loaded_trust: Array = restored["trust"]
+	var trust_match: bool = loaded_trust.size()==old_trust.size()
+	if trust_match:
+		for i in range(old_trust.size()):
+			if int(old_trust[i])!=int(loaded_trust[i]):
+				trust_match = false
+	check(trust_match,
+		"all four district trust scores survive genuine source reload")
+	var old_buildings: Dictionary = paid_snapshot["buildings"]
+	var loaded_buildings: Dictionary = restored["buildings"]
+	var building_match: bool = loaded_buildings.size()==old_buildings.size()
+	for key in old_buildings:
+		if not loaded_buildings.has(key) or int(loaded_buildings[key])!=int(old_buildings[key]):
+			building_match = false
+	check(building_match,"all 12 saved physical municipal building levels survive reload")
 	check(outcome.get_child_count()==initial_works and
 		world.get_child_count()==initial_count,
 		"repeated reset/load never duplicates source scene nodes")
