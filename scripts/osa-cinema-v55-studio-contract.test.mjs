@@ -79,3 +79,15 @@ test('historic media publication gate remains untouched',()=>{
  assert.match(oldPlayer,/isPlayableFullFilmResponse/)
  assert.match(film,/isPublicVideoAvailable\(project\)/)
 })
+
+test('V55 international discovery has correct canonical pages, not counterfeit VideoObject markup',()=>{
+ const seo=read('src/routeSeo.ts')
+ const sitemap=read('public/sitemap.xml')
+ assert.match(seo,/getStudioWork\(studioId\)/)
+ assert.match(seo,/CreativeWork/)
+ assert.doesNotMatch(seo,/VideoObject/)
+ assert.match(seo,/studioId && !studioWork/)
+ for(const path of ['/osa-cinema/studio','/osa-cinema/studio/films/the-next-human','/osa-cinema/studio/films/zero-window','/osa-cinema/studio/films/threshold']){
+  assert.ok(sitemap.includes('https://osgard.world'+path+'</loc>'),path)
+ }
+})
