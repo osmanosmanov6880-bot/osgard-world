@@ -217,6 +217,7 @@ var w76_immersive_switches: int = 0
 var top_rail: HFlowContainer
 var w78_touch_overlay: A7TouchFieldControls
 var w79_mission_deck: A7MobileMissionDeck
+var w80_full_bleed: A7FullBleedViewport
 var w76_play_button: Button
 var w76_focus_button: Button
 var w76_objective_label: Label
@@ -261,6 +262,13 @@ var _previewed_action: String = ""
 func _ready() -> void:
     set_anchors_preset(Control.PRESET_FULL_RECT)
     _build()
+    # W80 mounts a REAL top-level original Godot viewport host.
+    # Only the same existing live stage is reparented upon opt-in.
+    w80_full_bleed = A7FullBleedViewport.new()
+    add_child(w80_full_bleed)
+    w80_full_bleed.build(stage_shell)
+    w80_full_bleed.exit_requested.connect(_w76_toggle_immersive)
+    w80_full_bleed.language_requested.connect(_toggle_locale)
     sound_bus = A7ProceduralAudio.new()
     add_child(sound_bus)
     _create_web_accessibility()
@@ -802,6 +810,8 @@ func _w76_toggle_immersive() -> void:
         footnote.visible = not w76_immersive
     if scroll != null:
         scroll.scroll_vertical = 0
+    if w80_full_bleed != null:
+        w80_full_bleed.set_immersive(w76_immersive)
     _layout_stage()
     _render(model.snapshot())
 
@@ -1155,6 +1165,10 @@ func _layout_stage() -> void:
         height = maxf(height, clampf(size.y * 0.81, 420.0, 850.0))
         if size.x < 640.0:
             height = clampf(size.y * 0.61, 345.0, 570.0)
+    if w80_full_bleed != null and w80_full_bleed.active:
+        # This is an actual full-viewport 3D render size, not a camera
+        # crop or screenshot. W76's old 61% phone stage is superseded.
+        height = maxf(height, size.y)
     if cinema_mode:
         var cinema_target: float = clampf(size.y * 0.78, 585.0, 760.0)
         if size.x < 640.0:
@@ -1274,6 +1288,10 @@ func _unhandled_key_input(event: InputEvent) -> void:
     var key: InputEventKey = event as InputEventKey
     if not key.pressed or key.echo:
         return
+    if key.keycode == KEY_ESCAPE and w76_immersive:
+        _w76_toggle_immersive()
+        get_viewport().set_input_as_handled()
+        return
     if key.keycode == KEY_TAB:
         _w76_toggle_immersive()
         get_viewport().set_input_as_handled()
@@ -1391,6 +1409,8 @@ func _render(state: Dictionary) -> void:
     language_button.text = _t("language")
     w76_play_button.text = _t("w76_play")
     w76_focus_button.text = _t("w76_focus_off" if w76_immersive else "w76_focus_on")
+    if w80_full_bleed != null:
+        w80_full_bleed.set_locale(locale)
     _w76_update_goal()
     if w78_touch_overlay != null and stage_3d != null:
         w78_touch_overlay.set_context(size.x < 640.0,w76_immersive,
@@ -1661,6 +1681,12 @@ func _publish_web_accessibility() -> void:
         "w79_original_offline_save_requests":w79_mission_deck.save_requests if w79_mission_deck != null else 0,
         "w79_checked_load_requests":w79_mission_deck.load_requests if w79_mission_deck != null else 0,
         "w79_phone_hardware_certified":false,
+        "w80_genuine_full_bleed_original_stage":w80_full_bleed.active if w80_full_bleed != null else false,
+        "w80_full_3d_stage_area_fraction":float(w80_full_bleed.qa_readout()["native_stage_area_fraction"]) if w80_full_bleed != null else 0.0,
+        "w80_real_subviewport_id_preserved":bool(w80_full_bleed.qa_readout()["original_real_3d_subviewport_unchanged"]) if w80_full_bleed != null else false,
+        "w80_real_viewport_parent_changes":w80_full_bleed.real_reparent_events if w80_full_bleed != null else 0,
+        "w80_reversible_screen_returns":w80_full_bleed.reversible_returns if w80_full_bleed != null else 0,
+        "w80_physical_phone_hardware_certified":false,
         "w67_two_3d_sectors": bool(stage_state.get("cathedral_two_real_sectors", false)),
         "w67_inspection_sector": int(stage_state.get("inspection_sector", 0)),
         "w67_walk_progress": float(stage_state.get("inspection_progress", 0.0)),
@@ -1716,6 +1742,8 @@ func _publish_web_accessibility() -> void:
         "w79_command4":_web_rect(w79_mission_deck.slots[4]) if w79_mission_deck != null else [],
         "w79_offline_save":_web_rect(w79_mission_deck.save_button) if w79_mission_deck != null else [],
         "w79_checked_load":_web_rect(w79_mission_deck.load_button) if w79_mission_deck != null else [],
+        "w80_true_native_menu":_web_rect(w80_full_bleed.exit_button) if w80_full_bleed != null else [],
+        "w80_true_native_language":_web_rect(w80_full_bleed.language_button) if w80_full_bleed != null else [],
         "frame_diagnostics": _web_rect(diagnostic_label),
         "mission_title": _web_rect(mission_title),
         "mission_briefing": _web_rect(mission_briefing),
