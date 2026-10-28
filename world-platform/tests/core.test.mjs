@@ -131,6 +131,19 @@ test("identical engine polls do not masquerade as repeated player decisions",()=
   assert.equal(events.length,3);
   assert.deepEqual(events.map(e=>e.history_count),[0,1,2]);
 });
+test("native Y mission activation at same phase zero is an actual new observation",()=>{
+  const inactive=realShapedFixture({w71_mission_active:false,
+    w72_extended_mode:false,w71_mission_phase:0});
+  const active=realShapedFixture({w71_mission_active:true,
+    w72_extended_mode:true,w71_mission_phase:0});
+  let events=appendObservedEvent([],inactive,0);
+  events=appendObservedEvent(events,active,750);
+  assert.equal(events.length,2);
+  assert.equal(events[0].mission_active,false);
+  assert.equal(events[1].mission_active,true);
+  assert.equal(events[1].advanced_mode,true);
+  assert.equal(events[1].mission_phase,0);
+});
 test("recording is bounded to 160 actual state transitions",()=>{
   let events=[];
   for(let i=0;i<190;i++){
