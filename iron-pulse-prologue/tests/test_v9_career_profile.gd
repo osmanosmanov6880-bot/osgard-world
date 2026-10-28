@@ -86,6 +86,11 @@ func _run() -> void:
     _check(career.recommended_scenario()=="blackout",
         "When all three wins tie, operator is guided to least-attempted mission without paid gating")
 
+    _check(career.set_preference("language","en") and career.set_preference("graphics","eco") and
+        career.set_preference("reduced_motion",true) and career.set_preference("muted",true),
+        "Accessible visual/audio preferences are actual locally persisted user choices")
+    _check(not career.set_preference("graphics","ultra") and not career.set_preference("server_url","https://invalid.example"),
+        "Only known preference values and no arbitrary network endpoints can enter saved profile")
     _check(career.save(path), "Dedicated V9 profile saves into true atomic offline user storage")
     var reloaded := IPCareerProfile.new()
     var loaded_from_disk: bool = reloaded.load(path)
@@ -123,6 +128,14 @@ func _run() -> void:
     corrupted["mission_records"]["thermal"]["best_grade"] = "AAA"
     _check(not reloaded.restore(corrupted) and reloaded.snapshot()==stable,
         "Impossible fabricated ratings are rejected")
+    corrupted = stable.duplicate(true)
+    corrupted["preferences"]["graphics"] = "ultra"
+    _check(not reloaded.restore(corrupted) and reloaded.snapshot()==stable,
+        "Unrecognized heavy rendering setting cannot corrupt offline profile")
+    corrupted = stable.duplicate(true)
+    corrupted["preferences"]["muted"] = "no"
+    _check(not reloaded.restore(corrupted) and reloaded.snapshot()==stable,
+        "Corrupted audio boolean is rejected transactionally")
     corrupted = stable.duplicate(true)
     corrupted["schema"] = "IRON_PULSE_OPERATIONS_PROFILE_V999"
     _check(not reloaded.restore(corrupted) and reloaded.snapshot()==stable,
