@@ -15,20 +15,21 @@ func _ready() -> void:
 	add_child(world)
 	world.call("apply_visual_budget","cinematic")
 	world.call("update_daynight",16.0)
-	# Known WorldBuilder quarter (ix=0, iz=0, n=0) has a real building
-	# facing the -X road, x=-191,z=-191. This is the actual playable world.
+	# WorldBuilder original quarter ix=0 / iz=2 (centre -182,-78),
+	# n=0 is the actual physically colliding building at (-191,-87).
+	# The urban skyline occupies a RING beginning around radius 248m;
+	# earlier test cameras at radius 256-279 were INSIDE that skyscraper
+	# geometry. Do not mistake an interior wall for a WebGL loading screen.
 	shot_camera = Camera3D.new()
-	shot_camera.name = "ActualOriginalRoadFacingStreetCamera"
-	# B44 camera stays in the EXISTING roadway, away from the building
-	# collider. Earlier 11m shot put an entire near wall across the frame,
-	# falsely failed the legitimate live-world screenshot quality gate.
-	# This ~46m diagonal shot includes road surface, skyline and storefront.
-	shot_camera.position = Vector3(-208.0,13.2,-149.0)
-	shot_camera.fov = 58.0
+	shot_camera.name = "ActualOriginalPlayableRoadCornerCamera"
+	shot_camera.position = Vector3(-156.0,13.0,-104.0)
+	shot_camera.fov = 62.0
 	shot_camera.near = 0.08
 	shot_camera.far = 450.0
 	add_child(shot_camera)
-	shot_camera.look_at(Vector3(-191.0,6.0,-191.0),Vector3.UP)
+	shot_camera.look_at(Vector3(-191.0,5.0,-87.0),Vector3.UP)
+	assert(Vector2(shot_camera.position.x,shot_camera.position.z).length() < 220.0,
+		"WebGL visual-camera anchor must stay inside playable city, outside outer tower ring")
 	shot_camera.current = true
 
 func _unhandled_key_input(event: InputEvent) -> void:
