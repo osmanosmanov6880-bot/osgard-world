@@ -1361,10 +1361,41 @@ func _nearest_terminal() -> Dictionary:
             closest = terminal
     return closest
 
+func _nearest_relay() -> Dictionary:
+    if player == null:
+        return {}
+    var chosen: Dictionary = {}
+    var nearest: float = 3.0
+    for relay in relay_terminals:
+        var where: Vector3 = relay["position"]
+        var dist: float = Vector2(where.x,where.z).distance_to(Vector2(player.global_position.x,player.global_position.z))
+        if dist < nearest:
+            nearest = dist
+            chosen = relay
+    return chosen
+
+func _physical_distance(point: Vector3) -> float:
+    return Vector2(point.x,point.z).distance_to(Vector2(player.global_position.x,player.global_position.z))
+
 func _interact(fast: bool = false) -> void:
     if not started or paused or session.finished():
         return
     var target: Dictionary = _nearest_terminal()
+    var rescue: Dictionary = _nearest_relay()
+    if not rescue.is_empty() and not fast:
+        var main_distance: float = _physical_distance(target["position"]) if not target.is_empty() else 999.0
+        var rescue_distance: float = _physical_distance(rescue["position"])
+        if rescue_distance < main_distance:
+            var activated: bool = session.activate_relay(str(rescue["id"]))
+            previous_event = session.last_event
+            if activated:
+                _story_event(session.last_event)
+            elif session.relays_activated.size() >= IPCrisisEngine.MAX_RELAYS:
+                _story_event("relay_budget")
+            _announce(session.last_event)
+            _save_checkpoint()
+            _refresh_hud()
+            return
     if target.is_empty():
         return
     var terminal_id: String = str(target["id"])
@@ -1406,7 +1437,7 @@ func _announce(key: String) -> void:
             audio_director.cue("victory")
         "action_denied":
             audio_director.cue("denied")
-        "core_scanned", "coolant_repaired", "thermal_stabilized", "thermal_purged", "breach_sealed", "breach_patched", "bus_switched", "override_authorized":
+        "core_scanned", "coolant_repaired", "thermal_stabilized", "thermal_purged", "breach_sealed", "breach_patched", "bus_switched", "override_authorized", "relay_medbay", "relay_quench", "relay_uplink":
             audio_director.cue("confirm")
 
 func _show_end() -> void:
@@ -1425,6 +1456,7 @@ func _show_end() -> void:
     end_stats.text += "\n" + _copy("visited_sectors").format({"count":visited_sectors.size()})
     end_stats.text += "\n" + _copy("chapter_final").format({
         "act":story.act,"priority":session.priority_id if session.priority_id != "" else "-"})
+    end_stats.text += "\n" + _copy("rescue_final").format({"used":session.relays_activated.size()})
     if DisplayServer.get_name() != "headless":
         Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 
@@ -1449,8 +1481,9 @@ func _refresh_hud() -> void:
         _copy("heat"),int(session.heat),_copy("oxygen"),int(session.oxygen),
         _copy("crew"),int(session.crew_health),_copy("door"),int(session.door_charge),
         _copy("time"),floori(session.time_left/60.0),int(session.time_left)%60]
-    allocation_label.text = "%s  /  A: %s   |   B: %s" % [
-        _copy("power"),session.bus_a.to_upper(),session.bus_b.to_upper()]
+    allocation_label.text = "%s  /  A: %s   |   B: %s\n%s" % [
+        _copy("power"),session.bus_a.to_upper(),session.bus_b.to_upper(),
+        _copy("rescue_count").format({"used":session.relays_activated.size()})]
     (vitals_meters["heat"] as ProgressBar).value = session.heat
     (vitals_meters["oxygen"] as ProgressBar).value = session.oxygen
     (vitals_meters["crew"] as ProgressBar).value = session.crew_health
