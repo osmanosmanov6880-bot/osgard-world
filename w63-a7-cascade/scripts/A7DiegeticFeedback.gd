@@ -113,6 +113,17 @@ func build(actual_equipment: A7FieldOperations,
     set_process(true)
     _refresh_materials()
 
+func reset_visual_feedback() -> void:
+    _pulse_remaining = 0.0
+    _animation_phase = 0.0
+    if core_disc != null:
+        core_disc.scale = Vector3.ONE
+    for i in range(relay_contacts.size()):
+        relay_contacts[i].position.y = A7FieldOperations.RELAY.y+0.95
+    for contact in sync_contacts:
+        contact.scale = Vector3.ONE
+    _refresh_materials()
+
 func notify_real_world_operation(kind: String, index: int) -> bool:
     if equipment == null or not equipment.enabled:
         return false
