@@ -5,7 +5,15 @@ import {spawnSync} from 'node:child_process'
 
 const remote=readFileSync('scripts/city-reign-preview-remote.sh','utf8')
 const manifest=readFileSync('scripts/city-reign-preview-manifest.py','utf8')
-const fullSite=readFileSync('scripts/activate-frontend-remote.sh','utf8')
+// The feature branch predates master preservation. Verify ACTUAL CURRENT
+// master behavior before isolated SSH upload; never assume stale branch code.
+const upstream=spawnSync('git',
+  ['show','refs/remotes/origin/master:scripts/activate-frontend-remote.sh'],
+  {encoding:'utf8',timeout:8000})
+assert.equal(upstream.status,0,
+  'Fetch the real latest master preservation contract BEFORE validating SSH: '+
+  (upstream.stderr || upstream.stdout))
+const fullSite=upstream.stdout
 const preserve=readFileSync('scripts/preserve-omega-native.sh','utf8')
 const nginx=readFileSync('nginx.conf','utf8')
 
