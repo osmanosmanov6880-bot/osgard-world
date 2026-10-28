@@ -7,6 +7,7 @@ class_name A7TouchFieldControls
 
 signal world_tool_requested
 signal physical_inspection_requested
+signal actual_manual_motion_started
 
 const INK := Color("08121ae8")
 const COPPER := Color("efbd81")
@@ -104,6 +105,7 @@ func _held_start(key: String) -> void:
         return
     touch_press_events += 1
     last_input = key
+    actual_manual_motion_started.emit()
     if WALK_KEYS.has(key):
         held_directions[key] = true
         actor.set_key(int(WALK_KEYS[key]),true)
