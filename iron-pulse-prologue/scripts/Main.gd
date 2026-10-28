@@ -1410,6 +1410,7 @@ func _continue_checkpoint() -> bool:
         if saved_campaign.records.size() != saved_campaign.index:
             return false
     # Now, after atomic validation, restore all gameplay and authored story state.
+    _clear_after_action()
     cinematic_view = false
     _apply_cinematic_view()
     forecast_panel.visible = false
@@ -1505,6 +1506,7 @@ func _fast_interact() -> void:
     _interact(true)
 
 func start_run() -> void:
+    _clear_after_action()
     forecast_panel.visible = false
     forecast_report.clear()
     cinematic_view = false
@@ -1525,6 +1527,7 @@ func start_run() -> void:
         Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 
 func _restart() -> void:
+    _clear_after_action()
     forecast_panel.visible = false
     forecast_report.clear()
     cinematic_view = false
@@ -1598,6 +1601,7 @@ func _toggle_language() -> void:
     _announce("language")
     _refresh_hud()
     _refresh_decision_forecast()
+    _refresh_after_action_locale()
     _refresh_radio_ui()
 
 func _gamepad_axis(axis_id: int) -> float:
@@ -1617,13 +1621,18 @@ func _gamepad_button(button_index: int) -> void:
             _pause_toggle()
         return
     if button_index == JOY_BUTTON_B:
-        _toggle_journal()
+        if session.finished():
+            _toggle_after_action()
+        else:
+            _toggle_journal()
         return
     if not started or paused:
         return
     if session.finished():
-        if button_index == JOY_BUTTON_A:
+        if button_index == JOY_BUTTON_A and not debrief_panel.visible:
             _end_action()
+        elif button_index == JOY_BUTTON_Y:
+            _toggle_after_action()
         return
     match button_index:
         JOY_BUTTON_A:
@@ -1668,6 +1677,9 @@ func _input(event: InputEvent) -> void:
         if event.keycode == KEY_T:
             _toggle_decision_forecast()
             return
+        if event.keycode == KEY_B:
+            _toggle_after_action()
+            return
         if event.keycode == KEY_H and started and not paused and not session.finished():
             _announce("wayfinder_on" if wayfinder.toggle() else "wayfinder_off")
             _save_checkpoint()
@@ -1696,6 +1708,9 @@ func _input(event: InputEvent) -> void:
             _toggle_journal()
             return
         if event.keycode == KEY_ESCAPE:
+            if debrief_panel != null and debrief_panel.visible:
+                _toggle_after_action()
+                return
             if journal_panel.visible:
                 _toggle_journal()
             else:
@@ -1962,6 +1977,8 @@ func _show_end() -> void:
     end_stats.text += "\n" + _copy("rescue_final").format({"used":session.relays_activated.size()})
     if campaign.active:
         end_stats.text += "\n\n" + campaign.summary(locale)
+    black_box_report = after_action_review.review(session,campaign)
+    _refresh_after_action_locale()
     if DisplayServer.get_name() != "headless":
         Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 
@@ -1991,6 +2008,10 @@ func _refresh_hud() -> void:
     allocation_label.text = "%s  /  A: %s   |   B: %s\n%s" % [
         _copy("power"),session.bus_a.to_upper(),session.bus_b.to_upper(),
         _copy("rescue_count").format({"used":session.relays_activated.size()})]
+    var risk: Dictionary = threat_radar.snapshot(session)
+    threat_label.text = threat_radar.cockpit_text(risk,locale)
+    var risk_color: Color = RED if str(risk["tier"]) in ["CRITICAL","FAILED"] else AMBER if str(risk["tier"]) == "WATCH" else CYAN
+    threat_label.add_theme_color_override("font_color",risk_color)
     (vitals_meters["heat"] as ProgressBar).value = session.heat
     (vitals_meters["oxygen"] as ProgressBar).value = session.oxygen
     (vitals_meters["crew"] as ProgressBar).value = session.crew_health
