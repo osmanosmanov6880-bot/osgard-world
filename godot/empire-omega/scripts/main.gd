@@ -638,6 +638,11 @@ func _apply_visual_budget() -> void:
 		car.update_headlights(float(GameState.data.get("day_clock",12.0)),effective)
 	world.sun.shadow_enabled = effective != "low"
 	world.apply_visual_budget(effective)
+	# A17 real physical signal geometry: desktop 3-LED die-cast heads in
+	# nine shared GPU draws; LOW uses the EXACT original simple signals.
+	# No re-spawn, traffic AI update or shadow-map allocation on switches.
+	if traffic_signals != null:
+		traffic_signals.call("set_quality",effective)
 	# Switching live mobile quality adjusts ONLY cached traffic render
 	# meshes; no lane/traffic/vehicle collider changes and no allocations
 	# beyond the 6 shared precomputed city-fleet variant surfaces.
