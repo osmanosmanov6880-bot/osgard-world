@@ -1,13 +1,14 @@
 name: CITY REIGN - independent LIVE public original Godot desktop/mobile Chromium QA
 
+# Public QA is dispatched ONLY after a release is verified, never in a
+# race against ongoing SSH upload. The release workflow also runs it itself.
 on:
-  push:
-    branches:
-      - feat/city-reign-osgard-ssh-playable-20261028
-    paths:
-      - 'scripts/city-reign-public-live-qa.mjs'
-      - '.github/workflows/city-reign-public-live-qa.yml'
   workflow_dispatch:
+    inputs:
+      expected_sha:
+        description: Full 40-character SHA of already published source
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -20,6 +21,8 @@ jobs:
   live-game-independent-original-WebGL:
     runs-on: ubuntu-latest
     timeout-minutes: 25
+    env:
+      CITY_REIGN_EXPECTED_SHA: ${{ inputs.expected_sha }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -34,14 +37,16 @@ jobs:
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           python3 - <<'PY'
-          import json,urllib.request
+          import json,urllib.request,os,re
+          expected=os.environ.get('CITY_REIGN_EXPECTED_SHA','')
+          assert re.fullmatch('[0-9a-f]{40}',expected)
           url='https://osgard.world/games/city-reign/release.json'
           req=urllib.request.Request(url,
             headers={'Cache-Control':'no-cache','Accept-Encoding':'identity'})
           with urllib.request.urlopen(req,timeout=30) as response:
             assert response.status==200
             d=json.load(response)
-          assert d['source_commit']=='14f78e346574b10d7bceed70d61bd731b37529ef'
+          assert d['source_commit']==expected
           assert d['channel']=='city-reign-preview'
           assert d['engine']=='Godot 4.4.1'
           assert d['main_scene']=='res://scenes/main.tscn'
@@ -66,11 +71,11 @@ jobs:
           xvfb-run -a -s '-screen 0 1920x1080x24' \
             node scripts/city-reign-public-live-qa.mjs
           python3 - <<'PY'
-          import json,pathlib
+          import json,pathlib,os
           p=pathlib.Path('city-reign-public-live-evidence')
           m=json.loads((p/'PUBLIC-REAL-GODOT-ACCEPTANCE.json').read_text())
           assert m['status']=='PASS'
-          assert m['source_sha']=='14f78e346574b10d7bceed70d61bd731b37529ef'
+          assert m['source_sha']==os.environ['CITY_REIGN_EXPECTED_SHA']
           assert len(m['screens'])==2
           assert m['screens'][0]['actualInputChecked'] is True
           assert m['screens'][0]['actualCameraSwitchChecked'] is True

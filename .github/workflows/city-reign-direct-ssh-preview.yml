@@ -81,6 +81,10 @@ jobs:
             v131_city_reign_real_site_inspection \
             v132_city_reign_pedestrian_waypoint_continuity \
             v133_city_reign_camera_modes \
+            v134_city_reign_road_guidance \
+            v135_city_reign_turn_signals \
+            v136_city_reign_drive_navigation \
+            v137_city_reign_driver_awareness \
             v97_r123_real_pedestrian_body_gait \
             v68_r47_predictive_crosswalk_traffic \
             v110_city_reign_first_mandate \
@@ -182,7 +186,7 @@ jobs:
     name: Isolated atomic SSH upload to existing OSgard World Nginx
     needs: original-native-game
     runs-on: ubuntu-latest
-    timeout-minutes: 22
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
         with:
@@ -305,6 +309,46 @@ jobs:
           test -s /tmp/osgard-city-reign-live-index.html
           grep -Fq 'canvas' /tmp/osgard-city-reign-live-index.html
           echo "PASS: https://osgard.world/games/city-reign/ serves EXACT original Godot SHA"
+      - uses: actions/setup-node@v4
+        if: steps.activate.outputs.activated == 'true'
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Prepare independent public REAL WebGL2 browser QA before accepting release
+        if: steps.activate.outputs.activated == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm ci
+          npm install --no-save --package-lock=false @playwright/test@1.58.2 pngjs@7.0.0
+          npx playwright install --with-deps chromium
+          sudo apt-get install -y xvfb libgl1-mesa-dri libegl1 libgl1
+      - name: Verify actual LIVE 3D gameplay in Chromium at desktop and mobile sizes
+        if: steps.activate.outputs.activated == 'true'
+        shell: bash
+        env:
+          LIBGL_ALWAYS_SOFTWARE: '1'
+          CITY_REIGN_EXPECTED_SHA: ${{ github.sha }}
+          CITY_REIGN_PUBLIC_EVIDENCE_DIR: city-reign-verified-public-browser
+        run: |
+          set -euo pipefail
+          xvfb-run -a -s '-screen 0 1920x1080x24' \
+            node scripts/city-reign-public-live-qa.mjs
+          python3 - <<'PY'
+          import os,json,pathlib
+          p=pathlib.Path('city-reign-verified-public-browser')
+          m=json.loads((p/'PUBLIC-REAL-GODOT-ACCEPTANCE.json').read_text())
+          assert m['status']=='PASS'
+          assert m['source_sha']==os.environ['CITY_REIGN_EXPECTED_SHA']
+          assert len(m['screens'])==2
+          assert m['screens'][0]['actualInputChecked'] is True
+          assert m['screens'][0]['actualCameraSwitchChecked'] is True
+          for row in m['screens']:
+            assert row['engine']['actualWebGL2']
+            assert not row['engine']['lost']
+            assert row['originalFrame']['realWorldEdges']
+          print('PASS: published SHA, native 3D world and actual live WebGL on two screen sizes')
+          PY
       - name: Roll back ONLY city-reign if public verification fails
         if: failure() && steps.activate.outputs.activated == 'true'
         env:
@@ -320,6 +364,14 @@ jobs:
             "bash -s -- rollback '$RUN_ID' '$SOURCE_SHA'" \
             < scripts/deploy-city-reign-ssh-remote.sh
           echo "RESTORED: existing OSgard World and older Omega game were untouched."
+      - name: Archive independent REAL 3D live evidence before cleanup
+        if: always() && steps.activate.outputs.activated == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: city-reign-post-ssh-public-chromium
+          path: city-reign-verified-public-browser/
+          retention-days: 21
+          if-no-files-found: warn
       - name: Remove only this transfer's staging files after public integrity passes
         if: success() && steps.activate.outputs.activated == 'true'
         env:

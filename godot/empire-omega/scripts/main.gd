@@ -10,6 +10,8 @@ const TOUCH_CONTROLS_SCENE = preload("res://scripts/horizon_touch_controls.gd")
 const SAFE_CAMERA = preload("res://scripts/horizon_camera_collision.gd")
 const CITY_REIGN_CAMERA = preload("res://scripts/city_reign_camera_modes.gd")
 const CITY_REIGN_GUIDANCE = preload("res://scripts/city_reign_road_guidance.gd")
+const DRIVE_NAV = preload("res://scripts/city_reign_drive_navigation.gd")
+const DRIVER_SENSE = preload("res://scripts/city_reign_driver_awareness.gd")
 const PORTRAIT_SCREEN = preload("res://scripts/horizon_portrait_screen.gd")
 const ADAPTIVE_GRAPHICS = preload("res://scripts/horizon_adaptive_graphics.gd")
 const FRAME_METRICS = preload("res://scripts/horizon_frame_metrics.gd")
@@ -50,6 +52,9 @@ var city_reign_crisis: Node3D
 var city_reign_proposals: Node3D
 var city_reign_opening_director: Node3D
 var road_guidance: MeshInstance3D
+var drive_nav_status: Dictionary = {}
+var drive_warning_status: Dictionary = {}
+var drive_sensor_timer: float = 0.0
 var cargo_visual
 var current_weather_kind := "clear"
 var base_road_grip := 1.0
@@ -517,13 +522,25 @@ func _physics_process(delta: float) -> void:
 			road_guidance.sync_route(ground_route,protagonist,true,adaptive_graphics.effective_quality())
 	if road_guidance != null:
 		road_guidance.visible = route_allowed and not cabinet_open and road_guidance.mesh != null
+	# R162 sensor reads real scene velocities only at 4 Hz; no new rays
+	# or fake goals, and no effect on the vehicle physics time step.
+	drive_sensor_timer += delta
+	if not driving:
+		drive_nav_status = {}
+		drive_warning_status = {}
+	if drive_sensor_timer >= 0.25:
+		drive_sensor_timer = 0.0
+		if driving:
+			drive_nav_status = DRIVE_NAV.snapshot(hud.map.route,car.global_position) if route_allowed and hud.map != null else {}
+			drive_warning_status = DRIVER_SENSE.scan(car.global_position,car.rotation.y,
+				maxf(0.0,car.speed),ambient_cars,pedestrians)
 	if hud.map != null:
 		if patrols != null: hud.map.police_world = patrols.visible_positions()
 		var case_site: String = GameState.CITY_CASES.site(GameState.data)
 		hud.map.case_active = case_site != "" and world.locations.has(case_site)
 		if hud.map.case_active: hud.map.case_world = world.locations[case_site]["position"]
 	if Engine.get_physics_frames() % 3 == 0:
-		hud.update_world_context(protagonist,car.global_position,goal,driving,car.speed,car.fuel,near_name,car.health,car.handbrake_on,car.gear_label(),roundi(car.drift_chain_score),car.power_assist_reduction,car.steering_assist_correction,car.rotation.y,goal_visible)
+		hud.update_world_context(protagonist,car.global_position,goal,driving,car.speed,car.fuel,near_name,car.health,car.handbrake_on,car.gear_label(),roundi(car.drift_chain_score),car.power_assist_reduction,car.steering_assist_correction,car.rotation.y,goal_visible,drive_nav_status,drive_warning_status,car.indicator_mode)
 	# Patrols use shared physical roads and do not warp while pursuing the player.
 	if patrols != null:
 		var heat: int = int(GameState.data.get("law",{}).get("heat",0))

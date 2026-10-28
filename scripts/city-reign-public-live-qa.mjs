@@ -7,8 +7,16 @@ import { resolve } from 'node:path'
 import { captureAnimatedWebGLViewport } from './omega-browser-evidence.mjs'
 import { realGameFrameEvidence } from './omega-world-frame-evidence.mjs'
 
-const BASE = 'https://osgard.world/games/city-reign/'
-const SHA = '14f78e346574b10d7bceed70d61bd731b37529ef'
+// Private CI may use its own loopback source-locked Godot WebGL build.
+// Production release omits this override and always inspects the public URL.
+const BASE = process.env.CITY_REIGN_PUBLIC_BASE_URL ||
+  'https://osgard.world/games/city-reign/'
+if (!['https://osgard.world/games/city-reign/', 'http://127.0.0.1:4173/'].includes(BASE))
+  throw Error('Unapproved City Reign browser QA target')
+// Explicit 40-character SHAs are injected by the exact-source SSH job.
+ // A legacy R160 default supports the historical manual evidence workflow.
+const SHA = process.env.CITY_REIGN_EXPECTED_SHA || '14f78e346574b10d7bceed70d61bd731b37529ef'
+if (!/^[0-9a-f]{40}$/.test(SHA)) throw Error('Expected source SHA must be exactly forty hex characters')
 const OUT = resolve(process.env.CITY_REIGN_PUBLIC_EVIDENCE_DIR ||
   'city-reign-live-public-evidence')
 mkdirSync(OUT, { recursive: true })
