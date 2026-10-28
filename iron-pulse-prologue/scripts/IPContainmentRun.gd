@@ -13,7 +13,7 @@ const SEAL_COST_SECONDS: float = 7.0
 const SEAL_COST_OXYGEN: float = 6.0
 const CONSOLE_POSITIONS := [
     Vector3(4.7,1.1,-25.6),
-    Vector3(4.7,1.1,-39.9),
+    Vector3(-4.7,1.1,-42.4),
     Vector3(4.7,1.1,-52.8)
 ]
 const ZONE_Z := [-22.5,-41.0,-52.1]
