@@ -515,6 +515,10 @@ trap 'stop_activation_worker 129' HUP
     # SAME SHA-256-attested preservation guard runs BEFORE the entire html
     # root is swapped. No overwrite of Omega R87 or unrelated web products.
     sh /tmp/osgard-gh-next/preserve-omega-native.sh /usr/share/nginx/html/games/city-reign-preview /tmp/osgard-gh-next/html/games/city-reign-preview
+    # Preserve the independently SSH-published CITY REIGN real playable
+    # branch as a distinct verified release, not a stale frontend bundle.
+    # This route is /games/city-reign, deliberately NOT the above preview.
+    sh /tmp/osgard-gh-next/preserve-omega-native.sh /usr/share/nginx/html/games/city-reign /tmp/osgard-gh-next/html/games/city-reign
     # Full frontend root swaps must not erase the independently staged R40
     # hardware QA. Copy only after verifying the four original CI SHA-256s.
     test -s /tmp/osgard-gh-next/preserve-nebula-r40-qa.sh
@@ -528,6 +532,9 @@ trap 'stop_activation_worker 129' HUP
     fi
     if [ -s /usr/share/nginx/html/games/city-reign-preview/SHA256SUMS.txt ]; then
       (cd /usr/share/nginx/html/games/city-reign-preview && sha256sum -c SHA256SUMS.txt >/dev/null)
+    fi
+    if [ -s /usr/share/nginx/html/games/city-reign/SHA256SUMS.txt ]; then
+      (cd /usr/share/nginx/html/games/city-reign && sha256sum -c SHA256SUMS.txt >/dev/null)
     fi
     if [ -s /usr/share/nginx/html/games/remix/nebula-r40-qa/R40_DEVICE_ARTIFACT_SHA256.txt ]; then
       (cd /usr/share/nginx/html/games/remix/nebula-r40-qa && sha256sum -c R40_DEVICE_ARTIFACT_SHA256.txt >/dev/null)

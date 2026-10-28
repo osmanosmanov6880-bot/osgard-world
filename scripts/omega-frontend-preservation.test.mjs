@@ -97,3 +97,60 @@ test('full frontend SSH activation preserves source-verified CITY REIGN independ
  assert.match(frontend,/osgard-frontend-activation\.lock/)
  assert.equal((frontend.match(/sh \/tmp\/osgard-gh-next\/preserve-omega-native\.sh \/usr\/share\/nginx\/html\/games\/city-reign-preview/g)||[]).length,1)
 })
+
+test('verified live CITY REIGN survives an unrelated full-site frontend swap',()=>{
+ const root=mkdtempSync(join(tmpdir(),'osgard-city-reign-verified-'))
+ const active=join(root,'live','games','city-reign')
+ const candidate=join(root,'candidate','html','games','city-reign')
+ mkdirSync(active,{recursive:true});mkdirSync(candidate,{recursive:true})
+ try{
+   const release=JSON.stringify({
+     engine:'Godot 4.4.1',artifact_kind:'native-Godot-HTML5-export',
+     channel:'city-reign-preview',source_commit:'d79682d20c324f2b6f9fc99fb92b2fd33718a6ff'
+   })
+   for(const name of required){
+     writeFileSync(join(active,name),name==='release.json'?release:'LIVE-GAME-'+name)
+     writeFileSync(join(candidate,name),'STALE-FRONTEND-'+name)
+   }
+   writeFileSync(join(active,'SHA256SUMS.txt'),required.map(name=>
+     createHash('sha256').update(readFileSync(join(active,name))).digest('hex')+
+     '  '+name).join('\n')+'\n')
+   const result=spawnSync('sh',[helper,active,candidate],{
+     encoding:'utf8',timeout:6000})
+   assert.equal(result.status,0,result.stderr)
+   for(const name of required){
+     assert.deepEqual(readFileSync(join(candidate,name)),readFileSync(join(active,name)),
+       'verified player game must not be reverted by site redeployment: '+name)
+   }
+   assert.equal(spawnSync('sha256sum',['-c','SHA256SUMS.txt'],{
+     cwd:candidate,encoding:'utf8'}).status,0)
+   writeFileSync(join(active,'index.wasm'),'CORRUPTED-LIVE-WASM')
+   const result2=spawnSync('sh',[helper,active,candidate],{
+     encoding:'utf8',timeout:6000})
+   assert.notEqual(result2.status,0,
+     'a corrupted live game MUST block replacement instead of copying bad bytes')
+ } finally {
+   rmSync(root,{recursive:true,force:true})
+ }
+})
+
+test('OSgard full-site SSH preserves City Reign, its preview and original Omega separately',()=>{
+ const live='/usr/share/nginx/html/games/city-reign'
+ const staged='/tmp/osgard-gh-next/html/games/city-reign'
+ const preservation='sh /tmp/osgard-gh-next/preserve-omega-native.sh '+live+' '+staged
+ const liveIndex=frontend.indexOf(preservation)
+ const previewIndex=frontend.indexOf(
+   'sh /tmp/osgard-gh-next/preserve-omega-native.sh /usr/share/nginx/html/games/city-reign-preview ')
+ const omegaIndex=frontend.indexOf(
+   'sh /tmp/osgard-gh-next/preserve-omega-native.sh /usr/share/nginx/html/games/omega-3d-preview ')
+ const swap=frontend.indexOf('mv /usr/share/nginx/html /tmp/osgard-gh-previous')
+ const recheck=frontend.indexOf(
+   'cd /usr/share/nginx/html/games/city-reign && sha256sum -c SHA256SUMS.txt')
+ assert.ok(omegaIndex>0 && previewIndex>omegaIndex && liveIndex>previewIndex,
+   'all independent native Godot channels need their own preservation scope')
+ assert.ok(liveIndex<swap && recheck>swap,
+   'copy exact game before root swap, rehash after root swap')
+ assert.equal(frontend.split(preservation).length-1,1,
+   'never preserve the same game twice or redirect it to another app')
+ assert.match(frontend,/osgard-frontend-activation\.lock/)
+})

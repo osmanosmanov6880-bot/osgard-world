@@ -1,0 +1,75 @@
+name: CITY REIGN — preserve exact playable SSH bytes during every OSgard site deployment
+
+on:
+  push:
+    branches:
+      - fix/osgard-preserve-city-reign-live-game-20261028
+    paths:
+      - 'scripts/activate-frontend-remote.sh'
+      - 'scripts/omega-frontend-preservation.test.mjs'
+      - '.github/workflows/city-reign-frontend-preservation-ci.yml'
+  pull_request:
+    branches:
+      - master
+    paths:
+      - 'scripts/activate-frontend-remote.sh'
+      - 'scripts/omega-frontend-preservation.test.mjs'
+      - '.github/workflows/city-reign-frontend-preservation-ci.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: city-reign-live-preservation-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  preserve-source-verified-ssh-game:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify source-pinned shell syntax; no SSH, production or file mutation
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash -n scripts/activate-frontend-remote.sh
+          sh -n scripts/preserve-omega-native.sh
+          test -s scripts/deploy-omega-native-remote.sh
+          test -s scripts/omega-frontend-preservation.test.mjs
+      - name: Execute original existing Omega, preview and NEW City Reign native preservation tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --test scripts/omega-frontend-preservation.test.mjs
+      - name: Confirm new public route is covered inside shared activation lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          node - <<'JS'
+          const fs=require('node:fs')
+          const s=fs.readFileSync('scripts/activate-frontend-remote.sh','utf8')
+          const marker='sh /tmp/osgard-gh-next/preserve-omega-native.sh '
+          const routes=['omega-3d-preview','city-reign-preview','city-reign']
+          const swap='mv /usr/share/nginx/html /tmp/osgard-gh-previous'
+          const p=s.indexOf(swap)
+          if (p<0)throw Error('Original frontend atomic activation missing')
+          for (const route of routes){
+            const preserve=marker+'/usr/share/nginx/html/games/'+route+
+              ' /tmp/osgard-gh-next/html/games/'+route
+            const at=s.indexOf(preserve)
+            if(at<0||at>=p||s.indexOf(preserve,at+1)!==-1)
+              throw Error('Missing or duplicated original native preservation: '+route)
+            const rehash='cd /usr/share/nginx/html/games/'+route+
+              ' && sha256sum -c SHA256SUMS.txt'
+            if(s.indexOf(rehash)<p)
+              throw Error('Native channel not rehashed after site activation: '+route)
+          }
+          console.log('PASS: three original source-attested native game routes survive locked full-platform swap')
+          JS
