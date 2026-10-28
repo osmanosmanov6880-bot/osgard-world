@@ -174,6 +174,12 @@ func qa_readout() -> Dictionary:
         "last_mechanism":last_world_mechanic,
         "last_target_index":last_world_index,
         "actual_active_ray_target":actual_aim.get("kind",""),
+        "real_raw_raycast_colliding":ray.is_colliding() if ray != null else false,
+        "real_raw_collider": str(ray.get_collider().name) if ray != null and ray.is_colliding() and ray.get_collider() is Node3D else "",
+        "actual_player_yaw":player.body.rotation.y if player != null and player.body != null else 0.0,
+        "actual_camera_pitch":player.head_camera.rotation.x if player != null and player.head_camera != null else 0.0,
+        "actual_ray_source_xyz":[ray.global_position.x,ray.global_position.y,ray.global_position.z] if ray != null else [],
+        "actual_ray_forward_xyz":[ray.to_global(ray.target_position).x,ray.to_global(ray.target_position).y,ray.to_global(ray.target_position).z] if ray != null else [],
         "external_network":false,
         "production_approved":false,
     }
