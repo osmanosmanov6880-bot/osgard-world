@@ -72,6 +72,20 @@ func _run() -> void:
     _check(equipment.valve_index == 0,
         "Unobserved ray attempts never mutate actual valve or game")
 
+    # Reproduce actual Chromium operator pose + W72 auto-camera focus
+    # BEFORE manually aiming: the in-game camera itself must acquire the
+    # physics target in its exact live first-person path.
+    actor.body.position = Vector3(6.4,0.706,3.40)
+    actor.body.rotation.y = PI
+    actor.head_camera.rotation.x = 0.0
+    ui._focus_physical_field_device("thermal",
+        A7FieldOperations.CORE+Vector3(0,1.0,0))
+    await create_timer(0.40).timeout
+    var auto_hit: Dictionary = world.look_at_active_target()
+    _check(auto_hit.get("kind","") == "valve",
+        "W72 real in-game auto-focus from actual browser pose must point W73 ray at native physical valve")
+    ui.field_focused_devices.clear()
+
     # Look directly at actual valve with the ORIGINAL native Camera3D.
     actor.body.position = Vector3(5.50,1.33,2.90)
     await physics_frame
