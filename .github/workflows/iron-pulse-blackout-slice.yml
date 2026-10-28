@@ -205,6 +205,13 @@ jobs:
           timeout --signal=TERM --kill-after=5s 160s godot --headless --path iron-pulse-prologue --script res://tests/test_v9_cascade_3d_scene.gd 2>&1 | tee "$RUNNER_TEMP/iron-pulse-v9-world.log"
           grep -q '^IRON PULSE V9 PHYSICAL CAMPAIGN PASS:' "$RUNNER_TEMP/iron-pulse-v9-world.log"
           if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/iron-pulse-v9-world.log"; then exit 1; fi
+      - name: V10 cinematic industrial lighting, actual non-neon fixture geometry and live game regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 160s godot --headless --path iron-pulse-prologue --script res://tests/test_v10_reactor_art.gd 2>&1 | tee "$RUNNER_TEMP/iron-pulse-v10-art.log"
+          grep -q '^IRON PULSE V10 CINEMATIC ART PASS:' "$RUNNER_TEMP/iron-pulse-v10-art.log"
+          if grep -E '^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:' "$RUNNER_TEMP/iron-pulse-v10-art.log"; then exit 1; fi
       - name: Export exact-source Godot 4.4.1 WebGL playable build
         shell: bash
         run: |
@@ -252,6 +259,14 @@ jobs:
             --sha "${{ github.event.pull_request.head.sha || github.sha }}" \
             2>&1 | tee "$RUNNER_TEMP/iron-pulse-browser-playback.log"
           grep -q '"status": "PASS"' iron-pulse-prologue/build/browser-evidence/webgl-evidence.json
+      - name: V10 measured improvement of actual raw Godot security camera frame vs verified V9
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$RUNNER_TEMP/iron-pulse-playwright/bin/python" iron-pulse-prologue/ci/v10_cinematic_art_audit.py \
+            --evidence iron-pulse-prologue/build/browser-evidence \
+            2>&1 | tee "$RUNNER_TEMP/iron-pulse-v10-pixel-audit.log"
+          grep -q '"status": "PASS"' iron-pulse-prologue/build/browser-evidence/v10-cinematic-art-audit.json
       - name: Retain build proof even if packaging fails
         if: always()
         uses: actions/upload-artifact@v4
