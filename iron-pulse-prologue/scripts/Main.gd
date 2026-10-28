@@ -839,15 +839,30 @@ func _make_overlays() -> void:
     campaign_button = Button.new()
     campaign_button.name = "ThreeShiftsCampaignButton"
     campaign_button.text = _copy("campaign_start")
-    campaign_button.custom_minimum_size = Vector2(0,40)
-    campaign_button.add_theme_font_size_override("font_size",15)
+    campaign_button.custom_minimum_size = Vector2(0,46)
+    campaign_button.focus_mode = Control.FOCUS_ALL
+    campaign_button.add_theme_font_size_override("font_size",16)
+    campaign_button.add_theme_color_override("font_color",WHITE)
+    campaign_button.add_theme_color_override("font_hover_color",WHITE)
+    var campaign_style := StyleBoxFlat.new()
+    campaign_style.bg_color = Color(0.07,0.19,0.25,0.98)
+    campaign_style.border_color = Color(0.86,0.58,0.24,1.0)
+    campaign_style.set_border_width_all(1)
+    campaign_style.set_corner_radius_all(8)
+    campaign_style.content_margin_left = 14.0
+    campaign_style.content_margin_right = 14.0
+    campaign_button.add_theme_stylebox_override("normal",campaign_style)
+    var campaign_hover: StyleBoxFlat = campaign_style.duplicate()
+    campaign_hover.bg_color = Color(0.11,0.29,0.34,1.0)
+    campaign_hover.set_border_width_all(2)
+    campaign_button.add_theme_stylebox_override("hover",campaign_hover)
     campaign_button.pressed.connect(_start_campaign)
     start_box.add_child(campaign_button)
     scenario_brief = _label(start_box,"",12,AMBER)
     scenario_brief.custom_minimum_size = Vector2(0,44)
     var intro_scroll := ScrollContainer.new()
     intro_scroll.name = "BriefingScroll"
-    intro_scroll.custom_minimum_size = Vector2(0,192)
+    intro_scroll.custom_minimum_size = Vector2(0,169)
     intro_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
     start_box.add_child(intro_scroll)
     intro_body = _label(intro_scroll,_copy("intro"),15,WHITE)
@@ -1727,7 +1742,12 @@ func _show_end() -> void:
         "act":story.act,"priority":session.priority_id if session.priority_id != "" else "-"})
     end_stats.text += "\n" + _copy("rescue_final").format({"used":session.relays_activated.size()})
     if campaign.active:
+        end_panel.offset_top = -206.0
+        end_panel.offset_bottom = 206.0
         end_stats.text += "\n" + campaign.summary(locale)
+    else:
+        end_panel.offset_top = -160.0
+        end_panel.offset_bottom = 160.0
         end_button.text = _copy(
             "campaign_replay" if campaign.complete() else
             "campaign_next" if session.won else "campaign_retry")
