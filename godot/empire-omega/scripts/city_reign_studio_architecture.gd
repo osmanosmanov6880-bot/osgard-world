@@ -14,6 +14,7 @@ var gold_material: StandardMaterial3D
 var back_material: StandardMaterial3D
 var night: bool = false
 var mobile: bool = false
+var authored_fin_transforms: Array[Transform3D] = []
 
 static func _face(st: SurfaceTool,a: Vector3,b: Vector3,
 		c: Vector3,d: Vector3,tint: Color) -> void:
@@ -108,8 +109,14 @@ func _build_rear_louvres() -> void:
 	batch.instance_count = FIN_COUNT
 	for index in range(FIN_COUNT):
 		var x: float = (float(index)-float(FIN_COUNT-1)*0.5)*1.14
-		batch.set_instance_transform(index,
-			Transform3D(Basis.IDENTITY,Vector3(x,0.44,4.22)))
+		var authored: Transform3D = Transform3D(Basis.IDENTITY,
+			Vector3(x,0.44,4.22))
+		# Headless render servers may not read back CPU-visible transforms
+		# from MultiMesh GPU storage. Preserve the SOURCE transform that
+		# was actually submitted to each original instance, then also
+		# verify it against real browser pixels in the visual CI job.
+		authored_fin_transforms.append(authored)
+		batch.set_instance_transform(index,authored)
 	fins.multimesh = batch
 	fins.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(fins)
@@ -135,6 +142,8 @@ func geometry_is_bounded() -> bool:
 	if ring.mesh.surface_get_array_len(0)!=MAX_MARKING_VERTICES:
 		return false
 	if fins.multimesh==null or fins.multimesh.instance_count!=FIN_COUNT:
+		return false
+	if authored_fin_transforms.size()!=FIN_COUNT:
 		return false
 	if not find_children("*","CollisionShape3D",true,false).is_empty():
 		return false

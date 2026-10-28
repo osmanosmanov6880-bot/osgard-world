@@ -59,8 +59,11 @@ func _run() -> void:
 			fins.multimesh.mesh is BoxMesh,
 			"seven real architectural copper/bronze fins share one GPU mesh")
 		var xs: Dictionary = {}
+		var original_transforms: Array = stage.get("authored_fin_transforms")
+		check(original_transforms.size()==STAGE.FIN_COUNT,
+			"same finite CPU source transforms submitted to all seven GPU instances")
 		for index in range(STAGE.FIN_COUNT):
-			var t: Transform3D = fins.multimesh.get_instance_transform(index)
+			var t: Transform3D = original_transforms[index]
 			xs[snappedf(t.origin.x,0.001)] = true
 			check(is_equal_approx(t.origin.z,4.22),
 				"real metal fins safely remain behind the 3D car")
