@@ -51,7 +51,19 @@ jobs:
             log="r162-native-evidence/$suite.log"
             timeout --signal=TERM --kill-after=5s 120s godot --headless \
               --path godot/empire-omega --script "res://tests/$suite.gd" 2>&1 | tee "$log"
-            if grep -nEi 'SCRIPT ERROR:|Parse Error:|[1-9][0-9]* (FAIL|failed)|ERROR:.*FAIL' "$log"; then
+            # R55 deliberately writes a malformed PRIMARY save to test a
+            # correct backup recovery. Godot prints one expected JSON warning.
+            # Allow only that exact known line in that one suite, never broad
+            # error suppression for other scripts.
+            if [ "$suite" = "v72_r55_forty_mission_event_save" ]; then
+              expected_json="ERROR: Parse JSON failed. Error at line 0: Expected key"
+              count="$(grep -Fxc "$expected_json" "$log" || true)"
+              test "$count" -eq 1 || { echo "::error::Unexpected R55 corrupt-primary diagnostic count"; exit 1; }
+              grep -Fvx "$expected_json" "$log" > "$log.filtered"
+            else
+              cp "$log" "$log.filtered"
+            fi
+            if grep -nEi 'SCRIPT ERROR:|Parse Error:|[1-9][0-9]* (FAIL|failed)|ERROR:.*FAIL|^ERROR:' "$log.filtered"; then
               exit 1
             fi
             grep -Eqi '[1-9][0-9]* (PASS|passed).*0 (FAIL|failed)' "$log"

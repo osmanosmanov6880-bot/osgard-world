@@ -81,8 +81,10 @@ static func _distance(metres: float,locale: String) -> String:
         return "—"
     var bounded: float = maxf(0.0,metres)
     if bounded>=1000.0:
-        return "%.1f km" % (bounded/1000.0) if locale=="en" else "%.1f км" % (bounded/1000.0)
-    return "%d m" % roundi(bounded) if locale=="en" else "%d м" % roundi(bounded)
+        return "%.1f km" % (bounded/1000.0) if locale=="en" else (
+            "%.1f 公里" % (bounded/1000.0) if locale=="zh" else "%.1f км" % (bounded/1000.0))
+    return "%d m" % roundi(bounded) if locale=="en" else (
+        "%d 米" % roundi(bounded) if locale=="zh" else "%d м" % roundi(bounded))
 
 static func localized(state: Dictionary,locale: String,compact: bool = false) -> String:
     if state.is_empty():
