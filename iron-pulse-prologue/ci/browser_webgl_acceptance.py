@@ -129,6 +129,29 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                             "real_relay_positions":positions,
                             "available_slots":2
                         }
+                        # V9: true physical, optional scenario-dependent 3-coil puzzle
+                        # is present in exported WebGL and starts with NO rewards.
+                        matrix = idle.get("containment_circuit",{})
+                        assert matrix.get("real_3d_coils")==3 and matrix.get("mechanical_rotors")==3 and matrix.get("status_leds")==3, (
+                            "Actual 3D reactor containment coils/actuators are missing",matrix)
+                        actual_coils = matrix.get("physical_3d_positions",[])
+                        assert len(actual_coils)==3 and [p[0] for p in actual_coils]==["alpha","beta","gamma"], (
+                            "Actual source-authored ALPHA/BETA/GAMMA physical coils missing",actual_coils)
+                        assert [round(float(p[2]),1) for p in actual_coils]==[-19.0,-32.5,-50.0],(
+                            "Containment cannot be physically played across all three sectors",actual_coils)
+                        assert matrix.get("scene_state")=="offline" and matrix.get("active_count")==0, (
+                            "Fresh mission falsely reports synchronized reactor",matrix)
+                        assert matrix.get("quality")==("eco" if mobile else "hero"),(
+                            "Real V9 machinery ignores mobile low-end render budget",matrix)
+                        assert idle.get("containment_step")==0 and idle.get("containment_online") is False and idle.get("containment_next")=="alpha",(
+                            "Gameplay engine's optional puzzle missing or awards free completion",idle)
+                        report.setdefault("v9_physical_circuit",{})[name]={
+                            "actual_physical_positions":actual_coils,
+                            "lighting_nodes":matrix["status_leds"],
+                            "visual_scene_state":matrix["scene_state"],
+                            "engine_next_coil":idle["containment_next"],
+                            "quality":matrix["quality"]
+                        }
                         # V8 must render a NEW 15m side reactor chamber,
                         # not just rename old corridor meshes or substitute CGI.
                         bay = idle.get("reactor_atrium", {})
@@ -448,6 +471,8 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                                         "G button did not switch actual V8 vaulted reactor geometry",state.get("reactor_atrium"))
                                     assert state.get("containment_fx",{}).get("quality") == expected, (
                                         "G button did not scale procedural pressure vents/steam",state.get("containment_fx"))
+                                    assert state.get("containment_circuit",{}).get("quality") == expected, (
+                                        "G button did not scale V9 physical reactor circuit",state.get("containment_circuit"))
                                     if expected=="eco":
                                         assert state.get("containment_fx",{}).get("vapor_visible") is False, (
                                             "ECO retained heavyweight vapor rendering",state.get("containment_fx"))
