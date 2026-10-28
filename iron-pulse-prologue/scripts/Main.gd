@@ -1288,6 +1288,31 @@ func _refresh_decision_forecast() -> void:
     forecast_label.text = decision_forecaster.text_report(forecast_report,locale)
     forecast_close_button.text = "CLOSE / X" if locale == "en" else "ЗАКРЫТЬ / X"
 
+func _clear_after_action() -> void:
+    if debrief_panel != null:
+        debrief_panel.visible = false
+    black_box_report.clear()
+
+func _refresh_after_action_locale() -> void:
+    if debrief_button == null or debrief_title == null or debrief_label == null or debrief_close_button == null:
+        return
+    var english: bool = locale == "en"
+    debrief_button.text = "VIEW BLACK BOX / B" if english else "ЧЁРНЫЙ ЯЩИК / B"
+    debrief_title.text = "A7 / AFTER-ACTION REPORT" if english else "A7 / ОТЧЁТ ПО ОПЕРАЦИИ"
+    debrief_close_button.text = "CLOSE REPORT / ESC" if english else "ЗАКРЫТЬ ОТЧЁТ / ESC"
+    debrief_label.text = after_action_review.localized(black_box_report,locale)
+
+func _toggle_after_action() -> void:
+    # Review is a post-operation feature, never a free pause or cheat.
+    if not started or not session.finished() or debrief_panel == null or black_box_report.is_empty():
+        return
+    debrief_panel.visible = not debrief_panel.visible
+    if debrief_panel.visible:
+        forecast_panel.visible = false
+        diagnostic_panel.visible = false
+        _refresh_after_action_locale()
+    _publish_web_state()
+
 func _cycle_director_shot() -> void:
     if started and not paused and not session.finished() and cinematic_view:
         reactor_atrium.cycle_director_shot()
