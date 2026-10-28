@@ -134,6 +134,27 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                         bay = idle.get("reactor_atrium", {})
                         assert bay.get("security_director_camera") is True and bay.get("plasma_shader_live") is True, (
                             "New real in-engine observation camera or procedural plasma material missing",bay)
+                        assert bay.get("director_shot_count") == 3 and bay.get("director_shot_index") == 0, (
+                            "V12 three independent original physical cinema cameras missing",bay)
+                        assert idle.get("campaign",{}).get("active") is False and idle.get("campaign",{}).get("victories") == 0, (
+                            "V9 campaign falsely enabled or historical solo mode mutated",idle.get("campaign"))
+                        marker3d = idle.get("wayfinder",{})
+                        assert marker3d.get("physical_3d_halo") is True and marker3d.get("enabled") is True, (
+                            "V10 true 3D in-world waypoint missing",marker3d)
+                        assert marker3d.get("visible") is False, (
+                            "V10 guidance illegally visible before starting mission",marker3d)
+                        echoes = idle.get("campaign_echoes",{})
+                        assert echoes.get("physical_wall") is True and echoes.get("panel_count") == 3 and echoes.get("visible") is False, (
+                            "V11 three real physical memorial plaques missing or fake achievements",echoes)
+                        audit = idle.get("performance_audit",{})
+                        gates = idle.get("release_gate",{})
+                        assert audit.get("hardware_certified") is False and gates.get("production_ready") is False, (
+                            "V12 browser audit falsely asserted AAA/hardware production readiness",audit,gates)
+                        report.setdefault("v9_to_v12_native_source",{})[name] = {
+                            "campaign":idle["campaign"],"wayfinder":marker3d,
+                            "world_dossier":echoes,"director_cameras":bay["director_shot_count"],
+                            "hardware_qa":"NOT CERTIFIED"
+                        }
                         assert bay.get("open_core_inspection") is True, (
                             "Physical front armour still covers the live plasma reactor",bay)
                         hero = idle.get("reactor_hero",{})
@@ -302,6 +323,16 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                             "Crew/core priority offered before real scanner",state)
                         assert "МАРА" in state.get("radio_text","") or "MARA" in state.get("radio_text",""), (
                             "No authored radio subtitles shown in Godot",state.get("radio_text"))
+                        assert state.get("campaign",{}).get("active") is False, (
+                            "Standalone original scenario switched to campaign without opt-in",state)
+                        deadline = time.monotonic()+12
+                        while time.monotonic()<deadline:
+                            state=json.loads(marker.get_attribute("data-state",timeout=10000))
+                            if state.get("wayfinder",{}).get("visible") is True:
+                                break
+                            page.wait_for_timeout(200)
+                        assert state.get("wayfinder",{}).get("visible") is True and state["wayfinder"]["target"]=="scan", (
+                            "Actual first-person mission doesn't show true 3D scanner marker",state.get("wayfinder"))
                         # Capture an extra BEFORE-controls gameplay camera frame
                         # to compare the central scene's art evolution fairly.
                         # The image is a direct Chromium screenshot of the actual
@@ -350,6 +381,40 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                                 "source":"actual_godot_webgl_chromium",
                                 "hdr_overlays_hidden":True
                             }
+                            # V12 director cut: use real P key on exported Godot
+                            # to cycle entirely different actual Camera3D nodes.
+                            for shot_index,shot_name,filename in [
+                                (1,"A7_TurbineSideCamera","cinematic-side-desktop.png"),
+                                (2,"A7_UpperCatwalkCamera","cinematic-overhead-desktop.png")
+                            ]:
+                                page.keyboard.press("p")
+                                shot_deadline=time.monotonic()+22
+                                shot={}
+                                while time.monotonic()<shot_deadline:
+                                    shot=json.loads(marker.get_attribute("data-state",timeout=10000))
+                                    if shot.get("director_shot_index")==shot_index:
+                                        break
+                                    page.wait_for_timeout(160)
+                                assert shot.get("director_shot_index")==shot_index and shot.get("active_camera")==shot_name, (
+                                    "True native P camera cut failed in WebGL",shot_index,shot)
+                                screenshot=page.screenshot(timeout=60000,animations="disabled")
+                                metrics=frame_metrics(screenshot)
+                                assert metrics["color_bins"]>=12 and metrics["stddev"]>7,metrics
+                                (output/filename).write_bytes(screenshot)
+                                report.setdefault("v12_native_camera_shots",[]).append({
+                                    "index":shot_index,"active_camera":shot_name,"screenshot":filename,
+                                    **metrics,"source":"actual_godot_camera3d_webgl"
+                                })
+                            page.keyboard.press("p")
+                            wrap_deadline=time.monotonic()+20
+                            wrapped={}
+                            while time.monotonic()<wrap_deadline:
+                                wrapped=json.loads(marker.get_attribute("data-state",timeout=10000))
+                                if wrapped.get("director_shot_index")==0:
+                                    break
+                                page.wait_for_timeout(160)
+                            assert wrapped.get("active_camera")=="A7_ServiceObservationCamera", (
+                                "Cinema shot cycle failed to wrap to original A7 view",wrapped)
                             page.keyboard.press("c")
                             deadline=time.monotonic()+20
                             restored={}
@@ -398,6 +463,42 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                         assert state.get("journal_visible") is False and state.get("paused") is False, (
                             "Actual radio journal could not be closed",name,state)
                         report.setdefault("v6_real_radio",{})[name] = "original localized subtitles and native journal PASS"
+                        if mobile:
+                            # Actual touch buttons, no native method injection.
+                            for button_label,target_index,target_camera in [
+                                ("CAM / C",0,"A7_ServiceObservationCamera"),
+                                ("SHOT / P",1,"A7_TurbineSideCamera")
+                            ]:
+                                fresh=json.loads(marker.get_attribute("data-state",timeout=10000))
+                                button_rect=fresh["touch_button_rects"][button_label]
+                                bounds=canvas.bounding_box()
+                                assert bounds is not None
+                                x=bounds["x"]+(button_rect[0]+button_rect[2]/2)*bounds["width"]/fresh["viewport"][0]
+                                y=bounds["y"]+(button_rect[1]+button_rect[3]/2)*bounds["height"]/fresh["viewport"][1]
+                                page.touchscreen.tap(x,y)
+                                stop=time.monotonic()+24
+                                while time.monotonic()<stop:
+                                    touch_cam=json.loads(marker.get_attribute("data-state",timeout=10000))
+                                    if touch_cam.get("director_shot_index")==target_index and touch_cam.get("active_camera")==target_camera:
+                                        break
+                                    page.wait_for_timeout(180)
+                                assert touch_cam.get("active_camera")==target_camera, (
+                                    "Physical mobile CAM / SHOT control not working",button_label,touch_cam)
+                            # Exit cinema using same original CAM physical button.
+                            again=json.loads(marker.get_attribute("data-state",timeout=10000))
+                            rect=again["touch_button_rects"]["CAM / C"]
+                            bounds=canvas.bounding_box()
+                            page.touchscreen.tap(bounds["x"]+(rect[0]+rect[2]/2)*bounds["width"]/again["viewport"][0],
+                                                 bounds["y"]+(rect[1]+rect[3]/2)*bounds["height"]/again["viewport"][1])
+                            deadline=time.monotonic()+20
+                            while time.monotonic()<deadline:
+                                state=json.loads(marker.get_attribute("data-state",timeout=10000))
+                                if state.get("cinematic_view") is False:
+                                    break
+                                page.wait_for_timeout(150)
+                            assert state["active_camera"]=="FirstPersonCamera" and state["started"], (
+                                "Mobile cinema did not return to actual gameplay camera",state)
+                            report.setdefault("v12_real_mobile_cam",{})[name]="CAM/SHOT/RETURN native taps PASS"
                         if mobile:
                             # Genuine mobile tap through Chromium's touchscreen,
                             # on the actual Godot Button; never call the locale
