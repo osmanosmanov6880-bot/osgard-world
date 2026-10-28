@@ -52,6 +52,19 @@ const COPY := {
         "relay_quench": "ГАСИТЕЛЬ: тепло снижено, импульсы ослаблены.",
         "relay_uplink": "СВЯЗЬ: получено дополнительное время.",
         "relay_budget": "ЛИМИТ: доступны только две станции спасения.",
+        "cascade_start": "ЗАПУСК КАСКАДА", "cascade_bridge": "МОСТ / ПЕРЕКЛЮЧЕНИЕ",
+        "cascade_sync": "СИНХРОНИЗАТОР", "cascade_lock": "ФИНАЛЬНАЯ БЛОКИРОВКА",
+        "cascade_hint": "{name}  {distance} м  /  [E] ВЫПОЛНИТЬ",
+        "cascade_locked": "{name}  /  НУЖНО ВОССТАНОВИТЬ ОХЛАЖДЕНИЕ",
+        "cascade_spent": "{name}  /  УЗЕЛ ЗАКРЫТ",
+        "cascade_live": "КАСКАД {step}/3  /  ОСТАЛОСЬ {seconds} с",
+        "cascade_idle": "КАСКАД / ДОП. ОПЕРАЦИЯ",
+        "cascade_done": "КАСКАД СТАБИЛИЗИРОВАН",
+        "cascade_failed": "КАСКАД НЕ УДАЛСЯ",
+        "cascade_nav": "КАСКАД / {name}  —  {distance} м",
+        "cascade_result": "Каскад A7: {status} / этап {step}/3",
+        "cascade_started": "КАСКАД ЗАПУЩЕН: 78 СЕКУНД.",
+        "cascade_complete": "КАСКАД УСПЕШЕН: ТЕПЛО СНИЖЕНО, ШЛЮЗ ЗАРЯЖЕН.",
         "pause": "ПАУЗА", "victory": "ЭВАКУАЦИЯ УСПЕШНА", "failure": "МИССИЯ ПРОВАЛЕНА",
         "scan": "01  /  Просканировать реактор A7", "repair": "02  /  Восстановить охлаждение",
         "charge": "03  /  Зарядить аварийную дверь — перенаправьте одну линию на DOOR",
@@ -119,6 +132,19 @@ const COPY := {
         "relay_quench": "HEAT SUPPRESSOR: cooler core, weaker pulses.",
         "relay_uplink": "UPLINK: additional evacuation time secured.",
         "relay_budget": "CAPACITY LIMIT: only two rescue stations may run.",
+        "cascade_start": "START CASCADE", "cascade_bridge": "BRIDGE / TRANSFER",
+        "cascade_sync": "PHASE SYNCHRONIZER", "cascade_lock": "FINAL CORE LOCK",
+        "cascade_hint": "{name}  {distance} m  /  [E] EXECUTE",
+        "cascade_locked": "{name}  /  COOLANT REPAIR REQUIRED",
+        "cascade_spent": "{name}  /  STATION UNAVAILABLE",
+        "cascade_live": "CASCADE {step}/3  /  {seconds} s REMAIN",
+        "cascade_idle": "CASCADE / OPTIONAL OPERATION",
+        "cascade_done": "CASCADE STABILIZED",
+        "cascade_failed": "CASCADE FAILED",
+        "cascade_nav": "CASCADE / {name} — {distance} m",
+        "cascade_result": "Cascade A7: {status} / phase {step}/3",
+        "cascade_started": "CASCADE ARMED: 78 SECONDS.",
+        "cascade_complete": "CASCADE CLEAR: LOWER HEAT, MORE BULKHEAD CHARGE.",
         "pause": "PAUSED", "victory": "EVACUATION COMPLETE", "failure": "MISSION FAILED",
         "scan": "01  /  Scan the A7 reactor core", "repair": "02  /  Restore reactor cooling",
         "charge": "03  /  Charge the bulkhead — redirect one bus to DOOR",
@@ -159,6 +185,7 @@ var checkpoint_path: String = IPCheckpointStore.DEFAULT_PATH
 var art_stage: IPCinematicStage
 var reactor_atrium: IPReactorAtrium
 var containment_fx: IPContainmentFX
+var cascade_world: IPCascadeStations
 var world_sectors: IPWorldSectors
 var audio_director: IPSoundscape
 var legacy_lamps: Array[OmniLight3D] = []
@@ -327,6 +354,7 @@ func _publish_web_state() -> void:
     state["cinematic_details"] = art_stage.readout() if art_stage != null else {}
     state["reactor_atrium"] = reactor_atrium.readout() if reactor_atrium != null else {}
     state["containment_fx"] = containment_fx.readout() if containment_fx != null else {}
+    state["cascade_world"] = cascade_world.readout() if cascade_world != null else {}
     # Read-only native material/geometry facts; Chromium QA never invents art.
     var actual_core: SphereMesh = reactor_core.mesh as SphereMesh
     var support_count: int = 0
@@ -516,6 +544,8 @@ func _make_complex() -> void:
     add_child(reactor_atrium)
     containment_fx = IPContainmentFX.new()
     add_child(containment_fx)
+    cascade_world = IPCascadeStations.new()
+    add_child(cascade_world)
     if reactor_core != null and reactor_atrium.core_plasma_material != null:
         reactor_core.material_override = reactor_atrium.core_plasma_material
     _terminal_active_material = _metal(Color(0.20,0.95,0.72),0.12,true)
@@ -1492,6 +1522,8 @@ func _process(delta: float) -> void:
         session.scenario_id,session.heat,session.oxygen,runtime_seconds,
         reduced_motion,session.thermal_pulses,session.thermal_shield,
         started and not paused and not session.finished())
+    cascade_world.update_status(session.cascade_state,session.cascade_phase,
+        session.cascade_remaining,session.elapsed,reduced_motion)
     if started and not paused and not session.finished():
         var sector: String = world_sectors.current_sector(player.global_position.z)
         if sector != active_sector:
@@ -1559,11 +1591,48 @@ func _nearest_relay() -> Dictionary:
 func _physical_distance(point: Vector3) -> float:
     return Vector2(point.x,point.z).distance_to(Vector2(player.global_position.x,player.global_position.z))
 
+func _nearest_cascade_station() -> Dictionary:
+    if player == null or cascade_world == null:
+        return {}
+    var nearest: float = 2.65
+    var found: Dictionary = {}
+    for station in cascade_world.stations:
+        var dist: float = _physical_distance(station["position"])
+        if dist < nearest:
+            nearest = dist
+            found = station
+    return found
+
+func _activate_cascade_terminal(station_id: String) -> void:
+    var result: bool = false
+    if station_id == "start":
+        result = session.begin_cascade()
+    else:
+        result = session.advance_cascade(station_id)
+    previous_event = session.last_event
+    if result or session.last_event == "cascade_failed":
+        _story_event(session.last_event)
+    _announce(session.last_event)
+    _save_checkpoint()
+    if session.finished():
+        _show_end()
+    _refresh_hud()
+
 func _interact(fast: bool = false) -> void:
     if not started or paused or session.finished():
         return
     var target: Dictionary = _nearest_terminal()
     var rescue: Dictionary = _nearest_relay()
+    var cascade: Dictionary = _nearest_cascade_station()
+    # Use nearest actual world console; cascade must not hijack legacy repair,
+    # the 2-of-3 rescue network, or the optional quick Q action.
+    if not fast and not cascade.is_empty():
+        var main_dist: float = _physical_distance(target["position"]) if not target.is_empty() else 999.0
+        var rescue_dist: float = _physical_distance(rescue["position"]) if not rescue.is_empty() else 999.0
+        var cascade_dist: float = _physical_distance(cascade["position"])
+        if cascade_dist < main_dist and cascade_dist < rescue_dist:
+            _activate_cascade_terminal(str(cascade["id"]))
+            return
     if not rescue.is_empty() and not fast:
         var main_distance: float = _physical_distance(target["position"]) if not target.is_empty() else 999.0
         var rescue_distance: float = _physical_distance(rescue["position"])
@@ -1613,13 +1682,13 @@ func _announce(key: String) -> void:
     if audio_director == null or not started:
         return
     match key:
-        "surge", "thermal_pulse", "reactor_overheat", "life_support_lost", "time_expired":
+        "surge", "thermal_pulse", "reactor_overheat", "life_support_lost", "time_expired", "cascade_failed":
             audio_director.cue("surge")
         "crew_evacuated":
             audio_director.cue("victory")
         "action_denied":
             audio_director.cue("denied")
-        "core_scanned", "coolant_repaired", "thermal_stabilized", "thermal_purged", "breach_sealed", "breach_patched", "bus_switched", "override_authorized", "relay_medbay", "relay_quench", "relay_uplink":
+        "core_scanned", "coolant_repaired", "thermal_stabilized", "thermal_purged", "breach_sealed", "breach_patched", "bus_switched", "override_authorized", "relay_medbay", "relay_quench", "relay_uplink", "cascade_started", "cascade_bridge", "cascade_sync", "cascade_complete":
             audio_director.cue("confirm")
 
 func _show_end() -> void:
@@ -1641,6 +1710,8 @@ func _show_end() -> void:
     end_stats.text += "\n" + _copy("chapter_final").format({
         "act":story.act,"priority":session.priority_id if session.priority_id != "" else "-"})
     end_stats.text += "\n" + _copy("rescue_final").format({"used":session.relays_activated.size()})
+    end_stats.text += "\n" + _copy("cascade_result").format({
+        "status":session.cascade_state.to_upper(),"step":session.cascade_phase})
     if DisplayServer.get_name() != "headless":
         Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 
@@ -1665,29 +1736,43 @@ func _refresh_hud() -> void:
         _copy("heat"),int(session.heat),_copy("oxygen"),int(session.oxygen),
         _copy("crew"),int(session.crew_health),_copy("door"),int(session.door_charge),
         _copy("time"),floori(session.time_left/60.0),int(session.time_left)%60]
+    var status_hint: String = _copy("rescue_count").format({"used":session.relays_activated.size()})
+    if session.cascade_state == "active":
+        status_hint = _copy("cascade_live").format({
+            "step":session.cascade_phase,
+            "seconds":"%.0f" % session.cascade_remaining})
+    elif session.cascade_state == "completed":
+        status_hint = _copy("cascade_done")
+    elif session.cascade_state == "failed":
+        status_hint = _copy("cascade_failed")
     allocation_label.text = "%s  /  A: %s   |   B: %s\n%s" % [
-        _copy("power"),session.bus_a.to_upper(),session.bus_b.to_upper(),
-        _copy("rescue_count").format({"used":session.relays_activated.size()})]
+        _copy("power"),session.bus_a.to_upper(),session.bus_b.to_upper(),status_hint]
     (vitals_meters["heat"] as ProgressBar).value = session.heat
     (vitals_meters["oxygen"] as ProgressBar).value = session.oxygen
     (vitals_meters["crew"] as ProgressBar).value = session.crew_health
     (vitals_meters["door"] as ProgressBar).value = session.door_charge
+    cascade_world.update_status(session.cascade_state,session.cascade_phase,
+        session.cascade_remaining,session.elapsed,reduced_motion)
     var nearby: Dictionary = _nearest_terminal()
     var rescue: Dictionary = _nearest_relay()
-    var show_rescue: bool = not rescue.is_empty()
-    if show_rescue and not nearby.is_empty():
-        show_rescue = _physical_distance(rescue["position"]) < _physical_distance(nearby["position"])
-    if started and not session.finished() and show_rescue:
-        var relay_dist: float = _physical_distance(rescue["position"])
+    var cascade: Dictionary = _nearest_cascade_station()
+    var nearest_main: float = _physical_distance(nearby["position"]) if not nearby.is_empty() else 999.0
+    var nearest_rescue: float = _physical_distance(rescue["position"]) if not rescue.is_empty() else 999.0
+    var nearest_cascade: float = _physical_distance(cascade["position"]) if not cascade.is_empty() else 999.0
+    if started and not session.finished() and not cascade.is_empty() and nearest_cascade < nearest_main and nearest_cascade < nearest_rescue:
+        var station_id: String = str(cascade["id"])
+        var valid: bool = (session.cascade_state == "idle" and station_id == "start" and session.coolant_repaired) or (session.cascade_state == "active" and IPCrisisEngine.CASCADE_SEQUENCE[session.cascade_phase] == station_id)
+        var hint_key: String = "cascade_hint" if valid else "cascade_locked" if session.cascade_state == "idle" and not session.coolant_repaired else "cascade_spent"
+        interaction_label.text = _copy(hint_key).format({
+            "name":_copy("cascade_" + station_id),"distance":"%.1f" % nearest_cascade})
+    elif started and not session.finished() and not rescue.is_empty() and nearest_rescue < nearest_main:
         var available: bool = session.core_scanned and not session.relays_activated.has(str(rescue["id"])) and session.relays_activated.size() < IPCrisisEngine.MAX_RELAYS
         var rescue_key: String = "rescue_hint" if available else "rescue_spent"
         interaction_label.text = _copy(rescue_key).format({
-            "name":_copy(str(rescue["key"])),"distance":"%.1f" % relay_dist})
+            "name":_copy(str(rescue["key"])),"distance":"%.1f" % nearest_rescue})
     elif not nearby.is_empty() and started and not session.finished():
-        var at: Vector3 = nearby["position"]
-        var dist: float = _physical_distance(at)
         var hint_key: String = "choice_hint" if str(nearby["id"]) == "repair" and session.scenario_id != "blackout" and not session.coolant_repaired else "hint"
-        interaction_label.text = _copy(hint_key).format({"name":_copy(str(nearby["key"])),"distance":"%.1f" % dist})
+        interaction_label.text = _copy(hint_key).format({"name":_copy(str(nearby["key"])),"distance":"%.1f" % nearest_main})
     else:
         interaction_label.text = _copy("action") if started and not session.finished() else ""
     feedback_label.text = _copy(notice_key) if notice_time > 0.0 else ""
@@ -1704,6 +1789,14 @@ func _update_guidance(objective_key: String) -> void:
     if not started or session.finished():
         guidance_label.text = ""
         return
+    if session.cascade_state == "active":
+        var desired: String = IPCrisisEngine.CASCADE_SEQUENCE[session.cascade_phase]
+        for info in cascade_world.stations:
+            if str(info["id"]) == desired:
+                guidance_label.text = _copy("cascade_nav").format({
+                    "name":_copy("cascade_" + desired),
+                    "distance":"%.0f" % _physical_distance(info["position"])})
+                return
     var goal_id: String = objective_key
     if objective_key == "charge":
         goal_id = "bus_a" if player.global_position.x <= 0.0 else "bus_b"

@@ -160,6 +160,34 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                         assert containment.get("vapor_visible") is False and containment.get("spark_burst_visible") is False, (
                             "False catastrophe effects appear on the idle scenario menu",containment)
                         report.setdefault("v8_6_reactive_world",{})[name]=containment
+                        # V9: FOUR physically modeled optional challenge stations,
+                        # distinct route, unspent state and strict real timer.
+                        # The browser only reads the same Godot state shown to the
+                        # player. Game commands are never injected.
+                        cascade = idle.get("cascade_world",{})
+                        assert cascade.get("physical_3d_consoles")==4 and cascade.get("animated_3d_dials")==4, (
+                            "New A7 timed challenge has no real Godot 3D terminals",cascade)
+                        assert cascade.get("station_ids")==["start","bridge","sync","lock"], (
+                            "Timed mission physical sequence differs from native engine",cascade)
+                        assert cascade.get("active_station")=="start" and cascade.get("state")=="idle", (
+                            "Optional challenge begins already active or completed",cascade)
+                        assert idle.get("cascade_state")=="idle" and idle.get("cascade_phase")==0, (
+                            "V9 puzzle silently changes current emergency run",idle)
+                        assert abs(float(idle.get("cascade_remaining",0.0))-78.0)<0.01, (
+                            "V9 optional operation does not have its own genuine time budget",idle)
+                        positions = cascade.get("station_positions",[])
+                        assert len(positions)==4 and (
+                            abs(positions[0][1]+18.5)<0.1 and
+                            abs(positions[1][1]+40.5)<0.1 and
+                            abs(positions[2][1]+52.0)<0.1 and
+                            abs(positions[3][1]+25.0)<0.1
+                        ),("New route does not require actual player traversal",positions)
+                        report.setdefault("v9_timed_cascade_world",{})[name]={
+                            "real_stations":positions,
+                            "stage_sequence":cascade["station_ids"],
+                            "cascade_budget_seconds":78,
+                            "old_campaign_untouched":True
+                        }
                         assert bay.get("open_core_inspection") is True, (
                             "V8.3 reactor remains obscured by front armour despite successful render",bay)
                         assert bay.get("cinematic_vault") is True, (
