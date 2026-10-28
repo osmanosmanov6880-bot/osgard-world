@@ -86,7 +86,7 @@ void fragment() {
     vec3 ion = mix(tone, white_hot, electric * 0.70);
     float light = 0.58 + vein * 0.75 + sweep * 0.62 + fresnel * 0.70;
     ALBEDO = ion * 0.34;
-    EMISSION = ion * light * (1.48 + crisis * 1.05);
+    EMISSION = ion * light * (2.12 + crisis * 1.30);
 }
 """
     core_plasma_material = ShaderMaterial.new()

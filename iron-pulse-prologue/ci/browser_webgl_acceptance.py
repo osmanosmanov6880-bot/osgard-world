@@ -143,6 +143,8 @@ def test_webgl(directory: Path, output: Path, source_sha: str) -> dict:
                             "Original 3D containment rings remained oversized neon strips",hero)
                         assert hero.get("front_light_power",0.0)>2.0, (
                             "No physical key light illuminates the reactor",hero)
+                        assert hero.get("halo_camera_alignment",0.0)>=0.93, (
+                            "Camera sees the original 3D containment halo edge-on as a huge cyan obstruction",hero)
                         report.setdefault("v8_4_hero_visual",{})[name]=hero
                         assert bay.get("open_core_inspection") is True, (
                             "V8.3 reactor remains obscured by front armour despite successful render",bay)
