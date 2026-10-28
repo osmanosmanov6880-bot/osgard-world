@@ -25,6 +25,7 @@ var _burst_started_at: float = -10000.0
 var _burst_visible: bool = false
 var _reduced_motion: bool = false
 var _last_scenario: String = "blackout"
+var _last_spark_origin: Vector3 = Vector3(13.0,7.0,-20.5)
 
 func _ready() -> void:
     name = "A7_ReactivePressureRelief"
@@ -218,8 +219,11 @@ func update_from_crisis(
                 cos(angle)*outward,
                 sin(angle*2.0)*outward*0.6,
                 sin(angle)*outward)
+            var real_spark_position: Vector3 = Vector3(12.6,7.2,-20.5)+offset
+            if index == 0:
+                _last_spark_origin = real_spark_position
             _spark_meshes.set_instance_transform(index,
-                Transform3D(Basis(),Vector3(12.6,7.2,-20.5)+offset))
+                Transform3D(Basis(),real_spark_position))
     _update_visibility()
 
 func readout() -> Dictionary:
@@ -236,5 +240,6 @@ func readout() -> Dictionary:
         "vapor_visible":_active_vapor,
         "spark_burst_visible":_burst_visible and spark_cluster != null and spark_cluster.visible,
         "actual_surge_count":_last_surge_count,
+        "spark_0_render_submission":[_last_spark_origin.x,_last_spark_origin.y,_last_spark_origin.z],
         "reduced_motion":_reduced_motion
     }
