@@ -85,6 +85,7 @@ const RU := {
     "load_done": "СМЕНА ВОССТАНОВЛЕНА ПО ПРОВЕРЕННЫМ СОБЫТИЯМ",
     "save_fail": "НЕ УДАЛОСЬ СОХРАНИТЬ",
     "load_fail": "ФАЙЛ ПОВРЕЖДЕН ИЛИ СОБЫТИЯ НЕ ПРОХОДЯТ ПРОВЕРКУ",
+    "fps_label": "F3 / МОНИТОР КАДРОВ",
     "preview_default": "ВЫБЕРИТЕ ДЕЙСТВИЕ: ПОСЛЕДСТВИЯ ПОКАЗАНЫ В ИГРОВЫХ ЕДИНИЦАХ.",
 }
 const EN := {
@@ -157,11 +158,18 @@ const EN := {
     "load_done": "SESSION RESTORED FROM VALIDATED REAL ACTIONS",
     "save_fail": "LOCAL SAVE FAILED",
     "load_fail": "CORRUPT FILE OR INVALID SESSION JOURNAL",
+    "fps_label": "F3 / FRAME DIAGNOSTICS",
     "preview_default": "CHOOSE AN ACTION: FORECASTS ARE FICTIONAL GAME UNITS.",
 }
 
 var model: A7CascadeCore = A7CascadeCore.new()
 var checkpoint: A7SessionCheckpoint = A7SessionCheckpoint.new()
+var gamepad: A7GamepadDirector = A7GamepadDirector.new()
+var frame_telemetry: A7FrameTelemetry = A7FrameTelemetry.new()
+var controller_hint_label: Label
+var diagnostic_label: Label
+var show_diagnostics: bool = false
+var diagnostic_elapsed: float = 0.0
 var save_button: Button
 var load_button: Button
 var checkpoint_status_label: Label
@@ -411,6 +419,9 @@ func _build() -> void:
     cinematic_hud.name = "ObsidianAuroraLiveHUD"
     stage_shell.add_child(cinematic_hud)
     cinema_readout = _label(cinema, "", 12, MINT)
+    diagnostic_label = _label(cinema, "", 11, MUTED)
+    diagnostic_label.name = "W74ActualGodotFrameDeltaNotClaimedGPUBenchmark"
+    diagnostic_label.visible = false
     var cinema_controls := HFlowContainer.new()
     cinema_controls.name = "A7ViewAndAccessibilityRail"
     cinema_controls.add_theme_constant_override("h_separation", 10)
@@ -473,6 +484,9 @@ func _build() -> void:
     world_use_button.custom_minimum_size = Vector2(230,40)
     world_use_button.visible = false
     pilot_status_label = _label(cinema, "", 11, MINT)
+    controller_hint_label = _label(cinema, "", 11, GOLD)
+    controller_hint_label.name = "W74ActualJoypadContextHintOnlyOnInput"
+    controller_hint_label.visible = false
     pilot_rail.visible = false
     pilot_status_label.visible = false
     subtitle = _label(body, "", 15, MINT)
@@ -661,6 +675,8 @@ func _restart() -> void:
     _previewed_action = ""
     checkpoint.clear()
     field_focused_devices.clear()
+    if stage_3d != null and stage_3d.field_feedback != null:
+        stage_3d.field_feedback.reset_visual_feedback()
     if stage_3d != null and stage_3d.spatial_mission != null:
         stage_3d.spatial_mission.reset()
     model.reset()
@@ -669,6 +685,24 @@ func _restart() -> void:
     if stage_3d != null:
         stage_3d.recent_action = ""
         stage_3d.pulse = 0.0
+
+func _update_gamepad_hint() -> void:
+    if controller_hint_label == null:
+        return
+    var active: bool = (gamepad.any_controller_event_observed and
+        stage_3d != null and stage_3d.first_person != null and
+        stage_3d.first_person.piloting)
+    controller_hint_label.visible = active
+    if active:
+        controller_hint_label.text = gamepad.explain(locale)
+
+func _toggle_diagnostics() -> void:
+    show_diagnostics = not show_diagnostics
+    if diagnostic_label != null:
+        diagnostic_label.visible = show_diagnostics
+        if show_diagnostics:
+            diagnostic_label.text = frame_telemetry.display(locale)
+    call_deferred("_publish_web_accessibility")
 
 func _save_checkpoint() -> void:
     var ok: bool = checkpoint.write_packet(self)
@@ -787,6 +821,10 @@ func _field_valve(direction: int) -> void:
         direction, stage_3d.first_person)
     if ok:
         _focus_physical_field_device("thermal", A7FieldOperations.CORE + Vector3(0, 1.0, 0))
+        if stage_3d.field_feedback != null:
+            stage_3d.field_feedback.notify_real_world_operation("valve", 0)
+        if sound_bus != null:
+            sound_bus.cue("action")
         checkpoint.note("valve", direction, self)
     field_help.text = stage_3d.field_operations.instructions(locale) if ok else _t("field_far")
     _refresh_mission_ui(model.snapshot())
@@ -799,6 +837,10 @@ func _field_relay(index: int) -> void:
         index, stage_3d.first_person)
     if ok:
         _focus_physical_field_device("relay", A7FieldOperations.RELAY + Vector3(0, 0.93, 0))
+        if stage_3d.field_feedback != null:
+            stage_3d.field_feedback.notify_real_world_operation("relay", index)
+        if sound_bus != null:
+            sound_bus.cue("action")
         checkpoint.note("relay", index, self)
     field_help.text = stage_3d.field_operations.instructions(locale) if ok else _t("field_far")
     _refresh_mission_ui(model.snapshot())
@@ -811,6 +853,10 @@ func _field_sync(index: int) -> void:
         index, stage_3d.first_person, model.snapshot())
     if ok:
         _focus_physical_field_device("sync", A7FieldOperations.CORE + Vector3(1.02, 1.45, 0))
+        if stage_3d.field_feedback != null:
+            stage_3d.field_feedback.notify_real_world_operation("sync", index)
+        if sound_bus != null:
+            sound_bus.cue("action")
         checkpoint.note("sync", index, self)
     field_help.text = stage_3d.field_operations.instructions(locale) if ok else _t("field_far")
     _refresh_mission_ui(model.snapshot())
@@ -906,6 +952,11 @@ func _world_use() -> void:
     elif kind == "sync":
         _focus_physical_field_device("sync",
             A7FieldOperations.CORE + Vector3(1.02,1.45,0))
+    if stage_3d.field_feedback != null:
+        stage_3d.field_feedback.notify_real_world_operation(
+            kind,int(result["index"]))
+    if sound_bus != null:
+        sound_bus.cue("action")
     checkpoint.note(kind if kind in ["relay","sync"] else "valve",
         int(result["index"]) if kind in ["relay","sync"] else 1, self)
     _refresh_mission_ui(model.snapshot())
@@ -1011,6 +1062,21 @@ func _unhandled_input(event: InputEvent) -> void:
         get_viewport().set_input_as_handled()
 
 func _input(event: InputEvent) -> void:
+    # W74 native controller events are handled before focused GUI widgets.
+    # The analog axis drives the real W70 CharacterBody3D's continuous speed,
+    # never fake camera images or a teleported player position.
+    if event is InputEventJoypadMotion:
+        if gamepad.route_motion(event as InputEventJoypadMotion,self):
+            _update_gamepad_hint()
+            get_viewport().set_input_as_handled()
+        return
+    if event is InputEventJoypadButton:
+        var pad_button: InputEventJoypadButton = event as InputEventJoypadButton
+        if pad_button.pressed and gamepad.route_button(
+                pad_button.button_index,self):
+            _update_gamepad_hint()
+            get_viewport().set_input_as_handled()
+        return
     # W71 actual-browser correction: raw player motion must be captured before
     # scroll containers or focused buttons consume a WASD key. Both keydown and
     # keyup reach real CharacterBody3D physics; all normal shortcuts continue
@@ -1030,6 +1096,10 @@ func _unhandled_key_input(event: InputEvent) -> void:
         return
     var key: InputEventKey = event as InputEventKey
     if not key.pressed or key.echo:
+        return
+    if key.keycode == KEY_F3:
+        _toggle_diagnostics()
+        get_viewport().set_input_as_handled()
         return
     if key.keycode == KEY_F5:
         _save_checkpoint()
@@ -1158,6 +1228,9 @@ func _render(state: Dictionary) -> void:
         (pilot_nudge_buttons[keycode] as Button).text = _t(str(pilot_strings[keycode]))
     pilot_inspect_button.text = _t("pilot_inspect")
     _refresh_world_reticle()
+    _update_gamepad_hint()
+    if diagnostic_label != null and show_diagnostics:
+        diagnostic_label.text = frame_telemetry.display(locale)
     cycle_label.text = "%s %02d / 06" % [_t("round"), mini(6, int(state["shift"]) + 1)]
     actions_label.text = "%s: %d / 2" % [_t("actions"), int(state["actions_left"])]
     var result: String = str(state["status"])
@@ -1239,6 +1312,12 @@ func _create_web_accessibility() -> void:
 # Browser QA is passive: it may observe an actual moving physics body but
 # cannot fabricate or move it. Limit DOM state updates while the player walks.
 func _process(delta: float) -> void:
+    frame_telemetry.sample_frame(delta)
+    diagnostic_elapsed += delta
+    if diagnostic_elapsed >= 0.6:
+        diagnostic_elapsed = 0.0
+        if show_diagnostics and diagnostic_label != null:
+            diagnostic_label.text = frame_telemetry.display(locale)
     world_aim_elapsed += delta
     if world_aim_elapsed >= 0.21:
         world_aim_elapsed = 0.0
@@ -1344,6 +1423,18 @@ func _publish_web_accessibility() -> void:
         "w73_checkpoint_restores": checkpoint.successful_restores,
         "w73_checkpoint_rejected": checkpoint.rejected_loads,
         "w73_checkpoint_status": checkpoint.last_status,
+        "w74_true_3d_feedback_meshes": int(stage_state.get("w74_real_3d_feedback_meshes",0)),
+        "w74_accepted_diegetic_world_actions": int(stage_state.get("w74_3d_mechanic_animations",0)),
+        "w74_original_analog_axis_events": int(stage_state.get("w74_native_controller_motion_events",0)),
+        "w74_original_analog_physics_frames": int(stage_state.get("w74_native_analog_player_movement_frames",0)),
+        "w74_native_gamepad_event_routes": gamepad.actual_button_events,
+        "w74_native_gamepad_action_choices": gamepad.original_actions_via_controller,
+        "w74_native_gamepad_aimed_world_uses": gamepad.world_interactions_via_controller,
+        "w74_native_gamepad_selected_action": gamepad.selected_action(),
+        "w74_real_frame_time_samples": frame_telemetry.total_frames,
+        "w74_real_frame_time_p95_ms": float(frame_telemetry.qa_readout()["window_p95_frame_ms"]),
+        "w74_diagnostics_visible":show_diagnostics,
+        "w74_hardware_gamepad_certified":false,
         "w67_two_3d_sectors": bool(stage_state.get("cathedral_two_real_sectors", false)),
         "w67_inspection_sector": int(stage_state.get("inspection_sector", 0)),
         "w67_walk_progress": float(stage_state.get("inspection_progress", 0.0)),
@@ -1384,6 +1475,8 @@ func _publish_web_accessibility() -> void:
         "world_reticle": _web_rect(world_reticle),
         "checkpoint_save": _web_rect(save_button),
         "checkpoint_load": _web_rect(load_button),
+        "controller_hint": _web_rect(controller_hint_label),
+        "frame_diagnostics": _web_rect(diagnostic_label),
         "mission_title": _web_rect(mission_title),
         "mission_briefing": _web_rect(mission_briefing),
         "walk_back": _web_rect(route_buttons[0]),
