@@ -349,7 +349,11 @@ func _publish_web_state() -> void:
         "recommended":career.recommended_scenario(),
         "mission_records":career.snapshot()["mission_records"],
         "primary_button_rect":_hud_rect(operations_button) if operations_button != null else [],
-        "close_button_rect":_hud_rect(operations_panel.close_button) if operations_panel != null else []
+        "close_button_rect":_hud_rect(operations_panel.close_button) if operations_panel != null else [],
+        "panel_rect":_hud_rect(operations_panel) if operations_panel != null else [],
+        "launch_visible":operations_panel.launch_button.visible if operations_panel != null else false,
+        "heading":operations_panel._heading.text if operations_panel != null else "",
+        "history_count":career.recent.size()
     }
     state["quality_mode"] = quality_mode
     state["reduced_motion"] = reduced_motion
